@@ -170,6 +170,14 @@
 # BLOCKER: transitive prod dep used only for IP parsing in MCP rate-limit middleware and electron-builder's npm fetch path; the vulnerable HTML-emitting methods are never called and we never render Address6 output to a browser
 1117683
 
+# astro <6.1.10 server island encrypted-parameter cross-component replay
+# (GHSA-xr5h-phrj-8vxv; fix requires Astro 6.x major)
+# BLOCKER: same astro 6 major migration as 1116896/1117141; server islands are
+# disabled in our static-output marketing site (no SSR endpoints emit encrypted
+# Astro.props blobs), so the cross-component replay surface is not present at
+# runtime; revisit when @astrojs/mdx unblocks the Astro 6 upgrade
+1118920
+
 # @opentelemetry/exporter-prometheus + @opentelemetry/sdk-node Prometheus HTTP listener crash
 # (GHSA-q7rr-3cgh-j5r3; affects exporter-prometheus shipped with sdk-node 0.x)
 # Fixed upstream in exporter-prometheus >= 0.220.x, which in turn requires the whole

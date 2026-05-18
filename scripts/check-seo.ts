@@ -188,7 +188,7 @@ function checkH1Presence() {
   console.log('Checking H1 presence in pages...');
 
   // Components known to render an H1 (directly or via SPHero)
-  const h1Components = ['SPHero', 'SPHomePage', 'SolutionPage', 'PersonaPage', 'ContentLayout', 'DocsLayout'];
+  const h1Components = ['SPHero', 'SPHomePage', 'SolutionPage', 'PersonaPage', 'ContentLayout', 'DocsLayout', 'ResourceBriefPage'];
 
   const pageFiles = globSync(`${PAGES_DIR}/\\[lang\\]/**/*.astro`);
 

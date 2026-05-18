@@ -11189,6 +11189,125 @@
   },
   {
     "id": "search-4293",
+    "content": "SIEM Integration",
+    "excerpt": "Route Rediacc audit events to Splunk, OpenSearch, Sentinel, or any OpenTelemetry-compatible SIEM",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.title",
+    "priority": 1,
+    "language": "en"
+  },
+  {
+    "id": "search-4294",
+    "content": "Route Rediacc audit events to Splunk, OpenSearch, Sentinel, or any OpenTelemetry-compatible SIEM",
+    "excerpt": "Route Rediacc audit events to Splunk, OpenSearch, Sentinel, or any OpenTelemetry-compatible SIEM",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.description",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4295",
+    "content": "SIEM Integration",
+    "body": "# SIEM Integration Every machine-level operation issued through the Rediacc CLI is logged to the account server's event_log table and simultaneously emitted as an OpenTelemetry log record. Operators route those records into a SIEM (Splunk, OpenSearch, Microsoft Sentinel, AWS CloudWatch, etc.) by pointing the account server at an OpenTelemetry Collector that exports to the SIEM of their choice. This page covers how to wire it up. The audit-event schema and collector reference deployment are in the public monorepo at compose/otel-collector/.",
+    "excerpt": "# SIEM Integration Every machine-level operation issued through the Rediacc CLI is logged to the account server's event_log table and simultaneously e...",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.content",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4296",
+    "content": "What gets logged",
+    "body": "Every entry written to the account server's event_log table — and that includes both account-level events (auth, config storage, license) and machine-level CLI events (cli.repo.up, cli.repo.fork, cli.backup.push, cli.sync.upload, cli.term.session, …) — is mirrored to the OTLP logs pipeline. The event-type vocabulary is a closed discriminated union defined in packages/shared/src/audit/event-schema.ts. Adding a new event type requires a code change and is gated by CI, so SIEM rule authors can rely on the vocabulary being stable. Each log record carries OpenTelemetry semantic attributes: | Attribute | Meaning | |---|---| | event.domain | Fixed rediacc.audit — filter on this to ignore unrelated logs | | event.name | The canonical event type (e.g. cli.repo.up) | | event.source | cli, api, system, … | | enduser.id | Initiating user | | organization.id, team.id | Org/team scope | | cloud.account.id | Stripe customer ID | | subscription.id | License subscription | | audit.data.* | Flattened operation payload |",
+    "excerpt": "Every entry written to the account server's event_log table — and that includes both account-level events (auth, config storage, license) and machine-...",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.content",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4297",
+    "content": "Wiring it up",
+    "body": "",
+    "excerpt": "Wiring it up",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.content",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4298",
+    "content": "1. Deploy the collector",
+    "body": "git clone https://github.com/rediacc/console cd console/compose/otel-collector docker compose up -d By default the collector listens on :4318 (OTLP/HTTP) and writes to its own stdout via the debug exporter — useful for verifying the pipeline before routing anywhere expensive.",
+    "excerpt": "git clone https://github.com/rediacc/console cd console/compose/otel-collector docker compose up -d By default the collector listens on :4318 (OTLP/HT...",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.content",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4299",
+    "content": "2. Point the account server at it",
+    "body": "In the account server's environment (private/account/.env or your Docker/Wrangler equivalent): OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 Restart the account server. Audit events will begin flowing to the collector immediately.",
+    "excerpt": "In the account server's environment (private/account/.env or your Docker/Wrangler equivalent): OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318...",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.content",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4300",
+    "content": "3. Configure your SIEM exporter",
+    "body": "Edit compose/otel-collector/config.yaml. The file ships with four commented exporter examples: OpenSearch / Elasticsearch — opensearch exporter, requires basicauth/opensearch extension. Splunk HEC — splunk_hec exporter, requires an HEC token + index. AWS CloudWatch Logs — awscloudwatchlogs exporter, requires IAM credentials in the collector's env. Microsoft Sentinel — via the azuremonitor exporter with an App Insights connection string. Uncomment exactly one, swap it for debug in the logs: pipeline's exporters: list, and restart the collector. Any OTel Collector contrib exporter that accepts logs will work — the audit pipeline produces standard OTLP log records.",
+    "excerpt": "Edit compose/otel-collector/config.yaml. The file ships with four commented exporter examples: OpenSearch / Elasticsearch — opensearch exporter, requi...",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.content",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4301",
+    "content": "Detection content",
+    "body": "Audit events are designed for Sigma rule authoring. Sigma rules are vendor-neutral and convert via sigma-cli to native queries for OpenSearch, Splunk, Sentinel, and others. Example rule (failed repo.fork from an unexpected user): title: Unexpected Rediacc repo fork detection: selection: event.domain: rediacc.audit event.name: cli.repo.fork audit.data.success: false condition: selection level: medium",
+    "excerpt": "Audit events are designed for Sigma rule authoring. Sigma rules are vendor-neutral and convert via sigma-cli to native queries for OpenSearch, Splunk,...",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.content",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4302",
+    "content": "Compliance posture",
+    "body": "The audit pipeline is the foundation for the audit-logging requirements referenced in Rediacc's compliance documentation: GDPR Art. 30 — records of processing activities SOC 2 CC6.1 / CC7.2 — access logging + monitoring HIPAA 45 CFR 164.312(b) — audit controls PCI DSS Req 10 — track and monitor all access NIS2 Art. 21 — incident reporting capability DORA Art. 10 — ICT-related incident detection",
+    "excerpt": "The audit pipeline is the foundation for the audit-logging requirements referenced in Rediacc's compliance documentation: GDPR Art. 30 — records of pr...",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.content",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4303",
+    "content": "Reliability",
+    "body": "OTLP emission is fire-and-forget — a collector outage will never block or fail a Rediacc API request, and every event is still persisted to the account server's event_log table regardless. Combined with the collector's batching and retry behavior, this makes the pipeline safe to deploy in front of any SIEM.",
+    "excerpt": "OTLP emission is fire-and-forget — a collector outage will never block or fail a Rediacc API request, and every event is still persisted to the accoun...",
+    "category": "Documentation",
+    "page": "/en/docs/siem-integration",
+    "path": "docs.siem-integration.content",
+    "priority": 2,
+    "language": "en"
+  },
+  {
+    "id": "search-4304",
     "content": "Subscription & Licensing",
     "excerpt": "Understand how account, rdc, and renet handle machine slots, repo licenses, and plan limits.",
     "category": "Documentation",
@@ -11198,7 +11317,7 @@
     "language": "en"
   },
   {
-    "id": "search-4294",
+    "id": "search-4305",
     "content": "Understand how account, rdc, and renet handle machine slots, repo licenses, and plan limits.",
     "excerpt": "Understand how account, rdc, and renet handle machine slots, repo licenses, and plan limits.",
     "category": "Documentation",
@@ -11208,7 +11327,7 @@
     "language": "en"
   },
   {
-    "id": "search-4295",
+    "id": "search-4306",
     "content": "Subscription & Licensing",
     "body": "# Subscription & Licensing Rediacc licensing has three moving parts: account signs entitlements and tracks usage rdc authenticates, requests licenses, delivers them to machines, and enforces them at runtime renet (the on-machine runtime) validates installed licenses locally without calling the account server This page explains how those pieces fit together for local deployments.",
     "excerpt": "# Subscription & Licensing Rediacc licensing has three moving parts: account signs entitlements and tracks usage rdc authenticates, requests licenses,...",
@@ -11219,7 +11338,7 @@
     "language": "en"
   },
   {
-    "id": "search-4296",
+    "id": "search-4307",
     "content": "What Licensing Does",
     "body": "Licensing controls two different things: Machine access accounting through Floating Licenses Repository runtime authorization through repo licenses These are related, but they are not the same artifact.",
     "excerpt": "Licensing controls two different things: Machine access accounting through Floating Licenses Repository runtime authorization through repo licenses Th...",
@@ -11230,7 +11349,7 @@
     "language": "en"
   },
   {
-    "id": "search-4297",
+    "id": "search-4308",
     "content": "How Licensing Works",
     "body": "account is the source of truth for plans, contract overrides, machine slot state, and monthly repo license issuances. rdc runs on your workstation. It logs you into the account server, requests the licenses it needs, and installs them on remote machines over SSH. When you run a repository command, rdc ensures the required licenses are in place and validates them on the machine at runtime. The normal flow looks like this: You authenticate with rdc subscription login You run a repository command such as rdc repo create, rdc repo up, or rdc repo down If the required license is missing or expired, rdc requests it from account rdc writes the signed license to the machine The license is validated locally on the machine and the operation continues See rdc vs renet for the workstation-vs-server split, and Repositories for the repository lifecycle itself. For automation and AI agents, use a scoped subscription token instead of browser login: rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" You can also inject the token directly through the environment so the CLI can issue and refresh repo licenses without any interactive login step:",
     "excerpt": "account is the source of truth for plans, contract overrides, machine slot state, and monthly repo license issuances. rdc runs on your workstation. It...",
@@ -11241,7 +11360,7 @@
     "language": "en"
   },
   {
-    "id": "search-4298",
+    "id": "search-4309",
     "content": "Machine Slots and Repo Licenses",
     "body": "",
     "excerpt": "Machine Slots and Repo Licenses",
@@ -11252,7 +11371,7 @@
     "language": "en"
   },
   {
-    "id": "search-4299",
+    "id": "search-4310",
     "content": "Machine slots (server-side)",
     "body": "Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota (e.g., 2 machines for Community, 5 for Professional). A slot is held for 1 hour from the last repo license issuance on that machine and auto-releases after inactivity. This means a 5-slot plan can serve dozens of machines over time -- slots are only held while actively provisioning. No machine license file is stored on the machine. Slot enforcement happens at issuance time on the server.",
     "excerpt": "Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota (e....",
@@ -11263,7 +11382,7 @@
     "language": "en"
   },
   {
-    "id": "search-4300",
+    "id": "search-4311",
     "content": "Repo license",
     "body": "A repo license is a signed license for one repository on one machine. It is the only license file stored on the machine (/var/lib/rediacc/license/repos/{guid}.json). It is used for: rdc repo create and rdc repo fork, validated before provisioning (pre-issued without identity proofs, then re-issued with identity proofs after creation) rdc repo resize and rdc repo expand, full validation including expiry rdc repo up, rdc repo down, rdc repo delete, validated with expiry skipped rdc repo push, rdc repo pull, rdc repo sync, validated with expiry skipped repo autostart on machine restart, validated with expiry skipped Repo licenses are bound to the machine and the target repository. Each license contains the machine ID, repository GUID, subscription ID, plan limits, and expiry. For encrypted repositories, Rediacc also verifies the LUKS identity of the underlying volume. Multiple subscriptions can coexist on the same machine -- each repository carries its own license with its own subscription context.",
     "excerpt": "A repo license is a signed license for one repository on one machine. It is the only license file stored on the machine (/var/lib/rediacc/license/repo...",
@@ -11274,7 +11393,7 @@
     "language": "en"
   },
   {
-    "id": "search-4301",
+    "id": "search-4312",
     "content": "Default Limits",
     "body": "Repository size depends on the entitlement level: Community: up to 10 GB paid plans: plan or contract limit Default paid-plan limits are: | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max | |------|-------------------|-----------------|-------------------------------|---| | Community | 2 | 10 GB | 500 | 15d / 30d | | Professional | 5 | 100 GB | 5,000 | 60d / 120d | | Business | 20 | 500 GB | 20,000 | 90d / 180d | | Enterprise | 50 | 2048 GB | 100,000 | 120d / 365d | Contract-specific limits can raise or lower these values for a specific customer. Delegation cert validity is also hard-capped at subscription.expiresAt + 3 day grace, so monthly-billed subscriptions naturally get certs aligned to their billing cycle. See License Chain & Delegation - Validity Policy for the full rules.",
     "excerpt": "Repository size depends on the entitlement level: Community: up to 10 GB paid plans: plan or contract limit Default paid-plan limits are: | Plan | Flo...",
@@ -11285,7 +11404,7 @@
     "language": "en"
   },
   {
-    "id": "search-4302",
+    "id": "search-4313",
     "content": "VM Migration Grace Period",
     "body": "When a hosting provider migrates a VM to different physical hardware, the machine ID changes (it's derived from hardware identifiers like DMI UUID, /etc/machine-id, and NIC MAC addresses). Repo licenses are bound to the machine ID, so a migration would normally invalidate all licenses. To handle this transparently, repo licenses include a 40-day machine ID grace period. If the machine ID doesn't match but the license was issued less than 40 days ago, the license is still accepted. Since licenses refresh every 30 days, the next refresh automatically binds to the new machine ID. In practice: VM migrated, machine ID changes: repos keep running (within 40-day window) Next rdc operation refreshes the license with the new machine ID No manual intervention required Check machine ID and license status with rdc machine query --system --licenses --name <machine> Edge channel users receive 2X Community limits at no cost (20 GB repos, 1,000 issuances/month, 4 machines). Paid plans are only available on the Stable channel. See Release Channels for details.",
     "excerpt": "When a hosting provider migrates a VM to different physical hardware, the machine ID changes (it's derived from hardware identifiers like DMI UUID, /e...",
@@ -11296,7 +11415,7 @@
     "language": "en"
   },
   {
-    "id": "search-4303",
+    "id": "search-4314",
     "content": "What Happens During Repo Create, Up, Down, and Restart",
     "body": "",
     "excerpt": "What Happens During Repo Create, Up, Down, and Restart",
@@ -11307,7 +11426,7 @@
     "language": "en"
   },
   {
-    "id": "search-4304",
+    "id": "search-4315",
     "content": "Repo create and fork",
     "body": "When you create or fork a repository: rdc ensures your subscription token is available (triggers device-code auth if needed) rdc pre-issues a repo license from the account server (the server checks machine slot quota and monthly issuance limits at this point) The pre-issued repo license is written to the machine and validated locally (signature, machine ID, repo GUID, expiry, and size limit) After successful creation, rdc re-issues the repo license with repository identity proofs (LUKS UUID or storage fingerprint) That account-backed issuance counts toward your monthly repo license issuances usage. Each license contains the account holder's email and company name, which is logged when renet validates the license.",
     "excerpt": "When you create or fork a repository: rdc ensures your subscription token is available (triggers device-code auth if needed) rdc pre-issues a repo lic...",
@@ -11318,7 +11437,7 @@
     "language": "en"
   },
   {
-    "id": "search-4305",
+    "id": "search-4316",
     "content": "Repo up, down, and delete",
     "body": "rdc validates the installed repo license on the machine but skips the expiry check. Signature, machine ID, repository GUID, and identity are still verified. Users are never locked out of operating their repositories, even with an expired subscription.",
     "excerpt": "rdc validates the installed repo license on the machine but skips the expiry check. Signature, machine ID, repository GUID, and identity are still ver...",
@@ -11329,7 +11448,7 @@
     "language": "en"
   },
   {
-    "id": "search-4306",
+    "id": "search-4317",
     "content": "Repo resize and expand",
     "body": "rdc performs full repo license validation including expiry and size limits.",
     "excerpt": "rdc performs full repo license validation including expiry and size limits.",
@@ -11340,7 +11459,7 @@
     "language": "en"
   },
   {
-    "id": "search-4307",
+    "id": "search-4318",
     "content": "Machine restart and autostart",
     "body": "Autostart uses the same rules as rdc repo up, expiry is skipped, so repositories always restart freely. Repo licenses use a long-lived validity model: refreshRecommendedAt is the soft refresh point hardExpiresAt is the blocking point If the repo license is stale but still before hard expiry, runtime can continue. Once it reaches hard expiry, rdc must refresh it for resize/expand operations.",
     "excerpt": "Autostart uses the same rules as rdc repo up, expiry is skipped, so repositories always restart freely. Repo licenses use a long-lived validity model:...",
@@ -11351,7 +11470,7 @@
     "language": "en"
   },
   {
-    "id": "search-4308",
+    "id": "search-4319",
     "content": "Other repository operations",
     "body": "Operations like listing repos, inspecting repo info, and mounting do not require any license validation.",
     "excerpt": "Operations like listing repos, inspecting repo info, and mounting do not require any license validation.",
@@ -11362,7 +11481,7 @@
     "language": "en"
   },
   {
-    "id": "search-4309",
+    "id": "search-4320",
     "content": "Checking Status and Refreshing Licenses",
     "body": "Human login: rdc subscription login Automation or AI-agent login: rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" For non-interactive environments, setting REDIACC_SUBSCRIPTION_TOKEN is the simplest option. The token should be scoped only for the subscription and repo-license operations the agent needs. Show account-backed subscription status: rdc subscription status Show machine activation details for one machine: rdc subscription activation status -m hostinger Show installed repo-license details on one machine: rdc subscription repo status -m hostinger Batch-refresh repo licenses on a machine: rdc subscription refresh -m hostinger Repositories discovered on the machine but missing from local rdc config are rejected during batch refresh. They are reported as failures and are not auto-classified. Force a repo-license refresh for an existing repository: rdc subscription refresh repo --name my-app -m hostinger On first use, a licensed repo or backup operation that finds no usable repo license can trigger an account-authorization handoff automatically. The CLI prints an authorization URL, tries to open the browser in interactive terminals, and retries the operation once after authorization and issuance succeed. In non-interactive environments, the CLI does not wait for browser approval. Instead, it tells you to supply a scoped token with rdc subscription login --token ... or REDIACC_SUBSCRIPTION_TOKEN. For first-time machine setup, see Machine Setup.",
     "excerpt": "Human login: rdc subscription login Automation or AI-agent login: rdc subscription login --token \"$REDIACC_SUBSCRIPTION_TOKEN\" For non-interactive env...",
@@ -11373,7 +11492,7 @@
     "language": "en"
   },
   {
-    "id": "search-4310",
+    "id": "search-4321",
     "content": "Offline Behavior and Expiry",
     "body": "License validation happens locally on the machine, it does not require live connectivity to the account server. That means: a running environment does not need live account connectivity on every command all repos can always start, stop, and be deleted even with expired licenses, users are never locked out of operating their own repositories provisioning operations (create, fork) require a pre-issued repo license, and growth operations (resize, expand) require a valid repo license truly expired repo licenses must be refreshed through rdc before resize/expand license signatures are verified against an embedded public key, signature verification cannot be disabled",
     "excerpt": "License validation happens locally on the machine, it does not require live connectivity to the account server. That means: a running environment does...",
@@ -11384,7 +11503,7 @@
     "language": "en"
   },
   {
-    "id": "search-4311",
+    "id": "search-4322",
     "content": "Recovery Behavior",
     "body": "Automatic recovery is intentionally narrow: missing: rdc may authorize account access if needed, batch-refresh repo licenses, and retry once expired: rdc may batch-refresh repo licenses and retry once machine_mismatch: fails fast and tells you to reissue from the current machine context repository_mismatch: fails fast and tells you to refresh repo licenses explicitly sequence_regression: fails fast as a repo-license integrity/state problem invalid_signature: fails fast as a repo-license integrity/state problem identity_mismatch: fails fast, the repository identity does not match the installed license These fail-fast cases do not automatically consume account-backed refresh or issuance calls.",
     "excerpt": "Automatic recovery is intentionally narrow: missing: rdc may authorize account access if needed, batch-refresh repo licenses, and retry once expired:...",
@@ -11395,7 +11514,7 @@
     "language": "en"
   },
   {
-    "id": "search-4312",
+    "id": "search-4323",
     "content": "Delegation Certificates for On-Premise",
     "body": "For on-premise and air-gapped deployments, the upstream account server issues a delegation certificate authorizing your on-premise install to sign licenses with its own Ed25519 key. The cert constrains the on-premise to its plan limits and creates a tamper-evident chain. Key points for subscription owners: One active cert per subscription. Each on-premise install enforces per-month and per-machine quotas against its own local ledger, so multi-install would multiply the effective quota with no possible reconciliation. Customers needing production + staging + DR must purchase one subscription per install. Tier-based default validity (15d / 60d / 90d / 120d) and ceilings (30d / 120d / 180d / 365d) - see the limits table above. Self-service from the customer portal. Org owners and admins can create, renew, and revoke delegation certs at /account/delegation-certs. The page is visible to all customers regardless of plan tier - only the limits differ. Auto-renew is supported via a one-click bootstrap that mints a delegation:renew-scoped api token for the on-premise to use for upstream renewal calls. Air-gapped renewal is supported via a signed renewal request manifest that the on-premise admin downloads, transfers offline to the upstream, and the upstream processes to issue a new cert. See On-Premise Installation - Licensing for Air-Gapped Deployments for the operational setup, and License Chain & Delegation for the cryptographic design.",
     "excerpt": "For on-premise and air-gapped deployments, the upstream account server issues a delegation certificate authorizing your on-premise install to sign lic...",
@@ -11406,7 +11525,7 @@
     "language": "en"
   },
   {
-    "id": "search-4313",
+    "id": "search-4324",
     "content": "Monthly Repo License Issuances",
     "body": "This metric counts successful account-backed repo-license issuance activity in the current UTC calendar month. It includes: first-time repo-license issuance successful repo-license refresh that returns a newly signed license It does not include: unchanged batch entries failed issuance attempts untracked repositories rejected before issuance If you need a customer-facing view of usage and recent repo-license issuance history, use the account portal. If you need machine-side inspection, use rdc subscription activation status -m and rdc subscription repo status -m.",
     "excerpt": "This metric counts successful account-backed repo-license issuance activity in the current UTC calendar month. It includes: first-time repo-license is...",
@@ -11417,7 +11536,7 @@
     "language": "en"
   },
   {
-    "id": "search-4314",
+    "id": "search-4325",
     "content": "Time Travel Recovery",
     "excerpt": "Recover accidentally deleted data from weeks ago with snapshot-based time travel.",
     "category": "Documentation",
@@ -11427,7 +11546,7 @@
     "language": "en"
   },
   {
-    "id": "search-4315",
+    "id": "search-4326",
     "content": "Recover accidentally deleted data from weeks ago with snapshot-based time travel.",
     "excerpt": "Recover accidentally deleted data from weeks ago with snapshot-based time travel.",
     "category": "Documentation",
@@ -11437,7 +11556,7 @@
     "language": "en"
   },
   {
-    "id": "search-4316",
+    "id": "search-4327",
     "content": "Time Travel Recovery",
     "body": "When Others Lose Data Forever, You Can Travel Back In Time. Note: This is a use case example demonstrating how Rediacc can solve this problem. As a startup, these scenarios represent potential applications rather than completed case studies. Crisis Scenario: A newly hired employee accidentally deleted critical data from the live database 3 weeks ago. The organization's backup system only kept backups for 2 weeks, making data recovery nearly impossible through conventional means.",
     "excerpt": "When Others Lose Data Forever, You Can Travel Back In Time. Note: This is a use case example demonstrating how Rediacc can solve this problem. As a st...",
@@ -11448,7 +11567,7 @@
     "language": "en"
   },
   {
-    "id": "search-4317",
+    "id": "search-4328",
     "content": "The Problem",
     "body": "Mehmet is a system expert responsible for the database of a large online shopping organization. One morning, upon customer complaints, he notices that some past order records are not visible in the system. The investigation reveals that a newly hired employee accidentally deleted some critical data from the live database 3 weeks ago, connecting to the live database instead of the test environment. Existing Backup System: Full backups are taken once a week Incremental backups are recorded daily Dilemma: The deletion took place before the date of the full backups, so the lost data is not in the backups. Daily backups only record the latest data, so deleted items cannot be recovered.",
     "excerpt": "Mehmet is a system expert responsible for the database of a large online shopping organization. One morning, upon customer complaints, he notices that...",
@@ -11459,7 +11578,7 @@
     "language": "en"
   },
   {
-    "id": "search-4318",
+    "id": "search-4329",
     "content": "Crisis Impact",
     "body": "Due to lost data: Customers cannot process refund requests Inconsistencies occur in the payment system Complaints spread rapidly on social media Results: The customer support team is under intense pressure The organization's reputation is rapidly damaged Manual data recovery efforts achieve only 15% success Additional Challenge: To reduce storage costs, the organization keeps only the last 2 weeks of backups The deleted data is not in the recent backups",
     "excerpt": "Due to lost data: Customers cannot process refund requests Inconsistencies occur in the payment system Complaints spread rapidly on social media Resul...",
@@ -11470,7 +11589,7 @@
     "language": "en"
   },
   {
-    "id": "search-4319",
+    "id": "search-4330",
     "content": "Rediacc Solution",
     "body": "Mehmet offers a \"time machine\"-like solution with Rediacc: Time Travel Recovery",
     "excerpt": "Mehmet offers a \"time machine\"-like solution with Rediacc: Time Travel Recovery",
@@ -11481,7 +11600,7 @@
     "language": "en"
   },
   {
-    "id": "search-4320",
+    "id": "search-4331",
     "content": "1. **Snapshots**",
     "body": "Rediacc automatically takes snapshots of the system every hour These snapshots also cover the moments just before the data was deleted",
     "excerpt": "Rediacc automatically takes snapshots of the system every hour These snapshots also cover the moments just before the data was deleted",
@@ -11492,7 +11611,7 @@
     "language": "en"
   },
   {
-    "id": "search-4321",
+    "id": "search-4332",
     "content": "2. **Going Back in Time**",
     "body": "Mehmet selects the date and time when the deletion occurred in the Rediacc interface Restores a snapshot of the system from 3 weeks ago to a new instance in 1 minute",
     "excerpt": "Mehmet selects the date and time when the deletion occurred in the Rediacc interface Restores a snapshot of the system from 3 weeks ago to a new insta...",
@@ -11503,7 +11622,7 @@
     "language": "en"
   },
   {
-    "id": "search-4322",
+    "id": "search-4333",
     "content": "3. **Complete Recovery**",
     "body": "Lost data is restored completely and consistently",
     "excerpt": "Lost data is restored completely and consistently",
@@ -11514,7 +11633,7 @@
     "language": "en"
   },
   {
-    "id": "search-4323",
+    "id": "search-4334",
     "content": "Result",
     "body": "The organization's reputation was repaired within 24 hours Financial loss was prevented by 95% Rediacc proved that frequent backups could be made without increasing storage costs",
     "excerpt": "The organization's reputation was repaired within 24 hours Financial loss was prevented by 95% Rediacc proved that frequent backups could be made with...",
@@ -11525,7 +11644,7 @@
     "language": "en"
   },
   {
-    "id": "search-4324",
+    "id": "search-4335",
     "content": "Tools",
     "excerpt": "File sync, terminal access, VS Code integration, and CLI updates.",
     "category": "Documentation",
@@ -11535,7 +11654,7 @@
     "language": "en"
   },
   {
-    "id": "search-4325",
+    "id": "search-4336",
     "content": "File sync, terminal access, VS Code integration, and CLI updates.",
     "excerpt": "File sync, terminal access, VS Code integration, and CLI updates.",
     "category": "Documentation",
@@ -11545,7 +11664,7 @@
     "language": "en"
   },
   {
-    "id": "search-4326",
+    "id": "search-4337",
     "content": "Tools",
     "body": "# Tools Rediacc includes productivity tools for working with remote repositories: file sync, SSH terminal, VS Code integration, and CLI updates.",
     "excerpt": "# Tools Rediacc includes productivity tools for working with remote repositories: file sync, SSH terminal, VS Code integration, and CLI updates.",
@@ -11556,7 +11675,7 @@
     "language": "en"
   },
   {
-    "id": "search-4327",
+    "id": "search-4338",
     "content": "File Synchronization (sync)",
     "body": "Transfer files between your workstation and a remote repository using rsync over SSH.",
     "excerpt": "Transfer files between your workstation and a remote repository using rsync over SSH.",
@@ -11567,7 +11686,7 @@
     "language": "en"
   },
   {
-    "id": "search-4328",
+    "id": "search-4339",
     "content": "Upload Files",
     "body": "--local accepts one or more paths. Each path may be a file or a directory. Files land at <remote>/<basename>; directory contents merge into <remote>/. For a single file, prefer --remote-file to give the file its destination path explicitly. # Directory (contents merged into remote) rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src # Single file dropped into a remote directory (basename preserved) rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf # Single file, explicit destination path rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml # Multiple sources in one call rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app --remote and --remote-file are mutually exclusive. --remote-file requires exactly one --local path that points at a file. --mirror cannot be combined with a file source; it would delete sibling files in the remote directory.",
     "excerpt": "--local accepts one or more paths. Each path may be a file or a directory. Files land at <remote>/<basename>; directory contents merge into <remote>/....",
@@ -11578,7 +11697,7 @@
     "language": "en"
   },
   {
-    "id": "search-4329",
+    "id": "search-4340",
     "content": "Download Files",
     "body": "Use --remote for a directory (today's default) or --remote-file for a single file. The two flags are mutually exclusive. # Directory rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data # Single file — --local must be an existing directory rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf",
     "excerpt": "Use --remote for a directory (today's default) or --remote-file for a single file. The two flags are mutually exclusive. # Directory rdc repo sync dow...",
@@ -11589,7 +11708,7 @@
     "language": "en"
   },
   {
-    "id": "search-4330",
+    "id": "search-4341",
     "content": "Check Sync Status",
     "body": "rdc repo sync status -m server-1 -r my-app",
     "excerpt": "rdc repo sync status -m server-1 -r my-app",
@@ -11600,7 +11719,7 @@
     "language": "en"
   },
   {
-    "id": "search-4331",
+    "id": "search-4342",
     "content": "Options",
     "body": "| Option | Description | |--------|-------------| | -m, --machine <name> | Target machine | | -r, --repository <name> | Target repository | | --local <paths...> | One or more local file or directory paths (upload) or local destination directory (download) | | --remote <path> | Remote directory (relative to repository mount) | | --remote-file <path> | Remote file path for single-file uploads or downloads (alternative to --remote) | | --dry-run | Preview changes without transferring | | --mirror | Mirror source to destination, delete extra files (directory sources only) | | --verify | Verify checksums after transfer | | --confirm | Interactive confirmation with detail view | | --exclude <patterns...> | Exclude file patterns | | --skip-router-restart | Skip restarting the route server after the operation |",
     "excerpt": "| Option | Description | |--------|-------------| | -m, --machine <name> | Target machine | | -r, --repository <name> | Target repository | | --local...",
@@ -11611,7 +11730,7 @@
     "language": "en"
   },
   {
-    "id": "search-4332",
+    "id": "search-4343",
     "content": "SSH Terminal (term)",
     "body": "Open an interactive SSH session to a machine or into a repository's environment.",
     "excerpt": "Open an interactive SSH session to a machine or into a repository's environment.",
@@ -11622,7 +11741,7 @@
     "language": "en"
   },
   {
-    "id": "search-4333",
+    "id": "search-4344",
     "content": "Shorthand Syntax",
     "body": "The fastest way to connect: rdc term connect -m server-1 # Connect to a machine rdc term connect -m server-1 -r my-app # Connect to a repository",
     "excerpt": "The fastest way to connect: rdc term connect -m server-1 # Connect to a machine rdc term connect -m server-1 -r my-app # Connect to a repository",
@@ -11633,7 +11752,7 @@
     "language": "en"
   },
   {
-    "id": "search-4334",
+    "id": "search-4345",
     "content": "Run a Command",
     "body": "Execute a command without opening an interactive session: rdc term connect -m server-1 -c \"uptime\" rdc term connect -m server-1 -r my-app -c \"docker ps\" When connecting to a repository, DOCKER_HOST is automatically set to the repository's isolated Docker socket, so docker ps shows only that repository's containers.",
     "excerpt": "Execute a command without opening an interactive session: rdc term connect -m server-1 -c \"uptime\" rdc term connect -m server-1 -r my-app -c \"docker p...",
@@ -11644,7 +11763,7 @@
     "language": "en"
   },
   {
-    "id": "search-4335",
+    "id": "search-4346",
     "content": "Connect Subcommand",
     "body": "The connect subcommand provides the same functionality with explicit flags: rdc term connect -m server-1 rdc term connect -m server-1 -r my-app",
     "excerpt": "The connect subcommand provides the same functionality with explicit flags: rdc term connect -m server-1 rdc term connect -m server-1 -r my-app",
@@ -11655,7 +11774,7 @@
     "language": "en"
   },
   {
-    "id": "search-4336",
+    "id": "search-4347",
     "content": "Container Actions",
     "body": "Interact directly with a running container: # Open a shell inside a container rdc term connect -m server-1 -r my-app --container <container-id> # View container logs rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs # Follow logs in real-time rdc term connect -m server-1 -r my-app --container <container-id> --container-action logs --follow # View container stats rdc term connect -m server-1 -r my-app --container <container-id> --container-action stats # Execute a command in a container rdc term connect -m server-1 -r my-app --container <container-id> --container-action exec -c \"ls -la\" | Option | Description | |--------|-------------| | --container <id> | Target Docker container ID | | --container-action <action> | Action: terminal (default), logs, stats, exec | | --log-lines <n> | Number of log lines to show (default: 50) | | --follow | Follow logs continuously | | --external | Use external terminal instead of inline SSH |",
     "excerpt": "Interact directly with a running container: # Open a shell inside a container rdc term connect -m server-1 -r my-app --container <container-id> # View...",
@@ -11666,7 +11785,7 @@
     "language": "en"
   },
   {
-    "id": "search-4337",
+    "id": "search-4348",
     "content": "VS Code Integration (vscode)",
     "body": "Open a remote SSH session in VS Code, pre-configured with the correct SSH settings.",
     "excerpt": "Open a remote SSH session in VS Code, pre-configured with the correct SSH settings.",
@@ -11677,7 +11796,7 @@
     "language": "en"
   },
   {
-    "id": "search-4338",
+    "id": "search-4349",
     "content": "Connect to a Repository",
     "body": "rdc vscode connect -r my-app -m server-1 This command: Detects your VS Code installation Configures the SSH connection in ~/.ssh/config Persists the SSH key for the session Opens VS Code with a Remote SSH connection to the repository path",
     "excerpt": "rdc vscode connect -r my-app -m server-1 This command: Detects your VS Code installation Configures the SSH connection in ~/.ssh/config Persists the S...",
@@ -11688,7 +11807,7 @@
     "language": "en"
   },
   {
-    "id": "search-4339",
+    "id": "search-4350",
     "content": "List Configured Connections",
     "body": "rdc vscode list",
     "excerpt": "rdc vscode list",
@@ -11699,7 +11818,7 @@
     "language": "en"
   },
   {
-    "id": "search-4340",
+    "id": "search-4351",
     "content": "Clean Up Connections",
     "body": "rdc vscode cleanup Removes VS Code SSH configurations that are no longer needed.",
     "excerpt": "rdc vscode cleanup Removes VS Code SSH configurations that are no longer needed.",
@@ -11710,7 +11829,7 @@
     "language": "en"
   },
   {
-    "id": "search-4341",
+    "id": "search-4352",
     "content": "Check Configuration",
     "body": "rdc vscode check Verifies VS Code installation, Remote SSH extension, and active connections. Prerequisite: Install the Remote - SSH extension in VS Code.",
     "excerpt": "rdc vscode check Verifies VS Code installation, Remote SSH extension, and active connections. Prerequisite: Install the Remote - SSH extension in VS C...",
@@ -11721,7 +11840,7 @@
     "language": "en"
   },
   {
-    "id": "search-4342",
+    "id": "search-4353",
     "content": "CLI Updates (update)",
     "body": "Keep the rdc CLI up to date.",
     "excerpt": "Keep the rdc CLI up to date.",
@@ -11732,7 +11851,7 @@
     "language": "en"
   },
   {
-    "id": "search-4343",
+    "id": "search-4354",
     "content": "Check for Updates",
     "body": "rdc update --check-only",
     "excerpt": "rdc update --check-only",
@@ -11743,7 +11862,7 @@
     "language": "en"
   },
   {
-    "id": "search-4344",
+    "id": "search-4355",
     "content": "Apply Update",
     "body": "rdc update Updates are downloaded and applied in-place. The CLI automatically picks the right binary for your platform (Linux, macOS, or Windows). The new version takes effect on the next run.",
     "excerpt": "rdc update Updates are downloaded and applied in-place. The CLI automatically picks the right binary for your platform (Linux, macOS, or Windows). The...",
@@ -11754,7 +11873,7 @@
     "language": "en"
   },
   {
-    "id": "search-4345",
+    "id": "search-4356",
     "content": "Rollback",
     "body": "rdc update --rollback Reverts to the previously installed version. Only available after an update has been applied.",
     "excerpt": "rdc update --rollback Reverts to the previously installed version. Only available after an update has been applied.",
@@ -11765,7 +11884,7 @@
     "language": "en"
   },
   {
-    "id": "search-4346",
+    "id": "search-4357",
     "content": "Update Status",
     "body": "rdc update --status Shows current version, update channel, and auto-update configuration. #### Release Channels rdc update --channel edge # Continuously deployed production updates rdc update --channel stable # Promoted from edge after 7-day soak (default) rdc update --status # Show current channel and version info",
     "excerpt": "rdc update --status Shows current version, update channel, and auto-update configuration. #### Release Channels rdc update --channel edge # Continuous...",
@@ -11776,7 +11895,7 @@
     "language": "en"
   },
   {
-    "id": "search-4347",
+    "id": "search-4358",
     "content": "Troubleshooting",
     "excerpt": "Solutions for common issues with SSH, setup, repositories, services, and Docker.",
     "category": "Documentation",
@@ -11786,7 +11905,7 @@
     "language": "en"
   },
   {
-    "id": "search-4348",
+    "id": "search-4359",
     "content": "Solutions for common issues with SSH, setup, repositories, services, and Docker.",
     "excerpt": "Solutions for common issues with SSH, setup, repositories, services, and Docker.",
     "category": "Documentation",
@@ -11796,7 +11915,7 @@
     "language": "en"
   },
   {
-    "id": "search-4349",
+    "id": "search-4360",
     "content": "Troubleshooting",
     "body": "# Troubleshooting Common issues and their solutions. When in doubt, start with rdc doctor to run a comprehensive diagnostic check.",
     "excerpt": "# Troubleshooting Common issues and their solutions. When in doubt, start with rdc doctor to run a comprehensive diagnostic check.",
@@ -11807,7 +11926,7 @@
     "language": "en"
   },
   {
-    "id": "search-4350",
+    "id": "search-4361",
     "content": "SSH Connection Fails",
     "body": "Verify you can connect manually: ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 Run rdc config machine scan-keys -m server-1 to refresh host keys Check that the SSH port matches: --port 22 Test with a simple command: rdc term connect -m server-1 -c \"hostname\"",
     "excerpt": "Verify you can connect manually: ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50 Run rdc config machine scan-keys -m server-1 to refresh host keys Check...",
@@ -11818,7 +11937,7 @@
     "language": "en"
   },
   {
-    "id": "search-4351",
+    "id": "search-4362",
     "content": "Host Key Mismatch",
     "body": "If a server was reinstalled or its SSH keys changed, you'll see \"host key verification failed\": rdc config machine scan-keys -m server-1 This fetches fresh host keys and updates your config.",
     "excerpt": "If a server was reinstalled or its SSH keys changed, you'll see \"host key verification failed\": rdc config machine scan-keys -m server-1 This fetches...",
@@ -11829,7 +11948,7 @@
     "language": "en"
   },
   {
-    "id": "search-4352",
+    "id": "search-4363",
     "content": "Setup Machine Fails",
     "body": "Ensure the SSH user has sudo access without a password, or configure NOPASSWD for the required commands Check available disk space on the server Run with --debug for verbose output: rdc config machine setup --name server-1 --debug",
     "excerpt": "Ensure the SSH user has sudo access without a password, or configure NOPASSWD for the required commands Check available disk space on the server Run w...",
@@ -11840,7 +11959,7 @@
     "language": "en"
   },
   {
-    "id": "search-4353",
+    "id": "search-4364",
     "content": "Distribution-Specific Setup Issues",
     "body": "The five officially supported server OSes (Ubuntu 24.04, Debian 13, Fedora 43, openSUSE Leap 16.0, Oracle Linux 10) ship with different security policies and package managers. Most setups \"just work\"; the cases below cover the ones that don't.",
     "excerpt": "The five officially supported server OSes (Ubuntu 24.04, Debian 13, Fedora 43, openSUSE Leap 16.0, Oracle Linux 10) ship with different security polic...",
@@ -11851,7 +11970,7 @@
     "language": "en"
   },
   {
-    "id": "search-4354",
+    "id": "search-4365",
     "content": "SELinux denials (Fedora 43, Oracle Linux 10)",
     "body": "Both run SELinux in enforcing mode. rdc setup does not install a custom SELinux policy; the per-repo docker daemon runs under the standard container_t context. If setup fails with AVC denials, check the audit log and identify the domain: sudo ausearch -m AVC -ts recent | head -40 # Or: sudo tail -f /var/log/audit/audit.log | grep AVC If a denial points at the renet binary or a specific file path, the fix is almost always to relabel (restorecon -v /path) rather than to disable SELinux. As a temporary workaround while you investigate, sudo setenforce 0 moves the system to permissive. Re-enable with sudo setenforce 1 once you confirm the relabel sticks.",
     "excerpt": "Both run SELinux in enforcing mode. rdc setup does not install a custom SELinux policy; the per-repo docker daemon runs under the standard container_t...",
@@ -11862,7 +11981,7 @@
     "language": "en"
   },
   {
-    "id": "search-4355",
+    "id": "search-4366",
     "content": "AppArmor denials (Ubuntu 24.04, openSUSE Leap 16.0)",
     "body": "Both run AppArmor by default; the per-repo docker daemon uses the default container profile. If a container inside a repo is being blocked: dmesg | grep -i apparmor sudo aa-status CRIU is the known case that hits AppArmor. Renet auto-sets security_opt: apparmor=unconfined on containers labeled rediacc.checkpoint=true. You should not need to configure AppArmor profiles yourself for anything else. See the CRIU notes in Rules of Rediacc.",
     "excerpt": "Both run AppArmor by default; the per-repo docker daemon uses the default container profile. If a container inside a repo is being blocked: dmesg | gr...",
@@ -11873,7 +11992,7 @@
     "language": "en"
   },
   {
-    "id": "search-4356",
+    "id": "search-4367",
     "content": "Package manager error signatures",
     "body": "| OS | Package manager | Typical error | Resolution | |----|-----------------|---------------|------------| | Ubuntu / Debian | apt-get | File has unexpected size (N != M). Mirror sync in progress? | Cloudflare edge cache behind origin. Retry apt-get update after ~15s; the integrity check passes on the next poll. | | Fedora / Oracle | dnf | Problem: nothing provides rediacc-cli | The RPM repo metadata cached on disk is stale. Run sudo dnf clean all && sudo dnf makecache. | | openSUSE | zypper | Repository 'rediacc' needs to be refreshed. | Run sudo zypper refresh rediacc once; subsequent installs should succeed. |",
     "excerpt": "| OS | Package manager | Typical error | Resolution | |----|-----------------|---------------|------------| | Ubuntu / Debian | apt-get | File has une...",
@@ -11884,7 +12003,7 @@
     "language": "en"
   },
   {
-    "id": "search-4357",
+    "id": "search-4368",
     "content": "btrfs module missing (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)",
     "body": "If rdc config machine setup or renet system check-btrfs fails with: Module btrfs not found ...the server is running RHEL 10's stock kernel, which ships without the in-tree btrfs module. This is not a Rediacc bug; RHEL 10 dropped btrfs intentionally. The resolution is to run Oracle Linux 10 instead. Oracle 10 defaults to the Unbreakable Enterprise Kernel (UEK), which retains btrfs. See Requirements → Why UEK? for the full story.",
     "excerpt": "If rdc config machine setup or renet system check-btrfs fails with: Module btrfs not found ...the server is running RHEL 10's stock kernel, which ship...",
@@ -11895,7 +12014,7 @@
     "language": "en"
   },
   {
-    "id": "search-4358",
+    "id": "search-4369",
     "content": "Repository Create Fails",
     "body": "Verify setup was completed: the datastore directory must exist Check disk space on the server Ensure the renet binary is installed (run setup again if needed)",
     "excerpt": "Verify setup was completed: the datastore directory must exist Check disk space on the server Ensure the renet binary is installed (run setup again if...",
@@ -11906,7 +12025,7 @@
     "language": "en"
   },
   {
-    "id": "search-4359",
+    "id": "search-4370",
     "content": "Services Fail to Start",
     "body": "Check the Rediaccfile syntax: it must be valid Bash Ensure your Rediaccfile uses renet compose -- (not docker compose) Verify Docker images are accessible (consider renet compose -- pull in up()) Check container logs using the repository's Docker socket: rdc term connect -m server-1 -r my-app -c \"docker logs <container-name>\" Or view all containers: rdc machine containers --name server-1",
     "excerpt": "Check the Rediaccfile syntax: it must be valid Bash Ensure your Rediaccfile uses renet compose -- (not docker compose) Verify Docker images are access...",
@@ -11917,7 +12036,7 @@
     "language": "en"
   },
   {
-    "id": "search-4360",
+    "id": "search-4371",
     "content": "Permission Denied Errors",
     "body": "Repository operations require root on the server (renet runs via sudo) Verify your SSH user is in the sudo group Check that the datastore directory has correct permissions",
     "excerpt": "Repository operations require root on the server (renet runs via sudo) Verify your SSH user is in the sudo group Check that the datastore directory ha...",
@@ -11928,7 +12047,7 @@
     "language": "en"
   },
   {
-    "id": "search-4361",
+    "id": "search-4372",
     "content": "Docker Socket Issues",
     "body": "Each repository has its own Docker daemon. When running Docker commands manually, you must specify the correct socket: # Using rdc term (auto-configured): rdc term connect -m server-1 -r my-app -c \"docker ps\" # Or manually with the socket: docker -H unix:///var/run/rediacc/docker-2816.sock ps Replace 2816 with your repository's network ID (found in rediacc.json or rdc repo status).",
     "excerpt": "Each repository has its own Docker daemon. When running Docker commands manually, you must specify the correct socket: # Using rdc term (auto-configur...",
@@ -11939,7 +12058,7 @@
     "language": "en"
   },
   {
-    "id": "search-4362",
+    "id": "search-4373",
     "content": "`docker run` has no network, `apt update` fails, `curl` hangs",
     "body": "Inside a repository shell, running a container without --network host gives you an isolated container with only a loopback interface, no DNS, and no outbound connectivity. Commands like apt update, pip install, curl https://..., or any network fetch will fail immediately with DNS errors. This is intentional. Rediacc's networking model is host networking for every service, enforced by renet compose. A default Docker bridge with NAT would bypass the kernel-level loopback isolation that prevents one repo from reaching another repo's services, so the per-repo Docker daemon is configured with \"bridge\": \"none\" and \"iptables\": false. There is no routable bridge for a plain docker run container to attach to. To get network access in an ad-hoc container, use host networking: # Inside a repository shell (rdc term connect -m <machine> -r <repo>) docker run --rm --network host -it ubuntu bash # Now apt update, curl, pip install all work. For production services, use a Rediaccfile with renet compose instead of raw docker run. renet compose injects network_mode: host, service IP labels, and Traefik routing labels automatically. See Services for details.",
     "excerpt": "Inside a repository shell, running a container without --network host gives you an isolated container with only a loopback interface, no DNS, and no o...",
@@ -11950,7 +12069,7 @@
     "language": "en"
   },
   {
-    "id": "search-4363",
+    "id": "search-4374",
     "content": "VS Code Permission Denied on sandbox files",
     "body": "When connecting with rdc vscode connect -m <machine> -r <repo>, you may have seen errors like scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied after a previous VS Code session. This was caused by mixed file ownership inside the sandbox directory, which held files written by both your SSH user and the internal rediacc user. Modern versions of renet fix this by: Creating the per-repo sandbox workspace (/mnt/rediacc/.interim/sandbox/<repo>/) with group rediacc and the set-group-ID bit (mode 2775), so every file written underneath inherits the correct group. Applying umask 002 inside the sandbox runtime so new files are created group-writable (0664/0775). Normalizing an existing .vscode-server/ subtree on startup so stale files from before the fix get repaired automatically. If you still see permission errors, restart the repo's Docker daemon once with sudo systemctl restart rediacc-docker-<network-id> from a shell on the machine so the normalization pass runs, then retry rdc vscode connect.",
     "excerpt": "When connecting with rdc vscode connect -m <machine> -r <repo>, you may have seen errors like scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission...",
@@ -11961,7 +12080,7 @@
     "language": "en"
   },
   {
-    "id": "search-4364",
+    "id": "search-4375",
     "content": "Daemon fails to start after a renet upgrade",
     "body": "Before each start, renet daemon start-foreground rewrites daemon.json and containerd.toml in the repository's config directory from the current templates, so a repository whose config was generated by an older renet version automatically picks up the new format. You do not need to run any migration command, and you do not need to manually regenerate the systemd unit. Just restart the service: sudo systemctl restart rediacc-docker-<network-id> If the unit is still failing, check the journal for a specific error: sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50",
     "excerpt": "Before each start, renet daemon start-foreground rewrites daemon.json and containerd.toml in the repository's config directory from the current templa...",
@@ -11972,7 +12091,7 @@
     "language": "en"
   },
   {
-    "id": "search-4365",
+    "id": "search-4376",
     "content": "Containers Created on Wrong Docker Daemon",
     "body": "If your containers appear on the host system's Docker daemon instead of the repository's isolated daemon, the most common cause is using sudo docker inside a Rediaccfile. sudo resets environment variables, so DOCKER_HOST is lost and Docker defaults to the system socket (/var/run/docker.sock). Rediacc blocks this automatically, but if you encounter it: Use docker directly, Rediaccfile functions already run with sufficient privileges If you must use sudo, use sudo -E docker to preserve environment variables Check your Rediaccfile for any sudo docker commands and remove the sudo",
     "excerpt": "If your containers appear on the host system's Docker daemon instead of the repository's isolated daemon, the most common cause is using sudo docker i...",
@@ -11983,7 +12102,7 @@
     "language": "en"
   },
   {
-    "id": "search-4366",
+    "id": "search-4377",
     "content": "Terminal Not Working",
     "body": "If rdc term fails to open a terminal window: Use inline mode with -c to run commands directly: ``bash rdc term connect -m server-1 -c \"ls -la\" ` Force external terminal with --external if inline mode has issues On Linux, ensure you have gnome-terminal, xterm`, or another terminal emulator installed",
     "excerpt": "If rdc term fails to open a terminal window: Use inline mode with -c to run commands directly: ``bash rdc term connect -m server-1 -c \"ls -la\" ` Force...",
@@ -11994,7 +12113,7 @@
     "language": "en"
   },
   {
-    "id": "search-4367",
+    "id": "search-4378",
     "content": "Run Diagnostics",
     "body": "rdc doctor This checks your environment, renet installation, config configuration, and authentication status. Each check reports OK, Warning, or Error with a brief explanation.",
     "excerpt": "rdc doctor This checks your environment, renet installation, config configuration, and authentication status. Each check reports OK, Warning, or Error...",
@@ -12005,7 +12124,7 @@
     "language": "en"
   },
   {
-    "id": "search-4368",
+    "id": "search-4379",
     "content": "Adding Your First Server",
     "excerpt": "Register your first server with rdc, provision it, and understand the rdc + renet architecture.",
     "category": "Documentation",
@@ -12015,7 +12134,7 @@
     "language": "en"
   },
   {
-    "id": "search-4369",
+    "id": "search-4380",
     "content": "Register your first server with rdc, provision it, and understand the rdc + renet architecture.",
     "excerpt": "Register your first server with rdc, provision it, and understand the rdc + renet architecture.",
     "category": "Documentation",
@@ -12025,7 +12144,7 @@
     "language": "en"
   },
   {
-    "id": "search-4370",
+    "id": "search-4381",
     "content": "Adding Your First Server",
     "body": "# Adding Your First Server Before adding a server, it helps to understand how rdc works. Rediacc has a two-tool architecture: rdc on your laptop, renet on the server.",
     "excerpt": "# Adding Your First Server Before adding a server, it helps to understand how rdc works. Rediacc has a two-tool architecture: rdc on your laptop, rene...",
@@ -12036,7 +12155,7 @@
     "language": "en"
   },
   {
-    "id": "search-4371",
+    "id": "search-4382",
     "content": "Watch the tutorial",
     "body": "Tutorial: Adding your first server",
     "excerpt": "Tutorial: Adding your first server",
@@ -12047,7 +12166,7 @@
     "language": "en"
   },
   {
-    "id": "search-4372",
+    "id": "search-4383",
     "content": "Why two tools?",
     "body": "rdc on laptop, renet on server, SSH between rdc is the CLI on your laptop. You type commands here. renet is the orchestrator on the server. It manages encryption, Docker, and isolation. When you run a command locally, rdc connects over SSH and executes renet on the server. You never SSH into your servers manually. rdc does it for you.",
     "excerpt": "rdc on laptop, renet on server, SSH between rdc is the CLI on your laptop. You type commands here. renet is the orchestrator on the server. It manages...",
@@ -12058,7 +12177,7 @@
     "language": "en"
   },
   {
-    "id": "search-4373",
+    "id": "search-4384",
     "content": "Step 1: Register the server",
     "body": "Tell rdc about the server. Replace the name, IP, and user with your own. time rdc config machine add --name my-server --ip 192.168.1.100 --user deploy",
     "excerpt": "Tell rdc about the server. Replace the name, IP, and user with your own. time rdc config machine add --name my-server --ip 192.168.1.100 --user deploy",
@@ -12069,7 +12188,7 @@
     "language": "en"
   },
   {
-    "id": "search-4374",
+    "id": "search-4385",
     "content": "Step 2: Provision it",
     "body": "Setup installs renet and creates the encrypted datastore on the server. time rdc config machine setup --name my-server When it completes, your server is ready to host repositories.",
     "excerpt": "Setup installs renet and creates the encrypted datastore on the server. time rdc config machine setup --name my-server When it completes, your server...",
@@ -12080,7 +12199,7 @@
     "language": "en"
   },
   {
-    "id": "search-4375",
+    "id": "search-4386",
     "content": "Where the config lives",
     "body": "Verify what rdc knows about your setup: time rdc config show Or open the raw JSON file directly: vim ~/.config/rediacc/rediacc.json This single file holds everything: machines, repos, SSH key, encryption credentials. Copy it to another laptop and you're ready to go from that machine too. --- Next: Creating Your First Repository.",
     "excerpt": "Verify what rdc knows about your setup: time rdc config show Or open the raw JSON file directly: vim ~/.config/rediacc/rediacc.json This single file h...",
@@ -12091,7 +12210,7 @@
     "language": "en"
   },
   {
-    "id": "search-4376",
+    "id": "search-4387",
     "content": "Backup & Restore",
     "excerpt": "Push your repository to external storage and restore it on a new server when you need it.",
     "category": "Documentation",
@@ -12101,7 +12220,7 @@
     "language": "en"
   },
   {
-    "id": "search-4377",
+    "id": "search-4388",
     "content": "Push your repository to external storage and restore it on a new server when you need it.",
     "excerpt": "Push your repository to external storage and restore it on a new server when you need it.",
     "category": "Documentation",
@@ -12111,7 +12230,7 @@
     "language": "en"
   },
   {
-    "id": "search-4378",
+    "id": "search-4389",
     "content": "Backup & Restore",
     "body": "# Backup & Restore Your app is live in production. Now make sure you never lose it. rdc can push your entire repository (app, database, files, configs) to external storage and pull it back any time. Survive ransomware, hardware failure, anything.",
     "excerpt": "# Backup & Restore Your app is live in production. Now make sure you never lose it. rdc can push your entire repository (app, database, files, configs...",
@@ -12122,7 +12241,7 @@
     "language": "en"
   },
   {
-    "id": "search-4379",
+    "id": "search-4390",
     "content": "Watch the tutorial",
     "body": "Tutorial: Backup and restore",
     "excerpt": "Tutorial: Backup and restore",
@@ -12133,7 +12252,7 @@
     "language": "en"
   },
   {
-    "id": "search-4380",
+    "id": "search-4391",
     "content": "Three steps",
     "body": "Configure, push, restore Configure a storage provider. Push a backup. Restore when you need it.",
     "excerpt": "Configure, push, restore Configure a storage provider. Push a backup. Restore when you need it.",
@@ -12144,7 +12263,7 @@
     "language": "en"
   },
   {
-    "id": "search-4381",
+    "id": "search-4392",
     "content": "Step 1: Configure storage",
     "body": "You need an rclone config file. If you already use rclone, import it directly: time rdc config storage import --file rclone.conf This supports S3, B2, Google Drive, Dropbox, and many more. Verify what's wired up: time rdc config storage list",
     "excerpt": "You need an rclone config file. If you already use rclone, import it directly: time rdc config storage import --file rclone.conf This supports S3, B2,...",
@@ -12155,7 +12274,7 @@
     "language": "en"
   },
   {
-    "id": "search-4382",
+    "id": "search-4393",
     "content": "Step 2: Push a backup",
     "body": "time rdc repo push --name my-app -m my-server --to my-storage Your entire repository (app, database, files, everything) is now backed up. Because the repository itself is encrypted, the backup is encrypted too. No extra key management. List your backups any time: time rdc repo backup list --from my-storage -m my-server",
     "excerpt": "time rdc repo push --name my-app -m my-server --to my-storage Your entire repository (app, database, files, everything) is now backed up. Because the...",
@@ -12166,7 +12285,7 @@
     "language": "en"
   },
   {
-    "id": "search-4383",
+    "id": "search-4394",
     "content": "Why no downtime?",
     "body": "The app keeps running while the backup uploads. How is that consistent? Same logic as a fork. rdc forks first, then uploads the fork. The fork captures the moment; your live app keeps going. No downtime, no inconsistency.",
     "excerpt": "The app keeps running while the backup uploads. How is that consistent? Same logic as a fork. rdc forks first, then uploads the fork. The fork capture...",
@@ -12177,7 +12296,7 @@
     "language": "en"
   },
   {
-    "id": "search-4384",
+    "id": "search-4395",
     "content": "Step 3: Restore on a new server",
     "body": "Let's say your server dies. Set up a new server, add it to rdc, and pull: time rdc repo pull --name my-app -m new-server --from my-storage Then start it: time rdc repo up --name my-app -m new-server Your app is back. Same data, same containers, different machine.",
     "excerpt": "Let's say your server dies. Set up a new server, add it to rdc, and pull: time rdc repo pull --name my-app -m new-server --from my-storage Then start...",
@@ -12188,7 +12307,7 @@
     "language": "en"
   },
   {
-    "id": "search-4385",
+    "id": "search-4396",
     "content": "Faster backups: machine to machine",
     "body": "You can also push directly between machines, no cloud storage in between: time rdc repo push --name my-app -m my-server --to-machine backup-server Pro tip. Storage uploads always send everything. Machine-to-machine sends only the difference. The first machine-to-machine push takes the usual time, but every push after that is much faster. Great for frequent backups. --- Next: Monitoring.",
     "excerpt": "You can also push directly between machines, no cloud storage in between: time rdc repo push --name my-app -m my-server --to-machine backup-server Pro...",
@@ -12199,7 +12318,7 @@
     "language": "en"
   },
   {
-    "id": "search-4386",
+    "id": "search-4397",
     "content": "Creating Your First Repository",
     "excerpt": "Create an encrypted repository on your server and open it in VS Code.",
     "category": "Documentation",
@@ -12209,7 +12328,7 @@
     "language": "en"
   },
   {
-    "id": "search-4387",
+    "id": "search-4398",
     "content": "Create an encrypted repository on your server and open it in VS Code.",
     "excerpt": "Create an encrypted repository on your server and open it in VS Code.",
     "category": "Documentation",
@@ -12219,7 +12338,7 @@
     "language": "en"
   },
   {
-    "id": "search-4388",
+    "id": "search-4399",
     "content": "Creating Your First Repository",
     "body": "# Creating Your First Repository A Rediacc repository is a single encrypted file on your server. When mounted, it becomes a folder with its own Docker daemon and its own application data: completely isolated, completely portable. Think of it like a USB drive for production: a file at rest, a server at run.",
     "excerpt": "# Creating Your First Repository A Rediacc repository is a single encrypted file on your server. When mounted, it becomes a folder with its own Docker...",
@@ -12230,7 +12349,7 @@
     "language": "en"
   },
   {
-    "id": "search-4389",
+    "id": "search-4400",
     "content": "Watch the tutorial",
     "body": "Tutorial: Creating your first repository",
     "excerpt": "Tutorial: Creating your first repository",
@@ -12241,7 +12360,7 @@
     "language": "en"
   },
   {
-    "id": "search-4390",
+    "id": "search-4401",
     "content": "File on disk, environment when mounted",
     "body": "Encrypted file mounts as an isolated folder The on-disk form is a single encrypted image. When it mounts, you get: A dedicated Docker daemon (separate from the host's) Application data inside the encrypted volume Loopback IPs that don't collide with anything else on the box Repositories are portable. You can move one between machines, back it up, or fork it instantly. Every repo is isolated from every other repo on the same server.",
     "excerpt": "Encrypted file mounts as an isolated folder The on-disk form is a single encrypted image. When it mounts, you get: A dedicated Docker daemon (separate...",
@@ -12252,7 +12371,7 @@
     "language": "en"
   },
   {
-    "id": "search-4391",
+    "id": "search-4402",
     "content": "Create one",
     "body": "time rdc repo create --name my-app -m my-server --size 2G This creates a 2 GB encrypted repository on my-server. Verify it: time rdc repo list -m my-server",
     "excerpt": "time rdc repo create --name my-app -m my-server --size 2G This creates a 2 GB encrypted repository on my-server. Verify it: time rdc repo list -m my-s...",
@@ -12263,7 +12382,7 @@
     "language": "en"
   },
   {
-    "id": "search-4392",
+    "id": "search-4403",
     "content": "Open it in VS Code",
     "body": "rdc vscode connect -m my-server -r my-app VS Code opens directly inside the repository. Notice the workspace is empty. This is your isolated environment. Everything you create here lives inside the encrypted volume, invisible to any other repo on the same server. --- Next: Deploying Your First App.",
     "excerpt": "rdc vscode connect -m my-server -r my-app VS Code opens directly inside the repository. Notice the workspace is empty. This is your isolated environme...",
@@ -12274,7 +12393,7 @@
     "language": "en"
   },
   {
-    "id": "search-4393",
+    "id": "search-4404",
     "content": "Deploying Your First App",
     "excerpt": "Deploy a containerized app from a built-in template using renet dev up.",
     "category": "Documentation",
@@ -12284,7 +12403,7 @@
     "language": "en"
   },
   {
-    "id": "search-4394",
+    "id": "search-4405",
     "content": "Deploy a containerized app from a built-in template using renet dev up.",
     "excerpt": "Deploy a containerized app from a built-in template using renet dev up.",
     "category": "Documentation",
@@ -12294,7 +12413,7 @@
     "language": "en"
   },
   {
-    "id": "search-4395",
+    "id": "search-4406",
     "content": "Deploying Your First App",
     "body": "# Deploying Your First App You have an empty repository. rdc ships built-in templates so you can spin up real apps without writing a docker-compose from scratch. Three steps: pick a template, apply it, run it.",
     "excerpt": "# Deploying Your First App You have an empty repository. rdc ships built-in templates so you can spin up real apps without writing a docker-compose fr...",
@@ -12305,7 +12424,7 @@
     "language": "en"
   },
   {
-    "id": "search-4396",
+    "id": "search-4407",
     "content": "Watch the tutorial",
     "body": "Tutorial: Deploying your first app",
     "excerpt": "Tutorial: Deploying your first app",
@@ -12316,7 +12435,7 @@
     "language": "en"
   },
   {
-    "id": "search-4397",
+    "id": "search-4408",
     "content": "Pick · Apply · Run",
     "body": "Pick a template, apply it, run it",
     "excerpt": "Pick a template, apply it, run it",
@@ -12327,7 +12446,7 @@
     "language": "en"
   },
   {
-    "id": "search-4398",
+    "id": "search-4409",
     "content": "Step 1: Pick",
     "body": "Browse the available templates: time rdc repo template list You'll see ready-made setups for common apps: Postgres, Redis, web servers, and more.",
     "excerpt": "Browse the available templates: time rdc repo template list You'll see ready-made setups for common apps: Postgres, Redis, web servers, and more.",
@@ -12338,7 +12457,7 @@
     "language": "en"
   },
   {
-    "id": "search-4399",
+    "id": "search-4410",
     "content": "Step 2: Apply",
     "body": "Drop the template into your repo. We'll use app-postgres: time rdc repo template apply --name app-postgres -m my-server -r my-app Two new files appear in the repo: docker-compose.yml and Rediaccfile. The compose file describes the containers; the Rediaccfile defines what happens when the app starts and stops (its up and down lifecycle hooks).",
     "excerpt": "Drop the template into your repo. We'll use app-postgres: time rdc repo template apply --name app-postgres -m my-server -r my-app Two new files appear...",
@@ -12349,7 +12468,7 @@
     "language": "en"
   },
   {
-    "id": "search-4400",
+    "id": "search-4411",
     "content": "Step 3: Run",
     "body": "You're already inside the repo's sandbox (via the VS Code connection from the previous tutorial), so use renet directly: time renet dev up That's it. Your app is running. Verify it: time docker ps docker ps here lists only this repo's containers. Other repos on the same server have their own Docker daemons and are completely invisible from this one. --- Next: Working with Your Repo.",
     "excerpt": "You're already inside the repo's sandbox (via the VS Code connection from the previous tutorial), so use renet directly: time renet dev up That's it....",
@@ -12360,7 +12479,7 @@
     "language": "en"
   },
   {
-    "id": "search-4401",
+    "id": "search-4412",
     "content": "Forking a Repository",
     "excerpt": "Clone an entire repository (app, database, files) in seconds. Any size. Zero extra disk.",
     "category": "Documentation",
@@ -12370,7 +12489,7 @@
     "language": "en"
   },
   {
-    "id": "search-4402",
+    "id": "search-4413",
     "content": "Clone an entire repository (app, database, files) in seconds. Any size. Zero extra disk.",
     "excerpt": "Clone an entire repository (app, database, files) in seconds. Any size. Zero extra disk.",
     "category": "Documentation",
@@ -12380,7 +12499,7 @@
     "language": "en"
   },
   {
-    "id": "search-4403",
+    "id": "search-4414",
     "content": "Forking a Repository",
     "body": "# Forking a Repository This is the killer feature: clone an entire production environment (the app, the database, the config files) in seconds. Any size. Zero extra disk. Fork as many times as you want. The tagline: clone production, break nothing.",
     "excerpt": "# Forking a Repository This is the killer feature: clone an entire production environment (the app, the database, the config files) in seconds. Any si...",
@@ -12391,7 +12510,7 @@
     "language": "en"
   },
   {
-    "id": "search-4404",
+    "id": "search-4415",
     "content": "Watch the tutorial",
     "body": "Tutorial: Forking a repository",
     "excerpt": "Tutorial: Forking a repository",
@@ -12402,7 +12521,7 @@
     "language": "en"
   },
   {
-    "id": "search-4405",
+    "id": "search-4416",
     "content": "Set up something to lose",
     "body": "First, give the running app a file so you can prove the fork's isolation. Open the repo in VS Code: rdc vscode connect -m my-server -r my-app Inside the repo, create a marker file: time echo \"Hello from production\" > index.html Now fork it.",
     "excerpt": "First, give the running app a file so you can prove the fork's isolation. Open the repo in VS Code: rdc vscode connect -m my-server -r my-app Inside t...",
@@ -12413,7 +12532,7 @@
     "language": "en"
   },
   {
-    "id": "search-4406",
+    "id": "search-4417",
     "content": "Fork",
     "body": "time rdc repo fork --parent my-app -m my-server --tag experiment --up Parent fans out into independent clones One command. It cloned everything (the app, the database, the config files) and it happened in seconds. Run it again and you get another independent clone.",
     "excerpt": "time rdc repo fork --parent my-app -m my-server --tag experiment --up Parent fans out into independent clones One command. It cloned everything (the a...",
@@ -12424,7 +12543,7 @@
     "language": "en"
   },
   {
-    "id": "search-4407",
+    "id": "search-4418",
     "content": "Why is it so fast?",
     "body": "Sharing a folder link is the same speed regardless of the folder's size Imagine sharing a folder link. The link is the same whether the folder is small or huge. The folder is heavy, the link is light. 1 GB, 100 GB, 1 TB. Same time, every time. Forking works the same way. 1 GB, 100 GB, 1 TB. Same time, every time.",
     "excerpt": "Sharing a folder link is the same speed regardless of the folder's size Imagine sharing a folder link. The link is the same whether the folder is smal...",
@@ -12435,7 +12554,7 @@
     "language": "en"
   },
   {
-    "id": "search-4408",
+    "id": "search-4419",
     "content": "What's shared, what's yours",
     "body": "Many mirrors, one sun: shared base, your changes are yours Think of the parent repo as the sun. You can't hold the sun, but you can hold a mirror that catches it. That mirror is your fork. Paint on the mirror, and your drawings are yours. The sun stays the same, no matter how many mirrors face it. You can't hold the sun, but you can hold it in a mirror.",
     "excerpt": "Many mirrors, one sun: shared base, your changes are yours Think of the parent repo as the sun. You can't hold the sun, but you can hold a mirror that...",
@@ -12446,7 +12565,7 @@
     "language": "en"
   },
   {
-    "id": "search-4409",
+    "id": "search-4420",
     "content": "What if the parent changes later?",
     "body": "A fork is a frozen photograph; the parent keeps flowing like a river Now think of a river. The water keeps flowing. Every moment, it's different. When you fork, you take a photograph of the river, frozen at that moment. The river keeps flowing. Your photograph doesn't. If the parent repo changes later, your fork stays where it was. You can't hold a river, but you can hold it in a photo.",
     "excerpt": "A fork is a frozen photograph; the parent keeps flowing like a river Now think of a river. The water keeps flowing. Every moment, it's different. When...",
@@ -12457,7 +12576,7 @@
     "language": "en"
   },
   {
-    "id": "search-4410",
+    "id": "search-4421",
     "content": "Disk usage stays flat",
     "body": "Five forks of a 100 GB repo, still about 100 GB total That's why your disk doesn't blow up. Five forks of a 100 GB repo? Still about 100 GB total. You only pay disk for what you change in each fork. Fork five times if you want. Your disk won't even notice.",
     "excerpt": "Five forks of a 100 GB repo, still about 100 GB total That's why your disk doesn't blow up. Five forks of a 100 GB repo? Still about 100 GB total. You...",
@@ -12468,7 +12587,7 @@
     "language": "en"
   },
   {
-    "id": "search-4411",
+    "id": "search-4422",
     "content": "What forks do *not* inherit: secrets",
     "body": "There's one thing the fork deliberately doesn't follow: secrets. A fork starts with no API keys, no database passwords, no Stripe tokens. That's why \"clone production, break nothing\" actually works. Your sandbox can't bill real customers because it can't pretend to be you. We set this up properly in the Managing Secrets tutorial.",
     "excerpt": "There's one thing the fork deliberately doesn't follow: secrets. A fork starts with no API keys, no database passwords, no Stripe tokens. That's why \"...",
@@ -12479,7 +12598,7 @@
     "language": "en"
   },
   {
-    "id": "search-4412",
+    "id": "search-4423",
     "content": "Verify the isolation",
     "body": "List both repos side by side: time rdc repo list -m my-server You'll see my-app and my-app:experiment running concurrently. In the original repo, check what's running: time docker ps Note the uptime. These are the original containers. Now switch to the fork: rdc vscode connect -m my-server -r my-app:experiment time docker ps Same images, but the uptime is fresh. These started when the fork did. Make the difference even more obvious. Add a container only to the fork: time docker run --rm -it -d nginx time docker ps Nginx is running, but only inside this fork. Try something destructive: time rm index.html Gone here. Now jump back to the original: rdc vscode connect -m my-server -r my-app time docker ps No nginx. The fork's containers stayed in the fork. And index.html is still here, untouched. The original never knew anything happened. Same images, separate Docker daemons, separate filesystems.",
     "excerpt": "List both repos side by side: time rdc repo list -m my-server You'll see my-app and my-app:experiment running concurrently. In the original repo, chec...",
@@ -12490,7 +12609,7 @@
     "language": "en"
   },
   {
-    "id": "search-4413",
+    "id": "search-4424",
     "content": "Clean up",
     "body": "When you're done, just delete the fork: time rdc repo delete --name my-app:experiment -m my-server The original stays exactly as it was. Fork, experiment, break things, delete. No risk. --- Next: Managing Secrets.",
     "excerpt": "When you're done, just delete the fork: time rdc repo delete --name my-app:experiment -m my-server The original stays exactly as it was. Fork, experim...",
@@ -12501,7 +12620,7 @@
     "language": "en"
   },
   {
-    "id": "search-4414",
+    "id": "search-4425",
     "content": "Installation",
     "excerpt": "Install the rdc CLI on your laptop with a single command and verify it with rdc doctor.",
     "category": "Documentation",
@@ -12511,7 +12630,7 @@
     "language": "en"
   },
   {
-    "id": "search-4415",
+    "id": "search-4426",
     "content": "Install the rdc CLI on your laptop with a single command and verify it with rdc doctor.",
     "excerpt": "Install the rdc CLI on your laptop with a single command and verify it with rdc doctor.",
     "category": "Documentation",
@@ -12521,7 +12640,7 @@
     "language": "en"
   },
   {
-    "id": "search-4416",
+    "id": "search-4427",
     "content": "Installation",
     "body": "# Installation Installing rdc is three steps: open the install page, pick your operating system, paste the command into your terminal. The whole thing usually finishes in a minute or two.",
     "excerpt": "# Installation Installing rdc is three steps: open the install page, pick your operating system, paste the command into your terminal. The whole thing...",
@@ -12532,7 +12651,7 @@
     "language": "en"
   },
   {
-    "id": "search-4417",
+    "id": "search-4428",
     "content": "Watch the tutorial",
     "body": "Tutorial: Installation",
     "excerpt": "Tutorial: Installation",
@@ -12543,7 +12662,7 @@
     "language": "en"
   },
   {
-    "id": "search-4418",
+    "id": "search-4429",
     "content": "The three steps",
     "body": "Three steps overview Open the installation page. Pick your operating system. Copy the install command and paste it into your terminal.",
     "excerpt": "Three steps overview Open the installation page. Pick your operating system. Copy the install command and paste it into your terminal.",
@@ -12554,7 +12673,7 @@
     "language": "en"
   },
   {
-    "id": "search-4419",
+    "id": "search-4430",
     "content": "Install on your platform",
     "body": "The installation page generates the right command for you, but here are the canonical one-liners. Linux / macOS: time curl -fsSL https://www.rediacc.com/install.sh | bash Windows (PowerShell): iwr -useb https://www.rediacc.com/install.ps1 | iex The time prefix is a shell trick that prints how long a command took. We use it across this series so you can see the real speed of every step. It's optional. Drop it if you don't want it.",
     "excerpt": "The installation page generates the right command for you, but here are the canonical one-liners. Linux / macOS: time curl -fsSL https://www.rediacc.c...",
@@ -12565,7 +12684,7 @@
     "language": "en"
   },
   {
-    "id": "search-4420",
+    "id": "search-4431",
     "content": "Verify the install",
     "body": "Once the script finishes, check that everything rdc needs is present: time rdc doctor rdc doctor walks through Node, SSH, and the rest of rdc's dependencies and reports any gaps.",
     "excerpt": "Once the script finishes, check that everything rdc needs is present: time rdc doctor rdc doctor walks through Node, SSH, and the rest of rdc's depend...",
@@ -12576,7 +12695,7 @@
     "language": "en"
   },
   {
-    "id": "search-4421",
+    "id": "search-4432",
     "content": "Why `rdc` lives on your laptop",
     "body": "rdc on your laptop, renet on the server rdc is the CLI on your laptop. The server runs a separate component called renet, which rdc provisions and drives over SSH. You never need to SSH into a server manually. rdc does it for you. We'll set that up properly in the next two tutorials. --- Next: SSH Key Configuration.",
     "excerpt": "rdc on your laptop, renet on the server rdc is the CLI on your laptop. The server runs a separate component called renet, which rdc provisions and dri...",
@@ -12587,7 +12706,7 @@
     "language": "en"
   },
   {
-    "id": "search-4422",
+    "id": "search-4433",
     "content": "Managing Secrets",
     "excerpt": "Put deploy-time credentials in a place forks can't reach. Write-only by design.",
     "category": "Documentation",
@@ -12597,7 +12716,7 @@
     "language": "en"
   },
   {
-    "id": "search-4423",
+    "id": "search-4434",
     "content": "Put deploy-time credentials in a place forks can't reach. Write-only by design.",
     "excerpt": "Put deploy-time credentials in a place forks can't reach. Write-only by design.",
     "category": "Documentation",
@@ -12607,7 +12726,7 @@
     "language": "en"
   },
   {
-    "id": "search-4424",
+    "id": "search-4435",
     "content": "Managing Secrets",
     "body": "# Managing Secrets Real apps need real credentials: a Stripe live key, a database password, an API token. The wrong place to put them is in the repo, because a fork inherits whatever's inside the encrypted image. Suddenly your sandbox is charging real customer cards. The right place is rdc repo secret. Two delivery modes, write-only by design, and the fork starts with nothing.",
     "excerpt": "# Managing Secrets Real apps need real credentials: a Stripe live key, a database password, an API token. The wrong place to put them is in the repo,...",
@@ -12618,7 +12737,7 @@
     "language": "en"
   },
   {
-    "id": "search-4425",
+    "id": "search-4436",
     "content": "Watch the tutorial",
     "body": "Tutorial: Managing secrets",
     "excerpt": "Tutorial: Managing secrets",
@@ -12629,7 +12748,7 @@
     "language": "en"
   },
   {
-    "id": "search-4426",
+    "id": "search-4437",
     "content": "The trap: `.env` in the repo",
     "body": "A .env file inside the repo image gets cloned by every fork Most teams put .env in the repo. It's the obvious move. Then they fork. The fork is a byte-for-byte copy of the parent's image. Whatever's in .env is in the fork's .env. The fork's containers boot. They read the same Stripe key. They call the same Stripe API with production credentials. From Stripe's side, that call is you. That's a bad day.",
     "excerpt": "A .env file inside the repo image gets cloned by every fork Most teams put .env in the repo. It's the obvious move. Then they fork. The fork is a byte...",
@@ -12640,7 +12759,7 @@
     "language": "en"
   },
   {
-    "id": "search-4427",
+    "id": "search-4438",
     "content": "Set a secret",
     "body": "The fix is rdc repo secret. Set one in env mode. It lands as an environment variable in the container: time rdc repo secret set --name my-app --key DB_HOST --value postgres.internal --mode env --current \"\" Two things to notice: --mode env. The value lands as an environment variable. --current \"\". Empty string. We're declaring this is a brand-new secret with no prior value. Set another, in file mode, for anything sensitive: time rdc repo secret set --name my-app --key STRIPE_KEY --value sk_test_xxx --mode file --current \"\" file mode never puts the value in the container's environment. It writes it to /run/secrets/stripe_key instead, using Docker's standard mechanism. List what you have: time rdc repo secret list --name my-app You see names and modes. No values. The list never shows values.",
     "excerpt": "The fix is rdc repo secret. Set one in env mode. It lands as an environment variable in the container: time rdc repo secret set --name my-app --key DB...",
@@ -12651,7 +12770,7 @@
     "language": "en"
   },
   {
-    "id": "search-4428",
+    "id": "search-4439",
     "content": "Wire it into compose",
     "body": "Open docker-compose.yml. Reference both modes: services: api: image: myapp:latest environment: DATABASE_HOST: ${REDIACC_SECRET_DB_HOST} secrets: stripe_key secrets: stripe_key: file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_KEY ${REDIACC_SECRET_DB_HOST} is env mode: renet's compose wrapper expands it from your secret store at deploy time. The secrets: block is file mode, using Docker's standard mechanism. The host path uses ${REDIACC_NETWORK_ID} so the same compose works for parents and forks. Each fork has its own network ID. Deploy: time rdc repo up --name my-app -m my-server",
     "excerpt": "Open docker-compose.yml. Reference both modes: services: api: image: myapp:latest environment: DATABASE_HOST: ${REDIACC_SECRET_DB_HOST} secrets: strip...",
@@ -12662,7 +12781,7 @@
     "language": "en"
   },
   {
-    "id": "search-4429",
+    "id": "search-4440",
     "content": "Verify in the container",
     "body": "Both modes should be inside the container now. Check the env-mode secret: time rdc term connect -m my-server -r my-app -c 'docker exec $(docker ps -q -f name=api) printenv DATABASE_HOST' postgres.internal. The env-mode secret reached the container's environment. Now the file-mode one: time rdc term connect -m my-server -r my-app -c 'docker exec $(docker ps -q -f name=api) cat /run/secrets/stripe_key' sk_test_xxx. The file is mounted via Docker's standard secrets mechanism.",
     "excerpt": "Both modes should be inside the container now. Check the env-mode secret: time rdc term connect -m my-server -r my-app -c 'docker exec $(docker ps -q...",
@@ -12673,7 +12792,7 @@
     "language": "en"
   },
   {
-    "id": "search-4430",
+    "id": "search-4441",
     "content": "You can never read it back",
     "body": "Write-only model: get returns a digest, never the value Now the part that surprises people: time rdc repo secret get --name my-app --key STRIPE_KEY You get a digest. Not the value. There's no flag that makes it return the value. There's no command anywhere that will give you the plaintext back. That's the GitHub Actions model: write-only. You can prove you know what a secret is by passing --current <value> and watching the precondition pass. You can't ask Rediacc to tell you what it is. Lost the value? Don't peek. Rotate. time rdc repo secret set --name my-app --key STRIPE_KEY --value sk_test_new --mode file --rotate-secret --rotate-secret skips the precondition. The audit log marks it as a rotation: loud, deliberate. If you do remember the old value, prove it instead: time rdc repo secret set --name my-app --key STRIPE_KEY --value sk_test_new --mode file --current sk_test_xxx That's the safer path. It catches the \"I'm in the wrong terminal\" mistake.",
     "excerpt": "Write-only model: get returns a digest, never the value Now the part that surprises people: time rdc repo secret get --name my-app --key STRIPE_KEY Yo...",
@@ -12684,7 +12803,7 @@
     "language": "en"
   },
   {
-    "id": "search-4431",
+    "id": "search-4442",
     "content": "The fork punchline",
     "body": "After fork, the secrets list is empty Remember the trap? Fork the repo and look: time rdc repo fork --parent my-app --tag test -m my-server time rdc repo secret list --name my-app:test Empty. The fork has no Stripe key. No database password. No API token. Containers in the fork can't interpolate ${REDIACC_SECRET_STRIPE_KEY}. The file at /var/run/rediacc/secrets/<fork-id>/STRIPE_KEY doesn't exist. The fork can't pretend to be you. If you want secrets in the fork for testing, set them on the fork explicitly with sandbox values: time rdc repo secret set --name my-app:test --key STRIPE_KEY --value sk_sandbox_yyy --mode file --current \"\" Now the fork talks to the Stripe sandbox. Production credentials never left production.",
     "excerpt": "After fork, the secrets list is empty Remember the trap? Fork the repo and look: time rdc repo fork --parent my-app --tag test -m my-server time rdc r...",
@@ -12695,7 +12814,7 @@
     "language": "en"
   },
   {
-    "id": "search-4432",
+    "id": "search-4443",
     "content": "Summary",
     "body": "rdc repo secret puts your credentials outside the repo image. The fork can't reach them. get returns a digest, never the value. Rotate when you forget. Don't peek. Secrets the fork can't follow. --- Next: Networking & Domains.",
     "excerpt": "rdc repo secret puts your credentials outside the repo image. The fork can't reach them. get returns a digest, never the value. Rotate when you forget...",
@@ -12706,7 +12825,7 @@
     "language": "en"
   },
   {
-    "id": "search-4433",
+    "id": "search-4444",
     "content": "Monitoring",
     "excerpt": "Check the health of your servers and repos from your laptop with rdc machine commands.",
     "category": "Documentation",
@@ -12716,7 +12835,7 @@
     "language": "en"
   },
   {
-    "id": "search-4434",
+    "id": "search-4445",
     "content": "Check the health of your servers and repos from your laptop with rdc machine commands.",
     "excerpt": "Check the health of your servers and repos from your laptop with rdc machine commands.",
     "category": "Documentation",
@@ -12726,7 +12845,7 @@
     "language": "en"
   },
   {
-    "id": "search-4435",
+    "id": "search-4446",
     "content": "Monitoring",
     "body": "# Monitoring Your app is deployed, live, and backed up. Now make sure everything stays healthy. rdc gives you a full picture of any server (health, containers, repos) from your laptop.",
     "excerpt": "# Monitoring Your app is deployed, live, and backed up. Now make sure everything stays healthy. rdc gives you a full picture of any server (health, co...",
@@ -12737,7 +12856,7 @@
     "language": "en"
   },
   {
-    "id": "search-4436",
+    "id": "search-4447",
     "content": "Watch the tutorial",
     "body": "Tutorial: Monitoring",
     "excerpt": "Tutorial: Monitoring",
@@ -12748,7 +12867,7 @@
     "language": "en"
   },
   {
-    "id": "search-4437",
+    "id": "search-4448",
     "content": "Three things you can check",
     "body": "Health, containers, repos",
     "excerpt": "Health, containers, repos",
@@ -12759,7 +12878,7 @@
     "language": "en"
   },
   {
-    "id": "search-4438",
+    "id": "search-4449",
     "content": "Health: system info",
     "body": "Start with the system view: time rdc machine query --name my-server --system This shows system uptime, disk usage, and storage status. If something is wrong, it tells you.",
     "excerpt": "Start with the system view: time rdc machine query --name my-server --system This shows system uptime, disk usage, and storage status. If something is...",
@@ -12770,7 +12889,7 @@
     "language": "en"
   },
   {
-    "id": "search-4439",
+    "id": "search-4450",
     "content": "Containers",
     "body": "To see all running containers across every repo on the machine: time rdc machine query --name my-server --containers You get name, status, health, CPU, and memory for each container, plus which repo owns it.",
     "excerpt": "To see all running containers across every repo on the machine: time rdc machine query --name my-server --containers You get name, status, health, CPU...",
@@ -12781,7 +12900,7 @@
     "language": "en"
   },
   {
-    "id": "search-4440",
+    "id": "search-4451",
     "content": "Repos",
     "body": "To check your repositories: time rdc machine query --name my-server --repositories This shows every repo with its size, mount status, Docker status, and disk usage.",
     "excerpt": "To check your repositories: time rdc machine query --name my-server --repositories This shows every repo with its size, mount status, Docker status, a...",
@@ -12792,7 +12911,7 @@
     "language": "en"
   },
   {
-    "id": "search-4441",
+    "id": "search-4452",
     "content": "Everything in one shot",
     "body": "time rdc machine query --name my-server System info, repos, containers, all in one command. The same query command with no filters returns the full picture; with --system, --containers, --repositories, --services, --network, or --block-devices it narrows to just that section.",
     "excerpt": "time rdc machine query --name my-server System info, repos, containers, all in one command. The same query command with no filters returns the full pi...",
@@ -12803,7 +12922,7 @@
     "language": "en"
   },
   {
-    "id": "search-4442",
+    "id": "search-4453",
     "content": "Local sanity check",
     "body": "rdc doctor checks your local setup (Node, SSH key, renet, Docker), independent of any specific server: time rdc doctor",
     "excerpt": "rdc doctor checks your local setup (Node, SSH key, renet, Docker), independent of any specific server: time rdc doctor",
@@ -12814,7 +12933,7 @@
     "language": "en"
   },
   {
-    "id": "search-4443",
+    "id": "search-4454",
     "content": "You're done",
     "body": "That's the full series. You can now install, configure, deploy, fork, go live, autostart, back up, and monitor. All from your terminal, all on your own servers.",
     "excerpt": "That's the full series. You can now install, configure, deploy, fork, go live, autostart, back up, and monitor. All from your terminal, all on your ow...",
@@ -12825,7 +12944,7 @@
     "language": "en"
   },
   {
-    "id": "search-4444",
+    "id": "search-4455",
     "content": "Networking & Domains",
     "excerpt": "Make your app accessible on the internet with a domain, automatic TLS, and a Traefik reverse proxy.",
     "category": "Documentation",
@@ -12835,7 +12954,7 @@
     "language": "en"
   },
   {
-    "id": "search-4445",
+    "id": "search-4456",
     "content": "Make your app accessible on the internet with a domain, automatic TLS, and a Traefik reverse proxy.",
     "excerpt": "Make your app accessible on the internet with a domain, automatic TLS, and a Traefik reverse proxy.",
     "category": "Documentation",
@@ -12845,7 +12964,7 @@
     "language": "en"
   },
   {
-    "id": "search-4446",
+    "id": "search-4457",
     "content": "Networking & Domains",
     "body": "# Networking & Domains Your app is running, but nobody can reach it yet. This tutorial gets you a real domain, automatic TLS via Let's Encrypt, and a Traefik proxy that auto-discovers your containers. You need a domain on Cloudflare and an API token.",
     "excerpt": "# Networking & Domains Your app is running, but nobody can reach it yet. This tutorial gets you a real domain, automatic TLS via Let's Encrypt, and a...",
@@ -12856,7 +12975,7 @@
     "language": "en"
   },
   {
-    "id": "search-4447",
+    "id": "search-4458",
     "content": "Watch the tutorial",
     "body": "Tutorial: Networking and domains",
     "excerpt": "Tutorial: Networking and domains",
@@ -12867,7 +12986,7 @@
     "language": "en"
   },
   {
-    "id": "search-4448",
+    "id": "search-4459",
     "content": "Four steps",
     "body": "Token, configure, push, deploy Get your Cloudflare API token. Configure infrastructure on rdc. Push it to your server. Deploy the proxy.",
     "excerpt": "Token, configure, push, deploy Get your Cloudflare API token. Configure infrastructure on rdc. Push it to your server. Deploy the proxy.",
@@ -12878,7 +12997,7 @@
     "language": "en"
   },
   {
-    "id": "search-4449",
+    "id": "search-4460",
     "content": "Step 1: Cloudflare API token",
     "body": "In your Cloudflare dashboard, go to My Profile → API Tokens and create a token with Zone DNS Edit permission. Copy the token value. You'll only see it once.",
     "excerpt": "In your Cloudflare dashboard, go to My Profile → API Tokens and create a token with Zone DNS Edit permission. Copy the token value. You'll only see it...",
@@ -12889,7 +13008,7 @@
     "language": "en"
   },
   {
-    "id": "search-4450",
+    "id": "search-4461",
     "content": "Step 2: Configure infrastructure",
     "body": "Tell rdc your public IP, base domain, certificate email, and the token: time rdc config infra set -m my-server \\ --public-ipv4 203.0.113.50 \\ --base-domain yourdomain.com \\ --cert-email admin@yourdomain.com \\ --cf-dns-token your-cloudflare-api-token Replace the IP, domain, email, and token with your own. The --cert-email and --cf-dns-token are shared across all your machines, so you only set them once.",
     "excerpt": "Tell rdc your public IP, base domain, certificate email, and the token: time rdc config infra set -m my-server \\ --public-ipv4 203.0.113.50 \\ --base-d...",
@@ -12900,7 +13019,7 @@
     "language": "en"
   },
   {
-    "id": "search-4451",
+    "id": "search-4462",
     "content": "Step 3: Push to the server",
     "body": "time rdc config infra push -m my-server This creates the DNS records on Cloudflare automatically and prepares the proxy configuration on your server.",
     "excerpt": "time rdc config infra push -m my-server This creates the DNS records on Cloudflare automatically and prepares the proxy configuration on your server.",
@@ -12911,7 +13030,7 @@
     "language": "en"
   },
   {
-    "id": "search-4452",
+    "id": "search-4463",
     "content": "Step 4: Deploy the proxy",
     "body": "The proxy itself doesn't run yet. Deploy it from the built-in proxy template, inside a small repo named infra: time rdc repo create --name infra -m my-server --size 1G time rdc repo template apply --name proxy -m my-server -r infra time rdc repo up --name infra -m my-server That's it. Traefik is now running. Your app is accessible at: myapp.my-app.my-server.yourdomain.com Traefik discovers your containers every 5 seconds. TLS certificates come from Let's Encrypt automatically. No manual proxy configuration needed. --- Next: Production Mode.",
     "excerpt": "The proxy itself doesn't run yet. Deploy it from the built-in proxy template, inside a small repo named infra: time rdc repo create --name infra -m my...",
@@ -12922,7 +13041,7 @@
     "language": "en"
   },
   {
-    "id": "search-4453",
+    "id": "search-4464",
     "content": "Production Mode",
     "excerpt": "Run your app detached from your laptop and survive server reboots with autostart.",
     "category": "Documentation",
@@ -12932,7 +13051,7 @@
     "language": "en"
   },
   {
-    "id": "search-4454",
+    "id": "search-4465",
     "content": "Run your app detached from your laptop and survive server reboots with autostart.",
     "excerpt": "Run your app detached from your laptop and survive server reboots with autostart.",
     "category": "Documentation",
@@ -12942,7 +13061,7 @@
     "language": "en"
   },
   {
-    "id": "search-4455",
+    "id": "search-4466",
     "content": "Production Mode",
     "body": "# Production Mode So far you've been running the app with renet dev up from inside the repo. That's great for development. For production, you manage everything from your laptop with rdc. Close your laptop and the app keeps running.",
     "excerpt": "# Production Mode So far you've been running the app with renet dev up from inside the repo. That's great for development. For production, you manage...",
@@ -12953,7 +13072,7 @@
     "language": "en"
   },
   {
-    "id": "search-4456",
+    "id": "search-4467",
     "content": "Watch the tutorial",
     "body": "Tutorial: Production mode",
     "excerpt": "Tutorial: Production mode",
@@ -12964,7 +13083,7 @@
     "language": "en"
   },
   {
-    "id": "search-4457",
+    "id": "search-4468",
     "content": "Dev vs prod",
     "body": "The difference is simple: renet dev up runs inside the repo. You need to be connected. rdc repo up runs from your laptop. No connection needed after that. Three actions take you from dev to prod: Stop, start, autostart",
     "excerpt": "The difference is simple: renet dev up runs inside the repo. You need to be connected. rdc repo up runs from your laptop. No connection needed after t...",
@@ -12975,7 +13094,7 @@
     "language": "en"
   },
   {
-    "id": "search-4458",
+    "id": "search-4469",
     "content": "Step 1: Stop the dev session",
     "body": "Connect to the repo and bring it down: rdc vscode connect -m my-server -r my-app time renet dev down",
     "excerpt": "Connect to the repo and bring it down: rdc vscode connect -m my-server -r my-app time renet dev down",
@@ -12986,7 +13105,7 @@
     "language": "en"
   },
   {
-    "id": "search-4459",
+    "id": "search-4470",
     "content": "Step 2: Start in production mode",
     "body": "From your laptop's terminal: time rdc repo up --name my-app -m my-server That's it. Your app is running, and you can close your laptop. The Rediaccfile handles everything. rdc repo up calls the same up function renet dev up did. Same Rediaccfile, different way to invoke it.",
     "excerpt": "From your laptop's terminal: time rdc repo up --name my-app -m my-server That's it. Your app is running, and you can close your laptop. The Rediaccfil...",
@@ -12997,7 +13116,7 @@
     "language": "en"
   },
   {
-    "id": "search-4460",
+    "id": "search-4471",
     "content": "Step 3: Survive server reboots",
     "body": "Make sure your app comes back automatically when the server restarts: time rdc repo autostart enable --name my-app -m my-server Verify which repos have autostart enabled: time rdc repo autostart list -m my-server",
     "excerpt": "Make sure your app comes back automatically when the server restarts: time rdc repo autostart enable --name my-app -m my-server Verify which repos hav...",
@@ -13008,7 +13127,7 @@
     "language": "en"
   },
   {
-    "id": "search-4461",
+    "id": "search-4472",
     "content": "Stopping in production",
     "body": "When you need to stop your app: time rdc repo down --name my-app -m my-server One command up, one command down. All from your laptop. --- Next: Backup & Restore.",
     "excerpt": "When you need to stop your app: time rdc repo down --name my-app -m my-server One command up, one command down. All from your laptop. --- Next: Backup...",
@@ -13019,7 +13138,7 @@
     "language": "en"
   },
   {
-    "id": "search-4462",
+    "id": "search-4473",
     "content": "SSH Key Configuration",
     "excerpt": "Configure your SSH key so rdc can connect to your servers without passwords.",
     "category": "Documentation",
@@ -13029,7 +13148,7 @@
     "language": "en"
   },
   {
-    "id": "search-4463",
+    "id": "search-4474",
     "content": "Configure your SSH key so rdc can connect to your servers without passwords.",
     "excerpt": "Configure your SSH key so rdc can connect to your servers without passwords.",
     "category": "Documentation",
@@ -13039,7 +13158,7 @@
     "language": "en"
   },
   {
-    "id": "search-4464",
+    "id": "search-4475",
     "content": "SSH Key Configuration",
     "body": "# SSH Key Configuration rdc connects to your servers over SSH, so each server needs to trust your SSH key. Three steps total. Two are one-time setup, and one repeats for every new server you add.",
     "excerpt": "# SSH Key Configuration rdc connects to your servers over SSH, so each server needs to trust your SSH key. Three steps total. Two are one-time setup,...",
@@ -13050,7 +13169,7 @@
     "language": "en"
   },
   {
-    "id": "search-4465",
+    "id": "search-4476",
     "content": "Watch the tutorial",
     "body": "Tutorial: SSH key configuration",
     "excerpt": "Tutorial: SSH key configuration",
@@ -13061,7 +13180,7 @@
     "language": "en"
   },
   {
-    "id": "search-4466",
+    "id": "search-4477",
     "content": "The three steps",
     "body": "Generate, copy, register Generate an SSH key on your laptop. Once, ever. Copy it to your server. Repeat for every new server. Register the key with rdc. Once, ever.",
     "excerpt": "Generate, copy, register Generate an SSH key on your laptop. Once, ever. Copy it to your server. Repeat for every new server. Register the key with rd...",
@@ -13072,7 +13191,7 @@
     "language": "en"
   },
   {
-    "id": "search-4467",
+    "id": "search-4478",
     "content": "Step 1: Generate a key",
     "body": "If you already have a key you want to use, skip ahead. Otherwise: ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 ed25519 is the modern default: small, fast, and well-supported.",
     "excerpt": "If you already have a key you want to use, skip ahead. Otherwise: ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 ed25519 is the modern default: small, fas...",
@@ -13083,7 +13202,7 @@
     "language": "en"
   },
   {
-    "id": "search-4468",
+    "id": "search-4479",
     "content": "Step 2: Copy it to your server",
     "body": "ssh-copy-id -i ~/.ssh/id_ed25519 user@your-server-ip Replace user and your-server-ip with the SSH user and IP of your server. You'll be prompted for your server password one last time. After this, password authentication is no longer required.",
     "excerpt": "ssh-copy-id -i ~/.ssh/id_ed25519 user@your-server-ip Replace user and your-server-ip with the SSH user and IP of your server. You'll be prompted for y...",
@@ -13094,7 +13213,7 @@
     "language": "en"
   },
   {
-    "id": "search-4469",
+    "id": "search-4480",
     "content": "Step 3: Register the key with `rdc`",
     "body": "time rdc config ssh set --key ~/.ssh/id_ed25519 That's it. From here on, every rdc command authenticates with this key. No more passwords, no more interactive prompts. --- Next: Adding Your First Server.",
     "excerpt": "time rdc config ssh set --key ~/.ssh/id_ed25519 That's it. From here on, every rdc command authenticates with this key. No more passwords, no more int...",
@@ -13105,7 +13224,7 @@
     "language": "en"
   },
   {
-    "id": "search-4470",
+    "id": "search-4481",
     "content": "Working with Your Repo",
     "excerpt": "Tunnel a port to your browser, run commands inside the sandbox, and sync files between your laptop and the repo.",
     "category": "Documentation",
@@ -13115,7 +13234,7 @@
     "language": "en"
   },
   {
-    "id": "search-4471",
+    "id": "search-4482",
     "content": "Tunnel a port to your browser, run commands inside the sandbox, and sync files between your laptop and the repo.",
     "excerpt": "Tunnel a port to your browser, run commands inside the sandbox, and sync files between your laptop and the repo.",
     "category": "Documentation",
@@ -13125,7 +13244,7 @@
     "language": "en"
   },
   {
-    "id": "search-4472",
+    "id": "search-4483",
     "content": "Working with Your Repo",
     "body": "# Working with Your Repo Your app is running, but so far you've only seen it through docker ps. Three commands cover the daily workflow: tunnel to see the app in a browser, term to run commands inside the sandbox, sync to move files between your laptop and the repo.",
     "excerpt": "# Working with Your Repo Your app is running, but so far you've only seen it through docker ps. Three commands cover the daily workflow: tunnel to see...",
@@ -13136,7 +13255,7 @@
     "language": "en"
   },
   {
-    "id": "search-4473",
+    "id": "search-4484",
     "content": "Watch the tutorial",
     "body": "Tutorial: Working with your repo",
     "excerpt": "Tutorial: Working with your repo",
@@ -13147,7 +13266,7 @@
     "language": "en"
   },
   {
-    "id": "search-4474",
+    "id": "search-4485",
     "content": "The daily three",
     "body": "Tunnel, term, sync Tunnel: open your app in a browser. Term: run a command inside the sandbox. Sync: move files in and out.",
     "excerpt": "Tunnel, term, sync Tunnel: open your app in a browser. Term: run a command inside the sandbox. Sync: move files in and out.",
@@ -13158,7 +13277,7 @@
     "language": "en"
   },
   {
-    "id": "search-4475",
+    "id": "search-4486",
     "content": "Tunnel: see your app in a browser",
     "body": "The app runs on the server, not your laptop. Forward a container's port over SSH: rdc repo tunnel -m my-server -r my-app -c app Open localhost in your browser. Your app is right there. Press Ctrl+C when you're done. For a different container, swap -c and pick the port: rdc repo tunnel -m my-server -r my-app -c db --port 5432",
     "excerpt": "The app runs on the server, not your laptop. Forward a container's port over SSH: rdc repo tunnel -m my-server -r my-app -c app Open localhost in your...",
@@ -13169,7 +13288,7 @@
     "language": "en"
   },
   {
-    "id": "search-4476",
+    "id": "search-4487",
     "content": "Term: run commands inside the repo",
     "body": "Skip VS Code when you just need a shell: rdc term connect -m my-server -r my-app You're now inside the repo's sandbox. Try it: time docker ps You see only my-app's containers, the same view you'd see in VS Code. For one-off commands, use -c and skip the interactive shell: time rdc term connect -m my-server -r my-app -c \"df -h .\"",
     "excerpt": "Skip VS Code when you just need a shell: rdc term connect -m my-server -r my-app You're now inside the repo's sandbox. Try it: time docker ps You see...",
@@ -13180,7 +13299,7 @@
     "language": "en"
   },
   {
-    "id": "search-4477",
+    "id": "search-4488",
     "content": "Sync: move files between laptop and repo",
     "body": "Push a folder from your laptop into the repo: time rdc repo sync upload -m my-server -r my-app --local ./src Pull files back: time rdc repo sync download -m my-server -r my-app --local ./backup Preview first if you're unsure. --dry-run shows what would change without actually copying: time rdc repo sync upload -m my-server -r my-app --local ./src --dry-run Tunnel, term, sync. Three commands cover the daily loop. --- Next: Forking a Repository.",
     "excerpt": "Push a folder from your laptop into the repo: time rdc repo sync upload -m my-server -r my-app --local ./src Pull files back: time rdc repo sync downl...",
@@ -13191,7 +13310,7 @@
     "language": "en"
   },
   {
-    "id": "search-4478",
+    "id": "search-4489",
     "content": "Web Application",
     "excerpt": "Understanding web application architecture and deployment with Rediacc",
     "category": "Documentation",
@@ -13201,7 +13320,7 @@
     "language": "en"
   },
   {
-    "id": "search-4479",
+    "id": "search-4490",
     "content": "Understanding web application architecture and deployment with Rediacc",
     "excerpt": "Understanding web application architecture and deployment with Rediacc",
     "category": "Documentation",
@@ -13211,7 +13330,7 @@
     "language": "en"
   },
   {
-    "id": "search-4480",
+    "id": "search-4491",
     "content": "Web Application",
     "body": "# Rediacc Platform User Guide",
     "excerpt": "# Rediacc Platform User Guide",
@@ -13222,7 +13341,7 @@
     "language": "en"
   },
   {
-    "id": "search-4481",
+    "id": "search-4492",
     "content": "Overview",
     "body": "Rediacc is a cloud platform offering AI-powered backup services. This guide explains the basic usage of the web interface at https://www.rediacc.com/.",
     "excerpt": "Rediacc is a cloud platform offering AI-powered backup services. This guide explains the basic usage of the web interface at https://www.rediacc.com/.",
@@ -13233,7 +13352,7 @@
     "language": "en"
   },
   {
-    "id": "search-4482",
+    "id": "search-4493",
     "content": "Purpose of This Guide",
     "body": "Help new users quickly adapt to the platform Explain basic functions (resource management, backup) step by step ---",
     "excerpt": "Help new users quickly adapt to the platform Explain basic functions (resource management, backup) step by step ---",
@@ -13244,7 +13363,7 @@
     "language": "en"
   },
   {
-    "id": "search-4483",
+    "id": "search-4494",
     "content": "1. Account Creation and Login",
     "body": "",
     "excerpt": "1. Account Creation and Login",
@@ -13255,7 +13374,7 @@
     "language": "en"
   },
   {
-    "id": "search-4484",
+    "id": "search-4495",
     "content": "1.1 Registration",
     "body": "Registration process walkthrough (Video: Complete registration flow from start to finish) To start using the Rediacc platform, you first need to create an account. Rediacc login page - always-on infrastructure (Figure 1: Main login page, showing the Rediacc platform's main features) Navigate to https://www.rediacc.com/ in your browser. Click the {{t:auth.login.signIn}} button in the top right corner of the page. Choose Get Started for free access or Request Demo for a demonstration. Tip: You can create a free account without requiring any credit card. Includes unlimited teams. Rediacc Sign In form - email and password fields (Figure 2: Sign In screen for existing users) If you don't have an account, click the {{t:auth.login.register}} link to create a new account. Fill in the following information in the form that opens: {{t:auth.registration.organizationName}}: Enter your organization name {{t:auth.login.email}}: Enter a valid email address {{t:auth.login.password}}: Create a password with at least 8 characters {{t:auth.registration.passwordConfirm}}: Re-enter the same password Create Account modal - register, verify, and complete steps (Figure 3: New user registration step-by-step form - Register > Verify > Complete) Check the box to accept the terms of service and privacy policy. Click the {{t:auth.registration.createAccount}} button. Tip: Password must be at least 8 characters and should be strong. All fields are required. Enter the 6-digit verification code sent to your email in the boxes sequentially. Click the {{t:auth.registration.verifyAccount}} button. Verification code entry - 6-digit activation code (Figure 4: Window for entering the activation code sent to the administrator) Tip: The verification code is valid for a limited time. If you don't receive the code, check your spam folder. ---",
     "excerpt": "Registration process walkthrough (Video: Complete registration flow from start to finish) To start using the Rediacc platform, you first need to creat...",
@@ -13266,7 +13385,7 @@
     "language": "en"
   },
   {
-    "id": "search-4485",
+    "id": "search-4496",
     "content": "1.2 Signing In",
     "body": "Sign in process walkthrough (Video: Complete sign in flow) After your account is created, you can log in to the platform. Fill in the {{t:auth.login.email}} field (required if a red warning appears). Fill in the {{t:auth.login.password}} field. Click the {{t:auth.login.signIn}} button. Sign In form - required fields with error warning (Figure 5: Login form - error messages are marked with a red border) Tip: If the error message says \"This field is required\", fill in the empty fields. Contact the administrator for forgotten passwords. After successful login, you will be redirected to the {{t:common.navigation.dashboard}} screen. Rediacc dashboard - machine list and sidebar menu (Figure 6: Main dashboard after successful login - Organization, Machines, and Settings menus in the left sidebar) Tip: The dashboard auto-refreshes. You can refresh the page with F5 for fresh information. ---",
     "excerpt": "Sign in process walkthrough (Video: Complete sign in flow) After your account is created, you can log in to the platform. Fill in the {{t:auth.login.e...",
@@ -13277,7 +13396,7 @@
     "language": "en"
   },
   {
-    "id": "search-4486",
+    "id": "search-4497",
     "content": "2. Interface Overview",
     "body": "After logging in, the screen you see consists of these main sections: {{t:common.navigation.organization}}: Users, teams, and access control {{t:common.navigation.machines}}: Server and repository management {{t:common.navigation.settings}}: Profile and system settings {{t:common.navigation.storage}}: Storage area management {{t:common.navigation.credentials}}: Access credentials {{t:common.navigation.queue}}: Job queue management {{t:common.navigation.audit}}: System audit logs ---",
     "excerpt": "After logging in, the screen you see consists of these main sections: {{t:common.navigation.organization}}: Users, teams, and access control {{t:commo...",
@@ -13288,7 +13407,7 @@
     "language": "en"
   },
   {
-    "id": "search-4487",
+    "id": "search-4498",
     "content": "2.1 Organization - Users",
     "body": "User management allows you to control access to the platform for people in your organization.",
     "excerpt": "User management allows you to control access to the platform for people in your organization.",
@@ -13299,7 +13418,7 @@
     "language": "en"
   },
   {
-    "id": "search-4488",
+    "id": "search-4499",
     "content": "2.1.1 Adding Users",
     "body": "Adding users walkthrough (Video: Creating a new user) Click {{t:common.navigation.organization}} > {{t:common.navigation.organizationUsers}} option in the left sidebar. View the list of all users in table format. Each user row shows email, status ({{t:organization.users.status.active}}/{{t:organization.users.status.inactive}}), permission group, and last activity time. Users management page - active users list (Figure 7: Users section under Organization - all users' information is displayed) Click the \"+\" icon in the top right corner. Click the {{t:organization.users.modals.createTitle}} button and fill in the form that opens: {{t:organization.users.form.emailLabel}}: Enter the user's email address {{t:organization.users.form.passwordLabel}}: Enter a temporary password User creation modal - email and password fields (Figure 8: Modal window for adding new user - simple and quick user creation form) Click the {{t:common.actions.create}} button. Tip: Login credentials should be securely communicated to the created user. Changing the password on first login is recommended. User list - full table view with three users (Figure 9: All active and inactive users on the users management page) Tip: The page automatically shows 20 records. Use pagination to see more records.",
     "excerpt": "Adding users walkthrough (Video: Creating a new user) Click {{t:common.navigation.organization}} > {{t:common.navigation.organizationUsers}} option in...",
@@ -13310,7 +13429,7 @@
     "language": "en"
   },
   {
-    "id": "search-4489",
+    "id": "search-4500",
     "content": "2.1.2 Assigning User Permissions",
     "body": "User permissions walkthrough (Video: Assigning permission groups to users) You can manage access rights by assigning specific permission groups to users. Select a user from the {{t:common.navigation.organization}} > {{t:common.navigation.organizationUsers}} tab. Click the shield icon in the actions column ({{t:organization.access.tabs.permissions}}). Permission management - shield, gear, and delete icons (Figure 10: Icon display of user actions - each icon represents a different action) Select a {{t:organization.users.modals.permissionGroupLabel}} from the form that opens. The number of users and permissions in the group is shown next to the user. Click the {{t:organization.users.modals.assignTitle}} button to save the changes. Permission assignment modal - Administrators group (Figure 11: Modal for assigning permission group to selected user - dropdown with available groups) Tip: Some permission groups are fixed by the system and cannot be changed.",
     "excerpt": "User permissions walkthrough (Video: Assigning permission groups to users) You can manage access rights by assigning specific permission groups to use...",
@@ -13321,7 +13440,7 @@
     "language": "en"
   },
   {
-    "id": "search-4490",
+    "id": "search-4501",
     "content": "2.1.3 User Activation",
     "body": "User activation walkthrough (Video: Activating an inactive user) You can reactivate disabled users. Find the user with inactive status in the Users list. Click the red icon in the actions column. User activation - \"Activate\" tooltip view (Figure 12: Activating an inactive user) Click the {{t:common.general.yes}} button in the confirmation window. Activation confirmation modal (Figure 13: Modal window for confirming user activation) Tip: This action is reversible. You can deactivate the user in the same way.",
     "excerpt": "User activation walkthrough (Video: Activating an inactive user) You can reactivate disabled users. Find the user with inactive status in the Users li...",
@@ -13332,7 +13451,7 @@
     "language": "en"
   },
   {
-    "id": "search-4491",
+    "id": "search-4502",
     "content": "2.1.4 User Trace",
     "body": "User trace walkthrough (Video: Viewing user activity trace) You can use the trace feature to monitor user activities. Select a user and click the gear icon in the actions column. Click the {{t:common.actions.trace}} option to open the user's activity history. User trace - \"Trace\" tooltip with action button (Figure 14: User activity trace option) The user's past activities are listed on the opened screen. Statistics are displayed at the top: Total Records, Viewed Records, Last Activity. Click the {{t:common.actions.export}} button and select format: {{t:common.exportCSV}} or {{t:common.exportJSON}}. Audit History - Export options (Figure 15: User's complete activity history - statistics, details, and Export options) Tip: Regularly export audit data to maintain security and compliance records. CSV format can be opened in Excel. ---",
     "excerpt": "User trace walkthrough (Video: Viewing user activity trace) You can use the trace feature to monitor user activities. Select a user and click the gear...",
@@ -13343,7 +13462,7 @@
     "language": "en"
   },
   {
-    "id": "search-4492",
+    "id": "search-4503",
     "content": "2.2 Organization - Teams",
     "body": "Teams allow you to group users and provide bulk access to resources.",
     "excerpt": "Teams allow you to group users and provide bulk access to resources.",
@@ -13354,7 +13473,7 @@
     "language": "en"
   },
   {
-    "id": "search-4493",
+    "id": "search-4504",
     "content": "2.2.1 Creating Teams",
     "body": "Creating teams walkthrough (Video: Creating a new team) Go to {{t:common.navigation.organization}} > {{t:common.navigation.organizationTeams}} tab. Click the \"+\" button. Enter your team name in the {{t:common.vaultEditor.fields.TEAM.name.label}} field. Fill in the {{t:common.vaultEditor.fields.TEAM.SSH_PRIVATE_KEY.label}} and {{t:common.vaultEditor.fields.TEAM.SSH_PUBLIC_KEY.label}} fields in the {{t:common.vaultEditor.vaultConfiguration}} section. New team creation form - team name and SSH keys (Figure 16: Creating a new team within \"Private Team\") Click the {{t:common.actions.create}} button to save the team. Tip: SSH keys are required for Bridge SSH authentication. If you receive a missing key warning, provide both keys.",
     "excerpt": "Creating teams walkthrough (Video: Creating a new team) Go to {{t:common.navigation.organization}} > {{t:common.navigation.organizationTeams}} tab. Cl...",
@@ -13365,7 +13484,7 @@
     "language": "en"
   },
   {
-    "id": "search-4494",
+    "id": "search-4505",
     "content": "2.2.2 Team Editing",
     "body": "Team editing walkthrough (Video: Editing team information) Click the pencil icon next to the team you want to edit in the teams list. Change the team name in the {{t:common.vaultEditor.fields.TEAM.name.label}} field if needed. Update SSH keys in the {{t:common.vaultEditor.vaultConfiguration}} section. Click the {{t:common.save}} button to apply changes. Team editing form - blue info message (Figure 17: Editing an existing team's information) Tip: Team configuration is used for organizational structure. Changes take effect for all team members.",
     "excerpt": "Team editing walkthrough (Video: Editing team information) Click the pencil icon next to the team you want to edit in the teams list. Change the team...",
@@ -13376,7 +13495,7 @@
     "language": "en"
   },
   {
-    "id": "search-4495",
+    "id": "search-4506",
     "content": "2.2.3 Team Members Management",
     "body": "Team members management walkthrough (Video: Managing team members) Select a team and click the user icon. View members already assigned to the team in the {{t:organization.teams.manageMembers.currentTab}} tab. Switch to the {{t:organization.teams.manageMembers.addTab}} tab. Enter an email address or select a user from the dropdown. Click the \"+\" button to add the member to the team. Team members management form - \"Current Members\" and \"Add Member\" tabs (Figure 18: Team members management panel) Tip: You can assign the same member to multiple teams.",
     "excerpt": "Team members management walkthrough (Video: Managing team members) Select a team and click the user icon. View members already assigned to the team in...",
@@ -13387,7 +13506,7 @@
     "language": "en"
   },
   {
-    "id": "search-4496",
+    "id": "search-4507",
     "content": "2.2.4 Team Trace",
     "body": "Team trace walkthrough (Video: Viewing team audit history) Select the team you want to trace. Click the clock/history icon. Review Total Records, Viewed Records, and Last Activity counts in the {{t:resources.audit.title}} modal. Click the {{t:common.actions.export}} button to export in {{t:common.exportCSV}} or {{t:common.exportJSON}} format. Audit history modal - DataBassTeam team (Figure 19: Viewing team audit history) Tip: Audit history is important for compliance and security control.",
     "excerpt": "Team trace walkthrough (Video: Viewing team audit history) Select the team you want to trace. Click the clock/history icon. Review Total Records, View...",
@@ -13398,7 +13517,7 @@
     "language": "en"
   },
   {
-    "id": "search-4497",
+    "id": "search-4508",
     "content": "2.2.5 Team Deletion",
     "body": "Team deletion walkthrough (Video: Deleting a team) Click the trash can (red) icon next to the team you want to delete. Verify the team name is correct in the confirmation dialog. Click the {{t:common.general.yes}} button. Team deletion confirmation dialog (Figure 20: Team deletion confirmation) Warning: Team deletion is irreversible. Check if there is important data in the team before deleting. ---",
     "excerpt": "Team deletion walkthrough (Video: Deleting a team) Click the trash can (red) icon next to the team you want to delete. Verify the team name is correct...",
@@ -13409,7 +13528,7 @@
     "language": "en"
   },
   {
-    "id": "search-4498",
+    "id": "search-4509",
     "content": "2.3 Organization - Access Control",
     "body": "Access control allows you to centrally manage user permissions by creating permission groups.",
     "excerpt": "Access control allows you to centrally manage user permissions by creating permission groups.",
@@ -13420,7 +13539,7 @@
     "language": "en"
   },
   {
-    "id": "search-4499",
+    "id": "search-4510",
     "content": "2.3.1 Creating Permission Groups",
     "body": "Permission group creation walkthrough (Video: Creating a permission group) Go to {{t:common.navigation.organization}} > {{t:common.navigation.organizationAccess}} tab. Click the \"+\" button. Enter a meaningful name in the {{t:organization.access.modals.groupPlaceholder}} field. Click the {{t:common.actions.confirm}} button to create the group. Permission group creation form (Figure 21: Creating a new Permission Group) Tip: Permission groups are used to organize users with similar permissions. Keep group names descriptive (e.g., \"Admin\", \"Read Only\", \"Repository Manager\").",
     "excerpt": "Permission group creation walkthrough (Video: Creating a permission group) Go to {{t:common.navigation.organization}} > {{t:common.navigation.organiza...",
@@ -13431,7 +13550,7 @@
     "language": "en"
   },
   {
-    "id": "search-4500",
+    "id": "search-4511",
     "content": "2.3.2 Permission Management",
     "body": "Permission management walkthrough (Video: Managing permissions for a group) Select a Permission Group and click the {{t:organization.access.modals.managePermissionsTitle}} option. View the group's access rights in the {{t:organization.access.modals.currentPermissionsTab}} tab. You can revoke a permission by clicking the red {{t:common.delete}} button next to each action. Click the {{t:organization.access.modals.addPermissionsTab}} tab to add new permissions to the group. Permission management panel - assigned permissions list (Figure 22: Managing Permissions for Permission Group) Tip: Grant permissions based on the principle of least privilege. Regularly review and remove unnecessary permissions. ---",
     "excerpt": "Permission management walkthrough (Video: Managing permissions for a group) Select a Permission Group and click the {{t:organization.access.modals.man...",
@@ -13442,7 +13561,7 @@
     "language": "en"
   },
   {
-    "id": "search-4501",
+    "id": "search-4512",
     "content": "2.4 Machines",
     "body": "The Machines section allows you to manage your servers and repository resources.",
     "excerpt": "The Machines section allows you to manage your servers and repository resources.",
@@ -13453,7 +13572,7 @@
     "language": "en"
   },
   {
-    "id": "search-4502",
+    "id": "search-4513",
     "content": "2.4.1 Adding Machines",
     "body": "Adding machines walkthrough (Video: Adding a new machine) Go to the {{t:common.navigation.machines}} tab from the left menu. Click the {{t:machines.createMachine}} button in the top right corner. Machines page - \"Add Machine\" button (Figure 23: Machines management home page) Fill in the form that opens: {{t:machines.machineName}}: Enter a unique name (e.g., \"server-01\") {{t:common.vaultEditor.fields.MACHINE.ip.label}}: Enter the machine IP address (e.g., 192.168.111.11) {{t:common.vaultEditor.fields.MACHINE.datastore.label}}: Specify the storage directory (e.g., /mnt/rediacc) {{t:common.vaultEditor.fields.MACHINE.user.label}}: Enter the SSH username {{t:common.vaultEditor.fields.MACHINE.port.label}}: Enter the port number (default: 22) {{t:common.vaultEditor.fields.MACHINE.ssh_password.label}}: Enter the password (optional) Machine addition form - all fields (Figure 24: New machine addition form - machine name, network settings, SSH credentials) Click the {{t:common.vaultEditor.testConnection.button}} button to verify the connection. After the test is successful, click the {{t:common.actions.create}} button. Tip: If \"Automatically start setup after machine creation\" option is checked, the machine will automatically perform additional setup steps. Machine creation completed - task tracking window (Figure 25: Task tracking window after machine is successfully created) Watch the stages: {{t:queue.trace.assigned}} → Processing → {{t:queue.statusCompleted}} Click the {{t:common.actions.close}} button to close the operation. Tip: Click the \"{{t:common.actions.refresh}}\" button to manually check the latest status.",
     "excerpt": "Adding machines walkthrough (Video: Adding a new machine) Go to the {{t:common.navigation.machines}} tab from the left menu. Click the {{t:machines.cr...",
@@ -13464,7 +13583,7 @@
     "language": "en"
   },
   {
-    "id": "search-4503",
+    "id": "search-4514",
     "content": "2.4.2 Connectivity Test",
     "body": "Connectivity test walkthrough (Video: Running a connectivity test) You can check the connection status of existing machines. Click the {{t:machines.connectivityTest}} button. Connectivity Test button (Figure 26: Connectivity Test button in machine actions toolbar) See the list of machines to be tested. Click the {{t:machines.runTest}} button. Successful results are shown in green, failures in red. Connectivity test form - machine list (Figure 27: Connectivity test form - ping function for selected machines) Tip: If the test fails, check the machine IP address and SSH settings.",
     "excerpt": "Connectivity test walkthrough (Video: Running a connectivity test) You can check the connection status of existing machines. Click the {{t:machines.co...",
@@ -13475,7 +13594,7 @@
     "language": "en"
   },
   {
-    "id": "search-4504",
+    "id": "search-4515",
     "content": "2.4.3 Refreshing Machine List",
     "body": "Machine list refresh walkthrough (Video: Refreshing the machine list) Click the {{t:common.actions.refresh}} button to update the machine list. Refresh button (Figure 28: Refresh button in machine actions toolbar)",
     "excerpt": "Machine list refresh walkthrough (Video: Refreshing the machine list) Click the {{t:common.actions.refresh}} button to update the machine list. Refres...",
@@ -13486,7 +13605,7 @@
     "language": "en"
   },
   {
-    "id": "search-4505",
+    "id": "search-4516",
     "content": "2.4.4 Machine Details",
     "body": "Machine details walkthrough (Video: Viewing machine details) Select the machine whose details you want to see. Click the eye icon button ({{t:common.viewDetails}}). View Details button (Figure 29: Eye icon in machine actions column) The machine details panel opens on the right side: Hostname: Machine name Uptime: Running time {{t:queue.trace.operatingSystem}}: OS and version {{t:queue.trace.kernelVersion}}: Kernel version CPU: Processor information System Time: System clock Machine detail panel - system information (Figure 30: Machine detail panel - hostname, uptime, OS, kernel, CPU information) Tip: Regularly review this information to check OS compatibility and resource availability.",
     "excerpt": "Machine details walkthrough (Video: Viewing machine details) Select the machine whose details you want to see. Click the eye icon button ({{t:common.v...",
@@ -13497,7 +13616,7 @@
     "language": "en"
   },
   {
-    "id": "search-4506",
+    "id": "search-4517",
     "content": "2.4.5 Machine Editing",
     "body": "Machine editing walkthrough (Video: Editing machine settings) Select the machine you want to edit. Click the pencil icon button ({{t:common.actions.edit}}). Edit button (Figure 31: Pencil icon in machine actions column) Make the necessary changes. Click the {{t:common.vaultEditor.testConnection.button}} button. When the connection is successful, click the {{t:common.save}} button. Machine editing form (Figure 32: Machine editing form - machine name, region, and vault configuration) Tip: Always run \"Test Connection\" after changing critical settings.",
     "excerpt": "Machine editing walkthrough (Video: Editing machine settings) Select the machine you want to edit. Click the pencil icon button ({{t:common.actions.ed...",
@@ -13508,7 +13627,7 @@
     "language": "en"
   },
   {
-    "id": "search-4507",
+    "id": "search-4518",
     "content": "2.4.6 Machine Trace",
     "body": "Machine trace walkthrough (Video: Viewing machine audit history) Select the machine and click the clock icon button ({{t:common.actions.trace}}). Trace button (Figure 33: Clock icon in machine actions column) Review operations in the audit history window: {{t:resources.audit.action}}: Type of operation performed Details: Changed fields {{t:resources.audit.performedBy}}: User who performed the action Timestamp: Date and time Machine audit history window (Figure 34: Audit history - list of all changes) Tip: Click the Timestamp column to view changes in chronological order.",
     "excerpt": "Machine trace walkthrough (Video: Viewing machine audit history) Select the machine and click the clock icon button ({{t:common.actions.trace}}). Trac...",
@@ -13519,7 +13638,7 @@
     "language": "en"
   },
   {
-    "id": "search-4508",
+    "id": "search-4519",
     "content": "2.4.7 Machine Deletion",
     "body": "Machine deletion walkthrough (Video: Deleting a machine) Select the machine you want to delete. Click the trash can icon button ({{t:common.delete}}). Delete button (Figure 35: Trash can icon in machine actions column) Click the {{t:common.delete}} button in the confirmation window. Machine deletion confirmation window (Figure 36: \"Are you sure you want to delete this machine?\" confirmation window) Warning: When a machine is deleted, all repository definitions on it are also removed. This action is irreversible.",
     "excerpt": "Machine deletion walkthrough (Video: Deleting a machine) Select the machine you want to delete. Click the trash can icon button ({{t:common.delete}})....",
@@ -13530,7 +13649,7 @@
     "language": "en"
   },
   {
-    "id": "search-4509",
+    "id": "search-4520",
     "content": "2.4.8 Remote Operations",
     "body": "Remote operations walkthrough (Video: Running remote operations on a machine) You can perform various remote operations on machines. Select the machine and click the {{t:common.actions.remote}} button. See options in the dropdown menu: {{t:machines.runAction}}: Execute function on machine {{t:common.vaultEditor.testConnection.button}}: Ping the machine Remote menu - Run on Server and Test Connection (Figure 37: Remote button - function execution menu on selected machine) Tip: Use \"{{t:common.vaultEditor.testConnection.button}}\" option to verify the machine is accessible before running functions. #### Setup Select the {{t:machines.runAction}} option. Find the Setup function in the {{t:functions.availableFunctions}} list. Click on the function name to select it. Machine functions list - setup function (Figure 38: Setup function - prepares the machine with required tools and configurations) Tip: It's recommended to run the \"setup\" function first when setting up a new machine. #### Connection Check (Hello) Select {{t:machines.runAction}} > Hello function. Click the {{t:common.actions.addToQueue}} button. Hello function selection (Figure 39: Hello function - simple test function, returns hostname) Watch the results in the task tracking window. See the machine's output in the {{t:queue.trace.responseConsole}} section. Hello function completed (Figure 40: Hello function completed successfully - hostname response) Tip: The hello function is ideal for verifying machine connectivity. #### Advanced Operations Follow the {{t:common.actions.remote}} > {{t:machines.runAction}} > {{t:common.actions.advanced}} path. See available functions: setup, hello, ping, ssh_test, uninstall Select the required function and click the {{t:common.actions.addToQueue}} button. Advanced functions list (Figure 41: Advanced option - advanced functions list) Tip: Make sure machine setup is complete before using Advanced functions. #### Quick Connectivity Test Remote menu - Test Connection (Figure 42: Test Connection option from Remote menu) Tip: If the machine has SSH or network issues, you can quickly identify problems with this test. ---",
     "excerpt": "Remote operations walkthrough (Video: Running remote operations on a machine) You can perform various remote operations on machines. Select the machin...",
@@ -13541,7 +13660,7 @@
     "language": "en"
   },
   {
-    "id": "search-4510",
+    "id": "search-4521",
     "content": "2.5 Repository Creation and Operations",
     "body": "Repositories are the fundamental units where your backup data is stored.",
     "excerpt": "Repositories are the fundamental units where your backup data is stored.",
@@ -13552,7 +13671,7 @@
     "language": "en"
   },
   {
-    "id": "search-4511",
+    "id": "search-4522",
     "content": "2.5.1 Creating Repositories",
     "body": "Repository creation walkthrough (Video: Creating a new repository) Select a machine from the {{t:common.navigation.machines}} tab. Click the {{t:machines.createRepository}} button in the top right corner. Create Repository button (Figure 43: Machine repository management screen - Create Repository button) Fill in the form: {{t:common.vaultEditor.fields.REPOSITORY.name.label}}: Enter the repository name (e.g., postgresql) {{t:resources.repositories.size}}: Enter the repository size (e.g., 2GB) {{t:resources.repositories.repositoryGuid}}: View the automatically generated credential {{t:resources.templates.selectTemplate}}: Choose a template (e.g., databases_postgresql) Repository creation form (Figure 44: Repository creation form - repository name, size, and template selection) Click the {{t:common.actions.create}} button. Tip: Credential ID is automatically generated, manual modification is not recommended. Watch the stages in the task tracking window: {{t:queue.trace.assigned}} → Processing → {{t:queue.statusCompleted}} Repository creation completed (Figure 45: Repository creation queued - task monitoring) Click the {{t:common.actions.close}} button. Tip: The task typically completes within 1-2 minutes. Repository list (Figure 46: Created repository appears in the list)",
     "excerpt": "Repository creation walkthrough (Video: Creating a new repository) Select a machine from the {{t:common.navigation.machines}} tab. Click the {{t:machi...",
@@ -13563,7 +13682,7 @@
     "language": "en"
   },
   {
-    "id": "search-4512",
+    "id": "search-4523",
     "content": "2.5.2 Repository Fork",
     "body": "Repository fork walkthrough (Video: Forking a repository) You can create a new repository by copying an existing one. Select the repository you want to copy. Click the fx (function) menu. Click the fork option. fx menu - fork option (Figure 47: fx menu on the right side - repository operations) Enter a new tag in the {{t:functions.functions.fork.params.tag.label}} field (e.g., 2025-12-06-20-37-08). Click the {{t:common.actions.addToQueue}} button. Fork configuration form (Figure 48: Specify the new tag for the repository in the fork operation) Wait for the {{t:queue.statusCompleted}} message and click the {{t:common.actions.close}} button. Fork completed (Figure 49: Fork operation completed successfully) Tip: Creating tags in the default date-time format is good practice. The fork operation does not affect the original repository.",
     "excerpt": "Repository fork walkthrough (Video: Forking a repository) You can create a new repository by copying an existing one. Select the repository you want t...",
@@ -13574,7 +13693,7 @@
     "language": "en"
   },
   {
-    "id": "search-4513",
+    "id": "search-4524",
     "content": "2.5.3 Repository Up",
     "body": "Repository up walkthrough (Video: Starting a repository) To activate the repository: Select the repository and follow the fx > up path. Up operation (Figure 50: \"up\" option from fx menu - starting the repository) Wait for the {{t:queue.statusCompleted}} message. Up completed (Figure 51: Repository startup completed) Tip: The \"Up\" operation starts the repository's defined Docker services.",
     "excerpt": "Repository up walkthrough (Video: Starting a repository) To activate the repository: Select the repository and follow the fx > up path. Up operation (...",
@@ -13585,7 +13704,7 @@
     "language": "en"
   },
   {
-    "id": "search-4514",
+    "id": "search-4525",
     "content": "2.5.4 Repository Down",
     "body": "Repository down walkthrough (Video: Stopping a repository) To stop an active repository: Select the repository and follow the fx > down path. Down operation (Figure 52: \"down\" option from fx menu - shutting down the repository) Wait for the {{t:queue.statusCompleted}} message. Down completed (Figure 53: Repository shutdown completed) Tip: The \"Down\" operation safely shuts down the repository. No data is lost, only services are stopped.",
     "excerpt": "Repository down walkthrough (Video: Stopping a repository) To stop an active repository: Select the repository and follow the fx > down path. Down ope...",
@@ -13596,7 +13715,7 @@
     "language": "en"
   },
   {
-    "id": "search-4515",
+    "id": "search-4526",
     "content": "2.5.5 Deploy",
     "body": "Repository deploy walkthrough (Video: Deploying a repository) To deploy the repository to a different location: Select the repository and follow the fx > deploy path. Deploy operation (Figure 54: \"deploy\" option from fx menu) Enter the version to deploy in the {{t:functions.functions.fork.params.tag.label}} field. Select target machines in the {{t:functions.functions.backup_deploy.params.machines.label}} field. Check the {{t:functions.checkboxOptions.overrideExistingFile}} option (if applicable). Click the {{t:common.actions.addToQueue}} button. Deploy form (Figure 55: Configuring deploy operation - tag, target machines, and options) Wait for the {{t:queue.statusCompleted}} message. Deploy completed (Figure 56: Repository deployment completed) Tip: After the deploy operation completes, you can run the \"up\" command to start the repository on target machines.",
     "excerpt": "Repository deploy walkthrough (Video: Deploying a repository) To deploy the repository to a different location: Select the repository and follow the f...",
@@ -13607,7 +13726,7 @@
     "language": "en"
   },
   {
-    "id": "search-4516",
+    "id": "search-4527",
     "content": "2.5.6 Backup",
     "body": "Repository backup walkthrough (Video: Backing up a repository) To backup the repository: Select the repository and follow the fx > backup path. Backup operation (Figure 57: \"backup\" option from fx menu) Fill in the form: {{t:functions.functions.fork.params.tag.label}}: Enter a descriptive name (e.g., backup01012025) {{t:functions.functions.backup_create.params.storages.label}}: Select the backup location {{t:functions.checkboxOptions.overrideExistingFile}}: Enable or disable the option {{t:functions.functions.backup_deploy.params.checkpoint.label}}: Review the setting Backup form (Figure 58: Backup configuration form - target, filename, and options) Click the {{t:common.actions.addToQueue}} button. Tip: Use a descriptive name for the backup tag. Consider enabling checkpoint for large repositories. Wait for the {{t:queue.statusCompleted}} message. Backup completed (Figure 59: Backup task completed successfully) Tip: Wait patiently before reaching completed status; large backups may take several minutes.",
     "excerpt": "Repository backup walkthrough (Video: Backing up a repository) To backup the repository: Select the repository and follow the fx > backup path. Backup...",
@@ -13618,7 +13737,7 @@
     "language": "en"
   },
   {
-    "id": "search-4517",
+    "id": "search-4528",
     "content": "2.5.7 Template Application",
     "body": "Template application walkthrough (Video: Applying a template to a repository) To apply a new template to the repository: Select the repository and follow the fx > {{t:resources.templates.selectTemplate}} path. Templates operation (Figure 60: \"Templates\" option from fx menu) Filter templates by typing in the search box. Click on the desired template to select it (selected template is highlighted with a bold border). Click the {{t:common.actions.addToQueue}} button. Template selection form (Figure 61: Searching and selecting available templates) Tip: Use the search box to quickly find templates. Use \"{{t:common.viewDetails}}\" to learn about template features. Wait for the {{t:queue.statusCompleted}} message. Template applied (Figure 62: Template application completed successfully)",
     "excerpt": "Template application walkthrough (Video: Applying a template to a repository) To apply a new template to the repository: Select the repository and fol...",
@@ -13629,7 +13748,7 @@
     "language": "en"
   },
   {
-    "id": "search-4518",
+    "id": "search-4529",
     "content": "2.5.8 Unmount",
     "body": "Repository unmount walkthrough (Video: Unmounting a repository) To disconnect the repository: Select the repository and follow the fx > {{t:common.actions.advanced}} > {{t:resources.repositories.unmount}} path. Unmount operation (Figure 63: \"Unmount\" option in the advanced menu) Wait for the {{t:queue.statusCompleted}} message. Unmount completed (Figure 64: Unmount operation completed) Tip: Make sure there are no active operations on the repository before unmounting. After unmounting, the repository becomes inaccessible.",
     "excerpt": "Repository unmount walkthrough (Video: Unmounting a repository) To disconnect the repository: Select the repository and follow the fx > {{t:common.act...",
@@ -13640,7 +13759,7 @@
     "language": "en"
   },
   {
-    "id": "search-4519",
+    "id": "search-4530",
     "content": "2.5.9 Expand",
     "body": "Repository expand walkthrough (Video: Expanding repository size) To increase the repository size: Select the repository and follow the fx > {{t:common.actions.advanced}} > {{t:functions.functions.repository_expand.name}} path. Expand operation (Figure 65: \"Expand\" option in the advanced menu) Enter the desired size in the {{t:functions.functions.repository_expand.params.size.label}} field. Select the unit from the dropdown on the right (GB, TB). Click the {{t:common.actions.addToQueue}} button. Expand form (Figure 66: New size parameter to increase repository size) Tip: Do not enter a value smaller than the current size. Service is not interrupted during repository expansion. Wait for the {{t:queue.statusCompleted}} message. Expand completed (Figure 67: Repository expansion completed)",
     "excerpt": "Repository expand walkthrough (Video: Expanding repository size) To increase the repository size: Select the repository and follow the fx > {{t:common...",
@@ -13651,7 +13770,7 @@
     "language": "en"
   },
   {
-    "id": "search-4520",
+    "id": "search-4531",
     "content": "2.5.10 Rename",
     "body": "Repository rename walkthrough (Video: Renaming a repository) To change the repository name: Select the repository and follow the fx > {{t:common.actions.rename}} path. Rename operation (Figure 68: \"Rename\" option from fx menu) Enter the new repository name. Click the {{t:common.save}} button. Rename form (Figure 69: Dialog for entering new repository name) Tip: Repository names should be meaningful to reflect the repository type and purpose. Avoid special characters.",
     "excerpt": "Repository rename walkthrough (Video: Renaming a repository) To change the repository name: Select the repository and follow the fx > {{t:common.actio...",
@@ -13662,7 +13781,7 @@
     "language": "en"
   },
   {
-    "id": "search-4521",
+    "id": "search-4532",
     "content": "2.5.11 Repository Deletion",
     "body": "Repository deletion walkthrough (Video: Deleting a repository) To permanently delete the repository: Select the repository and follow the fx > {{t:resources.repositories.deleteRepository}} path. Delete Repository operation (Figure 70: \"Delete Repository\" option from fx menu - red) Click the {{t:common.delete}} button in the confirmation window. Warning: Repository deletion is irreversible. Make sure repository data is backed up before deleting.",
     "excerpt": "Repository deletion walkthrough (Video: Deleting a repository) To permanently delete the repository: Select the repository and follow the fx > {{t:res...",
@@ -13673,7 +13792,7 @@
     "language": "en"
   },
   {
-    "id": "search-4522",
+    "id": "search-4533",
     "content": "2.5.12 Repository Details",
     "body": "Repository details walkthrough (Video: Viewing repository details) To get detailed information about the repository: Select the repository. Click the eye icon ({{t:common.viewDetails}}). View Details button (Figure 71: Eye icon to open repository details) Review information in the detail panel: Repository name and type Team: The team it belongs to Machine: The machine it's on Vault Version: Encryption version Repository GUID: Unique identifier Status: Mounted/Unmounted status Image Size: Total size Last Modified: Last modification date Repository detail panel (Figure 72: Comprehensive information about the selected repository) Tip: All information shown in this panel is for reference. Use fx menu options for repository operations. ---",
     "excerpt": "Repository details walkthrough (Video: Viewing repository details) To get detailed information about the repository: Select the repository. Click the...",
@@ -13684,7 +13803,7 @@
     "language": "en"
   },
   {
-    "id": "search-4523",
+    "id": "search-4534",
     "content": "2.6 Repository Connection Operations",
     "body": "You can connect to repositories using different methods.",
     "excerpt": "You can connect to repositories using different methods.",
@@ -13695,7 +13814,7 @@
     "language": "en"
   },
   {
-    "id": "search-4524",
+    "id": "search-4535",
     "content": "2.6.1 Desktop Application Connection",
     "body": "Desktop connection walkthrough (Video: Connecting via desktop application) Click the {{t:resources.localActions.local}} button in the repository row. Local connection button (Figure 73: \"Local\" button in repository row - desktop application access) Select the access method from the dropdown menu: {{t:resources.localActions.openInDesktop}}: Access with graphical interface {{t:resources.localCommandBuilder.vscodeTab}}: Open in code editor {{t:common.terminal.terminal}}: Access via command line {{t:resources.localActions.showCLICommands}}: Command line tools Connection options menu (Figure 74: Repository connection menu - different access paths) Tip: If working with VS Code, the \"{{t:resources.localCommandBuilder.vscodeTab}}\" option provides the fastest integration. Click the {{t:common.vscodeSelection.open}} button when the browser requests permission. Desktop application open permission (Figure 75: Browser asking for permission to open desktop application) Tip: If you don't want to grant permission every time you open the desktop application, check the \"Always allow\" option. ---",
     "excerpt": "Desktop connection walkthrough (Video: Connecting via desktop application) Click the {{t:resources.localActions.local}} button in the repository row....",
@@ -13706,7 +13825,7 @@
     "language": "en"
   },
   {
-    "id": "search-4525",
+    "id": "search-4536",
     "content": "2.7 Settings",
     "body": "You can manage your profile and system settings from the Settings section.",
     "excerpt": "You can manage your profile and system settings from the Settings section.",
@@ -13717,7 +13836,7 @@
     "language": "en"
   },
   {
-    "id": "search-4526",
+    "id": "search-4537",
     "content": "2.7.1 Password Change",
     "body": "Password change walkthrough (Video: Changing your password) Go to {{t:common.navigation.settings}} > {{t:common.navigation.settingsProfile}} tab from the left menu. Profile settings page (Figure 76: Settings → Profile page - personal vault settings) Click the {{t:settings.personal.changePassword.submit}} button. Change Password button (Figure 77: \"Change Password\" button in personal settings section) Enter your new password. Password requirements: At least 8 characters long Must contain uppercase and lowercase letters Must contain at least one number Must contain at least one special character Re-enter the same password in the {{t:settings.personal.changePassword.confirmPasswordLabel}} field. Click the {{t:settings.personal.changePassword.submit}} button. Password change form (Figure 78: Change Password form - security requirements visible) Tip: Use random combinations when creating a strong password. ---",
     "excerpt": "Password change walkthrough (Video: Changing your password) Go to {{t:common.navigation.settings}} > {{t:common.navigation.settingsProfile}} tab from...",
@@ -13728,7 +13847,7 @@
     "language": "en"
   },
   {
-    "id": "search-4527",
+    "id": "search-4538",
     "content": "2.8 Storage",
     "body": "The Storage section allows you to manage the physical areas where your backup data will be stored.",
     "excerpt": "The Storage section allows you to manage the physical areas where your backup data will be stored.",
@@ -13739,7 +13858,7 @@
     "language": "en"
   },
   {
-    "id": "search-4528",
+    "id": "search-4539",
     "content": "2.8.1 Adding Storage",
     "body": "Storage creation walkthrough (Video: Adding a storage location) Go to the {{t:common.navigation.storage}} tab from the left menu. Click the {{t:resources.storage.createStorage}} button. Add Storage button (Figure 79: Storage management page - \"Add Storage\" button) Fill in the form: {{t:common.vaultEditor.fields.STORAGE.name.label}}: Enter a descriptive name {{t:common.vaultEditor.fields.STORAGE.provider.label}}: Select (e.g., s3) {{t:common.vaultEditor.fields.STORAGE.description.label}}: Add optional description {{t:common.vaultEditor.fields.STORAGE.noVersioning.label}}: Optional {{t:common.vaultEditor.fields.STORAGE.parameters.label}}: rclone flags (e.g., --transfers 4) Storage creation form (Figure 80: Add Storage form - name, provider, description, and parameters) Click the {{t:common.actions.create}} button. Tip: Additional Parameters accept rclone flags to optimize storage performance. ---",
     "excerpt": "Storage creation walkthrough (Video: Adding a storage location) Go to the {{t:common.navigation.storage}} tab from the left menu. Click the {{t:resour...",
@@ -13750,7 +13869,7 @@
     "language": "en"
   },
   {
-    "id": "search-4529",
+    "id": "search-4540",
     "content": "2.9 Credentials",
     "body": "The Credentials section allows you to securely manage access information for your repositories.",
     "excerpt": "The Credentials section allows you to securely manage access information for your repositories.",
@@ -13761,7 +13880,7 @@
     "language": "en"
   },
   {
-    "id": "search-4530",
+    "id": "search-4541",
     "content": "2.9.1 Credential Editing",
     "body": "Credential editing walkthrough (Video: Editing credentials) Go to the {{t:common.navigation.credentials}} tab from the left menu. Select the record you want to edit. Click the {{t:common.actions.edit}} button. Credentials list (Figure 81: Credentials page - repository names, teams, and management buttons) Change the {{t:common.vaultEditor.fields.REPOSITORY.name.label}} if needed. Save with the {{t:common.save}} button. Credential editing form (Figure 82: Edit Repository Name form - vault configuration fields) Tip: Credentials are stored encrypted and only decrypted during deployment.",
     "excerpt": "Credential editing walkthrough (Video: Editing credentials) Go to the {{t:common.navigation.credentials}} tab from the left menu. Select the record yo...",
@@ -13772,7 +13891,7 @@
     "language": "en"
   },
   {
-    "id": "search-4531",
+    "id": "search-4542",
     "content": "2.9.2 Credential Trace",
     "body": "Credential trace walkthrough (Video: Viewing credential audit history) Select the record you want to trace. Click the {{t:common.actions.trace}} button. Trace button (Figure 83: \"Trace\" button in Credentials table) Review the audit history. Select format from the {{t:common.actions.export}} button: {{t:common.exportCSV}} or {{t:common.exportJSON}}. Credential audit history (Figure 84: Credentials list - Export options) Tip: The trace feature provides usage tracking of credentials for security audit purposes.",
     "excerpt": "Credential trace walkthrough (Video: Viewing credential audit history) Select the record you want to trace. Click the {{t:common.actions.trace}} butto...",
@@ -13783,7 +13902,7 @@
     "language": "en"
   },
   {
-    "id": "search-4532",
+    "id": "search-4543",
     "content": "2.9.3 Credential Deletion",
     "body": "Credential deletion walkthrough (Video: Deleting a credential) Select the record you want to delete. Click the red {{t:common.delete}} button. Delete button (Figure 85: Red \"Delete\" button on Credentials page) Click the {{t:common.delete}} button in the confirmation window. Deletion confirmation (Figure 86: Deletion confirmation dialog - irreversible action warning) Warning: Before deleting, make sure the credential is not being used on other machines or in other operations. Ensure you have a backup of critical credentials before deleting. ---",
     "excerpt": "Credential deletion walkthrough (Video: Deleting a credential) Select the record you want to delete. Click the red {{t:common.delete}} button. Delete...",
@@ -13794,7 +13913,7 @@
     "language": "en"
   },
   {
-    "id": "search-4533",
+    "id": "search-4544",
     "content": "2.10 Queue",
     "body": "The Queue section allows you to track pending and completed operations in the system.",
     "excerpt": "The Queue section allows you to track pending and completed operations in the system.",
@@ -13805,7 +13924,7 @@
     "language": "en"
   },
   {
-    "id": "search-4534",
+    "id": "search-4545",
     "content": "2.10.1 Queue Operations",
     "body": "Queue operations walkthrough (Video: Managing queue operations) Click the {{t:common.navigation.queue}} tab from the left menu. Queue page (Figure 87: Queue page - filtering options and status tabs) To filter queue items: Use {{t:queue.trace.team}}, {{t:queue.trace.machine}}, {{t:queue.trace.region}}, and {{t:queue.trace.bridge}} filters Specify {{t:system.audit.filters.dateRange}} Check {{t:queue.filters.onlyStale}} option View details in status tabs: {{t:queue.statusActive}}: Tasks being processed {{t:queue.statusCompleted}}: Successfully completed tasks {{t:queue.statusCancelled}}: Cancelled tasks {{t:queue.statusFailed}}: Failed tasks Select a format from the {{t:common.actions.export}} button: {{t:common.exportCSV}} or {{t:common.exportJSON}}. Queue export (Figure 88: Queue list - Export options) Tip: The \"{{t:queue.filters.onlyStale}}\" option helps find tasks that have been processing for a long time. Regularly export queue history to analyze task execution trends. ---",
     "excerpt": "Queue operations walkthrough (Video: Managing queue operations) Click the {{t:common.navigation.queue}} tab from the left menu. Queue page (Figure 87:...",
@@ -13816,7 +13935,7 @@
     "language": "en"
   },
   {
-    "id": "search-4535",
+    "id": "search-4546",
     "content": "2.11 Audit",
     "body": "The Audit section maintains records of all operations performed in the system.",
     "excerpt": "The Audit section maintains records of all operations performed in the system.",
@@ -13827,7 +13946,7 @@
     "language": "en"
   },
   {
-    "id": "search-4536",
+    "id": "search-4547",
     "content": "2.11.1 Audit Records",
     "body": "Audit records walkthrough (Video: Viewing system audit records) Click the {{t:common.navigation.audit}} tab from the left menu. Audit list (Figure 89: Audit page - detailed record of all system operations) Filter audit records: Date Range: Filter for a specific period Entity Type: Filter by Request, Machine, Queue, etc. Search: Perform text search Review information for each record: Timestamp: Date and time of the operation Action: Type of operation (Create, Edit, Delete, etc.) Entity Type: Type of object affected Entity Name: Specific object identifier User: User who performed the operation Details: Additional information about the operation Select a format from the {{t:common.actions.export}} button: {{t:common.exportCSV}} or {{t:common.exportJSON}}. Audit export (Figure 90: Audit record export - CSV and JSON options) Tip: The audit record is critical for tracking all system activity for security and compliance purposes. Regularly export the audit record and store it in a secure location. --- © 2025 Rediacc Platform – All Rights Reserved.",
     "excerpt": "Audit records walkthrough (Video: Viewing system audit records) Click the {{t:common.navigation.audit}} tab from the left menu. Audit list (Figure 89:...",
@@ -13838,7 +13957,7 @@
     "language": "en"
   },
   {
-    "id": "search-4537",
+    "id": "search-4548",
     "content": "Accelerated Development Operations",
     "excerpt": "Reduce environment setup from days to minutes with smart deduplication storage.",
     "category": "Documentation",
@@ -13848,7 +13967,7 @@
     "language": "en"
   },
   {
-    "id": "search-4538",
+    "id": "search-4549",
     "content": "Reduce environment setup from days to minutes with smart deduplication storage.",
     "excerpt": "Reduce environment setup from days to minutes with smart deduplication storage.",
     "category": "Documentation",
@@ -13858,7 +13977,7 @@
     "language": "en"
   },
   {
-    "id": "search-4539",
+    "id": "search-4550",
     "content": "Accelerated Development Operations",
     "body": "Reduce Environment Setup From Days to Minutes with Smart deduplication Storage Architecture. Note: This is a use case example demonstrating how Rediacc's Infrastructure Automation Platform designed for AI-driven operations can accelerate development. As a startup, these scenarios represent potential applications rather than completed case studies.",
     "excerpt": "Reduce Environment Setup From Days to Minutes with Smart deduplication Storage Architecture. Note: This is a use case example demonstrating how Rediac...",
@@ -13869,7 +13988,7 @@
     "language": "en"
   },
   {
-    "id": "search-4540",
+    "id": "search-4551",
     "content": "The Problem",
     "body": "Mehmet works as a DevOps engineer in an e-commerce organization. The development team needs production-like environments for testing, staging, and development. This is because: Traditional Environment Challenges: Setting up production-like environments takes hours or days Developers wait for infrastructure provisioning to complete testing Environment inconsistencies lead to \"works on my machine\" problems The organization struggled with slow development cycles because environment provisioning was a bottleneck. This situation: Slowed development velocity significantly Created dependencies and waiting times in the development pipeline",
     "excerpt": "Mehmet works as a DevOps engineer in an e-commerce organization. The development team needs production-like environments for testing, staging, and dev...",
@@ -13880,7 +13999,7 @@
     "language": "en"
   },
   {
-    "id": "search-4541",
+    "id": "search-4552",
     "content": "Crisis Impact",
     "body": "Storage costs became unsustainable for the IT budget Backup windows exceeded available maintenance time System performance degraded during backup operations Risk of data loss increased due to incomplete backups",
     "excerpt": "Storage costs became unsustainable for the IT budget Backup windows exceeded available maintenance time System performance degraded during backup oper...",
@@ -13891,7 +14010,7 @@
     "language": "en"
   },
   {
-    "id": "search-4542",
+    "id": "search-4553",
     "content": "Rediacc Solution",
     "body": "Mehmet discovered Rediacc, and with this system: Backup Diagram",
     "excerpt": "Mehmet discovered Rediacc, and with this system: Backup Diagram",
@@ -13902,7 +14021,7 @@
     "language": "en"
   },
   {
-    "id": "search-4543",
+    "id": "search-4554",
     "content": "Smart Backup Technology",
     "body": "Full backups appear to be taken, but only changed data is physically stored For example, if there are average daily changes of 100 GB in a 10 TB database, the system records only those 100 GB Backups work completely and seamlessly during restoration, even if stored as a single file",
     "excerpt": "Full backups appear to be taken, but only changed data is physically stored For example, if there are average daily changes of 100 GB in a 10 TB datab...",
@@ -13913,7 +14032,7 @@
     "language": "en"
   },
   {
-    "id": "search-4544",
+    "id": "search-4555",
     "content": "Key Advantages",
     "body": "1. Cost Savings Even with 100 GB daily changes in a 10 TB database, the monthly storage cost is limited to ~3 TB (it was ~300 TB with the old system) 2. Universal Support Rediacc is not limited to SQL Server. It works compatibly with MySQL, PostgreSQL, MongoDB, and all other databases No need for separate know-how for different systems 3. Time and Resource Efficiency Backup time is reduced from hours to minutes The load on disk and network resources decreases by 99.99% (depending on update ratio of the total data between snapshots)",
     "excerpt": "1. Cost Savings Even with 100 GB daily changes in a 10 TB database, the monthly storage cost is limited to ~3 TB (it was ~300 TB with the old system)...",
@@ -13924,7 +14043,7 @@
     "language": "en"
   },
   {
-    "id": "search-4545",
+    "id": "search-4556",
     "content": "Result",
     "body": "Thanks to Rediacc, the organization: Reduced storage costs by 99.99% (depending on update ratio of the total data between snapshots) Standardized backup and restore processes Met all its needs with a single solution for different database systems",
     "excerpt": "Thanks to Rediacc, the organization: Reduced storage costs by 99.99% (depending on update ratio of the total data between snapshots) Standardized back...",

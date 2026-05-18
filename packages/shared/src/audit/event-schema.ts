@@ -82,7 +82,7 @@ export const MACHINE_OP_EVENT_TYPES = [
 
 export const ALL_EVENT_TYPES = [...MACHINE_OP_EVENT_TYPES, ...explicitEventTypes] as const;
 
-const auditEventTypeEnum = z.enum(ALL_EVENT_TYPES);
+export const auditEventTypeEnum = z.enum(ALL_EVENT_TYPES);
 export type AuditEventType = z.infer<typeof auditEventTypeEnum>;
 
 const baseData = z.object({

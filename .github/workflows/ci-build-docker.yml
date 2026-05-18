@@ -279,6 +279,7 @@ jobs:
       - name: Build account portal SPA
         run: |
           npm ci
+          npm run install:natives
           npm run build:packages
           cd private/account && npm install
           cd web && npm install && npx vite build --outDir ../../../account-web-assets
@@ -371,6 +372,7 @@ jobs:
       - name: Build account portal SPA
         run: |
           npm ci
+          npm run install:natives
           npm run build:packages
           cd private/account && npm install
           cd web && npm install && npx vite build --outDir ../../../account-web-assets

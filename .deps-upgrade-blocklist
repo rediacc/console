@@ -33,9 +33,6 @@ react-syntax-highlighter  # BLOCKER: ^16.1.1 spec causes workspace-level install
 # better-sqlite3 v12 — major version, newly adopted dep
 better-sqlite3  # BLOCKER: v12.x requires native binding rebuild; potential API changes need audit before adopting across packages
 
-# Zod v4 — major rewrite with different API surface
-zod  # BLOCKER: v4.x requires schema migration and different error handling; large-touch migration not scheduled
-
 # inquirer — npm publishes were broken at 13.3.x
 inquirer  # BLOCKER: v13.3.1 and v13.3.2 shipped without dist folder; stay on last known-good until upstream republishes
 

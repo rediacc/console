@@ -21,10 +21,10 @@ collector reference deployment are in the public monorepo at
 
 ## What gets logged
 
-Every entry written to the account server's `event_log` table — and
+Every entry written to the account server's `event_log` table -- and
 that includes both account-level events (auth, config storage, license)
 and machine-level CLI events (`cli.repo.up`, `cli.repo.fork`,
-`cli.backup.push`, `cli.sync.upload`, `cli.term.session`, …) — is
+`cli.backup.push`, `cli.sync.upload`, `cli.term.session`, …) -- is
 mirrored to the OTLP logs pipeline.
 
 The event-type vocabulary is a closed discriminated union defined in
@@ -36,7 +36,7 @@ Each log record carries OpenTelemetry semantic attributes:
 
 | Attribute | Meaning |
 |---|---|
-| `event.domain` | Fixed `rediacc.audit` — filter on this to ignore unrelated logs |
+| `event.domain` | Fixed `rediacc.audit` -- filter on this to ignore unrelated logs |
 | `event.name` | The canonical event type (e.g. `cli.repo.up`) |
 | `event.source` | `cli`, `api`, `system`, … |
 | `enduser.id` | Initiating user |
@@ -56,7 +56,7 @@ docker compose up -d
 ```
 
 By default the collector listens on `:4318` (OTLP/HTTP) and writes to
-its own stdout via the `debug` exporter — useful for verifying the
+its own stdout via the `debug` exporter -- useful for verifying the
 pipeline before routing anywhere expensive.
 
 ### 2. Point the account server at it
@@ -76,12 +76,12 @@ collector immediately.
 Edit `compose/otel-collector/config.yaml`. The file ships with four
 commented exporter examples:
 
-- **OpenSearch / Elasticsearch** — `opensearch` exporter, requires
+- **OpenSearch / Elasticsearch** -- `opensearch` exporter, requires
   `basicauth/opensearch` extension.
-- **Splunk HEC** — `splunk_hec` exporter, requires an HEC token + index.
-- **AWS CloudWatch Logs** — `awscloudwatchlogs` exporter, requires IAM
+- **Splunk HEC** -- `splunk_hec` exporter, requires an HEC token + index.
+- **AWS CloudWatch Logs** -- `awscloudwatchlogs` exporter, requires IAM
   credentials in the collector's env.
-- **Microsoft Sentinel** — via the `azuremonitor` exporter with an App
+- **Microsoft Sentinel** -- via the `azuremonitor` exporter with an App
   Insights connection string.
 
 Uncomment exactly one, swap it for `debug` in the `logs:` pipeline's
@@ -89,7 +89,7 @@ Uncomment exactly one, swap it for `debug` in the `logs:` pipeline's
 
 Any [OTel Collector contrib
 exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter)
-that accepts logs will work — the audit pipeline produces standard
+that accepts logs will work -- the audit pipeline produces standard
 OTLP log records.
 
 ## Detection content
@@ -116,16 +116,16 @@ level: medium
 The audit pipeline is the foundation for the audit-logging requirements
 referenced in Rediacc's compliance documentation:
 
-- **GDPR Art. 30** — records of processing activities
-- **SOC 2 CC6.1 / CC7.2** — access logging + monitoring
-- **HIPAA 45 CFR 164.312(b)** — audit controls
-- **PCI DSS Req 10** — track and monitor all access
-- **NIS2 Art. 21** — incident reporting capability
-- **DORA Art. 10** — ICT-related incident detection
+- **GDPR Art. 30** -- records of processing activities
+- **SOC 2 CC6.1 / CC7.2** -- access logging + monitoring
+- **HIPAA 45 CFR 164.312(b)** -- audit controls
+- **PCI DSS Req 10** -- track and monitor all access
+- **NIS2 Art. 21** -- incident reporting capability
+- **DORA Art. 10** -- ICT-related incident detection
 
 ## Reliability
 
-OTLP emission is fire-and-forget — a collector outage will never block
+OTLP emission is fire-and-forget -- a collector outage will never block
 or fail a Rediacc API request, and every event is still persisted to
 the account server's `event_log` table regardless. Combined with the
 collector's batching and retry behavior, this makes the pipeline safe

@@ -337,6 +337,8 @@ jobs:
         run: npm ci --workspaces=false --include-workspace-root --ignore-scripts
       - name: Install CLI workspace deps
         run: npm ci --workspace=@rediacc/cli --include-workspace-root --ignore-scripts
+      - name: Rebuild native modules
+        run: npm run install:natives
       - name: Build shared package (required for runtime imports)
         run: npm run build --workspace=@rediacc/shared
       - name: Check config-migration runner + fixtures
@@ -536,11 +538,12 @@ jobs:
       - name: Build shared package (required for subscription types)
         run: |
           npm ci --workspace=@rediacc/shared
+          npm run install:natives
           npm run build --workspace=@rediacc/shared
 
       - name: Install account dependencies
         working-directory: private/account
-        run: npm ci
+        run: npm ci && cd ../.. && npm run install:natives
 
       - name: Check config token auth requires org membership
         run: npm run check:ci-account-config-auth

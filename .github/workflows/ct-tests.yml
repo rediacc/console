@@ -321,6 +321,7 @@ jobs:
         # login` — no longer baked into the bundle (renet#51).
         run: |
           npm ci
+          npm run install:natives
           npm run build:packages
           npm run build:cli
           npm run build:bundle -w @rediacc/cli
