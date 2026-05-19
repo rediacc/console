@@ -57,6 +57,10 @@ jobs:
           cache: 'npm'
       - run: .ci/scripts/setup/install-deps.sh ${{ runner.os == 'Windows' && '--ignore-scripts' || '' }}
         shell: bash
+      - name: Rebuild native modules (electron, node-pty, ssh2, cpu-features, esbuild)
+        if: runner.os != 'Windows'
+        run: npm run install:natives
+        shell: bash
       - run: .ci/scripts/setup/build-packages.sh
         shell: bash
       - run: .ci/scripts/build/build-web.sh --type RELEASE

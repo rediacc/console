@@ -425,7 +425,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm run install:natives
 
       - name: Build shared packages
         run: npm run build:packages
@@ -881,7 +881,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm run install:natives
 
       - name: Build shared packages
         run: npm run build:packages
@@ -1066,7 +1066,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm run install:natives
 
       - name: Build shared packages
         run: npm run build:packages
@@ -1467,7 +1467,7 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm run install:natives
 
       - name: Build shared packages
         run: npm run build:packages

@@ -7,54 +7,28 @@
  *
  * Only active when a subscription token is available (cloud adapter).
  * Local adapter users (no token) get silent no-ops.
+ *
+ * Event types are validated against the shared discriminated-union
+ * schema at packages/shared/src/audit/event-schema.ts. Unrecognized
+ * function names are silently dropped — they would fail server-side
+ * validation anyway, and dropping locally keeps the queue clean.
  */
 
+import {
+  type AuditEvent,
+  type AuditEventType,
+  AuditEventSchema,
+  functionNameToEventType,
+} from '@rediacc/shared';
 import { getSubscriptionTokenState } from './subscription-auth.js';
 import { accountServerFetch } from './account-client.js';
 import { VERSION } from '../version.js';
 
-export interface AuditEvent {
-  type: string;
-  data: {
-    functionName: string;
-    machineName: string;
-    repoName?: string;
-    success: boolean;
-    exitCode: number;
-    durationMs: number;
-    cliVersion: string;
-    error?: string;
-    /** Optional transfer counts for sync_upload / sync_download events. */
-    filesTransferred?: number;
-    bytesTransferred?: number;
-  };
-}
+export type { AuditEvent, AuditEventType };
+export { functionNameToEventType };
 
 const FLUSH_TIMEOUT_MS = 5_000;
 const AUDIT_ENDPOINT = '/account/api/v1/licenses/audit-events';
-
-/**
- * Map renet function names to audit event types.
- *
- * Pattern: strip known prefixes, add `cli.` namespace.
- * e.g. `repository_up` -> `cli.repo.up`
- *      `backup_push`   -> `cli.backup.push`
- */
-export function functionNameToEventType(functionName: string): string {
-  if (functionName.startsWith('repository_')) {
-    return `cli.repo.${functionName.slice('repository_'.length)}`;
-  }
-  if (functionName.startsWith('backup_')) {
-    return `cli.backup.${functionName.slice('backup_'.length)}`;
-  }
-  if (functionName.startsWith('datastore_')) {
-    return `cli.datastore.${functionName.slice('datastore_'.length)}`;
-  }
-  if (functionName.startsWith('machine_')) {
-    return `cli.machine.${functionName.slice('machine_'.length)}`;
-  }
-  return `cli.${functionName}`;
-}
 
 class AuditService {
   private queue: AuditEvent[] = [];
@@ -67,10 +41,16 @@ class AuditService {
     }
   }
 
-  /** Queue an audit event. Synchronous, never blocks. */
+  /**
+   * Queue an audit event. Synchronous, never blocks.
+   * Event is validated against the shared schema; failures drop silently
+   * (an unrecognized type would be rejected by the server anyway).
+   */
   record(event: AuditEvent): void {
     if (!this.hasToken()) return;
-    this.queue.push(event);
+    const parsed = AuditEventSchema.safeParse(event);
+    if (!parsed.success) return;
+    this.queue.push(parsed.data);
   }
 
   /** Record a machine-level operation from localExecutorService context. */
@@ -84,22 +64,45 @@ class AuditService {
     error?: string;
     filesTransferred?: number;
     bytesTransferred?: number;
+    sessionDurationMs?: number;
   }): void {
-    this.record({
-      type: functionNameToEventType(opts.functionName),
-      data: {
-        functionName: opts.functionName,
-        machineName: opts.machineName,
-        repoName: opts.repoName,
-        success: opts.success,
-        exitCode: opts.exitCode,
-        durationMs: opts.durationMs,
-        cliVersion: VERSION,
-        error: opts.error?.slice(0, 500),
-        filesTransferred: opts.filesTransferred,
-        bytesTransferred: opts.bytesTransferred,
-      },
-    });
+    const type = functionNameToEventType(opts.functionName);
+    if (!type) return;
+
+    const baseData = {
+      functionName: opts.functionName,
+      machineName: opts.machineName,
+      repoName: opts.repoName,
+      success: opts.success,
+      exitCode: opts.exitCode,
+      durationMs: opts.durationMs,
+      cliVersion: VERSION,
+      error: opts.error?.slice(0, 500),
+    };
+
+    let event: AuditEvent;
+    if (type === 'cli.sync.upload' || type === 'cli.sync.download') {
+      event = {
+        type,
+        data: {
+          ...baseData,
+          filesTransferred: opts.filesTransferred,
+          bytesTransferred: opts.bytesTransferred,
+        },
+      };
+    } else if (type === 'cli.term.session') {
+      event = {
+        type,
+        data: {
+          ...baseData,
+          sessionDurationMs: opts.sessionDurationMs,
+        },
+      };
+    } else {
+      event = { type, data: baseData };
+    }
+
+    this.record(event);
   }
 
   /** Flush queued events to the account server. Timeout-bounded, swallows errors. */

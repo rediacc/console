@@ -1,4 +1,5 @@
 export * from './api/index.js';
+export * from './audit/index.js';
 export * from './config/index.js';
 export * from './encryption/index.js';
 export * from './error-parser/index.js';

@@ -87,10 +87,10 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci && npm run install:natives
 
       - name: Install account dependencies
-        run: npm install
+        run: npm install && cd ../.. && npm run install:natives
         working-directory: private/account
 
       - name: Build shared packages

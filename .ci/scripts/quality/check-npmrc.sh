@@ -1,12 +1,15 @@
 #!/bin/bash
-# Check .npmrc for problematic settings
+# Validate .npmrc supply-chain hardening.
 # Usage: check-npmrc.sh
 #
-# Validates that .npmrc doesn't contain settings that hide dependency problems:
-#   - legacy-peer-deps: Ignores peer dependency conflicts
-#   - force: Forces installation despite errors
-#
-# These settings can mask real dependency issues that should be fixed properly.
+# Enforces both directions:
+#   Forbidden  -- settings that hide dependency problems
+#       legacy-peer-deps : silently ignores peer dependency conflicts
+#       force            : forces installation despite errors
+#   Required   -- supply-chain defenses (see /workspace/console/.npmrc for rationale)
+#       ignore-scripts=true           : blocks dependency lifecycle scripts
+#       allow-git=none                : rejects git+/github:/tarball deps (PackageGate)
+#       minimum-release-age=1440      : 24h cooldown (Axios-style smash-and-grab)
 #
 # Example:
 #   .ci/scripts/quality/check-npmrc.sh
@@ -15,21 +18,59 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 
-# Change to repo root
 cd "$(get_repo_root)"
 
-log_step "Checking .npmrc for problematic settings..."
+log_step "Checking .npmrc for supply-chain hardening settings..."
 
-if [[ -f .npmrc ]]; then
-    if grep -qiE "legacy-peer-deps|force" .npmrc; then
-        log_error ".npmrc contains legacy-peer-deps or force=true"
-        log_error "These settings hide dependency problems that should be fixed properly."
-        echo ""
-        echo "Problematic lines:"
-        grep -iE "legacy-peer-deps|force" .npmrc || true
-        exit 1
-    fi
-    log_info ".npmrc is clean"
-else
-    log_info "No .npmrc file found (this is fine)"
+if [[ ! -f .npmrc ]]; then
+    log_error ".npmrc is missing"
+    log_error "Supply-chain hardening requires .npmrc at the repo root with:"
+    log_error "  ignore-scripts=true"
+    log_error "  allow-git=none"
+    log_error "  minimum-release-age=1440"
+    exit 1
 fi
+
+# Forbidden settings.
+if grep -qiE "^[[:space:]]*(legacy-peer-deps|force)[[:space:]]*=" .npmrc; then
+    log_error ".npmrc contains legacy-peer-deps or force=true"
+    log_error "These settings hide dependency problems that should be fixed properly."
+    echo ""
+    echo "Problematic lines:"
+    grep -niE "^[[:space:]]*(legacy-peer-deps|force)[[:space:]]*=" .npmrc || true
+    exit 1
+fi
+
+# Required settings -- exact value match.
+declare -A required=(
+    ["ignore-scripts"]=true
+    ["allow-git"]=none
+    ["minimum-release-age"]=1440
+)
+
+missing=0
+for key in "${!required[@]}"; do
+    expected="${required[$key]}"
+    # Strip optional trailing comments (everything from the first # onward) before
+    # trimming whitespace so a line like 'ignore-scripts=true # hardening' parses
+    # cleanly to 'true' instead of 'true#hardening'.
+    actual="$(grep -E "^[[:space:]]*${key}[[:space:]]*=" .npmrc |
+        tail -n1 |
+        sed -E "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*//; s/[[:space:]]*#.*//" |
+        tr -d '[:space:]' || true)"
+    if [[ -z "$actual" ]]; then
+        log_error ".npmrc is missing required setting: ${key}=${expected}"
+        missing=1
+    elif [[ "$actual" != "$expected" ]]; then
+        log_error ".npmrc has ${key}=${actual}, expected ${key}=${expected}"
+        missing=1
+    fi
+done
+
+if [[ "$missing" -ne 0 ]]; then
+    echo ""
+    echo "See /workspace/console/.npmrc header for the rationale behind each setting."
+    exit 1
+fi
+
+log_info ".npmrc is clean and hardened"

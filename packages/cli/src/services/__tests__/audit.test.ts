@@ -45,10 +45,15 @@ describe('functionNameToEventType', () => {
     expect(functionNameToEventType('machine_ssh_test')).toBe('cli.machine.ssh_test');
   });
 
-  it('falls back to cli.* for unknown prefixes', () => {
-    expect(functionNameToEventType('custom_fn')).toBe('cli.custom_fn');
-    expect(functionNameToEventType('sync_upload')).toBe('cli.sync_upload');
-    expect(functionNameToEventType('term_connect')).toBe('cli.term_connect');
+  it('maps explicit non-bridge events to canonical types', () => {
+    expect(functionNameToEventType('sync_upload')).toBe('cli.sync.upload');
+    expect(functionNameToEventType('sync_download')).toBe('cli.sync.download');
+    expect(functionNameToEventType('term_connect')).toBe('cli.term.session');
+  });
+
+  it('returns null for unrecognized function names', () => {
+    expect(functionNameToEventType('custom_fn')).toBeNull();
+    expect(functionNameToEventType('repository_unknown_op')).toBeNull();
   });
 });
 

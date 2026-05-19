@@ -33,11 +33,18 @@ react-syntax-highlighter  # BLOCKER: ^16.1.1 spec causes workspace-level install
 # better-sqlite3 v12 — major version, newly adopted dep
 better-sqlite3  # BLOCKER: v12.x requires native binding rebuild; potential API changes need audit before adopting across packages
 
-# Zod v4 — major rewrite with different API surface
-zod  # BLOCKER: v4.x requires schema migration and different error handling; large-touch migration not scheduled
-
 # inquirer — npm publishes were broken at 13.3.x
 inquirer  # BLOCKER: v13.3.1 and v13.3.2 shipped without dist folder; stay on last known-good until upstream republishes
 
 # @types/node major must match Node engine version (22.x)
 @types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 22
+
+# date-fns v4.2.0 changed package.json exports field to drop top-level types/typings; e2e package uses moduleResolution: node and can't see the conditional types — revert until either e2e moves to node16/bundler resolution or date-fns republishes with both
+date-fns  # BLOCKER: 4.2.0 dropped top-level types field; e2e tsconfig.json moduleResolution: node cannot read conditional exports.types; bumping needs a paired tsconfig migration
+
+# OpenTelemetry web instrumentation cluster — held by the .syncpackrc.json pin on @opentelemetry/instrumentation ^0.211.0
+# 0.62+ of auto-instrumentations-web / instrumentation-document-load / instrumentation-user-interaction all require
+# @opentelemetry/instrumentation ^0.218.0+, which would break the cross-workspace pin. Bumping needs the syncpack pin to move first.
+@opentelemetry/auto-instrumentations-web  # BLOCKER: 0.62+ requires @opentelemetry/instrumentation ^0.218.0; syncpack pins instrumentation at ^0.211.0 across all workspaces — bump requires lifting the syncpack pin first
+@opentelemetry/instrumentation-document-load  # BLOCKER: 0.62+ requires @opentelemetry/instrumentation ^0.218.0; same syncpack pin constraint as auto-instrumentations-web
+@opentelemetry/instrumentation-user-interaction  # BLOCKER: 0.61+ requires @opentelemetry/instrumentation ^0.218.0; same syncpack pin constraint as auto-instrumentations-web

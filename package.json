@@ -30,8 +30,11 @@
     "check:ci-nis2-quotes": "tsx scripts/check-directive-quotes.ts",
     "check:ci-editorconfig": ".ci/scripts/quality/check-editorconfig.sh",
     "check:ci-audit-coverage": ".ci/scripts/quality/check-audit-coverage.sh",
+    "check:ci-config-migrations": ".ci/scripts/quality/check-config-migrations.sh",
     "check:ci-e2e-coverage": ".ci/scripts/quality/check-e2e-coverage.sh",
     "check:ci-npmrc": ".ci/scripts/quality/check-npmrc.sh",
+    "check:ci-lockfile": ".ci/scripts/quality/check-lockfile.sh",
+    "install:natives": "npm rebuild electron node-pty ssh2 cpu-features esbuild --foreground-scripts --ignore-scripts=false",
     "check:ci-peer-deps": ".ci/scripts/quality/check-peer-deps.sh",
     "check:ci-overrides-reasons": "tsx scripts/check-overrides-reasons.ts",
     "check:ci-syncpack-reasons": "tsx scripts/check-syncpack-reasons.ts",
@@ -100,7 +103,7 @@
     "lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint packages scripts private/account",
     "lint:unused": "knip --treat-config-hints-as-errors",
     "lint:unused:fix": "knip --fix",
-    "ci": "npm run check:version && npm run check:deps && npm run lint && npm run check:lint && npm run lint:unused && npm run check:format && npm run check:i18n && npm run check:types && npm run check:test && npm run check:test-cli && npm run check:test-workers && npm run check:ci-install-sh-config && npm run check:ci-npmrc && npm run check:ci-peer-deps && npm run check:ci-security-audit && npm run check:ci-shell-lint && npm run check:ci-shell-format && npm run check:ci-shell-commands && npm run check:ci-workflows && npm run check:ci-compose-env && npm run check:ci-e2e-coverage && npm run check:ci-audit-coverage && npm run check:ci-editorconfig && npm run check:ci-account-portal && npm run check:ci-account-server && npm run check:ci-account-layer-isolation && npm run check:ci-account-config-auth && npm run check:ci-account-no-admin-role && npm run check:ci-account-scope-audit && npm run check:ci-renet && npm run check:ci-no-otlp-creds && npm run check:ci-subscription-schema && npm run check:ci-seo && npm run check:ci-external-links && npm run check:ci-dkim-notify && npm run check:ci-redirects && npm run check:ci-search-index && npm run check:ci-cta-bolt && npm run check:ci-content-quality && npm run check:ci-nis2-quotes && npm run check:cli-examples",
+    "ci": "npm run check:version && npm run check:deps && npm run lint && npm run check:lint && npm run lint:unused && npm run check:format && npm run check:i18n && npm run check:types && npm run check:test && npm run check:test-cli && npm run check:test-workers && npm run check:ci-install-sh-config && npm run check:ci-npmrc && npm run check:ci-lockfile && npm run check:ci-peer-deps && npm run check:ci-security-audit && npm run check:ci-shell-lint && npm run check:ci-shell-format && npm run check:ci-shell-commands && npm run check:ci-workflows && npm run check:ci-compose-env && npm run check:ci-e2e-coverage && npm run check:ci-audit-coverage && npm run check:ci-config-migrations && npm run check:ci-editorconfig && npm run check:ci-account-portal && npm run check:ci-account-server && npm run check:ci-account-layer-isolation && npm run check:ci-account-config-auth && npm run check:ci-account-no-admin-role && npm run check:ci-account-scope-audit && npm run check:ci-renet && npm run check:ci-no-otlp-creds && npm run check:ci-subscription-schema && npm run check:ci-seo && npm run check:ci-external-links && npm run check:ci-dkim-notify && npm run check:ci-redirects && npm run check:ci-search-index && npm run check:ci-cta-bolt && npm run check:ci-content-quality && npm run check:ci-nis2-quotes && npm run check:cli-examples",
     "quality": "npm run ci",
     "test": "npm run test -w @rediacc/web",
     "test:quality-gates": ".ci/scripts/test/run-all.sh",
@@ -130,7 +133,7 @@
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
-    "eslint-plugin-playwright": "^2.10.2",
+    "eslint-plugin-playwright": "^2.10.3",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-regexp": "^3.1.0",
@@ -139,10 +142,11 @@
     "globals": "^17.6.0",
     "jsdom": "^29.0.0",
     "knip": "^6.12.2",
-    "syncpack": "^15.1.2",
+    "lockfile-lint": "^5.0.0",
+    "syncpack": "^15.3.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.59.3"
+    "typescript-eslint": "^8.59.4"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -153,14 +157,14 @@
     "inflight": "npm:@isaacs/inflight@^1.0.1",
     "@npmcli/move-file": "npm:@npmcli/fs@^3.1.0",
     "rollup": "^4.59.0",
-    "fast-xml-parser": "5.7.1",
+    "fast-xml-parser": "5.8.0",
     "flatted": ">=3.4.2",
     "smol-toml": ">=1.6.1",
     "h3": ">=1.15.9",
     "yaml": ">=2.8.3",
     "lodash": ">=4.17.22",
     "svgo": "^4.0.1",
-    "devalue": "^5.6.4",
+    "devalue": "^5.8.1",
     "dayjs": "^1.11.20",
     "hono": ">=4.12.18",
     "@hono/node-server": ">=1.19.13",
@@ -169,7 +173,17 @@
     "postcss": ">=8.5.10",
     "fast-uri": ">=3.1.2",
     "@xmldom/xmldom": ">=0.8.13",
-    "fast-xml-builder": ">=1.1.7"
+    "fast-xml-builder": ">=1.1.7",
+    "ip-address": "^10.1.1",
+    "protobufjs": ">=7.5.6",
+    "@grpc/proto-loader": {
+      "protobufjs": "^7.5.6"
+    },
+    "zod": "^4.4.3",
+    "astro": {
+      "zod": "^3.25.76"
+    },
+    "plist": "^3.1.1"
   },
   "_overridesReasons": {
     "glob": "BLOCKER: force glob ^11 everywhere to avoid deprecated transitive glob <9 chain pulled in via old eslint/electron paths",
@@ -177,14 +191,14 @@
     "inflight": "BLOCKER: replace unmaintained inflight with @isaacs/inflight; original package is unsupported and leaks memory",
     "@npmcli/move-file": "BLOCKER: redirect to @npmcli/fs which is the supported successor; bare package archived since npm 7",
     "rollup": "BLOCKER: pin rollup ^4.59 to ensure all workspaces resolve the same native binary set and avoid platform-specific optional-dep drift",
-    "fast-xml-parser": "BLOCKER: pin 5.7.1 to carry CDATA/comment injection fix (GHSA-gh4j-gqv2-49f6); @astrojs/rss otherwise holds tree at <=5.5.x",
+    "fast-xml-parser": "BLOCKER: pin 5.8.0 to carry CDATA/comment injection fix (GHSA-gh4j-gqv2-49f6) plus the entity-expansion limit family (GHSA-gh4j-gqv2-49f6 family); @astrojs/rss otherwise holds tree at <=5.5.x",
     "flatted": "BLOCKER: force >=3.4.2 to pick up prototype pollution fix landed after vitest/@vitest transitive pin held older versions",
     "smol-toml": "BLOCKER: force >=1.6.1 to pick up DoS-via-commented-lines fix; astro toolchain otherwise pulls older transitive versions",
     "h3": "BLOCKER: force >=1.15.9 to include SSE carriage-return sanitization + path traversal fixes; upstream astro/nitro transitives lag",
     "yaml": "BLOCKER: force >=2.8.3 to include stack-overflow-on-deeply-nested-collections fix; astro transitive chain otherwise holds tree at older version",
     "lodash": "BLOCKER: force >=4.17.22 to pick up latest prototype-pollution defensive patches; upstream lodash is effectively unmaintained",
     "svgo": "BLOCKER: pin ^4.0.1 to avoid the multiple older v2/v3 transitive versions pulled in via astro icon pipeline",
-    "devalue": "BLOCKER: pin ^5.6.4 to match the version astro and sveltekit both ship; older transitives lack XSS hardening",
+    "devalue": "BLOCKER: force ^5.8.1 to include GHSA-77vg-94rm-hx3p (DoS via sparse array deserialization) fix; astro 5.x pulls 5.6.x by default which is in the affected range >=5.6.3, <=5.8.0",
     "dayjs": "BLOCKER: pin ^1.11.20 to match antd pro-components internal expectations and avoid transitive version drift",
     "hono": "BLOCKER: force >=4.12.18 to carry JSX attribute injection (GHSA-458j-xx4x-4375), bodyLimit chunked bypass (GHSA-9vqf-7f2p-gf9v), JSX tag-name HTML escape (GHSA-69xw-7hcm-h432), JSX style CSS escape (GHSA-qp7p-654g-cw7p), JWT NumericDate validation (GHSA-hm8q-7f3q-5f36), and Cache Middleware Vary handling (GHSA-p77w-8qqv-26rm) fixes; @modelcontextprotocol/sdk transitively pulls older hono",
     "@hono/node-server": "BLOCKER: force >=1.19.13 to pair with hono >=4.12.18 override; pre-1.19 cannot start against hono 4.12.x",
@@ -193,6 +207,12 @@
     "postcss": "BLOCKER: force >=8.5.10 to include GHSA-qx2v-qp2m-jg93 XSS-via-unescaped-style-tag fix; vite/marpit transitives otherwise hold tree at 8.5.8",
     "fast-uri": "BLOCKER: force >=3.1.2 to include GHSA-q3j6-qgpj-74h6 (encoded path-separator normalization) and GHSA-v39h-62p7-jpjc (encoded authority delimiter) fixes; transitive consumers (fastify-swagger, ajv-formats) otherwise hold older versions",
     "@xmldom/xmldom": "BLOCKER: force >=0.8.13 to include GHSA-2v35-w6hq-6mfw (DOM recursion DoS), GHSA-f6ww-3ggp-fr8h (DocumentType serialization XSS), GHSA-x6wf-f3px-wcqx (PI injection), and GHSA-j759-j44w-7fr8 (comment injection) fixes; electron-builder/plist transitively pulls 0.8.12",
-    "fast-xml-builder": "BLOCKER: force >=1.1.7 to include GHSA-5wm8-gmm8-39j9 attribute-quote injection fix; aws-sdk @aws-sdk/xml-builder transitively pulls older fast-xml-parser/fast-xml-builder"
+    "fast-xml-builder": "BLOCKER: force >=1.1.7 to include GHSA-5wm8-gmm8-39j9 attribute-quote injection fix; aws-sdk @aws-sdk/xml-builder transitively pulls older fast-xml-parser/fast-xml-builder",
+    "ip-address": "BLOCKER: force ^10.1.1 to include GHSA-v2v4-37r5-5v8g (XSS in Address6 HTML-emitting methods) fix; express-rate-limit@8.3.1 pulls 10.1.0 which is in the affected <= 10.1.0 range",
+    "protobufjs": "BLOCKER: force >=7.5.6 to clear the 7.x advisories (GHSA-66ff/2pr8/fx83/75px/jvwf/685m/q6x5/xq3m all affected <= 7.5.5) — npm picks 8.2.0+ for the otlp-transformer chain which also clears the 8.0.0-8.0.1 critical RCE; @opentelemetry/sdk-node is pinned in .syncpackrc.json so we cannot bump the outer tree",
+    "@grpc/proto-loader": "BLOCKER: nested override pins protobufjs ^7.5.6 inside the @grpc/proto-loader chain since proto-loader@0.8.x requires the 7.x major and cannot accept 8.x; pairs with the outer protobufjs >=7.5.6 override which handles the 8.x consumers",
+    "zod": "BLOCKER: force ^4.4.3 across the whole tree so @modelcontextprotocol/sdk and the cli workspace share the same physical zod copy; without the override the SDK satisfies its 'zod: ^3.25 || ^4.0' range with the older zod@3.25.x that other transitives drag in, creating two zod installs whose v4/core $ZodType interfaces TS treats as distinct nominal types (build breaks at registerTool inputSchema)",
+    "astro": "BLOCKER: astro's config validator (validateConfigRefined) was written against zod v3 and calls config.image.remotePatterns.length on the parsed shape; under the root zod ^4.4.3 override it gets undefined and the build crashes with 'Cannot read properties of undefined (reading length)'. Nest a zod ^3.25.76 override scoped to astro to match astro's own peer dep declaration. @astrojs/sitemap and @astrojs/rss already declare zod ^4 themselves so they stay on the root override.",
+    "plist": "BLOCKER: force ^3.1.1 across the whole tree because electron-builder ships an internal app-builder-lib/node_modules/plist@3.1.0 that calls DOMParser.parseFromString(xml) without a mimeType; @xmldom/xmldom >=0.9 requires the mimeType argument and throws 'the provided mimeType undefined is not valid' otherwise — observed on desktop mac-arm64 build. plist 3.1.1 passes 'text/xml' explicitly."
   }
 }

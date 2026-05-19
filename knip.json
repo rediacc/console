@@ -126,6 +126,7 @@
   "ignore": ["private/**"],
   "ignoreDependencies": [
     "jsdom",
+    "lockfile-lint",
     "@aws-sdk/client-s3",
     "@types/*",
     "@opentelemetry/instrumentation-*",
@@ -140,7 +141,6 @@
     "@electron-toolkit/preload",
     "node-pty",
     "ssh2",
-    "@rediacc/shared",
     "loupe",
     "@vitest/runner",
     "@vitest/utils",

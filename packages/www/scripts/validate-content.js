@@ -45,6 +45,7 @@ const EXCLUSIONS = {
     'release-channels.md', // New docs pending translation
     'data-regions.md',
     'on-premise.md',
+    'siem-integration.md', // pending translation; remove after the 12 langs land
   ],
 };
 

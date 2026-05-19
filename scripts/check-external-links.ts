@@ -59,6 +59,14 @@ const SKIP_PATTERNS = [
   /^https?:\/\/oag\.ca\.gov/,
   // Internal rediacc.io subdomains used in code examples (not reachable from CI)
   /^https?:\/\/[^/]*\.rediacc\.io/,
+  // Internal docker-compose service names referenced in collector config snippets
+  /^https?:\/\/otel-collector(:\d+)?/,
+  // UAE gov site is intermittently blocked by Cloudflare to CI runners
+  /^https?:\/\/u\.ae\//,
+  // Self-references to rediacc/console main: feature branches reference paths
+  // that only exist after the PR merges, so verifying them in pre-merge CI
+  // produces a false 404. GitHub's repo is ours; treat as trusted.
+  /^https?:\/\/github\.com\/rediacc\/console/,
 ];
 
 interface LinkLocation {

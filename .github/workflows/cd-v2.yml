@@ -369,7 +369,7 @@ jobs:
       # -----------------------------------------------------------------------
       - name: Install dependencies
         if: needs.init.outputs.workers_only != 'true'
-        run: npm ci
+        run: npm ci && npm run install:natives
 
       - name: Build shared packages
         if: needs.init.outputs.workers_only != 'true'

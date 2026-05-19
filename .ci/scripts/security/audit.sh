@@ -244,6 +244,18 @@ main() {
         exit 1
     fi
 
+    # ── Pass 0: Package signature / provenance verification ────────
+    # Verifies every installed package's registry signature against the public
+    # signing key, and provenance attestations where present. Failures are not
+    # allowlistable — a bad signature means the lockfile points at a tampered
+    # tarball.
+    log_info "Verifying package signatures and provenance"
+    if ! npm audit signatures 2>&1; then
+        log_error "npm audit signatures failed — at least one installed package has an invalid signature or missing provenance"
+        log_error "This indicates registry tampering, a poisoned lockfile, or a downgrade attack — do NOT allowlist"
+        exit 1
+    fi
+
     # ── Pass 1: Production dependencies ────────────────────────────
     log_info "Auditing production dependencies (no allowlist for new advisories)"
     run_audit audit-prod.json --omit=dev
