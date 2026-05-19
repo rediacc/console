@@ -279,7 +279,13 @@ jobs:
       - name: Build account portal SPA
         run: |
           npm ci
+          npm run install:natives
           npm run build:packages
+          # The account portal SPA build runs entirely in private/account/web (a
+          # Next/Vite tree). The nested installs here are SPA-only — they don't
+          # need root install:natives to be re-run because the SPA pipeline uses
+          # esbuild/tailwind via per-platform optional deps (no install scripts
+          # needed) and never imports better-sqlite3 / node-pty / ssh2.
           cd private/account && npm install
           cd web && npm install && npx vite build --outDir ../../../account-web-assets
 
@@ -371,7 +377,13 @@ jobs:
       - name: Build account portal SPA
         run: |
           npm ci
+          npm run install:natives
           npm run build:packages
+          # The account portal SPA build runs entirely in private/account/web (a
+          # Next/Vite tree). The nested installs here are SPA-only — they don't
+          # need root install:natives to be re-run because the SPA pipeline uses
+          # esbuild/tailwind via per-platform optional deps (no install scripts
+          # needed) and never imports better-sqlite3 / node-pty / ssh2.
           cd private/account && npm install
           cd web && npm install && npx vite build --outDir ../../../account-web-assets
 

@@ -130,9 +130,11 @@ When writing documentation, help text, error messages, or code comments, follow 
 
 **This monorepo uses npm, not pnpm.**
 
+`.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`, `minimum-release-age=1440`. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the five packages that genuinely need scripts (electron, node-pty, ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false` explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check-npmrc.sh`.
+
 ```bash
 # Install dependencies
-npm install
+npm install && npm run install:natives
 
 # Build shared package (required before www or cli)
 cd packages/shared && npm run build

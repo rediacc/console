@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 2,
+  "id": "8d9e2f0a-3b4c-4d5e-9f70-2b3c4d5e6f70",
+  "version": 1,
+  "defaults": {
+    "language": "en",
+    "datastoreSize": "95%"
+  },
+  "encryption": {
+    "mode": "plaintext"
+  }
+}
