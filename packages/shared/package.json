@@ -11,28 +11,16 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@aws-sdk/client-s3": "^3.982.0",
     "@opentelemetry/context-zone": "^2.7.0",
     "@opentelemetry/core": "^2.7.0",
-=======
-    "@aws-sdk/client-s3": "^3.1032.0",
-    "@opentelemetry/context-zone": "^2.5.0",
-    "@opentelemetry/core": "^2.6.0",
->>>>>>> 70a4a128 (fix(ci): optimize check-deps and block major version updates on final branch)
     "@opentelemetry/instrumentation": "^0.211.0",
     "@opentelemetry/instrumentation-fetch": "^0.211.0",
     "@opentelemetry/instrumentation-xml-http-request": "^0.211.0",
     "@opentelemetry/sdk-node": "^0.211.0",
-<<<<<<< HEAD
     "@opentelemetry/sdk-trace-web": "^2.7.0",
     "@vitest/coverage-v8": "^4.0.18",
     "@vitest/ui": "^4.0.18",
-=======
-    "@opentelemetry/sdk-trace-web": "^2.6.0",
-    "@vitest/coverage-v8": "^4.1.4",
-    "@vitest/ui": "^4.1.4",
->>>>>>> 70a4a128 (fix(ci): optimize check-deps and block major version updates on final branch)
     "loupe": "^3.2.1",
     "react-i18next": "^16.5.4",
     "unist-util-visit": "^5.1.0",
