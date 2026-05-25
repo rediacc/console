@@ -16,11 +16,7 @@ test.describe('Audit Records Tests', () => {
     await dashboardPage.waitForNetworkIdle();
 
     await page.getByTestId('user-menu-button').click();
-    await page
-      .getByTestId('main-mode-toggle')
-      .locator('.ant-segmented-item')
-      .nth(1)
-      .click();
+    await page.getByTestId('main-mode-toggle').locator('.ant-segmented-item').nth(1).click();
     await page.getByTestId('user-menu-button').click();
   });
 
@@ -38,13 +34,8 @@ test.describe('Audit Records Tests', () => {
     const nav = new NavigationHelper(page);
 
     await page.getByTestId('user-menu-button').click();
-    await page
-      .getByTestId('main-mode-toggle')
-      .locator('.ant-segmented-item')
-      .nth(1)
-      .click();
+    await page.getByTestId('main-mode-toggle').locator('.ant-segmented-item').nth(1).click();
     await page.getByTestId('user-menu-button').click();
-
 
     // Wait for the audit navigation item to be visible before clicking
     const auditNavItem = page.getByTestId('main-nav-audit');
