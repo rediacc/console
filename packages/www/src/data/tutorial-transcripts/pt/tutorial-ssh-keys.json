@@ -6,26 +6,53 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.50929,
-      "text": "Passo um. Vamos gerar uma nova chave SSH ed25519. O ed25519 é o padrão moderno: compacto, rápido e bem suportado. Só é necessário fazer isto uma vez para todos os servidores que venha a adicionar."
+      "at": 1.626287,
+      "text": "Passo um. Vamos gerar uma nova chave SSH ed25519. O ed25519 é o padrão moderno: compacto, rápido e bem suportado. Só é necessário fazer isto uma vez para todos os servidores que venha a adicionar.",
+      "afterText": "Chave gerada. A metade pública é a que vamos copiar para o servidor.",
+      "cardLabel": "Gerar Chave",
+      "prose": "Gere uma nova chave SSH no seu laptop. Ed25519 é seguro, compacto e bem suportado. Execute-o uma vez; a mesma chave funciona em todos os servidores. Isso é SSH simples e não tem nada a ver com rdc.",
+      "afterProse": "Chave gerada. A metade pública é o que é copiado para cada servidor."
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 8.723209,
-      "text": "Passo dois. Vamos copiar a chave pública para o servidor com ssh-copy-id. A palavra-passe do servidor é pedida pela última vez. A partir daqui, a autenticação por palavra-passe já não é necessária."
+      "at": 6.456735,
+      "text": "Passo dois. Vamos copiar a chave pública para o servidor com ssh-copy-id. A palavra-passe do servidor é pedida pela última vez. A partir daqui, a autenticação por palavra-passe já não é necessária.",
+      "afterText": "Execute isso no portátil. Depois de bem-sucedido, as palavras-passe ficam fora de questão.",
+      "cardLabel": "Autorizar Servidor 1",
+      "prose": "Autorize a chave no seu primeiro servidor com ssh-copy-id. Ele adiciona sua chave pública ao authorized_keys do servidor para que futuros logins não precisem de senha."
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 16.253995,
-      "text": "Passo três. Agora vamos registar a chave na ferramenta. A partir deste momento, todos os comandos autenticam com esta chave."
+      "at": 13.33617,
+      "text": "Passo três. Agora vamos registar a chave na ferramenta. A partir deste momento, todos os comandos autenticam com esta chave.",
+      "afterText": "Chave registada na CLI.",
+      "cardLabel": "Autorizar Servidor 2",
+      "prose": "Repita o ssh-copy-id para cada outro servidor que você gerencia. Aqui autorizamos o segundo."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Tudo certo! Vamos configurar as chaves SSH para que a CLI possa aceder aos seus servidores sem palavras-passe."
     },
     {
-      "id": "tutorial-ssh-keys-04",
-      "markerIndex": 3,
-      "at": 24.863027,
-      "text": "Vamos confirmar que a configuração mostra o caminho da chave guardado corretamente."
+      "id": "three-steps-generate-copy-register",
+      "text": "Três passos no total. Gerar uma chave no portátil, copiá-la para o servidor, e depois registá-la na ferramenta de linha de comandos. Dois destes só se fazem uma vez."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "A chave está registada e a CLI está pronta. A seguir, adicionamos o seu primeiro servidor."
     }
-  ]
+  ],
+  "title": "Configuração de Chave SSH",
+  "chapters": {
+    "intro": "Configuração de Chave SSH",
+    "three-steps-generate-copy-register": "Gere uma vez, autorize por servidor",
+    "cast-step-0": "Passo 1: Gere uma chave",
+    "cast-step-1": "Passo 2: Autorize seu primeiro servidor",
+    "cast-step-2": "Passo 3: Autorize outro servidor",
+    "outro": "A seguir: Adicionando Seu Primeiro Servidor"
+  }
 }

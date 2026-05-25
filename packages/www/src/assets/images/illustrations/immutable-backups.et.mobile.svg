@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="600" viewBox="0 0 390 600" role="img" aria-label="At 3 AM your backup box is locked shut by a hacker's skull padlock and a hand reaching up for it is blocked, leaving nothing left to use." font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif">
+  <title>At 3 AM your backup box is locked shut by a hacker's skull padlock and a hand reaching up for it is blocked, leaving nothing left to use.</title>
+
+  <rect x="0" y="0" width="390" height="600" fill="#f5f5f5" />
+
+  
+  <circle cx="195" cy="70" r="40" fill="#f5f5f5" stroke="#2d2d2d" stroke-width="3" />
+  <line x1="195" y1="70" x2="195" y2="42" stroke="#2d2d2d" stroke-width="3.5" stroke-linecap="round" />
+  <line x1="195" y1="70" x2="220" y2="70" stroke="#2d2d2d" stroke-width="3.5" stroke-linecap="round" />
+  <text x="195" y="142" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="22" font-weight="bold" fill="#1a1a1a">kell 3</text>
+
+  
+  <text x="195" y="180" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="20" font-weight="bold" fill="#8b0000">Häkkerite lukus</text>
+
+  
+  <rect x="110" y="195" width="170" height="170" rx="8" fill="#8b0000" stroke="#1a1a1a" stroke-width="3" />
+  <line x1="110" y1="248" x2="280" y2="248" stroke="#1a1a1a" stroke-width="3" />
+  <line x1="195" y1="195" x2="195" y2="248" stroke="#1a1a1a" stroke-width="3" />
+
+  
+  <path d="M172 285 v-13 a23 23 0 0 1 46 0 v13" fill="none" stroke="#1a1a1a" stroke-width="9" />
+  <rect x="161" y="283" width="68" height="72" rx="10" fill="#8b0000" stroke="#1a1a1a" stroke-width="3" />
+  <circle cx="195" cy="312" r="18" fill="#f5f5f5" />
+  <circle cx="189" cy="310" r="4.5" fill="#1a1a1a" />
+  <circle cx="201" cy="310" r="4.5" fill="#1a1a1a" />
+  <rect x="187" y="330" width="16" height="12" rx="3" fill="#f5f5f5" />
+
+  
+  <text x="195" y="402" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="22" font-weight="bold" fill="#1a1a1a">Teie varukoopiad</text>
+
+  
+  <g fill="#2d2d2d">
+    <rect x="158" y="470" width="74" height="78" rx="14" />
+    <rect x="160" y="418" width="17" height="60" rx="8.5" />
+    <rect x="181" y="412" width="17" height="66" rx="8.5" />
+    <rect x="202" y="416" width="17" height="62" rx="8.5" />
+    <rect x="222" y="424" width="17" height="54" rx="8.5" />
+    <rect x="222" y="478" width="58" height="17" rx="8.5" transform="rotate(32 222 478)" />
+  </g>
+
+  
+  <text x="195" y="582" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="20" font-weight="bold" fill="#1a1a1a">Kasutadagi pole</text>
+</svg>

@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 600" width="390" height="600" role="img" aria-label="During a server move the lock pops open and files spill out where a hand can grab them." font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif">
+  <title>During a server move the lock pops open and files spill out where a hand can grab them.</title>
+
+  <rect x="0" y="0" width="390" height="600" fill="#f5f5f5" />
+
+  
+  <rect x="135" y="40" width="120" height="95" rx="8" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="153" y1="72" x2="237" y2="72" stroke="#f5f5f5" stroke-width="2.5" />
+  <line x1="153" y1="103" x2="237" y2="103" stroke="#f5f5f5" stroke-width="2.5" />
+
+  <text x="195" y="172" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="24" font-weight="bold" fill="#1a1a1a">Sunucu taşıma</text>
+
+  
+  <polygon points="180,190 210,190 210,215 228,215 195,245 162,215 180,215" fill="#2d2d2d" />
+
+  
+  <path d="M168,290 L168,256" fill="none" stroke="#8b0000" stroke-width="14" stroke-linecap="round" />
+  <path d="M196,240 q28,-30 52,-2 l0,32" fill="none" stroke="#8b0000" stroke-width="14" stroke-linecap="round" />
+  <rect x="152" y="285" width="86" height="74" rx="10" fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5" />
+  <circle cx="195" cy="315" r="9" fill="#f5f5f5" />
+  <rect x="191" y="319" width="8" height="20" fill="#f5f5f5" />
+
+  
+  <g stroke="#1a1a1a" stroke-width="2.5">
+    <g transform="rotate(-18 100 320)">
+      <rect x="74" y="290" width="52" height="64" rx="4" fill="#8b0000" />
+      <line x1="84" y1="306" x2="116" y2="306" stroke="#f5f5f5" stroke-width="2.5" />
+      <line x1="84" y1="322" x2="116" y2="322" stroke="#f5f5f5" stroke-width="2.5" />
+      <line x1="84" y1="338" x2="108" y2="338" stroke="#f5f5f5" stroke-width="2.5" />
+    </g>
+    <g transform="rotate(14 292 322)">
+      <rect x="266" y="292" width="52" height="64" rx="4" fill="#8b0000" />
+      <line x1="276" y1="308" x2="308" y2="308" stroke="#f5f5f5" stroke-width="2.5" />
+      <line x1="276" y1="324" x2="308" y2="324" stroke="#f5f5f5" stroke-width="2.5" />
+      <line x1="276" y1="340" x2="300" y2="340" stroke="#f5f5f5" stroke-width="2.5" />
+    </g>
+  </g>
+
+  
+  <g fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M372,232 L376,300 L338,316 L300,300 L322,250 Z" />
+  </g>
+  <g fill="none" stroke="#8b0000" stroke-width="13" stroke-linecap="round">
+    <path d="M312,300 q-30,18 -60,18" />
+    <path d="M322,312 q-30,24 -62,30" />
+    <path d="M336,318 q-22,28 -46,44" />
+  </g>
+
+  <text x="195" y="408" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="22" font-weight="bold" fill="#8b0000">Kilit açıldı</text>
+  <text x="195" y="442" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="22" font-weight="bold" fill="#8b0000">Herkes çalabilir</text>
+
+  
+  <polygon points="180,460 210,460 210,482 228,482 195,510 162,482 180,482" fill="#2d2d2d" />
+
+  
+  <rect x="135" y="500" width="120" height="95" rx="8" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="153" y1="532" x2="237" y2="532" stroke="#f5f5f5" stroke-width="2.5" />
+  <line x1="153" y1="563" x2="237" y2="563" stroke="#f5f5f5" stroke-width="2.5" />
+</svg>

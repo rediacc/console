@@ -1,0 +1,58 @@
+---
+title: "Ihre erste App deployen"
+description: "Stellen Sie eine containerisierte App über eine integrierte Vorlage bereit – mit rdc repo up."
+category: "Tutorials"
+subcategory: essentials
+order: 5
+language: de
+sourceHash: "764733d064b93e4a"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Ihre erste App deployen
+
+Sie haben ein leeres Repository. `rdc` enthält integrierte Vorlagen, mit denen Sie echte Apps starten können, ohne ein `docker-compose` von Grund auf schreiben zu müssen. Drei Schritte: Vorlage auswählen, anwenden, starten.
+
+## Tutorial ansehen
+
+![Tutorial: Ihre erste App deployen](/assets/tutorials/tutorial-deploy-app.cast)
+
+## Auswählen - Anwenden - Starten
+
+![Vorlage auswählen, anwenden, starten](/img/tutorials/tutorial-deploy-app/slide-1.svg)
+
+## Schritt 1: Auswählen
+
+<TutorialStep number={1} />
+
+Sie sehen fertige Setups für gängige Apps: Postgres, Redis, Webserver und mehr.
+
+## Schritt 2: Anwenden
+
+<TutorialStep number={2} />
+
+Dadurch wird ein getesteter Satz von Dateien in das Repo kopiert.
+
+## Schritt 3: Was wurde hinzugefügt
+
+<TutorialStep number={3} />
+
+Zwei Dateien: `docker-compose.yml` beschreibt die Container, und `Rediaccfile` definiert, was beim Start und Stopp der App passiert (die Lifecycle-Hooks `up` und `down`). Das `2>/dev/null` blendet die Verbindungslogs aus, sodass nur die Dateiliste angezeigt wird.
+
+## Schritt 4: Starten
+
+<TutorialStep number={4} />
+
+Die CLI startet die Container, hängt das verschlüsselte Volume ein und richtet einen isolierten Docker-Daemon für dieses Repo ein. (Wenn Sie sich bereits über VS Code in der Sandbox des Repos befinden, ist `renet dev up` eine gleichwertige Alternative innerhalb der Sandbox.)
+
+## Schritt 5: Überprüfen
+
+<TutorialStep number={5} />
+
+`docker ps` listet hier nur die Container dieses Repos auf. Andere Repos auf demselben Server haben ihre eigenen Docker-Daemons und sind von diesem vollständig unsichtbar.
+
+---
+
+Weiter: [Mit Ihrem Repo arbeiten](/de/docs/tutorial-work-with-repo).

@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 600" width="390" height="600" role="img" aria-label="Ein Gerichtsbeschluss zwingt einen Cloud-Anbieter, Ihre privaten Dateien herauszugeben, ohne den Eigentümer zu informieren." font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif">
+  <title>Ein Gerichtsbeschluss zwingt einen Cloud-Anbieter, Ihre privaten Dateien herauszugeben, ohne den Eigentümer zu informieren.</title>
+
+  <rect x="0" y="0" width="390" height="600" fill="#f5f5f5" />
+
+  
+  <line x1="208" y1="42" x2="252" y2="8" stroke="#1a1a1a" stroke-width="8" stroke-linecap="round" />
+  <rect x="238" y="-8" width="42" height="18" rx="4" fill="#1a1a1a" transform="rotate(45 259 1)" />
+  <rect x="196" y="38" width="40" height="10" rx="2" fill="#1a1a1a" />
+  <rect x="138" y="34" width="120" height="138" rx="6" fill="#8b0000" stroke="#1a1a1a" stroke-width="3" />
+  <rect x="156" y="58" width="84" height="6" rx="3" fill="#f5f5f5" />
+  <rect x="156" y="74" width="84" height="6" rx="3" fill="#f5f5f5" />
+  <rect x="156" y="90" width="60" height="6" rx="3" fill="#f5f5f5" />
+  <circle cx="198" cy="138" r="18" fill="#f5f5f5" stroke="#1a1a1a" stroke-width="2.5" />
+  <text x="198" y="145" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="18" font-weight="bold" fill="#8b0000" text-anchor="middle">§</text>
+  <text x="198" y="200" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="22" font-weight="bold" fill="#1a1a1a" text-anchor="middle">Gerichtsbefehl</text>
+
+  
+  <line x1="212" y1="218" x2="206" y2="288" stroke="#8b0000" stroke-width="24" stroke-linecap="round" />
+  <ellipse cx="205" cy="296" rx="25" ry="19" fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5" />
+  <rect x="168" y="302" width="11" height="30" rx="5" fill="#8b0000" stroke="#1a1a1a" stroke-width="2" />
+  <rect x="182" y="306" width="11" height="32" rx="5" fill="#8b0000" stroke="#1a1a1a" stroke-width="2" />
+  <rect x="196" y="306" width="11" height="32" rx="5" fill="#8b0000" stroke="#1a1a1a" stroke-width="2" />
+  <rect x="210" y="303" width="11" height="30" rx="5" fill="#8b0000" stroke="#1a1a1a" stroke-width="2" />
+  <rect x="224" y="278" width="26" height="12" rx="6" fill="#8b0000" stroke="#1a1a1a" stroke-width="2" transform="rotate(32 237 284)" />
+
+  
+  <g transform="rotate(-5 196 320)">
+    <rect x="160" y="270" width="72" height="100" rx="4" fill="#8b0000" stroke="#1a1a1a" stroke-width="3" />
+    <rect x="173" y="318" width="46" height="5" rx="2" fill="#f5f5f5" />
+    <rect x="173" y="332" width="46" height="5" rx="2" fill="#f5f5f5" />
+    <rect x="173" y="346" width="34" height="5" rx="2" fill="#f5f5f5" />
+  </g>
+  <text x="300" y="262" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="20" font-weight="bold" fill="#8b0000" text-anchor="middle">Herausgegeben</text>
+
+  
+  <rect x="95" y="320" width="200" height="150" rx="12" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="3" />
+  <rect x="118" y="420" width="154" height="22" rx="3" fill="#f5f5f5" />
+  <rect x="118" y="392" width="154" height="22" rx="3" fill="#f5f5f5" />
+  <text x="195" y="498" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="22" font-weight="bold" fill="#1a1a1a" text-anchor="middle">Private Dateien</text>
+
+  
+  <text x="248" y="520" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="34" font-weight="bold" fill="#8b0000" text-anchor="middle">?</text>
+  <circle cx="195" cy="536" r="15" fill="#2d2d2d" />
+  <path d="M173 580 L178 562 Q195 548 212 562 L217 580 Z" fill="#2d2d2d" />
+  <text x="195" y="595" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="20" font-weight="bold" fill="#1a1a1a" text-anchor="middle">Nie informiert</text>
+</svg>

@@ -30,7 +30,7 @@ HIPAA requires administrative, technical, and physical safeguards. The table bel
 |-------------|-------------------|
 | Workforce access management | API tokens with scoped permissions. Team-based access control. Token auto-revocation on team removal. |
 | Security incident procedures | Audit logs provide forensic trail of all operations. Per-repository isolation limits blast radius. |
-| Contingency planning | `rdc repo backup push/pull` supports multi-destination encrypted backup. CoW snapshots enable instant recovery. |
+| Contingency planning | `rdc repo push/pull` supports multi-destination encrypted backup. CoW snapshots enable instant recovery. |
 
 ### Physical Safeguards
 

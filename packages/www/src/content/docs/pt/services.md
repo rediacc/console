@@ -6,6 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: pt
+sourceHash: "1eddcf9de8bfac31"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Servicos
@@ -194,7 +196,9 @@ O renet e o Docker discordam, propositadamente, sobre como tratar os reinicios d
 
 > **Experimental:** A recuperacao baseada em sidecar de cold backup e a flag `--sync-certs` em `rdc machine query` foram lancadas no renet 0.9+. Versoes anteriores dependem apenas de `restart_policy` guardado para recuperacao pelo watchdog, o que pode deixar contentores `on-failure` parados apos um cold backup.
 
-> **O bridge networking do Docker esta desactivado para daemons geridos pelo rediacc.** Cada daemon por repositorio e configurado com `"bridge": "none"` e `"iptables": false`. Um simples `docker run <image>` dentro de uma shell de repositorio ainda sera lancado, mas o contentor obtem apenas uma interface de loopback e nao tem DNS nem conectividade de saida. Isto e por design, uma vez que o isolamento de loopback entre repositorios e aplicado por hooks cgroup eBPF que um contentor com bridge contornaria. Os servicos de producao devem usar `renet compose` (que injeta host networking automaticamente); para depuracao ad-hoc, passe `--network host` explicitamente: `docker run --rm --network host -it ubuntu bash`.
+> **O bridge networking do Docker esta desactivado para daemons por repositorio.** Cada daemon por repositorio (`FlavorRediacc`) e configurado com `"bridge": "none"` e `"iptables": false`. Um simples `docker run <image>` dentro de uma shell de repositorio ainda sera lancado, mas o contentor obtem apenas uma interface de loopback e nao tem DNS nem conectividade de saida. Isto e por design, uma vez que o isolamento de loopback entre repositorios e aplicado por hooks cgroup eBPF que um contentor com bridge contornaria. Os servicos de producao devem usar `renet compose` (que injeta host networking automaticamente); para depuracao ad-hoc, passe `--network host` explicitamente: `docker run --rm --network host -it ubuntu bash`.
+>
+> Os daemons Hub por utilizador (`FlavorHub`, usados em ambientes de desenvolvimento) sao a excecao: definem `bridge="docker0"`, `iptables=true` e `live-restore=true` para que os contentores executados pelo utilizador tenham bridge networking normal e conectividade de saida.
 
 > **Nota:** Os repositorios fork obtem rotas automaticas sob o subdominio do pai: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Os dominios personalizados sao ignorados para forks.
 

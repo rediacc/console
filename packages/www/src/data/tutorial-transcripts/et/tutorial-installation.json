@@ -6,14 +6,52 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.509194,
-      "text": "Esmalt kinnitame, et CLI on teel. CLI käivitamine versioonilipuga prindib paigaldatud versiooni ja näitab, et paigaldamine lõpetati edukalt."
+      "at": 1.626476,
+      "text": "Esmalt kinnitame, et CLI on teel. CLI käivitamine versioonilipuga prindib paigaldatud versiooni ja näitab, et paigaldamine lõpetati edukalt.",
+      "afterText": "Paigaldus tehtud. rdc binaarfail on sinu teel.",
+      "cardLabel": "Installi CLI",
+      "prose": "Kleebi installimise käsk oma terminal'i ja käivita see. Skript kontrollib sinu platvormi, laadib alla uusima stabiilse binaarfaili ja paigutab selle sinu kodukataloogi. Süsteemiülest installimist pole vaja, sudo ei ole nõutav. Kui see on lõppenud, on rdc binaarfail sinu teel ja käivitatav igast shell'ist."
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 9.435981,
-      "text": "Järgmisena käivitame CLI doctor. See kontrollib sõltuvusi, mida CLI vajab -- Node, SSH ja ülejäänud -- ning teatab puuduvatest komponentidest. Puhas aruanne tähendab, et oled valmis serverit lisama."
+      "at": 7.903516,
+      "text": "Järgmisena käivitame CLI doctor. See kontrollib sõltuvusi, mida CLI vajab -- Node, SSH ja ülejäänud -- ning teatab puuduvatest komponentidest. Puhas aruanne tähendab, et oled valmis serverit lisama.",
+      "afterText": "Versioon prinditud. Oled valmis alustama.",
+      "cardLabel": "Kontrolli Versiooni",
+      "prose": "Kinnita installimine, käivitades rdc versiooni lipuga. See väljastab installitud versiooni, kinnitades, et binaarfail on sinu teel."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Olgu! Paigaldame käsurea tööriista sinu sülearvutisse."
+    },
+    {
+      "id": "three-steps",
+      "text": "Kolm sammu. Ava paigalduse leht, vali oma operatsioonisüsteem ja kleebi käsk terminali."
+    },
+    {
+      "id": "open-install-page",
+      "text": "Mine paigalduse lehele ja keri alla kiirpaigalduse jaotiseni. See genereerib õige üherealise käsu, ükskõik mis platvormil oled."
+    },
+    {
+      "id": "laptop-vs-server",
+      "text": "Käsurea tööriist elab sinu sülearvutis. Serveris töötab eraldi komponent nimega renet, mille CLI varustab ja juhib üle SSH, nii et sa ei pea kunagi käsitsi sisse logima."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Paigaldus on tehtud. Järgmisena seadistame SSH võtme, et CLI saaks su serveritesse jõuda."
+    }
+  ],
+  "title": "Installimine",
+  "chapters": {
+    "intro": "Installimine",
+    "three-steps": "Kolm sammu",
+    "open-install": "Ava installimise leht",
+    "cast-step-0": "Samm 1: Installi CLI",
+    "cast-step-1": "Samm 2: Kinnita installimine",
+    "laptop-vs-server": "Miks rdc asub sinu sülearvutis",
+    "outro": "Järgmine: SSH-võtme seadistamine"
+  }
 }

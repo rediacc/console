@@ -7,405 +7,95 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "a66f59c056538beec0be7ec71ad643f6bb574a0433b8c4828331a4eb94e06122",
+  "transcriptHash": "253242f083e3fb4bedad89d1e2a7411afe2f0fe1f1e18f0fc207220f915fc158",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 52.700593,
-      "replayEndSec": 61.85842,
+      "replayStartSec": 2.40432,
+      "replayEndSec": 6.041569,
       "narrationText": "Шаг первый. Выводим список доступных шаблонов. Rediacc поставляется с готовыми конфигурациями для популярных приложений: Postgres, Redis, веб-серверы — чтобы не писать docker compose точка yml с нуля.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-01.5c241ac7.mp3",
-      "audioDurationSec": 14.210612,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.8,
-          "startChar": 4,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 2.0,
-          "startChar": 20,
-          "endChar": 26
-        },
-        {
-          "startSec": 2.0,
-          "endSec": 2.56,
-          "startChar": 27,
-          "endChar": 36
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.12,
-          "startChar": 37,
-          "endChar": 45
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.64,
-          "startChar": 55,
-          "endChar": 67
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 4.72,
-          "startChar": 68,
-          "endChar": 69
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.2,
-          "startChar": 70,
-          "endChar": 78
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 6.0,
-          "startChar": 79,
-          "endChar": 93
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.24,
-          "startChar": 94,
-          "endChar": 97
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.8,
-          "startChar": 98,
-          "endChar": 108
-        },
-        {
-          "startSec": 6.8,
-          "endSec": 7.44,
-          "startChar": 109,
-          "endChar": 119
-        },
-        {
-          "startSec": 10.56,
-          "endSec": 10.8,
-          "startChar": 152,
-          "endChar": 157
-        },
-        {
-          "startSec": 10.8,
-          "endSec": 10.96,
-          "startChar": 158,
-          "endChar": 160
-        },
-        {
-          "startSec": 10.96,
-          "endSec": 11.36,
-          "startChar": 161,
-          "endChar": 167
-        },
-        {
-          "startSec": 11.36,
-          "endSec": 11.68,
-          "startChar": 168,
-          "endChar": 174
-        },
-        {
-          "startSec": 11.68,
-          "endSec": 12.32,
-          "startChar": 175,
-          "endChar": 182
-        },
-        {
-          "startSec": 13.76,
-          "endSec": 14.16,
-          "startChar": 195,
-          "endChar": 199
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-01.3d1487f1.mp3",
+      "textHash": "3d1487f1667ab436cd5860f133de9d08957c8365eb041a3be2f9fafce400ea1b",
+      "audioDurationSec": 13.244082,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-01-after.9e95be3b.mp3",
+      "afterAudioDurationSec": 5.146122,
+      "afterTextHash": "9e95be3b02fa84f843e96678039c79d188809652d1ad0c55a5f5a90debcea73b"
     },
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 61.85842,
-      "replayEndSec": 79.070004,
+      "replayStartSec": 6.041569,
+      "replayEndSec": 13.566247,
       "narrationText": "Шаг второй. Применяем шаблон app-postgres к репозиторию. Появляются два файла: docker compose точка yml с описанием контейнеров и Rediaccfile с хуками запуска и остановки.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-02.a902129b.mp3",
-      "audioDurationSec": 14.027755,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.64,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 1.36,
-          "startChar": 4,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.4,
-          "startChar": 12,
-          "endChar": 21
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.88,
-          "startChar": 22,
-          "endChar": 28
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.72,
-          "startChar": 44,
-          "endChar": 55
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.76,
-          "startChar": 57,
-          "endChar": 67
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 6.0,
-          "startChar": 68,
-          "endChar": 71
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.48,
-          "startChar": 72,
-          "endChar": 77
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.36,
-          "startChar": 79,
-          "endChar": 85
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 8.4,
-          "startChar": 86,
-          "endChar": 93
-        },
-        {
-          "startSec": 9.84,
-          "endSec": 9.92,
-          "startChar": 104,
-          "endChar": 105
-        },
-        {
-          "startSec": 9.92,
-          "endSec": 10.4,
-          "startChar": 106,
-          "endChar": 115
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 11.12,
-          "startChar": 116,
-          "endChar": 127
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 11.6,
-          "startChar": 128,
-          "endChar": 129
-        },
-        {
-          "startSec": 12.24,
-          "endSec": 12.32,
-          "startChar": 142,
-          "endChar": 143
-        },
-        {
-          "startSec": 12.32,
-          "endSec": 12.64,
-          "startChar": 144,
-          "endChar": 150
-        },
-        {
-          "startSec": 12.64,
-          "endSec": 13.12,
-          "startChar": 151,
-          "endChar": 158
-        },
-        {
-          "startSec": 13.28,
-          "endSec": 13.36,
-          "startChar": 159,
-          "endChar": 160
-        },
-        {
-          "startSec": 13.36,
-          "endSec": 13.92,
-          "startChar": 161,
-          "endChar": 170
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-02.c1368d91.mp3",
+      "textHash": "c1368d9106318edd74c7475496e0f7601976e448cd7167e132d42263ad234fd8",
+      "audioDurationSec": 12.59102,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-02-after.76d9dd74.mp3",
+      "afterAudioDurationSec": 6.844082,
+      "afterTextHash": "76d9dd7487d7595f94e830f66a6dd977ca886aff6a5616ab82001084fe8cf5c2"
     },
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 79.070004,
-      "replayEndSec": 123.719014,
+      "replayStartSec": 13.566247,
+      "replayEndSec": 23.282435,
       "narrationText": "Шаг третий. Запускаем репозиторий. CLI стартует контейнеры, монтирует зашифрованный том и подключает изолированный Docker-демон. Приложение уже работает.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-03.b2f71640.mp3",
-      "audioDurationSec": 12.120816,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 1.12,
-          "startChar": 4,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.56,
-          "startChar": 12,
-          "endChar": 21
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.36,
-          "startChar": 22,
-          "endChar": 33
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 5.12,
-          "startChar": 39,
-          "endChar": 47
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.76,
-          "startChar": 48,
-          "endChar": 58
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.8,
-          "startChar": 60,
-          "endChar": 69
-        },
-        {
-          "startSec": 6.8,
-          "endSec": 7.36,
-          "startChar": 70,
-          "endChar": 83
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.76,
-          "startChar": 84,
-          "endChar": 87
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.16,
-          "startChar": 88,
-          "endChar": 89
-        },
-        {
-          "startSec": 8.16,
-          "endSec": 8.8,
-          "startChar": 90,
-          "endChar": 100
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 9.44,
-          "startChar": 101,
-          "endChar": 114
-        },
-        {
-          "startSec": 9.44,
-          "endSec": 9.84,
-          "startChar": 115,
-          "endChar": 121
-        },
-        {
-          "startSec": 9.84,
-          "endSec": 10.24,
-          "startChar": 122,
-          "endChar": 127
-        },
-        {
-          "startSec": 10.72,
-          "endSec": 11.28,
-          "startChar": 129,
-          "endChar": 139
-        },
-        {
-          "startSec": 11.28,
-          "endSec": 11.52,
-          "startChar": 140,
-          "endChar": 143
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 12.0,
-          "startChar": 144,
-          "endChar": 152
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-03.fa8993cf.mp3",
+      "textHash": "fa8993cf4b82c880933cc4543bd751dbc2e2060805b4d7d5414515a114124104",
+      "audioDurationSec": 11.075918,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-03-after.b9f6273d.mp3",
+      "afterAudioDurationSec": 5.250612,
+      "afterTextHash": "b9f6273d0288cec5d57552e6bb2038669b96c927a7137711bd4b8adecb6bd7e2"
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 123.719014,
-      "replayEndSec": 179.687714,
+      "replayStartSec": 23.282435,
+      "replayEndSec": 30.345778,
       "narrationText": "Проверяем с помощью docker ps. Обратите внимание: этот вид показывает только контейнеры нашего репозитория. У других репозиториев на том же сервере собственные Docker-демоны, отсюда они полностью невидимы.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-04.adeed2d0.mp3",
-      "audioDurationSec": 14.445714,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.64,
-          "startChar": 0,
-          "endChar": 9
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 0.8,
-          "startChar": 10,
-          "endChar": 11
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.2,
-          "startChar": 12,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.6,
-          "startChar": 160,
-          "endChar": 166
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.8,
-          "startChar": 198,
-          "endChar": 201
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-04.ab20eefb.mp3",
+      "textHash": "ab20eefbe32770c6882a511318e29cc49634557156928a75e83da3f02da50dc6",
+      "audioDurationSec": 14.210612,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-04-after.581a218a.mp3",
+      "afterAudioDurationSec": 6.269388,
+      "afterTextHash": "581a218a7651eb03d85c6073ddff5d8e5bce0c753563b5e5e079a66bd06d3c9a"
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "replayStartSec": 30.345778,
+      "replayEndSec": 38.921409,
+      "narrationText": "Давайте проверим, что запущено. docker ps здесь показывает только контейнеры этого repo. Другие repos на том же сервере имеют собственные daemons и полностью невидимы из этого представления.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-05.49380350.mp3",
+      "textHash": "49380350a39ac981a94d36eb500a5851dab363c027ec31340c0a4a150f149e6c",
+      "audioDurationSec": 11.467755,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-05-after.c73a4c9a.mp3",
+      "afterAudioDurationSec": 6.922449,
+      "afterTextHash": "c73a4c9a6607cfb83bd9bd649d44eeee1f0b20d266a83df05a282a458ec18ca5"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "185070d50105a0f82f5d509adebcaf97cc04dc977c7c303ecc1e2484cc496e85",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/intro.185070d5.mp3",
+      "narrationText": "Пора развернуть настоящее приложение! Пройдём путь от пустого репозитория до запущенных контейнеров за три коротких шага.",
+      "audioDurationSec": 10.370612
+    },
+    {
+      "id": "pick-apply-run",
+      "textHash": "4d6f807e1b1496f65d564cf93bd83ffd6b85a870682e0ab077e870b879a1d116",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/pick-apply-run.4d6f807e.mp3",
+      "narrationText": "Схема проста: выбрать шаблон, применить его к репозиторию и запустить. В CLI встроены шаблоны, поэтому docker-compose писать с нуля не нужно.",
+      "audioDurationSec": 11.885714
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "c1a61cf12b3cb0ce9f74932ba69f59fda1fe16bc59110cb9c8b80098be687214",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/next-tutorial.c1a61cf1.mp3",
+      "narrationText": "Ваш первый деплой завершён. Увидимся в следующем уроке, где разберёмся с работой внутри репозитория.",
+      "audioDurationSec": 8.515918
     }
   ]
 }

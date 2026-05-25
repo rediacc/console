@@ -6,32 +6,72 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 102.949897,
-      "text": "Sistem görünümüyle başlıyoruz. --system filtresiyle makine sorgu komutu, sistem çalışma süresi, disk kullanımı ve depolama durumunu gösterir. Bir sorun varsa rapor bizi bilgilendirir."
+      "at": 2.411841,
+      "text": "Sistem görünümüyle başlıyoruz. --system filtresiyle makine sorgu komutu, sistem çalışma süresi, disk kullanımı ve depolama durumunu gösterir. Bir sorun varsa rapor bizi bilgilendirir.",
+      "afterText": "Çalışma süresi, disk, depolama. Tek bakışta ihtiyacınız olan her şey.",
+      "cardLabel": "Sistem Sağlığı",
+      "prose": "Sistem görünümüyle başlayın. system filtresiyle rdc machine query komutu çalışma süresini, disk kullanımını ve depolama durumunu gösterir."
     },
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 114.069314,
-      "text": "Şimdi container'lar. Bu görünüm, makinedeki her depodaki tüm çalışan container'ları listeler: ad, durum, sağlık, CPU, bellek ve her birinin hangi depoya ait olduğu."
+      "at": 8.597185,
+      "text": "Şimdi container'lar. Bu görünüm, makinedeki her depodaki tüm çalışan container'ları listeler: ad, durum, sağlık, CPU, bellek ve her birinin hangi depoya ait olduğu.",
+      "afterText": "Tüm depolardaki tüm container'lar, tek bir görünümde.",
+      "cardLabel": "Container'lar",
+      "prose": "Container görünümü, makinedeki her repository'de çalışan tüm container'ları listeler: ad, durum, sağlık, CPU, bellek ve bağlı olduğu repo."
     },
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 126.082986,
-      "text": "Şimdi depoların kendisi. Boyut, bağlama durumu, Docker daemon durumu, disk kullanımı. Makinedeki her izole ortam hakkında bilmeniz gereken her şey."
+      "at": 15.126152,
+      "text": "Şimdi depoların kendisi. Boyut, bağlama durumu, Docker daemon durumu, disk kullanımı. Makinedeki her izole ortam hakkında bilmeniz gereken her şey.",
+      "afterText": "Tüm depolar, tüm daemon'ları, tüm disk kullanımları.",
+      "cardLabel": "Repository'ler",
+      "prose": "Repository görünümü, her izole ortam için boyutu, bağlama durumunu, Docker daemon durumunu ve disk kullanımını raporlar."
     },
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 138.182721,
-      "text": "Makine sorgu komutu her şeyi tek seferde verir. Sistem bilgisi, container'lar, depolar; hepsi bir arada. Bir kez çalıştırın; tam görünümü elde edin."
+      "at": 24.385141,
+      "text": "Makine sorgu komutu her şeyi tek seferde verir. Sistem bilgisi, container'lar, depolar; hepsi bir arada. Bir kez çalıştırın; tam görünümü elde edin.",
+      "afterText": "Her şey bir arada, filtre gerekmez.",
+      "cardLabel": "Tam Sorgu",
+      "prose": "Sistem bilgilerini, container'ları ve repository'leri tek bir çıktıda almak için rdc machine query komutunu filtre olmadan çalıştırın."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 149.8205,
-      "text": "Son olarak dizüstü bilgisayarınızda yerel doğruluk kontrolü için tanı denetimi. Node, SSH anahtarı, renet, Docker; CLI'nin bağımlı olduğu her şey. Seri tamamlandı. Kurulumdan izlemeye kadar, hepsi terminalinizden."
+      "at": 32.334422,
+      "text": "Son olarak dizüstü bilgisayarınızda yerel doğruluk kontrolü için tanı denetimi. Node, SSH anahtarı, renet, Docker; CLI'nin bağımlı olduğu her şey. Seri tamamlandı. Kurulumdan izlemeye kadar, hepsi terminalinizden.",
+      "afterText": "Hepsi yeşilse yerel CLI'nız sağlıklı demektir.",
+      "cardLabel": "Doctor",
+      "prose": "Dizüstü bilgisayarınızda yerel bir kontrol için rdc doctor çalıştırın. Node, SSH anahtarı, renet ve Docker'ı, yani CLI'nin bağımlı olduğu tüm bileşenleri doğrular."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Pekâlâ! Uygulamanız yayında ve yedekli; şimdi sağlıklı kalmasını sağlayalım."
+    },
+    {
+      "id": "three-checks",
+      "text": "CLI, dizüstü bilgisayarınızdan herhangi bir sunucunun tam görüntüsünü verir. Kontrol edilecek üç açı var: sistem sağlığı, çalışan container'lar ve depoların kendisi."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Seri böylece tamamlandı. Artık kurulum yapabilir, yapılandırabilir, dağıtabilir, fork'layabilir, yayına alabilir, otomatik başlatabilir, yedekleyebilir ve izleyebilirsiniz; hepsi terminalinizden!"
+    }
+  ],
+  "title": "İzleme",
+  "chapters": {
+    "intro": "İzleme",
+    "three-checks": "Kontrol Edebileceğiniz Üç Şey",
+    "cast-step-0": "Sağlık: Sistem Bilgisi",
+    "cast-step-1": "Container'lar",
+    "cast-step-2": "Repo'lar",
+    "cast-step-3": "Her Şey Tek Seferde",
+    "cast-step-4": "Yerel Kontrol",
+    "outro": "Serinin Sonu"
+  }
 }

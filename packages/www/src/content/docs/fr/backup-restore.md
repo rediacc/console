@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: "eae6eedb1a1298f2"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "633ed49fd412e0ec"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Sauvegarde et restauration
@@ -181,7 +181,7 @@ Une sauvegarde froide s'exécute en trois phases par dépôt inclus : **arrêt -
 
 - `rdc machine query --name <machine> --containers` affiche l'état d'exécution. Comparez avec l'ensemble attendu.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` sur la machine. Inspectez via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` avec un `startedAt` obsolète signifie que la dernière sauvegarde ne s'est pas terminée proprement.
-- Les journaux du run de sauvegarde renet (`journalctl -u renet-*` ou l'invocation directe `rdc machine deploy-backup`) émettent une ligne de résumé finale de la forme `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vide est la cible de grep.
+- Les journaux du run de sauvegarde renet (`journalctl -u renet-*` ou l'invocation directe `rdc machine backup schedule`) émettent une ligne de résumé finale de la forme `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vide est la cible de grep.
 
 ### Estimer le temps d'arrêt d'une sauvegarde froide
 

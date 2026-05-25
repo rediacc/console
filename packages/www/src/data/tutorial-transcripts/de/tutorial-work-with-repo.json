@@ -6,26 +6,67 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 93.14728,
-      "text": "Zuerst der tunnel-Befehl. Die App läuft auf dem Server, nicht auf Ihrem Laptop. Der Tunnel-Befehl leitet den Port eines Containers über SSH weiter, sodass Sie ihn unter localhost in Ihrem Browser öffnen können."
+      "at": 2.415513,
+      "text": "Zuerst der tunnel-Befehl. Die App läuft auf dem Server, nicht auf Ihrem Laptop. Der Tunnel-Befehl leitet den Port eines Containers über SSH weiter, sodass Sie ihn unter localhost in Ihrem Browser öffnen können.",
+      "afterText": "Port weitergeleitet. Die App ist jetzt unter localhost erreichbar.",
+      "cardLabel": "Port tunneln",
+      "prose": "Die App läuft auf dem Server, nicht auf deinem Laptop. Der tunnel-Befehl leitet einen container-Port über SSH weiter, sodass du ihn unter localhost in deinem Browser öffnen kannst."
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 103.393386,
-      "text": "Zweitens der term-Befehl. Der Terminal-Connect-Befehl bringt Sie in die Sandbox des Repos, dieselbe isolierte Ansicht wie in VS Code. Führen Sie beliebige Befehle gegen den Docker-Daemon dieses Repos aus, ohne das Terminal zu verlassen."
+      "at": 9.087333,
+      "text": "Zweitens der term-Befehl. Der Terminal-Connect-Befehl bringt Sie in die Sandbox des Repos, dieselbe isolierte Ansicht wie in VS Code. Führen Sie beliebige Befehle gegen den Docker-Daemon dieses Repos aus, ohne das Terminal zu verlassen.",
+      "afterText": "In der Repo-Sandbox. Führ alles aus, als wärst du per SSH eingeloggt.",
+      "cardLabel": "Term im sandbox",
+      "prose": "Der Befehl term connect versetzt dich in den repo-sandbox, dieselbe isolierte Ansicht wie in VS Code. Führe beliebige Befehle gegen den Docker daemon dieses repos aus, ohne dein terminal zu verlassen."
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 120.858492,
-      "text": "Bevor Dateien übertragen werden, zeigen wir eine Vorschau mit --dry-run. Das zeigt genau, was sich ändern würde, ohne irgendetwas zu kopieren. Immer Vorschau anzeigen, wenn Sie unsicher sind."
+      "at": 15.893309,
+      "text": "Bevor Dateien übertragen werden, zeigen wir eine Vorschau mit --dry-run. Das zeigt genau, was sich ändern würde, ohne irgendetwas zu kopieren. Immer Vorschau anzeigen, wenn Sie unsicher sind.",
+      "afterText": "Nur eine Vorschau. Es wurden noch keine Dateien verschoben.",
+      "cardLabel": "Sync-Vorschau",
+      "prose": "Führe sync mit --dry-run aus, bevor du Dateien verschiebst. Es zeigt genau an, was sich ändern würde, ohne etwas zu kopieren. Sieh dir zuerst eine Vorschau an, wenn Quelle oder Ziel unsicher sind."
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 137.357072,
-      "text": "Jetzt führen wir den Upload durch. Der Sync-Upload-Befehl verschiebt Dateien von Ihrem Laptop ins Repo über SSH mit rsync-Delta-Kompression. Tunnel, term, sync: drei Befehle decken den täglichen Ablauf ab."
+      "at": 22.144638,
+      "text": "Jetzt führen wir den Upload durch. Der Sync-Upload-Befehl verschiebt Dateien von Ihrem Laptop ins Repo über SSH mit rsync-Delta-Kompression. Tunnel, term, sync: drei Befehle decken den täglichen Ablauf ab.",
+      "afterText": "Dateien hochgeladen. Die Delta-Kompression kommt auch mit großen Bäumen klar.",
+      "cardLabel": "Sync-Upload",
+      "prose": "Der Befehl sync upload verschiebt Dateien von deinem Laptop über SSH in das repo und nutzt dabei rsync-Delta-Komprimierung. Zusammen decken tunnel, term und sync den täglichen Arbeitsablauf ab."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alles klar! Deine App läuft, also arbeiten wir jetzt wirklich damit. Drei Befehle decken den täglichen Ablauf ab."
+    },
+    {
+      "id": "daily-three",
+      "text": "tunnel öffnet deine App im Browser, term führt Befehle in der Sandbox aus, und sync schiebt Dateien rein und raus. Das ist der komplette tägliche Workflow."
+    },
+    {
+      "id": "open-tunnel",
+      "text": "Mit dem laufenden Tunnel öffnet sich die App direkt in deinem Browser. Für diese Demo laden wir rediacc.com, genauso wie du deine eigene App erreichst, die direkt aus dem container bereitgestellt wird."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Und das war das tägliche Dreigespann. Bis zum nächsten Mal!"
+    }
+  ],
+  "title": "Mit deinem Repo arbeiten",
+  "chapters": {
+    "intro": "Mit deinem Repo arbeiten",
+    "daily-three": "Die täglichen drei: tunnel, term, sync",
+    "cast-step-0": "Tunnel: container-Port weiterleiten",
+    "open-tunnel": "App im Browser öffnen",
+    "cast-step-1": "Term: Befehle im sandbox ausführen",
+    "cast-step-2": "Sync: Vorschau mit --dry-run",
+    "cast-step-3": "Sync: echten Upload durchführen",
+    "outro": "Weiter: Repository forken"
+  }
 }

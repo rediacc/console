@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "eae6eedb1a1298f2"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "633ed49fd412e0ec"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -181,7 +181,7 @@ rdc repo pull --from my-storage -m server-1
 
 - `rdc machine query --name <machine> --containers` يُظهر حالة التشغيل. قارن مع المجموعة المتوقعة.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` على الجهاز. افحص عبر `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` مع `startedAt` قديم يعني أن آخر نسخة احتياطية لم تكتمل بنظافة.
-- السجلات من تشغيل نسخ renet الاحتياطي (`journalctl -u renet-*` أو استدعاء `rdc machine deploy-backup` المباشر) تصدر سطر ملخص نهائي بالشكل `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. `failed_repos` غير الفارغة هي هدف grep.
+- السجلات من تشغيل نسخ renet الاحتياطي (`journalctl -u renet-*` أو استدعاء `rdc machine backup schedule` المباشر) تصدر سطر ملخص نهائي بالشكل `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. `failed_repos` غير الفارغة هي هدف grep.
 
 ### تقدير وقت التوقف للنسخ الاحتياطي البارد
 

@@ -1,0 +1,130 @@
+WEBVTT
+
+00:00:01.080 --> 00:00:01.480
+Alright!
+
+00:00:01.880 --> 00:00:05.160
+Let's give your app a real domain with automatic TLS
+
+00:00:05.480 --> 00:00:07.720
+. Four short steps and you're on the internet.
+
+00:00:08.614 --> 00:00:11.574
+Here is the path. Grab a Cloudflare API
+
+00:00:11.574 --> 00:00:14.694
+token, configure the infrastructure on the CLI
+
+00:00:15.094 --> 00:00:18.134
+, push it to the server, then deploy a Traefik proxy
+
+00:00:18.134 --> 00:00:20.374
+that handles DNS and certificates for you.
+
+00:00:21.349 --> 00:00:24.309
+First, open the Cloudflare dashboard in your browser
+
+00:00:24.709 --> 00:00:27.589
+. Go to My Profile, then API Tokens, and
+
+00:00:27.589 --> 00:00:30.309
+create a token with Zone DNS Edit permission
+
+00:00:30.549 --> 00:00:32.789
+so the CLI can manage your records.
+
+00:00:36.189 --> 00:00:38.989
+Step two. We set the public IP, the
+
+00:00:38.989 --> 00:00:41.709
+base domain, the certificate email, and
+
+00:00:41.709 --> 00:00:44.509
+the Cloudflare API token from the command line
+
+00:00:44.909 --> 00:00:47.709
+. The cert email and the token are shared across all
+
+00:00:47.709 --> 00:00:50.429
+your machines, so you only set them once.
+
+00:00:51.435 --> 00:00:53.595
+Infrastructure recorded in your config.
+
+00:00:57.100 --> 00:00:59.980
+Let us confirm the infrastructure settings were stored
+
+00:01:00.380 --> 00:01:03.340
+. Public IP, base domain, certificate
+
+00:01:03.340 --> 00:01:04.860
+email, all visible.
+
+00:01:06.739 --> 00:01:09.059
+Settings stored. Ready to push to the server.
+
+00:01:12.521 --> 00:01:15.081
+Step three. Push the configuration to the
+
+00:01:15.081 --> 00:01:17.721
+server. This creates the DNS records
+
+00:01:17.721 --> 00:01:20.441
+on Cloudflare automatically and prepares
+
+00:01:20.441 --> 00:01:21.881
+the proxy configuration.
+
+00:01:25.082 --> 00:01:27.722
+Pushed. DNS records are being created
+
+00:01:27.722 --> 00:01:28.602
+on Cloudflare.
+
+00:01:32.066 --> 00:01:34.946
+Step four begins. Create a small repo
+
+00:01:34.946 --> 00:01:37.666
+named infra. This is where the proxy
+
+00:01:37.666 --> 00:01:40.626
+will live, isolated from the application repos.
+
+00:01:44.059 --> 00:01:47.099
+Infra repo created. Isolated from your app repos.
+
+00:01:50.548 --> 00:01:53.108
+Apply the proxy template. It carries Traefik
+
+00:01:53.108 --> 00:01:55.828
+plus the configuration for Let's Encrypt and Cloudflare
+
+00:01:55.908 --> 00:01:58.148
+DNS-01 challenges, ready to go.
+
+00:02:00.609 --> 00:02:02.289
+Traefik configuration in place.
+
+00:02:05.685 --> 00:02:08.485
+And bring the proxy up. Traefik discovers
+
+00:02:08.485 --> 00:02:11.525
+your containers automatically. TLS certificates
+
+00:02:11.525 --> 00:02:14.165
+come from Let's Encrypt automatically. Your
+
+00:02:14.245 --> 00:02:17.525
+app is now reachable on the internet over HTTPS.
+
+00:02:17.727 --> 00:02:20.367
+Proxy is live. TLS certificates
+
+00:02:20.367 --> 00:02:21.647
+will arrive automatically.
+
+00:02:22.591 --> 00:02:25.311
+And that's networking sorted! See
+
+00:02:25.311 --> 00:02:26.351
+you in the next one.

@@ -1,0 +1,58 @@
+---
+title: "Distribuire la Tua Prima App"
+description: "Distribuisci un'app containerizzata da un template integrato usando rdc repo up. È pronta in un attimo."
+category: "Tutorials"
+subcategory: essentials
+order: 5
+language: it
+sourceHash: "764733d064b93e4a"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Distribuire la Tua Prima App
+
+Hai un repository vuoto. `rdc` include template integrati così puoi avviare app reali senza scrivere un `docker-compose` da zero. Tre passi: scegli un template, applicalo, eseguilo.
+
+## Guarda il tutorial
+
+![Tutorial: Distribuire la tua prima app](/assets/tutorials/tutorial-deploy-app.cast)
+
+## Scegli, Applica, Esegui
+
+![Scegli un template, applicalo, eseguilo](/img/tutorials/tutorial-deploy-app/slide-1.svg)
+
+## Passo 1: Scegli
+
+<TutorialStep number={1} />
+
+Vedrai configurazioni già pronte per app comuni: Postgres, Redis, web server e altro.
+
+## Passo 2: Applica
+
+<TutorialStep number={2} />
+
+Questo copia un insieme di file testati nel repo.
+
+## Passo 3: Vedi cosa è arrivato
+
+<TutorialStep number={3} />
+
+Due file: `docker-compose.yml` descrive i container, e `Rediaccfile` definisce cosa succede quando l'app si avvia e si ferma (i suoi hook di ciclo di vita `up` e `down`). Il `2>/dev/null` nasconde i log di connessione in modo che venga mostrato solo l'elenco dei file.
+
+## Passo 4: Esegui
+
+<TutorialStep number={4} />
+
+La CLI avvia i container, monta il volume cifrato e collega un daemon Docker isolato per questo repo. (Se sei gia' all'interno della sandbox del repo tramite VS Code, `renet dev up` e' un'alternativa equivalente nel sandbox.)
+
+## Passo 5: Verifica
+
+<TutorialStep number={5} />
+
+`docker ps` qui elenca solo i container di questo repo. Gli altri repo sullo stesso server hanno i propri daemon Docker e sono completamente invisibili da questo.
+
+---
+
+Successivo: [Lavorare con il Tuo Repo](/it/docs/tutorial-work-with-repo).

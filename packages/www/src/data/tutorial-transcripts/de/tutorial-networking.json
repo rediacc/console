@@ -6,38 +6,86 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 27.859436,
-      "text": "Schritt zwei. Wir teilen der CLI die öffentliche IP, die Basisdomain, die Zertifikats-E-Mail und das Cloudflare-API-Token mit. Die Zertifikats-E-Mail und das Token werden über alle Ihre Maschinen geteilt, sodass Sie sie nur einmal setzen müssen."
+      "at": 2.424705,
+      "text": "Schritt zwei. Wir teilen der CLI die öffentliche IP, die Basisdomain, die Zertifikats-E-Mail und das Cloudflare-API-Token mit. Die Zertifikats-E-Mail und das Token werden über alle Ihre Maschinen geteilt, sodass Sie sie nur einmal setzen müssen.",
+      "afterText": "Infrastruktur in deiner Konfig hinterlegt.",
+      "cardLabel": "Infra Einrichten",
+      "prose": "Legen Sie die öffentliche IP, die Basisdomain, die Zertifikat-E-Mail und den Cloudflare API-Token über die Befehlszeile fest. Die Zertifikat-E-Mail und der Token gelten für alle Ihre Maschinen, daher müssen Sie diese nur einmal festlegen."
     },
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 41.958746,
-      "text": "Wir bestätigen, dass die Infrastruktureinstellungen gespeichert wurden. Öffentliche IP, Basisdomain, Zertifikats-E-Mail, alles in der Konfiguration sichtbar."
+      "at": 13.591473,
+      "text": "Wir bestätigen, dass die Infrastruktureinstellungen gespeichert wurden. Öffentliche IP, Basisdomain, Zertifikats-E-Mail, alles in der Konfiguration sichtbar.",
+      "afterText": "Einstellungen gespeichert. Bereit, sie auf den Server zu pushen.",
+      "cardLabel": "Infra Anzeigen",
+      "prose": "Überprüfen Sie, ob die Infrastruktureinstellungen gespeichert wurden. Öffentliche IP, Basisdomain und Zertifikat-E-Mail sollten alle sichtbar sein."
     },
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 51.564603,
-      "text": "Schritt drei. Wir übertragen die Konfiguration auf den Server. Dabei werden die DNS-Einträge bei Cloudflare automatisch erstellt und die Proxy-Konfiguration auf der Maschine vorbereitet."
+      "at": 18.479059,
+      "text": "Schritt drei. Wir übertragen die Konfiguration auf den Server. Dabei werden die DNS-Einträge bei Cloudflare automatisch erstellt und die Proxy-Konfiguration auf der Maschine vorbereitet.",
+      "afterText": "Gepusht. DNS-Einträge werden auf Cloudflare angelegt.",
+      "cardLabel": "Infra Pushen",
+      "prose": "Übertragen Sie die Konfiguration auf den Server. Dabei werden die DNS-Einträge auf Cloudflare automatisch erstellt und die Proxy-Konfiguration vorbereitet."
     },
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 70.626849,
-      "text": "Schritt vier beginnt. Wir erstellen ein kleines Repo namens infra. Dort wird der Proxy leben, isoliert von den Anwendungsrepos."
+      "at": 25.757057,
+      "text": "Schritt vier beginnt. Wir erstellen ein kleines Repo namens infra. Dort wird der Proxy leben, isoliert von den Anwendungsrepos.",
+      "afterText": "Infra-Repo angelegt. Isoliert von deinen App-Repos.",
+      "cardLabel": "Repo Erstellen",
+      "prose": "Erstellen Sie ein kleines repo mit dem Namen infra. Hier wird der Proxy untergebracht, isoliert von den Anwendungs-repos."
     },
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 97.243945,
-      "text": "Wir wenden die integrierte proxy-Vorlage an. Sie enthält Traefik sowie die Konfiguration für Let's Encrypt und Cloudflare DNS-01-Challenges, direkt einsatzbereit."
+      "at": 33.957312,
+      "text": "Wir wenden die integrierte proxy-Vorlage an. Sie enthält Traefik sowie die Konfiguration für Let's Encrypt und Cloudflare DNS-01-Challenges, direkt einsatzbereit.",
+      "afterText": "Traefik-Konfiguration steht.",
+      "cardLabel": "Vorlage Anwenden"
     },
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 112.494613,
-      "text": "Und wir starten den Proxy. Traefik erkennt Ihre Container alle fünf Sekunden. TLS-Zertifikate kommen automatisch von Let's Encrypt. Ihre App ist jetzt über HTTPS im Internet erreichbar."
+      "at": 41.036573,
+      "text": "Und wir starten den Proxy. Traefik erkennt Ihre Container alle fünf Sekunden. TLS-Zertifikate kommen automatisch von Let's Encrypt. Ihre App ist jetzt über HTTPS im Internet erreichbar.",
+      "afterText": "Proxy ist live. TLS-Zertifikate kommen automatisch.",
+      "cardLabel": "Proxy Bereitstellen",
+      "prose": "Starten Sie den Proxy. Traefik erkennt Ihre container automatisch, und TLS-Zertifikate werden automatisch von Let's Encrypt bereitgestellt. Ihre App ist nun über HTTPS im Internet erreichbar."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alles klar! Lass uns deiner App eine echte Domain mit automatischem TLS verpassen. Vier kurze Schritte und du bist im Internet."
+    },
+    {
+      "id": "four-steps",
+      "text": "So sieht der Weg aus. Hol dir ein Cloudflare-API-Token, konfiguriere die Infrastruktur in der CLI, push sie auf den Server und deploye dann einen Traefik-Proxy, der DNS und Zertifikate für dich übernimmt."
+    },
+    {
+      "id": "open-cloudflare",
+      "text": "Zuerst öffnest du das Cloudflare-Dashboard im Browser. Geh zu „My Profile“, dann zu „API Tokens“ und erstelle ein Token mit der Berechtigung Zone DNS Edit, damit die CLI deine Einträge verwalten kann."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Und damit ist das Netzwerk erledigt! Bis zum nächsten Mal."
+    }
+  ],
+  "title": "Netzwerk & Domains",
+  "chapters": {
+    "intro": "Netzwerk & Domains",
+    "four-steps": "Der Vier-Schritte-Weg",
+    "open-cloudflare": "Schritt 1: Cloudflare API-Token",
+    "cast-step-0": "Schritt 2: Infrastruktur konfigurieren",
+    "cast-step-1": "Schritt 2: Einstellungen überprüfen",
+    "cast-step-2": "Schritt 3: Auf den Server pushen",
+    "cast-step-3": "Schritt 4: Das infra-repo erstellen",
+    "cast-step-4": "Schritt 4: Proxy-Vorlage anwenden",
+    "cast-step-5": "Schritt 4: Proxy starten",
+    "outro": "Weiter: Produktionsmodus"
+  }
 }

@@ -1,0 +1,69 @@
+---
+title: "네트워킹 및 도메인"
+description: "도메인, 자동 TLS, Traefik 리버스 프록시로 인터넷에서 앱에 접근할 수 있게 합니다."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: ko
+sourceHash: "5df08f9900623aec"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 네트워킹 및 도메인
+
+앱이 실행 중이지만 아직 아무도 접근할 수 없습니다. 이 튜토리얼에서는 실제 도메인, Let's Encrypt를 통한 자동 TLS, 컨테이너를 자동으로 감지하는 Traefik 프록시를 설정합니다. Cloudflare의 도메인과 API 토큰이 필요합니다.
+
+## 튜토리얼 보기
+
+![Tutorial: Networking and domains](/assets/tutorials/tutorial-networking.cast)
+
+## 네 가지 단계
+
+![Token, configure, push, deploy](/img/tutorials/tutorial-networking/slide-1.svg)
+
+1. Cloudflare API 토큰을 **가져옵니다**.
+2. `rdc`에서 인프라를 **구성**합니다.
+3. 서버에 **푸시**합니다.
+4. 프록시를 **배포**합니다.
+
+## 1단계: Cloudflare API 토큰
+
+Cloudflare 대시보드에서 **내 프로필 → API 토큰**으로 이동하여 **Zone DNS Edit** 권한으로 토큰을 만듭니다. 토큰 값을 복사합니다. 한 번만 볼 수 있습니다.
+
+## 2단계: 인프라 구성
+
+`rdc`에 공용 IP, 기본 도메인, 인증서 이메일, 토큰을 알립니다. `--cert-email`과 `--cf-dns-token`은 모든 머신에서 공유되므로 한 번만 설정합니다.
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+## 3단계: 서버에 푸시
+
+<TutorialStep number={3} />
+
+이 명령은 Cloudflare에 DNS 레코드를 자동으로 생성하고 서버의 프록시 구성을 준비합니다.
+
+## 4단계: 프록시 배포
+
+프록시 자체는 아직 실행되지 않습니다. 내장 `proxy` 템플릿에서, `infra`라는 작은 저장소 내부에 배포합니다:
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+<TutorialStep number={6} />
+
+완료되었습니다. Traefik이 실행 중입니다. 앱에 다음 주소로 접근할 수 있습니다:
+
+```
+myapp.my-app.my-server.yourdomain.com
+```
+
+Traefik은 5초마다 컨테이너를 감지합니다. TLS 인증서는 Let's Encrypt에서 자동으로 발급됩니다. 수동 프록시 구성이 필요 없습니다.
+
+---
+
+다음: [프로덕션 모드](/ko/docs/tutorial-production-mode).

@@ -6,32 +6,72 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 102.949897,
-      "text": "Vamos começar com a vista do sistema. O comando de consulta de máquina com o filtro --system mostra o tempo de funcionamento, o uso do disco e o estado do armazenamento."
+      "at": 2.411841,
+      "text": "Vamos começar com a vista do sistema. O comando de consulta de máquina com o filtro --system mostra o tempo de funcionamento, o uso do disco e o estado do armazenamento.",
+      "afterText": "Tempo de funcionamento, disco, armazenamento. Tudo o que precisa, num relance.",
+      "cardLabel": "Saúde do Sistema",
+      "prose": "Comece pela visão do sistema. O rdc machine query com o filtro system exibe uptime, uso de disco e status de armazenamento."
     },
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 114.069314,
-      "text": "Agora os contentores. Esta vista lista todos os contentores em execução em todos os repositórios da máquina: nome, estado, saúde, CPU, memória e qual o repositório a que cada um pertence."
+      "at": 8.597185,
+      "text": "Agora os contentores. Esta vista lista todos os contentores em execução em todos os repositórios da máquina: nome, estado, saúde, CPU, memória e qual o repositório a que cada um pertence.",
+      "afterText": "Todos os contentores em todos os repos, numa só vista.",
+      "cardLabel": "Containers",
+      "prose": "A visão de containers lista todos os containers em execução em cada repository da máquina: nome, status, saúde, CPU, memória e o repo proprietário."
     },
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 126.082986,
-      "text": "E os próprios repositórios. Tamanho, estado de montagem, estado do daemon Docker, uso do disco. Tudo o que precisamos saber sobre cada ambiente isolado."
+      "at": 15.126152,
+      "text": "E os próprios repositórios. Tamanho, estado de montagem, estado do daemon Docker, uso do disco. Tudo o que precisamos saber sobre cada ambiente isolado.",
+      "afterText": "Todos os repos, todos os seus daemons, todo o seu uso de disco.",
+      "cardLabel": "Repositories",
+      "prose": "A visão de repositories reporta tamanho, status de montagem, status do Docker daemon e uso de disco para cada ambiente isolado."
     },
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 138.182721,
-      "text": "O comando de consulta de máquina sem filtros dá-nos tudo de uma vez. Informação do sistema, contentores, repositórios -- tudo junto."
+      "at": 24.385141,
+      "text": "O comando de consulta de máquina sem filtros dá-nos tudo de uma vez. Informação do sistema, contentores, repositórios -- tudo junto.",
+      "afterText": "Tudo junto, sem precisar de filtros.",
+      "cardLabel": "Query Completa",
+      "prose": "Execute rdc machine query sem filtros para obter informações do sistema, containers e repositories em uma única saída."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 149.8205,
-      "text": "E por fim a verificação de diagnóstico para uma verificação local no portátil. Node, chave SSH, renet, Docker -- tudo aquilo de que a linha de comandos depende. Esta é a série completa. Da instalação à monitorização, tudo a partir do terminal."
+      "at": 32.334422,
+      "text": "E por fim a verificação de diagnóstico para uma verificação local no portátil. Node, chave SSH, renet, Docker -- tudo aquilo de que a linha de comandos depende. Esta é a série completa. Da instalação à monitorização, tudo a partir do terminal.",
+      "afterText": "Tudo a verde significa que a sua CLI local está saudável.",
+      "cardLabel": "Doctor",
+      "prose": "Execute rdc doctor para uma verificação local de sanidade no seu laptop. Ele verifica Node, chave SSH, renet e Docker, todas as dependências das quais o próprio CLI depende."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Tudo certo! A sua aplicação está no ar e com cópia de segurança, agora vamos garantir que se mantém saudável."
+    },
+    {
+      "id": "three-checks",
+      "text": "A CLI dá-lhe uma imagem completa de qualquer servidor a partir do portátil. Três ângulos para verificar: saúde do sistema, contentores em execução e os próprios repositórios."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "E é assim que se fecha a série. Já consegue instalar, configurar, implementar, bifurcar, ir para produção, ativar arranque automático, fazer cópias e monitorizar, tudo a partir do terminal!"
+    }
+  ],
+  "title": "Monitoramento",
+  "chapters": {
+    "intro": "Monitoramento",
+    "three-checks": "Três coisas que você pode verificar",
+    "cast-step-0": "Saúde: informações do sistema",
+    "cast-step-1": "Containers",
+    "cast-step-2": "Repos",
+    "cast-step-3": "Tudo de uma vez",
+    "cast-step-4": "Verificação local de sanidade",
+    "outro": "Fim da série"
+  }
 }

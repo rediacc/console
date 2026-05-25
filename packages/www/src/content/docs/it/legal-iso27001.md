@@ -4,6 +4,8 @@ description: "Come Rediacc si mappa ai controlli di sicurezza delle informazioni
 category: "Legal"
 order: 5
 language: it
+sourceHash: "7c80000942b6196d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 ISO/IEC 27001 è uno standard internazionale per i sistemi di gestione della sicurezza delle informazioni (ISMS), pubblicato dall'International Organization for Standardization (ISO) e dalla International Electrotechnical Commission (IEC). La versione corrente è ISO/IEC 27001:2022.
@@ -20,7 +22,7 @@ Rediacc è un componente del livello dei controlli tecnici all'interno di un ISM
 | **A.8**, Gestione degli asset | A.8.24 Uso della crittografia | Cifratura obbligatoria LUKS2 AES-256 su tutti i repository. Gestione delle chiavi: le credenziali sono archiviate solo nella configurazione locale dell'operatore, mai sul server. |
 | **A.9**, Controllo degli accessi | A.9.2 Gestione degli accessi degli utenti | Autenticazione con chiave SSH. Token API con vincolo IP, ambito di team e revoca automatica alla rimozione dal team. Supporto all'autenticazione a due fattori (TOTP). |
 | **A.10**, Crittografia | A.10.1 Controlli crittografici | LUKS2 con parametri di chiave configurabili. Credenziali di cifratura per repository. Tutto il trasporto remoto tramite SSH. Il config store implementa la cifratura zero-knowledge: AES-256-GCM con derivazione della chiave HKDF, scambio di chiavi membro X25519 e chiavi SDK con finestra temporale per la revoca immediata. |
-| **A.12**, Sicurezza operativa | A.12.3 Backup | `rdc repo backup push/pull` con archiviazione offsite cifrata verso destinazioni multiple (SSH, S3, B2, Azure, GDrive). Snapshot CoW per il ripristino a un momento preciso. `rdc repo validate` verifica lo stato del backup e l'integrità del repository. |
+| **A.12**, Sicurezza operativa | A.12.3 Backup | `rdc repo push/pull` con archiviazione offsite cifrata verso destinazioni multiple (SSH, S3, B2, Azure, GDrive). Snapshot CoW per il ripristino a un momento preciso. `rdc repo validate` verifica lo stato del backup e l'integrità del repository. |
 | **A.12**, Sicurezza operativa | A.12.4 Registrazione e monitoraggio | Oltre 70 tipologie di eventi (autenticazione, token API, configurazione, licenze, operazioni sulle macchine). Monitoraggio dello stato delle macchine tramite `rdc machine query`. Monitoraggio dello stato dei container e delle risorse. |
 | **A.13**, Sicurezza delle comunicazioni | A.13.1 Gestione della sicurezza di rete | Isolamento del daemon Docker per repository. Regole iptables bloccano il traffico tra repository. Sottoreti IP loopback (/26) per repository. Reverse proxy con terminazione TLS per l'accesso esterno. |
 | **A.14**, Sviluppo dei sistemi | A.14.2 Sicurezza nello sviluppo | Gli ambienti di sviluppo basati su fork offrono parità con la produzione senza esporre i dati di produzione. I lifecycle hook del Rediaccfile consentono la sanitizzazione automatizzata dei dati negli ambienti clonati. |

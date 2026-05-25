@@ -1,0 +1,61 @@
+---
+title: "Modo producción"
+description: "Ejecuta tu app desconectada de tu laptop y sobrevive a los reinicios del servidor con el arranque automático."
+category: "Tutorials"
+subcategory: advanced
+order: 10
+language: es
+sourceHash: "6921482ea1810fb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Modo producción
+
+Hasta ahora has estado ejecutando la app con `renet dev up` desde dentro del repo. Eso es ideal para desarrollo. Para producción, gestionas todo desde tu laptop con `rdc`. Cierra tu laptop y la app sigue ejecutándose.
+
+## Ver el tutorial
+
+![Tutorial: Modo producción](/assets/tutorials/tutorial-production-mode.cast)
+
+## Desarrollo vs producción
+
+La diferencia es simple:
+
+- `renet dev up` se ejecuta **dentro del repo**. Necesitas estar conectado.
+- `rdc repo up` se ejecuta **desde tu laptop**. No necesitas conexión después de eso.
+
+Tres acciones te llevan del desarrollo a la producción:
+
+![Detener, arrancar, autoarranque](/img/tutorials/tutorial-production-mode/slide-1.svg)
+
+Si tienes una sesión `renet dev up` en ejecución dentro del repo, primero ciérrala con `rdc vscode connect -m my-server -r my-app` seguido de `renet dev down`. A partir de ahí, todo lo demás se gestiona completamente desde tu laptop.
+
+## Paso 1: Arrancar en modo producción
+
+<TutorialStep number={1} />
+
+`rdc repo up` llama a la misma función `up` que usaba `renet dev up`. El mismo `Rediaccfile`, una forma diferente de invocarlo, solo que ahora la app sigue ejecutándose después de desconectarte.
+
+## Paso 2: Habilitar el arranque automático
+
+<TutorialStep number={2} />
+
+Si el servidor se reinicia, este repo vuelve automáticamente.
+
+## Paso 3: Listar los repos con arranque automático
+
+<TutorialStep number={3} />
+
+Una comprobación rápida de que tu app está en la lista de arranque.
+
+## Paso 4: Detener desde tu laptop
+
+<TutorialStep number={4} />
+
+Un comando para arrancar, un comando para detener. Todo desde tu laptop.
+
+---
+
+Siguiente: [Backup y restauración](/es/docs/tutorial-backup-restore).

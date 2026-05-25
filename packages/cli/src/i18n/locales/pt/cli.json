@@ -26,10 +26,6 @@
         "fetching": "A obter histórico da entidade...",
         "success": "Histórico obtido"
       },
-      "list": {
-        "description": "Listar entradas do registo de auditoria",
-        "fetching": "A obter registos de auditoria..."
-      },
       "log": {
         "description": "Ver registos de auditoria",
         "fetching": "A obter registos de auditoria...",
@@ -490,6 +486,8 @@
         "add": {
           "description": "Adicionar uma máquina à configuração actual. Analisa automaticamente as chaves de anfitrião SSH. Após adicionar, execute: config machine setup <nome>",
           "descriptionShort": "Adicionar uma máquina à configuração actual",
+          "sshConfigFailed": "Falha ao escrever o alias SSH (não fatal): {{error}}",
+          "sshConfigWritten": "Alias SSH rediacc--{{name}} escrito em ~/.ssh/config_rediacc",
           "success": "Máquina \"{{name}}\" adicionada ({{user}}@{{ip}})"
         },
         "description": "Gerir máquinas na configuração actual",
@@ -499,6 +497,7 @@
         },
         "remove": {
           "description": "Remover uma máquina da configuração actual",
+          "sshConfigCleared": "Alias SSH rediacc--{{name}} removido",
           "success": "Máquina \"{{name}}\" removida"
         },
         "scanKeys": {
@@ -652,14 +651,6 @@
         "description": "Definir um valor por omissão (equipa, região, bridge)",
         "success": "\"{{key}}\" definido para \"{{value}}\""
       },
-      "setRenet": {
-        "description": "Definir o caminho para o binário renet",
-        "success": "Caminho do renet definido para: {{path}}"
-      },
-      "setSsh": {
-        "description": "Actualizar a configuração SSH da configuração actual",
-        "success": "Configuração SSH actualizada"
-      },
       "show": {
         "description": "Mostrar os detalhes da configuração actual",
         "noConfig": "Nenhuma configuração activa. Crie uma com: rdc config init",
@@ -733,6 +724,11 @@
         "starting": "A inicializar datastore em \"{{machine}}\"..."
       },
       "machineOption": "Nome da máquina (onde o datastore Ceph está alojado)",
+      "resize": {
+        "description": "Redimensionar o pool de datastore de uma máquina offline (crescer ou reduzir). Todos os repositórios têm de ser desmontados primeiro.",
+        "sizeOption": "Novo tamanho do datastore (por ex., 100G, 95%)",
+        "starting": "A redimensionar o datastore em \"{{machine}}\" para {{size}}..."
+      },
       "status": {
         "description": "Mostrar backend do datastore, tamanho, utilização, estado de montagem e cow_mode (se em fork)",
         "starting": "A verificar estado do datastore em \"{{machine}}\"..."
@@ -927,8 +923,10 @@
         "datastoreCompleted": "Limpeza do datastore concluída",
         "datastoreFailed": "Falha na limpeza do datastore",
         "datastoreOnlyOption": "Apenas remover recursos de datastore órfãos",
+        "datastorePrunedSummary": "Removidos {{count}} recurso(s) órfão(s) do datastore",
         "description": "Remover recursos de datastore órfãos e snapshots desatualizados de uma máquina. A execução base limpa artefactos internos do datastore do renet (subvolumes BTRFS, ficheiros de bloqueio, ficheiros temporários). As opções abaixo permitem limpezas progressivamente mais específicas de repositórios: --orphaned-repos usa apenas a configuração local do CLI como referência, enquanto --prune-unknown consulta também o espelho .interim/state do renet para que forks legítimos criados por outras ferramentas sobrevivam mesmo sem entrada na configuração local. Ambos os caminhos de eliminação executam uma verificação prévia de segurança de montagem; use --force-delete-mounted para ignorar.",
         "descriptionShort": "Remover recursos órfãos e snapshots desatualizados",
+        "dryRunHint": "{{count}} recurso(s) seriam removidos. Execute novamente sem --dry-run para removê-los.",
         "dryRunOption": "Mostrar o que seria removido sem efetuar alterações",
         "forceDeleteMountedOption": "Ignorar a verificação prévia de segurança de montagem e eliminar repositórios mesmo que estejam montados ou com contentores Docker em execução. Distinto de --force (que apenas ignora o período de carência para repositórios arquivados). Aplica-se a --orphaned-repos e --prune-unknown.",
         "noReposFound": "Nenhum repositório encontrado na máquina",
@@ -937,6 +935,7 @@
         "orphanedReposCompleted": "{{count}} repositório(s) órfão(s) removido(s)",
         "orphanedReposOption": "Eliminar todos os repositórios na máquina que não existam na configuração local do CLI. Abrangente -- também remove forks criados por outras ferramentas sem entrada na configuração local, mesmo quando o espelho renet os identifica corretamente como forks. Use --prune-unknown para o comportamento mais restrito que respeita o espelho.",
         "orphanedReposStarting": "A procurar repositórios órfãos em {{machine}}...",
+        "previewEmpty": "Nenhum recurso órfão do datastore encontrado",
         "pruneUnknownOption": "Eliminar apenas repositórios que o espelho .interim/state do renet não consegue classificar (não na configuração local E sem espelho marcado como fork). Estritamente mais restrito do que --orphaned-repos: forks sem configuração são preservados quando o espelho os identifica. Órfãos legados anteriores ao espelho e grands desatualizados cuja entrada de configuração foi eliminada entram neste grupo.",
         "snapshotDeleted": "{{name}} eliminado",
         "snapshotDeleting": "A eliminar {{name}}...",
@@ -958,7 +957,9 @@
         "fetching": "A obter estado de {{machine}}...",
         "infrastructure": "Infraestrutura",
         "noData": "Sem dados de estado disponíveis",
+        "storageHealthFragmentationNote": "A fragmentação conta os extents na imagem copy-on-write de cada repositório, não os arquivos dentro dela. Valores altos são esperados em cargas de escrita aleatória (bancos de dados, camadas de contêineres) e são apenas informativos. A desfragmentação não é suportada aqui intencionalmente: ela desfaria o compartilhamento de forks e snapshots de backup vinculados por reflink e inflaria o uso do datastore.",
         "storageHealthHint": "Sugestão: Execute com --storage-health para ver a fragmentação BTRFS e poupanças de reflink por repositório",
+        "storageHealthSummary": "Eficiência de armazenamento: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} contentor(es) acima do limiar de desvio; a sair com código de erro",
         "syncCertsFailed": "Falha na sincronização da cache de certificados: {{error}}"
       },
@@ -1004,11 +1005,6 @@
         "timeoutMessage": "Tempo limite da ligação de teste excedido. Consulte o rastreio da fila para detalhes.",
         "waiting": "À espera do resultado do teste SSH...",
         "waitingTime": "À espera do resultado do teste SSH... ({{seconds}}s)"
-      },
-      "update": {
-        "description": "Atualizar configuração da máquina",
-        "success": "Máquina \"{{name}}\" atualizada",
-        "updating": "A atualizar máquina..."
       },
       "vault": {
         "description": "Gestão do vault da máquina (apenas adaptador cloud)"
@@ -1120,10 +1116,6 @@
         "notFound": "Nenhuma informação da organização encontrada",
         "success": "Informações da organização obtidas"
       },
-      "list": {
-        "description": "Listar organizações",
-        "fetching": "A obter organizações..."
-      },
       "maintenance": {
         "description": "Ativar ou desativar o modo de manutenção (bloqueia sessões de não administradores)",
         "disabled": "Modo de manutenção desativado",
@@ -1181,10 +1173,6 @@
           "fetching": "A obter detalhes do grupo de permissões...",
           "success": "Detalhes obtidos"
         }
-      },
-      "list": {
-        "description": "Listar permissões",
-        "fetching": "A obter permissões..."
       },
       "remove": {
         "description": "Remover uma permissão de um grupo",
@@ -1335,6 +1323,18 @@
       "batchIterating": "{{action}} — passo {{current}}/{{total}}: \"{{repo}}\"...",
       "batchResult": "{{action}} concluído: {{succeeded}}/{{total}} bem-sucedidos",
       "batchStarting": "A iniciar {{action}}: \"{{repo}}\"...",
+      "cat": {
+        "description": "Ler uma janela delimitada de um ficheiro dentro de um repositório e escrevê-la para stdout (delimitado no servidor; os diagnósticos vão para stderr)",
+        "failed": "Leitura falhou",
+        "forceBinaryOption": "Permitir leitura de conteúdo binário (que contém NUL)",
+        "headOption": "Imprimir apenas as primeiras N linhas (não pode combinar com intervalo de bytes)",
+        "maxBytesOption": "Máximo de bytes a ler e imprimir (predefinição 1 MiB, teto máximo 50 MiB)",
+        "offsetOption": "Deslocamento em bytes a partir do qual começar a ler",
+        "remoteFileOption": "Caminho do ficheiro a ler, relativo à raiz de montagem do repositório",
+        "starting": "A ler \"{{path}}\" de \"{{repository}}\" em \"{{machine}}\"...",
+        "statOption": "Imprimir apenas tamanho, tipo e data de modificação; sem ler conteúdo",
+        "tailOption": "Imprimir apenas as últimas N linhas (não pode combinar com intervalo de bytes)"
+      },
       "certSync": {
         "updated": "Cache de certificados ACME actualizada a partir de {{machine}} ({{count}} certificados)"
       },
@@ -1353,6 +1353,7 @@
         "archived": "Credencial de \"{{repository}}\" arquivada",
         "archiveHint": "Para arquivar as credenciais para recuperação: reexecute com --archive-config",
         "archiveOption": "Mover a entrada de configuração para deletedRepositories para recuperação posterior",
+        "cloudBackupHint": "Os backups na nuvem (se houver) persistem após a exclusão. Remova backups na nuvem órfãos com: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Repositório eliminado",
         "configRetained": "Entrada de configuração para \"{{repository}}\" preservada (o repositório pode existir noutras máquinas). Para remover: rdc config repository remove --name {{repository}}",
         "description": "Eliminar um repositório (destrói contentores, volumes e imagem encriptada). A entrada de configuração é preservada. Use --archive-config para mover as credenciais para deletedRepositories para recuperação via 'config restore-archived'.",
@@ -1361,7 +1362,7 @@
         "restoreHint": "Restaurar com: rdc config restore-archived {{guid}}",
         "starting": "A eliminar \"{{repository}}\" em \"{{machine}}\"..."
       },
-      "description": "Implementar e gerir repositórios encriptados em máquinas. Subcomandos principais: create, up (implementar), down (parar), fork (clone CoW instantâneo), delete, push/pull (cópia de segurança), sync (transferência de ficheiros). Ciclo de vida: repo create → repo up --mount → repo down. Consulte Conceitos Principais em rdc --help para detalhes de arquitectura, encaminhamento e variáveis de ambiente.",
+      "description": "Implementar e gerir repositórios encriptados em máquinas. Subcomandos principais: create, up (implementar), down (parar), fork (clone CoW instantâneo), delete, push/pull (cópia de segurança), sync (transferência de ficheiros). Ciclo de vida: repo create → repo up → repo down. Consulte Conceitos Principais em rdc --help para detalhes de arquitectura, encaminhamento e variáveis de ambiente.",
       "descriptionShort": "Implementar e gerir repositórios encriptados em máquinas",
       "down": {
         "allCompleted": "Todos os repositórios parados",
@@ -1387,8 +1388,8 @@
       "fork": {
         "alreadyExists": "O repositório \"{{name}}\" já existe na configuração",
         "checkpointOption": "Criar ponto de verificação CRIU na origem antes de copiar (capturar o estado de memória do processo para restauro no fork)",
-        "completed": "Fork criado. Implementar localmente: repo up {{repository}} -m {{machine}} --mount. Para migrar o fork para outra máquina: repo push {{repository}} -m {{machine}} --to <destino> --up",
-        "description": "Criar um fork CoW (Copy-on-Write) de um repositório. O FORK É QUASE INSTANTÂNEO E DE TEMPO CONSTANTE independentemente do tamanho do repositório; o reflink BTRFS clona a imagem subjacente, pelo que um repositório de 100 GB e um de 1 GB são copiados no mesmo tempo (~segundos). O fork recebe um NOVO GUID, networkId, intervalo de IPs e domínio de rota automática ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}), sendo uma cópia totalmente independente. O fork online é suportado; o pai pode permanecer em execução. O fork herda automaticamente as credenciais de encriptação do pai. Use --checkpoint para capturar o estado do processo CRIU antes de copiar; o fork restaura automaticamente no primeiro 'repo up' (estado em memória preservado). FORK ENTRE MÁQUINAS: Para copiar para outra máquina, primeiro copie localmente e depois transfira: (1) repo fork --parent <pai> -m <origem> --tag <nome>, (2) backup push <nome> -m <origem> --to-machine <destino>, (3) repo up <nome> -m <destino> --mount. AVISO: Não use 'backup push' isoladamente para copiar; cria uma cópia bruta com o MESMO GUID (não é um fork independente). Copie sempre primeiro para obter uma nova identidade. As rotas automáticas utilizam o nome do repositório, pelo que cada fork obtém automaticamente um domínio único.",
+        "completed": "Fork criado. Implementar localmente: repo up {{repository}} -m {{machine}}. Para migrar o fork para outra máquina: repo push {{repository}} -m {{machine}} --to <destino> --up",
+        "description": "Criar um fork CoW (Copy-on-Write) de um repositório. O FORK É QUASE INSTANTÂNEO E DE TEMPO CONSTANTE independentemente do tamanho do repositório; o reflink BTRFS clona a imagem subjacente, pelo que um repositório de 100 GB e um de 1 GB são copiados no mesmo tempo (~segundos). O fork recebe um NOVO GUID, networkId, intervalo de IPs e domínio de rota automática ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}), sendo uma cópia totalmente independente. O fork online é suportado; o pai pode permanecer em execução. O fork herda automaticamente as credenciais de encriptação do pai. Use --checkpoint para capturar o estado do processo CRIU antes de copiar; o fork restaura automaticamente no primeiro 'repo up' (estado em memória preservado). FORK ENTRE MÁQUINAS: Para copiar para outra máquina, primeiro copie localmente e depois transfira: (1) repo fork --parent <pai> -m <origem> --tag <nome>, (2) backup push <nome> -m <origem> --to-machine <destino>, (3) repo up <nome> -m <destino>. AVISO: Não use 'backup push' isoladamente para copiar; cria uma cópia bruta com o MESMO GUID (não é um fork independente). Copie sempre primeiro para obter uma nova identidade. As rotas automáticas utilizam o nome do repositório, pelo que cada fork obtém automaticamente um domínio único.",
         "descriptionShort": "Fork CoW quase instantâneo de um repositório (novo GUID, networkId, intervalo de IPs)",
         "failed": "Falha na criação do fork",
         "registered": "Fork \"{{repository}}\" registado ({{guid}}, rede {{networkId}})",
@@ -1402,6 +1403,7 @@
         "completed": "Listagem concluída",
         "description": "Listar os repositórios numa máquina",
         "failed": "Listagem falhou: {{error}}",
+        "serverNameLegend": "* nome lido da máquina (não está na sua configuração local)",
         "starting": "A listar os repositórios em \"{{machine}}\"..."
       },
       "machineOption": "Nome da máquina de destino",
@@ -1441,7 +1443,7 @@
       "mount": {
         "checkpointOption": "Restaurar ponto de verificação CRIU do contentor após montagem (retomar processos a partir do estado de memória guardado). Utilizado após 'repo push --checkpoint' para migração em directo.",
         "completed": "Montagem concluída",
-        "description": "Montar um repositório (desencriptar e abrir o contentor LUKS, tornando o sistema de ficheiros acessível). Necessário na primeira implementação, após 'repo push' para uma nova máquina, ou após 'repo unmount'. Pode também ser feito via 'repo up --mount'. O volume permanece montado até ser desmontado explicitamente. Omita o nome para montar todos os repositórios na máquina.",
+        "description": "Montar um repositório (desencriptar e abrir o contentor LUKS, tornando o sistema de ficheiros acessível). Necessário na primeira implementação, após 'repo push' para uma nova máquina, ou após 'repo unmount'. Pode também ser feito via 'repo up'. O volume permanece montado até ser desmontado explicitamente. Omita o nome para montar todos os repositórios na máquina.",
         "descriptionShort": "Montar um repositório (desencriptar e abrir o contentor LUKS)",
         "failed": "Montagem falhou",
         "noDockerOption": "Não iniciar o daemon Docker após a montagem",
@@ -1524,25 +1526,6 @@
         },
         "valueOption": "Valor do segredo. Passe `-` para ler a partir de stdin (evita exposição no histórico da shell)."
       },
-      "snapshot": {
-        "create": {
-          "creating": "A criar snapshot de \"{{repo}}\" em {{machine}}...",
-          "description": "Criar um snapshot BTRFS de um repositório num momento específico (instantâneo, sem tempo de inactividade). Use --snapshot-name para um nome personalizado.",
-          "descriptionShort": "Criar um snapshot BTRFS de um repositório",
-          "optionSnapshotName": "Nome explícito do snapshot (gerado automaticamente se vazio)",
-          "success": "Snapshot criado: {{name}} ({{path}})"
-        },
-        "delete": {
-          "description": "Eliminar um snapshot de uma máquina remota",
-          "success": "Snapshot eliminado: {{name}}"
-        },
-        "description": "Gerir snapshots BTRFS em máquinas remotas",
-        "list": {
-          "description": "Listar snapshots BTRFS numa máquina remota com nome, data de criação e tamanho",
-          "header": "{{count}} snapshot(s) em {{path}}:",
-          "noSnapshots": "Nenhum snapshot encontrado."
-        }
-      },
       "status": {
         "completed": "Estado obtido",
         "description": "Obter o estado do repositório (estado de montagem, daemon Docker em execução, número de contentores, utilização do disco)",
@@ -1554,19 +1537,6 @@
         "download": {
           "description": "Descarregar ficheiros de um repositório via rsync sobre SSH (transferência delta). Use --mirror para eliminar ficheiros locais extra, --dry-run para pré-visualizar, --exclude para ignorar padrões.",
           "descriptionShort": "Descarregar ficheiros de um repositório via rsync"
-        },
-        "pull": {
-          "description": "Receber repositórios do armazenamento na cloud (omita o nome para receber todos)",
-          "optionFrom": "Nome do armazenamento de origem",
-          "optionOverride": "Substituir repositórios desmontados existentes ao receber",
-          "optionRepo": "Filtrar por repositório específico (repetível)",
-          "success": "Sincronização pull concluída"
-        },
-        "push": {
-          "description": "Enviar repositórios para armazenamento na cloud (omita o nome para enviar todos)",
-          "optionRepo": "Filtrar por repositório específico (repetível)",
-          "optionTo": "Nome do armazenamento de destino",
-          "success": "Sincronização push concluída"
         },
         "status": {
           "description": "Comparação em modo de simulação dos ficheiros locais e remotos (mostra o que seria transferido sem transferir de facto)",
@@ -1597,7 +1567,7 @@
           "notFound": "Modelo \"{{name}}\" não encontrado. Disponíveis: {{available}}"
         },
         "completed": "Modelo aplicado. Implementar com: rdc repo up --name {{repository}} -m {{machine}}",
-        "description": "Gerir e aplicar modelos de implementação (escreve docker-compose.yml, Rediaccfile e ficheiros adicionais). O Rediaccfile deve usar 'renet compose' (não 'docker compose'). As políticas de reinício são seguras (geridas automaticamente pelo watchdog do renet). O renet injeta automaticamente network_mode:host, capacidades CRIU e etiquetas rediacc. Definições perigosas (privileged, pid:host) são bloqueadas salvo com --unsafe. Use 'list' para ver os modelos incorporados disponíveis e 'apply' para implementar um num repositório.",
+        "description": "Gerir e aplicar modelos de implementação (escreve docker-compose.yml, Rediaccfile e ficheiros adicionais). O Rediaccfile deve usar 'renet compose' (não 'docker compose'). As políticas de reinício são seguras (geridas automaticamente pelo watchdog do renet). O renet injeta automaticamente network_mode:host, capacidades CRIU e etiquetas rediacc. Definições perigosas (privileged, pid:host) são bloqueadas. Use 'list' para ver os modelos incorporados disponíveis e 'apply' para implementar um num repositório.",
         "descriptionShort": "Gerir e aplicar modelos de implementação",
         "failed": "Falha na aplicação do modelo",
         "fileNotFound": "Ficheiro de modelo não encontrado: {{path}}",
@@ -1638,7 +1608,7 @@
       "up": {
         "checkpointOption": "Restaurar ponto de verificação CRIU no arranque (retomar processos a partir do estado de memória guardado)",
         "completed": "Serviços iniciados",
-        "description": "Implementar ou actualizar um repositório (montar, executar o up do Rediaccfile que invoca renet compose). As rotas de proxy demoram ~3s a ficar activas após a implementação. Apresenta o padrão de URL para serviços expostos via HTTP (etiqueta rediacc.service_port) quando concluído. Use --mount para a primeira implementação ou repositórios copiados (fork). O restauro de ponto de verificação CRIU é detectado automaticamente -- use --skip-checkpoint para forçar arranque limpo. Omita o nome para implementar todos os repositórios na máquina.",
+        "description": "Implementar ou actualizar um repositório (montar, executar o up do Rediaccfile que invoca renet compose). As rotas de proxy demoram ~3s a ficar activas após a implementação. Apresenta o padrão de URL para serviços expostos via HTTP (etiqueta rediacc.service_port) quando concluído. A primeira implementação e os forks são montados automaticamente. O restauro de ponto de verificação CRIU é detectado automaticamente -- use --skip-checkpoint para forçar arranque limpo. Omita o nome para implementar todos os repositórios na máquina.",
         "descriptionShort": "Implementar ou actualizar um repositório numa máquina",
         "failed": "Falha ao iniciar os serviços",
         "grandOption": "Repositório de credenciais pai (resolve automaticamente o nome para GUID). Apenas para repositórios que partilham segredos com um pai.",
@@ -1650,7 +1620,6 @@
       "upAll": {
         "completed": "Todos os repositórios iniciados",
         "concurrencyOption": "Máximo de repositórios em simultâneo (por omissão: 3)",
-        "description": "Implementar todos os repositórios numa máquina",
         "dryRunOption": "Mostrar o que seria feito sem executar",
         "failed": "Operação up-all falhou",
         "includeForksOption": "Montar e iniciar também os repositórios copiados (fork)",
@@ -1770,15 +1739,6 @@
         "listing": "A listar cópias de segurança em \"{{storage}}\"...",
         "machineOption": "Máquina executora -- executa as chamadas rclone list/delete contra o armazenamento. Obrigatório porque não se espera que os clientes tenham o rclone instalado localmente; as credenciais de armazenamento continuam a vir da sua configuração local.",
         "noBackups": "Nenhuma cópia de segurança encontrada no armazenamento"
-      },
-      "pull": {
-        "completed": "Transferência concluída em {{duration}}ms",
-        "description": "Transferir uma cópia de segurança do armazenamento na cloud para uma máquina",
-        "failed": "Falha na transferência: {{error}}",
-        "machineOption": "Nome da máquina de destino",
-        "noCredential": "Aviso: O repositório \"{{name}}\" não tem credencial definida. A transferência pode falhar se a cópia de segurança estiver encriptada.",
-        "repositoryOption": "Nome do repositório a transferir",
-        "starting": "A transferir \"{{repository}}\" de \"{{storage}}\" para \"{{machine}}\"..."
       },
       "rename": {
         "description": "Renomear um fornecedor de armazenamento"
@@ -2251,7 +2211,7 @@
           "afterDescription": "O comando health produz métricas do sistema, estado dos contentores, estabilidade dos serviços e informações de armazenamento -- útil para verificações em pipelines de CI/CD."
         },
         "testConnection": {
-          "tip": "Use `--save-known-hosts` para persistir automaticamente a chave do host no vault da máquina após um teste bem-sucedido."
+          "tip": "Use `--save` para persistir automaticamente a chave do host no vault da máquina após um teste bem-sucedido."
         }
       },
       "organization": {
@@ -2292,7 +2252,7 @@
       "createGuardOverrideNonLinux": "Não é possível criar um novo repositório grand \"{{name}}\". A substituição REDIACC_ALLOW_GRAND_REPO não é suportada em {{platform}}.\n\nEsta substituição só funciona em Linux. No Windows e macOS, os agentes têm de usar o fluxo fork-first.\n\nEm vez disso, faça um fork de um repositório existente:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nPara usar a substituição, execute o agente em Linux (diretamente, WSL, Docker ou uma VM).",
       "fieldReveal": "--reveal para o campo sensível {{pointer}} está bloqueado em ambientes de agente. Os agentes devem usar --digest. Um utilizador real num terminal interativo pode usar --reveal.",
       "forkBlocked": "O comando \"{{command}}\" não está disponível em repositórios fork.\n\nOs repositórios fork são ambientes de sandbox temporários. Esta operação aplica-se apenas a repositórios grand (produção). Peça ao utilizador que execute este comando diretamente.",
-      "grandGuard": "\"{{name}}\" é um repositório grand (produção). Os agentes não podem modificar repositórios grand diretamente.\n\nOs repositórios grand contêm dados de produção. Use um fork -- os forks são cópias de sandbox isoladas e seguras.\n\nFluxo de trabalho:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere no fork (ex.: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo takeover\n\nUtilizador: para permitir acesso direto, defina REDIACC_ALLOW_GRAND_REPO={{name}} (ou * para todos os repositórios) no terminal antes de iniciar a sessão do agente.",
+      "grandGuard": "\"{{name}}\" é um repositório grand (produção). Os agentes não podem modificar repositórios grand diretamente.\n\nOs repositórios grand contêm dados de produção. Use um fork -- os forks são cópias de sandbox isoladas e seguras.\n\nFluxo de trabalho:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere no fork (ex.: rdc repo up --name {{name}}:<tag-name> -m <machine>)\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo takeover\n\nUtilizador: para permitir acesso direto, defina REDIACC_ALLOW_GRAND_REPO={{name}} (ou * para todos os repositórios) no terminal antes de iniciar a sessão do agente.",
       "grandGuardOverride": "\"{{name}}\" é um repositório grand (produção). Substituições iniciadas por agentes não são aceites.\n\nNão tente definir REDIACC_ALLOW_GRAND_REPO -- apenas o utilizador pode autorizar isso antes de o agente ser iniciado.\n\nUse um fork -- os forks são cópias de sandbox isoladas e seguras:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere no fork\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo takeover",
       "grandGuardOverrideNonLinux": "\"{{name}}\" é um repositório grand (produção). A substituição REDIACC_ALLOW_GRAND_REPO não é suportada em {{platform}}.\n\nEsta substituição só funciona em Linux. No Windows e macOS, os agentes têm de usar o fluxo fork-first.\n\nFluxo de trabalho:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Opere no fork\n  3. Quando terminar, o utilizador pode promover o fork com rdc repo takeover\n\nPara usar a substituição, execute o agente em Linux (diretamente, WSL, Docker ou uma VM).",
       "machineGuard": "O acesso direto à máquina \"{{machine}}\" não é permitido no modo de agente.\n\nOs agentes têm de se ligar através de um contexto de repositório para acesso em sandbox. Faça primeiro um fork de um repositório e ligue-se ao fork.\n\nFluxo de trabalho:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nUtilizador: para permitir acesso direto à máquina, defina REDIACC_ALLOW_GRAND_REPO=* (ou um nome de repositório específico) no terminal antes de iniciar a sessão do agente.",
@@ -2344,6 +2304,12 @@
     "invalidPort": "Número de porta inválido: \"{{port}}\". Tem de estar entre 1 e 65535.",
     "invalidPriorityMax": "Valor de priority-max inválido. Tem de estar entre 1 e 5.",
     "invalidPriorityMin": "Valor de priority-min inválido. Tem de estar entre 1 e 5.",
+    "license": {
+      "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
+      "recoveryFailedNoKnownRepos": "Foram encontrados repositórios em {{machine}}, mas nenhum está registado na sua configuração local. Liste os seus repositórios rastreados com `rdc config repository list`, depois tente novamente.",
+      "recoveryFailedServerRejected": "O servidor de conta rejeitou a emissão de licença para o repositório. Primeiro erro: {{error}}. Execute: rdc subscription refresh repo --name <repo> -m {{machine}} para obter detalhes.",
+      "recoveryFailedTokenNotReady": "O seu token de subscrição não está pronto. Execute: rdc subscription login, depois tente novamente."
+    },
     "machineNotFound": "Máquina \"{{name}}\" não encontrada",
     "machineRequired": "Nome da máquina necessário. Use --machine <name>",
     "machineRequiredLocal": "Nome da máquina necessário. Use --machine <name>",
@@ -2461,7 +2427,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  Modo Agente\n    • Apenas forks: crie um fork antes de fazer alterações em qualquer repositório\n    • Repositórios grand (não fork) são de apenas leitura para agentes\n    • Fluxo de trabalho: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n    • A saída JSON é automática — todos os comandos retornam { success, data, errors, metrics }\n    • Analise sempre o JSON completo — nunca use tail/head/grep em saída JSON\n    • Use flags de filtro (ex.: --repositories, --containers) para reduzir o tamanho da resposta\n    • Descubra o esquema de um comando: rdc agent schema \"<command>\"\n",
+    "agentMode": "\n  Modo Agente\n    • Apenas forks: crie um fork antes de fazer alterações em qualquer repositório\n    • Repositórios grand (não fork) são de apenas leitura para agentes\n    • Fluxo de trabalho: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n    • A saída JSON é automática — todos os comandos retornam { success, data, errors, metrics }\n    • Analise sempre o JSON completo — nunca use tail/head/grep em saída JSON\n    • Use flags de filtro (ex.: --repositories, --containers) para reduzir o tamanho da resposta\n    • Descubra o esquema de um comando: rdc agent schema \"<command>\"\n",
     "cli": {
       "machineQuery": "Mostrar estado da máquina",
       "repoUp": "Fazer deploy dos serviços do repositório",

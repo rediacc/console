@@ -1,0 +1,196 @@
+{
+  "tutorial": "tutorial-forking",
+  "lang": "en",
+  "finalDurationSec": 172.045011,
+  "edgeLeadSec": 1,
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "mp4StartSec": 1,
+      "mp4EndSec": 9.020998
+    },
+    {
+      "id": "fan-out",
+      "type": "slide",
+      "mp4StartSec": 9.020998,
+      "mp4EndSec": 19.666009000000003
+    },
+    {
+      "id": "link-speed",
+      "type": "slide",
+      "mp4StartSec": 19.666009000000003,
+      "mp4EndSec": 29.359002000000004
+    },
+    {
+      "id": "scale-invariance",
+      "type": "slide",
+      "mp4StartSec": 29.359002000000004,
+      "mp4EndSec": 41.53600900000001
+    },
+    {
+      "id": "cast-intro",
+      "type": "cast",
+      "mp4StartSec": 41.53600900000001,
+      "mp4EndSec": 62.76934200000001
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "mp4StartSec": 62.76934200000001,
+      "mp4EndSec": 80.169342
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "mp4StartSec": 80.169342,
+      "mp4EndSec": 89.402675
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "mp4StartSec": 89.402675,
+      "mp4EndSec": 100.069342
+    },
+    {
+      "id": "sun-mirrors",
+      "type": "slide",
+      "mp4StartSec": 100.069342,
+      "mp4EndSec": 111.434353
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "mp4StartSec": 111.434353,
+      "mp4EndSec": 119.867686
+    },
+    {
+      "id": "cast-step-4",
+      "type": "cast-narrated",
+      "mp4StartSec": 119.867686,
+      "mp4EndSec": 129.634353
+    },
+    {
+      "id": "cast-step-5",
+      "type": "cast-narrated",
+      "mp4StartSec": 129.634353,
+      "mp4EndSec": 141.00102
+    },
+    {
+      "id": "river-photo",
+      "type": "slide",
+      "mp4StartSec": 141.00102,
+      "mp4EndSec": 151.414013
+    },
+    {
+      "id": "flat-disk",
+      "type": "slide",
+      "mp4StartSec": 151.414013,
+      "mp4EndSec": 161.734013
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "mp4StartSec": 161.734013,
+      "mp4EndSec": 171.014013
+    }
+  ],
+  "castNarrated": [
+    {
+      "sceneId": "cast-step-0",
+      "markerIndex": 0,
+      "startSec": 20.919212,
+      "rawEndSec": 32.341533,
+      "promptTime": 30.439896,
+      "mainEndSec": 30.289896000000002,
+      "frameEndSec": 30.939896,
+      "mainAnimDur": 9.370684,
+      "readPauseSec": 0,
+      "mainAudioDurSec": 16.039184,
+      "afterAudioDurSec": null,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-forking.debug-frames/cast-step-0.lastframe.png",
+      "mp4StartSec": 62.76934200000001,
+      "mp4EndSec": 80.169342
+    },
+    {
+      "sceneId": "cast-step-1",
+      "markerIndex": 1,
+      "startSec": 32.341533,
+      "rawEndSec": 38.935232,
+      "promptTime": 37.031927,
+      "mainEndSec": 36.881927000000005,
+      "frameEndSec": 37.531927,
+      "mainAnimDur": 4.540394000000006,
+      "readPauseSec": 0,
+      "mainAudioDurSec": 7.88898,
+      "afterAudioDurSec": null,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-forking.debug-frames/cast-step-1.lastframe.png",
+      "mp4StartSec": 80.169342,
+      "mp4EndSec": 89.402675
+    },
+    {
+      "sceneId": "cast-step-2",
+      "markerIndex": 2,
+      "startSec": 38.935232,
+      "rawEndSec": 46.321681,
+      "promptTime": 44.418631,
+      "mainEndSec": 44.268631,
+      "frameEndSec": 44.918631,
+      "mainAnimDur": 5.333399,
+      "readPauseSec": 0,
+      "mainAudioDurSec": 9.325714,
+      "afterAudioDurSec": null,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-forking.debug-frames/cast-step-2.lastframe.png",
+      "mp4StartSec": 89.402675,
+      "mp4EndSec": 100.069342
+    },
+    {
+      "sceneId": "cast-step-3",
+      "markerIndex": 3,
+      "startSec": 46.321681,
+      "rawEndSec": 54.694774,
+      "promptTime": 52.791298,
+      "mainEndSec": 52.641298,
+      "frameEndSec": 53.291298,
+      "mainAnimDur": 6.319617000000001,
+      "readPauseSec": 0,
+      "mainAudioDurSec": 5.877551,
+      "afterAudioDurSec": null,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-forking.debug-frames/cast-step-3.lastframe.png",
+      "mp4StartSec": 111.434353,
+      "mp4EndSec": 119.867686
+    },
+    {
+      "sceneId": "cast-step-4",
+      "markerIndex": 4,
+      "startSec": 54.694774,
+      "rawEndSec": 62.104113,
+      "promptTime": 60.202746,
+      "mainEndSec": 60.052746,
+      "frameEndSec": 60.702746,
+      "mainAnimDur": 5.357971999999997,
+      "readPauseSec": 0,
+      "mainAudioDurSec": 8.437551,
+      "afterAudioDurSec": null,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-forking.debug-frames/cast-step-4.lastframe.png",
+      "mp4StartSec": 119.867686,
+      "mp4EndSec": 129.634353
+    },
+    {
+      "sceneId": "cast-step-5",
+      "markerIndex": 5,
+      "startSec": 62.104113,
+      "rawEndSec": 73.604952,
+      "promptTime": 69.015894,
+      "mainEndSec": 68.865894,
+      "frameEndSec": 69.515894,
+      "mainAnimDur": 6.761780999999999,
+      "readPauseSec": 0,
+      "mainAudioDurSec": 10.03102,
+      "afterAudioDurSec": null,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-forking.debug-frames/cast-step-5.lastframe.png",
+      "mp4StartSec": 129.634353,
+      "mp4EndSec": 141.00102
+    }
+  ]
+}

@@ -7,591 +7,82 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "575ea8e721d31d6322e7440ae1cd58733431135d3a7f567f8f922789da60ba2c",
+  "transcriptHash": "21baf4b6169163a21fd19f4a4ab746da45c7db84694b2c181caaf66c9d22f212",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 56.862064,
-      "replayEndSec": 97.750961,
+      "replayStartSec": 2.418632,
+      "replayEndSec": 9.548589,
       "narrationText": "Vamos a arrancar la app en modo producción desde la laptop. El comando repo up del CLI llama a la misma función up que usábamos durante el desarrollo, pero se ejecuta en segundo plano. Puedes cerrar tu laptop y la app sigue funcionando.",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-01.ec26457e.mp3",
-      "audioDurationSec": 16.195918,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.48,
-          "startChar": 6,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 0.88,
-          "startChar": 8,
-          "endChar": 16
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 1.12,
-          "startChar": 17,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.44,
-          "startChar": 20,
-          "endChar": 23
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.6,
-          "startChar": 24,
-          "endChar": 26
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 1.92,
-          "startChar": 27,
-          "endChar": 31
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.72,
-          "startChar": 32,
-          "endChar": 42
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.04,
-          "startChar": 43,
-          "endChar": 48
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.12,
-          "startChar": 49,
-          "endChar": 51
-        },
-        {
-          "startSec": 3.12,
-          "endSec": 3.6,
-          "startChar": 52,
-          "endChar": 58
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.08,
-          "startChar": 60,
-          "endChar": 62
-        },
-        {
-          "startSec": 4.08,
-          "endSec": 4.48,
-          "startChar": 63,
-          "endChar": 70
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 4.8,
-          "startChar": 71,
-          "endChar": 75
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 6.24,
-          "startChar": 83,
-          "endChar": 86
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.72,
-          "startChar": 87,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 6.88,
-          "startChar": 93,
-          "endChar": 94
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.44,
-          "startChar": 98,
-          "endChar": 103
-        },
-        {
-          "startSec": 7.44,
-          "endSec": 8.08,
-          "startChar": 104,
-          "endChar": 111
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.32,
-          "startChar": 214,
-          "endChar": 217
-        },
-        {
-          "startSec": 15.04,
-          "endSec": 15.44,
-          "startChar": 218,
-          "endChar": 223
-        },
-        {
-          "startSec": 15.44,
-          "endSec": 16.16,
-          "startChar": 224,
-          "endChar": 235
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-01.9a02601b.mp3",
+      "textHash": "9a02601bb00f6f5d1613c9c40bb0822bcfe504c41ff1b3972b4bdbd6a6ffe53d",
+      "audioDurationSec": 15.229388,
+      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-01-after.2cc1c153.mp3",
+      "afterAudioDurationSec": 5.877551,
+      "afterTextHash": "2cc1c153fc6ff60cf7a26c48b385a5bb2938d44d5728ff0c4bf9a54dd4f23c8e"
     },
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 97.750961,
-      "replayEndSec": 125.443493,
+      "replayStartSec": 9.548589,
+      "replayEndSec": 17.034078,
       "narrationText": "Habilitamos el arranque automático para que la app sobreviva a un reinicio del servidor. A partir de ahora, si el servidor se reinicia, este repo vuelve automáticamente.",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-02.f9cc93ad.mp3",
-      "audioDurationSec": 11.885714,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.64,
-          "startChar": 0,
-          "endChar": 11
-        },
-        {
-          "startSec": 0.72,
-          "endSec": 0.8,
-          "startChar": 12,
-          "endChar": 14
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.2,
-          "startChar": 15,
-          "endChar": 23
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 2.0,
-          "startChar": 24,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.0,
-          "endSec": 2.24,
-          "startChar": 35,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.32,
-          "startChar": 40,
-          "endChar": 43
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.48,
-          "startChar": 44,
-          "endChar": 46
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.72,
-          "startChar": 47,
-          "endChar": 50
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.36,
-          "startChar": 51,
-          "endChar": 60
-        },
-        {
-          "startSec": 3.44,
-          "endSec": 3.68,
-          "startChar": 63,
-          "endChar": 65
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.56,
-          "startChar": 66,
-          "endChar": 74
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.8,
-          "startChar": 75,
-          "endChar": 78
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.52,
-          "startChar": 79,
-          "endChar": 87
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.4,
-          "startChar": 89,
-          "endChar": 90
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.72,
-          "startChar": 91,
-          "endChar": 97
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 6.88,
-          "startChar": 98,
-          "endChar": 100
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.2,
-          "startChar": 101,
-          "endChar": 106
-        },
-        {
-          "startSec": 7.44,
-          "endSec": 7.6,
-          "startChar": 108,
-          "endChar": 110
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 7.68,
-          "startChar": 111,
-          "endChar": 113
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.16,
-          "startChar": 114,
-          "endChar": 122
-        },
-        {
-          "startSec": 8.24,
-          "endSec": 8.4,
-          "startChar": 123,
-          "endChar": 125
-        },
-        {
-          "startSec": 8.4,
-          "endSec": 9.36,
-          "startChar": 126,
-          "endChar": 134
-        },
-        {
-          "startSec": 9.84,
-          "endSec": 10.08,
-          "startChar": 136,
-          "endChar": 140
-        },
-        {
-          "startSec": 10.08,
-          "endSec": 10.56,
-          "startChar": 141,
-          "endChar": 145
-        },
-        {
-          "startSec": 10.56,
-          "endSec": 10.96,
-          "startChar": 146,
-          "endChar": 152
-        },
-        {
-          "startSec": 10.96,
-          "endSec": 11.84,
-          "startChar": 153,
-          "endChar": 168
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-02.3948a995.mp3",
+      "textHash": "3948a9959af45d09bd810a2790b17cc58eeed2a3928949a20909b0ffad726775",
+      "audioDurationSec": 11.807347,
+      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-02-after.9ef22d29.mp3",
+      "afterAudioDurationSec": 4.284082,
+      "afterTextHash": "9ef22d2964f75fbbf792a49ab3a225083d8a35752a806bf8cbf2749a48178a32"
     },
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 125.443493,
-      "replayEndSec": 141.09184,
+      "replayStartSec": 17.034078,
+      "replayEndSec": 22.929505,
       "narrationText": "Listamos los repositorios que tienen el arranque automático habilitado. Confirmamos que nuestra app está ahora en la lista de inicio.",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-03.78281acf.mp3",
-      "audioDurationSec": 9.560816,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.64,
-          "startChar": 0,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 0.96,
-          "startChar": 9,
-          "endChar": 12
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.92,
-          "startChar": 13,
-          "endChar": 25
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.08,
-          "startChar": 26,
-          "endChar": 29
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.56,
-          "startChar": 30,
-          "endChar": 36
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.72,
-          "startChar": 37,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.2,
-          "startChar": 40,
-          "endChar": 48
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.92,
-          "startChar": 49,
-          "endChar": 59
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.56,
-          "startChar": 60,
-          "endChar": 70
-        },
-        {
-          "startSec": 5.36,
-          "endSec": 6.08,
-          "startChar": 72,
-          "endChar": 83
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.32,
-          "startChar": 84,
-          "endChar": 87
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.72,
-          "startChar": 88,
-          "endChar": 95
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.04,
-          "startChar": 96,
-          "endChar": 99
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.52,
-          "startChar": 100,
-          "endChar": 104
-        },
-        {
-          "startSec": 7.52,
-          "endSec": 8.0,
-          "startChar": 105,
-          "endChar": 110
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.24,
-          "startChar": 111,
-          "endChar": 113
-        },
-        {
-          "startSec": 8.24,
-          "endSec": 8.32,
-          "startChar": 114,
-          "endChar": 116
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 8.72,
-          "startChar": 117,
-          "endChar": 122
-        },
-        {
-          "startSec": 8.72,
-          "endSec": 8.88,
-          "startChar": 123,
-          "endChar": 125
-        },
-        {
-          "startSec": 8.88,
-          "endSec": 9.44,
-          "startChar": 126,
-          "endChar": 132
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-03.9b914df0.mp3",
+      "textHash": "9b914df0d809b7d2611ccd984198e0c575f644800d750d217ba37baae2c72476",
+      "audioDurationSec": 8.594286,
+      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-03-after.922e9846.mp3",
+      "afterAudioDurationSec": 2.272653,
+      "afterTextHash": "922e9846969036da82054fae253cbe7b1995d0b0726a8f13feabca997176cec2"
     },
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 141.09184,
-      "replayEndSec": 196.903183,
+      "replayStartSec": 22.929505,
+      "replayEndSec": 30.37798,
       "narrationText": "Y para detener la app, un comando desde la laptop. Un comando para arrancar, un comando para detener. Todo desde tu terminal, sin más sesiones interactivas.",
-      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-04.6a7b6bd2.mp3",
-      "audioDurationSec": 10.684082,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.16,
-          "startChar": 0,
-          "endChar": 1
-        },
-        {
-          "startSec": 0.16,
-          "endSec": 0.32,
-          "startChar": 2,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.64,
-          "startChar": 7,
-          "endChar": 14
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 0.96,
-          "startChar": 15,
-          "endChar": 17
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.12,
-          "startChar": 18,
-          "endChar": 21
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.6,
-          "startChar": 23,
-          "endChar": 25
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 2.08,
-          "startChar": 26,
-          "endChar": 33
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.4,
-          "startChar": 34,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.56,
-          "startChar": 40,
-          "endChar": 42
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.04,
-          "startChar": 43,
-          "endChar": 49
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 3.76,
-          "startChar": 77,
-          "endChar": 79
-        },
-        {
-          "startSec": 3.76,
-          "endSec": 4.16,
-          "startChar": 80,
-          "endChar": 87
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.32,
-          "startChar": 88,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.72,
-          "startChar": 93,
-          "endChar": 100
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.68,
-          "startChar": 102,
-          "endChar": 106
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 7.92,
-          "startChar": 107,
-          "endChar": 112
-        },
-        {
-          "startSec": 7.92,
-          "endSec": 8.0,
-          "startChar": 113,
-          "endChar": 115
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.56,
-          "startChar": 116,
-          "endChar": 124
-        },
-        {
-          "startSec": 8.96,
-          "endSec": 9.28,
-          "startChar": 126,
-          "endChar": 129
-        },
-        {
-          "startSec": 9.28,
-          "endSec": 9.44,
-          "startChar": 130,
-          "endChar": 133
-        },
-        {
-          "startSec": 9.44,
-          "endSec": 9.92,
-          "startChar": 134,
-          "endChar": 142
-        },
-        {
-          "startSec": 9.92,
-          "endSec": 10.56,
-          "startChar": 143,
-          "endChar": 155
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-04.e033422a.mp3",
+      "textHash": "e033422a96cf62d59dcfff4d9ee749ffeedc5bbacb5beca004ec8b1ec080fdf1",
+      "audioDurationSec": 10.605714,
+      "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/tutorial-production-mode-04-after.e0893d4d.mp3",
+      "afterAudioDurationSec": 5.485714,
+      "afterTextHash": "e0893d4d6ce22ab8c7fb5ea12b35e2847a2b6182d05030b313e5f51a95228ce9"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "f290583c3f2f674992cc74684110f3ab3c9b17f5ec46e543257825b76530a1e0",
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/intro.f290583c.mp3",
+      "narrationText": "¡Muy bien! Vamos a llevar tu app del desarrollo a producción. Tres pasos cortos, todos manejados desde tu laptop.",
+      "audioDurationSec": 8.280816
+    },
+    {
+      "id": "dev-vs-prod",
+      "textHash": "a766fae55b5c6751d99acc7ab155b43db7ba8f14eafe6f3fc3136a61ad07f1da",
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/dev-vs-prod.a766fae5.mp3",
+      "narrationText": "Durante el desarrollo ejecutas la app desde dentro del repo, así que se detiene cuando te desconectas. En producción la lanzas desde tu laptop con el CLI, y sigue ejecutándose de forma desacoplada.",
+      "audioDurationSec": 14.915918
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "2b47ed8099b1667b6058a8cc250300a9d05bb3c01fc3042879b07f097d03657e",
+      "audioSrc": "/assets/tutorials/audio/es/tutorial-production-mode/next-tutorial.2b47ed80.mp3",
+      "narrationText": "¡Y ese es el modo producción en pocas palabras. Nos vemos en el siguiente!",
+      "audioDurationSec": 5.32898
     }
   ]
 }

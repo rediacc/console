@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-ssh-keys",
+  "nextTutorialKey": "tutorial-add-server",
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "three-steps-generate-copy-register",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "three-steps-generate-copy-register",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "ssh-keygen -t ed25519",
+        "commandFull": "ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519"
+      }
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "ssh-copy-id",
+        "commandFull": "ssh-copy-id -i ~/.ssh/id_ed25519.pub <user>@<server-ip>"
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "transition",
+      "card": {
+        "command": "ssh-copy-id",
+        "commandFull": "ssh-copy-id -i ~/.ssh/id_ed25519.pub <user>@<another-server-ip>"
+      }
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

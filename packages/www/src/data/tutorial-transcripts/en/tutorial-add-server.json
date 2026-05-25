@@ -2,36 +2,56 @@
   "cast": "/assets/tutorials/tutorial-add-server.cast",
   "language": "en",
   "version": 1,
+  "title": "Adding Your First Server",
+  "chapters": {
+    "intro": "Adding Your First Server",
+    "two-tool-architecture": "How Rediacc connects to your server",
+    "cast-step-0": "Step 1: Register the server",
+    "cast-step-1": "Step 2: Provision renet",
+    "cast-step-2": "Step 3: Inspect the config file",
+    "outro": "Next: Creating Your First Repository"
+  },
   "events": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.508633,
-      "text": "First, we create a configuration profile that will hold the SSH key, machine list, and infrastructure settings."
+      "at": 1.627146,
+      "text": "Register the server from the command line. You give it a name, its IP address, and the SSH user. The name is just a local alias. We use machine-11 so it matches the IP, but it can be anything you like, such as prod-db or web-1. There is no separate init step; the config file is created automatically on first use.",
+      "afterText": "Server registered. Host keys were scanned automatically.",
+      "cardLabel": "Add Machine",
+      "prose": "Register the server with a name, IP address, and SSH user. The name is just a local alias (we use machine-11 to match the IP, but any label works, like prod-db or web-1). No init step is needed; the config file is created automatically on first use, and rdc falls back to your standard ~/.ssh key."
     },
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 11.160728,
-      "text": "Now we register the server from the command line, providing its name, IP address, and SSH user. Host keys are scanned automatically for trusted access."
+      "at": 7.928955,
+      "text": "Next we provision the server. This installs renet and creates the encrypted datastore.",
+      "afterText": "Done. Renet is installed and the datastore is ready.",
+      "cardLabel": "Setup Machine",
+      "prose": "Provision the server. This installs renet and creates the encrypted datastore."
     },
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 23.457976,
-      "text": "Next we provision the server. This installs renet and creates the encrypted datastore."
+      "at": 16.338306,
+      "text": "Here is the file that holds everything: your machines, the SSH key, and infrastructure settings. It is plain JSON, created automatically. You can keep several configs, one per environment such as production or staging, and switch between them with the config flag.",
+      "afterText": "One portable file. Copy it to another laptop to drive the same servers.",
+      "cardLabel": "Inspect Config",
+      "prose": "Inspect the JSON file that holds it all: machines, SSH key, and infrastructure. You can keep several configs, one per environment, and switch with the --config flag. See the multiple configs guide linked below."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alright! Let's add your first server. Two commands and you're set."
     },
     {
-      "id": "tutorial-add-server-04",
-      "markerIndex": 3,
-      "at": 39.717449,
-      "text": "Server is ready. Let's verify what the CLI knows about the configuration. Machines, SSH key, infrastructure, everything we just set up appears here."
+      "id": "two-tool-architecture",
+      "text": "There are two pieces. The command-line tool runs on your laptop, and an orchestrator called renet runs on the server. The CLI talks to it over SSH, so you never need to log into the server manually."
     },
     {
-      "id": "tutorial-add-server-05",
-      "markerIndex": 4,
-      "at": 48.157549,
-      "text": "And here is the JSON file that holds it all. Copy this single file to another laptop and you can drive the same servers from there."
+      "id": "next-tutorial",
+      "text": "And that's a wrap on adding a server! See you in the next one."
     }
   ]
 }

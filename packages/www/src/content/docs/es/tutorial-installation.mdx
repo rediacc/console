@@ -1,0 +1,58 @@
+---
+title: "Instalación"
+description: "Instala el CLI rdc en tu laptop con un solo comando y verifícalo con rdc doctor."
+category: "Tutorials"
+subcategory: essentials
+order: 1
+language: es
+sourceHash: "4cbfc9d1284b641a"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Instalación
+
+Instalar `rdc` son tres pasos: abre la página de instalación, elige tu sistema operativo y pega el comando en tu terminal. Todo el proceso suele terminar en uno o dos minutos.
+
+## Ver el tutorial
+
+![Tutorial: Instalación](/assets/tutorials/tutorial-installation.cast)
+
+## Los tres pasos
+
+![Resumen de los tres pasos](/img/tutorials/tutorial-installation/slide-1.svg)
+
+1. Abre la [página de instalación](/en/install).
+2. Elige tu sistema operativo.
+3. Copia el comando de instalación y pégalo en tu terminal.
+
+## Paso 1: Instalar el CLI
+
+<TutorialStep number={1} />
+
+La página de instalación genera el comando adecuado para ti. En Windows (PowerShell), el one-liner equivalente es:
+
+```powershell
+iwr -useb https://www.rediacc.com/install.ps1 | iex
+```
+
+> El prefijo `time` es un truco de shell que imprime cuánto tardó un comando. Lo usamos a lo largo de esta serie para que puedas ver la velocidad real de cada paso. Es opcional; puedes omitirlo si no lo necesitas.
+
+## Paso 2: Verificar la instalación
+
+<TutorialStep number={2} />
+
+`rdc doctor` también está disponible para revisar Node, SSH y el resto de las dependencias de `rdc`, e informa sobre cualquier problema.
+
+## Por qué `rdc` vive en tu laptop
+
+![rdc en tu laptop, renet en el servidor](/img/tutorials/tutorial-installation/slide-2.svg)
+
+`rdc` es el CLI en tu laptop. El servidor ejecuta un componente separado llamado `renet`, que `rdc` provisiona y controla por SSH. Nunca necesitas conectarte por SSH a un servidor manualmente. `rdc` lo hace por ti.
+
+Configuraremos eso correctamente en los próximos dos tutoriales.
+
+---
+
+Siguiente: [Configuración de claves SSH](/en/docs/tutorial-ssh-keys).

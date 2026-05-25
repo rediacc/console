@@ -100,7 +100,7 @@ Show full machine status (infra, system, repos with name/guid, containers with r
 - `--network` — Include network interfaces only
 - `--block-devices` — Include block devices only
 - `--licenses` — Include repository license statuses
-- `--storage-health` — Show BTRFS fragmentation and reflink savings per repository
+- `--storage-health` — Show BTRFS reflink savings and (informational) image fragmentation per repository
 - `--sync-certs` — Also pull the ACME cert cache from the machine after querying
 - `--strict` — Exit non-zero (code 2) if any container has crossed the health-drift threshold
 
@@ -375,6 +375,16 @@ Show datastore backend, size, usage, mount status, and cow_mode (if forked)
 - `-m, --machine <name>` — Machine name (where the Ceph datastore is hosted)
 - `--debug` — Enable debug output
 
+### rdc datastore resize
+
+Resize a machine's datastore pool offline (grow or shrink); unmount all repositories first.
+
+**Options:**
+
+- `-m, --machine <name>` — Machine name (where the Ceph datastore is hosted)
+- `--size <size>` — New datastore size (e.g., 100G, 95%)
+- `--debug` — Enable debug output
+
 ### rdc datastore fork
 
 Create a local COW copy of a Ceph datastore via RBD snapshot + clone (< 2s). Save snapshot/clone names from output for unfork. Only one fork per target name; unfork before re-forking
@@ -435,7 +445,7 @@ Delete a repository (destroys containers, volumes, and encrypted image). Config 
 
 ### rdc repo mount
 
-Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up --mount'. The volume stays mounted until explicitly unmounted. Omit name to mount all repos on the machine
+Mount a repository (decrypt and open the LUKS container, making the filesystem accessible). Needed on first deploy, after 'repo push' to a new machine, or after 'repo unmount'. Can also be done via 'repo up'. The volume stays mounted until explicitly unmounted. Omit name to mount all repos on the machine
 
 **Options:**
 
@@ -470,7 +480,7 @@ Unmount a repository (close the LUKS container, detaching the encrypted filesyst
 
 ### rdc repo up
 
-Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Prints the URL pattern for HTTP-exposed services (rediacc.service_port label) on completion. Use --mount for first deploy or forked repos. CRIU checkpoint restore is auto-detected — use --skip-checkpoint to force fresh start. Omit name to deploy all repos on the machine
+Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). Proxy routes take ~3s to become active after deploy. Prints the URL pattern for HTTP-exposed services (rediacc.service_port label) on completion. First deploy and forks are mounted automatically. CRIU checkpoint restore is auto-detected — use --skip-checkpoint to force fresh start. Omit name to deploy all repos on the machine
 
 **Options:**
 
@@ -531,9 +541,27 @@ List repositories on a machine
 
 > MCP tool
 
+### rdc repo cat
+
+Read a bounded window of a file in a repository to stdout (diagnostics go to stderr).
+
+**Options:**
+
+- `--name <name>` — Resource name
+- `-m, --machine <name>` — Target machine name
+- `--remote-file <path>` — File path to read, relative to the repository mount root
+- `--max-bytes <n>` — Maximum bytes to read and print (default 1 MiB, hard ceiling 50 MiB)
+- `--offset <n>` — Byte offset to start reading from
+- `--head <lines>` — Print only the first N lines (cannot combine with byte range)
+- `--tail <lines>` — Print only the last N lines (cannot combine with byte range)
+- `--stat` — Print only size, type, and modification time; read no content
+- `--force-binary` — Allow reading binary (NUL-containing) content
+- `--debug` — Enable debug output
+- `--skip-router-restart` — Skip restarting the route server after binary update
+
 ### rdc repo fork
 
-Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target> --mount. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.
+Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target>. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.
 
 **Options:**
 

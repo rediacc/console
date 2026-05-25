@@ -1,0 +1,127 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.384
+Alright!
+
+00:00:01.384 --> 00:00:04.068
+Let's set up SSH keys so you
+
+00:00:04.068 --> 00:00:06.369
+can reach your servers without passwords.
+
+00:00:06.369 --> 00:00:07.903
+This is pure SSH;
+
+00:00:07.903 --> 00:00:09.438
+rdc isn't involved yet.
+
+00:00:10.205 --> 00:00:11.200
+Two ideas.
+
+00:00:11.200 --> 00:00:14.186
+Generate one key on your laptop,
+
+00:00:14.186 --> 00:00:17.171
+then authorize it on each server
+
+00:00:17.171 --> 00:00:18.166
+with ssh-copy-id.
+
+00:00:18.166 --> 00:00:19.161
+Generate once,
+
+00:00:19.161 --> 00:00:20.654
+copy per server.
+
+00:00:23.907 --> 00:00:24.363
+First,
+
+00:00:24.363 --> 00:00:27.100
+generate a new SSH key on
+
+00:00:27.100 --> 00:00:28.012
+your laptop.
+
+00:00:28.012 --> 00:00:29.381
+Ed25519 is secure,
+
+00:00:29.381 --> 00:00:29.837
+small,
+
+00:00:29.837 --> 00:00:31.205
+and well supported.
+
+00:00:31.205 --> 00:00:33.030
+You do this once;
+
+00:00:33.030 --> 00:00:35.767
+the same key works for every
+
+00:00:35.767 --> 00:00:37.135
+server you add.
+
+00:00:37.135 --> 00:00:38.960
+This is plain SSH,
+
+00:00:38.960 --> 00:00:41.696
+nothing to do with rdc yet.
+
+00:00:42.496 --> 00:00:43.115
+Key generated.
+
+00:00:43.115 --> 00:00:45.897
+The public half is what we copy to each
+
+00:00:45.897 --> 00:00:46.206
+server.
+
+00:00:49.555 --> 00:00:52.453
+Now authorize the key on your first
+
+00:00:52.453 --> 00:00:53.694
+server with ssh-copy-id.
+
+00:00:53.694 --> 00:00:56.592
+It appends your public key to the
+
+00:00:56.592 --> 00:00:57.834
+server's authorized list,
+
+00:00:57.834 --> 00:01:00.317
+so future logins skip the password.
+
+00:01:02.317 --> 00:01:04.094
+Authorized on the first server.
+
+00:01:04.094 --> 00:01:05.870
+No more password prompts there.
+
+00:01:09.207 --> 00:01:12.098
+Do the same for every other server
+
+00:01:12.098 --> 00:01:12.924
+you manage.
+
+00:01:12.924 --> 00:01:15.402
+Here we authorize the second one.
+
+00:01:15.402 --> 00:01:17.880
+Just repeat ssh-copy-id for each machine.
+
+00:01:19.880 --> 00:01:21.988
+Both servers now trust this key.
+
+00:01:21.988 --> 00:01:23.746
+SSH is fully set up.
+
+00:01:24.584 --> 00:01:27.215
+Your key is set and your servers
+
+00:01:27.215 --> 00:01:27.967
+trust it.
+
+00:01:27.967 --> 00:01:28.719
+Next up,
+
+00:01:28.719 --> 00:01:31.350
+we add your first server to rdc.

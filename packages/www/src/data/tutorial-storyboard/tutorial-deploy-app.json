@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-deploy-app",
+  "nextTutorialKey": "tutorial-work-with-repo",
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "pick-apply-run",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "pick-apply-run",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc repo template list",
+        "commandFull": "rdc repo template list"
+      }
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc repo template apply",
+        "commandFull": "rdc repo template apply --name app-postgres -m <machine-name> --repository my-app"
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc term connect -c 'ls -la'",
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la' 2>/dev/null"
+      }
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "markerIndex": 3,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc repo up",
+        "commandFull": "rdc repo up --name my-app -m <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-4",
+      "type": "cast-narrated",
+      "markerIndex": 4,
+      "holdSec": 0.8,
+      "narrationRole": "transition",
+      "card": {
+        "command": "rdc term connect -c 'docker ps'",
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'docker ps' 2>/dev/null"
+      }
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

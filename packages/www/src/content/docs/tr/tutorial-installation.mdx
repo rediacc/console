@@ -1,0 +1,58 @@
+---
+title: "Kurulum"
+description: "rdc CLI'ı dizüstü bilgisayarınıza tek komutla yükleyin ve `rdc doctor` ile doğrulayın."
+category: "Tutorials"
+subcategory: essentials
+order: 1
+language: tr
+sourceHash: "4cbfc9d1284b641a"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Kurulum
+
+`rdc`'yi kurmak üç adımdan oluşur: kurulum sayfasını açın, işletim sisteminizi seçin, komutu terminalinize yapıştırın. Tüm süreç genellikle bir-iki dakika içinde tamamlanır.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Installation](/assets/tutorials/tutorial-installation.cast)
+
+## Üç adım
+
+![Three steps overview](/img/tutorials/tutorial-installation/slide-1.svg)
+
+1. [Kurulum sayfasını](/en/install) açın.
+2. İşletim sisteminizi seçin.
+3. Kurulum komutunu kopyalayıp terminalinize yapıştırın.
+
+## Adım 1: CLI'ı kurun
+
+<TutorialStep number={1} />
+
+Kurulum sayfası sizin için doğru komutu oluşturur. Windows (PowerShell) üzerinde eşdeğer tek satırlık komut şudur:
+
+```powershell
+iwr -useb https://www.rediacc.com/install.ps1 | iex
+```
+
+> `time` öneki, bir komutun ne kadar sürdüğünü yazdıran bir kabuk numarasıdır. Bu seriyi boyunca her adımın gerçek hızını görebilmeniz için kullanıyoruz. İsteğe bağlıdır; istemiyorsanız kaldırabilirsiniz.
+
+## Adım 2: Kurulumu doğrulayın
+
+<TutorialStep number={2} />
+
+`rdc doctor`, Node, SSH ve `rdc`'nin diğer bağımlılıklarını tek tek kontrol eder; eksik bir şey varsa bildirir.
+
+## `rdc` neden dizüstü bilgisayarınızda yaşar?
+
+![rdc on your laptop, renet on the server](/img/tutorials/tutorial-installation/slide-2.svg)
+
+`rdc`, dizüstü bilgisayarınızdaki CLI aracıdır. Sunucu ise `renet` adlı ayrı bir bileşen çalıştırır. `rdc`, SSH üzerinden `renet`'i yapılandırır ve yönetir. Sunucularınıza manuel olarak SSH yapmanıza hiç gerek kalmaz. `rdc` bunu sizin için halleder.
+
+Bu kurulumu önümüzdeki iki öğreticide düzgün biçimde yapılandıracağız.
+
+---
+
+Sonraki: [SSH Anahtar Yapılandırması](/en/docs/tutorial-ssh-keys).

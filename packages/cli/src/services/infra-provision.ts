@@ -25,13 +25,14 @@ interface PushInfraOptions {
  * Build snake_case JSON payload for Go consumption.
  * Machine-level infra fields + config-level shared fields + machine name.
  */
-function buildInfraPayload(
+export function buildInfraPayload(
   machineName: string,
   infra: InfraConfig,
-  configLevel: { cfDnsApiToken?: string; certEmail?: string }
+  configLevel: { cfDnsApiToken?: string; certEmail?: string; team?: string }
 ): string {
   const payload: Record<string, unknown> = {};
   payload.machine_name = machineName;
+  payload.team_name = configLevel.team ?? '';
   if (infra.publicIPv4) payload.public_ipv4 = infra.publicIPv4;
   if (infra.publicIPv6) payload.public_ipv6 = infra.publicIPv6;
   if (infra.baseDomain) payload.base_domain = infra.baseDomain;
@@ -299,9 +300,11 @@ export async function pushInfraConfig(
     }
   );
 
+  const team = (await configService.applyDefaults({})).team ?? '';
   const infraJSON = buildInfraPayload(machineName, machine.infra, {
     cfDnsApiToken: localConfig.cfDnsApiToken,
     certEmail: localConfig.certEmail,
+    team,
   });
 
   const sftp = new SFTPClient({

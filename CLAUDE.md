@@ -160,6 +160,22 @@ The flag runs `ensure_deps` + `ensure_packages_built` first, so edits to `packag
 
 The previous binary is preserved as a backup matching `getOldBinaryPath()` (`<base>.old<ext>` — `rdc.old` on Linux/macOS, `rdc.old.exe` on Windows) so `cleanupOldBinary()` removes it on the next successful update.
 
+### Reproducing license-flow bugs in dev (`RDC_RENET_LICENSE=1`)
+
+By default `./rdc.sh` rebuilds renet with the `--nolicense` Go build tag (`pkg/license/runtime_nolicense.go` stub) so dev iteration isn't blocked by license enforcement. That's the right default for everyday work, but it also hides license-flow bugs (e.g. rediacc/console#482) because the renet binary deployed to your test machine never returns `LICENSE_REQUIRED` (exit 10), so the CLI's recovery framework in `packages/cli/src/services/local-executor.ts:632-720` never fires.
+
+To reproduce license-enforcement issues locally, set:
+
+```bash
+ACCOUNT_ED25519_PUBLIC_KEY="$(curl -s https://www.rediacc.com/api/public/account-key)" \
+RDC_RENET_LICENSE=1 \
+RDC_PROD=1 ./rdc.sh --config <prod-config> repo push --name <repo> -m <src> --to <fresh-machine> --up
+```
+
+`RDC_RENET_LICENSE=1` drops the `--nolicense` build flag. `ACCOUNT_ED25519_PUBLIC_KEY` must match the account server that issued the licenses on your test machines — for production licenses that's the prod ed25519 public key. The build flow wires this into `private/renet/pkg/license/keys.ProductionPublicKey` via ldflags. Without it, prod-signed licenses fail validation as `invalid_signature`.
+
+After reproducing, unset `RDC_RENET_LICENSE` (or remove from your shell) so subsequent `./rdc.sh` invocations rebuild the dev-friendly nolicense renet again.
+
 ## Versioning
 
 Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits.

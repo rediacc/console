@@ -6,7 +6,7 @@ order: 2
 language: en
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/en/cli.json
-sourceHash: "d0bad622e2f54cc2"
+sourceHash: "2cd00a1758c541b0"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -226,26 +226,8 @@ rdc config recover [options]
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-config-set-ssh"></a>
-### 2.9 set-ssh
-
-{{t:cli.commands.config.setSsh.description}}
-
-```bash
-rdc config set-ssh
-```
-
-<a id="cli-local-config-set-renet"></a>
-### 2.10 set-renet
-
-{{t:cli.commands.config.setRenet.description}}
-
-```bash
-rdc config set-renet
-```
-
 <a id="cli-local-config-ssh"></a>
-### 2.11 ssh
+### 2.9 ssh
 
 {{t:cli.commands.config.ssh.description}}
 
@@ -283,7 +265,7 @@ rdc config ssh remove
 ```
 
 <a id="cli-local-config-remote"></a>
-### 2.12 remote
+### 2.10 remote
 
 {{t:cli.commands.config.remote.description}}
 
@@ -330,7 +312,7 @@ rdc config remote refresh
 ```
 
 <a id="cli-local-config-machine"></a>
-### 2.13 machine
+### 2.11 machine
 
 {{t:cli.commands.config.machine.description}}
 
@@ -424,7 +406,7 @@ rdc config machine set-ceph [options]
 
 
 <a id="cli-local-config-repository"></a>
-### 2.14 repository
+### 2.12 repository
 
 {{t:cli.commands.config.repository.description}}
 
@@ -503,7 +485,7 @@ rdc config repository purge-archived
 ```
 
 <a id="cli-local-config-provider"></a>
-### 2.15 provider
+### 2.13 provider
 
 {{t:cli.commands.config.provider.description}}
 
@@ -562,7 +544,7 @@ rdc config provider list
 ```
 
 <a id="cli-local-config-storage"></a>
-### 2.16 storage
+### 2.14 storage
 
 {{t:cli.commands.config.storage.description}}
 
@@ -605,7 +587,7 @@ rdc config storage list
 ```
 
 <a id="cli-local-config-infra"></a>
-### 2.17 infra
+### 2.15 infra
 
 {{t:cli.commands.config.infra.description}}
 
@@ -660,7 +642,7 @@ rdc config infra push [options]
 
 
 <a id="cli-local-config-cert-cache"></a>
-### 2.18 cert-cache
+### 2.16 cert-cache
 
 {{t:cli.commands.config.certCache.description}}
 
@@ -714,7 +696,7 @@ rdc config cert-cache clear
 ```
 
 <a id="cli-local-config-field"></a>
-### 2.19 field
+### 2.17 field
 
 {{t:cli.commands.config.field.description}}
 
@@ -795,7 +777,7 @@ rdc config field list [options]
 
 
 <a id="cli-local-config-edit"></a>
-### 2.20 edit
+### 2.18 edit
 
 {{t:cli.commands.config.edit.description}}
 
@@ -813,7 +795,7 @@ rdc config edit [options]
 
 
 <a id="cli-local-config-audit"></a>
-### 2.21 audit
+### 2.19 audit
 
 {{t:cli.commands.config.audit.description}}
 
@@ -852,7 +834,7 @@ rdc config audit verify
 ```
 
 <a id="cli-local-config-backup-strategy"></a>
-### 2.22 backup-strategy
+### 2.20 backup-strategy
 
 {{t:cli.commands.config.backupStrategy.description}}
 
@@ -925,8 +907,24 @@ rdc config backup-strategy show [options]
 
 {{t:cli.commands.datastore.description}}
 
+<a id="cli-local-datastore-resize"></a>
+### 3.1 resize
+
+{{t:cli.commands.datastore.resize.description}}
+
+```bash
+rdc datastore resize [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.datastore.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--size <size>` | {{t:cli.commands.datastore.resize.sizeOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-datastore-init"></a>
-### 3.1 init
+### 3.2 init
 
 {{t:cli.commands.datastore.init.description}}
 
@@ -947,7 +945,7 @@ rdc datastore init [options]
 
 
 <a id="cli-local-datastore-fork"></a>
-### 3.2 fork
+### 3.3 fork
 
 {{t:cli.commands.datastore.fork.description}}
 
@@ -964,7 +962,7 @@ rdc datastore fork [options]
 
 
 <a id="cli-local-datastore-unfork"></a>
-### 3.3 unfork
+### 3.4 unfork
 
 {{t:cli.commands.datastore.unfork.description}}
 
@@ -985,7 +983,7 @@ rdc datastore unfork [options]
 
 
 <a id="cli-local-datastore-status"></a>
-### 3.4 status
+### 3.5 status
 
 {{t:cli.commands.datastore.status.description}}
 
@@ -1097,17 +1095,8 @@ rdc machine vault-status [options]
 | `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-machine-update"></a>
-### 4.7 update
-
-{{t:cli.commands.machine.update.description}}
-
-```bash
-rdc machine update
-```
-
 <a id="cli-local-machine-health"></a>
-### 4.8 health
+### 4.7 health
 
 {{t:cli.commands.machine.health.description}}
 
@@ -1124,7 +1113,7 @@ rdc machine health [options]
 
 
 <a id="cli-local-machine-containers"></a>
-### 4.9 containers
+### 4.8 containers
 
 {{t:cli.commands.machine.containers.description}}
 
@@ -1140,7 +1129,7 @@ rdc machine containers [options]
 
 
 <a id="cli-local-machine-services"></a>
-### 4.10 services
+### 4.9 services
 
 {{t:cli.commands.machine.services.description}}
 
@@ -1156,7 +1145,7 @@ rdc machine services [options]
 
 
 <a id="cli-local-machine-query"></a>
-### 4.11 query
+### 4.10 query
 
 {{t:cli.commands.machine.query.description}}
 
@@ -1181,7 +1170,7 @@ rdc machine query [options]
 
 
 <a id="cli-local-machine-vault-status"></a>
-### 4.12 vault-status
+### 4.11 vault-status
 
 {{t:cli.commands.machine.vaultStatus.description}}
 
@@ -1196,7 +1185,7 @@ rdc machine vault-status [options]
 
 
 <a id="cli-local-machine-repos"></a>
-### 4.13 repos
+### 4.12 repos
 
 {{t:cli.commands.machine.repos.description}}
 
@@ -1212,7 +1201,7 @@ rdc machine repos [options]
 
 
 <a id="cli-local-machine-test-connection"></a>
-### 4.14 test-connection
+### 4.13 test-connection
 
 {{t:cli.commands.machine.testConnection.description}}
 
@@ -1236,7 +1225,7 @@ rdc machine test-connection [options]
 > **{{t:cli.docs.admonitions.tip}}**: {{t:cli.docs.supplements.machine.testConnection.tip}}
 
 <a id="cli-local-machine-provision"></a>
-### 4.15 provision
+### 4.14 provision
 
 {{t:cli.commands.machine.provision.description}}
 
@@ -1258,7 +1247,7 @@ rdc machine provision [options]
 
 
 <a id="cli-local-machine-deprovision"></a>
-### 4.16 deprovision
+### 4.15 deprovision
 
 {{t:cli.commands.machine.deprovision.description}}
 
@@ -1274,7 +1263,7 @@ rdc machine deprovision [options]
 
 
 <a id="cli-local-machine-backup"></a>
-### 4.17 backup
+### 4.16 backup
 
 {{t:cli.commands.machine.backup.description}}
 
@@ -1354,7 +1343,7 @@ rdc machine backup cancel [options]
 
 
 <a id="cli-local-machine-prune"></a>
-### 4.18 prune
+### 4.17 prune
 
 {{t:cli.commands.machine.prune.description}}
 
@@ -1472,17 +1461,8 @@ rdc repo up [options]
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-repo-up-all"></a>
-### 6.4 up-all
-
-{{t:cli.commands.repo.upAll.description}}
-
-```bash
-rdc repo up-all
-```
-
 <a id="cli-local-repo-down"></a>
-### 6.5 down
+### 6.4 down
 
 {{t:cli.commands.repo.down.description}}
 
@@ -1503,7 +1483,7 @@ rdc repo down [options]
 
 
 <a id="cli-local-repo-status"></a>
-### 6.6 status
+### 6.5 status
 
 {{t:cli.commands.repo.status.description}}
 
@@ -1515,6 +1495,30 @@ rdc repo status [options]
 |------|-------------|----------|---------|
 | `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-cat"></a>
+### 6.6 cat
+
+{{t:cli.commands.repo.cat.description}}
+
+```bash
+rdc repo cat [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.options.name}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--remote-file <path>` | {{t:cli.commands.repo.cat.remoteFileOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--max-bytes <n>` | {{t:cli.commands.repo.cat.maxBytesOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--offset <n>` | {{t:cli.commands.repo.cat.offsetOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--head <lines>` | {{t:cli.commands.repo.cat.headOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--tail <lines>` | {{t:cli.commands.repo.cat.tailOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--stat` | {{t:cli.commands.repo.cat.statOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force-binary` | {{t:cli.commands.repo.cat.forceBinaryOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -1877,24 +1881,6 @@ rdc repo backup list [options]
 
 {{t:cli.commands.repo.sync.description}}
 
-<a id="cli-local-repo-sync-push"></a>
-#### push
-
-{{t:cli.commands.repo.sync.push.description}}
-
-```bash
-rdc repo sync push
-```
-
-<a id="cli-local-repo-sync-pull"></a>
-#### pull
-
-{{t:cli.commands.repo.sync.pull.description}}
-
-```bash
-rdc repo sync pull
-```
-
 <a id="cli-local-repo-sync-upload"></a>
 #### upload
 
@@ -1962,40 +1948,8 @@ rdc repo sync status [options]
 | `--remote-file <path>` | {{t:cli.options.remoteFile}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
-<a id="cli-local-repo-snapshot"></a>
-### 6.23 snapshot
-
-{{t:cli.commands.repo.snapshot.description}}
-
-<a id="cli-local-repo-snapshot-create"></a>
-#### create
-
-{{t:cli.commands.repo.snapshot.create.description}}
-
-```bash
-rdc repo snapshot create
-```
-
-<a id="cli-local-repo-snapshot-list"></a>
-#### list
-
-{{t:cli.commands.repo.snapshot.list.description}}
-
-```bash
-rdc repo snapshot list
-```
-
-<a id="cli-local-repo-snapshot-delete"></a>
-#### delete
-
-{{t:cli.commands.repo.snapshot.delete.description}}
-
-```bash
-rdc repo snapshot delete
-```
-
 <a id="cli-local-repo-tunnel"></a>
-### 6.24 tunnel
+### 6.23 tunnel
 
 {{t:cli.commands.repo.tunnel.description}}
 
@@ -2013,7 +1967,7 @@ rdc repo tunnel [options]
 
 
 <a id="cli-local-repo-secret"></a>
-### 6.25 secret
+### 6.24 secret
 
 {{t:cli.commands.repo.secret.description}}
 
@@ -2198,15 +2152,6 @@ rdc storage prune [options]
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
-
-<a id="cli-local-storage-pull"></a>
-### 7.8 pull
-
-{{t:cli.commands.storage.pull.description}}
-
-```bash
-rdc storage pull
-```
 
 ---
 

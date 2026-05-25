@@ -6,38 +6,86 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 27.859436,
-      "text": "İkinci adım. Komut satırından genel IP'yi, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını giriyoruz. Sertifika e-postası ve token tüm makinelerinizde paylaşılır; yalnızca bir kez ayarlarsınız."
+      "at": 2.424705,
+      "text": "İkinci adım. Komut satırından genel IP'yi, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını giriyoruz. Sertifika e-postası ve token tüm makinelerinizde paylaşılır; yalnızca bir kez ayarlarsınız.",
+      "afterText": "Altyapı bilgileri yapılandırmanıza kaydedildi.",
+      "cardLabel": "Altyapı Ayarla",
+      "prose": "Genel IP adresini, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını komut satırından ayarlayın. Sertifika e-postası ve token tüm makinelerinizde ortaktır, bu yüzden bunları yalnızca bir kez ayarlarsınız."
     },
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 41.958746,
-      "text": "Altyapı ayarlarının kaydedildiğini doğruluyoruz. Genel IP, temel alan adı, sertifika e-postası; hepsi yapılandırmada görünüyor."
+      "at": 13.591473,
+      "text": "Altyapı ayarlarının kaydedildiğini doğruluyoruz. Genel IP, temel alan adı, sertifika e-postası; hepsi yapılandırmada görünüyor.",
+      "afterText": "Ayarlar kaydedildi. Sunucuya gönderilmeye hazır.",
+      "cardLabel": "Altyapıyı Göster",
+      "prose": "Altyapı ayarlarının kaydedildiğini doğrulayın. Genel IP, temel alan adı ve sertifika e-postası görünür olmalıdır."
     },
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 51.564603,
-      "text": "Üçüncü adım. Yapılandırmayı sunucuya gönderiyoruz. Bu komut, Cloudflare'de DNS kayıtlarını otomatik olarak oluşturur ve makinede proxy yapılandırmasını hazırlar."
+      "at": 18.479059,
+      "text": "Üçüncü adım. Yapılandırmayı sunucuya gönderiyoruz. Bu komut, Cloudflare'de DNS kayıtlarını otomatik olarak oluşturur ve makinede proxy yapılandırmasını hazırlar.",
+      "afterText": "Gönderildi. Cloudflare'de DNS kayıtları oluşturuluyor.",
+      "cardLabel": "Altyapıyı Gönder",
+      "prose": "Yapılandırmayı sunucuya gönderin. Bu işlem Cloudflare'de DNS kayıtlarını otomatik olarak oluşturur ve proxy yapılandırmasını hazırlar."
     },
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 70.626849,
-      "text": "Dördüncü adım başlıyor. infra adlı küçük bir depo oluşturuyoruz. Proxy burada yaşayacak; uygulama depolarından izole."
+      "at": 25.757057,
+      "text": "Dördüncü adım başlıyor. infra adlı küçük bir depo oluşturuyoruz. Proxy burada yaşayacak; uygulama depolarından izole.",
+      "afterText": "Infra deposu oluşturuldu. Uygulama depolarınızdan izole.",
+      "cardLabel": "Repo Oluştur",
+      "prose": "infra adında küçük bir repo oluşturun. Proxy burada çalışacak, uygulama repolarından ayrı tutulacak."
     },
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 97.243945,
-      "text": "Yerleşik proxy şablonunu uyguluyoruz. Traefik ile birlikte Let's Encrypt ve Cloudflare DNS-01 doğrulaması için yapılandırma hazır olarak geliyor."
+      "at": 33.957312,
+      "text": "Yerleşik proxy şablonunu uyguluyoruz. Traefik ile birlikte Let's Encrypt ve Cloudflare DNS-01 doğrulaması için yapılandırma hazır olarak geliyor.",
+      "afterText": "Traefik yapılandırması yerinde.",
+      "cardLabel": "Şablon Uygula"
     },
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 112.494613,
-      "text": "Proxy'yi ayağa kaldırıyoruz. Traefik, container'larınızı her beş saniyede bir keşfeder. TLS sertifikaları Let's Encrypt'ten otomatik olarak gelir. Uygulamanız artık HTTPS üzerinden internetten erişilebilir."
+      "at": 41.036573,
+      "text": "Proxy'yi ayağa kaldırıyoruz. Traefik, container'larınızı her beş saniyede bir keşfeder. TLS sertifikaları Let's Encrypt'ten otomatik olarak gelir. Uygulamanız artık HTTPS üzerinden internetten erişilebilir.",
+      "afterText": "Proxy yayında. TLS sertifikaları otomatik olarak gelecek.",
+      "cardLabel": "Proxy Dağıt",
+      "prose": "Proxy'yi başlatın. Traefik container'larınızı otomatik olarak keşfeder, TLS sertifikaları Let's Encrypt tarafından otomatik olarak sağlanır. Uygulamanız artık HTTPS üzerinden internette erişilebilir."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Pekâlâ! Uygulamanıza otomatik TLS ile gerçek bir alan adı verelim. Dört kısa adım ve internette yerinizi alıyorsunuz."
+    },
+    {
+      "id": "four-steps",
+      "text": "İşte yol. Cloudflare API token'ı alın, altyapıyı CLI üzerinde yapılandırın, sunucuya gönderin ve DNS ile sertifikaları sizin için yöneten bir Traefik proxy'si dağıtın."
+    },
+    {
+      "id": "open-cloudflare",
+      "text": "Önce tarayıcınızda Cloudflare panelini açın. My Profile, ardından API Tokens'a gidin ve CLI'nin kayıtlarınızı yönetebilmesi için Zone DNS Edit yetkisine sahip bir token oluşturun."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ağ tarafı halloldu! Bir sonraki bölümde görüşmek üzere."
+    }
+  ],
+  "title": "Ağ ve Alan Adları",
+  "chapters": {
+    "intro": "Ağ ve Alan Adları",
+    "four-steps": "Dört Adımlı Yol",
+    "open-cloudflare": "Adım 1: Cloudflare API Token",
+    "cast-step-0": "Adım 2: Altyapıyı Yapılandır",
+    "cast-step-1": "Adım 2: Ayarları Doğrula",
+    "cast-step-2": "Adım 3: Sunucuya Gönder",
+    "cast-step-3": "Adım 4: infra Reposunu Oluştur",
+    "cast-step-4": "Adım 4: Proxy Şablonunu Uygula",
+    "cast-step-5": "Adım 4: Proxy'yi Başlat",
+    "outro": "Sonraki: Production Modu"
+  }
 }

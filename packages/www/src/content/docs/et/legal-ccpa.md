@@ -4,6 +4,8 @@ description: "Kuidas Rediacc'i ise majutatud mudel rahuldab California tarbijate
 category: "Legal"
 order: 4
 language: et
+sourceHash: "949159b302cf6ab9"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 California tarbijate privaatsusseadus (CCPA) on osariigi seadus, mis annab California tarbijatele õigused nende isikuandmete üle, sealhulgas õiguse teada, milliseid andmeid kogutakse, õiguse need kustutada ning õiguse keelduda nende müümisest.
@@ -17,7 +19,7 @@ CCPA keskendub isikuandmetega seotud tarbija õigustele. Rediacc on ise majutatu
 | CCPA õigus | Nõue | Rediacc'i võimekus |
 |-----------|-------------|-------------------|
 | Teabeõigus (1798.100) | Avalikustada kogutavate andmete kategooriad ja eesmärgid | Auditlogi jälgib kõiki andmeoperatsioone. Ise majutatud: teie organisatsioon säilitab täieliku ülevaate sellest, millised andmed igas hoidlas asuvad. |
-| Kustutamisõigus (1798.105) | Kustutada tarbija isikuandmed taotluse alusel | `rdc repo destroy` kustutab LUKS-krüptitud mahu krüptograafiliselt. Hargi kustutamine eemaldab kloonitud koopiad. |
+| Kustutamisõigus (1798.105) | Kustutada tarbija isikuandmed taotluse alusel | `rdc repo delete` kustutab LUKS-krüptitud mahu krüptograafiliselt. Hargi kustutamine eemaldab kloonitud koopiad. |
 | Loobumisõigus (1798.120) | Mitte müüa ega jagada isikuandmeid | Ise majutatud arhitektuur: andmeid ei edastata Rediacc'ile ega ühelegi kolmandale osapoolele. Andmed jäävad teie serveritesse. Konfiguratsioonihoidla sünkroonimine kasutab null-teadmise krüptimist. Isegi sünkroonimisserver ei saa andmeid lugeda. |
 | Andmeturve (1798.150) | Rakendada mõistlikke turvameetmeid | LUKS2 AES-256 krüptimine, võrgueraldus, ainult SSH-põhine juurdepääs, eraldatud Docker-deemonid, auditeerimine. Konfiguratsioonihoidla kasutab kolmekihilist krüptimist koos jagatud võtme tuletamise ja pöörlevate ühekordse kasutuse žetoonidega. |
 

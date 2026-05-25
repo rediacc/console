@@ -4,6 +4,8 @@ description: "Layout delle directory, comandi renet, servizi systemd e workflow 
 category: "Concepts"
 order: 3
 language: it
+sourceHash: "40a33f0e2fa34548"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Riferimento server
@@ -112,6 +114,31 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 ```
 
 `sandbox-exec` applica le restrizioni filesystem Landlock LSM, poi esegue il comando dato. Viene invocato automaticamente da `sandbox-gateway` (il gestore SSH ForceCommand) per tutte le connessioni a livello di repository.
+
+### Hub per utente (ambienti di sviluppo)
+
+L'Hub fornisce a ogni utente il proprio daemon Docker per gli ambienti di sviluppo, separato dai daemon `FlavorRediacc` per singolo repository.
+
+```bash
+# Installare / rimuovere le unita systemd dell'Hub per utente
+sudo renet hub install
+sudo renet hub uninstall
+
+# Raccogliere i daemon Hub per utente inattivi
+sudo renet hub gc
+```
+
+I daemon girano sotto uno dei due flavor, selezionato con `--flavor`:
+
+```bash
+# Daemon isolato per repository (bridge=none, iptables=false) — predefinito
+sudo renet daemon start-foreground --flavor=rediacc ...
+
+# Daemon Hub per utente (bridge=docker0, iptables=true, live-restore=true)
+sudo renet daemon start-foreground --flavor=hub ...
+```
+
+Il flavor `hub` abilita la normale rete bridge affinche i contenitori avviati dall'utente abbiano connettivita in uscita; il flavor `rediacc` impone l'isolamento loopback tra i repository. I log di audit dell'Hub vengono scritti in `/var/log/rediacc/hub/<user>.log`.
 
 **Flag:**
 - `--allow-rw`, `--allow-ro`, `--allow-exec`: regole di percorso Landlock

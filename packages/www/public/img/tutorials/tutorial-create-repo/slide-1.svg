@@ -5,12 +5,12 @@
     .box { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 12; ry: 12; }
     .accent-box { fill: #eef2e6; stroke: #556b2f; stroke-width: 2; rx: 12; ry: 12; }
     .icon-stroke { fill: none; stroke: #1a1a1a; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-    .role { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
-    .title { fill: #1a1a1a; font: 700 24px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
-    .sub { fill: #5e5e5e; font: 400 16px Inter, system-ui, sans-serif; text-anchor: middle; }
-    .item { fill: #1a1a1a; font: 400 14px JetBrainsMono, "JetBrains Mono", monospace; }
+    .role { fill: #5e5e5e; font-weight: 400; font-size: 14px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
+    .title { fill: #1a1a1a; font-weight: 700; font-size: 24px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .sub { fill: #5e5e5e; font-weight: 400; font-size: 16px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .item { fill: #1a1a1a; font-weight: 400; font-size: 14px; font-family: JetBrainsMono, "JetBrains Mono", monospace; }
     .edge { stroke: #556b2f; stroke-width: 2.5; fill: none; }
-    .edge-label { fill: #556b2f; font: 600 14px Inter, system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
+    .edge-label { fill: #556b2f; font-weight: 600; font-size: 14px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; }
   </style>
   <rect class="bg" width="960" height="540"/>
 

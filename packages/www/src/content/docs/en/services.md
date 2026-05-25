@@ -194,7 +194,9 @@ renet and Docker disagree, on purpose, about how to handle container restarts. U
 
 > **Experimental:** Cold-backup sidecar-based recovery and the `--sync-certs` flag on `rdc machine query` shipped in renet 0.9+. Older versions rely purely on saved `restart_policy` for watchdog recovery, which can leave `on-failure` containers stranded after a cold backup.
 
-> **Docker bridge networking is disabled for rediacc-managed daemons.** Each per-repo daemon is configured with `"bridge": "none"` and `"iptables": false`. A plain `docker run <image>` inside a repository shell will still launch, but the container gets only a loopback interface and has no DNS or outbound connectivity. This is by design, since loopback isolation between repos is enforced by eBPF cgroup hooks that a bridged container would bypass. Production services should use `renet compose` (which injects host networking for you); for ad-hoc debugging, pass `--network host` explicitly: `docker run --rm --network host -it ubuntu bash`.
+> **Docker bridge networking is disabled for per-repo daemons.** Each per-repo daemon (`FlavorRediacc`) is configured with `"bridge": "none"` and `"iptables": false`. A plain `docker run <image>` inside a repository shell will still launch, but the container gets only a loopback interface and has no DNS or outbound connectivity. This is by design, since loopback isolation between repos is enforced by eBPF cgroup hooks that a bridged container would bypass. Production services should use `renet compose` (which injects host networking for you); for ad-hoc debugging, pass `--network host` explicitly: `docker run --rm --network host -it ubuntu bash`.
+>
+> Per-user Hub daemons (`FlavorHub`, used by development environments) are the exception: they set `bridge="docker0"`, `iptables=true`, and `live-restore=true` so user-run containers get normal bridge networking and outbound connectivity.
 
 > **Note:** Fork repos get auto-routes under the parent's subdomain: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Custom domains are skipped for forks.
 

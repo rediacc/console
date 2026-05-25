@@ -6,14 +6,52 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.509194,
-      "text": "Prima di tutto, confermiamo che la CLI sia nel path. Eseguendo la CLI con il flag version si ottiene la versione installata e si verifica che l'installazione sia andata a buon fine."
+      "at": 1.626476,
+      "text": "Prima di tutto, confermiamo che la CLI sia nel path. Eseguendo la CLI con il flag version si ottiene la versione installata e si verifica che l'installazione sia andata a buon fine.",
+      "afterText": "Installazione completata. Il binario rdc e' nel tuo path.",
+      "cardLabel": "Installa CLI",
+      "prose": "Incolla il comando di installazione nel tuo terminal ed eseguilo. Lo script verifica la tua piattaforma, scarica l'ultimo binary stabile e lo inserisce nella tua home directory. Nessuna installazione di sistema, nessun sudo richiesto. Una volta completato, il binary rdc è nel tuo path e può essere richiamato da qualsiasi shell."
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 9.435981,
-      "text": "Ora eseguiamo il controllo diagnostico. Controlla tutte le dipendenze necessarie alla CLI -- Node, SSH e le restanti -- e segnala eventuali mancanze. Un rapporto pulito significa che sei pronto ad aggiungere un server."
+      "at": 7.903516,
+      "text": "Ora eseguiamo il controllo diagnostico. Controlla tutte le dipendenze necessarie alla CLI -- Node, SSH e le restanti -- e segnala eventuali mancanze. Un rapporto pulito significa che sei pronto ad aggiungere un server.",
+      "afterText": "Versione stampata. Sei pronto.",
+      "cardLabel": "Verifica Versione",
+      "prose": "Conferma l'installazione eseguendo rdc con il flag della versione. Stampa la versione installata, verificando che il binary sia nel tuo path."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Bene! Installiamo lo strumento da riga di comando sul tuo laptop."
+    },
+    {
+      "id": "three-steps",
+      "text": "Tre passi. Apri la pagina di installazione, scegli il tuo sistema operativo, poi incolla il comando nel terminale."
+    },
+    {
+      "id": "open-install-page",
+      "text": "Vai alla pagina di installazione e scorri fino alla sezione di installazione rapida. Genera il one-liner giusto per la piattaforma che stai usando."
+    },
+    {
+      "id": "laptop-vs-server",
+      "text": "Lo strumento da riga di comando vive sul tuo laptop. Il server esegue un componente separato chiamato renet, che la CLI provisiona e pilota via SSH, quindi non devi mai collegarti manualmente."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Installazione completata. Nel prossimo configureremo la tua chiave SSH cosi' la CLI potra' raggiungere i tuoi server."
+    }
+  ],
+  "title": "Installazione",
+  "chapters": {
+    "intro": "Installazione",
+    "three-steps": "I tre passaggi",
+    "open-install": "Apri la pagina di installazione",
+    "cast-step-0": "Passaggio 1: Installa la CLI",
+    "cast-step-1": "Passaggio 2: Verifica l'installazione",
+    "laptop-vs-server": "Perché rdc vive sul tuo laptop",
+    "outro": "Avanti: Configurazione Chiave SSH"
+  }
 }

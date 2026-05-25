@@ -18,6 +18,7 @@ import { executeRepoFunction } from '../utils/repo-executor.js';
 import { formatStepDuration } from '../utils/timeline.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
+import { registerRepoCatCommand } from './repo-cat.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
 import {
   handleDownAll,
@@ -164,6 +165,7 @@ async function handleDeleteSuccess(
   if (!archiveConfig) {
     outputService.info(t('commands.repo.delete.archiveHint', { repository: name }));
   }
+  outputService.info(t('commands.repo.delete.cloudBackupHint', { machine: machineName }));
 }
 
 /** Handle the repo delete action body. */
@@ -506,6 +508,7 @@ export function registerRepoCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(handleRepoList);
+  registerRepoCatCommand(repo);
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
   registerRepoMigrateCommand(repo);

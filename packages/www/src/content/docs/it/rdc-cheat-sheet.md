@@ -4,6 +4,8 @@ description: Riferimento rapido per tutti i comandi rdc, config, repository, mac
 category: Guides
 order: 3
 language: it
+sourceHash: "12956297c1157cd2"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # RDC CLI Cheat Sheet
@@ -70,7 +72,7 @@ Credenziali di deploy in sola scrittura. `get` restituisce solo il digest. Il va
 | `rdc config backup-strategy list` | Elenca tutte le strategie di backup definite |
 | `rdc config backup-strategy show --name <name>` | Mostra i dettagli di una strategia |
 | `rdc config backup-strategy remove --name <name>` | Rimuove una strategia |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | Associa strategie a una macchina |
+| `rdc machine backup schedule -m <machine>` | Distribuisce le strategie di backup configurate su una macchina |
 
 ## Operazioni di Backup
 

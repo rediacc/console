@@ -1,0 +1,116 @@
+---
+title: "Depo Fork'lama"
+description: "Tüm bir depoyu (uygulama, veritabanı, dosyalar) saniyeler içinde klonlayın. Her boyutta. Sıfır ek disk."
+category: "Tutorials"
+subcategory: advanced
+order: 7
+language: tr
+sourceHash: "d67568772c42826c"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Depo Fork'lama
+
+Bu, en güçlü özelliktir: tüm bir üretim ortamını (uygulama, veritabanı, yapılandırma dosyaları) saniyeler içinde klonlayın. Her boyutta. Sıfır ek disk. İstediğiniz kadar fork alın.
+
+Slogan: **üretimi klonlayın, hiçbir şeyi bozmayın.**
+
+## Öğreticiyi izleyin
+
+![Tutorial: Forking a repository](/assets/tutorials/tutorial-forking.cast)
+
+## Kaybedecek bir şey kurun
+
+Önce fork'un izolasyonunu kanıtlayabilmek için çalışan uygulamaya bir dosya ekleyin. Depoyu VS Code'da açın, ardından deponun içinde bir işaret dosyası oluşturun:
+
+```bash
+rdc vscode connect -m my-server -r my-app
+```
+
+```bash
+echo "Hello from production" > index.html
+```
+
+Şimdi fork alın.
+
+## Fork
+
+<TutorialStep number={1} />
+
+![Parent fans out into independent clones](/img/tutorials/tutorial-forking/slide-1.svg)
+
+Tek komut. Her şeyi (uygulama, veritabanı, yapılandırma dosyaları) klonladı ve saniyeler içinde oldu. Tekrar çalıştırırsanız başka bir bağımsız klon elde edersiniz.
+
+## Neden bu kadar hızlı?
+
+![Sharing a folder link is the same speed regardless of the folder's size](/img/tutorials/tutorial-forking/slide-2.svg)
+
+Bir klasör bağlantısı paylaştığınızı hayal edin. Klasör küçük ya da büyük olsun, bağlantı aynıdır. Klasör ağırdır; bağlantı hafif.
+
+![1 GB, 100 GB, 1 TB. Same time, every time.](/img/tutorials/tutorial-forking/slide-3.svg)
+
+Fork'lama da aynı şekilde çalışır. 1 GB, 100 GB, 1 TB. Her seferinde aynı süre.
+
+## Neler paylaşılır, neler size aittir
+
+![Many mirrors, one sun: shared base, your changes are yours](/img/tutorials/tutorial-forking/slide-4.svg)
+
+Üst depoyu güneş gibi düşünün. Güneşi tutamazsınız, ama onu yakalayan bir ayna tutabilirsiniz. O ayna sizin fork'unuzdur. Aynaya resim çizin; çizimler size aittir. Güneş, kaç ayna ona baksa da değişmez.
+
+> Güneşi tutamazsınız, ama onu aynada tutabilirsiniz.
+
+## Üst depo daha sonra değişirse ne olur?
+
+![A fork is a frozen photograph; the parent keeps flowing like a river](/img/tutorials/tutorial-forking/slide-5.svg)
+
+Şimdi bir nehri düşünün. Su akmaya devam eder. Her an farklıdır. Fork aldığınızda nehrin o andaki fotoğrafını çekmiş gibi olursunuz; fotoğraf o anda donup kalır. Nehir akmaya devam eder; fotoğrafınız devam etmez.
+
+Üst depo daha sonra değişirse, fork'unuz olduğu yerde kalır.
+
+> Nehri tutamazsınız, ama onu fotoğrafta tutabilirsiniz.
+
+## Disk kullanımı sabit kalır
+
+![Five forks of a 100 GB repo, still about 100 GB total](/img/tutorials/tutorial-forking/slide-6.svg)
+
+İşte bu yüzden diskiniz patlamaz. 100 GB'lık bir deponun beş fork'u mı? Toplam hâlâ yaklaşık 100 GB. Yalnızca her fork'ta değiştirdiğiniz veriler için disk kullanırsınız.
+
+> İstediğiniz kadar fork alın. Diskiniz fark bile etmez.
+
+## Fork'ların *devralmadığı* şey: gizli bilgiler
+
+Fork'un kasıtlı olarak takip etmediği bir şey vardır: gizli bilgiler. Bir fork; API anahtarı, veritabanı parolası, Stripe token'ı olmadan başlar. "Üretimi klonlayın, hiçbir şeyi bozmayın" sloganının gerçekten işe yaramasının nedeni budur. Sandbox'ınız sizi taklit edemeyeceği için gerçek müşterilere fatura kesamaz. Bunu [Gizli Bilgileri Yönetme](/tr/docs/tutorial-managing-secrets) öğreticisinde düzgünce ayarlıyoruz.
+
+## İzolasyonu doğrulayın
+
+Her iki depoyu yan yana listeleyin:
+
+<TutorialStep number={2} />
+
+`my-app` ve `my-app:experiment`'in aynı anda çalıştığını göreceksiniz. Orijinalde, işaret dosyası tam olarak bıraktığınız yerdedir:
+
+<TutorialStep number={3} />
+
+Şimdi yıkıcı bir değişiklik yapın, ama yalnızca fork içinde:
+
+<TutorialStep number={4} />
+
+Orijinale geri dönün ve kontrol edin:
+
+<TutorialStep number={5} />
+
+İşaret dosyası hâlâ burada, dokunulmamış. Fork'un değişiklikleri fork içinde kaldı. Aynı görüntüler, ayrı Docker daemon'ları, ayrı dosya sistemleri.
+
+## Temizleyin
+
+İşiniz bittiğinde fork'u silin:
+
+<TutorialStep number={6} />
+
+Orijinal tam olarak olduğu gibi kalır. **Fork alın, deneyin, bir şeyleri bozun, silin.** Hiçbir risk yok.
+
+---
+
+Sonraki: [Gizli Bilgileri Yönetin](/tr/docs/tutorial-managing-secrets).

@@ -449,6 +449,24 @@ export interface RepositoryAutostartEnableAllParams {}
 /** List repositories with autostart enabled */
 export interface RepositoryAutostartListParams {}
 
+/** Read a bounded window of a file inside the repository mount */
+export interface RepositoryCatParams {
+  /** File path relative to the repo mount root */
+  path: string;
+  /** Max bytes to read/print (default 1 MiB, ceiling 50 MiB) */
+  maxBytes?: number;
+  /** Byte offset to start reading from */
+  offset?: number;
+  /** Print only the first N lines */
+  head?: number;
+  /** Print only the last N lines */
+  tail?: number;
+  /** Print size/type/mtime only; read no content */
+  stat?: boolean;
+  /** Allow reading binary (NUL-containing) content */
+  forceBinary?: boolean;
+}
+
 /** Create a new repository */
 export interface RepositoryCreateParams {
   /** Repository size (e.g., 100G, 1T) */
@@ -655,6 +673,7 @@ export const BRIDGE_FUNCTIONS = [
   'repository_autostart_enable',
   'repository_autostart_enable_all',
   'repository_autostart_list',
+  'repository_cat',
   'repository_create',
   'repository_delete',
   'repository_down',
@@ -729,6 +748,7 @@ export type FunctionParamsMap = {
   repository_autostart_enable: RepositoryAutostartEnableParams;
   repository_autostart_enable_all: RepositoryAutostartEnableAllParams;
   repository_autostart_list: RepositoryAutostartListParams;
+  repository_cat: RepositoryCatParams;
   repository_create: RepositoryCreateParams;
   repository_delete: RepositoryDeleteParams;
   repository_down: RepositoryDownParams;
@@ -892,6 +912,9 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   },
   'repository_autostart_list': {
     requirements: { machine: true },
+  },
+  'repository_cat': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'repository_create': {
     requirements: { machine: true, team: true, repository: true },
@@ -2054,6 +2077,43 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
     params: {
     },
   },
+  'repository_cat': {
+    name: 'repository_cat',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      path: {
+        type: 'string',
+        required: true,
+        help: 'File path relative to the repo mount root',
+      },
+      maxBytes: {
+        type: 'int',
+        help: 'Max bytes to read/print (default 1 MiB, ceiling 50 MiB)',
+      },
+      offset: {
+        type: 'int',
+        help: 'Byte offset to start reading from',
+      },
+      head: {
+        type: 'int',
+        help: 'Print only the first N lines',
+      },
+      tail: {
+        type: 'int',
+        help: 'Print only the last N lines',
+      },
+      stat: {
+        type: 'bool',
+        help: 'Print size/type/mtime only; read no content',
+      },
+      forceBinary: {
+        type: 'bool',
+        help: 'Allow reading binary (NUL-containing) content',
+      },
+    },
+  },
   'repository_create': {
     name: 'repository_create',
     category: 'repository',
@@ -2498,6 +2558,7 @@ export const queueFunctions: QueueFunctionsType = {
   repository_autostart_enable: (params) => ({ functionName: 'repository_autostart_enable', params }),
   repository_autostart_enable_all: (params) => ({ functionName: 'repository_autostart_enable_all', params }),
   repository_autostart_list: (params) => ({ functionName: 'repository_autostart_list', params }),
+  repository_cat: (params) => ({ functionName: 'repository_cat', params }),
   repository_create: (params) => ({ functionName: 'repository_create', params }),
   repository_delete: (params) => ({ functionName: 'repository_delete', params }),
   repository_down: (params) => ({ functionName: 'repository_down', params }),

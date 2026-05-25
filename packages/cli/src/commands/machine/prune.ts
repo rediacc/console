@@ -8,8 +8,13 @@ import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config-resources.js';
 import { localExecutorService } from '../../services/local-executor.js';
 import { outputService } from '../../services/output.js';
-import { handleError } from '../../utils/errors.js';
+import { getOutputFormat, handleError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
+import {
+  buildPrunePreviewRows,
+  countPrunedResources,
+  parseDatastorePruneOutput,
+} from '../datastore-prune-parser.js';
 
 interface PruneOptions {
   dryRun?: boolean;
@@ -21,7 +26,7 @@ interface PruneOptions {
   debug?: boolean;
 }
 
-/** Phase 1: Run datastore prune via renet. */
+/** Phase 1: Run datastore prune via renet and render what it found/removed. */
 async function pruneDatastore(machineName: string, options: PruneOptions): Promise<void> {
   const params: Record<string, unknown> = {};
   if (options.dryRun) params.dry_run = true;
@@ -33,13 +38,55 @@ async function pruneDatastore(machineName: string, options: PruneOptions): Promi
     machineName,
     params,
     debug: options.debug,
+    captureOutput: true,
   });
 
-  if (result.success) {
-    outputService.success(t('commands.machine.prune.datastoreCompleted'));
-  } else {
+  if (!result.success) {
     renderLocalExecutionFailure(result, t('commands.machine.prune.datastoreFailed'));
+    return;
   }
+
+  // renet emits the prunable-resources / result struct as JSON. Parse and render
+  // it so the operator can see what a real prune would remove (dry-run) or what
+  // was removed. Fall back gracefully if the output isn't the expected JSON
+  // (e.g. an older renet that ignores --output json).
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = parseDatastorePruneOutput(result.stdout ?? '');
+  } catch {
+    const raw = result.stdout?.trim();
+    if (raw) outputService.print(raw);
+    outputService.success(t('commands.machine.prune.datastoreCompleted'));
+    return;
+  }
+
+  renderPruneOutcome(parsed, Boolean(options.dryRun));
+}
+
+/** Render the parsed prune payload: a preview table (dry-run) or a removed-count
+ * summary (real run) in table mode; the raw structured object in JSON mode. */
+function renderPruneOutcome(parsed: Record<string, unknown>, dryRun: boolean): void {
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(parsed, format);
+    return;
+  }
+  if (dryRun) {
+    const rows = buildPrunePreviewRows(parsed);
+    if (rows.length === 0) {
+      outputService.success(t('commands.machine.prune.previewEmpty'));
+      return;
+    }
+    outputService.print(rows, 'table');
+    outputService.info(t('commands.machine.prune.dryRunHint', { count: rows.length }));
+    return;
+  }
+  const pruned = countPrunedResources(parsed);
+  outputService.success(
+    pruned === 0
+      ? t('commands.machine.prune.previewEmpty')
+      : t('commands.machine.prune.datastorePrunedSummary', { count: pruned })
+  );
 }
 
 /**

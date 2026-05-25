@@ -4,7 +4,8 @@ description: "Varunda krüpteeritud repositooriumeid välisesse salvestusse, taa
 category: "Guides"
 order: 7
 language: et
-sourceHash: "f5222efa9505ab5e"
+sourceHash: "633ed49fd412e0ec"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Varundamine ja taastamine
@@ -178,7 +179,7 @@ Külm varundamine käib kolmes faasis kaasatud repo kohta: **peatus → hetktõm
 
 - `rdc machine query --name <machine> --containers` näitab töötavat olekut. Võrdle oodatud hulgaga.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` masinas. Vaata seda käsuga `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` koos vana `startedAt`-ga tähendab, et viimane varukoopia ei lõppenud puhtalt.
-- Logid renet-i varundamiskäivitusest (`journalctl -u renet-*` või otsene `rdc machine deploy-backup` kutse) väljastavad lõplik kokkuvõtterida kujul `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Mittevühi `failed_repos` on grep-sihtmärk.
+- Logid renet-i varundamiskäivitusest (`journalctl -u renet-*` või otsene `rdc machine backup schedule` kutse) väljastavad lõplik kokkuvõtterida kujul `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Mittevühi `failed_repos` on grep-sihtmärk.
 
 ### Külma varundamise seisakuaja hindamine
 

@@ -4,7 +4,8 @@ description: "기존 프로젝트를 암호화된 Rediacc 저장소로 마이그
 category: "Guides"
 order: 11
 language: ko
-sourceHash: "feb1fcafc824b4b2"
+sourceHash: "69ab61a2875f8d70"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # 마이그레이션 가이드
@@ -15,7 +16,7 @@ sourceHash: "feb1fcafc824b4b2"
 
 - `rdc` CLI 설치됨([설치](/en/docs/installation))
 - 머신 추가 및 프로비저닝 완료([설정](/en/docs/setup))
-- 프로젝트를 위한 충분한 디스크 공간(`rdc machine status`로 확인)
+- 프로젝트를 위한 충분한 디스크 공간(`rdc machine query`로 확인)
 
 ## 1단계: 저장소 생성
 
@@ -95,6 +96,8 @@ rdc repo ownership --name my-project -m server-1
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **주의:** `7111`은 모든 곳에서 사용되는 범용 Rediacc UID입니다(devcontainer 이미지에 내장된 `rediacc` 사용자와 일치합니다). 특정 외부 UID가 소유한 파일과의 레거시 호환성을 위해서만 `--uid`로 재정의하십시오. 이것은 **마이그레이션 대상이 아닙니다**. 새 저장소는 기본값을 유지해야 합니다.
 
 ## 4단계: Rediaccfile 설정
 

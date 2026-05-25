@@ -1,0 +1,57 @@
+---
+title: "Agregar tu primer servidor"
+description: "Registra tu primer servidor en rdc, aprovisiónalo y comprende la arquitectura de rdc + renet."
+category: "Tutorials"
+subcategory: essentials
+order: 3
+language: es
+sourceHash: "09d6cde1ac066c85"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Agregar tu primer servidor
+
+Antes de agregar un servidor, conviene entender cómo funciona `rdc`. Rediacc tiene una arquitectura de dos herramientas: `rdc` en tu laptop y `renet` en el servidor.
+
+## Ver el tutorial
+
+![Tutorial: Agregar tu primer servidor](/assets/tutorials/tutorial-add-server.cast)
+
+## ¿Por qué dos herramientas?
+
+![rdc en la laptop, renet en el servidor, SSH entre ambos](/img/tutorials/tutorial-add-server/slide-1.svg)
+
+- **`rdc`** es el CLI en tu laptop. Aquí escribes los comandos.
+- **`renet`** es el orquestador en el servidor. Gestiona el cifrado, Docker y el aislamiento.
+
+Cuando ejecutas un comando localmente, `rdc` se conecta por SSH y ejecuta `renet` en el servidor. Nunca necesitas conectarte por SSH a tus servidores manualmente. `rdc` lo hace por ti.
+
+## Paso 1: Registrar el servidor
+
+<TutorialStep number={1} />
+
+No se necesita `rdc config init`. El archivo de configuración se crea automáticamente al primer uso, y `rdc` usa tu clave `~/.ssh` estándar.
+
+## Paso 2: Aprovisionarlo
+
+<TutorialStep number={2} />
+
+El servidor está listo para alojar repositorios.
+
+## Dónde vive la configuración
+
+El CLI almacena todo en `~/.config/rediacc/rediacc.json`, un único archivo de texto plano en JSON:
+
+<TutorialStep number={3} />
+
+Este único archivo contiene tus máquinas, clave SSH y credenciales de cifrado. Cópialo a otra laptop y estarás listo para operar desde esa máquina también.
+
+## Múltiples configuraciones
+
+Puedes mantener varias configuraciones, una por entorno (producción, staging, dev), y cambiar entre ellas con el flag `--config` en cualquier comando. Ver [configurar múltiples configuraciones](/es/docs/setup#multiple-configs).
+
+---
+
+Siguiente: [Crear tu primer repositorio](/es/docs/tutorial-create-repo).

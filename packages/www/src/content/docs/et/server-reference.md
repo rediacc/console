@@ -4,6 +4,8 @@ description: "Kataloogipaigutus, renet-käsud, systemd-teenused ja tööprotsess
 category: "Concepts"
 order: 3
 language: et
+sourceHash: "40a33f0e2fa34548"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Serveri viide
@@ -112,6 +114,31 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 ```
 
 `sandbox-exec` rakendab Landlock LSM failisüsteemi piiranguid, seejärel käivitab antud käsu. Seda käivitatakse automaatselt `sandbox-gateway` poolt (SSH ForceCommand töötleja) kõigi repositooriumitasandi ühenduste jaoks.
+
+### Kasutajapõhine Hub (arenduskeskkonnad)
+
+Hub annab igale kasutajale arenduskeskkondade jaoks oma Dockeri demoni, mis on eraldatud repositooriumipõhistest `FlavorRediacc` demonitest.
+
+```bash
+# Kasutajapõhiste Hub systemd-üksuste installimine / eemaldamine
+sudo renet hub install
+sudo renet hub uninstall
+
+# Jõudeolekus kasutajapõhiste Hub-demonite koristamine
+sudo renet hub gc
+```
+
+Demonid töötavad ühes kahest flavori all, mis valitakse `--flavor` abil:
+
+```bash
+# Repositooriumipõhine isoleeritud demon (bridge=none, iptables=false) — vaikimisi
+sudo renet daemon start-foreground --flavor=rediacc ...
+
+# Kasutajapõhine Hub-demon (bridge=docker0, iptables=true, live-restore=true)
+sudo renet daemon start-foreground --flavor=hub ...
+```
+
+`hub` flavor lubab tavalist bridge-võrgustikku, et kasutaja käitatavatel konteineritel oleks väljuv ühenduvus; `rediacc` flavor tagab repositooriumite vahelise loopback-isolatsiooni. Hubi auditiloge kirjutatakse asukohta `/var/log/rediacc/hub/<user>.log`.
 
 **Lipud:**
 - `--allow-rw`, `--allow-ro`, `--allow-exec`: Landlocki teereeglid

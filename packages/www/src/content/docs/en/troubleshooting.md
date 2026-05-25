@@ -125,7 +125,7 @@ Replace `2816` with your repository's network ID (found in `rediacc.json` or `rd
 
 Inside a repository shell, running a container without `--network host` gives you an isolated container with only a loopback interface, no DNS, and no outbound connectivity. Commands like `apt update`, `pip install`, `curl https://...`, or any network fetch will fail immediately with DNS errors.
 
-This is intentional. Rediacc's networking model is **host networking for every service**, enforced by `renet compose`. A default Docker bridge with NAT would bypass the kernel-level loopback isolation that prevents one repo from reaching another repo's services, so the per-repo Docker daemon is configured with `"bridge": "none"` and `"iptables": false`. There is no routable bridge for a plain `docker run` container to attach to.
+This is intentional. Rediacc's networking model is **host networking for every service**, enforced by `renet compose`. A default Docker bridge with NAT would bypass the kernel-level loopback isolation that prevents one repo from reaching another repo's services, so the per-repo Docker daemon (`FlavorRediacc`) is configured with `"bridge": "none"` and `"iptables": false`. There is no routable bridge for a plain `docker run` container to attach to. (Per-user Hub daemons (`FlavorHub`) used by development environments are the exception: they enable bridge + iptables so user-run containers have outbound networking.)
 
 **To get network access in an ad-hoc container, use host networking:**
 

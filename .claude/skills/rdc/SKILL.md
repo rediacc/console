@@ -56,7 +56,7 @@ Every command also supports `--help`:
 2. **Create** a repository on a machine → see [repositories.md](repositories.md)
 3. **Upload** application files → see [sync.md](sync.md)
 4. **Deploy** with `repo up` → see [repositories.md](repositories.md)
-5. **Verify** with `machine containers` and `term --container-action logs` → see [machines.md](machines.md) and [execution.md](execution.md)
+5. **Verify** with `machine query --containers` and `term --container-action logs` → see [machines.md](machines.md) and [execution.md](execution.md)
 
 ## Quick-start: Deploy an app to an ops VM
 
@@ -73,7 +73,7 @@ rdc repo sync upload -m <machine> -r <app-name> --local <path-to-app-dir>/
 rdc repo up --name <app-name> -m <machine>
 
 # 4. Verify (~5s after deploy for first output)
-rdc machine containers --name <machine>
+rdc machine query --containers --name <machine>
 rdc term connect -m <machine> -r <app-name> --container <container-name> --container-action logs --log-lines 20
 ```
 
@@ -188,7 +188,7 @@ See [config.md](config.md) for full details.
 ## Important conventions
 
 - **Never use raw SSH, SCP, or `rdc term connect -c` as a workaround** — `rdc` has dedicated commands for all remote operations. If a command fails, report it as a bug rather than working around it with `term connect -c` or raw docker/runc commands.
-- **Never use `rdc term connect -c` to run docker commands** — use `rdc machine containers`, `rdc run container_logs`, `rdc run container_exec`, etc. See [terminal.md](terminal.md) for the complete list of what NOT to use `term` for.
+- **Never use `rdc term connect -c` to run docker commands** — use `rdc machine query --containers`, `rdc run container_logs`, `rdc run container_exec`, etc. See [terminal.md](terminal.md) for the complete list of what NOT to use `term` for.
 - Repositories use `renet compose` (not `docker compose`). Renet injects network isolation, host networking, and per-service loopback IPs.
 - Each repository gets an isolated Docker daemon, encrypted LUKS volume, and dedicated IP range.
 - The "Proxy is not running" warning during `repo up` is informational and does not affect functionality.

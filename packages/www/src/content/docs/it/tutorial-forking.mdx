@@ -1,0 +1,116 @@
+---
+title: "Fare il Fork di un Repository"
+description: "Clona un intero repository (app, database, file) in pochi secondi. Qualsiasi dimensione. Zero disco aggiuntivo. È sempre istantaneo."
+category: "Tutorials"
+subcategory: advanced
+order: 7
+language: it
+sourceHash: "d67568772c42826c"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Fare il Fork di un Repository
+
+Questa è la funzionalità killer: clona un intero ambiente di produzione, l'app, il database, i file di configurazione, in pochi secondi. Qualsiasi dimensione. Zero disco aggiuntivo. Fai il fork tutte le volte che vuoi.
+
+Il motto: **clona la produzione, non rompere nulla.**
+
+## Guarda il tutorial
+
+![Tutorial: Fork di un repository](/assets/tutorials/tutorial-forking.cast)
+
+## Crea qualcosa da perdere
+
+Prima, dai all'app in esecuzione un file per dimostrare l'isolamento del fork. Apri il repo in VS Code, poi all'interno del repo crea un file marcatore:
+
+```bash
+rdc vscode connect -m my-server -r my-app
+```
+
+```bash
+echo "Hello from production" > index.html
+```
+
+Ora fai il fork.
+
+## Fork
+
+<TutorialStep number={1} />
+
+![Il parent si divide in cloni indipendenti](/img/tutorials/tutorial-forking/slide-1.svg)
+
+Un solo comando. Ha clonato tutto, l'app, il database, i file di configurazione, ed è successo in pochi secondi. Eseguilo di nuovo e ottieni un altro clone indipendente.
+
+## Perché è così veloce?
+
+![Condividere un link a una cartella ha la stessa velocita' indipendentemente dalla dimensione della cartella](/img/tutorials/tutorial-forking/slide-2.svg)
+
+Immagina di condividere un link a una cartella. Il link è lo stesso che la cartella sia piccola o enorme: la cartella è pesante, il link è leggero.
+
+![1 GB, 100 GB, 1 TB: stesso tempo, ogni volta](/img/tutorials/tutorial-forking/slide-3.svg)
+
+Il fork funziona allo stesso modo. 1 GB, 100 GB, 1 TB: stesso tempo, ogni volta.
+
+## Cosa è condiviso, cosa è tuo
+
+![Molti specchi, un sole: base condivisa, le tue modifiche sono tue](/img/tutorials/tutorial-forking/slide-4.svg)
+
+Pensa al repo parent come al sole. Non puoi tenere il sole, ma puoi tenere uno specchio che lo cattura, e quello specchio è il tuo fork. Dipingi sullo specchio e i tuoi disegni sono tuoi. Il sole rimane lo stesso, indipendentemente da quanti specchi gli siano rivolti.
+
+> Non puoi tenere il sole, ma puoi tenerlo in uno specchio.
+
+## E se il parent cambia dopo?
+
+![Un fork e' una fotografia congelata; il parent continua a scorrere come un fiume](/img/tutorials/tutorial-forking/slide-5.svg)
+
+Ora pensa a un fiume. L'acqua continua a scorrere: ogni momento è diverso. Quando fai il fork, scatti una fotografia del fiume, congelata in quel momento. Il fiume continua a scorrere. La tua fotografia no.
+
+Se il repo parent cambia dopo, il tuo fork rimane dov'era.
+
+> Non puoi tenere un fiume, ma puoi tenerlo in una foto.
+
+## L'utilizzo del disco rimane stabile
+
+![Cinque fork di un repo da 100 GB: ancora circa 100 GB in totale](/img/tutorials/tutorial-forking/slide-6.svg)
+
+Ecco perché il tuo disco non esplode. Cinque fork di un repo da 100 GB? Ancora circa 100 GB in totale. Paghi disco solo per ciò che cambi in ogni fork.
+
+> Fai il fork cinque volte se vuoi: il tuo disco non se ne accorgerà nemmeno.
+
+## Cosa i fork *non* ereditano: i segreti
+
+C'è una cosa che il fork deliberatamente non segue: i segreti. Un fork inizia senza chiavi API, senza password del database, senza token Stripe. Ecco perché "clona la produzione, non rompere nulla" funziona davvero: la tua sandbox non può addebitare ai clienti reali perché non può fingersi te. Configuriamo questo correttamente nel tutorial [Gestione dei Segreti](/it/docs/tutorial-managing-secrets).
+
+## Verifica l'isolamento
+
+Elenca entrambi i repo affiancati:
+
+<TutorialStep number={2} />
+
+Vedrai `my-app` e `my-app:experiment` in esecuzione contemporaneamente. Nell'originale, il file marcatore è esattamente dove l'hai lasciato:
+
+<TutorialStep number={3} />
+
+Ora fai una modifica distruttiva, ma solo all'interno del fork:
+
+<TutorialStep number={4} />
+
+Torna all'originale e controlla:
+
+<TutorialStep number={5} />
+
+Il file marcatore è ancora qui, intatto. Le modifiche del fork sono rimaste nel fork. Stesse immagini, daemon Docker separati, filesystem separati.
+
+## Pulizia
+
+Quando hai finito, elimina semplicemente il fork:
+
+<TutorialStep number={6} />
+
+L'originale rimane esattamente com'era. **Fork, sperimenta, rompi cose, elimina.** Nessun rischio.
+
+---
+
+Successivo: [Gestione dei Segreti](/it/docs/tutorial-managing-secrets).

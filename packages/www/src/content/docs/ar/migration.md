@@ -4,8 +4,8 @@ description: ترحيل المشاريع الحالية إلى مستودعات 
 category: Guides
 order: 11
 language: ar
-sourceHash: c0ea82abb1d29de0
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "69ab61a2875f8d70"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # دليل الترحيل
@@ -16,7 +16,7 @@ sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 
 - تثبيت واجهة سطر الأوامر `rdc` ([التثبيت](/ar/docs/installation))
 - إضافة جهاز وتجهيزه ([الإعداد](/ar/docs/setup))
-- مساحة قرص كافية على الخادم لمشروعك (تحقق باستخدام `rdc machine status`)
+- مساحة قرص كافية على الخادم لمشروعك (تحقق باستخدام `rdc machine query`)
 
 ## الخطوة 1: إنشاء مستودع
 
@@ -96,6 +96,8 @@ rdc repo ownership --name my-project -m server-1
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **تنبيه:** `7111` هو معرّف المستخدم العالمي في Rediacc المستخدم في كل مكان (يتطابق مع المستخدم `rediacc` المدمج في صورة devcontainer). لا تتجاوزه باستخدام `--uid` إلا لضمان التوافق مع الإصدارات القديمة مع الملفات المملوكة لمعرّف مستخدم خارجي محدد. فهو **لا** يُعدّ هدفاً للترحيل. يجب أن تحافظ المستودعات الجديدة على الإعداد الافتراضي.
 
 ## الخطوة 4: إعداد Rediaccfile
 

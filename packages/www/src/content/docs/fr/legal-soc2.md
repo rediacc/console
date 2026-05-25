@@ -4,7 +4,8 @@ description: "Comment Rediacc correspond aux critères de services de confiance 
 category: "Legal"
 order: 2
 language: fr
-sourceHash: "a01e8b457d648fdd"
+sourceHash: "ebdae97034aa3cce"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 SOC 2 (System and Organization Controls 2) est un cadre développé par l'American Institute of Certified Public Accountants (AICPA) pour évaluer les contrôles d'une organisation en matière de sécurité, disponibilité, intégrité du traitement, confidentialité et vie privée.
@@ -16,7 +17,7 @@ Référence : [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/aud
 | Principe de confiance | Critère | Capacité Rediacc |
 |----------------------|---------|-----------------|
 | **Sécurité** (CC6) | Contrôles d'accès logiques, chiffrement | Chiffrement LUKS2 AES-256 au repos. Identifiants stockés uniquement dans la configuration locale de l'opérateur (`~/.config/rediacc/`), jamais sur le serveur. Accès par clé SSH. Docker daemons isolés par dépôt. |
-| **Disponibilité** (A1) | Récupération et résilience du système | `rdc repo backup push/pull` avec copies chiffrées hors site vers SSH, S3, B2, Azure ou GDrive. Snapshots CoW pour restauration instantanée. Mises à jour basées sur les forks pour des changements sans interruption. |
+| **Disponibilité** (A1) | Récupération et résilience du système | `rdc repo push/pull` avec copies chiffrées hors site vers SSH, S3, B2, Azure ou GDrive. Snapshots CoW pour restauration instantanée. Mises à jour basées sur les forks pour des changements sans interruption. |
 | **Intégrité du traitement** (PI1) | Traitement précis et complet | Les hooks de cycle de vie déterministes du Rediaccfile (`up`/`down`) garantissent des déploiements cohérents. `rdc repo validate` vérifie l'intégrité du dépôt et la santé des sauvegardes après des arrêts inattendus ou des opérations de sauvegarde. |
 | **Confidentialité** (C1) | Protection des données contre les accès non autorisés | Chiffrement par dépôt avec des identifiants LUKS uniques. Isolation réseau via iptables, Docker daemons séparés et sous-réseaux IP loopback. Les conteneurs de différents dépôts ne peuvent pas se voir. Le magasin de configuration à connaissance nulle chiffre les configurations côté client avant l'envoi. Le serveur ne stocke que des blobs opaques qu'il ne peut pas déchiffrer. |
 | **Vie privée** (P1-P8) | Traitement des données personnelles | Auto-hébergé : pas de sortie de données pendant les opérations. Piste d'audit pour tous les accès aux données. Gestion des clés de chiffrement sous contrôle du client. Le magasin de configuration utilise la dérivation de clé fractionnée (passkey PRF + secret serveur) pour qu'aucune partie ne puisse accéder aux données seule. |

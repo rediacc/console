@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 3
 language: ru
-sourceHash: "ec3f99cf89fde4b3"
-sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
+sourceHash: "12956297c1157cd2"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Шпаргалка RDC CLI
@@ -58,7 +58,7 @@ sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
 | `rdc config backup-strategy list` | Вывести список всех определённых стратегий |
 | `rdc config backup-strategy show --name <name>` | Показать детали стратегии |
 | `rdc config backup-strategy remove --name <name>` | Удалить стратегию |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | Привязать стратегии к машине |
+| `rdc machine backup schedule -m <machine>` | Развернуть настроенные стратегии резервного копирования на машине |
 
 ## Операции резервного копирования
 

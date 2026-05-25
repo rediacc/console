@@ -29,6 +29,7 @@ import {
   issueRepoLicense,
   refreshRepoLicenseIdentity,
   refreshRepoLicensesBatch,
+  type RepoBatchRecoveryFailureMode,
 } from './license.js';
 import { fetchOtlpCredentials } from './otlp-credentials.js';
 import { outputService } from './output.js';
@@ -43,7 +44,6 @@ import {
   verifyMachineSetup,
 } from './renet-execution.js';
 import {
-  isLicensedRenetFunction,
   parseRenetLicenseFailure,
   RENET_LICENSE_REQUIRED_EXIT_CODE,
   type RenetLicenseFailure,
@@ -558,6 +558,10 @@ export function buildRemoteRenetCommand(params: {
   return `sudo ${envPrefix}${remoteRenetPath} execute --executor local${eventsFlag}`;
 }
 
+type LicenseIssuanceOutcome =
+  | { kind: 'success' }
+  | { kind: 'failure'; failureMode: RepoBatchRecoveryFailureMode; serverErrorSample?: string };
+
 class LocalExecutorService {
   private async resolveLicenseFailure(
     result: LocalExecuteResult,
@@ -590,23 +594,32 @@ class LocalExecutorService {
         startTime
       );
     }
-    const issued = await this.maybeIssueLicense(
+    const outcome = await this.maybeIssueLicense(
       options,
       machine,
       sshPrivateKey,
       remoteRenetPath,
       sftp
     );
-    if (issued) {
+    if (outcome.kind === 'success') {
       return null;
     }
-    if (!guidance.recoveryFailedMessage) {
+    telemetryService.trackEvent('license_recovery_failed', {
+      licenseRecoveryFailureMode: String(outcome.failureMode),
+    });
+    const recoveryGuidance = this.resolveLicenseRecoveryGuidance(
+      failure,
+      options.machineName,
+      outcome
+    );
+    const recoveryFailedMsg = recoveryGuidance.recoveryFailedMessage;
+    if (!recoveryFailedMsg) {
       return result;
     }
     return this.buildRecoveryFailureResult(
       result,
-      guidance,
-      guidance.recoveryFailedMessage,
+      recoveryGuidance,
+      recoveryFailedMsg,
       failure.reason,
       startTime
     );
@@ -683,10 +696,18 @@ class LocalExecutorService {
     sshPrivateKey: string,
     remoteRenetPath: string,
     sftp: SFTPClient
-  ): Promise<boolean> {
-    if (!isLicensedRenetFunction(options.functionName)) {
-      return false;
-    }
+  ): Promise<LicenseIssuanceOutcome> {
+    // NOTE: we intentionally do NOT gate on isLicensedRenetFunction here.
+    // That deny-list (repository_up/down/delete) governs PRE-FLIGHT issuance —
+    // those operate-tier ops don't issue a license before running. But this
+    // method runs during RECOVERY, after renet has already reported
+    // LICENSE_REQUIRED (reason=missing) for the repo on the target machine.
+    // The repo image exists on disk there, so refreshRepoLicensesBatch can
+    // scan it and issue. Skipping recovery for deny-listed functions is the
+    // root cause of rediacc/console#482: `repo push --up` to a fresh machine
+    // fails because the license was issued for the source, not the destination,
+    // and the destination's repository_up recovery never tried to issue.
+
     // For create/fork, re-issue the pre-provisioning repo license
     if (
       options.functionName === 'repository_create' ||
@@ -700,10 +721,14 @@ class LocalExecutorService {
           remoteRenetPath,
           sftp
         );
-        return true;
+        return { kind: 'success' };
       } catch (err) {
         telemetryService.trackError(err, { operation: 'executor.repo_license_recovery' });
-        return false;
+        return {
+          kind: 'failure',
+          failureMode: 'server_rejected_all',
+          serverErrorSample: err instanceof Error ? err.message : String(err),
+        };
       }
     }
     // For all other licensed operations, batch refresh existing repo licenses
@@ -714,9 +739,21 @@ class LocalExecutorService {
       sftp
     ).catch((err: unknown) => {
       telemetryService.trackError(err, { operation: 'executor.batch_refresh' });
-      return null;
+      return {
+        kind: 'failure' as const,
+        failureMode: 'server_rejected_all' as const,
+        serverErrorSample: String(err),
+      };
     });
-    return Boolean(batchResult && batchResult.valid > 0);
+    if ('kind' in batchResult) {
+      return batchResult;
+    }
+    if (batchResult.recoveryFailureMode === null) return { kind: 'success' };
+    return {
+      kind: 'failure',
+      failureMode: batchResult.recoveryFailureMode,
+      serverErrorSample: batchResult.serverErrorSample,
+    };
   }
 
   private async maybeRefreshInvalidSignatures(
@@ -822,9 +859,34 @@ class LocalExecutorService {
     }
   }
 
+  private buildMissingLicenseMessage(
+    outcome: { failureMode: RepoBatchRecoveryFailureMode; serverErrorSample?: string } | undefined,
+    machineName: string
+  ): string {
+    switch (outcome?.failureMode) {
+      case 'token_not_ready':
+        return t('errors.license.recoveryFailedTokenNotReady');
+      case 'no_known_repos':
+        return t('errors.license.recoveryFailedNoKnownRepos', { machine: machineName });
+      case 'server_rejected_all': {
+        const errorDetail = outcome.serverErrorSample ?? '';
+        return t('errors.license.recoveryFailedServerRejected', {
+          error: errorDetail,
+          machine: machineName,
+        });
+      }
+      default:
+        return (
+          `A repo license is required for this operation, and automatic issuance did not succeed. ` +
+          `Run: rdc subscription refresh -m ${machineName}`
+        );
+    }
+  }
+
   private resolveLicenseRecoveryGuidance(
     failure: RenetLicenseFailure,
-    machineName: string
+    machineName: string,
+    outcome?: { failureMode: RepoBatchRecoveryFailureMode; serverErrorSample?: string }
   ): {
     errorCode?: string;
     guidance?: string;
@@ -832,14 +894,14 @@ class LocalExecutorService {
     recoveryFailedMessage?: string;
   } {
     switch (failure.reason) {
-      case 'missing':
+      case 'missing': {
+        const recoveryFailedMessage = this.buildMissingLicenseMessage(outcome, machineName);
         return {
           errorCode: 'REPO_LICENSE_ISSUANCE_REQUIRED',
           guidance: `Issue repo licenses explicitly with: rdc subscription refresh -m ${machineName}`,
-          recoveryFailedMessage:
-            `A repo license is required for this operation, and automatic issuance did not succeed. ` +
-            `Run: rdc subscription refresh -m ${machineName}`,
+          recoveryFailedMessage,
         };
+      }
       case 'expired':
         return {
           errorCode: 'REPO_LICENSE_REFRESH_REQUIRED',

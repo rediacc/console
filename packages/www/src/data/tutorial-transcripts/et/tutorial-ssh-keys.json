@@ -6,26 +6,53 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.50929,
-      "text": "Esimene samm. Genereerime uue ed25519 SSH võtme. ed25519 on kaasaegne vaikimisi valik -- väike, kiire ja laialt toetatud. Seda tuleb teha ainult üks kord kõigi serverite jaoks, mida kunagi lisad."
+      "at": 1.626287,
+      "text": "Esimene samm. Genereerime uue ed25519 SSH võtme. ed25519 on kaasaegne vaikimisi valik -- väike, kiire ja laialt toetatud. Seda tuleb teha ainult üks kord kõigi serverite jaoks, mida kunagi lisad.",
+      "afterText": "Võti genereeritud. Avalik pool on see, mille serverisse kopeerime.",
+      "cardLabel": "Genereeri Võti",
+      "prose": "Genereeri uus SSH võti oma sülearvutis. Ed25519 on turvaline, väike ja laialdaselt toetatud. Käivita käsk üks kord – sama võti töötab iga serveriga. See on tavaline SSH ja pole seotud rdc-ga.",
+      "afterProse": "Võti genereeritud. Avalik pool on see, mis kopeeritakse igale serverile."
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 8.723209,
-      "text": "Teine samm. Kopeerime avaliku võtme serverisse ssh-copy-id abil. Serveri parooli küsitakse viimast korda. Pärast seda ei ole selle serveri jaoks parooliga autentimine enam vajalik."
+      "at": 6.456735,
+      "text": "Teine samm. Kopeerime avaliku võtme serverisse ssh-copy-id abil. Serveri parooli küsitakse viimast korda. Pärast seda ei ole selle serveri jaoks parooliga autentimine enam vajalik.",
+      "afterText": "Käivita see oma sülearvutis. Kui see õnnestub, on paroolid välistatud.",
+      "cardLabel": "Autoriseeri Server 1",
+      "prose": "Autoriseeri võti oma esimesel serveril käsuga ssh-copy-id. See lisab sinu avaliku võtme serveri authorized_keys faili, nii et edaspidised sisselogimised ei vaja parooli."
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 16.253995,
-      "text": "Kolmas samm. Registreerime võtme CLI-s. Edaspidi autentib iga CLI käsk selle võtmega. Rohkem paroole ega interaktiivseid päringuid."
+      "at": 13.33617,
+      "text": "Kolmas samm. Registreerime võtme CLI-s. Edaspidi autentib iga CLI käsk selle võtmega. Rohkem paroole ega interaktiivseid päringuid.",
+      "afterText": "Võti registreeritud CLI-s.",
+      "cardLabel": "Autoriseeri Server 2",
+      "prose": "Korda ssh-copy-id käsku iga ülejäänud serveri puhul, mida haldad. Siin autoriseerime teise serveri."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Olgu! Seadistame SSH võtmed, et CLI saaks su serveritesse jõuda ilma paroolideta."
     },
     {
-      "id": "tutorial-ssh-keys-04",
-      "markerIndex": 3,
-      "at": 24.863027,
-      "text": "Kinnitame, et konfiguratsioon näitab võtme tee õigesti salvestatuna. Seadistus on nüüd korduvkasutatav kõigi masinate jaoks, mida sellesse konfiguratsiooni lisad."
+      "id": "three-steps-generate-copy-register",
+      "text": "Kokku kolm sammu. Genereeri võti oma sülearvutis, kopeeri see serverisse ja siis registreeri see käsurea tööriistas. Kahte neist teed ainult üks kord."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Võti on registreeritud ja CLI on töövalmis. Järgmisena lisame su esimese serveri."
     }
-  ]
+  ],
+  "title": "SSH Võtme Seadistus",
+  "chapters": {
+    "intro": "SSH Võtme Seadistus",
+    "three-steps-generate-copy-register": "Genereeri kord, autoriseeri igal serveril",
+    "cast-step-0": "Samm 1: Genereeri võti",
+    "cast-step-1": "Samm 2: Autoriseeri oma esimene server",
+    "cast-step-2": "Samm 3: Autoriseeri järgmine server",
+    "outro": "Järgmine: Esimese Serveri Lisamine"
+  }
 }

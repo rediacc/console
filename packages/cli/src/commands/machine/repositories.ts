@@ -1,4 +1,8 @@
-import { getContainers, getServices } from '@rediacc/shared/queue-vault/data/list-types.generated';
+import {
+  getContainers,
+  getServices,
+  type RepositoryInfo,
+} from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { parseListResult } from '@rediacc/shared/services/machine';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
@@ -9,8 +13,38 @@ import { outputService } from '../../services/output.js';
 import type { OutputFormat } from '../../types/index.js';
 import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
-import { createGuidResolver, loadGuidMap } from '../../utils/guid-resolver.js';
+import {
+  createGuidResolver,
+  createRepoNameResolver,
+  loadGuidMap,
+} from '../../utils/guid-resolver.js';
 import { withSpinner } from '../../utils/spinner.js';
+
+// Renders the `machine repos` table, marking server-sourced names (not in local
+// config) with ' *' and printing a legend when any appear.
+function printMachineReposTable(
+  repositories: RepositoryInfo[],
+  repoName: ReturnType<typeof createRepoNameResolver>
+): void {
+  const tableData = repositories.map((r) => {
+    const { name, source } = repoName(r.name, r.repo_name);
+    return {
+      name: source === 'server' ? `${name} *` : name,
+      guid: r.name,
+      size: r.size_human,
+      mounted: r.mounted ? 'Yes' : 'No',
+      docker: r.docker_running ? 'Yes' : 'No',
+      containers: r.container_count,
+      diskUsed: r.disk_space?.use_percent ?? '-',
+      modified: r.modified_human || '-',
+      rediaccfile: r.has_rediaccfile ? 'Yes' : 'No',
+    };
+  });
+  outputService.print(tableData, 'table');
+  if (repositories.some((r) => repoName(r.name, r.repo_name).source === 'server')) {
+    outputService.info(t('commands.repo.list.serverNameLegend'));
+  }
+}
 
 export function registerRepositoriesCommand(machine: Command, program: Command): void {
   machine
@@ -47,6 +81,7 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
           configService.getLocalMachine(name).catch(() => undefined),
         ]);
         const resolve = createGuidResolver(guidMap);
+        const repoName = createRepoNameResolver(guidMap);
 
         if (!machine) {
           throw new ValidationError(t('errors.machineNotFound', { name }));
@@ -69,7 +104,9 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
           repositories = repositories.filter(
             (repository) =>
               repository.name.toLowerCase().includes(searchTerm) ||
-              resolve(repository.name).toLowerCase().includes(searchTerm) ||
+              repoName(repository.name, repository.repo_name)
+                .name.toLowerCase()
+                .includes(searchTerm) ||
               (repository.mount_path
                 ? repository.mount_path.toLowerCase().includes(searchTerm)
                 : false)
@@ -88,8 +125,9 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
 
           const enriched = repositories.map((repo) => ({
             ...repo,
-            name: resolve(repo.name),
+            name: repoName(repo.name, repo.repo_name).name,
             guid: repo.name,
+            name_source: repoName(repo.name, repo.repo_name).source,
             containers: containers
               .filter((c) => c.repository === repo.name)
               .map((c) => ({
@@ -109,19 +147,7 @@ export function registerRepositoriesCommand(machine: Command, program: Command):
           }));
           outputService.print(enriched, format);
         } else {
-          // Format for enhanced table output
-          const tableData = repositories.map((r) => ({
-            name: resolve(r.name),
-            guid: r.name,
-            size: r.size_human,
-            mounted: r.mounted ? 'Yes' : 'No',
-            docker: r.docker_running ? 'Yes' : 'No',
-            containers: r.container_count,
-            diskUsed: r.disk_space?.use_percent ?? '-',
-            modified: r.modified_human || '-',
-            rediaccfile: r.has_rediaccfile ? 'Yes' : 'No',
-          }));
-          outputService.print(tableData, format);
+          printMachineReposTable(repositories, repoName);
         }
       } catch (error) {
         handleError(error);

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "eae6eedb1a1298f2"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "633ed49fd412e0ec"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Backup & Wiederherstellung
@@ -181,7 +181,7 @@ Ein Cold-Backup läuft in drei Phasen pro enthaltenem Repository: **Stopp -- Sna
 
 - `rdc machine query --name <machine> --containers` zeigt den Laufzustand. Vergleichen Sie mit der erwarteten Menge.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` auf der Maschine. Prüfen Sie via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` mit einem veralteten `startedAt` bedeutet, dass das letzte Backup nicht sauber abgeschlossen wurde.
-- Protokolle des renet-Backup-Laufs (`journalctl -u renet-*` oder der direkte `rdc machine deploy-backup`-Aufruf) geben eine abschließende Zusammenfassungszeile der Form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` aus. Ein nicht leeres `failed_repos` ist das grep-Ziel.
+- Protokolle des renet-Backup-Laufs (`journalctl -u renet-*` oder der direkte `rdc machine backup schedule`-Aufruf) geben eine abschließende Zusammenfassungszeile der Form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` aus. Ein nicht leeres `failed_repos` ist das grep-Ziel.
 
 ### Abschätzung der Cold-Backup-Ausfallzeit
 

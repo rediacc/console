@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "eae6eedb1a1298f2"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "633ed49fd412e0ec"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -181,7 +181,7 @@ Soğuk yedekleme, dahil edilen her depo için üç aşamada çalışır: **durdu
 
 - `rdc machine query --name <machine> --containers` çalışma durumunu gösterir. Beklenen kümeyle karşılaştırın.
 - Makinedeki `/var/run/rediacc/cold-backup-<guid>.status.json` dosyasını kontrol edin. `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"` ile inceleyebilirsiniz. Eski bir `startedAt` ile birlikte `success: false`, son yedeklemenin temiz tamamlanmadığı anlamına gelir.
-- renet yedekleme çalıştırmasından gelen günlükler (`journalctl -u renet-*` veya doğrudan `rdc machine deploy-backup` çağrısı) `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` biçiminde bir son özet satırı yayar. Boş olmayan `failed_repos` grep hedefidir.
+- renet yedekleme çalıştırmasından gelen günlükler (`journalctl -u renet-*` veya doğrudan `rdc machine backup schedule` çağrısı) `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` biçiminde bir son özet satırı yayar. Boş olmayan `failed_repos` grep hedefidir.
 
 ### Soğuk Yedekleme Kesinti Süresini Tahmin Etme
 

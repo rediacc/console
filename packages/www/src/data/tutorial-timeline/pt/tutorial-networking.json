@@ -7,1003 +7,115 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "0dc83bdfe226bfd82082b16753f29b25e227faf64d8d1795896bbb100e49e966",
+  "transcriptHash": "d1127bbbd921abf3b9c8680cf529d22eea9602a34ba403f3eae0f17b8c6765b0",
   "steps": [
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "replayStartSec": 27.859436,
-      "replayEndSec": 41.958746,
+      "replayStartSec": 2.424705,
+      "replayEndSec": 13.591473,
       "narrationText": "Passo dois. Vamos definir o IP público, o domínio base, o endereço de e-mail para certificados e o token API do Cloudflare a partir da linha de comandos. O endereço de e-mail e o token são partilhados por todas as máquinas, por isso só é necessário defini-los uma vez.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-01.83e2ddbe.mp3",
-      "audioDurationSec": 18.677551,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.36,
-          "startChar": 12,
-          "endChar": 17
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 1.84,
-          "startChar": 18,
-          "endChar": 25
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.08,
-          "startChar": 26,
-          "endChar": 27
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.48,
-          "startChar": 28,
-          "endChar": 30
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.04,
-          "startChar": 31,
-          "endChar": 38
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.08,
-          "startChar": 42,
-          "endChar": 49
-        },
-        {
-          "startSec": 4.08,
-          "endSec": 4.56,
-          "startChar": 50,
-          "endChar": 54
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.12,
-          "startChar": 56,
-          "endChar": 57
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.6,
-          "startChar": 58,
-          "endChar": 66
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 5.76,
-          "startChar": 67,
-          "endChar": 69
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.24,
-          "startChar": 77,
-          "endChar": 81
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 7.12,
-          "startChar": 82,
-          "endChar": 94
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.2,
-          "startChar": 95,
-          "endChar": 96
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.28,
-          "startChar": 97,
-          "endChar": 98
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 7.68,
-          "startChar": 99,
-          "endChar": 104
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.16,
-          "startChar": 105,
-          "endChar": 108
-        },
-        {
-          "startSec": 8.16,
-          "endSec": 8.32,
-          "startChar": 109,
-          "endChar": 111
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 9.2,
-          "startChar": 112,
-          "endChar": 122
-        },
-        {
-          "startSec": 9.36,
-          "endSec": 9.84,
-          "startChar": 125,
-          "endChar": 131
-        },
-        {
-          "startSec": 9.84,
-          "endSec": 9.92,
-          "startChar": 132,
-          "endChar": 134
-        },
-        {
-          "startSec": 9.92,
-          "endSec": 10.16,
-          "startChar": 135,
-          "endChar": 140
-        },
-        {
-          "startSec": 10.16,
-          "endSec": 10.24,
-          "startChar": 141,
-          "endChar": 143
-        },
-        {
-          "startSec": 10.24,
-          "endSec": 10.8,
-          "startChar": 144,
-          "endChar": 152
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 11.52,
-          "startChar": 154,
-          "endChar": 155
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 12.0,
-          "startChar": 156,
-          "endChar": 164
-        },
-        {
-          "startSec": 12.0,
-          "endSec": 12.16,
-          "startChar": 165,
-          "endChar": 167
-        },
-        {
-          "startSec": 12.56,
-          "endSec": 12.72,
-          "startChar": 168,
-          "endChar": 169
-        },
-        {
-          "startSec": 12.8,
-          "endSec": 13.36,
-          "startChar": 179,
-          "endChar": 184
-        },
-        {
-          "startSec": 13.36,
-          "endSec": 13.6,
-          "startChar": 185,
-          "endChar": 188
-        },
-        {
-          "startSec": 14.16,
-          "endSec": 14.32,
-          "startChar": 201,
-          "endChar": 204
-        },
-        {
-          "startSec": 14.32,
-          "endSec": 14.64,
-          "startChar": 205,
-          "endChar": 210
-        },
-        {
-          "startSec": 14.64,
-          "endSec": 14.72,
-          "startChar": 211,
-          "endChar": 213
-        },
-        {
-          "startSec": 14.72,
-          "endSec": 15.36,
-          "startChar": 214,
-          "endChar": 222
-        },
-        {
-          "startSec": 15.84,
-          "endSec": 15.92,
-          "startChar": 224,
-          "endChar": 227
-        },
-        {
-          "startSec": 15.92,
-          "endSec": 16.24,
-          "startChar": 228,
-          "endChar": 232
-        },
-        {
-          "startSec": 16.56,
-          "endSec": 16.8,
-          "startChar": 233,
-          "endChar": 235
-        },
-        {
-          "startSec": 16.8,
-          "endSec": 16.96,
-          "startChar": 236,
-          "endChar": 237
-        },
-        {
-          "startSec": 16.96,
-          "endSec": 17.52,
-          "startChar": 238,
-          "endChar": 248
-        },
-        {
-          "startSec": 18.16,
-          "endSec": 18.32,
-          "startChar": 260,
-          "endChar": 263
-        },
-        {
-          "startSec": 18.32,
-          "endSec": 18.56,
-          "startChar": 264,
-          "endChar": 267
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-01.70ada24c.mp3",
+      "textHash": "70ada24cc8faa966952400a643ba837af6558fd7ca6ab803155c20cbbf2e4963",
+      "audioDurationSec": 17.71102,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-01-after.d612a5da.mp3",
+      "afterAudioDurationSec": 3.317551,
+      "afterTextHash": "d612a5da1e24735fbb7fb69115aa4ff611e4bd268d3bafe53413390224576943"
     },
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "replayStartSec": 41.958746,
-      "replayEndSec": 51.564603,
+      "replayStartSec": 13.591473,
+      "replayEndSec": 18.479059,
       "narrationText": "Vamos confirmar que as definições de infraestrutura foram guardadas. IP público, domínio base, endereço de e-mail para certificados -- tudo visível.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-02.41df9933.mp3",
-      "audioDurationSec": 10.919184,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 1.04,
-          "startChar": 6,
-          "endChar": 15
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.2,
-          "startChar": 16,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.36,
-          "startChar": 20,
-          "endChar": 22
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 2.08,
-          "startChar": 23,
-          "endChar": 33
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.24,
-          "startChar": 34,
-          "endChar": 36
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 3.2,
-          "startChar": 37,
-          "endChar": 51
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.52,
-          "startChar": 52,
-          "endChar": 57
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 4.16,
-          "startChar": 58,
-          "endChar": 67
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 4.96,
-          "startChar": 69,
-          "endChar": 71
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.68,
-          "startChar": 72,
-          "endChar": 79
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 6.24,
-          "startChar": 81,
-          "endChar": 88
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.72,
-          "startChar": 89,
-          "endChar": 93
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.44,
-          "startChar": 95,
-          "endChar": 103
-        },
-        {
-          "startSec": 7.44,
-          "endSec": 7.76,
-          "startChar": 104,
-          "endChar": 106
-        },
-        {
-          "startSec": 8.16,
-          "endSec": 8.64,
-          "startChar": 114,
-          "endChar": 118
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 9.6,
-          "startChar": 119,
-          "endChar": 131
-        },
-        {
-          "startSec": 10.0,
-          "endSec": 10.24,
-          "startChar": 135,
-          "endChar": 139
-        },
-        {
-          "startSec": 10.24,
-          "endSec": 10.8,
-          "startChar": 140,
-          "endChar": 147
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-02.5b9ae42a.mp3",
+      "textHash": "5b9ae42a5d6ed74151ce1ab04de3051256f8c303bf75fd305b6314ad1c083fc7",
+      "audioDurationSec": 11.807347,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-02-after.5a8197fc.mp3",
+      "afterAudioDurationSec": 3.709388,
+      "afterTextHash": "5a8197fcd288182f364b5e9e7708e0436eb017a0e21d231b952f9b6c4600ab93"
     },
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "replayStartSec": 51.564603,
-      "replayEndSec": 70.626849,
+      "replayStartSec": 18.479059,
+      "replayEndSec": 25.757057,
       "narrationText": "Passo três. Vamos enviar a configuração para o servidor. Isto cria automaticamente os registos DNS no Cloudflare e prepara a configuração do proxy.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-03.2ca8b124.mp3",
-      "audioDurationSec": 11.154286,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.88,
-          "startChar": 6,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.44,
-          "startChar": 12,
-          "endChar": 17
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.84,
-          "startChar": 18,
-          "endChar": 24
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 1.92,
-          "startChar": 25,
-          "endChar": 26
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.8,
-          "startChar": 27,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 3.12,
-          "startChar": 40,
-          "endChar": 44
-        },
-        {
-          "startSec": 3.12,
-          "endSec": 3.2,
-          "startChar": 45,
-          "endChar": 46
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.76,
-          "startChar": 47,
-          "endChar": 55
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.48,
-          "startChar": 57,
-          "endChar": 61
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 4.8,
-          "startChar": 62,
-          "endChar": 66
-        },
-        {
-          "startSec": 4.88,
-          "endSec": 5.68,
-          "startChar": 67,
-          "endChar": 82
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 5.92,
-          "startChar": 83,
-          "endChar": 85
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.4,
-          "startChar": 86,
-          "endChar": 94
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.8,
-          "startChar": 95,
-          "endChar": 98
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.44,
-          "startChar": 99,
-          "endChar": 101
-        },
-        {
-          "startSec": 7.44,
-          "endSec": 8.16,
-          "startChar": 102,
-          "endChar": 112
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 8.64,
-          "startChar": 113,
-          "endChar": 114
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 9.28,
-          "startChar": 115,
-          "endChar": 122
-        },
-        {
-          "startSec": 9.52,
-          "endSec": 10.4,
-          "startChar": 125,
-          "endChar": 137
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.56,
-          "startChar": 138,
-          "endChar": 140
-        },
-        {
-          "startSec": 10.64,
-          "endSec": 11.04,
-          "startChar": 141,
-          "endChar": 146
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-03.5c652bd0.mp3",
+      "textHash": "5c652bd0d0b0708df9a5fc92c282a60f8e6acda23c84eb0c4051e30e3e088ab3",
+      "audioDurationSec": 10.684082,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-03-after.509f172e.mp3",
+      "afterAudioDurationSec": 5.067755,
+      "afterTextHash": "509f172e60eb51261951d47f0d0f37e665771964525a793691255c30fe10cd23"
     },
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "replayStartSec": 70.626849,
-      "replayEndSec": 97.243945,
+      "replayStartSec": 25.757057,
+      "replayEndSec": 33.957312,
       "narrationText": "Começa o passo quatro. Vamos criar um pequeno repositório chamado infra. É aqui que o proxy vai viver, isolado dos repositórios de aplicações.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-04.ac72ce1c.mp3",
-      "audioDurationSec": 10.919184,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 0.56,
-          "startChar": 7,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 0.88,
-          "startChar": 9,
-          "endChar": 14
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.08,
-          "startChar": 23,
-          "endChar": 28
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.56,
-          "startChar": 29,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.72,
-          "startChar": 35,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.2,
-          "startChar": 38,
-          "endChar": 45
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 4.08,
-          "startChar": 46,
-          "endChar": 57
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.64,
-          "startChar": 58,
-          "endChar": 65
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 5.12,
-          "startChar": 66,
-          "endChar": 71
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 5.76,
-          "startChar": 73,
-          "endChar": 74
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 6.08,
-          "startChar": 75,
-          "endChar": 79
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.24,
-          "startChar": 80,
-          "endChar": 83
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.32,
-          "startChar": 84,
-          "endChar": 85
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.88,
-          "startChar": 86,
-          "endChar": 91
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.12,
-          "startChar": 92,
-          "endChar": 95
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.68,
-          "startChar": 96,
-          "endChar": 101
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.56,
-          "startChar": 103,
-          "endChar": 110
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 8.8,
-          "startChar": 111,
-          "endChar": 114
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 9.76,
-          "startChar": 115,
-          "endChar": 127
-        },
-        {
-          "startSec": 9.76,
-          "endSec": 10.0,
-          "startChar": 128,
-          "endChar": 130
-        },
-        {
-          "startSec": 10.0,
-          "endSec": 10.8,
-          "startChar": 131,
-          "endChar": 141
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-04.df79e4c9.mp3",
+      "textHash": "df79e4c99b2b2d37f5fff3139c3c1a4cece99704f7359ea592f891bac9fc1e24",
+      "audioDurationSec": 9.560816,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-04-after.193f34fb.mp3",
+      "afterAudioDurationSec": 4.989388,
+      "afterTextHash": "193f34fb5ee1ae1b03763c7ef619aca5cb9cacf71a5398267d4821d417c2e95d"
     },
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "replayStartSec": 97.243945,
-      "replayEndSec": 112.494613,
+      "replayStartSec": 33.957312,
+      "replayEndSec": 41.036573,
       "narrationText": "Vamos aplicar o template de proxy. Inclui o Traefik mais a configuração para o Let's Encrypt e os desafios DNS-01 do Cloudflare, pronto a usar.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-05.bcdb79f7.mp3",
-      "audioDurationSec": 12.120816,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 1.04,
-          "startChar": 6,
-          "endChar": 13
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.2,
-          "startChar": 14,
-          "endChar": 15
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.68,
-          "startChar": 16,
-          "endChar": 24
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 1.84,
-          "startChar": 25,
-          "endChar": 27
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.4,
-          "startChar": 28,
-          "endChar": 33
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.84,
-          "startChar": 42,
-          "endChar": 43
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.72,
-          "startChar": 52,
-          "endChar": 56
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 4.8,
-          "startChar": 57,
-          "endChar": 58
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.76,
-          "startChar": 59,
-          "endChar": 71
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 6.0,
-          "startChar": 72,
-          "endChar": 76
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.32,
-          "startChar": 79,
-          "endChar": 84
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.96,
-          "startChar": 85,
-          "endChar": 92
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.36,
-          "startChar": 93,
-          "endChar": 94
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.6,
-          "startChar": 95,
-          "endChar": 97
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 8.32,
-          "startChar": 98,
-          "endChar": 106
-        },
-        {
-          "startSec": 9.68,
-          "endSec": 9.76,
-          "startChar": 114,
-          "endChar": 116
-        },
-        {
-          "startSec": 9.76,
-          "endSec": 10.48,
-          "startChar": 117,
-          "endChar": 127
-        },
-        {
-          "startSec": 11.04,
-          "endSec": 11.44,
-          "startChar": 129,
-          "endChar": 135
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 11.6,
-          "startChar": 136,
-          "endChar": 137
-        },
-        {
-          "startSec": 11.6,
-          "endSec": 12.0,
-          "startChar": 138,
-          "endChar": 142
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-05.faad5c79.mp3",
+      "textHash": "faad5c794378434ffb7139e3ae6697e9b0bcf82a82cafbd31013b4cdef21642f",
+      "audioDurationSec": 10.762449,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-05-after.cf24ed3b.mp3",
+      "afterAudioDurationSec": 2.272653,
+      "afterTextHash": "cf24ed3b648ad1ef827d2e59c93278e4cf6729f378a7ccb5cfbdc1c44560b099"
     },
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "replayStartSec": 112.494613,
-      "replayEndSec": 150.444961,
+      "replayStartSec": 41.036573,
+      "replayEndSec": 49.697921,
       "narrationText": "E vamos iniciar o proxy. O Traefik descobre os seus contentores a cada cinco segundos. Os certificados TLS chegam automaticamente via Let's Encrypt. A sua aplicação está agora acessível na internet por HTTPS.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-06.45fad32e.mp3",
-      "audioDurationSec": 17.475918,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 1
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.8,
-          "startChar": 2,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.6,
-          "startChar": 8,
-          "endChar": 15
-        },
-        {
-          "startSec": 3.28,
-          "endSec": 3.52,
-          "startChar": 25,
-          "endChar": 26
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.64,
-          "startChar": 35,
-          "endChar": 43
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 4.88,
-          "startChar": 44,
-          "endChar": 46
-        },
-        {
-          "startSec": 4.88,
-          "endSec": 5.28,
-          "startChar": 47,
-          "endChar": 51
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 6.08,
-          "startChar": 52,
-          "endChar": 63
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.24,
-          "startChar": 64,
-          "endChar": 65
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.64,
-          "startChar": 66,
-          "endChar": 70
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 7.12,
-          "startChar": 71,
-          "endChar": 76
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.68,
-          "startChar": 77,
-          "endChar": 85
-        },
-        {
-          "startSec": 7.92,
-          "endSec": 8.16,
-          "startChar": 87,
-          "endChar": 89
-        },
-        {
-          "startSec": 8.16,
-          "endSec": 8.96,
-          "startChar": 90,
-          "endChar": 102
-        },
-        {
-          "startSec": 8.96,
-          "endSec": 9.6,
-          "startChar": 103,
-          "endChar": 106
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 10.0,
-          "startChar": 107,
-          "endChar": 113
-        },
-        {
-          "startSec": 10.16,
-          "endSec": 10.96,
-          "startChar": 114,
-          "endChar": 129
-        },
-        {
-          "startSec": 10.96,
-          "endSec": 11.2,
-          "startChar": 130,
-          "endChar": 133
-        },
-        {
-          "startSec": 11.2,
-          "endSec": 11.52,
-          "startChar": 134,
-          "endChar": 139
-        },
-        {
-          "startSec": 11.6,
-          "endSec": 12.08,
-          "startChar": 140,
-          "endChar": 147
-        },
-        {
-          "startSec": 12.56,
-          "endSec": 12.64,
-          "startChar": 149,
-          "endChar": 150
-        },
-        {
-          "startSec": 12.64,
-          "endSec": 12.8,
-          "startChar": 151,
-          "endChar": 154
-        },
-        {
-          "startSec": 12.8,
-          "endSec": 13.44,
-          "startChar": 155,
-          "endChar": 164
-        },
-        {
-          "startSec": 13.44,
-          "endSec": 13.68,
-          "startChar": 165,
-          "endChar": 169
-        },
-        {
-          "startSec": 13.68,
-          "endSec": 14.0,
-          "startChar": 170,
-          "endChar": 175
-        },
-        {
-          "startSec": 14.0,
-          "endSec": 14.64,
-          "startChar": 176,
-          "endChar": 185
-        },
-        {
-          "startSec": 14.64,
-          "endSec": 14.88,
-          "startChar": 186,
-          "endChar": 188
-        },
-        {
-          "startSec": 14.88,
-          "endSec": 15.36,
-          "startChar": 189,
-          "endChar": 197
-        },
-        {
-          "startSec": 15.44,
-          "endSec": 15.68,
-          "startChar": 198,
-          "endChar": 201
-        },
-        {
-          "startSec": 15.76,
-          "endSec": 17.36,
-          "startChar": 202,
-          "endChar": 207
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-06.67c85d14.mp3",
+      "textHash": "67c85d14d16527c5c91c6d87b95bbb02b7aa9797e16d97396e659ce238449026",
+      "audioDurationSec": 15.647347,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-networking/tutorial-networking-06-after.2439f9b8.mp3",
+      "afterAudioDurationSec": 5.067755,
+      "afterTextHash": "2439f9b8096e04972b3fae5409c7243445c7bb42265c298baceabb8930d307d6"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "927100f091cb68594dff87279c656973b9b293ec001712cf00f6d411e1c10347",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/intro.927100f0.mp3",
+      "narrationText": "Tudo certo! Vamos dar à sua aplicação um domínio a sério com TLS automático. Quatro passos curtos e está na internet.",
+      "audioDurationSec": 7.706122
+    },
+    {
+      "id": "four-steps",
+      "textHash": "b6786144fcfc3ab3fe21de054383428ef7c1f19c013f25487239d59ddf88a137",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/four-steps.b6786144.mp3",
+      "narrationText": "Eis o caminho. Obter um token API do Cloudflare, configurar a infraestrutura na CLI, enviá-la para o servidor, e depois implementar um proxy Traefik que trata do DNS e dos certificados por si.",
+      "audioDurationSec": 18.677551
+    },
+    {
+      "id": "open-cloudflare",
+      "textHash": "f9511f2d212bd0d3dd5e9cbb8854a36f3f772b466564bf97bba78328145bdeb3",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/open-cloudflare.f9511f2d.mp3",
+      "narrationText": "Primeiro, abra o painel do Cloudflare no browser. Vá a My Profile, depois API Tokens, e crie um token com a permissão Zone DNS Edit para que a CLI possa gerir os seus registos.",
+      "audioDurationSec": 13.00898
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "1159e50ce544bd1f093c7cf14f778154430bdf2159ed08f7f63cefc78837a0a1",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-networking/next-tutorial.1159e50c.mp3",
+      "narrationText": "E está a rede tratada! Até ao próximo.",
+      "audioDurationSec": 3.63102
     }
   ]
 }

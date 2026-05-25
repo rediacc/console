@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:08.046
+Production Mode
+
+00:00:08.046 --> 00:00:20.618
+Dev vs prod, the difference
+
+00:00:20.618 --> 00:00:43.307
+Step 1: Start in production mode
+
+00:00:43.307 --> 00:01:01.484
+Step 2: Enable autostart
+
+00:01:01.484 --> 00:01:14.071
+Step 3: List autostart-enabled repos
+
+00:01:14.071 --> 00:01:28.776
+Step 4: Stop from your laptop
+
+00:01:28.776 --> 00:01:32.776
+Next: Backup and Restore

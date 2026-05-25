@@ -178,7 +178,7 @@ A cold backup runs in three phases per included repo: **stop → snapshot → st
 
 - `rdc machine query --name <machine> --containers` shows running state. Compare against the expected set.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` on the machine. Inspect via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` with a stale `startedAt` means the last backup didn't complete cleanly.
-- Logs from the renet backup run (`journalctl -u renet-*` or the direct `rdc machine deploy-backup` invocation) emit a final summary line of the form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. A non-empty `failed_repos` is the grep target.
+- Logs from the renet backup run (`journalctl -u renet-*` or the direct `rdc machine backup schedule` invocation) emit a final summary line of the form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. A non-empty `failed_repos` is the grep target.
 
 ### Estimating Cold Backup Downtime
 

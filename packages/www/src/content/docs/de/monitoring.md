@@ -4,8 +4,8 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 order: 9
 language: de
-sourceHash: 7574575ee78682a9
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "2289d50dac21f9bf"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Überwachung
@@ -112,8 +112,9 @@ rdc machine query --name server-1 --storage-health
 | Size | Größe der LUKS-Image-Datei (wie das Repository aussieht) |
 | Unique | Tatsächlich einzigartige Daten, die nur diesem Repository gehören |
 | Shared | Datenblöcke, die über Repositories via BTRFS-Reflinks wiederverwendet werden (kostenlose Kopien) |
-| Extents | Anzahl der Dateiextents (höher = stärker fragmentiert) |
-| Frag | Fragmentierungsgrad: niedrig, mittel oder hoch |
+| Divergence | Prozentualer Anteil des Images, der einzigartig für dieses Repository ist und nicht geteilt wird (höher bedeutet mehr rückgewinnbarer Speicher bei Löschung) |
+| Extents | Anzahl der Dateiextents im copy-on-write-Image (höher = stärker fragmentiert) |
+| Frag | Fragmentierungsgrad: niedrig, mittel oder hoch (nur informativ) |
 
 Die Zusammenfassung zeigt Gesamteinsparungen durch BTRFS-Reflinks:
 
@@ -127,7 +128,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 - **Geteilt** sind Daten, die über Repositories via BTRFS-Reflinks wiederverwendet werden. Das Forken eines Repositories erstellt Reflink-Kopien, die Blöcke teilen, bis eine Seite neue Daten schreibt; dann divergieren die Blöcke.
 - **Effizienz** ist der Prozentsatz der via Reflinks wiederverwendeten Daten. Höher ist besser. Eine Maschine mit vielen Forks desselben Parent-Repositories zeigt eine Effizienz nahe 100%.
 
-Repositories mit hoher Fragmentierung und null gemeinsamen Blöcken können sicher mit `btrfs filesystem defragment` defragmentiert werden. Repositories mit gemeinsamen Blöcken sollten NICHT defragmentiert werden, da Defragmentierung gemeinsame Blöcke durch einzigartige Kopien ersetzt und damit die Festplattennutzung erhöht.
+Die Frag-Spalte ist nur informativ. Sie zählt Extents der copy-on-write-Image-Datei, nicht die Dateien, die deine Anwendung darin liest, daher liest sie unter normalen zufälligen Schreib-Workloads (Datenbanken, Container-Layer) hoch und sagt auf SSD-gestütztem Speicher nichts über die Leseperformance aus. Rediacc bietet bewusst keinen Defragmentierungsbefehl an: `btrfs filesystem defragment` hebt die Reflinks von refgelinkten Forks und Snapshots auf, was auf einem nahezu vollen Pool die Nutzung dramatisch aufblähen kann, während Benchmarks keinen messbaren Lesegewinn zeigen. Die vollständigen Messungen und Begründungen findest du unter [Deine Fragmentierungszahl sieht erschreckend aus. Ich habe gemessen, was sie kostet.](/de/blog/i-benchmarked-btrfs-fragmentation).
 
 Der Scan läuft parallel und dauert je nach Anzahl und Größe der Repositories 5-15 Sekunden. Wenn `--storage-health` nicht angegeben ist, erscheint nach der Abfrageausgabe ein einzeiliger Hinweis als Erinnerung.
 

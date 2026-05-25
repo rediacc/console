@@ -4,7 +4,8 @@ description: "Rediacc'ın AB NIS2 siber güvenlik direktifi ve DORA dijital oper
 category: "Legal"
 order: 8
 language: tr
-sourceHash: "be77425c2d3b38d2"
+sourceHash: "a2078388f7ae1906"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 NIS2 ve DORA, kritik altyapı ve finans sektörü kuruluşlarına siber güvenlik ve operasyonel dayanıklılık gereksinimleri dayatan AB düzenlemeleridir. Her ikisi de 2025'te yürürlüğe girmiş ve AB endüstrileri genelinde geniş olarak uygulanmaktadır.
@@ -21,7 +22,7 @@ Tam metin: [Direktif (AB) 2022/2555](https://eur-lex.europa.eu/eli/dir/2022/2555
 |-----------------|-----------------|
 | Risk yönetimi önlemleri (Md. 21) | Durağan halde LUKS2 şifreleme, depo başına ağ izolasyonu, yalnızca SSH erişimi, hesap düzeyinde denetim günlüğü (40'tan fazla olay türü) |
 | Olay işleme (Md. 21(2)(b)) | 40'tan fazla hesap düzeyinde olay türü (kimlik doğrulama, token'lar, yapılandırma, lisanslama) adli iz sağlar. Depo başına izolasyon etki alanını sınırlar. |
-| İş sürekliliği (Md. 21(2)(c)) | `rdc repo backup push/pull` ile çoklu hedefli şifreli yedekleme. Anlık geri alma için CoW anlık görüntüler. |
+| İş sürekliliği (Md. 21(2)(c)) | `rdc repo push/pull` ile çoklu hedefli şifreli yedekleme. Anlık geri alma için CoW anlık görüntüler. |
 | Tedarik zinciri güvenliği (Md. 21(2)(d)) | Kendi sunucunuzda barındırma SaaS tedarik zinciri riskini ortadan kaldırır. Hiçbir üçüncü taraf bulut sağlayıcı verilerinizi işlemez. |
 | Ağ güvenliği (Md. 21(2)(e)) | Depo başına Docker daemon'ları, iptables kuralları, loopback IP izolasyonu (/26 alt ağları). |
 | Şifreleme (Md. 21(2)(h)) | Zorunlu LUKS2 AES-256 şifreleme. AES-256-GCM ile sıfır bilgi yapılandırma deposu. |
@@ -49,7 +50,7 @@ Tam metin: [Tüzük (AB) 2022/2554](https://eur-lex.europa.eu/eli/reg/2022/2554/
 | BİT risk yönetimi çerçevesi (Md. 6) | Şifreleme, izolasyon, denetim günlüğü ve yedekleme teknik kontrol katmanını oluşturur. |
 | Koruma ve önleme (Md. 9) | Durağan halde LUKS2 AES-256 şifreleme. Ağ izolasyonu yanal hareketi önler. Yalnızca SSH erişimi. |
 | Tespit (Md. 10) | Hesap düzeyinde 40'tan fazla olay türü. Kullanıcı ve ekip bazında filtreleme ile yönetici paneli. Makine işlemleri SSH ve sistem günlükleri ile denetlenebilir. |
-| Müdahale ve kurtarma (Md. 11) | Anlık geri alma için CoW anlık görüntüler. `rdc repo backup push/pull` ile çoklu hedefli kurtarma. Fork tabanlı felaket kurtarma testi. |
+| Müdahale ve kurtarma (Md. 11) | Anlık geri alma için CoW anlık görüntüler. `rdc repo push/pull` ile çoklu hedefli kurtarma. Fork tabanlı felaket kurtarma testi. |
 | Üçüncü taraf BİT riski (Md. 28-30) | Kendi sunucunuzda barındırma "kritik üçüncü taraf BİT sağlayıcı" sınıflandırmasını tamamen ortadan kaldırır. |
 | Dijital operasyonel dayanıklılık testi (Md. 24-27) | CoW klonlama, veri açığa çıkmadan üretim benzeri ortamlarda tehdit yönelimli penetrasyon testini mümkün kılar. Klonla, test et, yok et. |
 

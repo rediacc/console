@@ -1,0 +1,97 @@
+WEBVTT
+
+00:00:01.080 --> 00:00:03.800
+Your app is live, so let's make sure
+
+00:00:03.800 --> 00:00:06.760
+you never lose it! In this tutorial, we
+
+00:00:06.760 --> 00:00:09.720
+push the whole repository to external storage
+
+00:00:10.200 --> 00:00:11.560
+and pull it back on demand.
+
+00:00:12.538 --> 00:00:15.338
+Backup and restore comes down to three steps
+
+00:00:15.658 --> 00:00:18.378
+. Configure a storage provider, push a backup
+
+00:00:18.858 --> 00:00:20.378
+, and restore it when you need to.
+
+00:00:23.849 --> 00:00:26.489
+Step one. We will import an existing
+
+00:00:26.489 --> 00:00:29.289
+rclone configuration. rclone supports
+
+00:00:29.369 --> 00:00:32.729
+S3, Backblaze, Google Drive, Dropbox
+
+00:00:32.889 --> 00:00:35.769
+, and many more. If you already use it, the
+
+00:00:35.769 --> 00:00:37.849
+same config imports directly.
+
+00:00:38.955 --> 00:00:41.595
+Storage imported. Your CLI can now push
+
+00:00:41.595 --> 00:00:42.395
+backups to it.
+
+00:00:45.894 --> 00:00:48.694
+Let us list the storages the CLI now knows
+
+00:00:48.694 --> 00:00:51.334
+about. Each one is a destination we can push
+
+00:00:51.334 --> 00:00:51.974
+backups to.
+
+00:00:53.913 --> 00:00:56.873
+There it is. Ready to receive backups.
+
+00:00:59.718 --> 00:01:02.518
+Step two. Push a full backup. The
+
+00:01:02.518 --> 00:01:05.638
+entire repository, app, database, files
+
+00:01:05.718 --> 00:01:08.998
+, configuration, is uploaded. Because the repository
+
+00:01:08.998 --> 00:01:11.958
+is encrypted at rest, the backup is encrypted
+
+00:01:11.958 --> 00:01:14.278
+too. No extra key management.
+
+00:01:16.727 --> 00:01:19.367
+Backup uploaded. Everything in this repo is now
+
+00:01:19.367 --> 00:01:21.527
+on the remote storage, encrypted.
+
+00:01:25.026 --> 00:01:27.666
+And the backups available on this storage. From
+
+00:01:27.666 --> 00:01:30.306
+here, restore on a brand new server is
+
+00:01:30.306 --> 00:01:32.866
+one command: the repo pull command.
+
+00:01:36.072 --> 00:01:38.632
+All your snapshots in one place. Pull
+
+00:01:38.632 --> 00:01:40.472
+any of them back with a single command.
+
+00:01:41.490 --> 00:01:44.210
+Your data is safe and portable across
+
+00:01:44.210 --> 00:01:46.450
+machines. See you in the next one!

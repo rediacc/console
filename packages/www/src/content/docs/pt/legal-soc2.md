@@ -4,6 +4,8 @@ description: "Como o Rediacc mapeia os Critérios de Serviço de Confiança SOC 
 category: "Legal"
 order: 2
 language: pt
+sourceHash: "ebdae97034aa3cce"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 O SOC 2 (System and Organization Controls 2) é um referencial desenvolvido pelo American Institute of Certified Public Accountants (AICPA) para avaliar os controlos de uma organização relacionados com segurança, disponibilidade, integridade de processamento, confidencialidade e privacidade.
@@ -15,7 +17,7 @@ Referência: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audi
 | Princípio de Confiança | Critério | Capacidade Rediacc |
 |----------------|----------|-------------------|
 | **Segurança** (CC6) | Controlos de acesso lógico, encriptação | Encriptação LUKS2 AES-256 em repouso. Credenciais armazenadas apenas na configuração local do operador (`~/.config/rediacc/`), nunca no servidor. Acesso baseado em chave SSH. Daemons Docker isolados por repositório. |
-| **Disponibilidade** (A1) | Recuperação e resiliência do sistema | `rdc repo backup push/pull` com cópias cifradas offsite para SSH, S3, B2, Azure ou GDrive. Snapshots CoW para reversão instantânea. Atualizações baseadas em fork para alterações sem tempo de inatividade. |
+| **Disponibilidade** (A1) | Recuperação e resiliência do sistema | `rdc repo push/pull` com cópias cifradas offsite para SSH, S3, B2, Azure ou GDrive. Snapshots CoW para reversão instantânea. Atualizações baseadas em fork para alterações sem tempo de inatividade. |
 | **Integridade de Processamento** (PI1) | Processamento preciso e completo | Os hooks de ciclo de vida deterministas do Rediaccfile (`up`/`down`) garantem implementações consistentes. `rdc repo validate` verifica a integridade do repositório e o estado das cópias de segurança após paragens inesperadas ou operações de backup. |
 | **Confidencialidade** (C1) | Proteção de dados contra acesso não autorizado | Encriptação por repositório com credenciais LUKS únicas. Isolamento de rede via iptables, daemons Docker separados e sub-redes de loopback IP. Contentores de repositórios diferentes não se conseguem ver mutuamente. O repositório de configuração de conhecimento zero encripta as configurações do lado do cliente antes do envio. O servidor armazena apenas blobs opacos que não consegue desencriptar. |
 | **Privacidade** (P1-P8) | Tratamento de dados pessoais | Self-hosted: sem saída de dados durante as operações. Registo de auditoria para todos os acessos a dados. Gestão de chaves de encriptação sob controlo do cliente. O repositório de configuração usa derivação de chave dividida (passkey PRF + segredo do servidor) para que nenhuma das partes sozinha consiga aceder aos dados. |

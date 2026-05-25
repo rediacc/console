@@ -6,26 +6,62 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 56.862064,
-      "text": "Vamos a arrancar la app en modo producción desde la laptop. El comando repo up del CLI llama a la misma función up que usábamos durante el desarrollo, pero se ejecuta en segundo plano. Puedes cerrar tu laptop y la app sigue funcionando."
+      "at": 2.418632,
+      "text": "Vamos a arrancar la app en modo producción desde la laptop. El comando repo up del CLI llama a la misma función up que usábamos durante el desarrollo, pero se ejecuta en segundo plano. Puedes cerrar tu laptop y la app sigue funcionando.",
+      "afterText": "App corriendo en producción. Mismo comando, mismo resultado, en el servidor real.",
+      "cardLabel": "Iniciar Prod",
+      "prose": "Inicia la app en modo producción desde el portátil. El comando de despliegue llama a la misma función up usada durante el desarrollo, pero se ejecuta en segundo plano para que la app continúe después de que el portátil se desconecte."
     },
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 97.750961,
-      "text": "Habilitamos el arranque automático para que la app sobreviva a un reinicio del servidor. A partir de ahora, si el servidor se reinicia, este repo vuelve automáticamente."
+      "at": 9.548589,
+      "text": "Habilitamos el arranque automático para que la app sobreviva a un reinicio del servidor. A partir de ahora, si el servidor se reinicia, este repo vuelve automáticamente.",
+      "afterText": "Arranque automático activado. La app sobrevive a los reinicios.",
+      "cardLabel": "Activar Inicio Automático",
+      "prose": "Activa el inicio automático para que el repo sobreviva a los reinicios del servidor. Una vez activado, el repo se levanta automáticamente cada vez que el servidor se reinicia."
     },
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 125.443493,
-      "text": "Listamos los repositorios que tienen el arranque automático habilitado. Confirmamos que nuestra app está ahora en la lista de inicio."
+      "at": 17.034078,
+      "text": "Listamos los repositorios que tienen el arranque automático habilitado. Confirmamos que nuestra app está ahora en la lista de inicio.",
+      "afterText": "Ahí está, en la lista de arranque.",
+      "cardLabel": "Listar Inicio Automático",
+      "prose": "Lista los repositorios con inicio automático activado para confirmar que la app está en la lista de arranque."
     },
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 141.09184,
-      "text": "Y para detener la app, un comando desde la laptop. Un comando para arrancar, un comando para detener. Todo desde tu terminal, sin más sesiones interactivas."
+      "at": 22.929505,
+      "text": "Y para detener la app, un comando desde la laptop. Un comando para arrancar, un comando para detener. Todo desde tu terminal, sin más sesiones interactivas.",
+      "afterText": "Detenida. Un comando para arrancar, un comando para detener.",
+      "cardLabel": "Detener Repo",
+      "prose": "Detén la app con un solo comando desde el portátil. Un comando la levanta, un comando la baja, todo gestionado desde el terminal."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "¡Muy bien! Vamos a llevar tu app del desarrollo a producción. Tres pasos cortos, todos manejados desde tu laptop."
+    },
+    {
+      "id": "dev-vs-prod",
+      "text": "Durante el desarrollo ejecutas la app desde dentro del repo, así que se detiene cuando te desconectas. En producción la lanzas desde tu laptop con el CLI, y sigue ejecutándose de forma desacoplada."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "¡Y ese es el modo producción en pocas palabras. Nos vemos en el siguiente!"
+    }
+  ],
+  "title": "Modo Producción",
+  "chapters": {
+    "intro": "Modo Producción",
+    "dev-vs-prod": "Dev vs prod, la diferencia",
+    "cast-step-0": "Paso 1: Iniciar en modo producción",
+    "cast-step-1": "Paso 2: Activar inicio automático",
+    "cast-step-2": "Paso 3: Listar repos con inicio automático",
+    "cast-step-3": "Paso 4: Detener desde tu portátil",
+    "outro": "Siguiente: Copia de seguridad y restauración"
+  }
 }

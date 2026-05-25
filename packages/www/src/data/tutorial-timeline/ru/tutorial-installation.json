@@ -7,305 +7,70 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "e1e34e2b40bcd293a352f637943caa355dc0a7f679d8d8991dc9fa0b453dcc8d",
+  "transcriptHash": "33ea685bdb3c167c55f3c7b3da78aca1f9fa67257cecf6226af802b2415bd96b",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.509194,
-      "replayEndSec": 9.435981,
+      "replayStartSec": 1.626476,
+      "replayEndSec": 7.903516,
       "narrationText": "Сначала убедимся, что CLI доступен в системе. Запустим CLI с флагом версии: он выведет установленную версию и подтвердит, что установка прошла успешно.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-01.68d9e42f.mp3",
-      "audioDurationSec": 11.232653,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 1.12,
-          "startChar": 8,
-          "endChar": 16
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.44,
-          "startChar": 18,
-          "endChar": 21
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.92,
-          "startChar": 22,
-          "endChar": 25
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.48,
-          "startChar": 26,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.56,
-          "startChar": 35,
-          "endChar": 36
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.2,
-          "startChar": 37,
-          "endChar": 44
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 4.16,
-          "startChar": 46,
-          "endChar": 54
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.64,
-          "startChar": 55,
-          "endChar": 58
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 4.72,
-          "startChar": 59,
-          "endChar": 60
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.12,
-          "startChar": 61,
-          "endChar": 67
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.68,
-          "startChar": 68,
-          "endChar": 74
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.4,
-          "startChar": 76,
-          "endChar": 78
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.8,
-          "startChar": 79,
-          "endChar": 86
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.6,
-          "startChar": 87,
-          "endChar": 100
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 8.08,
-          "startChar": 101,
-          "endChar": 107
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.24,
-          "startChar": 108,
-          "endChar": 109
-        },
-        {
-          "startSec": 8.24,
-          "endSec": 8.96,
-          "startChar": 110,
-          "endChar": 120
-        },
-        {
-          "startSec": 9.28,
-          "endSec": 9.44,
-          "startChar": 122,
-          "endChar": 125
-        },
-        {
-          "startSec": 9.44,
-          "endSec": 10.0,
-          "startChar": 126,
-          "endChar": 135
-        },
-        {
-          "startSec": 10.0,
-          "endSec": 10.48,
-          "startChar": 136,
-          "endChar": 142
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 11.2,
-          "startChar": 143,
-          "endChar": 150
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-01.d7a16f7e.mp3",
+      "textHash": "d7a16f7e040b09f9e6d52863e145ff14699a21081d30d94050e54bc8334416b6",
+      "audioDurationSec": 10.370612,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-01-after.a2d8e728.mp3",
+      "afterAudioDurationSec": 5.564082,
+      "afterTextHash": "a2d8e728a91307f5a328022da72515913508587c822e675fc0cec35d524eb2e5"
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 9.435981,
-      "replayEndSec": 18.745045,
+      "replayStartSec": 7.903516,
+      "replayEndSec": 10.095825,
       "narrationText": "Теперь запустим диагностическую проверку. Она проверяет все зависимости, которые нужны CLI: Node, SSH и остальное, и сообщает о пробелах. Чистый отчёт означает, что можно добавлять сервер.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-02.63536644.mp3",
-      "audioDurationSec": 12.747755,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.88,
-          "startChar": 7,
-          "endChar": 15
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 1.76,
-          "startChar": 16,
-          "endChar": 31
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.4,
-          "startChar": 32,
-          "endChar": 40
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 2.88,
-          "startChar": 42,
-          "endChar": 45
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.36,
-          "startChar": 46,
-          "endChar": 55
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 3.6,
-          "startChar": 56,
-          "endChar": 59
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 4.24,
-          "startChar": 60,
-          "endChar": 71
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.72,
-          "startChar": 73,
-          "endChar": 80
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.04,
-          "startChar": 81,
-          "endChar": 86
-        },
-        {
-          "startSec": 5.84,
-          "endSec": 6.24,
-          "startChar": 92,
-          "endChar": 96
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.8,
-          "startChar": 98,
-          "endChar": 101
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.2,
-          "startChar": 102,
-          "endChar": 103
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.92,
-          "startChar": 104,
-          "endChar": 113
-        },
-        {
-          "startSec": 8.16,
-          "endSec": 8.24,
-          "startChar": 115,
-          "endChar": 116
-        },
-        {
-          "startSec": 8.24,
-          "endSec": 8.8,
-          "startChar": 117,
-          "endChar": 125
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 8.88,
-          "startChar": 126,
-          "endChar": 127
-        },
-        {
-          "startSec": 8.88,
-          "endSec": 9.36,
-          "startChar": 128,
-          "endChar": 136
-        },
-        {
-          "startSec": 10.0,
-          "endSec": 10.4,
-          "startChar": 138,
-          "endChar": 144
-        },
-        {
-          "startSec": 10.64,
-          "endSec": 11.28,
-          "startChar": 151,
-          "endChar": 159
-        },
-        {
-          "startSec": 11.28,
-          "endSec": 11.44,
-          "startChar": 161,
-          "endChar": 164
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 11.84,
-          "startChar": 165,
-          "endChar": 170
-        },
-        {
-          "startSec": 11.84,
-          "endSec": 12.24,
-          "startChar": 171,
-          "endChar": 180
-        },
-        {
-          "startSec": 12.24,
-          "endSec": 12.64,
-          "startChar": 181,
-          "endChar": 187
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-02.c34085cb.mp3",
+      "textHash": "c34085cb3a677aaaa81b0e44b35db72439b8681afae688645cb74b027f0242be",
+      "audioDurationSec": 13.00898,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-02-after.1efd892b.mp3",
+      "afterAudioDurationSec": 2.690612,
+      "afterTextHash": "1efd892b14bbe9b706311e5815e5f07025122f58abed11ecfff16a8a6e4211f4"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "3413e4d9a6729d17e0b6b0fbb69942f4738bca86c84711e32f3e13808972da84",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/intro.3413e4d9.mp3",
+      "narrationText": "Итак! Давайте установим инструмент командной строки на ваш ноутбук.",
+      "audioDurationSec": 6.530612
+    },
+    {
+      "id": "three-steps",
+      "textHash": "cab934ae5b7e89ade938d33b801f54a6718fe2831ca63c04cf94afe99ce94bcc",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/three-steps.cab934ae.mp3",
+      "narrationText": "Три шага. Откройте страницу установки, выберите свою операционную систему и вставьте команду в терминал.",
+      "audioDurationSec": 8.672653
+    },
+    {
+      "id": "open-install-page",
+      "textHash": "447a7fe2166478aba3206d5e8d48376db6c1dfb6b6e15954fdfcb537d81bcf88",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/open-install-page.447a7fe2.mp3",
+      "narrationText": "Перейдите на страницу установки и прокрутите до раздела быстрой установки. Он сгенерирует подходящий однострочник под вашу платформу.",
+      "audioDurationSec": 8.437551
+    },
+    {
+      "id": "laptop-vs-server",
+      "textHash": "8bd2bd6edab55877faddfac001d0c785ce27e1f5b4b247ca67bc7275469c5bb8",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/laptop-vs-server.8bd2bd6e.mp3",
+      "narrationText": "Инструмент командной строки живёт на вашем ноутбуке. На сервере работает отдельный компонент под названием renet, который CLI устанавливает и которым управляет по SSH — заходить на сервер вручную не придётся.",
+      "audioDurationSec": 16.117551
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "268783e3645a50577f271630b79bdd5b16854f6fb1642632d879953dc145cd63",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/next-tutorial.268783e3.mp3",
+      "narrationText": "Установка готова. Дальше настроим SSH-ключ, чтобы CLI мог добраться до ваших серверов.",
+      "audioDurationSec": 7.235918
     }
   ]
 }

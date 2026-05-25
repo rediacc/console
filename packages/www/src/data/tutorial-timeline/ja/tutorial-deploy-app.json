@@ -7,693 +7,95 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "f6a47ef4b90205e422cdb177546abcc7c5aa30b74af17c5e4237115c4a70520f",
+  "transcriptHash": "b287ef4c7981b71d428077037efe8d891370c56e8f4be19e83f6e304aaad7096",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 52.700593,
-      "replayEndSec": 61.85842,
+      "replayStartSec": 2.40432,
+      "replayEndSec": 6.041569,
       "narrationText": "ステップ1です。利用可能なテンプレートを確認します。Rediacc には Postgres、Redis、Webサーバーなど、よく使われるアプリの既成セットアップが用意されているので、docker-compose をゼロから書く必要はありません。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-01.53520a91.mp3",
-      "audioDurationSec": 16.195918,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.72,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 0.96,
-          "startChar": 4,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.36,
-          "startChar": 5,
-          "endChar": 7
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.16,
-          "startChar": 8,
-          "endChar": 10
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.4,
-          "startChar": 10,
-          "endChar": 12
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.56,
-          "startChar": 12,
-          "endChar": 13
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.2,
-          "startChar": 13,
-          "endChar": 19
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.28,
-          "startChar": 19,
-          "endChar": 20
-        },
-        {
-          "startSec": 3.28,
-          "endSec": 3.68,
-          "startChar": 20,
-          "endChar": 22
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 3.84,
-          "startChar": 22,
-          "endChar": 23
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.08,
-          "startChar": 23,
-          "endChar": 25
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.6,
-          "startChar": 35,
-          "endChar": 36
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.4,
-          "startChar": 37,
-          "endChar": 41
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.84,
-          "startChar": 46,
-          "endChar": 51
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.24,
-          "startChar": 52,
-          "endChar": 55
-        },
-        {
-          "startSec": 8.24,
-          "endSec": 8.64,
-          "startChar": 55,
-          "endChar": 59
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 8.96,
-          "startChar": 59,
-          "endChar": 61
-        },
-        {
-          "startSec": 9.28,
-          "endSec": 9.6,
-          "startChar": 62,
-          "endChar": 64
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 9.92,
-          "startChar": 64,
-          "endChar": 66
-        },
-        {
-          "startSec": 9.92,
-          "endSec": 10.08,
-          "startChar": 66,
-          "endChar": 68
-        },
-        {
-          "startSec": 10.08,
-          "endSec": 10.4,
-          "startChar": 68,
-          "endChar": 71
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.56,
-          "startChar": 71,
-          "endChar": 72
-        },
-        {
-          "startSec": 10.96,
-          "endSec": 11.52,
-          "startChar": 74,
-          "endChar": 80
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 11.68,
-          "startChar": 80,
-          "endChar": 81
-        },
-        {
-          "startSec": 11.68,
-          "endSec": 11.92,
-          "startChar": 81,
-          "endChar": 83
-        },
-        {
-          "startSec": 11.92,
-          "endSec": 12.08,
-          "startChar": 83,
-          "endChar": 84
-        },
-        {
-          "startSec": 12.08,
-          "endSec": 12.16,
-          "startChar": 84,
-          "endChar": 85
-        },
-        {
-          "startSec": 12.16,
-          "endSec": 12.24,
-          "startChar": 85,
-          "endChar": 86
-        },
-        {
-          "startSec": 12.24,
-          "endSec": 12.4,
-          "startChar": 86,
-          "endChar": 88
-        },
-        {
-          "startSec": 12.4,
-          "endSec": 12.48,
-          "startChar": 88,
-          "endChar": 89
-        },
-        {
-          "startSec": 12.48,
-          "endSec": 12.72,
-          "startChar": 89,
-          "endChar": 90
-        },
-        {
-          "startSec": 13.12,
-          "endSec": 13.52,
-          "startChar": 91,
-          "endChar": 97
-        },
-        {
-          "startSec": 13.52,
-          "endSec": 14.0,
-          "startChar": 98,
-          "endChar": 105
-        },
-        {
-          "startSec": 14.08,
-          "endSec": 14.24,
-          "startChar": 106,
-          "endChar": 107
-        },
-        {
-          "startSec": 14.24,
-          "endSec": 14.56,
-          "startChar": 107,
-          "endChar": 109
-        },
-        {
-          "startSec": 14.56,
-          "endSec": 14.72,
-          "startChar": 109,
-          "endChar": 111
-        },
-        {
-          "startSec": 14.72,
-          "endSec": 15.04,
-          "startChar": 111,
-          "endChar": 113
-        },
-        {
-          "startSec": 15.04,
-          "endSec": 15.44,
-          "startChar": 113,
-          "endChar": 115
-        },
-        {
-          "startSec": 15.44,
-          "endSec": 15.52,
-          "startChar": 115,
-          "endChar": 116
-        },
-        {
-          "startSec": 15.52,
-          "endSec": 15.68,
-          "startChar": 116,
-          "endChar": 118
-        },
-        {
-          "startSec": 15.68,
-          "endSec": 16.0,
-          "startChar": 118,
-          "endChar": 120
-        },
-        {
-          "startSec": 16.0,
-          "endSec": 16.16,
-          "startChar": 120,
-          "endChar": 121
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-01.aca2e9ea.mp3",
+      "textHash": "aca2e9ea4be45bf12fb260e294dcf15a9a9b58e6ad3ac1702bf190f16d7395d4",
+      "audioDurationSec": 14.759184,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-01-after.373e8248.mp3",
+      "afterAudioDurationSec": 7.157551,
+      "afterTextHash": "373e8248542d58f29ddf41d949a9ea4ceabf6af893604265d34797695d7a5072"
     },
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 61.85842,
-      "replayEndSec": 79.070004,
+      "replayStartSec": 6.041569,
+      "replayEndSec": 13.566247,
       "narrationText": "ステップ2です。app-postgres テンプレートをリポジトリに適用します。コンテナを記述する docker-compose.yml と、起動・停止のライフサイクルフックを定義する Rediaccfile の2つのファイルが追加されます。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-02.0fd85434.mp3",
-      "audioDurationSec": 15.882449,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 0.64,
-          "startChar": 4,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 1.04,
-          "startChar": 5,
-          "endChar": 7
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 2.32,
-          "startChar": 8,
-          "endChar": 11
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.72,
-          "startChar": 12,
-          "endChar": 16
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.12,
-          "startChar": 16,
-          "endChar": 20
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.76,
-          "startChar": 23,
-          "endChar": 27
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.0,
-          "startChar": 27,
-          "endChar": 28
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.32,
-          "startChar": 28,
-          "endChar": 31
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.56,
-          "startChar": 31,
-          "endChar": 33
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.72,
-          "startChar": 33,
-          "endChar": 34
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.12,
-          "startChar": 34,
-          "endChar": 36
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.2,
-          "startChar": 36,
-          "endChar": 37
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.52,
-          "startChar": 37,
-          "endChar": 39
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.56,
-          "startChar": 40,
-          "endChar": 44
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 6.64,
-          "startChar": 44,
-          "endChar": 45
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 6.96,
-          "startChar": 45,
-          "endChar": 47
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.28,
-          "startChar": 47,
-          "endChar": 49
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 7.68,
-          "startChar": 50,
-          "endChar": 56
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.32,
-          "startChar": 57,
-          "endChar": 64
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 8.56,
-          "startChar": 109,
-          "endChar": 113
-        },
-        {
-          "startSec": 14.96,
-          "endSec": 15.12,
-          "startChar": 113,
-          "endChar": 114
-        },
-        {
-          "startSec": 15.12,
-          "endSec": 15.44,
-          "startChar": 114,
-          "endChar": 116
-        },
-        {
-          "startSec": 15.44,
-          "endSec": 15.52,
-          "startChar": 116,
-          "endChar": 117
-        },
-        {
-          "startSec": 15.52,
-          "endSec": 15.6,
-          "startChar": 117,
-          "endChar": 118
-        },
-        {
-          "startSec": 15.6,
-          "endSec": 15.84,
-          "startChar": 118,
-          "endChar": 120
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-02.780b12ef.mp3",
+      "textHash": "780b12ef6ae1a36711310bb4d7f4a7bc761f91eb55867e31384475056ca7670d",
+      "audioDurationSec": 16.927347,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-02-after.b1504297.mp3",
+      "afterAudioDurationSec": 6.687347,
+      "afterTextHash": "b1504297cb01e9fb8ef4ee4f565225b756cc45f313098436ce09b150cb45d751"
     },
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 79.070004,
-      "replayEndSec": 123.719014,
+      "replayStartSec": 13.566247,
+      "replayEndSec": 23.282435,
       "narrationText": "ステップ3です。リポジトリを起動します。CLI がコンテナを起動し、暗号化ボリュームをマウントし、分離された Docker デーモンを接続します。アプリが動いています。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-03.6dae61e7.mp3",
-      "audioDurationSec": 12.669388,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.64,
-          "startChar": 4,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 0.88,
-          "startChar": 5,
-          "endChar": 7
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 2.32,
-          "startChar": 8,
-          "endChar": 13
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.4,
-          "startChar": 13,
-          "endChar": 14
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.72,
-          "startChar": 14,
-          "endChar": 16
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 2.8,
-          "startChar": 16,
-          "endChar": 17
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 3.12,
-          "startChar": 17,
-          "endChar": 19
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.32,
-          "startChar": 20,
-          "endChar": 23
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.72,
-          "startChar": 24,
-          "endChar": 25
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.2,
-          "startChar": 25,
-          "endChar": 29
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.28,
-          "startChar": 29,
-          "endChar": 30
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.52,
-          "startChar": 30,
-          "endChar": 32
-        },
-        {
-          "startSec": 5.52,
-          "endSec": 5.84,
-          "startChar": 32,
-          "endChar": 33
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.72,
-          "startChar": 34,
-          "endChar": 36
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 6.88,
-          "startChar": 36,
-          "endChar": 37
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.36,
-          "startChar": 37,
-          "endChar": 42
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.44,
-          "startChar": 42,
-          "endChar": 43
-        },
-        {
-          "startSec": 7.44,
-          "endSec": 7.84,
-          "startChar": 43,
-          "endChar": 47
-        },
-        {
-          "startSec": 7.84,
-          "endSec": 8.16,
-          "startChar": 47,
-          "endChar": 48
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 8.72,
-          "startChar": 49,
-          "endChar": 51
-        },
-        {
-          "startSec": 8.72,
-          "endSec": 8.8,
-          "startChar": 51,
-          "endChar": 52
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 8.88,
-          "startChar": 52,
-          "endChar": 53
-        },
-        {
-          "startSec": 8.88,
-          "endSec": 9.04,
-          "startChar": 53,
-          "endChar": 54
-        },
-        {
-          "startSec": 9.04,
-          "endSec": 9.44,
-          "startChar": 55,
-          "endChar": 61
-        },
-        {
-          "startSec": 9.84,
-          "endSec": 10.32,
-          "startChar": 67,
-          "endChar": 69
-        },
-        {
-          "startSec": 10.32,
-          "endSec": 10.48,
-          "startChar": 69,
-          "endChar": 70
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.72,
-          "startChar": 70,
-          "endChar": 72
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 11.84,
-          "startChar": 73,
-          "endChar": 76
-        },
-        {
-          "startSec": 11.84,
-          "endSec": 11.92,
-          "startChar": 76,
-          "endChar": 77
-        },
-        {
-          "startSec": 11.92,
-          "endSec": 12.16,
-          "startChar": 77,
-          "endChar": 79
-        },
-        {
-          "startSec": 12.16,
-          "endSec": 12.32,
-          "startChar": 79,
-          "endChar": 80
-        },
-        {
-          "startSec": 12.32,
-          "endSec": 12.4,
-          "startChar": 80,
-          "endChar": 81
-        },
-        {
-          "startSec": 12.4,
-          "endSec": 12.64,
-          "startChar": 81,
-          "endChar": 83
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-03.b1acaa74.mp3",
+      "textHash": "b1acaa744e7cc9e18e7ed8f1ee32e99a7af6d7c6ea581cb84b60646c9d1a9427",
+      "audioDurationSec": 12.042449,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-03-after.bb4184f4.mp3",
+      "afterAudioDurationSec": 5.407347,
+      "afterTextHash": "bb4184f4966d59309089c5ad811e798f7d57600cbde481af79627df293a6839f"
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 123.719014,
-      "replayEndSec": 179.687714,
+      "replayStartSec": 23.282435,
+      "replayEndSec": 30.345778,
       "narrationText": "docker ps で確認します。このビューには私たちのリポジトリのコンテナだけが表示されることに注目してください。同じサーバー上の他のリポジトリは専用の Docker デーモンを持っており、ここからは完全に見えません。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-04.176043f3.mp3",
-      "audioDurationSec": 16.039184,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 78,
-          "endChar": 84
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 2.96,
-          "startChar": 103,
-          "endChar": 104
-        },
-        {
-          "startSec": 15.28,
-          "endSec": 15.52,
-          "startChar": 104,
-          "endChar": 106
-        },
-        {
-          "startSec": 15.52,
-          "endSec": 15.84,
-          "startChar": 106,
-          "endChar": 108
-        },
-        {
-          "startSec": 15.84,
-          "endSec": 15.92,
-          "startChar": 108,
-          "endChar": 109
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-04.ea6d7d7e.mp3",
+      "textHash": "ea6d7d7eaa851270095861213fa72693f24d81018f035b996bf9ccc35d5ede01",
+      "audioDurationSec": 16.509388,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-04-after.651b0439.mp3",
+      "afterAudioDurationSec": 6.687347,
+      "afterTextHash": "651b043907a7d06c663953ee02bc2ba35cdb2a3b59d7a66881c875f8f6462bd3"
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "replayStartSec": 30.345778,
+      "replayEndSec": 38.921409,
+      "narrationText": "何が動いているか確認しましょう。ここでのdocker psはこのrepoのコンテナだけを表示します。同じサーバー上の他のrepoはそれぞれ独自のdaemonを持ち、この画面からは完全に見えません。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-05.843bfbc5.mp3",
+      "textHash": "843bfbc51bb1debbc3a0fa433289ac22306f11ea06e9e99c3abed7a8fb5df054",
+      "audioDurationSec": 14.210612,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-05-after.006bbe79.mp3",
+      "afterAudioDurationSec": 5.250612,
+      "afterTextHash": "006bbe79509f6d27c2340b15f216deb55158301d04dd0518f962a4f6f4b9f2f2"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "6efabca1edd08232fa961381f2fa33e7f4aa2abbc508fe9f5acecb008467767e",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/intro.6efabca1.mp3",
+      "narrationText": "実際のアプリをデプロイしていきましょう！空のリポジトリから動作するコンテナまで、3つの短いステップで進めます。",
+      "audioDurationSec": 7.967347
+    },
+    {
+      "id": "pick-apply-run",
+      "textHash": "9fdb550ac4a28484dda442d558b7a509325fd76752473b076cf1f1d881916f5f",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/pick-apply-run.9fdb550a.mp3",
+      "narrationText": "流れはシンプルです。テンプレートを選び、リポジトリに適用し、実行する。CLI には組み込みテンプレートがあるので、docker-compose をゼロから書く必要はありません。",
+      "audioDurationSec": 12.747755
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "c71aa37f1a45d5b8ab1ed03bc8425841ad5a4dc9ebbd964f8711eb2583c46a14",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/next-tutorial.c71aa37f.mp3",
+      "narrationText": "これで最初のデプロイは完了です。次の動画では、リポジトリそのものの扱い方を掘り下げていきます。それではまた！",
+      "audioDurationSec": 8.280816
     }
   ]
 }

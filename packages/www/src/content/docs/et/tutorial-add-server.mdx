@@ -1,0 +1,57 @@
+---
+title: "Esimese serveri lisamine"
+description: "Registreeri oma esimene server rdc-s, valmista see ette ja mõista rdc + renet arhitektuuri."
+category: "Tutorials"
+subcategory: essentials
+order: 3
+language: et
+sourceHash: "09d6cde1ac066c85"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Esimese serveri lisamine
+
+Enne serveri lisamist on kasulik mõista, kuidas `rdc` töötab. Rediaccil on kahe tööriistaga arhitektuur: `rdc` sinu sülearvutis ja `renet` serveris.
+
+## Vaata juhendvideot
+
+![Tutorial: Adding your first server](/assets/tutorials/tutorial-add-server.cast)
+
+## Miks kaks tööriista?
+
+![rdc on laptop, renet on server, SSH between](/img/tutorials/tutorial-add-server/slide-1.svg)
+
+- **`rdc`** on CLI sinu sülearvutis. Siin sisestad käsud.
+- **`renet`** on orkestreerimistööriist serveris. See haldab krüpteerimist, Dockerit ja isolatsiooni.
+
+Kui käivitad käsu kohalikult, ühendub `rdc` üle SSH ja täidab `renet`-i serveris. Sa ei pea kunagi käsitsi serverisse SSH kaudu ühenduma. `rdc` teeb seda sinu eest.
+
+## 1. samm: registreeri server
+
+<TutorialStep number={1} />
+
+`rdc config init` ei ole vajalik. Konfiguratsioonifail luuakse automaatselt esimesel kasutamisel ja `rdc` kasutab tagavaravalikuna sinu standardset `~/.ssh` võtit.
+
+## 2. samm: valmista see ette
+
+<TutorialStep number={2} />
+
+Sinu server on repositooriumite majutamiseks valmis.
+
+## Kus konfiguratsioon asub
+
+CLI salvestab kõik üheainukesse `~/.config/rediacc/rediacc.json` failina lihtsa JSON-vormingus:
+
+<TutorialStep number={3} />
+
+See üksik fail sisaldab sinu masinaid, SSH võtit ja krüpteerimise mandaate. Kopeeri see teisele sülearvutile ja oled sealt kohe töövalmis.
+
+## Mitu konfiguratsiooni
+
+Saad pidada mitut konfiguratsiooni, ühe iga keskkonna kohta (tootmine, lavastus, arendus), ja lülituda nende vahel käskudel `--config` lipuga. Vaata [mitme konfiguratsiooni seadistamist](/et/docs/setup#multiple-configs).
+
+---
+
+Edasi: [Esimese repositooriumi loomine](/et/docs/tutorial-create-repo).

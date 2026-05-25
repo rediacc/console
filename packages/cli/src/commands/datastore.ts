@@ -198,6 +198,24 @@ export function registerDatastoreCommands(program: Command): void {
       }
     });
 
+  // datastore resize (offline grow/shrink of the loop-backed pool)
+  datastore
+    .command('resize')
+    .description(t('commands.datastore.resize.description'))
+    .requiredOption('-m, --machine <name>', t('commands.datastore.machineOption'))
+    .requiredOption('--size <size>', t('commands.datastore.resize.sizeOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (options: DatastoreRunOptions & { size: string }) => {
+      try {
+        outputService.info(
+          t('commands.datastore.resize.starting', { machine: options.machine, size: options.size })
+        );
+        await executeFunction('datastore_resize', { size: options.size }, options);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
   // datastore fork
   datastore
     .command('fork')

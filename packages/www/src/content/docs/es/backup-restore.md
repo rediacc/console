@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "eae6eedb1a1298f2"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "633ed49fd412e0ec"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Respaldo y Restauración
@@ -181,7 +181,7 @@ Un respaldo frio ejecuta tres fases por repositorio incluido: **detener -- snaps
 
 - `rdc machine query --name <machine> --containers` muestra el estado de ejecucion. Compare con el conjunto esperado.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` en la maquina. Inspeccione via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el ultimo respaldo no se completo correctamente.
-- Los registros del respaldo de renet (`journalctl -u renet-*` o la invocacion directa `rdc machine deploy-backup`) emiten una linea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacio es el objetivo de grep.
+- Los registros del respaldo de renet (`journalctl -u renet-*` o la invocacion directa `rdc machine backup schedule`) emiten una linea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacio es el objetivo de grep.
 
 ### Estimación del tiempo de inactividad del respaldo en frío
 

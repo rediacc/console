@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: 9365e0cabf7e8f03
-sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
+sourceHash: "1d227a06272a0050"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Rediacc Kuralları
@@ -151,7 +151,7 @@ Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/e
 - **Depo izolasyonu**: Her deponun Docker daemon'ı, ağı ve depolaması aynı makinedeki diğer depolardan tamamen izole edilmiştir.
 - **Ajan izolasyonu**: Yapay zeka ajanları varsayılan olarak yalnızca fork modunda çalışır. Her deponun, sunucu tarafında sandbox uygulaması (ForceCommand `sandbox-gateway`) olan kendi SSH anahtarı vardır. Tüm bağlantılar Landlock LSM, OverlayFS home overlay ve depo başına TMPDIR ile sandbox içine alınır. Depolar arası dosya sistemi erişimi çekirdek tarafından engellenir.
 - **Bir depo sandbox'ı içinde `sudo` tasarım gereği devre dışıdır.** Landlock dosya sistemi izolasyonu `NoNewPrivs` gerektirir ve bu, herhangi bir yetki yükseltmesini engeller, bu nedenle `sudo` komutu `no new privileges flag is set` hatasıyla başarısız olur. Deponun sahip kullanıcısı, deponun bağlama noktası ve Docker soketi içindeki her şey için zaten gerekli izinlere sahiptir. Gerçekten ayrıcalıklı işlemler (host paketleri yükleme, çekirdek ayarlama) için bunları sandbox dışında ya da altyapı yolu tarafından çalıştırılan bir Rediaccfile `up()` fonksiyonundan çalıştırın.
-- **Docker bridge ağı her depo başına daemonda devre dışıdır.** Her deponun `daemon.json` dosyası `"bridge": "none"` ve `"iptables": false` içerir, bu nedenle düz bir `docker run <image>` komutu yalnızca loopback arayüzü olan ve dışa doğru bağlantısı olmayan bir konteyner oluşturur. Bu bir hata değil, depolar arası izolasyonun uygulanma biçimidir: bir deponun başka bir deponun loopback IP'lerine ulaşmasını engelleyen çekirdek düzeyindeki eBPF kancaları yalnızca host ağ ad alanında yaşayan konteynerlere uygulanır. Üretim servisleri için otomatik olarak `network_mode: host` enjekte eden `renet compose` kullanın. Bir kabukta tek seferlik, geçici konteynerler için `--network host` parametresini açıkça geçin.
+- **Docker bridge ağı depo başına daemonlarda devre dışıdır.** Her deponun `daemon.json` (`FlavorRediacc`) dosyası `"bridge": "none"` ve `"iptables": false` içerir, bu nedenle düz bir `docker run <image>` komutu yalnızca loopback arayüzü olan ve dışa doğru bağlantısı olmayan bir konteyner oluşturur. Bu bir hata değil, depolar arası izolasyonun uygulanma biçimidir: bir deponun başka bir deponun loopback IP'lerine ulaşmasını engelleyen çekirdek düzeyindeki eBPF kancaları yalnızca host ağ ad alanında yaşayan konteynerlere uygulanır. Üretim servisleri için otomatik olarak `network_mode: host` enjekte eden `renet compose` kullanın. Bir kabukta tek seferlik, geçici konteynerler için `--network host` parametresini açıkça geçin. (Kullanıcı başına Hub daemonları (`FlavorHub`, geliştirme ortamları) istisnadır: `bridge="docker0"` ve `iptables=true` etkinleştirerek kullanıcı tarafından çalıştırılan konteynerlerin normal dışa bağlantı almasını sağlar.)
 
 ## Dağıtım
 

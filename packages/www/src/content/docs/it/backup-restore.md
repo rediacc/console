@@ -4,7 +4,8 @@ description: "Esegui il backup dei repository cifrati su storage esterni, ripris
 category: "Guides"
 order: 7
 language: it
-sourceHash: "f5222efa9505ab5e"
+sourceHash: "633ed49fd412e0ec"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Backup e Ripristino
@@ -178,7 +179,7 @@ Un backup cold viene eseguito in tre fasi per ogni repository incluso: **stop �
 
 - `rdc machine query --name <machine> --containers` mostra lo stato di esecuzione. Confrontare con il set atteso.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` sulla macchina. Ispezionare tramite `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa che l'ultimo backup non è stato completato in modo pulito.
-- I log dell'esecuzione del backup di renet (`journalctl -u renet-*` o l'invocazione diretta `rdc machine deploy-backup`) emettono una riga di riepilogo finale della forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vuoto è il target di grep.
+- I log dell'esecuzione del backup di renet (`journalctl -u renet-*` o l'invocazione diretta `rdc machine backup schedule`) emettono una riga di riepilogo finale della forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vuoto è il target di grep.
 
 ### Stima del Downtime del Backup Cold
 

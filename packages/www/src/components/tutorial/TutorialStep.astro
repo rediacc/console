@@ -1,0 +1,124 @@
+---
+/**
+ * TutorialStep — renders ONE cast-narrated step of the current tutorial page.
+ *
+ * Command text + label + prose are pulled from the canonical sources
+ * (storyboard.json and the per-language transcript.json) so the .mdx page
+ * cannot drift from the recorded cast.
+ *
+ * Usage:
+ *   <TutorialStep number={1} />
+ *
+ * The author wraps it with their own heading (or none). For a strict
+ * `## Step N: …` rhythm across all steps in order, use <TutorialSteps />
+ * instead.
+ */
+import type { Storyboard, CastNarratedScene } from '../../../scripts/lib/storyboard.ts';
+
+interface TranscriptEvent {
+  markerIndex?: number;
+  text?: string;
+  prose?: string;
+  cardLabel?: string;
+}
+interface TranscriptDoc {
+  events?: TranscriptEvent[];
+}
+
+const storyboards = import.meta.glob<{ default: Storyboard }>(
+  '../../data/tutorial-storyboard/*.json',
+  { eager: true },
+);
+const transcripts = import.meta.glob<{ default: TranscriptDoc }>(
+  '../../data/tutorial-transcripts/*/*.json',
+  { eager: true },
+);
+
+interface Props {
+  number: number;
+  /**
+   * Override the auto-detected tutorial slug. Normally derived from the
+   * URL path `/<lang>/docs/<tutorial>`. Useful if the component is rendered
+   * outside the tutorial route (e.g., a preview gallery).
+   */
+  tutorial?: string;
+  /** Override the auto-detected language. */
+  lang?: string;
+  /** Optional heading text rendered above the step (e.g., "Step 1: Foo"). */
+  heading?: string;
+}
+
+const { number, tutorial: tutorialProp, lang: langProp, heading } = Astro.props;
+
+const pathSegments = Astro.url.pathname.split('/').filter(Boolean);
+const lang = langProp ?? pathSegments[0] ?? 'en';
+const tutorial = tutorialProp ?? pathSegments[pathSegments.length - 1] ?? '';
+
+const sbModule = storyboards[`../../data/tutorial-storyboard/${tutorial}.json`];
+if (!sbModule) {
+  throw new Error(`TutorialStep: storyboard not found for tutorial "${tutorial}"`);
+}
+const storyboard = sbModule.default;
+
+const trModule = transcripts[`../../data/tutorial-transcripts/${lang}/${tutorial}.json`];
+const trEnModule = transcripts[`../../data/tutorial-transcripts/en/${tutorial}.json`];
+const transcript: TranscriptDoc = trModule?.default ?? {};
+const transcriptEn: TranscriptDoc = trEnModule?.default ?? transcript;
+
+const castNarrated = storyboard.scenes.filter(
+  (s): s is CastNarratedScene => s.type === 'cast-narrated',
+);
+const scene = castNarrated[number - 1];
+if (!scene) {
+  throw new Error(
+    `TutorialStep number={${number}} out of range for "${tutorial}" (has ${castNarrated.length} cast-narrated scenes)`,
+  );
+}
+
+function authored(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0 && !value.startsWith('TODO:');
+}
+
+const event = transcript.events?.find((e) => e.markerIndex === scene.markerIndex);
+const eventEn = transcriptEn.events?.find((e) => e.markerIndex === scene.markerIndex);
+
+const cardLabel = authored(event?.cardLabel)
+  ? event.cardLabel
+  : authored(eventEn?.cardLabel)
+    ? eventEn.cardLabel
+    : '';
+// The web page shows the FULL, copy-pasteable command (with `<placeholder>`
+// templates) so readers who don't watch the video can copy it. Fall back to
+// the short `command` (the video's slide-card label) only if no full form is set.
+const command = scene.card?.commandFull ?? scene.card?.command ?? '';
+const prose = authored(event?.prose)
+  ? event.prose
+  : authored(eventEn?.prose)
+    ? eventEn.prose
+    : authored(event?.text)
+      ? event.text
+      : authored(eventEn?.text)
+        ? eventEn.text
+        : '';
+---
+
+<section class="tutorial-step" data-step={number} data-label={cardLabel}>
+  {heading && <h3>{heading}</h3>}
+  {command && (
+    <pre class="tutorial-step-command"><code>{command}</code></pre>
+  )}
+  {prose && <p class="tutorial-step-prose">{prose}</p>}
+</section>
+
+<style>
+  .tutorial-step {
+    margin: 1.5rem 0;
+  }
+  .tutorial-step-command {
+    margin: 0.5rem 0;
+  }
+  .tutorial-step-prose {
+    margin: 0.5rem 0 0;
+    line-height: 1.6;
+  }
+</style>

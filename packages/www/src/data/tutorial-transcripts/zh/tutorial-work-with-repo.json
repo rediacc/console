@@ -6,26 +6,67 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 93.14728,
-      "text": "第一个是 tunnel 命令。应用运行在服务器上，而不是你的笔记本上。隧道命令通过 SSH 转发容器端口，让你可以在浏览器中通过 localhost 访问它。"
+      "at": 2.415513,
+      "text": "第一个是 tunnel 命令。应用运行在服务器上，而不是你的笔记本上。隧道命令通过 SSH 转发容器端口，让你可以在浏览器中通过 localhost 访问它。",
+      "afterText": "端口已转发。应用现在可通过 localhost 访问。",
+      "cardLabel": "Tunnel 端口",
+      "prose": "应用运行在服务器上，而非你的笔记本电脑。tunnel 命令通过 SSH 转发 container 端口，让你可以在浏览器中通过 localhost 访问。"
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 103.393386,
-      "text": "第二个是 term 命令。终端连接命令让你进入仓库的沙盒内，视图与 VS Code 中看到的完全一样。无需离开终端，就能针对这个仓库的 Docker 守护进程运行任意命令。"
+      "at": 9.087333,
+      "text": "第二个是 term 命令。终端连接命令让你进入仓库的沙盒内，视图与 VS Code 中看到的完全一样。无需离开终端，就能针对这个仓库的 Docker 守护进程运行任意命令。",
+      "afterText": "已进入 repo 沙盒。可以像 SSH 登录一样运行任何命令。",
+      "cardLabel": "Sandbox 中的 Term",
+      "prose": "term connect 命令将你带入 repo 的 sandbox，与 VS Code 中看到的隔离视图相同。无需离开 terminal，即可对该 repo 的 Docker daemon 执行任意命令。"
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 120.858492,
-      "text": "推送文件之前，先用 --dry-run 预览。它会显示将要变更的内容，而不实际复制任何东西。不确定时总是先预览。"
+      "at": 15.893309,
+      "text": "推送文件之前，先用 --dry-run 预览。它会显示将要变更的内容，而不实际复制任何东西。不确定时总是先预览。",
+      "afterText": "仅预览。尚未移动任何文件。",
+      "cardLabel": "Sync 预览",
+      "prose": "移动文件前，先使用 --dry-run 运行 sync。它会精确显示哪些内容将会变更，而不实际复制任何文件。每当来源或目标不确定时，都应先预览。"
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 137.357072,
-      "text": "现在让我们正式执行上传。同步上传命令通过 SSH 将文件从笔记本移入仓库，使用 rsync 差量压缩。Tunnel、term、sync，三条命令覆盖日常循环。"
+      "at": 22.144638,
+      "text": "现在让我们正式执行上传。同步上传命令通过 SSH 将文件从笔记本移入仓库，使用 rsync 差量压缩。Tunnel、term、sync，三条命令覆盖日常循环。",
+      "afterText": "文件已上传。差量压缩可以从容处理大目录。",
+      "cardLabel": "Sync 上传",
+      "prose": "sync upload 命令通过 SSH 使用 rsync 增量压缩，将文件从你的笔记本电脑传输到 repo 中。tunnel、term 和 sync 三者共同覆盖了日常工作循环。"
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "好！你的应用已经在运行，那就让我们真正开始使用它。三条命令覆盖日常循环。"
+    },
+    {
+      "id": "daily-three",
+      "text": "tunnel 在浏览器中打开你的应用，term 在沙盒内运行命令，sync 在两端之间搬运文件。这就是日常的完整工作流。"
+    },
+    {
+      "id": "open-tunnel",
+      "text": "隧道运行时，应用会直接在您的浏览器中打开。在本演示中，我们加载 rediacc.com，就像访问从容器直接提供服务的自有应用一样。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "日常三件套就这样。下个教程见！"
+    }
+  ],
+  "title": "使用你的 Repo",
+  "chapters": {
+    "intro": "使用你的 Repo",
+    "daily-three": "每日三件套：tunnel、term、sync",
+    "cast-step-0": "Tunnel：转发 container 端口",
+    "open-tunnel": "在浏览器中打开应用",
+    "cast-step-1": "Term：在 sandbox 内执行命令",
+    "cast-step-2": "Sync：使用 --dry-run 预览",
+    "cast-step-3": "Sync：正式上传",
+    "outro": "下一步：Fork 一个 Repository"
+  }
 }

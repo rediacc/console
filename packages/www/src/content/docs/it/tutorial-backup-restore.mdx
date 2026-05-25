@@ -1,0 +1,84 @@
+---
+title: "Backup e Ripristino"
+description: "Invia il tuo repository a uno storage esterno e ripristinalo su un nuovo server quando è necessario."
+category: "Tutorials"
+subcategory: advanced
+order: 11
+language: it
+sourceHash: "d9d8ffef900b509d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Backup e Ripristino
+
+La tua app è in produzione. Ora assicurati di non perderla mai. `rdc` può inviare l'intero repository (app, database, file e configurazioni) a uno storage esterno e recuperarlo in qualsiasi momento. Sopravvivi a ransomware, guasti hardware, qualsiasi cosa.
+
+## Guarda il tutorial
+
+![Tutorial: Backup e ripristino](/assets/tutorials/tutorial-backup-restore.cast)
+
+## Tre passi
+
+![Configura, invia, ripristina](/img/tutorials/tutorial-backup-restore/slide-1.svg)
+
+1. **Configura** un provider di storage.
+2. **Invia** un backup.
+3. **Ripristina** quando ne hai bisogno.
+
+## Passo 1: Configura lo storage
+
+Hai bisogno di un file di configurazione `rclone`. Se già usi rclone, importalo direttamente:
+
+<TutorialStep number={1} />
+
+Questo supporta S3, B2, Google Drive, Dropbox e molti altri. Verifica cosa è configurato:
+
+<TutorialStep number={2} />
+
+## Passo 2: Invia un backup
+
+<TutorialStep number={3} />
+
+L'intero repository (app, database, file e tutto il resto) è ora nel backup. Poiché il repository è cifrato, anche il backup è cifrato. Nessuna gestione aggiuntiva delle chiavi.
+
+Elenca i tuoi backup in qualsiasi momento:
+
+<TutorialStep number={4} />
+
+## Perché nessun downtime?
+
+L'app continua a funzionare mentre il backup viene caricato. Come può essere coerente?
+
+Stessa logica di un [fork](/it/docs/tutorial-forking). `rdc` fa prima il fork, poi carica il fork. Il fork cattura il momento; la tua app live continua a funzionare. Nessun downtime, nessuna incoerenza.
+
+## Passo 3: Ripristina su un nuovo server
+
+Supponiamo che il tuo server si guasti. Configura un nuovo server, aggiungilo a `rdc` e scarica:
+
+```bash
+rdc repo pull --name my-app -m new-server --from my-storage
+```
+
+Poi avvialo:
+
+```bash
+rdc repo up --name my-app -m new-server
+```
+
+La tua app è tornata. Stessi dati, stessi container, macchina diversa.
+
+## Backup più veloci: da macchina a macchina
+
+Puoi anche inviare direttamente tra macchine, senza storage cloud nel mezzo:
+
+```bash
+rdc repo push --name my-app -m my-server --to-machine backup-server
+```
+
+> **Consiglio professionale.** I caricamenti su storage inviano sempre tutto. Da macchina a macchina viene inviata solo la differenza. Il primo invio da macchina a macchina richiede il tempo normale, ma ogni invio successivo è molto più veloce. Ottimo per i backup frequenti.
+
+---
+
+Successivo: [Monitoraggio](/it/docs/tutorial-monitoring).

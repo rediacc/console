@@ -7,585 +7,89 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "ca6ba140ae74af47d75b87be59893c581a6a6d1d87b9f50b611907ed21cc2943",
+  "transcriptHash": "743ce173909ba1257fd37e4ed65914285f3ab2b22dac30bcfae763d5c2080e7b",
   "steps": [
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 93.14728,
-      "replayEndSec": 103.393386,
+      "replayStartSec": 2.415513,
+      "replayEndSec": 9.087333,
       "narrationText": "Primeiro, o comando tunnel. A aplicação corre no servidor, não no portátil. O comando tunnel reencaminha uma porta de um contentor por SSH para que possa aceder a partir do localhost no browser.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-01.38604a4c.mp3",
-      "audioDurationSec": 17.632653,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.64,
-          "startChar": 0,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.04,
-          "startChar": 10,
-          "endChar": 11
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.68,
-          "startChar": 12,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 2.16,
-          "startChar": 20,
-          "endChar": 26
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 3.2,
-          "startChar": 28,
-          "endChar": 29
-        },
-        {
-          "startSec": 3.28,
-          "endSec": 4.4,
-          "startChar": 30,
-          "endChar": 39
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 5.04,
-          "startChar": 40,
-          "endChar": 45
-        },
-        {
-          "startSec": 5.04,
-          "endSec": 5.2,
-          "startChar": 46,
-          "endChar": 48
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.84,
-          "startChar": 49,
-          "endChar": 57
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.88,
-          "startChar": 59,
-          "endChar": 62
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 6.96,
-          "startChar": 63,
-          "endChar": 65
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.6,
-          "startChar": 66,
-          "endChar": 74
-        },
-        {
-          "startSec": 8.24,
-          "endSec": 8.4,
-          "startChar": 76,
-          "endChar": 77
-        },
-        {
-          "startSec": 8.4,
-          "endSec": 8.8,
-          "startChar": 78,
-          "endChar": 85
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 9.28,
-          "startChar": 86,
-          "endChar": 92
-        },
-        {
-          "startSec": 9.44,
-          "endSec": 10.08,
-          "startChar": 93,
-          "endChar": 104
-        },
-        {
-          "startSec": 10.08,
-          "endSec": 10.24,
-          "startChar": 105,
-          "endChar": 108
-        },
-        {
-          "startSec": 10.24,
-          "endSec": 10.72,
-          "startChar": 109,
-          "endChar": 114
-        },
-        {
-          "startSec": 10.72,
-          "endSec": 10.96,
-          "startChar": 115,
-          "endChar": 117
-        },
-        {
-          "startSec": 10.96,
-          "endSec": 11.04,
-          "startChar": 118,
-          "endChar": 120
-        },
-        {
-          "startSec": 11.04,
-          "endSec": 11.68,
-          "startChar": 121,
-          "endChar": 130
-        },
-        {
-          "startSec": 12.32,
-          "endSec": 12.48,
-          "startChar": 131,
-          "endChar": 134
-        },
-        {
-          "startSec": 13.36,
-          "endSec": 13.6,
-          "startChar": 139,
-          "endChar": 143
-        },
-        {
-          "startSec": 13.6,
-          "endSec": 13.76,
-          "startChar": 144,
-          "endChar": 147
-        },
-        {
-          "startSec": 13.76,
-          "endSec": 14.08,
-          "startChar": 148,
-          "endChar": 153
-        },
-        {
-          "startSec": 14.4,
-          "endSec": 14.64,
-          "startChar": 154,
-          "endChar": 155
-        },
-        {
-          "startSec": 15.12,
-          "endSec": 15.6,
-          "startChar": 163,
-          "endChar": 169
-        },
-        {
-          "startSec": 15.6,
-          "endSec": 16.0,
-          "startChar": 170,
-          "endChar": 172
-        },
-        {
-          "startSec": 16.0,
-          "endSec": 16.88,
-          "startChar": 173,
-          "endChar": 182
-        },
-        {
-          "startSec": 16.88,
-          "endSec": 17.04,
-          "startChar": 183,
-          "endChar": 185
-        },
-        {
-          "startSec": 17.04,
-          "endSec": 17.52,
-          "startChar": 186,
-          "endChar": 193
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-01.84b4a2c6.mp3",
+      "textHash": "84b4a2c66da2262867b6d51073ab753a419d3c8c50ca29ebaa4fdf0e11a9ab7b",
+      "audioDurationSec": 15.882449,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-01-after.1f291760.mp3",
+      "afterAudioDurationSec": 5.485714,
+      "afterTextHash": "1f2917600dc8404efc6843d3a068d53c6de313ce50943867ef70401d5a7f7f52"
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 103.393386,
-      "replayEndSec": 120.858492,
+      "replayStartSec": 9.087333,
+      "replayEndSec": 15.893309,
       "narrationText": "Segundo, o comando term. O comando de ligação ao terminal coloca-nos dentro da sandbox do repositório, a mesma vista isolada que o VS Code oferece. Podemos executar qualquer comando contra o daemon Docker deste repositório sem sair do terminal.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-02.eca0ebf9.mp3",
-      "audioDurationSec": 17.084082,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.64,
-          "startChar": 0,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 0.88,
-          "startChar": 9,
-          "endChar": 10
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 1.28,
-          "startChar": 11,
-          "endChar": 18
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 1.68,
-          "startChar": 19,
-          "endChar": 23
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.24,
-          "startChar": 28,
-          "endChar": 29
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.8,
-          "startChar": 174,
-          "endChar": 181
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 2.96,
-          "startChar": 205,
-          "endChar": 207
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.24,
-          "startChar": 235,
-          "endChar": 243
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-02.60c43dcb.mp3",
+      "textHash": "60c43dcb8ea1a5d9b1f7b5db1eed0a83602c09ed02919e02f87ccdf943cb29a9",
+      "audioDurationSec": 17.71102,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-02-after.de0d747e.mp3",
+      "afterAudioDurationSec": 7.157551,
+      "afterTextHash": "de0d747ea549e49aaec95bfacc41ef297a36c86fb7cea587e2e3fb82434cde92"
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 120.858492,
-      "replayEndSec": 137.357072,
+      "replayStartSec": 15.893309,
+      "replayEndSec": 22.144638,
       "narrationText": "Agora vamos mover ficheiros. Primeiro uma pré-visualização com --dry-run. Mostra exatamente o que seria alterado sem copiar nada. Convém sempre pré-visualizar quando não temos a certeza.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-03.4c02bfea.mp3",
-      "audioDurationSec": 14.759184,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.88,
-          "startChar": 6,
-          "endChar": 11
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 1.28,
-          "startChar": 12,
-          "endChar": 17
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 2.08,
-          "startChar": 18,
-          "endChar": 27
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.72,
-          "startChar": 29,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.12,
-          "startChar": 38,
-          "endChar": 41
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 5.04,
-          "startChar": 59,
-          "endChar": 62
-        },
-        {
-          "startSec": 5.04,
-          "endSec": 5.36,
-          "startChar": 65,
-          "endChar": 68
-        },
-        {
-          "startSec": 5.36,
-          "endSec": 5.76,
-          "startChar": 69,
-          "endChar": 72
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.72,
-          "startChar": 74,
-          "endChar": 80
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.68,
-          "startChar": 81,
-          "endChar": 91
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 7.84,
-          "startChar": 94,
-          "endChar": 97
-        },
-        {
-          "startSec": 7.84,
-          "endSec": 8.4,
-          "startChar": 98,
-          "endChar": 103
-        },
-        {
-          "startSec": 8.4,
-          "endSec": 9.12,
-          "startChar": 104,
-          "endChar": 112
-        },
-        {
-          "startSec": 9.2,
-          "endSec": 9.44,
-          "startChar": 113,
-          "endChar": 116
-        },
-        {
-          "startSec": 9.44,
-          "endSec": 9.92,
-          "startChar": 117,
-          "endChar": 123
-        },
-        {
-          "startSec": 9.92,
-          "endSec": 10.32,
-          "startChar": 124,
-          "endChar": 128
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 11.84,
-          "startChar": 137,
-          "endChar": 143
-        },
-        {
-          "startSec": 12.8,
-          "endSec": 13.2,
-          "startChar": 159,
-          "endChar": 165
-        },
-        {
-          "startSec": 13.2,
-          "endSec": 13.44,
-          "startChar": 166,
-          "endChar": 169
-        },
-        {
-          "startSec": 13.44,
-          "endSec": 13.84,
-          "startChar": 170,
-          "endChar": 175
-        },
-        {
-          "startSec": 13.84,
-          "endSec": 14.08,
-          "startChar": 176,
-          "endChar": 177
-        },
-        {
-          "startSec": 14.08,
-          "endSec": 14.64,
-          "startChar": 178,
-          "endChar": 185
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-03.561393e0.mp3",
+      "textHash": "561393e0a05cef8fc7fa368324a2cd36f6915db2c3b1c779e5026ce8137deffc",
+      "audioDurationSec": 13.087347,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-03-after.f22867ba.mp3",
+      "afterAudioDurationSec": 3.709388,
+      "afterTextHash": "f22867ba005a39a5305a7f271cdb568362fce6c8c3a3078863910e7f3b829960"
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "replayStartSec": 137.357072,
-      "replayEndSec": 192.201374,
+      "replayStartSec": 22.144638,
+      "replayEndSec": 30.993341,
       "narrationText": "E agora o envio real. O comando de sincronização transfere ficheiros do portátil para o repositório por SSH, com compressão delta rsync. Tunnel, term, sync -- três comandos que cobrem o ciclo diário.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-04.2d21a2a9.mp3",
-      "audioDurationSec": 16.587755,
-      "wordTimings": [
-        {
-          "startSec": 0.96,
-          "endSec": 1.36,
-          "startChar": 10,
-          "endChar": 15
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 1.84,
-          "startChar": 16,
-          "endChar": 20
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.4,
-          "startChar": 22,
-          "endChar": 23
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.8,
-          "startChar": 24,
-          "endChar": 31
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 2.96,
-          "startChar": 32,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.96,
-          "endSec": 3.92,
-          "startChar": 35,
-          "endChar": 48
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.56,
-          "startChar": 49,
-          "endChar": 58
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 5.2,
-          "startChar": 59,
-          "endChar": 68
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.28,
-          "startChar": 69,
-          "endChar": 71
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 6.0,
-          "startChar": 72,
-          "endChar": 80
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.4,
-          "startChar": 81,
-          "endChar": 85
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 7.28,
-          "startChar": 88,
-          "endChar": 99
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 7.6,
-          "startChar": 100,
-          "endChar": 103
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.4,
-          "startChar": 104,
-          "endChar": 107
-        },
-        {
-          "startSec": 8.96,
-          "endSec": 9.28,
-          "startChar": 109,
-          "endChar": 112
-        },
-        {
-          "startSec": 9.28,
-          "endSec": 10.16,
-          "startChar": 113,
-          "endChar": 123
-        },
-        {
-          "startSec": 10.16,
-          "endSec": 10.72,
-          "startChar": 124,
-          "endChar": 129
-        },
-        {
-          "startSec": 11.12,
-          "endSec": 11.52,
-          "startChar": 131,
-          "endChar": 135
-        },
-        {
-          "startSec": 12.24,
-          "endSec": 12.64,
-          "startChar": 137,
-          "endChar": 143
-        },
-        {
-          "startSec": 12.72,
-          "endSec": 13.12,
-          "startChar": 145,
-          "endChar": 149
-        },
-        {
-          "startSec": 13.12,
-          "endSec": 13.6,
-          "startChar": 151,
-          "endChar": 155
-        },
-        {
-          "startSec": 14.0,
-          "endSec": 14.24,
-          "startChar": 159,
-          "endChar": 163
-        },
-        {
-          "startSec": 14.24,
-          "endSec": 14.8,
-          "startChar": 164,
-          "endChar": 172
-        },
-        {
-          "startSec": 14.8,
-          "endSec": 14.96,
-          "startChar": 173,
-          "endChar": 176
-        },
-        {
-          "startSec": 14.96,
-          "endSec": 15.52,
-          "startChar": 177,
-          "endChar": 183
-        },
-        {
-          "startSec": 15.52,
-          "endSec": 16.0,
-          "startChar": 186,
-          "endChar": 191
-        },
-        {
-          "startSec": 16.0,
-          "endSec": 16.48,
-          "startChar": 192,
-          "endChar": 198
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-04.a7a6e187.mp3",
+      "textHash": "a7a6e1878e0b751dc48031ca95d733d71885b4b0a51dbecf64cde0c5bd7c0610",
+      "audioDurationSec": 17.554286,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/tutorial-work-with-repo-04-after.0b341b93.mp3",
+      "afterAudioDurationSec": 4.519184,
+      "afterTextHash": "0b341b936165520ae9557fb02c0502b11e2d4e6545f40a209b1c9f63c6eb2b41"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "a641967c81b900f10e77568d14da60bfcd8efe12c00491fb5fb6051381fa834a",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/intro.a641967c.mp3",
+      "narrationText": "Tudo certo! A sua aplicação está a correr, vamos pô-la a trabalhar. Três comandos cobrem o ciclo diário.",
+      "audioDurationSec": 7.314286
+    },
+    {
+      "id": "daily-three",
+      "textHash": "14daf01c2a45c4281bf470e39bda880bd666dfe46df3b2b5c015ca98d37e235b",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/daily-three.14daf01c.mp3",
+      "narrationText": "O tunnel abre a sua aplicação no browser, o term corre comandos dentro da sandbox e o sync move ficheiros para dentro e para fora. É todo o fluxo diário.",
+      "audioDurationSec": 10.762449
+    },
+    {
+      "id": "open-tunnel",
+      "textHash": "f9531c1ecc07cbb3f9db171da90e501780d09d52c5037e7fc0188c8a4ba1c7f4",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/open-tunnel.f9531c1e.mp3",
+      "narrationText": "Com o túnel a correr, a aplicação abre diretamente no seu browser. Nesta demonstração carregamos rediacc.com, da mesma forma que acederia à sua própria aplicação servida diretamente a partir do container.",
+      "audioDurationSec": 16.274286
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "6c1df668c165a3cc9a20aa224bd2b3d900778e0a97d47ae454e1e9fdc3f19e03",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-work-with-repo/next-tutorial.6c1df668.mp3",
+      "narrationText": "E é assim o trio diário. Até ao próximo!",
+      "audioDurationSec": 3.63102
     }
   ]
 }

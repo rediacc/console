@@ -6,8 +6,8 @@
     .ray { stroke: #f4c850; stroke-width: 4; stroke-linecap: round; }
     .mirror { fill: #ffffff; stroke: #556b2f; stroke-width: 2.5; rx: 6; ry: 6; }
     .mirror-mark { stroke: #556b2f; stroke-width: 2; stroke-linecap: round; fill: none; }
-    .label { fill: #1a1a1a; font: 600 18px Inter, system-ui, sans-serif; text-anchor: middle; }
-    .closer { fill: #556b2f; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .label { fill: #1a1a1a; font-weight: 600; font-size: 18px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .closer { fill: #556b2f; font-weight: 600; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
   </style>
   <rect class="bg" width="960" height="540"/>
 

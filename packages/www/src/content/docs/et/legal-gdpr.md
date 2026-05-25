@@ -4,6 +4,8 @@ description: "Kuidas Rediacc'i ise majutatud arhitektuur vastab GDPR-i nõuetele
 category: "Legal"
 order: 1
 language: et
+sourceHash: "36a776d87c6294ff"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Isikuandmete kaitse üldmäärus (GDPR) on Euroopa Liidu andmekaitseõigus, mis jõustus 2018. aasta mais. See reguleerib, kuidas organisatsioonid koguvad, töötlevad ja salvestavad EL-i üksikisikute isikuandmeid.
@@ -17,7 +19,7 @@ Alljärgnev tabel kaardistab konkreetsed GDPR-i artiklid Rediacc'i tehniliste v�
 | Artikkel | Nõue | Rediacc'i võimekus |
 |---------|-------------|-------------------|
 | [Art. 5](https://gdpr-info.eu/art-5-gdpr/), Põhimõtted | Andmete minimeerimine, terviklus, konfidentsiaalsus | CoW-kloonid (`cp --reflink=always`) dubleerivad andmeid samal masinal ilma võrguülekandeta. LUKS2 AES-256 krüptib kõik puhkeolekus andmed. |
-| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Õigus andmete kustutamisele | Kustutada isikuandmed taotluse alusel | `rdc repo destroy` kustutab LUKS-mahu krüptograafiliselt. Hargi kustutamine eemaldab kloonitud koopia täielikult. |
+| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Õigus andmete kustutamisele | Kustutada isikuandmed taotluse alusel | `rdc repo delete` kustutab LUKS-mahu krüptograafiliselt. Hargi kustutamine eemaldab kloonitud koopia täielikult. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Lõimitud andmekaitse | Privaatsus vaikimisi | Krüptimine on kohustuslik, mitte vabatahtlik. Iga hoidla saab eraldatud Docker-deemoni ja võrgu. Hoidlate vahel andmeid ei jagata. Konfiguratsioonihoidla kasutab null-teadmise krüptimist: konfiguratsioonid krüptitakse kliendi poolel AES-256-GCM-iga enne üleslaadimist, seega server ei saa ühtegi avateksti lugeda. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Volitatud töötleja | Kolmanda osapoole andmetöötluse kohustused | Ise majutatud: Rediacc töötab teie infrastruktuuril. Andmed ei lahku teie masinast hargi, klooni ega varukoopia operatsioonide ajal. Ükski SaaS-komponent ei töötle isikuandmeid. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Töötlemistegevuste register | Pidada töötlemistegevuste arvestust | Auditlogi jälgib üle 70 sündmusetüübi: autentimine, API-žetoonid, konfiguratsioonihoidla toimingud, litsentsid ja CLI-masina toimingud (hoidla elutsükkel, varukoopia, sünkroonimine, terminal). Eksport haldusarmatuurlaua, portaali tegevuslehe või `rdc audit` CLI kaudu. |
@@ -28,7 +30,7 @@ Alljärgnev tabel kaardistab konkreetsed GDPR-i artiklid Rediacc'i tehniliste v�
 
 CoW-kloonid ei lahku kunagi lähtemasinast. Käsk `rdc repo fork` loob failisüsteemi tasandi koopia refnkkide abil. Andmeid võrgu kaudu ei edastata.
 
-Masinate vahel toimuvatel toimingutel edastab `rdc repo backup push/pull` andmeid SSH kaudu. Varukoopia sihtkoht saab LUKS-krüptitud mahud, mida ei saa ilma operaatori volitusteta lugeda.
+Masinate vahel toimuvatel toimingutel edastab `rdc repo push/pull` andmeid SSH kaudu. Varukoopia sihtkoht saab LUKS-krüptitud mahud, mida ei saa ilma operaatori volitusteta lugeda.
 
 ## Keskkonna kloonimine ja andmete maskeerimine
 

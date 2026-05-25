@@ -6,38 +6,107 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 108.099445,
-      "text": "让我们 fork 这个仓库。一条命令克隆了一切，应用、数据库、配置文件，只用了几秒，无论仓库有多大都一样。1 GB、100 GB、1 TB，每次时间相同。"
+      "at": 2.41277,
+      "text": "让我们 fork 这个仓库。一条命令克隆了一切，应用、数据库、配置文件，只用了几秒，无论仓库有多大都一样。1 GB、100 GB、1 TB，每次时间相同。",
+      "afterText": "fork 完成。克隆已启动并运行，无论大小如何。",
+      "cardLabel": "Fork Repo",
+      "prose": "一条命令即可克隆整个 repo：应用程序、数据库和配置文件。无论 repo 大小如何，fork 时间恒定，无论是 1 GB、100 GB 还是 1 TB。"
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 142.355671,
-      "text": "现在两个仓库并排运行。相同的机器，相同的磁盘，两个完全独立的环境。fork 有自己的容器、自己的文件系统和自己的 Docker 守护进程。"
+      "at": 13.421721,
+      "text": "现在两个仓库并排运行。相同的机器，相同的磁盘，两个完全独立的环境。fork 有自己的容器、自己的文件系统和自己的 Docker 守护进程。",
+      "afterText": "两个 repo，一个磁盘。相同的数据，其他一切都独立。",
+      "cardLabel": "列出 Repo",
+      "prose": "两个 repo 现在作为两个完全独立的环境共存于同一台机器和磁盘上。"
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 158.262452,
-      "text": "让我们来证明隔离性。在原始仓库中，我们的标记文件还在原来的位置。fork 的存在没有对父仓库造成任何影响。"
+      "at": 18.980206,
+      "text": "让我们来证明隔离性。在原始仓库中，我们的标记文件还在原来的位置。fork 的存在没有对父仓库造成任何影响。",
+      "afterText": "原始文件还在。fork 没有触碰它。",
+      "cardLabel": "原始文件",
+      "prose": "通过检查原始 repo 验证隔离性：标记文件仍在原位。创建 fork 不会修改父级。"
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 176.185047,
-      "text": "现在让我们删除那个文件，但只在 fork 内部删除。在 fork 里它已经消失了，我们做了一个破坏性的操作，它留在了 fork 之内。"
+      "at": 26.216902,
+      "text": "现在让我们删除那个文件，但只在 fork 内部删除。在 fork 里它已经消失了，我们做了一个破坏性的操作，它留在了 fork 之内。",
+      "afterText": "在 fork 中已消失。原始仓库保持不变。",
+      "cardLabel": "在 Fork 中删除",
+      "prose": "仅在 fork 内部删除标记文件。这是一个仅限于 fork 范围的破坏性操作。"
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 195.030667,
-      "text": "回到原始仓库。标记文件还在这里，完好无损。原始仓库从不知道发生了什么。相同的镜像，独立的 Docker 守护进程，独立的文件系统。"
+      "at": 34.456769,
+      "text": "回到原始仓库。标记文件还在这里，完好无损。原始仓库从不知道发生了什么。相同的镜像，独立的 Docker 守护进程，独立的文件系统。",
+      "afterText": "依然在。fork 的隔离是真实的。",
+      "cardLabel": "原始完好",
+      "prose": "切换回原始 repo：标记文件保持完好。父级和 fork 共享相同的镜像，但运行在各自独立的 Docker daemon 和独立的文件系统上。"
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 212.971596,
-      "text": "完成后，直接删除 fork。原始仓库保持原样。Fork、实验、破坏、删除，零风险。"
+      "at": 41.647526,
+      "text": "完成后，直接删除 fork。原始仓库保持原样。Fork、实验、破坏、删除，零风险。",
+      "afterText": "fork 已移除。原始仓库与我们离开时一模一样。",
+      "cardLabel": "清理",
+      "prose": "完成后删除 fork。原始 repo 不受影响，实现安全的 fork、实验和丢弃工作流。"
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "欢迎来到这项杀手级功能！克隆整个生产仓库，无论大小，都不会破坏任何东西。"
+    },
+    {
+      "id": "fan-out",
+      "text": "一个父仓库可以扇出任意数量的独立克隆。每一个 fork 都是它自己独立的环境，与原始仓库并排运行。"
+    },
+    {
+      "id": "link-speed",
+      "text": "想象一下分享一个文件夹链接。无论文件夹是小还是巨大，链接都是同样轻量的东西，fork 的工作原理也是如此。"
+    },
+    {
+      "id": "scale-invariance",
+      "text": "1 GB、100 GB、1 TB：fork 的表现都一样。仓库大小不会影响这一过程。"
+    },
+    {
+      "id": "sun-mirrors",
+      "text": "父仓库就像太阳，你的 fork 是接收阳光的镜子。共享的基础保持不变，而你画在镜子上的一切只属于你自己。"
+    },
+    {
+      "id": "river-photo",
+      "text": "一个 fork 就像在某一瞬间为父仓库拍下的定格照片。父仓库继续如河流般流动，但你的快照保持在拍摄时的样子。"
+    },
+    {
+      "id": "flat-disk",
+      "text": "一个 100 GB 仓库的五个 fork 在磁盘上加起来仍然只占约 100 GB。你只为每个 fork 中实际改变的字节付费。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "fork 故意把密钥留在原地，这正是 “克隆生产环境而不破坏任何东西” 真正安全的原因。我们将在下个教程中正确配置它们！"
+    }
+  ],
+  "title": "Fork 一个 Repository",
+  "chapters": {
+    "intro": "Fork 一个 Repository",
+    "fan-out": "一个父级，多个独立克隆",
+    "link-speed": "共享链接，而非文件夹",
+    "scale-invariance": "任意大小，速度相同",
+    "cast-step-0": "第一步：Fork 该 repo",
+    "cast-step-1": "第二步：两个 repo 并列共存",
+    "cast-step-2": "第三步：原始保持不变",
+    "sun-mirrors": "太阳与镜子",
+    "cast-step-3": "第四步：仅修改 fork",
+    "cast-step-4": "第五步：验证原始仍完好",
+    "cast-step-5": "第六步：删除 fork",
+    "river-photo": "河流的一张照片",
+    "flat-disk": "磁盘用量保持平稳",
+    "outro": "下一步：管理 Secrets"
+  }
 }

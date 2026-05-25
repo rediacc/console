@@ -8,7 +8,7 @@ For full command syntax and options, see [reference.md](reference.md).
 
 **machine query** — Shows infrastructure config (base domain, public IPs, TLS), system info, deployed repos, running containers, and systemd services in one view. Use this to check a machine's base domain, public IPs, or any infrastructure setting.
 
-**machine containers** — Table shows: `name`, `state`, `health`, `domain`, `autoRoute`, `repository`. JSON output includes full `ContainerInfo` with all fields (`labels`, `port_mappings`, `image`, `id`, `state`, `health`, `cpu_percent`, `memory_usage`, etc.) plus enriched fields: `repository` (resolved name), `repository_guid` (original GUID), `domain` (from labels), `autoRoute` (`{service}.{repo}.{machine}.{baseDomain}`).
+**machine query --containers** — Table shows: `name`, `state`, `health`, `domain`, `autoRoute`, `repository`. JSON output includes full `ContainerInfo` with all fields (`labels`, `port_mappings`, `image`, `id`, `state`, `health`, `cpu_percent`, `memory_usage`, etc.) plus enriched fields: `repository` (resolved name), `repository_guid` (original GUID), `domain` (from labels), `autoRoute` (`{service}.{repo}.{machine}.{baseDomain}`).
 
 **machine repos** — Table shows: name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present. JSON output includes `name` (resolved) and `guid` (original GUID), nests each repo's `containers` (with `domain`, `autoRoute`, `repository`/`repository_guid`) and `services` arrays. Use `--search` to filter by name or GUID.
 
@@ -35,7 +35,7 @@ All machine commands support the global `--output` flag (`json` or `table`).
 rdc machine query --name server-1
 
 # Check if containers are running after deploy
-rdc machine containers --name server-1
+rdc machine query --containers --name server-1
 
 # CI/CD health gate
 rdc machine health --name server-1 --output json

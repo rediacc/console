@@ -6,14 +6,52 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.509194,
-      "text": "Zuerst bestätigen wir, dass die CLI im Pfad verfügbar ist. Das Ausführen der CLI mit dem Versions-Flag gibt die installierte Version aus und zeigt, dass die Installation erfolgreich abgeschlossen wurde."
+      "at": 1.626476,
+      "text": "Zuerst bestätigen wir, dass die CLI im Pfad verfügbar ist. Das Ausführen der CLI mit dem Versions-Flag gibt die installierte Version aus und zeigt, dass die Installation erfolgreich abgeschlossen wurde.",
+      "afterText": "Installation fertig. Die rdc-Binary liegt im Pfad.",
+      "cardLabel": "CLI installieren",
+      "prose": "Füge den Installationsbefehl in dein Terminal ein und führe ihn aus. Das Skript prüft deine Plattform, lädt die neueste stabile Binary herunter und legt sie in deinem Home-Verzeichnis ab. Keine systemweite Installation, kein sudo erforderlich. Sobald der Vorgang abgeschlossen ist, liegt die rdc Binary in deinem Pfad und kann aus jeder Shell aufgerufen werden."
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 9.435981,
-      "text": "Jetzt führen wir die CLI doctor aus. Sie prüft alle Abhängigkeiten, die die CLI benötigt, also Node, SSH und den Rest, und meldet eventuelle Lücken. Ein sauberer Bericht bedeutet, dass wir bereit sind, einen Server hinzuzufügen."
+      "at": 7.903516,
+      "text": "Jetzt führen wir die CLI doctor aus. Sie prüft alle Abhängigkeiten, die die CLI benötigt, also Node, SSH und den Rest, und meldet eventuelle Lücken. Ein sauberer Bericht bedeutet, dass wir bereit sind, einen Server hinzuzufügen.",
+      "afterText": "Version ausgegeben. Du bist startklar.",
+      "cardLabel": "Version prüfen",
+      "prose": "Bestätige die Installation, indem du rdc mit dem Versions-Flag ausführst. Es gibt die installierte Version aus und bestätigt, dass die Binary in deinem Pfad vorhanden ist."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alles klar! Lass uns das Kommandozeilen-Tool auf deinem Laptop installieren."
+    },
+    {
+      "id": "three-steps",
+      "text": "Drei Schritte. Öffne die Installationsseite, wähle dein Betriebssystem aus und füge den Befehl in dein Terminal ein."
+    },
+    {
+      "id": "open-install-page",
+      "text": "Geh auf die Installationsseite und scroll runter zum Schnellinstallations-Bereich. Dort wird der passende Einzeiler für jede Plattform erzeugt."
+    },
+    {
+      "id": "laptop-vs-server",
+      "text": "Das Kommandozeilen-Tool lebt auf deinem Laptop. Auf dem Server läuft eine eigene Komponente namens renet, die die CLI über SSH einrichtet und steuert, sodass du dich nie manuell anmelden musst."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Das war die Installation. Als Nächstes richten wir deinen SSH-Schlüssel ein, damit die CLI deine Server erreichen kann."
+    }
+  ],
+  "title": "Installation",
+  "chapters": {
+    "intro": "Installation",
+    "three-steps": "Die drei Schritte",
+    "open-install": "Installationsseite öffnen",
+    "cast-step-0": "Schritt 1: CLI installieren",
+    "cast-step-1": "Schritt 2: Installation prüfen",
+    "laptop-vs-server": "Warum rdc auf deinem Laptop läuft",
+    "outro": "Weiter: SSH-Schlüssel-Konfiguration"
+  }
 }

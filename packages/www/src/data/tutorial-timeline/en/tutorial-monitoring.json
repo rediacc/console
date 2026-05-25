@@ -7,16 +7,17 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "872e6feac628105bbd768a51d15215413f99580d0746a38316a33470aeb300e2",
+  "transcriptHash": "550e6f239da99cc5c7caf0cb7bce877c454bca72aded5f34b32f8cfe8fe44110",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 102.949897,
-      "replayEndSec": 114.069314,
+      "replayStartSec": 2.411841,
+      "replayEndSec": 8.597185,
       "narrationText": "Let us start with the system view. The machine query command with the system filter shows uptime, disk usage, and storage status.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01.2ddf9612.mp3",
-      "audioDurationSec": 7.810612,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01.abea5009.mp3",
+      "textHash": "abea50098c72703c86e5da08b28b0ecb0e662c1ca294947c18a07686cb710065",
+      "audioDurationSec": 8.124082,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -50,24 +51,18 @@
         },
         {
           "startSec": 0.88,
-          "endSec": 1.36,
+          "endSec": 1.28,
           "startChar": 22,
           "endChar": 28
         },
         {
-          "startSec": 1.36,
-          "endSec": 1.68,
+          "startSec": 1.28,
+          "endSec": 1.6,
           "startChar": 29,
           "endChar": 33
         },
         {
-          "startSec": 2.16,
-          "endSec": 2.24,
-          "startChar": 35,
-          "endChar": 38
-        },
-        {
-          "startSec": 2.24,
+          "startSec": 2.08,
           "endSec": 2.56,
           "startChar": 39,
           "endChar": 46
@@ -80,12 +75,12 @@
         },
         {
           "startSec": 2.88,
-          "endSec": 3.36,
+          "endSec": 3.28,
           "startChar": 53,
           "endChar": 60
         },
         {
-          "startSec": 3.36,
+          "startSec": 3.28,
           "endSec": 3.52,
           "startChar": 61,
           "endChar": 65
@@ -121,325 +116,475 @@
           "endChar": 96
         },
         {
-          "startSec": 5.6,
-          "endSec": 5.84,
+          "startSec": 5.84,
+          "endSec": 6.08,
           "startChar": 98,
           "endChar": 102
         },
         {
-          "startSec": 5.84,
-          "endSec": 6.32,
+          "startSec": 6.08,
+          "endSec": 6.56,
           "startChar": 103,
           "endChar": 108
         },
         {
-          "startSec": 6.4,
-          "endSec": 6.72,
+          "startSec": 6.96,
+          "endSec": 7.12,
           "startChar": 110,
           "endChar": 113
         },
         {
-          "startSec": 6.72,
-          "endSec": 7.2,
+          "startSec": 7.12,
+          "endSec": 7.52,
           "startChar": 114,
           "endChar": 121
         },
         {
-          "startSec": 7.2,
-          "endSec": 7.76,
+          "startSec": 7.52,
+          "endSec": 8.0,
           "startChar": 122,
           "endChar": 128
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01-after.196f738d.mp3",
+      "afterAudioDurationSec": 3.866122,
+      "afterTextHash": "196f738dbcb20287d4b7b6affed163e092c438e437466aa6781feb3da0a5c55a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.96,
+          "startChar": 34,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 38,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.2,
+          "startChar": 43,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.28,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.76,
+          "startChar": 48,
+          "endChar": 54
         }
       ]
     },
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 114.069314,
-      "replayEndSec": 126.082986,
+      "replayStartSec": 8.597185,
+      "replayEndSec": 15.126152,
       "narrationText": "Now containers. This view lists every running container across every repository on the machine: name, status, health, CPU, memory, plus which repo owns each one.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02.77c9a908.mp3",
-      "audioDurationSec": 13.087347,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02.fc135b6e.mp3",
+      "textHash": "fc135b6ed9c522d336e24ffb3bc5606ce60e036792956bdab8858a726239d793",
+      "audioDurationSec": 12.042449,
       "wordTimings": [
         {
           "startSec": 0.08,
-          "endSec": 0.48,
+          "endSec": 0.32,
           "startChar": 0,
           "endChar": 3
         },
         {
-          "startSec": 0.56,
-          "endSec": 1.28,
+          "startSec": 0.32,
+          "endSec": 1.04,
           "startChar": 4,
           "endChar": 14
         },
         {
-          "startSec": 1.68,
-          "endSec": 1.84,
+          "startSec": 1.2,
+          "endSec": 1.44,
           "startChar": 16,
           "endChar": 20
         },
         {
-          "startSec": 1.84,
-          "endSec": 2.08,
+          "startSec": 1.44,
+          "endSec": 1.76,
           "startChar": 21,
           "endChar": 25
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.56,
+          "startSec": 1.76,
+          "endSec": 2.16,
           "startChar": 26,
           "endChar": 31
         },
         {
-          "startSec": 2.56,
-          "endSec": 2.96,
+          "startSec": 2.24,
+          "endSec": 2.56,
           "startChar": 32,
           "endChar": 37
         },
         {
-          "startSec": 2.96,
-          "endSec": 3.28,
+          "startSec": 2.56,
+          "endSec": 2.96,
           "startChar": 38,
           "endChar": 45
         },
         {
-          "startSec": 3.28,
-          "endSec": 3.84,
+          "startSec": 2.96,
+          "endSec": 3.52,
           "startChar": 46,
           "endChar": 55
         },
         {
-          "startSec": 3.84,
-          "endSec": 4.24,
+          "startSec": 3.52,
+          "endSec": 3.84,
           "startChar": 56,
           "endChar": 62
         },
         {
-          "startSec": 4.32,
-          "endSec": 4.64,
+          "startSec": 3.92,
+          "endSec": 4.24,
           "startChar": 63,
           "endChar": 68
         },
         {
-          "startSec": 4.64,
-          "endSec": 5.44,
+          "startSec": 4.24,
+          "endSec": 5.04,
           "startChar": 69,
           "endChar": 79
         },
         {
-          "startSec": 5.44,
-          "endSec": 5.52,
+          "startSec": 5.04,
+          "endSec": 5.2,
           "startChar": 80,
           "endChar": 82
         },
         {
-          "startSec": 5.52,
-          "endSec": 5.6,
-          "startChar": 83,
-          "endChar": 86
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 6.08,
+          "startSec": 5.2,
+          "endSec": 5.68,
           "startChar": 87,
           "endChar": 94
         },
         {
-          "startSec": 6.48,
-          "endSec": 6.96,
+          "startSec": 5.92,
+          "endSec": 6.4,
           "startChar": 96,
           "endChar": 100
         },
         {
-          "startSec": 7.12,
-          "endSec": 7.76,
+          "startSec": 6.56,
+          "endSec": 7.28,
           "startChar": 102,
           "endChar": 108
         },
         {
-          "startSec": 8.08,
-          "endSec": 8.4,
+          "startSec": 7.52,
+          "endSec": 7.84,
           "startChar": 110,
           "endChar": 116
         },
         {
-          "startSec": 8.88,
-          "endSec": 9.68,
+          "startSec": 8.08,
+          "endSec": 8.88,
           "startChar": 118,
           "endChar": 121
         },
         {
-          "startSec": 10.0,
-          "endSec": 10.56,
+          "startSec": 9.04,
+          "endSec": 9.6,
           "startChar": 123,
           "endChar": 129
         },
         {
-          "startSec": 11.04,
-          "endSec": 11.44,
+          "startSec": 9.76,
+          "endSec": 10.16,
           "startChar": 131,
           "endChar": 135
         },
         {
-          "startSec": 11.44,
-          "endSec": 11.68,
+          "startSec": 10.24,
+          "endSec": 10.48,
           "startChar": 136,
           "endChar": 141
         },
         {
-          "startSec": 11.68,
-          "endSec": 12.08,
+          "startSec": 10.48,
+          "endSec": 10.96,
           "startChar": 142,
           "endChar": 146
         },
         {
-          "startSec": 12.08,
-          "endSec": 12.4,
+          "startSec": 10.96,
+          "endSec": 11.36,
           "startChar": 147,
           "endChar": 151
         },
         {
-          "startSec": 12.4,
-          "endSec": 12.64,
+          "startSec": 11.36,
+          "endSec": 11.6,
           "startChar": 152,
           "endChar": 156
         },
         {
-          "startSec": 12.64,
-          "endSec": 12.96,
+          "startSec": 11.6,
+          "endSec": 11.92,
           "startChar": 157,
           "endChar": 160
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02-after.a56bb4c5.mp3",
+      "afterAudioDurationSec": 3.787755,
+      "afterTextHash": "a56bb4c5bd73e61263f27aa3efaaa2cc133966d0251581760589afc7238b4207",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.12,
+          "startChar": 6,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 23,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.64,
+          "startChar": 29,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.04,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.36,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 42,
+          "endChar": 46
         }
       ]
     },
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 126.082986,
-      "replayEndSec": 138.182721,
+      "replayStartSec": 15.126152,
+      "replayEndSec": 24.385141,
       "narrationText": "And the repos themselves. Size, mount status, Docker daemon status, disk usage. Everything you need to know about each isolated environment.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03.94b53d49.mp3",
-      "audioDurationSec": 10.266122,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03.def5e9f5.mp3",
+      "textHash": "def5e9f5b23e62344d7e69259899fd4fc407243da9de783e5f02fed9b3b63611",
+      "audioDurationSec": 9.717551,
       "wordTimings": [
         {
           "startSec": 0.08,
-          "endSec": 0.4,
+          "endSec": 0.24,
           "startChar": 0,
           "endChar": 3
         },
         {
-          "startSec": 0.4,
-          "endSec": 0.56,
+          "startSec": 0.24,
+          "endSec": 0.32,
           "startChar": 4,
           "endChar": 7
         },
         {
-          "startSec": 0.56,
-          "endSec": 1.2,
+          "startSec": 0.32,
+          "endSec": 0.8,
           "startChar": 8,
           "endChar": 13
         },
         {
-          "startSec": 1.2,
-          "endSec": 2.08,
+          "startSec": 0.8,
+          "endSec": 1.6,
           "startChar": 14,
           "endChar": 24
         },
         {
           "startSec": 2.48,
-          "endSec": 3.04,
-          "startChar": 26,
-          "endChar": 30
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.36,
+          "endSec": 2.88,
           "startChar": 32,
           "endChar": 37
         },
         {
-          "startSec": 3.36,
-          "endSec": 4.0,
+          "startSec": 2.88,
+          "endSec": 3.44,
           "startChar": 38,
           "endChar": 44
         },
         {
-          "startSec": 4.32,
-          "endSec": 4.64,
+          "startSec": 3.76,
+          "endSec": 4.08,
           "startChar": 46,
           "endChar": 52
         },
         {
-          "startSec": 4.64,
-          "endSec": 4.96,
+          "startSec": 4.08,
+          "endSec": 4.48,
           "startChar": 53,
           "endChar": 59
         },
         {
-          "startSec": 4.96,
-          "endSec": 5.6,
+          "startSec": 4.48,
+          "endSec": 5.04,
           "startChar": 60,
           "endChar": 66
         },
         {
-          "startSec": 6.0,
-          "endSec": 6.24,
+          "startSec": 5.36,
+          "endSec": 5.68,
           "startChar": 68,
           "endChar": 72
         },
         {
-          "startSec": 7.84,
-          "endSec": 8.0,
+          "startSec": 7.12,
+          "endSec": 7.2,
           "startChar": 91,
           "endChar": 94
         },
         {
-          "startSec": 8.0,
-          "endSec": 8.24,
+          "startSec": 7.2,
+          "endSec": 7.52,
           "startChar": 95,
           "endChar": 99
         },
         {
-          "startSec": 8.24,
-          "endSec": 8.48,
+          "startSec": 7.52,
+          "endSec": 7.76,
           "startChar": 103,
           "endChar": 107
         },
         {
-          "startSec": 8.48,
-          "endSec": 8.72,
+          "startSec": 7.76,
+          "endSec": 8.08,
           "startChar": 108,
           "endChar": 113
         },
         {
-          "startSec": 8.8,
-          "endSec": 9.04,
+          "startSec": 8.08,
+          "endSec": 8.32,
           "startChar": 114,
           "endChar": 118
         },
         {
-          "startSec": 9.04,
-          "endSec": 9.6,
+          "startSec": 8.4,
+          "endSec": 9.04,
           "startChar": 119,
           "endChar": 127
         },
         {
-          "startSec": 9.6,
-          "endSec": 10.24,
+          "startSec": 9.04,
+          "endSec": 9.68,
           "startChar": 128,
           "endChar": 139
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03-after.495fc923.mp3",
+      "afterAudioDurationSec": 3.866122,
+      "afterTextHash": "495fc9236361795074beeb04ff0991efe3b7e385b53187e6f7dfc1bcb7625c1a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.12,
+          "startChar": 4,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.28,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 15,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.24,
+          "startChar": 21,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 40,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.84,
+          "startChar": 45,
+          "endChar": 50
         }
       ]
     },
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 138.182721,
-      "replayEndSec": 149.8205,
+      "replayStartSec": 24.385141,
+      "replayEndSec": 32.334422,
       "narrationText": "The machine query command with no filters gives you everything in one shot. System info, containers, repositories, all together.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04.82fc7fbe.mp3",
-      "audioDurationSec": 7.810612,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04.952a05b4.mp3",
+      "textHash": "952a05b4536e2ed98fa434c4bc86a30d8f56990967826944609b708635adf8ba",
+      "audioDurationSec": 8.672653,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -449,66 +594,66 @@
         },
         {
           "startSec": 0.16,
-          "endSec": 0.56,
+          "endSec": 0.48,
           "startChar": 4,
           "endChar": 11
         },
         {
-          "startSec": 0.56,
-          "endSec": 0.96,
+          "startSec": 0.48,
+          "endSec": 0.8,
           "startChar": 12,
           "endChar": 17
         },
         {
-          "startSec": 0.96,
-          "endSec": 1.36,
+          "startSec": 0.8,
+          "endSec": 1.28,
           "startChar": 18,
           "endChar": 25
         },
         {
-          "startSec": 1.36,
-          "endSec": 1.6,
+          "startSec": 1.28,
+          "endSec": 1.44,
           "startChar": 26,
           "endChar": 30
         },
         {
-          "startSec": 1.6,
-          "endSec": 1.76,
+          "startSec": 1.44,
+          "endSec": 1.68,
           "startChar": 31,
           "endChar": 33
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.4,
+          "startSec": 1.68,
+          "endSec": 2.32,
           "startChar": 34,
           "endChar": 41
         },
         {
-          "startSec": 2.4,
-          "endSec": 2.64,
+          "startSec": 2.32,
+          "endSec": 2.56,
           "startChar": 42,
           "endChar": 47
         },
         {
-          "startSec": 2.64,
+          "startSec": 2.56,
           "endSec": 2.72,
           "startChar": 48,
           "endChar": 51
         },
         {
           "startSec": 2.8,
-          "endSec": 3.28,
+          "endSec": 3.36,
           "startChar": 52,
           "endChar": 62
         },
         {
-          "startSec": 3.28,
-          "endSec": 3.44,
+          "startSec": 3.36,
+          "endSec": 3.52,
           "startChar": 63,
           "endChar": 65
         },
         {
-          "startSec": 3.44,
+          "startSec": 3.52,
           "endSec": 3.68,
           "startChar": 66,
           "endChar": 69
@@ -527,44 +672,80 @@
         },
         {
           "startSec": 4.88,
-          "endSec": 5.36,
+          "endSec": 5.44,
           "startChar": 83,
           "endChar": 87
         },
         {
-          "startSec": 5.36,
-          "endSec": 6.08,
+          "startSec": 5.76,
+          "endSec": 6.8,
           "startChar": 89,
           "endChar": 99
         },
         {
-          "startSec": 6.08,
-          "endSec": 6.96,
+          "startSec": 6.8,
+          "endSec": 7.92,
           "startChar": 101,
           "endChar": 113
         },
         {
-          "startSec": 7.04,
-          "endSec": 7.2,
+          "startSec": 7.92,
+          "endSec": 8.16,
           "startChar": 115,
           "endChar": 118
         },
         {
-          "startSec": 7.2,
-          "endSec": 7.76,
+          "startSec": 8.16,
+          "endSec": 8.64,
           "startChar": 119,
           "endChar": 127
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04-after.f98de3e9.mp3",
+      "afterAudioDurationSec": 2.690612,
+      "afterTextHash": "f98de3e93233ea29ee2af4c032c5ac70274ba207dab7258d00d79c0b4d83a92c",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 11,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.84,
+          "startChar": 21,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 24,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 31,
+          "endChar": 37
         }
       ]
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 149.8205,
-      "replayEndSec": 198.111981,
+      "replayStartSec": 32.334422,
+      "replayEndSec": 38.502093,
       "narrationText": "And finally the diagnostic check for a local sanity check on your laptop. Node, SSH key, renet, Docker. All the things the CLI itself depends on. That is the full series. From install to monitoring, all from your terminal.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05.f3adfade.mp3",
-      "audioDurationSec": 16.666122,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05.ac6cfcac.mp3",
+      "textHash": "ac6cfcace593e6a47aa0c353d7a2f1c11883a8e2aa235c5e162eca03a7513af5",
+      "audioDurationSec": 15.229388,
       "wordTimings": [
         {
           "startSec": 0.08,
@@ -579,130 +760,560 @@
           "endChar": 11
         },
         {
-          "startSec": 0.8,
+          "startSec": 0.88,
           "endSec": 0.96,
           "startChar": 12,
           "endChar": 15
         },
         {
           "startSec": 0.96,
-          "endSec": 1.76,
+          "endSec": 1.6,
           "startChar": 16,
           "endChar": 26
         },
         {
-          "startSec": 1.76,
-          "endSec": 2.08,
+          "startSec": 1.6,
+          "endSec": 1.92,
           "startChar": 27,
           "endChar": 32
         },
         {
-          "startSec": 2.08,
-          "endSec": 2.24,
+          "startSec": 1.92,
+          "endSec": 2.08,
           "startChar": 33,
           "endChar": 36
         },
         {
-          "startSec": 2.24,
-          "endSec": 2.32,
+          "startSec": 2.08,
+          "endSec": 2.16,
           "startChar": 37,
           "endChar": 38
         },
         {
-          "startSec": 2.32,
-          "endSec": 2.64,
+          "startSec": 2.16,
+          "endSec": 2.48,
           "startChar": 39,
           "endChar": 44
         },
         {
-          "startSec": 2.64,
-          "endSec": 3.12,
+          "startSec": 2.48,
+          "endSec": 2.96,
           "startChar": 45,
           "endChar": 51
         },
         {
-          "startSec": 3.12,
-          "endSec": 3.36,
+          "startSec": 2.96,
+          "endSec": 3.28,
           "startChar": 52,
           "endChar": 57
         },
         {
-          "startSec": 3.36,
-          "endSec": 3.52,
+          "startSec": 3.28,
+          "endSec": 3.44,
           "startChar": 58,
           "endChar": 60
         },
         {
-          "startSec": 3.52,
-          "endSec": 3.68,
+          "startSec": 3.44,
+          "endSec": 3.52,
           "startChar": 61,
           "endChar": 65
         },
         {
-          "startSec": 3.68,
-          "endSec": 4.16,
+          "startSec": 3.52,
+          "endSec": 4.0,
           "startChar": 66,
           "endChar": 72
         },
         {
-          "startSec": 4.8,
-          "endSec": 5.28,
+          "startSec": 4.4,
+          "endSec": 4.8,
           "startChar": 74,
           "endChar": 78
         },
         {
-          "startSec": 5.6,
-          "endSec": 6.24,
+          "startSec": 5.28,
+          "endSec": 6.16,
           "startChar": 80,
           "endChar": 83
         },
         {
-          "startSec": 6.24,
-          "endSec": 6.64,
-          "startChar": 84,
-          "endChar": 87
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.52,
-          "startChar": 89,
-          "endChar": 94
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.56,
+          "startSec": 6.88,
+          "endSec": 7.36,
           "startChar": 96,
           "endChar": 102
         },
         {
-          "startSec": 9.04,
-          "endSec": 9.2,
+          "startSec": 7.76,
+          "endSec": 8.0,
           "startChar": 180,
           "endChar": 183
         },
         {
-          "startSec": 11.04,
-          "endSec": 11.28,
+          "startSec": 10.0,
+          "endSec": 10.32,
           "startChar": 188,
           "endChar": 190
         },
         {
-          "startSec": 13.68,
-          "endSec": 13.92,
+          "startSec": 12.56,
+          "endSec": 12.72,
           "startChar": 203,
           "endChar": 207
         },
         {
-          "startSec": 16.0,
-          "endSec": 16.08,
+          "startSec": 14.56,
+          "endSec": 14.64,
           "startChar": 208,
           "endChar": 212
         },
         {
-          "startSec": 16.08,
-          "endSec": 16.56,
+          "startSec": 14.64,
+          "endSec": 15.12,
           "startChar": 213,
           "endChar": 221
+        }
+      ],
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05-after.516ff012.mp3",
+      "afterAudioDurationSec": 2.847347,
+      "afterTextHash": "516ff012736daf0ef3bcd343ed3f83128902d33bc58650d39bbad0047def4cc2",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.64,
+          "startChar": 4,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.88,
+          "startChar": 10,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 16,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 2.16,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 31,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.8,
+          "startChar": 34,
+          "endChar": 41
+        }
+      ]
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "bdefb9f318f511db0543e5eb8eb06c460aed4a5f574aa7f474782d0031788ad3",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/intro.bdefb9f3.mp3",
+      "narrationText": "Alright! Your app is live and backed up, now let's make sure it stays healthy.",
+      "audioDurationSec": 3.970612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 9,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 21,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 30,
+          "endChar": 36
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.16,
+          "startChar": 37,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 41,
+          "endChar": 44
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.72,
+          "startChar": 45,
+          "endChar": 50
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 51,
+          "endChar": 55
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 56,
+          "endChar": 60
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.2,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 64,
+          "endChar": 69
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.84,
+          "startChar": 70,
+          "endChar": 77
+        }
+      ]
+    },
+    {
+      "id": "three-checks",
+      "textHash": "4c46c78b9219f10728b61cb9bf4b8e8fca24289521f87964ee48948f3e76b72e",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/three-checks.4c46c78b.mp3",
+      "narrationText": "The CLI gives you a full picture of any server from your laptop. Three angles to check: system health, running containers, and the repositories themselves.",
+      "audioDurationSec": 10.762449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.88,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 20,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 25,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 33,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.8,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.28,
+          "startChar": 40,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.52,
+          "startChar": 47,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.6,
+          "startChar": 52,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.16,
+          "startChar": 57,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 65,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.28,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.76,
+          "startChar": 81,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.8,
+          "startChar": 88,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 95,
+          "endChar": 101
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.68,
+          "startChar": 103,
+          "endChar": 110
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 8.4,
+          "startChar": 111,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 123,
+          "endChar": 126
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.92,
+          "startChar": 131,
+          "endChar": 143
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.64,
+          "startChar": 144,
+          "endChar": 154
+        }
+      ]
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "75bf30519c543df34d862aea63b9adb497438ee3fc85565e1f4b77176de982ae",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/next-tutorial.75bf3051.mp3",
+      "narrationText": "And that wraps the series. You can now install, configure, deploy, fork, go live, autostart, back up, and monitor, all from your terminal!",
+      "audioDurationSec": 9.639184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.88,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.68,
+          "startChar": 19,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 31,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.28,
+          "startChar": 39,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.92,
+          "startChar": 48,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.48,
+          "startChar": 59,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.04,
+          "startChar": 67,
+          "endChar": 71
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 73,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.84,
+          "startChar": 76,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.16,
+          "startChar": 82,
+          "endChar": 86
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.56,
+          "startChar": 86,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.2,
+          "startChar": 93,
+          "endChar": 100
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.52,
+          "startChar": 102,
+          "endChar": 105
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.08,
+          "startChar": 106,
+          "endChar": 113
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.64,
+          "startChar": 115,
+          "endChar": 118
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.88,
+          "startChar": 119,
+          "endChar": 123
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.04,
+          "startChar": 124,
+          "endChar": 128
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.6,
+          "startChar": 129,
+          "endChar": 137
         }
       ]
     }

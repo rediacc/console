@@ -4,8 +4,8 @@ description: حلول للمشاكل الشائعة مع SSH والإعداد و
 category: Guides
 order: 10
 language: ar
-sourceHash: 4575658381fb6508
-sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
+sourceHash: "658b00b83875950d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # استكشاف الأخطاء وإصلاحها
@@ -127,7 +127,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 
 داخل شل المستودع، يؤدي تشغيل حاوية بدون `--network host` إلى الحصول على حاوية معزولة بواجهة loopback فقط، وبدون DNS، وبدون اتصال خارجي. أوامر مثل `apt update` أو `pip install` أو `curl https://...` أو أي جلب شبكي ستفشل فوراً بأخطاء DNS.
 
-هذا مقصود. نموذج الشبكات في Rediacc هو **شبكة المضيف لكل خدمة**، ويفرضه `renet compose`. شبكة Docker bridge الافتراضية مع NAT ستتجاوز عزل الـ loopback على مستوى النواة الذي يمنع مستودعاً من الوصول إلى خدمات مستودع آخر، لذا يتم تكوين Docker daemon لكل مستودع بالقيم `"bridge": "none"` و `"iptables": false`. لا يوجد جسر قابل للتوجيه لكي ترتبط به حاوية `docker run` البسيطة.
+هذا مقصود. نموذج الشبكات في Rediacc هو **شبكة المضيف لكل خدمة**، ويفرضه `renet compose`. شبكة Docker bridge الافتراضية مع NAT ستتجاوز عزل الـ loopback على مستوى النواة الذي يمنع مستودعاً من الوصول إلى خدمات مستودع آخر، لذا يتم تكوين Docker daemon لكل مستودع (`FlavorRediacc`) بالقيم `"bridge": "none"` و `"iptables": false`. لا يوجد جسر قابل للتوجيه لكي ترتبط به حاوية `docker run` البسيطة. (تُعدّ دواعم Hub الخاصة بكل مستخدم (`FlavorHub`) المستخدمة في بيئات التطوير استثناءً: فهي تُفعّل الـ bridge و iptables لمنح حاويات المستخدم اتصالاً شبكياً خارجياً.)
 
 **للحصول على وصول شبكي في حاوية عابرة، استخدم شبكة المضيف:**
 

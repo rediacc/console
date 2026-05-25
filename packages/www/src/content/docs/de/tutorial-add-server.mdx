@@ -1,0 +1,57 @@
+---
+title: "Ihren ersten Server hinzufügen"
+description: "Registrieren Sie Ihren ersten Server bei rdc, stellen Sie ihn bereit und verstehen Sie die rdc-plus-renet-Architektur."
+category: "Tutorials"
+subcategory: essentials
+order: 3
+language: de
+sourceHash: "09d6cde1ac066c85"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Ihren ersten Server hinzufügen
+
+Bevor Sie einen Server hinzufügen, ist es hilfreich zu verstehen, wie `rdc` funktioniert. Rediacc hat eine Zwei-Tool-Architektur: `rdc` auf Ihrem Laptop, `renet` auf dem Server.
+
+## Tutorial ansehen
+
+![Tutorial: Ihren ersten Server hinzufügen](/assets/tutorials/tutorial-add-server.cast)
+
+## Warum zwei Tools?
+
+![rdc auf dem Laptop, renet auf dem Server, SSH dazwischen](/img/tutorials/tutorial-add-server/slide-1.svg)
+
+- **`rdc`** ist die CLI auf Ihrem Laptop. Hier tippen Sie Befehle ein.
+- **`renet`** ist der Orchestrator auf dem Server. Es verwaltet Verschlüsselung, Docker und Isolation.
+
+Wenn Sie lokal einen Befehl ausführen, verbindet sich `rdc` über SSH und führt `renet` auf dem Server aus. Sie müssen sich niemals manuell per SSH in Ihre Server einloggen. `rdc` erledigt das für Sie.
+
+## Schritt 1: Server registrieren
+
+<TutorialStep number={1} />
+
+`rdc config init` ist nicht erforderlich. Die Konfigurationsdatei wird beim ersten Verwenden automatisch erstellt, und `rdc` verwendet standardmäßig Ihren `~/.ssh`-Schlüssel.
+
+## Schritt 2: Server bereitstellen
+
+<TutorialStep number={2} />
+
+Ihr Server ist bereit, Repositories zu hosten.
+
+## Wo die Konfiguration liegt
+
+Die CLI speichert alles in `~/.config/rediacc/rediacc.json`, einer einzelnen Plain-JSON-Datei:
+
+<TutorialStep number={3} />
+
+Diese einzelne Datei enthält Ihre Maschinen, SSH-Schlüssel und Verschlüsselungsdaten. Kopieren Sie sie auf einen anderen Laptop und Sie können von dort aus direkt loslegen.
+
+## Mehrere Konfigurationen
+
+Sie können mehrere Konfigurationen verwalten, eine pro Umgebung (Produktion, Staging, Dev), und mit dem Flag `--config` bei jedem Befehl zwischen ihnen wechseln. Siehe [mehrere Konfigurationen einrichten](/de/docs/setup#multiple-configs).
+
+---
+
+Weiter: [Ihr erstes Repository erstellen](/de/docs/tutorial-create-repo).

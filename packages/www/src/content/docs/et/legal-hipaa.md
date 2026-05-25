@@ -4,6 +4,8 @@ description: "Kuidas Rediacc'i krüptimis- ja eraldusarhitektuur vastab HIPAA ka
 category: "Legal"
 order: 3
 language: et
+sourceHash: "f5fbdaa4a00491ea"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Tervisekindlustuse ülekantavuse ja vastutuse seadus (HIPAA) on Ameerika Ühendriikide föderaalseadus, mis kehtestab standardid tundlike patsientide terviseandmete (PHI) kaitseks. See kehtib kaetud üksustele (tervishoiuteenuse osutajad, tervisekavad, tervishoiu kliiringukojad) ja nende äripartneritele.
@@ -30,7 +32,7 @@ HIPAA nõuab haldus-, tehnilisi ja füüsilisi kaitsemeetmeid. Alljärgnev tabel
 |-------------|-------------------|
 | Tööjõu juurdepääsu haldamine | API-žetoonid ulatusega piiratud õigustega. Meeskonnapõhine juurdepääsukontroll. Žetooni automaatne tühistamine meeskonnast eemaldamisel. |
 | Turvaincidendi menetlused | Auditlogid pakuvad kõigi toimingute kohtuekspertiisi rada. Hoidlapõhine eraldus piirab kahjustuse ulatust. |
-| Hädaolukorra planeerimine | `rdc repo backup push/pull` toetab mitme sihtkoha krüptitud varukoopiat. CoW-hetktõmmised võimaldavad koheselt taastuda. |
+| Hädaolukorra planeerimine | `rdc repo push/pull` toetab mitme sihtkoha krüptitud varukoopiat. CoW-hetktõmmised võimaldavad koheselt taastuda. |
 
 ### Füüsilised kaitsemeetmed
 

@@ -183,7 +183,7 @@ rdc subscription repo status -m hostinger
 Batch-refresh repo licenses on a machine:
 
 ```bash
-rdc subscription refresh -m hostinger
+rdc subscription refresh repos -m hostinger
 ```
 
 Repositories discovered on the machine but missing from local `rdc` config are rejected during batch refresh. They are reported as failures and are not auto-classified.

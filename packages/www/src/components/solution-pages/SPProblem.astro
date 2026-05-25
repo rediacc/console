@@ -3,6 +3,7 @@ import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguageFromPath } from '../../i18n/language-utils';
+import { resolveSolutionIllustration } from '../../utils/solution-illustration';
 
 interface StatCallout {
   number: string;
@@ -35,13 +36,21 @@ interface Props {
     };
   };
   illustration?: ImageMetadata;
+  illustrationMobile?: ImageMetadata;
   illustrationAlt?: string;
   referenceItems?: ReferenceItem[];
+  slug?: string;
 }
 
-const { problem, illustration, illustrationAlt = '', referenceItems = [] } = Astro.props;
+const { problem, illustration, illustrationMobile, illustrationAlt = '', referenceItems = [], slug } = Astro.props;
 const lang = getLanguageFromPath(Astro.url.pathname);
 const { t } = createTranslator(lang);
+
+// When a slug is given (solution pages), resolve the per-language illustration
+// (falls back to English flat); otherwise use the props passed in (persona pages).
+const resolved = slug ? resolveSolutionIllustration(slug, lang) : null;
+const landscape = resolved?.landscape ?? illustration ?? null;
+const mobile = resolved?.mobile ?? illustrationMobile ?? null;
 ---
 
 <section class="sp-problem" id="problem">
@@ -50,7 +59,7 @@ const { t } = createTranslator(lang);
     <h2>{problem.title}</h2>
     <p>{problem.description}</p>
 
-    {illustration && (
+    {landscape && mobile ? (
       <button
         type="button"
         class="sp-problem-illustration sp-illustration-trigger"
@@ -59,7 +68,27 @@ const { t } = createTranslator(lang);
         data-track-label="sp-problem-illustration"
         data-track-dest="modal"
       >
-        <Image src={illustration} alt={illustrationAlt || problem.title} width={1200} height={675} loading="lazy" />
+        <picture>
+          <source media="(max-width: 768px)" srcset={mobile.src} />
+          <img
+            src={landscape.src}
+            width="800"
+            height="450"
+            alt={illustrationAlt || problem.title}
+            loading="lazy"
+          />
+        </picture>
+      </button>
+    ) : landscape && (
+      <button
+        type="button"
+        class="sp-problem-illustration sp-illustration-trigger"
+        aria-label={`${t('common.aria.clickToEnlarge')}: ${illustrationAlt || problem.title}`}
+        data-track="cta_click"
+        data-track-label="sp-problem-illustration"
+        data-track-dest="modal"
+      >
+        <Image src={landscape} alt={illustrationAlt || problem.title} width={1200} height={675} loading="lazy" />
       </button>
     )}
 

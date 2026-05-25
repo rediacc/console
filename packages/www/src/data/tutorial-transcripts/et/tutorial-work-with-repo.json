@@ -6,26 +6,67 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 93.14728,
-      "text": "Esiteks tunnel käsk. Rakendus töötab serveris, mitte sinu sülearvutis. CLI repo tunnel suunab konteineri pordi üle SSH, nii et saad selle brauseris localhost aadressil avada."
+      "at": 2.415513,
+      "text": "Esiteks tunnel käsk. Rakendus töötab serveris, mitte sinu sülearvutis. CLI repo tunnel suunab konteineri pordi üle SSH, nii et saad selle brauseris localhost aadressil avada.",
+      "afterText": "Port edastatud. Rakendus on nüüd localhost'is kättesaadav.",
+      "cardLabel": "Tunnelda Port",
+      "prose": "Rakendus töötab serveris, mitte sinu sülearvutis. Tunnel-käsk edastab konteineri pordi üle SSH, nii et saad selle brauseris localhost-is avada."
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 103.393386,
-      "text": "Teiseks term käsk. CLI term connect viib sind repositooriumi liivakasti -- sama isoleeritud vaate, mida VS Code annaks. Käivita suvaline käsk selle repositooriumi Dockeri deemoni vastu ilma terminalist lahkumata."
+      "at": 9.087333,
+      "text": "Teiseks term käsk. CLI term connect viib sind repositooriumi liivakasti -- sama isoleeritud vaate, mida VS Code annaks. Käivita suvaline käsk selle repositooriumi Dockeri deemoni vastu ilma terminalist lahkumata.",
+      "afterText": "Repo liivakasti sees. Käivita kõike, justkui oleksid SSH-ga sees.",
+      "cardLabel": "Term sandbox-is",
+      "prose": "Term connect käsk viib sind repo sandbox-i, samasse isoleeritud vaatesse nagu VS Code. Käivita mis tahes käsk selle repo Docker daemon-i vastu, lahkumata oma terminal-ist."
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 120.858492,
-      "text": "Enne failide tõugramist vaata eelvaadet --dry-run abil. See näitab täpselt, mis muutuks, ilma midagi kopeerimata. Kasuta alati eelvaadet, kui oled ebakindel."
+      "at": 15.893309,
+      "text": "Enne failide tõugramist vaata eelvaadet --dry-run abil. See näitab täpselt, mis muutuks, ilma midagi kopeerimata. Kasuta alati eelvaadet, kui oled ebakindel.",
+      "afterText": "Ainult eelvaade. Faile pole veel liigutatud.",
+      "cardLabel": "Sync Eelvaade",
+      "prose": "Enne failide teisaldamist käivita sync koos --dry-run. See näitab täpselt, mis muutuks, ilma midagi kopeerimata. Kasuta alati eelvaadet, kui allikas või sihtkoht on ebaselge."
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 137.357072,
-      "text": "Nüüd teeme päris üleslaadimise. CLI repo sync upload liigutab failid sinu sülearvutist repositooriumisse üle SSH rsync delta tihendusega. Tunnel, term, sync -- kolm käsku katavad igapäevase tsükli."
+      "at": 22.144638,
+      "text": "Nüüd teeme päris üleslaadimise. CLI repo sync upload liigutab failid sinu sülearvutist repositooriumisse üle SSH rsync delta tihendusega. Tunnel, term, sync -- kolm käsku katavad igapäevase tsükli.",
+      "afterText": "Failid üles laaditud. Delta tihendus tuleb suurte puudega toime.",
+      "cardLabel": "Sync Üleslaadimine",
+      "prose": "Sync upload käsk liigutab failid sinu sülearvutist repo-sse üle SSH, kasutades rsync delta tihendust. Koos katavad tunnel, term ja sync igapäevase töövoo."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Olgu! Sinu rakendus töötab, nii et hakkame sellega tõeliselt töötama. Kolm käsku katavad igapäevase tsükli."
+    },
+    {
+      "id": "daily-three",
+      "text": "Tunnel avab su rakenduse brauseris, term käivitab käske liivakasti sees ja sync liigutab faile sisse ja välja. See on terve igapäevane töövoog."
+    },
+    {
+      "id": "open-tunnel",
+      "text": "Koos töötava tunnelliga avaneb rakendus otse sinu brauseris. Selles demos laadime rediacc.com, täpselt nii nagu avaksid oma rakenduse, mida pakutakse otse konteinerist."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ja see on igapäevane kolmik. Kohtumiseni järgmises!"
+    }
+  ],
+  "title": "Töötamine oma repo-ga",
+  "chapters": {
+    "intro": "Töötamine oma repo-ga",
+    "daily-three": "Igapäevane kolmik: tunnel, term, sync",
+    "cast-step-0": "Tunnel: edasta konteineri port",
+    "open-tunnel": "Ava rakendus brauseris",
+    "cast-step-1": "Term: käivita käske sandbox-is",
+    "cast-step-2": "Sync: eelvaade --dry-run-iga",
+    "cast-step-3": "Sync: lae päriselt üles",
+    "outro": "Järgmine: repository fork-imine"
+  }
 }

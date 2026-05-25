@@ -108,7 +108,7 @@ In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
 - The datastore is a BTRFS pool file hosted on the system disk (`/mnt/rediacc.pool`)
 - `rdc machine query --name <name> --system` shows both disk and datastore stats plus effective free space
 - Effective free = min(disk free, datastore free) — the actual limit for new repos
-- Expand with: `rdc datastore resize <machine>`
+- Expand with: `rdc datastore resize -m <machine> --size <size>`
 
 ## Cleanup behavior
 
@@ -122,5 +122,5 @@ In containers: `SERVICE_IP`, `REDIACC_NETWORK_ID` (auto-injected by renet).
 rdc repo create --name my-app -m server-1 --size 5G
 rdc repo sync upload -m server-1 -r my-app --local ./my-app/
 rdc repo up --name my-app -m server-1
-rdc machine containers --name server-1    # verify
+rdc machine query --containers --name server-1    # verify
 ```

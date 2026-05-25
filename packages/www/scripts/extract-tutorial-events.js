@@ -54,19 +54,49 @@ function run() {
 
     const events = markers.map((marker, index) => {
       const existingEvent = existing?.events?.[index];
-      return {
+      const event = {
         id: `${castKey}-${String(index + 1).padStart(2, '0')}`,
         markerIndex: index,
         at: marker.at,
         text: existingEvent?.text ?? `TODO: write transcript sentence for event ${index + 1}`,
       };
+      // Preserve optional afterText (per-event post-command narration)
+      if (typeof existingEvent?.afterText === 'string') {
+        event.afterText = existingEvent.afterText;
+      }
+      // Preserve optional cardLabel (human-readable step-card caption, e.g.
+      // "Create Config" for `rdc config init`). Authored by hand; not derivable
+      // from the cast, so it must survive re-extraction like afterText.
+      if (typeof existingEvent?.cardLabel === 'string') {
+        event.cardLabel = existingEvent.cardLabel;
+      }
+      // Preserve optional prose / afterProse (written-doc narration variants
+      // used by the MDX tutorial pages + locale scaffolding). Hand-authored.
+      if (typeof existingEvent?.prose === 'string') {
+        event.prose = existingEvent.prose;
+      }
+      if (typeof existingEvent?.afterProse === 'string') {
+        event.afterProse = existingEvent.afterProse;
+      }
+      return event;
     });
 
     const doc = {
       cast: `/assets/tutorials/${castFile}`,
       language: 'en',
       version: 1,
+      // Preserve doc-level authored fields. title is the tutorial display name;
+      // chapters maps storyboard scene.id -> human chapter label (drives the
+      // chapters.vtt labels). Both hand-authored, not derivable from the cast.
+      ...(typeof existing?.title === 'string' ? { title: existing.title } : {}),
+      ...(existing?.chapters && typeof existing.chapters === 'object'
+        ? { chapters: existing.chapters }
+        : {}),
       events,
+      // Preserve narrations[] (non-cast scene audio: intro/slide/outro/browser
+      // narrations) if present. Extract only refreshes cast-marker events;
+      // narrations are authored separately and would otherwise be wiped.
+      ...(Array.isArray(existing?.narrations) ? { narrations: existing.narrations } : {}),
     };
 
     fs.writeFileSync(outPath, `${JSON.stringify(doc, null, 2)}\n`, 'utf-8');

@@ -6,14 +6,52 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.509194,
-      "text": "Primeiro, vamos confirmar que a ferramenta está instalada. A opção de versão imprime a versão instalada, para sabermos que a instalação ficou completa."
+      "at": 1.626476,
+      "text": "Primeiro, vamos confirmar que a ferramenta está instalada. A opção de versão imprime a versão instalada, para sabermos que a instalação ficou completa.",
+      "afterText": "Instalação concluída. O binário rdc está no seu PATH.",
+      "cardLabel": "Instalar CLI",
+      "prose": "Cole o comando de instalação no seu terminal e execute-o. O script verifica sua plataforma, baixa o binário estável mais recente e o coloca no seu diretório home. Sem instalação global, sem necessidade de sudo. Quando terminar, o binário rdc estará no seu path e poderá ser chamado de qualquer shell."
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 9.435981,
-      "text": "Agora vamos executar a verificação de diagnóstico. Este comando verifica todas as dependências de que a ferramenta necessita -- Node, SSH, Docker, o binário renet -- e reporta o que faltar. Um relatório limpo significa que estamos prontos para avançar."
+      "at": 7.903516,
+      "text": "Agora vamos executar a verificação de diagnóstico. Este comando verifica todas as dependências de que a ferramenta necessita -- Node, SSH, Docker, o binário renet -- e reporta o que faltar. Um relatório limpo significa que estamos prontos para avançar.",
+      "afterText": "Versão impressa. Está tudo pronto.",
+      "cardLabel": "Verificar Versão",
+      "prose": "Confirme a instalação executando rdc com a flag de versão. Ele imprime a versão instalada, verificando que o binário está no seu path."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Tudo certo! Vamos instalar a ferramenta de linha de comandos no seu portátil."
+    },
+    {
+      "id": "three-steps",
+      "text": "Três passos. Abrir a página de instalação, escolher o sistema operativo e colar o comando no terminal."
+    },
+    {
+      "id": "open-install-page",
+      "text": "Vá à página de instalação e desça até à secção de instalação rápida. Gera o comando correto para a plataforma em que está."
+    },
+    {
+      "id": "laptop-vs-server",
+      "text": "A ferramenta de linha de comandos vive no seu portátil. O servidor corre um componente separado chamado renet, que a CLI provisiona e controla por SSH, para que nunca tenha de iniciar sessão manualmente."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Instalação feita. A seguir, vamos configurar a sua chave SSH para que a CLI consiga aceder aos seus servidores."
+    }
+  ],
+  "title": "Instalação",
+  "chapters": {
+    "intro": "Instalação",
+    "three-steps": "Os três passos",
+    "open-install": "Abrir a página de instalação",
+    "cast-step-0": "Passo 1: Instalar o CLI",
+    "cast-step-1": "Passo 2: Verificar a instalação",
+    "laptop-vs-server": "Por que o rdc fica no seu laptop",
+    "outro": "Próximo: Configuração de Chave SSH"
+  }
 }

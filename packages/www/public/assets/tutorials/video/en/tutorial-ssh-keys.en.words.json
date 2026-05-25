@@ -1,0 +1,471 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.384,
+      "text": "Alright!",
+      "words": [{ "start": 1, "end": 1.384, "char": [0, 8] }]
+    },
+    {
+      "start": 1.384,
+      "end": 4.068,
+      "text": "Let's set up SSH keys so you",
+      "words": [
+        { "start": 1.384, "end": 1.767, "char": [0, 5] },
+        { "start": 1.767, "end": 2.151, "char": [6, 9] },
+        { "start": 2.151, "end": 2.534, "char": [10, 12] },
+        { "start": 2.534, "end": 2.918, "char": [13, 16] },
+        { "start": 2.918, "end": 3.301, "char": [17, 21] },
+        { "start": 3.301, "end": 3.685, "char": [22, 24] },
+        { "start": 3.685, "end": 4.068, "char": [25, 28] }
+      ]
+    },
+    {
+      "start": 4.068,
+      "end": 6.369,
+      "text": "can reach your servers without passwords.",
+      "words": [
+        { "start": 4.068, "end": 4.452, "char": [0, 3] },
+        { "start": 4.452, "end": 4.835, "char": [4, 9] },
+        { "start": 4.835, "end": 5.219, "char": [10, 14] },
+        { "start": 5.219, "end": 5.602, "char": [15, 22] },
+        { "start": 5.602, "end": 5.986, "char": [23, 30] },
+        { "start": 5.986, "end": 6.369, "char": [31, 41] }
+      ]
+    },
+    {
+      "start": 6.369,
+      "end": 7.903,
+      "text": "This is pure SSH;",
+      "words": [
+        { "start": 6.369, "end": 6.753, "char": [0, 4] },
+        { "start": 6.753, "end": 7.136, "char": [5, 7] },
+        { "start": 7.136, "end": 7.52, "char": [8, 12] },
+        { "start": 7.52, "end": 7.903, "char": [13, 17] }
+      ]
+    },
+    {
+      "start": 7.903,
+      "end": 9.438,
+      "text": "rdc isn't involved yet.",
+      "words": [
+        { "start": 7.903, "end": 8.287, "char": [0, 3] },
+        { "start": 8.287, "end": 8.671, "char": [4, 9] },
+        { "start": 8.671, "end": 9.054, "char": [10, 18] },
+        { "start": 9.054, "end": 9.438, "char": [19, 23] }
+      ]
+    },
+    {
+      "start": 10.205,
+      "end": 11.2,
+      "text": "Two ideas.",
+      "words": [
+        { "start": 10.205, "end": 10.703, "char": [0, 3] },
+        { "start": 10.703, "end": 11.2, "char": [4, 10] }
+      ]
+    },
+    {
+      "start": 11.2,
+      "end": 14.186,
+      "text": "Generate one key on your laptop,",
+      "words": [
+        { "start": 11.2, "end": 11.698, "char": [0, 8] },
+        { "start": 11.698, "end": 12.195, "char": [9, 12] },
+        { "start": 12.195, "end": 12.693, "char": [13, 16] },
+        { "start": 12.693, "end": 13.19, "char": [17, 19] },
+        { "start": 13.19, "end": 13.688, "char": [20, 24] },
+        { "start": 13.688, "end": 14.186, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 14.186,
+      "end": 17.171,
+      "text": "then authorize it on each server",
+      "words": [
+        { "start": 14.186, "end": 14.683, "char": [0, 4] },
+        { "start": 14.683, "end": 15.181, "char": [5, 14] },
+        { "start": 15.181, "end": 15.678, "char": [15, 17] },
+        { "start": 15.678, "end": 16.176, "char": [18, 20] },
+        { "start": 16.176, "end": 16.673, "char": [21, 25] },
+        { "start": 16.673, "end": 17.171, "char": [26, 32] }
+      ]
+    },
+    {
+      "start": 17.171,
+      "end": 18.166,
+      "text": "with ssh-copy-id.",
+      "words": [
+        { "start": 17.171, "end": 17.669, "char": [0, 4] },
+        { "start": 17.669, "end": 18.166, "char": [5, 17] }
+      ]
+    },
+    {
+      "start": 18.166,
+      "end": 19.161,
+      "text": "Generate once,",
+      "words": [
+        { "start": 18.166, "end": 18.664, "char": [0, 8] },
+        { "start": 18.664, "end": 19.161, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 19.161,
+      "end": 20.654,
+      "text": "copy per server.",
+      "words": [
+        { "start": 19.161, "end": 19.659, "char": [0, 4] },
+        { "start": 19.659, "end": 20.156, "char": [5, 8] },
+        { "start": 20.156, "end": 20.654, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 23.907,
+      "end": 24.363,
+      "text": "First,",
+      "words": [{ "start": 23.907, "end": 24.363, "char": [0, 6] }]
+    },
+    {
+      "start": 24.363,
+      "end": 27.1,
+      "text": "generate a new SSH key on",
+      "words": [
+        { "start": 24.363, "end": 24.819, "char": [0, 8] },
+        { "start": 24.819, "end": 25.275, "char": [9, 10] },
+        { "start": 25.275, "end": 25.732, "char": [11, 14] },
+        { "start": 25.732, "end": 26.188, "char": [15, 18] },
+        { "start": 26.188, "end": 26.644, "char": [19, 22] },
+        { "start": 26.644, "end": 27.1, "char": [23, 25] }
+      ]
+    },
+    {
+      "start": 27.1,
+      "end": 28.012,
+      "text": "your laptop.",
+      "words": [
+        { "start": 27.1, "end": 27.556, "char": [0, 4] },
+        { "start": 27.556, "end": 28.012, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 28.012,
+      "end": 29.381,
+      "text": "Ed25519 is secure,",
+      "words": [
+        { "start": 28.012, "end": 28.468, "char": [0, 7] },
+        { "start": 28.468, "end": 28.925, "char": [8, 10] },
+        { "start": 28.925, "end": 29.381, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 29.381,
+      "end": 29.837,
+      "text": "small,",
+      "words": [{ "start": 29.381, "end": 29.837, "char": [0, 6] }]
+    },
+    {
+      "start": 29.837,
+      "end": 31.205,
+      "text": "and well supported.",
+      "words": [
+        { "start": 29.837, "end": 30.293, "char": [0, 3] },
+        { "start": 30.293, "end": 30.749, "char": [4, 8] },
+        { "start": 30.749, "end": 31.205, "char": [9, 19] }
+      ]
+    },
+    {
+      "start": 31.205,
+      "end": 33.03,
+      "text": "You do this once;",
+      "words": [
+        { "start": 31.205, "end": 31.661, "char": [0, 3] },
+        { "start": 31.661, "end": 32.117, "char": [4, 6] },
+        { "start": 32.117, "end": 32.574, "char": [7, 11] },
+        { "start": 32.574, "end": 33.03, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 33.03,
+      "end": 35.767,
+      "text": "the same key works for every",
+      "words": [
+        { "start": 33.03, "end": 33.486, "char": [0, 3] },
+        { "start": 33.486, "end": 33.942, "char": [4, 8] },
+        { "start": 33.942, "end": 34.398, "char": [9, 12] },
+        { "start": 34.398, "end": 34.854, "char": [13, 18] },
+        { "start": 34.854, "end": 35.31, "char": [19, 22] },
+        { "start": 35.31, "end": 35.767, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 35.767,
+      "end": 37.135,
+      "text": "server you add.",
+      "words": [
+        { "start": 35.767, "end": 36.223, "char": [0, 6] },
+        { "start": 36.223, "end": 36.679, "char": [7, 10] },
+        { "start": 36.679, "end": 37.135, "char": [11, 15] }
+      ]
+    },
+    {
+      "start": 37.135,
+      "end": 38.96,
+      "text": "This is plain SSH,",
+      "words": [
+        { "start": 37.135, "end": 37.591, "char": [0, 4] },
+        { "start": 37.591, "end": 38.047, "char": [5, 7] },
+        { "start": 38.047, "end": 38.503, "char": [8, 13] },
+        { "start": 38.503, "end": 38.96, "char": [14, 18] }
+      ]
+    },
+    {
+      "start": 38.96,
+      "end": 41.696,
+      "text": "nothing to do with rdc yet.",
+      "words": [
+        { "start": 38.96, "end": 39.416, "char": [0, 7] },
+        { "start": 39.416, "end": 39.872, "char": [8, 10] },
+        { "start": 39.872, "end": 40.328, "char": [11, 13] },
+        { "start": 40.328, "end": 40.784, "char": [14, 18] },
+        { "start": 40.784, "end": 41.24, "char": [19, 22] },
+        { "start": 41.24, "end": 41.696, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 42.496,
+      "end": 43.115,
+      "text": "Key generated.",
+      "words": [
+        { "start": 42.496, "end": 42.806, "char": [0, 3] },
+        { "start": 42.806, "end": 43.115, "char": [4, 14] }
+      ]
+    },
+    {
+      "start": 43.115,
+      "end": 45.897,
+      "text": "The public half is what we copy to each",
+      "words": [
+        { "start": 43.115, "end": 43.424, "char": [0, 3] },
+        { "start": 43.424, "end": 43.733, "char": [4, 10] },
+        { "start": 43.733, "end": 44.042, "char": [11, 15] },
+        { "start": 44.042, "end": 44.351, "char": [16, 18] },
+        { "start": 44.351, "end": 44.66, "char": [19, 23] },
+        { "start": 44.66, "end": 44.969, "char": [24, 26] },
+        { "start": 44.969, "end": 45.278, "char": [27, 31] },
+        { "start": 45.278, "end": 45.588, "char": [32, 34] },
+        { "start": 45.588, "end": 45.897, "char": [35, 39] }
+      ]
+    },
+    {
+      "start": 45.897,
+      "end": 46.206,
+      "text": "server.",
+      "words": [{ "start": 45.897, "end": 46.206, "char": [0, 7] }]
+    },
+    {
+      "start": 49.555,
+      "end": 52.453,
+      "text": "Now authorize the key on your first",
+      "words": [
+        { "start": 49.555, "end": 49.969, "char": [0, 3] },
+        { "start": 49.969, "end": 50.383, "char": [4, 13] },
+        { "start": 50.383, "end": 50.797, "char": [14, 17] },
+        { "start": 50.797, "end": 51.211, "char": [18, 21] },
+        { "start": 51.211, "end": 51.625, "char": [22, 24] },
+        { "start": 51.625, "end": 52.039, "char": [25, 29] },
+        { "start": 52.039, "end": 52.453, "char": [30, 35] }
+      ]
+    },
+    {
+      "start": 52.453,
+      "end": 53.694,
+      "text": "server with ssh-copy-id.",
+      "words": [
+        { "start": 52.453, "end": 52.867, "char": [0, 6] },
+        { "start": 52.867, "end": 53.28, "char": [7, 11] },
+        { "start": 53.28, "end": 53.694, "char": [12, 24] }
+      ]
+    },
+    {
+      "start": 53.694,
+      "end": 56.592,
+      "text": "It appends your public key to the",
+      "words": [
+        { "start": 53.694, "end": 54.108, "char": [0, 2] },
+        { "start": 54.108, "end": 54.522, "char": [3, 10] },
+        { "start": 54.522, "end": 54.936, "char": [11, 15] },
+        { "start": 54.936, "end": 55.35, "char": [16, 22] },
+        { "start": 55.35, "end": 55.764, "char": [23, 26] },
+        { "start": 55.764, "end": 56.178, "char": [27, 29] },
+        { "start": 56.178, "end": 56.592, "char": [30, 33] }
+      ]
+    },
+    {
+      "start": 56.592,
+      "end": 57.834,
+      "text": "server's authorized list,",
+      "words": [
+        { "start": 56.592, "end": 57.006, "char": [0, 8] },
+        { "start": 57.006, "end": 57.42, "char": [9, 19] },
+        { "start": 57.42, "end": 57.834, "char": [20, 25] }
+      ]
+    },
+    {
+      "start": 57.834,
+      "end": 60.317,
+      "text": "so future logins skip the password.",
+      "words": [
+        { "start": 57.834, "end": 58.248, "char": [0, 2] },
+        { "start": 58.248, "end": 58.662, "char": [3, 9] },
+        { "start": 58.662, "end": 59.076, "char": [10, 16] },
+        { "start": 59.076, "end": 59.49, "char": [17, 21] },
+        { "start": 59.49, "end": 59.904, "char": [22, 25] },
+        { "start": 59.904, "end": 60.317, "char": [26, 35] }
+      ]
+    },
+    {
+      "start": 62.317,
+      "end": 64.094,
+      "text": "Authorized on the first server.",
+      "words": [
+        { "start": 62.317, "end": 62.673, "char": [0, 10] },
+        { "start": 62.673, "end": 63.028, "char": [11, 13] },
+        { "start": 63.028, "end": 63.383, "char": [14, 17] },
+        { "start": 63.383, "end": 63.739, "char": [18, 23] },
+        { "start": 63.739, "end": 64.094, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 64.094,
+      "end": 65.87,
+      "text": "No more password prompts there.",
+      "words": [
+        { "start": 64.094, "end": 64.449, "char": [0, 2] },
+        { "start": 64.449, "end": 64.804, "char": [3, 7] },
+        { "start": 64.804, "end": 65.16, "char": [8, 16] },
+        { "start": 65.16, "end": 65.515, "char": [17, 24] },
+        { "start": 65.515, "end": 65.87, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 69.207,
+      "end": 72.098,
+      "text": "Do the same for every other server",
+      "words": [
+        { "start": 69.207, "end": 69.62, "char": [0, 2] },
+        { "start": 69.62, "end": 70.033, "char": [3, 6] },
+        { "start": 70.033, "end": 70.446, "char": [7, 11] },
+        { "start": 70.446, "end": 70.859, "char": [12, 15] },
+        { "start": 70.859, "end": 71.272, "char": [16, 21] },
+        { "start": 71.272, "end": 71.685, "char": [22, 27] },
+        { "start": 71.685, "end": 72.098, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 72.098,
+      "end": 72.924,
+      "text": "you manage.",
+      "words": [
+        { "start": 72.098, "end": 72.511, "char": [0, 3] },
+        { "start": 72.511, "end": 72.924, "char": [4, 11] }
+      ]
+    },
+    {
+      "start": 72.924,
+      "end": 75.402,
+      "text": "Here we authorize the second one.",
+      "words": [
+        { "start": 72.924, "end": 73.337, "char": [0, 4] },
+        { "start": 73.337, "end": 73.75, "char": [5, 7] },
+        { "start": 73.75, "end": 74.163, "char": [8, 17] },
+        { "start": 74.163, "end": 74.576, "char": [18, 21] },
+        { "start": 74.576, "end": 74.989, "char": [22, 28] },
+        { "start": 74.989, "end": 75.402, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 75.402,
+      "end": 77.88,
+      "text": "Just repeat ssh-copy-id for each machine.",
+      "words": [
+        { "start": 75.402, "end": 75.815, "char": [0, 4] },
+        { "start": 75.815, "end": 76.228, "char": [5, 11] },
+        { "start": 76.228, "end": 76.641, "char": [12, 23] },
+        { "start": 76.641, "end": 77.054, "char": [24, 27] },
+        { "start": 77.054, "end": 77.467, "char": [28, 32] },
+        { "start": 77.467, "end": 77.88, "char": [33, 41] }
+      ]
+    },
+    {
+      "start": 79.88,
+      "end": 81.988,
+      "text": "Both servers now trust this key.",
+      "words": [
+        { "start": 79.88, "end": 80.231, "char": [0, 4] },
+        { "start": 80.231, "end": 80.583, "char": [5, 12] },
+        { "start": 80.583, "end": 80.934, "char": [13, 16] },
+        { "start": 80.934, "end": 81.286, "char": [17, 22] },
+        { "start": 81.286, "end": 81.637, "char": [23, 27] },
+        { "start": 81.637, "end": 81.988, "char": [28, 32] }
+      ]
+    },
+    {
+      "start": 81.988,
+      "end": 83.746,
+      "text": "SSH is fully set up.",
+      "words": [
+        { "start": 81.988, "end": 82.34, "char": [0, 3] },
+        { "start": 82.34, "end": 82.691, "char": [4, 6] },
+        { "start": 82.691, "end": 83.043, "char": [7, 12] },
+        { "start": 83.043, "end": 83.394, "char": [13, 16] },
+        { "start": 83.394, "end": 83.746, "char": [17, 20] }
+      ]
+    },
+    {
+      "start": 84.584,
+      "end": 87.215,
+      "text": "Your key is set and your servers",
+      "words": [
+        { "start": 84.584, "end": 84.96, "char": [0, 4] },
+        { "start": 84.96, "end": 85.336, "char": [5, 8] },
+        { "start": 85.336, "end": 85.712, "char": [9, 11] },
+        { "start": 85.712, "end": 86.088, "char": [12, 15] },
+        { "start": 86.088, "end": 86.463, "char": [16, 19] },
+        { "start": 86.463, "end": 86.839, "char": [20, 24] },
+        { "start": 86.839, "end": 87.215, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 87.215,
+      "end": 87.967,
+      "text": "trust it.",
+      "words": [
+        { "start": 87.215, "end": 87.591, "char": [0, 5] },
+        { "start": 87.591, "end": 87.967, "char": [6, 9] }
+      ]
+    },
+    {
+      "start": 87.967,
+      "end": 88.719,
+      "text": "Next up,",
+      "words": [
+        { "start": 87.967, "end": 88.343, "char": [0, 4] },
+        { "start": 88.343, "end": 88.719, "char": [5, 8] }
+      ]
+    },
+    {
+      "start": 88.719,
+      "end": 91.35,
+      "text": "we add your first server to rdc.",
+      "words": [
+        { "start": 88.719, "end": 89.094, "char": [0, 2] },
+        { "start": 89.094, "end": 89.47, "char": [3, 6] },
+        { "start": 89.47, "end": 89.846, "char": [7, 11] },
+        { "start": 89.846, "end": 90.222, "char": [12, 17] },
+        { "start": 90.222, "end": 90.598, "char": [18, 24] },
+        { "start": 90.598, "end": 90.974, "char": [25, 27] },
+        { "start": 90.974, "end": 91.35, "char": [28, 32] }
+      ]
+    }
+  ]
+}

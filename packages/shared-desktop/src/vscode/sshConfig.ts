@@ -46,12 +46,10 @@ function formatConfigEntry(entry: SSHConfigEntry): string {
     `  HostName ${entry.hostname}`,
     `  User ${entry.user}`,
     `  Port ${entry.port}`,
-    `  IdentityFile ${entry.identityFile}`,
-    `  UserKnownHostsFile ${entry.userKnownHostsFile}`,
-    '  IdentitiesOnly yes',
-    '  PasswordAuthentication no',
-    '  PubkeyAuthentication yes',
   ];
+  if (entry.identityFile) lines.push(`  IdentityFile ${entry.identityFile}`);
+  if (entry.userKnownHostsFile) lines.push(`  UserKnownHostsFile ${entry.userKnownHostsFile}`);
+  lines.push('  IdentitiesOnly yes', '  PasswordAuthentication no', '  PubkeyAuthentication yes');
 
   // SSH keepalive settings to prevent disconnection during long sessions
   const serverAliveInterval = entry.serverAliveInterval ?? DEFAULTS.SSH.SERVER_ALIVE_INTERVAL;
@@ -166,6 +164,51 @@ export function removeSSHConfigEntry(host: string): void {
     const newContent = `${Array.from(hosts.values()).join('\n\n')}\n`;
     writeFileSync(configPath, newContent, { mode: 0o600 });
   }
+}
+
+/**
+ * Options for writing a machine-level SSH config entry (no key paths required).
+ * The entry is written under the host `rediacc--<machineName>` (double-dash form).
+ */
+export interface AddMachineSSHConfigOptions {
+  machineName: string;
+  host: string;
+  port: number;
+  sshUser: string;
+  datastore?: string;
+  teamName?: string;
+}
+
+/**
+ * Writes (or updates) an SSH config block for a machine under
+ * `rediacc--<machineName>` so that `ssh rediacc--<name>` works without
+ * needing to go through the VS Code flow first.
+ * IdentityFile and UserKnownHostsFile are intentionally omitted here;
+ * the VS Code connect flow adds them via its own `addSSHConfigEntry` call.
+ */
+export function addMachineSSHConfigEntry(opts: AddMachineSSHConfigOptions): void {
+  const hostName = generateConnectionName(opts.teamName ?? '', opts.machineName);
+  const setEnv: Record<string, string> = {
+    REDIACC_MACHINE: opts.machineName,
+  };
+  if (opts.teamName) setEnv.REDIACC_TEAM = opts.teamName;
+  if (opts.datastore) setEnv.REDIACC_DATASTORE = opts.datastore;
+  addSSHConfigEntry({
+    host: hostName,
+    hostname: opts.host,
+    user: opts.sshUser,
+    port: opts.port,
+    identityFile: '',
+    userKnownHostsFile: '',
+    setEnv,
+  });
+}
+
+/**
+ * Removes the machine-level SSH config block for the given machine name.
+ */
+export function removeMachineSSHConfigEntry(machineName: string, teamName?: string): void {
+  removeSSHConfigEntry(generateConnectionName(teamName ?? '', machineName));
 }
 
 /**

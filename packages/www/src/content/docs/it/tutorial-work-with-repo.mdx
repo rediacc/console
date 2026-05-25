@@ -1,0 +1,60 @@
+---
+title: "Lavorare con il Tuo Repo"
+description: "Instrada una porta verso il browser, esegui i comandi più comuni all'interno della sandbox e sincronizza file tra il tuo laptop e il repo."
+category: "Tutorials"
+subcategory: essentials
+order: 6
+language: it
+sourceHash: "a7a5866276f19cb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Lavorare con il Tuo Repo
+
+La tua app è in esecuzione, ma finora l'hai vista solo tramite `docker ps`. Tre comandi coprono il flusso di lavoro quotidiano: **tunnel** per vedere l'app nel browser, **term** per eseguire comandi all'interno della sandbox, **sync** per spostare file tra il tuo laptop e il repo.
+
+## Guarda il tutorial
+
+![Tutorial: Lavorare con il tuo repo](/assets/tutorials/tutorial-work-with-repo.cast)
+
+## I tre quotidiani
+
+![Tunnel, term, sync](/img/tutorials/tutorial-work-with-repo/slide-1.svg)
+
+1. **Tunnel**: apri la tua app nel browser.
+2. **Term**: esegui un comando all'interno della sandbox.
+3. **Sync**: sposta file dentro e fuori.
+
+## Tunnel: vedi la tua app nel browser
+
+L'app gira sul server, non sul tuo laptop. Instrada la porta di un container tramite SSH:
+
+<TutorialStep number={1} />
+
+Apri `localhost` nel tuo browser: la tua app è lì. Premi `Ctrl+C` quando hai finito.
+
+## Term: esegui comandi all'interno del repo
+
+Salta VS Code quando hai solo bisogno di una shell. Entra nella sandbox del repo ed esegui qualsiasi cosa contro il suo Docker daemon:
+
+<TutorialStep number={2} />
+
+Vedi solo i container di `my-app`: la stessa vista che avresti in VS Code.
+
+## Sync: sposta file tra laptop e repo
+
+Fai prima un'anteprima se non sei sicuro: `--dry-run` mostra cosa cambierebbe senza copiare nulla effettivamente:
+
+<TutorialStep number={3} />
+
+Quando l'anteprima è corretta, esegui il caricamento per davvero:
+
+<TutorialStep number={4} />
+
+Tunnel, term, sync. Tre comandi coprono il ciclo quotidiano.
+
+---
+
+Successivo: [Fork di un Repository](/it/docs/tutorial-forking).

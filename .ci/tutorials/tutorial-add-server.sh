@@ -11,17 +11,22 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 
+# Silence pre-recording setup so its output doesn't bleed into the cast.
+exec 3>&1 4>&2
+exec >/dev/null 2>&1
+
 M="$TUTORIAL_MACHINE_NAME"
-rm -f ~/.config/rediacc/tutorial.json 2>/dev/null || true
+rm -f ~/.config/rediacc/rediacc.json 2>/dev/null || true
+
+# Restore stdout/stderr so asciinema captures only the demo from here on.
+exec >&3 2>&4
 
 clear_screen
 
 section "Step 1: Register the server"
-run_cmd "rdc config init --name tutorial --ssh-key $TUTORIAL_SSH_KEY"
-
-pause 1
-
-run_cmd "rdc --config tutorial config machine add --name $M --ip $TUTORIAL_MACHINE_IP --user $TUTORIAL_MACHINE_USER"
+# No `config init` needed — the config file is created automatically on first
+# use, and rdc falls back to your ~/.ssh/id_rsa key.
+run_cmd "rdc config machine add --name $M --ip $TUTORIAL_MACHINE_IP --user $TUTORIAL_MACHINE_USER"
 
 pause 2
 
@@ -33,16 +38,12 @@ for i in $(seq 1 30); do
 done
 
 section "Step 2: Provision the server"
-run_cmd "rdc --config tutorial config machine setup --name $M"
+run_cmd "rdc config machine setup --name $M"
 
 pause 2
 
 section "Where the config lives"
-run_cmd "rdc --config tutorial config show"
-
-pause 2
-
-run_cmd "ls -la ~/.config/rediacc/tutorial.json"
+run_cmd "cat ~/.config/rediacc/rediacc.json"
 
 pause 2
 

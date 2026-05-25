@@ -7,447 +7,82 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "fcd00432b254e59b3e5bbded2dbf6704065ce46334c4f39b4157e2057c8dc9ad",
+  "transcriptHash": "aa9813246c56edd4a7efb86bcb4492bca88a06bf30fb1c0424c5e830cd77ee4f",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 56.862064,
-      "replayEndSec": 97.750961,
+      "replayStartSec": 2.418632,
+      "replayEndSec": 9.548589,
       "narrationText": "Запускаем приложение в продакшен-режиме с ноутбука. Команда деплоя вызывает ту же функцию up, что использовалась при разработке, но запускает её в фоне. Можно закрыть ноутбук — приложение продолжит работать.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-01.bfc74c5c.mp3",
-      "audioDurationSec": 14.915918,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.72,
-          "startChar": 0,
-          "endChar": 9
-        },
-        {
-          "startSec": 0.72,
-          "endSec": 1.6,
-          "startChar": 10,
-          "endChar": 20
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 1.84,
-          "startChar": 21,
-          "endChar": 22
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.96,
-          "startChar": 33,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.96,
-          "endSec": 3.04,
-          "startChar": 40,
-          "endChar": 41
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.68,
-          "startChar": 42,
-          "endChar": 50
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 4.96,
-          "startChar": 52,
-          "endChar": 59
-        },
-        {
-          "startSec": 5.36,
-          "endSec": 5.92,
-          "startChar": 67,
-          "endChar": 75
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.08,
-          "startChar": 76,
-          "endChar": 78
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.16,
-          "startChar": 79,
-          "endChar": 81
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.72,
-          "startChar": 82,
-          "endChar": 89
-        },
-        {
-          "startSec": 7.52,
-          "endSec": 7.68,
-          "startChar": 94,
-          "endChar": 97
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.32,
-          "startChar": 98,
-          "endChar": 112
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 8.56,
-          "startChar": 113,
-          "endChar": 116
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.36,
-          "startChar": 117,
-          "endChar": 127
-        },
-        {
-          "startSec": 9.52,
-          "endSec": 9.68,
-          "startChar": 129,
-          "endChar": 131
-        },
-        {
-          "startSec": 9.76,
-          "endSec": 10.32,
-          "startChar": 132,
-          "endChar": 141
-        },
-        {
-          "startSec": 10.56,
-          "endSec": 11.04,
-          "startChar": 147,
-          "endChar": 151
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 11.84,
-          "startChar": 153,
-          "endChar": 158
-        },
-        {
-          "startSec": 11.84,
-          "endSec": 12.16,
-          "startChar": 159,
-          "endChar": 166
-        },
-        {
-          "startSec": 12.16,
-          "endSec": 12.72,
-          "startChar": 167,
-          "endChar": 174
-        },
-        {
-          "startSec": 13.2,
-          "endSec": 13.76,
-          "startChar": 177,
-          "endChar": 187
-        },
-        {
-          "startSec": 13.76,
-          "endSec": 14.4,
-          "startChar": 188,
-          "endChar": 197
-        },
-        {
-          "startSec": 14.4,
-          "endSec": 14.8,
-          "startChar": 198,
-          "endChar": 206
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-01.060fe13d.mp3",
+      "textHash": "060fe13d154b47c6495c8004c98abd1c02918c1019c14a7f4fad599cbc130bbb",
+      "audioDurationSec": 13.87102,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-01-after.a12dcb22.mp3",
+      "afterAudioDurationSec": 6.844082,
+      "afterTextHash": "a12dcb22b96c7eedd8b6064e8d56cd6c357b1eb951c40878360c353422c98167"
     },
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 97.750961,
-      "replayEndSec": 125.443493,
+      "replayStartSec": 9.548589,
+      "replayEndSec": 17.034078,
       "narrationText": "Включаем автозапуск, чтобы приложение пережило перезагрузку сервера. Теперь, если сервер перезапустится, этот репозиторий поднимется автоматически.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-02.d5b050ab.mp3",
-      "audioDurationSec": 8.594286,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 1.28,
-          "startChar": 9,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.76,
-          "startChar": 21,
-          "endChar": 26
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.4,
-          "startChar": 27,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.88,
-          "startChar": 38,
-          "endChar": 46
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.6,
-          "startChar": 47,
-          "endChar": 59
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 4.08,
-          "startChar": 60,
-          "endChar": 67
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.56,
-          "startChar": 69,
-          "endChar": 75
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.72,
-          "startChar": 77,
-          "endChar": 81
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.12,
-          "startChar": 82,
-          "endChar": 88
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 6.0,
-          "startChar": 89,
-          "endChar": 103
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.64,
-          "startChar": 105,
-          "endChar": 109
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 7.2,
-          "startChar": 110,
-          "endChar": 121
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.76,
-          "startChar": 122,
-          "endChar": 132
-        },
-        {
-          "startSec": 7.76,
-          "endSec": 8.48,
-          "startChar": 133,
-          "endChar": 146
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-02.5b0fcf0a.mp3",
+      "textHash": "5b0fcf0ac08f1296c62ab05bbe95936cfca348d4831fc76c9523b694a4413caa",
+      "audioDurationSec": 9.717551,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-02-after.c6c0ceb9.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "c6c0ceb99b8c8a45da7189b20e2503866332ba951ae5ad033ed41bb39935a51b"
     },
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 125.443493,
-      "replayEndSec": 141.09184,
+      "replayStartSec": 17.034078,
+      "replayEndSec": 22.929505,
       "narrationText": "Смотрим, у каких репозиториев включён автозапуск. Подтверждается, что наше приложение теперь в списке загрузки.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-03.f7ec0c2a.mp3",
-      "audioDurationSec": 7.810612,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 7
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.2,
-          "startChar": 9,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.6,
-          "startChar": 11,
-          "endChar": 16
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 2.4,
-          "startChar": 17,
-          "endChar": 29
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.84,
-          "startChar": 38,
-          "endChar": 48
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 5.28,
-          "startChar": 50,
-          "endChar": 64
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.44,
-          "startChar": 66,
-          "endChar": 69
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.76,
-          "startChar": 70,
-          "endChar": 74
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 6.4,
-          "startChar": 75,
-          "endChar": 85
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.72,
-          "startChar": 86,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 6.8,
-          "startChar": 93,
-          "endChar": 94
-        },
-        {
-          "startSec": 6.8,
-          "endSec": 7.2,
-          "startChar": 95,
-          "endChar": 101
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.76,
-          "startChar": 102,
-          "endChar": 110
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-03.98b6afd5.mp3",
+      "textHash": "98b6afd5de38d63a7bf8735ae963ac6a1978aefa6b37f85058d6a4bbff5efc76",
+      "audioDurationSec": 7.314286,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-03-after.de9787be.mp3",
+      "afterAudioDurationSec": 2.690612,
+      "afterTextHash": "de9787be2bed96c0f595b39674d1a9e6b8321eb4fc55de751131cc042b0864c6"
     },
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 141.09184,
-      "replayEndSec": 196.903183,
+      "replayStartSec": 22.929505,
+      "replayEndSec": 30.37798,
       "narrationText": "Для остановки приложения — одна команда с ноутбука. Одна команда вверх, одна вниз. Всё из терминала, без интерактивных сессий.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-04.04b2bcf2.mp3",
-      "audioDurationSec": 9.325714,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.8,
-          "startChar": 4,
-          "endChar": 13
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.6,
-          "startChar": 14,
-          "endChar": 24
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.08,
-          "startChar": 27,
-          "endChar": 31
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.48,
-          "startChar": 32,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.56,
-          "startChar": 40,
-          "endChar": 41
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.2,
-          "startChar": 42,
-          "endChar": 50
-        },
-        {
-          "startSec": 3.76,
-          "endSec": 4.08,
-          "startChar": 72,
-          "endChar": 76
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 6.0,
-          "startChar": 77,
-          "endChar": 81
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 6.88,
-          "startChar": 87,
-          "endChar": 89
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.52,
-          "startChar": 90,
-          "endChar": 99
-        },
-        {
-          "startSec": 7.84,
-          "endSec": 8.08,
-          "startChar": 101,
-          "endChar": 104
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.8,
-          "startChar": 105,
-          "endChar": 118
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 9.28,
-          "startChar": 119,
-          "endChar": 125
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-04.27c49105.mp3",
+      "textHash": "27c49105adf44e25d52d0a8f19b25800bf2ef0c423796e793362bd2936772046",
+      "audioDurationSec": 9.247347,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-04-after.f1f512b6.mp3",
+      "afterAudioDurationSec": 4.127347,
+      "afterTextHash": "f1f512b611f0e8a2043354259f262ced31278252ecdc76debd094429e928b9c9"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "88a2765148d5eb9d2118b53adb4ea3805a5a00b7752d0456fcf5f6aeed5a691e",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/intro.88a27651.mp3",
+      "narrationText": "Итак! Переводим ваше приложение из разработки в продакшен. Три коротких шага, всё с ноутбука.",
+      "audioDurationSec": 6.60898
+    },
+    {
+      "id": "dev-vs-prod",
+      "textHash": "e30890fdaa2986e923ac78669d6552b5466facc03b2082960998ff0abe31ba6a",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/dev-vs-prod.e30890fd.mp3",
+      "narrationText": "При разработке вы запускаете приложение изнутри репозитория, и оно останавливается при отключении. В продакшене вы запускаете его с ноутбука через CLI, и оно продолжает работать в фоне.",
+      "audioDurationSec": 15.647347
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "d6ad1d30ab8d7b8e914268c325af579020e7d8863f9e169accdc95cf674687fe",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/next-tutorial.d6ad1d30.mp3",
+      "narrationText": "Вот вам продакшен-режим в двух словах. Увидимся в следующем уроке!",
+      "audioDurationSec": 5.407347
     }
   ]
 }

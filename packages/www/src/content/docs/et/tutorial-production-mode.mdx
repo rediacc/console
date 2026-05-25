@@ -1,0 +1,61 @@
+---
+title: "Tootmisrežiim"
+description: "Käita rakendust sülearvutist eraldatult ja jää ellu serveri taaskäivituste korral autostart-i abil."
+category: "Tutorials"
+subcategory: advanced
+order: 10
+language: et
+sourceHash: "6921482ea1810fb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Tootmisrežiim
+
+Seni oled rakendust käitanud `renet dev up` abil repositooriumi seest. See sobib suurepäraselt arendustöö jaoks. Tootmises haldad kõike sülearvutist `rdc`-ga. Sulge sülearvuti ja rakendus jätkab tööd.
+
+## Vaata juhendvideot
+
+![Tutorial: Production mode](/assets/tutorials/tutorial-production-mode.cast)
+
+## Arendus vs tootmine
+
+Erinevus on lihtne:
+
+- `renet dev up` töötab **repositooriumi sees**. Peab olema ühendatud.
+- `rdc repo up` töötab **sinu sülearvutist**. Pärast seda pole ühendust vaja.
+
+Kolm toimingut viivad sind arendusest tootmiseni:
+
+![Stop, start, autostart](/img/tutorials/tutorial-production-mode/slide-1.svg)
+
+Kui sul on repositooriumis veel aktiivne `renet dev up` seanss, lõpeta see esmalt käsuga `rdc vscode connect -m my-server -r my-app` ning seejärel `renet dev down`. Edasi haldad kõike täielikult sülearvutist.
+
+## 1. samm: käivita tootmisrežiimis
+
+<TutorialStep number={1} />
+
+`rdc repo up` kutsub sama `up` funktsiooni, mida `renet dev up` kasutas. Sama `Rediaccfile`, erinev käivitusviis, ainult et nüüd jätkab rakendus tööd pärast ühenduse katkestamist.
+
+## 2. samm: luba autostart
+
+<TutorialStep number={2} />
+
+Kui server taaskäivitub, tuleb see repositoorium automaatselt tagasi.
+
+## 3. samm: loetle autostart-iga repositooriumid
+
+<TutorialStep number={3} />
+
+Kiire kontroll, et sinu rakendus on käivitusnimekirjas.
+
+## 4. samm: peata sülearvutist
+
+<TutorialStep number={4} />
+
+Üks käsk üles, üks käsk alla. Kõik sülearvutist.
+
+---
+
+Edasi: [Varukoopia ja taastamine](/et/docs/tutorial-backup-restore).

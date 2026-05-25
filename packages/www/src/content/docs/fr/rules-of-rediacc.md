@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 5
 language: fr
-sourceHash: 9365e0cabf7e8f03
-sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
+sourceHash: "1d227a06272a0050"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Règles de Rediacc
@@ -151,7 +151,7 @@ Aucun indicateur de posture de sécurité spécifique au système d'exploitation
 - **Isolation des dépôts** : Le daemon Docker, le réseau et le stockage de chaque dépôt sont entièrement isolés des autres dépôts sur la même machine.
 - **Isolation des agents** : Les agents IA fonctionnent par défaut en mode fork-only. Chaque dépôt possède sa propre clé SSH avec application du sandbox côté serveur (ForceCommand `sandbox-gateway`). Toutes les connexions sont isolées avec Landlock LSM, overlay OverlayFS du home et TMPDIR par dépôt. L'accès au système de fichiers entre dépôts est bloqué par le noyau.
 - **`sudo` est désactivé à l'intérieur du sandbox d'un dépôt, par conception.** L'isolation du système de fichiers par Landlock nécessite `NoNewPrivs`, qui empêche toute élévation de privilèges, et `sudo` échouera donc avec `no new privileges flag is set`. L'utilisateur propriétaire du dépôt dispose déjà des permissions nécessaires pour tout ce qui se trouve dans le point de montage et le socket Docker du dépôt. Pour des opérations réellement privilégiées (installation de paquets hôtes, réglages du noyau), exécutez-les en dehors du sandbox ou depuis une fonction `up()` d'un Rediaccfile exécutée par le chemin infrastructure.
-- **Le réseau bridge Docker est désactivé sur chaque daemon par dépôt.** Le `daemon.json` de chaque dépôt contient `"bridge": "none"` et `"iptables": false`, de sorte qu'un simple `docker run <image>` crée un conteneur avec uniquement une interface de loopback et aucune connectivité sortante. Ce n'est pas un bug, c'est ainsi que l'isolation inter-dépôts est appliquée : les hooks eBPF au niveau du noyau qui empêchent un dépôt d'atteindre les IPs de loopback d'un autre dépôt ne s'appliquent qu'aux conteneurs vivant dans le namespace réseau de l'hôte. Pour les services de production, utilisez `renet compose`, qui injecte automatiquement `network_mode: host`. Pour les conteneurs ad hoc ponctuels dans un shell, passez explicitement `--network host`.
+- **Le réseau bridge Docker est désactivé sur les daemons par dépôt.** Le `daemon.json` (`FlavorRediacc`) de chaque dépôt contient `"bridge": "none"` et `"iptables": false`, de sorte qu'un simple `docker run <image>` crée un conteneur avec uniquement une interface de loopback et aucune connectivité sortante. Ce n'est pas un bug, c'est ainsi que l'isolation inter-dépôts est appliquée : les hooks eBPF au niveau du noyau qui empêchent un dépôt d'atteindre les IPs de loopback d'un autre dépôt ne s'appliquent qu'aux conteneurs vivant dans le namespace réseau de l'hôte. Pour les services de production, utilisez `renet compose`, qui injecte automatiquement `network_mode: host`. Pour les conteneurs ad hoc ponctuels dans un shell, passez explicitement `--network host`. (Les daemons Hub par utilisateur (`FlavorHub`, environnements de développement) sont l'exception : ils activent `bridge="docker0"` et `iptables=true` afin que les conteneurs utilisateur bénéficient d'une connectivité sortante normale.)
 
 ## Déploiement
 

@@ -6,26 +6,53 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.50929,
-      "text": "Première étape. Nous allons générer une nouvelle clé SSH ed25519. ed25519 est le standard moderne : compact, rapide et bien supporté. Vous n'avez besoin de faire cela qu'une seule fois pour tous les serveurs que vous ajouterez."
+      "at": 1.626287,
+      "text": "Première étape. Nous allons générer une nouvelle clé SSH ed25519. ed25519 est le standard moderne : compact, rapide et bien supporté. Vous n'avez besoin de faire cela qu'une seule fois pour tous les serveurs que vous ajouterez.",
+      "afterText": "Clé générée. C'est la partie publique que nous copierons sur le serveur.",
+      "cardLabel": "Générer la clé",
+      "prose": "Générez une nouvelle clé SSH sur votre ordinateur portable. Ed25519 est sécurisé, compact et bien pris en charge. Exécutez-la une seule fois. La même clé fonctionne pour chaque serveur. Il s'agit de SSH standard, sans aucun lien avec rdc.",
+      "afterProse": "Clé générée. La partie publique est celle qui sera copiée sur chaque serveur."
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 8.723209,
-      "text": "Deuxième étape. Nous copions la clé publique sur le serveur avec ssh-copy-id. Le mot de passe du serveur est demandé une dernière fois. Après cela, l'authentification par mot de passe n'est plus nécessaire pour ce serveur."
+      "at": 6.456735,
+      "text": "Deuxième étape. Nous copions la clé publique sur le serveur avec ssh-copy-id. Le mot de passe du serveur est demandé une dernière fois. Après cela, l'authentification par mot de passe n'est plus nécessaire pour ce serveur.",
+      "afterText": "Lancez ceci sur votre ordinateur. Une fois réussi, les mots de passe sont écartés.",
+      "cardLabel": "Autoriser le serveur 1",
+      "prose": "Autorisez la clé sur votre premier serveur avec ssh-copy-id. Cette commande ajoute votre clé publique au fichier authorized_keys du serveur, ce qui permet aux connexions futures de se passer du mot de passe."
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 16.253995,
-      "text": "Troisième étape. Nous enregistrons maintenant la clé auprès de la ligne de commande. Désormais, chaque commande s'authentifie avec cette clé. Plus de mots de passe, plus d'invites interactives."
+      "at": 13.33617,
+      "text": "Troisième étape. Nous enregistrons maintenant la clé auprès de la ligne de commande. Désormais, chaque commande s'authentifie avec cette clé. Plus de mots de passe, plus d'invites interactives.",
+      "afterText": "Clé enregistrée auprès de la CLI.",
+      "cardLabel": "Autoriser le serveur 2",
+      "prose": "Répétez ssh-copy-id pour chaque autre serveur que vous gérez. Ici, nous autorisons le deuxième."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Très bien ! Configurons les clés SSH pour que la CLI puisse atteindre vos serveurs sans mot de passe."
     },
     {
-      "id": "tutorial-ssh-keys-04",
-      "markerIndex": 3,
-      "at": 24.863027,
-      "text": "Vérifions que la configuration affiche correctement le chemin de la clé stockée. La configuration est maintenant réutilisable pour chaque machine que vous ajouterez."
+      "id": "three-steps-generate-copy-register",
+      "text": "Trois étapes au total. Générer une clé sur votre ordinateur, la copier sur le serveur, puis l'enregistrer auprès de l'outil en ligne de commande. Deux de ces étapes ne se font qu'une seule fois."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "La clé est enregistrée et la CLI est prête. Dans la suite, nous ajoutons votre premier serveur."
     }
-  ]
+  ],
+  "title": "Configuration des clés SSH",
+  "chapters": {
+    "intro": "Configuration des clés SSH",
+    "three-steps-generate-copy-register": "Générer une fois, autoriser par serveur",
+    "cast-step-0": "Étape 1 : Générer une clé",
+    "cast-step-1": "Étape 2 : Autoriser votre premier serveur",
+    "cast-step-2": "Étape 3 : Autoriser un autre serveur",
+    "outro": "Suivant : Ajouter votre premier serveur"
+  }
 }

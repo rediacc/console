@@ -16,6 +16,16 @@ import { parseArgs } from 'node:util';
 
 const MARKER_RE = /\x1b\]rediacc-marker:(.*?)\x07/g;
 
+// Substitute the recordist's real $HOME with ~ so the cast doesn't reveal the
+// maintainer's username. The fake prompt is "user@rediacc:~$", so the home
+// directory should display as ~.
+const HOME = process.env.HOME ?? '';
+const HOME_RE = HOME ? new RegExp(HOME.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g') : null;
+
+function normalizePaths(s) {
+    return HOME_RE ? s.replace(HOME_RE, '~') : s;
+}
+
 function processCast(inputPath, outputPath) {
     const raw = readFileSync(inputPath, 'utf-8');
     const lines = raw.split('\n').filter(Boolean);
@@ -30,6 +40,7 @@ function processCast(inputPath, outputPath) {
 
     const outputEvents = [];
     let markerCount = 0;
+    let pathSubstitutions = 0;
     const commandLabels = [];
 
     for (const event of events) {
@@ -44,15 +55,18 @@ function processCast(inputPath, outputPath) {
                 markers.push(match[1]);
             }
 
-            // Inject marker events
+            // Inject marker events (label normalized for path display)
             for (const label of markers) {
-                outputEvents.push([timestamp, 'm', label]);
+                outputEvents.push([timestamp, 'm', normalizePaths(label)]);
                 commandLabels.push(label);
                 markerCount++;
             }
 
-            // Strip OSC sequences from the output data
-            const cleaned = data.replace(MARKER_RE, '');
+            // Strip OSC sequences from the output data + normalize home paths
+            let cleaned = data.replace(MARKER_RE, '');
+            const before = cleaned;
+            cleaned = normalizePaths(cleaned);
+            if (cleaned !== before) pathSubstitutions++;
             if (cleaned.length > 0) {
                 outputEvents.push([timestamp, eventType, cleaned]);
             }
@@ -70,6 +84,9 @@ function processCast(inputPath, outputPath) {
 
     // Summary
     console.log(`Markers injected: ${markerCount}`);
+    if (pathSubstitutions > 0) {
+        console.log(`Path substitutions (${HOME} → ~): ${pathSubstitutions} events`);
+    }
     if (commandLabels.length > 0) {
         console.log(`Commands: ${commandLabels.join(', ')}`);
     }

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "9a08a357e86497e3"
-sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
+sourceHash: "1eddcf9de8bfac31"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Servisler
@@ -196,7 +196,9 @@ renet ve Docker, konteyner yeniden başlatmalarının nasıl ele alınacağı ko
 
 > **Deneysel:** Soğuk yedek sidecar tabanlı kurtarma ve `rdc machine query` komutundaki `--sync-certs` bayrağı renet 0.9+ ile sunuldu. Eski sürümler watchdog kurtarması için yalnızca kaydedilmiş `restart_policy`'ye güvenir; bu da soğuk yedekten sonra `on-failure` konteynerlerini mahsur bırakabilir.
 
-> **Docker bridge ağı, rediacc tarafından yönetilen daemonlarda devre dışıdır.** Her depo başına daemon, `"bridge": "none"` ve `"iptables": false` ile yapılandırılmıştır. Bir depo kabuğunda düz bir `docker run <image>` komutu yine de başlar, ancak konteynere yalnızca bir loopback arayüzü verilir ve DNS ya da dışa doğru bağlantı bulunmaz. Bu tasarım gereğidir, çünkü depolar arası loopback izolasyonu, köprülü bir konteynerin atlayacağı eBPF cgroup kancaları tarafından zorunlu kılınır. Üretim servisleri `renet compose` kullanmalıdır (bu sizin için host ağını enjekte eder); geçici hata ayıklama için `--network host` parametresini açıkça geçin: `docker run --rm --network host -it ubuntu bash`.
+> **Docker bridge ağı, depo başına daemonlarda devre dışıdır.** Her depo başına daemon (`FlavorRediacc`), `"bridge": "none"` ve `"iptables": false` ile yapılandırılmıştır. Bir depo kabuğunda düz bir `docker run <image>` komutu yine de başlar, ancak konteynere yalnızca bir loopback arayüzü verilir ve DNS ya da dışa doğru bağlantı bulunmaz. Bu tasarım gereğidir, çünkü depolar arası loopback izolasyonu, köprülü bir konteynerin atlayacağı eBPF cgroup kancaları tarafından zorunlu kılınır. Üretim servisleri `renet compose` kullanmalıdır (bu sizin için host ağını enjekte eder); geçici hata ayıklama için `--network host` parametresini açıkça geçin: `docker run --rm --network host -it ubuntu bash`.
+>
+> Kullanıcı başına Hub daemonlar (`FlavorHub`, geliştirme ortamlarında kullanılır) istisnadır: `bridge="docker0"`, `iptables=true` ve `live-restore=true` ayarlarını yaparak kullanıcı tarafından çalıştırılan konteynerlerin normal bridge ağına ve dışa doğru bağlantıya sahip olmasını sağlarlar.
 
 > **Not:** Fork depoları üst dominin alt etki alanı altında otomatik rotalar alır: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Fork'lar için özel alan adları atlanır.
 
