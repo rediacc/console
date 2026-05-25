@@ -10,13 +10,18 @@ test.describe('Audit Records Tests', () => {
   test.beforeEach(async ({ page }) => {
     loginPage = new LoginPage(page);
     dashboardPage = new DashboardPage(page);
-    await page.addInitScript(() => {
-      localStorage.setItem('uiMode', 'expert');
-    });
 
     await loginPage.navigate();
     await loginPage.performQuickLogin();
     await dashboardPage.waitForNetworkIdle();
+
+    await page.getByTestId('user-menu-button').click();
+    await page
+      .getByTestId('main-mode-toggle')
+      .locator('.ant-segmented-item')
+      .nth(1)
+      .click();
+    await page.getByTestId('user-menu-button').click();
   });
 
   test.afterEach(async ({ testReporter }) => {
@@ -31,6 +36,15 @@ test.describe('Audit Records Tests', () => {
     testReporter.startStep('Navigate to Audit page');
 
     const nav = new NavigationHelper(page);
+
+    await page.getByTestId('user-menu-button').click();
+    await page
+      .getByTestId('main-mode-toggle')
+      .locator('.ant-segmented-item')
+      .nth(1)
+      .click();
+    await page.getByTestId('user-menu-button').click();
+
 
     // Wait for the audit navigation item to be visible before clicking
     const auditNavItem = page.getByTestId('main-nav-audit');
