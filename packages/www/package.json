@@ -38,7 +38,7 @@
     "@astrojs/mdx": "^4.3.14",
     "@astrojs/react": "^5.0.2",
     "@astrojs/rss": "^4.0.18",
-    "@astrojs/sitemap": "^3.7.2",
+    "@astrojs/sitemap": "^3.7.3",
     "@aws-sdk/client-s3": "^3.982.0",
     "@marp-team/marp-core": "^4.3.0",
     "@marsidev/react-turnstile": "^1.5.2",
