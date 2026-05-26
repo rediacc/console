@@ -4,14 +4,14 @@ description: "Comment fonctionne le démarrage automatique, le réconciliateur p
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "a009cfabc7240d87"
+sourceHash: "8e98fcd141e27da6"
 ---
 
 # Démarrage automatique et récupération
 
 Cette page explique comment les dépôts sont automatiquement montés et démarrés au démarrage du système, et comment le réconciliateur périodique remet un dépôt en service s'il tombe après que le serveur est déjà en fonctionnement.
 
-Pour savoir comment activer ou désactiver le démarrage automatique sur un dépôt, consultez [Services — Démarrage automatique au démarrage](/fr/docs/services#autostart-on-boot).
+Pour savoir comment activer ou désactiver le démarrage automatique sur un dépôt, consultez [Services: Démarrage automatique au démarrage](/fr/docs/services#autostart-on-boot).
 
 ## Comment fonctionne le démarrage automatique
 
@@ -67,9 +67,9 @@ Ce fichier survit à la rotation des journaux. Sa présence signifie que le dép
 
 Causes courantes d'échec de récupération persistant :
 
-- **Licence de dépôt non approuvée ou expirée** — la vérification de licence s'exécute avant `up()`.
-- **Fichier de clé manquant** — si le fichier de clé à `{datastore}/.credentials/keys/{guid}.key` a été supprimé, le réconciliateur ne peut pas monter le volume sans phrase secrète.
-- **Rediaccfile défaillant** — une erreur de syntaxe ou un hook `up()` qui se termine toujours avec un code non nul.
+- **Licence de dépôt non approuvée ou expirée**: la vérification de licence s'exécute avant `up()`.
+- **Fichier de clé manquant**: si le fichier de clé à `{datastore}/.credentials/keys/{guid}.key` a été supprimé, le réconciliateur ne peut pas monter le volume sans phrase secrète.
+- **Rediaccfile défaillant**: une erreur de syntaxe ou un hook `up()` qui se termine toujours avec un code non nul.
 
 ### Relation avec le watchdog du routeur
 
@@ -118,5 +118,5 @@ Le réconciliateur tentera à nouveau la récupération au prochain tick du time
 
 ## Pages connexes
 
-- [Services — Démarrage automatique au démarrage](/fr/docs/services#autostart-on-boot) — activer et désactiver le démarrage automatique, gestion du fichier de clé
-- [Sauvegarde et restauration](/fr/docs/backup-restore) — interaction des sauvegardes froides avec les services en cours d'exécution
+- [Services: Démarrage automatique au démarrage](/fr/docs/services#autostart-on-boot): activer et désactiver le démarrage automatique, gestion du fichier de clé
+- [Sauvegarde et restauration](/fr/docs/backup-restore): interaction des sauvegardes froides avec les services en cours d'exécution

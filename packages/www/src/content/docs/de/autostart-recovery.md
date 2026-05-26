@@ -4,14 +4,14 @@ description: "Wie Autostart funktioniert, der periodische Reconciler, der Reposi
 category: "Guides"
 order: 5
 language: de
-sourceHash: "a009cfabc7240d87"
+sourceHash: "8e98fcd141e27da6"
 ---
 
 # Autostart & Wiederherstellung
 
 Diese Seite erklärt, wie Repositories beim Systemstart automatisch eingebunden und gestartet werden, und wie der periodische Reconciler ein Repository wieder hochfährt, falls es nach dem Serverstart ausfällt.
 
-Informationen zum Aktivieren oder Deaktivieren von Autostart für ein Repository finden Sie unter [Dienste — Autostart beim Start](/de/docs/services#autostart-on-boot).
+Informationen zum Aktivieren oder Deaktivieren von Autostart für ein Repository finden Sie unter [Dienste: Autostart beim Start](/de/docs/services#autostart-on-boot).
 
 ## Wie Autostart funktioniert
 
@@ -67,9 +67,9 @@ Diese Datei überlebt Log-Rotation. Ihre Existenz bedeutet, dass das Repository 
 
 Häufige Ursachen für persistente Wiederherstellungsfehler:
 
-- **Nicht vertrauenswürdige oder abgelaufene Repo-Lizenz** — die Lizenzprüfung läuft vor `up()`.
-- **Fehlende Schlüsseldatei** — wurde die Schlüsseldatei unter `{datastore}/.credentials/keys/{guid}.key` gelöscht, kann der Reconciler das Volume ohne Passphrase nicht einbinden.
-- **Defektes Rediaccfile** — ein Syntaxfehler oder ein `up()`-Hook, der immer mit einem Fehlercode beendet wird.
+- **Nicht vertrauenswürdige oder abgelaufene Repo-Lizenz**: die Lizenzprüfung läuft vor `up()`.
+- **Fehlende Schlüsseldatei**: wurde die Schlüsseldatei unter `{datastore}/.credentials/keys/{guid}.key` gelöscht, kann der Reconciler das Volume ohne Passphrase nicht einbinden.
+- **Defektes Rediaccfile**: ein Syntaxfehler oder ein `up()`-Hook, der immer mit einem Fehlercode beendet wird.
 
 ### Verhältnis zum Router-Watchdog
 
@@ -118,5 +118,5 @@ Der Reconciler versucht beim nächsten Timer-Tick erneut die Wiederherstellung.
 
 ## Verwandte Seiten
 
-- [Dienste — Autostart beim Start](/de/docs/services#autostart-on-boot) — Autostart aktivieren und deaktivieren, Schlüsseldateiverwaltung
-- [Backup & Wiederherstellung](/de/docs/backup-restore) — Interaktion von Cold-Backup mit laufenden Diensten
+- [Dienste: Autostart beim Start](/de/docs/services#autostart-on-boot): Autostart aktivieren und deaktivieren, Schlüsseldateiverwaltung
+- [Backup & Wiederherstellung](/de/docs/backup-restore): Interaktion von Cold-Backup mit laufenden Diensten

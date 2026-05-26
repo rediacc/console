@@ -4,14 +4,14 @@ description: "Come funziona l'avvio automatico, il riconciliatore periodico che 
 category: "Guides"
 order: 5
 language: it
-sourceHash: "a009cfabc7240d87"
+sourceHash: "8e98fcd141e27da6"
 ---
 
 # Autostart e Ripristino
 
 Questa pagina spiega come i repository vengono montati e avviati automaticamente all'avvio, e come il riconciliatore periodico riporta in funzione un repository che si interrompe dopo che il server è già in esecuzione.
 
-Per abilitare o disabilitare l'autostart su un repository, vedere [Servizi — Autostart all'avvio](/it/docs/services#autostart-on-boot).
+Per abilitare o disabilitare l'autostart su un repository, vedere [Servizi: Autostart all'avvio](/it/docs/services#autostart-on-boot).
 
 ## Come funziona l'autostart
 
@@ -67,9 +67,9 @@ Questo file sopravvive alla rotazione dei log. La sua presenza significa che il 
 
 Cause comuni di fallimento persistente del recupero:
 
-- **Licenza del repository non attendibile o scaduta** — il controllo della licenza viene eseguito prima di `up()`.
-- **Keyfile mancante** — se il keyfile in `{datastore}/.credentials/keys/{guid}.key` è stato eliminato, il riconciliatore non può montare il volume senza una passphrase.
-- **Rediaccfile non funzionante** — un errore di sintassi o un hook `up()` che termina sempre con codice non zero.
+- **Licenza del repository non attendibile o scaduta**: il controllo della licenza viene eseguito prima di `up()`.
+- **Keyfile mancante**: se il keyfile in `{datastore}/.credentials/keys/{guid}.key` è stato eliminato, il riconciliatore non può montare il volume senza una passphrase.
+- **Rediaccfile non funzionante**: un errore di sintassi o un hook `up()` che termina sempre con codice non zero.
 
 ### Relazione con il watchdog del router
 
@@ -118,5 +118,5 @@ Il riconciliatore tenterà il recupero di nuovo al prossimo tick del timer.
 
 ## Pagine correlate
 
-- [Servizi — Autostart all'avvio](/it/docs/services#autostart-on-boot) — abilitazione e disabilitazione dell'autostart, gestione del keyfile
-- [Backup e Ripristino](/it/docs/backup-restore) — interazione del backup cold con i servizi in esecuzione
+- [Servizi: Autostart all'avvio](/it/docs/services#autostart-on-boot): abilitazione e disabilitazione dell'autostart, gestione del keyfile
+- [Backup e Ripristino](/it/docs/backup-restore): interazione del backup cold con i servizi in esecuzione

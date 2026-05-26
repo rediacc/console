@@ -4,14 +4,14 @@ description: "自动启动的工作原理、在启动后发生故障的仓库的
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "a009cfabc7240d87"
+sourceHash: "8e98fcd141e27da6"
 ---
 
 # 自动启动与恢复
 
 本页介绍仓库在启动时如何自动挂载和启动，以及当服务器已运行后仓库停止时，周期性协调器如何将其恢复。
 
-如需了解如何为仓库启用或禁用自动启动，请参阅[服务 — 开机自启](/zh/docs/services#autostart-on-boot)。
+如需了解如何为仓库启用或禁用自动启动，请参阅[服务: 开机自启](/zh/docs/services#autostart-on-boot)。
 
 ## 自动启动的工作原理
 
@@ -67,9 +67,9 @@ sourceHash: "a009cfabc7240d87"
 
 持久恢复失败的常见原因：
 
-- **不受信任或已过期的仓库许可证** — 许可证检查在 `up()` 之前运行。
-- **密钥文件丢失** — 如果 `{datastore}/.credentials/keys/{guid}.key` 处的密钥文件被删除，协调器将无法在没有密码短语的情况下挂载卷。
-- **损坏的 Rediaccfile** — 语法错误或总是以非零值退出的 `up()` 钩子。
+- **不受信任或已过期的仓库许可证**: 许可证检查在 `up()` 之前运行。
+- **密钥文件丢失**: 如果 `{datastore}/.credentials/keys/{guid}.key` 处的密钥文件被删除，协调器将无法在没有密码短语的情况下挂载卷。
+- **损坏的 Rediaccfile**: 语法错误或总是以非零值退出的 `up()` 钩子。
 
 ### 与路由器 Watchdog 的关系
 
@@ -118,5 +118,5 @@ rm /var/lib/rediacc/reconcile/failed/{guid}
 
 ## 相关页面
 
-- [服务 — 开机自启](/zh/docs/services#autostart-on-boot) — 启用和禁用自动启动、密钥文件管理
-- [备份与恢复](/zh/docs/backup-restore) — 冷备份与运行中服务的交互
+- [服务: 开机自启](/zh/docs/services#autostart-on-boot): 启用和禁用自动启动、密钥文件管理
+- [备份与恢复](/zh/docs/backup-restore): 冷备份与运行中服务的交互

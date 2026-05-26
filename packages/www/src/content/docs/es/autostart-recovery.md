@@ -4,14 +4,14 @@ description: "Cómo funciona el inicio automático, el reconciliador periódico 
 category: "Guides"
 order: 5
 language: es
-sourceHash: "a009cfabc7240d87"
+sourceHash: "8e98fcd141e27da6"
 ---
 
 # Inicio Automático y Recuperación
 
 Esta página explica cómo los repositorios se montan e inician automáticamente al arrancar, y cómo el reconciliador periódico vuelve a poner en marcha un repositorio si se cae después de que el servidor ya está en funcionamiento.
 
-Para saber cómo habilitar o deshabilitar el inicio automático en un repositorio, consulte [Servicios — Inicio automático en el arranque](/es/docs/services#autostart-on-boot).
+Para saber cómo habilitar o deshabilitar el inicio automático en un repositorio, consulte [Servicios: Inicio automático en el arranque](/es/docs/services#autostart-on-boot).
 
 ## Cómo funciona el inicio automático
 
@@ -67,9 +67,9 @@ Este archivo sobrevive a la rotación de registros. Su presencia significa que e
 
 Causas comunes de fallo de recuperación persistente:
 
-- **Licencia de repositorio no confiable o expirada** — la comprobación de licencia se ejecuta antes de `up()`.
-- **Archivo de clave faltante** — si el archivo de clave en `{datastore}/.credentials/keys/{guid}.key` fue eliminado, el reconciliador no puede montar el volumen sin una frase de contraseña.
-- **Rediaccfile defectuoso** — un error de sintaxis o un hook `up()` que siempre termina con código no cero.
+- **Licencia de repositorio no confiable o expirada**: la comprobación de licencia se ejecuta antes de `up()`.
+- **Archivo de clave faltante**: si el archivo de clave en `{datastore}/.credentials/keys/{guid}.key` fue eliminado, el reconciliador no puede montar el volumen sin una frase de contraseña.
+- **Rediaccfile defectuoso**: un error de sintaxis o un hook `up()` que siempre termina con código no cero.
 
 ### Relación con el watchdog del router
 
@@ -118,5 +118,5 @@ El reconciliador intentará la recuperación de nuevo en el siguiente tick del t
 
 ## Páginas relacionadas
 
-- [Servicios — Inicio automático en el arranque](/es/docs/services#autostart-on-boot) — habilitar y deshabilitar el inicio automático, gestión del archivo de clave
-- [Respaldo y Restauración](/es/docs/backup-restore) — interacción del respaldo en frío con los servicios en ejecución
+- [Servicios: Inicio automático en el arranque](/es/docs/services#autostart-on-boot): habilitar y deshabilitar el inicio automático, gestión del archivo de clave
+- [Respaldo y Restauración](/es/docs/backup-restore): interacción del respaldo en frío con los servicios en ejecución

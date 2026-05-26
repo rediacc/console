@@ -10,7 +10,7 @@ language: en
 
 This page explains how repositories are automatically mounted and started at boot, and how the periodic reconciler brings a repository back up if it goes down after the server is already running.
 
-For how to enable or disable autostart on a repository, see [Services — Autostart on Boot](/en/docs/services#autostart-on-boot).
+For how to enable or disable autostart on a repository, see [Services: Autostart on Boot](/en/docs/services#autostart-on-boot).
 
 ## How Autostart Works
 
@@ -66,9 +66,9 @@ This file survives log rotation. Its presence means the repository requires oper
 
 Common causes of persistent recovery failure:
 
-- **Untrusted or expired repo license** — the license check runs before `up()`.
-- **Missing keyfile** — if the keyfile at `{datastore}/.credentials/keys/{guid}.key` was deleted, the reconciler cannot mount the volume without a passphrase.
-- **Broken Rediaccfile** — a syntax error or an `up()` hook that always exits non-zero.
+- **Untrusted or expired repo license**: the license check runs before `up()`.
+- **Missing keyfile**: if the keyfile at `{datastore}/.credentials/keys/{guid}.key` was deleted, the reconciler cannot mount the volume without a passphrase.
+- **Broken Rediaccfile**: a syntax error or an `up()` hook that always exits non-zero.
 
 ### Relationship to the Router Watchdog
 
@@ -117,5 +117,5 @@ The reconciler will attempt recovery again on the next timer tick.
 
 ## Related Pages
 
-- [Services — Autostart on Boot](/en/docs/services#autostart-on-boot) — enabling and disabling autostart, keyfile management
-- [Backup & Restore](/en/docs/backup-restore) — cold backup interaction with running services
+- [Services: Autostart on Boot](/en/docs/services#autostart-on-boot): enabling and disabling autostart, keyfile management
+- [Backup & Restore](/en/docs/backup-restore): cold backup interaction with running services

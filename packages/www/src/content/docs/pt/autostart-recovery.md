@@ -4,14 +4,14 @@ description: "Como funciona o autostart, o reconciliador periódico que recupera
 category: "Guides"
 order: 5
 language: pt
-sourceHash: "a009cfabc7240d87"
+sourceHash: "8e98fcd141e27da6"
 ---
 
 # Autostart e Recuperação
 
 Esta página explica como os repositórios são montados e iniciados automaticamente no arranque, e como o reconciliador periódico repõe em funcionamento um repositório que fica inactivo depois de o servidor já estar a correr.
 
-Para saber como activar ou desactivar o autostart num repositório, consulte [Serviços — Autostart no Arranque](/pt/docs/services#autostart-on-boot).
+Para saber como activar ou desactivar o autostart num repositório, consulte [Serviços: Autostart no Arranque](/pt/docs/services#autostart-on-boot).
 
 ## Como funciona o autostart
 
@@ -67,9 +67,9 @@ Este ficheiro sobrevive à rotação de logs. A sua presença significa que o re
 
 Causas comuns de falha de recuperação persistente:
 
-- **Licença do repositório não confiável ou expirada** — a verificação de licença corre antes de `up()`.
-- **Keyfile em falta** — se o keyfile em `{datastore}/.credentials/keys/{guid}.key` foi eliminado, o reconciliador não consegue montar o volume sem uma frase-passe.
-- **Rediaccfile com erros** — um erro de sintaxe ou um hook `up()` que termina sempre com código não-zero.
+- **Licença do repositório não confiável ou expirada**: a verificação de licença corre antes de `up()`.
+- **Keyfile em falta**: se o keyfile em `{datastore}/.credentials/keys/{guid}.key` foi eliminado, o reconciliador não consegue montar o volume sem uma frase-passe.
+- **Rediaccfile com erros**: um erro de sintaxe ou um hook `up()` que termina sempre com código não-zero.
 
 ### Relação com o watchdog do router
 
@@ -118,5 +118,5 @@ O reconciliador tentará a recuperação novamente no próximo tick do temporiza
 
 ## Páginas relacionadas
 
-- [Serviços — Autostart no Arranque](/pt/docs/services#autostart-on-boot) — activar e desactivar o autostart, gestão do keyfile
-- [Backup e Restauro](/pt/docs/backup-restore) — interacção do backup cold com serviços em execução
+- [Serviços: Autostart no Arranque](/pt/docs/services#autostart-on-boot): activar e desactivar o autostart, gestão do keyfile
+- [Backup e Restauro](/pt/docs/backup-restore): interacção do backup cold com serviços em execução

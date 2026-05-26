@@ -4,14 +4,14 @@ description: "Kuidas automaatkäivitus toimib, perioodiline leppija, mis taastab
 category: "Guides"
 order: 5
 language: et
-sourceHash: "a009cfabc7240d87"
+sourceHash: "8e98fcd141e27da6"
 ---
 
 # Automaatkäivitus ja taastamine
 
 See leht selgitab, kuidas repositooriumid käivitamisel automaatselt ühendatakse ja käivitatakse, ning kuidas perioodiline leppija toob repositooriumi taas üles, kui see langeb pärast serveri käivitamist.
 
-Automaatkäivituse lubamiseks või keelamiseks repositooriumil vt [Teenused — Automaatkäivitus käivitamisel](/et/docs/services#autostart-on-boot).
+Automaatkäivituse lubamiseks või keelamiseks repositooriumil vt [Teenused: Automaatkäivitus käivitamisel](/et/docs/services#autostart-on-boot).
 
 ## Kuidas automaatkäivitus toimib
 
@@ -67,9 +67,9 @@ See fail jääb püsima pärast logide rotatsiooni. Selle olemasolu tähendab, e
 
 Püsiva taastumisetõrke levinud põhjused:
 
-- **Ebausaldusväärsed või aegunud repositooriumi litsents** — litsentsi kontroll töötab enne `up()`.
-- **Puuduv võtmefail** — kui võtmefail asukohas `{datastore}/.credentials/keys/{guid}.key` on kustutatud, ei saa leppija köidet ilma paroolita ühendada.
-- **Katkine Rediaccfile** — süntaksiviga või `up()` konks, mis lõpetab alati nullist erineva koodiga.
+- **Ebausaldusväärsed või aegunud repositooriumi litsents**: litsentsi kontroll töötab enne `up()`.
+- **Puuduv võtmefail**: kui võtmefail asukohas `{datastore}/.credentials/keys/{guid}.key` on kustutatud, ei saa leppija köidet ilma paroolita ühendada.
+- **Katkine Rediaccfile**: süntaksiviga või `up()` konks, mis lõpetab alati nullist erineva koodiga.
 
 ### Seos ruuteri valvekoeraga
 
@@ -118,5 +118,5 @@ Leppija katsub taastamist uuesti järgmisel taimeri tiktakil.
 
 ## Seotud lehed
 
-- [Teenused — Automaatkäivitus käivitamisel](/et/docs/services#autostart-on-boot) — automaatkäivituse lubamine ja keelamine, võtmefaili haldamine
-- [Varundamine ja taastamine](/et/docs/backup-restore) — külma varukoopia koostoime töötavate teenustega
+- [Teenused: Automaatkäivitus käivitamisel](/et/docs/services#autostart-on-boot): automaatkäivituse lubamine ja keelamine, võtmefaili haldamine
+- [Varundamine ja taastamine](/et/docs/backup-restore): külma varukoopia koostoime töötavate teenustega
