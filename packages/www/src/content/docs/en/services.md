@@ -326,6 +326,8 @@ the deploy.
 rdc repo autostart list -m server-1
 ```
 
+For details on how the periodic reconciler recovers repositories that go down after boot, see [Autostart & Recovery](/en/docs/autostart-recovery).
+
 ## Complete Example
 
 This deploys a web application with PostgreSQL, Redis, and an API server.

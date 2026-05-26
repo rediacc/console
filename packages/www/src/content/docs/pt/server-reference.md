@@ -4,8 +4,8 @@ description: "Estrutura de directórios, comandos renet, serviços systemd e flu
 category: "Concepts"
 order: 3
 language: pt
-sourceHash: "40a33f0e2fa34548"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Referência do Servidor
@@ -243,6 +243,8 @@ Servicos globais partilhados entre todos os repositorios:
 |---------|-----------|
 | `rediacc-router.service` | Descoberta de rotas (porta 7111) |
 | `rediacc-autostart.service` | Montagem de repositorios no arranque |
+| `rediacc-autostart-reconcile.service` | Reconciliador periódico de autostart (executado pelo temporizador seguinte) |
+| `rediacc-autostart-reconcile.timer` | Dispara `renet repository reconcile` aproximadamente a cada 3 minutos para recuperar repositórios de autostart que ficaram inactivos após o arranque |
 
 ## Fluxos de Trabalho Comuns
 

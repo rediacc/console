@@ -4,8 +4,8 @@ description: "Verzeichnisstruktur, renet-Befehle, systemd-Dienste und Arbeitsabl
 category: "Concepts"
 order: 3
 language: de
-sourceHash: "40a33f0e2fa34548"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Server-Referenz
@@ -243,6 +243,8 @@ Globale Dienste, die von allen Repositories gemeinsam genutzt werden:
 |------|-------|
 | `rediacc-router.service` | Routenermittlung (Port 7111) |
 | `rediacc-autostart.service` | Repository-Einbindung beim Start |
+| `rediacc-autostart-reconcile.service` | Periodischer Autostart-Reconciler (wird vom Timer unten gestartet) |
+| `rediacc-autostart-reconcile.timer` | Führt `renet repository reconcile` ungefähr alle 3 Minuten aus, um Autostart-Repos wiederherzustellen, die nach dem Start ausgefallen sind |
 
 ## Typische Arbeitsabläufe
 

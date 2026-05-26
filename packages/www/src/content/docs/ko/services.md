@@ -5,8 +5,8 @@ description: >-
 category: Guides
 order: 5
 language: ko
-sourceHash: "1eddcf9de8bfac31"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # 서비스
@@ -325,6 +325,8 @@ Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+부팅 후 중단된 레포지토리를 주기적 조정자가 복구하는 방법에 대한 자세한 내용은 [자동 시작 및 복구](/ko/docs/autostart-recovery)를 참조하세요.
 
 ## 완전한 예시
 

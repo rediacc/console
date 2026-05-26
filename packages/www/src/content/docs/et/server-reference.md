@@ -4,8 +4,8 @@ description: "Kataloogipaigutus, renet-käsud, systemd-teenused ja tööprotsess
 category: "Concepts"
 order: 3
 language: et
-sourceHash: "40a33f0e2fa34548"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Serveri viide
@@ -243,6 +243,8 @@ Globaalsed teenused, mis on jagatud kõigile repositooriumitele:
 |------|---------|
 | `rediacc-router.service` | Marsruudi avastamine (port 7111) |
 | `rediacc-autostart.service` | Käivitusaegne repositooriumi ühendamine |
+| `rediacc-autostart-reconcile.service` | Perioodiline automaatkäivituse leppija (käivitatakse alljärgneva taimeri poolt) |
+| `rediacc-autostart-reconcile.timer` | Käivitab `renet repository reconcile` ligikaudu iga 3 minuti järel, et taastada pärast käivitamist seiskunud automaatkäivitusega repositooriumeid |
 
 ## Tavalised tööprotsessid
 

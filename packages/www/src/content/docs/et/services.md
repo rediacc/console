@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: et
-sourceHash: "1eddcf9de8bfac31"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Teenused
@@ -327,6 +327,8 @@ juurutamist.
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+Üksikasjade saamiseks selle kohta, kuidas perioodiline leppija taastab pärast käivitamist seiskunud repositooriumeid, vaadake [Automaatkäivitus ja taastamine](/et/docs/autostart-recovery).
 
 ## Täielik näide
 

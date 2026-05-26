@@ -4,8 +4,8 @@ description: "Faça backup de repositórios encriptados para armazenamento exter
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "633ed49fd412e0ec"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "29bb767d837eab9a"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Backup e Restauro
@@ -295,6 +295,58 @@ Na sua configuração, associe um ou mais nomes de estratégia a uma máquina:
   }
 }
 ```
+
+## Escolher entre Hot e Cold e Filtragem por Repositório
+
+### Hot vs cold em resumo
+
+| | Hot | Cold |
+|---|-----|------|
+| **Consistência** | Crash-consistent (snapshot BTRFS durante a execução) | Application-consistent (stop → snapshot → start) |
+| **Downtime** | Nenhum | Janela de stop+start por repositório (normalmente 5-120 s) |
+| **Frequência adequada** | Alta (ex: de hora em hora) | Baixa (ex: diária ou semanal) |
+| **Uso típico** | Rede de segurança de alta frequência | Backup agendado com consistência garantida |
+
+**Hot** é o padrão correcto para execuções de alta frequência. Os serviços continuam a correr enquanto o snapshot é efectuado, por isso a janela de backup não interrompe os utilizadores. O snapshot é crash-consistent: é equivalente ao que se obteria após um encerramento não limpo. Para a maioria das bases de dados modernas e filas de mensagens, isto é aceitável.
+
+**Cold** é apropriado quando precisa de um snapshot application-consistent garantido e pode aceitar um breve reinício por repositório. Os serviços são parados antes do snapshot e reiniciados antes de o carregamento começar, por isso um carregamento lento ou falhado nunca prolonga a janela de downtime. Consulte [Semântica do Backup Cold](#semantica-do-backup-cold) para o modelo de garantia completo.
+
+### Filtrar repositórios por estratégia
+
+Cada estratégia pode ter filtros `--include` e `--exclude`. Os nomes de repositório que correspondem a um padrão `--exclude` são ignorados para essa estratégia; `--include` restringe a execução apenas a esses nomes. Os filtros correspondem ao nome do repositório na configuração local (sem `:tag`).
+
+```bash
+# Estratégia hot: fazer backup de tudo de hora em hora
+rdc config backup-strategy set \
+  --name hourly-hot \
+  --destination my-storage \
+  --cron "0 * * * *" \
+  --mode hot \
+  --bwlimit 6M \
+  --enable
+
+# Estratégia cold: fazer backup de tudo semanalmente, excluindo o conjunto de dados derivado de grande dimensão
+rdc config backup-strategy set \
+  --name weekly-cold \
+  --destination my-storage \
+  --cron "15 3 * * 0" \
+  --mode cold \
+  --exclude analytics-demo \
+  --enable
+```
+
+### Quando excluir um repositório da estratégia hot de alta frequência
+
+Exclua um repositório da execução de alta frequência quando:
+
+- O repositório é grande e **totalmente regenerável** a partir de dados de origem já presentes no volume, por isso cada backup de hora em hora desperdiça largura de banda significativa sem acrescentar valor de recuperação significativo.
+- A execução do backup ultrapassaria o seu próprio intervalo de agendamento à velocidade de carregamento disponível.
+
+**Exemplo.** Um repositório `analytics-demo` contém aproximadamente 114 GB de tabelas Postgres derivadas que podem ser totalmente reconstruídas a partir de ficheiros de dump CSV brutos já armazenados dentro do mesmo volume. Com um limite de carregamento de 6 MB/s, um único backup hot desse repositório demora mais de 5 horas. Executá-lo de hora em hora significa que cada execução ainda está em curso quando a próxima dispara, o que faz com que cada execução subsequente seja silenciosamente descartada (consulte [Backups Longos e Agendamentos Sobrepostos](#backups-longos-e-agendamentos-sobrepostos)). Excluí-lo de `hourly-hot` e mantê-lo em `weekly-cold` significa que é feito backup uma vez por semana em vez de nunca.
+
+> **Se os dados são puramente regeneráveis**, considere se precisa de os fazer backup. Uma alternativa é fazer backup apenas das entradas de origem brutas (os dumps CSV, neste exemplo) e ignorar completamente a cópia derivada. Um backup cold semanal das entradas de origem é muito mais pequeno e completamente suficiente para a recuperação.
+
+Os repositórios não excluídos de nenhuma das estratégias aparecem em ambas as subpastas de armazenamento `hot/` e `cold/`. O resultado unificado de `rdc repo backup list` mostra ambas as linhas para que possa verificar quais os fluxos que cobrem quais repositórios.
 
 ## Operações de Backup
 

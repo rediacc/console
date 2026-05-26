@@ -4,8 +4,8 @@ description: "Dizin yapısı, renet komutları, systemd servisleri ve uzak sunuc
 category: "Concepts"
 order: 3
 language: tr
-sourceHash: "40a33f0e2fa34548"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Sunucu Referansı
@@ -243,6 +243,8 @@ Tüm depolar arasında paylaşılan global servisler:
 |-------|------|
 | `rediacc-router.service` | Rota keşfi (port 7111) |
 | `rediacc-autostart.service` | Önyükleme zamanı depo bağlama |
+| `rediacc-autostart-reconcile.service` | Periyodik otomatik başlatma uzlaştırıcısı (aşağıdaki zamanlayıcı tarafından çalıştırılır) |
+| `rediacc-autostart-reconcile.timer` | Önyüklemeden sonra duran otomatik başlatma depolarını kurtarmak için yaklaşık her 3 dakikada bir `renet repository reconcile` komutunu çalıştırır |
 
 ## Yaygın İş Akışları
 

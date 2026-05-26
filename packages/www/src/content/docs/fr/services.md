@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: fr
-sourceHash: "1eddcf9de8bfac31"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Services
@@ -324,6 +324,8 @@ activé, la vérification est silencieusement ignorée. Les échecs sont non fat
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+Pour plus de détails sur la façon dont le réconciliateur périodique récupère les dépôts qui tombent après le démarrage, consultez [Démarrage automatique et récupération](/fr/docs/autostart-recovery).
 
 ## Exemple complet
 

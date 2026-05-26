@@ -4,8 +4,8 @@ description: "تخطيط المجلدات، وأوامر renet، وخدمات sy
 category: "Concepts"
 order: 3
 language: ar
-sourceHash: "40a33f0e2fa34548"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # مرجع الخادم
@@ -243,6 +243,8 @@ renet datastore expand      # Expand the datastore online
 |------|---------|
 | `rediacc-router.service` | اكتشاف المسارات (المنفذ 7111) |
 | `rediacc-autostart.service` | تحميل المستودعات عند الإقلاع |
+| `rediacc-autostart-reconcile.service` | المُوفِّق الدوري للتشغيل التلقائي (يُشغَّل بواسطة المؤقت أدناه) |
+| `rediacc-autostart-reconcile.timer` | يُطلق `renet repository reconcile` تقريباً كل 3 دقائق لاسترداد مستودعات التشغيل التلقائي التي توقفت بعد الإقلاع |
 
 ## سير العمل الشائعة
 

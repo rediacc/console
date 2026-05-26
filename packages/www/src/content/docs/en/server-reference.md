@@ -241,6 +241,8 @@ Global services shared across all repositories:
 |------|---------|
 | `rediacc-router.service` | Route discovery (port 7111) |
 | `rediacc-autostart.service` | Boot-time repository mounting |
+| `rediacc-autostart-reconcile.service` | Periodic autostart reconciler (run by the timer below) |
+| `rediacc-autostart-reconcile.timer` | Fires `renet repository reconcile` approximately every 3 minutes to recover autostart repos that went down after boot |
 
 ## Common Workflows
 

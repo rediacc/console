@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: fr
-sourceHash: "633ed49fd412e0ec"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "29bb767d837eab9a"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Sauvegarde et restauration
@@ -297,6 +297,58 @@ Dans votre configuration, associez un ou plusieurs noms de stratégie à une mac
   }
 }
 ```
+
+## Choisir entre hot et cold et filtrage par dépôt
+
+### Hot vs cold en un coup d'œil
+
+| | Hot | Cold |
+|---|-----|------|
+| **Cohérence** | Cohérent en cas de crash (snapshot BTRFS pendant l'exécution) | Cohérent au niveau applicatif (arrêt → snapshot → démarrage) |
+| **Temps d'arrêt** | Aucun | Fenêtre stop+start par dépôt (typiquement 5-120 s) |
+| **Fréquence adaptée** | Élevée (p. ex. horaire) | Faible (p. ex. quotidienne ou hebdomadaire) |
+| **Usage typique** | Filet de sécurité fréquent | Sauvegarde planifiée avec cohérence garantie |
+
+**Hot** est le bon choix par défaut pour les exécutions à haute fréquence. Les services continuent de fonctionner pendant la prise du snapshot, la fenêtre de sauvegarde n'interrompt donc pas les utilisateurs. Le snapshot est cohérent en cas de crash : il équivaut à ce que vous obtiendriez après un arrêt incorrect. Pour la plupart des bases de données modernes et des files de messages, c'est acceptable.
+
+**Cold** est approprié quand vous avez besoin d'un snapshot applicatif garanti et que vous pouvez accepter un bref redémarrage par dépôt. Les services sont arrêtés avant le snapshot et redémarrés avant le début du chargement, de sorte qu'un chargement lent ou échoué ne prolonge jamais la fenêtre de temps d'arrêt. Consultez [Sémantique de la sauvegarde froide](#sémantique-de-la-sauvegarde-froide) pour le modèle de garantie complet.
+
+### Filtrer les dépôts par stratégie
+
+Chaque stratégie peut porter des filtres `--include` et `--exclude`. Les noms de dépôts correspondant à un motif `--exclude` sont ignorés pour cette stratégie ; `--include` restreint l'exécution aux seuls noms correspondants. Les filtres correspondent au nom de dépôt de la configuration locale (sans `:tag`).
+
+```bash
+# Stratégie hot : sauvegarder tout toutes les heures
+rdc config backup-strategy set \
+  --name hourly-hot \
+  --destination my-storage \
+  --cron "0 * * * *" \
+  --mode hot \
+  --bwlimit 6M \
+  --enable
+
+# Stratégie cold : sauvegarder tout chaque semaine, sauf le grand jeu de données dérivé
+rdc config backup-strategy set \
+  --name weekly-cold \
+  --destination my-storage \
+  --cron "15 3 * * 0" \
+  --mode cold \
+  --exclude analytics-demo \
+  --enable
+```
+
+### Quand exclure un dépôt de la stratégie hot haute fréquence
+
+Excluez un dépôt de l'exécution haute fréquence quand :
+
+- Le dépôt est volumineux et **entièrement régénérable** à partir des données sources déjà présentes sur le volume, de sorte que chaque sauvegarde horaire gaspille une bande passante significative sans apporter de valeur de récupération concrète.
+- L'exécution de sauvegarde dépasserait son propre intervalle de calendrier à votre vitesse de chargement disponible.
+
+**Exemple.** Un dépôt `analytics-demo` contient environ 114 Go de tables Postgres dérivées pouvant être entièrement reconstruites à partir des fichiers CSV bruts déjà stockés dans le même volume. Avec une limite de chargement à 6 Mo/s, une seule sauvegarde hot de ce dépôt prend plus de 5 heures. En l'exécutant toutes les heures, chaque exécution est encore en cours quand la suivante se déclenche, ce qui provoque l'abandon silencieux de chaque exécution suivante (voir [Sauvegardes longues et calendriers qui se chevauchent](#sauvegardes-longues-et-calendriers-qui-se-chevauchent)). L'exclure de `hourly-hot` et le conserver dans `weekly-cold` signifie qu'il est sauvegardé une fois par semaine plutôt que jamais.
+
+> **Si les données sont purement régénérables**, envisagez si vous avez vraiment besoin de les sauvegarder. Une alternative est de ne sauvegarder que les entrées sources brutes (les dumps CSV dans cet exemple) et d'ignorer entièrement la copie dérivée. Une sauvegarde froide hebdomadaire des entrées sources est bien plus petite et entièrement suffisante pour la récupération.
+
+Les dépôts non exclus d'aucune des deux stratégies apparaissent dans les sous-dossiers `hot/` et `cold/` du stockage. La sortie fusionnée de `rdc repo backup list` affiche les deux lignes pour vérifier quels flux couvrent quels dépôts.
 
 ## Opérations de sauvegarde
 

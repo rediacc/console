@@ -4,8 +4,8 @@ description: "Organisation des répertoires, commandes renet, services systemd e
 category: "Concepts"
 order: 3
 language: fr
-sourceHash: "40a33f0e2fa34548"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Référence serveur
@@ -243,6 +243,8 @@ Services globaux partagés par tous les dépôts :
 |-------|------|
 | `rediacc-router.service` | Découverte des routes (port 7111) |
 | `rediacc-autostart.service` | Montage des dépôts au démarrage |
+| `rediacc-autostart-reconcile.service` | Réconciliateur de démarrage automatique périodique (exécuté par le timer ci-dessous) |
+| `rediacc-autostart-reconcile.timer` | Déclenche `renet repository reconcile` environ toutes les 3 minutes pour récupérer les dépôts autostart tombés après le démarrage |
 
 ## Procédures courantes
 

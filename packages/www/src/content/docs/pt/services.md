@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: pt
-sourceHash: "1eddcf9de8bfac31"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Servicos
@@ -327,6 +327,8 @@ o deployment.
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+Para mais detalhes sobre como o reconciliador periódico recupera repositórios que ficam inactivos após o arranque, consulte [Autostart e Recuperação](/pt/docs/autostart-recovery).
 
 ## Exemplo Completo
 

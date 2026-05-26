@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "633ed49fd412e0ec"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "29bb767d837eab9a"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -297,6 +297,58 @@ Yapılandırmanızda bir veya daha fazla strateji adını bir makineye bağlayı
   }
 }
 ```
+
+## Sıcak ve Soğuk Seçimi ve Depo Başına Filtreleme
+
+### Sıcak ve soğuk: özet
+
+| | Sıcak | Soğuk |
+|---|-------|-------|
+| **Tutarlılık** | Kilitlenme tutarlı (çalışırken BTRFS anlık görüntüsü) | Uygulama tutarlı (durdur → anlık görüntü → başlat) |
+| **Kesinti** | Yok | Depo başına durdur+başlat penceresi (genellikle 5-120 s) |
+| **Uygun sıklık** | Yüksek (örn. saatlik) | Düşük (örn. günlük veya haftalık) |
+| **Tipik kullanım** | Sık güvenlik ağı | Zamanlanmış garantili tutarlılık yedeklemesi |
+
+**Sıcak**, yüksek frekanslı çalıştırmalar için doğru varsayılandır. Anlık görüntü alınırken servisler çalışmaya devam eder, bu nedenle yedekleme penceresi kullanıcıları kesintiye uğratmaz. Anlık görüntü kilitlenme tutarlıdır: temiz olmayan bir kapanmanın ardından elde edeceğinize eşdeğerdir. Çoğu modern veritabanı ve mesaj kuyruğu için bu kabul edilebilir.
+
+**Soğuk**, garantili uygulama tutarlı bir anlık görüntüye ihtiyaç duyduğunuzda ve kısa bir depo başına yeniden başlatmayı kabul edebildiğinizde uygundur. Servisler anlık görüntüden önce durdurulur ve yükleme başlamadan önce yeniden başlatılır; bu nedenle yavaş veya başarısız bir yükleme kesinti penceresini hiçbir zaman uzatmaz. Tam garanti modeli için bkz. [Soğuk Yedekleme Semantiği](#soğuk-yedekleme-semantiği).
+
+### Strateji başına depo filtreleme
+
+Her strateji `--include` ve `--exclude` filtreleri taşıyabilir. Bir `--exclude` kalıbıyla eşleşen depo adları o strateji için atlanır; `--include` yalnızca bu adlarla çalıştırmayı kısıtlar. Filtreler yerel yapılandırma depo adıyla eşleşir (`:tag` olmadan).
+
+```bash
+# Sıcak strateji: her şeyi saatlik olarak yedekle
+rdc config backup-strategy set \
+  --name hourly-hot \
+  --destination my-storage \
+  --cron "0 * * * *" \
+  --mode hot \
+  --bwlimit 6M \
+  --enable
+
+# Soğuk strateji: büyük türetilmiş veri kümesi hariç her şeyi haftalık yedekle
+rdc config backup-strategy set \
+  --name weekly-cold \
+  --destination my-storage \
+  --cron "15 3 * * 0" \
+  --mode cold \
+  --exclude analytics-demo \
+  --enable
+```
+
+### Bir depoyu sık çalışan sıcak stratejiden ne zaman hariç tutmalı
+
+Yüksek frekanslı çalıştırmadan bir depoyu hariç tutun:
+
+- Depo büyükse ve zaten birimdeki kaynak verilerden **tamamen yeniden üretilebiliyorsa**, her saatlik yedekleme anlamlı bir kurtarma değeri katmadan önemli bant genişliği harcar.
+- Mevcut yükleme hızınızda yedekleme çalıştırması kendi zamanlama aralığını aşacaksa.
+
+**Örnek.** `analytics-demo` deposu, aynı birim içinde saklanan ham CSV döküm dosyalarından tamamen yeniden oluşturulabilen yaklaşık 114 GB türetilmiş Postgres tabloları içerir. 6 MB/s yükleme sınırıyla, bu deponun tek bir sıcak yedeklemesi 5 saatten fazla sürer. Saatlik çalıştırmak, bir sonraki başlamadan her çalıştırmanın hâlâ devam ettiği anlamına gelir; bu da sonraki her çalıştırmanın sessizce bırakılmasına neden olur (bkz. [Uzun Süren Yedeklemeler ve Çakışan Zamanlamalar](#uzun-süren-yedeklemeler-ve-çakışan-zamanlamalar)). `hourly-hot` stratejisinden hariç tutmak ve `weekly-cold` stratejisinde bırakmak, hiç yapılmaması yerine haftada bir yedekleme yapılması anlamına gelir.
+
+> **Veriler tamamen yeniden üretilebiliyorsa**, hiç yedeklemeniz gerekip gerekmediğini düşünün. Bir alternatif, yalnızca ham kaynak girdileri (bu örnekte CSV dökümleri) yedeklemek ve türetilmiş kopyayı tamamen atlamaktır. Kaynak girdilerin haftalık soğuk yedeklemesi çok daha küçük ve kurtarma için tamamen yeterlidir.
+
+Her iki stratejiden de hariç tutulmayan depolar hem `hot/` hem de `cold/` depolama alt klasörlerinde görünür. Birleşik `rdc repo backup list` çıktısı her iki satırı da gösterir; böylece hangi akışların hangi depoları kapsadığını doğrulayabilirsiniz.
 
 ## Yedekleme İşlemleri
 

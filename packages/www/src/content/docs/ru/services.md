@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: ru
-sourceHash: "1eddcf9de8bfac31"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Сервисы
@@ -324,6 +324,8 @@ Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+Подробнее о том, как периодический реконсилятор восстанавливает репозитории, остановившиеся после загрузки, см. [Автозапуск и восстановление](/ru/docs/autostart-recovery).
 
 ## Полный пример
 

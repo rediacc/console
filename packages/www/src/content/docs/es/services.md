@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: "1eddcf9de8bfac31"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Servicios
@@ -324,6 +324,8 @@ está habilitado, la verificación se omite silenciosamente. Los fallos no son f
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+Para más detalles sobre cómo el reconciliador periódico recupera repositorios que se caen después del arranque, consulte [Inicio Automático y Recuperación](/es/docs/autostart-recovery).
 
 ## Ejemplo Completo
 

@@ -4,8 +4,8 @@ description: "Layout delle directory, comandi renet, servizi systemd e workflow 
 category: "Concepts"
 order: 3
 language: it
-sourceHash: "40a33f0e2fa34548"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Riferimento server
@@ -243,6 +243,8 @@ Servizi globali condivisi tra tutti i repository:
 |-------|-------|
 | `rediacc-router.service` | Scoperta delle route (porta 7111) |
 | `rediacc-autostart.service` | Montaggio dei repository all'avvio |
+| `rediacc-autostart-reconcile.service` | Riconciliatore periodico dell'autostart (eseguito dal timer seguente) |
+| `rediacc-autostart-reconcile.timer` | Attiva `renet repository reconcile` circa ogni 3 minuti per recuperare i repository autostart che si sono interrotti dopo l'avvio |
 
 ## Workflow comuni
 

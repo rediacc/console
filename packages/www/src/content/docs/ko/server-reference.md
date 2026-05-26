@@ -4,8 +4,8 @@ description: "원격 서버의 디렉터리 구조, renet 명령, systemd 서비
 category: "Concepts"
 order: 3
 language: ko
-sourceHash: "40a33f0e2fa34548"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # 서버 레퍼런스
@@ -243,6 +243,8 @@ renet datastore expand      # 온라인으로 데이터스토어 확장
 |------|------|
 | `rediacc-router.service` | 경로 검색 (포트 7111) |
 | `rediacc-autostart.service` | 부팅 시 저장소 마운트 |
+| `rediacc-autostart-reconcile.service` | 주기적 자동 시작 조정자 (아래 타이머에 의해 실행) |
+| `rediacc-autostart-reconcile.timer` | 부팅 후 중단된 자동 시작 레포지토리를 복구하기 위해 약 3분마다 `renet repository reconcile` 실행 |
 
 ## 일반 워크플로
 
