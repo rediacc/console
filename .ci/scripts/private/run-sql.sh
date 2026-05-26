@@ -47,7 +47,22 @@ run_quality() {
     npm run typecheck
 
     log_step "Starting test infrastructure..."
-    npm run test:setup
+    # `npm run test:setup` is `docker compose up -d --wait`. Some docker compose
+    # versions spuriously return non-zero from `--wait` when the one-shot
+    # `rustfs-init` container exits cleanly (code 0), even though the only
+    # long-running dependency (rustfs) is healthy. Don't let that false failure
+    # abort the job: if setup reports failure, verify rustfs health directly and
+    # proceed when it is actually up (the init job has already created the bucket).
+    if ! npm run test:setup; then
+        log_warn "test:setup reported failure; verifying rustfs health directly..."
+        if docker inspect -f '{{.State.Health.Status}}' ha-coordinator-test-rustfs 2>/dev/null | grep -q healthy; then
+            log_warn "rustfs is healthy; treating setup as successful despite --wait exit code"
+        else
+            log_error "rustfs did not become healthy"
+            npm run test:teardown || true
+            return 1
+        fi
+    fi
 
     log_step "Running coordinator tests..."
     local rc=0
