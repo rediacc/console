@@ -153,6 +153,7 @@ export interface RepositoryInfo {
   service_count: number;
   size: number;
   size_human: string;
+  systemd_installed: boolean;
   total_volumes: number;
   volume_status: string;
 }
