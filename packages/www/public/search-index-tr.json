@@ -2319,7 +2319,7 @@
   {
     "id": "search-14692",
     "content": "Otomatik Başlatma ve Kurtarma",
-    "body": "# Otomatik Başlatma ve Kurtarma Bu sayfa, depoların önyükleme sırasında nasıl otomatik olarak bağlandığını ve başlatıldığını, ayrıca periyodik uzlaştırıcının sunucu çalışırken duran bir depoyu nasıl geri getirdiğini açıklar. Bir depo için otomatik başlatmayı etkinleştirme veya devre dışı bırakma hakkında bilgi için bkz. Servisler — Önyükleme Sırasında Otomatik Başlatma.",
+    "body": "# Otomatik Başlatma ve Kurtarma Bu sayfa, depoların önyükleme sırasında nasıl otomatik olarak bağlandığını ve başlatıldığını, ayrıca periyodik uzlaştırıcının sunucu çalışırken duran bir depoyu nasıl geri getirdiğini açıklar. Bir depo için otomatik başlatmayı etkinleştirme veya devre dışı bırakma hakkında bilgi için bkz. Servisler: Önyükleme Sırasında Otomatik Başlatma.",
     "excerpt": "# Otomatik Başlatma ve Kurtarma Bu sayfa, depoların önyükleme sırasında nasıl otomatik olarak bağlandığını ve başlatıldığını, ayrıca periyodik uzlaştı...",
     "category": "Documentation",
     "page": "/tr/docs/autostart-recovery",
@@ -2363,7 +2363,7 @@
   {
     "id": "search-14696",
     "content": "Geri Çekilme ve Kalıcı Başarısızlık İşaretçileri",
-    "body": "Kurtarılmayı başaramayan bir depo, her döngüde hemen yeniden denemez. Uzlaştırıcı üstel geri çekilme kullanır: | Başarısızlık sayısı | Sonraki denemeden önceki bekleme | |---------------------|----------------------------------| | 1 | 1 dakika | | 2 | 2 dakika | | 3 | 5 dakika | | 4 | 15 dakika | | 5+ | 30 dakika, ardından 60 dakika | 5 ardışık başarısızlıktan sonra, uzlaştırıcı şu konumda kalıcı bir işaretçi dosyası yazar: /var/lib/rediacc/reconcile/failed/{guid} Bu dosya, günlük rotasyonundan sağ çıkar. Varlığı, deponun operatör müdahalesi gerektirdiği anlamına gelir. Uzlaştırıcı başarısızlığı error seviyesinde kaydeder ve işaretçi silinene kadar o depo için otomatik kurtarma girişimlerini durdurur. Kalıcı kurtarma başarısızlığının yaygın nedenleri: Güvenilmez veya süresi dolmuş depo lisansı — lisans kontrolü up() işlevinden önce çalışır. Eksik anahtar dosyası — {datastore}/.credentials/keys/{guid}.key konumundaki anahtar dosyası silinmişse, uzlaştırıcı parola olmadan birimi bağlayamaz. Bozuk Rediaccfile — sözdizimi hatası veya her zaman sıfır dışı kodla çıkan bir up() kancası.",
+    "body": "Kurtarılmayı başaramayan bir depo, her döngüde hemen yeniden denemez. Uzlaştırıcı üstel geri çekilme kullanır: | Başarısızlık sayısı | Sonraki denemeden önceki bekleme | |---------------------|----------------------------------| | 1 | 1 dakika | | 2 | 2 dakika | | 3 | 5 dakika | | 4 | 15 dakika | | 5+ | 30 dakika, ardından 60 dakika | 5 ardışık başarısızlıktan sonra, uzlaştırıcı şu konumda kalıcı bir işaretçi dosyası yazar: /var/lib/rediacc/reconcile/failed/{guid} Bu dosya, günlük rotasyonundan sağ çıkar. Varlığı, deponun operatör müdahalesi gerektirdiği anlamına gelir. Uzlaştırıcı başarısızlığı error seviyesinde kaydeder ve işaretçi silinene kadar o depo için otomatik kurtarma girişimlerini durdurur. Kalıcı kurtarma başarısızlığının yaygın nedenleri: Güvenilmez veya süresi dolmuş depo lisansı: lisans kontrolü up() işlevinden önce çalışır. Eksik anahtar dosyası: {datastore}/.credentials/keys/{guid}.key konumundaki anahtar dosyası silinmişse, uzlaştırıcı parola olmadan birimi bağlayamaz. Bozuk Rediaccfile: sözdizimi hatası veya her zaman sıfır dışı kodla çıkan bir up() kancası.",
     "excerpt": "Kurtarılmayı başaramayan bir depo, her döngüde hemen yeniden denemez. Uzlaştırıcı üstel geri çekilme kullanır: | Başarısızlık sayısı | Sonraki denemed...",
     "category": "Documentation",
     "page": "/tr/docs/autostart-recovery",
@@ -2429,8 +2429,8 @@
   {
     "id": "search-14702",
     "content": "İlgili Sayfalar",
-    "body": "Servisler — Önyükleme Sırasında Otomatik Başlatma — otomatik başlatmayı etkinleştirme ve devre dışı bırakma, anahtar dosyası yönetimi Yedekleme ve Geri Yükleme — çalışan servislerle soğuk yedekleme etkileşimi",
-    "excerpt": "Servisler — Önyükleme Sırasında Otomatik Başlatma — otomatik başlatmayı etkinleştirme ve devre dışı bırakma, anahtar dosyası yönetimi Yedekleme ve Ger...",
+    "body": "Servisler: Önyükleme Sırasında Otomatik Başlatma: otomatik başlatmayı etkinleştirme ve devre dışı bırakma, anahtar dosyası yönetimi Yedekleme ve Geri Yükleme: çalışan servislerle soğuk yedekleme etkileşimi",
+    "excerpt": "Servisler: Önyükleme Sırasında Otomatik Başlatma: otomatik başlatmayı etkinleştirme ve devre dışı bırakma, anahtar dosyası yönetimi Yedekleme ve Geri...",
     "category": "Documentation",
     "page": "/tr/docs/autostart-recovery",
     "path": "docs.autostart-recovery.content",

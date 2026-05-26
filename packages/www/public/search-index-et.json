@@ -2374,7 +2374,7 @@
   {
     "id": "search-6138",
     "content": "Automaatkäivitus ja taastamine",
-    "body": "# Automaatkäivitus ja taastamine See leht selgitab, kuidas repositooriumid käivitamisel automaatselt ühendatakse ja käivitatakse, ning kuidas perioodiline leppija toob repositooriumi taas üles, kui see langeb pärast serveri käivitamist. Automaatkäivituse lubamiseks või keelamiseks repositooriumil vt Teenused — Automaatkäivitus käivitamisel.",
+    "body": "# Automaatkäivitus ja taastamine See leht selgitab, kuidas repositooriumid käivitamisel automaatselt ühendatakse ja käivitatakse, ning kuidas perioodiline leppija toob repositooriumi taas üles, kui see langeb pärast serveri käivitamist. Automaatkäivituse lubamiseks või keelamiseks repositooriumil vt Teenused: Automaatkäivitus käivitamisel.",
     "excerpt": "# Automaatkäivitus ja taastamine See leht selgitab, kuidas repositooriumid käivitamisel automaatselt ühendatakse ja käivitatakse, ning kuidas perioodi...",
     "category": "Documentation",
     "page": "/et/docs/autostart-recovery",
@@ -2418,7 +2418,7 @@
   {
     "id": "search-6142",
     "content": "Tagasilükkamine ja püsivad tõrkemarkerid",
-    "body": "Repositoorium, mille taastamine ebaõnnestub, ei katse kohe igal tiktakil uuesti. Leppija kasutab eksponentsiaalset tagasilükkamist: | Tõrgete arv | Ooteaeg enne järgmist katset | |-------------|------------------------------| | 1 | 1 minut | | 2 | 2 minutit | | 3 | 5 minutit | | 4 | 15 minutit | | 5+ | 30 minutit, seejärel 60 minutit | Pärast 5 järjestikust tõrget kirjutab leppija püsiva markerfaili asukohta: /var/lib/rediacc/reconcile/failed/{guid} See fail jääb püsima pärast logide rotatsiooni. Selle olemasolu tähendab, et repositoorium vajab operaatori tähelepanu. Leppija logib tõrke veatasemele ja lõpetab selle repositooriumi automaatse taastamise katsed kuni markeri kustutamiseni. Püsiva taastumisetõrke levinud põhjused: Ebausaldusväärsed või aegunud repositooriumi litsents — litsentsi kontroll töötab enne up(). Puuduv võtmefail — kui võtmefail asukohas {datastore}/.credentials/keys/{guid}.key on kustutatud, ei saa leppija köidet ilma paroolita ühendada. Katkine Rediaccfile — süntaksiviga või up() konks, mis lõpetab alati nullist erineva koodiga.",
+    "body": "Repositoorium, mille taastamine ebaõnnestub, ei katse kohe igal tiktakil uuesti. Leppija kasutab eksponentsiaalset tagasilükkamist: | Tõrgete arv | Ooteaeg enne järgmist katset | |-------------|------------------------------| | 1 | 1 minut | | 2 | 2 minutit | | 3 | 5 minutit | | 4 | 15 minutit | | 5+ | 30 minutit, seejärel 60 minutit | Pärast 5 järjestikust tõrget kirjutab leppija püsiva markerfaili asukohta: /var/lib/rediacc/reconcile/failed/{guid} See fail jääb püsima pärast logide rotatsiooni. Selle olemasolu tähendab, et repositoorium vajab operaatori tähelepanu. Leppija logib tõrke veatasemele ja lõpetab selle repositooriumi automaatse taastamise katsed kuni markeri kustutamiseni. Püsiva taastumisetõrke levinud põhjused: Ebausaldusväärsed või aegunud repositooriumi litsents: litsentsi kontroll töötab enne up(). Puuduv võtmefail: kui võtmefail asukohas {datastore}/.credentials/keys/{guid}.key on kustutatud, ei saa leppija köidet ilma paroolita ühendada. Katkine Rediaccfile: süntaksiviga või up() konks, mis lõpetab alati nullist erineva koodiga.",
     "excerpt": "Repositoorium, mille taastamine ebaõnnestub, ei katse kohe igal tiktakil uuesti. Leppija kasutab eksponentsiaalset tagasilükkamist: | Tõrgete arv | Oo...",
     "category": "Documentation",
     "page": "/et/docs/autostart-recovery",
@@ -2484,8 +2484,8 @@
   {
     "id": "search-6148",
     "content": "Seotud lehed",
-    "body": "Teenused — Automaatkäivitus käivitamisel — automaatkäivituse lubamine ja keelamine, võtmefaili haldamine Varundamine ja taastamine — külma varukoopia koostoime töötavate teenustega",
-    "excerpt": "Teenused — Automaatkäivitus käivitamisel — automaatkäivituse lubamine ja keelamine, võtmefaili haldamine Varundamine ja taastamine — külma varukoopia...",
+    "body": "Teenused: Automaatkäivitus käivitamisel: automaatkäivituse lubamine ja keelamine, võtmefaili haldamine Varundamine ja taastamine: külma varukoopia koostoime töötavate teenustega",
+    "excerpt": "Teenused: Automaatkäivitus käivitamisel: automaatkäivituse lubamine ja keelamine, võtmefaili haldamine Varundamine ja taastamine: külma varukoopia koo...",
     "category": "Documentation",
     "page": "/et/docs/autostart-recovery",
     "path": "docs.autostart-recovery.content",

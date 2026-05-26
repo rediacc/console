@@ -2319,7 +2319,7 @@
   {
     "id": "search-4914",
     "content": "Inicio Automático y Recuperación",
-    "body": "# Inicio Automático y Recuperación Esta página explica cómo los repositorios se montan e inician automáticamente al arrancar, y cómo el reconciliador periódico vuelve a poner en marcha un repositorio si se cae después de que el servidor ya está en funcionamiento. Para saber cómo habilitar o deshabilitar el inicio automático en un repositorio, consulte Servicios — Inicio automático en el arranque.",
+    "body": "# Inicio Automático y Recuperación Esta página explica cómo los repositorios se montan e inician automáticamente al arrancar, y cómo el reconciliador periódico vuelve a poner en marcha un repositorio si se cae después de que el servidor ya está en funcionamiento. Para saber cómo habilitar o deshabilitar el inicio automático en un repositorio, consulte Servicios: Inicio automático en el arranque.",
     "excerpt": "# Inicio Automático y Recuperación Esta página explica cómo los repositorios se montan e inician automáticamente al arrancar, y cómo el reconciliador...",
     "category": "Documentation",
     "page": "/es/docs/autostart-recovery",
@@ -2363,7 +2363,7 @@
   {
     "id": "search-4918",
     "content": "Back-off y marcadores de fallo persistentes",
-    "body": "Un repositorio que falla en la recuperación no reintenta de inmediato en cada ciclo. El reconciliador utiliza back-off exponencial: | Número de fallos | Espera antes del siguiente intento | |------------------|------------------------------------| | 1 | 1 minuto | | 2 | 2 minutos | | 3 | 5 minutos | | 4 | 15 minutos | | 5+ | 30 minutos, luego 60 minutos | Tras 5 fallos consecutivos, el reconciliador escribe un archivo marcador duradero en: /var/lib/rediacc/reconcile/failed/{guid} Este archivo sobrevive a la rotación de registros. Su presencia significa que el repositorio requiere la atención de un operador. El reconciliador registra el fallo a nivel de error y deja de intentar la recuperación automática para ese repositorio hasta que el marcador se elimine. Causas comunes de fallo de recuperación persistente: Licencia de repositorio no confiable o expirada — la comprobación de licencia se ejecuta antes de up(). Archivo de clave faltante — si el archivo de clave en {datastore}/.credentials/keys/{guid}.key fue eliminado, el reconciliador no puede montar el volumen sin una frase de contraseña. Rediaccfile defectuoso — un error de sintaxis o un hook up() que siempre termina con código no cero.",
+    "body": "Un repositorio que falla en la recuperación no reintenta de inmediato en cada ciclo. El reconciliador utiliza back-off exponencial: | Número de fallos | Espera antes del siguiente intento | |------------------|------------------------------------| | 1 | 1 minuto | | 2 | 2 minutos | | 3 | 5 minutos | | 4 | 15 minutos | | 5+ | 30 minutos, luego 60 minutos | Tras 5 fallos consecutivos, el reconciliador escribe un archivo marcador duradero en: /var/lib/rediacc/reconcile/failed/{guid} Este archivo sobrevive a la rotación de registros. Su presencia significa que el repositorio requiere la atención de un operador. El reconciliador registra el fallo a nivel de error y deja de intentar la recuperación automática para ese repositorio hasta que el marcador se elimine. Causas comunes de fallo de recuperación persistente: Licencia de repositorio no confiable o expirada: la comprobación de licencia se ejecuta antes de up(). Archivo de clave faltante: si el archivo de clave en {datastore}/.credentials/keys/{guid}.key fue eliminado, el reconciliador no puede montar el volumen sin una frase de contraseña. Rediaccfile defectuoso: un error de sintaxis o un hook up() que siempre termina con código no cero.",
     "excerpt": "Un repositorio que falla en la recuperación no reintenta de inmediato en cada ciclo. El reconciliador utiliza back-off exponencial: | Número de fallos...",
     "category": "Documentation",
     "page": "/es/docs/autostart-recovery",
@@ -2429,8 +2429,8 @@
   {
     "id": "search-4924",
     "content": "Páginas relacionadas",
-    "body": "Servicios — Inicio automático en el arranque — habilitar y deshabilitar el inicio automático, gestión del archivo de clave Respaldo y Restauración — interacción del respaldo en frío con los servicios en ejecución",
-    "excerpt": "Servicios — Inicio automático en el arranque — habilitar y deshabilitar el inicio automático, gestión del archivo de clave Respaldo y Restauración — i...",
+    "body": "Servicios: Inicio automático en el arranque: habilitar y deshabilitar el inicio automático, gestión del archivo de clave Respaldo y Restauración: interacción del respaldo en frío con los servicios en ejecución",
+    "excerpt": "Servicios: Inicio automático en el arranque: habilitar y deshabilitar el inicio automático, gestión del archivo de clave Respaldo y Restauración: inte...",
     "category": "Documentation",
     "page": "/es/docs/autostart-recovery",
     "path": "docs.autostart-recovery.content",

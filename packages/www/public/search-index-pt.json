@@ -2374,7 +2374,7 @@
   {
     "id": "search-12249",
     "content": "Autostart e Recuperação",
-    "body": "# Autostart e Recuperação Esta página explica como os repositórios são montados e iniciados automaticamente no arranque, e como o reconciliador periódico repõe em funcionamento um repositório que fica inactivo depois de o servidor já estar a correr. Para saber como activar ou desactivar o autostart num repositório, consulte Serviços — Autostart no Arranque.",
+    "body": "# Autostart e Recuperação Esta página explica como os repositórios são montados e iniciados automaticamente no arranque, e como o reconciliador periódico repõe em funcionamento um repositório que fica inactivo depois de o servidor já estar a correr. Para saber como activar ou desactivar o autostart num repositório, consulte Serviços: Autostart no Arranque.",
     "excerpt": "# Autostart e Recuperação Esta página explica como os repositórios são montados e iniciados automaticamente no arranque, e como o reconciliador periód...",
     "category": "Documentation",
     "page": "/pt/docs/autostart-recovery",
@@ -2418,7 +2418,7 @@
   {
     "id": "search-12253",
     "content": "Back-off e marcadores de falha persistentes",
-    "body": "Um repositório que não consegue recuperar não tenta imediatamente em cada tick. O reconciliador usa back-off exponencial: | Número de falhas | Espera antes da próxima tentativa | |------------------|-----------------------------------| | 1 | 1 minuto | | 2 | 2 minutos | | 3 | 5 minutos | | 4 | 15 minutos | | 5+ | 30 minutos, depois 60 minutos | Após 5 falhas consecutivas, o reconciliador escreve um ficheiro marcador durável em: /var/lib/rediacc/reconcile/failed/{guid} Este ficheiro sobrevive à rotação de logs. A sua presença significa que o repositório requer atenção do operador. O reconciliador regista a falha a nível de erro e deixa de tentar a recuperação automática para esse repositório até o marcador ser removido. Causas comuns de falha de recuperação persistente: Licença do repositório não confiável ou expirada — a verificação de licença corre antes de up(). Keyfile em falta — se o keyfile em {datastore}/.credentials/keys/{guid}.key foi eliminado, o reconciliador não consegue montar o volume sem uma frase-passe. Rediaccfile com erros — um erro de sintaxe ou um hook up() que termina sempre com código não-zero.",
+    "body": "Um repositório que não consegue recuperar não tenta imediatamente em cada tick. O reconciliador usa back-off exponencial: | Número de falhas | Espera antes da próxima tentativa | |------------------|-----------------------------------| | 1 | 1 minuto | | 2 | 2 minutos | | 3 | 5 minutos | | 4 | 15 minutos | | 5+ | 30 minutos, depois 60 minutos | Após 5 falhas consecutivas, o reconciliador escreve um ficheiro marcador durável em: /var/lib/rediacc/reconcile/failed/{guid} Este ficheiro sobrevive à rotação de logs. A sua presença significa que o repositório requer atenção do operador. O reconciliador regista a falha a nível de erro e deixa de tentar a recuperação automática para esse repositório até o marcador ser removido. Causas comuns de falha de recuperação persistente: Licença do repositório não confiável ou expirada: a verificação de licença corre antes de up(). Keyfile em falta: se o keyfile em {datastore}/.credentials/keys/{guid}.key foi eliminado, o reconciliador não consegue montar o volume sem uma frase-passe. Rediaccfile com erros: um erro de sintaxe ou um hook up() que termina sempre com código não-zero.",
     "excerpt": "Um repositório que não consegue recuperar não tenta imediatamente em cada tick. O reconciliador usa back-off exponencial: | Número de falhas | Espera...",
     "category": "Documentation",
     "page": "/pt/docs/autostart-recovery",
@@ -2484,8 +2484,8 @@
   {
     "id": "search-12259",
     "content": "Páginas relacionadas",
-    "body": "Serviços — Autostart no Arranque — activar e desactivar o autostart, gestão do keyfile Backup e Restauro — interacção do backup cold com serviços em execução",
-    "excerpt": "Serviços — Autostart no Arranque — activar e desactivar o autostart, gestão do keyfile Backup e Restauro — interacção do backup cold com serviços em e...",
+    "body": "Serviços: Autostart no Arranque: activar e desactivar o autostart, gestão do keyfile Backup e Restauro: interacção do backup cold com serviços em execução",
+    "excerpt": "Serviços: Autostart no Arranque: activar e desactivar o autostart, gestão do keyfile Backup e Restauro: interacção do backup cold com serviços em exec...",
     "category": "Documentation",
     "page": "/pt/docs/autostart-recovery",
     "path": "docs.autostart-recovery.content",

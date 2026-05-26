@@ -2374,7 +2374,7 @@
   {
     "id": "search-8586",
     "content": "Avvio automatico e ripristino",
-    "body": "# Autostart e Ripristino Questa pagina spiega come i repository vengono montati e avviati automaticamente all'avvio, e come il riconciliatore periodico riporta in funzione un repository che si interrompe dopo che il server è già in esecuzione. Per abilitare o disabilitare l'autostart su un repository, vedere Servizi — Autostart all'avvio.",
+    "body": "# Autostart e Ripristino Questa pagina spiega come i repository vengono montati e avviati automaticamente all'avvio, e come il riconciliatore periodico riporta in funzione un repository che si interrompe dopo che il server è già in esecuzione. Per abilitare o disabilitare l'autostart su un repository, vedere Servizi: Autostart all'avvio.",
     "excerpt": "# Autostart e Ripristino Questa pagina spiega come i repository vengono montati e avviati automaticamente all'avvio, e come il riconciliatore periodic...",
     "category": "Documentation",
     "page": "/it/docs/autostart-recovery",
@@ -2418,7 +2418,7 @@
   {
     "id": "search-8590",
     "content": "Back-off e marcatori di fallimento persistenti",
-    "body": "Un repository che non riesce a recuperarsi non riprova immediatamente a ogni tick. Il riconciliatore usa un back-off esponenziale: | Numero di fallimenti | Attesa prima del prossimo tentativo | |----------------------|-------------------------------------| | 1 | 1 minuto | | 2 | 2 minuti | | 3 | 5 minuti | | 4 | 15 minuti | | 5+ | 30 minuti, poi 60 minuti | Dopo 5 fallimenti consecutivi, il riconciliatore scrive un file marcatore durevole in: /var/lib/rediacc/reconcile/failed/{guid} Questo file sopravvive alla rotazione dei log. La sua presenza significa che il repository richiede l'intervento dell'operatore. Il riconciliatore registra il fallimento a livello di errore e smette di tentare il recupero automatico per quel repository finché il marcatore non viene rimosso. Cause comuni di fallimento persistente del recupero: Licenza del repository non attendibile o scaduta — il controllo della licenza viene eseguito prima di up(). Keyfile mancante — se il keyfile in {datastore}/.credentials/keys/{guid}.key è stato eliminato, il riconciliatore non può montare il volume senza una passphrase. Rediaccfile non funzionante — un errore di sintassi o un hook up() che termina sempre con codice non zero.",
+    "body": "Un repository che non riesce a recuperarsi non riprova immediatamente a ogni tick. Il riconciliatore usa un back-off esponenziale: | Numero di fallimenti | Attesa prima del prossimo tentativo | |----------------------|-------------------------------------| | 1 | 1 minuto | | 2 | 2 minuti | | 3 | 5 minuti | | 4 | 15 minuti | | 5+ | 30 minuti, poi 60 minuti | Dopo 5 fallimenti consecutivi, il riconciliatore scrive un file marcatore durevole in: /var/lib/rediacc/reconcile/failed/{guid} Questo file sopravvive alla rotazione dei log. La sua presenza significa che il repository richiede l'intervento dell'operatore. Il riconciliatore registra il fallimento a livello di errore e smette di tentare il recupero automatico per quel repository finché il marcatore non viene rimosso. Cause comuni di fallimento persistente del recupero: Licenza del repository non attendibile o scaduta: il controllo della licenza viene eseguito prima di up(). Keyfile mancante: se il keyfile in {datastore}/.credentials/keys/{guid}.key è stato eliminato, il riconciliatore non può montare il volume senza una passphrase. Rediaccfile non funzionante: un errore di sintassi o un hook up() che termina sempre con codice non zero.",
     "excerpt": "Un repository che non riesce a recuperarsi non riprova immediatamente a ogni tick. Il riconciliatore usa un back-off esponenziale: | Numero di fallime...",
     "category": "Documentation",
     "page": "/it/docs/autostart-recovery",
@@ -2484,8 +2484,8 @@
   {
     "id": "search-8596",
     "content": "Pagine correlate",
-    "body": "Servizi — Autostart all'avvio — abilitazione e disabilitazione dell'autostart, gestione del keyfile Backup e Ripristino — interazione del backup cold con i servizi in esecuzione",
-    "excerpt": "Servizi — Autostart all'avvio — abilitazione e disabilitazione dell'autostart, gestione del keyfile Backup e Ripristino — interazione del backup cold...",
+    "body": "Servizi: Autostart all'avvio: abilitazione e disabilitazione dell'autostart, gestione del keyfile Backup e Ripristino: interazione del backup cold con i servizi in esecuzione",
+    "excerpt": "Servizi: Autostart all'avvio: abilitazione e disabilitazione dell'autostart, gestione del keyfile Backup e Ripristino: interazione del backup cold con...",
     "category": "Documentation",
     "page": "/it/docs/autostart-recovery",
     "path": "docs.autostart-recovery.content",

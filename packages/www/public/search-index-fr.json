@@ -2319,7 +2319,7 @@
   {
     "id": "search-7362",
     "content": "Démarrage automatique et récupération",
-    "body": "# Démarrage automatique et récupération Cette page explique comment les dépôts sont automatiquement montés et démarrés au démarrage du système, et comment le réconciliateur périodique remet un dépôt en service s'il tombe après que le serveur est déjà en fonctionnement. Pour savoir comment activer ou désactiver le démarrage automatique sur un dépôt, consultez Services — Démarrage automatique au démarrage.",
+    "body": "# Démarrage automatique et récupération Cette page explique comment les dépôts sont automatiquement montés et démarrés au démarrage du système, et comment le réconciliateur périodique remet un dépôt en service s'il tombe après que le serveur est déjà en fonctionnement. Pour savoir comment activer ou désactiver le démarrage automatique sur un dépôt, consultez Services: Démarrage automatique au démarrage.",
     "excerpt": "# Démarrage automatique et récupération Cette page explique comment les dépôts sont automatiquement montés et démarrés au démarrage du système, et com...",
     "category": "Documentation",
     "page": "/fr/docs/autostart-recovery",
@@ -2363,7 +2363,7 @@
   {
     "id": "search-7366",
     "content": "Back-off et marqueurs de défaillance persistants",
-    "body": "Un dépôt qui échoue à la récupération ne réessaie pas immédiatement à chaque tick. Le réconciliateur utilise un back-off exponentiel : | Nombre d'échecs | Attente avant la prochaine tentative | |-----------------|--------------------------------------| | 1 | 1 minute | | 2 | 2 minutes | | 3 | 5 minutes | | 4 | 15 minutes | | 5+ | 30 minutes, puis 60 minutes | Après 5 échecs consécutifs, le réconciliateur écrit un fichier marqueur durable à : /var/lib/rediacc/reconcile/failed/{guid} Ce fichier survit à la rotation des journaux. Sa présence signifie que le dépôt nécessite l'intervention d'un opérateur. Le réconciliateur journalise l'échec au niveau erreur et cesse de tenter une récupération automatique pour ce dépôt jusqu'à ce que le marqueur soit effacé. Causes courantes d'échec de récupération persistant : Licence de dépôt non approuvée ou expirée — la vérification de licence s'exécute avant up(). Fichier de clé manquant — si le fichier de clé à {datastore}/.credentials/keys/{guid}.key a été supprimé, le réconciliateur ne peut pas monter le volume sans phrase secrète. Rediaccfile défaillant — une erreur de syntaxe ou un hook up() qui se termine toujours avec un code non nul.",
+    "body": "Un dépôt qui échoue à la récupération ne réessaie pas immédiatement à chaque tick. Le réconciliateur utilise un back-off exponentiel : | Nombre d'échecs | Attente avant la prochaine tentative | |-----------------|--------------------------------------| | 1 | 1 minute | | 2 | 2 minutes | | 3 | 5 minutes | | 4 | 15 minutes | | 5+ | 30 minutes, puis 60 minutes | Après 5 échecs consécutifs, le réconciliateur écrit un fichier marqueur durable à : /var/lib/rediacc/reconcile/failed/{guid} Ce fichier survit à la rotation des journaux. Sa présence signifie que le dépôt nécessite l'intervention d'un opérateur. Le réconciliateur journalise l'échec au niveau erreur et cesse de tenter une récupération automatique pour ce dépôt jusqu'à ce que le marqueur soit effacé. Causes courantes d'échec de récupération persistant : Licence de dépôt non approuvée ou expirée: la vérification de licence s'exécute avant up(). Fichier de clé manquant: si le fichier de clé à {datastore}/.credentials/keys/{guid}.key a été supprimé, le réconciliateur ne peut pas monter le volume sans phrase secrète. Rediaccfile défaillant: une erreur de syntaxe ou un hook up() qui se termine toujours avec un code non nul.",
     "excerpt": "Un dépôt qui échoue à la récupération ne réessaie pas immédiatement à chaque tick. Le réconciliateur utilise un back-off exponentiel : | Nombre d'éche...",
     "category": "Documentation",
     "page": "/fr/docs/autostart-recovery",
@@ -2429,8 +2429,8 @@
   {
     "id": "search-7372",
     "content": "Pages connexes",
-    "body": "Services — Démarrage automatique au démarrage — activer et désactiver le démarrage automatique, gestion du fichier de clé Sauvegarde et restauration — interaction des sauvegardes froides avec les services en cours d'exécution",
-    "excerpt": "Services — Démarrage automatique au démarrage — activer et désactiver le démarrage automatique, gestion du fichier de clé Sauvegarde et restauration —...",
+    "body": "Services: Démarrage automatique au démarrage: activer et désactiver le démarrage automatique, gestion du fichier de clé Sauvegarde et restauration: interaction des sauvegardes froides avec les services en cours d'exécution",
+    "excerpt": "Services: Démarrage automatique au démarrage: activer et désactiver le démarrage automatique, gestion du fichier de clé Sauvegarde et restauration: in...",
     "category": "Documentation",
     "page": "/fr/docs/autostart-recovery",
     "path": "docs.autostart-recovery.content",

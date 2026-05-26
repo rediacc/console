@@ -2319,7 +2319,7 @@
   {
     "id": "search-2455",
     "content": "Autostart & Wiederherstellung",
-    "body": "# Autostart & Wiederherstellung Diese Seite erklärt, wie Repositories beim Systemstart automatisch eingebunden und gestartet werden, und wie der periodische Reconciler ein Repository wieder hochfährt, falls es nach dem Serverstart ausfällt. Informationen zum Aktivieren oder Deaktivieren von Autostart für ein Repository finden Sie unter Dienste — Autostart beim Start.",
+    "body": "# Autostart & Wiederherstellung Diese Seite erklärt, wie Repositories beim Systemstart automatisch eingebunden und gestartet werden, und wie der periodische Reconciler ein Repository wieder hochfährt, falls es nach dem Serverstart ausfällt. Informationen zum Aktivieren oder Deaktivieren von Autostart für ein Repository finden Sie unter Dienste: Autostart beim Start.",
     "excerpt": "# Autostart & Wiederherstellung Diese Seite erklärt, wie Repositories beim Systemstart automatisch eingebunden und gestartet werden, und wie der perio...",
     "category": "Documentation",
     "page": "/de/docs/autostart-recovery",
@@ -2363,7 +2363,7 @@
   {
     "id": "search-2459",
     "content": "Backoff und persistente Fehlermarkierungen",
-    "body": "Ein Repository, das nicht wiederhergestellt werden kann, wiederholt den Versuch nicht sofort bei jedem Tick. Der Reconciler verwendet exponentielles Backoff: | Fehleranzahl | Wartezeit bis nächstem Versuch | |--------------|-------------------------------| | 1 | 1 Minute | | 2 | 2 Minuten | | 3 | 5 Minuten | | 4 | 15 Minuten | | 5+ | 30 Minuten, dann 60 Minuten | Nach 5 aufeinanderfolgenden Fehlern schreibt der Reconciler eine dauerhafte Markierungsdatei unter: /var/lib/rediacc/reconcile/failed/{guid} Diese Datei überlebt Log-Rotation. Ihre Existenz bedeutet, dass das Repository Operatoren-Eingriff erfordert. Der Reconciler protokolliert den Fehler auf Fehlerebene und stellt keine automatischen Wiederherstellungsversuche mehr für dieses Repository an, bis die Markierung gelöscht wird. Häufige Ursachen für persistente Wiederherstellungsfehler: Nicht vertrauenswürdige oder abgelaufene Repo-Lizenz — die Lizenzprüfung läuft vor up(). Fehlende Schlüsseldatei — wurde die Schlüsseldatei unter {datastore}/.credentials/keys/{guid}.key gelöscht, kann der Reconciler das Volume ohne Passphrase nicht einbinden. Defektes Rediaccfile — ein Syntaxfehler oder ein up()-Hook, der immer mit einem Fehlercode beendet wird.",
+    "body": "Ein Repository, das nicht wiederhergestellt werden kann, wiederholt den Versuch nicht sofort bei jedem Tick. Der Reconciler verwendet exponentielles Backoff: | Fehleranzahl | Wartezeit bis nächstem Versuch | |--------------|-------------------------------| | 1 | 1 Minute | | 2 | 2 Minuten | | 3 | 5 Minuten | | 4 | 15 Minuten | | 5+ | 30 Minuten, dann 60 Minuten | Nach 5 aufeinanderfolgenden Fehlern schreibt der Reconciler eine dauerhafte Markierungsdatei unter: /var/lib/rediacc/reconcile/failed/{guid} Diese Datei überlebt Log-Rotation. Ihre Existenz bedeutet, dass das Repository Operatoren-Eingriff erfordert. Der Reconciler protokolliert den Fehler auf Fehlerebene und stellt keine automatischen Wiederherstellungsversuche mehr für dieses Repository an, bis die Markierung gelöscht wird. Häufige Ursachen für persistente Wiederherstellungsfehler: Nicht vertrauenswürdige oder abgelaufene Repo-Lizenz: die Lizenzprüfung läuft vor up(). Fehlende Schlüsseldatei: wurde die Schlüsseldatei unter {datastore}/.credentials/keys/{guid}.key gelöscht, kann der Reconciler das Volume ohne Passphrase nicht einbinden. Defektes Rediaccfile: ein Syntaxfehler oder ein up()-Hook, der immer mit einem Fehlercode beendet wird.",
     "excerpt": "Ein Repository, das nicht wiederhergestellt werden kann, wiederholt den Versuch nicht sofort bei jedem Tick. Der Reconciler verwendet exponentielles B...",
     "category": "Documentation",
     "page": "/de/docs/autostart-recovery",
@@ -2429,8 +2429,8 @@
   {
     "id": "search-2465",
     "content": "Verwandte Seiten",
-    "body": "Dienste — Autostart beim Start — Autostart aktivieren und deaktivieren, Schlüsseldateiverwaltung Backup & Wiederherstellung — Interaktion von Cold-Backup mit laufenden Diensten",
-    "excerpt": "Dienste — Autostart beim Start — Autostart aktivieren und deaktivieren, Schlüsseldateiverwaltung Backup & Wiederherstellung — Interaktion von Cold-Bac...",
+    "body": "Dienste: Autostart beim Start: Autostart aktivieren und deaktivieren, Schlüsseldateiverwaltung Backup & Wiederherstellung: Interaktion von Cold-Backup mit laufenden Diensten",
+    "excerpt": "Dienste: Autostart beim Start: Autostart aktivieren und deaktivieren, Schlüsseldateiverwaltung Backup & Wiederherstellung: Interaktion von Cold-Backup...",
     "category": "Documentation",
     "page": "/de/docs/autostart-recovery",
     "path": "docs.autostart-recovery.content",
