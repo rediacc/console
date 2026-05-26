@@ -34,6 +34,12 @@ Creates an independent copy using the name:tag model — the fork is named `<par
 
 **Agent guard**: AI agents operate in fork-only mode by default — they can only modify fork repositories. Use `repo fork` to create a fork first, then operate on the fork. Grand repo access requires `REDIACC_ALLOW_GRAND_REPO=<name>` (or a comma-separated list like `repo1,repo2`, or `*` for all repos) or `--allow-grand` on the MCP server.
 
+### Naming & targeting (grand vs forks) — READ BEFORE delete/takeover
+Every repo is addressed as `<name>:<tag>`. The **grand** (production) repo is `<name>`, equivalently `<name>:latest` (`latest` is the default tag, `DEFAULTS.REPOSITORY.TAG`); a bare `--name <name>` resolves to the exact config key, else falls back to `<name>:latest`. A **fork** is always `<name>:<tag>` with a non-`latest` tag (e.g. `my-app:staging`).
+
+- `--name app` → the **grand**; `--name app:test` → that **fork**. Always pass the explicit `:tag` when acting on a fork — across `up`/`down`/`delete`/`term`/`sync` and `config repository remove`.
+- **Danger:** a fork can end up registered under the bare/`latest` name (colliding with the grand). Then a bare `--name` is ambiguous and a `delete` could hit the wrong repo. Disambiguate by checking `is_fork`/`grand_guid` (via `machine query --repositories`) and targeting the precise `<name>:<tag>`. The grand guard still refuses deleting a production grand from an agent session, but don't rely on it — target by tag.
+
 ### Resize (offline)
 Supports grow and shrink. Must be unmounted first (`repo down --unmount`).
 
