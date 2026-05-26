@@ -13,6 +13,9 @@ const mockGetRepository = vi.hoisted(() => vi.fn());
 const mockAddRepository = vi.hoisted(() => vi.fn());
 const mockAllocateNetworkId = vi.hoisted(() => vi.fn().mockResolvedValue(99999));
 const mockRemoveRepository = vi.hoisted(() => vi.fn());
+const mockGetLocalMachine = vi.hoisted(() =>
+  vi.fn().mockResolvedValue({ ip: '127.0.0.1', user: 'root' })
+);
 
 vi.mock('../../services/config-resources.js', () => ({
   configService: {
@@ -20,6 +23,7 @@ vi.mock('../../services/config-resources.js', () => ({
     addRepository: mockAddRepository,
     allocateNetworkId: mockAllocateNetworkId,
     removeRepository: mockRemoveRepository,
+    getLocalMachine: mockGetLocalMachine,
   },
 }));
 

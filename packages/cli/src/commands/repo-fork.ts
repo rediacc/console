@@ -17,6 +17,7 @@ import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { formatStepDuration, getActiveLabel, getDoneLabel } from '../utils/timeline.js';
+import { assertMachineExists } from './_validate.js';
 
 /** Log total step duration and mark timeline as rendered. */
 function renderTimelineTotal(steps: { duration_ms: number }[]): void {
@@ -174,6 +175,8 @@ export async function handleForkAction(
     if (!parentConfig) {
       throw new Error(`Repository "${parent}" not found in context`);
     }
+
+    await assertMachineExists(options.machine);
 
     const { repositoryGuid, networkId } = await registerFork(
       parent,

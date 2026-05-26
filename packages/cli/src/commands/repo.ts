@@ -13,6 +13,7 @@ import {
 import { assertAgentRepoCreate, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
+import { assertMachineExists } from './_validate.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { formatStepDuration } from '../utils/timeline.js';
@@ -74,6 +75,8 @@ async function handleRepoCreate(
 ): Promise<void> {
   try {
     assertAgentRepoCreate(name);
+
+    await assertMachineExists(options.machine);
 
     const existing = await configService.getRepository(name);
     if (existing) {

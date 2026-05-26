@@ -10,6 +10,7 @@ import { localExecutorService } from '../../services/local-executor.js';
 import { outputService } from '../../services/output.js';
 import { getOutputFormat, handleError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
+import { assertMachineExists } from '../_validate.js';
 import {
   buildPrunePreviewRows,
   countPrunedResources,
@@ -309,6 +310,7 @@ export function registerPruneCommand(machine: Command): void {
     .action(async (options: PruneOptions & { name: string }) => {
       try {
         const machineName = options.name;
+        await assertMachineExists(machineName);
         await pruneDatastore(machineName, options);
 
         if (options.orphanedRepos) {

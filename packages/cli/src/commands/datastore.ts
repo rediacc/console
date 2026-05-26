@@ -14,6 +14,7 @@ import {
   traceAction,
   validateFunctionParams,
 } from './queue.js';
+import { assertMachineExists } from './_validate.js';
 
 interface DatastoreRunOptions {
   machine?: string;
@@ -85,6 +86,8 @@ async function executeFunction(
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
   }
+
+  await assertMachineExists(machineName);
 
   const coerced = coerceCliParams(functionName, params as Record<string, string>);
   validateFunctionParams(functionName, coerced);

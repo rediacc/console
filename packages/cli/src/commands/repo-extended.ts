@@ -8,6 +8,7 @@ import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
+import { assertMachineExists } from './_validate.js';
 import { handleForkAction } from './repo-fork.js';
 import { registerRepoTakeoverCommand } from './repo-takeover.js';
 
@@ -17,6 +18,7 @@ async function executeMachineFunction(
   options: { machine: string; debug?: boolean; skipRouterRestart?: boolean },
   messages: { starting: string; completed: string; failed: string }
 ): Promise<void> {
+  await assertMachineExists(options.machine);
   outputService.info(messages.starting);
 
   const result = await localExecutorService.execute({
