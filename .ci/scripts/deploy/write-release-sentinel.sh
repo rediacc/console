@@ -121,6 +121,19 @@ build_payload() {
 write_sentinel() {
     local product="$1"
     local key="${product}/${VERSION_TAG}/${RSV_SENTINEL_KEY}"
+
+    # Defense in depth: never seal a prefix that has no binaries. Writing
+    # `.released` over an empty/partial prefix manufactures the corrupt
+    # "sealed-but-empty" state (sentinel blocks re-upload, every versioned
+    # install 404s). Pairs with the no-scrub guard in upload-to-r2.sh.
+    local bin_count
+    bin_count="$(rsv_binary_count "${product}/${VERSION_TAG}/")"
+    if [[ "$bin_count" -le 0 ]]; then
+        log_error "refusing to seal ${product}/${VERSION_TAG}/: prefix has no binaries (count=${bin_count})."
+        log_error "  Sealing an empty prefix would create the sealed-but-empty corrupt state."
+        return 1
+    fi
+
     local payload
     payload="$(build_payload "$product")"
 

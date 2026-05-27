@@ -192,7 +192,7 @@ r2_rm() {
         --endpoint-url "$R2_ENDPOINT" 2>/dev/null || true
 }
 
-# Sentinel-aware write-once guard.
+# Sentinel-aware, idempotent write guard.
 #
 # A versioned prefix (cli/v${X}/ or desktop/v${X}/) is COMMITTED iff a
 # `.released` sentinel exists under it. The sentinel is written by
@@ -200,20 +200,23 @@ r2_rm() {
 # after every CI gate passes. See .ci/scripts/lib/release-state-validator.sh
 # for the invariant.
 #
-# Pre-upload logic:
-#   sentinel present       → hard fail (version is sealed; must bump)
-#   prefix empty           → proceed (clean slate)
-#   prefix non-empty + no sentinel → orphan from a cancelled prior run; the
-#                                     invariant says nothing downstream points
-#                                     at it, so we scrub and proceed. This is
-#                                     the recovery path for the #458 drift
-#                                     class where the prior guard would burn
-#                                     the version number forever.
+# This guard NEVER deletes from R2. A prior implementation scrubbed "orphan"
+# prefixes (bytes present, no sentinel) at release time via
+# `aws s3 rm --exclude '*.released'`. On a retried/duplicate stage-artifacts
+# run that scrub raced the finalize sentinel write and deleted a SEALED
+# release's binaries while keeping `.released` — the "sealed-but-empty" state
+# that burned v1.1.16/v1.1.17. Orphan cleanup now lives only in the nightly
+# housekeeping job (cleanup-versions.sh Phase 8d), off the release critical path.
 #
-# The older prefix-existence guard was overbroad: it counted byte uploads as
-# "committed," so a CI cancel between the first upload and the true commit
-# marker permanently blocked the version. The sentinel contract closes that
-# hole — bytes are cheap, the sentinel is the authoritative commit.
+# Return codes (caller branches on these):
+#   0  → PROCEED: no sentinel. Clean prefix, or a byte-only orphan from a
+#        cancelled run — uploading overwrites the deterministic per-version
+#        filenames in place; no scrub needed. Caller uploads the versioned path.
+#   10 → SKIP: version already sealed AND its binaries are present. Idempotent
+#        rerun of a published version — caller must NOT re-upload the immutable
+#        versioned path (immutable-URL promise), but channel pointers still refresh.
+#   exit 1 → FAIL: version sealed but binaries MISSING (corrupt sealed-but-empty),
+#        which must never be silently overwritten. Loud, with remediation.
 #
 # shellcheck disable=SC1091
 source "$SCRIPT_DIR/../lib/release-state-validator.sh"
@@ -234,45 +237,26 @@ write_once_guard() {
     version="${version%/}"
 
     if rsv_sentinel_exists "$product" "$version"; then
-        log_error "Write-once guard blocked: s3://${RELEASES_BUCKET}/${prefix} is sealed."
-        log_error "  A prior run completed the full release flow for ${context} and wrote the"
-        log_error "  .released sentinel. Overwriting would break the immutable-URL promise and"
-        log_error "  poison long-lived CDN caches."
-        log_error "  resolve-version.sh should have bumped next_version past this tag. If you"
-        log_error "  truly need to replace this release, scrub it via"
-        log_error "  scripts/dev/scrub-sentinel.sh ${version} --execute."
+        local bin_count
+        bin_count="$(rsv_binary_count "$prefix")"
+        if [[ "$bin_count" -gt 0 ]]; then
+            log_info "Idempotent: ${context} is already sealed with ${bin_count} binary object(s)."
+            log_info "  Skipping immutable upload of ${prefix} (re-publishing a sealed version is a no-op)."
+            return 10
+        fi
+        log_error "Corrupt release state: s3://${RELEASES_BUCKET}/${prefix} is SEALED (.released present) but has NO binaries."
+        log_error "  This is the 'sealed-but-empty' failure — a prior run's orphan-scrub deleted the bytes."
+        log_error "  The version cannot be silently re-uploaded (that breaks the immutable-URL promise)."
+        log_error "  Remediation: scrub the sentinel, then re-run CI to repopulate the prefix:"
+        log_error "    scripts/dev/scrub-sentinel.sh ${version} --execute"
         exit 1
     fi
 
-    # No sentinel — either a clean prefix or an orphan from a cancelled run.
-    if rsv_prefix_nonempty "$prefix"; then
-        log_warn "Orphan prefix detected at s3://${RELEASES_BUCKET}/${prefix} (no .released sentinel)."
-        log_warn "  A prior CI run uploaded bytes here but was cancelled before finalize"
-        log_warn "  sealed the version. Scrubbing orphan bytes so this run can upload cleanly."
-
-        # Defensive recheck immediately before the destructive delete: if a
-        # sentinel appeared in the milliseconds between the initial probe and
-        # this scrub (concurrent finalize-release-sentinel write, eventual
-        # consistency, etc.), abort rather than nuke the freshly-sealed
-        # release. Pair with the --exclude '.released' below as belt-and-
-        # suspenders: the orphan case has no `.released` by definition, so
-        # the exclude is a no-op in the legitimate path but a safety net
-        # against any race we haven't enumerated.
-        if rsv_sentinel_exists "$product" "$version"; then
-            log_error "Sentinel ${product}/${version}/.released appeared during the orphan check — refusing to scrub."
-            log_error "  This race is benign for the upload caller: the version is now sealed,"
-            log_error "  so writes here would have been blocked anyway. Bump next_version past"
-            log_error "  ${version} and re-dispatch CI."
-            exit 1
-        fi
-
-        aws s3 rm "s3://${RELEASES_BUCKET}/${prefix}" \
-            --endpoint-url "$R2_ENDPOINT" \
-            --recursive \
-            --exclude '*.released' \
-            --exclude '.released'
-        log_info "  orphan bytes removed (sentinel files excluded); proceeding with upload"
-    fi
+    # No sentinel: clean prefix or a byte-only orphan from a cancelled run.
+    # Do NOT scrub — the versioned upload below overwrites per-version filenames
+    # in place, and nightly housekeeping (Phase 8d) reaps genuine orphans safely
+    # off the release path. This is what eliminates the sealed-but-empty race.
+    return 0
 }
 
 # Helper: read content from R2
@@ -360,13 +344,18 @@ if [[ -d "$CLI_DIR" ]]; then
     # manifest.json sentinel aborts the deploy if the path is already sealed.
     # Allowed channels are set in .github/workflows/ci.yml:115-122.
     if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
-        write_once_guard "cli/v${VERSION}/" "cli v${VERSION}"
-        for binary in "$CLI_DIR"/rdc-*; do
-            [[ -f "$binary" ]] || continue
-            local_name="$(basename "$binary")"
-            r2_cp "$binary" "$(r2_versioned_path "cli/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
-            ((UPLOADED++)) || true
-        done
+        # guard_rc: 0=proceed (upload versioned), 10=skip (already sealed with
+        # binaries — idempotent rerun), exit 1 inside the guard=fail (sealed-empty).
+        guard_rc=0
+        write_once_guard "cli/v${VERSION}/" "cli v${VERSION}" || guard_rc=$?
+        if [[ "$guard_rc" == "0" ]]; then
+            for binary in "$CLI_DIR"/rdc-*; do
+                [[ -f "$binary" ]] || continue
+                local_name="$(basename "$binary")"
+                r2_cp "$binary" "$(r2_versioned_path "cli/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
+                ((UPLOADED++)) || true
+            done
+        fi
     fi
 
     # Upload to channel path
@@ -427,9 +416,14 @@ if [[ -d "$DESKTOP_DIR" ]]; then
     log_step "Uploading Desktop artifacts"
 
     # Write-once guard on desktop's versioned prefix once per run, before the
-    # loop, so an aborted deploy does not leave a half-sealed versioned path.
+    # loop. DESKTOP_VERSIONED gates the immutable upload: a guard SKIP (10) means
+    # the version is already sealed with binaries, so we refresh only the channel
+    # path. The guard exits 1 on the corrupt sealed-but-empty state.
+    DESKTOP_VERSIONED=false
     if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
-        write_once_guard "desktop/v${VERSION}/" "desktop v${VERSION}"
+        guard_rc=0
+        write_once_guard "desktop/v${VERSION}/" "desktop v${VERSION}" || guard_rc=$?
+        [[ "$guard_rc" == "0" ]] && DESKTOP_VERSIONED=true
     fi
 
     for artifact in "$DESKTOP_DIR"/*; do
@@ -437,10 +431,10 @@ if [[ -d "$DESKTOP_DIR" ]]; then
         local_name="$(basename "$artifact")"
         [[ "$local_name" == "builder-debug.yml" ]] && continue
 
-        # Versioned path is immutable; only release channels may write here.
-        # Channel path is overwritten per release and must revalidate against
-        # R2 every time. See CLI section above for the gating rationale.
-        if [[ "$CHANNEL" == "stable" || "$CHANNEL" == "edge" ]]; then
+        # Versioned path is immutable; only release channels may write here, and
+        # only when not already sealed (DESKTOP_VERSIONED). Channel path is
+        # overwritten per release. See CLI section above for the gating rationale.
+        if [[ "$DESKTOP_VERSIONED" == "true" ]]; then
             r2_cp "$artifact" "$(r2_versioned_path "desktop/v${VERSION}/${local_name}")" "$CACHE_CONTROL_IMMUTABLE"
             ((UPLOADED++)) || true
         fi
