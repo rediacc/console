@@ -11,15 +11,18 @@
 # Channel pointers (latest.json, manifest.json, Packages.gz, etc.) only ever
 # reference committed versions. `.released` sentinels are the commit markers;
 # they are written LAST, after every CI gate has passed. A prefix that is
-# non-empty but missing its sentinel is an orphan from a cancelled run and is
-# always safe to scrub.
+# non-empty but missing its sentinel is an orphan from a cancelled run. Orphans
+# are reaped ONLY by the nightly housekeeping job (off the release path); the
+# release-time upload no longer scrubs them — it overwrites in place — so a
+# retried/cancelled in-flight release can never have its just-staged binaries
+# deleted out from under it.
 #
 # Sourced by:
 #   .ci/scripts/quality/check-release-state.sh           (the BLOCKER drift gate)
-#   .ci/scripts/deploy/upload-to-r2.sh                   (pre-upload orphan scrub)
-#   .ci/scripts/deploy/write-release-sentinel.sh         (commit-phase writer)
-#   .ci/scripts/housekeeping/cleanup-versions.sh         (Phase 8d orphan sweep)
-#   .github/workflows/cleanup-on-ci-cancel.yml           (belt-and-suspenders)
+#   .ci/scripts/deploy/upload-to-r2.sh                   (idempotent write guard; no scrub)
+#   .ci/scripts/deploy/write-release-sentinel.sh         (commit-phase writer; refuses empty)
+#   .ci/scripts/test/assert-r2-sentinel.sh               (post-upload binaries-present gate)
+#   .ci/scripts/housekeeping/cleanup-versions.sh         (Phase 8d orphan sweep, nightly only)
 #
 # The library is pure-bash and makes AWS / git calls lazily. Callers that want
 # to test the assertion logic should feed `rsv_assert_bijection` synthetic
