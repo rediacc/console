@@ -402,9 +402,13 @@ cleanup_packages() {
                 if [[ "$DRY_RUN" == "true" ]]; then
                     log_warn "  [DRY-RUN] Would delete version: $version_id (tags: $tags, created: $created_at)"
                 else
-                    local api_output
-                    api_output="$(gh api -X DELETE "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions/$version_id" 2>&1)"
-                    local api_exit=$?
+                    # Capture the exit code with `|| api_exit=$?` so a failed
+                    # delete does not trip `set -e` and abort the whole job
+                    # before the consecutive-failure handler below can absorb
+                    # it (GHCR rejects deleting versions still referenced by a
+                    # tag/manifest, which is expected and must not be fatal).
+                    local api_output api_exit=0
+                    api_output="$(gh api -X DELETE "orgs/$GITHUB_ORG/packages/container/$encoded_package/versions/$version_id" 2>&1)" || api_exit=$?
 
                     if [[ $api_exit -eq 0 ]]; then
                         log_debug "  Deleted version: $version_id (tags: $tags)"
