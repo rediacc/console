@@ -1,0 +1,110 @@
+name: Housekeeping
+
+# Nightly cleanup, decoupled from the release pipeline. This previously ran
+# inline on every push-to-main (a job in ci.yml), which meant version/R2/GHCR
+# cleanup raced live releases — including the orphan sweep that can delete a
+# version's bytes. Running it only on a schedule (or manual dispatch) guarantees
+# it never overlaps a release, so the sentinel+tag bijection is the sole guard
+# for R2 orphans and IN_FLIGHT_VERSION is intentionally NOT set.
+#
+# Two independent jobs:
+#   cleanup        — .ci/scripts/housekeeping/cleanup-versions.sh (releases, tags,
+#                    GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
+#                    branches, workflow runs/artifacts/cache).
+#   stripe-cleanup — Stripe sandbox orphan sweep + per-region webhook verification.
+
+on:
+  schedule:
+    - cron: '0 3 * * *' # Daily at 03:00 UTC (clear of CI '0 1' and promote-stable '0 6')
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Preview deletions without deleting (cleanup job only)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: housekeeping
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Cleanup versions
+    runs-on: ubuntu-slim
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: housekeeping
+          repositories: console,renet,middleware,elite,account
+
+      - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches
+        run: .ci/scripts/housekeeping/cleanup-versions.sh ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '--dry-run' || '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          # IN_FLIGHT_VERSION intentionally unset: nightly never overlaps a
+          # release, so Phase 8d's sentinel+tag bijection is the correct guard.
+          # The ${IN_FLIGHT_VERSION:-} default in the script no-ops when absent.
+
+  stripe-cleanup:
+    name: Stripe sandbox cleanup
+    runs-on: ubuntu-slim
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm ci && npm run install:natives
+
+      - name: Build shared packages
+        run: npm run build:packages
+
+      - uses: ./.github/actions/app-token
+        id: app-token-stripe
+        with:
+          client-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          preset: ci
+          repositories: console,account
+
+      - name: Initialize account submodule
+        run: git submodule update --init private/account
+
+      - name: Install account dependencies
+        run: npm install
+        working-directory: private/account
+
+      - name: Cleanup orphaned Stripe sandbox resources
+        run: npx tsx scripts/cleanup-orphans.ts
+        working-directory: private/account
+        env:
+          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Verify Stripe sandbox webhook endpoints (per-region)
+        run: |
+          jq -r '.regions[] | .edgeDomain' regions.json | while read domain; do
+            echo "Verifying sandbox webhook for ${domain}..."
+            npx tsx private/account/scripts/verify-webhook.ts --sandbox --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
+          done
+        env:
+          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}

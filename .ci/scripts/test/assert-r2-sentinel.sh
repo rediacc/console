@@ -19,6 +19,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=../lib/common.sh
 source "$SCRIPT_DIR/../lib/common.sh"
+# shellcheck source=../lib/release-state-validator.sh
+source "$SCRIPT_DIR/../lib/release-state-validator.sh"
 
 CHANNEL="${1:-}"
 VERSION="${2:-}"
@@ -48,22 +50,29 @@ export AWS_DEFAULT_REGION="auto"
 
 FAILED=false
 
+# Count BINARIES (objects excluding the `.released` sentinel), not raw objects.
+# A "sealed-but-empty" prefix (.released present, binaries scrubbed) has one
+# object and would pass a naive count>0 check while every versioned install
+# 404s. rsv_binary_count excludes the sentinel; combined with rsv_sentinel_exists
+# it tells the healthy case (binaries present) apart from sealed-but-empty.
 for prefix in "cli/v${VERSION}/" "desktop/v${VERSION}/"; do
-    # Use the r2_count_objects helper instead of `aws s3 ls | wc -l`:
-    # `aws s3 ls --recursive` returns exit 1 on empty prefixes, which under
-    # `set -eo pipefail` would silently abort this script before the if-check
-    # below ever ran. The helper normalises empty prefixes to "0".
-    count="$(r2_count_objects "$BUCKET" "$prefix" "$R2_ENDPOINT")"
-    if [[ "$count" -eq 0 ]]; then
-        log_error "R2 versioned prefix s3://${BUCKET}/${prefix} is empty after upload."
+    product="${prefix%%/*}"
+    bin_count="$(rsv_binary_count "$prefix")"
+    if [[ "$bin_count" -gt 0 ]]; then
+        log_info "s3://${BUCKET}/${prefix} contains $bin_count binary object(s)"
+    elif rsv_sentinel_exists "$product" "v${VERSION}"; then
+        log_error "SEALED-BUT-EMPTY: s3://${BUCKET}/${prefix} has a .released sentinel but NO binaries."
+        log_error "  A prior orphan-scrub deleted the bytes; every versioned install of this product will 404."
+        log_error "  Remediation: scrub the sentinel then re-run CI: scripts/dev/scrub-sentinel.sh v${VERSION} --execute"
         FAILED=true
     else
-        log_info "s3://${BUCKET}/${prefix} contains $count entries"
+        log_error "R2 versioned prefix s3://${BUCKET}/${prefix} is empty after upload (no binaries, no sentinel)."
+        log_error "  The CLI/desktop upload loop did not populate the versioned path."
+        FAILED=true
     fi
 done
 
 if [[ "$FAILED" == "true" ]]; then
-    log_error "Write-once guard would silently allow overwrites of a non-empty sentinel."
-    log_error "Fix the CLI/desktop upload loop so it populates cli/v\${V}/ and desktop/v\${V}/."
+    log_error "Versioned release prefix is not in a healthy sealed state."
     exit 1
 fi

@@ -640,6 +640,14 @@ jobs:
   # ============================================================================
   stage-artifacts:
     name: Stage Artifacts
+    # Serialize staging per channel+version: a retried/duplicate run (e.g. a
+    # watchdog rerun-failed attempt 2) must not run a second upload-to-r2 for the
+    # same version concurrently with the first. cancel-in-progress:false — never
+    # cancel an in-flight `aws s3 sync` mid-upload; queue instead. Cross-version
+    # runs get distinct groups, so normal throughput is unaffected.
+    concurrency:
+      group: stage-artifacts-${{ needs.initialize.outputs.channel }}-v${{ needs.initialize.outputs.next_version }}
+      cancel-in-progress: false
     needs: [initialize, build-docker, build-desktop, build-cli, stripe-sandbox, check-release-state]
     permissions:
       contents: read
@@ -1405,132 +1413,30 @@ jobs:
   # entries from the post-CI DAG without changing the assertion property.)
 
   # ============================================================================
-  # HOUSEKEEPING
-  # Cleanup old releases, tags, GHCR packages, deployments, CF Pages,
-  # preview environments, D1 dbs, Turnstile widgets, R2 orphans, stale branches,
-  # and Stripe sandbox orphans. Runs on every successful push to main so
-  # retention never blocks on a release actually shipping.
-  # ============================================================================
-  housekeeping:
-    name: Housekeeping
-    runs-on: ubuntu-slim
-    needs: [initialize, ci-complete, finalize-release-sentinel]
-    timeout-minutes: 60
-    # always() prefix is load-bearing. ci-complete transitively needs
-    # deploy-preview + smoke-test-preview, which are pull_request-only
-    # and skip on push-to-main. GHA propagates the skip through the
-    # needs chain to any downstream job that omits always(), so without
-    # it this job silently skips on every push regardless of the
-    # needs.ci-complete.result check.
-    #
-    # finalize-release-sentinel is in needs (not just transitively gated)
-    # because Phase 8d's orphan sweep classifies cli/v${V}/ as orphan when
-    # bytes are uploaded but the .released sentinel hasn't been written yet.
-    # Running housekeeping in parallel with finalize lets it delete the
-    # just-uploaded versioned binaries before they're sealed. Wait for the
-    # sentinel write so the bytes are committed before any sweeping happens.
-    # On non-release-channel pushes finalize is `skipped`; the explicit
-    # success-or-skipped check below keeps housekeeping running for those.
-    if: >-
-      always() && github.event_name == 'push' && github.ref == 'refs/heads/main' &&
-      needs.ci-complete.result == 'success' &&
-      (needs.finalize-release-sentinel.result == 'success' ||
-       needs.finalize-release-sentinel.result == 'skipped')
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: housekeeping
-          repositories: console,renet,middleware,elite,account
-
-      - name: Cleanup old releases, tags, packages, previews, R2 orphans, branches
-        run: .ci/scripts/housekeeping/cleanup-versions.sh
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          # Phase 8d's drift check excludes IN_FLIGHT_VERSION because
-          # housekeeping runs between finalize-release-sentinel (writes the
-          # sentinel) and cd-v2 (creates the tag); without exclusion the
-          # just-written sentinel always reports as "sentinel without tag".
-          IN_FLIGHT_VERSION: v${{ needs.initialize.outputs.next_version }}
-
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
-        with:
-          node-version: '22'
-
-      - name: Install dependencies
-        run: npm ci && npm run install:natives
-
-      - name: Build shared packages
-        run: npm run build:packages
-
-      - uses: ./.github/actions/app-token
-        id: app-token-stripe
-        with:
-          client-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-          preset: ci
-          repositories: console,account
-
-      - name: Initialize account submodule
-        run: git submodule update --init private/account
-
-      - name: Install account dependencies
-        run: npm install
-        working-directory: private/account
-
-      - name: Cleanup orphaned Stripe sandbox resources
-        run: npx tsx scripts/cleanup-orphans.ts
-        working-directory: private/account
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Verify Stripe sandbox webhook endpoints (per-region)
-        run: |
-          jq -r '.regions[] | .edgeDomain' regions.json | while read domain; do
-            echo "Verifying sandbox webhook for ${domain}..."
-            npx tsx private/account/scripts/verify-webhook.ts --sandbox --expected-url "https://${domain}/account/api/v1/webhooks/stripe"
-          done
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ secrets.STRIPE_SANDBOX_SECRET_KEY }}
-
-  # ============================================================================
   # PIPELINE SENTINEL
-  # Consolidates the previous assert-finalize-sentinel-ran and
-  # assert-housekeeping-ran into one job that asserts BOTH critical
-  # post-CI jobs ran (didn't silently skip via GHA's transitive-skip
-  # propagation when a pull_request-only dep is `skipped` on push-to-main).
+  # Asserts the critical post-CI job (finalize-release-sentinel) actually ran
+  # and didn't silently skip via GHA's transitive-skip propagation when a
+  # pull_request-only dep is `skipped` on push-to-main.
   #
-  # Each downstream job has its own `if:` guards; this sentinel is the
-  # belt-and-suspenders that fails loud if those guards regress.
+  # (Housekeeping was moved out of the release pipeline to a nightly schedule —
+  # see .github/workflows/housekeeping.yml — so version/R2 cleanup can no longer
+  # race a live release. It is no longer asserted here.)
   #
-  # 'cancelled' (watchdog force-cancel, concurrent-push supersession, manual
-  # cancel) and 'failure' (the downstream job already surfaced its own
-  # failure) are passed through. Only 'skipped' on a release-channel
-  # push-to-main trips this. See .ci/scripts/ci/assert-job-succeeded.sh
-  # for the full state table.
+  # finalize-release-sentinel has its own `if:` guards; this sentinel is the
+  # belt-and-suspenders that fails loud if those guards regress. 'cancelled'
+  # (watchdog force-cancel, concurrent-push supersession, manual cancel) and
+  # 'failure' (the job already surfaced its own failure) pass through. Only
+  # 'skipped' on a release-channel push-to-main trips this. See
+  # .ci/scripts/ci/assert-job-succeeded.sh for the full state table.
   # ============================================================================
   pipeline-sentinel:
     name: Pipeline Sentinel
     runs-on: ubuntu-slim
-    needs: [initialize, finalize-release-sentinel, housekeeping]
+    needs: [initialize, finalize-release-sentinel]
     timeout-minutes: 5
     if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Check housekeeping conclusion
-        run: .ci/scripts/ci/assert-job-succeeded.sh housekeeping "${{ needs.housekeeping.result }}"
       - name: Check finalize-release-sentinel conclusion (release channels only)
         if: needs.initialize.result == 'success' && (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
         run: .ci/scripts/ci/assert-job-succeeded.sh finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}"

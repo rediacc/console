@@ -93,6 +93,25 @@ rsv_prefix_nonempty() {
     [[ "$count" != "0" && "$count" != "None" ]]
 }
 
+# Count objects under a versioned prefix EXCLUDING the `.released` sentinel,
+# i.e. the actual release binaries. Echoes a non-negative integer (0 when the
+# prefix is empty or holds only the sentinel). Used to distinguish a healthy
+# sealed release (sentinel + binaries) from the corrupt "sealed-but-empty"
+# state (sentinel only, binaries scrubbed). A versioned prefix holds far fewer
+# than the 1000-key list page, so no pagination is needed.
+rsv_binary_count() {
+    local prefix="${1:?prefix required}"
+    local count
+    count="$(aws s3api list-objects-v2 \
+        --bucket "$RSV_BUCKET" \
+        --prefix "$prefix" \
+        --endpoint-url "$R2_ENDPOINT" \
+        --query "length(Contents[?ends_with(Key, \`/${RSV_SENTINEL_KEY}\`) == \`false\`] || \`[]\`)" \
+        --output text 2>/dev/null || echo 0)"
+    [[ "$count" =~ ^[0-9]+$ ]] || count=0
+    echo "$count"
+}
+
 # `0` if `${product}/${version}/.released` exists on R2.
 rsv_sentinel_exists() {
     local product="${1:?product required}"
