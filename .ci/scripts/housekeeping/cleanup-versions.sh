@@ -1134,7 +1134,21 @@ cleanup_r2() {
                 continue # committed release
             fi
             if ((!has_sentinel && !has_tag)); then
-                r2_rm_recursive "${dir}/${ver}/" "orphan ${dir}/${ver} (no .released sentinel, no git tag)"
+                # Age guard: never reap a freshly-uploaded orphan. A release in
+                # flight (Stage Artifacts uploaded bytes, finalize hasn't sealed
+                # yet) is an orphan by this definition; without an age floor a
+                # nightly run that overlaps a slow/retried release would delete
+                # its just-staged binaries. Genuine orphans from cancelled runs
+                # age past the threshold and get reaped on a later night. Skip
+                # when undatable too (don't delete what we can't age).
+                local last last_epoch
+                last="$(r2_prefix_last_modified "${dir}/${ver}/")"
+                last_epoch="$(date -u -d "$last" +%s 2>/dev/null || echo 0)"
+                if [[ "$last_epoch" -eq 0 ]] || ((now_epoch - last_epoch <= orphan_ver_max_age)); then
+                    log_info "  orphan ${dir}/${ver}: skipping (younger than ${R2_ORPHAN_VERSION_AGE_DAYS}d or undatable — may be an in-flight release)"
+                    continue
+                fi
+                r2_rm_recursive "${dir}/${ver}/" "orphan ${dir}/${ver} (no .released sentinel, no git tag, >${R2_ORPHAN_VERSION_AGE_DAYS}d old)"
                 orphan_ver_deleted=$((orphan_ver_deleted + 1))
                 continue
             fi

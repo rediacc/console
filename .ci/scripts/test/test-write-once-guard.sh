@@ -2,11 +2,12 @@
 # Unit tests for the sentinel-aware write_once_guard() in
 # .ci/scripts/deploy/upload-to-r2.sh. Mocks aws so the test runs offline.
 #
-# The guard's three expected behaviours (see
-# .ci/scripts/lib/release-state-validator.sh for the invariant):
-#   1. `.released` sentinel exists                → exit 1 (seal violated)
-#   2. prefix empty + no sentinel                 → return 0 (clean slate)
-#   3. prefix non-empty + no sentinel (orphan)    → scrub then return 0
+# The guard's behaviours (see .ci/scripts/lib/release-state-validator.sh):
+#   1. sentinel exists + binaries present  → return 10 (SKIP: idempotent rerun)
+#   2. sentinel exists + NO binaries       → exit 1 (FAIL: sealed-but-empty)
+#   3. no sentinel (clean OR orphan bytes) → return 0 (PROCEED, overwrite in place)
+# The guard NEVER runs `aws s3 rm` — orphan cleanup is the nightly housekeeping
+# job's responsibility, so a retried/cancelled release can't lose its binaries.
 
 set -euo pipefail
 
@@ -87,33 +88,48 @@ run_guard() {
     bash -c "source '$TEMP/bundle.sh'; write_once_guard '$1' 'test'" 2>/dev/null
 }
 
-test_sealed_prefix_aborts() {
+# PREFIX_KEYCOUNT drives BOTH the mock's list-objects-v2 responses; the guard
+# only calls rsv_binary_count when the sentinel exists, so it doubles as the
+# "binary count" for the sealed cases below.
+
+test_sealed_with_binaries_skips() {
     reset_log
-    SENTINEL_EXISTS=true PREFIX_KEYCOUNT=1 run_guard "cli/v0.0.0/" &&
-        log_fail "sealed prefix (sentinel present) should abort; guard returned zero"
-    grep -q "s3api head-object" "$TEMP/aws.log" ||
-        log_fail "guard should have checked head-object for the sentinel"
+    local rc=0
+    SENTINEL_EXISTS=true PREFIX_KEYCOUNT=16 run_guard "cli/v0.0.0/" || rc=$?
+    [[ "$rc" == "10" ]] ||
+        log_fail "sealed + binaries present should SKIP (rc=10, idempotent rerun); got rc=$rc"
     grep -q "s3 rm" "$TEMP/aws.log" &&
-        log_fail "guard must NOT scrub when the sentinel is present"
-    log_pass "sealed prefix aborts (sentinel-aware)"
+        log_fail "guard must NEVER scrub"
+    log_pass "sealed + binaries → idempotent SKIP (rc=10)"
 }
 
-test_empty_prefix_passes() {
+test_sealed_but_empty_fails() {
+    reset_log
+    local rc=0
+    SENTINEL_EXISTS=true PREFIX_KEYCOUNT=0 run_guard "cli/v0.0.0/" || rc=$?
+    [[ "$rc" == "1" ]] ||
+        log_fail "sealed + NO binaries (sealed-but-empty) should FAIL loud (rc=1); got rc=$rc"
+    grep -q "s3 rm" "$TEMP/aws.log" &&
+        log_fail "guard must NEVER scrub"
+    log_pass "sealed + no binaries → FAIL loud (rc=1)"
+}
+
+test_no_sentinel_proceeds_without_scrub() {
+    # Clean prefix: PROCEED, no scrub.
     reset_log
     SENTINEL_EXISTS=false PREFIX_KEYCOUNT=0 run_guard "cli/v0.0.0/" ||
-        log_fail "empty prefix + no sentinel should pass; guard returned non-zero"
+        log_fail "clean prefix (no sentinel) should PROCEED (rc=0)"
     grep -q "s3 rm" "$TEMP/aws.log" &&
-        log_fail "guard must NOT scrub an empty prefix"
-    log_pass "empty prefix returns 0 (clean slate)"
-}
+        log_fail "guard must NEVER scrub a clean prefix"
 
-test_orphan_prefix_scrubs_and_passes() {
+    # Orphan prefix (bytes, no sentinel): PROCEED and OVERWRITE in place — must
+    # NOT scrub (the old behaviour that deleted retried releases' binaries).
     reset_log
-    SENTINEL_EXISTS=false PREFIX_KEYCOUNT=1 run_guard "cli/v0.0.0/" ||
-        log_fail "orphan prefix should scrub and pass; guard returned non-zero"
-    grep -q "s3 rm .*cli/v0.0.0/ --endpoint-url .*--recursive" "$TEMP/aws.log" ||
-        log_fail "guard must invoke 'aws s3 rm --recursive' to scrub the orphan"
-    log_pass "orphan prefix scrubs and returns 0 (recovery path)"
+    SENTINEL_EXISTS=false PREFIX_KEYCOUNT=9 run_guard "cli/v0.0.0/" ||
+        log_fail "orphan prefix should PROCEED (rc=0), overwriting in place"
+    grep -q "s3 rm" "$TEMP/aws.log" &&
+        log_fail "guard must NEVER scrub an orphan — that is the nightly housekeeping job's responsibility"
+    log_pass "no sentinel → PROCEED (rc=0), never scrubs"
 }
 
 test_dry_run_skips() {
@@ -125,9 +141,9 @@ test_dry_run_skips() {
     log_pass "DRY_RUN=true skips all checks"
 }
 
-test_sealed_prefix_aborts
-test_empty_prefix_passes
-test_orphan_prefix_scrubs_and_passes
+test_sealed_with_binaries_skips
+test_sealed_but_empty_fails
+test_no_sentinel_proceeds_without_scrub
 test_dry_run_skips
 
 echo ""
