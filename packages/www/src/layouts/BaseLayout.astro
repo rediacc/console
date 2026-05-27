@@ -456,6 +456,7 @@ const dir = currentLang === 'ar' ? 'rtl' : 'ltr';
       window.__rediaccIsMarketingHost = function (hostname) {
         return (
           hostname === 'www.rediacc.com' ||
+          hostname === 'edge.rediacc.com' ||
           hostname === 'localhost' ||
           hostname.endsWith('.rediacc.workers.dev')
         );

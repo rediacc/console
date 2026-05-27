@@ -4,7 +4,8 @@ description: "Cómo el modelo autoalojado de Rediacc cumple con los requisitos d
 category: "Legal"
 order: 4
 language: es
-sourceHash: "8d0fc1ff16c1be28"
+sourceHash: "949159b302cf6ab9"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 La Ley de Privacidad del Consumidor de California (CCPA) es una ley estatal que otorga a los consumidores de California derechos sobre su información personal, incluyendo el derecho a saber qué datos se recopilan, el derecho a eliminarlos y el derecho a optar por no participar en su venta.
@@ -18,7 +19,7 @@ CCPA se centra en los derechos del consumidor relacionados con la información p
 | Derecho CCPA | Requisito | Capacidad de Rediacc |
 |-------------|-----------|---------------------|
 | Derecho a saber (1798.100) | Divulgar categorías y propósitos de los datos recopilados | Los registros de auditoría rastrean todas las operaciones de datos. Autoalojado: tu organización mantiene visibilidad completa sobre los datos existentes en cada repositorio. |
-| Derecho a eliminar (1798.105) | Eliminar la información personal del consumidor a solicitud | `rdc repo destroy` elimina criptográficamente el volumen cifrado con LUKS. La eliminación de forks remueve las copias clonadas completamente. |
+| Derecho a eliminar (1798.105) | Eliminar la información personal del consumidor a solicitud | `rdc repo delete` elimina criptográficamente el volumen cifrado con LUKS. La eliminación de forks remueve las copias clonadas completamente. |
 | Derecho a optar por no participar (1798.120) | No vender ni compartir información personal | Arquitectura autoalojada: no se transfieren datos a Rediacc ni a terceros. Los datos permanecen en tus servidores. La sincronización del almacén de configuración utiliza cifrado de conocimiento cero. Ni siquiera el servidor de sincronización puede leer los datos. |
 | Seguridad de datos (1798.150) | Implementar medidas de seguridad razonables | Cifrado LUKS2 AES-256, aislamiento de red, acceso solo por SSH, Docker daemons aislados, registro de auditoría. El almacén de configuración utiliza cifrado de triple capa con derivación de clave dividida y tokens rotativos de un solo uso. |
 

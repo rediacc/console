@@ -6,26 +6,62 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 56.862064,
-      "text": "Avviamo l'app in modalita' produzione dal laptop. Il comando di deploy chiama la stessa funzione up usata durante lo sviluppo, ma viene eseguita in modalita' distaccata. Puoi chiudere il laptop e l'app continua a girare."
+      "at": 2.418632,
+      "text": "Avviamo l'app in modalita' produzione dal laptop. Il comando di deploy chiama la stessa funzione up usata durante lo sviluppo, ma viene eseguita in modalita' distaccata. Puoi chiudere il laptop e l'app continua a girare.",
+      "afterText": "App in esecuzione in produzione. Stesso comando, stesso risultato, sul server reale.",
+      "cardLabel": "Avvia Prod",
+      "prose": "Avvia l'app in modalità produzione dal laptop. Il comando di deploy chiama la stessa funzione up usata durante lo sviluppo, ma viene eseguito in modalità distaccata in modo che l'app continui dopo la disconnessione del laptop."
     },
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 97.750961,
-      "text": "Abilitiamo l'avvio automatico cosi' l'app sopravvive al riavvio del server. Da questo momento, se il server si riavvia, questo repo torna su automaticamente."
+      "at": 9.548589,
+      "text": "Abilitiamo l'avvio automatico cosi' l'app sopravvive al riavvio del server. Da questo momento, se il server si riavvia, questo repo torna su automaticamente.",
+      "afterText": "Avvio automatico attivo. L'app sopravvive ai riavvii.",
+      "cardLabel": "Abilita Avvio Automatico",
+      "prose": "Abilita l'avvio automatico in modo che il repo sopravviva ai riavvii del server. Una volta abilitato, il repo viene riportato online automaticamente ogni volta che il server si riavvia."
     },
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 125.443493,
-      "text": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app e' ora nella lista di avvio."
+      "at": 17.034078,
+      "text": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app e' ora nella lista di avvio.",
+      "afterText": "Eccola, nella lista di avvio.",
+      "cardLabel": "Elenca Avvio Automatico",
+      "prose": "Elenca i repository con l'avvio automatico abilitato per confermare che l'app sia nella lista di avvio."
     },
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 141.09184,
-      "text": "E per fermare l'app, un solo comando dal laptop. Un comando per avviare, uno per fermare. Tutto dal tuo terminale, senza piu' sessioni interattive."
+      "at": 22.929505,
+      "text": "E per fermare l'app, un solo comando dal laptop. Un comando per avviare, uno per fermare. Tutto dal tuo terminale, senza piu' sessioni interattive.",
+      "afterText": "Fermata. Un comando per avviare, uno per fermare.",
+      "cardLabel": "Ferma Repo",
+      "prose": "Ferma l'app con un singolo comando dal laptop. Un comando per avviarla, un comando per spegnerla, tutto gestito dal terminal."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Bene! Portiamo la tua app dallo sviluppo alla produzione. Tre brevi passaggi, tutti pilotati dal tuo laptop."
+    },
+    {
+      "id": "dev-vs-prod",
+      "text": "Durante lo sviluppo esegui l'app dall'interno del repo, quindi si ferma quando ti disconnetti. In produzione la lanci dal tuo laptop con la CLI e continua a girare in modalita' distaccata."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ed ecco la modalita' produzione in sintesi. Ci vediamo nel prossimo!"
+    }
+  ],
+  "title": "Modalità Produzione",
+  "chapters": {
+    "intro": "Modalità Produzione",
+    "dev-vs-prod": "Dev vs prod, la differenza",
+    "cast-step-0": "Passaggio 1: Avvia in modalità produzione",
+    "cast-step-1": "Passaggio 2: Abilita l'avvio automatico",
+    "cast-step-2": "Passaggio 3: Elenca i repo con autostart",
+    "cast-step-3": "Passaggio 4: Ferma dal tuo laptop",
+    "outro": "Avanti: Backup e Ripristino"
+  }
 }

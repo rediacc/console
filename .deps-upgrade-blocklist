@@ -13,6 +13,7 @@
 antd  # BLOCKER: v6.x requires CSS-in-JS removal and component API changes across all pages
 @ant-design/icons  # BLOCKER: must match antd major version; blocked until antd v6 migration lands
 @ant-design/pro-components  # BLOCKER: React 19 compatibility issues in 3.x; revisit after React 19 canonical adoption
+dayjs  # BLOCKER: pinned to ^1.11.20 via overrides to keep one physical dayjs copy; a per-workspace bump creates a nested web copy whose Dayjs type is nominally distinct from antd's RangePicker Dayjs, breaking packages/web typecheck
 
 # Electron — v40.x has native module compatibility issues
 electron  # BLOCKER: v40.x breaks native module rebuild with nan library errors in our CLI bridge native addon

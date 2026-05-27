@@ -1,0 +1,57 @@
+---
+title: "İlk Sunucunuzu Ekleyin"
+description: "İlk sunucunuzu rdc'ye kaydedin, yapılandırın ve rdc + renet mimarisini anlayın."
+category: "Tutorials"
+subcategory: essentials
+order: 3
+language: tr
+sourceHash: "09d6cde1ac066c85"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# İlk Sunucunuzu Ekleyin
+
+Sunucu eklemeden önce `rdc`'nin nasıl çalıştığını anlamak işinizi kolaylaştırır. Rediacc iki araçlı bir mimariye sahiptir: dizüstü bilgisayarınızda `rdc`, sunucuda `renet`.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Adding your first server](/assets/tutorials/tutorial-add-server.cast)
+
+## Neden iki araç?
+
+![rdc on laptop, renet on server, SSH between](/img/tutorials/tutorial-add-server/slide-1.svg)
+
+- **`rdc`**, dizüstü bilgisayarınızdaki CLI aracıdır. Komutları buraya yazarsınız.
+- **`renet`**, sunucudaki orkestratördür. Şifreleme, Docker ve izolasyonu yönetir.
+
+Yerel olarak bir komut çalıştırdığınızda `rdc`, SSH üzerinden bağlanır ve sunucuda `renet`'i çalıştırır. Sunucularınıza hiçbir zaman manuel olarak SSH yapmanız gerekmez. `rdc` bunu sizin için halleder.
+
+## Adım 1: Sunucuyu kaydedin
+
+<TutorialStep number={1} />
+
+`rdc config init` gerekmez. Yapılandırma dosyası ilk kullanımda otomatik olarak oluşturulur ve `rdc`, standart `~/.ssh` anahtarınızı kullanır.
+
+## Adım 2: Yapılandırın
+
+<TutorialStep number={2} />
+
+Sunucunuz depo barındırmaya hazır.
+
+## Yapılandırma dosyası nerede?
+
+CLI her şeyi `~/.config/rediacc/rediacc.json` adlı tek bir düz JSON dosyasında saklar:
+
+<TutorialStep number={3} />
+
+Bu tek dosya makinelerinizi, SSH anahtarınızı ve şifreleme kimlik bilgilerinizi içerir. Başka bir dizüstü bilgisayara kopyalarsanız o makineden de hazır olursunuz.
+
+## Birden fazla yapılandırma
+
+Ortam başına (production, staging, dev) ayrı yapılandırma tutabilir ve herhangi bir komutta `--config` bayrağıyla aralarında geçiş yapabilirsiniz. Bkz. [birden fazla yapılandırma kurulumu](/tr/docs/setup#multiple-configs).
+
+---
+
+Sonraki: [İlk Deponuzu Oluşturun](/tr/docs/tutorial-create-repo).

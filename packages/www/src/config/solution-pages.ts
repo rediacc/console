@@ -17,6 +17,7 @@ import illustrationFailoverTesting from '../assets/images/illustrations/failover
 import illustrationImmutableBackups from '../assets/images/illustrations/immutable-backups.svg';
 import illustrationInfrastructureCosts from '../assets/images/illustrations/infrastructure-costs.svg';
 import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
+import illustrationInstantRecoveryMobile from '../assets/images/illustrations/instant-recovery.mobile.svg';
 import illustrationIntegrations from '../assets/images/illustrations/integrations.svg';
 import illustrationMigrationSafety from '../assets/images/illustrations/migration-safety.svg';
 import illustrationProductionParity from '../assets/images/illustrations/production-parity.svg';
@@ -80,6 +81,8 @@ export interface SolutionPageConfig {
   techStrip?: TechItem[];
   /** Problem section illustration */
   illustration?: ImageMetadata;
+  /** Optional portrait/mobile variant, swapped in under 768px (vector <picture>). */
+  illustrationMobile?: ImageMetadata;
   /** Primary CTA destination (overrides category default). Relative to /{lang}. */
   ctaHref?: string;
 }
@@ -139,7 +142,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     illustration: illustrationInfrastructureCosts,
     sections: ALL_SECTIONS,
     calculatorPreset: 'infrastructure-costs',
-    competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway', 'Rediacc'],
+    competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
     techStrip: [
       { name: 'GitLab', kind: 'devops' },
       { name: 'Nextcloud', kind: 'collab' },
@@ -157,7 +160,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     illustration: illustrationProductionParity,
     sections: ALL_SECTIONS,
     calculatorPreset: 'production-parity',
-    competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway', 'Rediacc'],
+    competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
     techStrip: [
       { name: 'GitLab', kind: 'devops' },
       { name: 'Nextcloud', kind: 'collab' },
@@ -175,7 +178,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     illustration: illustrationIntegrations,
     sections: ALL_SECTIONS,
     calculatorPreset: 'integrations',
-    competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway', 'Rediacc'],
+    competitors: ['Codespaces', 'Coder', 'Vercel', 'Railway'],
     techStrip: [
       { name: 'GitLab', kind: 'devops' },
       { name: 'Nextcloud', kind: 'collab' },
@@ -227,6 +230,7 @@ export const SOLUTION_PAGES: Record<string, SolutionPageConfig> = {
     contentKey: 'instantRecovery',
     category: 'backups',
     illustration: illustrationInstantRecovery,
+    illustrationMobile: illustrationInstantRecoveryMobile,
     sections: ALL_SECTIONS,
     calculatorPreset: 'instant-recovery',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Druva'],

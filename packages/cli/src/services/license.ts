@@ -22,6 +22,12 @@ interface RemoteRepoLicenseScanEntry {
   currentHardExpiresAt?: string;
 }
 
+export type RepoBatchRecoveryFailureMode =
+  | 'token_not_ready'
+  | 'no_known_repos'
+  | 'server_rejected_all'
+  | null; // null = success or partial success (valid > 0)
+
 export interface RepoBatchRefreshResult {
   scanned: number;
   issued: number;
@@ -31,6 +37,8 @@ export interface RepoBatchRefreshResult {
   valid: number;
   invalidSignatureDetected: number;
   failures: { repositoryGuid: string; error: string }[];
+  recoveryFailureMode: RepoBatchRecoveryFailureMode;
+  serverErrorSample?: string;
 }
 
 export interface RepoLicenseIssuancesUsage {
@@ -492,6 +500,15 @@ function resolveRepoBatchKind(
   return { kind: 'grand', grandGuid: grandGuid ?? repositoryGuid };
 }
 
+function pickServerErrorSample(
+  failures: { repositoryGuid: string; error: string }[],
+  serverFailuresStart: number
+): string | undefined {
+  if (failures.length === 0) return undefined;
+  const idx = serverFailuresStart < failures.length ? serverFailuresStart : 0;
+  return failures[idx].error.slice(0, 200);
+}
+
 export async function refreshRepoLicensesBatch(
   machine: MachineConfig,
   sshPrivateKey: string,
@@ -509,6 +526,8 @@ export async function refreshRepoLicensesBatch(
       valid: 0,
       invalidSignatureDetected: 0,
       failures: [{ repositoryGuid: '*', error: 'Subscription token is not ready' }],
+      recoveryFailureMode: 'token_not_ready',
+      serverErrorSample: undefined,
     };
   }
 
@@ -564,6 +583,8 @@ export async function refreshRepoLicensesBatch(
         valid: 0,
         invalidSignatureDetected: forceReissueGuids.size,
         failures: unknownRepoFailures,
+        recoveryFailureMode: remoteRepos.length > 0 ? 'no_known_repos' : 'server_rejected_all',
+        serverErrorSample: undefined,
       };
     }
 
@@ -600,21 +621,30 @@ export async function refreshRepoLicensesBatch(
     });
 
     const failures: { repositoryGuid: string; error: string }[] = [...unknownRepoFailures];
+    const serverFailuresBefore = failures.length;
     const { issued, refreshed, unchanged, failed } = await applyBatchRefreshResults(
       sftp,
       body.results,
       failures
     );
 
+    const counts = { issued, refreshed, unchanged };
+    const validCount = counts.issued + counts.refreshed + counts.unchanged;
+    const recoveryFailureMode: RepoBatchRecoveryFailureMode =
+      validCount > 0 ? null : 'server_rejected_all';
+    const serverErrorSample =
+      validCount === 0 ? pickServerErrorSample(failures, serverFailuresBefore) : undefined;
     return {
       scanned: remoteRepos.length,
       issued,
       refreshed,
       unchanged,
       failed,
-      valid: issued + refreshed + unchanged,
+      valid: validCount,
       invalidSignatureDetected: forceReissueGuids.size,
       failures,
+      recoveryFailureMode,
+      serverErrorSample,
     };
   } finally {
     if (ownsConnection) sftp.close();

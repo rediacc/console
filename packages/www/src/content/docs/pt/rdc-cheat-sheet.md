@@ -4,6 +4,8 @@ description: Referência rápida para todos os comandos rdc, configs, repositór
 category: Guides
 order: 3
 language: pt
+sourceHash: "12956297c1157cd2"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Folha de Consulta do CLI RDC
@@ -70,7 +72,7 @@ Credenciais de implantação apenas de escrita. `get` devolve apenas o digest. O
 | `rdc config backup-strategy list` | Listar todas as estratégias de backup definidas |
 | `rdc config backup-strategy show --name <name>` | Mostrar detalhes de uma estratégia |
 | `rdc config backup-strategy remove --name <name>` | Remover uma estratégia |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | Associar estratégias a uma máquina |
+| `rdc machine backup schedule -m <machine>` | Implementar estratégias de backup configuradas numa máquina |
 
 ## Operações de Backup
 

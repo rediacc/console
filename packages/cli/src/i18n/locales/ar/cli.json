@@ -26,10 +26,6 @@
         "fetching": "جاري جلب سجل الكيان...",
         "success": "تم جلب السجل"
       },
-      "list": {
-        "description": "قائمة إدخالات سجل التدقيق",
-        "fetching": "جاري جلب سجلات التدقيق..."
-      },
       "log": {
         "description": "عرض سجلات التدقيق",
         "fetching": "جاري جلب سجلات التدقيق...",
@@ -490,6 +486,8 @@
         "add": {
           "description": "إضافة جهاز إلى الإعدادات الحالية",
           "descriptionShort": "إضافة جهاز إلى التكوين الحالي",
+          "sshConfigFailed": "فشل كتابة الاسم المستعار لـ SSH (غير حرج): {{error}}",
+          "sshConfigWritten": "تمت كتابة الاسم المستعار rediacc--{{name}} إلى ~/.ssh/config_rediacc",
           "success": "تمت إضافة الجهاز \"{{name}}\" ({{user}}@{{ip}})"
         },
         "description": "إدارة الأجهزة في التكوين الحالي",
@@ -499,6 +497,7 @@
         },
         "remove": {
           "description": "إزالة جهاز من التكوين الحالي",
+          "sshConfigCleared": "تمت إزالة الاسم المستعار rediacc--{{name}}",
           "success": "تمت إزالة الجهاز \"{{name}}\""
         },
         "scanKeys": {
@@ -652,14 +651,6 @@
         "description": "تعيين قيمة افتراضية (فريق، منطقة، جسر)",
         "success": "تم تعيين \"{{key}}\" إلى \"{{value}}\""
       },
-      "setRenet": {
-        "description": "تعيين مسار الملف الثنائي renet للوضع المحلي",
-        "success": "تم تعيين مسار Renet إلى: {{path}}"
-      },
-      "setSsh": {
-        "description": "تحديث إعدادات SSH للإعدادات الحالية",
-        "success": "تم تحديث إعدادات SSH"
-      },
       "show": {
         "description": "عرض تفاصيل الإعدادات الحالية",
         "noConfig": "لا توجد إعدادات نشطة. أنشئ واحدة باستخدام: rdc config init",
@@ -733,6 +724,11 @@
         "starting": "جارٍ تهيئة مخزن البيانات على \"{{machine}}\"..."
       },
       "machineOption": "اسم الجهاز (حيث يستضاف مخزن بيانات Ceph)",
+      "resize": {
+        "description": "تغيير حجم مجموعة مخزن البيانات للجهاز دون اتصال (توسيع أو تقليص). يجب فك تثبيت جميع المستودعات أولاً.",
+        "sizeOption": "الحجم الجديد لمخزن البيانات (مثال: 100G، 95%)",
+        "starting": "جارٍ تغيير حجم مخزن البيانات على \"{{machine}}\" إلى {{size}}..."
+      },
       "status": {
         "description": "عرض خلفية مخزن البيانات والحجم والاستخدام وحالة التحميل ووضع cow_mode (إذا كان متفرعاً)",
         "starting": "جارٍ فحص حالة مخزن البيانات على \"{{machine}}\"..."
@@ -927,8 +923,10 @@
         "datastoreCompleted": "اكتمل تنظيف مخزن البيانات",
         "datastoreFailed": "فشل تنظيف مخزن البيانات",
         "datastoreOnlyOption": "تنظيف موارد مخزن البيانات المعزولة فقط",
+        "datastorePrunedSummary": "تمت إزالة {{count}} مورد مخزن بيانات يتيم",
         "description": "إزالة موارد مخزن البيانات المعزولة واللقطات القديمة من جهاز",
         "descriptionShort": "تنظيف الموارد المعزولة واللقطات القديمة",
+        "dryRunHint": "سيتم إزالة {{count}} مورد. أعد التشغيل بدون --dry-run لإزالتها.",
         "dryRunOption": "عرض ما سيتم إزالته دون إجراء تغييرات",
         "forceDeleteMountedOption": "تجاوز فحص أمان التركيب وحذف المستودعات حتى لو كانت مركبة حالياً أو تحتوي على حاويات Docker قيد التشغيل. مختلف عن --force (الذي يتجاوز فترة السماح للأرشيف فقط). ينطبق على كل من --orphaned-repos و --prune-unknown.",
         "noReposFound": "لم يتم العثور على مستودعات على الجهاز",
@@ -937,6 +935,7 @@
         "orphanedReposCompleted": "تم تنظيف {{count}} مستودعات معزولة",
         "orphanedReposOption": "تنظيف صور المستودعات غير الموجودة في أي تكوين أيضًا",
         "orphanedReposStarting": "جارٍ البحث عن المستودعات المعزولة على {{machine}}...",
+        "previewEmpty": "لم يتم العثور على موارد مخزن بيانات يتيمة",
         "pruneUnknownOption": "حذف فقط المستودعات التي لا يستطيع مرآة renet .interim/state تصنيفها (ليست في التكوين المحلي ولا تحتوي على مرآة موسومة بالشوكة). أضيق بشكل صارم من --orphaned-repos: تتم المحافظة على الشوكات بدون تكوين عندما تحددها المرآة. المتبقيات القديمة قبل المرآة والأجداد القدامى الذين تم حذف إدخال التكوين الخاص بهم يقعون كلاهما في هذه الفئة.",
         "snapshotDeleted": "تم حذف {{name}}",
         "snapshotDeleting": "جارٍ حذف {{name}}...",
@@ -958,7 +957,9 @@
         "fetching": "جارٍ جلب الحالة من {{machine}}...",
         "infrastructure": "البنية التحتية",
         "noData": "لا تتوفر بيانات حالة",
+        "storageHealthFragmentationNote": "يحسب التجزؤ عدد المقاطع (extents) في صورة النسخ-عند-الكتابة لكل مستودع، وليس الملفات بداخلها. القيم المرتفعة متوقعة في أحمال الكتابة العشوائية (قواعد البيانات، طبقات الحاويات) وهي للعلم فقط. إلغاء التجزئة غير مدعوم هنا عمدًا: فهو يلغي مشاركة النسخ المرتبطة عبر reflink ولقطات النسخ الاحتياطي ويضخّم استخدام مخزن البيانات.",
         "storageHealthHint": "تلميح: شغّل مع --storage-health لعرض تجزئة BTRFS وتوفير reflink لكل مستودع",
+        "storageHealthSummary": "كفاءة التخزين: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} حاوية تجاوزت عتبة الانحراف؛ الخروج بقيمة غير صفرية",
         "syncCertsFailed": "فشلت مزامنة ذاكرة التخزين المؤقت للشهادات: {{error}}"
       },
@@ -1004,11 +1005,6 @@
         "timeoutMessage": "انتهت مهلة الاختبار. تحقق من تتبع الطابور للمزيد من التفاصيل.",
         "waiting": "جاري الانتظار لنتيجة اختبار SSH...",
         "waitingTime": "جاري الانتظار لنتيجة اختبار SSH... ({{seconds}}ث)"
-      },
-      "update": {
-        "description": "تحديث إعدادات الآلة",
-        "success": "تم تحديث الآلة \"{{name}}\"",
-        "updating": "جاري تحديث الآلة..."
       },
       "vault": {
         "description": "إدارة خزنة الجهاز (محول السحابة فقط)"
@@ -1120,10 +1116,6 @@
         "notFound": "لم يتم العثور على معلومات المؤسسة",
         "success": "تم جلب معلومات المؤسسة"
       },
-      "list": {
-        "description": "قائمة المؤسسات",
-        "fetching": "جاري جلب المؤسسات..."
-      },
       "maintenance": {
         "description": "تفعيل أو تعطيل وضع الصيانة (يحجب تسجيلات الدخول للمستخدمين العاديين)",
         "disabled": "تم تعطيل وضع الصيانة",
@@ -1181,10 +1173,6 @@
           "fetching": "جاري جلب تفاصيل مجموعة الأذونات...",
           "success": "تم جلب التفاصيل"
         }
-      },
-      "list": {
-        "description": "قائمة الأذونات",
-        "fetching": "جاري جلب الأذونات..."
       },
       "remove": {
         "description": "إزالة إذن من مجموعة",
@@ -1335,6 +1323,18 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "اكتمل {{action}}: {{succeeded}}/{{total}} نجح",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "cat": {
+        "description": "قراءة نافذة محدودة من ملف داخل مستودع وكتابتها إلى stdout (محدودة من جانب الخادم؛ التشخيصات تذهب إلى stderr)",
+        "failed": "فشلت القراءة",
+        "forceBinaryOption": "السماح بقراءة المحتوى الثنائي (الذي يحتوي على NUL)",
+        "headOption": "طباعة أول N سطر فقط (لا يمكن الدمج مع نطاق البايت)",
+        "maxBytesOption": "الحد الأقصى من البايتات للقراءة والطباعة (الافتراضي 1 MiB، الحد الأقصى المطلق 50 MiB)",
+        "offsetOption": "إزاحة البايت لبدء القراءة منها",
+        "remoteFileOption": "مسار الملف للقراءة، نسبةً إلى جذر تثبيت المستودع",
+        "starting": "جارٍ قراءة \"{{path}}\" من \"{{repository}}\" على \"{{machine}}\"...",
+        "statOption": "طباعة الحجم والنوع ووقت التعديل فقط؛ دون قراءة أي محتوى",
+        "tailOption": "طباعة آخر N سطر فقط (لا يمكن الدمج مع نطاق البايت)"
+      },
       "certSync": {
         "updated": "تم تحديث ذاكرة التخزين المؤقت لشهادات ACME من {{machine}} ({{count}} شهادة)"
       },
@@ -1353,6 +1353,7 @@
         "archived": "تم أرشفة بيانات اعتماد \"{{repository}}\"",
         "archiveHint": "لأرشفة بيانات الاعتماد للاسترداد: أعد التشغيل باستخدام --archive-config",
         "archiveOption": "نقل إدخال الإعدادات إلى deletedRepositories للاستعادة لاحقاً",
+        "cloudBackupHint": "تظل النسخ الاحتياطية السحابية (إن وجدت) بعد الحذف. أزِل النسخ الاحتياطية السحابية المعزولة باستخدام: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "تم حذف المستودع",
         "configRetained": "تم الاحتفاظ بإعداد \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). للإزالة: rdc config repository remove --name {{repository}}",
         "description": "حذف مستودع (يدمّر الحاويات والأقراص والصورة المشفّرة). يتم الاحتفاظ بإدخال الإعدادات. استخدم --archive-config لنقل بيانات الاعتماد إلى deletedRepositories للاستعادة عبر 'config restore-archived'",
@@ -1387,7 +1388,7 @@
       "fork": {
         "alreadyExists": "المستودع \"{{name}}\" موجود بالفعل في السياق",
         "checkpointOption": "إنشاء نقطة تفتيش CRIU على المصدر قبل التفريع (التقاط حالة ذاكرة العمليات للاستعادة عند fork)",
-        "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}} --mount. لترحيل النسخة إلى جهاز آخر: repo push {{repository}} -m {{machine}} --to <target> --up",
+        "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}}. لترحيل النسخة إلى جهاز آخر: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
         "descriptionShort": "إنشاء نسخة CoW من مستودع (GUID جديد، networkId، نطاق IP)",
         "failed": "فشل إنشاء النسخة",
@@ -1402,6 +1403,7 @@
         "completed": "اكتمل العرض",
         "description": "عرض المستودعات على جهاز",
         "failed": "فشل العرض: {{error}}",
+        "serverNameLegend": "* الاسم مقروء من الجهاز (غير موجود في إعداداتك المحلية)",
         "starting": "جارٍ عرض المستودعات على \"{{machine}}\"..."
       },
       "machineOption": "اسم الجهاز المستهدف",
@@ -1524,25 +1526,6 @@
         },
         "valueOption": "قيمة السر. مرر `-` للقراءة من stdin (يتجنب التعرض في سجل الصدفة)."
       },
-      "snapshot": {
-        "create": {
-          "creating": "جارٍ إنشاء لقطة لـ \"{{repo}}\" على {{machine}}...",
-          "description": "إنشاء لقطة BTRFS لمستودع",
-          "descriptionShort": "إنشاء لقطة BTRFS لمستودع",
-          "optionSnapshotName": "اسم اللقطة صريح (يُولّد تلقائياً إذا ترك فارغاً)",
-          "success": "تم إنشاء اللقطة: {{name}} ({{path}})"
-        },
-        "delete": {
-          "description": "حذف لقطة من جهاز بعيد",
-          "success": "تم حذف اللقطة: {{name}}"
-        },
-        "description": "إدارة لقطات BTRFS على الأجهزة البعيدة",
-        "list": {
-          "description": "سرد اللقطات على جهاز بعيد",
-          "header": "{{count}} لقطة في {{path}}:",
-          "noSnapshots": "لم يتم العثور على لقطات."
-        }
-      },
       "status": {
         "completed": "تم جلب الحالة",
         "description": "الحصول على حالة المستودع",
@@ -1554,19 +1537,6 @@
         "download": {
           "description": "تنزيل الملفات من مستودع",
           "descriptionShort": "تنزيل ملفات من مستودع عبر rsync"
-        },
-        "pull": {
-          "description": "سحب المستودعات من التخزين السحابي (احذف الاسم لسحب الكل)",
-          "optionFrom": "اسم التخزين المصدر",
-          "optionOverride": "الكتابة فوق المستودعات غير المركّبة الموجودة عند السحب",
-          "optionRepo": "تصفية لمستودع محدد (قابل للتكرار)",
-          "success": "اكتمل سحب المزامنة"
-        },
-        "push": {
-          "description": "دفع المستودعات إلى التخزين السحابي (احذف الاسم لدفع الكل)",
-          "optionRepo": "تصفية لمستودع محدد (قابل للتكرار)",
-          "optionTo": "اسم التخزين الوجهة",
-          "success": "اكتمل دفع المزامنة"
         },
         "status": {
           "description": "التحقق من حالة المزامنة ومقارنة الملفات المحلية/البعيدة",
@@ -1650,7 +1620,6 @@
       "upAll": {
         "completed": "تم بدء جميع المستودعات",
         "concurrencyOption": "الحد الأقصى للمستودعات المتزامنة (افتراضي: 3)",
-        "description": "نشر جميع المستودعات على جهاز",
         "dryRunOption": "عرض ما سيتم تنفيذه بدون تنفيذ فعلي",
         "failed": "فشلت عملية بدء الكل",
         "includeForksOption": "تشغيل/بدء المستودعات المتشعبة أيضًا",
@@ -1770,15 +1739,6 @@
         "listing": "جارٍ عرض النسخ الاحتياطية في \"{{storage}}\"...",
         "machineOption": "آلة المنفذ، تشغل مكالمات قائمة/حذف rclone مقابل التخزين. مطلوبة لأن العملاء لا يُتوقع منهم تثبيت rclone محلياً؛ بيانات اعتماد التخزين لا تزال تأتي من تكوينك المحلي.",
         "noBackups": "لم يتم العثور على نسخ احتياطية في التخزين"
-      },
-      "pull": {
-        "completed": "اكتمل السحب في {{duration}} مللي ثانية",
-        "description": "سحب نسخة احتياطية من التخزين السحابي إلى جهاز",
-        "failed": "فشل السحب: {{error}}",
-        "machineOption": "اسم الجهاز المستهدف",
-        "noCredential": "تحذير: المستودع \"{{name}}\" لا يحتوي على بيانات اعتماد. قد يفشل السحب إذا كانت النسخة الاحتياطية مشفّرة.",
-        "repositoryOption": "اسم المستودع المراد سحبه",
-        "starting": "جارٍ سحب \"{{repository}}\" من \"{{storage}}\" إلى \"{{machine}}\"..."
       },
       "rename": {
         "description": "إعادة تسمية مزود تخزين"
@@ -2251,7 +2211,7 @@
           "afterDescription": "يُخرج أمر health مقاييس النظام وحالة الحاويات واستقرار الخدمات ومعلومات التخزين — مفيد لفحوصات خطوط أنابيب CI/CD."
         },
         "testConnection": {
-          "tip": "استخدم `--save-known-hosts` لحفظ مفتاح المضيف تلقائياً في خزنة الجهاز بعد اختبار ناجح."
+          "tip": "استخدم `--save` لحفظ مفتاح المضيف تلقائياً في خزنة الجهاز بعد اختبار ناجح."
         }
       },
       "organization": {
@@ -2292,7 +2252,7 @@
       "createGuardOverrideNonLinux": "لا يمكن إنشاء مستودع رئيسي جديد \"{{name}}\". تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nبدلاً من ذلك، أنشئ fork من مستودع موجود:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
       "fieldReveal": "‏--reveal للحقل الحساس {{pointer}} محظور في بيئات العملاء. يجب على العملاء استخدام --digest. يمكن لمستخدم حقيقي في طرفية تفاعلية استخدام --reveal.",
       "forkBlocked": "الأمر \"{{command}}\" غير متاح في مستودعات fork.\n\nمستودعات fork هي بيئات معزولة مؤقتة. هذه العملية تنطبق فقط على المستودعات الرئيسية (الإنتاجية). اطلب من المستخدم تشغيل هذا الأمر مباشرةً.",
-      "grandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nتحتوي المستودعات الرئيسية على بيانات الإنتاج. استخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة.\n\nسير العمل:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork (مثال: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nللمستخدم: للسماح بالوصول المباشر، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
+      "grandGuard": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يمكن للوكلاء تعديل المستودعات الرئيسية مباشرةً.\n\nتحتوي المستودعات الرئيسية على بيانات الإنتاج. استخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة.\n\nسير العمل:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork (مثال: rdc repo up --name {{name}}:<tag-name> -m <machine>)\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nللمستخدم: للسماح بالوصول المباشر، عيّن REDIACC_ALLOW_GRAND_REPO={{name}} (أو * لجميع المستودعات) في الطرفية قبل بدء جلسة الوكيل.",
       "grandGuardOverride": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). لا يُقبل التجاوز من قِبل الوكيل.\n\nلا تحاول تعيين REDIACC_ALLOW_GRAND_REPO — فقط المستخدم يمكنه التصريح بذلك قبل بدء الوكيل.\n\nاستخدم fork بدلاً من ذلك — فالـ forks هي نسخ معزولة وآمنة:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover",
       "grandGuardOverrideNonLinux": "\"{{name}}\" هو مستودع رئيسي (إنتاجي). تجاوز REDIACC_ALLOW_GRAND_REPO غير مدعوم على {{platform}}.\n\nهذا التجاوز يعمل فقط على Linux. على Windows وmacOS، يجب على الوكلاء استخدام سير عمل fork أولاً.\n\nسير العمل:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. اعمل على الـ fork\n  3. عند الانتهاء، يمكن للمستخدم ترقية الـ fork باستخدام rdc repo takeover\n\nلاستخدام التجاوز، شغّل الوكيل على Linux (مباشرةً، أو WSL، أو Docker، أو VM).",
       "machineGuard": "الوصول المباشر إلى الآلة \"{{machine}}\" غير مسموح في وضع الوكيل.\n\nيجب على الوكلاء الاتصال من خلال سياق مستودع للوصول المعزول. أنشئ fork للمستودع أولاً، ثم اتصل بالـ fork.\n\nسير العمل:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nللمستخدم: للسماح بالوصول المباشر للآلة، عيّن REDIACC_ALLOW_GRAND_REPO=* (أو اسم مستودع محدد) في الطرفية قبل بدء جلسة الوكيل.",
@@ -2344,6 +2304,12 @@
     "invalidPort": "رقم منفذ غير صحيح: \"{{port}}\". يجب أن يكون بين 1 و 65535.",
     "invalidPriorityMax": "قيمة priority-max غير صحيحة. يجب أن تكون بين 1 و 5.",
     "invalidPriorityMin": "قيمة priority-min غير صحيحة. يجب أن تكون بين 1 و 5.",
+    "license": {
+      "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
+      "recoveryFailedNoKnownRepos": "تم العثور على مستودعات على {{machine}} لكن لا يوجد أي منها في إعداداتك المحلية. راجع مستودعاتك المتابَعة باستخدام `rdc config repository list`, ثم أعد المحاولة.",
+      "recoveryFailedServerRejected": "رفض خادم الحساب إصدار الترخيص للمستودع. الخطأ الأول: {{error}}. شغّل: rdc subscription refresh repo --name <repo> -m {{machine}} للمزيد من التفاصيل.",
+      "recoveryFailedTokenNotReady": "رمز اشتراكك غير جاهز. شغّل: rdc subscription login، ثم أعد المحاولة."
+    },
     "machineNotFound": "لم يتم العثور على الآلة \"{{name}}\"",
     "machineRequired": "اسم الآلة مطلوب. استخدم --machine <name>",
     "machineRequiredLocal": "اسم الآلة مطلوب. استخدم --machine <name>",
@@ -2461,7 +2427,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  وضع الوكيل\n    • النسخ فقط: أنشئ نسخة متفرعة قبل إجراء أي تغييرات على أي مستودع\n    • المستودعات الرئيسية (غير المتفرعة) للقراءة فقط للوكلاء\n    • سير العمل: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "agentMode": "\n  وضع الوكيل\n    • النسخ فقط: أنشئ نسخة متفرعة قبل إجراء أي تغييرات على أي مستودع\n    • المستودعات الرئيسية (غير المتفرعة) للقراءة فقط للوكلاء\n    • سير العمل: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "عرض حالة الجهاز",
       "repoUp": "نشر خدمات المستودع",

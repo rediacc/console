@@ -25,16 +25,135 @@ export function detectRepoContextCommand(command: string): RepoContextPattern | 
   return null;
 }
 
-const DOCKER_COMPOSE_PATTERN = /\b(docker\s+compose|docker-compose)\b/i;
+// Wrapper tokens that prefix another command without being the command
+// themselves. We skip past them (plus their -flags / VAR=val args) to find the
+// real command word of a segment, so `sudo docker compose` is still caught.
+const COMMAND_PREFIXES = new Set([
+  'sudo',
+  'env',
+  'nice',
+  'nohup',
+  'time',
+  'command',
+  'exec',
+  'doas',
+]);
 
 /**
- * Detects `docker compose` / `docker-compose` usage. In repository context this
- * must be blocked because `renet compose` is a preprocessor that injects per-repo
- * loopback IPs, host network mode, CRIU capabilities, and compose validation —
- * bypassing it silently corrupts the deployment.
+ * Flags that take a VALUE argument for each wrapper prefix.
+ * Without this, `sudo -u root docker compose up` would treat `root` as the
+ * command and miss the docker-compose guard.
+ */
+const PREFIX_FLAGS_WITH_ARGS: Record<string, Set<string>> = {
+  sudo: new Set([
+    '-u',
+    '--user',
+    '-g',
+    '--group',
+    '-p',
+    '--prompt',
+    '-c',
+    '--class',
+    '-C',
+    '--close-from',
+    '-R',
+    '--chroot',
+  ]),
+  env: new Set(['-u', '--unset', '-C', '--chdir']),
+  nice: new Set(['-n', '--adjustment']),
+  time: new Set(['-o', '--output', '-f', '--format']),
+  exec: new Set(['-a']),
+};
+
+/** Strip a leading path from a command token: `/usr/bin/docker` -> `docker`. */
+function basename(token: string): string {
+  return token.replace(/^.*\//, '');
+}
+
+/**
+ * Consume one flag token (and its value token when applicable). Returns the
+ * updated index after consuming the flag (and optional value).
+ */
+function consumeFlag(tokens: string[], i: number, flagsWithArgs: Set<string>): number {
+  const tok = tokens[i];
+  const eqPos = tok.indexOf('=');
+  // `--flag=value` embeds the value; `--flag value` has a separate next token.
+  const flagPart = eqPos === -1 ? tok : tok.slice(0, eqPos);
+  i++;
+  // Flag takes a separate value token: consume it when the next token is a plain value.
+  const hasNextValue =
+    eqPos === -1 && flagsWithArgs.has(flagPart) && i < tokens.length && !tokens[i].startsWith('-');
+  return hasNextValue ? i + 1 : i;
+}
+
+function skipPrefixArgs(tokens: string[], start: number, flagsWithArgs: Set<string>): number {
+  let i = start;
+  while (i < tokens.length) {
+    const tok = tokens[i];
+    if (tok.startsWith('-')) {
+      i = consumeFlag(tokens, i, flagsWithArgs);
+      continue;
+    }
+    if (/^\w+=/.test(tok)) {
+      i++; // env assignment passed to the wrapper (e.g. `sudo FOO=bar cmd`)
+      continue;
+    }
+    break; // not a flag or assignment — this is the real command
+  }
+  return i;
+}
+
+/**
+ * Resolve the command words of a single shell segment: drop leading env-var
+ * assignments (`FOO=bar`) and wrapper prefixes (`sudo`, `env`, ...) along with
+ * their flags and flag values, leaving the actual command word first.
+ */
+function segmentCommandWords(segment: string): string[] {
+  const tokens = segment.trim().split(/\s+/).filter(Boolean);
+  let i = 0;
+  while (i < tokens.length) {
+    if (/^\w+=/.test(tokens[i])) {
+      i++; // leading env assignment
+      continue;
+    }
+    const prefixName = basename(tokens[i]).toLowerCase();
+    if (COMMAND_PREFIXES.has(prefixName)) {
+      i++; // consume the wrapper prefix itself
+      const flagsWithArgs = PREFIX_FLAGS_WITH_ARGS[prefixName] ?? new Set<string>();
+      i = skipPrefixArgs(tokens, i, flagsWithArgs);
+      continue;
+    }
+    break;
+  }
+  return tokens.slice(i);
+}
+
+/**
+ * Detects `docker compose` / `docker-compose` *invocation* in repository
+ * context, which must be blocked because `renet compose` is a preprocessor that
+ * injects per-repo loopback IPs, host network mode, CRIU capabilities, and
+ * compose validation — bypassing it silently corrupts the deployment.
+ *
+ * Matches the command being run, NOT substrings in arguments/filenames: each
+ * shell segment (split on `;`, `&&`, `||`, `|`, `&`, newline) is inspected at
+ * its command position, so `cat docker-compose.yml`, `find -iname
+ * 'docker-compose*'`, and `grep compose docker-compose.yml` are allowed while
+ * `docker compose up`, `sudo docker-compose down`, and
+ * `FOO=bar docker compose up` are still blocked (rediacc/console#490).
+ *
+ * Known limitation: docker-compose nested inside an opaque `bash -c "..."`
+ * string is not matched — the server-side sandbox and per-repo DOCKER_HOST are
+ * the real enforcement; this guard is an ergonomic guardrail.
  */
 export function detectDockerComposeCommand(command: string): boolean {
-  return DOCKER_COMPOSE_PATTERN.test(command);
+  for (const segment of command.split(/&&|\|\||[;&|\n]/)) {
+    const words = segmentCommandWords(segment);
+    if (words.length === 0) continue;
+    const cmd = basename(words[0]).toLowerCase();
+    if (cmd === 'docker-compose') return true;
+    if (cmd === 'docker' && words[1]?.toLowerCase() === 'compose') return true;
+  }
+  return false;
 }
 
 export interface RenetCommandMatch {

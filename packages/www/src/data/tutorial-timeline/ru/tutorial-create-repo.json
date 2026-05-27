@@ -7,341 +7,69 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "115f14373b6c87af34ee914535e574a8ab33f29cea7a04fb652adac622dac726",
+  "transcriptHash": "cf3af5fd0f4440a23ac8e1e8877db8da5b498b8811974a1d0e42f18d6e649e3c",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 32.02867,
-      "replayEndSec": 62.567023,
+      "replayStartSec": 2.409686,
+      "replayEndSec": 11.760396,
       "narrationText": "Создаём на сервере зашифрованный репозиторий объёмом 2 гигабайта. Репозиторий — это один зашифрованный файл в состоянии покоя. После монтирования он превращается в папку с собственным Docker-демоном и данными приложения, полностью изолированную от всего остального на сервере.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-01.b68375bf.mp3",
-      "audioDurationSec": 20.506122,
-      "wordTimings": [
-        {
-          "startSec": 0.64,
-          "endSec": 0.8,
-          "startChar": 8,
-          "endChar": 10
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.28,
-          "startChar": 11,
-          "endChar": 18
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 2.08,
-          "startChar": 19,
-          "endChar": 32
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.88,
-          "startChar": 33,
-          "endChar": 44
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.32,
-          "startChar": 53,
-          "endChar": 54
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 5.12,
-          "startChar": 55,
-          "endChar": 64
-        },
-        {
-          "startSec": 5.52,
-          "endSec": 6.4,
-          "startChar": 66,
-          "endChar": 77
-        },
-        {
-          "startSec": 6.8,
-          "endSec": 7.12,
-          "startChar": 80,
-          "endChar": 83
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.36,
-          "startChar": 84,
-          "endChar": 88
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 8.08,
-          "startChar": 89,
-          "endChar": 102
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.48,
-          "startChar": 103,
-          "endChar": 107
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 8.64,
-          "startChar": 108,
-          "endChar": 109
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 9.28,
-          "startChar": 110,
-          "endChar": 119
-        },
-        {
-          "startSec": 9.28,
-          "endSec": 9.76,
-          "startChar": 120,
-          "endChar": 125
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.88,
-          "startChar": 127,
-          "endChar": 132
-        },
-        {
-          "startSec": 10.88,
-          "endSec": 11.6,
-          "startChar": 133,
-          "endChar": 145
-        },
-        {
-          "startSec": 11.6,
-          "endSec": 11.84,
-          "startChar": 146,
-          "endChar": 148
-        },
-        {
-          "startSec": 11.84,
-          "endSec": 12.56,
-          "startChar": 149,
-          "endChar": 161
-        },
-        {
-          "startSec": 12.56,
-          "endSec": 12.64,
-          "startChar": 162,
-          "endChar": 163
-        },
-        {
-          "startSec": 12.64,
-          "endSec": 13.12,
-          "startChar": 164,
-          "endChar": 169
-        },
-        {
-          "startSec": 13.12,
-          "endSec": 13.84,
-          "startChar": 172,
-          "endChar": 183
-        },
-        {
-          "startSec": 15.36,
-          "endSec": 15.84,
-          "startChar": 201,
-          "endChar": 208
-        },
-        {
-          "startSec": 15.84,
-          "endSec": 16.56,
-          "startChar": 209,
-          "endChar": 219
-        },
-        {
-          "startSec": 17.04,
-          "endSec": 17.84,
-          "startChar": 221,
-          "endChar": 230
-        },
-        {
-          "startSec": 17.92,
-          "endSec": 18.8,
-          "startChar": 231,
-          "endChar": 244
-        },
-        {
-          "startSec": 18.8,
-          "endSec": 18.88,
-          "startChar": 245,
-          "endChar": 247
-        },
-        {
-          "startSec": 18.88,
-          "endSec": 19.28,
-          "startChar": 248,
-          "endChar": 253
-        },
-        {
-          "startSec": 19.28,
-          "endSec": 19.84,
-          "startChar": 254,
-          "endChar": 264
-        },
-        {
-          "startSec": 19.84,
-          "endSec": 19.92,
-          "startChar": 265,
-          "endChar": 267
-        },
-        {
-          "startSec": 19.92,
-          "endSec": 20.4,
-          "startChar": 268,
-          "endChar": 275
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-01.7da714a4.mp3",
+      "textHash": "7da714a4c3b4c6a62637b4c2f265194a05eac94787acc00d9668f8a34df8276e",
+      "audioDurationSec": 20.427755,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-01-after.a2a6b600.mp3",
+      "afterAudioDurationSec": 4.989388,
+      "afterTextHash": "a2a6b6005fe42bdbca583fb59489fdb2f5cd38935a324e73e45c33bfbcfc7368"
     },
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 62.567023,
-      "replayEndSec": 86.833369,
+      "replayStartSec": 11.760396,
+      "replayEndSec": 17.238181,
       "narrationText": "Выводим список репозиториев на машине, чтобы убедиться, что новый зарегистрирован. Отсюда репозиторий можно открыть в VS Code, развернуть, форкнуть или сделать резервную копию — всё с ноутбука.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-02.b9e21d75.mp3",
-      "audioDurationSec": 13.792653,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 0.96,
-          "startChar": 8,
-          "endChar": 14
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.68,
-          "startChar": 15,
-          "endChar": 27
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.32,
-          "startChar": 31,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.88,
-          "startChar": 39,
-          "endChar": 44
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.28,
-          "startChar": 45,
-          "endChar": 54
-        },
-        {
-          "startSec": 3.28,
-          "endSec": 3.52,
-          "startChar": 56,
-          "endChar": 59
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.84,
-          "startChar": 60,
-          "endChar": 65
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.72,
-          "startChar": 66,
-          "endChar": 81
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.44,
-          "startChar": 102,
-          "endChar": 107
-        },
-        {
-          "startSec": 7.44,
-          "endSec": 7.76,
-          "startChar": 108,
-          "endChar": 115
-        },
-        {
-          "startSec": 7.76,
-          "endSec": 7.84,
-          "startChar": 116,
-          "endChar": 117
-        },
-        {
-          "startSec": 7.84,
-          "endSec": 8.08,
-          "startChar": 118,
-          "endChar": 120
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.4,
-          "startChar": 121,
-          "endChar": 125
-        },
-        {
-          "startSec": 8.96,
-          "endSec": 9.6,
-          "startChar": 127,
-          "endChar": 137
-        },
-        {
-          "startSec": 9.76,
-          "endSec": 10.4,
-          "startChar": 139,
-          "endChar": 147
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.64,
-          "startChar": 148,
-          "endChar": 151
-        },
-        {
-          "startSec": 10.72,
-          "endSec": 11.12,
-          "startChar": 152,
-          "endChar": 159
-        },
-        {
-          "startSec": 11.12,
-          "endSec": 11.68,
-          "startChar": 160,
-          "endChar": 169
-        },
-        {
-          "startSec": 11.68,
-          "endSec": 12.24,
-          "startChar": 170,
-          "endChar": 175
-        },
-        {
-          "startSec": 13.04,
-          "endSec": 13.12,
-          "startChar": 179,
-          "endChar": 180
-        },
-        {
-          "startSec": 13.12,
-          "endSec": 13.68,
-          "startChar": 184,
-          "endChar": 192
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-02.857bdada.mp3",
+      "textHash": "857bdadaf3b523d25388e6c584c96b03d04810e884e7ca744fcb342ea4f8c8fc",
+      "audioDurationSec": 14.915918,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-02-after.990c8891.mp3",
+      "afterAudioDurationSec": 3.239184,
+      "afterTextHash": "990c8891dc277857186bd976e5558aae29bcacb74a127ff0adbf482a632b6475"
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.238181,
+      "replayEndSec": 21.33289,
+      "narrationText": "Удобная опция: открыть repo прямо в VS Code с помощью этой команды. Мы не будем запускать редактор здесь, но она начинает удалённый сеанс в repo через SSH, чтобы вы могли редактировать его файлы.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-03.881ebfcd.mp3",
+      "textHash": "881ebfcd5cff1acd1a86f3296d1a18cff87ce61b07c9a6e103862f1880e301e9",
+      "audioDurationSec": 13.165714,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-03-after.b5c19dfc.mp3",
+      "afterAudioDurationSec": 3.970612,
+      "afterTextHash": "b5c19dfcc81a16ac68db142f7be12838cc3b08ba67007e5cf69f7461ea01a019"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "5ac6b62bb58f2e301a3d2a6e713a32465caceb1dc6cc75c0cdd65051b32ef53a",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/intro.5ac6b62b.mp3",
+      "narrationText": "Создаём ваш первый репозиторий! В состоянии покоя это зашифрованный файл, а при монтировании он превращается в полностью изолированную среду.",
+      "audioDurationSec": 9.952653
+    },
+    {
+      "id": "file-on-disk",
+      "textHash": "002410e971bb24221b91c2868ec36044638bdcabdc89d26c11798247eac83bed",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/file-on-disk.002410e9.mp3",
+      "narrationText": "На диске это единый зашифрованный образ. При монтировании вы получаете отдельный Docker-демон, данные приложения внутри зашифрованного тома и loopback-адреса, которые не конфликтуют ни с чем другим на сервере.",
+      "audioDurationSec": 17.162449
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "0ec7594a2bdf0779ee8aef576e05223bca8e81e228ebde02b03056ff140419d3",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/next-tutorial.0ec7594a.mp3",
+      "narrationText": "Ваш первый репозиторий готов к работе. Дальше развернём в нём приложение!",
+      "audioDurationSec": 4.91102
     }
   ]
 }

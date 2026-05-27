@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 10
 language: tr
-sourceHash: 4575658381fb6508
-sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
+sourceHash: "658b00b83875950d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Sorun Giderme
@@ -129,7 +129,7 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 
 Bir depo kabuğu içinde, bir konteyneri `--network host` olmadan çalıştırmak, yalnızca loopback arayüzü olan, DNS içermeyen ve dışa doğru bağlantısı olmayan izole bir konteyner verir. `apt update`, `pip install`, `curl https://...` gibi komutlar ya da herhangi bir ağ isteği DNS hatalarıyla anında başarısız olur.
 
-Bu kasıtlıdır. Rediacc'in ağ modeli, `renet compose` tarafından zorunlu kılınan **her servis için host ağı**dır. NAT'lı varsayılan bir Docker bridge'i, bir deponun başka bir deponun servislerine ulaşmasını engelleyen çekirdek düzeyindeki loopback izolasyonunu atlayacağı için, depo başına Docker daemon'u `"bridge": "none"` ve `"iptables": false` ile yapılandırılır. Düz bir `docker run` konteynerinin bağlanabileceği yönlendirilebilir bir bridge yoktur.
+Bu kasıtlıdır. Rediacc'in ağ modeli, `renet compose` tarafından zorunlu kılınan **her servis için host ağı**dır. NAT'lı varsayılan bir Docker bridge'i, bir deponun başka bir deponun servislerine ulaşmasını engelleyen çekirdek düzeyindeki loopback izolasyonunu atlayacağı için, depo başına Docker daemon'u (`FlavorRediacc`) `"bridge": "none"` ve `"iptables": false` ile yapılandırılır. Düz bir `docker run` konteynerinin bağlanabileceği yönlendirilebilir bir bridge yoktur. (Geliştirme ortamları tarafından kullanılan kullanıcı başına Hub daemon'ları (`FlavorHub`) istisnadır: kullanıcı konteynerlerinin dışa doğru ağ bağlantısına sahip olması için bridge ve iptables'ı etkinleştirirler.)
 
 **Geçici bir konteynerde ağ erişimi elde etmek için host ağını kullanın:**
 

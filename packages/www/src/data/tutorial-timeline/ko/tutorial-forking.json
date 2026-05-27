@@ -7,601 +7,143 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "97804659cf2b77d3dc41ea719329838b9470da3f7d1d3417ff1919ffa9fc0b29",
+  "transcriptHash": "35a5bf8e8ee4021f447d500cf4652cc78f1fa42e0b2df913932402fd83aedcb9",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 108.099445,
-      "replayEndSec": 142.355671,
+      "replayStartSec": 2.41277,
+      "replayEndSec": 13.421721,
       "narrationText": "이제 포크입니다. 명령 하나로 전체 저장소, 앱, 데이터베이스, 설정 파일을 크기에 상관없이 몇 초 만에 복제합니다. 1기가바이트든 100기가바이트든 1테라바이트든 항상 같은 시간이 걸립니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-01.e486e388.mp3",
-      "audioDurationSec": 18.364082,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 2
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 1.12,
-          "startChar": 3,
-          "endChar": 8
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 1.92,
-          "startChar": 10,
-          "endChar": 12
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.4,
-          "startChar": 13,
-          "endChar": 16
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.88,
-          "startChar": 17,
-          "endChar": 19
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.52,
-          "startChar": 20,
-          "endChar": 23
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.16,
-          "startChar": 25,
-          "endChar": 26
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 5.44,
-          "startChar": 28,
-          "endChar": 34
-        },
-        {
-          "startSec": 5.84,
-          "endSec": 6.24,
-          "startChar": 36,
-          "endChar": 38
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.72,
-          "startChar": 39,
-          "endChar": 42
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.12,
-          "startChar": 43,
-          "endChar": 46
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.92,
-          "startChar": 47,
-          "endChar": 51
-        },
-        {
-          "startSec": 8.4,
-          "endSec": 8.56,
-          "startChar": 52,
-          "endChar": 53
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 8.72,
-          "startChar": 54,
-          "endChar": 55
-        },
-        {
-          "startSec": 8.72,
-          "endSec": 8.96,
-          "startChar": 56,
-          "endChar": 58
-        },
-        {
-          "startSec": 8.96,
-          "endSec": 9.76,
-          "startChar": 59,
-          "endChar": 64
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 11.52,
-          "startChar": 66,
-          "endChar": 73
-        },
-        {
-          "startSec": 12.0,
-          "endSec": 13.28,
-          "startChar": 74,
-          "endChar": 83
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-01.623dfb68.mp3",
+      "textHash": "623dfb68d24331fe53d372a92e408853301ed09919518d8c3a5154806cfa1968",
+      "audioDurationSec": 17.319184,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-01-after.9e5a676f.mp3",
+      "afterAudioDurationSec": 5.720816,
+      "afterTextHash": "9e5a676f1a1417d70483782c0e01f4ae14856f5950cba5b2a6a90ca43e64864d"
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 142.355671,
-      "replayEndSec": 158.262452,
+      "replayStartSec": 13.421721,
+      "replayEndSec": 18.980206,
       "narrationText": "이제 두 저장소가 나란히 존재합니다. 같은 머신, 같은 디스크, 완전히 독립된 두 환경입니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-02.ad5dfbae.mp3",
-      "audioDurationSec": 8.829388,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 2
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.72,
-          "startChar": 3,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.72,
-          "endSec": 1.52,
-          "startChar": 5,
-          "endChar": 9
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 2.16,
-          "startChar": 10,
-          "endChar": 13
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.96,
-          "startChar": 14,
-          "endChar": 19
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.92,
-          "startChar": 21,
-          "endChar": 23
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.4,
-          "startChar": 24,
-          "endChar": 26
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.44,
-          "startChar": 28,
-          "endChar": 30
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.92,
-          "startChar": 31,
-          "endChar": 34
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.96,
-          "startChar": 36,
-          "endChar": 39
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.76,
-          "startChar": 40,
-          "endChar": 43
-        },
-        {
-          "startSec": 7.84,
-          "endSec": 8.08,
-          "startChar": 44,
-          "endChar": 45
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.8,
-          "startChar": 46,
-          "endChar": 51
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-02.ed55b9c7.mp3",
+      "textHash": "ed55b9c753028b58373f8b6435e5d0af71a12b5090f3ba61f15e3193249dbfa8",
+      "audioDurationSec": 9.404082,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-02-after.1dd3af69.mp3",
+      "afterAudioDurationSec": 5.799184,
+      "afterTextHash": "1dd3af694ac65f160a89ba4d92986c0b0526efcfcc7bbb9081e81dfc746c3530"
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 158.262452,
-      "replayEndSec": 176.185047,
+      "replayStartSec": 18.980206,
+      "replayEndSec": 26.216902,
       "narrationText": "격리를 증명해 보겠습니다. 원본 저장소에서 마커 파일이 그대로 있습니다. 포크의 존재가 부모 저장소에 아무런 변화를 주지 않았습니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-03.bb9f6c63.mp3",
-      "audioDurationSec": 10.109388,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 1.04,
-          "startChar": 4,
-          "endChar": 7
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.76,
-          "startChar": 8,
-          "endChar": 13
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.56,
-          "startChar": 15,
-          "endChar": 17
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.36,
-          "startChar": 18,
-          "endChar": 23
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 3.76,
-          "startChar": 24,
-          "endChar": 26
-        },
-        {
-          "startSec": 3.76,
-          "endSec": 4.16,
-          "startChar": 27,
-          "endChar": 30
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.64,
-          "startChar": 31,
-          "endChar": 34
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 4.96,
-          "startChar": 35,
-          "endChar": 39
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 6.08,
-          "startChar": 41,
-          "endChar": 44
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.8,
-          "startChar": 45,
-          "endChar": 48
-        },
-        {
-          "startSec": 6.8,
-          "endSec": 7.12,
-          "startChar": 49,
-          "endChar": 51
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.76,
-          "startChar": 52,
-          "endChar": 56
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.48,
-          "startChar": 57,
-          "endChar": 60
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 9.04,
-          "startChar": 61,
-          "endChar": 64
-        },
-        {
-          "startSec": 9.04,
-          "endSec": 9.36,
-          "startChar": 65,
-          "endChar": 67
-        },
-        {
-          "startSec": 9.36,
-          "endSec": 10.08,
-          "startChar": 68,
-          "endChar": 73
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-03.777103ad.mp3",
+      "textHash": "777103ad95b33d2027598ba459a77e5eb2dba8103db9499f01fb90cf22f591a8",
+      "audioDurationSec": 11.546122,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-03-after.132dc9cb.mp3",
+      "afterAudioDurationSec": 5.799184,
+      "afterTextHash": "132dc9cb80aab29a03ab3defdcd9e7be5a5288ef96fd06e04b48c75b15c717d1"
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 176.185047,
-      "replayEndSec": 195.030667,
+      "replayStartSec": 26.216902,
+      "replayEndSec": 34.456769,
       "narrationText": "이제 그 파일을 삭제합니다. 하지만 포크 내부에서만 삭제합니다. 파괴적인 변경을 가하는 것입니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-04.8b985e18.mp3",
-      "audioDurationSec": 7.810612,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 2
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.64,
-          "startChar": 3,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 1.12,
-          "startChar": 5,
-          "endChar": 8
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.84,
-          "startChar": 9,
-          "endChar": 14
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.64,
-          "startChar": 16,
-          "endChar": 19
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.36,
-          "startChar": 20,
-          "endChar": 22
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 4.08,
-          "startChar": 23,
-          "endChar": 28
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.8,
-          "startChar": 29,
-          "endChar": 34
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 6.08,
-          "startChar": 36,
-          "endChar": 40
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.72,
-          "startChar": 41,
-          "endChar": 44
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.12,
-          "startChar": 45,
-          "endChar": 48
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.68,
-          "startChar": 49,
-          "endChar": 53
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-04.5f792dea.mp3",
+      "textHash": "5f792dea0e5a270242944a7b53a108d315f0c98910a2238a570e41ef34287dea",
+      "audioDurationSec": 6.844082,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-04-after.ba2ca8ea.mp3",
+      "afterAudioDurationSec": 3.395918,
+      "afterTextHash": "ba2ca8eaee50025f17b4062151f3b260c4eed0e929e3738dde565f6602a4d76b"
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 195.030667,
-      "replayEndSec": 212.971596,
+      "replayStartSec": 34.456769,
+      "replayEndSec": 41.647526,
       "narrationText": "원본으로 돌아왔습니다. 마커 파일이 아직 여기 그대로 있습니다. 같은 이미지, 별도의 Docker 데몬, 별도의 파일 시스템입니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-05.65658235.mp3",
-      "audioDurationSec": 10.997551,
-      "wordTimings": [
-        {
-          "startSec": 1.36,
-          "endSec": 2.08,
-          "startChar": 5,
-          "endChar": 11
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.96,
-          "startChar": 13,
-          "endChar": 15
-        },
-        {
-          "startSec": 2.96,
-          "endSec": 3.52,
-          "startChar": 16,
-          "endChar": 19
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 4.0,
-          "startChar": 20,
-          "endChar": 22
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.24,
-          "startChar": 23,
-          "endChar": 25
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.56,
-          "startChar": 26,
-          "endChar": 29
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.96,
-          "startChar": 30,
-          "endChar": 34
-        },
-        {
-          "startSec": 5.84,
-          "endSec": 6.24,
-          "startChar": 36,
-          "endChar": 38
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.96,
-          "startChar": 39,
-          "endChar": 42
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 7.76,
-          "startChar": 44,
-          "endChar": 47
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.64,
-          "startChar": 55,
-          "endChar": 57
-        },
-        {
-          "startSec": 9.12,
-          "endSec": 9.52,
-          "startChar": 59,
-          "endChar": 62
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 9.92,
-          "startChar": 63,
-          "endChar": 65
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.88,
-          "startChar": 66,
-          "endChar": 72
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-05.9b43aff3.mp3",
+      "textHash": "9b43aff3b320a67c32a54008039d35b0f5f1e76b24d71807686241813d0f8ca0",
+      "audioDurationSec": 10.840816,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-05-after.cef168e0.mp3",
+      "afterAudioDurationSec": 4.284082,
+      "afterTextHash": "cef168e06e0795a72fe57c30f64e37b87a467521620450269618e50025e20cbc"
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 212.971596,
-      "replayEndSec": 271.523047,
+      "replayStartSec": 41.647526,
+      "replayEndSec": 51.671921,
       "narrationText": "작업이 끝나면 포크를 삭제하면 됩니다. 원본은 그대로 유지됩니다. 포크하고, 실험하고, 망가뜨리고, 삭제하세요. 위험이 없습니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-06.79f34925.mp3",
-      "audioDurationSec": 12.199184,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 1.12,
-          "startChar": 4,
-          "endChar": 7
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.68,
-          "startChar": 8,
-          "endChar": 11
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 2.24,
-          "startChar": 12,
-          "endChar": 16
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.64,
-          "startChar": 17,
-          "endChar": 20
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 4.32,
-          "startChar": 22,
-          "endChar": 25
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.8,
-          "startChar": 26,
-          "endChar": 29
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.52,
-          "startChar": 30,
-          "endChar": 35
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 7.04,
-          "startChar": 37,
-          "endChar": 41
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.92,
-          "startChar": 43,
-          "endChar": 47
-        },
-        {
-          "startSec": 8.72,
-          "endSec": 9.12,
-          "startChar": 49,
-          "endChar": 54
-        },
-        {
-          "startSec": 9.52,
-          "endSec": 10.24,
-          "startChar": 56,
-          "endChar": 61
-        },
-        {
-          "startSec": 11.12,
-          "endSec": 11.52,
-          "startChar": 63,
-          "endChar": 66
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 12.08,
-          "startChar": 67,
-          "endChar": 71
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-06.086bdef3.mp3",
+      "textHash": "086bdef3d991613b715afc0a9c2a1cd8cef79e87539c67d5d57afdbf0dddef68",
+      "audioDurationSec": 12.120816,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-06-after.e772980e.mp3",
+      "afterAudioDurationSec": 4.04898,
+      "afterTextHash": "e772980ed1f348d44b331b4705a37d6216bb27dcb7e7808e984b32ec0ff086e6"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "fbb14c93117af87c69a6bdb08abdaa15ed15422acd9bf1d93e7ba2644ee174e8",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/intro.fbb14c93.mp3",
+      "narrationText": "킬러 기능을 소개할게요! 프로덕션 repo 전체를 크기에 상관없이 복제하면서도 아무것도 망가뜨리지 않을 수 있어요.",
+      "audioDurationSec": 8.124082
+    },
+    {
+      "id": "fan-out",
+      "textHash": "2ab815cd0481bd2b8f970cb5d12d5eddb8e15d83e9bc40cdd1061d01c1d0f048",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/fan-out.2ab815cd.mp3",
+      "narrationText": "부모 repo 하나에서 원하는 만큼의 독립된 복제본이 뻗어나가요. 각 fork는 원본과 나란히 실행되는 격리된 환경이에요.",
+      "audioDurationSec": 10.266122
+    },
+    {
+      "id": "link-speed",
+      "textHash": "93e8d21a5185ffc68bd539b99af69161684c292024858c9b8cc347566ed3824e",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/link-speed.93e8d21a.mp3",
+      "narrationText": "폴더 링크를 공유한다고 생각해보세요. 링크는 폴더가 작든 크든 똑같이 가벼워요. fork도 같은 원리로 작동해요.",
+      "audioDurationSec": 9.639184
+    },
+    {
+      "id": "scale-invariance",
+      "textHash": "811b34d91819aed65d644c0458fc1a7db3b23dbc9c22dca3ef08d980acc2bfa7",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/scale-invariance.811b34d9.mp3",
+      "narrationText": "1기가바이트, 100기가바이트, 1테라바이트, fork의 동작은 똑같아요. repo 크기는 계산에 들어가지 않아요.",
+      "audioDurationSec": 16.666122
+    },
+    {
+      "id": "sun-mirrors",
+      "textHash": "17f7c1d46e211b8c45556e9461687acb4e47a7d915226ed197a1cc89582cc558",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/sun-mirrors.17f7c1d4.mp3",
+      "narrationText": "부모 repo가 태양이라면 여러분의 fork는 그 빛을 받는 거울이에요. 공유하는 베이스는 그대로 남고, 거울에 그리는 모든 것은 오직 여러분만의 것이에요.",
+      "audioDurationSec": 16.770612
+    },
+    {
+      "id": "river-photo",
+      "textHash": "9786bd84c6cecfc5a88248490c161397725e39bfacb52448a13ea72b63790e30",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/river-photo.9786bd84.mp3",
+      "narrationText": "fork는 어느 한순간의 부모를 찍은 정지 사진이에요. 부모는 강물처럼 계속 흘러도, 여러분의 스냅샷은 그 자리에 그대로 남아요.",
+      "audioDurationSec": 13.400816
+    },
+    {
+      "id": "flat-disk",
+      "textHash": "7b6a4113401f568ba5eeeae6653ea6b32e5a0c803987c3a38c3640cb51fa2e63",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/flat-disk.7b6a4113.mp3",
+      "narrationText": "100기가바이트 repo의 fork 5개라도 디스크에서는 여전히 약 100기가바이트예요. 각 fork 안에서 실제로 변경한 바이트만큼만 비용을 지불해요.",
+      "audioDurationSec": 11.807347
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "58ad7a857428e67a29676b3e1c42549252f307c6825888170af6354c2ab426a0",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/next-tutorial.58ad7a85.mp3",
+      "narrationText": "fork는 의도적으로 시크릿을 남겨두는데, 그게 바로 '프로덕션을 복제하고 아무것도 망가뜨리지 않는다'가 실제로 안전한 이유예요. 다음 튜토리얼에서 제대로 연결해볼게요!",
+      "audioDurationSec": 14.680816
     }
   ]
 }

@@ -1,13 +1,15 @@
 import readline from 'node:readline';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { getMachineContainers } from '@rediacc/shared/services/machine';
 import { t } from '../i18n/index.js';
+import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { deployAllRepoKeys } from '../services/repo-key-deployment.js';
 import { telemetryService } from '../services/telemetry.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
-import { createGuidResolver, loadGuidMap, resolveGuids } from '../utils/guid-resolver.js';
+import { createRepoNameResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
@@ -78,12 +80,117 @@ export async function postRepoUpTasks(repoName: string, machineName: string): Pr
     await maybeSyncCertCache(baseDomain, machineName);
   }
 
-  // Print service URL pattern so users know where their services are accessible.
-  // We print the pattern rather than specific service names since querying
-  // containers is not available here — the user substitutes {service} with
-  // their exposed service names.
   if (baseDomain) {
-    printServiceUrlPattern(repoName, `${machineName}.${baseDomain}`);
+    await printResolvedServiceUrls(repoName, machineName, `${machineName}.${baseDomain}`);
+  }
+}
+
+// Containers carry a partial-rediacc-label shape on the JSON wire; this local
+// alias avoids leaking through @rediacc/shared types we don't need to depend
+// on here.
+type LabeledContainer = { name: string; labels?: Record<string, string> };
+
+function autoRouteHost(
+  c: LabeledContainer,
+  parentName: string,
+  repoName: string,
+  tag: string | undefined,
+  machineDomain: string
+): string {
+  const labels = c.labels ?? {};
+  const rediaccName = labels['rediacc.service_name'] as string | undefined;
+  const composeName = labels['com.docker.compose.service'] as string | undefined;
+  const serviceName = rediaccName ?? composeName ?? c.name;
+  return tag
+    ? `${serviceName}-fork-${tag}.${parentName}.${machineDomain}`
+    : `${serviceName}.${repoName}.${machineDomain}`;
+}
+
+const TRAEFIK_RULE_KEY_RE = /^traefik\.http\.routers\..+\.rule$/;
+const HOST_VALUE_RE = /Host\(`([^`]+)`\)/g;
+
+function collectHostsFromContainer(labels: Record<string, string>, into: Set<string>): void {
+  const rediaccDomain = labels['rediacc.domain'] as string | undefined;
+  if (rediaccDomain) {
+    for (const h of rediaccDomain
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)) {
+      into.add(h);
+    }
+  }
+  for (const [key, value] of Object.entries(labels)) {
+    if (!TRAEFIK_RULE_KEY_RE.test(key)) continue;
+    for (const m of value.matchAll(HOST_VALUE_RE)) {
+      into.add(m[1]);
+    }
+  }
+}
+
+function extractCustomHosts(matched: LabeledContainer[]): Set<string> {
+  const customHosts = new Set<string>();
+  for (const c of matched) {
+    collectHostsFromContainer(c.labels ?? {}, customHosts);
+  }
+  return customHosts;
+}
+
+// emitResolvedLines prints one Exposed: line per service_port container and
+// one per custom Traefik / rediacc.domain host. Returns true if it printed
+// anything (so the caller can decide whether to fall back to the template).
+function emitResolvedLines(
+  matched: LabeledContainer[],
+  repoName: string,
+  parentName: string,
+  tag: string | undefined,
+  machineDomain: string
+): boolean {
+  const serviceContainers = matched.filter((c) => c.labels?.['rediacc.service_port'] !== undefined);
+  for (const c of serviceContainers) {
+    const host = autoRouteHost(c, parentName, repoName, tag, machineDomain);
+    outputService.info(`Exposed: https://${host}`);
+  }
+  const customHosts = extractCustomHosts(matched);
+  for (const host of customHosts) {
+    outputService.info(`Exposed: https://${host}  (custom)`);
+  }
+  return serviceContainers.length > 0 || customHosts.size > 0;
+}
+
+export async function printResolvedServiceUrls(
+  repoName: string,
+  machineName: string,
+  machineDomain: string
+): Promise<void> {
+  try {
+    const [parentName, tag] = repoName.includes(':') ? repoName.split(':') : [repoName, undefined];
+
+    const provider = await getStateProvider();
+    const machine = await provider.machines.getWithVaultStatus({
+      teamName: '',
+      machineName,
+    });
+
+    if (!machine) {
+      printServiceUrlPattern(repoName, machineDomain);
+      return;
+    }
+
+    // The rediacc.repo_name label holds the FULL repo name including any
+    // :tag suffix for forks (e.g. "mautic:bugfix"), so a direct equality
+    // check covers both grands and forks. Traefik Host rules and the
+    // rediacc.domain label are already runtime-interpolated on running
+    // containers, so we read literal hostnames.
+    const matched = getMachineContainers(machine).filter(
+      (c) => c.labels?.['rediacc.repo_name'] === repoName
+    );
+
+    const emitted = emitResolvedLines(matched, repoName, parentName, tag, machineDomain);
+    if (!emitted) {
+      printServiceUrlPattern(repoName, machineDomain);
+    }
+  } catch {
+    printServiceUrlPattern(repoName, machineDomain);
   }
 }
 
@@ -281,6 +388,45 @@ export async function handleDownAll(options: {
   }
 }
 
+// Renders the `repo list` table: resolves tag/type from local config, marks
+// server-sourced names (not in local config) with ' *', and prints a legend
+// when any such name is shown.
+async function printRepoListTable(resolved: Record<string, unknown>[]): Promise<void> {
+  const { parseRepoRef } = await import('../utils/config-schema.js');
+  const { classifyRepoType } = await import('../utils/repo-classify.js');
+  const repoConfigs = await configService.listRepositories().catch((err: unknown) => {
+    telemetryService.trackError(err, { operation: 'repo.list_repositories' });
+    return [];
+  });
+  const configLookup = new Map<string, { grandGuid?: string; tag?: string }>();
+  for (const rc of repoConfigs) {
+    configLookup.set(rc.config.repositoryGuid, {
+      grandGuid: rc.config.grandGuid,
+      tag: rc.config.tag,
+    });
+  }
+  const compact = resolved.map((r) => {
+    const cfg = configLookup.get((r.guid ?? r.name) as string);
+    const { name: baseName, tag: parsedTag } = parseRepoRef(r.name as string);
+    const serverSourced = r.name_source === 'server';
+    return {
+      name: serverSourced ? `${baseName} *` : baseName,
+      tag: cfg?.tag ?? parsedTag,
+      type: classifyRepoType({ is_fork: Boolean(r.is_fork) }, cfg),
+      size: r.size_human,
+      mounted: r.mounted ? 'Yes' : 'No',
+      docker: r.docker_running ? 'Yes' : 'No',
+      containers: r.container_count,
+      services: r.service_count,
+      modified: r.modified_human,
+    };
+  });
+  outputService.print(compact, 'table');
+  if (resolved.some((r) => r.name_source === 'server')) {
+    outputService.info(t('commands.repo.list.serverNameLegend'));
+  }
+}
+
 export async function handleRepoList(options: {
   machine: string;
   debug?: boolean;
@@ -300,40 +446,16 @@ export async function handleRepoList(options: {
 
     if (result.success) {
       const repositories = parseRepositoryListOutput(result.stdout ?? '[]');
-      const resolve = createGuidResolver(await loadGuidMap());
-      const resolved = resolveGuids(repositories, resolve, 'name');
+      const nameResolver = createRepoNameResolver(await loadGuidMap());
+      // Resolve each repo's display name: local config > server repo_name > GUID.
+      // Keep the GUID under `guid` and record where the name came from in `name_source`.
+      const resolved: Record<string, unknown>[] = repositories.map((r) => {
+        const guid = String(r.name);
+        const { name, source } = nameResolver(guid, r.repo_name as string | undefined);
+        return { ...r, name, guid, name_source: source };
+      });
       if (format === 'table') {
-        const { parseRepoRef } = await import('../utils/config-schema.js');
-        const repoConfigs = await configService.listRepositories().catch((err: unknown) => {
-          telemetryService.trackError(err, { operation: 'repo.list_repositories' });
-          return [];
-        });
-        const configLookup = new Map<string, { grandGuid?: string; tag?: string }>();
-        for (const rc of repoConfigs) {
-          configLookup.set(rc.config.repositoryGuid, {
-            grandGuid: rc.config.grandGuid,
-            tag: rc.config.tag,
-          });
-        }
-        const { classifyRepoType } = await import('../utils/repo-classify.js');
-        const compact = resolved.map((r) => {
-          const guid = (r.guid ?? r.name) as string;
-          const cfg = configLookup.get(guid);
-          const resolvedName = r.name as string;
-          const { name: baseName, tag: parsedTag } = parseRepoRef(resolvedName);
-          return {
-            name: baseName,
-            tag: cfg?.tag ?? parsedTag,
-            type: classifyRepoType({ is_fork: Boolean(r.is_fork) }, cfg),
-            size: r.size_human,
-            mounted: r.mounted ? 'Yes' : 'No',
-            docker: r.docker_running ? 'Yes' : 'No',
-            containers: r.container_count,
-            services: r.service_count,
-            modified: r.modified_human,
-          };
-        });
-        outputService.print(compact, format);
+        await printRepoListTable(resolved);
       } else {
         outputService.print(resolved, format);
       }

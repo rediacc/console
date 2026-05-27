@@ -4,7 +4,8 @@ description: "Varunda krüpteeritud repositooriumeid välisesse salvestusse, taa
 category: "Guides"
 order: 7
 language: et
-sourceHash: "f5222efa9505ab5e"
+sourceHash: "29bb767d837eab9a"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Varundamine ja taastamine
@@ -178,7 +179,7 @@ Külm varundamine käib kolmes faasis kaasatud repo kohta: **peatus → hetktõm
 
 - `rdc machine query --name <machine> --containers` näitab töötavat olekut. Võrdle oodatud hulgaga.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` masinas. Vaata seda käsuga `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` koos vana `startedAt`-ga tähendab, et viimane varukoopia ei lõppenud puhtalt.
-- Logid renet-i varundamiskäivitusest (`journalctl -u renet-*` või otsene `rdc machine deploy-backup` kutse) väljastavad lõplik kokkuvõtterida kujul `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Mittevühi `failed_repos` on grep-sihtmärk.
+- Logid renet-i varundamiskäivitusest (`journalctl -u renet-*` või otsene `rdc machine backup schedule` kutse) väljastavad lõplik kokkuvõtterida kujul `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Mittevühi `failed_repos` on grep-sihtmärk.
 
 ### Külma varundamise seisakuaja hindamine
 
@@ -294,6 +295,58 @@ Oma konfiguratsioonis seo üks või mitu strateegianime masinaga:
   }
 }
 ```
+
+## Kuuma ja külma valimine ning repositooriumipõhine filtreerimine
+
+### Kuum vs külm lühidalt
+
+| | Kuum | Külm |
+|---|------|------|
+| **Järjepidevus** | Krahhi-järjepidev (BTRFS-i hetktõmmis käitamise ajal) | Rakenduse-järjepidev (stop → hetktõmmis → start) |
+| **Seisak** | Puudub | Repositooriumi kohane stop+start aken (tavaliselt 5-120 s) |
+| **Sobiv sagedus** | Kõrge (nt tunnis) | Madal (nt iga päev või kord nädalas) |
+| **Tüüpiline kasutus** | Sagedane turvavõrk | Ajastatud garanteeritud järjepidevusega varukoopia |
+
+**Kuum** on kõrgsageduslike käivituste jaoks õige vaikevalik. Teenused jätkavad töötamist hetktõmmise tegemise ajal, nii et varundamisaken ei katkesta kasutajaid. Hetktõmmis on krahhi-järjepidev: see vastab sellele, mida saaksite pärast ebapuhast seiskamist. Enamiku kaasaegsete andmebaaside ja sõnumijärjekordade jaoks on see vastuvõetav.
+
+**Külm** on asjakohane, kui vajate garanteeritud rakenduse-järjepidevat hetktõmmist ja saate lubada lühikest repositooriumi kohast taaskäivitust. Teenused peatatakse enne hetktõmmist ja taaskäivitatakse enne üleslaadimise algust, nii et aeglane või ebaõnnestunud üleslaadimine ei pikenda seisakuaknit kunagi. Täieliku garantiimudeli jaoks vaadake [Külma varundamise semantika](#kulma-varundamise-semantika).
+
+### Repositooriumide filtreerimine strateegia järgi
+
+Igal strateegial võivad olla `--include` ja `--exclude` filtrid. Repositooriumide nimed, mis vastavad `--exclude` mustrile, jäetakse selle strateegia puhul vahele; `--include` piirab käivitamist ainult nende nimedega. Filtrid vastavad kohaliku konfiguratsiooni repositooriuminimele (ilma `:tag`-ita).
+
+```bash
+# Kuum strateegia: varundage kõik tunnis
+rdc config backup-strategy set \
+  --name hourly-hot \
+  --destination my-storage \
+  --cron "0 * * * *" \
+  --mode hot \
+  --bwlimit 6M \
+  --enable
+
+# Külm strateegia: varundage kõik nädalas, välja arvatud suur tuletatud andmestik
+rdc config backup-strategy set \
+  --name weekly-cold \
+  --destination my-storage \
+  --cron "15 3 * * 0" \
+  --mode cold \
+  --exclude analytics-demo \
+  --enable
+```
+
+### Millal jätta repositoorium kõrgsagedusliku kuuma strateegia vahele
+
+Jätke repositoorium kõrgsageduslikust käivitamisest välja, kui:
+
+- Repositoorium on suur ja **täielikult taasgenereeritav** köitel juba olevatest lähteandmetest, nii et iga tunnine varukoopia raiskab märkimisväärset ribalaiust ilma sisukaid taasteandmeid lisamata.
+- Varundamise käivitamine ületaks oma ajakavaintervallit teie saadaoleval üleslaadimiskiirusel.
+
+**Näide.** Repositoorium `analytics-demo` sisaldab ligikaudu 114 GB tuletatud Postgres-tabeleid, mida saab täielikult taastada samas köites juba salvestatud toorest CSV-dumpi failidest. 6 MB/s üleslaadimispiiriga võtab selle repositooriumi üks kuum varukoopia üle 5 tunni. Selle tunnine käivitamine tähendab, et iga käivitamine on veel pooleli, kui järgmine käivitub, mis põhjustab iga järgneva käivitamise vaikse mahajätmise (vaadake [Pikalt kestvad varukopiad ja kattuvad ajakavad](#pikalt-kestvad-varukopiad-ja-kattuvad-ajakavad)). Selle jätmine `hourly-hot`-ist välja ja hoidmine `weekly-cold`-is tähendab, et see varundatakse kord nädalas mitte kunagi asemel.
+
+> **Kui andmed on puhtalt taasgenereeritavad**, kaaluge, kas peate neid üldse varundama. Alternatiiviks on varundada ainult toorallikate sisendid (CSV-dumpid selles näites) ja jätta tuletatud koopia täielikult vahele. Toorallikate sisendite nädalane külm varukoopia on palju väiksem ja taaste jaoks täiesti piisav.
+
+Repositooriumid, mis ei ole kummastki strateegiast välja jäetud, ilmuvad mõlemas salvestuse alamkaustas `hot/` ja `cold/`. `rdc repo backup list` ühendatud väljund näitab mõlemat rida, nii et saate kontrollida, millised vood milliseid repositooriumeid katavad.
 
 ## Varundamistoimingud
 

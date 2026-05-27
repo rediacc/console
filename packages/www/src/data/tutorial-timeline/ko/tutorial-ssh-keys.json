@@ -7,345 +7,69 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "a3fcd238330ed4eedd0af37c3b6d1832ccfd2f8fa0beec74e89a1d894489ce0c",
+  "transcriptHash": "921532c05d958fed29ac046fbefe302e3e0e0316db566344a001c8b3c5639a5b",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.50929,
-      "replayEndSec": 8.723209,
+      "replayStartSec": 1.626287,
+      "replayEndSec": 6.456735,
       "narrationText": "1단계입니다. 새로운 ed25519 SSH 키를 생성합니다. ed25519는 현대적인 기본값으로 작고 빠르며 널리 지원됩니다. 앞으로 추가하는 모든 서버에 대해 한 번만 생성하면 됩니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-01.5f6dffe4.mp3",
-      "audioDurationSec": 17.005714,
-      "wordTimings": [
-        {
-          "startSec": 1.44,
-          "endSec": 1.92,
-          "startChar": 8,
-          "endChar": 11
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 4.48,
-          "startChar": 20,
-          "endChar": 23
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.8,
-          "startChar": 24,
-          "endChar": 26
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.76,
-          "startChar": 27,
-          "endChar": 32
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.64,
-          "startChar": 43,
-          "endChar": 47
-        },
-        {
-          "startSec": 9.36,
-          "endSec": 9.52,
-          "startChar": 48,
-          "endChar": 53
-        },
-        {
-          "startSec": 9.52,
-          "endSec": 10.0,
-          "startChar": 54,
-          "endChar": 56
-        },
-        {
-          "startSec": 10.08,
-          "endSec": 10.64,
-          "startChar": 57,
-          "endChar": 60
-        },
-        {
-          "startSec": 10.64,
-          "endSec": 11.2,
-          "startChar": 61,
-          "endChar": 63
-        },
-        {
-          "startSec": 11.2,
-          "endSec": 12.16,
-          "startChar": 64,
-          "endChar": 69
-        },
-        {
-          "startSec": 12.8,
-          "endSec": 12.96,
-          "startChar": 71,
-          "endChar": 74
-        },
-        {
-          "startSec": 12.96,
-          "endSec": 13.52,
-          "startChar": 75,
-          "endChar": 79
-        },
-        {
-          "startSec": 13.52,
-          "endSec": 14.0,
-          "startChar": 80,
-          "endChar": 82
-        },
-        {
-          "startSec": 14.0,
-          "endSec": 14.4,
-          "startChar": 83,
-          "endChar": 86
-        },
-        {
-          "startSec": 14.4,
-          "endSec": 14.8,
-          "startChar": 87,
-          "endChar": 89
-        },
-        {
-          "startSec": 15.04,
-          "endSec": 15.28,
-          "startChar": 90,
-          "endChar": 91
-        },
-        {
-          "startSec": 15.28,
-          "endSec": 15.68,
-          "startChar": 92,
-          "endChar": 94
-        },
-        {
-          "startSec": 15.68,
-          "endSec": 16.4,
-          "startChar": 95,
-          "endChar": 99
-        },
-        {
-          "startSec": 16.4,
-          "endSec": 16.88,
-          "startChar": 100,
-          "endChar": 103
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-01.c6090e19.mp3",
+      "textHash": "c6090e192094d5b145b2cb01e37d92626c7da8793a869293c7bb4d8aa913c886",
+      "audioDurationSec": 15.307755,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-01-after.70a03ba7.mp3",
+      "afterAudioDurationSec": 4.675918,
+      "afterTextHash": "70a03ba7e9c12fdd6daa430348779fb0c6f1144bc61101f73afeccf1f8c37262"
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 8.723209,
-      "replayEndSec": 16.253995,
+      "replayStartSec": 6.456735,
+      "replayEndSec": 13.33617,
       "narrationText": "2단계입니다. ssh-copy-id로 공개 키를 서버에 복사합니다. 서버 비밀번호를 마지막으로 한 번 입력해야 합니다. 이후에는 비밀번호 인증이 더 이상 필요하지 않습니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-02.dd3c7469.mp3",
-      "audioDurationSec": 17.084082,
-      "wordTimings": [
-        {
-          "startSec": 1.92,
-          "endSec": 2.24,
-          "startChar": 8,
-          "endChar": 11
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 4.8,
-          "startChar": 21,
-          "endChar": 26
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.84,
-          "startChar": 31,
-          "endChar": 36
-        },
-        {
-          "startSec": 8.4,
-          "endSec": 8.8,
-          "startChar": 38,
-          "endChar": 40
-        },
-        {
-          "startSec": 9.52,
-          "endSec": 9.76,
-          "startChar": 41,
-          "endChar": 46
-        },
-        {
-          "startSec": 9.76,
-          "endSec": 10.48,
-          "startChar": 47,
-          "endChar": 52
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.72,
-          "startChar": 53,
-          "endChar": 54
-        },
-        {
-          "startSec": 10.72,
-          "endSec": 10.96,
-          "startChar": 55,
-          "endChar": 56
-        },
-        {
-          "startSec": 11.04,
-          "endSec": 11.68,
-          "startChar": 57,
-          "endChar": 61
-        },
-        {
-          "startSec": 11.68,
-          "endSec": 12.16,
-          "startChar": 62,
-          "endChar": 65
-        },
-        {
-          "startSec": 12.8,
-          "endSec": 14.48,
-          "startChar": 67,
-          "endChar": 71
-        },
-        {
-          "startSec": 14.48,
-          "endSec": 15.04,
-          "startChar": 77,
-          "endChar": 80
-        },
-        {
-          "startSec": 15.04,
-          "endSec": 15.28,
-          "startChar": 81,
-          "endChar": 82
-        },
-        {
-          "startSec": 15.28,
-          "endSec": 15.68,
-          "startChar": 83,
-          "endChar": 85
-        },
-        {
-          "startSec": 15.68,
-          "endSec": 16.24,
-          "startChar": 86,
-          "endChar": 90
-        },
-        {
-          "startSec": 16.4,
-          "endSec": 16.96,
-          "startChar": 91,
-          "endChar": 95
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-02.1269e19e.mp3",
+      "textHash": "1269e19ed10430abb9b4a46808fe023d42d3943fe60d05795642bb6080831179",
+      "audioDurationSec": 13.949388,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-02-after.6ee99cf1.mp3",
+      "afterAudioDurationSec": 7.079184,
+      "afterTextHash": "6ee99cf157d6a4bc41e2e7a8f6bddd2c954ed840a1069318772f2fd176921561"
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 16.253995,
-      "replayEndSec": 24.863027,
+      "replayStartSec": 13.33617,
+      "replayEndSec": 19.159643,
       "narrationText": "3단계입니다. CLI에 키를 등록합니다. 이제부터 모든 명령은 이 키로 인증됩니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-03.6c5146c5.mp3",
-      "audioDurationSec": 7.706122,
-      "wordTimings": [
-        {
-          "startSec": 0.8,
-          "endSec": 1.36,
-          "startChar": 2,
-          "endChar": 6
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.72,
-          "startChar": 8,
-          "endChar": 12
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.04,
-          "startChar": 13,
-          "endChar": 15
-        },
-        {
-          "startSec": 3.44,
-          "endSec": 3.92,
-          "startChar": 16,
-          "endChar": 21
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 4.88,
-          "startChar": 23,
-          "endChar": 27
-        },
-        {
-          "startSec": 4.88,
-          "endSec": 5.28,
-          "startChar": 28,
-          "endChar": 30
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.92,
-          "startChar": 31,
-          "endChar": 34
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.8,
-          "startChar": 37,
-          "endChar": 39
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.68,
-          "startChar": 40,
-          "endChar": 45
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-03.ed45f45b.mp3",
+      "textHash": "ed45f45b2120b615ebec5917ee57218224f26c81cbaa91fb0ad6f6c3c0e4d5e0",
+      "audioDurationSec": 7.157551,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-03-after.c08ace37.mp3",
+      "afterAudioDurationSec": 2.272653,
+      "afterTextHash": "c08ace37d71397ddec584fcd970b49d210f2038bc4c58875ba07f24e6820365d"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "0a6427a2ee4d1666e16210e876beaa546f08c545a9be5ced65e15115117108c7",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/intro.0a6427a2.mp3",
+      "narrationText": "자, CLI가 비밀번호 없이 서버에 접근할 수 있도록 SSH 키를 설정해볼게요.",
+      "audioDurationSec": 6.922449
     },
     {
-      "id": "tutorial-ssh-keys-04",
-      "markerIndex": 3,
-      "replayStartSec": 24.863027,
-      "replayEndSec": 32.617101,
-      "narrationText": "설정에 키 경로가 올바르게 저장되었는지 확인합니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/tutorial-ssh-keys-04.62b2c979.mp3",
-      "audioDurationSec": 3.970612,
-      "wordTimings": [
-        {
-          "startSec": 0.56,
-          "endSec": 0.8,
-          "startChar": 4,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.36,
-          "startChar": 6,
-          "endChar": 9
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 2.16,
-          "startChar": 10,
-          "endChar": 14
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 3.2,
-          "startChar": 15,
-          "endChar": 21
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.84,
-          "startChar": 22,
-          "endChar": 27
-        }
-      ]
+      "id": "three-steps-generate-copy-register",
+      "textHash": "12f95a03a60dc1d61790f30172faf056e6d48688a6520e6409f04552e2f1c635",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/three-steps-generate-copy-register.12f95a03.mp3",
+      "narrationText": "총 세 단계예요. 노트북에서 키를 생성하고, 서버에 복사한 다음, 명령줄 도구에 등록하면 끝. 이 중 두 단계는 한 번만 하면 돼요.",
+      "audioDurationSec": 12.277551
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "5957eb4619afe684d2eba2001f5fab3f856ba0803e3560e9506f7a4912be59f2",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-ssh-keys/next-tutorial.5957eb46.mp3",
+      "narrationText": "키가 등록되었고 CLI가 준비됐어요. 다음에는 첫 서버를 추가해볼게요.",
+      "audioDurationSec": 6.426122
     }
   ]
 }

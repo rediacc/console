@@ -131,6 +131,7 @@ export interface ContainerInfo {
 /** Repository status information */
 export interface RepositoryInfo {
   accessible: boolean;
+  autostart: boolean;
   container_count: number;
   disk_space?: DiskInfo;
   docker_available: boolean;
@@ -148,9 +149,11 @@ export interface RepositoryInfo {
   mount_path: string;
   mounted: boolean;
   name: string;
+  repo_name?: string;
   service_count: number;
   size: number;
   size_human: string;
+  systemd_installed: boolean;
   total_volumes: number;
   volume_status: string;
 }

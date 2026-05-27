@@ -4,6 +4,8 @@ description: "원격 서버의 디렉터리 구조, renet 명령, systemd 서비
 category: "Concepts"
 order: 3
 language: ko
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # 서버 레퍼런스
@@ -113,6 +115,31 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 
 `sandbox-exec`는 Landlock LSM 파일시스템 제한을 적용한 후 지정된 명령을 exec합니다. 모든 저장소 수준 연결에 대해 `sandbox-gateway`(SSH ForceCommand 핸들러)에 의해 자동으로 호출됩니다.
 
+### 사용자별 Hub (개발 환경)
+
+Hub는 각 사용자에게 개발 환경을 위한 전용 Docker 데몬을 제공하며, 저장소별 `FlavorRediacc` 데몬과 독립적으로 운영됩니다.
+
+```bash
+# 사용자별 Hub systemd 유닛 설치 / 제거
+sudo renet hub install
+sudo renet hub uninstall
+
+# 유휴 상태의 사용자별 Hub 데몬 가비지 컬렉션
+sudo renet hub gc
+```
+
+데몬은 `--flavor`로 선택되는 두 가지 플레이버 중 하나로 실행됩니다:
+
+```bash
+# 저장소 격리 데몬 (bridge=none, iptables=false) — 기본값
+sudo renet daemon start-foreground --flavor=rediacc ...
+
+# 사용자별 Hub 데몬 (bridge=docker0, iptables=true, live-restore=true)
+sudo renet daemon start-foreground --flavor=hub ...
+```
+
+`hub` 플레이버는 일반 브리지 네트워킹을 활성화하여 사용자가 실행하는 컨테이너에 외부 연결성을 제공하고, `rediacc` 플레이버는 저장소 간 루프백 격리를 강제합니다. Hub 감사 로그는 `/var/log/rediacc/hub/<user>.log`에 기록됩니다.
+
 **플래그:**
 - `--allow-rw`, `--allow-ro`, `--allow-exec`: Landlock 경로 규칙
 - `--home-overlay`: 저장소별 쓰기 격리를 위해 홈 디렉터리에 OverlayFS 마운트
@@ -216,6 +243,8 @@ renet datastore expand      # 온라인으로 데이터스토어 확장
 |------|------|
 | `rediacc-router.service` | 경로 검색 (포트 7111) |
 | `rediacc-autostart.service` | 부팅 시 저장소 마운트 |
+| `rediacc-autostart-reconcile.service` | 주기적 자동 시작 조정자 (아래 타이머에 의해 실행) |
+| `rediacc-autostart-reconcile.timer` | 부팅 후 중단된 자동 시작 레포지토리를 복구하기 위해 약 3분마다 `renet repository reconcile` 실행 |
 
 ## 일반 워크플로
 

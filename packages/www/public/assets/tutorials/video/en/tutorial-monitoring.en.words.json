@@ -1,0 +1,459 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1.08,
+      "end": 1.4,
+      "text": "Alright!",
+      "words": [{ "start": 1.08, "end": 1.4, "char": [0, 8] }]
+    },
+    {
+      "start": 1.64,
+      "end": 3.88,
+      "text": "Your app is live and backed up, now let's make",
+      "words": [
+        { "start": 1.64, "end": 1.8, "char": [0, 4] },
+        { "start": 1.8, "end": 1.96, "char": [5, 8] },
+        { "start": 1.96, "end": 2.12, "char": [9, 11] },
+        { "start": 2.12, "end": 2.52, "char": [12, 16] },
+        { "start": 2.52, "end": 2.6, "char": [17, 20] },
+        { "start": 2.6, "end": 2.92, "char": [21, 27] },
+        { "start": 2.92, "end": 3.16, "char": [28, 30] },
+        { "start": 3.32, "end": 3.48, "char": [32, 35] },
+        { "start": 3.48, "end": 3.72, "char": [36, 41] },
+        { "start": 3.72, "end": 3.88, "char": [42, 46] }
+      ]
+    },
+    {
+      "start": 3.88,
+      "end": 4.84,
+      "text": "sure it stays healthy.",
+      "words": [
+        { "start": 3.88, "end": 4.04, "char": [0, 4] },
+        { "start": 4.04, "end": 4.2, "char": [5, 7] },
+        { "start": 4.2, "end": 4.44, "char": [8, 13] },
+        { "start": 4.44, "end": 4.84, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 5.804,
+      "end": 8.524,
+      "text": "The CLI gives you a full picture of any",
+      "words": [
+        { "start": 5.804, "end": 5.884, "char": [0, 3] },
+        { "start": 5.884, "end": 6.604, "char": [4, 7] },
+        { "start": 6.604, "end": 6.924, "char": [8, 13] },
+        { "start": 6.924, "end": 7.084, "char": [14, 17] },
+        { "start": 7.164, "end": 7.484, "char": [20, 24] },
+        { "start": 7.484, "end": 8.044, "char": [25, 32] },
+        { "start": 8.044, "end": 8.204, "char": [33, 35] },
+        { "start": 8.284, "end": 8.524, "char": [36, 39] }
+      ]
+    },
+    {
+      "start": 8.524,
+      "end": 11.484,
+      "text": "server from your laptop. Three angles to check",
+      "words": [
+        { "start": 8.524, "end": 9.004, "char": [0, 6] },
+        { "start": 9.004, "end": 9.244, "char": [7, 11] },
+        { "start": 9.244, "end": 9.324, "char": [12, 16] },
+        { "start": 9.324, "end": 9.884, "char": [17, 23] },
+        { "start": 10.364, "end": 10.604, "char": [25, 30] },
+        { "start": 10.604, "end": 11.004, "char": [31, 37] },
+        { "start": 11.084, "end": 11.484, "char": [41, 46] }
+      ]
+    },
+    {
+      "start": 12.124,
+      "end": 14.684,
+      "text": ": system health, running containers, and",
+      "words": [
+        { "start": 12.124, "end": 12.524, "char": [2, 8] },
+        { "start": 12.524, "end": 12.844, "char": [9, 15] },
+        { "start": 13.084, "end": 13.404, "char": [17, 24] },
+        { "start": 13.404, "end": 14.124, "char": [25, 35] },
+        { "start": 14.524, "end": 14.684, "char": [37, 40] }
+      ]
+    },
+    {
+      "start": 14.684,
+      "end": 16.364,
+      "text": "the repositories themselves.",
+      "words": [
+        { "start": 14.684, "end": 15.644, "char": [4, 16] },
+        { "start": 15.644, "end": 16.364, "char": [17, 27] }
+      ]
+    },
+    {
+      "start": 19.831,
+      "end": 22.631,
+      "text": "Let us start with the system view. The machine query",
+      "words": [
+        { "start": 19.831, "end": 19.991, "char": [0, 3] },
+        { "start": 19.991, "end": 20.071, "char": [4, 6] },
+        { "start": 20.071, "end": 20.391, "char": [7, 12] },
+        { "start": 20.391, "end": 20.551, "char": [13, 17] },
+        { "start": 20.551, "end": 20.631, "char": [18, 21] },
+        { "start": 20.631, "end": 21.031, "char": [22, 28] },
+        { "start": 21.031, "end": 21.351, "char": [29, 33] },
+        { "start": 21.831, "end": 22.311, "char": [39, 46] },
+        { "start": 22.311, "end": 22.631, "char": [47, 52] }
+      ]
+    },
+    {
+      "start": 22.631,
+      "end": 25.831,
+      "text": "command with the system filter shows uptime, disk",
+      "words": [
+        { "start": 22.631, "end": 23.031, "char": [0, 7] },
+        { "start": 23.031, "end": 23.271, "char": [8, 12] },
+        { "start": 23.271, "end": 23.351, "char": [13, 16] },
+        { "start": 23.351, "end": 23.751, "char": [17, 23] },
+        { "start": 23.751, "end": 24.231, "char": [24, 30] },
+        { "start": 24.231, "end": 24.551, "char": [31, 36] },
+        { "start": 24.551, "end": 25.111, "char": [37, 43] },
+        { "start": 25.591, "end": 25.831, "char": [45, 49] }
+      ]
+    },
+    {
+      "start": 25.831,
+      "end": 27.751,
+      "text": "usage, and storage status.",
+      "words": [
+        { "start": 25.831, "end": 26.311, "char": [0, 5] },
+        { "start": 26.711, "end": 26.871, "char": [7, 10] },
+        { "start": 26.871, "end": 27.271, "char": [11, 18] },
+        { "start": 27.271, "end": 27.751, "char": [19, 25] }
+      ]
+    },
+    {
+      "start": 27.955,
+      "end": 30.835,
+      "text": "Uptime, disk, storage. Everything you",
+      "words": [
+        { "start": 27.955, "end": 28.515, "char": [0, 6] },
+        { "start": 28.675, "end": 29.075, "char": [8, 12] },
+        { "start": 30.675, "end": 30.835, "char": [34, 37] }
+      ]
+    },
+    {
+      "start": 30.835,
+      "end": 31.635,
+      "text": "need at a glance.",
+      "words": [
+        { "start": 30.835, "end": 30.995, "char": [0, 4] },
+        { "start": 30.995, "end": 31.075, "char": [5, 7] },
+        { "start": 31.075, "end": 31.155, "char": [8, 9] },
+        { "start": 31.155, "end": 31.635, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 35.175,
+      "end": 38.055,
+      "text": "Now containers. This view lists every running",
+      "words": [
+        { "start": 35.175, "end": 35.415, "char": [0, 3] },
+        { "start": 35.415, "end": 36.135, "char": [4, 14] },
+        { "start": 36.295, "end": 36.535, "char": [16, 20] },
+        { "start": 36.535, "end": 36.855, "char": [21, 25] },
+        { "start": 36.855, "end": 37.255, "char": [26, 31] },
+        { "start": 37.335, "end": 37.655, "char": [32, 37] },
+        { "start": 37.655, "end": 38.055, "char": [38, 45] }
+      ]
+    },
+    {
+      "start": 38.055,
+      "end": 40.775,
+      "text": "container across every repository on the machine",
+      "words": [
+        { "start": 38.055, "end": 38.615, "char": [0, 9] },
+        { "start": 38.615, "end": 38.935, "char": [10, 16] },
+        { "start": 39.015, "end": 39.335, "char": [17, 22] },
+        { "start": 39.335, "end": 40.135, "char": [23, 33] },
+        { "start": 40.135, "end": 40.295, "char": [34, 36] },
+        { "start": 40.295, "end": 40.775, "char": [41, 48] }
+      ]
+    },
+    {
+      "start": 41.015,
+      "end": 43.975,
+      "text": ": name, status, health, CPU",
+      "words": [
+        { "start": 41.015, "end": 41.495, "char": [2, 6] },
+        { "start": 41.655, "end": 42.375, "char": [8, 14] },
+        { "start": 42.615, "end": 42.935, "char": [16, 22] },
+        { "start": 43.175, "end": 43.975, "char": [24, 27] }
+      ]
+    },
+    {
+      "start": 44.135,
+      "end": 46.695,
+      "text": ", memory, plus which repo owns each",
+      "words": [
+        { "start": 44.135, "end": 44.695, "char": [2, 8] },
+        { "start": 44.855, "end": 45.255, "char": [10, 14] },
+        { "start": 45.335, "end": 45.575, "char": [15, 20] },
+        { "start": 45.575, "end": 46.055, "char": [21, 25] },
+        { "start": 46.055, "end": 46.455, "char": [26, 30] },
+        { "start": 46.455, "end": 46.695, "char": [31, 35] }
+      ]
+    },
+    {
+      "start": 46.695,
+      "end": 47.015,
+      "text": "one.",
+      "words": [{ "start": 46.695, "end": 47.015, "char": [0, 3] }]
+    },
+    {
+      "start": 47.217,
+      "end": 49.777,
+      "text": "Every container across every repo",
+      "words": [
+        { "start": 47.217, "end": 47.457, "char": [0, 5] },
+        { "start": 47.457, "end": 48.257, "char": [6, 15] },
+        { "start": 48.257, "end": 48.657, "char": [16, 22] },
+        { "start": 48.897, "end": 49.297, "char": [23, 28] },
+        { "start": 49.297, "end": 49.777, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 49.937,
+      "end": 50.897,
+      "text": ", in one view.",
+      "words": [
+        { "start": 49.937, "end": 50.177, "char": [2, 4] },
+        { "start": 50.177, "end": 50.497, "char": [5, 8] },
+        { "start": 50.497, "end": 50.897, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 54.326,
+      "end": 57.126,
+      "text": "And the repos themselves. Size, mount",
+      "words": [
+        { "start": 54.326, "end": 54.486, "char": [0, 3] },
+        { "start": 54.486, "end": 54.566, "char": [4, 7] },
+        { "start": 54.566, "end": 55.046, "char": [8, 13] },
+        { "start": 55.046, "end": 55.846, "char": [14, 24] },
+        { "start": 56.726, "end": 57.126, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 57.126,
+      "end": 59.926,
+      "text": "status, Docker daemon status, disk",
+      "words": [
+        { "start": 57.126, "end": 57.686, "char": [0, 6] },
+        { "start": 58.006, "end": 58.326, "char": [8, 14] },
+        { "start": 58.326, "end": 58.726, "char": [15, 21] },
+        { "start": 58.726, "end": 59.286, "char": [22, 28] },
+        { "start": 59.606, "end": 59.926, "char": [30, 34] }
+      ]
+    },
+    {
+      "start": 61.366,
+      "end": 63.926,
+      "text": "usage. Everything you need to know about each isolated environment.",
+      "words": [
+        { "start": 61.366, "end": 61.446, "char": [18, 21] },
+        { "start": 61.446, "end": 61.766, "char": [22, 26] },
+        { "start": 61.766, "end": 62.006, "char": [30, 34] },
+        { "start": 62.006, "end": 62.326, "char": [35, 40] },
+        { "start": 62.326, "end": 62.566, "char": [41, 45] },
+        { "start": 62.646, "end": 63.286, "char": [46, 54] },
+        { "start": 63.286, "end": 63.926, "char": [55, 66] }
+      ]
+    },
+    {
+      "start": 64.044,
+      "end": 66.684,
+      "text": "All repos, all their daemons, all their",
+      "words": [
+        { "start": 64.044, "end": 64.284, "char": [0, 3] },
+        { "start": 64.284, "end": 65.084, "char": [4, 9] },
+        { "start": 65.084, "end": 65.244, "char": [11, 14] },
+        { "start": 65.244, "end": 65.484, "char": [15, 20] },
+        { "start": 65.484, "end": 66.204, "char": [21, 28] },
+        { "start": 66.204, "end": 66.444, "char": [30, 33] },
+        { "start": 66.444, "end": 66.684, "char": [34, 39] }
+      ]
+    },
+    {
+      "start": 66.684,
+      "end": 67.804,
+      "text": "disk usage.",
+      "words": [
+        { "start": 66.684, "end": 67.164, "char": [0, 4] },
+        { "start": 67.164, "end": 67.804, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 71.237,
+      "end": 73.877,
+      "text": "The machine query command with no filters gives you",
+      "words": [
+        { "start": 71.237, "end": 71.317, "char": [0, 3] },
+        { "start": 71.317, "end": 71.637, "char": [4, 11] },
+        { "start": 71.637, "end": 71.957, "char": [12, 17] },
+        { "start": 71.957, "end": 72.437, "char": [18, 25] },
+        { "start": 72.437, "end": 72.597, "char": [26, 30] },
+        { "start": 72.597, "end": 72.837, "char": [31, 33] },
+        { "start": 72.837, "end": 73.477, "char": [34, 41] },
+        { "start": 73.477, "end": 73.717, "char": [42, 47] },
+        { "start": 73.717, "end": 73.877, "char": [48, 51] }
+      ]
+    },
+    {
+      "start": 73.957,
+      "end": 76.597,
+      "text": "everything in one shot. System info",
+      "words": [
+        { "start": 73.957, "end": 74.517, "char": [0, 10] },
+        { "start": 74.517, "end": 74.677, "char": [11, 13] },
+        { "start": 74.677, "end": 74.837, "char": [14, 17] },
+        { "start": 74.837, "end": 75.237, "char": [18, 22] },
+        { "start": 75.637, "end": 76.037, "char": [24, 30] },
+        { "start": 76.037, "end": 76.597, "char": [31, 35] }
+      ]
+    },
+    {
+      "start": 76.917,
+      "end": 79.797,
+      "text": ", containers, repositories, all together.",
+      "words": [
+        { "start": 76.917, "end": 77.957, "char": [2, 12] },
+        { "start": 77.957, "end": 79.077, "char": [14, 26] },
+        { "start": 79.077, "end": 79.317, "char": [28, 31] },
+        { "start": 79.317, "end": 79.797, "char": [32, 40] }
+      ]
+    },
+    {
+      "start": 79.91,
+      "end": 82.39,
+      "text": "Everything together, no filter needed.",
+      "words": [
+        { "start": 79.91, "end": 80.39, "char": [0, 10] },
+        { "start": 80.39, "end": 80.95, "char": [11, 19] },
+        { "start": 81.35, "end": 81.67, "char": [21, 23] },
+        { "start": 81.67, "end": 82.07, "char": [24, 30] },
+        { "start": 82.07, "end": 82.39, "char": [31, 37] }
+      ]
+    },
+    {
+      "start": 85.907,
+      "end": 88.787,
+      "text": "And finally the diagnostic check for a local sanity",
+      "words": [
+        { "start": 85.907, "end": 85.987, "char": [0, 3] },
+        { "start": 85.987, "end": 86.627, "char": [4, 11] },
+        { "start": 86.707, "end": 86.787, "char": [12, 15] },
+        { "start": 86.787, "end": 87.427, "char": [16, 26] },
+        { "start": 87.427, "end": 87.747, "char": [27, 32] },
+        { "start": 87.747, "end": 87.907, "char": [33, 36] },
+        { "start": 87.907, "end": 87.987, "char": [37, 38] },
+        { "start": 87.987, "end": 88.307, "char": [39, 44] },
+        { "start": 88.307, "end": 88.787, "char": [45, 51] }
+      ]
+    },
+    {
+      "start": 88.787,
+      "end": 91.987,
+      "text": "check on your laptop. Node, SSH",
+      "words": [
+        { "start": 88.787, "end": 89.107, "char": [0, 5] },
+        { "start": 89.107, "end": 89.267, "char": [6, 8] },
+        { "start": 89.267, "end": 89.347, "char": [9, 13] },
+        { "start": 89.347, "end": 89.827, "char": [14, 20] },
+        { "start": 90.227, "end": 90.627, "char": [22, 26] },
+        { "start": 91.107, "end": 91.987, "char": [28, 31] }
+      ]
+    },
+    {
+      "start": 92.707,
+      "end": 96.147,
+      "text": "key, renet, Docker. All the things the CLI itself depends on. That is the full series. From install to mon",
+      "words": [
+        { "start": 92.707, "end": 93.187, "char": [12, 18] },
+        { "start": 93.587, "end": 93.827, "char": [96, 99] },
+        { "start": 95.827, "end": 96.147, "char": [104, 106] }
+      ]
+    },
+    {
+      "start": 98.387,
+      "end": 100.947,
+      "text": "itoring, all from your terminal.",
+      "words": [
+        { "start": 98.387, "end": 98.547, "char": [13, 17] },
+        { "start": 100.387, "end": 100.467, "char": [18, 22] },
+        { "start": 100.467, "end": 100.947, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 101.136,
+      "end": 103.856,
+      "text": "All green means your local CLI is healthy.",
+      "words": [
+        { "start": 101.136, "end": 101.296, "char": [0, 3] },
+        { "start": 101.296, "end": 101.696, "char": [4, 9] },
+        { "start": 101.696, "end": 101.936, "char": [10, 15] },
+        { "start": 101.936, "end": 102.096, "char": [16, 20] },
+        { "start": 102.096, "end": 102.416, "char": [21, 26] },
+        { "start": 102.416, "end": 103.216, "char": [27, 30] },
+        { "start": 103.216, "end": 103.376, "char": [31, 33] },
+        { "start": 103.376, "end": 103.856, "char": [34, 41] }
+      ]
+    },
+    {
+      "start": 104.774,
+      "end": 107.334,
+      "text": "And that wraps the series. You can now",
+      "words": [
+        { "start": 104.774, "end": 105.014, "char": [0, 3] },
+        { "start": 105.014, "end": 105.174, "char": [4, 8] },
+        { "start": 105.174, "end": 105.574, "char": [9, 14] },
+        { "start": 105.574, "end": 105.654, "char": [15, 18] },
+        { "start": 105.654, "end": 106.374, "char": [19, 25] },
+        { "start": 106.934, "end": 107.014, "char": [27, 30] },
+        { "start": 107.014, "end": 107.094, "char": [31, 34] },
+        { "start": 107.094, "end": 107.334, "char": [35, 38] }
+      ]
+    },
+    {
+      "start": 107.334,
+      "end": 110.134,
+      "text": "install, configure, deploy, fork, go",
+      "words": [
+        { "start": 107.334, "end": 107.974, "char": [0, 7] },
+        { "start": 107.974, "end": 108.614, "char": [9, 18] },
+        { "start": 108.614, "end": 109.174, "char": [20, 26] },
+        { "start": 109.174, "end": 109.734, "char": [28, 32] },
+        { "start": 109.814, "end": 110.134, "char": [34, 36] }
+      ]
+    },
+    {
+      "start": 110.134,
+      "end": 112.774,
+      "text": "live, autostart, back up, and monitor",
+      "words": [
+        { "start": 110.134, "end": 110.534, "char": [0, 4] },
+        { "start": 110.614, "end": 110.854, "char": [6, 10] },
+        { "start": 110.854, "end": 111.254, "char": [10, 15] },
+        { "start": 111.414, "end": 111.894, "char": [17, 24] },
+        { "start": 111.894, "end": 112.214, "char": [26, 29] },
+        { "start": 112.214, "end": 112.774, "char": [30, 37] }
+      ]
+    },
+    {
+      "start": 113.094,
+      "end": 114.294,
+      "text": ", all from your terminal!",
+      "words": [
+        { "start": 113.094, "end": 113.334, "char": [2, 5] },
+        { "start": 113.334, "end": 113.574, "char": [6, 10] },
+        { "start": 113.574, "end": 113.734, "char": [11, 15] },
+        { "start": 113.734, "end": 114.294, "char": [16, 24] }
+      ]
+    }
+  ]
+}

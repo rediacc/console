@@ -6,26 +6,72 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 52.700593,
-      "text": "第一步。让我们列出可用模板。Rediacc 内置了常见应用的现成配置，比如 Postgres、Redis、Web 服务器，无需从头编写 docker compose 点 yml。"
+      "at": 2.40432,
+      "text": "第一步。让我们列出可用模板。Rediacc 内置了常见应用的现成配置，比如 Postgres、Redis、Web 服务器，无需从头编写 docker compose 点 yml。",
+      "afterText": "完整的模板目录。每一个都是经过测试的 compose 与 Rediaccfile 组合。",
+      "cardLabel": "列出模板",
+      "prose": "第一步：列出可用模板。Rediacc 预置了常见应用的模板，无需从头编写 docker-compose。"
     },
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 61.85842,
-      "text": "第二步。让我们将 app-postgres 模板应用到仓库中。两个新文件出现了：描述容器的 docker compose 点 yml，以及定义启动和停止生命周期钩子的 Rediaccfile。"
+      "at": 6.041569,
+      "text": "第二步。让我们将 app-postgres 模板应用到仓库中。两个新文件出现了：描述容器的 docker compose 点 yml，以及定义启动和停止生命周期钩子的 Rediaccfile。",
+      "afterText": "模板已应用。repo 现在拥有它的 compose 文件和 Rediaccfile。",
+      "cardLabel": "应用模板",
+      "prose": "第二步：将 app-postgres 模板应用到 repo。此操作会将一组经过测试的文件复制到 repo 中。"
     },
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 79.070004,
-      "text": "第三步。让我们启动仓库。命令行工具启动容器、挂载加密卷，并连接独立的 Docker 守护进程。应用现在正在运行了。"
+      "at": 13.566247,
+      "text": "第三步。让我们启动仓库。命令行工具启动容器、挂载加密卷，并连接独立的 Docker 守护进程。应用现在正在运行了。",
+      "afterText": "容器运行中，卷已挂载，独立的 Docker 守护进程已启动。",
+      "cardLabel": "查看文件",
+      "prose": "连接到 repo 并列出模板添加的内容：一个包含启动和停止钩子的 Rediaccfile，以及一个描述 container 的 docker-compose.yml。2>/dev/null 会隐藏连接日志，只显示文件列表。"
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 123.719014,
-      "text": "让我们用 docker ps 验证一下。注意这里只显示本仓库的容器。同一服务器上的其他仓库拥有各自的 Docker 守护进程，在这里完全不可见。"
+      "at": 23.282435,
+      "text": "让我们用 docker ps 验证一下。注意这里只显示本仓库的容器。同一服务器上的其他仓库拥有各自的 Docker 守护进程，在这里完全不可见。",
+      "afterText": "只有这个 repo 的容器。隔离是真实的，不只是配置。",
+      "cardLabel": "启动 Repo",
+      "prose": "启动 repo。CLI 会启动 container，挂载加密卷，并连接隔离的 Docker daemon。"
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "at": 30.345778,
+      "text": "让我们验证正在运行的内容。这里的 docker ps 只列出本 repo 的 container。同一服务器上的其他 repo 各自拥有独立的 daemon，从这个视图中完全不可见。",
+      "afterText": "只有本 repo 的 container。隔离是真实存在的，而非配置层面的。",
+      "cardLabel": "验证隔离",
+      "prose": "验证正在运行的内容。docker ps 仅列出此 repo 的 container；同一服务器上的其他 repo 拥有各自的 Docker daemon，在此视图中不可见。"
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "是时候部署一个真实应用了！我们将从一个空仓库出发，三个简短步骤就让容器跑起来。"
+    },
+    {
+      "id": "pick-apply-run",
+      "text": "流程很简单：选一个模板、应用到 repo，然后运行。CLI 自带内置模板，所以我们永远不必从头写 docker-compose。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "你的首次部署到此结束。下个教程见，我们将深入了解如何使用 repo 本身。"
+    }
+  ],
+  "title": "部署你的第一个应用",
+  "chapters": {
+    "intro": "部署你的第一个应用",
+    "pick-apply-run": "选择、应用、运行",
+    "cast-step-0": "第一步：列出模板",
+    "cast-step-1": "第二步：应用模板",
+    "cast-step-2": "第三步：查看模板添加的内容",
+    "cast-step-3": "第四步：启动 repo",
+    "cast-step-4": "第五步：验证隔离",
+    "outro": "下一步：使用你的 Repo"
+  }
 }

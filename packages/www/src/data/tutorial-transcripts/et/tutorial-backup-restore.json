@@ -6,26 +6,62 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 65.053708,
-      "text": "Esimene samm. Impordime olemasoleva rclone konfiguratsiooni. rclone toetab S3, Backblaze, Google Drive, Dropbox ja paljusid teisi -- kui kasutad seda juba, saad sama konfiguratsiooni otse importida."
+      "at": 2.424169,
+      "text": "Esimene samm. Impordime olemasoleva rclone konfiguratsiooni. rclone toetab S3, Backblaze, Google Drive, Dropbox ja paljusid teisi -- kui kasutad seda juba, saad sama konfiguratsiooni otse importida.",
+      "afterText": "Salvestus on imporditud. CLI saab nüüd sinna varukoopiaid tõugata.",
+      "cardLabel": "Impordi Salvestusruum",
+      "prose": "Impordi olemasolev rclone konfiguratsioon. rclone toetab S3, Backblaze, Google Drive, Dropbox ja paljusid teisi teenuseid. Kui kasutad juba rclone, imporditakse sama konfiguratsioon otse."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 73.743501,
-      "text": "Loetleme salvestused, millest CLI nüüd teab. Iga salvestus on sihtkoht, kuhu saame varukoopiad tõugata."
+      "at": 6.651448,
+      "text": "Loetleme salvestused, millest CLI nüüd teab. Iga salvestus on sihtkoht, kuhu saame varukoopiad tõugata.",
+      "afterText": "Seal see on. Valmis varukoopiaid vastu võtma.",
+      "cardLabel": "Kuva Salvestusruumid",
+      "prose": "Kuva salvestusruumid, mida CLI nüüd tunneb. Iga salvestusruum on varukoopiate sihtkoht."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 82.843959,
-      "text": "Teine samm. Tõukame täieliku varukoopia. Terve repositoorium -- rakendus, andmebaas, failid, konfiguratsioon -- laaditakse üles. Kuna repositoorium on puhkeolekus krüpteeritud, on ka varukoopia krüpteeritud. Lisavõtme haldamine pole vajalik."
+      "at": 10.354487,
+      "text": "Teine samm. Tõukame täieliku varukoopia. Terve repositoorium -- rakendus, andmebaas, failid, konfiguratsioon -- laaditakse üles. Kuna repositoorium on puhkeolekus krüpteeritud, on ka varukoopia krüpteeritud. Lisavõtme haldamine pole vajalik.",
+      "afterText": "Varukoopia üles laaditud. Kõik selle repo sisu on nüüd kaugsalvestusel, krüpteeritud.",
+      "cardLabel": "Lae Varukoopia",
+      "prose": "Laadi täielik varukoopia. Kogu repository laaditakse üles, sealhulgas rakendus, andmebaas, failid ja konfiguratsioon. Kuna repository on puhkeolekus krüpteeritud, on ka varukoopia krüpteeritud, ilma täiendava võtmehalduseta."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 94.515541,
-      "text": "Loetleme sellel salvestusel saadaolevad varukoopiad. Edaspidi on taastamine uuel serveril üks käsk -- CLI repo pull. Samad andmed, samad konteinerid, erinev masin."
+      "at": 18.28182,
+      "text": "Loetleme sellel salvestusel saadaolevad varukoopiad. Edaspidi on taastamine uuel serveril üks käsk -- CLI repo pull. Samad andmed, samad konteinerid, erinev masin.",
+      "afterText": "Kõik tõmmised ühes kohas. Tõmba ükskõik milline neist ühe käsuga tagasi.",
+      "cardLabel": "Kuva Varukoopiad",
+      "prose": "Kuva sellel salvestusruumil saadaolevad varukoopiad. Taastamine täiesti uuele serverile on üks käsk: repo pull käsk."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Sinu rakendus on töös, nii et veendume, et sa seda kunagi ei kaota! Selles õpetuses tõukame terve repositooriumi välisesse salvestusse ja tõmbame selle nõudmisel tagasi."
+    },
+    {
+      "id": "three-steps",
+      "text": "Varundamine ja taastamine taandub kolmele sammule. Seadista salvestuse pakkuja, tõuka varukoopia ja taasta see, kui vaja."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Sinu andmed on turvalised ja masinate vahel kaasaskantavad. Kohtumiseni järgmises!"
+    }
+  ],
+  "title": "Varukoopia ja Taastamine",
+  "chapters": {
+    "intro": "Varukoopia ja Taastamine",
+    "three-steps": "Kolm sammu: seadista, laadi, taasta",
+    "cast-step-0": "1. samm: impordi rclone konfiguratsioon",
+    "cast-step-1": "2. samm: kuva seadistatud salvestusruumid",
+    "cast-step-2": "3. samm: laadi täielik varukoopia",
+    "cast-step-3": "4. samm: kuva varukoopiad salvestusruumil",
+    "outro": "Järgmine: Monitooring"
+  }
 }

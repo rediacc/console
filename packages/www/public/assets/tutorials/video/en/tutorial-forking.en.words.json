@@ -1,0 +1,807 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1.08,
+      "end": 3.64,
+      "text": "Welcome to the killer feature! Clone an",
+      "words": [
+        { "start": 1.08, "end": 1.56, "char": [0, 7] },
+        { "start": 1.56, "end": 1.64, "char": [8, 10] },
+        { "start": 1.64, "end": 1.8, "char": [11, 14] },
+        { "start": 1.8, "end": 2.12, "char": [15, 21] },
+        { "start": 2.12, "end": 2.68, "char": [22, 29] },
+        { "start": 3.16, "end": 3.48, "char": [31, 36] },
+        { "start": 3.48, "end": 3.64, "char": [37, 39] }
+      ]
+    },
+    {
+      "start": 3.64,
+      "end": 6.6,
+      "text": "entire production repo regardless of size",
+      "words": [
+        { "start": 3.64, "end": 4.2, "char": [0, 6] },
+        { "start": 4.2, "end": 4.68, "char": [7, 17] },
+        { "start": 4.68, "end": 5.08, "char": [18, 22] },
+        { "start": 5.08, "end": 5.96, "char": [23, 33] },
+        { "start": 5.96, "end": 6.04, "char": [34, 36] },
+        { "start": 6.04, "end": 6.6, "char": [37, 41] }
+      ]
+    },
+    {
+      "start": 6.84,
+      "end": 7.72,
+      "text": ", and break nothing.",
+      "words": [
+        { "start": 6.84, "end": 7, "char": [2, 5] },
+        { "start": 7, "end": 7.24, "char": [6, 11] },
+        { "start": 7.24, "end": 7.72, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 8.683,
+      "end": 11.323,
+      "text": "One parent repo fans out into as many",
+      "words": [
+        { "start": 8.683, "end": 8.923, "char": [0, 3] },
+        { "start": 8.923, "end": 9.403, "char": [4, 10] },
+        { "start": 9.403, "end": 9.803, "char": [11, 15] },
+        { "start": 9.803, "end": 10.283, "char": [16, 20] },
+        { "start": 10.283, "end": 10.523, "char": [21, 24] },
+        { "start": 10.523, "end": 10.843, "char": [25, 29] },
+        { "start": 10.843, "end": 11.003, "char": [30, 32] },
+        { "start": 11.003, "end": 11.323, "char": [33, 37] }
+      ]
+    },
+    {
+      "start": 11.323,
+      "end": 14.043,
+      "text": "independent clones as you want. Each fork",
+      "words": [
+        { "start": 11.323, "end": 12.043, "char": [0, 11] },
+        { "start": 12.043, "end": 12.523, "char": [12, 18] },
+        { "start": 12.523, "end": 12.603, "char": [19, 21] },
+        { "start": 12.603, "end": 12.763, "char": [22, 25] },
+        { "start": 12.763, "end": 13.163, "char": [26, 30] },
+        { "start": 13.323, "end": 13.563, "char": [32, 36] },
+        { "start": 13.563, "end": 14.043, "char": [37, 41] }
+      ]
+    },
+    {
+      "start": 14.123,
+      "end": 16.683,
+      "text": "is its own isolated environment running",
+      "words": [
+        { "start": 14.123, "end": 14.283, "char": [0, 2] },
+        { "start": 14.283, "end": 14.443, "char": [3, 6] },
+        { "start": 14.523, "end": 14.843, "char": [7, 10] },
+        { "start": 14.843, "end": 15.483, "char": [11, 19] },
+        { "start": 15.483, "end": 16.203, "char": [20, 31] },
+        { "start": 16.203, "end": 16.683, "char": [32, 39] }
+      ]
+    },
+    {
+      "start": 16.683,
+      "end": 18.363,
+      "text": "side by side with the original.",
+      "words": [
+        { "start": 16.683, "end": 17.083, "char": [0, 4] },
+        { "start": 17.083, "end": 17.243, "char": [5, 7] },
+        { "start": 17.243, "end": 17.723, "char": [8, 12] },
+        { "start": 17.723, "end": 17.803, "char": [13, 17] },
+        { "start": 17.803, "end": 17.963, "char": [18, 21] },
+        { "start": 17.963, "end": 18.363, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 19.328,
+      "end": 21.968,
+      "text": "Think of sharing a folder link. The link is",
+      "words": [
+        { "start": 19.328, "end": 19.488, "char": [0, 5] },
+        { "start": 19.488, "end": 19.568, "char": [6, 8] },
+        { "start": 19.568, "end": 20.048, "char": [9, 16] },
+        { "start": 20.048, "end": 20.528, "char": [19, 25] },
+        { "start": 20.528, "end": 20.928, "char": [26, 30] },
+        { "start": 21.408, "end": 21.488, "char": [32, 35] },
+        { "start": 21.488, "end": 21.808, "char": [36, 40] },
+        { "start": 21.808, "end": 21.968, "char": [41, 43] }
+      ]
+    },
+    {
+      "start": 21.968,
+      "end": 24.848,
+      "text": "the same lightweight thing whether the folder is small",
+      "words": [
+        { "start": 21.968, "end": 22.048, "char": [0, 3] },
+        { "start": 22.048, "end": 22.528, "char": [4, 8] },
+        { "start": 22.528, "end": 23.008, "char": [9, 20] },
+        { "start": 23.008, "end": 23.408, "char": [21, 26] },
+        { "start": 23.408, "end": 23.648, "char": [27, 34] },
+        { "start": 23.648, "end": 23.728, "char": [35, 38] },
+        { "start": 23.728, "end": 24.208, "char": [39, 45] },
+        { "start": 24.208, "end": 24.368, "char": [46, 48] },
+        { "start": 24.368, "end": 24.848, "char": [49, 54] }
+      ]
+    },
+    {
+      "start": 24.848,
+      "end": 27.648,
+      "text": "or huge, and forking works on the same",
+      "words": [
+        { "start": 24.848, "end": 25.008, "char": [0, 2] },
+        { "start": 25.008, "end": 25.568, "char": [3, 7] },
+        { "start": 25.968, "end": 26.128, "char": [9, 12] },
+        { "start": 26.128, "end": 26.768, "char": [13, 20] },
+        { "start": 26.768, "end": 27.088, "char": [21, 26] },
+        { "start": 27.088, "end": 27.248, "char": [27, 29] },
+        { "start": 27.248, "end": 27.648, "char": [34, 38] }
+      ]
+    },
+    {
+      "start": 27.648,
+      "end": 28.128,
+      "text": "principle.",
+      "words": [{ "start": 27.648, "end": 28.128, "char": [0, 9] }]
+    },
+    {
+      "start": 29.021,
+      "end": 31.981,
+      "text": "One gigabyte, one hundred gigabytes",
+      "words": [
+        { "start": 29.021, "end": 29.741, "char": [0, 3] },
+        { "start": 29.741, "end": 30.301, "char": [4, 12] },
+        { "start": 31.181, "end": 31.981, "char": [26, 35] }
+      ]
+    },
+    {
+      "start": 32.701,
+      "end": 35.261,
+      "text": ", one terabyte: the fork behaves the",
+      "words": [
+        { "start": 32.701, "end": 33.021, "char": [2, 5] },
+        { "start": 33.021, "end": 33.581, "char": [6, 14] },
+        { "start": 34.301, "end": 34.541, "char": [20, 24] },
+        { "start": 34.701, "end": 35.181, "char": [25, 32] },
+        { "start": 35.181, "end": 35.261, "char": [33, 36] }
+      ]
+    },
+    {
+      "start": 35.261,
+      "end": 38.221,
+      "text": "same. Repo size does not factor",
+      "words": [
+        { "start": 35.261, "end": 35.901, "char": [0, 4] },
+        { "start": 36.381, "end": 36.701, "char": [6, 10] },
+        { "start": 36.701, "end": 37.261, "char": [11, 15] },
+        { "start": 37.261, "end": 37.421, "char": [16, 20] },
+        { "start": 37.421, "end": 37.741, "char": [21, 24] },
+        { "start": 37.741, "end": 38.221, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 38.221,
+      "end": 39.341,
+      "text": "into the equation.",
+      "words": [
+        { "start": 38.221, "end": 38.541, "char": [0, 4] },
+        { "start": 38.541, "end": 38.701, "char": [5, 8] },
+        { "start": 38.701, "end": 39.341, "char": [9, 17] }
+      ]
+    },
+    {
+      "start": 42.816,
+      "end": 45.376,
+      "text": "Now the fork. One command will clone",
+      "words": [
+        { "start": 42.816, "end": 43.056, "char": [0, 3] },
+        { "start": 43.056, "end": 43.136, "char": [4, 7] },
+        { "start": 43.136, "end": 43.696, "char": [8, 12] },
+        { "start": 44.096, "end": 44.336, "char": [14, 17] },
+        { "start": 44.336, "end": 44.816, "char": [18, 25] },
+        { "start": 44.816, "end": 44.976, "char": [26, 30] },
+        { "start": 44.976, "end": 45.376, "char": [31, 36] }
+      ]
+    },
+    {
+      "start": 45.376,
+      "end": 48.416,
+      "text": "the entire repo, the app, the database",
+      "words": [
+        { "start": 45.376, "end": 45.536, "char": [0, 3] },
+        { "start": 45.536, "end": 46.016, "char": [4, 10] },
+        { "start": 46.016, "end": 46.496, "char": [11, 15] },
+        { "start": 46.896, "end": 47.056, "char": [17, 20] },
+        { "start": 47.056, "end": 47.296, "char": [21, 24] },
+        { "start": 47.696, "end": 47.776, "char": [26, 29] },
+        { "start": 47.776, "end": 48.416, "char": [30, 38] }
+      ]
+    },
+    {
+      "start": 48.816,
+      "end": 51.616,
+      "text": ", the config files, regardless of size",
+      "words": [
+        { "start": 48.816, "end": 49.296, "char": [6, 12] },
+        { "start": 49.296, "end": 49.936, "char": [13, 18] },
+        { "start": 50.336, "end": 50.976, "char": [20, 30] },
+        { "start": 50.976, "end": 51.056, "char": [31, 33] },
+        { "start": 51.056, "end": 51.616, "char": [34, 38] }
+      ]
+    },
+    {
+      "start": 52.256,
+      "end": 55.136,
+      "text": ". One gigabyte, one hundred gigabytes, one terabyte",
+      "words": [
+        { "start": 52.256, "end": 52.736, "char": [6, 14] },
+        { "start": 53.616, "end": 54.256, "char": [28, 37] },
+        { "start": 54.656, "end": 55.136, "char": [43, 51] }
+      ]
+    },
+    {
+      "start": 55.616,
+      "end": 57.856,
+      "text": ": the size simply does not matter.",
+      "words": [
+        { "start": 55.616, "end": 55.696, "char": [2, 5] },
+        { "start": 55.696, "end": 56.256, "char": [6, 10] },
+        { "start": 56.256, "end": 56.736, "char": [11, 17] },
+        { "start": 56.736, "end": 57.136, "char": [18, 22] },
+        { "start": 57.136, "end": 57.456, "char": [23, 26] },
+        { "start": 57.456, "end": 57.856, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 60.967,
+      "end": 63.767,
+      "text": "Fork done. The clone is up and running, regardless",
+      "words": [
+        { "start": 60.967, "end": 61.207, "char": [0, 4] },
+        { "start": 61.207, "end": 61.607, "char": [5, 9] },
+        { "start": 62.087, "end": 62.167, "char": [11, 14] },
+        { "start": 62.167, "end": 62.407, "char": [15, 20] },
+        { "start": 62.407, "end": 62.567, "char": [21, 23] },
+        { "start": 62.567, "end": 62.647, "char": [24, 26] },
+        { "start": 62.647, "end": 62.727, "char": [27, 30] },
+        { "start": 62.727, "end": 63.127, "char": [31, 38] },
+        { "start": 63.127, "end": 63.767, "char": [40, 50] }
+      ]
+    },
+    {
+      "start": 63.767,
+      "end": 64.327,
+      "text": "of size.",
+      "words": [
+        { "start": 63.767, "end": 63.847, "char": [0, 2] },
+        { "start": 63.847, "end": 64.327, "char": [3, 7] }
+      ]
+    },
+    {
+      "start": 67.835,
+      "end": 71.115,
+      "text": "Both repos exist side by side now. Same",
+      "words": [
+        { "start": 67.835, "end": 68.075, "char": [0, 4] },
+        { "start": 68.075, "end": 68.635, "char": [5, 10] },
+        { "start": 68.635, "end": 69.115, "char": [11, 16] },
+        { "start": 69.115, "end": 69.515, "char": [17, 21] },
+        { "start": 69.515, "end": 69.675, "char": [22, 24] },
+        { "start": 69.675, "end": 69.995, "char": [25, 29] },
+        { "start": 69.995, "end": 70.315, "char": [30, 33] },
+        { "start": 70.795, "end": 71.115, "char": [35, 39] }
+      ]
+    },
+    {
+      "start": 71.115,
+      "end": 74.155,
+      "text": "machine, same disk, two completely",
+      "words": [
+        { "start": 71.115, "end": 71.595, "char": [0, 7] },
+        { "start": 71.915, "end": 72.315, "char": [9, 13] },
+        { "start": 72.315, "end": 72.715, "char": [14, 18] },
+        { "start": 73.355, "end": 73.515, "char": [20, 23] },
+        { "start": 73.515, "end": 74.155, "char": [24, 34] }
+      ]
+    },
+    {
+      "start": 74.155,
+      "end": 75.595,
+      "text": "independent environments.",
+      "words": [
+        { "start": 74.155, "end": 74.795, "char": [0, 11] },
+        { "start": 74.795, "end": 75.595, "char": [12, 24] }
+      ]
+    },
+    {
+      "start": 78.724,
+      "end": 81.684,
+      "text": "Two repos, one disk. Same data, separate",
+      "words": [
+        { "start": 78.724, "end": 78.884, "char": [0, 3] },
+        { "start": 78.884, "end": 79.524, "char": [4, 9] },
+        { "start": 79.524, "end": 79.764, "char": [11, 14] },
+        { "start": 79.764, "end": 80.084, "char": [15, 19] },
+        { "start": 80.484, "end": 80.804, "char": [21, 25] },
+        { "start": 80.804, "end": 81.204, "char": [26, 30] },
+        { "start": 81.204, "end": 81.684, "char": [32, 40] }
+      ]
+    },
+    {
+      "start": 81.684,
+      "end": 82.404,
+      "text": "everything else.",
+      "words": [
+        { "start": 81.684, "end": 82.084, "char": [0, 10] },
+        { "start": 82.084, "end": 82.404, "char": [11, 15] }
+      ]
+    },
+    {
+      "start": 85.912,
+      "end": 88.792,
+      "text": "Let us prove the isolation. In the original",
+      "words": [
+        { "start": 85.912, "end": 85.992, "char": [0, 3] },
+        { "start": 86.072, "end": 86.152, "char": [4, 6] },
+        { "start": 86.152, "end": 86.632, "char": [7, 12] },
+        { "start": 86.632, "end": 86.792, "char": [13, 16] },
+        { "start": 86.792, "end": 87.592, "char": [17, 26] },
+        { "start": 87.992, "end": 88.072, "char": [28, 30] },
+        { "start": 88.072, "end": 88.232, "char": [31, 34] },
+        { "start": 88.232, "end": 88.792, "char": [35, 43] }
+      ]
+    },
+    {
+      "start": 89.032,
+      "end": 91.992,
+      "text": ", our marker file is right where we left it. The",
+      "words": [
+        { "start": 89.032, "end": 89.192, "char": [2, 5] },
+        { "start": 89.192, "end": 89.512, "char": [6, 12] },
+        { "start": 89.512, "end": 89.992, "char": [13, 17] },
+        { "start": 89.992, "end": 90.152, "char": [18, 20] },
+        { "start": 90.152, "end": 90.472, "char": [21, 26] },
+        { "start": 90.472, "end": 90.712, "char": [27, 32] },
+        { "start": 90.712, "end": 90.792, "char": [33, 35] },
+        { "start": 90.792, "end": 91.112, "char": [36, 40] },
+        { "start": 91.112, "end": 91.272, "char": [41, 43] },
+        { "start": 91.912, "end": 91.992, "char": [45, 48] }
+      ]
+    },
+    {
+      "start": 91.992,
+      "end": 94.552,
+      "text": "fork existence did not change anything in the",
+      "words": [
+        { "start": 91.992, "end": 92.312, "char": [0, 4] },
+        { "start": 92.312, "end": 93.032, "char": [5, 14] },
+        { "start": 93.032, "end": 93.272, "char": [15, 18] },
+        { "start": 93.272, "end": 93.592, "char": [19, 22] },
+        { "start": 93.592, "end": 93.992, "char": [23, 29] },
+        { "start": 93.992, "end": 94.472, "char": [30, 38] },
+        { "start": 94.472, "end": 94.552, "char": [42, 45] }
+      ]
+    },
+    {
+      "start": 94.552,
+      "end": 95.032,
+      "text": "parent.",
+      "words": [{ "start": 94.552, "end": 95.032, "char": [0, 6] }]
+    },
+    {
+      "start": 96.038,
+      "end": 98.678,
+      "text": "Original file still there. The fork",
+      "words": [
+        { "start": 96.038, "end": 96.438, "char": [0, 8] },
+        { "start": 96.438, "end": 96.918, "char": [9, 13] },
+        { "start": 96.918, "end": 97.238, "char": [14, 19] },
+        { "start": 97.238, "end": 97.638, "char": [20, 25] },
+        { "start": 98.278, "end": 98.358, "char": [27, 30] },
+        { "start": 98.358, "end": 98.678, "char": [31, 35] }
+      ]
+    },
+    {
+      "start": 98.678,
+      "end": 99.318,
+      "text": "didn't touch it.",
+      "words": [
+        { "start": 98.678, "end": 98.918, "char": [0, 6] },
+        { "start": 98.918, "end": 99.238, "char": [7, 12] },
+        { "start": 99.238, "end": 99.318, "char": [13, 15] }
+      ]
+    },
+    {
+      "start": 100.328,
+      "end": 103.128,
+      "text": "The parent repo is the sun and your fork",
+      "words": [
+        { "start": 100.328, "end": 100.408, "char": [0, 3] },
+        { "start": 100.408, "end": 100.888, "char": [4, 10] },
+        { "start": 100.888, "end": 101.288, "char": [11, 15] },
+        { "start": 101.288, "end": 101.448, "char": [16, 18] },
+        { "start": 101.448, "end": 101.528, "char": [19, 22] },
+        { "start": 101.528, "end": 102.008, "char": [23, 26] },
+        { "start": 102.408, "end": 102.488, "char": [27, 30] },
+        { "start": 102.488, "end": 102.648, "char": [31, 35] },
+        { "start": 102.648, "end": 103.128, "char": [36, 40] }
+      ]
+    },
+    {
+      "start": 103.448,
+      "end": 106.328,
+      "text": "is a mirror catching its light. The shared base",
+      "words": [
+        { "start": 103.448, "end": 103.608, "char": [0, 2] },
+        { "start": 103.608, "end": 104.088, "char": [5, 11] },
+        { "start": 104.088, "end": 104.488, "char": [12, 20] },
+        { "start": 104.488, "end": 104.648, "char": [21, 24] },
+        { "start": 104.648, "end": 105.048, "char": [25, 30] },
+        { "start": 105.528, "end": 105.928, "char": [36, 42] },
+        { "start": 105.928, "end": 106.328, "char": [43, 47] }
+      ]
+    },
+    {
+      "start": 106.328,
+      "end": 108.968,
+      "text": "stays untouched while anything you paint",
+      "words": [
+        { "start": 106.328, "end": 106.648, "char": [0, 5] },
+        { "start": 106.648, "end": 107.368, "char": [6, 15] },
+        { "start": 107.608, "end": 107.928, "char": [16, 21] },
+        { "start": 108.088, "end": 108.488, "char": [22, 30] },
+        { "start": 108.488, "end": 108.648, "char": [31, 34] },
+        { "start": 108.648, "end": 108.968, "char": [35, 40] }
+      ]
+    },
+    {
+      "start": 108.968,
+      "end": 110.808,
+      "text": "on the mirror belongs only to you.",
+      "words": [
+        { "start": 108.968, "end": 109.048, "char": [0, 2] },
+        { "start": 109.048, "end": 109.128, "char": [3, 6] },
+        { "start": 109.128, "end": 109.528, "char": [7, 13] },
+        { "start": 109.528, "end": 110.008, "char": [14, 21] },
+        { "start": 110.008, "end": 110.248, "char": [22, 26] },
+        { "start": 110.328, "end": 110.408, "char": [27, 29] },
+        { "start": 110.408, "end": 110.808, "char": [30, 33] }
+      ]
+    },
+    {
+      "start": 114.193,
+      "end": 116.993,
+      "text": "Now let us delete that file, but only inside",
+      "words": [
+        { "start": 114.193, "end": 114.513, "char": [0, 3] },
+        { "start": 114.673, "end": 114.753, "char": [4, 7] },
+        { "start": 114.753, "end": 114.913, "char": [8, 10] },
+        { "start": 114.913, "end": 115.233, "char": [11, 17] },
+        { "start": 115.313, "end": 115.393, "char": [18, 22] },
+        { "start": 115.393, "end": 115.873, "char": [23, 27] },
+        { "start": 116.113, "end": 116.193, "char": [29, 32] },
+        { "start": 116.273, "end": 116.593, "char": [33, 37] },
+        { "start": 116.593, "end": 116.993, "char": [38, 44] }
+      ]
+    },
+    {
+      "start": 116.993,
+      "end": 119.633,
+      "text": "the fork. We are making a destructive change",
+      "words": [
+        { "start": 116.993, "end": 117.473, "char": [4, 8] },
+        { "start": 117.793, "end": 118.033, "char": [10, 12] },
+        { "start": 118.033, "end": 118.433, "char": [17, 23] },
+        { "start": 118.433, "end": 119.233, "char": [26, 37] },
+        { "start": 119.233, "end": 119.633, "char": [38, 44] }
+      ]
+    },
+    {
+      "start": 119.633,
+      "end": 119.953,
+      "text": "here.",
+      "words": [{ "start": 119.633, "end": 119.953, "char": [0, 4] }]
+    },
+    {
+      "start": 122.465,
+      "end": 125.425,
+      "text": "Gone in the fork. The original stays untouched.",
+      "words": [
+        { "start": 122.465, "end": 122.705, "char": [0, 4] },
+        { "start": 122.705, "end": 122.785, "char": [5, 7] },
+        { "start": 122.785, "end": 122.865, "char": [8, 11] },
+        { "start": 122.865, "end": 123.425, "char": [12, 16] },
+        { "start": 123.825, "end": 123.985, "char": [18, 21] },
+        { "start": 123.985, "end": 124.385, "char": [22, 30] },
+        { "start": 124.385, "end": 124.785, "char": [31, 36] },
+        { "start": 124.785, "end": 125.425, "char": [37, 46] }
+      ]
+    },
+    {
+      "start": 128.826,
+      "end": 131.626,
+      "text": "Back to the original. The marker file is still here",
+      "words": [
+        { "start": 128.826, "end": 129.066, "char": [0, 4] },
+        { "start": 129.066, "end": 129.226, "char": [8, 11] },
+        { "start": 129.226, "end": 129.706, "char": [12, 20] },
+        { "start": 130.186, "end": 130.506, "char": [26, 32] },
+        { "start": 130.506, "end": 130.906, "char": [33, 37] },
+        { "start": 130.906, "end": 130.986, "char": [38, 40] },
+        { "start": 130.986, "end": 131.306, "char": [41, 46] },
+        { "start": 131.306, "end": 131.626, "char": [47, 51] }
+      ]
+    },
+    {
+      "start": 132.026,
+      "end": 134.746,
+      "text": ", untouched. Same image, separate",
+      "words": [
+        { "start": 132.026, "end": 132.746, "char": [2, 11] },
+        { "start": 133.306, "end": 133.626, "char": [13, 17] },
+        { "start": 133.626, "end": 134.026, "char": [18, 23] },
+        { "start": 134.346, "end": 134.746, "char": [25, 33] }
+      ]
+    },
+    {
+      "start": 134.746,
+      "end": 137.066,
+      "text": "Docker daemons, separate filesystems.",
+      "words": [
+        { "start": 134.746, "end": 135.066, "char": [0, 6] },
+        { "start": 135.066, "end": 135.626, "char": [7, 14] },
+        { "start": 135.946, "end": 136.266, "char": [16, 24] },
+        { "start": 136.266, "end": 136.586, "char": [25, 29] },
+        { "start": 136.586, "end": 137.066, "char": [29, 36] }
+      ]
+    },
+    {
+      "start": 138.064,
+      "end": 140.704,
+      "text": "Still here. Forks are properly isolated.",
+      "words": [
+        { "start": 138.064, "end": 138.304, "char": [0, 5] },
+        { "start": 138.304, "end": 138.784, "char": [6, 10] },
+        { "start": 139.024, "end": 139.424, "char": [12, 17] },
+        { "start": 139.424, "end": 139.504, "char": [18, 21] },
+        { "start": 139.504, "end": 140.064, "char": [22, 30] },
+        { "start": 140.064, "end": 140.704, "char": [31, 39] }
+      ]
+    },
+    {
+      "start": 144.193,
+      "end": 146.833,
+      "text": "When you are done, just delete the fork. The",
+      "words": [
+        { "start": 144.193, "end": 144.353, "char": [0, 4] },
+        { "start": 144.353, "end": 144.433, "char": [5, 8] },
+        { "start": 144.433, "end": 144.513, "char": [9, 12] },
+        { "start": 144.513, "end": 145.073, "char": [13, 17] },
+        { "start": 145.233, "end": 145.393, "char": [19, 23] },
+        { "start": 145.393, "end": 145.713, "char": [24, 30] },
+        { "start": 145.713, "end": 145.793, "char": [31, 34] },
+        { "start": 145.793, "end": 146.273, "char": [35, 39] },
+        { "start": 146.673, "end": 146.833, "char": [41, 44] }
+      ]
+    },
+    {
+      "start": 146.833,
+      "end": 149.873,
+      "text": "original stays exactly as it was. Fork",
+      "words": [
+        { "start": 146.833, "end": 147.233, "char": [0, 8] },
+        { "start": 147.233, "end": 147.713, "char": [9, 14] },
+        { "start": 147.713, "end": 148.273, "char": [15, 22] },
+        { "start": 148.273, "end": 148.433, "char": [23, 25] },
+        { "start": 148.433, "end": 148.593, "char": [26, 28] },
+        { "start": 148.593, "end": 148.993, "char": [29, 32] },
+        { "start": 149.473, "end": 149.873, "char": [34, 38] }
+      ]
+    },
+    {
+      "start": 150.273,
+      "end": 152.913,
+      "text": ", experiment, break things, delete",
+      "words": [
+        { "start": 150.273, "end": 150.993, "char": [2, 12] },
+        { "start": 151.393, "end": 151.713, "char": [14, 19] },
+        { "start": 151.713, "end": 152.113, "char": [20, 26] },
+        { "start": 152.513, "end": 152.913, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 153.553,
+      "end": 154.113,
+      "text": ". No risk.",
+      "words": [
+        { "start": 153.553, "end": 153.713, "char": [2, 4] },
+        { "start": 153.713, "end": 154.113, "char": [5, 9] }
+      ]
+    },
+    {
+      "start": 157.224,
+      "end": 160.104,
+      "text": "Fork removed. The original is exactly",
+      "words": [
+        { "start": 157.224, "end": 157.544, "char": [0, 4] },
+        { "start": 157.544, "end": 158.104, "char": [5, 12] },
+        { "start": 158.584, "end": 158.664, "char": [14, 17] },
+        { "start": 158.664, "end": 159.224, "char": [18, 26] },
+        { "start": 159.224, "end": 159.384, "char": [27, 29] },
+        { "start": 159.384, "end": 160.104, "char": [30, 37] }
+      ]
+    },
+    {
+      "start": 160.104,
+      "end": 160.744,
+      "text": "as we left it.",
+      "words": [
+        { "start": 160.104, "end": 160.184, "char": [0, 2] },
+        { "start": 160.184, "end": 160.344, "char": [3, 5] },
+        { "start": 160.344, "end": 160.664, "char": [6, 10] },
+        { "start": 160.664, "end": 160.744, "char": [11, 13] }
+      ]
+    },
+    {
+      "start": 161.774,
+      "end": 164.494,
+      "text": "A fork is a frozen photograph of the parent",
+      "words": [
+        { "start": 161.774, "end": 161.854, "char": [0, 1] },
+        { "start": 161.854, "end": 162.254, "char": [2, 6] },
+        { "start": 162.334, "end": 162.494, "char": [7, 9] },
+        { "start": 162.494, "end": 162.574, "char": [10, 11] },
+        { "start": 162.574, "end": 163.134, "char": [12, 18] },
+        { "start": 163.134, "end": 163.774, "char": [19, 29] },
+        { "start": 163.774, "end": 163.934, "char": [30, 32] },
+        { "start": 163.934, "end": 164.014, "char": [33, 36] },
+        { "start": 164.014, "end": 164.494, "char": [37, 43] }
+      ]
+    },
+    {
+      "start": 164.494,
+      "end": 167.294,
+      "text": "at one instant. The parent keeps flowing",
+      "words": [
+        { "start": 164.494, "end": 164.654, "char": [0, 2] },
+        { "start": 164.734, "end": 165.054, "char": [3, 6] },
+        { "start": 165.134, "end": 165.694, "char": [7, 14] },
+        { "start": 166.174, "end": 166.254, "char": [16, 19] },
+        { "start": 166.254, "end": 166.574, "char": [20, 26] },
+        { "start": 166.574, "end": 166.814, "char": [27, 32] },
+        { "start": 166.814, "end": 167.294, "char": [33, 40] }
+      ]
+    },
+    {
+      "start": 167.294,
+      "end": 170.414,
+      "text": "like a river, but your snapshot stays exactly",
+      "words": [
+        { "start": 167.294, "end": 167.454, "char": [0, 4] },
+        { "start": 167.454, "end": 167.934, "char": [7, 12] },
+        { "start": 168.174, "end": 168.334, "char": [14, 17] },
+        { "start": 168.334, "end": 168.574, "char": [18, 22] },
+        { "start": 168.574, "end": 169.294, "char": [23, 31] },
+        { "start": 169.294, "end": 169.694, "char": [32, 37] },
+        { "start": 169.694, "end": 170.414, "char": [38, 45] }
+      ]
+    },
+    {
+      "start": 170.414,
+      "end": 171.294,
+      "text": "where it was.",
+      "words": [
+        { "start": 170.414, "end": 170.734, "char": [0, 5] },
+        { "start": 170.734, "end": 170.814, "char": [6, 8] },
+        { "start": 170.814, "end": 171.294, "char": [9, 12] }
+      ]
+    },
+    {
+      "start": 172.187,
+      "end": 175.307,
+      "text": "Five forks of a hundred gigabyte repo still",
+      "words": [
+        { "start": 172.187, "end": 172.427, "char": [0, 4] },
+        { "start": 172.427, "end": 172.907, "char": [5, 10] },
+        { "start": 172.907, "end": 172.987, "char": [11, 13] },
+        { "start": 172.987, "end": 173.067, "char": [14, 15] },
+        { "start": 173.067, "end": 173.547, "char": [16, 23] },
+        { "start": 173.547, "end": 174.027, "char": [24, 32] },
+        { "start": 174.027, "end": 174.507, "char": [33, 37] },
+        { "start": 174.987, "end": 175.307, "char": [38, 43] }
+      ]
+    },
+    {
+      "start": 175.307,
+      "end": 177.867,
+      "text": "add up to about a hundred gigabytes on disk",
+      "words": [
+        { "start": 175.307, "end": 175.467, "char": [0, 3] },
+        { "start": 175.467, "end": 175.707, "char": [4, 6] },
+        { "start": 175.787, "end": 175.867, "char": [7, 9] },
+        { "start": 175.867, "end": 176.187, "char": [10, 15] },
+        { "start": 176.187, "end": 176.267, "char": [16, 17] },
+        { "start": 176.267, "end": 176.747, "char": [18, 25] },
+        { "start": 176.747, "end": 177.227, "char": [26, 35] },
+        { "start": 177.227, "end": 177.387, "char": [36, 38] },
+        { "start": 177.387, "end": 177.867, "char": [39, 43] }
+      ]
+    },
+    {
+      "start": 178.347,
+      "end": 181.067,
+      "text": ". You only pay for the bytes you actually change inside",
+      "words": [
+        { "start": 178.347, "end": 178.507, "char": [2, 5] },
+        { "start": 178.507, "end": 178.667, "char": [6, 10] },
+        { "start": 178.667, "end": 178.987, "char": [11, 14] },
+        { "start": 178.987, "end": 179.067, "char": [15, 18] },
+        { "start": 179.067, "end": 179.147, "char": [19, 22] },
+        { "start": 179.147, "end": 179.547, "char": [23, 28] },
+        { "start": 179.547, "end": 179.627, "char": [29, 32] },
+        { "start": 179.627, "end": 180.107, "char": [33, 41] },
+        { "start": 180.107, "end": 180.587, "char": [42, 48] },
+        { "start": 180.587, "end": 181.067, "char": [49, 55] }
+      ]
+    },
+    {
+      "start": 181.067,
+      "end": 181.627,
+      "text": "each fork.",
+      "words": [
+        { "start": 181.067, "end": 181.307, "char": [0, 4] },
+        { "start": 181.307, "end": 181.627, "char": [5, 9] }
+      ]
+    },
+    {
+      "start": 182.507,
+      "end": 185.387,
+      "text": "Forks deliberately leave secrets behind, which",
+      "words": [
+        { "start": 182.507, "end": 182.907, "char": [0, 5] },
+        { "start": 182.907, "end": 183.547, "char": [6, 18] },
+        { "start": 183.547, "end": 183.787, "char": [19, 24] },
+        { "start": 183.787, "end": 184.267, "char": [25, 32] },
+        { "start": 184.267, "end": 184.747, "char": [33, 39] },
+        { "start": 185.227, "end": 185.387, "char": [41, 46] }
+      ]
+    },
+    {
+      "start": 185.387,
+      "end": 188.267,
+      "text": "is what makes clone production, break nothing actually",
+      "words": [
+        { "start": 185.387, "end": 185.467, "char": [0, 2] },
+        { "start": 185.467, "end": 185.707, "char": [3, 7] },
+        { "start": 185.707, "end": 185.947, "char": [8, 13] },
+        { "start": 185.947, "end": 186.347, "char": [14, 19] },
+        { "start": 186.347, "end": 186.907, "char": [20, 30] },
+        { "start": 187.147, "end": 187.387, "char": [32, 37] },
+        { "start": 187.387, "end": 187.787, "char": [38, 45] },
+        { "start": 187.787, "end": 188.267, "char": [46, 54] }
+      ]
+    },
+    {
+      "start": 188.267,
+      "end": 191.067,
+      "text": "safe. We wire those up properly in the next",
+      "words": [
+        { "start": 188.267, "end": 188.747, "char": [0, 4] },
+        { "start": 189.227, "end": 189.387, "char": [6, 8] },
+        { "start": 189.387, "end": 189.707, "char": [9, 13] },
+        { "start": 189.707, "end": 189.947, "char": [14, 19] },
+        { "start": 189.947, "end": 190.107, "char": [20, 22] },
+        { "start": 190.107, "end": 190.587, "char": [23, 31] },
+        { "start": 190.587, "end": 190.667, "char": [32, 34] },
+        { "start": 190.667, "end": 190.747, "char": [35, 38] },
+        { "start": 190.747, "end": 191.067, "char": [39, 43] }
+      ]
+    },
+    {
+      "start": 191.067,
+      "end": 191.627,
+      "text": "tutorial!",
+      "words": [{ "start": 191.067, "end": 191.627, "char": [0, 8] }]
+    }
+  ]
+}

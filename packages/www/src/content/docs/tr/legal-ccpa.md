@@ -4,7 +4,8 @@ description: "Rediacc'ın kendi sunucunuzda barındırma modeli, tüketici veril
 category: "Legal"
 order: 4
 language: tr
-sourceHash: "8d0fc1ff16c1be28"
+sourceHash: "949159b302cf6ab9"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Kaliforniya Tüketici Gizlilik Yasası (CCPA), Kaliforniya'daki tüketicilere kişisel bilgileri üzerinde haklar tanıyan bir eyalet yasasıdır. Bu haklar arasında hangi verilerin toplandığını bilme hakkı, silme hakkı ve satışını reddetme hakkı yer alır.
@@ -18,7 +19,7 @@ CCPA, kişisel bilgilerle ilgili tüketici haklarına odaklanır. Rediacc, sizin
 | CCPA Hakkı | Gereksinim | Rediacc Yeteneği |
 |-----------|-----------|-----------------|
 | Bilme hakkı (1798.100) | Toplanan verilerin kategorilerini ve amaçlarını açıklama | Denetim günlükleri tüm veri işlemlerini takip eder. Kendi sunucunuzda barındırma: kuruluşunuz her depodaki verilerin tam görünürlüğünü korur. |
-| Silme hakkı (1798.105) | Talep üzerine tüketicinin kişisel bilgilerini silme | `rdc repo destroy` LUKS ile şifrelenmiş birimi kriptografik olarak siler. Fork silme işlemi klonlanmış kopyaları tamamen kaldırır. |
+| Silme hakkı (1798.105) | Talep üzerine tüketicinin kişisel bilgilerini silme | `rdc repo delete` LUKS ile şifrelenmiş birimi kriptografik olarak siler. Fork silme işlemi klonlanmış kopyaları tamamen kaldırır. |
 | Reddetme hakkı (1798.120) | Kişisel bilgileri satmama veya paylaşmama | Kendi sunucunuzda barındırma mimarisi: Rediacc'a veya herhangi bir üçüncü tarafa veri aktarımı yapılmaz. Veriler sunucularınızda kalır. Yapılandırma deposu senkronizasyonu sıfır bilgi şifrelemesi kullanır. Senkronizasyon sunucusu bile verileri okuyamaz. |
 | Veri güvenliği (1798.150) | Makul güvenlik önlemlerini uygulama | LUKS2 AES-256 şifreleme, ağ izolasyonu, yalnızca SSH erişimi, izole Docker daemon'ları, denetim günlüğü. Yapılandırma deposu, bölünmüş anahtar türetme ve dönen tek kullanımlık token'lar ile üç katmanlı şifreleme kullanır. |
 

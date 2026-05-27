@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" role="img" aria-label="A dial set once keeps a row of backups safe, sweeps out old copies, and a green check shows the proof is ready for the auditor." font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif">
+  <title>A dial set once keeps a row of backups safe, sweeps out old copies, and a green check shows the proof is ready for the auditor.</title>
+
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5" />
+
+  
+  <circle cx="140" cy="225" r="80" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="3" />
+  <circle cx="140" cy="225" r="52" fill="none" stroke="#f5f5f5" stroke-width="3" />
+  <line x1="140" y1="225" x2="178" y2="185" stroke="#4a7c3f" stroke-width="8" stroke-linecap="round" />
+  <circle cx="140" cy="225" r="9" fill="#f5f5f5" />
+  <line x1="140" y1="151" x2="140" y2="163" stroke="#f5f5f5" stroke-width="3" />
+  <line x1="214" y1="225" x2="202" y2="225" stroke="#f5f5f5" stroke-width="3" />
+  <line x1="66" y1="225" x2="78" y2="225" stroke="#f5f5f5" stroke-width="3" />
+  <text x="140" y="345" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">设置时长</text>
+
+  
+  <line x1="235" y1="225" x2="318" y2="225" stroke="#4a7c3f" stroke-width="9" stroke-linecap="round" />
+  <polygon points="318,210 348,225 318,240" fill="#4a7c3f" />
+
+  
+  <rect x="372" y="170" width="66" height="120" rx="6" fill="#4a7c3f" stroke="#2d5227" stroke-width="3" />
+  <rect x="450" y="170" width="66" height="120" rx="6" fill="#4a7c3f" stroke="#2d5227" stroke-width="3" />
+  <rect x="528" y="170" width="66" height="120" rx="6" fill="#4a7c3f" stroke="#2d5227" stroke-width="3" />
+  <text x="483" y="335" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">安全保存</text>
+
+  
+  <g transform="rotate(14 685 235)">
+    <rect x="652" y="180" width="66" height="120" rx="6" fill="#f5f5f5" stroke="#1a1a1a" stroke-width="3" stroke-dasharray="9 8" />
+  </g>
+  <line x1="612" y1="232" x2="660" y2="232" stroke="#1a1a1a" stroke-width="6" stroke-linecap="round" />
+  <polygon points="660,222 686,232 660,242" fill="#1a1a1a" />
+  <text x="784" y="360" text-anchor="end" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif" font-size="28" fill="#1a1a1a">已为你清理</text>
+
+  
+  <text x="470" y="46" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif" font-size="28" font-weight="bold" fill="#1a1a1a">审计就绪</text>
+  <circle cx="470" cy="103" r="36" fill="#4a7c3f" stroke="#2d5227" stroke-width="3" />
+  <polyline points="453,103 466,117 489,90" fill="none" stroke="#f5f5f5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

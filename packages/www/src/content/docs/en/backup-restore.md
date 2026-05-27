@@ -178,7 +178,7 @@ A cold backup runs in three phases per included repo: **stop → snapshot → st
 
 - `rdc machine query --name <machine> --containers` shows running state. Compare against the expected set.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` on the machine. Inspect via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` with a stale `startedAt` means the last backup didn't complete cleanly.
-- Logs from the renet backup run (`journalctl -u renet-*` or the direct `rdc machine deploy-backup` invocation) emit a final summary line of the form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. A non-empty `failed_repos` is the grep target.
+- Logs from the renet backup run (`journalctl -u renet-*` or the direct `rdc machine backup schedule` invocation) emit a final summary line of the form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. A non-empty `failed_repos` is the grep target.
 
 ### Estimating Cold Backup Downtime
 
@@ -294,6 +294,58 @@ In your config, bind one or more strategy names to a machine:
   }
 }
 ```
+
+## Choosing Hot vs Cold and Per-Repo Filtering
+
+### Hot vs cold at a glance
+
+| | Hot | Cold |
+|---|-----|------|
+| **Consistency** | Crash-consistent (BTRFS snapshot while running) | Application-consistent (stop → snapshot → start) |
+| **Downtime** | None | Per-repo stop+start window (typically 5-120 s) |
+| **Suitable frequency** | High (e.g. hourly) | Low (e.g. daily or weekly) |
+| **Typical use** | Frequent safety net | Scheduled guaranteed-consistency backup |
+
+**Hot** is the right default for high-frequency runs. Services keep running while the snapshot is taken, so the backup window does not interrupt users. The snapshot is crash-consistent: it is equivalent to what you would get after an unclean shutdown. For most modern databases and message queues this is acceptable.
+
+**Cold** is appropriate when you need a guaranteed application-consistent snapshot and can accept a brief per-repo restart. Services are stopped before the snapshot and restarted before the upload begins, so a slow or failed upload never prolongs the downtime window. See [Cold Backup Semantics](#cold-backup-semantics) for the full guarantee model.
+
+### Filtering repos per strategy
+
+Each strategy can carry `--include` and `--exclude` filters. Repository names that match an `--exclude` pattern are skipped for that strategy; `--include` restricts the run to only those names. Filters match the local-config repository name (no `:tag`).
+
+```bash
+# Hot strategy: back up everything hourly
+rdc config backup-strategy set \
+  --name hourly-hot \
+  --destination my-storage \
+  --cron "0 * * * *" \
+  --mode hot \
+  --bwlimit 6M \
+  --enable
+
+# Cold strategy: back up everything weekly, excluding the large derived dataset
+rdc config backup-strategy set \
+  --name weekly-cold \
+  --destination my-storage \
+  --cron "15 3 * * 0" \
+  --mode cold \
+  --exclude analytics-demo \
+  --enable
+```
+
+### When to exclude a repo from the frequent hot strategy
+
+Exclude a repository from the high-frequency run when:
+
+- The repo is large and **fully regenerable** from source data already on the volume, so every hourly backup wastes significant bandwidth without adding meaningful recovery value.
+- The backup run would overrun its own schedule interval at your available upload speed.
+
+**Example.** A `analytics-demo` repository contains roughly 114 GB of derived Postgres tables that can be fully rebuilt from raw CSV dump files already stored inside the same volume. At a 6 MB/s upload limit, a single hot backup of that repo takes over 5 hours. Running that hourly means each run is still in progress when the next one fires, which causes every subsequent run to be silently dropped (see [Long-Running Backups and Overlapping Schedules](#long-running-backups-and-overlapping-schedules)). Excluding it from `hourly-hot` and keeping it in `weekly-cold` means it is backed up once per week instead of never.
+
+> **If the data is purely regenerable**, consider whether you need to back it up at all. An alternative is to back up only the raw source inputs (the CSV dumps, in this example) and skip the derived copy entirely. A weekly cold backup of the source inputs is much smaller and fully sufficient for recovery.
+
+Repos that are not excluded from either strategy appear in both the `hot/` and `cold/` storage subfolders. The merged `rdc repo backup list` output shows both rows so you can verify which streams cover which repos.
 
 ## Backup Operations
 

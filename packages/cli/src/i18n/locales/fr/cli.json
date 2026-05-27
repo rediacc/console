@@ -26,10 +26,6 @@
         "fetching": "Récupération de l'historique de l'entité...",
         "success": "Historique récupéré"
       },
-      "list": {
-        "description": "Lister les entrées du journal d'audit",
-        "fetching": "Récupération des journaux d'audit..."
-      },
       "log": {
         "description": "Afficher les journaux d'audit",
         "fetching": "Récupération des journaux d'audit...",
@@ -490,6 +486,8 @@
         "add": {
           "description": "Ajouter une machine à la configuration actuelle",
           "descriptionShort": "Ajouter une machine à la configuration actuelle",
+          "sshConfigFailed": "Échec de l'écriture de l'alias SSH (non fatal) : {{error}}",
+          "sshConfigWritten": "Alias SSH rediacc--{{name}} écrit dans ~/.ssh/config_rediacc",
           "success": "Machine \"{{name}}\" ajoutée ({{user}}@{{ip}})"
         },
         "description": "Gérer les machines dans la configuration actuelle",
@@ -499,6 +497,7 @@
         },
         "remove": {
           "description": "Supprimer une machine de la configuration actuelle",
+          "sshConfigCleared": "Alias SSH rediacc--{{name}} supprimé",
           "success": "Machine \"{{name}}\" supprimée"
         },
         "scanKeys": {
@@ -652,14 +651,6 @@
         "description": "Définir une valeur par défaut (équipe, région, pont)",
         "success": "\"{{key}}\" défini à \"{{value}}\""
       },
-      "setRenet": {
-        "description": "Définir le chemin vers le binaire renet pour le mode local",
-        "success": "Chemin renet défini à : {{path}}"
-      },
-      "setSsh": {
-        "description": "Mettre à jour la configuration SSH pour la configuration actuelle",
-        "success": "Configuration SSH mise à jour"
-      },
       "show": {
         "description": "Afficher les détails de la configuration actuelle",
         "noConfig": "Aucune configuration active. Créez-en une avec : rdc config init",
@@ -733,6 +724,11 @@
         "starting": "Initialisation du datastore sur \"{{machine}}\"..."
       },
       "machineOption": "Nom de la machine (où le datastore Ceph est hébergé)",
+      "resize": {
+        "description": "Redimensionner le pool de datastore d'une machine hors ligne (agrandir ou réduire). Tous les dépôts doivent être démontés au préalable.",
+        "sizeOption": "Nouvelle taille du datastore (ex. : 100G, 95%)",
+        "starting": "Redimensionnement du datastore sur « {{machine}} » vers {{size}}..."
+      },
       "status": {
         "description": "Afficher le backend, la taille, l'utilisation, l'état de montage et cow_mode (si forké) du datastore",
         "starting": "Vérification du statut du datastore sur \"{{machine}}\"..."
@@ -927,8 +923,10 @@
         "datastoreCompleted": "Nettoyage du datastore terminé",
         "datastoreFailed": "Échec du nettoyage du datastore",
         "datastoreOnlyOption": "Nettoyer uniquement les ressources orphelines du datastore",
+        "datastorePrunedSummary": "{{count}} ressource(s) de datastore orphelines supprimées",
         "description": "Supprimer les ressources orphelines du datastore et les instantanés périmés d'une machine",
         "descriptionShort": "Nettoyer les ressources orphelines et les instantanés périmés",
+        "dryRunHint": "{{count}} ressource(s) seraient supprimées. Relancez sans --dry-run pour les supprimer.",
         "dryRunOption": "Afficher ce qui serait supprimé sans effectuer de modifications",
         "forceDeleteMountedOption": "Remplace la vérification de sécurité de montage et supprime les dépôts même s'ils sont actuellement montés ou ont des conteneurs Docker en cours. Distinct de --force (qui ne remplace que la période de grâce d'archive). S'applique à la fois à --orphaned-repos et à --prune-unknown.",
         "noReposFound": "Aucun dépôt trouvé sur la machine",
@@ -937,6 +935,7 @@
         "orphanedReposCompleted": "{{count}} dépôts orphelins supprimés",
         "orphanedReposOption": "Supprimer aussi les images de dépôts absents de toute configuration",
         "orphanedReposStarting": "Recherche des dépôts orphelins sur {{machine}}...",
+        "previewEmpty": "Aucune ressource de datastore orpheline trouvée",
         "pruneUnknownOption": "Supprime uniquement les dépôts que le miroir renet .interim/state ne peut pas classer (pas dans la configuration locale ET pas de miroir marqué fork). Strictement plus restreint que --orphaned-repos : les forks sans configuration sont préservés quand le miroir les identifie. Les orphelins hérités pré-miroir et les grands obsolètes dont l'entrée de configuration a été supprimée tombent tous dans cette catégorie.",
         "snapshotDeleted": "{{name}} supprimé",
         "snapshotDeleting": "Suppression de {{name}}...",
@@ -958,7 +957,9 @@
         "fetching": "Récupération du statut de {{machine}}...",
         "infrastructure": "Infrastructure",
         "noData": "Aucune donnée de statut disponible",
+        "storageHealthFragmentationNote": "La fragmentation compte les extents de l'image copy-on-write de chaque dépôt, pas les fichiers qu'elle contient. Des valeurs élevées sont attendues pour les charges à écritures aléatoires (bases de données, couches de conteneurs) et sont purement informatives. La défragmentation n'est volontairement pas prise en charge ici : elle dissocierait les forks et instantanés de sauvegarde partagés par reflink et gonflerait l'utilisation du datastore.",
         "storageHealthHint": "Astuce : Exécutez avec --storage-health pour voir la fragmentation BTRFS et les économies reflink par repo",
+        "storageHealthSummary": "Efficacité du stockage : {{summary}}",
         "strictDriftDetected": "--strict : {{count}} conteneur(s) au-delà du seuil de dérive ; sortie avec code non nul",
         "syncCertsFailed": "Échec de la synchronisation du cache de certificats : {{error}}"
       },
@@ -1004,11 +1005,6 @@
         "timeoutMessage": "Le test de connexion a expiré. Vérifiez la trace de la file d'attente pour plus de détails.",
         "waiting": "En attente du résultat du test SSH...",
         "waitingTime": "En attente du résultat du test SSH... ({{seconds}}s)"
-      },
-      "update": {
-        "description": "Mettre à jour la configuration de la machine",
-        "success": "Machine \"{{name}}\" mise à jour",
-        "updating": "Mise à jour de la machine en cours..."
       },
       "vault": {
         "description": "Gestion du coffre-fort machine (adaptateur cloud uniquement)"
@@ -1120,10 +1116,6 @@
         "notFound": "Aucune information d'organisation trouvée",
         "success": "Informations de l'organisation récupérées"
       },
-      "list": {
-        "description": "Lister les organisations",
-        "fetching": "Récupération des organisations..."
-      },
       "maintenance": {
         "description": "Activer ou désactiver le mode maintenance (bloque les connexions non-administrateur)",
         "disabled": "Mode maintenance désactivé",
@@ -1181,10 +1173,6 @@
           "fetching": "Récupération des détails du groupe de permissions...",
           "success": "Détails récupérés"
         }
-      },
-      "list": {
-        "description": "Lister les permissions",
-        "fetching": "Récupération des permissions..."
       },
       "remove": {
         "description": "Supprimer une permission d'un groupe",
@@ -1335,6 +1323,18 @@
       "batchIterating": "{{action}} {{current}}/{{total}} : \"{{repo}}\"...",
       "batchResult": "{{action}} terminé : {{succeeded}}/{{total}} réussis",
       "batchStarting": "{{action}} : «{{repo}}»...",
+      "cat": {
+        "description": "Lire une fenêtre bornée d'un fichier dans un dépôt et l'écrire sur stdout (borné côté serveur ; les diagnostics vont sur stderr)",
+        "failed": "Lecture échouée",
+        "forceBinaryOption": "Autoriser la lecture de contenu binaire (contenant NUL)",
+        "headOption": "N'afficher que les N premières lignes (incompatible avec une plage d'octets)",
+        "maxBytesOption": "Nombre maximum d'octets à lire et afficher (défaut 1 MiB, plafond absolu 50 MiB)",
+        "offsetOption": "Décalage en octets à partir duquel commencer la lecture",
+        "remoteFileOption": "Chemin du fichier à lire, relatif à la racine de montage du dépôt",
+        "starting": "Lecture de « {{path}} » depuis « {{repository}} » sur « {{machine}} »...",
+        "statOption": "N'afficher que la taille, le type et la date de modification ; ne pas lire le contenu",
+        "tailOption": "N'afficher que les N dernières lignes (incompatible avec une plage d'octets)"
+      },
       "certSync": {
         "updated": "Cache de certificats ACME mis à jour depuis {{machine}} ({{count}} certificats)"
       },
@@ -1353,6 +1353,7 @@
         "archived": "Identifiant de \"{{repository}}\" archivé",
         "archiveHint": "Pour archiver les identifiants pour la récupération : relancez avec --archive-config",
         "archiveOption": "Déplacer l'entrée de configuration vers deletedRepositories pour récupération ultérieure",
+        "cloudBackupHint": "Les sauvegardes cloud (le cas échéant) persistent après la suppression. Supprimez les sauvegardes cloud orphelines avec : rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Dépôt supprimé",
         "configRetained": "Entrée de configuration pour \"{{repository}}\" conservée (le dépôt peut exister sur d'autres machines). Pour supprimer : rdc config repository remove --name {{repository}}",
         "description": "Supprimer un dépôt (détruit les conteneurs, volumes et l'image chiffrée). L'entrée de configuration est conservée. Utilisez --archive-config pour déplacer les identifiants vers deletedRepositories pour récupération via 'config restore-archived'",
@@ -1387,7 +1388,7 @@
       "fork": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",
         "checkpointOption": "Créer un checkpoint CRIU sur la source avant le fork (capturer l'état mémoire des processus pour restauration sur le fork)",
-        "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}} --mount. Pour migrer le fork vers une autre machine : repo push {{repository}} -m {{machine}} --to <target> --up",
+        "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}}. Pour migrer le fork vers une autre machine : repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt",
         "descriptionShort": "Créer un fork CoW d'un dépôt (nouveau GUID, networkId, plage IP)",
         "failed": "Échec de la création du fork",
@@ -1402,6 +1403,7 @@
         "completed": "Listage terminé",
         "description": "Lister les dépôts sur une machine",
         "failed": "Échec du listage : {{error}}",
+        "serverNameLegend": "* nom lu depuis la machine (absent de votre configuration locale)",
         "starting": "Listage des dépôts sur \"{{machine}}\"..."
       },
       "machineOption": "Nom de la machine cible",
@@ -1524,25 +1526,6 @@
         },
         "valueOption": "Valeur du secret. Passez `-` pour lire depuis stdin (évite l'exposition dans l'historique du shell)."
       },
-      "snapshot": {
-        "create": {
-          "creating": "Création de l'instantané de \"{{repo}}\" sur {{machine}}...",
-          "description": "Créer un instantané BTRFS d'un dépôt",
-          "descriptionShort": "Créer un instantané BTRFS d'un dépôt",
-          "optionSnapshotName": "Nom explicite de l'instantané (généré automatiquement si vide)",
-          "success": "Instantané créé : {{name}} ({{path}})"
-        },
-        "delete": {
-          "description": "Supprimer un instantané d'une machine distante",
-          "success": "Instantané supprimé : {{name}}"
-        },
-        "description": "Gérer les instantanés BTRFS sur les machines distantes",
-        "list": {
-          "description": "Lister les instantanés sur une machine distante",
-          "header": "{{count}} instantané(s) dans {{path}} :",
-          "noSnapshots": "Aucun instantané trouvé."
-        }
-      },
       "status": {
         "completed": "Statut récupéré",
         "description": "Obtenir le statut du dépôt",
@@ -1554,19 +1537,6 @@
         "download": {
           "description": "Télécharger des fichiers depuis un dépôt",
           "descriptionShort": "Télécharger des fichiers depuis un dépôt via rsync"
-        },
-        "pull": {
-          "description": "Récupérer les dépôts depuis le stockage cloud (omettre le nom pour tout récupérer)",
-          "optionFrom": "Nom du stockage source",
-          "optionOverride": "Écraser les dépôts non montés existants lors de la récupération",
-          "optionRepo": "Filtrer par dépôt spécifique (répétable)",
-          "success": "Récupération de synchronisation terminée"
-        },
-        "push": {
-          "description": "Envoyer les dépôts vers le stockage cloud (omettre le nom pour tout envoyer)",
-          "optionRepo": "Filtrer par dépôt spécifique (répétable)",
-          "optionTo": "Nom du stockage de destination",
-          "success": "Envoi de synchronisation terminé"
         },
         "status": {
           "description": "Vérifier l'état de synchronisation et comparer les fichiers locaux/distants",
@@ -1650,7 +1620,6 @@
       "upAll": {
         "completed": "Tous les dépôts démarrés",
         "concurrencyOption": "Nombre maximum de dépôts simultanés (par défaut : 3)",
-        "description": "Déployer tous les dépôts sur une machine",
         "dryRunOption": "Afficher ce qui serait fait sans exécuter",
         "failed": "Échec de l'opération de démarrage global",
         "includeForksOption": "Également monter/démarrer les dépôts forkés",
@@ -1770,15 +1739,6 @@
         "listing": "Listage des sauvegardes dans \"{{storage}}\"...",
         "machineOption": "Machine exécutrice : exécute les appels list/delete de rclone vers le stockage. Requise car les clients ne sont pas censés avoir rclone installé localement ; les identifiants de stockage proviennent toujours de votre configuration locale.",
         "noBackups": "Aucune sauvegarde trouvée dans le stockage"
-      },
-      "pull": {
-        "completed": "Téléchargement terminé en {{duration}}ms",
-        "description": "Télécharger une sauvegarde depuis le stockage cloud vers une machine",
-        "failed": "Échec du téléchargement : {{error}}",
-        "machineOption": "Nom de la machine cible",
-        "noCredential": "Avertissement : Le dépôt \"{{name}}\" n'a pas d'identifiant défini. Le téléchargement peut échouer si la sauvegarde est chiffrée.",
-        "repositoryOption": "Nom du dépôt à télécharger",
-        "starting": "Téléchargement de \"{{repository}}\" depuis \"{{storage}}\" vers \"{{machine}}\"..."
       },
       "rename": {
         "description": "Renommer un fournisseur de stockage"
@@ -2251,7 +2211,7 @@
           "afterDescription": "La commande health affiche les métriques système, l'état des conteneurs, la stabilité des services et les informations de stockage — utile pour les vérifications de pipeline CI/CD."
         },
         "testConnection": {
-          "tip": "Utilisez `--save-known-hosts` pour persister automatiquement la clé de l'hôte dans le vault de la machine après un test réussi."
+          "tip": "Utilisez `--save` pour persister automatiquement la clé de l'hôte dans le vault de la machine après un test réussi."
         }
       },
       "organization": {
@@ -2292,7 +2252,7 @@
       "createGuardOverrideNonLinux": "Impossible de créer un nouveau dépôt grand \"{{name}}\". Le contournement REDIACC_ALLOW_GRAND_REPO n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nCréez plutôt un fork d'un dépôt existant :\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nPour utiliser le contournement, exécutez votre agent sous Linux (directement, WSL, Docker ou une VM).",
       "fieldReveal": "--reveal sur le champ sensible {{pointer}} est bloqué dans les environnements d'agent. Les agents doivent utiliser --digest. Un vrai utilisateur sur un terminal interactif peut utiliser --reveal.",
       "forkBlocked": "La commande \"{{command}}\" n'est pas disponible sur les dépôts fork.\n\nLes dépôts fork sont des environnements sandbox temporaires. Cette opération s'applique uniquement aux dépôts grand (production). Demandez à l'utilisateur d'exécuter cette commande directement.",
-      "grandGuard": "\"{{name}}\" est un dépôt grand (production). Les agents ne peuvent pas modifier directement les dépôts grand.\n\nLes dépôts grand contiennent des données de production. Utilisez un fork à la place — les forks sont des copies sandbox sûres et isolées.\n\nFlux de travail :\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork (ex : rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover\n\nUtilisateur : pour autoriser l'accès direct, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent.",
+      "grandGuard": "\"{{name}}\" est un dépôt grand (production). Les agents ne peuvent pas modifier directement les dépôts grand.\n\nLes dépôts grand contiennent des données de production. Utilisez un fork à la place — les forks sont des copies sandbox sûres et isolées.\n\nFlux de travail :\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork (ex : rdc repo up --name {{name}}:<tag-name> -m <machine>)\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover\n\nUtilisateur : pour autoriser l'accès direct, définissez REDIACC_ALLOW_GRAND_REPO={{name}} (ou * pour tous les dépôts) dans votre terminal avant de démarrer la session de l'agent.",
       "grandGuardOverride": "\"{{name}}\" est un dépôt grand (production). Les contournements initiés par l'agent ne sont pas acceptés.\n\nN'essayez pas de définir REDIACC_ALLOW_GRAND_REPO — seul l'utilisateur peut l'autoriser avant le démarrage de l'agent.\n\nUtilisez un fork à la place — les forks sont des copies sandbox sûres et isolées :\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover",
       "grandGuardOverrideNonLinux": "\"{{name}}\" est un dépôt grand (production). Le contournement REDIACC_ALLOW_GRAND_REPO n'est pas pris en charge sur {{platform}}.\n\nCe contournement ne fonctionne que sous Linux. Sous Windows et macOS, les agents doivent utiliser le flux de travail fork-first.\n\nFlux de travail :\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Travaillez sur le fork\n  3. Une fois terminé, l'utilisateur peut promouvoir le fork avec rdc repo takeover\n\nPour utiliser le contournement, exécutez votre agent sous Linux (directement, WSL, Docker ou une VM).",
       "machineGuard": "L'accès direct à la machine \"{{machine}}\" n'est pas autorisé en mode agent.\n\nLes agents doivent se connecter via un contexte de dépôt pour un accès sandboxé. Créez d'abord un fork d'un dépôt, puis connectez-vous au fork.\n\nFlux de travail :\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nUtilisateur : pour autoriser l'accès direct à la machine, définissez REDIACC_ALLOW_GRAND_REPO=* (ou un nom de dépôt spécifique) dans votre terminal avant de démarrer la session de l'agent.",
@@ -2344,6 +2304,12 @@
     "invalidPort": "Numéro de port invalide : \"{{port}}\". Doit être entre 1 et 65535.",
     "invalidPriorityMax": "Valeur priority-max invalide. Doit être entre 1 et 5.",
     "invalidPriorityMin": "Valeur priority-min invalide. Doit être entre 1 et 5.",
+    "license": {
+      "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
+      "recoveryFailedNoKnownRepos": "Des dépôts ont été trouvés sur {{machine}} mais aucun n'est suivi dans votre configuration locale. Listez vos dépôts suivis avec `rdc config repository list`, puis réessayez.",
+      "recoveryFailedServerRejected": "Le serveur de compte a refusé l'émission de la licence pour le dépôt. Première erreur : {{error}}. Exécutez : rdc subscription refresh repo --name <repo> -m {{machine}} pour plus de détails.",
+      "recoveryFailedTokenNotReady": "Votre jeton d'abonnement n'est pas prêt. Exécutez : rdc subscription login, puis réessayez."
+    },
     "machineNotFound": "Machine \"{{name}}\" non trouvée",
     "machineRequired": "Le nom de la machine est requis. Utilisez --machine <name>",
     "machineRequiredLocal": "Le nom de la machine est requis. Utilisez --machine <name>",
@@ -2461,7 +2427,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  Mode Agent\n    • Fork uniquement : créez un fork avant de modifier un dépôt\n    • Les dépôts grand (non fork) sont en lecture seule pour les agents\n    • Flux de travail : repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "agentMode": "\n  Mode Agent\n    • Fork uniquement : créez un fork avant de modifier un dépôt\n    • Les dépôts grand (non fork) sont en lecture seule pour les agents\n    • Flux de travail : repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "Afficher l'état de la machine",
       "repoUp": "Déployer les services du dépôt",

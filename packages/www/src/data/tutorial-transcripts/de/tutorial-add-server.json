@@ -6,32 +6,52 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.508633,
-      "text": "Wir beginnen damit, ein Konfigurationsprofil zu erstellen. Das Profil enthält den SSH-Schlüssel, die Maschinenliste und die Infrastruktureinstellungen für alles, was wir von hier an tun."
+      "at": 1.627146,
+      "text": "Wir beginnen damit, ein Konfigurationsprofil zu erstellen. Das Profil enthält den SSH-Schlüssel, die Maschinenliste und die Infrastruktureinstellungen für alles, was wir von hier an tun.",
+      "afterText": "Profil erstellt. Alles, was wir sonst noch konfigurieren, lebt in dieser einen Datei.",
+      "cardLabel": "Maschine Hinzufügen",
+      "prose": "Registriere den Server mit einem Namen, einer IP-Adresse und einem SSH-Benutzer. Der Name ist nur ein lokaler Alias (wir verwenden machine-11, um die IP zuzuordnen, aber jede Bezeichnung funktioniert, z. B. prod-db oder web-1). Ein Init-Schritt ist nicht erforderlich; die Konfigurationsdatei wird beim ersten Aufruf automatisch erstellt, und rdc greift auf deinen Standard-~/.ssh-Schlüssel zurück."
     },
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 11.160728,
-      "text": "Jetzt registrieren wir den Server bei der CLI, indem wir Namen, IP-Adresse und SSH-Benutzer angeben. Host-Schlüssel werden automatisch für vertrauenswürdigen Zugang gescannt."
+      "at": 7.928955,
+      "text": "Jetzt registrieren wir den Server bei der CLI, indem wir Namen, IP-Adresse und SSH-Benutzer angeben. Host-Schlüssel werden automatisch für vertrauenswürdigen Zugang gescannt.",
+      "afterText": "Server registriert. Die Host-Keys wurden automatisch eingelesen.",
+      "cardLabel": "Maschine Einrichten",
+      "prose": "Richte den Server ein. Dabei wird renet installiert und der verschlüsselte Datenspeicher erstellt."
     },
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 23.457976,
-      "text": "Als Nächstes stellen wir den Server bereit. Dabei wird renet installiert und der verschlüsselte Datenspeicher erstellt. Danach ist der Server bereit, Repositories zu hosten."
-    },
-    {
-      "id": "tutorial-add-server-04",
-      "markerIndex": 3,
-      "at": 39.717449,
-      "text": "Wir prüfen, was die CLI über die Konfiguration weiß. Maschinen, SSH-Schlüssel, Infrastruktur, alles, was gerade eingerichtet wurde, erscheint hier."
-    },
-    {
-      "id": "tutorial-add-server-05",
-      "markerIndex": 4,
-      "at": 48.157549,
-      "text": "Die gesamte Konfiguration liegt in einer einzigen JSON-Datei auf Ihrem Laptop. Kopieren Sie sie auf eine andere Maschine und Sie können dieselben Server von dort aus steuern."
+      "at": 16.338306,
+      "text": "Als Nächstes stellen wir den Server bereit. Dabei wird renet installiert und der verschlüsselte Datenspeicher erstellt. Danach ist der Server bereit, Repositories zu hosten.",
+      "afterText": "Fertig. renet ist installiert und der Datastore ist bereit.",
+      "cardLabel": "Konfiguration Prüfen",
+      "prose": "Prüfe die JSON-Datei, die alles enthält: Maschinen, SSH-Schlüssel und Infrastruktur. Du kannst mehrere Konfigurationen anlegen, eine pro Umgebung, und mit dem --config-Flag wechseln. Den Leitfaden für mehrere Konfigurationen findest du unten verlinkt."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Los geht's! Lass uns deinen ersten Server hinzufügen. Das geht mit zwei Befehlen und dauert ungefähr eine Minute."
+    },
+    {
+      "id": "two-tool-architecture",
+      "text": "Es gibt zwei Teile. Das Kommandozeilen-Tool läuft auf deinem Laptop, und ein Orchestrator namens `renet` läuft auf dem Server. Das CLI verbindet sich per SSH, also musst du dich nie manuell auf dem Server einloggen."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Und das war's mit dem Hinzufügen eines Servers! Wir sehen uns im nächsten Tutorial."
+    }
+  ],
+  "title": "Ersten Server Hinzufügen",
+  "chapters": {
+    "intro": "Ersten Server Hinzufügen",
+    "two-tool-architecture": "Wie Rediacc sich mit deinem Server verbindet",
+    "cast-step-0": "Schritt 1: Server registrieren",
+    "cast-step-1": "Schritt 2: renet einrichten",
+    "cast-step-2": "Schritt 3: Konfigurationsdatei prüfen",
+    "outro": "Weiter: Erstes Repository erstellen"
+  }
 }

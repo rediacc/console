@@ -4,6 +4,8 @@ description: "Como a Rediacc responde aos requisitos da Diretiva NIS2 de ciberse
 category: "Legal"
 order: 8
 language: pt
+sourceHash: "a2078388f7ae1906"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 A NIS2 e o DORA são regulamentos da UE que impõem requisitos de cibersegurança e resiliência operacional a organizações de infraestruturas críticas e do setor financeiro. Ambos entraram em vigor em 2025 e aplicam-se amplamente às indústrias da UE.
@@ -20,7 +22,7 @@ Texto integral: [Diretiva (UE) 2022/2555](https://eur-lex.europa.eu/eli/dir/2022
 |-----------------|-------------------|
 | Medidas de gestão de risco (Art. 21) | Encriptação LUKS2 em repouso, isolamento de rede por repositório, acesso exclusivo por SSH, registo de auditoria (mais de 70 tipos de eventos incluindo operações em máquinas) |
 | Tratamento de incidentes (Art. 21(2)(b)) | Mais de 70 tipos de eventos (autenticação, tokens, configuração, licenciamento, operações em máquinas) fornecem trilha forense. O isolamento por repositório limita o raio de explosão. |
-| Continuidade de negócio (Art. 21(2)(c)) | `rdc repo backup push/pull` com backup encriptado para múltiplos destinos. Snapshots CoW para reversão instantânea. |
+| Continuidade de negócio (Art. 21(2)(c)) | `rdc repo push/pull` com backup encriptado para múltiplos destinos. Snapshots CoW para reversão instantânea. |
 | Segurança da cadeia de fornecimento (Art. 21(2)(d)) | O self-hosted elimina o risco da cadeia de fornecimento SaaS. Nenhum fornecedor de nuvem terceiro processa os seus dados. |
 | Segurança de rede (Art. 21(2)(e)) | Daemons Docker por repositório, regras iptables, isolamento IP de loopback (sub-redes /26). |
 | Encriptação (Art. 21(2)(h)) | Encriptação obrigatória LUKS2 AES-256. Arquivo de configuração de conhecimento zero com AES-256-GCM. |
@@ -48,7 +50,7 @@ Texto integral: [Regulamento (UE) 2022/2554](https://eur-lex.europa.eu/eli/reg/2
 | Quadro de gestão de risco TIC (Art. 6) | A encriptação, o isolamento, o registo de auditoria e o backup formam a camada de controlos técnicos. |
 | Proteção e prevenção (Art. 9) | Encriptação LUKS2 AES-256 em repouso. O isolamento de rede impede o movimento lateral. Acesso exclusivo por SSH. |
 | Deteção (Art. 10) | Mais de 70 tipos de eventos incluindo operações em máquinas (ciclo de vida de repositórios, backup, sincronização, terminal). Painel de administração e portal com filtragem por utilizador e por equipa. As operações em máquinas também constam dos registos do sistema para defesa em profundidade. |
-| Resposta e recuperação (Art. 11) | Snapshots CoW para reversão instantânea. `rdc repo backup push/pull` para recuperação com múltiplos destinos. Testes de recuperação de desastres baseados em forks. |
+| Resposta e recuperação (Art. 11) | Snapshots CoW para reversão instantânea. `rdc repo push/pull` para recuperação com múltiplos destinos. Testes de recuperação de desastres baseados em forks. |
 | Risco de terceiros TIC (Art. 28-30) | O self-hosted elimina inteiramente a classificação de "fornecedor TIC terceiro crítico". |
 | Testes de resiliência operacional digital (Art. 24-27) | A clonagem CoW permite testes de penetração orientados por ameaças em ambientes semelhantes à produção sem exposição de dados. Clonar, testar, destruir. |
 

@@ -4,7 +4,8 @@ description: "Comment l'architecture auto-hébergée de Rediacc répond aux exig
 category: "Legal"
 order: 0
 language: fr
-sourceHash: "e54bb73d5b2f5fd4"
+sourceHash: "e20385eb9adfe180"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Rediacc fonctionne entièrement sur votre infrastructure. Lors des opérations de clonage d'environnement, de sauvegarde et de déploiement, les données ne quittent jamais votre machine. Vous restez à la fois le responsable du traitement et le sous-traitant des données. Aucun SaaS tiers ne traite vos données.
@@ -15,7 +16,7 @@ Cette section met en correspondance les capacités techniques de Rediacc avec le
 
 | Cadre | Portée | Capacités clés de Rediacc |
 |-------|--------|---------------------------|
-| [RGPD](/fr/docs/legal-gdpr) | Protection des données et vie privée dans l'UE | Clonage CoW sur la même machine, chiffrement LUKS2, magasin de configuration à connaissance nulle, journalisation d'audit, droit à l'effacement via `rdc repo destroy` |
+| [RGPD](/fr/docs/legal-gdpr) | Protection des données et vie privée dans l'UE | Clonage CoW sur la même machine, chiffrement LUKS2, magasin de configuration à connaissance nulle, journalisation d'audit, droit à l'effacement via `rdc repo delete` |
 | [SOC 2](/fr/docs/legal-soc2) | Critères de services de confiance pour les organisations de services | Chiffrement au repos, synchronisation de configuration à connaissance nulle, isolation réseau, piste d'audit, sauvegarde et récupération |
 | [HIPAA](/fr/docs/legal-hipaa) | Protection des informations de santé aux États-Unis | Chiffrement LUKS2, magasin de configuration à connaissance nulle, accès SSH uniquement, Docker daemons isolés, sécurité de transmission |
 | [CCPA](/fr/docs/legal-ccpa) | Droits de confidentialité des consommateurs californiens | Auto-hébergé (pas de vente/partage de données), chiffrement à connaissance nulle, suppression chiffrée, inventaire des données par dépôt |
@@ -32,7 +33,7 @@ Chaque cadre de conformité dans cette section renvoie aux mêmes propriétés t
 - **Isolation réseau** : Chaque dépôt dispose de son propre Docker daemon, sous-réseau IP loopback (/26) et règles iptables. Les conteneurs de différents dépôts ne peuvent pas communiquer entre eux.
 - **Clonage copy-on-write** : `rdc repo fork` utilise des reflinks du système de fichiers (`cp --reflink=always`). Les données sont dupliquées sur la même machine sans aucun transfert réseau.
 - **Journalisation d'audit** : Plus de 40 types d'événements couvrant l'authentification (connexion, 2FA, changements de mot de passe, révocation de sessions), le cycle de vie des jetons API, les opérations du magasin de configuration et l'activité d'abonnement/licence. Accessible via le tableau de bord d'administration et `rdc audit` CLI. Les opérations au niveau machine (fork, sauvegarde, déploiement) sont effectuées sur la machine elle-même via SSH et les journaux système.
-- **Sauvegarde chiffrée** : `rdc repo backup push/pull` transfère les données via SSH. La destination de sauvegarde reçoit des volumes chiffrés LUKS.
+- **Sauvegarde chiffrée** : `rdc repo push/pull` transfère les données via SSH. La destination de sauvegarde reçoit des volumes chiffrés LUKS.
 - **Magasin de configuration à connaissance nulle** : Synchronisation chiffrée optionnelle des configurations entre appareils. Les configurations sont chiffrées côté client avec AES-256-GCM avant l'envoi. Le serveur ne stocke que des blobs opaques. Le serveur ne peut pas lire les clés SSH, les identifiants, les adresses IP ou les données de configuration en clair. La dérivation de clé utilise passkey PRF extension + HKDF avec séparation de domaine. L'accès des membres est géré via l'échange de clés X25519, et la révocation est immédiate.
 
 Pour plus de détails sur ces capacités, consultez [Architecture](/fr/docs/architecture), [Dépôts](/fr/docs/repositories), [Stockage de configuration](/fr/docs/config-storage) et [Sécurité du compte](/fr/docs/account-security).

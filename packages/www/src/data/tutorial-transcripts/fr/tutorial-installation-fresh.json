@@ -1,0 +1,28 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation-fresh.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-fresh-01",
+      "markerIndex": 0,
+      "at": 0.667007,
+      "text": "C'est parti sur une machine vierge. Collez la commande d'installation en une seule ligne dans votre terminal et laissez-la s'exécuter. Le script vérifie votre plateforme, télécharge le binary stable le plus récent de l'outil en ligne de commande et le place dans votre répertoire personnel. Pas de sudo, pas d'installation système.",
+      "afterText": "Installé. Le binary rdc est dans votre PATH."
+    },
+    {
+      "id": "tutorial-installation-fresh-02",
+      "markerIndex": 1,
+      "at": 9.659113,
+      "text": "Vérifions que l'installation s'est bien passée. Le flag de version affiche exactement ce qui vient d'être installé, pour confirmer que l'outil en ligne de commande est dans votre PATH et prêt à l'emploi.",
+      "afterText": "Version affichée. rdc est prêt."
+    },
+    {
+      "id": "tutorial-installation-fresh-03",
+      "markerIndex": 2,
+      "at": 12.976611,
+      "text": "Lancez maintenant le diagnostic intégré. Il vérifie votre environnement de bout en bout (le binary, votre configuration et la connectivité) afin de détecter tout problème de configuration avant de commencer à travailler.",
+      "afterText": "Tous les contrôles sont au vert. Vous pouvez ajouter votre premier serveur."
+    }
+  ]
+}

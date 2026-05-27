@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 600" width="390" height="600" role="img" aria-label="A red price arrow climbing upward above a dark data box wrapped in red chains with a big red padlock, showing vendor lock-in." font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif">
+  <title>A red price arrow climbing upward above a dark data box wrapped in red chains with a big red padlock, showing vendor lock-in.</title>
+
+  <rect x="0" y="0" width="390" height="600" fill="#f5f5f5" />
+
+  
+  <polyline points="70,150 140,150 140,110 215,110 215,70 285,70 285,45" fill="none" stroke="#8b0000" stroke-width="12" stroke-linejoin="round" />
+  <polygon points="285,20 267,56 303,56" fill="#8b0000" />
+  <text x="195" y="195" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="26" font-weight="bold" fill="#8b0000">Prezzo crescente</text>
+
+  
+  <rect x="80" y="290" width="230" height="250" rx="10" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="3" />
+  <rect x="108" y="320" width="174" height="24" rx="4" fill="#1a1a1a" />
+  <rect x="108" y="356" width="174" height="24" rx="4" fill="#1a1a1a" />
+
+  
+  <rect x="66" y="405" width="258" height="28" rx="8" fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="100" y1="405" x2="100" y2="433" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="140" y1="405" x2="140" y2="433" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="180" y1="405" x2="180" y2="433" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="220" y1="405" x2="220" y2="433" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="260" y1="405" x2="260" y2="433" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="290" y1="405" x2="290" y2="433" stroke="#1a1a1a" stroke-width="2.5" />
+
+  
+  <path d="M158 480 v-20 a37 37 0 0 1 74 0 v20" fill="none" stroke="#8b0000" stroke-width="12" />
+  <rect x="147" y="478" width="96" height="70" rx="10" fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5" />
+  <circle cx="195" cy="508" r="10" fill="#1a1a1a" />
+  <rect x="191" y="508" width="8" height="24" fill="#1a1a1a" />
+
+  
+  <text x="195" y="270" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">Bloccato</text>
+  <text x="195" y="585" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="22" fill="#1a1a1a">Dati bloccati</text>
+</svg>

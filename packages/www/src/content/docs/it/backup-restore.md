@@ -4,7 +4,8 @@ description: "Esegui il backup dei repository cifrati su storage esterni, ripris
 category: "Guides"
 order: 7
 language: it
-sourceHash: "f5222efa9505ab5e"
+sourceHash: "29bb767d837eab9a"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Backup e Ripristino
@@ -178,7 +179,7 @@ Un backup cold viene eseguito in tre fasi per ogni repository incluso: **stop �
 
 - `rdc machine query --name <machine> --containers` mostra lo stato di esecuzione. Confrontare con il set atteso.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` sulla macchina. Ispezionare tramite `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa che l'ultimo backup non è stato completato in modo pulito.
-- I log dell'esecuzione del backup di renet (`journalctl -u renet-*` o l'invocazione diretta `rdc machine deploy-backup`) emettono una riga di riepilogo finale della forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vuoto è il target di grep.
+- I log dell'esecuzione del backup di renet (`journalctl -u renet-*` o l'invocazione diretta `rdc machine backup schedule`) emettono una riga di riepilogo finale della forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` non vuoto è il target di grep.
 
 ### Stima del Downtime del Backup Cold
 
@@ -294,6 +295,58 @@ Nella tua configurazione, associa uno o più nomi di strategia a una macchina:
   }
 }
 ```
+
+## Scegliere tra Hot e Cold e il filtraggio per repository
+
+### Hot vs cold in sintesi
+
+| | Hot | Cold |
+|---|-----|------|
+| **Consistenza** | Crash-consistent (snapshot BTRFS durante l'esecuzione) | Application-consistent (stop → snapshot → start) |
+| **Downtime** | Nessuno | Finestra di stop+start per repository (tipicamente 5-120 s) |
+| **Frequenza adatta** | Alta (ad es. oraria) | Bassa (ad es. giornaliera o settimanale) |
+| **Uso tipico** | Rete di sicurezza ad alta frequenza | Backup pianificato con consistenza garantita |
+
+**Hot** è il default corretto per le esecuzioni ad alta frequenza. I servizi continuano a girare mentre lo snapshot viene effettuato, quindi la finestra di backup non interrompe gli utenti. Lo snapshot è crash-consistent: equivale a quello che si otterrebbe dopo uno spegnimento non pulito. Per la maggior parte dei database moderni e delle code di messaggi questo è accettabile.
+
+**Cold** è appropriato quando si ha bisogno di uno snapshot application-consistent garantito e si può accettare un breve riavvio per repository. I servizi vengono fermati prima dello snapshot e riavviati prima che inizi il caricamento, quindi un caricamento lento o fallito non prolunga mai la finestra di downtime. Vedere [Semantica del Backup Cold](#semantica-del-backup-cold) per il modello di garanzia completo.
+
+### Filtraggio dei repository per strategia
+
+Ogni strategia può avere filtri `--include` e `--exclude`. I nomi di repository che corrispondono a un pattern `--exclude` vengono saltati per quella strategia; `--include` limita l'esecuzione solo a quei nomi. I filtri corrispondono al nome del repository nella configurazione locale (senza `:tag`).
+
+```bash
+# Strategia hot: backup di tutto ogni ora
+rdc config backup-strategy set \
+  --name hourly-hot \
+  --destination my-storage \
+  --cron "0 * * * *" \
+  --mode hot \
+  --bwlimit 6M \
+  --enable
+
+# Strategia cold: backup di tutto ogni settimana, escludendo il dataset derivato di grandi dimensioni
+rdc config backup-strategy set \
+  --name weekly-cold \
+  --destination my-storage \
+  --cron "15 3 * * 0" \
+  --mode cold \
+  --exclude analytics-demo \
+  --enable
+```
+
+### Quando escludere un repository dalla strategia hot ad alta frequenza
+
+Escludi un repository dall'esecuzione ad alta frequenza quando:
+
+- Il repository è grande e **completamente rigenerabile** dai dati sorgente già presenti nel volume, quindi ogni backup orario spreca banda significativa senza aggiungere valore di recupero significativo.
+- L'esecuzione del backup supererebbe il proprio intervallo di schedule alla velocità di caricamento disponibile.
+
+**Esempio.** Un repository `analytics-demo` contiene circa 114 GB di tabelle Postgres derivate che possono essere completamente ricostruite dai file di dump CSV grezzi già memorizzati all'interno dello stesso volume. Con un limite di caricamento di 6 MB/s, un singolo backup hot di quel repository richiede oltre 5 ore. Eseguirlo ogni ora significa che ogni esecuzione è ancora in corso quando parte quella successiva, il che causa lo scarto silenzioso di ogni esecuzione successiva (vedere [Backup di Lunga Durata e Schedule Sovrapposti](#backup-di-lunga-durata-e-schedule-sovrapposti)). Escluderlo da `hourly-hot` e mantenerlo in `weekly-cold` significa che viene eseguito il backup una volta alla settimana invece di mai.
+
+> **Se i dati sono puramente rigenerabili**, considera se è necessario eseguirne il backup. Un'alternativa è eseguire il backup solo degli input sorgente grezzi (i dump CSV, in questo esempio) e saltare la copia derivata del tutto. Un backup cold settimanale degli input sorgente è molto più piccolo e completamente sufficiente per il recupero.
+
+I repository non esclusi da nessuna delle due strategie appaiono in entrambe le sottocartelle di storage `hot/` e `cold/`. L'output unificato di `rdc repo backup list` mostra entrambe le righe in modo da poter verificare quali stream coprono quali repository.
 
 ## Operazioni di Backup
 

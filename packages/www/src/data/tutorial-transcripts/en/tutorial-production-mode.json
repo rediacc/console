@@ -2,30 +2,66 @@
   "cast": "/assets/tutorials/tutorial-production-mode.cast",
   "language": "en",
   "version": 1,
+  "title": "Production Mode",
+  "chapters": {
+    "intro": "Production Mode",
+    "dev-vs-prod": "Dev vs prod, the difference",
+    "cast-step-0": "Step 1: Start in production mode",
+    "cast-step-1": "Step 2: Enable autostart",
+    "cast-step-2": "Step 3: List autostart-enabled repos",
+    "cast-step-3": "Step 4: Stop from your laptop",
+    "outro": "Next: Backup and Restore"
+  },
   "events": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 56.862064,
-      "text": "Time to start the app in production mode from the laptop. The deploy command calls the same up function we used during development, but it runs detached. Close your laptop and the app keeps going."
+      "at": 2.418632,
+      "text": "Time to start the app in production mode from the laptop. The deploy command calls the same up function we used during development, but it runs detached. Close your laptop and the app keeps going.",
+      "afterText": "App running in production. Same command, same result, on the real server.",
+      "cardLabel": "Start Prod",
+      "prose": "Start the app in production mode from the laptop. The deploy command calls the same up function used during development, but runs detached so the app continues after the laptop disconnects."
     },
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 97.750961,
-      "text": "Now enable autostart so the app survives a server reboot. From here on, if the server restarts, this repo comes back automatically."
+      "at": 9.548589,
+      "text": "Now enable autostart so the app survives a server reboot. From here on, if the server restarts, this repo comes back automatically.",
+      "afterText": "Autostart on. The app survives reboots.",
+      "cardLabel": "Enable Autostart",
+      "prose": "Enable autostart so the repo survives server reboots. Once enabled, the repo is brought back automatically whenever the server restarts."
     },
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 125.443493,
-      "text": "Let us list which repositories have autostart enabled. Confirms our app is in the boot list."
+      "at": 17.034078,
+      "text": "Let us list which repositories have autostart enabled. Confirms our app is in the boot list.",
+      "afterText": "There it is, in the boot list.",
+      "cardLabel": "List Autostart",
+      "prose": "List the repositories with autostart enabled to confirm the app is in the boot list."
     },
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 141.09184,
-      "text": "And to stop the app, one command from the laptop. One command up, one command down. All from your terminal."
+      "at": 22.929505,
+      "text": "And to stop the app, one command from the laptop. One command up, one command down. All from your terminal.",
+      "afterText": "Stopped. One command up, one command down.",
+      "cardLabel": "Stop Repo",
+      "prose": "Stop the app with a single command from the laptop. One command brings it up, one command takes it down, all driven from the terminal."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alright! Let's take your app from development to production. Three short steps, all driven from your laptop."
+    },
+    {
+      "id": "dev-vs-prod",
+      "text": "During development you run the app from inside the repo, so it stops when you disconnect. In production you launch it from your laptop with the CLI, and it keeps running detached."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "And that's production mode in a nutshell. See you in the next one!"
     }
   ]
 }

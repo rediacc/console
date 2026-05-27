@@ -6,38 +6,86 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 27.859436,
-      "text": "第二步。让我们从命令行输入公网 IP、根域名、证书邮箱和 Cloudflare API 令牌。证书邮箱和令牌在你所有机器间共享，因此只需设置一次。"
+      "at": 2.424705,
+      "text": "第二步。让我们从命令行输入公网 IP、根域名、证书邮箱和 Cloudflare API 令牌。证书邮箱和令牌在你所有机器间共享，因此只需设置一次。",
+      "afterText": "基础设施信息已记录到你的配置中。",
+      "cardLabel": "设置基础设施",
+      "prose": "从命令行设置公网 IP、基础域名、证书邮箱和 Cloudflare API token。证书邮箱和 token 在所有机器间共享，因此只需设置一次。"
     },
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 41.958746,
-      "text": "让我们确认基础设施配置已正确存储。公网 IP、根域名、证书邮箱，全都显示在配置中。"
+      "at": 13.591473,
+      "text": "让我们确认基础设施配置已正确存储。公网 IP、根域名、证书邮箱，全都显示在配置中。",
+      "afterText": "配置已保存。可以推送到服务器了。",
+      "cardLabel": "查看基础设施",
+      "prose": "确认基础设施配置已保存。公网 IP、基础域名和证书邮箱应全部可见。"
     },
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 51.564603,
-      "text": "第三步。让我们将配置推送到服务器。这会自动在 Cloudflare 上创建 DNS 记录，并在机器上准备代理配置。"
+      "at": 18.479059,
+      "text": "第三步。让我们将配置推送到服务器。这会自动在 Cloudflare 上创建 DNS 记录，并在机器上准备代理配置。",
+      "afterText": "已推送。DNS 记录正在 Cloudflare 上创建。",
+      "cardLabel": "推送基础设施",
+      "prose": "将配置推送到服务器。这将自动在 Cloudflare 上创建 DNS 记录，并准备好代理配置。"
     },
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 70.626849,
-      "text": "第四步开始。让我们创建一个名为 infra 的小仓库，代理将在这里运行，与应用仓库隔离。"
+      "at": 25.757057,
+      "text": "第四步开始。让我们创建一个名为 infra 的小仓库，代理将在这里运行，与应用仓库隔离。",
+      "afterText": "infra 仓库已创建。与应用 repo 相互隔离。",
+      "cardLabel": "创建 Repo",
+      "prose": "创建一个名为 infra 的小型 repo。这是代理的存放位置，与应用 repo 隔离。"
     },
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 97.243945,
-      "text": "让我们应用内置的 proxy 模板。它包含 Traefik 以及 Let's Encrypt 和 Cloudflare DNS-01 验证的完整配置，开箱即用。"
+      "at": 33.957312,
+      "text": "让我们应用内置的 proxy 模板。它包含 Traefik 以及 Let's Encrypt 和 Cloudflare DNS-01 验证的完整配置，开箱即用。",
+      "afterText": "Traefik 配置已就位。",
+      "cardLabel": "应用模板"
     },
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 112.494613,
-      "text": "现在启动代理。Traefik 每五秒自动发现你的容器，TLS 证书由 Let's Encrypt 自动颁发。你的应用现在已经可以通过 HTTPS 在互联网上访问了。"
+      "at": 41.036573,
+      "text": "现在启动代理。Traefik 每五秒自动发现你的容器，TLS 证书由 Let's Encrypt 自动颁发。你的应用现在已经可以通过 HTTPS 在互联网上访问了。",
+      "afterText": "代理已上线。TLS 证书将自动到位。",
+      "cardLabel": "部署代理",
+      "prose": "启动代理。Traefik 会自动发现你的 container，TLS 证书由 Let's Encrypt 自动颁发。你的应用现在可以通过 HTTPS 在互联网上访问。"
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "好！让我们为你的应用配置一个真实域名，并自动启用 TLS。四个简短步骤，你就能登上互联网。"
+    },
+    {
+      "id": "four-steps",
+      "text": "路径如下。拿到 Cloudflare API 令牌，在 CLI 上配置基础设施，推送到服务器，然后部署一个 Traefik 代理，由它替你处理 DNS 和证书。"
+    },
+    {
+      "id": "open-cloudflare",
+      "text": "首先，在浏览器中打开 Cloudflare 控制台。前往 My Profile，再到 API Tokens，创建一个具备 Zone DNS Edit 权限的令牌，让 CLI 能够管理你的 DNS 记录。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "网络部分搞定！下个教程见。"
+    }
+  ],
+  "title": "网络与域名",
+  "chapters": {
+    "intro": "网络与域名",
+    "four-steps": "四步操作流程",
+    "open-cloudflare": "第一步：Cloudflare API token",
+    "cast-step-0": "第二步：配置基础设施",
+    "cast-step-1": "第二步：验证配置",
+    "cast-step-2": "第三步：推送到服务器",
+    "cast-step-3": "第四步：创建 infra repo",
+    "cast-step-4": "第四步：应用代理模板",
+    "cast-step-5": "第四步：启动代理",
+    "outro": "下一步：生产模式"
+  }
 }

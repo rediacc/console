@@ -6,38 +6,107 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 108.099445,
-      "text": "Teeme repositooriumist forki ühe käsuga. See kloonib kõik -- rakenduse, andmebaasi, konfiguratsioonifailid. Ja see juhtub sekunditega, olenemata repositooriumi suurusest. Üks gigabait, sada gigabaiti, üks terabait: sama aeg, iga kord."
+      "at": 2.41277,
+      "text": "Teeme repositooriumist forki ühe käsuga. See kloonib kõik -- rakenduse, andmebaasi, konfiguratsioonifailid. Ja see juhtub sekunditega, olenemata repositooriumi suurusest. Üks gigabait, sada gigabaiti, üks terabait: sama aeg, iga kord.",
+      "afterText": "Fork on tehtud. Kloon töötab, sõltumata suurusest.",
+      "cardLabel": "Fork Repo",
+      "prose": "Üks käsk kloonib kogu repo: rakenduse, andmebaasi ja konfiguratsioonifailid. Fork'i aeg on konstantne sõltumata repo suurusest, olgu see üks gigabait, sada gigabaiti või üks terabait."
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 142.355671,
-      "text": "Mõlemad repositooriumid eksisteerivad nüüd kõrvuti. Sama masin, sama ketas, kaks täiesti sõltumatut keskkonda. Forkil on oma konteinerid, oma failisüsteem ja oma Dockeri deemon."
+      "at": 13.421721,
+      "text": "Mõlemad repositooriumid eksisteerivad nüüd kõrvuti. Sama masin, sama ketas, kaks täiesti sõltumatut keskkonda. Forkil on oma konteinerid, oma failisüsteem ja oma Dockeri deemon.",
+      "afterText": "Kaks repot, üks ketas. Samad andmed, kõik muu eraldi.",
+      "cardLabel": "Loetle Repos",
+      "prose": "Mõlemad repos asuvad nüüd samal masinal ja kettal kahe täiesti sõltumatu keskkonnana."
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 158.262452,
-      "text": "Tõestame isolatsiooni. Originaalis on meie markerifail täpselt seal, kuhu me selle jätsime. Forki olemasolu ei ole originaalis midagi muutnud."
+      "at": 18.980206,
+      "text": "Tõestame isolatsiooni. Originaalis on meie markerifail täpselt seal, kuhu me selle jätsime. Forki olemasolu ei ole originaalis midagi muutnud.",
+      "afterText": "Originaali fail on endiselt seal. Fork seda ei puutunud.",
+      "cardLabel": "Originaalfail",
+      "prose": "Kontrollige isolatsiooni, uurides algset repo: markerfail on endiselt oma kohal. Ülemrepo jääb fork'i loomisel muutmata."
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 176.185047,
-      "text": "Nüüd kustutame selle faili -- kuid ainult forki sees. Forki sees on see kadunud. Tegime hävitava muudatuse ja see jäi forki sisse."
+      "at": 26.216902,
+      "text": "Nüüd kustutame selle faili -- kuid ainult forki sees. Forki sees on see kadunud. Tegime hävitava muudatuse ja see jäi forki sisse.",
+      "afterText": "Forkis kadunud. Originaal jääb puutumata.",
+      "cardLabel": "Kustuta Fork'ist",
+      "prose": "Kustutage markerfail ainult fork'i sees. See on hävitav muutus, mis piirdub fork'iga."
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 195.030667,
-      "text": "Tagasi originaalile. Markerifail on siin ikka alles, puutumata. Originaal ei teadnud, et midagi juhtus. Samad kujutised, eraldi Dockeri deemonid, eraldi failisüsteemid."
+      "at": 34.456769,
+      "text": "Tagasi originaalile. Markerifail on siin ikka alles, puutumata. Originaal ei teadnud, et midagi juhtus. Samad kujutised, eraldi Dockeri deemonid, eraldi failisüsteemid.",
+      "afterText": "Endiselt siin. Forgid on korralikult isoleeritud.",
+      "cardLabel": "Originaal Puutumata",
+      "prose": "Lülitage tagasi algse repo juurde: markerfail on endiselt puutumata. Ülemrepo ja fork jagavad sama pilti, kuid töötavad eraldi Docker daemonidel ja eraldi failisüsteemidel."
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 212.971596,
-      "text": "Kui oled lõpetanud, kustuta lihtsalt fork. Originaal jääb täpselt selliseks, nagu ta oli. Tee fork, katse, riku asju, kustuta -- riskita."
+      "at": 41.647526,
+      "text": "Kui oled lõpetanud, kustuta lihtsalt fork. Originaal jääb täpselt selliseks, nagu ta oli. Tee fork, katse, riku asju, kustuta -- riskita.",
+      "afterText": "Fork eemaldatud. Originaal on täpselt selline, nagu jätsime.",
+      "cardLabel": "Puhasta",
+      "prose": "Kustutage fork, kui olete lõpetanud. Algne repo jääb mõjutamata, võimaldades turvalist fork, katse ja kõrvaldamise töövoogu."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Tere tulemast tapja-funktsiooni juurde! Klooni terve tootmisrepo sõltumata suurusest ja ära riku midagi."
+    },
+    {
+      "id": "fan-out",
+      "text": "Üks vanemrepo hargneb nii paljudeks sõltumatuteks kloonideks, kui soovid. Iga fork on oma isoleeritud keskkond, mis töötab originaaliga kõrvuti."
+    },
+    {
+      "id": "link-speed",
+      "text": "Mõtle, nagu jagaksid kausta linki. Link on sama kerge asi, olgu kaust väike või tohutu, ja forkimine töötab sama põhimõtte alusel."
+    },
+    {
+      "id": "scale-invariance",
+      "text": "Üks gigabait, sada gigabaiti, üks terabait: fork käitub samamoodi. Repo suurus ei tule võrrandisse."
+    },
+    {
+      "id": "sun-mirrors",
+      "text": "Vanemrepo on päike ja sinu fork on peegel, mis selle valgust püüab. Jagatud alus jääb puutumata, samas kui kõik, mida sa peeglile maalid, kuulub ainult sulle."
+    },
+    {
+      "id": "river-photo",
+      "text": "Fork on vanema külmutatud foto ühel hetkel. Vanem voolab edasi nagu jõgi, kuid sinu hetkpilt jääb täpselt sinna, kus oli."
+    },
+    {
+      "id": "flat-disk",
+      "text": "Viis forki saja gigabaidisest repost moodustavad kettal ikkagi umbes sada gigabaiti. Sa maksad ainult baitide eest, mida tegelikult iga forki sees muudad."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Forgid jätavad saladused tahtlikult maha, mis teebki kloonimise tootmisest -- ilma midagi rikkumata -- tegelikult turvaliseks. Järgmises õpetuses seadistame need korralikult!"
+    }
+  ],
+  "title": "Repository Fork'imine",
+  "chapters": {
+    "intro": "Repository Fork'imine",
+    "fan-out": "Üks ülemrepo, palju sõltumatuid kloone",
+    "link-speed": "Jagame linki, mitte kausta",
+    "scale-invariance": "Sama kiirus igas suuruses",
+    "cast-step-0": "Samm 1: Fork repo",
+    "cast-step-1": "Samm 2: Mõlemad repos kõrvuti",
+    "cast-step-2": "Samm 3: Originaal on puutumata",
+    "sun-mirrors": "Päike ja peegel",
+    "cast-step-3": "Samm 4: Muuda ainult fork'i",
+    "cast-step-4": "Samm 5: Kontrolli, et originaal säilib",
+    "cast-step-5": "Samm 6: Kustuta fork",
+    "river-photo": "Foto jõest",
+    "flat-disk": "Ketta kasutus jääb muutumatuks",
+    "outro": "Järgmine: Saladuste Haldamine"
+  }
 }

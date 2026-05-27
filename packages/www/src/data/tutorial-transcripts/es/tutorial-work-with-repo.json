@@ -6,26 +6,67 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 93.14728,
-      "text": "Primero, el comando tunnel. La app se ejecuta en el servidor, no en tu laptop. El comando repo tunnel del CLI reenvía el puerto de un contenedor por SSH para que puedas abrirlo en localhost en tu navegador."
+      "at": 2.415513,
+      "text": "Primero, el comando tunnel. La app se ejecuta en el servidor, no en tu laptop. El comando repo tunnel del CLI reenvía el puerto de un contenedor por SSH para que puedas abrirlo en localhost en tu navegador.",
+      "afterText": "Puerto reenviado. La app ya es accesible en localhost.",
+      "cardLabel": "Tunelizar un Puerto",
+      "prose": "La app se ejecuta en el servidor, no en tu laptop. El comando tunnel reenvía un puerto de container por SSH para que puedas abrirlo en localhost en tu navegador."
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 103.393386,
-      "text": "Segundo, el comando term. El comando term connect del CLI te lleva dentro del sandbox del repo, la misma vista aislada que te daría VS Code. Ejecuta cualquier comando contra el Docker daemon de este repo sin salir de tu terminal."
+      "at": 9.087333,
+      "text": "Segundo, el comando term. El comando term connect del CLI te lleva dentro del sandbox del repo, la misma vista aislada que te daría VS Code. Ejecuta cualquier comando contra el Docker daemon de este repo sin salir de tu terminal.",
+      "afterText": "Dentro del sandbox del repo. Ejecuta lo que sea como si estuvieras conectado por SSH.",
+      "cardLabel": "Terminal en Sandbox",
+      "prose": "El comando term connect te lleva al sandbox del repo, la misma vista aislada que VS Code. Ejecuta cualquier comando contra el daemon de Docker de este repo sin salir de tu terminal."
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 120.858492,
-      "text": "Antes de subir archivos, usamos la previsualización con guion guion dry guion run. Muestra exactamente qué cambiaría sin copiar nada. Siempre previsualiza cuando no estés seguro."
+      "at": 15.893309,
+      "text": "Antes de subir archivos, usamos la previsualización con guion guion dry guion run. Muestra exactamente qué cambiaría sin copiar nada. Siempre previsualiza cuando no estés seguro.",
+      "afterText": "Solo previsualización. Ningún archivo se movió todavía.",
+      "cardLabel": "Vista Previa Sync",
+      "prose": "Antes de mover archivos, ejecuta sync con --dry-run. Muestra exactamente qué cambiaría sin copiar nada. Haz una vista previa siempre que el origen o el destino sean inciertos."
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 137.357072,
-      "text": "Ahora ejecutamos la subida real. El comando repo sync upload del CLI mueve archivos desde tu laptop al repo por SSH con compresión delta de rsync. Tunnel, term, sync: tres comandos cubren el ciclo diario."
+      "at": 22.144638,
+      "text": "Ahora ejecutamos la subida real. El comando repo sync upload del CLI mueve archivos desde tu laptop al repo por SSH con compresión delta de rsync. Tunnel, term, sync: tres comandos cubren el ciclo diario.",
+      "afterText": "Archivos subidos. La compresión delta se encarga de los árboles grandes.",
+      "cardLabel": "Sync Subida",
+      "prose": "El comando sync upload mueve archivos desde tu laptop al repo por SSH usando compresión delta de rsync. Juntos, tunnel, term y sync cubren el ciclo diario."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "¡Muy bien! Tu app está corriendo, así que vamos a trabajar con ella de verdad. Tres comandos cubren el ciclo diario."
+    },
+    {
+      "id": "daily-three",
+      "text": "Tunnel abre tu app en un navegador, term ejecuta comandos dentro del sandbox y sync mueve archivos de entrada y salida. Ese es el flujo de trabajo diario completo."
+    },
+    {
+      "id": "open-tunnel",
+      "text": "Con el túnel en funcionamiento, la app se abre directamente en tu navegador. En esta demo cargamos rediacc.com, de la misma forma en que accederías a tu propia app servida directamente desde el container."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "¡Y esos son los tres comandos del día a día. Nos vemos en el siguiente!"
+    }
+  ],
+  "title": "Trabajando con Tu Repo",
+  "chapters": {
+    "intro": "Trabajando con Tu Repo",
+    "daily-three": "Los tres diarios: tunnel, term, sync",
+    "cast-step-0": "Tunnel: reenvía un puerto de container",
+    "open-tunnel": "Abre la app en tu navegador",
+    "cast-step-1": "Term: ejecuta comandos en el sandbox",
+    "cast-step-2": "Sync: vista previa con --dry-run",
+    "cast-step-3": "Sync: subida real",
+    "outro": "Siguiente: Fork de un Repositorio"
+  }
 }

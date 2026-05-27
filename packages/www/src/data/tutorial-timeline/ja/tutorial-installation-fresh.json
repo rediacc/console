@@ -1,0 +1,53 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation-fresh.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "4cc33d8021c4f143c09da5f963fdd4ddb34007149663496023cadd630e21317e",
+  "steps": [
+    {
+      "id": "tutorial-installation-fresh-01",
+      "markerIndex": 0,
+      "replayStartSec": 0.667007,
+      "replayEndSec": 9.659113,
+      "narrationText": "クリーンなマシンで始めましょう。1行のインストールコマンドをターミナルに貼り付けて実行してください。スクリプトがプラットフォームを確認し、最新の安定版コマンドラインツールのバイナリをダウンロードして、ホームディレクトリに配置します。sudo 不要、システム全体へのインストールも不要です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation-fresh/tutorial-installation-fresh-01.a5fc6e1f.mp3",
+      "textHash": "a5fc6e1fad40001463dcd06d87a272c3836326d3460b5c5d0defee37b6c38e49",
+      "audioDurationSec": 20.767347,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-installation-fresh/tutorial-installation-fresh-01-after.95d4b620.mp3",
+      "afterAudioDurationSec": 4.205714,
+      "afterTextHash": "95d4b6204c2e23a7bd53856c529810e4fe7c0986e768c4595996f7a997e5b613"
+    },
+    {
+      "id": "tutorial-installation-fresh-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.659113,
+      "replayEndSec": 12.976611,
+      "narrationText": "正しくインストールされたか確認しましょう。バージョンフラグを実行すると、今インストールされたものが正確に表示されるので、コマンドラインツールがパスにあり使用準備ができていることを確認できます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation-fresh/tutorial-installation-fresh-02.16e26081.mp3",
+      "textHash": "16e2608123e06c16fa7099cfd3d153cabd9f3e4fdabcb0a27ad64e0da0645d88",
+      "audioDurationSec": 13.635918,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-installation-fresh/tutorial-installation-fresh-02-after.44b85c8d.mp3",
+      "afterAudioDurationSec": 3.970612,
+      "afterTextHash": "44b85c8d73803b939cd29c00b01a72c599b20e443efaf6377bc74c80d5b5cdb9"
+    },
+    {
+      "id": "tutorial-installation-fresh-03",
+      "markerIndex": 2,
+      "replayStartSec": 12.976611,
+      "replayEndSec": 14.798584,
+      "narrationText": "次に組み込みの診断チェックを実行します。バイナリ、設定、接続性など、環境をエンドツーエンドで検査し、作業を始める前に設定の問題を見つけることができます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-installation-fresh/tutorial-installation-fresh-03.53f1e3d4.mp3",
+      "textHash": "53f1e3d4bfcd7f1a16a28748c2236e6d9eaf2f260776b24664a0563edba2ba2a",
+      "audioDurationSec": 13.00898,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-installation-fresh/tutorial-installation-fresh-03-after.91a01f13.mp3",
+      "afterAudioDurationSec": 5.32898,
+      "afterTextHash": "91a01f13612a1fe60a7762599e0a9637541d427f849b4f6fe3e9e645bcdcd9e8"
+    }
+  ],
+  "narrationAudio": []
+}

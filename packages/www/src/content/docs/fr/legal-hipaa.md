@@ -4,7 +4,8 @@ description: "Comment l'architecture de chiffrement et d'isolation de Rediacc co
 category: "Legal"
 order: 3
 language: fr
-sourceHash: "13bf006e6e3d481f"
+sourceHash: "f5fbdaa4a00491ea"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Le Health Insurance Portability and Accountability Act (HIPAA) est une loi fédérale américaine qui établit des normes pour la protection des informations sensibles de santé des patients (PHI). Il s'applique aux entités couvertes (prestataires de soins, régimes d'assurance maladie, chambres de compensation) et à leurs partenaires commerciaux.
@@ -31,7 +32,7 @@ HIPAA exige des garanties administratives, techniques et physiques. Le tableau c
 |----------|-----------------|
 | Gestion des accès du personnel | Jetons API avec permissions à portée définie. Contrôle d'accès basé sur les équipes. Révocation automatique des jetons lors du retrait d'une équipe. |
 | Procédures d'incidents de sécurité | Les journaux d'audit fournissent une piste forensique de toutes les opérations. L'isolation par dépôt limite le rayon d'impact. |
-| Plan de contingence | `rdc repo backup push/pull` supporte la sauvegarde chiffrée multi-destination. Les snapshots CoW permettent une récupération instantanée. |
+| Plan de contingence | `rdc repo push/pull` supporte la sauvegarde chiffrée multi-destination. Les snapshots CoW permettent une récupération instantanée. |
 
 ### Garanties physiques
 

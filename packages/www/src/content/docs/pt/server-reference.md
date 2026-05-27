@@ -4,6 +4,8 @@ description: "Estrutura de directórios, comandos renet, serviços systemd e flu
 category: "Concepts"
 order: 3
 language: pt
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Referência do Servidor
@@ -113,6 +115,31 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 
 `sandbox-exec` aplica restricoes do sistema de ficheiros Landlock LSM e depois executa o comando fornecido. E invocado automaticamente pelo `sandbox-gateway` (o handler SSH ForceCommand) para todas as conexoes ao nivel do repositorio.
 
+### Hub por utilizador (ambientes de desenvolvimento)
+
+O Hub fornece a cada utilizador o seu proprio daemon Docker para ambientes de desenvolvimento, separado dos daemons `FlavorRediacc` por repositorio.
+
+```bash
+# Instalar / remover as unidades systemd do Hub por utilizador
+sudo renet hub install
+sudo renet hub uninstall
+
+# Recolher daemons Hub por utilizador inactivos
+sudo renet hub gc
+```
+
+Os daemons correm sob um de dois flavors, seleccionado com `--flavor`:
+
+```bash
+# Daemon isolado por repositorio (bridge=none, iptables=false) — o padrao
+sudo renet daemon start-foreground --flavor=rediacc ...
+
+# Daemon Hub por utilizador (bridge=docker0, iptables=true, live-restore=true)
+sudo renet daemon start-foreground --flavor=hub ...
+```
+
+O flavor `hub` activa a rede bridge normal para que os contentores do utilizador tenham conectividade de saida; o flavor `rediacc` enforaca o isolamento loopback entre repositorios. Os registos de auditoria do Hub sao escritos em `/var/log/rediacc/hub/<user>.log`.
+
 **Flags:**
 - `--allow-rw`, `--allow-ro`, `--allow-exec`: regras de caminho Landlock
 - `--home-overlay`: monta OverlayFS sobre o diretorio home para isolamento de escrita por repositorio
@@ -216,6 +243,8 @@ Servicos globais partilhados entre todos os repositorios:
 |---------|-----------|
 | `rediacc-router.service` | Descoberta de rotas (porta 7111) |
 | `rediacc-autostart.service` | Montagem de repositorios no arranque |
+| `rediacc-autostart-reconcile.service` | Reconciliador periódico de autostart (executado pelo temporizador seguinte) |
+| `rediacc-autostart-reconcile.timer` | Dispara `renet repository reconcile` aproximadamente a cada 3 minutos para recuperar repositórios de autostart que ficaram inactivos após o arranque |
 
 ## Fluxos de Trabalho Comuns
 

@@ -6,26 +6,62 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 65.053708,
-      "text": "Passo um. Vamos importar uma configuração rclone existente. O rclone suporta S3, Backblaze, Google Drive, Dropbox e muitos outros. Se já o utiliza, a mesma configuração pode ser importada diretamente."
+      "at": 2.424169,
+      "text": "Passo um. Vamos importar uma configuração rclone existente. O rclone suporta S3, Backblaze, Google Drive, Dropbox e muitos outros. Se já o utiliza, a mesma configuração pode ser importada diretamente.",
+      "afterText": "Armazenamento importado. A sua CLI já pode enviar cópias de segurança para ele.",
+      "cardLabel": "Importar Armazenamento",
+      "prose": "Importe uma configuração rclone existente. O rclone suporta S3, Backblaze, Google Drive, Dropbox e muito mais. Se você já usa rclone, a mesma configuração é importada diretamente."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 73.743501,
-      "text": "Vamos listar os armazenamentos que a ferramenta conhece agora. Cada um é um destino para onde podemos enviar cópias de segurança."
+      "at": 6.651448,
+      "text": "Vamos listar os armazenamentos que a ferramenta conhece agora. Cada um é um destino para onde podemos enviar cópias de segurança.",
+      "afterText": "Aqui está. Pronto a receber cópias de segurança.",
+      "cardLabel": "Listar Armazenamentos",
+      "prose": "Liste os armazenamentos que a CLI conhece agora. Cada um é um destino para backups."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 82.843959,
-      "text": "Passo dois. Vamos enviar uma cópia de segurança completa. O repositório inteiro -- aplicação, base de dados, ficheiros, configuração -- é carregado. Como o repositório está encriptado em repouso, a cópia de segurança também fica encriptada. Sem gestão adicional de chaves."
+      "at": 10.354487,
+      "text": "Passo dois. Vamos enviar uma cópia de segurança completa. O repositório inteiro -- aplicação, base de dados, ficheiros, configuração -- é carregado. Como o repositório está encriptado em repouso, a cópia de segurança também fica encriptada. Sem gestão adicional de chaves.",
+      "afterText": "Cópia de segurança enviada. Tudo neste repositório está agora no armazenamento remoto, encriptado.",
+      "cardLabel": "Enviar Backup",
+      "prose": "Envie um backup completo. O repository inteiro é carregado, incluindo o app, banco de dados, arquivos e configuração. Como o repository é criptografado em repouso, o backup também é criptografado, sem gerenciamento adicional de chaves."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 94.515541,
-      "text": "E aqui estão as cópias de segurança disponíveis neste armazenamento. A partir daqui, restaurar num servidor novo é um único comando: o comando de restauração do repositório."
+      "at": 18.28182,
+      "text": "E aqui estão as cópias de segurança disponíveis neste armazenamento. A partir daqui, restaurar num servidor novo é um único comando: o comando de restauração do repositório.",
+      "afterText": "Todos os seus snapshots num só sítio. Recupere qualquer um com um único comando.",
+      "cardLabel": "Listar Backups",
+      "prose": "Liste os backups disponíveis neste armazenamento. Restaurar em um servidor totalmente novo é apenas um comando: o comando repo pull."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "A sua aplicação está no ar, por isso vamos garantir que nunca a perde! Neste tutorial enviamos o repositório inteiro para armazenamento externo e recuperamo-lo quando precisarmos."
+    },
+    {
+      "id": "three-steps",
+      "text": "A cópia de segurança e a restauração resumem-se a três passos. Configurar um fornecedor de armazenamento, enviar uma cópia e restaurá-la quando for necessário."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Os seus dados estão seguros e portáveis entre máquinas. Até ao próximo!"
+    }
+  ],
+  "title": "Backup e Restauração",
+  "chapters": {
+    "intro": "Backup e Restauração",
+    "three-steps": "Três etapas: configurar, enviar, restaurar",
+    "cast-step-0": "Etapa 1: Importar a configuração rclone",
+    "cast-step-1": "Etapa 2: Listar armazenamentos configurados",
+    "cast-step-2": "Etapa 3: Enviar um backup completo",
+    "cast-step-3": "Etapa 4: Listar backups no armazenamento",
+    "outro": "Próximo: Monitoramento"
+  }
 }

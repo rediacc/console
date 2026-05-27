@@ -1,0 +1,112 @@
+WEBVTT
+
+00:00:01.080 --> 00:00:01.400
+Alright!
+
+00:00:01.640 --> 00:00:03.880
+Your app is live and backed up, now let's make
+
+00:00:03.880 --> 00:00:04.840
+sure it stays healthy.
+
+00:00:05.804 --> 00:00:08.524
+The CLI gives you a full picture of any
+
+00:00:08.524 --> 00:00:11.484
+server from your laptop. Three angles to check
+
+00:00:12.124 --> 00:00:14.684
+: system health, running containers, and
+
+00:00:14.684 --> 00:00:16.364
+the repositories themselves.
+
+00:00:19.831 --> 00:00:22.631
+Let us start with the system view. The machine query
+
+00:00:22.631 --> 00:00:25.831
+command with the system filter shows uptime, disk
+
+00:00:25.831 --> 00:00:27.751
+usage, and storage status.
+
+00:00:27.955 --> 00:00:30.835
+Uptime, disk, storage. Everything you
+
+00:00:30.835 --> 00:00:31.635
+need at a glance.
+
+00:00:35.175 --> 00:00:38.055
+Now containers. This view lists every running
+
+00:00:38.055 --> 00:00:40.775
+container across every repository on the machine
+
+00:00:41.015 --> 00:00:43.975
+: name, status, health, CPU
+
+00:00:44.135 --> 00:00:46.695
+, memory, plus which repo owns each
+
+00:00:46.695 --> 00:00:47.015
+one.
+
+00:00:47.217 --> 00:00:49.777
+Every container across every repo
+
+00:00:49.937 --> 00:00:50.897
+, in one view.
+
+00:00:54.326 --> 00:00:57.126
+And the repos themselves. Size, mount
+
+00:00:57.126 --> 00:00:59.926
+status, Docker daemon status, disk
+
+00:01:01.366 --> 00:01:03.926
+usage. Everything you need to know about each isolated environment.
+
+00:01:04.044 --> 00:01:06.684
+All repos, all their daemons, all their
+
+00:01:06.684 --> 00:01:07.804
+disk usage.
+
+00:01:11.237 --> 00:01:13.877
+The machine query command with no filters gives you
+
+00:01:13.957 --> 00:01:16.597
+everything in one shot. System info
+
+00:01:16.917 --> 00:01:19.797
+, containers, repositories, all together.
+
+00:01:19.910 --> 00:01:22.390
+Everything together, no filter needed.
+
+00:01:25.907 --> 00:01:28.787
+And finally the diagnostic check for a local sanity
+
+00:01:28.787 --> 00:01:31.987
+check on your laptop. Node, SSH
+
+00:01:32.707 --> 00:01:36.147
+key, renet, Docker. All the things the CLI itself depends on. That is the full series. From install to mon
+
+00:01:38.387 --> 00:01:40.947
+itoring, all from your terminal.
+
+00:01:41.136 --> 00:01:43.856
+All green means your local CLI is healthy.
+
+00:01:44.774 --> 00:01:47.334
+And that wraps the series. You can now
+
+00:01:47.334 --> 00:01:50.134
+install, configure, deploy, fork, go
+
+00:01:50.134 --> 00:01:52.774
+live, autostart, back up, and monitor
+
+00:01:53.094 --> 00:01:54.294
+, all from your terminal!

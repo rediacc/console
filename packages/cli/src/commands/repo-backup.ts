@@ -6,6 +6,7 @@ import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { getSubscriptionTokenState } from '../services/subscription-auth.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
@@ -190,11 +191,17 @@ async function resolvePushTarget(
 }
 
 /** Deploy repo on target machine after a backup push. */
-async function postPushDeploy(
+export async function postPushDeploy(
   repo: string,
   targetName: string,
   options: Record<string, unknown>
 ): Promise<void> {
+  const tokenState = getSubscriptionTokenState();
+  if (tokenState.kind !== 'ready') {
+    outputService.error(t('errors.license.preflightTokenNotReady', { machine: targetName }));
+    process.exitCode = 1;
+    return;
+  }
   outputService.info(t('commands.repo.push.deploying', { repo, machine: targetName }));
   await deployRepoKeyIfNeeded(repo, targetName);
   const upResult = await localExecutorService.execute({
@@ -289,6 +296,12 @@ async function postPullDeploy(
   targetMachine: string,
   options: Record<string, unknown>
 ): Promise<void> {
+  const tokenState = getSubscriptionTokenState();
+  if (tokenState.kind !== 'ready') {
+    outputService.error(t('errors.license.preflightTokenNotReady', { machine: targetMachine }));
+    process.exitCode = 1;
+    return;
+  }
   outputService.info(t('commands.repo.pull.deploying', { repo, machine: targetMachine }));
   await deployRepoKeyIfNeeded(repo, targetMachine);
   const upResult = await localExecutorService.execute({

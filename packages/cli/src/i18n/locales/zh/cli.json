@@ -26,10 +26,6 @@
         "fetching": "正在获取实体历史...",
         "success": "历史已获取"
       },
-      "list": {
-        "description": "列出审计日志条目",
-        "fetching": "正在获取审计日志..."
-      },
       "log": {
         "description": "查看审计日志",
         "fetching": "正在获取审计日志...",
@@ -490,6 +486,8 @@
         "add": {
           "description": "将机器添加到当前配置",
           "descriptionShort": "将机器添加到当前配置",
+          "sshConfigFailed": "写入 SSH 别名失败（非致命）：{{error}}",
+          "sshConfigWritten": "已将 SSH 别名 rediacc--{{name}} 写入 ~/.ssh/config_rediacc",
           "success": "已添加机器 \"{{name}}\" ({{user}}@{{ip}})"
         },
         "description": "管理当前配置中的机器",
@@ -499,6 +497,7 @@
         },
         "remove": {
           "description": "从当前配置中移除机器",
+          "sshConfigCleared": "已移除 SSH 别名 rediacc--{{name}}",
           "success": "已移除机器 \"{{name}}\""
         },
         "scanKeys": {
@@ -652,14 +651,6 @@
         "description": "设置默认值（team、region、bridge）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
       },
-      "setRenet": {
-        "description": "为本地模式设置 renet 二进制文件路径",
-        "success": "Renet 路径已设置为：{{path}}"
-      },
-      "setSsh": {
-        "description": "更新当前配置的 SSH 配置",
-        "success": "SSH 配置已更新"
-      },
       "show": {
         "description": "显示当前配置详情",
         "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init",
@@ -733,6 +724,11 @@
         "starting": "正在\"{{machine}}\"上初始化数据存储..."
       },
       "machineOption": "机器名称（Ceph数据存储所在位置）",
+      "resize": {
+        "description": "离线调整机器数据存储池大小（扩展或缩减）。所有仓库必须先卸载。",
+        "sizeOption": "新的数据存储大小（例如 100G、95%）",
+        "starting": "正在将 \"{{machine}}\" 上的数据存储调整为 {{size}}..."
+      },
       "status": {
         "description": "显示数据存储后端、大小、使用情况、挂载状态和cow_mode（如果已分叉）",
         "starting": "正在检查\"{{machine}}\"上的数据存储状态..."
@@ -927,8 +923,10 @@
         "datastoreCompleted": "数据存储清理完成",
         "datastoreFailed": "数据存储清理失败",
         "datastoreOnlyOption": "仅清理孤立的数据存储资源",
+        "datastorePrunedSummary": "已清理 {{count}} 个孤立的数据存储资源",
         "description": "从机器中移除孤立的数据存储资源和过期快照",
         "descriptionShort": "清理孤立资源和过期快照",
+        "dryRunHint": "将移除 {{count}} 个资源。不带 --dry-run 重新运行以移除它们。",
         "dryRunOption": "显示将被移除的内容，但不做实际更改",
         "forceDeleteMountedOption": "覆盖挂载安全预检并删除仓库，即使它们当前已挂载或有正在运行的 Docker 容器。与 --force 不同（后者仅覆盖归档宽限期）。适用于 --orphaned-repos 和 --prune-unknown。",
         "noReposFound": "在机器上未找到仓库",
@@ -937,6 +935,7 @@
         "orphanedReposCompleted": "已清理 {{count}} 个孤立仓库",
         "orphanedReposOption": "同时清理不在任何配置中的仓库镜像",
         "orphanedReposStarting": "正在扫描 {{machine}} 上的孤立仓库...",
+        "previewEmpty": "未找到孤立的数据存储资源",
         "pruneUnknownOption": "仅删除 renet .interim/state 镜像无法分类的仓库（不在本地配置中且没有标记为 fork 的镜像）。比 --orphaned-repos 严格更窄：镜像识别时保留没有配置的 fork。镜像前的遗留孤儿和配置条目已删除的过时 grands 都属于此类别。",
         "snapshotDeleted": "已删除 {{name}}",
         "snapshotDeleting": "正在删除 {{name}}...",
@@ -958,7 +957,9 @@
         "fetching": "正在从 {{machine}} 获取状态...",
         "infrastructure": "基础设施",
         "noData": "无可用状态数据",
+        "storageHealthFragmentationNote": "碎片化统计的是每个仓库的写时复制（copy-on-write）镜像中的区段（extent）数量，而非其中的文件。在随机写入的工作负载（数据库、容器分层）下出现较高值属正常现象，仅供参考。此处有意不支持碎片整理：它会解除通过 reflink 共享的分支（fork）和备份快照的共享，并使数据存储用量膨胀。",
         "storageHealthHint": "提示：使用 --storage-health 运行可查看每个仓库的 BTRFS 碎片化情况和 reflink 节省量",
+        "storageHealthSummary": "存储效率：{{summary}}",
         "strictDriftDetected": "--strict: {{count}} 个容器超过漂移阈值；以非零状态退出",
         "syncCertsFailed": "证书缓存同步失败：{{error}}"
       },
@@ -1004,11 +1005,6 @@
         "timeoutMessage": "测试连接超时。检查队列跟踪以获取详细信息。",
         "waiting": "正在等待 SSH 测试结果...",
         "waitingTime": "正在等待 SSH 测试结果...（{{seconds}}s）"
-      },
-      "update": {
-        "description": "更新机器配置",
-        "success": "机器 \"{{name}}\" 已更新",
-        "updating": "正在更新机器..."
       },
       "vault": {
         "description": "机器保险库管理 (仅限云适配器)"
@@ -1120,10 +1116,6 @@
         "notFound": "未找到组织信息",
         "success": "组织信息已获取"
       },
-      "list": {
-        "description": "列出组织",
-        "fetching": "正在获取组织..."
-      },
       "maintenance": {
         "description": "启用或禁用维护模式（阻止非管理员登录）",
         "disabled": "维护模式已禁用",
@@ -1181,10 +1173,6 @@
           "fetching": "正在获取权限组详情...",
           "success": "详情已获取"
         }
-      },
-      "list": {
-        "description": "列出权限",
-        "fetching": "正在获取权限..."
       },
       "remove": {
         "description": "从组中移除权限",
@@ -1335,6 +1323,18 @@
       "batchIterating": "{{action}} {{current}}/{{total}}：\"{{repo}}\"...",
       "batchResult": "{{action}} 完成：{{succeeded}}/{{total}} 成功",
       "batchStarting": "{{action}}：\"{{repo}}\"...",
+      "cat": {
+        "description": "读取仓库内文件的有界窗口并写入 stdout（服务端限制；诊断信息输出到 stderr）",
+        "failed": "读取失败",
+        "forceBinaryOption": "允许读取二进制（含 NUL）内容",
+        "headOption": "仅打印前 N 行（不能与字节范围组合使用）",
+        "maxBytesOption": "最大读取和打印字节数（默认 1 MiB，上限 50 MiB）",
+        "offsetOption": "开始读取的字节偏移量",
+        "remoteFileOption": "要读取的文件路径，相对于仓库挂载根目录",
+        "starting": "正在从 \"{{machine}}\" 上的 \"{{repository}}\" 读取 \"{{path}}\"...",
+        "statOption": "仅打印大小、类型和修改时间；不读取内容",
+        "tailOption": "仅打印最后 N 行（不能与字节范围组合使用）"
+      },
       "certSync": {
         "updated": "已从 {{machine}} 更新 ACME 证书缓存（{{count}} 个证书）"
       },
@@ -1353,6 +1353,7 @@
         "archived": "\"{{repository}}\" 的凭据已归档",
         "archiveHint": "要归档凭据以便恢复: 使用 --archive-config 重新运行",
         "archiveOption": "将配置条目移至 deletedRepositories 以便后续恢复",
+        "cloudBackupHint": "云备份（如有）在删除后仍会保留。使用以下命令删除孤立的云备份：rdc storage prune --name <storage> -m {{machine}}",
         "completed": "仓库已删除",
         "configRetained": "\"{{repository}}\" 的配置条目已保留 (仓库可能存在于其他机器上)。要移除: rdc config repository remove --name {{repository}}",
         "description": "删除仓库（销毁容器、卷和加密镜像）。配置条目将被保留。使用 --archive-config 将凭据移至 deletedRepositories，可通过 'config restore-archived' 恢复",
@@ -1387,7 +1388,7 @@
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "checkpointOption": "fork 前在源上创建 CRIU checkpoint（捕获进程内存状态以便在 fork 上恢复）",
-        "completed": "Fork已创建。本地部署: repo up {{repository}} -m {{machine}} --mount。将fork迁移到另一台机器: repo push {{repository}} -m {{machine}} --to <target> --up",
+        "completed": "Fork已创建。本地部署: repo up {{repository}} -m {{machine}}。将fork迁移到另一台机器: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "创建仓库的 CoW（写时复制）分支",
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
         "failed": "分支创建失败",
@@ -1402,6 +1403,7 @@
         "completed": "列表获取完成",
         "description": "列出机器上的仓库",
         "failed": "列出失败: {{error}}",
+        "serverNameLegend": "* 名称读取自机器（不在您的本地配置中）",
         "starting": "正在列出 \"{{machine}}\" 上的仓库..."
       },
       "machineOption": "目标机器名称",
@@ -1524,25 +1526,6 @@
         },
         "valueOption": "密钥值。传递 `-` 以从 stdin 读取（避免在 shell 历史记录中暴露）。"
       },
-      "snapshot": {
-        "create": {
-          "creating": "正在 {{machine}} 上创建 \"{{repo}}\" 的快照...",
-          "description": "创建仓库的 BTRFS 快照",
-          "descriptionShort": "创建仓库的 BTRFS 快照",
-          "optionSnapshotName": "显式快照名称（为空时自动生成）",
-          "success": "快照已创建: {{name}}（{{path}}）"
-        },
-        "delete": {
-          "description": "从远程机器上删除快照",
-          "success": "快照已删除: {{name}}"
-        },
-        "description": "管理远程机器上的 BTRFS 快照",
-        "list": {
-          "description": "列出远程机器上的快照",
-          "header": "{{path}} 中有 {{count}} 个快照:",
-          "noSnapshots": "未找到快照。"
-        }
-      },
       "status": {
         "completed": "状态已获取",
         "description": "获取仓库状态",
@@ -1554,19 +1537,6 @@
         "download": {
           "description": "从仓库下载文件",
           "descriptionShort": "通过 rsync 从仓库下载文件"
-        },
-        "pull": {
-          "description": "从云存储拉取仓库（省略名称则拉取全部）",
-          "optionFrom": "源存储名称",
-          "optionOverride": "拉取时覆盖现有的未挂载仓库",
-          "optionRepo": "筛选特定仓库（可重复）",
-          "success": "同步拉取完成"
-        },
-        "push": {
-          "description": "将仓库推送到云存储（省略名称则推送全部）",
-          "optionRepo": "筛选特定仓库（可重复）",
-          "optionTo": "目标存储名称",
-          "success": "同步推送完成"
         },
         "status": {
           "description": "检查同步状态并比较本地/远程文件",
@@ -1650,7 +1620,6 @@
       "upAll": {
         "completed": "所有仓库已启动",
         "concurrencyOption": "最大并发仓库数 (默认: 3)",
-        "description": "部署机器上的所有仓库",
         "dryRunOption": "显示将要执行的操作而不实际执行",
         "failed": "全部启动操作失败",
         "includeForksOption": "同时挂载/启动分叉的仓库",
@@ -1770,15 +1739,6 @@
         "listing": "正在列出 \"{{storage}}\" 中的备份...",
         "machineOption": "执行机器：对存储运行 rclone list/delete 调用。必需，因为客户端不应在本地安装 rclone；存储凭据仍来自你的本地配置。",
         "noBackups": "存储中未找到备份"
-      },
-      "pull": {
-        "completed": "拉取完成，耗时 {{duration}}ms",
-        "description": "从云存储拉取备份到机器",
-        "failed": "拉取失败: {{error}}",
-        "machineOption": "目标机器名称",
-        "noCredential": "警告: 仓库 \"{{name}}\" 未设置凭证。如果备份已加密，拉取可能会失败。",
-        "repositoryOption": "要拉取的仓库名称",
-        "starting": "正在将 \"{{repository}}\" 从 \"{{storage}}\" 拉取到 \"{{machine}}\"..."
       },
       "rename": {
         "description": "重命名存储提供商"
@@ -2251,7 +2211,7 @@
           "afterDescription": "health 命令输出系统指标、容器状态、服务稳定性和存储信息 — 适用于 CI/CD 管道检查。"
         },
         "testConnection": {
-          "tip": "使用 `--save-known-hosts` 在测试成功后自动将主机密钥持久化到机器保险库中。"
+          "tip": "使用 `--save` 在测试成功后自动将主机密钥持久化到机器保险库中。"
         }
       },
       "organization": {
@@ -2292,7 +2252,7 @@
       "createGuardOverrideNonLinux": "无法创建新的 grand 仓库 \"{{name}}\"。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n请改为 fork 现有仓库：\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
       "fieldReveal": "在代理环境中禁止对敏感字段 {{pointer}} 使用 --reveal。代理应改用 --digest。真正用户在交互式终端可使用 --reveal。",
       "forkBlocked": "命令 \"{{command}}\" 在 fork 仓库上不可用。\n\nFork 仓库是临时沙箱环境。此操作仅适用于 grand（生产）仓库。请要求用户直接运行此命令。",
-      "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up --name {{name}}:<tag-name> -m <machine> --mount）\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
+      "grandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\nGrand 仓库包含生产数据。请改用 fork — fork 是安全、隔离的沙箱副本。\n\n工作流程：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作（例如：rdc repo up --name {{name}}:<tag-name> -m <machine>）\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n用户提示：要允许直接访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
       "grandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO — 只有用户可以在代理启动前授权此操作。\n\n请改用 fork — fork 是安全、隔离的沙箱副本：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork",
       "grandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖在 {{platform}} 上不受支持。\n\n此覆盖仅在 Linux 上有效。在 Windows 和 macOS 上，代理必须使用 fork 优先工作流程。\n\n工作流程：\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. 在 fork 上操作\n  3. 完成后，用户可以使用 rdc repo takeover 提升 fork\n\n要使用覆盖，请在 Linux 上运行您的代理（直接运行、WSL、Docker 或 VM）。",
       "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\n用户提示：要允许直接机器访问，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
@@ -2344,6 +2304,12 @@
     "invalidPort": "无效的端口号：\"{{port}}\"。必须在 1 到 65535 之间。",
     "invalidPriorityMax": "无效的优先级-最大值。必须在 1 到 5 之间。",
     "invalidPriorityMin": "无效的优先级-最小值。必须在 1 到 5 之间。",
+    "license": {
+      "preflightTokenNotReady": "订阅令牌尚未就绪。请运行：rdc subscription login。已跳过部署到 {{machine}}。",
+      "recoveryFailedNoKnownRepos": "在 {{machine}} 上发现了仓库，但本地配置中未追踪任何仓库。请运行 `rdc config repository list`, 列出已追踪的仓库，然后重试。",
+      "recoveryFailedServerRejected": "账户服务器拒绝为该仓库签发许可证。首个错误：{{error}}。请运行：rdc subscription refresh repo --name <repo> -m {{machine}} 获取详情。",
+      "recoveryFailedTokenNotReady": "订阅令牌尚未就绪。请运行：rdc subscription login，然后重试。"
+    },
     "machineNotFound": "机器 \"{{name}}\" 未找到",
     "machineRequired": "需要机器名称。使用 --machine <name>",
     "machineRequiredLocal": "需要机器名称。使用 --machine <name>",
@@ -2461,7 +2427,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  代理模式\n    • 仅限分支: 在对任何仓库进行更改之前创建分支\n    • Grand (非分支) 仓库对代理为只读\n    • 工作流: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "agentMode": "\n  代理模式\n    • 仅限分支: 在对任何仓库进行更改之前创建分支\n    • Grand (非分支) 仓库对代理为只读\n    • 工作流: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "显示机器状态",
       "repoUp": "部署仓库服务",

@@ -334,7 +334,12 @@ ensure_renet_built() {
 
     check_go_installed
     local build_flags=""
-    if [[ "${RDC_BENCH:-0}" != "1" ]]; then
+    # Drop --nolicense when RDC_BENCH=1 (real bench environment) OR
+    # RDC_RENET_LICENSE=1 (opt-in license-enforcing dev build, used to
+    # reproduce license-flow bugs like rediacc/console#482 locally).
+    if [[ "${RDC_BENCH:-0}" == "1" || "${RDC_RENET_LICENSE:-0}" == "1" ]]; then
+        build_flags=""
+    else
         build_flags="--nolicense"
     fi
     (cd "$renet_dir" && ./build.sh dev $build_flags)

@@ -6,38 +6,107 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 108.099445,
-      "text": "Maintenant le fork. Une seule commande va cloner le dépôt entier, l'application, la base de données, les fichiers de configuration, en quelques secondes, quelle que soit la taille. 1 gigaoctet, 100 gigaoctets, 1 téraoctet : même temps, à chaque fois."
+      "at": 2.41277,
+      "text": "Maintenant le fork. Une seule commande va cloner le dépôt entier, l'application, la base de données, les fichiers de configuration, en quelques secondes, quelle que soit la taille. 1 gigaoctet, 100 gigaoctets, 1 téraoctet : même temps, à chaque fois.",
+      "afterText": "Fork terminé. Le clone est en place et opérationnel, quelle que soit sa taille.",
+      "cardLabel": "Forker le Repo",
+      "prose": "Une seule commande clone l'intégralité du repo : l'application, la base de données et les fichiers de configuration. Le temps de fork est constant quelle que soit la taille du repo, qu'il s'agisse d'un gigaoctet, cent gigaoctets ou un téraoctet."
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 142.355671,
-      "text": "Les deux dépôts existent maintenant côte à côte. Même machine, même disque, deux environnements complètement indépendants. Le fork a ses propres conteneurs, son propre système de fichiers et son propre daemon Docker."
+      "at": 13.421721,
+      "text": "Les deux dépôts existent maintenant côte à côte. Même machine, même disque, deux environnements complètement indépendants. Le fork a ses propres conteneurs, son propre système de fichiers et son propre daemon Docker.",
+      "afterText": "Deux repos, un seul disque. Mêmes données, tout le reste séparé.",
+      "cardLabel": "Lister les Repos",
+      "prose": "Les deux repos coexistent désormais sur la même machine et le même disque en tant qu'environnements entièrement indépendants."
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 158.262452,
-      "text": "Prouvons l'isolation. Dans l'original, notre fichier marqueur est exactement là où nous l'avons laissé. L'existence du fork n'a rien changé dans le parent."
+      "at": 18.980206,
+      "text": "Prouvons l'isolation. Dans l'original, notre fichier marqueur est exactement là où nous l'avons laissé. L'existence du fork n'a rien changé dans le parent.",
+      "afterText": "Fichier d'origine toujours là. Le fork n'y a pas touché.",
+      "cardLabel": "Fichier Original",
+      "prose": "Vérifiez l'isolation en inspectant le repo original : le fichier marqueur est toujours en place. Créer un fork ne modifie pas le parent."
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 176.185047,
-      "text": "Voyons maintenant ce qui se passe si nous supprimons ce fichier, mais uniquement dans le fork. Dans le fork, il a disparu. Nous avons fait un changement destructif, et il est resté dans le fork."
+      "at": 26.216902,
+      "text": "Voyons maintenant ce qui se passe si nous supprimons ce fichier, mais uniquement dans le fork. Dans le fork, il a disparu. Nous avons fait un changement destructif, et il est resté dans le fork.",
+      "afterText": "Disparu dans le fork. L'original reste intact.",
+      "cardLabel": "Supprimer dans le Fork",
+      "prose": "Supprimez le fichier marqueur uniquement dans le fork. Il s'agit d'une modification destructive limitée au fork."
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 195.030667,
-      "text": "Retournons à l'original. Le fichier marqueur est toujours là, intact. L'original n'a rien su de ce qui s'est passé. Même image, daemons Docker séparés, systèmes de fichiers séparés."
+      "at": 34.456769,
+      "text": "Retournons à l'original. Le fichier marqueur est toujours là, intact. L'original n'a rien su de ce qui s'est passé. Même image, daemons Docker séparés, systèmes de fichiers séparés.",
+      "afterText": "Toujours là. Les forks sont correctement isolés.",
+      "cardLabel": "Original Intact",
+      "prose": "Revenez au repo original : le fichier marqueur est toujours intact. Le parent et le fork partagent la même image mais s'exécutent sur des Docker daemons distincts et des systèmes de fichiers séparés."
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 212.971596,
-      "text": "Quand vous avez terminé, supprimez simplement le fork. L'original reste exactement comme il était. Forkez, expérimentez, cassez des choses, supprimez. Aucun risque."
+      "at": 41.647526,
+      "text": "Quand vous avez terminé, supprimez simplement le fork. L'original reste exactement comme il était. Forkez, expérimentez, cassez des choses, supprimez. Aucun risque.",
+      "afterText": "Fork supprimé. L'original est exactement tel que nous l'avions laissé.",
+      "cardLabel": "Nettoyer",
+      "prose": "Supprimez le fork une fois terminé. Le repo original n'est pas affecté, ce qui permet un workflow sûr de fork, d'expérimentation et de suppression."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Bienvenue dans la fonctionnalité phare ! Clonez un repo de production entier, quelle que soit sa taille, sans rien casser."
+    },
+    {
+      "id": "fan-out",
+      "text": "Un repo parent se démultiplie en autant de clones indépendants que vous le souhaitez. Chaque fork est son propre environnement isolé, tournant côte à côte avec l'original."
+    },
+    {
+      "id": "link-speed",
+      "text": "Pensez à partager un lien vers un dossier. Le lien est la même chose, léger, que le dossier soit petit ou énorme. Le fork fonctionne sur le même principe."
+    },
+    {
+      "id": "scale-invariance",
+      "text": "Un gigaoctet, cent gigaoctets, un téraoctet : le fork se comporte pareil. La taille du repo n'entre pas dans l'équation."
+    },
+    {
+      "id": "sun-mirrors",
+      "text": "Le repo parent est le soleil et votre fork un miroir qui en capte la lumière. La base partagée reste intacte, et tout ce que vous peignez sur le miroir n'appartient qu'à vous."
+    },
+    {
+      "id": "river-photo",
+      "text": "Un fork est une photographie figée du parent à un instant donné. Le parent continue à couler comme une rivière, mais votre instantané reste exactement où il était."
+    },
+    {
+      "id": "flat-disk",
+      "text": "Cinq forks d'un repo de cent gigaoctets pèsent toujours environ cent gigaoctets sur le disque. Vous ne payez que les octets réellement modifiés à l'intérieur de chaque fork."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Les forks laissent volontairement les secrets derrière eux, ce qui rend réellement sûr le « cloner la production sans rien casser ». Nous les câblons proprement dans le prochain tutoriel !"
+    }
+  ],
+  "title": "Forker un Repository",
+  "chapters": {
+    "intro": "Forker un Repository",
+    "fan-out": "Un parent, plusieurs clones indépendants",
+    "link-speed": "Partager un lien, pas le dossier",
+    "scale-invariance": "La même vitesse quelle que soit la taille",
+    "cast-step-0": "Étape 1 : Forker le repo",
+    "cast-step-1": "Étape 2 : Les deux repos côte à côte",
+    "cast-step-2": "Étape 3 : L'original est intact",
+    "sun-mirrors": "Le soleil et le miroir",
+    "cast-step-3": "Étape 4 : Modifier uniquement le fork",
+    "cast-step-4": "Étape 5 : Vérifier que l'original survit",
+    "cast-step-5": "Étape 6 : Supprimer le fork",
+    "river-photo": "Une photo de la rivière",
+    "flat-disk": "L'utilisation du disque reste stable",
+    "outro": "Suivant : Gérer les Secrets"
+  }
 }

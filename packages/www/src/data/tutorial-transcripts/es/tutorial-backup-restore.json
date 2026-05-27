@@ -6,26 +6,62 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 65.053708,
-      "text": "Paso uno. Importamos una configuración de rclone existente. rclone soporta S3, Backblaze, Google Drive, Dropbox y muchos más. Si ya lo usas, puedes importar la misma configuración directamente."
+      "at": 2.424169,
+      "text": "Paso uno. Importamos una configuración de rclone existente. rclone soporta S3, Backblaze, Google Drive, Dropbox y muchos más. Si ya lo usas, puedes importar la misma configuración directamente.",
+      "afterText": "Almacenamiento importado. Tu CLI ya puede enviar backups a él.",
+      "cardLabel": "Importar Almacenamiento",
+      "prose": "Importa una configuración de rclone existente. rclone es compatible con S3, Backblaze, Google Drive, Dropbox y muchos más. Si ya usas rclone, la misma configuración se importa directamente."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 73.743501,
-      "text": "Listamos los almacenamientos que el CLI conoce ahora. Cada almacenamiento es un destino al que podemos enviar backups."
+      "at": 6.651448,
+      "text": "Listamos los almacenamientos que el CLI conoce ahora. Cada almacenamiento es un destino al que podemos enviar backups.",
+      "afterText": "Ahí está. Listo para recibir backups.",
+      "cardLabel": "Listar Almacenamientos",
+      "prose": "Lista los almacenamientos que la CLI ya conoce. Cada uno es un destino para las copias de seguridad."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 82.843959,
-      "text": "Paso dos. Enviamos un backup completo. El repositorio entero, app, base de datos, archivos y configuración, se sube. Como el repositorio está cifrado en reposo, el backup también está cifrado. Sin gestión de claves adicional."
+      "at": 10.354487,
+      "text": "Paso dos. Enviamos un backup completo. El repositorio entero, app, base de datos, archivos y configuración, se sube. Como el repositorio está cifrado en reposo, el backup también está cifrado. Sin gestión de claves adicional.",
+      "afterText": "Backup subido. Todo lo que hay en este repo está ahora en el almacenamiento remoto, cifrado.",
+      "cardLabel": "Enviar Copia de Seguridad",
+      "prose": "Envía una copia de seguridad completa. Se sube el repositorio entero, incluyendo la app, la base de datos, los archivos y la configuración. Como el repositorio está cifrado en reposo, la copia de seguridad también está cifrada, sin gestión adicional de claves."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 94.515541,
-      "text": "Listamos los backups disponibles en este almacenamiento. Desde aquí, restaurar en un servidor completamente nuevo es un solo comando: repo pull del CLI. Los mismos datos, los mismos contenedores, una máquina diferente."
+      "at": 18.28182,
+      "text": "Listamos los backups disponibles en este almacenamiento. Desde aquí, restaurar en un servidor completamente nuevo es un solo comando: repo pull del CLI. Los mismos datos, los mismos contenedores, una máquina diferente.",
+      "afterText": "Todos tus snapshots en un solo lugar. Recupera cualquiera de ellos con un único comando.",
+      "cardLabel": "Listar Copias de Seguridad",
+      "prose": "Lista las copias de seguridad disponibles en este almacenamiento. Restaurar en un servidor nuevo es un solo comando: el comando repo pull."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "¡Tu app está en producción, así que vamos a asegurarnos de que nunca la pierdas! En este tutorial enviamos el repositorio entero a un almacenamiento externo y lo recuperamos cuando lo necesitemos."
+    },
+    {
+      "id": "three-steps",
+      "text": "Backup y restauración se reducen a tres pasos. Configurar un proveedor de almacenamiento, enviar un backup y restaurarlo cuando lo necesites."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Tus datos están seguros y son portátiles entre máquinas. ¡Nos vemos en el siguiente!"
+    }
+  ],
+  "title": "Copia de Seguridad y Restauración",
+  "chapters": {
+    "intro": "Copia de Seguridad y Restauración",
+    "three-steps": "Tres pasos: configurar, enviar, restaurar",
+    "cast-step-0": "Paso 1: Importa la configuración de rclone",
+    "cast-step-1": "Paso 2: Lista los almacenamientos configurados",
+    "cast-step-2": "Paso 3: Envía una copia de seguridad completa",
+    "cast-step-3": "Paso 4: Lista las copias de seguridad en el almacenamiento",
+    "outro": "Siguiente: Monitorización"
+  }
 }

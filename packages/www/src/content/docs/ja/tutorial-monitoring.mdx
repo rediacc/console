@@ -1,0 +1,58 @@
+---
+title: "モニタリング"
+description: "rdc machine コマンドでラップトップからサーバーとリポジトリのヘルスを確認します。"
+category: "Tutorials"
+subcategory: advanced
+order: 12
+language: ja
+sourceHash: "7690e2a129161381"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# モニタリング
+
+アプリがデプロイされ、稼働中で、バックアップも取れています。次はすべてが健全に動き続けているか確認しましょう。`rdc` はラップトップから任意のサーバーの全体像（ヘルス、コンテナ、リポジトリ）を把握できます。
+
+## チュートリアル動画
+
+![チュートリアル: モニタリング](/assets/tutorials/tutorial-monitoring.cast)
+
+## 確認できる3つのこと
+
+![ヘルス、コンテナ、リポジトリ](/img/tutorials/tutorial-monitoring/slide-1.svg)
+
+## ヘルス: システム情報
+
+<TutorialStep number={1} />
+
+システムの稼働時間、ディスク使用量、ストレージの状態が表示されます。問題があれば教えてくれます。
+
+## コンテナ
+
+<TutorialStep number={2} />
+
+各コンテナの名前、状態、ヘルス、CPU、メモリ、さらにどのリポジトリが所有しているかが表示されます。
+
+## リポジトリ
+
+<TutorialStep number={3} />
+
+各リポジトリのサイズ、マウント状態、Docker の状態、ディスク使用量が表示されます。
+
+## すべてを一度に確認する
+
+<TutorialStep number={4} />
+
+システム情報、リポジトリ、コンテナ、すべてを1つのコマンドで確認できます。同じ `query` コマンドにフィルターなしで使うと全体像が表示され、`--system`、`--containers`、`--repositories`、`--services`、`--network`、`--block-devices` で該当セクションに絞り込めます。
+
+## ローカルの動作確認
+
+`rdc doctor` は特定のサーバーとは無関係に、ローカルのセットアップ（Node、SSH キー、`renet`、Docker）を確認します。
+
+<TutorialStep number={5} />
+
+## 完了です
+
+以上でシリーズ全体が完了です。インストール、設定、デプロイ、フォーク、本番公開、オートスタート、バックアップ、モニタリングをすべてマスターしました。すべてターミナルから、すべて自分のサーバーで行えます。

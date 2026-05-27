@@ -1,0 +1,57 @@
+---
+title: "첫 번째 서버 추가하기"
+description: "rdc에 첫 번째 서버를 등록하고, 프로비저닝하고, rdc + renet 아키텍처를 이해합니다."
+category: "Tutorials"
+subcategory: essentials
+order: 3
+language: ko
+sourceHash: "09d6cde1ac066c85"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 첫 번째 서버 추가하기
+
+서버를 추가하기 전에 `rdc`가 어떻게 작동하는지 이해하는 것이 도움이 됩니다. Rediacc는 두 가지 도구 아키텍처를 사용합니다: 노트북의 `rdc`와 서버의 `renet`.
+
+## 튜토리얼 보기
+
+![Tutorial: Adding your first server](/assets/tutorials/tutorial-add-server.cast)
+
+## 왜 두 가지 도구인가요?
+
+![rdc on laptop, renet on server, SSH between](/img/tutorials/tutorial-add-server/slide-1.svg)
+
+- **`rdc`**는 노트북의 CLI입니다. 여기서 명령을 입력합니다.
+- **`renet`**은 서버의 오케스트레이터입니다. 암호화, Docker, 격리를 관리합니다.
+
+로컬에서 명령을 실행하면 `rdc`가 SSH를 통해 서버에 연결하고 서버에서 `renet`을 실행합니다. 서버에 직접 SSH로 접속할 필요가 없습니다. `rdc`가 대신 처리합니다.
+
+## 1단계: 서버 등록
+
+<TutorialStep number={1} />
+
+`rdc config init`은 필요하지 않습니다. 구성 파일은 첫 사용 시 자동으로 생성되며, `rdc`는 표준 `~/.ssh` 키를 기본으로 사용합니다.
+
+## 2단계: 프로비저닝
+
+<TutorialStep number={2} />
+
+서버가 저장소를 호스팅할 준비가 되었습니다.
+
+## 설정 파일의 위치
+
+CLI는 모든 것을 `~/.config/rediacc/rediacc.json`이라는 단일 일반 JSON 파일에 저장합니다:
+
+<TutorialStep number={3} />
+
+이 단일 파일에 머신, SSH 키, 암호화 자격 증명이 모두 담겨 있습니다. 다른 노트북에 복사하면 그 머신에서도 바로 동일한 서버를 관리할 수 있습니다.
+
+## 여러 구성
+
+환경별(프로덕션, 스테이징, 개발)로 여러 구성을 관리하고, 모든 명령에서 `--config` 플래그로 전환할 수 있습니다. [여러 구성 설정하기](/ko/docs/setup#multiple-configs)를 참조하세요.
+
+---
+
+다음: [첫 번째 저장소 만들기](/ko/docs/tutorial-create-repo).

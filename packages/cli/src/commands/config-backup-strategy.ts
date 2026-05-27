@@ -48,7 +48,23 @@ async function upsertBackupDestination(o: UpsertDestOpts): Promise<void> {
   await configService.addBackupDestination(o.strategyName, dest);
 }
 
-function buildStrategyUpdate(
+// parseRepoFilter turns a comma-separated --include/--exclude value into a repo
+// list, or returns undefined to CLEAR the filter. An empty string or the literal
+// "none" (and a value that is only separators/whitespace) clears it — that's how
+// you drop a strategy's include/exclude entirely (e.g. make a cold backup cover
+// all repos again). setBackupStrategy merges with `{...existing, ...update}`, and
+// an undefined value is dropped on JSON write, so the key is removed.
+export function parseRepoFilter(raw: string): string[] | undefined {
+  const trimmed = raw.trim();
+  if (trimmed === '' || trimmed.toLowerCase() === 'none') return undefined;
+  const list = trimmed
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+  return list.length > 0 ? list : undefined;
+}
+
+export function buildStrategyUpdate(
   opts: { cron?: string; mode?: string; bwlimit?: string; include?: string; exclude?: string },
   enabled: boolean | undefined
 ): Partial<BackupStrategyConfig> {
@@ -57,12 +73,14 @@ function buildStrategyUpdate(
   if (opts.mode !== undefined) u.mode = opts.mode as 'hot' | 'cold';
   if (enabled !== undefined) u.enabled = enabled;
   if (opts.bwlimit !== undefined) u.bandwidthLimit = opts.bwlimit;
+  // include/exclude are mutually exclusive; setting one clears the other.
+  // An empty/"none" value clears the filter entirely.
   if (opts.include !== undefined) {
-    u.include = opts.include.split(',').map((s) => s.trim());
+    u.include = parseRepoFilter(opts.include);
     u.exclude = undefined;
   }
   if (opts.exclude !== undefined) {
-    u.exclude = opts.exclude.split(',').map((s) => s.trim());
+    u.exclude = parseRepoFilter(opts.exclude);
     u.include = undefined;
   }
   return u;

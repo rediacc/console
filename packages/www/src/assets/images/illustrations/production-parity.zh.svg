@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Two identical green boxes joined by a green check mark, showing the test setup is an exact copy of what real users use." font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif">
+  <title>Two identical green boxes joined by a green check mark, showing the test setup is an exact copy of what real users use.</title>
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5" />
+
+  
+  <rect x="80" y="150" width="200" height="150" rx="14" fill="#4a7c3f" stroke="#2d5227" stroke-width="4" />
+  <rect x="102" y="178" width="156" height="18" rx="6" fill="#f5f5f5" />
+  <rect x="102" y="210" width="156" height="18" rx="6" fill="#f5f5f5" />
+  <rect x="102" y="242" width="100" height="18" rx="6" fill="#f5f5f5" />
+
+  
+  <rect x="520" y="150" width="200" height="150" rx="14" fill="#4a7c3f" stroke="#2d5227" stroke-width="4" />
+  <rect x="542" y="178" width="156" height="18" rx="6" fill="#f5f5f5" />
+  <rect x="542" y="210" width="156" height="18" rx="6" fill="#f5f5f5" />
+  <rect x="542" y="242" width="100" height="18" rx="6" fill="#f5f5f5" />
+
+  
+  <circle cx="400" cy="225" r="64" fill="#2d5227" />
+  <path d="M368 226 L392 252 L436 198" fill="none" stroke="#f5f5f5" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+
+  
+  <text x="400" y="118" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif" font-size="32" font-weight="bold" fill="#2d5227">精确副本</text>
+
+  
+  <text x="180" y="350" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif" font-size="29" font-weight="bold" fill="#1a1a1a">测试环境</text>
+  <text x="620" y="350" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif" font-size="28" font-weight="bold" fill="#1a1a1a">真实用户使用</text>
+
+  
+  <text x="400" y="408" text-anchor="middle" font-family="'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif" font-size="30" font-weight="bold" fill="#4a7c3f">代码兼容</text>
+</svg>

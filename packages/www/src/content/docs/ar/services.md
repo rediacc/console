@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "9a08a357e86497e3"
-sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # الخدمات
@@ -196,7 +196,9 @@ services:
 
 > **تجريبي:** وصل استرداد sidecar النسخ الاحتياطية الباردة وعلامة `--sync-certs` في `rdc machine query` في renet 0.9+. الإصدارات الأقدم تعتمد كلياً على `restart_policy` المحفوظة لاسترداد watchdog، مما قد يترك حاويات `on-failure` عالقة بعد نسخة احتياطية باردة.
 
-> **شبكات Docker bridge معطّلة لعمليات daemon التي تديرها rediacc.** يتم تكوين كل daemon خاص بمستودع بالقيم `"bridge": "none"` و `"iptables": false`. سيظل أمر `docker run <image>` البسيط داخل شل المستودع يبدأ التشغيل، لكن الحاوية ستحصل فقط على واجهة loopback وبدون DNS أو اتصال خارجي. هذا بالتصميم، لأن عزل الـ loopback بين المستودعات تفرضه خطاطيف cgroup الخاصة بـ eBPF، وهي خطاطيف تتجاوزها الحاويات التي تعمل عبر bridge. يجب أن تستخدم خدمات الإنتاج `renet compose` (الذي يحقن شبكة المضيف تلقائياً)؛ وللتصحيح العابر، مرّر `--network host` بشكل صريح: `docker run --rm --network host -it ubuntu bash`.
+> **شبكات Docker bridge معطّلة لعمليات daemon الخاصة بكل مستودع.** يتم تكوين كل daemon خاص بمستودع (`FlavorRediacc`) بالقيم `"bridge": "none"` و `"iptables": false`. سيظل أمر `docker run <image>` البسيط داخل شل المستودع يبدأ التشغيل، لكن الحاوية ستحصل فقط على واجهة loopback وبدون DNS أو اتصال خارجي. هذا بالتصميم، لأن عزل الـ loopback بين المستودعات تفرضه خطاطيف cgroup الخاصة بـ eBPF، وهي خطاطيف تتجاوزها الحاويات التي تعمل عبر bridge. يجب أن تستخدم خدمات الإنتاج `renet compose` (الذي يحقن شبكة المضيف تلقائياً)؛ وللتصحيح العابر، مرّر `--network host` بشكل صريح: `docker run --rm --network host -it ubuntu bash`.
+>
+> عمليات Hub daemon الخاصة بكل مستخدم (`FlavorHub`، المستخدمة في بيئات التطوير) هي الاستثناء: فهي تضبط `bridge="docker0"` و`iptables=true` و`live-restore=true` لكي تحصل الحاويات التي يشغّلها المستخدم على شبكة bridge عادية واتصال خارجي.
 
 > **ملاحظة:** مستودعات fork تحصل على مسارات تلقائية مسطحة تحت نطاق فرعي الأصل: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. يتم تخطي النطاقات المخصصة لمستودعات fork.
 
@@ -322,6 +324,8 @@ Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+لتفاصيل حول كيفية استرداد المُوفِّق الدوري للمستودعات التي تتوقف بعد الإقلاع، راجع [التشغيل التلقائي والاسترداد](/ar/docs/autostart-recovery).
 
 ## مثال كامل
 

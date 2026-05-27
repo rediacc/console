@@ -4,6 +4,8 @@ description: "Kuidas Rediacc isehallatav arhitektuur vastab andmekaitse, privaat
 category: "Legal"
 order: 0
 language: et
+sourceHash: "e20385eb9adfe180"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Rediacc töötab täielikult teie infrastruktuuril. Keskkonna kloonimise, varundamise ja juurutamise toimingute ajal ei lahku andmed teie masinast. Teie jääte nii andmete töötlejaks kui ka vastutavaks töötlejaks. Ükski kolmanda osapoole SaaS-teenus teie andmeid ei käsitle.
@@ -14,7 +16,7 @@ See jaotis seob Rediacc tehnilised võimalused peamiste vastavusraamistike nõue
 
 | Raamistik | Ulatus | Rediacc peamised võimalused |
 |-----------|--------|--------------------------|
-| [GDPR](/en/docs/legal-gdpr) | EL-i andmekaitse ja privaatsus | CoW kloonimine samal masinal, LUKS2 krüptimine, zero-knowledge konfiguratsioonihoidla, auditilogi, kustutamisõigus `rdc repo destroy` kaudu |
+| [GDPR](/en/docs/legal-gdpr) | EL-i andmekaitse ja privaatsus | CoW kloonimine samal masinal, LUKS2 krüptimine, zero-knowledge konfiguratsioonihoidla, auditilogi, kustutamisõigus `rdc repo delete` kaudu |
 | [SOC 2](/en/docs/legal-soc2) | Usaldusteenuse kriteeriumid teenuseorganisatsioonidele | Puhkeoleku krüptimine, zero-knowledge konfiguratsiooni sünkroonimine, võrgueraldus, auditijälg, varundamine ja taastamine |
 | [HIPAA](/en/docs/legal-hipaa) | USA terviseteabe kaitse | LUKS2 krüptimine, zero-knowledge konfiguratsioonihoidla, ainult SSH juurdepääs, eraldatud Dockeri deemonid, edastusturvalisus |
 | [CCPA](/en/docs/legal-ccpa) | California tarbijate privaatsusõigused | Isehallatav (andmemüüki/jagamist ei toimu), zero-knowledge krüptimine, krüptograafiline kustutamine, andmete inventuur hoidla kaupa |
@@ -31,7 +33,7 @@ Iga selles jaotises käsitletav vastavusraamistik põhineb samadel tehnilistel o
 - **Võrgueraldus**: igal hoidlal on oma Dockeri deemon, loopback-IP-alamvõrk (/26) ja iptables-reeglid. Eri hoidlate konteinerid ei saa omavahel suhelda.
 - **Kirjutamisel kopeeriv kloonimine**: `rdc repo fork` kasutab failisüsteemi reflinke (`cp --reflink=always`). Andmed dubleeritakse samal masinal ilma võrguedastuseta.
 - **Auditilogi**: 70+ sündmusetüüpi, mis hõlmavad autentimist (sisselogimine, 2FA, paroolimuutused, seansi tühistamine), API-tokeni elutsüklit, konfiguratsioonihoidla toiminguid, tellimuse/litsentsimise tegevust ning CLI masina toiminguid (hoidla elutsükkel, varundamine, sünkroonimine, terminaliseanssid). Juurdepääs haldusarmatuurlaua, portaali tegevuslehe (organisatsioonipõhise filtreerimisega) ja `rdc audit` CLI kaudu. Masina toimingud salvestatakse ka teie süsteemilogidesse kaitsesügavuse eesmärgil.
-- **Krüpteeritud varundamine**: `rdc repo backup push/pull` edastab andmeid üle SSH. Varukoopia sihtkoht saab LUKS-krüpteeritud mahud.
+- **Krüpteeritud varundamine**: `rdc repo push/pull` edastab andmeid üle SSH. Varukoopia sihtkoht saab LUKS-krüpteeritud mahud.
 - **Zero-knowledge konfiguratsioonihoidla**: valikuline krüpteeritud konfiguratsiooni sünkroonimine seadmete vahel. Konfiguratsioonid krüpteeritakse kliendipoolselt AES-256-GCM-iga enne üleslaadimist. Server salvestab ainult läbipaistmatuid plokke. Server ei saa lugeda SSH-võtmeid, mandaate, IP-aadresse ega ühtegi konfiguratsioonitekstiandmet. Võtme tuletamine kasutab pääsvõtme PRF-laiendust koos HKDF-iga ja domeenieraldusega. Liikmete juurdepääsu haldab X25519 võtmevahetus ning tühistamine on kohene.
 
 Nende võimaluste kohta vt [Arhitektuur](/en/docs/architecture), [Hoidlad](/en/docs/repositories), [Konfiguratsioonihoidla](/en/docs/config-storage) ja [Konto turvalisus](/en/docs/account-security).

@@ -6,6 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: et
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Teenused
@@ -194,7 +196,9 @@ renet ja Docker ei nõustu tahtlikult, kuidas käsitseda konteineri taaskäivitu
 
 > **Eksperimentaalne:** Külma varukoopia külgfailist taastamine ja `--sync-certs`-lipp `rdc machine query`-l saadeti renet 0.9+-s. Vanemad versioonid toetuvad ainult salvestatud `restart_policy`-le valvekoera taastamiseks, mis võib jätta `on-failure`-konteinerid külma varundamise järel ummikusse.
 
-> **Dockeri silla võrgundus on rediacc-hallatavate deemonite jaoks keelatud.** Iga repositoorimupõhine deemon on konfigureeritud koos `"bridge": "none"` ja `"iptables": false`-ga. Tavaline `docker run <image>` repositooriumi shellis käivitub siiski, kuid konteiner saab ainult loopback-liidese ja ei oma DNS-i ega väljuvat ühenduvust. See on disaini järgi, kuna repositooriumite vaheline loopback-isoleerimine on jõustatud eBPF-cgroup-konksude abil, millest sillaga konteiner möödub. Tootmisteenused peaksid kasutama `renet compose`-i (mis süstib hosti võrgunduse teie eest); ad-hoc silumiseks edastage `--network host` selgesõnaliselt: `docker run --rm --network host -it ubuntu bash`.
+> **Dockeri silla võrgundus on repositooriumipõhiste deemonite jaoks keelatud.** Iga repositooriumipõhine deemon (`FlavorRediacc`) on konfigureeritud koos `"bridge": "none"` ja `"iptables": false`-ga. Tavaline `docker run <image>` repositooriumi shellis käivitub siiski, kuid konteiner saab ainult loopback-liidese ja ei oma DNS-i ega väljuvat ühenduvust. See on disaini järgi, kuna repositooriumite vaheline loopback-isoleerimine on jõustatud eBPF-cgroup-konksude abil, millest sillaga konteiner möödub. Tootmisteenused peaksid kasutama `renet compose`-i (mis süstib hosti võrgunduse teie eest); ad-hoc silumiseks edastage `--network host` selgesõnaliselt: `docker run --rm --network host -it ubuntu bash`.
+>
+> Kasutajapõhised Hub-deemonid (`FlavorHub`, mida kasutatakse arenduskeskkondades) on erand: need seavad `bridge="docker0"`, `iptables=true` ja `live-restore=true`, et kasutaja käivitatud konteinerid saaksid normaalse silla võrgunduse ja väljuva ühenduvuse.
 
 > **Märkus:** Fork-repositooriumid saavad automaatmarsruudid vanema alamdomeeni all: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Forkide jaoks kohandatud domeenid jäetakse vahele.
 
@@ -323,6 +327,8 @@ juurutamist.
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+Üksikasjade saamiseks selle kohta, kuidas perioodiline leppija taastab pärast käivitamist seiskunud repositooriumeid, vaadake [Automaatkäivitus ja taastamine](/et/docs/autostart-recovery).
 
 ## Täielik näide
 

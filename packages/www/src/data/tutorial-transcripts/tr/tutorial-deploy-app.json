@@ -6,26 +6,72 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 52.700593,
-      "text": "Birinci adım. Mevcut şablonları listeliyoruz. Rediacc, yaygın uygulamalar için hazır kurulumlar sunar: Postgres, Redis, web sunucuları ve daha fazlası. Sıfırdan docker-compose yazmak zorunda kalmıyorsunuz."
+      "at": 2.40432,
+      "text": "Birinci adım. Mevcut şablonları listeliyoruz. Rediacc, yaygın uygulamalar için hazır kurulumlar sunar: Postgres, Redis, web sunucuları ve daha fazlası. Sıfırdan docker-compose yazmak zorunda kalmıyorsunuz.",
+      "afterText": "Tam şablon kataloğu. Her biri test edilmiş bir compose ile Rediaccfile ikilisi.",
+      "cardLabel": "Şablonları Listele",
+      "prose": "Birinci adım: mevcut şablonları listeleyin. Rediacc, yaygın uygulamalar için önceden hazırlanmış şablonlarla gelir, bu sayede docker-compose dosyasını sıfırdan yazmanıza gerek kalmaz."
     },
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 61.85842,
-      "text": "İkinci adım. app-postgres şablonunu depoya uyguluyoruz. İki dosya oluşuyor: container'ları tanımlayan docker-compose.yml ve başlatma ile durdurma yaşam döngüsü kancalarını tanımlayan Rediaccfile."
+      "at": 6.041569,
+      "text": "İkinci adım. app-postgres şablonunu depoya uyguluyoruz. İki dosya oluşuyor: container'ları tanımlayan docker-compose.yml ve başlatma ile durdurma yaşam döngüsü kancalarını tanımlayan Rediaccfile.",
+      "afterText": "Şablon uygulandı. Depoda artık compose dosyası ve Rediaccfile var.",
+      "cardLabel": "Şablon Uygula",
+      "prose": "İkinci adım: app-postgres şablonunu repo'ya uygulayın. Bu, test edilmiş bir dosya setini repo'ya kopyalar."
     },
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 79.070004,
-      "text": "Üçüncü adım. Depoyu ayağa kaldırıyoruz. Araç container'ları başlatır, şifreli birimi bağlar ve izole Docker daemon'ını yapılandırır. Uygulama artık çalışıyor."
+      "at": 13.566247,
+      "text": "Üçüncü adım. Depoyu ayağa kaldırıyoruz. Araç container'ları başlatır, şifreli birimi bağlar ve izole Docker daemon'ını yapılandırır. Uygulama artık çalışıyor.",
+      "afterText": "Container'lar çalışıyor, birim bağlandı, izole Docker daemon ayakta.",
+      "cardLabel": "Dosyaları Gör",
+      "prose": "repo'ya bağlanın ve şablonun eklediği öğeleri listeleyin: start ve stop hook'larını içeren bir Rediaccfile ve container'ları tanımlayan bir docker-compose.yml. 2>/dev/null bağlantı günlüklerini gizler, böylece yalnızca dosya listesi görünür."
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 123.719014,
-      "text": "docker ps ile doğruluyoruz. Bu görünümün yalnızca kendi depomuzun container'larını gösterdiğine dikkat edin. Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahip ve buradan tamamen görünmez."
+      "at": 23.282435,
+      "text": "docker ps ile doğruluyoruz. Bu görünümün yalnızca kendi depomuzun container'larını gösterdiğine dikkat edin. Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahip ve buradan tamamen görünmez.",
+      "afterText": "Yalnızca bu deponun container'ları. İzolasyon yapılandırma değil, gerçek.",
+      "cardLabel": "Repo'yu Başlat",
+      "prose": "repo'yu başlatın. CLI, container'ları başlatır, şifreli birimi bağlar ve izole Docker daemon'ını devreye alır."
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "at": 30.345778,
+      "text": "Nelerin çalıştığını doğrulayalım. docker ps burada yalnızca bu repoya ait container'ları listeler. Aynı sunucudaki diğer repolar kendi daemon'larına sahiptir ve bu görünümden tamamen görünmezdir.",
+      "afterText": "Yalnızca bu reponun container'ları. İzolasyon gerçektir, yapılandırma değil.",
+      "cardLabel": "İzolasyonu Doğrula",
+      "prose": "Nelerin çalıştığını doğrulayın. docker ps yalnızca bu repo'nun container'larını listeler; aynı sunucudaki diğer repo'ların kendi Docker daemon'ları vardır ve bu görünümden görünmezler."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Gerçek bir uygulama dağıtma zamanı! Üç kısa adımda boş bir depodan çalışan container'lara geçeceğiz."
+    },
+    {
+      "id": "pick-apply-run",
+      "text": "Akış basit: bir şablon seçin, depoya uygulayın ve çalıştırın. CLI yerleşik şablonlarla gelir; bu sayede sıfırdan docker-compose yazmak zorunda kalmazsınız."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "İlk dağıtımınız böylece tamamlandı. Bir sonraki bölümde deponun kendisiyle çalışmaya derinlemesine bakacağız."
+    }
+  ],
+  "title": "İlk Uygulamanı Dağıt",
+  "chapters": {
+    "intro": "İlk Uygulamanı Dağıtma",
+    "pick-apply-run": "Seç, uygula, çalıştır",
+    "cast-step-0": "Adım 1: Şablonları listele",
+    "cast-step-1": "Adım 2: Şablonu uygula",
+    "cast-step-2": "Adım 3: Şablonun eklediklerini gör",
+    "cast-step-3": "Adım 4: repo'yu başlat",
+    "cast-step-4": "Adım 5: İzolasyonu doğrula",
+    "outro": "Sonraki: Repo'nuzla Çalışma"
+  }
 }

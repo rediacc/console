@@ -1,84 +1,40 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
-  <defs>
-    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#2d2d2d;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
-    </filter>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="auto" role="img" aria-label="A crashed red server recovers in minutes into a full green running setup of server, settings, and data.">
+  <title>A crashed red server recovers in minutes into a full green running setup of server, settings, and data.</title>
 
-  <!-- Background -->
-  <rect width="800" height="450" fill="#f5f5f5"/>
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5"/>
 
-  <!-- Failed server (left) -->
-  <g transform="translate(60, 140)" filter="url(#shadow)">
-    <rect width="100" height="130" rx="8" fill="url(#serverGrad)"/>
-    <rect x="12" y="25" width="76" height="10" rx="2" fill="#1a1a1a"/>
-    <rect x="12" y="42" width="76" height="10" rx="2" fill="#1a1a1a"/>
-    <rect x="12" y="59" width="76" height="10" rx="2" fill="#1a1a1a"/>
-    <circle cx="20" cy="30" r="2.5" fill="#8b0000" opacity="0.8"/>
-    <circle cx="20" cy="47" r="2.5" fill="#8b0000" opacity="0.6"/>
-    <circle cx="20" cy="64" r="2.5" fill="#8b0000" opacity="0.8"/>
-    <rect x="12" y="90" width="16" height="7" rx="1" fill="#3d3d3d"/>
-    <rect x="34" y="90" width="16" height="7" rx="1" fill="#3d3d3d"/>
-    <rect x="56" y="90" width="16" height="7" rx="1" fill="#3d3d3d"/>
+  <!-- LEFT: dead red server with crack -->
+  <g>
+    <rect x="60" y="150" width="150" height="190" rx="10" fill="#8b0000" stroke="#1a1a1a" stroke-width="3"/>
+    <!-- crack -->
+    <polyline points="135,150 120,210 150,255 125,340" fill="none" stroke="#1a1a1a" stroke-width="4"/>
+    <line x1="80" y1="180" x2="190" y2="180" stroke="#1a1a1a" stroke-width="3"/>
+    <line x1="80" y1="310" x2="190" y2="310" stroke="#1a1a1a" stroke-width="3"/>
+    <text x="135" y="385" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">Server died</text>
   </g>
 
-  <!-- Warning on failed server -->
-  <g transform="translate(80, 85)">
-    <polygon points="20,0 40,35 0,35" fill="#e0e0e0" stroke="#1a1a1a" stroke-width="1.5"/>
-    <polygon points="20,5 36,32 4,32" fill="#f5f5f5"/>
-    <line x1="20" y1="12" x2="20" y2="22" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>
-    <circle cx="20" cy="27" r="2" fill="#1a1a1a"/>
+  <!-- MIDDLE: green recovery arrow -->
+  <g>
+    <polygon points="250,225 360,225 360,200 430,250 360,300 360,275 250,275" fill="#4a7c3f" stroke="#2d5227" stroke-width="3"/>
   </g>
 
-  <!-- SLOW PATH (top) - winding dotted line -->
-  <path d="M170 170 C230 170 230 120 290 120 C350 120 350 170 410 170 C470 170 470 120 530 120 C570 120 580 150 600 170" fill="none" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="6,4"/>
-
-  <!-- Slow clock icon -->
-  <g transform="translate(370, 80)">
-    <circle cx="20" cy="20" r="18" fill="none" stroke="#e0e0e0" stroke-width="2"/>
-    <circle cx="20" cy="20" r="15" fill="#f5f5f5"/>
-    <line x1="20" y1="20" x2="20" y2="10" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
-    <line x1="20" y1="20" x2="28" y2="24" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round"/>
-    <circle cx="20" cy="20" r="2" fill="#1a1a1a"/>
-  </g>
-  <text x="390" y="58" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#999999">Hours / Days</text>
-
-  <!-- FAST PATH (bottom) - straight solid line -->
-  <line x1="170" y1="280" x2="600" y2="280" stroke="#556b2f" stroke-width="3"/>
-  <polygon points="600,280 588,274 588,286" fill="#556b2f"/>
-
-  <!-- Fast bolt icon -->
-  <g transform="translate(370, 290)">
-    <polygon points="18,0 8,18 16,18 12,34 26,14 18,14 22,0" fill="#556b2f" opacity="0.8"/>
-  </g>
-  <text x="390" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#556b2f">Minutes</text>
-
-  <!-- Recovered server (right) -->
-  <g transform="translate(620, 140)" filter="url(#shadow)">
-    <rect width="100" height="130" rx="8" fill="url(#serverGrad)"/>
-    <rect x="12" y="25" width="76" height="10" rx="2" fill="#1a1a1a"/>
-    <rect x="12" y="42" width="76" height="10" rx="2" fill="#1a1a1a"/>
-    <rect x="12" y="59" width="76" height="10" rx="2" fill="#1a1a1a"/>
-    <circle cx="20" cy="30" r="2.5" fill="#556b2f"/>
-    <circle cx="20" cy="47" r="2.5" fill="#556b2f"/>
-    <circle cx="20" cy="64" r="2.5" fill="#556b2f"/>
-    <rect x="12" y="90" width="16" height="7" rx="1" fill="#3d3d3d"/>
-    <rect x="34" y="90" width="16" height="7" rx="1" fill="#3d3d3d"/>
-    <rect x="56" y="90" width="16" height="7" rx="1" fill="#3d3d3d"/>
+  <!-- clock + label above arrow -->
+  <g>
+    <circle cx="300" cy="120" r="34" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="3"/>
+    <line x1="300" y1="120" x2="300" y2="98" stroke="#f5f5f5" stroke-width="4"/>
+    <line x1="300" y1="120" x2="318" y2="128" stroke="#f5f5f5" stroke-width="4"/>
+    <text x="360" y="130" text-anchor="start" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="32" font-weight="bold" fill="#1a1a1a">Back in minutes</text>
   </g>
 
-  <!-- Checkmark on recovered server -->
-  <g transform="translate(645, 92)">
-    <circle cx="20" cy="20" r="18" fill="#556b2f"/>
-    <polyline points="10,20 17,27 30,13" fill="none" stroke="#f5f5f5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- RIGHT: whole running green setup, stacked -->
+  <g>
+    <rect x="500" y="150" width="220" height="55" rx="8" fill="#4a7c3f" stroke="#2d5227" stroke-width="3"/>
+    <rect x="500" y="215" width="220" height="55" rx="8" fill="#556b2f" stroke="#2d5227" stroke-width="3"/>
+    <rect x="500" y="280" width="220" height="55" rx="8" fill="#2d5227" stroke="#1a1a1a" stroke-width="3"/>
+    <!-- check marks to show running/ok -->
+    <polyline points="520,178 532,190 552,166" fill="none" stroke="#f5f5f5" stroke-width="4"/>
+    <polyline points="520,243 532,255 552,231" fill="none" stroke="#f5f5f5" stroke-width="4"/>
+    <polyline points="520,308 532,320 552,296" fill="none" stroke="#f5f5f5" stroke-width="4"/>
+    <text x="500" y="390" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">Server, settings, data</text>
   </g>
-
-  <!-- Decorative elements -->
-  <circle cx="110" cy="360" r="40" fill="#e0e0e0" opacity="0.3"/>
-  <circle cx="670" cy="380" r="55" fill="#e0e0e0" opacity="0.2"/>
-  <circle cx="400" cy="410" r="30" fill="#556b2f" opacity="0.1"/>
 </svg>

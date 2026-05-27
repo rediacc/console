@@ -1,0 +1,58 @@
+---
+title: "İlk Uygulamanızı Dağıtın"
+description: "Yerleşik bir şablondan container tabanlı bir uygulamayı dağıtın: rdc repo up."
+category: "Tutorials"
+subcategory: essentials
+order: 5
+language: tr
+sourceHash: "764733d064b93e4a"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# İlk Uygulamanızı Dağıtın
+
+Elinizde boş bir depo var. `rdc`, sıfırdan `docker-compose` yazmak zorunda kalmadan gerçek uygulamalar ayağa kaldırmanızı sağlayan yerleşik şablonlar sunar. Üç adım: bir şablon seçin, uygulayın, çalıştırın.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Deploying your first app](/assets/tutorials/tutorial-deploy-app.cast)
+
+## Seç - Uygula - Çalıştır
+
+![Pick a template, apply it, run it](/img/tutorials/tutorial-deploy-app/slide-1.svg)
+
+## Adım 1: Seç
+
+<TutorialStep number={1} />
+
+Postgres, Redis, web sunucuları ve daha fazlası için hazır kurulumlar göreceksiniz.
+
+## Adım 2: Uygula
+
+<TutorialStep number={2} />
+
+Bu, depoya test edilmiş bir dosya kümesi kopyalar.
+
+## Adım 3: Nelerin geldiğini görün
+
+<TutorialStep number={3} />
+
+İki dosya: `docker-compose.yml` container'ları tanımlar; `Rediaccfile` ise uygulamanın başlarken ve dururken ne yapacağını belirtir (`up` ve `down` yaşam döngüsü kancaları). `2>/dev/null` bağlantı loglarını gizleyerek yalnızca dosya listesini gösterir.
+
+## Adım 4: Çalıştır
+
+<TutorialStep number={4} />
+
+CLI container'ları başlatır, şifreli birimi bağlar ve bu repo için izole bir Docker daemon'ı konfigüre eder. (VS Code aracılığıyla zaten deponun sandbox'ının içindeyseniz, `renet dev up` sandbox içinde eşdeğer bir alternatiftir.)
+
+## Adım 5: Doğrula
+
+<TutorialStep number={5} />
+
+Buradaki `docker ps` yalnızca bu depoya ait container'ları listeler. Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahiptir ve bu görünümden tamamen görünmezdir.
+
+---
+
+Sonraki: [Deponuzla Çalışın](/tr/docs/tutorial-work-with-repo).

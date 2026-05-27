@@ -7,471 +7,82 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "d491df82d57986c5a2738dec87d2d82d23fb66f5c1484181e8f90f73b25e0351",
+  "transcriptHash": "329f75eb6459b6eda7695b72fe26098dd1356fb6ed8a37f5a5410edd123a2bd3",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 65.053708,
-      "replayEndSec": 73.743501,
+      "replayStartSec": 2.424169,
+      "replayEndSec": 6.651448,
       "narrationText": "1단계입니다. 기존 rclone 구성을 가져옵니다. rclone은 S3, Backblaze, Google Drive, Dropbox 등 다양한 서비스를 지원합니다. 이미 rclone을 사용하고 있다면 동일한 구성을 바로 가져올 수 있습니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-01.b4a5f062.mp3",
-      "audioDurationSec": 17.867755,
-      "wordTimings": [
-        {
-          "startSec": 1.52,
-          "endSec": 1.92,
-          "startChar": 8,
-          "endChar": 10
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.88,
-          "startChar": 18,
-          "endChar": 21
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.68,
-          "startChar": 22,
-          "endChar": 27
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.44,
-          "startChar": 52,
-          "endChar": 58
-        },
-        {
-          "startSec": 7.44,
-          "endSec": 7.92,
-          "startChar": 59,
-          "endChar": 64
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 9.36,
-          "startChar": 66,
-          "endChar": 73
-        },
-        {
-          "startSec": 9.36,
-          "endSec": 9.76,
-          "startChar": 74,
-          "endChar": 75
-        },
-        {
-          "startSec": 10.16,
-          "endSec": 10.64,
-          "startChar": 76,
-          "endChar": 79
-        },
-        {
-          "startSec": 11.12,
-          "endSec": 11.44,
-          "startChar": 80,
-          "endChar": 84
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 12.16,
-          "startChar": 85,
-          "endChar": 90
-        },
-        {
-          "startSec": 12.64,
-          "endSec": 13.04,
-          "startChar": 92,
-          "endChar": 94
-        },
-        {
-          "startSec": 13.76,
-          "endSec": 14.32,
-          "startChar": 103,
-          "endChar": 107
-        },
-        {
-          "startSec": 14.4,
-          "endSec": 14.8,
-          "startChar": 108,
-          "endChar": 111
-        },
-        {
-          "startSec": 15.12,
-          "endSec": 15.6,
-          "startChar": 112,
-          "endChar": 115
-        },
-        {
-          "startSec": 15.6,
-          "endSec": 16.0,
-          "startChar": 116,
-          "endChar": 119
-        },
-        {
-          "startSec": 16.32,
-          "endSec": 16.64,
-          "startChar": 120,
-          "endChar": 122
-        },
-        {
-          "startSec": 16.64,
-          "endSec": 17.04,
-          "startChar": 123,
-          "endChar": 126
-        },
-        {
-          "startSec": 17.04,
-          "endSec": 17.2,
-          "startChar": 127,
-          "endChar": 128
-        },
-        {
-          "startSec": 17.2,
-          "endSec": 17.84,
-          "startChar": 129,
-          "endChar": 133
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-01.7809dbce.mp3",
+      "textHash": "7809dbce50cca6189ded80d3b8c15f7aa003e0d22735b9f25268f3c7f460ecd0",
+      "audioDurationSec": 16.274286,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-01-after.06968919.mp3",
+      "afterAudioDurationSec": 6.034286,
+      "afterTextHash": "0696891927565fa62387a2cd6be52255b40551d25421b8e7232ccc99959e1848"
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 73.743501,
-      "replayEndSec": 82.843959,
+      "replayStartSec": 6.651448,
+      "replayEndSec": 10.354487,
       "narrationText": "CLI가 인식하는 스토리지 목록을 확인합니다. 각각은 백업을 푸시할 수 있는 대상입니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-02.f4926c1a.mp3",
-      "audioDurationSec": 7.157551,
-      "wordTimings": [
-        {
-          "startSec": 1.2,
-          "endSec": 1.84,
-          "startChar": 5,
-          "endChar": 9
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.4,
-          "startChar": 10,
-          "endChar": 14
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 2.88,
-          "startChar": 15,
-          "endChar": 18
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.6,
-          "startChar": 19,
-          "endChar": 24
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.72,
-          "startChar": 26,
-          "endChar": 29
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.68,
-          "startChar": 34,
-          "endChar": 37
-        },
-        {
-          "startSec": 5.68,
-          "endSec": 5.92,
-          "startChar": 38,
-          "endChar": 39
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.32,
-          "startChar": 40,
-          "endChar": 42
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 7.12,
-          "startChar": 43,
-          "endChar": 48
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-02.f1679de5.mp3",
+      "textHash": "f1679de59df84d1d15933a18112c8923f289b07ce2ab12af189df28f2d7a5320",
+      "audioDurationSec": 7.810612,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-02-after.277a2885.mp3",
+      "afterAudioDurationSec": 4.91102,
+      "afterTextHash": "277a2885200bb602520fa1be9c46aaa40543ddffe30d2bfa1625000c39a09efa"
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 82.843959,
-      "replayEndSec": 94.515541,
+      "replayStartSec": 10.354487,
+      "replayEndSec": 18.28182,
       "narrationText": "2단계입니다. 전체 백업을 푸시합니다. 저장소 전체, 앱, 데이터베이스, 파일, 구성이 업로드됩니다. 저장소가 저장 시 암호화되어 있으므로 백업도 암호화됩니다. 별도의 키 관리가 필요하지 않습니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-03.b4813e75.mp3",
-      "audioDurationSec": 18.207347,
-      "wordTimings": [
-        {
-          "startSec": 0.64,
-          "endSec": 1.12,
-          "startChar": 1,
-          "endChar": 6
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 1.76,
-          "startChar": 8,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.32,
-          "startChar": 11,
-          "endChar": 14
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.04,
-          "startChar": 15,
-          "endChar": 20
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 4.0,
-          "startChar": 22,
-          "endChar": 25
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.88,
-          "startChar": 26,
-          "endChar": 28
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.44,
-          "startChar": 30,
-          "endChar": 31
-        },
-        {
-          "startSec": 5.68,
-          "endSec": 6.48,
-          "startChar": 33,
-          "endChar": 39
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.36,
-          "startChar": 41,
-          "endChar": 43
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.24,
-          "startChar": 45,
-          "endChar": 48
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 9.36,
-          "startChar": 49,
-          "endChar": 55
-        },
-        {
-          "startSec": 9.84,
-          "endSec": 10.56,
-          "startChar": 57,
-          "endChar": 61
-        },
-        {
-          "startSec": 11.04,
-          "endSec": 11.44,
-          "startChar": 62,
-          "endChar": 64
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 11.68,
-          "startChar": 65,
-          "endChar": 66
-        },
-        {
-          "startSec": 11.68,
-          "endSec": 12.32,
-          "startChar": 67,
-          "endChar": 72
-        },
-        {
-          "startSec": 12.48,
-          "endSec": 12.96,
-          "startChar": 73,
-          "endChar": 77
-        },
-        {
-          "startSec": 13.2,
-          "endSec": 13.92,
-          "startChar": 78,
-          "endChar": 81
-        },
-        {
-          "startSec": 13.92,
-          "endSec": 14.88,
-          "startChar": 82,
-          "endChar": 88
-        },
-        {
-          "startSec": 15.44,
-          "endSec": 16.0,
-          "startChar": 90,
-          "endChar": 93
-        },
-        {
-          "startSec": 16.0,
-          "endSec": 16.32,
-          "startChar": 94,
-          "endChar": 95
-        },
-        {
-          "startSec": 16.32,
-          "endSec": 16.88,
-          "startChar": 96,
-          "endChar": 99
-        },
-        {
-          "startSec": 16.88,
-          "endSec": 17.44,
-          "startChar": 100,
-          "endChar": 104
-        },
-        {
-          "startSec": 17.52,
-          "endSec": 18.08,
-          "startChar": 105,
-          "endChar": 109
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-03.08ffbc66.mp3",
+      "textHash": "08ffbc66ecde9b68e6409f41a8ce5f05975e0b6b67ae67f3b923aedc42b5a2a7",
+      "audioDurationSec": 18.442449,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-03-after.51f136dc.mp3",
+      "afterAudioDurationSec": 8.124082,
+      "afterTextHash": "51f136dcbdd36d0f970819c338d062cc6abf927f20fc718719fb7c7d0562600b"
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 94.515541,
-      "replayEndSec": 131.818198,
+      "replayStartSec": 18.28182,
+      "replayEndSec": 26.532142,
       "narrationText": "이 스토리지에서 사용 가능한 백업 목록을 확인합니다. 이제 새 서버에서 복원하려면 명령 하나면 됩니다. 저장소 풀 명령을 실행하면 됩니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-04.5ba13ad6.mp3",
-      "audioDurationSec": 10.266122,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.24,
-          "startChar": 0,
-          "endChar": 1
-        },
-        {
-          "startSec": 0.24,
-          "endSec": 1.12,
-          "startChar": 2,
-          "endChar": 8
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.44,
-          "startChar": 9,
-          "endChar": 11
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 2.08,
-          "startChar": 12,
-          "endChar": 15
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.4,
-          "startChar": 16,
-          "endChar": 18
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 2.88,
-          "startChar": 19,
-          "endChar": 22
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.52,
-          "startChar": 23,
-          "endChar": 28
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.32,
-          "startChar": 30,
-          "endChar": 32
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.48,
-          "startChar": 33,
-          "endChar": 34
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 5.04,
-          "startChar": 35,
-          "endChar": 39
-        },
-        {
-          "startSec": 5.04,
-          "endSec": 5.84,
-          "startChar": 40,
-          "endChar": 45
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.64,
-          "startChar": 46,
-          "endChar": 48
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 7.04,
-          "startChar": 49,
-          "endChar": 52
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.52,
-          "startChar": 53,
-          "endChar": 56
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.48,
-          "startChar": 58,
-          "endChar": 61
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 8.72,
-          "startChar": 62,
-          "endChar": 63
-        },
-        {
-          "startSec": 8.72,
-          "endSec": 9.2,
-          "startChar": 64,
-          "endChar": 67
-        },
-        {
-          "startSec": 9.2,
-          "endSec": 9.76,
-          "startChar": 68,
-          "endChar": 72
-        },
-        {
-          "startSec": 9.76,
-          "endSec": 10.24,
-          "startChar": 73,
-          "endChar": 76
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-04.f0e2190e.mp3",
+      "textHash": "f0e2190e85840075ee92b89c225b15afd1436573c4af03da9be30b679d06c351",
+      "audioDurationSec": 10.919184,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-04-after.6bffac9b.mp3",
+      "afterAudioDurationSec": 5.642449,
+      "afterTextHash": "6bffac9b24d3532d6699add6381b7d194b46dd5af49a656a6120e2a3b194216e"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "09f6cce7cfdfef43962b283a55af7c34e5ab5d8abdefc0eb832bcee56ad7adb2",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/intro.09f6cce7.mp3",
+      "narrationText": "앱이 실행 중이니, 절대 잃어버리지 않도록 만들어볼게요! 이번 튜토리얼에서는 저장소 전체를 외부 스토리지에 푸시하고 필요할 때 다시 가져와요.",
+      "audioDurationSec": 11.546122
+    },
+    {
+      "id": "three-steps",
+      "textHash": "e12816bfe38bb547671f98ece6ff15ea9234f4b8787aa195d2608edd97db4e9f",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/three-steps.e12816bf.mp3",
+      "narrationText": "백업과 복원은 세 단계로 정리돼요. 스토리지 제공자를 구성하고, 백업을 푸시하고, 필요할 때 복원하면 끝이에요.",
+      "audioDurationSec": 9.717551
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "c0ea22c1e02d585e2cf272fcd7d2ec4ab7f92ca3695f0edd2306b1f905a579d2",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/next-tutorial.c0ea22c1.mp3",
+      "narrationText": "데이터가 안전하고 머신 간에 휴대 가능해졌어요. 다음 영상에서 만나요!",
+      "audioDurationSec": 5.32898
     }
   ]
 }

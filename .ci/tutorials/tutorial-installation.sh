@@ -1,12 +1,12 @@
 #!/bin/bash
 # Tutorial 01: Installation
-# Demonstrates the rdc install verification flow. The actual `curl install.sh | bash`
-# step is skipped during recording — it can't be safely re-run in the host that
-# already has rdc available. We exercise the verification commands the prompter
-# walks through after install.
+# Runs the real curl install (the script overwrites any existing rdc binary,
+# so it's safe to re-run on a host that already has rdc), then verifies the
+# install with rdc --version.
 #
 # Prerequisites:
-#   - rdc CLI available in PATH (or TUTORIAL_RDC_CMD set)
+#   - curl available
+#   - network access to www.rediacc.com
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -14,16 +14,16 @@ source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 
 clear_screen
 
-section "Confirm rdc is installed"
-run_cmd "rdc --version"
+section "Install the CLI"
+# Real curl install. The install script overwrites the existing binary, so
+# re-running on a host that already has rdc is fine — the freshly-installed
+# binary is what the next command (rdc --version) invokes.
+run_cmd "curl -fsSL https://www.rediacc.com/install.sh | bash"
 
 pause 2
 
-section "Verify the install"
-# `rdc doctor` exits non-zero when any check is `fail` (e.g. dev-mode CLIs
-# don't have a valid subscription). Tolerate it -- the cast captures the
-# full report regardless.
-run_cmd "rdc doctor || true"
+section "Confirm rdc is installed"
+run_cmd "rdc --version"
 
 pause 2
 

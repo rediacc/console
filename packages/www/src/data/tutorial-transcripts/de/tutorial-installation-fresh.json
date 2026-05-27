@@ -1,0 +1,28 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation-fresh.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-fresh-01",
+      "markerIndex": 0,
+      "at": 0.667007,
+      "text": "Los geht's auf einem frischen System. Füge den einzeiligen Installationsbefehl in dein Terminal ein und lass ihn laufen. Das Skript erkennt deine Plattform, lädt die neueste stabile Binary des Befehlszeilenwerkzeugs herunter und legt sie in dein Home-Verzeichnis. Kein sudo, keine systemweite Installation.",
+      "afterText": "Installiert. Die rdc-Binary ist in deinem Pfad."
+    },
+    {
+      "id": "tutorial-installation-fresh-02",
+      "markerIndex": 1,
+      "at": 9.659113,
+      "text": "Bestätigen wir, dass es geklappt hat. Das Versions-Flag gibt genau das aus, was gerade installiert wurde – damit weißt du, dass das Befehlszeilenwerkzeug in deinem Pfad ist und einsatzbereit ist.",
+      "afterText": "Version ausgegeben. rdc ist bereit."
+    },
+    {
+      "id": "tutorial-installation-fresh-03",
+      "markerIndex": 2,
+      "at": 12.976611,
+      "text": "Führe jetzt die eingebaute Diagnose aus. Sie prüft deine Umgebung von Anfang bis Ende – die Binary, deine Konfiguration und die Konnektivität – damit du eventuelle Lücken in der Einrichtung erkennst, bevor du anfängst zu arbeiten.",
+      "afterText": "Alle Prüfungen grün. Du kannst deinen ersten Server hinzufügen."
+    }
+  ]
+}

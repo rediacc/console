@@ -3,10 +3,10 @@
   <style>
     .bg { fill: #f7f7f6; }
     .num { fill: #556b2f; }
-    .num-text { fill: #ffffff; font: 700 28px Inter, system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
-    .label { fill: #1a1a1a; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
-    .sub { fill: #5e5e5e; font: 400 16px Inter, system-ui, sans-serif; text-anchor: middle; }
-    .freq { fill: #556b2f; font: 600 13px Inter, system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.05em; text-transform: uppercase; }
+    .num-text { fill: #ffffff; font-weight: 700; font-size: 56px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+    .label { fill: #1a1a1a; font-weight: 600; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .sub { fill: #5e5e5e; font-weight: 400; font-size: 16px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .freq { fill: #556b2f; font-weight: 600; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; letter-spacing: 0.05em; text-transform: uppercase; }
     .connector { stroke: #cdcdcd; stroke-width: 2; fill: none; }
   </style>
   <rect class="bg" width="960" height="540"/>

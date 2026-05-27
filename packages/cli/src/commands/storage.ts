@@ -13,6 +13,7 @@ import { storageBrowserService } from '../services/storage-browser.js';
 import { createResourceCommands } from '../utils/commandFactory.js';
 import { handleError } from '../utils/errors.js';
 import { withSpinner } from '../utils/spinner.js';
+import { assertStorageExists } from './_validate.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 function formatFileName(f: RemoteFile): string {
@@ -346,6 +347,7 @@ export function registerStorageCommands(program: Command): void {
     .action(async (options: StoragePruneOptions & { name: string }) => {
       try {
         const storageName = options.name;
+        await assertStorageExists(storageName);
         await executeStoragePrune(storageName, options);
       } catch (error) {
         handleError(error);

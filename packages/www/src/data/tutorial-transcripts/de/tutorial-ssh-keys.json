@@ -6,26 +6,53 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.50929,
-      "text": "Schritt eins. Wir generieren einen neuen ed25519 SSH-Schlüssel. ed25519 ist der moderne Standard: klein, schnell und gut unterstützt. Das muss nur einmal für alle Server gemacht werden, die Sie je hinzufügen werden."
+      "at": 1.626287,
+      "text": "Schritt eins. Wir generieren einen neuen ed25519 SSH-Schlüssel. ed25519 ist der moderne Standard: klein, schnell und gut unterstützt. Das muss nur einmal für alle Server gemacht werden, die Sie je hinzufügen werden.",
+      "afterText": "Schlüssel erzeugt. Die öffentliche Hälfte ist das, was wir auf den Server kopieren.",
+      "cardLabel": "Schlüssel generieren",
+      "prose": "Generieren Sie einen neuen SSH-Schlüssel auf Ihrem Laptop. Ed25519 ist sicher, kompakt und gut unterstützt. Führen Sie den Befehl einmal aus, der gleiche Schlüssel funktioniert für jeden Server. Dies ist normales SSH und hat nichts mit rdc zu tun.",
+      "afterProse": "Schlüssel generiert. Der öffentliche Teil wird auf jeden Server kopiert."
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 8.723209,
-      "text": "Schritt zwei. Wir kopieren den öffentlichen Schlüssel mit ssh-copy-id auf den Server. Das Serverpasswort wird ein letztes Mal abgefragt. Danach ist für diesen Server keine Passwortauthentifizierung mehr erforderlich."
+      "at": 6.456735,
+      "text": "Schritt zwei. Wir kopieren den öffentlichen Schlüssel mit ssh-copy-id auf den Server. Das Serverpasswort wird ein letztes Mal abgefragt. Danach ist für diesen Server keine Passwortauthentifizierung mehr erforderlich.",
+      "afterText": "Führ das auf deinem Laptop aus. Sobald es durchgelaufen ist, sind Passwörter vom Tisch.",
+      "cardLabel": "Server 1 autorisieren",
+      "prose": "Autorisieren Sie den Schlüssel auf Ihrem ersten Server mit ssh-copy-id. Der Befehl hängt Ihren öffentlichen Schlüssel an die authorized_keys des Servers an, sodass spätere Anmeldungen ohne Passwort funktionieren."
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 16.253995,
-      "text": "Schritt drei. Wir registrieren den Schlüssel bei der CLI. Von nun an authentifiziert sich jeder CLI-Befehl mit diesem Schlüssel. Keine Passwörter mehr, keine interaktiven Abfragen mehr."
+      "at": 13.33617,
+      "text": "Schritt drei. Wir registrieren den Schlüssel bei der CLI. Von nun an authentifiziert sich jeder CLI-Befehl mit diesem Schlüssel. Keine Passwörter mehr, keine interaktiven Abfragen mehr.",
+      "afterText": "Schlüssel bei der CLI registriert.",
+      "cardLabel": "Server 2 autorisieren",
+      "prose": "Wiederholen Sie ssh-copy-id für jeden weiteren Server, den Sie verwalten. Hier autorisieren wir den zweiten."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alles klar! Lass uns SSH-Schlüssel einrichten, damit die CLI deine Server ohne Passwörter erreichen kann."
     },
     {
-      "id": "tutorial-ssh-keys-04",
-      "markerIndex": 3,
-      "at": 24.863027,
-      "text": "Wir bestätigen, dass die Konfiguration den Schlüsselpfad korrekt gespeichert hat. Das Setup ist nun für jede Maschine wiederverwendbar, die Sie zu dieser Konfiguration hinzufügen."
+      "id": "three-steps-generate-copy-register",
+      "text": "Drei Schritte insgesamt. Erzeuge einen Schlüssel auf deinem Laptop, kopiere ihn auf den Server und registriere ihn dann beim Kommandozeilen-Tool. Zwei davon machst du nur einmal."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Der Schlüssel ist registriert und die CLI ist startklar. Als Nächstes fügen wir deinen ersten Server hinzu."
     }
-  ]
+  ],
+  "title": "SSH-Schlüssel-Konfiguration",
+  "chapters": {
+    "intro": "SSH-Schlüssel-Konfiguration",
+    "three-steps-generate-copy-register": "Einmal generieren, pro Server autorisieren",
+    "cast-step-0": "Schritt 1: Schlüssel generieren",
+    "cast-step-1": "Schritt 2: Ersten Server autorisieren",
+    "cast-step-2": "Schritt 3: Weiteren Server autorisieren",
+    "outro": "Weiter: Ersten Server hinzufügen"
+  }
 }

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "eae6eedb1a1298f2"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "29bb767d837eab9a"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Backup & Wiederherstellung
@@ -181,7 +181,7 @@ Ein Cold-Backup läuft in drei Phasen pro enthaltenem Repository: **Stopp -- Sna
 
 - `rdc machine query --name <machine> --containers` zeigt den Laufzustand. Vergleichen Sie mit der erwarteten Menge.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` auf der Maschine. Prüfen Sie via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` mit einem veralteten `startedAt` bedeutet, dass das letzte Backup nicht sauber abgeschlossen wurde.
-- Protokolle des renet-Backup-Laufs (`journalctl -u renet-*` oder der direkte `rdc machine deploy-backup`-Aufruf) geben eine abschließende Zusammenfassungszeile der Form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` aus. Ein nicht leeres `failed_repos` ist das grep-Ziel.
+- Protokolle des renet-Backup-Laufs (`journalctl -u renet-*` oder der direkte `rdc machine backup schedule`-Aufruf) geben eine abschließende Zusammenfassungszeile der Form `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]` aus. Ein nicht leeres `failed_repos` ist das grep-Ziel.
 
 ### Abschätzung der Cold-Backup-Ausfallzeit
 
@@ -297,6 +297,58 @@ Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Masc
   }
 }
 ```
+
+## Hot vs. Cold und Repo-Filterung im Vergleich
+
+### Hot vs. Cold auf einen Blick
+
+| | Hot | Cold |
+|---|-----|------|
+| **Konsistenz** | Absturzkonsistent (BTRFS-Snapshot bei laufenden Diensten) | Anwendungskonsistent (Stopp → Snapshot → Start) |
+| **Ausfallzeit** | Keine | Stop+Start-Fenster pro Repo (typischerweise 5-120 s) |
+| **Geeignete Häufigkeit** | Hoch (z. B. stündlich) | Niedrig (z. B. täglich oder wöchentlich) |
+| **Typischer Einsatz** | Häufiges Sicherheitsnetz | Geplantes Backup mit garantierter Konsistenz |
+
+**Hot** ist die richtige Standardwahl für hochfrequente Läufe. Dienste laufen weiter, während der Snapshot erstellt wird, sodass das Backup-Fenster Benutzer nicht unterbricht. Der Snapshot ist absturzkonsistent: Er entspricht dem, was Sie nach einem unsauberen Herunterfahren erhalten würden. Für die meisten modernen Datenbanken und Message-Queues ist dies akzeptabel.
+
+**Cold** ist geeignet, wenn Sie einen garantiert anwendungskonsistenten Snapshot benötigen und einen kurzen Neustart pro Repo akzeptieren können. Dienste werden vor dem Snapshot gestoppt und vor Beginn des Uploads neu gestartet, sodass ein langsamer oder fehlgeschlagener Upload das Ausfallzeitfenster nie verlängert. Das vollständige Garantiemodell finden Sie unter [Cold-Backup-Semantik](#cold-backup-semantik).
+
+### Repos pro Strategie filtern
+
+Jede Strategie kann `--include`- und `--exclude`-Filter tragen. Repository-Namen, die einem `--exclude`-Muster entsprechen, werden für diese Strategie übersprungen; `--include` beschränkt den Lauf auf genau diese Namen. Filter passen auf den lokalen Konfigurationsnamen des Repositories (ohne `:tag`).
+
+```bash
+# Hot-Strategie: alles stündlich sichern
+rdc config backup-strategy set \
+  --name hourly-hot \
+  --destination my-storage \
+  --cron "0 * * * *" \
+  --mode hot \
+  --bwlimit 6M \
+  --enable
+
+# Cold-Strategie: alles wöchentlich sichern, außer dem großen abgeleiteten Datensatz
+rdc config backup-strategy set \
+  --name weekly-cold \
+  --destination my-storage \
+  --cron "15 3 * * 0" \
+  --mode cold \
+  --exclude analytics-demo \
+  --enable
+```
+
+### Wann ein Repo aus der hochfrequenten Hot-Strategie ausschließen
+
+Schließen Sie ein Repository aus dem hochfrequenten Lauf aus, wenn:
+
+- Das Repo groß ist und **vollständig aus Quelldaten regeneriert werden kann**, die bereits auf dem Volume liegen, sodass jedes stündliche Backup erhebliche Bandbreite verschwendet, ohne echten Wiederherstellungswert zu bieten.
+- Der Backup-Lauf bei Ihrer verfügbaren Upload-Geschwindigkeit sein eigenes Zeitplan-Intervall überschreiten würde.
+
+**Beispiel.** Ein `analytics-demo`-Repository enthält ungefähr 114 GB abgeleitete Postgres-Tabellen, die vollständig aus rohen CSV-Dump-Dateien, die bereits im selben Volume gespeichert sind, neu aufgebaut werden können. Bei einem Upload-Limit von 6 MB/s dauert ein einzelnes Hot-Backup dieses Repos über 5 Stunden. Wenn dies stündlich läuft, ist jeder Lauf noch aktiv, wenn der nächste feuert, was dazu führt, dass jeder nachfolgende Lauf still verworfen wird (siehe [Lange Läufe und überlappende Zeitpläne](#lange-läufe-und-überlappende-zeitpläne)). Es aus `hourly-hot` auszuschließen und in `weekly-cold` zu belassen bedeutet, dass es einmal pro Woche gesichert wird statt gar nicht.
+
+> **Wenn die Daten rein regenerierbar sind**, überlegen Sie, ob Sie sie überhaupt sichern müssen. Eine Alternative ist, nur die rohen Quelleingaben (in diesem Beispiel die CSV-Dumps) zu sichern und die abgeleitete Kopie ganz zu überspringen. Ein wöchentliches Cold-Backup der Quelleingaben ist viel kleiner und für eine Wiederherstellung vollständig ausreichend.
+
+Repos, die aus keiner der beiden Strategien ausgeschlossen sind, erscheinen sowohl in den `hot/`- als auch in den `cold/`-Speicher-Unterordnern. Die zusammengeführte Ausgabe von `rdc repo backup list` zeigt beide Zeilen, sodass Sie überprüfen können, welche Streams welche Repos abdecken.
 
 ## Backup-Operationen
 

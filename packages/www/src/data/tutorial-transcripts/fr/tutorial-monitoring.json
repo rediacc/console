@@ -6,32 +6,72 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 102.949897,
-      "text": "Commençons par la vue système. La commande de requête machine avec le filtre system affiche le temps de fonctionnement, l'utilisation du disque et l'état du stockage. Si quelque chose ne va pas, le rapport nous le dit."
+      "at": 2.411841,
+      "text": "Commençons par la vue système. La commande de requête machine avec le filtre system affiche le temps de fonctionnement, l'utilisation du disque et l'état du stockage. Si quelque chose ne va pas, le rapport nous le dit.",
+      "afterText": "Uptime, disque, stockage. Tout ce qu'il vous faut d'un coup d'œil.",
+      "cardLabel": "Santé Système",
+      "prose": "Commencez par la vue système. rdc machine query avec le filtre système affiche l'uptime, l'utilisation du disque et l'état du stockage."
     },
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 114.069314,
-      "text": "Voyons maintenant les conteneurs. Cette vue liste tous les conteneurs en cours d'exécution sur tous les dépôts de la machine : nom, statut, état de santé, CPU, mémoire, plus quel dépôt possède chacun."
+      "at": 8.597185,
+      "text": "Voyons maintenant les conteneurs. Cette vue liste tous les conteneurs en cours d'exécution sur tous les dépôts de la machine : nom, statut, état de santé, CPU, mémoire, plus quel dépôt possède chacun.",
+      "afterText": "Tous les conteneurs de tous les repos, dans une seule vue.",
+      "cardLabel": "Containers",
+      "prose": "La vue containers liste tous les containers en cours d'exécution dans chaque repository de la machine : nom, statut, santé, CPU, mémoire et le repo propriétaire."
     },
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 126.082986,
-      "text": "Et les dépôts eux-mêmes. Taille, état de montage, état du daemon Docker, utilisation du disque. Tout ce que vous devez savoir sur chaque environnement isolé de la machine."
+      "at": 15.126152,
+      "text": "Et les dépôts eux-mêmes. Taille, état de montage, état du daemon Docker, utilisation du disque. Tout ce que vous devez savoir sur chaque environnement isolé de la machine.",
+      "afterText": "Tous les repos, tous leurs daemons, toute leur utilisation disque.",
+      "cardLabel": "Repositories",
+      "prose": "La vue repositories indique la taille, l'état du montage, l'état du Docker daemon et l'utilisation du disque pour chaque environnement isolé."
     },
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 138.182721,
-      "text": "La commande de requête machine vous donne tout en une seule fois. Informations système, conteneurs, dépôts, tout ensemble. Lancez-la une fois et vous avez le tableau complet."
+      "at": 24.385141,
+      "text": "La commande de requête machine vous donne tout en une seule fois. Informations système, conteneurs, dépôts, tout ensemble. Lancez-la une fois et vous avez le tableau complet.",
+      "afterText": "Tout ensemble, sans filtre.",
+      "cardLabel": "Requête Complète",
+      "prose": "Exécutez rdc machine query sans filtres pour obtenir les informations système, les containers et les repositories en une seule sortie."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 149.8205,
-      "text": "Et enfin le contrôle de diagnostic pour une vérification locale sur votre ordinateur. Node, clé SSH, renet, Docker, tout ce dont la ligne de commande elle-même dépend. C'est la série complète. De l'installation à la surveillance, tout depuis votre terminal."
+      "at": 32.334422,
+      "text": "Et enfin le contrôle de diagnostic pour une vérification locale sur votre ordinateur. Node, clé SSH, renet, Docker, tout ce dont la ligne de commande elle-même dépend. C'est la série complète. De l'installation à la surveillance, tout depuis votre terminal.",
+      "afterText": "Tout au vert signifie que votre CLI locale est en bonne santé.",
+      "cardLabel": "Doctor",
+      "prose": "Exécutez rdc doctor pour une vérification locale sur votre ordinateur. Il vérifie Node, la clé SSH, renet et Docker, toutes les dépendances dont le CLI lui-même dépend."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Très bien ! Votre application est en ligne et sauvegardée, assurons-nous maintenant qu'elle reste en bonne santé."
+    },
+    {
+      "id": "three-checks",
+      "text": "La CLI vous donne une vue complète de n'importe quel serveur depuis votre ordinateur. Trois angles à vérifier : la santé système, les conteneurs en cours d'exécution et les dépôts eux-mêmes."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Et voilà la série bouclée. Vous pouvez désormais installer, configurer, déployer, forker, mettre en ligne, démarrer automatiquement, sauvegarder et surveiller, le tout depuis votre terminal !"
+    }
+  ],
+  "title": "Supervision",
+  "chapters": {
+    "intro": "Supervision",
+    "three-checks": "Trois choses à vérifier",
+    "cast-step-0": "Santé : infos système",
+    "cast-step-1": "Containers",
+    "cast-step-2": "Repos",
+    "cast-step-3": "Tout en une seule commande",
+    "cast-step-4": "Vérification locale",
+    "outro": "Fin de la série"
+  }
 }

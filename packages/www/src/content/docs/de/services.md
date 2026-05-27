@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: de
-sourceHash: "9a08a357e86497e3"
-sourceCommit: "8b0f83c57ebaaa0a2bee93143db34ab677b4e68b"
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Dienste
@@ -196,7 +196,9 @@ renet und Docker sind absichtlich unterschiedlicher Meinung, wie Container-Neust
 
 > **Experimentell:** Die Cold-Backup-Sidecar-basierte Wiederherstellung und das Flag `--sync-certs` bei `rdc machine query` wurden in renet 0.9+ eingeführt. Ältere Versionen verlassen sich ausschließlich auf die gespeicherte `restart_policy` für Watchdog-Wiederherstellung, was `on-failure`-Container nach einem Cold-Backup hängen lassen kann.
 
-> **Docker-Bridge-Networking ist für rediacc-verwaltete Daemons deaktiviert.** Jeder pro-Repo-Daemon ist mit `"bridge": "none"` und `"iptables": false` konfiguriert. Ein einfaches `docker run <image>` innerhalb einer Repository-Shell startet zwar, aber der Container erhält lediglich ein Loopback-Interface und verfügt weder über DNS noch über ausgehende Konnektivität. Dies ist beabsichtigt, da die Loopback-Isolation zwischen Repos durch eBPF-cgroup-Hooks erzwungen wird, die ein Bridged-Container umgehen würde. Produktionsdienste sollten `renet compose` verwenden (das Host-Networking für Sie injiziert); für Ad-hoc-Debugging übergeben Sie `--network host` explizit: `docker run --rm --network host -it ubuntu bash`.
+> **Docker-Bridge-Networking ist für pro-Repo-Daemons deaktiviert.** Jeder pro-Repo-Daemon (`FlavorRediacc`) ist mit `"bridge": "none"` und `"iptables": false` konfiguriert. Ein einfaches `docker run <image>` innerhalb einer Repository-Shell startet zwar, aber der Container erhält lediglich ein Loopback-Interface und verfügt weder über DNS noch über ausgehende Konnektivität. Dies ist beabsichtigt, da die Loopback-Isolation zwischen Repos durch eBPF-cgroup-Hooks erzwungen wird, die ein Bridged-Container umgehen würde. Produktionsdienste sollten `renet compose` verwenden (das Host-Networking für Sie injiziert); für Ad-hoc-Debugging übergeben Sie `--network host` explizit: `docker run --rm --network host -it ubuntu bash`.
+>
+> Hub-Daemons pro Benutzer (`FlavorHub`, für Entwicklungsumgebungen) sind die Ausnahme: Sie setzen `bridge="docker0"`, `iptables=true` und `live-restore=true`, damit vom Benutzer gestartete Container normales Bridge-Networking und ausgehende Konnektivität erhalten.
 
 > **Hinweis:** Fork-Repos erhalten Auto-Routen unter der Subdomain des Eltern-Repos: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. Benutzerdefinierte Domains werden bei Forks übersprungen.
 
@@ -322,6 +324,8 @@ aktiviert ist, wird die Prüfung stillschweigend übersprungen. Fehler sind nich
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+Informationen dazu, wie der periodische Reconciler Repositories wiederherstellt, die nach dem Start ausfallen, finden Sie unter [Autostart & Wiederherstellung](/de/docs/autostart-recovery).
 
 ## Vollständiges Beispiel
 

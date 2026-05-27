@@ -1,0 +1,52 @@
+---
+title: "إنشاء مستودعك الأول"
+description: "أنشئ مستودعًا مشفرًا على خادمك وافتحه في VS Code."
+category: "Tutorials"
+subcategory: essentials
+order: 4
+language: ar
+sourceHash: "cd4e0e72ce1b734b"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# إنشاء مستودعك الأول
+
+مستودع Rediacc هو ملف مشفر واحد على خادمك. عند تحميله، يصبح مجلدًا بمحرك Docker خاص به وبيانات تطبيق خاصة به: معزول تمامًا وقابل للنقل بالكامل.
+
+فكّر فيه كمحرك USB للإنتاج: ملف في حالة السكون، وخادم في حالة التشغيل.
+
+## شاهد الدرس التعليمي
+
+![Tutorial: Creating your first repository](/assets/tutorials/tutorial-create-repo.cast)
+
+## ملف على القرص، بيئة عند التحميل
+
+![Encrypted file mounts as an isolated folder](/img/tutorials/tutorial-create-repo/slide-1.svg)
+
+الشكل على القرص هو صورة مشفرة واحدة. عند التحميل، تحصل على:
+
+- محرك Docker مخصص (منفصل عن محرك المضيف)
+- بيانات التطبيق داخل الحجم المشفر
+- عناوين IP الاسترجاعية التي لا تتعارض مع أي شيء آخر على الخادم
+
+المستودعات قابلة للنقل. يمكنك نقل مستودع بين أجهزة أو نسخه احتياطيًا أو نسخه فوريًا. كل مستودع معزول عن أي مستودع آخر على نفس الخادم.
+
+## إنشاء مستودع
+
+<TutorialStep number={1} />
+
+يُنشئ هذا الأمر مستودعًا مشفرًا بحجم 2 جيجابايت ويحمّله فورًا. تحقق منه:
+
+<TutorialStep number={2} />
+
+## فتحه في VS Code
+
+<TutorialStep number={3} />
+
+يفتح VS Code مباشرةً داخل المستودع عبر SSH. يبدأ مساحة العمل فارغة: هذه بيئتك المعزولة. كل ما تنشئه هنا يعيش داخل الحجم المشفر، وهو غير مرئي لأي مستودع آخر على نفس الخادم.
+
+---
+
+التالي: [نشر تطبيقك الأول](/ar/docs/tutorial-deploy-app).

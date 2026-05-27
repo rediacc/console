@@ -1,0 +1,59 @@
+---
+title: "Production Mode"
+description: "Run your app detached from your laptop and survive server reboots with autostart."
+category: "Tutorials"
+subcategory: advanced
+order: 10
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Production Mode
+
+So far you've been running the app with `renet dev up` from inside the repo. That's great for development. For production, you manage everything from your laptop with `rdc`. Close your laptop and the app keeps running.
+
+## Watch the tutorial
+
+![Tutorial: Production mode](/assets/tutorials/tutorial-production-mode.cast)
+
+## Dev vs prod
+
+The difference is simple:
+
+- `renet dev up` runs **inside the repo**. You need to be connected.
+- `rdc repo up` runs **from your laptop**. No connection needed after that.
+
+Three actions take you from dev to prod:
+
+![Stop, start, autostart](/img/tutorials/tutorial-production-mode/slide-1.svg)
+
+If you have a `renet dev up` session still running inside the repo, bring it down first with `rdc vscode connect -m my-server -r my-app` followed by `renet dev down`. From there, the rest is driven entirely from your laptop.
+
+## Step 1: Start in production mode
+
+<TutorialStep number={1} />
+
+`rdc repo up` calls the same `up` function `renet dev up` did. Same `Rediaccfile`, different way to invoke it, except now the app keeps running after you disconnect.
+
+## Step 2: Enable autostart
+
+<TutorialStep number={2} />
+
+If the server reboots, this repo comes back automatically.
+
+## Step 3: List autostart-enabled repos
+
+<TutorialStep number={3} />
+
+A quick check that your app is in the boot list.
+
+## Step 4: Stop from your laptop
+
+<TutorialStep number={4} />
+
+One command up, one command down. All from your laptop.
+
+---
+
+Next: [Backup & Restore](/en/docs/tutorial-backup-restore).

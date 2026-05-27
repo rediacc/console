@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 3
 language: es
-sourceHash: "ec3f99cf89fde4b3"
-sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
+sourceHash: "12956297c1157cd2"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Hoja de referencia de RDC CLI
@@ -58,7 +58,7 @@ Referencia rápida de los comandos `rdc` más comunes. Ejecuta cualquier comando
 | `rdc config backup-strategy list` | Listar todas las estrategias definidas |
 | `rdc config backup-strategy show --name <name>` | Mostrar los detalles de una estrategia |
 | `rdc config backup-strategy remove --name <name>` | Eliminar una estrategia |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | Vincular estrategias a una máquina |
+| `rdc machine backup schedule -m <machine>` | Desplegar estrategias de copia de seguridad configuradas en una máquina |
 
 ## Operaciones de copia de seguridad
 

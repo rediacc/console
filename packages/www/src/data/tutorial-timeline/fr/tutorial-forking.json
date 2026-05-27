@@ -7,1057 +7,143 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "a994e1753171519f22adeb5f0dfe9de1860f55663dc1f13ac5d0df2cce6d33ca",
+  "transcriptHash": "9e02065f3ffa441a6b25eb83ead190ae27dcf3ed60ce23a3469c75bdc1f579bf",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 108.099445,
-      "replayEndSec": 142.355671,
+      "replayStartSec": 2.41277,
+      "replayEndSec": 13.421721,
       "narrationText": "Maintenant le fork. Une seule commande va cloner le dépôt entier, l'application, la base de données, les fichiers de configuration, en quelques secondes, quelle que soit la taille. 1 gigaoctet, 100 gigaoctets, 1 téraoctet : même temps, à chaque fois.",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-01.e8d5f59f.mp3",
-      "audioDurationSec": 20.192653,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.8,
-          "startChar": 0,
-          "endChar": 10
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 0.96,
-          "startChar": 11,
-          "endChar": 13
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.6,
-          "startChar": 14,
-          "endChar": 18
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.4,
-          "startChar": 20,
-          "endChar": 23
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.64,
-          "startChar": 24,
-          "endChar": 29
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 3.04,
-          "startChar": 30,
-          "endChar": 38
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.2,
-          "startChar": 39,
-          "endChar": 41
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.6,
-          "startChar": 42,
-          "endChar": 48
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 3.68,
-          "startChar": 49,
-          "endChar": 51
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.0,
-          "startChar": 52,
-          "endChar": 57
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.48,
-          "startChar": 58,
-          "endChar": 64
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.68,
-          "startChar": 66,
-          "endChar": 79
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.0,
-          "startChar": 81,
-          "endChar": 83
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.24,
-          "startChar": 84,
-          "endChar": 88
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.32,
-          "startChar": 89,
-          "endChar": 91
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.72,
-          "startChar": 92,
-          "endChar": 99
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.2,
-          "startChar": 101,
-          "endChar": 104
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.6,
-          "startChar": 105,
-          "endChar": 113
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 7.68,
-          "startChar": 114,
-          "endChar": 116
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.56,
-          "startChar": 117,
-          "endChar": 130
-        },
-        {
-          "startSec": 8.96,
-          "endSec": 9.12,
-          "startChar": 132,
-          "endChar": 134
-        },
-        {
-          "startSec": 9.12,
-          "endSec": 9.6,
-          "startChar": 135,
-          "endChar": 143
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 10.16,
-          "startChar": 144,
-          "endChar": 152
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.72,
-          "startChar": 154,
-          "endChar": 160
-        },
-        {
-          "startSec": 10.72,
-          "endSec": 10.88,
-          "startChar": 161,
-          "endChar": 164
-        },
-        {
-          "startSec": 10.88,
-          "endSec": 11.12,
-          "startChar": 165,
-          "endChar": 169
-        },
-        {
-          "startSec": 11.12,
-          "endSec": 11.2,
-          "startChar": 170,
-          "endChar": 172
-        },
-        {
-          "startSec": 11.2,
-          "endSec": 11.68,
-          "startChar": 173,
-          "endChar": 179
-        },
-        {
-          "startSec": 12.64,
-          "endSec": 13.36,
-          "startChar": 183,
-          "endChar": 192
-        },
-        {
-          "startSec": 13.92,
-          "endSec": 14.24,
-          "startChar": 194,
-          "endChar": 197
-        },
-        {
-          "startSec": 14.48,
-          "endSec": 15.28,
-          "startChar": 198,
-          "endChar": 208
-        },
-        {
-          "startSec": 17.28,
-          "endSec": 18.08,
-          "startChar": 212,
-          "endChar": 221
-        },
-        {
-          "startSec": 18.48,
-          "endSec": 18.8,
-          "startChar": 224,
-          "endChar": 228
-        },
-        {
-          "startSec": 18.88,
-          "endSec": 19.2,
-          "startChar": 229,
-          "endChar": 234
-        },
-        {
-          "startSec": 19.28,
-          "endSec": 19.36,
-          "startChar": 236,
-          "endChar": 237
-        },
-        {
-          "startSec": 19.36,
-          "endSec": 19.76,
-          "startChar": 238,
-          "endChar": 244
-        },
-        {
-          "startSec": 19.76,
-          "endSec": 20.16,
-          "startChar": 245,
-          "endChar": 249
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-01.4807284a.mp3",
+      "textHash": "4807284a3007a7ddcffba9bbaa3467d0b4df762cefe360e5dc27976765849687",
+      "audioDurationSec": 19.487347,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-01-after.13c7e921.mp3",
+      "afterAudioDurationSec": 5.720816,
+      "afterTextHash": "13c7e9214b42a3e69b82ffc44c75bbc1d1708d2a6f4df6428d95aeb2c77c324a"
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 142.355671,
-      "replayEndSec": 158.262452,
+      "replayStartSec": 13.421721,
+      "replayEndSec": 18.980206,
       "narrationText": "Les deux dépôts existent maintenant côte à côte. Même machine, même disque, deux environnements complètement indépendants. Le fork a ses propres conteneurs, son propre système de fichiers et son propre daemon Docker.",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-02.575060ac.mp3",
-      "audioDurationSec": 15.490612,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.24,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.24,
-          "endSec": 0.32,
-          "startChar": 4,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.72,
-          "startChar": 9,
-          "endChar": 15
-        },
-        {
-          "startSec": 0.72,
-          "endSec": 1.2,
-          "startChar": 16,
-          "endChar": 24
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.68,
-          "startChar": 25,
-          "endChar": 35
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 1.84,
-          "startChar": 36,
-          "endChar": 40
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 1.92,
-          "startChar": 41,
-          "endChar": 42
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.32,
-          "startChar": 43,
-          "endChar": 47
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.2,
-          "startChar": 63,
-          "endChar": 67
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.72,
-          "startChar": 68,
-          "endChar": 74
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.44,
-          "startChar": 76,
-          "endChar": 80
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 6.08,
-          "startChar": 81,
-          "endChar": 95
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.88,
-          "startChar": 96,
-          "endChar": 108
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.52,
-          "startChar": 109,
-          "endChar": 121
-        },
-        {
-          "startSec": 8.16,
-          "endSec": 8.32,
-          "startChar": 123,
-          "endChar": 125
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 8.72,
-          "startChar": 126,
-          "endChar": 130
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 8.96,
-          "startChar": 131,
-          "endChar": 132
-        },
-        {
-          "startSec": 8.96,
-          "endSec": 9.12,
-          "startChar": 133,
-          "endChar": 136
-        },
-        {
-          "startSec": 9.12,
-          "endSec": 9.44,
-          "startChar": 137,
-          "endChar": 144
-        },
-        {
-          "startSec": 9.44,
-          "endSec": 10.08,
-          "startChar": 145,
-          "endChar": 155
-        },
-        {
-          "startSec": 10.56,
-          "endSec": 10.72,
-          "startChar": 157,
-          "endChar": 160
-        },
-        {
-          "startSec": 10.72,
-          "endSec": 11.2,
-          "startChar": 161,
-          "endChar": 167
-        },
-        {
-          "startSec": 11.2,
-          "endSec": 11.6,
-          "startChar": 168,
-          "endChar": 175
-        },
-        {
-          "startSec": 11.6,
-          "endSec": 11.68,
-          "startChar": 176,
-          "endChar": 178
-        },
-        {
-          "startSec": 11.68,
-          "endSec": 12.24,
-          "startChar": 179,
-          "endChar": 187
-        },
-        {
-          "startSec": 12.72,
-          "endSec": 13.04,
-          "startChar": 188,
-          "endChar": 190
-        },
-        {
-          "startSec": 13.04,
-          "endSec": 13.28,
-          "startChar": 191,
-          "endChar": 194
-        },
-        {
-          "startSec": 13.28,
-          "endSec": 13.92,
-          "startChar": 195,
-          "endChar": 201
-        },
-        {
-          "startSec": 14.32,
-          "endSec": 14.88,
-          "startChar": 202,
-          "endChar": 208
-        },
-        {
-          "startSec": 14.88,
-          "endSec": 15.44,
-          "startChar": 209,
-          "endChar": 215
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-02.7308f334.mp3",
+      "textHash": "7308f3347ba05982f4efcc6295f934091fcbccfe83e2d4638ae49b854b27f952",
+      "audioDurationSec": 15.804082,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-02-after.011e9a54.mp3",
+      "afterAudioDurationSec": 4.754286,
+      "afterTextHash": "011e9a54e8fba2e1540170aa2f65665ced3ce862d0260676554fe44d5282ea6c"
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 158.262452,
-      "replayEndSec": 176.185047,
+      "replayStartSec": 18.980206,
+      "replayEndSec": 26.216902,
       "narrationText": "Prouvons l'isolation. Dans l'original, notre fichier marqueur est exactement là où nous l'avons laissé. L'existence du fork n'a rien changé dans le parent.",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-03.326f00ec.mp3",
-      "audioDurationSec": 10.03102,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 1.28,
-          "startChar": 9,
-          "endChar": 20
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 1.76,
-          "startChar": 22,
-          "endChar": 26
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.48,
-          "startChar": 27,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.04,
-          "startChar": 39,
-          "endChar": 44
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.44,
-          "startChar": 45,
-          "endChar": 52
-        },
-        {
-          "startSec": 3.44,
-          "endSec": 3.92,
-          "startChar": 53,
-          "endChar": 61
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.16,
-          "startChar": 62,
-          "endChar": 65
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 5.12,
-          "startChar": 66,
-          "endChar": 76
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.44,
-          "startChar": 77,
-          "endChar": 79
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.6,
-          "startChar": 80,
-          "endChar": 82
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 5.68,
-          "startChar": 83,
-          "endChar": 87
-        },
-        {
-          "startSec": 5.68,
-          "endSec": 5.92,
-          "startChar": 88,
-          "endChar": 95
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.4,
-          "startChar": 96,
-          "endChar": 102
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.68,
-          "startChar": 104,
-          "endChar": 115
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 7.84,
-          "startChar": 116,
-          "endChar": 118
-        },
-        {
-          "startSec": 7.84,
-          "endSec": 8.24,
-          "startChar": 119,
-          "endChar": 123
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 8.48,
-          "startChar": 124,
-          "endChar": 127
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 8.88,
-          "startChar": 128,
-          "endChar": 132
-        },
-        {
-          "startSec": 8.96,
-          "endSec": 9.36,
-          "startChar": 133,
-          "endChar": 139
-        },
-        {
-          "startSec": 9.36,
-          "endSec": 9.44,
-          "startChar": 140,
-          "endChar": 144
-        },
-        {
-          "startSec": 9.44,
-          "endSec": 9.6,
-          "startChar": 145,
-          "endChar": 147
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 10.0,
-          "startChar": 148,
-          "endChar": 154
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-03.6281287b.mp3",
+      "textHash": "6281287ba6dad45c51ee375569175ba99753383692c38b90d45d3b5fb95e8d1a",
+      "audioDurationSec": 11.650612,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-03-after.0eaf08af.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "0eaf08afb94468679e51aaecd92412c6218923117813bda4531e217db66322ef"
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 176.185047,
-      "replayEndSec": 195.030667,
+      "replayStartSec": 26.216902,
+      "replayEndSec": 34.456769,
       "narrationText": "Voyons maintenant ce qui se passe si nous supprimons ce fichier, mais uniquement dans le fork. Dans le fork, il a disparu. Nous avons fait un changement destructif, et il est resté dans le fork.",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-04.7c4f51c1.mp3",
-      "audioDurationSec": 11.964082,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.64,
-          "startChar": 7,
-          "endChar": 17
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 0.72,
-          "startChar": 18,
-          "endChar": 20
-        },
-        {
-          "startSec": 0.72,
-          "endSec": 0.88,
-          "startChar": 21,
-          "endChar": 24
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 0.96,
-          "startChar": 25,
-          "endChar": 27
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.28,
-          "startChar": 28,
-          "endChar": 33
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 1.36,
-          "startChar": 34,
-          "endChar": 36
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 1.52,
-          "startChar": 37,
-          "endChar": 41
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 2.0,
-          "startChar": 42,
-          "endChar": 52
-        },
-        {
-          "startSec": 2.0,
-          "endSec": 2.16,
-          "startChar": 53,
-          "endChar": 55
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.64,
-          "startChar": 56,
-          "endChar": 63
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.04,
-          "startChar": 65,
-          "endChar": 69
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 4.0,
-          "startChar": 70,
-          "endChar": 80
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.16,
-          "startChar": 81,
-          "endChar": 85
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.64,
-          "startChar": 89,
-          "endChar": 93
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.36,
-          "startChar": 95,
-          "endChar": 99
-        },
-        {
-          "startSec": 5.36,
-          "endSec": 5.44,
-          "startChar": 100,
-          "endChar": 102
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.84,
-          "startChar": 103,
-          "endChar": 107
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.4,
-          "startChar": 109,
-          "endChar": 111
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.48,
-          "startChar": 112,
-          "endChar": 113
-        },
-        {
-          "startSec": 6.48,
-          "endSec": 7.04,
-          "startChar": 114,
-          "endChar": 121
-        },
-        {
-          "startSec": 7.76,
-          "endSec": 8.0,
-          "startChar": 123,
-          "endChar": 127
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.16,
-          "startChar": 128,
-          "endChar": 133
-        },
-        {
-          "startSec": 8.16,
-          "endSec": 8.4,
-          "startChar": 134,
-          "endChar": 138
-        },
-        {
-          "startSec": 8.4,
-          "endSec": 8.56,
-          "startChar": 139,
-          "endChar": 141
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.12,
-          "startChar": 142,
-          "endChar": 152
-        },
-        {
-          "startSec": 9.12,
-          "endSec": 10.16,
-          "startChar": 153,
-          "endChar": 163
-        },
-        {
-          "startSec": 10.16,
-          "endSec": 10.4,
-          "startChar": 165,
-          "endChar": 167
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.56,
-          "startChar": 168,
-          "endChar": 170
-        },
-        {
-          "startSec": 10.56,
-          "endSec": 10.64,
-          "startChar": 171,
-          "endChar": 174
-        },
-        {
-          "startSec": 10.64,
-          "endSec": 11.12,
-          "startChar": 175,
-          "endChar": 180
-        },
-        {
-          "startSec": 11.12,
-          "endSec": 11.28,
-          "startChar": 181,
-          "endChar": 185
-        },
-        {
-          "startSec": 11.28,
-          "endSec": 11.44,
-          "startChar": 186,
-          "endChar": 188
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 11.84,
-          "startChar": 189,
-          "endChar": 193
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-04.c093d9c8.mp3",
+      "textHash": "c093d9c81b191c317a8b460d86549638352104e994ee4986336d8e4a28ba1c11",
+      "audioDurationSec": 10.527347,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-04-after.0497b135.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "0497b1359732827b98b1612ca5d8c7fc93ea2e9f5193af998484112cef179d5a"
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 195.030667,
-      "replayEndSec": 212.971596,
+      "replayStartSec": 34.456769,
+      "replayEndSec": 41.647526,
       "narrationText": "Retournons à l'original. Le fichier marqueur est toujours là, intact. L'original n'a rien su de ce qui s'est passé. Même image, daemons Docker séparés, systèmes de fichiers séparés.",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-05.4b14f365.mp3",
-      "audioDurationSec": 17.867755,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.96,
-          "startChar": 0,
-          "endChar": 10
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.12,
-          "startChar": 11,
-          "endChar": 12
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 2.24,
-          "startChar": 13,
-          "endChar": 23
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.52,
-          "startChar": 36,
-          "endChar": 44
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.6,
-          "startChar": 45,
-          "endChar": 48
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.08,
-          "startChar": 49,
-          "endChar": 57
-        },
-        {
-          "startSec": 4.08,
-          "endSec": 4.48,
-          "startChar": 58,
-          "endChar": 60
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.44,
-          "startChar": 62,
-          "endChar": 68
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 7.28,
-          "startChar": 70,
-          "endChar": 80
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 7.6,
-          "startChar": 81,
-          "endChar": 84
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 7.92,
-          "startChar": 85,
-          "endChar": 89
-        },
-        {
-          "startSec": 7.92,
-          "endSec": 8.4,
-          "startChar": 90,
-          "endChar": 92
-        },
-        {
-          "startSec": 8.4,
-          "endSec": 8.48,
-          "startChar": 93,
-          "endChar": 95
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 8.72,
-          "startChar": 96,
-          "endChar": 98
-        },
-        {
-          "startSec": 8.72,
-          "endSec": 8.88,
-          "startChar": 99,
-          "endChar": 102
-        },
-        {
-          "startSec": 8.88,
-          "endSec": 9.12,
-          "startChar": 103,
-          "endChar": 108
-        },
-        {
-          "startSec": 9.12,
-          "endSec": 9.76,
-          "startChar": 109,
-          "endChar": 114
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.88,
-          "startChar": 116,
-          "endChar": 120
-        },
-        {
-          "startSec": 13.6,
-          "endSec": 14.64,
-          "startChar": 143,
-          "endChar": 150
-        },
-        {
-          "startSec": 15.12,
-          "endSec": 15.92,
-          "startChar": 152,
-          "endChar": 159
-        },
-        {
-          "startSec": 15.92,
-          "endSec": 16.08,
-          "startChar": 161,
-          "endChar": 163
-        },
-        {
-          "startSec": 16.08,
-          "endSec": 16.8,
-          "startChar": 164,
-          "endChar": 172
-        },
-        {
-          "startSec": 16.88,
-          "endSec": 17.84,
-          "startChar": 173,
-          "endChar": 180
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-05.976cbc88.mp3",
+      "textHash": "976cbc88df9651169bba3f2d68ad64b87264fcad6b4022b23bb9f71bab90a2ef",
+      "audioDurationSec": 12.355918,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-05-after.1c7e4734.mp3",
+      "afterAudioDurationSec": 3.239184,
+      "afterTextHash": "1c7e473470f77da979d626a6e64b9701a35d3162041df79d78f41c9b6c90dd28"
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 212.971596,
-      "replayEndSec": 271.523047,
+      "replayStartSec": 41.647526,
+      "replayEndSec": 51.671921,
       "narrationText": "Quand vous avez terminé, supprimez simplement le fork. L'original reste exactement comme il était. Forkez, expérimentez, cassez des choses, supprimez. Aucun risque.",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-06.5e3cf9ee.mp3",
-      "audioDurationSec": 11.650612,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.16,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.16,
-          "endSec": 0.32,
-          "startChar": 6,
-          "endChar": 10
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.48,
-          "startChar": 11,
-          "endChar": 15
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 1.04,
-          "startChar": 16,
-          "endChar": 23
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.76,
-          "startChar": 25,
-          "endChar": 34
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.24,
-          "startChar": 35,
-          "endChar": 45
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.72,
-          "startChar": 49,
-          "endChar": 53
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.84,
-          "startChar": 55,
-          "endChar": 65
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.16,
-          "startChar": 66,
-          "endChar": 71
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.88,
-          "startChar": 72,
-          "endChar": 82
-        },
-        {
-          "startSec": 4.88,
-          "endSec": 5.12,
-          "startChar": 83,
-          "endChar": 88
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.2,
-          "startChar": 89,
-          "endChar": 91
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.6,
-          "startChar": 92,
-          "endChar": 97
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 8.64,
-          "startChar": 128,
-          "endChar": 131
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 9.04,
-          "startChar": 132,
-          "endChar": 138
-        },
-        {
-          "startSec": 10.56,
-          "endSec": 11.12,
-          "startChar": 151,
-          "endChar": 156
-        },
-        {
-          "startSec": 11.12,
-          "endSec": 11.52,
-          "startChar": 157,
-          "endChar": 163
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-06.56440f6c.mp3",
+      "textHash": "56440f6cec049f6c99c5dabdd73d08aec9051fc559a6f6ca84c98c74336dce67",
+      "audioDurationSec": 12.434286,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-06-after.1f2c3b97.mp3",
+      "afterAudioDurationSec": 4.754286,
+      "afterTextHash": "1f2c3b97e657999df02d25c89f8822726c9fa27e06954d29bf56014547b9ff80"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "d31ee0c37c840589cde50625192a81aa617cdeee294d813ed7933c1ec20826d9",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/intro.d31ee0c3.mp3",
+      "narrationText": "Bienvenue dans la fonctionnalité phare ! Clonez un repo de production entier, quelle que soit sa taille, sans rien casser.",
+      "audioDurationSec": 6.687347
+    },
+    {
+      "id": "fan-out",
+      "textHash": "dc2d85cdf31bd40c7b0a2980da5dfa27cfa767f9b57e6bc1fa680a0defdbdac2",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/fan-out.dc2d85cd.mp3",
+      "narrationText": "Un repo parent se démultiplie en autant de clones indépendants que vous le souhaitez. Chaque fork est son propre environnement isolé, tournant côte à côte avec l'original.",
+      "audioDurationSec": 10.605714
+    },
+    {
+      "id": "link-speed",
+      "textHash": "e86b0314057125e4e16c596d296b492b521146025c4cb446fa8a6971f42865e0",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/link-speed.e86b0314.mp3",
+      "narrationText": "Pensez à partager un lien vers un dossier. Le lien est la même chose, léger, que le dossier soit petit ou énorme. Le fork fonctionne sur le même principe.",
+      "audioDurationSec": 11.232653
+    },
+    {
+      "id": "scale-invariance",
+      "textHash": "f274743ec9167fceeb321637ef9d00b71a88ad6e365f5dbf4506503310a68443",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/scale-invariance.f274743e.mp3",
+      "narrationText": "Un gigaoctet, cent gigaoctets, un téraoctet : le fork se comporte pareil. La taille du repo n'entre pas dans l'équation.",
+      "audioDurationSec": 16.274286
+    },
+    {
+      "id": "sun-mirrors",
+      "textHash": "b7b1edc92d7116baab58c6cbf1989d100fbdd34d11718761de1e61a631f68e00",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/sun-mirrors.b7b1edc9.mp3",
+      "narrationText": "Le repo parent est le soleil et votre fork un miroir qui en capte la lumière. La base partagée reste intacte, et tout ce que vous peignez sur le miroir n'appartient qu'à vous.",
+      "audioDurationSec": 12.355918
+    },
+    {
+      "id": "river-photo",
+      "textHash": "d2e40e39bc247f8609878637298b4218a867467f530284358859d8a3737342b8",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/river-photo.d2e40e39.mp3",
+      "narrationText": "Un fork est une photographie figée du parent à un instant donné. Le parent continue à couler comme une rivière, mais votre instantané reste exactement où il était.",
+      "audioDurationSec": 12.042449
+    },
+    {
+      "id": "flat-disk",
+      "textHash": "abac631739b95353c2e66b24bbc51bd933b723a1ba7a9467d8e373bcf4e7e190",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/flat-disk.abac6317.mp3",
+      "narrationText": "Cinq forks d'un repo de cent gigaoctets pèsent toujours environ cent gigaoctets sur le disque. Vous ne payez que les octets réellement modifiés à l'intérieur de chaque fork.",
+      "audioDurationSec": 10.762449
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "79f5cfdbfe2ac19b6a0beae7ce31c000e6a70c608a994e9d37c34f7f5dbba118",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/next-tutorial.79f5cfdb.mp3",
+      "narrationText": "Les forks laissent volontairement les secrets derrière eux, ce qui rend réellement sûr le « cloner la production sans rien casser ». Nous les câblons proprement dans le prochain tutoriel !",
+      "audioDurationSec": 13.244082
     }
   ]
 }

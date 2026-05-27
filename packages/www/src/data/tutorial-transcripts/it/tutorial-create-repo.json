@@ -6,14 +6,52 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 32.02867,
-      "text": "Creiamo un repository cifrato da 2 gigabyte sul server. Un repository e' un singolo file cifrato a riposo. Una volta montato, diventa una cartella con il proprio Docker daemon e i propri dati applicativi, completamente isolata da tutto il resto sul server."
+      "at": 2.409686,
+      "text": "Creiamo un repository cifrato da 2 gigabyte sul server. Un repository e' un singolo file cifrato a riposo. Una volta montato, diventa una cartella con il proprio Docker daemon e i propri dati applicativi, completamente isolata da tutto il resto sul server.",
+      "afterText": "Repository creato. Il file cifrato e' sul server, pronto per essere montato.",
+      "cardLabel": "Crea Repo",
+      "prose": "Crea un repository cifrato da 2 GB sul server. Un repo è un singolo file cifrato a riposo. Crearlo lo monta immediatamente: una cartella con il proprio Docker daemon e dati applicativi isolati."
     },
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 62.567023,
-      "text": "Elenchiamo i repository sulla macchina per confermare che il nuovo sia registrato. Da qui, il repo puo' essere aperto in VS Code, distribuito, clonato tramite fork o salvato in backup -- tutto dal tuo laptop."
+      "at": 11.760396,
+      "text": "Elenchiamo i repository sulla macchina per confermare che il nuovo sia registrato. Da qui, il repo puo' essere aperto in VS Code, distribuito, clonato tramite fork o salvato in backup -- tutto dal tuo laptop.",
+      "afterText": "Eccolo, registrato e pronto all'uso.",
+      "cardLabel": "Elenca Repo",
+      "prose": "Conferma che il nuovo repo è registrato. Una volta elencato, può essere distribuito, sottoposto a fork, salvato come backup o aperto in un editor dal tuo laptop."
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "at": 17.238181,
+      "text": "Un'opzione comoda: aprire il repo direttamente in VS Code con questo comando. Non avvieremo l'editor qui, ma avvia una sessione remota nel repo tramite SSH così puoi modificare i suoi file.",
+      "afterText": "Eseguilo sul tuo laptop per modificare i file del repo in VS Code.",
+      "cardLabel": "Apri in VS Code",
+      "prose": "Apri il repo direttamente in VS Code con rdc vscode connect. Avvia una sessione SSH remota nel repo così puoi modificare i suoi file nel tuo editor."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Creiamo il tuo primo repository! E' un file cifrato a riposo che si trasforma in un ambiente completamente isolato quando viene montato."
+    },
+    {
+      "id": "file-on-disk",
+      "text": "Su disco e' una singola immagine cifrata. Quando viene montato, ottieni un Docker daemon dedicato, dati applicativi all'interno del volume cifrato e IP di loopback che non entrano in conflitto con nient'altro sul server."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ecco il tuo primo repository, pronto a partire. Nel prossimo distribuiremo un'app al suo interno!"
+    }
+  ],
+  "title": "Crea il Tuo Primo Repository",
+  "chapters": {
+    "intro": "Crea il Tuo Primo Repository",
+    "file-on-disk": "File su disco, ambiente quando montato",
+    "cast-step-0": "Crea il repository",
+    "cast-step-1": "Verifica che sia registrato",
+    "cast-step-2": "Aprilo in VS Code",
+    "outro": "Successivo: Distribuisci la Tua Prima App"
+  }
 }

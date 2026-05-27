@@ -690,8 +690,8 @@ const useGrouped = isCollapsible && tocGroups.length > 0;
     })();
   </script>
 
-  <!-- Tutorial player hydration (lazy — only loads if page has .cast embeds) -->
-  <script src="../scripts/tutorial-hydrate.ts"></script>
+  <!-- Tutorial video hydration: mounts TutorialVideoPlayer for any .tutorial-video-container on the page. -->
+  <script src="../scripts/tutorial-video-hydrate.ts"></script>
 
   <style>
     .docs-shell {

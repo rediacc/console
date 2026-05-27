@@ -1,0 +1,53 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation-fresh.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "1dc0016f6ccc7abfdfaad98d7f4efd795524fcc66205cc4a930f4602f51241e4",
+  "steps": [
+    {
+      "id": "tutorial-installation-fresh-01",
+      "markerIndex": 0,
+      "replayStartSec": 0.667007,
+      "replayEndSec": 9.659113,
+      "narrationText": "我们在一台全新的机器上开始。将单行安装命令粘贴到终端中并运行。脚本会检测您的平台，下载命令行工具的最新稳定版二进制文件，并将其放置到您的主目录中。无需 sudo，无需系统级安装。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-installation-fresh/tutorial-installation-fresh-01.02e2e158.mp3",
+      "textHash": "02e2e158ca054c554f96ad0db6ae1dabdf31054a53cc5026753d739356beddf0",
+      "audioDurationSec": 20.427755,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-installation-fresh/tutorial-installation-fresh-01-after.17985998.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "17985998ecac1e4ec423c5d0b3393154b54680c220e414e00f716254aa0b127e"
+    },
+    {
+      "id": "tutorial-installation-fresh-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.659113,
+      "replayEndSec": 12.976611,
+      "narrationText": "让我们确认安装成功。版本标志会精确打印刚刚安装的内容，以便您确认命令行工具已在您的路径中并可以使用。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-installation-fresh/tutorial-installation-fresh-02.0b787bca.mp3",
+      "textHash": "0b787bca91ff120313135ed4b4668135b101ea3dc8be83372e1135be584afdec",
+      "audioDurationSec": 9.795918,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-installation-fresh/tutorial-installation-fresh-02-after.1e304c4e.mp3",
+      "afterAudioDurationSec": 3.004082,
+      "afterTextHash": "1e304c4ed2d4b7de76ba29b66b17c651b540514a95cb3a3289bd7db5414a2fbb"
+    },
+    {
+      "id": "tutorial-installation-fresh-03",
+      "markerIndex": 2,
+      "replayStartSec": 12.976611,
+      "replayEndSec": 14.798584,
+      "narrationText": "现在运行内置诊断检查。它会端到端地检查您的环境（二进制文件、配置和网络连接），让您在开始工作之前发现任何配置问题。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-installation-fresh/tutorial-installation-fresh-03.04a1cdc4.mp3",
+      "textHash": "04a1cdc40ecde6dbd6c7365a3d37c5d1cab1ea2d3804cd45b5573809dcca8cce",
+      "audioDurationSec": 12.277551,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-installation-fresh/tutorial-installation-fresh-03-after.742618be.mp3",
+      "afterAudioDurationSec": 3.866122,
+      "afterTextHash": "742618be3d2733cb8d60fa40c9c4724399e3d3f35847ddbe6bb64a47fd533ebc"
+    }
+  ],
+  "narrationAudio": []
+}

@@ -6,26 +6,53 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.50929,
-      "text": "Paso uno. Vamos a generar una nueva clave SSH de tipo ed25519. El algoritmo ed25519 es el estándar moderno: pequeño, rápido y ampliamente compatible. Solo necesitas hacerlo una vez para todos los servidores que vayas a agregar."
+      "at": 1.626287,
+      "text": "Paso uno. Vamos a generar una nueva clave SSH de tipo ed25519. El algoritmo ed25519 es el estándar moderno: pequeño, rápido y ampliamente compatible. Solo necesitas hacerlo una vez para todos los servidores que vayas a agregar.",
+      "afterText": "Clave generada. La parte pública es la que se copia al servidor.",
+      "cardLabel": "Generar Clave",
+      "prose": "Genera una nueva clave SSH en tu laptop. Ed25519 es segura, ligera y ampliamente compatible. Ejecútala una vez; la misma clave funciona para todos los servidores. Esto es SSH estándar y no tiene nada que ver con rdc.",
+      "afterProse": "Clave generada. La mitad pública es la que se copia a cada servidor."
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 8.723209,
-      "text": "Paso dos. Copiamos la clave pública al servidor con ssh guion copy guion id. Se pide la contraseña del servidor por última vez. Después de esto, la autenticación por contraseña ya no es necesaria para ese servidor."
+      "at": 6.456735,
+      "text": "Paso dos. Copiamos la clave pública al servidor con ssh guion copy guion id. Se pide la contraseña del servidor por última vez. Después de esto, la autenticación por contraseña ya no es necesaria para ese servidor.",
+      "afterText": "Ejecuta eso en tu laptop. Una vez que funcione, las contraseñas quedan fuera.",
+      "cardLabel": "Autorizar Servidor 1",
+      "prose": "Autoriza la clave en tu primer servidor con ssh-copy-id. Agrega tu clave pública al archivo authorized_keys del servidor para que los accesos futuros no requieran contraseña."
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 16.253995,
-      "text": "Paso tres. Registramos la clave en el CLI. A partir de ahora, cada comando del CLI se autentica con esta clave. Sin contraseñas, sin prompts interactivos."
+      "at": 13.33617,
+      "text": "Paso tres. Registramos la clave en el CLI. A partir de ahora, cada comando del CLI se autentica con esta clave. Sin contraseñas, sin prompts interactivos.",
+      "afterText": "Clave registrada en el CLI.",
+      "cardLabel": "Autorizar Servidor 2",
+      "prose": "Repite ssh-copy-id para cada otro servidor que administres. Aquí autorizamos el segundo."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "¡Muy bien! Vamos a configurar las claves SSH para que el CLI pueda alcanzar tus servidores sin contraseñas."
     },
     {
-      "id": "tutorial-ssh-keys-04",
-      "markerIndex": 3,
-      "at": 24.863027,
-      "text": "Confirmamos que la configuración muestra la ruta de la clave guardada correctamente. Esta configuración es reutilizable en cada máquina que agregues a este perfil."
+      "id": "three-steps-generate-copy-register",
+      "text": "Tres pasos en total. Genera una clave en tu laptop, cópiala al servidor y luego regístrala en la herramienta de línea de comandos. Dos de estos pasos solo se hacen una vez."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "La clave está registrada y el CLI está listo para usarse. Lo siguiente: agregamos tu primer servidor."
     }
-  ]
+  ],
+  "title": "Configuración de Clave SSH",
+  "chapters": {
+    "intro": "Configuración de Clave SSH",
+    "three-steps-generate-copy-register": "Generar una vez, autorizar por servidor",
+    "cast-step-0": "Paso 1: Generar una clave",
+    "cast-step-1": "Paso 2: Autorizar tu primer servidor",
+    "cast-step-2": "Paso 3: Autorizar otro servidor",
+    "outro": "Siguiente: Agregar Tu Primer Servidor"
+  }
 }

@@ -2,18 +2,56 @@
   "cast": "/assets/tutorials/tutorial-create-repo.cast",
   "language": "en",
   "version": 1,
+  "title": "Creating Your First Repository",
+  "chapters": {
+    "intro": "Creating Your First Repository",
+    "file-on-disk": "File on disk, environment when mounted",
+    "cast-step-0": "Create the repository",
+    "cast-step-1": "Verify it's registered",
+    "cast-step-2": "Open it in VS Code",
+    "outro": "Next: Deploying Your First App"
+  },
   "events": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 32.02867,
-      "text": "Time to create a 2 gigabyte encrypted repository on the server. A repository is a single encrypted file at rest. When mounted, it becomes a folder with its own Docker daemon and its own application data, completely isolated."
+      "at": 2.409686,
+      "text": "Time to create a 2 gigabyte encrypted repository on the server. A repository is a single encrypted file at rest. Creating it also mounts it, so it immediately becomes a folder with its own Docker daemon and isolated application data, completely separate from everything else.",
+      "afterText": "Repository created and already mounted on the server, ready to use.",
+      "cardLabel": "Create Repo",
+      "prose": "Create a 2 GB encrypted repository on the server. A repo is a single encrypted file at rest. Creating it mounts it right away: a folder with its own Docker daemon and isolated application data."
     },
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 62.567023,
-      "text": "Let's confirm the new repo is registered. From here, the repo can be opened in VS Code, deployed, forked, or backed up, all from your laptop."
+      "at": 11.760396,
+      "text": "Let's confirm the new repo is registered. From here it can be deployed, forked, backed up, or opened in your editor, all from your laptop.",
+      "afterText": "There it is, registered and ready to use.",
+      "cardLabel": "List Repos",
+      "prose": "Confirm the new repo is registered. Once listed, it can be deployed, forked, backed up, or opened in an editor from your laptop."
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "at": 17.238181,
+      "text": "One handy option: open the repo directly in VS Code with this command. We won't launch the editor here, but it starts a remote session into the repo over SSH so you can edit its files.",
+      "afterText": "Run that on your laptop to edit the repo's files in VS Code.",
+      "cardLabel": "Open in VS Code",
+      "prose": "Open the repo directly in VS Code with rdc vscode connect. It starts a remote SSH session into the repo so you can edit its files in your editor."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Let's create your first repository! It's an encrypted file at rest that turns into a fully isolated environment the moment you create it."
+    },
+    {
+      "id": "file-on-disk",
+      "text": "On disk it's a single encrypted image. Once mounted, you get a dedicated Docker daemon, application data inside the encrypted volume, and loopback IPs that won't collide with anything else on the server."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "That's your first repository, ready to go. Next up, we'll deploy an app inside it!"
     }
   ]
 }

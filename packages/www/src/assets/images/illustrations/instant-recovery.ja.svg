@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="100%" height="auto" role="img" aria-label="A crashed red server recovers in minutes into a full green running setup of server, settings, and data." font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif">
+  <title>A crashed red server recovers in minutes into a full green running setup of server, settings, and data.</title>
+
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5" />
+
+  
+  <g>
+    <rect x="60" y="150" width="150" height="190" rx="10" fill="#8b0000" stroke="#1a1a1a" stroke-width="3" />
+    
+    <polyline points="135,150 120,210 150,255 125,340" fill="none" stroke="#1a1a1a" stroke-width="4" />
+    <line x1="80" y1="180" x2="190" y2="180" stroke="#1a1a1a" stroke-width="3" />
+    <line x1="80" y1="310" x2="190" y2="310" stroke="#1a1a1a" stroke-width="3" />
+    <text x="135" y="385" text-anchor="middle" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">サーバー故障</text>
+  </g>
+
+  
+  <g>
+    <polygon points="250,225 360,225 360,200 430,250 360,300 360,275 250,275" fill="#4a7c3f" stroke="#2d5227" stroke-width="3" />
+  </g>
+
+  
+  <g>
+    <circle cx="300" cy="120" r="34" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="3" />
+    <line x1="300" y1="120" x2="300" y2="98" stroke="#f5f5f5" stroke-width="4" />
+    <line x1="300" y1="120" x2="318" y2="128" stroke="#f5f5f5" stroke-width="4" />
+    <text x="360" y="130" text-anchor="start" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="32" font-weight="bold" fill="#1a1a1a">数分で復旧</text>
+  </g>
+
+  
+  <g>
+    <rect x="500" y="150" width="220" height="55" rx="8" fill="#4a7c3f" stroke="#2d5227" stroke-width="3" />
+    <rect x="500" y="215" width="220" height="55" rx="8" fill="#556b2f" stroke="#2d5227" stroke-width="3" />
+    <rect x="500" y="280" width="220" height="55" rx="8" fill="#2d5227" stroke="#1a1a1a" stroke-width="3" />
+    
+    <polyline points="520,178 532,190 552,166" fill="none" stroke="#f5f5f5" stroke-width="4" />
+    <polyline points="520,243 532,255 552,231" fill="none" stroke="#f5f5f5" stroke-width="4" />
+    <polyline points="520,308 532,320 552,296" fill="none" stroke="#f5f5f5" stroke-width="4" />
+    <text x="500" y="390" text-anchor="middle" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">サーバー・設定・データ</text>
+  </g>
+</svg>

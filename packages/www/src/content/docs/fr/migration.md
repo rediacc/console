@@ -4,8 +4,8 @@ description: Migrer des projets existants vers des dépôts chiffrés Rediacc.
 category: Guides
 order: 11
 language: fr
-sourceHash: c0ea82abb1d29de0
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "69ab61a2875f8d70"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Guide de migration
@@ -16,7 +16,7 @@ Migrez un projet existant, fichiers, services Docker, bases de données, depuis 
 
 - CLI `rdc` installé ([Installation](/fr/docs/installation))
 - Une machine ajoutée et provisionnée ([Configuration](/fr/docs/setup))
-- Suffisamment d'espace disque sur le serveur pour votre projet (vérifiez avec `rdc machine status`)
+- Suffisamment d'espace disque sur le serveur pour votre projet (vérifiez avec `rdc machine query`)
 
 ## Etape 1 : Créer un dépôt
 
@@ -96,6 +96,8 @@ Pour définir un UID autre que l'UID par défaut 7111 :
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **Attention :** `7111` est l'UID universel Rediacc utilisé partout (il correspond à l'utilisateur `rediacc` intégré dans l'image du devcontainer). Ne le surchargez avec `--uid` que pour assurer la compatibilité ascendante avec des fichiers appartenant à un UID externe spécifique. Ce n'est **pas** une cible de migration. Les nouveaux dépôts doivent conserver la valeur par défaut.
 
 ## Etape 4 : Configurer votre Rediaccfile
 

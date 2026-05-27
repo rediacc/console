@@ -14,6 +14,7 @@ import {
   traceAction,
   validateFunctionParams,
 } from './queue.js';
+import { assertMachineExists } from './_validate.js';
 
 interface DatastoreRunOptions {
   machine?: string;
@@ -85,6 +86,8 @@ async function executeFunction(
   if (!machineName) {
     throw new ValidationError(t('errors.machineRequiredLocal'));
   }
+
+  await assertMachineExists(machineName);
 
   const coerced = coerceCliParams(functionName, params as Record<string, string>);
   validateFunctionParams(functionName, coerced);
@@ -193,6 +196,24 @@ export function registerDatastoreCommands(program: Command): void {
       try {
         outputService.info(t('commands.datastore.status.starting', { machine: options.machine }));
         await executeFunction('datastore_status', {}, options);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // datastore resize (offline grow/shrink of the loop-backed pool)
+  datastore
+    .command('resize')
+    .description(t('commands.datastore.resize.description'))
+    .requiredOption('-m, --machine <name>', t('commands.datastore.machineOption'))
+    .requiredOption('--size <size>', t('commands.datastore.resize.sizeOption'))
+    .option('--debug', t('options.debug'))
+    .action(async (options: DatastoreRunOptions & { size: string }) => {
+      try {
+        outputService.info(
+          t('commands.datastore.resize.starting', { machine: options.machine, size: options.size })
+        );
+        await executeFunction('datastore_resize', { size: options.size }, options);
       } catch (error) {
         handleError(error);
       }

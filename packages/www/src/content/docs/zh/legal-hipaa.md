@@ -4,7 +4,8 @@ description: "Rediacc 的加密和隔离架构如何满足 HIPAA 保护医疗信
 category: "Legal"
 order: 3
 language: zh
-sourceHash: "13bf006e6e3d481f"
+sourceHash: "f5fbdaa4a00491ea"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 《健康保险流通与责任法案》(HIPAA) 是一部美国联邦法律，为保护敏感的患者健康信息 (PHI) 制定了标准。它适用于受覆盖实体（医疗保健提供者、健康计划、医疗信息交换所）及其业务伙伴。
@@ -31,7 +32,7 @@ HIPAA 要求管理、技术和物理保障措施。下表将其映射到 Rediacc
 |------|-------------|
 | 员工访问管理 | 范围限定权限的 API 令牌。基于团队的访问控制。从团队移除时自动撤销令牌。 |
 | 安全事件程序 | 审计日志提供所有操作的取证线索。每仓库隔离限制影响范围。 |
-| 应急计划 | `rdc repo backup push/pull` 支持多目标加密备份。CoW 快照实现即时恢复。 |
+| 应急计划 | `rdc repo push/pull` 支持多目标加密备份。CoW 快照实现即时恢复。 |
 
 ### 物理保障措施
 

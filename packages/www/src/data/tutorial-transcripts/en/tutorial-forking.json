@@ -2,42 +2,111 @@
   "cast": "/assets/tutorials/tutorial-forking.cast",
   "language": "en",
   "version": 1,
+  "title": "Forking a Repository",
+  "chapters": {
+    "intro": "Forking a Repository",
+    "fan-out": "One parent, many independent clones",
+    "link-speed": "Sharing a link, not the folder",
+    "scale-invariance": "Same speed at any size",
+    "cast-step-0": "Step 1: Fork the repo",
+    "cast-step-1": "Step 2: Both repos side by side",
+    "cast-step-2": "Step 3: Original is untouched",
+    "sun-mirrors": "The sun and the mirror",
+    "cast-step-3": "Step 4: Change only the fork",
+    "cast-step-4": "Step 5: Verify the original survives",
+    "cast-step-5": "Step 6: Delete the fork",
+    "river-photo": "A photo of the river",
+    "flat-disk": "Disk usage stays flat",
+    "outro": "Next: Managing Secrets"
+  },
   "events": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 108.099445,
-      "text": "Now the fork. One command will clone the entire repo, the app, the database, the config files, in seconds, regardless of size. One gigabyte, one hundred gigabytes, one terabyte: same time, every time."
+      "at": 2.41277,
+      "text": "Now the fork. One command will clone the entire repo, the app, the database, the config files, regardless of size. One gigabyte, one hundred gigabytes, one terabyte: the size simply does not matter.",
+      "afterText": "Fork done. The clone is up and running, regardless of size.",
+      "cardLabel": "Fork Repo",
+      "prose": "A single command clones the entire repo: app, database, and config files. Fork time is constant regardless of repo size, whether one gigabyte, one hundred gigabytes, or one terabyte."
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 142.355671,
-      "text": "Both repos exist side by side now. Same machine, same disk, two completely independent environments."
+      "at": 13.421721,
+      "text": "Both repos exist side by side now. Same machine, same disk, two completely independent environments.",
+      "afterText": "Two repos, one disk. Same data, separate everything else.",
+      "cardLabel": "List Repos",
+      "prose": "Both repos now coexist on the same machine and disk as two fully independent environments."
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 158.262452,
-      "text": "Let us prove the isolation. In the original, our marker file is right where we left it. The fork existence did not change anything in the parent."
+      "at": 18.980206,
+      "text": "Let us prove the isolation. In the original, our marker file is right where we left it. The fork existence did not change anything in the parent.",
+      "afterText": "Original file still there. The fork didn't touch it.",
+      "cardLabel": "Original File",
+      "prose": "Verify isolation by inspecting the original repo: the marker file remains in place. Creating a fork does not modify the parent."
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 176.185047,
-      "text": "Now let us delete that file, but only inside the fork. We are making a destructive change here."
+      "at": 26.216902,
+      "text": "Now let us delete that file, but only inside the fork. We are making a destructive change here.",
+      "afterText": "Gone in the fork. The original stays untouched.",
+      "cardLabel": "Delete In Fork",
+      "prose": "Delete the marker file inside the fork only. This is a destructive change scoped to the fork."
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 195.030667,
-      "text": "Back to the original. The marker file is still here, untouched. Same image, separate Docker daemons, separate filesystems."
+      "at": 34.456769,
+      "text": "Back to the original. The marker file is still here, untouched. Same image, separate Docker daemons, separate filesystems.",
+      "afterText": "Still here. Forks are properly isolated.",
+      "cardLabel": "Original Intact",
+      "prose": "Switch back to the original repo: the marker file remains intact. The parent and fork share the same image but run on separate Docker daemons and separate filesystems."
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 212.971596,
-      "text": "When you are done, just delete the fork. The original stays exactly as it was. Fork, experiment, break things, delete. No risk."
+      "at": 41.647526,
+      "text": "When you are done, just delete the fork. The original stays exactly as it was. Fork, experiment, break things, delete. No risk.",
+      "afterText": "Fork removed. The original is exactly as we left it.",
+      "cardLabel": "Clean Up",
+      "prose": "Delete the fork when finished. The original repo is unaffected, enabling a safe fork, experiment, and discard workflow."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Welcome to the killer feature! Clone an entire production repo regardless of size, and break nothing."
+    },
+    {
+      "id": "fan-out",
+      "text": "One parent repo fans out into as many independent clones as you want. Each fork is its own isolated environment running side by side with the original."
+    },
+    {
+      "id": "link-speed",
+      "text": "Think of sharing a folder link. The link is the same lightweight thing whether the folder is small or huge, and forking works on the same principle."
+    },
+    {
+      "id": "scale-invariance",
+      "text": "One gigabyte, one hundred gigabytes, one terabyte: the fork behaves the same. Repo size does not factor into the equation."
+    },
+    {
+      "id": "sun-mirrors",
+      "text": "The parent repo is the sun and your fork is a mirror catching its light. The shared base stays untouched while anything you paint on the mirror belongs only to you."
+    },
+    {
+      "id": "river-photo",
+      "text": "A fork is a frozen photograph of the parent at one instant. The parent keeps flowing like a river, but your snapshot stays exactly where it was."
+    },
+    {
+      "id": "flat-disk",
+      "text": "Five forks of a hundred gigabyte repo still add up to about a hundred gigabytes on disk. You only pay for the bytes you actually change inside each fork."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Forks deliberately leave secrets behind, which is what makes clone production, break nothing actually safe. We wire those up properly in the next tutorial!"
     }
   ]
 }

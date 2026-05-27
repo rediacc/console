@@ -14,8 +14,11 @@ export const TEST_ENV = {
   },
   rustfs: {
     endpoint: 'http://192.168.111.1:9000',
-    accessKey: 'rustfsadmin',
-    secretKey: 'rustfsadmin',
+    // Must match renet's RustFS defaults (pkg/infra/config/config.go): non-default
+    // creds are required since rustfs (CVE-2025-68926) rejects "rustfsadmin" on
+    // the bridge's non-loopback 0.0.0.0:9000 listener.
+    accessKey: 'rediacc-rustfs',
+    secretKey: 'rediacc-rustfs-secret-key',
     bucket: 'rediacc-test',
   },
   testRepositoryPrefix: 'test-repo',

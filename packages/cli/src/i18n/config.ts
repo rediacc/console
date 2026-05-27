@@ -54,11 +54,31 @@ const resources = {
   it: { cli: itCli, [SHARED_NAMESPACE]: sharedTranslations.it },
 };
 
-// Initialize i18n synchronously with English at module load time.
-// This ensures t() works for command definitions.
-// Language can be changed later via changeLanguage().
+// Initialize i18n synchronously at module load time so t() returns the right
+// language for command descriptions registered during module import (e.g.
+// `cli.command(...).description(t('...'))`). At this point we can only read
+// synchronous sources — REDIACC_LANG env and CLI-arg sniffing. The richer
+// precedence (config file -> system detect) runs later in cli.ts's preAction
+// hook via configService.getLanguage() and applies to runtime t() calls;
+// help output, which is generated entirely from registration-time strings,
+// only honors what's resolvable synchronously here.
+function detectInitialLanguage(): string {
+  const envLang = process.env.REDIACC_LANG;
+  if (envLang) return normalizeLanguage(envLang);
+  const argv = process.argv;
+  for (let i = 0; i < argv.length; i++) {
+    if ((argv[i] === '-l' || argv[i] === '--lang') && argv[i + 1]) {
+      return normalizeLanguage(argv[i + 1]);
+    }
+    if (argv[i].startsWith('--lang=')) {
+      return normalizeLanguage(argv[i].slice('--lang='.length));
+    }
+  }
+  return 'en';
+}
+
 void i18n.init({
-  lng: 'en',
+  lng: detectInitialLanguage(),
   fallbackLng: 'en',
   ns: ['cli', SHARED_NAMESPACE],
   defaultNS: 'cli',

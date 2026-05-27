@@ -4,7 +4,8 @@ description: "Cómo Rediacc aborda la directiva de ciberseguridad NIS2 de la UE 
 category: "Legal"
 order: 8
 language: es
-sourceHash: "be77425c2d3b38d2"
+sourceHash: "a2078388f7ae1906"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 NIS2 y DORA son regulaciones de la UE que imponen requisitos de ciberseguridad y resiliencia operativa a organizaciones de infraestructura critica y del sector financiero. Ambas entraron en vigor en 2025 y se aplican ampliamente en las industrias de la UE.
@@ -21,7 +22,7 @@ Texto completo: [Directiva (UE) 2022/2555](https://eur-lex.europa.eu/eli/dir/202
 |---------------|---------------------|
 | Medidas de gestion de riesgos (Art. 21) | Cifrado LUKS2 en reposo, aislamiento de red por repositorio, acceso solo SSH, registro de auditoria a nivel de cuenta (40+ tipos de eventos) |
 | Manejo de incidentes (Art. 21(2)(b)) | 40+ tipos de eventos (autenticacion, tokens, configuracion, licencias) proporcionan rastro forense. Aislamiento por repositorio limita el radio de impacto. |
-| Continuidad del negocio (Art. 21(2)(c)) | `rdc repo backup push/pull` con respaldo cifrado a multiples destinos. Snapshots CoW para rollback instantaneo. |
+| Continuidad del negocio (Art. 21(2)(c)) | `rdc repo push/pull` con respaldo cifrado a multiples destinos. Snapshots CoW para rollback instantaneo. |
 | Seguridad de la cadena de suministro (Art. 21(2)(d)) | El autoalojamiento elimina riesgos de cadena de suministro SaaS. Ningun proveedor de nube tercero procesa tus datos. |
 | Seguridad de red (Art. 21(2)(e)) | Docker daemons por repositorio, reglas iptables, aislamiento de IP loopback (subredes /26). |
 | Cifrado (Art. 21(2)(h)) | Cifrado LUKS2 AES-256 obligatorio. Almacen de configuracion de conocimiento cero con AES-256-GCM. |
@@ -49,7 +50,7 @@ Texto completo: [Reglamento (UE) 2022/2554](https://eur-lex.europa.eu/eli/reg/20
 | Marco de gestion de riesgos TIC (Art. 6) | Cifrado, aislamiento, registro de auditoria y respaldo forman la capa de controles tecnicos. |
 | Proteccion y prevencion (Art. 9) | Cifrado LUKS2 AES-256 en reposo. Aislamiento de red previene movimiento lateral. Acceso solo SSH. |
 | Deteccion (Art. 10) | 40+ tipos de eventos a nivel de cuenta. Panel de administracion con filtrado por usuario y equipo. Operaciones de maquina auditables via SSH y registros del sistema. |
-| Respuesta y recuperacion (Art. 11) | Snapshots CoW para rollback instantaneo. `rdc repo backup push/pull` para recuperacion multi-destino. Pruebas de recuperacion ante desastres basadas en fork. |
+| Respuesta y recuperacion (Art. 11) | Snapshots CoW para rollback instantaneo. `rdc repo push/pull` para recuperacion multi-destino. Pruebas de recuperacion ante desastres basadas en fork. |
 | Riesgo TIC de terceros (Art. 28-30) | El autoalojamiento elimina completamente la clasificacion de "proveedor critico de TIC tercero". |
 | Pruebas de resiliencia operativa digital (Art. 24-27) | La clonacion CoW permite pruebas de penetracion dirigidas por amenazas en entornos similares a produccion sin exposicion de datos. Clonar, probar, destruir. |
 

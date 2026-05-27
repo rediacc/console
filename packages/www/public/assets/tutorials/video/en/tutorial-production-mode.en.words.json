@@ -1,0 +1,393 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.369,
+      "text": "Alright!",
+      "words": [{ "start": 1, "end": 1.369, "char": [0, 8] }]
+    },
+    {
+      "start": 1.369,
+      "end": 3.95,
+      "text": "Let's take your app from development to",
+      "words": [
+        { "start": 1.369, "end": 1.738, "char": [0, 5] },
+        { "start": 1.738, "end": 2.106, "char": [6, 10] },
+        { "start": 2.106, "end": 2.475, "char": [11, 15] },
+        { "start": 2.475, "end": 2.844, "char": [16, 19] },
+        { "start": 2.844, "end": 3.213, "char": [20, 24] },
+        { "start": 3.213, "end": 3.582, "char": [25, 36] },
+        { "start": 3.582, "end": 3.95, "char": [37, 39] }
+      ]
+    },
+    {
+      "start": 3.95,
+      "end": 4.319,
+      "text": "production.",
+      "words": [{ "start": 3.95, "end": 4.319, "char": [0, 11] }]
+    },
+    {
+      "start": 4.319,
+      "end": 5.425,
+      "text": "Three short steps,",
+      "words": [
+        { "start": 4.319, "end": 4.688, "char": [0, 5] },
+        { "start": 4.688, "end": 5.057, "char": [6, 11] },
+        { "start": 5.057, "end": 5.425, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 5.425,
+      "end": 7.269,
+      "text": "all driven from your laptop.",
+      "words": [
+        { "start": 5.425, "end": 5.794, "char": [0, 3] },
+        { "start": 5.794, "end": 6.163, "char": [4, 10] },
+        { "start": 6.163, "end": 6.532, "char": [11, 15] },
+        { "start": 6.532, "end": 6.901, "char": [16, 20] },
+        { "start": 6.901, "end": 7.269, "char": [21, 28] }
+      ]
+    },
+    {
+      "start": 8.126,
+      "end": 10.686,
+      "text": "During development you run the app from inside",
+      "words": [
+        { "start": 8.126, "end": 8.366, "char": [0, 6] },
+        { "start": 8.366, "end": 9.006, "char": [7, 18] },
+        { "start": 9.086, "end": 9.246, "char": [19, 22] },
+        { "start": 9.246, "end": 9.486, "char": [23, 26] },
+        { "start": 9.486, "end": 9.646, "char": [27, 30] },
+        { "start": 9.646, "end": 9.806, "char": [31, 34] },
+        { "start": 9.806, "end": 10.126, "char": [35, 39] },
+        { "start": 10.206, "end": 10.686, "char": [40, 46] }
+      ]
+    },
+    {
+      "start": 10.686,
+      "end": 13.326,
+      "text": "the repo, so it stops when you disconnect",
+      "words": [
+        { "start": 10.686, "end": 10.766, "char": [0, 3] },
+        { "start": 10.766, "end": 11.246, "char": [4, 8] },
+        { "start": 11.726, "end": 11.886, "char": [10, 12] },
+        { "start": 11.886, "end": 11.966, "char": [13, 15] },
+        { "start": 11.966, "end": 12.446, "char": [16, 21] },
+        { "start": 12.446, "end": 12.606, "char": [22, 26] },
+        { "start": 12.606, "end": 12.686, "char": [27, 30] },
+        { "start": 12.686, "end": 13.326, "char": [31, 41] }
+      ]
+    },
+    {
+      "start": 14.046,
+      "end": 16.686,
+      "text": ". In production you launch it from your laptop with",
+      "words": [
+        { "start": 14.046, "end": 14.206, "char": [2, 4] },
+        { "start": 14.206, "end": 14.846, "char": [5, 15] },
+        { "start": 14.846, "end": 15.086, "char": [16, 19] },
+        { "start": 15.086, "end": 15.326, "char": [20, 26] },
+        { "start": 15.326, "end": 15.406, "char": [27, 29] },
+        { "start": 15.406, "end": 15.646, "char": [30, 34] },
+        { "start": 15.646, "end": 15.806, "char": [35, 39] },
+        { "start": 15.806, "end": 16.446, "char": [40, 46] },
+        { "start": 16.446, "end": 16.686, "char": [47, 51] }
+      ]
+    },
+    {
+      "start": 16.766,
+      "end": 19.726,
+      "text": "the CLI, and it keeps running detached.",
+      "words": [
+        { "start": 16.766, "end": 16.926, "char": [0, 3] },
+        { "start": 16.926, "end": 17.726, "char": [4, 7] },
+        { "start": 18.286, "end": 18.446, "char": [13, 15] },
+        { "start": 18.446, "end": 18.766, "char": [16, 21] },
+        { "start": 18.766, "end": 19.166, "char": [22, 29] },
+        { "start": 19.166, "end": 19.726, "char": [30, 38] }
+      ]
+    },
+    {
+      "start": 23.198,
+      "end": 25.358,
+      "text": "Time to start the app in production mode from the",
+      "words": [
+        { "start": 23.198, "end": 23.438, "char": [0, 4] },
+        { "start": 23.438, "end": 23.598, "char": [5, 7] },
+        { "start": 23.598, "end": 23.838, "char": [8, 13] },
+        { "start": 23.838, "end": 23.998, "char": [14, 17] },
+        { "start": 23.998, "end": 24.158, "char": [18, 21] },
+        { "start": 24.158, "end": 24.318, "char": [22, 24] },
+        { "start": 24.318, "end": 24.878, "char": [25, 35] },
+        { "start": 24.878, "end": 25.118, "char": [36, 40] },
+        { "start": 25.118, "end": 25.278, "char": [41, 45] },
+        { "start": 25.278, "end": 25.358, "char": [46, 49] }
+      ]
+    },
+    {
+      "start": 25.358,
+      "end": 27.998,
+      "text": "laptop. The deploy command calls",
+      "words": [
+        { "start": 25.358, "end": 25.918, "char": [0, 6] },
+        { "start": 26.558, "end": 26.638, "char": [8, 11] },
+        { "start": 26.638, "end": 27.118, "char": [12, 18] },
+        { "start": 27.118, "end": 27.598, "char": [19, 26] },
+        { "start": 27.598, "end": 27.998, "char": [27, 32] }
+      ]
+    },
+    {
+      "start": 27.998,
+      "end": 31.118,
+      "text": "the same up function we used during development, but",
+      "words": [
+        { "start": 27.998, "end": 28.078, "char": [0, 3] },
+        { "start": 28.078, "end": 28.478, "char": [4, 8] },
+        { "start": 28.478, "end": 28.718, "char": [9, 11] },
+        { "start": 28.718, "end": 29.198, "char": [12, 20] },
+        { "start": 29.198, "end": 29.358, "char": [21, 23] },
+        { "start": 29.358, "end": 29.598, "char": [24, 27] },
+        { "start": 29.598, "end": 29.918, "char": [29, 35] },
+        { "start": 29.918, "end": 30.478, "char": [36, 47] },
+        { "start": 30.958, "end": 31.118, "char": [49, 52] }
+      ]
+    },
+    {
+      "start": 31.118,
+      "end": 33.918,
+      "text": "it runs detached. Close your laptop",
+      "words": [
+        { "start": 31.118, "end": 31.198, "char": [0, 2] },
+        { "start": 31.198, "end": 31.598, "char": [3, 7] },
+        { "start": 31.598, "end": 32.398, "char": [8, 16] },
+        { "start": 32.958, "end": 33.198, "char": [18, 23] },
+        { "start": 33.198, "end": 33.358, "char": [24, 28] },
+        { "start": 33.358, "end": 33.918, "char": [29, 35] }
+      ]
+    },
+    {
+      "start": 33.998,
+      "end": 35.358,
+      "text": "and the app keeps going.",
+      "words": [
+        { "start": 33.998, "end": 34.238, "char": [0, 3] },
+        { "start": 34.238, "end": 34.398, "char": [4, 7] },
+        { "start": 34.398, "end": 34.638, "char": [8, 11] },
+        { "start": 34.638, "end": 34.958, "char": [12, 17] },
+        { "start": 34.958, "end": 35.358, "char": [18, 23] }
+      ]
+    },
+    {
+      "start": 38.304,
+      "end": 40.864,
+      "text": "App running in production. Same command, same",
+      "words": [
+        { "start": 38.304, "end": 38.464, "char": [0, 3] },
+        { "start": 38.464, "end": 38.704, "char": [4, 11] },
+        { "start": 38.704, "end": 38.864, "char": [12, 14] },
+        { "start": 38.864, "end": 39.344, "char": [15, 25] },
+        { "start": 39.584, "end": 39.824, "char": [27, 31] },
+        { "start": 39.824, "end": 40.384, "char": [32, 39] },
+        { "start": 40.544, "end": 40.864, "char": [41, 45] }
+      ]
+    },
+    {
+      "start": 40.864,
+      "end": 42.464,
+      "text": "result, on the real server.",
+      "words": [
+        { "start": 40.864, "end": 41.264, "char": [0, 6] },
+        { "start": 41.504, "end": 41.584, "char": [8, 10] },
+        { "start": 41.584, "end": 41.664, "char": [11, 14] },
+        { "start": 41.664, "end": 41.984, "char": [15, 19] },
+        { "start": 41.984, "end": 42.464, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 45.887,
+      "end": 48.927,
+      "text": "Now enable autostart so the app survives",
+      "words": [
+        { "start": 45.887, "end": 46.367, "char": [0, 3] },
+        { "start": 46.687, "end": 47.167, "char": [4, 10] },
+        { "start": 47.167, "end": 47.487, "char": [11, 15] },
+        { "start": 47.487, "end": 47.967, "char": [15, 20] },
+        { "start": 47.967, "end": 48.127, "char": [21, 23] },
+        { "start": 48.127, "end": 48.287, "char": [24, 27] },
+        { "start": 48.287, "end": 48.367, "char": [28, 31] },
+        { "start": 48.367, "end": 48.927, "char": [32, 40] }
+      ]
+    },
+    {
+      "start": 48.927,
+      "end": 51.567,
+      "text": "a server reboot. From here on, if the",
+      "words": [
+        { "start": 48.927, "end": 49.007, "char": [0, 1] },
+        { "start": 49.007, "end": 49.327, "char": [2, 8] },
+        { "start": 49.327, "end": 49.807, "char": [9, 15] },
+        { "start": 50.207, "end": 50.367, "char": [17, 21] },
+        { "start": 50.367, "end": 50.607, "char": [22, 26] },
+        { "start": 50.607, "end": 51.007, "char": [27, 29] },
+        { "start": 51.327, "end": 51.407, "char": [31, 33] },
+        { "start": 51.407, "end": 51.567, "char": [34, 37] }
+      ]
+    },
+    {
+      "start": 51.567,
+      "end": 54.287,
+      "text": "server restarts, this repo comes back",
+      "words": [
+        { "start": 51.567, "end": 51.887, "char": [0, 6] },
+        { "start": 51.887, "end": 52.607, "char": [7, 15] },
+        { "start": 53.007, "end": 53.247, "char": [17, 21] },
+        { "start": 53.247, "end": 53.647, "char": [22, 26] },
+        { "start": 53.647, "end": 53.967, "char": [27, 32] },
+        { "start": 53.967, "end": 54.287, "char": [33, 37] }
+      ]
+    },
+    {
+      "start": 54.367,
+      "end": 55.087,
+      "text": "automatically.",
+      "words": [{ "start": 54.367, "end": 55.087, "char": [0, 13] }]
+    },
+    {
+      "start": 57.541,
+      "end": 60.581,
+      "text": "Autostart on. The app survives reboots.",
+      "words": [
+        { "start": 57.541, "end": 57.861, "char": [0, 4] },
+        { "start": 57.861, "end": 58.261, "char": [4, 9] },
+        { "start": 58.261, "end": 58.741, "char": [10, 12] },
+        { "start": 58.901, "end": 59.061, "char": [14, 17] },
+        { "start": 59.061, "end": 59.221, "char": [18, 21] },
+        { "start": 59.221, "end": 59.781, "char": [22, 30] },
+        { "start": 59.781, "end": 60.581, "char": [31, 38] }
+      ]
+    },
+    {
+      "start": 64.064,
+      "end": 66.704,
+      "text": "Let us list which repositories have autostart",
+      "words": [
+        { "start": 64.064, "end": 64.224, "char": [0, 3] },
+        { "start": 64.224, "end": 64.384, "char": [4, 6] },
+        { "start": 64.384, "end": 64.704, "char": [7, 11] },
+        { "start": 64.704, "end": 64.944, "char": [12, 17] },
+        { "start": 64.944, "end": 65.824, "char": [18, 30] },
+        { "start": 65.824, "end": 65.984, "char": [31, 35] },
+        { "start": 66.064, "end": 66.384, "char": [36, 40] },
+        { "start": 66.384, "end": 66.704, "char": [40, 45] }
+      ]
+    },
+    {
+      "start": 66.704,
+      "end": 69.344,
+      "text": "enabled. Confirms our app is in the boot list.",
+      "words": [
+        { "start": 66.704, "end": 67.184, "char": [0, 7] },
+        { "start": 67.584, "end": 68.144, "char": [9, 17] },
+        { "start": 68.144, "end": 68.224, "char": [18, 21] },
+        { "start": 68.224, "end": 68.544, "char": [22, 25] },
+        { "start": 68.544, "end": 68.624, "char": [26, 28] },
+        { "start": 68.624, "end": 68.784, "char": [29, 31] },
+        { "start": 68.784, "end": 68.864, "char": [32, 35] },
+        { "start": 68.864, "end": 69.104, "char": [36, 40] },
+        { "start": 69.104, "end": 69.344, "char": [41, 45] }
+      ]
+    },
+    {
+      "start": 71.55,
+      "end": 73.23,
+      "text": "There it is, in the boot list.",
+      "words": [
+        { "start": 71.55, "end": 71.71, "char": [0, 5] },
+        { "start": 71.71, "end": 71.79, "char": [6, 8] },
+        { "start": 71.79, "end": 72.35, "char": [9, 11] },
+        { "start": 72.43, "end": 72.59, "char": [13, 15] },
+        { "start": 72.59, "end": 72.67, "char": [16, 19] },
+        { "start": 72.67, "end": 72.91, "char": [20, 24] },
+        { "start": 72.91, "end": 73.23, "char": [25, 29] }
+      ]
+    },
+    {
+      "start": 76.651,
+      "end": 79.371,
+      "text": "And to stop the app, one command from the laptop",
+      "words": [
+        { "start": 76.651, "end": 76.731, "char": [0, 3] },
+        { "start": 76.811, "end": 76.891, "char": [4, 6] },
+        { "start": 76.891, "end": 77.211, "char": [7, 11] },
+        { "start": 77.211, "end": 77.371, "char": [12, 15] },
+        { "start": 77.371, "end": 77.611, "char": [16, 19] },
+        { "start": 77.771, "end": 78.091, "char": [21, 24] },
+        { "start": 78.091, "end": 78.491, "char": [25, 32] },
+        { "start": 78.491, "end": 78.731, "char": [33, 37] },
+        { "start": 78.731, "end": 78.811, "char": [38, 41] },
+        { "start": 78.811, "end": 79.371, "char": [42, 48] }
+      ]
+    },
+    {
+      "start": 79.611,
+      "end": 82.251,
+      "text": ". One command up, one command down. All",
+      "words": [
+        { "start": 79.611, "end": 79.931, "char": [18, 21] },
+        { "start": 79.931, "end": 80.251, "char": [22, 29] },
+        { "start": 81.211, "end": 81.611, "char": [30, 34] },
+        { "start": 82.011, "end": 82.251, "char": [36, 39] }
+      ]
+    },
+    {
+      "start": 82.251,
+      "end": 83.131,
+      "text": "from your terminal.",
+      "words": [
+        { "start": 82.251, "end": 82.411, "char": [0, 4] },
+        { "start": 82.411, "end": 82.571, "char": [5, 9] },
+        { "start": 82.571, "end": 83.131, "char": [10, 18] }
+      ]
+    },
+    {
+      "start": 85.838,
+      "end": 87.838,
+      "text": "Stopped. One command up, one command down.",
+      "words": [
+        { "start": 85.838, "end": 86.238, "char": [0, 7] },
+        { "start": 86.238, "end": 86.478, "char": [9, 12] },
+        { "start": 86.478, "end": 86.718, "char": [13, 20] },
+        { "start": 86.718, "end": 86.878, "char": [21, 23] },
+        { "start": 86.878, "end": 87.118, "char": [25, 28] },
+        { "start": 87.118, "end": 87.438, "char": [29, 36] },
+        { "start": 87.438, "end": 87.838, "char": [37, 41] }
+      ]
+    },
+    {
+      "start": 88.856,
+      "end": 91.896,
+      "text": "And that's production mode in a nutshell. See",
+      "words": [
+        { "start": 88.856, "end": 89.096, "char": [0, 3] },
+        { "start": 89.096, "end": 89.416, "char": [4, 10] },
+        { "start": 89.416, "end": 90.056, "char": [11, 21] },
+        { "start": 90.056, "end": 90.376, "char": [22, 26] },
+        { "start": 90.376, "end": 90.536, "char": [27, 29] },
+        { "start": 90.536, "end": 91.176, "char": [32, 40] },
+        { "start": 91.736, "end": 91.896, "char": [42, 45] }
+      ]
+    },
+    {
+      "start": 91.896,
+      "end": 92.776,
+      "text": "you in the next one!",
+      "words": [
+        { "start": 91.896, "end": 91.976, "char": [0, 3] },
+        { "start": 91.976, "end": 92.136, "char": [4, 6] },
+        { "start": 92.136, "end": 92.456, "char": [11, 15] },
+        { "start": 92.456, "end": 92.776, "char": [16, 19] }
+      ]
+    }
+  ]
+}

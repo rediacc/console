@@ -12,7 +12,7 @@ Use `rdc term connect -m <machine> -r <repo> --container <name> --container-acti
 |------|-----------|------------------------|
 | View container logs | `rdc term connect -m <m> -r <repo> --container <c> --container-action logs` | `rdc run container_logs -m <m> --param repository=<repo> --param container=<c> --param lines=<n>` |
 | Exec into container | `rdc term connect -m <m> -r <repo> --container <c> --container-action exec` | `rdc run container_exec -m <m> --param repository=<repo> --param container=<c> --param command="..."` |
-| List containers | `rdc machine containers --name <m>` | `rdc run container_list -m <m> --param repository=<repo>` |
+| List containers | `rdc machine query --containers --name <m>` | `rdc run container_list -m <m> --param repository=<repo>` |
 | Container stats | `rdc term connect -m <m> -r <repo> --container <c> --container-action stats` | `rdc run container_stats -m <m> --param repository=<repo>` |
 | Deploy a repo | `rdc repo up` | — |
 | Stop a repo | `rdc repo down` | — |

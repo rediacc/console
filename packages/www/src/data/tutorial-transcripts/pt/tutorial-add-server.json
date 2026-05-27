@@ -6,32 +6,52 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.508633,
-      "text": "Começamos por criar um perfil de configuração que vai guardar a chave SSH, a lista de máquinas e as definições de infraestrutura."
+      "at": 1.627146,
+      "text": "Começamos por criar um perfil de configuração que vai guardar a chave SSH, a lista de máquinas e as definições de infraestrutura.",
+      "afterText": "Perfil criado. Tudo o que configurarmos a seguir vive neste único ficheiro.",
+      "cardLabel": "Adicionar Máquina",
+      "prose": "Registre o servidor com um nome, endereço IP e usuário SSH. O nome é apenas um alias local (usamos machine-11 para corresponder ao IP, mas qualquer rótulo funciona, como prod-db ou web-1). Nenhum passo de inicialização é necessário; o arquivo de configuração é criado automaticamente no primeiro uso, e o rdc recorre à sua chave ~/.ssh padrão."
     },
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 11.160728,
-      "text": "Agora vamos registar o servidor a partir da linha de comandos, fornecendo o nome, o endereço IP e o utilizador SSH. As chaves de anfitrião são verificadas automaticamente para acesso seguro."
+      "at": 7.928955,
+      "text": "Agora vamos registar o servidor a partir da linha de comandos, fornecendo o nome, o endereço IP e o utilizador SSH. As chaves de anfitrião são verificadas automaticamente para acesso seguro.",
+      "afterText": "Servidor registado. As chaves de anfitrião foram verificadas automaticamente.",
+      "cardLabel": "Configurar Máquina",
+      "prose": "Provisione o servidor. Isso instala o renet e cria o armazenamento de dados criptografado."
     },
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 23.457976,
-      "text": "De seguida, vamos provisionar o servidor. Este passo instala o renet e cria o repositório de dados encriptado."
-    },
-    {
-      "id": "tutorial-add-server-04",
-      "markerIndex": 3,
-      "at": 39.717449,
-      "text": "O servidor está pronto. Vamos verificar o que a ferramenta sabe sobre a configuração. Máquinas, chave SSH, infraestrutura -- tudo o que acabámos de configurar aparece aqui."
-    },
-    {
-      "id": "tutorial-add-server-05",
-      "markerIndex": 4,
-      "at": 48.157549,
-      "text": "E aqui está o ficheiro JSON que contém tudo. Copie este único ficheiro para outro portátil e poderá gerir os mesmos servidores a partir daí."
+      "at": 16.338306,
+      "text": "De seguida, vamos provisionar o servidor. Este passo instala o renet e cria o repositório de dados encriptado.",
+      "afterText": "Pronto. O renet está instalado e o repositório de dados está preparado.",
+      "cardLabel": "Inspecionar Config",
+      "prose": "Inspecione o arquivo JSON que contém tudo: máquinas, chave SSH e infraestrutura. Você pode manter várias configs, uma por ambiente, e alternar com o flag --config. Consulte o guia de múltiplas configs vinculado abaixo."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Tudo certo! Vamos adicionar seu primeiro servidor. Leva dois comandos e cerca de um minuto."
+    },
+    {
+      "id": "two-tool-architecture",
+      "text": "São duas partes. A ferramenta de linha de comando vive no seu notebook, e um orquestrador chamado renet roda no servidor. A CLI conecta via SSH, então você nunca precisa entrar no servidor manualmente."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "E é isso para adicionar um servidor! Até o próximo."
+    }
+  ],
+  "title": "Adicionando Seu Primeiro Servidor",
+  "chapters": {
+    "intro": "Adicionando Seu Primeiro Servidor",
+    "two-tool-architecture": "Como o Rediacc conecta ao seu servidor",
+    "cast-step-0": "Passo 1: Registrar o servidor",
+    "cast-step-1": "Passo 2: Provisionar o renet",
+    "cast-step-2": "Passo 3: Inspecionar o arquivo de configuração",
+    "outro": "A seguir: Criando Seu Primeiro Repositório"
+  }
 }

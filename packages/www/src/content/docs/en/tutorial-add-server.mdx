@@ -1,0 +1,55 @@
+---
+title: "Adding Your First Server"
+description: "Register your first server with rdc, provision it, and understand the rdc + renet architecture."
+category: "Tutorials"
+subcategory: essentials
+order: 3
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Adding Your First Server
+
+Before adding a server, it helps to understand how `rdc` works. Rediacc has a two-tool architecture: `rdc` on your laptop, `renet` on the server.
+
+## Watch the tutorial
+
+![Tutorial: Adding your first server](/assets/tutorials/tutorial-add-server.cast)
+
+## Why two tools?
+
+![rdc on laptop, renet on server, SSH between](/img/tutorials/tutorial-add-server/slide-1.svg)
+
+- **`rdc`** is the CLI on your laptop. You type commands here.
+- **`renet`** is the orchestrator on the server. It manages encryption, Docker, and isolation.
+
+When you run a command locally, `rdc` connects over SSH and executes `renet` on the server. You never SSH into your servers manually. `rdc` does it for you.
+
+## Step 1: Register the server
+
+<TutorialStep number={1} />
+
+No `rdc config init` is needed. The config file is created automatically on first use, and `rdc` falls back to your standard `~/.ssh` key.
+
+## Step 2: Provision it
+
+<TutorialStep number={2} />
+
+The server is ready to host repositories.
+
+## Where the config lives
+
+The CLI stores everything in `~/.config/rediacc/rediacc.json`, a single plain-JSON file:
+
+<TutorialStep number={3} />
+
+This one file holds your machines, SSH key, and encryption credentials. Copy it to another laptop and you're ready to drive the same servers from there.
+
+## Multiple configs
+
+You can keep several configs, one per environment (production, staging, dev), and switch between them with the `--config` flag on any command. See [setting up multiple configs](/en/docs/setup#multiple-configs).
+
+---
+
+Next: [Creating Your First Repository](/en/docs/tutorial-create-repo).

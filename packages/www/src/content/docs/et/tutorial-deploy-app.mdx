@@ -1,0 +1,58 @@
+---
+title: "Esimese rakenduse juurutamine"
+description: "Juuruta konteineriseeritud rakendus sisseehitatud malli abil, kasutades käsku rdc repo up."
+category: "Tutorials"
+subcategory: essentials
+order: 5
+language: et
+sourceHash: "764733d064b93e4a"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Esimese rakenduse juurutamine
+
+Sul on tühi repositoorium. `rdc` sisaldab sisseehitatud malle, et saaksid tõelisi rakendusi käivitada ilma `docker-compose`-i nullist kirjutamata. Kolm sammu: vali mall, rakenda see, käivita.
+
+## Vaata juhendvideot
+
+![Tutorial: Deploying your first app](/assets/tutorials/tutorial-deploy-app.cast)
+
+## Vali · Rakenda · Käivita
+
+![Pick a template, apply it, run it](/img/tutorials/tutorial-deploy-app/slide-1.svg)
+
+## 1. samm: vali
+
+<TutorialStep number={1} />
+
+Näed valmis seadistusi levinud rakendustele: Postgres, Redis, veebiserverid ja palju muud.
+
+## 2. samm: rakenda
+
+<TutorialStep number={2} />
+
+See kopeerib repositooriumisse testitud failikomplekti.
+
+## 3. samm: vaata, mis lisandus
+
+<TutorialStep number={3} />
+
+Kaks faili: `docker-compose.yml` kirjeldab konteinereid ja `Rediaccfile` määrab, mis juhtub rakenduse käivitumisel ja peatamisel (selle `up`- ja `down`-elutsükli konksud). `2>/dev/null` peidab ühenduslogid, nii et kuvatakse ainult failide loend.
+
+## 4. samm: käivita
+
+<TutorialStep number={4} />
+
+CLI käivitab konteinerid, ühendab krüptitud köite ja seadistab selle repositooriumi jaoks isoleeritud Dockeri deemoni. (Kui oled juba repositooriumi liivakastis VS Code ühenduse kaudu, on `renet dev up` samaväärne liivakastisisene alternatiiv.)
+
+## 5. samm: kontrolli
+
+<TutorialStep number={5} />
+
+`docker ps` loetleb siin ainult selle repositooriumi konteinerid. Teistel repositooriumidel samal serveril on oma Dockeri deemonid ja need on siit täielikult nähtamatud.
+
+---
+
+Edasi: [Repositooriumiga töötamine](/et/docs/tutorial-work-with-repo).

@@ -1,121 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
-  <defs>
-    <linearGradient id="serverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#2d2d2d;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
-    </filter>
-  </defs>
-  
-  <!-- Background -->
-  <rect width="800" height="450" fill="#f5f5f5"/>
-  
-  <!-- Connection lines -->
-  <line x1="220" y1="225" x2="300" y2="225" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="8,4"/>
-  <line x1="500" y1="225" x2="580" y2="225" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="8,4"/>
-  
-  <!-- Server 1 -->
-  <g transform="translate(100, 150)" filter="url(#shadow)">
-    <!-- Server body -->
-    <rect x="0" y="0" width="120" height="150" rx="8" fill="url(#serverGrad)"/>
-    <!-- Server top highlight -->
-    <rect x="0" y="0" width="120" height="8" rx="8" fill="#3d3d3d"/>
-    <rect x="0" y="0" width="120" height="6" rx="6" fill="#3d3d3d"/>
-    <!-- Drive bays -->
-    <rect x="15" y="30" width="90" height="12" rx="2" fill="#1a1a1a"/>
-    <rect x="15" y="50" width="90" height="12" rx="2" fill="#1a1a1a"/>
-    <rect x="15" y="70" width="90" height="12" rx="2" fill="#1a1a1a"/>
-    <!-- Status lights -->
-    <circle cx="25" cy="36" r="3" fill="#556b2f" opacity="0.5"/>
-    <circle cx="25" cy="56" r="3" fill="#556b2f" opacity="0.3"/>
-    <circle cx="25" cy="76" r="3" fill="#556b2f" opacity="0.5"/>
-    <!-- Ports -->
-    <rect x="15" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="45" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="75" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="15" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="45" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="75" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" role="img" aria-label="A saved backup copy is automatically checked and earns a big green check mark proving it works.">
+  <title>A saved backup copy is automatically checked and earns a big green check mark proving it works.</title>
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5"/>
+
+  <!-- Backup copy: stacked green sheets, left -->
+  <g>
+    <rect x="80" y="150" width="150" height="170" rx="10" fill="#2d5227"/>
+    <rect x="65" y="135" width="150" height="170" rx="10" fill="#4a7c3f" stroke="#1a1a1a" stroke-width="2.5"/>
+    <line x1="90" y1="175" x2="190" y2="175" stroke="#f5f5f5" stroke-width="2.5"/>
+    <line x1="90" y1="205" x2="190" y2="205" stroke="#f5f5f5" stroke-width="2.5"/>
+    <line x1="90" y1="235" x2="160" y2="235" stroke="#f5f5f5" stroke-width="2.5"/>
   </g>
-  
-  <!-- Warning Triangle for Server 1 -->
-  <g transform="translate(130, 80)">
-    <polygon points="30,0 60,52 0,52" fill="#e0e0e0" stroke="#1a1a1a" stroke-width="2"/>
-    <polygon points="30,8 54,48 6,48" fill="#f5f5f5"/>
-    <line x1="30" y1="18" x2="30" y2="32" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="30" cy="40" r="2.5" fill="#1a1a1a"/>
+  <text x="140" y="360" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">Backup copy</text>
+
+  <!-- Automatic check: magnifying glass, center -->
+  <g>
+    <circle cx="400" cy="200" r="62" fill="none" stroke="#2d2d2d" stroke-width="9"/>
+    <circle cx="400" cy="200" r="62" fill="#f5f5f5" fill-opacity="1"/>
+    <circle cx="400" cy="200" r="62" fill="none" stroke="#2d2d2d" stroke-width="9"/>
+    <line x1="400" y1="172" x2="400" y2="228" stroke="#2d5227" stroke-width="8" stroke-linecap="round"/>
+    <line x1="372" y1="200" x2="428" y2="200" stroke="#2d5227" stroke-width="8" stroke-linecap="round"/>
+    <line x1="444" y1="244" x2="492" y2="292" stroke="#2d2d2d" stroke-width="14" stroke-linecap="round"/>
   </g>
-  
-  <!-- Server 2 -->
-  <g transform="translate(340, 150)" filter="url(#shadow)">
-    <!-- Server body -->
-    <rect x="0" y="0" width="120" height="150" rx="8" fill="url(#serverGrad)"/>
-    <!-- Server top highlight -->
-    <rect x="0" y="0" width="120" height="8" rx="8" fill="#3d3d3d"/>
-    <rect x="0" y="0" width="120" height="6" rx="6" fill="#3d3d3d"/>
-    <!-- Drive bays -->
-    <rect x="15" y="30" width="90" height="12" rx="2" fill="#1a1a1a"/>
-    <rect x="15" y="50" width="90" height="12" rx="2" fill="#1a1a1a"/>
-    <rect x="15" y="70" width="90" height="12" rx="2" fill="#1a1a1a"/>
-    <!-- Status lights -->
-    <circle cx="25" cy="36" r="3" fill="#556b2f" opacity="0.3"/>
-    <circle cx="25" cy="56" r="3" fill="#556b2f" opacity="0.5"/>
-    <circle cx="25" cy="76" r="3" fill="#556b2f" opacity="0.3"/>
-    <!-- Ports -->
-    <rect x="15" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="45" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="75" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="15" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="45" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="75" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
+  <text x="400" y="360" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">Checked for you</text>
+
+  <!-- Big green check mark, right -->
+  <g>
+    <circle cx="660" cy="200" r="80" fill="#4a7c3f" stroke="#2d5227" stroke-width="2.5"/>
+    <path d="M620 202 L650 234 L702 168" fill="none" stroke="#f5f5f5" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
   </g>
-  
-  <!-- Warning Triangle for Server 2 -->
-  <g transform="translate(370, 80)">
-    <polygon points="30,0 60,52 0,52" fill="#e0e0e0" stroke="#1a1a1a" stroke-width="2"/>
-    <polygon points="30,8 54,48 6,48" fill="#f5f5f5"/>
-    <line x1="30" y1="18" x2="30" y2="32" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="30" cy="40" r="2.5" fill="#1a1a1a"/>
-  </g>
-  
-  <!-- Server 3 -->
-  <g transform="translate(580, 150)" filter="url(#shadow)">
-    <!-- Server body -->
-    <rect x="0" y="0" width="120" height="150" rx="8" fill="url(#serverGrad)"/>
-    <!-- Server top highlight -->
-    <rect x="0" y="0" width="120" height="8" rx="8" fill="#3d3d3d"/>
-    <rect x="0" y="0" width="120" height="6" rx="6" fill="#3d3d3d"/>
-    <!-- Drive bays -->
-    <rect x="15" y="30" width="90" height="12" rx="2" fill="#1a1a1a"/>
-    <rect x="15" y="50" width="90" height="12" rx="2" fill="#1a1a1a"/>
-    <rect x="15" y="70" width="90" height="12" rx="2" fill="#1a1a1a"/>
-    <!-- Status lights -->
-    <circle cx="25" cy="36" r="3" fill="#556b2f"/>
-    <circle cx="25" cy="56" r="3" fill="#556b2f"/>
-    <circle cx="25" cy="76" r="3" fill="#556b2f"/>
-    <!-- Ports -->
-    <rect x="15" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="45" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="75" y="110" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="15" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="45" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
-    <rect x="75" y="125" width="20" height="8" rx="1" fill="#3d3d3d"/>
-  </g>
-  
-  <!-- Shield with Checkmark for Server 3 -->
-  <g transform="translate(610, 75)">
-    <!-- Shield outline -->
-    <path d="M30 5 L55 15 L55 35 C55 50 30 70 30 70 C30 70 5 50 5 35 L5 15 Z" fill="#556b2f" stroke="#1a1a1a" stroke-width="2"/>
-    <!-- Inner shield -->
-    <path d="M30 12 L48 19 L48 34 C48 46 30 62 30 62 C30 62 12 46 12 34 L12 19 Z" fill="#f5f5f5"/>
-    <!-- Checkmark -->
-    <polyline points="18,32 26,42 42,22" fill="none" stroke="#556b2f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-  
-  <!-- Subtle decorative elements -->
-  <circle cx="160" cy="320" r="40" fill="#e0e0e0" opacity="0.3"/>
-  <circle cx="640" cy="380" r="60" fill="#e0e0e0" opacity="0.2"/>
-  <circle cx="400" cy="400" r="30" fill="#556b2f" opacity="0.1"/>
+  <text x="660" y="360" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">Proven to work</text>
 </svg>

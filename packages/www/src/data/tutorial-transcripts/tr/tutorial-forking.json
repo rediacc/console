@@ -6,38 +6,107 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 108.099445,
-      "text": "Depoyu tek bir komutla fork'lıyoruz. Her şeyi klonladı: uygulama, veritabanı, yapılandırma dosyaları. Ve bu saniyeler içinde oldu; deponun boyutundan bağımsız olarak. 1 gigabayt, 100 gigabayt, 1 terabayt: her seferinde aynı süre."
+      "at": 2.41277,
+      "text": "Depoyu tek bir komutla fork'lıyoruz. Her şeyi klonladı: uygulama, veritabanı, yapılandırma dosyaları. Ve bu saniyeler içinde oldu; deponun boyutundan bağımsız olarak. 1 gigabayt, 100 gigabayt, 1 terabayt: her seferinde aynı süre.",
+      "afterText": "Fork tamam. Klon ayakta ve çalışıyor; boyuttan bağımsız olarak.",
+      "cardLabel": "Repo Forkla",
+      "prose": "Tek bir komut tüm repo'yu kopyalar: uygulama, veritabanı ve yapılandırma dosyaları. Fork süresi, repo boyutundan bağımsız olarak sabittir; bir gigabayt, yüz gigabayt veya bir terabayt olsa da fark etmez."
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 142.355671,
-      "text": "Her iki depo yan yana var. Aynı makine, aynı disk, iki tamamen bağımsız ortam. Fork'un kendi container'ları, kendi dosya sistemi ve kendi Docker daemon'ı var."
+      "at": 13.421721,
+      "text": "Her iki depo yan yana var. Aynı makine, aynı disk, iki tamamen bağımsız ortam. Fork'un kendi container'ları, kendi dosya sistemi ve kendi Docker daemon'ı var.",
+      "afterText": "İki depo, tek disk. Aynı veri, geri kalan her şey ayrı.",
+      "cardLabel": "Repo'ları Listele",
+      "prose": "Her iki repo artık aynı makine ve diskte iki tam bağımsız ortam olarak bir arada bulunur."
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 158.262452,
-      "text": "İzolasyonu kanıtlayalım. Orijinalde işaret dosyamız bıraktığımız yerde duruyor. Fork'un varlığı üst depoda hiçbir şeyi değiştirmedi."
+      "at": 18.980206,
+      "text": "İzolasyonu kanıtlayalım. Orijinalde işaret dosyamız bıraktığımız yerde duruyor. Fork'un varlığı üst depoda hiçbir şeyi değiştirmedi.",
+      "afterText": "Orijinal dosya hâlâ orada. Fork ona dokunmadı.",
+      "cardLabel": "Orijinal Dosya",
+      "prose": "Orijinal repo'yu inceleyerek izolasyonu doğrulayın: işaret dosyası yerinde kalır. Fork oluşturmak üst repo'yu değiştirmez."
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 176.185047,
-      "text": "Şimdi o dosyayı siliyoruz; ama yalnızca fork içinde. Fork içinde silindi. Yıkıcı bir değişiklik yaptık ve bu değişiklik fork içinde kaldı."
+      "at": 26.216902,
+      "text": "Şimdi o dosyayı siliyoruz; ama yalnızca fork içinde. Fork içinde silindi. Yıkıcı bir değişiklik yaptık ve bu değişiklik fork içinde kaldı.",
+      "afterText": "Fork'ta gitti. Orijinale dokunulmadı.",
+      "cardLabel": "Fork'ta Sil",
+      "prose": "İşaret dosyasını yalnızca fork içinde silin. Bu, fork kapsamında yıkıcı bir değişikliktir."
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 195.030667,
-      "text": "Orijinale geri döndük. İşaret dosyası hâlâ burada, dokunulmamış. Orijinal, hiçbir şeyin olduğunu fark etmedi. Aynı görüntüler, ayrı Docker daemon'ları, ayrı dosya sistemleri."
+      "at": 34.456769,
+      "text": "Orijinale geri döndük. İşaret dosyası hâlâ burada, dokunulmamış. Orijinal, hiçbir şeyin olduğunu fark etmedi. Aynı görüntüler, ayrı Docker daemon'ları, ayrı dosya sistemleri.",
+      "afterText": "Hâlâ burada. Fork'lar doğru biçimde izole.",
+      "cardLabel": "Orijinal Sağlam",
+      "prose": "Orijinal repo'ya geri dönün: işaret dosyası sağlam kalır. Üst repo ve fork aynı image'ı paylaşır ancak ayrı Docker daemon'lar ve ayrı dosya sistemleri üzerinde çalışır."
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 212.971596,
-      "text": "İşiniz bittiğinde fork'u silin. Orijinal tam olarak olduğu gibi kalır. Fork alın, deneyin, bir şeyleri bozun, silin; hiçbir risk yok."
+      "at": 41.647526,
+      "text": "İşiniz bittiğinde fork'u silin. Orijinal tam olarak olduğu gibi kalır. Fork alın, deneyin, bir şeyleri bozun, silin; hiçbir risk yok.",
+      "afterText": "Fork kaldırıldı. Orijinal tam bıraktığımız gibi.",
+      "cardLabel": "Temizle",
+      "prose": "İşiniz bittiğinde fork'u silin. Orijinal repo etkilenmez; bu, güvenli bir fork, deney ve imha iş akışını mümkün kılar."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Asıl özelliğe hoş geldiniz! Boyutu ne olursa olsun tüm bir üretim deposunu klonlayın ve hiçbir şeyi bozmayın."
+    },
+    {
+      "id": "fan-out",
+      "text": "Bir üst depo, istediğiniz sayıda bağımsız klona dağılır. Her fork, orijinalle yan yana çalışan kendi izole ortamıdır."
+    },
+    {
+      "id": "link-speed",
+      "text": "Bir klasör bağlantısı paylaşmayı düşünün. Klasör küçük de olsa devasa da olsa bağlantı aynı hafif şeydir; fork da aynı prensiple çalışır."
+    },
+    {
+      "id": "scale-invariance",
+      "text": "1 gigabayt, 100 gigabayt, 1 terabayt: fork aynı şekilde davranır. Depo boyutu denkleme girmez."
+    },
+    {
+      "id": "sun-mirrors",
+      "text": "Üst depo güneş, fork'unuz ise onun ışığını yakalayan bir aynadır. Paylaşılan temel dokunulmadan kalırken aynaya boyadığınız her şey yalnızca size aittir."
+    },
+    {
+      "id": "river-photo",
+      "text": "Fork, üst deponun bir andaki donmuş fotoğrafıdır. Üst depo bir nehir gibi akmaya devam eder; ama sizin fotoğrafınız tam olduğu yerde kalır."
+    },
+    {
+      "id": "flat-disk",
+      "text": "100 gigabaytlık bir deponun beş fork'u, diskte hâlâ yaklaşık 100 gigabayt eder. Yalnızca her fork içinde gerçekten değiştirdiğiniz baytlar için bedel ödersiniz."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Fork'lar gizli bilgileri bilinçli olarak arkalarında bırakır; 'üretimi klonla, hiçbir şeyi bozma' yaklaşımını gerçekten güvenli kılan da budur. Bir sonraki bölümde bunları doğru biçimde bağlayacağız!"
+    }
+  ],
+  "title": "Repository Forklama",
+  "chapters": {
+    "intro": "Repository Forklama",
+    "fan-out": "Bir üst, çok sayıda bağımsız kopya",
+    "link-speed": "Klasörü değil, bağlantıyı paylaşma",
+    "scale-invariance": "Her boyutta aynı hız",
+    "cast-step-0": "Adım 1: Repo'yu forkla",
+    "cast-step-1": "Adım 2: İki repo yan yana",
+    "cast-step-2": "Adım 3: Orijinal dokunulmamış",
+    "sun-mirrors": "Güneş ve ayna",
+    "cast-step-3": "Adım 4: Yalnızca fork'u değiştir",
+    "cast-step-4": "Adım 5: Orijinalin korunduğunu doğrula",
+    "cast-step-5": "Adım 6: Fork'u sil",
+    "river-photo": "Nehrin fotoğrafı",
+    "flat-disk": "Disk kullanımı sabit kalır",
+    "outro": "Sonraki: Secrets Yönetimi"
+  }
 }

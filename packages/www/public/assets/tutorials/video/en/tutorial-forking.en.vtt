@@ -1,0 +1,190 @@
+WEBVTT
+
+00:00:01.080 --> 00:00:03.640
+Welcome to the killer feature! Clone an
+
+00:00:03.640 --> 00:00:06.600
+entire production repo regardless of size
+
+00:00:06.840 --> 00:00:07.720
+, and break nothing.
+
+00:00:08.683 --> 00:00:11.323
+One parent repo fans out into as many
+
+00:00:11.323 --> 00:00:14.043
+independent clones as you want. Each fork
+
+00:00:14.123 --> 00:00:16.683
+is its own isolated environment running
+
+00:00:16.683 --> 00:00:18.363
+side by side with the original.
+
+00:00:19.328 --> 00:00:21.968
+Think of sharing a folder link. The link is
+
+00:00:21.968 --> 00:00:24.848
+the same lightweight thing whether the folder is small
+
+00:00:24.848 --> 00:00:27.648
+or huge, and forking works on the same
+
+00:00:27.648 --> 00:00:28.128
+principle.
+
+00:00:29.021 --> 00:00:31.981
+One gigabyte, one hundred gigabytes
+
+00:00:32.701 --> 00:00:35.261
+, one terabyte: the fork behaves the
+
+00:00:35.261 --> 00:00:38.221
+same. Repo size does not factor
+
+00:00:38.221 --> 00:00:39.341
+into the equation.
+
+00:00:42.816 --> 00:00:45.376
+Now the fork. One command will clone
+
+00:00:45.376 --> 00:00:48.416
+the entire repo, the app, the database
+
+00:00:48.816 --> 00:00:51.616
+, the config files, regardless of size
+
+00:00:52.256 --> 00:00:55.136
+. One gigabyte, one hundred gigabytes, one terabyte
+
+00:00:55.616 --> 00:00:57.856
+: the size simply does not matter.
+
+00:01:00.967 --> 00:01:03.767
+Fork done. The clone is up and running, regardless
+
+00:01:03.767 --> 00:01:04.327
+of size.
+
+00:01:07.835 --> 00:01:11.115
+Both repos exist side by side now. Same
+
+00:01:11.115 --> 00:01:14.155
+machine, same disk, two completely
+
+00:01:14.155 --> 00:01:15.595
+independent environments.
+
+00:01:18.724 --> 00:01:21.684
+Two repos, one disk. Same data, separate
+
+00:01:21.684 --> 00:01:22.404
+everything else.
+
+00:01:25.912 --> 00:01:28.792
+Let us prove the isolation. In the original
+
+00:01:29.032 --> 00:01:31.992
+, our marker file is right where we left it. The
+
+00:01:31.992 --> 00:01:34.552
+fork existence did not change anything in the
+
+00:01:34.552 --> 00:01:35.032
+parent.
+
+00:01:36.038 --> 00:01:38.678
+Original file still there. The fork
+
+00:01:38.678 --> 00:01:39.318
+didn't touch it.
+
+00:01:40.328 --> 00:01:43.128
+The parent repo is the sun and your fork
+
+00:01:43.448 --> 00:01:46.328
+is a mirror catching its light. The shared base
+
+00:01:46.328 --> 00:01:48.968
+stays untouched while anything you paint
+
+00:01:48.968 --> 00:01:50.808
+on the mirror belongs only to you.
+
+00:01:54.193 --> 00:01:56.993
+Now let us delete that file, but only inside
+
+00:01:56.993 --> 00:01:59.633
+the fork. We are making a destructive change
+
+00:01:59.633 --> 00:01:59.953
+here.
+
+00:02:02.465 --> 00:02:05.425
+Gone in the fork. The original stays untouched.
+
+00:02:08.826 --> 00:02:11.626
+Back to the original. The marker file is still here
+
+00:02:12.026 --> 00:02:14.746
+, untouched. Same image, separate
+
+00:02:14.746 --> 00:02:17.066
+Docker daemons, separate filesystems.
+
+00:02:18.064 --> 00:02:20.704
+Still here. Forks are properly isolated.
+
+00:02:24.193 --> 00:02:26.833
+When you are done, just delete the fork. The
+
+00:02:26.833 --> 00:02:29.873
+original stays exactly as it was. Fork
+
+00:02:30.273 --> 00:02:32.913
+, experiment, break things, delete
+
+00:02:33.553 --> 00:02:34.113
+. No risk.
+
+00:02:37.224 --> 00:02:40.104
+Fork removed. The original is exactly
+
+00:02:40.104 --> 00:02:40.744
+as we left it.
+
+00:02:41.774 --> 00:02:44.494
+A fork is a frozen photograph of the parent
+
+00:02:44.494 --> 00:02:47.294
+at one instant. The parent keeps flowing
+
+00:02:47.294 --> 00:02:50.414
+like a river, but your snapshot stays exactly
+
+00:02:50.414 --> 00:02:51.294
+where it was.
+
+00:02:52.187 --> 00:02:55.307
+Five forks of a hundred gigabyte repo still
+
+00:02:55.307 --> 00:02:57.867
+add up to about a hundred gigabytes on disk
+
+00:02:58.347 --> 00:03:01.067
+. You only pay for the bytes you actually change inside
+
+00:03:01.067 --> 00:03:01.627
+each fork.
+
+00:03:02.507 --> 00:03:05.387
+Forks deliberately leave secrets behind, which
+
+00:03:05.387 --> 00:03:08.267
+is what makes clone production, break nothing actually
+
+00:03:08.267 --> 00:03:11.067
+safe. We wire those up properly in the next
+
+00:03:11.067 --> 00:03:11.627
+tutorial!

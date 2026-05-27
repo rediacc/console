@@ -6,26 +6,72 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 52.700593,
-      "text": "Passo um. Vamos listar os templates disponíveis. O Rediacc inclui configurações prontas para as aplicações mais comuns, para não termos de escrever um docker-compose de raiz."
+      "at": 2.40432,
+      "text": "Passo um. Vamos listar os templates disponíveis. O Rediacc inclui configurações prontas para as aplicações mais comuns, para não termos de escrever um docker-compose de raiz.",
+      "afterText": "O catálogo completo de templates. Cada um é uma combinação testada de compose e Rediaccfile.",
+      "cardLabel": "Listar Templates",
+      "prose": "Passo um: liste os templates disponíveis. O Rediacc vem com templates prontos para aplicativos comuns, para que você não precise criar um docker-compose do zero."
     },
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 61.85842,
-      "text": "Passo dois. Vamos aplicar o template app-postgres ao repositório. Surgem dois ficheiros: o docker-compose.yml que descreve os contentores, e o Rediaccfile que define os hooks de arranque e paragem."
+      "at": 6.041569,
+      "text": "Passo dois. Vamos aplicar o template app-postgres ao repositório. Surgem dois ficheiros: o docker-compose.yml que descreve os contentores, e o Rediaccfile que define os hooks de arranque e paragem.",
+      "afterText": "Template aplicado. O repo tem agora o ficheiro compose e o Rediaccfile.",
+      "cardLabel": "Aplicar Template",
+      "prose": "Passo dois: aplique o template app-postgres ao repo. Isso copia um conjunto de arquivos testados para o repo."
     },
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 79.070004,
-      "text": "Passo três. Vamos iniciar o repositório. A ferramenta arranca os contentores, monta o volume encriptado e liga o daemon Docker isolado."
+      "at": 13.566247,
+      "text": "Passo três. Vamos iniciar o repositório. A ferramenta arranca os contentores, monta o volume encriptado e liga o daemon Docker isolado.",
+      "afterText": "Contentores em execução, volume montado, daemon Docker isolado ativo.",
+      "cardLabel": "Ver os Arquivos",
+      "prose": "Conecte-se ao repo e liste o que o template adicionou: um Rediaccfile com hooks de início e parada, e um docker-compose.yml descrevendo os containers. O 2>/dev/null oculta os logs de conexão para que apenas a listagem de arquivos seja exibida."
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 123.719014,
-      "text": "Vamos verificar o que está a correr. O docker ps mostra apenas os contentores deste repositório. Os outros repositórios no mesmo servidor têm os seus próprios daemons e são completamente invisíveis a partir desta vista."
+      "at": 23.282435,
+      "text": "Vamos verificar o que está a correr. O docker ps mostra apenas os contentores deste repositório. Os outros repositórios no mesmo servidor têm os seus próprios daemons e são completamente invisíveis a partir desta vista.",
+      "afterText": "Apenas os contentores deste repo. O isolamento é real, não é configuração.",
+      "cardLabel": "Iniciar o Repo",
+      "prose": "Inicie o repo. O CLI inicia os containers, monta o volume criptografado e configura o Docker daemon isolado."
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "at": 30.345778,
+      "text": "Vamos verificar o que está em execução. docker ps aqui lista apenas os containers deste repo. Os outros repos no mesmo servidor têm seus próprios daemons e são completamente invisíveis nesta visão.",
+      "afterText": "Apenas os containers deste repo. O isolamento é real, não é configuração.",
+      "cardLabel": "Verificar Isolamento",
+      "prose": "Verifique o que está em execução. O docker ps lista apenas os containers deste repo; outros repos no mesmo servidor têm seus próprios Docker daemons e são invisíveis nesta visualização."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Vamos implementar uma aplicação a sério! Passamos de um repositório vazio para contentores em execução em três passos curtos."
+    },
+    {
+      "id": "pick-apply-run",
+      "text": "O fluxo é simples: escolher um template, aplicá-lo ao repositório e executá-lo. A CLI traz templates incorporados, por isso nunca temos de escrever um docker-compose de raiz."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "E está concluída a sua primeira implementação. Até ao próximo, onde vamos aprofundar o trabalho com o próprio repositório."
+    }
+  ],
+  "title": "Implantando Seu Primeiro App",
+  "chapters": {
+    "intro": "Implantando Seu Primeiro App",
+    "pick-apply-run": "Escolha, aplique, execute",
+    "cast-step-0": "Passo 1: Listar templates",
+    "cast-step-1": "Passo 2: Aplicar o template",
+    "cast-step-2": "Passo 3: Ver o que o template adicionou",
+    "cast-step-3": "Passo 4: Iniciar o repo",
+    "cast-step-4": "Passo 5: Verificar isolamento",
+    "outro": "A seguir: Trabalhando com Seu Repo"
+  }
 }

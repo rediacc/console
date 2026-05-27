@@ -1,0 +1,43 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:08.603
+Forking a Repository
+
+00:00:08.603 --> 00:00:19.248
+One parent, many independent clones
+
+00:00:19.248 --> 00:00:28.941
+Sharing a link, not the folder
+
+00:00:28.941 --> 00:00:40.236
+Same speed at any size
+
+00:00:40.236 --> 00:01:05.255
+Step 1: Fork the repo
+
+00:01:05.255 --> 00:01:23.332
+Step 2: Both repos side by side
+
+00:01:23.332 --> 00:01:40.248
+Step 3: Original is untouched
+
+00:01:40.248 --> 00:01:51.613
+The sun and the mirror
+
+00:01:51.613 --> 00:02:06.246
+Step 4: Change only the fork
+
+00:02:06.246 --> 00:02:21.613
+Step 5: Verify the original survives
+
+00:02:21.613 --> 00:02:41.694
+Step 6: Delete the fork
+
+00:02:41.694 --> 00:02:52.107
+A photo of the river
+
+00:02:52.107 --> 00:03:02.427
+Disk usage stays flat
+
+00:03:02.427 --> 00:03:11.707
+Next: Managing Secrets

@@ -6,26 +6,62 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 56.862064,
-      "text": "Käivitame rakenduse tootmisrežiimis sülearvutist. CLI repo up kutsub sama up funktsiooni, mida kasutasime arenduse ajal, kuid käivitab selle eraldatult. Saad sülearvuti sulgeda ja rakendus jätkab tööd."
+      "at": 2.418632,
+      "text": "Käivitame rakenduse tootmisrežiimis sülearvutist. CLI repo up kutsub sama up funktsiooni, mida kasutasime arenduse ajal, kuid käivitab selle eraldatult. Saad sülearvuti sulgeda ja rakendus jätkab tööd.",
+      "afterText": "Rakendus töötab tootmises. Sama käsk, sama tulemus, päris serveris.",
+      "cardLabel": "Käivita Prod",
+      "prose": "Käivita rakendus tootmisrežiimis sülearvutist. Juurutamiskäsk kutsub sama up-funktsiooni, mida kasutatakse arenduse ajal, kuid töötab eraldatud režiimis, nii et rakendus jätkab tööd pärast sülearvuti ühenduse katkemist."
     },
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 97.750961,
-      "text": "Lubame autostarti, et rakendus jääks ellu serveri taaskäivituse korral. Edaspidi, kui server taaskäivitub, tuleb see repositoorium automaatselt tagasi."
+      "at": 9.548589,
+      "text": "Lubame autostarti, et rakendus jääks ellu serveri taaskäivituse korral. Edaspidi, kui server taaskäivitub, tuleb see repositoorium automaatselt tagasi.",
+      "afterText": "Autostart sees. Rakendus elab taaskäivituse üle.",
+      "cardLabel": "Luba Autostart",
+      "prose": "Luba autostart, et repo säiliks serveri taaskäivituste üle. Kui see on lubatud, taastatakse repo automaatselt iga kord, kui server taaskäivitub."
     },
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 125.443493,
-      "text": "Loetleme, millel repositooriumidel on autostart lubatud. Kinnitab, et meie rakendus on nüüd käivitusnimekirjas."
+      "at": 17.034078,
+      "text": "Loetleme, millel repositooriumidel on autostart lubatud. Kinnitab, et meie rakendus on nüüd käivitusnimekirjas.",
+      "afterText": "Seal see on, käivitusnimekirjas.",
+      "cardLabel": "Autostart Loend",
+      "prose": "Loetlege repositooriumid, millel on autostart lubatud, et kinnitada, et rakendus on käivitusnimekirjas."
     },
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 141.09184,
-      "text": "Rakenduse peatamiseks üks käsk sülearvutist. Üks käsk üles, üks käsk alla. Kõik sinu terminalist, ilma interaktiivsete seanssideta."
+      "at": 22.929505,
+      "text": "Rakenduse peatamiseks üks käsk sülearvutist. Üks käsk üles, üks käsk alla. Kõik sinu terminalist, ilma interaktiivsete seanssideta.",
+      "afterText": "Peatatud. Üks käsk üles, üks käsk alla.",
+      "cardLabel": "Peata Repo",
+      "prose": "Peata rakendus ühe käsuga sülearvutist. Üks käsk käivitab selle, üks käsk peatab selle, kõik juhitakse terminalilt."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Olgu! Viime su rakenduse arendusest tootmisse. Kolm lühikest sammu, kõik juhitud sülearvutist."
+    },
+    {
+      "id": "dev-vs-prod",
+      "text": "Arenduse ajal käivitad rakenduse repositooriumi seest, nii et see peatub, kui sa lahti ühendud. Tootmises käivitad selle sülearvutist CLI-ga ja see jätkab tööd eraldatult."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ja see on tootmisrežiim lühidalt. Kohtumiseni järgmises!"
+    }
+  ],
+  "title": "Tootmisrežiim",
+  "chapters": {
+    "intro": "Tootmisrežiim",
+    "dev-vs-prod": "Dev vs prod, erinevus",
+    "cast-step-0": "Samm 1: Käivita tootmisrežiimis",
+    "cast-step-1": "Samm 2: Luba autostart",
+    "cast-step-2": "Samm 3: Loetlege autostart-lubatud repod",
+    "cast-step-3": "Samm 4: Peata sülearvutist",
+    "outro": "Järgmine: Varundamine ja Taastamine"
+  }
 }

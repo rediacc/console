@@ -113,6 +113,31 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 
 `sandbox-exec` applies Landlock LSM filesystem restrictions, then execs the given command. It is invoked automatically by `sandbox-gateway` (the SSH ForceCommand handler) for all repo-level connections.
 
+### Per-User Hub (development environments)
+
+The Hub gives each user their own Docker daemon for development environments, separate from the per-repo `FlavorRediacc` daemons.
+
+```bash
+# Install / remove the per-user Hub systemd units
+sudo renet hub install
+sudo renet hub uninstall
+
+# Garbage-collect idle per-user Hub daemons
+sudo renet hub gc
+```
+
+Daemons run under one of two flavors, selected with `--flavor`:
+
+```bash
+# Per-repo isolated daemon (bridge=none, iptables=false) — the default
+sudo renet daemon start-foreground --flavor=rediacc ...
+
+# Per-user Hub daemon (bridge=docker0, iptables=true, live-restore=true)
+sudo renet daemon start-foreground --flavor=hub ...
+```
+
+The `hub` flavor enables normal bridge networking so user-run containers have outbound connectivity; the `rediacc` flavor enforces loopback isolation between repos. Hub audit logs are written to `/var/log/rediacc/hub/<user>.log`.
+
 **Flags:**
 - `--allow-rw`, `--allow-ro`, `--allow-exec`: Landlock path rules
 - `--home-overlay`: Mount OverlayFS over home dir for per-repo write isolation
@@ -216,6 +241,8 @@ Global services shared across all repositories:
 |------|---------|
 | `rediacc-router.service` | Route discovery (port 7111) |
 | `rediacc-autostart.service` | Boot-time repository mounting |
+| `rediacc-autostart-reconcile.service` | Periodic autostart reconciler (run by the timer below) |
+| `rediacc-autostart-reconcile.timer` | Fires `renet repository reconcile` approximately every 3 minutes to recover autostart repos that went down after boot |
 
 ## Common Workflows
 

@@ -6,26 +6,72 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 52.700593,
-      "text": "Passo uno. Elenchiamo i template disponibili. Rediacc include configurazioni pronte all'uso per le app piu' comuni -- Postgres, Redis, web server -- cosi' non devi scrivere un docker-compose da zero."
+      "at": 2.40432,
+      "text": "Passo uno. Elenchiamo i template disponibili. Rediacc include configurazioni pronte all'uso per le app piu' comuni -- Postgres, Redis, web server -- cosi' non devi scrivere un docker-compose da zero.",
+      "afterText": "Il catalogo completo dei template. Ognuno e' una coppia compose + Rediaccfile testata.",
+      "cardLabel": "Elenca Template",
+      "prose": "Primo passo: elenca i template disponibili. Rediacc include template preconfigurati per le app più comuni, così non devi creare un docker-compose da zero."
     },
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 61.85842,
-      "text": "Passo due. Applichiamo il template app-postgres al nostro repo. Compaiono due file: il docker-compose.yml che descrive i container e il Rediaccfile che definisce gli hook di avvio e arresto."
+      "at": 6.041569,
+      "text": "Passo due. Applichiamo il template app-postgres al nostro repo. Compaiono due file: il docker-compose.yml che descrive i container e il Rediaccfile che definisce gli hook di avvio e arresto.",
+      "afterText": "Template applicato. Il repo ora ha il suo file compose e il suo Rediaccfile.",
+      "cardLabel": "Applica Template",
+      "prose": "Secondo passo: applica il template app-postgres al repo. Questo copia un insieme collaudato di file nel repo."
     },
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 79.070004,
-      "text": "Passo tre. Avviamo il repo. Lo strumento avvia i container, monta il volume cifrato e collega il Docker daemon isolato. L'app e' ora in esecuzione."
+      "at": 13.566247,
+      "text": "Passo tre. Avviamo il repo. Lo strumento avvia i container, monta il volume cifrato e collega il Docker daemon isolato. L'app e' ora in esecuzione.",
+      "afterText": "Container in esecuzione, volume montato, Docker daemon isolato attivo.",
+      "cardLabel": "Vedi i File",
+      "prose": "Connettiti al repo ed elenca ciò che il template ha aggiunto: un Rediaccfile con hook di avvio e arresto, e un docker-compose.yml che descrive i container. Il 2>/dev/null nasconde i log di connessione in modo che venga mostrato solo l'elenco dei file."
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 123.719014,
-      "text": "Verifichiamo con docker ps. Nota che questa vista mostra solo i container del nostro repository. Gli altri repo sullo stesso server hanno i propri Docker daemon e sono completamente invisibili da qui."
+      "at": 23.282435,
+      "text": "Verifichiamo con docker ps. Nota che questa vista mostra solo i container del nostro repository. Gli altri repo sullo stesso server hanno i propri Docker daemon e sono completamente invisibili da qui.",
+      "afterText": "Solo i container di questo repo. L'isolamento e' reale, non solo di configurazione.",
+      "cardLabel": "Avvia il Repo",
+      "prose": "Avvia il repo. La CLI avvia i container, monta il volume cifrato e configura il Docker daemon isolato."
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "at": 30.345778,
+      "text": "Verifichiamo cosa è in esecuzione. docker ps qui elenca solo i container di questo repo. Gli altri repo sullo stesso server hanno i propri daemon e sono completamente invisibili da questa vista.",
+      "afterText": "Solo i container di questo repo. L'isolamento è reale, non è configurazione.",
+      "cardLabel": "Verifica Isolamento",
+      "prose": "Verifica cosa è in esecuzione. docker ps elenca solo i container di questo repo; gli altri repo sullo stesso server hanno i propri Docker daemon e non sono visibili da questa vista."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "E' ora di distribuire un'app vera! Passeremo da un repo vuoto a container in esecuzione in tre brevi passaggi."
+    },
+    {
+      "id": "pick-apply-run",
+      "text": "Il flusso e' semplice: scegli un template, applicalo al repo ed eseguilo. La CLI include template integrati, cosi' non dobbiamo mai scrivere un docker-compose da zero."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ed e' tutto per il tuo primo deploy. Ci vediamo nel prossimo, dove approfondiremo come lavorare con il repo stesso."
+    }
+  ],
+  "title": "Distribuire la Prima App",
+  "chapters": {
+    "intro": "Distribuire la Prima App",
+    "pick-apply-run": "Scegli, applica, avvia",
+    "cast-step-0": "Passo 1: Elenca i template",
+    "cast-step-1": "Passo 2: Applica il template",
+    "cast-step-2": "Passo 3: Vedi cosa ha aggiunto il template",
+    "cast-step-3": "Passo 4: Avvia il repo",
+    "cast-step-4": "Passo 5: Verifica l'isolamento",
+    "outro": "Prossimo: Lavorare con il Repo"
+  }
 }

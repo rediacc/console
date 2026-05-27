@@ -6,6 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: it
+sourceHash: "ee2c8fc465b846e4"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Servizi
@@ -194,7 +196,9 @@ renet e Docker non sono d'accordo, intenzionalmente, su come gestire i restart d
 
 > **Sperimentale:** Il ripristino basato sul sidecar cold-backup e il flag `--sync-certs` su `rdc machine query` sono stati introdotti in renet 0.9+. Le versioni precedenti si affidano esclusivamente alla `restart_policy` salvata per il ripristino del watchdog, il che può lasciare i container `on-failure` bloccati dopo un cold backup.
 
-> **Il bridge networking Docker è disabilitato per i daemon gestiti da rediacc.** Ogni daemon per singolo repository è configurato con `"bridge": "none"` e `"iptables": false`. Un semplice `docker run <image>` all'interno di una shell di repository si avvierà comunque, ma il container ottiene solo un'interfaccia loopback e non ha DNS né connettività in uscita. Questo è by design, poiché l'isolamento loopback tra repository è applicato dagli hook cgroup eBPF che un container in bridge aggirerebbe. I servizi di produzione dovrebbero usare `renet compose` (che inietta host networking automaticamente); per il debug ad hoc, passa `--network host` esplicitamente: `docker run --rm --network host -it ubuntu bash`.
+> **Il bridge networking Docker è disabilitato per i daemon per singolo repository.** Ogni daemon per singolo repository (`FlavorRediacc`) è configurato con `"bridge": "none"` e `"iptables": false`. Un semplice `docker run <image>` all'interno di una shell di repository si avvierà comunque, ma il container ottiene solo un'interfaccia loopback e non ha DNS né connettività in uscita. Questo è by design, poiché l'isolamento loopback tra repository è applicato dagli hook cgroup eBPF che un container in bridge aggirerebbe. I servizi di produzione dovrebbero usare `renet compose` (che inietta host networking automaticamente); per il debug ad hoc, passa `--network host` esplicitamente: `docker run --rm --network host -it ubuntu bash`.
+>
+> I daemon Hub per utente (`FlavorHub`, usati negli ambienti di sviluppo) sono l'eccezione: impostano `bridge="docker0"`, `iptables=true` e `live-restore=true` in modo che i container avviati dall'utente abbiano bridge networking normale e connettività in uscita.
 
 > **Nota:** I repository fork ottengono route automatiche nel sottodominio del genitore: `{service}-fork-{tag}.{repo}.{machine}.{baseDomain}`. I domini personalizzati vengono ignorati per i fork.
 
@@ -323,6 +327,8 @@ il deploy.
 ```bash
 rdc repo autostart list -m server-1
 ```
+
+Per i dettagli su come il riconciliatore periodico recupera i repository che si interrompono dopo l'avvio, vedere [Autostart e Ripristino](/it/docs/autostart-recovery).
 
 ## Esempio completo
 

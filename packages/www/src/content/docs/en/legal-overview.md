@@ -14,7 +14,7 @@ This section maps Rediacc's technical capabilities to the requirements of major 
 
 | Framework | Scope | Key Rediacc Capabilities |
 |-----------|-------|--------------------------|
-| [GDPR](/en/docs/legal-gdpr) | EU data protection and privacy | CoW cloning on same machine, LUKS2 encryption, zero-knowledge config store, audit logging, right to erasure via `rdc repo destroy` |
+| [GDPR](/en/docs/legal-gdpr) | EU data protection and privacy | CoW cloning on same machine, LUKS2 encryption, zero-knowledge config store, audit logging, right to erasure via `rdc repo delete` |
 | [SOC 2](/en/docs/legal-soc2) | Trust service criteria for service organizations | Encryption at rest, zero-knowledge config sync, network isolation, audit trail, backup and recovery |
 | [HIPAA](/en/docs/legal-hipaa) | US health information protection | LUKS2 encryption, zero-knowledge config store, SSH-only access, isolated Docker daemons, transmission security |
 | [CCPA](/en/docs/legal-ccpa) | California consumer privacy rights | Self-hosted (no data sale/sharing), zero-knowledge encryption, encrypted deletion, data inventory per repository |
@@ -31,7 +31,7 @@ Every compliance framework in this section maps back to the same technical prope
 - **Network isolation**: Each repository gets its own Docker daemon, loopback IP subnet (/26), and iptables rules. Containers from different repositories cannot communicate.
 - **Copy-on-write cloning**: `rdc repo fork` uses filesystem reflinks (`cp --reflink=always`). Data is duplicated on the same machine without any network transfer.
 - **Audit logging**: 70+ event types covering authentication (login, 2FA, password changes, session revocation), API token lifecycle, config store operations, subscription/licensing activity, and CLI machine operations (repo lifecycle, backup, sync, terminal sessions). Accessible via admin dashboard, portal activity page (with org-scoped filtering), and `rdc audit` CLI. Machine operations are also recorded in your system logs for defense in depth.
-- **Encrypted backup**: `rdc repo backup push/pull` transfers data over SSH. The backup destination receives LUKS-encrypted volumes.
+- **Encrypted backup**: `rdc repo push/pull` transfers data over SSH. The backup destination receives LUKS-encrypted volumes.
 - **Zero-knowledge config store**: Optional encrypted config sync across devices. Configs are encrypted client-side with AES-256-GCM before upload. The server stores only opaque blobs. The server cannot read SSH keys, credentials, IP addresses, or any plaintext config data. Key derivation uses passkey PRF extension + HKDF with domain separation. Member access is managed via X25519 key exchange, and revocation is immediate.
 
 For details on these capabilities, see [Architecture](/en/docs/architecture), [Repositories](/en/docs/repositories), [Config Storage](/en/docs/config-storage), and [Account Security](/en/docs/account-security).

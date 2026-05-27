@@ -4,8 +4,8 @@ description: "Entender cómo account, rdc y renet gestionan los slots de máquin
 category: "Guides"
 order: 7
 language: es
-sourceHash: "dc61245ac532e3a4"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "8e0a4976634ae323"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Suscripción y licencias
@@ -176,7 +176,7 @@ rdc subscription repo status -m hostinger
 Renovar la activación de máquina y actualizar licencias de repositorio en lote:
 
 ```bash
-rdc subscription refresh -m hostinger
+rdc subscription refresh repos -m hostinger
 ```
 
 Los repositorios descubiertos en la máquina pero que faltan en la configuración local de `rdc` se rechazan durante la actualización en lote. Se reportan como fallos y no se clasifican automáticamente.
