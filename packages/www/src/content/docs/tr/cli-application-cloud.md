@@ -6,7 +6,7 @@ order: 3
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "5113c86b2e17e2f0"
+sourceHash: "c285d703825d9607"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -183,17 +183,8 @@ rdc auth token revoke <requestId>
 
 {{t:cli.commands.organization.description}}
 
-<a id="cli-cloud-organization-list"></a>
-### 2.1 list
-
-{{t:cli.commands.organization.list.description}}
-
-```bash
-rdc organization list
-```
-
 <a id="cli-cloud-organization-info"></a>
-### 2.2 info
+### 2.1 info
 
 {{t:cli.commands.organization.info.description}}
 
@@ -202,7 +193,7 @@ rdc organization info
 ```
 
 <a id="cli-cloud-organization-dashboard"></a>
-### 2.3 dashboard
+### 2.2 dashboard
 
 {{t:cli.commands.organization.dashboard.description}}
 
@@ -211,7 +202,7 @@ rdc organization dashboard
 ```
 
 <a id="cli-cloud-organization-vault"></a>
-### 2.4 vault
+### 2.3 vault
 
 {{t:cli.commands.organization.vault.description}}
 
@@ -249,7 +240,7 @@ rdc organization vault update [options]
 
 
 <a id="cli-cloud-organization-export"></a>
-### 2.5 export
+### 2.4 export
 
 {{t:cli.commands.organization.export.description}}
 
@@ -263,7 +254,7 @@ rdc organization export [options]
 
 
 <a id="cli-cloud-organization-import"></a>
-### 2.6 import
+### 2.5 import
 
 {{t:cli.commands.organization.import.description}}
 
@@ -277,7 +268,7 @@ rdc organization import <path> [options]
 
 
 <a id="cli-cloud-organization-maintenance"></a>
-### 2.7 maintenance
+### 2.6 maintenance
 
 {{t:cli.commands.organization.maintenance.description}}
 
@@ -510,17 +501,8 @@ rdc team member remove <teamName> <userEmail>
 
 {{t:cli.commands.permission.description}}
 
-<a id="cli-cloud-permission-list"></a>
-### 5.1 list
-
-{{t:cli.commands.permission.list.description}}
-
-```bash
-rdc permission list
-```
-
 <a id="cli-cloud-permission-group"></a>
-### 5.2 group
+### 5.1 group
 
 {{t:cli.commands.permission.group.description}}
 
@@ -566,7 +548,7 @@ rdc permission group show <name>
 ```
 
 <a id="cli-cloud-permission-add"></a>
-### 5.3 add
+### 5.2 add
 
 {{t:cli.commands.permission.add.description}}
 
@@ -575,7 +557,7 @@ rdc permission add <groupName> <permission>
 ```
 
 <a id="cli-cloud-permission-remove"></a>
-### 5.4 remove
+### 5.3 remove
 
 {{t:cli.commands.permission.remove.description}}
 
@@ -1262,17 +1244,8 @@ rdc ceph clone unassign <name> [options]
 
 {{t:cli.commands.audit.description}}
 
-<a id="cli-cloud-audit-list"></a>
-### 11.1 list
-
-{{t:cli.commands.audit.list.description}}
-
-```bash
-rdc audit list
-```
-
 <a id="cli-cloud-audit-log"></a>
-### 11.2 log
+### 11.1 log
 
 {{t:cli.commands.audit.log.description}}
 
@@ -1286,7 +1259,7 @@ rdc audit log [options]
 
 
 <a id="cli-cloud-audit-trace"></a>
-### 11.3 trace
+### 11.2 trace
 
 {{t:cli.commands.audit.trace.description}}
 
@@ -1295,7 +1268,7 @@ rdc audit trace <entityType> <entityId>
 ```
 
 <a id="cli-cloud-audit-history"></a>
-### 11.4 history
+### 11.3 history
 
 {{t:cli.commands.audit.history.description}}
 

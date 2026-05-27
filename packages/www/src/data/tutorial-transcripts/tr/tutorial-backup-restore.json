@@ -6,26 +6,62 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 65.053708,
-      "text": "Birinci adım. Mevcut bir rclone yapılandırmasını içe aktarıyoruz. rclone; S3, Backblaze, Google Drive, Dropbox ve çok daha fazlasını destekler. Halihazırda kullanıyorsanız aynı yapılandırmayı doğrudan içe aktarabilirsiniz."
+      "at": 2.424169,
+      "text": "Birinci adım. Mevcut bir rclone yapılandırmasını içe aktarıyoruz. rclone; S3, Backblaze, Google Drive, Dropbox ve çok daha fazlasını destekler. Halihazırda kullanıyorsanız aynı yapılandırmayı doğrudan içe aktarabilirsiniz.",
+      "afterText": "Depolama içe aktarıldı. CLI artık buraya yedek gönderebilir.",
+      "cardLabel": "Depolama İçe Aktar",
+      "prose": "Mevcut bir rclone yapılandırmasını içe aktarın. rclone; S3, Backblaze, Google Drive, Dropbox ve daha fazlasını destekler. rclone kullanıyorsanız aynı yapılandırma doğrudan içe aktarılır."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 73.743501,
-      "text": "Aracın artık tanıdığı depolama alanlarını listeliyoruz. Her depolama alanı, yedek gönderebileceğimiz bir hedef."
+      "at": 6.651448,
+      "text": "Aracın artık tanıdığı depolama alanlarını listeliyoruz. Her depolama alanı, yedek gönderebileceğimiz bir hedef.",
+      "afterText": "İşte burada. Yedek almaya hazır.",
+      "cardLabel": "Depolamaları Listele",
+      "prose": "CLI'nin artık tanıdığı depolamaları listeleyin. Her biri yedeklemeler için bir hedeftir."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 82.843959,
-      "text": "İkinci adım. Tam yedek gönderiyoruz. Tüm depo yükleniyor: uygulama, veritabanı, dosyalar, yapılandırma. Depo depolandığında şifreli olduğundan yedek de şifreli olur. Ek anahtar yönetimi gerekmez."
+      "at": 10.354487,
+      "text": "İkinci adım. Tam yedek gönderiyoruz. Tüm depo yükleniyor: uygulama, veritabanı, dosyalar, yapılandırma. Depo depolandığında şifreli olduğundan yedek de şifreli olur. Ek anahtar yönetimi gerekmez.",
+      "afterText": "Yedek yüklendi. Bu depodaki her şey artık uzak depolamada, şifreli olarak duruyor.",
+      "cardLabel": "Yedek Gönder",
+      "prose": "Tam yedek gönderin. Uygulama, veritabanı, dosyalar ve yapılandırma dahil tüm repository yüklenir. Repository bekleme sırasında şifrelendiğinden yedekleme de şifrelenir, ekstra anahtar yönetimine gerek yoktur."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 94.515541,
-      "text": "Bu depolama alanında bulunan yedekleri listeliyoruz. Buradan itibaren, yeni bir sunucuda geri yükleme tek komutla yapılır: depo geri yükleme komutu. Aynı veri, aynı container'lar, farklı makine."
+      "at": 18.28182,
+      "text": "Bu depolama alanında bulunan yedekleri listeliyoruz. Buradan itibaren, yeni bir sunucuda geri yükleme tek komutla yapılır: depo geri yükleme komutu. Aynı veri, aynı container'lar, farklı makine.",
+      "afterText": "Tüm anlık görüntüleriniz tek bir yerde. Tek bir komutla herhangi birini geri çekebilirsiniz.",
+      "cardLabel": "Yedekleri Listele",
+      "prose": "Bu depolamada mevcut yedekleri listeleyin. Yeni bir sunucuda geri yükleme tek bir komutla yapılır: repo pull komutu."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Uygulamanız yayında; şimdi onu asla kaybetmediğinizden emin olalım! Bu eğitimde tüm depoyu harici depolamaya gönderiyor ve gerektiğinde geri çekiyoruz."
+    },
+    {
+      "id": "three-steps",
+      "text": "Yedekleme ve geri yükleme üç adıma iner. Bir depolama sağlayıcısını yapılandırın, yedek gönderin ve ihtiyaç olduğunda geri yükleyin."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Verileriniz güvende ve makineler arasında taşınabilir. Bir sonraki bölümde görüşmek üzere!"
+    }
+  ],
+  "title": "Yedekleme ve Geri Yükleme",
+  "chapters": {
+    "intro": "Yedekleme ve Geri Yükleme",
+    "three-steps": "Üç adım: yapılandır, gönder, geri yükle",
+    "cast-step-0": "Adım 1: rclone yapılandırmasını içe aktar",
+    "cast-step-1": "Adım 2: Yapılandırılmış depolamaları listele",
+    "cast-step-2": "Adım 3: Tam yedek gönder",
+    "cast-step-3": "Adım 4: Depolamadaki yedekleri listele",
+    "outro": "Sıradaki: İzleme"
+  }
 }

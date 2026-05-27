@@ -4,7 +4,8 @@ description: "Comment Rediacc répond aux exigences de la directive européenne 
 category: "Legal"
 order: 8
 language: fr
-sourceHash: "be77425c2d3b38d2"
+sourceHash: "a2078388f7ae1906"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 NIS2 et DORA sont des réglementations européennes qui imposent des exigences de cybersécurité et de résilience opérationnelle aux organisations d'infrastructures critiques et du secteur financier. Les deux sont entrées en vigueur en 2025 et s'appliquent largement aux industries de l'UE.
@@ -21,7 +22,7 @@ Texte intégral : [Directive (UE) 2022/2555](https://eur-lex.europa.eu/eli/dir/2
 |--------------|-----------------|
 | Mesures de gestion des risques (Art. 21) | Chiffrement LUKS2 au repos, isolation réseau par dépôt, accès SSH uniquement, journalisation d'audit au niveau du compte (40+ types d'événements) |
 | Gestion des incidents (Art. 21(2)(b)) | 40+ types d'événements au niveau du compte (auth, jetons, config, licences) fournissent une piste forensique. L'isolation par dépôt limite le rayon d'impact. |
-| Continuité d'activité (Art. 21(2)(c)) | `rdc repo backup push/pull` avec sauvegarde chiffrée multi-destination. Snapshots CoW pour restauration instantanée. |
+| Continuité d'activité (Art. 21(2)(c)) | `rdc repo push/pull` avec sauvegarde chiffrée multi-destination. Snapshots CoW pour restauration instantanée. |
 | Sécurité de la chaîne d'approvisionnement (Art. 21(2)(d)) | L'auto-hébergement élimine les risques liés à la chaîne d'approvisionnement SaaS. Aucun fournisseur cloud tiers ne traite vos données. |
 | Sécurité réseau (Art. 21(2)(e)) | Docker daemons par dépôt, règles iptables, isolation IP loopback (sous-réseaux /26). |
 | Chiffrement (Art. 21(2)(h)) | Chiffrement LUKS2 AES-256 obligatoire. Magasin de configuration à connaissance nulle avec AES-256-GCM. |
@@ -49,7 +50,7 @@ Texte intégral : [Règlement (UE) 2022/2554](https://eur-lex.europa.eu/eli/reg/
 | Cadre de gestion des risques TIC (Art. 6) | Le chiffrement, l'isolation, la journalisation d'audit et la sauvegarde forment la couche de contrôles techniques. |
 | Protection et prévention (Art. 9) | Chiffrement LUKS2 AES-256 au repos. L'isolation réseau empêche le déplacement latéral. Accès SSH uniquement. |
 | Détection (Art. 10) | 40+ types d'événements au niveau du compte. Tableau de bord d'administration avec filtrage par utilisateur et équipe. Opérations machine auditables via SSH et journaux système. |
-| Réponse et récupération (Art. 11) | Snapshots CoW pour restauration instantanée. `rdc repo backup push/pull` pour récupération multi-destination. Tests de reprise après sinistre basés sur les forks. |
+| Réponse et récupération (Art. 11) | Snapshots CoW pour restauration instantanée. `rdc repo push/pull` pour récupération multi-destination. Tests de reprise après sinistre basés sur les forks. |
 | Risque TIC tiers (Art. 28-30) | L'auto-hébergement élimine entièrement la classification de "fournisseur tiers critique de TIC". |
 | Tests de résilience opérationnelle numérique (Art. 24-27) | Le clonage CoW permet des tests de pénétration dirigés par les menaces sur des environnements similaires à la production sans exposition de données. Cloner, tester, détruire. |
 

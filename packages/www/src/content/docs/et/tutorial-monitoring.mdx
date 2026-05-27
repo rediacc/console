@@ -1,0 +1,58 @@
+---
+title: "Monitoorimine"
+description: "Kontrolli oma serverite ja repositooriumide tervist sülearvutist rdc machine käskudega."
+category: "Tutorials"
+subcategory: advanced
+order: 12
+language: et
+sourceHash: "7690e2a129161381"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Monitoorimine
+
+Sinu rakendus on juurutatud, elus ja varundatud. Veendu nüüd, et kõik jääb terveks. `rdc` annab sulle täieliku ülevaate igast serverist (tervis, konteinerid, repositooriumid) sinu sülearvutist.
+
+## Vaata juhendvideot
+
+![Tutorial: Monitoring](/assets/tutorials/tutorial-monitoring.cast)
+
+## Kolm asja, mida saad kontrollida
+
+![Health, containers, repos](/img/tutorials/tutorial-monitoring/slide-1.svg)
+
+## Tervis: süsteemiteave
+
+<TutorialStep number={1} />
+
+See näitab süsteemi tööaega, kettakasutust ja salvestuse olekut. Kui midagi on valesti, räägib see sulle.
+
+## Konteinerid
+
+<TutorialStep number={2} />
+
+Saad iga konteineri nime, oleku, tervise, CPU ja mälu, lisaks sellele, millisele repositooriumile see kuulub.
+
+## Repositooriumid
+
+<TutorialStep number={3} />
+
+See näitab iga repositooriumit selle suuruse, ühendamise oleku, Dockeri oleku ja kettakasutusega.
+
+## Kõik korraga
+
+<TutorialStep number={4} />
+
+Süsteemiteave, repositooriumid, konteinerid, kõik ühes käsus. Sama `query` käsk ilma filtriteta tagastab täieliku pildi; koos `--system`, `--containers`, `--repositories`, `--services`, `--network` või `--block-devices` piirab see ainult selle jaotiseni.
+
+## Kohalik tervise kontroll
+
+`rdc doctor` kontrollib sinu kohalikku seadistust (Node, SSH võti, `renet`, Docker), sõltumatult konkreetsest serverist:
+
+<TutorialStep number={5} />
+
+## Oled valmis
+
+See on terve sari. Saad nüüd paigaldada, seadistada, juurutada, teha forke, minna ellu, seadistada autostarti, varundada ja monitoorida. Kõik oma terminalist, kõik oma serveritel.

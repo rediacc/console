@@ -289,6 +289,15 @@ const ALLOWED_IDENTICAL = new Set([
   'Self-hosted / on-premises',
   // Website label (identical in European Portuguese)
   'Website',
+  // SSH alias messages (contain fixed path ~/.ssh/config_rediacc and brand alias rediacc-- — kept English)
+  'Wrote SSH alias rediacc--{{name}} to ~/.ssh/config_rediacc',
+  'Failed to write SSH alias (non-fatal): {{error}}',
+  'Removed SSH alias rediacc--{{name}}',
+  // License recovery error messages — contain CLI commands and technical terms kept in English
+  'Your subscription token is not ready. Run: rdc subscription login, then retry.',
+  'Repositories were found on {{machine}} but none are tracked in your local config. Run: rdc config repository list and ensure the repo entries exist, then retry.',
+  'The account server rejected license issuance for the repository. First error: {{error}}. Run: rdc subscription refresh repo --name <repo> -m {{machine}} for details.',
+  'Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.',
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)

@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-forking",
+  "nextTutorialKey": "tutorial-managing-secrets",
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "fan-out",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "fan-out",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "link-speed",
+      "type": "slide",
+      "src": "slide-2.svg",
+      "narrationKey": "link-speed",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "scale-invariance",
+      "type": "slide",
+      "src": "slide-3.svg",
+      "narrationKey": "scale-invariance",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc repo fork --parent my-app -m my-server --tag experiment --up",
+        "commandFull": "rdc repo fork --parent my-app -m <machine-name> --tag experiment --up"
+      }
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc repo list -m my-server",
+        "commandFull": "rdc repo list -m <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc term connect -m my-server -r my-app -c 'ls -la index.html'",
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la index.html' 2>/dev/null"
+      }
+    },
+    {
+      "id": "sun-mirrors",
+      "type": "slide",
+      "src": "slide-4.svg",
+      "narrationKey": "sun-mirrors",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "markerIndex": 3,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc term connect -m my-server -r my-app:experiment -c 'rm index.html && echo removed'",
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app:experiment --command 'rm index.html && echo removed' 2>/dev/null"
+      }
+    },
+    {
+      "id": "cast-step-4",
+      "type": "cast-narrated",
+      "markerIndex": 4,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc term connect -m my-server -r my-app -c 'ls -la index.html'",
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la index.html' 2>/dev/null"
+      }
+    },
+    {
+      "id": "cast-step-5",
+      "type": "cast-narrated",
+      "markerIndex": 5,
+      "holdSec": 0.8,
+      "narrationRole": "transition",
+      "card": {
+        "command": "rdc repo delete --name my-app:experiment -m my-server",
+        "commandFull": "rdc repo delete --name my-app:experiment -m <machine-name>"
+      }
+    },
+    {
+      "id": "river-photo",
+      "type": "slide",
+      "src": "slide-5.svg",
+      "narrationKey": "river-photo",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "flat-disk",
+      "type": "slide",
+      "src": "slide-6.svg",
+      "narrationKey": "flat-disk",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

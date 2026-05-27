@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-monitoring",
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "three-checks",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "three-checks",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc machine query --name my-server --system",
+        "commandFull": "rdc machine query --name <machine-name> --system"
+      }
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "transition",
+      "card": {
+        "command": "rdc machine query --name my-server --containers",
+        "commandFull": "rdc machine query --name <machine-name> --containers"
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "transition",
+      "card": {
+        "command": "rdc machine query --name my-server --repositories",
+        "commandFull": "rdc machine query --name <machine-name> --repositories"
+      }
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "markerIndex": 3,
+      "holdSec": 0.8,
+      "narrationRole": "transition",
+      "card": {
+        "command": "rdc machine query --name my-server",
+        "commandFull": "rdc machine query --name <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-4",
+      "type": "cast-narrated",
+      "markerIndex": 4,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": { "command": "rdc doctor", "commandFull": "rdc doctor || true" }
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

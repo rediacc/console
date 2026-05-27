@@ -4,7 +4,8 @@ description: "Cómo la arquitectura autoalojada de Rediacc se ajusta a los requi
 category: "Legal"
 order: 1
 language: es
-sourceHash: "e3d383739190bb30"
+sourceHash: "36a776d87c6294ff"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 El Reglamento General de Protección de Datos (GDPR) es la ley de protección de datos de la Unión Europea, vigente desde mayo de 2018. Regula cómo las organizaciones recopilan, procesan y almacenan datos personales de personas en la UE.
@@ -18,7 +19,7 @@ La tabla a continuación mapea artículos específicos del GDPR a las capacidade
 | Artículo | Requisito | Capacidad de Rediacc |
 |----------|-----------|---------------------|
 | [Art. 5](https://gdpr-info.eu/art-5-gdpr/), Principios | Minimización de datos, integridad, confidencialidad | Los clones CoW (`cp --reflink=always`) duplican datos en la misma máquina sin transferencia de red. LUKS2 AES-256 cifra todos los datos en reposo. |
-| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Derecho al olvido | Eliminar datos personales a solicitud | `rdc repo destroy` elimina criptográficamente el volumen LUKS. Eliminar un fork remueve la copia clonada completamente. |
+| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Derecho al olvido | Eliminar datos personales a solicitud | `rdc repo delete` elimina criptográficamente el volumen LUKS. Eliminar un fork remueve la copia clonada completamente. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Protección de datos por diseño | Privacidad por defecto | El cifrado es obligatorio, no opcional. Cada repositorio obtiene un Docker daemon aislado y una red propia. Sin compartición de datos entre repositorios. El almacén de configuración usa cifrado de conocimiento cero: las configuraciones se cifran del lado del cliente con AES-256-GCM antes de subirse, por lo que el servidor no puede leer datos en texto plano. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Procesador | Obligaciones de procesamiento de datos de terceros | Autoalojado: Rediacc se ejecuta en tu infraestructura. Ningún dato sale de tu máquina durante operaciones de fork, clonación o respaldo. Ningún componente SaaS procesa datos personales. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registros de procesamiento | Mantener registros de actividades de procesamiento | El registro de auditoría rastrea más de 40 tipos de eventos a nivel de cuenta: autenticación, tokens API, operaciones del almacén de configuración y licencias. Exportación vía `rdc audit` CLI o panel de administración. |
@@ -29,7 +30,7 @@ La tabla a continuación mapea artículos específicos del GDPR a las capacidade
 
 Los clones CoW nunca abandonan la máquina de origen. El comando `rdc repo fork` crea una copia a nivel de sistema de archivos usando reflinks. No se transfieren datos por la red.
 
-Para operaciones entre máquinas, `rdc repo backup push/pull` transfiere datos por SSH. El destino de respaldo recibe volúmenes cifrados con LUKS que no pueden leerse sin las credenciales del operador.
+Para operaciones entre máquinas, `rdc repo push/pull` transfiere datos por SSH. El destino de respaldo recibe volúmenes cifrados con LUKS que no pueden leerse sin las credenciales del operador.
 
 ## Clonación de entornos y enmascaramiento de datos
 

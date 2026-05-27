@@ -6,26 +6,62 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 65.053708,
-      "text": "Schritt eins. Wir importieren eine bestehende rclone-Konfiguration. rclone unterstützt S3, Backblaze, Google Drive, Dropbox und viele mehr. Wenn Sie es bereits verwenden, können Sie dieselbe Konfiguration direkt importieren."
+      "at": 2.424169,
+      "text": "Schritt eins. Wir importieren eine bestehende rclone-Konfiguration. rclone unterstützt S3, Backblaze, Google Drive, Dropbox und viele mehr. Wenn Sie es bereits verwenden, können Sie dieselbe Konfiguration direkt importieren.",
+      "afterText": "Storage importiert. Deine CLI kann jetzt Backups dorthin schicken.",
+      "cardLabel": "Speicher importieren",
+      "prose": "Importieren Sie eine vorhandene rclone-Konfiguration. rclone unterstützt S3, Backblaze, Google Drive, Dropbox und viele weitere Dienste. Wenn Sie rclone bereits verwenden, lässt sich die vorhandene Konfiguration direkt importieren."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 73.743501,
-      "text": "Wir listen die Speicher auf, die die CLI jetzt kennt. Jeder Speicher ist ein Ziel, auf das wir Backups übertragen können."
+      "at": 6.651448,
+      "text": "Wir listen die Speicher auf, die die CLI jetzt kennt. Jeder Speicher ist ein Ziel, auf das wir Backups übertragen können.",
+      "afterText": "Da ist er. Bereit, Backups entgegenzunehmen.",
+      "cardLabel": "Speicher auflisten",
+      "prose": "Listet die Speicher auf, die der CLI jetzt bekannt sind. Jeder davon ist ein Ziel für Backups."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 82.843959,
-      "text": "Schritt zwei. Wir übertragen ein vollständiges Backup. Das gesamte Repository, App, Datenbank, Dateien, Konfiguration, wird hochgeladen. Da das Repository im Ruhezustand verschlüsselt ist, ist auch das Backup verschlüsselt. Kein zusätzliches Schlüsselmanagement."
+      "at": 10.354487,
+      "text": "Schritt zwei. Wir übertragen ein vollständiges Backup. Das gesamte Repository, App, Datenbank, Dateien, Konfiguration, wird hochgeladen. Da das Repository im Ruhezustand verschlüsselt ist, ist auch das Backup verschlüsselt. Kein zusätzliches Schlüsselmanagement.",
+      "afterText": "Backup hochgeladen. Alles in diesem Repo liegt jetzt verschlüsselt im Remote-Storage.",
+      "cardLabel": "Backup pushen",
+      "prose": "Pusht ein vollständiges Backup. Das gesamte Repository wird hochgeladen, einschließlich App, Datenbank, Dateien und Konfiguration. Da das Repository im Ruhezustand verschlüsselt ist, ist auch das Backup verschlüsselt, ohne zusätzliches Schlüsselmanagement."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 94.515541,
-      "text": "Wir listen die auf diesem Speicher verfügbaren Backups auf. Von hier aus ist die Wiederherstellung auf einem neuen Server ein einziger Befehl: der Repo-Pull-Befehl. Gleiche Daten, gleiche Container, andere Maschine."
+      "at": 18.28182,
+      "text": "Wir listen die auf diesem Speicher verfügbaren Backups auf. Von hier aus ist die Wiederherstellung auf einem neuen Server ein einziger Befehl: der Repo-Pull-Befehl. Gleiche Daten, gleiche Container, andere Maschine.",
+      "afterText": "Alle deine Snapshots an einem Ort. Jeden davon holst du mit einem einzigen Befehl zurück.",
+      "cardLabel": "Backups auflisten",
+      "prose": "Listet die auf diesem Speicher verfügbaren Backups auf. Die Wiederherstellung auf einem brandneuen Server erfordert nur einen einzigen Befehl: den Repo-Pull-Befehl."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Deine App ist live, also sorgen wir dafür, dass du sie nie verlierst! In diesem Tutorial schicken wir das gesamte Repository in einen externen Storage und holen es bei Bedarf wieder zurück."
+    },
+    {
+      "id": "three-steps",
+      "text": "Backup und Restore läuft in drei Schritten. Konfiguriere einen Storage-Anbieter, schick ein Backup hoch und stelle es wieder her, wenn du es brauchst."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Deine Daten sind sicher und maschinenübergreifend portabel. Bis zum nächsten Mal!"
+    }
+  ],
+  "title": "Backup & Wiederherstellung",
+  "chapters": {
+    "intro": "Backup & Wiederherstellung",
+    "three-steps": "Drei Schritte: Konfigurieren, Pushen, Wiederherstellen",
+    "cast-step-0": "Schritt 1: rclone-Konfiguration importieren",
+    "cast-step-1": "Schritt 2: Konfigurierte Speicher auflisten",
+    "cast-step-2": "Schritt 3: Vollständiges Backup pushen",
+    "cast-step-3": "Schritt 4: Backups auf dem Speicher auflisten",
+    "outro": "Weiter: Monitoring"
+  }
 }

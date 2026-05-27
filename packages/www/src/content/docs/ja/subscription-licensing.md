@@ -4,8 +4,8 @@ description: "account、rdc、renetがマシンスロット、リポジトリラ
 category: "Guides"
 order: 7
 language: ja
-sourceHash: "dc61245ac532e3a4"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "8e0a4976634ae323"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # サブスクリプションとライセンス
@@ -176,7 +176,7 @@ rdc subscription repo status -m hostinger
 マシンアクティベーションを更新し、リポジトリライセンスをバッチ更新：
 
 ```bash
-rdc subscription refresh -m hostinger
+rdc subscription refresh repos -m hostinger
 ```
 
 マシン上で発見されたがローカルの `rdc` 設定にないリポジトリはバッチ更新中に拒否されます。失敗として報告され、自動分類はされません。

@@ -2,6 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MachineConfig } from '../../types/index.js';
 import { refreshRepoLicensesBatch } from '../license.js';
 
+const { mockGetSubscriptionTokenState } = vi.hoisted(() => ({
+  mockGetSubscriptionTokenState: vi.fn(() => ({
+    kind: 'ready',
+    serverUrl: 'http://localhost:4800',
+    token: { token: 'rdt_test' },
+  })),
+}));
+
 const { mockExec, mockExecStreaming, mockConnect, mockClose, mockListRepositories } = vi.hoisted(
   () => ({
     mockExec: vi.fn(),
@@ -26,11 +34,7 @@ vi.mock('node:fs/promises', () => ({
 }));
 
 vi.mock('../subscription-auth.js', () => ({
-  getSubscriptionTokenState: vi.fn(() => ({
-    kind: 'ready',
-    serverUrl: 'http://localhost:4800',
-    token: { token: 'rdt_test' },
-  })),
+  getSubscriptionTokenState: mockGetSubscriptionTokenState,
 }));
 
 vi.mock('../config-resources.js', () => ({
@@ -54,6 +58,11 @@ describe('refreshRepoLicensesBatch', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSubscriptionTokenState.mockReturnValue({
+      kind: 'ready',
+      serverUrl: 'http://localhost:4800',
+      token: { token: 'rdt_test' },
+    });
     mockListRepositories.mockResolvedValue([
       {
         name: 'mail',
@@ -102,7 +111,7 @@ describe('refreshRepoLicensesBatch', () => {
 
     const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       scanned: 2,
       issued: 1,
       refreshed: 0,
@@ -110,6 +119,7 @@ describe('refreshRepoLicensesBatch', () => {
       failed: 2,
       valid: 1,
       invalidSignatureDetected: 0,
+      recoveryFailureMode: null,
       failures: [
         {
           repositoryGuid: '550e8400-e29b-41d4-a716-446655440002',
@@ -130,7 +140,7 @@ describe('refreshRepoLicensesBatch', () => {
 
     const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       scanned: 2,
       issued: 0,
       refreshed: 0,
@@ -138,6 +148,7 @@ describe('refreshRepoLicensesBatch', () => {
       failed: 2,
       valid: 0,
       invalidSignatureDetected: 0,
+      recoveryFailureMode: 'no_known_repos',
       failures: [
         {
           repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
@@ -261,5 +272,60 @@ describe('refreshRepoLicensesBatch', () => {
     // Should still work — dates are sent normally when license-status fails
     expect(result.invalidSignatureDetected).toBe(0);
     expect(result.issued).toBe(1);
+  });
+
+  it('returns recoveryFailureMode=token_not_ready when subscription token is not ready', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
+
+    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+    expect(result.recoveryFailureMode).toBe('token_not_ready');
+    expect(result.valid).toBe(0);
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns recoveryFailureMode=no_known_repos when remote scan finds repos not in local config', async () => {
+    mockListRepositories.mockResolvedValueOnce([]);
+
+    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+    expect(result.recoveryFailureMode).toBe('no_known_repos');
+    expect(result.valid).toBe(0);
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
+  });
+
+  it('returns recoveryFailureMode=server_rejected_all and serverErrorSample when activate-repo-batch returns failed for all repos', async () => {
+    mockAccountServerFetch.mockResolvedValueOnce({
+      results: [
+        {
+          repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'failed',
+          error: 'size limit exceeded for this subscription plan',
+        },
+      ],
+    });
+
+    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+    expect(result.recoveryFailureMode).toBe('server_rejected_all');
+    expect(result.valid).toBe(0);
+    expect(result.serverErrorSample).toContain('size limit exceeded');
+  });
+
+  it('returns recoveryFailureMode=null on full success', async () => {
+    mockAccountServerFetch.mockResolvedValueOnce({
+      results: [
+        {
+          repositoryGuid: '550e8400-e29b-41d4-a716-446655440000',
+          status: 'issued',
+          license: { payload: 'a', signature: 'b', publicKeyId: 'c' },
+        },
+      ],
+    });
+
+    const result = await refreshRepoLicensesBatch(machine, 'dummy-key', '/usr/bin/renet');
+
+    expect(result.recoveryFailureMode).toBeNull();
+    expect(result.valid).toBeGreaterThan(0);
   });
 });

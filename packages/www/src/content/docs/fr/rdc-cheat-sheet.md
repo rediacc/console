@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 3
 language: fr
-sourceHash: "ec3f99cf89fde4b3"
-sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
+sourceHash: "12956297c1157cd2"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Aide-mémoire RDC CLI
@@ -58,7 +58,7 @@ Référence rapide des commandes `rdc` les plus courantes. Exécutez n'importe q
 | `rdc config backup-strategy list` | Lister toutes les stratégies définies |
 | `rdc config backup-strategy show --name <name>` | Afficher les détails d'une stratégie |
 | `rdc config backup-strategy remove --name <name>` | Supprimer une stratégie |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | Associer des stratégies à une machine |
+| `rdc machine backup schedule -m <machine>` | Déployer les stratégies de sauvegarde configurées sur une machine |
 
 ## Opérations de sauvegarde
 

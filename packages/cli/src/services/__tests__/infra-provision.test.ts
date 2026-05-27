@@ -22,6 +22,7 @@ vi.mock('../output.js', () => ({
 vi.mock('../config-resources.js', () => ({
   configService: {
     updateConfigFields: vi.fn(),
+    applyDefaults: vi.fn().mockResolvedValue({ team: undefined }),
   },
 }));
 
@@ -30,7 +31,7 @@ vi.mock('../../i18n/index.js', () => ({
     params ? `${key}:${JSON.stringify(params)}` : key,
 }));
 
-import { ensureRepoDnsRecords } from '../infra-provision.js';
+import { buildInfraPayload, ensureRepoDnsRecords } from '../infra-provision.js';
 
 const baseInfra: InfraConfig = {
   baseDomain: 'rediacc.io',
@@ -98,5 +99,34 @@ describe('ensureRepoDnsRecords wildcard hostname', () => {
       dnsConfig
     );
     expect(mockEnsureRecord).not.toHaveBeenCalled();
+  });
+});
+
+describe('buildInfraPayload team_name field', () => {
+  it('includes team_name in the infra config JSON when team is set', () => {
+    const json = buildInfraPayload('my-machine', baseInfra, {
+      cfDnsApiToken: 'token',
+      certEmail: 'admin@example.com',
+      team: 'alpha',
+    });
+    const parsed = JSON.parse(json) as Record<string, unknown>;
+    expect(parsed.team_name).toBe('alpha');
+    expect(parsed.machine_name).toBe('my-machine');
+  });
+
+  it('emits team_name as empty string when no team is configured', () => {
+    const json = buildInfraPayload('my-machine', baseInfra, {
+      cfDnsApiToken: 'token',
+    });
+    const parsed = JSON.parse(json) as Record<string, unknown>;
+    expect(parsed.team_name).toBe('');
+  });
+
+  it('emits team_name as empty string when team is explicitly undefined', () => {
+    const json = buildInfraPayload('my-machine', baseInfra, {
+      team: undefined,
+    });
+    const parsed = JSON.parse(json) as Record<string, unknown>;
+    expect(parsed.team_name).toBe('');
   });
 });

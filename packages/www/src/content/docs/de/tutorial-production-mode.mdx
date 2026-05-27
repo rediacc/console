@@ -1,0 +1,61 @@
+---
+title: "Produktionsmodus"
+description: "Lassen Sie Ihre App unabhängig von Ihrem Laptop laufen und überleben Sie Server-Neustarts mit Autostart."
+category: "Tutorials"
+subcategory: advanced
+order: 10
+language: de
+sourceHash: "6921482ea1810fb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Produktionsmodus
+
+Bisher haben Sie die App mit `renet dev up` von innerhalb des Repos gestartet. Das ist ideal für die Entwicklung. Für die Produktion verwalten Sie alles von Ihrem Laptop aus mit `rdc`. Klappen Sie Ihren Laptop zu, und die App läuft weiter.
+
+## Tutorial ansehen
+
+![Tutorial: Produktionsmodus](/assets/tutorials/tutorial-production-mode.cast)
+
+## Entwicklung vs. Produktion
+
+Der Unterschied ist einfach:
+
+- `renet dev up` läuft **innerhalb des Repos**. Sie müssen verbunden sein.
+- `rdc repo up` läuft **von Ihrem Laptop aus**. Danach ist keine Verbindung mehr nötig.
+
+Drei Aktionen bringen Sie von der Entwicklung in die Produktion:
+
+![Stoppen, starten, Autostart](/img/tutorials/tutorial-production-mode/slide-1.svg)
+
+Wenn Sie noch eine aktive `renet dev up`-Sitzung im Repo haben, beenden Sie diese zuerst mit `rdc vscode connect -m my-server -r my-app` gefolgt von `renet dev down`. Danach wird alles vollständig von Ihrem Laptop aus gesteuert.
+
+## Schritt 1: Im Produktionsmodus starten
+
+<TutorialStep number={1} />
+
+`rdc repo up` ruft dieselbe `up`-Funktion auf, die auch `renet dev up` verwendet hat. Gleicher `Rediaccfile`, andere Art des Aufrufs – nur läuft die App jetzt weiter, nachdem Sie die Verbindung getrennt haben.
+
+## Schritt 2: Autostart aktivieren
+
+<TutorialStep number={2} />
+
+Wenn der Server neu startet, wird dieses Repo automatisch wieder hochgefahren.
+
+## Schritt 3: Repos mit Autostart auflisten
+
+<TutorialStep number={3} />
+
+Eine schnelle Überprüfung, ob Ihre App in der Boot-Liste steht.
+
+## Schritt 4: Vom Laptop aus stoppen
+
+<TutorialStep number={4} />
+
+Ein Befehl hoch, ein Befehl runter. Alles von Ihrem Laptop.
+
+---
+
+Weiter: [Backup und Wiederherstellung](/de/docs/tutorial-backup-restore).

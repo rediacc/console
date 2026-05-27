@@ -1,0 +1,116 @@
+---
+title: "Ein Repository forken"
+description: "Klonen Sie ein gesamtes Repository (App, Datenbank, Dateien) in Sekunden. Beliebige Größe. Null zusätzlicher Speicher."
+category: "Tutorials"
+subcategory: advanced
+order: 7
+language: de
+sourceHash: "d67568772c42826c"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Ein Repository forken
+
+Das ist das Killer-Feature: Eine gesamte Produktionsumgebung (die App, die Datenbank, die Konfigurationsdateien) in Sekunden klonen. Beliebige Größe. Null zusätzlicher Speicher. So oft forken, wie Sie möchten.
+
+Der Leitspruch: **Produktion klonen, nichts kaputt machen.**
+
+## Tutorial ansehen
+
+![Tutorial: Ein Repository forken](/assets/tutorials/tutorial-forking.cast)
+
+## Etwas zum Verlieren einrichten
+
+Geben Sie der laufenden App zunächst eine Datei, damit Sie die Isolation des Forks beweisen können. Öffnen Sie das Repo in VS Code, dann erstellen Sie im Repo eine Markierungsdatei:
+
+```bash
+rdc vscode connect -m my-server -r my-app
+```
+
+```bash
+echo "Hello from production" > index.html
+```
+
+Jetzt forken.
+
+## Forken
+
+<TutorialStep number={1} />
+
+![Der Parent verzweigt sich in unabhängige Klone](/img/tutorials/tutorial-forking/slide-1.svg)
+
+Ein Befehl. Alles wurde geklont (die App, die Datenbank, die Konfigurationsdateien), und es dauerte Sekunden. Führen Sie es erneut aus und Sie erhalten einen weiteren unabhängigen Klon.
+
+## Warum ist es so schnell?
+
+![Das Teilen eines Ordner-Links ist gleich schnell, unabhängig von der Größe des Ordners](/img/tutorials/tutorial-forking/slide-2.svg)
+
+Stellen Sie sich vor, Sie teilen einen Ordner-Link. Der Link ist gleich, egal ob der Ordner klein oder riesig ist. Der Ordner ist schwer, der Link ist leicht.
+
+![1 GB, 100 GB, 1 TB. Immer die gleiche Zeit.](/img/tutorials/tutorial-forking/slide-3.svg)
+
+Forken funktioniert genauso. 1 GB, 100 GB, 1 TB. Immer die gleiche Zeit.
+
+## Was geteilt wird, was Ihnen gehört
+
+![Viele Spiegel, eine Sonne: gemeinsame Basis, Ihre Änderungen gehören Ihnen](/img/tutorials/tutorial-forking/slide-4.svg)
+
+Stellen Sie sich das Parent-Repo als die Sonne vor. Sie können die Sonne nicht festhalten, aber Sie können einen Spiegel halten, der sie auffängt. Dieser Spiegel ist Ihr Fork. Malen Sie auf den Spiegel, und Ihre Zeichnungen gehören Ihnen. Die Sonne bleibt gleich, egal wie viele Spiegel ihr gegenüberstehen.
+
+> Sie können die Sonne nicht festhalten, aber Sie können sie in einem Spiegel halten.
+
+## Was, wenn der Parent sich später ändert?
+
+![Ein Fork ist ein eingefrorenes Foto; der Parent fließt weiter wie ein Fluss](/img/tutorials/tutorial-forking/slide-5.svg)
+
+Denken Sie jetzt an einen Fluss. Das Wasser fließt weiter. In jedem Moment ist es anders. Wenn Sie forken, machen Sie ein Foto des Flusses, eingefroren in diesem Moment. Der Fluss fließt weiter. Ihr Foto nicht.
+
+Wenn sich das Parent-Repo später ändert, bleibt Ihr Fork dort, wo er war.
+
+> Sie können einen Fluss nicht festhalten, aber Sie können ihn in einem Foto festhalten.
+
+## Speichernutzung bleibt konstant
+
+![Fünf Forks eines 100-GB-Repos, insgesamt immer noch etwa 100 GB](/img/tutorials/tutorial-forking/slide-6.svg)
+
+Deshalb läuft Ihr Speicher nicht voll. Fünf Forks eines 100-GB-Repos? Insgesamt immer noch etwa 100 GB. Sie zahlen nur Speicher für das, was Sie in jedem Fork ändern.
+
+> Forken Sie fünfmal, wenn Sie möchten. Ihr Speicher wird es kaum bemerken.
+
+## Was Forks *nicht* erben: Secrets
+
+Es gibt eine Sache, der der Fork bewusst nicht folgt: Secrets. Ein Fork startet ohne API-Schlüssel, ohne Datenbankpasswörter, ohne Stripe-Tokens. Deshalb funktioniert "Produktion klonen, nichts kaputt machen" wirklich. Ihre Sandbox kann keine echten Kunden belasten, weil sie nicht so tun kann, als wären Sie es. Das richten wir ordentlich im Tutorial [Secrets verwalten](/de/docs/tutorial-managing-secrets) ein.
+
+## Isolation verifizieren
+
+Beide Repos nebeneinander auflisten:
+
+<TutorialStep number={2} />
+
+Sie sehen `my-app` und `my-app:experiment`, die gleichzeitig laufen. Im Original-Repo ist die Markierungsdatei genau dort, wo Sie sie gelassen haben:
+
+<TutorialStep number={3} />
+
+Jetzt eine destruktive Änderung vornehmen, aber nur im Fork:
+
+<TutorialStep number={4} />
+
+Zurück zum Original wechseln und prüfen:
+
+<TutorialStep number={5} />
+
+Die Markierungsdatei ist noch hier, unberührt. Die Änderungen des Forks blieben im Fork. Gleiche Images, getrennte Docker-Daemons, getrennte Dateisysteme.
+
+## Aufräumen
+
+Wenn Sie fertig sind, löschen Sie einfach den Fork:
+
+<TutorialStep number={6} />
+
+Das Original bleibt genau so, wie es war. **Forken, experimentieren, Dinge kaputtmachen, löschen.** Kein Risiko.
+
+---
+
+Weiter: [Secrets verwalten](/de/docs/tutorial-managing-secrets).

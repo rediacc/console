@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 10
 language: es
-sourceHash: 4575658381fb6508
-sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
+sourceHash: "658b00b83875950d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Solución de problemas
@@ -129,7 +129,7 @@ Reemplace `2816` con el ID de red de su repositorio (se encuentra en `rediacc.js
 
 Dentro de la shell de un repositorio, ejecutar un contenedor sin `--network host` le da un contenedor aislado con solo una interfaz de loopback, sin DNS y sin conectividad saliente. Comandos como `apt update`, `pip install`, `curl https://...` o cualquier descarga de red fallarán inmediatamente con errores de DNS.
 
-Esto es intencional. El modelo de red de Rediacc es **red de host para cada servicio**, impuesto por `renet compose`. Un bridge de Docker predeterminado con NAT evitaría el aislamiento de loopback a nivel de kernel que impide que un repo alcance los servicios de otro repo, por lo que el daemon de Docker por repositorio está configurado con `"bridge": "none"` e `"iptables": false`. No hay un bridge enrutable al que un simple contenedor `docker run` pueda conectarse.
+Esto es intencional. El modelo de red de Rediacc es **red de host para cada servicio**, impuesto por `renet compose`. Un bridge de Docker predeterminado con NAT evitaría el aislamiento de loopback a nivel de kernel que impide que un repo alcance los servicios de otro repo, por lo que el daemon de Docker por repositorio (`FlavorRediacc`) está configurado con `"bridge": "none"` e `"iptables": false`. No hay un bridge enrutable al que un simple contenedor `docker run` pueda conectarse. (Los daemons Hub por usuario (`FlavorHub`) utilizados por entornos de desarrollo son la excepción: habilitan bridge e iptables para que los contenedores del usuario tengan conectividad de red saliente.)
 
 **Para obtener acceso de red en un contenedor ad-hoc, use la red de host:**
 

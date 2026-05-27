@@ -70,7 +70,7 @@ Write-only deploy-time credentials. `get` returns the digest only. The value is 
 | `rdc config backup-strategy list` | List all defined backup strategies |
 | `rdc config backup-strategy show --name <name>` | Show details of a strategy |
 | `rdc config backup-strategy remove --name <name>` | Remove a strategy |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | Bind strategies to a machine |
+| `rdc machine backup schedule -m <machine>` | Deploy configured backup strategies to a machine |
 
 ## Backup Operations
 

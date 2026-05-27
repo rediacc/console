@@ -1,0 +1,51 @@
+---
+title: "SSH キーの設定"
+description: "rdc がパスワードなしでサーバーに接続できるよう、SSH キーを設定します。"
+category: "Tutorials"
+subcategory: essentials
+order: 2
+language: ja
+sourceHash: "910838d56f67927f"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# SSH キーの設定
+
+SSH キーを使うと、パスワードなしでサーバーにアクセスできます。これは `rdc` とは独立した通常の SSH です: ラップトップでキーを一度生成し、各サーバーで承認するだけです。
+
+## チュートリアル動画
+
+![チュートリアル: SSH キーの設定](/assets/tutorials/tutorial-ssh-keys.cast)
+
+## 仕組み
+
+![キーを生成して、各サーバーで承認する](/img/tutorials/tutorial-ssh-keys/slide-1.svg)
+
+1. **生成**: ラップトップで SSH キーを生成します。一度だけ行います。
+2. **承認**: `ssh-copy-id` を使って各サーバーで承認します。新しいサーバーを追加するたびに繰り返します。
+
+## ステップ1: キーを生成する
+
+使いたいキーがすでにある場合は、この手順をスキップしてください。ない場合は次のコマンドを実行します。
+
+<TutorialStep number={1} />
+
+`ed25519` は現代の標準形式で、小さく、高速で、広くサポートされています。
+
+## ステップ2: 最初のサーバーを承認する
+
+<TutorialStep number={2} />
+
+`<user>` と `<server-ip>` は、お使いのサーバーの SSH ユーザーと IP アドレスに置き換えてください。この最後の一度だけサーバーのパスワードを求められます。これ以降、パスワード認証は不要になります。
+
+## ステップ3: その他のサーバーを承認する
+
+<TutorialStep number={3} />
+
+管理するすべてのマシンで `ssh-copy-id` を繰り返してください。SSH に必要なのはそれだけです。次のチュートリアルでは、`rdc` がこのキーを自動的に使用します。
+
+---
+
+次: [最初のサーバーを追加する](/ja/docs/tutorial-add-server)

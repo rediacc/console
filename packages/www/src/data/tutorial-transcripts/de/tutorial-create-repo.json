@@ -6,14 +6,52 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 32.02867,
-      "text": "Wir erstellen ein 2 Gigabyte großes verschlüsseltes Repository auf dem Server. Ein Repository ist im Ruhezustand eine einzelne verschlüsselte Datei. Wenn es eingehängt wird, wird es zu einem Ordner mit einem eigenen Docker-Daemon und eigenen Anwendungsdaten, vollständig isoliert von allem anderen auf dem Server."
+      "at": 2.409686,
+      "text": "Wir erstellen ein 2 Gigabyte großes verschlüsseltes Repository auf dem Server. Ein Repository ist im Ruhezustand eine einzelne verschlüsselte Datei. Wenn es eingehängt wird, wird es zu einem Ordner mit einem eigenen Docker-Daemon und eigenen Anwendungsdaten, vollständig isoliert von allem anderen auf dem Server.",
+      "afterText": "Repository erstellt. Die verschlüsselte Datei liegt auf dem Server und ist bereit zum Mounten.",
+      "cardLabel": "Repo erstellen",
+      "prose": "Erstellen Sie ein 2 GB großes verschlüsseltes repository auf dem Server. Ein repo ist eine einzelne verschlüsselte Datei im Ruhezustand. Beim Erstellen wird es sofort eingehängt: ein Ordner mit eigenem Docker daemon und isolierten Anwendungsdaten."
     },
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 62.567023,
-      "text": "Wir listen die Repositories auf der Maschine auf, um zu bestätigen, dass das neue registriert ist. Von hier aus kann das Repo in VS Code geöffnet, deployed, geforkt oder gesichert werden, alles von Ihrem Laptop aus."
+      "at": 11.760396,
+      "text": "Wir listen die Repositories auf der Maschine auf, um zu bestätigen, dass das neue registriert ist. Von hier aus kann das Repo in VS Code geöffnet, deployed, geforkt oder gesichert werden, alles von Ihrem Laptop aus.",
+      "afterText": "Da ist es, registriert und einsatzbereit.",
+      "cardLabel": "Repos auflisten",
+      "prose": "Bestätigen Sie, dass das neue repo registriert ist. Sobald es aufgelistet ist, kann es bereitgestellt, geforkt, gesichert oder von Ihrem Laptop aus in einem Editor geöffnet werden."
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "at": 17.238181,
+      "text": "Eine praktische Option: Das Repo lässt sich mit diesem Befehl direkt in VS Code öffnen. Wir starten den Editor hier nicht, aber er beginnt eine Remote-Sitzung in das Repo über SSH, sodass Sie die Dateien bearbeiten können.",
+      "afterText": "Führen Sie das auf Ihrem Laptop aus, um die Dateien des Repos in VS Code zu bearbeiten.",
+      "cardLabel": "In VS Code öffnen",
+      "prose": "Öffnen Sie das repo direkt in VS Code mit rdc vscode connect. Es startet eine remote SSH-Sitzung in das repo, sodass Sie dessen Dateien in Ihrem Editor bearbeiten können."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Lass uns dein erstes Repository anlegen! Es ist im Ruhezustand eine verschlüsselte Datei, die beim Mounten zu einer vollständig isolierten Umgebung wird."
+    },
+    {
+      "id": "file-on-disk",
+      "text": "Auf der Platte ist es ein einzelnes verschlüsseltes Image. Sobald es gemountet ist, bekommst du einen eigenen Docker-Daemon, Anwendungsdaten innerhalb des verschlüsselten Volumes und Loopback-IPs, die mit nichts anderem auf dem Server kollidieren."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Das ist dein erstes Repository, einsatzbereit. Als Nächstes deployen wir eine App darin!"
+    }
+  ],
+  "title": "Ihr erstes repository erstellen",
+  "chapters": {
+    "intro": "Ihr erstes repository erstellen",
+    "file-on-disk": "Datei auf der Disk, Umgebung beim Einhängen",
+    "cast-step-0": "Das repository erstellen",
+    "cast-step-1": "Registrierung bestätigen",
+    "cast-step-2": "In VS Code öffnen",
+    "outro": "Weiter: Erste App bereitstellen"
+  }
 }

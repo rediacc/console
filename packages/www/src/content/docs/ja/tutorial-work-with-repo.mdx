@@ -1,0 +1,60 @@
+---
+title: "リポジトリで作業する"
+description: "ポートをブラウザにトンネリングし、サンドボックス内でコマンドを実行し、ラップトップとリポジトリの間でファイルを同期します。"
+category: "Tutorials"
+subcategory: essentials
+order: 6
+language: ja
+sourceHash: "a7a5866276f19cb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# リポジトリで作業する
+
+アプリが起動しましたが、これまでは `docker ps` でしか確認していません。日常的な作業をカバーする3つのコマンドを紹介します。**tunnel** でブラウザでアプリを確認し、**term** でサンドボックス内のコマンドを実行し、**sync** でラップトップとリポジトリの間でファイルを移動します。
+
+## チュートリアル動画
+
+![チュートリアル: リポジトリで作業する](/assets/tutorials/tutorial-work-with-repo.cast)
+
+## 毎日の3つのコマンド
+
+![トンネル、ターム、シンク](/img/tutorials/tutorial-work-with-repo/slide-1.svg)
+
+1. **Tunnel**: ブラウザでアプリを開く。
+2. **Term**: サンドボックス内でコマンドを実行する。
+3. **Sync**: ファイルを出し入れする。
+
+## Tunnel: ブラウザでアプリを確認する
+
+アプリはラップトップではなくサーバーで動いています。SSH 経由でコンテナのポートを転送します。
+
+<TutorialStep number={1} />
+
+ブラウザで `localhost` を開きます。アプリがそこに表示されます。完了したら `Ctrl+C` を押します。
+
+## Term: リポジトリ内でコマンドを実行する
+
+シェルだけが必要なときは VS Code を使わなくても大丈夫です。リポジトリのサンドボックスに入って、Docker デーモンに対して何でも実行できます。
+
+<TutorialStep number={2} />
+
+VS Code と同じビューで、`my-app` のコンテナだけが表示されます。
+
+## Sync: ラップトップとリポジトリの間でファイルを移動する
+
+不安な場合はまずプレビューしましょう。`--dry-run` は実際にコピーせずに変更内容を表示します。
+
+<TutorialStep number={3} />
+
+プレビューが問題なければ、実際にアップロードを実行します。
+
+<TutorialStep number={4} />
+
+トンネル、ターム、シンク。3つのコマンドで日常の作業サイクルをカバーできます。
+
+---
+
+次: [リポジトリをフォークする](/ja/docs/tutorial-forking)

@@ -4,6 +4,8 @@ description: "Olulised reeglid ja kokkulepped rakenduste ehitamiseks Rediacci pl
 category: "Guides"
 order: 5
 language: et
+sourceHash: "1d227a06272a0050"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Rediacci reeglid
@@ -146,7 +148,7 @@ OS-põhist turvaasendi lippu pole vaja; `rdc` ja `renet` tuvastavad, mis tööta
 - **Repositooriumi isoleerimine**: Iga repositooriumi Dockeri deemon, võrgustik ja salvestus on täielikult isoleeritud teistest repositooriumitest samal masinal.
 - **Agendi isoleerimine**: AI-agendid töötavad vaikimisi ainult fork-režiimis. Igal repositooriumil on oma SSH-võti koos serveripoolse liivakastijõustamisega (`sandbox-gateway` ForceCommand). Kõik ühendused on liivakastis Landlock LSM, OverlayFS kodu-ülekatte ja repositooriumipõhise TMPDIR-iga. Repositooriumiülene failisüsteemi juurdepääs on kerneli poolt blokeeritud.
 - **`sudo` on repositooriumi liivakastis disaini järgi keelatud.** Landlock'i failisüsteemi isoleerimine nõuab `NoNewPrivs`, mis takistab igasugust privileegide tõstmist, seega `sudo` ebaõnnestub teatega `no new privileges flag is set`. Repositooriumi omaniku kasutajal on juba kõik vajalikud õigused kõige jaoks repositooriumi ühenduspunkti ja Dockeri pesa sees. Tõeliselt privilegeeritud toimingute jaoks (hosti pakettide installimine, kerneli häälestamine) käivitage need väljaspool liivakasti või Rediaccfile'i `up()` funktsioonist, mida täidab infrastruktuuritee.
-- **Dockeri silla võrgundus on keelatud igal repositooriumipõhisel deemonil.** Iga repositooriumi `daemon.json` sisaldab `"bridge": "none"` ja `"iptables": false`, seega tavaline `docker run <image>` loob konteineri ainult loopback-liidesega ja ilma väljuva ühenduvuseta. See pole viga, see on see, kuidas repositooriumiülene isoleerimine jõustatakse: kerneli taseme eBPF-konksud, mis blokeerivad ühe repositooriumi jõudmise teise repositooriumi loopback-IP-deni, kehtivad ainult konteineritele, mis elavad hosti võrgu nimeruumis. Tootmisteenuste jaoks kasutage `renet compose`, mis süstib automaatselt `network_mode: host`. Ad-hoc ühekordsete konteinerite jaoks shellis edastage `--network host` selgesõnaliselt.
+- **Dockeri silla võrgundus on keelatud repositooriumipõhistel deemonitel.** Iga repositooriumi `daemon.json` (`FlavorRediacc`) sisaldab `"bridge": "none"` ja `"iptables": false`, seega tavaline `docker run <image>` loob konteineri ainult loopback-liidesega ja ilma väljuva ühenduvuseta. See pole viga, see on see, kuidas repositooriumiülene isoleerimine jõustatakse: kerneli taseme eBPF-konksud, mis blokeerivad ühe repositooriumi jõudmise teise repositooriumi loopback-IP-deni, kehtivad ainult konteineritele, mis elavad hosti võrgu nimeruumis. Tootmisteenuste jaoks kasutage `renet compose`, mis süstib automaatselt `network_mode: host`. Ad-hoc ühekordsete konteinerite jaoks shellis edastage `--network host` selgesõnaliselt. (Kasutajapõhised Hub-deemonid (`FlavorHub`, arenduskeskkonnad) on erandiks: need lubavad `bridge="docker0"` ja `iptables=true`, nii et kasutaja käivitatud konteinerid saavad tavalise väljuva võrguühenduse.)
 
 ## Juurutamine
 

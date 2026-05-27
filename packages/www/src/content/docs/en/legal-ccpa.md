@@ -17,7 +17,7 @@ CCPA focuses on consumer rights related to personal information. Rediacc is a se
 | CCPA Right | Requirement | Rediacc Capability |
 |-----------|-------------|-------------------|
 | Right to know (1798.100) | Disclose categories and purposes of data collected | Audit logs track all data operations. Self-hosted: your organization retains full visibility into what data exists in each repository. |
-| Right to delete (1798.105) | Delete consumer's personal information on request | `rdc repo destroy` cryptographically erases the LUKS-encrypted volume. Fork deletion removes cloned copies. |
+| Right to delete (1798.105) | Delete consumer's personal information on request | `rdc repo delete` cryptographically erases the LUKS-encrypted volume. Fork deletion removes cloned copies. |
 | Right to opt-out (1798.120) | Do not sell or share personal information | Self-hosted architecture: no data transfers to Rediacc or any third party. Data stays on your servers. Config store sync uses zero-knowledge encryption. Even the sync server cannot read the data. |
 | Data security (1798.150) | Implement reasonable security measures | LUKS2 AES-256 encryption, network isolation, SSH-only access, isolated Docker daemons, audit logging. Config store uses triple-layer encryption with split-key derivation and rotating single-use tokens. |
 

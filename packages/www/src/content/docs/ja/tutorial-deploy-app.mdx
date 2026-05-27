@@ -1,0 +1,58 @@
+---
+title: "最初のアプリをデプロイする"
+description: "rdc repo up を使い、組み込みテンプレートからコンテナ化されたアプリをデプロイします。"
+category: "Tutorials"
+subcategory: essentials
+order: 5
+language: ja
+sourceHash: "764733d064b93e4a"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 最初のアプリをデプロイする
+
+空のリポジトリが用意できました。`rdc` には組み込みテンプレートが用意されているので、`docker-compose` をゼロから書かずに本格的なアプリを立ち上げることができます。3ステップで完了します。テンプレートを選び、適用して、実行するだけです。
+
+## チュートリアル動画
+
+![チュートリアル: 最初のアプリをデプロイする](/assets/tutorials/tutorial-deploy-app.cast)
+
+## 選択・適用・実行
+
+![テンプレートを選び、適用して、実行する](/img/tutorials/tutorial-deploy-app/slide-1.svg)
+
+## ステップ1: 選択する
+
+<TutorialStep number={1} />
+
+Postgres、Redis、Webサーバーなど、よく使われるアプリのための既成セットアップが表示されます。
+
+## ステップ2: 適用する
+
+<TutorialStep number={2} />
+
+これにより、テスト済みのファイル一式がリポジトリにコピーされます。
+
+## ステップ3: 追加されたファイルを確認する
+
+<TutorialStep number={3} />
+
+2つのファイルがあります。`docker-compose.yml` はコンテナを記述するファイルで、`Rediaccfile` はアプリの起動・停止時の処理（`up` と `down` のライフサイクルフック）を定義します。`2>/dev/null` は接続ログを非表示にして、ファイル一覧だけを表示します。
+
+## ステップ4: 実行する
+
+<TutorialStep number={4} />
+
+CLIがコンテナを起動し、暗号化ボリュームをマウントして、このリポジトリ用に隔離されたDockerデーモンを接続します。（VS Code経由でリポジトリのサンドボックス内にすでにいる場合は、`renet dev up` がサンドボックス内の同等の代替手段になります。）
+
+## ステップ5: 確認する
+
+<TutorialStep number={5} />
+
+ここで表示される `docker ps` は、このリポジトリのコンテナのみを表示します。同じサーバー上の他のリポジトリは専用のDockerデーモンを持っており、このビューからは完全に見えません。
+
+---
+
+次: [リポジトリで作業する](/ja/docs/tutorial-work-with-repo)

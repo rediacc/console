@@ -1,0 +1,60 @@
+---
+title: "Travailler avec votre dépôt"
+description: "Tunnelisez un port vers votre navigateur, exécutez des commandes dans le sandbox et synchronisez des fichiers entre votre ordinateur et le dépôt."
+category: "Tutorials"
+subcategory: essentials
+order: 6
+language: fr
+sourceHash: "a7a5866276f19cb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Travailler avec votre dépôt
+
+Votre application est en cours d'exécution, mais jusqu'à présent vous ne l'avez vue qu'à travers `docker ps`. Trois commandes couvrent le flux de travail quotidien : **tunnel** pour voir l'application dans un navigateur, **term** pour exécuter des commandes dans le sandbox, **sync** pour déplacer des fichiers entre votre ordinateur et le dépôt.
+
+## Regarder le tutoriel
+
+![Tutorial: Working with your repo](/assets/tutorials/tutorial-work-with-repo.cast)
+
+## Les trois commandes du quotidien
+
+![Tunnel, term, sync](/img/tutorials/tutorial-work-with-repo/slide-1.svg)
+
+1. **Tunnel** : ouvrir votre application dans un navigateur.
+2. **Term** : exécuter une commande dans le sandbox.
+3. **Sync** : déplacer des fichiers vers et depuis le dépôt.
+
+## Tunnel : voir votre application dans un navigateur
+
+L'application tourne sur le serveur, pas sur votre ordinateur. Transférez le port d'un conteneur via SSH :
+
+<TutorialStep number={1} />
+
+Ouvrez `localhost` dans votre navigateur. Votre application est là. Appuyez sur `Ctrl+C` quand vous avez terminé.
+
+## Term : exécuter des commandes dans le dépôt
+
+Ignorez VS Code quand vous avez juste besoin d'un shell. Entrez dans le sandbox du dépôt et exécutez n'importe quelle commande contre son Docker daemon :
+
+<TutorialStep number={2} />
+
+Vous ne voyez que les conteneurs de `my-app`, la même vue que dans VS Code.
+
+## Sync : déplacer des fichiers entre l'ordinateur et le dépôt
+
+Prévisualisez d'abord si vous n'êtes pas sûr. `--dry-run` montre ce qui changerait sans rien copier :
+
+<TutorialStep number={3} />
+
+Une fois la prévisualisation satisfaisante, lancez le transfert pour de vrai :
+
+<TutorialStep number={4} />
+
+Tunnel, term, sync. Trois commandes couvrent la boucle quotidienne.
+
+---
+
+Suivant : [Forker un dépôt](/fr/docs/tutorial-forking).

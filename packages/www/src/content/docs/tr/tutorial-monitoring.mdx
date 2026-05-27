@@ -1,0 +1,58 @@
+---
+title: "İzleme"
+description: "rdc machine komutlarıyla dizüstü bilgisayarınızdan sunucularınızın ve depolarınızın durumunu kontrol edin."
+category: "Tutorials"
+subcategory: advanced
+order: 12
+language: tr
+sourceHash: "7690e2a129161381"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# İzleme
+
+Uygulamanız dağıtıldı, canlı ve yedeklendi. Şimdi her şeyin sağlıklı kaldığından emin olun. `rdc`, dizüstü bilgisayarınızdan herhangi bir sunucunun tam görünümünü (sağlık durumu, container'lar, depolar) almanızı sağlar.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Monitoring](/assets/tutorials/tutorial-monitoring.cast)
+
+## Kontrol edebileceğiniz üç şey
+
+![Health, containers, repos](/img/tutorials/tutorial-monitoring/slide-1.svg)
+
+## Sağlık durumu: sistem bilgisi
+
+<TutorialStep number={1} />
+
+Bu komut sistem çalışma süresini, disk kullanımını ve depolama durumunu gösterir. Bir sorun varsa bildirir.
+
+## Container'lar
+
+<TutorialStep number={2} />
+
+Her container için ad, durum, sağlık, CPU ve bellek bilgileri ile hangi depoya ait olduğu görüntülenir.
+
+## Depolar
+
+<TutorialStep number={3} />
+
+Her depo; boyutu, bağlama durumu, Docker durumu ve disk kullanımıyla birlikte gösterilir.
+
+## Tek seferde her şey
+
+<TutorialStep number={4} />
+
+Sistem bilgisi, depolar, container'lar hepsi tek komutta. Filtre olmadan kullanılan `query` komutu tam görünümü döndürür; `--system`, `--containers`, `--repositories`, `--services`, `--network` veya `--block-devices` ile yalnızca ilgili bölüme odaklanılır.
+
+## Yerel doğruluk kontrolü
+
+`rdc doctor`, belirli bir sunucudan bağımsız olarak yerel kurulumunuzu (Node, SSH anahtarı, `renet`, Docker) kontrol eder:
+
+<TutorialStep number={5} />
+
+## Tamamlandınız
+
+Seri tamamlandı. Artık kurulum, yapılandırma, dağıtım, fork alma, yayına alma, otomatik başlatma, yedekleme ve izleme yapabilirsiniz. Hepsi terminalinizden, hepsi kendi sunucularınızda.

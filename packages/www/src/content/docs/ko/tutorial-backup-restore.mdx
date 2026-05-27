@@ -1,0 +1,84 @@
+---
+title: "백업 및 복원"
+description: "저장소를 외부 스토리지에 푸시하고, 필요할 때 새 서버에서 복원합니다."
+category: "Tutorials"
+subcategory: advanced
+order: 11
+language: ko
+sourceHash: "d9d8ffef900b509d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 백업 및 복원
+
+앱이 프로덕션에서 실행 중입니다. 이제 절대 잃지 않도록 대비하세요. `rdc`는 앱, 데이터베이스, 파일, 구성을 포함한 전체 저장소를 외부 스토리지에 푸시하고 언제든지 다시 가져올 수 있습니다. 랜섬웨어, 하드웨어 장애, 무엇이든 견딜 수 있습니다.
+
+## 튜토리얼 보기
+
+![Tutorial: Backup and restore](/assets/tutorials/tutorial-backup-restore.cast)
+
+## 세 가지 단계
+
+![Configure, push, restore](/img/tutorials/tutorial-backup-restore/slide-1.svg)
+
+1. 스토리지 제공자를 **구성**합니다.
+2. 백업을 **푸시**합니다.
+3. 필요할 때 **복원**합니다.
+
+## 1단계: 스토리지 구성
+
+`rclone` 구성 파일이 필요합니다. 이미 rclone을 사용 중이라면 직접 가져오세요:
+
+<TutorialStep number={1} />
+
+S3, B2, Google Drive, Dropbox 등 다양한 스토리지를 지원합니다. 연결된 스토리지를 확인하세요:
+
+<TutorialStep number={2} />
+
+## 2단계: 백업 푸시
+
+<TutorialStep number={3} />
+
+앱, 데이터베이스, 파일, 모든 것을 포함한 전체 저장소가 백업되었습니다. 저장소 자체가 암호화되어 있으므로 백업도 암호화됩니다. 추가적인 키 관리가 필요 없습니다.
+
+백업 목록을 언제든지 확인하세요:
+
+<TutorialStep number={4} />
+
+## 다운타임이 없는 이유는?
+
+백업이 업로드되는 동안 앱은 계속 실행됩니다. 어떻게 일관성이 유지될까요?
+
+[포크](/ko/docs/tutorial-forking)와 동일한 로직입니다. `rdc`가 먼저 포크한 다음 포크를 업로드합니다. 포크가 그 순간을 캡처하고, 실제 앱은 계속 실행됩니다. 다운타임도 없고 불일치도 없습니다.
+
+## 3단계: 새 서버에서 복원
+
+서버가 장애를 겪었다고 가정해 봅시다. 새 서버를 설정하고 `rdc`에 추가한 다음 가져옵니다:
+
+```bash
+rdc repo pull --name my-app -m new-server --from my-storage
+```
+
+그런 다음 시작합니다:
+
+```bash
+rdc repo up --name my-app -m new-server
+```
+
+앱이 돌아왔습니다. 동일한 데이터, 동일한 컨테이너, 다른 머신.
+
+## 더 빠른 백업: 머신 간 직접 전송
+
+클라우드 스토리지 없이 머신 간에 직접 푸시할 수도 있습니다:
+
+```bash
+rdc repo push --name my-app -m my-server --to-machine backup-server
+```
+
+> **팁.** 스토리지 업로드는 항상 모든 것을 전송합니다. 머신 간 전송은 차이점만 보냅니다. 첫 번째 머신 간 푸시는 일반적인 시간이 걸리지만, 이후의 모든 푸시는 훨씬 빠릅니다. 빈번한 백업에 적합합니다.
+
+---
+
+다음: [모니터링](/ko/docs/tutorial-monitoring).

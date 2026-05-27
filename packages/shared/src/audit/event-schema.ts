@@ -34,6 +34,7 @@ const repoEventTypes = [
   'cli.repo.autostart_enable',
   'cli.repo.autostart_enable_all',
   'cli.repo.autostart_list',
+  'cli.repo.cat',
   'cli.repo.create',
   'cli.repo.delete',
   'cli.repo.down',

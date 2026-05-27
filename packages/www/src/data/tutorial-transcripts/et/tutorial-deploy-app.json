@@ -6,26 +6,72 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 52.700593,
-      "text": "Esimene samm. Loetleme saadaolevad mallid. Rediacc sisaldab valmis seadistusi levinud rakendustele -- Postgres, Redis, veebiserverid -- nii et docker-compose'i pole vaja nullist kirjutada."
+      "at": 2.40432,
+      "text": "Esimene samm. Loetleme saadaolevad mallid. Rediacc sisaldab valmis seadistusi levinud rakendustele -- Postgres, Redis, veebiserverid -- nii et docker-compose'i pole vaja nullist kirjutada.",
+      "afterText": "Täielik mallide kataloog. Iga mall on testitud compose'i ja Rediaccfile'i paar.",
+      "cardLabel": "Loetle mallid",
+      "prose": "Esimene samm: loetle saadaolevad mallid. Rediacc sisaldab eelehitatud malle levinud rakenduste jaoks, nii et te ei pea docker-compose faili nullist kirjutama."
     },
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 61.85842,
-      "text": "Teine samm. Rakendame app-postgres malli oma repositooriumisse. Ilmub kaks faili: docker-compose.yml, mis kirjeldab konteinereid, ja Rediaccfile, mis määrab käivitamise ja peatamise elutsükli konksud."
+      "at": 6.041569,
+      "text": "Teine samm. Rakendame app-postgres malli oma repositooriumisse. Ilmub kaks faili: docker-compose.yml, mis kirjeldab konteinereid, ja Rediaccfile, mis määrab käivitamise ja peatamise elutsükli konksud.",
+      "afterText": "Mall on rakendatud. Repol on nüüd oma compose-fail ja Rediaccfile.",
+      "cardLabel": "Rakenda mall",
+      "prose": "Teine samm: rakenda app-postgres mall repo-le. See kopeerib testitud failikomplekti repo-sse."
     },
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 79.070004,
-      "text": "Kolmas samm. Käivitame repositooriumi. CLI käivitab konteinerid, ühendab krüpteeritud mahu ja seadistab isoleeritud Dockeri deemoni. Rakendus töötab nüüd."
+      "at": 13.566247,
+      "text": "Kolmas samm. Käivitame repositooriumi. CLI käivitab konteinerid, ühendab krüpteeritud mahu ja seadistab isoleeritud Dockeri deemoni. Rakendus töötab nüüd.",
+      "afterText": "Konteinerid töötavad, maht on ühendatud, isoleeritud Dockeri deemon on üleval.",
+      "cardLabel": "Vaata faile",
+      "prose": "Ühenduge repo-ga ja loetlege, mida mall lisas: Rediaccfile käivitamis- ja peatamishaakidega ning docker-compose.yml, mis kirjeldab konteinereid. 2>/dev/null peidab ühenduslogid, nii et kuvatakse ainult failide loend."
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 123.719014,
-      "text": "Kontrollime docker ps abil. Pane tähele, et see vaade näitab ainult meie repositooriumi konteinereid. Teistel repositooriumidel samal serveril on oma Dockeri deemonid ja need on siit täielikult nähtamatud."
+      "at": 23.282435,
+      "text": "Kontrollime docker ps abil. Pane tähele, et see vaade näitab ainult meie repositooriumi konteinereid. Teistel repositooriumidel samal serveril on oma Dockeri deemonid ja need on siit täielikult nähtamatud.",
+      "afterText": "Ainult selle repo konteinerid. Isolatsioon on tegelik, mitte ainult konfiguratsioon.",
+      "cardLabel": "Käivita repo",
+      "prose": "Käivitage repo. CLI käivitab konteinerid, ühendab krüptitud mahu ja seadistab isoleeritud Docker daemon-i."
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "at": 30.345778,
+      "text": "Kontrollime, mis töötab. docker ps kuvab siin ainult selle repo konteinereid. Teistel repo'del samal serveril on oma daemonid ja need on siit vaates täiesti nähtamatud.",
+      "afterText": "Ainult selle repo konteinerid. Isolatsioon on päris, mitte lihtsalt konfiguratsioon.",
+      "cardLabel": "Kontrolli isolatsiooni",
+      "prose": "Kontrollige, mis töötab. docker ps loetleb ainult selle repo konteinereid. Teistel repo-del samal serveril on oma Docker daemon-id ja need pole sellest vaatest nähtavad."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Aeg juurutada päris rakendus! Liigume tühjast repost töötavate konteineriteni kolme lühikese sammuga."
+    },
+    {
+      "id": "pick-apply-run",
+      "text": "Voog on lihtne: vali mall, rakenda see repositooriumisse ja käivita. CLI-l on kaasas sisseehitatud mallid, nii et docker-compose'i pole vaja nullist kirjutada."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ja sellega on su esimene juurutus tehtud. Kohtumiseni järgmises, kus süveneme repositooriumiga töötamisse."
+    }
+  ],
+  "title": "Esimese rakenduse juurutamine",
+  "chapters": {
+    "intro": "Esimese rakenduse juurutamine",
+    "pick-apply-run": "Vali, rakenda, käivita",
+    "cast-step-0": "Samm 1: loetle mallid",
+    "cast-step-1": "Samm 2: rakenda mall",
+    "cast-step-2": "Samm 3: vaata, mida mall lisas",
+    "cast-step-3": "Samm 4: käivita repo",
+    "cast-step-4": "Samm 5: kontrolli isolatsiooni",
+    "outro": "Järgmine: töö oma repo-ga"
+  }
 }

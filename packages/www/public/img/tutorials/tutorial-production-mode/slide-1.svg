@@ -5,9 +5,9 @@
     .card { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 14; ry: 14; }
     .icon-stroke { fill: none; stroke: #556b2f; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     .icon-fill { fill: #eef2e6; stroke: #556b2f; stroke-width: 2.5; }
-    .title { fill: #1a1a1a; font: 700 22px Inter, system-ui, sans-serif; text-anchor: middle; }
-    .cmd { fill: #5e5e5e; font: 400 14px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
-    .desc { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .title { fill: #1a1a1a; font-weight: 700; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .cmd { fill: #5e5e5e; font-weight: 400; font-size: 14px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .desc { fill: #5e5e5e; font-weight: 400; font-size: 14px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
   </style>
   <rect class="bg" width="960" height="540"/>
 

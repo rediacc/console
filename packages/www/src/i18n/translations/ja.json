@@ -3549,6 +3549,398 @@
         "title": "目次"
       }
     },
+    "resourcesBrief": {
+      "devEnvironments": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
+          "downloadButton": "概要書をダウンロードする",
+          "heading": "この概要書について"
+        },
+        "companions": {
+          "heading": "関連ソリューションページ",
+          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
+          "readMore": "詳しく読む"
+        },
+        "faq": {
+          "heading": "読者からのよくある質問",
+          "items": [
+            {
+              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。",
+              "q": "この概要書はどなた向けですか？"
+            },
+            {
+              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。",
+              "q": "技術者向けでないバージョンはありますか？"
+            },
+            {
+              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。",
+              "q": "メールアドレスはどのように扱われますか？"
+            },
+            {
+              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。",
+              "q": "なぜ btrfs なのですか？"
+            },
+            {
+              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。",
+              "q": "AWS RDSなどのマネージドサービスにも適用できますか？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。",
+          "downloadButton": "技術概要書をダウンロードする",
+          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
+          "openInBrowser": "ブラウザで開く",
+          "subtitle": "開発者が実際にコードを書くのは週4.5時間。残りは環境の準備待ちです。50名のエンジニアチームでは、セットアップだけで年間72万〜120万ドルの損失が生じています。",
+          "title": "開発環境"
+        },
+        "meta": {
+          "description": "btrfs ゼロコピークローンにより、本番同等の開発環境を 60 秒で起動できます。Rediacc 提供の CISO・CTO 向け無料ブリーフと、5 分で読めるエグゼクティブ向け要約版もあります。",
+          "keywords": "開発環境, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書",
+          "title": "開発環境の即時複製：無料テクニカルブリーフ PDF — Rediacc"
+        },
+        "toc": {
+          "heading": "目次・内容",
+          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
+          "items": [
+            "具体的なオペレーター視点での脅威モデル",
+            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
+            "防御する障害モードと具体的な先例",
+            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
+            "公開数値に基づくROI計算",
+            "技術的アプローチによるベンダー比較（ARRではなく）",
+            "オンボーディングの概要と既知のスコープ上の制限",
+            "アーキテクチャが生成する監査対応エビデンス"
+          ]
+        }
+      },
+      "encryptionControl": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
+          "downloadButton": "概要書をダウンロードする",
+          "heading": "この概要書について"
+        },
+        "companions": {
+          "heading": "関連ソリューションページ",
+          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
+          "readMore": "詳しく読む"
+        },
+        "faq": {
+          "heading": "読者からのよくある質問",
+          "items": [
+            {
+              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。",
+              "q": "この概要書はどなた向けですか？"
+            },
+            {
+              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。",
+              "q": "技術者向けでないバージョンはありますか？"
+            },
+            {
+              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。",
+              "q": "メールアドレスはどのように扱われますか？"
+            },
+            {
+              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。",
+              "q": "なぜ btrfs なのですか？"
+            },
+            {
+              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。",
+              "q": "AWS RDSなどのマネージドサービスにも適用できますか？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。",
+          "downloadButton": "技術概要書をダウンロードする",
+          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
+          "openInBrowser": "ブラウザで開く",
+          "subtitle": "Schrems IIはポリシーの選択肢ではありません。アーキテクチャ上の要件であり、ほとんどのバックアップベンダーはこれを満たしていません。",
+          "title": "暗号化管理"
+        },
+        "meta": {
+          "description": "顧客管理キーと、ベンダー変更後も利用できる暗号化データ。Schrems II 準拠。CISO・CTO 向けブリーフとエグゼクティブ向け要約版もご用意しています。",
+          "keywords": "暗号化管理, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書",
+          "title": "暗号化コントロール：無料テクニカルブリーフ PDF — Rediacc"
+        },
+        "toc": {
+          "heading": "目次・内容",
+          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
+          "items": [
+            "具体的なオペレーター視点での脅威モデル",
+            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
+            "防御する障害モードと具体的な先例",
+            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
+            "公開数値に基づくROI計算",
+            "技術的アプローチによるベンダー比較（ARRではなく）",
+            "オンボーディングの概要と既知のスコープ上の制限",
+            "アーキテクチャが生成する監査対応エビデンス"
+          ]
+        }
+      },
+      "multiCloudAlways": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
+          "downloadButton": "概要書をダウンロードする",
+          "heading": "この概要書について"
+        },
+        "companions": {
+          "heading": "関連ソリューションページ",
+          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
+          "readMore": "詳しく読む"
+        },
+        "faq": {
+          "heading": "読者からのよくある質問",
+          "items": [
+            {
+              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。",
+              "q": "この概要書はどなた向けですか？"
+            },
+            {
+              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。",
+              "q": "技術者向けでないバージョンはありますか？"
+            },
+            {
+              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。",
+              "q": "メールアドレスはどのように扱われますか？"
+            },
+            {
+              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。",
+              "q": "なぜ btrfs なのですか？"
+            },
+            {
+              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。",
+              "q": "AWS RDSなどのマネージドサービスにも適用できますか？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。",
+          "downloadButton": "技術概要書をダウンロードする",
+          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
+          "openInBrowser": "ブラウザで開く",
+          "subtitle": "2025年10月20日、AWS US-EAST-1が15時間にわたって停止しました。Snapchat、Robinhood、Uber、Deltaも影響を受けました。あなたは間に合うようにクラウドを切り替えられましたか？",
+          "title": "マルチクラウド 常時稼働"
+        },
+        "meta": {
+          "description": "ポータブルなスナップショットと実証済みのクロスクラウドフェイルオーバーで、クラウド障害時もビジネスを継続できます。CISO・CTO 向けブリーフとエグゼクティブ向け要約版もご用意しています。",
+          "keywords": "マルチクラウド常時稼働, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書",
+          "title": "マルチクラウド継続稼働：無料テクニカルブリーフ PDF — Rediacc"
+        },
+        "toc": {
+          "heading": "目次・内容",
+          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
+          "items": [
+            "具体的なオペレーター視点での脅威モデル",
+            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
+            "防御する障害モードと具体的な先例",
+            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
+            "公開数値に基づくROI計算",
+            "技術的アプローチによるベンダー比較（ARRではなく）",
+            "オンボーディングの概要と既知のスコープ上の制限",
+            "アーキテクチャが生成する監査対応エビデンス"
+          ]
+        }
+      },
+      "preemptiveDefense": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
+          "downloadButton": "概要書をダウンロードする",
+          "heading": "この概要書について"
+        },
+        "companions": {
+          "heading": "関連ソリューションページ",
+          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
+          "readMore": "詳しく読む"
+        },
+        "faq": {
+          "heading": "読者からのよくある質問",
+          "items": [
+            {
+              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。",
+              "q": "この概要書はどなた向けですか？"
+            },
+            {
+              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。",
+              "q": "技術者向けでないバージョンはありますか？"
+            },
+            {
+              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。",
+              "q": "メールアドレスはどのように扱われますか？"
+            },
+            {
+              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。",
+              "q": "なぜ btrfs なのですか？"
+            },
+            {
+              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。",
+              "q": "AWS RDSなどのマネージドサービスにも適用できますか？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。",
+          "downloadButton": "技術概要書をダウンロードする",
+          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
+          "openInBrowser": "ブラウザで開く",
+          "subtitle": "実際のインフラに対してテストする。何も壊さない。危険な攻撃はクローンが引き受けます。",
+          "title": "先制防衛"
+        },
+        "meta": {
+          "description": "本番リスクゼロで本番クローンのセキュリティテストを実施。使い捨てコピーへの AI ペネトレーションテストが可能です。CISO・CTO 向けブリーフとエグゼクティブ向け要約版もご用意しています。",
+          "keywords": "先制防衛, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書",
+          "title": "先制的セキュリティ防御：無料テクニカルブリーフ PDF — Rediacc"
+        },
+        "toc": {
+          "heading": "目次・内容",
+          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
+          "items": [
+            "具体的なオペレーター視点での脅威モデル",
+            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
+            "防御する障害モードと具体的な先例",
+            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
+            "公開数値に基づくROI計算",
+            "技術的アプローチによるベンダー比較（ARRではなく）",
+            "オンボーディングの概要と既知のスコープ上の制限",
+            "アーキテクチャが生成する監査対応エビデンス"
+          ]
+        }
+      },
+      "ransomwareSurvival": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
+          "downloadButton": "概要書をダウンロードする",
+          "heading": "この概要書について"
+        },
+        "companions": {
+          "heading": "関連ソリューションページ",
+          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
+          "readMore": "詳しく読む"
+        },
+        "faq": {
+          "heading": "読者からのよくある質問",
+          "items": [
+            {
+              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。",
+              "q": "この概要書はどなた向けですか？"
+            },
+            {
+              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。",
+              "q": "技術者向けでないバージョンはありますか？"
+            },
+            {
+              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。",
+              "q": "メールアドレスはどのように扱われますか？"
+            },
+            {
+              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。",
+              "q": "なぜ btrfs なのですか？"
+            },
+            {
+              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。",
+              "q": "AWS RDSなどのマネージドサービスにも適用できますか？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。",
+          "downloadButton": "技術概要書をダウンロードする",
+          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
+          "openInBrowser": "ブラウザで開く",
+          "subtitle": "ランサムウェア攻撃の94%がバックアップを標的にしています。そのうち57%は成功しています。",
+          "title": "ランサムウェア サバイバル"
+        },
+        "meta": {
+          "description": "攻撃者が暗号化も削除もできないファイルシステムネイティブの不変バックアップ。Rediacc が提供する CISO・CTO 向け無料ブリーフと、エグゼクティブ向け要約版もご用意しています。",
+          "keywords": "ランサムウェア対策, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書",
+          "title": "ランサムウェア対策：無料テクニカルブリーフ PDF — Rediacc"
+        },
+        "toc": {
+          "heading": "目次・内容",
+          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
+          "items": [
+            "具体的なオペレーター視点での脅威モデル",
+            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
+            "防御する障害モードと具体的な先例",
+            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
+            "公開数値に基づくROI計算",
+            "技術的アプローチによるベンダー比較（ARRではなく）",
+            "オンボーディングの概要と既知のスコープ上の制限",
+            "アーキテクチャが生成する監査対応エビデンス"
+          ]
+        }
+      },
+      "verifiedBackups": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
+          "downloadButton": "概要書をダウンロードする",
+          "heading": "この概要書について"
+        },
+        "companions": {
+          "heading": "関連ソリューションページ",
+          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
+          "readMore": "詳しく読む"
+        },
+        "faq": {
+          "heading": "読者からのよくある質問",
+          "items": [
+            {
+              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。",
+              "q": "この概要書はどなた向けですか？"
+            },
+            {
+              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。",
+              "q": "技術者向けでないバージョンはありますか？"
+            },
+            {
+              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。",
+              "q": "メールアドレスはどのように扱われますか？"
+            },
+            {
+              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。",
+              "q": "なぜ btrfs なのですか？"
+            },
+            {
+              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。",
+              "q": "AWS RDSなどのマネージドサービスにも適用できますか？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。",
+          "downloadButton": "技術概要書をダウンロードする",
+          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
+          "openInBrowser": "ブラウザで開く",
+          "subtitle": "バックアップの58%はリストアを試みた時点で失敗します。ほとんどの企業が気づくのは、実際に障害が発生した後です。",
+          "title": "検証済みバックアップ"
+        },
+        "meta": {
+          "description": "毎回のバックアップで起動・検証テストを実施。四半期ごとのチェックではありません。Rediacc 提供の CISO・CTO 向け無料ブリーフと、5 分で読めるエグゼクティブ向け要約版もあります。",
+          "keywords": "検証済みバックアップ, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書",
+          "title": "バックアップ検証：無料テクニカルブリーフ PDF — Rediacc"
+        },
+        "toc": {
+          "heading": "目次・内容",
+          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
+          "items": [
+            "具体的なオペレーター視点での脅威モデル",
+            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
+            "防御する障害モードと具体的な先例",
+            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
+            "公開数値に基づくROI計算",
+            "技術的アプローチによるベンダー比較（ARRではなく）",
+            "オンボーディングの概要と既知のスコープ上の制限",
+            "アーキテクチャが生成する監査対応エビデンス"
+          ]
+        }
+      }
+    },
     "resourcesNis2Directive": {
       "about": {
         "body": "Rediaccはエストニア登録のセルフホスト型インフラストラクチャプラットフォームです（OÜ 17363830、VAT EE102920091）。本要約はNIS2コンテンツプログラムの一環として作成されました。上記のコンパニオンガイドでは、Rediaccが対応できない領域（現時点では認証なし、GRCレイヤーなし、Article 23報告管理なし、ポータル専用MFA）を含め、指令の各条項にRediaccがどのように対応しているかを説明しています。公開されている機能マッピングについては、ドキュメントの{nis2DoraLink}をご参照ください。",
@@ -3763,21 +4155,6 @@
       "title": "Rediaccで組織のコストをどれだけ削減できますか？"
     },
     "solutionPages": {
-      "downloadGated": {
-        "title": "技術概要書を入手する",
-        "description": "CISO・CTO・上級エンジニア向けに書かれた、無駄のないPDFです。メールアドレスをご入力いただければ、ダウンロードリンクとワンページのサマリーをメールでお送りします。",
-        "emailPlaceholder": "you@company.com",
-        "submitLabel": "概要書を送ってください",
-        "successMessage": "受信トレイをご確認ください。新しいタブでPDFも開きました。",
-        "errorMessage": "エラーが発生しました。もう一度お試しいただくか、support@rediacc.com までお問い合わせください。",
-        "disclaimer": "送信は1通のみ。マーケティングリストへの登録はありません。ワンクリックで配信停止できます。",
-        "dismissLabel": "閉じる"
-      },
-      "downloadShort": {
-        "title": "お時間がありませんか？",
-        "description": "詳細な解説は不要という方へ。スタンドアップミーティングでチームが読める5分版をご用意しています。",
-        "buttonLabel": "ショート版概要書をダウンロード（PDF）"
-      },
       "aiPentesting": {
         "benefits": {
           "items": [
@@ -6067,6 +6444,489 @@
             }
           ]
         }
+      },
+      "dataSovereignty": {
+        "benefits": {
+          "items": [
+            {
+              "description": "米国司法管轄の親会社なし。ベンダーへの鍵エスクローなし。アーキテクチャが防御そのものです。カルニオ上院証言（2025年6月18日）は、契約が管轄免除の代替になるという残りの議論をすべて終結させました。",
+              "icon": "shield",
+              "title": "構造によるCLOUD Act免除"
+            },
+            {
+              "description": "構造によるオープンデータ形式とゼロ切り替え料金。すべてのバックアップは移植可能な動作するレプリカです。2027年1月12日のゼロ切り替え料金期限前に、Data Act第23条から第31条への完全準拠を実現。",
+              "icon": "globe",
+              "title": "EU Data Act 2027対応済み"
+            },
+            {
+              "description": "4本柱の姿勢は2025年11月17日のANSSI-BSI共同宣言と一致: 厳格なデータローカライゼーション、EU法の排他的適用、欧州外アクセスの不在、EU外依存なしの事業継続性。",
+              "icon": "check-circle",
+              "title": "SecNumCloudおよびC5:2026準拠"
+            }
+          ],
+          "overline": "重要な理由",
+          "title": "得られるもの"
+        },
+        "bottomCta": {
+          "command": "rdc audit log --limit 50",
+          "ctaText": "Communityで無料で始める",
+          "description": "無料のCommunityエディションから始めてください。最初の鍵管理監査を1分以内に実行できます。",
+          "title": "米国司法管轄のプロバイダーからデータを借り返すのをやめましょう。"
+        },
+        "calculator": {
+          "annualLabel": "年間主権露出",
+          "description": "スライダーを環境に合わせて調整してください。主権のギャップの真のコストを確認してください。",
+          "footnote": "移転リスク: レコード数 x €0.04 x 規制審査の確率10%。退出ペナルティ: Data Act第25条に基づく推定切り替えコスト上限としてのハイパースケーラー支出の10%（ゼロ料金期限: 2027年1月12日）。DORAテスト: 時間 x €200/時間のエンジニアコスト。Rediacc使用時: セルフホストにより移転リスクが解消。オープン形式により退出ペナルティがゼロに。定数時間フォークによりDORAリカバリテストがリポジトリサイズに関係なく数分に短縮。",
+          "headerTitle": "主権露出計算機",
+          "overline": "真のコスト",
+          "results": {
+            "doraTesting": "DORA第12条テストコスト",
+            "exitPenalty": "Data Act 2027 退出ペナルティリスク",
+            "transferRisk": "GDPR移転リスク露出"
+          },
+          "sliders": {
+            "records": "EU個人データレコード（千件）",
+            "recoveryHours": "手動DORAリカバリテスト（時間/年）",
+            "spend": "年間ハイパースケーラー支出（€千）"
+          },
+          "title": "米国司法管轄の露出はどのくらいのコストですか?",
+          "withAnnual": "年間主権露出",
+          "withoutTag": "米国司法管轄",
+          "withResults": {
+            "doraTesting": "DORA第12条テストコスト",
+            "exitPenalty": "Data Act 2027 退出ペナルティリスク",
+            "transferRisk": "GDPR移転リスク露出"
+          },
+          "withTag": "REDIACC使用時"
+        },
+        "comparison": {
+          "capabilityLabel": "機能",
+          "description": "ほとんどのベンダーはデータ所在地を提供します。Rediaccがアーキテクチャで実現するものを提供できるベンダーはありません: 顧客による鍵管理、EUのみのオペレーター、CLOUD Act免除。",
+          "features": [
+            {
+              "name": "CLOUD Act免除（米国司法管轄の親会社なし）",
+              "refs": [4, 4, 4, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+            },
+            {
+              "name": "顧客が鍵を保持（技術的判読不可能性）",
+              "refs": [0, 5, 5, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "EUのみのオペレーター（米国の親会社なし）",
+              "refs": [4, 4, 4, 0, 6, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+            },
+            {
+              "name": "SecNumCloud / C5:2026認証パス",
+              "refs": [0, 0, 7, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "オープン退出形式（Data Act第30条）",
+              "refs": [8, 8, 8, 0, 8, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "顧客インフラでのセルフホスト",
+              "refs": [9, 0, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "デフォルトでEUデータ所在地",
+              "refs": [0, 0, 10, 0, 13, 0],
+              "values": ["cross", "cross", "check", "check", "check", "rediacc"]
+            }
+          ],
+          "overline": "差異",
+          "title": "主権の比較"
+        },
+        "explore": {
+          "solutions": [
+            {
+              "category": "Encryption Control",
+              "dataCategory": "encryption",
+              "description": "あなたの鍵。あなたの暗号化。例外なし。",
+              "slug": "encryption",
+              "title": "自分で管理する暗号化"
+            },
+            {
+              "category": "Encryption Control",
+              "dataCategory": "encryption",
+              "description": "すべてのアクションを記録。隠し事なし。",
+              "slug": "audit-trail",
+              "title": "監査証跡"
+            },
+            {
+              "category": "Encryption Control",
+              "dataCategory": "encryption",
+              "description": "データを危険にさらさず移行",
+              "slug": "migration-safety",
+              "title": "移行の安全性"
+            },
+            {
+              "category": "Ransomware Survival",
+              "dataCategory": "ransomware",
+              "description": "ランサムウェアが触れないバックアップ",
+              "slug": "immutable-backups",
+              "title": "イミュータブルバックアップ"
+            },
+            {
+              "category": "Multi-Cloud",
+              "dataCategory": "multi-cloud",
+              "description": "AWSがダウンしても、あなたはダウンしない",
+              "slug": "cloud-outage-protection",
+              "title": "クラウド障害対策"
+            },
+            {
+              "category": "Verified Backups",
+              "dataCategory": "backups",
+              "description": "どのベンダーからでも退出できます。データは保持されます。",
+              "slug": "vendor-lock-in",
+              "title": "ベンダーロックインからの解放"
+            },
+            {
+              "category": "Verified Backups",
+              "dataCategory": "backups",
+              "description": "すべての保持要件を自動的に満たす",
+              "slug": "retention-compliance",
+              "title": "保持期間コンプライアンス"
+            },
+            {
+              "category": "Development Environments",
+              "dataCategory": "dev-env",
+              "description": "本番環境を60秒でクローン",
+              "slug": "environment-cloning",
+              "title": "環境クローン"
+            }
+          ],
+          "title": "他のソリューションを探す"
+        },
+        "hero": {
+          "badge": "暗号化制御",
+          "differentiator": "すべてのハイパースケーラーが主権を謳います。しかし誰も、あなたのデータが米国の裁判所命令の対象外であることを保証できません。Rediaccはできます。",
+          "primaryCta": "Communityで無料で始める",
+          "secondaryCta": "主権機能を見る →",
+          "subtitle": "あなたがホストします。鍵はあなたが保持します。米国司法管轄のプロバイダーは、持っていないものを提出させられることはありません。",
+          "title": "証明書ではなく、アーキテクチャによるソブリン。"
+        },
+        "howItWorks": {
+          "cloneVisual": {
+            "arrow": {
+              "icon": "shield-arrow",
+              "label": "Migrate",
+              "time": "Open format"
+            },
+            "clone": {
+              "cardClass": "sealed",
+              "containerCount": "アーキテクチャによる主権",
+              "services": [
+                {
+                  "name": "Your Storage",
+                  "port": "Customer-owned"
+                },
+                {
+                  "name": "Your Keys",
+                  "port": "Customer HSM"
+                },
+                {
+                  "name": "Your Policy",
+                  "port": "EU-governed"
+                },
+                {
+                  "name": "Audit Chain",
+                  "port": "SHA-256 signed"
+                }
+              ],
+              "size": "CLOUD Act免除",
+              "status": "EU管轄",
+              "title": "あなたのソブリンスタック"
+            },
+            "production": {
+              "containerCount": "契約上の所在地",
+              "services": [
+                {
+                  "name": "S3 Bucket",
+                  "port": "US-controlled"
+                },
+                {
+                  "name": "KMS Key",
+                  "port": "vendor-held"
+                },
+                {
+                  "name": "IAM Policy",
+                  "port": "US-governed"
+                },
+                {
+                  "name": "Audit Log",
+                  "port": "US-accessible"
+                }
+              ],
+              "size": "主権ではない",
+              "status": "CLOUD Act対象",
+              "title": "米国ハイパースケーラー"
+            }
+          },
+          "overline": "仕組み",
+          "steps": [
+            {
+              "description": "自社ハードウェア、EU IaaSプロバイダー、またはその組み合わせにデプロイします。Rediacc OEはエストニアで設立されており、米国の親会社なし、米国のコントロールプレーンなし、CLOUD Act対象面なしです。",
+              "icon": "server",
+              "title": "ホスト"
+            },
+            {
+              "description": "暗号化鍵はあなたの管理下から離れることはありません。鍵導出はクライアントサイドで実行されます。Rediaccは平文を参照しません。管理チェーンはCLIで鍵ごとに監査可能です。",
+              "icon": "key",
+              "title": "鍵を保持"
+            },
+            {
+              "description": "1つのコマンドで署名済みの鍵管理レポートを生成します。SecNumCloud 3.2、BSI C5:2026、ANSSI-BSI共同宣言、EDPB勧告01/2020ユースケース2に準拠しています。",
+              "icon": "shield",
+              "title": "証明する"
+            }
+          ],
+          "title": "3ステップ。1つのソブリンスタック。"
+        },
+        "meta": {
+          "description": "あなたがホストし、あなたが鍵を管理します。証明書ではなくアーキテクチャによる CLOUD Act 免疫。顧客管理キーによる自己ホスト型バックアップ。",
+          "keywords": "データ主権, CLOUD Act免除, 顧客管理鍵, GDPR Schrems II, EU Data Act, セルフホスト, ソブリンバックアップ, SecNumCloud, DORA",
+          "title": "データ主権：アーキテクチャが保証するバックアップ — Rediacc"
+        },
+        "problem": {
+          "description": "米国司法管轄のクラウドプロバイダーは、データがEUのデータセンターに保存されていても、CLOUD Actの命令に従う法的義務があります。契約上のコミットメントは米国法に優先できません。問題は、プロバイダーがそうするかどうかではありません。問題は、法的にそうできるかどうかです。",
+          "overline": "問題点",
+          "statCallouts": [
+            {
+              "number": "「いいえ、保証できません」",
+              "ref": 1,
+              "source": "フランス上院、2025年6月18日",
+              "text": "Microsoft Franceの公共法務部長（アントン・カルニオ、\"Non, je ne peux pas le garantir\"）、宣誓証言において: EUのMicrosoftデータセンターにあるフランス市民のデータが米国当局から保護されるかという問いへの回答"
+            },
+            {
+              "number": "€126億",
+              "ref": 2,
+              "source": "Gartner、2026年2月",
+              "text": "2026年のEUソブリンクラウドIaaS支出。2027年には€231億に増加。市場は主権が任意でないことを決定しました。"
+            },
+            {
+              "number": "米国主要請負業者0社",
+              "ref": 3,
+              "source": "欧州委員会、2026年4月17日",
+              "text": "Cloud III: 欧州委員会の€1億8000万のソブリンクラウド入札は4つのEUコンソーシアムに授与されました。米国本社の主要請負業者はゼロです。"
+            }
+          ],
+          "timeline": {
+            "newLabel": "REDIACC では",
+            "newSteps": ["自社インフラでホスト", "自分で鍵を保持", "CLOUD Actはあなたに届かない"],
+            "oldLabel": "従来の方法",
+            "oldSteps": [
+              {
+                "day": "1日目",
+                "text": "米国司法管轄のクラウドプロバイダーと契約締結"
+              },
+              {
+                "day": "1か月目",
+                "text": "DPOがGDPR移転リスクを指摘。TIAが必要"
+              },
+              {
+                "day": "3か月目",
+                "text": "法務部門がCLOUD Act露出を検討。保証は得られない"
+              },
+              {
+                "day": "6か月目",
+                "text": "規制当局の監査。データ所在地は確認されるが、主権は確認されない"
+              },
+              {
+                "day": "結果",
+                "text": "所在地であり、主権ではない。コンプライアンスのギャップは残る。"
+              }
+            ]
+          },
+          "title": "クラウドプロバイダーはあなたのデータを提出できます。あなたには知らされません。"
+        },
+        "references": {
+          "disclaimer": "計算機の推定は業界標準のコストモデルを使用しています。実際の露出は管轄、契約構造、侵害シナリオによって異なります。",
+          "items": [
+            {
+              "text": "Microsoft France公共法務部長アントン・カルニオ、公共調達とデジタル主権に関するフランス上院調査、2025年6月18日: 「いいえ、保証できません。ただし、これまで一度も起きたことはありません。」The Register、2025年7月25日報道。",
+              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
+            },
+            {
+              "text": "Gartner、2026年2月: 欧州ソブリンクラウドIaaS支出は2026年に126億ドル、2027年に231億ドルに達し、2027年には北米を上回ると予測。",
+              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
+            },
+            {
+              "text": "欧州委員会「戦略的調達によるクラウド主権の推進」2026年4月17日。Cloud III €1億8000万入札はPost Telecom + OVHcloud + CleverCloud、STACKIT、Scaleway、Proximus + S3NS + Clarence + Mistral AIに授与。米国本社の主要請負業者はゼロ。",
+              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
+            },
+            {
+              "text": "CLOUD Act（海外データの合法的使用明確化法）、18 U.S.C. 2713、2018年。米国当局が米国司法管轄のプロバイダーに対し、世界中に保存された顧客データの開示を強制することを許可します。",
+              "url": "https://www.justice.gov/dag/cloudact"
+            },
+            {
+              "text": "EDPB勧告01/2020「EU個人データ保護レベルへの準拠を確保するための移転ツールを補完する措置について」バージョン2.0、2021年6月。ユースケース2: 補完的措置としての暗号化には、顧客による排他的鍵管理と輸入者における技術的判読不可能性が必要。",
+              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
+            },
+            {
+              "text": "Keepit A/S、コペンハーゲン。Microsoft 365、Salesforce、Google WorkspaceのSaaSのみのバックアップ。EU設立、米国の親会社なし。セルフホストまたはオンプレミスのワークロードはバックアップしません。",
+              "url": "https://keepit.com"
+            },
+            {
+              "text": "ANSSI SecNumCloud 3.2認定要件。プロバイダーはEU過半数所有、EU本社、域外法からの免除が必要。非EU株主は個人で25%、合計で39%に制限。AWS Sovereign CloudとMicrosoft Bleuは適格ではありません。",
+              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
+            },
+            {
+              "text": "EU Data Act（規則（EU）2023/2854）第23条から第31条。2025年9月12日から施行。2027年1月12日から切り替え料金を全面禁止。プロバイダーは切り替え後の機能的同等性を確保する必要があります。",
+              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
+            },
+            {
+              "text": "Veeam Backup and Replicationはオンプレミスのセルフホストデプロイをサポートします。Veeamには直接の主権認定はなく、EUの主権ストーリーはパートナーIaaS（特にOVHcloud）に依存します。",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "AWS European Sovereign Cloud、2026年1月15日GA。4つのドイツGmbHの下で運営。米国本社の親会社（Amazon.com Inc.）は引き続きCLOUD Actの対象です。",
+              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
+            },
+            {
+              "text": "クラウド主権基準に関するANSSI-BSI共同声明、2025年11月17日。4つの失格基準: 厳格なデータおよびサポートのローカライゼーション、欧州法の排他的適用、欧州外第三者による不正アクセスの不在、EU外技術なしで事業継続性を維持する能力。",
+              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
+            },
+            {
+              "text": "欧州監督機関「DORA下での重要ICT第三者プロバイダーの指定」2025年11月18日。最初に指定された19の重要ICT第三者プロバイダーにはAWS、Microsoft Azure、Google Cloud、IBM、Oracle、SAP、Salesforceが含まれます。",
+              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
+            },
+            {
+              "text": "Keepitのデータレジデンシーポリシー: 顧客データはEU域内のデータセンター(フランクフルト、アムステルダム、コペンハーゲン)にのみ保存。SaaS専用モデルで運用者および保存場所はEUのみ。",
+              "url": "https://www.keepit.com/trust/"
+            }
+          ],
+          "label": "出典と参考文献"
+        },
+        "socialProof": {
+          "author": "最高情報セキュリティ責任者（CISO）",
+          "company": "SecNumCloud義務下のフランスOIV、従業員1,200名",
+          "impact": {
+            "after": {
+              "label": "導入後",
+              "value": "CLOUD Act免除"
+            },
+            "before": {
+              "label": "導入前",
+              "value": "移転リスク"
+            },
+            "improvement": "Microsoft Azure Backupを置き換え - 鍵管理: ベンダーから顧客へ - ANSSI監査: 合格"
+          },
+          "quote": "2025年6月のカルニオ上院証言後、SecNumCloud監査委員会は1つの質問をしました: バックアッププロバイダーが患者データを米国当局に開示するよう強制されないことを証明できますか? Microsoft Azure Backupではその質問に答えられませんでした。Rediaccでは答えはアーキテクチャ的です: 鍵は決してHSMから離れず、オペレーターに米国の親会社はなく、30秒で署名済み管理レポートを生成できます。それがANSSIを満足させる唯一の答えです。"
+        },
+        "stats": [
+          {
+            "icon": "key",
+            "label": "プロバイダーへのエスクロー鍵",
+            "number": "0"
+          },
+          {
+            "icon": "lock",
+            "label": "顧客による鍵管理",
+            "number": "100%"
+          },
+          {
+            "icon": "globe",
+            "label": "オペレーター管轄",
+            "number": "EUのみ"
+          }
+        ],
+        "techDiff": {
+          "description": "米国司法管轄のプロバイダーはフランクフルトにデータを保存しながら、米国の裁判所から開示を強制される可能性があります。Rediaccのアーキテクチャは強制ベクターを完全に除去します。提出できる鍵は存在せず、傍受できる通信チャネルもありません。",
+          "overline": "技術的詳細",
+          "rows": [
+            {
+              "rediacc": "オペレーターはエストニアで設立。米国の親会社なし、CLOUD Act強制の対象面なし",
+              "traditional": "プロバイダーは暗号文の保存場所に関わらず米国の司法管轄に服する"
+            },
+            {
+              "rediacc": "クライアントサイド鍵導出: ベンダーは鍵を保持しない。強制は技術的に無意味",
+              "traditional": "ベンダー管理KMS: プロバイダーは法的要求に応じて平文を生成できる"
+            },
+            {
+              "rediacc": "SHA-256署名付き監査チェーン: すべての鍵アクセスと要求が記録され、顧客が読み取り可能",
+              "traditional": "国境を越えたデータ要求はベンダーが記録し、顧客には見えない"
+            },
+            {
+              "rediacc": "オープン形式（btrfs send、tar）: 退出は動作するレプリカを意味し、Data Actに準拠",
+              "traditional": "独自バックアップ形式: 退出にはベンダーツールによる移行が必要"
+            },
+            {
+              "rediacc": "btrfs reflinkによる定数時間フォーク: 100GBも100TBも同じ秒数でフォーク",
+              "traditional": "DORAリカバリテストはデータ量に比例。大規模リポジトリでは数日かかる"
+            }
+          ],
+          "title": "データ所在地がデータ主権でない理由"
+        },
+        "techStrip": {
+          "label": "あらゆるワークロードをセルフホスト、すべての鍵を手元に",
+          "note": "データベース、メールサーバー、CI/CD、ERP、CMS、AIモデルストア: すべてのワークロードが主権的で、すべての鍵があなたのものです。"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "text": "rdc audit log --limit 50",
+              "type": "command"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "すべてのリポジトリの鍵管理チェーンを確認中...",
+              "type": "comment"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "鍵ID                    保管          HSM          エスクロー  管轄",
+              "type": "table-header"
+            },
+            {
+              "text": "prod-main-v3            顧客            YubiHSM 2    NO          顧客-構内",
+              "type": "table-row"
+            },
+            {
+              "text": "prod-db-v2              顧客            YubiHSM 2    NO          顧客-構内",
+              "type": "table-row"
+            },
+            {
+              "text": "staging-main-v1         顧客            software     NO          顧客-構内",
+              "type": "table-row"
+            },
+            {
+              "text": "backup-archive-v4       顧客            YubiHSM 2    NO          顧客-構内",
+              "type": "table-row"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "鍵: 4   保管: 100% 顧客   エスクロー: 0   米国-アクセス: 0   署名済み: 2026-05-11T09:14:33Z",
+              "type": "summary"
+            }
+          ]
+        }
+      },
+      "downloadGated": {
+        "description": "CISO・CTO・上級エンジニア向けに書かれた、無駄のないPDFです。メールアドレスをご入力いただければ、ダウンロードリンクとワンページのサマリーをメールでお送りします。",
+        "disclaimer": "送信は1通のみ。マーケティングリストへの登録はありません。ワンクリックで配信停止できます。",
+        "dismissLabel": "閉じる",
+        "emailPlaceholder": "you@company.com",
+        "errorMessage": "エラーが発生しました。もう一度お試しいただくか、support@rediacc.com までお問い合わせください。",
+        "submitLabel": "概要書を送ってください",
+        "successMessage": "受信トレイをご確認ください。新しいタブでPDFも開きました。",
+        "title": "技術概要書を入手する"
+      },
+      "downloadShort": {
+        "buttonLabel": "ショート版概要書をダウンロード（PDF）",
+        "description": "詳細な解説は不要という方へ。スタンドアップミーティングでチームが読める5分版をご用意しています。",
+        "title": "お時間がありませんか？"
       },
       "encryption": {
         "benefits": {
@@ -9523,6 +10383,26 @@
           ]
         }
       },
+      "leadMagnetButton": {
+        "buttonLabel": "概要書をダウンロードする",
+        "description": "CISO・CTO・上級エンジニア向けに書かれた、無駄のないPDFです。後から見つけられるよう、リンクをメールでお送りします。",
+        "dismissLabel": "閉じる",
+        "title": "技術概要書を入手する"
+      },
+      "leadMagnetModal": {
+        "captchaRequired": "キャプチャ認証を完了してください。",
+        "closeLabel": "閉じる",
+        "description": "会社のメールアドレスをご入力ください。PDFリンクをお送りし、受信トレイにも保存されます。",
+        "disclaimer": "送信は1通のみ。マーケティングリストへの登録はありません。ワンクリックで配信停止できます。",
+        "emailLabel": "会社のメールアドレス",
+        "emailPlaceholder": "you@company.com",
+        "errorGeneric": "エラーが発生しました。もう一度お試しいただくか、support@rediacc.com までお問い合わせください。",
+        "sendingLabel": "送信中...",
+        "submitLabel": "PDFを送ってください",
+        "successBody": "新しいタブで開き、リンクをメールでもお送りしました。まもなくこのウィンドウを閉じます。",
+        "successTitle": "PDFを送信しました",
+        "title": "技術概要書を入手する"
+      },
       "migrationSafety": {
         "benefits": {
           "items": [
@@ -10497,474 +11377,6 @@
               "type": "summary"
             }
           ]
-        }
-      },
-      "dataSovereignty": {
-        "meta": {
-          "title": "データ主権：アーキテクチャが保証するバックアップ — Rediacc",
-          "description": "あなたがホストし、あなたが鍵を管理します。証明書ではなくアーキテクチャによる CLOUD Act 免疫。顧客管理キーによる自己ホスト型バックアップ。",
-          "keywords": "データ主権, CLOUD Act免除, 顧客管理鍵, GDPR Schrems II, EU Data Act, セルフホスト, ソブリンバックアップ, SecNumCloud, DORA"
-        },
-        "hero": {
-          "badge": "暗号化制御",
-          "title": "証明書ではなく、アーキテクチャによるソブリン。",
-          "subtitle": "あなたがホストします。鍵はあなたが保持します。米国司法管轄のプロバイダーは、持っていないものを提出させられることはありません。",
-          "differentiator": "すべてのハイパースケーラーが主権を謳います。しかし誰も、あなたのデータが米国の裁判所命令の対象外であることを保証できません。Rediaccはできます。",
-          "primaryCta": "Communityで無料で始める",
-          "secondaryCta": "主権機能を見る →"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "type": "command",
-              "text": "rdc audit log --limit 50"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "type": "comment",
-              "text": "すべてのリポジトリの鍵管理チェーンを確認中..."
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "type": "table-header",
-              "text": "鍵ID                    保管          HSM          エスクロー  管轄"
-            },
-            {
-              "type": "table-row",
-              "text": "prod-main-v3            顧客            YubiHSM 2    NO          顧客-構内"
-            },
-            {
-              "type": "table-row",
-              "text": "prod-db-v2              顧客            YubiHSM 2    NO          顧客-構内"
-            },
-            {
-              "type": "table-row",
-              "text": "staging-main-v1         顧客            software     NO          顧客-構内"
-            },
-            {
-              "type": "table-row",
-              "text": "backup-archive-v4       顧客            YubiHSM 2    NO          顧客-構内"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "type": "summary",
-              "text": "鍵: 4   保管: 100% 顧客   エスクロー: 0   米国-アクセス: 0   署名済み: 2026-05-11T09:14:33Z"
-            }
-          ]
-        },
-        "stats": [
-          {
-            "number": "0",
-            "label": "プロバイダーへのエスクロー鍵",
-            "icon": "key"
-          },
-          {
-            "number": "100%",
-            "label": "顧客による鍵管理",
-            "icon": "lock"
-          },
-          {
-            "number": "EUのみ",
-            "label": "オペレーター管轄",
-            "icon": "globe"
-          }
-        ],
-        "problem": {
-          "overline": "問題点",
-          "title": "クラウドプロバイダーはあなたのデータを提出できます。あなたには知らされません。",
-          "description": "米国司法管轄のクラウドプロバイダーは、データがEUのデータセンターに保存されていても、CLOUD Actの命令に従う法的義務があります。契約上のコミットメントは米国法に優先できません。問題は、プロバイダーがそうするかどうかではありません。問題は、法的にそうできるかどうかです。",
-          "statCallouts": [
-            {
-              "number": "「いいえ、保証できません」",
-              "source": "フランス上院、2025年6月18日",
-              "ref": 1,
-              "text": "Microsoft Franceの公共法務部長（アントン・カルニオ、\"Non, je ne peux pas le garantir\"）、宣誓証言において: EUのMicrosoftデータセンターにあるフランス市民のデータが米国当局から保護されるかという問いへの回答"
-            },
-            {
-              "number": "€126億",
-              "source": "Gartner、2026年2月",
-              "ref": 2,
-              "text": "2026年のEUソブリンクラウドIaaS支出。2027年には€231億に増加。市場は主権が任意でないことを決定しました。"
-            },
-            {
-              "number": "米国主要請負業者0社",
-              "source": "欧州委員会、2026年4月17日",
-              "ref": 3,
-              "text": "Cloud III: 欧州委員会の€1億8000万のソブリンクラウド入札は4つのEUコンソーシアムに授与されました。米国本社の主要請負業者はゼロです。"
-            }
-          ],
-          "timeline": {
-            "oldLabel": "従来の方法",
-            "oldSteps": [
-              {
-                "day": "1日目",
-                "text": "米国司法管轄のクラウドプロバイダーと契約締結"
-              },
-              {
-                "day": "1か月目",
-                "text": "DPOがGDPR移転リスクを指摘。TIAが必要"
-              },
-              {
-                "day": "3か月目",
-                "text": "法務部門がCLOUD Act露出を検討。保証は得られない"
-              },
-              {
-                "day": "6か月目",
-                "text": "規制当局の監査。データ所在地は確認されるが、主権は確認されない"
-              },
-              {
-                "day": "結果",
-                "text": "所在地であり、主権ではない。コンプライアンスのギャップは残る。"
-              }
-            ],
-            "newLabel": "REDIACC では",
-            "newSteps": ["自社インフラでホスト", "自分で鍵を保持", "CLOUD Actはあなたに届かない"]
-          }
-        },
-        "calculator": {
-          "overline": "真のコスト",
-          "title": "米国司法管轄の露出はどのくらいのコストですか?",
-          "description": "スライダーを環境に合わせて調整してください。主権のギャップの真のコストを確認してください。",
-          "headerTitle": "主権露出計算機",
-          "sliders": {
-            "records": "EU個人データレコード（千件）",
-            "spend": "年間ハイパースケーラー支出（€千）",
-            "recoveryHours": "手動DORAリカバリテスト（時間/年）"
-          },
-          "withoutTag": "米国司法管轄",
-          "withTag": "REDIACC使用時",
-          "results": {
-            "transferRisk": "GDPR移転リスク露出",
-            "exitPenalty": "Data Act 2027 退出ペナルティリスク",
-            "doraTesting": "DORA第12条テストコスト"
-          },
-          "annualLabel": "年間主権露出",
-          "withResults": {
-            "transferRisk": "GDPR移転リスク露出",
-            "exitPenalty": "Data Act 2027 退出ペナルティリスク",
-            "doraTesting": "DORA第12条テストコスト"
-          },
-          "withAnnual": "年間主権露出",
-          "footnote": "移転リスク: レコード数 x €0.04 x 規制審査の確率10%。退出ペナルティ: Data Act第25条に基づく推定切り替えコスト上限としてのハイパースケーラー支出の10%（ゼロ料金期限: 2027年1月12日）。DORAテスト: 時間 x €200/時間のエンジニアコスト。Rediacc使用時: セルフホストにより移転リスクが解消。オープン形式により退出ペナルティがゼロに。定数時間フォークによりDORAリカバリテストがリポジトリサイズに関係なく数分に短縮。"
-        },
-        "howItWorks": {
-          "overline": "仕組み",
-          "title": "3ステップ。1つのソブリンスタック。",
-          "steps": [
-            {
-              "title": "ホスト",
-              "description": "自社ハードウェア、EU IaaSプロバイダー、またはその組み合わせにデプロイします。Rediacc OEはエストニアで設立されており、米国の親会社なし、米国のコントロールプレーンなし、CLOUD Act対象面なしです。",
-              "icon": "server"
-            },
-            {
-              "title": "鍵を保持",
-              "description": "暗号化鍵はあなたの管理下から離れることはありません。鍵導出はクライアントサイドで実行されます。Rediaccは平文を参照しません。管理チェーンはCLIで鍵ごとに監査可能です。",
-              "icon": "key"
-            },
-            {
-              "title": "証明する",
-              "description": "1つのコマンドで署名済みの鍵管理レポートを生成します。SecNumCloud 3.2、BSI C5:2026、ANSSI-BSI共同宣言、EDPB勧告01/2020ユースケース2に準拠しています。",
-              "icon": "shield"
-            }
-          ],
-          "cloneVisual": {
-            "production": {
-              "title": "米国ハイパースケーラー",
-              "status": "CLOUD Act対象",
-              "services": [
-                {
-                  "name": "S3 Bucket",
-                  "port": "US-controlled"
-                },
-                {
-                  "name": "KMS Key",
-                  "port": "vendor-held"
-                },
-                {
-                  "name": "IAM Policy",
-                  "port": "US-governed"
-                },
-                {
-                  "name": "Audit Log",
-                  "port": "US-accessible"
-                }
-              ],
-              "containerCount": "契約上の所在地",
-              "size": "主権ではない"
-            },
-            "clone": {
-              "title": "あなたのソブリンスタック",
-              "status": "EU管轄",
-              "cardClass": "sealed",
-              "services": [
-                {
-                  "name": "Your Storage",
-                  "port": "Customer-owned"
-                },
-                {
-                  "name": "Your Keys",
-                  "port": "Customer HSM"
-                },
-                {
-                  "name": "Your Policy",
-                  "port": "EU-governed"
-                },
-                {
-                  "name": "Audit Chain",
-                  "port": "SHA-256 signed"
-                }
-              ],
-              "containerCount": "アーキテクチャによる主権",
-              "size": "CLOUD Act免除"
-            },
-            "arrow": {
-              "label": "Migrate",
-              "time": "Open format",
-              "icon": "shield-arrow"
-            }
-          }
-        },
-        "techDiff": {
-          "overline": "技術的詳細",
-          "title": "データ所在地がデータ主権でない理由",
-          "description": "米国司法管轄のプロバイダーはフランクフルトにデータを保存しながら、米国の裁判所から開示を強制される可能性があります。Rediaccのアーキテクチャは強制ベクターを完全に除去します。提出できる鍵は存在せず、傍受できる通信チャネルもありません。",
-          "rows": [
-            {
-              "traditional": "プロバイダーは暗号文の保存場所に関わらず米国の司法管轄に服する",
-              "rediacc": "オペレーターはエストニアで設立。米国の親会社なし、CLOUD Act強制の対象面なし"
-            },
-            {
-              "traditional": "ベンダー管理KMS: プロバイダーは法的要求に応じて平文を生成できる",
-              "rediacc": "クライアントサイド鍵導出: ベンダーは鍵を保持しない。強制は技術的に無意味"
-            },
-            {
-              "traditional": "国境を越えたデータ要求はベンダーが記録し、顧客には見えない",
-              "rediacc": "SHA-256署名付き監査チェーン: すべての鍵アクセスと要求が記録され、顧客が読み取り可能"
-            },
-            {
-              "traditional": "独自バックアップ形式: 退出にはベンダーツールによる移行が必要",
-              "rediacc": "オープン形式（btrfs send、tar）: 退出は動作するレプリカを意味し、Data Actに準拠"
-            },
-            {
-              "traditional": "DORAリカバリテストはデータ量に比例。大規模リポジトリでは数日かかる",
-              "rediacc": "btrfs reflinkによる定数時間フォーク: 100GBも100TBも同じ秒数でフォーク"
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "重要な理由",
-          "title": "得られるもの",
-          "items": [
-            {
-              "icon": "shield",
-              "title": "構造によるCLOUD Act免除",
-              "description": "米国司法管轄の親会社なし。ベンダーへの鍵エスクローなし。アーキテクチャが防御そのものです。カルニオ上院証言（2025年6月18日）は、契約が管轄免除の代替になるという残りの議論をすべて終結させました。"
-            },
-            {
-              "icon": "globe",
-              "title": "EU Data Act 2027対応済み",
-              "description": "構造によるオープンデータ形式とゼロ切り替え料金。すべてのバックアップは移植可能な動作するレプリカです。2027年1月12日のゼロ切り替え料金期限前に、Data Act第23条から第31条への完全準拠を実現。"
-            },
-            {
-              "icon": "check-circle",
-              "title": "SecNumCloudおよびC5:2026準拠",
-              "description": "4本柱の姿勢は2025年11月17日のANSSI-BSI共同宣言と一致: 厳格なデータローカライゼーション、EU法の排他的適用、欧州外アクセスの不在、EU外依存なしの事業継続性。"
-            }
-          ]
-        },
-        "comparison": {
-          "overline": "差異",
-          "title": "主権の比較",
-          "description": "ほとんどのベンダーはデータ所在地を提供します。Rediaccがアーキテクチャで実現するものを提供できるベンダーはありません: 顧客による鍵管理、EUのみのオペレーター、CLOUD Act免除。",
-          "capabilityLabel": "機能",
-          "features": [
-            {
-              "name": "CLOUD Act免除（米国司法管轄の親会社なし）",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 0, 0]
-            },
-            {
-              "name": "顧客が鍵を保持（技術的判読不可能性）",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 5, 5, 0, 0, 0]
-            },
-            {
-              "name": "EUのみのオペレーター（米国の親会社なし）",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 6, 0]
-            },
-            {
-              "name": "SecNumCloud / C5:2026認証パス",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 7, 0, 0, 0]
-            },
-            {
-              "name": "オープン退出形式（Data Act第30条）",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [8, 8, 8, 0, 8, 0]
-            },
-            {
-              "name": "顧客インフラでのセルフホスト",
-              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [9, 0, 0, 0, 0, 0]
-            },
-            {
-              "name": "デフォルトでEUデータ所在地",
-              "values": ["cross", "cross", "check", "check", "check", "rediacc"],
-              "refs": [0, 0, 10, 0, 13, 0]
-            }
-          ]
-        },
-        "socialProof": {
-          "quote": "2025年6月のカルニオ上院証言後、SecNumCloud監査委員会は1つの質問をしました: バックアッププロバイダーが患者データを米国当局に開示するよう強制されないことを証明できますか? Microsoft Azure Backupではその質問に答えられませんでした。Rediaccでは答えはアーキテクチャ的です: 鍵は決してHSMから離れず、オペレーターに米国の親会社はなく、30秒で署名済み管理レポートを生成できます。それがANSSIを満足させる唯一の答えです。",
-          "author": "最高情報セキュリティ責任者（CISO）",
-          "company": "SecNumCloud義務下のフランスOIV、従業員1,200名",
-          "impact": {
-            "before": {
-              "label": "導入前",
-              "value": "移転リスク"
-            },
-            "after": {
-              "label": "導入後",
-              "value": "CLOUD Act免除"
-            },
-            "improvement": "Microsoft Azure Backupを置き換え - 鍵管理: ベンダーから顧客へ - ANSSI監査: 合格"
-          }
-        },
-        "bottomCta": {
-          "title": "米国司法管轄のプロバイダーからデータを借り返すのをやめましょう。",
-          "description": "無料のCommunityエディションから始めてください。最初の鍵管理監査を1分以内に実行できます。",
-          "ctaText": "Communityで無料で始める",
-          "command": "rdc audit log --limit 50"
-        },
-        "techStrip": {
-          "label": "あらゆるワークロードをセルフホスト、すべての鍵を手元に",
-          "note": "データベース、メールサーバー、CI/CD、ERP、CMS、AIモデルストア: すべてのワークロードが主権的で、すべての鍵があなたのものです。"
-        },
-        "explore": {
-          "title": "他のソリューションを探す",
-          "solutions": [
-            {
-              "category": "Encryption Control",
-              "title": "自分で管理する暗号化",
-              "description": "あなたの鍵。あなたの暗号化。例外なし。",
-              "slug": "encryption",
-              "dataCategory": "encryption"
-            },
-            {
-              "category": "Encryption Control",
-              "title": "監査証跡",
-              "description": "すべてのアクションを記録。隠し事なし。",
-              "slug": "audit-trail",
-              "dataCategory": "encryption"
-            },
-            {
-              "category": "Encryption Control",
-              "title": "移行の安全性",
-              "description": "データを危険にさらさず移行",
-              "slug": "migration-safety",
-              "dataCategory": "encryption"
-            },
-            {
-              "category": "Ransomware Survival",
-              "title": "イミュータブルバックアップ",
-              "description": "ランサムウェアが触れないバックアップ",
-              "slug": "immutable-backups",
-              "dataCategory": "ransomware"
-            },
-            {
-              "category": "Multi-Cloud",
-              "title": "クラウド障害対策",
-              "description": "AWSがダウンしても、あなたはダウンしない",
-              "slug": "cloud-outage-protection",
-              "dataCategory": "multi-cloud"
-            },
-            {
-              "category": "Verified Backups",
-              "title": "ベンダーロックインからの解放",
-              "description": "どのベンダーからでも退出できます。データは保持されます。",
-              "slug": "vendor-lock-in",
-              "dataCategory": "backups"
-            },
-            {
-              "category": "Verified Backups",
-              "title": "保持期間コンプライアンス",
-              "description": "すべての保持要件を自動的に満たす",
-              "slug": "retention-compliance",
-              "dataCategory": "backups"
-            },
-            {
-              "category": "Development Environments",
-              "title": "環境クローン",
-              "description": "本番環境を60秒でクローン",
-              "slug": "environment-cloning",
-              "dataCategory": "dev-env"
-            }
-          ]
-        },
-        "references": {
-          "label": "出典と参考文献",
-          "items": [
-            {
-              "text": "Microsoft France公共法務部長アントン・カルニオ、公共調達とデジタル主権に関するフランス上院調査、2025年6月18日: 「いいえ、保証できません。ただし、これまで一度も起きたことはありません。」The Register、2025年7月25日報道。",
-              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
-            },
-            {
-              "text": "Gartner、2026年2月: 欧州ソブリンクラウドIaaS支出は2026年に126億ドル、2027年に231億ドルに達し、2027年には北米を上回ると予測。",
-              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
-            },
-            {
-              "text": "欧州委員会「戦略的調達によるクラウド主権の推進」2026年4月17日。Cloud III €1億8000万入札はPost Telecom + OVHcloud + CleverCloud、STACKIT、Scaleway、Proximus + S3NS + Clarence + Mistral AIに授与。米国本社の主要請負業者はゼロ。",
-              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
-            },
-            {
-              "text": "CLOUD Act（海外データの合法的使用明確化法）、18 U.S.C. 2713、2018年。米国当局が米国司法管轄のプロバイダーに対し、世界中に保存された顧客データの開示を強制することを許可します。",
-              "url": "https://www.justice.gov/dag/cloudact"
-            },
-            {
-              "text": "EDPB勧告01/2020「EU個人データ保護レベルへの準拠を確保するための移転ツールを補完する措置について」バージョン2.0、2021年6月。ユースケース2: 補完的措置としての暗号化には、顧客による排他的鍵管理と輸入者における技術的判読不可能性が必要。",
-              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
-            },
-            {
-              "text": "Keepit A/S、コペンハーゲン。Microsoft 365、Salesforce、Google WorkspaceのSaaSのみのバックアップ。EU設立、米国の親会社なし。セルフホストまたはオンプレミスのワークロードはバックアップしません。",
-              "url": "https://keepit.com"
-            },
-            {
-              "text": "ANSSI SecNumCloud 3.2認定要件。プロバイダーはEU過半数所有、EU本社、域外法からの免除が必要。非EU株主は個人で25%、合計で39%に制限。AWS Sovereign CloudとMicrosoft Bleuは適格ではありません。",
-              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
-            },
-            {
-              "text": "EU Data Act（規則（EU）2023/2854）第23条から第31条。2025年9月12日から施行。2027年1月12日から切り替え料金を全面禁止。プロバイダーは切り替え後の機能的同等性を確保する必要があります。",
-              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
-            },
-            {
-              "text": "Veeam Backup and Replicationはオンプレミスのセルフホストデプロイをサポートします。Veeamには直接の主権認定はなく、EUの主権ストーリーはパートナーIaaS（特にOVHcloud）に依存します。",
-              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
-            },
-            {
-              "text": "AWS European Sovereign Cloud、2026年1月15日GA。4つのドイツGmbHの下で運営。米国本社の親会社（Amazon.com Inc.）は引き続きCLOUD Actの対象です。",
-              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
-            },
-            {
-              "text": "クラウド主権基準に関するANSSI-BSI共同声明、2025年11月17日。4つの失格基準: 厳格なデータおよびサポートのローカライゼーション、欧州法の排他的適用、欧州外第三者による不正アクセスの不在、EU外技術なしで事業継続性を維持する能力。",
-              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
-            },
-            {
-              "text": "欧州監督機関「DORA下での重要ICT第三者プロバイダーの指定」2025年11月18日。最初に指定された19の重要ICT第三者プロバイダーにはAWS、Microsoft Azure、Google Cloud、IBM、Oracle、SAP、Salesforceが含まれます。",
-              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
-            },
-            {
-              "text": "Keepitのデータレジデンシーポリシー: 顧客データはEU域内のデータセンター(フランクフルト、アムステルダム、コペンハーゲン)にのみ保存。SaaS専用モデルで運用者および保存場所はEUのみ。",
-              "url": "https://www.keepit.com/trust/"
-            }
-          ],
-          "disclaimer": "計算機の推定は業界標準のコストモデルを使用しています。実際の露出は管轄、契約構造、侵害シナリオによって異なります。"
         }
       },
       "rapidRecovery": {
@@ -13386,26 +13798,6 @@
             }
           ]
         }
-      },
-      "leadMagnetModal": {
-        "title": "技術概要書を入手する",
-        "description": "会社のメールアドレスをご入力ください。PDFリンクをお送りし、受信トレイにも保存されます。",
-        "emailLabel": "会社のメールアドレス",
-        "emailPlaceholder": "you@company.com",
-        "submitLabel": "PDFを送ってください",
-        "sendingLabel": "送信中...",
-        "successTitle": "PDFを送信しました",
-        "successBody": "新しいタブで開き、リンクをメールでもお送りしました。まもなくこのウィンドウを閉じます。",
-        "errorGeneric": "エラーが発生しました。もう一度お試しいただくか、support@rediacc.com までお問い合わせください。",
-        "captchaRequired": "キャプチャ認証を完了してください。",
-        "disclaimer": "送信は1通のみ。マーケティングリストへの登録はありません。ワンクリックで配信停止できます。",
-        "closeLabel": "閉じる"
-      },
-      "leadMagnetButton": {
-        "title": "技術概要書を入手する",
-        "description": "CISO・CTO・上級エンジニア向けに書かれた、無駄のないPDFです。後から見つけられるよう、リンクをメールでお送りします。",
-        "buttonLabel": "概要書をダウンロードする",
-        "dismissLabel": "閉じる"
       }
     },
     "team": {
@@ -14019,398 +14411,6 @@
       },
       "toc": {
         "title": "目次"
-      }
-    },
-    "resourcesBrief": {
-      "ransomwareSurvival": {
-        "meta": {
-          "title": "ランサムウェア対策：無料テクニカルブリーフ PDF — Rediacc",
-          "description": "攻撃者が暗号化も削除もできないファイルシステムネイティブの不変バックアップ。Rediacc が提供する CISO・CTO 向け無料ブリーフと、エグゼクティブ向け要約版もご用意しています。",
-          "keywords": "ランサムウェア対策, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書"
-        },
-        "hero": {
-          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
-          "title": "ランサムウェア サバイバル",
-          "subtitle": "ランサムウェア攻撃の94%がバックアップを標的にしています。そのうち57%は成功しています。",
-          "downloadButton": "技術概要書をダウンロードする",
-          "openInBrowser": "ブラウザで開く",
-          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。"
-        },
-        "toc": {
-          "heading": "目次・内容",
-          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
-          "items": [
-            "具体的なオペレーター視点での脅威モデル",
-            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
-            "防御する障害モードと具体的な先例",
-            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
-            "公開数値に基づくROI計算",
-            "技術的アプローチによるベンダー比較（ARRではなく）",
-            "オンボーディングの概要と既知のスコープ上の制限",
-            "アーキテクチャが生成する監査対応エビデンス"
-          ]
-        },
-        "companions": {
-          "heading": "関連ソリューションページ",
-          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
-          "readMore": "詳しく読む"
-        },
-        "faq": {
-          "heading": "読者からのよくある質問",
-          "items": [
-            {
-              "q": "この概要書はどなた向けですか？",
-              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。"
-            },
-            {
-              "q": "技術者向けでないバージョンはありますか？",
-              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。"
-            },
-            {
-              "q": "メールアドレスはどのように扱われますか？",
-              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。"
-            },
-            {
-              "q": "なぜ btrfs なのですか？",
-              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。"
-            },
-            {
-              "q": "AWS RDSなどのマネージドサービスにも適用できますか？",
-              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "この概要書について",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
-          "downloadButton": "概要書をダウンロードする"
-        }
-      },
-      "multiCloudAlways": {
-        "meta": {
-          "title": "マルチクラウド継続稼働：無料テクニカルブリーフ PDF — Rediacc",
-          "description": "ポータブルなスナップショットと実証済みのクロスクラウドフェイルオーバーで、クラウド障害時もビジネスを継続できます。CISO・CTO 向けブリーフとエグゼクティブ向け要約版もご用意しています。",
-          "keywords": "マルチクラウド常時稼働, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書"
-        },
-        "hero": {
-          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
-          "title": "マルチクラウド 常時稼働",
-          "subtitle": "2025年10月20日、AWS US-EAST-1が15時間にわたって停止しました。Snapchat、Robinhood、Uber、Deltaも影響を受けました。あなたは間に合うようにクラウドを切り替えられましたか？",
-          "downloadButton": "技術概要書をダウンロードする",
-          "openInBrowser": "ブラウザで開く",
-          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。"
-        },
-        "toc": {
-          "heading": "目次・内容",
-          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
-          "items": [
-            "具体的なオペレーター視点での脅威モデル",
-            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
-            "防御する障害モードと具体的な先例",
-            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
-            "公開数値に基づくROI計算",
-            "技術的アプローチによるベンダー比較（ARRではなく）",
-            "オンボーディングの概要と既知のスコープ上の制限",
-            "アーキテクチャが生成する監査対応エビデンス"
-          ]
-        },
-        "companions": {
-          "heading": "関連ソリューションページ",
-          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
-          "readMore": "詳しく読む"
-        },
-        "faq": {
-          "heading": "読者からのよくある質問",
-          "items": [
-            {
-              "q": "この概要書はどなた向けですか？",
-              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。"
-            },
-            {
-              "q": "技術者向けでないバージョンはありますか？",
-              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。"
-            },
-            {
-              "q": "メールアドレスはどのように扱われますか？",
-              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。"
-            },
-            {
-              "q": "なぜ btrfs なのですか？",
-              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。"
-            },
-            {
-              "q": "AWS RDSなどのマネージドサービスにも適用できますか？",
-              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "この概要書について",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
-          "downloadButton": "概要書をダウンロードする"
-        }
-      },
-      "verifiedBackups": {
-        "meta": {
-          "title": "バックアップ検証：無料テクニカルブリーフ PDF — Rediacc",
-          "description": "毎回のバックアップで起動・検証テストを実施。四半期ごとのチェックではありません。Rediacc 提供の CISO・CTO 向け無料ブリーフと、5 分で読めるエグゼクティブ向け要約版もあります。",
-          "keywords": "検証済みバックアップ, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書"
-        },
-        "hero": {
-          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
-          "title": "検証済みバックアップ",
-          "subtitle": "バックアップの58%はリストアを試みた時点で失敗します。ほとんどの企業が気づくのは、実際に障害が発生した後です。",
-          "downloadButton": "技術概要書をダウンロードする",
-          "openInBrowser": "ブラウザで開く",
-          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。"
-        },
-        "toc": {
-          "heading": "目次・内容",
-          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
-          "items": [
-            "具体的なオペレーター視点での脅威モデル",
-            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
-            "防御する障害モードと具体的な先例",
-            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
-            "公開数値に基づくROI計算",
-            "技術的アプローチによるベンダー比較（ARRではなく）",
-            "オンボーディングの概要と既知のスコープ上の制限",
-            "アーキテクチャが生成する監査対応エビデンス"
-          ]
-        },
-        "companions": {
-          "heading": "関連ソリューションページ",
-          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
-          "readMore": "詳しく読む"
-        },
-        "faq": {
-          "heading": "読者からのよくある質問",
-          "items": [
-            {
-              "q": "この概要書はどなた向けですか？",
-              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。"
-            },
-            {
-              "q": "技術者向けでないバージョンはありますか？",
-              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。"
-            },
-            {
-              "q": "メールアドレスはどのように扱われますか？",
-              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。"
-            },
-            {
-              "q": "なぜ btrfs なのですか？",
-              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。"
-            },
-            {
-              "q": "AWS RDSなどのマネージドサービスにも適用できますか？",
-              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "この概要書について",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
-          "downloadButton": "概要書をダウンロードする"
-        }
-      },
-      "encryptionControl": {
-        "meta": {
-          "title": "暗号化コントロール：無料テクニカルブリーフ PDF — Rediacc",
-          "description": "顧客管理キーと、ベンダー変更後も利用できる暗号化データ。Schrems II 準拠。CISO・CTO 向けブリーフとエグゼクティブ向け要約版もご用意しています。",
-          "keywords": "暗号化管理, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書"
-        },
-        "hero": {
-          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
-          "title": "暗号化管理",
-          "subtitle": "Schrems IIはポリシーの選択肢ではありません。アーキテクチャ上の要件であり、ほとんどのバックアップベンダーはこれを満たしていません。",
-          "downloadButton": "技術概要書をダウンロードする",
-          "openInBrowser": "ブラウザで開く",
-          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。"
-        },
-        "toc": {
-          "heading": "目次・内容",
-          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
-          "items": [
-            "具体的なオペレーター視点での脅威モデル",
-            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
-            "防御する障害モードと具体的な先例",
-            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
-            "公開数値に基づくROI計算",
-            "技術的アプローチによるベンダー比較（ARRではなく）",
-            "オンボーディングの概要と既知のスコープ上の制限",
-            "アーキテクチャが生成する監査対応エビデンス"
-          ]
-        },
-        "companions": {
-          "heading": "関連ソリューションページ",
-          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
-          "readMore": "詳しく読む"
-        },
-        "faq": {
-          "heading": "読者からのよくある質問",
-          "items": [
-            {
-              "q": "この概要書はどなた向けですか？",
-              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。"
-            },
-            {
-              "q": "技術者向けでないバージョンはありますか？",
-              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。"
-            },
-            {
-              "q": "メールアドレスはどのように扱われますか？",
-              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。"
-            },
-            {
-              "q": "なぜ btrfs なのですか？",
-              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。"
-            },
-            {
-              "q": "AWS RDSなどのマネージドサービスにも適用できますか？",
-              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "この概要書について",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
-          "downloadButton": "概要書をダウンロードする"
-        }
-      },
-      "devEnvironments": {
-        "meta": {
-          "title": "開発環境の即時複製：無料テクニカルブリーフ PDF — Rediacc",
-          "description": "btrfs ゼロコピークローンにより、本番同等の開発環境を 60 秒で起動できます。Rediacc 提供の CISO・CTO 向け無料ブリーフと、5 分で読めるエグゼクティブ向け要約版もあります。",
-          "keywords": "開発環境, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書"
-        },
-        "hero": {
-          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
-          "title": "開発環境",
-          "subtitle": "開発者が実際にコードを書くのは週4.5時間。残りは環境の準備待ちです。50名のエンジニアチームでは、セットアップだけで年間72万〜120万ドルの損失が生じています。",
-          "downloadButton": "技術概要書をダウンロードする",
-          "openInBrowser": "ブラウザで開く",
-          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。"
-        },
-        "toc": {
-          "heading": "目次・内容",
-          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
-          "items": [
-            "具体的なオペレーター視点での脅威モデル",
-            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
-            "防御する障害モードと具体的な先例",
-            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
-            "公開数値に基づくROI計算",
-            "技術的アプローチによるベンダー比較（ARRではなく）",
-            "オンボーディングの概要と既知のスコープ上の制限",
-            "アーキテクチャが生成する監査対応エビデンス"
-          ]
-        },
-        "companions": {
-          "heading": "関連ソリューションページ",
-          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
-          "readMore": "詳しく読む"
-        },
-        "faq": {
-          "heading": "読者からのよくある質問",
-          "items": [
-            {
-              "q": "この概要書はどなた向けですか？",
-              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。"
-            },
-            {
-              "q": "技術者向けでないバージョンはありますか？",
-              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。"
-            },
-            {
-              "q": "メールアドレスはどのように扱われますか？",
-              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。"
-            },
-            {
-              "q": "なぜ btrfs なのですか？",
-              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。"
-            },
-            {
-              "q": "AWS RDSなどのマネージドサービスにも適用できますか？",
-              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "この概要書について",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
-          "downloadButton": "概要書をダウンロードする"
-        }
-      },
-      "preemptiveDefense": {
-        "meta": {
-          "title": "先制的セキュリティ防御：無料テクニカルブリーフ PDF — Rediacc",
-          "description": "本番リスクゼロで本番クローンのセキュリティテストを実施。使い捨てコピーへの AI ペネトレーションテストが可能です。CISO・CTO 向けブリーフとエグゼクティブ向け要約版もご用意しています。",
-          "keywords": "先制防衛, pdf, rediacc, btrfs バックアップ, イミュータブルバックアップ, 技術概要書"
-        },
-        "hero": {
-          "eyebrow": "無料ダウンロード · A4 PDF · CISO / CTO グレード",
-          "title": "先制防衛",
-          "subtitle": "実際のインフラに対してテストする。何も壊さない。危険な攻撃はクローンが引き受けます。",
-          "downloadButton": "技術概要書をダウンロードする",
-          "openInBrowser": "ブラウザで開く",
-          "disclaimer": "送信は1通のみ。メールで確認。ワンクリックで配信停止できます。"
-        },
-        "toc": {
-          "heading": "目次・内容",
-          "intro": "本概要書では、アーキテクチャ、防御する障害モード、規制対応マップ、および監査人が求めるオペレーターレベルのエビデンスを取り上げています。ページ数はおよそ10〜14ページです。",
-          "items": [
-            "具体的なオペレーター視点での脅威モデル",
-            "敵対者モデルの考察を含むアーキテクチャのメカニズム",
-            "防御する障害モードと具体的な先例",
-            "コンプライアンスマップ：具体的な規則、罰則、報告期限",
-            "公開数値に基づくROI計算",
-            "技術的アプローチによるベンダー比較（ARRではなく）",
-            "オンボーディングの概要と既知のスコープ上の制限",
-            "アーキテクチャが生成する監査対応エビデンス"
-          ]
-        },
-        "companions": {
-          "heading": "関連ソリューションページ",
-          "intro": "同じアーキテクチャを、特定の購買者の疑問に応用した内容です：",
-          "readMore": "詳しく読む"
-        },
-        "faq": {
-          "heading": "読者からのよくある質問",
-          "items": [
-            {
-              "q": "この概要書はどなた向けですか？",
-              "a": "アーキテクチャを評価するCISO、CTO、または上級インフラエンジニアを対象としています。バックアップのワークフロー、ファイルシステムの基礎知識、および貴社のスタックが既に関わる規制環境についての理解を前提としています。"
-            },
-            {
-              "q": "技術者向けでないバージョンはありますか？",
-              "a": "はい。メールアドレスをご送信いただいた後、CFO・IT責任者・取締役会メンバーに転送できる5分で読めるエグゼクティブPDFへのリンクも同じページに表示されます。"
-            },
-            {
-              "q": "メールアドレスはどのように扱われますか？",
-              "a": "確認メールを1通お送りします。月1回の全製品ニュースレターにご登録いただきます。ワンクリックでいつでも配信停止できます。メールアドレスはRediaccのデータ居住ポリシーに基づき、デフォルトでEU内に保管されます。"
-            },
-            {
-              "q": "なぜ btrfs なのですか？",
-              "a": "概要書に詳細な説明があります。簡単に言えば、btrfsはイミュータビリティ、コピーオンライトスナップショット、差分送受信をストレージ層のプロパティとして実現します。アプリケーション側ではなくストレージ層に組み込まれているため、root権限を持つ攻撃者が突破できる範囲が変わります。"
-            },
-            {
-              "q": "AWS RDSなどのマネージドサービスにも適用できますか？",
-              "a": "直接的には適用できません。このアーキテクチャは、btrfsバックのボリューム上でコンテナ化されたデータベースを実行するセルフマネージド環境を対象としています。リカバリが重要なシステムがRDSやAuroraにある場合、概要書ではその点を明示し、モデルが適用できる範囲とできない範囲を示しています。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "この概要書について",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "このページに追加すべき質問がありましたら、hello@rediacc.com までお知らせください。",
-          "downloadButton": "概要書をダウンロードする"
-        }
       }
     }
   },

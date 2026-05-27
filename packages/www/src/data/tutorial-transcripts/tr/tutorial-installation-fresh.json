@@ -1,0 +1,28 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation-fresh.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-fresh-01",
+      "markerIndex": 0,
+      "at": 0.667007,
+      "text": "Temiz bir makinede başlıyoruz. Tek satırlık kurulum komutunu terminale yapıştırın ve çalışmasını bekleyin. Betik platformunuzu kontrol eder, komut satırı aracının en son kararlı ikili dosyasını indirir ve ana dizininize yerleştirir. sudo gerekmez, sistem genelinde kurulum yapılmaz.",
+      "afterText": "Kuruldu. rdc binary'si yolunuzda."
+    },
+    {
+      "id": "tutorial-installation-fresh-02",
+      "markerIndex": 1,
+      "at": 9.659113,
+      "text": "Her şeyin doğru yerleştiğini doğrulayalım. Sürüm bayrağı az önce yüklenenin tam olarak ne olduğunu yazdırır, böylece komut satırı aracının yolunuzda olduğunu ve kullanıma hazır olduğunu bilirsiniz.",
+      "afterText": "Sürüm yazdırıldı. rdc hazır."
+    },
+    {
+      "id": "tutorial-installation-fresh-03",
+      "markerIndex": 2,
+      "at": 12.976611,
+      "text": "Şimdi yerleşik tanılama kontrolünü çalıştırın. İkili dosyanızı, yapılandırmanızı ve bağlantınızı baştan sona kontrol ederek çalışmaya başlamadan önce kurulum eksikliklerini yakalamanızı sağlar.",
+      "afterText": "Tüm kontroller başarılı. İlk sunucunuzu eklemeye hazırsınız."
+    }
+  ]
+}

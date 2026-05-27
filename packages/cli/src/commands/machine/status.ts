@@ -17,7 +17,19 @@ import { outputService } from '../../services/output.js';
 import type { InfraConfig, MachineConfig, OutputFormat } from '../../types/index.js';
 import { extractAutoRoute, extractCustomDomain } from '../../utils/domain-helpers.js';
 import { handleError } from '../../utils/errors.js';
-import { createGuidResolver, loadGuidMap, resolveGuids } from '../../utils/guid-resolver.js';
+import {
+  createGuidResolver,
+  createRepoNameResolver,
+  loadGuidMap,
+  type RepoNameSource,
+  resolveGuids,
+} from '../../utils/guid-resolver.js';
+
+/** Resolves a repo GUID + server repo_name to a display name and its source. */
+type RepoNameResolver = (
+  guid: string,
+  serverRepoName?: string
+) => { name: string; source: RepoNameSource };
 import { withSpinner } from '../../utils/spinner.js';
 
 /** Parse size strings like "71.9G", "180.3G" into GB numbers. */
@@ -55,8 +67,53 @@ function flattenSystem(sys: SystemInfo): Record<string, unknown> {
   };
 }
 
+const BYTES_PER_GB = 1024 ** 3;
+
+/**
+ * Fragmentation as a comparable number: extents per GB (what renet's
+ * low/moderate/high label is bucketed from: <100 / <1000 / >=1000). Shown
+ * instead of the bare label so repos can be compared directly. Falls back to the
+ * raw extent count when size is unknown.
+ *
+ * NOTE: this counts extents of the repo's copy-on-write IMAGE file on the pool
+ * btrfs, not the files inside the mounted volume. High values are an expected
+ * artifact of CoW under random writes, not inner-fs fragmentation, and are
+ * informational only (defragmentation is unsupported: it would unshare reflinked
+ * forks/snapshots and inflate pool usage). See storageHealthFragmentationNote.
+ */
+export function fragmentationPerGb(extents: number, sizeBytes: number): string {
+  if (sizeBytes <= 0) return `${extents}`;
+  return `${Math.round(extents / (sizeBytes / BYTES_PER_GB))}/GB`;
+}
+
+/**
+ * Build the rows for the Storage Health table from the renet `storage_health`
+ * section. Names are resolved like the Repositories section (config > server
+ * repo_name > GUID) and server-sourced ones get the ' *' marker. The `*_human`
+ * fields are pre-formatted by renet and displayed as-is; fragmentation is shown
+ * as a numeric extents/GB ratio. Returns [] when no storage-health data is
+ * present (so the section is skipped).
+ */
+export function buildStorageHealthRows(
+  storageHealth: ListResult['storage_health'],
+  repoName: RepoNameResolver
+): Record<string, unknown>[] {
+  return (storageHealth?.repositories ?? []).map((sh) => {
+    const { name, source } = repoName(sh.guid, sh.name);
+    return {
+      name: source === 'server' ? `${name} *` : name,
+      size: sh.size_human,
+      exclusive: sh.exclusive_human,
+      shared: sh.shared_human,
+      divergence: `${sh.divergence_percent.toFixed(1)}%`,
+      fragmentation: fragmentationPerGb(sh.extents, sh.size),
+    };
+  });
+}
+
 function getSections(
   resolve: (guid: string) => string,
+  repoName: RepoNameResolver,
   baseDomain?: string,
   machineName?: string
 ): SectionRenderer[] {
@@ -68,16 +125,25 @@ function getSections(
     {
       title: 'Repositories',
       getData: (r) =>
-        getRepositories(r).map((repo) => ({
-          name: resolve(repo.name),
-          guid: repo.name,
-          size: repo.size_human,
-          mounted: repo.mounted ? 'Yes' : 'No',
-          docker: repo.docker_running ? 'Yes' : 'No',
-          containers: repo.container_count,
-          disk: repo.disk_space?.use_percent ?? '-',
-          modified: repo.modified_human,
-        })),
+        getRepositories(r).map((repo) => {
+          const { name, source } = repoName(repo.name, repo.repo_name);
+          return {
+            // Mark names that came from the machine (not in local config) with ' *'.
+            name: source === 'server' ? `${name} *` : name,
+            guid: repo.name,
+            size: repo.size_human,
+            mounted: repo.mounted ? 'Yes' : 'No',
+            docker: repo.docker_running ? 'Yes' : 'No',
+            autostart: repo.autostart ? 'Yes' : 'No',
+            containers: repo.container_count,
+            disk: repo.disk_space?.use_percent ?? '-',
+            modified: repo.modified_human,
+          };
+        }),
+    },
+    {
+      title: 'Storage Health',
+      getData: (r) => buildStorageHealthRows(r.storage_health, repoName),
     },
     {
       title: 'Containers',
@@ -243,16 +309,39 @@ interface QueryOptions {
   strict?: boolean;
 }
 
+interface StorageSummary {
+  effectiveFree: string;
+  limitedBy: 'datastore' | 'disk';
+  datastorePool: string;
+  datastorePath: string;
+  recommendation: string | null;
+}
+
+/**
+ * Single source of truth for the derived storage summary. Returns null when the
+ * system section is absent (e.g. renet error or older renet) so callers never
+ * emit a fabricated "0.0G" — the storage summary must reflect real data or none.
+ */
+export function deriveStorageSummary(sys: SystemInfo | undefined): StorageSummary | null {
+  if (!sys?.disk.available || !sys.datastore.available) return null;
+  const diskFreeGb = parseSizeToGb(sys.disk.available);
+  const dsFreeGb = parseSizeToGb(sys.datastore.available);
+  const effectiveFreeGb = Math.min(diskFreeGb, dsFreeGb);
+  return {
+    effectiveFree: `${effectiveFreeGb.toFixed(1)}G`,
+    limitedBy: dsFreeGb <= diskFreeGb ? 'datastore' : 'disk',
+    datastorePool: sys.datastore.total,
+    datastorePath: sys.datastore.path ?? NETWORK_DEFAULTS.DATASTORE_PATH,
+    recommendation: effectiveFreeGb < 10 ? 'Low storage. Expand with: rdc datastore resize' : null,
+  };
+}
+
 function printStorageSummary(sys: SystemInfo | undefined): void {
-  if (!sys?.disk.available || !sys.datastore.available) return;
-  const diskFree = parseSizeToGb(sys.disk.available);
-  const dsFree = parseSizeToGb(sys.datastore.available);
-  const effectiveFree = Math.min(diskFree, dsFree);
-  const limitedBy = dsFree <= diskFree ? 'datastore' : 'disk';
-  const lowStorageWarning =
-    effectiveFree < 10 ? ' Low storage — expand with: rdc datastore resize' : '';
+  const summary = deriveStorageSummary(sys);
+  if (!summary) return;
+  const warning = summary.recommendation ? ` ${summary.recommendation}` : '';
   outputService.info(
-    `\nStorage: ${effectiveFree.toFixed(1)}G effective free (limited by ${limitedBy}). Datastore pool: ${sys.datastore.total}.${lowStorageWarning}`
+    `\nStorage: ${summary.effectiveFree} effective free (limited by ${summary.limitedBy}). Datastore pool: ${summary.datastorePool}.${warning}`
   );
 }
 
@@ -261,9 +350,10 @@ function renderTableMode(
   machineConfig: MachineConfig | undefined,
   infra: InfraConfig | undefined,
   resolve: (guid: string) => string,
+  repoName: RepoNameResolver,
   machineName?: string
 ): void {
-  const tableSections = getSections(resolve, infra?.baseDomain, machineName);
+  const tableSections = getSections(resolve, repoName, infra?.baseDomain, machineName);
   printSummary(listResult);
 
   if (machineConfig) {
@@ -281,6 +371,25 @@ function renderTableMode(
     process.stdout.write(`${outputService.formatTable(data)}\n`);
   }
 
+  const repoServerSourced = getRepositories(listResult).some(
+    (r) => repoName(r.name, r.repo_name).source === 'server'
+  );
+  const healthServerSourced = (listResult.storage_health?.repositories ?? []).some(
+    (sh) => repoName(sh.guid, sh.name).source === 'server'
+  );
+  if (repoServerSourced || healthServerSourced) {
+    outputService.info(t('commands.repo.list.serverNameLegend'));
+  }
+
+  if (listResult.storage_health) {
+    outputService.info(
+      t('commands.machine.query.storageHealthSummary', {
+        summary: listResult.storage_health.savings_human,
+      })
+    );
+    outputService.info(t('commands.machine.query.storageHealthFragmentationNote'));
+  }
+
   printStorageSummary(listResult.system);
 }
 
@@ -289,24 +398,26 @@ function buildEnrichedJson(
   machineConfig: MachineConfig | undefined,
   infra: InfraConfig | undefined,
   resolve: (guid: string) => string,
+  repoName: RepoNameResolver,
   machineName: string
 ): Record<string, unknown> {
   const baseDomain = infra?.baseDomain;
-  const system = listResult.system;
-  const diskFreeGb = parseSizeToGb(system?.disk.available);
-  const dsFreeGb = parseSizeToGb(system?.datastore.available);
-  const effectiveFreeGb = Math.min(diskFreeGb, dsFreeGb);
-  const limitedBy = dsFreeGb <= diskFreeGb ? 'datastore' : 'disk';
   return {
     ...listResult,
     connection: machineConfig ? flattenConnection(machineConfig) : null,
-    repositories: resolveGuids(getRepositories(listResult), resolve).map((repo) => ({
-      ...repo,
-      url:
-        baseDomain && machineName
-          ? `https://*.${repo.name}.${machineName}.${baseDomain}`
-          : DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
-    })),
+    repositories: getRepositories(listResult).map((repo) => {
+      const { name, source } = repoName(repo.name, repo.repo_name);
+      return {
+        ...repo,
+        name,
+        guid: repo.name,
+        name_source: source,
+        url:
+          baseDomain && machineName
+            ? `https://*.${name}.${machineName}.${baseDomain}`
+            : DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
+      };
+    }),
     containers: getContainers(listResult).map((c) => ({
       ...c,
       repository: resolve(c.repository),
@@ -316,22 +427,20 @@ function buildEnrichedJson(
     })),
     services: resolveGuids(getServices(listResult), resolve, 'repository'),
     infra: infra ?? null,
-    storage: {
-      effectiveFree: `${effectiveFreeGb.toFixed(1)}G`,
-      limitedBy,
-      datastorePool: system?.datastore.total ?? DEFAULTS.CLOUD.DISPLAY_PLACEHOLDER,
-      datastorePath: system?.datastore.path ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-      recommendation:
-        effectiveFreeGb < 10 ? 'Low storage. Expand with: rdc datastore resize' : null,
-    },
+    storage: deriveStorageSummary(listResult.system),
   };
 }
 
-function collectSections(options: QueryOptions): string[] {
+export function collectSections(options: QueryOptions): string[] {
   const sections: string[] = [];
   for (const { flag, section } of SECTION_FLAGS) {
     if (options[flag]) sections.push(section);
   }
+  // The storage summary is derived from the system section, so ensure it is
+  // always collected when a section subset is requested. Cheap renet-side
+  // (~sub-10ms, no shell-outs). An empty list means a full query, which
+  // already includes system.
+  if (sections.length > 0 && !sections.includes('system')) sections.push('system');
   return sections;
 }
 
@@ -380,6 +489,7 @@ export function registerQueryCommand(machine: Command, program: Command): void {
         const infra = machineConfig?.infra;
         const format = program.opts().output as OutputFormat;
         const resolve = createGuidResolver(guidMap);
+        const repoName = createRepoNameResolver(guidMap);
 
         if (format === 'json') {
           const enriched = buildEnrichedJson(
@@ -387,11 +497,12 @@ export function registerQueryCommand(machine: Command, program: Command): void {
             machineConfig,
             infra,
             resolve,
+            repoName,
             machineName
           );
           outputService.print(enriched, format);
         } else {
-          renderTableMode(listResult, machineConfig, infra, resolve, machineName);
+          renderTableMode(listResult, machineConfig, infra, resolve, repoName, machineName);
         }
 
         // Hint: nudge toward --storage-health (stderr so it doesn't break JSON piping)

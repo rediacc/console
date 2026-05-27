@@ -4,7 +4,8 @@ description: "Rediacc'ın kendi sunucunuzda barındırma mimarisi veri koruma, g
 category: "Legal"
 order: 0
 language: tr
-sourceHash: "e54bb73d5b2f5fd4"
+sourceHash: "e20385eb9adfe180"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Rediacc tamamen sizin altyapınızda çalışır. Ortam klonlama, yedekleme ve dağıtım işlemleri sırasında veriler makinenizi asla terk etmez. Hem veri sorumlusu hem de veri işleyen siz olmaya devam edersiniz. Hiçbir üçüncü taraf SaaS verilerinizi işlemez.
@@ -15,7 +16,7 @@ Bu bölüm, Rediacc'ın teknik yeteneklerini başlıca uyumluluk çerçevelerini
 
 | Çerçeve | Kapsam | Temel Rediacc Yetenekleri |
 |---------|--------|---------------------------|
-| [GDPR](/tr/docs/legal-gdpr) | AB veri koruma ve gizlilik | Aynı makinede CoW klonlama, LUKS2 şifreleme, sıfır bilgi yapılandırma deposu, denetim günlüğü, `rdc repo destroy` ile silme hakkı |
+| [GDPR](/tr/docs/legal-gdpr) | AB veri koruma ve gizlilik | Aynı makinede CoW klonlama, LUKS2 şifreleme, sıfır bilgi yapılandırma deposu, denetim günlüğü, `rdc repo delete` ile silme hakkı |
 | [SOC 2](/tr/docs/legal-soc2) | Hizmet kuruluşları için güven hizmeti kriterleri | Durağan halde şifreleme, sıfır bilgi yapılandırma senkronizasyonu, ağ izolasyonu, denetim izi, yedekleme ve kurtarma |
 | [HIPAA](/tr/docs/legal-hipaa) | ABD sağlık bilgileri koruması | LUKS2 şifreleme, sıfır bilgi yapılandırma deposu, yalnızca SSH erişimi, izole Docker daemon'ları, iletim güvenliği |
 | [CCPA](/tr/docs/legal-ccpa) | Kaliforniya tüketici gizlilik hakları | Kendi sunucunuzda barındırma (veri satışı/paylaşımı yok), sıfır bilgi şifreleme, şifreli silme, depo başına veri envanteri |
@@ -32,7 +33,7 @@ Bu bölümdeki her uyumluluk çerçevesi aynı teknik özelliklere dayanır:
 - **Ağ izolasyonu**: Her depo kendi Docker daemon'ına, loopback IP alt ağına (/26) ve iptables kurallarına sahiptir. Farklı depolardan konteynerler birbirleriyle iletişim kuramaz.
 - **Copy-on-write klonlama**: `rdc repo fork` dosya sistemi reflink'lerini (`cp --reflink=always`) kullanır. Veriler herhangi bir ağ transferi olmadan aynı makinede çoğaltılır.
 - **Denetim günlüğü**: Kimlik doğrulama (giriş, 2FA, parola değişiklikleri, oturum iptali), API token yaşam döngüsü, yapılandırma deposu işlemleri ve abonelik/lisans etkinliğini kapsayan 40'tan fazla olay türü. Yönetici paneli ve `rdc audit` CLI üzerinden erişilebilir. Makine düzeyindeki işlemler (fork, yedekleme, dağıtım) makinenin kendisinde SSH ve sistem günlükleri aracılığıyla gerçekleştirilir.
-- **Şifreli yedekleme**: `rdc repo backup push/pull` verileri SSH üzerinden aktarır. Yedekleme hedefi LUKS ile şifrelenmiş birimler alır.
+- **Şifreli yedekleme**: `rdc repo push/pull` verileri SSH üzerinden aktarır. Yedekleme hedefi LUKS ile şifrelenmiş birimler alır.
 - **Sıfır bilgi yapılandırma deposu**: Cihazlar arası isteğe bağlı şifreli yapılandırma senkronizasyonu. Yapılandırmalar yüklenmeden önce istemci tarafında AES-256-GCM ile şifrelenir. Sunucu yalnızca opak blob'lar saklar. Sunucu SSH anahtarlarını, kimlik bilgilerini, IP adreslerini veya herhangi bir düz metin yapılandırma verisini okuyamaz. Anahtar türetme passkey PRF extension + HKDF ile alan ayırma kullanır. Üye erişimi X25519 anahtar değişimi ile yönetilir ve iptal anında gerçekleşir.
 
 Bu yetenekler hakkında ayrıntılı bilgi için [Mimari](/tr/docs/architecture), [Depolar](/tr/docs/repositories), [Yapılandırma Depolama](/tr/docs/config-storage) ve [Hesap Güvenliği](/tr/docs/account-security) sayfalarına bakın.

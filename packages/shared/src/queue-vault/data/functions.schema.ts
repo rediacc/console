@@ -332,6 +332,17 @@ export const RepositoryAutostartEnableAllParamsSchema = z.object({});
 /** List repositories with autostart enabled */
 export const RepositoryAutostartListParamsSchema = z.object({});
 
+/** Read a bounded window of a file inside the repository mount */
+export const RepositoryCatParamsSchema = z.object({
+  path: z.string().min(1).describe('File path relative to the repo mount root'),
+  maxBytes: z.number().int().optional().describe('Max bytes to read/print (default 1 MiB, ceiling 50 MiB)'),
+  offset: z.number().int().optional().describe('Byte offset to start reading from'),
+  head: z.number().int().optional().describe('Print only the first N lines'),
+  tail: z.number().int().optional().describe('Print only the last N lines'),
+  stat: z.boolean().optional().describe('Print size/type/mtime only; read no content'),
+  forceBinary: z.boolean().optional().describe('Allow reading binary (NUL-containing) content'),
+});
+
 /** Create a new repository */
 export const RepositoryCreateParamsSchema = z.object({
   size: z.string().min(1).describe('Repository size (e.g., 100G, 1T)'),
@@ -523,6 +534,7 @@ export const FUNCTION_SCHEMAS = {
   repository_autostart_enable: RepositoryAutostartEnableParamsSchema,
   repository_autostart_enable_all: RepositoryAutostartEnableAllParamsSchema,
   repository_autostart_list: RepositoryAutostartListParamsSchema,
+  repository_cat: RepositoryCatParamsSchema,
   repository_create: RepositoryCreateParamsSchema,
   repository_delete: RepositoryDeleteParamsSchema,
   repository_down: RepositoryDownParamsSchema,

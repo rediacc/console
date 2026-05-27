@@ -34,6 +34,28 @@ export function resolveGuids<T>(
   });
 }
 
+/** Where a resolved repository display name came from. */
+export type RepoNameSource = 'config' | 'server' | 'guid';
+
+/**
+ * Build a resolver that maps a repository GUID to a display name, falling back
+ * to the server-provided `repo_name` (from renet) when the local config has no
+ * entry, and finally to the bare GUID. Precedence: config > server > guid.
+ *
+ * The `:latest` tag is stripped from config and server names for display.
+ */
+export function createRepoNameResolver(
+  guidMap: Record<string, string>
+): (guid: string, serverRepoName?: string) => { name: string; source: RepoNameSource } {
+  const strip = (v: string) => (v.endsWith(':latest') ? v.slice(0, -7) : v);
+  return (guid, serverRepoName) => {
+    const entry = guidMap[guid];
+    if (entry) return { name: strip(entry), source: 'config' };
+    if (serverRepoName) return { name: strip(serverRepoName), source: 'server' };
+    return { name: guid, source: 'guid' };
+  };
+}
+
 export async function loadGuidMap(): Promise<Record<string, string>> {
   try {
     return await configService.getRepositoryGuidMap();

@@ -4,6 +4,8 @@ description: "Come l'architettura self-hosted di Rediacc risponde ai requisiti d
 category: "Legal"
 order: 0
 language: it
+sourceHash: "e20385eb9adfe180"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Rediacc gira interamente sulla propria infrastruttura. Durante le operazioni di clonazione dell'ambiente, backup e distribuzione, i dati non lasciano mai la macchina. L'organizzazione rimane sia titolare sia responsabile del trattamento dei dati. Nessun SaaS di terze parti gestisce i propri dati.
@@ -14,7 +16,7 @@ Questa sezione mappa le capacità tecniche di Rediacc ai requisiti dei principal
 
 | Framework | Ambito | Capacità chiave di Rediacc |
 |-----------|-------|--------------------------|
-| [GDPR](/it/docs/legal-gdpr) | Protezione dei dati e privacy nell'UE | Clonazione CoW sulla stessa macchina, cifratura LUKS2, config store zero-knowledge, log di audit, diritto alla cancellazione tramite `rdc repo destroy` |
+| [GDPR](/it/docs/legal-gdpr) | Protezione dei dati e privacy nell'UE | Clonazione CoW sulla stessa macchina, cifratura LUKS2, config store zero-knowledge, log di audit, diritto alla cancellazione tramite `rdc repo delete` |
 | [SOC 2](/it/docs/legal-soc2) | Criteri di fiducia per le organizzazioni di servizi | Cifratura a riposo, sincronizzazione config zero-knowledge, isolamento di rete, traccia di audit, backup e ripristino |
 | [HIPAA](/it/docs/legal-hipaa) | Protezione delle informazioni sanitarie negli USA | Cifratura LUKS2, config store zero-knowledge, accesso esclusivo via SSH, daemon Docker isolati, sicurezza della trasmissione |
 | [CCPA](/it/docs/legal-ccpa) | Diritti alla privacy dei consumatori californiani | Self-hosted (nessuna vendita/condivisione di dati), cifratura zero-knowledge, cancellazione cifrata, inventario dei dati per repository |
@@ -31,7 +33,7 @@ Ogni framework di conformità in questa sezione si riconduce alle stesse proprie
 - **Isolamento di rete**: ogni repository dispone di un proprio daemon Docker, di una subnet IP loopback (/26) e di regole iptables. I container di repository diversi non possono comunicare.
 - **Clonazione copy-on-write**: `rdc repo fork` utilizza reflink del filesystem (`cp --reflink=always`). I dati vengono duplicati sulla stessa macchina senza alcun trasferimento di rete.
 - **Log di audit**: oltre 70 tipologie di eventi che coprono autenticazione (accesso, 2FA, cambio password, revoca sessione), ciclo di vita dei token API, operazioni sul config store, attività di abbonamento/licenza e operazioni CLI sulle macchine (ciclo di vita dei repository, backup, sincronizzazione, sessioni di terminale). Accessibili tramite dashboard di amministrazione, pagina attività del portale (con filtraggio per organizzazione) e CLI `rdc audit`. Le operazioni sulle macchine sono registrate anche nei log di sistema per una difesa in profondità.
-- **Backup cifrato**: `rdc repo backup push/pull` trasferisce i dati tramite SSH. La destinazione del backup riceve volumi cifrati con LUKS.
+- **Backup cifrato**: `rdc repo push/pull` trasferisce i dati tramite SSH. La destinazione del backup riceve volumi cifrati con LUKS.
 - **Config store zero-knowledge**: sincronizzazione cifrata opzionale delle configurazioni tra dispositivi. Le configurazioni sono cifrate lato client con AES-256-GCM prima dell'upload. Il server archivia solo blob opachi. Il server non può leggere chiavi SSH, credenziali, indirizzi IP o dati di configurazione in chiaro. La derivazione della chiave utilizza l'estensione PRF della passkey e HKDF con separazione di dominio. L'accesso dei membri è gestito tramite scambio di chiavi X25519 e la revoca è immediata.
 
 Per i dettagli su queste capacità, vedere [Architettura](/it/docs/architecture), [Repository](/it/docs/repositories), [Config Storage](/it/docs/config-storage) e [Sicurezza dell'account](/it/docs/account-security).

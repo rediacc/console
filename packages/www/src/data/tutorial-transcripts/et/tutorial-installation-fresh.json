@@ -1,0 +1,28 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation-fresh.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-fresh-01",
+      "markerIndex": 0,
+      "at": 0.667007,
+      "text": "Alustame puhtal masinal. Kleebi üherealist paigaldusskäsku oma terminali ja lase käivitada. Skript tuvastab sinu platvormi, laadib alla käsurea tööriista uusima stabiilse binaarfaili ja paigutab selle kodukausta. Ei vajata sudo ega süsteemiülest paigaldust.",
+      "afterText": "Paigaldatud. rdc binary on sinu teekonnale lisatud."
+    },
+    {
+      "id": "tutorial-installation-fresh-02",
+      "markerIndex": 1,
+      "at": 9.659113,
+      "text": "Kinnitame, et kõik läks hästi. Versiooni lipp prindib täpselt selle, mis just paigaldati, nii tead, et käsurea tööriist on sinu teekonnal ja kasutusvalmis.",
+      "afterText": "Versioon prinditud. rdc on valmis."
+    },
+    {
+      "id": "tutorial-installation-fresh-03",
+      "markerIndex": 2,
+      "at": 12.976611,
+      "text": "Nüüd käivita sisseehitatud diagnostikakontroll. See kontrollib sinu keskkonda algusest lõpuni (binaarfail, konfiguratsioon ja ühenduvus), et leida kõik seadistamislüngad enne töö alustamist.",
+      "afterText": "Kõik kontrollid rohelised. Oled valmis oma esimese serveri lisamiseks."
+    }
+  ]
+}

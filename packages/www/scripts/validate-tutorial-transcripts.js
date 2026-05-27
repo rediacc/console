@@ -154,7 +154,64 @@ function validateSchema(transcript, file, errors) {
         'Write narration describing what happens in the terminal at this marker, then translate for locale files'
       );
     }
+
+    // Optional afterText (post-command narration). If present, must be a non-empty
+    // string and not a TODO placeholder.
+    if (event.afterText !== undefined) {
+      if (typeof event.afterText !== 'string' || event.afterText.trim().length === 0) {
+        pushError(
+          errors,
+          file,
+          `events[${index}].afterText must be a non-empty string when present.`,
+          'Add post-command narration text or remove the field'
+        );
+      } else if (/^TODO:/i.test(event.afterText)) {
+        pushError(
+          errors,
+          file,
+          `events[${index}].afterText is a TODO placeholder.`,
+          'Write the post-command closing line (1 short sentence), then translate for locale files'
+        );
+      }
+    }
   });
+
+  // Optional narrations[] block (non-cast scenes: intro/slide/browser/outro).
+  if (transcript.narrations !== undefined) {
+    if (!Array.isArray(transcript.narrations)) {
+      pushError(errors, file, 'narrations must be an array.', 'Wrap narrations in an array');
+    } else {
+      transcript.narrations.forEach((narration, index) => {
+        if (!narration || typeof narration !== 'object') {
+          pushError(errors, file, `narrations[${index}] must be an object.`, 'Fix narration shape');
+          return;
+        }
+        if (typeof narration.id !== 'string' || narration.id.length === 0) {
+          pushError(
+            errors,
+            file,
+            `narrations[${index}].id must be a non-empty string.`,
+            'Set a stable narration id'
+          );
+        }
+        if (typeof narration.text !== 'string' || narration.text.trim().length === 0) {
+          pushError(
+            errors,
+            file,
+            `narrations[${index}].text must be a non-empty string.`,
+            'Add narration text'
+          );
+        } else if (/^TODO:/i.test(narration.text)) {
+          pushError(
+            errors,
+            file,
+            `narrations[${index}].text is a TODO placeholder.`,
+            'Translate the narration text from English'
+          );
+        }
+      });
+    }
+  }
 }
 
 function validateEnglishParity(castKey, transcript, markers, file, errors) {
@@ -378,6 +435,54 @@ function main() {
               'Run: ./run.sh www tutorials scaffold-locales'
             );
           }
+          // afterText parity: if EN has it, locale must have it (translated, not TODO).
+          const enHasAfter = typeof eev.afterText === 'string';
+          const locHasAfter = typeof lev.afterText === 'string';
+          if (enHasAfter && !locHasAfter) {
+            pushError(
+              errors,
+              localeRelative,
+              `events[${i}].afterText is missing (English has after-text for this event).`,
+              'Run: ./run.sh www tutorials scaffold-locales, then translate the TODO'
+            );
+          } else if (!enHasAfter && locHasAfter) {
+            pushError(
+              errors,
+              localeRelative,
+              `events[${i}].afterText is present but English no longer has after-text for this event.`,
+              'Run: ./run.sh www tutorials scaffold-locales to remove the stale field'
+            );
+          }
+        }
+      }
+
+      // narrations[] parity: locale must have the same id-set as English.
+      const enNarrations = Array.isArray(enFile.data.narrations) ? enFile.data.narrations : [];
+      const locNarrations = Array.isArray(localeFile.data.narrations)
+        ? localeFile.data.narrations
+        : [];
+      const enIDs = new Set(enNarrations.map((n) => n?.id).filter((id) => typeof id === 'string'));
+      const locIDs = new Set(
+        locNarrations.map((n) => n?.id).filter((id) => typeof id === 'string')
+      );
+      for (const id of enIDs) {
+        if (!locIDs.has(id)) {
+          pushError(
+            errors,
+            localeRelative,
+            `narrations[] is missing id "${id}" (present in English).`,
+            'Run: ./run.sh www tutorials scaffold-locales, then translate the TODO'
+          );
+        }
+      }
+      for (const id of locIDs) {
+        if (!enIDs.has(id)) {
+          pushError(
+            errors,
+            localeRelative,
+            `narrations[] has stale id "${id}" (not in English).`,
+            'Run: ./run.sh www tutorials scaffold-locales to drop the stale entry'
+          );
         }
       }
     }

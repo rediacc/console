@@ -11,28 +11,31 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/tutorial-helpers.sh"
 
+# Silence pre-recording setup so its output doesn't bleed into the cast.
+exec 3>&1 4>&2
+exec >/dev/null 2>&1
+
 M="$TUTORIAL_MACHINE_NAME"
 BACKUP_HOST="${TUTORIAL_BACKUP_HOST:-192.168.111.12}"
 BACKUP_USER="${TUTORIAL_BACKUP_USER:-$TUTORIAL_MACHINE_USER}"
-C="--config tutorial"
 RCLONE_CONF=/tmp/tutorial-rclone.conf
 
 # Pre-recording setup
-rm -f ~/.config/rediacc/tutorial.json 2>/dev/null || true
-rdc config init --name tutorial --ssh-key "$TUTORIAL_SSH_KEY"
-rdc --config tutorial config machine add --name "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
+rm -f ~/.config/rediacc/rediacc.json 2>/dev/null || true
+rdc config init --ssh-key "$TUTORIAL_SSH_KEY"
+rdc config machine add --name "$M" --ip "$TUTORIAL_MACHINE_IP" --user "$TUTORIAL_MACHINE_USER"
 for i in $(seq 1 30); do
     ssh -i "$TUTORIAL_SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=2 \
         "$TUTORIAL_MACHINE_USER@$TUTORIAL_MACHINE_IP" true 2>/dev/null && break
     sleep 2
 done
-rdc --config tutorial config machine setup --name "$M"
+rdc config machine setup --name "$M"
 # Reap any orphaned repo state from previous tutorial runs.
-rdc --config tutorial machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
+rdc machine prune --name "$M" --orphaned-repos --force --grace-days 0 --force-delete-mounted 2>/dev/null || true
 
-rdc $C repo delete --name my-app -m "$M" 2>/dev/null || true
-rdc $C repo create --name my-app -m "$M" --size 2G
-rdc $C repo template apply --name app-postgres -m "$M" -r my-app
+rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
+rdc repo create --name my-app --machine "$M" --size 2G
+rdc repo template apply --name app-postgres --machine "$M" --repository my-app
 
 # rclone config for the recording: sftp to a sibling VM in the test cluster.
 # Real users would import their own production rclone.conf. The tutorial
@@ -45,14 +48,17 @@ user = $BACKUP_USER
 key_file = $TUTORIAL_SSH_KEY
 EOF
 
+# Restore stdout/stderr so asciinema captures only the demo from here on.
+exec >&3 2>&4
+
 clear_screen
 
 section "Step 1: Configure storage"
-run_cmd "rdc $C config storage import --file $RCLONE_CONF"
+run_cmd "rdc config storage import --file $RCLONE_CONF"
 
 pause 1
 
-run_cmd "rdc $C config storage list"
+run_cmd "rdc config storage list"
 
 pause 2
 
@@ -60,19 +66,19 @@ section "Step 2: Push a backup"
 # Tolerate push errors: real backends will succeed; the recording's sftp
 # target may have permission/path quirks. The command + output are what
 # matters for the cast.
-run_cmd "rdc $C repo push --name my-app -m $M --to my-storage || true"
+run_cmd "rdc repo push --name my-app --machine $M --to my-storage || true"
 
 pause 2
 
 section "List the backups"
-run_cmd "rdc $C repo backup list --from my-storage -m $M || true"
+run_cmd "rdc repo backup list --from my-storage --machine $M || true"
 
 pause 2
 
 # Cleanup
-rdc $C repo down --name my-app -m "$M" 2>/dev/null || true
-rdc $C repo down --name my-app -m "$M" --unmount 2>/dev/null || true
-rdc $C repo delete --name my-app -m "$M" 2>/dev/null || true
+rdc repo down --name my-app --machine "$M" 2>/dev/null || true
+rdc repo down --name my-app --machine "$M" --unmount 2>/dev/null || true
+rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
 rm -f "$RCLONE_CONF"
 
 printf '\n\033[1;32m# Tutorial complete!\033[0m\n'

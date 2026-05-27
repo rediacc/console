@@ -1,0 +1,28 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation-fresh.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-installation-fresh-01",
+      "markerIndex": 0,
+      "at": 0.667007,
+      "text": "我们在一台全新的机器上开始。将单行安装命令粘贴到终端中并运行。脚本会检测您的平台，下载命令行工具的最新稳定版二进制文件，并将其放置到您的主目录中。无需 sudo，无需系统级安装。",
+      "afterText": "安装完成。rdc binary 已添加到您的路径中。"
+    },
+    {
+      "id": "tutorial-installation-fresh-02",
+      "markerIndex": 1,
+      "at": 9.659113,
+      "text": "让我们确认安装成功。版本标志会精确打印刚刚安装的内容，以便您确认命令行工具已在您的路径中并可以使用。",
+      "afterText": "版本已打印。rdc 已就绪。"
+    },
+    {
+      "id": "tutorial-installation-fresh-03",
+      "markerIndex": 2,
+      "at": 12.976611,
+      "text": "现在运行内置诊断检查。它会端到端地检查您的环境（二进制文件、配置和网络连接），让您在开始工作之前发现任何配置问题。",
+      "afterText": "所有检查均通过。您可以添加第一台服务器了。"
+    }
+  ]
+}

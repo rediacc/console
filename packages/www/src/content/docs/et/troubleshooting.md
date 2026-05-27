@@ -4,6 +4,8 @@ description: "Lahendused levinud probleemidele SSH, seadistamise, repositooriumi
 category: "Guides"
 order: 10
 language: et
+sourceHash: "658b00b83875950d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Tõrkeotsing
@@ -125,7 +127,7 @@ Asenda `2816` oma repositooriumi võrgu ID-ga (leiad selle `rediacc.json`-ist v�
 
 Repositooriumi kestas konteineri käivitamine ilma `--network host` annab sulle isoleeritud konteineri ainult loopback-liidesega, ilma DNS-i ja väljamineva ühenduvuseta. Käsud nagu `apt update`, `pip install`, `curl https://...` või mis tahes võrgupäring ebaõnnestuvad koheselt DNS-i vigadega.
 
-See on tahtlik. Rediacc'i võrgumudel on **hosti võrgustamine iga teenuse jaoks**, mida jõustab `renet compose`. Vaikimisi Dockeri sild NAT-iga mööduks kerneli taseme loopback-isolatsioonist, mis takistab ühel repositooriumil teise repositooriumi teenustele jõudmast, seega on repositooriumipõhine Dockeri deemon konfigureeritud seadetega `"bridge": "none"` ja `"iptables": false`. Tavalisel `docker run` konteineril pole marsruutitavat silda, millega ühenduda.
+See on tahtlik. Rediacc'i võrgumudel on **hosti võrgustamine iga teenuse jaoks**, mida jõustab `renet compose`. Vaikimisi Dockeri sild NAT-iga mööduks kerneli taseme loopback-isolatsioonist, mis takistab ühel repositooriumil teise repositooriumi teenustele jõudmast, seega on repositooriumipõhine Dockeri deemon (`FlavorRediacc`) konfigureeritud seadetega `"bridge": "none"` ja `"iptables": false`. Tavalisel `docker run` konteineril pole marsruutitavat silda, millega ühenduda. (Kasutajapõhised Hub-deemonid (`FlavorHub`), mida arenduskeskkonnad kasutavad, on erand: need lubavad sildu ja iptables-i, et kasutaja konteinerid saaksid väljuvat võrguühendust.)
 
 **Võrguligipääsuks ad-hoc konteineris kasuta hosti võrgustamist:**
 

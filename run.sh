@@ -224,6 +224,137 @@ _tutorial_script_hash() {
     cat "$script" "$helpers" 2>/dev/null | sha256sum | awk '{print $1}'
 }
 
+# --- Bridge recording helpers -------------------------------------------------
+# Tutorials are recorded INSIDE the bridge VM so the local host's
+# ~/.config/rediacc is never touched and the cast captures a pristine machine.
+# Host->bridge SSH uses the config that `renet ops up` generates, which carries
+# the correct VM user + key for THIS environment (vscode in CI, the host user
+# locally), so we never hardcode either.
+_BRIDGE_SSH_CONFIG="$HOME/.renet/staging/.ssh/config"
+
+# Resolve the bridge IP from the provision state, with a sane default.
+_bridge_ip() {
+    local ip=""
+    if [[ -f "$ROOT_DIR/.provision-state" ]]; then
+        ip="$(grep '^bridge_ip=' "$ROOT_DIR/.provision-state" 2>/dev/null | cut -d= -f2)"
+    fi
+    echo "${ip:-${VM_NET_BASE:-${VM_NET_BASE_DEFAULT:-192.168.111}}.${VM_BRIDGE:-${VM_BRIDGE_DEFAULT:-1}}}"
+}
+
+# Resolve the Nth worker IP (1-based) from provision state (.11, .12, ...).
+_worker_ip() {
+    local idx="${1:-1}"
+    local ips=""
+    if [[ -f "$ROOT_DIR/.provision-state" ]]; then
+        ips="$(grep '^worker_ips=' "$ROOT_DIR/.provision-state" 2>/dev/null | cut -d= -f2)"
+    fi
+    if [[ -n "$ips" ]]; then
+        echo "$ips" | cut -d, -f"$idx"
+    else
+        local -a workers
+        read -ra workers <<<"${VM_WORKERS:-11 12}"
+        echo "${VM_NET_BASE:-${VM_NET_BASE_DEFAULT:-192.168.111}}.${workers[$((idx - 1))]:-11}"
+    fi
+}
+
+_bridge_ssh() {
+    ssh -F "$_BRIDGE_SSH_CONFIG" -o BatchMode=yes -o StrictHostKeyChecking=no \
+        -o ConnectTimeout=15 "$(_bridge_ip)" "$@"
+}
+
+_bridge_rsync() {
+    rsync -a -e "ssh -F $_BRIDGE_SSH_CONFIG -o BatchMode=yes -o StrictHostKeyChecking=no" "$@"
+}
+
+# Build the linux-x64 dev rdc SEA (for the bridge), cached by source hash so
+# reruns skip the rebuild when packages/cli, packages/shared(-desktop), or renet
+# are unchanged. Output: dist/cli/rdc-linux-x64. Mirrors `rdc.sh --override-local`
+# but installs nothing on the host.
+_build_cli_sea_cached() {
+    local out="$ROOT_DIR/dist/cli/rdc-linux-x64"
+    local hash_file="$ROOT_DIR/dist/cli/.sea-source-hash"
+    local cur
+    cur="$(
+        {
+            find "$ROOT_DIR/packages/cli/src" "$ROOT_DIR/packages/shared/src" \
+                "$ROOT_DIR/packages/shared-desktop/src" -type f \
+                \( -name '*.ts' -o -name '*.json' \) -exec sha256sum {} + 2>/dev/null | sort
+            git -C "$ROOT_DIR/private/renet" rev-parse HEAD 2>/dev/null || true
+        } | sha256sum | awk '{print $1}'
+    )"
+    if [[ -f "$out" && -f "$hash_file" && "$(cat "$hash_file" 2>/dev/null)" == "$cur" ]]; then
+        log_info "Dev SEA up-to-date (source unchanged): $out"
+        return 0
+    fi
+
+    log_step "Building dev rdc SEA (linux-x64) for the bridge..."
+    ensure_deps
+    ensure_packages_built
+    local embed_renet="$ROOT_DIR/private/bin/renet-linux-amd64"
+    mkdir -p "$ROOT_DIR/private/bin"
+    (cd "$ROOT_DIR/private/renet" &&
+        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+            -tags nolicense -ldflags="-s -w -X main.Version=0.0.0-dev" \
+            -o "$embed_renet" ./cmd/renet)
+    bash "$ROOT_DIR/.ci/scripts/build/build-cli-executables.sh" --platform linux --arch x64
+    [[ -f "$out" ]] || {
+        log_error "SEA build did not produce $out"
+        exit 1
+    }
+    echo "$cur" >"$hash_file"
+}
+
+# Ensure the bridge has node + asciinema + the dev rdc SEA + the tutorial scripts.
+# Idempotent: safe to call before every recording batch (state is ephemeral —
+# the bridge is torn down with provision_stop).
+_ensure_bridge_recording_tooling() {
+    local bridge
+    bridge="$(_bridge_ip)"
+
+    # Wait for the bridge to be reachable, then fail loudly if it never is.
+    local who="" i
+    for i in $(seq 1 15); do
+        who="$(_bridge_ssh 'whoami' 2>/dev/null || true)"
+        [[ -n "$who" ]] && break
+        sleep 2
+    done
+    if [[ -z "$who" ]]; then
+        log_error "Bridge VM ($bridge) is not reachable over SSH."
+        log_error "Check 'rdc ops status' / './run.sh provision status' and $_BRIDGE_SSH_CONFIG."
+        exit 1
+    fi
+    log_info "Bridge reachable as user: $who"
+
+    # node + asciinema (bridge has internet + passwordless sudo).
+    if ! _bridge_ssh 'command -v node >/dev/null && command -v asciinema >/dev/null'; then
+        log_step "Installing node + asciinema on the bridge..."
+        _bridge_ssh 'sudo DEBIAN_FRONTEND=noninteractive apt-get update -qq && \
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nodejs npm asciinema'
+    fi
+
+    # Dev rdc SEA — build (cached) and transfer only when the checksum differs.
+    _build_cli_sea_cached
+    local sea="$ROOT_DIR/dist/cli/rdc-linux-x64"
+    local local_sum remote_sum
+    local_sum="$(sha256sum "$sea" | awk '{print $1}')"
+    remote_sum="$(_bridge_ssh 'sha256sum /usr/local/bin/rdc 2>/dev/null | cut -d" " -f1' || true)"
+    if [[ "$local_sum" != "$remote_sum" ]]; then
+        log_step "Transferring dev rdc SEA to the bridge..."
+        _bridge_rsync "$sea" "${bridge}:/tmp/rdc-dev"
+        _bridge_ssh 'sudo install -m0755 /tmp/rdc-dev /usr/local/bin/rdc && rm -f /tmp/rdc-dev'
+    else
+        log_info "Bridge rdc up-to-date (checksum match)"
+    fi
+    log_info "Bridge rdc version: $(_bridge_ssh 'rdc --version 2>/dev/null | tail -1')"
+
+    # Tutorial scripts + post-processors, preserving record.sh's ROOT_DIR=../..
+    # layout so it resolves the .mjs post-processors under /tmp/rec/.ci.
+    log_step "Syncing tutorial scripts to the bridge..."
+    _bridge_ssh 'mkdir -p /tmp/rec/.ci/tutorials /tmp/rec/.ci/scripts/docs /tmp/rec/out'
+    _bridge_rsync "$ROOT_DIR/.ci/tutorials/" "${bridge}:/tmp/rec/.ci/tutorials/"
+    _bridge_rsync "$ROOT_DIR/.ci/scripts/docs/" "${bridge}:/tmp/rec/.ci/scripts/docs/"
+}
+
 www_tutorials_record() {
     local force=false
     local name=""
@@ -237,6 +368,14 @@ www_tutorials_record() {
                 force=true
                 shift
                 ;;
+            --max-idle-ms)
+                export MAX_IDLE_MS="$2"
+                shift 2
+                ;;
+            --max-idle-ms=*)
+                export MAX_IDLE_MS="${1#*=}"
+                shift
+                ;;
             *)
                 name="$1"
                 shift
@@ -244,14 +383,10 @@ www_tutorials_record() {
         esac
     done
 
-    if ! command -v asciinema &>/dev/null; then
-        log_error "asciinema is not installed. Install with: pip install asciinema"
-        exit 1
-    fi
-
     # Tutorials use term connect / repo create which require direct machine access.
     # In AI agent sessions, the user must pre-set REDIACC_ALLOW_GRAND_REPO=* before
-    # starting the agent so the CLI accepts the override as legitimate.
+    # starting the agent so the CLI accepts the override as legitimate. We propagate
+    # it to the bridge's rdc below.
     if [[ "${CLAUDECODE:-}" == "1" || "${GEMINI_CLI:-}" == "1" || "${COPILOT_CLI:-}" == "1" || "${REDIACC_AGENT:-}" == "1" || -n "${CURSOR_TRACE_ID:-}" ]]; then
         if ! _grand_env_is_wildcard; then
             log_error "Tutorial recording requires direct machine access, which is blocked in agent mode."
@@ -262,12 +397,6 @@ www_tutorials_record() {
             exit 1
         fi
     fi
-
-    ensure_deps
-    ensure_packages_built
-    ensure_renet_built
-    export PATH="$ROOT_DIR/private/renet/bin:$PATH"
-    export TUTORIAL_RDC_CMD="npx tsx $ROOT_DIR/packages/cli/src/index.ts"
 
     # Load stored hashes
     local -A stored_hashes
@@ -321,11 +450,20 @@ www_tutorials_record() {
         return 0
     fi
 
-    # Auto-provision VMs
+    # Provision the cluster (bridge + workers) and prepare host->bridge SSH.
     log_step "Provisioning VMs for tutorial recording..."
     provision_start
+    provision_post_setup
 
-    # Stage shared app files; some tutorial scripts may consume /tmp/tutorial-app
+    # Recording runs INSIDE the bridge VM so the local host's ~/.config/rediacc is
+    # never touched and the cast captures a pristine machine. Bootstrap the bridge
+    # with node + asciinema + the dev rdc SEA + the tutorial scripts.
+    _ensure_bridge_recording_tooling
+    local bridge
+    bridge="$(_bridge_ip)"
+
+    # Stage shared app files (some tutorials consume /tmp/tutorial-app) and push
+    # them to the bridge where the recording runs.
     mkdir -p /tmp/tutorial-app
     cat >/tmp/tutorial-app/Rediaccfile <<'TEOF'
 #!/bin/bash
@@ -340,13 +478,38 @@ services:
     ports:
       - "80:80"
 TEOF
+    _bridge_ssh 'mkdir -p /tmp/tutorial-app'
+    _bridge_rsync /tmp/tutorial-app/ "${bridge}:/tmp/tutorial-app/"
 
-    # Record each changed tutorial
+    # Resolve the recording env from the live cluster (worker IPs + VM user/home).
+    local worker1 worker2 vm_user vm_home
+    worker1="$(_worker_ip 1)"
+    worker2="$(_worker_ip 2)"
+    vm_user="$(_bridge_ssh 'whoami')"
+    vm_home="$(_bridge_ssh 'echo $HOME')"
+    log_info "Recording on bridge $bridge as $vm_user → worker $worker1 (backup ${worker2:-none})"
+
+    # Record each changed tutorial on the bridge, then pull the cast back. The
+    # cast is the only handoff artifact; downstream stages read it unchanged.
     for script in "${scripts_to_record[@]}"; do
         local base
         base="$(basename "$script" .sh)"
-        log_step "Recording: $base"
-        "$tutorials_dir/record.sh" "$script" "$output_dir/${base}.cast"
+        log_step "Recording on bridge: $base"
+        # No TUTORIAL_RDC_CMD: use the real rdc in the bridge PATH (setting it to
+        # "rdc" would self-recurse — guarded in tutorial-helpers.sh regardless).
+        _bridge_ssh "cd /tmp/rec && \
+            TUTORIAL_MACHINE_IP='$worker1' \
+            TUTORIAL_MACHINE_USER='$vm_user' \
+            TUTORIAL_SSH_KEY='$vm_home/.ssh/id_rsa' \
+            TUTORIAL_BACKUP_HOST='$worker2' \
+            TUTORIAL_BACKUP_USER='$vm_user' \
+            REDIACC_ALLOW_GRAND_REPO='${REDIACC_ALLOW_GRAND_REPO:-}' \
+            MAX_IDLE_MS='${MAX_IDLE_MS:-800}' \
+            bash /tmp/rec/.ci/tutorials/record.sh \
+                /tmp/rec/.ci/tutorials/${base}.sh \
+                /tmp/rec/out/${base}.cast 100 30"
+        _bridge_rsync "${bridge}:/tmp/rec/out/${base}.cast" "$output_dir/${base}.cast"
+        log_info "Pulled cast → $output_dir/${base}.cast"
 
         # Update stored hash
         stored_hashes["$base"]="$(_tutorial_script_hash "$script")"
@@ -418,6 +581,95 @@ www_tutorials_generate() {
     fi
 }
 
+www_tutorials_video() {
+    check_node_version
+    ensure_deps
+    ensure_audio_system_deps
+
+    local name=""
+    local lang=""
+    local passthrough=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --lang)
+                lang="$2"
+                shift 2
+                ;;
+            --lang=*)
+                lang="${1#*=}"
+                shift
+                ;;
+            --keep-temp)
+                passthrough+=("$1")
+                shift
+                ;;
+            *)
+                name="$1"
+                shift
+                ;;
+        esac
+    done
+
+    local tutorials_root="$ROOT_DIR/packages/www/public/assets/tutorials"
+    local timeline_root="$ROOT_DIR/packages/www/src/data/tutorial-timeline"
+
+    local tutorials=()
+    if [[ -n "$name" ]]; then
+        local base="$name"
+        [[ "$base" != tutorial-* ]] && base="tutorial-$base"
+        [[ -f "$tutorials_root/${base}.cast" ]] || {
+            log_error "Cast not found: $tutorials_root/${base}.cast"
+            exit 1
+        }
+        tutorials+=("$base")
+    else
+        for cast in "$tutorials_root"/*.cast; do
+            [[ -f "$cast" ]] || continue
+            tutorials+=("$(basename "$cast" .cast)")
+        done
+    fi
+
+    local langs=()
+    if [[ -n "$lang" ]]; then
+        langs+=("$lang")
+    else
+        for d in "$timeline_root"/*/; do
+            [[ -d "$d" ]] || continue
+            langs+=("$(basename "$d")")
+        done
+    fi
+
+    log_step "Compiling tutorial videos (${#tutorials[@]} tutorial(s) × ${#langs[@]} lang(s))..."
+    local failures=()
+    (
+        cd "$ROOT_DIR/packages/www"
+        for t in "${tutorials[@]}"; do
+            for l in "${langs[@]}"; do
+                if [[ ! -f "$timeline_root/$l/${t}.json" ]]; then
+                    log_debug "skip $t × $l (no timeline)"
+                    continue
+                fi
+                if [[ ! -d "$tutorials_root/audio/$l/$t" ]]; then
+                    log_debug "skip $t × $l (no audio)"
+                    continue
+                fi
+                log_step "  → $t × $l"
+                if ! npx tsx scripts/generate-tutorial-video.ts \
+                    --cast "$t" --lang "$l" "${passthrough[@]}"; then
+                    log_error "  ✗ failed: $t × $l"
+                    echo "$t × $l" >>/tmp/_tut_video_failures.$$
+                fi
+            done
+        done
+    )
+    if [[ -f "/tmp/_tut_video_failures.$$" ]]; then
+        log_error "Failed tutorials:"
+        cat "/tmp/_tut_video_failures.$$" >&2
+        rm -f "/tmp/_tut_video_failures.$$"
+        return 1
+    fi
+}
+
 www_tutorials_validate() {
     check_node_version
     ensure_deps
@@ -427,14 +679,63 @@ www_tutorials_validate() {
     npm run validate:tutorial-transcripts -w @rediacc/www
     log_step "Validating tutorial audio..."
     npm run validate:tutorial-audio -w @rediacc/www
+    # Web<->video parity (cast markers vs storyboard vs transcript vs MDX, incl.
+    # card.commandFull). Mirrors CI's check:ci-tutorial-parity so local runs catch drift.
+    log_step "Checking tutorial web/video parity..."
+    npm run check:ci-tutorial-parity
 }
 
 www_tutorials_all() {
+    # Split args: --lang / --keep-temp / --clean-venv / --destroy-venv only flow
+    # to the steps that understand them. Everything else is treated as a
+    # tutorial-name positional and passed to record + generate + video.
+    local lang_args=()
+    local audio_args=()
+    local video_args=()
+    local record_args=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --lang)
+                lang_args+=("$1" "$2")
+                shift 2
+                ;;
+            --lang=*)
+                lang_args+=("$1")
+                shift
+                ;;
+            --keep-temp)
+                video_args+=("$1")
+                shift
+                ;;
+            --clean-venv | --destroy-venv | --subtitle)
+                audio_args+=("$1")
+                shift
+                ;;
+            --force)
+                record_args+=("$1")
+                shift
+                ;;
+            --max-idle-ms)
+                record_args+=("$1" "$2")
+                shift 2
+                ;;
+            --max-idle-ms=*)
+                record_args+=("$1")
+                shift
+                ;;
+            *)
+                record_args+=("$1")
+                shift
+                ;;
+        esac
+    done
+
     log_step "Running full tutorial pipeline..."
-    www_tutorials_record "$@"
+    www_tutorials_record ${record_args[@]+"${record_args[@]}"}
     www_tutorials_extract
     www_tutorials_scaffold_locales
-    www_tutorials_generate "$@"
+    www_tutorials_generate ${audio_args[@]+"${audio_args[@]}"} ${lang_args[@]+"${lang_args[@]}"}
+    www_tutorials_video ${video_args[@]+"${video_args[@]}"} ${lang_args[@]+"${lang_args[@]}"}
     www_tutorials_validate
     log_info "Tutorial pipeline complete!"
 }
@@ -1173,12 +1474,13 @@ DEVELOPMENT COMMANDS:
 WWW COMMANDS:
   www all [opts]                    Full pipeline for tutorials + team videos
 
-  www tutorials record [name]       Record .cast files (auto-provision, change-detected)
+  www tutorials record [name]       Record .cast files inside the bridge VM (auto-provision, change-detected; keeps local ~/.config/rediacc clean)
   www tutorials extract             Sync cast markers to transcripts (preserves text)
   www tutorials scaffold-locales    Sync locale transcripts with English
   www tutorials generate [opts]     Generate TTS audio + timelines (Python venv)
+  www tutorials video [name] [--lang <code>]  Compile .mp4 from cast+storyboard+timeline+audio
   www tutorials validate            Validate transcripts + audio integrity
-  www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate)
+  www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate -> video)
 
   www team-video extract [opts]     ASR: extract English transcripts from video audio
   www team-video scaffold-locales   Sync locale transcripts with English
@@ -1392,6 +1694,10 @@ main() {
                             shift
                             www_tutorials_generate "$@"
                             ;;
+                        video)
+                            shift
+                            www_tutorials_video "$@"
+                            ;;
                         validate) www_tutorials_validate ;;
                         all)
                             shift
@@ -1400,7 +1706,7 @@ main() {
                         *)
                             log_error "Unknown tutorials command: ${1:-}"
                             echo ""
-                            echo "Usage: ./run.sh www tutorials [record|extract|scaffold-locales|generate|validate|all]"
+                            echo "Usage: ./run.sh www tutorials [record|extract|scaffold-locales|generate|video|validate|all]"
                             exit 1
                             ;;
                     esac

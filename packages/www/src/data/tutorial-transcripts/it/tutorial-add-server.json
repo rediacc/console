@@ -6,32 +6,52 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.508633,
-      "text": "Iniziamo creando un profilo di configurazione. Il profilo contiene la chiave SSH, l'elenco delle macchine e le impostazioni dell'infrastruttura per tutto cio' che faremo da qui in avanti."
+      "at": 1.627146,
+      "text": "Iniziamo creando un profilo di configurazione. Il profilo contiene la chiave SSH, l'elenco delle macchine e le impostazioni dell'infrastruttura per tutto cio' che faremo da qui in avanti.",
+      "afterText": "Profilo creato. Tutto cio' che configuriamo da qui in poi vive in questo unico file.",
+      "cardLabel": "Aggiungi Macchina",
+      "prose": "Registra il server con un nome, un indirizzo IP e un utente SSH. Il nome è solo un alias locale (usiamo machine-11 per corrispondere all'IP, ma qualsiasi etichetta funziona, come prod-db o web-1). Non è necessario alcun passaggio di init; il file di config viene creato automaticamente al primo utilizzo, e rdc usa come fallback la tua chiave ~/.ssh standard."
     },
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 11.160728,
-      "text": "Ora registriamo il server dalla riga di comando, fornendo il nome, l'indirizzo IP e l'utente SSH. Le host key vengono scansionate automaticamente per un accesso sicuro."
+      "at": 7.928955,
+      "text": "Ora registriamo il server dalla riga di comando, fornendo il nome, l'indirizzo IP e l'utente SSH. Le host key vengono scansionate automaticamente per un accesso sicuro.",
+      "afterText": "Server registrato. Le host key sono state scansionate automaticamente.",
+      "cardLabel": "Configura Macchina",
+      "prose": "Esegui il provisioning del server. Questo installa renet e crea il datastore cifrato."
     },
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 23.457976,
-      "text": "Poi effettuiamo il provisioning del server. Questo installa renet e crea il datastore cifrato. Al termine, il server e' pronto ad ospitare repository."
-    },
-    {
-      "id": "tutorial-add-server-04",
-      "markerIndex": 3,
-      "at": 39.717449,
-      "text": "Verifichiamo cio' che lo strumento conosce della configurazione. Macchine, chiave SSH, infrastruttura -- tutto quello che abbiamo appena configurato compare qui."
-    },
-    {
-      "id": "tutorial-add-server-05",
-      "markerIndex": 4,
-      "at": 48.157549,
-      "text": "L'intera configurazione risiede in un unico file JSON sul tuo laptop. Copialo su un altro computer e potrai gestire gli stessi server da li'."
+      "at": 16.338306,
+      "text": "Poi effettuiamo il provisioning del server. Questo installa renet e crea il datastore cifrato. Al termine, il server e' pronto ad ospitare repository.",
+      "afterText": "Fatto. renet e' installato e il datastore e' pronto.",
+      "cardLabel": "Ispeziona Config",
+      "prose": "Ispeziona il file JSON che contiene tutto: macchine, chiave SSH e infrastruttura. Puoi mantenere più config, una per ambiente, e passare da una all'altra con il flag --config. Consulta la guida alle configurazioni multiple collegata qui sotto."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Bene! Aggiungiamo il tuo primo server. Bastano due comandi e circa un minuto."
+    },
+    {
+      "id": "two-tool-architecture",
+      "text": "I componenti sono due. Lo strumento da riga di comando vive sul tuo laptop, e un orchestratore chiamato renet gira sul server. La CLI si connette via SSH, quindi non devi mai collegarti al server manualmente."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "E con questo abbiamo finito con l'aggiunta di un server! Ci vediamo nel prossimo."
+    }
+  ],
+  "title": "Aggiungere il Primo Server",
+  "chapters": {
+    "intro": "Aggiungere il Primo Server",
+    "two-tool-architecture": "Come Rediacc si connette al tuo server",
+    "cast-step-0": "Passaggio 1: Registra il server",
+    "cast-step-1": "Passaggio 2: Provisioning di renet",
+    "cast-step-2": "Passaggio 3: Ispeziona il file di config",
+    "outro": "Avanti: Creare il Primo Repository"
+  }
 }

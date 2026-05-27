@@ -1,0 +1,58 @@
+---
+title: "インストール"
+description: "コマンド1つでラップトップに rdc CLI をインストールし、rdc doctor で動作確認します。"
+category: "Tutorials"
+subcategory: essentials
+order: 1
+language: ja
+sourceHash: "4cbfc9d1284b641a"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# インストール
+
+`rdc` のインストールは3ステップです。インストールページを開き、オペレーティングシステムを選択して、コマンドをターミナルに貼り付けるだけです。全体で1〜2分もあれば完了します。
+
+## チュートリアル動画
+
+![チュートリアル: インストール](/assets/tutorials/tutorial-installation.cast)
+
+## 3つのステップ
+
+![3ステップの概要](/img/tutorials/tutorial-installation/slide-1.svg)
+
+1. [インストールページ](/en/install) を開きます。
+2. お使いのオペレーティングシステムを選択します。
+3. インストールコマンドをコピーして、ターミナルに貼り付けます。
+
+## ステップ1: CLIをインストールする
+
+<TutorialStep number={1} />
+
+インストールページが適切なコマンドを自動生成します。Windows（PowerShell）の場合、同等のワンライナーは次のとおりです。
+
+```powershell
+iwr -useb https://www.rediacc.com/install.ps1 | iex
+```
+
+> `time` プレフィックスは、コマンドの実行時間を表示するシェルの機能です。このシリーズ全体で使用しており、各ステップの実際の速度を確認できます。省略しても問題ありません。
+
+## ステップ2: インストールを確認する
+
+<TutorialStep number={2} />
+
+`rdc doctor` は Node、SSH、その他の `rdc` の依存関係を順番にチェックし、不足しているものを報告します。
+
+## `rdc` がラップトップに置かれる理由
+
+![ラップトップの rdc、サーバーの renet](/img/tutorials/tutorial-installation/slide-2.svg)
+
+`rdc` はラップトップ上の CLI です。サーバーは `renet` という別のコンポーネントを実行しており、`rdc` が SSH 経由でプロビジョニングして操作します。サーバーに手動で SSH 接続する必要はありません。`rdc` がすべて行います。
+
+次の2つのチュートリアルで、この仕組みをきちんとセットアップします。
+
+---
+
+次: [SSH キーの設定](/en/docs/tutorial-ssh-keys)

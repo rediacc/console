@@ -19,6 +19,8 @@ import { seoTitleLength } from './seo-title-length.js';
 import { seoDescriptionLength } from './seo-description-length.js';
 import { seoNoDuplicateH1Title } from './seo-no-duplicate-h1-title.js';
 import { noPositionalCliSyntax } from './no-positional-cli-syntax.js';
+import { noUndefinedCliFlags } from './no-undefined-cli-flags.js';
+import { cliFlagConsistency } from './cli-flag-consistency.js';
 
 /**
  * Plugin for JSON locale file validation
@@ -39,6 +41,8 @@ export const i18nJsonPlugin = {
     'seo-description-length': seoDescriptionLength,
     'seo-no-duplicate-h1-title': seoNoDuplicateH1Title,
     'no-positional-cli-syntax': noPositionalCliSyntax,
+    'no-undefined-cli-flags': noUndefinedCliFlags,
+    'cli-flag-consistency': cliFlagConsistency,
   },
 };
 
@@ -67,6 +71,8 @@ export { seoTitleLength } from './seo-title-length.js';
 export { seoDescriptionLength } from './seo-description-length.js';
 export { seoNoDuplicateH1Title } from './seo-no-duplicate-h1-title.js';
 export { noPositionalCliSyntax } from './no-positional-cli-syntax.js';
+export { noUndefinedCliFlags } from './no-undefined-cli-flags.js';
+export { cliFlagConsistency } from './cli-flag-consistency.js';
 
 // Default export for ESLint plugin
 export default i18nJsonPlugin;

@@ -7,8 +7,8 @@
     .photo-mat { fill: #eef2e6; }
     .photo-river { fill: none; stroke: #6794c4; stroke-width: 2; stroke-linecap: round; }
     .clip { fill: #1a1a1a; }
-    .label { fill: #1a1a1a; font: 600 20px Inter, system-ui, sans-serif; text-anchor: middle; }
-    .closer { fill: #556b2f; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .label { fill: #1a1a1a; font-weight: 600; font-size: 20px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .closer { fill: #556b2f; font-weight: 600; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
   </style>
   <rect class="bg" width="960" height="540"/>
 

@@ -1,0 +1,56 @@
+---
+title: "Monitoring"
+description: "Check the health of your servers and repos from your laptop with rdc machine commands."
+category: "Tutorials"
+subcategory: advanced
+order: 12
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Monitoring
+
+Your app is deployed, live, and backed up. Now make sure everything stays healthy. `rdc` gives you a full picture of any server (health, containers, repos) from your laptop.
+
+## Watch the tutorial
+
+![Tutorial: Monitoring](/assets/tutorials/tutorial-monitoring.cast)
+
+## Three things you can check
+
+![Health, containers, repos](/img/tutorials/tutorial-monitoring/slide-1.svg)
+
+## Health: system info
+
+<TutorialStep number={1} />
+
+This shows system uptime, disk usage, and storage status. If something is wrong, it tells you.
+
+## Containers
+
+<TutorialStep number={2} />
+
+You get name, status, health, CPU, and memory for each container, plus which repo owns it.
+
+## Repos
+
+<TutorialStep number={3} />
+
+This shows every repo with its size, mount status, Docker status, and disk usage.
+
+## Everything in one shot
+
+<TutorialStep number={4} />
+
+System info, repos, containers, all in one command. The same `query` command with no filters returns the full picture; with `--system`, `--containers`, `--repositories`, `--services`, `--network`, or `--block-devices` it narrows to just that section.
+
+## Local sanity check
+
+`rdc doctor` checks your local setup (Node, SSH key, `renet`, Docker), independent of any specific server:
+
+<TutorialStep number={5} />
+
+## You're done
+
+That's the full series. You can now install, configure, deploy, fork, go live, autostart, back up, and monitor. All from your terminal, all on your own servers.

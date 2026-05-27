@@ -4,7 +4,8 @@ description: "Cómo la arquitectura autoalojada de Rediacc aborda los requisitos
 category: "Legal"
 order: 0
 language: es
-sourceHash: "e54bb73d5b2f5fd4"
+sourceHash: "e20385eb9adfe180"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Rediacc se ejecuta completamente en tu infraestructura. Durante las operaciones de clonación de entornos, respaldo y despliegue, los datos nunca salen de tu máquina. Tú sigues siendo tanto el controlador como el procesador de datos. Ningún SaaS de terceros maneja tus datos.
@@ -15,7 +16,7 @@ Esta sección mapea las capacidades técnicas de Rediacc a los requisitos de los
 
 | Marco | Alcance | Capacidades clave de Rediacc |
 |-------|---------|------------------------------|
-| [GDPR](/es/docs/legal-gdpr) | Protección de datos y privacidad de la UE | Clonación CoW en la misma máquina, cifrado LUKS2, almacén de configuración de conocimiento cero, registro de auditoría, derecho al olvido vía `rdc repo destroy` |
+| [GDPR](/es/docs/legal-gdpr) | Protección de datos y privacidad de la UE | Clonación CoW en la misma máquina, cifrado LUKS2, almacén de configuración de conocimiento cero, registro de auditoría, derecho al olvido vía `rdc repo delete` |
 | [SOC 2](/es/docs/legal-soc2) | Criterios de servicio de confianza para organizaciones de servicios | Cifrado en reposo, sincronización de configuración de conocimiento cero, aislamiento de red, registro de auditoría, respaldo y recuperación |
 | [HIPAA](/es/docs/legal-hipaa) | Protección de información de salud en EE.UU. | Cifrado LUKS2, almacén de configuración de conocimiento cero, acceso solo por SSH, Docker daemons aislados, seguridad de transmisión |
 | [CCPA](/es/docs/legal-ccpa) | Derechos de privacidad del consumidor de California | Autoalojado (sin venta/compartición de datos), cifrado de conocimiento cero, eliminación cifrada, inventario de datos por repositorio |
@@ -32,7 +33,7 @@ Cada marco de cumplimiento en esta sección se remite a las mismas propiedades t
 - **Aislamiento de red**: Cada repositorio obtiene su propio Docker daemon, subred de IP loopback (/26) y reglas de iptables. Los contenedores de diferentes repositorios no pueden comunicarse entre sí.
 - **Clonación copy-on-write**: `rdc repo fork` utiliza reflinks del sistema de archivos (`cp --reflink=always`). Los datos se duplican en la misma máquina sin ninguna transferencia de red.
 - **Registro de auditoría**: Más de 40 tipos de eventos que cubren autenticación (inicio de sesión, 2FA, cambios de contraseña, revocación de sesiones), ciclo de vida de tokens API, operaciones del almacén de configuración y actividad de suscripción/licencias. Accesible a través del panel de administración y `rdc audit` CLI. Las operaciones a nivel de máquina (fork, respaldo, despliegue) se realizan en la propia máquina vía SSH y registros del sistema.
-- **Respaldo cifrado**: `rdc repo backup push/pull` transfiere datos por SSH. El destino de respaldo recibe volúmenes cifrados con LUKS.
+- **Respaldo cifrado**: `rdc repo push/pull` transfiere datos por SSH. El destino de respaldo recibe volúmenes cifrados con LUKS.
 - **Almacén de configuración de conocimiento cero**: Sincronización opcional de configuración cifrada entre dispositivos. Las configuraciones se cifran del lado del cliente con AES-256-GCM antes de subirse. El servidor solo almacena blobs opacos. El servidor no puede leer claves SSH, credenciales, direcciones IP ni datos de configuración en texto plano. La derivación de claves usa passkey PRF extension + HKDF con separación de dominio. El acceso de miembros se gestiona mediante intercambio de claves X25519, y la revocación es inmediata.
 
 Para detalles sobre estas capacidades, consulta [Arquitectura](/es/docs/architecture), [Repositorios](/es/docs/repositories), [Almacenamiento de configuración](/es/docs/config-storage) y [Seguridad de cuenta](/es/docs/account-security).

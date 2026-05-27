@@ -26,10 +26,6 @@
         "fetching": "エンティティ履歴を取得中です...",
         "success": "履歴が取得されました"
       },
-      "list": {
-        "description": "監査ログエントリをリスト表示する",
-        "fetching": "監査ログを取得中です..."
-      },
       "log": {
         "description": "監査ログを表示する",
         "fetching": "監査ログを取得中です...",
@@ -490,6 +486,8 @@
         "add": {
           "description": "現在の設定にマシンを追加",
           "descriptionShort": "現在の設定にマシンを追加する",
+          "sshConfigFailed": "SSH エイリアスの書き込みに失敗しました（非致命的）: {{error}}",
+          "sshConfigWritten": "SSH エイリアス rediacc--{{name}} を ~/.ssh/config_rediacc に書き込みました",
           "success": "マシン \"{{name}}\" を追加しました ({{user}}@{{ip}})"
         },
         "description": "現在の設定のマシンを管理する",
@@ -499,6 +497,7 @@
         },
         "remove": {
           "description": "現在の設定からマシンを削除する",
+          "sshConfigCleared": "SSH エイリアス rediacc--{{name}} を削除しました",
           "success": "マシン \"{{name}}\" を削除しました"
         },
         "scanKeys": {
@@ -652,14 +651,6 @@
         "description": "デフォルト値を設定する (team、region、bridge)",
         "success": "\"{{key}}\" を \"{{value}}\" に設定しました"
       },
-      "setRenet": {
-        "description": "ローカルモード用の renet バイナリのパスを設定する",
-        "success": "renet のパスを設定しました: {{path}}"
-      },
-      "setSsh": {
-        "description": "現在の設定の SSH 設定を更新する",
-        "success": "SSH 設定が更新されました"
-      },
       "show": {
         "description": "現在の設定の詳細を表示する",
         "noConfig": "アクティブな設定がありません。次のコマンドで作成してください: rdc config init",
@@ -733,6 +724,11 @@
         "starting": "\"{{machine}}\"でデータストアを初期化中..."
       },
       "machineOption": "マシン名（Cephデータストアがホストされている場所）",
+      "resize": {
+        "description": "マシンのデータストアプールをオフラインでリサイズします（拡張または縮小）。先にすべてのリポジトリをアンマウントしてください。",
+        "sizeOption": "新しいデータストアサイズ（例: 100G, 95%）",
+        "starting": "\"{{machine}}\" 上のデータストアを {{size}} にリサイズ中..."
+      },
       "status": {
         "description": "データストアのバックエンド、サイズ、使用量、マウント状態、cow_mode（フォーク時）を表示",
         "starting": "\"{{machine}}\"でデータストアの状態を確認中..."
@@ -927,8 +923,10 @@
         "datastoreCompleted": "データストアの整理が完了しました",
         "datastoreFailed": "データストアの整理に失敗しました",
         "datastoreOnlyOption": "孤立したデータストアリソースのみを整理する",
+        "datastorePrunedSummary": "{{count}} 個の孤立したデータストアリソースを削除しました",
         "description": "孤立したデータストアリソースと古いスナップショットをマシンから削除する",
         "descriptionShort": "孤立したリソースと古いスナップショットを整理する",
+        "dryRunHint": "{{count}} 個のリソースが削除されます。削除するには --dry-run なしで再実行してください。",
         "dryRunOption": "変更を加えずに削除される内容を表示する",
         "forceDeleteMountedOption": "マウント安全プリフライトを上書きし、現在マウントされているか実行中の Docker コンテナがあってもリポジトリを削除します。--force（アーカイブ猶予期間のみを上書き）とは異なります。--orphaned-repos と --prune-unknown の両方に適用されます。",
         "noReposFound": "マシン上にリポジトリが見つかりません",
@@ -937,6 +935,7 @@
         "orphanedReposCompleted": "{{count}} 件の孤立したリポジトリを削除しました",
         "orphanedReposOption": "どの設定にも存在しないリポジトリイメージも削除する",
         "orphanedReposStarting": "{{machine}} 上の孤立したリポジトリをスキャン中...",
+        "previewEmpty": "孤立したデータストアリソースは見つかりませんでした",
         "pruneUnknownOption": "renet .interim/state ミラーが分類できないリポジトリのみを削除します（ローカル設定になく、かつフォークマークされたミラーがない）。--orphaned-repos より厳密に狭い：ミラーがそれらを識別する場合、設定なしのフォークは保持されます。プレミラーレガシー孤児と設定エントリが削除された古い grands は両方ともこのバケットに入ります。",
         "snapshotDeleted": "{{name}} を削除しました",
         "snapshotDeleting": "{{name}} を削除中...",
@@ -958,7 +957,9 @@
         "fetching": "{{machine}} からステータスを取得中...",
         "infrastructure": "インフラストラクチャ",
         "noData": "ステータスデータがありません",
+        "storageHealthFragmentationNote": "断片化は各リポジトリのコピーオンライト・イメージのエクステント数を数えるものであり、その中のファイルではありません。高い値はランダム書き込みのワークロード（データベース、コンテナレイヤー）では想定内であり、参考情報にすぎません。デフラグはここでは意図的に未対応です。reflink で共有されたフォークやバックアップスナップショットの共有を解除し、データストアの使用量を膨張させてしまうためです。",
         "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます",
+        "storageHealthSummary": "ストレージ効率: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} 個のコンテナがドリフトしきい値を超えました。ゼロ以外で終了します",
         "syncCertsFailed": "証明書キャッシュの同期に失敗しました: {{error}}"
       },
@@ -1004,11 +1005,6 @@
         "timeoutMessage": "接続テストがタイムアウトしました。キューのトレースで詳細を確認してください。",
         "waiting": "SSH テスト結果を待機中です...",
         "waitingTime": "SSH テスト結果を待機中です... ({{seconds}}s)"
-      },
-      "update": {
-        "description": "マシン設定を更新する",
-        "success": "マシン \"{{name}}\" が更新されました",
-        "updating": "マシンを更新中です..."
       },
       "vault": {
         "description": "マシン Vault 管理 (クラウドアダプターのみ)"
@@ -1120,10 +1116,6 @@
         "notFound": "組織情報が見つかりません",
         "success": "組織情報が取得されました"
       },
-      "list": {
-        "description": "組織をリスト表示する",
-        "fetching": "組織を取得中です..."
-      },
       "maintenance": {
         "description": "メンテナンスモードを有効化または無効化する (管理者以外のログインをブロック)",
         "disabled": "メンテナンスモードが無効化されました",
@@ -1181,10 +1173,6 @@
           "fetching": "権限グループの詳細を取得中です...",
           "success": "詳細が取得されました"
         }
-      },
-      "list": {
-        "description": "権限をリスト表示する",
-        "fetching": "権限を取得中です..."
       },
       "remove": {
         "description": "グループから権限を削除する",
@@ -1335,6 +1323,18 @@
       "batchIterating": "{{action}} {{current}}/{{total}}：「{{repo}}」...",
       "batchResult": "{{action}}完了: {{succeeded}}/{{total}} 成功",
       "batchStarting": "{{action}}：「{{repo}}」...",
+      "cat": {
+        "description": "リポジトリ内のファイルを範囲指定で読み取り、stdout に書き出します（サーバー側で範囲制限あり。診断情報は stderr に出力）",
+        "failed": "読み取りに失敗しました",
+        "forceBinaryOption": "バイナリ（NUL を含む）コンテンツの読み取りを許可する",
+        "headOption": "最初の N 行のみを出力する（バイト範囲との併用不可）",
+        "maxBytesOption": "読み取って出力する最大バイト数（デフォルト 1 MiB、上限 50 MiB）",
+        "offsetOption": "読み取りを開始するバイトオフセット",
+        "remoteFileOption": "リポジトリマウントルートからの相対パスで読み取るファイルパス",
+        "starting": "\"{{machine}}\" 上の \"{{repository}}\" から \"{{path}}\" を読み取り中...",
+        "statOption": "サイズ、種類、更新日時のみを出力する（コンテンツは読み取らない）",
+        "tailOption": "最後の N 行のみを出力する（バイト範囲との併用不可）"
+      },
       "certSync": {
         "updated": "{{machine}} から ACME 証明書キャッシュを更新しました ({{count}} 件)"
       },
@@ -1353,6 +1353,7 @@
         "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
         "archiveHint": "リカバリ用に認証情報をアーカイブするには: --archive-config を付けて再実行",
         "archiveOption": "設定エントリを deletedRepositories に移動して後から復元可能にする",
+        "cloudBackupHint": "クラウドバックアップ（存在する場合）は削除後も残ります。孤立したクラウドバックアップを削除するには: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "リポジトリを削除しました",
         "configRetained": "\"{{repository}}\" の設定エントリを保持 (リポジトリは他のマシンに存在する可能性があります)。削除するには: rdc config repository remove --name {{repository}}",
         "description": "リポジトリを削除する（コンテナ、ボリューム、暗号化イメージを破棄）。設定エントリは保持されます。--archive-config を使用して資格情報を deletedRepositories に移動し、'config restore-archived' で復元できます",
@@ -1387,7 +1388,7 @@
       "fork": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
         "checkpointOption": "fork 前にソースで CRIU checkpoint を作成する（fork 先での復元用にプロセスメモリ状態を取得）",
-        "completed": "Forkが作成されました。ローカルでデプロイ: repo up {{repository}} -m {{machine}} --mount。別のマシンにforkを移行: repo push {{repository}} -m {{machine}} --to <target> --up",
+        "completed": "Forkが作成されました。ローカルでデプロイ: repo up {{repository}} -m {{machine}}。別のマシンにforkを移行: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "リポジトリのCoW（コピーオンライト）フォークを作成する",
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
         "failed": "フォークの作成に失敗しました",
@@ -1402,6 +1403,7 @@
         "completed": "リスト表示が完了しました",
         "description": "マシン上のリポジトリをリスト表示する",
         "failed": "一覧取得に失敗しました: {{error}}",
+        "serverNameLegend": "* 名前はマシンから取得（ローカル設定にはありません）",
         "starting": "\"{{machine}}\" のリポジトリをリスト表示中..."
       },
       "machineOption": "対象マシン名",
@@ -1524,25 +1526,6 @@
         },
         "valueOption": "シークレット値。`-` を渡して stdin から読み取ります（シェル履歴への露出を回避）。"
       },
-      "snapshot": {
-        "create": {
-          "creating": "{{machine}} で \"{{repo}}\" のスナップショットを作成中...",
-          "description": "リポジトリのBTRFSスナップショットを作成する",
-          "descriptionShort": "リポジトリの BTRFS スナップショットを作成する",
-          "optionSnapshotName": "明示的なスナップショット名（空の場合は自動生成）",
-          "success": "スナップショットを作成しました: {{name}}（{{path}}）"
-        },
-        "delete": {
-          "description": "リモートマシンからスナップショットを削除する",
-          "success": "スナップショットを削除しました: {{name}}"
-        },
-        "description": "リモートマシン上のBTRFSスナップショットを管理する",
-        "list": {
-          "description": "リモートマシン上のスナップショットを一覧表示する",
-          "header": "{{path}} 内に {{count}} 個のスナップショット:",
-          "noSnapshots": "スナップショットが見つかりませんでした。"
-        }
-      },
       "status": {
         "completed": "ステータスを取得しました",
         "description": "リポジトリのステータスを取得する",
@@ -1554,19 +1537,6 @@
         "download": {
           "description": "リポジトリからファイルをダウンロード",
           "descriptionShort": "rsync 経由でリポジトリからファイルをダウンロードする"
-        },
-        "pull": {
-          "description": "クラウドストレージからリポジトリをプルする（名前を省略するとすべてプル）",
-          "optionFrom": "ソースストレージ名",
-          "optionOverride": "プル時に既存の未マウントリポジトリを上書きする",
-          "optionRepo": "特定のリポジトリにフィルターする（繰り返し指定可）",
-          "success": "同期プルが完了しました"
-        },
-        "push": {
-          "description": "クラウドストレージにリポジトリをプッシュする（名前を省略するとすべてプッシュ）",
-          "optionRepo": "特定のリポジトリにフィルターする（繰り返し指定可）",
-          "optionTo": "宛先ストレージ名",
-          "success": "同期プッシュが完了しました"
         },
         "status": {
           "description": "同期ステータスを確認しローカル/リモートファイルを比較",
@@ -1650,7 +1620,6 @@
       "upAll": {
         "completed": "すべてのリポジトリが開始されました",
         "concurrencyOption": "最大同時リポジトリ数 (デフォルト: 3)",
-        "description": "マシン上のすべてのリポジトリをデプロイする",
         "dryRunOption": "実行せずに行われる内容を表示する",
         "failed": "全体開始操作に失敗しました",
         "includeForksOption": "フォークされたリポジトリもマウント/開始する",
@@ -1770,15 +1739,6 @@
         "listing": "\"{{storage}}\" のバックアップをリスト表示中...",
         "machineOption": "実行マシン、rclone のリスト/削除呼び出しをストレージに対して実行します。クライアントはローカルに rclone がインストールされていることが期待されないため必須です；ストレージの認証情報は引き続きローカル設定から取得されます。",
         "noBackups": "ストレージにバックアップが見つかりません"
-      },
-      "pull": {
-        "completed": "{{duration}}ms でプルが完了しました",
-        "description": "クラウドストレージからマシンにバックアップをプルする",
-        "failed": "プルに失敗しました: {{error}}",
-        "machineOption": "対象マシン名",
-        "noCredential": "警告: リポジトリ \"{{name}}\" に認証情報が設定されていません。バックアップが暗号化されている場合、プルが失敗する可能性があります。",
-        "repositoryOption": "プルするリポジトリ名",
-        "starting": "\"{{repository}}\" を \"{{storage}}\" から \"{{machine}}\" にプル中..."
       },
       "rename": {
         "description": "ストレージプロバイダーの名前を変更"
@@ -2251,7 +2211,7 @@
           "afterDescription": "healthコマンドはシステムメトリクス、コンテナステータス、サービス安定性、ストレージ情報を出力します — CI/CDパイプラインチェックに便利です。"
         },
         "testConnection": {
-          "tip": "テスト成功後にホストキーをマシンvaultに自動的に永続化するには、`--save-known-hosts`を使用してください。"
+          "tip": "テスト成功後にホストキーをマシンvaultに自動的に永続化するには、`--save`を使用してください。"
         }
       },
       "organization": {
@@ -2292,7 +2252,7 @@
       "createGuardOverrideNonLinux": "新しいgrandリポジトリ \"{{name}}\" を作成できません。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\n代わりに、既存のリポジトリからforkを作成してください:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
       "fieldReveal": "機密フィールド {{pointer}} の --reveal はエージェント環境ではブロックされます。エージェントは --digest を使用してください。対話型端末の実ユーザーは --reveal を使えます。",
       "forkBlocked": "コマンド \"{{command}}\" はforkリポジトリでは使用できません。\n\nforkリポジトリは一時的なサンドボックス環境です。この操作はgrand（本番）リポジトリにのみ適用されます。ユーザーにこのコマンドを直接実行するよう依頼してください。",
-      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up --name {{name}}:<tag-name> -m <machine> --mount）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
+      "grandGuard": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントはgrandリポジトリを直接変更できません。\n\ngrandリポジトリには本番データが含まれています。代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する（例: rdc repo up --name {{name}}:<tag-name> -m <machine>）\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nユーザーへ: 直接アクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
       "grandGuardOverride": "\"{{name}}\" はgrand（本番）リポジトリです。エージェントによるオーバーライドは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください — エージェント開始前にユーザーのみがこれを承認できます。\n\n代わりにforkを使用してください — forkは安全で分離されたサンドボックスコピーです:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます",
       "grandGuardOverrideNonLinux": "\"{{name}}\" はgrand（本番）リポジトリです。REDIACC_ALLOW_GRAND_REPO オーバーライドは {{platform}} ではサポートされていません。\n\nこのオーバーライドは Linux でのみ機能します。Windows および macOS では、エージェントはfork優先ワークフローを使用する必要があります。\n\nワークフロー:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. fork上で操作する\n  3. 完了したら、ユーザーは rdc repo takeover でforkを昇格できます\n\nオーバーライドを使用するには、Linux でエージェントを実行してください（直接、WSL、Docker、またはVM）。",
       "machineGuard": "エージェントモードでは \"{{machine}}\" への直接マシンアクセスは許可されていません。\n\nエージェントはサンドボックスアクセスのためにリポジトリコンテキストを通じて接続する必要があります。まずリポジトリのforkを作成し、fork に接続してください。\n\nワークフロー:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nユーザーへ: 直接マシンアクセスを許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO=*（または特定のリポジトリ名）を設定してください。",
@@ -2344,6 +2304,12 @@
     "invalidPort": "無効なポート番号: \"{{port}}\"。1 から 65535 の間である必要があります。",
     "invalidPriorityMax": "無効な priority-max 値です。1 から 5 の間である必要があります。",
     "invalidPriorityMin": "無効な priority-min 値です。1 から 5 の間である必要があります。",
+    "license": {
+      "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
+      "recoveryFailedNoKnownRepos": "{{machine}} でリポジトリが見つかりましたが、ローカル設定で追跡されているものはありません。まず `rdc config repository list`, で追跡中のリポジトリを確認してから再試行してください。",
+      "recoveryFailedServerRejected": "アカウントサーバーがリポジトリのライセンス発行を拒否しました。最初のエラー: {{error}}。詳細は次を実行してください: rdc subscription refresh repo --name <repo> -m {{machine}}",
+      "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。"
+    },
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
     "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
     "machineRequiredLocal": "マシン名が必要です。--machine <name> を使用してください",
@@ -2461,7 +2427,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成してください\n    • Grand (非フォーク) リポジトリはエージェントに対して読み取り専用です\n    • ワークフロー: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成してください\n    • Grand (非フォーク) リポジトリはエージェントに対して読み取り専用です\n    • ワークフロー: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "マシンの状態を表示",
       "repoUp": "リポジトリサービスをデプロイ",

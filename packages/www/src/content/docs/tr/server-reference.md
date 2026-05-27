@@ -4,8 +4,8 @@ description: "Dizin yapısı, renet komutları, systemd servisleri ve uzak sunuc
 category: "Concepts"
 order: 3
 language: tr
-sourceHash: "ce8786bdc5c1543f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Sunucu Referansı
@@ -115,6 +115,31 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 
 `sandbox-exec`, Landlock LSM dosya sistemi kısıtlamalarını uygular ve ardından belirtilen komutu çalıştırır. Tüm depo düzeyindeki bağlantılar için `sandbox-gateway` (SSH ForceCommand işleyicisi) tarafından otomatik olarak çağrılır.
 
+### Kullanıcı Başına Hub (geliştirme ortamları)
+
+Hub, her kullanıcıya geliştirme ortamları için kendi Docker daemon'ını verir; bu daemon, depo başına `FlavorRediacc` daemon'larından bağımsızdır.
+
+```bash
+# Kullanıcı başına Hub systemd birimlerini kur / kaldır
+sudo renet hub install
+sudo renet hub uninstall
+
+# Boşta kalan kullanıcı başına Hub daemon'larını temizle
+sudo renet hub gc
+```
+
+Daemon'lar, `--flavor` ile seçilen iki flavor'dan biri altında çalışır:
+
+```bash
+# Depo başına izole daemon (bridge=none, iptables=false) — varsayılan
+sudo renet daemon start-foreground --flavor=rediacc ...
+
+# Kullanıcı başına Hub daemon'u (bridge=docker0, iptables=true, live-restore=true)
+sudo renet daemon start-foreground --flavor=hub ...
+```
+
+`hub` flavor'ı, kullanıcı tarafından çalıştırılan konteynerlerin dışarıya bağlantısı olması için normal bridge ağını etkinleştirir; `rediacc` flavor'ı ise depolar arasında loopback yalıtımını zorunlu kılar. Hub denetim günlükleri `/var/log/rediacc/hub/<user>.log` konumuna yazılır.
+
 **Bayraklar:**
 - `--allow-rw`, `--allow-ro`, `--allow-exec`: Landlock yol kuralları
 - `--home-overlay`: Depo başına yazma yalıtımı için home dizininin üzerine OverlayFS bağlar
@@ -218,6 +243,8 @@ Tüm depolar arasında paylaşılan global servisler:
 |-------|------|
 | `rediacc-router.service` | Rota keşfi (port 7111) |
 | `rediacc-autostart.service` | Önyükleme zamanı depo bağlama |
+| `rediacc-autostart-reconcile.service` | Periyodik otomatik başlatma uzlaştırıcısı (aşağıdaki zamanlayıcı tarafından çalıştırılır) |
+| `rediacc-autostart-reconcile.timer` | Önyüklemeden sonra duran otomatik başlatma depolarını kurtarmak için yaklaşık her 3 dakikada bir `renet repository reconcile` komutunu çalıştırır |
 
 ## Yaygın İş Akışları
 

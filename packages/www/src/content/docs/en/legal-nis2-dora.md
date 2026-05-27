@@ -20,7 +20,7 @@ Full text: [Directive (EU) 2022/2555](https://eur-lex.europa.eu/eli/dir/2022/255
 |-----------------|-------------------|
 | Risk management measures (Art. 21) | LUKS2 encryption at rest, network isolation per repository, SSH-only access, audit logging (70+ event types including machine operations) |
 | Incident handling (Art. 21(2)(b)) | 70+ event types (auth, tokens, config, licensing, machine operations) provide forensic trail. Per-repository isolation limits blast radius. |
-| Business continuity (Art. 21(2)(c)) | `rdc repo backup push/pull` with multi-destination encrypted backup. CoW snapshots for instant rollback. |
+| Business continuity (Art. 21(2)(c)) | `rdc repo push/pull` with multi-destination encrypted backup. CoW snapshots for instant rollback. |
 | Supply chain security (Art. 21(2)(d)) | Self-hosted eliminates SaaS supply chain risk. No third-party cloud provider processes your data. |
 | Network security (Art. 21(2)(e)) | Per-repository Docker daemons, iptables rules, loopback IP isolation (/26 subnets). |
 | Encryption (Art. 21(2)(h)) | LUKS2 AES-256 mandatory encryption. Zero-knowledge config store with AES-256-GCM. |
@@ -48,7 +48,7 @@ Full text: [Regulation (EU) 2022/2554](https://eur-lex.europa.eu/eli/reg/2022/25
 | ICT risk management framework (Art. 6) | Encryption, isolation, audit logging, and backup form the technical controls layer. |
 | Protection and prevention (Art. 9) | LUKS2 AES-256 encryption at rest. Network isolation prevents lateral movement. SSH-only access. |
 | Detection (Art. 10) | 70+ event types including machine operations (repo lifecycle, backup, sync, terminal). Admin dashboard and portal with per-user, per-team filtering. Machine operations also in system logs for defense in depth. |
-| Response and recovery (Art. 11) | CoW snapshots for instant rollback. `rdc repo backup push/pull` for multi-destination recovery. Fork-based disaster recovery testing. |
+| Response and recovery (Art. 11) | CoW snapshots for instant rollback. `rdc repo push/pull` for multi-destination recovery. Fork-based disaster recovery testing. |
 | ICT third-party risk (Art. 28-30) | Self-hosted eliminates the "critical ICT third-party provider" classification entirely. |
 | Digital operational resilience testing (Art. 24-27) | CoW cloning enables threat-led penetration testing on production-like environments without data exposure. Clone, test, destroy. |
 

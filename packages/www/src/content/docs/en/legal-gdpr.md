@@ -17,7 +17,7 @@ The table below maps specific GDPR articles to Rediacc's technical capabilities.
 | Article | Requirement | Rediacc Capability |
 |---------|-------------|-------------------|
 | [Art. 5](https://gdpr-info.eu/art-5-gdpr/), Principles | Data minimization, integrity, confidentiality | CoW clones (`cp --reflink=always`) duplicate data on the same machine without network transfer. LUKS2 AES-256 encrypts all data at rest. |
-| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Right to erasure | Delete personal data on request | `rdc repo destroy` cryptographically erases the LUKS volume. Deleting a fork removes the cloned copy entirely. |
+| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Right to erasure | Delete personal data on request | `rdc repo delete` cryptographically erases the LUKS volume. Deleting a fork removes the cloned copy entirely. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Data protection by design | Privacy by default | Encryption is mandatory, not optional. Each repository gets an isolated Docker daemon and network. No data sharing between repositories. The config store uses zero-knowledge encryption: configs are encrypted client-side with AES-256-GCM before upload, so the server cannot read any plaintext data. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Processor | Third-party data processing obligations | Self-hosted: Rediacc runs on your infrastructure. No data leaves your machine during fork, clone, or backup operations. No SaaS component processes personal data. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Records of processing | Maintain processing activity records | Audit logging tracks 70+ event types: authentication, API tokens, config store operations, licensing, and CLI machine operations (repo lifecycle, backup, sync, terminal). Export via admin dashboard, portal activity page, or `rdc audit` CLI. |
@@ -28,7 +28,7 @@ The table below maps specific GDPR articles to Rediacc's technical capabilities.
 
 CoW clones never leave the source machine. The `rdc repo fork` command creates a filesystem-level copy using reflinks. No data is transferred over the network.
 
-For cross-machine operations, `rdc repo backup push/pull` transfers data over SSH. The backup destination receives LUKS-encrypted volumes that cannot be read without the operator's credentials.
+For cross-machine operations, `rdc repo push/pull` transfers data over SSH. The backup destination receives LUKS-encrypted volumes that cannot be read without the operator's credentials.
 
 ## Environment Cloning and Data Masking
 

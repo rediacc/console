@@ -6,38 +6,86 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 27.859436,
-      "text": "Deuxième étape. Nous saisissons l'IP publique, le domaine de base, l'adresse email pour le certificat et le token API Cloudflare depuis la ligne de commande. L'email de certificat et le token sont partagés entre toutes vos machines, donc vous ne les définissez qu'une seule fois."
+      "at": 2.424705,
+      "text": "Deuxième étape. Nous saisissons l'IP publique, le domaine de base, l'adresse email pour le certificat et le token API Cloudflare depuis la ligne de commande. L'email de certificat et le token sont partagés entre toutes vos machines, donc vous ne les définissez qu'une seule fois.",
+      "afterText": "Infrastructure enregistrée dans votre config.",
+      "cardLabel": "Configurer l'infra",
+      "prose": "Définissez l'IP publique, le domaine de base, l'adresse e-mail pour le certificat et le token API Cloudflare depuis la ligne de commande. L'adresse e-mail du certificat et le token sont partagés entre toutes vos machines, donc vous les configurez une seule fois."
     },
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 41.958746,
-      "text": "Confirmons que les paramètres d'infrastructure ont bien été enregistrés. IP publique, domaine de base, adresse email pour le certificat, tout est visible dans la configuration."
+      "at": 13.591473,
+      "text": "Confirmons que les paramètres d'infrastructure ont bien été enregistrés. IP publique, domaine de base, adresse email pour le certificat, tout est visible dans la configuration.",
+      "afterText": "Paramètres enregistrés. Prêt à pousser vers le serveur.",
+      "cardLabel": "Afficher l'infra",
+      "prose": "Confirmez que les paramètres d'infrastructure ont bien été enregistrés. L'IP publique, le domaine de base et l'adresse e-mail du certificat doivent tous être visibles."
     },
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 51.564603,
-      "text": "Troisième étape. Nous poussons la configuration vers le serveur. Cela crée automatiquement les enregistrements DNS sur Cloudflare et prépare la configuration du proxy sur la machine."
+      "at": 18.479059,
+      "text": "Troisième étape. Nous poussons la configuration vers le serveur. Cela crée automatiquement les enregistrements DNS sur Cloudflare et prépare la configuration du proxy sur la machine.",
+      "afterText": "Poussé. Les enregistrements DNS sont en train d'être créés sur Cloudflare.",
+      "cardLabel": "Pousser l'infra",
+      "prose": "Poussez la configuration vers le serveur. Cela crée les enregistrements DNS sur Cloudflare automatiquement et prépare la configuration du proxy."
     },
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 70.626849,
-      "text": "La quatrième étape commence. Nous créons un petit dépôt nommé infra. C'est là que le proxy va résider, isolé des dépôts d'application."
+      "at": 25.757057,
+      "text": "La quatrième étape commence. Nous créons un petit dépôt nommé infra. C'est là que le proxy va résider, isolé des dépôts d'application.",
+      "afterText": "Repo infra créé. Isolé de vos repos d'application.",
+      "cardLabel": "Créer un repo",
+      "prose": "Créez un petit repo nommé infra. C'est là que vivra le proxy, isolé des repos d'application."
     },
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 97.243945,
-      "text": "Nous appliquons le modèle proxy intégré. Il contient Traefik ainsi que la configuration pour Let's Encrypt et les challenges DNS-01 de Cloudflare, prêt à l'emploi."
+      "at": 33.957312,
+      "text": "Nous appliquons le modèle proxy intégré. Il contient Traefik ainsi que la configuration pour Let's Encrypt et les challenges DNS-01 de Cloudflare, prêt à l'emploi.",
+      "afterText": "Configuration Traefik en place.",
+      "cardLabel": "Appliquer le modèle"
     },
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 112.494613,
-      "text": "Et nous démarrons le proxy. Traefik découvre vos conteneurs toutes les cinq secondes. Les certificats TLS proviennent de Let's Encrypt automatiquement. Votre application est maintenant accessible sur internet via HTTPS."
+      "at": 41.036573,
+      "text": "Et nous démarrons le proxy. Traefik découvre vos conteneurs toutes les cinq secondes. Les certificats TLS proviennent de Let's Encrypt automatiquement. Votre application est maintenant accessible sur internet via HTTPS.",
+      "afterText": "Proxy en ligne. Les certificats TLS arriveront automatiquement.",
+      "cardLabel": "Déployer le proxy",
+      "prose": "Démarrez le proxy. Traefik découvre vos containers automatiquement, et les certificats TLS proviennent de Let's Encrypt automatiquement. Votre application est maintenant accessible sur internet via HTTPS."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Très bien ! Donnons à votre application un vrai domaine avec TLS automatique. Quatre courtes étapes et vous êtes sur internet."
+    },
+    {
+      "id": "four-steps",
+      "text": "Voici le chemin. Récupérer un token API Cloudflare, configurer l'infrastructure dans la CLI, la pousser sur le serveur, puis déployer un proxy Traefik qui gère DNS et certificats à votre place."
+    },
+    {
+      "id": "open-cloudflare",
+      "text": "D'abord, ouvrez le tableau de bord Cloudflare dans votre navigateur. Allez dans Mon Profil, puis Tokens API, et créez un token avec la permission Zone DNS Edit pour que la CLI puisse gérer vos enregistrements."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Et voilà le réseau réglé ! On se retrouve dans la prochaine vidéo."
+    }
+  ],
+  "title": "Réseau et domaines",
+  "chapters": {
+    "intro": "Réseau et domaines",
+    "four-steps": "Le chemin en quatre étapes",
+    "open-cloudflare": "Étape 1 : Token API Cloudflare",
+    "cast-step-0": "Étape 2 : Configurer l'infrastructure",
+    "cast-step-1": "Étape 2 : Vérifier les paramètres",
+    "cast-step-2": "Étape 3 : Pousser vers le serveur",
+    "cast-step-3": "Étape 4 : Créer le repo infra",
+    "cast-step-4": "Étape 4 : Appliquer le modèle de proxy",
+    "cast-step-5": "Étape 4 : Démarrer le proxy",
+    "outro": "Suivant : Mode production"
+  }
 }

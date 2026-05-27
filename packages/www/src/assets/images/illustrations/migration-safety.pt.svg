@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="Durante uma migração de servidor o cadeado se abre e arquivos caem onde uma mão pode pegá-los." font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif">
+  <title>Durante uma migração de servidor o cadeado se abre e arquivos caem onde uma mão pode pegá-los.</title>
+
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5" />
+
+  
+  <rect x="45" y="200" width="115" height="160" rx="8" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="62" y1="240" x2="143" y2="240" stroke="#f5f5f5" stroke-width="2.5" />
+  <line x1="62" y1="275" x2="143" y2="275" stroke="#f5f5f5" stroke-width="2.5" />
+
+  
+  <rect x="640" y="200" width="115" height="160" rx="8" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="2.5" />
+  <line x1="657" y1="240" x2="738" y2="240" stroke="#f5f5f5" stroke-width="2.5" />
+  <line x1="657" y1="275" x2="738" y2="275" stroke="#f5f5f5" stroke-width="2.5" />
+
+  
+  <polygon points="160,272 560,272 560,254 624,290 560,326 560,308 160,308" fill="#2d2d2d" />
+
+  
+  <g stroke="#1a1a1a" stroke-width="2.5">
+    <g transform="rotate(-16 365 330)">
+      <rect x="338" y="300" width="54" height="66" rx="4" fill="#8b0000" />
+      <line x1="348" y1="316" x2="382" y2="316" stroke="#f5f5f5" stroke-width="2.5" />
+      <line x1="348" y1="332" x2="382" y2="332" stroke="#f5f5f5" stroke-width="2.5" />
+      <line x1="348" y1="348" x2="372" y2="348" stroke="#f5f5f5" stroke-width="2.5" />
+    </g>
+    <g transform="rotate(10 445 332)">
+      <rect x="418" y="302" width="54" height="66" rx="4" fill="#8b0000" />
+      <line x1="428" y1="318" x2="462" y2="318" stroke="#f5f5f5" stroke-width="2.5" />
+      <line x1="428" y1="334" x2="462" y2="334" stroke="#f5f5f5" stroke-width="2.5" />
+      <line x1="428" y1="350" x2="452" y2="350" stroke="#f5f5f5" stroke-width="2.5" />
+    </g>
+  </g>
+
+  
+  
+  <path d="M372,205 L372,168" fill="none" stroke="#8b0000" stroke-width="13" stroke-linecap="round" />
+  
+  <path d="M398,150 q28,-30 52,-2 l0,34" fill="none" stroke="#8b0000" stroke-width="13" stroke-linecap="round" />
+  
+  <rect x="358" y="200" width="84" height="72" rx="10" fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5" />
+  <circle cx="400" cy="230" r="9" fill="#f5f5f5" />
+  <rect x="396" y="234" width="8" height="20" fill="#f5f5f5" />
+
+  
+  <g fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round">
+    <path d="M560,70 L612,118 L584,150 L520,250 L470,235 Z" />
+  </g>
+  <g fill="none" stroke="#8b0000" stroke-width="14" stroke-linecap="round">
+    <path d="M512,230 q-30,30 -52,52" />
+    <path d="M498,248 q-26,34 -46,58" />
+    <path d="M488,262 q-22,36 -38,62" />
+    <path d="M540,232 q14,28 6,58" />
+  </g>
+
+  
+  <text x="40" y="48" text-anchor="start" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">Mover servidores</text>
+  <text x="400" y="118" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="30" font-weight="bold" fill="#8b0000">Cadeado se abre</text>
+  <text x="784" y="48" text-anchor="end" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="30" font-weight="bold" fill="#8b0000">Qualquer um pega</text>
+</svg>

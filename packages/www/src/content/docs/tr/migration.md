@@ -4,8 +4,8 @@ description: Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın.
 category: Guides
 order: 11
 language: tr
-sourceHash: c0ea82abb1d29de0
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "69ab61a2875f8d70"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Geçiş Rehberi
@@ -16,7 +16,7 @@ Mevcut bir projeyi, dosyalar, Docker servisleri, veritabanları, geleneksel bir 
 
 - `rdc` CLI kurulu ([Kurulum](/tr/docs/installation))
 - Bir makine eklenmiş ve hazırlanmış ([Kurulum](/tr/docs/setup))
-- Sunucuda projeniz için yeterli disk alanı (`rdc machine status` ile kontrol edin)
+- Sunucuda projeniz için yeterli disk alanı (`rdc machine query` ile kontrol edin)
 
 ## Adım 1: Depo Oluşturma
 
@@ -96,6 +96,8 @@ Varsayılan 7111 dışında bir UID ayarlamak için:
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **Dikkat:** `7111`, her yerde kullanılan evrensel Rediacc UID'sidir (devcontainer imajına yerleşik `rediacc` kullanıcısıyla eşleşir). Yalnızca belirli bir harici UID'e ait dosyalarla geriye dönük uyumluluk için `--uid` ile geçersiz kılın; bu **bir** geçiş hedefi **değildir**. Yeni depolar varsayılan değeri korumalıdır.
 
 ## Adım 4: Rediaccfile Kurulumu
 

@@ -4,6 +4,8 @@ description: "Mõista, kuidas account, rdc ja renet haldavad masina kohti, repos
 category: "Guides"
 order: 7
 language: et
+sourceHash: "8e0a4976634ae323"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Tellimus ja litsentsid
@@ -183,7 +185,7 @@ rdc subscription repo status -m hostinger
 Uuenda repositooriumilitsentse partiina masinas:
 
 ```bash
-rdc subscription refresh -m hostinger
+rdc subscription refresh repos -m hostinger
 ```
 
 Masinas avastatud, kuid kohalikust `rdc` konfiguratsioonist puuduvad repositooriumid lükatakse partiina uuendamise ajal tagasi. Need kuvatakse tõrgetena ega klassifitseerita automaatselt.

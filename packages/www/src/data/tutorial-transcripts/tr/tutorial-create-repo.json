@@ -6,14 +6,52 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 32.02867,
-      "text": "Sunucuda 2 gigabaytlık şifreli bir depo oluşturuyoruz. Depo, depolandığında tek bir şifreli dosyadır. Bağlandığında kendi Docker daemon'ı ve kendi uygulama verisiyle birlikte bir klasöre dönüşür; sunucudaki her şeyden tamamen izole edilmiş."
+      "at": 2.409686,
+      "text": "Sunucuda 2 gigabaytlık şifreli bir depo oluşturuyoruz. Depo, depolandığında tek bir şifreli dosyadır. Bağlandığında kendi Docker daemon'ı ve kendi uygulama verisiyle birlikte bir klasöre dönüşür; sunucudaki her şeyden tamamen izole edilmiş.",
+      "afterText": "Depo oluşturuldu. Şifreli dosya sunucuda, bağlanmaya hazır.",
+      "cardLabel": "Repo Oluştur",
+      "prose": "Sunucuda 2 GB şifreli bir repository oluşturun. Repo, bekleme halindeki tek bir şifreli dosyadır. Oluşturulduğunda hemen bağlanır: kendi Docker daemon'ına ve izole uygulama verilerine sahip bir klasör."
     },
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 62.567023,
-      "text": "Yeni deponun kayıtlı olduğunu doğrulamak için makinedeki depoları listeliyoruz. Buradan itibaren depo, VS Code'da açılabilir, dağıtılabilir, fork'lanabilir veya yedeklenebilir; hepsi dizüstü bilgisayarınızdan."
+      "at": 11.760396,
+      "text": "Yeni deponun kayıtlı olduğunu doğrulamak için makinedeki depoları listeliyoruz. Buradan itibaren depo, VS Code'da açılabilir, dağıtılabilir, fork'lanabilir veya yedeklenebilir; hepsi dizüstü bilgisayarınızdan.",
+      "afterText": "İşte burada; kayıtlı ve kullanıma hazır.",
+      "cardLabel": "Repoları Listele",
+      "prose": "Yeni repo'nun kayıtlı olduğunu doğrulayın. Listelendikten sonra dizüstü bilgisayarınızdan dağıtılabilir, fork'lanabilir, yedeklenebilir veya bir editörde açılabilir."
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "at": 17.238181,
+      "text": "Kullanışlı bir seçenek: bu komutla repoyu doğrudan VS Code'da açabilirsiniz. Editörü burada başlatmayacağız, ancak SSH üzerinden repoya uzak bir oturum başlatarak dosyalarını düzenleyebilirsiniz.",
+      "afterText": "Reponun dosyalarını VS Code'da düzenlemek için bunu dizüstü bilgisayarınızda çalıştırın.",
+      "cardLabel": "VS Code'da Aç",
+      "prose": "rdc vscode connect ile repo'yu doğrudan VS Code'da açın. Repo'ya uzak bir SSH oturumu başlatarak dosyalarını editörünüzde düzenlemenizi sağlar."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "İlk deponuzu oluşturalım! Depolandığında şifreli bir dosyadır; bağlandığında tamamen izole bir ortama dönüşür."
+    },
+    {
+      "id": "file-on-disk",
+      "text": "Diskte tek bir şifreli görüntü olarak durur. Bağlandığında size özel bir Docker daemon'ı, şifreli birim içindeki uygulama verisi ve sunucudaki başka hiçbir şeyle çakışmayan loopback IP'leri sunar."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "İlk deponuz hazır! Sırada, içine bir uygulama dağıtmak var."
+    }
+  ],
+  "title": "İlk Repository'ni Oluşturma",
+  "chapters": {
+    "intro": "İlk Repository'ni Oluşturma",
+    "file-on-disk": "Diskte dosya, bağlandığında ortam",
+    "cast-step-0": "Repository'yi oluştur",
+    "cast-step-1": "Kayıtlı olduğunu doğrula",
+    "cast-step-2": "VS Code'da aç",
+    "outro": "Sonraki: İlk Uygulamanı Dağıtma"
+  }
 }

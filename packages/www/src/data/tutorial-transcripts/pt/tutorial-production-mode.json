@@ -6,26 +6,62 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 56.862064,
-      "text": "Vamos iniciar a aplicação em modo de produção a partir do portátil. O comando de deploy chama a mesma função up que usámos durante o desenvolvimento, mas corre em segundo plano. Pode fechar o portátil e a aplicação continua a funcionar."
+      "at": 2.418632,
+      "text": "Vamos iniciar a aplicação em modo de produção a partir do portátil. O comando de deploy chama a mesma função up que usámos durante o desenvolvimento, mas corre em segundo plano. Pode fechar o portátil e a aplicação continua a funcionar.",
+      "afterText": "Aplicação a correr em produção. Mesmo comando, mesmo resultado, no servidor real.",
+      "cardLabel": "Iniciar Prod",
+      "prose": "Inicie o aplicativo em modo de produção a partir do laptop. O comando de deploy chama a mesma função up usada durante o desenvolvimento, mas é executado em modo desanexado para que o aplicativo continue após a desconexão do laptop."
     },
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 97.750961,
-      "text": "Agora vamos ativar o arranque automático para que a aplicação sobreviva a um reinício do servidor. A partir daqui, se o servidor reiniciar, este repositório volta a arrancar automaticamente."
+      "at": 9.548589,
+      "text": "Agora vamos ativar o arranque automático para que a aplicação sobreviva a um reinício do servidor. A partir daqui, se o servidor reiniciar, este repositório volta a arrancar automaticamente.",
+      "afterText": "Arranque automático ativo. A aplicação sobrevive a reinícios.",
+      "cardLabel": "Ativar Autostart",
+      "prose": "Ative o autostart para que o repo sobreviva a reinicializações do servidor. Uma vez ativado, o repo é restaurado automaticamente sempre que o servidor reiniciar."
     },
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 125.443493,
-      "text": "Vamos listar os repositórios com arranque automático ativado. Confirma que a nossa aplicação está na lista de arranque."
+      "at": 17.034078,
+      "text": "Vamos listar os repositórios com arranque automático ativado. Confirma que a nossa aplicação está na lista de arranque.",
+      "afterText": "Aqui está, na lista de arranque.",
+      "cardLabel": "Listar Autostart",
+      "prose": "Liste os repositories com autostart ativado para confirmar que o aplicativo está na lista de inicialização."
     },
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 141.09184,
-      "text": "E para parar a aplicação, um único comando a partir do portátil. Um comando para iniciar, um comando para parar. Tudo a partir do terminal."
+      "at": 22.929505,
+      "text": "E para parar a aplicação, um único comando a partir do portátil. Um comando para iniciar, um comando para parar. Tudo a partir do terminal.",
+      "afterText": "Parada. Um comando para arrancar, um comando para parar.",
+      "cardLabel": "Parar Repo",
+      "prose": "Pare o aplicativo com um único comando a partir do laptop. Um comando o inicia, outro o encerra, tudo controlado pelo terminal."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Tudo certo! Vamos levar a sua aplicação do desenvolvimento à produção. Três passos curtos, todos conduzidos a partir do portátil."
+    },
+    {
+      "id": "dev-vs-prod",
+      "text": "Durante o desenvolvimento corre a aplicação a partir de dentro do repo, por isso para quando se desliga. Em produção lança-a a partir do portátil com a CLI, e continua a correr em segundo plano."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "E é assim o modo de produção, em resumo. Até ao próximo!"
+    }
+  ],
+  "title": "Modo de Produção",
+  "chapters": {
+    "intro": "Modo de Produção",
+    "dev-vs-prod": "Dev vs prod, a diferença",
+    "cast-step-0": "Etapa 1: Iniciar em modo de produção",
+    "cast-step-1": "Etapa 2: Ativar autostart",
+    "cast-step-2": "Etapa 3: Listar repos com autostart ativado",
+    "cast-step-3": "Etapa 4: Parar a partir do seu laptop",
+    "outro": "A seguir: Backup e Restauração"
+  }
 }

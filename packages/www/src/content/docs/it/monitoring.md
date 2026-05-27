@@ -4,6 +4,8 @@ description: "Monitora la salute della macchina, i container, i servizi, i repos
 category: "Guides"
 order: 9
 language: it
+sourceHash: "2289d50dac21f9bf"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Monitoraggio
@@ -110,8 +112,9 @@ rdc machine query --name server-1 --storage-health
 | Size | Dimensione del file immagine LUKS (come appare il repository) |
 | Unique | Dati unici effettivi posseduti solo da questo repository |
 | Shared | Blocchi di dati riutilizzati tra repository tramite reflink BTRFS (copie gratuite) |
-| Extents | Numero di estensioni di file (più alto = più frammentato) |
-| Frag | Livello di frammentazione: basso, moderato o alto |
+| Divergence | Percentuale dell'immagine unica in questo repository rispetto a quella condivisa (piu' alta = piu' recuperabile se eliminato) |
+| Extents | Numero di estensioni di file nell'immagine copy-on-write (piu' alto = piu' frammentato) |
+| Frag | Livello di frammentazione: basso, moderato o alto (solo informativo) |
 
 Il riepilogo mostra i risparmi totali dai reflink BTRFS:
 
@@ -125,7 +128,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 - **Shared** è la quantità di dati riutilizzati tra repository tramite reflink BTRFS. Il fork di un repository crea copie tramite reflink che condividono blocchi finché uno dei due lati non scrive nuovi dati, a quel punto i blocchi divergono.
 - **Efficiency** è la percentuale di dati riutilizzati tramite reflink. Maggiore è meglio. Una macchina con molti fork dallo stesso genitore mostrerà un'efficienza vicina al 100%.
 
-I repository con alta frammentazione e zero blocchi condivisi possono essere deframmentati in sicurezza con `btrfs filesystem defragment`. I repository con blocchi condivisi NON devono essere deframmentati perché la deframmentazione sostituisce i blocchi condivisi con copie uniche, aumentando l'utilizzo del disco.
+La colonna Frag e' informativa. Conta le estensioni del file immagine copy-on-write, non i file che la tua applicazione legge al suo interno, quindi risulta alta sotto normali carichi di lavoro con scritture casuali (database, layer container) e non predice le prestazioni di lettura su archiviazione con supporto SSD. Rediacc non offre deliberatamente un comando di deframmentazione: `btrfs filesystem defragment` rimuove la condivisione tramite reflink di fork e snapshot, il che su un pool quasi pieno puo' aumentare drasticamente l'utilizzo dello spazio mentre i benchmark non mostrano alcun guadagno misurabile in lettura. Per le misurazioni complete e il ragionamento, vedi [Il Tuo Indice di Frammentazione Sembra Terrificante. Ho Misurato Quanto Costa.](/it/blog/i-benchmarked-btrfs-fragmentation).
 
 La scansione viene eseguita in parallelo e richiede 5-15 secondi a seconda del numero e della dimensione dei repository. Quando `--storage-health` non è specificato, dopo l'output della query appare un suggerimento di una riga come promemoria.
 

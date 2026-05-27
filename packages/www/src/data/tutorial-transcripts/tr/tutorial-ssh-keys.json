@@ -6,26 +6,53 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.50929,
-      "text": "Birinci adım. Yeni bir ed25519 SSH anahtarı oluşturacağız. ed25519 modern standarttır: küçük, hızlı ve geniş destekli. Bunu ekleyeceğiniz her sunucu için yalnızca bir kez yapmanız yeterlidir."
+      "at": 1.626287,
+      "text": "Birinci adım. Yeni bir ed25519 SSH anahtarı oluşturacağız. ed25519 modern standarttır: küçük, hızlı ve geniş destekli. Bunu ekleyeceğiniz her sunucu için yalnızca bir kez yapmanız yeterlidir.",
+      "afterText": "Anahtar oluşturuldu. Sunucuya kopyalayacağımız kısım, genel anahtar.",
+      "cardLabel": "Anahtar Oluştur",
+      "prose": "Dizüstü bilgisayarınızda yeni bir SSH anahtarı oluşturun. Ed25519 güvenli, küçük ve yaygın olarak desteklenmektedir. Bir kez çalıştırın; aynı anahtar her sunucuda çalışır. Bu standart SSH'dır ve rdc ile hiçbir ilgisi yoktur.",
+      "afterProse": "Anahtar oluşturuldu. Her sunucuya kopyalanan kısım genel anahtardır."
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 8.723209,
-      "text": "İkinci adım. Genel anahtarı ssh-copy-id ile sunucuya kopyalıyoruz. Sunucu parolası son kez isteniyor. Bundan sonra o sunucu için parola ile kimlik doğrulama gerekmez."
+      "at": 6.456735,
+      "text": "İkinci adım. Genel anahtarı ssh-copy-id ile sunucuya kopyalıyoruz. Sunucu parolası son kez isteniyor. Bundan sonra o sunucu için parola ile kimlik doğrulama gerekmez.",
+      "afterText": "Komutu dizüstünüzde çalıştırın. Başarılı olduğunda parolalar devre dışı kalır.",
+      "cardLabel": "Sunucu 1'i Yetkilendir",
+      "prose": "Anahtarı ilk sunucunuzda ssh-copy-id ile yetkilendirin. Bu komut, genel anahtarınızı sunucunun authorized_keys dosyasına ekler ve sonraki girişlerde parola sorulmaz."
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 16.253995,
-      "text": "Üçüncü adım. Anahtarı CLI'ye kaydediyoruz. Bundan itibaren her komut bu anahtarla kimlik doğrulaması yapar. Artık parola gerekmez, etkileşimli istemler de olmaz."
+      "at": 13.33617,
+      "text": "Üçüncü adım. Anahtarı CLI'ye kaydediyoruz. Bundan itibaren her komut bu anahtarla kimlik doğrulaması yapar. Artık parola gerekmez, etkileşimli istemler de olmaz.",
+      "afterText": "Anahtar CLI'ye kaydedildi.",
+      "cardLabel": "Sunucu 2'yi Yetkilendir",
+      "prose": "Yönettiğiniz diğer her sunucu için ssh-copy-id komutunu tekrarlayın. Burada ikinci sunucuyu yetkilendiriyoruz."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Pekâlâ! CLI'nin sunucularınıza parolasız ulaşabilmesi için SSH anahtarlarını ayarlayalım."
     },
     {
-      "id": "tutorial-ssh-keys-04",
-      "markerIndex": 3,
-      "at": 24.863027,
-      "text": "Yapılandırmanın anahtar yolunu doğru biçimde kaydettiğini doğruluyoruz. Bu kurulum artık bu yapılandırmaya eklediğiniz her makine için yeniden kullanılabilir."
+      "id": "three-steps-generate-copy-register",
+      "text": "Toplam üç adım. Dizüstü bilgisayarınızda bir anahtar oluşturun, sunucuya kopyalayın, ardından komut satırı aracına kaydedin. Bunlardan ikisini yalnızca bir kez yaparsınız."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Anahtar kaydedildi ve CLI hazır. Sırada, ilk sunucunuzu ekleyeceğiz."
     }
-  ]
+  ],
+  "title": "SSH Anahtar Yapılandırması",
+  "chapters": {
+    "intro": "SSH Anahtar Yapılandırması",
+    "three-steps-generate-copy-register": "Bir kez oluştur, her sunucu için yetkilendir",
+    "cast-step-0": "Adım 1: Anahtar Oluşturun",
+    "cast-step-1": "Adım 2: İlk Sunucunuzu Yetkilendirin",
+    "cast-step-2": "Adım 3: Başka Bir Sunucuyu Yetkilendirin",
+    "outro": "Sonraki: İlk Sunucunuzu Ekleme"
+  }
 }

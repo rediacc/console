@@ -6,32 +6,52 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.508633,
-      "text": "Alustame konfiguratsiooniprofiiliga. Profiil sisaldab SSH võtit, masinate loendit ja infrastruktuuri seadeid kõige jaoks, mida edaspidi teeme."
+      "at": 1.627146,
+      "text": "Alustame konfiguratsiooniprofiiliga. Profiil sisaldab SSH võtit, masinate loendit ja infrastruktuuri seadeid kõige jaoks, mida edaspidi teeme.",
+      "afterText": "Profiil on loodud. Kõik, mida edasi seadistame, elab selles ühes failis.",
+      "cardLabel": "Lisa masin",
+      "prose": "Registreeri server nime, IP-aadressi ja SSH-kasutajaga. Nimi on lihtsalt kohalik alias (kasutame machine-11, et see vastaks IP-le, kuid iga silt sobib, näiteks prod-db või web-1). Initsialiseerimise sammu pole vaja; konfiguratsioonifail luuakse automaatselt esimesel kasutamisel ja rdc kasutab varuvalikuna sinu tavalist ~/.ssh võtit."
     },
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 11.160728,
-      "text": "Nüüd registreerime serveri CLI-s -- esitades selle nime, IP-aadressi ja SSH kasutajanime. Hosti võtmeid skanneeritakse automaatselt usaldusväärse juurdepääsu jaoks."
+      "at": 7.928955,
+      "text": "Nüüd registreerime serveri CLI-s -- esitades selle nime, IP-aadressi ja SSH kasutajanime. Hosti võtmeid skanneeritakse automaatselt usaldusväärse juurdepääsu jaoks.",
+      "afterText": "Server registreeritud. Hosti võtmed skanneeriti automaatselt.",
+      "cardLabel": "Seadista masin",
+      "prose": "Seadista server. See installib renet-i ja loob krüpteeritud andmesalve."
     },
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 23.457976,
-      "text": "Järgmisena valmistame serveri ette. See paigaldab renet-i ja loob krüpteeritud andmehoidla. Pärast seda on server repositooriumite majutamiseks valmis."
-    },
-    {
-      "id": "tutorial-add-server-04",
-      "markerIndex": 3,
-      "at": 39.717449,
-      "text": "Kontrollime, mida CLI konfiguratsiooni kohta teab. Masinad, SSH võti, infrastruktuur -- kõik äsja seadistatu on siin nähtav."
-    },
-    {
-      "id": "tutorial-add-server-05",
-      "markerIndex": 4,
-      "at": 48.157549,
-      "text": "Kogu konfiguratsioon asub ühes JSON-failis sinu sülearvutis. Kopeeri see teisele masinale ja saad sealt samu servereid juhtida."
+      "at": 16.338306,
+      "text": "Järgmisena valmistame serveri ette. See paigaldab renet-i ja loob krüpteeritud andmehoidla. Pärast seda on server repositooriumite majutamiseks valmis.",
+      "afterText": "Valmis. Renet on paigaldatud ja andmehoidla on töövalmis.",
+      "cardLabel": "Vaata konfiguratsiooni",
+      "prose": "Vaata JSON-faili, mis hoiab kõike: masinaid, SSH-võtit ja infrastruktuuri. Saad hoida mitut konfiguratsiooni, ühe iga keskkonna kohta, ja vahetada --config lipuga. Vaata allpool lingitud mitme konfiguratsiooni juhendit."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Olgu! Lisame su esimese serveri. See võtab kaks käsku ja umbes minuti."
+    },
+    {
+      "id": "two-tool-architecture",
+      "text": "Osi on kaks. Käsurea tööriist elab sinu sülearvutis ja orkestraator nimega renet töötab serveris. CLI ühendub üle SSH, nii et sa ei pea kunagi serverisse käsitsi sisse logima."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ja sellega on serveri lisamine pakitud! Kohtumiseni järgmises."
+    }
+  ],
+  "title": "Esimese serveri lisamine",
+  "chapters": {
+    "intro": "Esimese serveri lisamine",
+    "two-tool-architecture": "Kuidas Rediacc sinu serveriga ühendub",
+    "cast-step-0": "1. samm: Registreeri server",
+    "cast-step-1": "2. samm: Seadista renet",
+    "cast-step-2": "3. samm: Vaata konfiguratsioonifaili",
+    "outro": "Järgmine: Esimese repository loomine"
+  }
 }

@@ -1,0 +1,61 @@
+---
+title: "Modo de Produção"
+description: "Execute a sua aplicação desligada do seu computador portátil e sobreviva a reinícios do servidor com arranque automático."
+category: "Tutorials"
+subcategory: advanced
+order: 10
+language: pt
+sourceHash: "6921482ea1810fb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Modo de Produção
+
+Até agora tem estado a executar a aplicação com `renet dev up` a partir do interior do repositório. Ótimo para desenvolvimento. Para produção, gere tudo a partir do seu computador portátil com `rdc`. Feche o portátil e a aplicação continua a funcionar.
+
+## Ver o tutorial
+
+![Tutorial: Production mode](/assets/tutorials/tutorial-production-mode.cast)
+
+## Dev vs produção
+
+A diferença é simples:
+
+- `renet dev up` executa **dentro do repositório**. Precisa de estar ligado.
+- `rdc repo up` executa **a partir do seu computador portátil**. Não é necessária ligação a seguir.
+
+Três ações levam-no do desenvolvimento à produção:
+
+![Stop, start, autostart](/img/tutorials/tutorial-production-mode/slide-1.svg)
+
+Se tiver uma sessão `renet dev up` ainda em execução dentro do repositório, termine-a primeiro com `rdc vscode connect -m my-server -r my-app` seguido de `renet dev down`. A partir daí, o resto é gerido inteiramente a partir do seu portátil.
+
+## Passo 1: Arrancar em modo de produção
+
+<TutorialStep number={1} />
+
+`rdc repo up` chama a mesma função `up` que `renet dev up` chamava. O mesmo `Rediaccfile`, uma forma diferente de invocá-lo, exceto que agora a aplicação continua a funcionar depois de se desligar.
+
+## Passo 2: Ativar o arranque automático
+
+<TutorialStep number={2} />
+
+Se o servidor reiniciar, este repositório volta automaticamente.
+
+## Passo 3: Listar repositórios com arranque automático
+
+<TutorialStep number={3} />
+
+Uma verificação rápida de que a sua aplicação está na lista de arranque.
+
+## Passo 4: Parar a partir do portátil
+
+<TutorialStep number={4} />
+
+Um comando para arrancar, um comando para parar. Tudo a partir do seu computador portátil.
+
+---
+
+Próximo: [Backup e Restauro](/pt/docs/tutorial-backup-restore).

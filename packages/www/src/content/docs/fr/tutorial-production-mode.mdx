@@ -1,0 +1,61 @@
+---
+title: "Mode production"
+description: "Exécutez votre application indépendamment de votre ordinateur et survivez aux redémarrages du serveur avec le démarrage automatique."
+category: "Tutorials"
+subcategory: advanced
+order: 10
+language: fr
+sourceHash: "6921482ea1810fb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Mode production
+
+Jusqu'à présent, vous avez exécuté l'application avec `renet dev up` depuis l'intérieur du dépôt. C'est parfait pour le développement. Pour la production, vous gérez tout depuis votre ordinateur avec `rdc`. Fermez votre ordinateur et l'application continue de tourner.
+
+## Regarder le tutoriel
+
+![Tutorial: Production mode](/assets/tutorials/tutorial-production-mode.cast)
+
+## Dev versus prod
+
+La différence est simple :
+
+- `renet dev up` s'exécute **à l'intérieur du dépôt**. Vous devez être connecté.
+- `rdc repo up` s'exécute **depuis votre ordinateur**. Aucune connexion n'est nécessaire après cela.
+
+Trois actions vous font passer du dev à la prod :
+
+![Arrêter, démarrer, démarrage automatique](/img/tutorials/tutorial-production-mode/slide-1.svg)
+
+Si vous avez encore une session `renet dev up` en cours dans le dépôt, arrêtez-la d'abord avec `rdc vscode connect -m my-server -r my-app` suivi de `renet dev down`. À partir de là, tout le reste est piloté entièrement depuis votre ordinateur.
+
+## Étape 1 : Démarrer en mode production
+
+<TutorialStep number={1} />
+
+`rdc repo up` appelle la même fonction `up` que `renet dev up`. Même `Rediaccfile`, façon différente de l'invoquer, sauf que l'application continue de tourner après que vous vous déconnectez.
+
+## Étape 2 : Activer le démarrage automatique
+
+<TutorialStep number={2} />
+
+Si le serveur redémarre, ce dépôt revient automatiquement.
+
+## Étape 3 : Lister les dépôts avec démarrage automatique
+
+<TutorialStep number={3} />
+
+Une vérification rapide que votre application est dans la liste de démarrage.
+
+## Étape 4 : Arrêter depuis votre ordinateur
+
+<TutorialStep number={4} />
+
+Une commande pour démarrer, une commande pour arrêter. Tout depuis votre ordinateur.
+
+---
+
+Suivant : [Sauvegarde et restauration](/fr/docs/tutorial-backup-restore).

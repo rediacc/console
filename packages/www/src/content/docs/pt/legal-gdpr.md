@@ -4,6 +4,8 @@ description: "Como a arquitetura self-hosted da Rediacc se mapeia com os requisi
 category: "Legal"
 order: 1
 language: pt
+sourceHash: "36a776d87c6294ff"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 O Regulamento Geral sobre a Proteção de Dados (RGPD) é a lei de proteção de dados da União Europeia, em vigor desde maio de 2018. Rege a forma como as organizações recolhem, processam e armazenam dados pessoais de pessoas singulares na UE.
@@ -17,7 +19,7 @@ A tabela seguinte mapeia artigos específicos do RGPD com as capacidades técnic
 | Artigo | Requisito | Capacidade da Rediacc |
 |---------|-------------|-------------------|
 | [Art. 5](https://gdpr-info.eu/art-5-gdpr/), Princípios | Minimização de dados, integridade, confidencialidade | Os clones CoW (`cp --reflink=always`) duplicam os dados na mesma máquina sem transferência de rede. O LUKS2 AES-256 encripta todos os dados em repouso. |
-| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Direito ao apagamento | Apagar dados pessoais mediante pedido | `rdc repo destroy` apaga criptograficamente o volume LUKS. A eliminação de um fork remove a cópia clonada na totalidade. |
+| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Direito ao apagamento | Apagar dados pessoais mediante pedido | `rdc repo delete` apaga criptograficamente o volume LUKS. A eliminação de um fork remove a cópia clonada na totalidade. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Proteção de dados desde a conceção | Privacidade por defeito | A encriptação é obrigatória, não opcional. Cada repositório dispõe de um daemon Docker e de uma rede isolados. Não existe partilha de dados entre repositórios. O arquivo de configuração utiliza encriptação de conhecimento zero: as configurações são encriptadas do lado do cliente com AES-256-GCM antes do carregamento, pelo que o servidor não consegue ler nenhum dado em texto simples. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Subcontratante | Obrigações de processamento de dados por terceiros | Self-hosted: a Rediacc funciona na sua infraestrutura. Nenhum dado sai da sua máquina durante operações de fork, clone ou backup. Nenhum componente SaaS processa dados pessoais. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registos das atividades de tratamento | Manter registos das atividades de processamento | O registo de auditoria acompanha mais de 70 tipos de eventos: autenticação, tokens de API, operações no arquivo de configuração, licenciamento e operações CLI em máquinas (ciclo de vida de repositórios, backup, sincronização, terminal). Exportação via painel de administração, página de atividade do portal ou CLI `rdc audit`. |
@@ -28,7 +30,7 @@ A tabela seguinte mapeia artigos específicos do RGPD com as capacidades técnic
 
 Os clones CoW nunca saem da máquina de origem. O comando `rdc repo fork` cria uma cópia ao nível do sistema de ficheiros utilizando reflinks. Nenhum dado é transferido pela rede.
 
-Para operações entre máquinas, `rdc repo backup push/pull` transfere dados via SSH. O destino do backup recebe volumes encriptados com LUKS que não podem ser lidos sem as credenciais do operador.
+Para operações entre máquinas, `rdc repo push/pull` transfere dados via SSH. O destino do backup recebe volumes encriptados com LUKS que não podem ser lidos sem as credenciais do operador.
 
 ## Clonagem de Ambientes e Mascaramento de Dados
 

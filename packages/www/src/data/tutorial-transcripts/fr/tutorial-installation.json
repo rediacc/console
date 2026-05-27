@@ -6,14 +6,52 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.509194,
-      "text": "Commençons par confirmer que l'outil est installé. Le flag version affiche la version installée et nous confirme que l'installation s'est bien déroulée."
+      "at": 1.626476,
+      "text": "Commençons par confirmer que l'outil est installé. Le flag version affiche la version installée et nous confirme que l'installation s'est bien déroulée.",
+      "afterText": "Installation terminée. Le binaire rdc est sur votre PATH.",
+      "cardLabel": "Installer le CLI",
+      "prose": "Collez la commande d'installation dans votre terminal et exécutez-la. Le script vérifie votre plateforme, télécharge le dernier binaire stable et le dépose dans votre répertoire personnel. Aucune installation système, aucun sudo requis. Une fois terminé, le binaire rdc est dans votre PATH et utilisable depuis n'importe quel shell."
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 9.435981,
-      "text": "Maintenant, lançons le contrôle de diagnostic. Il parcourt toutes les dépendances dont la ligne de commande a besoin, Node, SSH, Docker, le binaire renet, et signale les éventuels manques. Un rapport propre signifie que vous êtes prêt."
+      "at": 7.903516,
+      "text": "Maintenant, lançons le contrôle de diagnostic. Il parcourt toutes les dépendances dont la ligne de commande a besoin, Node, SSH, Docker, le binaire renet, et signale les éventuels manques. Un rapport propre signifie que vous êtes prêt.",
+      "afterText": "Version affichée. Vous êtes prêt à enchaîner.",
+      "cardLabel": "Vérifier la version",
+      "prose": "Confirmez l'installation en exécutant rdc avec le flag de version. Il affiche la version installée, vérifiant que le binaire est dans votre PATH."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Très bien ! Installons l'outil en ligne de commande sur votre ordinateur."
+    },
+    {
+      "id": "three-steps",
+      "text": "Trois étapes. Ouvrir la page d'installation, choisir votre système d'exploitation, puis coller la commande dans votre terminal."
+    },
+    {
+      "id": "open-install-page",
+      "text": "Rendez-vous sur la page d'installation et faites défiler jusqu'à la section installation rapide. Elle génère la bonne ligne de commande pour votre plateforme."
+    },
+    {
+      "id": "laptop-vs-server",
+      "text": "L'outil en ligne de commande vit sur votre ordinateur. Le serveur exécute un composant séparé appelé renet, que la CLI provisionne et pilote via SSH, vous n'avez donc jamais à vous connecter manuellement."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Voilà pour l'installation. Dans la suite, nous configurerons votre clé SSH pour que la CLI puisse atteindre vos serveurs."
+    }
+  ],
+  "title": "Installation",
+  "chapters": {
+    "intro": "Installation",
+    "three-steps": "Les trois étapes",
+    "open-install": "Ouvrir la page d'installation",
+    "cast-step-0": "Étape 1 : Installer le CLI",
+    "cast-step-1": "Étape 2 : Vérifier l'installation",
+    "laptop-vs-server": "Pourquoi rdc réside sur votre ordinateur",
+    "outro": "Suivant : Configuration de la clé SSH"
+  }
 }

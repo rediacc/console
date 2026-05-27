@@ -6,32 +6,52 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.508633,
-      "text": "Nous commençons par créer un profil de configuration. Ce profil contient la clé SSH, la liste des machines et les paramètres d'infrastructure pour tout ce que nous allons faire."
+      "at": 1.627146,
+      "text": "Nous commençons par créer un profil de configuration. Ce profil contient la clé SSH, la liste des machines et les paramètres d'infrastructure pour tout ce que nous allons faire.",
+      "afterText": "Profil créé. Tout ce que nous configurons ensuite vit dans ce seul fichier.",
+      "cardLabel": "Ajouter Machine",
+      "prose": "Enregistrez le serveur avec un nom, une adresse IP et un utilisateur SSH. Le nom est simplement un alias local (nous utilisons machine-11 pour correspondre à l'IP, mais n'importe quel label fonctionne, comme prod-db ou web-1). Aucune étape d'initialisation n'est nécessaire ; le fichier de configuration est créé automatiquement à la première utilisation, et rdc utilise par défaut votre clé ~/.ssh standard."
     },
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 11.160728,
-      "text": "Maintenant, nous enregistrons le serveur depuis la ligne de commande en fournissant son nom, son adresse IP et l'utilisateur SSH. Les clés hôtes sont scannées automatiquement pour un accès sécurisé."
+      "at": 7.928955,
+      "text": "Maintenant, nous enregistrons le serveur depuis la ligne de commande en fournissant son nom, son adresse IP et l'utilisateur SSH. Les clés hôtes sont scannées automatiquement pour un accès sécurisé.",
+      "afterText": "Serveur enregistré. Les clés hôtes ont été scannées automatiquement.",
+      "cardLabel": "Configurer Machine",
+      "prose": "Provisionnez le serveur. Cela installe renet et crée le datastore chiffré."
     },
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 23.457976,
-      "text": "Voyons ensuite le provisionnement du serveur. Cette étape installe renet et crée le datastore chiffré. Après cela, le serveur est prêt à héberger des dépôts."
-    },
-    {
-      "id": "tutorial-add-server-04",
-      "markerIndex": 3,
-      "at": 39.717449,
-      "text": "Vérifions ce que l'outil connaît de la configuration. Machines, clé SSH, infrastructure, tout ce que nous venons de configurer apparaît ici."
-    },
-    {
-      "id": "tutorial-add-server-05",
-      "markerIndex": 4,
-      "at": 48.157549,
-      "text": "Toute la configuration réside dans un seul fichier JSON sur votre ordinateur. Copiez-le sur une autre machine et vous pouvez piloter les mêmes serveurs depuis là-bas."
+      "at": 16.338306,
+      "text": "Voyons ensuite le provisionnement du serveur. Cette étape installe renet et crée le datastore chiffré. Après cela, le serveur est prêt à héberger des dépôts.",
+      "afterText": "Terminé. renet est installé et le datastore est prêt.",
+      "cardLabel": "Inspecter Config",
+      "prose": "Inspectez le fichier JSON qui contient tout : les machines, la clé SSH et l'infrastructure. Vous pouvez conserver plusieurs configs, une par environnement, et basculer avec le flag --config. Consultez le guide des configurations multiples lié ci-dessous."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Très bien ! Ajoutons votre premier serveur. Cela tient en deux commandes et prend environ une minute."
+    },
+    {
+      "id": "two-tool-architecture",
+      "text": "Il y a deux éléments. L'outil en ligne de commande vit sur votre ordinateur, et un orchestrateur appelé renet tourne sur le serveur. La CLI se connecte via SSH, vous n'avez donc jamais à vous connecter manuellement au serveur."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Et voilà pour l'ajout d'un serveur ! On se retrouve dans la prochaine vidéo."
+    }
+  ],
+  "title": "Ajouter Votre Premier Serveur",
+  "chapters": {
+    "intro": "Ajouter votre premier serveur",
+    "two-tool-architecture": "Comment Rediacc se connecte à votre serveur",
+    "cast-step-0": "Étape 1 : Enregistrer le serveur",
+    "cast-step-1": "Étape 2 : Provisionner renet",
+    "cast-step-2": "Étape 3 : Inspecter le fichier de config",
+    "outro": "Suivant : Créer votre premier repository"
+  }
 }

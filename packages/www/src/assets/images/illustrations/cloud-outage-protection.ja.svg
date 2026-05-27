@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="A rented cloud has gone dark and broken, the store below it has lost all power, and a person stands waiting with empty hands." font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif">
+  <title>A rented cloud has gone dark and broken, the store below it has lost all power, and a person stands waiting with empty hands.</title>
+
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5" />
+
+  
+  <g>
+    <path d="M150 150 a44 44 0 0 1 84 -16 a40 40 0 0 1 70 18 a40 40 0 0 1 -4 80 l-150 0 a40 40 0 0 1 0 -80 z" fill="#8b0000" />
+    
+    <path d="M232 96 l-14 38 l22 18 l-20 44" fill="none" stroke="#f5f5f5" stroke-width="5" stroke-linejoin="round" stroke-linecap="round" />
+    
+    <path d="M150 150 l24 -42 l24 42 z" fill="#8b0000" stroke="#f5f5f5" stroke-width="3" stroke-linejoin="round" />
+    <rect x="171" y="120" width="6" height="16" fill="#f5f5f5" />
+    <rect x="171" y="140" width="6" height="6" fill="#f5f5f5" />
+  </g>
+
+  
+  <g>
+    
+    <path d="M300 300 l90 -46 l90 46 z" fill="#8b0000" />
+    
+    <rect x="312" y="300" width="156" height="110" fill="#8b0000" />
+    
+    <rect x="362" y="340" width="56" height="70" fill="#1a1a1a" />
+    
+    <rect x="326" y="320" width="26" height="22" fill="#1a1a1a" />
+    <rect x="428" y="320" width="26" height="22" fill="#1a1a1a" />
+  </g>
+
+  
+  <g>
+    <circle cx="640" cy="300" r="22" fill="#2d2d2d" />
+    <rect x="622" y="324" width="36" height="62" rx="8" fill="#2d2d2d" />
+    
+    <rect x="606" y="330" width="14" height="48" rx="7" fill="#2d2d2d" />
+    <rect x="660" y="330" width="14" height="48" rx="7" fill="#2d2d2d" />
+    
+    <rect x="626" y="384" width="13" height="40" rx="6" fill="#2d2d2d" />
+    <rect x="641" y="384" width="13" height="40" rx="6" fill="#2d2d2d" />
+  </g>
+
+  
+  <text x="270" y="60" text-anchor="middle" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="32" font-weight="bold" fill="#8b0000">クラウド停止中</text>
+  <text x="390" y="438" text-anchor="middle" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="32" font-weight="bold" fill="#8b0000">ビジネスも同様</text>
+  <text x="772" y="220" text-anchor="end" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="28" fill="#1a1a1a">待つしかない</text>
+</svg>

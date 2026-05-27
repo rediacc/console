@@ -140,6 +140,14 @@ export PATH="$renet_bin_dir:$PATH"
 #                   Uses a separate token file under .rdc-bench/ so it never
 #                   collides with the local-dev or production token state.
 #                   Deploy/reset bench via scripts/dev/{deploy,reset}-bench.sh.
+#
+# Independent renet build modifier:
+#   RDC_RENET_LICENSE=1 → Build dev renet WITHOUT the --nolicense build tag, so
+#                         the local binary enforces repo licenses like a prod
+#                         release. Used to reproduce license-flow bugs locally
+#                         (e.g. rediacc/console#482) without a release cycle.
+#                         When set, also export ACCOUNT_ED25519_PUBLIC_KEY to
+#                         the production key to validate prod-issued licenses.
 if [[ "${RDC_BENCH:-0}" == "1" ]]; then
     export REDIACC_SUBSCRIPTION_TOKEN_FILE="$ROOT_DIR/.rdc-bench/api-token.json"
     export REDIACC_ACCOUNT_SERVER="https://bench.rediacc.com"

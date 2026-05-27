@@ -4,8 +4,8 @@ description: 将现有项目迁移到加密的 Rediacc 仓库中。
 category: Guides
 order: 11
 language: zh
-sourceHash: c0ea82abb1d29de0
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "69ab61a2875f8d70"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # 迁移指南
@@ -16,7 +16,7 @@ sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 
 - 已安装 `rdc` CLI（[安装](/zh/docs/installation)）
 - 已添加并配置好机器（[设置](/zh/docs/setup)）
-- 服务器上有足够的磁盘空间用于您的项目（使用 `rdc machine status` 检查）
+- 服务器上有足够的磁盘空间用于您的项目（使用 `rdc machine query` 检查）
 
 ## 步骤 1：创建仓库
 
@@ -96,6 +96,8 @@ rdc repo ownership --name my-project -m server-1
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **注意：** `7111` 是在所有地方使用的通用 Rediacc UID（与内置在 devcontainer 镜像中的 `rediacc` 用户对应）。仅在需要与特定外部 UID 所有的文件保持旧版兼容性时，才使用 `--uid` 覆盖它。它**不是**迁移目标。新仓库应保持默认值。
 
 ## 步骤 4：设置 Rediaccfile
 

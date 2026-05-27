@@ -4,6 +4,8 @@ description: "Soluzioni per i problemi più comuni con SSH, configurazione, repo
 category: "Guides"
 order: 10
 language: it
+sourceHash: "658b00b83875950d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Risoluzione dei Problemi
@@ -125,7 +127,7 @@ Sostituisci `2816` con l'ID di rete del tuo repository (trovabile in `rediacc.js
 
 All'interno di una shell di repository, eseguire un container senza `--network host` ti fornisce un container isolato con solo un'interfaccia loopback, senza DNS e senza connettivita' in uscita. Comandi come `apt update`, `pip install`, `curl https://...`, o qualsiasi richiesta di rete falliranno immediatamente con errori DNS.
 
-Questo e' intenzionale. Il modello di rete di Rediacc e' **host networking per ogni servizio**, imposto da `renet compose`. Un bridge Docker predefinito con NAT aggirerebbe l'isolamento loopback a livello kernel che impedisce a un repo di raggiungere i servizi di un altro repo, quindi il daemon Docker per repository e' configurato con `"bridge": "none"` e `"iptables": false`. Non esiste un bridge instradabile a cui un container `docker run` normale possa connettersi.
+Questo e' intenzionale. Il modello di rete di Rediacc e' **host networking per ogni servizio**, imposto da `renet compose`. Un bridge Docker predefinito con NAT aggirerebbe l'isolamento loopback a livello kernel che impedisce a un repo di raggiungere i servizi di un altro repo, quindi il daemon Docker per repository (`FlavorRediacc`) e' configurato con `"bridge": "none"` e `"iptables": false`. Non esiste un bridge instradabile a cui un container `docker run` normale possa connettersi. (I daemon Hub per utente (`FlavorHub`) utilizzati dagli ambienti di sviluppo sono l'eccezione: abilitano bridge e iptables in modo che i container dell'utente abbiano connettivita' di rete in uscita.)
 
 **Per ottenere accesso alla rete in un container ad hoc, usa host networking:**
 

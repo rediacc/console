@@ -4,7 +4,8 @@ description: "Wie das Self-Hosted-Modell von Rediacc die Anforderungen des Calif
 category: "Legal"
 order: 4
 language: de
-sourceHash: "8d0fc1ff16c1be28"
+sourceHash: "949159b302cf6ab9"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Der California Consumer Privacy Act (CCPA) ist ein Landesgesetz, das Verbrauchern in Kalifornien Rechte über ihre persönlichen Daten einräumt, einschließlich des Rechts zu erfahren, welche Daten erhoben werden, des Rechts auf Löschung und des Rechts, dem Verkauf zu widersprechen.
@@ -18,7 +19,7 @@ CCPA konzentriert sich auf Verbraucherrechte in Bezug auf persönliche Daten. Re
 | CCPA-Recht | Anforderung | Rediacc-Fähigkeit |
 |-----------|-------------|-------------------|
 | Auskunftsrecht (1798.100) | Offenlegung der Kategorien und Zwecke erhobener Daten | Audit-Logs verfolgen alle Datenoperationen. Self-Hosted: Ihre Organisation behält die vollständige Übersicht über vorhandene Daten in jedem Repository. |
-| Löschungsrecht (1798.105) | Löschung persönlicher Daten des Verbrauchers auf Anfrage | `rdc repo destroy` löscht das LUKS-verschlüsselte Volume kryptographisch. Fork-Löschung entfernt geklonte Kopien vollständig. |
+| Löschungsrecht (1798.105) | Löschung persönlicher Daten des Verbrauchers auf Anfrage | `rdc repo delete` löscht das LUKS-verschlüsselte Volume kryptographisch. Fork-Löschung entfernt geklonte Kopien vollständig. |
 | Widerspruchsrecht (1798.120) | Keine Weitergabe oder kein Verkauf persönlicher Daten | Self-Hosted-Architektur: Keine Datenübertragung an Rediacc oder Dritte. Daten verbleiben auf Ihren Servern. Die Config-Store-Synchronisation verwendet Zero-Knowledge-Verschlüsselung. Selbst der Synchronisationsserver kann die Daten nicht lesen. |
 | Datensicherheit (1798.150) | Angemessene Sicherheitsmaßnahmen implementieren | LUKS2 AES-256-Verschlüsselung, Netzwerkisolation, ausschließlicher SSH-Zugang, isolierte Docker Daemons, Audit-Logging. Der Config Store verwendet dreischichtige Verschlüsselung mit Split-Key-Ableitung und rotierenden Einmaltoken. |
 

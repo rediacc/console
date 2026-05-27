@@ -6,26 +6,62 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 65.053708,
-      "text": "Première étape. Nous allons importer une configuration rclone existante. rclone prend en charge S3, Backblaze, Google Drive, Dropbox et bien d'autres. Si vous l'utilisez déjà, vous pouvez importer la même configuration directement."
+      "at": 2.424169,
+      "text": "Première étape. Nous allons importer une configuration rclone existante. rclone prend en charge S3, Backblaze, Google Drive, Dropbox et bien d'autres. Si vous l'utilisez déjà, vous pouvez importer la même configuration directement.",
+      "afterText": "Stockage importé. Votre CLI peut maintenant y pousser des sauvegardes.",
+      "cardLabel": "Importer le Stockage",
+      "prose": "Importez une configuration rclone existante. rclone prend en charge S3, Backblaze, Google Drive, Dropbox, et bien d'autres. Si vous utilisez déjà rclone, la même configuration s'importe directement."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 73.743501,
-      "text": "Listons les stockages que l'outil connaît maintenant. Chaque stockage est une destination vers laquelle nous pouvons pousser des sauvegardes."
+      "at": 6.651448,
+      "text": "Listons les stockages que l'outil connaît maintenant. Chaque stockage est une destination vers laquelle nous pouvons pousser des sauvegardes.",
+      "afterText": "Le voilà. Prêt à recevoir des sauvegardes.",
+      "cardLabel": "Lister les Stockages",
+      "prose": "Listez les stockages que le CLI connaît désormais. Chacun est une destination pour les sauvegardes."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 82.843959,
-      "text": "Deuxième étape. Nous poussons une sauvegarde complète. Le dépôt entier, application, base de données, fichiers, configuration, est téléversé. Comme le dépôt est chiffré au repos, la sauvegarde l'est aussi. Aucune gestion de clé supplémentaire."
+      "at": 10.354487,
+      "text": "Deuxième étape. Nous poussons une sauvegarde complète. Le dépôt entier, application, base de données, fichiers, configuration, est téléversé. Comme le dépôt est chiffré au repos, la sauvegarde l'est aussi. Aucune gestion de clé supplémentaire.",
+      "afterText": "Sauvegarde téléversée. Tout ce qui se trouve dans ce repo est désormais sur le stockage distant, chiffré.",
+      "cardLabel": "Envoyer la Sauvegarde",
+      "prose": "Envoyez une sauvegarde complète. L'intégralité du repository est téléversée, incluant l'application, la base de données, les fichiers et la configuration. Comme le repository est chiffré au repos, la sauvegarde est également chiffrée, sans gestion de clés supplémentaire."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 94.515541,
-      "text": "Listons les sauvegardes disponibles sur ce stockage. À partir de là, la restauration sur un tout nouveau serveur se fait en une seule commande : la commande de restauration de dépôt. Mêmes données, mêmes conteneurs, machine différente."
+      "at": 18.28182,
+      "text": "Listons les sauvegardes disponibles sur ce stockage. À partir de là, la restauration sur un tout nouveau serveur se fait en une seule commande : la commande de restauration de dépôt. Mêmes données, mêmes conteneurs, machine différente.",
+      "afterText": "Tous vos instantanés au même endroit. Restaurez n'importe lequel d'une seule commande.",
+      "cardLabel": "Lister les Sauvegardes",
+      "prose": "Listez les sauvegardes disponibles sur ce stockage. La restauration sur un tout nouveau serveur se fait en une seule commande : la commande repo pull."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Votre application est en ligne, alors assurons-nous que vous ne la perdiez jamais ! Dans ce tutoriel, nous poussons le dépôt entier vers un stockage externe et le récupérons à la demande."
+    },
+    {
+      "id": "three-steps",
+      "text": "La sauvegarde et la restauration se résument à trois étapes. Configurer un fournisseur de stockage, pousser une sauvegarde, et la restaurer quand vous en avez besoin."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Vos données sont en sécurité et portables d'une machine à l'autre. On se retrouve dans la prochaine vidéo !"
+    }
+  ],
+  "title": "Sauvegarde et Restauration",
+  "chapters": {
+    "intro": "Sauvegarde et Restauration",
+    "three-steps": "Trois étapes : configurer, envoyer, restaurer",
+    "cast-step-0": "Étape 1 : Importer la configuration rclone",
+    "cast-step-1": "Étape 2 : Lister les stockages configurés",
+    "cast-step-2": "Étape 3 : Envoyer une sauvegarde complète",
+    "cast-step-3": "Étape 4 : Lister les sauvegardes sur le stockage",
+    "outro": "Suivant : Monitoring"
+  }
 }

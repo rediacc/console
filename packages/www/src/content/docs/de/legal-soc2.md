@@ -4,7 +4,8 @@ description: "Wie Rediacc den SOC 2 Trust Service Criteria für Sicherheit, Verf
 category: "Legal"
 order: 2
 language: de
-sourceHash: "a01e8b457d648fdd"
+sourceHash: "ebdae97034aa3cce"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 SOC 2 (System and Organization Controls 2) ist ein Framework des American Institute of Certified Public Accountants (AICPA) zur Bewertung der Kontrollen einer Organisation in Bezug auf Sicherheit, Verfügbarkeit, Verarbeitungsintegrität, Vertraulichkeit und Datenschutz.
@@ -16,7 +17,7 @@ Referenz: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-a
 | Trust-Prinzip | Kriterium | Rediacc-Fähigkeit |
 |---------------|-----------|-------------------|
 | **Sicherheit** (CC6) | Logische Zugriffskontrollen, Verschlüsselung | LUKS2 AES-256-Verschlüsselung im Ruhezustand. Anmeldedaten werden ausschließlich in der lokalen Konfiguration des Operators (`~/.config/rediacc/`) gespeichert, nie auf dem Server. SSH-Schlüssel-basierter Zugang. Isolierte Docker Daemons pro Repository. |
-| **Verfügbarkeit** (A1) | Systemwiederherstellung und Resilienz | `rdc repo backup push/pull` mit verschlüsselten Offsite-Kopien auf SSH, S3, B2, Azure oder GDrive. CoW-Snapshots für sofortiges Rollback. Fork-basierte Upgrades für Änderungen ohne Ausfallzeit. |
+| **Verfügbarkeit** (A1) | Systemwiederherstellung und Resilienz | `rdc repo push/pull` mit verschlüsselten Offsite-Kopien auf SSH, S3, B2, Azure oder GDrive. CoW-Snapshots für sofortiges Rollback. Fork-basierte Upgrades für Änderungen ohne Ausfallzeit. |
 | **Verarbeitungsintegrität** (PI1) | Genaue und vollständige Verarbeitung | Deterministische Rediaccfile-Lebenszyklus-Hooks (`up`/`down`) gewährleisten konsistente Deployments. `rdc repo validate` überprüft Repository-Integrität und Backup-Gesundheit nach unerwarteten Abschaltungen oder Backup-Operationen. |
 | **Vertraulichkeit** (C1) | Datenschutz vor unbefugtem Zugriff | Pro-Repository-Verschlüsselung mit einzigartigen LUKS-Anmeldedaten. Netzwerkisolation via iptables, separate Docker Daemons und Loopback-IP-Subnetze. Container verschiedener Repositories können sich nicht sehen. Zero-Knowledge-Config-Store verschlüsselt Configs clientseitig vor dem Upload. Der Server speichert nur opake Blobs, die er nicht entschlüsseln kann. |
 | **Datenschutz** (P1-P8) | Umgang mit personenbezogenen Daten | Self-Hosted: kein Datenabfluss während Operationen. Audit-Trail für alle Datenzugriffe. Verschlüsselungs-Key-Management unter Kundenkontrollen. Config Store verwendet Split-Key-Ableitung (Passkey PRF + Server-Geheimnis), sodass keine Partei allein Zugang zu den Daten hat. |

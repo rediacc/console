@@ -4,6 +4,8 @@ description: "Como a arquitetura self-hosted da Rediacc responde aos requisitos 
 category: "Legal"
 order: 0
 language: pt
+sourceHash: "e20385eb9adfe180"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 A Rediacc funciona inteiramente na sua infraestrutura. Durante as operações de clonagem de ambientes, backup e implementação, os dados nunca saem da sua máquina. A sua organização mantém-se simultaneamente responsável pelo tratamento e subcontratante dos dados. Nenhum SaaS de terceiros gere os seus dados.
@@ -14,7 +16,7 @@ Esta secção mapeia as capacidades técnicas da Rediacc com os requisitos dos p
 
 | Referencial | Âmbito | Principais Capacidades da Rediacc |
 |-----------|-------|--------------------------|
-| [RGPD](/pt/docs/legal-gdpr) | Proteção de dados e privacidade na UE | Clonagem CoW na mesma máquina, encriptação LUKS2, arquivo de configuração de conhecimento zero, registo de auditoria, direito ao apagamento via `rdc repo destroy` |
+| [RGPD](/pt/docs/legal-gdpr) | Proteção de dados e privacidade na UE | Clonagem CoW na mesma máquina, encriptação LUKS2, arquivo de configuração de conhecimento zero, registo de auditoria, direito ao apagamento via `rdc repo delete` |
 | [SOC 2](/pt/docs/legal-soc2) | Critérios de serviços de confiança para organizações de serviços | Encriptação em repouso, sincronização de configuração de conhecimento zero, isolamento de rede, trilha de auditoria, backup e recuperação |
 | [HIPAA](/pt/docs/legal-hipaa) | Proteção de informações de saúde nos EUA | Encriptação LUKS2, arquivo de configuração de conhecimento zero, acesso exclusivo por SSH, daemons Docker isolados, segurança de transmissão |
 | [CCPA](/pt/docs/legal-ccpa) | Direitos de privacidade dos consumidores da Califórnia | Self-hosted (sem venda/partilha de dados), encriptação de conhecimento zero, eliminação encriptada, inventário de dados por repositório |
@@ -31,7 +33,7 @@ Todos os referenciais de conformidade desta secção remetem para as mesmas prop
 - **Isolamento de rede**: cada repositório dispõe do seu próprio daemon Docker, sub-rede IP de loopback (/26) e regras iptables. Os contentores de repositórios diferentes não conseguem comunicar entre si.
 - **Clonagem copy-on-write**: `rdc repo fork` utiliza reflinks do sistema de ficheiros (`cp --reflink=always`). Os dados são duplicados na mesma máquina sem qualquer transferência de rede.
 - **Registo de auditoria**: mais de 70 tipos de eventos cobrindo autenticação (início de sessão, 2FA, alterações de palavra-passe, revogação de sessão), ciclo de vida de tokens de API, operações no arquivo de configuração, atividade de subscrição/licenciamento e operações CLI em máquinas (ciclo de vida de repositórios, backup, sincronização, sessões de terminal). Acessível via painel de administração, página de atividade do portal (com filtragem por organização) e CLI `rdc audit`. As operações em máquinas são também registadas nos registos do sistema para defesa em profundidade.
-- **Backup encriptado**: `rdc repo backup push/pull` transfere dados via SSH. O destino do backup recebe volumes encriptados com LUKS.
+- **Backup encriptado**: `rdc repo push/pull` transfere dados via SSH. O destino do backup recebe volumes encriptados com LUKS.
 - **Arquivo de configuração de conhecimento zero**: sincronização de configuração encriptada opcional entre dispositivos. As configurações são encriptadas do lado do cliente com AES-256-GCM antes do carregamento. O servidor armazena apenas blobs opacos. O servidor não consegue ler chaves SSH, credenciais, endereços IP nem quaisquer dados de configuração em texto simples. A derivação de chaves utiliza a extensão PRF de passkey com HKDF e separação de domínio. O acesso dos membros é gerido via troca de chaves X25519 e a revogação é imediata.
 
 Para mais detalhes sobre estas capacidades, consulte [Arquitetura](/pt/docs/architecture), [Repositórios](/pt/docs/repositories), [Armazenamento de Configuração](/pt/docs/config-storage) e [Segurança da Conta](/pt/docs/account-security).

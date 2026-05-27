@@ -4,8 +4,8 @@ description: Bestehende Projekte in verschlüsselte Rediacc-Repositories migrier
 category: Guides
 order: 11
 language: de
-sourceHash: c0ea82abb1d29de0
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "69ab61a2875f8d70"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Migrationsleitfaden
@@ -16,7 +16,7 @@ Migrieren Sie ein bestehendes Projekt, Dateien, Docker-Dienste, Datenbanken, von
 
 - `rdc` CLI installiert ([Installation](/de/docs/installation))
 - Eine Maschine hinzugefügt und provisioniert ([Einrichtung](/de/docs/setup))
-- Ausreichend Speicherplatz auf dem Server für Ihr Projekt (prüfen Sie mit `rdc machine status`)
+- Ausreichend Speicherplatz auf dem Server für Ihr Projekt (prüfen Sie mit `rdc machine query`)
 
 ## Schritt 1: Repository erstellen
 
@@ -96,6 +96,8 @@ Um eine andere UID als die Standard-UID 7111 festzulegen:
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **Vorsicht:** `7111` ist die universelle Rediacc-UID, die überall verwendet wird (sie entspricht dem `rediacc`-Benutzer, der in das Devcontainer-Image eingebaut ist). Überschreiben Sie sie nur mit `--uid` für Legacy-Kompatibilität mit Dateien, die einem bestimmten externen UID gehören – sie ist **kein** Migrationsziel. Neue Repositories sollten den Standard beibehalten.
 
 ## Schritt 4: Rediaccfile einrichten
 

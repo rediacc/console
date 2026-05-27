@@ -4,6 +4,8 @@ description: "Layout delle directory, comandi renet, servizi systemd e workflow 
 category: "Concepts"
 order: 3
 language: it
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Riferimento server
@@ -113,6 +115,31 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 
 `sandbox-exec` applica le restrizioni filesystem Landlock LSM, poi esegue il comando dato. Viene invocato automaticamente da `sandbox-gateway` (il gestore SSH ForceCommand) per tutte le connessioni a livello di repository.
 
+### Hub per utente (ambienti di sviluppo)
+
+L'Hub fornisce a ogni utente il proprio daemon Docker per gli ambienti di sviluppo, separato dai daemon `FlavorRediacc` per singolo repository.
+
+```bash
+# Installare / rimuovere le unita systemd dell'Hub per utente
+sudo renet hub install
+sudo renet hub uninstall
+
+# Raccogliere i daemon Hub per utente inattivi
+sudo renet hub gc
+```
+
+I daemon girano sotto uno dei due flavor, selezionato con `--flavor`:
+
+```bash
+# Daemon isolato per repository (bridge=none, iptables=false) — predefinito
+sudo renet daemon start-foreground --flavor=rediacc ...
+
+# Daemon Hub per utente (bridge=docker0, iptables=true, live-restore=true)
+sudo renet daemon start-foreground --flavor=hub ...
+```
+
+Il flavor `hub` abilita la normale rete bridge affinche i contenitori avviati dall'utente abbiano connettivita in uscita; il flavor `rediacc` impone l'isolamento loopback tra i repository. I log di audit dell'Hub vengono scritti in `/var/log/rediacc/hub/<user>.log`.
+
 **Flag:**
 - `--allow-rw`, `--allow-ro`, `--allow-exec`: regole di percorso Landlock
 - `--home-overlay`: monta OverlayFS sulla home dir per l'isolamento in scrittura per singolo repository
@@ -216,6 +243,8 @@ Servizi globali condivisi tra tutti i repository:
 |-------|-------|
 | `rediacc-router.service` | Scoperta delle route (porta 7111) |
 | `rediacc-autostart.service` | Montaggio dei repository all'avvio |
+| `rediacc-autostart-reconcile.service` | Riconciliatore periodico dell'autostart (eseguito dal timer seguente) |
+| `rediacc-autostart-reconcile.timer` | Attiva `renet repository reconcile` circa ogni 3 minuti per recuperare i repository autostart che si sono interrotti dopo l'avvio |
 
 ## Workflow comuni
 

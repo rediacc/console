@@ -152,7 +152,10 @@
     "glob",
     "react-i18next",
     "tiny-typed-emitter",
-    "asciinema-player"
+    "plyr",
+    "@resvg/resvg-js",
+    "playwright",
+    "vfile"
   ],
   "ignoreBinaries": ["rimraf", "vite", "vitest", "wrangler"]
 }

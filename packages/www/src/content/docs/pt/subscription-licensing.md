@@ -4,6 +4,8 @@ description: "Compreenda como o account, o rdc e o renet gerem os slots de máqu
 category: "Guides"
 order: 7
 language: pt
+sourceHash: "8e0a4976634ae323"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Subscrição e Licenciamento
@@ -183,7 +185,7 @@ rdc subscription repo status -m hostinger
 Renovar em massa as licencas de repositorios numa maquina:
 
 ```bash
-rdc subscription refresh -m hostinger
+rdc subscription refresh repos -m hostinger
 ```
 
 Os repositorios descobertos na maquina mas em falta na configuracao local do `rdc` sao rejeitados durante a renovacao em massa. Sao reportados como falhas e nao sao classificados automaticamente.

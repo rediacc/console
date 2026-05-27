@@ -1,0 +1,58 @@
+---
+title: "Desplegar tu primera aplicación"
+description: "Despliega una app en contenedor a partir de una plantilla integrada usando rdc repo up."
+category: "Tutorials"
+subcategory: essentials
+order: 5
+language: es
+sourceHash: "764733d064b93e4a"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Desplegar tu primera aplicación
+
+Tienes un repositorio vacío. `rdc` incluye plantillas integradas para que puedas levantar apps reales sin escribir un `docker-compose` desde cero. Tres pasos: elige una plantilla, aplícala y ejecútala.
+
+## Ver el tutorial
+
+![Tutorial: Desplegar tu primera aplicación](/assets/tutorials/tutorial-deploy-app.cast)
+
+## Elegir · Aplicar · Ejecutar
+
+![Elige una plantilla, aplícala y ejecútala](/img/tutorials/tutorial-deploy-app/slide-1.svg)
+
+## Paso 1: Elegir
+
+<TutorialStep number={1} />
+
+Verás configuraciones listas para apps comunes: Postgres, Redis, servidores web y más.
+
+## Paso 2: Aplicar
+
+<TutorialStep number={2} />
+
+Esto copia un conjunto de archivos probados en el repo.
+
+## Paso 3: Ver qué se añadió
+
+<TutorialStep number={3} />
+
+Dos archivos: `docker-compose.yml` describe los contenedores, y `Rediaccfile` define qué ocurre cuando la app arranca y se detiene (los hooks de ciclo de vida `up` y `down`). El `2>/dev/null` oculta los logs de conexión para que solo se muestre el listado de archivos.
+
+## Paso 4: Ejecutar
+
+<TutorialStep number={4} />
+
+La CLI inicia los contenedores, monta el volumen cifrado y conecta un Docker daemon aislado para este repo. (Si ya estás dentro del sandbox del repo a través de VS Code, `renet dev up` es una alternativa equivalente dentro del sandbox.)
+
+## Paso 5: Verificar
+
+<TutorialStep number={5} />
+
+`docker ps` aquí lista solo los contenedores de este repo. Los demás repos en el mismo servidor tienen sus propios Docker daemons y son completamente invisibles desde este.
+
+---
+
+Siguiente: [Trabajar con tu repo](/es/docs/tutorial-work-with-repo).

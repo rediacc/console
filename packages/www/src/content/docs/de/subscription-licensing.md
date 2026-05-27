@@ -4,8 +4,8 @@ description: "Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Li
 category: "Guides"
 order: 7
 language: de
-sourceHash: "dc61245ac532e3a4"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "8e0a4976634ae323"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Abonnement & Lizenzierung
@@ -176,7 +176,7 @@ rdc subscription repo status -m hostinger
 Maschinenaktivierung aktualisieren und Repo-Lizenzen im Batch aktualisieren:
 
 ```bash
-rdc subscription refresh -m hostinger
+rdc subscription refresh repos -m hostinger
 ```
 
 Repositories, die auf der Maschine entdeckt wurden, aber in der lokalen `rdc`-Konfiguration fehlen, werden bei der Batch-Aktualisierung abgelehnt. Sie werden als Fehler gemeldet und nicht automatisch klassifiziert.

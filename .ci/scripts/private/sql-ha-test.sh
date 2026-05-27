@@ -254,8 +254,8 @@ HA_DOMAIN=sql.ci.local
 CLUSTER_ID=ci-test
 INITIAL_PRIMARY=${NODE_NAMES[0]}
 PORT=3000
-RUSTFS_ACCESS_KEY=rustfsadmin
-RUSTFS_SECRET_KEY=rustfsadmin
+RUSTFS_ACCESS_KEY=rediacc-coordinator
+RUSTFS_SECRET_KEY=rediacc-coordinator-secret
 LEASE_TTL_MS=120000
 MIN_STABLE_DURATION_MS=30000
 HEARTBEAT_TIMEOUT_MS=10000
@@ -271,6 +271,11 @@ EOF
     #    on 2026-04-26 main runs). /proc/net/tcp is always present and
     #    grep-able even on distroless variants. Port 9000 hex = 2328,
     #    LISTEN state = 0A.
+    # Note: rustfs:latest (CVE-2025-68926 hardening) FATALs on non-loopback
+    # listeners when the access/secret keys are its built-in default
+    # ("rustfsadmin"). The coordinator binds rustfs on 0.0.0.0:9000, so the
+    # .env above sets non-default RUSTFS_ACCESS_KEY/RUSTFS_SECRET_KEY (shared by
+    # the rustfs server, the coordinator S3 client, and rustfs-init).
     _ssh "$coord_ip" "cat > ${REMOTE_SQL_DIR}/coordinator/docker-compose.override.yml" <<'OVERRIDE'
 services:
   rustfs:

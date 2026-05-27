@@ -501,9 +501,8 @@ function countByStatus(sections: CheckSection[]): { warnings: number; errors: nu
 }
 
 function computeExitCode(sections: CheckSection[]): number {
-  const { warnings, errors } = countByStatus(sections);
+  const { errors } = countByStatus(sections);
   if (errors > 0) return 2;
-  if (warnings > 0) return 1;
   return 0;
 }
 

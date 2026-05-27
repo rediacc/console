@@ -2,30 +2,66 @@
   "cast": "/assets/tutorials/tutorial-backup-restore.cast",
   "language": "en",
   "version": 1,
+  "title": "Backup & Restore",
+  "chapters": {
+    "intro": "Backup & Restore",
+    "three-steps": "Three steps: configure, push, restore",
+    "cast-step-0": "Step 1: Import the rclone config",
+    "cast-step-1": "Step 2: List configured storages",
+    "cast-step-2": "Step 3: Push a full backup",
+    "cast-step-3": "Step 4: List backups on the storage",
+    "outro": "Next: Monitoring"
+  },
   "events": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 65.053708,
-      "text": "Step one. We will import an existing rclone configuration. rclone supports S3, Backblaze, Google Drive, Dropbox, and many more. If you already use it, the same config imports directly."
+      "at": 2.424169,
+      "text": "Step one. We will import an existing rclone configuration. rclone supports S3, Backblaze, Google Drive, Dropbox, and many more. If you already use it, the same config imports directly.",
+      "afterText": "Storage imported. Your CLI can now push backups to it.",
+      "cardLabel": "Import Storage",
+      "prose": "Import an existing rclone configuration. rclone supports S3, Backblaze, Google Drive, Dropbox, and many more. If you already use rclone, the same config imports directly."
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 73.743501,
-      "text": "Let us list the storages the CLI now knows about. Each one is a destination we can push backups to."
+      "at": 6.651448,
+      "text": "Let us list the storages the CLI now knows about. Each one is a destination we can push backups to.",
+      "afterText": "There it is. Ready to receive backups.",
+      "cardLabel": "List Storages",
+      "prose": "List the storages the CLI now knows about. Each one is a destination for backups."
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 82.843959,
-      "text": "Step two. Push a full backup. The entire repository, app, database, files, configuration, is uploaded. Because the repository is encrypted at rest, the backup is encrypted too. No extra key management."
+      "at": 10.354487,
+      "text": "Step two. Push a full backup. The entire repository, app, database, files, configuration, is uploaded. Because the repository is encrypted at rest, the backup is encrypted too. No extra key management.",
+      "afterText": "Backup uploaded. Everything in this repo is now on the remote storage, encrypted.",
+      "cardLabel": "Push Backup",
+      "prose": "Push a full backup. The entire repository is uploaded, including the app, database, files, and configuration. Because the repository is encrypted at rest, the backup is encrypted too, with no extra key management."
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 94.515541,
-      "text": "And the backups available on this storage. From here, restore on a brand new server is one command: the repo pull command."
+      "at": 18.28182,
+      "text": "And the backups available on this storage. From here, restore on a brand new server is one command: the repo pull command.",
+      "afterText": "All your snapshots in one place. Pull any of them back with a single command.",
+      "cardLabel": "List Backups",
+      "prose": "List the backups available on this storage. Restoring on a brand new server is one command: the repo pull command."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Your app is live, so let's make sure you never lose it! In this tutorial, we push the whole repository to external storage and pull it back on demand."
+    },
+    {
+      "id": "three-steps",
+      "text": "Backup and restore comes down to three steps. Configure a storage provider, push a backup, and restore it when you need to."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Your data is safe and portable across machines. See you in the next one!"
     }
   ]
 }

@@ -26,10 +26,6 @@
         "fetching": "Entitätsverlauf wird abgerufen...",
         "success": "Verlauf abgerufen"
       },
-      "list": {
-        "description": "Audit-Log-Einträge auflisten",
-        "fetching": "Audit-Logs werden abgerufen..."
-      },
       "log": {
         "description": "Audit-Logs anzeigen",
         "fetching": "Audit-Logs werden abgerufen...",
@@ -490,6 +486,8 @@
         "add": {
           "description": "Maschine zur aktuellen Konfiguration hinzufügen",
           "descriptionShort": "Maschine zur aktuellen Konfiguration hinzufügen",
+          "sshConfigFailed": "SSH-Alias konnte nicht geschrieben werden (nicht kritisch): {{error}}",
+          "sshConfigWritten": "SSH-Alias rediacc--{{name}} in ~/.ssh/config_rediacc eingetragen",
           "success": "Maschine \"{{name}}\" hinzugefügt ({{user}}@{{ip}})"
         },
         "description": "Maschinen in der aktuellen Konfiguration verwalten",
@@ -499,6 +497,7 @@
         },
         "remove": {
           "description": "Maschine aus der aktuellen Konfiguration entfernen",
+          "sshConfigCleared": "SSH-Alias rediacc--{{name}} entfernt",
           "success": "Maschine \"{{name}}\" entfernt"
         },
         "scanKeys": {
@@ -652,14 +651,6 @@
         "description": "Einen Standardwert setzen (Team, Region, Bridge)",
         "success": "\"{{key}}\" auf \"{{value}}\" gesetzt"
       },
-      "setRenet": {
-        "description": "Pfad zur renet-Binärdatei für den lokalen Modus setzen",
-        "success": "Renet-Pfad gesetzt auf: {{path}}"
-      },
-      "setSsh": {
-        "description": "SSH-Konfiguration für die aktuelle Konfiguration aktualisieren",
-        "success": "SSH-Konfiguration aktualisiert"
-      },
       "show": {
         "description": "Aktuelle Konfigurationsdetails anzeigen",
         "noConfig": "Keine aktive Konfiguration. Erstellen Sie eine mit: rdc config init",
@@ -733,6 +724,11 @@
         "starting": "Initialisiere Datenspeicher auf \"{{machine}}\"..."
       },
       "machineOption": "Maschinenname (wo der Ceph-Datenspeicher gehostet wird)",
+      "resize": {
+        "description": "Datenspeicher-Pool einer Maschine offline verkleinern oder vergrößern. Alle Repositories müssen zuvor ausgehängt werden.",
+        "sizeOption": "Neue Datenspeichergröße (z. B. 100G, 95%)",
+        "starting": "Datenspeicher auf \"{{machine}}\" wird auf {{size}} angepasst..."
+      },
       "status": {
         "description": "Datenspeicher-Backend, Größe, Nutzung, Mount-Status und cow_mode (falls geforkt) anzeigen",
         "starting": "Überprüfe Datenspeicher-Status auf \"{{machine}}\"..."
@@ -927,8 +923,10 @@
         "datastoreCompleted": "Datenspeicher-Bereinigung abgeschlossen",
         "datastoreFailed": "Datenspeicher-Bereinigung fehlgeschlagen",
         "datastoreOnlyOption": "Nur verwaiste Datenspeicher-Ressourcen bereinigen",
+        "datastorePrunedSummary": "{{count}} verwaiste Datastore-Ressource(n) entfernt",
         "description": "Verwaiste Datenspeicher-Ressourcen und veraltete Snapshots von einer Maschine entfernen",
         "descriptionShort": "Verwaiste Ressourcen und veraltete Snapshots bereinigen",
+        "dryRunHint": "{{count}} Ressource(n) würden entfernt. Ohne --dry-run erneut ausführen, um sie zu entfernen.",
         "dryRunOption": "Anzeigen, was entfernt würde, ohne Änderungen vorzunehmen",
         "forceDeleteMountedOption": "Setzt die Mount-Sicherheitsprüfung außer Kraft und löscht Repos, auch wenn sie aktuell gemountet sind oder laufende Docker-Container haben. Unterscheidet sich von --force (das nur die Archiv-Schonfrist überschreibt). Gilt sowohl für --orphaned-repos als auch für --prune-unknown.",
         "noReposFound": "Keine Repositories auf dem Rechner gefunden",
@@ -937,6 +935,7 @@
         "orphanedReposCompleted": "{{count}} verwaiste Repositories bereinigt",
         "orphanedReposOption": "Auch Repo-Images bereinigen, die in keiner Konfiguration enthalten sind",
         "orphanedReposStarting": "Suche nach verwaisten Repositories auf {{machine}}...",
+        "previewEmpty": "Keine verwaisten Datastore-Ressourcen gefunden",
         "pruneUnknownOption": "Löscht nur Repos, die der renet .interim/state Mirror nicht klassifizieren kann (nicht in lokaler Konfiguration UND kein fork-markierter Mirror). Strikt enger als --orphaned-repos: Forks ohne Konfiguration werden bewahrt, wenn der Mirror sie identifiziert. Pre-mirror Legacy-Waisen und veraltete Grands mit gelöschtem Konfigurationseintrag fallen beide in diesen Bereich.",
         "snapshotDeleted": "{{name}} gelöscht",
         "snapshotDeleting": "{{name}} wird gelöscht...",
@@ -958,7 +957,9 @@
         "fetching": "Status von {{machine}} wird abgerufen...",
         "infrastructure": "Infrastruktur",
         "noData": "Keine Statusdaten verfügbar",
+        "storageHealthFragmentationNote": "Die Fragmentierung zählt Extents im Copy-on-Write-Image jedes Repos, nicht die darin enthaltenen Dateien. Hohe Werte sind bei Workloads mit zufälligen Schreibzugriffen (Datenbanken, Container-Schichten) zu erwarten und nur informativ. Defragmentierung wird hier bewusst nicht unterstützt: Sie würde reflink-geteilte Forks und Backup-Snapshots entkoppeln und die Datastore-Nutzung aufblähen.",
         "storageHealthHint": "Tipp: Mit --storage-health ausführen, um BTRFS-Fragmentierung und reflink-Einsparungen pro Repo anzuzeigen",
+        "storageHealthSummary": "Speichereffizienz: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} Container haben den Drift-Schwellenwert überschritten; Beenden mit Nicht-Null-Code",
         "syncCertsFailed": "Zertifikats-Cache-Sync fehlgeschlagen: {{error}}"
       },
@@ -1004,11 +1005,6 @@
         "timeoutMessage": "Test-Verbindung hat Zeitüberschreitung. Prüfen Sie Queue-Nachverfolgung für Details.",
         "waiting": "Auf SSH-Test-Ergebnis wird gewartet...",
         "waitingTime": "Auf SSH-Test-Ergebnis wird gewartet... ({{seconds}}s)"
-      },
-      "update": {
-        "description": "Machine-Konfiguration aktualisieren",
-        "success": "Machine \"{{name}}\" aktualisiert",
-        "updating": "Machine wird aktualisiert..."
       },
       "vault": {
         "description": "Maschinen-Tresor-Verwaltung (nur Cloud-Adapter)"
@@ -1120,10 +1116,6 @@
         "notFound": "Keine Organisationsinformationen gefunden",
         "success": "Organisationsinformationen abgerufen"
       },
-      "list": {
-        "description": "Organisationen auflisten",
-        "fetching": "Organisationen werden abgerufen..."
-      },
       "maintenance": {
         "description": "Wartungsmodus aktivieren oder deaktivieren (blockiert Nicht-Admin-Anmeldungen)",
         "disabled": "Wartungsmodus deaktiviert",
@@ -1181,10 +1173,6 @@
           "fetching": "Details zur Berechtigungsgruppe werden abgerufen...",
           "success": "Details abgerufen"
         }
-      },
-      "list": {
-        "description": "Berechtigungen auflisten",
-        "fetching": "Berechtigungen werden abgerufen..."
       },
       "remove": {
         "description": "Entfernen Sie eine Berechtigung aus einer Gruppe",
@@ -1335,6 +1323,18 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} abgeschlossen: {{succeeded}}/{{total}} erfolgreich",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "cat": {
+        "description": "Einen begrenzten Ausschnitt einer Datei innerhalb eines Repositories lesen und auf stdout ausgeben (serverseitig begrenzt; Diagnosemeldungen gehen an stderr)",
+        "failed": "Lesen fehlgeschlagen",
+        "forceBinaryOption": "Lesen von Binärinhalten (mit NUL-Zeichen) erlauben",
+        "headOption": "Nur die ersten N Zeilen ausgeben (nicht kombinierbar mit Byte-Bereich)",
+        "maxBytesOption": "Maximale Anzahl zu lesender und auszugebender Bytes (Standard 1 MiB, Obergrenze 50 MiB)",
+        "offsetOption": "Byte-Offset, ab dem gelesen wird",
+        "remoteFileOption": "Zu lesender Dateipfad, relativ zum Mount-Wurzelverzeichnis des Repositories",
+        "starting": "Lese \"{{path}}\" aus \"{{repository}}\" auf \"{{machine}}\"...",
+        "statOption": "Nur Größe, Typ und Änderungszeit ausgeben; keinen Inhalt lesen",
+        "tailOption": "Nur die letzten N Zeilen ausgeben (nicht kombinierbar mit Byte-Bereich)"
+      },
       "certSync": {
         "updated": "ACME-Zertifikats-Cache von {{machine}} aktualisiert ({{count}} Zertifikate)"
       },
@@ -1353,6 +1353,7 @@
         "archived": "Zugangsdaten für \"{{repository}}\" archiviert",
         "archiveHint": "Um Anmeldedaten für die Wiederherstellung zu archivieren: erneut mit --archive-config ausführen",
         "archiveOption": "Konfigurationseintrag nach deletedRepositories verschieben zur späteren Wiederherstellung",
+        "cloudBackupHint": "Cloud-Backups (falls vorhanden) bleiben nach dem Löschen erhalten. Verwaiste Cloud-Backups entfernen mit: rdc storage prune --name <storage> -m {{machine}}",
         "completed": "Repository gelöscht",
         "configRetained": "Konfigurationseintrag für \"{{repository}}\" beibehalten (Repository kann auf anderen Maschinen existieren). Zum Entfernen: rdc config repository remove --name {{repository}}",
         "description": "Repository löschen (zerstört Container, Volumes und verschlüsseltes Image). Konfigurationseintrag bleibt erhalten. Verwenden Sie --archive-config, um Anmeldedaten nach deletedRepositories zu verschieben, zur Wiederherstellung über 'config restore-archived'",
@@ -1387,7 +1388,7 @@
       "fork": {
         "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
         "checkpointOption": "CRIU checkpoint auf der Quelle vor dem fork erstellen (Prozessspeicherzustand für Wiederherstellung beim fork erfassen)",
-        "completed": "Fork erstellt. Lokal bereitstellen: repo up {{repository}} -m {{machine}} --mount. Fork auf anderen Rechner migrieren: repo push {{repository}} -m {{machine}} --to <target> --up",
+        "completed": "Fork erstellt. Lokal bereitstellen: repo up {{repository}} -m {{machine}}. Fork auf anderen Rechner migrieren: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "CoW-Fork (Copy-on-Write) eines Repositorys erstellen",
         "descriptionShort": "CoW-Fork eines Repositorys erstellen (neue GUID, networkId, IP-Bereich)",
         "failed": "Fork-Erstellung fehlgeschlagen",
@@ -1402,6 +1403,7 @@
         "completed": "Auflistung abgeschlossen",
         "description": "Repositories auf einer Maschine auflisten",
         "failed": "Auflistung fehlgeschlagen: {{error}}",
+        "serverNameLegend": "* Name von der Maschine gelesen (nicht in Ihrer lokalen Konfiguration)",
         "starting": "Repositories auf \"{{machine}}\" werden aufgelistet..."
       },
       "machineOption": "Name der Zielmaschine",
@@ -1511,37 +1513,18 @@
         },
         "modeOption": "Lieferungsmodus: 'env' (sichtbar in Container-Umgebung, docker inspect) oder 'file' (tmpfs-Datei, niemals in env). Standard: file.",
         "nameOption": "Repository-Name (z. B. mail, mail:staging). Ohne Tag wird :latest standardmäßig verwendet.",
-        "rotateOption": "Rotation bestätigen; --current-Vorbedingung überspringen (als Rotation auditiert). Verwenden, wenn absichtlich rotiert wird, ohne den vorherigen Wert zu verifizieren.",
+        "rotateOption": "Rotation bestätigen; die Vorbedingung von --current überspringen (als Rotation auditiert). Verwenden, wenn absichtlich rotiert wird, ohne den vorherigen Wert zu verifizieren.",
         "set": {
-          "description": "Geheimnis setzen oder überschreiben. Forks erben nicht; auf dem Fork explizit setzen. Im Agent-Kontext ist eine --current-Digest-Übereinstimmung erforderlich (passwd-Stil).",
+          "description": "Geheimnis setzen oder überschreiben. Forks erben nicht; auf dem Fork explizit setzen. Im Agent-Kontext ist eine Digest-Übereinstimmung mit --current erforderlich (passwd-Stil).",
           "descriptionShort": "Repo-Geheimnis setzen oder überschreiben",
           "success": "Geheimnis \"{{key}}\" ({{mode}}) auf \"{{repository}}\" gesetzt"
         },
         "unset": {
-          "description": "Ein Geheimnis löschen. Im Agent-Kontext ist eine --current-Digest-Übereinstimmung erforderlich.",
+          "description": "Ein Geheimnis löschen. Im Agent-Kontext ist eine Digest-Übereinstimmung mit --current erforderlich.",
           "descriptionShort": "Repo-Geheimnis löschen",
           "success": "Geheimnis \"{{key}}\" aus \"{{repository}}\" entfernt"
         },
         "valueOption": "Geheimer Wert. `-` übergeben, um von stdin zu lesen (vermeidet Shell-Verlauf-Offenlegung)."
-      },
-      "snapshot": {
-        "create": {
-          "creating": "Snapshot von \"{{repo}}\" auf {{machine}} wird erstellt...",
-          "description": "BTRFS-Snapshot eines Repositorys erstellen",
-          "descriptionShort": "BTRFS-Snapshot eines Repositorys erstellen",
-          "optionSnapshotName": "Expliziter Snapshot-Name (wird automatisch generiert, wenn leer)",
-          "success": "Snapshot erstellt: {{name}} ({{path}})"
-        },
-        "delete": {
-          "description": "Snapshot von einem Remote-Rechner löschen",
-          "success": "Snapshot gelöscht: {{name}}"
-        },
-        "description": "BTRFS-Snapshots auf Remote-Rechnern verwalten",
-        "list": {
-          "description": "Snapshots auf einem Remote-Rechner auflisten",
-          "header": "{{count}} Snapshot(s) in {{path}}:",
-          "noSnapshots": "Keine Snapshots gefunden."
-        }
       },
       "status": {
         "completed": "Status abgerufen",
@@ -1554,19 +1537,6 @@
         "download": {
           "description": "Dateien aus einem Repository herunterladen",
           "descriptionShort": "Dateien per rsync von einem Repository herunterladen"
-        },
-        "pull": {
-          "description": "Repositories aus Cloud-Speicher abrufen (Name weglassen, um alle abzurufen)",
-          "optionFrom": "Name des Quellspeichers",
-          "optionOverride": "Vorhandene nicht gemountete Repos beim Abrufen überschreiben",
-          "optionRepo": "Auf bestimmtes Repository filtern (wiederholbar)",
-          "success": "Sync-Pull abgeschlossen"
-        },
-        "push": {
-          "description": "Repositories in Cloud-Speicher übertragen (Name weglassen, um alle zu übertragen)",
-          "optionRepo": "Auf bestimmtes Repository filtern (wiederholbar)",
-          "optionTo": "Name des Zielspeichers",
-          "success": "Sync-Push abgeschlossen"
         },
         "status": {
           "description": "Synchronisierungsstatus prüfen und lokale/entfernte Dateien vergleichen",
@@ -1650,7 +1620,6 @@
       "upAll": {
         "completed": "Alle Repositories gestartet",
         "concurrencyOption": "Maximale gleichzeitige Repositories (Standard: 3)",
-        "description": "Alle Repositories auf einer Maschine deployen",
         "dryRunOption": "Zeigen, was ausgeführt würde, ohne es tatsächlich auszuführen",
         "failed": "Sammelstart fehlgeschlagen",
         "includeForksOption": "Auch geforkte Repositories einbinden/starten",
@@ -1770,15 +1739,6 @@
         "listing": "Backups in \"{{storage}}\" werden aufgelistet...",
         "machineOption": "Ausführungsmaschine: führt rclone list/delete-Aufrufe gegen den Speicher aus. Erforderlich, weil Clients rclone nicht lokal installiert haben sollen; Speicheranmeldedaten kommen weiterhin aus Ihrer lokalen Konfiguration.",
         "noBackups": "Keine Backups im Speicher gefunden"
-      },
-      "pull": {
-        "completed": "Download abgeschlossen in {{duration}}ms",
-        "description": "Ein Backup aus dem Cloud-Speicher auf eine Maschine herunterladen",
-        "failed": "Download fehlgeschlagen: {{error}}",
-        "machineOption": "Name der Zielmaschine",
-        "noCredential": "Warnung: Repository \"{{name}}\" hat keine Zugangsdaten. Der Download kann fehlschlagen, wenn das Backup verschlüsselt ist.",
-        "repositoryOption": "Name des Repositories zum Herunterladen",
-        "starting": "\"{{repository}}\" wird von \"{{storage}}\" auf \"{{machine}}\" heruntergeladen..."
       },
       "rename": {
         "description": "Einen Speicheranbieter umbenennen"
@@ -2251,7 +2211,7 @@
           "afterDescription": "Der Health-Befehl gibt Systemmetriken, Container-Status, Dienststabilität und Speicherinformationen aus — nützlich für CI/CD-Pipeline-Prüfungen."
         },
         "testConnection": {
-          "tip": "Verwenden Sie `--save-known-hosts`, um den Host-Schlüssel nach einem erfolgreichen Test automatisch im Maschinen-Vault zu speichern."
+          "tip": "Verwenden Sie `--save`, um den Host-Schlüssel nach einem erfolgreichen Test automatisch im Maschinen-Vault zu speichern."
         }
       },
       "organization": {
@@ -2292,7 +2252,7 @@
       "createGuardOverrideNonLinux": "Es kann kein neues Grand-Repository \"{{name}}\" erstellt werden. Die REDIACC_ALLOW_GRAND_REPO-Überschreibung wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nErstellen Sie stattdessen einen Fork eines bestehenden Repositories:\n  rdc repo fork --parent <parent> -m <machine> --tag {{name}}\n\nUm die Überschreibung zu verwenden, führen Sie Ihren Agenten unter Linux aus (direkt, WSL, Docker oder eine VM).",
       "fieldReveal": "--reveal für das sensible Feld {{pointer}} ist in Agenten-Umgebungen blockiert. Agenten sollten --digest verwenden. Ein echter Benutzer an einem interaktiven Terminal kann --reveal ausführen.",
       "forkBlocked": "Der Befehl \"{{command}}\" ist für Fork-Repositories nicht verfügbar.\n\nFork-Repos sind temporäre Sandbox-Umgebungen. Diese Operation gilt nur für Grand-Repositories (Produktion). Bitten Sie den Benutzer, diesen Befehl direkt auszuführen.",
-      "grandGuard": "\"{{name}}\" ist ein Grand-Repository (Produktion). Agenten können Grand-Repositories nicht direkt ändern.\n\nGrand-Repositories enthalten Produktionsdaten. Verwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien.\n\nArbeitsablauf:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork (z.B. rdc repo up --name {{name}}:<tag-name> -m <machine> --mount)\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen\n\nBenutzer: Um direkten Zugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
+      "grandGuard": "\"{{name}}\" ist ein Grand-Repository (Produktion). Agenten können Grand-Repositories nicht direkt ändern.\n\nGrand-Repositories enthalten Produktionsdaten. Verwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien.\n\nArbeitsablauf:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork (z.B. rdc repo up --name {{name}}:<tag-name> -m <machine>)\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen\n\nBenutzer: Um direkten Zugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO={{name}} (oder * für alle Repos) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
       "grandGuardOverride": "\"{{name}}\" ist ein Grand-Repository (Produktion). Vom Agenten initiierte Überschreibungen werden nicht akzeptiert.\n\nVersuchen Sie nicht, REDIACC_ALLOW_GRAND_REPO zu setzen — nur der Benutzer kann dies vor dem Start des Agenten autorisieren.\n\nVerwenden Sie stattdessen einen Fork — Forks sind sichere, isolierte Sandbox-Kopien:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen",
       "grandGuardOverrideNonLinux": "\"{{name}}\" ist ein Grand-Repository (Produktion). Die REDIACC_ALLOW_GRAND_REPO-Überschreibung wird auf {{platform}} nicht unterstützt.\n\nDiese Überschreibung funktioniert nur unter Linux. Unter Windows und macOS müssen Agenten den Fork-First-Arbeitsablauf verwenden.\n\nArbeitsablauf:\n  1. rdc repo fork --parent {{name}} -m <machine> --tag <tag-name>\n  2. Arbeiten Sie mit dem Fork\n  3. Wenn fertig, kann der Benutzer den Fork mit rdc repo takeover übernehmen\n\nUm die Überschreibung zu verwenden, führen Sie Ihren Agenten unter Linux aus (direkt, WSL, Docker oder eine VM).",
       "machineGuard": "Direkter Maschinenzugriff auf \"{{machine}}\" ist im Agenten-Modus nicht erlaubt.\n\nAgenten müssen sich über einen Repository-Kontext für sandboxed Zugriff verbinden. Erstellen Sie zuerst einen Fork eines Repositories und verbinden Sie sich dann mit dem Fork.\n\nArbeitsablauf:\n  1. rdc repo fork --parent <repo> -m {{machine}} --tag <tag-name>\n  2. rdc term connect -m {{machine}} -r <repo>:<tag-name> -c \"<command>\"\n\nBenutzer: Um direkten Maschinenzugriff zu erlauben, setzen Sie REDIACC_ALLOW_GRAND_REPO=* (oder einen bestimmten Repository-Namen) in Ihrem Terminal, bevor Sie die Agenten-Sitzung starten.",
@@ -2344,6 +2304,12 @@
     "invalidPort": "Ungültige Portnummer: \"{{port}}\". Muss zwischen 1 und 65535 liegen.",
     "invalidPriorityMax": "Ungültiger priority-max-Wert. Muss zwischen 1 und 5 liegen.",
     "invalidPriorityMin": "Ungültiger priority-min-Wert. Muss zwischen 1 und 5 liegen.",
+    "license": {
+      "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
+      "recoveryFailedNoKnownRepos": "Auf {{machine}} wurden Repositories gefunden, aber keines ist in deiner lokalen Konfiguration eingetragen. Liste deine verfolgten Repos mit `rdc config repository list`, dann versuche es erneut.",
+      "recoveryFailedServerRejected": "Der Account-Server hat die Lizenzausstellung für das Repository abgelehnt. Erster Fehler: {{error}}. Ausführen: rdc subscription refresh repo --name <repo> -m {{machine}} für Details.",
+      "recoveryFailedTokenNotReady": "Das Subscription-Token ist noch nicht bereit. Ausführen: rdc subscription login, dann erneut versuchen."
+    },
     "machineNotFound": "Machine \"{{name}}\" nicht gefunden",
     "machineRequired": "Machine-Name erforderlich. Verwenden Sie --machine <name>",
     "machineRequiredLocal": "Machine-Name erforderlich. Verwenden Sie --machine <name>",
@@ -2355,7 +2321,7 @@
     "poolNotFound": "Ceph-Pool \"{{name}}\" nicht gefunden",
     "precondition": {
       "currentSecretsRequired": "{{pointer}}: Sensibles Feld ohne --current geändert; geben Sie --current-secrets <file> mit pointer→alter-Wert-Zuordnung an",
-      "digestMismatch": "--current-Prüfsummen-Mismatch (erwartet {{expected}}…, erhalten {{got}}…)",
+      "digestMismatch": "--current Prüfsummen-Mismatch (erwartet {{expected}}…, erhalten {{got}}…)",
       "kindMismatch": "Werttyp geändert (gespeichert: {{stored}}, behauptet: {{claimed}})",
       "mismatch": "Precondition fehlgeschlagen für {{count}} Pfad(e):\n{{details}}",
       "missing": "Sensibler Pfad erfordert --current (oder --rotate-secret)",
@@ -2415,13 +2381,13 @@
       "tokenWarning": "Kein Abonnement-Token gefunden. Lizenzbedürftige Befehle (repo create, repo fork) werden fehlschlagen. Setzen Sie die Umgebungsvariable REDIACC_SUBSCRIPTION_TOKEN oder führen Sie `rdc subscription login` in Ihrem Terminal aus."
     },
     "sync": {
-      "absolutePathBlocked": "Der --remote-Pfad muss relativ sein, nicht absolut. Verwenden Sie einen Pfad relativ zum Repository-Stammverzeichnis.",
+      "absolutePathBlocked": "Der Pfad von --remote muss relativ sein, nicht absolut. Verwenden Sie einen Pfad relativ zum Repository-Stammverzeichnis.",
       "localPathNotFound": "Lokaler Pfad existiert nicht: {{path}}",
       "mirrorWithFile": "--mirror kann nicht verwendet werden, wenn eine Quelle eine Datei ist: Geschwisterdateien im Zielverzeichnis würden gelöscht.",
       "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
       "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
-      "pathTraversalBlocked": "Der --remote-Pfad darf keine \"..\" Pfadtraversierung enthalten. Verwenden Sie einen Pfad innerhalb des Repositorys.",
+      "pathTraversalBlocked": "Der Pfad von --remote darf keine \"..\" Pfadtraversierung enthalten. Verwenden Sie einen Pfad innerhalb des Repositorys.",
       "remoteAndRemoteFile": "--remote und --remote-file können nicht zusammen verwendet werden. Wählen Sie eine Option.",
       "remoteFileLocalNotDir": "Wenn --remote-file gesetzt ist, muss --local ein vorhandenes Verzeichnis sein: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file erfordert genau einen --local Pfad, der auf eine Datei verweist."
@@ -2461,7 +2427,7 @@
     }
   },
   "help": {
-    "agentMode": "\n  Agent-Modus\n    • Nur Forks: Erstellen Sie einen Fork, bevor Sie Änderungen an einem Repository vornehmen\n    • Grand-Repositorys (keine Forks) sind für Agenten schreibgeschützt\n    • Arbeitsablauf: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> --mount → term <machine> <fork>\n",
+    "agentMode": "\n  Agent-Modus\n    • Nur Forks: Erstellen Sie einen Fork, bevor Sie Änderungen an einem Repository vornehmen\n    • Grand-Repositorys (keine Forks) sind für Agenten schreibgeschützt\n    • Arbeitsablauf: repo fork --parent <name> -m <machine> → repo up <fork> -m <machine> → term <machine> <fork>\n",
     "cli": {
       "machineQuery": "Maschinenstatus anzeigen",
       "repoUp": "Repository-Dienste bereitstellen",

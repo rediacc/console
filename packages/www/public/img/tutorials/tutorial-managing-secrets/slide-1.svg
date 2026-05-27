@@ -5,11 +5,11 @@
     .repo { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 10; ry: 10; }
     .danger-fill { fill: #fbe5e3; stroke: #b3372d; stroke-width: 2; rx: 4; ry: 4; }
     .danger-stroke { stroke: #b3372d; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-    .label { fill: #1a1a1a; font: 700 18px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
-    .env-text { fill: #b3372d; font: 600 13px JetBrainsMono, "JetBrains Mono", monospace; }
-    .desc { fill: #5e5e5e; font: 400 14px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .label { fill: #1a1a1a; font-weight: 700; font-size: 18px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .env-text { fill: #b3372d; font-weight: 600; font-size: 13px; font-family: JetBrainsMono, "JetBrains Mono", monospace; }
+    .desc { fill: #5e5e5e; font-weight: 400; font-size: 14px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
     .arrow { stroke: #b3372d; stroke-width: 2.5; fill: none; }
-    .closer { fill: #b3372d; font: 600 22px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .closer { fill: #b3372d; font-weight: 600; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
   </style>
   <rect class="bg" width="960" height="540"/>
 

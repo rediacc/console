@@ -1,0 +1,58 @@
+---
+title: "모니터링"
+description: "rdc machine 명령으로 노트북에서 서버와 저장소의 상태를 확인합니다."
+category: "Tutorials"
+subcategory: advanced
+order: 12
+language: ko
+sourceHash: "7690e2a129161381"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 모니터링
+
+앱이 배포되고, 실행 중이고, 백업되었습니다. 이제 모든 것이 건강하게 유지되도록 합니다. `rdc`는 노트북에서 상태, 컨테이너, 저장소 등 모든 서버의 전체 모습을 제공합니다.
+
+## 튜토리얼 보기
+
+![Tutorial: Monitoring](/assets/tutorials/tutorial-monitoring.cast)
+
+## 확인할 수 있는 세 가지
+
+![Health, containers, repos](/img/tutorials/tutorial-monitoring/slide-1.svg)
+
+## 상태 확인: 시스템 정보
+
+<TutorialStep number={1} />
+
+시스템 가동 시간, 디스크 사용량, 스토리지 상태를 표시합니다. 문제가 있으면 알려줍니다.
+
+## 컨테이너
+
+<TutorialStep number={2} />
+
+각 컨테이너의 이름, 상태, 헬스, CPU, 메모리와 어떤 저장소가 소유하는지 확인할 수 있습니다.
+
+## 저장소
+
+<TutorialStep number={3} />
+
+크기, 마운트 상태, Docker 상태, 디스크 사용량과 함께 모든 저장소를 표시합니다.
+
+## 한 번에 모든 것 확인
+
+<TutorialStep number={4} />
+
+시스템 정보, 저장소, 컨테이너 모두 하나의 명령으로. 필터 없이 사용하는 `query` 명령은 전체 모습을 반환하고, `--system`, `--containers`, `--repositories`, `--services`, `--network`, `--block-devices`로 해당 섹션만 좁힐 수 있습니다.
+
+## 로컬 상태 확인
+
+`rdc doctor`는 특정 서버와 무관하게 로컬 설정(Node, SSH 키, `renet`, Docker)을 확인합니다:
+
+<TutorialStep number={5} />
+
+## 완료
+
+이것으로 전체 시리즈가 끝났습니다. 이제 설치, 구성, 배포, 포크, 라이브 전환, 자동 시작, 백업, 모니터링을 모두 터미널에서, 여러분 자신의 서버에서 할 수 있습니다.

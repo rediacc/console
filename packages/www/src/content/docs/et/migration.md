@@ -4,7 +4,8 @@ description: "Olemasolevate projektide migreerimine krüpteeritud Rediacc hoidla
 category: "Guides"
 order: 11
 language: et
-sourceHash: "feb1fcafc824b4b2"
+sourceHash: "69ab61a2875f8d70"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Migratsioonijuhend
@@ -15,7 +16,7 @@ Migreerige olemasolev projekt, failid, Dockeri teenused, andmebaasid, traditsioo
 
 - `rdc` CLI installitud ([Installatsioon](/en/docs/installation))
 - Masin lisatud ja ettevalmistatud ([Seadistus](/en/docs/setup))
-- Serveri kettaruum on piisav teie projekti jaoks (kontrollige `rdc machine status` abil)
+- Serveri kettaruum on piisav teie projekti jaoks (kontrollige `rdc machine query` abil)
 
 ## Samm 1: Looge hoidla
 
@@ -95,6 +96,8 @@ Vaikimisi 7111-st erineva UID seadistamiseks:
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **Ettevaatus:** `7111` on kõikjal kasutatav universaalne Rediacc UID (see vastab devcontaineri pilti põimitud `rediacc` kasutajale). Seda tuleks `--uid` abil üle kirjutada ainult selleks, et tagada ühilduvus konkreetse välise UID-ga omistatud failidega. See **ei** ole migratsioonisihtmärk. Uued hoidlad peaksid säilitama vaikeväärtuse.
 
 ## Samm 4: Seadistage oma Rediaccfile
 

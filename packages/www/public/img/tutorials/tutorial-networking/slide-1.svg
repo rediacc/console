@@ -3,9 +3,9 @@
   <style>
     .bg { fill: #f7f7f6; }
     .num { fill: #556b2f; }
-    .num-text { fill: #ffffff; font: 700 26px Inter, system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
-    .label { fill: #1a1a1a; font: 600 20px Inter, system-ui, sans-serif; text-anchor: middle; }
-    .sub { fill: #5e5e5e; font: 400 13px JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .num-text { fill: #ffffff; font-weight: 700; font-size: 50px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+    .label { fill: #1a1a1a; font-weight: 600; font-size: 20px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .sub { fill: #5e5e5e; font-weight: 400; font-size: 13px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
     .connector { stroke: #cdcdcd; stroke-width: 2; fill: none; }
   </style>
   <rect class="bg" width="960" height="540"/>

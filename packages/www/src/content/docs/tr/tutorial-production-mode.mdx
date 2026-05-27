@@ -1,0 +1,61 @@
+---
+title: "Üretim Modu"
+description: "Uygulamanızı dizüstü bilgisayarınızdan bağımsız çalıştırın ve otomatik başlatma ile sunucu yeniden başlamalarından kurtulun."
+category: "Tutorials"
+subcategory: advanced
+order: 10
+language: tr
+sourceHash: "6921482ea1810fb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Üretim Modu
+
+Şimdiye kadar uygulamayı depo içinden `renet dev up` ile çalıştırdınız. Bu, geliştirme için idealdir. Üretim için her şeyi dizüstü bilgisayarınızdan `rdc` ile yönetirsiniz. Dizüstü bilgisayarınızı kapatın; uygulama çalışmaya devam eder.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Production mode](/assets/tutorials/tutorial-production-mode.cast)
+
+## Geliştirme ile üretim farkı
+
+Fark basittir:
+
+- `renet dev up`, **deponun içinde** çalışır. Bağlı olmanız gerekir.
+- `rdc repo up`, **dizüstü bilgisayarınızdan** çalışır. Sonrasında bağlantıya gerek yoktur.
+
+Geliştirmeden üretime geçmek için üç işlem:
+
+![Stop, start, autostart](/img/tutorials/tutorial-production-mode/slide-1.svg)
+
+Depoda hâlâ çalışan bir `renet dev up` oturumunuz varsa, önce `rdc vscode connect -m my-server -r my-app` ardından `renet dev down` ile durdurun. Bundan sonra her şey tamamen dizüstü bilgisayarınızdan yönetilir.
+
+## Adım 1: Üretim modunda başlatın
+
+<TutorialStep number={1} />
+
+`rdc repo up`, `renet dev up`'ın çağırdığı `up` fonksiyonunun aynısını çağırır. Aynı `Rediaccfile`, farklı çağrı yöntemi; ancak şimdi bağlantı kestikten sonra uygulama çalışmaya devam eder.
+
+## Adım 2: Otomatik başlatmayı etkinleştirin
+
+<TutorialStep number={2} />
+
+Sunucu yeniden başlarsa bu depo otomatik olarak geri gelir.
+
+## Adım 3: Otomatik başlatması etkin depoları listeleyin
+
+<TutorialStep number={3} />
+
+Uygulamanızın önyükleme listesinde olduğunu hızlıca doğrulayın.
+
+## Adım 4: Dizüstü bilgisayarınızdan durdurun
+
+<TutorialStep number={4} />
+
+Bir komutla açın, bir komutla kapatın. Hepsi dizüstü bilgisayarınızdan.
+
+---
+
+Sonraki: [Yedekleme ve Geri Yükleme](/tr/docs/tutorial-backup-restore).

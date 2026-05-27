@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0b1220"/>
+      <stop offset="100%" stop-color="#1a2740"/>
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  <rect x="0" y="1010" width="1920" height="6" fill="#00d68f"/>
+  <text x="160" y="380" font-family="JetBrains Mono, monospace" font-size="36" fill="#8aa0c2" letter-spacing="6">UP NEXT</text>
+  <text x="160" y="540" font-family="Inter, sans-serif" font-size="100" font-weight="700" fill="#ffffff">{{NEXT_TITLE}}</text>
+  <text x="160" y="640" font-family="Inter, sans-serif" font-size="34" fill="#00d68f">{{NEXT_HREF}}</text>
+  <text x="160" y="900" font-family="Inter, sans-serif" font-size="28" fill="#5b7090">rediacc.com</text>
+</svg>

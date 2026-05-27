@@ -6,14 +6,52 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 32.02867,
-      "text": "Loome serverile 2 gigabaidise krüpteeritud repositooriumi. Repositoorium on puhkeolekus üksik krüpteeritud fail. Ühendamisel muutub see kaustaks, millel on oma Dockeri deemon ja oma rakenduse andmed, täielikult isoleeritud kõigest muust serveris."
+      "at": 2.409686,
+      "text": "Loome serverile 2 gigabaidise krüpteeritud repositooriumi. Repositoorium on puhkeolekus üksik krüpteeritud fail. Ühendamisel muutub see kaustaks, millel on oma Dockeri deemon ja oma rakenduse andmed, täielikult isoleeritud kõigest muust serveris.",
+      "afterText": "Repositoorium on loodud. Krüpteeritud fail on serveris, valmis ühendamiseks.",
+      "cardLabel": "Loo repo",
+      "prose": "Loo serverile 2 GB suurune krüptitud repository. Repo on üks krüptitud fail kettal. Selle loomine ühendab selle kohe: kaust oma Docker daemoniga ja isoleeritud rakendusandmetega."
     },
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 62.567023,
-      "text": "Loetleme masina repositooriumid, et kinnitada uue registreerimist. Edaspidi saab repositooriumi avada VS Code'is, juurutada, teha sellest forki või varundada -- kõik sülearvutist."
+      "at": 11.760396,
+      "text": "Loetleme masina repositooriumid, et kinnitada uue registreerimist. Edaspidi saab repositooriumi avada VS Code'is, juurutada, teha sellest forki või varundada -- kõik sülearvutist.",
+      "afterText": "Seal see on, registreeritud ja kasutusvalmis.",
+      "cardLabel": "Loetle repod",
+      "prose": "Kinnita, et uus repo on registreeritud. Kui see on loetletud, saab selle juurutada, forkida, varundada või avada oma sülearvutis redaktoriga."
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "at": 17.238181,
+      "text": "Üks kasulik võimalus: avada repo otse VS Code'is selle käsuga. Me ei käivita siin redaktorit, kuid see alustab SSH kaudu repo'sse kaugseanssi, et saaksite selle faile muuta.",
+      "afterText": "Käivitage see oma sülearvutis, et muuta repo faile VS Code'is.",
+      "cardLabel": "Ava VS Code'is",
+      "prose": "Ava repo otse VS Code'is käsuga rdc vscode connect. See käivitab kaugse SSH-seansi repossa, nii et saad selle faile oma redaktoris muuta."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Loome su esimese repositooriumi! See on puhkeolekus krüpteeritud fail, mis ühendamisel muutub täielikult isoleeritud keskkonnaks."
+    },
+    {
+      "id": "file-on-disk",
+      "text": "Kettal on see üksik krüpteeritud kujutis. Ühendamisel saad pühendatud Dockeri deemoni, rakenduse andmed krüpteeritud mahu sees ja loopback IP-d, mis ei kattu millegi muuga serveris."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "See on su esimene repositoorium, kasutusvalmis. Järgmisena juurutame selle sisse rakenduse!"
+    }
+  ],
+  "title": "Esimese Repository Loomine",
+  "chapters": {
+    "intro": "Esimese Repository Loomine",
+    "file-on-disk": "Fail kettal, keskkond ühendamisel",
+    "cast-step-0": "Loo repository",
+    "cast-step-1": "Kontrolli registreerimist",
+    "cast-step-2": "Ava VS Code'is",
+    "outro": "Järgmine: esimese rakenduse juurutamine"
+  }
 }

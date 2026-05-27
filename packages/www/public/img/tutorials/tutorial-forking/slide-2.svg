@@ -4,9 +4,9 @@
     .bg { fill: #f7f7f6; }
     .icon-stroke { fill: none; stroke: #556b2f; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
     .icon-fill { fill: #eef2e6; stroke: #556b2f; stroke-width: 2.5; stroke-linejoin: round; }
-    .label { fill: #1a1a1a; font: 600 18px Inter, system-ui, sans-serif; text-anchor: middle; }
-    .heavy { fill: #1a1a1a; font: 700 24px Inter, system-ui, sans-serif; text-anchor: middle; }
-    .light { fill: #556b2f; font: 700 24px Inter, system-ui, sans-serif; text-anchor: middle; }
+    .label { fill: #1a1a1a; font-weight: 600; font-size: 18px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .heavy { fill: #1a1a1a; font-weight: 700; font-size: 24px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .light { fill: #556b2f; font-weight: 700; font-size: 24px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
     .arrow { stroke: #556b2f; stroke-width: 3; fill: none; }
   </style>
   <rect class="bg" width="960" height="540"/>

@@ -4,7 +4,8 @@ description: "Wie Rediacc die Anforderungen der EU NIS2-Cybersicherheitsrichtlin
 category: "Legal"
 order: 8
 language: de
-sourceHash: "be77425c2d3b38d2"
+sourceHash: "a2078388f7ae1906"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 NIS2 und DORA sind EU-Verordnungen, die Cybersicherheits- und operationelle Resilienzanforderungen an kritische Infrastruktur- und Finanzsektor-Organisationen stellen. Beide traten 2025 in Kraft und gelten breit über EU-Branchen hinweg.
@@ -21,7 +22,7 @@ Volltext: [Richtlinie (EU) 2022/2555](https://eur-lex.europa.eu/eli/dir/2022/255
 |-----------------|-------------------|
 | Risikomanagement-Maßnahmen (Art. 21) | LUKS2-Verschlüsselung im Ruhezustand, Netzwerkisolation pro Repository, ausschließlicher SSH-Zugang, Audit-Logging auf Kontoebene (40+ Ereignistypen) |
 | Vorfallsbehandlung (Art. 21(2)(b)) | 40+ Ereignistypen auf Kontoebene (Auth, Tokens, Config, Lizenzierung) bieten forensischen Trail. Repository-Isolation begrenzt den Wirkungsradius. |
-| Geschäftskontinuität (Art. 21(2)(c)) | `rdc repo backup push/pull` mit verschlüsseltem Multi-Destination-Backup. CoW-Snapshots für sofortiges Rollback. |
+| Geschäftskontinuität (Art. 21(2)(c)) | `rdc repo push/pull` mit verschlüsseltem Multi-Destination-Backup. CoW-Snapshots für sofortiges Rollback. |
 | Lieferkettensicherheit (Art. 21(2)(d)) | Self-Hosting eliminiert SaaS-Lieferkettenrisiken. Kein Drittanbieter-Cloud-Provider verarbeitet Ihre Daten. |
 | Netzwerksicherheit (Art. 21(2)(e)) | Pro-Repository Docker Daemons, iptables-Regeln, Loopback-IP-Isolation (/26-Subnetze). |
 | Verschlüsselung (Art. 21(2)(h)) | Obligatorische LUKS2 AES-256-Verschlüsselung. Zero-Knowledge-Config-Store mit AES-256-GCM. |
@@ -49,7 +50,7 @@ Volltext: [Verordnung (EU) 2022/2554](https://eur-lex.europa.eu/eli/reg/2022/255
 | ICT-Risikomanagement-Framework (Art. 6) | Verschlüsselung, Isolation, Audit-Logging und Backup bilden die technische Kontrollschicht. |
 | Schutz und Prävention (Art. 9) | LUKS2 AES-256-Verschlüsselung im Ruhezustand. Netzwerkisolation verhindert laterale Bewegung. Ausschließlicher SSH-Zugang. |
 | Erkennung (Art. 10) | 40+ Ereignistypen auf Kontoebene. Admin-Dashboard mit Filterung pro Benutzer und Team. Maschinenoperationen über SSH und Systemlogs auditierbar. |
-| Reaktion und Wiederherstellung (Art. 11) | CoW-Snapshots für sofortiges Rollback. `rdc repo backup push/pull` für Multi-Destination-Recovery. Fork-basierte Disaster-Recovery-Tests. |
+| Reaktion und Wiederherstellung (Art. 11) | CoW-Snapshots für sofortiges Rollback. `rdc repo push/pull` für Multi-Destination-Recovery. Fork-basierte Disaster-Recovery-Tests. |
 | ICT-Drittanbieter-Risiko (Art. 28-30) | Self-Hosting eliminiert die Klassifikation als "kritischer ICT-Drittanbieter" vollständig. |
 | Digitale operationelle Resilienztests (Art. 24-27) | CoW-Kloning ermöglicht bedrohungsgeleitete Penetrationstests auf produktionsnahen Umgebungen ohne Datenexposition. Klonen, testen, zerstören. |
 

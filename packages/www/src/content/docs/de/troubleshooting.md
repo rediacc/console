@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 10
 language: de
-sourceHash: 4575658381fb6508
-sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
+sourceHash: "658b00b83875950d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Fehlerbehebung
@@ -129,7 +129,7 @@ Ersetzen Sie `2816` durch die Netzwerk-ID Ihres Repositories (zu finden in `redi
 
 Innerhalb einer Repository-Shell erhalten Sie, wenn Sie einen Container ohne `--network host` starten, einen isolierten Container, der nur über ein Loopback-Interface verfügt, kein DNS und keine ausgehende Konnektivität hat. Befehle wie `apt update`, `pip install`, `curl https://...` oder jeder Netzwerk-Abruf schlagen sofort mit DNS-Fehlern fehl.
 
-Dies ist beabsichtigt. Rediaccs Netzwerkmodell ist **Host-Networking für jeden Dienst**, durchgesetzt von `renet compose`. Eine standardmäßige Docker-Bridge mit NAT würde die Loopback-Isolation auf Kernel-Ebene umgehen, die verhindert, dass ein Repo die Dienste eines anderen Repos erreicht, weshalb der pro-Repo-Docker-Daemon mit `"bridge": "none"` und `"iptables": false` konfiguriert ist. Es gibt keine routebare Bridge, an die sich ein einfacher `docker run`-Container anhängen könnte.
+Dies ist beabsichtigt. Rediaccs Netzwerkmodell ist **Host-Networking für jeden Dienst**, durchgesetzt von `renet compose`. Eine standardmäßige Docker-Bridge mit NAT würde die Loopback-Isolation auf Kernel-Ebene umgehen, die verhindert, dass ein Repo die Dienste eines anderen Repos erreicht, weshalb der pro-Repo-Docker-Daemon (`FlavorRediacc`) mit `"bridge": "none"` und `"iptables": false` konfiguriert ist. Es gibt keine routebare Bridge, an die sich ein einfacher `docker run`-Container anhängen könnte. (Benutzerspezifische Hub-Daemons (`FlavorHub`), die von Entwicklungsumgebungen genutzt werden, sind die Ausnahme: Sie aktivieren Bridge und iptables, damit benutzerdefinierte Container ausgehende Netzwerkkonnektivität besitzen.)
 
 **Um in einem Ad-hoc-Container Netzwerkzugriff zu erhalten, verwenden Sie Host-Networking:**
 

@@ -4,9 +4,18 @@
  * All resource access goes through ResourceState, eliminating mode-specific branches.
  */
 
+import { promises as fs } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { MIN_NETWORK_ID, NETWORK_ID_INCREMENT } from '@rediacc/shared/queue-vault';
+import {
+  addMachineSSHConfigEntry,
+  removeMachineSSHConfigEntry,
+} from '@rediacc/shared-desktop/vscode';
 import { configFileStorage } from '../adapters/config-file-storage.js';
+import { t } from '../i18n/index.js';
+import { outputService } from './output.js';
 import type {
   ArchivedRepository,
   BackupStrategyConfig,
@@ -21,36 +30,7 @@ import type {
 import { hasCloudCredentials } from '../types/index.js';
 import { parseRepoRef } from '../utils/config-schema.js';
 import { ConfigServiceBase } from './config-base.js';
-
-// Find the initial network ID when the forward counter is missing or stale.
-// Avoids `Math.max(...usedIds)` because JS engines cap function arguments
-// around 65536 while the network ID space allows ~261000 IDs — a long-lived
-// shared config can hit that cap before the MAX_NETWORK_ID ceiling.
-function pickInitialNetworkId(usedIds: Set<number>): number {
-  if (usedIds.size === 0) return MIN_NETWORK_ID;
-  let maxId = -1;
-  for (const id of usedIds) {
-    if (id > maxId) maxId = id;
-  }
-  return maxId + NETWORK_ID_INCREMENT;
-}
-
-// Linear scan for the first free slot when the forward counter has walked
-// past the allowed ceiling. Thrown error is caught by the outer allocation
-// path and surfaced to the user.
-function findFreeNetworkIdSlot(usedIds: Set<number>, maxNetworkId: number): number {
-  let candidate = MIN_NETWORK_ID;
-  while (usedIds.has(candidate) && candidate <= maxNetworkId) {
-    candidate += NETWORK_ID_INCREMENT;
-  }
-  if (candidate > maxNetworkId) {
-    const totalSlots = Math.floor((maxNetworkId - MIN_NETWORK_ID) / NETWORK_ID_INCREMENT + 1);
-    throw new Error(
-      `Network ID space exhausted: all ${totalSlots} slots are in use. Delete unused repositories to free slots.`
-    );
-  }
-  return candidate;
-}
+import { findFreeNetworkIdSlot, pickInitialNetworkId } from './config-network-id.js';
 
 class ConfigService extends ConfigServiceBase {
   /**
@@ -90,15 +70,35 @@ class ConfigService extends ConfigServiceBase {
     }
 
     const sshContent = state.getSSH();
-    if (!sshContent?.privateKey) {
-      throw new Error(`Config "${configName}" has no SSH key configured`);
+    let sshPrivateKey = sshContent?.privateKey;
+    let sshPublicKey = sshContent?.publicKey;
+    // Fall back to the standard local SSH key when none is configured (e.g. a
+    // config auto-created without `rdc config init --ssh-key`). Keeps the
+    // common case zero-config: if ~/.ssh/id_rsa (or id_ed25519) exists, use it.
+    if (!sshPrivateKey) {
+      const sshDir = path.join(os.homedir(), '.ssh');
+      for (const name of ['id_rsa', 'id_ed25519']) {
+        const keyPath = path.join(sshDir, name);
+        try {
+          sshPrivateKey = await fs.readFile(keyPath, 'utf-8');
+          sshPublicKey = await fs.readFile(`${keyPath}.pub`, 'utf-8').catch(() => undefined);
+          break;
+        } catch {
+          // try the next default key
+        }
+      }
+    }
+    if (!sshPrivateKey) {
+      throw new Error(
+        `Config "${configName}" has no SSH key configured and no default key found at ~/.ssh/id_rsa or ~/.ssh/id_ed25519`
+      );
     }
 
     return {
       machines,
       ssh: { privateKeyPath: '' },
-      sshPrivateKey: sshContent.privateKey,
-      sshPublicKey: sshContent.publicKey,
+      sshPrivateKey,
+      sshPublicKey,
       renetPath: config.renetPath ?? DEFAULTS.CONTEXT.RENET_BINARY,
       cfDnsApiToken: config.credentials?.cfDnsApiToken,
       cfDnsZoneId: config.infra?.cfDnsZoneId,
@@ -127,6 +127,18 @@ class ConfigService extends ConfigServiceBase {
     const machines = state.getMachines();
     machines[machineName] = config;
     await state.setMachines(machines);
+    try {
+      addMachineSSHConfigEntry({
+        machineName,
+        host: config.ip,
+        port: config.port ?? DEFAULTS.SSH.PORT,
+        sshUser: config.user,
+        datastore: config.datastore,
+      });
+      outputService.info(t('commands.config.machine.add.sshConfigWritten', { name: machineName }));
+    } catch (err) {
+      outputService.warn(t('commands.config.machine.add.sshConfigFailed', { error: String(err) }));
+    }
   }
 
   async removeMachine(machineName: string): Promise<void> {
@@ -136,6 +148,12 @@ class ConfigService extends ConfigServiceBase {
     if (!(machineName in machines)) throw new Error(`Machine "${machineName}" not found`);
     delete machines[machineName];
     await state.setMachines(machines);
+    try {
+      removeMachineSSHConfigEntry(machineName);
+    } catch {
+      /* non-fatal */
+    }
+    outputService.info(t('commands.config.machine.remove.sshConfigCleared', { name: machineName }));
   }
 
   async listMachines(): Promise<{ name: string; config: MachineConfig }[]> {
@@ -233,10 +251,10 @@ class ConfigService extends ConfigServiceBase {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
     const storages = state.getStorages();
-    if (!(storageName in storages)) {
-      const available = Object.keys(storages).join(', ');
-      throw new Error(`Storage "${storageName}" not found. Available: ${available || 'none'}`);
-    }
+    if (!(storageName in storages))
+      throw new Error(
+        `Storage "${storageName}" not found. Available: ${Object.keys(storages).join(', ') || 'none'}`
+      );
     return storages[storageName];
   }
 
@@ -293,12 +311,9 @@ class ConfigService extends ConfigServiceBase {
     if (!config || hasCloudCredentials(config)) return {};
 
     const state = await this.getResourceState();
-    const repos = state.getRepositories();
     const map: Record<string, string> = {};
-    for (const [, repoConfig] of Object.entries(repos)) {
-      if (repoConfig.credential) {
-        map[repoConfig.repositoryGuid] = repoConfig.credential;
-      }
+    for (const repoConfig of Object.values(state.getRepositories())) {
+      if (repoConfig.credential) map[repoConfig.repositoryGuid] = repoConfig.credential;
     }
     return map;
   }
@@ -353,15 +368,10 @@ class ConfigService extends ConfigServiceBase {
   ): Promise<{ key: string; tag: string; config: RepositoryConfig }[]> {
     const { parseRepoRef } = await import('../utils/config-schema.js');
     const repos = await this.listRepositories();
-    return repos
-      .filter((r) => {
-        const { name } = parseRepoRef(r.name);
-        return name === baseName;
-      })
-      .map((r) => {
-        const { tag } = parseRepoRef(r.name);
-        return { key: r.name, tag, config: r.config };
-      });
+    return repos.flatMap((r) => {
+      const ref = parseRepoRef(r.name);
+      return ref.name === baseName ? [{ key: r.name, tag: ref.tag, config: r.config }] : [];
+    });
   }
 
   // ============================================================================
@@ -406,12 +416,10 @@ class ConfigService extends ConfigServiceBase {
     const restoredName = name ?? archived.name;
 
     const repos = state.getRepositories();
-    if (restoredName in repos) {
+    if (restoredName in repos)
       throw new Error(
         `Repository "${restoredName}" already exists. Use --name to specify a different name.`
       );
-    }
-
     const { name: originalName, deletedAt, ...repoConfig } = archived;
     void originalName;
     void deletedAt;
@@ -442,11 +450,9 @@ class ConfigService extends ConfigServiceBase {
     const state = await this.getResourceState();
     const cutoff = Date.now() - graceDays * 86400000;
     const all = state.getDeletedRepositories();
-    const expired = all.filter((r) => new Date(r.deletedAt).getTime() < cutoff);
-    if (expired.length > 0) {
-      const remaining = all.filter((r) => new Date(r.deletedAt).getTime() >= cutoff);
-      await state.setDeletedRepositories(remaining);
-    }
+    const isExpired = (r: ArchivedRepository) => new Date(r.deletedAt).getTime() < cutoff;
+    const expired = all.filter(isExpired);
+    if (expired.length > 0) await state.setDeletedRepositories(all.filter((r) => !isExpired(r)));
     return expired;
   }
 

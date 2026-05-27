@@ -4,6 +4,8 @@ description: "Como o modelo self-hosted da Rediacc responde aos requisitos da Ca
 category: "Legal"
 order: 4
 language: pt
+sourceHash: "949159b302cf6ab9"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 A California Consumer Privacy Act (CCPA) é uma lei estadual que confere aos consumidores da Califórnia direitos sobre as suas informações pessoais, incluindo o direito de saber que dados são recolhidos, o direito de os eliminar e o direito de recusar a sua venda.
@@ -17,7 +19,7 @@ A CCPA centra-se nos direitos dos consumidores relativos às informações pesso
 | Direito da CCPA | Requisito | Capacidade da Rediacc |
 |-----------|-------------|-------------------|
 | Direito de acesso (1798.100) | Divulgar categorias e finalidades dos dados recolhidos | Os registos de auditoria acompanham todas as operações com dados. Self-hosted: a sua organização mantém total visibilidade sobre os dados existentes em cada repositório. |
-| Direito de eliminação (1798.105) | Eliminar informações pessoais do consumidor mediante pedido | `rdc repo destroy` apaga criptograficamente o volume encriptado com LUKS. A eliminação de um fork remove as cópias clonadas. |
+| Direito de eliminação (1798.105) | Eliminar informações pessoais do consumidor mediante pedido | `rdc repo delete` apaga criptograficamente o volume encriptado com LUKS. A eliminação de um fork remove as cópias clonadas. |
 | Direito de recusa (1798.120) | Não vender nem partilhar informações pessoais | Arquitetura self-hosted: sem transferências de dados para a Rediacc ou para terceiros. Os dados permanecem nos seus servidores. A sincronização do arquivo de configuração utiliza encriptação de conhecimento zero. Nem o servidor de sincronização consegue ler os dados. |
 | Segurança de dados (1798.150) | Implementar medidas de segurança razoáveis | Encriptação LUKS2 AES-256, isolamento de rede, acesso exclusivo por SSH, daemons Docker isolados, registo de auditoria. O arquivo de configuração utiliza encriptação de três camadas com derivação de chave dividida e tokens de utilização única rotativos. |
 

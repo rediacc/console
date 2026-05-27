@@ -4,7 +4,8 @@ description: "Migra i progetti esistenti in repository Rediacc cifrati. È più 
 category: "Guides"
 order: 11
 language: it
-sourceHash: "feb1fcafc824b4b2"
+sourceHash: "69ab61a2875f8d70"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Guida alla Migrazione
@@ -15,7 +16,7 @@ Migra un progetto esistente -- file, servizi Docker, database -- da un server tr
 
 - CLI `rdc` installato ([Installazione](/en/docs/installation))
 - Una macchina aggiunta e configurata ([Setup](/en/docs/setup))
-- Spazio su disco sufficiente sul server per il tuo progetto (verifica con `rdc machine status`)
+- Spazio su disco sufficiente sul server per il tuo progetto (verifica con `rdc machine query`)
 
 ## Passo 1: Crea un Repository
 
@@ -95,6 +96,8 @@ Per impostare un UID diverso da quello predefinito 7111:
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **Attenzione:** `7111` è l'UID universale di Rediacc usato ovunque (corrisponde all'utente `rediacc` integrato nell'immagine del devcontainer). Sovrascrivilo con `--uid` solo per compatibilità con file appartenenti a un UID esterno specifico. **Non** è un target di migrazione. I nuovi repository dovrebbero mantenere il valore predefinito.
 
 ## Passo 4: Configura il Tuo Rediaccfile
 

@@ -1,0 +1,53 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation-fresh.cast",
+  "language": "ko",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "19aa0abffcad468dd21dbb247302329e054b21abbdd1b7b9f4410c86c0379f8d",
+  "steps": [
+    {
+      "id": "tutorial-installation-fresh-01",
+      "markerIndex": 0,
+      "replayStartSec": 0.667007,
+      "replayEndSec": 9.659113,
+      "narrationText": "깨끗한 서버에서 시작합니다. 한 줄짜리 설치 명령을 터미널에 붙여넣고 실행하세요. 스크립트가 플랫폼을 확인하고 명령줄 도구의 최신 안정 버전 바이너리를 다운로드하여 홈 디렉토리에 배치합니다. sudo 불필요, 시스템 전체 설치 없음.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-installation-fresh/tutorial-installation-fresh-01.037cdca8.mp3",
+      "textHash": "037cdca8f7269785a2a15717086032b795924923186ee43e81680e3c64d26952",
+      "audioDurationSec": 19.330612,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-installation-fresh/tutorial-installation-fresh-01-after.af051f2f.mp3",
+      "afterAudioDurationSec": 5.067755,
+      "afterTextHash": "af051f2fdd5b9380a5836480bf5b34a945e533c8ff50dbcea839343ac8bae6de"
+    },
+    {
+      "id": "tutorial-installation-fresh-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.659113,
+      "replayEndSec": 12.976611,
+      "narrationText": "제대로 설치되었는지 확인해 봅시다. 버전 플래그를 실행하면 방금 설치된 내용이 정확히 출력되어 명령줄 도구가 경로에 있고 사용 준비가 되었음을 알 수 있습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-installation-fresh/tutorial-installation-fresh-02.707ac503.mp3",
+      "textHash": "707ac503272dcf0c3690455e60d7ff4ba9c20403dbf5db8ac0559afc03c948e7",
+      "audioDurationSec": 13.00898,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-installation-fresh/tutorial-installation-fresh-02-after.2e16d48c.mp3",
+      "afterAudioDurationSec": 4.127347,
+      "afterTextHash": "2e16d48c0e713b56fe3d67570b8ffdb3e02a72eda15269607bd03cee2180c264"
+    },
+    {
+      "id": "tutorial-installation-fresh-03",
+      "markerIndex": 2,
+      "replayStartSec": 12.976611,
+      "replayEndSec": 14.798584,
+      "narrationText": "이제 내장 진단 검사를 실행하세요. 바이너리, 설정, 연결성을 포함하여 환경을 처음부터 끝까지 검사하므로 작업을 시작하기 전에 설정 문제를 파악할 수 있습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-installation-fresh/tutorial-installation-fresh-03.20a8ffb7.mp3",
+      "textHash": "20a8ffb795f43ba130a8c95fd48b81b9b4a6ac498355e4610b7244501cc86ae5",
+      "audioDurationSec": 12.826122,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-installation-fresh/tutorial-installation-fresh-03-after.c92a8f8d.mp3",
+      "afterAudioDurationSec": 5.250612,
+      "afterTextHash": "c92a8f8dbca5097ae825144c9a2e42997fc862f2ddd9d39c4aea7e59b0c040a4"
+    }
+  ],
+  "narrationAudio": []
+}

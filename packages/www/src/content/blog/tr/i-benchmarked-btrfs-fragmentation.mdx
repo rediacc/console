@@ -1,0 +1,82 @@
+---
+title: "Parçalanma Sayınız Korkunç Görünüyor. Ne Kadara Mal Olduğunu Ölçtüm."
+description: "Depolama sağlığı raporumuz, depoları gigabyte başına neredeyse 20.000 extent ile işaretliyor. Bu sayı alarmlı görünüyor. En kötü durumlar üzerinde ardışık ve rastgele okuma kıyaslamaları yaptım; ceza sıfırdı. İşte veriler ve Rediacc'ın neden birleştirme komutu sunmadığı."
+author: Muhammed Fatih Bayraktar
+publishedDate: 2026-05-25
+category: guide
+tags:
+  - storage
+  - btrfs
+  - performance
+  - benchmarks
+featured: false
+language: tr
+sourceHash: "73f1772f961bae0d"
+---
+
+> **Özet.** Rediacc'ın `rdc machine query --storage-health` komutu, depo başına bir parçalanma rakamı raporlar. Bir üretim makinesinde GitLab'ı yaklaşık 19.650 extent/gigabyte ile işaretliyor. İçgüdü birleştirme yapmak. Ben ise ölçtüm.
+>
+> - Komşusundan **16 kat daha fazla** parçalanmış bir depo, ardışık okumada **149 MB/s**'ye karşı 143 MB/s okudu ve rastgele 4K okumada **daha hızlıydı** (719 us'ye karşı 957 us).
+> - Cihaz flash tabanlı. Parçalanma, disk kafası arama süresi aracılığıyla dönen disklere zarar verir. SSD'de bunu olumsuz etkileyecek neredeyse hiçbir mekanizma kalmamıştır.
+> - Bu durumda `btrfs filesystem defragment` çalıştırmak, 4,4 GB boş alana sahip bir havuza yaklaşık 250 GB reflink bağlantılı çatallamayı ve anlık görüntüyü paylaşımsız hale getirir. Gerçek risk budur; kıyaslama ise buna karşı tartılacak bir fayda olmadığını söylüyor.
+
+Depolama sağlığı raporu tek bir soruyu yanıtlamak için vardır: diskimde ne var. Her deponun boyutunu, çatallamalarla ne kadar veri paylaştığını ve bir parçalanma rakamını gösterir. Bu son sayı ürkütücü görünebilir. Çalıştırdığım makinede GitLab'ın depo görüntüsü 14,6 GB genelinde 268.771 extent bildiriyor. Bu, gigabyte başına yaklaşık 19.650 extent ve araç bunu "yüksek" olarak etiketliyor.
+
+Bunu izleyen refleks otomatik. Yüksek parçalanma, birleştir. Bu reflexi dönen diskler için on beş yıldır kabuk betiklerine yazıyorum. Rediacc'a bir birleştirme düğmesi eklemeden önce, bu rakamın çalıştırdığımız donanımda gerçekte neye mal olduğunu bilmek istedim. Bu yüzden canlı makinede ölçtüm.
+
+## Rakamın gerçekte neyi saydığı
+
+Bir Rediacc deposu, btrfs havuzunda yaşayan tek bir LUKS görüntü dosyasıdır. Parçalanma rakamı, bu görüntü dosyasında `filefrag` çalıştırılarak elde edilir. Şifreli konteynerin extentlerini sayar, uygulamanızın içinde okuduğu dosyaları değil.
+
+Bu, verilerin nasıl katmanlandığı nedeniyle önemlidir. Tabandan itibaren: fiziksel bir SSD, ardından ana ext4 kök dosya sistemi, ardından loop destekli bir havuz dosyası, ardından loop0, ardından btrfs havuzu, ardından LUKS görüntüsü, ardından bir device-mapper crypt cihazı ve son olarak konteynerlerinizin gördüğü iç ext4. btrfs copy-on-write'tır. Bir depodaki her rastgele yazma, görüntüye yeni bir extent yazar. Veritabanları ve konteyner overlay katmanları gün boyu rastgele yazar, dolayısıyla görüntü tasarım gereği extent biriktirir.
+
+Birimin içindeki dosyalar farklı bir hikaye. GitLab deposunu kontrol ettim: gitaly ikilisi 10 extentte, bir git paket dosyası 17'de. İç dosya sistemi parçalanmış değil. 19.650-per-gigabyte rakamı, copy-on-write konteynerini tanımlıyor; bu da tam olarak böyle görünmesini beklediğiniz şey ve okumaların yavaş olup olmadığı hakkında size hiçbir şey söylemiyor.
+
+## Kıyaslama
+
+Parçalanma ölçeğinin iki ucundaki iki depoyu seçtim ve doğrudan IO ile okuydum; bu, sayfa önbelleğini atlayarak fiziksel okumayı zorluyor.
+
+| Depo | Ortalama extent | GB başına extent | Ardışık okuma |
+|---|---|---|---|
+| GitLab | 54 KB | ~19.650 | **149 MB/s** |
+| Stack Overflow demo | 880 KB | ~1.190 | **143 MB/s** |
+
+Parçalanmadaki 16 katlık fark, verimde herhangi bir ceza üretmedi. Yoğun parçalanmış dosya biraz daha hızlıydı. Ardından gerçekten insanların endişelendiği desen, küçük rastgele okumalar yani veritabanı trafiğinin biçimi:
+
+| Depo | Rastgele 4K gecikme | IOPS |
+|---|---|---|
+| GitLab (parçalanmış) | **719 us** | **1.390** |
+| Stack Overflow demo (daha az parçalanmış) | 957 us | 1.045 |
+
+Yine daha parçalanmış dosya daha hızlı. Küçük fark, extent düzenini değil, dosya boyutunu ve arka uç önbelleğini takip ediyor. Flash'ta rastgele okuma, çevresindeki extentlerin nerede olduğundan bağımsız olarak tek bir arama ve tek bir okumadan ibarettir. Hareket ettirilecek bir kafa yoktur.
+
+Mutlak değerlerde verim mütevazı, yaklaşık 145 MB/s ve 1.000 IOPS, çünkü cihaz paylaşımlı bir ana bilgisayar üzerinde sanallaştırılmış bir disk ve veri yolu derindir. Bu tavan, btrfs'nin altında ve üstünde, sanallaştırma ve crypt katmanları tarafından belirleniyor. Görüntünün birleştirilmesi bunu yükseltemez.
+
+## Parçalanmanın tek bir şeye mal olduğu durum
+
+Dürüstlük, diğer tarafı gerektiriyor. Parçalanmanın burada tek bir ölçülebilir maliyeti var ve bu okuma hızı değil. Extent haritasını numaralandırma süresi:
+
+- GitLab'da `filefrag` (268.771 extent): **3,19 s**
+- Stack Overflow demosunda `filefrag` (152.364 extent): **0,74 s**
+
+Her extent'i dolaşan işlemler bunu öder. Buna depolama sağlığı taramasının kendisi, yedekleme senkronizasyonu ve delta araçları dahildir. Saniyeler cinsinden, kabaca extent sayısıyla ölçekleniyor ve uygulamanızı değil, arka plan işlerini etkiliyor. Extent yürüyüş süresi gerçek bir darboğaza dönüşürse, bu dar bir probleme dar çözümler gerektiren bir durumdur. Canlı veriyi yeniden yazmanın nedeni değildir.
+
+## Rediacc'ın neden birleştirme komutu sunmadığı
+
+`btrfs filesystem defragment`, yaklaşık 3.9 çekirdeğinden bu yana reflink'leri korumamaktadır. Kılavuz sayfası bunu açıkça söylüyor: birleştirme, copy-on-write verilerinin reflink bağlantılarını bozar ve alan kullanımında önemli bir artışa yol açabilir. Bir dosyayı sürekli olarak yeniden yazmak, her paylaşılan extent'i özel bir kopyaya kopyalar.
+
+Bu makinede neredeyse her şey paylaşılıyor. Çatalmalar, reflink'ler aracılığıyla üst deponun verilerini paylaşır ve yedekleme zamanlayıcısı da paylaşan salt okunur anlık görüntüler ekler. Havuz, 4,4 GB boş alanla %99 dolu. GitLab %97 paylaşılmış durumda, dolayısıyla birleştirilmesi yaklaşık 14 GB'ı 4,4 GB'a kopyalamaya çalışır ve yarıda başarısız olur. Stack Overflow demosu 26 MB benzersiz veriyle 137 GB'tır, bu yüzden birleştirilmesi fiziksel olarak var olmayan 137 GB'ı somutlaştırmaya kalkışır. Tüm depolar genelinde yaklaşık 250 GB reflink bağlantılı. Birleştirme geçişi, bir ince ayar değil, bir alan bombasıdır.
+
+Sığdığı yerlerde bile uzun sürmez. Bu görüntüler, aynı rastgele yazma iş yükü altında dakikalar içinde yeniden parçalanır. Çatalmalarınızın paylaşımını kaldırırsınız, kısa bir süreliğine, kıyaslamanın zaten sahip olduğunuzu söylediği bir okuma hızı için.
+
+## Parçalanma yerine neye bakmalı
+
+Aynı rapordaki dikkat çeken sütun, divergence'tır (farklılaşma). Bir deponun görüntüsünün çatalmalar ve anlık görüntülerle paylaşılmak yerine kendine özgü olan yüzdesidir. Yeni bir çatalma %0'a yakın durur çünkü neredeyse her şeyi paylaşır. Çatallandıktan sonra yoğun şekilde yazılmış bir depo %100'e doğru yükselir.
+
+Farklılaşma, parçalanmanın yanıtlayamadığı soruyu yanıtlıyor: bu depo gerçek, geri kazanılabilir ne kadar diske mal oluyor. Bir havuz dar olduğunda, düşük farklılaşmalı bir depo zayıf bir temizlik hedefidir çünkü baytları paylaşılmış ve silinmesi az şey serbest bırakır. Baytlar, farklılaşmanın yüksek olduğu yerde yaşar.
+
+## Çıkarım
+
+Parçalanma rakamı gerçektir ve rastgele yazmalar altındaki copy-on-write görüntüsünde her zaman yüksek görünür. Flash'ta bilgi amaçlıdır. 16 katlık bir farkı ölçtüm ve okuma cezası bulamadım, daha parçalanmış dosyada daha hızlı rastgele profil buldum ve arka plan tarama süresinde tek küçük bir maliyet buldum. Rakamı "düzeltecek" araç, bunun yerine bir çeyrek terabayt çatallamayı, onlar için yer olmayan bir havuza paylaşımsız hale getirirdi.
+
+Bu yüzden Rediacc parçalanmayı raporlar ve açıklar; buna göre hareket etmek için bir düğme sunmaz. Dürüst mühendislik cevabı, reflexi otomatikleştirmek yerine varsayımı ölçmekti.

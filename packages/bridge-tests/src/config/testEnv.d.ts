@@ -14,8 +14,8 @@ export declare const TEST_ENV: {
     };
     readonly rustfs: {
         readonly endpoint: "http://192.168.111.1:9000";
-        readonly accessKey: "rustfsadmin";
-        readonly secretKey: "rustfsadmin";
+        readonly accessKey: "rediacc-rustfs";
+        readonly secretKey: "rediacc-rustfs-secret-key";
         readonly bucket: "rediacc-test";
     };
     readonly testRepositoryPrefix: "test-repo";

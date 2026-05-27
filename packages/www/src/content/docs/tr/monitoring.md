@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: 7574575ee78682a9
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "2289d50dac21f9bf"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # İzleme
@@ -114,8 +114,9 @@ rdc machine query --name server-1 --storage-health
 | Size | LUKS imaj dosyasının boyutu (deponun görünümü) |
 | Unique | Yalnızca bu depoya ait gerçek benzersiz veriler |
 | Shared | BTRFS reflinkleri aracılığıyla depolar arasında yeniden kullanılan veri blokları (ücretsiz kopyalar) |
-| Extents | Dosya extent sayısı (yüksek = daha fazla parçalanma) |
-| Frag | Parçalanma düzeyi: düşük, orta veya yüksek |
+| Divergence | Görüntünün paylaşılan yerine bu depoya özgü yüzdesi (yüksekse silindiğinde daha fazla alan geri kazanılır) |
+| Extents | Copy-on-write görüntüsündeki dosya extent sayısı (yüksek = daha fazla parçalanma) |
+| Frag | Parçalanma düzeyi: düşük, orta veya yüksek (yalnızca bilgi amaçlı) |
 
 Özet, BTRFS reflinklerinden elde edilen toplam tasarrufları gösterir:
 
@@ -129,7 +130,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 - **Paylaşılan**, BTRFS reflinkleri aracılığıyla depolar arasında yeniden kullanılan verilerdir. Bir depoyu çatallama, her iki taraftan biri yeni veriler yazana kadar blokları paylaşan reflink kopyaları oluşturur; bu noktada bloklar ayrışır.
 - **Verimlilik**, reflinkler aracılığıyla yeniden kullanılan verilerin yüzdesidir. Yüksek olması iyidir. Aynı üst depodan çok sayıda çatallanmaya sahip bir makine, %100'e yakın verimlilik gösterir.
 
-Yüksek parçalanma ve sıfır paylaşılan blok içeren depolar `btrfs filesystem defragment` ile güvenle birleştirilebilir. Paylaşılan bloklar içeren depolar birleştirilmemelidir; çünkü birleştirme, paylaşılan blokları benzersiz kopyalarla değiştirerek disk kullanımını artırır.
+Frag sütunu yalnızca bilgi amaçlıdır. Copy-on-write görüntü dosyasının extentlerini sayar, uygulamanızın içinde okuduğu dosyaları değil; bu nedenle normal rastgele yazma iş yükleri (veritabanları, konteyner katmanları) altında yüksek görünür ve SSD destekli depolarda okuma performansını tahmin etmez. Rediacc kasıtlı olarak birleştirme komutu sunmaz: `btrfs filesystem defragment`, reflink bağlantılı çatallamaların ve anlık görüntülerin paylaşımını kaldırır; bu durum, neredeyse dolu bir havuzda kullanımı önemli ölçüde artırabilirken kıyaslamalar ölçülebilir bir okuma kazancı olmadığını gösterir. Tam ölçümler ve gerekçe için bkz. [Parçalanma Sayınız Korkunç Görünüyor. Ne Kadara Mal Olduğunu Ölçtüm.](/tr/blog/i-benchmarked-btrfs-fragmentation).
 
 Tarama paralel olarak çalışır ve depo sayısına ve boyutuna bağlı olarak 5-15 saniye sürer. `--storage-health` belirtilmediğinde, sorgu çıktısından sonra bir hatırlatıcı olarak tek satırlık bir ipucu görünür.
 

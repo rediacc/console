@@ -4,8 +4,8 @@ description: "تخطيط المجلدات، وأوامر renet، وخدمات sy
 category: "Concepts"
 order: 3
 language: ar
-sourceHash: "ce8786bdc5c1543f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # مرجع الخادم
@@ -115,6 +115,31 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 
 يطبق `sandbox-exec` قيود نظام الملفات الخاصة بـ Landlock LSM، ثم ينفذ الأمر المحدد. يُستدعى تلقائيًا بواسطة `sandbox-gateway` (معالج SSH ForceCommand) لجميع اتصالات مستوى المستودع.
 
+### المحور لكل مستخدم (بيئات التطوير)
+
+يمنح Hub كل مستخدم daemon Docker خاصًا به لبيئات التطوير، مستقلًا عن daemons `FlavorRediacc` الخاصة بكل مستودع.
+
+```bash
+# تثبيت / إزالة وحدات systemd الخاصة بـ Hub لكل مستخدم
+sudo renet hub install
+sudo renet hub uninstall
+
+# تنظيف daemons Hub الخاملة لكل مستخدم
+sudo renet hub gc
+```
+
+تعمل الـ daemons تحت أحد نوعين، يُحدد عبر `--flavor`:
+
+```bash
+# daemon معزول لكل مستودع (bridge=none, iptables=false) — الافتراضي
+sudo renet daemon start-foreground --flavor=rediacc ...
+
+# daemon Hub لكل مستخدم (bridge=docker0, iptables=true, live-restore=true)
+sudo renet daemon start-foreground --flavor=hub ...
+```
+
+يُتيح نوع `hub` شبكة bridge العادية حتى تتمتع الحاويات التي يشغّلها المستخدم باتصال خارجي؛ أما نوع `rediacc` فيفرض عزل loopback بين المستودعات. تُكتب سجلات تدقيق Hub في `/var/log/rediacc/hub/<user>.log`.
+
 **الأعلام:**
 - `--allow-rw`، `--allow-ro`، `--allow-exec`: قواعد مسارات Landlock
 - `--home-overlay`: تركيب OverlayFS فوق المجلد الرئيسي لعزل الكتابة لكل مستودع
@@ -218,6 +243,8 @@ renet datastore expand      # Expand the datastore online
 |------|---------|
 | `rediacc-router.service` | اكتشاف المسارات (المنفذ 7111) |
 | `rediacc-autostart.service` | تحميل المستودعات عند الإقلاع |
+| `rediacc-autostart-reconcile.service` | المُوفِّق الدوري للتشغيل التلقائي (يُشغَّل بواسطة المؤقت أدناه) |
+| `rediacc-autostart-reconcile.timer` | يُطلق `renet repository reconcile` تقريباً كل 3 دقائق لاسترداد مستودعات التشغيل التلقائي التي توقفت بعد الإقلاع |
 
 ## سير العمل الشائعة
 

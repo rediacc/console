@@ -6,14 +6,52 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 32.02867,
-      "text": "让我们在服务器上创建一个 2 GB 的加密仓库。仓库静态时是一个单一加密文件，挂载后变成拥有独立 Docker 守护进程和独立应用数据的文件夹，与服务器上的其他一切完全隔离。"
+      "at": 2.409686,
+      "text": "让我们在服务器上创建一个 2 GB 的加密仓库。仓库静态时是一个单一加密文件，挂载后变成拥有独立 Docker 守护进程和独立应用数据的文件夹，与服务器上的其他一切完全隔离。",
+      "afterText": "仓库已创建。加密文件就在服务器上，随时可以挂载。",
+      "cardLabel": "创建 Repo",
+      "prose": "在服务器上创建一个 2 GB 的加密 repository。repository 是磁盘上的单个加密文件。创建后会立即挂载：一个拥有独立 Docker daemon 和隔离应用数据的文件夹。"
     },
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 62.567023,
-      "text": "让我们列出机器上的仓库，确认新仓库已注册。从这里开始，仓库可以在 VS Code 中打开、部署、fork 或备份，全都从笔记本完成。"
+      "at": 11.760396,
+      "text": "让我们列出机器上的仓库，确认新仓库已注册。从这里开始，仓库可以在 VS Code 中打开、部署、fork 或备份，全都从笔记本完成。",
+      "afterText": "就在这里，已注册并可使用。",
+      "cardLabel": "列出 Repo",
+      "prose": "确认新 repo 已注册。列出后，即可从您的笔记本电脑对其进行部署、fork、备份或在编辑器中打开。"
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "at": 17.238181,
+      "text": "一个实用选项：用这条命令直接在 VS Code 中打开 repo。我们这里不会启动编辑器，但它会通过 SSH 建立一个进入 repo 的远程会话，让你可以编辑其中的文件。",
+      "afterText": "在笔记本上运行该命令，即可在 VS Code 中编辑 repo 的文件。",
+      "cardLabel": "在 VS Code 中打开",
+      "prose": "使用 rdc vscode connect 直接在 VS Code 中打开 repo。它会启动一个远程 SSH 会话进入 repo，让您可以在编辑器中编辑文件。"
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "让我们来创建你的第一个仓库！它静态时是一个加密文件，挂载后变成一个完全隔离的环境。"
+    },
+    {
+      "id": "file-on-disk",
+      "text": "在磁盘上它是单一加密镜像。挂载后，你会获得专用的 Docker 守护进程、保存在加密卷内的应用数据，以及不会与服务器上其他任何东西冲突的环回 IP。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "你的第一个仓库已准备就绪。接下来，我们将在其中部署一个应用！"
+    }
+  ],
+  "title": "创建您的第一个 Repository",
+  "chapters": {
+    "intro": "创建您的第一个 Repository",
+    "file-on-disk": "磁盘文件，挂载时的环境",
+    "cast-step-0": "创建 repository",
+    "cast-step-1": "验证已注册",
+    "cast-step-2": "在 VS Code 中打开",
+    "outro": "下一步：部署您的第一个应用"
+  }
 }

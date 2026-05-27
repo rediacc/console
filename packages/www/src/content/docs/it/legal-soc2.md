@@ -4,6 +4,8 @@ description: "Come Rediacc si allinea ai criteri dei Trust Service Criteria SOC 
 category: "Legal"
 order: 2
 language: it
+sourceHash: "ebdae97034aa3cce"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 SOC 2 (System and Organization Controls 2) è un framework sviluppato dall'American Institute of Certified Public Accountants (AICPA) per valutare i controlli di un'organizzazione relativi a sicurezza, disponibilità, integrità del trattamento, riservatezza e privacy.
@@ -15,7 +17,7 @@ Riferimento: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audi
 | Principio di Fiducia | Criteri | Capacità di Rediacc |
 |----------------|----------|-------------------|
 | **Sicurezza** (CC6) | Controlli di accesso logico, crittografia | Crittografia LUKS2 AES-256 a riposo. Le credenziali sono conservate solo nella configurazione locale dell'operatore (`~/.config/rediacc/`), mai sul server. Accesso basato su chiave SSH. Daemon Docker isolati per repository. |
-| **Disponibilità** (A1) | Ripristino del sistema e resilienza | `rdc repo backup push/pull` con copie offsite cifrate verso SSH, S3, B2, Azure o GDrive. Snapshot CoW per rollback istantaneo. Aggiornamenti basati su fork per modifiche senza downtime. |
+| **Disponibilità** (A1) | Ripristino del sistema e resilienza | `rdc repo push/pull` con copie offsite cifrate verso SSH, S3, B2, Azure o GDrive. Snapshot CoW per rollback istantaneo. Aggiornamenti basati su fork per modifiche senza downtime. |
 | **Integrità del Trattamento** (PI1) | Trattamento accurato e completo | Gli hook deterministici del ciclo di vita del Rediaccfile (`up`/`down`) garantiscono deployment coerenti. `rdc repo validate` verifica l'integrità del repository e lo stato dei backup dopo spegnimenti imprevisti o operazioni di backup. |
 | **Riservatezza** (C1) | Protezione dei dati da accessi non autorizzati | Crittografia per repository con credenziali LUKS univoche. Isolamento di rete tramite iptables, daemon Docker separati e sottoreti IP di loopback. I container di repository diversi non si vedono tra loro. Il config store zero-knowledge cifra le configurazioni lato client prima del caricamento. Il server conserva solo blob opachi che non può decifrare. |
 | **Privacy** (P1-P8) | Gestione dei dati personali | Self-hosted: nessun egress di dati durante le operazioni. Audit trail per tutti gli accessi ai dati. Gestione delle chiavi di crittografia sotto il controllo del cliente. Il config store utilizza la derivazione a chiave divisa (passkey PRF + segreto del server) in modo che nessuna delle due parti da sola possa accedere ai dati. |

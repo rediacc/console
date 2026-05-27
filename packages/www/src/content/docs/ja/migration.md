@@ -4,8 +4,8 @@ description: 既存のプロジェクトを暗号化されたRediaccリポジト
 category: Guides
 order: 11
 language: ja
-sourceHash: c0ea82abb1d29de0
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "69ab61a2875f8d70"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # 移行ガイド
@@ -16,7 +16,7 @@ sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 
 - `rdc` CLIがインストール済み（[インストール](/ja/docs/installation)）
 - マシンが追加・プロビジョニング済み（[セットアップ](/ja/docs/setup)）
-- プロジェクトに十分なディスク容量がサーバーにあること（`rdc machine status`で確認）
+- プロジェクトに十分なディスク容量がサーバーにあること（`rdc machine query`で確認）
 
 ## ステップ1：リポジトリを作成する
 
@@ -96,6 +96,8 @@ rdc repo ownership --name my-project -m server-1
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **注意：** `7111`はどこでも使用されているRediaccの共通UIDです（devcontainerイメージに組み込まれた`rediacc`ユーザーに対応しています）。特定の外部UIDが所有するファイルとのレガシー互換性のためにのみ`--uid`でオーバーライドしてください。これは**移行対象ではありません**。新しいリポジトリはデフォルトを維持すべきです。
 
 ## ステップ4：Rediaccfileを設定する
 

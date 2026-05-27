@@ -3499,6 +3499,398 @@
         "title": "目录"
       }
     },
+    "resourcesBrief": {
+      "devEnvironments": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
+          "downloadButton": "下载简报",
+          "heading": "关于本简报"
+        },
+        "companions": {
+          "heading": "相关解决方案页面",
+          "intro": "同一架构，针对不同买家问题的具体应用：",
+          "readMore": "了解更多"
+        },
+        "faq": {
+          "heading": "读者常见问题",
+          "items": [
+            {
+              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。",
+              "q": "本简报的目标读者是谁？"
+            },
+            {
+              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。",
+              "q": "是否有非技术版本？"
+            },
+            {
+              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。",
+              "q": "我的邮箱会如何使用？"
+            },
+            {
+              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。",
+              "q": "为什么选择 btrfs？"
+            },
+            {
+              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。",
+              "q": "这适用于 AWS RDS 等托管服务吗？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "仅一封邮件，邮件确认，一键退订。",
+          "downloadButton": "下载技术简报",
+          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
+          "openInBrowser": "在浏览器中打开",
+          "subtitle": "您的开发者每周仅有 4.5 小时真正在写代码，其余时间都在等待环境就绪。一支 50 人的工程团队每年因此损失 72 万至 120 万美元。",
+          "title": "开发环境"
+        },
+        "meta": {
+          "description": "基于 btrfs 零拷贝克隆，60 秒内还原与生产环境完全一致的开发环境。Rediacc 面向 CISO/CTO 的免费专业简报，附五分钟高管精简版 PDF。",
+          "keywords": "开发环境, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报",
+          "title": "开发环境：60 秒极速克隆生产环境 | Rediacc 免费技术白皮书 PDF"
+        },
+        "toc": {
+          "heading": "内容概览",
+          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
+          "items": [
+            "以具体运维视角描述的威胁模型",
+            "架构机制及对抗性模型推理",
+            "已阻断的故障模式及具名先例",
+            "合规性地图：具体条款、罚款及报告时限",
+            "基于公开数据的 ROI 测算",
+            "从技术路线角度进行的厂商对比（非 ARR）",
+            "上线流程及已知范围限制",
+            "架构所产生的审计就绪证据"
+          ]
+        }
+      },
+      "encryptionControl": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
+          "downloadButton": "下载简报",
+          "heading": "关于本简报"
+        },
+        "companions": {
+          "heading": "相关解决方案页面",
+          "intro": "同一架构，针对不同买家问题的具体应用：",
+          "readMore": "了解更多"
+        },
+        "faq": {
+          "heading": "读者常见问题",
+          "items": [
+            {
+              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。",
+              "q": "本简报的目标读者是谁？"
+            },
+            {
+              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。",
+              "q": "是否有非技术版本？"
+            },
+            {
+              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。",
+              "q": "我的邮箱会如何使用？"
+            },
+            {
+              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。",
+              "q": "为什么选择 btrfs？"
+            },
+            {
+              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。",
+              "q": "这适用于 AWS RDS 等托管服务吗？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "仅一封邮件，邮件确认，一键退订。",
+          "downloadButton": "下载技术简报",
+          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
+          "openInBrowser": "在浏览器中打开",
+          "subtitle": "Schrems II 不是一个政策选项，而是一项架构要求，而大多数备份供应商并不满足这一要求。",
+          "title": "加密控制"
+        },
+        "meta": {
+          "description": "客户自管密钥，加密数据在切换供应商后依然有效，符合 Schrems II 合规要求。附 CISO/CTO 专业简报及高管精简版 PDF。",
+          "keywords": "加密控制, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报",
+          "title": "加密控制：客户自管密钥 | Rediacc 免费技术白皮书 PDF"
+        },
+        "toc": {
+          "heading": "内容概览",
+          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
+          "items": [
+            "以具体运维视角描述的威胁模型",
+            "架构机制及对抗性模型推理",
+            "已阻断的故障模式及具名先例",
+            "合规性地图：具体条款、罚款及报告时限",
+            "基于公开数据的 ROI 测算",
+            "从技术路线角度进行的厂商对比（非 ARR）",
+            "上线流程及已知范围限制",
+            "架构所产生的审计就绪证据"
+          ]
+        }
+      },
+      "multiCloudAlways": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
+          "downloadButton": "下载简报",
+          "heading": "关于本简报"
+        },
+        "companions": {
+          "heading": "相关解决方案页面",
+          "intro": "同一架构，针对不同买家问题的具体应用：",
+          "readMore": "了解更多"
+        },
+        "faq": {
+          "heading": "读者常见问题",
+          "items": [
+            {
+              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。",
+              "q": "本简报的目标读者是谁？"
+            },
+            {
+              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。",
+              "q": "是否有非技术版本？"
+            },
+            {
+              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。",
+              "q": "我的邮箱会如何使用？"
+            },
+            {
+              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。",
+              "q": "为什么选择 btrfs？"
+            },
+            {
+              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。",
+              "q": "这适用于 AWS RDS 等托管服务吗？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "仅一封邮件，邮件确认，一键退订。",
+          "downloadButton": "下载技术简报",
+          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
+          "openInBrowser": "在浏览器中打开",
+          "subtitle": "2025 年 10 月 20 日，AWS US-EAST-1 中断长达 15 小时，Snapchat、Robinhood、Uber、Delta 均受影响。您能在最短时间内完成云端切换吗？",
+          "title": "多云常态化"
+        },
+        "meta": {
+          "description": "可移植快照与经验证的跨云故障切换，确保业务在云服务中断时持续运行。附 CISO/CTO 专业简报及高管精简版 PDF。",
+          "keywords": "多云常态化, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报",
+          "title": "多云策略：免费技术白皮书 PDF | Rediacc 跨云容灾备份方案"
+        },
+        "toc": {
+          "heading": "内容概览",
+          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
+          "items": [
+            "以具体运维视角描述的威胁模型",
+            "架构机制及对抗性模型推理",
+            "已阻断的故障模式及具名先例",
+            "合规性地图：具体条款、罚款及报告时限",
+            "基于公开数据的 ROI 测算",
+            "从技术路线角度进行的厂商对比（非 ARR）",
+            "上线流程及已知范围限制",
+            "架构所产生的审计就绪证据"
+          ]
+        }
+      },
+      "preemptiveDefense": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
+          "downloadButton": "下载简报",
+          "heading": "关于本简报"
+        },
+        "companions": {
+          "heading": "相关解决方案页面",
+          "intro": "同一架构，针对不同买家问题的具体应用：",
+          "readMore": "了解更多"
+        },
+        "faq": {
+          "heading": "读者常见问题",
+          "items": [
+            {
+              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。",
+              "q": "本简报的目标读者是谁？"
+            },
+            {
+              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。",
+              "q": "是否有非技术版本？"
+            },
+            {
+              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。",
+              "q": "我的邮箱会如何使用？"
+            },
+            {
+              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。",
+              "q": "为什么选择 btrfs？"
+            },
+            {
+              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。",
+              "q": "这适用于 AWS RDS 等托管服务吗？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "仅一封邮件，邮件确认，一键退订。",
+          "downloadButton": "下载技术简报",
+          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
+          "openInBrowser": "在浏览器中打开",
+          "subtitle": "针对真实基础设施进行测试，不破坏任何内容。克隆环境承担所有危险冲击。",
+          "title": "主动防御"
+        },
+        "meta": {
+          "description": "在一次性生产克隆环境上进行安全测试，零生产风险，支持 AI 渗透测试。附 CISO/CTO 专业简报及高管精简版 PDF。",
+          "keywords": "主动防御, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报",
+          "title": "主动防御：零生产风险安全测试 | Rediacc 免费技术白皮书 PDF"
+        },
+        "toc": {
+          "heading": "内容概览",
+          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
+          "items": [
+            "以具体运维视角描述的威胁模型",
+            "架构机制及对抗性模型推理",
+            "已阻断的故障模式及具名先例",
+            "合规性地图：具体条款、罚款及报告时限",
+            "基于公开数据的 ROI 测算",
+            "从技术路线角度进行的厂商对比（非 ARR）",
+            "上线流程及已知范围限制",
+            "架构所产生的审计就绪证据"
+          ]
+        }
+      },
+      "ransomwareSurvival": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
+          "downloadButton": "下载简报",
+          "heading": "关于本简报"
+        },
+        "companions": {
+          "heading": "相关解决方案页面",
+          "intro": "同一架构，针对不同买家问题的具体应用：",
+          "readMore": "了解更多"
+        },
+        "faq": {
+          "heading": "读者常见问题",
+          "items": [
+            {
+              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。",
+              "q": "本简报的目标读者是谁？"
+            },
+            {
+              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。",
+              "q": "是否有非技术版本？"
+            },
+            {
+              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。",
+              "q": "我的邮箱会如何使用？"
+            },
+            {
+              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。",
+              "q": "为什么选择 btrfs？"
+            },
+            {
+              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。",
+              "q": "这适用于 AWS RDS 等托管服务吗？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "仅一封邮件，邮件确认，一键退订。",
+          "downloadButton": "下载技术简报",
+          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
+          "openInBrowser": "在浏览器中打开",
+          "subtitle": "94% 的勒索软件攻击以备份为目标，57% 攻击成功。",
+          "title": "勒索软件生存指南"
+        },
+        "meta": {
+          "description": "文件系统原生不可变备份，攻击者无法加密或删除。Rediacc 面向 CISO/CTO 的免费专业简报，附高管精简版 PDF。",
+          "keywords": "勒索软件生存, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报",
+          "title": "勒索软件防御指南：免费技术白皮书 PDF | Rediacc 企业备份方案"
+        },
+        "toc": {
+          "heading": "内容概览",
+          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
+          "items": [
+            "以具体运维视角描述的威胁模型",
+            "架构机制及对抗性模型推理",
+            "已阻断的故障模式及具名先例",
+            "合规性地图：具体条款、罚款及报告时限",
+            "基于公开数据的 ROI 测算",
+            "从技术路线角度进行的厂商对比（非 ARR）",
+            "上线流程及已知范围限制",
+            "架构所产生的审计就绪证据"
+          ]
+        }
+      },
+      "verifiedBackups": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
+          "downloadButton": "下载简报",
+          "heading": "关于本简报"
+        },
+        "companions": {
+          "heading": "相关解决方案页面",
+          "intro": "同一架构，针对不同买家问题的具体应用：",
+          "readMore": "了解更多"
+        },
+        "faq": {
+          "heading": "读者常见问题",
+          "items": [
+            {
+              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。",
+              "q": "本简报的目标读者是谁？"
+            },
+            {
+              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。",
+              "q": "是否有非技术版本？"
+            },
+            {
+              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。",
+              "q": "我的邮箱会如何使用？"
+            },
+            {
+              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。",
+              "q": "为什么选择 btrfs？"
+            },
+            {
+              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。",
+              "q": "这适用于 AWS RDS 等托管服务吗？"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "仅一封邮件，邮件确认，一键退订。",
+          "downloadButton": "下载技术简报",
+          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
+          "openInBrowser": "在浏览器中打开",
+          "subtitle": "58% 的备份在恢复时失败，而大多数企业直到灾难发生时才发现这一问题。",
+          "title": "备份验证"
+        },
+        "meta": {
+          "description": "每次备份、每个周期均执行启动验证测试，而非季度性勾选了事。Rediacc 面向 CISO/CTO 的免费专业简报，附五分钟高管精简版 PDF。",
+          "keywords": "备份验证, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报",
+          "title": "备份验证：每次验证，每周期执行 | Rediacc 免费技术白皮书 PDF"
+        },
+        "toc": {
+          "heading": "内容概览",
+          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
+          "items": [
+            "以具体运维视角描述的威胁模型",
+            "架构机制及对抗性模型推理",
+            "已阻断的故障模式及具名先例",
+            "合规性地图：具体条款、罚款及报告时限",
+            "基于公开数据的 ROI 测算",
+            "从技术路线角度进行的厂商对比（非 ARR）",
+            "上线流程及已知范围限制",
+            "架构所产生的审计就绪证据"
+          ]
+        }
+      }
+    },
     "resourcesNis2Directive": {
       "about": {
         "body": "Rediacc 是一家在爱沙尼亚注册的自托管基础设施平台（OÜ 17363830，增値税号 EE102920091）。本摘要是我们 NIS2 内容计划的一部分。上方的配套指南介绍了 Rediacc 如何应对指令的具体条款，包括 Rediacc 尚无法覆盖的方面（尚无认证、无 GRC 层、无托管式第 23 条报告、仅限门户的 MFA）。如需查看公开能力映射，请参阅文档中的 {nis2DoraLink}。",
@@ -3713,21 +4105,6 @@
       "title": "Rediacc 能为您的组织节省多少？"
     },
     "solutionPages": {
-      "downloadGated": {
-        "title": "获取技术简报",
-        "description": "这份简明扼要的 PDF 专为 CISO、CTO 及高级工程师撰写。填写您的邮箱，我们将通过邮件发送下载链接及一页摘要。",
-        "emailPlaceholder": "you@company.com",
-        "submitLabel": "发送简报",
-        "successMessage": "请查收邮件确认。PDF 已在新标签页中打开。",
-        "errorMessage": "出现错误，请重试或联系 support@rediacc.com。",
-        "disclaimer": "仅一封邮件，不加入营销列表，一键退订。",
-        "dismissLabel": "关闭"
-      },
-      "downloadShort": {
-        "title": "时间有限？",
-        "description": "跳过深度解读，直接获取五分钟速览版，供团队站会阅读。",
-        "buttonLabel": "下载简版简报（PDF）"
-      },
       "aiPentesting": {
         "benefits": {
           "items": [
@@ -6017,6 +6394,489 @@
             }
           ]
         }
+      },
+      "dataSovereignty": {
+        "benefits": {
+          "items": [
+            {
+              "description": "无美国司法管辖母公司。无供应商密钥托管。架构本身就是防御。Carniaux参议院证词（2025年6月18日）终结了合同可以替代司法管辖豁免的任何残余争议。",
+              "icon": "shield",
+              "title": "架构层面的CLOUD Act豁免"
+            },
+            {
+              "description": "架构上开放的数据格式，零切换费用。每次备份都是可移植的可用副本。在2027年1月12日零切换费用截止日期前完全符合数据法第23-31条。",
+              "icon": "globe",
+              "title": "EU数据法2027就绪"
+            },
+            {
+              "description": "四大支柱体系与2025年11月17日ANSSI-BSI联合声明一致：严格数据本地化、仅适用欧洲法律、无法外访问、无非EU依赖的业务连续性。",
+              "icon": "check-circle",
+              "title": "与SecNumCloud及C5:2026对齐"
+            }
+          ],
+          "overline": "重要意义",
+          "title": "您将获得什么"
+        },
+        "bottomCta": {
+          "command": "rdc audit log --limit 50",
+          "ctaText": "免费开始使用社区版",
+          "description": "从免费社区版开始。一分钟内运行您的第一次密钥托管审计。",
+          "title": "停止从美国司法管辖的提供商那里租用您自己的数据。"
+        },
+        "calculator": {
+          "annualLabel": "年度主权风险敞口",
+          "description": "拖动滑块以匹配您的环境。查看主权差距的真实成本。",
+          "footnote": "传输风险：记录数 x €0.04 x 10%监管审查概率。退出罚款：超大规模云支出的10%作为数据法第25条估算转换成本上限（2027年1月12日零费用截止日期）。DORA测试：小时数 x €200/小时工程师成本。使用Rediacc：自托管消除传输风险，开放格式消除退出罚款，恒定时间分叉将DORA恢复测试缩减至几分钟，与存储库大小无关。",
+          "headerTitle": "主权风险敞口计算器",
+          "overline": "真实成本",
+          "results": {
+            "doraTesting": "DORA第12条测试成本",
+            "exitPenalty": "数据法2027退出罚款风险",
+            "transferRisk": "GDPR传输风险敞口"
+          },
+          "sliders": {
+            "records": "EU个人数据记录（千条）",
+            "recoveryHours": "手动DORA恢复测试（小时/年）",
+            "spend": "年度超大规模云支出（€ 千）"
+          },
+          "title": "美国司法管辖风险敞口会给您带来多少代价？",
+          "withAnnual": "年度主权风险敞口",
+          "withoutTag": "美国司法管辖",
+          "withResults": {
+            "doraTesting": "DORA第12条测试成本",
+            "exitPenalty": "数据法2027退出罚款风险",
+            "transferRisk": "GDPR传输风险敞口"
+          },
+          "withTag": "使用 Rediacc"
+        },
+        "comparison": {
+          "capabilityLabel": "能力",
+          "description": "大多数供应商提供数据驻留。没有人能提供Rediacc通过架构实现的内容：客户密钥托管、纯EU运营商和CLOUD Act豁免。",
+          "features": [
+            {
+              "name": "CLOUD Act豁免（无美国司法管辖母公司）",
+              "refs": [4, 4, 4, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+            },
+            {
+              "name": "客户持有密钥（技术不可读性）",
+              "refs": [0, 5, 5, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "纯EU运营商（无美国母公司）",
+              "refs": [4, 4, 4, 0, 6, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+            },
+            {
+              "name": "SecNumCloud / C5:2026认证路径",
+              "refs": [0, 0, 7, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "开放退出格式（数据法第30条）",
+              "refs": [8, 8, 8, 0, 8, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "在客户基础设施上自托管",
+              "refs": [9, 0, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "默认EU数据驻留",
+              "refs": [0, 0, 10, 0, 13, 0],
+              "values": ["cross", "cross", "check", "check", "check", "rediacc"]
+            }
+          ],
+          "overline": "差距对比",
+          "title": "主权对比"
+        },
+        "explore": {
+          "solutions": [
+            {
+              "category": "Encryption Control",
+              "dataCategory": "encryption",
+              "description": "您的密钥，您的加密，没有例外。",
+              "slug": "encryption",
+              "title": "您掌控的加密"
+            },
+            {
+              "category": "Encryption Control",
+              "dataCategory": "encryption",
+              "description": "每项操作都有记录，无任何隐藏。",
+              "slug": "audit-trail",
+              "title": "审计追踪"
+            },
+            {
+              "category": "Encryption Control",
+              "dataCategory": "encryption",
+              "description": "迁移不冒数据风险",
+              "slug": "migration-safety",
+              "title": "迁移安全"
+            },
+            {
+              "category": "Ransomware Survival",
+              "dataCategory": "ransomware",
+              "description": "勒索软件无法触及的备份",
+              "slug": "immutable-backups",
+              "title": "不可变备份"
+            },
+            {
+              "category": "Multi-Cloud",
+              "dataCategory": "multi-cloud",
+              "description": "AWS 宕机时，您不受影响",
+              "slug": "cloud-outage-protection",
+              "title": "云故障保护"
+            },
+            {
+              "category": "Verified Backups",
+              "dataCategory": "backups",
+              "description": "从任何供应商退出。保留您的数据。",
+              "slug": "vendor-lock-in",
+              "title": "摆脱供应商锁定"
+            },
+            {
+              "category": "Verified Backups",
+              "dataCategory": "backups",
+              "description": "自动满足每项留存要求",
+              "slug": "retention-compliance",
+              "title": "留存合规"
+            },
+            {
+              "category": "Development Environments",
+              "dataCategory": "dev-env",
+              "description": "60 秒克隆生产环境",
+              "slug": "environment-cloning",
+              "title": "环境克隆"
+            }
+          ],
+          "title": "探索其他解决方案"
+        },
+        "hero": {
+          "badge": "加密控制",
+          "differentiator": "每家超大规模云商都在营销主权，但没有人能保证您的数据不受美国法院命令约束。Rediacc可以做到。",
+          "primaryCta": "免费开始使用社区版",
+          "secondaryCta": "查看主权功能 →",
+          "subtitle": "由您托管。由您持有密钥。美国司法管辖的提供商无法被强制交出其未持有的内容。",
+          "title": "以架构实现主权，而非依赖证书。"
+        },
+        "howItWorks": {
+          "cloneVisual": {
+            "arrow": {
+              "icon": "shield-arrow",
+              "label": "迁移",
+              "time": "开放格式"
+            },
+            "clone": {
+              "cardClass": "sealed",
+              "containerCount": "架构主权",
+              "services": [
+                {
+                  "name": "您的存储",
+                  "port": "客户自有"
+                },
+                {
+                  "name": "您的密钥",
+                  "port": "客户HSM"
+                },
+                {
+                  "name": "您的策略",
+                  "port": "EU治理"
+                },
+                {
+                  "name": "审计链",
+                  "port": "SHA-256签名"
+                }
+              ],
+              "size": "CLOUD Act豁免",
+              "status": "EU司法管辖",
+              "title": "您的主权栈"
+            },
+            "production": {
+              "containerCount": "合同驻留",
+              "services": [
+                {
+                  "name": "S3 Bucket",
+                  "port": "美国管控"
+                },
+                {
+                  "name": "KMS Key",
+                  "port": "供应商持有"
+                },
+                {
+                  "name": "IAM Policy",
+                  "port": "美国治理"
+                },
+                {
+                  "name": "Audit Log",
+                  "port": "美国可访问"
+                }
+              ],
+              "size": "非主权",
+              "status": "CLOUD Act风险敞口",
+              "title": "美国超大规模云"
+            }
+          },
+          "overline": "工作原理",
+          "steps": [
+            {
+              "description": "在您自己的硬件、EU IaaS提供商或任意组合上部署。Rediacc OE在爱沙尼亚注册成立，无美国母公司，无美国控制平面，无CLOUD Act暴露面。",
+              "icon": "server",
+              "title": "托管"
+            },
+            {
+              "description": "加密密钥永远不会离开您的掌控。密钥派生在客户端完成。Rediacc永远看不到明文。托管链可通过CLI按密钥审计。",
+              "icon": "key",
+              "title": "持有密钥"
+            },
+            {
+              "description": "一条命令生成签名的密钥托管报告。符合SecNumCloud 3.2、BSI C5:2026、ANSSI-BSI联合声明及EDPB建议01/2020用例2。",
+              "icon": "shield",
+              "title": "证明它"
+            }
+          ],
+          "title": "三个步骤。一套主权栈。"
+        },
+        "meta": {
+          "description": "您自主托管，您掌握密钥。通过架构设计规避 CLOUD Act 管辖，无需依赖合规证书。Rediacc 自托管备份，客户自管密钥，数据主权由您掌控。",
+          "keywords": "数据主权, CLOUD Act豁免, 客户管理密钥, GDPR Schrems II, EU数据法, 自托管, 主权备份, SecNumCloud, DORA",
+          "title": "数据主权：架构级主权备份解决方案 | Rediacc 数据保护平台"
+        },
+        "problem": {
+          "description": "美国司法管辖的云提供商在法律上必须遵守CLOUD Act命令，即使数据存储在EU数据中心。合同承诺无法凌驾于美国法规之上。问题不在于您的提供商是否愿意这样做，而在于他们是否在法律上可以这样做。",
+          "overline": "问题所在",
+          "statCallouts": [
+            {
+              "number": "\"不，我无法保证\" (Non, je ne peux pas le garantir)",
+              "ref": 1,
+              "source": "法国参议院，2025年6月18日",
+              "text": "Microsoft France公共与法律事务总监在宣誓作证时，就EU Microsoft数据中心中的法国公民数据是否能免受美国当局查阅所作的回答"
+            },
+            {
+              "number": "€12.6B",
+              "ref": 2,
+              "source": "Gartner，2026年2月",
+              "text": "2026年EU主权云IaaS支出，2027年将增至€23.1B。市场已判定主权不是可选项。"
+            },
+            {
+              "number": "0 US primaries",
+              "ref": 3,
+              "source": "欧盟委员会，2026年4月17日",
+              "text": "Cloud III: 欧盟委员会€180M主权云招标由四家EU联合体中标。美国总部主承包商数量为零。"
+            }
+          ],
+          "timeline": {
+            "newLabel": "使用 Rediacc",
+            "newSteps": ["在您自己的基础设施上托管", "持有您自己的密钥", "CLOUD Act无法触及您"],
+            "oldLabel": "传统方式",
+            "oldSteps": [
+              {
+                "day": "第1天",
+                "text": "与美国司法管辖的云提供商签约"
+              },
+              {
+                "day": "第1个月",
+                "text": "DPO标记GDPR传输风险，需要TIA"
+              },
+              {
+                "day": "第3个月",
+                "text": "法务审查CLOUD Act风险敞口，无法保证"
+              },
+              {
+                "day": "第6个月",
+                "text": "监管机构审计，数据驻留已确认，主权未确认"
+              },
+              {
+                "day": "结果",
+                "text": "有驻留，无主权。合规差距持续存在。"
+              }
+            ]
+          },
+          "title": "您的云提供商可以交出您的数据，而您不会得到任何通知。"
+        },
+        "references": {
+          "disclaimer": "计算器估算使用行业标准成本模型，实际风险敞口因司法管辖区、合同结构和违规场景而异。",
+          "items": [
+            {
+              "text": "Microsoft France公共与法律事务总监Anton Carniaux，法国参议院关于公共采购和数字主权的调查，2025年6月18日：「不，我无法保证这一点，但同样，这从来没有发生过。」The Register于2025年7月25日报道。",
+              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
+            },
+            {
+              "text": "Gartner，2026年2月：欧洲主权云IaaS支出预测，2026年为$12.6B，2027年为$23.1B，超越北美。",
+              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
+            },
+            {
+              "text": "欧盟委员会，「Commission Advances Cloud Sovereignty Through Strategic Procurement」，2026年4月17日。Cloud III €180M招标由Post Telecom + OVHcloud + CleverCloud、STACKIT、Scaleway以及Proximus + S3NS + Clarence + Mistral AI中标。美国总部主承包商数量为零。",
+              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
+            },
+            {
+              "text": "CLOUD Act（Clarifying Lawful Overseas Use of Data Act），18 U.S.C. 2713，2018年。授权美国当局强制美国司法管辖的提供商披露存储在世界任何地方的客户数据。",
+              "url": "https://www.justice.gov/dag/cloudact"
+            },
+            {
+              "text": "EDPB建议01/2020，关于补充转移工具以确保符合EU个人数据保护水平的措施，第2.0版，2021年6月。用例2：作为补充措施的加密要求客户独占密钥托管及进口方的技术不可读性。",
+              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
+            },
+            {
+              "text": "Keepit A/S，哥本哈根。面向Microsoft 365、Salesforce和Google Workspace的纯SaaS备份。EU注册，无美国母公司。不备份自托管或本地工作负载。",
+              "url": "https://keepit.com"
+            },
+            {
+              "text": "ANSSI SecNumCloud 3.2资质要求。提供商必须以EU为多数股东、EU总部所在地，且不受域外法律约束。非EU股东个人上限25%，集体上限39%。AWS Sovereign Cloud和Microsoft Bleu不符合资质。",
+              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
+            },
+            {
+              "text": "EU数据法（Regulation (EU) 2023/2854），第23-31条。自2025年9月12日生效。自2027年1月12日起全面禁止切换费用。提供商必须确保切换后的功能等效性。",
+              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
+            },
+            {
+              "text": "Veeam Backup and Replication支持本地自托管部署。Veeam不直接持有主权认证，EU主权叙事依赖合作伙伴IaaS（尤其是OVHcloud）。",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "AWS European Sovereign Cloud，2026年1月15日正式发布。在四个德国GmbH下运营。美国总部母公司（Amazon.com Inc.）仍受CLOUD Act约束。",
+              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
+            },
+            {
+              "text": "ANSSI-BSI云主权标准联合声明，2025年11月17日。四项失格标准：严格的数据和支持本地化、仅适用欧洲法律、无法外第三方未经授权的访问，以及无需非EU技术维持业务连续性的能力。",
+              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
+            },
+            {
+              "text": "欧洲监管当局，「DORA下关键ICT第三方提供商的指定」，2025年11月18日。首批指定的19家CTPP包括AWS、Microsoft Azure、Google Cloud、IBM、Oracle、SAP、Salesforce。",
+              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
+            },
+            {
+              "text": "Keepit 数据驻留政策：客户数据仅存储在欧盟数据中心（法兰克福、阿姆斯特丹、哥本哈根）。仅 SaaS 模式，运营商和存储均位于欧盟。",
+              "url": "https://www.keepit.com/trust/"
+            }
+          ],
+          "label": "来源与参考文献"
+        },
+        "socialProof": {
+          "author": "首席信息安全官",
+          "company": "承担SecNumCloud义务的法国OIV，员工1,200人",
+          "impact": {
+            "after": {
+              "label": "之后",
+              "value": "CLOUD Act豁免"
+            },
+            "before": {
+              "label": "之前",
+              "value": "传输风险"
+            },
+            "improvement": "已替换Microsoft Azure Backup · 密钥托管：从供应商转至客户 · ANSSI审计：通过"
+          },
+          "quote": "2025年6月Carniaux参议院证词之后，我们的SecNumCloud审计委员会提出了一个问题：您能否证明您的备份提供商不会被强制向美国当局披露患者数据？使用Microsoft Azure Backup时，我们无法回答这个问题。使用Rediacc，答案是架构层面的：密钥永远不会离开我们的HSM，运营商没有美国母公司，我们可以在三十秒内生成签名的托管报告。这是唯一能令ANSSI满意的答案。"
+        },
+        "stats": [
+          {
+            "icon": "key",
+            "label": "托管给任何提供商的密钥",
+            "number": "0"
+          },
+          {
+            "icon": "lock",
+            "label": "客户密钥托管",
+            "number": "100%"
+          },
+          {
+            "icon": "globe",
+            "label": "运营商司法管辖",
+            "number": "EU-only"
+          }
+        ],
+        "techDiff": {
+          "description": "美国司法管辖的提供商可以将您的数据存储在法兰克福，仍然可能被美国法院强制要求披露。Rediacc的架构从根本上消除了强制向量：没有密钥可以交出，没有回传通道可以拦截。",
+          "overline": "底层技术",
+          "rows": [
+            {
+              "rediacc": "运营商在爱沙尼亚注册，无美国母公司，无CLOUD Act强制面",
+              "traditional": "无论密文存放在哪里，提供商均受美国司法管辖"
+            },
+            {
+              "rediacc": "客户端密钥派生：供应商从不持有密钥，强制在技术上毫无意义",
+              "traditional": "供应商管理KMS：提供商可在法律要求下还原明文"
+            },
+            {
+              "rediacc": "SHA-256签名审计链：每次密钥访问和请求均被记录，客户可读",
+              "traditional": "跨境数据请求由供应商记录，客户不可见"
+            },
+            {
+              "rediacc": "开放格式（btrfs send, tar）：退出即得到可用副本，符合数据法",
+              "traditional": "专有备份格式：退出需要供应商工具迁移"
+            },
+            {
+              "rediacc": "通过btrfs reflink实现恒定时间分叉：100 GB和100 TB在相同秒数内完成分叉",
+              "traditional": "DORA恢复测试随数据量扩展，大型存储库需要数天"
+            }
+          ],
+          "title": "为何数据驻留不等于数据主权"
+        },
+        "techStrip": {
+          "label": "自托管任何工作负载，持有每一把密钥",
+          "note": "数据库、邮件服务器、CI/CD、ERP、CMS和AI模型存储：每个工作负载都是主权的，每把密钥都是您的。"
+        },
+        "terminal": {
+          "lines": [
+            {
+              "text": "rdc audit log --limit 50",
+              "type": "command"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "正在检查所有存储库的密钥托管链...",
+              "type": "comment"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "密钥 ID                 保管          HSM          托管        管辖",
+              "type": "table-header"
+            },
+            {
+              "text": "prod-main-v3            客户            YubiHSM 2    NO          客户-本地",
+              "type": "table-row"
+            },
+            {
+              "text": "prod-db-v2              客户            YubiHSM 2    NO          客户-本地",
+              "type": "table-row"
+            },
+            {
+              "text": "staging-main-v1         客户            software     NO          客户-本地",
+              "type": "table-row"
+            },
+            {
+              "text": "backup-archive-v4       客户            YubiHSM 2    NO          客户-本地",
+              "type": "table-row"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "密钥: 4   保管: 100% 客户   托管: 0   美国-可访问: 0   已签名: 2026-05-11T09:14:33Z",
+              "type": "summary"
+            }
+          ]
+        }
+      },
+      "downloadGated": {
+        "description": "这份简明扼要的 PDF 专为 CISO、CTO 及高级工程师撰写。填写您的邮箱，我们将通过邮件发送下载链接及一页摘要。",
+        "disclaimer": "仅一封邮件，不加入营销列表，一键退订。",
+        "dismissLabel": "关闭",
+        "emailPlaceholder": "you@company.com",
+        "errorMessage": "出现错误，请重试或联系 support@rediacc.com。",
+        "submitLabel": "发送简报",
+        "successMessage": "请查收邮件确认。PDF 已在新标签页中打开。",
+        "title": "获取技术简报"
+      },
+      "downloadShort": {
+        "buttonLabel": "下载简版简报（PDF）",
+        "description": "跳过深度解读，直接获取五分钟速览版，供团队站会阅读。",
+        "title": "时间有限？"
       },
       "encryption": {
         "benefits": {
@@ -9473,6 +10333,26 @@
           ]
         }
       },
+      "leadMagnetButton": {
+        "buttonLabel": "下载简报",
+        "description": "这份简明 PDF 专为 CISO、CTO 及高级工程师撰写。我们将链接发送至您的邮箱，方便日后查阅。",
+        "dismissLabel": "关闭",
+        "title": "获取技术简报"
+      },
+      "leadMagnetModal": {
+        "captchaRequired": "请完成验证码验证。",
+        "closeLabel": "关闭",
+        "description": "请输入您的工作邮箱，我们将发送 PDF 链接并为您保留一份副本。",
+        "disclaimer": "仅一封邮件，不加入营销列表，一键退订。",
+        "emailLabel": "工作邮箱",
+        "emailPlaceholder": "you@company.com",
+        "errorGeneric": "出现错误，请重试或联系 support@rediacc.com。",
+        "sendingLabel": "发送中……",
+        "submitLabel": "发送 PDF",
+        "successBody": "已在新标签页中打开，并通过邮件发送了链接。即将自动关闭。",
+        "successTitle": "PDF 正在发送",
+        "title": "获取技术简报"
+      },
       "migrationSafety": {
         "benefits": {
           "items": [
@@ -10447,474 +11327,6 @@
               "type": "summary"
             }
           ]
-        }
-      },
-      "dataSovereignty": {
-        "meta": {
-          "title": "数据主权：架构级主权备份解决方案 | Rediacc 数据保护平台",
-          "description": "您自主托管，您掌握密钥。通过架构设计规避 CLOUD Act 管辖，无需依赖合规证书。Rediacc 自托管备份，客户自管密钥，数据主权由您掌控。",
-          "keywords": "数据主权, CLOUD Act豁免, 客户管理密钥, GDPR Schrems II, EU数据法, 自托管, 主权备份, SecNumCloud, DORA"
-        },
-        "hero": {
-          "badge": "加密控制",
-          "title": "以架构实现主权，而非依赖证书。",
-          "subtitle": "由您托管。由您持有密钥。美国司法管辖的提供商无法被强制交出其未持有的内容。",
-          "differentiator": "每家超大规模云商都在营销主权，但没有人能保证您的数据不受美国法院命令约束。Rediacc可以做到。",
-          "primaryCta": "免费开始使用社区版",
-          "secondaryCta": "查看主权功能 →"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "type": "command",
-              "text": "rdc audit log --limit 50"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "type": "comment",
-              "text": "正在检查所有存储库的密钥托管链..."
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "type": "table-header",
-              "text": "密钥 ID                 保管          HSM          托管        管辖"
-            },
-            {
-              "type": "table-row",
-              "text": "prod-main-v3            客户            YubiHSM 2    NO          客户-本地"
-            },
-            {
-              "type": "table-row",
-              "text": "prod-db-v2              客户            YubiHSM 2    NO          客户-本地"
-            },
-            {
-              "type": "table-row",
-              "text": "staging-main-v1         客户            software     NO          客户-本地"
-            },
-            {
-              "type": "table-row",
-              "text": "backup-archive-v4       客户            YubiHSM 2    NO          客户-本地"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "type": "summary",
-              "text": "密钥: 4   保管: 100% 客户   托管: 0   美国-可访问: 0   已签名: 2026-05-11T09:14:33Z"
-            }
-          ]
-        },
-        "stats": [
-          {
-            "number": "0",
-            "label": "托管给任何提供商的密钥",
-            "icon": "key"
-          },
-          {
-            "number": "100%",
-            "label": "客户密钥托管",
-            "icon": "lock"
-          },
-          {
-            "number": "EU-only",
-            "label": "运营商司法管辖",
-            "icon": "globe"
-          }
-        ],
-        "problem": {
-          "overline": "问题所在",
-          "title": "您的云提供商可以交出您的数据，而您不会得到任何通知。",
-          "description": "美国司法管辖的云提供商在法律上必须遵守CLOUD Act命令，即使数据存储在EU数据中心。合同承诺无法凌驾于美国法规之上。问题不在于您的提供商是否愿意这样做，而在于他们是否在法律上可以这样做。",
-          "statCallouts": [
-            {
-              "number": "\"不，我无法保证\" (Non, je ne peux pas le garantir)",
-              "source": "法国参议院，2025年6月18日",
-              "ref": 1,
-              "text": "Microsoft France公共与法律事务总监在宣誓作证时，就EU Microsoft数据中心中的法国公民数据是否能免受美国当局查阅所作的回答"
-            },
-            {
-              "number": "€12.6B",
-              "source": "Gartner，2026年2月",
-              "ref": 2,
-              "text": "2026年EU主权云IaaS支出，2027年将增至€23.1B。市场已判定主权不是可选项。"
-            },
-            {
-              "number": "0 US primaries",
-              "source": "欧盟委员会，2026年4月17日",
-              "ref": 3,
-              "text": "Cloud III: 欧盟委员会€180M主权云招标由四家EU联合体中标。美国总部主承包商数量为零。"
-            }
-          ],
-          "timeline": {
-            "oldLabel": "传统方式",
-            "oldSteps": [
-              {
-                "day": "第1天",
-                "text": "与美国司法管辖的云提供商签约"
-              },
-              {
-                "day": "第1个月",
-                "text": "DPO标记GDPR传输风险，需要TIA"
-              },
-              {
-                "day": "第3个月",
-                "text": "法务审查CLOUD Act风险敞口，无法保证"
-              },
-              {
-                "day": "第6个月",
-                "text": "监管机构审计，数据驻留已确认，主权未确认"
-              },
-              {
-                "day": "结果",
-                "text": "有驻留，无主权。合规差距持续存在。"
-              }
-            ],
-            "newLabel": "使用 Rediacc",
-            "newSteps": ["在您自己的基础设施上托管", "持有您自己的密钥", "CLOUD Act无法触及您"]
-          }
-        },
-        "calculator": {
-          "overline": "真实成本",
-          "title": "美国司法管辖风险敞口会给您带来多少代价？",
-          "description": "拖动滑块以匹配您的环境。查看主权差距的真实成本。",
-          "headerTitle": "主权风险敞口计算器",
-          "sliders": {
-            "records": "EU个人数据记录（千条）",
-            "spend": "年度超大规模云支出（€ 千）",
-            "recoveryHours": "手动DORA恢复测试（小时/年）"
-          },
-          "withoutTag": "美国司法管辖",
-          "withTag": "使用 Rediacc",
-          "results": {
-            "transferRisk": "GDPR传输风险敞口",
-            "exitPenalty": "数据法2027退出罚款风险",
-            "doraTesting": "DORA第12条测试成本"
-          },
-          "annualLabel": "年度主权风险敞口",
-          "withResults": {
-            "transferRisk": "GDPR传输风险敞口",
-            "exitPenalty": "数据法2027退出罚款风险",
-            "doraTesting": "DORA第12条测试成本"
-          },
-          "withAnnual": "年度主权风险敞口",
-          "footnote": "传输风险：记录数 x €0.04 x 10%监管审查概率。退出罚款：超大规模云支出的10%作为数据法第25条估算转换成本上限（2027年1月12日零费用截止日期）。DORA测试：小时数 x €200/小时工程师成本。使用Rediacc：自托管消除传输风险，开放格式消除退出罚款，恒定时间分叉将DORA恢复测试缩减至几分钟，与存储库大小无关。"
-        },
-        "howItWorks": {
-          "overline": "工作原理",
-          "title": "三个步骤。一套主权栈。",
-          "steps": [
-            {
-              "title": "托管",
-              "description": "在您自己的硬件、EU IaaS提供商或任意组合上部署。Rediacc OE在爱沙尼亚注册成立，无美国母公司，无美国控制平面，无CLOUD Act暴露面。",
-              "icon": "server"
-            },
-            {
-              "title": "持有密钥",
-              "description": "加密密钥永远不会离开您的掌控。密钥派生在客户端完成。Rediacc永远看不到明文。托管链可通过CLI按密钥审计。",
-              "icon": "key"
-            },
-            {
-              "title": "证明它",
-              "description": "一条命令生成签名的密钥托管报告。符合SecNumCloud 3.2、BSI C5:2026、ANSSI-BSI联合声明及EDPB建议01/2020用例2。",
-              "icon": "shield"
-            }
-          ],
-          "cloneVisual": {
-            "production": {
-              "title": "美国超大规模云",
-              "status": "CLOUD Act风险敞口",
-              "services": [
-                {
-                  "name": "S3 Bucket",
-                  "port": "美国管控"
-                },
-                {
-                  "name": "KMS Key",
-                  "port": "供应商持有"
-                },
-                {
-                  "name": "IAM Policy",
-                  "port": "美国治理"
-                },
-                {
-                  "name": "Audit Log",
-                  "port": "美国可访问"
-                }
-              ],
-              "containerCount": "合同驻留",
-              "size": "非主权"
-            },
-            "clone": {
-              "title": "您的主权栈",
-              "status": "EU司法管辖",
-              "cardClass": "sealed",
-              "services": [
-                {
-                  "name": "您的存储",
-                  "port": "客户自有"
-                },
-                {
-                  "name": "您的密钥",
-                  "port": "客户HSM"
-                },
-                {
-                  "name": "您的策略",
-                  "port": "EU治理"
-                },
-                {
-                  "name": "审计链",
-                  "port": "SHA-256签名"
-                }
-              ],
-              "containerCount": "架构主权",
-              "size": "CLOUD Act豁免"
-            },
-            "arrow": {
-              "label": "迁移",
-              "time": "开放格式",
-              "icon": "shield-arrow"
-            }
-          }
-        },
-        "techDiff": {
-          "overline": "底层技术",
-          "title": "为何数据驻留不等于数据主权",
-          "description": "美国司法管辖的提供商可以将您的数据存储在法兰克福，仍然可能被美国法院强制要求披露。Rediacc的架构从根本上消除了强制向量：没有密钥可以交出，没有回传通道可以拦截。",
-          "rows": [
-            {
-              "traditional": "无论密文存放在哪里，提供商均受美国司法管辖",
-              "rediacc": "运营商在爱沙尼亚注册，无美国母公司，无CLOUD Act强制面"
-            },
-            {
-              "traditional": "供应商管理KMS：提供商可在法律要求下还原明文",
-              "rediacc": "客户端密钥派生：供应商从不持有密钥，强制在技术上毫无意义"
-            },
-            {
-              "traditional": "跨境数据请求由供应商记录，客户不可见",
-              "rediacc": "SHA-256签名审计链：每次密钥访问和请求均被记录，客户可读"
-            },
-            {
-              "traditional": "专有备份格式：退出需要供应商工具迁移",
-              "rediacc": "开放格式（btrfs send, tar）：退出即得到可用副本，符合数据法"
-            },
-            {
-              "traditional": "DORA恢复测试随数据量扩展，大型存储库需要数天",
-              "rediacc": "通过btrfs reflink实现恒定时间分叉：100 GB和100 TB在相同秒数内完成分叉"
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "重要意义",
-          "title": "您将获得什么",
-          "items": [
-            {
-              "icon": "shield",
-              "title": "架构层面的CLOUD Act豁免",
-              "description": "无美国司法管辖母公司。无供应商密钥托管。架构本身就是防御。Carniaux参议院证词（2025年6月18日）终结了合同可以替代司法管辖豁免的任何残余争议。"
-            },
-            {
-              "icon": "globe",
-              "title": "EU数据法2027就绪",
-              "description": "架构上开放的数据格式，零切换费用。每次备份都是可移植的可用副本。在2027年1月12日零切换费用截止日期前完全符合数据法第23-31条。"
-            },
-            {
-              "icon": "check-circle",
-              "title": "与SecNumCloud及C5:2026对齐",
-              "description": "四大支柱体系与2025年11月17日ANSSI-BSI联合声明一致：严格数据本地化、仅适用欧洲法律、无法外访问、无非EU依赖的业务连续性。"
-            }
-          ]
-        },
-        "comparison": {
-          "overline": "差距对比",
-          "title": "主权对比",
-          "description": "大多数供应商提供数据驻留。没有人能提供Rediacc通过架构实现的内容：客户密钥托管、纯EU运营商和CLOUD Act豁免。",
-          "capabilityLabel": "能力",
-          "features": [
-            {
-              "name": "CLOUD Act豁免（无美国司法管辖母公司）",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 0, 0]
-            },
-            {
-              "name": "客户持有密钥（技术不可读性）",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 5, 5, 0, 0, 0]
-            },
-            {
-              "name": "纯EU运营商（无美国母公司）",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 6, 0]
-            },
-            {
-              "name": "SecNumCloud / C5:2026认证路径",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 7, 0, 0, 0]
-            },
-            {
-              "name": "开放退出格式（数据法第30条）",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [8, 8, 8, 0, 8, 0]
-            },
-            {
-              "name": "在客户基础设施上自托管",
-              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [9, 0, 0, 0, 0, 0]
-            },
-            {
-              "name": "默认EU数据驻留",
-              "values": ["cross", "cross", "check", "check", "check", "rediacc"],
-              "refs": [0, 0, 10, 0, 13, 0]
-            }
-          ]
-        },
-        "socialProof": {
-          "quote": "2025年6月Carniaux参议院证词之后，我们的SecNumCloud审计委员会提出了一个问题：您能否证明您的备份提供商不会被强制向美国当局披露患者数据？使用Microsoft Azure Backup时，我们无法回答这个问题。使用Rediacc，答案是架构层面的：密钥永远不会离开我们的HSM，运营商没有美国母公司，我们可以在三十秒内生成签名的托管报告。这是唯一能令ANSSI满意的答案。",
-          "author": "首席信息安全官",
-          "company": "承担SecNumCloud义务的法国OIV，员工1,200人",
-          "impact": {
-            "before": {
-              "label": "之前",
-              "value": "传输风险"
-            },
-            "after": {
-              "label": "之后",
-              "value": "CLOUD Act豁免"
-            },
-            "improvement": "已替换Microsoft Azure Backup · 密钥托管：从供应商转至客户 · ANSSI审计：通过"
-          }
-        },
-        "bottomCta": {
-          "title": "停止从美国司法管辖的提供商那里租用您自己的数据。",
-          "description": "从免费社区版开始。一分钟内运行您的第一次密钥托管审计。",
-          "ctaText": "免费开始使用社区版",
-          "command": "rdc audit log --limit 50"
-        },
-        "techStrip": {
-          "label": "自托管任何工作负载，持有每一把密钥",
-          "note": "数据库、邮件服务器、CI/CD、ERP、CMS和AI模型存储：每个工作负载都是主权的，每把密钥都是您的。"
-        },
-        "explore": {
-          "title": "探索其他解决方案",
-          "solutions": [
-            {
-              "category": "Encryption Control",
-              "title": "您掌控的加密",
-              "description": "您的密钥，您的加密，没有例外。",
-              "slug": "encryption",
-              "dataCategory": "encryption"
-            },
-            {
-              "category": "Encryption Control",
-              "title": "审计追踪",
-              "description": "每项操作都有记录，无任何隐藏。",
-              "slug": "audit-trail",
-              "dataCategory": "encryption"
-            },
-            {
-              "category": "Encryption Control",
-              "title": "迁移安全",
-              "description": "迁移不冒数据风险",
-              "slug": "migration-safety",
-              "dataCategory": "encryption"
-            },
-            {
-              "category": "Ransomware Survival",
-              "title": "不可变备份",
-              "description": "勒索软件无法触及的备份",
-              "slug": "immutable-backups",
-              "dataCategory": "ransomware"
-            },
-            {
-              "category": "Multi-Cloud",
-              "title": "云故障保护",
-              "description": "AWS 宕机时，您不受影响",
-              "slug": "cloud-outage-protection",
-              "dataCategory": "multi-cloud"
-            },
-            {
-              "category": "Verified Backups",
-              "title": "摆脱供应商锁定",
-              "description": "从任何供应商退出。保留您的数据。",
-              "slug": "vendor-lock-in",
-              "dataCategory": "backups"
-            },
-            {
-              "category": "Verified Backups",
-              "title": "留存合规",
-              "description": "自动满足每项留存要求",
-              "slug": "retention-compliance",
-              "dataCategory": "backups"
-            },
-            {
-              "category": "Development Environments",
-              "title": "环境克隆",
-              "description": "60 秒克隆生产环境",
-              "slug": "environment-cloning",
-              "dataCategory": "dev-env"
-            }
-          ]
-        },
-        "references": {
-          "label": "来源与参考文献",
-          "items": [
-            {
-              "text": "Microsoft France公共与法律事务总监Anton Carniaux，法国参议院关于公共采购和数字主权的调查，2025年6月18日：「不，我无法保证这一点，但同样，这从来没有发生过。」The Register于2025年7月25日报道。",
-              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
-            },
-            {
-              "text": "Gartner，2026年2月：欧洲主权云IaaS支出预测，2026年为$12.6B，2027年为$23.1B，超越北美。",
-              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
-            },
-            {
-              "text": "欧盟委员会，「Commission Advances Cloud Sovereignty Through Strategic Procurement」，2026年4月17日。Cloud III €180M招标由Post Telecom + OVHcloud + CleverCloud、STACKIT、Scaleway以及Proximus + S3NS + Clarence + Mistral AI中标。美国总部主承包商数量为零。",
-              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
-            },
-            {
-              "text": "CLOUD Act（Clarifying Lawful Overseas Use of Data Act），18 U.S.C. 2713，2018年。授权美国当局强制美国司法管辖的提供商披露存储在世界任何地方的客户数据。",
-              "url": "https://www.justice.gov/dag/cloudact"
-            },
-            {
-              "text": "EDPB建议01/2020，关于补充转移工具以确保符合EU个人数据保护水平的措施，第2.0版，2021年6月。用例2：作为补充措施的加密要求客户独占密钥托管及进口方的技术不可读性。",
-              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
-            },
-            {
-              "text": "Keepit A/S，哥本哈根。面向Microsoft 365、Salesforce和Google Workspace的纯SaaS备份。EU注册，无美国母公司。不备份自托管或本地工作负载。",
-              "url": "https://keepit.com"
-            },
-            {
-              "text": "ANSSI SecNumCloud 3.2资质要求。提供商必须以EU为多数股东、EU总部所在地，且不受域外法律约束。非EU股东个人上限25%，集体上限39%。AWS Sovereign Cloud和Microsoft Bleu不符合资质。",
-              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
-            },
-            {
-              "text": "EU数据法（Regulation (EU) 2023/2854），第23-31条。自2025年9月12日生效。自2027年1月12日起全面禁止切换费用。提供商必须确保切换后的功能等效性。",
-              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
-            },
-            {
-              "text": "Veeam Backup and Replication支持本地自托管部署。Veeam不直接持有主权认证，EU主权叙事依赖合作伙伴IaaS（尤其是OVHcloud）。",
-              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
-            },
-            {
-              "text": "AWS European Sovereign Cloud，2026年1月15日正式发布。在四个德国GmbH下运营。美国总部母公司（Amazon.com Inc.）仍受CLOUD Act约束。",
-              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
-            },
-            {
-              "text": "ANSSI-BSI云主权标准联合声明，2025年11月17日。四项失格标准：严格的数据和支持本地化、仅适用欧洲法律、无法外第三方未经授权的访问，以及无需非EU技术维持业务连续性的能力。",
-              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
-            },
-            {
-              "text": "欧洲监管当局，「DORA下关键ICT第三方提供商的指定」，2025年11月18日。首批指定的19家CTPP包括AWS、Microsoft Azure、Google Cloud、IBM、Oracle、SAP、Salesforce。",
-              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
-            },
-            {
-              "text": "Keepit 数据驻留政策：客户数据仅存储在欧盟数据中心（法兰克福、阿姆斯特丹、哥本哈根）。仅 SaaS 模式，运营商和存储均位于欧盟。",
-              "url": "https://www.keepit.com/trust/"
-            }
-          ],
-          "disclaimer": "计算器估算使用行业标准成本模型，实际风险敞口因司法管辖区、合同结构和违规场景而异。"
         }
       },
       "rapidRecovery": {
@@ -13336,26 +13748,6 @@
             }
           ]
         }
-      },
-      "leadMagnetModal": {
-        "title": "获取技术简报",
-        "description": "请输入您的工作邮箱，我们将发送 PDF 链接并为您保留一份副本。",
-        "emailLabel": "工作邮箱",
-        "emailPlaceholder": "you@company.com",
-        "submitLabel": "发送 PDF",
-        "sendingLabel": "发送中……",
-        "successTitle": "PDF 正在发送",
-        "successBody": "已在新标签页中打开，并通过邮件发送了链接。即将自动关闭。",
-        "errorGeneric": "出现错误，请重试或联系 support@rediacc.com。",
-        "captchaRequired": "请完成验证码验证。",
-        "disclaimer": "仅一封邮件，不加入营销列表，一键退订。",
-        "closeLabel": "关闭"
-      },
-      "leadMagnetButton": {
-        "title": "获取技术简报",
-        "description": "这份简明 PDF 专为 CISO、CTO 及高级工程师撰写。我们将链接发送至您的邮箱，方便日后查阅。",
-        "buttonLabel": "下载简报",
-        "dismissLabel": "关闭"
       }
     },
     "team": {
@@ -13959,398 +14351,6 @@
       },
       "toc": {
         "title": "目录"
-      }
-    },
-    "resourcesBrief": {
-      "ransomwareSurvival": {
-        "meta": {
-          "title": "勒索软件防御指南：免费技术白皮书 PDF | Rediacc 企业备份方案",
-          "description": "文件系统原生不可变备份，攻击者无法加密或删除。Rediacc 面向 CISO/CTO 的免费专业简报，附高管精简版 PDF。",
-          "keywords": "勒索软件生存, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
-        },
-        "hero": {
-          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
-          "title": "勒索软件生存指南",
-          "subtitle": "94% 的勒索软件攻击以备份为目标，57% 攻击成功。",
-          "downloadButton": "下载技术简报",
-          "openInBrowser": "在浏览器中打开",
-          "disclaimer": "仅一封邮件，邮件确认，一键退订。"
-        },
-        "toc": {
-          "heading": "内容概览",
-          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
-          "items": [
-            "以具体运维视角描述的威胁模型",
-            "架构机制及对抗性模型推理",
-            "已阻断的故障模式及具名先例",
-            "合规性地图：具体条款、罚款及报告时限",
-            "基于公开数据的 ROI 测算",
-            "从技术路线角度进行的厂商对比（非 ARR）",
-            "上线流程及已知范围限制",
-            "架构所产生的审计就绪证据"
-          ]
-        },
-        "companions": {
-          "heading": "相关解决方案页面",
-          "intro": "同一架构，针对不同买家问题的具体应用：",
-          "readMore": "了解更多"
-        },
-        "faq": {
-          "heading": "读者常见问题",
-          "items": [
-            {
-              "q": "本简报的目标读者是谁？",
-              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。"
-            },
-            {
-              "q": "是否有非技术版本？",
-              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。"
-            },
-            {
-              "q": "我的邮箱会如何使用？",
-              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。"
-            },
-            {
-              "q": "为什么选择 btrfs？",
-              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。"
-            },
-            {
-              "q": "这适用于 AWS RDS 等托管服务吗？",
-              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "关于本简报",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
-          "downloadButton": "下载简报"
-        }
-      },
-      "multiCloudAlways": {
-        "meta": {
-          "title": "多云策略：免费技术白皮书 PDF | Rediacc 跨云容灾备份方案",
-          "description": "可移植快照与经验证的跨云故障切换，确保业务在云服务中断时持续运行。附 CISO/CTO 专业简报及高管精简版 PDF。",
-          "keywords": "多云常态化, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
-        },
-        "hero": {
-          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
-          "title": "多云常态化",
-          "subtitle": "2025 年 10 月 20 日，AWS US-EAST-1 中断长达 15 小时，Snapchat、Robinhood、Uber、Delta 均受影响。您能在最短时间内完成云端切换吗？",
-          "downloadButton": "下载技术简报",
-          "openInBrowser": "在浏览器中打开",
-          "disclaimer": "仅一封邮件，邮件确认，一键退订。"
-        },
-        "toc": {
-          "heading": "内容概览",
-          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
-          "items": [
-            "以具体运维视角描述的威胁模型",
-            "架构机制及对抗性模型推理",
-            "已阻断的故障模式及具名先例",
-            "合规性地图：具体条款、罚款及报告时限",
-            "基于公开数据的 ROI 测算",
-            "从技术路线角度进行的厂商对比（非 ARR）",
-            "上线流程及已知范围限制",
-            "架构所产生的审计就绪证据"
-          ]
-        },
-        "companions": {
-          "heading": "相关解决方案页面",
-          "intro": "同一架构，针对不同买家问题的具体应用：",
-          "readMore": "了解更多"
-        },
-        "faq": {
-          "heading": "读者常见问题",
-          "items": [
-            {
-              "q": "本简报的目标读者是谁？",
-              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。"
-            },
-            {
-              "q": "是否有非技术版本？",
-              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。"
-            },
-            {
-              "q": "我的邮箱会如何使用？",
-              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。"
-            },
-            {
-              "q": "为什么选择 btrfs？",
-              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。"
-            },
-            {
-              "q": "这适用于 AWS RDS 等托管服务吗？",
-              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "关于本简报",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
-          "downloadButton": "下载简报"
-        }
-      },
-      "verifiedBackups": {
-        "meta": {
-          "title": "备份验证：每次验证，每周期执行 | Rediacc 免费技术白皮书 PDF",
-          "description": "每次备份、每个周期均执行启动验证测试，而非季度性勾选了事。Rediacc 面向 CISO/CTO 的免费专业简报，附五分钟高管精简版 PDF。",
-          "keywords": "备份验证, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
-        },
-        "hero": {
-          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
-          "title": "备份验证",
-          "subtitle": "58% 的备份在恢复时失败，而大多数企业直到灾难发生时才发现这一问题。",
-          "downloadButton": "下载技术简报",
-          "openInBrowser": "在浏览器中打开",
-          "disclaimer": "仅一封邮件，邮件确认，一键退订。"
-        },
-        "toc": {
-          "heading": "内容概览",
-          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
-          "items": [
-            "以具体运维视角描述的威胁模型",
-            "架构机制及对抗性模型推理",
-            "已阻断的故障模式及具名先例",
-            "合规性地图：具体条款、罚款及报告时限",
-            "基于公开数据的 ROI 测算",
-            "从技术路线角度进行的厂商对比（非 ARR）",
-            "上线流程及已知范围限制",
-            "架构所产生的审计就绪证据"
-          ]
-        },
-        "companions": {
-          "heading": "相关解决方案页面",
-          "intro": "同一架构，针对不同买家问题的具体应用：",
-          "readMore": "了解更多"
-        },
-        "faq": {
-          "heading": "读者常见问题",
-          "items": [
-            {
-              "q": "本简报的目标读者是谁？",
-              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。"
-            },
-            {
-              "q": "是否有非技术版本？",
-              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。"
-            },
-            {
-              "q": "我的邮箱会如何使用？",
-              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。"
-            },
-            {
-              "q": "为什么选择 btrfs？",
-              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。"
-            },
-            {
-              "q": "这适用于 AWS RDS 等托管服务吗？",
-              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "关于本简报",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
-          "downloadButton": "下载简报"
-        }
-      },
-      "encryptionControl": {
-        "meta": {
-          "title": "加密控制：客户自管密钥 | Rediacc 免费技术白皮书 PDF",
-          "description": "客户自管密钥，加密数据在切换供应商后依然有效，符合 Schrems II 合规要求。附 CISO/CTO 专业简报及高管精简版 PDF。",
-          "keywords": "加密控制, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
-        },
-        "hero": {
-          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
-          "title": "加密控制",
-          "subtitle": "Schrems II 不是一个政策选项，而是一项架构要求，而大多数备份供应商并不满足这一要求。",
-          "downloadButton": "下载技术简报",
-          "openInBrowser": "在浏览器中打开",
-          "disclaimer": "仅一封邮件，邮件确认，一键退订。"
-        },
-        "toc": {
-          "heading": "内容概览",
-          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
-          "items": [
-            "以具体运维视角描述的威胁模型",
-            "架构机制及对抗性模型推理",
-            "已阻断的故障模式及具名先例",
-            "合规性地图：具体条款、罚款及报告时限",
-            "基于公开数据的 ROI 测算",
-            "从技术路线角度进行的厂商对比（非 ARR）",
-            "上线流程及已知范围限制",
-            "架构所产生的审计就绪证据"
-          ]
-        },
-        "companions": {
-          "heading": "相关解决方案页面",
-          "intro": "同一架构，针对不同买家问题的具体应用：",
-          "readMore": "了解更多"
-        },
-        "faq": {
-          "heading": "读者常见问题",
-          "items": [
-            {
-              "q": "本简报的目标读者是谁？",
-              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。"
-            },
-            {
-              "q": "是否有非技术版本？",
-              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。"
-            },
-            {
-              "q": "我的邮箱会如何使用？",
-              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。"
-            },
-            {
-              "q": "为什么选择 btrfs？",
-              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。"
-            },
-            {
-              "q": "这适用于 AWS RDS 等托管服务吗？",
-              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "关于本简报",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
-          "downloadButton": "下载简报"
-        }
-      },
-      "devEnvironments": {
-        "meta": {
-          "title": "开发环境：60 秒极速克隆生产环境 | Rediacc 免费技术白皮书 PDF",
-          "description": "基于 btrfs 零拷贝克隆，60 秒内还原与生产环境完全一致的开发环境。Rediacc 面向 CISO/CTO 的免费专业简报，附五分钟高管精简版 PDF。",
-          "keywords": "开发环境, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
-        },
-        "hero": {
-          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
-          "title": "开发环境",
-          "subtitle": "您的开发者每周仅有 4.5 小时真正在写代码，其余时间都在等待环境就绪。一支 50 人的工程团队每年因此损失 72 万至 120 万美元。",
-          "downloadButton": "下载技术简报",
-          "openInBrowser": "在浏览器中打开",
-          "disclaimer": "仅一封邮件，邮件确认，一键退订。"
-        },
-        "toc": {
-          "heading": "内容概览",
-          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
-          "items": [
-            "以具体运维视角描述的威胁模型",
-            "架构机制及对抗性模型推理",
-            "已阻断的故障模式及具名先例",
-            "合规性地图：具体条款、罚款及报告时限",
-            "基于公开数据的 ROI 测算",
-            "从技术路线角度进行的厂商对比（非 ARR）",
-            "上线流程及已知范围限制",
-            "架构所产生的审计就绪证据"
-          ]
-        },
-        "companions": {
-          "heading": "相关解决方案页面",
-          "intro": "同一架构，针对不同买家问题的具体应用：",
-          "readMore": "了解更多"
-        },
-        "faq": {
-          "heading": "读者常见问题",
-          "items": [
-            {
-              "q": "本简报的目标读者是谁？",
-              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。"
-            },
-            {
-              "q": "是否有非技术版本？",
-              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。"
-            },
-            {
-              "q": "我的邮箱会如何使用？",
-              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。"
-            },
-            {
-              "q": "为什么选择 btrfs？",
-              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。"
-            },
-            {
-              "q": "这适用于 AWS RDS 等托管服务吗？",
-              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "关于本简报",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
-          "downloadButton": "下载简报"
-        }
-      },
-      "preemptiveDefense": {
-        "meta": {
-          "title": "主动防御：零生产风险安全测试 | Rediacc 免费技术白皮书 PDF",
-          "description": "在一次性生产克隆环境上进行安全测试，零生产风险，支持 AI 渗透测试。附 CISO/CTO 专业简报及高管精简版 PDF。",
-          "keywords": "主动防御, pdf, rediacc, btrfs 备份, 不可变备份, 技术简报"
-        },
-        "hero": {
-          "eyebrow": "免费下载 · A4 PDF · CISO / CTO 级",
-          "title": "主动防御",
-          "subtitle": "针对真实基础设施进行测试，不破坏任何内容。克隆环境承担所有危险冲击。",
-          "downloadButton": "下载技术简报",
-          "openInBrowser": "在浏览器中打开",
-          "disclaimer": "仅一封邮件，邮件确认，一键退订。"
-        },
-        "toc": {
-          "heading": "内容概览",
-          "intro": "本简报涵盖架构设计、所阻断的故障模式、合规性地图，以及审计人员所需的运维级证据。约 10 至 14 页，内容详实。",
-          "items": [
-            "以具体运维视角描述的威胁模型",
-            "架构机制及对抗性模型推理",
-            "已阻断的故障模式及具名先例",
-            "合规性地图：具体条款、罚款及报告时限",
-            "基于公开数据的 ROI 测算",
-            "从技术路线角度进行的厂商对比（非 ARR）",
-            "上线流程及已知范围限制",
-            "架构所产生的审计就绪证据"
-          ]
-        },
-        "companions": {
-          "heading": "相关解决方案页面",
-          "intro": "同一架构，针对不同买家问题的具体应用：",
-          "readMore": "了解更多"
-        },
-        "faq": {
-          "heading": "读者常见问题",
-          "items": [
-            {
-              "q": "本简报的目标读者是谁？",
-              "a": "CISO、CTO 或正在评估该架构的高级基础设施工程师。内容假定读者已熟悉备份工作流、文件系统基础知识，以及您的技术栈所涉及的监管要求。"
-            },
-            {
-              "q": "是否有非技术版本？",
-              "a": "有。提交邮箱后，同一页面将提供五分钟高管速览 PDF，可转发给 CFO、IT 总监或董事会成员。"
-            },
-            {
-              "q": "我的邮箱会如何使用？",
-              "a": "仅发送一封确认邮件。您将订阅我们的新闻简报（每月一篇简短的全产品内容）。一键退订。根据 Rediacc 的数据驻留政策，您的邮箱数据默认存储于欧盟。"
-            },
-            {
-              "q": "为什么选择 btrfs？",
-              "a": "简报中有详细说明。简而言之：btrfs 将不可变性、写时复制快照及增量发送/接收作为存储层的固有属性，而非上层应用实现的能力。这从根本上改变了持有 root 凭据的攻击者所能突破的边界。"
-            },
-            {
-              "q": "这适用于 AWS RDS 等托管服务吗？",
-              "a": "不直接适用。该架构针对在 btrfs 卷上运行容器化数据库的自管理计算环境。如果您的恢复关键资产位于 RDS 或 Aurora，简报会明确指出，并说明该模型适用与不适用的边界。"
-            }
-          ]
-        },
-        "about": {
-          "heading": "关于本简报",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "有建议添加到本页面的问题？请发送至 hello@rediacc.com。",
-          "downloadButton": "下载简报"
-        }
       }
     }
   },

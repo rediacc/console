@@ -13,8 +13,8 @@ export declare const DEFAULT_BRIDGE_IP: "192.168.111.1";
 export declare const DEFAULT_WORKER_1_IP: "192.168.111.11";
 export declare const DEFAULT_WORKER_2_IP: "192.168.111.12";
 export declare const DEFAULT_RUSTFS_ENDPOINT: "http://192.168.111.1:9000";
-export declare const DEFAULT_RUSTFS_ACCESS_KEY: "rustfsadmin";
-export declare const DEFAULT_RUSTFS_SECRET_KEY: "rustfsadmin";
+export declare const DEFAULT_RUSTFS_ACCESS_KEY: "rediacc-rustfs";
+export declare const DEFAULT_RUSTFS_SECRET_KEY: "rediacc-rustfs-secret-key";
 export declare const DEFAULT_RUSTFS_BUCKET: "rediacc-test";
 /**
  * Universal user ID for rediacc system user.

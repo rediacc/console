@@ -15,6 +15,7 @@ import {
   traceAction,
   validateFunctionParams,
 } from './queue.js';
+import { assertMachineExists } from './_validate.js';
 
 interface RunLocalOptions {
   machine?: string;
@@ -61,6 +62,7 @@ export function handleExecutionResult(result: {
 
 async function runLocalMode(functionName: string, options: RunLocalOptions): Promise<void> {
   const { machineName, params } = resolveRunParams(functionName, options);
+  await assertMachineExists(machineName);
   outputService.info(
     t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
   );

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 3
 language: ar
-sourceHash: "ec3f99cf89fde4b3"
-sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
+sourceHash: "12956297c1157cd2"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # ورقة مرجعية لـ RDC CLI
@@ -58,7 +58,7 @@ sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
 | `rdc config backup-strategy list` | عرض جميع استراتيجيات النسخ الاحتياطي المحددة |
 | `rdc config backup-strategy show --name <name>` | عرض تفاصيل استراتيجية |
 | `rdc config backup-strategy remove --name <name>` | حذف استراتيجية |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | ربط الاستراتيجيات بجهاز |
+| `rdc machine backup schedule -m <machine>` | نشر استراتيجيات النسخ الاحتياطي المُكوَّنة على جهاز |
 
 ## عمليات النسخ الاحتياطي
 

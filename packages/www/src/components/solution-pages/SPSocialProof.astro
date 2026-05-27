@@ -1,18 +1,37 @@
 ---
+// The i18n data carries two historical impact shapes: nested
+// ({ before: { label, value }, after: { label, value } }) on most pages, and
+// flat ({ beforeLabel, beforeValue, afterLabel, afterValue }) on the dev-env
+// pages. Normalize both here so the component renders the before/after box for
+// every page and never crashes on the shape it does not expect.
+interface ImpactNested {
+  before: { label: string; value: string };
+  after: { label: string; value: string };
+  improvement: string;
+}
+interface ImpactFlat {
+  beforeLabel: string;
+  beforeValue: string;
+  afterLabel: string;
+  afterValue: string;
+  improvement: string;
+}
 interface Props {
   socialProof: {
     quote: string;
-    impact?: {
-      beforeLabel: string;
-      beforeValue: string;
-      afterLabel: string;
-      afterValue: string;
-      improvement: string;
-    };
+    impact?: ImpactNested | ImpactFlat;
   };
 }
 
 const { socialProof } = Astro.props;
+const rawImpact = socialProof.impact as (ImpactNested & ImpactFlat) | undefined;
+const impact = rawImpact
+  ? {
+      before: rawImpact.before ?? { label: rawImpact.beforeLabel, value: rawImpact.beforeValue },
+      after: rawImpact.after ?? { label: rawImpact.afterLabel, value: rawImpact.afterValue },
+      improvement: rawImpact.improvement,
+    }
+  : null;
 ---
 
 <section class="sp-social-proof">
@@ -20,21 +39,21 @@ const { socialProof } = Astro.props;
     <div class="sp-quote-mark" aria-hidden="true">&ldquo;</div>
     <blockquote class="sp-quote-text">{socialProof.quote}</blockquote>
 
-    {socialProof.impact && (
+    {impact && (
       <Fragment>
         <div class="sp-impact-card">
           <div class="sp-impact-metric sp-impact-before">
-            <div class="sp-impact-label">{socialProof.impact.beforeLabel}</div>
-            <div class="sp-impact-value">{socialProof.impact.beforeValue}</div>
+            <div class="sp-impact-label">{impact.before.label}</div>
+            <div class="sp-impact-value">{impact.before.value}</div>
           </div>
           <div class="sp-impact-arrow">&rarr;</div>
           <div class="sp-impact-metric sp-impact-after">
-            <div class="sp-impact-label">{socialProof.impact.afterLabel}</div>
-            <div class="sp-impact-value">{socialProof.impact.afterValue}</div>
+            <div class="sp-impact-label">{impact.after.label}</div>
+            <div class="sp-impact-value">{impact.after.value}</div>
           </div>
         </div>
         <div class="sp-impact-improvement">
-          <span>{socialProof.impact.improvement}</span>
+          <span>{impact.improvement}</span>
         </div>
       </Fragment>
     )}

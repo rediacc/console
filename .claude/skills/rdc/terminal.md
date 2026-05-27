@@ -10,7 +10,7 @@ For full command syntax and options, see [reference.md](reference.md).
 
 | Task | Use this | NOT this |
 |------|----------|----------|
-| List containers | `rdc machine containers` | `rdc term connect -c "docker ps"` |
+| List containers | `rdc machine query --containers` | `rdc term connect -c "docker ps"` |
 | View container logs | `rdc term connect -m <m> -r <repo> --container <c> --container-action logs` | `rdc term connect -c "docker logs"` |
 | Exec into container | `rdc term connect -m <m> -r <repo> --container <c> --container-action exec` | `rdc term connect -c "docker exec"` |
 | Check machine health | `rdc machine health` | `rdc term connect -c "systemctl status"` |

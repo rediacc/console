@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-work-with-repo",
+  "nextTutorialKey": "tutorial-forking",
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "daily-three",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "daily-three",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc repo tunnel -m my-server -r my-app -c app",
+        "commandFull": "timeout 2s rdc repo tunnel -m <machine-name> --repository my-app --container app || true"
+      }
+    },
+    {
+      "id": "open-tunnel",
+      "type": "browser",
+      "url": "https://www.rediacc.com",
+      "durationSec": 7,
+      "zoom": 1.5,
+      "actions": [
+        {
+          "wait": 3000
+        }
+      ],
+      "narrationKey": "open-tunnel",
+      "narrationRole": "step"
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc term connect -m my-server -r my-app -c 'docker ps'",
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'docker ps' 2>/dev/null"
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "command": "rdc repo sync upload -m my-server -r my-app --local ./src --dry-run",
+        "commandFull": "rdc repo sync upload -m <machine-name> --repository my-app --local /tmp/tutorial-src --dry-run"
+      }
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "markerIndex": 3,
+      "holdSec": 0.8,
+      "narrationRole": "transition",
+      "card": {
+        "command": "rdc repo sync upload -m my-server -r my-app --local ./src",
+        "commandFull": "rdc repo sync upload -m <machine-name> --repository my-app --local /tmp/tutorial-src"
+      }
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

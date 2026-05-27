@@ -4,6 +4,8 @@ description: Kiirviide kõigi rdc käskude, konfiguratsioonide, hoidlate, masina
 category: Guides
 order: 3
 language: et
+sourceHash: "12956297c1157cd2"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # RDC CLI petuleht
@@ -70,7 +72,7 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc config backup-strategy list` | Loenda kõik defineeritud varundusstrateegiad |
 | `rdc config backup-strategy show --name <name>` | Näita strateegia üksikasju |
 | `rdc config backup-strategy remove --name <name>` | Eemalda strateegia |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | Seo strateegiad masinaga |
+| `rdc machine backup schedule -m <machine>` | Juuruta konfigureeritud varundusstrateegiad masinasse |
 
 ## Varundusoperatsioonid
 

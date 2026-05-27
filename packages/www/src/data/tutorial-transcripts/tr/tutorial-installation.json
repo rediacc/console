@@ -6,14 +6,52 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.509194,
-      "text": "Önce CLI'nin kurulu olduğunu doğrulayalım. Versiyon bayrağı kurulu versiyonu yazdırır; böylece kurulumun tamamlandığını anlayabiliriz."
+      "at": 1.626476,
+      "text": "Önce CLI'nin kurulu olduğunu doğrulayalım. Versiyon bayrağı kurulu versiyonu yazdırır; böylece kurulumun tamamlandığını anlayabiliriz.",
+      "afterText": "Kurulum tamam. rdc ikili dosyası artık path'te.",
+      "cardLabel": "CLI Kur",
+      "prose": "Kurulum komutunu terminal'inize yapıştırın ve çalıştırın. Betik platformunuzu doğrular, en son kararlı binary'yi indirir ve ana dizininize yerleştirir. Sistem genelinde kurulum yok, sudo gerekmez. İşlem tamamlandığında rdc binary'si path'inizde olur ve herhangi bir shell'den çağrılabilir."
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 9.435981,
-      "text": "Şimdi tanı denetimini çalıştıralım. CLI'nin ihtiyaç duyduğu her bağımlılığı (Node, SSH, Docker, renet ikili dosyası) tek tek kontrol eder ve eksikleri bildirir. Temiz bir rapor, hazır olduğumuz anlamına gelir."
+      "at": 7.903516,
+      "text": "Şimdi tanı denetimini çalıştıralım. CLI'nin ihtiyaç duyduğu her bağımlılığı (Node, SSH, Docker, renet ikili dosyası) tek tek kontrol eder ve eksikleri bildirir. Temiz bir rapor, hazır olduğumuz anlamına gelir.",
+      "afterText": "Versiyon yazdırıldı. Hazırsınız.",
+      "cardLabel": "Sürümü Doğrula",
+      "prose": "Kurulumu, rdc'yi sürüm bayrağıyla çalıştırarak onaylayın. Yüklenen sürümü yazdırır ve binary'nin path'inizde olduğunu doğrular."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Pekâlâ! Komut satırı aracını dizüstü bilgisayarınıza kuralım."
+    },
+    {
+      "id": "three-steps",
+      "text": "Üç adım. Kurulum sayfasını açın, işletim sisteminizi seçin ve ardından komutu terminalinize yapıştırın."
+    },
+    {
+      "id": "open-install-page",
+      "text": "Kurulum sayfasına gidin ve hızlı kurulum bölümüne kaydırın. Hangi platformda olursanız olun size uygun tek satırlık komutu üretir."
+    },
+    {
+      "id": "laptop-vs-server",
+      "text": "Komut satırı aracı dizüstü bilgisayarınızda yaşar. Sunucuda renet adlı ayrı bir bileşen çalışır; CLI onu SSH üzerinden sağlar ve sürer, böylece sunucuya elle giriş yapmanıza hiç gerek kalmaz."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Kurulum tamam! Sırada, CLI'nin sunucularınıza ulaşabilmesi için SSH anahtarınızı ayarlayacağız."
+    }
+  ],
+  "title": "Kurulum",
+  "chapters": {
+    "intro": "Kurulum",
+    "three-steps": "Üç Adım",
+    "open-install": "Kurulum Sayfasını Aç",
+    "cast-step-0": "Adım 1: CLI'yi Kur",
+    "cast-step-1": "Adım 2: Kurulumu Doğrula",
+    "laptop-vs-server": "rdc Neden Yerel Makinenizde Çalışır",
+    "outro": "Sonraki: SSH Anahtar Yapılandırması"
+  }
 }

@@ -2,30 +2,71 @@
   "cast": "/assets/tutorials/tutorial-work-with-repo.cast",
   "language": "en",
   "version": 1,
+  "title": "Working with Your Repo",
+  "chapters": {
+    "intro": "Working with Your Repo",
+    "daily-three": "The daily three: tunnel, term, sync",
+    "cast-step-0": "Tunnel: forward a container port",
+    "open-tunnel": "Open the app in your browser",
+    "cast-step-1": "Term: run commands inside the sandbox",
+    "cast-step-2": "Sync: preview with --dry-run",
+    "cast-step-3": "Sync: upload for real",
+    "outro": "Next: Forking a Repository"
+  },
   "events": [
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 93.14728,
-      "text": "First, the tunnel command. The app runs on the server, not your laptop. The tunnel command forwards a container port over SSH so you can open it at localhost in your browser."
+      "at": 2.415513,
+      "text": "First, the tunnel command. The app runs on the server, not your laptop. The tunnel command forwards a container port over SSH so you can open it at localhost in your browser.",
+      "afterText": "Port forwarded. The app is now reachable at localhost.",
+      "cardLabel": "Tunnel a Port",
+      "prose": "The app runs on the server, not your laptop. The tunnel command forwards a container port over SSH so you can open it at localhost in your browser."
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 103.393386,
-      "text": "Second, the term command. The terminal connect command drops you into the repo sandbox, the same isolated view as VS Code. Run any command against this repo Docker daemon without leaving your terminal."
+      "at": 9.087333,
+      "text": "Second, the term command. The terminal connect command drops you into the repo sandbox, the same isolated view as VS Code. Run any command against this repo Docker daemon without leaving your terminal.",
+      "afterText": "Inside the repo sandbox. Run anything as if you were SSH'd in.",
+      "cardLabel": "Term in Sandbox",
+      "prose": "The term connect command drops you into the repo sandbox, the same isolated view as VS Code. Run any command against this repo's Docker daemon without leaving your terminal."
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 120.858492,
-      "text": "Now we will move files. First a dry-run preview. It shows exactly what would change without copying anything. Always preview when you are not sure."
+      "at": 15.893309,
+      "text": "Now we will move files. First a dry-run preview. It shows exactly what would change without copying anything. Always preview when you are not sure.",
+      "afterText": "Preview only. No files moved yet.",
+      "cardLabel": "Sync Preview",
+      "prose": "Before moving files, run sync with --dry-run. It shows exactly what would change without copying anything. Preview first whenever the source or destination is uncertain."
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 137.357072,
-      "text": "And the upload for real. The sync upload command moves files from your laptop into the repo over SSH, with rsync delta compression. Tunnel, term, sync. Three commands cover the daily loop."
+      "at": 22.144638,
+      "text": "And the upload for real. The sync upload command moves files from your laptop into the repo over SSH, with rsync delta compression. Tunnel, term, sync. Three commands cover the daily loop.",
+      "afterText": "Files uploaded. Delta compression handles big trees.",
+      "cardLabel": "Sync Upload",
+      "prose": "The sync upload command moves files from your laptop into the repo over SSH using rsync delta compression. Together, tunnel, term, and sync cover the daily loop."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alright! Your app is running, so let's actually work with it. Three commands cover the daily loop."
+    },
+    {
+      "id": "daily-three",
+      "text": "Tunnel opens your app in a browser, term runs commands inside the sandbox, and sync moves files in and out. That's the whole daily workflow."
+    },
+    {
+      "id": "open-tunnel",
+      "text": "With the tunnel running, the app opens right in your browser. For this demo we load rediacc.com, the same way you would reach your own app served straight from the container."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "And that's the daily three. See you in the next one!"
     }
   ]
 }

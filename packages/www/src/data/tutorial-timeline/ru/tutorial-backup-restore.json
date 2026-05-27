@@ -7,591 +7,82 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "d6a5a98404a640fb56d1fc18939b67d61e606b6a2513a1150ced995771b689e0",
+  "transcriptHash": "489b3591134924249eefe5b2d790f09bfc1d1f0e69cb5c5cc2ce17da9fe3b5db",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 65.053708,
-      "replayEndSec": 73.743501,
+      "replayStartSec": 2.424169,
+      "replayEndSec": 6.651448,
       "narrationText": "Шаг первый. Импортируем существующую конфигурацию rclone. rclone поддерживает S3, Backblaze, Google Drive, Dropbox и многое другое. Если вы уже используете его, ту же конфигурацию можно импортировать напрямую.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-01.63cdbae9.mp3",
-      "audioDurationSec": 15.490612,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.8,
-          "startChar": 4,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 2.08,
-          "startChar": 12,
-          "endChar": 23
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.8,
-          "startChar": 24,
-          "endChar": 36
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 3.6,
-          "startChar": 37,
-          "endChar": 49
-        },
-        {
-          "startSec": 5.36,
-          "endSec": 6.08,
-          "startChar": 65,
-          "endChar": 77
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.64,
-          "startChar": 78,
-          "endChar": 80
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.6,
-          "startChar": 82,
-          "endChar": 91
-        },
-        {
-          "startSec": 7.76,
-          "endSec": 8.0,
-          "startChar": 93,
-          "endChar": 99
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.48,
-          "startChar": 100,
-          "endChar": 105
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.2,
-          "startChar": 107,
-          "endChar": 114
-        },
-        {
-          "startSec": 9.52,
-          "endSec": 9.6,
-          "startChar": 115,
-          "endChar": 116
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 10.0,
-          "startChar": 117,
-          "endChar": 123
-        },
-        {
-          "startSec": 10.0,
-          "endSec": 10.48,
-          "startChar": 124,
-          "endChar": 130
-        },
-        {
-          "startSec": 11.04,
-          "endSec": 11.28,
-          "startChar": 132,
-          "endChar": 136
-        },
-        {
-          "startSec": 11.28,
-          "endSec": 11.44,
-          "startChar": 137,
-          "endChar": 139
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 11.6,
-          "startChar": 140,
-          "endChar": 143
-        },
-        {
-          "startSec": 11.6,
-          "endSec": 12.24,
-          "startChar": 144,
-          "endChar": 155
-        },
-        {
-          "startSec": 12.24,
-          "endSec": 12.56,
-          "startChar": 156,
-          "endChar": 159
-        },
-        {
-          "startSec": 12.96,
-          "endSec": 13.04,
-          "startChar": 161,
-          "endChar": 163
-        },
-        {
-          "startSec": 13.04,
-          "endSec": 13.12,
-          "startChar": 164,
-          "endChar": 166
-        },
-        {
-          "startSec": 13.12,
-          "endSec": 13.92,
-          "startChar": 167,
-          "endChar": 179
-        },
-        {
-          "startSec": 13.92,
-          "endSec": 14.16,
-          "startChar": 180,
-          "endChar": 185
-        },
-        {
-          "startSec": 14.16,
-          "endSec": 14.88,
-          "startChar": 186,
-          "endChar": 199
-        },
-        {
-          "startSec": 14.88,
-          "endSec": 15.44,
-          "startChar": 200,
-          "endChar": 208
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-01.bd9059a6.mp3",
+      "textHash": "bd9059a6324355b5933b595a9df024451781a36d39f89e7597194d495d2f602e",
+      "audioDurationSec": 15.229388,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-01-after.d2049b22.mp3",
+      "afterAudioDurationSec": 5.799184,
+      "afterTextHash": "d2049b22ec2fa8de3039d70606a1a9be267ee855d9f4fe0b527f1a6fdbc3a760"
     },
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 73.743501,
-      "replayEndSec": 82.843959,
+      "replayStartSec": 6.651448,
+      "replayEndSec": 10.354487,
       "narrationText": "Выводим список хранилищ, о которых теперь знает CLI. Каждое хранилище — это место назначения для резервных копий.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-02.391943aa.mp3",
-      "audioDurationSec": 8.124082,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 0.96,
-          "startChar": 8,
-          "endChar": 14
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.52,
-          "startChar": 15,
-          "endChar": 23
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.0,
-          "startChar": 25,
-          "endChar": 26
-        },
-        {
-          "startSec": 2.0,
-          "endSec": 2.4,
-          "startChar": 27,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.72,
-          "startChar": 35,
-          "endChar": 41
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.04,
-          "startChar": 42,
-          "endChar": 47
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.8,
-          "startChar": 53,
-          "endChar": 59
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.44,
-          "startChar": 60,
-          "endChar": 69
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.6,
-          "startChar": 72,
-          "endChar": 75
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 6.0,
-          "startChar": 76,
-          "endChar": 81
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.72,
-          "startChar": 82,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 6.88,
-          "startChar": 93,
-          "endChar": 96
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.52,
-          "startChar": 97,
-          "endChar": 106
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 8.0,
-          "startChar": 107,
-          "endChar": 112
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-02.58498bf9.mp3",
+      "textHash": "58498bf91cc3de3b3d76aa493b60ed026c884a59054dc30e562ad2c19e527f38",
+      "audioDurationSec": 9.090612,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-02-after.f46f97be.mp3",
+      "afterAudioDurationSec": 3.474286,
+      "afterTextHash": "f46f97be697fd09667836a05e0199c6bec74f0eb04ced93989a97e9e136129ad"
     },
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 82.843959,
-      "replayEndSec": 94.515541,
+      "replayStartSec": 10.354487,
+      "replayEndSec": 18.28182,
       "narrationText": "Шаг второй. Отправляем полную резервную копию. Весь репозиторий — приложение, база данных, файлы, конфигурация — загружается. Поскольку репозиторий зашифрован, резервная копия тоже зашифрована. Никакого дополнительного управления ключами.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-03.0c84dd8b.mp3",
-      "audioDurationSec": 18.99102,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.96,
-          "startChar": 4,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 2.08,
-          "startChar": 12,
-          "endChar": 22
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.56,
-          "startChar": 23,
-          "endChar": 29
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.2,
-          "startChar": 30,
-          "endChar": 39
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.68,
-          "startChar": 40,
-          "endChar": 45
-        },
-        {
-          "startSec": 4.08,
-          "endSec": 4.4,
-          "startChar": 47,
-          "endChar": 51
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 5.36,
-          "startChar": 52,
-          "endChar": 63
-        },
-        {
-          "startSec": 6.48,
-          "endSec": 6.88,
-          "startChar": 78,
-          "endChar": 82
-        },
-        {
-          "startSec": 6.88,
-          "endSec": 7.28,
-          "startChar": 83,
-          "endChar": 89
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.84,
-          "startChar": 91,
-          "endChar": 96
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.8,
-          "startChar": 98,
-          "endChar": 110
-        },
-        {
-          "startSec": 9.04,
-          "endSec": 9.92,
-          "startChar": 113,
-          "endChar": 124
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.88,
-          "startChar": 126,
-          "endChar": 135
-        },
-        {
-          "startSec": 10.88,
-          "endSec": 11.6,
-          "startChar": 136,
-          "endChar": 147
-        },
-        {
-          "startSec": 11.6,
-          "endSec": 12.32,
-          "startChar": 148,
-          "endChar": 158
-        },
-        {
-          "startSec": 12.8,
-          "endSec": 13.52,
-          "startChar": 160,
-          "endChar": 169
-        },
-        {
-          "startSec": 13.52,
-          "endSec": 14.08,
-          "startChar": 170,
-          "endChar": 175
-        },
-        {
-          "startSec": 14.32,
-          "endSec": 14.64,
-          "startChar": 176,
-          "endChar": 180
-        },
-        {
-          "startSec": 14.64,
-          "endSec": 15.44,
-          "startChar": 181,
-          "endChar": 192
-        },
-        {
-          "startSec": 16.08,
-          "endSec": 16.72,
-          "startChar": 194,
-          "endChar": 202
-        },
-        {
-          "startSec": 16.72,
-          "endSec": 17.6,
-          "startChar": 203,
-          "endChar": 218
-        },
-        {
-          "startSec": 17.6,
-          "endSec": 18.4,
-          "startChar": 219,
-          "endChar": 229
-        },
-        {
-          "startSec": 18.4,
-          "endSec": 18.88,
-          "startChar": 230,
-          "endChar": 237
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-03.08db43cb.mp3",
+      "textHash": "08db43cbe0a718418947b0c95a44c69efa5bf9ca4a06a9bb7e0c33f8c8df4fe7",
+      "audioDurationSec": 18.912653,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-03-after.670db051.mp3",
+      "afterAudioDurationSec": 8.045714,
+      "afterTextHash": "670db051244d5827fbbce40a107db0a3f415a8bca147a452977bf6a8a2d659aa"
     },
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 94.515541,
-      "replayEndSec": 131.818198,
+      "replayStartSec": 18.28182,
+      "replayEndSec": 26.532142,
       "narrationText": "Выводим список резервных копий в этом хранилище. Отсюда восстановление на новом сервере — одна команда: команда pull для репозитория. Те же данные, те же контейнеры, другая машина.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-04.4e286167.mp3",
-      "audioDurationSec": 13.714286,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 1.04,
-          "startChar": 8,
-          "endChar": 14
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.76,
-          "startChar": 15,
-          "endChar": 24
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.24,
-          "startChar": 25,
-          "endChar": 30
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.32,
-          "startChar": 31,
-          "endChar": 32
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.64,
-          "startChar": 33,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 3.44,
-          "startChar": 38,
-          "endChar": 47
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.32,
-          "startChar": 49,
-          "endChar": 55
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 5.2,
-          "startChar": 56,
-          "endChar": 70
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.44,
-          "startChar": 71,
-          "endChar": 73
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.84,
-          "startChar": 74,
-          "endChar": 79
-        },
-        {
-          "startSec": 5.84,
-          "endSec": 6.4,
-          "startChar": 80,
-          "endChar": 87
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 6.96,
-          "startChar": 90,
-          "endChar": 94
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.44,
-          "startChar": 95,
-          "endChar": 102
-        },
-        {
-          "startSec": 7.92,
-          "endSec": 8.32,
-          "startChar": 104,
-          "endChar": 111
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 8.72,
-          "startChar": 112,
-          "endChar": 116
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 9.04,
-          "startChar": 117,
-          "endChar": 120
-        },
-        {
-          "startSec": 9.04,
-          "endSec": 9.76,
-          "startChar": 121,
-          "endChar": 132
-        },
-        {
-          "startSec": 10.16,
-          "endSec": 10.32,
-          "startChar": 134,
-          "endChar": 136
-        },
-        {
-          "startSec": 10.32,
-          "endSec": 10.48,
-          "startChar": 137,
-          "endChar": 139
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 11.04,
-          "startChar": 140,
-          "endChar": 146
-        },
-        {
-          "startSec": 11.36,
-          "endSec": 11.52,
-          "startChar": 148,
-          "endChar": 150
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 11.68,
-          "startChar": 151,
-          "endChar": 153
-        },
-        {
-          "startSec": 11.68,
-          "endSec": 12.4,
-          "startChar": 154,
-          "endChar": 164
-        },
-        {
-          "startSec": 12.72,
-          "endSec": 13.12,
-          "startChar": 166,
-          "endChar": 172
-        },
-        {
-          "startSec": 13.12,
-          "endSec": 13.68,
-          "startChar": 173,
-          "endChar": 179
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-04.1525e77b.mp3",
+      "textHash": "1525e77b353166def746ea77a0fdbbd3c7ba265c87742c46532ce9325b1d5bfb",
+      "audioDurationSec": 13.792653,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-04-after.701d1f78.mp3",
+      "afterAudioDurationSec": 5.485714,
+      "afterTextHash": "701d1f78303906fd3875511105aa13d0cce9bcf43052f331875000448fb3c603"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "8db0855fdebcedc0c44bd371d0613a8cf4b32fb1436b4d89243294e3e7bcdeca",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/intro.8db0855f.mp3",
+      "narrationText": "Ваше приложение работает — позаботимся о том, чтобы вы никогда его не потеряли! В этом уроке отправляем весь репозиторий во внешнее хранилище и забираем его обратно по необходимости.",
+      "audioDurationSec": 13.244082
+    },
+    {
+      "id": "three-steps",
+      "textHash": "59dff9ccce7241f3f07d444fab2bd4afc93ae198276e92bc8e96cd7fe0264ebf",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/three-steps.59dff9cc.mp3",
+      "narrationText": "Резервное копирование и восстановление сводится к трём шагам. Настроить провайдера хранилища, отправить резервную копию и восстановить её, когда понадобится.",
+      "audioDurationSec": 10.840816
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "1866684f34e060749e25f305655876bfca99d9d74ee1da7e2bf1f92bf894a37a",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/next-tutorial.1866684f.mp3",
+      "narrationText": "Ваши данные в безопасности и переносимы между машинами. Увидимся в следующем уроке!",
+      "audioDurationSec": 6.922449
     }
   ]
 }

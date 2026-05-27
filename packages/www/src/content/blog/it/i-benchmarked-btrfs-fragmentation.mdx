@@ -1,0 +1,82 @@
+---
+title: "Il Tuo Indice di Frammentazione Sembra Terrificante. Ho Misurato Quanto Costa."
+description: "Il report sulla salute dell'archiviazione segnala repository a quasi 20.000 estensioni per gigabyte. Il numero sembra allarmante. Ho eseguito benchmark di lettura sequenziale e casuale sui casi peggiori e la penalizzazione era zero. Ecco i dati, e perche' Rediacc non include un comando di deframmentazione."
+author: Muhammed Fatih Bayraktar
+publishedDate: 2026-05-25
+category: guide
+tags:
+  - storage
+  - btrfs
+  - performance
+  - benchmarks
+featured: false
+language: it
+sourceHash: "73f1772f961bae0d"
+---
+
+> **TL;DR.** Il comando `rdc machine query --storage-health` di Rediacc riporta un indice di frammentazione per ogni repository. Su una macchina di produzione segnala GitLab a circa 19.650 estensioni per gigabyte. L'istinto e' di deframmentare. Ho misurato invece.
+>
+> - Un repository frammentato **16 volte di piu'** rispetto al suo vicino ha letto a **149 MB/s** contro 143 MB/s in lettura sequenziale, ed era **piu' veloce** nelle letture casuali da 4K (719 vs 957 microsecondi).
+> - Il dispositivo e' flash. La frammentazione danneggia i dischi magnetici attraverso il tempo di seek. Su un SSD non rimane quasi nessun meccanismo per causare danni.
+> - Eseguire `btrfs filesystem defragment` qui rimuoverebbe la condivisione di circa 250 GB di fork e snapshot tramite reflink in un pool con 4,4 GB liberi. Questo e' il rischio reale, e il benchmark dice che non c'e' alcun beneficio da contrapporre.
+
+Il report sulla salute dell'archiviazione esiste per rispondere a una domanda: dove sta andando il mio disco. Mostra le dimensioni di ogni repository, quanti dati condivide con i suoi fork, e un indice di frammentazione. Quest'ultimo numero puo' sembrare spaventoso. Sulla macchina che gestisco, l'immagine del repository di GitLab riporta 268.771 estensioni su 14,6 GB. Sono circa 19.650 estensioni per gigabyte, e lo strumento la etichetta come "alta".
+
+Il riflesso che segue e' automatico. Alta frammentazione, quindi deframmentare. Ho scritto quel riflesso in script shell su dischi magnetici per quindici anni. Prima di aggiungere un pulsante di deframmentazione a Rediacc, volevo sapere cosa costa davvero il numero sull'hardware che utilizziamo. Cosi' l'ho misurato sulla macchina in produzione.
+
+## Cosa conta davvero il numero
+
+Un repository Rediacc e' un singolo file immagine LUKS che vive su un pool btrfs. L'indice di frammentazione viene calcolato eseguendo `filefrag` su quel file immagine. Conta le estensioni del contenitore cifrato, non i file che la tua applicazione legge al suo interno.
+
+Questo e' importante a causa di come sono organizzati i dati. Dal basso verso l'alto: un SSD fisico, poi il filesystem root ext4 dell'host, poi un file pool su loop device, poi loop0, poi il pool btrfs, poi l'immagine LUKS, poi un dispositivo device-mapper crypt, poi l'ext4 interno che vedono i tuoi container. btrfs e' copy-on-write. Ogni scrittura casuale all'interno di un repository scrive una nuova estensione nell'immagine. I database e i layer overlay dei container scrivono in modo casuale tutto il giorno, quindi l'immagine accumula estensioni per design.
+
+I file all'interno del volume sono un'altra storia. Ho controllato il repository di GitLab: il suo binario gitaly e' in 10 estensioni, un file pack di git in 17. Il filesystem interno non e' frammentato. Il numero di 19.650 per gigabyte descrive il contenitore copy-on-write, che e' esattamente come ti aspetteresti che appaia e non dice nulla sul fatto che le letture siano lente.
+
+## Il benchmark
+
+Ho scelto due repository agli estremi opposti della scala di frammentazione e ho letto da loro con IO diretto, che bypassa la page cache e forza una lettura fisica.
+
+| Repository | Estensione media | Estensioni per GB | Lettura sequenziale |
+|---|---|---|---|
+| GitLab | 54 KB | ~19.650 | **149 MB/s** |
+| Demo Stack Overflow | 880 KB | ~1.190 | **143 MB/s** |
+
+Una differenza di frammentazione di 16 volte non ha prodotto alcuna penalizzazione sul throughput. Il file piu' frammentato era marginalmente piu' veloce. Poi il pattern che preoccupa davvero le persone, le letture casuali di piccole dimensioni, la forma del traffico di database:
+
+| Repository | Latenza lettura casuale 4K | IOPS |
+|---|---|---|
+| GitLab (frammentato) | **719 us** | **1.390** |
+| Demo Stack Overflow (meno frammentato) | 957 us | 1.045 |
+
+Anche qui il file piu' frammentato e' piu' veloce. Il piccolo divario riflette la dimensione del file e il caching del backend, non la disposizione delle estensioni. Su flash, una lettura casuale e' una ricerca e una lettura indipendentemente da dove si trovano le estensioni circostanti. Non c'e' alcuna testina da spostare.
+
+Il throughput e' modesto in termini assoluti, circa 145 MB/s e 1.000 IOPS, perche' il dispositivo e' un disco virtualizzato su un host condiviso e il percorso dei dati e' profondo. Quel limite e' imposto dai layer di virtualizzazione e crypt, sopra e sotto btrfs. Deframmentare l'immagine non puo' alzarlo.
+
+## L'unica cosa che la frammentazione costa davvero
+
+L'onesta' richiede di considerare anche l'altro lato. La frammentazione ha esattamente un costo misurabile qui, e non e' la velocita' di lettura. E' il tempo per enumerare la mappa delle estensioni:
+
+- `filefrag` su GitLab (268.771 estensioni): **3,19 s**
+- `filefrag` sulla demo Stack Overflow (152.364 estensioni): **0,74 s**
+
+Le operazioni che attraversano ogni estensione pagano questo costo. Comprende la scansione della salute dell'archiviazione, la sincronizzazione dei backup e gli strumenti delta. Sono secondi, scala approssimativamente con il numero di estensioni, e tocca i job in background piuttosto che la tua applicazione. Se il tempo di attraversamento delle estensioni dovesse diventare un vero collo di bottiglia, quello e' un problema specifico con soluzioni specifiche. Non e' un motivo per riscrivere i dati in produzione.
+
+## Perche' Rediacc non include un comando di deframmentazione
+
+`btrfs filesystem defragment` non ha preservato i reflink sin dal kernel 3.9 circa. La pagina di manuale lo dice chiaramente: deframmentare rompe i reflink dei dati copy-on-write e puo' causare un aumento considerevole nell'utilizzo dello spazio. Riscrivere un file in modo contiguo copia ogni estensione condivisa in una privata.
+
+Su questa macchina quasi tutto e' condiviso. I fork condividono i dati del parent tramite reflink, e il timer di backup aggiunge snapshot di sola lettura che condividono anch'essi. Il pool e' pieno al 99% con 4,4 GB liberi. GitLab e' condiviso al 97%, quindi deframmentarlo cercherebbe di copiare circa 14 GB in 4,4 GB e fallirebbe a meta'. La demo di Stack Overflow e' di 137 GB con 26 MB di dati unici, quindi deframmentarla cercherebbe di materializzare 137 GB che non esistono fisicamente. Tra tutti i repository circa 250 GB sono tramite reflink. Una passata di deframmentazione e' una bomba per lo spazio, non una messa a punto.
+
+Anche dove ci stesse, non durerebbe. Queste immagini si ri-frammentano in pochi minuti sotto lo stesso carico di lavoro di scrittura casuale. Rimuoveresti la condivisione dei tuoi fork, brevemente, per una velocita' di lettura che il benchmark dice che hai gia'.
+
+## Cosa guardare invece della frammentazione
+
+La colonna che merita la tua attenzione nello stesso report e' la divergenza. E' la percentuale dell'immagine di un repository che e' unica rispetto ai fork e agli snapshot. Un fork fresco si trova vicino allo 0%, perche' condivide quasi tutto. Un repository che ha subito molte scritture da quando e' stato forkato sale verso il 100%.
+
+La divergenza risponde alla domanda che la frammentazione non puo': quante risorse disco reali e recuperabili ha questo repository. Quando un pool e' in difficolta', un repository a bassa divergenza e' un obiettivo di pulizia scarso, perche' i suoi byte sono condivisi e cancellarlo libera poco. I byte vivono dove la divergenza e' alta.
+
+## La conclusione
+
+Il numero di frammentazione e' reale, e su un'immagine copy-on-write sotto scritture casuali sara' sempre alto. Su flash e' informativo. Ho misurato uno spread di 16 volte e non ho trovato penalizzazione della lettura, un profilo casuale piu' veloce sul file piu' frammentato, e un unico piccolo costo nel tempo di scansione in background. Lo strumento che "correrebbe" il numero rimuoverebbe invece la condivisione di un quarto di terabyte di fork in un pool che non ha spazio per loro.
+
+Quindi Rediacc riporta la frammentazione e la spiega, e non offre alcun pulsante per agire su di essa. La risposta ingegneristica onesta era misurare l'assunzione piuttosto che automatizzare il riflesso.

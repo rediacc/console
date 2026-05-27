@@ -6,26 +6,72 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 52.700593,
-      "text": "Paso uno. Listamos las plantillas disponibles. Rediacc incluye configuraciones listas para apps comunes como Postgres, Redis y servidores web, para que no tengas que escribir un docker guion compose desde cero."
+      "at": 2.40432,
+      "text": "Paso uno. Listamos las plantillas disponibles. Rediacc incluye configuraciones listas para apps comunes como Postgres, Redis y servidores web, para que no tengas que escribir un docker guion compose desde cero.",
+      "afterText": "El catálogo completo de plantillas. Cada una es un par compose más Rediaccfile ya probado.",
+      "cardLabel": "Ver Plantillas",
+      "prose": "Paso uno: lista las plantillas disponibles. Rediacc incluye plantillas preconfiguradas para aplicaciones comunes, así que no tienes que crear un docker-compose desde cero."
     },
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 61.85842,
-      "text": "Paso dos. Aplicamos la plantilla app guion postgres a nuestro repo. Aparecen dos archivos: el docker compose punto yml que describe los contenedores, y el Rediaccfile que define los hooks de ciclo de vida de arranque y parada."
+      "at": 6.041569,
+      "text": "Paso dos. Aplicamos la plantilla app guion postgres a nuestro repo. Aparecen dos archivos: el docker compose punto yml que describe los contenedores, y el Rediaccfile que define los hooks de ciclo de vida de arranque y parada.",
+      "afterText": "Plantilla aplicada. El repo ya tiene su archivo compose y su Rediaccfile.",
+      "cardLabel": "Aplicar Plantilla",
+      "prose": "Paso dos: aplica la plantilla app-postgres al repo. Esto copia un conjunto de archivos probados en el repo."
     },
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 79.070004,
-      "text": "Paso tres. Levantamos el repo. El CLI arranca los contenedores, monta el volumen cifrado y conecta el Docker daemon aislado. La app está en ejecución ahora."
+      "at": 13.566247,
+      "text": "Paso tres. Levantamos el repo. El CLI arranca los contenedores, monta el volumen cifrado y conecta el Docker daemon aislado. La app está en ejecución ahora.",
+      "afterText": "Contenedores en ejecución, volumen montado, Docker daemon aislado activo.",
+      "cardLabel": "Ver los Archivos",
+      "prose": "Conéctate al repo y lista lo que añadió la plantilla: un Rediaccfile con hooks de inicio y detención, y un docker-compose.yml que describe los containers. El 2>/dev/null oculta los registros de conexión para que solo se muestre el listado de archivos."
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 123.719014,
-      "text": "Verificamos con docker ps. Observa que esta vista solo muestra los contenedores de nuestro repositorio. Los demás repos en el mismo servidor tienen sus propios Docker daemons y son completamente invisibles desde aquí."
+      "at": 23.282435,
+      "text": "Verificamos con docker ps. Observa que esta vista solo muestra los contenedores de nuestro repositorio. Los demás repos en el mismo servidor tienen sus propios Docker daemons y son completamente invisibles desde aquí.",
+      "afterText": "Solo los contenedores de este repo. El aislamiento es real, no de configuración.",
+      "cardLabel": "Iniciar Repo",
+      "prose": "Inicia el repo. La CLI arranca los containers, monta el volumen cifrado y configura el daemon de Docker aislado."
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "at": 30.345778,
+      "text": "Verifiquemos qué está en ejecución. docker ps aquí solo lista los contenedores de este repo. Los demás repos del mismo servidor tienen sus propios daemons y son completamente invisibles desde esta vista.",
+      "afterText": "Solo los contenedores de este repo. El aislamiento es real, no es configuración.",
+      "cardLabel": "Verificar Aislamiento",
+      "prose": "Verifica lo que está en ejecución. docker ps lista únicamente los containers de este repo; los demás repos en el mismo servidor tienen sus propios daemons de Docker y no son visibles desde esta vista."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "¡Es hora de desplegar una app de verdad! Pasaremos de un repo vacío a contenedores en ejecución en tres pasos cortos."
+    },
+    {
+      "id": "pick-apply-run",
+      "text": "El flujo es simple: elige una plantilla, aplícala al repo y ejecútala. El CLI incluye plantillas integradas, así que nunca tenemos que escribir un docker-compose desde cero."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Y con eso terminamos tu primer despliegue. Nos vemos en el siguiente, donde profundizamos en trabajar con el repo en sí."
+    }
+  ],
+  "title": "Desplegando Tu Primera App",
+  "chapters": {
+    "intro": "Desplegando Tu Primera App",
+    "pick-apply-run": "Elige, aplica, ejecuta",
+    "cast-step-0": "Paso 1: Lista las plantillas",
+    "cast-step-1": "Paso 2: Aplica la plantilla",
+    "cast-step-2": "Paso 3: Ve lo que añadió la plantilla",
+    "cast-step-3": "Paso 4: Inicia el repo",
+    "cast-step-4": "Paso 5: Verifica el aislamiento",
+    "outro": "Siguiente: Trabajando con Tu Repo"
+  }
 }

@@ -6,26 +6,67 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 93.14728,
-      "text": "Önce tunnel komutu. Uygulama sunucuda çalışıyor, dizüstü bilgisayarınızda değil. Tünel komutu, bir container'ın portunu SSH üzerinden yönlendirir; tarayıcınızda localhost adresinde açabilirsiniz."
+      "at": 2.415513,
+      "text": "Önce tunnel komutu. Uygulama sunucuda çalışıyor, dizüstü bilgisayarınızda değil. Tünel komutu, bir container'ın portunu SSH üzerinden yönlendirir; tarayıcınızda localhost adresinde açabilirsiniz.",
+      "afterText": "Port yönlendirildi. Uygulamaya artık localhost üzerinden erişilebiliyor.",
+      "cardLabel": "Port Tünelle",
+      "prose": "Uygulama sunucuda çalışır, dizüstü bilgisayarınızda değil. tunnel komutu, bir container portunu SSH üzerinden ileterek tarayıcınızda localhost adresinden açmanızı sağlar."
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 103.393386,
-      "text": "İkinci olarak term komutu. Terminal bağlantı komutu sizi doğrudan deponun sandbox'ına bırakır; VS Code'un sağlayacağı izole görünümün aynısı. Terminalden hiç çıkmadan bu depoya ait Docker daemon'a karşı herhangi bir komut çalıştırabilirsiniz."
+      "at": 9.087333,
+      "text": "İkinci olarak term komutu. Terminal bağlantı komutu sizi doğrudan deponun sandbox'ına bırakır; VS Code'un sağlayacağı izole görünümün aynısı. Terminalden hiç çıkmadan bu depoya ait Docker daemon'a karşı herhangi bir komut çalıştırabilirsiniz.",
+      "afterText": "Depo sandbox'ının içindesiniz. SSH ile bağlanmışsınız gibi her şeyi çalıştırın.",
+      "cardLabel": "Sandbox'ta Term",
+      "prose": "term connect komutu sizi repo sandbox'ına bırakır, VS Code ile aynı izole görünümdür. terminal'inizi terk etmeden bu repo'nun Docker daemon'ına karşı herhangi bir komut çalıştırın."
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 120.858492,
-      "text": "Dosya göndermeden önce --dry-run ile önizleme yapın. Hiçbir şeyi kopyalamadan tam olarak neyin değişeceğini gösterir. Emin olmadığınızda her zaman önizleme yapın."
+      "at": 15.893309,
+      "text": "Dosya göndermeden önce --dry-run ile önizleme yapın. Hiçbir şeyi kopyalamadan tam olarak neyin değişeceğini gösterir. Emin olmadığınızda her zaman önizleme yapın.",
+      "afterText": "Yalnızca önizleme. Henüz hiçbir dosya taşınmadı.",
+      "cardLabel": "Sync Önizle",
+      "prose": "Dosyaları taşımadan önce sync komutunu --dry-run ile çalıştırın. Hiçbir şey kopyalamadan tam olarak neyin değişeceğini gösterir. Kaynak veya hedef belirsiz olduğunda her zaman önce önizleme yapın."
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 137.357072,
-      "text": "Şimdi gerçek yüklemeyi çalıştırıyoruz. Eşitleme yükleme komutu, rsync delta sıkıştırmasıyla dizüstü bilgisayarınızdan depoya SSH üzerinden dosya taşır. Tunnel, term, sync; günlük döngüyü üç komut karşılar."
+      "at": 22.144638,
+      "text": "Şimdi gerçek yüklemeyi çalıştırıyoruz. Eşitleme yükleme komutu, rsync delta sıkıştırmasıyla dizüstü bilgisayarınızdan depoya SSH üzerinden dosya taşır. Tunnel, term, sync; günlük döngüyü üç komut karşılar.",
+      "afterText": "Dosyalar yüklendi. Delta sıkıştırma büyük ağaçların üstesinden gelir.",
+      "cardLabel": "Sync Yükle",
+      "prose": "sync upload komutu, rsync delta sıkıştırmasını kullanarak dosyaları dizüstü bilgisayarınızdan repo'ya SSH üzerinden aktarır. tunnel, term ve sync birlikte günlük döngüyü kapsar."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Pekâlâ! Uygulamanız çalışıyor; şimdi gerçekten onunla çalışalım. Günlük döngüyü üç komut karşılar."
+    },
+    {
+      "id": "daily-three",
+      "text": "Tunnel uygulamanızı tarayıcıda açar, term sandbox içinde komut çalıştırır, sync ise dosyaları girip çıkarır. Günlük iş akışının tamamı bu."
+    },
+    {
+      "id": "open-tunnel",
+      "text": "Tünel çalışırken uygulama doğrudan tarayıcınızda açılır. Bu demoda rediacc.com'u yüklüyoruz; tıpkı container'dan doğrudan sunulan kendi uygulamanıza eriştiğiniz gibi."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Günlük üçlü bu kadar. Bir sonraki bölümde görüşmek üzere!"
+    }
+  ],
+  "title": "Repo'nuzla Çalışmak",
+  "chapters": {
+    "intro": "Repo'nuzla Çalışmak",
+    "daily-three": "Günlük üçlü: tunnel, term, sync",
+    "cast-step-0": "Tunnel: container portunu yönlendir",
+    "open-tunnel": "Uygulamayı tarayıcıda aç",
+    "cast-step-1": "Term: sandbox içinde komut çalıştır",
+    "cast-step-2": "Sync: --dry-run ile önizle",
+    "cast-step-3": "Sync: gerçekten yükle",
+    "outro": "Sıradaki: Repository Fork'lama"
+  }
 }

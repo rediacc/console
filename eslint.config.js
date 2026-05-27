@@ -63,6 +63,7 @@ function i18nLocaleConfigs({
   unusedKeyIgnores,
   extraUntranslatedPatterns = [],
   cliSyntax,
+  cliFlags,
 }) {
   const jsonBase = {
     plugins: { json, 'i18n': i18nJsonPlugin },
@@ -83,6 +84,11 @@ function i18nLocaleConfigs({
           allowedPatterns: ['^[A-Z]$', '_one$', '_other$', '_zero$', '_few$', '_many$'],
         }],
         ...(cliSyntax ? { 'i18n/no-positional-cli-syntax': ['error', cliSyntax] } : {}),
+        // Runs on EVERY language file (this block globs all of them, not just the
+        // curated I18N_LANGUAGES set) so flag-name mangling is caught even in
+        // locales like et/it/ko/pt that the heavier non-English block skips. The
+        // rule self-guards the en source.
+        ...(cliFlags ? { 'i18n/cli-flag-consistency': ['error', { localesDir }] } : {}),
       },
     },
     // 2. English cross-language validation
@@ -96,6 +102,10 @@ function i18nLocaleConfigs({
         ...(sourceDir && unusedKeyIgnores ? {
           'i18n/no-unused-keys': ['error', { sourceDir, ignorePatterns: unusedKeyIgnores }],
         } : {}),
+        // Flags are language-invariant, so this only runs on the en source locale
+        // (this block is scoped to `${localesDir}/en/**`). Avoids translation-only
+        // false positives (e.g. Estonian case endings agglutinated onto flag names).
+        ...(cliFlags ? { 'i18n/no-undefined-cli-flags': ['error', cliFlags] } : {}),
       },
     },
     // 3. Non-English locale validation
@@ -673,6 +683,14 @@ export default tseslint.config(
         'rdc permission', 'rdc protocol', 'rdc queue', 'rdc region',
         'rdc repository', 'rdc team', 'rdc user', 'rdc ceph',
       ],
+    },
+    // Ban help/description prose that references a `--flag` not registered on any
+    // rdc command (see issue #489 — `repo up --mount` did not exist). Derives the
+    // valid-flag set from packages/cli/scripts/command-tree.json. en-only (see the
+    // rule wiring above).
+    cliFlags: {
+      exemptFlags: [],
+      exemptKeyPrefixes: [],
     },
   }),
   ...i18nLocaleConfigs({

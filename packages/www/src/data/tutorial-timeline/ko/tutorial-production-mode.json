@@ -7,465 +7,82 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "92cd8f79b5cc8c1b8cf44ce687dab8227be5dbe0b304470c5ca5809e2ea1024a",
+  "transcriptHash": "e9dd73237128934b8ebd844f9d8470a8081e1aa698fd6a3a83bfe1dc06d78ccb",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 56.862064,
-      "replayEndSec": 97.750961,
+      "replayStartSec": 2.418632,
+      "replayEndSec": 9.548589,
       "narrationText": "노트북에서 프로덕션 모드로 앱을 시작합니다. 배포 명령은 개발 중에 사용한 것과 동일한 up 함수를 호출하지만 분리된 상태로 실행됩니다. 노트북을 닫아도 앱은 계속 실행됩니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-01.478ecab8.mp3",
-      "audioDurationSec": 15.229388,
-      "wordTimings": [
-        {
-          "startSec": 0.48,
-          "endSec": 0.96,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.68,
-          "startChar": 6,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 2.24,
-          "startChar": 11,
-          "endChar": 14
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.56,
-          "startChar": 15,
-          "endChar": 17
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 3.28,
-          "startChar": 18,
-          "endChar": 23
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.16,
-          "startChar": 25,
-          "endChar": 27
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.8,
-          "startChar": 28,
-          "endChar": 31
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.44,
-          "startChar": 32,
-          "endChar": 34
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.76,
-          "startChar": 35,
-          "endChar": 37
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 6.16,
-          "startChar": 38,
-          "endChar": 41
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.72,
-          "startChar": 42,
-          "endChar": 44
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.44,
-          "startChar": 45,
-          "endChar": 48
-        },
-        {
-          "startSec": 7.68,
-          "endSec": 8.08,
-          "startChar": 52,
-          "endChar": 55
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.88,
-          "startChar": 56,
-          "endChar": 61
-        },
-        {
-          "startSec": 9.28,
-          "endSec": 9.76,
-          "startChar": 62,
-          "endChar": 65
-        },
-        {
-          "startSec": 9.76,
-          "endSec": 10.32,
-          "startChar": 66,
-          "endChar": 69
-        },
-        {
-          "startSec": 10.64,
-          "endSec": 11.2,
-          "startChar": 70,
-          "endChar": 75
-        },
-        {
-          "startSec": 12.08,
-          "endSec": 12.72,
-          "startChar": 77,
-          "endChar": 81
-        },
-        {
-          "startSec": 12.72,
-          "endSec": 13.36,
-          "startChar": 82,
-          "endChar": 85
-        },
-        {
-          "startSec": 13.44,
-          "endSec": 13.92,
-          "startChar": 86,
-          "endChar": 88
-        },
-        {
-          "startSec": 13.92,
-          "endSec": 14.4,
-          "startChar": 89,
-          "endChar": 91
-        },
-        {
-          "startSec": 14.4,
-          "endSec": 15.2,
-          "startChar": 92,
-          "endChar": 97
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-01.57242729.mp3",
+      "textHash": "57242729a7ed109fc1cdc2db7b950002372b06ba2eeb92997c3b43b6f9037bad",
+      "audioDurationSec": 14.524082,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-01-after.2966374d.mp3",
+      "afterAudioDurationSec": 6.922449,
+      "afterTextHash": "2966374de3252143f05d92d32bd7cf4d43b6aefd56103846a103b0b71856ac30"
     },
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 97.750961,
-      "replayEndSec": 125.443493,
+      "replayStartSec": 9.548589,
+      "replayEndSec": 17.034078,
       "narrationText": "이제 자동 시작을 활성화하여 서버 재부팅 후에도 앱이 유지되도록 합니다. 이제부터 서버가 재시작되면 이 저장소가 자동으로 복구됩니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-02.c216572b.mp3",
-      "audioDurationSec": 11.075918,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 2
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.8,
-          "startChar": 3,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.2,
-          "startChar": 6,
-          "endChar": 9
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 2.08,
-          "startChar": 10,
-          "endChar": 15
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.72,
-          "startChar": 16,
-          "endChar": 18
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.2,
-          "startChar": 19,
-          "endChar": 22
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.76,
-          "startChar": 23,
-          "endChar": 26
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.16,
-          "startChar": 27,
-          "endChar": 29
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.88,
-          "startChar": 30,
-          "endChar": 35
-        },
-        {
-          "startSec": 4.88,
-          "endSec": 5.28,
-          "startChar": 36,
-          "endChar": 39
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.56,
-          "startChar": 41,
-          "endChar": 45
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 7.12,
-          "startChar": 46,
-          "endChar": 49
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 8.08,
-          "startChar": 50,
-          "endChar": 55
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 8.64,
-          "startChar": 56,
-          "endChar": 57
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 9.44,
-          "startChar": 58,
-          "endChar": 62
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 10.16,
-          "startChar": 63,
-          "endChar": 67
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.96,
-          "startChar": 68,
-          "endChar": 73
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-02.0f75638d.mp3",
+      "textHash": "0f75638d8ba43746dc47f3b8883f3ba2e23dba9202b72da6fcf100a2a7e37077",
+      "audioDurationSec": 11.154286,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-02-after.e35c95f6.mp3",
+      "afterAudioDurationSec": 5.067755,
+      "afterTextHash": "e35c95f6a88552ab09c59c2130cd1d7a178f1b0c661953e37783550eb92584be"
     },
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 125.443493,
-      "replayEndSec": 141.09184,
+      "replayStartSec": 17.034078,
+      "replayEndSec": 22.929505,
       "narrationText": "자동 시작이 활성화된 저장소 목록을 확인합니다. 앱이 부팅 목록에 포함되어 있음을 확인할 수 있습니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-03.443ea77e.mp3",
-      "audioDurationSec": 6.687347,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 2
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.8,
-          "startChar": 3,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.8,
-          "endSec": 1.52,
-          "startChar": 7,
-          "endChar": 11
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 2.0,
-          "startChar": 12,
-          "endChar": 15
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.48,
-          "startChar": 16,
-          "endChar": 19
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 3.12,
-          "startChar": 20,
-          "endChar": 25
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 3.92,
-          "startChar": 27,
-          "endChar": 29
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.24,
-          "startChar": 30,
-          "endChar": 32
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 4.64,
-          "startChar": 33,
-          "endChar": 36
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 5.12,
-          "startChar": 37,
-          "endChar": 41
-        },
-        {
-          "startSec": 5.36,
-          "endSec": 5.6,
-          "startChar": 42,
-          "endChar": 45
-        },
-        {
-          "startSec": 5.6,
-          "endSec": 5.92,
-          "startChar": 46,
-          "endChar": 49
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.08,
-          "startChar": 50,
-          "endChar": 51
-        },
-        {
-          "startSec": 6.08,
-          "endSec": 6.4,
-          "startChar": 52,
-          "endChar": 56
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-03.ba8113e4.mp3",
+      "textHash": "ba8113e465f34c58fd0b7ddddbcfc01431f5ecca37917ee23773540c1b8cbadb",
+      "audioDurationSec": 7.47102,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-03-after.f2a0489d.mp3",
+      "afterAudioDurationSec": 1.645714,
+      "afterTextHash": "f2a0489d0d40616334225663951018271932dd6616944d31cf051254a6bb3da4"
     },
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 141.09184,
-      "replayEndSec": 196.903183,
+      "replayStartSec": 22.929505,
+      "replayEndSec": 30.37798,
       "narrationText": "앱을 중지할 때도 노트북에서 명령 하나면 됩니다. 시작도 명령 하나, 중지도 명령 하나입니다. 모두 터미널에서 실행됩니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-04.f2e96d8b.mp3",
-      "audioDurationSec": 10.370612,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 2
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.96,
-          "startChar": 3,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.52,
-          "startChar": 7,
-          "endChar": 9
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.24,
-          "startChar": 10,
-          "endChar": 15
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.64,
-          "startChar": 16,
-          "endChar": 18
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 3.12,
-          "startChar": 19,
-          "endChar": 22
-        },
-        {
-          "startSec": 3.12,
-          "endSec": 3.6,
-          "startChar": 23,
-          "endChar": 26
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.88,
-          "startChar": 28,
-          "endChar": 31
-        },
-        {
-          "startSec": 4.88,
-          "endSec": 5.28,
-          "startChar": 32,
-          "endChar": 34
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.6,
-          "startChar": 35,
-          "endChar": 37
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.56,
-          "startChar": 39,
-          "endChar": 42
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 6.96,
-          "startChar": 43,
-          "endChar": 45
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.68,
-          "startChar": 46,
-          "endChar": 51
-        },
-        {
-          "startSec": 8.24,
-          "endSec": 8.64,
-          "startChar": 53,
-          "endChar": 55
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 9.52,
-          "startChar": 56,
-          "endChar": 61
-        },
-        {
-          "startSec": 9.84,
-          "endSec": 10.32,
-          "startChar": 62,
-          "endChar": 67
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-04.9182b0a5.mp3",
+      "textHash": "9182b0a50ce3218d0ac903dff470cf712aa1fe0056f836899b8e3909e39c2f50",
+      "audioDurationSec": 9.874286,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-04-after.413e1457.mp3",
+      "afterAudioDurationSec": 4.754286,
+      "afterTextHash": "413e1457b441755e85b36ee4b312e74a0a6a1dd58d1a5962cc3209e3d4ee0b17"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "168c56e3bf7dd83cbcbc215909bdb175c6f981a09bf58c108a6f8c0537345c83",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/intro.168c56e3.mp3",
+      "narrationText": "자, 앱을 개발에서 프로덕션으로 가져가볼게요. 노트북에서 모두 처리하는 짧은 세 단계예요.",
+      "audioDurationSec": 6.60898
+    },
+    {
+      "id": "dev-vs-prod",
+      "textHash": "0031d7c0cd119d989075d6c2f465502bcdc53b50a85e73cdc94a57edae2aa933",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/dev-vs-prod.0031d7c0.mp3",
+      "narrationText": "개발 중에는 repo 안에서 앱을 실행하기 때문에 연결을 끊으면 멈춰요. 프로덕션에서는 노트북의 CLI에서 기동하면 분리된 상태로 계속 실행돼요.",
+      "audioDurationSec": 12.669388
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "437a4ade8c37e0bad8437ba00deddb3c5ebfaf241cef5544a8ab6c2d70d1697c",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/next-tutorial.437a4ade.mp3",
+      "narrationText": "이게 프로덕션 모드의 핵심이에요. 다음 영상에서 만나요!",
+      "audioDurationSec": 5.407347
     }
   ]
 }

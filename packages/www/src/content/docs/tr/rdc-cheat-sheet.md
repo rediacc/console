@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 3
 language: tr
-sourceHash: "ec3f99cf89fde4b3"
-sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
+sourceHash: "12956297c1157cd2"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # RDC CLI Hızlı Referans
@@ -58,7 +58,7 @@ En sık kullanılan `rdc` komutları için hızlı referans. Tüm seçenekleri g
 | `rdc config backup-strategy list` | Tanımlanmış tüm yedekleme stratejilerini listele |
 | `rdc config backup-strategy show --name <name>` | Strateji ayrıntılarını göster |
 | `rdc config backup-strategy remove --name <name>` | Stratejiyi kaldır |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | Stratejileri bir makineye bağla |
+| `rdc machine backup schedule -m <machine>` | Yapılandırılmış yedekleme stratejilerini bir makineye dağıt |
 
 ## Yedekleme İşlemleri
 

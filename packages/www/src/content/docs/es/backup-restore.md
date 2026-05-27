@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "eae6eedb1a1298f2"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "29bb767d837eab9a"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Respaldo y Restauración
@@ -181,7 +181,7 @@ Un respaldo frio ejecuta tres fases por repositorio incluido: **detener -- snaps
 
 - `rdc machine query --name <machine> --containers` muestra el estado de ejecucion. Compare con el conjunto esperado.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` en la maquina. Inspeccione via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el ultimo respaldo no se completo correctamente.
-- Los registros del respaldo de renet (`journalctl -u renet-*` o la invocacion directa `rdc machine deploy-backup`) emiten una linea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacio es el objetivo de grep.
+- Los registros del respaldo de renet (`journalctl -u renet-*` o la invocacion directa `rdc machine backup schedule`) emiten una linea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacio es el objetivo de grep.
 
 ### Estimación del tiempo de inactividad del respaldo en frío
 
@@ -297,6 +297,58 @@ En su configuración, vincule uno o más nombres de estrategia a una máquina:
   }
 }
 ```
+
+## Elegir entre Hot y Cold y Filtrado por Repositorio
+
+### Hot vs cold de un vistazo
+
+| | Hot | Cold |
+|---|-----|------|
+| **Consistencia** | Consistente ante fallos (snapshot BTRFS mientras los servicios están en ejecución) | Consistente a nivel de aplicación (detener → snapshot → iniciar) |
+| **Tiempo de inactividad** | Ninguno | Ventana stop+start por repositorio (típicamente 5-120 s) |
+| **Frecuencia adecuada** | Alta (p. ej. horaria) | Baja (p. ej. diaria o semanal) |
+| **Uso típico** | Red de seguridad frecuente | Respaldo programado con consistencia garantizada |
+
+**Hot** es la opción predeterminada correcta para ejecuciones de alta frecuencia. Los servicios siguen en funcionamiento mientras se toma el snapshot, por lo que la ventana de respaldo no interrumpe a los usuarios. El snapshot es consistente ante fallos: es equivalente a lo que obtendría tras un apagado incorrecto. Para la mayoría de las bases de datos modernas y colas de mensajes esto es aceptable.
+
+**Cold** es apropiado cuando necesita un snapshot consistente a nivel de aplicación garantizado y puede aceptar un breve reinicio por repositorio. Los servicios se detienen antes del snapshot y se reinician antes de que comience la carga, de modo que una carga lenta o fallida nunca prolonga la ventana de tiempo de inactividad. Consulte [Semantica del Respaldo en Frio](#semantica-del-respaldo-en-frio) para el modelo de garantía completo.
+
+### Filtrar repositorios por estrategia
+
+Cada estrategia puede llevar filtros `--include` y `--exclude`. Los nombres de repositorios que coincidan con un patrón `--exclude` se omiten para esa estrategia; `--include` restringe la ejecución solo a esos nombres. Los filtros coinciden con el nombre de repositorio de la configuración local (sin `:tag`).
+
+```bash
+# Estrategia hot: respaldar todo cada hora
+rdc config backup-strategy set \
+  --name hourly-hot \
+  --destination my-storage \
+  --cron "0 * * * *" \
+  --mode hot \
+  --bwlimit 6M \
+  --enable
+
+# Estrategia cold: respaldar todo semanalmente, excluyendo el gran conjunto de datos derivado
+rdc config backup-strategy set \
+  --name weekly-cold \
+  --destination my-storage \
+  --cron "15 3 * * 0" \
+  --mode cold \
+  --exclude analytics-demo \
+  --enable
+```
+
+### Cuándo excluir un repositorio de la estrategia hot de alta frecuencia
+
+Excluya un repositorio de la ejecución de alta frecuencia cuando:
+
+- El repositorio es grande y **totalmente regenerable** a partir de los datos de origen ya almacenados en el volumen, de modo que cada respaldo horario desperdicia ancho de banda significativo sin añadir valor de recuperación real.
+- La ejecución del respaldo superaría su propio intervalo de cronograma a su velocidad de carga disponible.
+
+**Ejemplo.** Un repositorio `analytics-demo` contiene aproximadamente 114 GB de tablas Postgres derivadas que pueden reconstruirse completamente a partir de archivos CSV brutos ya almacenados dentro del mismo volumen. Con un límite de carga de 6 MB/s, un solo respaldo hot de ese repositorio tarda más de 5 horas. Ejecutarlo cada hora significa que cada ejecución sigue en curso cuando se activa la siguiente, lo que provoca que cada ejecución posterior se descarte silenciosamente (consulte [Respaldos de Larga Duración y Cronogramas Superpuestos](#respaldos-de-larga-duración-y-cronogramas-superpuestos)). Excluirlo de `hourly-hot` y mantenerlo en `weekly-cold` significa que se respalda una vez por semana en lugar de nunca.
+
+> **Si los datos son puramente regenerables**, considere si necesita respaldarlos en absoluto. Una alternativa es respaldar solo las entradas de origen bruto (los dumps CSV en este ejemplo) y omitir por completo la copia derivada. Un respaldo en frío semanal de las entradas de origen es mucho más pequeño y totalmente suficiente para la recuperación.
+
+Los repositorios que no se excluyen de ninguna estrategia aparecen en las subcarpetas `hot/` y `cold/` del almacenamiento. La salida combinada de `rdc repo backup list` muestra ambas filas para verificar qué flujos cubren qué repositorios.
 
 ## Operaciones de Respaldo
 

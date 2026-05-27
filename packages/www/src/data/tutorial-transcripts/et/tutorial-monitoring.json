@@ -6,32 +6,72 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 102.949897,
-      "text": "Alustame süsteemivaatega. CLI machine query süsteemifiltriga näitab tööaega, kettakasutust ja salvestuse olekut. Kui midagi on valesti, ütleb aruanne meile seda."
+      "at": 2.411841,
+      "text": "Alustame süsteemivaatega. CLI machine query süsteemifiltriga näitab tööaega, kettakasutust ja salvestuse olekut. Kui midagi on valesti, ütleb aruanne meile seda.",
+      "afterText": "Tööaeg, ketas, salvestus. Kõik, mida vajad, ühe pilguga.",
+      "cardLabel": "Süsteemi tervis",
+      "prose": "Alusta süsteemi vaatega. rdc machine query süsteemi filtriga kuvab tööaega, kettakasutust ja salvestuse olekut."
     },
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 114.069314,
-      "text": "Nüüd konteinerid. See vaade loetleb kõik töötavad konteinerid kõigis masina repositooriumides -- nimi, olek, tervis, CPU, mälu, lisaks sellele, millisele repositooriumile igaüks kuulub."
+      "at": 8.597185,
+      "text": "Nüüd konteinerid. See vaade loetleb kõik töötavad konteinerid kõigis masina repositooriumides -- nimi, olek, tervis, CPU, mälu, lisaks sellele, millisele repositooriumile igaüks kuulub.",
+      "afterText": "Iga konteiner igas repos, ühes vaates.",
+      "cardLabel": "Containers",
+      "prose": "Containers vaade loetleb kõik masinal töötavad container'id üle kõigi repository'de: nimi, olek, tervis, CPU, mälu ja omav repo."
     },
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 126.082986,
-      "text": "Ja repositooriumid ise. Suurus, ühendamise olek, Dockeri deemoni olek, kettakasutus. Kõik, mida pead teadma iga isoleeritud keskkonna kohta masinas."
+      "at": 15.126152,
+      "text": "Ja repositooriumid ise. Suurus, ühendamise olek, Dockeri deemoni olek, kettakasutus. Kõik, mida pead teadma iga isoleeritud keskkonna kohta masinas.",
+      "afterText": "Kõik repod, kõik nende deemonid, kogu nende kettakasutus.",
+      "cardLabel": "Repositories",
+      "prose": "Repositories vaade näitab iga isoleeritud keskkonna suurust, ühendamise olekut, Docker daemon'i olekut ja kettakasutust."
     },
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 138.182721,
-      "text": "CLI machine query annab sulle kõik korraga. Süsteemiteave, konteinerid, repositooriumid, kõik koos. Käivita korra ja sul on täielik pilt."
+      "at": 24.385141,
+      "text": "CLI machine query annab sulle kõik korraga. Süsteemiteave, konteinerid, repositooriumid, kõik koos. Käivita korra ja sul on täielik pilt.",
+      "afterText": "Kõik koos, filtrit pole vaja.",
+      "cardLabel": "Täielik Päring",
+      "prose": "Käivita rdc machine query ilma filtriteta, et saada süsteemiteave, container'id ja repository'd ühe väljundina."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 149.8205,
-      "text": "Ja lõpuks CLI doctor kohaliku tervise kontrolliks sülearvutis. Node, SSH võti, renet, Docker -- kõik asjad, millest CLI ise sõltub. See on terve sari. Paigaldamisest monitoorimiseni, kõik sinu terminalist."
+      "at": 32.334422,
+      "text": "Ja lõpuks CLI doctor kohaliku tervise kontrolliks sülearvutis. Node, SSH võti, renet, Docker -- kõik asjad, millest CLI ise sõltub. See on terve sari. Paigaldamisest monitoorimiseni, kõik sinu terminalist.",
+      "afterText": "Kõik roheline tähendab, et su kohalik CLI on terve.",
+      "cardLabel": "Doctor",
+      "prose": "Käivita rdc doctor, et teha kohalik tervisekontroll oma sülearvutil. See kontrollib Node, SSH võtit, renet ja Docker'it, kõiki sõltuvusi, millele CLI ise toetub."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Olgu! Sinu rakendus on töös ja varundatud, nüüd veendume, et see jääb terveks."
+    },
+    {
+      "id": "three-checks",
+      "text": "CLI annab sulle täieliku pildi igast serverist sinu sülearvutist. Kolm vaatenurka kontrolliks: süsteemi tervis, töötavad konteinerid ja repositooriumid ise."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ja sellega on sari pakitud. Sa oskad nüüd paigaldada, seadistada, juurutada, forkida, minna live'i, autostartida, varundada ja monitoorida -- kõik oma terminalist!"
+    }
+  ],
+  "title": "Monitooring",
+  "chapters": {
+    "intro": "Monitooring",
+    "three-checks": "Kolm asja, mida kontrollida",
+    "cast-step-0": "Tervis: süsteemiteave",
+    "cast-step-1": "Containers",
+    "cast-step-2": "Repos",
+    "cast-step-3": "Kõik korraga",
+    "cast-step-4": "Kohalik tervisekontroll",
+    "outro": "Sarja lõpp"
+  }
 }

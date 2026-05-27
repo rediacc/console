@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: 7574575ee78682a9
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "2289d50dac21f9bf"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Supervision
@@ -114,8 +114,9 @@ rdc machine query --name server-1 --storage-health
 | Size | Taille du fichier image LUKS (ce à quoi ressemble le dépôt) |
 | Unique | Données uniques réelles appartenant uniquement à ce dépôt |
 | Shared | Blocs de données réutilisés entre dépôts via les reflinks BTRFS (copies gratuites) |
-| Extents | Nombre d'extents de fichiers (plus élevé = plus fragmenté) |
-| Frag | Niveau de fragmentation : faible, modéré ou élevé |
+| Divergence | Pourcentage de l'image propre à ce dépôt plutôt que partagé (plus élevé = davantage récupérable en cas de suppression) |
+| Extents | Nombre d'extents de fichiers dans l'image copy-on-write (plus élevé = plus fragmenté) |
+| Frag | Niveau de fragmentation : faible, modéré ou élevé (informatif uniquement) |
 
 Le résumé affiche les économies totales réalisées grâce aux reflinks BTRFS :
 
@@ -129,7 +130,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 - **Partagé** désigne les données réutilisées entre dépôts via les reflinks BTRFS. La bifurcation d'un dépôt crée des copies reflink qui partagent des blocs jusqu'à ce que l'un ou l'autre côté écrive de nouvelles données, moment auquel les blocs divergent.
 - **Efficacité** est le pourcentage de données réutilisées via les reflinks. Plus élevé est mieux. Une machine avec de nombreuses bifurcations depuis le même dépôt parent affichera une efficacité proche de 100%.
 
-Les dépôts avec une fragmentation élevée et zéro bloc partagé peuvent être défragmentés en toute sécurité avec `btrfs filesystem defragment`. Les dépôts avec des blocs partagés ne doivent PAS être défragmentés car la défragmentation remplace les blocs partagés par des copies uniques, augmentant ainsi l'utilisation du disque.
+La colonne Frag est informative. Elle compte les extents du fichier image copy-on-write, pas les fichiers que votre application lit à l'intérieur, donc elle affiche des valeurs élevées sous des charges d'écriture aléatoires normales (bases de données, couches de conteneurs) et ne prédit pas les performances de lecture sur un stockage SSD. Rediacc ne propose délibérément aucune commande de défragmentation : `btrfs filesystem defragment` dé-partage les forks et snapshots avec reflinks, ce qui sur un pool presque plein peut faire exploser l'utilisation de l'espace alors que les benchmarks ne montrent aucun gain de lecture mesurable. Pour les mesures complètes et le raisonnement, voir [Votre chiffre de fragmentation semble terrifiant. J'ai mesuré ce qu'il coûte.](/fr/blog/i-benchmarked-btrfs-fragmentation).
 
 Le scan s'exécute en parallèle et prend 5 à 15 secondes selon le nombre et la taille des dépôts. Quand `--storage-health` n'est pas spécifié, une indication d'une ligne apparaît après la sortie de la requête comme rappel.
 

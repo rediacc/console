@@ -6,26 +6,67 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 93.14728,
-      "text": "첫 번째는 tunnel 명령입니다. 앱은 노트북이 아닌 서버에서 실행됩니다. 터널 명령은 컨테이너 포트를 SSH를 통해 포워딩하여 브라우저에서 localhost로 접근할 수 있게 합니다."
+      "at": 2.415513,
+      "text": "첫 번째는 tunnel 명령입니다. 앱은 노트북이 아닌 서버에서 실행됩니다. 터널 명령은 컨테이너 포트를 SSH를 통해 포워딩하여 브라우저에서 localhost로 접근할 수 있게 합니다.",
+      "afterText": "포트가 포워딩되었습니다. 이제 앱을 localhost에서 접근할 수 있습니다.",
+      "cardLabel": "포트 Tunnel",
+      "prose": "앱은 노트북이 아닌 서버에서 실행됩니다. tunnel 명령어는 container 포트를 SSH를 통해 전달하여 브라우저에서 localhost로 열 수 있게 해줍니다."
     },
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 103.393386,
-      "text": "두 번째는 term 명령입니다. 터미널 연결 명령은 저장소 샌드박스 안으로 진입시켜 주는데, VS Code와 동일한 격리된 환경입니다. 터미널을 벗어나지 않고 이 저장소의 Docker 데몬에 명령을 실행할 수 있습니다."
+      "at": 9.087333,
+      "text": "두 번째는 term 명령입니다. 터미널 연결 명령은 저장소 샌드박스 안으로 진입시켜 주는데, VS Code와 동일한 격리된 환경입니다. 터미널을 벗어나지 않고 이 저장소의 Docker 데몬에 명령을 실행할 수 있습니다.",
+      "afterText": "repo sandbox 안에 들어왔습니다. SSH로 접속한 것처럼 무엇이든 실행할 수 있습니다.",
+      "cardLabel": "Sandbox의 Term",
+      "prose": "term connect 명령어는 VS Code와 동일한 격리된 환경인 repo sandbox로 바로 이동합니다. terminal을 벗어나지 않고 이 repo의 Docker daemon에 대해 모든 명령어를 실행할 수 있습니다."
     },
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 120.858492,
-      "text": "파일을 이동하기 전에 미리보기를 실행합니다. 실제로 복사하지 않고 변경될 내용만 정확히 보여줍니다. 확실하지 않을 때는 항상 미리보기를 먼저 실행하세요."
+      "at": 15.893309,
+      "text": "파일을 이동하기 전에 미리보기를 실행합니다. 실제로 복사하지 않고 변경될 내용만 정확히 보여줍니다. 확실하지 않을 때는 항상 미리보기를 먼저 실행하세요.",
+      "afterText": "미리보기만 수행되었습니다. 아직 파일이 이동되지 않았습니다.",
+      "cardLabel": "Sync 미리보기",
+      "prose": "파일을 이동하기 전에 --dry-run 옵션으로 sync를 실행하세요. 아무것도 복사하지 않고 변경될 내용을 정확하게 보여줍니다. 소스나 대상이 불분명할 때는 항상 먼저 미리 확인하세요."
     },
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 137.357072,
-      "text": "이제 실제 업로드를 실행합니다. 동기화 업로드 명령은 rsync 델타 압축을 사용하여 SSH를 통해 노트북에서 저장소로 파일을 이동합니다. tunnel, term, sync. 이 세 가지 명령이 일상적인 작업을 모두 커버합니다."
+      "at": 22.144638,
+      "text": "이제 실제 업로드를 실행합니다. 동기화 업로드 명령은 rsync 델타 압축을 사용하여 SSH를 통해 노트북에서 저장소로 파일을 이동합니다. tunnel, term, sync. 이 세 가지 명령이 일상적인 작업을 모두 커버합니다.",
+      "afterText": "파일이 업로드되었습니다. 델타 압축이 큰 트리도 효율적으로 처리합니다.",
+      "cardLabel": "Sync 업로드",
+      "prose": "sync upload 명령어는 rsync 델타 압축을 사용하여 SSH를 통해 노트북에서 repo로 파일을 옮깁니다. tunnel, term, sync를 함께 사용하면 일상적인 작업 흐름을 모두 처리할 수 있습니다."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "자, 앱이 실행 중이니 실제로 작업을 해볼게요. 일상 작업은 세 가지 명령으로 끝나요."
+    },
+    {
+      "id": "daily-three",
+      "text": "tunnel은 브라우저에서 앱을 열어주고, term은 sandbox 안에서 명령을 실행하고, sync는 파일을 안팎으로 옮겨줘요. 이게 일상 워크플로의 전부예요."
+    },
+    {
+      "id": "open-tunnel",
+      "text": "터널이 실행 중인 상태에서 앱이 브라우저에 바로 열립니다. 이 데모에서는 rediacc.com을 불러옵니다. 컨테이너에서 직접 제공되는 자신의 앱에 접근하는 방식과 동일합니다."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "이게 일상의 세 가지예요. 다음 영상에서 만나요!"
+    }
+  ],
+  "title": "Repo 활용하기",
+  "chapters": {
+    "intro": "Repo 활용하기",
+    "daily-three": "일상의 세 가지: tunnel, term, sync",
+    "cast-step-0": "Tunnel: container 포트 포워딩",
+    "open-tunnel": "브라우저에서 앱 열기",
+    "cast-step-1": "Term: sandbox 내부에서 명령어 실행",
+    "cast-step-2": "Sync: --dry-run으로 미리보기",
+    "cast-step-3": "Sync: 실제 업로드",
+    "outro": "다음: Repository Fork"
+  }
 }

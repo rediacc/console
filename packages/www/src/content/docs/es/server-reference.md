@@ -4,8 +4,8 @@ description: "Organización de directorios, comandos de renet, servicios systemd
 category: "Concepts"
 order: 3
 language: es
-sourceHash: "ce8786bdc5c1543f"
-sourceCommit: "5c97ef070ea0c474b03651ceea03433b3f48abcd"
+sourceHash: "f68c27543a2fe3ff"
+sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
 ---
 
 # Referencia del Servidor
@@ -115,6 +115,31 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 
 `sandbox-exec` aplica restricciones de sistema de archivos de Landlock LSM y luego ejecuta el comando indicado. Es invocado automáticamente por `sandbox-gateway` (el manejador SSH ForceCommand) para todas las conexiones a nivel de repositorio.
 
+### Hub por usuario (entornos de desarrollo)
+
+El Hub proporciona a cada usuario su propio daemon Docker para entornos de desarrollo, independiente de los daemons `FlavorRediacc` por repositorio.
+
+```bash
+# Instalar / eliminar las unidades systemd del Hub por usuario
+sudo renet hub install
+sudo renet hub uninstall
+
+# Recolectar daemons Hub por usuario inactivos
+sudo renet hub gc
+```
+
+Los daemons se ejecutan bajo uno de dos flavors, seleccionado con `--flavor`:
+
+```bash
+# Daemon aislado por repositorio (bridge=none, iptables=false) — el predeterminado
+sudo renet daemon start-foreground --flavor=rediacc ...
+
+# Daemon Hub por usuario (bridge=docker0, iptables=true, live-restore=true)
+sudo renet daemon start-foreground --flavor=hub ...
+```
+
+El flavor `hub` habilita la red bridge normal para que los contenedores del usuario tengan conectividad de salida; el flavor `rediacc` fuerza el aislamiento de loopback entre repositorios. Los registros de auditoría del Hub se escriben en `/var/log/rediacc/hub/<user>.log`.
+
 **Flags:**
 - `--allow-rw`, `--allow-ro`, `--allow-exec`: reglas de ruta de Landlock
 - `--home-overlay`: monta OverlayFS sobre el directorio home para aislar la escritura por repositorio
@@ -218,6 +243,8 @@ Servicios globales compartidos por todos los repositorios:
 |--------|-----------|
 | `rediacc-router.service` | Descubrimiento de rutas (puerto 7111) |
 | `rediacc-autostart.service` | Montaje de repositorios en el arranque |
+| `rediacc-autostart-reconcile.service` | Reconciliador de inicio automático periódico (ejecutado por el timer siguiente) |
+| `rediacc-autostart-reconcile.timer` | Activa `renet repository reconcile` aproximadamente cada 3 minutos para recuperar repositorios de inicio automático que se cayeron después del arranque |
 
 ## Flujos de trabajo habituales
 

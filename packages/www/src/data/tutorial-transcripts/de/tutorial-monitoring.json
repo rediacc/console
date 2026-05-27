@@ -6,32 +6,72 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 102.949897,
-      "text": "Wir beginnen mit der Systemansicht. Der Machine-Query-Befehl mit dem system-Filter zeigt Uptime, Festplattennutzung und Speicherstatus. Wenn etwas nicht stimmt, meldet der Bericht es."
+      "at": 2.411841,
+      "text": "Wir beginnen mit der Systemansicht. Der Machine-Query-Befehl mit dem system-Filter zeigt Uptime, Festplattennutzung und Speicherstatus. Wenn etwas nicht stimmt, meldet der Bericht es.",
+      "afterText": "Laufzeit, Platte, Storage. Alles, was du brauchst, auf einen Blick.",
+      "cardLabel": "Systemstatus",
+      "prose": "Beginnen Sie mit der Systemansicht. rdc machine query mit dem System-Filter zeigt Betriebszeit, Festplattennutzung und Speicherstatus."
     },
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 114.069314,
-      "text": "Jetzt Container. Diese Ansicht listet alle laufenden Container über alle Repositories auf der Maschine auf: Name, Status, Zustand, CPU, Speicher, plus welches Repo jeden Container besitzt."
+      "at": 8.597185,
+      "text": "Jetzt Container. Diese Ansicht listet alle laufenden Container über alle Repositories auf der Maschine auf: Name, Status, Zustand, CPU, Speicher, plus welches Repo jeden Container besitzt.",
+      "afterText": "Jeder Container in jedem Repo, in einer Ansicht.",
+      "cardLabel": "Container",
+      "prose": "Die Container-Ansicht listet alle laufenden Container über alle Repositories auf dem Rechner auf: Name, Status, Zustand, CPU, Arbeitsspeicher und das zugehörige Repo."
     },
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 126.082986,
-      "text": "Und die Repos selbst. Größe, Einhängestatus, Docker-Daemon-Status, Festplattennutzung. Alles, was Sie über jede isolierte Umgebung auf der Maschine wissen müssen."
+      "at": 15.126152,
+      "text": "Und die Repos selbst. Größe, Einhängestatus, Docker-Daemon-Status, Festplattennutzung. Alles, was Sie über jede isolierte Umgebung auf der Maschine wissen müssen.",
+      "afterText": "Alle Repos, alle ihre Daemons, ihre gesamte Plattennutzung.",
+      "cardLabel": "Repositories",
+      "prose": "Die Repositories-Ansicht zeigt Größe, Mount-Status, Docker-Daemon-Status und Festplattennutzung für jede isolierte Umgebung."
     },
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 138.182721,
-      "text": "Der Machine-Query-Befehl gibt Ihnen alles auf einmal. Systeminformationen, Container, Repositories, alles zusammen. Einmal ausführen und Sie haben das vollständige Bild."
+      "at": 24.385141,
+      "text": "Der Machine-Query-Befehl gibt Ihnen alles auf einmal. Systeminformationen, Container, Repositories, alles zusammen. Einmal ausführen und Sie haben das vollständige Bild.",
+      "afterText": "Alles zusammen, kein Filter nötig.",
+      "cardLabel": "Vollständige Abfrage",
+      "prose": "Führen Sie rdc machine query ohne Filter aus, um Systeminformationen, Container und Repositories in einer einzigen Ausgabe zu erhalten."
     },
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 149.8205,
-      "text": "Und schließlich die Diagnoseprüfung für eine lokale Plausibilitätsprüfung auf Ihrem Laptop. Node, SSH-Schlüssel, renet, Docker, alles, wovon die CLI selbst abhängt. Das ist die vollständige Serie. Von der Installation bis zum Monitoring, alles aus Ihrem Terminal."
+      "at": 32.334422,
+      "text": "Und schließlich die Diagnoseprüfung für eine lokale Plausibilitätsprüfung auf Ihrem Laptop. Node, SSH-Schlüssel, renet, Docker, alles, wovon die CLI selbst abhängt. Das ist die vollständige Serie. Von der Installation bis zum Monitoring, alles aus Ihrem Terminal.",
+      "afterText": "Alles grün heißt, deine lokale CLI ist gesund.",
+      "cardLabel": "Doctor",
+      "prose": "Führen Sie rdc doctor für eine lokale Überprüfung auf Ihrem Laptop aus. Es prüft Node, SSH-Schlüssel, renet und Docker, alle Abhängigkeiten, auf die die CLI selbst angewiesen ist."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alles klar! Deine App ist live und gesichert, jetzt sorgen wir dafür, dass sie gesund bleibt."
+    },
+    {
+      "id": "three-checks",
+      "text": "Die CLI liefert dir vom Laptop aus ein vollständiges Bild jedes Servers. Drei Blickwinkel zum Prüfen: System-Status, laufende Container und die Repositories selbst."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Damit schließt sich die Serie. Du kannst jetzt installieren, konfigurieren, deployen, forken, live gehen, Autostart einrichten, sichern und überwachen, alles aus deinem Terminal!"
+    }
+  ],
+  "title": "Monitoring",
+  "chapters": {
+    "intro": "Monitoring",
+    "three-checks": "Drei Dinge, die Sie prüfen können",
+    "cast-step-0": "Status: Systeminfos",
+    "cast-step-1": "Container",
+    "cast-step-2": "Repos",
+    "cast-step-3": "Alles auf einmal",
+    "cast-step-4": "Lokale Überprüfung",
+    "outro": "Ende der Serie"
+  }
 }

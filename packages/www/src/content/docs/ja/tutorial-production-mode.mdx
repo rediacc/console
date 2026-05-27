@@ -1,0 +1,61 @@
+---
+title: "本番モード"
+description: "ラップトップから切断してもアプリを動かし続け、オートスタートでサーバー再起動に対応します。"
+category: "Tutorials"
+subcategory: advanced
+order: 10
+language: ja
+sourceHash: "6921482ea1810fb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 本番モード
+
+これまでリポジトリ内から `renet dev up` でアプリを動かしてきました。開発には最適な方法です。本番では、`rdc` を使ってラップトップからすべてを管理します。ラップトップを閉じてもアプリは動き続けます。
+
+## チュートリアル動画
+
+![チュートリアル: 本番モード](/assets/tutorials/tutorial-production-mode.cast)
+
+## 開発と本番の違い
+
+違いはシンプルです。
+
+- `renet dev up` は**リポジトリ内**で実行します。接続が必要です。
+- `rdc repo up` は**ラップトップから**実行します。その後は接続不要です。
+
+開発から本番への移行は3つのアクションで完了します。
+
+![停止、起動、オートスタート](/img/tutorials/tutorial-production-mode/slide-1.svg)
+
+リポジトリ内でまだ `renet dev up` セッションが実行中の場合は、`rdc vscode connect -m my-server -r my-app` を実行し、続けて `renet dev down` でセッションを終了してください。その後はすべてラップトップから操作できます。
+
+## ステップ1: 本番モードで起動する
+
+<TutorialStep number={1} />
+
+`rdc repo up` は `renet dev up` と同じ `up` 関数を呼び出します。同じ `Rediaccfile`、呼び出し方が違うだけです。ただし、切断後もアプリは動き続けます。
+
+## ステップ2: オートスタートを有効にする
+
+<TutorialStep number={2} />
+
+サーバーが再起動したとき、このリポジトリは自動的に復帰します。
+
+## ステップ3: オートスタート有効なリポジトリを一覧表示する
+
+<TutorialStep number={3} />
+
+アプリがブートリストに含まれているかを素早く確認します。
+
+## ステップ4: ラップトップから停止する
+
+<TutorialStep number={4} />
+
+起動は1コマンド、停止も1コマンド。すべてラップトップから操作できます。
+
+---
+
+次: [バックアップとリストア](/ja/docs/tutorial-backup-restore)

@@ -6,38 +6,107 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 108.099445,
-      "text": "Vamos a hacer un fork del repositorio con un único comando. Clonó todo: la app, la base de datos, los archivos de configuración. Y ocurrió en segundos, sin importar el tamaño del repo. Un gigabyte, cien gigabytes, un terabyte: el mismo tiempo, siempre."
+      "at": 2.41277,
+      "text": "Vamos a hacer un fork del repositorio con un único comando. Clonó todo: la app, la base de datos, los archivos de configuración. Y ocurrió en segundos, sin importar el tamaño del repo. Un gigabyte, cien gigabytes, un terabyte: el mismo tiempo, siempre.",
+      "afterText": "Fork listo. El clon está activo y en ejecución, sin importar el tamaño.",
+      "cardLabel": "Fork Repo",
+      "prose": "Un solo comando clona el repo completo: app, base de datos y archivos de configuración. El tiempo de fork es constante sin importar el tamaño del repo, ya sea un gigabyte, cien gigabytes o un terabyte."
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 142.355671,
-      "text": "Ambos repos existen en paralelo ahora. La misma máquina, el mismo disco, dos entornos completamente independientes. El fork tiene sus propios contenedores, su propio sistema de archivos y su propio Docker daemon."
+      "at": 13.421721,
+      "text": "Ambos repos existen en paralelo ahora. La misma máquina, el mismo disco, dos entornos completamente independientes. El fork tiene sus propios contenedores, su propio sistema de archivos y su propio Docker daemon.",
+      "afterText": "Dos repos, un disco. Mismos datos, todo lo demás separado.",
+      "cardLabel": "Listar Repos",
+      "prose": "Ambos repos ahora coexisten en la misma máquina y disco como dos entornos completamente independientes."
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 158.262452,
-      "text": "Vamos a probar el aislamiento. En el original, nuestro archivo marcador está justo donde lo dejamos. La existencia del fork no cambió nada en el padre."
+      "at": 18.980206,
+      "text": "Vamos a probar el aislamiento. En el original, nuestro archivo marcador está justo donde lo dejamos. La existencia del fork no cambió nada en el padre.",
+      "afterText": "El archivo original sigue ahí. El fork no lo tocó.",
+      "cardLabel": "Archivo Original",
+      "prose": "Verifica el aislamiento inspeccionando el repo original: el archivo marcador permanece en su lugar. Crear un fork no modifica el padre."
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 176.185047,
-      "text": "Ahora eliminamos ese archivo, pero solo dentro del fork. Dentro del fork, desapareció. Hicimos un cambio destructivo y se quedó dentro del fork."
+      "at": 26.216902,
+      "text": "Ahora eliminamos ese archivo, pero solo dentro del fork. Dentro del fork, desapareció. Hicimos un cambio destructivo y se quedó dentro del fork.",
+      "afterText": "Eliminado en el fork. El original permanece intacto.",
+      "cardLabel": "Eliminar En Fork",
+      "prose": "Elimina el archivo marcador solo dentro del fork. Este es un cambio destructivo limitado al fork."
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 195.030667,
-      "text": "De vuelta al original. El archivo marcador sigue aquí, intacto. El original nunca supo que pasó algo. La misma imagen, Docker daemons separados, sistemas de archivos separados."
+      "at": 34.456769,
+      "text": "De vuelta al original. El archivo marcador sigue aquí, intacto. El original nunca supo que pasó algo. La misma imagen, Docker daemons separados, sistemas de archivos separados.",
+      "afterText": "Sigue aquí. Los forks están correctamente aislados.",
+      "cardLabel": "Original Intacto",
+      "prose": "Vuelve al repo original: el archivo marcador permanece intacto. El padre y el fork comparten la misma imagen pero se ejecutan en Docker daemons separados y sistemas de archivos separados."
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 212.971596,
-      "text": "Cuando termines, simplemente elimina el fork. El original queda exactamente como estaba. Fork, experimenta, rompe cosas, elimina: sin riesgo."
+      "at": 41.647526,
+      "text": "Cuando termines, simplemente elimina el fork. El original queda exactamente como estaba. Fork, experimenta, rompe cosas, elimina: sin riesgo.",
+      "afterText": "Fork eliminado. El original quedó exactamente como lo dejamos.",
+      "cardLabel": "Limpiar",
+      "prose": "Elimina el fork cuando termines. El repo original no se ve afectado, lo que permite un flujo de trabajo seguro de fork, experimentación y descarte."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "¡Bienvenido a la función estrella! Clona un repo de producción entero sin importar su tamaño, y sin romper nada."
+    },
+    {
+      "id": "fan-out",
+      "text": "Un repo padre se ramifica en tantos clones independientes como quieras. Cada fork es su propio entorno aislado que corre en paralelo con el original."
+    },
+    {
+      "id": "link-speed",
+      "text": "Piensa en compartir el enlace de una carpeta. El enlace es algo igual de ligero ya sea que la carpeta sea pequeña o enorme, y hacer fork funciona con el mismo principio."
+    },
+    {
+      "id": "scale-invariance",
+      "text": "Un gigabyte, cien gigabytes, un terabyte: el fork se comporta igual. El tamaño del repo no entra en la ecuación."
+    },
+    {
+      "id": "sun-mirrors",
+      "text": "El repo padre es el sol y tu fork es un espejo que atrapa su luz. La base compartida permanece intacta mientras que lo que pintes en el espejo te pertenece solo a ti."
+    },
+    {
+      "id": "river-photo",
+      "text": "Un fork es una fotografía congelada del padre en un instante. El padre sigue fluyendo como un río, pero tu snapshot permanece exactamente donde estaba."
+    },
+    {
+      "id": "flat-disk",
+      "text": "Cinco forks de un repo de cien gigabytes siguen sumando alrededor de cien gigabytes en disco. Solo pagas por los bytes que realmente cambias dentro de cada fork."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Los forks deliberadamente dejan los secrets atrás, que es lo que hace que clonar producción sin romper nada sea realmente seguro. ¡Los configuramos correctamente en el siguiente tutorial!"
+    }
+  ],
+  "title": "Fork de un Repository",
+  "chapters": {
+    "intro": "Fork de un Repository",
+    "fan-out": "Un padre, muchos clones independientes",
+    "link-speed": "Compartir un enlace, no la carpeta",
+    "scale-invariance": "La misma velocidad a cualquier tamaño",
+    "cast-step-0": "Paso 1: Fork del repo",
+    "cast-step-1": "Paso 2: Ambos repos lado a lado",
+    "cast-step-2": "Paso 3: El original no tiene cambios",
+    "sun-mirrors": "El sol y el espejo",
+    "cast-step-3": "Paso 4: Cambiar solo el fork",
+    "cast-step-4": "Paso 5: Verificar que el original sobrevive",
+    "cast-step-5": "Paso 6: Eliminar el fork",
+    "river-photo": "Una foto del río",
+    "flat-disk": "El uso del disco se mantiene estable",
+    "outro": "Siguiente: Gestionar Secretos"
+  }
 }

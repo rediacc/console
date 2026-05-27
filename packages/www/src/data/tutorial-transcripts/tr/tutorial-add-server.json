@@ -6,32 +6,52 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.508633,
-      "text": "SSH anahtarını, makine listesini ve altyapı ayarlarını barındıracak bir yapılandırma profili oluşturarak başlıyoruz. Bu profil, buradan itibaren yapacağımız her işlem için temel oluşturuyor."
+      "at": 1.627146,
+      "text": "SSH anahtarını, makine listesini ve altyapı ayarlarını barındıracak bir yapılandırma profili oluşturarak başlıyoruz. Bu profil, buradan itibaren yapacağımız her işlem için temel oluşturuyor.",
+      "afterText": "Profil oluşturuldu. Yapılandıracağımız her şey bu tek dosyada yaşar.",
+      "cardLabel": "Makine Ekle",
+      "prose": "Sunucuyu bir ad, IP adresi ve SSH kullanıcısıyla kaydedin. Ad yalnızca yerel bir takma addır (IP ile eşleştirmek için machine-11 kullanıyoruz, ancak prod-db veya web-1 gibi herhangi bir etiket de işe yarar). Herhangi bir başlatma adımına gerek yoktur; yapılandırma dosyası ilk kullanımda otomatik olarak oluşturulur ve rdc, standart ~/.ssh anahtarınıza geri döner."
     },
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 11.160728,
-      "text": "Şimdi sunucuyu komut satırına kaydediyoruz: adını, IP adresini ve SSH kullanıcısını belirtiyoruz. Host anahtarları güvenilir erişim için otomatik olarak taranıyor."
+      "at": 7.928955,
+      "text": "Şimdi sunucuyu komut satırına kaydediyoruz: adını, IP adresini ve SSH kullanıcısını belirtiyoruz. Host anahtarları güvenilir erişim için otomatik olarak taranıyor.",
+      "afterText": "Sunucu kaydedildi. Host anahtarları otomatik olarak tarandı.",
+      "cardLabel": "Makineyi Kur",
+      "prose": "Sunucuyu hazırlayın. Bu işlem renet'i yükler ve şifreli veri deposunu oluşturur."
     },
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 23.457976,
-      "text": "Sırada sunucunun yapılandırılması var. Bu adım renet'i yüklüyor ve şifreli veri deposunu oluşturuyor. Tamamlandığında sunucu depo barındırmaya hazır."
-    },
-    {
-      "id": "tutorial-add-server-04",
-      "markerIndex": 3,
-      "at": 39.717449,
-      "text": "Aracın yapılandırma hakkında bildiklerini doğruluyoruz. Makineler, SSH anahtarı, altyapı bilgileri; az önce kurduğumuz her şey burada görünüyor."
-    },
-    {
-      "id": "tutorial-add-server-05",
-      "markerIndex": 4,
-      "at": 48.157549,
-      "text": "Tüm yapılandırma, dizüstü bilgisayarınızdaki tek bir JSON dosyasında yaşıyor. Başka bir makineye kopyalayın; aynı sunucuları oradan da yönetebilirsiniz."
+      "at": 16.338306,
+      "text": "Sırada sunucunun yapılandırılması var. Bu adım renet'i yüklüyor ve şifreli veri deposunu oluşturuyor. Tamamlandığında sunucu depo barındırmaya hazır.",
+      "afterText": "Tamam. Renet kuruldu ve veri deposu hazır.",
+      "cardLabel": "Yapılandırmayı İncele",
+      "prose": "Her şeyi barındıran JSON dosyasını inceleyin: makineler, SSH anahtarı ve altyapı. Ortam başına bir tane olmak üzere birden fazla yapılandırma tutabilir ve --config bayrağıyla aralarında geçiş yapabilirsiniz. Aşağıda bağlantısı verilen çoklu yapılandırma kılavuzuna bakın."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Pekâlâ! İlk sunucunuzu ekleyelim. İki komut ve yaklaşık bir dakika sürüyor."
+    },
+    {
+      "id": "two-tool-architecture",
+      "text": "İki parça var. Komut satırı aracı dizüstü bilgisayarınızda, renet adlı orkestratör ise sunucuda çalışır. CLI sunucuya SSH üzerinden bağlanır; yani sunucuya elle giriş yapmanıza hiç gerek kalmaz."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Sunucu ekleme işlemi böylece tamamlandı! Bir sonraki bölümde görüşmek üzere."
+    }
+  ],
+  "title": "İlk Sunucunuzu Ekleme",
+  "chapters": {
+    "intro": "İlk Sunucunuzu Ekleme",
+    "two-tool-architecture": "Rediacc Sunucunuza Nasıl Bağlanır",
+    "cast-step-0": "Adım 1: Sunucuyu Kaydedin",
+    "cast-step-1": "Adım 2: renet'i Hazırlayın",
+    "cast-step-2": "Adım 3: Yapılandırma Dosyasını İnceleyin",
+    "outro": "Sonraki: İlk Repository'nizi Oluşturun"
+  }
 }

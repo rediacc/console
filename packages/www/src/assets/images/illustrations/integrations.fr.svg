@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450" role="img" aria-label="Pousser un petit bloc de code crée une grande copie verte prête à tester du système actif avec de vraies lignes de données et une coche verte." font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif">
+  <title>Pousser un petit bloc de code crée une grande copie verte prête à tester du système actif avec de vraies lignes de données et une coche verte.</title>
+
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5" />
+
+  
+  <text x="140" y="172" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="28" font-weight="bold" fill="#1a1a1a">Vous poussez du code</text>
+  <rect x="60" y="190" width="160" height="110" rx="10" fill="#2d2d2d" />
+  <rect x="78" y="212" width="110" height="12" rx="3" fill="#f5f5f5" />
+  <rect x="78" y="238" width="124" height="12" rx="3" fill="#f5f5f5" />
+  <rect x="78" y="264" width="88" height="12" rx="3" fill="#f5f5f5" />
+
+  
+  <rect x="235" y="233" width="112" height="24" fill="#2d2d2d" />
+  <polygon points="345,213 382,245 345,277" fill="#2d2d2d" />
+
+  
+  <text x="540" y="110" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="30" font-weight="bold" fill="#1a1a1a">Copie réelle prête</text>
+  <rect x="380" y="130" width="320" height="240" rx="14" fill="#2d5227" />
+
+  
+  <rect x="410" y="200" width="240" height="22" rx="5" fill="#f5f5f5" />
+  <rect x="410" y="244" width="200" height="22" rx="5" fill="#f5f5f5" />
+  <rect x="410" y="288" width="230" height="22" rx="5" fill="#f5f5f5" />
+
+  
+  <circle cx="380" cy="165" r="32" fill="#4a7c3f" stroke="#f5f5f5" stroke-width="3" />
+  <polyline points="366,165 376,176 395,151" fill="none" stroke="#f5f5f5" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+
+  
+  <text x="540" y="405" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="30" fill="#1a1a1a">Données réelles</text>
+  <text x="540" y="442" text-anchor="middle" font-family="Arial, 'Helvetica Neue', 'Segoe UI', sans-serif" font-size="30" font-weight="bold" fill="#2d5227">Aucun script</text>
+</svg>

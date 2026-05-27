@@ -15,7 +15,7 @@ Migrate an existing project, files, Docker services, databases, from a tradition
 
 - `rdc` CLI installed ([Installation](/en/docs/installation))
 - A machine added and provisioned ([Setup](/en/docs/setup))
-- Enough disk space on the server for your project (check with `rdc machine status`)
+- Enough disk space on the server for your project (check with `rdc machine query`)
 
 ## Step 1: Create a Repository
 
@@ -95,6 +95,8 @@ To set a UID other than the default 7111:
 ```bash
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
+
+> **Caution:** `7111` is the universal Rediacc UID used everywhere (it matches the `rediacc` user baked into the devcontainer image). Only override it with `--uid` for legacy compatibility with files owned by a specific external UID. It is **not** a migration target. New repositories should keep the default.
 
 ## Step 4: Set Up Your Rediaccfile
 

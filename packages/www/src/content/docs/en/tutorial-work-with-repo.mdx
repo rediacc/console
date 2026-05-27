@@ -1,0 +1,58 @@
+---
+title: "Working with Your Repo"
+description: "Tunnel a port to your browser, run commands inside the sandbox, and sync files between your laptop and the repo."
+category: "Tutorials"
+subcategory: essentials
+order: 6
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Working with Your Repo
+
+Your app is running, but so far you've only seen it through `docker ps`. Three commands cover the daily workflow: **tunnel** to see the app in a browser, **term** to run commands inside the sandbox, **sync** to move files between your laptop and the repo.
+
+## Watch the tutorial
+
+![Tutorial: Working with your repo](/assets/tutorials/tutorial-work-with-repo.cast)
+
+## The daily three
+
+![Tunnel, term, sync](/img/tutorials/tutorial-work-with-repo/slide-1.svg)
+
+1. **Tunnel**: open your app in a browser.
+2. **Term**: run a command inside the sandbox.
+3. **Sync**: move files in and out.
+
+## Tunnel: see your app in a browser
+
+The app runs on the server, not your laptop. Forward a container's port over SSH:
+
+<TutorialStep number={1} />
+
+Open `localhost` in your browser. Your app is right there. Press `Ctrl+C` when you're done.
+
+## Term: run commands inside the repo
+
+Skip VS Code when you just need a shell. Drop into the repo sandbox and run anything against its Docker daemon:
+
+<TutorialStep number={2} />
+
+You see only `my-app`'s containers, the same view you'd see in VS Code.
+
+## Sync: move files between laptop and repo
+
+Preview first if you're unsure. `--dry-run` shows what would change without actually copying:
+
+<TutorialStep number={3} />
+
+Once the preview looks right, run the upload for real:
+
+<TutorialStep number={4} />
+
+Tunnel, term, sync. Three commands cover the daily loop.
+
+---
+
+Next: [Forking a Repository](/en/docs/tutorial-forking).

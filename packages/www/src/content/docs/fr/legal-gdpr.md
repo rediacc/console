@@ -4,7 +4,8 @@ description: "Comment l'architecture auto-hébergée de Rediacc correspond aux e
 category: "Legal"
 order: 1
 language: fr
-sourceHash: "e3d383739190bb30"
+sourceHash: "36a776d87c6294ff"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Le Règlement Général sur la Protection des Données (RGPD) est la loi de l'Union européenne sur la protection des données, en vigueur depuis mai 2018. Il régit la manière dont les organisations collectent, traitent et stockent les données personnelles des individus dans l'UE.
@@ -18,7 +19,7 @@ Le tableau ci-dessous met en correspondance les articles spécifiques du RGPD av
 | Article | Exigence | Capacité Rediacc |
 |---------|----------|-----------------|
 | [Art. 5](https://gdpr-info.eu/art-5-gdpr/), Principes | Minimisation des données, intégrité, confidentialité | Les clones CoW (`cp --reflink=always`) dupliquent les données sur la même machine sans transfert réseau. LUKS2 AES-256 chiffre toutes les données au repos. |
-| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Droit à l'effacement | Supprimer les données personnelles sur demande | `rdc repo destroy` efface cryptographiquement le volume LUKS. La suppression d'un fork retire entièrement la copie clonée. |
+| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Droit à l'effacement | Supprimer les données personnelles sur demande | `rdc repo delete` efface cryptographiquement le volume LUKS. La suppression d'un fork retire entièrement la copie clonée. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Protection des données dès la conception | Vie privée par défaut | Le chiffrement est obligatoire, pas optionnel. Chaque dépôt dispose d'un Docker daemon isolé et d'un réseau dédié. Aucun partage de données entre dépôts. Le magasin de configuration utilise le chiffrement à connaissance nulle : les configurations sont chiffrées côté client avec AES-256-GCM avant l'envoi, le serveur ne peut donc lire aucune donnée en clair. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Sous-traitant | Obligations de traitement des données par un tiers | Auto-hébergé : Rediacc s'exécute sur votre infrastructure. Aucune donnée ne quitte votre machine pendant les opérations de fork, clone ou sauvegarde. Aucun composant SaaS ne traite de données personnelles. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registre des traitements | Tenir un registre des activités de traitement | La journalisation d'audit trace plus de 40 types d'événements au niveau du compte : authentification, jetons API, opérations du magasin de configuration et licences. Export via `rdc audit` CLI ou tableau de bord d'administration. |
@@ -29,7 +30,7 @@ Le tableau ci-dessous met en correspondance les articles spécifiques du RGPD av
 
 Les clones CoW ne quittent jamais la machine source. La commande `rdc repo fork` crée une copie au niveau du système de fichiers en utilisant des reflinks. Aucune donnée n'est transférée sur le réseau.
 
-Pour les opérations inter-machines, `rdc repo backup push/pull` transfère les données via SSH. La destination de sauvegarde reçoit des volumes chiffrés LUKS qui ne peuvent être lus sans les identifiants de l'opérateur.
+Pour les opérations inter-machines, `rdc repo push/pull` transfère les données via SSH. La destination de sauvegarde reçoit des volumes chiffrés LUKS qui ne peuvent être lus sans les identifiants de l'opérateur.
 
 ## Clonage d'environnement et masquage des données
 

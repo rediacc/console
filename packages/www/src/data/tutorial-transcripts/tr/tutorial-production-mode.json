@@ -6,26 +6,62 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 56.862064,
-      "text": "Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz. Deploy komutu, geliştirme sırasında kullandığımız aynı up fonksiyonunu çağırır; ancak bağımsız çalışır. Dizüstü bilgisayarınızı kapatabilirsiniz; uygulama çalışmaya devam eder."
+      "at": 2.418632,
+      "text": "Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz. Deploy komutu, geliştirme sırasında kullandığımız aynı up fonksiyonunu çağırır; ancak bağımsız çalışır. Dizüstü bilgisayarınızı kapatabilirsiniz; uygulama çalışmaya devam eder.",
+      "afterText": "Uygulama üretimde çalışıyor. Aynı komut, aynı sonuç, gerçek sunucuda.",
+      "cardLabel": "Prod'u Başlat",
+      "prose": "Uygulamayı dizüstü bilgisayardan production modunda başlatın. Deploy komutu, geliştirme sırasında kullanılan up fonksiyonunun aynısını çağırır; ancak ayrık (detached) modda çalışır, böylece dizüstü bilgisayar bağlantıyı kesse bile uygulama çalışmaya devam eder."
     },
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 97.750961,
-      "text": "Uygulamanın sunucu yeniden başlamalarından kurtulması için otomatik başlatmayı etkinleştiriyoruz. Artık sunucu yeniden başlarsa bu depo otomatik olarak geri gelir."
+      "at": 9.548589,
+      "text": "Uygulamanın sunucu yeniden başlamalarından kurtulması için otomatik başlatmayı etkinleştiriyoruz. Artık sunucu yeniden başlarsa bu depo otomatik olarak geri gelir.",
+      "afterText": "Otomatik başlatma açık. Uygulama yeniden başlatmalardan sağ çıkar.",
+      "cardLabel": "Otomatik Başlatmayı Etkinleştir",
+      "prose": "Sunucu yeniden başlatmalarında repo'nun hayatta kalması için otomatik başlatmayı etkinleştirin. Etkinleştirildikten sonra, sunucu her yeniden başladığında repo otomatik olarak geri getirilir."
     },
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 125.443493,
-      "text": "Hangi depolarda otomatik başlatmanın etkin olduğunu listeliyoruz. Uygulamamızın artık başlatma listesinde olduğunu doğruluyor."
+      "at": 17.034078,
+      "text": "Hangi depolarda otomatik başlatmanın etkin olduğunu listeliyoruz. Uygulamamızın artık başlatma listesinde olduğunu doğruluyor.",
+      "afterText": "İşte burada, başlatma listesinde.",
+      "cardLabel": "Otomatik Başlatmayı Listele",
+      "prose": "Uygulamanın önyükleme listesinde olduğunu doğrulamak için otomatik başlatması etkin olan repository'leri listeleyin."
     },
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 141.09184,
-      "text": "Uygulamayı durdurmak için dizüstü bilgisayardan tek komut. Bir komutla açın, bir komutla kapatın. Hepsi terminalinizden; artık etkileşimli oturum gerekmez."
+      "at": 22.929505,
+      "text": "Uygulamayı durdurmak için dizüstü bilgisayardan tek komut. Bir komutla açın, bir komutla kapatın. Hepsi terminalinizden; artık etkileşimli oturum gerekmez.",
+      "afterText": "Durduruldu. Tek komutla aç, tek komutla kapat.",
+      "cardLabel": "Repo'yu Durdur",
+      "prose": "Uygulamayı dizüstü bilgisayardan tek bir komutla durdurun. Bir komut başlatır, bir komut kapatır; hepsi terminal üzerinden yönetilir."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Pekâlâ! Uygulamanızı geliştirmeden üretime taşıyalım. Üç kısa adım, hepsi dizüstü bilgisayarınızdan."
+    },
+    {
+      "id": "dev-vs-prod",
+      "text": "Geliştirme sırasında uygulamayı deponun içinden çalıştırırsınız; bu yüzden bağlantınız kesildiğinde durur. Üretimde uygulamayı dizüstü bilgisayarınızdan CLI ile başlatırsınız ve bağımsız olarak çalışmaya devam eder."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Özetle üretim modu bu kadar. Bir sonraki bölümde görüşmek üzere!"
+    }
+  ],
+  "title": "Production Modu",
+  "chapters": {
+    "intro": "Production Modu",
+    "dev-vs-prod": "Dev ile prod arasındaki fark",
+    "cast-step-0": "Adım 1: Production modunda başlat",
+    "cast-step-1": "Adım 2: Otomatik başlatmayı etkinleştir",
+    "cast-step-2": "Adım 3: Otomatik başlatması etkin repo'ları listele",
+    "cast-step-3": "Adım 4: Dizüstü bilgisayardan durdur",
+    "outro": "Sıradaki: Yedekleme ve Geri Yükleme"
+  }
 }

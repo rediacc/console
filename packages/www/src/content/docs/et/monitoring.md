@@ -4,6 +4,8 @@ description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning k�
 category: "Guides"
 order: 9
 language: et
+sourceHash: "2289d50dac21f9bf"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Jälgimine
@@ -110,8 +112,9 @@ rdc machine query --name server-1 --storage-health
 | Size | LUKS-pildifaili suurus (kuidas hoidla välja näeb) |
 | Unique | Tegelik unikaalne andmemaht, mis kuulub ainult sellele hoidlale |
 | Shared | Andmeplokid, mida taaskasutatakse hoidlate vahel BTRFS-i reflink'ide kaudu (tasuta koopiad) |
-| Extents | Faililaiendite arv (kõrgem = rohkem fragmenteeritud) |
-| Frag | Fragmentatsioonitase: madal, mõõdukas või kõrge |
+| Divergence | Protsent kujutisest, mis on selle hoidla jaoks unikaalne, mitte jagatud (kõrgem = rohkem tagasinõutavat ruumi kustutamisel) |
+| Extents | Faililaiendite arv copy-on-write kujutises (kõrgem = rohkem fragmenteeritud) |
+| Frag | Fragmentatsioonitase: madal, mõõdukas või kõrge (ainult informatiivne) |
 
 Kokkuvõte näitab BTRFS-i reflink'idest saadud säästu kokku:
 
@@ -125,7 +128,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 - **Jagatud** on andmed, mida taaskasutatakse hoidlate vahel BTRFS-i reflink'ide kaudu. Hoidla hargnemine loob reflink'i koopiad, mis jagavad plokke, kuni kumbki pool kirjutab uusi andmeid, mille tulemusel plokid lahknevad.
 - **Efektiivsus** on reflink'ide kaudu taaskasutatud andmete protsent. Kõrgem on parem. Masin, millel on palju hargnemisi samalt vanemalt, näitab lähedal-100% efektiivsust.
 
-Hoidlad, millel on kõrge fragmentatsioon ja null jagatud plokke, saab turvaliselt defragmenteerida `btrfs filesystem defragment` abil. Hoidlaid, millel on jagatud plokid, ei tohiks defragmenteerida, kuna defrag asendab jagatud plokid unikaalsete koopiatega, suurendades ketta kasutust.
+Frag-veerg on informatiivne. See loeb copy-on-write pildifaili laiendeid, mitte faile, mida su rakendus selle sees loeb, seega loeb see kõrgeks tavapäraste juhuslik-kirjutamise töökoormate korral (andmebaasid, konteinerite kihid) ega ennusta lugemise jõudlust SSD-toega salvestusel. Rediacc ei paku tahtlikult defragmenteerimiskäsku: `btrfs filesystem defragment` jagab lahku reflingitud harked ja hetktõmmised, mis täis-basseiniga võib kasutust dramatiliselt paisutada, samas kui võrdlusmõõtmised ei näita mõõdetavat lugemiskasumit. Täielikud mõõtmised ja põhjendused leiad siit: [Sinu fragmentatsiooninumber näeb kohutav välja. Mõõtsin, mida see tegelikult maksab.](/et/blog/i-benchmarked-btrfs-fragmentation).
 
 Skaneerimine töötab paralleelselt ja võtab 5--15 sekundit sõltuvalt hoidlate arvust ja suurusest. Kui `--storage-health` ei ole täpsustatud, ilmub päringuväljundi järel üherealise vihje meeldetuletusena.
 

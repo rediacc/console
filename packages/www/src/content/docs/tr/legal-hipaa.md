@@ -4,7 +4,8 @@ description: "Rediacc'ın şifreleme ve izolasyon mimarisi, sağlık bilgilerini
 category: "Legal"
 order: 3
 language: tr
-sourceHash: "13bf006e6e3d481f"
+sourceHash: "f5fbdaa4a00491ea"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Sağlık Sigortası Taşınabilirlik ve Hesap Verebilirlik Yasası (HIPAA), hassas hasta sağlık bilgilerinin (PHI) korunması için standartlar belirleyen bir ABD federal yasasıdır. Kapsanan kuruluşlar (sağlık hizmeti sağlayıcıları, sağlık planları, sağlık takas odaları) ve iş ortakları için geçerlidir.
@@ -31,7 +32,7 @@ HIPAA idari, teknik ve fiziksel güvenceler gerektirir. Aşağıdaki tablo bunla
 |-----------|-----------------|
 | İş gücü erişim yönetimi | Kapsamlı izinlerle API token'ları. Ekip tabanlı erişim kontrolü. Ekipten çıkarılma durumunda otomatik token iptali. |
 | Güvenlik olayı prosedürleri | Denetim günlükleri tüm işlemlerin adli izini sağlar. Depo başına izolasyon etki alanını sınırlar. |
-| Acil durum planlaması | `rdc repo backup push/pull` çoklu hedefli şifreli yedeklemeyi destekler. CoW anlık görüntüleri anlık kurtarmayı sağlar. |
+| Acil durum planlaması | `rdc repo push/pull` çoklu hedefli şifreli yedeklemeyi destekler. CoW anlık görüntüleri anlık kurtarmayı sağlar. |
 
 ### Fiziksel Güvenceler
 

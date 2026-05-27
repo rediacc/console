@@ -4,6 +4,8 @@ description: "Come il modello self-hosted di Rediacc risponde ai requisiti del C
 category: "Legal"
 order: 4
 language: it
+sourceHash: "949159b302cf6ab9"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Il California Consumer Privacy Act (CCPA) è una legge statale che attribuisce ai consumatori californiani diritti sui propri dati personali, tra cui il diritto di sapere quali dati vengono raccolti, il diritto di cancellarli e il diritto di opporsi alla loro vendita.
@@ -17,7 +19,7 @@ Il CCPA si concentra sui diritti dei consumatori relativi alle informazioni pers
 | Diritto CCPA | Requisito | Capacità di Rediacc |
 |-----------|-------------|-------------------|
 | Diritto di conoscere (1798.100) | Comunicare le categorie e le finalità dei dati raccolti | I log di audit tracciano tutte le operazioni sui dati. Self-hosted: la propria organizzazione mantiene piena visibilità sui dati presenti in ciascun repository. |
-| Diritto di cancellazione (1798.105) | Cancellare i dati personali del consumatore su richiesta | `rdc repo destroy` cancella crittograficamente il volume LUKS cifrato. L'eliminazione di un fork rimuove le copie clonate. |
+| Diritto di cancellazione (1798.105) | Cancellare i dati personali del consumatore su richiesta | `rdc repo delete` cancella crittograficamente il volume LUKS cifrato. L'eliminazione di un fork rimuove le copie clonate. |
 | Diritto di opposizione (1798.120) | Non vendere né condividere le informazioni personali | Architettura self-hosted: nessun trasferimento di dati verso Rediacc o terze parti. I dati rimangono sui propri server. La sincronizzazione del config store utilizza la cifratura zero-knowledge. Nemmeno il server di sincronizzazione può leggere i dati. |
 | Sicurezza dei dati (1798.150) | Implementare misure di sicurezza adeguate | Cifratura LUKS2 AES-256, isolamento di rete, accesso esclusivo via SSH, daemon Docker isolati, log di audit. Il config store utilizza la cifratura a triplo livello con derivazione a chiave suddivisa e token monouso rotanti. |
 

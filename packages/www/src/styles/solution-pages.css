@@ -483,6 +483,13 @@
 .sp-problem-illustration img {
   width: 100%;
   height: auto;
+  /* When a <picture> swaps in a portrait mobile source, the <img> width/height
+     attributes would otherwise force a 16:9 box and squash it. `auto` lets each
+     source render at its own natural aspect ratio. */
+  aspect-ratio: auto;
+  display: block;
+}
+.sp-problem-illustration picture {
   display: block;
 }
 /* Make the illustration a clickable trigger that opens the image modal */

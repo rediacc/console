@@ -6,38 +6,107 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 108.099445,
-      "text": "Agora a bifurcação. Um único comando clona o repositório inteiro -- a aplicação, a base de dados, os ficheiros de configuração -- em segundos, independentemente do tamanho. Um gigabyte, cem gigabytes, um terabyte: o mesmo tempo, sempre."
+      "at": 2.41277,
+      "text": "Agora a bifurcação. Um único comando clona o repositório inteiro -- a aplicação, a base de dados, os ficheiros de configuração -- em segundos, independentemente do tamanho. Um gigabyte, cem gigabytes, um terabyte: o mesmo tempo, sempre.",
+      "afterText": "Bifurcação concluída. O clone está pronto a usar, qualquer que seja o tamanho.",
+      "cardLabel": "Fork de Repo",
+      "prose": "Um único comando clona o repo inteiro: aplicação, banco de dados e arquivos de configuração. O tempo de fork é constante independentemente do tamanho do repo, seja um gigabyte, cem gigabytes ou um terabyte."
     },
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 142.355671,
-      "text": "Os dois repositórios coexistem agora lado a lado. Mesma máquina, mesmo disco, dois ambientes completamente independentes."
+      "at": 13.421721,
+      "text": "Os dois repositórios coexistem agora lado a lado. Mesma máquina, mesmo disco, dois ambientes completamente independentes.",
+      "afterText": "Dois repos, um disco. Mesmos dados, tudo o resto separado.",
+      "cardLabel": "Listar Repos",
+      "prose": "Os dois repos agora coexistem na mesma máquina e no mesmo disco como dois ambientes completamente independentes."
     },
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 158.262452,
-      "text": "Vamos provar o isolamento. No original, o nosso ficheiro de marcação está exatamente onde o deixámos. A existência da bifurcação não alterou nada no repositório pai."
+      "at": 18.980206,
+      "text": "Vamos provar o isolamento. No original, o nosso ficheiro de marcação está exatamente onde o deixámos. A existência da bifurcação não alterou nada no repositório pai.",
+      "afterText": "O ficheiro original continua lá. A bifurcação não lhe tocou.",
+      "cardLabel": "Arquivo Original",
+      "prose": "Verifique o isolamento inspecionando o repo original: o arquivo marcador permanece no lugar. Criar um fork não modifica o pai."
     },
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 176.185047,
-      "text": "Agora vamos apagar esse ficheiro, mas apenas dentro da bifurcação. Estamos a fazer uma alteração destrutiva aqui."
+      "at": 26.216902,
+      "text": "Agora vamos apagar esse ficheiro, mas apenas dentro da bifurcação. Estamos a fazer uma alteração destrutiva aqui.",
+      "afterText": "Desapareceu da bifurcação. O original permanece intacto.",
+      "cardLabel": "Excluir no Fork",
+      "prose": "Exclua o arquivo marcador apenas dentro do fork. Esta é uma alteração destrutiva com escopo restrito ao fork."
     },
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 195.030667,
-      "text": "De volta ao original. O ficheiro de marcação ainda está aqui, intacto. Mesma imagem, daemons Docker separados, sistemas de ficheiros separados."
+      "at": 34.456769,
+      "text": "De volta ao original. O ficheiro de marcação ainda está aqui, intacto. Mesma imagem, daemons Docker separados, sistemas de ficheiros separados.",
+      "afterText": "Continua aqui. As bifurcações estão devidamente isoladas.",
+      "cardLabel": "Original Intacto",
+      "prose": "Volte ao repo original: o arquivo marcador permanece intacto. O pai e o fork compartilham a mesma imagem, mas rodam em Docker daemons separados e sistemas de arquivos separados."
     },
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 212.971596,
-      "text": "Quando terminar, basta apagar a bifurcação. O original fica exatamente como estava. Bifurcar, experimentar, destruir, apagar. Sem risco."
+      "at": 41.647526,
+      "text": "Quando terminar, basta apagar a bifurcação. O original fica exatamente como estava. Bifurcar, experimentar, destruir, apagar. Sem risco.",
+      "afterText": "Bifurcação removida. O original está exatamente como o deixámos.",
+      "cardLabel": "Limpar",
+      "prose": "Exclua o fork quando terminar. O repo original não é afetado, permitindo um fluxo de trabalho seguro de fork, experimento e descarte."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Bem-vindo à funcionalidade matadora! Clone um repositório de produção inteiro independentemente do tamanho, sem partir nada."
+    },
+    {
+      "id": "fan-out",
+      "text": "Um repositório pai dá origem a tantas cópias independentes quantas quiser. Cada bifurcação é o seu próprio ambiente isolado, a correr lado a lado com o original."
+    },
+    {
+      "id": "link-speed",
+      "text": "Pense em partilhar uma ligação para uma pasta. A ligação é igualmente leve quer a pasta seja pequena ou enorme, e a bifurcação funciona pelo mesmo princípio."
+    },
+    {
+      "id": "scale-invariance",
+      "text": "Um gigabyte, cem gigabytes, um terabyte: a bifurcação comporta-se da mesma forma. O tamanho do repo não entra na equação."
+    },
+    {
+      "id": "sun-mirrors",
+      "text": "O repositório pai é o sol e a sua bifurcação é um espelho que apanha a sua luz. A base partilhada permanece intacta enquanto tudo o que pintar no espelho lhe pertence apenas a si."
+    },
+    {
+      "id": "river-photo",
+      "text": "Uma bifurcação é uma fotografia congelada do pai num instante. O pai continua a fluir como um rio, mas o seu instantâneo permanece exatamente onde estava."
+    },
+    {
+      "id": "flat-disk",
+      "text": "Cinco bifurcações de um repo de cem gigabytes ainda somam cerca de cem gigabytes no disco. Só paga pelos bytes que efetivamente alterar dentro de cada bifurcação."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "As bifurcações deixam deliberadamente os segredos para trás, e é isso que torna o clonar produção sem partir nada realmente seguro. Vamos tratar disso a sério no próximo tutorial!"
+    }
+  ],
+  "title": "Fork de Repositório",
+  "chapters": {
+    "intro": "Fork de Repositório",
+    "fan-out": "Um pai, muitos clones independentes",
+    "link-speed": "Compartilhando um link, não a pasta",
+    "scale-invariance": "Mesma velocidade em qualquer tamanho",
+    "cast-step-0": "Passo 1: Fork do repo",
+    "cast-step-1": "Passo 2: Os dois repos lado a lado",
+    "cast-step-2": "Passo 3: Original sem alterações",
+    "sun-mirrors": "O sol e o espelho",
+    "cast-step-3": "Passo 4: Alterar apenas o fork",
+    "cast-step-4": "Passo 5: Verificar que o original sobrevive",
+    "cast-step-5": "Passo 6: Excluir o fork",
+    "river-photo": "Uma foto do rio",
+    "flat-disk": "Uso de disco permanece constante",
+    "outro": "Próximo: Gerenciando Secrets"
+  }
 }

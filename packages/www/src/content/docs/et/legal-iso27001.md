@@ -4,6 +4,8 @@ description: "Kuidas Rediacc vastab ISO 27001 infoturbe kontrollidele krüptimis
 category: "Legal"
 order: 5
 language: et
+sourceHash: "7c80000942b6196d"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 ISO/IEC 27001 on infoturbe haldussüsteemide (ISMS) rahvusvaheline standard, mille on avaldanud Rahvusvaheline Standardiorganisatsioon (ISO) ja Rahvusvaheline Elektrotehnikakomisjon (IEC). Kehtiv versioon on ISO/IEC 27001:2022.
@@ -20,7 +22,7 @@ Rediacc on üks komponent ISMS-i tehniliste kontrollide kihis. Alljärgnev tabel
 | **A.8**, Varade haldamine | A.8.24 Krüptograafia kasutamine | LUKS2 AES-256 kohustuslik krüptimine kõigil hoidlatel. Võtmehaldus: volitused salvestatakse ainult operaatori lokaalses konfiguratsioonis, mitte kunagi serveris. |
 | **A.9**, Juurdepääsukontroll | A.9.2 Kasutajate juurdepääsuhaldamine | SSH-võtme autentimine. API-žetoonid IP-sidumise, meeskonnaulatuse ja automaatse tühistamisega meeskonnast eemaldamisel. Kahefaktoriline autentimine (TOTP) toetatud. |
 | **A.10**, Krüptograafia | A.10.1 Krüptograafilised kontrollid | LUKS2 konfigureeritavate võtmeparameetritega. Hoidlapõhised krüptimisvolitused. Kogu kaugtransport SSH kaudu. Konfiguratsioonihoidla rakendab null-teadmise krüptimist: AES-256-GCM HKDF võtme tuletamisega, X25519 liikmete võtmevahetus ja ajaaknaline SDK-võtmed koheseks tühistamiseks. |
-| **A.12**, Operatsiooniturvalisus | A.12.3 Varukoopia | `rdc repo backup push/pull` krüptitud väliseks salvestuseks mitmesse sihtkohta (SSH, S3, B2, Azure, GDrive). CoW-hetktõmmised ajapõhiseks taastumiseks. `rdc repo validate` kontrollib varukoopia seisundit ja hoidla terviklust. |
+| **A.12**, Operatsiooniturvalisus | A.12.3 Varukoopia | `rdc repo push/pull` krüptitud väliseks salvestuseks mitmesse sihtkohta (SSH, S3, B2, Azure, GDrive). CoW-hetktõmmised ajapõhiseks taastumiseks. `rdc repo validate` kontrollib varukoopia seisundit ja hoidla terviklust. |
 | **A.12**, Operatsiooniturvalisus | A.12.4 Logimine ja jälgimine | Üle 70 sündmusetüübi (autentimine, API-žetoonid, konfiguratsioon, litsentsid, masina toimingud). Masina terviseseire `rdc machine query` kaudu. Konteineri olek ja ressursside jälgimine. |
 | **A.13**, Side turvalisus | A.13.1 Võrguturbe haldamine | Hoidlapõhine Docker-deemoni eraldus. iptablesi reeglid blokeerivad hoidlatevahelise liikluse. Loopback-IP-alamvõrgud (/26) hoidla kohta. Pöördproxy TLS-lõpetusega väliseks juurdepääsuks. |
 | **A.14**, Süsteemi arendamine | A.14.2 Turvalisus arenduses | Hargipõhised arenduskeskkonnad pakuvad tootmissarnasust ilma tootmisandmete avaldumiseta. Rediaccfile elutsükli konksud võimaldavad automaatset andmete saniteerimist kloonitud keskkondades. |

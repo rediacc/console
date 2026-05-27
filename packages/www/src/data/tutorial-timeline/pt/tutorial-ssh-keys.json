@@ -7,597 +7,69 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "73dc228ff475cfb47972c64ffb36ef464d2ec0f098bb6b6108853587160c2993",
+  "transcriptHash": "eda8ae6ea6f4d0b7224a174eaeba0e5419d2d55eabae4f9560b623573cde59eb",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.50929,
-      "replayEndSec": 8.723209,
+      "replayStartSec": 1.626287,
+      "replayEndSec": 6.456735,
       "narrationText": "Passo um. Vamos gerar uma nova chave SSH ed25519. O ed25519 é o padrão moderno: compacto, rápido e bem suportado. Só é necessário fazer isto uma vez para todos os servidores que venha a adicionar.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-01.b9811daa.mp3",
-      "audioDurationSec": 17.632653,
-      "wordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.64,
-          "startChar": 0,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 0.88,
-          "startChar": 11,
-          "endChar": 12
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 1.84,
-          "startChar": 16,
-          "endChar": 21
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.08,
-          "startChar": 22,
-          "endChar": 25
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.48,
-          "startChar": 26,
-          "endChar": 30
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.88,
-          "startChar": 31,
-          "endChar": 36
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.6,
-          "startChar": 37,
-          "endChar": 40
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 3.84,
-          "startChar": 73,
-          "endChar": 75
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.36,
-          "startChar": 77,
-          "endChar": 78
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.16,
-          "startChar": 81,
-          "endChar": 82
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.16,
-          "startChar": 87,
-          "endChar": 88
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.96,
-          "startChar": 90,
-          "endChar": 96
-        },
-        {
-          "startSec": 11.36,
-          "endSec": 11.52,
-          "startChar": 97,
-          "endChar": 98
-        },
-        {
-          "startSec": 11.52,
-          "endSec": 11.84,
-          "startChar": 99,
-          "endChar": 102
-        },
-        {
-          "startSec": 11.84,
-          "endSec": 12.64,
-          "startChar": 103,
-          "endChar": 112
-        },
-        {
-          "startSec": 13.2,
-          "endSec": 13.36,
-          "startChar": 114,
-          "endChar": 116
-        },
-        {
-          "startSec": 13.36,
-          "endSec": 13.44,
-          "startChar": 117,
-          "endChar": 118
-        },
-        {
-          "startSec": 13.44,
-          "endSec": 14.0,
-          "startChar": 119,
-          "endChar": 129
-        },
-        {
-          "startSec": 14.0,
-          "endSec": 14.32,
-          "startChar": 130,
-          "endChar": 135
-        },
-        {
-          "startSec": 14.32,
-          "endSec": 14.56,
-          "startChar": 136,
-          "endChar": 140
-        },
-        {
-          "startSec": 14.56,
-          "endSec": 14.72,
-          "startChar": 141,
-          "endChar": 144
-        },
-        {
-          "startSec": 14.72,
-          "endSec": 14.96,
-          "startChar": 145,
-          "endChar": 148
-        },
-        {
-          "startSec": 14.96,
-          "endSec": 15.28,
-          "startChar": 149,
-          "endChar": 153
-        },
-        {
-          "startSec": 15.28,
-          "endSec": 15.68,
-          "startChar": 154,
-          "endChar": 159
-        },
-        {
-          "startSec": 15.68,
-          "endSec": 15.84,
-          "startChar": 160,
-          "endChar": 162
-        },
-        {
-          "startSec": 15.84,
-          "endSec": 16.48,
-          "startChar": 163,
-          "endChar": 173
-        },
-        {
-          "startSec": 16.48,
-          "endSec": 16.64,
-          "startChar": 174,
-          "endChar": 177
-        },
-        {
-          "startSec": 16.64,
-          "endSec": 16.96,
-          "startChar": 178,
-          "endChar": 183
-        },
-        {
-          "startSec": 16.96,
-          "endSec": 17.52,
-          "startChar": 186,
-          "endChar": 195
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-01.9a2c18b5.mp3",
+      "textHash": "9a2c18b5432296ad16d946828de2e393c26c7221e6cb855310a751f56f9bd7e3",
+      "audioDurationSec": 18.599184,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-01-after.ba809030.mp3",
+      "afterAudioDurationSec": 5.642449,
+      "afterTextHash": "ba8090306e8dc4c93ba56fc6b9f53b60ed6bf798a5b71ca737ea2c8151324545"
     },
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 8.723209,
-      "replayEndSec": 16.253995,
+      "replayStartSec": 6.456735,
+      "replayEndSec": 13.33617,
       "narrationText": "Passo dois. Vamos copiar a chave pública para o servidor com ssh-copy-id. A palavra-passe do servidor é pedida pela última vez. A partir daqui, a autenticação por palavra-passe já não é necessária.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-02.9fd5ca70.mp3",
-      "audioDurationSec": 15.882449,
-      "wordTimings": [
-        {
-          "startSec": 0.0,
-          "endSec": 0.56,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 1.12,
-          "startChar": 6,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 1.68,
-          "startChar": 12,
-          "endChar": 17
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 2.32,
-          "startChar": 18,
-          "endChar": 24
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.4,
-          "startChar": 25,
-          "endChar": 26
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.88,
-          "startChar": 27,
-          "endChar": 32
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.36,
-          "startChar": 33,
-          "endChar": 40
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 3.6,
-          "startChar": 41,
-          "endChar": 45
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 3.68,
-          "startChar": 46,
-          "endChar": 47
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.4,
-          "startChar": 48,
-          "endChar": 56
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.88,
-          "startChar": 57,
-          "endChar": 60
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.76,
-          "startChar": 61,
-          "endChar": 64
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.52,
-          "startChar": 74,
-          "endChar": 75
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 8.0,
-          "startChar": 84,
-          "endChar": 89
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.08,
-          "startChar": 90,
-          "endChar": 92
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.72,
-          "startChar": 93,
-          "endChar": 101
-        },
-        {
-          "startSec": 8.72,
-          "endSec": 8.88,
-          "startChar": 102,
-          "endChar": 103
-        },
-        {
-          "startSec": 8.88,
-          "endSec": 9.36,
-          "startChar": 104,
-          "endChar": 110
-        },
-        {
-          "startSec": 9.36,
-          "endSec": 9.68,
-          "startChar": 111,
-          "endChar": 115
-        },
-        {
-          "startSec": 9.68,
-          "endSec": 10.08,
-          "startChar": 116,
-          "endChar": 122
-        },
-        {
-          "startSec": 10.08,
-          "endSec": 10.48,
-          "startChar": 123,
-          "endChar": 126
-        },
-        {
-          "startSec": 11.04,
-          "endSec": 11.36,
-          "startChar": 130,
-          "endChar": 136
-        },
-        {
-          "startSec": 11.36,
-          "endSec": 11.84,
-          "startChar": 137,
-          "endChar": 142
-        },
-        {
-          "startSec": 12.0,
-          "endSec": 12.32,
-          "startChar": 144,
-          "endChar": 145
-        },
-        {
-          "startSec": 12.48,
-          "endSec": 13.44,
-          "startChar": 146,
-          "endChar": 158
-        },
-        {
-          "startSec": 13.44,
-          "endSec": 13.76,
-          "startChar": 159,
-          "endChar": 162
-        },
-        {
-          "startSec": 13.76,
-          "endSec": 14.16,
-          "startChar": 163,
-          "endChar": 170
-        },
-        {
-          "startSec": 14.16,
-          "endSec": 14.64,
-          "startChar": 171,
-          "endChar": 176
-        },
-        {
-          "startSec": 14.64,
-          "endSec": 14.8,
-          "startChar": 177,
-          "endChar": 179
-        },
-        {
-          "startSec": 14.8,
-          "endSec": 15.04,
-          "startChar": 180,
-          "endChar": 183
-        },
-        {
-          "startSec": 15.04,
-          "endSec": 15.12,
-          "startChar": 184,
-          "endChar": 185
-        },
-        {
-          "startSec": 15.12,
-          "endSec": 15.84,
-          "startChar": 186,
-          "endChar": 196
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-02.7f7eeb28.mp3",
+      "textHash": "7f7eeb28c8442d8c096fc92695e2d45333f02844f398610af3fc13c6cdd762ee",
+      "audioDurationSec": 13.87102,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-02-after.2d1d8bcf.mp3",
+      "afterAudioDurationSec": 6.269388,
+      "afterTextHash": "2d1d8bcf125cc860d972992dcc82396ea045d697d7c1359addc72bab29e129d6"
     },
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 16.253995,
-      "replayEndSec": 24.863027,
+      "replayStartSec": 13.33617,
+      "replayEndSec": 19.159643,
       "narrationText": "Passo três. Agora vamos registar a chave na ferramenta. A partir deste momento, todos os comandos autenticam com esta chave.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-03.386e66bf.mp3",
-      "audioDurationSec": 9.952653,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.96,
-          "startChar": 6,
-          "endChar": 10
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 1.92,
-          "startChar": 12,
-          "endChar": 17
-        },
-        {
-          "startSec": 1.92,
-          "endSec": 2.24,
-          "startChar": 18,
-          "endChar": 23
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 2.8,
-          "startChar": 30,
-          "endChar": 31
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 3.2,
-          "startChar": 35,
-          "endChar": 40
-        },
-        {
-          "startSec": 3.2,
-          "endSec": 3.36,
-          "startChar": 41,
-          "endChar": 43
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 4.0,
-          "startChar": 44,
-          "endChar": 54
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 4.72,
-          "startChar": 56,
-          "endChar": 57
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.12,
-          "startChar": 58,
-          "endChar": 64
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.44,
-          "startChar": 65,
-          "endChar": 70
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.92,
-          "startChar": 71,
-          "endChar": 78
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 7.04,
-          "startChar": 80,
-          "endChar": 85
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.28,
-          "startChar": 86,
-          "endChar": 88
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 8.0,
-          "startChar": 89,
-          "endChar": 97
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.8,
-          "startChar": 98,
-          "endChar": 108
-        },
-        {
-          "startSec": 8.8,
-          "endSec": 9.12,
-          "startChar": 109,
-          "endChar": 112
-        },
-        {
-          "startSec": 9.12,
-          "endSec": 9.36,
-          "startChar": 113,
-          "endChar": 117
-        },
-        {
-          "startSec": 9.36,
-          "endSec": 9.84,
-          "startChar": 118,
-          "endChar": 123
-        }
-      ]
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-03.0e96fa44.mp3",
+      "textHash": "0e96fa44e169d3da9700d7f501953167981b97955352dd0cd5c1c006cc9b63c7",
+      "audioDurationSec": 8.515918,
+      "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-03-after.338c2f5b.mp3",
+      "afterAudioDurationSec": 2.35102,
+      "afterTextHash": "338c2f5b40d7a677cc0f897d97ba6b43450ec9b0914a7bac5c3321073f0a284e"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "20cbd26d022b3002abe8408d3e0af2b02b09bb32e76174bc6f93647f22808a1b",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/intro.20cbd26d.mp3",
+      "narrationText": "Tudo certo! Vamos configurar as chaves SSH para que a CLI possa aceder aos seus servidores sem palavras-passe.",
+      "audioDurationSec": 7.967347
     },
     {
-      "id": "tutorial-ssh-keys-04",
-      "markerIndex": 3,
-      "replayStartSec": 24.863027,
-      "replayEndSec": 32.617101,
-      "narrationText": "Vamos confirmar que a configuração mostra o caminho da chave guardado corretamente.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/tutorial-ssh-keys-04.37952801.mp3",
-      "audioDurationSec": 5.485714,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 1.04,
-          "startChar": 6,
-          "endChar": 15
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.2,
-          "startChar": 16,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 2.4,
-          "startChar": 22,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.88,
-          "startChar": 35,
-          "endChar": 41
-        },
-        {
-          "startSec": 2.88,
-          "endSec": 3.04,
-          "startChar": 42,
-          "endChar": 43
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.52,
-          "startChar": 44,
-          "endChar": 51
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.68,
-          "startChar": 52,
-          "endChar": 54
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 4.16,
-          "startChar": 55,
-          "endChar": 60
-        },
-        {
-          "startSec": 4.16,
-          "endSec": 4.64,
-          "startChar": 61,
-          "endChar": 69
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 5.44,
-          "startChar": 70,
-          "endChar": 82
-        }
-      ]
+      "id": "three-steps-generate-copy-register",
+      "textHash": "16c7bb600e66ea672cd0a218e6a5c67c3557c66d25fb73176de399b5015ae81a",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/three-steps-generate-copy-register.16c7bb60.mp3",
+      "narrationText": "Três passos no total. Gerar uma chave no portátil, copiá-la para o servidor, e depois registá-la na ferramenta de linha de comandos. Dois destes só se fazem uma vez.",
+      "audioDurationSec": 12.120816
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "0dc8ba4fa205deca486bc413471e708540c0e2c4d1d6f3a1951e3e90c213f558",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-ssh-keys/next-tutorial.0dc8ba4f.mp3",
+      "narrationText": "A chave está registada e a CLI está pronta. A seguir, adicionamos o seu primeiro servidor.",
+      "audioDurationSec": 7.392653
     }
   ]
 }

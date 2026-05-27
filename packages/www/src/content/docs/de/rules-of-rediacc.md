@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 5
 language: de
-sourceHash: 9365e0cabf7e8f03
-sourceCommit: d5c06171af0ef58b551a9682905d98af81e496cd
+sourceHash: "1d227a06272a0050"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Regeln von Rediacc
@@ -151,7 +151,7 @@ Es ist kein betriebssystemspezifisches Sicherheitspositions-Flag erforderlich; `
 - **Repository-Isolation**: Docker-Daemon, Netzwerk und Speicher jedes Repos sind vollständig von anderen Repos auf derselben Maschine isoliert.
 - **Agenten-Isolation**: KI-Agenten arbeiten standardmäßig im fork-only-Modus. Jedes Repo hat seinen eigenen SSH-Schlüssel mit serverseitiger Sandbox-Durchsetzung (`sandbox-gateway` ForceCommand). Alle Verbindungen werden mit Landlock LSM, OverlayFS Home-Overlay und repo-eigenem TMPDIR sandboxed. Dateisystemzugriff zwischen Repos wird durch den Kernel blockiert.
 - **`sudo` ist innerhalb einer Repository-Sandbox bewusst deaktiviert.** Die Landlock-Dateisystemisolation erfordert `NoNewPrivs`, was jede Rechteerhöhung unterbindet, sodass `sudo` mit `no new privileges flag is set` fehlschlägt. Der Eigentümer-Benutzer des Repos besitzt bereits alle Berechtigungen, die für sämtliche Vorgänge innerhalb des Repo-Mounts und des Docker-Sockets erforderlich sind. Für echt privilegierte Operationen (Installation von Host-Paketen, Kernel-Tuning) führen Sie diese außerhalb der Sandbox aus oder über eine Rediaccfile-`up()`-Funktion, die vom Infrastruktur-Pfad ausgeführt wird.
-- **Docker-Bridge-Networking ist auf jedem pro-Repo-Daemon deaktiviert.** Die `daemon.json` jedes Repos enthält `"bridge": "none"` und `"iptables": false`, sodass ein einfaches `docker run <image>` einen Container nur mit Loopback-Interface und ohne ausgehende Konnektivität erzeugt. Dies ist kein Bug, sondern die Art und Weise, wie die Cross-Repo-Isolation durchgesetzt wird: Die eBPF-Kernel-Hooks, die verhindern, dass ein Repo die Loopback-IPs eines anderen Repos erreicht, greifen nur bei Containern, die im Host-Netzwerk-Namespace laufen. Verwenden Sie für Produktionsdienste `renet compose`, das automatisch `network_mode: host` injiziert. Für ad-hoc einmalige Container in einer Shell übergeben Sie `--network host` explizit.
+- **Docker-Bridge-Networking ist auf pro-Repo-Daemons deaktiviert.** Die `daemon.json` (`FlavorRediacc`) jedes Repos enthält `"bridge": "none"` und `"iptables": false`, sodass ein einfaches `docker run <image>` einen Container nur mit Loopback-Interface und ohne ausgehende Konnektivität erzeugt. Dies ist kein Bug, sondern die Art und Weise, wie die Cross-Repo-Isolation durchgesetzt wird: Die eBPF-Kernel-Hooks, die verhindern, dass ein Repo die Loopback-IPs eines anderen Repos erreicht, greifen nur bei Containern, die im Host-Netzwerk-Namespace laufen. Verwenden Sie für Produktionsdienste `renet compose`, das automatisch `network_mode: host` injiziert. Für ad-hoc einmalige Container in einer Shell übergeben Sie `--network host` explizit. (Pro-Benutzer Hub-Daemons (`FlavorHub`, Entwicklungsumgebungen) sind die Ausnahme: Sie aktivieren `bridge="docker0"` und `iptables=true`, sodass Benutzer-Container normale ausgehende Netzwerkkonnektivität erhalten.)
 
 ## Deployment
 

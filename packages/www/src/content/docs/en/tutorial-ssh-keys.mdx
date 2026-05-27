@@ -1,0 +1,49 @@
+---
+title: "SSH Key Configuration"
+description: "Configure your SSH key so rdc can connect to your servers without passwords."
+category: "Tutorials"
+subcategory: essentials
+order: 2
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# SSH Key Configuration
+
+SSH keys let you reach your servers without passwords. This is plain SSH, independent of `rdc`: you generate one key on your laptop, then authorize it on each server.
+
+## Watch the tutorial
+
+![Tutorial: SSH key configuration](/assets/tutorials/tutorial-ssh-keys.cast)
+
+## How it works
+
+![Generate a key, then authorize it on each server](/img/tutorials/tutorial-ssh-keys/slide-1.svg)
+
+1. **Generate** an SSH key on your laptop. Once, ever.
+2. **Authorize** it on each server with `ssh-copy-id`. Repeat for every server.
+
+## Step 1: Generate a key
+
+If you already have a key you want to use, skip ahead. Otherwise:
+
+<TutorialStep number={1} />
+
+`ed25519` is the modern default: small, fast, and well-supported.
+
+## Step 2: Authorize your first server
+
+<TutorialStep number={2} />
+
+Replace `<user>` and `<server-ip>` with the SSH user and IP of your server. You'll be prompted for your server password one last time. After this, password authentication is no longer required.
+
+## Step 3: Authorize any other servers
+
+<TutorialStep number={3} />
+
+Repeat `ssh-copy-id` for every machine you manage. That's all SSH needs. In the next tutorial, `rdc` uses this key automatically.
+
+---
+
+Next: [Adding Your First Server](/en/docs/tutorial-add-server).

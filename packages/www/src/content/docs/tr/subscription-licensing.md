@@ -4,8 +4,8 @@ description: "account, rdc ve renet'in makine slotlarını, depo lisanslarını 
 category: "Guides"
 order: 7
 language: tr
-sourceHash: "dc61245ac532e3a4"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "8e0a4976634ae323"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Abonelik ve Lisanslama
@@ -176,7 +176,7 @@ rdc subscription repo status -m hostinger
 Makine aktivasyonunu yenile ve depo lisanslarını toplu olarak yenile:
 
 ```bash
-rdc subscription refresh -m hostinger
+rdc subscription refresh repos -m hostinger
 ```
 
 Makinede keşfedilen ancak yerel `rdc` yapılandırmasında bulunmayan depolar toplu yenileme sırasında reddedilir. Bunlar başarısızlık olarak raporlanır ve otomatik olarak sınıflandırılmaz.

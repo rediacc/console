@@ -6,14 +6,52 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 32.02867,
-      "text": "Vamos criar um repositório encriptado de 2 gigabytes no servidor. Um repositório é um único ficheiro encriptado em repouso. Quando montado, torna-se uma pasta com o seu próprio daemon Docker e os seus próprios dados de aplicação, completamente isolados."
+      "at": 2.409686,
+      "text": "Vamos criar um repositório encriptado de 2 gigabytes no servidor. Um repositório é um único ficheiro encriptado em repouso. Quando montado, torna-se uma pasta com o seu próprio daemon Docker e os seus próprios dados de aplicação, completamente isolados.",
+      "afterText": "Repositório criado. O ficheiro encriptado está no servidor, pronto a montar.",
+      "cardLabel": "Criar Repo",
+      "prose": "Crie um repository criptografado de 2 GB no servidor. Um repo é um único arquivo criptografado em repouso. Ao criá-lo, ele é montado imediatamente: uma pasta com o seu próprio Docker daemon e dados de aplicação isolados."
     },
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 62.567023,
-      "text": "Vamos confirmar que o novo repositório está registado. A partir daqui, o repositório pode ser aberto no VS Code, implementado, bifurcado ou incluído numa cópia de segurança -- tudo a partir do portátil."
+      "at": 11.760396,
+      "text": "Vamos confirmar que o novo repositório está registado. A partir daqui, o repositório pode ser aberto no VS Code, implementado, bifurcado ou incluído numa cópia de segurança -- tudo a partir do portátil.",
+      "afterText": "Aqui está, registado e pronto a usar.",
+      "cardLabel": "Listar Repos",
+      "prose": "Confirme que o novo repo está registrado. Uma vez listado, pode ser implantado, submetido a fork, salvo em backup ou aberto em um editor a partir do seu computador."
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "at": 17.238181,
+      "text": "Uma opção bem útil: abrir o repo diretamente no VS Code com este comando. Não vamos lançar o editor aqui, mas ele inicia uma sessão remota no repo via SSH para que você possa editar seus arquivos.",
+      "afterText": "Execute isso no seu notebook para editar os arquivos do repo no VS Code.",
+      "cardLabel": "Abrir no VS Code",
+      "prose": "Abra o repo diretamente no VS Code com rdc vscode connect. Isso inicia uma sessão SSH remota no repo para que você possa editar seus arquivos no editor."
     }
-  ]
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Vamos criar o seu primeiro repositório! É um ficheiro encriptado em repouso que se transforma num ambiente totalmente isolado quando montado."
+    },
+    {
+      "id": "file-on-disk",
+      "text": "No disco é uma única imagem encriptada. Quando montado, obtém um daemon Docker dedicado, dados de aplicação dentro do volume encriptado e IPs de loopback que não colidem com nada no servidor."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "O seu primeiro repositório está pronto. A seguir, vamos implementar uma aplicação dentro dele!"
+    }
+  ],
+  "title": "Criando seu primeiro repository",
+  "chapters": {
+    "intro": "Criando seu primeiro repository",
+    "file-on-disk": "Arquivo em disco, ambiente ao montar",
+    "cast-step-0": "Criar o repository",
+    "cast-step-1": "Verificar se está registrado",
+    "cast-step-2": "Abrir no VS Code",
+    "outro": "Próximo: implantando seu primeiro app"
+  }
 }

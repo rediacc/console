@@ -4,7 +4,8 @@ description: "Wie die Self-Hosted-Architektur von Rediacc den DSGVO-Anforderunge
 category: "Legal"
 order: 1
 language: de
-sourceHash: "e3d383739190bb30"
+sourceHash: "36a776d87c6294ff"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 Die Datenschutz-Grundverordnung (DSGVO) ist das Datenschutzgesetz der Europäischen Union, in Kraft seit Mai 2018. Sie regelt, wie Organisationen personenbezogene Daten von Personen in der EU erheben, verarbeiten und speichern.
@@ -18,7 +19,7 @@ Die folgende Tabelle ordnet spezifische DSGVO-Artikel den technischen Fähigkeit
 | Artikel | Anforderung | Rediacc-Fähigkeit |
 |---------|-------------|-------------------|
 | [Art. 5](https://gdpr-info.eu/art-5-gdpr/), Grundsätze | Datenminimierung, Integrität, Vertraulichkeit | CoW-Klone (`cp --reflink=always`) duplizieren Daten auf derselben Maschine ohne Netzwerktransfer. LUKS2 AES-256 verschlüsselt alle Daten im Ruhezustand. |
-| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Recht auf Löschung | Personenbezogene Daten auf Anfrage löschen | `rdc repo destroy` löscht das LUKS-Volume kryptographisch. Das Löschen eines Forks entfernt die geklonte Kopie vollständig. |
+| [Art. 17](https://gdpr-info.eu/art-17-gdpr/), Recht auf Löschung | Personenbezogene Daten auf Anfrage löschen | `rdc repo delete` löscht das LUKS-Volume kryptographisch. Das Löschen eines Forks entfernt die geklonte Kopie vollständig. |
 | [Art. 25](https://gdpr-info.eu/art-25-gdpr/), Datenschutz durch Technikgestaltung | Datenschutz durch Voreinstellung | Verschlüsselung ist obligatorisch, nicht optional. Jedes Repository erhält einen isolierten Docker Daemon und ein eigenes Netzwerk. Keine Datenfreigabe zwischen Repositories. Der Config Store verwendet Zero-Knowledge-Verschlüsselung: Configs werden clientseitig mit AES-256-GCM vor dem Upload verschlüsselt, sodass der Server keine Klartextdaten lesen kann. |
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Auftragsverarbeiter | Pflichten bei Drittanbieter-Datenverarbeitung | Self-Hosted: Rediacc läuft auf Ihrer Infrastruktur. Keine Daten verlassen Ihre Maschine während Fork-, Klon- oder Backup-Operationen. Keine SaaS-Komponente verarbeitet personenbezogene Daten. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Verarbeitungsverzeichnis | Verzeichnis von Verarbeitungstätigkeiten führen | Audit-Logging verfolgt über 40 Ereignistypen auf Kontoebene: Authentifizierung, API-Tokens, Config-Store-Operationen und Lizenzierung. Export über `rdc audit` CLI oder Admin-Dashboard. |
@@ -29,7 +30,7 @@ Die folgende Tabelle ordnet spezifische DSGVO-Artikel den technischen Fähigkeit
 
 CoW-Klone verlassen niemals die Quellmaschine. Der Befehl `rdc repo fork` erstellt eine Kopie auf Dateisystemebene mittels Reflinks. Es werden keine Daten über das Netzwerk übertragen.
 
-Für maschinenübergreifende Operationen überträgt `rdc repo backup push/pull` Daten über SSH. Das Backup-Ziel empfängt LUKS-verschlüsselte Volumes, die ohne die Anmeldedaten des Operators nicht gelesen werden können.
+Für maschinenübergreifende Operationen überträgt `rdc repo push/pull` Daten über SSH. Das Backup-Ziel empfängt LUKS-verschlüsselte Volumes, die ohne die Anmeldedaten des Operators nicht gelesen werden können.
 
 ## Umgebungskloning und Datenmaskierung
 

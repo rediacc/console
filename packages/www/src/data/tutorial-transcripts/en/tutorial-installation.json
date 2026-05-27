@@ -2,18 +2,56 @@
   "cast": "/assets/tutorials/tutorial-installation.cast",
   "language": "en",
   "version": 1,
+  "title": "Installation",
+  "chapters": {
+    "intro": "Installation",
+    "three-steps": "The three steps",
+    "open-install": "Open the install page",
+    "cast-step-0": "Step 1: Install the CLI",
+    "cast-step-1": "Step 2: Verify the install",
+    "laptop-vs-server": "Why rdc lives on your laptop",
+    "outro": "Next: SSH Key Configuration"
+  },
   "events": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.509194,
-      "text": "First, let's confirm the CLI is installed. The version flag prints the installed version, so we know the install completed."
+      "at": 1.626476,
+      "text": "Here we go. Paste the install command into your terminal and let it run. The script verifies your platform, downloads the latest stable binary, and drops it into your home directory. No system-wide install, no sudo. Watch it work. The binary is on disk and you can call it from any shell.",
+      "afterText": "Install done. The rdc binary is on your path.",
+      "cardLabel": "Install CLI",
+      "prose": "Paste the install command into your terminal and run it. The script verifies your platform, downloads the latest stable binary, and drops it into your home directory. No system-wide install, no sudo required. Once it finishes, the rdc binary is on your path and callable from any shell."
     },
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 9.435981,
-      "text": "Now let's run the diagnostic check. It walks through every dependency the CLI needs (Node, SSH, Docker, the renet binary) and reports any gaps. A clean report means we're ready."
+      "at": 7.903516,
+      "text": "Install done. Let's confirm it. The version flag prints what just got installed, so we know it's on your path.",
+      "afterText": "Version printed. You're good to go.",
+      "cardLabel": "Verify Version",
+      "prose": "Confirm the install by running rdc with the version flag. It prints the installed version, verifying the binary is on your path."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alright! Let's get the command-line tool installed on your laptop."
+    },
+    {
+      "id": "three-steps",
+      "text": "Three steps. Open the install page, pick your operating system, then paste the command into your terminal."
+    },
+    {
+      "id": "open-install-page",
+      "text": "Head to the install page and scroll down to the quick install section. It generates the right one-liner for whatever platform you're on."
+    },
+    {
+      "id": "laptop-vs-server",
+      "text": "The command-line tool lives on your laptop. The server runs a separate component called renet, which the CLI provisions and drives over SSH, so you never need to log in manually."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "That's the install done. Next up, we'll set up your SSH key so the CLI can reach your servers."
     }
   ]
 }

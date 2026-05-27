@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 3
 language: de
-sourceHash: "ec3f99cf89fde4b3"
-sourceCommit: 35b53352026ae87fb6800c7fed10b793223ca1da
+sourceHash: "12956297c1157cd2"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # RDC CLI Cheat Sheet
@@ -58,7 +58,7 @@ Kurzreferenz für die gebräuchlichsten `rdc`-Befehle. Führe jeden Befehl mit `
 | `rdc config backup-strategy list` | Alle definierten Sicherungsstrategien auflisten |
 | `rdc config backup-strategy show --name <name>` | Details einer Strategie anzeigen |
 | `rdc config backup-strategy remove --name <name>` | Strategie entfernen |
-| `rdc config machine set <machine> --backup-strategies <s1,s2>` | Strategien an eine Maschine binden |
+| `rdc machine backup schedule -m <machine>` | Konfigurierte Sicherungsstrategien auf einer Maschine bereitstellen |
 
 ## Sicherungsoperationen
 

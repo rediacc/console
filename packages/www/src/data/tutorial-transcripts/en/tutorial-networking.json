@@ -2,42 +2,90 @@
   "cast": "/assets/tutorials/tutorial-networking.cast",
   "language": "en",
   "version": 1,
+  "title": "Networking & Domains",
+  "chapters": {
+    "intro": "Networking & Domains",
+    "four-steps": "The four-step path",
+    "open-cloudflare": "Step 1: Cloudflare API token",
+    "cast-step-0": "Step 2: Configure infrastructure",
+    "cast-step-1": "Step 2: Verify the settings",
+    "cast-step-2": "Step 3: Push to the server",
+    "cast-step-3": "Step 4: Create the infra repo",
+    "cast-step-4": "Step 4: Apply the proxy template",
+    "cast-step-5": "Step 4: Bring the proxy up",
+    "outro": "Next: Production Mode"
+  },
   "events": [
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 27.859436,
-      "text": "Step two. We set the public IP, the base domain, the certificate email, and the Cloudflare API token from the command line. The cert email and the token are shared across all your machines, so you only set them once."
+      "at": 2.424705,
+      "text": "Step two. We set the public IP, the base domain, the certificate email, and the Cloudflare API token from the command line. The cert email and the token are shared across all your machines, so you only set them once.",
+      "afterText": "Infrastructure recorded in your config.",
+      "cardLabel": "Set Infra",
+      "prose": "Set the public IP, the base domain, the certificate email, and the Cloudflare API token from the command line. The cert email and the token are shared across all your machines, so you only set them once."
     },
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 41.958746,
-      "text": "Let us confirm the infrastructure settings were stored. Public IP, base domain, certificate email, all visible."
+      "at": 13.591473,
+      "text": "Let us confirm the infrastructure settings were stored. Public IP, base domain, certificate email, all visible.",
+      "afterText": "Settings stored. Ready to push to the server.",
+      "cardLabel": "Show Infra",
+      "prose": "Confirm the infrastructure settings were stored. Public IP, base domain, and certificate email should all be visible."
     },
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 51.564603,
-      "text": "Step three. Push the configuration to the server. This creates the DNS records on Cloudflare automatically and prepares the proxy configuration."
+      "at": 18.479059,
+      "text": "Step three. Push the configuration to the server. This creates the DNS records on Cloudflare automatically and prepares the proxy configuration.",
+      "afterText": "Pushed. DNS records are being created on Cloudflare.",
+      "cardLabel": "Push Infra",
+      "prose": "Push the configuration to the server. This creates the DNS records on Cloudflare automatically and prepares the proxy configuration."
     },
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 70.626849,
-      "text": "Step four begins. Create a small repo named infra. This is where the proxy will live, isolated from the application repos."
+      "at": 25.757057,
+      "text": "Step four begins. Create a small repo named infra. This is where the proxy will live, isolated from the application repos.",
+      "afterText": "Infra repo created. Isolated from your app repos.",
+      "cardLabel": "Create Repo",
+      "prose": "Create a small repo named infra. This is where the proxy will live, isolated from the application repos."
     },
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 97.243945,
-      "text": "Apply the proxy template. It carries Traefik plus the configuration for Let's Encrypt and Cloudflare DNS-01 challenges, ready to go."
+      "at": 33.957312,
+      "text": "Apply the proxy template. It carries Traefik plus the configuration for Let's Encrypt and Cloudflare DNS-01 challenges, ready to go.",
+      "afterText": "Traefik configuration in place.",
+      "cardLabel": "Apply Template"
     },
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 112.494613,
-      "text": "And bring the proxy up. Traefik discovers your containers every five seconds. TLS certificates come from Let's Encrypt automatically. Your app is now reachable on the internet over HTTPS."
+      "at": 41.036573,
+      "text": "And bring the proxy up. Traefik discovers your containers automatically. TLS certificates come from Let's Encrypt automatically. Your app is now reachable on the internet over HTTPS.",
+      "afterText": "Proxy is live. TLS certificates will arrive automatically.",
+      "cardLabel": "Deploy Proxy",
+      "prose": "Bring the proxy up. Traefik discovers your containers automatically, and TLS certificates come from Let's Encrypt automatically. Your app is now reachable on the internet over HTTPS."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Alright! Let's give your app a real domain with automatic TLS. Four short steps and you're on the internet."
+    },
+    {
+      "id": "four-steps",
+      "text": "Here is the path. Grab a Cloudflare API token, configure the infrastructure on the CLI, push it to the server, then deploy a Traefik proxy that handles DNS and certificates for you."
+    },
+    {
+      "id": "open-cloudflare",
+      "text": "First, open the Cloudflare dashboard in your browser. Go to My Profile, then API Tokens, and create a token with Zone DNS Edit permission so the CLI can manage your records."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "And that's networking sorted! See you in the next one."
     }
   ]
 }

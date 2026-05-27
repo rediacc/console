@@ -14,8 +14,8 @@ export const TEST_ENV = {
     },
     rustfs: {
         endpoint: 'http://192.168.111.1:9000',
-        accessKey: 'rustfsadmin',
-        secretKey: 'rustfsadmin',
+        accessKey: 'rediacc-rustfs',
+        secretKey: 'rediacc-rustfs-secret-key',
         bucket: 'rediacc-test',
     },
     testRepositoryPrefix: 'test-repo',

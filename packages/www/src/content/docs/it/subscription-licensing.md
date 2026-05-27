@@ -4,6 +4,8 @@ description: "Scopri come account, rdc e renet gestiscono gli slot macchina, le 
 category: "Guides"
 order: 7
 language: it
+sourceHash: "8e0a4976634ae323"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Abbonamento e licenze
@@ -183,7 +185,7 @@ rdc subscription repo status -m hostinger
 Aggiornamento in blocco delle licenze repo su una macchina:
 
 ```bash
-rdc subscription refresh -m hostinger
+rdc subscription refresh repos -m hostinger
 ```
 
 I repository rilevati sulla macchina ma assenti dalla config `rdc` locale vengono rifiutati durante l'aggiornamento in blocco. Vengono segnalati come fallimenti e non vengono classificati automaticamente.

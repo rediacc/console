@@ -1,0 +1,69 @@
+---
+title: "الشبكات والنطاقات"
+description: "اجعل تطبيقك متاحًا على الإنترنت بنطاق وTLS تلقائي ووكيل عكسي Traefik."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: ar
+sourceHash: "5df08f9900623aec"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# الشبكات والنطاقات
+
+تطبيقك يعمل، لكن لا أحد يستطيع الوصول إليه بعد. يُرشدك هذا الدرس للحصول على نطاق حقيقي وTLS تلقائي عبر Let's Encrypt ووكيل Traefik يكتشف حاوياتك تلقائيًا. تحتاج إلى نطاق على Cloudflare ورمز API.
+
+## شاهد الدرس التعليمي
+
+![Tutorial: Networking and domains](/assets/tutorials/tutorial-networking.cast)
+
+## أربع خطوات
+
+![Token, configure, push, deploy](/img/tutorials/tutorial-networking/slide-1.svg)
+
+1. **احصل** على رمز Cloudflare API.
+2. **اضبط** البنية التحتية في `rdc`.
+3. **ادفع** إلى خادمك.
+4. **انشر** الوكيل.
+
+## الخطوة 1: رمز Cloudflare API
+
+في لوحة تحكم Cloudflare الخاصة بك، انتقل إلى **My Profile → API Tokens** وأنشئ رمزًا بصلاحية **Zone DNS Edit**. انسخ قيمة الرمز. ستراها مرة واحدة فقط.
+
+## الخطوة 2: ضبط البنية التحتية
+
+أخبر `rdc` بعنوان IP العام ونطاقك الأساسي وبريد الشهادة والرمز. يُشارَك `--cert-email` و`--cf-dns-token` عبر جميع أجهزتك، لذا تضبطهما مرة واحدة فقط.
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+## الخطوة 3: الدفع إلى الخادم
+
+<TutorialStep number={3} />
+
+يُنشئ هذا سجلات DNS على Cloudflare تلقائيًا ويُحضّر إعداد الوكيل على خادمك.
+
+## الخطوة 4: نشر الوكيل
+
+الوكيل نفسه لا يعمل بعد. انشره من قالب `proxy` المدمج، داخل مستودع صغير باسم `infra`:
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+<TutorialStep number={6} />
+
+هذا كل شيء. Traefik يعمل الآن. تطبيقك متاح على:
+
+```
+myapp.my-app.my-server.yourdomain.com
+```
+
+يكتشف Traefik حاوياتك كل 5 ثوانٍ. تأتي شهادات TLS من Let's Encrypt تلقائيًا. لا حاجة لأي إعداد وكيل يدوي.
+
+---
+
+التالي: [وضع الإنتاج](/ar/docs/tutorial-production-mode).

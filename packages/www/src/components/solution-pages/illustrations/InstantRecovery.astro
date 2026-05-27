@@ -1,0 +1,386 @@
+---
+/**
+ * Animated, inline version of instant-recovery.svg.
+ *
+ * Progressive enhancement:
+ *   - No JS / no CSS / prefers-reduced-motion -> renders the original
+ *     "after" state (green LEDs, drawn fast path, checkmark). Identical to the
+ *     static asset, so nothing regresses for those users.
+ *   - JS present + motion allowed -> the failure->recovery story replays each
+ *     time the illustration scrolls into view (IntersectionObserver toggles
+ *     `.in-view`). Clicking it replays on demand.
+ *
+ * The story (left -> right): a failed server (red, blinking, warning) is routed
+ * either down the slow path (winding dashes, ticking clock, "Hours / Days") or
+ * the fast path (a green bolt line draws across, "Minutes") to a recovered
+ * server whose LEDs flip red->green and a checkmark draws in.
+ *
+ * All hooks are plain classes on groups/elements from the source SVG; the only
+ * structural changes are two wrapper <g>s (`.warn`, `.slow-hands`) added so CSS
+ * transforms can pivot correctly, and pathLength="100" on the checkmark so it
+ * can be "drawn".
+ */
+interface Props {
+  alt?: string;
+}
+const { alt = '' } = Astro.props;
+---
+
+<figure class="sp-problem-illustration sp-illustration-animated">
+  <svg
+    class="anim-ir"
+    viewBox="0 0 800 450"
+    role="img"
+    aria-label={alt}
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title>{alt}</title>
+    <defs>
+      <linearGradient id="ir-serverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#2d2d2d;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#1a1a1a;stop-opacity:1" />
+      </linearGradient>
+      <filter id="ir-shadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3" />
+      </filter>
+    </defs>
+
+    <!-- Background -->
+    <rect width="800" height="450" fill="#f5f5f5" />
+
+    <!-- Failed server (left) -->
+    <g transform="translate(60, 140)" filter="url(#ir-shadow)">
+      <rect width="100" height="130" rx="8" fill="url(#ir-serverGrad)" />
+      <rect x="12" y="25" width="76" height="10" rx="2" fill="#1a1a1a" />
+      <rect x="12" y="42" width="76" height="10" rx="2" fill="#1a1a1a" />
+      <rect x="12" y="59" width="76" height="10" rx="2" fill="#1a1a1a" />
+      <circle class="fail-led" cx="20" cy="30" r="2.5" fill="#8b0000" opacity="0.8" />
+      <circle class="fail-led" cx="20" cy="47" r="2.5" fill="#8b0000" opacity="0.6" />
+      <circle class="fail-led" cx="20" cy="64" r="2.5" fill="#8b0000" opacity="0.8" />
+      <rect x="12" y="90" width="16" height="7" rx="1" fill="#3d3d3d" />
+      <rect x="34" y="90" width="16" height="7" rx="1" fill="#3d3d3d" />
+      <rect x="56" y="90" width="16" height="7" rx="1" fill="#3d3d3d" />
+    </g>
+
+    <!-- Warning on failed server (inner <g class="warn"> so CSS can pulse it) -->
+    <g transform="translate(80, 85)">
+      <g class="warn">
+        <polygon points="20,0 40,35 0,35" fill="#e0e0e0" stroke="#1a1a1a" stroke-width="1.5" />
+        <polygon points="20,5 36,32 4,32" fill="#f5f5f5" />
+        <line x1="20" y1="12" x2="20" y2="22" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round" />
+        <circle cx="20" cy="27" r="2" fill="#1a1a1a" />
+      </g>
+    </g>
+
+    <!-- SLOW PATH (top) - winding dotted line, marching-ants -->
+    <path
+      class="slow-path"
+      d="M170 170 C230 170 230 120 290 120 C350 120 350 170 410 170 C470 170 470 120 530 120 C570 120 580 150 600 170"
+      fill="none"
+      stroke="#e0e0e0"
+      stroke-width="2"
+      stroke-dasharray="6,4"
+    />
+
+    <!-- Slow clock icon -->
+    <g transform="translate(370, 80)">
+      <circle cx="20" cy="20" r="18" fill="none" stroke="#e0e0e0" stroke-width="2" />
+      <circle cx="20" cy="20" r="15" fill="#f5f5f5" />
+      <g class="slow-hands">
+        <line x1="20" y1="20" x2="20" y2="10" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" />
+        <line x1="20" y1="20" x2="28" y2="24" stroke="#1a1a1a" stroke-width="2" stroke-linecap="round" />
+        <circle cx="20" cy="20" r="2" fill="#1a1a1a" />
+      </g>
+    </g>
+    <text x="390" y="58" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#999999">Hours / Days</text>
+
+    <!-- FAST PATH (bottom) - straight solid line that draws in -->
+    <line class="fast-line" x1="170" y1="280" x2="600" y2="280" stroke="#556b2f" stroke-width="3" />
+    <polygon class="fast-arrow" points="600,280 588,274 588,286" fill="#556b2f" />
+
+    <!-- Fast bolt icon -->
+    <g transform="translate(370, 290)">
+      <polygon class="fast-bolt" points="18,0 8,18 16,18 12,34 26,14 18,14 22,0" fill="#556b2f" opacity="0.8" />
+    </g>
+    <text x="390" y="340" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#556b2f">Minutes</text>
+
+    <!-- Recovered server (right) -->
+    <g transform="translate(620, 140)" filter="url(#ir-shadow)">
+      <rect width="100" height="130" rx="8" fill="url(#ir-serverGrad)" />
+      <rect x="12" y="25" width="76" height="10" rx="2" fill="#1a1a1a" />
+      <rect x="12" y="42" width="76" height="10" rx="2" fill="#1a1a1a" />
+      <rect x="12" y="59" width="76" height="10" rx="2" fill="#1a1a1a" />
+      <circle class="rec-led" cx="20" cy="30" r="2.5" fill="#556b2f" />
+      <circle class="rec-led" cx="20" cy="47" r="2.5" fill="#556b2f" />
+      <circle class="rec-led" cx="20" cy="64" r="2.5" fill="#556b2f" />
+      <rect x="12" y="90" width="16" height="7" rx="1" fill="#3d3d3d" />
+      <rect x="34" y="90" width="16" height="7" rx="1" fill="#3d3d3d" />
+      <rect x="56" y="90" width="16" height="7" rx="1" fill="#3d3d3d" />
+    </g>
+
+    <!-- Checkmark on recovered server -->
+    <g transform="translate(645, 92)">
+      <circle class="check-circle" cx="20" cy="20" r="18" fill="#556b2f" />
+      <polyline
+        class="check-mark"
+        points="10,20 17,27 30,13"
+        pathLength="100"
+        fill="none"
+        stroke="#f5f5f5"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </g>
+
+    <!-- Decorative elements (gentle ambient float) -->
+    <circle class="deco" cx="110" cy="360" r="40" fill="#e0e0e0" opacity="0.3" />
+    <circle class="deco" cx="670" cy="380" r="55" fill="#e0e0e0" opacity="0.2" />
+    <circle class="deco" cx="400" cy="410" r="30" fill="#556b2f" opacity="0.1" />
+  </svg>
+</figure>
+
+<style>
+  .sp-illustration-animated {
+    margin: 40px auto 8px;
+    width: min(1100px, calc(100vw - 96px));
+    margin-left: calc((var(--sp-content-max) - min(1100px, calc(100vw - 96px))) / 2);
+    margin-right: auto;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .anim-ir {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  @media (max-width: 768px) {
+    .sp-illustration-animated {
+      width: 100%;
+      margin-left: 0;
+      margin-right: 0;
+    }
+  }
+
+  /* The fast path is always dashed to its own length so it can be "drawn". */
+  .fast-line {
+    stroke-dasharray: 430;
+  }
+
+  /*
+   * All motion is opt-in: it only exists when the user has not requested
+   * reduced motion. Outside this block the SVG renders its resting "after"
+   * state, identical to the static asset.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    .anim-ir {
+      cursor: pointer; /* click to replay */
+    }
+
+    /* Pre-roll: once JS is active but before the illustration is on screen,
+       reset the recoverable elements to their "before" state. */
+    .anim-ir.js:not(.in-view) .fast-line {
+      stroke-dashoffset: 430;
+    }
+    .anim-ir.js:not(.in-view) .fast-arrow,
+    .anim-ir.js:not(.in-view) .fast-bolt,
+    .anim-ir.js:not(.in-view) .check-circle,
+    .anim-ir.js:not(.in-view) .check-mark {
+      opacity: 0;
+    }
+    .anim-ir.js:not(.in-view) .check-mark {
+      stroke-dashoffset: 100;
+    }
+    .anim-ir.js:not(.in-view) .rec-led {
+      fill: #8b0000;
+    }
+
+    /* Sized/anchored transforms for the elements that scale or rotate. */
+    .fast-arrow,
+    .fast-bolt,
+    .check-circle,
+    .warn,
+    .deco {
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    .slow-hands {
+      transform-box: view-box;
+      transform-origin: 390px 100px; /* clock centre in viewBox coords */
+    }
+
+    /* ---- Play: one-shot, left -> right story ---- */
+    .anim-ir.in-view .fast-line {
+      animation: ir-draw-line 0.7s ease 0.2s both;
+    }
+    .anim-ir.in-view .fast-bolt {
+      animation: ir-pop 0.4s ease 0.9s both;
+    }
+    .anim-ir.in-view .fast-arrow {
+      animation: ir-pop 0.35s ease 0.95s both;
+    }
+    .anim-ir.in-view .rec-led {
+      animation: ir-led 0.45s ease both;
+    }
+    .anim-ir.in-view .rec-led:nth-of-type(1) {
+      animation-delay: 1.1s;
+    }
+    .anim-ir.in-view .rec-led:nth-of-type(2) {
+      animation-delay: 1.25s;
+    }
+    .anim-ir.in-view .rec-led:nth-of-type(3) {
+      animation-delay: 1.4s;
+    }
+    .anim-ir.in-view .check-circle {
+      animation: ir-pop 0.4s ease 1.55s both;
+    }
+    .anim-ir.in-view .check-mark {
+      animation: ir-draw-check 0.5s ease 1.75s both;
+    }
+
+    /* ---- Continuous ambient (only while on screen) ---- */
+    .anim-ir.in-view .slow-path {
+      animation: ir-ants 1.1s linear infinite;
+    }
+    .anim-ir.in-view .slow-hands {
+      animation: ir-spin 8s linear infinite;
+    }
+    .anim-ir.in-view .warn {
+      animation: ir-warn 2.2s ease-in-out infinite;
+    }
+    .anim-ir.in-view .fail-led {
+      animation: ir-blink 1.6s ease-in-out infinite;
+    }
+    .anim-ir.in-view .fail-led:nth-of-type(2) {
+      animation-delay: 0.2s;
+    }
+    .anim-ir.in-view .fail-led:nth-of-type(3) {
+      animation-delay: 0.4s;
+    }
+    .anim-ir.in-view .deco {
+      animation: ir-float 7s ease-in-out infinite;
+    }
+    .anim-ir.in-view .deco:nth-of-type(2) {
+      animation-delay: 1.5s;
+    }
+    .anim-ir.in-view .deco:nth-of-type(3) {
+      animation-delay: 3s;
+    }
+  }
+
+  @keyframes ir-draw-line {
+    from {
+      stroke-dashoffset: 430;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes ir-draw-check {
+    from {
+      stroke-dashoffset: 100;
+      opacity: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+      opacity: 1;
+    }
+  }
+  @keyframes ir-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes ir-led {
+    from {
+      fill: #8b0000;
+    }
+    to {
+      fill: #556b2f;
+    }
+  }
+  @keyframes ir-ants {
+    to {
+      stroke-dashoffset: -10;
+    }
+  }
+  @keyframes ir-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes ir-warn {
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.12);
+      opacity: 0.75;
+    }
+  }
+  @keyframes ir-blink {
+    0%,
+    100% {
+      opacity: 0.85;
+    }
+    50% {
+      opacity: 0.2;
+    }
+  }
+  @keyframes ir-float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+</style>
+
+<script>
+  // Replay the failure->recovery story whenever an animated illustration
+  // scrolls into view; clicking it replays on demand. Guarded by the CSS
+  // prefers-reduced-motion query, so this script is a no-op for those users
+  // (the elements simply stay in their resting "after" state).
+  function initAnimatedIllustrations() {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const nodes = document.querySelectorAll<SVGElement>('.anim-ir');
+    if (!nodes.length) return;
+
+    for (const el of nodes) {
+      el.classList.add('js');
+      if (reduce) continue;
+      el.addEventListener('click', () => {
+        el.classList.remove('in-view');
+        // Force reflow so removing/re-adding restarts the animations.
+        void el.getBoundingClientRect();
+        el.classList.add('in-view');
+      });
+    }
+    if (reduce) return;
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          entry.target.classList.toggle('in-view', entry.isIntersecting);
+        }
+      },
+      { threshold: 0.35 }
+    );
+    for (const el of nodes) io.observe(el);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAnimatedIllustrations);
+  } else {
+    initAnimatedIllustrations();
+  }
+</script>

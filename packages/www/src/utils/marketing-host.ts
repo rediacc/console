@@ -10,8 +10,16 @@
  *   - bench.rediacc.com                                    (internal)
  *   - any on-prem hostname (handled by the open-ended "else" branch)
  *
- * Marketing hosts (no portal — open the picker):
+ * Marketing hosts (no functional portal — open the picker):
  *   - www.rediacc.com                  (production marketing site)
+ *   - edge.rediacc.com                 (edge-channel marketing site;
+ *                                       auto-deploys on merge to main,
+ *                                       promoted to www after 7-day soak.
+ *                                       Statically serves the portal SPA
+ *                                       shell at /account/* but the API
+ *                                       returns {"error":"gone"} — so the
+ *                                       SPA shell loads but cannot function.
+ *                                       Same picker treatment as www.)
  *   - localhost                        (dev server)
  *   - *.rediacc.workers.dev            (PR preview deployments, e.g.
  *                                       pr-477.rediacc.workers.dev)
@@ -27,6 +35,7 @@
 export function isMarketingHost(hostname: string): boolean {
   return (
     hostname === 'www.rediacc.com' ||
+    hostname === 'edge.rediacc.com' ||
     hostname === 'localhost' ||
     hostname.endsWith('.rediacc.workers.dev')
   );

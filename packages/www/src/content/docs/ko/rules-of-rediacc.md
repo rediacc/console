@@ -4,6 +4,8 @@ description: "Rediacc 플랫폼에서 애플리케이션을 구축하기 위한 
 category: "Guides"
 order: 5
 language: ko
+sourceHash: "1d227a06272a0050"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 # Rediacc 규칙
@@ -146,7 +148,7 @@ OS별 보안 자세 플래그가 필요하지 않습니다. `rdc`와 `renet`은 
 - **저장소 격리**: 각 저장소의 Docker 데몬, 네트워크, 스토리지는 동일 머신의 다른 저장소와 완전히 격리됩니다.
 - **에이전트 격리**: AI 에이전트는 기본적으로 fork 전용 모드로 작동합니다. 각 저장소는 서버 측 샌드박스 적용(`sandbox-gateway` ForceCommand)이 있는 자체 SSH 키를 갖습니다. 모든 연결은 Landlock LSM, OverlayFS 홈 오버레이, 저장소별 TMPDIR로 샌드박스화됩니다. 저장소 간 파일시스템 접근은 커널에 의해 차단됩니다.
 - **`sudo`는 저장소 샌드박스 내에서 설계상 비활성화됩니다.** Landlock 파일시스템 격리는 `NoNewPrivs`가 필요하며, 이는 모든 권한 상승을 방지합니다. 따라서 `sudo`는 `no new privileges flag is set`으로 실패합니다. 저장소 소유자 사용자는 이미 저장소의 마운트와 Docker 소켓 내의 모든 것에 필요한 권한을 갖고 있습니다. 진정한 권한 작업(호스트 패키지 설치, 커널 튜닝)은 샌드박스 외부에서 또는 인프라 경로에 의해 실행되는 Rediaccfile `up()` 함수에서 수행하십시오.
-- **Docker 브리지 네트워킹은 모든 저장소별 데몬에서 비활성화됩니다.** 각 저장소의 `daemon.json`에는 `"bridge": "none"`과 `"iptables": false`가 있어, 일반 `docker run <image>`는 루프백 인터페이스만 있고 아웃바운드 연결이 없는 컨테이너를 생성합니다. 이것은 버그가 아니라 저장소 간 격리가 적용되는 방식입니다. 한 저장소가 다른 저장소의 루프백 IP에 도달하는 것을 차단하는 커널 수준 eBPF 훅은 호스트 네트워크 네임스페이스에 있는 컨테이너에만 적용됩니다. 프로덕션 서비스에는 `renet compose`를 사용하십시오 (`network_mode: host`를 자동으로 주입). 셸에서 임시 컨테이너를 사용하려면 `--network host`를 명시적으로 전달하십시오.
+- **Docker 브리지 네트워킹은 저장소별 데몬에서 비활성화됩니다.** 각 저장소의 `daemon.json`(`FlavorRediacc`)에는 `"bridge": "none"`과 `"iptables": false`가 있어, 일반 `docker run <image>`는 루프백 인터페이스만 있고 아웃바운드 연결이 없는 컨테이너를 생성합니다. 이것은 버그가 아니라 저장소 간 격리가 적용되는 방식입니다. 한 저장소가 다른 저장소의 루프백 IP에 도달하는 것을 차단하는 커널 수준 eBPF 훅은 호스트 네트워크 네임스페이스에 있는 컨테이너에만 적용됩니다. 프로덕션 서비스에는 `renet compose`를 사용하십시오 (`network_mode: host`를 자동으로 주입). 셸에서 임시 컨테이너를 사용하려면 `--network host`를 명시적으로 전달하십시오. (사용자별 Hub 데몬(`FlavorHub`, 개발 환경)은 예외로, `bridge="docker0"`과 `iptables=true`를 활성화하여 사용자가 실행하는 컨테이너가 정상적인 아웃바운드 네트워크 연결을 사용할 수 있습니다.)
 
 ## 배포
 

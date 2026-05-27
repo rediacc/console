@@ -117,6 +117,8 @@ describe('localExecutorService first-use onboarding', () => {
       valid: 1,
       invalidSignatureDetected: 0,
       failures: [],
+      recoveryFailureMode: null,
+      serverErrorSample: undefined,
     });
     mockAuthorizeSubscriptionViaDeviceCode.mockResolvedValue({
       storedToken: {
@@ -154,6 +156,62 @@ describe('localExecutorService first-use onboarding', () => {
     expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
     expect(mockExecStreaming).toHaveBeenCalledTimes(2);
     expect(result.success).toBe(true);
+  });
+
+  it('issues a license on missing-license recovery for operate-tier repository_up (rediacc/console#482)', async () => {
+    // repository_up is on the pre-flight deny-list, but recovery after a
+    // genuine missing-license failure on a fresh machine must still issue.
+    mockExecStreaming
+      .mockImplementationOnce((_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"missing","message":"no license data"}\n'
+        );
+        return Promise.resolve(10);
+      })
+      .mockImplementationOnce(() => Promise.resolve(0));
+
+    const result = await localExecutorService.execute({
+      functionName: 'repository_up',
+      machineName: 'benchtest482',
+      captureOutput: true,
+    });
+
+    expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
+    expect(mockExecStreaming).toHaveBeenCalledTimes(2);
+    expect(result.success).toBe(true);
+  });
+
+  it('surfaces server-rejected guidance when operate-tier recovery cannot issue', async () => {
+    mockRefreshRepoLicensesBatch.mockResolvedValueOnce({
+      scanned: 1,
+      issued: 0,
+      refreshed: 0,
+      unchanged: 0,
+      failed: 1,
+      valid: 0,
+      invalidSignatureDetected: 0,
+      failures: [{ repositoryGuid: 'g', error: 'D1_ERROR: boom' }],
+      recoveryFailureMode: 'server_rejected_all',
+      serverErrorSample: 'D1_ERROR: boom',
+    });
+    mockExecStreaming.mockImplementationOnce(
+      (_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"missing","message":"no license data"}\n'
+        );
+        return Promise.resolve(10);
+      }
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'repository_up',
+      machineName: 'benchtest482',
+      captureOutput: true,
+    });
+
+    expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
+    expect(result.success).toBe(false);
+    expect(result.error).toContain('D1_ERROR: boom');
   });
 
   it('does not authorize when the license-required reason is not missing', async () => {
@@ -293,5 +351,116 @@ describe('localExecutorService first-use onboarding', () => {
     expect(result.success).toBe(false);
     expect(result.errorCode).toBe('REPO_LICENSE_IDENTITY_MISMATCH');
     expect(result.error).toContain('repository identity does not match');
+  });
+
+  it('reports server_rejected_all message when recovery returns no valid licenses', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'ready', token: { token: 'rdt_test' } });
+    mockRefreshRepoLicensesBatch.mockResolvedValueOnce({
+      scanned: 1,
+      issued: 0,
+      refreshed: 0,
+      unchanged: 0,
+      failed: 1,
+      valid: 0,
+      invalidSignatureDetected: 0,
+      failures: [{ repositoryGuid: 'abc-123', error: 'quota exceeded for plan' }],
+      recoveryFailureMode: 'server_rejected_all',
+      serverErrorSample: 'quota exceeded for plan',
+    });
+    mockExecStreaming.mockImplementationOnce(
+      (_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"missing","message":"repo license required"}\n'
+        );
+        return Promise.resolve(10);
+      }
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+      captureOutput: true,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe('REPO_LICENSE_ISSUANCE_REQUIRED');
+    expect(result.error).toContain('quota exceeded for plan');
+  });
+
+  it('reports token_not_ready guidance when recovery is blocked by missing token', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'ready', token: { token: 'rdt_test' } });
+    mockRefreshRepoLicensesBatch.mockResolvedValueOnce({
+      scanned: 0,
+      issued: 0,
+      refreshed: 0,
+      unchanged: 0,
+      failed: 0,
+      valid: 0,
+      invalidSignatureDetected: 0,
+      failures: [{ repositoryGuid: '*', error: 'Subscription token is not ready' }],
+      recoveryFailureMode: 'token_not_ready',
+      serverErrorSample: undefined,
+    });
+    mockExecStreaming.mockImplementationOnce(
+      (_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"missing","message":"repo license required"}\n'
+        );
+        return Promise.resolve(10);
+      }
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+      captureOutput: true,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe('REPO_LICENSE_ISSUANCE_REQUIRED');
+    expect(result.error).toContain('rdc subscription login');
+  });
+
+  it('reports no_known_repos guidance when recovery cannot match repos to local config', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'ready', token: { token: 'rdt_test' } });
+    mockRefreshRepoLicensesBatch.mockResolvedValueOnce({
+      scanned: 2,
+      issued: 0,
+      refreshed: 0,
+      unchanged: 0,
+      failed: 2,
+      valid: 0,
+      invalidSignatureDetected: 0,
+      failures: [
+        {
+          repositoryGuid: 'abc-001',
+          error: 'Repository exists on target machine but is not tracked in local config',
+        },
+        {
+          repositoryGuid: 'abc-002',
+          error: 'Repository exists on target machine but is not tracked in local config',
+        },
+      ],
+      recoveryFailureMode: 'no_known_repos',
+      serverErrorSample: undefined,
+    });
+    mockExecStreaming.mockImplementationOnce(
+      (_cmd: string, handlers: { onStderr?: (chunk: string) => void }) => {
+        handlers.onStderr?.(
+          '{"code":"LICENSE_REQUIRED","reason":"missing","message":"repo license required"}\n'
+        );
+        return Promise.resolve(10);
+      }
+    );
+
+    const result = await localExecutorService.execute({
+      functionName: 'backup_push',
+      machineName: 'hostinger',
+      captureOutput: true,
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.errorCode).toBe('REPO_LICENSE_ISSUANCE_REQUIRED');
+    expect(result.error).toContain('tracked in your local config');
   });
 });

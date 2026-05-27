@@ -184,9 +184,28 @@ test.describe('Backup Management', () => {
 });
 
 test.describe('Repository Maintenance', () => {
+  // Own context lifecycle: the Phase 7 block above deletes its config in
+  // afterAll, so this block cannot rely on `ctxName` still being active by the
+  // time it runs. Set up a dedicated context so prune executes against a real
+  // active config (only vm1 is needed).
+  const maintCtx = `e2e-maint-${Date.now()}`;
+  const maintConfig = getE2EConfig();
+  let maintCleanup: (() => Promise<void>) | null = null;
+
+  test.beforeAll(async () => {
+    test.setTimeout(E2E.SETUP_TIMEOUT);
+    test.skip(!maintConfig.enabled, 'E2E not configured');
+    maintCleanup = await setupE2EEnvironment(maintCtx);
+  });
+
+  test.afterAll(async () => {
+    await maintCleanup?.();
+  });
+
   test('should prune orphaned repository resources', async () => {
+    test.skip(!maintConfig.enabled, 'E2E not configured');
     const result = await runLocalFunction('repository_prune', E2E.MACHINE_VM1, {
-      contextName: ctxName,
+      contextName: maintCtx,
       params: { dry_run: true },
       timeout: E2E.SETUP_TIMEOUT,
     });

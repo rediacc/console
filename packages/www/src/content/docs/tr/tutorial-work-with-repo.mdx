@@ -1,0 +1,60 @@
+---
+title: "Deponuzla Çalışın"
+description: "Bir portu tarayıcınıza tünelleyin, sandbox içinde komut çalıştırın ve dizüstü bilgisayarınız ile depo arasında dosya senkronize edin."
+category: "Tutorials"
+subcategory: essentials
+order: 6
+language: tr
+sourceHash: "a7a5866276f19cb3"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Deponuzla Çalışın
+
+Uygulamanız çalışıyor, ancak şimdiye kadar yalnızca `docker ps` ile gördünüz. Günlük iş akışını üç komut karşılar: uygulamayı tarayıcıda görmek için **tunnel**, sandbox içinde komut çalıştırmak için **term**, dizüstü bilgisayarınız ile depo arasında dosya taşımak için **sync**.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Working with your repo](/assets/tutorials/tutorial-work-with-repo.cast)
+
+## Günlük üçlü
+
+![Tunnel, term, sync](/img/tutorials/tutorial-work-with-repo/slide-1.svg)
+
+1. **Tunnel**: uygulamanızı tarayıcıda açın.
+2. **Term**: sandbox içinde komut çalıştırın.
+3. **Sync**: dosyaları içeri veya dışarı taşıyın.
+
+## Tunnel: uygulamanızı tarayıcıda görün
+
+Uygulama dizüstü bilgisayarınızda değil, sunucuda çalışır. Bir container'ın portunu SSH üzerinden yönlendirin:
+
+<TutorialStep number={1} />
+
+Tarayıcınızda `localhost`'u açın. Uygulamanız oradadır. İşiniz bittiğinde `Ctrl+C`'ye basın.
+
+## Term: depo içinde komut çalıştırın
+
+Yalnızca bir shell'e ihtiyaç duyduğunuzda VS Code'u atlayın. Deponun sandbox'ına girin ve Docker daemon'una karşı istediğiniz her şeyi çalıştırın:
+
+<TutorialStep number={2} />
+
+Yalnızca `my-app`'e ait container'ları görürsünüz; VS Code'da göreceğinizin aynısı.
+
+## Sync: dizüstü bilgisayar ile depo arasında dosya taşıyın
+
+Emin değilseniz önce önizleme yapın. `--dry-run`, gerçekten kopyalamadan neyin değişeceğini gösterir:
+
+<TutorialStep number={3} />
+
+Önizleme doğru göründüğünde, yüklemeyi gerçekten çalıştırın:
+
+<TutorialStep number={4} />
+
+Tunnel, term, sync. Günlük döngüyü üç komut karşılar.
+
+---
+
+Sonraki: [Depo Fork'lama](/tr/docs/tutorial-forking).

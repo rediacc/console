@@ -4,6 +4,8 @@ description: "Como a arquitetura de encriptação e isolamento da Rediacc se map
 category: "Legal"
 order: 3
 language: pt
+sourceHash: "f5fbdaa4a00491ea"
+sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
 ---
 
 A Health Insurance Portability and Accountability Act (HIPAA) é uma lei federal dos Estados Unidos que estabelece normas para a proteção de informações sensíveis de saúde de doentes (PHI). Aplica-se a entidades cobertas (prestadores de cuidados de saúde, planos de saúde, câmaras de compensação de saúde) e aos seus associados comerciais.
@@ -30,7 +32,7 @@ A HIPAA exige salvaguardas administrativas, técnicas e físicas. A tabela segui
 |-------------|-------------------|
 | Gestão do acesso dos colaboradores | Tokens de API com permissões de âmbito limitado. Controlo de acesso por equipa. Revogação automática do token na remoção da equipa. |
 | Procedimentos de incidentes de segurança | Os registos de auditoria fornecem uma trilha forense de todas as operações. O isolamento por repositório limita o raio de explosão. |
-| Planeamento de contingência | `rdc repo backup push/pull` suporta backup encriptado para múltiplos destinos. Os snapshots CoW permitem recuperação instantânea. |
+| Planeamento de contingência | `rdc repo push/pull` suporta backup encriptado para múltiplos destinos. Os snapshots CoW permitem recuperação instantânea. |
 
 ### Salvaguardas Físicas
 

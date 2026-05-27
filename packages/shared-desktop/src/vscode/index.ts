@@ -57,14 +57,16 @@ export {
   writeVSCodeSettings,
 } from './settings.js';
 // SSH config management
-export type { BuildSSHConfigOptions } from './sshConfig.js';
+export type { AddMachineSSHConfigOptions, BuildSSHConfigOptions } from './sshConfig.js';
 export {
+  addMachineSSHConfigEntry,
   addSSHConfigEntry,
   buildVSCodeSSHConfigEntry,
   generateConnectionName,
   getSSHConfigEntry,
   getSSHConfigPath,
   listSSHConfigEntries,
+  removeMachineSSHConfigEntry,
   removeSSHConfigEntry,
 } from './sshConfig.js';
 // Types

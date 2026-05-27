@@ -7,6 +7,7 @@ import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { coerceCliParams, validateFunctionParams } from './queue.js';
 import { resolveExtraMachines } from './repo-backup.js';
+import { assertMachineExists, assertStorageExists } from './_validate.js';
 
 export interface BackupListEntry {
   name: string;
@@ -65,6 +66,30 @@ function extractBackupListPayload(stdout: string): BackupListPayload | undefined
   return undefined;
 }
 
+async function assertBackupFromExists(fromName: string, sourceType: unknown): Promise<void> {
+  if (sourceType === 'machine') {
+    await assertMachineExists(fromName);
+    return;
+  }
+  if (sourceType === 'storage') {
+    await assertStorageExists(fromName);
+    return;
+  }
+  // Unknown source type — pass if it resolves as either machine or storage.
+  const isMachine = await assertMachineExists(fromName).then(
+    () => true,
+    () => false
+  );
+  if (isMachine) return;
+  const isStorage = await assertStorageExists(fromName).then(
+    () => true,
+    () => false
+  );
+  if (!isStorage) {
+    throw new ValidationError(`"${fromName}" is not a known machine or storage`);
+  }
+}
+
 export async function fetchBackupList(
   params: Record<string, unknown>,
   options: BackupRunOptions
@@ -78,6 +103,12 @@ export async function fetchBackupList(
 
   const coerced = coerceCliParams('backup_list', params as Record<string, string>);
   validateFunctionParams('backup_list', coerced);
+
+  const fromName = typeof coerced.from === 'string' ? coerced.from : undefined;
+  if (fromName) {
+    await assertBackupFromExists(fromName, coerced.sourceType);
+  }
+
   const extraMachines = await resolveExtraMachines(coerced);
 
   const result = await localExecutorService.execute({

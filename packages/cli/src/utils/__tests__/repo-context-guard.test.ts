@@ -135,26 +135,34 @@ describe('detectFileWriteCommand', () => {
 });
 
 describe('detectDockerComposeCommand', () => {
-  describe('positive cases (should detect)', () => {
+  describe('positive cases (should detect — docker-compose at command position)', () => {
     it.each([
       'docker compose up -d',
       'docker-compose up',
       'sudo docker compose up -d',
       'sudo docker-compose down',
+      'sudo --preserve-env=X docker compose up',
+      // FIX 1: sudo -u <user> must not treat <user> as the command
+      'sudo -u root docker compose up',
+      'sudo --user root docker compose up',
+      'sudo -u root -g staff docker compose up',
       '/usr/bin/docker compose up',
+      '/usr/local/bin/docker-compose ps',
       'DOCKER_HOST=/tmp/sock docker compose up',
+      'FOO=bar docker compose up',
+      'env docker-compose down',
       'docker  compose  up',
       'Docker Compose up',
       'DOCKER-COMPOSE ps',
-      'bash -c "docker compose up"',
       'cd /app && docker compose restart',
-      'echo "use docker compose"',
+      'cat x.yml; docker-compose up',
+      'docker compose up 2>&1',
     ])('%s → detected', (command) => {
       expect(detectDockerComposeCommand(command)).toBe(true);
     });
   });
 
-  describe('negative cases (should NOT detect)', () => {
+  describe('negative cases (should NOT detect — substring in args, not a command)', () => {
     it.each([
       'docker ps',
       'docker run -d nginx',
@@ -164,6 +172,14 @@ describe('detectDockerComposeCommand', () => {
       'sudo renet compose -- ps',
       'uptime',
       '',
+      // rediacc/console#490: reads/searches that merely name the file are allowed
+      'cat docker-compose.yml',
+      "find . -iname 'docker-compose*'",
+      'grep compose docker-compose.yml',
+      'head -c 4096 docker-compose.yml',
+      // command nested in an opaque -c string is a documented non-match
+      'bash -c "docker compose up"',
+      'echo "use docker compose"',
     ])('%s → no match', (command) => {
       expect(detectDockerComposeCommand(command)).toBe(false);
     });

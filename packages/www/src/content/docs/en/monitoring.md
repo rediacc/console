@@ -110,8 +110,9 @@ rdc machine query --name server-1 --storage-health
 | Size | LUKS image file size (what the repo looks like) |
 | Unique | Actual unique data owned only by this repo |
 | Shared | Data blocks reused across repos via BTRFS reflinks (free copies) |
-| Extents | Number of file extents (higher = more fragmented) |
-| Frag | Fragmentation level: low, moderate, or high |
+| Divergence | Percent of the image unique to this repo rather than shared (higher means more reclaimable if deleted) |
+| Extents | Number of file extents in the copy-on-write image (higher = more fragmented) |
+| Frag | Fragmentation level: low, moderate, or high (informational only) |
 
 The summary shows total savings from BTRFS reflinks:
 
@@ -125,7 +126,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 - **Shared** is data reused across repos via BTRFS reflinks. Forking a repo creates reflink copies that share blocks until either side writes new data, at which point blocks diverge.
 - **Efficiency** is the percentage of data reused via reflinks. Higher is better. A machine with many forks from the same parent will show near-100% efficiency.
 
-Repos with high fragmentation and zero shared blocks can be safely defragmented with `btrfs filesystem defragment`. Repos with shared blocks should NOT be defragmented because defrag replaces shared blocks with unique copies, increasing disk usage.
+The Frag column is informational. It counts extents of the copy-on-write image file, not the files your application reads inside it, so it reads high under normal random-write workloads (databases, container layers) and does not predict read performance on SSD-backed storage. Rediacc deliberately offers no defragment command: `btrfs filesystem defragment` unshares reflinked forks and snapshots, which on a near-full pool can inflate usage dramatically while benchmarks show no measurable read gain. For the full measurements and reasoning, see [Your Fragmentation Number Looks Terrifying. I Benchmarked What It Costs.](/en/blog/i-benchmarked-btrfs-fragmentation).
 
 The scan runs in parallel and takes 5-15 seconds depending on the number and size of repos. When `--storage-health` is not specified, a one-line hint appears after the query output as a reminder.
 

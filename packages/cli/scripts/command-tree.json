@@ -1852,6 +1852,80 @@
           "subcommands": []
         },
         {
+          "name": "cat",
+          "descriptionKey": "commands.repo.cat.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "options.name",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--remote-file <path>",
+              "descriptionKey": "commands.repo.cat.remoteFileOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--max-bytes <n>",
+              "descriptionKey": "commands.repo.cat.maxBytesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--offset <n>",
+              "descriptionKey": "commands.repo.cat.offsetOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--head <lines>",
+              "descriptionKey": "commands.repo.cat.headOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tail <lines>",
+              "descriptionKey": "commands.repo.cat.tailOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--stat",
+              "descriptionKey": "commands.repo.cat.statOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force-binary",
+              "descriptionKey": "commands.repo.cat.forceBinaryOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "fork",
           "descriptionKey": "commands.repo.fork.description",
           "options": [
@@ -6751,6 +6825,32 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.datastore.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "resize",
+          "descriptionKey": "commands.datastore.resize.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.datastore.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--size <size>",
+              "descriptionKey": "commands.datastore.resize.sizeOption",
               "mandatory": true,
               "defaultValue": null
             },

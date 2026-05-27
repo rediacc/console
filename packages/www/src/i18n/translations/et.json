@@ -3565,6 +3565,398 @@
         "title": "Sisukord"
       }
     },
+    "resourcesBrief": {
+      "devEnvironments": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
+          "downloadButton": "Laadi ülevaade alla",
+          "heading": "Sellest ülevaatest"
+        },
+        "companions": {
+          "heading": "Seotud lahenduste lehed",
+          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "readMore": "Loe edasi"
+        },
+        "faq": {
+          "heading": "Lugejate küsimused",
+          "items": [
+            {
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "q": "Kellele see ülevaade on kirjutatud?"
+            },
+            {
+              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "q": "Kas on ka mittetehniline versioon?"
+            },
+            {
+              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "q": "Mis saab minu e-postiga?"
+            },
+            {
+              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "q": "Miks btrfs?"
+            },
+            {
+              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga.",
+          "downloadButton": "Laadi tehniline ülevaade alla",
+          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
+          "openInBrowser": "Ava brauseris",
+          "subtitle": "Sinu arendajad kirjutavad koodi 4,5 tundi nädalas. Ülejäänud aeg kulub keskkondade ootamisele. 50-liikmeline meeskond kaotab seadistamisele aastas 720 000–1 200 000 dollarit.",
+          "title": "Arenduskeskkonnad"
+        },
+        "meta": {
+          "description": "Tootmisega identsed arenduskeskkonnad 60 sekundiga btrfs nullkoopiakloone kasutades. Tasuta CISO/CTO ülevaade Rediaccilt ja viie minuti juhtkonnaversioon.",
+          "keywords": "arenduskeskkonnad, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
+          "title": "Arenduskeskkonnad: tasuta tehniline ülevaade PDF"
+        },
+        "toc": {
+          "heading": "Mis on sees",
+          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "items": [
+            "Ohumudel konkreetsetes operaatoritingimustes",
+            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
+            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
+            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
+            "ROI-arvutus avaldatud andmete põhjal",
+            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
+            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
+            "Auditiks valmis tõendid, mida arhitektuur toodab"
+          ]
+        }
+      },
+      "encryptionControl": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
+          "downloadButton": "Laadi ülevaade alla",
+          "heading": "Sellest ülevaatest"
+        },
+        "companions": {
+          "heading": "Seotud lahenduste lehed",
+          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "readMore": "Loe edasi"
+        },
+        "faq": {
+          "heading": "Lugejate küsimused",
+          "items": [
+            {
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "q": "Kellele see ülevaade on kirjutatud?"
+            },
+            {
+              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "q": "Kas on ka mittetehniline versioon?"
+            },
+            {
+              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "q": "Mis saab minu e-postiga?"
+            },
+            {
+              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "q": "Miks btrfs?"
+            },
+            {
+              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga.",
+          "downloadButton": "Laadi tehniline ülevaade alla",
+          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
+          "openInBrowser": "Ava brauseris",
+          "subtitle": "Schrems II ei ole poliitiline valik. See on arhitektuurinõue ja enamik varundustarnijaid ei täida seda.",
+          "title": "Krüpteerimise kontroll"
+        },
+        "meta": {
+          "description": "Kliendihaldusega võtmed ja krüpteeritud andmed, mis ei sõltu teenusepakkujast. Schrems II nõuetele vastav. CISO/CTO ülevaade ja juhtkonna versioon.",
+          "keywords": "krüpteerimise kontroll, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
+          "title": "Krüpteerimisjuhtimine: tasuta tehniline ülevaade"
+        },
+        "toc": {
+          "heading": "Mis on sees",
+          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "items": [
+            "Ohumudel konkreetsetes operaatoritingimustes",
+            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
+            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
+            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
+            "ROI-arvutus avaldatud andmete põhjal",
+            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
+            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
+            "Auditiks valmis tõendid, mida arhitektuur toodab"
+          ]
+        }
+      },
+      "multiCloudAlways": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
+          "downloadButton": "Laadi ülevaade alla",
+          "heading": "Sellest ülevaatest"
+        },
+        "companions": {
+          "heading": "Seotud lahenduste lehed",
+          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "readMore": "Loe edasi"
+        },
+        "faq": {
+          "heading": "Lugejate küsimused",
+          "items": [
+            {
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "q": "Kellele see ülevaade on kirjutatud?"
+            },
+            {
+              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "q": "Kas on ka mittetehniline versioon?"
+            },
+            {
+              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "q": "Mis saab minu e-postiga?"
+            },
+            {
+              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "q": "Miks btrfs?"
+            },
+            {
+              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga.",
+          "downloadButton": "Laadi tehniline ülevaade alla",
+          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
+          "openInBrowser": "Ava brauseris",
+          "subtitle": "AWS US-EAST-1 katkestas töö 15 tunniks 20. oktoobril 2025. Snapchat, Robinhood, Uber, Delta. Kas oleksid saanud pilve vahetada õigeaegselt?",
+          "title": "Multi-Cloud Always"
+        },
+        "meta": {
+          "description": "Porditavad hetktõmmised ja testitud pilveülene tõrkesiire – teie äri püsib üles ka pilverikke ajal. CISO/CTO ülevaade ja juhtkonna versioon.",
+          "keywords": "multi-cloud always, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
+          "title": "Multi-Cloud alati: tasuta tehniline ülevaade PDF"
+        },
+        "toc": {
+          "heading": "Mis on sees",
+          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "items": [
+            "Ohumudel konkreetsetes operaatoritingimustes",
+            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
+            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
+            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
+            "ROI-arvutus avaldatud andmete põhjal",
+            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
+            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
+            "Auditiks valmis tõendid, mida arhitektuur toodab"
+          ]
+        }
+      },
+      "preemptiveDefense": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
+          "downloadButton": "Laadi ülevaade alla",
+          "heading": "Sellest ülevaatest"
+        },
+        "companions": {
+          "heading": "Seotud lahenduste lehed",
+          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "readMore": "Loe edasi"
+        },
+        "faq": {
+          "heading": "Lugejate küsimused",
+          "items": [
+            {
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "q": "Kellele see ülevaade on kirjutatud?"
+            },
+            {
+              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "q": "Kas on ka mittetehniline versioon?"
+            },
+            {
+              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "q": "Mis saab minu e-postiga?"
+            },
+            {
+              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "q": "Miks btrfs?"
+            },
+            {
+              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga.",
+          "downloadButton": "Laadi tehniline ülevaade alla",
+          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
+          "openInBrowser": "Ava brauseris",
+          "subtitle": "Testi oma päris infrastruktuuri vastu. Ära riku midagi. Kloon võtab ohtlikud löögid vastu.",
+          "title": "Ennetav kaitse"
+        },
+        "meta": {
+          "description": "Turvatestid tootmiskloonil ilma tootmisriskita. Tehisaru permestatsioonitestid korduvkasutatamatul koopial. CISO/CTO ülevaade ja juhtkonna versioon.",
+          "keywords": "ennetav kaitse, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
+          "title": "Ennetav kaitse: tasuta tehniline ülevaade PDF"
+        },
+        "toc": {
+          "heading": "Mis on sees",
+          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "items": [
+            "Ohumudel konkreetsetes operaatoritingimustes",
+            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
+            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
+            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
+            "ROI-arvutus avaldatud andmete põhjal",
+            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
+            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
+            "Auditiks valmis tõendid, mida arhitektuur toodab"
+          ]
+        }
+      },
+      "ransomwareSurvival": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
+          "downloadButton": "Laadi ülevaade alla",
+          "heading": "Sellest ülevaatest"
+        },
+        "companions": {
+          "heading": "Seotud lahenduste lehed",
+          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "readMore": "Loe edasi"
+        },
+        "faq": {
+          "heading": "Lugejate küsimused",
+          "items": [
+            {
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "q": "Kellele see ülevaade on kirjutatud?"
+            },
+            {
+              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "q": "Kas on ka mittetehniline versioon?"
+            },
+            {
+              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "q": "Mis saab minu e-postiga?"
+            },
+            {
+              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "q": "Miks btrfs?"
+            },
+            {
+              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga.",
+          "downloadButton": "Laadi tehniline ülevaade alla",
+          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
+          "openInBrowser": "Ava brauseris",
+          "subtitle": "94% lunavararünnakutest sihib varundust. 57% õnnestub.",
+          "title": "Lunavarast ellujäämine"
+        },
+        "meta": {
+          "description": "Failisüsteemi tasemel muutumatud varukoopiad, mida ründajad ei saa krüpteerida ega kustutada. Tasuta CISO/CTO-tasemel ülevaade Rediaccilt.",
+          "keywords": "lunavarast ellujäämine, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
+          "title": "Lunavararünnetele vastupidav varukoopiastrateegia"
+        },
+        "toc": {
+          "heading": "Mis on sees",
+          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "items": [
+            "Ohumudel konkreetsetes operaatoritingimustes",
+            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
+            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
+            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
+            "ROI-arvutus avaldatud andmete põhjal",
+            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
+            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
+            "Auditiks valmis tõendid, mida arhitektuur toodab"
+          ]
+        }
+      },
+      "verifiedBackups": {
+        "about": {
+          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
+          "downloadButton": "Laadi ülevaade alla",
+          "heading": "Sellest ülevaatest"
+        },
+        "companions": {
+          "heading": "Seotud lahenduste lehed",
+          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "readMore": "Loe edasi"
+        },
+        "faq": {
+          "heading": "Lugejate küsimused",
+          "items": [
+            {
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "q": "Kellele see ülevaade on kirjutatud?"
+            },
+            {
+              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "q": "Kas on ka mittetehniline versioon?"
+            },
+            {
+              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "q": "Mis saab minu e-postiga?"
+            },
+            {
+              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "q": "Miks btrfs?"
+            },
+            {
+              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
+            }
+          ]
+        },
+        "hero": {
+          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga.",
+          "downloadButton": "Laadi tehniline ülevaade alla",
+          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
+          "openInBrowser": "Ava brauseris",
+          "subtitle": "58% varukoopiatest ebaõnnestub taastamiskatsel. Enamik ettevõtteid saab sellest teada alles katastroofi ajal.",
+          "title": "Kinnitatud varukoopiad"
+        },
+        "meta": {
+          "description": "Käivitus- ja kontrolltest igal varukoopial, igal tsüklil – mitte kord kvartalis. Tasuta CISO/CTO ülevaade Rediaccilt ja viie minuti juhtkonnaversioon.",
+          "keywords": "kinnitatud varukoopiad, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
+          "title": "Tõendatud varukoopiad: tasuta tehniline ülevaade"
+        },
+        "toc": {
+          "heading": "Mis on sees",
+          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "items": [
+            "Ohumudel konkreetsetes operaatoritingimustes",
+            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
+            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
+            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
+            "ROI-arvutus avaldatud andmete põhjal",
+            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
+            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
+            "Auditiks valmis tõendid, mida arhitektuur toodab"
+          ]
+        }
+      }
+    },
     "resourcesNis2Directive": {
       "about": {
         "body": "Rediacc on isehostitav infrastruktuuri platvorm, mis on registreeritud Eestis (OÜ 17363830, KM EE102920091). Selle kokkuvõtte koostas Rediacc oma NIS2 sisuprogrammi raames. Ülaltoodud täiendavad juhendid kirjeldavad, kuidas Rediacc käsitleb direktiivi konkreetseid artikleid, sealhulgas lüngad, kus Rediacc ei ole lahendus (sertifikaadid puuduvad; GRC kiht puudub; Article 23 aruandlust ei haldata; ainult portaali kaudu MFA). Avaliku võimekuse kaardistuse jaoks vaata dokumentatsioonis {nis2DoraLink}.",
@@ -3779,21 +4171,6 @@
       "title": "Kui palju saab Rediacc teie organisatsioonile säästa?"
     },
     "solutionPages": {
-      "downloadGated": {
-        "title": "Hangi tehniline ülevaade",
-        "description": "Otse asja juurde minev PDF, mis on kirjutatud CISO-dele, CTO-dele ja vaneminsenieridele. Sisesta oma e-posti aadress ja saadame sulle allalaadimislingi koos üheleheküljelise kokkuvõttega.",
-        "emailPlaceholder": "you@company.com",
-        "submitLabel": "Saada mulle ülevaade",
-        "successMessage": "Kontrolli oma postkasti kinnituse saamiseks. Avasime PDF-i ka uuel vahekaardil.",
-        "errorMessage": "Midagi läks valesti. Proovi uuesti või võta ühendust aadressil support@rediacc.com.",
-        "disclaimer": "Üks e-kiri. Turunduslistis ei osale. Tühista tellimus ühe klikiga.",
-        "dismissLabel": "Sulge"
-      },
-      "downloadShort": {
-        "title": "Aeg on piiratud?",
-        "description": "Jäta süvitsi minek vahele. Võta viie minuti versioon, mida su meeskond saab koosolekul läbi lugeda.",
-        "buttonLabel": "Laadi lühiülevaade alla (PDF)"
-      },
       "aiPentesting": {
         "benefits": {
           "items": [
@@ -6083,6 +6460,493 @@
             }
           ]
         }
+      },
+      "dataSovereignty": {
+        "benefits": {
+          "items": [
+            {
+              "description": "Puudub USA jurisdiktsiooni all olev emaettevõte. Puudub müüja juures escrow-s hoitav võti. Arhitektuur on kaitse. Carniaux'i senaadi tunnistus (18. juuni 2025) sulges mis tahes alles jäänud argumendi, et lepingud asendavad jurisdiktsioonilist immuunsust.",
+              "icon": "shield",
+              "title": "CLOUD Act-i immuunsus konstruktsiooni järgi"
+            },
+            {
+              "description": "Avatud andmeformaat ja null üleminekukulusid konstruktsiooni järgi. Iga varukoopia on kaasaskantav, töötav koopia. Täielik vastavus andmemääruse artiklitele 23-31 enne 12. jaanuari 2027 tasuta ülemineku tähtaega.",
+              "icon": "globe",
+              "title": "EL-i andmemääruse 2027 jaoks valmis"
+            },
+            {
+              "description": "Nelja samba asend vastab ANSSI-BSI 17. novembri 2025 ühisavaldusele: range andmete lokaliseerimine, eksklusiivne EL-i õiguse kohaldamine, väljaspool-Euroopa juurdepääsu puudumine ja äritegevuse järjepidevus ilma EL-i väliste sõltuvusteta.",
+              "icon": "check-circle",
+              "title": "SecNumCloud ja C5:2026-ga kooskõlas"
+            }
+          ],
+          "overline": "MIKS SEE LOEB",
+          "title": "Mida saate"
+        },
+        "bottomCta": {
+          "command": "rdc audit log --limit 50",
+          "ctaText": "Alusta tasuta Community väljaandega",
+          "description": "Alustage tasuta Community väljaandega. Käivitage oma esimene võtmehalduse audit alla minuti jooksul.",
+          "title": "Lõpetage oma andmete rentimise USA jurisdiktsiooni all olevalt teenusepakkujalt."
+        },
+        "calculator": {
+          "annualLabel": "Aastane suveräänsuse kokkupuude",
+          "description": "Lohistage liugureid oma keskkonnale vastavaks. Vaadake suveräänsuse lünkade tegelikku kulu.",
+          "footnote": "Edastusrisk: kirjed × 0,04 € × 10% regulatiivse kontrolli tõenäosus. Lahkumistrahv: 10% hyperscaleri kulutusest andmemääruse artikli 25 hinnangulise üleminekukulude ülemmäärana (tasuta ülemineku tähtaeg 12. jaanuar 2027). DORA testimine: tunnid × 200 €/tund insenerikulud. Rediacciga: ise hostimine kõrvaldab edastusriski; avatud formaat kõrvaldab lahkumistrahvi; konstantse ajaga fork vähendab DORA taastetestimise minutiteks sõltumata repositooriumi suurusest.",
+          "headerTitle": "Suveräänsuse kokkupuute kalkulaator",
+          "overline": "TEGELIK KULU",
+          "results": {
+            "doraTesting": "DORA artikli 12 testimiskulu",
+            "exitPenalty": "Andmemääruse 2027 lahkumistrahvi risk",
+            "transferRisk": "GDPR andmeedastuse riskikokku puude"
+          },
+          "sliders": {
+            "records": "EL-i isikuandmete kirjed (tuhandetes)",
+            "recoveryHours": "Manuaalne DORA taastetestimine (tundi / aastas)",
+            "spend": "Aastane hyperscaleri kulutus (tuhandetes €)"
+          },
+          "title": "Mida maksab teile kokkupuude USA jurisdiktsiooniga?",
+          "withAnnual": "Aastane suveräänsuse kokkupuude",
+          "withoutTag": "USA JURISDIKTSIOON",
+          "withResults": {
+            "doraTesting": "DORA artikli 12 testimiskulu",
+            "exitPenalty": "Andmemääruse 2027 lahkumistrahvi risk",
+            "transferRisk": "GDPR andmeedastuse riskikokkupuude"
+          },
+          "withTag": "REDIACCIGA"
+        },
+        "comparison": {
+          "capabilityLabel": "Võimekus",
+          "description": "Enamik müüjaid pakub andmete asukohta. Ükski ei suuda pakkuda seda, mida Rediacc arhitektuuri kaudu toimetab: kliendi võtmehaldus, ainult EL-i operaator ja CLOUD Act-i immuunsus.",
+          "features": [
+            {
+              "name": "CLOUD Act-i immuunsus (puudub USA jurisdiktsiooni all olev emaettevõte)",
+              "refs": [4, 4, 4, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+            },
+            {
+              "name": "Klient hoiab võtmeid (tehniline arusaamatus)",
+              "refs": [0, 5, 5, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Ainult EL-i operaator (puudub USA emaettevõte)",
+              "refs": [4, 4, 4, 0, 6, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+            },
+            {
+              "name": "SecNumCloud / C5:2026 atesteerimisrada",
+              "refs": [0, 0, 7, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Avatud väljumisformaat (andmemäärus art. 30)",
+              "refs": [8, 8, 8, 0, 8, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "Ise hostitud kliendi infrastruktuuris",
+              "refs": [9, 0, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"]
+            },
+            {
+              "name": "EL-i andmete asukoht vaikimisi",
+              "refs": [0, 0, 10, 0, 13, 0],
+              "values": ["cross", "cross", "check", "check", "check", "rediacc"]
+            }
+          ],
+          "overline": "LÕHE",
+          "title": "Suveräänsuse võrdlus"
+        },
+        "explore": {
+          "solutions": [
+            {
+              "category": "Krüptimise kontroll",
+              "dataCategory": "encryption",
+              "description": "Teie võtmed. Teie krüptimine. Erandeid pole.",
+              "slug": "encryption",
+              "title": "Teie kontrollitav krüptimine"
+            },
+            {
+              "category": "Krüptimise kontroll",
+              "dataCategory": "encryption",
+              "description": "Iga tegevus logitud. Mitte midagi peidetud.",
+              "slug": "audit-trail",
+              "title": "Auditirada"
+            },
+            {
+              "category": "Krüptimise kontroll",
+              "dataCategory": "encryption",
+              "description": "Migreerige ilma andmeid ohustamata",
+              "slug": "migration-safety",
+              "title": "Migratsiooni turvalisus"
+            },
+            {
+              "category": "Lunavara ellujäämine",
+              "dataCategory": "ransomware",
+              "description": "Varukoopiad, mida lunavara ei saa puutuda",
+              "slug": "immutable-backups",
+              "title": "Muutumatud varukoopiad"
+            },
+            {
+              "category": "Mitme pilve haldus",
+              "dataCategory": "multi-cloud",
+              "description": "Kui AWS läheb alla, teie ei lähe",
+              "slug": "cloud-outage-protection",
+              "title": "Pilve katkestuste kaitse"
+            },
+            {
+              "category": "Kontrollitud varukoopiad",
+              "dataCategory": "backups",
+              "description": "Lahkuge mis tahes tarnijalt. Hoidke oma andmeid.",
+              "slug": "vendor-lock-in",
+              "title": "Tarnija lukustusest pääsemine"
+            },
+            {
+              "category": "Kontrollitud varukoopiad",
+              "dataCategory": "backups",
+              "description": "Täitke iga säilitamiskohustus automaatselt",
+              "slug": "retention-compliance",
+              "title": "Säilitamisnõuete vastavus"
+            },
+            {
+              "category": "Arenduskeskkonnad",
+              "dataCategory": "dev-env",
+              "description": "Klooni tootmiskeskkond 60 sekundiga",
+              "slug": "environment-cloning",
+              "title": "Keskkonna kloonimine"
+            }
+          ],
+          "title": "Avastage teisi lahendusi"
+        },
+        "hero": {
+          "badge": "KRÜPTIMISE KONTROLL",
+          "differentiator": "Iga hyperscaler turundab suveräänsust. Ükski neist ei suuda garanteerida, et teie andmed jäävad väljapoole USA kohtumäärusi. Rediacc saab.",
+          "primaryCta": "Alusta tasuta Community väljaandega",
+          "secondaryCta": "Vaata suveräänsuse funktsioone →",
+          "subtitle": "Teie hostib. Teie hoiab võtmeid. Ühtegi USA jurisdiktsiooni all olevat teenusepakkujat ei saa kohustada üle andma seda, mida tal pole.",
+          "title": "Suveräänne arhitektuuri järgi, mitte sertifikaadi järgi."
+        },
+        "howItWorks": {
+          "cloneVisual": {
+            "arrow": {
+              "icon": "shield-arrow",
+              "label": "Migreeri",
+              "time": "Avatud formaat"
+            },
+            "clone": {
+              "cardClass": "sealed",
+              "containerCount": "Arhitektuuriline suveräänsus",
+              "services": [
+                {
+                  "name": "Your Storage",
+                  "port": "Customer-owned"
+                },
+                {
+                  "name": "Your Keys",
+                  "port": "Customer HSM"
+                },
+                {
+                  "name": "Your Policy",
+                  "port": "EU-governed"
+                },
+                {
+                  "name": "Audit Chain",
+                  "port": "SHA-256 signed"
+                }
+              ],
+              "size": "CLOUD Act-ile immuunne",
+              "status": "EL-i jurisdiktsioon",
+              "title": "Teie Suveräänne Virn"
+            },
+            "production": {
+              "containerCount": "Lepinguline asukoht",
+              "services": [
+                {
+                  "name": "S3 Bucket",
+                  "port": "US-controlled"
+                },
+                {
+                  "name": "KMS Key",
+                  "port": "vendor-held"
+                },
+                {
+                  "name": "IAM Policy",
+                  "port": "US-governed"
+                },
+                {
+                  "name": "Audit Log",
+                  "port": "US-accessible"
+                }
+              ],
+              "size": "Ei ole suveräänsus",
+              "status": "CLOUD Act-ile avatud",
+              "title": "USA Hyperscaler"
+            }
+          },
+          "overline": "KUIDAS SEE TÖÖTAB",
+          "steps": [
+            {
+              "description": "Juurutage oma riistvaras, oma EL-i IaaS-i teenusepakkujas või mis tahes kombinatsioonis. Rediacc OÜ on asutatud Eestis; USA emaettevõte puudub, USA juhtimistasand puudub, CLOUD Act-i kokkupuutepind puudub.",
+              "icon": "server",
+              "title": "Hostib"
+            },
+            {
+              "description": "Krüptimisvõtmed ei lahku kunagi teie valdusest. Võtme tuletamine toimub kliendi poolel. Rediacc ei näe kunagi lihtteksti. Haldusahel on igale võtmele CLI kaudu auditeeritav.",
+              "icon": "key",
+              "title": "Hoiab võtmeid"
+            },
+            {
+              "description": "Genereerige allkirjastatud võtmehalduse aruanne ühe käsuga. Kooskõlas SecNumCloud 3.2, BSI C5:2026, ANSSI-BSI ühisavalduse ja EDPB soovitustega 01/2020 kasutamise juhtum 2.",
+              "icon": "shield",
+              "title": "Tõestab"
+            }
+          ],
+          "title": "Kolm sammu. Üks suveräänne virn."
+        },
+        "meta": {
+          "description": "Majutad ise, hoiad võtmeid ise. CLOUD Act immuunsus arhitektuuri tasemel, mitte sertifikaadiga. Kliendihaldusega võtmed ja isehostitav varukoopia.",
+          "keywords": "andmesuveräänsus, CLOUD Act-i immuunsus, kliendi hallatavad võtmed, GDPR Schrems II, EL-i andmemäärus, ise hostitud, suveräänne varukoopia, SecNumCloud, DORA",
+          "title": "Andmesuveräänsus: arhitektuurist tulenev kontroll"
+        },
+        "problem": {
+          "description": "USA jurisdiktsiooni all olevad pilveteenuse pakkujad on seaduslikult kohustatud täitma CLOUD Act-i korraldusi, isegi EL-i andmekeskustes hoitavate andmete puhul. Lepingulised kohustused ei saa USA seadust tühistada. Küsimus pole selles, kas teie teenusepakkuja seda teeks. Küsimus on selles, kas ta seaduslikult saaks seda teha.",
+          "overline": "PROBLEEM",
+          "statCallouts": [
+            {
+              "number": "\"Ei, ma ei saa seda garanteerida\"",
+              "ref": 1,
+              "source": "Prantsuse Senat, 18. juuni 2025",
+              "text": "Microsoft Prantsusmaa avalike ja õigusasjade direktor vande all selle kohta, kas Prantsuse kodanike andmed EL-i Microsofti andmekeskustes oleksid kaitstud USA ametiasutuste eest (algne avaldus prantsuse keeles: \"Non, je ne peux pas le garantir\")"
+            },
+            {
+              "number": "12,6 miljardit €",
+              "ref": 2,
+              "source": "Gartner, veebruar 2026",
+              "text": "EL-i suveräänse pilve IaaS-i kulutused 2026. aastal, tõustes 23,1 miljardi euroni 2027. aastaks. Turg on otsustanud, et suveräänsus ei ole vabatahtlik."
+            },
+            {
+              "number": "0 USA peaettevõtjat",
+              "ref": 3,
+              "source": "Euroopa Komisjon, 17. aprill 2026",
+              "text": "Cloud III: Euroopa Komisjoni 180 miljoni euro suurune suveräänne pilvehange anti neljale EL-i konsortsiumile. Null USA peakorteriga peaettevõtjat."
+            }
+          ],
+          "timeline": {
+            "newLabel": "REDIACCIGA",
+            "newSteps": [
+              "Hostib teie infrastruktuuris",
+              "Hoiab oma võtmeid",
+              "CLOUD Act ei saa teid kätte"
+            ],
+            "oldLabel": "VANA VIIS",
+            "oldSteps": [
+              {
+                "day": "1. päev",
+                "text": "Lepingu sõlmimine USA jurisdiktsiooni all oleva pilveteenuse pakkujaga"
+              },
+              {
+                "day": "1. kuu",
+                "text": "DPO märgib GDPR-i andmeedastuse riski; nõutav on TIA"
+              },
+              {
+                "day": "3. kuu",
+                "text": "Õigusmeeskond analüüsib CLOUD Act-i kokkupuudet; mingit garantiid pole võimalik anda"
+              },
+              {
+                "day": "6. kuu",
+                "text": "Regulaatori audit; andmete asukoht kinnitatud, suveräänsus mitte"
+              },
+              {
+                "day": "Tulemus",
+                "text": "Asukoht, mitte suveräänsus. Vastavuslõhe jääb alles."
+              }
+            ]
+          },
+          "title": "Teie pilveteenus saab teie andmed üle anda. Ja teile ei teatata sellest."
+        },
+        "references": {
+          "disclaimer": "Kalkulaatori hinnangud kasutavad valdkonna standardseid kulmudeleid; tegelik kokkupuude varieerub sõltuvalt jurisdiktsioonist, lepingu struktuurist ja rikkumise stsenaariumist.",
+          "items": [
+            {
+              "text": "Anton Carniaux, Microsoft Prantsusmaa avalike ja õigusasjade direktor, Prantsuse senati uurimine avalike hangete ja digitaalse suveräänsuse kohta, 18. juuni 2025: \"Ei, ma ei saa seda garanteerida, aga jällegi, seda pole kunagi varem juhtunud.\" Teatas The Register, 25. juuli 2025.",
+              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
+            },
+            {
+              "text": "Gartner, veebruar 2026: EL-i suveräänse pilve IaaS-i kulutuste prognoos 12,6 miljardit dollarit 2026. aastal ja 23,1 miljardit dollarit 2027. aastal, ületades Põhja-Ameerika 2027. aastaks.",
+              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
+            },
+            {
+              "text": "Euroopa Komisjon, \"Komisjon edendab pilvesuveräänsust strateegiliste hangete kaudu\", 17. aprill 2026. Cloud III 180 miljoni euro hange anti Post Telecom + OVHcloud + CleverCloud, STACKIT, Scaleway ja Proximus + S3NS + Clarence + Mistral AI-le. Null USA peakorteriga peaettevõtjat.",
+              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
+            },
+            {
+              "text": "CLOUD Act (Clarifying Lawful Overseas Use of Data Act), 18 U.S.C. 2713, 2018. Volitab USA ametiasutusi kohustama USA jurisdiktsiooni all olevaid teenusepakkujaid avaldama kliendi andmeid, mis on talletatud kõikjal maailmas.",
+              "url": "https://www.justice.gov/dag/cloudact"
+            },
+            {
+              "text": "EDPB soovitused 01/2020 meetmete kohta, mis täiendavad edastustööriistu, et tagada vastavus isikuandmete EL-i kaitsetasemele, versioon 2.0, juuni 2021. Kasutamise juhtum 2: krüptimine täiendava meetmena nõuab kliendi eksklusiivset võtmehaldust ja tehnilist arusaamatust importijal.",
+              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
+            },
+            {
+              "text": "Keepit A/S, Kopenhaagen. Ainult SaaS-varukoopia Microsoft 365, Salesforce ja Google Workspace jaoks. EL-is asutatud, puudub USA emaettevõte. Ei varunda ise hostitud ega kohapealseid töökoormusi.",
+              "url": "https://keepit.com"
+            },
+            {
+              "text": "ANSSI SecNumCloud 3.2 kvalifikatsiooninõuded. Teenusepakkujad peavad olema enamuses EL-i omanduses, EL-i peakorteriga ja immuunsed ekstraterritoriaalse õiguse suhtes. EL-i välistele aktsionäridele kehtib piirang 25% individuaalselt ja 39% ühiselt. AWS Sovereign Cloud ja Microsoft Bleu ei kvalifitseeru.",
+              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
+            },
+            {
+              "text": "EL-i andmemäärus (määrus (EL) 2023/2854), artiklid 23-31. Kehtib alates 12. september 2025. Täielik keeld üleminekukuludele alates 12. jaanuar 2027. Teenusepakkujad peavad tagama funktsionaalse samaväärsuse pärast üleminekut.",
+              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
+            },
+            {
+              "text": "Veeam Backup and Replication toetab kohapealset ise hostitud juurutamist. Veeam ei oma otseseid suveräänsuse sertifitseeringuid; EL-i suveräänsuse lugu sõltub partneri IaaS-ist (eelkõige OVHcloud).",
+              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
+            },
+            {
+              "text": "AWS European Sovereign Cloud, üldiselt kättesaadav alates 15. jaanuar 2026. Tegutseb nelja Saksa GmbH kaudu. USA peakorteriga emaettevõte (Amazon.com Inc.) jääb CLOUD Act-i alla.",
+              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
+            },
+            {
+              "text": "ANSSI-BSI ühisavaldus pilvesuveräänsuse kriteeriumide kohta, 17. november 2025. Neli diskvalifitseerivat kriteeriumi: range andmete ja toe lokaliseerimine, Euroopa õiguse eksklusiivne kohaldamine, volitamata juurdepääsu puudumine Euroopa-välistelt kolmandatelt osapooltelt ning suutlikkus säilitada äritegevuse järjepidevus ilma EL-i väliste tehnoloogiateta.",
+              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
+            },
+            {
+              "text": "Euroopa järelevalveasutused, \"Kriitiliste IKT kolmanda osapoole teenusepakkujate määramine DORA alusel\", 18. november 2025. Esimesed 19 määratud CTPP-d hõlmavad AWS, Microsoft Azure, Google Cloud, IBM, Oracle, SAP, Salesforce.",
+              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
+            },
+            {
+              "text": "Keepiti andmete residentsuse poliitika: kliendiandmed hoiustatakse eranditult ELi andmekeskustes (Frankfurt, Amsterdam, Kopenhaagen). SaaS-mudel, operaator ja salvestus on ELi-põhised.",
+              "url": "https://www.keepit.com/trust/"
+            }
+          ],
+          "label": "Allikad ja viited"
+        },
+        "socialProof": {
+          "author": "Infoturbe juht (CISO)",
+          "company": "Prantsuse OIV SecNumCloud kohustuse alusel, 1200 töötajat",
+          "impact": {
+            "after": {
+              "label": "PÄRAST",
+              "value": "CLOUD Act-ile immuunne"
+            },
+            "before": {
+              "label": "ENNE",
+              "value": "Edastusrisk"
+            },
+            "improvement": "Microsoft Azure Backup asendatud - Võtmehaldus: müüjalt kliendile - ANSSI audit: läbitud"
+          },
+          "quote": "Pärast Carniaux' senaadi tunnistust juunis 2025 esitas meie SecNumCloud audiitikomitee ühe küsimuse: kas suudate tõestada, et teie varukoopia teenusepakkujat ei saa kohustada avaldama patsiendi andmeid USA ametiasutustele? Microsoft Azure Backup-iga ei suutnud me sellele vastata. Rediacciga on vastus arhitektuuriline: võtmed ei lahku kunagi meie HSM-ist, operaatoril puudub USA emaettevõte ja saame genereerida allkirjastatud haldusaruande kolmekümnne sekundiga. See on ainus vastus, mis rahuldab ANSSI-d."
+        },
+        "stats": [
+          {
+            "icon": "key",
+            "label": "Võtmeid ühelegi teenusepakkujale escrow-s",
+            "number": "0"
+          },
+          {
+            "icon": "lock",
+            "label": "Kliendi võtmehaldus",
+            "number": "100%"
+          },
+          {
+            "icon": "globe",
+            "label": "Operaatori jurisdiktsioon",
+            "number": "Ainult EL"
+          }
+        ],
+        "techDiff": {
+          "description": "USA jurisdiktsiooni all olev teenusepakkuja saab teie andmeid hoida Frankfurdis ja USA kohtud saavad siiski kohustada neid andmeid avaldama. Rediacc-i arhitektuur eemaldab sunnivektori täielikult: pole võtmeid, mida üle anda, ja pole call-home kanalit, mida pealt kuulata.",
+          "overline": "KAPOTI ALL",
+          "rows": [
+            {
+              "rediacc": "Operaator asutatud Eestis; USA emaettevõte puudub, CLOUD Act-i sunnipind puudub",
+              "traditional": "Teenusepakkuja USA jurisdiktsiooni all olenemata sellest, kus šifreeritud tekst asub"
+            },
+            {
+              "rediacc": "Kliendipoolne võtme tuletamine: müüja ei hoia kunagi võtmeid; sunnimine on tehniliselt mõttetu",
+              "traditional": "Müüja hallatav KMS: teenusepakkuja saab õigusliku nõudmise korral lihtteksti materiaalseks muuta"
+            },
+            {
+              "rediacc": "SHA-256 allkirjastatud auditiahel: iga võtmele juurdepääs ja päring on logitud, kliendile loetav",
+              "traditional": "Piiriülesed andmepäringud on müüja logitud, kliendile nähtamatud"
+            },
+            {
+              "rediacc": "Avatud formaat (btrfs send, tar): lahkumine võrdub töötava koopiaega, andmemäärusele vastav",
+              "traditional": "Patenteeritud varukoopia formaat: lahkumine nõuab müüja tööriistadega migratsiooni"
+            },
+            {
+              "rediacc": "Konstantse ajaga fork btrfs reflink-i kaudu: 100 GB ja 100 TB saavad fork-i sama sekundite jooksul",
+              "traditional": "DORA taastetestimine skaleerib andmemahuga; suure suurusega repositooriumite jaoks mitu päeva"
+            }
+          ],
+          "title": "Miks andmete asukoht ei ole andmesuveräänsus"
+        },
+        "techStrip": {
+          "label": "Hostib ise mis tahes töökoormust, hoiab iga võtit",
+          "note": "Andmebaasid, meiliserverid, CI/CD, ERP, CMS ja tehisintellekti mudelite hoidlad: iga töökoormus suveräänne, iga võti teie."
+        },
+        "terminal": {
+          "lines": [
+            {
+              "text": "rdc audit log --limit 50",
+              "type": "command"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Kõigi repositooriumite võtme haldusahela kontrollimine...",
+              "type": "comment"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "VÕTME ID                HOIDMINE      HSM          DEPONEER.   JURISDIKTSIOON",
+              "type": "table-header"
+            },
+            {
+              "text": "prod-main-v3            klient        YubiHSM 2    NO          kliendi-ruumid",
+              "type": "table-row"
+            },
+            {
+              "text": "prod-db-v2              klient        YubiHSM 2    NO          kliendi-ruumid",
+              "type": "table-row"
+            },
+            {
+              "text": "staging-main-v1         klient        software     NO          kliendi-ruumid",
+              "type": "table-row"
+            },
+            {
+              "text": "backup-archive-v4       klient        YubiHSM 2    NO          kliendi-ruumid",
+              "type": "table-row"
+            },
+            {
+              "type": "spacer"
+            },
+            {
+              "text": "Võtmed: 4   Hoidmine: 100% klient   Deponeeritud: 0   USA-juurdepääs: 0   Allkirjastatud: 2026-05-11T09:14:33Z",
+              "type": "summary"
+            }
+          ]
+        }
+      },
+      "downloadGated": {
+        "description": "Otse asja juurde minev PDF, mis on kirjutatud CISO-dele, CTO-dele ja vaneminsenieridele. Sisesta oma e-posti aadress ja saadame sulle allalaadimislingi koos üheleheküljelise kokkuvõttega.",
+        "disclaimer": "Üks e-kiri. Turunduslistis ei osale. Tühista tellimus ühe klikiga.",
+        "dismissLabel": "Sulge",
+        "emailPlaceholder": "you@company.com",
+        "errorMessage": "Midagi läks valesti. Proovi uuesti või võta ühendust aadressil support@rediacc.com.",
+        "submitLabel": "Saada mulle ülevaade",
+        "successMessage": "Kontrolli oma postkasti kinnituse saamiseks. Avasime PDF-i ka uuel vahekaardil.",
+        "title": "Hangi tehniline ülevaade"
+      },
+      "downloadShort": {
+        "buttonLabel": "Laadi lühiülevaade alla (PDF)",
+        "description": "Jäta süvitsi minek vahele. Võta viie minuti versioon, mida su meeskond saab koosolekul läbi lugeda.",
+        "title": "Aeg on piiratud?"
       },
       "encryption": {
         "benefits": {
@@ -9539,6 +10403,26 @@
           ]
         }
       },
+      "leadMagnetButton": {
+        "buttonLabel": "Laadi ülevaade alla",
+        "description": "Otse asja juurde minev PDF, mis on kirjutatud CISO-dele, CTO-dele ja vaneminsenieridele. Saadame lingi e-postiga, et saaksid selle hiljem üles leida.",
+        "dismissLabel": "Sulge",
+        "title": "Hangi tehniline ülevaade"
+      },
+      "leadMagnetModal": {
+        "captchaRequired": "Palun läbi captcha kinnitamine.",
+        "closeLabel": "Sulge",
+        "description": "Sisesta töö e-posti aadress. Saadame sulle PDF-i lingi ja hoiame koopia sinu postkastis.",
+        "disclaimer": "Üks e-kiri. Turunduslistis ei osale. Tühista tellimus ühe klikiga.",
+        "emailLabel": "Töö e-post",
+        "emailPlaceholder": "you@company.com",
+        "errorGeneric": "Midagi läks valesti. Proovi uuesti või võta ühendust aadressil support@rediacc.com.",
+        "sendingLabel": "Saadan...",
+        "submitLabel": "Saada mulle PDF",
+        "successBody": "Avasime selle uuel vahekaardil ja saatsime sulle lingi e-postiga. Sulgen akna hetke pärast.",
+        "successTitle": "PDF on teel",
+        "title": "Hangi tehniline ülevaade"
+      },
       "migrationSafety": {
         "benefits": {
           "items": [
@@ -10513,478 +11397,6 @@
               "type": "summary"
             }
           ]
-        }
-      },
-      "dataSovereignty": {
-        "meta": {
-          "title": "Andmesuveräänsus: arhitektuurist tulenev kontroll",
-          "description": "Majutad ise, hoiad võtmeid ise. CLOUD Act immuunsus arhitektuuri tasemel, mitte sertifikaadiga. Kliendihaldusega võtmed ja isehostitav varukoopia.",
-          "keywords": "andmesuveräänsus, CLOUD Act-i immuunsus, kliendi hallatavad võtmed, GDPR Schrems II, EL-i andmemäärus, ise hostitud, suveräänne varukoopia, SecNumCloud, DORA"
-        },
-        "hero": {
-          "badge": "KRÜPTIMISE KONTROLL",
-          "title": "Suveräänne arhitektuuri järgi, mitte sertifikaadi järgi.",
-          "subtitle": "Teie hostib. Teie hoiab võtmeid. Ühtegi USA jurisdiktsiooni all olevat teenusepakkujat ei saa kohustada üle andma seda, mida tal pole.",
-          "differentiator": "Iga hyperscaler turundab suveräänsust. Ükski neist ei suuda garanteerida, et teie andmed jäävad väljapoole USA kohtumäärusi. Rediacc saab.",
-          "primaryCta": "Alusta tasuta Community väljaandega",
-          "secondaryCta": "Vaata suveräänsuse funktsioone →"
-        },
-        "terminal": {
-          "lines": [
-            {
-              "type": "command",
-              "text": "rdc audit log --limit 50"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "type": "comment",
-              "text": "Kõigi repositooriumite võtme haldusahela kontrollimine..."
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "type": "table-header",
-              "text": "VÕTME ID                HOIDMINE      HSM          DEPONEER.   JURISDIKTSIOON"
-            },
-            {
-              "type": "table-row",
-              "text": "prod-main-v3            klient        YubiHSM 2    NO          kliendi-ruumid"
-            },
-            {
-              "type": "table-row",
-              "text": "prod-db-v2              klient        YubiHSM 2    NO          kliendi-ruumid"
-            },
-            {
-              "type": "table-row",
-              "text": "staging-main-v1         klient        software     NO          kliendi-ruumid"
-            },
-            {
-              "type": "table-row",
-              "text": "backup-archive-v4       klient        YubiHSM 2    NO          kliendi-ruumid"
-            },
-            {
-              "type": "spacer"
-            },
-            {
-              "type": "summary",
-              "text": "Võtmed: 4   Hoidmine: 100% klient   Deponeeritud: 0   USA-juurdepääs: 0   Allkirjastatud: 2026-05-11T09:14:33Z"
-            }
-          ]
-        },
-        "stats": [
-          {
-            "number": "0",
-            "label": "Võtmeid ühelegi teenusepakkujale escrow-s",
-            "icon": "key"
-          },
-          {
-            "number": "100%",
-            "label": "Kliendi võtmehaldus",
-            "icon": "lock"
-          },
-          {
-            "number": "Ainult EL",
-            "label": "Operaatori jurisdiktsioon",
-            "icon": "globe"
-          }
-        ],
-        "problem": {
-          "overline": "PROBLEEM",
-          "title": "Teie pilveteenus saab teie andmed üle anda. Ja teile ei teatata sellest.",
-          "description": "USA jurisdiktsiooni all olevad pilveteenuse pakkujad on seaduslikult kohustatud täitma CLOUD Act-i korraldusi, isegi EL-i andmekeskustes hoitavate andmete puhul. Lepingulised kohustused ei saa USA seadust tühistada. Küsimus pole selles, kas teie teenusepakkuja seda teeks. Küsimus on selles, kas ta seaduslikult saaks seda teha.",
-          "statCallouts": [
-            {
-              "number": "\"Ei, ma ei saa seda garanteerida\"",
-              "source": "Prantsuse Senat, 18. juuni 2025",
-              "ref": 1,
-              "text": "Microsoft Prantsusmaa avalike ja õigusasjade direktor vande all selle kohta, kas Prantsuse kodanike andmed EL-i Microsofti andmekeskustes oleksid kaitstud USA ametiasutuste eest (algne avaldus prantsuse keeles: \"Non, je ne peux pas le garantir\")"
-            },
-            {
-              "number": "12,6 miljardit €",
-              "source": "Gartner, veebruar 2026",
-              "ref": 2,
-              "text": "EL-i suveräänse pilve IaaS-i kulutused 2026. aastal, tõustes 23,1 miljardi euroni 2027. aastaks. Turg on otsustanud, et suveräänsus ei ole vabatahtlik."
-            },
-            {
-              "number": "0 USA peaettevõtjat",
-              "source": "Euroopa Komisjon, 17. aprill 2026",
-              "ref": 3,
-              "text": "Cloud III: Euroopa Komisjoni 180 miljoni euro suurune suveräänne pilvehange anti neljale EL-i konsortsiumile. Null USA peakorteriga peaettevõtjat."
-            }
-          ],
-          "timeline": {
-            "oldLabel": "VANA VIIS",
-            "oldSteps": [
-              {
-                "day": "1. päev",
-                "text": "Lepingu sõlmimine USA jurisdiktsiooni all oleva pilveteenuse pakkujaga"
-              },
-              {
-                "day": "1. kuu",
-                "text": "DPO märgib GDPR-i andmeedastuse riski; nõutav on TIA"
-              },
-              {
-                "day": "3. kuu",
-                "text": "Õigusmeeskond analüüsib CLOUD Act-i kokkupuudet; mingit garantiid pole võimalik anda"
-              },
-              {
-                "day": "6. kuu",
-                "text": "Regulaatori audit; andmete asukoht kinnitatud, suveräänsus mitte"
-              },
-              {
-                "day": "Tulemus",
-                "text": "Asukoht, mitte suveräänsus. Vastavuslõhe jääb alles."
-              }
-            ],
-            "newLabel": "REDIACCIGA",
-            "newSteps": [
-              "Hostib teie infrastruktuuris",
-              "Hoiab oma võtmeid",
-              "CLOUD Act ei saa teid kätte"
-            ]
-          }
-        },
-        "calculator": {
-          "overline": "TEGELIK KULU",
-          "title": "Mida maksab teile kokkupuude USA jurisdiktsiooniga?",
-          "description": "Lohistage liugureid oma keskkonnale vastavaks. Vaadake suveräänsuse lünkade tegelikku kulu.",
-          "headerTitle": "Suveräänsuse kokkupuute kalkulaator",
-          "sliders": {
-            "records": "EL-i isikuandmete kirjed (tuhandetes)",
-            "spend": "Aastane hyperscaleri kulutus (tuhandetes €)",
-            "recoveryHours": "Manuaalne DORA taastetestimine (tundi / aastas)"
-          },
-          "withoutTag": "USA JURISDIKTSIOON",
-          "withTag": "REDIACCIGA",
-          "results": {
-            "transferRisk": "GDPR andmeedastuse riskikokku puude",
-            "exitPenalty": "Andmemääruse 2027 lahkumistrahvi risk",
-            "doraTesting": "DORA artikli 12 testimiskulu"
-          },
-          "annualLabel": "Aastane suveräänsuse kokkupuude",
-          "withResults": {
-            "transferRisk": "GDPR andmeedastuse riskikokkupuude",
-            "exitPenalty": "Andmemääruse 2027 lahkumistrahvi risk",
-            "doraTesting": "DORA artikli 12 testimiskulu"
-          },
-          "withAnnual": "Aastane suveräänsuse kokkupuude",
-          "footnote": "Edastusrisk: kirjed × 0,04 € × 10% regulatiivse kontrolli tõenäosus. Lahkumistrahv: 10% hyperscaleri kulutusest andmemääruse artikli 25 hinnangulise üleminekukulude ülemmäärana (tasuta ülemineku tähtaeg 12. jaanuar 2027). DORA testimine: tunnid × 200 €/tund insenerikulud. Rediacciga: ise hostimine kõrvaldab edastusriski; avatud formaat kõrvaldab lahkumistrahvi; konstantse ajaga fork vähendab DORA taastetestimise minutiteks sõltumata repositooriumi suurusest."
-        },
-        "howItWorks": {
-          "overline": "KUIDAS SEE TÖÖTAB",
-          "title": "Kolm sammu. Üks suveräänne virn.",
-          "steps": [
-            {
-              "title": "Hostib",
-              "description": "Juurutage oma riistvaras, oma EL-i IaaS-i teenusepakkujas või mis tahes kombinatsioonis. Rediacc OÜ on asutatud Eestis; USA emaettevõte puudub, USA juhtimistasand puudub, CLOUD Act-i kokkupuutepind puudub.",
-              "icon": "server"
-            },
-            {
-              "title": "Hoiab võtmeid",
-              "description": "Krüptimisvõtmed ei lahku kunagi teie valdusest. Võtme tuletamine toimub kliendi poolel. Rediacc ei näe kunagi lihtteksti. Haldusahel on igale võtmele CLI kaudu auditeeritav.",
-              "icon": "key"
-            },
-            {
-              "title": "Tõestab",
-              "description": "Genereerige allkirjastatud võtmehalduse aruanne ühe käsuga. Kooskõlas SecNumCloud 3.2, BSI C5:2026, ANSSI-BSI ühisavalduse ja EDPB soovitustega 01/2020 kasutamise juhtum 2.",
-              "icon": "shield"
-            }
-          ],
-          "cloneVisual": {
-            "production": {
-              "title": "USA Hyperscaler",
-              "status": "CLOUD Act-ile avatud",
-              "services": [
-                {
-                  "name": "S3 Bucket",
-                  "port": "US-controlled"
-                },
-                {
-                  "name": "KMS Key",
-                  "port": "vendor-held"
-                },
-                {
-                  "name": "IAM Policy",
-                  "port": "US-governed"
-                },
-                {
-                  "name": "Audit Log",
-                  "port": "US-accessible"
-                }
-              ],
-              "containerCount": "Lepinguline asukoht",
-              "size": "Ei ole suveräänsus"
-            },
-            "clone": {
-              "title": "Teie Suveräänne Virn",
-              "status": "EL-i jurisdiktsioon",
-              "cardClass": "sealed",
-              "services": [
-                {
-                  "name": "Your Storage",
-                  "port": "Customer-owned"
-                },
-                {
-                  "name": "Your Keys",
-                  "port": "Customer HSM"
-                },
-                {
-                  "name": "Your Policy",
-                  "port": "EU-governed"
-                },
-                {
-                  "name": "Audit Chain",
-                  "port": "SHA-256 signed"
-                }
-              ],
-              "containerCount": "Arhitektuuriline suveräänsus",
-              "size": "CLOUD Act-ile immuunne"
-            },
-            "arrow": {
-              "label": "Migreeri",
-              "time": "Avatud formaat",
-              "icon": "shield-arrow"
-            }
-          }
-        },
-        "techDiff": {
-          "overline": "KAPOTI ALL",
-          "title": "Miks andmete asukoht ei ole andmesuveräänsus",
-          "description": "USA jurisdiktsiooni all olev teenusepakkuja saab teie andmeid hoida Frankfurdis ja USA kohtud saavad siiski kohustada neid andmeid avaldama. Rediacc-i arhitektuur eemaldab sunnivektori täielikult: pole võtmeid, mida üle anda, ja pole call-home kanalit, mida pealt kuulata.",
-          "rows": [
-            {
-              "traditional": "Teenusepakkuja USA jurisdiktsiooni all olenemata sellest, kus šifreeritud tekst asub",
-              "rediacc": "Operaator asutatud Eestis; USA emaettevõte puudub, CLOUD Act-i sunnipind puudub"
-            },
-            {
-              "traditional": "Müüja hallatav KMS: teenusepakkuja saab õigusliku nõudmise korral lihtteksti materiaalseks muuta",
-              "rediacc": "Kliendipoolne võtme tuletamine: müüja ei hoia kunagi võtmeid; sunnimine on tehniliselt mõttetu"
-            },
-            {
-              "traditional": "Piiriülesed andmepäringud on müüja logitud, kliendile nähtamatud",
-              "rediacc": "SHA-256 allkirjastatud auditiahel: iga võtmele juurdepääs ja päring on logitud, kliendile loetav"
-            },
-            {
-              "traditional": "Patenteeritud varukoopia formaat: lahkumine nõuab müüja tööriistadega migratsiooni",
-              "rediacc": "Avatud formaat (btrfs send, tar): lahkumine võrdub töötava koopiaega, andmemäärusele vastav"
-            },
-            {
-              "traditional": "DORA taastetestimine skaleerib andmemahuga; suure suurusega repositooriumite jaoks mitu päeva",
-              "rediacc": "Konstantse ajaga fork btrfs reflink-i kaudu: 100 GB ja 100 TB saavad fork-i sama sekundite jooksul"
-            }
-          ]
-        },
-        "benefits": {
-          "overline": "MIKS SEE LOEB",
-          "title": "Mida saate",
-          "items": [
-            {
-              "icon": "shield",
-              "title": "CLOUD Act-i immuunsus konstruktsiooni järgi",
-              "description": "Puudub USA jurisdiktsiooni all olev emaettevõte. Puudub müüja juures escrow-s hoitav võti. Arhitektuur on kaitse. Carniaux'i senaadi tunnistus (18. juuni 2025) sulges mis tahes alles jäänud argumendi, et lepingud asendavad jurisdiktsioonilist immuunsust."
-            },
-            {
-              "icon": "globe",
-              "title": "EL-i andmemääruse 2027 jaoks valmis",
-              "description": "Avatud andmeformaat ja null üleminekukulusid konstruktsiooni järgi. Iga varukoopia on kaasaskantav, töötav koopia. Täielik vastavus andmemääruse artiklitele 23-31 enne 12. jaanuari 2027 tasuta ülemineku tähtaega."
-            },
-            {
-              "icon": "check-circle",
-              "title": "SecNumCloud ja C5:2026-ga kooskõlas",
-              "description": "Nelja samba asend vastab ANSSI-BSI 17. novembri 2025 ühisavaldusele: range andmete lokaliseerimine, eksklusiivne EL-i õiguse kohaldamine, väljaspool-Euroopa juurdepääsu puudumine ja äritegevuse järjepidevus ilma EL-i väliste sõltuvusteta."
-            }
-          ]
-        },
-        "comparison": {
-          "overline": "LÕHE",
-          "title": "Suveräänsuse võrdlus",
-          "description": "Enamik müüjaid pakub andmete asukohta. Ükski ei suuda pakkuda seda, mida Rediacc arhitektuuri kaudu toimetab: kliendi võtmehaldus, ainult EL-i operaator ja CLOUD Act-i immuunsus.",
-          "capabilityLabel": "Võimekus",
-          "features": [
-            {
-              "name": "CLOUD Act-i immuunsus (puudub USA jurisdiktsiooni all olev emaettevõte)",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 0, 0]
-            },
-            {
-              "name": "Klient hoiab võtmeid (tehniline arusaamatus)",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 5, 5, 0, 0, 0]
-            },
-            {
-              "name": "Ainult EL-i operaator (puudub USA emaettevõte)",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 6, 0]
-            },
-            {
-              "name": "SecNumCloud / C5:2026 atesteerimisrada",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 7, 0, 0, 0]
-            },
-            {
-              "name": "Avatud väljumisformaat (andmemäärus art. 30)",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [8, 8, 8, 0, 8, 0]
-            },
-            {
-              "name": "Ise hostitud kliendi infrastruktuuris",
-              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [9, 0, 0, 0, 0, 0]
-            },
-            {
-              "name": "EL-i andmete asukoht vaikimisi",
-              "values": ["cross", "cross", "check", "check", "check", "rediacc"],
-              "refs": [0, 0, 10, 0, 13, 0]
-            }
-          ]
-        },
-        "socialProof": {
-          "quote": "Pärast Carniaux' senaadi tunnistust juunis 2025 esitas meie SecNumCloud audiitikomitee ühe küsimuse: kas suudate tõestada, et teie varukoopia teenusepakkujat ei saa kohustada avaldama patsiendi andmeid USA ametiasutustele? Microsoft Azure Backup-iga ei suutnud me sellele vastata. Rediacciga on vastus arhitektuuriline: võtmed ei lahku kunagi meie HSM-ist, operaatoril puudub USA emaettevõte ja saame genereerida allkirjastatud haldusaruande kolmekümnne sekundiga. See on ainus vastus, mis rahuldab ANSSI-d.",
-          "author": "Infoturbe juht (CISO)",
-          "company": "Prantsuse OIV SecNumCloud kohustuse alusel, 1200 töötajat",
-          "impact": {
-            "before": {
-              "label": "ENNE",
-              "value": "Edastusrisk"
-            },
-            "after": {
-              "label": "PÄRAST",
-              "value": "CLOUD Act-ile immuunne"
-            },
-            "improvement": "Microsoft Azure Backup asendatud - Võtmehaldus: müüjalt kliendile - ANSSI audit: läbitud"
-          }
-        },
-        "bottomCta": {
-          "title": "Lõpetage oma andmete rentimise USA jurisdiktsiooni all olevalt teenusepakkujalt.",
-          "description": "Alustage tasuta Community väljaandega. Käivitage oma esimene võtmehalduse audit alla minuti jooksul.",
-          "ctaText": "Alusta tasuta Community väljaandega",
-          "command": "rdc audit log --limit 50"
-        },
-        "techStrip": {
-          "label": "Hostib ise mis tahes töökoormust, hoiab iga võtit",
-          "note": "Andmebaasid, meiliserverid, CI/CD, ERP, CMS ja tehisintellekti mudelite hoidlad: iga töökoormus suveräänne, iga võti teie."
-        },
-        "explore": {
-          "title": "Avastage teisi lahendusi",
-          "solutions": [
-            {
-              "category": "Krüptimise kontroll",
-              "title": "Teie kontrollitav krüptimine",
-              "description": "Teie võtmed. Teie krüptimine. Erandeid pole.",
-              "slug": "encryption",
-              "dataCategory": "encryption"
-            },
-            {
-              "category": "Krüptimise kontroll",
-              "title": "Auditirada",
-              "description": "Iga tegevus logitud. Mitte midagi peidetud.",
-              "slug": "audit-trail",
-              "dataCategory": "encryption"
-            },
-            {
-              "category": "Krüptimise kontroll",
-              "title": "Migratsiooni turvalisus",
-              "description": "Migreerige ilma andmeid ohustamata",
-              "slug": "migration-safety",
-              "dataCategory": "encryption"
-            },
-            {
-              "category": "Lunavara ellujäämine",
-              "title": "Muutumatud varukoopiad",
-              "description": "Varukoopiad, mida lunavara ei saa puutuda",
-              "slug": "immutable-backups",
-              "dataCategory": "ransomware"
-            },
-            {
-              "category": "Mitme pilve haldus",
-              "title": "Pilve katkestuste kaitse",
-              "description": "Kui AWS läheb alla, teie ei lähe",
-              "slug": "cloud-outage-protection",
-              "dataCategory": "multi-cloud"
-            },
-            {
-              "category": "Kontrollitud varukoopiad",
-              "title": "Tarnija lukustusest pääsemine",
-              "description": "Lahkuge mis tahes tarnijalt. Hoidke oma andmeid.",
-              "slug": "vendor-lock-in",
-              "dataCategory": "backups"
-            },
-            {
-              "category": "Kontrollitud varukoopiad",
-              "title": "Säilitamisnõuete vastavus",
-              "description": "Täitke iga säilitamiskohustus automaatselt",
-              "slug": "retention-compliance",
-              "dataCategory": "backups"
-            },
-            {
-              "category": "Arenduskeskkonnad",
-              "title": "Keskkonna kloonimine",
-              "description": "Klooni tootmiskeskkond 60 sekundiga",
-              "slug": "environment-cloning",
-              "dataCategory": "dev-env"
-            }
-          ]
-        },
-        "references": {
-          "label": "Allikad ja viited",
-          "items": [
-            {
-              "text": "Anton Carniaux, Microsoft Prantsusmaa avalike ja õigusasjade direktor, Prantsuse senati uurimine avalike hangete ja digitaalse suveräänsuse kohta, 18. juuni 2025: \"Ei, ma ei saa seda garanteerida, aga jällegi, seda pole kunagi varem juhtunud.\" Teatas The Register, 25. juuli 2025.",
-              "url": "https://www.theregister.com/2025/07/25/microsoft_admits_it_cannot_guarantee/"
-            },
-            {
-              "text": "Gartner, veebruar 2026: EL-i suveräänse pilve IaaS-i kulutuste prognoos 12,6 miljardit dollarit 2026. aastal ja 23,1 miljardit dollarit 2027. aastal, ületades Põhja-Ameerika 2027. aastaks.",
-              "url": "https://www.gartner.com/en/newsroom/press-releases/2026-02"
-            },
-            {
-              "text": "Euroopa Komisjon, \"Komisjon edendab pilvesuveräänsust strateegiliste hangete kaudu\", 17. aprill 2026. Cloud III 180 miljoni euro hange anti Post Telecom + OVHcloud + CleverCloud, STACKIT, Scaleway ja Proximus + S3NS + Clarence + Mistral AI-le. Null USA peakorteriga peaettevõtjat.",
-              "url": "https://commission.europa.eu/news-and-media/news/commission-advances-cloud-sovereignty-through-strategic-procurement-2026-04-17_en"
-            },
-            {
-              "text": "CLOUD Act (Clarifying Lawful Overseas Use of Data Act), 18 U.S.C. 2713, 2018. Volitab USA ametiasutusi kohustama USA jurisdiktsiooni all olevaid teenusepakkujaid avaldama kliendi andmeid, mis on talletatud kõikjal maailmas.",
-              "url": "https://www.justice.gov/dag/cloudact"
-            },
-            {
-              "text": "EDPB soovitused 01/2020 meetmete kohta, mis täiendavad edastustööriistu, et tagada vastavus isikuandmete EL-i kaitsetasemele, versioon 2.0, juuni 2021. Kasutamise juhtum 2: krüptimine täiendava meetmena nõuab kliendi eksklusiivset võtmehaldust ja tehnilist arusaamatust importijal.",
-              "url": "https://www.edpb.europa.eu/system/files/2021-06/edpb_recommendations_202001vo.2.0_supplementarymeasurestransferstools_en.pdf"
-            },
-            {
-              "text": "Keepit A/S, Kopenhaagen. Ainult SaaS-varukoopia Microsoft 365, Salesforce ja Google Workspace jaoks. EL-is asutatud, puudub USA emaettevõte. Ei varunda ise hostitud ega kohapealseid töökoormusi.",
-              "url": "https://keepit.com"
-            },
-            {
-              "text": "ANSSI SecNumCloud 3.2 kvalifikatsiooninõuded. Teenusepakkujad peavad olema enamuses EL-i omanduses, EL-i peakorteriga ja immuunsed ekstraterritoriaalse õiguse suhtes. EL-i välistele aktsionäridele kehtib piirang 25% individuaalselt ja 39% ühiselt. AWS Sovereign Cloud ja Microsoft Bleu ei kvalifitseeru.",
-              "url": "https://www.ssi.gouv.fr/uploads/2022/01/secnumcloud-referentiel-v3.2.pdf"
-            },
-            {
-              "text": "EL-i andmemäärus (määrus (EL) 2023/2854), artiklid 23-31. Kehtib alates 12. september 2025. Täielik keeld üleminekukuludele alates 12. jaanuar 2027. Teenusepakkujad peavad tagama funktsionaalse samaväärsuse pärast üleminekut.",
-              "url": "https://eur-lex.europa.eu/eli/reg/2023/2854/oj/eng"
-            },
-            {
-              "text": "Veeam Backup and Replication toetab kohapealset ise hostitud juurutamist. Veeam ei oma otseseid suveräänsuse sertifitseeringuid; EL-i suveräänsuse lugu sõltub partneri IaaS-ist (eelkõige OVHcloud).",
-              "url": "https://helpcenter.veeam.com/docs/vbr/userguide/system_requirements.html"
-            },
-            {
-              "text": "AWS European Sovereign Cloud, üldiselt kättesaadav alates 15. jaanuar 2026. Tegutseb nelja Saksa GmbH kaudu. USA peakorteriga emaettevõte (Amazon.com Inc.) jääb CLOUD Act-i alla.",
-              "url": "https://aws.amazon.com/government-education/european-sovereign-cloud/"
-            },
-            {
-              "text": "ANSSI-BSI ühisavaldus pilvesuveräänsuse kriteeriumide kohta, 17. november 2025. Neli diskvalifitseerivat kriteeriumi: range andmete ja toe lokaliseerimine, Euroopa õiguse eksklusiivne kohaldamine, volitamata juurdepääsu puudumine Euroopa-välistelt kolmandatelt osapooltelt ning suutlikkus säilitada äritegevuse järjepidevus ilma EL-i väliste tehnoloogiateta.",
-              "url": "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/ANSSI-BSI-joint-releases/Cloud-Sovereignty-Criteria.pdf"
-            },
-            {
-              "text": "Euroopa järelevalveasutused, \"Kriitiliste IKT kolmanda osapoole teenusepakkujate määramine DORA alusel\", 18. november 2025. Esimesed 19 määratud CTPP-d hõlmavad AWS, Microsoft Azure, Google Cloud, IBM, Oracle, SAP, Salesforce.",
-              "url": "https://www.eiopa.europa.eu/european-supervisory-authorities-designate-critical-ict-third-party-providers-under-digital-2025-11-18_en"
-            },
-            {
-              "text": "Keepiti andmete residentsuse poliitika: kliendiandmed hoiustatakse eranditult ELi andmekeskustes (Frankfurt, Amsterdam, Kopenhaagen). SaaS-mudel, operaator ja salvestus on ELi-põhised.",
-              "url": "https://www.keepit.com/trust/"
-            }
-          ],
-          "disclaimer": "Kalkulaatori hinnangud kasutavad valdkonna standardseid kulmudeleid; tegelik kokkupuude varieerub sõltuvalt jurisdiktsioonist, lepingu struktuurist ja rikkumise stsenaariumist."
         }
       },
       "rapidRecovery": {
@@ -13406,26 +13818,6 @@
             }
           ]
         }
-      },
-      "leadMagnetModal": {
-        "title": "Hangi tehniline ülevaade",
-        "description": "Sisesta töö e-posti aadress. Saadame sulle PDF-i lingi ja hoiame koopia sinu postkastis.",
-        "emailLabel": "Töö e-post",
-        "emailPlaceholder": "you@company.com",
-        "submitLabel": "Saada mulle PDF",
-        "sendingLabel": "Saadan...",
-        "successTitle": "PDF on teel",
-        "successBody": "Avasime selle uuel vahekaardil ja saatsime sulle lingi e-postiga. Sulgen akna hetke pärast.",
-        "errorGeneric": "Midagi läks valesti. Proovi uuesti või võta ühendust aadressil support@rediacc.com.",
-        "captchaRequired": "Palun läbi captcha kinnitamine.",
-        "disclaimer": "Üks e-kiri. Turunduslistis ei osale. Tühista tellimus ühe klikiga.",
-        "closeLabel": "Sulge"
-      },
-      "leadMagnetButton": {
-        "title": "Hangi tehniline ülevaade",
-        "description": "Otse asja juurde minev PDF, mis on kirjutatud CISO-dele, CTO-dele ja vaneminsenieridele. Saadame lingi e-postiga, et saaksid selle hiljem üles leida.",
-        "buttonLabel": "Laadi ülevaade alla",
-        "dismissLabel": "Sulge"
       }
     },
     "team": {
@@ -14037,398 +14429,6 @@
       },
       "toc": {
         "title": "Sisukord"
-      }
-    },
-    "resourcesBrief": {
-      "ransomwareSurvival": {
-        "meta": {
-          "title": "Lunavararünnetele vastupidav varukoopiastrateegia",
-          "description": "Failisüsteemi tasemel muutumatud varukoopiad, mida ründajad ei saa krüpteerida ega kustutada. Tasuta CISO/CTO-tasemel ülevaade Rediaccilt.",
-          "keywords": "lunavarast ellujäämine, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
-        },
-        "hero": {
-          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
-          "title": "Lunavarast ellujäämine",
-          "subtitle": "94% lunavararünnakutest sihib varundust. 57% õnnestub.",
-          "downloadButton": "Laadi tehniline ülevaade alla",
-          "openInBrowser": "Ava brauseris",
-          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga."
-        },
-        "toc": {
-          "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
-          "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
-          ]
-        },
-        "companions": {
-          "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
-          "readMore": "Loe edasi"
-        },
-        "faq": {
-          "heading": "Lugejate küsimused",
-          "items": [
-            {
-              "q": "Kellele see ülevaade on kirjutatud?",
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub."
-            },
-            {
-              "q": "Kas on ka mittetehniline versioon?",
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele."
-            },
-            {
-              "q": "Mis saab minu e-postiga?",
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale."
-            },
-            {
-              "q": "Miks btrfs?",
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada."
-            },
-            {
-              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?",
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte."
-            }
-          ]
-        },
-        "about": {
-          "heading": "Sellest ülevaatest",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
-          "downloadButton": "Laadi ülevaade alla"
-        }
-      },
-      "multiCloudAlways": {
-        "meta": {
-          "title": "Multi-Cloud alati: tasuta tehniline ülevaade PDF",
-          "description": "Porditavad hetktõmmised ja testitud pilveülene tõrkesiire – teie äri püsib üles ka pilverikke ajal. CISO/CTO ülevaade ja juhtkonna versioon.",
-          "keywords": "multi-cloud always, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
-        },
-        "hero": {
-          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
-          "title": "Multi-Cloud Always",
-          "subtitle": "AWS US-EAST-1 katkestas töö 15 tunniks 20. oktoobril 2025. Snapchat, Robinhood, Uber, Delta. Kas oleksid saanud pilve vahetada õigeaegselt?",
-          "downloadButton": "Laadi tehniline ülevaade alla",
-          "openInBrowser": "Ava brauseris",
-          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga."
-        },
-        "toc": {
-          "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
-          "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
-          ]
-        },
-        "companions": {
-          "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
-          "readMore": "Loe edasi"
-        },
-        "faq": {
-          "heading": "Lugejate küsimused",
-          "items": [
-            {
-              "q": "Kellele see ülevaade on kirjutatud?",
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub."
-            },
-            {
-              "q": "Kas on ka mittetehniline versioon?",
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele."
-            },
-            {
-              "q": "Mis saab minu e-postiga?",
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale."
-            },
-            {
-              "q": "Miks btrfs?",
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada."
-            },
-            {
-              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?",
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte."
-            }
-          ]
-        },
-        "about": {
-          "heading": "Sellest ülevaatest",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
-          "downloadButton": "Laadi ülevaade alla"
-        }
-      },
-      "verifiedBackups": {
-        "meta": {
-          "title": "Tõendatud varukoopiad: tasuta tehniline ülevaade",
-          "description": "Käivitus- ja kontrolltest igal varukoopial, igal tsüklil – mitte kord kvartalis. Tasuta CISO/CTO ülevaade Rediaccilt ja viie minuti juhtkonnaversioon.",
-          "keywords": "kinnitatud varukoopiad, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
-        },
-        "hero": {
-          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
-          "title": "Kinnitatud varukoopiad",
-          "subtitle": "58% varukoopiatest ebaõnnestub taastamiskatsel. Enamik ettevõtteid saab sellest teada alles katastroofi ajal.",
-          "downloadButton": "Laadi tehniline ülevaade alla",
-          "openInBrowser": "Ava brauseris",
-          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga."
-        },
-        "toc": {
-          "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
-          "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
-          ]
-        },
-        "companions": {
-          "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
-          "readMore": "Loe edasi"
-        },
-        "faq": {
-          "heading": "Lugejate küsimused",
-          "items": [
-            {
-              "q": "Kellele see ülevaade on kirjutatud?",
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub."
-            },
-            {
-              "q": "Kas on ka mittetehniline versioon?",
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele."
-            },
-            {
-              "q": "Mis saab minu e-postiga?",
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale."
-            },
-            {
-              "q": "Miks btrfs?",
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada."
-            },
-            {
-              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?",
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte."
-            }
-          ]
-        },
-        "about": {
-          "heading": "Sellest ülevaatest",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
-          "downloadButton": "Laadi ülevaade alla"
-        }
-      },
-      "encryptionControl": {
-        "meta": {
-          "title": "Krüpteerimisjuhtimine: tasuta tehniline ülevaade",
-          "description": "Kliendihaldusega võtmed ja krüpteeritud andmed, mis ei sõltu teenusepakkujast. Schrems II nõuetele vastav. CISO/CTO ülevaade ja juhtkonna versioon.",
-          "keywords": "krüpteerimise kontroll, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
-        },
-        "hero": {
-          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
-          "title": "Krüpteerimise kontroll",
-          "subtitle": "Schrems II ei ole poliitiline valik. See on arhitektuurinõue ja enamik varundustarnijaid ei täida seda.",
-          "downloadButton": "Laadi tehniline ülevaade alla",
-          "openInBrowser": "Ava brauseris",
-          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga."
-        },
-        "toc": {
-          "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
-          "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
-          ]
-        },
-        "companions": {
-          "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
-          "readMore": "Loe edasi"
-        },
-        "faq": {
-          "heading": "Lugejate küsimused",
-          "items": [
-            {
-              "q": "Kellele see ülevaade on kirjutatud?",
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub."
-            },
-            {
-              "q": "Kas on ka mittetehniline versioon?",
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele."
-            },
-            {
-              "q": "Mis saab minu e-postiga?",
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale."
-            },
-            {
-              "q": "Miks btrfs?",
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada."
-            },
-            {
-              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?",
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte."
-            }
-          ]
-        },
-        "about": {
-          "heading": "Sellest ülevaatest",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
-          "downloadButton": "Laadi ülevaade alla"
-        }
-      },
-      "devEnvironments": {
-        "meta": {
-          "title": "Arenduskeskkonnad: tasuta tehniline ülevaade PDF",
-          "description": "Tootmisega identsed arenduskeskkonnad 60 sekundiga btrfs nullkoopiakloone kasutades. Tasuta CISO/CTO ülevaade Rediaccilt ja viie minuti juhtkonnaversioon.",
-          "keywords": "arenduskeskkonnad, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
-        },
-        "hero": {
-          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
-          "title": "Arenduskeskkonnad",
-          "subtitle": "Sinu arendajad kirjutavad koodi 4,5 tundi nädalas. Ülejäänud aeg kulub keskkondade ootamisele. 50-liikmeline meeskond kaotab seadistamisele aastas 720 000–1 200 000 dollarit.",
-          "downloadButton": "Laadi tehniline ülevaade alla",
-          "openInBrowser": "Ava brauseris",
-          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga."
-        },
-        "toc": {
-          "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
-          "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
-          ]
-        },
-        "companions": {
-          "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
-          "readMore": "Loe edasi"
-        },
-        "faq": {
-          "heading": "Lugejate küsimused",
-          "items": [
-            {
-              "q": "Kellele see ülevaade on kirjutatud?",
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub."
-            },
-            {
-              "q": "Kas on ka mittetehniline versioon?",
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele."
-            },
-            {
-              "q": "Mis saab minu e-postiga?",
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale."
-            },
-            {
-              "q": "Miks btrfs?",
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada."
-            },
-            {
-              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?",
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte."
-            }
-          ]
-        },
-        "about": {
-          "heading": "Sellest ülevaatest",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
-          "downloadButton": "Laadi ülevaade alla"
-        }
-      },
-      "preemptiveDefense": {
-        "meta": {
-          "title": "Ennetav kaitse: tasuta tehniline ülevaade PDF",
-          "description": "Turvatestid tootmiskloonil ilma tootmisriskita. Tehisaru permestatsioonitestid korduvkasutatamatul koopial. CISO/CTO ülevaade ja juhtkonna versioon.",
-          "keywords": "ennetav kaitse, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade"
-        },
-        "hero": {
-          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
-          "title": "Ennetav kaitse",
-          "subtitle": "Testi oma päris infrastruktuuri vastu. Ära riku midagi. Kloon võtab ohtlikud löögid vastu.",
-          "downloadButton": "Laadi tehniline ülevaade alla",
-          "openInBrowser": "Ava brauseris",
-          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga."
-        },
-        "toc": {
-          "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
-          "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
-          ]
-        },
-        "companions": {
-          "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
-          "readMore": "Loe edasi"
-        },
-        "faq": {
-          "heading": "Lugejate küsimused",
-          "items": [
-            {
-              "q": "Kellele see ülevaade on kirjutatud?",
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub."
-            },
-            {
-              "q": "Kas on ka mittetehniline versioon?",
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele."
-            },
-            {
-              "q": "Mis saab minu e-postiga?",
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale."
-            },
-            {
-              "q": "Miks btrfs?",
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada."
-            },
-            {
-              "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?",
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte."
-            }
-          ]
-        },
-        "about": {
-          "heading": "Sellest ülevaatest",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
-          "downloadButton": "Laadi ülevaade alla"
-        }
       }
     }
   },

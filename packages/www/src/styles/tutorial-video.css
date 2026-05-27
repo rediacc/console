@@ -1,0 +1,193 @@
+/* TutorialVideoPlayer styles. Plyr's own stylesheet is imported by the
+ * component; this file adds the container layout and the chapter-tick
+ * overlay that sits on top of Plyr's progress bar. */
+
+.tvp-root {
+  position: relative;
+  max-width: 100%;
+  margin: 1.5rem 0;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.tvp-root .plyr {
+  border-radius: 8px;
+  --plyr-color-main: #e94e2b;
+  --plyr-video-control-color-hover: #ffffff;
+  --plyr-tooltip-radius: 4px;
+}
+
+.tvp-root .plyr__poster {
+  background-size: cover;
+}
+
+/* Suppress Plyr's built-in caption box — our .tvp-caption overlay below
+ * renders the same text with per-word highlighting. The subtitles track is
+ * still loaded so Plyr's CC button + captions menu stay wired. */
+.tvp-root .plyr__captions {
+  display: none !important;
+}
+
+.tvp-caption {
+  position: absolute;
+  left: 50%;
+  bottom: 64px;
+  transform: translateX(-50%);
+  max-width: min(85%, 900px);
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1.4;
+  font-weight: 500;
+  text-align: center;
+  border-radius: 6px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 120ms ease,
+    visibility 0s linear 120ms;
+  z-index: 3;
+  text-wrap: balance;
+}
+
+.tvp-caption.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 120ms ease,
+    visibility 0s linear 0s;
+}
+
+.tvp-caption.is-hidden-by-cc {
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+/* In fullscreen the controls overlay sits higher; nudge the caption up. */
+.tvp-root .plyr--fullscreen-active .tvp-caption,
+.tvp-root .plyr:fullscreen .tvp-caption {
+  bottom: 96px;
+  font-size: 22px;
+}
+
+.tvp-caption-word {
+  display: inline;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
+}
+
+.tvp-caption-word.is-active {
+  color: var(--plyr-color-main, #e94e2b);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .tvp-caption {
+    bottom: 56px;
+    font-size: 15px;
+    padding: 6px 10px;
+  }
+}
+
+/* Chapter overlay: a row of ticks sitting directly above Plyr's progress
+ * bar. Plyr's .plyr__progress is a relatively positioned wrapper around
+ * the seek input; we append this element into it so it scales with the
+ * progress bar across viewport sizes and fullscreen toggles. */
+.tvp-chapter-overlay {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.tvp-chapter-overlay .tvp-chapter-tick {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+/* The visible tick mark is drawn as a centered pseudo-element so the button's
+ * hit area can be wider than the painted bar (3px is too narrow to hover). */
+.tvp-chapter-overlay .tvp-chapter-tick::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4);
+  border-radius: 1px;
+  transition:
+    background 120ms ease,
+    transform 120ms ease;
+}
+
+.tvp-chapter-overlay .tvp-chapter-tick:hover::before,
+.tvp-chapter-overlay .tvp-chapter-tick:focus-visible::before {
+  background: var(--plyr-color-main, #e94e2b);
+  transform: translate(-50%, -50%) scaleY(1.4);
+}
+
+.tvp-chapter-overlay .tvp-chapter-tick:focus-visible {
+  outline: none;
+}
+
+.tvp-chapter-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 120ms ease,
+    visibility 0s linear 120ms;
+  z-index: 5;
+}
+
+.tvp-chapter-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.tvp-chapter-overlay .tvp-chapter-tick:hover .tvp-chapter-tooltip,
+.tvp-chapter-overlay .tvp-chapter-tick:focus-visible .tvp-chapter-tooltip {
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 120ms ease,
+    visibility 0s linear 0s;
+}

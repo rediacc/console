@@ -1,0 +1,74 @@
+---
+/**
+ * TutorialSteps — renders the full ordered list of cast-narrated steps for
+ * the current tutorial, each with an auto-generated heading like
+ * "Step N: <cardLabel>".
+ *
+ * Convenience shorthand for the strict-pattern tutorials (add-server,
+ * deploy-app, networking, production-mode, ssh-keys, backup-restore). For
+ * tutorials that group steps under thematic headings, use multiple
+ * <TutorialStep number={N} /> elements directly.
+ */
+import type { Storyboard, CastNarratedScene } from '../../../scripts/lib/storyboard.ts';
+import TutorialStep from './TutorialStep.astro';
+
+interface TranscriptEvent {
+  markerIndex?: number;
+  cardLabel?: string;
+}
+interface TranscriptDoc {
+  events?: TranscriptEvent[];
+}
+
+const storyboards = import.meta.glob<{ default: Storyboard }>(
+  '../../data/tutorial-storyboard/*.json',
+  { eager: true },
+);
+const transcripts = import.meta.glob<{ default: TranscriptDoc }>(
+  '../../data/tutorial-transcripts/*/*.json',
+  { eager: true },
+);
+
+interface Props {
+  tutorial?: string;
+}
+
+const { tutorial: tutorialProp } = Astro.props;
+const pathSegments = Astro.url.pathname.split('/').filter(Boolean);
+const lang = pathSegments[0] ?? 'en';
+const tutorial = tutorialProp ?? pathSegments[pathSegments.length - 1] ?? '';
+
+const sbModule = storyboards[`../../data/tutorial-storyboard/${tutorial}.json`];
+if (!sbModule) {
+  throw new Error(`TutorialSteps: storyboard not found for tutorial "${tutorial}"`);
+}
+const storyboard = sbModule.default;
+
+const trModule = transcripts[`../../data/tutorial-transcripts/${lang}/${tutorial}.json`];
+const trEnModule = transcripts[`../../data/tutorial-transcripts/en/${tutorial}.json`];
+const transcript: TranscriptDoc = trModule?.default ?? {};
+const transcriptEn: TranscriptDoc = trEnModule?.default ?? transcript;
+
+function authored(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0 && !value.startsWith('TODO:');
+}
+
+const castNarrated = storyboard.scenes.filter(
+  (s): s is CastNarratedScene => s.type === 'cast-narrated',
+);
+
+const headings = castNarrated.map((scene, i) => {
+  const ev = transcript.events?.find((e) => e.markerIndex === scene.markerIndex);
+  const evEn = transcriptEn.events?.find((e) => e.markerIndex === scene.markerIndex);
+  const label = authored(ev?.cardLabel)
+    ? ev.cardLabel
+    : authored(evEn?.cardLabel)
+      ? evEn.cardLabel
+      : '';
+  return label ? `Step ${i + 1}: ${label}` : `Step ${i + 1}`;
+});
+---
+
+<div class="tutorial-steps">
+  {headings.map((h, i) => <TutorialStep number={i + 1} heading={h} />)}
+</div>
