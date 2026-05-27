@@ -42,3 +42,8 @@
 1115540
 1115541
 1115543
+
+# tmp Path Traversal — electron-builder build chain
+# GHSA-ph9p-34f9-6g65 (app-builder-lib > @malept/flatpak-bundler > tmp-promise > tmp)
+# BLOCKER: electron-builder transitive; patched tmp@0.2.6 published <24h ago and is blocked by .npmrc minimum-release-age=1440; prefix/postfix inputs come from trusted desktop build tooling, not untrusted data
+1119610
