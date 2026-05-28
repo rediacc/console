@@ -2669,8 +2669,8 @@
   {
     "id": "search-15943",
     "content": "将策略绑定到机器",
-    "body": "在配置中，将一个或多个策略名称绑定到机器： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
-    "excerpt": "在配置中，将一个或多个策略名称绑定到机器： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "在配置中，将一个或多个策略名称绑定到机器： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } 绑定仅作用于本地配置。 定义策略并将其绑定到机器并不会改动机器本身。运行 rdc machine backup schedule -m <machine>（参见将计划部署到机器）以部署 systemd 定时器，并在任何策略或绑定更改后重新运行。",
+    "excerpt": "在配置中，将一个或多个策略名称绑定到机器： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } 绑定仅作用于本地配置。 定义策略并将其绑定到机器并不会改动机器本身。运行 rdc...",
     "category": "Documentation",
     "page": "/zh/docs/backup-restore",
     "path": "docs.backup-restore.content",

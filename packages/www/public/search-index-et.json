@@ -2724,8 +2724,8 @@
   {
     "id": "search-6170",
     "content": "Strateegiate sidumine masinaga",
-    "body": "Oma konfiguratsioonis seo üks või mitu strateegianime masinaga: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
-    "excerpt": "Oma konfiguratsioonis seo üks või mitu strateegianime masinaga: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "Oma konfiguratsioonis seo üks või mitu strateegianime masinaga: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } Sidumine on ainult kohalik konfiguratsioon. Strateegia määratlemine ja masinaga sidumine ei muuda masinat. Käivitage rdc machine backup schedule -m <machine> (vt Ajakava juurutamine masinale), et juurutada systemd-taimerid, ja käivitage see uuesti pärast iga strateegia või sidumise muudatust.",
+    "excerpt": "Oma konfiguratsioonis seo üks või mitu strateegianime masinaga: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }...",
     "category": "Documentation",
     "page": "/et/docs/backup-restore",
     "path": "docs.backup-restore.content",

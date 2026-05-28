@@ -2724,8 +2724,8 @@
   {
     "id": "search-3711",
     "content": "Bind Strategies to a Machine",
-    "body": "In your config, bind one or more strategy names to a machine: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
-    "excerpt": "In your config, bind one or more strategy names to a machine: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "In your config, bind one or more strategy names to a machine: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } Binding is local-config only. Defining a strategy and binding it to a machine does not touch the machine. Run rdc machine backup schedule -m <machine> (see Deploy Schedule to Machine) to deploy the systemd timers, and re-run it after any strategy or binding change.",
+    "excerpt": "In your config, bind one or more strategy names to a machine: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } B...",
     "category": "Documentation",
     "page": "/en/docs/backup-restore",
     "path": "docs.backup-restore.content",

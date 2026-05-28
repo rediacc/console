@@ -2669,7 +2669,7 @@
   {
     "id": "search-2487",
     "content": "Strategien an eine Maschine binden",
-    "body": "Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Maschine: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Maschine: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } Bindung ist nur lokale Konfiguration. Eine Strategie zu definieren und an eine Maschine zu binden, hat keine Auswirkung auf die Maschine. Führen Sie rdc machine backup schedule -m <machine> aus (siehe Zeitplan auf Maschine deployen), um die systemd-Timer zu deployen, und führen Sie den Befehl nach jeder Strategie- oder Bindungsänderung erneut aus.",
     "excerpt": "Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Maschine: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\"...",
     "category": "Documentation",
     "page": "/de/docs/backup-restore",

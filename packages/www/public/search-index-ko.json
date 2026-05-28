@@ -2724,8 +2724,8 @@
   {
     "id": "search-11052",
     "content": "머신에 전략 바인딩",
-    "body": "설정에서 머신에 하나 이상의 전략 이름을 바인딩합니다. { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
-    "excerpt": "설정에서 머신에 하나 이상의 전략 이름을 바인딩합니다. { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "설정에서 머신에 하나 이상의 전략 이름을 바인딩합니다. { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } 바인딩은 로컬 구성 전용입니다. 전략을 정의하고 머신에 바인딩해도 머신은 변경되지 않습니다. systemd 타이머를 배포하려면 rdc machine backup schedule -m <machine>을 실행하세요(머신에 일정 배포 참조). 전략이나 바인딩을 변경한 후에는 다시 실행해야 합니다.",
+    "excerpt": "설정에서 머신에 하나 이상의 전략 이름을 바인딩합니다. { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } 바인딩은 로컬 구성 전용입니다. 전략을 정의하고 머신에 바...",
     "category": "Documentation",
     "page": "/ko/docs/backup-restore",
     "path": "docs.backup-restore.content",

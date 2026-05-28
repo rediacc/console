@@ -2669,7 +2669,7 @@
   {
     "id": "search-4946",
     "content": "Vincular Estrategias a una Maquina",
-    "body": "En su configuración, vincule uno o más nombres de estrategia a una máquina: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "En su configuración, vincule uno o más nombres de estrategia a una máquina: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } La vinculación es solo de configuración local. Definir una estrategia y vincularla a una máquina no afecta a la máquina. Ejecute rdc machine backup schedule -m <machine> (consulte Desplegar Cronograma en la Máquina) para desplegar los temporizadores systemd, y vuelva a ejecutarlo tras cualquier cambio de estrategia o vinculación.",
     "excerpt": "En su configuración, vincule uno o más nombres de estrategia a una máquina: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-...",
     "category": "Documentation",
     "page": "/es/docs/backup-restore",
