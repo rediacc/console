@@ -65,7 +65,11 @@ export function resolveExactOrLatest(
   return undefined;
 }
 
-/** True iff this config entry is a fork (grandGuid set and !== repositoryGuid). */
+/**
+ * True iff this config entry is a fork. A fork has a `grandGuid` pointing
+ * at a different repository (its production source). A grand repo either
+ * lacks `grandGuid` or has it equal to its own `repositoryGuid`.
+ */
 export function isForkConfig(cfg: RepositoryConfig): boolean {
   return !!(cfg.grandGuid && cfg.grandGuid !== cfg.repositoryGuid);
 }
