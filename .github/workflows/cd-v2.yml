@@ -862,15 +862,30 @@ jobs:
             echo "  R2 version check: skipped (workers-only)"
           fi
 
-          # Per-region account health checks (dynamic from regions.json)
+          # Per-region account health checks (dynamic from regions.json).
+          # The header gate below activates the moment Phase 1 ships (worker
+          # sets Strict-Transport-Security): once HSTS is present, we require
+          # X-Content-Type-Options: nosniff alongside it. Until then the gate
+          # is a no-op — pre-Phase-1 deploys still pass.
           FAILED=0
           while read -r domain; do
-            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "https://${domain}/account/api/v1/.well-known/server-info" 2>/dev/null || echo "000")
-            if [[ "$HTTP_CODE" == "200" ]]; then
-              echo "  ${domain} health: OK"
-            else
+            INFO_URL="https://${domain}/account/api/v1/.well-known/server-info"
+            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "${INFO_URL}" 2>/dev/null || echo "000")
+            if [[ "$HTTP_CODE" != "200" ]]; then
               echo "::error::${domain} health check failed (HTTP ${HTTP_CODE})"
               FAILED=1
+              continue
+            fi
+            HDRS=$(curl -sI "${INFO_URL}" | tr -d '\r')
+            if echo "$HDRS" | grep -qi '^strict-transport-security:'; then
+              if ! echo "$HDRS" | grep -qi '^x-content-type-options: *nosniff'; then
+                echo "::error::${domain} has HSTS but missing X-Content-Type-Options: nosniff"
+                FAILED=1
+                continue
+              fi
+              echo "  ${domain} health: OK (security headers verified)"
+            else
+              echo "  ${domain} health: OK (security headers not yet enabled)"
             fi
           done < <(jq -r '.regions[] | .edgeDomain' regions.json)
 
