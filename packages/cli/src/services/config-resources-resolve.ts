@@ -11,6 +11,7 @@
 import type { RepositoryConfig } from '../types/index.js';
 import { parseRepoRef, RESERVED_GRAND_TAG } from '../utils/config-schema.js';
 
+/** A repository whose base name matches an operator's `--name` query. */
 export interface RepoCandidate {
   key: string;
   kind: 'grand' | 'fork';
