@@ -46,6 +46,10 @@ const EXCLUSIONS = {
     'data-regions.md',
     'on-premise.md',
     'siem-integration.md', // pending translation; remove after the 12 langs land
+    'repo-diff.md', // pending translation; remove after the 12 langs land
+  ],
+  blog: [
+    'git-diff-for-encrypted-disk-images.md', // pending translation; remove after the 12 langs land
   ],
 };
 

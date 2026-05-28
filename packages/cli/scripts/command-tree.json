@@ -1926,6 +1926,74 @@
           "subcommands": []
         },
         {
+          "name": "diff",
+          "descriptionKey": "commands.repo.diff.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.repo.diff.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--base <name>",
+              "descriptionKey": "commands.repo.diff.baseOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--name-only",
+              "descriptionKey": "commands.repo.diff.nameOnlyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--stat",
+              "descriptionKey": "commands.repo.diff.statOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--content [path]",
+              "descriptionKey": "commands.repo.diff.contentOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--json",
+              "descriptionKey": "commands.repo.diff.jsonOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--fast",
+              "descriptionKey": "commands.repo.diff.fastOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "fork",
           "descriptionKey": "commands.repo.fork.description",
           "options": [

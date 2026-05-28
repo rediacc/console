@@ -27,6 +27,7 @@ import {
   runBatchOperation,
 } from './repo-batch-utils.js';
 import { registerRepoCatCommand } from './repo-cat.js';
+import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
 
 /** Clean up local VS Code SSH artifacts after a repo delete. Non-fatal. */
@@ -524,6 +525,7 @@ export function registerRepoCommands(program: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(handleRepoList);
   registerRepoCatCommand(repo);
+  registerRepoDiffCommand(repo);
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
   registerRepoMigrateCommand(repo);

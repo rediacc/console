@@ -559,6 +559,25 @@ Read a bounded window of a file in a repository to stdout (diagnostics go to std
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
+### rdc repo diff
+
+Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by --name (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.
+
+**Options:**
+
+- `--name <name>` — Repository to inspect (the target / new side)
+- `--base <name>` — Repository to diff against (the base / old side); defaults to the parent of --name
+- `-m, --machine <name>` — Target machine name
+- `--name-only` — Print only changed file paths, one per line (no status letters)
+- `--stat` — Show per-file change magnitude (byte and block deltas) and totals
+- `--content [path]` — Show a unified text diff for a single file (requires a file path)
+- `--json` — Output the structured diff result in the JSON envelope
+- `--fast` — Trust the block filter; skip content-hash confirmation (may over-report Modified)
+- `--debug` — Enable debug output
+- `--skip-router-restart` — Skip restarting the route server after binary update
+
+> MCP tool
+
 ### rdc repo fork
 
 Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target>. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.

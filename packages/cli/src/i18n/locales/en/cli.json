@@ -1424,6 +1424,26 @@
         "starting": "Reading \"{{path}}\" from \"{{repository}}\" on \"{{machine}}\"...",
         "failed": "Read failed"
       },
+      "diff": {
+        "description": "Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by --name (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.",
+        "descriptionShort": "Git-style file-level diff between two forked repositories (A/M/D/R)",
+        "nameOption": "Repository to inspect (the target / new side)",
+        "baseOption": "Repository to diff against (the base / old side); defaults to the parent of --name",
+        "nameOnlyOption": "Print only changed file paths, one per line (no status letters)",
+        "statOption": "Show per-file change magnitude (byte and block deltas) and totals",
+        "contentOption": "Show a unified text diff for a single file (requires a file path)",
+        "jsonOption": "Output the structured diff result in the JSON envelope",
+        "fastOption": "Trust the block filter; skip content-hash confirmation (may over-report Modified)",
+        "starting": "Diffing \"{{base}}\" against \"{{target}}\" on \"{{machine}}\"...",
+        "failed": "Diff failed",
+        "truncated": "Diff truncated: file exceeds the content-diff size cap.",
+        "notFound": "Repository \"{{name}}\" not found in context",
+        "notAFork": "\"{{name}}\" is not a fork. Pass an explicit base with --base.",
+        "parentMissing": "Parent of \"{{name}}\" is not in this context. Pass it explicitly with --base.",
+        "sameRepo": "Cannot diff a repository against itself.",
+        "conflictingFormat": "Choose only one of --name-only, --stat, --content, --json.",
+        "contentNeedsPath": "--content requires a file path, for example: --content app/config.toml"
+      },
       "list": {
         "description": "List repositories on a machine",
         "starting": "Listing repositories on \"{{machine}}\"...",

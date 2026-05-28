@@ -6,7 +6,7 @@ order: 2
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "2cd00a1758c541b0"
+sourceHash: "a727eb5b7e0c8677"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1523,8 +1523,31 @@ rdc repo cat [options]
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-repo-diff"></a>
+### 6.7 diff
+
+{{t:cli.commands.repo.diff.description}}
+
+```bash
+rdc repo diff [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--name <name>` | {{t:cli.commands.repo.diff.nameOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--base <name>` | {{t:cli.commands.repo.diff.baseOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--name-only` | {{t:cli.commands.repo.diff.nameOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--stat` | {{t:cli.commands.repo.diff.statOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--content [path]` | {{t:cli.commands.repo.diff.contentOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--json` | {{t:cli.commands.repo.diff.jsonOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--fast` | {{t:cli.commands.repo.diff.fastOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-repo-list"></a>
-### 6.7 list
+### 6.8 list
 
 {{t:cli.commands.repo.list.description}}
 
@@ -1540,7 +1563,7 @@ rdc repo list [options]
 
 
 <a id="cli-local-repo-create"></a>
-### 6.8 create
+### 6.9 create
 
 {{t:cli.commands.repo.create.description}}
 
@@ -1559,7 +1582,7 @@ rdc repo create [options]
 
 
 <a id="cli-local-repo-delete"></a>
-### 6.9 delete
+### 6.10 delete
 
 {{t:cli.commands.repo.delete.description}}
 
@@ -1578,7 +1601,7 @@ rdc repo delete [options]
 
 
 <a id="cli-local-repo-fork"></a>
-### 6.10 fork
+### 6.11 fork
 
 {{t:cli.commands.repo.fork.description}}
 
@@ -1598,7 +1621,7 @@ rdc repo fork [options]
 
 
 <a id="cli-local-repo-takeover"></a>
-### 6.11 takeover
+### 6.12 takeover
 
 {{t:cli.commands.repo.takeover.description}}
 
@@ -1616,7 +1639,7 @@ rdc repo takeover [options]
 
 
 <a id="cli-local-repo-resize"></a>
-### 6.12 resize
+### 6.13 resize
 
 {{t:cli.commands.repo.resize.description}}
 
@@ -1634,7 +1657,7 @@ rdc repo resize [options]
 
 
 <a id="cli-local-repo-expand"></a>
-### 6.13 expand
+### 6.14 expand
 
 {{t:cli.commands.repo.expand.description}}
 
@@ -1652,7 +1675,7 @@ rdc repo expand [options]
 
 
 <a id="cli-local-repo-validate"></a>
-### 6.14 validate
+### 6.15 validate
 
 {{t:cli.commands.repo.validate.description}}
 
@@ -1669,7 +1692,7 @@ rdc repo validate [options]
 
 
 <a id="cli-local-repo-autostart"></a>
-### 6.15 autostart
+### 6.16 autostart
 
 {{t:cli.commands.repo.autostart.description}}
 
@@ -1724,7 +1747,7 @@ rdc repo autostart list [options]
 
 
 <a id="cli-local-repo-ownership"></a>
-### 6.16 ownership
+### 6.17 ownership
 
 {{t:cli.commands.repo.ownership.description}}
 
@@ -1742,7 +1765,7 @@ rdc repo ownership [options]
 
 
 <a id="cli-local-repo-template"></a>
-### 6.17 template
+### 6.18 template
 
 {{t:cli.commands.repo.template.description}}
 
@@ -1776,7 +1799,7 @@ rdc repo template apply [options]
 
 
 <a id="cli-local-repo-push"></a>
-### 6.18 push
+### 6.19 push
 
 {{t:cli.commands.repo.push.description}}
 
@@ -1805,7 +1828,7 @@ rdc repo push [options]
 
 
 <a id="cli-local-repo-pull"></a>
-### 6.19 pull
+### 6.20 pull
 
 {{t:cli.commands.repo.pull.description}}
 
@@ -1831,7 +1854,7 @@ rdc repo pull [options]
 
 
 <a id="cli-local-repo-migrate"></a>
-### 6.20 migrate
+### 6.21 migrate
 
 {{t:cli.commands.repo.migrate.description}}
 
@@ -1852,7 +1875,7 @@ rdc repo migrate [options]
 
 
 <a id="cli-local-repo-backup"></a>
-### 6.21 backup
+### 6.22 backup
 
 {{t:cli.commands.repo.backup.description}}
 
@@ -1877,7 +1900,7 @@ rdc repo backup list [options]
 
 
 <a id="cli-local-repo-sync"></a>
-### 6.22 sync
+### 6.23 sync
 
 {{t:cli.commands.repo.sync.description}}
 
@@ -1949,7 +1972,7 @@ rdc repo sync status [options]
 
 
 <a id="cli-local-repo-tunnel"></a>
-### 6.23 tunnel
+### 6.24 tunnel
 
 {{t:cli.commands.repo.tunnel.description}}
 
@@ -1967,7 +1990,7 @@ rdc repo tunnel [options]
 
 
 <a id="cli-local-repo-secret"></a>
-### 6.24 secret
+### 6.25 secret
 
 {{t:cli.commands.repo.secret.description}}
 
