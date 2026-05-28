@@ -423,11 +423,21 @@ jobs:
           echo "  R2 cli/stable/install.ps1: OK (channel=stable)"
 
           while read -r domain; do
-            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "https://${domain}/account/api/v1/.well-known/server-info" 2>/dev/null || echo "000")
-            if [[ "$HTTP_CODE" == "200" ]]; then
-              echo "  ${domain} health: OK"
-            else
+            INFO_URL="https://${domain}/account/api/v1/.well-known/server-info"
+            HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" "${INFO_URL}" 2>/dev/null || echo "000")
+            if [[ "$HTTP_CODE" != "200" ]]; then
               echo "::warning::${domain} health check returned HTTP ${HTTP_CODE}"
+              continue
+            fi
+            HDRS=$(curl -sI "${INFO_URL}" | tr -d '\r')
+            if echo "$HDRS" | grep -qi '^strict-transport-security:'; then
+              if ! echo "$HDRS" | grep -qi '^x-content-type-options: *nosniff'; then
+                echo "::warning::${domain} has HSTS but missing X-Content-Type-Options"
+                continue
+              fi
+              echo "  ${domain} health: OK (security headers verified)"
+            else
+              echo "  ${domain} health: OK (security headers not yet enabled)"
             fi
           done < <(jq -r '.regions[] | .domain' regions.json)
 
