@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 1929,
-    "sourceCommit": "cc82457d2d213aeb954bfb70e4fd4dcb9f02385e"
+    "sourceCommit": "16c75b4876a1c026e3084bd70300d969ed25f3f0"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -937,7 +937,7 @@
     "commands.repo.delete.configRetained": "4272377d",
     "commands.repo.delete.description": "bee4b9fd",
     "commands.repo.delete.descriptionShort": "9bf9d3bb",
-    "commands.repo.delete.examples": "609beb0f",
+    "commands.repo.delete.examples": "caba2897",
     "commands.repo.delete.failed": "0a75c54d",
     "commands.repo.delete.restoreHint": "01f9fcf8",
     "commands.repo.delete.starting": "b4ba15bb",
@@ -965,7 +965,7 @@
     "commands.repo.fork.completed": "5fa7d32c",
     "commands.repo.fork.description": "35e29bfc",
     "commands.repo.fork.descriptionShort": "bed2d483",
-    "commands.repo.fork.examples": "7d58a1a2",
+    "commands.repo.fork.examples": "89a5f7d8",
     "commands.repo.fork.failed": "b6deb539",
     "commands.repo.fork.registered": "0cf334fb",
     "commands.repo.fork.rollback": "7d15ae3b",
@@ -1092,7 +1092,7 @@
     "commands.repo.takeover.completed": "d4a49ed8",
     "commands.repo.takeover.description": "667f877e",
     "commands.repo.takeover.descriptionShort": "4ac5ca05",
-    "commands.repo.takeover.examples": "172f1aec",
+    "commands.repo.takeover.examples": "e73d8729",
     "commands.repo.takeover.failed": "bb216c63",
     "commands.repo.takeover.forceOption": "1e2d6df0",
     "commands.repo.takeover.grandNotFound": "923eb529",
