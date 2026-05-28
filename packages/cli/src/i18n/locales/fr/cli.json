@@ -639,7 +639,8 @@
         },
         "remove": {
           "description": "Supprimer un mappage de dépôt de la configuration actuelle",
-          "success": "Dépôt \"{{name}}\" supprimé"
+          "success": "Dépôt \"{{name}}\" supprimé",
+          "descriptionShort": "Supprimer un mappage de dépôt de la configuration actuelle"
         },
         "restoreArchived": {
           "description": "Restaurer un identifiant de dépôt archivé",

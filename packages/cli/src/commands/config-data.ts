@@ -71,6 +71,7 @@ export function registerRepositoryCommands(config: Command, program: Command): v
   // config repository remove
   repository
     .command('remove')
+    .summary(t('commands.config.repository.remove.descriptionShort'))
     .description(t('commands.config.repository.remove.description'))
     .requiredOption('--name <name>', t('options.name'))
     .action(async (options) => {

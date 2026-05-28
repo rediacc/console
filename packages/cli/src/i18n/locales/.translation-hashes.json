@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 1928,
-    "sourceCommit": "40da2a4d41b3e2abad067b16cdd28cae6c0b10e3"
+    "keyCount": 1929,
+    "sourceCommit": "cc82457d2d213aeb954bfb70e4fd4dcb9f02385e"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -418,6 +418,7 @@
     "commands.config.repository.purgeArchived.noArchived": "fe1ffb39",
     "commands.config.repository.purgeArchived.success": "9c42b446",
     "commands.config.repository.remove.description": "ab28f6f3",
+    "commands.config.repository.remove.descriptionShort": "c29b8f0e",
     "commands.config.repository.remove.success": "44e938e9",
     "commands.config.repository.restoreArchived.description": "ad9b5cce",
     "commands.config.repository.restoreArchived.optionName": "fb8a8b93",

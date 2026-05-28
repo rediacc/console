@@ -639,7 +639,8 @@
         },
         "remove": {
           "description": "현재 설정에서 저장소 매핑을 제거합니다",
-          "success": "저장소 \"{{name}}\" 제거 완료"
+          "success": "저장소 \"{{name}}\" 제거 완료",
+          "descriptionShort": "현재 구성에서 저장소 매핑 제거"
         },
         "restoreArchived": {
           "description": "보관된 저장소 자격증명을 복원합니다",

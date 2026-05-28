@@ -639,7 +639,8 @@
         },
         "remove": {
           "description": "从当前配置中移除仓库映射",
-          "success": "已移除仓库 \"{{name}}\""
+          "success": "已移除仓库 \"{{name}}\"",
+          "descriptionShort": "从当前配置中移除一个仓库映射"
         },
         "restoreArchived": {
           "description": "恢复已归档的仓库凭据",

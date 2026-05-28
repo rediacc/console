@@ -639,7 +639,8 @@
         },
         "remove": {
           "description": "Eliminar mapeo de repositorio de la configuración actual",
-          "success": "Repositorio \"{{name}}\" eliminado"
+          "success": "Repositorio \"{{name}}\" eliminado",
+          "descriptionShort": "Eliminar una asignación de repositorio de la configuración actual"
         },
         "restoreArchived": {
           "description": "Restaurar credencial de repositorio archivado",

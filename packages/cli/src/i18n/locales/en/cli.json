@@ -521,6 +521,7 @@
         },
         "remove": {
           "description": "Remove a repository mapping from the current config. Targets <name>:<tag>; a bare --name resolves to the grand <name>:latest and is refused when multiple repos share the base name — pass :tag explicitly to target a fork.",
+          "descriptionShort": "Remove a repository mapping from the current config",
           "success": "Repository \"{{name}}\" removed"
         },
         "list": {

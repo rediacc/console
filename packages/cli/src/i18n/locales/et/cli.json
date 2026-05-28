@@ -639,7 +639,8 @@
         },
         "remove": {
           "description": "Eemalda hoidla vastandus praegusest konfiguratsioonist",
-          "success": "Hoidla \"{{name}}\" eemaldatud"
+          "success": "Hoidla \"{{name}}\" eemaldatud",
+          "descriptionShort": "Eemalda hoidla vastendus praegusest konfiguratsioonist"
         },
         "restoreArchived": {
           "description": "Taasta arhiveeritud hoidla mandaat",

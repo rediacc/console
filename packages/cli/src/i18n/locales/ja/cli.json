@@ -639,7 +639,8 @@
         },
         "remove": {
           "description": "現在の設定からリポジトリマッピングを削除する",
-          "success": "リポジトリ \"{{name}}\" を削除しました"
+          "success": "リポジトリ \"{{name}}\" を削除しました",
+          "descriptionShort": "現在の構成からリポジトリのマッピングを削除"
         },
         "restoreArchived": {
           "description": "アーカイブ済みリポジトリ資格情報を復元する",

@@ -639,7 +639,8 @@
         },
         "remove": {
           "description": "Mevcut yapılandırmadan depo eşlemesini kaldır",
-          "success": "\"{{name}}\" deposu kaldırıldı"
+          "success": "\"{{name}}\" deposu kaldırıldı",
+          "descriptionShort": "Geçerli yapılandırmadan bir depo eşlemesini kaldır"
         },
         "restoreArchived": {
           "description": "Arşivlenmiş depo kimlik bilgisini geri yükle",

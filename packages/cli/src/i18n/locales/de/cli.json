@@ -639,7 +639,8 @@
         },
         "remove": {
           "description": "Repository-Zuordnung aus der aktuellen Konfiguration entfernen",
-          "success": "Repository \"{{name}}\" entfernt"
+          "success": "Repository \"{{name}}\" entfernt",
+          "descriptionShort": "Eine Repository-Zuordnung aus der aktuellen Konfiguration entfernen"
         },
         "restoreArchived": {
           "description": "Archivierte Repository-Anmeldedaten wiederherstellen",
