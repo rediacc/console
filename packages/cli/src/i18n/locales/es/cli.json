@@ -1358,6 +1358,7 @@
         "configRetained": "Entrada de configuración para \"{{repository}}\" retenida (el repositorio puede existir en otras máquinas). Para eliminar: rdc config repository remove --name {{repository}}",
         "description": "Eliminar un repositorio (destruye contenedores, volúmenes e imagen cifrada). La entrada de configuración se conserva. Use --archive-config para mover credenciales a deletedRepositories para recuperación vía 'config restore-archived'",
         "descriptionShort": "Eliminar un repositorio de una máquina",
+        "examples": "\nEjemplos:\n  $ rdc repo delete --name app -m server-1            Eliminar el repositorio principal (app:latest)\n  $ rdc repo delete --name app:test -m server-1       Eliminar el fork etiquetado como \"test\"\n",
         "failed": "Error al eliminar el repositorio",
         "restoreHint": "Restaurar con: rdc config restore-archived {{guid}}",
         "starting": "Eliminando \"{{repository}}\" en \"{{machine}}\"..."
@@ -1391,12 +1392,14 @@
         "completed": "Fork creado. Desplegar localmente: repo up {{repository}} -m {{machine}}. Para migrar el fork a otra máquina: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Crear un fork CoW (Copy-on-Write) de un repositorio",
         "descriptionShort": "Crear un fork CoW de un repositorio (nuevo GUID, networkId, rango IP)",
+        "examples": "\nEjemplos:\n  $ rdc repo fork --parent app --tag test -m server-1   Fork app:latest → app:test\n  $ rdc repo fork --parent app --tag staging -m server-1 --up   Fork + montar + iniciar\n",
         "failed": "Error al crear el fork",
         "registered": "Fork \"{{repository}}\" registrado ({{guid}}, red {{networkId}})",
         "rollback": "Configuración revertida para \"{{repository}}\"",
         "starting": "Creando fork de \"{{parent}}\" como \"{{repository}}\" en \"{{machine}}\"...",
         "tagOption": "Etiqueta para el fork (crea nombre:etiqueta)",
         "tagRequired": "La etiqueta es obligatoria para fork. Uso: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: la etiqueta \"latest\" está reservada para el repositorio principal (producción) — elija un --tag distinto (p. ej. \"test\", \"staging\", \"<feature>\")",
         "upOption": "Montar e iniciar servicios después de fork (fork + mount + up en un solo comando)"
       },
       "list": {
@@ -1552,6 +1555,7 @@
         "completed": "Toma de control completada. El repositorio principal ahora tiene los datos del fork.",
         "description": "Reemplazar los datos del repositorio principal con los datos de un fork. El principal conserva su identidad (GUID, networkId, dominios, inicio automático, cadena de respaldos) pero obtiene los datos actualizados del fork. Los datos de producción anteriores se conservan como fork de respaldo. Uso: probar la actualización en el fork → verificar → tomar el control en producción.",
         "descriptionShort": "Reemplazar datos de producción con datos del fork",
+        "examples": "\nEjemplos:\n  $ rdc repo takeover --name app:test -m server-1   Promover el fork app:test al principal app:latest\n",
         "failed": "Error en la toma de control",
         "forceOption": "Omitir advertencias de modificación",
         "grandNotFound": "Repositorio principal no encontrado para el fork \"{{name}}\"",

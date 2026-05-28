@@ -1358,6 +1358,7 @@
         "configRetained": "\"{{repository}}\"의 설정 항목이 유지되었습니다 (저장소가 다른 머신에 존재할 수 있습니다). 제거하려면: rdc config repository remove --name {{repository}}",
         "description": "저장소를 삭제합니다 (컨테이너, 볼륨, 암호화 이미지를 제거합니다). 설정 항목은 유지됩니다. 'config restore-archived'를 통한 복구를 위해 자격증명을 deletedRepositories로 이동하려면 --archive-config를 사용하십시오",
         "descriptionShort": "머신에서 저장소를 삭제합니다",
+        "examples": "\n예시:\n  $ rdc repo delete --name app -m server-1            그랜드 저장소 (app:latest) 삭제\n  $ rdc repo delete --name app:test -m server-1       태그 \"test\" 포크 삭제\n",
         "failed": "저장소 삭제 실패",
         "restoreHint": "복원 명령어: rdc config restore-archived {{guid}}",
         "starting": "\"{{machine}}\"에서 \"{{repository}}\"를 삭제하는 중..."
@@ -1391,12 +1392,14 @@
         "completed": "포크 생성 완료. 로컬 배포: repo up {{repository}} -m {{machine}}. 다른 머신으로 포크 마이그레이션: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "저장소의 CoW (Copy-on-Write) 포크를 생성합니다. 포크는 저장소 크기에 관계없이 즉시 완료되며 일정한 시간이 소요됩니다. BTRFS reflink이 기반 이미지를 복제하므로 100 GB 저장소와 1 GB 저장소의 포크가 동일한 시간(약 몇 초)이 걸립니다. 포크는 새 GUID, networkId, IP 범위, 자동 경로 도메인 ({service}-fork-{tag}.{repo}.{machine}.{baseDomain})을 갖으며 완전히 독립적인 복사본입니다. 온라인 포크가 지원되므로 상위 저장소는 계속 실행될 수 있습니다. 포크는 상위의 암호화 자격증명을 자동으로 상속합니다. --checkpoint를 사용하면 포크 전에 CRIU 프로세스 상태를 캡처하며, 포크는 첫 번째 'repo up' 시 자동으로 복원됩니다 (메모리 내 상태가 보존됩니다). 다른 머신으로 포크: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target>. 경고: 포크를 위해 'backup push'만 단독으로 사용하지 마십시오. 동일한 GUID를 가진 원시 복사본이 생성됩니다 (독립적인 포크가 아닙니다). 항상 먼저 포크하여 새 식별자를 얻으십시오. 자동 경로는 저장소 이름을 사용하므로 각 포크는 고유한 도메인을 자동으로 얻습니다.",
         "descriptionShort": "저장소의 즉각적인 CoW 포크 (새 GUID, networkId, IP 범위)",
+        "examples": "\n예시:\n  $ rdc repo fork --parent app --tag test -m server-1   app:latest → app:test 포크\n  $ rdc repo fork --parent app --tag staging -m server-1 --up   포크 + 마운트 + 시작\n",
         "failed": "포크 생성 실패",
         "registered": "포크 \"{{repository}}\" 등록 완료 ({{guid}}, 네트워크 {{networkId}})",
         "rollback": "\"{{repository}}\"의 설정을 롤백했습니다",
         "starting": "\"{{machine}}\"에서 \"{{parent}}\"를 \"{{repository}}\"로 포크하는 중...",
         "tagOption": "포크의 태그 (name:tag 형태로 생성)",
         "tagRequired": "포크에는 태그가 필요합니다. 사용법: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: 태그 \"latest\"는 그랜드(프로덕션) 저장소용으로 예약되어 있습니다 — 다른 --tag을 선택하세요 (예: \"test\", \"staging\", \"<feature>\")",
         "upOption": "포크 후 서비스를 마운트하고 시작합니다 (fork + mount + up을 하나의 명령으로)"
       },
       "list": {
@@ -1552,6 +1555,7 @@
         "completed": "인수 완료. grand 저장소가 이제 포크의 데이터를 갖습니다.",
         "description": "grand 저장소의 데이터를 포크의 데이터로 교체합니다. grand는 자신의 식별자 (GUID, networkId, 도메인, 자동 시작, 백업 체인)를 유지하지만 포크의 업그레이드된 데이터를 갖게 됩니다. 이전 프로덕션 데이터는 백업 포크로 보존됩니다. 사용 사례: 포크에서 업그레이드 테스트 → 검증 → 프로덕션으로 takeover.",
         "descriptionShort": "프로덕션 데이터를 포크 데이터로 교체합니다",
+        "examples": "\n예시:\n  $ rdc repo takeover --name app:test -m server-1   포크 app:test를 그랜드 app:latest로 승격\n",
         "failed": "인수 실패",
         "forceOption": "변경 경고를 건너뜁니다",
         "grandNotFound": "포크 \"{{name}}\"의 grand 저장소를 찾을 수 없습니다",

@@ -1358,6 +1358,7 @@
         "configRetained": "\"{{repository}}\" の設定エントリを保持 (リポジトリは他のマシンに存在する可能性があります)。削除するには: rdc config repository remove --name {{repository}}",
         "description": "リポジトリを削除する（コンテナ、ボリューム、暗号化イメージを破棄）。設定エントリは保持されます。--archive-config を使用して資格情報を deletedRepositories に移動し、'config restore-archived' で復元できます",
         "descriptionShort": "マシンからリポジトリを削除する",
+        "examples": "\n例:\n  $ rdc repo delete --name app -m server-1            グランド (app:latest) を削除\n  $ rdc repo delete --name app:test -m server-1       タグ \"test\" のフォークを削除\n",
         "failed": "リポジトリの削除に失敗しました",
         "restoreHint": "復元するには: rdc config restore-archived {{guid}}",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中..."
@@ -1391,12 +1392,14 @@
         "completed": "Forkが作成されました。ローカルでデプロイ: repo up {{repository}} -m {{machine}}。別のマシンにforkを移行: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "リポジトリのCoW（コピーオンライト）フォークを作成する",
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
+        "examples": "\n例:\n  $ rdc repo fork --parent app --tag test -m server-1   app:latest → app:test をフォーク\n  $ rdc repo fork --parent app --tag staging -m server-1 --up   フォーク + マウント + 起動\n",
         "failed": "フォークの作成に失敗しました",
         "registered": "フォーク \"{{repository}}\" を登録しました（{{guid}}、ネットワーク {{networkId}}）",
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
         "tagOption": "フォークのタグ（名前:タグを作成）",
         "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: タグ \"latest\" はグランド (本番) リポジトリ用に予約されています — 別の --tag を選んでください (例: \"test\"、\"staging\"、\"<feature>\")",
         "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）"
       },
       "list": {
@@ -1552,6 +1555,7 @@
         "completed": "引き継ぎが完了しました。グランドリポジトリはフォークのデータを取得しました。",
         "description": "グランドリポジトリのデータをフォークのデータで置き換えます。グランドはその ID（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持しつつ、フォークの更新されたデータを取得します。古い本番データはバックアップフォークとして保存されます。使用方法: フォークでアップグレードをテスト → 確認 → 本番への引き継ぎ。",
         "descriptionShort": "本番データをフォークのデータで置き換える",
+        "examples": "\n例:\n  $ rdc repo takeover --name app:test -m server-1   フォーク app:test をグランド app:latest に昇格\n",
         "failed": "引き継ぎに失敗しました",
         "forceOption": "変更の警告をスキップする",
         "grandNotFound": "フォーク \"{{name}}\" のグランドリポジトリが見つかりません",

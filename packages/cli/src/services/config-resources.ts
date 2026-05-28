@@ -15,7 +15,6 @@ import {
 } from '@rediacc/shared-desktop/vscode';
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import { t } from '../i18n/index.js';
-import { outputService } from './output.js';
 import type {
   ArchivedRepository,
   BackupStrategyConfig,
@@ -31,6 +30,26 @@ import { hasCloudCredentials } from '../types/index.js';
 import { parseRepoRef } from '../utils/config-schema.js';
 import { ConfigServiceBase } from './config-base.js';
 import { findFreeNetworkIdSlot, pickInitialNetworkId } from './config-network-id.js';
+import { outputService } from './output.js';
+
+/**
+ * Thrown by `resolveDestructiveTarget` when a bare `--name` matches more than
+ * one config key (e.g. grand + fork share the base name). Destructive commands
+ * surface this to force the operator to supply an explicit `<name>:<tag>`.
+ */
+export class AmbiguousRepoTargetError extends Error {
+  candidates: { key: string; kind: 'grand' | 'fork'; guid: string }[];
+  constructor(ref: string, candidates: { key: string; kind: 'grand' | 'fork'; guid: string }[]) {
+    const lines = candidates
+      .map((c) => `  - ${c.key}  (${c.kind}; guid=${c.guid.slice(0, 8)})`)
+      .join('\n');
+    super(
+      `"${ref}" is ambiguous — multiple repositories share this base name:\n${lines}\nRe-run with an explicit --name <name>:<tag> to target one.`
+    );
+    this.name = 'AmbiguousRepoTargetError';
+    this.candidates = candidates;
+  }
+}
 
 class ConfigService extends ConfigServiceBase {
   /**
@@ -361,6 +380,67 @@ class ConfigService extends ConfigServiceBase {
   }
 
   /**
+   * Strict resolver for destructive commands (repo delete, repo takeover,
+   * config repository remove, datastore unfork). Fails closed on ambiguity
+   * so a bare `--name` cannot silently hit the wrong repo. See issue #495.
+   *
+   * - Exact-key match wins (same as `getRepositoryKey`).
+   * - For a bare ref, refuses when more than one config key shares the base
+   *   name, even if the `:latest` fallback would otherwise resolve.
+   * - For a bare ref that resolves to a fork (grandGuid set and !== guid),
+   *   refuses — the operator must say `<name>:<tag>` explicitly so we do not
+   *   destroy a fork registered in the grand slot by mistake.
+   */
+  async resolveDestructiveTarget(
+    repoRef: string
+  ): Promise<{ key: string; config: RepositoryConfig }> {
+    const config = await this.getCurrent();
+    if (!config || hasCloudCredentials(config)) {
+      throw new Error(`Repository "${repoRef}" not found in context`);
+    }
+
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+    const isBare = !repoRef.includes(':');
+
+    const baseName = parseRepoRef(repoRef).name;
+    const candidates: { key: string; kind: 'grand' | 'fork'; guid: string }[] = [];
+    for (const [key, cfg] of Object.entries(repos)) {
+      if (parseRepoRef(key).name !== baseName) continue;
+      const isFork = !!(cfg.grandGuid && cfg.grandGuid !== cfg.repositoryGuid);
+      candidates.push({ key, kind: isFork ? 'fork' : 'grand', guid: cfg.repositoryGuid });
+    }
+
+    if (isBare && candidates.length > 1) {
+      throw new AmbiguousRepoTargetError(repoRef, candidates);
+    }
+
+    let resolvedKey: string | undefined;
+    if (repoRef in repos) resolvedKey = repoRef;
+    else if (isBare) {
+      const latestKey = `${repoRef}:${DEFAULTS.REPOSITORY.TAG}`;
+      if (latestKey in repos) resolvedKey = latestKey;
+    }
+
+    if (!resolvedKey) {
+      if (isBare && candidates.length === 1) {
+        throw new Error(
+          `Repository "${repoRef}" not found — did you mean "${candidates[0].key}"? Re-run with --name ${candidates[0].key}.`
+        );
+      }
+      throw new Error(`Repository "${repoRef}" not found in context`);
+    }
+
+    const resolved = repos[resolvedKey];
+    const isFork = !!(resolved.grandGuid && resolved.grandGuid !== resolved.repositoryGuid);
+    if (isBare && isFork) {
+      throw new AmbiguousRepoTargetError(repoRef, candidates);
+    }
+
+    return { key: resolvedKey, config: resolved };
+  }
+
+  /**
    * List all tags for a given base repository name.
    */
   async listRepositoriesByName(
@@ -414,6 +494,18 @@ class ConfigService extends ConfigServiceBase {
 
     const archived = deletedRepos[index];
     const restoredName = name ?? archived.name;
+
+    // Forks must never restore under a bare `<name>` or `<name>:latest` key —
+    // either would shadow / collide with the grand and re-create the #495 ambiguity.
+    if (archived.grandGuid && archived.grandGuid !== archived.repositoryGuid) {
+      const { parseRepoRef } = await import('../utils/config-schema.js');
+      const { tag } = parseRepoRef(restoredName);
+      if (!restoredName.includes(':') || tag === DEFAULTS.REPOSITORY.TAG) {
+        throw new Error(
+          `Cannot restore fork "${archived.name}" under "${restoredName}" — forks must use an explicit non-"latest" tag (e.g. "${parseRepoRef(restoredName).name}:restored"). Pass --new-name <name>:<tag>.`
+        );
+      }
+    }
 
     const repos = state.getRepositories();
     if (restoredName in repos)

@@ -8,7 +8,7 @@ import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 
 export function registerRepoTakeoverCommand(repo: Command): void {
-  repo
+  const takeoverCmd = repo
     .command('takeover')
     .summary(t('commands.repo.takeover.descriptionShort'))
     .description(t('commands.repo.takeover.description'))
@@ -26,11 +26,9 @@ export function registerRepoTakeoverCommand(repo: Command): void {
         skipRouterRestart?: boolean;
       }) => {
         try {
-          const forkRef = options.name;
-          const forkConfig = await configService.getRepository(forkRef);
-          if (!forkConfig) {
-            throw new Error(`Repository "${forkRef}" not found in context`);
-          }
+          const { key: forkRef, config: forkConfig } = await configService.resolveDestructiveTarget(
+            options.name
+          );
           if (!forkConfig.parentGuid) {
             throw new Error(t('commands.repo.takeover.notAFork', { name: forkRef }));
           }
@@ -70,11 +68,8 @@ export function registerRepoTakeoverCommand(repo: Command): void {
           const { parseRepoRef } = await import('../utils/config-schema.js');
           const dateSuffix = new Date().toISOString().slice(0, 10).replaceAll('-', '');
           const backupName = `${parseRepoRef(forkRef).name}:pre-takeover-${dateSuffix}`;
-          const forkCfg = await configService.getRepository(forkRef);
-          if (forkCfg) {
-            await configService.addRepository(backupName, forkCfg);
-            await configService.removeRepository(forkRef);
-          }
+          await configService.addRepository(backupName, forkConfig);
+          await configService.removeRepository(forkRef);
           outputService.success(t('commands.repo.takeover.completed'));
           outputService.info(t('commands.repo.takeover.backupInfo', { backup: backupName }));
           outputService.info(
@@ -85,4 +80,5 @@ export function registerRepoTakeoverCommand(repo: Command): void {
         }
       }
     );
+  takeoverCmd.addHelpText('after', t('commands.repo.takeover.examples'));
 }

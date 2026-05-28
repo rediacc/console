@@ -1358,6 +1358,7 @@
         "configRetained": "Hoidla \"{{repository}}\" konfiguratsioonikirje säilitati (hoidla võib eksisteerida teistel masinatel). Eemaldamiseks käivita: rdc config repository remove --name {{repository}}",
         "description": "Kustuta hoidla (hävitab konteinerid, mahud ja krüpteeritud kujutise). Konfiguratsioonikirje säilitatakse. Kasuta --archive-config, et teisaldada mandaadid deletedRepositories-i taastamiseks käsuga 'config restore-archived'",
         "descriptionShort": "Kustuta hoidla masinalt",
+        "examples": "\nNäited:\n  $ rdc repo delete --name app -m server-1            Kustuta peamine hoidla (app:latest)\n  $ rdc repo delete --name app:test -m server-1       Kustuta sildiga \"test\" haru\n",
         "failed": "Hoidla kustutamine ebaõnnestus",
         "restoreHint": "Taasta käsuga: rdc config restore-archived {{guid}}",
         "starting": "Hoidla \"{{repository}}\" kustutamine masinal \"{{machine}}\"..."
@@ -1391,12 +1392,14 @@
         "completed": "Fork loodud. Juuruta kohalikult: repo up {{repository}} -m {{machine}}. Forgi teisaldamiseks teisele masinale: repo push {{repository}} -m {{machine}} --to <siht> --up",
         "description": "Loo hoidla CoW (Copy-on-Write) fork. FORK ON PEAAEGU HETKELINE JA KONSTANTSE AJAGA sõltumata hoidla suurusest -- BTRFS reflink kloonib alusel oleva kujutise nii, et 100 GB hoidla ja 1 GB hoidla forkitakse sama ~mõne sekundiga. Fork saab uue GUID-i, networkId, IP-vahemiku ja automaatse marsruudi domeeni ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) ning on täiesti iseseisev koopia. Onlainforkimine on toetatud, vanem võib jääda töötavaks. Fork pärib vanema krüpteerimismandaadid automaatselt. Kasuta --checkpoint, et jäädvustada CRIU protsessiseisund enne forkimist -- fork taastab selle automaatselt esimesel käsul 'repo up' (mäluseisund säilitatakse). RISTMASINA FORK: Teise masinasse forkimiseks forki kõigepealt kohalikult, seejärel kanna üle: (1) repo fork --parent <vanem> -m <allikas> --tag <nimi>, (2) backup push <nimi> -m <allikas> --to-machine <siht>, (3) repo up <nimi> -m <siht>. HOIATUS: Ära kasuta forkimiseks ainult käsku 'backup push' -- see loob sama GUID-iga toorkoopiata iseseisva fork. Forki alati kõigepealt uue identiteedi saamiseks. Automarsruudid kasutavad hoidla nime, nii et iga fork saab automaatselt kordumatu domeeni.",
         "descriptionShort": "Peaaegu hetkeline CoW-fork hoidlast (uus GUID, networkId, IP-vahemik)",
+        "examples": "\nNäited:\n  $ rdc repo fork --parent app --tag test -m server-1   Haru app:latest → app:test\n  $ rdc repo fork --parent app --tag staging -m server-1 --up   Haru + monteeri + käivita\n",
         "failed": "Forgi loomine ebaõnnestus",
         "registered": "Fork \"{{repository}}\" registreeritud ({{guid}}, võrk {{networkId}})",
         "rollback": "Konfiguratsiooni muudatused tühistati hoidla \"{{repository}}\" jaoks",
         "starting": "Forkimine: \"{{parent}}\" nimega \"{{repository}}\" masinal \"{{machine}}\"...",
         "tagOption": "Forki silt (loob nime:silt)",
         "tagRequired": "Silt on forki jaoks kohustuslik. Kasutus: rdc repo fork --parent <vanem> --tag <silt> -m <masin>",
+        "tagReservedLatest": "repo fork: silt \"latest\" on reserveeritud peamise (toodangu) hoidla jaoks — vali teine --tag (nt \"test\", \"staging\", \"<feature>\")",
         "upOption": "Haagi külge ja käivita teenused pärast forkimist (fork + mount + up ühes käsus)"
       },
       "list": {
@@ -1552,6 +1555,7 @@
         "completed": "Ülevõtmine lõpetatud. Põhihoidlal on nüüd forgi andmed.",
         "description": "Asenda põhihoidla (grand) andmed forgi andmetega. Põhihoidla säilitab oma identiteedi (GUID, networkId, domeenid, autostart, varukoopiaahel), kuid saab forgi täiendatud andmed. Vanad tootmisandmed säilitatakse varukoopiaforgi kujul. Kasutus: testi uuendust forgil, kontrolli, seejärel tee takeover tootmisele.",
         "descriptionShort": "Asenda tootmisandmed forgi andmetega",
+        "examples": "\nNäited:\n  $ rdc repo takeover --name app:test -m server-1   Edenda haru app:test peamiseks app:latest\n",
         "failed": "Ülevõtmine ebaõnnestus",
         "forceOption": "Jäta muutmishoiatused vahele",
         "grandNotFound": "Forgi \"{{name}}\" põhihoidlat ei leitud",

@@ -1358,6 +1358,7 @@
         "configRetained": "\"{{repository}}\" 的配置条目已保留 (仓库可能存在于其他机器上)。要移除: rdc config repository remove --name {{repository}}",
         "description": "删除仓库（销毁容器、卷和加密镜像）。配置条目将被保留。使用 --archive-config 将凭据移至 deletedRepositories，可通过 'config restore-archived' 恢复",
         "descriptionShort": "从机器上删除仓库",
+        "examples": "\n示例:\n  $ rdc repo delete --name app -m server-1            删除主仓库 (app:latest)\n  $ rdc repo delete --name app:test -m server-1       删除标签为 \"test\" 的分支\n",
         "failed": "仓库删除失败",
         "restoreHint": "恢复命令: rdc config restore-archived {{guid}}",
         "starting": "正在 \"{{machine}}\" 上删除 \"{{repository}}\"..."
@@ -1391,12 +1392,14 @@
         "completed": "Fork已创建。本地部署: repo up {{repository}} -m {{machine}}。将fork迁移到另一台机器: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "创建仓库的 CoW（写时复制）分支",
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
+        "examples": "\n示例:\n  $ rdc repo fork --parent app --tag test -m server-1   分支 app:latest → app:test\n  $ rdc repo fork --parent app --tag staging -m server-1 --up   分支 + 挂载 + 启动\n",
         "failed": "分支创建失败",
         "registered": "已注册分支 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
         "tagOption": "分支的标签（创建 名称:标签）",
         "tagRequired": "分支需要标签。用法：rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: 标签 \"latest\" 保留给主 (生产) 仓库 — 请选择其他 --tag (例如 \"test\"、\"staging\"、\"<feature>\")",
         "upOption": "fork后挂载并启动服务（fork + mount + up 一条命令完成）"
       },
       "list": {
@@ -1552,6 +1555,7 @@
         "completed": "接管完成。主仓库现在拥有分支的数据。",
         "description": "用分支的数据替换主仓库的数据。主仓库保留其身份（GUID、networkId、域名、自动启动、备份链），但获取分支的升级数据。旧的生产数据作为备份分支保留。用途：在分支上测试升级 → 验证 → 接管到生产环境。",
         "descriptionShort": "用分支数据替换生产数据",
+        "examples": "\n示例:\n  $ rdc repo takeover --name app:test -m server-1   将分支 app:test 提升为主 app:latest\n",
         "failed": "接管失败",
         "forceOption": "跳过修改警告",
         "grandNotFound": "未找到分支 \"{{name}}\" 的主仓库",

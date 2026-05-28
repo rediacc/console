@@ -1358,6 +1358,7 @@
         "configRetained": "تم الاحتفاظ بإعداد \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). للإزالة: rdc config repository remove --name {{repository}}",
         "description": "حذف مستودع (يدمّر الحاويات والأقراص والصورة المشفّرة). يتم الاحتفاظ بإدخال الإعدادات. استخدم --archive-config لنقل بيانات الاعتماد إلى deletedRepositories للاستعادة عبر 'config restore-archived'",
         "descriptionShort": "حذف مستودع من جهاز",
+        "examples": "\nأمثلة:\n  $ rdc repo delete --name app -m server-1            حذف المستودع الرئيسي (app:latest)\n  $ rdc repo delete --name app:test -m server-1       حذف الفرع الموسوم بـ \"test\"\n",
         "failed": "فشل حذف المستودع",
         "restoreHint": "للاستعادة: rdc config restore-archived {{guid}}",
         "starting": "جارٍ حذف \"{{repository}}\" على \"{{machine}}\"..."
@@ -1391,12 +1392,14 @@
         "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}}. لترحيل النسخة إلى جهاز آخر: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
         "descriptionShort": "إنشاء نسخة CoW من مستودع (GUID جديد، networkId، نطاق IP)",
+        "examples": "\nأمثلة:\n  $ rdc repo fork --parent app --tag test -m server-1   استنساخ app:latest إلى app:test\n  $ rdc repo fork --parent app --tag staging -m server-1 --up   استنساخ + تركيب + تشغيل\n",
         "failed": "فشل إنشاء النسخة",
         "registered": "تم تسجيل النسخة \"{{repository}}\" ({{guid}}، شبكة {{networkId}})",
         "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
         "starting": "جارٍ إنشاء نسخة من \"{{parent}}\" باسم \"{{repository}}\" على \"{{machine}}\"...",
         "tagOption": "وسم النسخة (ينشئ اسم:وسم)",
         "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: الوسم \"latest\" محجوز للمستودع الرئيسي (الإنتاج) — اختر --tag مختلفًا (مثل \"test\" أو \"staging\" أو \"<feature>\")",
         "upOption": "تركيب وبدء الخدمات بعد التفريع (fork + mount + up في أمر واحد)"
       },
       "list": {
@@ -1552,6 +1555,7 @@
         "completed": "اكتمل الاستحواذ. المستودع الأصلي يحتوي الآن على بيانات النسخة المتفرعة.",
         "description": "استبدال بيانات المستودع الأصلي ببيانات النسخة المتفرعة. يحتفظ الأصلي بهويته (GUID، networkId، النطاقات، التشغيل التلقائي، سلسلة النسخ الاحتياطي) لكنه يحصل على البيانات المحدّثة من النسخة المتفرعة. يتم حفظ البيانات القديمة للإنتاج كنسخة احتياطية متفرعة. للاستخدام: اختبر الترقية على النسخة المتفرعة → تحقق → استحوذ على بيانات الإنتاج.",
         "descriptionShort": "استبدال بيانات الإنتاج ببيانات النسخة المتفرعة",
+        "examples": "\nأمثلة:\n  $ rdc repo takeover --name app:test -m server-1   ترقية الفرع app:test إلى المستودع الرئيسي app:latest\n",
         "failed": "فشل الاستحواذ",
         "forceOption": "تخطي تحذيرات التعديل",
         "grandNotFound": "لم يتم العثور على المستودع الأصلي للنسخة المتفرعة \"{{name}}\"",
