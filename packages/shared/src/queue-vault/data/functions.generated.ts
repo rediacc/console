@@ -483,6 +483,22 @@ export interface RepositoryDeleteParams {
   grand?: string;
 }
 
+/** Git-style file-level diff between two related repositories (read-only) */
+export interface RepositoryDiffParams {
+  /** Base repository GUID (old/left side) */
+  base: string;
+  /** Target repository GUID (new/right side) */
+  target: string;
+  /** Trust the block filter; skip content-hash confirmation */
+  fast?: boolean;
+  /** Delta strategy */
+  strategy?: string;
+  /** Show a unified text diff for a single file path */
+  content?: string;
+  /** Content-diff per-side read cap (default 1 MiB, ceiling 50 MiB) */
+  maxBytes?: number;
+}
+
 /** Stop repository services */
 export interface RepositoryDownParams {
   /** Shutdown options */
@@ -676,6 +692,7 @@ export const BRIDGE_FUNCTIONS = [
   'repository_cat',
   'repository_create',
   'repository_delete',
+  'repository_diff',
   'repository_down',
   'repository_down_all',
   'repository_expand',
@@ -751,6 +768,7 @@ export type FunctionParamsMap = {
   repository_cat: RepositoryCatParams;
   repository_create: RepositoryCreateParams;
   repository_delete: RepositoryDeleteParams;
+  repository_diff: RepositoryDiffParams;
   repository_down: RepositoryDownParams;
   repository_down_all: RepositoryDownAllParams;
   repository_expand: RepositoryExpandParams;
@@ -920,6 +938,9 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_delete': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_diff': {
     requirements: { machine: true, team: true, repository: true },
   },
   'repository_down': {
@@ -2149,6 +2170,42 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
     },
   },
+  'repository_diff': {
+    name: 'repository_diff',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      base: {
+        type: 'string',
+        required: true,
+        help: 'Base repository GUID (old/left side)',
+      },
+      target: {
+        type: 'string',
+        required: true,
+        help: 'Target repository GUID (new/right side)',
+      },
+      fast: {
+        type: 'bool',
+        help: 'Trust the block filter; skip content-hash confirmation',
+      },
+      strategy: {
+        type: 'string',
+        default: 'auto',
+        help: 'Delta strategy',
+        options: ['auto', 'physical', 'shared'],
+      },
+      content: {
+        type: 'string',
+        help: 'Show a unified text diff for a single file path',
+      },
+      maxBytes: {
+        type: 'int',
+        help: 'Content-diff per-side read cap (default 1 MiB, ceiling 50 MiB)',
+      },
+    },
+  },
   'repository_down': {
     name: 'repository_down',
     category: 'repository',
@@ -2561,6 +2618,7 @@ export const queueFunctions: QueueFunctionsType = {
   repository_cat: (params) => ({ functionName: 'repository_cat', params }),
   repository_create: (params) => ({ functionName: 'repository_create', params }),
   repository_delete: (params) => ({ functionName: 'repository_delete', params }),
+  repository_diff: (params) => ({ functionName: 'repository_diff', params }),
   repository_down: (params) => ({ functionName: 'repository_down', params }),
   repository_down_all: (params) => ({ functionName: 'repository_down_all', params }),
   repository_expand: (params) => ({ functionName: 'repository_expand', params }),

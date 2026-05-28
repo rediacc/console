@@ -355,6 +355,16 @@ export const RepositoryDeleteParamsSchema = z.object({
   grand: z.string().optional().describe('Grand repository GUID for tracking'),
 });
 
+/** Git-style file-level diff between two related repositories (read-only) */
+export const RepositoryDiffParamsSchema = z.object({
+  base: z.string().min(1).describe('Base repository GUID (old/left side)'),
+  target: z.string().min(1).describe('Target repository GUID (new/right side)'),
+  fast: z.boolean().optional().describe('Trust the block filter; skip content-hash confirmation'),
+  strategy: z.string().default('auto').optional().describe('Delta strategy'),
+  content: z.string().optional().describe('Show a unified text diff for a single file path'),
+  maxBytes: z.number().int().optional().describe('Content-diff per-side read cap (default 1 MiB, ceiling 50 MiB)'),
+});
+
 /** Stop repository services */
 export const RepositoryDownParamsSchema = z.object({
   option: z.string().optional().describe('Shutdown options'),
@@ -537,6 +547,7 @@ export const FUNCTION_SCHEMAS = {
   repository_cat: RepositoryCatParamsSchema,
   repository_create: RepositoryCreateParamsSchema,
   repository_delete: RepositoryDeleteParamsSchema,
+  repository_diff: RepositoryDiffParamsSchema,
   repository_down: RepositoryDownParamsSchema,
   repository_down_all: RepositoryDownAllParamsSchema,
   repository_expand: RepositoryExpandParamsSchema,
