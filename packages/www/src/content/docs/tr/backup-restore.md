@@ -298,6 +298,8 @@ Yapılandırmanızda bir veya daha fazla strateji adını bir makineye bağlayı
 }
 ```
 
+> **Bağlama yalnızca yerel yapılandırmadır.** Bir strateji tanımlamak ve makineye bağlamak makineyi etkilemez. systemd zamanlayıcılarını dağıtmak için `rdc machine backup schedule -m <machine>` komutunu çalıştırın ([Zamanlamayı Makineye Dağıtma](#zamanlamayı-makineye-dağıtma) bölümüne bakın) ve her strateji veya bağlama değişikliğinden sonra tekrar çalıştırın.
+
 ## Sıcak ve Soğuk Seçimi ve Depo Başına Filtreleme
 
 ### Sıcak ve soğuk: özet

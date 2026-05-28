@@ -298,6 +298,8 @@ Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Masc
 }
 ```
 
+> **Bindung ist nur lokale Konfiguration.** Eine Strategie zu definieren und an eine Maschine zu binden, hat keine Auswirkung auf die Maschine. Führen Sie `rdc machine backup schedule -m <machine>` aus (siehe [Zeitplan auf Maschine deployen](#zeitplan-auf-maschine-deployen)), um die systemd-Timer zu deployen, und führen Sie den Befehl nach jeder Strategie- oder Bindungsänderung erneut aus.
+
 ## Hot vs. Cold und Repo-Filterung im Vergleich
 
 ### Hot vs. Cold auf einen Blick

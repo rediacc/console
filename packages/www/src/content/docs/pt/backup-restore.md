@@ -296,6 +296,8 @@ Na sua configuração, associe um ou mais nomes de estratégia a uma máquina:
 }
 ```
 
+> **A vinculação é apenas configuração local.** Definir uma estratégia e vinculá-la a uma máquina não afeta a máquina. Execute `rdc machine backup schedule -m <machine>` (consulte [Implementar Agendamento na Máquina](#implementar-agendamento-na-máquina)) para implantar os temporizadores systemd, e execute novamente após qualquer alteração de estratégia ou vinculação.
+
 ## Escolher entre Hot e Cold e Filtragem por Repositório
 
 ### Hot vs cold em resumo

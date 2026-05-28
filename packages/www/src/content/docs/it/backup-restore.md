@@ -296,6 +296,8 @@ Nella tua configurazione, associa uno o più nomi di strategia a una macchina:
 }
 ```
 
+> **Il binding è solo configurazione locale.** Definire una strategia e collegarla a una macchina non modifica la macchina. Esegui `rdc machine backup schedule -m <machine>` (vedi [Distribuisci lo Schedule sulla Macchina](#distribuisci-lo-schedule-sulla-macchina)) per distribuire i timer systemd, e rilancialo dopo ogni modifica di strategia o binding.
+
 ## Scegliere tra Hot e Cold e il filtraggio per repository
 
 ### Hot vs cold in sintesi

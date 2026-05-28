@@ -296,6 +296,8 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
+> **绑定仅作用于本地配置。** 定义策略并将其绑定到机器并不会改动机器本身。运行 `rdc machine backup schedule -m <machine>`（参见[将计划部署到机器](#将计划部署到机器)）以部署 systemd 定时器，并在任何策略或绑定更改后重新运行。
+
 ## 选择热备份或冷备份以及按仓库筛选
 
 ### 热备份与冷备份一览

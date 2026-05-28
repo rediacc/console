@@ -298,6 +298,8 @@ Dans votre configuration, associez un ou plusieurs noms de stratégie à une mac
 }
 ```
 
+> **La liaison ne concerne que la configuration locale.** Définir une stratégie et la lier à une machine n'agit pas sur la machine. Exécutez `rdc machine backup schedule -m <machine>` (voir [Déployer le calendrier sur une machine](#déployer-le-calendrier-sur-une-machine)) pour déployer les minuteurs systemd, et relancez-le après tout changement de stratégie ou de liaison.
+
 ## Choisir entre hot et cold et filtrage par dépôt
 
 ### Hot vs cold en un coup d'œil

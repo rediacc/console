@@ -296,6 +296,8 @@ Oma konfiguratsioonis seo üks või mitu strateegianime masinaga:
 }
 ```
 
+> **Sidumine on ainult kohalik konfiguratsioon.** Strateegia määratlemine ja masinaga sidumine ei muuda masinat. Käivitage `rdc machine backup schedule -m <machine>` (vt [Ajakava juurutamine masinale](#ajakava-juurutamine-masinale)), et juurutada systemd-taimerid, ja käivitage see uuesti pärast iga strateegia või sidumise muudatust.
+
 ## Kuuma ja külma valimine ning repositooriumipõhine filtreerimine
 
 ### Kuum vs külm lühidalt

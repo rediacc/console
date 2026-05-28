@@ -296,6 +296,8 @@ rdc config backup-strategy remove --name weekly-cold
 }
 ```
 
+> **바인딩은 로컬 구성 전용입니다.** 전략을 정의하고 머신에 바인딩해도 머신은 변경되지 않습니다. systemd 타이머를 배포하려면 `rdc machine backup schedule -m <machine>`을 실행하세요([머신에 일정 배포](#머신에-일정-배포) 참조). 전략이나 바인딩을 변경한 후에는 다시 실행해야 합니다.
+
 ## 핫 vs 콜드 선택 및 레포지토리별 필터링
 
 ### 핫 vs 콜드 한눈에 보기
