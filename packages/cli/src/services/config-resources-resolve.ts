@@ -6,9 +6,8 @@
  * and `config-resources.ts` stays under its max-lines budget.
  */
 
-import { DEFAULTS } from '@rediacc/shared/config';
 import type { RepositoryConfig } from '../types/index.js';
-import { parseRepoRef } from '../utils/config-schema.js';
+import { parseRepoRef, RESERVED_GRAND_TAG } from '../utils/config-schema.js';
 
 export interface RepoCandidate {
   key: string;
@@ -57,7 +56,7 @@ export function resolveExactOrLatest(
 ): string | undefined {
   if (ref in repos) return ref;
   if (isBare) {
-    const latestKey = `${ref}:${DEFAULTS.REPOSITORY.TAG}`;
+    const latestKey = `${ref}:${RESERVED_GRAND_TAG}`;
     if (latestKey in repos) return latestKey;
   }
   return undefined;
@@ -76,7 +75,7 @@ export function isForkConfig(cfg: RepositoryConfig): boolean {
 export function buildGuidMap(repos: Record<string, RepositoryConfig>): Record<string, string> {
   const map: Record<string, string> = {};
   for (const [repoName, repoConfig] of Object.entries(repos)) {
-    const tag = repoConfig.tag ?? DEFAULTS.REPOSITORY.TAG;
+    const tag = repoConfig.tag ?? RESERVED_GRAND_TAG;
     const { name: baseName } = parseRepoRef(repoName);
     map[repoConfig.repositoryGuid] = `${baseName}:${tag}`;
   }
@@ -105,7 +104,7 @@ export function assertRestoredForkKeyIsExplicit(
 ): void {
   if (!archived.grandGuid || archived.grandGuid === archived.repositoryGuid) return;
   const { name: base, tag } = parseRepoRef(restoredName);
-  if (!restoredName.includes(':') || tag === DEFAULTS.REPOSITORY.TAG) {
+  if (!restoredName.includes(':') || tag === RESERVED_GRAND_TAG) {
     throw new Error(
       `Cannot restore fork "${archived.name}" under "${restoredName}" — forks must use an explicit non-"latest" tag (e.g. "${base}:restored"). Pass --new-name <name>:<tag>.`
     );

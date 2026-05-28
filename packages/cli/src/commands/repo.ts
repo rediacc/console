@@ -151,9 +151,16 @@ async function handleDeleteSuccess(
   machineName: string,
   repoConfig: { repositoryGuid: string },
   archiveConfig: boolean,
-  result: import('../services/local-executor.js').LocalExecuteResult
+  result: import('../services/local-executor.js').LocalExecuteResult,
+  originalRef?: string
 ): Promise<void> {
   await cleanupDeletedRepoSSH(machineName, name).catch(() => {});
+  // When the user invoked `repo delete --name app` and the resolver returned
+  // `app:latest`, VS Code SSH artifacts persisted under the original bare
+  // alias survive the cleanup above. Sweep that name too.
+  if (originalRef && originalRef !== name) {
+    await cleanupDeletedRepoSSH(machineName, originalRef).catch(() => {});
+  }
 
   if (archiveConfig) {
     await configService.archiveRepository(name);
@@ -221,7 +228,8 @@ async function handleRepoDelete(
         options.machine,
         repoConfig,
         !!options.archiveConfig,
-        result
+        result,
+        name
       );
     } else {
       renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
