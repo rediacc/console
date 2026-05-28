@@ -223,6 +223,7 @@ const TutorialVideoPlayer: FC<TutorialVideoPlayerProps> = ({
       keyboard: { focused: true, global: false },
       tooltips: { controls: true, seek: true },
       storage: { enabled: true, key: 'plyr-tutorial' },
+      iconUrl: '/assets/plyr.svg',
     });
     playerRef.current = player;
 
