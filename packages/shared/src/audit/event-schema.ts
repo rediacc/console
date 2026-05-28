@@ -37,6 +37,7 @@ const repoEventTypes = [
   'cli.repo.cat',
   'cli.repo.create',
   'cli.repo.delete',
+  'cli.repo.diff',
   'cli.repo.down',
   'cli.repo.down_all',
   'cli.repo.expand',
