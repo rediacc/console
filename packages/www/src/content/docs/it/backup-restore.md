@@ -4,8 +4,8 @@ description: "Esegui il backup dei repository cifrati su storage esterni, ripris
 category: "Guides"
 order: 7
 language: it
-sourceHash: "29bb767d837eab9a"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "196ee7b649ac7371"
+sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
 ---
 
 # Backup e Ripristino
