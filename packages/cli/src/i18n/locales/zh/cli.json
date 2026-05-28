@@ -639,8 +639,8 @@
         },
         "remove": {
           "description": "从当前配置中移除仓库映射",
-          "success": "已移除仓库 \"{{name}}\"",
-          "descriptionShort": "从当前配置中移除一个仓库映射"
+          "descriptionShort": "从当前配置中移除一个仓库映射",
+          "success": "已移除仓库 \"{{name}}\""
         },
         "restoreArchived": {
           "description": "恢复已归档的仓库凭据",
@@ -1366,6 +1366,26 @@
       },
       "description": "在机器上部署和管理加密仓库",
       "descriptionShort": "在机器上部署和管理加密仓库",
+      "diff": {
+        "baseOption": "用于比较的仓库（基准/旧侧）；默认为 --name 的父级",
+        "conflictingFormat": "只能从 --name-only、--stat、--content、--json 中选择一个。",
+        "contentNeedsPath": "--content 需要文件路径，例如: --content app/config.toml",
+        "contentOption": "为单个文件显示统一文本差异（需提供文件路径）",
+        "description": "在两个写时复制（CoW）分支仓库之间进行 git 风格的文件级差异比较。报告新增、修改、删除和重命名的文件。将由 --name 指定的仓库（目标/新侧）与从本地配置解析出的父级，或与显式的 --base 仓库（基准/旧侧）进行比较。仅使用元数据，与大小无关：在不解密的情况下以块级别对加密的 LUKS 镜像求差，因此 1 GB 与 100 GB 仓库在相同的毫秒内完成差分。",
+        "descriptionShort": "两个分支仓库之间的 git 风格文件差异 (A/M/D/R)",
+        "failed": "差分失败",
+        "fastOption": "信任块过滤器；跳过内容哈希确认（可能过报 \"已修改\"）",
+        "jsonOption": "以 JSON 信封形式输出结构化的差分结果",
+        "nameOnlyOption": "仅打印更改的文件路径，每行一个（不含状态字母）",
+        "nameOption": "要检查的仓库（目标/新侧）",
+        "notAFork": "\"{{name}}\" 不是分支。请通过 --base 传入显式的基准。",
+        "notFound": "上下文中未找到仓库 \"{{name}}\"",
+        "parentMissing": "\"{{name}}\" 的父级不在此上下文中。请通过 --base 显式传入。",
+        "sameRepo": "不能将仓库与自身进行比较。",
+        "starting": "在 \"{{machine}}\" 上对 \"{{base}}\" 与 \"{{target}}\" 求差...",
+        "statOption": "显示每个文件的变更量（字节和块增量）及总计",
+        "truncated": "差分被截断: 文件超过了内容差分大小上限。"
+      },
       "down": {
         "allCompleted": "所有仓库已停止",
         "allFailed": "全部停止操作失败",

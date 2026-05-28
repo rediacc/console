@@ -639,8 +639,8 @@
         },
         "remove": {
           "description": "Repository-Zuordnung aus der aktuellen Konfiguration entfernen",
-          "success": "Repository \"{{name}}\" entfernt",
-          "descriptionShort": "Eine Repository-Zuordnung aus der aktuellen Konfiguration entfernen"
+          "descriptionShort": "Eine Repository-Zuordnung aus der aktuellen Konfiguration entfernen",
+          "success": "Repository \"{{name}}\" entfernt"
         },
         "restoreArchived": {
           "description": "Archivierte Repository-Anmeldedaten wiederherstellen",
@@ -1366,6 +1366,26 @@
       },
       "description": "Verschlüsselte Repositories auf Maschinen deployen und verwalten",
       "descriptionShort": "Verschlüsselte Repositories auf Maschinen bereitstellen und verwalten",
+      "diff": {
+        "baseOption": "Vergleichs-Repository (Basis/Altseite); standardmäßig das Eltern-Repository von --name",
+        "conflictingFormat": "Nur eine der Optionen --name-only, --stat, --content, --json wählen.",
+        "contentNeedsPath": "--content erfordert einen Dateipfad, z. B.: --content app/config.toml",
+        "contentOption": "Vereinheitlichten Text-Diff für eine einzelne Datei anzeigen (benötigt Dateipfad)",
+        "description": "Git-artiger Datei-Diff zwischen zwei Copy-on-Write-geforkten Repositories. Meldet hinzugefügte, geänderte, gelöschte und umbenannte Dateien. Vergleicht das per --name angegebene Repository (Ziel/Neuseite) mit seinem aus der lokalen Konfiguration aufgelösten Eltern-Repository oder mit einem explizit per --base angegebenen Repository (Basis/Altseite). Nur Metadaten und größenunabhängig: vergleicht die verschlüsselten LUKS-Images auf Blockebene ohne Entschlüsselung — ein 1-GB- und ein 100-GB-Repo werden in denselben Millisekunden gediff.",
+        "descriptionShort": "Git-artiger Datei-Diff zwischen zwei geforkten Repositories (A/M/D/R)",
+        "failed": "Diff fehlgeschlagen",
+        "fastOption": "Block-Filter vertrauen; Inhalts-Hash-Bestätigung überspringen (kann „Modified“ überschätzen)",
+        "jsonOption": "Strukturiertes Diff-Ergebnis im JSON-Envelope ausgeben",
+        "nameOnlyOption": "Nur geänderte Dateipfade ausgeben, einer pro Zeile (ohne Statusbuchstaben)",
+        "nameOption": "Zu inspizierendes Repository (Ziel/Neuseite)",
+        "notAFork": "„{{name}}“ ist kein Fork. Geben Sie eine explizite Basis per --base an.",
+        "notFound": "Repository „{{name}}“ nicht im Kontext gefunden",
+        "parentMissing": "Eltern-Repository von „{{name}}“ ist nicht in diesem Kontext. Geben Sie es explizit per --base an.",
+        "sameRepo": "Repository kann nicht mit sich selbst verglichen werden.",
+        "starting": "Vergleiche „{{base}}“ gegen „{{target}}“ auf „{{machine}}“...",
+        "statOption": "Änderungsumfang pro Datei (Byte- und Block-Deltas) und Summen anzeigen",
+        "truncated": "Diff abgeschnitten: Datei überschreitet die Größenobergrenze für Inhalts-Diffs."
+      },
       "down": {
         "allCompleted": "Alle Repositories gestoppt",
         "allFailed": "Down-all-Vorgang fehlgeschlagen",

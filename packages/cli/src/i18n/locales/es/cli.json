@@ -639,8 +639,8 @@
         },
         "remove": {
           "description": "Eliminar mapeo de repositorio de la configuración actual",
-          "success": "Repositorio \"{{name}}\" eliminado",
-          "descriptionShort": "Eliminar una asignación de repositorio de la configuración actual"
+          "descriptionShort": "Eliminar una asignación de repositorio de la configuración actual",
+          "success": "Repositorio \"{{name}}\" eliminado"
         },
         "restoreArchived": {
           "description": "Restaurar credencial de repositorio archivado",
@@ -1366,6 +1366,26 @@
       },
       "description": "Desplegar y gestionar repositorios cifrados en máquinas",
       "descriptionShort": "Desplegar y gestionar repositorios cifrados en máquinas",
+      "diff": {
+        "baseOption": "Repositorio con el que comparar (lado base/antiguo); por defecto el padre de --name",
+        "conflictingFormat": "Elija solo una de --name-only, --stat, --content, --json.",
+        "contentNeedsPath": "--content requiere una ruta de archivo, por ejemplo: --content app/config.toml",
+        "contentOption": "Mostrar diff de texto unificado para un único archivo (requiere ruta de archivo)",
+        "description": "Diff a nivel de archivo al estilo git entre dos repositorios bifurcados con copy-on-write. Reporta archivos añadidos, modificados, eliminados y renombrados. Compara el repositorio indicado por --name (lado objetivo/nuevo) con su padre, resuelto desde la configuración local, o con un --base explícito (lado base/antiguo). Solo metadatos e independiente del tamaño: compara las imágenes LUKS cifradas a nivel de bloque sin descifrarlas, así que un repo de 1 GB y otro de 100 GB se comparan en los mismos milisegundos.",
+        "descriptionShort": "Diff de archivos estilo git entre dos repositorios bifurcados (A/M/D/R)",
+        "failed": "Diff falló",
+        "fastOption": "Confiar en el filtro de bloques; omitir confirmación por hash de contenido (puede sobre-reportar Modificado)",
+        "jsonOption": "Imprimir el resultado del diff estructurado en sobre JSON",
+        "nameOnlyOption": "Imprimir solo las rutas de archivos cambiados, una por línea (sin letras de estado)",
+        "nameOption": "Repositorio a inspeccionar (lado objetivo/nuevo)",
+        "notAFork": "\"{{name}}\" no es un fork. Pase una base explícita con --base.",
+        "notFound": "Repositorio \"{{name}}\" no encontrado en el contexto",
+        "parentMissing": "El padre de \"{{name}}\" no está en este contexto. Páselo explícitamente con --base.",
+        "sameRepo": "No se puede comparar un repositorio consigo mismo.",
+        "starting": "Comparando \"{{base}}\" con \"{{target}}\" en \"{{machine}}\"...",
+        "statOption": "Mostrar magnitud de cambio por archivo (deltas de bytes y bloques) y totales",
+        "truncated": "Diff truncado: el archivo supera el límite de tamaño para diff de contenido."
+      },
       "down": {
         "allCompleted": "Todos los repositorios detenidos",
         "allFailed": "La operación de detener todo falló",

@@ -639,8 +639,8 @@
         },
         "remove": {
           "description": "Supprimer un mappage de dépôt de la configuration actuelle",
-          "success": "Dépôt \"{{name}}\" supprimé",
-          "descriptionShort": "Supprimer un mappage de dépôt de la configuration actuelle"
+          "descriptionShort": "Supprimer un mappage de dépôt de la configuration actuelle",
+          "success": "Dépôt \"{{name}}\" supprimé"
         },
         "restoreArchived": {
           "description": "Restaurer un identifiant de dépôt archivé",
@@ -1366,6 +1366,26 @@
       },
       "description": "Déployer et gérer des dépôts chiffrés sur les machines",
       "descriptionShort": "Déployer et gérer des dépôts chiffrés sur les machines",
+      "diff": {
+        "baseOption": "Dépôt avec lequel comparer (côté base/ancien) ; par défaut le parent de --name",
+        "conflictingFormat": "Choisissez une seule option parmi --name-only, --stat, --content, --json.",
+        "contentNeedsPath": "--content nécessite un chemin de fichier, par exemple : --content app/config.toml",
+        "contentOption": "Afficher un diff textuel unifié pour un seul fichier (nécessite un chemin de fichier)",
+        "description": "Diff fichier-par-fichier façon git entre deux dépôts forkés en copy-on-write. Signale les fichiers ajoutés, modifiés, supprimés et renommés. Compare le dépôt donné par --name (côté cible/nouveau) à son parent, résolu depuis la configuration locale, ou à un dépôt --base explicite (côté base/ancien). Métadonnées uniquement et indépendant de la taille : compare les images LUKS chiffrées au niveau bloc sans les déchiffrer, donc un dépôt de 1 Go et un de 100 Go sont comparés en les mêmes millisecondes.",
+        "descriptionShort": "Diff fichier façon git entre deux dépôts forkés (A/M/D/R)",
+        "failed": "Échec du diff",
+        "fastOption": "Faire confiance au filtre de blocs ; sauter la confirmation par hash de contenu (peut sur-signaler Modifié)",
+        "jsonOption": "Sortir le résultat du diff structuré dans l’enveloppe JSON",
+        "nameOnlyOption": "Afficher uniquement les chemins de fichiers modifiés, un par ligne (sans lettres de statut)",
+        "nameOption": "Dépôt à inspecter (côté cible/nouveau)",
+        "notAFork": "« {{name}} » n’est pas un fork. Passez une base explicite avec --base.",
+        "notFound": "Dépôt « {{name}} » introuvable dans le contexte",
+        "parentMissing": "Le parent de « {{name}} » n’est pas dans ce contexte. Passez-le explicitement avec --base.",
+        "sameRepo": "Impossible de comparer un dépôt avec lui-même.",
+        "starting": "Diff de « {{base}} » contre « {{target}} » sur « {{machine}} »...",
+        "statOption": "Afficher la magnitude de changement par fichier (deltas en octets et blocs) et les totaux",
+        "truncated": "Diff tronqué : le fichier dépasse le plafond de taille du diff de contenu."
+      },
       "down": {
         "allCompleted": "Tous les dépôts arrêtés",
         "allFailed": "L'opération d'arrêt total a échoué",

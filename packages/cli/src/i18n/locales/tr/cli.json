@@ -639,8 +639,8 @@
         },
         "remove": {
           "description": "Mevcut yapılandırmadan depo eşlemesini kaldır",
-          "success": "\"{{name}}\" deposu kaldırıldı",
-          "descriptionShort": "Geçerli yapılandırmadan bir depo eşlemesini kaldır"
+          "descriptionShort": "Geçerli yapılandırmadan bir depo eşlemesini kaldır",
+          "success": "\"{{name}}\" deposu kaldırıldı"
         },
         "restoreArchived": {
           "description": "Arşivlenmiş depo kimlik bilgisini geri yükle",
@@ -1366,6 +1366,26 @@
       },
       "description": "Makinelerde şifreli depoları dağıtın ve yönetin",
       "descriptionShort": "Makinelerde şifrelenmiş depoları dağıt ve yönet",
+      "diff": {
+        "baseOption": "Karşılaştırılacak depo (taban / eski taraf); varsayılan olarak --name ebeveyni",
+        "conflictingFormat": "--name-only, --stat, --content, --json seçeneklerinden yalnızca birini seçin.",
+        "contentNeedsPath": "--content bir dosya yolu gerektirir, örn: --content app/config.toml",
+        "contentOption": "Tek bir dosya için birleşik metin diffi göster (dosya yolu gerekir)",
+        "description": "Kopyala-yazma ile forklanmış iki depo arasında git tarzı dosya seviyesinde diff. Eklenen, değiştirilen, silinen ve yeniden adlandırılan dosyaları raporlar. --name ile verilen depoyu (hedef / yeni taraf) yerel yapılandırmadan çözülen ebeveyniyle veya açık bir --base deposu ile (taban / eski taraf) karşılaştırır. Yalnızca üst veri ve boyuttan bağımsız: şifreli LUKS imajlarını şifre çözmeden blok seviyesinde karşılaştırır; bu sayede 1 GB ve 100 GB depo aynı milisaniyelerde karşılaştırılır.",
+        "descriptionShort": "İki forklanmış depo arasında git tarzı dosya diffi (A/M/D/R)",
+        "failed": "Diff başarısız",
+        "fastOption": "Blok filtresine güven; içerik hash onayını atla (\"Değiştirildi\" sayısı abartılı olabilir)",
+        "jsonOption": "Yapılandırılmış diff sonucunu JSON zarfında yaz",
+        "nameOnlyOption": "Yalnızca değişen dosya yollarını her satıra bir tane yaz (durum harfleri olmadan)",
+        "nameOption": "İncelenecek depo (hedef / yeni taraf)",
+        "notAFork": "\"{{name}}\" bir fork değil. --base ile açık bir taban geçirin.",
+        "notFound": "Bağlamda \"{{name}}\" deposu bulunamadı",
+        "parentMissing": "\"{{name}}\" ebeveyni bu bağlamda yok. --base ile açıkça geçirin.",
+        "sameRepo": "Bir depo kendisiyle karşılaştırılamaz.",
+        "starting": "\"{{machine}}\" üzerinde \"{{base}}\" ile \"{{target}}\" karşılaştırılıyor...",
+        "statOption": "Dosya başına değişim büyüklüğünü (bayt ve blok delta'ları) ve toplamları göster",
+        "truncated": "Diff kesildi: dosya, içerik diff boyut üst sınırını aşıyor."
+      },
       "down": {
         "allCompleted": "Tüm depolar durduruldu",
         "allFailed": "Tümünü durdurma işlemi başarısız oldu",

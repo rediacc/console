@@ -639,8 +639,8 @@
         },
         "remove": {
           "description": "Remover um mapeamento de repositório da configuração actual",
-          "success": "Repositório \"{{name}}\" removido",
-          "descriptionShort": "Remover um mapeamento de repositório da configuração atual"
+          "descriptionShort": "Remover um mapeamento de repositório da configuração atual",
+          "success": "Repositório \"{{name}}\" removido"
         },
         "restoreArchived": {
           "description": "Restaurar uma credencial de repositório arquivado",
@@ -1366,6 +1366,26 @@
       },
       "description": "Implementar e gerir repositórios encriptados em máquinas. Subcomandos principais: create, up (implementar), down (parar), fork (clone CoW instantâneo), delete, push/pull (cópia de segurança), sync (transferência de ficheiros). Ciclo de vida: repo create → repo up → repo down. Consulte Conceitos Principais em rdc --help para detalhes de arquitectura, encaminhamento e variáveis de ambiente.",
       "descriptionShort": "Implementar e gerir repositórios encriptados em máquinas",
+      "diff": {
+        "baseOption": "Repositório com o qual comparar (lado base/antigo); padrão é o pai de --name",
+        "conflictingFormat": "Escolha apenas uma de --name-only, --stat, --content, --json.",
+        "contentNeedsPath": "--content requer um caminho de arquivo, por exemplo: --content app/config.toml",
+        "contentOption": "Mostrar diff de texto unificado para um único arquivo (requer caminho de arquivo)",
+        "description": "Diff a nível de arquivo no estilo git entre dois repositórios bifurcados em copy-on-write. Relata arquivos adicionados, modificados, excluídos e renomeados. Compara o repositório dado por --name (lado alvo/novo) com seu pai, resolvido a partir da configuração local, ou com um --base explícito (lado base/antigo). Somente metadados e independente do tamanho: compara as imagens LUKS criptografadas em nível de bloco sem decriptá-las, então um repo de 1 GB e um de 100 GB são comparados nos mesmos milissegundos.",
+        "descriptionShort": "Diff de arquivos estilo git entre dois repositórios bifurcados (A/M/D/R)",
+        "failed": "Diff falhou",
+        "fastOption": "Confiar no filtro de blocos; pular confirmação por hash de conteúdo (pode super-relatar Modificado)",
+        "jsonOption": "Imprimir o resultado do diff estruturado no envelope JSON",
+        "nameOnlyOption": "Imprimir apenas os caminhos dos arquivos alterados, um por linha (sem letras de status)",
+        "nameOption": "Repositório a inspecionar (lado alvo/novo)",
+        "notAFork": "\"{{name}}\" não é um fork. Passe uma base explícita com --base.",
+        "notFound": "Repositório \"{{name}}\" não encontrado no contexto",
+        "parentMissing": "O pai de \"{{name}}\" não está neste contexto. Passe-o explicitamente com --base.",
+        "sameRepo": "Não é possível comparar um repositório consigo mesmo.",
+        "starting": "Comparando \"{{base}}\" com \"{{target}}\" em \"{{machine}}\"...",
+        "statOption": "Mostrar a magnitude da alteração por arquivo (deltas em bytes e blocos) e totais",
+        "truncated": "Diff truncado: o arquivo excede o limite de tamanho do diff de conteúdo."
+      },
       "down": {
         "allCompleted": "Todos os repositórios parados",
         "allFailed": "Operação down-all falhou",

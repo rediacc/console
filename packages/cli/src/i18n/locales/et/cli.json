@@ -639,8 +639,8 @@
         },
         "remove": {
           "description": "Eemalda hoidla vastandus praegusest konfiguratsioonist",
-          "success": "Hoidla \"{{name}}\" eemaldatud",
-          "descriptionShort": "Eemalda hoidla vastendus praegusest konfiguratsioonist"
+          "descriptionShort": "Eemalda hoidla vastendus praegusest konfiguratsioonist",
+          "success": "Hoidla \"{{name}}\" eemaldatud"
         },
         "restoreArchived": {
           "description": "Taasta arhiveeritud hoidla mandaat",
@@ -1366,6 +1366,26 @@
       },
       "description": "Juuruta ja halda krüpteeritud hoidlaid masinatel. Põhialakomandod: create, up (juuruta), down (peata), fork (hetkeline CoW-kloon), delete, push/pull (varukoopia), sync (failide ülekanne). Elutsükkel: repo create → repo up → repo down. Vaata arhitektuuri, marsruutimise ja keskkonna muutujate üksikasju käsuga rdc --help.",
       "descriptionShort": "Juuruta ja halda krüpteeritud hoidlaid masinatel",
+      "diff": {
+        "baseOption": "Hoidla, millega võrrelda (alus/vana pool); vaikimisi --name vanem",
+        "conflictingFormat": "Vali ainult üks valikutest --name-only, --stat, --content, --json.",
+        "contentNeedsPath": "--content vajab failiteed, näiteks: --content app/config.toml",
+        "contentOption": "Näita ühtlustatud tekstierinevust ühe faili kohta (vajab failiteed)",
+        "description": "Git-stiilis failitaseme erinevus kahe kopeeri-kirjutamisel forkitud hoidla vahel. Teatab lisatud, muudetud, kustutatud ja ümbernimetatud failidest. Võrdleb --name (sihtmärk/uus pool) antud hoidlat selle vanemaga, mis on lahendatud kohalikust seadistusest, või selgesõnalise --base hoidlaga (alus/vana pool). Ainult metaandmed ja suurusest sõltumatu: võrdleb krüptitud LUKS-tõmmiseid plokitasandil ilma dekrüpteerimata, nii et 1 GB ja 100 GB hoidlad võrdluvad sama millisekundi jooksul.",
+        "descriptionShort": "Git-stiilis failierinevus kahe forkitud hoidla vahel (A/M/D/R)",
+        "failed": "Erinevuse arvutamine ebaõnnestus",
+        "fastOption": "Usu plokifiltrit; jäta sisuhashi kinnitus vahele (võib „Muudetut“ üle teatada)",
+        "jsonOption": "Väljasta struktureeritud erinevustulemus JSON-ümbrikus",
+        "nameOnlyOption": "Prindi ainult muudetud failiteed, üks rea kohta (ilma olekutähtedeta)",
+        "nameOption": "Hoidla, mida uurida (sihtmärk/uus pool)",
+        "notAFork": "\"{{name}}\" ei ole fork. Anna selgesõnaline alus --base abil.",
+        "notFound": "Hoidlat \"{{name}}\" kontekstist ei leitud",
+        "parentMissing": "\"{{name}}\" vanem ei ole selles kontekstis. Anna see selgesõnaliselt --base abil.",
+        "sameRepo": "Hoidlat ei saa võrrelda iseendaga.",
+        "starting": "Võrdlen \"{{base}}\" hoidlaga \"{{target}}\" masinal \"{{machine}}\"...",
+        "statOption": "Näita failipõhise muutuse mahtu (baidi- ja plokierinevused) ja kogusummad",
+        "truncated": "Erinevus kärbitud: fail ületab sisuerinevuse suuruse ülempiiri."
+      },
       "down": {
         "allCompleted": "Kõik hoidlad peatatud",
         "allFailed": "Kõigi hoidlate peatamine ebaõnnestus",

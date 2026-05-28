@@ -639,8 +639,8 @@
         },
         "remove": {
           "description": "Rimuovi una mappatura di repository dalla configurazione corrente",
-          "success": "Repository \"{{name}}\" rimosso",
-          "descriptionShort": "Rimuove una mappatura repository dalla configurazione corrente"
+          "descriptionShort": "Rimuove una mappatura repository dalla configurazione corrente",
+          "success": "Repository \"{{name}}\" rimosso"
         },
         "restoreArchived": {
           "description": "Ripristina una credenziale di repository archiviata",
@@ -1366,6 +1366,26 @@
       },
       "description": "Distribuisci e gestisci repository cifrati sui macchinari. Sottocomandi principali: create, up (distribuisci), down (ferma), fork (clone CoW istantaneo), delete, push/pull (backup), sync (trasferimento file). Ciclo di vita: repo create → repo up → repo down. Consulta Concetti Chiave in rdc --help per architettura, routing e variabili d'ambiente.",
       "descriptionShort": "Distribuisci e gestisci repository cifrati sui macchinari",
+      "diff": {
+        "baseOption": "Repository con cui confrontare (lato base/vecchio); predefinito il padre di --name",
+        "conflictingFormat": "Scegli solo una fra --name-only, --stat, --content, --json.",
+        "contentNeedsPath": "--content richiede un percorso file, ad esempio: --content app/config.toml",
+        "contentOption": "Mostra un diff testuale unificato per un singolo file (richiede un percorso file)",
+        "description": "Diff a livello di file in stile git fra due repository forkati con copy-on-write. Riporta i file aggiunti, modificati, eliminati e rinominati. Confronta il repository indicato da --name (lato target/nuovo) con il suo padre, risolto dalla configurazione locale, oppure con un repository --base esplicito (lato base/vecchio). Solo metadati e indipendente dalla dimensione: confronta le immagini LUKS cifrate a livello di blocco senza decifrarle, quindi un repo da 1 GB e uno da 100 GB vengono confrontati negli stessi millisecondi.",
+        "descriptionShort": "Diff file in stile git fra due repository forkati (A/M/D/R)",
+        "failed": "Diff fallito",
+        "fastOption": "Affidati al filtro a blocchi; salta la conferma via hash del contenuto (può sovra-segnalare Modificato)",
+        "jsonOption": "Stampa il risultato del diff strutturato in busta JSON",
+        "nameOnlyOption": "Stampa solo i percorsi dei file modificati, uno per riga (senza lettere di stato)",
+        "nameOption": "Repository da ispezionare (lato target/nuovo)",
+        "notAFork": "\"{{name}}\" non è un fork. Passa una base esplicita con --base.",
+        "notFound": "Repository \"{{name}}\" non trovato nel contesto",
+        "parentMissing": "Il padre di \"{{name}}\" non è in questo contesto. Passalo esplicitamente con --base.",
+        "sameRepo": "Impossibile confrontare un repository con sé stesso.",
+        "starting": "Diff di \"{{base}}\" contro \"{{target}}\" su \"{{machine}}\"...",
+        "statOption": "Mostra la magnitudine del cambiamento per file (delta in byte e blocchi) e i totali",
+        "truncated": "Diff troncato: il file supera il limite di dimensione del diff dei contenuti."
+      },
       "down": {
         "allCompleted": "Tutti i repository fermati",
         "allFailed": "Operazione down-all non riuscita",

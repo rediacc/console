@@ -639,8 +639,8 @@
         },
         "remove": {
           "description": "현재 설정에서 저장소 매핑을 제거합니다",
-          "success": "저장소 \"{{name}}\" 제거 완료",
-          "descriptionShort": "현재 구성에서 저장소 매핑 제거"
+          "descriptionShort": "현재 구성에서 저장소 매핑 제거",
+          "success": "저장소 \"{{name}}\" 제거 완료"
         },
         "restoreArchived": {
           "description": "보관된 저장소 자격증명을 복원합니다",
@@ -1366,6 +1366,26 @@
       },
       "description": "머신에서 암호화된 저장소를 배포하고 관리합니다. 주요 하위 명령어: create, up (배포), down (중지), fork (즉시 CoW 클론), delete, push/pull (백업), sync (파일 전송). 수명 주기: repo create → repo up → repo down. 아키텍처, 라우팅, 환경 변수 세부 정보는 rdc --help의 핵심 개념을 참조하십시오.",
       "descriptionShort": "머신에서 암호화된 저장소를 배포하고 관리합니다",
+      "diff": {
+        "baseOption": "비교할 저장소 (기준/이전 쪽); 기본값은 --name 의 부모",
+        "conflictingFormat": "--name-only, --stat, --content, --json 중 하나만 선택하세요.",
+        "contentNeedsPath": "--content 에는 파일 경로가 필요합니다 (예: --content app/config.toml)",
+        "contentOption": "단일 파일에 대한 통합 텍스트 비교 표시 (파일 경로 필요)",
+        "description": "복사-온-라이트로 포크된 두 저장소 간의 git 스타일 파일 단위 비교. 추가, 수정, 삭제, 이름 변경된 파일을 보고합니다. --name(대상/새 쪽)으로 지정된 저장소를 로컬 구성에서 해석된 부모 또는 명시적 --base 저장소(기준/이전 쪽)와 비교합니다. 메타데이터만 사용하고 크기에 독립적: 암호화된 LUKS 이미지를 복호화하지 않고 블록 수준에서 비교하므로 1GB 저장소와 100GB 저장소가 같은 밀리초 안에 비교됩니다.",
+        "descriptionShort": "두 포크된 저장소 간의 git 스타일 파일 비교 (A/M/D/R)",
+        "failed": "비교 실패",
+        "fastOption": "블록 필터를 신뢰하고 콘텐츠 해시 확인 건너뛰기 (수정 항목이 과다 보고될 수 있음)",
+        "jsonOption": "구조화된 비교 결과를 JSON 엔벨로프로 출력",
+        "nameOnlyOption": "변경된 파일 경로만 한 줄에 하나씩 출력 (상태 문자 없음)",
+        "nameOption": "검사할 저장소 (대상/새 쪽)",
+        "notAFork": "\"{{name}}\" 은(는) 포크가 아닙니다. --base 로 명시적인 기준을 전달하세요.",
+        "notFound": "컨텍스트에서 저장소 \"{{name}}\" 을(를) 찾을 수 없습니다",
+        "parentMissing": "\"{{name}}\" 의 부모가 이 컨텍스트에 없습니다. --base 로 명시적으로 전달하세요.",
+        "sameRepo": "저장소를 자신과 비교할 수 없습니다.",
+        "starting": "\"{{machine}}\" 에서 \"{{base}}\" 를 \"{{target}}\" 과 비교 중...",
+        "statOption": "파일별 변경 규모(바이트 및 블록 델타)와 합계 표시",
+        "truncated": "비교 잘림: 파일이 콘텐츠 비교 크기 한도를 초과합니다."
+      },
       "down": {
         "allCompleted": "모든 저장소 중지 완료",
         "allFailed": "전체 중지 작업 실패",
