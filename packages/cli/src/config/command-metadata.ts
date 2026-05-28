@@ -321,6 +321,16 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
+  'repo diff': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      repoArg: 'name',
+      requiredArgs: ['name'],
+      excludeOptions: ['debug', 'skip-router-restart'],
+    },
+  },
   'repo validate': {
     grandGuard: true,
     mcpExcludeReason: 'Validation runs on remote machine — use repo status for MCP',

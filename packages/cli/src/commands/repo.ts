@@ -20,6 +20,7 @@ import { formatStepDuration } from '../utils/timeline.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import { registerRepoCatCommand } from './repo-cat.js';
+import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
 import {
   handleDownAll,
@@ -512,6 +513,7 @@ export function registerRepoCommands(program: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(handleRepoList);
   registerRepoCatCommand(repo);
+  registerRepoDiffCommand(repo);
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
   registerRepoMigrateCommand(repo);
