@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: de
-sourceHash: "29bb767d837eab9a"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "196ee7b649ac7371"
+sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
 ---
 
 # Backup & Wiederherstellung
@@ -297,6 +297,8 @@ Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Masc
   }
 }
 ```
+
+> **Bindung ist nur lokale Konfiguration.** Eine Strategie zu definieren und an eine Maschine zu binden, hat keine Auswirkung auf die Maschine. Führen Sie `rdc machine backup schedule -m <machine>` aus (siehe [Zeitplan auf Maschine deployen](#zeitplan-auf-maschine-deployen)), um die systemd-Timer zu deployen, und führen Sie den Befehl nach jeder Strategie- oder Bindungsänderung erneut aus.
 
 ## Hot vs. Cold und Repo-Filterung im Vergleich
 

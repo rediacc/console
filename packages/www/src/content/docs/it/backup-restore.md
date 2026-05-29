@@ -4,8 +4,8 @@ description: "Esegui il backup dei repository cifrati su storage esterni, ripris
 category: "Guides"
 order: 7
 language: it
-sourceHash: "29bb767d837eab9a"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "196ee7b649ac7371"
+sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
 ---
 
 # Backup e Ripristino
@@ -295,6 +295,8 @@ Nella tua configurazione, associa uno o più nomi di strategia a una macchina:
   }
 }
 ```
+
+> **Il binding è solo configurazione locale.** Definire una strategia e collegarla a una macchina non modifica la macchina. Esegui `rdc machine backup schedule -m <machine>` (vedi [Distribuisci lo Schedule sulla Macchina](#distribuisci-lo-schedule-sulla-macchina)) per distribuire i timer systemd, e rilancialo dopo ogni modifica di strategia o binding.
 
 ## Scegliere tra Hot e Cold e il filtraggio per repository
 

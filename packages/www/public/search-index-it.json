@@ -2724,7 +2724,7 @@
   {
     "id": "search-8664",
     "content": "Associa le Strategie a una Macchina",
-    "body": "Nella tua configurazione, associa uno o più nomi di strategia a una macchina: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "Nella tua configurazione, associa uno o più nomi di strategia a una macchina: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } Il binding è solo configurazione locale. Definire una strategia e collegarla a una macchina non modifica la macchina. Esegui rdc machine backup schedule -m <machine> (vedi Distribuisci lo Schedule sulla Macchina) per distribuire i timer systemd, e rilancialo dopo ogni modifica di strategia o binding.",
     "excerpt": "Nella tua configurazione, associa uno o più nomi di strategia a una macchina: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekl...",
     "category": "Documentation",
     "page": "/it/docs/backup-restore",

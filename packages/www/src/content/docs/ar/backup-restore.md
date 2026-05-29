@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "29bb767d837eab9a"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "196ee7b649ac7371"
+sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -297,6 +297,8 @@ rdc config backup-strategy remove --name weekly-cold
   }
 }
 ```
+
+> **الربط هو إعداد محلي فقط.** تعريف استراتيجية وربطها بجهاز لا يؤثر على الجهاز نفسه. شغّل `rdc machine backup schedule -m <machine>` (راجع [نشر الجدول على الجهاز](#نشر-الجدول-على-الجهاز)) لنشر مؤقتات systemd، وأعد تشغيله بعد أي تغيير في الاستراتيجية أو الربط.
 
 ## اختيار الوضع الساخن أو البارد والتصفية لكل مستودع
 

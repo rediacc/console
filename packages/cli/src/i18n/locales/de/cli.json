@@ -639,6 +639,7 @@
         },
         "remove": {
           "description": "Repository-Zuordnung aus der aktuellen Konfiguration entfernen",
+          "descriptionShort": "Eine Repository-Zuordnung aus der aktuellen Konfiguration entfernen",
           "success": "Repository \"{{name}}\" entfernt"
         },
         "restoreArchived": {
@@ -1358,12 +1359,33 @@
         "configRetained": "Konfigurationseintrag für \"{{repository}}\" beibehalten (Repository kann auf anderen Maschinen existieren). Zum Entfernen: rdc config repository remove --name {{repository}}",
         "description": "Repository löschen (zerstört Container, Volumes und verschlüsseltes Image). Konfigurationseintrag bleibt erhalten. Verwenden Sie --archive-config, um Anmeldedaten nach deletedRepositories zu verschieben, zur Wiederherstellung über 'config restore-archived'",
         "descriptionShort": "Repository von einer Maschine löschen",
+        "examples": "\nBeispiele:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
         "failed": "Repository-Löschung fehlgeschlagen",
         "restoreHint": "Wiederherstellen mit: rdc config restore-archived {{guid}}",
         "starting": "\"{{repository}}\" wird auf \"{{machine}}\" gelöscht..."
       },
       "description": "Verschlüsselte Repositories auf Maschinen deployen und verwalten",
       "descriptionShort": "Verschlüsselte Repositories auf Maschinen bereitstellen und verwalten",
+      "diff": {
+        "baseOption": "Vergleichs-Repository (Basis/Altseite); standardmäßig das Eltern-Repository von --name",
+        "conflictingFormat": "Nur eine der Optionen --name-only, --stat, --content, --json wählen.",
+        "contentNeedsPath": "--content erfordert einen Dateipfad, z. B.: --content app/config.toml",
+        "contentOption": "Vereinheitlichten Text-Diff für eine einzelne Datei anzeigen (benötigt Dateipfad)",
+        "description": "Git-artiger Datei-Diff zwischen zwei Copy-on-Write-geforkten Repositories. Meldet hinzugefügte, geänderte, gelöschte und umbenannte Dateien. Vergleicht das per --name angegebene Repository (Ziel/Neuseite) mit seinem aus der lokalen Konfiguration aufgelösten Eltern-Repository oder mit einem explizit per --base angegebenen Repository (Basis/Altseite). Nur Metadaten und größenunabhängig: vergleicht die verschlüsselten LUKS-Images auf Blockebene ohne Entschlüsselung — ein 1-GB- und ein 100-GB-Repo werden in denselben Millisekunden gediff.",
+        "descriptionShort": "Git-artiger Datei-Diff zwischen zwei geforkten Repositories (A/M/D/R)",
+        "failed": "Diff fehlgeschlagen",
+        "fastOption": "Block-Filter vertrauen; Inhalts-Hash-Bestätigung überspringen (kann „Modified“ überschätzen)",
+        "jsonOption": "Strukturiertes Diff-Ergebnis im JSON-Envelope ausgeben",
+        "nameOnlyOption": "Nur geänderte Dateipfade ausgeben, einer pro Zeile (ohne Statusbuchstaben)",
+        "nameOption": "Zu inspizierendes Repository (Ziel/Neuseite)",
+        "notAFork": "„{{name}}“ ist kein Fork. Geben Sie eine explizite Basis per --base an.",
+        "notFound": "Repository „{{name}}“ nicht im Kontext gefunden",
+        "parentMissing": "Eltern-Repository von „{{name}}“ ist nicht in diesem Kontext. Geben Sie es explizit per --base an.",
+        "sameRepo": "Repository kann nicht mit sich selbst verglichen werden.",
+        "starting": "Vergleiche „{{base}}“ gegen „{{target}}“ auf „{{machine}}“...",
+        "statOption": "Änderungsumfang pro Datei (Byte- und Block-Deltas) und Summen anzeigen",
+        "truncated": "Diff abgeschnitten: Datei überschreitet die Größenobergrenze für Inhalts-Diffs."
+      },
       "down": {
         "allCompleted": "Alle Repositories gestoppt",
         "allFailed": "Down-all-Vorgang fehlgeschlagen",
@@ -1391,12 +1413,14 @@
         "completed": "Fork erstellt. Lokal bereitstellen: repo up {{repository}} -m {{machine}}. Fork auf anderen Rechner migrieren: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "CoW-Fork (Copy-on-Write) eines Repositorys erstellen",
         "descriptionShort": "CoW-Fork eines Repositorys erstellen (neue GUID, networkId, IP-Bereich)",
+        "examples": "\nBeispiele:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Fork-Erstellung fehlgeschlagen",
         "registered": "Fork \"{{repository}}\" registriert ({{guid}}, Netzwerk {{networkId}})",
         "rollback": "Konfiguration für \"{{repository}}\" zurückgesetzt",
         "starting": "Fork von \"{{parent}}\" als \"{{repository}}\" auf \"{{machine}}\" wird erstellt...",
         "tagOption": "Tag für den Fork (erstellt Name:Tag)",
         "tagRequired": "Tag ist für Fork erforderlich. Verwendung: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: Tag \"latest\" ist für das Grand-Repository (Produktion) reserviert — wählen Sie ein anderes --tag (z. B. \"test\", \"staging\", \"<feature>\")",
         "upOption": "Nach dem Fork mounten und Dienste starten (Fork + Mount + Up in einem Befehl)"
       },
       "list": {
@@ -1552,6 +1576,7 @@
         "completed": "Übernahme abgeschlossen. Grand-Repository hat jetzt die Fork-Daten.",
         "description": "Daten des Grand-Repositorys durch Daten eines Forks ersetzen. Das Grand-Repository behält seine Identität (GUID, networkId, Domains, Autostart, Backup-Kette), erhält aber die aktualisierten Daten des Forks. Die alten Produktionsdaten werden als Backup-Fork gespeichert. Verwendung: Upgrade im Fork testen → prüfen → Übernahme in die Produktion.",
         "descriptionShort": "Produktionsdaten durch Fork-Daten ersetzen",
+        "examples": "\nBeispiele:\n  $ rdc repo takeover --name app:test -m server-1\n",
         "failed": "Übernahme fehlgeschlagen",
         "forceOption": "Änderungswarnungen überspringen",
         "grandNotFound": "Grand-Repository für Fork \"{{name}}\" nicht gefunden",

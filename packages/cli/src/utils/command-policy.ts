@@ -52,6 +52,7 @@ export const CMD = {
   TERM_REPO: 'term repo',
   VSCODE_REPO: 'vscode repo',
   RUN: 'run',
+  CONFIG_REPOSITORY_REMOVE: 'config repository remove',
 } as const;
 
 export type CommandPath = (typeof CMD)[keyof typeof CMD];

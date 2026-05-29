@@ -2669,7 +2669,7 @@
   {
     "id": "search-7439",
     "content": "Associer des stratégies à une machine",
-    "body": "Dans votre configuration, associez un ou plusieurs noms de stratégie à une machine : { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "Dans votre configuration, associez un ou plusieurs noms de stratégie à une machine : { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } La liaison ne concerne que la configuration locale. Définir une stratégie et la lier à une machine n'agit pas sur la machine. Exécutez rdc machine backup schedule -m <machine> (voir Déployer le calendrier sur une machine) pour déployer les minuteurs systemd, et relancez-le après tout changement de stratégie ou de liaison.",
     "excerpt": "Dans votre configuration, associez un ou plusieurs noms de stratégie à une machine : { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\",...",
     "category": "Documentation",
     "page": "/fr/docs/backup-restore",

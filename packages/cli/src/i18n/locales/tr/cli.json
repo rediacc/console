@@ -639,6 +639,7 @@
         },
         "remove": {
           "description": "Mevcut yapılandırmadan depo eşlemesini kaldır",
+          "descriptionShort": "Geçerli yapılandırmadan bir depo eşlemesini kaldır",
           "success": "\"{{name}}\" deposu kaldırıldı"
         },
         "restoreArchived": {
@@ -1358,12 +1359,33 @@
         "configRetained": "\"{{repository}}\" yapılandırma girişi korundu (depo başka makinelerde mevcut olabilir). Kaldırmak için: rdc config repository remove --name {{repository}}",
         "description": "Bir depoyu sil (konteynerleri, birimleri ve şifreli imajı yok eder). Yapılandırma girdisi korunur. Kimlik bilgilerini deletedRepositories'e taşımak için --archive-config kullanın, 'config restore-archived' ile kurtarılabilir",
         "descriptionShort": "Bir makineden depoyu sil",
+        "examples": "\nÖrnekler:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
         "failed": "Depo silme başarısız",
         "restoreHint": "Geri yüklemek için: rdc config restore-archived {{guid}}",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" siliniyor..."
       },
       "description": "Makinelerde şifreli depoları dağıtın ve yönetin",
       "descriptionShort": "Makinelerde şifrelenmiş depoları dağıt ve yönet",
+      "diff": {
+        "baseOption": "Karşılaştırılacak depo (taban / eski taraf); varsayılan olarak --name ebeveyni",
+        "conflictingFormat": "--name-only, --stat, --content, --json seçeneklerinden yalnızca birini seçin.",
+        "contentNeedsPath": "--content bir dosya yolu gerektirir, örn: --content app/config.toml",
+        "contentOption": "Tek bir dosya için birleşik metin diffi göster (dosya yolu gerekir)",
+        "description": "Kopyala-yazma ile forklanmış iki depo arasında git tarzı dosya seviyesinde diff. Eklenen, değiştirilen, silinen ve yeniden adlandırılan dosyaları raporlar. --name ile verilen depoyu (hedef / yeni taraf) yerel yapılandırmadan çözülen ebeveyniyle veya açık bir --base deposu ile (taban / eski taraf) karşılaştırır. Yalnızca üst veri ve boyuttan bağımsız: şifreli LUKS imajlarını şifre çözmeden blok seviyesinde karşılaştırır; bu sayede 1 GB ve 100 GB depo aynı milisaniyelerde karşılaştırılır.",
+        "descriptionShort": "İki forklanmış depo arasında git tarzı dosya diffi (A/M/D/R)",
+        "failed": "Diff başarısız",
+        "fastOption": "Blok filtresine güven; içerik hash onayını atla (\"Değiştirildi\" sayısı abartılı olabilir)",
+        "jsonOption": "Yapılandırılmış diff sonucunu JSON zarfında yaz",
+        "nameOnlyOption": "Yalnızca değişen dosya yollarını her satıra bir tane yaz (durum harfleri olmadan)",
+        "nameOption": "İncelenecek depo (hedef / yeni taraf)",
+        "notAFork": "\"{{name}}\" bir fork değil. --base ile açık bir taban geçirin.",
+        "notFound": "Bağlamda \"{{name}}\" deposu bulunamadı",
+        "parentMissing": "\"{{name}}\" ebeveyni bu bağlamda yok. --base ile açıkça geçirin.",
+        "sameRepo": "Bir depo kendisiyle karşılaştırılamaz.",
+        "starting": "\"{{machine}}\" üzerinde \"{{base}}\" ile \"{{target}}\" karşılaştırılıyor...",
+        "statOption": "Dosya başına değişim büyüklüğünü (bayt ve blok delta'ları) ve toplamları göster",
+        "truncated": "Diff kesildi: dosya, içerik diff boyut üst sınırını aşıyor."
+      },
       "down": {
         "allCompleted": "Tüm depolar durduruldu",
         "allFailed": "Tümünü durdurma işlemi başarısız oldu",
@@ -1391,12 +1413,14 @@
         "completed": "Fork oluşturuldu. Yerel olarak dağıt: repo up {{repository}} -m {{machine}}. Fork'u başka bir makineye taşımak için: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Bir deponun CoW (Copy-on-Write) çatalını oluştur",
         "descriptionShort": "Deponun CoW çatalını oluştur (yeni GUID, networkId, IP aralığı)",
+        "examples": "\nÖrnekler:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Çatal oluşturma başarısız",
         "registered": "Çatal \"{{repository}}\" kaydedildi ({{guid}}, ağ {{networkId}})",
         "rollback": "\"{{repository}}\" yapılandırması geri alındı",
         "starting": "\"{{machine}}\" üzerinde \"{{parent}}\" deposunun \"{{repository}}\" olarak çatallanıyor...",
         "tagOption": "Çatal için etiket (isim:etiket oluşturur)",
         "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: \"latest\" etiketi ana (üretim) depo için ayrılmıştır — farklı bir --tag seçin (örn. \"test\", \"staging\", \"<feature>\")",
         "upOption": "Fork sonrası bağlayıp servisleri başlat (fork + mount + up tek komutta)"
       },
       "list": {
@@ -1552,6 +1576,7 @@
         "completed": "Devralma tamamlandı. Grand depo artık çatalın verilerine sahip.",
         "description": "Grand deponun verilerini bir çatalın verileriyle değiştir. Grand, kimliğini (GUID, networkId, alan adları, otomatik başlatma, yedekleme zinciri) korur ancak çatalın güncellenmiş verilerini alır. Eski üretim verileri yedek çatal olarak saklanır. Kullanım: çatalda yükseltmeyi test et → doğrula → üretime devir.",
         "descriptionShort": "Üretim verilerini çatal verileriyle değiştir",
+        "examples": "\nÖrnekler:\n  $ rdc repo takeover --name app:test -m server-1\n",
         "failed": "Devralma başarısız",
         "forceOption": "Değişiklik uyarılarını atla",
         "grandNotFound": "\"{{name}}\" çatalı için grand depo bulunamadı",

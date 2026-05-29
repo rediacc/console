@@ -42,7 +42,7 @@ async function executeMachineFunction(
  */
 export function registerExtendedRepoCommands(repo: Command): void {
   // repo fork --parent <name> --tag <name>
-  repo
+  const forkCmd = repo
     .command('fork')
     .summary(t('commands.repo.fork.descriptionShort'))
     .description(t('commands.repo.fork.description'))
@@ -68,6 +68,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
         await handleForkAction(parent, tagName, options);
       }
     );
+  forkCmd.addHelpText('after', t('commands.repo.fork.examples'));
 
   registerRepoTakeoverCommand(repo);
 

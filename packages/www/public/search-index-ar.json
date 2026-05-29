@@ -2669,7 +2669,7 @@
   {
     "id": "search-1284",
     "content": "ربط الاستراتيجيات بجهاز",
-    "body": "في التكوين الخاص بك، اربط اسماً واحداً أو أكثر من أسماء الاستراتيجيات بجهاز: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "في التكوين الخاص بك، اربط اسماً واحداً أو أكثر من أسماء الاستراتيجيات بجهاز: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } الربط هو إعداد محلي فقط. تعريف استراتيجية وربطها بجهاز لا يؤثر على الجهاز نفسه. شغّل rdc machine backup schedule -m <machine> (راجع نشر الجدول على الجهاز) لنشر مؤقتات systemd، وأعد تشغيله بعد أي تغيير في الاستراتيجية أو الربط.",
     "excerpt": "في التكوين الخاص بك، اربط اسماً واحداً أو أكثر من أسماء الاستراتيجيات بجهاز: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly...",
     "category": "Documentation",
     "page": "/ar/docs/backup-restore",

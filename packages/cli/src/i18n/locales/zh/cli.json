@@ -639,6 +639,7 @@
         },
         "remove": {
           "description": "从当前配置中移除仓库映射",
+          "descriptionShort": "从当前配置中移除一个仓库映射",
           "success": "已移除仓库 \"{{name}}\""
         },
         "restoreArchived": {
@@ -1358,12 +1359,33 @@
         "configRetained": "\"{{repository}}\" 的配置条目已保留 (仓库可能存在于其他机器上)。要移除: rdc config repository remove --name {{repository}}",
         "description": "删除仓库（销毁容器、卷和加密镜像）。配置条目将被保留。使用 --archive-config 将凭据移至 deletedRepositories，可通过 'config restore-archived' 恢复",
         "descriptionShort": "从机器上删除仓库",
+        "examples": "\n示例:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
         "failed": "仓库删除失败",
         "restoreHint": "恢复命令: rdc config restore-archived {{guid}}",
         "starting": "正在 \"{{machine}}\" 上删除 \"{{repository}}\"..."
       },
       "description": "在机器上部署和管理加密仓库",
       "descriptionShort": "在机器上部署和管理加密仓库",
+      "diff": {
+        "baseOption": "用于比较的仓库（基准/旧侧）；默认为 --name 的父级",
+        "conflictingFormat": "只能从 --name-only、--stat、--content、--json 中选择一个。",
+        "contentNeedsPath": "--content 需要文件路径，例如: --content app/config.toml",
+        "contentOption": "为单个文件显示统一文本差异（需提供文件路径）",
+        "description": "在两个写时复制（CoW）分支仓库之间进行 git 风格的文件级差异比较。报告新增、修改、删除和重命名的文件。将由 --name 指定的仓库（目标/新侧）与从本地配置解析出的父级，或与显式的 --base 仓库（基准/旧侧）进行比较。仅使用元数据，与大小无关：在不解密的情况下以块级别对加密的 LUKS 镜像求差，因此 1 GB 与 100 GB 仓库在相同的毫秒内完成差分。",
+        "descriptionShort": "两个分支仓库之间的 git 风格文件差异 (A/M/D/R)",
+        "failed": "差分失败",
+        "fastOption": "信任块过滤器；跳过内容哈希确认（可能过报 \"已修改\"）",
+        "jsonOption": "以 JSON 信封形式输出结构化的差分结果",
+        "nameOnlyOption": "仅打印更改的文件路径，每行一个（不含状态字母）",
+        "nameOption": "要检查的仓库（目标/新侧）",
+        "notAFork": "\"{{name}}\" 不是分支。请通过 --base 传入显式的基准。",
+        "notFound": "上下文中未找到仓库 \"{{name}}\"",
+        "parentMissing": "\"{{name}}\" 的父级不在此上下文中。请通过 --base 显式传入。",
+        "sameRepo": "不能将仓库与自身进行比较。",
+        "starting": "在 \"{{machine}}\" 上对 \"{{base}}\" 与 \"{{target}}\" 求差...",
+        "statOption": "显示每个文件的变更量（字节和块增量）及总计",
+        "truncated": "差分被截断: 文件超过了内容差分大小上限。"
+      },
       "down": {
         "allCompleted": "所有仓库已停止",
         "allFailed": "全部停止操作失败",
@@ -1391,12 +1413,14 @@
         "completed": "Fork已创建。本地部署: repo up {{repository}} -m {{machine}}。将fork迁移到另一台机器: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "创建仓库的 CoW（写时复制）分支",
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
+        "examples": "\n示例:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "分支创建失败",
         "registered": "已注册分支 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
         "tagOption": "分支的标签（创建 名称:标签）",
         "tagRequired": "分支需要标签。用法：rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: 标签 \"latest\" 保留给主 (生产) 仓库 — 请选择其他 --tag (例如 \"test\"、\"staging\"、\"<feature>\")",
         "upOption": "fork后挂载并启动服务（fork + mount + up 一条命令完成）"
       },
       "list": {
@@ -1552,6 +1576,7 @@
         "completed": "接管完成。主仓库现在拥有分支的数据。",
         "description": "用分支的数据替换主仓库的数据。主仓库保留其身份（GUID、networkId、域名、自动启动、备份链），但获取分支的升级数据。旧的生产数据作为备份分支保留。用途：在分支上测试升级 → 验证 → 接管到生产环境。",
         "descriptionShort": "用分支数据替换生产数据",
+        "examples": "\n示例:\n  $ rdc repo takeover --name app:test -m server-1\n",
         "failed": "接管失败",
         "forceOption": "跳过修改警告",
         "grandNotFound": "未找到分支 \"{{name}}\" 的主仓库",

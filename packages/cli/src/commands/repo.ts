@@ -1,27 +1,24 @@
 import { randomBytes, randomUUID } from 'node:crypto';
+import {
+  generateConnectionName,
+  removePersistedKeys,
+  removeSSHConfigEntry,
+} from '@rediacc/shared-desktop/vscode';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
-import {
-  generateConnectionName,
-  removePersistedKeys,
-  removeSSHConfigEntry,
-} from '@rediacc/shared-desktop/vscode';
 import { assertAgentRepoCreate, isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD, type CommandPath } from '../utils/command-policy.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
-import { assertMachineExists } from './_validate.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
-import { formatStepDuration } from '../utils/timeline.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
+import { formatStepDuration } from '../utils/timeline.js';
+import { assertMachineExists } from './_validate.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
-import { registerRepoCatCommand } from './repo-cat.js';
-import { registerRepoDiffCommand } from './repo-diff.js';
-import { registerRepoSecretCommands } from './repo-secret.js';
 import {
   handleDownAll,
   handleRepoList,
@@ -29,6 +26,9 @@ import {
   postRepoUpTasks,
   runBatchOperation,
 } from './repo-batch-utils.js';
+import { registerRepoCatCommand } from './repo-cat.js';
+import { registerRepoDiffCommand } from './repo-diff.js';
+import { registerRepoSecretCommands } from './repo-secret.js';
 
 /** Clean up local VS Code SSH artifacts after a repo delete. Non-fatal. */
 async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Promise<void> {
@@ -37,9 +37,10 @@ async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Pro
   removeSSHConfigEntry(connectionName);
   removePersistedKeys(teamName, machineName, repoName);
 }
+
 import { registerExtendedRepoCommands } from './repo-extended.js';
-import { registerRepoSyncCommands } from './repo-sync.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
+import { registerRepoSyncCommands } from './repo-sync.js';
 import { registerRepoTunnelCommand } from './repo-tunnel.js';
 import { registerRepoVolumeCommands } from './repo-volume.js';
 
@@ -151,9 +152,16 @@ async function handleDeleteSuccess(
   machineName: string,
   repoConfig: { repositoryGuid: string },
   archiveConfig: boolean,
-  result: import('../services/local-executor.js').LocalExecuteResult
+  result: import('../services/local-executor.js').LocalExecuteResult,
+  originalRef?: string
 ): Promise<void> {
   await cleanupDeletedRepoSSH(machineName, name).catch(() => {});
+  // When the user invoked `repo delete --name app` and the resolver returned
+  // `app:latest`, VS Code SSH artifacts persisted under the original bare
+  // alias survive the cleanup above. Sweep that name too.
+  if (originalRef && originalRef !== name) {
+    await cleanupDeletedRepoSSH(machineName, originalRef).catch(() => {});
+  }
 
   if (archiveConfig) {
     await configService.archiveRepository(name);
@@ -184,20 +192,16 @@ async function handleRepoDelete(
   }
 ): Promise<void> {
   try {
-    await assertCommandPolicy(CMD.REPO_DELETE, name);
+    const { key: target, config: repoConfig } = await configService.resolveDestructiveTarget(name);
+    await assertCommandPolicy(CMD.REPO_DELETE, target);
 
-    const repoConfig = await configService.getRepository(name);
-    if (!repoConfig) {
-      throw new Error(`Repository "${name}" not found in context`);
-    }
-
-    await configService.ensureRepositoryNetworkId(name);
+    await configService.ensureRepositoryNetworkId(target);
 
     if (options.dryRun) {
       outputService.print(
         {
           dryRun: true,
-          repository: name,
+          repository: target,
           machine: options.machine,
           guid: repoConfig.repositoryGuid,
           archiveConfig: !!options.archiveConfig,
@@ -208,19 +212,26 @@ async function handleRepoDelete(
     }
 
     outputService.info(
-      t('commands.repo.delete.starting', { repository: name, machine: options.machine })
+      t('commands.repo.delete.starting', { repository: target, machine: options.machine })
     );
 
     const result = await localExecutorService.execute({
       functionName: 'repository_delete',
       machineName: options.machine,
-      params: { repository: name },
+      params: { repository: target },
       debug: options.debug,
       skipRouterRestart: options.skipRouterRestart,
     });
 
     if (result.success) {
-      await handleDeleteSuccess(name, options.machine, repoConfig, !!options.archiveConfig, result);
+      await handleDeleteSuccess(
+        target,
+        options.machine,
+        repoConfig,
+        !!options.archiveConfig,
+        result,
+        name
+      );
     } else {
       renderLocalExecutionFailure(result, t('commands.repo.delete.failed'));
     }
@@ -344,7 +355,7 @@ export function registerRepoCommands(program: Command): void {
     });
 
   // repo delete --name <name>
-  repo
+  const deleteCmd = repo
     .command('delete')
     .summary(t('commands.repo.delete.descriptionShort'))
     .description(t('commands.repo.delete.description'))
@@ -358,6 +369,7 @@ export function registerRepoCommands(program: Command): void {
       const name = options.name;
       await handleRepoDelete(name, options);
     });
+  deleteCmd.addHelpText('after', t('commands.repo.delete.examples'));
 
   registerRepoVolumeCommands(repo, executeRepoFunction, iterateAllRepos);
 

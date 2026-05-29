@@ -639,6 +639,7 @@
         },
         "remove": {
           "description": "Remover um mapeamento de repositório da configuração actual",
+          "descriptionShort": "Remover um mapeamento de repositório da configuração atual",
           "success": "Repositório \"{{name}}\" removido"
         },
         "restoreArchived": {
@@ -1358,12 +1359,33 @@
         "configRetained": "Entrada de configuração para \"{{repository}}\" preservada (o repositório pode existir noutras máquinas). Para remover: rdc config repository remove --name {{repository}}",
         "description": "Eliminar um repositório (destrói contentores, volumes e imagem encriptada). A entrada de configuração é preservada. Use --archive-config para mover as credenciais para deletedRepositories para recuperação via 'config restore-archived'.",
         "descriptionShort": "Eliminar um repositório de uma máquina",
+        "examples": "\nExemplos:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
         "failed": "Falha na eliminação do repositório",
         "restoreHint": "Restaurar com: rdc config restore-archived {{guid}}",
         "starting": "A eliminar \"{{repository}}\" em \"{{machine}}\"..."
       },
       "description": "Implementar e gerir repositórios encriptados em máquinas. Subcomandos principais: create, up (implementar), down (parar), fork (clone CoW instantâneo), delete, push/pull (cópia de segurança), sync (transferência de ficheiros). Ciclo de vida: repo create → repo up → repo down. Consulte Conceitos Principais em rdc --help para detalhes de arquitectura, encaminhamento e variáveis de ambiente.",
       "descriptionShort": "Implementar e gerir repositórios encriptados em máquinas",
+      "diff": {
+        "baseOption": "Repositório com o qual comparar (lado base/antigo); padrão é o pai de --name",
+        "conflictingFormat": "Escolha apenas uma de --name-only, --stat, --content, --json.",
+        "contentNeedsPath": "--content requer um caminho de arquivo, por exemplo: --content app/config.toml",
+        "contentOption": "Mostrar diff de texto unificado para um único arquivo (requer caminho de arquivo)",
+        "description": "Diff a nível de arquivo no estilo git entre dois repositórios bifurcados em copy-on-write. Relata arquivos adicionados, modificados, excluídos e renomeados. Compara o repositório dado por --name (lado alvo/novo) com seu pai, resolvido a partir da configuração local, ou com um --base explícito (lado base/antigo). Somente metadados e independente do tamanho: compara as imagens LUKS criptografadas em nível de bloco sem decriptá-las, então um repo de 1 GB e um de 100 GB são comparados nos mesmos milissegundos.",
+        "descriptionShort": "Diff de arquivos estilo git entre dois repositórios bifurcados (A/M/D/R)",
+        "failed": "Diff falhou",
+        "fastOption": "Confiar no filtro de blocos; pular confirmação por hash de conteúdo (pode super-relatar Modificado)",
+        "jsonOption": "Imprimir o resultado do diff estruturado no envelope JSON",
+        "nameOnlyOption": "Imprimir apenas os caminhos dos arquivos alterados, um por linha (sem letras de status)",
+        "nameOption": "Repositório a inspecionar (lado alvo/novo)",
+        "notAFork": "\"{{name}}\" não é um fork. Passe uma base explícita com --base.",
+        "notFound": "Repositório \"{{name}}\" não encontrado no contexto",
+        "parentMissing": "O pai de \"{{name}}\" não está neste contexto. Passe-o explicitamente com --base.",
+        "sameRepo": "Não é possível comparar um repositório consigo mesmo.",
+        "starting": "Comparando \"{{base}}\" com \"{{target}}\" em \"{{machine}}\"...",
+        "statOption": "Mostrar a magnitude da alteração por arquivo (deltas em bytes e blocos) e totais",
+        "truncated": "Diff truncado: o arquivo excede o limite de tamanho do diff de conteúdo."
+      },
       "down": {
         "allCompleted": "Todos os repositórios parados",
         "allFailed": "Operação down-all falhou",
@@ -1391,12 +1413,14 @@
         "completed": "Fork criado. Implementar localmente: repo up {{repository}} -m {{machine}}. Para migrar o fork para outra máquina: repo push {{repository}} -m {{machine}} --to <destino> --up",
         "description": "Criar um fork CoW (Copy-on-Write) de um repositório. O FORK É QUASE INSTANTÂNEO E DE TEMPO CONSTANTE independentemente do tamanho do repositório; o reflink BTRFS clona a imagem subjacente, pelo que um repositório de 100 GB e um de 1 GB são copiados no mesmo tempo (~segundos). O fork recebe um NOVO GUID, networkId, intervalo de IPs e domínio de rota automática ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}), sendo uma cópia totalmente independente. O fork online é suportado; o pai pode permanecer em execução. O fork herda automaticamente as credenciais de encriptação do pai. Use --checkpoint para capturar o estado do processo CRIU antes de copiar; o fork restaura automaticamente no primeiro 'repo up' (estado em memória preservado). FORK ENTRE MÁQUINAS: Para copiar para outra máquina, primeiro copie localmente e depois transfira: (1) repo fork --parent <pai> -m <origem> --tag <nome>, (2) backup push <nome> -m <origem> --to-machine <destino>, (3) repo up <nome> -m <destino>. AVISO: Não use 'backup push' isoladamente para copiar; cria uma cópia bruta com o MESMO GUID (não é um fork independente). Copie sempre primeiro para obter uma nova identidade. As rotas automáticas utilizam o nome do repositório, pelo que cada fork obtém automaticamente um domínio único.",
         "descriptionShort": "Fork CoW quase instantâneo de um repositório (novo GUID, networkId, intervalo de IPs)",
+        "examples": "\nExemplos:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Falha na criação do fork",
         "registered": "Fork \"{{repository}}\" registado ({{guid}}, rede {{networkId}})",
         "rollback": "Configuração revertida para \"{{repository}}\"",
         "starting": "A copiar \"{{parent}}\" como \"{{repository}}\" em \"{{machine}}\"...",
         "tagOption": "Etiqueta para o fork (cria nome:etiqueta)",
         "tagRequired": "A etiqueta é obrigatória para fork. Utilização: rdc repo fork --parent <pai> --tag <etiqueta> -m <máquina>",
+        "tagReservedLatest": "repo fork: a tag \"latest\" é reservada para o repositório principal (produção) — escolha um --tag diferente (ex.: \"test\", \"staging\", \"<feature>\")",
         "upOption": "Montar e iniciar os serviços após copiar (fork + mount + up num único comando)"
       },
       "list": {
@@ -1552,6 +1576,7 @@
         "completed": "Takeover concluído. O repositório pai tem agora os dados do fork.",
         "description": "Substituir os dados do repositório pai pelos dados de um fork. O pai mantém a sua identidade (GUID, networkId, domínios, arranque automático, cadeia de cópia de segurança) mas recebe os dados actualizados do fork. Os dados de produção antigos são preservados como fork de cópia de segurança. Utilização: testar actualização no fork, verificar, e depois fazer takeover para produção.",
         "descriptionShort": "Substituir os dados de produção pelos dados do fork",
+        "examples": "\nExemplos:\n  $ rdc repo takeover --name app:test -m server-1\n",
         "failed": "Takeover falhou",
         "forceOption": "Ignorar avisos de modificação",
         "grandNotFound": "Repositório pai não encontrado para o fork \"{{name}}\"",

@@ -639,6 +639,7 @@
         },
         "remove": {
           "description": "現在の設定からリポジトリマッピングを削除する",
+          "descriptionShort": "現在の構成からリポジトリのマッピングを削除",
           "success": "リポジトリ \"{{name}}\" を削除しました"
         },
         "restoreArchived": {
@@ -1358,12 +1359,33 @@
         "configRetained": "\"{{repository}}\" の設定エントリを保持 (リポジトリは他のマシンに存在する可能性があります)。削除するには: rdc config repository remove --name {{repository}}",
         "description": "リポジトリを削除する（コンテナ、ボリューム、暗号化イメージを破棄）。設定エントリは保持されます。--archive-config を使用して資格情報を deletedRepositories に移動し、'config restore-archived' で復元できます",
         "descriptionShort": "マシンからリポジトリを削除する",
+        "examples": "\n例:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
         "failed": "リポジトリの削除に失敗しました",
         "restoreHint": "復元するには: rdc config restore-archived {{guid}}",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を削除中..."
       },
       "description": "マシン上の暗号化リポジトリをデプロイ・管理する",
       "descriptionShort": "マシン上の暗号化リポジトリをデプロイ・管理する",
+      "diff": {
+        "baseOption": "差分対象のリポジトリ（基底／旧側）。既定では --name の親",
+        "conflictingFormat": "--name-only, --stat, --content, --json のうち1つだけを選択してください。",
+        "contentNeedsPath": "--content にはファイルパスが必要です (例: --content app/config.toml)",
+        "contentOption": "単一ファイルの統一テキスト差分を表示（ファイルパスが必要）",
+        "description": "コピーオンライトでフォークされた2つのリポジトリ間の、git風ファイル単位の差分。追加・変更・削除・リネームされたファイルを報告します。--name で与えられたリポジトリ（対象／新側）を、ローカル設定から解決した親、あるいは明示的な --base リポジトリ（基底／旧側）と比較します。メタデータのみでサイズに依存しません: 暗号化された LUKS イメージを復号せずブロックレベルで差分を取るため、1 GB のリポジトリと 100 GB のリポジトリが同じミリ秒で差分されます。",
+        "descriptionShort": "2つのフォークされたリポジトリ間のgit風ファイル差分 (A/M/D/R)",
+        "failed": "差分に失敗しました",
+        "fastOption": "ブロックフィルタを信頼し、コンテンツハッシュ確認を省略する（変更を過大報告する可能性あり）",
+        "jsonOption": "構造化された差分結果を JSON エンベロープで出力",
+        "nameOnlyOption": "変更されたファイルパスのみを1行ずつ出力（状態文字なし）",
+        "nameOption": "調査対象のリポジトリ（対象／新側）",
+        "notAFork": "\"{{name}}\" はフォークではありません。--base で明示的なベースを指定してください。",
+        "notFound": "コンテキストにリポジトリ \"{{name}}\" が見つかりません",
+        "parentMissing": "\"{{name}}\" の親がこのコンテキストにありません。--base で明示的に指定してください。",
+        "sameRepo": "リポジトリを自身と比較することはできません。",
+        "starting": "\"{{machine}}\" 上で \"{{base}}\" を \"{{target}}\" と差分中...",
+        "statOption": "ファイルごとの変更量（バイトおよびブロックのデルタ）と合計を表示",
+        "truncated": "差分を切り捨てました: ファイルがコンテンツ差分のサイズ上限を超えています。"
+      },
       "down": {
         "allCompleted": "すべてのリポジトリを停止しました",
         "allFailed": "全停止操作に失敗しました",
@@ -1391,12 +1413,14 @@
         "completed": "Forkが作成されました。ローカルでデプロイ: repo up {{repository}} -m {{machine}}。別のマシンにforkを移行: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "リポジトリのCoW（コピーオンライト）フォークを作成する",
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
+        "examples": "\n例:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "フォークの作成に失敗しました",
         "registered": "フォーク \"{{repository}}\" を登録しました（{{guid}}、ネットワーク {{networkId}}）",
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
         "tagOption": "フォークのタグ（名前:タグを作成）",
         "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: タグ \"latest\" はグランド (本番) リポジトリ用に予約されています — 別の --tag を選んでください (例: \"test\"、\"staging\"、\"<feature>\")",
         "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）"
       },
       "list": {
@@ -1552,6 +1576,7 @@
         "completed": "引き継ぎが完了しました。グランドリポジトリはフォークのデータを取得しました。",
         "description": "グランドリポジトリのデータをフォークのデータで置き換えます。グランドはその ID（GUID、networkId、ドメイン、自動起動、バックアップチェーン）を保持しつつ、フォークの更新されたデータを取得します。古い本番データはバックアップフォークとして保存されます。使用方法: フォークでアップグレードをテスト → 確認 → 本番への引き継ぎ。",
         "descriptionShort": "本番データをフォークのデータで置き換える",
+        "examples": "\n例:\n  $ rdc repo takeover --name app:test -m server-1\n",
         "failed": "引き継ぎに失敗しました",
         "forceOption": "変更の警告をスキップする",
         "grandNotFound": "フォーク \"{{name}}\" のグランドリポジトリが見つかりません",

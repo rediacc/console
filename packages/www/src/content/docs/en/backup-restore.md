@@ -295,6 +295,8 @@ In your config, bind one or more strategy names to a machine:
 }
 ```
 
+> **Binding is local-config only.** Defining a strategy and binding it to a machine does not touch the machine. Run `rdc machine backup schedule -m <machine>` (see [Deploy Schedule to Machine](#deploy-schedule-to-machine)) to deploy the systemd timers, and re-run it after any strategy or binding change.
+
 ## Choosing Hot vs Cold and Per-Repo Filtering
 
 ### Hot vs cold at a glance

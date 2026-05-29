@@ -303,6 +303,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   'repo autostart enable': { grandGuard: true, forkBlocked: true },
   'repo autostart disable': { grandGuard: true, forkBlocked: true },
   'repo takeover': { grandGuard: true },
+  'config repository remove': { grandGuard: true },
   'repo status': {
     mcp: {
       destructive: false,

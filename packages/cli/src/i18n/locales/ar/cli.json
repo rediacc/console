@@ -639,6 +639,7 @@
         },
         "remove": {
           "description": "إزالة ربط مستودع من التكوين الحالي",
+          "descriptionShort": "إزالة تعيين مستودع من التهيئة الحالية",
           "success": "تمت إزالة المستودع \"{{name}}\""
         },
         "restoreArchived": {
@@ -1358,12 +1359,33 @@
         "configRetained": "تم الاحتفاظ بإعداد \"{{repository}}\" (قد يكون المستودع موجودًا على أجهزة أخرى). للإزالة: rdc config repository remove --name {{repository}}",
         "description": "حذف مستودع (يدمّر الحاويات والأقراص والصورة المشفّرة). يتم الاحتفاظ بإدخال الإعدادات. استخدم --archive-config لنقل بيانات الاعتماد إلى deletedRepositories للاستعادة عبر 'config restore-archived'",
         "descriptionShort": "حذف مستودع من جهاز",
+        "examples": "\nأمثلة:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
         "failed": "فشل حذف المستودع",
         "restoreHint": "للاستعادة: rdc config restore-archived {{guid}}",
         "starting": "جارٍ حذف \"{{repository}}\" على \"{{machine}}\"..."
       },
       "description": "نشر وإدارة المستودعات المشفرة على الأجهزة",
       "descriptionShort": "نشر وإدارة المستودعات المشفرة على الأجهزة",
+      "diff": {
+        "baseOption": "المستودع المُراد المقارنة معه (الجانب القديم/الأساس)؛ افتراضيًا أصل --name",
+        "conflictingFormat": "اختر فقط واحدًا من --name-only أو --stat أو --content أو --json.",
+        "contentNeedsPath": "--content يتطلّب مسار ملف، على سبيل المثال: --content app/config.toml",
+        "contentOption": "أظهر فرقًا نصيًا موحَّدًا لملف واحد (يتطلّب مسار ملف)",
+        "description": "مقارنة على مستوى الملف بأسلوب git بين مستودعين مفترعين بنسخ-عند-الكتابة. تُبلّغ عن الملفات المضافة والمعدَّلة والمحذوفة والمعاد تسميتها. تُقارن المستودع المُعطى عبر --name (الهدف / الجانب الجديد) بأصله المُحلَّل من الإعدادات المحلية، أو بمستودع --base صريح (الجانب القديم). تعتمد على البيانات الوصفية ومستقلة عن الحجم: تقارن صور LUKS المشفّرة على مستوى الكتل دون فكّ تشفيرها، فتُقارن مستودعًا بحجم 1 ج.ب وآخر بحجم 100 ج.ب في نفس أجزاء الثانية.",
+        "descriptionShort": "مقارنة ملفات بأسلوب git بين مستودعين مفترعين (A/M/D/R)",
+        "failed": "فشلت المقارنة",
+        "fastOption": "ثِق بمرشّح الكتل؛ تجاوز تأكيد تجزئة المحتوى (قد يُبالغ في الإبلاغ عن المُعدَّل)",
+        "jsonOption": "أخرج نتيجة الفرق المُهيكلة في غلاف JSON",
+        "nameOnlyOption": "اطبع فقط مسارات الملفات المتغيّرة، واحدة في كل سطر (بدون أحرف الحالة)",
+        "nameOption": "المستودع المُراد فحصه (الهدف / الجانب الجديد)",
+        "notAFork": "\"{{name}}\" ليس مستودعًا مفترعًا. مرّر أساسًا صريحًا عبر --base.",
+        "notFound": "المستودع \"{{name}}\" غير موجود في السياق",
+        "parentMissing": "أصل \"{{name}}\" غير موجود في هذا السياق. مرّره صراحةً عبر --base.",
+        "sameRepo": "لا يمكن مقارنة مستودع بنفسه.",
+        "starting": "مقارنة \"{{base}}\" بـ \"{{target}}\" على \"{{machine}}\"...",
+        "statOption": "أظهر حجم التغيير لكل ملف (فروق البايت والكتل) والإجماليات",
+        "truncated": "تم اقتطاع الفرق: الملف يتجاوز سقف حجم فرق المحتوى."
+      },
       "down": {
         "allCompleted": "تم إيقاف جميع المستودعات",
         "allFailed": "فشلت عملية إيقاف الكل",
@@ -1391,12 +1413,14 @@
         "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}}. لترحيل النسخة إلى جهاز آخر: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
         "descriptionShort": "إنشاء نسخة CoW من مستودع (GUID جديد، networkId، نطاق IP)",
+        "examples": "\nأمثلة:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "فشل إنشاء النسخة",
         "registered": "تم تسجيل النسخة \"{{repository}}\" ({{guid}}، شبكة {{networkId}})",
         "rollback": "تم التراجع عن تكوين \"{{repository}}\"",
         "starting": "جارٍ إنشاء نسخة من \"{{parent}}\" باسم \"{{repository}}\" على \"{{machine}}\"...",
         "tagOption": "وسم النسخة (ينشئ اسم:وسم)",
         "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork: الوسم \"latest\" محجوز للمستودع الرئيسي (الإنتاج) — اختر --tag مختلفًا (مثل \"test\" أو \"staging\" أو \"<feature>\")",
         "upOption": "تركيب وبدء الخدمات بعد التفريع (fork + mount + up في أمر واحد)"
       },
       "list": {
@@ -1552,6 +1576,7 @@
         "completed": "اكتمل الاستحواذ. المستودع الأصلي يحتوي الآن على بيانات النسخة المتفرعة.",
         "description": "استبدال بيانات المستودع الأصلي ببيانات النسخة المتفرعة. يحتفظ الأصلي بهويته (GUID، networkId، النطاقات، التشغيل التلقائي، سلسلة النسخ الاحتياطي) لكنه يحصل على البيانات المحدّثة من النسخة المتفرعة. يتم حفظ البيانات القديمة للإنتاج كنسخة احتياطية متفرعة. للاستخدام: اختبر الترقية على النسخة المتفرعة → تحقق → استحوذ على بيانات الإنتاج.",
         "descriptionShort": "استبدال بيانات الإنتاج ببيانات النسخة المتفرعة",
+        "examples": "\nأمثلة:\n  $ rdc repo takeover --name app:test -m server-1\n",
         "failed": "فشل الاستحواذ",
         "forceOption": "تخطي تحذيرات التعديل",
         "grandNotFound": "لم يتم العثور على المستودع الأصلي للنسخة المتفرعة \"{{name}}\"",
