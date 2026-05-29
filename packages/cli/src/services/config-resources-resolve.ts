@@ -37,7 +37,7 @@ export class AmbiguousRepoTargetError extends Error {
   }
 }
 
-/** Collect every config entry sharing the given base repo name. */
+/** Collect every config entry that shares the given base repo name. */
 export function collectCandidates(
   repos: Record<string, RepositoryConfig>,
   baseName: string
