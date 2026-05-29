@@ -57,8 +57,8 @@ test.describe('Audit Records Tests - Authenticated', () => {
     testReporter.completeStep('Select Last 7 Days preset', 'passed');
 
     testReporter.startStep('Verify date range is reflected in the picker');
-    // After preset selection the start input must have a date value
-    await expect(auditPage.filterDate.first()).not.toBeEmpty();
+    // After preset selection the start input (nested inside the RangePicker container) must have a date value
+    await expect(auditPage.filterDate.locator('input').first()).not.toHaveValue('');
     testReporter.completeStep('Verify date range is reflected in the picker', 'passed');
 
     await testReporter.finalizeTest();

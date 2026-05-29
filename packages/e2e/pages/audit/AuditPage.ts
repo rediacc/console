@@ -64,10 +64,7 @@ export class AuditPage extends BasePage {
 
   async selectEntityType(entityType: string): Promise<void> {
     await this.filterEntity.click();
-    // Ant Design Select options: use content locator since aria-name may not match exactly
-    const option = this.page
-      .locator('.ant-select-item-option-content')
-      .filter({ hasText: new RegExp(`^${entityType}$`) });
+    const option = this.page.getByRole('option', { name: entityType, exact: true });
     await option.waitFor({ state: 'visible', timeout: 15000 });
     await option.click();
   }
