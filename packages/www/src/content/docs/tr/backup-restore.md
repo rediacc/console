@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "29bb767d837eab9a"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "196ee7b649ac7371"
+sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -297,6 +297,8 @@ Yapılandırmanızda bir veya daha fazla strateji adını bir makineye bağlayı
   }
 }
 ```
+
+> **Bağlama yalnızca yerel yapılandırmadır.** Bir strateji tanımlamak ve makineye bağlamak makineyi etkilemez. systemd zamanlayıcılarını dağıtmak için `rdc machine backup schedule -m <machine>` komutunu çalıştırın ([Zamanlamayı Makineye Dağıtma](#zamanlamayı-makineye-dağıtma) bölümüne bakın) ve her strateji veya bağlama değişikliğinden sonra tekrar çalıştırın.
 
 ## Sıcak ve Soğuk Seçimi ve Depo Başına Filtreleme
 

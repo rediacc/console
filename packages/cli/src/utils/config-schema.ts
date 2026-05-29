@@ -151,6 +151,21 @@ export function compositeKey(name: string, tag: string): string {
   return `${name}:${tag}`;
 }
 
+/**
+ * Reject the reserved `latest` tag for any operation that registers a fork.
+ * A fork registered under `<name>:latest` collides with the grand and makes
+ * bare `--name` ambiguous for destructive commands. Pass the translated
+ * message to keep this utility free of i18n imports (would be circular).
+ */
+export function assertNonLatestForkTag(tag: string, errorMessage: string): void {
+  if (tag === DEFAULT_TAG) {
+    throw new Error(errorMessage);
+  }
+}
+
+/** The reserved tag that identifies the grand (production) repository. */
+export const RESERVED_GRAND_TAG = DEFAULT_TAG;
+
 export const InfraConfigSchema = z.object({
   publicIPv4: z
     .string()

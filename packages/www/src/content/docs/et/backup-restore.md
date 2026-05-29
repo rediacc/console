@@ -4,8 +4,8 @@ description: "Varunda krüpteeritud repositooriumeid välisesse salvestusse, taa
 category: "Guides"
 order: 7
 language: et
-sourceHash: "29bb767d837eab9a"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "196ee7b649ac7371"
+sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
 ---
 
 # Varundamine ja taastamine
@@ -295,6 +295,8 @@ Oma konfiguratsioonis seo üks või mitu strateegianime masinaga:
   }
 }
 ```
+
+> **Sidumine on ainult kohalik konfiguratsioon.** Strateegia määratlemine ja masinaga sidumine ei muuda masinat. Käivitage `rdc machine backup schedule -m <machine>` (vt [Ajakava juurutamine masinale](#ajakava-juurutamine-masinale)), et juurutada systemd-taimerid, ja käivitage see uuesti pärast iga strateegia või sidumise muudatust.
 
 ## Kuuma ja külma valimine ning repositooriumipõhine filtreerimine
 

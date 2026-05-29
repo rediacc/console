@@ -639,6 +639,7 @@
         },
         "remove": {
           "description": "Supprimer un mappage de dépôt de la configuration actuelle",
+          "descriptionShort": "Supprimer un mappage de dépôt de la configuration actuelle",
           "success": "Dépôt \"{{name}}\" supprimé"
         },
         "restoreArchived": {
@@ -1358,12 +1359,33 @@
         "configRetained": "Entrée de configuration pour \"{{repository}}\" conservée (le dépôt peut exister sur d'autres machines). Pour supprimer : rdc config repository remove --name {{repository}}",
         "description": "Supprimer un dépôt (détruit les conteneurs, volumes et l'image chiffrée). L'entrée de configuration est conservée. Utilisez --archive-config pour déplacer les identifiants vers deletedRepositories pour récupération via 'config restore-archived'",
         "descriptionShort": "Supprimer un dépôt d'une machine",
+        "examples": "\nExemples :\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n",
         "failed": "Échec de la suppression du dépôt",
         "restoreHint": "Restaurer avec : rdc config restore-archived {{guid}}",
         "starting": "Suppression de \"{{repository}}\" sur \"{{machine}}\"..."
       },
       "description": "Déployer et gérer des dépôts chiffrés sur les machines",
       "descriptionShort": "Déployer et gérer des dépôts chiffrés sur les machines",
+      "diff": {
+        "baseOption": "Dépôt avec lequel comparer (côté base/ancien) ; par défaut le parent de --name",
+        "conflictingFormat": "Choisissez une seule option parmi --name-only, --stat, --content, --json.",
+        "contentNeedsPath": "--content nécessite un chemin de fichier, par exemple : --content app/config.toml",
+        "contentOption": "Afficher un diff textuel unifié pour un seul fichier (nécessite un chemin de fichier)",
+        "description": "Diff fichier-par-fichier façon git entre deux dépôts forkés en copy-on-write. Signale les fichiers ajoutés, modifiés, supprimés et renommés. Compare le dépôt donné par --name (côté cible/nouveau) à son parent, résolu depuis la configuration locale, ou à un dépôt --base explicite (côté base/ancien). Métadonnées uniquement et indépendant de la taille : compare les images LUKS chiffrées au niveau bloc sans les déchiffrer, donc un dépôt de 1 Go et un de 100 Go sont comparés en les mêmes millisecondes.",
+        "descriptionShort": "Diff fichier façon git entre deux dépôts forkés (A/M/D/R)",
+        "failed": "Échec du diff",
+        "fastOption": "Faire confiance au filtre de blocs ; sauter la confirmation par hash de contenu (peut sur-signaler Modifié)",
+        "jsonOption": "Sortir le résultat du diff structuré dans l’enveloppe JSON",
+        "nameOnlyOption": "Afficher uniquement les chemins de fichiers modifiés, un par ligne (sans lettres de statut)",
+        "nameOption": "Dépôt à inspecter (côté cible/nouveau)",
+        "notAFork": "« {{name}} » n’est pas un fork. Passez une base explicite avec --base.",
+        "notFound": "Dépôt « {{name}} » introuvable dans le contexte",
+        "parentMissing": "Le parent de « {{name}} » n’est pas dans ce contexte. Passez-le explicitement avec --base.",
+        "sameRepo": "Impossible de comparer un dépôt avec lui-même.",
+        "starting": "Diff de « {{base}} » contre « {{target}} » sur « {{machine}} »...",
+        "statOption": "Afficher la magnitude de changement par fichier (deltas en octets et blocs) et les totaux",
+        "truncated": "Diff tronqué : le fichier dépasse le plafond de taille du diff de contenu."
+      },
       "down": {
         "allCompleted": "Tous les dépôts arrêtés",
         "allFailed": "L'opération d'arrêt total a échoué",
@@ -1391,12 +1413,14 @@
         "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}}. Pour migrer le fork vers une autre machine : repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt",
         "descriptionShort": "Créer un fork CoW d'un dépôt (nouveau GUID, networkId, plage IP)",
+        "examples": "\nExemples :\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Échec de la création du fork",
         "registered": "Fork \"{{repository}}\" enregistré ({{guid}}, réseau {{networkId}})",
         "rollback": "Configuration annulée pour \"{{repository}}\"",
         "starting": "Création du fork de \"{{parent}}\" en tant que \"{{repository}}\" sur \"{{machine}}\"...",
         "tagOption": "Tag pour le fork (crée nom:tag)",
         "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork --parent <parent> --tag <tag> -m <machine>",
+        "tagReservedLatest": "repo fork : le tag \"latest\" est réservé au dépôt principal (production) — choisissez un autre --tag (par exemple \"test\", \"staging\", \"<feature>\")",
         "upOption": "Monter et démarrer les services après le fork (fork + mount + up en une seule commande)"
       },
       "list": {
@@ -1552,6 +1576,7 @@
         "completed": "Prise de contrôle terminée. Le dépôt principal contient maintenant les données du fork.",
         "description": "Remplacer les données du dépôt principal par les données d'un fork. Le principal conserve son identité (GUID, networkId, domaines, démarrage automatique, chaîne de sauvegardes) mais obtient les données mises à jour du fork. Les anciennes données de production sont conservées comme fork de sauvegarde. Utilisation : tester la mise à niveau sur le fork → vérifier → prise de contrôle en production.",
         "descriptionShort": "Remplacer les données de production par les données du fork",
+        "examples": "\nExemples :\n  $ rdc repo takeover --name app:test -m server-1\n",
         "failed": "Échec de la prise de contrôle",
         "forceOption": "Ignorer les avertissements de modification",
         "grandNotFound": "Dépôt principal introuvable pour le fork \"{{name}}\"",

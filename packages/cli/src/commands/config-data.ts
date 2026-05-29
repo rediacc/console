@@ -8,6 +8,7 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import { outputService } from '../services/output.js';
 import type { OutputFormat } from '../types/index.js';
+import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { assertResourceName, parseConfig, RepositoryConfigSchema } from '../utils/config-schema.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 
@@ -70,13 +71,15 @@ export function registerRepositoryCommands(config: Command, program: Command): v
   // config repository remove
   repository
     .command('remove')
+    .summary(t('commands.config.repository.remove.descriptionShort'))
     .description(t('commands.config.repository.remove.description'))
     .requiredOption('--name <name>', t('options.name'))
     .action(async (options) => {
       try {
-        const name = options.name;
-        await configService.removeRepository(name);
-        outputService.success(t('commands.config.repository.remove.success', { name }));
+        const { key: target } = await configService.resolveDestructiveTarget(options.name);
+        await assertCommandPolicy(CMD.CONFIG_REPOSITORY_REMOVE, target);
+        await configService.removeRepository(target);
+        outputService.success(t('commands.config.repository.remove.success', { name: target }));
       } catch (error) {
         handleError(error);
       }

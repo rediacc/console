@@ -135,4 +135,13 @@ describe('repo fork — hard-isolate of secrets', () => {
     const src = readFileSync(resolve(__dirname, '..', 'repo-fork.ts'), 'utf-8');
     expect(src).not.toMatch(/parentConfig\.secrets/);
   });
+
+  it('rejects --tag latest before any config mutation (issue #495)', async () => {
+    await expect(handleForkAction('app', 'latest', { machine: 'hostinger' })).rejects.toThrow(
+      /tagReservedLatest|reserved/i
+    );
+    expect(mockAddRepository).not.toHaveBeenCalled();
+    expect(mockRemoveRepository).not.toHaveBeenCalled();
+    expect(mockExecute).not.toHaveBeenCalled();
+  });
 });

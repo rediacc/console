@@ -2669,7 +2669,7 @@
   {
     "id": "search-14775",
     "content": "Stratejileri Makineye Bağlama",
-    "body": "Yapılandırmanızda bir veya daha fazla strateji adını bir makineye bağlayın: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "Yapılandırmanızda bir veya daha fazla strateji adını bir makineye bağlayın: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } Bağlama yalnızca yerel yapılandırmadır. Bir strateji tanımlamak ve makineye bağlamak makineyi etkilemez. systemd zamanlayıcılarını dağıtmak için rdc machine backup schedule -m <machine> komutunu çalıştırın (Zamanlamayı Makineye Dağıtma bölümüne bakın) ve her strateji veya bağlama değişikliğinden sonra tekrar çalıştırın.",
     "excerpt": "Yapılandırmanızda bir veya daha fazla strateji adını bir makineye bağlayın: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-...",
     "category": "Documentation",
     "page": "/tr/docs/backup-restore",

@@ -6,18 +6,18 @@ import { randomUUID } from 'node:crypto';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config-resources.js';
 import {
-  localExecutorService,
   type LocalExecuteResult,
+  localExecutorService,
   type RenetEvent,
 } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
-import { postRepoUpTasks } from './repo-batch-utils.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { formatStepDuration, getActiveLabel, getDoneLabel } from '../utils/timeline.js';
 import { assertMachineExists } from './_validate.js';
+import { postRepoUpTasks } from './repo-batch-utils.js';
 
 /** Log total step duration and mark timeline as rendered. */
 function renderTimelineTotal(steps: { duration_ms: number }[]): void {
@@ -168,9 +168,13 @@ export async function handleForkAction(
     skipRouterRestart?: boolean;
   }
 ): Promise<void> {
-  const { parseRepoRef, compositeKey } = await import('../utils/config-schema.js');
-  const forkKey = compositeKey(parseRepoRef(parent).name, tagName);
+  const { parseRepoRef, compositeKey, assertNonLatestForkTag } = await import(
+    '../utils/config-schema.js'
+  );
+  let forkKey = '';
   try {
+    assertNonLatestForkTag(tagName, t('commands.repo.fork.tagReservedLatest'));
+    forkKey = compositeKey(parseRepoRef(parent).name, tagName);
     const parentConfig = await configService.getRepository(parent);
     if (!parentConfig) {
       throw new Error(`Repository "${parent}" not found in context`);

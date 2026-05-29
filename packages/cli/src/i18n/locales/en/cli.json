@@ -520,7 +520,8 @@
           "networkIdAssigned": "Network ID: {{networkId}}"
         },
         "remove": {
-          "description": "Remove a repository mapping from the current config",
+          "description": "Remove a repository mapping from the current config. Targets <name>:<tag>; a bare --name resolves to the grand <name>:latest and is refused when multiple repos share the base name — pass :tag explicitly to target a fork.",
+          "descriptionShort": "Remove a repository mapping from the current config",
           "success": "Repository \"{{name}}\" removed"
         },
         "list": {
@@ -1462,7 +1463,7 @@
         "alreadyExists": "Repository \"{{name}}\" already exists in config"
       },
       "delete": {
-        "description": "Delete a repository (destroys containers, volumes, and encrypted image). Config entry is preserved. Use --archive-config to move credentials to deletedRepositories for recovery via 'config restore-archived'",
+        "description": "Delete a repository (destroys containers, volumes, and encrypted image). Config entry is preserved. Use --archive-config to move credentials to deletedRepositories for recovery via 'config restore-archived'. Targets <name>:<tag>; a bare --name resolves to the grand <name>:latest and is refused when multiple repos share the base name — pass :tag explicitly to target a fork.",
         "descriptionShort": "Delete a repository from a machine",
         "archiveOption": "Move config entry to deletedRepositories for later recovery",
         "starting": "Deleting \"{{repository}}\" on \"{{machine}}\"...",
@@ -1472,7 +1473,8 @@
         "archived": "Credential for \"{{repository}}\" archived",
         "restoreHint": "Restore with: rdc config restore-archived {{guid}}",
         "failed": "Repository deletion failed",
-        "cloudBackupHint": "Cloud backups (if any) persist after delete. Remove orphaned cloud backups with: rdc storage prune --name <storage> -m {{machine}}"
+        "cloudBackupHint": "Cloud backups (if any) persist after delete. Remove orphaned cloud backups with: rdc storage prune --name <storage> -m {{machine}}",
+        "examples": "\nExamples:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n"
       },
       "fork": {
         "description": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target>. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.",
@@ -1486,10 +1488,12 @@
         "completed": "Fork created. Deploy locally: repo up {{repository}} -m {{machine}}. To migrate fork to another machine: repo push {{repository}} -m {{machine}} --to <target> --up",
         "failed": "Fork creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
-        "alreadyExists": "Repository \"{{name}}\" already exists in config"
+        "alreadyExists": "Repository \"{{name}}\" already exists in config",
+        "tagReservedLatest": "repo fork: tag \"latest\" is reserved for the grand (production) repository — pick a different --tag (e.g. \"test\", \"staging\", \"<feature>\")",
+        "examples": "\nExamples:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n"
       },
       "takeover": {
-        "description": "Replace grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain) but gets the fork's upgraded data. The old production data is preserved as a backup fork. Use for: test upgrade on fork → verify → takeover to production.",
+        "description": "Replace grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain) but gets the fork's upgraded data. The old production data is preserved as a backup fork. Use for: test upgrade on fork → verify → takeover to production. Pass an explicit <name>:<tag> for the fork — a bare --name resolves to the grand and is rejected with \"not a fork\".",
         "descriptionShort": "Replace production data with fork data",
         "forceOption": "Skip modification warnings",
         "notAFork": "\"{{name}}\" is not a fork repository (missing parentGuid)",
@@ -1499,7 +1503,8 @@
         "backupInfo": "Old production data preserved as: {{backup}}",
         "revertHint": "To revert: rdc repo takeover --name {{backup}} -m {{machine}}",
         "failed": "Takeover failed",
-        "rollback": "Rolled back config for \"{{name}}\""
+        "rollback": "Rolled back config for \"{{name}}\"",
+        "examples": "\nExamples:\n  $ rdc repo takeover --name app:test -m server-1\n"
       },
       "resize": {
         "description": "Resize a repository offline (supports both grow and shrink). Repo must be unmounted first ('repo down --unmount'). For zero-downtime growth without stopping, use 'repo expand' instead",

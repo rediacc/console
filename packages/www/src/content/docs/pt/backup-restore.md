@@ -4,8 +4,8 @@ description: "Faça backup de repositórios encriptados para armazenamento exter
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "29bb767d837eab9a"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "196ee7b649ac7371"
+sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
 ---
 
 # Backup e Restauro
@@ -295,6 +295,8 @@ Na sua configuração, associe um ou mais nomes de estratégia a uma máquina:
   }
 }
 ```
+
+> **A vinculação é apenas configuração local.** Definir uma estratégia e vinculá-la a uma máquina não afeta a máquina. Execute `rdc machine backup schedule -m <machine>` (consulte [Implementar Agendamento na Máquina](#implementar-agendamento-na-máquina)) para implantar os temporizadores systemd, e execute novamente após qualquer alteração de estratégia ou vinculação.
 
 ## Escolher entre Hot e Cold e Filtragem por Repositório
 

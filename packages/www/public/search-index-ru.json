@@ -2669,7 +2669,7 @@
   {
     "id": "search-13555",
     "content": "Привязка стратегий к машине",
-    "body": "В конфигурации привяжите одно или несколько имен стратегий к машине: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "В конфигурации привяжите одно или несколько имен стратегий к машине: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } Привязка действует только в локальной конфигурации. Определение стратегии и её привязка к машине не вносят изменений на саму машину. Выполните rdc machine backup schedule -m <machine> (см. Развертывание расписания на машине), чтобы развернуть таймеры systemd, и повторите команду после любого изменения стратегии или привязки.",
     "excerpt": "В конфигурации привяжите одно или несколько имен стратегий к машине: { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"]...",
     "category": "Documentation",
     "page": "/ru/docs/backup-restore",

@@ -15,7 +15,6 @@ import {
 } from '@rediacc/shared-desktop/vscode';
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import { t } from '../i18n/index.js';
-import { outputService } from './output.js';
 import type {
   ArchivedRepository,
   BackupStrategyConfig,
@@ -28,9 +27,18 @@ import type {
   StorageConfig,
 } from '../types/index.js';
 import { hasCloudCredentials } from '../types/index.js';
-import { parseRepoRef } from '../utils/config-schema.js';
 import { ConfigServiceBase } from './config-base.js';
 import { findFreeNetworkIdSlot, pickInitialNetworkId } from './config-network-id.js';
+import {
+  assertRestoredForkKeyIsExplicit,
+  buildCredentialsMap,
+  buildGuidMap,
+  resolveDestructiveTargetFromRepos,
+  resolveExactOrLatest,
+} from './config-resources-resolve.js';
+import { outputService } from './output.js';
+
+export { AmbiguousRepoTargetError } from './config-resources-resolve.js';
 
 class ConfigService extends ConfigServiceBase {
   /**
@@ -291,31 +299,15 @@ class ConfigService extends ConfigServiceBase {
   async getRepositoryGuidMap(): Promise<Record<string, string>> {
     const config = await this.getCurrent();
     if (!config || hasCloudCredentials(config)) return {};
-
     const state = await this.getResourceState();
-    const repos = state.getRepositories();
-    const map: Record<string, string> = {};
-    for (const [repoName, repoConfig] of Object.entries(repos)) {
-      const tag = repoConfig.tag ?? DEFAULTS.REPOSITORY.TAG;
-      // Config keys may be bare ("erpnext") or composite ("demo-stackoverflow:latest").
-      // Extract the bare base name so we always produce a canonical "name:tag"
-      // without double-tagging composite keys.
-      const { name: baseName } = parseRepoRef(repoName);
-      map[repoConfig.repositoryGuid] = `${baseName}:${tag}`;
-    }
-    return map;
+    return buildGuidMap(state.getRepositories());
   }
 
   async getRepositoryCredentials(): Promise<Record<string, string>> {
     const config = await this.getCurrent();
     if (!config || hasCloudCredentials(config)) return {};
-
     const state = await this.getResourceState();
-    const map: Record<string, string> = {};
-    for (const repoConfig of Object.values(state.getRepositories())) {
-      if (repoConfig.credential) map[repoConfig.repositoryGuid] = repoConfig.credential;
-    }
-    return map;
+    return buildCredentialsMap(state.getRepositories());
   }
 
   /**
@@ -325,20 +317,10 @@ class ConfigService extends ConfigServiceBase {
   async getRepository(repoRef: string): Promise<RepositoryConfig | undefined> {
     const config = await this.getCurrent();
     if (!config || hasCloudCredentials(config)) return undefined;
-
     const state = await this.getResourceState();
     const repos = state.getRepositories();
-
-    // 1. Direct match (composite key or legacy key)
-    if (repoRef in repos) return repos[repoRef];
-
-    // 2. If no colon, try name:latest
-    if (!repoRef.includes(':')) {
-      const latestKey = `${repoRef}:latest`;
-      if (latestKey in repos) return repos[latestKey];
-    }
-
-    return undefined;
+    const key = resolveExactOrLatest(repos, repoRef, !repoRef.includes(':'));
+    return key ? repos[key] : undefined;
   }
 
   /**
@@ -348,16 +330,32 @@ class ConfigService extends ConfigServiceBase {
   async getRepositoryKey(repoRef: string): Promise<string | undefined> {
     const config = await this.getCurrent();
     if (!config || hasCloudCredentials(config)) return undefined;
-
     const state = await this.getResourceState();
-    const repos = state.getRepositories();
+    return resolveExactOrLatest(state.getRepositories(), repoRef, !repoRef.includes(':'));
+  }
 
-    if (repoRef in repos) return repoRef;
-    if (!repoRef.includes(':')) {
-      const latestKey = `${repoRef}:latest`;
-      if (latestKey in repos) return latestKey;
-    }
-    return undefined;
+  /**
+   * Strict resolver for destructive commands (repo delete, repo takeover,
+   * config repository remove, datastore unfork). Fails closed on ambiguity
+   * so a bare `--name` cannot silently hit the wrong repo. See issue #495.
+   *
+   * - Exact-key match wins (same as `getRepositoryKey`).
+   * - For a bare ref, refuses when more than one config key shares the base
+   *   name, even if the `:latest` fallback would otherwise resolve.
+   * - For a bare ref that resolves to a fork (grandGuid set and !== guid),
+   *   refuses — the operator must say `<name>:<tag>` explicitly so we do not
+   *   destroy a fork registered in the grand slot by mistake.
+   */
+  async resolveDestructiveTarget(
+    repoRef: string
+  ): Promise<{ key: string; config: RepositoryConfig }> {
+    const config = await this.getCurrent();
+    if (!config || hasCloudCredentials(config))
+      throw new Error(`Repository "${repoRef}" not found in context`);
+    return resolveDestructiveTargetFromRepos(
+      (await this.getResourceState()).getRepositories(),
+      repoRef
+    );
   }
 
   /**
@@ -414,6 +412,7 @@ class ConfigService extends ConfigServiceBase {
 
     const archived = deletedRepos[index];
     const restoredName = name ?? archived.name;
+    assertRestoredForkKeyIsExplicit(archived, restoredName);
 
     const repos = state.getRepositories();
     if (restoredName in repos)

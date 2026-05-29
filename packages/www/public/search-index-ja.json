@@ -2669,8 +2669,8 @@
   {
     "id": "search-9889",
     "content": "マシンへの戦略のバインド",
-    "body": "設定内で、1つ以上の戦略名をマシンにバインドします： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
-    "excerpt": "設定内で、1つ以上の戦略名をマシンにバインドします： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } }",
+    "body": "設定内で、1つ以上の戦略名をマシンにバインドします： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } バインディングはローカル設定のみです。 ストラテジーを定義してマシンにバインドしてもマシン自体には影響しません。systemd タイマーをデプロイするには rdc machine backup schedule -m <machine> を実行してください（マシンへのスケジュールのデプロイを参照）。ストラテジーやバインディングを変更した後は再度実行してください。",
+    "excerpt": "設定内で、1つ以上の戦略名をマシンにバインドします： { \"machines\": { \"hostinger\": { \"backupStrategies\": [\"hourly-hot\", \"weekly-cold\"] } } } バインディングはローカル設定のみです。 ストラテジーを定義してマシンにバ...",
     "category": "Documentation",
     "page": "/ja/docs/backup-restore",
     "path": "docs.backup-restore.content",

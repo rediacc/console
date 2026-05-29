@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: es
-sourceHash: "29bb767d837eab9a"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "196ee7b649ac7371"
+sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
 ---
 
 # Respaldo y Restauración
@@ -297,6 +297,8 @@ En su configuración, vincule uno o más nombres de estrategia a una máquina:
   }
 }
 ```
+
+> **La vinculación es solo de configuración local.** Definir una estrategia y vincularla a una máquina no afecta a la máquina. Ejecute `rdc machine backup schedule -m <machine>` (consulte [Desplegar Cronograma en la Máquina](#desplegar-cronograma-en-la-máquina)) para desplegar los temporizadores systemd, y vuelva a ejecutarlo tras cualquier cambio de estrategia o vinculación.
 
 ## Elegir entre Hot y Cold y Filtrado por Repositorio
 
