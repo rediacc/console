@@ -37,6 +37,9 @@ better-sqlite3  # BLOCKER: v12.x requires native binding rebuild; potential API 
 # inquirer — npm publishes were broken at 13.3.x
 inquirer  # BLOCKER: v13.3.1 and v13.3.2 shipped without dist folder; stay on last known-good until upstream republishes
 
+# commander — v15 is ESM-only; the CLI bundles to CommonJS
+commander  # BLOCKER: v15.0.0 is ESM-only (dropped CommonJS) and requires Node 22.12+; the CLI bundles to cli-bundle.cjs so adopting it needs a deliberate ESM migration, and .npmrc minimum-release-age blocks install for 24h after the 2026-05-29 release
+
 # @types/node major must match Node engine version (22.x)
 @types/node  # BLOCKER: v25+ targets Node 25 APIs; our engines field and CI runners are on Node 22
 
