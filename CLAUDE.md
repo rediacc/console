@@ -307,6 +307,10 @@ The CI has a watchdog (`watchdog-monitor.cjs`) and cancellation script (`cancel-
 
 Re-running (`gh run rerun`) is only appropriate for transient errors (network, flaky infra) on failed — not cancelled — runs.
 
+### Never push to `main` or cut a release without explicit user authorization
+
+**AI agents MUST NOT push to `main` (console or any submodule) or trigger a release without an explicit, per-task user request.** Every push to `main` runs the full release pipeline (`cd-v2.yml` deploys edge on green), so an unprompted main push is an unprompted release. The default is always: create a feature branch, open a PR, and let the user merge. Approving an implementation plan is **not** authorization to push to `main` or release. Branch protection forbids direct pushes (`.github/CONTRIBUTING.md`); do not work around it. When in doubt, stop at the branch/PR and ask.
+
 ### Submodule commit order
 
 Always commit submodules before the parent repo:

@@ -1,6 +1,11 @@
 import { expect, test } from '@playwright/test';
 import { E2E } from '../../src/utils/e2e-constants';
-import { getE2EConfig, runLocalFunction, setupE2EEnvironment } from '../../src/utils/local';
+import {
+  assertSuccess,
+  getE2EConfig,
+  runLocalFunction,
+  setupE2EEnvironment,
+} from '../../src/utils/local';
 import { safeDeleteRepo } from '../../src/utils/local-operations';
 import { SSHValidator } from '../../src/utils/SSHValidator';
 
@@ -68,15 +73,7 @@ test.describe
       await cleanup?.();
     });
 
-    // repository_diff requires LUKS-encrypted repositories: it reads the
-    // encrypted images at the block level and maps changed blocks back to
-    // file names. The local-mode E2E environment provisions unencrypted
-    // directory-backed repos (mirroring 05-repository-advanced's resize
-    // expectation), so the most we can verify here end-to-end is that the
-    // command rejects the operation cleanly with a clear LUKS-required
-    // message. Cloud/encrypted E2E covers the happy path elsewhere.
-
-    test('repository_diff rejects unencrypted repos with a clear LUKS message', async () => {
+    test('repository_diff reports the modified and added files', async () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
@@ -85,8 +82,47 @@ test.describe
         params: { repository: E2E.TEST_REPO_2, base: E2E.TEST_REPO, target: E2E.TEST_REPO_2 },
         timeout: E2E.TEST_TIMEOUT,
       });
-      expect(result.exitCode).not.toBe(0);
+      assertSuccess(result);
+      // `rdc run` surfaces only a progress line on stdout, not the renet JSON
+      // payload, so success (exit 0) is the meaningful end-to-end signal: the
+      // unencrypted directory-backed repo was diffed without hitting the old
+      // "LUKS required" rejection. Content correctness (A/M/D/R) is covered by
+      // repodiff's engine_dirbacked_test in the renet unit lane.
       const combined = `${result.stdout}\n${result.stderr}`;
-      expect(combined).toMatch(/not LUKS-encrypted|read-only diff of unencrypted/i);
+      expect(combined).not.toMatch(/not LUKS-encrypted|read-only diff of unencrypted/i);
+    });
+
+    test('repository_diff --fast still succeeds', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      const result = await runLocalFunction('repository_diff', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        params: {
+          repository: E2E.TEST_REPO_2,
+          base: E2E.TEST_REPO,
+          target: E2E.TEST_REPO_2,
+          fast: 'true',
+        },
+        timeout: E2E.TEST_TIMEOUT,
+      });
+      assertSuccess(result);
+    });
+
+    test('repository_diff --content returns a unified diff for one file', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      const result = await runLocalFunction('repository_diff', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        params: {
+          repository: E2E.TEST_REPO_2,
+          base: E2E.TEST_REPO,
+          target: E2E.TEST_REPO_2,
+          content: 'diffme.txt',
+        },
+        timeout: E2E.TEST_TIMEOUT,
+      });
+      assertSuccess(result);
     });
   });
