@@ -162,6 +162,11 @@ jobs:
           cd private/renet
           go generate ./pkg/ebpf/...
 
+      - name: Run renet unit tests (repodiff/delta/fiemap/kernel)
+        run: |
+          cd private/renet
+          go test ./pkg/repodiff/... ./pkg/delta/... ./pkg/fiemap/... ./pkg/kernel/...
+
       - name: Build full renet with embedded assets (release)
         env:
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ secrets.ACCOUNT_ED25519_PUBLIC_KEY }}
