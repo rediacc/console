@@ -36,8 +36,14 @@ export interface BackupPullParams {
   from: string;
   /** Comma-separated repository GUIDs for CoW pre-seeding (closest relative first) */
   seed?: string;
+  /** Overwrite existing repository */
+  force?: boolean;
   /** Bandwidth limit for rsync transfer (e.g., 6M, 10M) */
   bwlimit?: string;
+  /** Immutable base GUID present byte-identical on both machines; receive only changed extents (machine source, LUKS repos) */
+  deltaBase?: string;
+  /** Delta strategy: auto|physical|shared */
+  strategy?: string;
 }
 
 /** Push repository to remote destination (machine or storage) */
@@ -64,6 +70,14 @@ export interface BackupPushParams {
   seed?: string;
   /** Bandwidth limit for rsync transfer (e.g., 6M, 10M) */
   bwlimit?: string;
+  /** Immutable base GUID present byte-identical on both machines; transfer only changed extents (machine target, LUKS repos) */
+  deltaBase?: string;
+  /** Delta strategy: auto|physical|shared */
+  strategy?: string;
+  /** Retain the pushed image as an immutable delta base under this GUID on both machines */
+  retainBase?: string;
+  /** Delete this prior retained base on both machines after a successful push */
+  retainBasePrune?: string;
 }
 
 /** Mount RBD image on client */
@@ -467,6 +481,32 @@ export interface RepositoryCatParams {
   forceBinary?: boolean;
 }
 
+/** Freeze a working fork into a new immutable commit (git-like) */
+export interface RepositoryCommitParams {
+  /** Name of the new immutable commit */
+  tag: string;
+  /** Commit message */
+  message: string;
+  /** Commit author */
+  author?: string;
+  /** GUID of the previous branch tip (empty for the root commit) */
+  commitParent?: string;
+}
+
+/** Reconstruct an immutable commit's state mirror from supplied metadata (cross-machine log sync) */
+export interface RepositoryCommitMetaParams {
+  /** Commit message */
+  message?: string;
+  /** Commit author */
+  author?: string;
+  /** Parent commit GUID */
+  commitParent?: string;
+  /** Commit timestamp (RFC3339) */
+  committedAt?: string;
+  /** Grand (lineage root) GUID */
+  grandGuid?: string;
+}
+
 /** Create a new repository */
 export interface RepositoryCreateParams {
   /** Repository size (e.g., 100G, 1T) */
@@ -523,6 +563,8 @@ export interface RepositoryExpandParams {
 export interface RepositoryForkParams {
   /** Fork repository name */
   tag: string;
+  /** Mark the fork read-only (refuses to mount; frozen commit/base) */
+  immutable?: boolean;
 }
 
 /** Get repository information */
@@ -536,6 +578,21 @@ export interface RepositoryListParams {
   format?: string;
   /** Source machine or storage */
   from?: string;
+}
+
+/** Walk the commit DAG from a starting commit (reads out-of-volume mirror) */
+export interface RepositoryLogParams {}
+
+/** Lifecycle-safe merge of a source into a target working fork (atomic swap) */
+export interface RepositoryMergeParams {
+  /** Source commit/fork to merge from */
+  from: string;
+  /** Quiesce a mounted/running target first, then merge */
+  force?: boolean;
+  /** Per-file three-way conflict policy: ours|theirs (requires base) */
+  resolve?: string;
+  /** Common-ancestor commit GUID for a per-file three-way merge */
+  base?: string;
 }
 
 /** Mount a repository */
@@ -690,6 +747,8 @@ export const BRIDGE_FUNCTIONS = [
   'repository_autostart_enable_all',
   'repository_autostart_list',
   'repository_cat',
+  'repository_commit',
+  'repository_commit_meta',
   'repository_create',
   'repository_delete',
   'repository_diff',
@@ -699,6 +758,8 @@ export const BRIDGE_FUNCTIONS = [
   'repository_fork',
   'repository_info',
   'repository_list',
+  'repository_log',
+  'repository_merge',
   'repository_mount',
   'repository_ownership',
   'repository_prune',
@@ -766,6 +827,8 @@ export type FunctionParamsMap = {
   repository_autostart_enable_all: RepositoryAutostartEnableAllParams;
   repository_autostart_list: RepositoryAutostartListParams;
   repository_cat: RepositoryCatParams;
+  repository_commit: RepositoryCommitParams;
+  repository_commit_meta: RepositoryCommitMetaParams;
   repository_create: RepositoryCreateParams;
   repository_delete: RepositoryDeleteParams;
   repository_diff: RepositoryDiffParams;
@@ -775,6 +838,8 @@ export type FunctionParamsMap = {
   repository_fork: RepositoryForkParams;
   repository_info: RepositoryInfoParams;
   repository_list: RepositoryListParams;
+  repository_log: RepositoryLogParams;
+  repository_merge: RepositoryMergeParams;
   repository_mount: RepositoryMountParams;
   repository_ownership: RepositoryOwnershipParams;
   repository_prune: RepositoryPruneParams;
@@ -934,6 +999,12 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   'repository_cat': {
     requirements: { machine: true, team: true, repository: true },
   },
+  'repository_commit': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_commit_meta': {
+    requirements: { machine: true, team: true, repository: true },
+  },
   'repository_create': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -960,6 +1031,12 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   },
   'repository_list': {
     requirements: { machine: true, team: true, organization: true },
+  },
+  'repository_log': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_merge': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'repository_mount': {
     requirements: { machine: true, team: true, repository: true },
@@ -1152,9 +1229,27 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         type: 'string',
         help: 'Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)',
       },
+      force: {
+        type: 'bool',
+        default: 'false',
+        help: 'Overwrite existing repository',
+        options: ['true', 'false'],
+      },
       bwlimit: {
         type: 'string',
         help: 'Bandwidth limit for rsync transfer (e.g., 6M, 10M)',
+      },
+      deltaBase: {
+        type: 'string',
+        help: 'Immutable base GUID present byte-identical on both machines; receive only changed extents (machine source, LUKS repos)',
+      },
+      strategy: {
+        type: 'string',
+        default: 'auto',
+        help: 'Delta strategy: auto|physical|shared',
+        options: ['auto', 'physical', 'shared'],
+        ui: 'dropdown',
+        enum: ['auto', 'physical', 'shared'],
       },
     },
   },
@@ -1227,6 +1322,26 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       bwlimit: {
         type: 'string',
         help: 'Bandwidth limit for rsync transfer (e.g., 6M, 10M)',
+      },
+      deltaBase: {
+        type: 'string',
+        help: 'Immutable base GUID present byte-identical on both machines; transfer only changed extents (machine target, LUKS repos)',
+      },
+      strategy: {
+        type: 'string',
+        default: 'auto',
+        help: 'Delta strategy: auto|physical|shared',
+        options: ['auto', 'physical', 'shared'],
+        ui: 'dropdown',
+        enum: ['auto', 'physical', 'shared'],
+      },
+      retainBase: {
+        type: 'string',
+        help: 'Retain the pushed image as an immutable delta base under this GUID on both machines',
+      },
+      retainBasePrune: {
+        type: 'string',
+        help: 'Delete this prior retained base on both machines after a successful push',
       },
     },
   },
@@ -2135,6 +2250,61 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
     },
   },
+  'repository_commit': {
+    name: 'repository_commit',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      tag: {
+        type: 'string',
+        required: true,
+        help: 'Name of the new immutable commit',
+      },
+      message: {
+        type: 'string',
+        required: true,
+        help: 'Commit message',
+        minLength: 1,
+      },
+      author: {
+        type: 'string',
+        help: 'Commit author',
+      },
+      commitParent: {
+        type: 'string',
+        help: 'GUID of the previous branch tip (empty for the root commit)',
+      },
+    },
+  },
+  'repository_commit_meta': {
+    name: 'repository_commit_meta',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      message: {
+        type: 'string',
+        help: 'Commit message',
+      },
+      author: {
+        type: 'string',
+        help: 'Commit author',
+      },
+      commitParent: {
+        type: 'string',
+        help: 'Parent commit GUID',
+      },
+      committedAt: {
+        type: 'string',
+        help: 'Commit timestamp (RFC3339)',
+      },
+      grandGuid: {
+        type: 'string',
+        help: 'Grand (lineage root) GUID',
+      },
+    },
+  },
   'repository_create': {
     name: 'repository_create',
     category: 'repository',
@@ -2265,6 +2435,12 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         required: true,
         help: 'Fork repository name',
       },
+      immutable: {
+        type: 'bool',
+        default: 'false',
+        help: 'Mark the fork read-only (refuses to mount; frozen commit/base)',
+        options: ['true', 'false'],
+      },
     },
   },
   'repository_info': {
@@ -2294,6 +2470,44 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         type: 'string',
         help: 'Source machine or storage',
         ui: 'source-dropdown',
+      },
+    },
+  },
+  'repository_log': {
+    name: 'repository_log',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
+  'repository_merge': {
+    name: 'repository_merge',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      from: {
+        type: 'string',
+        required: true,
+        help: 'Source commit/fork to merge from',
+      },
+      force: {
+        type: 'bool',
+        default: 'false',
+        help: 'Quiesce a mounted/running target first, then merge',
+        options: ['true', 'false'],
+      },
+      resolve: {
+        type: 'string',
+        help: 'Per-file three-way conflict policy: ours|theirs (requires base)',
+        options: ['ours', 'theirs'],
+        ui: 'dropdown',
+        enum: ['ours', 'theirs'],
+      },
+      base: {
+        type: 'string',
+        help: 'Common-ancestor commit GUID for a per-file three-way merge',
       },
     },
   },
@@ -2616,6 +2830,8 @@ export const queueFunctions: QueueFunctionsType = {
   repository_autostart_enable_all: (params) => ({ functionName: 'repository_autostart_enable_all', params }),
   repository_autostart_list: (params) => ({ functionName: 'repository_autostart_list', params }),
   repository_cat: (params) => ({ functionName: 'repository_cat', params }),
+  repository_commit: (params) => ({ functionName: 'repository_commit', params }),
+  repository_commit_meta: (params) => ({ functionName: 'repository_commit_meta', params }),
   repository_create: (params) => ({ functionName: 'repository_create', params }),
   repository_delete: (params) => ({ functionName: 'repository_delete', params }),
   repository_diff: (params) => ({ functionName: 'repository_diff', params }),
@@ -2625,6 +2841,8 @@ export const queueFunctions: QueueFunctionsType = {
   repository_fork: (params) => ({ functionName: 'repository_fork', params }),
   repository_info: (params) => ({ functionName: 'repository_info', params }),
   repository_list: (params) => ({ functionName: 'repository_list', params }),
+  repository_log: (params) => ({ functionName: 'repository_log', params }),
+  repository_merge: (params) => ({ functionName: 'repository_merge', params }),
   repository_mount: (params) => ({ functionName: 'repository_mount', params }),
   repository_ownership: (params) => ({ functionName: 'repository_ownership', params }),
   repository_prune: (params) => ({ functionName: 'repository_prune', params }),

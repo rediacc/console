@@ -1,14 +1,14 @@
 ---
 title: "SOC 2 合规"
-description: "Rediacc 如何满足 SOC 2 安全性、可用性和机密性的信任服务标准。"
+description: "Rediacc 在哪些方面为你提供 SOC 2 证据：日志、变更管理追踪以及审计人员所关注的控制措施。"
 category: "Legal"
 order: 2
 language: zh
-sourceHash: "ebdae97034aa3cce"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "29b0c745e631e4f8"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-SOC 2（系统和组织控制 2）是由美国注册会计师协会 (AICPA) 开发的框架，用于评估组织在安全性、可用性、处理完整性、机密性和隐私方面的控制。
+SOC 2 是 AICPA 框架，当审计人员需要证明控制措施真实有效时就会使用它。它涵盖五项信任服务标准：安全性、可用性、处理完整性、机密性和隐私。
 
 参考: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -35,7 +35,7 @@ Rediacc 记录 40 多种账户级事件类型，涵盖：
 
 ## 变更管理
 
-基于 Fork 的工作流程支持受控的变更管理：
+fork 让变更管理具有可审计性：每个 fork 是当前实时状态的副本，你可以对其进行测试、审查，然后选择推广或丢弃，每个步骤都有时间戳和执行者标识。
 
 1. Fork 生产仓库（`rdc repo fork`）
 2. 在 Fork 上应用和测试更改

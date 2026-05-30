@@ -12,8 +12,8 @@ tags:
   - conformidade
 featured: false
 language: pt
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -164,4 +164,4 @@ Se está a entrar numa renovação de cópia de segurança ou DR nos próximos d
 
 Se somos a alternativa na sua lista curta, a oferta é concreta. Envie-nos o seu questionário de fornecedor. Preenchemo-lo contra uma instância em produção, com as nossas respostas reais às suas perguntas, incluindo as lacunas. Se quiser percorrer a arquitetura antes de enviar papelada, agendamos uma revisão de arquitetura de 30 minutos com o fundador. O caminho para uma entrada de registo defensável não é uma brochura vistosa. São as respostas, incluindo as desconfortáveis.
 
-Para o mapeamento público das capacidades da Rediacc para os artigos NIS2, consulte [NIS2 e DORA](/pt/docs/legal-nis2-dora). Para o quadro de conformidade mais abrangente, consulte [Visão Geral de Conformidade](/pt/docs/legal-overview), [Soberania de Dados](/pt/docs/legal-data-sovereignty) e [On-Premise](/pt/docs/on-premise).
+Quer o mapa por artigo do Rediacc? Consulte [NIS2 e DORA](/pt/docs/legal-nis2-dora). Precisa de um enquadramento mais amplo? Leia [Visão Geral de Conformidade](/pt/docs/legal-overview). Para residência de dados, consulte [Soberania de Dados](/pt/docs/legal-data-sovereignty). Para saber porque o self-hosting importa, consulte [On-Premise](/pt/docs/on-premise).

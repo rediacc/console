@@ -58,7 +58,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Machine slots (server-side)
 
-Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota (e.g., 2 machines for Community, 5 for Professional). A slot is held for 1 hour from the last repo license issuance on that machine and auto-releases after inactivity. This means a 5-slot plan can serve dozens of machines over time -- slots are only held while actively provisioning.
+Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota (e.g., 2 machines for Community, 5 for Professional). A slot is held for 1 hour from the last repo license issuance on that machine and auto-releases after inactivity. A 5-slot plan can therefore cover dozens of machines over time, since slots are only held while you are actively provisioning.
 
 No machine license file is stored on the machine. Slot enforcement happens at issuance time on the server.
 
@@ -76,7 +76,7 @@ It is used for:
 
 Repo licenses are bound to the machine and the target repository. Each license contains the machine ID, repository GUID, subscription ID, plan limits, and expiry. For encrypted repositories, Rediacc also verifies the LUKS identity of the underlying volume.
 
-Multiple subscriptions can coexist on the same machine -- each repository carries its own license with its own subscription context.
+Multiple subscriptions can coexist on the same machine. Each repository carries its own license with its own subscription context.
 
 ## Default Limits
 
@@ -133,7 +133,7 @@ That account-backed issuance counts toward your monthly **repo license issuances
 
 ### Machine restart and autostart
 
-Autostart uses the same rules as `rdc repo up`, expiry is skipped, so repositories always restart freely.
+Autostart uses the same rules as `rdc repo up`: expiry is skipped, so repositories always restart freely.
 
 Repo licenses use a long-lived validity model:
 
@@ -202,7 +202,7 @@ For first-time machine setup, see [Machine Setup](/en/docs/setup).
 
 ## Offline Behavior and Expiry
 
-License validation happens locally on the machine, it does not require live connectivity to the account server.
+License validation happens locally on the machine. It does not require live connectivity to the account server.
 
 That means:
 

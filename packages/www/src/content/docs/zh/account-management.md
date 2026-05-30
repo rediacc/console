@@ -4,13 +4,13 @@ description: Rediacc 中的组织、团队、成员和订阅。
 category: Guides
 order: 12
 language: zh
-sourceHash: "e32952a1485133e0"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "974885635641ed70"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### 组织
 
-注册时，Rediacc 会自动为您创建一个组织。您的组织是所有资源的顶级容器 -- 机器、仓库、订阅和团队成员。
+注册账户后，Rediacc 会自动为您创建一个组织。该组织是您在此处拥有的一切的顶级容器：机器、仓库、订阅以及您邀请的成员。您不会意外创建第二个组织，每个账户对应恰好一个组织，所有团队和资源都挂载于此。
 
 ![Registration Flow](/img/account-registration-flow.svg)
 

@@ -4,7 +4,8 @@ description: "Manipulationssichere Lizenzausstellung, delegiertes Signieren für
 category: "Guides"
 order: 8
 language: de
-sourceHash: "326c4f4efbd60493"
+sourceHash: "9b062d6866c1ccb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Lizenz-Chain & Delegation
@@ -101,7 +102,7 @@ Der Standard wird vom Erstellungsendpunkt gewählt, wenn der Aufrufer `validDays
 
 ### Abonnementbezogene Überschreibung
 
-Administratoren können für ein bestimmtes Abonnement einen benutzerdefinierten `delegationCertDefaultDays`-Wert über die Admin-Abonnementdetailseite setzen. **Die Überschreibung ersetzt sowohl den Standard als auch die Obergrenze für dieses Abonnement** - sie ist ein Sicherheitsventil für Sonderkunden (z. B. ein Enterprise-Vertrag, der ein 200-Tage-Zertifikat auf einem COMMUNITY-Plan benötigt). Das Zod-Schema erzwingt weiterhin einen absoluten Bereich von `1..365`.
+Administratoren können für ein bestimmtes Abonnement einen benutzerdefinierten `delegationCertDefaultDays`-Wert über die Admin-Abonnementdetailseite setzen. **Die Überschreibung ersetzt sowohl den Standard als auch die Obergrenze für dieses Abonnement.** Sie ist ein Sicherheitsventil für Sonderkunden (z. B. ein Enterprise-Vertrag, der ein 200-Tage-Zertifikat auf einem COMMUNITY-Plan benötigt). Das Zod-Schema erzwingt weiterhin einen absoluten Bereich von `1..365`.
 
 ### Hartes Limit: Abonnementende + 3 Tage Nachfrist
 
@@ -142,7 +143,7 @@ Ein Abonnement darf **höchstens ein aktives Delegierungszertifikat gleichzeitig
 
 ### Warum nur eines?
 
-Jede On-Premise-Installation erzwingt `maxRepoLicenseIssuancesPerMonth`, `maxActivations` und Kettenintegrität gegen ihr eigenes lokales Ausstellungs-Ledger. Der On-Premise-Server synchronisiert Nutzungszahlen nicht mit dem vorgelagerten System - das ist der Sinn der offline-fähigen Delegation.
+Jede On-Premise-Installation erzwingt `maxRepoLicenseIssuancesPerMonth`, `maxActivations` und Kettenintegrität gegen ihr eigenes lokales Ausstellungs-Ledger. Der On-Premise-Server synchronisiert Nutzungszahlen nicht mit dem vorgelagerten System. Das ist der Sinn der offline-fähigen Delegation.
 
 Hätte ein Abonnement mehrere aktive Zertifikate (eines pro Installation), würde jede Installation das Limit unabhängig erzwingen:
 

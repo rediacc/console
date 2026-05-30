@@ -1476,11 +1476,73 @@
         "cloudBackupHint": "Cloud backups (if any) persist after delete. Remove orphaned cloud backups with: rdc storage prune --name <storage> -m {{machine}}",
         "examples": "\nExamples:\n  $ rdc repo delete --name app -m server-1\n  $ rdc repo delete --name app:test -m server-1\n"
       },
+      "commit": {
+        "descriptionShort": "Freeze a working fork into a new immutable commit",
+        "description": "Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only — it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.",
+        "nameOption": "Working fork to commit (must be mounted)",
+        "messageOption": "Commit message",
+        "authorOption": "Commit author",
+        "completed": "Committed {{commit}}: {{message}}",
+        "failed": "Commit failed"
+      },
+      "branch": {
+        "descriptionShort": "Create a branch ref pointing at the current commit",
+        "description": "Create a named branch ref pointing at the working fork's current commit (its tip). Branch refs live in the CLI config (machine = object store, config = ref store).",
+        "branchOption": "Name of the new branch",
+        "workingOption": "Working fork whose current commit the branch points at",
+        "completed": "Branch \"{{branch}}\" -> {{commit}}"
+      },
+      "checkout": {
+        "descriptionShort": "Reflink-clone a commit/branch into a writable working fork",
+        "description": "Reflink-clone an immutable commit (or a branch tip) into a fresh writable working fork and point HEAD at it. Near-instant and constant-time (BTRFS reflink).",
+        "refOption": "Commit GUID (or branch name with --from) to check out",
+        "tagOption": "Name for the new writable working fork",
+        "fromOption": "Resolve --ref as a branch name on this working fork"
+      },
+      "log": {
+        "descriptionShort": "Walk the commit history of a fork or commit",
+        "nameOption": "Working fork or commit to start the history walk from",
+        "description": "Print the commit history reachable from a working fork's current commit (or a commit reference), walking the parent chain recorded by 'rdc repo commit'. Reads the out-of-volume mirror, so no commit is unlocked.",
+        "jsonOption": "Output the commit history as JSON",
+        "failed": "Log failed"
+      },
+      "merge": {
+        "descriptionShort": "Lifecycle-safe merge of a commit/fork into a working fork",
+        "description": "Merge a source commit or fork into a target working fork. The live target is never mutated in place: the result is built in a reflink clone and atomically swapped in. A mounted or running target is refused unless --force, which cleanly quiesces it first. Without --resolve it is a whole-image take-theirs (the target becomes the source); with --resolve ours|theirs it is a per-file three-way merge against the common ancestor, taking each side's unique changes and resolving two-sided conflicts per the flag.",
+        "nameOption": "Target working fork to merge into",
+        "fromOption": "Source commit or fork to merge from",
+        "forceOption": "Quiesce a mounted/running target first, then merge (never mutates a live mount)",
+        "completed": "Merged {{source}} into {{target}}",
+        "failed": "Merge failed",
+        "resolveOption": "Per-file conflict resolution for a three-way merge: 'ours' keeps the target's version, 'theirs' takes the source's. Omit for whole-image fast-forward (take-theirs).",
+        "baseOption": "Common-ancestor commit GUID for a three-way merge (used with --resolve). Defaults to the source commit's parent or the target's current commit."
+      },
+      "gc": {
+        "descriptionShort": "Garbage-collect unreachable immutable commits on a machine",
+        "description": "Delete immutable commit objects on a machine that no branch or HEAD reaches (reachability GC). The machine is the object store; the CLI config is the ref store. Dry-run by default: pass --apply to delete. Never touches a mounted object or a working fork.",
+        "applyOption": "Actually delete the unreachable commits (default is a dry-run preview)",
+        "nothing": "Nothing to collect on {{machine}}: every commit is reachable",
+        "dryRunHeader": "{{count}} unreachable commit(s) would be deleted:",
+        "dryRunHint": "Re-run with --apply to delete them.",
+        "deleted": "Deleted commit {{commit}}",
+        "deleteFailed": "Failed to delete commit {{commit}}",
+        "applied": "Garbage collection complete: {{deleted}}/{{total}} commit(s) deleted"
+      },
+      "fsck": {
+        "descriptionShort": "Check config refs against machine objects",
+        "description": "Validate the CLI config refs (branches, HEAD) against the objects actually present on a machine. Reports dangling refs (a ref pointing at a missing object) and orphan commits (an immutable commit no ref reaches). Read-only.",
+        "clean": "No drift on {{machine}}: every ref resolves and no orphan commits found",
+        "danglingHeader": "{{count}} dangling ref(s) (point at a missing object):",
+        "orphanHeader": "{{count}} orphan commit(s) (no ref reaches them):",
+        "orphanHint": "Reclaim orphans with: rdc repo gc --apply -m <machine>"
+      },
       "fork": {
         "description": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target>. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.",
         "descriptionShort": "Near-instant CoW fork of a repository (new GUID, networkId, IP range)",
         "tagOption": "Tag for the fork (creates name:tag)",
         "checkpointOption": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)",
+        "immutableOption": "Mark the fork read-only: it refuses to mount, keeping its image byte-stable forever (a frozen commit/base for cross-machine delta push)",
+        "immutableUpConflict": "repo fork: --immutable and --up are mutually exclusive. An immutable fork refuses to mount, so it cannot be brought up. Drop --up, or drop --immutable to deploy a normal fork.",
         "upOption": "Mount and start services after forking (fork + mount + up in one command)",
         "tagRequired": "Tag is required for fork. Usage: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "starting": "Forking \"{{parent}}\" as \"{{repository}}\" on \"{{machine}}\"...",
@@ -1598,6 +1660,8 @@
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
         "deployed": "Repository \"{{repo}}\" deployed on {{machine}}",
         "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
+        "optionDeltaBase": "Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base",
+        "optionStrategy": "Block-delta strategy when using a delta base: auto, physical, or shared",
         "deployFailed": "Failed to deploy \"{{repo}}\" after push"
       },
       "pull": {
@@ -1607,6 +1671,8 @@
         "optionForce": "Force overwrite existing repository",
         "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
         "optionUp": "After pull, mount and deploy repository on this machine",
+        "optionDeltaBase": "Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)",
+        "optionStrategy": "Block-delta strategy when using a delta base: auto, physical, or shared",
         "sourceRequired": "Specify --from <remote> (machine or storage name from config)",
         "pulling": "Pulling backup of \"{{repo}}\"...",
         "deploying": "Deploying \"{{repo}}\" on {{machine}}...",
@@ -1621,6 +1687,8 @@
         "optionProvision": "Auto-provision target via cloud provider (e.g., hetzner, linode)",
         "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., 10M)",
         "optionCheckpoint": "CRIU live migration: capture and restore process memory state",
+        "optionDeltaBase": "Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)",
+        "optionStrategy": "Block-delta strategy for the cutover: auto, physical, or shared",
         "optionSkipDns": "Skip DNS record switching after migration",
         "provisioning": "Provisioning target machine {{machine}} via {{provider}}...",
         "phase1": "Phase 1: Transferring bulk data (source stays running)...",

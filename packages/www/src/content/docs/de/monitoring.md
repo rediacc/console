@@ -4,8 +4,8 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 order: 9
 language: de
-sourceHash: "2289d50dac21f9bf"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1d0af1a74a12d49e"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Überwachung
@@ -14,7 +14,7 @@ Rediacc bietet integrierte Überwachungsbefehle, um Maschinengesundheit, laufend
 
 ## Maschinengesundheit
 
-Einen umfassenden Gesundheitsbericht für eine Maschine abrufen:
+Einen vollständigen Gesundheitsbericht für eine Maschine abrufen:
 
 ```bash
 rdc machine health --name server-1
@@ -213,7 +213,7 @@ Optionen:
 
 ## Diagnose (doctor)
 
-Eine umfassende Diagnoseprüfung Ihrer Rediacc-Umgebung durchführen:
+Eine vollständige Diagnoseprüfung Ihrer Rediacc-Umgebung durchführen:
 
 ```bash
 rdc doctor

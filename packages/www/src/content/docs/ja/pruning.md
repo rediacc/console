@@ -4,8 +4,8 @@ description: "孤立したバックアップ、古いスナップショット、
 category: "Guides"
 order: 12
 language: ja
-sourceHash: "881513fbe657978e"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # プルーニング
@@ -60,7 +60,7 @@ rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
 
 ## Machine Prune
 
-マシン上のリソースを 3 つのフェーズでクリーンアップします。フェーズ 1 は常に実行されます。フェーズ 2 と 3 はオプトインで、相互補完的です。
+マシン上のリソースを 3 つのフェーズでクリーンアップします。フェーズ 1 は常に実行されます。フェーズ 2 と 3 はオプトインで、組み合わせることができます。
 
 ### フェーズ 1：データストアのクリーンアップ（常に実行）
 
@@ -171,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-アンカーがライブのマシン、リポジトリ、または GUID である証明書名. および任意の単一ラベル `<service>.<base>` またはルート `*.<base>` ワイルドカード. はそのまま残されます。
+アンカーがライブのマシン、リポジトリ、または GUID である証明書名はそのまま残されます。単一ラベル `<service>.<base>` またはルート `*.<base>` ワイルドカードも同様です。
 
 ## 移行：状態ミラーバックフィル
 

@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: es
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -164,4 +164,4 @@ Si va a afrontar una renovación de copia de seguridad o recuperación ante desa
 
 Si somos la alternativa en su lista corta, la oferta es concreta. Envíenos su cuestionario de proveedores. Lo completaremos contra una instancia desplegada, con nuestras respuestas reales a sus preguntas, incluidas las brechas. Si desea revisar la arquitectura antes de enviar la documentación, reservaremos una revisión de arquitectura de 30 minutos con el fundador. El camino hacia una entrada de registro defendible no es un folleto brillante. Son las respuestas, incluidas las incómodas.
 
-Para el mapeo público de las capacidades de Rediacc con los artículos de NIS2, consulte [NIS2 y DORA](/es/docs/legal-nis2-dora). Para el marco de cumplimiento más amplio, consulte [Resumen de cumplimiento](/es/docs/legal-overview), [Soberanía de datos](/es/docs/legal-data-sovereignty) y [On-Premise](/es/docs/on-premise).
+¿Quiere el mapa de Rediacc artículo por artículo? Consulte [NIS2 y DORA](/es/docs/legal-nis2-dora). ¿Necesita el marco más amplio? Lea [Resumen de cumplimiento](/es/docs/legal-overview). Para la residencia de datos, consulte [Soberanía de datos](/es/docs/legal-data-sovereignty). Para entender por qué el autoalojamiento importa, consulte [On-Premise](/es/docs/on-premise).

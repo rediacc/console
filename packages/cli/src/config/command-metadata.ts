@@ -332,6 +332,77 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
+  'repo commit': {
+    grandGuard: true,
+    mcp: {
+      destructive: true,
+      idempotent: false,
+      timeout: 'write' as const,
+      repoArg: 'name',
+      requiredArgs: ['name', 'message'],
+      descriptionOverride:
+        'Freeze a mounted working fork into a new immutable commit (git-like). Records message/author/parent in the commit and advances the working fork tip. The commit refuses to mount; check it out to get a writable copy.',
+      excludeOptions: ['debug'],
+    },
+  },
+  'repo branch': {
+    grandGuard: true,
+    mcpExcludeReason: 'Config-only ref operation — use CLI directly',
+  },
+  'repo checkout': {
+    grandGuard: true,
+    mcp: {
+      destructive: true,
+      idempotent: false,
+      timeout: 'write' as const,
+      requiredArgs: ['tag'],
+      descriptionOverride:
+        'Reflink-clone an immutable commit (or branch tip) into a fresh writable working fork and point HEAD at it.',
+      excludeOptions: ['debug', 'skip-router-restart'],
+    },
+  },
+  'repo log': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      repoArg: 'name',
+      requiredArgs: ['name'],
+      excludeOptions: ['debug'],
+    },
+  },
+  'repo merge': {
+    grandGuard: true,
+    mcp: {
+      destructive: true,
+      idempotent: false,
+      timeout: 'write' as const,
+      repoArg: 'name',
+      requiredArgs: ['name', 'from'],
+      descriptionOverride:
+        'Lifecycle-safe merge of a source commit/fork into a target working fork. Refuses a mounted/running target unless --force (which quiesces it first); never mutates a live mount — builds the result in a reflink clone and atomically swaps it in.',
+      excludeOptions: ['debug'],
+    },
+  },
+  'repo gc': {
+    mcp: {
+      destructive: true,
+      idempotent: false,
+      timeout: 'write' as const,
+      descriptionOverride:
+        'Reachability garbage-collection: delete immutable commit objects on a machine that no branch/HEAD reaches. Dry-run by default; pass --apply to delete. Never touches a mounted object or a working fork.',
+      excludeOptions: ['debug'],
+    },
+  },
+  'repo fsck': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      descriptionOverride:
+        'Validate config refs (branches/HEAD) against the objects present on a machine; report dangling refs and orphan commits.',
+    },
+  },
   'repo validate': {
     grandGuard: true,
     mcpExcludeReason: 'Validation runs on remote machine — use repo status for MCP',

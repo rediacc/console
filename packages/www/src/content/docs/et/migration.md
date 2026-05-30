@@ -4,8 +4,8 @@ description: "Olemasolevate projektide migreerimine krüpteeritud Rediacc hoidla
 category: "Guides"
 order: 11
 language: et
-sourceHash: "69ab61a2875f8d70"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "24c62c7fa0d043c2"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Migratsioonijuhend
@@ -191,7 +191,7 @@ Peamised muutused:
 4. **Kasutage teenuse nimesid teenusetevaheliste ühenduste jaoks** (nt `postgres`, `redis`) -- renet sisestab iga teenuse nime lahendatava hostinimena. Ärge manustage ühendusstringe, mis salvestatakse andmebaasidesse või konfiguratsioonifailidesse, tooreid IP-sid; kasutage selle asemel teenuse nime, et hargnemise eraldus püsiks
 5. **Sidumine on automaatne** -- tuum kirjutab `bind()` ümber õigele loopback-IP-le. Teenused saavad kasutada `0.0.0.0` või `localhost`
 
-`{SERVICE}_IP` muutujad on endiselt saadaval, kui vajate neid, kuid sõnaselge sidumine ei ole enam vajalik -- seda käsitletakse automaatselt. Nimetamise konventsioon: suurtähtedega, sidekriipsud asendatud alljoontega, järelliide `_IP`. Näiteks `listmonk-app` saab `LISTMONK_APP_IP`.
+`{SERVICE}_IP` muutujad on endiselt saadaval, kui vajate neid, kuid sõnaselge sidumine ei ole enam vajalik. Sidumine toimub automaatselt. Nimetamise konventsioon: suurtähtedega, sidekriipsud asendatud alljoontega, järelliide `_IP`. Näiteks `listmonk-app` saab `LISTMONK_APP_IP`.
 
 Vt IP eraldamise ja `.rediacc.json` üksikasju [Teenuse võrgust](/en/docs/services#service-networking-rediaccjson).
 
@@ -292,11 +292,11 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Pordi konflikt hoidlate vahel
 
-Iga hoidla saab unikaalsed loopback-IP-d ja tuum kirjutab automaatselt `bind()` kutsed õigele IP-le ümber. Portide konfliktid hoidlate vahel ei tohiks esineda. Kui näete ootamatut käitumist, kontrollige, et teenused on käivitatud `renet compose` kaudu (mitte `docker compose`). **Teistele teenustele** ühendamiseks kasutage teenuse nime (nt `postgres`), mitte toorkeid IP-sid -- teenuse nimed lahenduvad õigesti igas hargnemises.
+Iga hoidla saab unikaalsed loopback-IP-d ja tuum kirjutab automaatselt `bind()` kutsed õigele IP-le ümber. Portide konfliktid hoidlate vahel ei esine. Kui näete ootamatut käitumist, kontrollige, et teenused on käivitatud `renet compose` kaudu (mitte `docker compose`). **Teistele teenustele** ühendamiseks kasutage teenuse nime (nt `postgres`), mitte toorkeid IP-sid. Teenuse nimed lahenduvad õigesti igas hargnemises.
 
 ### Omandiõiguse parandus katkestab konteinerid
 
-Kui käivitasite `rdc repo ownership` ja konteiner lakkas töötamast, chown'iti konteineri andmefailid. Peatage konteiner, kustutage selle andmekaust ja taaskäivitage -- konteiner loob selle uuesti:
+Kui käivitasite `rdc repo ownership` ja konteiner lakkas töötamast, chown'iti konteineri andmefailid. Peatage konteiner, kustutage selle andmekaust ja taaskäivitage. Konteiner loob selle uuesti:
 
 ```bash
 rdc repo down --name my-project -m server-1

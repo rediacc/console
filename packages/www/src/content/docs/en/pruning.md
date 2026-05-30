@@ -58,7 +58,7 @@ Deletes are batched per storage subpath: one rclone call per `hot/` or `cold/` d
 
 ## Machine Prune
 
-Cleans up on-machine resources in three phases. Phase 1 always runs; phases 2 and 3 are opt-in, mutually-supplementary.
+Cleans up on-machine resources in three phases. Phase 1 always runs; phases 2 and 3 are opt-in and can be combined.
 
 ### Phase 1: Datastore cleanup (always runs)
 
@@ -169,7 +169,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-Cert names whose anchor is a live machine, repo, or GUID. And any single-label `<service>.<base>` or root `*.<base>` wildcard. Are left alone.
+Cert names whose anchor is a live machine, repo, or GUID are left alone, as are any single-label `<service>.<base>` or root `*.<base>` wildcards.
 
 ## Migration: state-mirror backfill
 

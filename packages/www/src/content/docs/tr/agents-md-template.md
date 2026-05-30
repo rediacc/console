@@ -6,10 +6,11 @@ description: >-
 category: Reference
 order: 50
 language: tr
-sourceHash: 37be1e401927ed9a
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-Bu şablonu, AI kodlama asistanlarını (Claude Code, Cursor, Cline, Windsurf) otonom Rediacc altyapı yönetimi için yapılandırmak üzere kullanın. Aşağıdaki bloğu projenizin `CLAUDE.md`, `.cursorrules` veya eşdeğer ajan yapılandırma dosyasına kopyalayın.
+İşte sorun: AI kodlama asistanları (Claude Code, Cursor, Cline, Windsurf) var olmayan `rdc` bayrakları üretiyor ve sizi her seferinde hangi Rediacc depo adının hangi GUID'e karşılık geldiğini sormadan anlayamıyorlar. Bu şablon bunu düzeltiyor. Aşağıdaki bloğu projenizin `CLAUDE.md`, `.cursorrules` veya aracınızın kullandığı ajan yapılandırma dosyasına yapıştırın.
 
 ## Şablon
 

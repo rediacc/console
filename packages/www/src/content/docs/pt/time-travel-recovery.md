@@ -4,13 +4,15 @@ description: Recupere dados apagados acidentalmente há semanas com recuperaçã
 category: Use Cases
 order: 2
 language: pt
+sourceHash: "4c1fcb1667a89759"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 > **Quando os outros perdem dados para sempre, você pode viajar de volta no tempo.**
 
-**Nota:** Este é um **exemplo de caso de uso** que demonstra como o Rediacc pode resolver este problema. Sendo uma startup, estes cenários representam aplicações potenciais e não estudos de caso concluídos.
+**Nota:** Este é um **exemplo de caso de uso** que mostra como o Rediacc lida com este tipo de problema. Somos uma startup. Estes são cenários realistas para os quais o produto foi construído, não estudos de caso de clientes que já concluímos.
 
-**Cenário de Crise:** Um funcionário recém-contratado **apagou acidentalmente** dados críticos da base de dados em produção há 3 semanas. O sistema de backup da organização guardava apenas 2 semanas de backups, tornando a recuperação de dados praticamente impossível pelos meios convencionais.
+**Cenário de Crise:** Um novo funcionário **apagou acidentalmente** linhas críticas da sua base de dados em produção há 3 semanas. O seu sistema de backup guarda apenas 2 semanas de histórico. Com uma configuração normal, esses dados perderam-se.
 
 ## O Problema
 

@@ -73,6 +73,132 @@ export class RepositoryHelpers {
   }
 
   /**
+   * Freeze a working fork into a new immutable commit (issue #75 Phase 2).
+   * Drives the renet CLI directly (commit/log/merge params are not in the bridge
+   * once test-mode flag allowlist), mirroring createRepositoryFork.
+   */
+  async repositoryCommit(
+    workingFork: string,
+    commitGuid: string,
+    message: string,
+    datastorePath: string,
+    commitParent?: string
+  ): Promise<ExecResult> {
+    const parentFlag = commitParent ? ` --commit-parent "${commitParent}"` : '';
+    return this.executeViaBridge(
+      `sudo renet repository commit --name "${workingFork}" --tag "${commitGuid}" --message "${message}" --datastore "${datastorePath}"${parentFlag}`
+    );
+  }
+
+  /**
+   * Check a commit out into a fresh writable working fork. At the renet layer a
+   * checkout is a reflink fork of the immutable commit, so this reuses fork.
+   */
+  async repositoryCheckout(
+    commitGuid: string,
+    tag: string,
+    datastorePath: string
+  ): Promise<ExecResult> {
+    return this.createRepositoryFork(commitGuid, tag, datastorePath);
+  }
+
+  /** Walk the commit history reachable from a working fork or commit. */
+  async repositoryLog(startGuid: string, datastorePath: string): Promise<ExecResult> {
+    return this.executeViaBridge(
+      `sudo renet repository log --name "${startGuid}" --datastore "${datastorePath}" -o json`
+    );
+  }
+
+  /**
+   * Lifecycle-safe merge of a source commit/fork into a target working fork.
+   * Without `resolve` it is a whole-image take-theirs; with `resolve` (+ `base`,
+   * the common ancestor) it is a per-file three-way merge, which mounts the
+   * lineage and therefore needs the repo `password` (piped via --password-stdin).
+   */
+  async repositoryMerge(
+    target: string,
+    source: string,
+    datastorePath: string,
+    opts: { force?: boolean; resolve?: 'ours' | 'theirs'; base?: string; password?: string } = {}
+  ): Promise<ExecResult> {
+    let cmd = `sudo renet repository merge --name "${target}" --from "${source}" --datastore "${datastorePath}"`;
+    if (opts.force) cmd += ' --force';
+    if (opts.resolve) cmd += ` --resolve ${opts.resolve}`;
+    if (opts.base) cmd += ` --base "${opts.base}"`;
+    if (opts.password) {
+      cmd += ' --password-stdin';
+      // Pipe the credential so the three-way mount of base/ours/theirs can unlock.
+      return this.executeViaBridge(`printf '%s' '${opts.password}' | ${cmd}`);
+    }
+    return this.executeViaBridge(cmd);
+  }
+
+  /**
+   * Create an immutable (read-only) fork — the commit-equivalent base. It refuses
+   * to mount; check it out into a writable fork to use it.
+   */
+  async repositoryForkImmutable(
+    parentRepo: string,
+    tag: string,
+    datastorePath: string
+  ): Promise<ExecResult> {
+    return this.executeViaBridge(
+      `sudo renet repository fork --name "${parentRepo}" --tag "${tag}" --datastore "${datastorePath}" --immutable`
+    );
+  }
+
+  /**
+   * Deterministic CoW-delta push of a repo from THIS worker to another machine,
+   * via the renet CLI directly (delta params are not in the bridge once test-mode
+   * allowlist). retainBase retains an immutable base on both ends for the next
+   * push; deltaBase ships only the changed extents against an existing base.
+   * --dest-user omitted → renet infers it from SUDO_USER (we run under sudo).
+   */
+  async deltaPushToMachine(
+    repoGuid: string,
+    destHost: string,
+    datastorePath: string,
+    opts: { destUser?: string; deltaBase?: string; retainBase?: string } = {}
+  ): Promise<ExecResult> {
+    let cmd =
+      `sudo renet backup push --name "${repoGuid}" --datastore "${datastorePath}"` +
+      ` --target machine --dest-host "${destHost}"` +
+      ` --dest-path "${datastorePath}" --dest "${repoGuid}" --strategy physical`;
+    if (opts.destUser) cmd += ` --dest-user "${opts.destUser}"`;
+    if (opts.deltaBase) cmd += ` --delta-base "${opts.deltaBase}"`;
+    if (opts.retainBase) cmd += ` --retain-base "${opts.retainBase}"`;
+    return this.executeViaBridge(cmd);
+  }
+
+  /**
+   * Deterministic CoW-delta pull of a repo from another machine onto THIS worker.
+   * deltaBase ships only the changed extents against a base byte-identical on both
+   * ends; force overwrites an existing local repo.
+   */
+  async deltaPullFromMachine(
+    repoGuid: string,
+    srcHost: string,
+    datastorePath: string,
+    opts: { srcUser?: string; deltaBase?: string; force?: boolean } = {}
+  ): Promise<ExecResult> {
+    let cmd =
+      `sudo renet backup pull --name "${repoGuid}" --datastore "${datastorePath}"` +
+      ` --source machine --src-host "${srcHost}"` +
+      ` --src-path "${datastorePath}" --src "${repoGuid}" --strategy physical`;
+    if (opts.srcUser) cmd += ` --src-user "${opts.srcUser}"`;
+    if (opts.deltaBase) cmd += ` --delta-base "${opts.deltaBase}"`;
+    if (opts.force) cmd += ' --force';
+    return this.executeViaBridge(cmd);
+  }
+
+  /** sha256 of a repository image file (for byte-identity assertions). */
+  async repositoryImageSha256(repoGuid: string, datastorePath: string): Promise<ExecResult> {
+    return this.executeViaBridge(
+      `sudo sha256sum "${datastorePath}/repositories/${repoGuid}" | cut -d' ' -f1`
+    );
+  }
+
+  /**
    * Check if a repository exists in the datastore.
    * Repositories are LUKS image files, not directories.
    */

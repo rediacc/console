@@ -1,19 +1,20 @@
 ---
 title: Application Web
-description: Comprendre l'architecture et le déploiement de l'application web avec Rediacc
+description: "Utiliser la console web Rediacc pour gérer les machines, les dépôts et les sauvegardes"
 category: Reference
 order: 1
 language: fr
-sourceHash: "ee9dff9ac2c8bce1"
+sourceHash: "0951a0a1b320f570"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Guide d'Utilisation de la Plateforme Rediacc
 
 ## Vue d'Ensemble
 
-**Rediacc** est une plateforme cloud offrant des services de sauvegarde alimentés par l'IA.
+**Rediacc** est un logiciel auto-hébergé que vous installez sur vos propres serveurs. Vous sauvegardez, forkez et restaurez des systèmes entiers en direct. Applications, bases de données et configuration ensemble, et non fichier par fichier. C'est précisément l'essentiel : la plupart des outils de sauvegarde copient des fichiers et perdent les relations entre eux.
 
-Ce guide explique l'utilisation de base de l'interface web sur [https://www.rediacc.com/](https://www.rediacc.com/).
+Ce guide présente la console web sur [https://www.rediacc.com/](https://www.rediacc.com/).
 
 ### Objectif de Ce Guide
 
@@ -29,7 +30,7 @@ Ce guide explique l'utilisation de base de l'interface web sur [https://www.redi
 ![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
 *(Vidéo: Complete registration flow from start to finish)*
 
-Pour commencer à utiliser la plateforme Rediacc, vous devez d'abord créer un compte.
+Pour utiliser Rediacc, vous devez d'abord avoir un compte.
 
 ![Page de connexion Rediacc - infrastructure toujours active](/assets/images/user-guide/01_login.png)
 *(Figure 1 : Page de connexion principale, présentant les principales fonctionnalités de la plateforme Rediacc)*
@@ -110,7 +111,7 @@ Après vous être connecté, l'écran que vous voyez se compose de ces sections 
 
 ## 2.1 Organisation - Utilisateurs
 
-La gestion des utilisateurs vous permet de contrôler l'accès à la plateforme pour les personnes de votre organisation.
+La gestion des utilisateurs vous permet de contrôler qui, au sein de votre organisation, obtient un accès.
 
 ### 2.1.1 Ajout d'Utilisateurs
 
@@ -209,7 +210,7 @@ Vous pouvez utiliser la fonction de traçabilité pour surveiller les activités
 
 ## 2.2 Organisation - Équipes
 
-Les équipes vous permettent de regrouper des utilisateurs et de fournir un accès groupé aux ressources.
+Les équipes regroupent des utilisateurs afin que vous puissiez accorder des accès en masse.
 
 ### 2.2.1 Création d'Équipes
 
@@ -292,7 +293,7 @@ Les équipes vous permettent de regrouper des utilisateurs et de fournir un acc�
 
 ## 2.3 Organisation - Contrôle d'Accès
 
-Le contrôle d'accès vous permet de gérer de manière centralisée les permissions des utilisateurs en créant des groupes de permissions.
+Le contrôle d'accès centralise les permissions via des groupes, plutôt que par utilisateur.
 
 ### 2.3.1 Création de Groupes de Permissions
 
@@ -328,7 +329,7 @@ Le contrôle d'accès vous permet de gérer de manière centralisée les permiss
 
 ## 2.4 Machines
 
-La section Machines vous permet de gérer vos serveurs et ressources de dépôt.
+La section Machines est l'endroit où vous gérez vos serveurs et les dépôts qu'ils hébergent.
 
 ### 2.4.1 Ajout de Machines
 
@@ -484,7 +485,7 @@ Cliquez sur le bouton **{{t:common.actions.refresh}}** pour mettre à jour la li
 ![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
 *(Vidéo: Running remote operations on a machine)*
 
-Vous pouvez effectuer diverses opérations à distance sur les machines.
+Vous pouvez exécuter des opérations à distance sur une machine depuis le web.
 
 1. Sélectionnez la machine et cliquez sur le bouton **{{t:common.actions.remote}}**.
 2. Consultez les options dans le menu déroulant :
@@ -545,7 +546,7 @@ Vous pouvez effectuer diverses opérations à distance sur les machines.
 
 ## 2.5 Création et Opérations de Dépôt
 
-Les dépôts sont les unités fondamentales où vos données de sauvegarde sont stockées.
+Un dépôt est un déploiement d'application isolé. Ses applications, ses données, sa configuration, son propre daemon Docker. Ainsi, presque chaque bouton de cette page agit sur un dépôt, et non sur la machine qui l'héberge. Bon à savoir avant de cliquer sur Supprimer.
 
 ### 2.5.1 Création de Dépôts
 
@@ -846,7 +847,7 @@ Pour obtenir des informations détaillées sur le dépôt :
 
 ## 2.6 Opérations de Connexion au Dépôt
 
-Vous pouvez vous connecter aux dépôts en utilisant différentes méthodes.
+Vous vous connectez à un dépôt de deux façons. L'application de bureau vous offre un vrai terminal et SSH. Le navigateur convient pour l'inspection et la gestion par clics, mais il ne peut pas gérer de longues sessions shell. Privilégiez l'application de bureau pour un vrai travail.
 
 ### 2.6.1 Connexion par Application de Bureau
 
@@ -915,7 +916,7 @@ Vous pouvez gérer votre profil et les paramètres système depuis la section Pa
 
 ## 2.8 Stockage
 
-La section Stockage vous permet de gérer les zones physiques où vos données de sauvegarde seront stockées.
+La section Stockage est l'endroit où vous définissez les emplacements physiques où atterrissent vos données de sauvegarde.
 
 ### 2.8.1 Ajout de Stockage
 
@@ -946,7 +947,7 @@ La section Stockage vous permet de gérer les zones physiques où vos données d
 
 ## 2.9 Identifiants
 
-La section Identifiants vous permet de gérer de manière sécurisée les informations d'accès pour vos dépôts.
+La section Identifiants est l'endroit où vous gérez les secrets qu'utilisent vos dépôts pour accéder aux ressources.
 
 ### 2.9.1 Modification d'Identifiants
 
@@ -1009,7 +1010,7 @@ La section Identifiants vous permet de gérer de manière sécurisée les inform
 
 ## 2.10 File d'Attente
 
-La section File d'Attente vous permet de suivre les opérations en attente et terminées dans le système.
+La section File d'Attente suit les opérations en attente et terminées dans l'ensemble du système.
 
 ### 2.10.1 Opérations de File d'Attente
 
@@ -1043,7 +1044,7 @@ La section File d'Attente vous permet de suivre les opérations en attente et te
 
 ## 2.11 Audit
 
-La section Audit conserve les enregistrements de toutes les opérations effectuées dans le système.
+La section Audit conserve un enregistrement de toutes les opérations exécutées dans le système.
 
 ### 2.11.1 Enregistrements d'Audit
 

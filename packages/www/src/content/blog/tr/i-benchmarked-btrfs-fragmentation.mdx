@@ -1,6 +1,6 @@
 ---
-title: "Parçalanma Sayınız Korkunç Görünüyor. Ne Kadara Mal Olduğunu Ölçtüm."
-description: "Depolama sağlığı raporumuz, depoları gigabyte başına neredeyse 20.000 extent ile işaretliyor. Bu sayı alarmlı görünüyor. En kötü durumlar üzerinde ardışık ve rastgele okuma kıyaslamaları yaptım; ceza sıfırdı. İşte veriler ve Rediacc'ın neden birleştirme komutu sunmadığı."
+title: "Parçalanmanız Korkunç Görünüyor. Maliyeti Ölçtüm."
+description: "Depolama sağlığı raporumuz depoları GB başına neredeyse 20.000 extent ile işaretliyor. Her iki uçta da kıyaslama yaptım: okuma cezası sıfır. Rediacc'ın neden birleştirme komutu sunmadığı."
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-05-25
 category: guide
@@ -11,7 +11,8 @@ tags:
   - benchmarks
 featured: false
 language: tr
-sourceHash: "73f1772f961bae0d"
+sourceHash: "5245c4e48a3a7074"
+sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
 ---
 
 > **Özet.** Rediacc'ın `rdc machine query --storage-health` komutu, depo başına bir parçalanma rakamı raporlar. Bir üretim makinesinde GitLab'ı yaklaşık 19.650 extent/gigabyte ile işaretliyor. İçgüdü birleştirme yapmak. Ben ise ölçtüm.
@@ -20,7 +21,7 @@ sourceHash: "73f1772f961bae0d"
 > - Cihaz flash tabanlı. Parçalanma, disk kafası arama süresi aracılığıyla dönen disklere zarar verir. SSD'de bunu olumsuz etkileyecek neredeyse hiçbir mekanizma kalmamıştır.
 > - Bu durumda `btrfs filesystem defragment` çalıştırmak, 4,4 GB boş alana sahip bir havuza yaklaşık 250 GB reflink bağlantılı çatallamayı ve anlık görüntüyü paylaşımsız hale getirir. Gerçek risk budur; kıyaslama ise buna karşı tartılacak bir fayda olmadığını söylüyor.
 
-Depolama sağlığı raporu tek bir soruyu yanıtlamak için vardır: diskimde ne var. Her deponun boyutunu, çatallamalarla ne kadar veri paylaştığını ve bir parçalanma rakamını gösterir. Bu son sayı ürkütücü görünebilir. Çalıştırdığım makinede GitLab'ın depo görüntüsü 14,6 GB genelinde 268.771 extent bildiriyor. Bu, gigabyte başına yaklaşık 19.650 extent ve araç bunu "yüksek" olarak etiketliyor.
+Açıkçası depolama sağlığı raporu tek bir soruyu yanıtlamak için var: diskimde ne var. Her deponun boyutunu, çatallamalarla ne kadar veri paylaştığını ve bir parçalanma rakamını gösterir. Bu son sayı ürkütücü görünüyor. Çalıştırdığım makinede GitLab'ın depo görüntüsü 14,6 GB genelinde 268.771 extent bildiriyor. Bu, gigabyte başına yaklaşık 19.650 extent ve araç bunu "yüksek" olarak etiketliyor.
 
 Bunu izleyen refleks otomatik. Yüksek parçalanma, birleştir. Bu reflexi dönen diskler için on beş yıldır kabuk betiklerine yazıyorum. Rediacc'a bir birleştirme düğmesi eklemeden önce, bu rakamın çalıştırdığımız donanımda gerçekte neye mal olduğunu bilmek istedim. Bu yüzden canlı makinede ölçtüm.
 
@@ -30,11 +31,11 @@ Bir Rediacc deposu, btrfs havuzunda yaşayan tek bir LUKS görüntü dosyasıdı
 
 Bu, verilerin nasıl katmanlandığı nedeniyle önemlidir. Tabandan itibaren: fiziksel bir SSD, ardından ana ext4 kök dosya sistemi, ardından loop destekli bir havuz dosyası, ardından loop0, ardından btrfs havuzu, ardından LUKS görüntüsü, ardından bir device-mapper crypt cihazı ve son olarak konteynerlerinizin gördüğü iç ext4. btrfs copy-on-write'tır. Bir depodaki her rastgele yazma, görüntüye yeni bir extent yazar. Veritabanları ve konteyner overlay katmanları gün boyu rastgele yazar, dolayısıyla görüntü tasarım gereği extent biriktirir.
 
-Birimin içindeki dosyalar farklı bir hikaye. GitLab deposunu kontrol ettim: gitaly ikilisi 10 extentte, bir git paket dosyası 17'de. İç dosya sistemi parçalanmış değil. 19.650-per-gigabyte rakamı, copy-on-write konteynerini tanımlıyor; bu da tam olarak böyle görünmesini beklediğiniz şey ve okumaların yavaş olup olmadığı hakkında size hiçbir şey söylemiyor.
+Birimin içindeki dosyalar parçalanmamış. Kontrol ettim: GitLab'ın gitaly ikilisi 10 extentte, bir git paket dosyası 17'de. 19.650-per-gigabyte rakamı, copy-on-write konteynerini tanımlıyor. Bu tam olarak böyle görünmesini beklediğiniz şey ve okumaların yavaş olup olmadığı hakkında size hiçbir şey söylemiyor.
 
 ## Kıyaslama
 
-Parçalanma ölçeğinin iki ucundaki iki depoyu seçtim ve doğrudan IO ile okuydum; bu, sayfa önbelleğini atlayarak fiziksel okumayı zorluyor.
+Parçalanma ölçeğinin iki ucundaki iki depoyu seçtim: biri neredeyse hiç parçalanmamış, diğeri yoğun parçalanmış. Her birini doğrudan IO ile okudum; bu, sayfa önbelleğini atlayarak gerçek bir disk okumasını zorluyor.
 
 | Depo | Ortalama extent | GB başına extent | Ardışık okuma |
 |---|---|---|---|
@@ -73,10 +74,10 @@ Sığdığı yerlerde bile uzun sürmez. Bu görüntüler, aynı rastgele yazma 
 
 Aynı rapordaki dikkat çeken sütun, divergence'tır (farklılaşma). Bir deponun görüntüsünün çatalmalar ve anlık görüntülerle paylaşılmak yerine kendine özgü olan yüzdesidir. Yeni bir çatalma %0'a yakın durur çünkü neredeyse her şeyi paylaşır. Çatallandıktan sonra yoğun şekilde yazılmış bir depo %100'e doğru yükselir.
 
-Farklılaşma, parçalanmanın yanıtlayamadığı soruyu yanıtlıyor: bu depo gerçek, geri kazanılabilir ne kadar diske mal oluyor. Bir havuz dar olduğunda, düşük farklılaşmalı bir depo zayıf bir temizlik hedefidir çünkü baytları paylaşılmış ve silinmesi az şey serbest bırakır. Baytlar, farklılaşmanın yüksek olduğu yerde yaşar.
+Farklılaşma, parçalanmanın yanıtlayamadığı soruyu yanıtlıyor: bu depo gerçek, geri kazanılabilir ne kadar diske mal oluyor. Dar bir havuzda, düşük farklılaşmalı bir depo kötü bir temizlik hedefidir. Baytları paylaşılmış; silmek neredeyse hiçbir şeyi serbest bırakmaz. Baytlar, farklılaşmanın yüksek olduğu yerde yaşıyor.
 
 ## Çıkarım
 
 Parçalanma rakamı gerçektir ve rastgele yazmalar altındaki copy-on-write görüntüsünde her zaman yüksek görünür. Flash'ta bilgi amaçlıdır. 16 katlık bir farkı ölçtüm ve okuma cezası bulamadım, daha parçalanmış dosyada daha hızlı rastgele profil buldum ve arka plan tarama süresinde tek küçük bir maliyet buldum. Rakamı "düzeltecek" araç, bunun yerine bir çeyrek terabayt çatallamayı, onlar için yer olmayan bir havuza paylaşımsız hale getirirdi.
 
-Bu yüzden Rediacc parçalanmayı raporlar ve açıklar; buna göre hareket etmek için bir düğme sunmaz. Dürüst mühendislik cevabı, reflexi otomatikleştirmek yerine varsayımı ölçmekti.
+Bu yüzden Rediacc parçalanmayı raporlar ve açıklar. Buna göre hareket etmek için düğme sunmaz. Dürüst cevap varsayımı ölçmekti; refleksi otomatikleştirmek değil.

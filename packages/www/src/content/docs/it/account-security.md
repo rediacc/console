@@ -4,6 +4,8 @@ description: Autenticazione, token API, gestione delle sessioni e modello di per
 category: Guides
 order: 13
 language: it
+sourceHash: "dcd061b971573573"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Autenticazione
@@ -97,6 +99,6 @@ rdc update --status            # Mostra il canale corrente
 
 ### Postura di sicurezza della CLI per gli agenti AI
 
-Ogni invocazione di `rdc` viene classificata all'avvio come **human** o **agent** in base ai segnali dell'ambiente (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) più un'analisi della catena di antenati Linux `/proc`. Gli agenti ricevono un insieme ridotto di permessi: le mutazioni sensibili alla configurazione richiedono il knowledge-gate (`--current <old>`), l'editor interattivo viene rifiutato senza un override `REDIACC_ALLOW_CONFIG_EDIT` verificato tramite antenati, e `--reveal` su qualsiasi comando di visualizzazione è bloccato. Ogni decisione -- consenti, rifiuta, concedi `--reveal` -- scrive una riga JSONL con hash in catena in `~/.config/rediacc/audit.log.jsonl`. Esegui `rdc config audit verify` per controllare l'integrità della catena.
+Gli agenti di programmazione che invocano `rdc` sono una superficie di minaccia reale, quindi li trattiamo come un principal separato. Ogni invocazione di `rdc` viene classificata all'avvio come **human** o **agent** in base ai segnali dell'ambiente (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) piu' un'analisi della catena di antenati Linux `/proc`. Il rilevamento e' best-effort. Un wrapper determinato puo' falsificare le variabili d'ambiente, ecco perche' la catena di antenati e' importante. Gli agenti ricevono un insieme ridotto di permessi: le mutazioni sensibili alla configurazione richiedono il knowledge-gate (`--current <old>`), l'editor interattivo viene rifiutato senza un override `REDIACC_ALLOW_CONFIG_EDIT` verificato tramite antenati, e `--reveal` su qualsiasi comando di visualizzazione e' bloccato. Ogni decisione (consenti, rifiuta, o concedi `--reveal`) scrive una riga JSONL con hash in catena in `~/.config/rediacc/audit.log.jsonl`. Esegui `rdc config audit verify` per controllare l'integrita' della catena.
 
 Consulta [Sicurezza e guardrail per agenti AI](/en/docs/ai-agents-safety) per la matrice completa di ciò che gli agenti possono e non possono fare, esempi pratici del knowledge-gate e la meccanica degli scope-override.

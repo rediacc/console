@@ -1,11 +1,11 @@
 ---
 title: RDC CLI 快速参考
-description: 所有 rdc 命令的快速参考，包括配置、仓库、机器、同步、容器等。
+description: "rdc 命令快速参考：配置、仓库、机器、同步和容器。"
 category: Guides
 order: 3
 language: zh
-sourceHash: "12956297c1157cd2"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ad0ae49efa847fbc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # RDC CLI 快速参考

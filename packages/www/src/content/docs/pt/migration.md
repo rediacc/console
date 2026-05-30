@@ -4,8 +4,8 @@ description: "Migre projetos existentes para repositórios Rediacc encriptados."
 category: "Guides"
 order: 11
 language: pt
-sourceHash: "69ab61a2875f8d70"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "24c62c7fa0d043c2"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Guia de Migração
@@ -191,7 +191,7 @@ Principais alterações:
 4. **Use nomes de serviço para conexões entre serviços** (por exemplo `postgres`, `redis`) - o renet injeta cada nome de serviço como um hostname resolvível. Não incorpore IPs brutos em strings de conexão que ficam armazenadas em bases de dados ou ficheiros de configuração; use o nome do serviço para manter o isolamento de fork intacto
 5. **O bind é automático** - o kernel reescreve `bind()` para o IP de loopback correto. Os serviços podem usar `0.0.0.0` ou `localhost`
 
-As variáveis `{SERVICE}_IP` ainda estão disponíveis se precisar delas, mas o bind explícito já não é necessário - é tratado automaticamente. A convenção de nomenclatura: maiúsculas, hífenes substituídos por underscores, sufixo `_IP`. Por exemplo, `listmonk-app` torna-se `LISTMONK_APP_IP`.
+As variáveis `{SERVICE}_IP` ainda estão disponíveis se precisar delas, mas o bind explícito já não é necessário. O bind acontece automaticamente. A convenção de nomenclatura: maiúsculas, hífenes substituídos por underscores, sufixo `_IP`. Por exemplo, `listmonk-app` torna-se `LISTMONK_APP_IP`.
 
 Consulte [Rede de Serviços](/pt/docs/services#service-networking-rediaccjson) para detalhes sobre atribuição de IP e `.rediacc.json`.
 
@@ -292,11 +292,11 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Conflito de Portas Entre Repositórios
 
-Cada repositório obtém IPs de loopback únicos, e o kernel reescreve automaticamente as chamadas `bind()` para o IP correto. Os conflitos de portas entre repositórios não devem ocorrer. Se verificar comportamento inesperado, confirme que os serviços são iniciados via `renet compose` (não `docker compose`). Para conectar **a** outros serviços, use o nome do serviço (por exemplo `postgres`) em vez de IPs brutos - os nomes de serviço resolvem corretamente em cada fork.
+Cada repositório obtém IPs de loopback únicos, e o kernel reescreve automaticamente as chamadas `bind()` para o IP correto. Os conflitos de portas entre repositórios não ocorrem. Se verificar comportamento inesperado, confirme que os serviços são iniciados via `renet compose` (não `docker compose`). Para conectar **a** outros serviços, use o nome do serviço (por exemplo `postgres`) em vez de IPs brutos. Os nomes de serviço resolvem corretamente em cada fork.
 
 ### A Correção de Propriedade Quebra Contentores
 
-Se executou `rdc repo ownership` e um contentor deixou de funcionar, os ficheiros de dados do contentor foram alvo de chown. Pare o contentor, elimine o seu diretório de dados e reinicie; o contentor irá recriá-lo:
+Se executou `rdc repo ownership` e um contentor deixou de funcionar, os ficheiros de dados do contentor foram alvo de chown. Pare o contentor, elimine o seu diretório de dados e reinicie. O contentor irá recriá-lo:
 
 ```bash
 rdc repo down --name my-project -m server-1

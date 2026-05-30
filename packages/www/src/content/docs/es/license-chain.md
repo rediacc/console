@@ -4,7 +4,8 @@ description: "Emisión de licencias con evidencia de manipulación, firma delega
 category: "Guides"
 order: 8
 language: es
-sourceHash: "326c4f4efbd60493"
+sourceHash: "9b062d6866c1ccb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Cadena de Licencias y Delegación
@@ -101,7 +102,7 @@ El valor predeterminado es el que elige el endpoint de creación cuando el calle
 
 ### Anulación por suscripción
 
-Los administradores pueden establecer un valor personalizado de `delegationCertDefaultDays` en una suscripción específica a través de la página de Detalle de Suscripción del administrador. **La anulación reemplaza tanto el valor predeterminado como el límite para esa suscripción** - es una salida de emergencia para clientes especiales (por ejemplo, un contrato enterprise que necesita un certificado de 200 días en un plan COMMUNITY). El esquema Zod todavía aplica un rango absoluto de `1..365`.
+Los administradores pueden establecer un valor personalizado de `delegationCertDefaultDays` en una suscripción específica a través de la página de Detalle de Suscripción del administrador. **La anulación reemplaza tanto el valor predeterminado como el límite para esa suscripción.** Es una salida de emergencia para clientes especiales (por ejemplo, un contrato enterprise que necesita un certificado de 200 días en un plan COMMUNITY). El esquema Zod todavía aplica un rango absoluto de `1..365`.
 
 ### Límite máximo: fin de suscripción + 3 días de gracia
 
@@ -142,7 +143,7 @@ Una suscripción puede tener **como máximo un certificado de delegación activo
 
 ### ¿Por qué uno?
 
-Cada instalación on-premise aplica `maxRepoLicenseIssuancesPerMonth`, `maxActivations` e integridad de la cadena contra su propio libro de contabilidad de emisión local. El on-premise no sincroniza recuentos de uso con el upstream - ese es el objetivo completo de la delegación con capacidad offline.
+Cada instalación on-premise aplica `maxRepoLicenseIssuancesPerMonth`, `maxActivations` e integridad de la cadena contra su propio libro de contabilidad de emisión local. El on-premise no sincroniza recuentos de uso con el upstream. Ese es el objetivo completo de la delegación con capacidad offline.
 
 Si una suscripción tuviera múltiples certificados activos (uno por instalación), cada instalación aplicaría el límite de forma independiente:
 

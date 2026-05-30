@@ -430,7 +430,7 @@ Create a new encrypted repository
 
 ### rdc repo delete
 
-Delete a repository (destroys containers, volumes, and encrypted image). Config entry is preserved. Use --archive-config to move credentials to deletedRepositories for recovery via 'config restore-archived'
+Delete a repository (destroys containers, volumes, and encrypted image). Config entry is preserved. Use --archive-config to move credentials to deletedRepositories for recovery via 'config restore-archived'. Targets <name>:<tag>; a bare --name resolves to the grand <name>:latest and is refused when multiple repos share the base name — pass :tag explicitly to target a fork.
 
 **Options:**
 
@@ -578,6 +578,97 @@ Git-style file-level diff between two copy-on-write forked repositories. Reports
 
 > MCP tool
 
+### rdc repo commit
+
+Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only — it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.
+
+**Options:**
+
+- `--name <name>` — Working fork to commit (must be mounted)
+- `--message <msg>` — Commit message
+- `--author <author>` — Commit author
+- `-m, --machine <name>` — Target machine name
+- `--debug` — Enable debug output
+
+> MCP tool
+
+### rdc repo branch
+
+Create a named branch ref pointing at the working fork's current commit (its tip). Branch refs live in the CLI config (machine = object store, config = ref store).
+
+**Options:**
+
+- `--branch <branch>` — Name of the new branch
+- `--name <name>` — Working fork whose current commit the branch points at
+
+> MCP excluded: Config-only ref operation — use CLI directly
+
+### rdc repo checkout
+
+Reflink-clone an immutable commit (or a branch tip) into a fresh writable working fork and point HEAD at it. Near-instant and constant-time (BTRFS reflink).
+
+**Options:**
+
+- `--ref <commit|branch>` — Commit GUID (or branch name with --from) to check out
+- `--tag <name>` — Name for the new writable working fork
+- `-m, --machine <name>` — Target machine name
+- `--from <workingFork>` — Resolve --ref as a branch name on this working fork
+- `--debug` — Enable debug output
+- `--skip-router-restart` — Skip restarting the route server after binary update
+
+> MCP tool
+
+### rdc repo log
+
+Print the commit history reachable from a working fork's current commit (or a commit reference), walking the parent chain recorded by 'rdc repo commit'. Reads the out-of-volume mirror, so no commit is unlocked.
+
+**Options:**
+
+- `--name <name>` — Working fork or commit to start the history walk from
+- `-m, --machine <name>` — Target machine name
+- `--json` — Output the commit history as JSON
+- `--debug` — Enable debug output
+
+> MCP tool
+
+### rdc repo merge
+
+Merge a source commit or fork into a target working fork. The live target is never mutated in place: the result is built in a reflink clone and atomically swapped in. A mounted or running target is refused unless --force, which cleanly quiesces it first. Without --resolve it is a whole-image take-theirs (the target becomes the source); with --resolve ours|theirs it is a per-file three-way merge against the common ancestor, taking each side's unique changes and resolving two-sided conflicts per the flag.
+
+**Options:**
+
+- `--name <name>` — Target working fork to merge into
+- `--from <source>` — Source commit or fork to merge from
+- `-m, --machine <name>` — Target machine name
+- `--force` — Quiesce a mounted/running target first, then merge (never mutates a live mount)
+- `--resolve <ours|theirs>` — Per-file conflict resolution for a three-way merge: 'ours' keeps the target's version, 'theirs' takes the source's. Omit for whole-image fast-forward (take-theirs).
+- `--base <guid>` — Common-ancestor commit GUID for a three-way merge (used with --resolve). Defaults to the source commit's parent or the target's current commit.
+- `--debug` — Enable debug output
+
+> MCP tool | agent: fork-only
+
+### rdc repo gc
+
+Delete immutable commit objects on a machine that no branch or HEAD reaches (reachability GC). The machine is the object store; the CLI config is the ref store. Dry-run by default: pass --apply to delete. Never touches a mounted object or a working fork.
+
+**Options:**
+
+- `-m, --machine <name>` — Target machine name
+- `--apply` — Actually delete the unreachable commits (default is a dry-run preview)
+- `--debug` — Enable debug output
+
+> MCP tool
+
+### rdc repo fsck
+
+Validate the CLI config refs (branches, HEAD) against the objects actually present on a machine. Reports dangling refs (a ref pointing at a missing object) and orphan commits (an immutable commit no ref reaches). Read-only.
+
+**Options:**
+
+- `-m, --machine <name>` — Target machine name
+
+> MCP tool
+
 ### rdc repo fork
 
 Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: To fork to another machine, first fork locally, then transfer: (1) repo fork --parent <parent> -m <source> --tag <name>, (2) backup push <name> -m <source> --to-machine <target>, (3) repo up <name> -m <target>. WARNING: Do NOT use 'backup push' alone for forking, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name so each fork gets a unique domain automatically.
@@ -588,6 +679,7 @@ Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONS
 - `-m, --machine <name>` — Target machine name
 - `--tag <name>` — Tag for the fork (creates name:tag)
 - `--checkpoint` — Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)
+- `--immutable` — Mark the fork read-only: it refuses to mount, keeping its image byte-stable forever (a frozen commit/base for cross-machine delta push)
 - `--up` — Mount and start services after forking (fork + mount + up in one command)
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
@@ -596,7 +688,7 @@ Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONS
 
 ### rdc repo takeover
 
-Replace grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain) but gets the fork's upgraded data. The old production data is preserved as a backup fork. Use for: test upgrade on fork → verify → takeover to production.
+Replace grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain) but gets the fork's upgraded data. The old production data is preserved as a backup fork. Use for: test upgrade on fork → verify → takeover to production. Pass an explicit <name>:<tag> for the fork — a bare --name resolves to the grand and is rejected with "not a fork".
 
 **Options:**
 
@@ -737,6 +829,8 @@ Push repository to a remote (machine or storage). Omit name to push all repos. T
 - `--concurrency <n>` — Max concurrent repositories (default: 3) (default: 3)
 - `-y, --yes` — Skip confirmation for batch operations
 - `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
+- `--delta-base <guid>` — Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base
+- `--strategy <strategy>` — Block-delta strategy when using a delta base: auto, physical, or shared
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
@@ -759,6 +853,8 @@ Pull repository from a remote (machine or storage). Omit name to pull all repos.
 - `--concurrency <n>` — Max concurrent repositories (default: 3) (default: 3)
 - `-y, --yes` — Skip confirmation for batch operations
 - `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
+- `--delta-base <guid>` — Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)
+- `--strategy <strategy>` — Block-delta strategy when using a delta base: auto, physical, or shared
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
@@ -802,6 +898,8 @@ Live-migrate a repository from one machine to another with minimal downtime. Two
 - `--provision <provider>` — Auto-provision target via cloud provider (e.g., hetzner, linode)
 - `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., 10M)
 - `--checkpoint` — CRIU live migration: capture and restore process memory state
+- `--delta-base <guid>` — Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)
+- `--strategy <strategy>` — Block-delta strategy for the cutover: auto, physical, or shared
 - `--skip-dns` — Skip DNS record switching after migration
 - `--debug` — Enable debug output
 
@@ -1145,11 +1243,13 @@ Add a repository GUID mapping to the current config
 
 ### rdc config repository remove
 
-Remove a repository mapping from the current config
+Remove a repository mapping from the current config. Targets <name>:<tag>; a bare --name resolves to the grand <name>:latest and is refused when multiple repos share the base name — pass :tag explicitly to target a fork.
 
 **Options:**
 
 - `--name <name>` — Resource name
+
+> agent: fork-only
 
 ### rdc config repository list
 

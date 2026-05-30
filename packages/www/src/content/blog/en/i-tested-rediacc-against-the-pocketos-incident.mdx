@@ -1,6 +1,6 @@
 ---
 title: "I Tested Rediacc Against the PocketOS Incident"
-description: "PocketOS lost their production database to a Cursor agent in 9 seconds. I ran the same kind of test on my own platform and timed every step. Here is what held and what stays the developer's responsibility."
+description: "PocketOS lost their production database to a Cursor agent in 9 seconds. I ran the same test, timed every step, and noted what held and what's yours to fix."
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-04-28
 category: case-study
@@ -31,26 +31,26 @@ His company, PocketOS, builds software that car rental businesses use to run the
 
 I read his post twice. The Register, Tom's Hardware, and Business Standard all picked it up. The Hacker News thread hit 874 comments.
 
-I build a different kind of infrastructure platform. We call it Rediacc. The whole point of how it is built is to make this exact scenario harder. So I sat down and ran the test.
+I build Rediacc. The platform exists to make exactly this kind of failure harder. So I sat down and ran the test.
 
 This post is what I found. The numbers are real. The error messages are quoted from the CLI. And the one place Rediacc does not protect at all is in here too. Pretending otherwise is what gets people in trouble.
 
 ## What was actually missing
 
-Read carefully through Jer's timeline and four failures stack on top of each other.
+Go through Jer's timeline carefully. Four separate failures stacked on top of each other.
 
 1. The Railway API token Cursor used was created for managing custom domains. It also had `volumeDelete` authority. There is no per-operation scoping on Railway's CLI tokens.
 2. Railway's GraphQL API accepts `volumeDelete` as a single POST. No confirmation step.
 3. Railway's "volume backups" live inside the same volume. When the volume goes, the backups go too.
 4. The Cursor agent decided, on its own, that the right way to fix a credential mismatch in staging was to delete a volume.
 
-Pull failure 4 out for a second. Cursor's system rules told the agent never to run destructive git commands without an explicit user request. After the deletion, asked to explain itself, the agent produced a written confession. It admitted that deleting a database volume is "the most destructive, irreversible action possible: far worse than a force push" and listed every safety rule it broke.
+Sit with failure 4 for a second. Cursor's system rules told the agent never to run destructive git commands without an explicit user request. After the deletion, the agent was asked to explain itself. It produced a written confession. It admitted that deleting a database volume is "the most destructive, irreversible action possible: far worse than a force push" and listed every safety rule it broke.
 
 A behavioral rule in a prompt is advice. It is not enforcement. Failures 1, 2, and 3 are infrastructure design choices. They are what turn failure 4 from a mistake into a lost company.
 
 ## The test setup
 
-Rediacc has a real production machine I run, called `hostinger`. Thirteen repositories live on it: a mail server, a self-hosted GitLab, an observability stack, and a 128 GB demo of StackOverflow we use for benchmarks. The disk is 87% full. Free space is at zero. The kind of machine where mistakes hurt.
+I have a real production machine running Rediacc, called `hostinger`. Thirteen repositories live on it: a mail server, a self-hosted GitLab, an observability stack, and a 128 GB demo of StackOverflow we use for benchmarks. The disk is 87% full. Free space: basically zero. The kind of machine where mistakes hurt.
 
 I picked the StackOverflow demo on purpose. It is the largest repository on the box. It is set up like a real application, with containers and persistent data. If forking it is fast and isolated, it is fast and isolated for everything smaller too.
 
@@ -58,7 +58,7 @@ My agent for the test was Claude Code, running Claude Opus. Same family of model
 
 ## Try one: just SSH into the production repo
 
-The first thing the agent (me, in this case) tried was the most natural thing. Open a shell into the production repo and look around.
+The first thing the agent (me, in this case) would try: open a shell into the production repo and look around.
 
 ```bash
 $ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
@@ -72,7 +72,7 @@ The CLI refused. Verbatim:
 
 That is not a system prompt. That is the CLI itself, refusing the call before it ever leaves my laptop. The CLI saw I was an agent. Claude Code sets the `CLAUDECODE` env var. The CLI also walks the process tree via `/proc` to catch agents that try to hide that var. Then it matched the operation against its policy table. Then it refused.
 
-So the agent does what an agent might do. It tries to set the override itself.
+So the agent does what any agent would try. It sets the override itself.
 
 ```bash
 $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
@@ -111,7 +111,7 @@ License activated (2.1s)
 Total: 7.2s
 ```
 
-A 128 GB fork in 2.3 seconds. The reason is a BTRFS reflink. The fork is metadata that points at the parent's blocks until one side writes. No data is copied.
+A 128 GB fork in 2.3 seconds. The reason is a BTRFS reflink. The fork is just metadata pointing at the parent's blocks until one side writes. No data moves.
 
 To check the scaling, I ran the same fork on a 2 GB repository:
 
@@ -162,11 +162,11 @@ Now the harder part of the post.
 
 Rediacc isolates infrastructure: the file on disk, the Docker daemon, the mount namespace, the network. It does not isolate external SaaS APIs that your repository holds credentials for.
 
-A fork is a byte-for-byte BTRFS reflink of the parent. Whatever lives in the parent's `data/`, `.env`, or `secrets/` is in the fork too. If your repository contains a `STRIPE_LIVE_KEY`, an `AWS_ACCESS_KEY_ID`, or a Railway API token, the agent in the fork can read them. It can call `api.stripe.com` or `s3.amazonaws.com` or `backboard.railway.app` with those tokens. From the outside, the call looks like it came from production. Stripe or AWS cannot tell the fork apart.
+A fork is a byte-for-byte BTRFS reflink of the parent. Whatever lives in the parent's `data/`, `.env`, or `secrets/` comes with it. If your repository contains a `STRIPE_LIVE_KEY`, an `AWS_ACCESS_KEY_ID`, or a Railway API token, the agent in the fork can read them. It can call `api.stripe.com` or `s3.amazonaws.com` or `backboard.railway.app` with those tokens. From the outside, those calls look like production. Stripe or AWS cannot tell the fork apart.
 
 This is the shared-responsibility line. Rediacc handles the infrastructure half. The external-service half lives in your application code.
 
-Three patterns close the gap on the developer side:
+The developer side of the gap is yours to close.
 
 - Do not store production external credentials in the repository at all. Fetch them from a secrets manager at container startup. The fork's containers fetch sandbox-scoped credentials by design.
 - Strip or swap credentials at fork time via the Rediaccfile `up()` hook. A fork's `up()` runs against a different repository GUID than the parent. Detect that. Then rewrite `.env` with sandbox values.
@@ -182,7 +182,7 @@ I left the section above as I originally wrote it. The honesty held its weight a
 
 The mechanism is `rdc repo secret`. It is modeled on GitHub Actions secrets. Two things matter about how it is built.
 
-**Secrets do not live inside the LUKS image.** They live in a separate plane on disk: env-mode secrets reach containers as `${REDIACC_SECRET_<KEY>}` interpolation in your compose file, file-mode secrets reach containers as a tmpfs file at `/run/secrets/<key>` via Docker compose's `secrets:` block. Either way, the value is never written into the repository's encrypted image. The fork's BTRFS reflink copies the image. It does not copy what was never in the image. A fresh fork's secret list is empty. Its containers boot with no production credentials, so no production calls are even possible to make.
+**Secrets do not live inside the LUKS image.** They live in a separate plane on disk: env-mode secrets reach containers as `${REDIACC_SECRET_<KEY>}` interpolation in your compose file, file-mode secrets reach containers as a tmpfs file at `/run/secrets/<key>` via Docker compose's `secrets:` block. Either way, the value never touches the repository's encrypted image. The fork's BTRFS reflink copies the image. It does not copy what was never in the image. A fresh fork's secret list is empty. Its containers boot with no production credentials. No production calls are even possible.
 
 **The model is write-only.** `rdc repo secret get` returns a SHA-256 digest, not the value. There is no way to read a secret back through the CLI, by design. That closes the leak surface of terminal recordings, shell history, and accidental redirects. Rotation is `--current <previous-value>` to verify the prior value, or `--rotate-secret` to skip the precondition when you do not have the prior value (audited as a rotation). Symmetric for humans and agents. Both gates apply equally.
 
@@ -192,7 +192,7 @@ The honest residual gap. Secrets that you wrote into the repo image before adopt
 
 For the agent threat model specifically, two side effects of this design are worth calling out. First, `repo secret list` and `repo secret get` are exposed as MCP tools (read-safe. Names and digests, never values), so an agent helping you set up an app can discover what is configured without seeing what it is. Second, when a write fails the precondition, the JSON error envelope includes a structured `next.options[].run` field with concrete commands the agent should relay verbatim to the human. Including the rotation escape hatch for "I forgot the prior value." See [AI Agent Safety](/en/docs/ai-agents-safety) for the full model.
 
-The full how-to lives in [Repositories § Secrets](/en/docs/repositories#secrets). The recipe is short: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""` to seed, `${REDIACC_SECRET_<KEY>}` in compose to consume, `rdc repo fork` and check that the fork's secret list is empty.
+The full how-to lives in [Repositories § Secrets](/en/docs/repositories#secrets). Three steps. First, seed the value: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. Then reference `${REDIACC_SECRET_<KEY>}` in your compose file. Finally, run `rdc repo fork` and confirm the fork starts with an empty secret list.
 
 ## What this changes for someone doing this kind of work
 

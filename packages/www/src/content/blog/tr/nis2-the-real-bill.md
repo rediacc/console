@@ -12,8 +12,8 @@ tags:
   - mid-market
 featured: false
 language: tr
-sourceHash: "95f07c80c1d91055"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "3fbb581ec14e3f80"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -92,15 +92,15 @@ Boşluklar örtüşmelerden daha ilginç, çünkü boşluklar NIS2'nin gün yüz
 
 Rediacc, kendi altyapısını barındıran yapılar için beş kategorinin dördünün temel kapasitesini tek bir denetim günlüğüyle tek bir kontrol düzlemine indirgiyor.
 
-**Yedekleme:** sistemd zamanlayıcılarıyla planlanan, rclone üzerinden çoklu hedefli sıcak (çökme tutarlı BTRFS anlık görüntüsü, kesinti yok) ve soğuk (uygulama tutarlı durdur-anlık görüntüle-başlat) yedekleme stratejileri. LUKS şifreli birimler; kimlik bilgisi operatörde; Rediacc şirketi hiçbir zaman düz metin veri görmüyor. Operasyonel şekil için bkz. [Backup & Restore](/tr/docs/backup-restore) ve [Cross Backup Strategy](/tr/docs/cross-backup).
+**Yedekleme** iki modda çalışır. Sıcak, çökme tutarlı bir BTRFS anlık görüntüsüdür. Kesinti yok. Soğuk ise durdur, anlık görüntüle, başlat döngüsü yapar. Her ikisi de sistemd zamanlayıcılarıyla planlanır. Her ikisi de rclone üzerinden birçok hedefe gönderir. Birimler LUKS şifreli. Operatör anahtarı tutar. Rediacc şirketi hiçbir zaman düz metin görmez. Bkz. [Backup & Restore](/tr/docs/backup-restore) ve [Cross Backup Strategy](/tr/docs/cross-backup).
 
 **DR:** yedeklemeyle aynı ilkel, artı makineler arası veri taşımak için `rdc repo migrate`, artı paralel bir makinede kurtarılmış durumun hızla ayağa kaldırılması için fork ilkeli. DR merkezi başka bir Hetzner makinesi, bir OVH makinesi, bir yerel raf; SSH'ın ulaştığı her yer olabilir. Veri yolunda DR satıcısı bulutu yok.
 
-**Test verisi ve tam yığın klonlama:** BTRFS reflink tabanlı fork, depo boyutundan bağımsız sabit süre, tam yığın (veri, yapılandırmalar, konteyner durumu, servisler). [PocketOS testimizde](/tr/blog/i-tested-rediacc-against-the-pocketos-incident) 128 GB deposunu fork etmek 7,2 saniye. Fork mevcut üretim; sadeleştirilmiş bir test ortamı değil. Bkz. [Risk-Free Upgrades](/tr/docs/risk-free-upgrades).
+**Test verisi ve tam yığın klonlama** BTRFS reflink üzerinde çalışır. Fork sabit zamanlıdır, depo boyutundan bağımsız. Tam yığın: veri, yapılandırmalar, konteynerler ve servisler. [PocketOS testimizde](/tr/blog/i-tested-rediacc-against-the-pocketos-incident) 128 GB deposunu 7,2 saniyede fork ettik. Fork mevcut üretimdir, sadeleştirilmiş bir test kopyası değil. Bkz. [Risk-Free Upgrades](/tr/docs/risk-free-upgrades).
 
 **Anlık geri yükleme:** herhangi bir rclone hedefinden `rdc repo backup pull` ile yeni bir fork'a; üst deponun wildcard sertifikasıyla kapsanan fork'a özgü bir alt alan adı altında ayağa kaldırılır. DNS karmaşası yok, sertifika dansı yok.
 
-**Birleşik denetim günlüğü:** kontrol düzleminin tamamını kapsayan 70'ten fazla olay türü (kimlik doğrulama, API token'ları, yapılandırma yazmaları, depo yaşam döngüsü, yedekleme, senkronizasyon, terminal oturumları, makine operasyonları). Operatörün iş istasyonunda hash zinciriyle bağlı; `rdc audit verify` uçtan uca bütünlüğü doğruluyor.
+**Birleşik denetim günlüğü.** Kontrol düzleminde 70'ten fazla olay türü. Oturum açmalar, API token'ları, yapılandırma yazmaları, depo yaşam döngüsü, yedekleme, senkronizasyon, terminal oturumları ve makine işlemleri. Zincir operatör iş istasyonunda hash'le bağlı. `rdc audit verify` baştan sona kontrol eder.
 
 250 çalışanlı orta ölçekli bir temel kuruluş için birleştirme, dört adlandırılmış satıcıdan (yedekleme, DR, test verisi, anlık geri yükleme) bire iniyor. Tek lisans, tek denetim günlüğü, tek yükseltme kararı seti, tek kayıt girişi.
 
@@ -125,7 +125,7 @@ Tablonun sağ tarafı sol tarafından uzun. NIS2'nin gerçek maliyetinin dürüs
 
 Bunu okuyup "Drata'nın yerini Rediacc alabilir" sonucuna varan bir alıcı denetçisini hayal kırıklığına uğratacak. Doğru okuma şu: Rediacc'ın mümkün kıldığı veri düzlemi satıcısı birleştirmesi, GRC araçlarının yapamadığı şey; GRC araçlarının yaptığı kayıt ve kanıt çalışması ise Rediacc'ın yapmadığı şey. İkisi tamamlayıcı.
 
-Kapasitelerin NIS2 maddelerine genel haritalanması için bkz. [NIS2 and DORA](/tr/docs/legal-nis2-dora). Daha geniş mimari çerçeve için bkz. [Compliance Overview](/tr/docs/legal-overview). Rediacc tarafındaki ticari ayrıntılar için bkz. [Subscription & Licensing](/tr/docs/subscription-licensing).
+Derinleştirmek istiyorsanız üç bağlantı daha. Kamuya açık eşleme [NIS2 and DORA](/tr/docs/legal-nis2-dora)'da. Daha geniş çerçeve [Compliance Overview](/tr/docs/legal-overview)'da. Rediacc tarafındaki ticari bilgiler [Subscription & Licensing](/tr/docs/subscription-licensing)'da.
 
 ## Yapısal bir referans senaryo, sayısal değil
 
@@ -169,4 +169,4 @@ Yenileme döngüsüne girecekseniz ve bütçe açıksa, üç somut hamle:
 
 Kısa listendeysek, teklif somut. Geçen yılın güvenlik ve altyapı bütçesinden en büyük üç kalemi gönderin. Size bir hafta içinde hangilerinin birleştirilebileceğini ve hangilerinin birleştirilemeyeceğini yazılı olarak söyleriz. Yanıt boşlukları da içerecek; çünkü boşlukları adlandırmak, yanıtın geri kalanını güvenilir kılan şey.
 
-Depolama tarafında neden rakiplerden daha hafif çalıştığımıza ilişkin mimari argüman için [zero-cost backup](/tr/docs/zero-cost-backup), kıtalararası DR için [Cross Backup Strategy](/tr/docs/cross-backup) ve ticari taraf için [Subscription & Licensing](/tr/docs/subscription-licensing) belgelerine bakın.
+Daha derine gitmek istiyorsanız üç belge daha. [zero-cost backup](/tr/docs/zero-cost-backup), neden depolama tarafında rakiplerden daha hafif çalıştığımızı açıklar. [Cross Backup Strategy](/tr/docs/cross-backup), kıtalararası DR'ı kapsar. [Subscription & Licensing](/tr/docs/subscription-licensing) ticari taraftır.

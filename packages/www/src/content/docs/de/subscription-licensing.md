@@ -4,8 +4,8 @@ description: "Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Li
 category: "Guides"
 order: 7
 language: de
-sourceHash: "8e0a4976634ae323"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "98aede90642cfabc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Abonnement & Lizenzierung
@@ -126,7 +126,7 @@ Diese kontogestützte Ausstellung zählt zu Ihrer monatlichen Nutzung der **Repo
 
 ### Maschinenneustart und Autostart
 
-Autostart verwendet dieselben Regeln wie `rdc repo up`, die Ablaufprüfung wird übersprungen, sodass Repositories immer frei neu starten.
+Autostart verwendet dieselben Regeln wie `rdc repo up`: die Ablaufprüfung wird übersprungen, sodass Repositories immer frei neu starten.
 
 Repo-Lizenzen verwenden ein langlebiges Gültigkeitsmodell:
 
@@ -195,7 +195,7 @@ Für die erstmalige Maschineneinrichtung siehe [Maschinen-Setup](/de/docs/setup)
 
 ## Offline-Verhalten und Ablauf
 
-Die Lizenzvalidierung erfolgt lokal auf der Maschine, sie erfordert keine Live-Verbindung zum Account-Server.
+Die Lizenzvalidierung erfolgt lokal auf der Maschine. Sie erfordert keine Live-Verbindung zum Account-Server.
 
 Das bedeutet:
 

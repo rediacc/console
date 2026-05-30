@@ -4,8 +4,8 @@ description: Starten Sie einen containerisierten Dienst auf Ihrem Server in weni
 category: Guides
 order: -1
 language: de
-sourceHash: "71da41d42b1a6b4e"
-sourceCommit: "62f6c6e20c424566749c15efca685c8dc136f09b"
+sourceHash: "15b3c42682a05678"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Schnellstart
@@ -20,7 +20,7 @@ Stellen Sie eine verschlüsselte, isolierte Container-Umgebung auf Ihrem eigenen
 
 Ein Repo ist eine einzelne verschlüsselte Datei auf der Festplatte. Verschieben Sie es, sichern Sie es, forken Sie es. Es ist einfach eine Datei. Wenn es gemountet ist, wird es zu einem Ordner mit einem eigenen Docker-Daemon und Ihren App-Daten darin.
 
-Stellen Sie sich ein Repo wie einen USB-Stick vor. Es ist etwas in Ihrer Hand, und wenn Sie es einstecken, wird es für das System sichtbar und zugänglich. Ihre Apps und Daten sind vollständig portabel. Plug & Run auf jeder Maschine bei jedem Cloud-Anbieter.
+Stellen Sie sich ein Repo wie einen USB-Stick vor: Stecken Sie es in eine beliebige Maschine und die Apps und Daten werden eingehängt, bereit zur Ausführung. Wechseln Sie Maschinen oder Cloud-Anbieter ohne Neuaufbau. Plug & Run.
 
 **Zwei Werkzeuge, zwei Rollen:**
 

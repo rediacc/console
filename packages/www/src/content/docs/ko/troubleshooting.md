@@ -1,16 +1,16 @@
 ---
 title: "문제 해결"
-description: "SSH, 설정, 저장소, 서비스, Docker에 관한 일반적인 문제와 해결책."
+description: "일반적인 SSH, 설정, 저장소, 서비스, Docker 문제에 대한 해결책."
 category: "Guides"
 order: 10
 language: ko
-sourceHash: "658b00b83875950d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "7cfabe7bbf3914c3"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 문제 해결
 
-일반적인 문제와 해결책입니다. 확실하지 않을 때는 `rdc doctor`로 시작하여 종합적인 진단 검사를 실행하세요.
+일반적인 문제와 해결 방법입니다. 확실하지 않을 때는 `rdc doctor`로 시작하여 전체 진단 검사를 실행하세요.
 
 ## SSH 연결 실패
 
@@ -78,7 +78,7 @@ CRIU는 AppArmor에 걸리는 알려진 경우입니다. Renet은 `rediacc.check
 Module btrfs not found
 ```
 
-...서버가 in-tree btrfs 모듈 없이 출시된 RHEL 10 기본 커널을 실행하고 있습니다. 이것은 Rediacc 버그가 아닙니다. RHEL 10은 의도적으로 btrfs를 제외했습니다. 해결책은 **Oracle Linux 10을 대신 사용**하는 것입니다. Oracle 10은 btrfs를 유지하는 Unbreakable Enterprise Kernel(UEK)을 기본으로 사용합니다. 전체 내용은 [요구 사항 - UEK를 사용하는 이유?](/ko/docs/requirements)를 참조하세요.
+...서버가 in-tree btrfs 모듈 없이 출시된 RHEL 10 기본 커널을 실행하고 있습니다. 이것은 Rediacc 버그가 아닙니다. RHEL 10은 의도적으로 btrfs를 제외했습니다. 수정 방법은 **Oracle Linux 10을 대신 사용**하는 것입니다. Oracle 10은 btrfs를 유지하는 Unbreakable Enterprise Kernel(UEK)을 기본으로 사용합니다. 전체 내용은 [요구 사항 - UEK를 사용하는 이유?](/ko/docs/requirements)를 참조하세요.
 
 ## 저장소 생성 실패
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## 샌드박스 파일에 대한 VS Code 권한 거부
 
-`rdc vscode connect -m <machine> -r <repo>`로 연결할 때, 이전 VS Code 세션 이후 `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`와 같은 오류가 발생할 수 있습니다. 이것은 SSH 사용자와 내부 `rediacc` 사용자가 각각 작성한 파일이 혼재하는 샌드박스 디렉터리 내의 파일 소유권 혼재로 인해 발생했습니다.
+이전 VS Code 세션 이후 `rdc vscode connect -m <machine> -r <repo>`로 연결할 때, 이전 버전의 renet은 `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` 같은 오류를 발생시켰습니다. 원인은 샌드박스 디렉터리 내의 파일 소유권 혼재로, SSH 사용자와 내부 `rediacc` 사용자가 모두 파일을 작성했기 때문입니다.
 
 최신 버전의 renet은 다음으로 이 문제를 해결합니다:
 
@@ -192,4 +192,4 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 rdc doctor
 ```
 
-환경, renet 설치, 설정 구성, 인증 상태를 확인합니다. 각 검사는 간단한 설명과 함께 OK, Warning, 또는 Error를 보고합니다.
+환경, renet 설치, 설정, 인증 상태를 확인합니다. 각 검사는 간단한 설명과 함께 OK, Warning, 또는 Error를 보고합니다.

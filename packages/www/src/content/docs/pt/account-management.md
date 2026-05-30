@@ -4,11 +4,13 @@ description: Organizações, equipas, membros e subscrições no Rediacc.
 category: Guides
 order: 12
 language: pt
+sourceHash: "974885635641ed70"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Organizações
 
-Ao registar-se, o Rediacc cria automaticamente uma organização para si. A sua organização é o contentor de nível superior para todos os recursos -- máquinas, repositórios, subscrições e membros de equipa.
+Ao registar uma conta, o Rediacc cria automaticamente uma organização para si. Essa organização é o contentor de nível superior para tudo o que possui aqui: máquinas, repositórios, subscrições e as pessoas que convida. Não criará uma segunda por acidente. Existe exatamente uma organização por conta, e todas as equipas e recursos dependem dela.
 
 ![Registration Flow](/img/account-registration-flow.svg)
 
@@ -115,7 +117,7 @@ UPSTREAM_URL=https://www.rediacc.com
 UPSTREAM_API_KEY=rdt_<token>
 ```
 
-O token concede **apenas** a renovação de certificados de delegação -- não pode ler nem modificar qualquer outro recurso. Este é o único caminho para emitir um token `delegation:renew`; o fluxo regular `/portal/api-tokens` não inclui este âmbito.
+O token concede **apenas** a renovação de certificados de delegação. Não pode ler nem modificar qualquer outro recurso. Este é o único caminho para emitir um token `delegation:renew`; o fluxo regular `/portal/api-tokens` não inclui este âmbito.
 
 #### Renovação air-gapped
 

@@ -4,7 +4,8 @@ description: فهم معمارية تطبيق الويب ونشره باستخد
 category: Reference
 order: 1
 language: ar
-sourceHash: "ee9dff9ac2c8bce1"
+sourceHash: "0951a0a1b320f570"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # دليل مستخدم منصة Rediacc

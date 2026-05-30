@@ -5,13 +5,13 @@ description: >-
 category: "Reference"
 order: 99
 language: zh
-sourceHash: "e663f13b2f78bc65"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "8f29c515be1b7fb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 限制与配额
 
-本页记录了适用于 Rediacc 部署的硬性和软性限制。了解这些限制有助于您规划容量并避免意外约束。
+本页列出了适用于 Rediacc 部署的硬性和软性限制。在规划容量前请先阅读本页，以便了解哪些上限存在，哪些不存在。
 
 ---
 
@@ -110,7 +110,7 @@ rdc config infra push -m server-1
 
 每个带有 `rediacc.service_port` 标签的服务自动获得一个 HTTPS 路由。带路由的服务数量没有限制，但受每个仓库最多 61 个服务的限制。
 
-通配符 TLS 证书在首次部署时通过 Let's Encrypt（Cloudflare DNS-01 验证）按仓库签发。Let's Encrypt 规定**每个注册域名每周 50 个证书**的限制。由于 Rediacc 每个仓库（而非每个服务）使用一个通配符证书，因此在一周内拥有 50 个以上新仓库的部署可能会达到此限制。
+通配符 TLS 证书在首次部署时通过 Let's Encrypt（Cloudflare DNS-01 验证）按仓库签发。Let's Encrypt 的签发上限为**每个注册域名每周 50 个证书**。由于 Rediacc 每个仓库（而非每个服务）使用一个通配符证书，因此在单周内创建 50 个以上新仓库的部署将达到此上限。
 
 分支重用父仓库现有的通配符证书，不消耗任何证书配额。
 
@@ -172,7 +172,7 @@ rdc config infra push -m server-1
 
 ### 内核功能矩阵
 
-运营人员可以通过此矩阵一目了然地查看每个经 CI 测试的操作系统在开箱即用情况下提供的功能。五个系统均满足所有要求；该矩阵是面向运营人员的参考信息，而非门控标准。
+该矩阵提供每个经 CI 测试的操作系统在开箱即用情况下所提供功能的一览视图。五个系统均满足所有要求，因此这是面向运营人员的参考信息，而非门控标准。
 
 | 操作系统 | btrfs 模块 | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup 钩子 |
 |----------|------------|------------|---------------------|-----------------|

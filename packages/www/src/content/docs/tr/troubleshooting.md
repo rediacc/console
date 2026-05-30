@@ -1,18 +1,16 @@
 ---
 title: Sorun Giderme
-description: >-
-  SSH, kurulum, depolar, servisler ve Docker ile ilgili yaygın sorunların
-  çözümleri.
+description: "Yaygın SSH, kurulum, depo, servis ve Docker sorunlarının çözümleri."
 category: Guides
 order: 10
 language: tr
-sourceHash: "658b00b83875950d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "7cfabe7bbf3914c3"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Sorun Giderme
 
-Yaygın sorunlar ve çözümleri. Şüphe durumunda, kapsamlı bir tanılama kontrolü yapmak için `rdc doctor` ile başlayın.
+Yaygın sorunlar ve nasıl düzeltileceği. Şüphe durumunda, tam bir tanılama kontrolü yapmak için `rdc doctor` ile başlayın.
 
 ## SSH Bağlantısı Başarısız
 
@@ -80,7 +78,7 @@ CRIU, AppArmor ile karşılaşan bilinen durumdur. Renet, `rediacc.checkpoint=tr
 Module btrfs not found
 ```
 
-...sunucu, yerleşik btrfs modülü olmadan gelen RHEL 10'un stok çekirdeğini çalıştırıyordur. Bu bir Rediacc hatası değildir; RHEL 10 btrfs'i kasıtlı olarak kaldırdı. Çözüm, **bunun yerine Oracle Linux 10 kullanmaktır**. Oracle 10 varsayılan olarak btrfs'i koruyan Unbreakable Enterprise Kernel (UEK) kullanır. Tam hikaye için [Gereksinimler -- Neden UEK?](/en/docs/requirements) sayfasına bakın.
+...sunucu, yerleşik btrfs modülü olmadan gelen RHEL 10'un stok çekirdeğini çalıştırıyordur. Bu bir Rediacc hatası değildir; RHEL 10 btrfs'i kasıtlı olarak kaldırdı. Düzeltme, **bunun yerine Oracle Linux 10 kullanmaktır**. Oracle 10 varsayılan olarak btrfs'i koruyan Unbreakable Enterprise Kernel (UEK) kullanır. Tam hikaye için [Gereksinimler -- Neden UEK?](/en/docs/requirements) sayfasına bakın.
 
 ## Depo Oluşturma Başarısız
 
@@ -143,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code sandbox dosyalarında İzin Reddedildi
 
-`rdc vscode connect -m <machine> -r <repo>` ile bağlanırken, önceki bir VS Code oturumundan sonra `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` gibi hatalar görmüş olabilirsiniz. Bu, sandbox dizini içinde hem SSH kullanıcınız hem de dahili `rediacc` kullanıcısı tarafından yazılmış dosyaların karışık sahipliğinden kaynaklanıyordu.
+Önceki bir VS Code oturumunun ardından `rdc vscode connect -m <machine> -r <repo>` ile bağlanırken, eski renet sürümleri `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` gibi hatalar üretiyordu. Neden: sandbox dizininde hem SSH kullanıcınızın hem de dahili `rediacc` kullanıcısının dosya yazmış olduğu karışık dosya sahipliği.
 
 Renet'in modern sürümleri bunu şu şekilde düzeltir:
 
@@ -194,4 +192,4 @@ Konteynerleriniz deponun izole daemon'u yerine ana sistemin Docker daemon'unda g
 rdc doctor
 ```
 
-Bu komut ortamınızı, renet kurulumunu, yapılandırmayı ve kimlik doğrulama durumunu kontrol eder. Her kontrol OK, Warning veya Error durumunu kısa bir açıklama ile bildirir.
+Bu komut ortamınızı, renet kurulumunu, yapılandırmayı ve kimlik doğrulama durumunu kontrol eder. Her kontrol, kısa bir açıklama ile birlikte OK, Warning veya Error durumunu bildirir.

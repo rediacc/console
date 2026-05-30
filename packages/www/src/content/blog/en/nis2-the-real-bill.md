@@ -89,15 +89,15 @@ The gaps are more interesting than the overlaps, because the gaps are what NIS2 
 
 Rediacc is one control plane with a unified audit log, replacing four of the five categories' core capability for self-hosted infrastructure.
 
-**Backup**: hot (crash-consistent BTRFS snapshot, no downtime) and cold (app-consistent stop-snapshot-start) backup strategies, scheduled via systemd timers, multi-destination via rclone. LUKS-encrypted volumes; the operator holds the credential; Rediacc-the-company never sees plaintext data. See [Backup & Restore](/en/docs/backup-restore) and [Cross Backup Strategy](/en/docs/cross-backup) for the operational shape.
+**Backup** runs in two modes. Hot is a crash-consistent BTRFS snapshot. No downtime. Cold does a stop, snapshot, start cycle. Both schedule on systemd timers. Both ship to many destinations via rclone. Volumes are LUKS-encrypted. The operator holds the key. Rediacc-the-company never sees plaintext. See [Backup & Restore](/en/docs/backup-restore) and [Cross Backup Strategy](/en/docs/cross-backup).
 
 **DR**: same primitive as backup, plus `rdc repo migrate` for cross-machine data movement, plus the fork primitive for fast bring-up of recovered state on a parallel machine. The DR site can be another Hetzner machine, an OVH machine, an on-prem rack, anywhere SSH reaches. No DR-vendor cloud in the data path.
 
-**Test data and full-stack cloning**: BTRFS reflink-based fork, constant-time regardless of repository size, full-stack (data, configurations, container state, services). 7.2 seconds to fork a 128 GB repository in our [PocketOS test](/en/blog/i-tested-rediacc-against-the-pocketos-incident). The fork is current production, not a stripped-down staging environment. See [Risk-Free Upgrades](/en/docs/risk-free-upgrades).
+**Test data and full-stack cloning** runs on BTRFS reflink. The fork is constant-time, no matter the repo size. Full-stack means data, configs, containers, and services. We forked a 128 GB repo in 7.2 seconds in our [PocketOS test](/en/blog/i-tested-rediacc-against-the-pocketos-incident). The fork is current production, not a stripped-down staging copy. See [Risk-Free Upgrades](/en/docs/risk-free-upgrades).
 
 **Instant restore**: `rdc repo backup pull` from any rclone target into a fresh fork, brought up under a fork-specific subdomain covered by the parent repository's wildcard certificate. No DNS scramble, no certificate dance.
 
-**Unified audit log**: 70+ event types covering the entire control plane (authentication, API tokens, config writes, repo lifecycle, backup, sync, terminal sessions, machine operations). Hash-chained on the operator's workstation; `rdc audit verify` validates end-to-end integrity.
+**Unified audit log.** 70+ event types across the control plane. They cover sign-ins, API tokens, config writes, repo lifecycle, backup, sync, terminal sessions, and machine ops. The chain is hash-linked on the operator workstation. `rdc audit verify` checks it end to end.
 
 For a 250-employee mid-market essential entity, the consolidation is from four named vendors (backup, DR, test-data, instant-restore) to one. One licence, one audit log, one set of upgrade decisions, one register entry.
 
@@ -122,7 +122,7 @@ The right side of the table is longer than the left side. That is the honest sha
 
 A buyer who reads this and concludes "I can replace Drata with Rediacc" is going to disappoint their auditor. The right read is: the data-plane vendor consolidation that Rediacc enables is the thing that GRC tools cannot do, and the register-and-evidence work that GRC tools do is the thing Rediacc does not. The two are complementary.
 
-For the public mapping of capabilities to NIS2 articles, see [NIS2 and DORA](/en/docs/legal-nis2-dora). For the broader architectural framing, see [Compliance Overview](/en/docs/legal-overview). For commercial details on the Rediacc side, see [Subscription & Licensing](/en/docs/subscription-licensing).
+Three more links if you want depth. The public mapping is at [NIS2 and DORA](/en/docs/legal-nis2-dora). The broader framing is at [Compliance Overview](/en/docs/legal-overview). The commercial side on Rediacc is at [Subscription & Licensing](/en/docs/subscription-licensing).
 
 ## A reference scenario, structural not numeric
 
@@ -166,4 +166,4 @@ If you are heading into a renewal cycle and the budget is open, three concrete m
 
 If we are on the shortlist, the offer is concrete. Send your three biggest line items from last year's security and infrastructure budget. We will tell you which ones can be collapsed and which cannot, in writing, in a week. The answer will include the gaps, because the gap-naming is what makes the rest of the answer trustworthy.
 
-For [zero-cost backup](/en/docs/zero-cost-backup) (the architectural argument behind why we run lighter than the incumbents on the storage side), [Cross Backup Strategy](/en/docs/cross-backup) (intercontinental DR), and [Subscription & Licensing](/en/docs/subscription-licensing) (the commercial side), see the linked docs.
+Three more docs if you want to go deeper. [zero-cost backup](/en/docs/zero-cost-backup) explains why we run lighter on storage than the incumbents. [Cross Backup Strategy](/en/docs/cross-backup) covers intercontinental DR. [Subscription & Licensing](/en/docs/subscription-licensing) is the commercial side.

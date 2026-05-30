@@ -4,8 +4,8 @@ description: Authentifizierung, API-Token-Verwaltung, Sitzungsüberwachung und d
 category: Guides
 order: 13
 language: de
-sourceHash: "c4e24e7a3494b6f6"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "dcd061b971573573"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Authentifizierung
@@ -96,3 +96,9 @@ rdc update --channel edge      # Zu edge wechseln
 rdc update --channel stable    # Zurück zu stable
 rdc update --status            # Aktuellen Kanal anzeigen
 ```
+
+### CLI-Sicherheitshaltung für KI-Agenten
+
+Coding-Agenten, die `rdc` aufrufen, sind eine echte Angriffsfläche, deshalb behandeln wir sie als separaten Principal. Jeder `rdc`-Aufruf wird beim Start als **Mensch** oder **Agent** klassifiziert, basierend auf Umgebungssignalen (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) plus einem Linux-`/proc`-Abstammungs-Walk. Die Erkennung ist bestmöglich. Ein entschlossener Wrapper kann Umgebungsvariablen fälschen, weshalb die Abstammung wichtig ist. Agenten erhalten ein reduziertes Berechtigungsset: sensible Konfigurations-Mutationen erfordern das Knowledge-Gate (`--current <alt>`), der interaktive Editor wird ohne einen abstammungsverifizierten `REDIACC_ALLOW_CONFIG_EDIT`-Override verweigert, und `--reveal` bei jedem Anzeigebefehl ist gesperrt. Jede Entscheidung (erlauben, verweigern oder `--reveal` gewähren) schreibt eine hash-verkettete JSONL-Zeile in `~/.config/rediacc/audit.log.jsonl`. Führen Sie `rdc config audit verify` aus, um die Kettenintegrität zu prüfen.
+
+Siehe [Sicherheit und Schutzmechanismen für KI-Agenten](/de/docs/ai-agents-safety) für die vollständige Matrix dessen, was Agenten tun und nicht tun können, mit Beispielen zum Knowledge-Gate und Scope-Override-Mechaniken.

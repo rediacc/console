@@ -6,13 +6,13 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "d089cea510a69bfb"
-sourceCommit: "1b6c53f52954d63959d8176bfa70a91405a2a87f"
+sourceHash: "f350872720c99d58"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Araçlar
 
-Rediacc, uzak depolarla çalışmak için üretkenlik araçları içerir: dosya senkronizasyonu, SSH terminali, VS Code entegrasyonu ve CLI güncellemeleri.
+Rediacc, uzak depolarla çalışmak için araçlar sunar: dosya senkronizasyonu, SSH terminali, VS Code entegrasyonu ve CLI güncellemeleri.
 
 ## Dosya Senkronizasyonu (sync)
 
@@ -78,7 +78,7 @@ Bir depoya bağlanırken, `DOCKER_HOST` otomatik olarak deponun izole Docker sok
 
 ### Connect Alt Komutu
 
-`connect` alt komutu, açık bayraklarla aynı işlevselliği sağlar:
+`connect` alt komutu aynı şeyi açık bayraklarla yapar:
 
 ```bash
 rdc term connect -m server-1

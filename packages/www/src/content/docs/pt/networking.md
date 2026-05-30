@@ -4,6 +4,8 @@ description: "Exponha serviços com o proxy reverso, etiquetas Docker, certifica
 category: "Guides"
 order: 6
 language: pt
+sourceHash: "d60a43cd573517a1"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Redes
@@ -172,7 +174,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | Resolvedor de certificados; use `letsencrypt` para Let's Encrypt automático |
 | `traefik.http.services.{name}.loadbalancer.server.port` | A porta em que a sua aplicação ouve dentro do contentor |
 
-O `{name}` nas etiquetas é um identificador arbitrário; apenas precisa de ser consistente entre as etiquetas de router/serviço/middleware relacionadas.
+O `{name}` nas etiquetas é um identificador arbitrário. Apenas precisa de ser consistente entre as etiquetas de router/serviço/middleware relacionadas.
 
 > **Nota:** As etiquetas `rediacc.*` (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) são injetadas automaticamente pelo `renet compose`. Não precisa de as adicionar ao seu ficheiro compose.
 
@@ -321,7 +323,7 @@ Quando `--cf-dns-token` está configurado, `rdc config infra push` cria automati
 
 Os registos ao nível da máquina são criados pelo `push-infra` e cobrem as rotas de domínio personalizado (`rediacc.domain`). Os registos wildcard por repositório são criados automaticamente pelo `repo up` e cobrem as rotas automáticas para esse repositório.
 
-Isto é idempotente; os registos existentes são atualizados se o IP mudar e deixados inalterados se já estiverem corretos.
+Isto é idempotente: os registos existentes são atualizados se o IP mudar e deixados inalterados se já estiverem corretos.
 
 O wildcard do domínio base (`*.example.com`) deve ser criado manualmente se usar etiquetas de domínio personalizado como `rediacc.domain=erp`.
 

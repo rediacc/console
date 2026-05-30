@@ -6,10 +6,11 @@ description: >-
 category: Reference
 order: 50
 language: ja
-sourceHash: 37be1e401927ed9a
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-このテンプレートを使用して、AIコーディングアシスタント（Claude Code、Cursor、Cline、Windsurf）をRediaccインフラストラクチャの自律管理用に設定します。以下のブロックをプロジェクトの `CLAUDE.md`、`.cursorrules`、または同等のエージェント設定ファイルにコピーしてください。
+問題はこうです：AIコーディングアシスタント（Claude Code、Cursor、Cline、Windsurf）は存在しない `rdc` フラグを作り出し続け、どの Rediacc リポジトリ名がどの GUID に対応するかを毎回あなたに尋ねずにはいられません。このテンプレートがそれを解決します。以下のブロックをプロジェクトの `CLAUDE.md`、`.cursorrules`、またはあなたのツールが使用するエージェント設定ファイルに貼り付けてください。
 
 ## テンプレート
 

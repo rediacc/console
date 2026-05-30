@@ -122,7 +122,7 @@ This section covers the operational setup: generating keys, requesting the cert,
 
 A subscription may have **at most one active delegation certificate at a time**. Each on-premise install enforces per-month and per-machine limits against its own local issuance ledger, so multiple active certs would multiply the effective quota with no possible reconciliation.
 
-If you need separate environments (production, staging, DR, multi-region), purchase one subscription per install. The single-active enforcement codifies this contract: an attempt to create a second active cert returns `409 DELEGATION_CERT_ALREADY_ACTIVE` with the existing cert id and instructions to renew (preferred - preserves the chain) or revoke-and-create (resets the chain).
+If you need separate environments (production, staging, DR, multi-region), buy one subscription per install. The single-active enforcement codifies this contract: an attempt to create a second active cert returns `409 DELEGATION_CERT_ALREADY_ACTIVE` with the existing cert id and instructions to renew (preferred, preserves the chain) or revoke-and-create (resets the chain).
 
 ### 1. Generate the on-premise Ed25519 key pair
 
@@ -144,11 +144,11 @@ Store the private key alongside your other secrets (for example, a Docker secret
 
 You can request the cert from the upstream account portal in three ways:
 
-**Option A - Customer self-service (recommended).** Log into the upstream portal as an org owner or admin and navigate to **/account/delegation-certs**. Click **Create New**, paste the on-premise public key (base64 SPKI), choose a validity (or accept the per-plan default), and download the resulting `.json` file.
+**Option A: Customer self-service (recommended).** Log into the upstream portal as an org owner or admin and go to **/account/delegation-certs**. Click **Create New**, paste the on-premise public key (base64 SPKI), pick a validity (or accept the per-plan default), and download the resulting `.json` file.
 
-**Option B - Admin (cross-customer).** Rediacc support or the upstream system admin can use `POST /admin/delegation-certs` with the same parameters.
+**Option B: Admin (cross-customer).** Rediacc support or the upstream system admin can call `POST /admin/delegation-certs` with the same parameters.
 
-**Option C - `rdc` CLI (planned).** A future CLI command will wrap the portal flow.
+**Option C: `rdc` CLI (planned).** A future CLI command will wrap the portal flow.
 
 The returned `.json` looks like:
 

@@ -4,11 +4,13 @@ description: "Sincronização de ficheiros, acesso por terminal, integração co
 category: "Guides"
 order: 9
 language: pt
+sourceHash: "f350872720c99d58"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Ferramentas
 
-O Rediacc inclui ferramentas de produtividade para trabalhar com repositórios remotos: sincronização de ficheiros, terminal SSH, integração com VS Code e atualizações do CLI.
+O Rediacc inclui ferramentas para trabalhar com repositórios remotos: sincronização de ficheiros, terminal SSH, integração com VS Code e atualizações do CLI.
 
 ## Sincronização de Ficheiros (sync)
 
@@ -38,7 +40,7 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 
 ### Descarregar Ficheiros
 
-Use `--remote` para um diretório (predefinição atual) ou `--remote-file` para um único ficheiro. Os dois sinalizadores são mutuamente exclusivos.
+Use `--remote` para um diretório (a predefinição) ou `--remote-file` para um único ficheiro. Os dois sinalizadores são mutuamente exclusivos.
 
 ```bash
 # Diretório
@@ -96,7 +98,7 @@ Ao ligar a um repositório, `DOCKER_HOST` é definido automaticamente para o soc
 
 ### Subcomando Connect
 
-O subcomando `connect` oferece a mesma funcionalidade com sinalizadores explícitos:
+O subcomando `connect` faz o mesmo com sinalizadores explícitos:
 
 ```bash
 rdc term connect -m server-1

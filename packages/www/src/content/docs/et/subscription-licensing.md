@@ -4,8 +4,8 @@ description: "Mõista, kuidas account, rdc ja renet haldavad masina kohti, repos
 category: "Guides"
 order: 7
 language: et
-sourceHash: "8e0a4976634ae323"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "98aede90642cfabc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Tellimus ja litsentsid
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Masina kohad (serveri pool)
 
-Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti (nt 2 masinat Community jaoks, 5 Professional jaoks). Koht hoitakse 1 tund alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. See tähendab, et 5 kohaga plaan saab aja jooksul teenindada kümneid masinaid - kohad hoitakse ainult aktiivse ettevalmistamise ajal.
+Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti (nt 2 masinat Community jaoks, 5 Professional jaoks). Koht hoitakse 1 tund alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. 5 kohaga plaan saab seega aja jooksul katta kümneid masinaid, kuna kohti hoitakse ainult aktiivse ettevalmistamise ajal.
 
 Masinas ei salvestata ühtegi masina litsentsi faili. Koha jõustamine toimub väljastamise ajal serveris.
 
@@ -78,7 +78,7 @@ Seda kasutatakse järgmistel juhtudel:
 
 Repositooriumilitsentsid on seotud masina ja sihtrepositooriumiga. Iga litsents sisaldab masina ID-d, repositooriumi GUID-i, tellimuse ID-d, plaani piiranguid ja aegumist. Krüptitud repositooriumide puhul kontrollib Rediacc ka aluseks oleva mahu LUKS-identiteeti.
 
-Samal masinal võivad koos eksisteerida mitu tellimust - iga repositoorium kannab oma litsentsi oma tellimuskontekstiga.
+Samal masinal võivad koos eksisteerida mitu tellimust. Iga repositoorium kannab oma litsentsi oma tellimuskontekstiga.
 
 ## Vaikepiirangud
 
@@ -135,7 +135,7 @@ See account-põhine väljastamine arvestatakse sinu igakuiste **repositooriumili
 
 ### Masina taaskäivitus ja automaatkäivitus
 
-Automaatkäivitus kasutab samu reegleid nagu `rdc repo up`, aegumine jäetakse vahele, seega repositooriumid käivituvad alati vabalt.
+Automaatkäivitus kasutab samu reegleid nagu `rdc repo up`: aegumine jäetakse vahele, seega repositooriumid käivituvad alati vabalt.
 
 Repositooriumilitsentsid kasutavad pikaajalist kehtivusmudelit:
 
@@ -204,7 +204,7 @@ Masina esmakordse seadistamise kohta vaata [Masina seadistamine](/en/docs/setup)
 
 ## Võrguühenduseta käitumine ja aegumine
 
-Litsentsi valideerimine toimub masinas lokaalselt, see ei nõua elusat ühendust account-serveriga.
+Litsentsi valideerimine toimub masinas lokaalselt. See ei nõua elusat ühendust account-serveriga.
 
 See tähendab:
 

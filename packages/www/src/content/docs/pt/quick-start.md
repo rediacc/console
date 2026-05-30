@@ -4,6 +4,8 @@ description: Coloque um serviço em contentor a funcionar no seu servidor em min
 category: Guides
 order: -1
 language: pt
+sourceHash: "15b3c42682a05678"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Início Rápido
@@ -18,7 +20,7 @@ Implante um ambiente de contentores encriptado e isolado no seu próprio servido
 
 Um repositório é um único ficheiro encriptado em disco. Mova-o, faça backup, crie um fork. É apenas um ficheiro. Quando montado, torna-se uma pasta com um daemon Docker dedicado e os dados da sua aplicação no interior.
 
-Pense num repositório como uma pen USB. É algo que tem na mão, e quando a liga fica visível e acessível ao sistema. As suas aplicações e dados são completamente portáteis. Ligue e execute em qualquer máquina em qualquer fornecedor de nuvem.
+Pense num repositório como uma pen USB: ligue-a a qualquer máquina e as aplicações e dados são montados, prontos a correr. Mova-o entre máquinas ou fornecedores de nuvem sem reconstruir nada. Ligue e Execute.
 
 **Duas ferramentas, dois papéis:**
 

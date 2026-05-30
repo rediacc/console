@@ -4,7 +4,8 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "edfb821962d35ccb"
+sourceHash: "2456daa4289ffb8c"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # マシンセットアップ
@@ -129,7 +130,7 @@ rdc config infra set -m server-1 \
 | `--tcp-ports <ports>` | Machine | 転送する追加TCPポートのカンマ区切りリスト（例：`25,143,465,587,993`） |
 | `--udp-ports <ports>` | Machine | 転送する追加UDPポートのカンマ区切りリスト（例：`53`） |
 
-Machineスコープのオプションはマシンごとに保存されます。Configスコープのオプション（`--cert-email`、`--cf-dns-token`）は設定内のすべてのマシンで共有されます。一度設定すればすべてに適用されます。
+Machineスコープのオプションはマシンごとに保存されます。Configスコープのオプション（`--cert-email`、`--cf-dns-token`）は設定内のすべてのマシンで共有されます。一度設定すればどこにでも適用されます。
 
 ### インフラストラクチャの表示
 
@@ -150,7 +151,7 @@ rdc config infra push -m server-1
 2. Traefikリバースプロキシ、ルーター、systemdサービスを設定
 3. `--cf-dns-token` が設定されている場合、マシンサブドメイン（`server-1.example.com` および `*.server-1.example.com`）のCloudflare DNSレコードを作成
 
-DNSステップは自動的かつ冪等です, 不足しているレコードを作成し、IPが変更されたレコードを更新し、既に正しいレコードはスキップします。Cloudflareトークンが設定されていない場合、DNSは警告付きでスキップされます。 Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+DNSステップは自動的かつ冪等です：不足しているレコードを作成し、IPが変更されたレコードを更新し、既に正しいレコードはスキップします。Cloudflareトークンが設定されていない場合、DNSは警告付きでスキップされます。リポジトリごとのワイルドカードDNSレコード（自動ルート用）は、`rdc repo up` を実行すると自動的に作成されます。
 
 ## クラウドプロビジョニング
 

@@ -1,233 +1,67 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="A green live system box is copied into a ready-to-use sandbox in under a minute.">
+  <title>A green live system box is copied into a ready-to-use sandbox in under a minute.</title>
   <defs>
-    <linearGradient id="serverGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2d2d2d"/>
-      <stop offset="100%" stop-color="#1a1a1a"/>
-    </linearGradient>
-    <linearGradient id="cloneGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#3a3a3a"/>
-      <stop offset="100%" stop-color="#252525"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
-    </filter>
-    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%">
-      <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.15"/>
-    </filter>
-    <marker id="arrowGreen" markerWidth="10" markerHeight="8" refX="10" refY="4" orient="auto" fill="#556b2f">
-      <polygon points="0 0, 10 4, 0 8"/>
+    <marker id="hs-arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4a7c3f"/>
     </marker>
   </defs>
 
-  <!-- Background -->
-  <rect width="1200" height="675" fill="#f5f5f5"/>
+  <!-- background -->
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5"/>
 
-  <!-- ==================== GREEN SOLUTION BADGE (top center) ==================== -->
-  <rect x="510" y="16" width="180" height="36" rx="18" fill="#556b2f"/>
-  <text x="600" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#fff">SOLUTION</text>
+  <!-- LEFT: Live system box -->
+  <rect x="60" y="110" width="200" height="190" rx="10" fill="#4a7c3f" stroke="#2d5227" stroke-width="3"/>
+  <!-- inner screen -->
+  <rect x="80" y="130" width="160" height="150" rx="4" fill="#2d5227"/>
+  <!-- data rows -->
+  <rect x="92" y="146" width="136" height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="92" y="166" width="110" height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="92" y="186" width="128" height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="92" y="206" width="96"  height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="92" y="226" width="120" height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="92" y="246" width="104" height="10" rx="2" fill="#f5f5f5"/>
 
-  <!-- ==================== 2 PERSONA FIGURES WITH SPEECH BUBBLES ==================== -->
+  <!-- ARROW from left box to right box -->
+  <!-- arrow shaft -->
+  <rect x="278" y="200" width="220" height="28" fill="#4a7c3f"/>
+  <!-- arrowhead -->
+  <polygon points="498,180 540,214 498,248" fill="#4a7c3f"/>
 
-  <!-- PERSONA 1: Developer (left side, arms raised) -->
-  <g transform="translate(130, 100)">
-    <circle cx="0" cy="0" r="20" fill="none" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Body -->
-    <line x1="0" y1="20" x2="0" y2="58" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Arms raised (celebration) -->
-    <line x1="0" y1="36" x2="-26" y2="14" stroke="#3d3d3d" stroke-width="4"/>
-    <line x1="0" y1="36" x2="26" y2="14" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Legs -->
-    <line x1="0" y1="58" x2="-18" y2="78" stroke="#3d3d3d" stroke-width="4"/>
-    <line x1="0" y1="58" x2="18" y2="78" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Laptop -->
-    <rect x="-34" y="62" width="68" height="7" rx="3" fill="#3d3d3d"/>
-    <!-- Green checkmark dot -->
-    <circle cx="28" cy="-14" r="8" fill="#556b2f"/>
-    <path d="M23,-14 L26,-11 L33,-17" stroke="#fff" stroke-width="2" fill="none"/>
-  </g>
+  <!-- STOPWATCH above arrow -->
+  <!-- stem -->
+  <rect x="335" y="58" width="14" height="14" rx="2" fill="#2d2d2d"/>
+  <!-- side button -->
+  <rect x="358" y="62" width="10" height="8" rx="2" fill="#2d2d2d" transform="rotate(35 363 66)"/>
+  <!-- body -->
+  <circle cx="342" cy="110" r="38" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="3"/>
+  <!-- top tick -->
+  <line x1="342" y1="80" x2="342" y2="88" stroke="#f5f5f5" stroke-width="3" stroke-linecap="round"/>
+  <!-- hands -->
+  <line x1="342" y1="110" x2="342" y2="88" stroke="#f5f5f5" stroke-width="3" stroke-linecap="round"/>
+  <line x1="342" y1="110" x2="360" y2="118" stroke="#f5f5f5" stroke-width="3" stroke-linecap="round"/>
 
-  <!-- Developer speech bubble -->
-  <g transform="translate(180, 72)">
-    <rect width="260" height="70" rx="12" fill="#fff" stroke="#556b2f" stroke-width="2" filter="url(#shadow)"/>
-    <polygon points="-10,28 0,22 0,36" fill="#fff" stroke="#556b2f" stroke-width="2"/>
-    <rect x="-1" y="23" width="4" height="12" fill="#fff"/>
-    <text x="18" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#1a1a1a">Developer</text>
-    <text x="18" y="52" font-family="Arial, sans-serif" font-size="13" fill="#556b2f">"Wow! Clone in seconds!"</text>
-  </g>
+  <!-- Under a minute label, right of stopwatch -->
+  <text x="395" y="122" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="32" font-weight="700" fill="#1a1a1a" text-anchor="start">Under a minute</text>
 
-  <!-- PERSONA 2: Agentic AI (right side) -->
-  <g transform="translate(1070, 100)">
-    <circle cx="0" cy="0" r="20" fill="none" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Antenna -->
-    <line x1="0" y1="-20" x2="0" y2="-30" stroke="#3d3d3d" stroke-width="3"/>
-    <circle cx="0" cy="-34" r="5" fill="#3d3d3d"/>
-    <!-- Body -->
-    <line x1="0" y1="20" x2="0" y2="58" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Arms reaching to screen -->
-    <line x1="0" y1="36" x2="-30" y2="48" stroke="#3d3d3d" stroke-width="4"/>
-    <line x1="0" y1="36" x2="30" y2="48" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Legs -->
-    <line x1="0" y1="58" x2="-16" y2="78" stroke="#3d3d3d" stroke-width="4"/>
-    <line x1="0" y1="58" x2="16" y2="78" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Screen/monitor -->
-    <rect x="-38" y="48" width="76" height="8" rx="3" fill="#3d3d3d"/>
-    <!-- Green checkmark dot -->
-    <circle cx="28" cy="-14" r="8" fill="#556b2f"/>
-    <path d="M23,-14 L26,-11 L33,-17" stroke="#fff" stroke-width="2" fill="none"/>
-  </g>
+  <!-- Same real data, floating between boxes below arrow -->
+  <text x="400" y="290" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="28" fill="#1a1a1a" text-anchor="middle">Same real data</text>
 
-  <!-- Agentic AI speech bubble -->
-  <g transform="translate(740, 72)">
-    <rect width="300" height="70" rx="12" fill="#fff" stroke="#556b2f" stroke-width="2" filter="url(#shadow)"/>
-    <polygon points="300,28 310,22 310,36" fill="#fff" stroke="#556b2f" stroke-width="2"/>
-    <rect x="298" y="23" width="4" height="12" fill="#fff"/>
-    <text x="18" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#1a1a1a">Agentic AI</text>
-    <text x="18" y="52" font-family="Arial, sans-serif" font-size="13" fill="#556b2f">"Can't modify prod, using clone..."</text>
-  </g>
+  <!-- RIGHT: Ready-to-use copy -->
+  <rect x="540" y="110" width="200" height="190" rx="10" fill="#4a7c3f" stroke="#2d5227" stroke-width="3"/>
+  <!-- inner screen -->
+  <rect x="560" y="130" width="160" height="150" rx="4" fill="#2d5227"/>
+  <!-- data rows (same as live) -->
+  <rect x="572" y="146" width="136" height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="572" y="166" width="110" height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="572" y="186" width="128" height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="572" y="206" width="96"  height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="572" y="226" width="120" height="10" rx="2" fill="#f5f5f5"/>
+  <rect x="572" y="246" width="104" height="10" rx="2" fill="#f5f5f5"/>
+  <!-- big check badge top-right corner -->
+  <circle cx="720" cy="130" r="28" fill="#f5f5f5" stroke="#2d5227" stroke-width="3"/>
+  <polyline points="706,131 717,142 736,121" fill="none" stroke="#4a7c3f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
 
-  <!-- ==================== LEFT ZONE: PRODUCTION ==================== -->
-
-  <text x="185" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#1a1a1a">Production</text>
-  <text x="185" y="250" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#999999">Terabytes of Data</text>
-
-  <!-- Server rack container -->
-  <rect x="50" y="264" width="270" height="160" rx="10" fill="none" stroke="#e0e0e0" stroke-width="2"/>
-
-  <!-- Server: DB -->
-  <g transform="translate(65, 300)" filter="url(#shadow)">
-    <rect width="120" height="90" rx="6" fill="url(#serverGrad)"/>
-    <rect x="10" y="16" width="100" height="9" rx="2" fill="#1a1a1a"/>
-    <rect x="10" y="32" width="100" height="9" rx="2" fill="#1a1a1a"/>
-    <circle cx="18" cy="21" r="3" fill="#556b2f"/>
-    <circle cx="18" cy="37" r="3" fill="#556b2f"/>
-    <rect x="10" y="56" width="14" height="7" rx="2" fill="#3d3d3d"/>
-    <rect x="28" y="56" width="14" height="7" rx="2" fill="#3d3d3d"/>
-  </g>
-  <text x="125" y="406" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#999999">DB</text>
-
-  <!-- Server: APP -->
-  <g transform="translate(200, 300)" filter="url(#shadow)">
-    <rect width="120" height="90" rx="6" fill="url(#serverGrad)"/>
-    <rect x="10" y="16" width="100" height="9" rx="2" fill="#1a1a1a"/>
-    <rect x="10" y="32" width="100" height="9" rx="2" fill="#1a1a1a"/>
-    <circle cx="18" cy="21" r="3" fill="#556b2f"/>
-    <circle cx="18" cy="37" r="3" fill="#556b2f"/>
-    <rect x="10" y="56" width="14" height="7" rx="2" fill="#3d3d3d"/>
-    <rect x="28" y="56" width="14" height="7" rx="2" fill="#3d3d3d"/>
-  </g>
-  <text x="260" y="406" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#999999">APP</text>
-
-  <!-- ==================== CENTER: REDIACC PLATFORM ==================== -->
-
-  <!-- Arrows from production to platform -->
-  <line x1="325" y1="340" x2="395" y2="400" stroke="#556b2f" stroke-width="2.5" stroke-dasharray="6,4" marker-end="url(#arrowGreen)"/>
-  <line x1="325" y1="370" x2="395" y2="420" stroke="#556b2f" stroke-width="2.5" stroke-dasharray="6,4"/>
-
-  <!-- Platform badge -->
-  <g transform="translate(405, 380)">
-    <rect x="0" y="0" width="190" height="65" rx="32" fill="#556b2f" filter="url(#shadow)"/>
-    <text x="95" y="28" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#fff">Rediacc</text>
-    <text x="95" y="48" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#d4e4b8">Platform</text>
-  </g>
-
-  <!-- Lightning bolt -->
-  <g transform="translate(470, 300)">
-    <path d="M24,0 L10,28 L20,28 L6,56 L34,22 L24,22 Z" fill="#556b2f" opacity="0.8"/>
-  </g>
-
-  <!-- ==================== RIGHT: INSTANT CLONES ==================== -->
-
-  <!-- Arrows from platform to clones -->
-  <line x1="600" y1="396" x2="680" y2="300" stroke="#556b2f" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
-  <line x1="600" y1="412" x2="680" y2="470" stroke="#556b2f" stroke-width="2.5" marker-end="url(#arrowGreen)"/>
-
-  <!-- "60s" speed badges -->
-  <rect x="620" y="332" width="44" height="22" rx="11" fill="#556b2f"/>
-  <text x="642" y="348" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#fff">60s</text>
-
-  <rect x="620" y="430" width="44" height="22" rx="11" fill="#556b2f"/>
-  <text x="642" y="446" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#fff">60s</text>
-
-  <!-- CLONE 1 (top) -->
-  <text x="770" y="265" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#556b2f">Clone 1</text>
-
-  <g transform="translate(700, 280)" filter="url(#softShadow)">
-    <rect width="80" height="90" rx="6" fill="url(#cloneGrad)" stroke="#556b2f" stroke-width="2" stroke-dasharray="5,3"/>
-    <rect x="8" y="16" width="64" height="8" rx="2" fill="#1a1a1a"/>
-    <rect x="8" y="30" width="64" height="8" rx="2" fill="#1a1a1a"/>
-    <circle cx="16" cy="20" r="2.5" fill="#556b2f"/>
-    <circle cx="16" cy="34" r="2.5" fill="#556b2f"/>
-    <rect x="8" y="52" width="12" height="6" rx="1" fill="#3d3d3d"/>
-    <rect x="24" y="52" width="12" height="6" rx="1" fill="#3d3d3d"/>
-  </g>
-  <g transform="translate(790, 280)" filter="url(#softShadow)">
-    <rect width="80" height="90" rx="6" fill="url(#cloneGrad)" stroke="#556b2f" stroke-width="2" stroke-dasharray="5,3"/>
-    <rect x="8" y="16" width="64" height="8" rx="2" fill="#1a1a1a"/>
-    <rect x="8" y="30" width="64" height="8" rx="2" fill="#1a1a1a"/>
-    <circle cx="16" cy="20" r="2.5" fill="#556b2f"/>
-    <circle cx="16" cy="34" r="2.5" fill="#556b2f"/>
-    <rect x="8" y="52" width="12" height="6" rx="1" fill="#3d3d3d"/>
-    <rect x="24" y="52" width="12" height="6" rx="1" fill="#3d3d3d"/>
-  </g>
-
-  <!-- Clone 1 checkmark -->
-  <g transform="translate(885, 310)">
-    <circle cx="0" cy="0" r="12" fill="#556b2f" opacity="0.15"/>
-    <path d="M-6,0 L-2,4 L6,-5" stroke="#556b2f" stroke-width="2.5" fill="none"/>
-  </g>
-
-  <!-- CLONE 2 (bottom) -->
-  <text x="770" y="455" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#556b2f">Clone 2</text>
-
-  <g transform="translate(700, 470)" filter="url(#softShadow)">
-    <rect width="80" height="90" rx="6" fill="url(#cloneGrad)" stroke="#556b2f" stroke-width="2" stroke-dasharray="5,3"/>
-    <rect x="8" y="16" width="64" height="8" rx="2" fill="#1a1a1a"/>
-    <rect x="8" y="30" width="64" height="8" rx="2" fill="#1a1a1a"/>
-    <circle cx="16" cy="20" r="2.5" fill="#556b2f"/>
-    <circle cx="16" cy="34" r="2.5" fill="#556b2f"/>
-    <rect x="8" y="52" width="12" height="6" rx="1" fill="#3d3d3d"/>
-    <rect x="24" y="52" width="12" height="6" rx="1" fill="#3d3d3d"/>
-  </g>
-  <g transform="translate(790, 470)" filter="url(#softShadow)">
-    <rect width="80" height="90" rx="6" fill="url(#cloneGrad)" stroke="#556b2f" stroke-width="2" stroke-dasharray="5,3"/>
-    <rect x="8" y="16" width="64" height="8" rx="2" fill="#1a1a1a"/>
-    <rect x="8" y="30" width="64" height="8" rx="2" fill="#1a1a1a"/>
-    <circle cx="16" cy="20" r="2.5" fill="#556b2f"/>
-    <circle cx="16" cy="34" r="2.5" fill="#556b2f"/>
-    <rect x="8" y="52" width="12" height="6" rx="1" fill="#3d3d3d"/>
-    <rect x="24" y="52" width="12" height="6" rx="1" fill="#3d3d3d"/>
-  </g>
-
-  <!-- Clone 2 checkmark -->
-  <g transform="translate(885, 500)">
-    <circle cx="0" cy="0" r="12" fill="#556b2f" opacity="0.15"/>
-    <path d="M-6,0 L-2,4 L6,-5" stroke="#556b2f" stroke-width="2.5" fill="none"/>
-  </g>
-
-  <!-- ==================== FEATURE BULLETS ==================== -->
-  <g transform="translate(940, 280)">
-    <circle cx="0" cy="0" r="5" fill="#556b2f"/>
-    <text x="14" y="5" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#556b2f">Instant Clone</text>
-  </g>
-  <g transform="translate(940, 316)">
-    <circle cx="0" cy="0" r="5" fill="#556b2f"/>
-    <text x="14" y="5" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#556b2f">No Extra Disk Space</text>
-  </g>
-  <g transform="translate(940, 352)">
-    <circle cx="0" cy="0" r="5" fill="#556b2f"/>
-    <text x="14" y="5" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#556b2f">No Virtualization</text>
-  </g>
-  <g transform="translate(940, 388)">
-    <circle cx="0" cy="0" r="5" fill="#556b2f"/>
-    <text x="14" y="5" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#556b2f">Sync in Minutes</text>
-  </g>
-  <g transform="translate(940, 424)">
-    <circle cx="0" cy="0" r="5" fill="#556b2f"/>
-    <text x="14" y="5" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#556b2f">Zero Risk</text>
-  </g>
-
-  <!-- ==================== CONNECTOR LINES ==================== -->
-  <line x1="130" y1="180" x2="140" y2="264" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>
-  <line x1="1070" y1="180" x2="830" y2="280" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>
-
+  <!-- Labels below boxes -->
+  <text x="160" y="345" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="32" font-weight="700" fill="#1a1a1a" text-anchor="middle">Live system</text>
+  <text x="640" y="345" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="32" font-weight="700" fill="#1a1a1a" text-anchor="middle">Ready to test</text>
 </svg>

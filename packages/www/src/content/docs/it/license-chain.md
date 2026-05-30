@@ -4,6 +4,8 @@ description: "Emissione di licenze a prova di manomissione, firma delegata per o
 category: "Guides"
 order: 8
 language: it
+sourceHash: "9b062d6866c1ccb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Catena di Licenze e Delega
@@ -100,7 +102,7 @@ Il valore predefinito è quello scelto dall'endpoint di creazione quando il chia
 
 ### Override per abbonamento
 
-Gli amministratori possono impostare un valore `delegationCertDefaultDays` personalizzato su un abbonamento specifico tramite la pagina di dettaglio dell'abbonamento nell'amministrazione. **L'override sostituisce sia il valore predefinito che il limite per quell'abbonamento**: è una via d'uscita per clienti speciali (ad esempio, un contratto enterprise che necessita di un certificato di 200 giorni su un piano COMMUNITY). Lo schema Zod applica comunque un intervallo assoluto di `1..365`.
+Gli amministratori possono impostare un valore `delegationCertDefaultDays` personalizzato su un abbonamento specifico tramite la pagina di dettaglio dell'abbonamento nell'amministrazione. **L'override sostituisce sia il valore predefinito che il limite per quell'abbonamento.** E' una via d'uscita per clienti speciali (ad esempio, un contratto enterprise che necessita di un certificato di 200 giorni su un piano COMMUNITY). Lo schema Zod applica comunque un intervallo assoluto di `1..365`.
 
 ### Limite rigido: fine abbonamento + 3 giorni di grazia
 
@@ -141,7 +143,7 @@ Un abbonamento può avere **al massimo un certificato di delega attivo alla volt
 
 ### Perché uno solo?
 
-Ogni installazione on-premise applica `maxRepoLicenseIssuancesPerMonth`, `maxActivations` e l'integrità della catena rispetto al proprio registro di emissione locale. L'on-premise non sincronizza i conteggi di utilizzo con l'upstream: questo è il punto centrale della delega con capacità offline.
+Ogni installazione on-premise applica `maxRepoLicenseIssuancesPerMonth`, `maxActivations` e l'integrita' della catena rispetto al proprio registro di emissione locale. L'on-premise non sincronizza i conteggi di utilizzo con l'upstream. Questo e' il punto centrale della delega con capacita' offline.
 
 Se un abbonamento avesse più certificati attivi (uno per installazione), ogni installazione applicherebbe il limite in modo indipendente:
 

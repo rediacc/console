@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 4
 language: de
-sourceHash: "cd4e0e72ce1b734b"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "0e8255f05b01469b"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Ihr erstes Repository erstellen
 
-Ein Rediacc-Repository ist eine einzelne verschlüsselte Datei auf Ihrem Server. Wenn es eingebunden wird, wird es zu einem Ordner mit einem eigenen Docker-Daemon und eigenen Anwendungsdaten: vollständig isoliert, vollständig portierbar.
+Ein Rediacc-Repository ist eine einzige verschlüsselte Datei auf Ihrem Server. Binden Sie es ein, erhalten Sie einen Ordner mit einem eigenen Docker-Daemon und eigenen Anwendungsdaten, vollständig vom Rest des Servers abgeschottet.
 
 Stellen Sie es sich wie einen USB-Stick für die Produktion vor: eine ruhende Datei, ein laufender Server.
 
@@ -25,19 +25,19 @@ Stellen Sie es sich wie einen USB-Stick für die Produktion vor: eine ruhende Da
 
 ![Verschlüsselte Datei wird als isolierter Ordner eingehängt](/img/tutorials/tutorial-create-repo/slide-1.svg)
 
-Die Form auf dem Datenträger ist ein einzelnes verschlüsseltes Image. Wenn es eingehängt wird, erhalten Sie:
+Auf dem Datenträger ist es ein einzelnes verschlüsseltes Image. Wenn es eingehängt wird, erhalten Sie:
 
 - Einen dedizierten Docker-Daemon (getrennt vom Host-Daemon)
 - Anwendungsdaten innerhalb des verschlüsselten Volumes
 - Loopback-IPs, die mit nichts anderem auf dem Server kollidieren
 
-Repositories sind portierbar. Sie können eines zwischen Maschinen verschieben, es sichern oder sofort forken. Jedes Repo ist von jedem anderen Repo auf demselben Server isoliert.
+Repositories lassen sich bewegen. Kopieren Sie eines zwischen Maschinen, sichern Sie es oder forken Sie es (Forks sind nahezu sofort und zeitkonstant, ein 100-GB-Repo forkt genauso schnell wie ein 1-GB-Repo). Jedes Repo ist vom Rest des Servers vollständig abgeschottet.
 
 ## Eines erstellen
 
 <TutorialStep number={1} />
 
-Hiermit wird ein 2 GB großes verschlüsseltes Repository erstellt und sofort eingehängt. Überprüfen Sie es:
+Hiermit wird ein 2 GB großes verschlüsseltes Repository erstellt und eingehängt. Überprüfen:
 
 <TutorialStep number={2} />
 
@@ -45,7 +45,7 @@ Hiermit wird ein 2 GB großes verschlüsseltes Repository erstellt und sofort ei
 
 <TutorialStep number={3} />
 
-VS Code öffnet sich direkt innerhalb des Repositorys über SSH. Der Arbeitsbereich ist zunächst leer: Das ist Ihre isolierte Umgebung. Alles, was Sie hier erstellen, lebt innerhalb des verschlüsselten Volumes und ist für jedes andere Repo auf demselben Server unsichtbar.
+VS Code öffnet sich innerhalb des Repositorys über SSH. Der Arbeitsbereich ist absichtlich leer. Alles, was Sie hier erstellen, lebt innerhalb des verschlüsselten Volumes und ist für jedes andere Repo auf demselben Server unsichtbar.
 
 ---
 

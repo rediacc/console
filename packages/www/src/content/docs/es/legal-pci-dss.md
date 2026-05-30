@@ -4,7 +4,8 @@ description: "Cómo Rediacc se ajusta a los requisitos de PCI DSS para proteger 
 category: "Legal"
 order: 6
 language: es
-sourceHash: "06528e1f28fc2764"
+sourceHash: "7dfa2cbb5f86d910"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 El Estándar de Seguridad de Datos de la Industria de Tarjetas de Pago (PCI DSS) es requerido para cualquier organización que almacene, procese o transmita datos de titulares de tarjetas. La versión actual es PCI DSS v4.0.1.
@@ -28,14 +29,14 @@ Referencia: [PCI Security Standards Council](https://www.pcisecuritystandards.or
 
 ## Segmentación de red
 
-PCI DSS pone gran énfasis en la segmentación de red para aislar el entorno de datos del titular (CDE). Rediacc lo proporciona por arquitectura:
+PCI DSS exige segmentación: aisla el entorno de datos del titular (CDE) o falla la auditoría. Rediacc te da esa segmentación por defecto:
 
 - Cada repositorio se ejecuta en su propio Docker daemon en `/var/run/rediacc/docker-<networkId>.sock`
 - Los repositorios tienen subredes de IP loopback aisladas (127.0.x.x/26, 61 IPs utilizables por red)
 - Las reglas iptables aplicadas por renet bloquean todo tráfico entre daemons
 - Los contenedores de diferentes repositorios no pueden comunicarse a nivel de red
 
-Un repositorio de procesamiento de pagos está aislado de red de todas las demás aplicaciones en la misma máquina. No se necesita configuración de firewall adicional.
+Un repositorio de procesamiento de pagos se ejecuta en su propio Docker daemon y su propia subred loopback, aislado de red de todas las demás aplicaciones en la misma máquina. No hay reglas de firewall adicionales que escribir.
 
 ## Reducción de alcance
 
@@ -48,7 +49,7 @@ Rediacc autoalojado reduce el alcance de cumplimiento PCI DSS:
 
 ## Casos de aplicación
 
-La segmentación de red deficiente y el cifrado ausente han llevado a costosas acciones de aplicación de PCI DSS:
+La segmentación débil y el cifrado ausente están detrás de las acciones de aplicación de PCI DSS más costosas:
 
 - Heartland Payment Systems (2008): los atacantes se movieron lateralmente a través de 48 bases de datos debido a la pobre segmentación de red, exponiendo 130 millones de números de tarjetas. [El costo total superó los 200 millones de dólares.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): los atacantes pivotaron del acceso de red de un proveedor HVAC a sistemas de punto de venta debido a la arquitectura de red plana, capturando 40 millones de tarjetas de pago. [Acuerdo por 18,5 millones de dólares con 47 fiscales generales estatales.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

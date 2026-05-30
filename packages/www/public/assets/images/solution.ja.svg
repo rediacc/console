@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="A green live system box is copied into a ready-to-use sandbox in under a minute." font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif">
+  <title>A green live system box is copied into a ready-to-use sandbox in under a minute.</title>
+  <defs>
+    <marker id="hs-arrowhead" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4a7c3f" />
+    </marker>
+  </defs>
+
+  
+  <rect x="0" y="0" width="800" height="450" fill="#f5f5f5" />
+
+  
+  <rect x="60" y="110" width="200" height="190" rx="10" fill="#4a7c3f" stroke="#2d5227" stroke-width="3" />
+  
+  <rect x="80" y="130" width="160" height="150" rx="4" fill="#2d5227" />
+  
+  <rect x="92" y="146" width="136" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="92" y="166" width="110" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="92" y="186" width="128" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="92" y="206" width="96" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="92" y="226" width="120" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="92" y="246" width="104" height="10" rx="2" fill="#f5f5f5" />
+
+  
+  
+  <rect x="278" y="200" width="220" height="28" fill="#4a7c3f" />
+  
+  <polygon points="498,180 540,214 498,248" fill="#4a7c3f" />
+
+  
+  
+  <rect x="335" y="58" width="14" height="14" rx="2" fill="#2d2d2d" />
+  
+  <rect x="358" y="62" width="10" height="8" rx="2" fill="#2d2d2d" transform="rotate(35 363 66)" />
+  
+  <circle cx="342" cy="110" r="38" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="3" />
+  
+  <line x1="342" y1="80" x2="342" y2="88" stroke="#f5f5f5" stroke-width="3" stroke-linecap="round" />
+  
+  <line x1="342" y1="110" x2="342" y2="88" stroke="#f5f5f5" stroke-width="3" stroke-linecap="round" />
+  <line x1="342" y1="110" x2="360" y2="118" stroke="#f5f5f5" stroke-width="3" stroke-linecap="round" />
+
+  
+  <text x="395" y="122" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="32" font-weight="700" fill="#1a1a1a" text-anchor="start">1分以内</text>
+
+  
+  <text x="400" y="290" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="28" fill="#1a1a1a" text-anchor="middle">同一の実データ</text>
+
+  
+  <rect x="540" y="110" width="200" height="190" rx="10" fill="#4a7c3f" stroke="#2d5227" stroke-width="3" />
+  
+  <rect x="560" y="130" width="160" height="150" rx="4" fill="#2d5227" />
+  
+  <rect x="572" y="146" width="136" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="572" y="166" width="110" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="572" y="186" width="128" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="572" y="206" width="96" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="572" y="226" width="120" height="10" rx="2" fill="#f5f5f5" />
+  <rect x="572" y="246" width="104" height="10" rx="2" fill="#f5f5f5" />
+  
+  <circle cx="720" cy="130" r="28" fill="#f5f5f5" stroke="#2d5227" stroke-width="3" />
+  <polyline points="706,131 717,142 736,121" fill="none" stroke="#4a7c3f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+
+  
+  <text x="160" y="345" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="32" font-weight="700" fill="#1a1a1a" text-anchor="middle">本番環境</text>
+  <text x="640" y="345" font-family="'Hiragino Sans', 'Yu Gothic', 'Meiryo', 'Noto Sans CJK JP', sans-serif" font-size="32" font-weight="700" fill="#1a1a1a" text-anchor="middle">テスト準備完了</text>
+</svg>

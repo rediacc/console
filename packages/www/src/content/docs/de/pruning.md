@@ -4,8 +4,8 @@ description: "Verwaiste Backups, überholte Snapshots, Repo-Images und lokale Ko
 category: "Guides"
 order: 12
 language: de
-sourceHash: "881513fbe657978e"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Bereinigung
@@ -60,7 +60,7 @@ Löschungen werden pro Speicher-Unterpfad gebündelt: ein rclone-Aufruf pro `hot
 
 ## Machine Prune
 
-Bereinigt Ressourcen auf der Maschine in drei Phasen. Phase 1 läuft immer; die Phasen 2 und 3 sind opt-in und ergänzen sich gegenseitig.
+Bereinigt Ressourcen auf der Maschine in drei Phasen. Phase 1 läuft immer; die Phasen 2 und 3 sind opt-in und können kombiniert werden.
 
 ### Phase 1: Datastore-Bereinigung (wird immer ausgeführt)
 
@@ -171,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-Cert-Namen, deren Anker eine aktive Maschine, ein aktives Repo oder eine aktive GUID ist. Sowie jede einzelne Wildcard auf der Form `<service>.<base>` oder root `*.<base>` , , werden in Ruhe gelassen.
+Cert-Namen, deren Anker eine aktive Maschine, ein aktives Repo oder eine aktive GUID ist, werden in Ruhe gelassen, ebenso wie jede einzelne Wildcard auf der Form `<service>.<base>` oder root `*.<base>`.
 
 ## Migration: State-Mirror-Backfill
 

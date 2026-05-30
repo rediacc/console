@@ -97,6 +97,18 @@ Forks use the name:tag model: the resulting fork is named `my-app:staging`. This
 
 At fork creation, `repo fork` writes the [state mirror sidecar](#type-column-and-the-state-mirror) at `<datastore>/.interim/state/<fork-guid>/.rediacc.json` immediately. Without unlocking the volume. So the new fork is correctly identified as `is_fork: true` from the moment of creation. This lets scheduled backups skip it (forks are excluded from the upload pipeline by default) even if it's never mounted. When forking a fork, `grand_guid` chains correctly: the new fork's mirror points at the original grand parent's GUID, not at the intermediate fork.
 
+## Git-like versioning
+
+Forks can act as git commits. `rdc repo commit` freezes a working fork into an immutable, byte-stable commit; `rdc repo branch` names a line of history; `rdc repo checkout` reflink-clones a commit back into a writable fork; `rdc repo log` walks the parent chain; and `rdc repo merge` combines two lines without mutating a live repository in place. `rdc repo fork --immutable` produces a commit-equivalent base in a single step.
+
+```bash
+rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
+rdc repo branch --branch staging --name my-app:work
+rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+```
+
+See the [Git-like branching reference](/en/docs/repo-branching) for the full command set, options, and worked examples.
+
 ## Secrets
 
 Per-repo secrets are deploy-time credentials injected into containers without being written to the encrypted repository image. They are kept on a separate plane from the repository's data, so `rdc repo fork` does not propagate them. A fork starts with an empty secrets map and its containers boot identifying themselves as a different external principal than the parent.

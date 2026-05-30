@@ -4,9 +4,11 @@ description: Kopeeritav mall Claude Code'i, Cursori ja teiste AI-koodiassistenti
 category: Reference
 order: 50
 language: et
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-Kasutage seda malli AI-koodiassistentide (Claude Code, Cursor, Cline, Windsurf) konfigureerimiseks Rediacc infrastruktuuri autonoomseks haldamiseks. Kopeerige alljärgnev plokk oma projekti `CLAUDE.md`-i, `.cursorrules`-i või samaväärsesse agendi konfiguratsioonifaili.
+Siin on probleem: AI koodiassistendid (Claude Code, Cursor, Cline, Windsurf) leiutavad pidevalt `rdc` lippe, mida ei eksisteeri, ja nad ei suuda ilma iga kord küsimata öelda, milline Rediacc repositooriumi nimi vastab millisele GUID-ile. See mall lahendab selle. Kleebi alljärgnev plokk oma projekti `CLAUDE.md`-i, `.cursorrules`-i või millist agendi konfiguratsioonifaili su tööriist kasutab.
 
 ## Mall
 

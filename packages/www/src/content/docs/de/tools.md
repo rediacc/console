@@ -4,13 +4,13 @@ description: 'Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und 
 category: Guides
 order: 9
 language: de
-sourceHash: "d089cea510a69bfb"
-sourceCommit: "1b6c53f52954d63959d8176bfa70a91405a2a87f"
+sourceHash: "f350872720c99d58"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Werkzeuge
 
-Rediacc enthält Produktivitätswerkzeuge für die Arbeit mit entfernten Repositories: Dateisynchronisation, SSH-Terminal, VS Code-Integration und CLI-Updates.
+Rediacc bündelt Werkzeuge für die Arbeit mit entfernten Repositories: Dateisynchronisation, SSH-Terminal, VS Code-Integration und CLI-Updates.
 
 ## Dateisynchronisation (sync)
 
@@ -23,6 +23,8 @@ rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### Dateien herunterladen
+
+Verwenden Sie `--remote` für ein Verzeichnis (Standard) oder `--remote-file` für eine einzelne Datei. Die beiden Flags schließen sich gegenseitig aus.
 
 ```bash
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
@@ -76,7 +78,7 @@ Bei der Verbindung zu einem Repository wird `DOCKER_HOST` automatisch auf den is
 
 ### Connect-Unterbefehl
 
-Der `connect`-Unterbefehl bietet die gleiche Funktionalität mit expliziten Flags:
+Der `connect`-Unterbefehl macht dasselbe mit expliziten Flags:
 
 ```bash
 rdc term connect -m server-1

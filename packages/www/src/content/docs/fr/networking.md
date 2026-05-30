@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: fr
-sourceHash: 5f8a1092ed53e1b4
-sourceCommit: 8b0f83c57ebaaa0a2bee93143db34ab677b4e68b
+sourceHash: "d60a43cd573517a1"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Réseau
@@ -176,7 +176,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | Résolveur de certificats, utilisez `letsencrypt` pour Let's Encrypt automatique |
 | `traefik.http.services.{name}.loadbalancer.server.port` | Le port sur lequel votre application écoute à l'intérieur du conteneur |
 
-Le `{name}` dans les labels est un identifiant arbitraire, il doit simplement être cohérent entre les labels de routeur/service/middleware associés.
+Le `{name}` dans les labels est un identifiant arbitraire. Il doit simplement rester cohérent entre les labels de routeur/service/middleware associés.
 
 > **Note :** Les labels `rediacc.*` (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) sont injectés automatiquement par `renet compose`. Vous n'avez pas besoin de les ajouter à votre fichier compose.
 
@@ -325,7 +325,7 @@ Lorsque `--cf-dns-token` est configuré, `rdc config infra push` crée automatiq
 
 Les enregistrements au niveau machine sont créés par `push-infra` et couvrent les routes avec domaine personnalisé (`rediacc.domain`). Les enregistrements wildcard par dépôt sont créés automatiquement par `repo up` et couvrent les routes automatiques pour ce dépôt.
 
-C'est idempotent, les enregistrements existants sont mis à jour si l'IP change, et laissés inchangés s'ils sont déjà corrects.
+C'est idempotent : les enregistrements existants sont mis à jour si l'IP change, et laissés inchangés s'ils sont déjà corrects.
 
 Le wildcard du domaine de base (`*.example.com`) doit être créé manuellement si vous utilisez des labels de domaine personnalisés comme `rediacc.domain=erp`.
 

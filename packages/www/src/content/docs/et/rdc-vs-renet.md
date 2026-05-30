@@ -4,6 +4,8 @@ description: "Millal kasutada rdc-d ja millal renet'i: kahe tööriista erinevus
 category: "Concepts"
 order: 1
 language: et
+sourceHash: "026a183f8a5f9dd4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # rdc vs renet
@@ -21,7 +23,7 @@ Rediacc'il on kaks binaari. Siin on selgitus, millal kumbagi kasutada.
 
 ## Kuidas need koos töötavad
 
-`rdc` ühendub sinu serveriga üle SSH ja käivitab sinu eest `renet`-käsud. Sa trükid ühe käsu oma tööjaamasse ja `rdc` hoolitseb ülejäänu eest:
+Tööjaamal käivitad `rdc`. See avab SSH-ühenduse sinu serveriga ja käivitab seal sinu eest vastava `renet`-käsu. Üks käsk, üks koht, kust seda käivitada:
 
 1. Loeb sinu kohaliku konfiguratsiooni (`~/.config/rediacc/rediacc.json`)
 2. Ühendub serveriga üle SSH
@@ -79,6 +81,6 @@ Need käsud käivitavad `renet`'i lokaalselt (mitte üle SSH). Täieliku dokumen
 
 ## Rediaccfile märkus
 
-Võid näha `renet compose -- ...` sees `Rediaccfile`'is. See on normaalne -- Rediaccfile funktsioonid käivituvad serveris, kus `renet` on saadaval.
+Näed `renet compose -- ...` `Rediaccfile`'is. Ära muretse. Rediaccfile funktsioonid käivituvad serveris, kus `renet` on juba installitud.
 
 Oma tööjaamast käivita ja peata töökoormuseid käskudega `rdc repo up` ja `rdc repo down`.

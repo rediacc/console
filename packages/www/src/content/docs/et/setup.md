@@ -4,6 +4,8 @@ description: "Loo konfiguratsioon, lisa masinad, häälesta serverid ja konfigur
 category: "Guides"
 order: 3
 language: et
+sourceHash: "2456daa4289ffb8c"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Masina seadistamine
@@ -128,7 +130,7 @@ rdc config infra set -m server-1 \
 | `--tcp-ports <ports>` | Masin | Komaga eraldatud lisatavad TCP-pordid edasisaatmiseks (nt `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Masin | Komaga eraldatud lisatavad UDP-pordid edasisaatmiseks (nt `53`) |
 
-Masina ulatusega valikud salvestatakse iga masina kohta eraldi. Konfiguratsiooni ulatusega valikud (`--cert-email`, `--cf-dns-token`) on jagatud kõigi konfiguratsiooni masinate vahel; seadista need üks kord ja need kehtivad kõikjal.
+Masina ulatusega valikud salvestatakse iga masina kohta eraldi. Konfiguratsiooni ulatusega valikud (`--cert-email`, `--cf-dns-token`) on jagatud kõigi konfiguratsiooni masinate vahel. Seadista need üks kord ja need kehtivad kõikjal.
 
 ### Infrastruktuuri vaatamine
 

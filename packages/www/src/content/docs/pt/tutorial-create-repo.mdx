@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 4
 language: pt
-sourceHash: "cd4e0e72ce1b734b"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "0e8255f05b01469b"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Criar o Seu Primeiro Repositório
 
-Um repositório Rediacc é um único ficheiro encriptado no seu servidor. Quando montado, torna-se uma pasta com o seu próprio daemon Docker e os seus próprios dados de aplicação -- completamente isolada, completamente portátil.
+Um repositório Rediacc é um ficheiro encriptado no seu servidor. Monte-o e obtém uma pasta com o seu próprio daemon Docker e os seus próprios dados de aplicação, completamente isolada de tudo o resto no servidor.
 
 Pense nisto como uma pen USB para produção: um ficheiro em repouso, um servidor em execução.
 
@@ -25,19 +25,19 @@ Pense nisto como uma pen USB para produção: um ficheiro em repouso, um servido
 
 ![Encrypted file mounts as an isolated folder](/img/tutorials/tutorial-create-repo/slide-1.svg)
 
-A forma em disco é uma única imagem encriptada. Quando monta, obtém:
+Em disco é uma única imagem encriptada. Quando monta, obtém:
 
 - Um daemon Docker dedicado (separado do do servidor anfitrião)
 - Dados da aplicação dentro do volume encriptado
 - IPs de loopback que não colidem com nada mais no servidor
 
-Os repositórios são portáteis. Pode mover um entre máquinas, fazer backup ou criar um fork instantaneamente. Cada repositório está isolado de todos os outros repositórios no mesmo servidor.
+Os repositórios movem-se. Copie um entre máquinas, faça backup ou crie um fork (os forks são quase instantâneos e de tempo constante, um repositório de 100 GB faz fork tão depressa como um de 1 GB). Cada repositório está completamente isolado de todos os outros repositórios no mesmo servidor.
 
 ## Criar um
 
 <TutorialStep number={1} />
 
-Isto cria um repositório encriptado de 2 GB e monta-o imediatamente. Verifique:
+Isto cria um repositório encriptado de 2 GB e monta-o. Verifique:
 
 <TutorialStep number={2} />
 
@@ -45,7 +45,7 @@ Isto cria um repositório encriptado de 2 GB e monta-o imediatamente. Verifique:
 
 <TutorialStep number={3} />
 
-O VS Code abre diretamente dentro do repositório via SSH. O espaço de trabalho começa vazio -- este é o seu ambiente isolado. Tudo o que criar aqui vive dentro do volume encriptado, invisível para qualquer outro repositório no mesmo servidor.
+O VS Code abre dentro do repositório via SSH. O espaço de trabalho começa vazio por design. Tudo o que criar aqui vive dentro do volume encriptado e é invisível para todos os outros repositórios no servidor.
 
 ---
 

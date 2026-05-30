@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: es
-sourceHash: 5f8a1092ed53e1b4
-sourceCommit: 8b0f83c57ebaaa0a2bee93143db34ab677b4e68b
+sourceHash: "d60a43cd573517a1"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Red
@@ -176,7 +176,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | Resolvedor de certificados, use `letsencrypt` para Let's Encrypt automático |
 | `traefik.http.services.{name}.loadbalancer.server.port` | El puerto en el que su aplicación escucha dentro del contenedor |
 
-El `{name}` en las etiquetas es un identificador arbitrario, solo necesita ser consistente entre las etiquetas de router/servicio/middleware relacionadas.
+El `{name}` en las etiquetas es un identificador arbitrario. Solo necesita mantenerse consistente entre las etiquetas de router/servicio/middleware relacionadas.
 
 > **Nota:** Las etiquetas `rediacc.*` (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) se inyectan automáticamente por `renet compose`. No necesita agregarlas a su archivo compose.
 
@@ -325,7 +325,7 @@ Cuando `--cf-dns-token` está configurado, `rdc config infra push` crea automát
 
 Los registros a nivel de máquina son creados por `push-infra` y cubren las rutas con dominio personalizado (`rediacc.domain`). Los registros comodín por repositorio son creados automáticamente por `repo up` y cubren las rutas automáticas para ese repositorio.
 
-Esto es idempotente, los registros existentes se actualizan si la IP cambia, y se dejan sin cambios si ya son correctos.
+Esto es idempotente: los registros existentes se actualizan si la IP cambia, y se dejan sin cambios si ya son correctos.
 
 El comodín del dominio base (`*.example.com`) debe crearse manualmente si usa etiquetas de dominio personalizadas como `rediacc.domain=erp`.
 

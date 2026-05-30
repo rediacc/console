@@ -4,7 +4,8 @@ description: "Kurcalamaya karşı kanıt lisans düzenleme, yerinde yetkilendiri
 category: "Guides"
 order: 8
 language: tr
-sourceHash: "326c4f4efbd60493"
+sourceHash: "9b062d6866c1ccb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Lisans Zinciri ve Yetkilendirme
@@ -101,7 +102,7 @@ Varsayılan, çağıran `validDays` parametresini atladığında oluşturma uç 
 
 ### Abonelik başına geçersiz kılma
 
-Yöneticiler, yönetici Abonelik Detay sayfası aracılığıyla belirli bir abonelikte özel bir `delegationCertDefaultDays` değeri ayarlayabilir. **Geçersiz kılma, o abonelik için hem varsayılanı hem de tavanı değiştirir** - özel müşteriler için bir kaçış kapısıdır (örn. COMMUNITY planında 200 günlük sertifika gerektiren bir kurumsal sözleşme). Zod şeması yine de mutlak `1..365` aralığını uygular.
+Yöneticiler, yönetici Abonelik Detay sayfası aracılığıyla belirli bir abonelikte özel bir `delegationCertDefaultDays` değeri ayarlayabilir. **Geçersiz kılma, o abonelik için hem varsayılanı hem de tavanı değiştirir.** Özel müşteriler için bir kaçış kapısıdır (örn. COMMUNITY planında 200 günlük sertifika gerektiren bir kurumsal sözleşme). Zod şeması yine de mutlak `1..365` aralığını uygular.
 
 ### Sert tavan: abonelik sonu + 3 günlük yetkisiz kullanım süresi
 
@@ -142,7 +143,7 @@ Bir aboneliğin **aynı anda en fazla bir aktif yetkilendirme sertifikası** ola
 
 ### Neden bir tane?
 
-Her yerinde kurulum, `maxRepoLicenseIssuancesPerMonth`, `maxActivations` ve zincir bütünlüğünü kendi yerel düzenleme defterine karşı uygular. Yerinde sunucu, kullanım sayılarını yukarı akışla senkronize etmez - çevrimdışı yetenekli yetkilendirmenin tüm amacı budur.
+Her yerinde kurulum, `maxRepoLicenseIssuancesPerMonth`, `maxActivations` ve zincir bütünlüğünü kendi yerel düzenleme defterine karşı uygular. Yerinde sunucu, kullanım sayılarını yukarı akışla senkronize etmez. Çevrimdışı yetenekli yetkilendirmenin tüm amacı budur.
 
 Bir aboneliğin birden fazla aktif sertifikası olsaydı (kurulum başına bir tane), her kurulum limiti bağımsız olarak uygulardı:
 

@@ -12,8 +12,8 @@ tags:
   - conformita
 featured: false
 language: it
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -164,4 +164,4 @@ Se stai affrontando un rinnovo di backup o DR nei prossimi dodici mesi e Article
 
 Se siamo l'alternativa nella tua shortlist, la proposta è concreta. Inviaci il tuo questionario fornitori. Lo compileremo su un'istanza in produzione, con le nostre risposte reali alle tue domande, lacune incluse. Se vuoi esaminare l'architettura prima di inviare la documentazione, organizzeremo una revisione architetturale di 30 minuti con il fondatore. La strada verso una voce di registro difendibile non è una brochure patinata. Sono le risposte, incluse quelle scomode.
 
-Per la mappatura pubblica delle capacità di Rediacc agli articoli NIS2, vedi [NIS2 e DORA](/it/docs/legal-nis2-dora). Per il quadro di conformità più ampio, vedi [Panoramica sulla conformità](/it/docs/legal-overview), [Sovranità dei dati](/it/docs/legal-data-sovereignty) e [On-Premise](/it/docs/on-premise).
+Vuoi la mappa per articolo di Rediacc? Vedi [NIS2 e DORA](/it/docs/legal-nis2-dora). Ti serve il quadro piu' ampio? Leggi [Panoramica sulla conformità](/it/docs/legal-overview). Per la residenza dei dati, vedi [Sovranità dei dati](/it/docs/legal-data-sovereignty). Per capire perche' il self-hosted conta, vedi [On-Premise](/it/docs/on-premise).

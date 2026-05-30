@@ -100,7 +100,7 @@ The default is what the create endpoint picks when the caller omits `validDays`.
 
 ### Per-subscription override
 
-Admins can set a custom `delegationCertDefaultDays` value on a specific subscription via the admin Subscription Detail page. **The override replaces both the default AND the ceiling for that subscription** - it's an escape hatch for special customers (e.g. an enterprise contract that needs a 200-day cert on a COMMUNITY plan). The Zod schema still enforces an absolute `1..365` range.
+Admins can set a custom `delegationCertDefaultDays` value on a specific subscription via the admin Subscription Detail page. **The override replaces both the default AND the ceiling for that subscription.** It's an escape hatch for special customers (e.g. an enterprise contract that needs a 200-day cert on a COMMUNITY plan). The Zod schema still enforces an absolute `1..365` range.
 
 ### Hard cap: subscription end + 3 day grace
 
@@ -141,7 +141,7 @@ A subscription may have **at most one active delegation certificate at a time** 
 
 ### Why one?
 
-Each on-premise install enforces `maxRepoLicenseIssuancesPerMonth`, `maxActivations`, and chain integrity against its own local issuance ledger. The on-premise does not sync usage counts to the upstream - that's the whole point of offline-capable delegation.
+Each on-premise install enforces `maxRepoLicenseIssuancesPerMonth`, `maxActivations`, and chain integrity against its own local issuance ledger. The on-premise does not sync usage counts to the upstream. That's the whole point of offline-capable delegation.
 
 If a subscription had multiple active certs (one per install), each install would enforce the limit independently:
 

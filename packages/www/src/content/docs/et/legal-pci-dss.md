@@ -4,6 +4,8 @@ description: "Kuidas Rediacc vastab PCI DSS nõuetele maksekaardi andmete kaitsm
 category: "Legal"
 order: 6
 language: et
+sourceHash: "7dfa2cbb5f86d910"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Maksekaardi tööstuse andmeturbestandard (PCI DSS) on kohustuslik igale organisatsioonile, mis talletab, töötleb või edastab kaardiomaniku andmeid. Praegune versioon on PCI DSS v4.0.1.
@@ -27,14 +29,14 @@ Viide: [PCI Security Standards Council](https://www.pcisecuritystandards.org/doc
 
 ## Võrgusegmenteerimine
 
-PCI DSS rõhutab tugevalt võrgusegmenteerimist, et eraldada kaardiomaniku andmekeskkond (CDE). Rediacc tagab selle arhitektuuriliselt:
+PCI DSS tugineb tugevalt segmenteerimisele: eralda kaardiomaniku andmekeskkond (CDE) või kukku audit läbi. Rediacc annab selle segmenteerimise vaikimisi:
 
 - Iga hoidla töötab oma Dockeri deemonis aadressil `/var/run/rediacc/docker-<networkId>.sock`
 - Hoidlatel on eraldatud loopback-IP-alamvõrgud (127.0.x.x/26, 61 kasutatavat IP-d võrgu kohta)
 - Renet'i poolt jõustatud iptables-reeglid blokeerivad kõik deemoniülese liikluse
 - Eri hoidlate konteinerid ei saa võrgutasandil suhelda
 
-Maksete töötlemise hoidla on võrgutasandil eraldatud kõikidest teistest rakendustest samal masinal. Lisafaileri konfiguratsiooni pole vaja.
+Maksete töötlemise hoidla töötab oma Dockeri deemonis ja oma loopback-alamvõrgus, eraldatuna võrgutasandil kõigist teistest rakendustest samal masinal. Lisafaileri reegleid ei ole vaja kirjutada.
 
 ## Ulatuse vähendamine
 
@@ -47,7 +49,7 @@ Isehallatav Rediacc vähendab PCI DSS vastavuse ulatust:
 
 ## Täitemenetlused
 
-Nõrk võrgusegmenteerimine ja puuduv krüptimine on toonud kaasa kulukaid PCI DSS täitemenetlusi:
+Nõrk segmenteerimine ja puuduv krüptimine on kulukate PCI DSS täitemenetluste taga:
 
 - Heartland Payment Systems (2008): ründajad liikusid külgsuunaliselt 48 andmebaasi üle nõrga võrgusegmenteerimise tõttu, paljastades 130 miljonit kaardinumbrit. [Kogukulu ületas 200 miljonit dollarit.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): ründajad liikusid HVAC-tarnija võrgujuurdepääsust kassasüsteemidesse tasase võrguarhitektuuri tõttu, kaaperdades 40 miljonit maksekaart. [Lahendati 18,5 miljoni dollariga 47 osariigi peaprokuröriga.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

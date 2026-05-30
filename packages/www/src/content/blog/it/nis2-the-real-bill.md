@@ -12,8 +12,8 @@ tags:
   - mid-market
 featured: false
 language: it
-sourceHash: "95f07c80c1d91055"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "3fbb581ec14e3f80"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -92,15 +92,15 @@ I gap sono più interessanti delle sovrapposizioni, perché sono ciò che NIS2 p
 
 Rediacc è un unico control plane con un audit log unificato, che sostituisce la capacità core di quattro delle cinque categorie per le infrastrutture self-hosted.
 
-**Backup**: strategie di backup hot (snapshot BTRFS crash-consistent, senza downtime) e cold (stop-snapshot-start app-consistent), pianificate tramite systemd timer, multi-destinazione via rclone. Volumi cifrati con LUKS; l'operatore detiene le credenziali; Rediacc-the-company non vede mai i dati in chiaro. Vedere [Backup & Restore](/it/docs/backup-restore) e [Cross Backup Strategy](/it/docs/cross-backup) per la struttura operativa.
+**Il backup** gira in due modalita'. La modalita' hot e' uno snapshot BTRFS crash-consistent. Nessun downtime. La modalita' cold esegue un ciclo stop, snapshot, start. Entrambe si schedulano su systemd timer. Entrambe spediscono verso molte destinazioni via rclone. I volumi sono cifrati con LUKS. L'operatore detiene la chiave. Rediacc-the-company non vede mai il testo in chiaro. Vedi [Backup & Restore](/it/docs/backup-restore) e [Cross Backup Strategy](/it/docs/cross-backup).
 
 **DR**: stessa primitiva del backup, più `rdc repo migrate` per il trasferimento dati tra macchine, più la primitiva di fork per il rapido avvio dello stato ripristinato su una macchina parallela. Il sito DR può essere un'altra macchina Hetzner, una macchina OVH, un rack on-prem, ovunque SSH sia raggiungibile. Nessun cloud del vendor DR nel percorso dei dati.
 
-**Test data e full-stack cloning**: fork basato su BTRFS reflink, a tempo costante indipendentemente dalla dimensione del repository, full-stack (dati, configurazioni, stato dei container, servizi). 7,2 secondi per il fork di un repository da 128 GB nel nostro [test PocketOS](/it/blog/i-tested-rediacc-against-the-pocketos-incident). Il fork è la produzione corrente, non un ambiente di staging semplificato. Vedere [Risk-Free Upgrades](/it/docs/risk-free-upgrades).
+**Il test data e il full-stack cloning** girano su BTRFS reflink. Il fork e' a tempo costante, indipendentemente dalla dimensione del repo. Full-stack significa dati, configurazioni, container e servizi. Abbiamo forkato un repo da 128 GB in 7,2 secondi nel nostro [test PocketOS](/it/blog/i-tested-rediacc-against-the-pocketos-incident). Il fork e' la produzione corrente, non una copia di staging semplificata. Vedi [Risk-Free Upgrades](/it/docs/risk-free-upgrades).
 
 **Ripristino istantaneo**: `rdc repo backup pull` da qualsiasi destinazione rclone in un fork fresco, avviato su un sottodominio specifico del fork coperto dal certificato wildcard del repository padre. Nessun rimescolamento DNS, nessuna complessità con i certificati.
 
-**Audit log unificato**: oltre 70 tipi di eventi che coprono l'intero control plane (autenticazione, API token, scritture di configurazione, ciclo di vita dei repo, backup, sync, sessioni terminale, operazioni sulle macchine). Con hash chain sulla workstation dell'operatore; `rdc audit verify` valida l'integrità end-to-end.
+**Audit log unificato.** Oltre 70 tipi di eventi sull'intero control plane. Coprono accessi, API token, scritture di configurazione, ciclo di vita dei repo, backup, sync, sessioni terminale e operazioni sulle macchine. La catena e' hash-linked sulla workstation dell'operatore. `rdc audit verify` la controlla da un capo all'altro.
 
 Per un'entità essenziale mid-market con 250 dipendenti, il consolidamento passa da quattro vendor nominati (backup, DR, test-data, ripristino istantaneo) a uno. Una licenza, un audit log, un insieme di decisioni di aggiornamento, una voce nel registro.
 
@@ -125,7 +125,7 @@ Il lato destro della tabella è più lungo del lato sinistro. Questa è la forma
 
 Un acquirente che legge questo e conclude "posso sostituire Drata con Rediacc" deluderà il proprio auditor. La lettura corretta è: il consolidamento dei vendor del data plane che Rediacc rende possibile è la cosa che gli strumenti GRC non possono fare, e il lavoro di gestione del registro e delle evidenze che gli strumenti GRC fanno è la cosa che Rediacc non fa. I due sono complementari.
 
-Per la mappatura pubblica delle capacità agli articoli NIS2, vedere [NIS2 e DORA](/it/docs/legal-nis2-dora). Per l'inquadramento architetturale più ampio, vedere [Panoramica sulla Conformità](/it/docs/legal-overview). Per i dettagli commerciali lato Rediacc, vedere [Abbonamento e Licenze](/it/docs/subscription-licensing).
+Altri tre link se vuoi andare in profondita'. La mappatura pubblica e' su [NIS2 e DORA](/it/docs/legal-nis2-dora). Il quadro piu' ampio e' su [Panoramica sulla Conformità](/it/docs/legal-overview). Il lato commerciale di Rediacc e' su [Abbonamento e Licenze](/it/docs/subscription-licensing).
 
 ## Uno scenario di riferimento, strutturale e non numerico
 
@@ -169,4 +169,4 @@ Se state entrando in un ciclo di rinnovo con il budget aperto, tre mosse concret
 
 Se siamo nella vostra shortlist, l'offerta è concreta. Inviateci le tre voci di spesa più significative dell'anno scorso per sicurezza e infrastruttura. Vi diremo quali possono essere consolidate e quali no, per iscritto, entro una settimana. La risposta includerà i gap, perché nominare i gap è ciò che rende attendibile il resto della risposta.
 
-Per [backup a costo zero](/it/docs/zero-cost-backup) (l'argomentazione architetturale dietro il perché siamo più leggeri dei vendor tradizionali sul lato storage), [Cross Backup Strategy](/it/docs/cross-backup) (DR intercontinentale) e [Abbonamento e Licenze](/it/docs/subscription-licensing) (il lato commerciale), vedere la documentazione collegata.
+Altri tre documenti se vuoi approfondire. [Backup a costo zero](/it/docs/zero-cost-backup) spiega perche' siamo piu' leggeri dei vendor tradizionali sullo storage. [Cross Backup Strategy](/it/docs/cross-backup) copre il DR intercontinentale. [Abbonamento e Licenze](/it/docs/subscription-licensing) e' il lato commerciale.

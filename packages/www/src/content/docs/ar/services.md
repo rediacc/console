@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "ee2c8fc465b846e4"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "181ba0512ff98f9c"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # الخدمات

@@ -1,11 +1,11 @@
 ---
 title: Folha de Consulta do CLI RDC
-description: Referência rápida para todos os comandos rdc, configs, repositórios, máquinas, sincronização, contentores e mais.
+description: "Referência rápida para comandos rdc: configs, repositórios, máquinas, sincronização e contentores."
 category: Guides
 order: 3
 language: pt
-sourceHash: "12956297c1157cd2"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ad0ae49efa847fbc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Folha de Consulta do CLI RDC

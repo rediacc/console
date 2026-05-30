@@ -4,6 +4,8 @@ description: "Eemalda orvuks jäänud varukoopiad, aegunud hetktõmmised, hoidla
 category: "Guides"
 order: 12
 language: et
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Kärpimine
@@ -58,7 +60,7 @@ Kustutamised grupeeritakse mäluhoidla alamtee järgi: üks rclone kutse `hot/` 
 
 ## Masina kärpimine
 
-Puhastab masinal olevad ressursid kolmes faasis. Faas 1 käivitub alati; faasid 2 ja 3 on valikulised, vastastikku täiendavad.
+Puhastab masinal olevad ressursid kolmes faasis. Faas 1 käivitub alati; faasid 2 ja 3 on valikulised ja neid saab kombineerida.
 
 ### Faas 1: andmehoidla puhastamine (käivitub alati)
 
@@ -169,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-Serdinimed, mille ankur on elav masin, hoidla või GUID, ning kõik ühe-sildi `<service>.<base>` või juure `*.<base>` metamärgid jäetakse alles.
+Serdinimed, mille ankur on elav masin, hoidla või GUID, jäetakse alles, samuti kõik ühe-sildi `<service>.<base>` või juure `*.<base>` metamärgid.
 
 ## Migreerimine: olekupeegli tagasiasustamine
 

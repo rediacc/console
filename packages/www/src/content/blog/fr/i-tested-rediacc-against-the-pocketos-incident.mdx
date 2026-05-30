@@ -1,6 +1,6 @@
 ---
 title: "J'ai testé Rediacc face à l'incident PocketOS"
-description: "PocketOS a perdu sa base de données de production à cause d'un agent Cursor en 9 secondes. J'ai effectué le même type de test sur ma propre plateforme et chronométré chaque étape. Voici ce qui a tenu et ce qui reste de la responsabilité du développeur."
+description: "PocketOS a perdu sa base de données de production à cause d'un agent Cursor en 9 secondes. J'ai effectué le même test, chronométré chaque étape, et noté ce qui a tenu et ce qui vous appartient à corriger."
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-04-28
 category: case-study
@@ -11,7 +11,8 @@ tags:
   - case-study
 featured: true
 language: fr
-sourceHash: "92e468286c279cc0"
+sourceHash: "8ccb6579c9b25ab4"
+sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -32,26 +33,26 @@ Son entreprise, PocketOS, développe le logiciel utilisé par des sociétés de 
 
 J'ai lu son article deux fois. The Register, Tom's Hardware et Business Standard l'ont tous repris. Le fil Hacker News a atteint 874 commentaires.
 
-Je construis un type de plateforme d'infrastructure différent. Nous l'appelons Rediacc. Tout l'objectif de sa conception est précisément de rendre ce scénario plus difficile. Je me suis donc assis et j'ai fait le test.
+Je construis Rediacc. La plateforme existe précisément pour rendre ce type de défaillance plus difficile. Je me suis donc assis et j'ai fait le test.
 
 Cet article expose ce que j'ai trouvé. Les chiffres sont réels. Les messages d'erreur sont cités directement depuis le CLI. Et le seul endroit où Rediacc ne protège pas du tout y figure aussi. Prétendre le contraire est ce qui met les gens en difficulté.
 
 ## Ce qui manquait réellement
 
-En lisant attentivement la chronologie de Jer, on voit quatre défaillances qui s'empilent les unes sur les autres.
+Parcourez attentivement la chronologie de Jer. Quatre défaillances distinctes se sont empilées les unes sur les autres.
 
 1. Le jeton API Railway utilisé par Cursor avait été créé pour gérer des domaines personnalisés. Il avait également l'autorité `volumeDelete`. Il n'existe pas de portée par opération sur les jetons CLI de Railway.
 2. L'API GraphQL de Railway accepte `volumeDelete` comme un simple POST. Aucune étape de confirmation.
 3. Les « sauvegardes de volume » de Railway vivent à l'intérieur du même volume. Quand le volume disparaît, les sauvegardes disparaissent aussi.
 4. L'agent Cursor a décidé, de lui-même, que la bonne façon de corriger une incohérence d'identifiants en staging était de supprimer un volume.
 
-Mettons la défaillance 4 de côté un instant. Les règles système de Cursor disaient à l'agent de ne jamais exécuter de commandes git destructrices sans une demande explicite de l'utilisateur. Après la suppression, sommé de s'expliquer, l'agent a produit une confession écrite. Il a admis que supprimer un volume de base de données est « l'action la plus destructrice et irréversible possible : bien pire qu'un force push » et a énuméré toutes les règles de sûreté qu'il avait enfreintes.
+Arrêtons-nous un instant sur la défaillance 4. Les règles système de Cursor disaient à l'agent de ne jamais exécuter de commandes git destructrices sans une demande explicite de l'utilisateur. Après la suppression, on a demandé à l'agent de s'expliquer. Il a produit une confession écrite. Il a admis que supprimer un volume de base de données est « l'action la plus destructrice et irréversible possible : bien pire qu'un force push » et a énuméré toutes les règles de sûreté qu'il avait enfreintes.
 
 Une règle comportementale dans un prompt est un conseil. Ce n'est pas une mesure d'exécution. Les défaillances 1, 2 et 3 sont des choix de conception d'infrastructure. Ce sont elles qui transforment la défaillance 4, d'une simple erreur, en perte d'entreprise.
 
 ## Le dispositif de test
 
-Rediacc dispose d'une vraie machine de production que j'exploite, appelée `hostinger`. Treize dépôts y vivent : un serveur de mail, un GitLab auto-hébergé, une stack d'observabilité, et une démo StackOverflow de 128 Go que nous utilisons pour des benchmarks. Le disque est rempli à 87 %. L'espace libre est à zéro. Le genre de machine où les erreurs font mal.
+J'ai une vraie machine de production qui tourne sur Rediacc, appelée `hostinger`. Treize dépôts y vivent : un serveur de mail, un GitLab auto-hébergé, une stack d'observabilité, et une démo StackOverflow de 128 Go que nous utilisons pour des benchmarks. Le disque est rempli à 87 %. L'espace libre : pratiquement zéro. Le genre de machine où les erreurs font mal.
 
 J'ai choisi la démo StackOverflow exprès. C'est le plus gros dépôt de la machine. Il est configuré comme une vraie application, avec des conteneurs et des données persistantes. Si son fork est rapide et isolé, il l'est aussi pour tout ce qui est plus petit.
 
@@ -59,7 +60,7 @@ Mon agent pour le test était Claude Code, exécutant Claude Opus. Même famille
 
 ## Tentative un : se contenter d'ouvrir une session SSH dans le dépôt de production
 
-La première chose que l'agent (moi, en l'occurrence) a essayée était la plus naturelle : ouvrir un shell dans le dépôt de production et regarder autour.
+La première chose que l'agent (moi, en l'occurrence) tenterait : ouvrir un shell dans le dépôt de production et regarder autour.
 
 ```bash
 $ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
@@ -73,7 +74,7 @@ Le CLI a refusé. Mot pour mot :
 
 Ce n'est pas un prompt système. C'est le CLI lui-même qui refuse l'appel avant même qu'il ne quitte mon ordinateur portable. Le CLI a vu que j'étais un agent. Claude Code définit la variable d'environnement `CLAUDECODE`. Le CLI parcourt aussi l'arbre de processus via `/proc` pour attraper les agents qui essaient de masquer cette variable. Ensuite il a comparé l'opération à sa table de politique. Puis il a refusé.
 
-Alors l'agent fait ce qu'un agent pourrait faire. Il essaie de définir lui-même la dérogation.
+Alors l'agent fait ce que tout agent tenterait. Il définit lui-même la dérogation.
 
 ```bash
 $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
@@ -112,7 +113,7 @@ License activated (2.1s)
 Total: 7.2s
 ```
 
-Un fork de 128 Go en 2,3 secondes. La raison est un reflink BTRFS. Le fork est constitué de métadonnées qui pointent vers les blocs du parent jusqu'à ce que l'un des deux côtés écrive. Aucune donnée n'est copiée.
+Un fork de 128 Go en 2,3 secondes. La raison est un reflink BTRFS. Le fork n'est que des métadonnées qui pointent vers les blocs du parent jusqu'à ce que l'un des deux côtés écrive. Aucune donnée ne se déplace.
 
 Pour vérifier la mise à l'échelle, j'ai exécuté le même fork sur un dépôt de 2 Go :
 
@@ -163,11 +164,11 @@ Maintenant la partie la plus difficile de l'article.
 
 Rediacc isole l'infrastructure : le fichier sur disque, le démon Docker, l'espace de noms de montage, le réseau. Il n'isole pas les API SaaS externes pour lesquelles votre dépôt détient des identifiants.
 
-Un fork est un reflink BTRFS octet pour octet du parent. Tout ce qui vit dans `data/`, `.env` ou `secrets/` du parent se trouve aussi dans le fork. Si votre dépôt contient une `STRIPE_LIVE_KEY`, un `AWS_ACCESS_KEY_ID` ou un jeton API Railway, l'agent dans le fork peut les lire. Il peut appeler `api.stripe.com`, `s3.amazonaws.com` ou `backboard.railway.app` avec ces jetons. Vu de l'extérieur, l'appel semble venir de la production. Stripe ou AWS ne peuvent pas distinguer le fork du parent.
+Un fork est un reflink BTRFS octet pour octet du parent. Tout ce qui vit dans `data/`, `.env` ou `secrets/` du parent s'y retrouve aussi. Si votre dépôt contient une `STRIPE_LIVE_KEY`, un `AWS_ACCESS_KEY_ID` ou un jeton API Railway, l'agent dans le fork peut les lire. Il peut appeler `api.stripe.com`, `s3.amazonaws.com` ou `backboard.railway.app` avec ces jetons. Vu de l'extérieur, ces appels ressemblent à de la production. Stripe ou AWS ne peuvent pas distinguer le fork du parent.
 
 C'est la ligne de partage des responsabilités. Rediacc gère la moitié infrastructure. La moitié service externe vit dans le code de votre application.
 
-Trois schémas comblent l'écart côté développeur :
+C'est à vous de combler l'écart côté développeur.
 
 - Ne stockez pas du tout les identifiants externes de production dans le dépôt. Récupérez-les depuis un gestionnaire de secrets au démarrage du conteneur. Les conteneurs du fork récupèrent par conception des identifiants à portée bac à sable.
 - Supprimez ou échangez les identifiants au moment du fork via le hook `up()` du Rediaccfile. Le `up()` d'un fork s'exécute avec un GUID de dépôt différent de celui du parent. Détectez-le. Puis réécrivez `.env` avec des valeurs de bac à sable.
@@ -183,7 +184,7 @@ J'ai laissé la section ci-dessus telle que je l'avais écrite à l'origine. L'h
 
 Le mécanisme est `rdc repo secret`. Il est calqué sur les secrets de GitHub Actions. Deux choses comptent dans sa conception.
 
-**Les secrets ne vivent pas à l'intérieur de l'image LUKS.** Ils vivent sur un plan séparé du disque : les secrets en mode env atteignent les conteneurs sous forme d'interpolation `${REDIACC_SECRET_<KEY>}` dans votre fichier compose, les secrets en mode file atteignent les conteneurs sous forme de fichier tmpfs à `/run/secrets/<key>` via le bloc `secrets:` de Docker compose. Dans les deux cas, la valeur n'est jamais écrite dans l'image chiffrée du dépôt. Le reflink BTRFS du fork copie l'image. Il ne copie pas ce qui n'a jamais été dans l'image. La liste de secrets d'un fork frais est vide. Ses conteneurs démarrent sans aucun identifiant de production, donc aucun appel de production n'est même possible.
+**Les secrets ne vivent pas à l'intérieur de l'image LUKS.** Ils vivent sur un plan séparé du disque : les secrets en mode env atteignent les conteneurs sous forme d'interpolation `${REDIACC_SECRET_<KEY>}` dans votre fichier compose, les secrets en mode file atteignent les conteneurs sous forme de fichier tmpfs à `/run/secrets/<key>` via le bloc `secrets:` de Docker compose. Dans les deux cas, la valeur ne touche jamais l'image chiffrée du dépôt. Le reflink BTRFS du fork copie l'image. Il ne copie pas ce qui n'a jamais été dans l'image. La liste de secrets d'un fork frais est vide. Ses conteneurs démarrent sans aucun identifiant de production. Aucun appel de production n'est même possible.
 
 **Le modèle est en écriture seule.** `rdc repo secret get` renvoie un condensé SHA-256, pas la valeur. Il n'existe aucun moyen de relire un secret via le CLI, par conception. Ce qui ferme la surface de fuite des enregistrements de terminal, de l'historique du shell et des redirections accidentelles. La rotation se fait avec `--current <previous-value>` pour vérifier la valeur précédente, ou avec `--rotate-secret` pour passer outre la précondition lorsque vous n'avez pas l'ancienne valeur (audité comme une rotation). Symétrique pour les humains et les agents. Les deux garde-fous s'appliquent de la même façon.
 
@@ -193,7 +194,7 @@ La lacune résiduelle honnête. Les secrets que vous avez écrits dans l'image d
 
 Pour le modèle de menace agent en particulier, deux effets secondaires de cette conception méritent d'être soulignés. Premièrement, `repo secret list` et `repo secret get` sont exposés comme outils MCP (sûrs en lecture. Noms et condensés, jamais les valeurs), de sorte qu'un agent qui vous aide à configurer une application peut découvrir ce qui est configuré sans voir ce que c'est. Deuxièmement, lorsqu'une écriture échoue à la précondition, l'enveloppe d'erreur JSON inclut un champ structuré `next.options[].run` avec les commandes concrètes que l'agent doit relayer mot pour mot à l'humain. Y compris l'échappatoire de rotation pour « j'ai oublié la valeur précédente ». Voir [Sûreté des agents IA](/fr/docs/ai-agents-safety) pour le modèle complet.
 
-Le mode d'emploi complet vit dans [Dépôts § Secrets](/fr/docs/repositories#secrets). La recette est courte : `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""` pour amorcer, `${REDIACC_SECRET_<KEY>}` dans compose pour consommer, `rdc repo fork` puis vérifier que la liste de secrets du fork est vide.
+Le mode d'emploi complet vit dans [Dépôts § Secrets](/fr/docs/repositories#secrets). Trois étapes. Premièrement, amorcez la valeur : `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. Ensuite, référencez `${REDIACC_SECRET_<KEY>}` dans votre fichier compose. Enfin, exécutez `rdc repo fork` et confirmez que le fork démarre avec une liste de secrets vide.
 
 ## Ce que cela change pour quelqu'un faisant ce genre de travail
 

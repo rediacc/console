@@ -4,7 +4,8 @@ description: "Wie Rediacc den PCI DSS-Anforderungen zum Schutz von Zahlungskarte
 category: "Legal"
 order: 6
 language: de
-sourceHash: "06528e1f28fc2764"
+sourceHash: "7dfa2cbb5f86d910"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Der Payment Card Industry Data Security Standard (PCI DSS) ist für jede Organisation erforderlich, die Karteninhaberdaten speichert, verarbeitet oder überträgt. Die aktuelle Version ist PCI DSS v4.0.1.
@@ -28,14 +29,14 @@ Referenz: [PCI Security Standards Council](https://www.pcisecuritystandards.org/
 
 ## Netzwerksegmentierung
 
-PCI DSS legt großen Wert auf Netzwerksegmentierung zur Isolation der Karteninhaberdatenumgebung (CDE). Rediacc bietet dies architekturbedingt:
+PCI DSS setzt stark auf Segmentierung: Die Karteninhaberdatenumgebung (CDE) muss isoliert werden, sonst schlägt das Audit fehl. Rediacc liefert diese Segmentierung standardmäßig:
 
 - Jedes Repository läuft in seinem eigenen Docker Daemon unter `/var/run/rediacc/docker-<networkId>.sock`
 - Repositories haben isolierte Loopback-IP-Subnetze (127.0.x.x/26, 61 nutzbare IPs pro Netzwerk)
 - Von renet erzwungene iptables-Regeln blockieren jeglichen Daemon-übergreifenden Verkehr
 - Container verschiedener Repositories können auf Netzwerkebene nicht kommunizieren
 
-Ein Zahlungsverarbeitungs-Repository ist netzwerkisoliert von allen anderen Anwendungen auf derselben Maschine. Keine zusätzliche Firewall-Konfiguration erforderlich.
+Ein Zahlungsverarbeitungs-Repository läuft auf seinem eigenen Docker Daemon und seinem eigenen Loopback-Subnetz, netzwerkisoliert von jeder anderen Anwendung auf derselben Maschine. Keine zusätzlichen Firewall-Regeln zu schreiben.
 
 ## Scope-Reduktion
 
@@ -48,7 +49,7 @@ Self-Hosted Rediacc reduziert den PCI DSS-Konformitätsumfang:
 
 ## Durchsetzungsfälle
 
-Schlechte Netzwerksegmentierung und fehlende Verschlüsselung haben zu kostspieligen PCI DSS-Durchsetzungsmaßnahmen geführt:
+Schwache Segmentierung und fehlende Verschlüsselung stehen hinter den kostspieligsten PCI DSS-Durchsetzungsmaßnahmen:
 
 - Heartland Payment Systems (2008): Angreifer bewegten sich lateral über 48 Datenbanken aufgrund schlechter Netzwerksegmentierung und legten 130 Millionen Kartennummern offen. [Die Gesamtkosten überstiegen 200 Millionen Dollar.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): Angreifer wechselten vom Netzwerkzugang eines HVAC-Lieferanten zu Point-of-Sale-Systemen aufgrund flacher Netzwerkarchitektur und erbeuteten 40 Millionen Zahlungskarten. [Einigung auf 18,5 Millionen Dollar mit 47 Staatsanwaltschaften.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

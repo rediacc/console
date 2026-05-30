@@ -4,6 +4,8 @@ description: "Avalda teenuseid pöördproksi, Dockeri siltide, TLS-sertifikaatid
 category: "Guides"
 order: 6
 language: et
+sourceHash: "d60a43cd573517a1"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Võrgundus
@@ -172,7 +174,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | Sertifikaadi lahendaja, kasuta `letsencrypt` automaatse Let's Encrypt'i jaoks |
 | `traefik.http.services.{name}.loadbalancer.server.port` | Port, mida su rakendus konteineri sees kuulab |
 
-Siltides olev `{name}` on suvaline identifikaator -- see peab ainult olema järjepidev seotud marsruuteri/teenuse/vahevara siltide vahel.
+Siltides olev `{name}` on suvaline identifikaator. See peab lihtsalt olema järjepidev seotud marsruuteri/teenuse/vahevara siltide vahel.
 
 > **Märkus:** `rediacc.*` sildid (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) lisatakse automaatselt `renet compose` poolt. Sa ei pea neid oma compose-faili lisama.
 
@@ -321,7 +323,7 @@ Kui `--cf-dns-token` on seadistatud, loob `rdc config infra push` automaatselt D
 
 Masinataseme kirjed loob `push-infra` ja need katavad kohandatud domeeni marsruudid (`rediacc.domain`). Hoidlapõhised metamärgikirjed loob `repo up` automaatselt ja need katavad selle hoidla automarsruudid.
 
-See on idemotentne -- olemasolevaid kirjeid uuendatakse, kui IP muutub, ja jäetakse muutmata, kui need on juba õiged.
+See on idempotentne: olemasolevaid kirjeid uuendatakse, kui IP muutub, ja jäetakse muutmata, kui need on juba õiged.
 
 Põhidomeeni metamärk (`*.example.com`) tuleb luua käsitsi, kui kasutad kohandatud domeeni silte nagu `rediacc.domain=erp`.
 

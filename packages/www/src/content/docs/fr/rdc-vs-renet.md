@@ -6,8 +6,8 @@ description: >-
 category: Concepts
 order: 1
 language: fr
-sourceHash: 526136e143dbcf08
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "026a183f8a5f9dd4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # rdc vs renet
@@ -25,7 +25,7 @@ Rediacc possède deux binaires. Voici quand utiliser chacun d'entre eux.
 
 ## Comment ils fonctionnent ensemble
 
-`rdc` se connecte à votre serveur via SSH et exécute les commandes `renet` à votre place. Vous tapez une seule commande sur votre poste de travail, et `rdc` gère le reste :
+Sur votre poste de travail, vous exécutez `rdc`. Il ouvre une connexion SSH vers votre serveur et y exécute la commande `renet` correspondante. Une commande, un seul endroit pour l'exécuter :
 
 1. Lit votre configuration locale (`~/.config/rediacc/rediacc.json`)
 2. Se connecte au serveur via SSH
@@ -83,6 +83,6 @@ Ces commandes exécutent `renet` localement (pas via SSH). Consultez [VM expéri
 
 ## Note sur le Rediaccfile
 
-Vous pouvez voir `renet compose -- ...` à l'intérieur d'un `Rediaccfile`. C'est normal, les fonctions du Rediaccfile s'exécutent sur le serveur où `renet` est disponible.
+Vous verrez `renet compose -- ...` à l'intérieur d'un `Rediaccfile`. Ne vous inquiétez pas. Les fonctions du Rediaccfile s'exécutent sur le serveur, où `renet` est déjà installé.
 
 Depuis votre poste de travail, démarrez et arrêtez les charges de travail avec `rdc repo up` et `rdc repo down`.

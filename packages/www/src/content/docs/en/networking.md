@@ -172,7 +172,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | Certificate resolver, use `letsencrypt` for automatic Let's Encrypt |
 | `traefik.http.services.{name}.loadbalancer.server.port` | The port your application listens on inside the container |
 
-The `{name}` in labels is an arbitrary identifier, it just needs to be consistent across related router/service/middleware labels.
+The `{name}` in labels is an arbitrary identifier. It just needs to stay consistent across related router/service/middleware labels.
 
 > **Note:** The `rediacc.*` labels (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) are injected automatically by `renet compose`. You do not need to add them to your compose file.
 
@@ -321,7 +321,7 @@ When `--cf-dns-token` is configured, `rdc config infra push` automatically creat
 
 Machine-level records are created by `push-infra` and cover custom domain routes (`rediacc.domain`). Per-repo wildcard records are created automatically by `repo up` and cover auto-routes for that repository.
 
-This is idempotent, existing records are updated if the IP changes, and left unchanged if already correct.
+This is idempotent: existing records are updated if the IP changes, and left unchanged if already correct.
 
 The base domain wildcard (`*.example.com`) must be created manually if you use custom domain labels like `rediacc.domain=erp`.
 

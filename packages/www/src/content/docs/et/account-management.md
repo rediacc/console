@@ -4,11 +4,13 @@ description: Organisatsioonid, meeskonnad, liikmed ja tellimused Rediaccis ühes
 category: Guides
 order: 12
 language: et
+sourceHash: "974885635641ed70"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Organisatsioonid
 
-Registreerimisel loob Rediacc teile automaatselt organisatsiooni. Teie org on kõigi ressursside peamine konteiner - masinate, repositooriumide, tellimuste ja meeskonnaliikmete jaoks.
+Konto registreerimisel loob Rediacc teile automaatselt organisatsiooni. See org on kõige peamine konteiner, mis teil siin on: masinad, repositooriumid, tellimused ja inimesed, keda kutsute. Teist org-i ei saa kogemata luua. Ühe konto kohta on täpselt üks org ja kõik meeskonnad ning ressursid ripuvad sellest.
 
 ![Registreerimisvoog](/img/account-registration-flow.svg)
 
@@ -115,7 +117,7 @@ UPSTREAM_URL=https://www.rediacc.com
 UPSTREAM_API_KEY=rdt_<token>
 ```
 
-Token annab loa **ainult** delegeerimissertide uuendamiseks - muid ressursse ei saa lugeda ega muuta. See on ainus viis `delegation:renew`-tokeni väljastamiseks; tavaline `/portal/api-tokens` voog ei sisalda seda ulatust.
+Token annab loa **ainult** delegeerimissertide uuendamiseks. See ei saa lugeda ega muuta ühtegi muud ressurssi. See on ainus viis `delegation:renew`-tokeni väljastamiseks; tavaline `/portal/api-tokens` voog ei sisalda seda ulatust.
 
 #### Õhulõhe uuendamine
 

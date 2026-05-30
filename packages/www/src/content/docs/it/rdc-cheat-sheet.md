@@ -1,14 +1,14 @@
 ---
-title: RDC CLI Cheat Sheet
-description: Riferimento rapido per tutti i comandi rdc, config, repository, macchine, sync, container e altro ancora. È più comodo tenerlo sempre a portata di mano.
+title: "Riferimento Rapido RDC CLI"
+description: "Guida rapida ai comandi rdc più usati: configurazione, repository, macchine, sincronizzazione e gestione dei container così da avere tutto a portata di mano."
 category: Guides
 order: 3
 language: it
-sourceHash: "12956297c1157cd2"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ad0ae49efa847fbc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-# RDC CLI Cheat Sheet
+# Riferimento Rapido RDC CLI
 
 Riferimento rapido per i comandi `rdc` più comuni. Esegui qualsiasi comando con `--help` per le opzioni complete.
 

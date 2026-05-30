@@ -4,8 +4,8 @@ description: Kimlik doğrulama, API tokenleri, oturum yönetimi ve izin modeli.
 category: Guides
 order: 13
 language: tr
-sourceHash: "c4e24e7a3494b6f6"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "dcd061b971573573"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Kimlik Doğrulama
@@ -96,3 +96,9 @@ rdc update --channel edge      # Edge'e geç
 rdc update --channel stable    # Stable'a geri dön
 rdc update --status            # Geçerli kanalı göster
 ```
+
+### Yapay Zeka Ajanları için CLI Güvenlik Duruşu
+
+`rdc`'yi çağıran kodlama ajanları gerçek bir tehdit yüzeyi; bu yüzden onlara ayrı bir özne gibi davranıyoruz. Her `rdc` çağrısı başlangıçta ortam sinyallerine (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) ve bir Linux `/proc` soy ağacı yürüyüşüne göre **insan** veya **ajan** olarak sınıflandırılır. Tespit yöntem olarak en iyiyi amaçlar. Kararlı bir sarmalayıcı ortam değişkenlerini sahte gösterebilir; bu yüzden soy ağacı önemlidir. Ajanlar azaltılmış bir izin kümesi alır: hassas yapılandırma mutasyonları bilgi kapısı gerektirir (`--current <eski>`), etkileşimli düzenleyici soy ağacıyla doğrulanmış `REDIACC_ALLOW_CONFIG_EDIT` geçersiz kılması olmadan reddedilir ve herhangi bir görüntüleme komutundaki `--reveal` engellenir. Her karar (izin ver, reddet veya `--reveal` ver) `~/.config/rediacc/audit.log.jsonl` dosyasına hash zincirine bağlı bir JSONL satırı yazar. Zincir bütünlüğünü kontrol etmek için `rdc config audit verify` çalıştırın.
+
+Ajanların yapabilecekleri ve yapamadıklarının tam matrisi, bilgi kapısı örnekleri ve kapsam geçersiz kılma mekanizmaları için bkz. [Yapay Zeka Ajanı Güvenliği ve Korumalar](/tr/docs/ai-agents-safety).

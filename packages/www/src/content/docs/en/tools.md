@@ -8,7 +8,7 @@ language: en
 
 # Tools
 
-Rediacc includes productivity tools for working with remote repositories: file sync, SSH terminal, VS Code integration, and CLI updates.
+Rediacc bundles tools for working with remote repositories: file sync, SSH terminal, VS Code integration, and CLI updates.
 
 ## File Synchronization (sync)
 
@@ -38,7 +38,7 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 
 ### Download Files
 
-Use `--remote` for a directory (today's default) or `--remote-file` for a single file. The two flags are mutually exclusive.
+Use `--remote` for a directory (the default) or `--remote-file` for a single file. The two flags are mutually exclusive.
 
 ```bash
 # Directory
@@ -96,7 +96,7 @@ When connecting to a repository, `DOCKER_HOST` is automatically set to the repos
 
 ### Connect Subcommand
 
-The `connect` subcommand provides the same functionality with explicit flags:
+The `connect` subcommand does the same with explicit flags:
 
 ```bash
 rdc term connect -m server-1
