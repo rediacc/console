@@ -76,11 +76,11 @@ test.describe
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);
 
-      // The repo is down (created then not brought up), so the merge gate allows
-      // it without --force. Merge the commit back into the working fork.
+      // repository_create leaves the repo mounted, so the merge gate requires
+      // --force to quiesce it first. Merge the commit back into the working fork.
       const result = await runLocalFunction('repository_merge', E2E.MACHINE_VM1, {
         contextName: ctxName,
-        params: { repository: E2E.TEST_REPO, from: commitGuid },
+        params: { repository: E2E.TEST_REPO, from: commitGuid, force: 'true' },
         timeout: E2E.TEST_TIMEOUT,
       });
       assertSuccess(result);
