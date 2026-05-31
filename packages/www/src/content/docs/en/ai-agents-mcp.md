@@ -8,7 +8,7 @@ language: en
 
 ## Overview
 
-Look, `rdc mcp serve` starts a local MCP (Model Context Protocol) server that AI agents use to manage your infrastructure. The server uses stdio transport. The agent spawns it as a subprocess and communicates via JSON-RPC.
+The `rdc mcp serve` command starts a local MCP (Model Context Protocol) server that AI agents can use to manage your infrastructure. The server uses stdio transport, the AI agent spawns it as a subprocess and communicates via JSON-RPC.
 
 **Prerequisites:** `rdc` installed and configured with at least one machine.
 
@@ -115,7 +115,7 @@ The MCP server enforces two layers of protection:
 
 ### Fork-only mode (default)
 
-By default, the server runs in **fork-only mode**: write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Agents cannot touch grand (original) repositories. By design.
+By default, the server runs in **fork-only mode**, write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
 
 > **Per-repo secrets are CLI-only by design.** `repo_secret_set` and `repo_secret_unset` are intentionally **not** exposed as MCP tools. Writes require a `--current <previous-value>` precondition (or `--rotate-secret` to acknowledge an unverified rotation), and that ceremony needs human eyes-on. Agents that need to suggest a secret rotation should call `repo_secret_get` to confirm the digest, then relay the operator-facing CLI command to the user via the structured `next.options[].run` field in the JSON error envelope. See [AI Agent Safety](/en/docs/ai-agents-safety#structured-next-action-hints) for the full pattern, and [Repositories § Secrets](/en/docs/repositories#secrets) for the user-facing how-to.
 
@@ -155,7 +155,7 @@ Each repository has its own SSH key pair. The public key is deployed to `authori
 
 **VS Code integration**: Each repo gets its own VS Code server installation at `<datastore>/.interim/sandbox/<name>/.vscode-server/`. Multiple repos can be open simultaneously with independent sandboxed environments, no server sharing between repos.
 
-This prevents lateral movement. Even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) uses the team key and is not sandboxed.
+This prevents lateral movement, even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) uses the team key and is not sandboxed.
 
 ## Architecture
 

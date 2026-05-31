@@ -6,7 +6,7 @@ order: 3
 language: en
 ---
 
-When you sign up for Rediacc, you pick a data region. All your data stays there. That choice is permanent: you can't change it after sign-up. No migration path exists. Pick based on where your data needs to reside legally, not where your servers are today.
+When you create a Rediacc account, you choose a data region. All your data stays in that region. This choice is permanent and cannot be changed after sign-up.
 
 ## Available Regions
 
@@ -47,7 +47,7 @@ Each region runs independent infrastructure. There are no cross-region queries o
 
 ## EU Data Guarantees
 
-Look: if you're subject to European data residency requirements, the EU region adds specific guarantees:
+The EU region provides additional guarantees for organizations with European data residency requirements:
 
 - **D1 database**: runs in Eastern Europe (EEUR location hint)
 - **R2 config storage**: uses EU jurisdictional enforcement (contractual guarantee, not just a location hint)
@@ -60,7 +60,7 @@ For detailed GDPR mapping, see [GDPR Compliance](/en/docs/legal-gdpr).
 
 Configuration blobs stored in R2 are encrypted client-side before upload using X25519 key exchange and AES-256-GCM. The server holds only ciphertext. Neither Rediacc nor any infrastructure provider can read your configuration data.
 
-Keys derive from a passkey with PRF extension. The server stores a secret that participates in key derivation, but neither the passkey alone nor the server secret alone can decrypt the data.
+Keys are derived from a passkey with PRF extension. The server stores a server-side secret that participates in key derivation, but neither the passkey alone nor the server secret alone can decrypt the data.
 
 For details on the encryption architecture, see [Config Storage](/en/docs/config-storage).
 

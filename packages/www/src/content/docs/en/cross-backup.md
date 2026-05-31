@@ -1,6 +1,6 @@
 ---
 title: Cross Backup Strategy
-description: "Your backup fails the moment its machine does. Rediacc replicates snapshots to a separate machine so one disk failure doesn't take everything with it."
+description: Protect data against disasters with efficient cross-continental backups and rapid recovery.
 category: Use Cases
 order: 5
 language: en
@@ -8,19 +8,19 @@ language: en
 
 > **When Disaster Strikes, Will Your Data Survive? With Rediacc, It Always Does.**
 
-**Note:** This is a **use case example** showing how Rediacc can address this problem. These scenarios are potential applications, not completed case studies.
+**Note:** This is a **use case example** demonstrating how Rediacc can solve this problem. As a startup, these scenarios represent potential applications rather than completed case studies.
 
-**Crisis Scenario:** A customer call reveals the outage: **disk failure**. The remote backup server's last backup was **3 weeks old**. That's weeks of data, gone.
+**Crisis Scenario:** After a customer call, services were found to be not working due to a **disk failure**. The remote backup server's last backup was **3 weeks old**, leading to significant data loss.
 
 ## The Problem
 
-Keeping your only backup on the same machine as the data it protects is not a strategy. Here's what that failure confirms:
+The organization becomes aware of the risks of backing up data **only on the same machine**:
 * Hardware failures
 * Cyber attacks
 * Physical disasters like war, earthquake, fire, flood
 * Insufficient protection against data loss
 
-**Looking for a Fix:**
+**Search for Solution:**
 * It is decided to back up 20 TB of data to **a remote server**
 * However, with traditional methods, this backup takes **2 weeks** and occupies **99.99% (depending on update ratio of the total data between snapshots)** of the bandwidth
 
@@ -56,8 +56,8 @@ After a customer call:
 * Backup time was reduced from **2 weeks to an average of 4 minutes**
 * Data loss risk was reduced to **1 hour**
 
-**Cost Reduction:**
+**Cost Optimization:**
 * Bandwidth consumption decreased by **98%**
 
-**Business Continuity:**
+**Uninterrupted Business Continuity:**
 * When the main server crashed, the remote backup was activated in **7 minutes**

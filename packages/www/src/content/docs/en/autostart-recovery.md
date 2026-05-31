@@ -8,7 +8,7 @@ language: en
 
 # Autostart & Recovery
 
-Repositories with autostart enabled come up on their own at boot. If one goes down afterward, the periodic reconciler brings it back. No prompts. No manual restart.
+This page explains how repositories are automatically mounted and started at boot, and how the periodic reconciler brings a repository back up if it goes down after the server is already running.
 
 For how to enable or disable autostart on a repository, see [Services: Autostart on Boot](/en/docs/services#autostart-on-boot).
 
@@ -34,7 +34,7 @@ This means that if a repository's LUKS volume is unmounted or its Docker daemon 
 
 ## Periodic Reconciler
 
-The `rediacc-autostart-reconcile.timer` systemd timer fires about every 3 minutes and runs `renet repository reconcile`. For each autostart-enabled repository, the reconciler checks three things:
+The `rediacc-autostart-reconcile.timer` systemd timer fires approximately every 3 minutes and runs `renet repository reconcile`. For each autostart-enabled repository, the reconciler checks three things:
 
 1. Is the LUKS volume mounted?
 2. Is the per-network Docker daemon running?

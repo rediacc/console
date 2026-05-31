@@ -26,7 +26,7 @@ Config storage provides zero-knowledge encrypted synchronization of your CLI con
    - Second touch: derives encryption keys via PRF
 4. Setup complete, your passkey secret is stored in your OS keyring
 
-After setup, daily CLI operations (push/pull) work without the passkey. Fair warning: setup needs a passkey with PRF extension support. Not every hardware token or platform authenticator has it.
+After setup, daily CLI operations (push/pull) work without the passkey.
 
 ## PRF Provider Compatibility
 

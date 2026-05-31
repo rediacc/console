@@ -10,7 +10,7 @@ language: en
 
 # Architecture
 
-So: rdc on your workstation, renet on your servers, communicating over SSH. Rediacc's whole architecture rests on that split. This page covers how the two tools divide responsibilities, how adapter detection routes state, what the security model looks like, and how config is structured.
+This page explains how Rediacc works under the hood: the two-tool architecture, adapter detection, security model, and configuration structure.
 
 ## Full Stack Overview
 
@@ -120,7 +120,7 @@ Docker data and configuration are stored inside the repository's mount, keeping 
 /run/rediacc/docker-{N}.sock
 ```
 
-This unified layout eliminates read-only/read-write mount collisions that occurred when daemon paths were split across the host filesystem and the encrypted volume. We hit that split more than once before settling on this. Both per-repo and standalone daemons follow the same directory structure, so tooling and diagnostics work identically in both cases.
+This unified layout eliminates read-only/read-write mount collisions that occurred when daemon paths were split across the host filesystem and the encrypted volume. Both per-repo and standalone daemons follow the same directory structure, so tooling and diagnostics work identically in both cases.
 
 ## LUKS Encryption
 
