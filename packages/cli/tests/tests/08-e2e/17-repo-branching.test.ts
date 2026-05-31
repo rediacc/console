@@ -62,6 +62,11 @@ test.describe
         contextName: ctxName,
         params: { repository: commitGuid },
         timeout: E2E.TEST_TIMEOUT,
+        // debug streams renet's raw `-o json` stdout (the LogResult, incl. the commit
+        // message) through to the captured CLI stdout. Without it `rdc run` uses the
+        // step-detection stdout handler, which renders progress spinners and discards
+        // the function's JSON payload, so the message never reaches result.stdout.
+        debug: true,
       });
       assertSuccess(result);
       expect(result.stdout).toContain('phase17 commit');
@@ -127,6 +132,10 @@ async function safeRepoExists(repoGuid: string, ctxName: string): Promise<boolea
     contextName: ctxName,
     params: {},
     timeout: E2E.TEST_TIMEOUT,
+    // debug streams renet's raw `-o json` stdout through to the captured CLI stdout;
+    // without it `rdc run`'s step-detection handler discards the list payload and the
+    // GUID check below would always be false. Same reason as the repository_log test.
+    debug: true,
   });
   return `${result.stdout}`.includes(repoGuid);
 }
