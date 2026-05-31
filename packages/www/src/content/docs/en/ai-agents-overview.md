@@ -1,16 +1,16 @@
 ---
 title: AI Agent Integration Overview
-description: How AI coding assistants like Claude Code, Cursor, and Cline integrate with Rediacc infrastructure for autonomous deployment and management.
+description: "How Claude Code, Cursor, and Cline manage Rediacc infrastructure via rdc: JSON output, agent introspection, and safety guardrails."
 category: Guides
 order: 30
 language: en
 ---
 
-AI coding assistants can manage Rediacc infrastructure autonomously through the `rdc` CLI. This guide covers the integration approaches and how to get started.
+Honestly, `rdc` is agent-aware by design. Claude Code, Cursor, Cline: any AI assistant calling `rdc` in a subshell gets structured JSON output, machine-readable errors, and the guardrails you'd want for autonomous Rediacc infrastructure management. Here's how the integration works.
 
 ## Why Self-Hosted + AI Agents
 
-Rediacc's architecture is naturally agent-friendly:
+Rediacc's architecture works well for agents:
 
 - **CLI-first**: Every operation is a `rdc` command, no GUI required
 - **SSH-based**: The protocol agents know best from training data
@@ -28,7 +28,7 @@ The fastest way to get started. Copy our [AGENTS.md template](/en/docs/agents-md
 - `.cursorrules` for Cursor
 - `.windsurfrules` for Windsurf
 
-This gives the agent full context about available commands, architecture, and conventions.
+Drop it in and the agent has the full command reference, the architecture context, and the conventions it needs to work without guessing.
 
 ### 2. JSON Output Pipeline
 
@@ -86,7 +86,7 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 
 ## Safety & Guardrails
 
-The CLI treats AI agents differently from humans at a keyboard. Sensitive operations require proof of prior knowledge (the `--current` flag), interactive-editor flows are refused by default, and every refusal is audit-logged. The [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) reference covers the full firewall table, the knowledge-gate model, the `REDIACC_ALLOW_CONFIG_EDIT` scope-override, and the hash-chained audit log.
+Look, the CLI doesn't treat agents the same as a human at the terminal. Sensitive operations need proof you already know the current state (the `--current` flag), interactive-editor flows are refused by default, and every refusal is audit-logged. The [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) reference covers the full firewall table, the knowledge-gate model, the `REDIACC_ALLOW_CONFIG_EDIT` scope-override, and the hash-chained audit log.
 
 ## Next Steps
 
