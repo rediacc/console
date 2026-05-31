@@ -1,6 +1,6 @@
 ---
 title: "CLI Application (Cloud / Experimental)"
-description: "Cloud adapter commands for the Rediacc CLI (experimental). Requires apiUrl and token in your config. Covers auth, organizations, teams, users, permissions, repositories, queues, Ceph block storage, and audit logs."
+description: "Cloud-only commands for the Rediacc CLI — authentication, teams, organizations, and multi-tenant management"
 category: "Reference"
 order: 3
 language: en
