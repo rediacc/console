@@ -1,29 +1,28 @@
 ---
 title: Recuperación del viaje en el tiempo
-description: >-
-  Recupere datos borrados accidentalmente de hace semanas con viajes en el
-  tiempo basados ​​en instantáneas.
+description: "Recupere datos borrados hace semanas usando instantáneas btrfs, incluso después de que sus copias de seguridad normales ya las hayan descartado."
 category: Use Cases
 order: 2
 language: es
-sourceHash: "b8dbfddbf5b46895"
+sourceHash: "4c1fcb1667a89759"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 > ** Cuando otras pierden datos para siempre, puedes viajar en el tiempo. **
 
-**Nota:** Este es un **ejemplo de caso de uso** que demuestra cómo Rediacc puede resolver este problema. Como startup, estos escenarios representan aplicaciones potenciales en lugar de estudios de casos completos.
+**Nota:** Este es un **ejemplo de caso de uso** que muestra cómo Rediacc maneja este tipo de problema. Somos una startup. Son escenarios realistas para los que el producto fue diseñado, no estudios de caso de clientes que ya hayamos entregado.
 
-**Escenario de crisis:** Un empleado recién contratado **borró accidentalmente** datos críticos de la base de datos activa hace 3 semanas. El sistema de respaldo de la empresa solo mantuvo respaldos durante 2 semanas, lo que hizo que la recuperación de datos fuera casi imposible por medios convencionales.
+**Escenario de crisis:** Un empleado recién contratado **borró accidentalmente** filas críticas de la base de datos activa hace 3 semanas. El sistema de respaldo solo conserva 2 semanas de historial. Con una configuración normal, esos datos se pierden para siempre.
 
 ## El problema
 
-Mehmet es un experto en sistemas responsable de la base de datos de una gran empresa de compras online. Una mañana, tras las quejas de los clientes, se da cuenta de que algunos registros de pedidos anteriores **no son visibles** en el sistema. La investigación revela que un empleado recién contratado **borró accidentalmente** algunos datos críticos de la base de datos activa hace 3 semanas, **conectándose a la base de datos activa en lugar del entorno de prueba**.
+Mehmet gestiona la base de datos de una gran plataforma de comercio electrónico. Una mañana los clientes empiezan a quejarse de que registros de pedidos anteriores **no son visibles**. Investiga. Un ingeniero recién contratado había **borrado accidentalmente** filas críticas de la base de datos activa hace 3 semanas, **conectándose a la base de datos activa en lugar del entorno de prueba**. El error clásico que todo DBA ha cometido alguna vez o ha visto cometer a un junior.
 
 **Sistema de respaldo existente:** 
 * Las copias de seguridad completas se realizan una vez por semana. 
 * **Las copias de seguridad incrementales** se registran diariamente
 
-**Dilema:** La eliminación tuvo lugar **antes de la fecha de las copias de seguridad completas**, por lo que los datos perdidos no están en las copias de seguridad. Las copias de seguridad diarias **solo registran los datos más recientes**, por lo que **los elementos eliminados no se pueden recuperar**.
+**El dilema:** la eliminación ocurrió **antes de la fecha de las copias de seguridad completas**, por lo que los datos perdidos no están en ningún archivo de copia de seguridad. Las copias de seguridad diarias **solo registran los datos más recientes**, por lo que **los elementos eliminados no se pueden recuperar**.
 
 ## Impacto de la crisis
 
@@ -43,7 +42,7 @@ Debido a la pérdida de datos:
 
 ## Solución Rediacc
 
-Mehmet ofrece una solución similar a una "máquina del tiempo" con Rediacc:
+Esta es la configuración de "máquina del tiempo" que Mehmet construye con Rediacc:
 
 ![Time Travel Recovery](/img/time-travel-recovery.svg)
 

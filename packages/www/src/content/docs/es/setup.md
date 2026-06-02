@@ -4,7 +4,8 @@ description: "Cree una configuración, agregue máquinas, aprovisione servidores
 category: "Guides"
 order: 3
 language: es
-sourceHash: "edfb821962d35ccb"
+sourceHash: "2456daa4289ffb8c"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Configuración de Máquinas
@@ -129,7 +130,7 @@ rdc config infra set -m server-1 \
 | `--tcp-ports <ports>` | Machine | Puertos TCP adicionales separados por comas para redirigir (por ejemplo, `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Machine | Puertos UDP adicionales separados por comas para redirigir (por ejemplo, `53`) |
 
-Las opciones de alcance Machine se almacenan por máquina. Las opciones de alcance Config (`--cert-email`, `--cf-dns-token`) son compartidas entre todas las máquinas en la configuración, configúrelas una vez y se aplican en todas partes.
+Las opciones de alcance Machine se almacenan por máquina. Las opciones de alcance Config (`--cert-email`, `--cf-dns-token`) son compartidas entre todas las máquinas en la configuración. Configúrelas una vez y se aplican en todas partes.
 
 ### Ver Infraestructura
 

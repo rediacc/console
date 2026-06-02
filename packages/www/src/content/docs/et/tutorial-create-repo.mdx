@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 4
 language: et
-sourceHash: "cd4e0e72ce1b734b"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "0e8255f05b01469b"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Esimese repositooriumi loomine
 
-Rediacc repositoorium on üksik krüpteeritud fail sinu serveris. Ühendamisel muutub see kaustaks, millel on oma Dockeri deemon ja oma rakenduse andmed: täielikult isoleeritud, täielikult teisaldatav.
+Rediacc repositoorium on üks krüpteeritud fail sinu serveris. Ühenda see ja saad kausta, millel on oma Dockeri deemon ja oma rakenduse andmed, eraldatuna kõigest muust serveris.
 
 Mõtle sellele kui tootmiskeskkonna USB-mälupulgale: puhkeolekus on see fail, käivitamisel server.
 
@@ -25,19 +25,19 @@ Mõtle sellele kui tootmiskeskkonna USB-mälupulgale: puhkeolekus on see fail, k
 
 ![Encrypted file mounts as an isolated folder](/img/tutorials/tutorial-create-repo/slide-1.svg)
 
-Kettale kirjutatud kujul on see üksik krüpteeritud kujutis. Ühendamisel saad:
+Kettal on see üksik krüpteeritud kujutis. Ühendamisel saad:
 
 - Pühendatud Dockeri deemoni (eraldi hosti omast)
 - Rakenduse andmed krüpteeritud mahus
 - Loopback IP-d, mis ei põrku serveri millegi muuga
 
-Repositooriumid on teisaldatavad. Saad neid masinate vahel liigutada, varundada või koheselt forki teha. Iga repositoorium on isoleeritud kõigist teistest repositooriumitest samal serveril.
+Repositooriumid liiguvad. Kopeeri üks masinate vahel, varunda see või tee sellest fork (forkid on peaaegu hetkelised ja konstantse ajaga, 100 GB repositoorium forkeritakse sama kiiresti kui 1 GB repositoorium). Iga repositoorium on eraldatud kõigist teistest repositooriumitest samal serveril.
 
 ## Loo repositoorium
 
 <TutorialStep number={1} />
 
-See loob 2 GB krüpteeritud repositooriumi ja ühendab selle kohe. Kontrolli seda:
+See loob 2 GB krüpteeritud repositooriumi ja ühendab selle. Kontrolli:
 
 <TutorialStep number={2} />
 
@@ -45,7 +45,7 @@ See loob 2 GB krüpteeritud repositooriumi ja ühendab selle kohe. Kontrolli sed
 
 <TutorialStep number={3} />
 
-VS Code avaneb otse repositooriumi sees SSH kaudu. Tööruum algab tühjana: see on sinu isoleeritud keskkond. Kõik, mida siin lood, asub krüpteeritud mahus ja on nähtamatu kõigile teistele repositooriumidele samal serveril.
+VS Code avaneb repositooriumi sees SSH kaudu. Tööruum algab disainipõhiselt tühjana. Kõik, mida siin lood, asub krüpteeritud mahus ja on nähtamatu kõigile teistele repositooriumidele serveris.
 
 ---
 

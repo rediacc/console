@@ -4,6 +4,8 @@ description: "Emissão de licenças à prova de adulteração, assinatura delega
 category: "Guides"
 order: 8
 language: pt
+sourceHash: "9b062d6866c1ccb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Cadeia de Licenças e Delegação
@@ -100,7 +102,7 @@ A predefinição é o que o endpoint de criação escolhe quando o chamador omit
 
 ### Substituição por subscrição
 
-Os administradores podem definir um valor personalizado de `delegationCertDefaultDays` numa subscrição específica através da página de Detalhes de Subscrição do administrador. **A substituição substitui tanto a predefinição como o limite para essa subscrição** - é uma saída de emergência para clientes especiais (por exemplo, um contrato empresarial que necessite de um certificado de 200 dias num plano COMMUNITY). O schema Zod ainda impõe um intervalo absoluto de `1..365`.
+Os administradores podem definir um valor personalizado de `delegationCertDefaultDays` numa subscrição específica através da página de Detalhes de Subscrição do administrador. **A substituição substitui tanto a predefinição como o limite para essa subscrição.** É uma saída de emergência para clientes especiais (por exemplo, um contrato empresarial que necessite de um certificado de 200 dias num plano COMMUNITY). O schema Zod ainda impõe um intervalo absoluto de `1..365`.
 
 ### Limite máximo: fim da subscrição + 3 dias de tolerância
 
@@ -141,7 +143,7 @@ Uma subscrição pode ter **no máximo um certificado de delegação ativo de ca
 
 ### Porquê um?
 
-Cada instalação on-premise impõe `maxRepoLicenseIssuancesPerMonth`, `maxActivations` e integridade da cadeia contra o seu próprio livro-razão de emissão local. O on-premise não sincroniza contagens de uso com o upstream - esse é o ponto central da delegação com capacidade offline.
+Cada instalação on-premise impõe `maxRepoLicenseIssuancesPerMonth`, `maxActivations` e integridade da cadeia contra o seu próprio livro-razão de emissão local. O on-premise não sincroniza contagens de uso com o upstream. Esse é o ponto central da delegação com capacidade offline.
 
 Se uma subscrição tivesse múltiplos certificados ativos (um por instalação), cada instalação imporia o limite de forma independente:
 

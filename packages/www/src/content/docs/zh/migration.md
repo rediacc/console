@@ -4,8 +4,8 @@ description: 将现有项目迁移到加密的 Rediacc 仓库中。
 category: Guides
 order: 11
 language: zh
-sourceHash: "69ab61a2875f8d70"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "24c62c7fa0d043c2"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 迁移指南
@@ -191,7 +191,7 @@ services:
 4. **使用服务名称进行服务间连接**（例如 `postgres`、`redis`）- renet 将每个服务名称注入为可解析的主机名。不要在存储于数据库或配置文件中的连接字符串里嵌入原始 IP；使用服务名称以保持 fork 隔离
 5. **绑定是自动的** - 内核将 `bind()` 重写到正确的环回 IP。服务可以使用 `0.0.0.0` 或 `localhost`
 
-`{SERVICE}_IP` 变量在需要时仍然可用，但不再需要显式绑定，它由系统自动处理。命名约定：大写字母、连字符替换为下划线、加 `_IP` 后缀。例如，`listmonk-app` 变为 `LISTMONK_APP_IP`。
+`{SERVICE}_IP` 变量在需要时仍然可用，但不再需要显式绑定。绑定由系统自动处理。命名约定：大写字母、连字符替换为下划线、加 `_IP` 后缀。例如，`listmonk-app` 变为 `LISTMONK_APP_IP`。
 
 关于 IP 分配和 `.rediacc.json` 的详情，请参阅 [服务网络](/zh/docs/services#service-networking-rediaccjson)。
 
@@ -292,7 +292,7 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### 仓库之间的端口冲突
 
-每个仓库获得唯一的环回 IP，内核会自动将 `bind()` 调用重写到正确的 IP。仓库之间不应出现端口冲突。如果出现意外行为，请确认服务通过 `renet compose`（而非 `docker compose`）启动。连接其他服务时，请使用服务名称（例如 `postgres`）而非原始 IP；服务名称在每个 fork 中都能正确解析。
+每个仓库获得唯一的环回 IP，内核会自动将 `bind()` 调用重写到正确的 IP。仓库之间不会出现端口冲突。如果出现意外行为，请确认服务通过 `renet compose`（而非 `docker compose`）启动。连接其他服务时，请使用服务名称（例如 `postgres`）而非原始 IP。服务名称在每个 fork 中都能正确解析。
 
 ### 所有权修复破坏了容器
 

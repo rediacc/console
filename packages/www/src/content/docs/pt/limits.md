@@ -6,11 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: pt
+sourceHash: "8f29c515be1b7fb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Limites e Quotas
 
-Esta página documenta os limites rígidos e flexíveis que se aplicam às implementações do Rediacc. Compreender estes limites ajuda a planear a capacidade e a evitar restrições inesperadas.
+Esta página lista os limites rígidos e flexíveis que se aplicam às implementações do Rediacc. Leia-a antes de planear a capacidade, para saber quais os tetos que existem e quais não existem.
 
 ---
 
@@ -34,7 +36,7 @@ Não existe um limite rígido imposto pelo Rediacc. O limite prático depende do
 | RAM | Cada repositório em execução inicia o seu próprio daemon Docker e contentores. O uso de memória depende das suas cargas de trabalho. |
 | CPU | Operações de repositório paralelas (iniciar, cópia de segurança, fork) adicionam carga de CPU temporária. |
 
-**As implementações típicas** correm 10 a 50 repositórios por máquina sem problemas. Máquinas com 32 GB+ de RAM e 500 GB+ de armazenamento correm regularmente mais de 100 repositórios.
+**As implementações típicas** correm entre 10 e 50 repositórios por máquina sem problemas. Máquinas com 32 GB+ de RAM e 500 GB+ de armazenamento correm regularmente mais de 100 repositórios.
 
 ### Limite de ID de rede ao nível do sistema
 
@@ -109,7 +111,7 @@ Cada imagem de repositório tem um tamanho máximo fixo definido no momento da c
 
 Cada serviço com a etiqueta `rediacc.service_port` obtém uma rota HTTPS automaticamente. Não existe limite no número de serviços com rotas, sujeito ao máximo de 61 serviços por repositório.
 
-Os certificados TLS wildcard são provisionados por repositório na primeira implementação via Let's Encrypt (desafio Cloudflare DNS-01). O Let's Encrypt impõe um limite de **50 certificados por domínio registado por semana**. Como o Rediacc usa um certificado wildcard por repositório (não por serviço), uma implementação com mais de 50 novos repositórios numa única semana pode atingir este limite.
+Os certificados TLS wildcard são provisionados por repositório na primeira implementação via Let's Encrypt (desafio Cloudflare DNS-01). O Let's Encrypt limita a emissão a **50 certificados por domínio registado por semana**. Como o Rediacc usa um certificado wildcard por repositório (não por serviço), uma implementação que crie mais de 50 novos repositórios numa única semana atingirá este limite.
 
 Os forks reutilizam o certificado wildcard existente do repositório pai e não consomem nenhuma quota de certificado.
 
@@ -171,7 +173,7 @@ As máquinas remotas devem correr um dos seguintes para satisfazer os requisitos
 
 ### Matriz de funcionalidades do kernel
 
-Os operadores podem ler isto como uma vista rápida do que cada SO testado em CI fornece de origem. Os cinco satisfazem todos os requisitos; a matriz é uma referência para operadores, não um critério de bloqueio.
+Leia a matriz como uma vista rápida do que cada SO testado em CI fornece de origem. Os cinco satisfazem todos os requisitos, pelo que esta é uma referência para operadores, não um critério de bloqueio.
 
 | SO | módulo btrfs | cgroups v2 | Landlock (ABI >= 1) | hooks eBPF cgroup |
 |----|--------------|------------|--------------------|-------------------|

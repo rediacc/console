@@ -4,8 +4,8 @@ description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning k�
 category: "Guides"
 order: 9
 language: et
-sourceHash: "2289d50dac21f9bf"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1d0af1a74a12d49e"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Jälgimine
@@ -14,7 +14,7 @@ Rediacc pakub sisseehitatud jälgimiskäske masina tervise, töötavate konteine
 
 ## Masina tervis
 
-Hankige masina kohta põhjalik terviseraport:
+Hankige masina kohta täielik terviseraport:
 
 ```bash
 rdc machine health --name server-1
@@ -213,7 +213,7 @@ Valikud:
 
 ## Diagnostika (doctor)
 
-Käivitage põhjalik diagnostikakontroll oma Rediacc keskkonnale:
+Käivitage täielik diagnostikakontroll oma Rediacc keskkonnale:
 
 ```bash
 rdc doctor

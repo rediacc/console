@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: de
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -164,4 +164,4 @@ Wer in den nächsten zwölf Monaten eine Backup- oder DR-Verlängerung vor sich 
 
 Wenn wir die Alternative auf Ihrer Shortlist sind, ist das Angebot konkret. Schicken Sie uns Ihren Lieferantenfragebogen. Wir füllen ihn für eine deployed Instanz aus, mit unseren tatsächlichen Antworten auf Ihre Fragen, einschließlich der Lücken. Wenn Sie die Architektur vor dem Papierkram besprechen möchten, buchen wir eine 30-minütige Architekturüberprüfung mit dem Gründer. Der Weg zu einem vertretbaren Registereintrag ist keine glänzende Broschüre. Es sind die Antworten, einschließlich der unbequemen.
 
-Für die öffentliche Zuordnung der Rediacc-Funktionen zu NIS2-Artikeln siehe [NIS2 und DORA](/de/docs/legal-nis2-dora). Für den umfassenderen Compliance-Rahmen siehe [Compliance-Übersicht](/de/docs/legal-overview), [Datensouveränität](/de/docs/legal-data-sovereignty) und [On-Premise](/de/docs/on-premise).
+Die Zuordnung pro Artikel finden Sie unter [NIS2 und DORA](/de/docs/legal-nis2-dora). Den breiteren Rahmen finden Sie unter [Compliance-Übersicht](/de/docs/legal-overview). Für Datenresidenz, siehe [Datensouveränität](/de/docs/legal-data-sovereignty). Warum Self-Hosting wichtig ist, erklärt [On-Premise](/de/docs/on-premise).

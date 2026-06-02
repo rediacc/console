@@ -1,14 +1,14 @@
 ---
 title: "SOC 2 vastavus"
-description: "Kuidas Rediacc vastab SOC 2 usaldusteenuse kriteeriumitele turvalisuse, kättesaadavuse ja konfidentsiaalsuse osas."
+description: "Kus Rediacc annab SOC 2 tõendeid: logid, muutuste haldamise rada ja kontrollid, mida audiitorid küsivad."
 category: "Legal"
 order: 2
 language: et
-sourceHash: "ebdae97034aa3cce"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "29b0c745e631e4f8"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-SOC 2 (System and Organization Controls 2) on Ameerika sertifitseeritud avalike raamatupidajate instituudi (AICPA) välja töötatud raamistik organisatsiooni kontrollide hindamiseks seoses turvalisuse, kättesaadavuse, töötlemise terviklikkuse, konfidentsiaalsuse ja privaatsusega.
+SOC 2 on AICPA raamistik, mille poole audiitorid pöörduvad, kui soovivad tõendeid, et su kontrollid tegelikult toimivad. See katab viis usaldusteenuse kriteeriumi: turvalisus, kättesaadavus, töötlemise terviklikkus, konfidentsiaalsus ja privaatsus.
 
 Viide: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -36,7 +36,7 @@ Need logid on kättesaadavad haldusarmatuurlaua kaudu (filtreerimisega kasutaja,
 
 ## Muudatuste haldus
 
-Hargnemispõhine töövoog toetab kontrollitud muudatuste haldust:
+Hargid muudavad muudatuste halduse auditeeritavaks: iga hark on elusalla koopia, mida saad testida, üle vaadata ja kas edendada või ära visata, iga sammuga ajatemplile kinnitatuna.
 
 1. Tootmishoidla hargnemine (`rdc repo fork`)
 2. Muudatuste rakendamine ja testimine harul

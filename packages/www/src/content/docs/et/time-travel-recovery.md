@@ -1,26 +1,28 @@
 ---
 title: Ajarändel põhinev taastamine
-description: Taasta nädala tagasi kogemata kustutatud andmed hetktõmmisepõhise ajarände abil.
+description: "Taasta nädala tagasi kustutatud andmed btrfs hetktõmmiste abil, isegi kui tavapärased varukoopiad on sellest ajast juba edasi liikunud."
 category: Use Cases
 order: 2
 language: et
+sourceHash: "4c1fcb1667a89759"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 > **Kui teised kaotavad andmed igaveseks, saad sina ajas tagasi rännata.**
 
-**Märkus:** See on **kasutusjuhtumi näide**, mis demonstreerib, kuidas Rediacc suudab seda probleemi lahendada. Idufirmana kujutavad need stsenaariumid potentsiaalseid rakendusvõimalusi, mitte lõpetatud juhtumiuuringuid.
+**Märkus:** See on **kasutusjuhtumi näide**, mis näitab, kuidas Rediacc seda tüüpi probleeme lahendab. Oleme idufirma. Need on realistlikud stsenaariumid, mille jaoks toode on loodud, mitte klientide juhtumiuuringud, mida oleme juba ellu viinud.
 
-**Kriisistsenaarium:** Äsja tööle võetud töötaja **kustutas kogemata** kriitilised andmed otseandmebaasist 3 nädalat tagasi. Organisatsiooni varunduslahendus hoidis varukoopiad alles vaid 2 nädalat, muutes andmete taastamise tavapärasel teel peaaegu võimatuks.
+**Kriisistsenaarium:** Uus töötaja **kustutas kogemata** kriitilised read otseandmebaasist 3 nädalat tagasi. Varundussüsteem hoiab alles ainult 2 nädala ajalugu. Tavapärases seadistuses on need andmed kadunud.
 
 ## Probleem
 
-Mehmet on süsteemiekspert, kes vastutab suure veebipoe organisatsiooni andmebaasi eest. Ühel hommikul, klientide kaebustele reageerides, märkab ta, et mõned varasemad tellimuste kirjed **ei ole süsteemis nähtavad**. Uurimine paljastab, et äsja tööle võetud töötaja **kustutas kogemata** mõned kriitilised andmed otseandmebaasist 3 nädalat tagasi, **ühendudes otseandmebaasiga testikeskkonna asemel**.
+Mehmet haldab suure e-kaubanduse platvormi andmebaasi. Ühel hommikul hakkavad kliendid kaebama, et varasemad tellimuste kirjed **ei ole enam nähtavad**. Ta uurib asja. Äsja tööle võetud insener oli **kogemata kustutanud** kriitilised read otseandmebaasist 3 nädalat tagasi, **ühendudes otseandmebaasiga testikeskkonna asemel**. Klassikaline viga, mida iga andmebaasiadministraator on kas ise teinud või nooremalt töötajalt näinud.
 
 **Olemasolev varundussüsteem:**
 * Täisvarukoopiad tehakse kord nädalas
 * **Inkrementaalsed varukoopiad** salvestatakse iga päev
 
-**Dilemma:** Kustutamine toimus **enne täisvarukoopiate kuupäeva**, seega pole kadunud andmeid varukoopiates. Igapäevased varukoopiad **salvestavad ainult uusimad andmed**, seega **kustutatud kirjeid ei saa taastada**.
+**Dilemma:** kustutamine toimus **enne täisvarukoopiate kuupäeva**, seega pole kadunud andmeid üheski varukoopiafailis. Igapäevased varukoopiad **salvestavad ainult uusimad andmed**, seega **kustutatud kirjeid ei saa taastada**.
 
 ## Kriisi mõju
 
@@ -40,7 +42,7 @@ Kadunud andmete tõttu:
 
 ## Rediacc lahendus
 
-Mehmet pakub Rediacciga "ajamasina"-laadse lahenduse:
+Siin on ajamasina lahendus, mille Mehmet Rediacciga üles ehitab:
 
 ![Time Travel Recovery](/img/time-travel-recovery.svg)
 

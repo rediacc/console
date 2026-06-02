@@ -1,19 +1,20 @@
 ---
 title: Web Uygulaması
-description: Rediacc ile web uygulaması mimarisi ve dağıtımını anlama
+description: "Makineleri, depoları ve yedeklemeleri yönetmek için Rediacc web konsolunu kullanma"
 category: Reference
 order: 1
 language: tr
-sourceHash: "ee9dff9ac2c8bce1"
+sourceHash: "0951a0a1b320f570"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Rediacc Platformu Kullanım Kılavuzu
 
 ## Genel Bakış
 
-**Rediacc**, yapay zeka destekli yedekleme hizmetleri sunan bir bulut platformudur.
+**Rediacc**, kendi sunucularınıza kurduğunuz bir yazılımdır. Canlı sistemlerin tamamını yedekler, çatallayabilir ve geri yükleyebilirsiniz. Uygulamalar, veritabanları ve yapılandırma birlikte; dosya dosya değil. Asıl mesele de bu: çoğu yedekleme aracı dosyaları kopyalar ama aralarındaki ilişkileri kaybeder.
 
-Bu kılavuz, [https://www.rediacc.com/](https://www.rediacc.com/) adresindeki web arayüzünün temel kullanımını anlatır.
+Bu kılavuz, [https://www.rediacc.com/](https://www.rediacc.com/) adresindeki web konsolunu anlatır.
 
 ### Bu Kılavuzun Amacı
 
@@ -29,7 +30,7 @@ Bu kılavuz, [https://www.rediacc.com/](https://www.rediacc.com/) adresindeki we
 ![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
 *(Video: Complete registration flow from start to finish)*
 
-Rediacc platformunu kullanmaya başlamak için öncelikle bir hesap oluşturmanız gerekmektedir.
+Rediacc'ı kullanmak için önce bir hesap oluşturmanız gerekir.
 
 ![Rediacc giriş sayfası - her zaman ayakta kalan altyapı](/assets/images/user-guide/01_login.png)
 *(Resim 1: Ana giriş sayfası, Rediacc platformunun başlıca özelliklerini tanıtan açılış ekranı)*
@@ -110,7 +111,7 @@ Giriş yaptıktan sonra karşınıza çıkan ekran temel olarak şu bölümlerde
 
 ## 2.1 Organizasyon - Kullanıcılar
 
-Kullanıcı yönetimi, organizasyonunuzdaki kişilerin platforma erişimini kontrol etmenizi sağlar.
+Kullanıcı yönetimi, organizasyonunuzdaki kişilerin erişimini kontrol ettiğiniz yerdir.
 
 ### 2.1.1 Kullanıcı Ekleme
 
@@ -209,7 +210,7 @@ Kullanıcı aktivitelerini izlemek için takip özelliğini kullanabilirsiniz.
 
 ## 2.2 Organizasyon - Takımlar
 
-Takımlar, kullanıcıları gruplandırarak kaynaklara toplu erişim sağlamanıza olanak tanır.
+Takımlar, kullanıcıları gruplandırarak toplu erişim vermenizi sağlar.
 
 ### 2.2.1 Takım Oluşturma
 
@@ -292,7 +293,7 @@ Takımlar, kullanıcıları gruplandırarak kaynaklara toplu erişim sağlamanı
 
 ## 2.3 Organizasyon - Erişim Kontrolü
 
-Erişim kontrolü, izin grupları oluşturarak kullanıcı yetkilerini merkezi olarak yönetmenizi sağlar.
+Erişim kontrolü, izin grupları aracılığıyla yetkileri merkezi olarak yönetir; kullanıcı bazında değil.
 
 ### 2.3.1 İzin Grubu Oluşturma
 
@@ -328,7 +329,7 @@ Erişim kontrolü, izin grupları oluşturarak kullanıcı yetkilerini merkezi o
 
 ## 2.4 Makineler
 
-Makineler bölümü, sunucularınızı ve depo kaynaklarınızı yönetmenizi sağlar.
+Makineler bölümü, sunucularınızı ve üzerlerindeki depoları yönettiğiniz yerdir.
 
 ### 2.4.1 Makine Ekleme
 
@@ -484,7 +485,7 @@ Makine listesini güncellemek için **{{t:common.actions.refresh}}** düğmesine
 ![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
 *(Video: Running remote operations on a machine)*
 
-Makineler üzerinde uzaktan çeşitli işlemler gerçekleştirebilirsiniz.
+Bir makineye karşı uzak işlemleri web üzerinden çalıştırabilirsiniz.
 
 1. Makineyi seçin ve **{{t:common.actions.remote}}** düğmesine tıklayın.
 2. Açılır menüde seçenekleri görün:
@@ -545,7 +546,7 @@ Makineler üzerinde uzaktan çeşitli işlemler gerçekleştirebilirsiniz.
 
 ## 2.5 Depo Oluşturma ve İşlemleri
 
-Depolar, yedekleme verilerinizin saklandığı temel birimlerdir.
+Depo, yalıtılmış bir uygulama dağıtımıdır. Kendi uygulamaları, kendi verileri, kendi yapılandırması, kendi Docker daemon'u vardır. Dolayısıyla bu sayfadaki hemen her düğme, üzerinde durduğu makineye değil bir depoya karşı işlem yapar. Sil'e tıklamadan önce bunu bilmekte fayda var.
 
 ### 2.5.1 Depo Oluşturma
 
@@ -846,7 +847,7 @@ Depo hakkında ayrıntılı bilgi almak için:
 
 ## 2.6 Depo Bağlantı İşlemleri
 
-Depolara farklı yöntemlerle bağlanabilirsiniz.
+Bir depoya iki şekilde bağlanabilirsiniz. Masaüstü uygulaması gerçek bir terminal ve SSH sağlar. Tarayıcı inceleme ve tıklama tabanlı yönetim için yeterlidir; ancak uzun kabuk oturumları için uygun değildir. Gerçek iş yapıyorsanız masaüstü uygulamasını tercih edin.
 
 ### 2.6.1 Masaüstü Uygulaması ile Bağlantı
 
@@ -915,7 +916,7 @@ Ayarlar bölümünden profil ve sistem ayarlarınızı yönetebilirsiniz.
 
 ## 2.8 Depolama
 
-Depolama bölümü, yedekleme verilerinizin saklanacağı fiziksel alanları yönetmenizi sağlar.
+Depolama bölümü, yedekleme verilerinizin yazılacağı fiziksel konumları tanımladığınız yerdir.
 
 ### 2.8.1 Depolama Ekleme
 
@@ -946,7 +947,7 @@ Depolama bölümü, yedekleme verilerinizin saklanacağı fiziksel alanları yö
 
 ## 2.9 Kimlik Bilgileri
 
-Kimlik bilgileri bölümü, depolarınızın erişim bilgilerini güvenli şekilde yönetmenizi sağlar.
+Kimlik bilgileri bölümü, depolarınızın kullandığı gizli bilgileri yönettiğiniz yerdir.
 
 ### 2.9.1 Kimlik Bilgisi Düzenleme
 
@@ -1009,7 +1010,7 @@ Kimlik bilgileri bölümü, depolarınızın erişim bilgilerini güvenli şekil
 
 ## 2.10 Kuyruk
 
-Kuyruk bölümü, sistemde bekleyen ve tamamlanan işlemleri takip etmenizi sağlar.
+Kuyruk bölümü, sistemdeki bekleyen ve tamamlanan işlemleri izler.
 
 ### 2.10.1 Kuyruk İşlemleri
 
@@ -1043,7 +1044,7 @@ Kuyruk bölümü, sistemde bekleyen ve tamamlanan işlemleri takip etmenizi sağ
 
 ## 2.11 Denetim
 
-Denetim bölümü, sistemde yapılan tüm işlemlerin kayıtlarını tutar.
+Denetim bölümü, sistemde çalıştırılan her işlemin kaydını tutar.
 
 ### 2.11.1 Denetim Kayıtları
 

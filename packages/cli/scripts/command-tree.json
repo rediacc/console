@@ -1994,6 +1994,230 @@
           "subcommands": []
         },
         {
+          "name": "commit",
+          "descriptionKey": "commands.repo.commit.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.repo.commit.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--message <msg>",
+              "descriptionKey": "commands.repo.commit.messageOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--author <author>",
+              "descriptionKey": "commands.repo.commit.authorOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "branch",
+          "descriptionKey": "commands.repo.branch.description",
+          "options": [
+            {
+              "flags": "--branch <branch>",
+              "descriptionKey": "commands.repo.branch.branchOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.repo.branch.workingOption",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "checkout",
+          "descriptionKey": "commands.repo.checkout.description",
+          "options": [
+            {
+              "flags": "--ref <commit|branch>",
+              "descriptionKey": "commands.repo.checkout.refOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tag <name>",
+              "descriptionKey": "commands.repo.checkout.tagOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--from <workingFork>",
+              "descriptionKey": "commands.repo.checkout.fromOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "log",
+          "descriptionKey": "commands.repo.log.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.repo.log.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--json",
+              "descriptionKey": "commands.repo.log.jsonOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "merge",
+          "descriptionKey": "commands.repo.merge.description",
+          "options": [
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.repo.merge.nameOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--from <source>",
+              "descriptionKey": "commands.repo.merge.fromOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.repo.merge.forceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--resolve <ours|theirs>",
+              "descriptionKey": "commands.repo.merge.resolveOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--base <guid>",
+              "descriptionKey": "commands.repo.merge.baseOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "gc",
+          "descriptionKey": "commands.repo.gc.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--apply",
+              "descriptionKey": "commands.repo.gc.applyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "fsck",
+          "descriptionKey": "commands.repo.fsck.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "fork",
           "descriptionKey": "commands.repo.fork.description",
           "options": [
@@ -2018,6 +2242,12 @@
             {
               "flags": "--checkpoint",
               "descriptionKey": "commands.repo.fork.checkpointOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--immutable",
+              "descriptionKey": "commands.repo.fork.immutableOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -2479,6 +2709,18 @@
               "defaultValue": null
             },
             {
+              "flags": "--delta-base <guid>",
+              "descriptionKey": "commands.repo.push.optionDeltaBase",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--strategy <strategy>",
+              "descriptionKey": "commands.repo.push.optionStrategy",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -2561,6 +2803,18 @@
             {
               "flags": "--bwlimit <limit>",
               "descriptionKey": "commands.repo.push.optionBwlimit",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--delta-base <guid>",
+              "descriptionKey": "commands.repo.pull.optionDeltaBase",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--strategy <strategy>",
+              "descriptionKey": "commands.repo.push.optionStrategy",
               "mandatory": false,
               "defaultValue": null
             },
@@ -2713,6 +2967,18 @@
             {
               "flags": "--checkpoint",
               "descriptionKey": "commands.repo.migrate.optionCheckpoint",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--delta-base <guid>",
+              "descriptionKey": "commands.repo.migrate.optionDeltaBase",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--strategy <strategy>",
+              "descriptionKey": "commands.repo.migrate.optionStrategy",
               "mandatory": false,
               "defaultValue": null
             },

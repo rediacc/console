@@ -1,181 +1,69 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" width="1200" height="675">
-  <defs>
-    <linearGradient id="serverGrad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#2d2d2d"/>
-      <stop offset="100%" stop-color="#1a1a1a"/>
-    </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
-    </filter>
-    <marker id="arrowRed" markerWidth="12" markerHeight="9" refX="12" refY="4.5" orient="auto">
-      <polygon points="0 0, 12 4.5, 0 9" fill="#dc3545"/>
-    </marker>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450" role="img" aria-label="A 30-day-old test copy and a stuck developer lead the team to test on the live customer site, which is now broken.">
+<title>A 30-day-old test copy and a stuck developer lead the team to test on the live customer site, which is now broken.</title>
 
-  <!-- Background -->
-  <rect width="1200" height="675" fill="#f5f5f5"/>
+<rect width="800" height="450" fill="#f5f5f5"/>
 
-  <!-- ==================== RED PROBLEM BADGE (top center) ==================== -->
-  <rect x="510" y="16" width="180" height="36" rx="18" fill="#dc3545"/>
-  <text x="600" y="40" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" font-weight="bold" fill="#fff">PROBLEM</text>
+<!-- Stale test box: dusty calendar on a dark unit -->
+<g id="hp-stale-box">
+  <rect x="40" y="170" width="140" height="130" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="3"/>
+  <rect x="58" y="186" width="104" height="98" fill="#f5f5f5" stroke="#1a1a1a" stroke-width="2.5"/>
+  <rect x="58" y="186" width="104" height="20" fill="#1a1a1a"/>
+  <line x1="78" y1="180" x2="78" y2="196" stroke="#1a1a1a" stroke-width="3"/>
+  <line x1="142" y1="180" x2="142" y2="196" stroke="#1a1a1a" stroke-width="3"/>
+  <text x="110" y="262" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="44" font-weight="bold" fill="#1a1a1a">30</text>
+  <!-- Cobweb in corner -->
+  <path d="M 40 170 L 70 170 M 40 170 L 40 200 M 40 170 L 65 195" stroke="#1a1a1a" stroke-width="2.5" fill="none"/>
+</g>
+<text x="110" y="340" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="28" font-weight="bold" fill="#1a1a1a">30 days old</text>
 
-  <!-- ==================== 2 PERSONA FIGURES WITH SPEECH BUBBLES ==================== -->
+<!-- Tired developer slumped at desk with wait clock -->
+<g id="hp-developer">
+  <!-- Wait clock above -->
+  <circle cx="335" cy="150" r="30" fill="#f5f5f5" stroke="#1a1a1a" stroke-width="3"/>
+  <line x1="335" y1="150" x2="335" y2="128" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+  <line x1="335" y1="150" x2="352" y2="158" stroke="#1a1a1a" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="335" cy="150" r="3" fill="#1a1a1a"/>
 
-  <!-- PERSONA 1: Developer (left side) -->
-  <g transform="translate(130, 100)">
-    <!-- Stick figure sitting at laptop — 2x scale -->
-    <circle cx="0" cy="0" r="20" fill="none" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Body -->
-    <line x1="0" y1="20" x2="0" y2="58" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Arms reaching to laptop -->
-    <line x1="0" y1="36" x2="-28" y2="52" stroke="#3d3d3d" stroke-width="4"/>
-    <line x1="0" y1="36" x2="28" y2="52" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Legs (seated) -->
-    <line x1="0" y1="58" x2="-18" y2="78" stroke="#3d3d3d" stroke-width="4"/>
-    <line x1="0" y1="58" x2="18" y2="78" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Laptop -->
-    <rect x="-34" y="54" width="68" height="7" rx="3" fill="#3d3d3d"/>
-    <!-- Red warning dot -->
-    <circle cx="28" cy="-14" r="8" fill="#dc3545"/>
-    <text x="28" y="-9" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#fff">!</text>
-  </g>
+  <!-- Desk -->
+  <rect x="240" y="278" width="200" height="12" fill="#2d2d2d"/>
+  <rect x="248" y="290" width="10" height="30" fill="#2d2d2d"/>
+  <rect x="422" y="290" width="10" height="30" fill="#2d2d2d"/>
 
-  <!-- Developer speech bubble -->
-  <g transform="translate(180, 72)">
-    <rect width="280" height="70" rx="12" fill="#fff" stroke="#e0e0e0" stroke-width="2" filter="url(#shadow)"/>
-    <polygon points="-10,28 0,22 0,36" fill="#fff" stroke="#e0e0e0" stroke-width="2"/>
-    <rect x="-1" y="23" width="4" height="12" fill="#fff"/>
-    <text x="18" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#1a1a1a">Developer</text>
-    <text x="18" y="52" font-family="Arial, sans-serif" font-size="13" fill="#999999">"Sandbox too old, coding on prod"</text>
-  </g>
+  <!-- Slumped body (back curve) -->
+  <path d="M 290 278 Q 295 230 320 220 L 360 230 Q 385 245 388 278 Z" fill="#2d2d2d"/>
+  <!-- Head bowed onto desk -->
+  <circle cx="310" cy="248" r="24" fill="#2d2d2d" stroke="#1a1a1a" stroke-width="2.5"/>
+  <!-- Arm draped across desk -->
+  <path d="M 360 240 Q 410 250 415 275" stroke="#2d2d2d" stroke-width="14" fill="none" stroke-linecap="round"/>
+</g>
+<text x="335" y="340" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="28" font-weight="bold" fill="#1a1a1a">Stuck waiting</text>
 
-  <!-- PERSONA 2: Agentic AI (right side) -->
-  <g transform="translate(1070, 100)">
-    <!-- Robot stick figure — 2x scale -->
-    <circle cx="0" cy="0" r="20" fill="none" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Antenna -->
-    <line x1="0" y1="-20" x2="0" y2="-30" stroke="#3d3d3d" stroke-width="3"/>
-    <circle cx="0" cy="-34" r="5" fill="#3d3d3d"/>
-    <!-- Body -->
-    <line x1="0" y1="20" x2="0" y2="58" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Arms reaching to screen -->
-    <line x1="0" y1="36" x2="-30" y2="48" stroke="#3d3d3d" stroke-width="4"/>
-    <line x1="0" y1="36" x2="30" y2="48" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Legs -->
-    <line x1="0" y1="58" x2="-16" y2="78" stroke="#3d3d3d" stroke-width="4"/>
-    <line x1="0" y1="58" x2="16" y2="78" stroke="#3d3d3d" stroke-width="4"/>
-    <!-- Screen/monitor -->
-    <rect x="-38" y="48" width="76" height="8" rx="3" fill="#3d3d3d"/>
-    <!-- Red warning dot -->
-    <circle cx="28" cy="-14" r="8" fill="#dc3545"/>
-    <text x="28" y="-9" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#fff">!</text>
-  </g>
+<!-- Red shortcut arrow from developer to live server -->
+<g id="hp-arrow">
+  <path d="M 440 215 Q 475 195 495 210" stroke="#8b0000" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <polygon points="488,195 515,212 488,228" fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5"/>
+</g>
 
-  <!-- Agentic AI speech bubble -->
-  <g transform="translate(740, 72)">
-    <rect width="300" height="70" rx="12" fill="#fff" stroke="#e0e0e0" stroke-width="2" filter="url(#shadow)"/>
-    <polygon points="300,28 310,22 310,36" fill="#fff" stroke="#e0e0e0" stroke-width="2"/>
-    <rect x="298" y="23" width="4" height="12" fill="#fff"/>
-    <text x="18" y="30" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#1a1a1a">Agentic AI</text>
-    <text x="18" y="52" font-family="Arial, sans-serif" font-size="13" fill="#999999">"I deleted the entire database..."</text>
-  </g>
+<!-- Live customer site server, cracked open with sparks -->
+<g id="hp-server">
+  <rect x="510" y="170" width="230" height="220" fill="#8b0000" stroke="#1a1a1a" stroke-width="3"/>
+  <!-- Server vent slots to suggest a rack -->
+  <line x1="525" y1="190" x2="725" y2="190" stroke="#1a1a1a" stroke-width="2.5"/>
+  <line x1="525" y1="200" x2="725" y2="200" stroke="#1a1a1a" stroke-width="2.5"/>
 
-  <!-- ==================== LEFT ZONE: PRODUCTION ==================== -->
+  <!-- Major crack zig-zagging across the body -->
+  <polyline points="510,235 575,275 555,320 620,355 600,390" stroke="#1a1a1a" stroke-width="5" fill="none" stroke-linejoin="miter"/>
+  <polyline points="740,250 680,285 700,330 660,365" stroke="#1a1a1a" stroke-width="5" fill="none" stroke-linejoin="miter"/>
+  <polyline points="625,170 640,220 615,260 645,300" stroke="#1a1a1a" stroke-width="5" fill="none" stroke-linejoin="miter"/>
 
-  <text x="230" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#1a1a1a">Production</text>
-  <text x="230" y="252" text-anchor="middle" font-family="Arial, sans-serif" font-size="13" fill="#999999">Terabytes of Data</text>
+  <!-- Warning sparks above -->
+  <polygon points="555,165 565,140 575,165 570,170 560,170" fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5"/>
+  <polygon points="625,160 635,130 648,160 640,168 630,168" fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5"/>
+  <polygon points="705,162 715,135 727,162 720,170 710,170" fill="#8b0000" stroke="#1a1a1a" stroke-width="2.5"/>
+</g>
 
-  <!-- Server rack container -->
-  <rect x="50" y="270" width="360" height="190" rx="12" fill="none" stroke="#e0e0e0" stroke-width="2"/>
-
-  <!-- Server: DB -->
-  <g transform="translate(70, 310)" filter="url(#shadow)">
-    <rect width="150" height="100" rx="8" fill="url(#serverGrad)"/>
-    <rect x="12" y="20" width="126" height="10" rx="3" fill="#1a1a1a"/>
-    <rect x="12" y="38" width="126" height="10" rx="3" fill="#1a1a1a"/>
-    <circle cx="22" cy="25" r="3.5" fill="#556b2f"/>
-    <circle cx="22" cy="43" r="3.5" fill="#556b2f"/>
-    <rect x="12" y="64" width="16" height="8" rx="2" fill="#3d3d3d"/>
-    <rect x="32" y="64" width="16" height="8" rx="2" fill="#3d3d3d"/>
-  </g>
-  <text x="145" y="428" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#999999">DB</text>
-
-  <!-- Server: APP -->
-  <g transform="translate(240, 310)" filter="url(#shadow)">
-    <rect width="150" height="100" rx="8" fill="url(#serverGrad)"/>
-    <rect x="12" y="20" width="126" height="10" rx="3" fill="#1a1a1a"/>
-    <rect x="12" y="38" width="126" height="10" rx="3" fill="#1a1a1a"/>
-    <circle cx="22" cy="25" r="3.5" fill="#556b2f"/>
-    <circle cx="22" cy="43" r="3.5" fill="#556b2f"/>
-    <rect x="12" y="64" width="16" height="8" rx="2" fill="#3d3d3d"/>
-    <rect x="32" y="64" width="16" height="8" rx="2" fill="#3d3d3d"/>
-  </g>
-  <text x="315" y="428" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#999999">APP</text>
-
-  <!-- ==================== CENTER: SYNC PROBLEM ==================== -->
-
-  <!-- Red tinted background strip -->
-  <rect x="440" y="220" width="320" height="400" rx="10" fill="#dc3545" opacity="0.05"/>
-
-  <!-- Large dashed red arrow -->
-  <line x1="440" y1="440" x2="730" y2="440" stroke="#dc3545" stroke-width="4" stroke-dasharray="10,6" marker-end="url(#arrowRed)"/>
-
-  <!-- "Syncs Monthly" large red pill -->
-  <rect x="500" y="390" width="200" height="36" rx="18" fill="#dc3545"/>
-  <text x="600" y="414" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="bold" fill="#fff">Syncs Monthly</text>
-
-  <!-- Large red clock icon -->
-  <g transform="translate(600, 310)">
-    <circle cx="0" cy="0" r="36" fill="none" stroke="#dc3545" stroke-width="3.5"/>
-    <line x1="0" y1="0" x2="0" y2="-22" stroke="#dc3545" stroke-width="3.5" stroke-linecap="round"/>
-    <line x1="0" y1="0" x2="16" y2="6" stroke="#dc3545" stroke-width="3.5" stroke-linecap="round"/>
-    <circle cx="0" cy="0" r="4" fill="#dc3545"/>
-    <circle cx="0" cy="-28" r="2.5" fill="#dc3545"/>
-    <circle cx="28" cy="0" r="2.5" fill="#dc3545"/>
-    <circle cx="0" cy="28" r="2.5" fill="#dc3545"/>
-    <circle cx="-28" cy="0" r="2.5" fill="#dc3545"/>
-  </g>
-
-  <!-- ==================== RIGHT ZONE: SANDBOX (STALE) ==================== -->
-
-  <text x="970" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#1a1a1a">Sandbox</text>
-  <text x="970" y="252" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#dc3545">(Stale Copy)</text>
-
-  <!-- Sandbox rack (dashed red border) -->
-  <rect x="790" y="270" width="360" height="190" rx="12" fill="none" stroke="#dc3545" stroke-width="2" stroke-dasharray="8,5" opacity="0.5"/>
-
-  <!-- Warning triangle (larger) -->
-  <g transform="translate(970, 320)">
-    <polygon points="0,-28 26,18 -26,18" fill="none" stroke="#dc3545" stroke-width="3.5" stroke-linejoin="round"/>
-    <text x="0" y="12" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#dc3545">!</text>
-  </g>
-
-  <!-- Sandbox Server: DB (faded, red LEDs) -->
-  <g transform="translate(810, 310)" opacity="0.35" filter="url(#shadow)">
-    <rect width="150" height="100" rx="8" fill="url(#serverGrad)" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="5,4"/>
-    <rect x="12" y="20" width="126" height="10" rx="3" fill="#1a1a1a"/>
-    <rect x="12" y="38" width="126" height="10" rx="3" fill="#1a1a1a"/>
-    <circle cx="22" cy="25" r="3.5" fill="#dc3545"/>
-    <circle cx="22" cy="43" r="3.5" fill="#dc3545"/>
-    <rect x="12" y="64" width="16" height="8" rx="2" fill="#3d3d3d"/>
-    <rect x="32" y="64" width="16" height="8" rx="2" fill="#3d3d3d"/>
-  </g>
-  <text x="885" y="428" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#999999" opacity="0.5">DB</text>
-
-  <!-- Sandbox Server: APP (faded, red LEDs) -->
-  <g transform="translate(980, 310)" opacity="0.35" filter="url(#shadow)">
-    <rect width="150" height="100" rx="8" fill="url(#serverGrad)" stroke="#e0e0e0" stroke-width="2" stroke-dasharray="5,4"/>
-    <rect x="12" y="20" width="126" height="10" rx="3" fill="#1a1a1a"/>
-    <rect x="12" y="38" width="126" height="10" rx="3" fill="#1a1a1a"/>
-    <circle cx="22" cy="25" r="3.5" fill="#dc3545"/>
-    <circle cx="22" cy="43" r="3.5" fill="#dc3545"/>
-    <rect x="12" y="64" width="16" height="8" rx="2" fill="#3d3d3d"/>
-    <rect x="32" y="64" width="16" height="8" rx="2" fill="#3d3d3d"/>
-  </g>
-  <text x="1055" y="428" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#999999" opacity="0.5">APP</text>
-
-  <!-- ==================== CONNECTOR LINES ==================== -->
-  <line x1="130" y1="180" x2="180" y2="270" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>
-  <line x1="1070" y1="180" x2="1020" y2="270" stroke="#e0e0e0" stroke-width="1.5" stroke-dasharray="4,4"/>
+<!-- Server labels -->
+<text x="620" y="120" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="28" font-weight="bold" fill="#1a1a1a">Tested on live site</text>
+<text x="620" y="425" text-anchor="middle" font-family="Arial, 'Helvetica Neue', sans-serif" font-size="28" font-weight="bold" fill="#1a1a1a">Now broken</text>
 
 </svg>

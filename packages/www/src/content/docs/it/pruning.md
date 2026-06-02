@@ -4,6 +4,8 @@ description: "Rimuovi backup orfani, snapshot obsoleti, immagini di repository e
 category: "Guides"
 order: 12
 language: it
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Pruning
@@ -58,7 +60,7 @@ Le eliminazioni sono raggruppate per sottopercorso di archiviazione: una chiamat
 
 ## Machine Prune
 
-Pulisce le risorse sulla macchina in tre fasi. La fase 1 viene sempre eseguita; le fasi 2 e 3 sono opt-in, complementari tra loro.
+Pulisce le risorse sulla macchina in tre fasi. La fase 1 viene sempre eseguita; le fasi 2 e 3 sono opt-in e possono essere combinate.
 
 ### Fase 1: Pulizia del datastore (viene sempre eseguita)
 
@@ -169,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-I nomi di certificato il cui anchor è una macchina, repository o GUID attivo, e qualsiasi wildcard a etichetta singola `<service>.<base>` o radice `*.<base>`, vengono lasciati intatti.
+I nomi di certificato il cui anchor e' una macchina, repository o GUID attivo vengono lasciati intatti, come pure qualsiasi wildcard a etichetta singola `<service>.<base>` o radice `*.<base>`.
 
 ## Migrazione: backfill dello specchio di stato
 

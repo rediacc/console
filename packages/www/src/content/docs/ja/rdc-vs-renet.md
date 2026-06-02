@@ -4,8 +4,8 @@ description: rdc を使う場面と renet を使う場面。
 category: Concepts
 order: 1
 language: ja
-sourceHash: 526136e143dbcf08
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "026a183f8a5f9dd4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # rdc vs renet
@@ -23,7 +23,7 @@ Rediaccには2つのバイナリがあります。それぞれの使い分けを
 
 ## 連携の仕組み
 
-`rdc`はSSH経由でサーバーに接続し、`renet`コマンドを代行実行します。ワークステーションで1つのコマンドを入力するだけで、`rdc`が残りの処理を行います：
+ワークステーションで `rdc` を実行します。サーバーへの SSH 接続を開き、対応する `renet` コマンドをそこで代わりに実行します。1つのコマンド、1つの場所で実行するだけです：
 
 1. ローカル設定（`~/.config/rediacc/rediacc.json`）を読み取る
 2. SSH経由でサーバーに接続する
@@ -81,6 +81,6 @@ rdc ops down               # クラスターを破棄
 
 ## Rediaccfileに関する注意
 
-`Rediaccfile`内で`renet compose -- ...`が使われているのを目にすることがあるかもしれません。これは正常です。Rediaccfileの関数は`renet`が利用可能なサーバー上で実行されます。
+`Rediaccfile`内で`renet compose -- ...`が使われているのを見かけます。心配不要です。Rediaccfileの関数はサーバー上で実行され、そこには `renet` が既にインストールされています。
 
 ワークステーションからは、`rdc repo up`と`rdc repo down`を使用してワークロードを起動・停止してください。

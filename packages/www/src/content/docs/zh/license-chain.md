@@ -4,7 +4,8 @@ description: "可验证防篡改的许可证颁发、本地部署的委托签名
 category: "Guides"
 order: 8
 language: zh
-sourceHash: "326c4f4efbd60493"
+sourceHash: "9b062d6866c1ccb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 许可证链与委托
@@ -142,7 +143,7 @@ effectiveThresholdDays = min(env.RENEW_THRESHOLD_DAYS, ceil(certValidityDays / 3
 
 ### 为什么只允许一个？
 
-每个本地部署实例针对其本地颁发账本独立执行 `maxRepoLicenseIssuancesPerMonth`、`maxActivations` 和链完整性。本地部署不向上游同步使用量，这正是离线可用委托的核心设计。
+每个本地部署实例针对其本地颁发账本独立执行 `maxRepoLicenseIssuancesPerMonth`、`maxActivations` 和链完整性。本地部署不向上游同步使用量。这正是离线可用委托的核心设计。
 
 如果一个订阅有多个有效证书（每个实例一个），每个实例将独立执行限制：
 

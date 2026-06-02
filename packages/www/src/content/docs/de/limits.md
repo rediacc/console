@@ -6,13 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "e663f13b2f78bc65"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "8f29c515be1b7fb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Limits & Kontingente
 
-Diese Seite dokumentiert die festen und weichen Limits, die für Rediacc-Deployments gelten. Das Verständnis dieser Limits hilft bei der Kapazitätsplanung und vermeidet unerwartete Einschränkungen.
+Diese Seite listet die festen und weichen Limits auf, die für Rediacc-Deployments gelten. Lesen Sie sie vor der Kapazitätsplanung, damit Sie wissen, welche Obergrenzen existieren und welche nicht.
 
 ---
 
@@ -36,7 +36,7 @@ Es gibt kein festes Limit, das von Rediacc erzwungen wird. Das praktische Limit 
 | RAM | Jedes laufende Repository startet seinen eigenen Docker-Daemon und Container. Der Speicherverbrauch hängt von Ihren Workloads ab. |
 | CPU | Parallele Repository-Operationen (Start, Backup, Fork) erzeugen vorübergehende CPU-Last. |
 
-**Typische Deployments** führen 10 bis 50 Repositories pro Maschine problemlos aus. Maschinen mit 32 GB+ RAM und 500 GB+ Speicher betreiben regelmäßig 100+ Repositories.
+**Typische Deployments** führen 10 bis 50 Repositories pro Maschine problemlos aus. Maschinen mit 32 GB+ RAM und 500 GB+ Speicher betreiben regelmäßig mehr als 100 Repositories.
 
 ### Systemweites Netzwerk-ID-Limit
 
@@ -111,7 +111,7 @@ Jedes Repository-Image hat eine feste maximale Größe, die bei der Erstellung f
 
 Jeder Dienst mit dem Label `rediacc.service_port` erhält automatisch eine HTTPS-Route. Es gibt kein Limit für die Anzahl der Dienste mit Routen, vorbehaltlich des Maximums von 61 Diensten pro Repository.
 
-Wildcard-TLS-Zertifikate werden pro Repository beim ersten Deployment über Let's Encrypt (Cloudflare DNS-01 Challenge) bereitgestellt. Let's Encrypt hat ein Limit von **50 Zertifikaten pro registrierter Domain pro Woche**. Da Rediacc ein Wildcard-Zertifikat pro Repository verwendet (nicht pro Dienst), kann ein Deployment mit 50+ neuen Repositories in einer einzelnen Woche dieses Limit erreichen.
+Wildcard-TLS-Zertifikate werden pro Repository beim ersten Deployment über Let's Encrypt (Cloudflare DNS-01 Challenge) bereitgestellt. Let's Encrypt begrenzt die Ausstellung auf **50 Zertifikate pro registrierter Domain pro Woche**. Da Rediacc ein Wildcard-Zertifikat pro Repository verwendet (nicht pro Dienst), wird ein Deployment, das in einer einzigen Woche mehr als 50 neue Repositories erstellt, diese Grenze erreichen.
 
 Forks verwenden das vorhandene Wildcard-Zertifikat des Eltern-Repositories wieder und verbrauchen kein Zertifikatskontingent.
 
@@ -173,7 +173,7 @@ Remote-Maschinen müssen eines der folgenden Systeme ausführen, um die Kernel-,
 
 ### Kernel-Feature-Matrix
 
-Operatoren können diese Matrix als Übersicht nutzen, was jedes CI-getestete Betriebssystem out-of-the-box bereitstellt. Alle fünf erfüllen jede Anforderung; die Matrix ist eine operatorbezogene Referenz, kein Auswahlkriterium.
+Die Matrix zeigt auf einen Blick, was jedes CI-getestete Betriebssystem out-of-the-box bereitstellt. Alle fünf erfüllen jede Anforderung, daher ist dies eine operatorbezogene Referenz, kein Auswahlkriterium.
 
 | Betriebssystem | btrfs-Modul | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup Hooks |
 |----------------|-------------|------------|---------------------|-------------------|

@@ -1324,6 +1324,13 @@
       "batchIterating": "{{action}} {{current}}/{{total}}：\"{{repo}}\"...",
       "batchResult": "{{action}} 完成：{{succeeded}}/{{total}} 成功",
       "batchStarting": "{{action}}：\"{{repo}}\"...",
+      "branch": {
+        "branchOption": "新分支的名称",
+        "completed": "分支 \"{{branch}}\" -> {{commit}}",
+        "description": "创建一个指向工作 fork 当前 commit（其顶端）的命名 branch 引用。Branch 引用保存在 CLI 配置中（machine = 对象存储，config = 引用存储）。",
+        "descriptionShort": "创建指向当前 commit 的 branch 引用",
+        "workingOption": "branch 所指向其当前 commit 的工作 fork"
+      },
       "cat": {
         "description": "读取仓库内文件的有界窗口并写入 stdout（服务端限制；诊断信息输出到 stderr）",
         "failed": "读取失败",
@@ -1338,6 +1345,22 @@
       },
       "certSync": {
         "updated": "已从 {{machine}} 更新 ACME 证书缓存（{{count}} 个证书）"
+      },
+      "checkout": {
+        "description": "通过 reflink 克隆将不可变的 commit（或 branch 顶端）克隆为一个全新的可写工作 fork，并将 HEAD 指向它。近乎即时且耗时与体积无关（BTRFS reflink）。",
+        "descriptionShort": "通过 reflink 克隆将 commit/branch 检出为可写的工作 fork",
+        "fromOption": "将 --ref 解析为此工作分叉上的分支名称",
+        "refOption": "要检出的提交 GUID（或使用 --from 的分支名称）",
+        "tagOption": "新的可写工作 fork 的名称"
+      },
+      "commit": {
+        "authorOption": "Commit 作者",
+        "completed": "已提交 {{commit}}：{{message}}",
+        "description": "将已挂载的工作 fork 的当前状态冻结为新的不可变 commit（类似 git）。该 commit 在卷内记录其提交信息、作者、时间戳和父 commit（因此可随 push 一同传输），并被标记为只读——它拒绝挂载。工作 fork 保持不变，就像 git 不会改动工作树一样。使用 'rdc repo checkout' 检出某个 commit 以获取可写副本。",
+        "descriptionShort": "将工作 fork 冻结为新的不可变 commit",
+        "failed": "Commit 失败",
+        "messageOption": "Commit 信息",
+        "nameOption": "要提交的工作 fork（必须已挂载）"
       },
       "create": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
@@ -1415,6 +1438,8 @@
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
         "examples": "\n示例:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "分支创建失败",
+        "immutableOption": "将分叉标记为只读：它会拒绝挂载，使其镜像永久保持字节级稳定（用于跨机器增量推送的冻结提交/基线）",
+        "immutableUpConflict": "repo fork：--immutable 与 --up 互斥。不可变分叉会拒绝挂载，因此无法启动。请去掉 --up，或去掉 --immutable 以部署普通分叉。",
         "registered": "已注册分支 \"{{repository}}\"（{{guid}}，网络 {{networkId}}）",
         "rollback": "已回滚 \"{{repository}}\" 的配置",
         "starting": "正在 \"{{machine}}\" 上将 \"{{parent}}\" 分支为 \"{{repository}}\"...",
@@ -1423,6 +1448,25 @@
         "tagReservedLatest": "repo fork: 标签 \"latest\" 保留给主 (生产) 仓库 — 请选择其他 --tag (例如 \"test\"、\"staging\"、\"<feature>\")",
         "upOption": "fork后挂载并启动服务（fork + mount + up 一条命令完成）"
       },
+      "fsck": {
+        "clean": "{{machine}} 上无偏差：所有引用均可解析，且未发现孤立提交",
+        "danglingHeader": "{{count}} 个悬空引用（指向缺失对象）：",
+        "description": "对照机器上实际存在的对象校验 CLI 配置引用（分支、HEAD）。报告悬空引用（指向缺失对象的引用）和孤立提交（没有任何引用可达的不可变提交）。只读操作。",
+        "descriptionShort": "对照机器对象检查配置引用",
+        "orphanHeader": "{{count}} 个孤立提交（无引用可达）：",
+        "orphanHint": "使用以下命令回收孤立提交：rdc repo gc --apply -m <machine>"
+      },
+      "gc": {
+        "applied": "垃圾回收完成：已删除 {{deleted}}/{{total}} 个提交",
+        "applyOption": "实际删除不可达的提交（默认仅为试运行预览）",
+        "deleted": "已删除提交 {{commit}}",
+        "deleteFailed": "删除提交 {{commit}} 失败",
+        "description": "删除机器上没有任何分支或 HEAD 可达的不可变提交对象（可达性垃圾回收）。机器是对象存储，CLI 配置是引用存储。默认仅试运行：传入 --apply 才会删除。绝不触及已挂载的对象或正在使用的分叉。",
+        "descriptionShort": "在机器上回收不可达的不可变提交",
+        "dryRunHeader": "将删除 {{count}} 个不可达提交：",
+        "dryRunHint": "使用 --apply 重新运行以删除它们。",
+        "nothing": "{{machine}} 上无可回收对象：所有提交均可达"
+      },
       "list": {
         "completed": "列表获取完成",
         "description": "列出机器上的仓库",
@@ -1430,7 +1474,25 @@
         "serverNameLegend": "* 名称读取自机器（不在您的本地配置中）",
         "starting": "正在列出 \"{{machine}}\" 上的仓库..."
       },
+      "log": {
+        "description": "打印从工作 fork 的当前 commit（或某个 commit 引用）可达的提交历史，沿 'rdc repo commit' 记录的父 commit 链进行遍历。读取的是卷外镜像，因此不会解锁任何 commit。",
+        "descriptionShort": "遍历某个 fork 或 commit 的提交历史",
+        "failed": "Log 失败",
+        "jsonOption": "以 JSON 格式输出提交历史",
+        "nameOption": "作为历史遍历起点的工作 fork 或 commit"
+      },
       "machineOption": "目标机器名称",
+      "merge": {
+        "baseOption": "三方合并的共同祖先 commit GUID（与 --resolve 配合使用）。默认为源 commit 的父级或目标的当前 commit。",
+        "completed": "已将 {{source}} merge 到 {{target}}",
+        "description": "将源 commit 或 fork merge 到目标工作 fork 中。实时目标绝不会被就地修改：结果会在 reflink 克隆中构建，并以原子方式换入。已挂载或正在运行的目标会被拒绝，除非使用 --force，该选项会先将其干净地静默停止。不带 --resolve 时执行整镜像的 take-theirs（目标变为源）；带 --resolve ours|theirs 时，则针对共同祖先执行逐文件的三方合并，采用各方的独有更改，并按该标志解析双方冲突。",
+        "descriptionShort": "以生命周期安全的方式将 commit/fork merge 到工作 fork 中",
+        "failed": "merge 失败",
+        "forceOption": "先静默停止已挂载/正在运行的目标，然后 merge（绝不修改实时挂载）",
+        "fromOption": "要从中 merge 的源 commit 或 fork",
+        "nameOption": "要 merge 到的目标工作 fork",
+        "resolveOption": "三方合并的逐文件冲突解决方式：'ours' 保留目标的版本，'theirs' 采用源的版本。省略则对整个镜像执行快进（采用 theirs）。"
+      },
       "migrate": {
         "checkpointing": "正在创建 CRIU 检查点...",
         "complete": "迁移完成：{{name}} 已从 {{from}} 移动到 {{to}}",
@@ -1443,9 +1505,11 @@
         "downtime": "停机时间：{{duration}}",
         "optionBwlimit": "rsync 传输带宽限制（例如 10M）",
         "optionCheckpoint": "CRIU 实时迁移：捕获和恢复进程内存状态",
+        "optionDeltaBase": "用于切换增量的不可变基准 GUID（高级；默认使用阶段 1 的基准）",
         "optionFrom": "源机器名称",
         "optionProvision": "通过云服务商自动配置目标机器（例如 hetzner、linode）",
         "optionSkipDns": "迁移后跳过 DNS 记录切换",
+        "optionStrategy": "切换时的块增量策略：auto、physical 或 shared",
         "optionTo": "目标机器名称",
         "phase1": "阶段 1：批量传输数据（源继续运行）...",
         "phase1Done": "批量传输完成",
@@ -1489,8 +1553,10 @@
         "description": "从远程（机器或存储）拉取仓库。省略名称以拉取所有仓库。源类型从配置中自动检测。使用--up在pull后部署",
         "descriptionShort": "从远程（机器或存储）拉取仓库",
         "optionBwlimit": "rsync 传输带宽限制（例如 \"6M\"、\"10M\"）",
+        "optionDeltaBase": "在两台机器上字节完全相同的不可变基准 GUID；仅接收已更改的块（机器源）",
         "optionForce": "强制覆盖现有仓库",
         "optionFrom": "源机器或存储名称（从配置中自动检测）",
+        "optionStrategy": "使用增量基准时的块增量策略：auto、physical 或 shared",
         "optionUp": "pull后，在此机器上挂载并部署仓库",
         "pulling": "正在拉取 \"{{repo}}\" 的备份...",
         "sourceRequired": "请指定 --from <remote>（配置中的机器或存储名称）"
@@ -1504,8 +1570,10 @@
         "destRequired": "请指定 --to <remote>（配置中的机器或存储名称）",
         "optionBwlimit": "rsync 传输带宽限制（例如 \"6M\"、\"10M\"）",
         "optionCheckpoint": "备份前创建CRIU检查点（捕获进程内存状态用于实时迁移）",
+        "optionDeltaBase": "在两台机器上字节完全相同的不可变基准 GUID；仅传输已更改的块（机器目标）。省略以自动选择基准",
         "optionForce": "强制覆盖现有备份",
         "optionProvision": "如果目标机器不存在，通过云提供商自动配置",
+        "optionStrategy": "使用增量基准时的块增量策略：auto、physical 或 shared",
         "optionTag": "用于版本控制的部署标签",
         "optionTo": "目标机器或存储名称（从配置中自动检测）",
         "optionUp": "推送后，在目标机器上挂载并部署仓库",

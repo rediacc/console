@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: tr
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -165,4 +165,4 @@ Altının tamamını temiz yanıtlayan bir tedarikçi nadirdir. Altıdan dördü
 
 Kısa listenizde biz alternatifisek, teklif somuttur. Tedarikçi anketinizi bize gönderin. Dağıtılmış bir örneğe karşı, açıklar dahil sorularınızın gerçek yanıtlarıyla dolduracağız. Evrak göndermeden önce mimariyi gözden geçirmek isterseniz, kurucu ile 30 dakikalık bir mimari inceleme rezervasyonu yapabiliriz. Savunulabilir bir kayıt girdisine giden yol parlak bir broşür değildir. Rahatsız edici olanlar dahil, yanıtlardır.
 
-Rediacc'ın NIS2 maddelerine genel olarak eşlenmesi için [NIS2 ve DORA](/tr/docs/legal-nis2-dora) sayfasına bakın. Daha geniş uyumluluk çerçevesi için [Uyumluluk Genel Bakışı](/tr/docs/legal-overview), [Veri Egemenliği](/tr/docs/legal-data-sovereignty) ve [Şirket İçi Kurulum](/tr/docs/on-premise) sayfalarına bakın.
+Madde madde Rediacc haritasını mı istiyorsunuz? Bkz. [NIS2 ve DORA](/tr/docs/legal-nis2-dora). Daha geniş çerçeve mi? Bkz. [Uyumluluk Genel Bakışı](/tr/docs/legal-overview). Veri yerleşimi için bkz. [Veri Egemenliği](/tr/docs/legal-data-sovereignty). Neden kendi altyapınızı barındırmanın önemli olduğu için bkz. [Şirket İçi Kurulum](/tr/docs/on-premise).

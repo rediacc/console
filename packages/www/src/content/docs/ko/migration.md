@@ -4,8 +4,8 @@ description: "기존 프로젝트를 암호화된 Rediacc 저장소로 마이그
 category: "Guides"
 order: 11
 language: ko
-sourceHash: "69ab61a2875f8d70"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "24c62c7fa0d043c2"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 마이그레이션 가이드
@@ -191,7 +191,7 @@ services:
 4. **서비스 간 연결에 서비스 이름 사용**(예: `postgres`, `redis`) - renet이 모든 서비스 이름을 해석 가능한 호스트명으로 주입합니다. 데이터베이스나 구성 파일에 저장되는 연결 문자열에 원시 IP를 포함하지 마십시오. 포크 격리를 유지하기 위해 서비스 이름을 사용하십시오
 5. **바인딩은 자동입니다** - 커널이 `bind()`를 올바른 루프백 IP로 재작성합니다. 서비스는 `0.0.0.0` 또는 `localhost`를 사용할 수 있습니다
 
-`{SERVICE}_IP` 변수는 여전히 사용 가능하지만 명시적 바인딩은 더 이상 필요하지 않으며 자동으로 처리됩니다. 명명 규칙: 대문자, 하이픈을 밑줄로 교체, `_IP` 접미사 추가. 예를 들어 `listmonk-app`은 `LISTMONK_APP_IP`가 됩니다.
+`{SERVICE}_IP` 변수는 여전히 사용 가능하지만 명시적 바인딩은 더 이상 필요하지 않습니다. 바인딩은 자동으로 처리됩니다. 명명 규칙: 대문자, 하이픈을 밑줄로 교체, `_IP` 접미사 추가. 예를 들어 `listmonk-app`은 `LISTMONK_APP_IP`가 됩니다.
 
 IP 할당 및 `.rediacc.json`에 대한 자세한 내용은 [서비스 네트워킹](/en/docs/services#service-networking-rediaccjson)을 참조하십시오.
 
@@ -292,11 +292,11 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### 저장소 간 포트 충돌
 
-각 저장소는 고유한 루프백 IP를 갖으며 커널이 자동으로 `bind()` 호출을 올바른 IP로 재작성합니다. 저장소 간 포트 충돌은 발생하지 않아야 합니다. 예상치 못한 동작이 발생하면 서비스가 `renet compose`를 통해(`docker compose`가 아닌) 시작되었는지 확인하십시오. 다른 서비스에 **연결**할 때는 원시 IP 대신 서비스 이름(예: `postgres`)을 사용하십시오. 서비스 이름은 모든 포크에서 올바르게 해석됩니다.
+각 저장소는 고유한 루프백 IP를 갖으며 커널이 자동으로 `bind()` 호출을 올바른 IP로 재작성합니다. 저장소 간 포트 충돌은 발생하지 않습니다. 예상치 못한 동작이 발생하면 서비스가 `renet compose`를 통해(`docker compose`가 아닌) 시작되었는지 확인하십시오. 다른 서비스에 **연결**할 때는 원시 IP 대신 서비스 이름(예: `postgres`)을 사용하십시오. 서비스 이름은 모든 포크에서 올바르게 해석됩니다.
 
 ### 소유권 수정이 컨테이너를 손상시킴
 
-`rdc repo ownership`을 실행했는데 컨테이너가 작동을 중지한 경우 컨테이너의 데이터 파일이 chown되었습니다. 컨테이너를 중지하고 데이터 디렉토리를 삭제한 후 재시작하면 컨테이너가 다시 생성합니다.
+`rdc repo ownership`을 실행했는데 컨테이너가 작동을 중지한 경우 컨테이너의 데이터 파일이 chown되었습니다. 컨테이너를 중지하고 데이터 디렉토리를 삭제한 후 재시작하십시오. 컨테이너가 다시 생성합니다.
 
 ```bash
 rdc repo down --name my-project -m server-1

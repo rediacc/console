@@ -1,6 +1,6 @@
 ---
-title: Welcome to the Rediacc Blog
-description: Stay updated with the latest news, tutorials, and announcements from Rediacc.
+title: "The Rediacc blog: war stories and how-tos"
+description: "This is where I post war stories, how-tos, and product notes about Rediacc."
 author: Rediacc Team
 publishedDate: 2025-01-20
 category: announcement
@@ -13,7 +13,7 @@ language: en
 
 # Welcome to the Rediacc Blog
 
-Welcome to our official blog! Here you'll find tutorials, announcements, and guides to help you get the most out of Rediacc.
+So, this is the blog. Expect war stories from years of running servers. Deep dives on how Rediacc works. The occasional 3 AM incident write-up.
 
 ## What to Expect
 
@@ -22,4 +22,4 @@ Welcome to our official blog! Here you'll find tutorials, announcements, and gui
 - **Case Studies**: Real-world examples of Rediacc in action
 - **Best Practices**: Tips and tricks from our team
 
-Check back regularly for new content!
+New posts when I have something real to say. Not when a calendar tells me to.

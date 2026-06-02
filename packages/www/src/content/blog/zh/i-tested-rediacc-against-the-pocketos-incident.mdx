@@ -1,6 +1,6 @@
 ---
 title: "我用 PocketOS 事故场景测试了 Rediacc"
-description: "PocketOS 在 9 秒内被一个 Cursor 智能体抹掉了生产数据库。我在自己的平台上跑了同类测试，并对每一步都计了时。本文记录哪些防线扛住了，哪些仍是开发者自己的责任。"
+description: "PocketOS 在 9 秒内被一个 Cursor 智能体抹掉了生产数据库。我跑了同样的测试，对每一步计时，并记录了哪些扛住了、哪些还得靠你自己。"
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-04-28
 category: case-study
@@ -11,7 +11,8 @@ tags:
   - case-study
 featured: true
 language: zh
-sourceHash: "92e468286c279cc0"
+sourceHash: "8ccb6579c9b25ab4"
+sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -32,26 +33,26 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 
 他这篇文章我读了两遍。The Register、Tom's Hardware 和 Business Standard 都做了报道。Hacker News 上的讨论涌到了 874 条评论。
 
-我做的是一种不一样的基础设施平台，叫 Rediacc。它整个的设计初衷就是让这种场景更难发生。于是我坐下来，把测试跑了一遍。
+我做的就是 Rediacc。这个平台的存在就是为了让这种故障更难发生。于是我坐下来，把测试跑了一遍。
 
 这篇文章就是我的发现。数字是真实的。错误信息直接来自 CLI。Rediacc 完全无法保护的那一处，也写在这里。装作没有这一处，才是真正会让人栽跟头的地方。
 
 ## 真正缺失的是什么
 
-仔细读 Jer 的时间线，会发现四个失败彼此叠加。
+仔细看 Jer 的时间线。四个独立的失败彼此叠加。
 
 1. Cursor 用的那个 Railway API 令牌本来是为了管理自定义域名而创建的。它同时拥有 `volumeDelete` 权限。Railway 的 CLI 令牌不支持按操作粒度限定范围。
 2. Railway 的 GraphQL API 接受 `volumeDelete` 作为单次 POST 调用，没有确认步骤。
 3. Railway 所谓的「卷备份」就在同一个卷里。卷没了，备份也跟着没了。
 4. Cursor 智能体自己决定，修复 staging 环境凭证不匹配的「正确」方式是删掉一个卷。
 
-把第 4 点单拎出来。Cursor 的系统规则告诉智能体，没有用户明确请求时，绝不要执行破坏性的 git 命令。删除之后，被要求解释自己的行为时，智能体写了一份书面认罪书。它承认删除数据库卷是「最具破坏性、最不可逆的操作，远比 force push 更糟糕」，并列出了它违反的每一条安全规则。
+停下来单独看第 4 点。Cursor 的系统规则告诉智能体，没有用户明确请求时，绝不要执行破坏性的 git 命令。删除之后，被要求解释自己的行为时，智能体写了一份书面认罪书。它承认删除数据库卷是「最具破坏性、最不可逆的操作，远比 force push 更糟糕」，并列出了它违反的每一条安全规则。
 
 提示词里的行为规则只是建议，不是强制。第 1、2、3 项是基础设施层面的设计选择。正是它们把第 4 项从「一个错误」放大成了「一家公司没了」。
 
 ## 测试环境
 
-Rediacc 上有一台我自己运行的真实生产机器，叫 `hostinger`。上面跑着十三个仓库：一台邮件服务器、一个自托管的 GitLab、一套可观测性栈，还有一个 128 GB 的 StackOverflow 演示仓库，我们用它来跑性能基准。磁盘已经写到 87%，可用空间为零。这是那种出错代价不轻的机器。
+我在 Rediacc 上有一台自己运行的真实生产机器，叫 `hostinger`。上面跑着十三个仓库：一台邮件服务器、一个自托管的 GitLab、一套可观测性栈，还有一个 128 GB 的 StackOverflow 演示仓库，我们用它来跑性能基准。磁盘已经写到 87%，可用空间基本为零。这是那种出错代价不轻的机器。
 
 我特意挑了 StackOverflow 演示仓库。它是机器上最大的一个仓库。它的结构跟真实应用一样，有容器、有持久化数据。如果它的 fork 又快又隔离，那比它小的仓库一定也快也隔离。
 
@@ -59,7 +60,7 @@ Rediacc 上有一台我自己运行的真实生产机器，叫 `hostinger`。上
 
 ## 尝试一：直接 SSH 进入生产仓库
 
-智能体（这次就是我）干的第一件事，是最自然的反应：开一个 shell 进生产仓库看看。
+智能体（这次就是我）会干的第一件事：开一个 shell 进生产仓库看看。
 
 ```bash
 $ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
@@ -73,7 +74,7 @@ CLI 直接拒绝了。原文如下：
 
 这不是系统提示词，而是 CLI 本身在调用离开我笔记本之前就拒绝了它。CLI 看到了我是一个智能体。Claude Code 会设置 `CLAUDECODE` 环境变量。CLI 同时还会通过 `/proc` 遍历进程树，抓那些试图把这个变量藏起来的智能体。然后它把操作和策略表对照一遍，再做出拒绝。
 
-于是智能体做了一件智能体可能会做的事：自己去设置覆盖开关。
+于是智能体做了任何智能体都可能尝试的事：自己去设置覆盖开关。
 
 ```bash
 $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
@@ -112,7 +113,7 @@ License activated (2.1s)
 Total: 7.2s
 ```
 
-128 GB 的 fork 在 2.3 秒内完成。原因是 BTRFS reflink。fork 只是一份元数据，指向父仓库的数据块，直到任意一边发生写入才会分裂。没有任何数据被复制。
+128 GB 的 fork 在 2.3 秒内完成。原因是 BTRFS reflink。fork 只是一份元数据，指向父仓库的数据块，直到任意一边发生写入才会分裂。没有任何数据移动。
 
 为了看一下随容量的变化，我又在一个 2 GB 的仓库上跑了一遍：
 
@@ -163,11 +164,11 @@ uid=7111(rediacc) gid=7111(rediacc) groups=7111(rediacc),988(docker)
 
 Rediacc 隔离的是基础设施：磁盘上的文件、Docker daemon、挂载命名空间、网络。它不隔离你仓库里持有凭证的那些外部 SaaS API。
 
-fork 是父仓库的逐字节 BTRFS reflink。父仓库 `data/`、`.env` 或 `secrets/` 里有什么，fork 里就有什么。如果你的仓库里有 `STRIPE_LIVE_KEY`、`AWS_ACCESS_KEY_ID` 或 Railway API 令牌，fork 里的智能体就能读到它们。它可以拿这些令牌去调 `api.stripe.com`、`s3.amazonaws.com` 或 `backboard.railway.app`。从外部看，这些调用就像来自生产环境。Stripe 或 AWS 分不出 fork 和原始生产的区别。
+fork 是父仓库的逐字节 BTRFS reflink。父仓库 `data/`、`.env` 或 `secrets/` 里有什么，fork 里就有什么。如果你的仓库里有 `STRIPE_LIVE_KEY`、`AWS_ACCESS_KEY_ID` 或 Railway API 令牌，fork 里的智能体就能读到它们。它可以拿这些令牌去调 `api.stripe.com`、`s3.amazonaws.com` 或 `backboard.railway.app`。从外部看，这些调用看起来就像生产环境发出的。Stripe 或 AWS 分不出 fork 和原始生产的区别。
 
 这就是责任共担的分界线。Rediacc 处理基础设施这一半。外部服务那一半住在你的应用代码里。
 
-开发者侧有三种模式可以填上这个缺口：
+开发者侧的缺口由你来填：
 
 - 干脆不要把生产环境的外部凭证放进仓库。让容器在启动时从一个密钥管理系统去取。fork 的容器按设计取到的是受沙箱限定的凭证。
 - 在 fork 时通过 Rediaccfile 的 `up()` 钩子剥离或替换凭证。fork 的 `up()` 跑在跟父仓库不同的仓库 GUID 上，识别这一点，然后用沙箱值改写 `.env`。
@@ -183,7 +184,7 @@ fork 是父仓库的逐字节 BTRFS reflink。父仓库 `data/`、`.env` 或 `se
 
 机制就是 `rdc repo secret`。它的设计参照了 GitHub Actions secrets。它的实现里有两点很关键。
 
-**密钥不住在 LUKS 镜像里面。** 它们住在磁盘上的另一个独立平面：env 模式的密钥以 `${REDIACC_SECRET_<KEY>}` 插值方式在你的 compose 文件里到达容器；file 模式的密钥则通过 Docker compose 的 `secrets:` 块以 tmpfs 文件 `/run/secrets/<key>` 的形式到达容器。无论哪种方式，值都不会被写进仓库的加密镜像。fork 的 BTRFS reflink 复制的是镜像。它不会复制从未在镜像里的东西。一份新鲜 fork 的密钥列表是空的。它的容器启动时没有任何生产凭证，因此连发起一次生产调用都不可能。
+**密钥不住在 LUKS 镜像里面。** 它们住在磁盘上的另一个独立平面：env 模式的密钥以 `${REDIACC_SECRET_<KEY>}` 插值方式在你的 compose 文件里到达容器；file 模式的密钥则通过 Docker compose 的 `secrets:` 块以 tmpfs 文件 `/run/secrets/<key>` 的形式到达容器。无论哪种方式，值都不会接触仓库的加密镜像。fork 的 BTRFS reflink 复制的是镜像。它不会复制从未在镜像里的东西。一份新鲜 fork 的密钥列表是空的。它的容器启动时没有任何生产凭证，连发起一次生产调用都不可能。
 
 **这个模型是只写的。** `rdc repo secret get` 返回的是 SHA-256 摘要，不是值。CLI 设计上就没有任何方式可以把密钥读回来. 这就关上了终端录像、shell 历史和意外重定向带来的泄露面。轮换的方式是 `--current <previous-value>` 来校验前一个值，或者在你不知道前一个值的时候用 `--rotate-secret` 跳过前置条件（会作为一次轮换被审计）。对人类和智能体是对称的。两道关卡同样适用。
 
@@ -193,7 +194,7 @@ fork 是父仓库的逐字节 BTRFS reflink。父仓库 `data/`、`.env` 或 `se
 
 针对智能体威胁模型，这个设计有两个值得专门指出来的副作用。第一，`repo secret list` 和 `repo secret get` 作为 MCP 工具暴露出来（读安全. 只给名字和摘要，绝不给值），所以一个帮你搭应用的智能体可以发现配置了什么，而不会看到具体是什么。第二，当一次写操作未通过前置条件时，JSON 错误信封里包含一个结构化的 `next.options[].run` 字段，列出智能体应当原样转交给人类的具体命令. 包括针对"我忘了前一个值"的轮换逃生口。完整模型见 [AI 智能体安全](/zh/docs/ai-agents-safety)。
 
-完整的操作指引见 [仓库 § 密钥](/zh/docs/repositories#secrets)。配方很短：用 `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""` 播种，用 compose 里的 `${REDIACC_SECRET_<KEY>}` 消费，再 `rdc repo fork` 然后检查 fork 的密钥列表是空的。
+完整的操作指引见 [仓库 § 密钥](/zh/docs/repositories#secrets)。分三步：首先播种值，运行 `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`；然后在 compose 文件里引用 `${REDIACC_SECRET_<KEY>}`；最后运行 `rdc repo fork`，确认 fork 的密钥列表是空的。
 
 ## 这对做这类工作的人意味着什么
 

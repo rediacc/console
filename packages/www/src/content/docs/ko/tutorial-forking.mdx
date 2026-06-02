@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: ko
-sourceHash: "d67568772c42826c"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "73a4cb1d8c412531"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # 저장소 포크하기
 
-이것이 핵심 기능입니다: 앱, 데이터베이스, 구성 파일을 포함한 전체 프로덕션 환경을 몇 초 만에 복제합니다. 크기 무관. 추가 디스크 없음. 원하는 만큼 포크할 수 있습니다.
+이것이 작업 방식을 바꾸는 기능입니다. 앱, 데이터베이스, 구성 파일을 포함한 전체 프로덕션 환경을 몇 초 만에 복제합니다. 크기 무관. 추가 디스크 없음. 원하는 만큼 포크할 수 있습니다.
 
 핵심 문구: **프로덕션을 복제하되, 아무것도 망가뜨리지 않습니다.**
 
@@ -57,7 +57,7 @@ echo "Hello from production" > index.html
 
 ![Many mirrors, one sun -- shared base, your changes are yours](/img/tutorials/tutorial-forking/slide-4.svg)
 
-부모 저장소를 태양이라고 생각하세요. 태양을 손에 쥘 수는 없지만, 태양을 담는 거울을 쥘 수 있습니다. 그 거울이 바로 여러분의 포크입니다. 거울에 그림을 그리면 그 그림은 여러분의 것입니다. 아무리 많은 거울이 태양을 향해 있어도 태양은 변하지 않습니다.
+부모 저장소를 고정된 원본이라고 생각하세요. 포크는 그것의 쓰기 시 복사(copy-on-write) 뷰입니다. 포크에 쓰면 그 내용은 포크에만 남습니다. 아무리 많은 포크가 가리키고 있어도 부모는 변하지 않습니다.
 
 > 태양을 손에 쥘 수 없지만, 거울에 담을 수 있습니다.
 
@@ -65,7 +65,7 @@ echo "Hello from production" > index.html
 
 ![A fork is a frozen photograph; the parent keeps flowing like a river](/img/tutorials/tutorial-forking/slide-5.svg)
 
-이제 강을 생각해 보세요. 물은 계속 흐릅니다. 매 순간 달라집니다. 포크할 때 그 순간에 얼어붙은 강의 사진을 찍는 것과 같습니다. 강은 계속 흐릅니다. 사진은 그렇지 않습니다.
+이제 스냅샷을 생각해 보세요. 포크할 때 그 정확한 순간에 부모를 고정합니다. 부모는 계속 변화합니다. 포크는 그렇지 않습니다.
 
 나중에 부모 저장소가 변경되어도 포크는 그 자리에 있습니다.
 

@@ -4,11 +4,13 @@ description: "Failide sünkroonimine, terminali ligipääs, VS Code integratsioo
 category: "Guides"
 order: 9
 language: et
+sourceHash: "f350872720c99d58"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Tööriistad
 
-Rediacc sisaldab tootlikkuse tööriistu kaugrepositooriumidega töötamiseks: failide sünkroonimine, SSH-terminal, VS Code integratsioon ja CLI uuendused.
+Rediacc sisaldab kaugrepositooriumidega töötamiseks tööriistu: failide sünkroonimine, SSH-terminal, VS Code integratsioon ja CLI uuendused.
 
 ## Failide sünkroonimine (sync)
 
@@ -38,7 +40,7 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 
 ### Failide allalaadimine
 
-Kataloogi puhul kasuta `--remote` (praegune vaikeväärtus) või ühe faili puhul `--remote-file`. Kaks lippu on üksteist välistavad.
+Kataloogi puhul kasuta `--remote` (vaikimisi) või ühe faili puhul `--remote-file`. Kaks lippu on üksteist välistavad.
 
 ```bash
 # Kataloog
@@ -96,7 +98,7 @@ Repositooriumiga ühendamisel seadistatakse `DOCKER_HOST` automaatselt repositoo
 
 ### Alamkäsk connect
 
-Alamkäsk `connect` pakub sama funktsionaalsust otseste lippudega:
+Alamkäsk `connect` teeb sama otseste lippudega:
 
 ```bash
 rdc term connect -m server-1

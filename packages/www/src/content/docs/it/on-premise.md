@@ -4,6 +4,8 @@ description: "Esecuzione del server account e distribuzione della CLI sulla prop
 category: "Guides"
 order: 5
 language: it
+sourceHash: "c8c9aceeeeea1411"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Rediacc può funzionare interamente sulla propria infrastruttura. L'immagine Docker standalone include il server account, il portale web, il sito di marketing e l'endpoint di distribuzione della CLI. Non è richiesta alcuna dipendenza esterna dai servizi ospitati da Rediacc.
@@ -122,7 +124,7 @@ Questa sezione copre la configurazione operativa: generazione delle chiavi, rich
 
 Una sottoscrizione può avere **al massimo un certificato di delega attivo alla volta**. Ogni installazione on-premise impone limiti mensili e per macchina rispetto al proprio registro di emissione locale, quindi più certificati attivi moltiplicherebbero la quota effettiva senza possibilità di riconciliazione.
 
-Se hai bisogno di ambienti separati (produzione, staging, DR, multi-regione), acquista una sottoscrizione per installazione. L'applicazione single-active codifica questo contratto: un tentativo di creare un secondo certificato attivo restituisce `409 DELEGATION_CERT_ALREADY_ACTIVE` con l'id del certificato esistente e le istruzioni per rinnovare (preferito - preserva la catena) o revocare-e-creare (reimposta la catena).
+Se hai bisogno di ambienti separati (produzione, staging, DR, multi-regione), acquista una sottoscrizione per installazione. L'applicazione single-active codifica questo contratto: un tentativo di creare un secondo certificato attivo restituisce `409 DELEGATION_CERT_ALREADY_ACTIVE` con l'id del certificato esistente e le istruzioni per rinnovare (preferito, preserva la catena) o revocare-e-creare (reimposta la catena).
 
 ### 1. Genera la coppia di chiavi Ed25519 on-premise
 
@@ -144,11 +146,11 @@ Memorizza la chiave privata insieme agli altri segreti (ad esempio, un Docker se
 
 Puoi richiedere il certificato dal portale account upstream in tre modi:
 
-**Opzione A - Self-service del cliente (consigliato).** Accedi al portale upstream come proprietario o amministratore dell'organizzazione e naviga su **/account/delegation-certs**. Fai clic su **Create New**, incolla la chiave pubblica on-premise (SPKI base64), scegli una validità (o accetta il valore predefinito del piano) e scarica il file `.json` risultante.
+**Opzione A: Self-service del cliente (consigliato).** Accedi al portale upstream come proprietario o amministratore dell'organizzazione e vai su **/account/delegation-certs**. Fai clic su **Create New**, incolla la chiave pubblica on-premise (SPKI base64), scegli una validita' (o accetta il valore predefinito del piano) e scarica il file `.json` risultante.
 
-**Opzione B - Admin (cross-customer).** Il supporto Rediacc o l'amministratore di sistema upstream può usare `POST /admin/delegation-certs` con gli stessi parametri.
+**Opzione B: Admin (cross-customer).** Il supporto Rediacc o l'amministratore di sistema upstream puo' chiamare `POST /admin/delegation-certs` con gli stessi parametri.
 
-**Opzione C - CLI `rdc` (pianificato).** Un futuro comando CLI integrerà il flusso del portale.
+**Opzione C: CLI `rdc` (pianificato).** Un futuro comando CLI integrera' il flusso del portale.
 
 Il `.json` restituito appare come:
 

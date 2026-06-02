@@ -4,8 +4,8 @@ description: "Den Account-Server und die CLI-Distribution auf eigener Infrastruk
 category: "Guides"
 order: 5
 language: de
-sourceHash: "91498e4c2f374e86"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "c8c9aceeeeea1411"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Rediacc kann vollständig auf eigener Infrastruktur betrieben werden. Das Standalone-Docker-Image enthält den Account-Server, das Webportal, die Marketing-Website und den CLI-Distributionsendpunkt. Externe Abhängigkeiten von Rediacccs gehosteten Diensten sind nicht erforderlich.
@@ -124,7 +124,7 @@ Dieser Abschnitt beschreibt die operative Einrichtung: Schlüssel generieren, Ze
 
 Ein Abonnement darf **höchstens ein aktives Delegierungszertifikat gleichzeitig** haben. Jede On-Premise-Installation erzwingt Pro-Monat- und Pro-Maschinen-Limits gegen ihr eigenes lokales Ausstellungs-Ledger, sodass mehrere aktive Zertifikate das effektive Kontingent ohne mögliche Abstimmung vervielfachen würden.
 
-Wenn separate Umgebungen benötigt werden (Produktion, Staging, DR, Multi-Region), muss ein Abonnement pro Installation erworben werden. Die Single-Active-Durchsetzung kodifiziert diesen Vertrag: Ein Versuch, ein zweites aktives Zertifikat zu erstellen, gibt `409 DELEGATION_CERT_ALREADY_ACTIVE` mit der vorhandenen Zertifikat-ID und Anweisungen zur Erneuerung (bevorzugt - behält die Kette) oder zum Widerrufen und Neuerstellen (setzt die Kette zurück) zurück.
+Wenn separate Umgebungen benötigt werden (Produktion, Staging, DR, Multi-Region), kaufen Sie ein Abonnement pro Installation. Die Single-Active-Durchsetzung kodifiziert diesen Vertrag: Ein Versuch, ein zweites aktives Zertifikat zu erstellen, gibt `409 DELEGATION_CERT_ALREADY_ACTIVE` mit der vorhandenen Zertifikat-ID und Anweisungen zur Erneuerung (bevorzugt, behält die Kette) oder zum Widerrufen und Neuerstellen (setzt die Kette zurück) zurück.
 
 ### 1. Ed25519-Schlüsselpaar für On-Premise generieren
 
@@ -146,11 +146,11 @@ Den privaten Schlüssel neben anderen Geheimnissen speichern (z. B. als Docker-S
 
 Das Zertifikat kann auf drei Arten vom vorgelagerten Account-Portal angefordert werden:
 
-**Variante A - Kundenselbstbedienung (empfohlen).** Als Org-Owner oder Admin in das vorgelagerte Portal einloggen und zu **/account/delegation-certs** navigieren. Auf **Neu erstellen** klicken, den öffentlichen On-Premise-Schlüssel (base64 SPKI) einfügen, eine Gültigkeit wählen (oder den planmäßigen Standard akzeptieren) und die resultierende `.json`-Datei herunterladen.
+**Variante A: Kundenselbstbedienung (empfohlen).** Als Org-Owner oder Admin in das vorgelagerte Portal einloggen und zu **/account/delegation-certs** navigieren. Auf **Neu erstellen** klicken, den öffentlichen On-Premise-Schlüssel (base64 SPKI) einfügen, eine Gültigkeit wählen (oder den planmäßigen Standard akzeptieren) und die resultierende `.json`-Datei herunterladen.
 
-**Variante B - Admin (kundenübergreifend).** Rediacc-Support oder der vorgelagerte Systemadministrator kann `POST /admin/delegation-certs` mit denselben Parametern verwenden.
+**Variante B: Admin (kundenübergreifend).** Rediacc-Support oder der vorgelagerte Systemadministrator kann `POST /admin/delegation-certs` mit denselben Parametern aufrufen.
 
-**Variante C - `rdc`-CLI (geplant).** Ein künftiger CLI-Befehl wird den Portal-Ablauf vereinfachen.
+**Variante C: `rdc`-CLI (geplant).** Ein künftiger CLI-Befehl wird den Portal-Ablauf vereinfachen.
 
 Das zurückgegebene `.json` sieht wie folgt aus:
 

@@ -4,8 +4,8 @@ description: 什么时候使用 rdc，什么时候使用 renet。
 category: Concepts
 order: 1
 language: zh
-sourceHash: 526136e143dbcf08
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "026a183f8a5f9dd4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # rdc vs renet
@@ -23,7 +23,7 @@ Rediacc 有两个二进制文件。以下是各自的使用场景。
 
 ## 它们如何协同工作
 
-`rdc` 通过 SSH 连接到您的服务器，并代替您运行 `renet` 命令。您在工作站上输入一条命令，`rdc` 处理剩下的一切：
+在工作站上运行 `rdc`。它会打开一个到服务器的 SSH 连接，并在那里为你运行匹配的 `renet` 命令。一条命令，一处执行：
 
 1. 读取本地配置（`~/.config/rediacc/rediacc.json`）
 2. 通过 SSH 连接到服务器
@@ -81,6 +81,6 @@ rdc ops down               # 销毁集群
 
 ## Rediaccfile 说明
 
-您可能会在 `Rediaccfile` 中看到 `renet compose -- ...`。这是正常的, Rediaccfile 函数在 `renet` 可用的服务器上运行。
+你会在 `Rediaccfile` 中看到 `renet compose -- ...`。不必担心。Rediaccfile 函数在服务器上运行，而 `renet` 已经安装在那里。
 
 从工作站启动和停止工作负载请使用 `rdc repo up` 和 `rdc repo down`。

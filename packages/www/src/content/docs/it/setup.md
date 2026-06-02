@@ -4,6 +4,8 @@ description: "Crea una config, aggiungi macchine, esegui il provisioning dei ser
 category: "Guides"
 order: 3
 language: it
+sourceHash: "2456daa4289ffb8c"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Configurazione della macchina
@@ -128,7 +130,7 @@ rdc config infra set -m server-1 \
 | `--tcp-ports <ports>` | Macchina | Porte TCP aggiuntive da forwardare, separate da virgola (es. `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Macchina | Porte UDP aggiuntive da forwardare, separate da virgola (es. `53`) |
 
-Le opzioni con ambito macchina vengono memorizzate per ogni macchina. Le opzioni con ambito config (`--cert-email`, `--cf-dns-token`) sono condivise tra tutte le macchine nella config; impostale una volta e si applicano ovunque.
+Le opzioni con ambito macchina vengono memorizzate per ogni macchina. Le opzioni con ambito config (`--cert-email`, `--cf-dns-token`) sono condivise tra ogni macchina nella config. Impostale una volta e si applicano ovunque.
 
 ### Visualizza l'infrastruttura
 

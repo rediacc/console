@@ -12,8 +12,8 @@ tags:
   - conformite
 featured: false
 language: fr
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -164,4 +164,4 @@ Si vous vous apprêtez à renouveler un contrat de sauvegarde ou de reprise apr�
 
 Si nous sommes l'alternative dans votre liste restreinte, l'offre est concrète. Envoyez-nous votre questionnaire fournisseur. Nous le remplirons sur la base d'une instance déployée, avec nos réponses réelles à vos questions, y compris les lacunes. Si vous souhaitez parcourir l'architecture avant d'envoyer des documents, nous réserverons une revue d'architecture de 30 minutes avec le fondateur. Le chemin vers une entrée défendable dans le registre n'est pas une brochure brillante. Ce sont les réponses, y compris les plus inconfortables.
 
-Pour la cartographie publique des capacités de Rediacc par rapport aux articles de NIS2, voir [NIS2 et DORA](/fr/docs/legal-nis2-dora). Pour le cadre de conformité plus large, voir [Vue d'ensemble de la conformité](/fr/docs/legal-overview), [Souveraineté des données](/fr/docs/legal-data-sovereignty) et [Sur site](/fr/docs/on-premise).
+Vous voulez la carte Rediacc article par article ? Voir [NIS2 et DORA](/fr/docs/legal-nis2-dora). Vous avez besoin du cadre plus large ? Consultez [Vue d'ensemble de la conformité](/fr/docs/legal-overview). Pour la résidence des données, voir [Souveraineté des données](/fr/docs/legal-data-sovereignty). Pour comprendre pourquoi l'auto-hébergement importe, voir [Sur site](/fr/docs/on-premise).

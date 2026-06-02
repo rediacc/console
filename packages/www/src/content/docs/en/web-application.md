@@ -1,6 +1,6 @@
 ---
 title: Web Application
-description: Understanding web application architecture and deployment with Rediacc
+description: "Using the Rediacc web console to manage machines, repositories, and backups"
 category: Reference
 order: 1
 language: en
@@ -10,9 +10,9 @@ language: en
 
 ## Overview
 
-**Rediacc** is a cloud platform offering AI-powered backup services.
+**Rediacc** is self-hosted software you install on your own servers. You back up, fork, and restore whole live systems with it. Apps, databases, and config together, not file-by-file. That last part is the whole point: most backup tools copy files and lose the relationships between them.
 
-This guide explains the basic usage of the web interface at [https://www.rediacc.com/](https://www.rediacc.com/).
+This guide walks through the web console at [https://www.rediacc.com/](https://www.rediacc.com/).
 
 ### Purpose of This Guide
 
@@ -28,7 +28,7 @@ This guide explains the basic usage of the web interface at [https://www.rediacc
 ![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
 *(Video: Complete registration flow from start to finish)*
 
-To start using the Rediacc platform, you first need to create an account.
+To use Rediacc, you need an account first.
 
 ![Rediacc login page - always-on infrastructure](/assets/images/user-guide/01_login.png)
 *(Figure 1: Main login page, showing the Rediacc platform's main features)*
@@ -109,7 +109,7 @@ After logging in, the screen you see consists of these main sections:
 
 ## 2.1 Organization - Users
 
-User management allows you to control access to the platform for people in your organization.
+User management is where you control who in your organization gets access.
 
 ### 2.1.1 Adding Users
 
@@ -208,7 +208,7 @@ You can use the trace feature to monitor user activities.
 
 ## 2.2 Organization - Teams
 
-Teams allow you to group users and provide bulk access to resources.
+Teams group users so you can grant access in bulk.
 
 ### 2.2.1 Creating Teams
 
@@ -291,7 +291,7 @@ Teams allow you to group users and provide bulk access to resources.
 
 ## 2.3 Organization - Access Control
 
-Access control allows you to centrally manage user permissions by creating permission groups.
+Access control centralizes permissions through groups, instead of per-user.
 
 ### 2.3.1 Creating Permission Groups
 
@@ -327,7 +327,7 @@ Access control allows you to centrally manage user permissions by creating permi
 
 ## 2.4 Machines
 
-The Machines section allows you to manage your servers and repository resources.
+The Machines section is where you manage your servers and the repositories on them.
 
 ### 2.4.1 Adding Machines
 
@@ -483,7 +483,7 @@ Click the **{{t:common.actions.refresh}}** button to update the machine list.
 ![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
 *(Video: Running remote operations on a machine)*
 
-You can perform various remote operations on machines.
+You can run remote operations against a machine from the web.
 
 1. Select the machine and click the **{{t:common.actions.remote}}** button.
 2. See options in the dropdown menu:
@@ -544,7 +544,7 @@ You can perform various remote operations on machines.
 
 ## 2.5 Repository Creation and Operations
 
-Repositories are the fundamental units where your backup data is stored.
+A repository is one isolated application deployment. Its apps, its data, its config, its own Docker daemon. So almost every button on this page acts on a repository, not on the machine it sits on. Worth knowing before you click Delete.
 
 ### 2.5.1 Creating Repositories
 
@@ -845,7 +845,7 @@ To get detailed information about the repository:
 
 ## 2.6 Repository Connection Operations
 
-You can connect to repositories using different methods.
+You connect to a repository two ways. The desktop app gives you a real terminal and SSH. The browser is fine for inspection and click-through management, but it cannot drive long shell sessions. Pick the desktop app if you are doing real work.
 
 ### 2.6.1 Desktop Application Connection
 
@@ -914,7 +914,7 @@ You can manage your profile and system settings from the Settings section.
 
 ## 2.8 Storage
 
-The Storage section allows you to manage the physical areas where your backup data will be stored.
+The Storage section is where you define the physical locations your backup data lands.
 
 ### 2.8.1 Adding Storage
 
@@ -945,7 +945,7 @@ The Storage section allows you to manage the physical areas where your backup da
 
 ## 2.9 Credentials
 
-The Credentials section allows you to securely manage access information for your repositories.
+The Credentials section is where you manage the secrets your repositories use to access things.
 
 ### 2.9.1 Credential Editing
 
@@ -1008,7 +1008,7 @@ The Credentials section allows you to securely manage access information for you
 
 ## 2.10 Queue
 
-The Queue section allows you to track pending and completed operations in the system.
+The Queue section tracks pending and completed operations across the system.
 
 ### 2.10.1 Queue Operations
 
@@ -1042,7 +1042,7 @@ The Queue section allows you to track pending and completed operations in the sy
 
 ## 2.11 Audit
 
-The Audit section maintains records of all operations performed in the system.
+The Audit section keeps a record of every operation run in the system.
 
 ### 2.11.1 Audit Records
 

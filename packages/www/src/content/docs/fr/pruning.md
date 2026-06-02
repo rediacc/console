@@ -4,8 +4,8 @@ description: "Supprimer les sauvegardes orphelines, les snapshots obsolètes, le
 category: "Guides"
 order: 12
 language: fr
-sourceHash: "881513fbe657978e"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Nettoyage
@@ -60,7 +60,7 @@ Les suppressions sont regroupées par sous-chemin de stockage : un appel rclone 
 
 ## Machine Prune
 
-Nettoie les ressources sur la machine en trois phases. La phase 1 s'exécute toujours ; les phases 2 et 3 sont opt-in et mutuellement complémentaires.
+Nettoie les ressources sur la machine en trois phases. La phase 1 s'exécute toujours ; les phases 2 et 3 sont opt-in et peuvent être combinées.
 
 ### Phase 1 : Nettoyage du datastore (s'exécute toujours)
 
@@ -171,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-Les noms de certificats dont l'ancrage est une machine, un dépôt ou un GUID vivant. Et tout wildcard `<service>.<base>` à étiquette unique ou racine `*.<base>`. Sont laissés intacts.
+Les noms de certificats dont l'ancrage est une machine, un dépôt ou un GUID vivant sont laissés intacts, de même que tout wildcard `<service>.<base>` à étiquette unique ou racine `*.<base>`.
 
 ## Migration : backfill du miroir d'état
 

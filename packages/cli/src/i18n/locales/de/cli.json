@@ -1324,6 +1324,13 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} abgeschlossen: {{succeeded}}/{{total}} erfolgreich",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "branch": {
+        "branchOption": "Name des neuen Branches",
+        "completed": "branch \"{{branch}}\" -> {{commit}}",
+        "description": "Erstellt eine benannte branch-Referenz, die auf den aktuellen commit (dessen Spitze) des Arbeits-Forks zeigt. branch-Referenzen liegen in der CLI-Konfiguration (Maschine = Objektspeicher, Konfiguration = Referenzspeicher).",
+        "descriptionShort": "Eine branch-Referenz erstellen, die auf den aktuellen commit zeigt",
+        "workingOption": "Arbeits-Fork, auf dessen aktuellen commit die branch zeigt"
+      },
       "cat": {
         "description": "Einen begrenzten Ausschnitt einer Datei innerhalb eines Repositories lesen und auf stdout ausgeben (serverseitig begrenzt; Diagnosemeldungen gehen an stderr)",
         "failed": "Lesen fehlgeschlagen",
@@ -1338,6 +1345,22 @@
       },
       "certSync": {
         "updated": "ACME-Zertifikats-Cache von {{machine}} aktualisiert ({{count}} Zertifikate)"
+      },
+      "checkout": {
+        "description": "Klont einen unveränderlichen commit (oder eine branch-Spitze) per Reflink in einen frischen beschreibbaren Arbeits-Fork und richtet HEAD darauf aus. Nahezu sofort und von konstanter Dauer (BTRFS-Reflink).",
+        "descriptionShort": "Einen commit/eine branch per Reflink in einen beschreibbaren Arbeits-Fork klonen",
+        "fromOption": "--ref als Branch-Namen auf diesem Arbeits-Fork auflösen",
+        "refOption": "Commit-GUID (oder Branch-Name mit --from) zum Auschecken",
+        "tagOption": "Name für den neuen beschreibbaren Arbeits-Fork"
+      },
+      "commit": {
+        "authorOption": "commit-Autor",
+        "completed": "{{commit}} committet: {{message}}",
+        "description": "Friert den aktuellen Zustand eines gemounteten Arbeits-Forks in einen neuen unveränderlichen commit ein (wie bei git). Der commit speichert seine Nachricht, den Autor, den Zeitstempel und den Parent im Volume (sodass diese Angaben beim push mitwandern) und wird schreibgeschützt markiert — er verweigert das Mounten. Der Arbeits-Fork bleibt unverändert, so wie git den Arbeitsbaum unangetastet lässt. Checke einen commit mit 'rdc repo checkout' aus, um eine beschreibbare Kopie zu erhalten.",
+        "descriptionShort": "Einen Arbeits-Fork in einen neuen unveränderlichen commit einfrieren",
+        "failed": "commit fehlgeschlagen",
+        "messageOption": "commit-Nachricht",
+        "nameOption": "Arbeits-Fork, der committet werden soll (muss gemountet sein)"
       },
       "create": {
         "alreadyExists": "Repository \"{{name}}\" existiert bereits im Kontext",
@@ -1415,6 +1438,8 @@
         "descriptionShort": "CoW-Fork eines Repositorys erstellen (neue GUID, networkId, IP-Bereich)",
         "examples": "\nBeispiele:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Fork-Erstellung fehlgeschlagen",
+        "immutableOption": "Markiert den Fork als schreibgeschützt: Er verweigert das Einhängen und hält sein Image dauerhaft byte-stabil (ein eingefrorener Commit/eine Basis für maschinenübergreifenden Delta-Push)",
+        "immutableUpConflict": "repo fork: --immutable und --up schließen sich gegenseitig aus. Ein unveränderlicher Fork verweigert das Einhängen und kann daher nicht gestartet werden. Lassen Sie --up weg oder verzichten Sie auf --immutable, um einen normalen Fork bereitzustellen.",
         "registered": "Fork \"{{repository}}\" registriert ({{guid}}, Netzwerk {{networkId}})",
         "rollback": "Konfiguration für \"{{repository}}\" zurückgesetzt",
         "starting": "Fork von \"{{parent}}\" als \"{{repository}}\" auf \"{{machine}}\" wird erstellt...",
@@ -1423,6 +1448,25 @@
         "tagReservedLatest": "repo fork: Tag \"latest\" ist für das Grand-Repository (Produktion) reserviert — wählen Sie ein anderes --tag (z. B. \"test\", \"staging\", \"<feature>\")",
         "upOption": "Nach dem Fork mounten und Dienste starten (Fork + Mount + Up in einem Befehl)"
       },
+      "fsck": {
+        "clean": "Keine Abweichung auf {{machine}}: jede Referenz löst auf und keine verwaisten Commits gefunden",
+        "danglingHeader": "{{count}} hängende Referenz(en) (zeigen auf ein fehlendes Objekt):",
+        "description": "Validiert die Referenzen der CLI-Konfiguration (Branches, HEAD) gegen die tatsächlich auf einer Maschine vorhandenen Objekte. Meldet hängende Referenzen (eine Referenz, die auf ein fehlendes Objekt zeigt) und verwaiste Commits (ein unveränderlicher Commit, den keine Referenz erreicht). Schreibgeschützt.",
+        "descriptionShort": "Konfigurationsreferenzen gegen Maschinenobjekte prüfen",
+        "orphanHeader": "{{count}} verwaiste(r) Commit(s) (keine Referenz erreicht sie):",
+        "orphanHint": "Verwaiste Commits zurückgewinnen mit: rdc repo gc --apply -m <machine>"
+      },
+      "gc": {
+        "applied": "Garbage Collection abgeschlossen: {{deleted}}/{{total}} Commit(s) gelöscht",
+        "applyOption": "Die unerreichbaren Commits tatsächlich löschen (Standard ist eine Probelauf-Vorschau)",
+        "deleted": "Commit {{commit}} gelöscht",
+        "deleteFailed": "Commit {{commit}} konnte nicht gelöscht werden",
+        "description": "Löscht unveränderliche Commit-Objekte auf einer Maschine, die kein Branch und kein HEAD erreicht (Erreichbarkeits-GC). Die Maschine ist der Objektspeicher; die CLI-Konfiguration ist der Referenzspeicher. Standardmäßig Probelauf: mit --apply löschen. Berührt niemals ein eingehängtes Objekt oder einen Arbeits-Fork.",
+        "descriptionShort": "Unerreichbare unveränderliche Commits auf einer Maschine per Garbage Collection entfernen",
+        "dryRunHeader": "{{count}} unerreichbare(r) Commit(s) würden gelöscht:",
+        "dryRunHint": "Mit --apply erneut ausführen, um sie zu löschen.",
+        "nothing": "Nichts zu bereinigen auf {{machine}}: jeder Commit ist erreichbar"
+      },
       "list": {
         "completed": "Auflistung abgeschlossen",
         "description": "Repositories auf einer Maschine auflisten",
@@ -1430,7 +1474,25 @@
         "serverNameLegend": "* Name von der Maschine gelesen (nicht in Ihrer lokalen Konfiguration)",
         "starting": "Repositories auf \"{{machine}}\" werden aufgelistet..."
       },
+      "log": {
+        "description": "Gibt die commit-Historie aus, die vom aktuellen commit eines Arbeits-Forks (oder von einer commit-Referenz) aus erreichbar ist, und durchläuft dabei die von 'rdc repo commit' aufgezeichnete Parent-Kette. Liest den Spiegel außerhalb des Volumes, sodass kein commit entsperrt wird.",
+        "descriptionShort": "Die commit-Historie eines Forks oder commits durchlaufen",
+        "failed": "log fehlgeschlagen",
+        "jsonOption": "Die commit-Historie als JSON ausgeben",
+        "nameOption": "Arbeits-Fork oder commit, bei dem der Durchlauf der Historie beginnt"
+      },
       "machineOption": "Name der Zielmaschine",
+      "merge": {
+        "baseOption": "GUID des gemeinsamen Vorgänger-commits für einen three-way-merge (mit --resolve verwendet). Standardmäßig das Eltern-Element des Quell-commits oder der aktuelle commit des Ziels.",
+        "completed": "{{source}} in {{target}} zusammengeführt",
+        "description": "Führt einen Quell-Commit oder -Fork in einen Ziel-Arbeits-Fork zusammen. Das aktive Ziel wird niemals direkt verändert: Das Ergebnis wird in einem Reflink-Klon erstellt und atomar eingewechselt. Ein eingehängtes oder laufendes Ziel wird abgelehnt, sofern nicht --force angegeben ist, das es zuvor sauber stilllegt. Ohne --resolve erfolgt eine bildweite Übernahme der Quelle (take-theirs; das Ziel wird zur Quelle); mit --resolve ours|theirs erfolgt eine dateiweise Drei-Wege-Zusammenführung gegen den gemeinsamen Vorfahren, wobei die jeweils einzigartigen Änderungen beider Seiten übernommen und beidseitige Konflikte gemäß dem Flag (ours oder theirs) aufgelöst werden.",
+        "descriptionShort": "Lifecycle-sicherer merge eines commit/fork in einen Arbeits-fork",
+        "failed": "merge fehlgeschlagen",
+        "forceOption": "Ein eingehängtes/laufendes Ziel zuerst stilllegen, dann zusammenführen (verändert niemals einen aktiven Mount)",
+        "fromOption": "Quell-commit oder -fork, aus dem zusammengeführt wird",
+        "nameOption": "Ziel-Arbeits-fork, in den zusammengeführt wird",
+        "resolveOption": "Dateiweise Konfliktauflösung für einen Three-Way-Merge: 'ours' behält die Version des Ziels, 'theirs' übernimmt die der Quelle. Für ein Fast-Forward des gesamten Images (take-theirs) weglassen."
+      },
       "migrate": {
         "checkpointing": "CRIU-Checkpoint wird erstellt...",
         "complete": "Migration abgeschlossen: {{name}} von {{from}} nach {{to}} verschoben",
@@ -1443,9 +1505,11 @@
         "downtime": "Ausfallzeit: {{duration}}",
         "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. 10M)",
         "optionCheckpoint": "CRIU-Live-Migration: Prozessspeicherzustand erfassen und wiederherstellen",
+        "optionDeltaBase": "Unveränderliche Basis-GUID für das Umschalt-Delta (erweitert; Standard ist die Phase-1-Basis)",
         "optionFrom": "Name der Quellmaschine",
         "optionProvision": "Automatische Bereitstellung über Cloud-Anbieter (z.B. hetzner, linode)",
         "optionSkipDns": "DNS-Umschaltung nach Migration überspringen",
+        "optionStrategy": "Block-Delta-Strategie für die Umschaltung: auto, physical oder shared",
         "optionTo": "Name der Zielmaschine",
         "phase1": "Phase 1: Massendaten übertragen (Quelle läuft weiter)...",
         "phase1Done": "Massentransfer abgeschlossen",
@@ -1489,8 +1553,10 @@
         "description": "Repository von einem Remote (Rechner oder Speicher) pullen. Namen weglassen, um alle Repos zu pullen. Der Quelltyp wird automatisch aus der Konfiguration erkannt. Verwenden Sie --up zum Bereitstellen nach dem Pull",
         "descriptionShort": "Repository von einem Remote (Rechner oder Speicher) pullen",
         "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. \"6M\", \"10M\")",
+        "optionDeltaBase": "Unveränderliche Basis-GUID, die auf beiden Rechnern byte-identisch vorliegt; nur geänderte Blöcke empfangen (Rechnerquelle)",
         "optionForce": "Vorhandenes Repository überschreiben erzwingen",
         "optionFrom": "Name des Quellrechners oder Speichers (wird automatisch aus der Konfiguration erkannt)",
+        "optionStrategy": "Block-Delta-Strategie bei Verwendung einer Delta-Basis: auto, physical oder shared",
         "optionUp": "Nach dem Pull das Repository auf diesem Rechner mounten und bereitstellen",
         "pulling": "Backup von \"{{repo}}\" wird abgerufen...",
         "sourceRequired": "Geben Sie --from <remote> an (Rechner- oder Speichername aus der Konfiguration)"
@@ -1504,8 +1570,10 @@
         "destRequired": "Geben Sie --to <remote> an (Rechner- oder Speichername aus der Konfiguration)",
         "optionBwlimit": "Bandbreitenlimit für rsync-Transfer (z.B. \"6M\", \"10M\")",
         "optionCheckpoint": "CRIU-Checkpoint vor Backup erstellen (erfasst Prozessspeicherstatus für Live-Migration)",
+        "optionDeltaBase": "Unveränderliche Basis-GUID, die auf beiden Rechnern byte-identisch vorliegt; nur geänderte Blöcke übertragen (Rechnerziel). Weglassen für automatische Basiswahl",
         "optionForce": "Vorhandenes Backup überschreiben erzwingen",
         "optionProvision": "Zielrechner automatisch über Cloud-Anbieter bereitstellen, wenn nicht vorhanden",
+        "optionStrategy": "Block-Delta-Strategie bei Verwendung einer Delta-Basis: auto, physical oder shared",
         "optionTag": "Deployment-Tag für Versionierung",
         "optionTo": "Name des Zielrechners oder Speichers (wird automatisch aus der Konfiguration erkannt)",
         "optionUp": "Nach dem Push das Repository auf dem Zielrechner mounten und bereitstellen",

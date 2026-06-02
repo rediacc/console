@@ -1,19 +1,20 @@
 ---
 title: Aplicación Web
-description: Comprensión de la arquitectura y el despliegue de aplicaciones web con Rediacc
+description: "Uso de la consola web de Rediacc para gestionar máquinas, repositorios y respaldos"
 category: Reference
 order: 1
 language: es
-sourceHash: "ee9dff9ac2c8bce1"
+sourceHash: "0951a0a1b320f570"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Guía de Usuario de la Plataforma Rediacc
 
 ## Descripción General
 
-**Rediacc** es una plataforma en la nube que ofrece servicios de respaldo impulsados por IA.
+**Rediacc** es un software autoalojado que instala en sus propios servidores. Con él puede respaldar, ramificar y restaurar sistemas completos en vivo: aplicaciones, bases de datos y configuración juntos, no archivo por archivo. Esa última parte es el punto central: la mayoría de las herramientas de respaldo copian archivos y pierden las relaciones entre ellos.
 
-Esta guía explica el uso básico de la interfaz web en [https://www.rediacc.com/](https://www.rediacc.com/).
+Esta guía recorre la consola web en [https://www.rediacc.com/](https://www.rediacc.com/).
 
 ### Propósito de esta Guía
 
@@ -29,7 +30,7 @@ Esta guía explica el uso básico de la interfaz web en [https://www.rediacc.com
 ![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
 *(Video: Complete registration flow from start to finish)*
 
-Para comenzar a utilizar la plataforma Rediacc, primero necesita crear una cuenta.
+Para usar Rediacc, primero necesita una cuenta.
 
 ![Página de inicio de sesión de Rediacc - infraestructura siempre activa](/assets/images/user-guide/01_login.png)
 *(Figura 1: Página principal de inicio de sesión, mostrando las características principales de la plataforma Rediacc)*
@@ -110,7 +111,7 @@ Después de iniciar sesión, la pantalla que ve consta de estas secciones princi
 
 ## 2.1 Organización - Usuarios
 
-La gestión de usuarios le permite controlar el acceso a la plataforma para las personas de su organización.
+La gestión de usuarios es donde controla quién en su organización tiene acceso.
 
 ### 2.1.1 Agregar Usuarios
 
@@ -209,7 +210,7 @@ Puede usar la función de rastreo para monitorear las actividades de los usuario
 
 ## 2.2 Organización - Equipos
 
-Los equipos le permiten agrupar usuarios y proporcionar acceso masivo a los recursos.
+Los equipos agrupan usuarios para que pueda otorgar acceso en bloque.
 
 ### 2.2.1 Crear Equipos
 
@@ -292,7 +293,7 @@ Los equipos le permiten agrupar usuarios y proporcionar acceso masivo a los recu
 
 ## 2.3 Organización - Control de Acceso
 
-El control de acceso le permite gestionar centralmente los permisos de usuario creando grupos de permisos.
+El control de acceso centraliza los permisos mediante grupos, en lugar de hacerlo por usuario.
 
 ### 2.3.1 Crear Grupos de Permisos
 
@@ -328,7 +329,7 @@ El control de acceso le permite gestionar centralmente los permisos de usuario c
 
 ## 2.4 Máquinas
 
-La sección de Máquinas le permite gestionar sus servidores y recursos de repositorio.
+La sección de Máquinas es donde gestiona sus servidores y los repositorios que contienen.
 
 ### 2.4.1 Agregar Máquinas
 
@@ -484,7 +485,7 @@ Haga clic en el botón **{{t:common.actions.refresh}}** para actualizar la lista
 ![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
 *(Video: Running remote operations on a machine)*
 
-Puede realizar varias operaciones remotas en las máquinas.
+Puede ejecutar operaciones remotas contra una máquina desde la web.
 
 1. Seleccione la máquina y haga clic en el botón **{{t:common.actions.remote}}**.
 2. Vea las opciones en el menú desplegable:
@@ -545,7 +546,7 @@ Puede realizar varias operaciones remotas en las máquinas.
 
 ## 2.5 Creación y Operaciones de Repositorio
 
-Los repositorios son las unidades fundamentales donde se almacenan sus datos de respaldo.
+Un repositorio es un despliegue de aplicación aislado: sus aplicaciones, sus datos, su configuración y su propio daemon Docker. Por eso casi todos los botones de esta página actúan sobre un repositorio, no sobre la máquina donde reside. Conviene saberlo antes de hacer clic en Eliminar.
 
 ### 2.5.1 Crear Repositorios
 
@@ -846,7 +847,7 @@ Para obtener información detallada sobre el repositorio:
 
 ## 2.6 Operaciones de Conexión de Repositorio
 
-Puede conectarse a los repositorios utilizando diferentes métodos.
+Hay dos formas de conectarse a un repositorio. La aplicación de escritorio le da una terminal real y SSH. El navegador es adecuado para inspección y gestión por clics, pero no puede manejar sesiones de shell largas. Use la aplicación de escritorio si va a realizar trabajo real.
 
 ### 2.6.1 Conexión de Aplicación de Escritorio
 
@@ -915,7 +916,7 @@ Puede gestionar su perfil y configuración del sistema desde la sección Configu
 
 ## 2.8 Almacenamiento
 
-La sección de Almacenamiento le permite gestionar las áreas físicas donde se almacenarán sus datos de respaldo.
+La sección de Almacenamiento es donde define las ubicaciones físicas donde aterrizan sus datos de respaldo.
 
 ### 2.8.1 Agregar Almacenamiento
 
@@ -946,7 +947,7 @@ La sección de Almacenamiento le permite gestionar las áreas físicas donde se 
 
 ## 2.9 Credenciales
 
-La sección de Credenciales le permite gestionar de forma segura la información de acceso para sus repositorios.
+La sección de Credenciales es donde gestiona los secretos que sus repositorios utilizan para acceder a los recursos.
 
 ### 2.9.1 Edición de Credenciales
 
@@ -1009,7 +1010,7 @@ La sección de Credenciales le permite gestionar de forma segura la información
 
 ## 2.10 Cola
 
-La sección de Cola le permite rastrear las operaciones pendientes y completadas en el sistema.
+La sección de Cola realiza un seguimiento de las operaciones pendientes y completadas en todo el sistema.
 
 ### 2.10.1 Operaciones de Cola
 
@@ -1043,7 +1044,7 @@ La sección de Cola le permite rastrear las operaciones pendientes y completadas
 
 ## 2.11 Auditoría
 
-La sección de Auditoría mantiene registros de todas las operaciones realizadas en el sistema.
+La sección de Auditoría lleva un registro de cada operación ejecutada en el sistema.
 
 ### 2.11.1 Registros de Auditoría
 

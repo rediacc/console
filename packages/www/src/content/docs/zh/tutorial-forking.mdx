@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: zh
-sourceHash: "d67568772c42826c"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "73a4cb1d8c412531"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Fork 仓库
 
-这是杀手级功能：在几秒内克隆整个生产环境（应用、数据库、配置文件）。任意大小，零额外磁盘占用，随心所欲地 fork。
+这是改变你工作方式的功能：在几秒内克隆整个生产环境（应用、数据库、配置文件）。任意大小，零额外磁盘占用，随心所欲地 fork。
 
 一句话总结：**克隆生产环境，万无一失。**
 
@@ -57,7 +57,7 @@ Fork 的工作原理相同。1 GB、100 GB、1 TB，每次时间相同。
 
 ![多面镜子，一个太阳：共享基础，你的改动属于你](/img/tutorials/tutorial-forking/slide-4.svg)
 
-把父仓库想象成太阳。你无法握住太阳，但你可以拿一面镜子来捕捉它。那面镜子就是你的 fork。在镜子上作画，你的画是你的。无论有多少面镜子对着太阳，太阳都保持不变。
+把父仓库想象成一个固定的数据源。你的 fork 是它的写时复制视图。向 fork 写入的数据留在 fork 内，父仓库不会移动，无论有多少个 fork 指向它。
 
 > 你无法握住太阳，但你可以把它握在镜子里。
 
@@ -65,7 +65,7 @@ Fork 的工作原理相同。1 GB、100 GB、1 TB，每次时间相同。
 
 ![fork 是一张冻结的照片，父仓库像河流一样继续流淌](/img/tutorials/tutorial-forking/slide-5.svg)
 
-现在想象一条河。水不断流动，每时每刻都在变化。当你 fork 时，你拍下了那一刻河流的照片，冻结在那个瞬间。河流继续流动，你的照片不会。
+现在想象快照的概念。当你 fork 时，你将父仓库冻结在那个确切的时刻。父仓库继续变化，你的 fork 不会。
 
 如果父仓库后来发生了变化，你的 fork 仍然停留在原来的位置。
 

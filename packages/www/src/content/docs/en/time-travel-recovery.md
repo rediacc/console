@@ -1,6 +1,6 @@
 ---
 title: Time Travel Recovery
-description: Recover accidentally deleted data from weeks ago with snapshot-based time travel.
+description: "Recover data deleted weeks ago using btrfs snapshots, even after your normal backups have rolled past it."
 category: Use Cases
 order: 2
 language: en
@@ -8,19 +8,19 @@ language: en
 
 > **When Others Lose Data Forever, You Can Travel Back In Time.**
 
-**Note:** This is a **use case example** demonstrating how Rediacc can solve this problem. As a startup, these scenarios represent potential applications rather than completed case studies.
+**Note:** This is a **use case example** showing how Rediacc handles this kind of problem. We're a startup. These are realistic scenarios the product is built for, not customer case studies we've already shipped.
 
-**Crisis Scenario:** A newly hired employee **accidentally deleted** critical data from the live database 3 weeks ago. The organization's backup system only kept backups for 2 weeks, making data recovery nearly impossible through conventional means.
+**Crisis Scenario:** A new hire **accidentally deleted** critical rows from your live database 3 weeks ago. Your backup system only keeps 2 weeks of history. With a normal setup, that data is gone.
 
 ## The Problem
 
-Mehmet is a system expert responsible for the database of a large online shopping organization. One morning, upon customer complaints, he notices that some past order records **are not visible** in the system. The investigation reveals that a newly hired employee **accidentally deleted** some critical data from the live database 3 weeks ago, **connecting to the live database instead of the test environment**.
+Mehmet runs the database for a large e-commerce platform. One morning customers start complaining that past order records **are not visible** anymore. He investigates. A newly hired engineer had **accidentally deleted** critical rows from the live database 3 weeks ago, **connecting to the live database instead of the test environment**. The classic mistake every DBA has either made themselves or watched a junior make.
 
 **Existing Backup System:**
 * Full backups are taken once a week
 * **Incremental backups** are recorded daily
 
-**Dilemma:** The deletion took place **before the date of the full backups**, so the lost data is not in the backups. Daily backups **only record the latest data**, so **deleted items cannot be recovered**.
+**The dilemma:** the deletion happened **before the date of the full backups**, so the lost data isn't in any backup file. The daily backups **only record the latest data**, so **deleted items cannot be recovered**.
 
 ## Crisis Impact
 
@@ -40,7 +40,7 @@ Due to lost data:
 
 ## Rediacc Solution
 
-Mehmet offers a "time machine"-like solution with Rediacc:
+Here's the time-machine setup Mehmet builds with Rediacc:
 
 ![Time Travel Recovery](/img/time-travel-recovery.svg)
 

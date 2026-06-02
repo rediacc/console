@@ -111,7 +111,7 @@
     "account": "Account"
   },
   "footer": {
-    "tagline": "Infrastructure Automation Platform for AI-Driven Operations",
+    "tagline": "Self-hosted backup and disaster recovery on your own servers",
     "links": {
       "returnToHome": "Return to Home",
       "contactSupport": "Contact Support"
@@ -161,7 +161,7 @@
       "getStarted": "Get Started Free",
       "readDocs": "Read the Docs",
       "contactUs": "View All Install Options",
-      "learnMore": "Learn More",
+      "learnMore": "See how it works",
       "bookDemo": "Book Demo",
       "freeBadge": "FREE FOREVER · No credit card",
       "benefits": "Unlimited teams • $0",
@@ -186,14 +186,14 @@
     }
   },
   "problem": {
-    "title": "The Speed Mismatch Crisis",
-    "subtitle": "When production environments have terabytes of data but sandbox environments only sync monthly, teams face impossible choices that lead to dangerous workarounds.",
+    "title": "Why your team keeps testing on the live system",
+    "subtitle": "Your live system holds terabytes of data. Your test copy updates once a month. So teams either work against stale data, or run risky changes on the live system itself.",
     "reality": {
-      "title": "The Reality: Frustrated Teams, Dangerous Workarounds",
+      "title": "What really happens: tired teams, risky shortcuts",
       "imageAlt": "Diagram illustrating traditional infrastructure workflow challenges: frustrated developers waiting for environment provisioning, stakeholders demanding faster deployment, and teams resorting to dangerous production testing due to slow sandbox updates"
     },
     "solution": {
-      "title": "The Solution: Rediacc Platform",
+      "title": "How Rediacc fixes it",
       "imageAlt": "Rediacc platform solution diagram: automated infrastructure provisioning, instant production-like environment clones, faster developer workflows, and AI-safe operations with Model Context Protocol integration"
     }
   },
@@ -203,7 +203,7 @@
   },
   "solutions": {
     "title": "How We Ensure Business Continuity",
-    "subtitle": "Solutions across six focus areas — from ransomware survival to preemptive defense.",
+    "subtitle": "Six ways to survive ransomware, stay online, and keep your data yours.",
     "categories": {
       "ransomware": "Ransomware Survival",
       "multi-cloud": "Multi-Cloud",
@@ -215,14 +215,14 @@
   },
   "featureShowcase": {
     "title": "What You Can Do with Rediacc",
-    "subtitle": "Solutions across six focus areas — from ransomware survival to preemptive defense.",
+    "subtitle": "Six ways to survive ransomware, stay online, and keep your data yours.",
     "categoryDescriptions": {
-      "ransomware": "Tamper-proof, cryptographically verified backups that ransomware cannot touch. Recover your entire stack in under 60 seconds.",
-      "multi-cloud": "Move your infrastructure between providers with zero vendor lock-in. Instant failover, tested disaster recovery, cloud-agnostic portability.",
-      "backups": "Verified, instantly recoverable backups with full retention compliance. Every backup is tested — not just stored.",
-      "encryption": "Every repository encrypted at rest with LUKS and in transit. Full audit trails and safe migration between environments.",
-      "dev-env": "Clone your entire production stack in seconds. Zero additional storage, same data, instant developer environments.",
-      "defense": "Clone production. Point your pen-testing tools at the clone. Fix what they find. Delete the clone."
+      "ransomware": "Locked backups that ransomware can't touch. Each one carries a fingerprint that proves it wasn't changed. Restore your whole system in under 60 seconds.",
+      "multi-cloud": "Move your servers between Amazon, Microsoft, or your own building. No lock-in. If one cloud goes down, you flip to another. We test the switch, so it works when you need it.",
+      "backups": "Backups we test every week, not just store. Proven to restore. Kept long enough to satisfy your auditors.",
+      "encryption": "Every system locked with LUKS on disk, and encrypted whenever it moves between machines. Full audit logs. Safe to move between sites.",
+      "dev-env": "Make an instant copy of your live system for your team. Same data, no extra storage. Test changes safely, without risking the real thing.",
+      "defense": "Clone your live system. Point your security tests at the copy. Fix what they find. Throw the copy away."
     }
   },
   "whyNow": {
@@ -242,7 +242,7 @@
         "description": "You run on many clouds. Your test copy fits none of them."
       }
     ],
-    "footer": "Most teams run across many clouds. Their test copy rarely matches any of them."
+    "footer": "Your business runs in minutes. Your test copy still runs in days."
   },
   "notASlice": {
     "overline": "One tool. The whole stack.",
@@ -291,7 +291,7 @@
     "items": [
       {
         "number": "241 GB",
-        "label": "Copied in under 60s"
+        "label": "Copied in under 60 seconds"
       },
       {
         "number": "0 bytes",
@@ -304,8 +304,8 @@
     ]
   },
   "integrations": {
-    "title": "Works with your stack and beyond",
-    "migrationMessage": "Rediacc turns your whole setup into one file you can move anywhere. Already using Docker? Switching over is simple.",
+    "title": "Works with what you already run",
+    "migrationMessage": "Rediacc bundles your apps, databases, and settings into one file. Move it anywhere. Already on Docker? You're most of the way there.",
     "items": [
       "Docker",
       "PostgreSQL",
@@ -345,7 +345,7 @@
   },
   "announcement": {
     "enabled": true,
-    "text": "Limited time: Design Partner Program — BUSINESS plan free for life",
+    "text": "Limited time: Design Partner Program. BUSINESS plan free for life.",
     "link": "/account/"
   },
   "testimonials": {
@@ -368,7 +368,7 @@
         "role": "CTO",
         "name": "James L.",
         "company": "SaaS Platform",
-        "quote": "We scaled from one database to twelve without buying new hardware. Rediacc clones share storage. we only pay for what changes."
+        "quote": "We scaled from one database to twelve without buying new hardware. Rediacc clones share storage. We only pay for what changes."
       },
       {
         "role": "DevOps Engineer",
@@ -379,7 +379,7 @@
   },
   "getStarted": {
     "title": "Ready to Clone Your First Stack?",
-    "subtitle": "Join teams who test with real production data, without the risk.",
+    "subtitle": "Most teams test in fake staging, then pray. Copy your live system in seconds. Run the risky change on real data. Production never feels it.",
     "cta": {
       "primary": "Install Rediacc Free",
       "secondary": "Talk to Sales"
@@ -434,9 +434,9 @@
   },
   "newsletter": {
     "title": "Newsletter",
-    "description": "Monthly product updates and self-hosting tips.",
+    "description": "One short email a month. Product news and self-hosting tips.",
     "pageTitle": "Stay in the Loop",
-    "pageDescription": "Get monthly updates on new features, self-hosting guides, and infrastructure tips.",
+    "pageDescription": "A short email, once a month. New features, self-hosting tips, and lessons we learned the hard way.",
     "placeholder": "Your email address",
     "subscribe": "Subscribe",
     "successMessage": "Check your inbox to confirm your subscription.",
@@ -445,7 +445,7 @@
     "unsubscribed": "You've been unsubscribed. Sorry to see you go.",
     "blogCta": {
       "title": "Enjoyed this article?",
-      "description": "Get more self-hosting guides and product updates delivered to your inbox."
+      "description": "We send self-hosting guides and product news every month. Want them?"
     },
     "stickyBar": {
       "text": "Get self-hosting tips in your inbox"
@@ -519,8 +519,8 @@
     },
     "contact": {
       "meta": {
-        "title": "Contact Us - Get Support & Assistance | Rediacc",
-        "description": "Get in touch with the Rediacc team for support, partnerships, or general inquiries about our infrastructure platform.",
+        "title": "Contact Rediacc | Talk to the Team",
+        "description": "Contact the Rediacc team about disaster recovery, partnerships, or technical questions. We reply within 48 hours.",
         "keywords": "Rediacc contact, disaster recovery platform, verified backups"
       },
       "breadcrumb": {
@@ -586,36 +586,36 @@
     },
     "team": {
       "meta": {
-        "title": "Our Team | Rediacc - Building Infrastructure That Survives",
-        "description": "Meet the team building disaster-proof infrastructure. Engineers dedicated to making your systems survive every disaster.",
+        "title": "Our Team | Rediacc - Backups That Survive Ransomware",
+        "description": "Meet the team behind Rediacc. We got tired of 3 AM data-loss pages, so we built backups ransomware can't touch.",
         "keywords": "Rediacc team, infrastructure engineering, disaster recovery experts, system reliability, DevOps team"
       },
       "hero": {
-        "title": "The Team Building Infrastructure That Survives",
-        "subtitle": "Engineers dedicated to making disasters impossible for your business."
+        "title": "The Team Behind Backups Ransomware Can't Touch",
+        "subtitle": "Engineers who got tired of 3 AM data-loss pages. So we built the fix."
       },
       "team": {
         "title": "Meet Our Team"
       },
       "mission": {
         "title": "Our Mission: Make Disasters Impossible",
-        "description": "Every 47 days, AI deletes a production database. Every year, 1.71% of drives fail. 75% of ransomware targets backups. We make all these disasters recoverable in 60 seconds.",
-        "belief": "The Community tier does everything the paid tiers do — same btrfs cloning, same LUKS encryption, same immutable backups. Just with smaller limits. No feature gates, no bait-and-switch."
+        "description": "Every 47 days, AI deletes a production database. Every year, 1.71% of drives fail. 75% of ransomware targets backups. We get you back online in 60 seconds.",
+        "belief": "The Community tier does everything the paid tiers do. Same btrfs cloning. Same LUKS encryption. Same locked, write-once backups. Just smaller limits. No feature gates. No bait-and-switch."
       },
       "values": {
         "title": "Our Values",
         "items": {
           "simplicity": {
             "title": "Simplicity First",
-            "description": "One command to clone 241 GB of production data. That's our complexity budget."
+            "description": "One command to copy 241 GB of live data. That's the whole complexity budget."
           },
           "security": {
             "title": "Security by Design",
-            "description": "LUKS encryption at rest. TLS in transit. Isolated Docker daemons per repo. Every layer locked down."
+            "description": "LUKS encryption on disk. TLS over the network. A separate Docker engine for each app. Every layer locked down."
           },
           "success": {
             "title": "Customer Success",
-            "description": "We measure ourselves by your recovery time — not our feature count."
+            "description": "We measure ourselves by your recovery time, not our feature count."
           },
           "innovation": {
             "title": "Continuous Innovation",
@@ -623,7 +623,7 @@
           },
           "global": {
             "title": "Global Thinking",
-            "description": "9 languages. EU-hosted telemetry. Estonian company with GDPR compliance built in."
+            "description": "9 languages. Usage data stays in the EU. Estonian company with GDPR built in."
           },
           "transparency": {
             "title": "Transparency",
@@ -635,20 +635,20 @@
         "title": "Our Story",
         "beginning": {
           "title": "The Beginning",
-          "paragraph1": "In 2018, I left my position as a software engineer to pursue building my own vision. The excitement kept me working 18-hour days, sleeping only 4-5 hours. I poured everything into the project for 5-6 months.",
-          "paragraph2": "Then I unexpectedly lost access to all my development infrastructure. Everything I'd built was suddenly inaccessible. I had no backups, and even if I had, I couldn't afford to replace the on-premises hardware I'd been using.",
-          "paragraph3": "To pay off debts and support my family, I had to return to a salaried job. It took 20 months to regain access to my work. During that time, I drifted far from my dreams, living with uncertainty and mounting financial pressure."
+          "paragraph1": "In 2018, I quit my software engineer job to chase my own vision. The excitement kept me on 18-hour days, sleeping 4-5 hours. I poured everything in for 5-6 months.",
+          "paragraph2": "Then I lost access to all my dev infrastructure. Just like that, everything I'd built was out of reach. I had no backups. Even if I had, I couldn't afford new physical servers.",
+          "paragraph3": "To pay off debts and support my family, I went back to a salaried job. It took 20 months to get my work back. I drifted far from my dreams. I lived with uncertainty and mounting bills."
         },
         "turningPoint": {
           "title": "The Turning Point",
-          "paragraph1": "Years later, I kept thinking about what I could do to prevent such a problem from happening again. I needed a tool that would allow me to move my systems to another environment whenever I wanted, activate them whenever needed, back them up easily, and store them securely no matter where I moved them.",
-          "paragraph2": "In 2021, I discovered Docker through NetworkChuck's video. I was shocked by what was possible. I wished I had known about this technology earlier—it could have changed everything.",
-          "paragraph3": "But Docker alone didn't solve all my problems. Moving container files between systems was difficult. I faced file ownership compatibility issues, and as data size grew, transfers took longer. Most critically, I had to keep services offline until migration finished, and Docker offered minimal security features."
+          "paragraph1": "Years later, I kept thinking about how to stop this from happening again. I needed a tool to move my systems anywhere. Turn them on whenever. Back them up easily. Keep them safe no matter where I moved them.",
+          "paragraph2": "In 2021, I found Docker through a NetworkChuck video. I was shocked at what was possible. I wished I had known about it earlier. It could have changed everything.",
+          "paragraph3": "But Docker alone didn't fix everything. Moving container files between systems was hard. File ownership broke. As data grew, transfers got slower. Worst of all, I had to keep services offline until the migration finished. Docker also gave me almost no security."
         },
         "birth": {
           "title": "Birth of Rediacc",
-          "paragraph1": "It all started with developing a portable filesystem logic. From there, I integrated a backup module. Then came one of the most critical challenges: enabling live system transfers with minimal downtime, regardless of data size. I added unique features based on real needs.",
-          "paragraph2": "This is how Rediacc was born—a product forged through the toughest challenges. Now, it's available to everyone. Use it and don't let anything hold your business back—be ready to survive and accelerate.",
+          "paragraph1": "It started with a portable storage layer. From there, I added a backup module. Then came the hardest part. Moving live systems with almost no downtime, no matter the data size. I added the features I actually needed.",
+          "paragraph2": "This is how Rediacc was born. A product forged through the hardest problems I had. Now it's open to everyone. Use it. Don't let outages hold your business back. Be ready to survive and grow.",
           "quote": "When I lost access to my infrastructure, I knew what I had to build: a system that makes disasters impossible."
         }
       },
@@ -657,7 +657,7 @@
         "subtitle": "Install Rediacc in under 5 minutes. Community tier is free forever.",
         "buttons": {
           "contact": "Get in Touch",
-          "learnMore": "Learn More"
+          "learnMore": "See How It Works"
         }
       }
     },
@@ -672,13 +672,13 @@
         "subtitle": "We are pre-customer. We want pioneers willing to use the product and tell us when it breaks. In exchange, you get our BUSINESS plan free for as long as Rediacc exists.",
         "primaryCta": "Claim my BUSINESS plan",
         "secondaryCta": "See pricing",
-        "note": "No credit card. No application. We close the program without notice — sign up today."
+        "note": "No credit card. No application. We close the program without notice, so sign up today."
       },
       "why": {
         "title": "Why we run this",
         "items": [
           {
-            "title": "Real teams, real workloads",
+            "title": "Real teams, real systems",
             "body": "We learn 100x more from one team running production than from a hundred trial signups. Design Partners are how we sharpen the product before the masses arrive."
           },
           {
@@ -693,12 +693,12 @@
       },
       "youGet": {
         "title": "What you get",
-        "lede": "Everything in the BUSINESS tier, free for the lifetime of your account.",
+        "lede": "You get the full BUSINESS plan. Free. For as long as Rediacc exists.",
         "items": [
-          "BUSINESS plan: 500 GB per repository, 20 floating licenses, 20,000 license requests per month",
-          "On the edge channel: 2x limits (1 TB per repo, 40 licenses, 40,000 requests)",
+          "BUSINESS plan: 500 GB per repository, 20 user seats, 20,000 seat activations per month",
+          "On the early-access track: 2x limits (1 TB per repo, 40 user seats, 40,000 seat activations)",
           "Unlimited repositories, users, and teams",
-          "Snapshot restores, dark mode, all 9 languages",
+          "Backup restores, dark mode, all 9 languages",
           "Direct line to the founder for onboarding and support",
           "Locked in for life. No expiry, no downgrade, no card on file."
         ]
@@ -730,7 +730,7 @@
           },
           {
             "q": "What if Rediacc shuts down?",
-            "a": "Then your account stops working — same as anyone else. The lifetime promise is the lifetime of the company. We are pre-customer; this is the honest risk you are taking."
+            "a": "Then your account stops working, same as anyone else. The lifetime promise is the lifetime of the company. We are pre-customer; this is the honest risk you are taking."
           },
           {
             "q": "Are there strings attached?",
@@ -756,12 +756,12 @@
     "professionalServices": {
       "meta": {
         "title": "Professional Services | Expert Implementation & Support",
-        "description": "Implementation support, migration help, and emergency response. 2-hour response time. 100% migration success rate.",
+        "description": "Help with setup, moves, and outages. We answer in 2 hours. 100% of guided moves have worked.",
         "keywords": "professional services, implementation support, infrastructure consulting, emergency response, migration services, ransomware recovery"
       },
       "hero": {
         "title": "Expert Help When You Need It Most",
-        "subtitle": "Fast-track your infrastructure deployment with professional implementation, migration support, and emergency response services.",
+        "subtitle": "You install Rediacc on your own servers. We help you do it without losing a weekend, move your data over without breaking it, and pick up the phone when something is on fire.",
         "badge": "Available for all subscription tiers"
       },
       "value": {
@@ -779,7 +779,7 @@
       },
       "cta": {
         "heading": "Talk to Our Team",
-        "description": "Schedule a consultation to discuss your infrastructure needs and get a custom quote.",
+        "description": "Book a call to talk through what you need. We'll send a custom quote within two business days. If your timeline is tighter than that, say so on the call and we'll tell you straight whether we can hit it.",
         "button": "Schedule Consultation",
         "subtext": "Most consultations completed within 48 hours"
       }
@@ -797,13 +797,13 @@
       "plans": {
         "community": {
           "name": "Community",
-          "description": "Production-ready infrastructure automation — Free forever",
+          "description": "Back up and restore up to 2 servers, free forever.",
           "features": [
             "Unlimited users & teams",
             "Unlimited repositories",
-            "500 monthly repo license issuances",
-            "2 concurrent floating licenses",
-            "Snapshot restores",
+            "500 server setups per month",
+            "2 setup slots",
+            "Backup restores",
             "Manual scheduling",
             "Community Slack access",
             "Self-service support & docs"
@@ -814,11 +814,11 @@
           "description": "Professional automation and scheduling for growing teams",
           "features": [
             "Everything in Community +",
-            "5 concurrent floating licenses",
+            "5 setup slots",
             "Unlimited repositories",
-            "5,000 monthly repo license issuances",
+            "5,000 server setups per month",
             "Automated scheduling",
-            "24-hour point-in-time restore",
+            "Restore from any point in the last 24 hours",
             "Email + chat support",
             "Slack & PagerDuty notifications",
             "No \"Powered by Rediacc\" attribution",
@@ -827,12 +827,12 @@
         },
         "business": {
           "name": "Business",
-          "description": "Mission-critical infrastructure with expert onboarding",
+          "description": "Expert setup, backups across multiple regions, and a 4-hour restore promise.",
           "features": [
             "Everything in Professional +",
-            "20 concurrent floating licenses",
+            "20 setup slots",
             "Unlimited repositories",
-            "20,000 monthly repo license issuances",
+            "20,000 server setups per month",
             "$9,999 implementation support included (Launch Offer)",
             "Geo-redundant storage (3 regions)",
             "Continuous data protection",
@@ -844,16 +844,16 @@
         },
         "enterprise": {
           "name": "Enterprise",
-          "description": "White-glove support for complex enterprise infrastructure",
+          "description": "Dedicated support and custom terms for large, complex environments.",
           "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
-            "50+ concurrent floating licenses",
+            "50+ setup slots",
             "Unlimited repositories",
-            "100,000+ monthly repo license issuances",
+            "100,000+ server setups per month",
             "Custom SLA with guaranteed restore times",
-            "Dedicated infrastructure tenant",
-            "24/7/365 white-glove support",
+            "Your own dedicated server space",
+            "24/7/365 dedicated support",
             "Dedicated customer success manager",
             "Quarterly readiness exercises",
             "Executive escalation hotline",
@@ -866,37 +866,37 @@
         "header": {
           "title": "Professional Service Packages",
           "subtitle": "Get expert help when you need it most",
-          "badge": "Fast-track your success with professional assistance",
-          "eligibility": "Professional services align to every plan via hybrid access. Use the matrix below to see what’s included and what can be added on."
+          "badge": "Expert help at every stage",
+          "eligibility": "Here's how it works: every plan gets access to our professional services. The table below shows what's in your plan and what you can add on."
         },
         "packages": {
           "standard": {
             "name": "Standard",
             "turnaround": "3-5 Business Days",
-            "description": "Structured implementation that covers architecture, deployment, validation, and enablement.",
+            "description": "We design the setup, deploy it, run tests, and train your team.",
             "benefits": [
               "Project discovery and success plan",
-              "Environment provisioning and configuration",
-              "Validation checklist and knowledge transfer"
+              "Environment setup and configuration",
+              "Testing checklist and team handoff"
             ],
             "price": "From $7,499",
             "tiers": [
-              "Starter (1-4 workloads): $7,499",
-              "Growth (5-10 workloads): $14,999",
-              "Scale (11-25 workloads): $29,999",
-              "Enterprise (25+ workloads): Custom quote"
+              "Starter (1-4 servers): $7,499",
+              "Growth (5-10 servers): $14,999",
+              "Scale (11-25 servers): $29,999",
+              "Enterprise (25+ servers): Custom quote"
             ],
-            "tierHeading": "Workload-Based Implementation Pricing",
-            "tierNote": "A workload represents a distinct business process, application, or service requiring backup and disaster recovery protection. Implementation includes architecture design, deployment, validation, and team enablement."
+            "tierHeading": "Pricing by Number of Servers",
+            "tierNote": "Each server or app you want to protect counts as one unit. Setup includes planning, deployment, testing, and training your team."
           },
           "priority": {
             "name": "Priority",
             "turnaround": "24-48 Hours",
-            "description": "Accelerated delivery with extended availability and guided cutover support.",
+            "description": "Faster delivery, with evening and weekend availability. We stay with you through your go-live.",
             "benefits": [
               "Dedicated engagement manager",
               "Evening/weekend availability",
-              "Production cutover assistance"
+              "Production go-live support"
             ],
             "price": "$19,999",
             "tiers": []
@@ -904,7 +904,7 @@
           "emergency": {
             "name": "Emergency",
             "turnaround": "Same Day",
-            "description": "On-demand incident response team ready to contain and restore critical systems.",
+            "description": "Call us when something is on fire. We show up the same day. We stop the bleeding, then get your critical systems back online.",
             "benefits": [
               "Immediate engagement (under 2 hours)",
               "Forensics, containment, and recovery plan",
@@ -931,7 +931,7 @@
               "description": "Single expert vs. full dedicated team of specialists"
             }
           ],
-          "note": "Example: A mid-sized implementation (120 machines) with security architecture review typically ranges from $14,999–$24,999 depending on integrations and retainer coverage."
+          "note": "For example: a 120-server project plus a security review is an Enterprise custom scope. Projects like this typically run $14,999 to $24,999 on a custom quote. These are estimates. We scope the final cost once we see your setup. The final price depends on how many tools we connect and whether you add a retainer."
         },
         "serviceTypes": {
           "heading": "Available Services",
@@ -965,9 +965,9 @@
             },
             {
               "name": "Infrastructure Scaling",
-              "standard": "Complete infrastructure redesign with optimization",
+              "standard": "Complete infrastructure redesign with improvements",
               "priority": "Rapid capacity increase + monitoring setup within 48h",
-              "emergency": "Critical resources provisioned same-day + auto-scaling configured + full plan begins",
+              "emergency": "Critical resources set up same-day + auto-scaling configured + full plan begins",
               "id": "infrastructure-scaling"
             },
             {
@@ -980,8 +980,8 @@
             {
               "name": "Performance Optimization",
               "standard": "Deep analysis with full performance tuning",
-              "priority": "Quick profiling + high-impact optimizations deployed within 48h",
-              "emergency": "Critical bottleneck identified + immediate hotfix deployed same-day + full optimization begins",
+              "priority": "Quick profiling + high-impact improvements deployed within 48h",
+              "emergency": "Critical bottleneck identified + immediate hotfix deployed same-day + full performance work begins",
               "id": "performance-optimization"
             },
             {
@@ -993,9 +993,9 @@
             },
             {
               "name": "Storage Hardening",
-              "standard": "Full BTRFS redundant storage setup with self-healing scrub, live data migration from single-disk, reflink verification, and monitoring integration. RAID1 (2 SSDs, mirrored) for standard deployments or RAID10 (4+ SSDs, striped mirrors) for high-throughput production workloads. Scrub auto-repairs corruption from the redundant copy instead of just detecting it. Includes capacity planning and backup strategy review.",
+              "standard": "We install BTRFS, a Linux storage tool, on your servers. It writes a copy of your data to 2 or more disks at once. RAID1 mirrors 2 disks, so if one fails, you lose nothing. RAID10 uses 4 or more disks for both speed and safety. A built-in check finds and fixes disk errors on its own. We also review your capacity and backup plan.",
               "priority": "BTRFS RAID1 or RAID10 configured + live balance migration started + scrub timer active within 48h",
-              "emergency": "Disks attached + RAID conversion initiated same-day + critical repos verified + full hardening begins",
+              "emergency": "Disks attached + RAID conversion started same-day + critical repos verified + full hardening begins",
               "id": "storage-hardening"
             }
           ]
@@ -1004,12 +1004,12 @@
           "heading": "Why Professional Services?",
           "statistics": [
             "The average cost of a ransomware attack is $4.62 million (IBM Security, 2023)",
-            "The average downtime cost is $5,600 per minute for enterprises"
+            "The average downtime cost is $5,600 per minute for large companies"
           ],
-          "description": "Dedicated engineers on your side when infrastructure fails.",
+          "description": "Real engineers on the phone when your servers go down. Not a ticket queue. A human, same day.",
           "items": [
             "Dedicated team of experts assigned to your project",
-            "Guaranteed response times with SLA",
+            "Guaranteed response times, in writing",
             "Switch between service tiers as needed",
             "24/7 emergency hotline for Emergency tier"
           ]
@@ -1021,7 +1021,7 @@
         },
         "access": {
           "heading": "Professional services access by tier",
-          "description": "Hybrid coverage combines included onboarding with optional add-ons so every team can get the right help at the right time.",
+          "description": "Your plan includes onboarding help to get started. You can add more services on top. The table below shows what's built in and what costs extra.",
           "labels": {
             "included": "Included",
             "available": "Available add-ons"
@@ -1031,7 +1031,7 @@
               "planId": "community",
               "included": ["Self-service documentation, video tutorials, and community forum"],
               "available": [
-                "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
+                "Standard Implementation ($9,999) or tiered packages (Starter $7,499 · Growth $14,999 · Scale $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
               ]
             },
@@ -1064,7 +1064,7 @@
             {
               "planId": "enterprise",
               "included": [
-                "24/7/365 white-glove support and dedicated CSM",
+                "24/7/365 support with a dedicated account manager",
                 "Priority Implementation included ($19,999 value)",
                 "Quarterly disaster recovery testing",
                 "Annual business continuity planning workshop",
@@ -1080,7 +1080,7 @@
         },
         "retainers": {
           "heading": "Retainer options for always-on readiness",
-          "description": "Executive stakeholders get direct access to our specialists. Predictable monthly pricing.",
+          "description": "You get direct access to our engineers. One flat monthly price.",
           "items": [
             {
               "title": "Emergency Response Retainer",
@@ -1103,7 +1103,7 @@
         "items": [
           {
             "question": "Is there a free plan?",
-            "answer": "Yes. The Community plan is free forever with up to 2 machines, 500 monthly repo license issuances, and full snapshot restore capabilities. No credit card required."
+            "answer": "Yes. The Community plan is free. It covers up to 2 servers, 500 server setups per month, and backup restores. No credit card needed."
           },
           {
             "question": "Can I upgrade or downgrade my plan?",
@@ -1111,7 +1111,7 @@
           },
           {
             "question": "Do you offer annual billing?",
-            "answer": "Yes. Annual billing saves 17% — equivalent to 2 months free. All paid plans are available with monthly or annual billing."
+            "answer": "Yes. Annual billing saves 17%, equivalent to 2 months free. All paid plans are available with monthly or annual billing."
           },
           {
             "question": "What payment methods do you accept?",
@@ -1119,33 +1119,33 @@
           },
           {
             "question": "How are machines counted?",
-            "answer": "Each physical or virtual server where Rediacc is installed counts as one machine (floating license). Clones created on those machines do not count separately — only the host machines are counted."
+            "answer": "Each physical or virtual server where Rediacc is installed counts as one machine. Instant copies made on those machines don't count separately. Only the host machines are counted."
           },
           {
-            "question": "Can I self-host on any infrastructure?",
-            "answer": "Yes. Rediacc runs on any Linux server with btrfs filesystem support. Bare metal, VMs, and cloud instances (AWS, Azure, GCP, Hetzner, OVH, etc.) are all supported."
+            "question": "Does Rediacc run on my own servers?",
+            "answer": "Yes. Rediacc runs on any Linux server with btrfs (an open-source storage system built into Linux) support. Physical servers, virtual machines, and cloud servers (AWS, Azure, GCP, Hetzner, OVH, etc.) are all supported."
           },
           {
-            "question": "What's included in Community vs Professional?",
-            "answer": "Community includes core cloning, snapshot restores, and community support for up to 2 machines. Professional adds automated scheduling, 24-hour point-in-time restore, priority support, integrations API, and supports up to 5 machines."
+            "question": "What is the difference between Community and Professional?",
+            "answer": "The free plan covers 2 machines. You get server copies on demand, backup restores, and community support. The paid plan covers 5 machines. It adds timed backups, 24-hour backup records, faster support, and API access."
           },
           {
             "question": "What does Enterprise pricing include?",
-            "answer": "Enterprise plans are customized based on your infrastructure scale, compliance requirements, and support needs. They include dedicated infrastructure, custom SLAs, 24/7/365 support, security reviews, and quarterly readiness exercises."
+            "answer": "Look, Enterprise is built for your setup. You choose the terms. You get your own server space, a custom recovery promise, and 24/7/365 support. Plus safety reviews and regular drills."
           },
           {
             "question": "Do you offer discounts for education or nonprofits?",
-            "answer": "Yes. Contact us to discuss special pricing for educational institutions and nonprofit organizations."
+            "answer": "Yes. Email us. Schools and nonprofits get special pricing."
           },
           {
             "question": "Is there a money-back guarantee?",
-            "answer": "Yes. All paid plans include a 14-day money-back guarantee. If Rediacc doesn't meet your needs, we'll issue a full refund — no questions asked."
+            "answer": "Yes. All paid plans include a 14-day money-back guarantee. If Rediacc doesn't meet your needs, we'll issue a full refund with no questions asked."
           }
         ]
       },
       "edgeChannel": {
         "heading": "Try the Edge Channel",
-        "description": "2X Community limits, latest features, zero cost. No credit card required.",
+        "description": "2x the Community limits. Latest features. No cost. No card needed.",
         "cta": "Get Started Free"
       },
       "roiCta": {
@@ -1154,7 +1154,7 @@
       },
       "finalCta": {
         "heading": "Protect Your Infrastructure",
-        "description": "Install in 5 minutes. Community tier is free forever.",
+        "description": "Install in 5 minutes. Free to start.",
         "buttons": {
           "startFree": "Start Free",
           "talkToSales": "Talk to Sales"
@@ -1169,39 +1169,39 @@
         "subtitle": "Rediacc licenses are designed so you're never locked in. Here's what that means in practice.",
         "rows": [
           {
-            "title": "Your repos run forever.",
-            "description": "Start, stop, delete, and back up — always works, even years after your subscription ends. These operations never check expiry. Your data is always accessible."
+            "title": "Your apps keep running forever.",
+            "description": "Start, stop, delete, and back up. These always work, even years after your subscription ends. Your data is always accessible."
           },
           {
             "title": "Full access to your tools.",
-            "description": "File sync, VS Code remote, SSH terminal, and all management commands work without any license at all. Completely unrestricted, forever."
+            "description": "All your tools keep working. File sync. SSH access. Remote editing. Every management command. No license ever needed."
           },
           {
-            "title": "Only new repos need a subscription.",
-            "description": "An active subscription is required to create new repositories or fork existing ones. Resize and expand work for 60 days after expiry. Everything else is permanent."
+            "title": "Only new servers need a subscription.",
+            "description": "You need an active plan to create new servers or copy existing ones. Resizing and expanding work for 60 days after your plan expires. Everything else is permanent."
           },
           {
             "title": "60-day grace for scaling.",
-            "description": "When your subscription ends, resize and expand continue working for 60 more days. Start, stop, delete, and backup are not affected — they work forever."
+            "description": "When your subscription ends, resize and expand continue working for 60 more days. Start, stop, delete, and backup are not affected. They work forever."
           },
           {
-            "title": "Unlimited machines. Pay-per-create licensing.",
-            "description": "A license slot is only held while creating or forking a repository — your daily operations never consume one. Slots auto-release after 1 hour of inactivity, so a 5-slot plan can serve dozens of machines. No per-machine fees, ever."
+            "title": "Unlimited machines. Pay only when adding new ones.",
+            "description": "A setup slot is only used when you create or copy a server. Your normal work never takes up a slot. Slots free up after 1 hour with no action. A 5-slot plan works for dozens of machines. No per-machine fees, ever."
           },
           {
-            "title": "40-day VM migration grace.",
-            "description": "Every repo license is bound to the machine it was issued for. When your hosting provider migrates your VM to different hardware, the machine identity changes -- but your licenses keep working for 40 days. The next refresh automatically rebinds to the new machine. No downtime, no manual steps."
+            "title": "40-day buffer when your server hardware changes.",
+            "description": "Every server license is tied to the machine it was set up for. When your hosting provider moves your server to different hardware, the machine identity changes. Your licenses keep working for 40 days. The next check-in automatically updates to the new machine. No downtime, no manual steps."
           }
         ],
         "svg": {
-          "noLicenseRequired": "No license required — works always",
+          "noLicenseRequired": "No license required, works always",
           "noLicenseNeeded": "No license needed",
           "requiredOnlyHere": "Required only here",
           "allOperations": "All operations",
-          "slotsAutoRelease": "Slots auto-release after 1 hour of inactivity",
-          "slotsCreateFork": "Slots used only for create & fork — daily ops are always free",
+          "slotsAutoRelease": "Setup slots free up after 1 hour of inactivity",
+          "slotsCreateFork": "Setup slots used only for new and copied servers. Daily ops are always free.",
           "newMachineId": "New machine ID",
-          "reposKeepRunning": "Repos keep running throughout. No manual steps needed."
+          "reposKeepRunning": "Your apps keep running throughout. No manual steps needed."
         }
       },
       "ui": {
@@ -1217,7 +1217,7 @@
         "keyBenefits": "Key Benefits",
         "monthOrYear": "per month or {{price}} per year",
         "foreverFree": "Forever free",
-        "edgeLimitsNote": "Limits shown for edge channel. Half on stable.",
+        "edgeLimitsNote": "Limits shown for the edge channel. The stable channel has half these limits.",
         "designPartner": {
           "badge": "FREE for Design Partners",
           "price": "FREE",
@@ -1251,14 +1251,14 @@
           }
         },
         "guarantees": {
-          "moneyBack": "14-Day Money Payback Guarantee",
+          "moneyBack": "14-Day Money-Back Guarantee",
           "cancelAnytime": "Cancel anytime",
           "noContracts": "No long-term contracts"
         },
         "billingToggle": {
           "monthly": "Monthly",
           "annual": "Annual",
-          "annualSavings": "Save 17% — 2 months free",
+          "annualSavings": "Save 17%, get 2 months free",
           "ariaLabel": "Billing period"
         }
       },
@@ -1273,17 +1273,17 @@
           {
             "key": "repoSize",
             "label": "Repository size",
-            "tooltip": "Community users can use up to 10 GB. Larger repositories require a paid plan."
+            "tooltip": "Community users can use up to 10 GB per server. Larger setups require a paid plan."
           },
           {
             "key": "floatingLicenses",
-            "label": "Floating Licenses",
-            "tooltip": "How many machines can hold active activation slots at the same time."
+            "label": "Setup Slots",
+            "tooltip": "How many machines can create or copy servers at the same time."
           },
           {
             "key": "jobsPerMonth",
-            "label": "Floating license requests",
-            "tooltip": "Successful activation-backed repo license issuances counted in the current UTC calendar month."
+            "label": "Server setups per month",
+            "tooltip": "How many new server setups are counted in a calendar month. Creating a server or copying an existing one each counts as one."
           },
           {
             "key": "usersTeams",
@@ -1461,7 +1461,7 @@
                 "enterprise": "✓"
               },
               {
-                "label": "Dedicated CSM",
+                "label": "Dedicated Account Manager",
                 "community": "—",
                 "professional": "—",
                 "business": "✓",
@@ -1496,11 +1496,11 @@
     "blog": {
       "meta": {
         "title": "Blog | Rediacc - Infrastructure Automation Insights",
-        "description": "Read insights, guides, and updates about distributed task execution, infrastructure automation, and DevOps best practices.",
+        "description": "Backups ransomware can't touch. Faster recovery. How to run your own servers without losing nights to it.",
         "keywords": "infrastructure automation blog, DevOps guides, distributed systems, task execution, cloud infrastructure"
       },
       "title": "Blog",
-      "subtitle": "Insights, guides, and updates about distributed task execution",
+      "subtitle": "Guides on backups, recovery, and running on your own servers",
       "featured": "Featured Articles",
       "allArticles": "All Articles",
       "byAuthor": "By {{author}}",
@@ -1513,20 +1513,20 @@
     },
     "docs": {
       "meta": {
-        "title": "Documentation | Rediacc - Infrastructure Automation Platform",
-        "description": "Rediacc documentation — getting started, CLI reference, API docs, and deployment guides.",
+        "title": "Documentation | Rediacc - Server Backup & Recovery",
+        "description": "Rediacc documentation: setup guides, CLI reference, API docs, and step-by-step deployment help.",
         "keywords": "documentation, API reference, guides, infrastructure automation, CLI reference, queue system"
       },
       "title": "Documentation",
-      "subtitle": "Learn how to use Rediacc and master distributed task execution",
+      "subtitle": "Learn how to use Rediacc, back up your servers, and recover fast.",
       "welcome": "Welcome to Rediacc Documentation",
-      "welcomeDescription": "Rediacc manages Docker-based repositories with encrypted, isolated environments. Start with the getting started guide or jump to the CLI reference.",
+      "welcomeDescription": "Rediacc runs on your own servers and keeps a locked copy of each Docker app, its databases, and its settings. So when a server fails, you get it back instead of rebuilding from scratch. New here? Start with the getting-started guide. Already running? Jump to the command reference.",
       "gettingStarted": "Getting Started",
-      "gettingStartedDesc": "New to Rediacc? Start with the basics and learn fundamental concepts.",
+      "gettingStartedDesc": "New to Rediacc? Start here. Learn the basics and have your first backup running fast.",
       "cliReference": "CLI Reference",
-      "cliReferenceDesc": "Complete reference for all command-line interface commands and options.",
-      "queueSystem": "Queue System",
-      "queueSystemDesc": "Understand how tasks are managed and executed across machines.",
+      "cliReferenceDesc": "All the commands you need to run Rediacc from the terminal. Look up flags and examples here.",
+      "queueSystem": "Work Across Servers",
+      "queueSystemDesc": "This section covers how Rediacc handles work across multiple servers. If you are running just one machine, skip this for now.",
       "allDocumentation": "All Documentation",
       "tableOfContents": "On this page",
       "backToDocs": "Back to Docs",
@@ -1572,21 +1572,21 @@
         "download": "Download"
       },
       "cli": {
-        "description": "Lightweight command-line tool for automation and scripting.",
+        "description": "A small, fast tool you run in a terminal window. Good for servers you manage without a screen, or for running the same command across many machines at once. Look, if that is your setup, the CLI is the right choice over the desktop app. Connect to servers, run commands, push updates. No browser needed.",
         "binary": "Binary"
       },
       "noReleases": "No releases available at this time. Please check back later.",
       "autoUpdate": {
         "title": "Auto-Update Information",
-        "description": "The Rediacc Desktop application includes built-in auto-update functionality. After the initial installation, the application will automatically check for updates and notify you when new versions are available. Updates can be installed with one click without requiring manual downloads."
+        "description": "Rediacc Desktop updates itself. After install, it checks for new versions and lets you know when one is ready. One click installs it. Allow a few minutes on a slow connection."
       },
       "installation": {
         "title": "Installation Instructions",
-        "windows": "Windows: Run the .exe installer and follow the setup wizard. The application will be installed to your Program Files directory.",
-        "macos": "macOS: Open the .dmg file and drag Rediacc Desktop to your Applications folder. You may need to allow the app in System Preferences > Security & Privacy.",
+        "windows": "Windows: Run the .exe installer and follow the steps on screen. It installs to your Program Files folder.",
+        "macos": "macOS: Open the .dmg. Drag Rediacc Desktop to your Applications folder. If macOS blocks it, allow it in System Preferences, under Security and Privacy.",
         "linux_appimage": "Linux AppImage: Make the file executable with 'chmod +x filename.AppImage' and run it directly. No installation required.",
         "linux_deb": "Linux DEB: Install with 'sudo dpkg -i filename.deb' or double-click the file in your file manager.",
-        "cli": "CLI: Download the binary for your platform, make it executable (chmod +x on Linux/macOS), and place it in your PATH."
+        "cli": "CLI: Download the file for your system. On Linux/macOS, open a terminal and run chmod+x filename to make it runnable. Then move it to /usr/local/bin."
       },
       "requirements": {
         "title": "System Requirements",
@@ -1601,7 +1601,7 @@
     },
     "install": {
       "meta": {
-        "title": "Install Rediacc CLI - Quick Setup Guide",
+        "title": "Install Rediacc CLI: Quick Setup Guide",
         "description": "Install the Rediacc CLI on Linux, macOS, or Windows via APT, DNF, npm, or direct download.",
         "keywords": "install rediacc, apt install, dnf install, npm install, CLI installation"
       },
@@ -1614,7 +1614,7 @@
       "methods": {
         "quick": {
           "title": "Quick Install",
-          "description": "Recommended - automatic installation with version management"
+          "description": "Recommended. Installs and updates the CLI for you."
         },
         "apt": {
           "title": "APT (Debian / Ubuntu)",
@@ -1642,7 +1642,7 @@
         },
         "docker": {
           "title": "Docker",
-          "description": "For containerized environments"
+          "description": "For Docker users"
         }
       },
       "verify": {
@@ -2633,16 +2633,16 @@
       },
       "hero": {
         "title": "Built for Real Recovery Operations",
-        "subtitle": "Choose the disaster recovery tier that protects your infrastructure today and scales as you grow."
+        "subtitle": "Most teams start on the free tier and stay there. When hours offline would cost the business money, step up. Same product, no switching."
       },
       "plans": {
         "community": {
           "name": "Community",
-          "description": "Production-ready disaster recovery from day one—Free forever",
+          "description": "Production-ready disaster recovery from day one. Free forever.",
           "features": [
-            "Unlimited users & teams—collaborate freely",
-            "Latest snapshot restores—recover from failures in minutes",
-            "Unlimited repositories, 10 GB each",
+            "Unlimited users and teams. Collaborate freely.",
+            "Restore your latest backup in minutes after any failure.",
+            "Unlimited apps, 10 GB each",
             "2-hour job timeout, 2 active/1 reserved jobs",
             "7-day audit log retention",
             "Manual backup scheduling",
@@ -2653,12 +2653,12 @@
         },
         "professional": {
           "name": "Professional",
-          "description": "Professional-grade disaster recovery without enterprise complexity",
+          "description": "Serious disaster recovery. Without the enterprise headaches.",
           "features": [
             "Everything in Community +",
-            "Automated backup scheduling—set it and forget it",
+            "Automated backup scheduling. Set it and forget it.",
             "Point-in-time recovery (24h)",
-            "Unlimited repositories, 100 GB each",
+            "Unlimited apps, 100 GB each",
             "24-hour job timeout, 5 active/2 reserved jobs",
             "30-day audit log retention",
             "Email + chat support",
@@ -2669,17 +2669,17 @@
         },
         "business": {
           "name": "Business",
-          "description": "Mission-Critical Protection + Expert Setup",
+          "description": "Expert setup included. Protection for the systems you can't afford to lose.",
           "features": [
             "Everything in Professional +",
-            "$9,999 implementation support included (Launch Offer)",
-            "Geo-redundant storage (3 regions)—one failure won't stop you",
-            "Continuous data protection—zero data loss",
+            "$9,999 setup credit included (Launch Offer)",
+            "Storage across 3 regions. One failure won't stop you.",
+            "Continuous data protection. Near-zero data loss.",
             "4-hour recovery SLA (guaranteed)",
-            "Unlimited Repositories, 500 GB each",
+            "Unlimited apps, 500 GB each",
             "7 active/3 reserved jobs",
             "90-day audit log retention",
-            "Role-based access control & comprehensive audit logs",
+            "Role-based access control and full audit logs",
             "Compliance-ready audit reporting",
             "Dedicated customer success manager",
             "Phone support + collaboration spaces"
@@ -2687,17 +2687,17 @@
         },
         "enterprise": {
           "name": "Enterprise",
-          "description": "White-glove disaster recovery for complex enterprise infrastructure",
+          "description": "Done-for-you disaster recovery for large, complex operations.",
           "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
-            "Custom SLA (15-60 minute RTO)—your requirements, our commitment",
-            "Dedicated infrastructure tenant—maximum security & performance",
-            "24/7/365 white-glove support",
-            "Unlimited repositories, 2 TB+ each",
+            "Custom SLA (back online in 15-60 min). Your requirements, our commitment.",
+            "Your own dedicated environment. Maximum security and performance.",
+            "24/7/365 expert support, always on",
+            "Unlimited apps, 2 TB+ each",
             "96+ hour job windows with 10+ active/5+ reserved jobs",
-            "1 Year+ audit log retention",
-            "Quarterly disaster recovery exercises—tested readiness",
+            "1 year+ audit log retention",
+            "Quarterly disaster recovery drills. Know you're ready before you need to be.",
             "Executive escalation hotline",
             "Custom integrations & workflows",
             "Audit documentation support & security reviews"
@@ -2707,7 +2707,7 @@
       "psTeaser": {
         "heading": "Need Expert Help Getting Started?",
         "subtitle": "Professional implementation and support services available for all tiers",
-        "viewDetails": "Explore Professional Services",
+        "viewDetails": "See Professional Services",
         "packages": {
           "standard": {
             "name": "Standard",
@@ -2725,52 +2725,52 @@
       },
       "strategy": {
         "heading": "Built for every stage",
-        "copy": "Choose the plan that fits your operational stage today and scale without switching platforms tomorrow.",
+        "copy": "Look: start where you are. Most teams stay there longer than they expect. Move up only when slow recovery would actually cost the business something. Same product throughout.",
         "distribution": [
-          "Professional → Business: Add geo-redundant storage, continuous data protection, guaranteed 4-hour RTO, and dedicated customer success as your team grows.",
-          "Business → Enterprise: Add custom SLAs with 15-60 minute RTO, dedicated infrastructure tenancy, and white-glove partnership when stakes are highest."
+          "Professional to Business: Your backups are stored in a second location. Every change is saved the moment it happens. You get a guaranteed 4-hour window to be back online. A dedicated support contact is included.",
+          "Business to Enterprise: You choose how fast you need to be back online. That window runs from 15 to 60 min. Recovery happens in a completely separate environment your live systems cannot touch, and hands-on support is there when it matters most."
         ]
       },
       "enterpriseCta": {
-        "heading": "Need a Custom Enterprise Solution?",
-        "description": "Get tailored infrastructure protection for your organization",
+        "heading": "Unusual setup? Tell us what you've got.",
+        "description": "If none of the tiers above fits your situation, tell us what you're running. We'll figure it out.",
         "button": "Contact Sales"
       },
       "professionalServices": {
         "header": {
           "title": "Professional Service Packages",
           "subtitle": "Get expert help when you need it most",
-          "badge": "Fast-track your success with professional assistance",
-          "eligibility": "Professional services align to every plan via hybrid access. Use the matrix below to see what’s included and what can be added on."
+          "badge": "Get set up faster with expert help on your side.",
+          "eligibility": "Every plan includes some level of expert help. Check the table below to see what's included in yours and what you can add on."
         },
         "packages": {
           "standard": {
             "name": "Standard",
             "turnaround": "3-5 Business Days",
-            "description": "Structured implementation that covers architecture, deployment, validation, and enablement.",
+            "description": "We handle the planning, setup, testing, and training.",
             "benefits": [
               "Project discovery and success plan",
-              "Environment provisioning and configuration",
-              "Validation checklist and knowledge transfer"
+              "Environment setup and configuration",
+              "Testing checklist and team handoff"
             ],
             "price": "From $7,499",
             "tiers": [
-              "Starter (1-4 workloads): $7,499",
-              "Growth (5-10 workloads): $14,999",
-              "Scale (11-25 workloads): $29,999",
-              "Enterprise (25+ workloads): Custom quote"
+              "Starter (1-4 servers): $7,499",
+              "Growth (5-10 servers): $14,999",
+              "Scale (11-25 servers): $29,999",
+              "Enterprise (25+ servers): Custom quote"
             ],
-            "tierHeading": "Workload-Based Implementation Pricing",
-            "tierNote": "A workload represents a distinct business process, application, or service requiring backup and disaster recovery protection. Implementation includes architecture design, deployment, validation, and team enablement."
+            "tierHeading": "Pricing by number of servers",
+            "tierNote": "Each server (or app) is counted as one unit. Setup covers design, configuration, testing, and training for your team."
           },
           "priority": {
             "name": "Priority",
             "turnaround": "24-48 Hours",
-            "description": "Accelerated delivery with extended availability and guided cutover support.",
+            "description": "Faster delivery. Our team is available evenings and weekends to guide your launch.",
             "benefits": [
               "Dedicated engagement manager",
               "Evening/weekend availability",
-              "Production cutover assistance"
+              "Hands-on help when you go live"
             ],
             "price": "$19,999",
             "tiers": []
@@ -2778,11 +2778,11 @@
           "emergency": {
             "name": "Emergency",
             "turnaround": "Same Day",
-            "description": "On-demand incident response team ready to contain and restore critical systems.",
+            "description": "Call us when things go wrong. We respond within 2 hours and start getting your systems back the same day.",
             "benefits": [
-              "Immediate engagement (under 2 hours)",
+              "We're on it in under 2 hours",
               "Forensics, containment, and recovery plan",
-              "Stabilization report with hardening roadmap"
+              "A report on what went wrong, plus a plan to stop it happening again"
             ],
             "price": "$29,999",
             "tiers": []
@@ -2805,7 +2805,7 @@
               "description": "Single expert vs. full dedicated team of specialists"
             }
           ],
-          "note": "Example: A mid-sized implementation (120 machines) with security architecture review typically ranges from $14,999–$24,999 depending on integrations and retainer coverage."
+          "note": "Example: A mid-sized setup (120 machines) with a security review typically runs from $14,999 to $24,999, depending on integrations and ongoing support."
         },
         "serviceTypes": {
           "heading": "Available Services",
@@ -2819,29 +2819,29 @@
             {
               "name": "Data Migration",
               "standard": "Complete end-to-end migration with full validation",
-              "priority": "Rapid migration pipeline setup + core data transferred within 48h",
+              "priority": "Fast migration setup, with core data moved within 48h",
               "emergency": "Immediate assessment + critical systems online same-day + full migration begins",
               "id": "data-migration"
             },
             {
               "name": "Ransomware Recovery",
               "standard": "Complete recovery with forensics and hardening",
-              "priority": "Rapid threat assessment + core operations restored within 48h",
+              "priority": "Fast threat assessment, core operations back within 48h",
               "emergency": "Immediate containment + critical systems restored same-day + full recovery begins",
               "id": "ransomware-recovery"
             },
             {
               "name": "Security Assessment",
-              "standard": "Full security audit with implementation roadmap",
+              "standard": "Full security audit with a clear action plan",
               "priority": "Full vulnerability assessment + remediation plan within 48h",
               "emergency": "Critical vulnerability scan + high-risk patches deployed same-day + full audit begins",
               "id": "security-assessment"
             },
             {
               "name": "Infrastructure Scaling",
-              "standard": "Complete infrastructure redesign with optimization",
-              "priority": "Rapid capacity increase + monitoring setup within 48h",
-              "emergency": "Critical resources provisioned same-day + auto-scaling configured + full plan begins",
+              "standard": "Complete infrastructure redesign with performance improvements",
+              "priority": "Fast capacity increase, with monitoring set up within 48h",
+              "emergency": "Critical resources set up same-day, auto-scaling configured, full plan begins",
               "id": "infrastructure-scaling"
             },
             {
@@ -2854,8 +2854,8 @@
             {
               "name": "Performance Optimization",
               "standard": "Deep analysis with full performance tuning",
-              "priority": "Quick profiling + high-impact optimizations deployed within 48h",
-              "emergency": "Critical bottleneck identified + immediate hotfix deployed same-day + full optimization begins",
+              "priority": "Quick profiling, high-impact improvements deployed within 48h",
+              "emergency": "Critical bottleneck found, immediate hotfix deployed same-day, full performance work begins",
               "id": "performance-optimization"
             },
             {
@@ -2867,9 +2867,9 @@
             },
             {
               "name": "Storage Hardening",
-              "standard": "Full BTRFS redundant storage setup with self-healing scrub, live data migration from single-disk, reflink verification, and monitoring integration. RAID1 (2 SSDs, mirrored) for standard deployments or RAID10 (4+ SSDs, striped mirrors) for high-throughput production workloads. Scrub auto-repairs corruption from the redundant copy instead of just detecting it. Includes capacity planning and backup strategy review.",
-              "priority": "BTRFS RAID1 or RAID10 configured + live balance migration started + scrub timer active within 48h",
-              "emergency": "Disks attached + RAID conversion initiated same-day + critical repos verified + full hardening begins",
+              "standard": "We set up full BTRFS redundant storage, with RAID1 (2 mirrored drives) for standard setups or RAID10 (4+ drives) for high-traffic systems. We also handle live migration, shortcut-copy checks, auto-repair, and monitoring. Finishes with a storage plan and a backup strategy review.",
+              "priority": "BTRFS RAID1 or RAID10 set up, live migration started, auto-repair active, all within 48h",
+              "emergency": "Disks attached, RAID conversion started same-day, critical apps verified, full hardening begins",
               "id": "storage-hardening"
             }
           ]
@@ -2878,9 +2878,9 @@
           "heading": "Why Professional Services?",
           "statistics": [
             "The average cost of a ransomware attack is $4.62 million (IBM Security, 2023)",
-            "The average downtime cost is $5,600 per minute for enterprises"
+            "The average downtime cost is $5,600 per minute for large businesses"
           ],
-          "description": "Dedicated engineers on your side when infrastructure fails.",
+          "description": "Dedicated engineers on your side when your systems fail.",
           "items": [
             "Dedicated team of experts assigned to your project",
             "Guaranteed response times with SLA",
@@ -2895,7 +2895,7 @@
         },
         "access": {
           "heading": "Professional services access by tier",
-          "description": "Hybrid coverage combines included onboarding with optional add-ons so every team can get the right help at the right time.",
+          "description": "Some help comes with every plan. You can add more when you need it.",
           "labels": {
             "included": "Included",
             "available": "Available add-ons"
@@ -2905,8 +2905,8 @@
               "planId": "community",
               "included": ["Self-service documentation, video tutorials, and community forum"],
               "available": [
-                "Standard Implementation ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
-                "Emergency Response engagement ($29,999 on-demand)"
+                "Standard Setup ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
+                "Emergency Response service ($29,999 on-demand)"
               ]
             },
             {
@@ -2916,8 +2916,8 @@
                 "Standard onboarding session (setup call and configuration walkthrough)"
               ],
               "available": [
-                "Priority Implementation ($19,999)",
-                "Emergency Response engagement ($29,999 on-demand)",
+                "Priority Setup ($19,999)",
+                "Emergency Response service ($29,999 on-demand)",
                 "Custom integration projects (scoped)"
               ]
             },
@@ -2925,51 +2925,51 @@
               "planId": "business",
               "included": [
                 "Priority email/chat/phone support",
-                "Dedicated onboarding with configuration and runbook handoff",
-                "Standard Implementation package included ($9,999 value)",
+                "Dedicated onboarding with configuration and step-by-step guide handoff",
+                "Standard Setup package included ($9,999 value)",
                 "Quarterly success reviews"
               ],
               "available": [
-                "Priority Implementation upgrade ($19,999)",
-                "Emergency Response engagement ($29,999 on-demand)",
+                "Priority Setup upgrade ($19,999)",
+                "Emergency Response service ($29,999 on-demand)",
                 "Custom development and security architecture consulting"
               ]
             },
             {
               "planId": "enterprise",
               "included": [
-                "24/7/365 white-glove support and dedicated CSM",
-                "Priority Implementation included ($19,999 value)",
+                "24/7/365 hands-on expert support with a dedicated account manager",
+                "Priority Setup included ($19,999 value)",
                 "Quarterly disaster recovery testing",
                 "Annual business continuity planning workshop",
                 "Executive escalation hotline"
               ],
               "available": [
                 "Custom development and advanced integrations",
-                "Security & audit architecture consulting",
-                "Emergency Response retainer ($5,000-$7,500/month)"
+                "Security and infrastructure design consulting",
+                "Monthly Emergency Response contract ($5,000-$7,500/month)"
               ]
             }
           ]
         },
         "retainers": {
-          "heading": "Retainer options for always-on readiness",
-          "description": "Executive stakeholders get direct access to our specialists. Predictable monthly pricing.",
+          "heading": "Monthly plans for ongoing peace of mind",
+          "description": "You get direct access to our team. Predictable monthly pricing.",
           "items": [
             {
               "title": "Emergency Response Retainer",
               "price": "$5,000–$7,500/month",
               "bullets": [
                 "Guaranteed 2-hour response time",
-                "Priority escalation path with war-room coordination",
-                "Quarterly readiness review and playbook updates"
+                "Direct line to senior engineers when you need it most",
+                "Quarterly readiness review and response plan updates"
               ]
             }
           ]
         },
         "advancedDetails": {
-          "heading": "Implementation & Pricing Details",
-          "description": "Service packages, implementation tiers, pricing factors, and retainer options"
+          "heading": "Setup and Pricing Details",
+          "description": "Service packages, setup tiers, pricing factors, and monthly support options"
         }
       },
       "faq": {
@@ -2981,27 +2981,27 @@
           },
           {
             "question": "What payment methods do you accept?",
-            "answer": "We accept all major credit cards (Visa, MasterCard, American Express) and support invoice-based billing for annual Enterprise plans."
+            "answer": "We accept Visa, MasterCard, and American Express. For annual Enterprise plans, we also offer invoice billing."
           },
           {
             "question": "Is there a free trial available?",
-            "answer": "Our Community plan is free forever. For business plans, contact our sales team to discuss trial options."
+            "answer": "Our Community plan is free forever. For paid plans, reach out to our sales team about trial options."
           },
           {
             "question": "What's included in support?",
-            "answer": "The Community plan includes community support and self-service documentation. Professional includes email and chat support. Business adds phone support and a dedicated customer success manager. Enterprise includes 24/7/365 white-glove support with executive escalation."
+            "answer": "The Community plan has community support and self-service docs. Professional adds email and chat. Business adds phone support and a dedicated account manager. Enterprise gets 24/7/365 hands-on support with direct access to senior staff."
           },
           {
             "question": "How fast can I recover from a disaster?",
-            "answer": "Recovery time depends on your tier: Community restores latest snapshots in minutes, Professional offers point-in-time recovery (24h), Business provides 4-hour SLA, and Enterprise delivers 15-60 minute custom RTO."
+            "answer": "Recovery time depends on your plan. Community restores your latest backup in minutes. Professional lets you recover to any point in the last 24 hours. Business guarantees a 4-hour recovery. Enterprise gets back online in 15 to 60 min, on a custom schedule."
           },
           {
             "question": "Are my backups actually tested and verified?",
-            "answer": "Yes. Unlike traditional backup systems, we automatically verify backups by testing restoration processes, so you know they work before you need them in an emergency."
+            "answer": "Yes, and this is something I care about personally. We run a sample restore on every backup. So you know it works before you ever need it."
           },
           {
             "question": "What happens to my data if the service goes down?",
-            "answer": "Your data stays encrypted in your chosen storage location. You maintain full control and can access encrypted backups independently of our services."
+            "answer": "Your data stays encrypted in your chosen location. You stay in control and can access your backups even if our service goes down."
           }
         ]
       },
@@ -3064,8 +3064,8 @@
       },
       "technicalSummary": {
         "heading": "Technical limits at a glance",
-        "description": "Give your platform team a precise view of throughput, retention, and recovery expectations.",
-        "recoveryNote": "RPO (Recovery Point Objective): How much data you can afford to lose—measured in time. For example, 15-minute RPO means you might lose up to 15 minutes of recent changes.\n\nRTO (Recovery Time Objective): How quickly you need to be back online after a disaster. For example, 4-hour RTO means your systems will be restored within 4 hours.",
+        "description": "Give your IT team a clear picture of storage limits and recovery targets.",
+        "recoveryNote": "RPO (Recovery Point Objective): How much data you can afford to lose, measured in time. For example, a 15 min RPO means you might lose up to 15 minutes of recent changes.\n\nRTO (Recovery Time Objective): How quickly you need to be back online after a disaster. For example, a 4-hour RTO means your systems will be back within 4 hours.",
         "metrics": [
           {
             "key": "rpo",
@@ -12788,14 +12788,14 @@
     "personaPages": {
       "forDevops": {
         "meta": {
-          "title": "For DevOps - Ship Faster, Recover Instantly | Rediacc",
-          "description": "Ship faster with instant environment cloning, automated disaster recovery, and CLI-native workflows built for DevOps engineers.",
+          "title": "Rediacc for DevOps: Clone Prod, Recover Fast",
+          "description": "Clone production in 60 seconds, roll back in under 5 minutes, run on your own hardware. CLI-first DR for DevOps teams.",
           "keywords": "devops, infrastructure automation, CLI, btrfs snapshots, self-hosted, environment cloning, instant rollback, production parity"
         },
         "hero": {
           "badge": "FOR DEVOPS ENGINEERS",
-          "title": "Ship faster. Recover instantly. Sleep better.",
-          "subtitle": "CLI-first infrastructure that clones production in 60 seconds, rolls back in under five, and runs on your own hardware. No tickets. No waiting. No vendor lock-in.",
+          "title": "Clone prod in a minute. Roll back in five. Stop filing tickets.",
+          "subtitle": "CLI-first infrastructure that clones production in 60 seconds, rolls back in under five minutes, and runs on hardware you control. No tickets. No waiting. Your data stays yours.",
           "primaryCta": "Get Started Free",
           "secondaryCta": "Read the Docs"
         },
@@ -12880,7 +12880,7 @@
         ],
         "problem": {
           "overline": "THE PROBLEM",
-          "title": "You automate everything — except getting an environment",
+          "title": "You automate everything. Except getting a test environment.",
           "description": "Your CI/CD pipeline deploys in minutes. Your IaC provisions in seconds. But when you need a test environment with real data, you file a ticket and wait three days. Meanwhile, staging is shared, flaky, and nothing like production.",
           "statCallouts": [
             {
@@ -12936,7 +12936,7 @@
           "steps": [
             {
               "title": "Clone",
-              "description": "Run rdc ceph snapshot create production. Btrfs CoW creates an instant snapshot — app, database, config, everything.",
+              "description": "Run rdc ceph snapshot create production. Btrfs CoW gives you a sub-second snapshot of everything: app, database, config.",
               "icon": "terminal"
             },
             {
@@ -13052,7 +13052,7 @@
           ]
         },
         "socialProof": {
-          "quote": "We went from a 3-day environment provisioning cycle to under a minute. Our developers stopped filing tickets and started shipping. The btrfs snapshots just work — 380 GB cloned in 52 seconds with near-zero additional storage.",
+          "quote": "We went from a 3-day environment provisioning cycle to under a minute. Developers stopped filing tickets and started shipping. The btrfs snapshots just work: 380 GB cloned in 52 seconds with near-zero additional storage.",
           "author": "Senior DevOps Engineer",
           "company": "Fintech, 80 developers",
           "impact": {
@@ -13064,7 +13064,7 @@
           }
         },
         "relatedSolutions": {
-          "title": "Explore related solutions"
+          "title": "Related solutions"
         },
         "bottomCta": {
           "title": "Try it yourself",
@@ -13075,14 +13075,14 @@
       },
       "forCtos": {
         "meta": {
-          "title": "For CTOs — Reduce Infrastructure TCO by 60% | Rediacc",
+          "title": "For CTOs: Cut Infrastructure TCO by 60% | Rediacc",
           "description": "Self-hosted infrastructure protection on your hardware. Reduce TCO by 60%, eliminate vendor lock-in, and recover from any disaster in minutes.",
           "keywords": "CTO, infrastructure TCO, self-hosted, disaster recovery, vendor lock-in, btrfs snapshots, compliance, scalability"
         },
         "hero": {
           "badge": "FOR CTOs",
           "title": "Reduce infrastructure TCO by 60%. Scale on your hardware.",
-          "subtitle": "Self-hosted infrastructure protection that eliminates cloud markup, scales without per-seat pricing, and recovers from any disaster in minutes — not hours.",
+          "subtitle": "Self-hosted infrastructure protection. No cloud markup, no per-seat pricing, recovery in minutes instead of hours.",
           "primaryCta": "Schedule a Demo",
           "secondaryCta": "Calculate Your ROI"
         },
@@ -13168,7 +13168,7 @@
         "problem": {
           "overline": "THE PROBLEM",
           "title": "Cloud costs keep rising. Recovery keeps failing.",
-          "description": "Your cloud bill grows 15-20% annually. Per-seat licensing punishes team growth. When disaster strikes, your 'instant recovery' takes hours — because the backup tool that promised RPO of minutes actually delivers RPO of days. Meanwhile, you're locked into a vendor ecosystem that gets more expensive every renewal.",
+          "description": "Your cloud bill grows 15-20% every year. Per-seat licensing punishes team growth. When something breaks, the 'instant recovery' you bought takes hours, because the tool that promised RPO of minutes actually delivers RPO of days. And every renewal cycle, the vendor ecosystem you're stuck in gets pricier.",
           "statCallouts": [
             {
               "number": "17%",
@@ -13220,7 +13220,7 @@
         "calculator": {
           "overline": "THE REAL COST",
           "title": "What's your infrastructure really costing you?",
-          "description": "Drag the sliders to match your organization. See how Rediacc compares to your current spend.",
+          "description": "Drag the sliders to match your setup. See how Rediacc compares to what you're paying now.",
           "headerTitle": "Calculate your infrastructure savings",
           "sliders": {
             "devs": "Servers / workloads managed",
@@ -13248,7 +13248,7 @@
         "techDiff": {
           "overline": "ARCHITECTURE",
           "title": "How Rediacc protects your infrastructure",
-          "description": "Rediacc runs on your hardware, using btrfs copy-on-write snapshots for instant backups and recovery. Every snapshot is immutable at the filesystem level — ransomware can't encrypt what the kernel protects. Recovery means switching a pointer, not restoring terabytes.",
+          "description": "Rediacc runs on your hardware, using btrfs copy-on-write snapshots for instant backups and recovery. Every snapshot is immutable at the filesystem level. Ransomware can't encrypt what the kernel protects. Recovery means flipping a pointer, not restoring terabytes.",
           "traditionalLabel": "Cloud / legacy DR",
           "rediaccLabel": "Rediacc (self-hosted)",
           "rows": [
@@ -13272,7 +13272,7 @@
         },
         "benefits": {
           "overline": "STRATEGIC VALUE",
-          "title": "What Rediacc means for your organization",
+          "title": "What Rediacc means for your stack",
           "items": [
             {
               "title": "60% lower TCO",
@@ -13281,12 +13281,12 @@
             },
             {
               "title": "Minutes, not hours",
-              "description": "Full disaster recovery in under 5 minutes. Btrfs snapshots mean recovery is a pointer switch, not a restore job.",
+              "description": "Full disaster recovery in under 5 minutes. btrfs snapshots mean recovery is a pointer switch, not a restore job.",
               "icon": "zap"
             },
             {
               "title": "Zero vendor lock-in",
-              "description": "Your data stays on your infrastructure in open formats. Switch providers or self-manage — your choice, always.",
+              "description": "Your data stays on your infrastructure in open formats. Switch providers, self-manage, or move it tomorrow. Your call.",
               "icon": "lock"
             }
           ]
@@ -13294,7 +13294,7 @@
         "comparison": {
           "overline": "COMPETITIVE LANDSCAPE",
           "title": "How Rediacc compares",
-          "description": "Enterprise backup tools charge per-socket, per-VM, or per-TB. Rediacc charges per machine — and runs on your hardware.",
+          "description": "Enterprise backup tools charge per-socket, per-VM, or per-TB. Rediacc charges per machine, and runs on your hardware.",
           "capabilityLabel": "Capability",
           "features": [
             {
@@ -13342,12 +13342,12 @@
         "shareWithTeam": {
           "overline": "SHARE WITH YOUR TEAM",
           "title": "Get your DevOps team started",
-          "description": "Your engineers will love the CLI-first workflow and instant environments. Share the technical deep-dive with your DevOps team.",
+          "description": "Your engineers care about CLI-first workflows and instant environments. Send them the technical deep-dive.",
           "ctaText": "Share the DevOps deep-dive",
           "ctaSlug": "for-devops"
         },
         "relatedSolutions": {
-          "title": "Explore the platform"
+          "title": "More from the platform"
         },
         "bottomCta": {
           "title": "See it in action",
@@ -13358,13 +13358,13 @@
       "forCeos": {
         "meta": {
           "title": "For CEOs - Predictable Costs, Zero Lock-In | Rediacc",
-          "description": "Self-hosted infrastructure protection with predictable pricing, zero vendor lock-in, and full data ownership. Protect your business without the cloud bill.",
+          "description": "Back up and recover your systems on servers you own. One flat price per machine. No per-seat fees. No surprise cloud bills. Your data stays yours.",
           "keywords": "CEO, infrastructure costs, self-hosted, data protection, vendor lock-in, predictable pricing, business continuity, SMB"
         },
         "hero": {
           "badge": "FOR CEOs & FOUNDERS",
-          "title": "Predictable infrastructure costs. Zero vendor lock-in.",
-          "subtitle": "Protect your business data on hardware you own. One flat price per machine — no per-seat fees, no surprise cloud bills, no vendor holding your data hostage.",
+          "title": "One flat price per server. Your data stays yours.",
+          "subtitle": "Protect your business data on hardware you own. One flat price per machine. No per-seat fees, no surprise cloud bills, no vendor holding your data hostage.",
           "primaryCta": "See Pricing",
           "secondaryCta": "Talk to Sales"
         },
@@ -13405,7 +13405,7 @@
             },
             {
               "type": "success",
-              "text": "All systems protected. Zero incidents this quarter."
+              "text": "All safe. No issues this quarter."
             },
             {
               "type": "summary",
@@ -13525,11 +13525,11 @@
             "quarterlySlip": "100% yours"
           },
           "withAnnual": "Calculate →",
-          "footnote": "Estimates based on industry TCO models. Actual savings depend on your current infrastructure and scale."
+          "footnote": "These numbers are estimates based on common cost models. What you save depends on your setup and size."
         },
         "benefits": {
           "overline": "BUSINESS VALUE",
-          "title": "What this means for your business",
+          "title": "What you actually get.",
           "items": [
             {
               "title": "Predictable costs",
@@ -13543,13 +13543,13 @@
             },
             {
               "title": "Business continuity",
-              "description": "Full disaster recovery in under 5 minutes. Immutable backups that ransomware can't touch. Your business keeps running.",
+              "description": "Full recovery in under 5 minutes. Locked, write-once backups that ransomware cannot change. Your business keeps running.",
               "icon": "shield"
             }
           ]
         },
         "socialProof": {
-          "quote": "We were spending $18,000 a month on cloud infrastructure for 47 workloads. After migrating to Rediacc on our own servers, our bill dropped to $6,800 — and recovery time went from 4 hours to 3 minutes. The ROI was obvious in the first month.",
+          "quote": "We were spending $18,000 a month on cloud infrastructure for 47 workloads. After migrating to Rediacc on our own servers, our bill dropped to $6,800. Recovery time went from 4 hours to 3 minutes. The ROI was obvious in the first month.",
           "author": "CEO & Founder",
           "company": "SaaS startup, 45 employees",
           "impact": {
@@ -13563,7 +13563,7 @@
         "shareWithTeam": {
           "overline": "NEXT STEP",
           "title": "Share with your CTO",
-          "description": "Your technical team needs to evaluate the architecture and integration. Share the CTO deep-dive with the technical details they need.",
+          "description": "Your tech team needs to check how this fits with your stack. Send them the CTO deep-dive. It has the details they will ask for.",
           "ctaText": "Share the CTO deep-dive",
           "ctaSlug": "for-ctos"
         },
@@ -13579,13 +13579,13 @@
       "forAiAgents": {
         "meta": {
           "title": "For AI Agents - CLI-Native Automation | Rediacc",
-          "description": "Rediacc is built for AI coding assistants. CLI-first operations, structured JSON output, SSH-based access, and full agent discovery via rdc agent commands.",
+          "description": "Rediacc is built for AI coding assistants. CLI-first operations, structured JSON, SSH-based access, full agent discovery via rdc agent commands.",
           "keywords": "AI agents, Claude Code, Cursor, Cline, infrastructure automation, CLI, JSON output, self-hosted, agent-native, MCP"
         },
         "hero": {
           "badge": "FOR AI AGENTS",
           "title": "Infrastructure your AI agent already knows how to use.",
-          "subtitle": "CLI-first. SSH-based. JSON by default. Every rdc command is designed for autonomous agents — no GUI, no browser automation, no custom integrations needed.",
+          "subtitle": "CLI-first. SSH-based. JSON by default. Every rdc command is built for autonomous agents: no GUI, no browser automation, no custom integrations.",
           "primaryCta": "Get Started Free",
           "secondaryCta": "Read the Docs"
         },
@@ -13665,7 +13665,7 @@
         ],
         "problem": {
           "overline": "THE PROBLEM",
-          "title": "AI agents are powerful — but most infrastructure fights them",
+          "title": "AI agents are powerful, but most infrastructure fights them",
           "description": "Your AI coding assistant can write, test, and debug code autonomously. But when it needs to deploy, check status, or manage infrastructure, it hits a wall: GUI-only dashboards, OAuth browser flows, unstable APIs, and responses that blow the context window.",
           "statCallouts": [
             {
@@ -13731,7 +13731,7 @@
             },
             {
               "title": "Operate",
-              "description": "Deploy, monitor, rollback — all through CLI commands with JSON output. No GUI, no browser, no custom integration.",
+              "description": "Deploy, monitor, rollback. All through CLI commands with JSON output. No GUI, no browser, no custom integration.",
               "icon": "shield"
             }
           ],
@@ -13837,7 +13837,7 @@
           ]
         },
         "relatedSolutions": {
-          "title": "Explore related solutions"
+          "title": "See related solutions"
         },
         "bottomCta": {
           "title": "Let your AI agent manage your infrastructure",
@@ -13850,12 +13850,12 @@
     "roiCalculator": {
       "meta": {
         "title": "ROI Calculator - Infrastructure Savings | Rediacc",
-        "description": "Calculate total cost of ownership savings, payback period, and ROI of switching to Rediacc self-hosted infrastructure.",
+        "description": "See what Rediacc could save you. Plug in your numbers to get TCO, payback, and 3-year ROI for self-hosted infrastructure you run yourself.",
         "keywords": "ROI calculator, TCO comparison, infrastructure savings, self-hosted ROI, payback period, backup cost reduction"
       },
       "overline": "CALCULATE YOUR ROI",
       "title": "How much can Rediacc save your organization?",
-      "description": "Select your company size and adjust the inputs to see real-time TCO comparison, developer productivity gains, and payback period.",
+      "description": "Pick your company size and slide the inputs. You'll see TCO side-by-side, developer time saved, and how fast it pays back.",
       "sizeSelect": {
         "label": "Company size",
         "smb": "SMB",
@@ -13920,7 +13920,7 @@
           "auditTimeSaved": "Audit prep time saved"
         }
       },
-      "footnote": "Estimates based on industry benchmarks from ITIC, IBM/Ponemon, Sophos, Cortex, and KPMG research (2024). TCO includes infrastructure, administration, DR testing, and maintenance. Developer productivity uses a conservative 40% realization rate. DR savings based on RTO improvement using btrfs copy-on-write snapshots. Storage savings assume CoW efficiency vs. traditional backup chains. Actual results vary by workload and configuration.",
+      "footnote": "Estimates use industry benchmarks from ITIC, IBM/Ponemon, Sophos, Cortex, and KPMG (2024). TCO covers infrastructure, admin work, DR testing, and upkeep. Developer productivity uses a conservative 40% realization rate. DR savings come from faster recovery using btrfs (an open-source storage system built into Linux). Storage savings come from shortcut copies that take no extra space, not full backup chains. Real results vary by workload and setup.",
       "references": {
         "label": "Sources & References",
         "items": [
@@ -13957,7 +13957,7 @@
             "url": "https://forums.veeam.com/veeam-backup-replication-f2/phasing-out-our-socket-based-licensing-t74168.html"
           }
         ],
-        "disclaimer": "All figures are based on published industry research and public vendor documentation. TCO comparisons use illustrative Rediacc pricing for modeling purposes. Actual pricing and savings may differ based on specific deployment configurations, negotiated rates, and organizational requirements."
+        "disclaimer": "All numbers come from published research and public vendor docs. The TCO math uses example Rediacc pricing. Your real price and real savings will depend on your setup, your deal, and what your team needs."
       },
       "hero": {
         "title": "Calculate Your Infrastructure ROI"
@@ -13965,8 +13965,8 @@
     },
     "newsletter": {
       "meta": {
-        "title": "Newsletter - Infrastructure Automation Updates | Rediacc",
-        "description": "Subscribe to the Rediacc newsletter for monthly product updates, self-hosting guides, and infrastructure tips.",
+        "title": "Rediacc Newsletter | Monthly self-hosting tips and updates",
+        "description": "Get monthly updates from Rediacc. New features, self-hosting guides, and tips to keep your servers safe.",
         "keywords": "Rediacc newsletter, self-hosting updates, infrastructure tips, DevOps newsletter"
       },
       "breadcrumb": {
@@ -13978,12 +13978,12 @@
         "items": [
           "Monthly product updates and new features",
           "Self-hosting guides and best practices",
-          "Infrastructure tips and DevOps insights",
+          "Server tips and lessons from real deployments",
           "Early access to new features"
         ]
       },
       "frequency": "Once a month.",
-      "privacy": "We use Plausible Analytics and never share your email with third parties.",
+      "privacy": "We use Plausible for traffic stats. We never share your email.",
       "hero": {
         "title": "Subscribe to Our Newsletter"
       }
@@ -13991,7 +13991,7 @@
     "changelog": {
       "meta": {
         "title": "Changelog - Latest Updates & Releases | Rediacc",
-        "description": "Follow the latest Rediacc releases, improvements, and bug fixes.",
+        "description": "See what shipped in Rediacc: new features, improvements, and fixes.",
         "keywords": "Rediacc changelog, release notes, updates, new features"
       },
       "breadcrumb": {
@@ -13999,9 +13999,9 @@
         "changelog": "Changelog"
       },
       "title": "Changelog",
-      "subtitle": "Follow the latest updates, improvements, and fixes.",
+      "subtitle": "See what we shipped, what we fixed, and what is coming next.",
       "subscribeTitle": "Get notified of new releases",
-      "subscribeDescription": "Receive a short update whenever we ship something new."
+      "subscribeDescription": "We will email you when we ship something new. No marketing fluff."
     },
     "resourcesNis2Directive": {
       "meta": {
@@ -14019,7 +14019,7 @@
       },
       "toc": {
         "heading": "What is in the PDF",
-        "intro": "Nineteen sections, structured for the working CISO or compliance lead who wants the directive's substance without wading through 73 pages of recitals and articles.",
+        "intro": "Nineteen sections. Built for the CISO or compliance lead who needs the directive in plain words, not 73 pages of recitals and articles.",
         "items": [
           "Executive Summary",
           "Purpose and Legal Basis",
@@ -14050,7 +14050,7 @@
           {
             "title": "Article 21(2)(d) is a vendor question",
             "slug": "nis2-supply-chain-self-hosted",
-            "blurb": "Why the third-party-ICT register shrinks when the data plane never leaves your tenancy. For CISOs and procurement leads renegotiating DPAs in 2026."
+            "blurb": "Why your third-party vendor list shrinks when the software runs on your own servers, not the vendor's. For CISOs and procurement leads rewriting vendor contracts in 2026."
           },
           {
             "title": "Continuous effectiveness without theatre",
@@ -14060,7 +14060,7 @@
           {
             "title": "What buyers told us in the first NIS2 audit cycle",
             "slug": "nis2-the-real-bill",
-            "blurb": "The five-tool compliance stack mid-market essential entities are quietly assembling, what a self-hosted control plane collapses, and the line items that stay yours either way. For CFOs and buyers heading into a renewal cycle."
+            "blurb": "The five-tool compliance stack mid-market essential entities are quietly assembling, which of those tools one piece of self-hosted software replaces, and the line items that stay yours either way. For CFOs and buyers heading into a renewal cycle."
           }
         ]
       },
@@ -14073,15 +14073,15 @@
           },
           {
             "q": "Who is in scope under NIS2?",
-            "a": "Entities operating in Annex I (high-criticality) or Annex II (other critical) sectors that meet the medium-sized enterprise threshold (50+ employees or EUR 10 million+ turnover, per Recommendation 2003/361/EC). Some entities are in scope regardless of size, including TLD registries, DNS providers, trust service providers, and central public administration. Sections 4, 6, and 7 of the PDF cover scope in detail."
+            "a": "Companies in Annex I or Annex II sectors that pass the medium-size mark. That means 50+ staff, or more than EUR 10 million in turnover, per Recommendation 2003/361/EC. Annex I covers what the EU treats as the most critical sectors: energy, transport, banking, financial markets, health, water, digital infrastructure, public administration, space. Annex II covers other critical sectors: postal, waste, chemicals, food, manufacturing, digital providers, research. A few entities are in scope no matter their size: TLD registries, DNS providers, trust service providers, and central public administration. Sections 4, 6, and 7 of the PDF cover scope in detail."
           },
           {
             "q": "When did NIS2 enter into force, and what is the transposition deadline?",
-            "a": "The directive entered into force on 16 January 2023. Member States had until 17 October 2024 to transpose it into national law; application began on 18 October 2024 (the same date NIS1 was repealed). The full timeline including the entity-list-to-Commission deadline (17 April 2025) and the periodic-review schedule is in Section 16."
+            "a": "The directive took effect on 16 January 2023. Member States had until 17 October 2024 to add it to national law. It started to apply on 18 October 2024. That is also the day NIS1 was repealed. The full timeline sits in Section 16. That covers the 17 April 2025 deadline to send entity lists to the Commission, plus the review schedule. Most teams underestimate how much of that timeline is already behind them."
           },
           {
             "q": "What are the maximum fines?",
-            "a": "For essential entities: EUR 10,000,000 or 2% of global annual turnover, whichever is higher. For important entities: EUR 7,000,000 or 1.4% of global annual turnover, whichever is higher. The directive also permits non-monetary sanctions including temporary management bans for senior management of essential entities (last-resort measure). Section 15 covers fine determination factors."
+            "a": "For essential entities: EUR 10,000,000 or 2% of global annual turnover, whichever is higher. For important entities: EUR 7,000,000 or 1.4% of global annual turnover, whichever is higher. The directive also allows penalties beyond fines. As a last resort, regulators can temporarily ban senior leaders at essential entities from their roles. Section 15 covers how fines get set."
           },
           {
             "q": "Does NIS2 apply to non-EU companies?",
@@ -14096,7 +14096,7 @@
       "about": {
         "heading": "About this summary",
         "body": "Rediacc is a self-hosted infrastructure platform registered in Estonia (OÜ 17363830, VAT EE102920091). This summary was authored as part of our NIS2 content programme. The companion guides above describe how Rediacc addresses specific articles of the directive, including the gaps where Rediacc is not the answer (no certifications yet; no GRC layer; no managed Article 23 reporting; portal-only MFA). For the public capability mapping, see {nis2DoraLink} in the documentation.",
-        "cta": "Send us your vendor questionnaire or your three biggest security line items from last year's budget. We will respond against a deployed instance, in writing, including the gaps. Or download the PDF and forward it to a colleague.",
+        "cta": "Send us your vendor questionnaire or your three biggest security line items from last year's budget. We will respond against a working install on one of our own servers, in writing, including the gaps. Or download the PDF and forward it to a colleague.",
         "downloadButton": "Download the PDF"
       }
     },
@@ -14104,7 +14104,7 @@
       "ransomwareSurvival": {
         "meta": {
           "title": "Ransomware Survival: Free Technical Brief PDF",
-          "description": "Filesystem-native immutable backup that attackers cannot encrypt or delete. A free CISO/CTO-grade brief from Rediacc, plus exec version.",
+          "description": "Backups built into the storage layer that attackers can't encrypt or delete. A free CISO/CTO-grade brief from Rediacc, plus exec version.",
           "keywords": "ransomware survival, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {
@@ -14117,21 +14117,21 @@
         },
         "toc": {
           "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "intro": "Inside: what it protects against and how it works. Which rules it helps you meet. The proof your auditor will want. About 10 to 14 dense pages.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "What you're really defending against, in plain terms",
+            "How the system works, and why an attacker can't beat it",
+            "What it stops, with real-world examples",
+            "Which rules apply: fines, deadlines, exact wording",
+            "The cost math, grounded in published numbers",
+            "How we stack up against other vendors on the tech, not the price tag",
+            "What setup looks like, and what we don't cover",
+            "The evidence your auditor will ask for"
           ]
         },
         "companions": {
           "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
+          "intro": "The same approach, framed for the questions you'll get asked:",
           "readMore": "Read more"
         },
         "faq": {
@@ -14139,7 +14139,7 @@
           "items": [
             {
               "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "a": "A CISO, CTO, or senior infrastructure engineer reviewing the design. It assumes you know how backups work, how storage works, and the rules your stack already has to follow."
             },
             {
               "q": "Is there a non-technical version?",
@@ -14151,17 +14151,17 @@
             },
             {
               "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "a": "The brief covers this in depth. Short version: btrfs puts write-once copies and instant clones into the storage layer itself. Not into an app on top. The send/receive feature ships those copies off-machine. So an attacker holding your top admin password can't change or delete them."
             },
             {
               "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "a": "Not directly. The design covers your own servers running databases in Docker on btrfs storage. If your critical data lives in RDS or Aurora, the brief flags that. It then shows where the model fits and where it doesn't."
             }
           ]
         },
         "about": {
           "heading": "About this brief",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "body": "Rediacc is a Tallinn-based company. We build backup and disaster recovery on btrfs and commodity Linux. Our engineering team wrote this brief. We edited it against an anti-slop style guide. Then we checked every claim before publishing.",
           "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
           "downloadButton": "Download the brief"
         }
@@ -14169,7 +14169,7 @@
       "multiCloudAlways": {
         "meta": {
           "title": "Multi-Cloud Always: Free Technical Brief PDF",
-          "description": "Portable snapshots and tested cross-cloud failover so your business survives a cloud outage. CISO/CTO brief, plus exec version.",
+          "description": "Portable backups and tested failover between clouds, so your business survives a cloud outage. CISO/CTO brief, plus exec version.",
           "keywords": "multi-cloud always, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {
@@ -14182,21 +14182,21 @@
         },
         "toc": {
           "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "intro": "Inside: what it protects against and how it works. Which rules it helps you meet. The proof your auditor will want. About 10 to 14 dense pages.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "What you're really defending against, in plain terms",
+            "How the system works, and why an attacker can't beat it",
+            "What it stops, with real-world examples",
+            "Which rules apply: fines, deadlines, exact wording",
+            "The cost math, grounded in published numbers",
+            "How we stack up against other vendors on the tech, not the price tag",
+            "What setup looks like, and what we don't cover",
+            "The evidence your auditor will ask for"
           ]
         },
         "companions": {
           "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
+          "intro": "The same approach, framed for the questions you'll get asked:",
           "readMore": "Read more"
         },
         "faq": {
@@ -14204,7 +14204,7 @@
           "items": [
             {
               "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "a": "A CISO, CTO, or senior infrastructure engineer reviewing the design. It assumes you know how backups work, how storage works, and the rules your stack already has to follow."
             },
             {
               "q": "Is there a non-technical version?",
@@ -14216,17 +14216,17 @@
             },
             {
               "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "a": "The brief covers this in depth. Short version: btrfs puts write-once copies and instant clones into the storage layer itself. Not into an app on top. The send/receive feature ships those copies off-machine. So an attacker holding your top admin password can't change or delete them."
             },
             {
               "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "a": "Not directly. The design covers your own servers running databases in Docker on btrfs storage. If your critical data lives in RDS or Aurora, the brief flags that. It then shows where the model fits and where it doesn't."
             }
           ]
         },
         "about": {
           "heading": "About this brief",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "body": "Rediacc is a Tallinn-based company. We build backup and disaster recovery on btrfs and commodity Linux. Our engineering team wrote this brief. We edited it against an anti-slop style guide. Then we checked every claim before publishing.",
           "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
           "downloadButton": "Download the brief"
         }
@@ -14234,7 +14234,7 @@
       "verifiedBackups": {
         "meta": {
           "title": "Verified Backups: Free Technical Brief PDF",
-          "description": "Boot-and-verify testing on every backup, every cycle — not a quarterly checkbox. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "description": "Boot-and-verify testing on every backup, every cycle. Not a quarterly checkbox. A free CISO/CTO-grade brief from Rediacc, plus exec version.",
           "keywords": "verified backups, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {
@@ -14247,21 +14247,21 @@
         },
         "toc": {
           "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "intro": "Inside: what it protects against and how it works. Which rules it helps you meet. The proof your auditor will want. About 10 to 14 dense pages.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "What you're really defending against, in plain terms",
+            "How the system works, and why an attacker can't beat it",
+            "What it stops, with real-world examples",
+            "Which rules apply: fines, deadlines, exact wording",
+            "The cost math, grounded in published numbers",
+            "How we stack up against other vendors on the tech, not the price tag",
+            "What setup looks like, and what we don't cover",
+            "The evidence your auditor will ask for"
           ]
         },
         "companions": {
           "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
+          "intro": "The same approach, framed for the questions you'll get asked:",
           "readMore": "Read more"
         },
         "faq": {
@@ -14269,7 +14269,7 @@
           "items": [
             {
               "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "a": "A CISO, CTO, or senior infrastructure engineer reviewing the design. It assumes you know how backups work, how storage works, and the rules your stack already has to follow."
             },
             {
               "q": "Is there a non-technical version?",
@@ -14281,17 +14281,17 @@
             },
             {
               "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "a": "The brief covers this in depth. Short version: btrfs puts write-once copies and instant clones into the storage layer itself. Not into an app on top. The send/receive feature ships those copies off-machine. So an attacker holding your top admin password can't change or delete them."
             },
             {
               "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "a": "Not directly. The design covers your own servers running databases in Docker on btrfs storage. If your critical data lives in RDS or Aurora, the brief flags that. It then shows where the model fits and where it doesn't."
             }
           ]
         },
         "about": {
           "heading": "About this brief",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "body": "Rediacc is a Tallinn-based company. We build backup and disaster recovery on btrfs and commodity Linux. Our engineering team wrote this brief. We edited it against an anti-slop style guide. Then we checked every claim before publishing.",
           "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
           "downloadButton": "Download the brief"
         }
@@ -14299,34 +14299,34 @@
       "encryptionControl": {
         "meta": {
           "title": "Encryption Control: Free Technical Brief PDF",
-          "description": "Customer-managed keys and encrypted data that survives a vendor switch, Schrems II compliant. CISO/CTO brief, plus exec version.",
+          "description": "You hold the keys. Your data stays encrypted even if you switch vendors. Schrems II compliant. CISO/CTO brief, plus exec version.",
           "keywords": "encryption control, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {
           "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
           "title": "Encryption Control",
-          "subtitle": "Schrems II is not a policy choice. It is an architecture requirement, and most backup vendors fail it.",
+          "subtitle": "Schrems II isn't a policy choice. It's a design requirement, and most backup vendors fail it.",
           "downloadButton": "Download the technical brief",
           "openInBrowser": "Open in browser",
           "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
         },
         "toc": {
           "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "intro": "Inside: what it protects against and how it works. Which rules it helps you meet. The proof your auditor will want. About 10 to 14 dense pages.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "What you're really defending against, in plain terms",
+            "How the system works, and why an attacker can't beat it",
+            "What it stops, with real-world examples",
+            "Which rules apply: fines, deadlines, exact wording",
+            "The cost math, grounded in published numbers",
+            "How we stack up against other vendors on the tech, not the price tag",
+            "What setup looks like, and what we don't cover",
+            "The evidence your auditor will ask for"
           ]
         },
         "companions": {
           "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
+          "intro": "The same approach, framed for the questions you'll get asked:",
           "readMore": "Read more"
         },
         "faq": {
@@ -14334,7 +14334,7 @@
           "items": [
             {
               "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "a": "A CISO, CTO, or senior infrastructure engineer reviewing the design. It assumes you know how backups work, how storage works, and the rules your stack already has to follow."
             },
             {
               "q": "Is there a non-technical version?",
@@ -14346,17 +14346,17 @@
             },
             {
               "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "a": "The brief covers this in depth. Short version: btrfs puts write-once copies and instant clones into the storage layer itself. Not into an app on top. The send/receive feature ships those copies off-machine. So an attacker holding your top admin password can't change or delete them."
             },
             {
               "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "a": "Not directly. The design covers your own servers running databases in Docker on btrfs storage. If your critical data lives in RDS or Aurora, the brief flags that. It then shows where the model fits and where it doesn't."
             }
           ]
         },
         "about": {
           "heading": "About this brief",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "body": "Rediacc is a Tallinn-based company. We build backup and disaster recovery on btrfs and commodity Linux. Our engineering team wrote this brief. We edited it against an anti-slop style guide. Then we checked every claim before publishing.",
           "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
           "downloadButton": "Download the brief"
         }
@@ -14364,7 +14364,7 @@
       "devEnvironments": {
         "meta": {
           "title": "Development Environments: Free Technical Brief PDF",
-          "description": "Production-identical dev environments in 60 seconds via btrfs zero-copy clones. A free CISO/CTO-grade brief from Rediacc, plus a five-minute executive version.",
+          "description": "Production-identical dev environments in 60 seconds, using btrfs shortcut copies. A free CISO/CTO-grade brief from Rediacc, plus exec version.",
           "keywords": "development environments, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {
@@ -14377,21 +14377,21 @@
         },
         "toc": {
           "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "intro": "Inside: what it protects against and how it works. Which rules it helps you meet. The proof your auditor will want. About 10 to 14 dense pages.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "What you're really defending against, in plain terms",
+            "How the system works, and why an attacker can't beat it",
+            "What it stops, with real-world examples",
+            "Which rules apply: fines, deadlines, exact wording",
+            "The cost math, grounded in published numbers",
+            "How we stack up against other vendors on the tech, not the price tag",
+            "What setup looks like, and what we don't cover",
+            "The evidence your auditor will ask for"
           ]
         },
         "companions": {
           "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
+          "intro": "The same approach, framed for the questions you'll get asked:",
           "readMore": "Read more"
         },
         "faq": {
@@ -14399,7 +14399,7 @@
           "items": [
             {
               "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "a": "A CISO, CTO, or senior infrastructure engineer reviewing the design. It assumes you know how backups work, how storage works, and the rules your stack already has to follow."
             },
             {
               "q": "Is there a non-technical version?",
@@ -14411,17 +14411,17 @@
             },
             {
               "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "a": "The brief covers this in depth. Short version: btrfs puts write-once copies and instant clones into the storage layer itself. Not into an app on top. The send/receive feature ships those copies off-machine. So an attacker holding your top admin password can't change or delete them."
             },
             {
               "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "a": "Not directly. The design covers your own servers running databases in Docker on btrfs storage. If your critical data lives in RDS or Aurora, the brief flags that. It then shows where the model fits and where it doesn't."
             }
           ]
         },
         "about": {
           "heading": "About this brief",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "body": "Rediacc is a Tallinn-based company. We build backup and disaster recovery on btrfs and commodity Linux. Our engineering team wrote this brief. We edited it against an anti-slop style guide. Then we checked every claim before publishing.",
           "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
           "downloadButton": "Download the brief"
         }
@@ -14429,34 +14429,34 @@
       "preemptiveDefense": {
         "meta": {
           "title": "Preemptive Defense: Free Technical Brief PDF",
-          "description": "Production-clone security testing with zero production risk. AI pentests on a disposable copy. CISO/CTO brief, plus exec version.",
+          "description": "Run security tests on a copy of production, with zero risk to the real thing. AI pentests on a throwaway clone. CISO/CTO brief, plus exec version.",
           "keywords": "preemptive defense, pdf, rediacc, btrfs backup, immutable backup, technical brief"
         },
         "hero": {
           "eyebrow": "Free download · A4 PDF · CISO / CTO grade",
           "title": "Preemptive Defense",
-          "subtitle": "Test against your real infrastructure. Break nothing. The clone takes the dangerous hits.",
+          "subtitle": "Test on a copy of your real systems. Break nothing in production. The copy takes the dangerous hits.",
           "downloadButton": "Download the technical brief",
           "openInBrowser": "Open in browser",
           "disclaimer": "One email. Confirmation by mail. Unsubscribe with one click."
         },
         "toc": {
           "heading": "What's inside",
-          "intro": "The brief covers the architecture, the failure modes it blocks, the regulatory map, and the operator-level evidence an auditor will ask for. Roughly 10 to 14 dense pages.",
+          "intro": "Inside: what it protects against and how it works. Which rules it helps you meet. The proof your auditor will want. About 10 to 14 dense pages.",
           "items": [
-            "The threat model in concrete operator terms",
-            "Architectural mechanism, with adversary-model reasoning",
-            "Failure modes blocked, with named precedents",
-            "Compliance map: specific rules, fines, reporting windows",
-            "ROI math grounded in published numbers",
-            "Vendor comparison on technical approach (not ARR)",
-            "Onboarding shape and known scope limits",
-            "Audit-ready evidence the architecture produces"
+            "What you're really defending against, in plain terms",
+            "How the system works, and why an attacker can't beat it",
+            "What it stops, with real-world examples",
+            "Which rules apply: fines, deadlines, exact wording",
+            "The cost math, grounded in published numbers",
+            "How we stack up against other vendors on the tech, not the price tag",
+            "What setup looks like, and what we don't cover",
+            "The evidence your auditor will ask for"
           ]
         },
         "companions": {
           "heading": "Related solution pages",
-          "intro": "The same architecture, applied to specific buyer questions:",
+          "intro": "The same approach, framed for the questions you'll get asked:",
           "readMore": "Read more"
         },
         "faq": {
@@ -14464,7 +14464,7 @@
           "items": [
             {
               "q": "Who is this brief written for?",
-              "a": "A CISO, CTO, or senior infrastructure engineer evaluating the architecture. It assumes familiarity with backup workflows, filesystem fundamentals, and the regulatory landscape your stack already touches."
+              "a": "A CISO, CTO, or senior infrastructure engineer reviewing the design. It assumes you know how backups work, how storage works, and the rules your stack already has to follow."
             },
             {
               "q": "Is there a non-technical version?",
@@ -14476,17 +14476,17 @@
             },
             {
               "q": "Why btrfs?",
-              "a": "The brief explains in detail. The short version: btrfs makes immutability, copy-on-write snapshots, and incremental send/receive properties of the storage layer rather than of an application running on top of it. That changes what an attacker holding root credentials can defeat."
+              "a": "The brief covers this in depth. Short version: btrfs puts write-once copies and instant clones into the storage layer itself. Not into an app on top. The send/receive feature ships those copies off-machine. So an attacker holding your top admin password can't change or delete them."
             },
             {
               "q": "Does this apply to managed services like AWS RDS?",
-              "a": "Not directly. The architecture covers self-managed compute with containerized databases on btrfs-backed volumes. If your recovery-critical estate sits in RDS or Aurora, the brief flags this explicitly and points to where the model does and doesn't apply."
+              "a": "Not directly. The design covers your own servers running databases in Docker on btrfs storage. If your critical data lives in RDS or Aurora, the brief flags that. It then shows where the model fits and where it doesn't."
             }
           ]
         },
         "about": {
           "heading": "About this brief",
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "body": "Rediacc is a Tallinn-based company. We build backup and disaster recovery on btrfs and commodity Linux. Our engineering team wrote this brief. We edited it against an anti-slop style guide. Then we checked every claim before publishing.",
           "cta": "Have a question we should add to this page? Tell us at hello@rediacc.com.",
           "downloadButton": "Download the brief"
         }

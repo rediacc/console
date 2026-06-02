@@ -1,6 +1,6 @@
 ---
-title: Willkommen im Rediacc Blog
-description: Bleiben Sie auf dem Laufenden mit den neuesten Nachrichten, Tutorials und Ankündigungen von Rediacc.
+title: "Der Rediacc-Blog: Erfahrungsberichte und Anleitungen"
+description: "Hier schreibe ich über Erfahrungen aus dem Betrieb, Anleitungen und Produktnotizen zu Rediacc."
 author: Rediacc Team
 publishedDate: 2025-01-20
 category: announcement
@@ -9,12 +9,13 @@ tags:
   - welcome
 featured: true
 language: de
-sourceHash: "a292e24968f4bc9b"
+sourceHash: "73ff9dafe4309f78"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Willkommen im Rediacc Blog
 
-Willkommen in unserem offiziellen Blog! Hier finden Sie Tutorials, Ankündigungen und Anleitungen, die Ihnen helfen, das Beste aus Rediacc herauszuholen.
+Dieser Blog. Hier gibt es Erfahrungsberichte aus Jahren des Serverbetriebs. Tiefe Einblicke in die Funktionsweise von Rediacc. Gelegentliche Incident-Berichte aus dem 3-Uhr-Morgens-Betrieb.
 
 ## Was Sie erwartet
 
@@ -23,4 +24,4 @@ Willkommen in unserem offiziellen Blog! Hier finden Sie Tutorials, Ankündigunge
 - **Fallstudien**: Praxisbeispiele von Rediacc im Einsatz
 - **Best Practices**: Tipps und Tricks von unserem Team
 
-Schauen Sie regelmäßig vorbei für neue Inhalte!
+Neue Beiträge, wenn ich etwas Echtes zu sagen habe. Nicht wenn es ein Kalender verlangt.

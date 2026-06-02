@@ -27,14 +27,14 @@ Reference: [PCI Security Standards Council](https://www.pcisecuritystandards.org
 
 ## Network Segmentation
 
-PCI DSS places heavy emphasis on network segmentation to isolate the cardholder data environment (CDE). Rediacc provides this by architecture:
+PCI DSS leans hard on segmentation: isolate the cardholder data environment (CDE), or fail the audit. Rediacc gives you that segmentation by default:
 
 - Each repository runs in its own Docker daemon at `/var/run/rediacc/docker-<networkId>.sock`
 - Repositories have isolated loopback IP subnets (127.0.x.x/26, 61 usable IPs per network)
 - iptables rules enforced by renet block all cross-daemon traffic
 - Containers from different repositories cannot communicate at the network level
 
-A payment processing repository is network-isolated from all other applications on the same machine. No additional firewall configuration needed.
+A payment processing repository runs on its own Docker daemon and its own loopback subnet, network-isolated from every other application on the same machine. No extra firewall rules to write.
 
 ## Scope Reduction
 
@@ -47,7 +47,7 @@ Self-hosted Rediacc reduces PCI DSS compliance scope:
 
 ## Enforcement Cases
 
-Poor network segmentation and missing encryption have led to costly PCI DSS enforcement actions:
+Weak segmentation and missing encryption are behind the most costly PCI DSS enforcement actions:
 
 - Heartland Payment Systems (2008): attackers moved laterally across 48 databases due to poor network segmentation, exposing 130 million card numbers. [Total cost exceeded $200 million.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): attackers pivoted from an HVAC vendor's network access to point-of-sale systems due to flat network architecture, capturing 40 million payment cards. [Settled for $18.5 million with 47 state AGs.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

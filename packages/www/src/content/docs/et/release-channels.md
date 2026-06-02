@@ -1,16 +1,18 @@
 ---
 title: "Väljalaskekanalid"
-description: "Edge ja Stable väljalaskekanalite mõistmine, nende erinevused ja kuidas valida."
+description: "Kuidas Edge ja Stable erinevad ning millist kanalit kasutada."
 category: "Concepts"
 order: 2
 language: et
+sourceHash: "5fdcb0e8944f5d60"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-Rediacc avaldab uuendusi kahe väljalaskekanali kaudu: **Stable** ja **Edge**. Iga kanal teenib erinevat sihtrühma ja toob kaasa erinevad kompromissid.
+Rediacc saadab uuendusi kahe kanali kaudu: **Stable** ja **Edge**. Need töötavad eraldi infrastruktuuril ja toovad kaasa erinevad kompromissid.
 
 ## Stable kanal
 
-Stable on kõigi kasutajate vaikimisi kanal. Väljalasked edendatakse Edge'ist pärast 7-päevast leotusperioodi ilma teatatud probleemideta.
+Stable on vaikimisi. Väljalase jõuab sellele alles pärast seda, kui on 7 päeva Edge'il istunud ilma teatatud probleemideta.
 
 - Soovitatav, kui eelistad konservatiivset uuendussagedust ja soovid juurdepääsu tasuliste plaanidele
 - Juurutatakse pärast 7 päeva testimist Edge'il

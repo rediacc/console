@@ -1,13 +1,11 @@
 ---
 title: RDC CLI Cheat Sheet
-description: >-
-  Kurzreferenz für alle rdc-Befehle, Konfigurationen, Repos, Maschinen, Sync,
-  Container und mehr.
+description: "Kurzreferenz für rdc-Befehle: Konfigurationen, Repos, Maschinen, Sync und Container."
 category: Guides
 order: 3
 language: de
-sourceHash: "12956297c1157cd2"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ad0ae49efa847fbc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # RDC CLI Cheat Sheet

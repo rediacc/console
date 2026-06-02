@@ -4,6 +4,8 @@ description: Autentimine, API-tokenid, seansihaldus ja õiguste mudel.
 category: Guides
 order: 13
 language: et
+sourceHash: "dcd061b971573573"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Autentimine
@@ -97,6 +99,6 @@ rdc update --status            # Kuva praegune kanal
 
 ### CLI turvahoiak AI-agentide jaoks
 
-Iga `rdc` käivitamine klassifitseeritakse käivitamisel kas **inimeseks** või **agendiks** keskkonnasignaalide põhjal (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) koos Linuxi `/proc` esivanemate läbimisega. Agendid saavad vähendatud lubade komplekti: tundlikud konfiguratsioonide muutmised nõuavad teadmiseväravat (`--current <vana>`), interaktiivne redaktor keeldutakse ilma esivanemate kontrollitud `REDIACC_ALLOW_CONFIG_EDIT` alistamiseta, ning `--reveal` mis tahes kuvamiskäsul on blokeeritud. Iga otsus - lubamine, keeldumine, `--reveal` andmine - kirjutab ühe räsiaheldatud JSONL-rea faili `~/.config/rediacc/audit.log.jsonl`. Käivitage `rdc config audit verify`, et kontrollida ahela terviklust.
+Koodiagendid, kes käivitavad `rdc`, on tõeline ohupind, seega käsitleme neid eraldi põhimõttena. Iga `rdc` käivitamine klassifitseeritakse käivitamisel **inimeseks** või **agendiks** keskkonnasignaalide põhjal (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) koos Linuxi `/proc` esivanemate läbimisega. Tuvastamine on parimate jõupingutuste põhine. Sihikindel ümbris saab keskkonna muutujaid võltsida, mis on põhjus, miks esivanem on oluline. Agendid saavad vähendatud lubade komplekti: tundlikud konfiguratsioonide muutmised nõuavad teadmiseväravat (`--current <vana>`), interaktiivne redaktor keeldutakse ilma esivanemate kontrollitud `REDIACC_ALLOW_CONFIG_EDIT` alistamiseta, ja `--reveal` mis tahes kuvamiskäsul on blokeeritud. Iga otsus (lubamine, keeldumine või `--reveal` andmine) kirjutab ühe räsiaheldatud JSONL-rea faili `~/.config/rediacc/audit.log.jsonl`. Käivitage `rdc config audit verify`, et kontrollida ahela terviklust.
 
 Vaadake AI-agentide täielikku maatriksit jaotisest [AI-agendi turvalisus ja kaitsemehhanismid](/et/docs/ai-agents-safety), sealhulgas teadmisevärava töönäidiseid ja ulatuse alistamise mehhanisme.

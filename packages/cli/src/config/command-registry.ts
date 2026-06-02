@@ -97,6 +97,7 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
       status: { modes: SELF_HOSTED_MODES },
       list: { modes: SELF_HOSTED_MODES },
       fork: { modes: SELF_HOSTED_MODES },
+      branch: { modes: SELF_HOSTED_MODES },
       resize: { modes: SELF_HOSTED_MODES },
       expand: { modes: SELF_HOSTED_MODES },
       validate: { modes: SELF_HOSTED_MODES },

@@ -1,18 +1,18 @@
 ---
 title: "Release-Kanäle"
-description: "Edge- und Stable-Release-Kanäle verstehen, ihre Unterschiede und wie die richtige Wahl getroffen wird."
+description: "Was Edge und Stable unterscheidet und welchen Kanal man nutzen sollte."
 category: "Concepts"
 order: 2
 language: de
-sourceHash: "d6ff18f9265392d2"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "5fdcb0e8944f5d60"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-Rediacc veröffentlicht Updates über zwei Release-Kanäle: **Stable** und **Edge**. Jeder Kanal richtet sich an eine andere Zielgruppe und bietet unterschiedliche Kompromisse.
+Rediacc liefert Updates über zwei Kanäle: **Stable** und **Edge**. Sie laufen auf separater Infrastruktur und tragen unterschiedliche Kompromisse.
 
 ## Stable-Kanal
 
-Stable ist der Standardkanal für alle Benutzer. Releases werden nach einer 7-tägigen Einlaufphase ohne gemeldete Probleme von Edge gefördert.
+Stable ist der Standard. Ein Release erreicht ihn nur, nachdem er 7 Tage auf Edge ohne gemeldete Probleme verbracht hat.
 
 - Empfohlen, wenn Sie eine konservative Update-Kadenz bevorzugen und Zugang zu kostenpflichtigen Plänen möchten
 - Nach 7 Testtagen auf Edge bereitgestellt
@@ -21,7 +21,7 @@ Stable ist der Standardkanal für alle Benutzer. Releases werden nach einer 7-t�
 
 ## Edge-Kanal
 
-Edge erhält jede Änderung unmittelbar nachdem sie in den Hauptzweig eingeführt wurde. Es ist die neueste Version der Software, die kontinuierlich bereitgestellt wird.
+Edge nimmt jede Änderung in dem Moment auf, in dem sie in den Hauptzweig eingeführt wird. Es ist die Live-Version der Software, die kontinuierlich bereitgestellt wird.
 
 - Neueste Funktionen und Fixes, bei jedem Merge bereitgestellt
 - Doppelte Community-Plan-Limits (siehe Tabelle unten)
@@ -42,7 +42,7 @@ Edge erhält jede Änderung unmittelbar nachdem sie in den Hauptzweig eingeführ
 
 ## Edge-Doppellimits
 
-Edge-Benutzer im Community-Plan erhalten kostenlos verdoppelte Ressourcenlimits:
+Nutzen Sie Edge im Community-Plan und Ihre Ressourcenlimits verdoppeln sich, ohne zusätzliche Kosten:
 
 | Ressource | Stable Community | Edge Community |
 |---|---|---|
@@ -50,11 +50,11 @@ Edge-Benutzer im Community-Plan erhalten kostenlos verdoppelte Ressourcenlimits:
 | Lizenzausstellungen pro Monat | 500 | 1.000 |
 | Maschinenaktivierungen | 2 | 4 |
 
-Werden höhere Limits oder Funktionen eines kostenpflichtigen Plans benötigt, wird ein Konto im Stable-Kanal erstellt und dort aufgewertet.
+Höhere Limits oder kostenpflichtige Funktionen benötigt? Erstellen Sie Ihr Konto auf Stable und upgraden Sie dort.
 
 ## Getrennte Konten
 
-Edge und Stable laufen auf separater Infrastruktur mit separaten Datenbanken. Ein auf Edge erstelltes Konto existiert nicht auf Stable und umgekehrt. Es gibt keinen Migrationspfad zwischen den Kanälen. Wer mit Edge beginnt und später einen kostenpflichtigen Plan möchte, muss ein neues Konto auf Stable erstellen.
+Edge und Stable laufen auf separater Infrastruktur mit separaten Datenbanken. Ein Konto auf einem Kanal existiert nicht auf dem anderen, und es gibt keinen Migrationspfad. Wer mit Edge beginnt und später einen kostenpflichtigen Plan möchte, muss ein neues Konto auf Stable von Grund auf erstellen.
 
 ## Wie Förderungen funktionieren
 
@@ -62,7 +62,7 @@ Edge und Stable laufen auf separater Infrastruktur mit separaten Datenbanken. Ei
 2. Nach 7 Tagen ohne Probleme wird Edge automatisch auf Stable gefördert.
 3. Kritische Hotfixes können gleichzeitig auf beide Kanäle verteilt werden.
 
-Das bedeutet, Stable liegt immer höchstens 7 Tage hinter Edge. Die Einlaufphase erkennt Regressionen, bevor sie von Edge nach Stable übernommen werden.
+Stable liegt also höchstens 7 Tage hinter Edge. Das Einlauffenster erkennt Regressionen auf Edge, bevor sie Stable erreichen.
 
 ## Welchen Kanal wählen?
 
@@ -79,15 +79,15 @@ Das bedeutet, Stable liegt immer höchstens 7 Tage hinter Edge. Die Einlaufphase
 
 ## Installation
 
-Befehle zur Installation von einem der beiden Kanäle, einschließlich Paketverwaltungskonfiguration und Docker-Tags, finden sich unter [Installation](/de/docs/installation).
+Die Installationsbefehle, Paketverwaltungskonfiguration und Docker-Tags für jeden Kanal finden sich unter [Installation](/de/docs/installation).
 
 ## CLI-Kanalverwaltung
 
-Die CLI verwendet automatisch den während der Installation oder Anmeldung konfigurierten Kanal. So wechselt man den Kanal:
+Die CLI verwendet den Kanal, den Sie bei der Installation oder Anmeldung konfiguriert haben. So wechselt man:
 
 ```bash
 rdc update --channel edge      # Zu Edge wechseln
 rdc update --channel stable    # Zu Stable wechseln
 ```
 
-Beim Ausführen von `rdc subscription login` und Auswahl einer Edge-Region konfiguriert die CLI automatisch den Edge-Update-Kanal. Kein manueller `--channel`-Parameter ist erforderlich.
+Führen Sie `rdc subscription login` aus und wählen Sie eine Edge-Region, setzt die CLI den Edge-Update-Kanal automatisch für Sie. Kein `--channel`-Parameter erforderlich.

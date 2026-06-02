@@ -4,8 +4,8 @@ description: Mevcut projeleri şifrelenmiş Rediacc depolarına taşıyın.
 category: Guides
 order: 11
 language: tr
-sourceHash: "69ab61a2875f8d70"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "24c62c7fa0d043c2"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Geçiş Rehberi
@@ -191,7 +191,7 @@ Temel değişiklikler:
 4. **Servisler arası bağlantılar için servis adlarını kullanın** (örn. `postgres`, `redis`) - renet her servis adını çözümlenebilir bir ana bilgisayar adı olarak enjekte eder. Veritabanlarında veya yapılandırma dosyalarında saklanan bağlantı dizelerine ham IP'ler yerleştirmeyin; fork izolasyonunu korumak için servis adını kullanın
 5. **Bağlama otomatiktir** - kernel `bind()` çağrılarını doğru geri döngü IP'sine yeniden yazar. Servisler `0.0.0.0` veya `localhost` kullanabilir
 
-`{SERVICE}_IP` değişkenleri ihtiyaç duyulduğunda hâlâ kullanılabilir, ancak açık bağlama artık gerekli değildir. Adlandırma kuralı: büyük harf, tireler alt çizgiyle değiştirilir, `_IP` son eki. Örneğin, `listmonk-app` `LISTMONK_APP_IP` olur.
+`{SERVICE}_IP` değişkenleri ihtiyaç duyulduğunda hâlâ kullanılabilir, ancak açık bağlama artık gerekli değildir. Bağlama otomatik olarak gerçekleşir. Adlandırma kuralı: büyük harf, tireler alt çizgiyle değiştirilir, `_IP` son eki. Örneğin, `listmonk-app` `LISTMONK_APP_IP` olur.
 
 IP ataması ve `.rediacc.json` hakkında ayrıntılar için [Servis Ağı](/tr/docs/services#service-networking-rediaccjson) bölümüne bakın.
 
@@ -292,11 +292,11 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Depolar Arasında Port Çakışması
 
-Her depo benzersiz geri döngü IP'leri alır ve kernel `bind()` çağrılarını otomatik olarak doğru IP'ye yeniden yazar. Depolar arasında port çakışmaları olmamalıdır. Beklenmedik davranış görürseniz, servislerin `docker compose` yerine `renet compose` aracılığıyla başlatıldığını doğrulayın. Diğer servislere bağlanırken ham IP'ler yerine servis adını (örn. `postgres`) kullanın; servis adları her fork'ta doğru şekilde çözümlenir.
+Her depo benzersiz geri döngü IP'leri alır ve kernel `bind()` çağrılarını otomatik olarak doğru IP'ye yeniden yazar. Depolar arasında port çakışmaları yaşanmaz. Beklenmedik davranış görürseniz, servislerin `docker compose` yerine `renet compose` aracılığıyla başlatıldığını doğrulayın. Diğer servislere bağlanırken ham IP'ler yerine servis adını (örn. `postgres`) kullanın. Servis adları her fork'ta doğru şekilde çözümlenir.
 
 ### Sahiplik Düzeltmesi Konteynerleri Bozuyor
 
-`rdc repo ownership` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın, konteyner onu yeniden oluşturacaktır:
+`rdc repo ownership` çalıştırdıysanız ve bir konteyner çalışmayı durdurduysa, konteynerin veri dosyaları değiştirilmiştir. Konteyneri durdurun, veri dizinini silin ve yeniden başlatın. Konteyner onu yeniden oluşturacaktır:
 
 ```bash
 rdc repo down --name my-project -m server-1

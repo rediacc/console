@@ -4,6 +4,8 @@ description: "Crie uma configuração, adicione máquinas, provisione servidores
 category: "Guides"
 order: 3
 language: pt
+sourceHash: "2456daa4289ffb8c"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Configuracao da Maquina
@@ -128,7 +130,7 @@ rdc config infra set -m server-1 \
 | `--tcp-ports <ports>` | Maquina | Portas TCP adicionais separadas por virgula para reencaminhar (por exemplo, `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Maquina | Portas UDP adicionais separadas por virgula para reencaminhar (por exemplo, `53`) |
 
-As opcoes com ambito de maquina sao guardadas por maquina. As opcoes com ambito de configuracao (`--cert-email`, `--cf-dns-token`) sao partilhadas entre todas as maquinas da configuracao; defina-as uma vez e aplicam-se em todo o lado.
+As opcoes com ambito de maquina sao guardadas por maquina. As opcoes com ambito de configuracao (`--cert-email`, `--cf-dns-token`) sao partilhadas entre todas as maquinas da configuracao. Defina-as uma vez e aplicam-se em todo o lado.
 
 ### Ver Infraestrutura
 
@@ -149,7 +151,7 @@ Este comando:
 2. Configura o proxy reverso Traefik, o router e os servicos systemd
 3. Cria registos DNS Cloudflare para o subdominio da maquina (`server-1.example.com` e `*.server-1.example.com`) se `--cf-dns-token` estiver definido
 
-O passo DNS e automatico e idempotente; cria registos em falta, actualiza registos com IPs alterados e ignora registos que ja estao correctos. Se nenhum token Cloudflare estiver configurado, o DNS e ignorado com um aviso. Os registos DNS wildcard por repositorio (para rotas automaticas) sao criados automaticamente quando executa `rdc repo up`.
+O passo DNS e automatico e idempotente: cria registos em falta, actualiza registos com IPs alterados e ignora registos que ja estao correctos. Se nenhum token Cloudflare estiver configurado, o DNS e ignorado com um aviso. Os registos DNS wildcard por repositorio (para rotas automaticas) sao criados automaticamente quando executa `rdc repo up`.
 
 ## Provisionamento na Nuvem
 

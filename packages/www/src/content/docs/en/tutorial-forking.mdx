@@ -11,7 +11,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Forking a Repository
 
-This is the killer feature: clone an entire production environment (the app, the database, the config files) in seconds. Any size. Zero extra disk. Fork as many times as you want.
+This is the part that changes how you work. Clone an entire production environment (the app, the database, the config files) in seconds. Any size. Zero extra disk. Fork as many times as you want.
 
 The tagline: **clone production, break nothing.**
 
@@ -55,7 +55,7 @@ Forking works the same way. 1 GB, 100 GB, 1 TB. Same time, every time.
 
 ![Many mirrors, one sun: shared base, your changes are yours](/img/tutorials/tutorial-forking/slide-4.svg)
 
-Think of the parent repo as the sun. You can't hold the sun, but you can hold a mirror that catches it. That mirror is your fork. Paint on the mirror, and your drawings are yours. The sun stays the same, no matter how many mirrors face it.
+Think of the parent repo as a fixed source. Your fork is a copy-on-write view of it. Write to the fork and the writes stay in the fork. The parent doesn't move, no matter how many forks point at it.
 
 > You can't hold the sun, but you can hold it in a mirror.
 
@@ -63,7 +63,7 @@ Think of the parent repo as the sun. You can't hold the sun, but you can hold a 
 
 ![A fork is a frozen photograph; the parent keeps flowing like a river](/img/tutorials/tutorial-forking/slide-5.svg)
 
-Now think of a river. The water keeps flowing. Every moment, it's different. When you fork, you take a photograph of the river, frozen at that moment. The river keeps flowing. Your photograph doesn't.
+Now think snapshot. When you fork, you freeze the parent at that exact moment. The parent keeps moving. Your fork doesn't.
 
 If the parent repo changes later, your fork stays where it was.
 

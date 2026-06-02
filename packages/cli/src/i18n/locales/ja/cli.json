@@ -1324,6 +1324,13 @@
       "batchIterating": "{{action}} {{current}}/{{total}}：「{{repo}}」...",
       "batchResult": "{{action}}完了: {{succeeded}}/{{total}} 成功",
       "batchStarting": "{{action}}：「{{repo}}」...",
+      "branch": {
+        "branchOption": "新しいブランチの名前",
+        "completed": "branch \"{{branch}}\" -> {{commit}}",
+        "description": "作業 fork の現在の commit（その先端）を指す名前付き branch 参照を作成します。branch 参照は CLI の設定内に保存されます（マシン = オブジェクトストア、設定 = 参照ストア）。",
+        "descriptionShort": "現在の commit を指す branch 参照を作成します",
+        "workingOption": "branch が指す現在の commit を持つ作業 fork"
+      },
       "cat": {
         "description": "リポジトリ内のファイルを範囲指定で読み取り、stdout に書き出します（サーバー側で範囲制限あり。診断情報は stderr に出力）",
         "failed": "読み取りに失敗しました",
@@ -1338,6 +1345,22 @@
       },
       "certSync": {
         "updated": "{{machine}} から ACME 証明書キャッシュを更新しました ({{count}} 件)"
+      },
+      "checkout": {
+        "description": "イミュータブルな commit（または branch の先端）を新しい書き込み可能な作業 fork に reflink クローンし、HEAD をそこに向けます。ほぼ瞬時かつ定数時間で完了します（BTRFS reflink）。",
+        "descriptionShort": "commit／branch を書き込み可能な作業 fork に reflink クローンします",
+        "fromOption": "--ref をこの作業フォーク上のブランチ名として解決します",
+        "refOption": "チェックアウトする commit の GUID（または --from でブランチ名）",
+        "tagOption": "新しい書き込み可能な作業 fork の名前"
+      },
+      "commit": {
+        "authorOption": "commit の作成者",
+        "completed": "commit しました {{commit}}: {{message}}",
+        "description": "マウント中の作業 fork の現在の状態を凍結し、新しいイミュータブルな commit を作成します（git ライク）。commit はメッセージ・作成者・タイムスタンプ・親をボリューム内に記録するため、push 時にも一緒に転送されます。また読み取り専用としてマークされ、マウントを拒否します。作業 fork は git が作業ツリーをそのまま残すのと同様に、変更されずに維持されます。書き込み可能なコピーを得るには 'rdc repo checkout' で commit をチェックアウトしてください。",
+        "descriptionShort": "作業中の fork を凍結して新しいイミュータブルな commit を作成します",
+        "failed": "commit に失敗しました",
+        "messageOption": "commit メッセージ",
+        "nameOption": "commit する作業 fork（マウントされている必要があります）"
       },
       "create": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",
@@ -1415,6 +1438,8 @@
         "descriptionShort": "リポジトリの CoW フォークを作成する（新規 GUID、networkId、IP 範囲）",
         "examples": "\n例:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "フォークの作成に失敗しました",
+        "immutableOption": "フォークを読み取り専用にします。マウントを拒否し、イメージをバイト単位で永続的に安定させます（マシン間デルタプッシュのための凍結されたコミット/ベース）",
+        "immutableUpConflict": "repo fork: --immutable と --up は同時に指定できません。イミュータブルなフォークはマウントを拒否するため、起動できません。--up を外すか、通常のフォークをデプロイするには --immutable を外してください。",
         "registered": "フォーク \"{{repository}}\" を登録しました（{{guid}}、ネットワーク {{networkId}}）",
         "rollback": "\"{{repository}}\" の設定をロールバックしました",
         "starting": "\"{{machine}}\" で \"{{parent}}\" を \"{{repository}}\" としてフォーク中...",
@@ -1423,6 +1448,25 @@
         "tagReservedLatest": "repo fork: タグ \"latest\" はグランド (本番) リポジトリ用に予約されています — 別の --tag を選んでください (例: \"test\"、\"staging\"、\"<feature>\")",
         "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）"
       },
+      "fsck": {
+        "clean": "{{machine}} に乖離はありません: すべての ref が解決し、孤立コミットも見つかりませんでした",
+        "danglingHeader": "ダングリング ref {{count}} 件（存在しないオブジェクトを指しています）:",
+        "description": "CLI 設定の ref（ブランチ、HEAD）を、マシン上に実際に存在するオブジェクトと照合して検証します。ダングリング ref（存在しないオブジェクトを指す ref）と孤立コミット（どの ref からも到達できない不変コミット）を報告します。読み取り専用です。",
+        "descriptionShort": "設定の ref をマシン上のオブジェクトと照合する",
+        "orphanHeader": "孤立コミット {{count}} 件（どの ref からも到達できません）:",
+        "orphanHint": "孤立コミットを回収するには: rdc repo gc --apply -m <machine>"
+      },
+      "gc": {
+        "applied": "ガベージコレクション完了: {{deleted}}/{{total}} 件のコミットを削除しました",
+        "applyOption": "到達不能なコミットを実際に削除する（既定はドライランのプレビュー）",
+        "deleted": "コミット {{commit}} を削除しました",
+        "deleteFailed": "コミット {{commit}} の削除に失敗しました",
+        "description": "どのブランチや HEAD からも到達できない不変コミットオブジェクトをマシン上から削除します（到達可能性 GC）。マシンがオブジェクトストア、CLI 設定が ref ストアです。既定はドライランで、削除するには --apply を指定します。マウント中のオブジェクトや作業中の fork には一切手を加えません。",
+        "descriptionShort": "マシン上の到達不能な不変コミットをガベージコレクトする",
+        "dryRunHeader": "到達不能なコミット {{count}} 件が削除されます:",
+        "dryRunHint": "削除するには --apply を付けて再実行してください。",
+        "nothing": "{{machine}} に回収対象はありません: すべてのコミットが到達可能です"
+      },
       "list": {
         "completed": "リスト表示が完了しました",
         "description": "マシン上のリポジトリをリスト表示する",
@@ -1430,7 +1474,25 @@
         "serverNameLegend": "* 名前はマシンから取得（ローカル設定にはありません）",
         "starting": "\"{{machine}}\" のリポジトリをリスト表示中..."
       },
+      "log": {
+        "description": "作業 fork の現在の commit（または commit 参照）から到達可能な commit 履歴を、'rdc repo commit' が記録した親チェーンをたどって表示します。ボリューム外のミラーを読み取るため、commit がアンロックされることはありません。",
+        "descriptionShort": "fork または commit の commit 履歴をたどります",
+        "failed": "log に失敗しました",
+        "jsonOption": "commit 履歴を JSON として出力します",
+        "nameOption": "履歴のたどり始めとなる作業 fork または commit"
+      },
       "machineOption": "対象マシン名",
+      "merge": {
+        "baseOption": "3-way マージの共通祖先コミットの GUID（--resolve と併用）。既定ではソースコミットの親、またはターゲットの現在のコミット。",
+        "completed": "{{source}} を {{target}} に merge しました",
+        "description": "ソースの commit または fork を対象の作業用 fork に merge します。稼働中の対象がその場で変更されることはありません。結果は reflink クローン上に構築され、アトミックに入れ替えられます。マウント中または実行中の対象は、--force を指定しない限り拒否されます。--force を指定した場合は、まず対象を安全に停止してから merge します。--resolve を指定しない場合は、イメージ全体の take-theirs となり (対象がソースに置き換わります)、--resolve ours|theirs を指定した場合は、共通の祖先に対するファイル単位の three-way merge となり、各サイド固有の変更を取り込み、両サイドで衝突する箇所はフラグに従って解決します。",
+        "descriptionShort": "commit/fork を作業用 fork へライフサイクル安全に merge",
+        "failed": "merge に失敗しました",
+        "forceOption": "マウント中/実行中の対象をまず停止してから merge します (稼働中のマウントを直接変更することはありません)",
+        "fromOption": "merge 元となるソースの commit または fork",
+        "nameOption": "merge 先となる対象の作業用 fork",
+        "resolveOption": "3-way マージのファイル単位の競合解決: 'ours' はターゲット側のバージョンを保持し、'theirs' はソース側を採用します。省略するとイメージ全体の fast-forward（take-theirs）になります。"
+      },
       "migrate": {
         "checkpointing": "CRIUチェックポイントを作成中...",
         "complete": "移行完了: {{name}} を {{from}} から {{to}} に移動しました",
@@ -1443,9 +1505,11 @@
         "downtime": "ダウンタイム: {{duration}}",
         "optionBwlimit": "rsync転送の帯域幅制限（例: 10M）",
         "optionCheckpoint": "CRIUライブマイグレーション: プロセスメモリ状態のキャプチャと復元",
+        "optionDeltaBase": "切り替え差分用のイミュータブルなベースGUID（上級者向け。既定はフェーズ1のベース）",
         "optionFrom": "移行元マシン名",
         "optionProvision": "クラウドプロバイダー経由でターゲットを自動プロビジョニング（例: hetzner, linode）",
         "optionSkipDns": "移行後のDNSレコード切り替えをスキップ",
+        "optionStrategy": "切り替え時のブロック差分戦略: auto、physical、または shared",
         "optionTo": "移行先マシン名",
         "phase1": "フェーズ1: バルクデータを転送中（ソースは実行中）...",
         "phase1Done": "バルク転送完了",
@@ -1489,8 +1553,10 @@
         "description": "リモート（マシンまたはストレージ）からリポジトリをプル。名前を省略するとすべてのリポジトリをプル。ソースタイプは設定から自動検出。pull後にデプロイするには--upを使用",
         "descriptionShort": "リモート（マシンまたはストレージ）からリポジトリをプル",
         "optionBwlimit": "rsync転送の帯域幅制限（例: \"6M\", \"10M\"）",
+        "optionDeltaBase": "両マシンにバイト単位で同一に存在するイミュータブルなベースGUID。変更されたブロックのみを受信（マシンソース）",
         "optionForce": "既存のリポジトリを強制的に上書きする",
         "optionFrom": "ソースマシンまたはストレージ名（設定から自動検出）",
+        "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
         "optionUp": "pull後、このマシンでリポジトリをマウントしてデプロイ",
         "pulling": "\"{{repo}}\" のバックアップをプル中...",
         "sourceRequired": "--from <remote> を指定してください（設定からのマシンまたはストレージ名）"
@@ -1504,8 +1570,10 @@
         "destRequired": "--to <remote> を指定してください（設定からのマシンまたはストレージ名）",
         "optionBwlimit": "rsync転送の帯域幅制限（例: \"6M\", \"10M\"）",
         "optionCheckpoint": "バックアップ前にCRIUチェックポイントを作成（ライブマイグレーション用にプロセスメモリ状態をキャプチャ）",
+        "optionDeltaBase": "両マシンにバイト単位で同一に存在するイミュータブルなベースGUID。変更されたブロックのみを転送（マシンターゲット）。省略すると自動ベースで手間なく処理",
         "optionForce": "既存のバックアップを強制的に上書きする",
         "optionProvision": "ターゲットマシンが存在しない場合、クラウドプロバイダー経由で自動プロビジョニング",
+        "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
         "optionTag": "バージョニング用デプロイタグ",
         "optionTo": "宛先マシンまたはストレージ名（設定から自動検出）",
         "optionUp": "プッシュ後、ターゲットマシンにリポジトリをマウントしてデプロイする",

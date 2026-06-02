@@ -4,8 +4,8 @@ description: "Entender cómo account, rdc y renet gestionan los slots de máquin
 category: "Guides"
 order: 7
 language: es
-sourceHash: "8e0a4976634ae323"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "98aede90642cfabc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Suscripción y licencias
@@ -126,7 +126,7 @@ Esa emisión respaldada por la cuenta cuenta para tu uso mensual de **issuances 
 
 ### Reinicio de máquina y autoarranque
 
-El autoarranque usa las mismas reglas que `rdc repo up`; la expiración se omite, por lo que los repositorios siempre se reinician libremente.
+El autoarranque usa las mismas reglas que `rdc repo up`: la expiración se omite, por lo que los repositorios siempre se reinician libremente.
 
 Las licencias de repositorio usan un modelo de validez de larga duración:
 
@@ -195,7 +195,7 @@ Para la configuración inicial de la máquina, consulta [Configuración de máqu
 
 ## Comportamiento sin conexión y expiración
 
-La validación de licencias ocurre localmente en la máquina; no requiere conectividad en vivo con el servidor de cuentas.
+La validación de licencias ocurre localmente en la máquina. No requiere conectividad en vivo con el servidor de cuentas.
 
 Eso significa:
 

@@ -4,8 +4,8 @@ description: "Sahipsiz yedekleri, eski anlık görüntüleri, depo görüntüler
 category: "Guides"
 order: 12
 language: tr
-sourceHash: "881513fbe657978e"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Temizleme
@@ -60,7 +60,7 @@ Silmeler depolama alt yolu başına gruplandırılır: `hot/` veya `cold/` dizin
 
 ## Machine Prune
 
-Makine üzerindeki kaynakları üç aşamada temizler. 1. Aşama her zaman çalışır; 2. ve 3. aşamalar isteğe bağlı, karşılıklı olarak tamamlayıcıdır.
+Makine üzerindeki kaynakları üç aşamada temizler. 1. Aşama her zaman çalışır; 2. ve 3. aşamalar isteğe bağlı olup birlikte kullanılabilir.
 
 ### 1. Aşama: Veri deposu temizliği (her zaman çalışır)
 
@@ -171,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-Bağlantı noktası canlı bir makine, depo veya GUID olan sertifika adları. Ve herhangi bir tek etiketli `<service>.<base>` veya kök `*.<base>` joker karakteri. Yalnız bırakılır.
+Bağlantı noktası canlı bir makine, depo veya GUID olan sertifika adları yalnız bırakılır; tek etiketli `<service>.<base>` veya kök `*.<base>` joker karakterleri de aynı şekilde dokunulmaz bırakılır.
 
 ## Taşıma: durum aynası doldurma
 

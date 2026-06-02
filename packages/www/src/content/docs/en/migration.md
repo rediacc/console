@@ -190,7 +190,7 @@ Key changes:
 4. **Use service names for inter-service connections** (e.g. `postgres`, `redis`) - renet injects every service name as a resolvable hostname. Do not embed raw IPs in connection strings that get stored in databases or config files; use the service name instead to keep fork isolation intact
 5. **Binding is automatic** - the kernel rewrites `bind()` to the correct loopback IP. Services can use `0.0.0.0` or `localhost`
 
-The `{SERVICE}_IP` variables are still available if you need them, but explicit binding is no longer required - it is handled automatically. The naming convention: uppercase, hyphens replaced with underscores, suffixed with `_IP`. For example, `listmonk-app` becomes `LISTMONK_APP_IP`.
+The `{SERVICE}_IP` variables are still available if you need them, but explicit binding is no longer required. Binding happens automatically. The naming convention: uppercase, hyphens replaced with underscores, suffixed with `_IP`. For example, `listmonk-app` becomes `LISTMONK_APP_IP`.
 
 See [Service Networking](/en/docs/services#service-networking-rediaccjson) for details on IP assignment and `.rediacc.json`.
 
@@ -291,11 +291,11 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Port Conflict Between Repositories
 
-Each repository gets unique loopback IPs, and the kernel automatically rewrites `bind()` calls to the correct IP. Port conflicts between repositories should not occur. If you see unexpected behavior, verify that services are started via `renet compose` (not `docker compose`). For connecting **to** other services, use the service name (e.g. `postgres`) rather than raw IPs - service names resolve correctly in every fork.
+Each repository gets unique loopback IPs, and the kernel automatically rewrites `bind()` calls to the correct IP. Port conflicts between repositories don't occur. If you see unexpected behavior, verify that services are started via `renet compose` (not `docker compose`). For connecting **to** other services, use the service name (e.g. `postgres`) rather than raw IPs. Service names resolve correctly in every fork.
 
 ### Ownership Fix Breaks Containers
 
-If you ran `rdc repo ownership` and a container stopped working, the container's data files were chowned. Stop the container, delete its data directory, and restart, the container will recreate it:
+If you ran `rdc repo ownership` and a container stopped working, the container's data files were chowned. Stop the container, delete its data directory, and restart. The container will recreate it:
 
 ```bash
 rdc repo down --name my-project -m server-1

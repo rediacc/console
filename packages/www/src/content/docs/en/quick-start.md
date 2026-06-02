@@ -18,7 +18,7 @@ Deploy an encrypted, isolated container environment on your own server. No cloud
 
 A repo is a single encrypted file on disk. Move it, back it up, fork it. It's just a file. When mounted, it becomes a folder with a dedicated Docker daemon and your app data inside.
 
-Think of a repo like a USB drive. It's something in your hand, and when you plug it in it becomes visible and accessible to the system. Your apps and data are completely portable. Plug & Run on any machine on any cloud provider.
+Think of a repo like a USB drive: plug it into any machine and the apps and data mount, ready to run. Move it across machines or cloud providers without rebuilding anything. Plug & Run.
 
 **Two tools, two roles:**
 

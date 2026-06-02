@@ -6,13 +6,13 @@ description: >-
 category: Guides
 order: 9
 language: ru
-sourceHash: "d089cea510a69bfb"
-sourceCommit: "1b6c53f52954d63959d8176bfa70a91405a2a87f"
+sourceHash: "f350872720c99d58"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Инструменты
 
-Rediacc включает инструменты для повышения продуктивности при работе с удалёнными репозиториями: синхронизация файлов, SSH-терминал, интеграция с VS Code и обновление CLI.
+Rediacc включает инструменты для работы с удалёнными репозиториями: синхронизация файлов, SSH-терминал, интеграция с VS Code и обновление CLI.
 
 ## Синхронизация файлов (sync)
 
@@ -78,7 +78,7 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 
 ### Подкоманда connect
 
-Подкоманда `connect` предоставляет ту же функциональность с явными флагами:
+Подкоманда `connect` делает то же самое с явными флагами:
 
 ```bash
 rdc term connect -m server-1

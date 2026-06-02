@@ -4,8 +4,8 @@ description: "Exécuter le serveur de compte et la distribution de la CLI sur vo
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "91498e4c2f374e86"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "c8c9aceeeeea1411"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Rediacc peut fonctionner entièrement sur votre propre infrastructure. L'image Docker autonome inclut le serveur de compte, le portail web, le site marketing et le point de terminaison de distribution de la CLI. Aucune dépendance externe aux services hébergés de Rediacc n'est requise.
@@ -124,7 +124,7 @@ Cette section couvre la configuration opérationnelle : génération des clés, 
 
 Un abonnement peut avoir **au plus un certificat de délégation actif à la fois**. Chaque installation on-premise applique les limites mensuelles et par machine contre son propre registre d'émission local, de sorte que plusieurs certificats actifs multiplieraient le quota effectif sans aucune réconciliation possible.
 
-Si vous avez besoin d'environnements séparés (production, staging, DR, multi-région), achetez un abonnement par installation. L'application de l'unicité codifie ce contrat : une tentative de création d'un second certificat actif retourne `409 DELEGATION_CERT_ALREADY_ACTIVE` avec l'identifiant du certificat existant et des instructions pour renouveler (recommandé - préserve la chaîne) ou révoquer-et-créer (réinitialise la chaîne).
+Si vous avez besoin d'environnements séparés (production, staging, DR, multi-région), achetez un abonnement par installation. L'application de l'unicité codifie ce contrat : une tentative de création d'un second certificat actif retourne `409 DELEGATION_CERT_ALREADY_ACTIVE` avec l'identifiant du certificat existant et des instructions pour renouveler (recommandé, préserve la chaîne) ou révoquer-et-créer (réinitialise la chaîne).
 
 ### 1. Générer la paire de clés Ed25519 on-premise
 
@@ -146,11 +146,11 @@ Stockez la clé privée avec vos autres secrets (par exemple, un secret Docker o
 
 Vous pouvez demander le certificat depuis le portail de compte amont de trois façons :
 
-**Méthode A - Libre-service client (recommandé).** Connectez-vous au portail amont en tant que propriétaire ou administrateur d'organisation et naviguez vers **/account/delegation-certs**. Cliquez sur **Create New**, collez la clé publique on-premise (SPKI base64), choisissez une validité (ou acceptez le défaut par plan) et téléchargez le fichier `.json` résultant.
+**A : Libre-service client (recommandé).** Connectez-vous au portail amont en tant que propriétaire ou administrateur d'organisation et accédez à **/account/delegation-certs**. Cliquez sur « Create New », collez la clé publique on-premise (SPKI base64), choisissez une validité (ou acceptez le défaut par plan) et téléchargez le fichier `.json` résultant.
 
-**Méthode B - Admin (inter-client).** Le support Rediacc ou l'administrateur système amont peut utiliser `POST /admin/delegation-certs` avec les mêmes paramètres.
+**B : Admin (inter-client).** Le support Rediacc ou l'administrateur système amont peut appeler `POST /admin/delegation-certs` avec les mêmes paramètres.
 
-**Méthode C - CLI `rdc` (prévu).** Une future commande CLI encapsulera le flux du portail.
+**C : CLI `rdc` (prévu).** Une future commande CLI encapsulera le flux du portail.
 
 Le `.json` retourné ressemble à :
 

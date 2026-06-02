@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "ee2c8fc465b846e4"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "181ba0512ff98f9c"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Servisler
@@ -150,7 +150,7 @@ Her depo en fazla **61 servisi** destekler (slot 0'dan 60'a kadar).
 
 ### Docker Compose'da Servis IP'lerini Kullanma
 
-Her depo izole bir Docker daemon'u çalıştırdığından, `renet compose` tüm servisler için otomatik olarak `network_mode: host` yapılandırır. Çekirdek, `bind()` çağrılarını servisin atanan loopback IP'sine şeffaf biçimde yeniden yazar; bu nedenle servisler çakışma olmadan `0.0.0.0` veya `localhost`'a bağlanabilir. **Diğer servislere bağlantı** için **servis adını** kullanın -- renet her servis adını fork'larda da her zaman doğru IP'ye çözümlenen bir hostname olarak enjekte eder:
+Her depo izole bir Docker daemon'u çalıştırdığından, `renet compose` tüm servisler için otomatik olarak `network_mode: host` yapılandırır. Çekirdek, `bind()` çağrılarını servisin atanan loopback IP'sine şeffaf biçimde yeniden yazar; bu nedenle servisler çakışma olmadan `0.0.0.0` veya `localhost`'a bağlanabilir. **Diğer servislere bağlantı** için **servis adını** kullanın. renet her servis adını fork'larda da her zaman doğru IP'ye çözümlenen bir hostname olarak enjekte eder:
 
 ```yaml
 services:

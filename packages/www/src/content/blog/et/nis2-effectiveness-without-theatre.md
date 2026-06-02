@@ -12,8 +12,8 @@ tags:
   - intsidentide-teatamine
 featured: false
 language: et
-sourceHash: "21965e5d5e9f25d5"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "4c2768e81f0ff03a"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -76,13 +76,13 @@ Turul on vastuseid. Vastused on kallid.
 
 **Rubrik Live Mount**: sarnane kontseptsioon, momentülesvõtte kohene ühendamine testimiseks. Parem integratsioon pilvenatiivse töökoormusega. Sama operatiivne muster. Sama iga-testi insenerlikud üldkulud.
 
-**Delphix (Perforce DevOps Data)**: andmevirtualiseerimise tööriist, mis loob arenduse ja testimise jaoks lähteandmebaaside peaaegu koheseid kloone. Lahendab "tahame dev-is tootmiskujulist andmeid" probleemi. Ainult andmebaasid. Ei klooni rakenduse teenuseid, konfiguratsioone, saladusi ega konteineri olekut. Aastane litsents läheb keskmise turu tiimidele kuuekohalisse arvusse.
+**Delphix (Perforce DevOps Data)**: virtualiseerib lähteandmebaase, et arendus saaks peaaegu koheseid kloone. Lahendab tootmiskujuliste andmete probleemi dev-is. Ainult andmebaasid. See ei klooni rakenduse teenuseid, konfiguratsioone, saladusi ega konteineri olekut. Aastane litsents läheb keskturu tiimidel kuuekohalisse arvusse.
 
-**Tonic.ai, Redgate Test Data Manager**: andmete maskeerimise ja sünteetiliste andmete lähenemisviisid. Lahendavad privaatsuse ja realism-vahelise kompromissi arendus- ja testikeskkondades. Tootmisrealistlik andmekuju ja mahu osas. Mitte täisvirna kloonid. Mitte kavandatud turvetestimise stsenaariumite jaoks, kus rakenduse konfiguratsioon on oluline.
+**Tonic.ai, Redgate Test Data Manager**: maskeerivad või sünteesivad andmeid arenduse ja testimise jaoks. Hea lahendus privaatsuse-realismi kompromissile. Andmekuju ja mastaap näevad välja nagu tootmine. Kuid need tööriistad kloonivad andmeid, mitte rakenduse virna. Kasuta neid QA-s, mitte turvaharjutusteks, kus konfiguratsioon on viga.
 
 **Kohandatud ehitamine**: võtta kuumvarukoopia, taastada see paralleelkeskkonda, käivitada test, lammutada see. Kontseptuaalselt võimalik. Operatiivselt mitme päeva inseneritöö harjutuse kohta. Tiim teeb seda ühe korra, kuna oli sunnitud, ja siis mitte kunagi enam.
 
-Struktuuriline probleem on see, et tootmiskloonaamine, täisvirna ja rakenduse olekuga, on ajalooliselt nõudnud kas (a) baidi-põhist andmeedastust (aeglane ja kallis mastaabis), (b) momentülesvõttel põhinevat VM kloonamist (töötab IaaS jaoks, katkeb konteineritega ja Kubernetesega), või (c) andmevirtualiseerimist (ainult andmebaasid). Kõik kolm lähenemist kannavad iga-testi kulu, mis skaleerub keskkonna suurusega.
+Täieliku tootmise kloonimine, sh rakenduse olek, on alati tähendanud ühte kolmest asjast. Kopeeri iga bait (aeglane, kallis mastaabis). Tee VM-ist momentülesvõte (töötab IaaS jaoks, katkeb konteineritega ja Kubernetesega). Või virtualiseeri ainult andmebaas. Kõik kolm maksavad harjutuse kohta rohkem, mida keskkond kasvab.
 
 Kui iga-testi kulu skaleerub suurusega, muutuvad harjutused haruldasteks sündmusteks. Haruldased sündmused ei täida pidevat tõhususe hindamist.
 
@@ -116,7 +116,7 @@ Siin on konkreetne rutiin, mis rahuldab Article 21(2)(e) ja (f) tootmishoidla ja
 rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
 ```
 
-Fork on nimetatud ISO nädalaga, nii et auditilogi on isekuvav. Hoidla on üleval forgi-spetsiifilise alamdomeeni all (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`) ja vanema metamärksertifikaat katab seda. Uut TLS kätlust ei toimu.
+Fork on nimetatud ISO nädalaga, nii et auditilogi loeb ennast ise. Repositoorium käivitub hargi alamdomeeni all (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). Vanema metamärksertifikaat katab seda. Uut TLS kätlust ei toimu.
 
 **2. samm**: Rakenda testitav plaaster forkis.
 
@@ -159,7 +159,7 @@ Rutiini kogu seinakellajaeg 128 GB hoidla puhul on alla 15 minuti. Suurem osa on
 
 Üks SRE, kes teeb seda kord nädalas, toodab 52 ajatempliga, auditilogi kirjega tõhususe kirjet aastas. See on tõendite kuju, mida audiitor küsib.
 
-Laialdasema taastumiloo jaoks, sealhulgas maskinaüleste ja mandritevaheliste harjutuste kohta, vaata [Ristivarundusstrateegia](/et/docs/cross-backup) ja [Varundus ja taastamine](/et/docs/backup-restore). Osalise korruptsioonisündmuse ajal ajas-tagasi semantika kohta vaata [Ajas-tagasi taastamine](/et/docs/time-travel-recovery).
+Soovid täielikku taastumiselugu? [Ristivarundusstrateegia](/et/docs/cross-backup) käsitleb harjutusi masinate ja mandrite üleselt. [Varundus ja taastamine](/et/docs/backup-restore) on algkäsiraamat. Osalise korruptsioonisündmuse korral vaata [Ajas-tagasi taastamine](/et/docs/time-travel-recovery).
 
 ## Article 23: aruandluse tähtaeg, mida ei saa täita ilma artefaktideta
 
@@ -205,7 +205,7 @@ Kaks asja, mida SRE peaks teadma ette, enne kui otsustab, et ülejäänud postit
 
 **Rediacc ei kirjuta teie käsiraamatuid**. Ülaltoodud CLI käsud on liikuvad osad. Otsused selle kohta, millal forkida, millal üle lülituda, kuidas klientidega suhelda, millal kaasata õiguskaitseasutused, on käsiraamatu otsused. Neid tuleb endiselt teie tiimil koostada, harjutada ja uuendada. NIS2 Article 21(2)(b) (intsidentide käsitlemine) on protsessikohustus, mitte tööriistakohustus, ja me rahuldame osa sellest, mitte kõike.
 
-Hangete poolse ulatuse kohta (sertifikaadid, GRC, tarnija registri kokkukukkumine) vaata [tarneahela postitust](/et/blog/nis2-supply-chain-self-hosted). Kulude poolse ulatuse kohta (mis jääb eelarvesse pärast ise majutatud juhtimistasandit) vaata [reaalse arve postitust](/et/blog/nis2-the-real-bill).
+Hangete poolel (sertifikaadid, GRC, tarnija registri probleem) vaata [tarneahela postitust](/et/blog/nis2-supply-chain-self-hosted). Kulude poolel (mis jääb eelarvesse pärast ise majutamist) vaata [reaalse arve postitust](/et/blog/nis2-the-real-bill).
 
 Nende õige lugemine: Rediacc on tööriistakiht, mitte turbepagramma. See eemaldab vabandused ja toodab tõendeid. See ei käita programmi teie eest.
 
@@ -219,7 +219,7 @@ Kolm artefakti. Tooda need ja Article 21(2)(e) ja (f) vestlus läheb lühikeseks
 
 **Artefakt 3: varunduse kontrollimise rada**. Iga ajakavastatud varundusstrateegiale toodab systemd üksus oleku lisafaili `/var/run/rediacc/cold-backup-<guid>.status.json` hoidla ja käituse kohta ning lõpliku kokkuvõtte logirea. `rdc machine backup status` esitab mõlemaid. Koos 4. sammust iganädalase taastamisharjutusega annab see audiitorile "varundus-ja-taastamine-testitud" raja, mitte ainult "varundus-võetud" raja. Diagnostilise pinna kohta vaata [Jälgimine](/et/docs/monitoring).
 
-Artefaktid koos vastavad küsimusele "kas teie kontrollid on tõhusad" ajatemplite ja räsiaheldatud tõenditega, mitte kinnitustega.
+Koos vastavad artefaktid küsimusele "kas teie kontrollid on tõhusad" ajatemplite ja räsiahela põhjal. Mitte kinnitustega. Tõenditega.
 
 ## Mida see tähendab järgmiseks kvartaliks planeerimiskoosolekuks
 
@@ -233,4 +233,4 @@ Kui soovite näha forgi ajastust oma suurimal hoidlal, on pakkumine lihtne. Käi
 
 Struktuuriline kululugu (mis kukub kokku ülejäänud turbepinult ja mis jääb eelarve ritta) on kaaspostituses [reaalse arve](/et/blog/nis2-the-real-bill) kohta. Tarnija registri ja hangete nurga jaoks vaata [Article 21(2)(d) ja ise majutamine](/et/blog/nis2-supply-chain-self-hosted).
 
-Võimekuste avaliku kaardistamise jaoks NIS2 artiklitele vaata [NIS2 ja DORA](/et/docs/legal-nis2-dora).
+Rediacci toimingute avaliku kaardistuse kohta NIS2 artikli kaupa vaata [NIS2 ja DORA](/et/docs/legal-nis2-dora).

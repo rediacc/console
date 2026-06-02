@@ -1,29 +1,28 @@
 ---
 title: Zeitreise-Erholung
-description: >-
-  Stellen Sie mit Snapshot-basierten Zeitreisen versehentlich gelöschte Daten
-  von vor Wochen wieder her.
+description: "Stellen Sie vor Wochen gelöschte Daten mithilfe von btrfs-Snapshots wieder her, auch nachdem Ihre normalen Backups darüber hinweg rotiert sind."
 category: Use Cases
 order: 2
 language: de
-sourceHash: "b8dbfddbf5b46895"
+sourceHash: "4c1fcb1667a89759"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 > **Wenn andere Daten für immer verlieren, können Sie in die Vergangenheit reisen.**
 
-**Hinweis:** Dies ist ein **Anwendungsbeispiel**, das zeigt, wie Rediacc dieses Problem lösen kann. Als Startup stellen diese Szenarien potenzielle Anwendungen und keine abgeschlossenen Fallstudien dar.
+**Hinweis:** Dies ist ein **Anwendungsbeispiel**, das zeigt, wie Rediacc mit dieser Art von Problem umgeht. Wir sind ein Startup. Das sind realistische Szenarien, für die das Produkt entwickelt wurde, keine Kundenfallstudien, die wir bereits abgeliefert haben.
 
-**Krisenszenario:** Ein neu eingestellter Mitarbeiter hat vor drei Wochen **versehentlich** kritische Daten aus der Live-Datenbank gelöscht. Das Backup-System des Unternehmens speicherte Backups nur zwei Wochen lang, was eine Datenwiederherstellung mit herkömmlichen Mitteln nahezu unmöglich machte.
+**Krisenszenario:** Ein neuer Mitarbeiter hat vor drei Wochen **versehentlich** kritische Zeilen aus Ihrer Live-Datenbank gelöscht. Ihr Backup-System bewahrt nur 2 Wochen an Verlauf. Mit einem normalen Setup sind diese Daten verloren.
 
 ## Das Problem
 
-Mehmet ist als Systemexperte für die Datenbank eines großen Online-Shopping-Unternehmens verantwortlich. Eines Morgens bemerkte er aufgrund von Kundenbeschwerden, dass einige frühere Bestelldaten im System **nicht sichtbar** sind. Die Untersuchung ergab, dass ein neu eingestellter Mitarbeiter vor drei Wochen **versehentlich** einige wichtige Daten aus der Live-Datenbank gelöscht** hat, indem er **eine Verbindung zur Live-Datenbank statt zur Testumgebung herstellte**.
+Mehmet ist für die Datenbank einer großen E-Commerce-Plattform zuständig. Eines Morgens beschweren sich Kunden, dass frühere Bestelldaten **nicht mehr sichtbar** sind. Er untersucht die Situation. Ein neu eingestellter Entwickler hatte vor drei Wochen **versehentlich** kritische Zeilen aus der Live-Datenbank gelöscht, indem er **sich mit der Live-Datenbank statt mit der Testumgebung verband**. Der klassische Fehler, den jeder DBA entweder selbst gemacht hat oder bei einem Junior beobachtet hat.
 
 **Vorhandenes Backup-System:** 
 * Vollständige Backups werden einmal pro Woche erstellt 
 * **Inkrementelle Backups** werden täglich aufgezeichnet
 
-**Dilemma:** Die Löschung erfolgte **vor dem Datum der Vollsicherungen**, sodass die verlorenen Daten nicht in den Sicherungen enthalten sind. Tägliche Backups zeichnen **nur die neuesten Daten auf**, sodass **gelöschte Elemente nicht wiederhergestellt werden können**.
+**Das Dilemma:** Die Löschung erfolgte **vor dem Datum der Vollsicherungen**, sodass die verlorenen Daten in keiner Backup-Datei enthalten sind. Tägliche Backups zeichnen **nur die neuesten Daten auf**, sodass **gelöschte Elemente nicht wiederhergestellt werden können**.
 
 ## Krisenauswirkungen
 
@@ -43,7 +42,7 @@ Aufgrund verlorener Daten:
 
 ## Rediacc-Lösung
 
-Mehmet bietet mit Rediacc eine „Zeitmaschinen“-ähnliche Lösung:
+Hier ist das Zeitmaschinen-Setup, das Mehmet mit Rediacc aufbaut:
 
 ![Time Travel Recovery](/img/time-travel-recovery.svg)
 

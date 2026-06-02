@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: "2289d50dac21f9bf"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1d0af1a74a12d49e"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Monitoreo
@@ -16,7 +16,7 @@ Rediacc proporciona comandos de monitoreo integrados para inspeccionar el estado
 
 ## Estado de la Máquina
 
-Obtenga un informe completo del estado de una máquina:
+Obtenga un informe de estado completo de una máquina:
 
 ```bash
 rdc machine health --name server-1
@@ -215,7 +215,7 @@ Opciones:
 
 ## Diagnósticos (doctor)
 
-Ejecute una verificación de diagnóstico completa de su entorno Rediacc:
+Ejecuta una verificación de diagnóstico completa de tu entorno Rediacc:
 
 ```bash
 rdc doctor

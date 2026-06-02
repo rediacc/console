@@ -1,18 +1,20 @@
 ---
 title: Aplicação Web
-description: Compreender a arquitectura e a implementação da aplicação web com o Rediacc
+description: "Utilizar a consola web do Rediacc para gerir máquinas, repositórios e backups"
 category: Reference
 order: 1
 language: pt
+sourceHash: "0951a0a1b320f570"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Guia do Utilizador da Plataforma Rediacc
 
 ## Visão Geral
 
-O **Rediacc** é uma plataforma cloud que oferece serviços de backup com inteligência artificial.
+O **Rediacc** é um software auto-alojado que instala nos seus próprios servidores. Com ele pode fazer backup, fork e restauro de sistemas completos e em execução. Aplicações, bases de dados e configuração em conjunto, não ficheiro a ficheiro. Essa última parte é o ponto central: a maioria das ferramentas de backup copia ficheiros e perde as relações entre eles.
 
-Este guia explica a utilização básica da interface web em [https://www.rediacc.com/](https://www.rediacc.com/).
+Este guia percorre a consola web em [https://www.rediacc.com/](https://www.rediacc.com/).
 
 ### Objectivo Deste Guia
 
@@ -28,7 +30,7 @@ Este guia explica a utilização básica da interface web em [https://www.rediac
 ![Demonstração do processo de registo](/assets/videos/user-guide/01-01-registration.webm)
 *(Vídeo: Fluxo completo de registo do início ao fim)*
 
-Para começar a utilizar a plataforma Rediacc, é necessário criar uma conta.
+Para utilizar o Rediacc, precisa primeiro de uma conta.
 
 ![Página de início de sessão do Rediacc - infraestrutura sempre activa](/assets/images/user-guide/01_login.png)
 *(Figura 1: Página principal de início de sessão, com as funcionalidades principais da plataforma Rediacc)*
@@ -109,7 +111,7 @@ Após iniciar sessão, o ecrã que vê é composto pelas seguintes secções pri
 
 ## 2.1 Organização - Utilizadores
 
-A gestão de utilizadores permite controlar o acesso à plataforma por parte das pessoas da sua organização.
+A gestão de utilizadores é onde controla quem na sua organização tem acesso.
 
 ### 2.1.1 Adicionar Utilizadores
 
@@ -208,7 +210,7 @@ Pode utilizar a funcionalidade de rastreio para monitorizar as actividades dos u
 
 ## 2.2 Organização - Equipas
 
-As equipas permitem agrupar utilizadores e fornecer acesso em massa aos recursos.
+As equipas agrupam utilizadores para que possa conceder acesso em bloco.
 
 ### 2.2.1 Criar Equipas
 
@@ -291,7 +293,7 @@ As equipas permitem agrupar utilizadores e fornecer acesso em massa aos recursos
 
 ## 2.3 Organização - Controlo de Acesso
 
-O controlo de acesso permite-lhe gerir centralmente as permissões dos utilizadores através da criação de grupos de permissões.
+O controlo de acesso centraliza as permissões através de grupos, em vez de ser por utilizador.
 
 ### 2.3.1 Criar Grupos de Permissões
 
@@ -327,7 +329,7 @@ O controlo de acesso permite-lhe gerir centralmente as permissões dos utilizado
 
 ## 2.4 Máquinas
 
-A secção Máquinas permite-lhe gerir os seus servidores e recursos de repositórios.
+A secção Máquinas é onde gere os seus servidores e os repositórios neles existentes.
 
 ### 2.4.1 Adicionar Máquinas
 
@@ -483,7 +485,7 @@ Clique no botão **{{t:common.actions.refresh}}** para actualizar a lista de má
 ![Demonstração de operações remotas](/assets/videos/user-guide/02-04-08-remote-hello.webm)
 *(Vídeo: Executar operações remotas numa máquina)*
 
-Pode realizar diversas operações remotas em máquinas.
+Pode executar operações remotas numa máquina a partir da web.
 
 1. Seleccione a máquina e clique no botão **{{t:common.actions.remote}}**.
 2. Veja as opções no menu dropdown:
@@ -544,7 +546,7 @@ Pode realizar diversas operações remotas em máquinas.
 
 ## 2.5 Criação e Operações de Repositórios
 
-Os repositórios são as unidades fundamentais onde os seus dados de backup são armazenados.
+Um repositório é uma implementação de aplicação isolada. As suas aplicações, os seus dados, a sua configuração, o seu próprio Docker daemon. Por isso, quase todos os botões desta página actuam sobre um repositório, não sobre a máquina em que se encontra. Vale a pena saber antes de clicar em Eliminar.
 
 ### 2.5.1 Criar Repositórios
 
@@ -845,7 +847,7 @@ Para obter informações detalhadas sobre o repositório:
 
 ## 2.6 Operações de Ligação a Repositórios
 
-Pode ligar-se a repositórios através de diferentes métodos.
+Pode ligar-se a um repositório de duas formas. A aplicação de ambiente de trabalho dá-lhe um terminal real e SSH. O browser é adequado para inspecção e gestão por cliques, mas não consegue sustentar sessões de shell longas. Escolha a aplicação de ambiente de trabalho se estiver a fazer trabalho real.
 
 ### 2.6.1 Ligação via Aplicação de Ambiente de Trabalho
 
@@ -914,7 +916,7 @@ Pode gerir o seu perfil e as definições do sistema na secção Definições.
 
 ## 2.8 Armazenamento
 
-A secção Armazenamento permite-lhe gerir as áreas físicas onde os seus dados de backup serão guardados.
+A secção Armazenamento é onde define as localizações físicas onde os seus dados de backup ficam guardados.
 
 ### 2.8.1 Adicionar Armazenamento
 
@@ -945,7 +947,7 @@ A secção Armazenamento permite-lhe gerir as áreas físicas onde os seus dados
 
 ## 2.9 Credenciais
 
-A secção Credenciais permite-lhe gerir de forma segura as informações de acesso aos seus repositórios.
+A secção Credenciais é onde gere os segredos que os seus repositórios utilizam para aceder a recursos externos.
 
 ### 2.9.1 Edição de Credenciais
 
@@ -1008,7 +1010,7 @@ A secção Credenciais permite-lhe gerir de forma segura as informações de ace
 
 ## 2.10 Fila de Tarefas
 
-A secção Fila de Tarefas permite-lhe acompanhar as operações pendentes e concluídas no sistema.
+A secção Fila de Tarefas acompanha as operações pendentes e concluídas em todo o sistema.
 
 ### 2.10.1 Operações na Fila de Tarefas
 
@@ -1042,7 +1044,7 @@ A secção Fila de Tarefas permite-lhe acompanhar as operações pendentes e con
 
 ## 2.11 Auditoria
 
-A secção Auditoria mantém registos de todas as operações realizadas no sistema.
+A secção Auditoria mantém um registo de todas as operações executadas no sistema.
 
 ### 2.11.1 Registos de Auditoria
 
