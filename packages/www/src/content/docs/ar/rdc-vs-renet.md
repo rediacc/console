@@ -4,8 +4,8 @@ description: متى تستخدم rdc ومتى تستخدم renet.
 category: Concepts
 order: 1
 language: ar
-sourceHash: 526136e143dbcf08
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: 026a183f8a5f9dd4
+sourceCommit: 4e60a12e0664cdee5ad9079a7b75e2d05980d0f5
 ---
 
 # rdc مقابل renet
@@ -23,7 +23,7 @@ sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 
 ## كيف يعملان معًا
 
-يتصل `rdc` بخادمك عبر SSH وينفذ أوامر `renet` نيابة عنك. تكتب أمرًا واحدًا على جهاز العمل الخاص بك، ويتولى `rdc` الباقي:
+على جهاز العمل الخاص بك تشغّل `rdc`. يفتح اتصال SSH بخادمك وينفذ أمر `renet` المقابل هناك نيابة عنك. أمر واحد، مكان واحد لتشغيله:
 
 1. يقرأ الإعداد المحلي (`~/.config/rediacc/rediacc.json`)
 2. يتصل بالخادم عبر SSH
@@ -81,6 +81,6 @@ rdc ops down               # Destroy cluster
 
 ## ملاحظة حول Rediaccfile
 
-قد ترى `renet compose -- ...` داخل ملف `Rediaccfile`. هذا أمر طبيعي, تعمل دوال Rediaccfile على الخادم حيث يكون `renet` متاحًا.
+ستجد `renet compose -- ...` داخل ملف `Rediaccfile`. لا داعي للقلق. دوال Rediaccfile تعمل على الخادم، حيث يكون `renet` مثبتًا بالفعل.
 
 من جهاز العمل الخاص بك، قم بتشغيل وإيقاف أحمال العمل باستخدام `rdc repo up` و `rdc repo down`.

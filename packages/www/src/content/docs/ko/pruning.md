@@ -4,6 +4,8 @@ description: "고아 백업, 오래된 스냅샷, 리포지터리 이미지, 로
 category: "Guides"
 order: 12
 language: ko
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 정리(Pruning)
@@ -58,7 +60,7 @@ rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
 
 ## Machine Prune
 
-세 단계로 머신 내 리소스를 정리합니다. 1단계는 항상 실행되며, 2단계와 3단계는 옵트인 방식으로 상호 보완적입니다.
+세 단계로 머신 내 리소스를 정리합니다. 1단계는 항상 실행되며, 2단계와 3단계는 옵트인 방식으로 함께 사용할 수 있습니다.
 
 ### 1단계: 데이터스토어 정리 (항상 실행)
 
@@ -169,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-앵커가 실제 머신, 리포지터리 또는 GUID인 인증서 이름과 단일 레이블 `<service>.<base>` 또는 루트 `*.<base>` 와일드카드는 그대로 유지됩니다.
+앵커가 실제 머신, 리포지터리 또는 GUID인 인증서 이름은 그대로 유지되며, 단일 레이블 `<service>.<base>` 또는 루트 `*.<base>` 와일드카드도 마찬가지입니다.
 
 ## 마이그레이션: 상태 미러 백필
 

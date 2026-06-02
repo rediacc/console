@@ -1,16 +1,16 @@
 ---
 title: "Tõrkeotsing"
-description: "Lahendused levinud probleemidele SSH, seadistamise, repositooriumide, teenuste ja Dockeriga."
+description: "Parandused levinud SSH, seadistamise, repositooriumi, teenuse ja Dockeri probleemidele."
 category: "Guides"
 order: 10
 language: et
-sourceHash: "658b00b83875950d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "7cfabe7bbf3914c3"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Tõrkeotsing
 
-Levinud probleemid ja nende lahendused. Kahtluse korral alusta käsuga `rdc doctor`, mis käivitab põhjaliku diagnostilise kontrolli.
+Levinud probleemid ja nende parandused. Kahtluse korral alusta käsuga `rdc doctor`, mis käivitab täieliku diagnostilise kontrolli.
 
 ## SSH-ühendus ebaõnnestub
 
@@ -78,7 +78,7 @@ Kui `rdc config machine setup` või `renet system check-btrfs` ebaõnnestub veag
 Module btrfs not found
 ```
 
-...siis töötab server RHEL 10 standardse kernelil, mis ei sisalda btrfs-moodulit. See ei ole Rediacc'i viga; RHEL 10 eemaldas btrfs'i tahtlikult. Lahenduseks on kasutada **Oracle Linux 10**. Oracle 10 kasutab vaikimisi Unbreakable Enterprise Kerneli (UEK), mis säilitab btrfs'i. Täielikku selgitust vaata jaotisest [Nõuded - miks UEK?](/en/docs/requirements).
+...siis töötab server RHEL 10 standardse kernelil, mis ei sisalda btrfs-moodulit. See ei ole Rediacc'i viga; RHEL 10 eemaldas btrfs'i tahtlikult. Parandus on kasutada **Oracle Linux 10**. Oracle 10 kasutab vaikimisi Unbreakable Enterprise Kerneli (UEK), mis säilitab btrfs'i. Täielikku selgitust vaata jaotisest [Nõuded - miks UEK?](/en/docs/requirements).
 
 ## Repositooriumi loomine ebaõnnestub
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code "Permission Denied" liivakastifailides
 
-Ühendamisel käsuga `rdc vscode connect -m <machine> -r <repo>` võisid näha vigu nagu `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` pärast eelmist VS Code seanssi. See oli põhjustatud liivakasti kataloogis segamini failiomandiõigustest, mis hoidsid nii sinu SSH-kasutaja kui ka sisemise `rediacc` kasutaja kirjutatud faile.
+Ühendamisel käsuga `rdc vscode connect -m <machine> -r <repo>` pärast eelmist VS Code seanssi tootsid vanemad renet'i versioonid vigu nagu `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. Põhjus: liivakasti kataloogis olid segamini failiomandiõigused, kus nii sinu SSH-kasutaja kui ka sisemine `rediacc` kasutaja olid faile kirjutanud.
 
 Renet'i uuemad versioonid lahendavad selle:
 
@@ -192,4 +192,4 @@ Kui `rdc term` ei suuda terminaliakent avada:
 rdc doctor
 ```
 
-See kontrollib sinu keskkonda, renet'i paigaldust, konfiguratsiooni seadistust ja autentimise olekut. Iga kontroll annab lühikese selgitusega tulemuse OK, Hoiatus või Viga.
+See kontrollib sinu keskkonda, renet'i paigaldust, konfiguratsiooni ja autentimise olekut. Iga kontroll annab lühikese selgitusega tulemuse OK, Hoiatus või Viga.

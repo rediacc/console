@@ -1,11 +1,11 @@
 ---
 title: RDC CLI petuleht
-description: Kiirviide kõigi rdc käskude, konfiguratsioonide, hoidlate, masinate, sünkroonimise, konteinerite jm jaoks.
+description: "Kiirviide rdc käskudele: konfiguratsioonid, hoidlad, masinad, sünkroonimine ja konteinerid."
 category: Guides
 order: 3
 language: et
-sourceHash: "12956297c1157cd2"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ad0ae49efa847fbc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # RDC CLI petuleht

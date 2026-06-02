@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: zh
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -165,4 +165,4 @@ Rediacc 的构建方式有所不同。完整架构记录于[架构页面](/zh/do
 
 如果我们是你候选名单上的备选方案，承诺是具体的。请将你们的供应商问卷发给我们，我们将基于已部署实例填写，包含你的问题的真实答案，包括差距部分。如果你希望在提交文件前先了解架构，我们可以安排一次与创始人进行的 30 分钟架构评审。通往可防御登记册条目的路径，不是光鲜的宣传册，而是答案本身，包括令人不舒服的那些。
 
-关于 Rediacc 能力与 NIS2 各条款的公开对照，参见 [NIS2 与 DORA](/zh/docs/legal-nis2-dora)。关于更广泛的合规框架，参见[合规概览](/zh/docs/legal-overview)、[数据主权](/zh/docs/legal-data-sovereignty)和[本地部署](/zh/docs/on-premise)。
+想要按条款映射的 Rediacc 对照表？参见 [NIS2 与 DORA](/zh/docs/legal-nis2-dora)。需要更广泛的合规框架？阅读[合规概览](/zh/docs/legal-overview)。关于数据驻留，参见[数据主权](/zh/docs/legal-data-sovereignty)。关于自托管为何重要，参见[本地部署](/zh/docs/on-premise)。

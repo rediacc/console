@@ -6,7 +6,7 @@ order: 50
 language: en
 ---
 
-Use this template to configure AI coding assistants (Claude Code, Cursor, Cline, Windsurf) for autonomous Rediacc infrastructure management. Copy the block below into your project's `CLAUDE.md`, `.cursorrules`, or equivalent agent configuration file.
+Here is the problem: AI coding assistants (Claude Code, Cursor, Cline, Windsurf) keep inventing `rdc` flags that do not exist, and they cannot tell which Rediacc repo name maps to which GUID without asking you every time. This template fixes that. Paste the block below into your project's `CLAUDE.md`, `.cursorrules`, or whichever agent config file your tool uses.
 
 ## Template
 

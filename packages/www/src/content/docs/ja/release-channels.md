@@ -1,11 +1,11 @@
 ---
 title: "リリースチャネル"
-description: "EdgeとStableのリリースチャネルの違いと選び方を理解します。"
+description: "EdgeとStableの違いと、どちらのチャネルを使うべきか。"
 category: "Concepts"
 order: 2
 language: ja
-sourceHash: "d6ff18f9265392d2"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "5fdcb0e8944f5d60"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Rediaccは2つのリリースチャネルを通じて更新を提供します：**Stable**と**Edge**。各チャネルは異なるユーザーを対象としており、それぞれのトレードオフがあります。

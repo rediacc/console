@@ -4,113 +4,124 @@ description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: Guides
 order: 4
 language: tr
-sourceHash: "25063a999a6e4880"
-sourceCommit: "1e6b2d0400cac5fdcf537bfb1cf349dbc3180f52"
-untranslated: true
+sourceHash: "531ee9648611844e"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-# Repositories
+# Depolar
 
-A **repository** is a LUKS-encrypted disk image on a remote server. When mounted, it provides:
-- An isolated filesystem for your application data
-- A dedicated Docker daemon (separate from the host's Docker)
-- Unique loopback IPs for each service within a /26 subnet
+Bir **depo**, uzak bir sunucudaki LUKS ile şifrelenmiş bir disk görüntüsüdür. Bağlandığında şunları sağlar:
+- Uygulama verileriniz için yalıtılmış bir dosya sistemi
+- Özel bir Docker daemon (sunucunun Docker'ından ayrı)
+- /26 alt ağındaki her hizmet için benzersiz geri döngü IP'leri
 
-## Create a Repository
+## Depo Oluşturma
 
 ```bash
 rdc repo create --name my-app -m server-1 --size 10G
 ```
 
-| Option | Required | Description |
+| Seçenek | Zorunlu | Açıklama |
 |--------|----------|-------------|
-| `-m, --machine <name>` | Yes | Target machine where the repository will be created |
-| `--size <size>` | Yes | Size of the encrypted disk image (e.g., `5G`, `10G`, `50G`) |
-| `--skip-router-restart` | No | Skip restarting the route server after the operation |
+| `-m, --machine <name>` | Evet | Deponun oluşturulacağı hedef makine |
+| `--size <size>` | Evet | Şifrelenmiş disk görüntüsünün boyutu (örneğin `5G`, `10G`, `50G`) |
+| `--skip-router-restart` | Hayır | İşlem sonrasında yönlendirici sunucusunu yeniden başlatmayı atla |
 
-The output will show three auto-generated values:
+Çıktı, otomatik oluşturulan üç değeri gösterir:
 
-- **Repository GUID** -- A UUID that identifies the encrypted disk image on the server.
-- **Credential** -- A random passphrase used to encrypt/decrypt the LUKS volume.
-- **Network ID** -- An integer (starting at 2816, incrementing by 64) that determines the IP subnet for this repository's services.
+- **Repository GUID** -- Sunucudaki şifrelenmiş disk görüntüsünü tanımlayan bir UUID.
+- **Credential** -- LUKS birimini şifrelemek/çözmek için kullanılan rastgele bir parola.
+- **Network ID** -- Bu deponun hizmetleri için IP alt ağını belirleyen bir tam sayı (2816'dan başlar, 64 artarak devam eder).
 
-> **Store the credential securely.** It is the encryption key for your repository. If lost, data cannot be recovered. The credential is stored in your local `config.json` but is not stored on the server.
+> **Kimlik bilgisini güvenli bir şekilde saklayın.** Bu, deponuzun şifreleme anahtarıdır. Kaybolursa, veriler kurtarılamaz. Kimlik bilgisi yerel `config.json` dosyanızda saklanır ancak sunucuda saklanmaz.
 
-## Mount and Unmount
+## Bağlama ve Çıkarma
 
-Mount decrypts and makes the repository filesystem accessible. Unmount closes the encrypted volume.
+Bağlama, depoyu şifreler ve dosya sistemine erişilebilir kılar. Çıkarma, şifrelenmiş birimi kapatır.
 
 ```bash
 rdc repo mount --name my-app -m server-1  # Decrypt and mount
 rdc repo unmount --name my-app -m server-1  # Unmount and re-encrypt
 ```
 
-| Option | Description |
+| Seçenek | Açıklama |
 |--------|-------------|
-| `--checkpoint` | Create a CRIU checkpoint before mount/unmount (for containers with `rediacc.checkpoint=true` label) |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--checkpoint` | Bağlama/çıkarma öncesinde bir CRIU kontrol noktası oluştur (`rediacc.checkpoint=true` etiketli kapsayıcılar için) |
+| `--skip-router-restart` | İşlem sonrasında yönlendirici sunucusunu yeniden başlatmayı atla |
 
-## Check Status
+## Durumu Kontrol Etme
 
 ```bash
 rdc repo status --name my-app -m server-1
 ```
 
-## List Repositories
+## Depoları Listeleme
 
 ```bash
 rdc repo list -m server-1
 ```
 
-### Type column and the state mirror
+### Tür sütunu ve durum aynası
 
-The output table includes a `Type` column with three values:
+Çıktı tablosu üç değer içeren bir `Type` sütunu içerir:
 
-- **`grand`**. A top-level repository registered in your local CLI config without a parent. The base case.
-- **`fork`**. A copy-on-write fork of another repo. Identified either via `grandGuid` in the local config **or** via the renet `.interim/state` mirror on the machine. Either source is authoritative; both should agree once the mirror is populated.
-- **`unknown`**. Neither signal can classify the repo. Most often a pre-mirror legacy fork (created before the mirror code shipped and never re-mounted since), or a stale `grand` whose local-config entry was deleted by mistake. The CLI refuses to guess; the operator should run [the mirror backfill](/en/docs/pruning#migration-state-mirror-backfill) or remove the directory if it's genuinely orphaned.
+- **`grand`**. Üst öğesi olmadan yerel CLI yapılandırmanıza kaydedilmiş üst düzey bir depo. Temel durum.
+- **`fork`**. Başka bir deponun kopyala-üzerine-yaz (copy-on-write) çatalı. Yerel yapılandırmadaki `grandGuid` aracılığıyla **ya da** makinedeki renet `.interim/state` aynası aracılığıyla tanımlanır. Her iki kaynak da yetkilidir; ayna doldurulduktan sonra her ikisi de aynı değeri göstermelidir.
+- **`unknown`**. Hiçbir sinyal depoyu sınıflandıramaz. Çoğunlukla ayna kodu gönderilmeden önce oluşturulmuş ve o tarihten bu yana hiç yeniden bağlanmamış eski bir fork veya yerel yapılandırma girdisi yanlışlıkla silinmiş eski bir `grand` depodur. CLI tahmin etmeyi reddeder; operatör [ayna geri doldurmayı](/en/docs/pruning#migration-state-mirror-backfill) çalıştırmalı ya da gerçekten sahipsizse dizini kaldırmalıdır.
 
-The `.interim/state/<guid>/.rediacc.json` mirror is a small sidecar file written **outside** the LUKS-encrypted volume so backup tooling and `repo list` can read fork lineage without unlocking each image. It carries the same shape as the in-volume `.rediacc.json` (`is_fork`, `grand_guid`, `name`, etc.) and is refreshed on every `Repository.SaveState`. I.e. every mount and every state mutation. It's the source of truth for fork detection in scheduled backups: an unmounted fork with a mirror that says `is_fork: true` is correctly skipped from `cold` and `hot` uploads.
+`.interim/state/<guid>/.rediacc.json` aynası, yedek araçlarının ve `repo list` komutunun her görüntünün kilidini açmadan fork soyunu okuyabilmesi için LUKS ile şifrelenmiş birimin **dışına** yazılan küçük bir ek dosyadır. Birim içindeki `.rediacc.json` ile aynı yapıyı taşır (`is_fork`, `grand_guid`, `name` vb.) ve her `Repository.SaveState` işleminde yenilenir, yani her bağlama ve her durum değişikliğinde. Bu, zamanlanmış yedeklemelerde fork tespiti için gerçeği kaynaktan okur: `is_fork: true` diyen bir aynaya sahip, bağlı olmayan bir fork, `cold` ve `hot` yüklemelerinden doğru şekilde atlanır.
 
-For routine cleanup of unknown entries, see [`rdc machine prune --prune-unknown`](/en/docs/pruning#phase-3---prune-unknown-surgical).
+Bilinmeyen girdilerin rutin temizliği için bkz. [`rdc machine prune --prune-unknown`](/en/docs/pruning#phase-3---prune-unknown-surgical).
 
-## Resize
+## Yeniden Boyutlandırma
 
-Set the repository to an exact size or expand by a given amount:
+Depoyu tam bir boyuta ayarlayın veya belirli bir miktarda genişletin:
 
 ```bash
 rdc repo resize --name my-app -m server-1 --size 20G  # Set to exact size
 rdc repo expand --name my-app -m server-1 --size 5G  # Add 5G to current size
 ```
 
-> The repository must be unmounted before resizing.
+> Yeniden boyutlandırmadan önce deponun çıkarılmış olması gerekir.
 
 ## Fork
 
-Create a copy of an existing repository at its current state:
+Mevcut bir deponun mevcut durumunun bir kopyasını oluşturun:
 
 ```bash
 rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
-Forks use the name:tag model: the resulting fork is named `my-app:staging`. This creates a new encrypted copy with its own GUID and network ID, while sharing the parent's name. The fork shares the same LUKS credential as the parent.
+Fork'lar isim:etiket modelini kullanır: elde edilen fork, `my-app:staging` olarak adlandırılır. Bu, kendi GUID ve ağ kimliğine sahip yeni bir şifrelenmiş kopya oluşturur ve üst öğenin adını paylaşır. Fork, üst öğeyle aynı LUKS kimlik bilgisini paylaşır.
 
-> Forks share the parent's data via BTRFS reflink, including any credentials stored on disk. See [What Rediacc does not isolate](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) for the implications when those credentials authorize external services like Stripe, AWS, or Railway. To keep deploy-time credentials out of the fork's reach, use [per-repo secrets](#secrets) instead of baking values into `.env` files inside the repo.
+> Fork'lar, diskte depolanan kimlik bilgileri de dahil olmak üzere üst öğenin verilerini BTRFS reflink aracılığıyla paylaşır. Bu kimlik bilgileri Stripe, AWS veya Railway gibi harici hizmetleri yetkilendirdiğinde bunun etkileri için bkz. [Rediacc'ın yalıtmadıkları](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate). Dağıtım zamanı kimlik bilgilerini fork'un erişim alanı dışında tutmak için, değerleri depo içindeki `.env` dosyalarına gömmek yerine [depo başına gizli diziler](#secrets) kullanın.
 
-At fork creation, `repo fork` writes the [state mirror sidecar](#type-column-and-the-state-mirror) at `<datastore>/.interim/state/<fork-guid>/.rediacc.json` immediately. Without unlocking the volume. So the new fork is correctly identified as `is_fork: true` from the moment of creation. This lets scheduled backups skip it (forks are excluded from the upload pipeline by default) even if it's never mounted. When forking a fork, `grand_guid` chains correctly: the new fork's mirror points at the original grand parent's GUID, not at the intermediate fork.
+Fork oluşturma sırasında `repo fork`, [durum aynası ek dosyasını](#type-column-and-the-state-mirror) `<datastore>/.interim/state/<fork-guid>/.rediacc.json` konumuna hemen yazar. Birimi açmadan. Böylece yeni fork, oluşturma anından itibaren `is_fork: true` olarak doğru şekilde tanımlanır. Bu, zamanlanmış yedeklemelerin fork'u atlamasına olanak tanır (fork'lar varsayılan olarak yükleme ardışık düzeninden dışlanır), hiç bağlı olmasa bile. Bir fork'u çatallayırken `grand_guid` doğru şekilde zincir oluşturur: yeni fork'un aynası, ara fork'un GUID'ini değil, orijinal büyük üst öğenin GUID'ini işaret eder.
 
-## Secrets
+## Git Benzeri Sürüm Yönetimi
 
-Per-repo secrets are deploy-time credentials injected into containers without being written to the encrypted repository image. They are kept on a separate plane from the repository's data, so `rdc repo fork` does not propagate them. A fork starts with an empty secrets map and its containers boot identifying themselves as a different external principal than the parent.
+Fork'lar git commit'leri gibi davranabilir. `rdc repo commit` çalışan bir fork'u değiştirilemez, byte-kararlı bir commit'e dondurur; `rdc repo branch` bir geçmiş satırını adlandırır; `rdc repo checkout` bir commit'i reflink ile klonlayarak yazılabilir bir fork oluşturur; `rdc repo log` ebeveyn zincirini dolaşır; `rdc repo merge` ise canlı bir depoyu yerinde değiştirmeden iki satırı birleştirir. `rdc repo fork --immutable` tek adımda commit eşdeğeri bir taban üretir.
 
-> Want a step-by-step walkthrough? See the [Managing Secrets tutorial](/en/docs/tutorial-managing-secrets) for the full set/list/deploy/verify/rotate cycle.
+```bash
+rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
+rdc repo branch --branch staging --name my-app:work
+rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+```
 
-**Write-only model (GitHub-style):** `get` returns the SHA-256 digest only. The plaintext value is never returned to anyone, human or agent. If you forget what a value is, look it up in your password manager and rotate; you cannot read it back from Rediacc by design. This eliminates an entire class of leak: terminal recordings, shell history, accidental redirection, shoulder-surfing.
+Tam komut kümesi, seçenekler ve çalışılmış örnekler için [Git benzeri dallanma referansına](/en/docs/repo-branching) bakın.
 
-Two delivery modes:
+## Gizli Diziler
 
-- `env`. The secret is exported as `REDIACC_SECRET_<KEY>` in the renet shell on the target machine. Reference it from your `docker-compose.yml` via `${REDIACC_SECRET_<KEY>}` interpolation. Visible inside the container's environment, so use this for connection-string-shaped values that the application already expects in env.
-- `file`. The secret is written to `/var/run/rediacc/secrets/<networkID>/<KEY>` on the host (tmpfs, never persisted). Reference it from your compose file via a top-level `secrets:` declaration with `file:` source, plus a per-service `secrets:` list. Containers read from `/run/secrets/<key>`. Prefer this mode for anything sensitive. It never appears in `docker inspect` or `/proc/<pid>/environ`.
+Depo başına gizli diziler, şifrelenmiş depo görüntüsüne yazılmadan kapsayıcılara enjekte edilen dağıtım zamanı kimlik bilgileridir. Deponun verilerinden ayrı bir düzlemde tutulurlar; bu nedenle `rdc repo fork` bunları yaymaz. Bir fork boş bir gizli dizi haritasıyla başlar ve kapsayıcıları, üst öğeden farklı bir harici asıl olarak tanımlanarak önyüklenir.
+
+> Adım adım bir rehber ister misiniz? Tam set/list/deploy/verify/rotate döngüsü için [Gizli Dizileri Yönetme öğreticisine](/en/docs/tutorial-managing-secrets) bakın.
+
+**Salt yazma modeli (GitHub tarzı):** `get` yalnızca SHA-256 özetini döndürür. Düz metin değeri hiçbir zaman, ne bir insana ne de bir ajana döndürülmez. Bir değerin ne olduğunu unutursanız, şifre yöneticinizde arayın ve döndürün; tasarım gereği Rediacc'dan geri okuyamazsınız. Bu, bir hata sınıfının tamamını ortadan kaldırır: terminal kayıtları, kabuk geçmişi, yanlışlıkla yeniden yönlendirme, omuz sörf.
+
+İki teslimat modu:
+
+- `env`. Gizli dizi, hedef makinedeki renet kabuğunda `REDIACC_SECRET_<KEY>` olarak dışa aktarılır. `docker-compose.yml` dosyanızdan `${REDIACC_SECRET_<KEY>}` enterpolasyonu aracılığıyla referans alın. Kapsayıcının ortamında görünür olduğundan, uygulamanın env'de zaten beklediği bağlantı dizisi şeklindeki değerler için bunu kullanın.
+- `file`. Gizli dizi, ana makinede `/var/run/rediacc/secrets/<networkID>/<KEY>` konumuna yazılır (tmpfs, hiçbir zaman kalıcı değil). Compose dosyanızdan `file:` kaynağıyla üst düzey bir `secrets:` bildirimi ve hizmet başına bir `secrets:` listesi aracılığıyla referans alın. Kapsayıcılar `/run/secrets/<key>` konumundan okur. Hassas her şey için bu modu tercih edin. `docker inspect` veya `/proc/<pid>/environ` içinde hiçbir zaman görünmez.
 
 ```bash
 # Set, list, get (digest only), unset
@@ -121,11 +132,11 @@ rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } 
 rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
-**Symmetric mutation gate.** Both humans and agents need `--current <previous-value>` to overwrite or unset a secret (passwd-style precondition). For first-write of a new key, pass `--current ""` (empty). To rotate without verifying the prior value, pass `--rotate-secret` instead. This is loudly audited as a rotation. `--current` and `--rotate-secret` are mutually exclusive.
+**Simetrik mutasyon kapısı.** Hem insanların hem de ajanların bir gizli diziyi üzerine yazmak veya kaldırmak için `--current <önceki-değer>` girmesi gerekir (passwd tarzı ön koşul). Yeni bir anahtarın ilk yazımı için `--current ""` (boş) girin. Önceki değeri doğrulamadan döndürmek için bunun yerine `--rotate-secret` kullanın. Bu, yüksek sesle bir döndürme olarak denetlenir. `--current` ve `--rotate-secret` birbirini dışlar.
 
-Pass `--value -` to read from stdin instead of argv (avoids shell-history exposure for one-shot writes).
+Kabuk geçmişine maruziyetten kaçınmak için (tek seferlik yazımlar için), değeri argv yerine stdin'den okumak üzere `--value -` girin.
 
-In your `docker-compose.yml`:
+`docker-compose.yml` dosyanızda:
 
 ```yaml
 services:
@@ -141,100 +152,100 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-The lowercase service-side reference (`stripe_live_key`) is the in-container `/run/secrets/<name>` filename; the uppercase tail of the host path (`STRIPE_LIVE_KEY`) matches what you set with `--key`. `${REDIACC_NETWORK_ID}` is interpolated by `renet compose` automatically.
+Küçük harfli hizmet tarafı referansı (`stripe_live_key`), kapsayıcı içindeki `/run/secrets/<name>` dosya adıdır; ana makine yolunun büyük harfli kuyruğu (`STRIPE_LIVE_KEY`), `--key` ile belirlediğinizle eşleşir. `${REDIACC_NETWORK_ID}`, `renet compose` tarafından otomatik olarak enterpolasyona tabi tutulur.
 
-> **Cross-repo isolation enforced**: renet's compose validator rejects `secrets: file:` (and `configs: file:`, and `env_file:`) paths that reference any other repo's network ID. The literal `${REDIACC_NETWORK_ID}` token (or your own network's int) is the only accepted form for `/var/run/rediacc/secrets/...` references. And `--unsafe` does NOT override this check. The Landlock sandbox around the Rediaccfile bash subprocess also scopes filesystem access to your own network's secrets directory only, so a malicious `cat /var/run/rediacc/secrets/<other>/X` from a Rediaccfile fails with EACCES at the kernel layer.
+> **Depo arası yalıtım uygulanır**: renet'in compose doğrulayıcısı, başka bir deponun ağ kimliğine referans veren `secrets: file:` (ve `configs: file:`, ve `env_file:`) yollarını reddeder. `/var/run/rediacc/secrets/...` referansları için kabul edilen tek form, `${REDIACC_NETWORK_ID}` değişmez belirteci (veya kendi ağınızın tam sayısı) dir. `--unsafe` bu kontrolü geçersiz kılmaz. Rediaccfile bash alt işleminin etrafındaki Landlock korumalı alanı da dosya sistemi erişimini yalnızca kendi ağınızın gizli dizi diziniyle kapsar; bu nedenle bir Rediaccfile'dan kötü niyetli bir `cat /var/run/rediacc/secrets/<other>/X` çağrısı çekirdek katmanında EACCES ile başarısız olur.
 
-> **Forks**: `rdc repo fork` does **not** copy secrets. To use secrets in a fork, run `rdc repo secret set --name <fork>` on the fork explicitly. This is the load-bearing safety property. The fork's containers should not be able to act as the production principal against external services.
+> **Fork'lar**: `rdc repo fork` gizli dizileri **kopyalamaz**. Fork'ta gizli diziler kullanmak için fork üzerinde açıkça `rdc repo secret set --name <fork>` çalıştırın. Bu, yük taşıyan güvenlik özelliğidir. Fork'un kapsayıcıları, harici hizmetlere karşı üretim asıl olarak hareket edememeli.
 
-> **Agents** (Claude Code, Cursor, etc.): `repo secret list` and `repo secret get` are exposed as MCP tools (read-safe. Names + digests only, never values). `set` and `unset` are CLI-only because the `--current`/`--rotate-secret` ceremony requires human eyes-on; agents calling them via shell get the same gate as humans. When precondition fails, the JSON envelope contains a structured `errors[].next.options[].run` field. Agents should relay those commands verbatim to the user. See [AI agent safety](/en/docs/ai-agents-safety) for the full model.
+> **Ajanlar** (Claude Code, Cursor vb.): `repo secret list` ve `repo secret get`, MCP araçları olarak sunulur (güvenli okuma. Yalnızca adlar ve özetler, hiçbir zaman değerler). `set` ve `unset` yalnızca CLI'dır çünkü `--current`/`--rotate-secret` seremonisi insan gözü gerektirir; bunları kabuk üzerinden çağıran ajanlar insanlarla aynı kapıya gelir. Ön koşul başarısız olduğunda JSON zarfı, yapılandırılmış bir `errors[].next.options[].run` alanı içerir. Ajanlar bu komutları kullanıcıya birebir iletmelidir. Tam model için bkz. [Yapay zeka ajanı güvenliği](/en/docs/ai-agents-safety).
 
-## Validate
+## Doğrulama
 
-Check the filesystem integrity of a repository:
+Bir deponun dosya sistemi bütünlüğünü kontrol edin:
 
 ```bash
 rdc repo validate --name my-app -m server-1
 ```
 
-## Ownership
+## Sahiplik
 
-Set file ownership within a repository to the universal user (UID 7111). This is typically needed after uploading files from your workstation, which arrive with your local UID.
+Depo içindeki dosya sahipliğini evrensel kullanıcıya (UID 7111) ayarlayın. Bu, genellikle çalışma istasyonunuzdan dosya yükledikten sonra gereklidir; dosyalar yerel UID'inizle gelir.
 
 ```bash
 rdc repo ownership --name my-app -m server-1
 ```
 
-The command automatically detects Docker container data directories (writable bind mounts) and excludes them. This prevents breaking containers that manage files with their own UIDs (e.g., MariaDB=999, www-data=33).
+Komut, Docker kapsayıcı veri dizinlerini (yazılabilir bağlama bağlantı noktaları) otomatik olarak algılar ve bunları dışlar. Bu, kendi UID'leri ile dosyaları yöneten kapsayıcıların bozulmasını önler (örneğin MariaDB=999, www-data=33).
 
-| Option | Description |
+| Seçenek | Açıklama |
 |--------|-------------|
-| `--uid <uid>` | Set a custom UID instead of 7111 |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--uid <uid>` | 7111 yerine özel bir UID ayarla |
+| `--skip-router-restart` | İşlem sonrasında yönlendirici sunucusunu yeniden başlatmayı atla |
 
-To force ownership on all files, including container data:
+Kapsayıcı verileri de dahil olmak üzere tüm dosyalarda sahipliği zorlamak için:
 
 ```bash
 rdc repo ownership --name my-app -m server-1
 ```
 
 
-See the [Migration Guide](/en/docs/migration) for a complete walkthrough of when and how to use ownership during project migration.
+Proje geçişi sırasında sahipliğin ne zaman ve nasıl kullanılacağına ilişkin tam bir rehber için bkz. [Geçiş Kılavuzu](/en/docs/migration).
 
-## Template
+## Şablon
 
-Apply a template to initialize a repository with files:
+Bir depoyu dosyalarla başlatmak için şablon uygulayın:
 
 ```bash
 rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
-## Delete
+## Silme
 
-Permanently destroy a repository and all data inside it:
+Bir depoyu ve içindeki tüm verileri kalıcı olarak yok edin:
 
 ```bash
 rdc repo delete --name my-app -m server-1
 ```
 
-> This permanently destroys the encrypted disk image. This action cannot be undone.
+> Bu, şifrelenmiş disk görüntüsünü kalıcı olarak yok eder. Bu işlem geri alınamaz.
 
-## Migrate Repository
+## Depo Geçişi
 
-Live-migrate a repository from one machine to another with minimal downtime.
+Bir depoyu minimum kesinti süresiyle bir makineden diğerine canlı olarak geçirin.
 
 ```bash
 rdc repo migrate --name my-app --from server-1 --to server-2
 ```
 
-| Option | Description |
+| Seçenek | Açıklama |
 |--------|-------------|
-| `--provision` | Provision the repository on the target machine before migrating (creates LUKS image and registers config) |
-| `--checkpoint` | Create a CRIU checkpoint of running containers before cutover |
-| `--bwlimit <kbps>` | Limit rsync bandwidth in kilobytes per second |
-| `--skip-dns` | Skip updating DNS records after cutover |
+| `--provision` | Geçişten önce hedef makinede depoyu hazırlayın (LUKS görüntüsü oluşturur ve yapılandırmayı kaydeder) |
+| `--checkpoint` | Geçiş öncesinde çalışan kapsayıcıların bir CRIU kontrol noktasını oluşturun |
+| `--bwlimit <kbps>` | rsync bant genişliğini kilobayt/saniye cinsinden sınırlandırın |
+| `--skip-dns` | Geçiş sonrasında DNS kayıtlarını güncellemeyi atlayın |
 
-**Three-phase flow:**
+**Üç aşamalı akış:**
 
-1. **Hot pre-copy** - rsync transfers data while the repository stays running on the source. Large files are transferred before any downtime.
-2. **Cutover** - the repository is stopped on the source, a final rsync pass syncs remaining changes, and the repository starts on the target.
-3. **Start on target** - renet mounts and starts the repository on the target machine. DNS is updated unless `--skip-dns` is passed.
+1. **Sıcak ön kopyalama** - Depo kaynakta çalışmaya devam ederken rsync verileri aktarır. Büyük dosyalar, herhangi bir kesinti olmadan önce aktarılır.
+2. **Geçiş** - Depo kaynakta durdurulur, son bir rsync geçişi kalan değişiklikleri eşitler ve depo hedefte başlatılır.
+3. **Hedefte başlatma** - renet, hedef makinede depoyu bağlar ve başlatır. `--skip-dns` geçilmediğinde DNS güncellenir.
 
 ![Repository Live Migration](/img/repo-migrate-flow.svg)
 
-**Push vs migrate:**
+**Push ile migrate karşılaştırması:**
 
 | | `repo push` | `repo migrate` |
 |--|-------------|----------------|
-| Operation | Copy | Move |
-| Source after | Unchanged | Stopped |
-| Downtime | None (copy only) | Brief cutover window |
-| DNS update | No | Yes (unless `--skip-dns`) |
-| Use case | Backup, staging clone | Machine replacement, server move |
+| İşlem | Kopyala | Taşı |
+| Sonrası kaynak | Değişmedi | Durduruldu |
+| Kesinti süresi | Yok (yalnızca kopyalama) | Kısa geçiş penceresi |
+| DNS güncelleme | Hayır | Evet (`--skip-dns` yoksa) |
+| Kullanım durumu | Yedekleme, hazırlık klonu | Makine değiştirme, sunucu taşıma |
 
-## Prune
+## Temizleme
 
-After deleting repositories or recovering from failed operations, orphaned mount directories, lock files, and immovable markers may remain. Prune removes these safely:
+Depoları sildikten veya başarısız işlemlerden kurtardıktan sonra, sahipsiz bağlama dizinleri, kilit dosyaları ve taşınamaz işaretçiler kalabilir. Temizleme bunları güvenli şekilde kaldırır:
 
 ```bash
 # Preview what would be removed
@@ -244,4 +255,4 @@ rdc machine prune --name server-1 --dry-run
 rdc machine prune --name server-1
 ```
 
-Only resources with no matching repository image are affected. Non-empty mount directories are never removed.
+Yalnızca eşleşen depo görüntüsü olmayan kaynaklar etkilenir. Boş olmayan bağlama dizinleri hiçbir zaman kaldırılmaz.

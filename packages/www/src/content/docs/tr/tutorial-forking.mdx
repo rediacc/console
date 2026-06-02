@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: tr
-sourceHash: "d67568772c42826c"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "73a4cb1d8c412531"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Depo Fork'lama
 
-Bu, en güçlü özelliktir: tüm bir üretim ortamını (uygulama, veritabanı, yapılandırma dosyaları) saniyeler içinde klonlayın. Her boyutta. Sıfır ek disk. İstediğiniz kadar fork alın.
+Bu, çalışma biçiminizi değiştiren kısımdır. Tüm bir üretim ortamını (uygulama, veritabanı, yapılandırma dosyaları) saniyeler içinde klonlayın. Her boyutta. Sıfır ek disk. İstediğiniz kadar fork alın.
 
 Slogan: **üretimi klonlayın, hiçbir şeyi bozmayın.**
 
@@ -57,7 +57,7 @@ Fork'lama da aynı şekilde çalışır. 1 GB, 100 GB, 1 TB. Her seferinde aynı
 
 ![Many mirrors, one sun: shared base, your changes are yours](/img/tutorials/tutorial-forking/slide-4.svg)
 
-Üst depoyu güneş gibi düşünün. Güneşi tutamazsınız, ama onu yakalayan bir ayna tutabilirsiniz. O ayna sizin fork'unuzdur. Aynaya resim çizin; çizimler size aittir. Güneş, kaç ayna ona baksa da değişmez.
+Üst depoyu sabit bir kaynak olarak düşünün. Fork'unuz, ona yazma sırasında kopyalayan bir görünümdür. Fork'a yazın; yazılar fork içinde kalır. Kaç fork olursa olsun üst depo değişmez.
 
 > Güneşi tutamazsınız, ama onu aynada tutabilirsiniz.
 
@@ -65,7 +65,7 @@ Fork'lama da aynı şekilde çalışır. 1 GB, 100 GB, 1 TB. Her seferinde aynı
 
 ![A fork is a frozen photograph; the parent keeps flowing like a river](/img/tutorials/tutorial-forking/slide-5.svg)
 
-Şimdi bir nehri düşünün. Su akmaya devam eder. Her an farklıdır. Fork aldığınızda nehrin o andaki fotoğrafını çekmiş gibi olursunuz; fotoğraf o anda donup kalır. Nehir akmaya devam eder; fotoğrafınız devam etmez.
+Şimdi anlık görüntü mantığını düşünün. Fork aldığınızda, üst depoyu tam o anda dondurursunuz. Üst depo hareket etmeye devam eder; fork'unuz etmez.
 
 Üst depo daha sonra değişirse, fork'unuz olduğu yerde kalır.
 

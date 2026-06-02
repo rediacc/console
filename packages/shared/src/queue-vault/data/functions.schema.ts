@@ -38,7 +38,14 @@ export const BackupPullParamsSchema = z.object({
     .describe('Source type: machine (SSH) or storage (rclone)'),
   from: z.string().min(1).describe('Source machine or storage name'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
+  force: z.boolean().default(false).optional().describe('Overwrite existing repository'),
   bwlimit: z.string().optional().describe('Bandwidth limit for rsync transfer (e.g., 6M, 10M)'),
+  deltaBase: z.string().optional().describe('Immutable base GUID present byte-identical on both machines; receive only changed extents (machine source, LUKS repos)'),
+  strategy: z
+    .enum(['auto', 'physical', 'shared'])
+    .default('auto')
+    .optional()
+    .describe('Delta strategy: auto|physical|shared'),
 });
 
 /** Push repository to remote destination (machine or storage) */
@@ -57,6 +64,14 @@ export const BackupPushParamsSchema = z.object({
   override: z.boolean().optional().describe('Overwrite existing backup'),
   seed: z.string().optional().describe('Comma-separated repository GUIDs for CoW pre-seeding (closest relative first)'),
   bwlimit: z.string().optional().describe('Bandwidth limit for rsync transfer (e.g., 6M, 10M)'),
+  deltaBase: z.string().optional().describe('Immutable base GUID present byte-identical on both machines; transfer only changed extents (machine target, LUKS repos)'),
+  strategy: z
+    .enum(['auto', 'physical', 'shared'])
+    .default('auto')
+    .optional()
+    .describe('Delta strategy: auto|physical|shared'),
+  retainBase: z.string().optional().describe('Retain the pushed image as an immutable delta base under this GUID on both machines'),
+  retainBasePrune: z.string().optional().describe('Delete this prior retained base on both machines after a successful push'),
 });
 
 /** Mount RBD image on client */
@@ -343,6 +358,23 @@ export const RepositoryCatParamsSchema = z.object({
   forceBinary: z.boolean().optional().describe('Allow reading binary (NUL-containing) content'),
 });
 
+/** Freeze a working fork into a new immutable commit (git-like) */
+export const RepositoryCommitParamsSchema = z.object({
+  tag: z.string().min(1).describe('Name of the new immutable commit'),
+  message: z.string().min(1).describe('Commit message'),
+  author: z.string().optional().describe('Commit author'),
+  commitParent: z.string().optional().describe('GUID of the previous branch tip (empty for the root commit)'),
+});
+
+/** Reconstruct an immutable commit's state mirror from supplied metadata (cross-machine log sync) */
+export const RepositoryCommitMetaParamsSchema = z.object({
+  message: z.string().optional().describe('Commit message'),
+  author: z.string().optional().describe('Commit author'),
+  commitParent: z.string().optional().describe('Parent commit GUID'),
+  committedAt: z.string().optional().describe('Commit timestamp (RFC3339)'),
+  grandGuid: z.string().optional().describe('Grand (lineage root) GUID'),
+});
+
 /** Create a new repository */
 export const RepositoryCreateParamsSchema = z.object({
   size: z.string().min(1).describe('Repository size (e.g., 100G, 1T)'),
@@ -384,6 +416,7 @@ export const RepositoryExpandParamsSchema = z.object({
 /** Create a CoW fork of a repository */
 export const RepositoryForkParamsSchema = z.object({
   tag: z.string().min(1).describe('Fork repository name'),
+  immutable: z.boolean().default(false).optional().describe('Mark the fork read-only (refuses to mount; frozen commit/base)'),
 });
 
 /** Get repository information */
@@ -394,6 +427,17 @@ export const RepositoryListParamsSchema = z.object({
   kind: z.string().default('repo').optional().describe('List type'),
   format: z.string().optional().describe('Output format'),
   from: z.string().optional().describe('Source machine or storage'),
+});
+
+/** Walk the commit DAG from a starting commit (reads out-of-volume mirror) */
+export const RepositoryLogParamsSchema = z.object({});
+
+/** Lifecycle-safe merge of a source into a target working fork (atomic swap) */
+export const RepositoryMergeParamsSchema = z.object({
+  from: z.string().min(1).describe('Source commit/fork to merge from'),
+  force: z.boolean().default(false).optional().describe('Quiesce a mounted/running target first, then merge'),
+  resolve: z.enum(['ours', 'theirs']).optional().describe('Per-file three-way conflict policy: ours|theirs (requires base)'),
+  base: z.string().optional().describe('Common-ancestor commit GUID for a per-file three-way merge'),
 });
 
 /** Mount a repository */
@@ -545,6 +589,8 @@ export const FUNCTION_SCHEMAS = {
   repository_autostart_enable_all: RepositoryAutostartEnableAllParamsSchema,
   repository_autostart_list: RepositoryAutostartListParamsSchema,
   repository_cat: RepositoryCatParamsSchema,
+  repository_commit: RepositoryCommitParamsSchema,
+  repository_commit_meta: RepositoryCommitMetaParamsSchema,
   repository_create: RepositoryCreateParamsSchema,
   repository_delete: RepositoryDeleteParamsSchema,
   repository_diff: RepositoryDiffParamsSchema,
@@ -554,6 +600,8 @@ export const FUNCTION_SCHEMAS = {
   repository_fork: RepositoryForkParamsSchema,
   repository_info: RepositoryInfoParamsSchema,
   repository_list: RepositoryListParamsSchema,
+  repository_log: RepositoryLogParamsSchema,
+  repository_merge: RepositoryMergeParamsSchema,
   repository_mount: RepositoryMountParamsSchema,
   repository_ownership: RepositoryOwnershipParamsSchema,
   repository_prune: RepositoryPruneParamsSchema,

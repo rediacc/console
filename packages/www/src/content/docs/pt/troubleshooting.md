@@ -1,16 +1,16 @@
 ---
 title: "Resolução de Problemas"
-description: "Soluções para problemas comuns com SSH, configuração, repositórios, serviços e Docker."
+description: "Correções para problemas comuns com SSH, configuração, repositórios, serviços e Docker."
 category: "Guides"
 order: 10
 language: pt
-sourceHash: "658b00b83875950d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "7cfabe7bbf3914c3"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Resolução de Problemas
 
-Problemas comuns e as suas soluções. Em caso de dúvida, comece com `rdc doctor` para executar um diagnóstico abrangente.
+Problemas comuns e como resolvê-los. Em caso de dúvida, comece com `rdc doctor` para executar um diagnóstico completo.
 
 ## Falha na Ligação SSH
 
@@ -78,7 +78,7 @@ Se `rdc config machine setup` ou `renet system check-btrfs` falhar com:
 Module btrfs not found
 ```
 
-...o servidor está a executar o kernel padrão do RHEL 10, que não inclui o módulo btrfs integrado. Isto não é um problema do Rediacc; o RHEL 10 removeu o btrfs intencionalmente. A solução é utilizar **Oracle Linux 10**. O Oracle 10 usa por predefinição o Unbreakable Enterprise Kernel (UEK), que mantém o btrfs. Consulte [Requisitos -> Por que UEK?](/pt/docs/requirements) para a história completa.
+...o servidor está a executar o kernel padrão do RHEL 10, que não inclui o módulo btrfs integrado. Isto não é um problema do Rediacc; o RHEL 10 removeu o btrfs intencionalmente. A correção é utilizar **Oracle Linux 10**. O Oracle 10 usa por predefinição o Unbreakable Enterprise Kernel (UEK), que mantém o btrfs. Consulte [Requisitos -> Por que UEK?](/pt/docs/requirements) para a história completa.
 
 ## Falha na Criação de Repositório
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## Permissão Negada do VS Code em Ficheiros do Sandbox
 
-Ao ligar com `rdc vscode connect -m <machine> -r <repo>`, pode ter visto erros como `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` após uma sessão anterior do VS Code. Isto era causado por propriedade de ficheiros mista dentro do diretório sandbox, que continha ficheiros escritos tanto pelo seu utilizador SSH como pelo utilizador interno `rediacc`.
+Ao ligar com `rdc vscode connect -m <machine> -r <repo>` após uma sessão anterior do VS Code, versões mais antigas do renet produziam erros como `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. A causa: propriedade de ficheiros mista dentro do diretório sandbox, onde tanto o utilizador SSH como o utilizador interno `rediacc` tinham escrito ficheiros.
 
 As versões modernas do renet corrigem isto:
 
@@ -192,4 +192,4 @@ Se `rdc term` falhar ao abrir uma janela de terminal:
 rdc doctor
 ```
 
-Isto verifica o seu ambiente, a instalação do renet, a configuração e o estado de autenticação. Cada verificação reporta OK, Aviso ou Erro com uma breve explicação.
+Isto verifica o seu ambiente, a instalação do renet, a configuração e o estado de autenticação. Cada verificação reporta OK, Aviso ou Erro com uma explicação breve.

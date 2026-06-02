@@ -4,6 +4,8 @@ description: Avvia un servizio containerizzato sul tuo server in pochi minuti. �
 category: Guides
 order: -1
 language: it
+sourceHash: "15b3c42682a05678"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Quick Start
@@ -18,7 +20,7 @@ Distribuisci un ambiente container cifrato e isolato sul tuo server. Nessun acco
 
 Una repository è un singolo file cifrato su disco. Spostala, fai il backup, esegui un fork. È solo un file. Quando viene montata, diventa una cartella con un demone Docker dedicato e i dati della tua app all'interno.
 
-Pensa a una repository come a una chiavetta USB. È qualcosa in mano tua, e quando la inserisci diventa visibile e accessibile al sistema. Le tue app e i tuoi dati sono completamente portabili. Plug & Run su qualsiasi macchina, su qualsiasi provider cloud.
+Pensa a una repository come a una chiavetta USB: inseriscila in qualsiasi macchina e le app e i dati si montano, pronti all'uso. Spostala tra macchine o provider cloud senza ricostruire nulla. Plug & Run.
 
 **Due strumenti, due ruoli:**
 

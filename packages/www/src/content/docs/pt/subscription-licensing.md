@@ -4,8 +4,8 @@ description: "Compreenda como o account, o rdc e o renet gerem os slots de máqu
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "8e0a4976634ae323"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "98aede90642cfabc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Subscrição e Licenciamento
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slots de maquinas (lado do servidor)
 
-O acompanhamento de slots de maquinas e aplicado do lado do servidor. Quando o CLI emite uma licenca de repositorio, o servidor de contas verifica a quota de slots de maquinas da subscricao (por exemplo, 2 maquinas para Community, 5 para Professional). Um slot e reservado durante 1 hora a partir da ultima emissao de licenca de repositorio nessa maquina e e libertado automaticamente apos inatividade. Isto significa que um plano de 5 slots pode servir dezenas de maquinas ao longo do tempo; os slots so sao reservados durante o provisionamento activo.
+O acompanhamento de slots de maquinas e aplicado do lado do servidor. Quando o CLI emite uma licenca de repositorio, o servidor de contas verifica a quota de slots de maquinas da subscricao (por exemplo, 2 maquinas para Community, 5 para Professional). Um slot e reservado durante 1 hora a partir da ultima emissao de licenca de repositorio nessa maquina e e libertado automaticamente apos inatividade. Um plano de 5 slots pode por isso cobrir dezenas de maquinas ao longo do tempo, uma vez que os slots so sao reservados durante o provisionamento activo.
 
 Nenhum ficheiro de licenca de maquina e guardado na maquina. A aplicacao de slots ocorre no momento da emissao no servidor.
 
@@ -78,7 +78,7 @@ E usada para:
 
 As licencas de repositorios estao vinculadas a maquina e ao repositorio alvo. Cada licenca contem o ID da maquina, o GUID do repositorio, o ID da subscricao, os limites do plano e a expiracao. Para repositorios encriptados, o Rediacc tambem verifica a identidade LUKS do volume subjacente.
 
-Multiplas subscricoes podem coexistir na mesma maquina; cada repositorio carrega a sua propria licenca com o seu proprio contexto de subscricao.
+Multiplas subscricoes podem coexistir na mesma maquina. Cada repositorio carrega a sua propria licenca com o seu proprio contexto de subscricao.
 
 ## Limites Predefinidos
 
@@ -135,7 +135,7 @@ Essa emissao suportada pela conta conta para o seu uso mensal de **emissoes de l
 
 ### Reinicio da maquina e autostart
 
-O autostart usa as mesmas regras que `rdc repo up`; a expiracao e ignorada, pelo que os repositorios reiniciam sempre livremente.
+O autostart usa as mesmas regras que `rdc repo up`: a expiracao e ignorada, pelo que os repositorios reiniciam sempre livremente.
 
 As licencas de repositorios usam um modelo de validade de longa duracao:
 
@@ -204,7 +204,7 @@ Para a configuracao inicial da maquina, consulte [Configuracao da Maquina](/pt/d
 
 ## Comportamento Offline e Expiracao
 
-A validacao de licencas ocorre localmente na maquina; nao requer conectividade ao vivo com o servidor de contas.
+A validacao de licencas ocorre localmente na maquina. Nao requer conectividade ao vivo com o servidor de contas.
 
 Isso significa que:
 

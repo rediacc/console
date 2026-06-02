@@ -4,8 +4,8 @@ description: "فهم قناتَي الإصدار Edge وStable، والفروق 
 category: "Concepts"
 order: 2
 language: ar
-sourceHash: "d6ff18f9265392d2"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "5fdcb0e8944f5d60"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 تنشر Rediacc التحديثات عبر قناتَي إصدار: **Stable** و**Edge**. تخدم كل قناة جمهوراً مختلفاً وتنطوي على مقايضات مختلفة.

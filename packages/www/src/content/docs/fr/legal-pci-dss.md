@@ -4,7 +4,8 @@ description: "Comment Rediacc correspond aux exigences PCI DSS pour la protectio
 category: "Legal"
 order: 6
 language: fr
-sourceHash: "06528e1f28fc2764"
+sourceHash: "7dfa2cbb5f86d910"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Le Payment Card Industry Data Security Standard (PCI DSS) est requis pour toute organisation qui stocke, traite ou transmet des données de titulaires de cartes. La version actuelle est PCI DSS v4.0.1.
@@ -28,14 +29,14 @@ Référence : [PCI Security Standards Council](https://www.pcisecuritystandards.
 
 ## Segmentation réseau
 
-PCI DSS met fortement l'accent sur la segmentation réseau pour isoler l'environnement des données du titulaire (CDE). Rediacc le fournit par architecture :
+PCI DSS insiste fortement sur la segmentation : isoler l'environnement des données du titulaire (CDE), ou échouer l'audit. Rediacc vous offre cette segmentation par défaut :
 
 - Chaque dépôt s'exécute dans son propre Docker daemon à `/var/run/rediacc/docker-<networkId>.sock`
 - Les dépôts ont des sous-réseaux IP loopback isolés (127.0.x.x/26, 61 IPs utilisables par réseau)
 - Les règles iptables appliquées par renet bloquent tout trafic inter-daemons
 - Les conteneurs de différents dépôts ne peuvent pas communiquer au niveau réseau
 
-Un dépôt de traitement des paiements est isolé du réseau de toutes les autres applications sur la même machine. Aucune configuration de pare-feu supplémentaire n'est nécessaire.
+Un dépôt de traitement des paiements s'exécute sur son propre daemon Docker et son propre sous-réseau loopback, isolé du réseau de toutes les autres applications sur la même machine. Aucune règle de pare-feu supplémentaire à rédiger.
 
 ## Réduction du périmètre
 
@@ -48,7 +49,7 @@ Rediacc auto-hébergé réduit le périmètre de conformité PCI DSS :
 
 ## Cas d'application
 
-Une segmentation réseau insuffisante et un chiffrement manquant ont conduit à des actions PCI DSS coûteuses :
+Une segmentation insuffisante et un chiffrement manquant sont à l'origine des actions PCI DSS les plus coûteuses :
 
 - Heartland Payment Systems (2008) : les attaquants se sont déplacés latéralement à travers 48 bases de données en raison d'une mauvaise segmentation réseau, exposant 130 millions de numéros de cartes. [Le coût total a dépassé 200 millions de dollars.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013) : les attaquants ont pivoté de l'accès réseau d'un fournisseur HVAC vers les systèmes de point de vente en raison d'une architecture réseau plate, capturant 40 millions de cartes de paiement. [Accord de 18,5 millions de dollars avec 47 procureurs généraux d'États.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

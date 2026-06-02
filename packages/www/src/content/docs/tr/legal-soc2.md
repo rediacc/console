@@ -1,14 +1,14 @@
 ---
 title: "SOC 2 Uyumluluğu"
-description: "Rediacc'ın güvenlik, kullanılabilirlik ve gizlilik için SOC 2 Güven Hizmeti Kriterlerine nasıl uyum sağladığı."
+description: "Rediacc'ın SOC 2 kanıtı nerede sunduğu: günlükler, değişiklik yönetimi izi ve denetçilerin sorduğu kontroller."
 category: "Legal"
 order: 2
 language: tr
-sourceHash: "ebdae97034aa3cce"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "29b0c745e631e4f8"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-SOC 2 (System and Organization Controls 2), Amerikan Yeminli Mali Müşavirler Enstitüsü (AICPA) tarafından bir kuruluşun güvenlik, kullanılabilirlik, işleme bütünlüğü, gizlilik ve mahremiyet ile ilgili kontrollerini değerlendirmek için geliştirilen bir çerçevedir.
+SOC 2, denetçilerin kontrollerinizin gerçekten çalıştığına dair kanıt istediklerinde başvurdukları AICPA çerçevesidir. Beş Güven Hizmeti Kriterini kapsar: güvenlik, kullanılabilirlik, işleme bütünlüğü, gizlilik ve mahremiyet.
 
 Referans: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -35,7 +35,7 @@ Bu günlükler yönetici paneli (kullanıcı, ekip ve tarih bazında filtreleme 
 
 ## Değişiklik Yönetimi
 
-Fork tabanlı iş akışı kontrollü değişiklik yönetimini destekler:
+Fork'lar değişiklik yönetimini denetlenebilir hale getirir: her fork, test edebileceğiniz, gözden geçirebileceğiniz ve tanıtabileceğiniz ya da silebileceğiniz canlı durum kopyasıdır; her adım bir aktöre zaman damgasıyla kaydedilmiştir.
 
 1. Üretim deposunu fork'lama (`rdc repo fork`)
 2. Fork üzerinde değişiklikleri uygulama ve test etme

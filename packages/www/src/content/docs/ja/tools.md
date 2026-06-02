@@ -4,13 +4,13 @@ description: ファイル同期、ターミナルアクセス、VS Code統合、
 category: Guides
 order: 9
 language: ja
-sourceHash: "d089cea510a69bfb"
-sourceCommit: "1b6c53f52954d63959d8176bfa70a91405a2a87f"
+sourceHash: "f350872720c99d58"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # ツール
 
-Rediaccには、リモートリポジトリを操作するための生産性ツールが含まれています：ファイル同期、SSHターミナル、VS Code統合、CLIアップデート。
+Rediaccには、リモートリポジトリを操作するためのツールが組み込まれています：ファイル同期、SSHターミナル、VS Code統合、CLIアップデート。
 
 ## ファイル同期 (sync)
 
@@ -76,7 +76,7 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 
 ### connect サブコマンド
 
-`connect`サブコマンドは、明示的なフラグを使用して同じ機能を提供します：
+`connect`サブコマンドは、明示的なフラグを使用して同じ操作を行います：
 
 ```bash
 rdc term connect -m server-1

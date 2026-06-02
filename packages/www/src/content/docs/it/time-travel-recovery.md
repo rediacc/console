@@ -1,26 +1,28 @@
 ---
 title: Recupero nel Tempo
-description: Recupera dati eliminati accidentalmente settimane fa grazie al recupero basato su snapshot. È più semplice di qualsiasi soluzione tradizionale.
+description: "Recupera dati eliminati settimane fa tramite snapshot btrfs, anche dopo che i tuoi backup normali li hanno già sovrascritti."
 category: Use Cases
 order: 2
 language: it
+sourceHash: "4c1fcb1667a89759"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 > **Quando gli altri perdono i dati per sempre, tu puoi viaggiare indietro nel tempo.**
 
-**Nota:** Questo è un **esempio di caso d'uso** che dimostra come Rediacc può risolvere questo problema. Come startup, questi scenari rappresentano applicazioni potenziali piuttosto che casi studio completati.
+**Nota:** Questo è un **esempio di caso d'uso** che mostra come Rediacc gestisce questo tipo di problema. Siamo una startup. Questi sono scenari realistici per cui il prodotto è stato costruito, non casi studio di clienti già completati.
 
-**Scenario di crisi:** Un dipendente appena assunto ha **eliminato accidentalmente** dati critici dal database di produzione 3 settimane fa. Il sistema di backup dell'organizzazione conservava i backup solo per 2 settimane, rendendo il recupero dei dati quasi impossibile con i metodi tradizionali.
+**Scenario di crisi:** Un nuovo assunto ha **eliminato accidentalmente** righe critiche dal tuo database di produzione 3 settimane fa. Il tuo sistema di backup conserva solo 2 settimane di storia. Con una configurazione normale, quei dati sono perduti.
 
 ## Il Problema
 
-Mehmet è un esperto di sistemi responsabile del database di una grande organizzazione di e-commerce. Una mattina, in seguito a reclami dei clienti, nota che alcuni record di ordini precedenti **non sono visibili** nel sistema. L'indagine rivela che un dipendente appena assunto ha **eliminato accidentalmente** alcuni dati critici dal database di produzione 3 settimane fa, **connettendosi al database di produzione invece dell'ambiente di test**.
+Mehmet gestisce il database di una grande piattaforma e-commerce. Una mattina i clienti iniziano a lamentarsi che alcuni record di ordini precedenti **non sono visibili**. Indaga. Un ingegnere appena assunto aveva **eliminato accidentalmente** righe critiche dal database di produzione 3 settimane fa, **connettendosi al database di produzione invece dell'ambiente di test**. L'errore classico che ogni DBA ha commesso almeno una volta o ha visto fare a un junior.
 
 **Sistema di backup esistente:**
 * I backup completi vengono eseguiti una volta alla settimana
 * I **backup incrementali** vengono registrati giornalmente
 
-**Il dilemma:** L'eliminazione è avvenuta **prima della data dei backup completi**, quindi i dati persi non si trovano nei backup. I backup giornalieri **registrano solo i dati più recenti**, quindi **gli elementi eliminati non possono essere recuperati**.
+**Il dilemma:** l'eliminazione è avvenuta **prima della data dei backup completi**, quindi i dati persi non si trovano in nessun file di backup. I backup giornalieri **registrano solo i dati più recenti**, quindi **gli elementi eliminati non possono essere recuperati**.
 
 ## Impatto della Crisi
 
@@ -40,7 +42,7 @@ A causa dei dati persi:
 
 ## Soluzione Rediacc
 
-Mehmet propone una soluzione simile a una "macchina del tempo" con Rediacc:
+Ecco la configurazione a "macchina del tempo" che Mehmet costruisce con Rediacc:
 
 ![Recupero nel Tempo](/img/time-travel-recovery.svg)
 

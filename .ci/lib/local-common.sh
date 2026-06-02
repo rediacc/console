@@ -305,9 +305,45 @@ check_go_installed() {
     log_debug "Go version: $(go version)"
 }
 
-# Ensure renet binary is built and up-to-date
-# Builds from Go source with embedded assets (CRIU, rsync)
-# Only rebuilds when Go sources are newer than the binary
+# Compute a content hash of every input that determines the renet binary's
+# bytes: all Go/C/H sources, go.mod/go.sum, the build script, and embedded
+# proxy/asset inputs. Excludes bin/ (build output) and pkg/embed/assets/*.gz
+# (large, deterministic from the Docker image; their presence is checked by
+# build.sh). Used to decide whether a rebuild is required.
+_renet_source_hash() {
+    local renet_dir="$1"
+    (
+        cd "$renet_dir" || exit
+        find . \
+            \( -path './bin' -o -path './build' -o -path './pkg/embed/assets' \) -prune -o \
+            \( -name '*.go' -o -name '*.c' -o -name '*.h' \
+            -o -name 'go.mod' -o -name 'go.sum' -o -name 'build.sh' \
+            -o -name 'docker-compose.yml' \) \
+            -type f -print0 2>/dev/null |
+            LC_ALL=C sort -z |
+            xargs -0 $_SHA256SUM_CMD 2>/dev/null |
+            $_SHA256SUM_CMD |
+            awk '{print $1}'
+    )
+}
+
+# Ensure renet binary is built and up-to-date.
+# Builds from Go source with embedded assets (CRIU, rsync).
+#
+# Staleness is decided by a CONTENT HASH of the build inputs, not file mtimes.
+# The previous mtime-only heuristic (`find -newer bin/renet`) had a real race
+# that wasted hours of debugging: any operation that changes a source file's
+# CONTENT while giving it an OLDER mtime than the existing binary — `git
+# checkout`/`stash pop`/branch switch, editor reverts, `cp -p`, `touch -d` —
+# left a binary that did NOT match its source yet looked "fresh", so the build
+# (and therefore the SFTP deploy that hashes this binary) was silently skipped.
+# A subsequent edit that bumped an mtime past the binary finally triggered the
+# rebuild, which is why "running ./rdc.sh a second time" appeared to fix it.
+# Hashing the inputs and recording a stamp only after a successful build makes
+# the decision exact: the binary is rebuilt iff the inputs differ from what was
+# last built, regardless of mtime ordering. The build mode (license flags,
+# account key) is folded into the hash so toggling RDC_BENCH / RDC_RENET_LICENSE
+# also forces a rebuild.
 ensure_renet_built() {
     local renet_dir="$LOCAL_ROOT_DIR/private/renet"
     local renet_bin="$renet_dir/bin/renet"
@@ -316,21 +352,6 @@ ensure_renet_built() {
     case "$(uname -s)" in
         MINGW* | MSYS* | CYGWIN*) renet_bin="$renet_dir/bin/renet.exe" ;;
     esac
-
-    if [[ -f "$renet_bin" ]]; then
-        local newer_files
-        newer_files=$(find "$renet_dir" \
-            \( -name "*.go" -o -name "go.mod" -o -name "go.sum" \) \
-            -newer "$renet_bin" -type f 2>/dev/null | head -1)
-
-        if [[ -z "$newer_files" ]]; then
-            log_debug "Renet binary is up-to-date"
-            return 0
-        fi
-        log_step "Renet sources changed, rebuilding..."
-    else
-        log_step "Building renet (first time, requires Docker for asset extraction)..."
-    fi
 
     check_go_installed
     local build_flags=""
@@ -342,6 +363,35 @@ ensure_renet_built() {
     else
         build_flags="--nolicense"
     fi
+
+    # Hash inputs that determine the binary's bytes. The build mode and the
+    # account public key change ldflags, so they are part of the identity.
+    local stamp_file="$LOCAL_ROOT_DIR/.ci/cache/build-renet.stamp"
+    local _account_key="${ACCOUNT_ED25519_PUBLIC_KEY:-}"
+    if [[ -z "$_account_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
+        _account_key=$(sed -n 's/^ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
+    fi
+    local current_hash saved_hash=""
+    current_hash="$(
+        {
+            _renet_source_hash "$renet_dir"
+            printf 'flags=%s\n' "$build_flags"
+            printf 'key=%s\n' "$_account_key"
+        } | _sha256sum | awk '{print $1}'
+    )"
+    saved_hash="$(read_stamp_hash "$stamp_file")"
+
+    if [[ -f "$renet_bin" ]] && [[ -n "$current_hash" ]] && [[ "$saved_hash" == "$current_hash" ]]; then
+        log_debug "Renet binary is up-to-date (stamp matched)"
+        return 0
+    fi
+
+    if [[ -f "$renet_bin" ]]; then
+        log_step "Renet sources changed, rebuilding..."
+    else
+        log_step "Building renet (first time, requires Docker for asset extraction)..."
+    fi
+
     (cd "$renet_dir" && ./build.sh dev $build_flags)
 
     if [[ ! -f "$renet_bin" ]]; then
@@ -350,30 +400,32 @@ ensure_renet_built() {
     fi
 
     # On non-Linux, also cross-compile Linux binaries for remote provisioning.
-    # The CLI uploads these to remote machines via SFTP.
+    # The CLI uploads these to remote machines via SFTP. We always rebuild these
+    # here because we only reach this point when the source hash changed (or the
+    # binary was missing), so the previously cross-compiled Linux binaries are
+    # likewise stale. Relying on `renet_bin -nt linux_bin` had the same mtime
+    # race as the main staleness check.
     if [[ "$(uname -s)" != "Linux" ]]; then
-        local linux_bin="$renet_dir/bin/renet-linux-amd64"
-        if [[ ! -f "$linux_bin" ]] || [[ "$renet_bin" -nt "$linux_bin" ]]; then
-            # Read account server public key (same logic as build.sh dev)
-            local _xc_account_key="${ACCOUNT_ED25519_PUBLIC_KEY:-}"
-            if [[ -z "$_xc_account_key" ]] && [[ -f "$renet_dir/../account/.env" ]]; then
-                _xc_account_key=$(sed -n 's/^ED25519_PUBLIC_KEY=//p' "$renet_dir/../account/.env" | tr -d '\r')
-            fi
-            local _xc_key_ldflags=""
-            if [[ -n "$_xc_account_key" ]]; then
-                _xc_key_ldflags="-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=$_xc_account_key"
-            fi
-            local _xc_version
-            _xc_version="$(cd "$LOCAL_ROOT_DIR" && git describe --tags --always 2>/dev/null || echo dev)-dev"
-
-            for arch in amd64 arm64; do
-                log_step "Cross-compiling renet for linux/${arch} (remote provisioning)..."
-                (cd "$renet_dir" && CGO_ENABLED=0 GOOS=linux GOARCH=${arch} go build \
-                    -ldflags="-s -w -X main.Version=$_xc_version $_xc_key_ldflags" \
-                    -o "bin/renet-linux-${arch}" ./cmd/renet)
-            done
+        local _xc_key_ldflags=""
+        if [[ -n "$_account_key" ]]; then
+            _xc_key_ldflags="-X github.com/rediacc/renet/pkg/license/keys.ProductionPublicKey=$_account_key"
         fi
+        local _xc_version
+        _xc_version="$(cd "$LOCAL_ROOT_DIR" && git describe --tags --always 2>/dev/null || echo dev)-dev"
+
+        for arch in amd64 arm64; do
+            log_step "Cross-compiling renet for linux/${arch} (remote provisioning)..."
+            (cd "$renet_dir" && CGO_ENABLED=0 GOOS=linux GOARCH=${arch} go build \
+                -ldflags="-s -w -X main.Version=$_xc_version $_xc_key_ldflags" \
+                -o "bin/renet-linux-${arch}" ./cmd/renet)
+        done
     fi
+
+    # Record the stamp ONLY after a fully successful build (binary + any
+    # cross-compiled Linux binaries). If anything above failed we exited
+    # non-zero and never get here, so a partial/failed build never marks the
+    # tree "fresh" and the next ./rdc.sh will rebuild.
+    write_stamp_hash "$stamp_file" "$current_hash"
 
     log_info "Renet built successfully"
 }

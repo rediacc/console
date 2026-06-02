@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: de
-sourceHash: "d67568772c42826c"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "73a4cb1d8c412531"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Ein Repository forken
 
-Das ist das Killer-Feature: Eine gesamte Produktionsumgebung (die App, die Datenbank, die Konfigurationsdateien) in Sekunden klonen. Beliebige Größe. Null zusätzlicher Speicher. So oft forken, wie Sie möchten.
+Das ist der Teil, der Ihre Arbeitsweise verändert: Eine gesamte Produktionsumgebung (die App, die Datenbank, die Konfigurationsdateien) in Sekunden klonen. Beliebige Größe. Null zusätzlicher Speicher. So oft forken, wie Sie möchten.
 
 Der Leitspruch: **Produktion klonen, nichts kaputt machen.**
 
@@ -57,7 +57,7 @@ Forken funktioniert genauso. 1 GB, 100 GB, 1 TB. Immer die gleiche Zeit.
 
 ![Viele Spiegel, eine Sonne: gemeinsame Basis, Ihre Änderungen gehören Ihnen](/img/tutorials/tutorial-forking/slide-4.svg)
 
-Stellen Sie sich das Parent-Repo als die Sonne vor. Sie können die Sonne nicht festhalten, aber Sie können einen Spiegel halten, der sie auffängt. Dieser Spiegel ist Ihr Fork. Malen Sie auf den Spiegel, und Ihre Zeichnungen gehören Ihnen. Die Sonne bleibt gleich, egal wie viele Spiegel ihr gegenüberstehen.
+Stellen Sie sich das Parent-Repo als feste Quelle vor. Ihr Fork ist eine Copy-on-Write-Sicht darauf. Schreiben Sie in den Fork, bleiben die Schreibvorgänge im Fork. Der Parent bewegt sich nicht, egal wie viele Forks auf ihn zeigen.
 
 > Sie können die Sonne nicht festhalten, aber Sie können sie in einem Spiegel halten.
 
@@ -65,7 +65,7 @@ Stellen Sie sich das Parent-Repo als die Sonne vor. Sie können die Sonne nicht 
 
 ![Ein Fork ist ein eingefrorenes Foto; der Parent fließt weiter wie ein Fluss](/img/tutorials/tutorial-forking/slide-5.svg)
 
-Denken Sie jetzt an einen Fluss. Das Wasser fließt weiter. In jedem Moment ist es anders. Wenn Sie forken, machen Sie ein Foto des Flusses, eingefroren in diesem Moment. Der Fluss fließt weiter. Ihr Foto nicht.
+Denken Sie jetzt an einen Snapshot. Wenn Sie forken, frieren Sie den Parent in diesem genauen Moment ein. Der Parent läuft weiter. Ihr Fork nicht.
 
 Wenn sich das Parent-Repo später ändert, bleibt Ihr Fork dort, wo er war.
 

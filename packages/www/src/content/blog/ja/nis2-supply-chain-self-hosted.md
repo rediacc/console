@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: ja
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -165,4 +165,4 @@ CISO がデータプレーンの SaaS 依存を減らしたいと考えるのは
 
 私たちがショートリストの候補であれば、提案は具体的です。ベンダー質問票をお送りください。実際にデプロイされたインスタンスに対して、ギャップも含めてあなたの質問への実際の回答を記入して返答します。書類を送る前にアーキテクチャを確認したい場合は、創業者との 30 分のアーキテクチャレビューを設定します。防御可能な登録簿エントリへの道は光沢のあるパンフレットではありません。答えそのもの、居心地の悪いものも含めた答えです。
 
-Rediacc の機能と NIS2 各条項のパブリックマッピングについては、[NIS2 および DORA](/ja/docs/legal-nis2-dora) を参照してください。より広いコンプライアンスフレームについては、[コンプライアンス概要](/ja/docs/legal-overview)、[データ主権](/ja/docs/legal-data-sovereignty)、[オンプレミス](/ja/docs/on-premise) を参照してください。
+条項ごとの Rediacc マップが欲しい場合は [NIS2 と DORA](/ja/docs/legal-nis2-dora) を参照してください。より広い枠組みが必要な場合は [コンプライアンス概要](/ja/docs/legal-overview) を参照してください。データ所在地については [データ主権](/ja/docs/legal-data-sovereignty) を参照してください。セルフホストが重要な理由については [オンプレミス](/ja/docs/on-premise) を参照してください。

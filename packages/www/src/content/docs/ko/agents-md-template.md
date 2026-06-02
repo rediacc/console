@@ -4,9 +4,11 @@ description: Claude Code, Cursor 및 기타 AI 코딩 어시스턴트를 Rediacc
 category: Reference
 order: 50
 language: ko
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-이 템플릿을 사용하여 AI 코딩 어시스턴트(Claude Code, Cursor, Cline, Windsurf)를 자율적인 Rediacc 인프라 관리에 맞게 구성하세요. 아래 블록을 프로젝트의 `CLAUDE.md`, `.cursorrules` 또는 그에 상응하는 에이전트 설정 파일에 복사하세요.
+문제는 이것입니다. AI 코딩 어시스턴트(Claude Code, Cursor, Cline, Windsurf)가 존재하지 않는 `rdc` 플래그를 계속 만들어 내고, 매번 물어보지 않으면 어떤 Rediacc 저장소 이름이 어떤 GUID에 매핑되는지 알 수 없습니다. 이 템플릿이 그 문제를 해결합니다. 아래 블록을 프로젝트의 `CLAUDE.md`, `.cursorrules`, 또는 도구가 사용하는 에이전트 설정 파일에 붙여넣으세요.
 
 ## 템플릿
 

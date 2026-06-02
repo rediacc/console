@@ -25,6 +25,7 @@ import {
   type TaggedBackupEntry,
 } from './repo-backup-list.js';
 import { runBatchOperation } from './repo-batch-utils.js';
+import { applyPullDeltaParams, applyPushDeltaParams, finalizePush } from './repo-delta.js';
 
 interface BackupRunOptions {
   machine?: string;
@@ -32,6 +33,8 @@ interface BackupRunOptions {
   watch?: boolean;
   skipRouterRestart?: boolean;
 }
+
+type RepoConfig = import('../schema/schemas.js').RepositoryConfig;
 
 /** Resolve extra machines needed for multi-machine operations (e.g., backup push --to-machine). */
 export async function resolveExtraMachines(
@@ -64,13 +67,17 @@ export async function resolveExtraMachines(
   return undefined;
 }
 
-/** Execute a bridge function in the appropriate mode (local/s3/cloud). */
+/**
+ * Execute a bridge function in the appropriate mode (local/s3/cloud).
+ * Returns whether the execution succeeded so callers can gate follow-up state
+ * writes (e.g. recording an auto-delta base only after a successful push).
+ */
 async function executeFunction(
   functionName: string,
   params: Record<string, unknown>,
   options: BackupRunOptions,
   program?: Command
-): Promise<void> {
+): Promise<boolean> {
   const provider = await getStateProvider();
   const machineName = options.machine;
 
@@ -93,30 +100,32 @@ async function executeFunction(
       outputService.info(t('commands.shortcuts.run.watching'));
       await traceAction(result.taskId, { watch: true, interval: '2000' }, program);
     }
-  } else {
-    outputService.info(
-      t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
-    );
-    const extraMachines = await resolveExtraMachines(coerced);
-    const result = await localExecutorService.execute({
-      functionName,
-      machineName,
-      params: coerced,
-      extraMachines,
-      debug: options.debug,
-      skipRouterRestart: options.skipRouterRestart,
-    });
-    if (result.success) {
-      outputService.success(
-        t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
-      );
-    } else {
-      renderLocalExecutionFailure(
-        result,
-        t('commands.shortcuts.run.failedLocal', { error: result.error })
-      );
-    }
+    return true;
   }
+
+  outputService.info(
+    t('commands.shortcuts.run.executingLocal', { function: functionName, machine: machineName })
+  );
+  const extraMachines = await resolveExtraMachines(coerced);
+  const result = await localExecutorService.execute({
+    functionName,
+    machineName,
+    params: coerced,
+    extraMachines,
+    debug: options.debug,
+    skipRouterRestart: options.skipRouterRestart,
+  });
+  if (result.success) {
+    outputService.success(
+      t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
+    );
+    return true;
+  }
+  renderLocalExecutionFailure(
+    result,
+    t('commands.shortcuts.run.failedLocal', { error: result.error })
+  );
+  return false;
 }
 
 /** Apply optional backup push flags (checkpoint, force, tag) to params. */
@@ -229,6 +238,46 @@ export function attachSeedLineage(
   }
 }
 
+/** Build push params (provision, key deploy, seed lineage, bwlimit, delta wiring). */
+async function preparePush(
+  repo: string,
+  options: Record<string, unknown>,
+  repoConfig: RepoConfig,
+  resolvedType: 'machine' | 'storage',
+  targetName: string
+): Promise<{ params: Record<string, unknown>; dest: string; retainBase?: string }> {
+  if (options.provision) {
+    await autoProvisionTarget(
+      targetName,
+      options.provision as string,
+      options.machine as string,
+      options.debug as boolean
+    );
+  }
+  if (resolvedType === 'machine') {
+    await deployRepoKeyIfNeeded(repo, targetName);
+  }
+
+  const { params, dest } = buildPushParams(
+    repo,
+    repoConfig.repositoryGuid,
+    resolvedType,
+    targetName,
+    options
+  );
+  attachSeedLineage(params, repoConfig);
+  if (options.bwlimit) params.bwlimit = options.bwlimit;
+
+  // Deterministic CoW-delta push (machine target only; rclone/storage has no
+  // FIEMAP base). Resolves a base (explicit or hands-free) and retains a fresh
+  // immutable base on both ends; returns the GUID to record on success.
+  const retainBase =
+    resolvedType === 'machine'
+      ? await applyPushDeltaParams(params, options, repoConfig, targetName)
+      : undefined;
+  return { params, dest, retainBase };
+}
+
 /**
  * Push a single repo backup.
  */
@@ -244,33 +293,21 @@ async function pushSingleRepo(
   }
 
   const { type: resolvedType, name: targetName } = await resolvePushTarget(options);
-
-  if (options.provision) {
-    await autoProvisionTarget(
-      targetName,
-      options.provision as string,
-      options.machine as string,
-      options.debug as boolean
-    );
-  }
-
-  if (resolvedType === 'machine') {
-    await deployRepoKeyIfNeeded(repo, targetName);
-  }
-
-  const { params, dest } = buildPushParams(
+  const { params, dest, retainBase } = await preparePush(
     repo,
-    repoConfig.repositoryGuid,
+    options,
+    repoConfig,
     resolvedType,
-    targetName,
-    options
+    targetName
   );
 
-  attachSeedLineage(params, repoConfig);
-  if (options.bwlimit) params.bwlimit = options.bwlimit;
-
   outputService.info(t('commands.repo.push.pushing', { repo, dest }));
-  await executeFunction('backup_push', params, options, repoCommand);
+  const ok = await executeFunction('backup_push', params, options, repoCommand);
+  // retainBase is set only for machine targets; finalizePush also syncs commit
+  // metadata to the target when the pushed object is an immutable commit.
+  if (ok && resolvedType === 'machine') {
+    await finalizePush(repo, repoConfig, targetName, params, retainBase, options.debug as boolean);
+  }
 
   if (options.up && resolvedType === 'machine') {
     await postPushDeploy(repo, targetName, options);
@@ -334,6 +371,8 @@ async function pullSingleRepo(
   params.from = sourceName;
   if (options.force) params.force = true;
   if (options.bwlimit) params.bwlimit = options.bwlimit;
+  // Delta pull is machine-source only (rclone/storage has no FIEMAP base).
+  if (resolvedType === 'machine') applyPullDeltaParams(params, options);
 
   const repoConfig = await configService.getRepository(repo);
   if (repoConfig) {
@@ -379,6 +418,8 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--bwlimit <limit>', t('commands.repo.push.optionBwlimit'))
+    .option('--delta-base <guid>', t('commands.repo.push.optionDeltaBase'))
+    .option('--strategy <strategy>', t('commands.repo.push.optionStrategy'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {
@@ -416,6 +457,8 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--concurrency <n>', t('commands.repo.upAll.concurrencyOption'), '3')
     .option('-y, --yes', t('commands.repo.yesOption'))
     .option('--bwlimit <limit>', t('commands.repo.pull.optionBwlimit'))
+    .option('--delta-base <guid>', t('commands.repo.pull.optionDeltaBase'))
+    .option('--strategy <strategy>', t('commands.repo.pull.optionStrategy'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {

@@ -160,6 +160,14 @@ export class BridgeTestRunner {
         this.writeFileToRepository = (repositoryName, filePath, content, datastorePath) => this.repositoryHelpers.writeFileToRepository(repositoryName, filePath, content, datastorePath);
         this.isContainerRunning = (containerName, networkId) => this.repositoryHelpers.isContainerRunning(containerName, networkId);
         this.createRepositoryFork = (parentRepo, tag, datastorePath) => this.repositoryHelpers.createRepositoryFork(parentRepo, tag, datastorePath);
+        this.repositoryCommit = (workingFork, commitGuid, message, datastorePath, commitParent) => this.repositoryHelpers.repositoryCommit(workingFork, commitGuid, message, datastorePath, commitParent);
+        this.repositoryCheckout = (commitGuid, tag, datastorePath) => this.repositoryHelpers.repositoryCheckout(commitGuid, tag, datastorePath);
+        this.repositoryLog = (startGuid, datastorePath) => this.repositoryHelpers.repositoryLog(startGuid, datastorePath);
+        this.repositoryMerge = (target, source, datastorePath, opts) => this.repositoryHelpers.repositoryMerge(target, source, datastorePath, opts);
+        this.repositoryForkImmutable = (parentRepo, tag, datastorePath) => this.repositoryHelpers.repositoryForkImmutable(parentRepo, tag, datastorePath);
+        this.deltaPushToMachine = (repoGuid, destHost, datastorePath, opts) => this.repositoryHelpers.deltaPushToMachine(repoGuid, destHost, datastorePath, opts);
+        this.deltaPullFromMachine = (repoGuid, srcHost, datastorePath, opts) => this.repositoryHelpers.deltaPullFromMachine(repoGuid, srcHost, datastorePath, opts);
+        this.repositoryImageSha256 = (repoGuid, datastorePath) => this.repositoryHelpers.repositoryImageSha256(repoGuid, datastorePath);
         this.repositoryExists = (repositoryName, datastorePath) => this.repositoryHelpers.repositoryExists(repositoryName, datastorePath);
         this.waitForPostgresReady = (containerName, networkId, maxAttempts, intervalMs) => this.repositoryHelpers.waitForPostgresReady(containerName, networkId, maxAttempts, intervalMs);
         // SQL Helper Methods

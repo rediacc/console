@@ -12,8 +12,8 @@ tags:
   - vastavus
 featured: false
 language: et
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -164,4 +164,4 @@ Kui teil on järgmise kaheteistkümne kuu jooksul ees varukoopiate või DR uuend
 
 Kui oleme teie lühinimistu alternatiiv, on pakkumine konkreetne. Saatke meile oma hankijaküsimustik. Me täidame selle juurutatud instantsi suhtes, meie tegelike vastustega teie küsimustele, sealhulgas lünkadega. Kui soovite arhitektuuri läbi vaadata enne paberimajanduse saatmist, broneerime 30-minutilise arhitektuuriülevaatuse asutajaga. Kaitsetava registrikirjeni viiv tee ei ole läikiv brošüür. See on vastused, sealhulgas ebamugavad.
 
-Rediacc'i võimekuste avaliku kaardistuse kohta NIS2 artiklitega vt [NIS2 ja DORA](/et/docs/legal-nis2-dora). Laiema vastavusraamistiku kohta vt [Vastavuse ülevaade](/et/docs/legal-overview), [Andmesuveräänsus](/et/docs/legal-data-sovereignty) ja [Kohapealne](/et/docs/on-premise).
+Soovid artiklipõhist Rediacc kaarti? Vaata [NIS2 ja DORA](/et/docs/legal-nis2-dora). Vajad laiemat raamistikku? Loe [Vastavuse ülevaade](/et/docs/legal-overview). Andmete asukoha kohta vaata [Andmesuveräänsus](/et/docs/legal-data-sovereignty). Miks ise majutamine on oluline, vaata [Kohapealne](/et/docs/on-premise).

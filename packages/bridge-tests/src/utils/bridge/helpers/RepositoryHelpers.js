@@ -50,6 +50,76 @@ export class RepositoryHelpers {
         // Use renet repository fork command for proper CoW forking
         return this.executeViaBridge(`sudo renet repository fork --name "${parentRepo}" --tag "${tag}" --datastore "${datastorePath}"`);
     }
+    /** Freeze a working fork into a new immutable commit (issue #75 Phase 2). */
+    async repositoryCommit(workingFork, commitGuid, message, datastorePath, commitParent) {
+        const parentFlag = commitParent ? ` --commit-parent "${commitParent}"` : '';
+        return this.executeViaBridge(`sudo renet repository commit --name "${workingFork}" --tag "${commitGuid}" --message "${message}" --datastore "${datastorePath}"${parentFlag}`);
+    }
+    /** Check a commit out into a fresh writable working fork (reflink fork of the commit). */
+    async repositoryCheckout(commitGuid, tag, datastorePath) {
+        return this.createRepositoryFork(commitGuid, tag, datastorePath);
+    }
+    /** Walk the commit history reachable from a working fork or commit. */
+    async repositoryLog(startGuid, datastorePath) {
+        return this.executeViaBridge(`sudo renet repository log --name "${startGuid}" --datastore "${datastorePath}" -o json`);
+    }
+    /**
+     * Lifecycle-safe merge. Without `resolve` it is a whole-image take-theirs; with
+     * `resolve` (+ `base`) it is a per-file three-way merge, which mounts the lineage
+     * and needs the repo `password` (piped via --password-stdin).
+     */
+    async repositoryMerge(target, source, datastorePath, opts = {}) {
+        let cmd = `sudo renet repository merge --name "${target}" --from "${source}" --datastore "${datastorePath}"`;
+        if (opts.force)
+            cmd += ' --force';
+        if (opts.resolve)
+            cmd += ` --resolve ${opts.resolve}`;
+        if (opts.base)
+            cmd += ` --base "${opts.base}"`;
+        if (opts.password) {
+            cmd += ' --password-stdin';
+            return this.executeViaBridge(`printf '%s' '${opts.password}' | ${cmd}`);
+        }
+        return this.executeViaBridge(cmd);
+    }
+    /** Create an immutable (read-only) fork — the commit-equivalent base; refuses to mount. */
+    async repositoryForkImmutable(parentRepo, tag, datastorePath) {
+        return this.executeViaBridge(`sudo renet repository fork --name "${parentRepo}" --tag "${tag}" --datastore "${datastorePath}" --immutable`);
+    }
+    /**
+     * Deterministic CoW-delta push from THIS worker to another machine. --dest-user
+     * omitted → renet infers it from SUDO_USER. retainBase retains a base on both
+     * ends; deltaBase ships only the changed extents.
+     */
+    async deltaPushToMachine(repoGuid, destHost, datastorePath, opts = {}) {
+        let cmd = `sudo renet backup push --name "${repoGuid}" --datastore "${datastorePath}"` +
+            ` --target machine --dest-host "${destHost}"` +
+            ` --dest-path "${datastorePath}" --dest "${repoGuid}" --strategy physical`;
+        if (opts.destUser)
+            cmd += ` --dest-user "${opts.destUser}"`;
+        if (opts.deltaBase)
+            cmd += ` --delta-base "${opts.deltaBase}"`;
+        if (opts.retainBase)
+            cmd += ` --retain-base "${opts.retainBase}"`;
+        return this.executeViaBridge(cmd);
+    }
+    /** Deterministic CoW-delta pull from another machine onto THIS worker. */
+    async deltaPullFromMachine(repoGuid, srcHost, datastorePath, opts = {}) {
+        let cmd = `sudo renet backup pull --name "${repoGuid}" --datastore "${datastorePath}"` +
+            ` --source machine --src-host "${srcHost}"` +
+            ` --src-path "${datastorePath}" --src "${repoGuid}" --strategy physical`;
+        if (opts.srcUser)
+            cmd += ` --src-user "${opts.srcUser}"`;
+        if (opts.deltaBase)
+            cmd += ` --delta-base "${opts.deltaBase}"`;
+        if (opts.force)
+            cmd += ' --force';
+        return this.executeViaBridge(cmd);
+    }
+    /** sha256 of a repository image file (for byte-identity assertions). */
+    async repositoryImageSha256(repoGuid, datastorePath) {
+        return this.executeViaBridge(`sudo sha256sum "${datastorePath}/repositories/${repoGuid}" | cut -d' ' -f1`);
+    }
     /**
      * Check if a repository exists in the datastore.
      * Repositories are LUKS image files, not directories.

@@ -1,12 +1,12 @@
 ---
 title: "SOC 2 Compliance"
-description: "How Rediacc maps to SOC 2 Trust Service Criteria for security, availability, and confidentiality."
+description: "Where Rediacc gives you SOC 2 evidence: the logs, the change-management trail, and the controls auditors ask about."
 category: "Legal"
 order: 2
 language: en
 ---
 
-SOC 2 (System and Organization Controls 2) is a framework developed by the American Institute of Certified Public Accountants (AICPA) for evaluating an organization's controls related to security, availability, processing integrity, confidentiality, and privacy.
+SOC 2 is the AICPA framework auditors reach for when they want evidence your controls actually work. It covers five Trust Service Criteria: security, availability, processing integrity, confidentiality, and privacy.
 
 Reference: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -34,7 +34,7 @@ These logs are accessible through the admin dashboard (with filtering by user, t
 
 ## Change Management
 
-The fork-based workflow supports controlled change management:
+Forks make change management auditable: each fork is a copy of live state you can test against, review, and either promote or discard, with every step timestamped to an actor.
 
 1. Fork a production repository (`rdc repo fork`)
 2. Apply and test changes on the fork

@@ -4,7 +4,8 @@ description: "Émission de licences inviolable, signature déléguée pour l'on-
 category: "Guides"
 order: 8
 language: fr
-sourceHash: "326c4f4efbd60493"
+sourceHash: "9b062d6866c1ccb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Chaîne de licence et délégation
@@ -101,7 +102,7 @@ La valeur par défaut est celle que le point de terminaison de création utilise
 
 ### Remplacement par abonnement
 
-Les administrateurs peuvent définir une valeur `delegationCertDefaultDays` personnalisée sur un abonnement spécifique via la page de détail de l'abonnement admin. **Le remplacement remplace à la fois la valeur par défaut ET le plafond pour cet abonnement** - c'est une échappatoire pour les clients spéciaux (ex. un contrat enterprise nécessitant un certificat de 200 jours sur un plan COMMUNITY). Le schéma Zod applique tout de même une plage absolue de `1..365`.
+Les administrateurs peuvent définir une valeur `delegationCertDefaultDays` personnalisée sur un abonnement spécifique via la page de détail de l'abonnement admin. **Le remplacement remplace à la fois la valeur par défaut ET le plafond pour cet abonnement.** C'est une échappatoire pour les clients spéciaux (ex. un contrat enterprise nécessitant un certificat de 200 jours sur un plan COMMUNITY). Le schéma Zod applique tout de même une plage absolue de `1..365`.
 
 ### Plafond absolu : fin d'abonnement + 3 jours de grâce
 
@@ -142,7 +143,7 @@ Un abonnement peut avoir **au plus un certificat de délégation actif à la foi
 
 ### Pourquoi un seul ?
 
-Chaque installation on-premise applique `maxRepoLicenseIssuancesPerMonth`, `maxActivations` et l'intégrité de la chaîne contre son propre registre d'émission local. L'on-premise ne synchronise pas les compteurs d'utilisation vers l'amont - c'est tout l'intérêt de la délégation capable de fonctionner hors ligne.
+Chaque installation on-premise applique `maxRepoLicenseIssuancesPerMonth`, `maxActivations` et l'intégrité de la chaîne contre son propre registre d'émission local. L'on-premise ne synchronise pas les compteurs d'utilisation vers l'amont. C'est tout l'intérêt de la délégation capable de fonctionner hors ligne.
 
 Si un abonnement avait plusieurs certificats actifs (un par installation), chaque installation appliquerait la limite indépendamment :
 

@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: fr
-sourceHash: "d67568772c42826c"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "73a4cb1d8c412531"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Forker un dépôt
 
-C'est la fonctionnalité clé : cloner un environnement de production entier (l'application, la base de données, les fichiers de configuration) en quelques secondes. Toute taille. Zéro disque supplémentaire. Forkez autant de fois que vous le souhaitez.
+C'est la partie qui change votre façon de travailler. Clonez un environnement de production entier (l'application, la base de données, les fichiers de configuration) en quelques secondes. Toute taille. Zéro disque supplémentaire. Forkez autant de fois que vous le souhaitez.
 
 Le slogan : **clonez la production, ne cassez rien.**
 
@@ -57,7 +57,7 @@ Le fork fonctionne de la même manière. 1 Go, 100 Go, 1 To. Même temps, à cha
 
 ![Plusieurs miroirs, un soleil : base partagée, vos modifications vous appartiennent](/img/tutorials/tutorial-forking/slide-4.svg)
 
-Pensez au dépôt parent comme au soleil. Vous ne pouvez pas tenir le soleil, mais vous pouvez tenir un miroir qui le capte. Ce miroir, c'est votre fork. Peignez sur le miroir, et vos dessins vous appartiennent. Le soleil reste le même, peu importe combien de miroirs lui font face.
+Pensez au dépôt parent comme à une source fixe. Votre fork en est une vue copy-on-write. Écrivez dans le fork et les écritures restent dans le fork. Le parent ne bouge pas, peu importe combien de forks lui pointent dessus.
 
 > Vous ne pouvez pas tenir le soleil, mais vous pouvez le tenir dans un miroir.
 
@@ -65,7 +65,7 @@ Pensez au dépôt parent comme au soleil. Vous ne pouvez pas tenir le soleil, ma
 
 ![Un fork est une photographie figée ; le parent continue de couler comme une rivière](/img/tutorials/tutorial-forking/slide-5.svg)
 
-Pensez maintenant à une rivière. L'eau continue de couler. À chaque instant, elle est différente. Quand vous forkez, vous prenez une photographie de la rivière, figée à cet instant. La rivière continue de couler. Votre photographie, non.
+Pensez maintenant à un instantané. Quand vous forkez, vous figez le parent à ce moment précis. Le parent continue d'évoluer. Votre fork, non.
 
 Si le dépôt parent change ensuite, votre fork reste là où il était.
 

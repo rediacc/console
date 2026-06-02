@@ -12,8 +12,8 @@ tags:
   - notificacion-incidentes
 featured: false
 language: es
-sourceHash: "21965e5d5e9f25d5"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "4c2768e81f0ff03a"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -76,13 +76,13 @@ El mercado tiene respuestas. Las respuestas son caras.
 
 **Rubrik Live Mount**: concepto similar, montaje instantáneo de un snapshot de backup para pruebas. Mejor integración con cargas de trabajo nativas en la nube. El mismo patrón operativo. La misma sobrecarga de ingeniería por prueba.
 
-**Delphix (Perforce DevOps Data)**: herramienta de virtualización de datos que crea clones casi instantáneos de bases de datos fuente para desarrollo y pruebas. Resuelve el problema de "queremos datos con forma de producción en dev." Solo para bases de datos. No clona servicios de aplicación, configuraciones, secretos ni estado de contenedores. La licencia anual alcanza seis cifras para equipos de mercado medio.
+**Delphix (Perforce DevOps Data)**: virtualiza bases de datos fuente para que dev obtenga clones casi instantáneos. Resuelve el problema de "datos con forma de producción en dev." Solo para bases de datos. No clona servicios de aplicación, configuraciones, secretos ni estado de contenedores. La licencia anual alcanza seis cifras para equipos de mercado medio.
 
-**Tonic.ai, Redgate Test Data Manager**: enfoques de enmascaramiento de datos y datos sintéticos. Resuelven la compensación privacidad-realismo para entornos de desarrollo y prueba. Realistas en cuanto a forma y escala de datos. No son clones de pila completa. No están diseñados para escenarios de pruebas de seguridad donde la configuración de la aplicación importa.
+**Tonic.ai, Redgate Test Data Manager**: enmascaran o sintetizan datos para dev y pruebas. Buena solución para la compensación privacidad-realismo. La forma y escala de datos se parecen a prod. Pero estas herramientas clonan los datos, no la pila de aplicación. Úsalas para QA, no para simulacros de seguridad donde la configuración es el bug.
 
 **Construcción personalizada**: tomar un backup en caliente, restaurarlo en un entorno paralelo, ejecutar la prueba, desmontarlo. Conceptualmente posible. Operativamente un esfuerzo de ingeniería de varios días por ejercicio. El equipo hace esto una vez porque se vio obligado, y luego nunca más.
 
-El problema estructural es que la clonación de producción, de pila completa e incluyendo el estado de la aplicación, ha requerido históricamente (a) transferencia de datos byte a byte (lenta y cara a escala), (b) clonación de VM basada en snapshots (funciona para IaaS, falla para contenedores y Kubernetes) o (c) virtualización de datos (solo para bases de datos). Los tres enfoques tienen un coste por prueba que escala con el tamaño del entorno.
+Clonar prod completo, incluyendo el estado de la aplicación, siempre ha significado una de tres cosas. Copiar cada byte (lento, caro a escala). Hacer snapshot de la VM (funciona para IaaS, falla para contenedores y Kubernetes). O virtualizar solo la base de datos. Los tres cuestan más por ejercicio a medida que el entorno crece.
 
 Cuando el coste por prueba escala con el tamaño, los ejercicios se convierten en eventos poco frecuentes. Los eventos poco frecuentes no satisfacen la evaluación continua de la efectividad.
 
@@ -116,7 +116,7 @@ A continuación se describe una rutina concreta que satisface los artículos 21(
 rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
 ```
 
-El fork se nombra con la semana ISO para que el log de auditoría sea autodescriptivo. El repositorio está activo bajo un subdominio específico del fork (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`) y el certificado wildcard del padre lo cubre. Sin nuevo handshake TLS.
+El fork se nombra con la semana ISO para que el log de auditoría se lea solo. El repositorio se activa bajo un subdominio del fork (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). El certificado wildcard del padre lo cubre. Sin nuevo handshake TLS.
 
 **Paso 2**: Aplicar el parche bajo prueba, en el fork.
 
@@ -159,7 +159,7 @@ El tiempo de reloj de pared total para la rutina, en un repositorio de 128 GB, e
 
 Un único SRE ejecutando esto una vez a la semana produce 52 registros de efectividad con marca de tiempo y log de auditoría al año. Esa es la forma de evidencia que un auditor está pidiendo.
 
-Para la historia más amplia de recuperación, incluyendo ejercicios entre máquinas e intercontinentales, consulta [Estrategia de Backup Cruzado](/es/docs/cross-backup) y [Backup y Restauración](/es/docs/backup-restore). Para la semántica de punto en el tiempo durante un evento de corrupción parcial, consulta [Recuperación en el Tiempo](/es/docs/time-travel-recovery).
+¿Quieres la historia completa de recuperación? [Estrategia de Backup Cruzado](/es/docs/cross-backup) cubre ejercicios entre máquinas y continentes. [Backup y Restauración](/es/docs/backup-restore) es la introducción. Para un evento de corrupción parcial, consulta [Recuperación en el Tiempo](/es/docs/time-travel-recovery).
 
 ## Artículo 23: el calendario de notificación que no puedes cumplir sin artefactos
 
@@ -205,7 +205,7 @@ Dos cosas que un SRE debe saber de antemano, antes de decidir si el resto del ar
 
 **Rediacc no escribe tus runbooks**. Los comandos del CLI anteriores son las piezas móviles. Las decisiones sobre cuándo hacer fork, cuándo hacer failover, cómo comunicarse con los clientes, cuándo involucrar a las fuerzas del orden, son decisiones de runbook. Esas todavía necesitan ser redactadas, ejercitadas y actualizadas por tu equipo. El artículo 21(2)(b) de NIS2 (gestión de incidentes) es una obligación de proceso, no de herramientas, y nosotros satisfacemos una parte de ella, no toda.
 
-Para el alcance del lado de la contratación (certificaciones, GRC, colapso del registro de proveedores), consulta el [artículo sobre la cadena de suministro](/es/blog/nis2-supply-chain-self-hosted). Para el alcance del lado del coste (lo que permanece en el presupuesto después de un plano de control autogestionado), consulta el [artículo sobre la factura real](/es/blog/nis2-the-real-bill).
+En el lado de las compras (certificaciones, GRC, el problema del registro de proveedores), consulta el [artículo sobre la cadena de suministro](/es/blog/nis2-supply-chain-self-hosted). En el lado del coste (lo que permanece en el presupuesto una vez que te autoalojas), consulta el [artículo sobre la factura real](/es/blog/nis2-the-real-bill).
 
 La lectura correcta de todo esto: Rediacc es una capa de herramientas, no un programa de seguridad. Elimina excusas y produce evidencia. No ejecuta el programa por ti.
 
@@ -219,7 +219,7 @@ Tres artefactos. Prodúcelos y la conversación sobre los artículos 21(2)(e) y 
 
 **Artefacto 3: el rastro de verificación de backups**. Para cada estrategia de backup programada, la unidad systemd produce un archivo sidecar de estado en `/var/run/rediacc/cold-backup-<guid>.status.json` por repositorio y por ejecución, y una línea de log de resumen final. `rdc machine backup status` expone ambos. Combinado con el ejercicio de restauración semanal del Paso 4 de la rutina anterior, esto da al auditor un rastro de "backup tomado y restauración probada," no solo de "backup tomado." Consulta [Monitorización](/es/docs/monitoring) para la superficie de diagnóstico.
 
-Los artefactos juntos responden a la pregunta "¿son efectivos tus controles?" con marcas de tiempo y evidencia encadenada por hash, no con atestaciones.
+Los artefactos juntos responden a la pregunta "¿son efectivos tus controles?" con marcas de tiempo y una cadena de hash. No atestaciones. Evidencia.
 
 ## Lo que esto significa para la próxima reunión de planificación trimestral
 
@@ -233,4 +233,4 @@ Si quieres ver el tiempo del fork en tu repositorio más grande, la oferta es si
 
 La historia del coste estructural (lo que se elimina del resto del stack de seguridad y lo que permanece en la línea de presupuesto) está en el artículo complementario sobre [la factura real](/es/blog/nis2-the-real-bill). Para el ángulo del registro de proveedores y la contratación, consulta [el artículo 21(2)(d) y el autoalojamiento](/es/blog/nis2-supply-chain-self-hosted).
 
-Para el mapeado público de capacidades a artículos de NIS2, consulta [NIS2 y DORA](/es/docs/legal-nis2-dora).
+Para el mapa público de lo que Rediacc hace contra cada artículo de NIS2, consulta [NIS2 y DORA](/es/docs/legal-nis2-dora).

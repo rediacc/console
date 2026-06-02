@@ -4,8 +4,8 @@ description: "Comprendre comment account, rdc et renet gèrent les slots de mach
 category: "Guides"
 order: 7
 language: fr
-sourceHash: "8e0a4976634ae323"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "98aede90642cfabc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Abonnement et licences
@@ -126,7 +126,7 @@ Cette émission soutenue par le compte est comptabilisée dans votre utilisation
 
 ### Redémarrage de machine et démarrage automatique
 
-Le démarrage automatique utilise les mêmes règles que `rdc repo up`, l'expiration est ignorée, de sorte que les dépôts redémarrent toujours librement.
+Le démarrage automatique utilise les mêmes règles que `rdc repo up` : l'expiration est ignorée, de sorte que les dépôts redémarrent toujours librement.
 
 Les licences de dépôt utilisent un modèle de validité longue durée :
 
@@ -195,7 +195,7 @@ Pour la configuration initiale de la machine, consultez [Configuration de machin
 
 ## Comportement hors ligne et expiration
 
-La validation des licences s'effectue localement sur la machine, elle ne nécessite pas de connectivité en temps réel avec le serveur de comptes.
+La validation des licences s'effectue localement sur la machine. Elle ne nécessite pas de connectivité en temps réel avec le serveur de comptes.
 
 Cela signifie :
 

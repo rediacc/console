@@ -4,13 +4,13 @@ description: "Organisationen, Teams, Mitglieder und Abonnements für Ihr Rediacc
 category: Guides
 order: 12
 language: de
-sourceHash: "e32952a1485133e0"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "974885635641ed70"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Organisationen
 
-Bei der Registrierung erstellt Rediacc automatisch eine Organisation für Sie. Ihre Organisation ist der übergeordnete Container für alle Ressourcen -- Maschinen, Repositories, Abonnements und Teammitglieder.
+Registrieren Sie ein Konto und Rediacc erstellt automatisch eine Organisation für Sie. Diese Organisation ist der übergeordnete Container für alles, was Sie hier besitzen: Maschinen, Repositories, Abonnements und die Personen, die Sie einladen. Sie werden nicht versehentlich eine zweite erstellen. Es gibt genau eine Organisation pro Konto, und jedes Team und jede Ressource hängt daran.
 
 ![Registration Flow](/img/account-registration-flow.svg)
 
@@ -117,7 +117,7 @@ UPSTREAM_URL=https://www.rediacc.com
 UPSTREAM_API_KEY=rdt_<token>
 ```
 
-Das Token gewährt **ausschließlich** die Erneuerung von Delegierungszertifikaten - es kann keine anderen Ressourcen lesen oder ändern. Dies ist der einzige Weg, ein `delegation:renew`-Token auszustellen; der reguläre `/portal/api-tokens`-Ablauf schließt diesen Geltungsbereich nicht ein.
+Das Token gewährt **ausschließlich** die Erneuerung von Delegierungszertifikaten. Es kann keine anderen Ressourcen lesen oder ändern. Dies ist der einzige Weg, ein `delegation:renew`-Token auszustellen; der reguläre `/portal/api-tokens`-Ablauf schließt diesen Geltungsbereich nicht ein.
 
 #### Air-Gapped-Erneuerung
 

@@ -1,19 +1,18 @@
 ---
 title: Récupération du voyage dans le temps
-description: >-
-  Récupérez les données supprimées accidentellement il y a des semaines grâce à
-  un voyage dans le temps basé sur des instantanés.
+description: "Récupérez des données supprimées il y a des semaines à l'aide d'instantanés btrfs, même après que vos sauvegardes normales sont passées à autre chose."
 category: Use Cases
 order: 2
 language: fr
-sourceHash: "b8dbfddbf5b46895"
+sourceHash: "4c1fcb1667a89759"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 > **Lorsque d'autres perdent des données pour toujours, vous pouvez voyager dans le temps.**
 
-**Remarque :** Il s'agit d'un **exemple de cas d'utilisation** démontrant comment Rediacc peut résoudre ce problème. En tant que startup, ces scénarios représentent des applications potentielles plutôt que des études de cas réalisées.
+**Remarque :** Il s’agit d’un **exemple de cas d’utilisation** montrant comment Rediacc gère ce type de problème. Nous sommes une startup. Ce sont des scénarios réalistes pour lesquels le produit a été conçu, pas des études de cas déjà livrées à des clients.
 
-**Scénario de crise :** Un employé nouvellement embauché a **accidentellement supprimé** des données critiques de la base de données en direct il y a 3 semaines. Le système de sauvegarde de l'entreprise n'a conservé les sauvegardes que pendant 2 semaines, ce qui rend la récupération des données presque impossible par les moyens conventionnels.
+**Scénario de crise :** Un nouvel employé a **accidentellement supprimé** des lignes critiques de votre base de données en direct il y a 3 semaines. Votre système de sauvegarde ne conserve que 2 semaines d’historique. Avec une configuration normale, ces données sont perdues.
 
 ## Le problème
 

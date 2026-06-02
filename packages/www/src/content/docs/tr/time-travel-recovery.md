@@ -1,29 +1,28 @@
 ---
 title: Zaman Yolculuğu Kurtarma
-description: >-
-  Anlık görüntü tabanlı zaman yolculuğu ile haftalar öncesinden yanlışlıkla
-  silinen verileri kurtarın.
+description: "Haftalar önce silinen verileri btrfs anlık görüntüleriyle kurtarın; normal yedeklemeleriniz o noktayı geçmiş olsa bile."
 category: Use Cases
 order: 2
 language: tr
-sourceHash: "b8dbfddbf5b46895"
+sourceHash: "4c1fcb1667a89759"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 > **Başkaları Verilerini Sonsuza Kadar Kaybedince, Zamanda Geriye Yolculuk Yapabilirsiniz.**
 
-**Not:** Bu, Rediacc'ın bu sorunu nasıl çözebileceğini gösteren bir **kullanım örneğidir**. Bir startup olarak bu senaryolar, tamamlanmış vaka çalışmalarından ziyade potansiyel uygulamaları temsil ediyor.
+**Not:** Bu, Rediacc'ın bu tür sorunları nasıl ele aldığını gösteren bir **kullanım örneğidir**. Bir startup'ız. Bunlar ürünün tasarlandığı gerçekçi senaryolardır; önceden tamamlanmış müşteri vaka çalışmaları değil.
 
-**Kriz Senaryosu:** Yeni işe alınan bir çalışan, 3 hafta önce canlı veritabanındaki kritik verileri **yanlışlıkla sildi**. Şirketin yedekleme sistemi, yedeklemeleri yalnızca 2 hafta boyunca sakladı ve geleneksel yöntemlerle veri kurtarmayı neredeyse imkansız hale getirdi.
+**Kriz Senaryosu:** Yeni işe alınan bir çalışan, 3 hafta önce canlı veritabanınızdaki kritik satırları **yanlışlıkla sildi**. Yedekleme sisteminiz yalnızca 2 haftalık geçmişi saklıyor. Normal bir kurulumda bu veri kaybolmuş demektir.
 
 ## Sorun
 
-Mehmet, büyük bir online alışveriş şirketinin veri tabanından sorumlu bir sistem uzmanıdır. Bir sabah müşteri şikayeti üzerine geçmiş sipariş kayıtlarından bazılarının sistemde **görünmediğini** fark eder. Araştırma, yeni işe alınan bir çalışanın 3 hafta önce canlı veri tabanından bazı kritik verileri **yanlışlıkla sildiğini** ve **test ortamı yerine canlı veri tabanına bağlandığını** ortaya koyuyor.
+Mehmet, büyük bir e-ticaret platformunun veritabanını yönetiyor. Bir sabah müşteriler geçmiş sipariş kayıtlarının **görünmediğinden** şikayet etmeye başlıyor. Araştırıyor. Yeni işe alınan bir mühendis, 3 hafta önce canlı veritabanından kritik satırları **yanlışlıkla silmiş**; **test ortamı yerine canlı veritabanına bağlanmış**. Her DBA'nın ya bizzat yaşadığı ya da bir aceminin yaptığını izlediği klasik hata.
 
 **Mevcut Yedekleme Sistemi:** 
 * Haftada bir kez tam yedekleme alınır 
 * **Artımlı yedeklemeler** günlük olarak kaydedilir
 
-**İkilem:** Silme işlemi **tam yedekleme tarihinden önce** gerçekleşti, dolayısıyla kayıp veriler yedeklemelerde yer almıyor. Günlük yedeklemeler **yalnızca en son verileri kaydeder**, dolayısıyla **silinen öğeler kurtarılamaz**.
+**Sorun:** Silme işlemi **tam yedekleme tarihinden önce** gerçekleşti, dolayısıyla kayıp veriler hiçbir yedek dosyasında yer almıyor. Günlük yedeklemeler **yalnızca en son verileri kaydeder**, dolayısıyla **silinen öğeler kurtarılamaz**.
 
 ## Krizin Etkisi
 
@@ -43,7 +42,7 @@ Kayıp veriler nedeniyle:
 
 ## Rediacc Çözümü
 
-Mehmet, Rediacc ile "zaman makinesi" benzeri bir çözüm sunuyor:
+Mehmet'in Rediacc ile kurduğu zaman makinesi çözümü şu şekilde:
 
 ![Time Travel Recovery](/img/time-travel-recovery.svg)
 

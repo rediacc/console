@@ -4,6 +4,8 @@ description: "Konto-serveri ja CLI jaotuse käitamine oma infrastruktuuris."
 category: "Guides"
 order: 5
 language: et
+sourceHash: "c8c9aceeeeea1411"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Rediacc saab töötada täielikult sinu enda infrastruktuuris. Eraldiseisev Dockeri pilt sisaldab konto-serverit, veebiportaali, turunduslehte ja CLI jaotuse lõpp-punkti. Rediacc hostitud teenustele pole väliseid sõltuvusi.
@@ -122,7 +124,7 @@ See jaotis käsitleb operatiivset seadistust: võtmete genereerimine, sertifikaa
 
 Tellimusel võib olla **korraga kõige rohkem üks aktiivne delegeerimissertifikaat**. Iga kohapealne paigaldus jõustab kuu- ja masinapiiranguid oma kohaliku väljastamise raamatu alusel, seega mitme aktiivse serdi korral korrutuvad kehtivad kvoodid ilma võimaliku ühitamiseta.
 
-Kui vajad eraldi keskkondi (tootmine, lavastamine, DR, mitme piirkond), osta üks tellimus paigalduse kohta. Ühe-aktiivse jõustamine kodifitseerib selle lepingu: katse luua teine aktiivne sert tagastab `409 DELEGATION_CERT_ALREADY_ACTIVE` olemasoleva serdi id-ga ja juhistega uuendamiseks (eelistatav -- säilitab ahela) või tühistamiseks-ja-loomiseks (lähtestab ahela).
+Kui vajad eraldi keskkondi (tootmine, lavastamine, DR, mitme piirkond), osta üks tellimus paigalduse kohta. Ühe-aktiivse jõustamine kodifitseerib selle lepingu: katse luua teine aktiivne sert tagastab `409 DELEGATION_CERT_ALREADY_ACTIVE` olemasoleva serdi id-ga ja juhistega uuendamiseks (eelistatav, säilitab ahela) või tühistamiseks-ja-loomiseks (lähtestab ahela).
 
 ### 1. Genereeri kohapealne Ed25519 võtmepaar
 
@@ -144,11 +146,11 @@ Salvesta privaatvõti koos teiste saladustega (näiteks Dockeri saladus või Kub
 
 Saad sertifikaati ülesvoolu konto portaalist taotleda kolmel viisil:
 
-**Variant A - Kliendi iseteenindus (soovitatav).** Logi ülesvoolu portaali org-omaniku või administraatorina sisse ja mine aadressile **/account/delegation-certs**. Klõpsa **Create New**, kleebi kohapealne avalik võti (base64 SPKI), vali kehtivus (või aktsepteeri plaanipõhine vaikeväärtus) ja laadi alla saadud `.json` fail.
+**Variant A: Kliendi iseteenindus (soovitatav).** Logi ülesvoolu portaali org-omaniku või administraatorina sisse ja mine aadressile **/account/delegation-certs**. Klõpsa **Create New**, kleebi kohapealne avalik võti (base64 SPKI), vali kehtivus (või aktsepteeri plaanipõhine vaikeväärtus) ja laadi alla saadud `.json` fail.
 
-**Variant B - Administraator (ristklient).** Rediacc'i tugi või ülesvoolu süsteemiadministraator saab kasutada `POST /admin/delegation-certs` samade parameetritega.
+**Variant B: Administraator (ristklient).** Rediacc'i tugi või ülesvoolu süsteemiadministraator saab kutsuda `POST /admin/delegation-certs` samade parameetritega.
 
-**Variant C - `rdc` CLI (kavandatud).** Tulevane CLI käsk mähib portaali voo sisse.
+**Variant C: `rdc` CLI (kavandatud).** Tulevane CLI käsk mähib portaali voo sisse.
 
 Tagastatud `.json` näeb välja nii:
 

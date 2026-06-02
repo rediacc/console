@@ -4,7 +4,8 @@ description: يمكنك تقليل إعداد البيئة من أيام إلى 
 category: Use Cases
 order: 7
 language: ar
-sourceHash: "c72f558d409d40ea"
+sourceHash: "2aa115fc621f5258"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 > **تقليل إعداد البيئة من أيام إلى دقائق باستخدام بنية التخزين الذكية لإلغاء البيانات المكررة.**

@@ -4,8 +4,8 @@ description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许
 category: Guides
 order: 7
 language: zh
-sourceHash: "8e0a4976634ae323"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "98aede90642cfabc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 订阅与许可
@@ -126,7 +126,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### 机器重启和自动启动
 
-自动启动使用与 `rdc repo up` 相同的规则，跳过到期，因此仓库总是可以自由重启。
+自动启动使用与 `rdc repo up` 相同的规则：跳过到期，因此仓库总是可以自由重启。
 
 仓库许可证使用长期有效性模型：
 
@@ -195,7 +195,7 @@ rdc subscription refresh repo --name my-app -m hostinger
 
 ## 离线行为和到期
 
-许可证验证在机器本地进行，不需要与账户服务器的实时连接。
+许可证验证在机器本地进行。不需要与账户服务器的实时连接。
 
 这意味着：
 

@@ -12,8 +12,8 @@ tags:
   - incident-reporting
 featured: false
 language: tr
-sourceHash: "21965e5d5e9f25d5"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "4c2768e81f0ff03a"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -80,13 +80,13 @@ Piyasanın yanıtları var. Yanıtlar pahalı.
 
 **Rubrik Live Mount**: Benzer kavram, test için bir yedek anlık görüntüsünün anında bağlanması. Bulut-native iş yükleriyle daha iyi entegrasyon. Aynı operasyonel örüntü. Aynı test başına mühendislik yükü.
 
-**Delphix (Perforce DevOps Data)**: Geliştirme ve test için kaynak veritabanlarının neredeyse anında klonlarını oluşturan veri sanallaştırma aracı. "Dev'de üretime şekilli veri istiyoruz" sorununu çözer. Yalnızca veritabanı. Uygulama hizmetlerini, yapılandırmaları, gizlilikleri veya konteyner durumunu klonlamaz. Yıllık lisans, orta piyasa ekipleri için altı haneli rakamlara ulaşır.
+**Delphix (Perforce DevOps Data)**: kaynak veritabanlarını sanallaştırarak dev için neredeyse anında klon oluşturur. Dev'de üretime şekilli veri sorununu çözer. Yalnızca veritabanı. Uygulama hizmetlerinizi, yapılandırmalarınızı, gizlilerinizi veya konteyner durumunuzu klonlamaz. Yıllık lisans, orta piyasa ekipleri için altı haneli rakamlara ulaşır.
 
-**Tonic.ai, Redgate Test Data Manager**: Veri maskeleme ve sentetik veri yaklaşımları. Dev ve test ortamları için gizlilik-gerçekçilik dengelerini çözer. Veri şekli ve ölçek açısından üretime gerçekçidir. Tam yığın klon değildir. Uygulama yapılandırmasının önemli olduğu güvenlik testi senaryoları için tasarlanmamıştır.
+**Tonic.ai, Redgate Test Data Manager**: dev ve test için veriyi maskeler veya sentezler. Gizlilik ile gerçekçilik dengesi için iyi çözüm. Veri şekli ve ölçek üretime benzer. Ancak bu araçlar uygulama yığınını değil, veriyi klonlar. Yapılandırmanın hata olduğu güvenlik tatbikatları için değil, KA için kullanın.
 
 **Özel yapı**: Sıcak yedek al, paralel bir ortama geri yükle, testi çalıştır, yıkmadan kaldır. Kavramsal olarak mümkün. Operasyonel olarak tatbikat başına birden fazla günlük mühendislik çalışması. Ekip bunu bir kez yapar, çünkü mecbur kalır, sonra bir daha yapmaz.
 
-Yapısal sorun şudur: üretim klonlaması, tam yığın ve uygulama durumu dahil, tarihsel olarak ya (a) bayt başına veri transferi (ölçekte yavaş ve pahalı), ya (b) anlık görüntü tabanlı VM klonlaması (IaaS için işe yarar, konteynerler ve Kubernetes için bozulur), ya da (c) veri sanallaştırma (yalnızca veritabanı) gerektirmiştir. Her üç yaklaşım da ortam boyutuyla orantılı test başına maliyet taşır.
+Tam üretimi klonlamak, uygulama durumu dahil, her zaman üç şeyden biri anlama geldi. Her baytı kopyalamak (ölçekte yavaş, pahalı). VM'i anlık görüntülemek (IaaS için işe yarar, konteynerler ve Kubernetes için bozulur). Ya da yalnızca veritabanını sanallaştırmak. Tatbikat büyüdükçe üçü de daha fazlaya mal olur.
 
 Test başına maliyet boyutla ölçeklendiğinde tatbikatlar nadir etkinliklere dönüşür. Nadir etkinlikler sürekli etkinlik değerlendirmesini karşılamaz.
 
@@ -120,7 +120,7 @@ Tek bir SRE tarafından haftalık kadansla çalıştırılabilen, bir üretim de
 rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
 ```
 
-Fork, denetim günlüğünün kendi kendini açıklar olması için ISO haftasıyla adlandırılır. Depo, fork'a özgü bir alt alan adı altında çalışır (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`) ve üst deponun wildcard sertifikası bunu kapsar. Yeni TLS el sıkışması gerekmez.
+Fork, denetim günlüğünün kendi kendini okuması için ISO haftasıyla adlandırılır. Depo, fork alt alan adı altında çalışır (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). Üst deponun wildcard sertifikası bunu kapsar. Yeni TLS el sıkışması gerekmez.
 
 **Adım 2**: Test altındaki yamayı fork üzerine uygula.
 
@@ -163,7 +163,7 @@ Rutinin 128 GB'lık bir depo için toplam gerçek zamanlı süresi 15 dakikanın
 
 Haftada bir kez bu rutini çalıştıran tek bir SRE, yılda 52 zaman damgalı, denetim günlüğüne kaydedilmiş etkinlik kaydı üretir. Bu, denetçinin aradığı kanıt şeklidir.
 
-Makineler arası ve kıtalararası tatbikatlar dahil daha geniş kurtarma hikayesi için bkz. [Çapraz Yedekleme Stratejisi](/tr/docs/cross-backup) ve [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore). Kısmi bozulma olaylarında anlık nokta semantiği için bkz. [Zaman Yolculuğu Kurtarma](/tr/docs/time-travel-recovery).
+Tam kurtarma hikayesini istiyorsanız: [Çapraz Yedekleme Stratejisi](/tr/docs/cross-backup), makineler ve kıtalar arası tatbikatları kapsar. [Yedekleme ve Geri Yükleme](/tr/docs/backup-restore) başlangıç noktasıdır. Kısmi bozulma olayı için bkz. [Zaman Yolculuğu Kurtarma](/tr/docs/time-travel-recovery).
 
 ## Article 23: Kanıt olmadan karşılanamayacak raporlama takvimi
 
@@ -209,7 +209,7 @@ Bir SRE'nin, yazının geri kalanının ilginç olup olmadığına karar vermede
 
 **Rediacc işletme rehberlerinizi yazmaz**. Yukarıdaki CLI komutları hareketli parçalardır. Ne zaman fork yapılacağına, ne zaman yük devredeceğine, müşterilerle nasıl iletişim kurulacağına, ne zaman kolluk kuvvetlerine başvurulacağına ilişkin kararlar işletme rehberi kararlarıdır. Bunların hala ekibiniz tarafından yazılması, tatbikat edilmesi ve güncellenmesi gerekir. NIS2 Article 21(2)(b) (olay yönetimi) bir araç yükümlülüğü değil, süreç yükümlülüğüdür ve biz bunun bir bölümünü karşılıyoruz, tamamını değil.
 
-Tedarik tarafındaki kapsam (sertifikalar, GRC, tedarikçi kaydı konsolidasyonu) için bkz. [tedarik zinciri yazısı](/tr/blog/nis2-supply-chain-self-hosted). Maliyet tarafındaki kapsam (kendi kendine barındırılan bir kontrol düzleminden sonra bütçede ne kalır) için bkz. [gerçek fatura yazısı](/tr/blog/nis2-the-real-bill).
+Tedarik tarafında (sertifikalar, GRC, tedarikçi kayıt sorunu) bkz. [tedarik zinciri yazısı](/tr/blog/nis2-supply-chain-self-hosted). Maliyet tarafında (kendi altyapınızı barındırdıktan sonra bütçede ne kalır) bkz. [gerçek fatura yazısı](/tr/blog/nis2-the-real-bill).
 
 Bunların doğru okunması şudur: Rediacc bir araç katmanıdır, güvenlik programı değildir. Bahaneleri ortadan kaldırır ve kanıt üretir. Programı sizin yerinize çalıştırmaz.
 
@@ -223,7 +223,7 @@ Bunların doğru okunması şudur: Rediacc bir araç katmanıdır, güvenlik pro
 
 **Kanıt 3: yedek doğrulama izi**. Zamanlanmış her yedekleme stratejisi için systemd birimi, depo başına çalışma başına `/var/run/rediacc/cold-backup-<guid>.status.json` konumunda bir durum yan dosyası ve son bir özet günlük satırı üretir. `rdc machine backup status` her ikisini de ortaya çıkarır. Yukarıdaki rutinin 4. Adımındaki haftalık geri yükleme tatbikatıyla birleştirildiğinde, bu denetçiye yalnızca "yedek alındı" izi değil, "yedek alındı ve geri yükleme test edildi" izi sunar. Tanılama yüzeyi için bkz. [İzleme](/tr/docs/monitoring).
 
-Kanıtlar birlikte "kontrolleriniz etkin mi" sorusunu doğrulama değil, zaman damgaları ve hash zincirine bağlı kanıtlarla yanıtlar.
+Kanıtlar birlikte "kontrolleriniz etkin mi" sorusunu zaman damgaları ve hash zinciriyle yanıtlar. Doğrulama değil, kanıt.
 
 ## Bu, bir sonraki üç aylık planlama toplantısı için ne anlama gelir
 
@@ -237,4 +237,4 @@ En büyük deponuzdaki fork zamanlamasını görmek istiyorsanız teklif basit. 
 
 Yapısal maliyet hikayesi (güvenlik yığınının geri kalanında neler konsolide edilir ve bütçe satırında ne kalır) [gerçek fatura](/tr/blog/nis2-the-real-bill) eşlik yazısındadır. Tedarikçi kaydı ve tedarik açısı için bkz. [Article 21(2)(d) ve öz barındırma](/tr/blog/nis2-supply-chain-self-hosted).
 
-NIS2 makalelerine yönelik kapasite eşlemesinin kamuya açık versiyonu için bkz. [NIS2 ve DORA](/tr/docs/legal-nis2-dora).
+Rediacc'ın her NIS2 makalesine karşı ne yaptığının kamuya açık haritası için bkz. [NIS2 ve DORA](/tr/docs/legal-nis2-dora).

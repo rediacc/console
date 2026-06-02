@@ -4,6 +4,8 @@ description: "리버스 프록시, Docker 레이블, TLS 인증서, DNS, TCP/UDP
 category: "Guides"
 order: 6
 language: ko
+sourceHash: "d60a43cd573517a1"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 네트워킹
@@ -172,7 +174,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | 인증서 리졸버, 자동 Let's Encrypt에는 `letsencrypt` 사용 |
 | `traefik.http.services.{name}.loadbalancer.server.port` | 컨테이너 내부에서 애플리케이션이 수신하는 포트 |
 
-레이블의 `{name}`은 임의의 식별자입니다. 관련 라우터/서비스/미들웨어 레이블 전반에 걸쳐 일관성만 유지하면 됩니다.
+레이블의 `{name}`은 임의의 식별자입니다. 관련 라우터/서비스/미들웨어 레이블 전반에 걸쳐 일관되게 유지하기만 하면 됩니다.
 
 > **참고:** `rediacc.*` 레이블(`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`)은 `renet compose`에 의해 자동으로 주입됩니다. compose 파일에 추가할 필요가 없습니다.
 
@@ -321,7 +323,7 @@ services:
 
 머신 수준 레코드는 `push-infra`에 의해 생성되며 사용자 정의 도메인 경로(`rediacc.domain`)를 포함합니다. 저장소별 와일드카드 레코드는 `repo up`에 의해 자동으로 생성되며 해당 저장소의 자동 경로를 포함합니다.
 
-이는 멱등성이 있습니다. IP가 변경되면 기존 레코드가 업데이트되고 이미 올바른 경우 변경되지 않습니다.
+이는 멱등성이 있습니다: IP가 변경되면 기존 레코드가 업데이트되고, 이미 올바른 경우 변경되지 않습니다.
 
 베이스 도메인 와일드카드(`*.example.com`)는 `rediacc.domain=erp` 같은 사용자 정의 도메인 레이블을 사용하는 경우 수동으로 생성해야 합니다.
 

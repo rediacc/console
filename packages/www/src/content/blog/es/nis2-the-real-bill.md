@@ -12,8 +12,8 @@ tags:
   - mid-market
 featured: false
 language: es
-sourceHash: "95f07c80c1d91055"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "3fbb581ec14e3f80"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -85,15 +85,15 @@ Las brechas son más interesantes que los solapamientos, porque las brechas son 
 
 Rediacc es un plano de control con un registro de auditoría unificado, que reemplaza la capacidad central de cuatro de las cinco categorías para infraestructura self-hosted.
 
-**Backup**: estrategias de backup en caliente (snapshot BTRFS consistente con el crash, sin tiempo de inactividad) y en frío (stop-snapshot-start consistente con la aplicación), programadas mediante temporizadores systemd, con múltiples destinos vía rclone. Volúmenes cifrados con LUKS; el operador tiene la credencial; Rediacc-la-empresa nunca ve datos en texto plano. Consulta [Backup y Restauración](/es/docs/backup-restore) y [Estrategia de Backup Cruzado](/es/docs/cross-backup) para la forma operativa.
+**Backup** funciona en dos modos. El modo en caliente es un snapshot BTRFS consistente con el crash, sin tiempo de inactividad. El modo en frío realiza un ciclo stop-snapshot-start. Ambos se programan con temporizadores systemd. Ambos envían a múltiples destinos vía rclone. Los volúmenes están cifrados con LUKS. El operador tiene la clave. Rediacc-la-empresa nunca ve texto plano. Consulta [Backup y Restauración](/es/docs/backup-restore) y [Estrategia de Backup Cruzado](/es/docs/cross-backup).
 
 **DR**: mismo primitivo que el backup, más `rdc repo migrate` para el movimiento de datos entre máquinas, más el primitivo de fork para la puesta en marcha rápida del estado recuperado en una máquina paralela. El sitio de DR puede ser otra máquina Hetzner, una máquina OVH, un rack on-prem, cualquier lugar al que llegue SSH. Ninguna nube de proveedor de DR en la ruta de datos.
 
-**Datos de prueba y clonación de stack completo**: fork basado en reflink de BTRFS, tiempo constante independientemente del tamaño del repositorio, stack completo (datos, configuraciones, estado de contenedores, servicios). 7,2 segundos para hacer fork de un repositorio de 128 GB en nuestra [prueba PocketOS](/es/blog/i-tested-rediacc-against-the-pocketos-incident). El fork es la producción actual, no un entorno de staging reducido. Consulta [Actualizaciones Sin Riesgo](/es/docs/risk-free-upgrades).
+**Datos de prueba y clonación de stack completo** funciona con reflink de BTRFS. El fork es de tiempo constante, sin importar el tamaño del repositorio. Stack completo significa datos, configuraciones, contenedores y servicios. Hicimos fork de un repositorio de 128 GB en 7,2 segundos en nuestra [prueba PocketOS](/es/blog/i-tested-rediacc-against-the-pocketos-incident). El fork es la producción actual, no una copia de staging reducida. Consulta [Actualizaciones Sin Riesgo](/es/docs/risk-free-upgrades).
 
 **Restauración instantánea**: `rdc repo backup pull` desde cualquier destino rclone a un fork nuevo, puesto en marcha bajo un subdominio específico del fork cubierto por el certificado wildcard del repositorio padre. Sin confusión de DNS, sin baile de certificados.
 
-**Registro de auditoría unificado**: más de 70 tipos de eventos que cubren todo el plano de control (autenticación, tokens de API, escrituras de configuración, ciclo de vida del repositorio, backup, sincronización, sesiones de terminal, operaciones de máquina). Encadenado por hash en la estación de trabajo del operador; `rdc audit verify` valida la integridad de extremo a extremo.
+**Registro de auditoría unificado.** Más de 70 tipos de eventos en todo el plano de control. Cubren inicios de sesión, tokens de API, escrituras de configuración, ciclo de vida del repositorio, backup, sincronización, sesiones de terminal y operaciones de máquina. La cadena está enlazada por hash en la estación de trabajo del operador. `rdc audit verify` la comprueba de extremo a extremo.
 
 Para una entidad esencial mid-market de 250 empleados, la consolidación pasa de cuatro proveedores nombrados (backup, DR, datos de prueba, restauración instantánea) a uno. Una licencia, un registro de auditoría, un conjunto de decisiones de actualización, una entrada de registro.
 
@@ -118,7 +118,7 @@ El lado derecho de la tabla es más largo que el izquierdo. Esa es la forma hone
 
 Un comprador que lea esto y concluya "puedo reemplazar Drata con Rediacc" va a decepcionar a su auditor. La lectura correcta es: la consolidación del proveedor de plano de datos que Rediacc permite es lo que las herramientas GRC no pueden hacer, y el trabajo de registro y evidencias que hacen las herramientas GRC es lo que Rediacc no hace. Los dos son complementarios.
 
-Para el mapeado público de capacidades a artículos NIS2, consulta [NIS2 y DORA](/es/docs/legal-nis2-dora). Para el marco arquitectónico más amplio, consulta [Visión General de Cumplimiento](/es/docs/legal-overview). Para los detalles comerciales del lado de Rediacc, consulta [Suscripción y Licencias](/es/docs/subscription-licensing).
+Tres enlaces más si quieres profundizar. El mapeado público está en [NIS2 y DORA](/es/docs/legal-nis2-dora). El marco más amplio está en [Visión General de Cumplimiento](/es/docs/legal-overview). El lado comercial de Rediacc está en [Suscripción y Licencias](/es/docs/subscription-licensing).
 
 ## Un escenario de referencia, estructural no numérico
 
@@ -162,4 +162,4 @@ Si te diriges a un ciclo de renovación y el presupuesto está abierto, tres mov
 
 Si estamos en la lista corta, la oferta es concreta. Envía tus tres mayores partidas del presupuesto de seguridad e infraestructura del año pasado. Te diremos cuáles se pueden consolidar y cuáles no, por escrito, en una semana. La respuesta incluirá las brechas, porque nombrar las brechas es lo que hace que el resto de la respuesta sea de confianza.
 
-Para [backup de coste cero](/es/docs/zero-cost-backup) (el argumento arquitectónico de por qué funcionamos más ligero que los incumbentes en el lado del almacenamiento), [Estrategia de Backup Cruzado](/es/docs/cross-backup) (DR intercontinental) y [Suscripción y Licencias](/es/docs/subscription-licensing) (el lado comercial), consulta la documentación enlazada.
+Tres documentos más si quieres profundizar. [Backup de coste cero](/es/docs/zero-cost-backup) explica por qué funcionamos más ligero en almacenamiento que los incumbentes. [Estrategia de Backup Cruzado](/es/docs/cross-backup) cubre el DR intercontinental. [Suscripción y Licencias](/es/docs/subscription-licensing) es el lado comercial.

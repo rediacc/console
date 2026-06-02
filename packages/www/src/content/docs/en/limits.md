@@ -10,7 +10,7 @@ language: en
 
 # Limits & Quotas
 
-This page documents the hard and soft limits that apply to Rediacc deployments. Understanding these limits helps you plan capacity and avoid unexpected constraints.
+This page lists the hard and soft limits that apply to Rediacc deployments. Read it before you plan capacity, so you know which ceilings exist and which do not.
 
 ---
 
@@ -34,7 +34,7 @@ There is no hard cap enforced by Rediacc. The practical limit depends on your ma
 | RAM | Each running repository starts its own Docker daemon and containers. Memory usage depends on your workloads. |
 | CPU | Parallel repository operations (start, backup, fork) add temporary CPU load. |
 
-**Typical deployments** run 10–50 repositories per machine without issue. Machines with 32 GB+ RAM and 500 GB+ storage regularly run 100+ repositories.
+**Typical deployments** run 10 to 50 repositories per machine without issue. Machines with 32 GB+ RAM and 500 GB+ storage regularly run 100+ repositories.
 
 ### System-wide network ID limit
 
@@ -109,7 +109,7 @@ Each repository image has a fixed maximum size set at creation time (default: 10
 
 Each service with the `rediacc.service_port` label gets one HTTPS route automatically. There is no limit on the number of services with routes, subject to the 61-service maximum per repository.
 
-Wildcard TLS certificates are provisioned per repository on the first deployment via Let's Encrypt (Cloudflare DNS-01 challenge). Let's Encrypt imposes a limit of **50 certificates per registered domain per week**. Because Rediacc uses one wildcard certificate per repository (not per service), a deployment with 50+ new repositories in a single week may hit this limit.
+Wildcard TLS certificates are provisioned per repository on the first deployment via Let's Encrypt (Cloudflare DNS-01 challenge). Let's Encrypt caps issuance at **50 certificates per registered domain per week**. Because Rediacc uses one wildcard certificate per repository (not per service), a deployment that creates 50+ new repositories in a single week will hit this cap.
 
 Forks reuse the parent repository's existing wildcard certificate and do not consume any certificate quota.
 
@@ -171,7 +171,7 @@ Remote machines must run one of the following to meet Rediacc's kernel, filesyst
 
 ### Kernel feature matrix
 
-Operators can read this as a single glance at what each CI-tested OS provides out of the box. All five satisfy every requirement; the matrix is an operator-facing reference, not a gating criterion.
+Read the matrix as a single-glance view of what each CI-tested OS provides out of the box. All five satisfy every requirement, so this is an operator-facing reference, not a gating criterion.
 
 | OS | btrfs module | cgroups v2 | Landlock (ABI ≥ 1) | eBPF cgroup hooks |
 |----|--------------|------------|--------------------|-------------------|

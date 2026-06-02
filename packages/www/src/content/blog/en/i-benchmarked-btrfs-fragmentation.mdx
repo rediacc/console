@@ -1,6 +1,6 @@
 ---
-title: "Your Fragmentation Number Looks Terrifying. I Benchmarked What It Costs."
-description: "Our storage-health report flags repositories at nearly 20,000 extents per gigabyte. That number sounds alarming. I ran sequential and random read benchmarks on the worst offenders and the penalty was zero. Here is the data, and why Rediacc ships no defragment command."
+title: "Your Fragmentation Looks Terrifying. I Benchmarked the Cost."
+description: "Our storage-health report flags repos at nearly 20,000 extents/GB. I benchmarked both extremes: read penalty zero. Why Rediacc has no defrag command."
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-05-25
 category: guide
@@ -19,7 +19,7 @@ language: en
 > - The device is flash. Fragmentation hurts spinning disks through seek time. On an SSD there is almost no mechanism left for it to hurt.
 > - Running `btrfs filesystem defragment` here would unshare about 250 GB of reflinked forks and snapshots into a pool with 4.4 GB free. That is the real risk, and the benchmark says there is no benefit to weigh against it.
 
-The storage-health report exists to answer one question: where is my disk going. It shows each repository's size, how much data it shares with its forks, and a fragmentation figure. That last number can look frightening. On the machine I run, GitLab's repository image reports 268,771 extents across 14.6 GB. That is about 19,650 extents per gigabyte, and the tool labels it "high".
+Honestly, the storage-health report is there to answer one question: where is my disk going. It shows each repository's size, how much data it shares with its forks, and a fragmentation figure. That last number looks frightening. On the machine I run, GitLab's repository image reports 268,771 extents across 14.6 GB. That is about 19,650 extents per gigabyte, and the tool labels it "high".
 
 The reflex that follows is automatic. High fragmentation, so defragment. I have written that reflex into shell scripts on spinning disks for fifteen years. Before I added a defrag button to Rediacc, I wanted to know what the number actually costs on the hardware we run. So I benchmarked it on the live machine.
 
@@ -29,11 +29,11 @@ A Rediacc repository is a single LUKS image file living on a btrfs pool. The fra
 
 This matters because of how the data is stacked. From the bottom up: a physical SSD, then the host ext4 root filesystem, then a loop-backed pool file, then loop0, then the btrfs pool, then the LUKS image, then a device-mapper crypt device, then the inner ext4 your containers see. btrfs is copy-on-write. Every random write inside a repository writes a fresh extent in the image. Databases and container overlay layers write randomly all day, so the image accumulates extents by design.
 
-The files inside the volume are a different story. I checked the GitLab repository: its gitaly binary is in 10 extents, a git pack file in 17. The inner filesystem is not fragmented. The 19,650-per-gigabyte figure describes the copy-on-write container, which is exactly what you would expect it to look like and tells you nothing about whether reads are slow.
+The files inside the volume are unfragmented. I checked: GitLab's gitaly binary is in 10 extents, a git pack file in 17. The 19,650-per-gigabyte figure describes the copy-on-write container. That is exactly what it should look like, and it tells you nothing about whether reads are slow.
 
 ## The benchmark
 
-I picked two repositories at opposite ends of the fragmentation scale and read from them with direct IO, which bypasses the page cache and forces a physical read.
+I picked two repositories at opposite ends of the scale. One barely fragmented, one heavily. I read from each with direct IO, which skips the page cache and forces a real disk read.
 
 | Repository | Average extent | Extents per GB | Sequential read |
 |---|---|---|---|
@@ -72,10 +72,10 @@ Even where it fit, it would not last. These images re-fragment within minutes un
 
 The column worth your attention in the same report is divergence. It is the percentage of a repository's image that is unique to it rather than shared with forks and snapshots. A fresh fork sits near 0%, because it shares almost everything. A repository that has been written heavily since it was forked climbs toward 100%.
 
-Divergence answers the question fragmentation cannot: how much real, reclaimable disk does this repository cost. When a pool is tight, a low-divergence repository is a poor cleanup target, because its bytes are shared and deleting it frees little. The bytes live where divergence is high.
+Divergence answers the question fragmentation cannot: how much real, reclaimable disk does this repo cost. On a tight pool, a low-divergence repo is a bad cleanup target. Its bytes are shared, so deleting it frees almost nothing. The bytes live where divergence is high.
 
 ## The takeaway
 
 The fragmentation number is real, and on a copy-on-write image under random writes it will always look high. On flash it is informational. I measured a 16x spread and found no read penalty, a faster random profile on the more fragmented file, and a single small cost in background scan time. The tool that would "fix" the number would instead unshare a quarter of a terabyte of forks into a pool that has no room for them.
 
-So Rediacc reports fragmentation and explains it, and offers no button to act on it. The honest engineering answer was to benchmark the assumption rather than automate the reflex.
+So Rediacc reports fragmentation and explains it. It offers no button to act on it. The honest answer was to benchmark the assumption, not automate the reflex.

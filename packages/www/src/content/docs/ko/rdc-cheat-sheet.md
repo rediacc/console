@@ -1,11 +1,11 @@
 ---
 title: RDC CLI 치트 시트
-description: 모든 rdc 명령, config, 리포지터리, 머신, 동기화, 컨테이너 등에 대한 빠른 참조입니다.
+description: "rdc 명령 빠른 참조: config, 리포지터리, 머신, 동기화, 컨테이너."
 category: Guides
 order: 3
 language: ko
-sourceHash: "12956297c1157cd2"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "ad0ae49efa847fbc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # RDC CLI 치트 시트

@@ -1,6 +1,6 @@
 ---
 title: "Troubleshooting"
-description: "Solutions for common issues with SSH, setup, repositories, services, and Docker."
+description: "Fixes for common SSH, setup, repository, service, and Docker issues."
 category: "Guides"
 order: 10
 language: en
@@ -8,7 +8,7 @@ language: en
 
 # Troubleshooting
 
-Common issues and their solutions. When in doubt, start with `rdc doctor` to run a comprehensive diagnostic check.
+Common issues and how to fix them. When in doubt, start with `rdc doctor` to run a full diagnostic check.
 
 ## SSH Connection Fails
 
@@ -76,7 +76,7 @@ If `rdc config machine setup` or `renet system check-btrfs` fails with:
 Module btrfs not found
 ```
 
-...the server is running RHEL 10's stock kernel, which ships without the in-tree btrfs module. This is not a Rediacc bug; RHEL 10 dropped btrfs intentionally. The resolution is to run **Oracle Linux 10 instead**. Oracle 10 defaults to the Unbreakable Enterprise Kernel (UEK), which retains btrfs. See [Requirements → Why UEK?](/en/docs/requirements) for the full story.
+...the server is running RHEL 10's stock kernel, which ships without the in-tree btrfs module. This is not a Rediacc bug; RHEL 10 dropped btrfs intentionally. The fix is to run **Oracle Linux 10 instead**. Oracle 10 defaults to the Unbreakable Enterprise Kernel (UEK), which retains btrfs. See [Requirements → Why UEK?](/en/docs/requirements) for the full story.
 
 ## Repository Create Fails
 
@@ -139,7 +139,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code Permission Denied on sandbox files
 
-When connecting with `rdc vscode connect -m <machine> -r <repo>`, you may have seen errors like `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` after a previous VS Code session. This was caused by mixed file ownership inside the sandbox directory, which held files written by both your SSH user and the internal `rediacc` user.
+When connecting with `rdc vscode connect -m <machine> -r <repo>` after a previous VS Code session, older renet versions produced errors like `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. The cause: mixed file ownership inside the sandbox directory, where both your SSH user and the internal `rediacc` user had written files.
 
 Modern versions of renet fix this by:
 
@@ -190,4 +190,4 @@ If `rdc term` fails to open a terminal window:
 rdc doctor
 ```
 
-This checks your environment, renet installation, config configuration, and authentication status. Each check reports OK, Warning, or Error with a brief explanation.
+This checks your environment, renet installation, config, and authentication status. Each check reports OK, Warning, or Error with a brief explanation.

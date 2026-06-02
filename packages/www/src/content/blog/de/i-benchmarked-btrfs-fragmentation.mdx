@@ -1,6 +1,6 @@
 ---
-title: "Deine Fragmentierungszahl sieht erschreckend aus. Ich habe gemessen, was sie kostet."
-description: "Unser Speichergesundheitsbericht markiert Repositories mit fast 20.000 Extents pro Gigabyte. Diese Zahl klingt alarmierend. Ich habe sequenzielle und zufällige Lese-Benchmarks auf den schlimmsten Fällen durchgeführt und die Strafe war null. Hier sind die Daten und warum Rediacc keinen Defragmentierungsbefehl liefert."
+title: "Deine Fragmentierung sieht erschreckend aus. Ich habe die Kosten gemessen."
+description: "Unser Speichergesundheitsbericht markiert Repos mit fast 20.000 Extents/GB. Ich habe beide Extreme gemessen: Lese-Strafe null. Warum Rediacc keinen Defragmentierungsbefehl hat."
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-05-25
 category: guide
@@ -11,7 +11,8 @@ tags:
   - benchmarks
 featured: false
 language: de
-sourceHash: "73f1772f961bae0d"
+sourceHash: "5245c4e48a3a7074"
+sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
 ---
 
 > **Kurzfassung.** Rediaccs `rdc machine query --storage-health` meldet eine Fragmentierungszahl pro Repository. Auf einer Produktionsmaschine markiert es GitLab mit etwa 19.650 Extents pro Gigabyte. Der Reflex ist zu defragmentieren. Ich habe es stattdessen gemessen.
@@ -20,7 +21,7 @@ sourceHash: "73f1772f961bae0d"
 > - Das Gerät ist Flash. Fragmentierung schadet rotierenden Festplatten durch Seek-Zeit. Auf einer SSD gibt es fast keinen Mechanismus mehr, durch den sie schaden könnte.
 > - Das Ausführen von `btrfs filesystem defragment` hier würde etwa 250 GB refgelinkter Forks und Snapshots in einen Pool mit 4,4 GB freiem Speicher entladen. Das ist das echte Risiko, und der Benchmark sagt, dass es keinen Nutzen gibt, gegen den es abzuwägen wäre.
 
-Der Speichergesundheitsbericht existiert, um eine Frage zu beantworten: wo bleibt meine Festplatte. Er zeigt die Größe jedes Repositories, wie viel Daten es mit seinen Forks teilt, und eine Fragmentierungszahl. Diese letzte Zahl kann beängstigend aussehen. Auf der Maschine, die ich betreibe, meldet das Repository-Image von GitLab 268.771 Extents über 14,6 GB. Das sind etwa 19.650 Extents pro Gigabyte, und das Tool bezeichnet es als "hoch".
+Ehrlich gesagt ist der Speichergesundheitsbericht dafür da, eine Frage zu beantworten: wo bleibt meine Festplatte. Er zeigt die Größe jedes Repositories, wie viel Daten es mit seinen Forks teilt, und eine Fragmentierungszahl. Diese letzte Zahl sieht beängstigend aus. Auf der Maschine, die ich betreibe, meldet das Repository-Image von GitLab 268.771 Extents über 14,6 GB. Das sind etwa 19.650 Extents pro Gigabyte, und das Tool bezeichnet es als "hoch".
 
 Der darauffolgende Reflex ist automatisch. Hohe Fragmentierung, also defragmentieren. Ich habe diesen Reflex fünfzehn Jahre lang in Shell-Skripte für rotierende Festplatten geschrieben. Bevor ich einen Defragmentierungsknopf zu Rediacc hinzufügte, wollte ich wissen, was die Zahl auf der Hardware, die wir betreiben, tatsächlich kostet. Also habe ich es auf der Live-Maschine gemessen.
 
@@ -30,11 +31,11 @@ Ein Rediacc-Repository ist eine einzelne LUKS-Image-Datei, die auf einem btrfs-P
 
 Das ist wichtig wegen der Art, wie die Daten gestapelt sind. Von unten nach oben: eine physische SSD, dann das ext4-Root-Dateisystem des Hosts, dann eine loop-gestützte Pool-Datei, dann loop0, dann der btrfs-Pool, dann das LUKS-Image, dann ein device-mapper crypt-Gerät, dann das innere ext4, das deine Container sehen. btrfs ist copy-on-write. Jeder zufällige Schreibvorgang innerhalb eines Repositories schreibt einen neuen Extent in das Image. Datenbanken und Container-Overlay-Layer schreiben den ganzen Tag zufällig, also sammelt das Image absichtlich Extents an.
 
-Die Dateien innerhalb des Volumes sind eine andere Geschichte. Ich habe das GitLab-Repository überprüft: seine gitaly-Binary liegt in 10 Extents, eine git-Pack-Datei in 17. Das innere Dateisystem ist nicht fragmentiert. Die 19.650-pro-Gigabyte-Zahl beschreibt den copy-on-write-Container, was genau das ist, was man erwarten würde, und sagt nichts darüber aus, ob Lesevorgänge langsam sind.
+Die Dateien innerhalb des Volumes sind nicht fragmentiert. Ich habe es geprüft: GitLabs gitaly-Binary liegt in 10 Extents, eine git-Pack-Datei in 17. Die 19.650-pro-Gigabyte-Zahl beschreibt den copy-on-write-Container. Das ist genau das, was man erwarten sollte, und sagt nichts darüber aus, ob Lesevorgänge langsam sind.
 
 ## Der Benchmark
 
-Ich habe zwei Repositories an entgegengesetzten Enden der Fragmentierungsskala ausgewählt und mit Direct-IO daraus gelesen, was den Page-Cache umgeht und einen physischen Lesevorgang erzwingt.
+Ich habe zwei Repositories an entgegengesetzten Enden der Skala ausgewählt. Eines kaum fragmentiert, eines stark. Ich habe von beiden mit Direct-IO gelesen, was den Page-Cache überspringt und einen echten Festplattenlesevorgang erzwingt.
 
 | Repository | Durchschnittlicher Extent | Extents pro GB | Sequenzielles Lesen |
 |---|---|---|---|
@@ -73,10 +74,10 @@ Selbst wo es passen würde, würde es nicht lange halten. Diese Images re-fragme
 
 Die Spalte, die in demselben Bericht deine Aufmerksamkeit verdient, ist Divergenz. Es ist der Prozentsatz des Images eines Repositories, der einzigartig für es ist, anstatt mit Forks und Snapshots geteilt zu werden. Ein frischer Fork liegt nahe 0 %, weil er fast alles teilt. Ein Repository, das seit dem Forken stark beschrieben wurde, klettert gegen 100 %.
 
-Divergenz beantwortet die Frage, die Fragmentierung nicht kann: wie viel echte, rückgewinnbare Festplatte kostet dieses Repository. Wenn ein Pool eng ist, ist ein Repository mit niedriger Divergenz ein schlechtes Aufräumziel, weil seine Bytes geteilt sind und das Löschen wenig freigibt. Die Bytes leben dort, wo die Divergenz hoch ist.
+Divergenz beantwortet die Frage, die Fragmentierung nicht kann: wie viel echte, rückgewinnbare Festplatte kostet dieses Repo. Auf einem vollen Pool ist ein Repo mit niedriger Divergenz ein schlechtes Aufräumziel. Seine Bytes sind geteilt, das Löschen gibt fast nichts frei. Die Bytes leben dort, wo die Divergenz hoch ist.
 
 ## Das Fazit
 
 Die Fragmentierungszahl ist real, und auf einem copy-on-write-Image unter zufälligen Schreibvorgängen wird sie immer hoch aussehen. Auf Flash ist sie informativ. Ich habe eine 16-fache Spanne gemessen und keine Lesestrafe gefunden, ein schnelleres Zufallsprofil auf der stärker fragmentierten Datei, und einen einzigen kleinen Preis in der Hintergrundscan-Zeit. Das Tool, das die Zahl "beheben" würde, würde stattdessen ein Viertel eines Terabytes an Forks in einen Pool entladen, der keinen Platz für sie hat.
 
-Also meldet Rediacc die Fragmentierung und erklärt sie, und bietet keinen Knopf, um darauf zu reagieren. Die ehrliche technische Antwort war, die Annahme zu messen, anstatt den Reflex zu automatisieren.
+Also meldet Rediacc die Fragmentierung und erklärt sie. Es bietet keinen Knopf, um darauf zu reagieren. Die ehrliche Antwort war, die Annahme zu messen, nicht den Reflex zu automatisieren.

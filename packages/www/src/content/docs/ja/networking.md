@@ -4,8 +4,8 @@ description: リバースプロキシ、Dockerラベル、TLS証明書、DNS、T
 category: Guides
 order: 6
 language: ja
-sourceHash: 5f8a1092ed53e1b4
-sourceCommit: 8b0f83c57ebaaa0a2bee93143db34ab677b4e68b
+sourceHash: "d60a43cd573517a1"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # ネットワーキング
@@ -174,7 +174,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | 証明書リゾルバ, 自動Let's Encryptには`letsencrypt`を使用 |
 | `traefik.http.services.{name}.loadbalancer.server.port` | コンテナ内でアプリケーションがリッスンするポート |
 
-ラベル内の`{name}`は任意の識別子です。関連するルーター/サービス/ミドルウェアラベル間で一貫している必要があります。
+ラベル内の`{name}`は任意の識別子です。関連するルーター/サービス/ミドルウェアラベル間で一貫している必要があるだけです。
 
 > **注意：** `rediacc.*`ラベル（`rediacc.service_name`、`rediacc.service_ip`、`rediacc.network_id`）は`renet compose`によって自動的に注入されます。composeファイルに追加する必要はありません。
 
@@ -323,7 +323,7 @@ services:
 
 マシンレベルのレコードは`push-infra`によって作成され、カスタムドメインルート（`rediacc.domain`）をカバーします。リポジトリごとのワイルドカードレコードは`repo up`によって自動的に作成され、そのリポジトリの自動ルートをカバーします。
 
-これは冪等です。IPが変更された場合は既存のレコードが更新され、既に正しい場合はそのまま維持されます。
+これは冪等です：IPが変更された場合は既存のレコードが更新され、既に正しい場合はそのまま維持されます。
 
 ベースドメインのワイルドカード（`*.example.com`）は、`rediacc.domain=erp`のようなカスタムドメインラベルを使用する場合、手動で作成する必要があります。
 

@@ -1,6 +1,6 @@
 ---
-title: "O Seu Número de Fragmentação Parece Assustador. Medi o Que Custa."
-description: "O nosso relatório de estado do armazenamento sinaliza repositórios com quase 20.000 extents por gigabyte. Esse número parece alarmante. Executei benchmarks de leitura sequencial e aleatória nos piores casos e a penalidade foi zero. Aqui estão os dados, e porque é que o Rediacc não inclui um comando de desfragmentação."
+title: "A Sua Fragmentação Parece Assustadora. Medi o Custo."
+description: "O nosso relatório de estado do armazenamento sinaliza repositórios com quase 20.000 extents/GB. Fiz o benchmark dos dois extremos: penalidade de leitura zero. Porque é que o Rediacc não tem um comando de desfragmentação."
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-05-25
 category: guide
@@ -11,7 +11,8 @@ tags:
   - benchmarks
 featured: false
 language: pt
-sourceHash: "73f1772f961bae0d"
+sourceHash: "5245c4e48a3a7074"
+sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
 ---
 
 > **Resumo.** O `rdc machine query --storage-health` do Rediacc reporta um valor de fragmentação por repositório. Numa máquina de produção, sinaliza o GitLab com cerca de 19.650 extents por gigabyte. O impulso natural é desfragmentar. Em vez disso, medi.
@@ -20,7 +21,7 @@ sourceHash: "73f1772f961bae0d"
 > - O dispositivo é flash. A fragmentação prejudica os discos giratórios através do tempo de procura. Num SSD quase não resta nenhum mecanismo para que isso cause dano.
 > - Executar `btrfs filesystem defragment` aqui despartilharia cerca de 250 GB de forks e snapshots com reflink num pool com 4,4 GB livres. Esse é o risco real, e o benchmark mostra que não há benefício para contrapor.
 
-O relatório de estado do armazenamento existe para responder a uma pergunta: para onde está a ir o meu disco. Mostra o tamanho de cada repositório, quanto dado partilha com os seus forks, e um valor de fragmentação. Esse último número pode parecer assustador. Na máquina que giro, a imagem do repositório GitLab reporta 268.771 extents em 14,6 GB. São cerca de 19.650 extents por gigabyte, e a ferramenta classifica-o como "alto".
+Honestamente, o relatório de estado do armazenamento existe para responder a uma pergunta: para onde está a ir o meu disco. Mostra o tamanho de cada repositório, quanto dado partilha com os seus forks, e um valor de fragmentação. Esse último número parece assustador. Na máquina que giro, a imagem do repositório GitLab reporta 268.771 extents em 14,6 GB. São cerca de 19.650 extents por gigabyte, e a ferramenta classifica-o como "alto".
 
 O reflexo que se segue é automático. Alta fragmentação, logo desfragmentar. Escrevi esse reflexo em scripts shell para discos giratórios durante quinze anos. Antes de adicionar um botão de desfragmentação ao Rediacc, quis saber o que o número realmente custa no hardware que utilizamos. Por isso fiz o benchmark na máquina em produção.
 
@@ -30,11 +31,11 @@ Um repositório Rediacc é um único ficheiro de imagem LUKS a viver num pool bt
 
 Isto importa por causa de como os dados estão empilhados. De baixo para cima: um SSD físico, depois o sistema de ficheiros raiz ext4 do host, depois um ficheiro de pool com loop-back, depois loop0, depois o pool btrfs, depois a imagem LUKS, depois um dispositivo device-mapper crypt, depois o ext4 interior que os seus contentores veem. O btrfs é copy-on-write. Cada escrita aleatória dentro de um repositório escreve um extent novo na imagem. Bases de dados e camadas de overlay de contentores escrevem aleatoriamente o dia todo, por isso a imagem acumula extents por design.
 
-Os ficheiros dentro do volume são uma história diferente. Verifiquei o repositório GitLab: o seu binário gitaly está em 10 extents, um ficheiro git pack em 17. O sistema de ficheiros interior não está fragmentado. O valor de 19.650 por gigabyte descreve o contentor copy-on-write, que é exatamente o que esperaria que parecesse e não lhe diz nada sobre se as leituras são lentas.
+Os ficheiros dentro do volume não estão fragmentados. Verifiquei: o binário gitaly do GitLab está em 10 extents, um ficheiro git pack em 17. O valor de 19.650 por gigabyte descreve o contentor copy-on-write. É exatamente o que deveria parecer, e não lhe diz nada sobre se as leituras são lentas.
 
 ## O benchmark
 
-Escolhi dois repositórios nas extremidades opostas da escala de fragmentação e li a partir deles com IO direto, o que contorna a cache de página e força uma leitura física.
+Escolhi dois repositórios nas extremidades opostas da escala. Um quase sem fragmentação, outro muito fragmentado. Li a partir de cada um com IO direto, o que ignora a cache de página e força uma leitura de disco real.
 
 | Repositório | Extent médio | Extents por GB | Leitura sequencial |
 |---|---|---|---|
@@ -73,10 +74,10 @@ Mesmo onde coubesse, não duraria. Estas imagens re-fragmentam em minutos sob a 
 
 A coluna que merece a sua atenção no mesmo relatório é a divergência. É a percentagem da imagem de um repositório que lhe é única em vez de partilhada com forks e snapshots. Um fork recente fica próximo de 0%, porque partilha quase tudo. Um repositório que foi escrito intensamente desde que foi criado por fork sobe para 100%.
 
-A divergência responde à pergunta que a fragmentação não consegue: quanto disco real e recuperável este repositório custa. Quando um pool está apertado, um repositório com baixa divergência é um fraco alvo de limpeza, porque os seus bytes são partilhados e apagá-lo liberta pouco. Os bytes vivem onde a divergência é alta.
+A divergência responde à pergunta que a fragmentação não consegue: quanto disco real e recuperável este repositório custa. Num pool apertado, um repositório com baixa divergência é um mau alvo de limpeza. Os seus bytes são partilhados, por isso apagá-lo liberta quase nada. Os bytes vivem onde a divergência é alta.
 
 ## A conclusão
 
 O número de fragmentação é real, e numa imagem copy-on-write sob escritas aleatórias parecerá sempre alto. Em flash é informativo. Medi uma diferença de 16x e não encontrei nenhuma penalidade de leitura, um perfil aleatório mais rápido no ficheiro mais fragmentado, e um único custo pequeno no tempo de análise em segundo plano. A ferramenta que "corrigiria" o número despartilharia um quarto de terabyte de forks num pool que não tem espaço para eles.
 
-Por isso o Rediacc reporta a fragmentação e explica-a, e não oferece nenhum botão para agir sobre ela. A resposta de engenharia honesta foi fazer o benchmark da suposição em vez de automatizar o reflexo.
+Por isso o Rediacc reporta a fragmentação e explica-a. Não oferece nenhum botão para agir sobre ela. A resposta honesta foi fazer o benchmark da suposição, não automatizar o reflexo.

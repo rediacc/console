@@ -4,13 +4,13 @@ description: "Organisations, équipes, membres et abonnements dans Rediacc."
 category: Guides
 order: 12
 language: fr
-sourceHash: "e32952a1485133e0"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "974885635641ed70"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Organisations
 
-Lors de votre inscription, Rediacc crée automatiquement une organisation pour vous. Votre organisation est le conteneur principal de toutes les ressources -- machines, dépôts, abonnements et membres d'équipe.
+Créez un compte et Rediacc crée automatiquement une organisation pour vous. Cette organisation est le conteneur principal de tout ce que vous possédez ici : machines, dépôts, abonnements et personnes que vous invitez. Vous n'en créerez pas une seconde par accident. Il y a exactement une organisation par compte, et toutes les équipes et ressources en dépendent.
 
 ![Registration Flow](/img/account-registration-flow.svg)
 
@@ -117,7 +117,7 @@ UPSTREAM_URL=https://www.rediacc.com
 UPSTREAM_API_KEY=rdt_<token>
 ```
 
-Le token accorde **uniquement** le renouvellement de cert de délégation - il ne peut pas lire ni modifier d'autres ressources. C'est le seul moyen d'émettre un token `delegation:renew` ; le flux standard `/portal/api-tokens` n'inclut pas cette portée.
+Le token accorde **uniquement** le renouvellement de cert de délégation. Il ne peut pas lire ni modifier d'autres ressources. C'est le seul moyen d'émettre un token `delegation:renew` ; le flux standard `/portal/api-tokens` n'inclut pas cette portée.
 
 #### Renouvellement en réseau isolé
 

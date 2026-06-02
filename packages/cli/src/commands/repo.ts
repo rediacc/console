@@ -26,6 +26,8 @@ import {
   postRepoUpTasks,
   runBatchOperation,
 } from './repo-batch-utils.js';
+import { registerRepoBranchingCommands } from './repo-branching.js';
+import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoCatCommand } from './repo-cat.js';
 import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
@@ -526,6 +528,8 @@ export function registerRepoCommands(program: Command): void {
     .action(handleRepoList);
   registerRepoCatCommand(repo);
   registerRepoDiffCommand(repo);
+  registerRepoBranchingCommands(repo);
+  registerRepoMaintenanceCommands(repo);
   registerExtendedRepoCommands(repo);
   registerRepoBackupCommands(repo);
   registerRepoMigrateCommand(repo);

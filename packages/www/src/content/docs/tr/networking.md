@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: 5f8a1092ed53e1b4
-sourceCommit: 8b0f83c57ebaaa0a2bee93143db34ab677b4e68b
+sourceHash: "d60a43cd573517a1"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Ağ
@@ -176,7 +176,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | Sertifika çözümleyici, otomatik Let's Encrypt için `letsencrypt` kullanın |
 | `traefik.http.services.{name}.loadbalancer.server.port` | Uygulamanızın konteyner içinde dinlediği port |
 
-Etiketlerdeki `{name}` rastgele bir tanımlayıcıdır, sadece ilgili router/service/middleware etiketleri arasında tutarlı olması yeterlidir.
+Etiketlerdeki `{name}` rastgele bir tanımlayıcıdır. Sadece ilgili router/service/middleware etiketleri arasında tutarlı olması yeterlidir.
 
 > **Not:** `rediacc.*` etiketleri (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) `renet compose` tarafından otomatik olarak enjekte edilir. Compose dosyanıza eklemenize gerek yoktur.
 
@@ -325,7 +325,7 @@ Aşağıdaki TCP/UDP portları varsayılan olarak giriş noktalarına sahiptir (
 
 Makine seviyesi kayıtlar `push-infra` tarafından oluşturulur ve özel alan adlı yönlendirmeleri (`rediacc.domain`) kapsar. Depo başına joker kayıtlar `repo up` tarafından otomatik olarak oluşturulur ve o deponun otomatik yönlendirmelerini kapsar.
 
-Bu idempotent bir işlemdir, IP değişirse mevcut kayıtlar güncellenir, zaten doğruysa değiştirilmez.
+Bu idempotent bir işlemdir: IP değişirse mevcut kayıtlar güncellenir, zaten doğruysa değiştirilmez.
 
 Temel alan adı joker kaydı (`*.example.com`), `rediacc.domain=erp` gibi özel alan adı etiketleri kullanıyorsanız manuel olarak oluşturulmalıdır.
 

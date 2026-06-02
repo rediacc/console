@@ -4,8 +4,8 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "71da41d42b1a6b4e"
-sourceCommit: "62f6c6e20c424566749c15efca685c8dc136f09b"
+sourceHash: "15b3c42682a05678"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Hızlı Başlangıç
@@ -20,7 +20,7 @@ Kendi sunucunuzda şifrelenmiş, izole bir konteyner ortamı dağıtın. Bulut h
 
 Bir repo, disk üzerinde tek bir şifrelenmiş dosyadır. Taşıyabilir, yedekleyebilir, çatallayabilirsiniz. Sadece bir dosyadır. Bağlandığında, içinde özel bir Docker daemon'u ve uygulama verileriniz bulunan bir klasöre dönüşür.
 
-Bir repoyu USB bellek gibi düşünün. Elinizde somut bir şeydir ve taktığınızda sistem tarafından görünür ve erişilebilir hale gelir. Uygulamalarınız ve verileriniz tamamen taşınabilirdir. Herhangi bir bulut sağlayıcısındaki herhangi bir makinede Tak ve Çalıştır.
+Bir repoyu USB bellek gibi düşünün: herhangi bir makineye takın; uygulamalar ve veriler bağlanır, çalışmaya hazır. Hiçbir şeyi yeniden oluşturmadan makineler veya bulut sağlayıcıları arasında taşıyın. Tak ve Çalıştır.
 
 **İki araç, iki rol:**
 

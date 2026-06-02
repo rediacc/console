@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: de
-sourceHash: 5f8a1092ed53e1b4
-sourceCommit: 8b0f83c57ebaaa0a2bee93143db34ab677b4e68b
+sourceHash: "d60a43cd573517a1"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Netzwerk
@@ -176,7 +176,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | Zertifikat-Resolver, verwenden Sie `letsencrypt` für automatisches Let's Encrypt |
 | `traefik.http.services.{name}.loadbalancer.server.port` | Der Port, auf dem Ihre Anwendung im Container lauscht |
 
-Der `{name}` in den Labels ist ein beliebiger Bezeichner, er muss nur über zusammengehörige Router-/Service-/Middleware-Labels konsistent sein.
+Der `{name}` in den Labels ist ein beliebiger Bezeichner. Er muss nur über zusammengehörige Router-/Service-/Middleware-Labels konsistent bleiben.
 
 > **Hinweis:** Die `rediacc.*`-Labels (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) werden automatisch von `renet compose` injiziert. Sie müssen sie nicht in Ihre Compose-Datei einfügen.
 
@@ -325,7 +325,7 @@ Wenn `--cf-dns-token` konfiguriert ist, erstellt `rdc config infra push` automat
 
 Maschinen-Einträge werden von `push-infra` erstellt und decken Routen mit benutzerdefinierten Domains (`rediacc.domain`) ab. Pro-Repository-Wildcard-Einträge werden automatisch von `repo up` erstellt und decken Auto-Routen für dieses Repository ab.
 
-Dies ist idempotent, bestehende Einträge werden aktualisiert, wenn sich die IP ändert, und bleiben unverändert, wenn sie bereits korrekt sind.
+Dies ist idempotent: bestehende Einträge werden aktualisiert, wenn sich die IP ändert, und bleiben unverändert, wenn sie bereits korrekt sind.
 
 Der Basis-Domain-Wildcard (`*.example.com`) muss manuell erstellt werden, wenn Sie benutzerdefinierte Domain-Labels wie `rediacc.domain=erp` verwenden.
 

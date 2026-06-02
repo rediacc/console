@@ -21,7 +21,7 @@ Rediacc has two binaries. Here is when to use each one.
 
 ## How They Work Together
 
-`rdc` connects to your server over SSH and runs `renet` commands for you. You type a single command on your workstation, and `rdc` handles the rest:
+On your workstation you run `rdc`. It opens an SSH connection to your server and runs the matching `renet` command there for you. One command, one place to run it:
 
 1. Reads your local config (`~/.config/rediacc/rediacc.json`)
 2. Connects to the server over SSH
@@ -79,6 +79,6 @@ These commands run `renet` locally (not over SSH). See [Experimental VMs](/en/do
 
 ## Rediaccfile Note
 
-You may see `renet compose -- ...` inside a `Rediaccfile`. That is normal, Rediaccfile functions run on the server where `renet` is available.
+You'll see `renet compose -- ...` inside a `Rediaccfile`. Don't worry. Rediaccfile functions run on the server, where `renet` is already installed.
 
 From your workstation, start and stop workloads with `rdc repo up` and `rdc repo down`.

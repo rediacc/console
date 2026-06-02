@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: ar
-sourceHash: 5f8a1092ed53e1b4
-sourceCommit: 8b0f83c57ebaaa0a2bee93143db34ab677b4e68b
+sourceHash: d60a43cd573517a1
+sourceCommit: 4e60a12e0664cdee5ad9079a7b75e2d05980d0f5
 ---
 
 # الشبكات
@@ -176,7 +176,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | محلل الشهادات، استخدم `letsencrypt` لشهادات Let's Encrypt التلقائية |
 | `traefik.http.services.{name}.loadbalancer.server.port` | المنفذ الذي يستمع عليه تطبيقك داخل الحاوية |
 
-`{name}` في العلامات هو معرّف عشوائي، يجب فقط أن يكون متسقاً عبر علامات الموجّه/الخدمة/الوسيط المرتبطة.
+`{name}` في العلامات هو معرّف عشوائي، يجب فقط أن يبقى متسقاً عبر علامات الموجّه/الخدمة/الوسيط المرتبطة.
 
 > **ملاحظة:** علامات `rediacc.*` (`rediacc.service_name`، `rediacc.service_ip`، `rediacc.network_id`) تُضاف تلقائياً بواسطة `renet compose`. لا تحتاج لإضافتها إلى ملف compose الخاص بك.
 
@@ -325,7 +325,7 @@ services:
 
 سجلات مستوى الجهاز تُنشأ بواسطة `push-infra` وتغطي مسارات النطاق المخصص (`rediacc.domain`). سجلات البدل لكل مستودع تُنشأ تلقائياً بواسطة `repo up` وتغطي المسارات التلقائية لذلك المستودع.
 
-هذه العملية متساوية القوة، يتم تحديث السجلات الموجودة إذا تغير عنوان IP، وتُترك دون تغيير إذا كانت صحيحة بالفعل.
+هذه العملية متساوية القوة: تُحدَّث السجلات الموجودة إذا تغير عنوان IP، وتُترك دون تغيير إذا كانت صحيحة بالفعل.
 
 يجب إنشاء سجل البدل للنطاق الأساسي (`*.example.com`) يدوياً إذا كنت تستخدم تسميات نطاق مخصصة مثل `rediacc.domain=erp`.
 

@@ -1324,6 +1324,13 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: „{{repo}}\"...",
       "batchResult": "{{action}} lõpetatud: {{succeeded}}/{{total}} õnnestus",
       "batchStarting": "{{action}}: „{{repo}}\"...",
+      "branch": {
+        "branchOption": "Uue haru nimi",
+        "completed": "Haru \"{{branch}}\" -> {{commit}}",
+        "description": "Loo nimega branch-viide, mis osutab töötava forki praegusele commit'ile (selle tipule). Branch-viited asuvad CLI konfiguratsioonis (masin = objektihoidla, konfiguratsioon = viitehoidla).",
+        "descriptionShort": "Loo branch-viide, mis osutab praegusele commit'ile",
+        "workingOption": "Töötav fork, mille praegusele commit'ile branch osutab"
+      },
       "cat": {
         "description": "Loe piiratud aken failist hoidla sees ja kirjuta see stdout-i (piiramine toimub serveripoolselt; diagnostika läheb stderr-i)",
         "failed": "Lugemine ebaõnnestus",
@@ -1338,6 +1345,22 @@
       },
       "certSync": {
         "updated": "ACME sertifikaadi vahemälu uuendati masinalt {{machine}} ({{count}} sertifikaati)"
+      },
+      "checkout": {
+        "description": "Reflink-klooni muutumatu commit (või branch'i tipp) värskesse kirjutatavasse töötavasse forki ja suuna HEAD sellele. Peaaegu silmapilkne ja konstantse ajaga (BTRFS reflink).",
+        "descriptionShort": "Reflink-klooni commit/branch kirjutatavasse töötavasse forki",
+        "fromOption": "Lahenda --ref selle töökahvli haru nimena",
+        "refOption": "Commiti GUID (või haru nimi koos --from) väljavõtmiseks",
+        "tagOption": "Uue kirjutatava töötava forki nimi"
+      },
+      "commit": {
+        "authorOption": "Commit'i autor",
+        "completed": "Commit'itud {{commit}}: {{message}}",
+        "description": "Külmuta haagitud töötava forki praegune olek uueks muutumatuks commit'iks (git-laadne). Commit salvestab oma sõnumi, autori, ajatempli ja vanema mahu sees (nii et see liigub kaasa push'iga) ning märgitakse kirjutuskaitstuks — see keeldub haakimisest. Töötav fork jätkab muutumatuna, nagu git jätab töökataloogi puutumata. Tee commit'ist kirjutatav koopia käsuga 'rdc repo checkout'.",
+        "descriptionShort": "Külmuta töötav fork uueks muutumatuks commit'iks",
+        "failed": "Commit ebaõnnestus",
+        "messageOption": "Commit'i sõnum",
+        "nameOption": "Töötav fork, mida commit'ida (peab olema haagitud)"
       },
       "create": {
         "alreadyExists": "Hoidla \"{{name}}\" on konfiguratsioonis juba olemas",
@@ -1415,6 +1438,8 @@
         "descriptionShort": "Peaaegu hetkeline CoW-fork hoidlast (uus GUID, networkId, IP-vahemik)",
         "examples": "\nNäited:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Forgi loomine ebaõnnestus",
+        "immutableOption": "Märgib kahvli kirjutuskaitstuks: see keeldub haakimisest ja hoiab oma tõmmist jäädavalt baidi tasemel stabiilsena (külmutatud commit/alus masinatevaheliseks delta-tõukeks)",
+        "immutableUpConflict": "repo fork: --immutable ja --up välistavad teineteise. Muutumatu kahvel keeldub haakimisest, seega ei saa seda käivitada. Eemalda --up või eemalda --immutable, et juurutada tavaline kahvel.",
         "registered": "Fork \"{{repository}}\" registreeritud ({{guid}}, võrk {{networkId}})",
         "rollback": "Konfiguratsiooni muudatused tühistati hoidla \"{{repository}}\" jaoks",
         "starting": "Forkimine: \"{{parent}}\" nimega \"{{repository}}\" masinal \"{{machine}}\"...",
@@ -1423,6 +1448,25 @@
         "tagReservedLatest": "repo fork: silt \"latest\" on reserveeritud peamise (toodangu) hoidla jaoks — vali teine --tag (nt \"test\", \"staging\", \"<feature>\")",
         "upOption": "Haagi külge ja käivita teenused pärast forkimist (fork + mount + up ühes käsus)"
       },
+      "fsck": {
+        "clean": "Masinal {{machine}} pole hälbeid: kõik viidad lahenevad ja orvuks jäänud commit'e ei leitud",
+        "danglingHeader": "{{count}} rippuvat viidet (osutavad puuduvale objektile):",
+        "description": "Kontrolli CLI konfiguratsiooni viitu (harud, HEAD) masinal tegelikult olemasolevate objektide vastu. Teatab rippuvatest viidetest (viide osutab puuduvale objektile) ja orvuks jäänud commit'idest (muutumatu commit, milleni ükski viide ei küüni). Ainult lugemiseks.",
+        "descriptionShort": "Kontrolli konfiguratsiooni viitu masina objektide vastu",
+        "orphanHeader": "{{count}} orvuks jäänud commit'i (ükski viide ei küüni nendeni):",
+        "orphanHint": "Taaskasuta orve käsuga: rdc repo gc --apply -m <machine>"
+      },
+      "gc": {
+        "applied": "Prügikoristus lõpetatud: {{deleted}}/{{total}} commit'i kustutatud",
+        "applyOption": "Kustuta ligipääsmatud commit'id päriselt (vaikimisi on kuiv eelvaade)",
+        "deleted": "Commit {{commit}} kustutatud",
+        "deleteFailed": "Commit'i {{commit}} kustutamine ebaõnnestus",
+        "description": "Kustuta masinal muutumatud commit-objektid, milleni ükski haru ega HEAD ei küüni (ligipääsetavuse GC). Masin on objektihoidla; CLI konfiguratsioon on viidahoidla. Vaikimisi kuiv käivitus: kustutamiseks anna --apply. Ei puuduta kunagi külgehaagitud objekti ega töötavat forki.",
+        "descriptionShort": "Korja kokku masina ligipääsmatud muutumatud commit'id",
+        "dryRunHeader": "{{count}} ligipääsmatut commit'i kustutataks:",
+        "dryRunHint": "Nende kustutamiseks käivita uuesti võtmega --apply.",
+        "nothing": "Masinal {{machine}} pole midagi koristada: kõik commit'id on ligipääsetavad"
+      },
       "list": {
         "completed": "Loetlemine lõpetatud",
         "description": "Loetle masina hoidlad",
@@ -1430,7 +1474,25 @@
         "serverNameLegend": "* nimi loetud masinast (puudub teie kohalikus konfiguratsioonis)",
         "starting": "Hoidlate loetlemine masinal \"{{machine}}\"..."
       },
+      "log": {
+        "description": "Prindi commit-ajalugu, mis on kättesaadav töötava forki praegusest commit'ist (või commit-viitest), käies läbi vanemate ahelat, mille salvestas 'rdc repo commit'. Loeb mahuvälist peegeldust, nii et ühtki commit'i ei avata.",
+        "descriptionShort": "Käi läbi forki või commit'i commit-ajalugu",
+        "failed": "Log ebaõnnestus",
+        "jsonOption": "Väljasta commit-ajalugu JSON-ina",
+        "nameOption": "Töötav fork või commit, kust ajaloo läbikäimist alustada"
+      },
       "machineOption": "Sihtmasina nimi",
+      "merge": {
+        "baseOption": "Ühise eellase commiti GUID kolmepoolse merge'i jaoks (kasutatakse koos --resolve'iga). Vaikimisi lähtecommiti vanem või sihtmärgi praegune commit.",
+        "completed": "{{source}} merge'itud sihtmärki {{target}}",
+        "description": "Merge lähtecommit või fork sihtmärgiks olevasse töötavasse forki. Aktiivset sihtmärki ei muudeta kunagi kohapeal: tulemus ehitatakse reflink-kloonis ja vahetatakse aatomilises sammus sisse. Külgehaagitud või töötav sihtmärk lükatakse tagasi, kui ei kasutata --force, mis peatab selle enne korralikult. Ilma --resolve'ita on tegu kogu kujutise take-theirs'iga (sihtmärgist saab lähtekoodi koopia); valikuga --resolve ours|theirs on tegu failipõhise kolmepoolse merge'iga ühise eellase suhtes, mis võtab kummagi poole ainulaadsed muudatused ja lahendab kahepoolsed konfliktid lipu järgi.",
+        "descriptionShort": "Commiti/forki olelusringikindel merge töötavasse forki",
+        "failed": "Merge ebaõnnestus",
+        "forceOption": "Peata külgehaagitud/töötav sihtmärk enne ja seejärel merge (ei muuda kunagi aktiivset külgehaaki)",
+        "fromOption": "Lähtekoodi commit või fork, millest merge teha",
+        "nameOption": "Sihtmärgiks olev töötav fork, kuhu merge teha",
+        "resolveOption": "Failipõhine konfliktide lahendamine kolmepoolsel merge'il: 'ours' säilitab sihtmärgi versiooni, 'theirs' võtab lähtekoodi oma. Jäta välja kogu kujutise fast-forward'i jaoks (take-theirs)."
+      },
       "migrate": {
         "checkpointing": "CRIU kontrollpunkti loomine...",
         "complete": "Migratsioon lõpetatud: {{name}} teisaldati {{from}} asukohast {{to}} asukohta",
@@ -1443,9 +1505,11 @@
         "downtime": "Katkestusaeg: {{duration}}",
         "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt 10M)",
         "optionCheckpoint": "CRIU otsemigratsion: jäädvusta ja taasta protsessi mäluseisund",
+        "optionDeltaBase": "Muutumatu baas-GUID ülemineku deltaks (edasijõudnutele; vaikimisi 1. faasi baas)",
         "optionFrom": "Allika masina nimi",
         "optionProvision": "Provisioni siht automaatselt pilveteenusepakkuja kaudu (nt hetzner, linode)",
         "optionSkipDns": "Jäta DNS-kirjete vahetamine pärast migratsiooni vahele",
+        "optionStrategy": "Üleminekul kasutatav plokidelta strateegia: auto, physical või shared",
         "optionTo": "Sihtmasina nimi",
         "phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
         "phase1Done": "Mahukas ülekanne lõpetatud",
@@ -1489,8 +1553,10 @@
         "description": "Tõmba hoidla kaugelt (masin või salvestus). Jäta nimi välja, et tõmmata kõik hoidlad. Allika tüüp tuvastatakse automaatselt konfiguratsioonist. Kasuta --up, et juurutada pärast tõmbamist",
         "descriptionShort": "Tõmba hoidla kaugelt (masin või salvestus)",
         "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt \"6M\", \"10M\")",
+        "optionDeltaBase": "Muutumatu baas-GUID, mis on mõlemal masinal baidihaaval identne; võta vastu ainult muutunud plokid (masinaallikas)",
         "optionForce": "Sundi olemasoleva hoidla ülekirjutamine",
         "optionFrom": "Allika masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
+        "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
         "optionUp": "Pärast tõmbamist haagi külge ja juuruta hoidla sellel masinal",
         "pulling": "Hoidla \"{{repo}}\" varukoopia tõmbamine...",
         "sourceRequired": "Määra --from <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)"
@@ -1504,8 +1570,10 @@
         "destRequired": "Määra --to <kaugkoht> (masina või salvestuse nimi konfiguratsioonist)",
         "optionBwlimit": "Ribalaiuse piirang rsync-ülekandele (nt \"6M\", \"10M\")",
         "optionCheckpoint": "Loo CRIU kontrollpunkt enne varukoopiat (jäädvustab protsessi mäluseisundi otseülekandeks)",
+        "optionDeltaBase": "Muutumatu baas-GUID, mis on mõlemal masinal baidihaaval identne; kanna üle ainult muutunud plokid (masinasihtkoht). Jäta välja automaatse baasi jaoks",
         "optionForce": "Sundi olemasoleva varukoopia ülekirjutamine",
         "optionProvision": "Provisioni sihtmasina automaatselt pilveteenusepakkuja kaudu, kui seda ei eksisteeri",
+        "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
         "optionTag": "Versioonimise juurutusmärgend",
         "optionTo": "Sihtkoha masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
         "optionUp": "Pärast pushumist haagi külge ja juuruta hoidla sihtmasinal",

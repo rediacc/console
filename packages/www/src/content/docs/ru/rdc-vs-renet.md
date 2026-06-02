@@ -4,8 +4,8 @@ description: 'Когда использовать rdc, а когда renet.'
 category: Concepts
 order: 1
 language: ru
-sourceHash: 526136e143dbcf08
-sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
+sourceHash: "026a183f8a5f9dd4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # rdc vs renet
@@ -23,7 +23,7 @@ sourceCommit: 5c97ef070ea0c474b03651ceea03433b3f48abcd
 
 ## Как они работают вместе
 
-`rdc` подключается к вашему серверу по SSH и выполняет команды `renet` за вас. Вы вводите одну команду на рабочей станции, а `rdc` делает всё остальное:
+На рабочей станции вы запускаете `rdc`. Он открывает SSH-соединение с вашим сервером и выполняет там соответствующую команду `renet`. Одна команда, одно место запуска:
 
 1. Читает локальную конфигурацию (`~/.config/rediacc/rediacc.json`)
 2. Подключается к серверу по SSH
@@ -81,6 +81,6 @@ rdc ops down               # Уничтожить кластер
 
 ## Примечание о Rediaccfile
 
-Вы можете увидеть `renet compose -- ...` внутри `Rediaccfile`. Это нормально, функции Rediaccfile выполняются на сервере, где доступен `renet`.
+Вы увидите `renet compose -- ...` внутри `Rediaccfile`. Не беспокойтесь. Функции Rediaccfile выполняются на сервере, где `renet` уже установлен.
 
 С вашей рабочей станции запускайте и останавливайте рабочие нагрузки командами `rdc repo up` и `rdc repo down`.

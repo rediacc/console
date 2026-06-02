@@ -1,16 +1,16 @@
 ---
 title: 故障排除
-description: SSH、设置、仓库、服务和Docker常见问题的解决方案。
+description: SSH、设置、仓库、服务和 Docker 常见问题的修复方法。
 category: Guides
 order: 10
 language: zh
-sourceHash: "658b00b83875950d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "7cfabe7bbf3914c3"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 故障排除
 
-常见问题及其解决方案。如有疑问，请先运行 `rdc doctor` 进行全面诊断检查。
+常见问题及其修复方法。如有疑问，请先运行 `rdc doctor` 进行完整诊断检查。
 
 ## SSH连接失败
 
@@ -78,7 +78,7 @@ CRIU 是触发 AppArmor 的已知情况。Renet 自动为标记了 `rediacc.chec
 Module btrfs not found
 ```
 
-...服务器运行的是 RHEL 10 的标准内核，该内核不包含内置的 btrfs 模块。这不是 Rediacc 的 bug；RHEL 10 有意移除了 btrfs。解决方案是**改用 Oracle Linux 10**。Oracle 10 默认使用保留了 btrfs 的 Unbreakable Enterprise Kernel（UEK）。完整说明请参见 [要求 -- 为什么选择 UEK?](/en/docs/requirements)。
+...服务器运行的是 RHEL 10 的标准内核，该内核不包含内置的 btrfs 模块。这不是 Rediacc 的 bug；RHEL 10 有意移除了 btrfs。修复方法是**改用 Oracle Linux 10**。Oracle 10 默认使用保留了 btrfs 的 Unbreakable Enterprise Kernel（UEK）。完整说明请参见 [要求 -- 为什么选择 UEK?](/en/docs/requirements)。
 
 ## 仓库创建失败
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code 在沙箱文件上 Permission Denied
 
-当使用 `rdc vscode connect -m <machine> -r <repo>` 连接时，你可能在之前的 VS Code 会话之后看到过类似 `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` 的错误。这是因为沙箱目录内存在混合的文件所有权，其中既有你的 SSH 用户写入的文件，也有内部 `rediacc` 用户写入的文件。
+在之前的 VS Code 会话之后使用 `rdc vscode connect -m <machine> -r <repo>` 连接时，旧版 renet 会产生类似 `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` 的错误。原因是：沙箱目录内存在混合的文件所有权，你的 SSH 用户和内部 `rediacc` 用户都写入了文件。
 
 较新版本的 renet 通过以下方式修复了这个问题：
 
@@ -192,4 +192,4 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 rdc doctor
 ```
 
-此命令检查您的环境、renet安装、配置文件和身份验证状态。每项检查会报告OK、Warning或Error，并附带简要说明。
+此命令检查您的环境、renet安装、配置和身份验证状态。每项检查会报告OK、Warning或Error，并附带简要说明。

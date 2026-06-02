@@ -4,11 +4,13 @@ description: Rediacc의 조직, 팀, 구성원 및 구독 관리.
 category: Guides
 order: 12
 language: ko
+sourceHash: "974885635641ed70"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### 조직
 
-회원가입 시 Rediacc가 자동으로 조직을 생성합니다. 조직은 머신, 리포지토리, 구독, 팀 구성원 등 모든 리소스를 담는 최상위 컨테이너입니다.
+계정을 등록하면 Rediacc가 자동으로 조직을 생성합니다. 이 조직은 여기서 소유하는 모든 것의 최상위 컨테이너입니다. 즉, 머신, 리포지토리, 구독, 그리고 초대하는 사람들. 실수로 두 번째 조직을 만들 수는 없습니다. 계정당 정확히 하나의 조직이 있으며, 모든 팀과 리소스는 그것에 연결됩니다.
 
 ![Registration Flow](/img/account-registration-flow.svg)
 
@@ -115,7 +117,7 @@ UPSTREAM_URL=https://www.rediacc.com
 UPSTREAM_API_KEY=rdt_<token>
 ```
 
-이 토큰은 위임 인증서 갱신**만** 허용하며 다른 리소스를 읽거나 수정할 수 없습니다. `delegation:renew` 토큰을 발급받는 유일한 방법입니다. 일반 `/portal/api-tokens` 흐름에는 이 범위가 포함되지 않습니다.
+이 토큰은 위임 인증서 갱신**만** 허용합니다. 다른 리소스를 읽거나 수정할 수 없습니다. `delegation:renew` 토큰을 발급받는 유일한 방법입니다. 일반 `/portal/api-tokens` 흐름에는 이 범위가 포함되지 않습니다.
 
 #### 에어갭 갱신
 

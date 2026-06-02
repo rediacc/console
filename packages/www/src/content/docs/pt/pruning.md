@@ -4,6 +4,8 @@ description: "Remover backups órfãos, snapshots obsoletos, imagens de reposit�
 category: "Guides"
 order: 12
 language: pt
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Pruning
@@ -58,7 +60,7 @@ As eliminações são agrupadas por subcaminho de armazenamento: uma chamada rcl
 
 ## Machine Prune
 
-Limpa recursos na máquina em três fases. A Fase 1 é sempre executada; as fases 2 e 3 são opcionais e mutuamente complementares.
+Limpa recursos na máquina em três fases. A Fase 1 é sempre executada; as fases 2 e 3 são opcionais e podem ser combinadas.
 
 ### Fase 1: Limpeza do datastore (sempre executada)
 
@@ -169,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-Nomes de certificados cujo âncora é uma máquina, repositório ou GUID ativo. E qualquer wildcard de rótulo único `<service>.<base>` ou raiz `*.<base>`. São deixados intactos.
+Os nomes de certificados cujo âncora é uma máquina, repositório ou GUID ativo são deixados intactos, assim como qualquer wildcard de rótulo único `<service>.<base>` ou raiz `*.<base>`.
 
 ## Migração: preenchimento retroativo do espelho de estado
 

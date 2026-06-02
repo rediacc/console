@@ -6,11 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: et
+sourceHash: "8f29c515be1b7fb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Piirangud ja kvoodid
 
-See leht dokumenteerib Rediacc juurutuste suhtes kohaldatavaid kõvasid ja pehmeid piiranguid. Nende piirangute mõistmine aitab planeerida mahtu ja vältida ootamatuid kitsaskohti.
+See leht loetleb Rediacc juurutuste suhtes kohaldatavaid kõvasid ja pehmeid piiranguid. Loe seda enne mahu planeerimist, et teaksid, millised laed on olemas ja millised mitte.
 
 ---
 
@@ -34,7 +36,7 @@ Rediacc ei jõusta kõva ülempiiri. Praktiline piirang sõltub teie masina ress
 | RAM | Iga töötav hoidla käivitab oma Dockeri deemoni ja konteinerid. Mälukasutus sõltub teie töökoormustest. |
 | CPU | Paralleelsed hoidla toimingud (käivitamine, varundamine, hargnemine) lisavad ajutist CPU koormust. |
 
-**Tüüpilised juurutused** käitavad 10--50 hoidlat masina kohta probleemideta. Masinad 32 GB+ RAM ja 500 GB+ salvestusruumiga käitavad regulaarselt 100+ hoidlat.
+**Tüüpilised juurutused** käitavad 10 kuni 50 hoidlat masina kohta probleemideta. Masinad 32 GB+ RAM ja 500 GB+ salvestusruumiga käitavad regulaarselt 100+ hoidlat.
 
 ### Süsteemiülene võrgu-ID piirang
 
@@ -109,7 +111,7 @@ Igal hoidla pildil on fikseeritud maksimaalne suurus, mis on seatud loomise ajal
 
 Iga teenus sildiga `rediacc.service_port` saab automaatselt ühe HTTPS-marsruudi. Marsruutidega teenuste arvule piirangut ei ole, alludes hoidla kohta 61-teenuse maksimumile.
 
-Metamärgi TLS-sertifikaadid väljastatakse hoidla kohta esimesel juurutusel Let's Encrypt kaudu (Cloudflare DNS-01 väljakutse). Let's Encrypt kehtestab piirangu **50 sertifikaati registreeritud domeeni kohta nädalas**. Kuna Rediacc kasutab ühte metamärgi sertifikaati hoidla kohta (mitte teenuse kohta), võib juurutus, millel on 50+ uut hoidlat ühe nädala jooksul, seda piirangut tabada.
+Metamärgi TLS-sertifikaadid väljastatakse hoidla kohta esimesel juurutusel Let's Encrypt kaudu (Cloudflare DNS-01 väljakutse). Let's Encrypt piirab väljastamist **50 sertifikaadiga registreeritud domeeni kohta nädalas**. Kuna Rediacc kasutab ühte metamärgi sertifikaati hoidla kohta (mitte teenuse kohta), tabab 50+ uut hoidlat ühe nädala jooksul loov juurutus selle lae.
 
 Hargnemised kasutavad uuesti vanema hoidla olemasolevat metamärgi sertifikaati ega tarbi sertifikaadi kvooti.
 
@@ -171,7 +173,7 @@ Kaugmasinad peavad käitama üht järgmistest, et vastata Rediacc tuuma-, failis
 
 ### Tuumafunktsioonide maatriks
 
-Operaatorid saavad seda lugeda ühekordse pilguga sellele, mida iga CI-testitud OS pakub kastist välja. Kõik viis vastavad kõikidele nõuetele; maatriks on operaatorile suunatud viide, mitte väravakriteerium.
+Loe maatriksit ühekordse pilguna sellele, mida iga CI-testitud OS pakub kastist välja. Kõik viis vastavad kõikidele nõuetele, seega on see operaatorile suunatud viide, mitte väravakriteerium.
 
 | OS | btrfs moodul | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup haagid |
 |----|--------------|------------|--------------------|-------------------|

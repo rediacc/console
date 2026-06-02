@@ -120,7 +120,8 @@ async function registerFork(
   forkKey: string,
   tagName: string,
   machineName: string,
-  parentConfig: NonNullable<Awaited<ReturnType<typeof configService.getRepository>>>
+  parentConfig: NonNullable<Awaited<ReturnType<typeof configService.getRepository>>>,
+  immutable = false
 ): Promise<{ repositoryGuid: string; networkId: number }> {
   const existing = await configService.getRepository(forkKey);
   if (existing) {
@@ -138,6 +139,7 @@ async function registerFork(
     networkId,
     grandGuid: parentConfig.grandGuid ?? parentConfig.repositoryGuid,
     parentGuid: parentConfig.repositoryGuid,
+    ...(immutable ? { immutable: true } : {}),
     sshPrivateKey,
     sshPublicKey,
   });
@@ -156,6 +158,13 @@ async function registerFork(
   return { repositoryGuid, networkId };
 }
 
+/** Validate mutually-exclusive fork option combinations. */
+function assertForkOptions(options: { immutable?: boolean; up?: boolean }): void {
+  if (options.immutable && options.up) {
+    throw new Error(t('commands.repo.fork.immutableUpConflict'));
+  }
+}
+
 /** Handle the fork action body. */
 export async function handleForkAction(
   parent: string,
@@ -163,6 +172,7 @@ export async function handleForkAction(
   options: {
     machine: string;
     checkpoint?: boolean;
+    immutable?: boolean;
     up?: boolean;
     debug?: boolean;
     skipRouterRestart?: boolean;
@@ -174,6 +184,7 @@ export async function handleForkAction(
   let forkKey = '';
   try {
     assertNonLatestForkTag(tagName, t('commands.repo.fork.tagReservedLatest'));
+    assertForkOptions(options);
     forkKey = compositeKey(parseRepoRef(parent).name, tagName);
     const parentConfig = await configService.getRepository(parent);
     if (!parentConfig) {
@@ -187,7 +198,8 @@ export async function handleForkAction(
       forkKey,
       tagName,
       options.machine,
-      parentConfig
+      parentConfig,
+      options.immutable
     );
 
     await deployRepoKeyIfNeeded(forkKey, options.machine);
@@ -200,6 +212,7 @@ export async function handleForkAction(
         tag: repositoryGuid,
         network_id: networkId,
         ...(options.checkpoint ? { checkpoint: true } : {}),
+        ...(options.immutable ? { immutable: true } : {}),
       },
       debug: options.debug,
       skipRouterRestart: options.skipRouterRestart,

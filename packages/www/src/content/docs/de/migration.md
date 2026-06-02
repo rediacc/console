@@ -4,8 +4,8 @@ description: Bestehende Projekte in verschlüsselte Rediacc-Repositories migrier
 category: Guides
 order: 11
 language: de
-sourceHash: "69ab61a2875f8d70"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "24c62c7fa0d043c2"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Migrationsleitfaden
@@ -191,7 +191,7 @@ Wichtige Änderungen:
 4. **Dienstnamen für dienstübergreifende Verbindungen verwenden** (z. B. `postgres`, `redis`) - renet injiziert jeden Dienstnamen als auflösbaren Hostnamen. Keine rohen IPs in Verbindungsstrings einbetten, die in Datenbanken oder Konfigurationsdateien gespeichert werden; verwenden Sie stattdessen den Dienstnamen, um die Fork-Isolation zu erhalten
 5. **Bindung erfolgt automatisch** - der Kernel schreibt `bind()` auf die korrekte Loopback-IP um. Dienste können `0.0.0.0` oder `localhost` verwenden
 
-Die `{SERVICE}_IP`-Variablen sind weiterhin verfügbar, falls Sie sie benötigen, aber explizites Binden ist nicht mehr erforderlich. Die Namenskonvention: Großbuchstaben, Bindestriche durch Unterstriche ersetzen, Suffix `_IP`. Zum Beispiel wird `listmonk-app` zu `LISTMONK_APP_IP`.
+Die `{SERVICE}_IP`-Variablen sind weiterhin verfügbar, falls Sie sie benötigen, aber explizites Binden ist nicht mehr erforderlich. Das Binden erfolgt automatisch. Die Namenskonvention: Großbuchstaben, Bindestriche durch Unterstriche ersetzen, Suffix `_IP`. Zum Beispiel wird `listmonk-app` zu `LISTMONK_APP_IP`.
 
 Siehe [Dienst-Netzwerk](/de/docs/services#service-networking-rediaccjson) für Details zur IP-Zuweisung und `.rediacc.json`.
 
@@ -292,11 +292,11 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Port-Konflikte zwischen Repositories
 
-Jedes Repository erhält einzigartige Loopback-IPs, und der Kernel schreibt `bind()`-Aufrufe automatisch auf die korrekte IP um. Port-Konflikte zwischen Repositories sollten nicht auftreten. Wenn Sie unerwartetes Verhalten sehen, überprüfen Sie, ob die Dienste über `renet compose` (nicht `docker compose`) gestartet werden. Verwenden Sie beim Verbinden mit anderen Diensten den Dienstnamen (z. B. `postgres`) statt roher IPs - Dienstnamen werden in jedem Fork korrekt aufgelöst.
+Jedes Repository erhält einzigartige Loopback-IPs, und der Kernel schreibt `bind()`-Aufrufe automatisch auf die korrekte IP um. Port-Konflikte zwischen Repositories treten nicht auf. Wenn Sie unerwartetes Verhalten sehen, überprüfen Sie, ob die Dienste über `renet compose` (nicht `docker compose`) gestartet werden. Verwenden Sie beim Verbinden mit anderen Diensten den Dienstnamen (z. B. `postgres`) statt roher IPs. Dienstnamen werden in jedem Fork korrekt aufgelöst.
 
 ### Eigentümerschaftskorrektur beschädigt Container
 
-Wenn Sie `rdc repo ownership` ausgeführt haben und ein Container nicht mehr funktioniert, wurden die Datendateien des Containers geändert. Stoppen Sie den Container, löschen Sie sein Datenverzeichnis und starten Sie ihn neu, der Container erstellt es neu:
+Wenn Sie `rdc repo ownership` ausgeführt haben und ein Container nicht mehr funktioniert, wurden die Datendateien des Containers geändert. Stoppen Sie den Container, löschen Sie sein Datenverzeichnis und starten Sie ihn neu. Der Container wird es neu erstellen:
 
 ```bash
 rdc repo down --name my-project -m server-1

@@ -6,13 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: fr
-sourceHash: "e663f13b2f78bc65"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "8f29c515be1b7fb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Limites et quotas
 
-Cette page documente les limites fixes et souples qui s'appliquent aux déploiements Rediacc. Comprendre ces limites vous aide à planifier la capacité et à éviter des contraintes inattendues.
+Cette page liste les limites fixes et souples qui s'appliquent aux déploiements Rediacc. Lisez-la avant de planifier la capacité, afin de connaître quels plafonds existent et lesquels n'existent pas.
 
 ---
 
@@ -111,7 +111,7 @@ Chaque image de repository a une taille maximale fixe définie à la création (
 
 Chaque service avec le label `rediacc.service_port` obtient automatiquement une route HTTPS. Il n'y a pas de limite sur le nombre de services avec des routes, sous réserve du maximum de 61 services par repository.
 
-Les certificats TLS génériques sont provisionnés par repository lors du premier déploiement via Let's Encrypt (challenge Cloudflare DNS-01). Let's Encrypt impose une limite de **50 certificats par domaine enregistré par semaine**. Comme Rediacc utilise un certificat générique par repository (pas par service), un déploiement avec 50+ nouveaux repositories en une seule semaine peut atteindre cette limite.
+Les certificats TLS génériques sont provisionnés par repository lors du premier déploiement via Let's Encrypt (challenge Cloudflare DNS-01). Let's Encrypt plafonne l'émission à **50 certificats par domaine enregistré par semaine**. Comme Rediacc utilise un certificat générique par repository (pas par service), un déploiement qui crée 50+ nouveaux repositories en une seule semaine atteindra ce plafond.
 
 Les forks réutilisent le certificat générique existant du repository parent et ne consomment aucun quota de certificats.
 
@@ -173,7 +173,7 @@ Les machines distantes doivent exécuter l'un des systèmes suivants pour satisf
 
 ### Matrice des fonctionnalités du kernel
 
-Les opérateurs peuvent lire cette matrice d'un coup d'oeil pour voir ce que chaque OS testé en CI fournit par défaut. Les cinq satisfont toutes les exigences ; la matrice est une référence pour les opérateurs, pas un critère de sélection.
+Lisez cette matrice d'un coup d'oeil pour voir ce que chaque OS testé en CI fournit par défaut. Les cinq satisfont toutes les exigences, c'est donc une référence pour les opérateurs, pas un critère de sélection.
 
 | SE | Module btrfs | cgroups v2 | Landlock (ABI >= 1) | Hooks eBPF cgroup |
 |----|--------------|------------|---------------------|-------------------|

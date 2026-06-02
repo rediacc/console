@@ -1,19 +1,20 @@
 ---
 title: 网页应用
-description: 了解 Rediacc 网页应用的架构和部署
+description: "使用 Rediacc 网页控制台管理机器、仓库和备份"
 category: Reference
 order: 1
 language: zh
-sourceHash: "ee9dff9ac2c8bce1"
+sourceHash: "0951a0a1b320f570"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Rediacc 平台用户指南
 
 ## 概述
 
-**Rediacc** 是一个提供 AI 驱动备份服务的云平台。
+**Rediacc** 是您安装在自己服务器上的自托管软件。您可以用它备份、分叉和还原整个实时系统，包括应用、数据库和配置，而不是逐文件操作。这一点至关重要：大多数备份工具只复制文件，却丢失了文件之间的关联关系。
 
-本指南介绍了网页界面 [https://www.rediacc.com/](https://www.rediacc.com/) 的基本使用方法。
+本指南介绍了网页控制台 [https://www.rediacc.com/](https://www.rediacc.com/) 的使用方法。
 
 ### 本指南的目的
 
@@ -29,7 +30,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 ![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
 *(视频: Complete registration flow from start to finish)*
 
-要开始使用 Rediacc 平台，您首先需要创建一个账户。
+要使用 Rediacc，您需要先创建一个账户。
 
 ![Rediacc 登录页面 - 始终在线的基础设施](/assets/images/user-guide/01_login.png)
 *（图 1：主登录页面，展示 Rediacc 平台的主要功能）*
@@ -110,7 +111,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.1 组织 - 用户
 
-用户管理允许您控制组织中人员对平台的访问。
+用户管理是您控制组织中哪些人获得访问权限的地方。
 
 ### 2.1.1 添加用户
 
@@ -209,7 +210,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.2 组织 - 团队
 
-团队允许您对用户进行分组并提供对资源的批量访问。
+团队对用户进行分组，使您可以批量授予访问权限。
 
 ### 2.2.1 创建团队
 
@@ -292,7 +293,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.3 组织 - 访问控制
 
-访问控制允许您通过创建权限组来集中管理用户权限。
+访问控制通过权限组集中管理权限，而不是逐用户设置。
 
 ### 2.3.1 创建权限组
 
@@ -328,7 +329,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.4 机器
 
-机器部分允许您管理服务器和仓库资源。
+机器部分是您管理服务器及其上仓库的地方。
 
 ### 2.4.1 添加机器
 
@@ -484,7 +485,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 ![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
 *(视频: Running remote operations on a machine)*
 
-您可以在机器上执行各种远程操作。
+您可以通过网页对机器执行远程操作。
 
 1. 选择机器并点击 **{{t:common.actions.remote}}** 按钮。
 2. 在下拉菜单中查看选项：
@@ -545,7 +546,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.5 仓库创建和操作
 
-仓库是存储备份数据的基本单元。
+仓库是一个独立的应用部署单元，包含其应用、数据、配置和专属 Docker 守护进程。因此，此页面上几乎每个按钮都作用于仓库，而不是仓库所在的机器。点击"删除"前请了解这一点。
 
 ### 2.5.1 创建仓库
 
@@ -846,7 +847,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.6 仓库连接操作
 
-您可以使用不同方法连接到仓库。
+连接仓库有两种方式。桌面应用提供真实的终端和 SSH。浏览器适合查看和点击管理，但无法处理长时间的 shell 会话。如果要做实际工作，请使用桌面应用。
 
 ### 2.6.1 桌面应用程序连接
 
@@ -915,7 +916,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.8 存储
 
-存储部分允许您管理备份数据将存储的物理区域。
+存储部分是您定义备份数据存储物理位置的地方。
 
 ### 2.8.1 添加存储
 
@@ -946,7 +947,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.9 凭证
 
-凭证部分允许您安全地管理仓库的访问信息。
+凭证部分是您管理仓库访问所需密钥的地方。
 
 ### 2.9.1 凭证编辑
 
@@ -1009,7 +1010,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.10 队列
 
-队列部分允许您跟踪系统中的待处理和已完成操作。
+队列部分跟踪系统中的待处理和已完成操作。
 
 ### 2.10.1 队列操作
 
@@ -1043,7 +1044,7 @@ sourceHash: "ee9dff9ac2c8bce1"
 
 ## 2.11 审计
 
-审计部分维护系统中执行的所有操作的记录。
+审计部分记录系统中执行的每一项操作。
 
 ### 2.11.1 审计记录
 

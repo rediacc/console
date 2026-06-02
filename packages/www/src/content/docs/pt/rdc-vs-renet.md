@@ -4,6 +4,8 @@ description: "Quando usar o rdc e quando usar o renet. Introdução à configura
 category: "Concepts"
 order: 1
 language: pt
+sourceHash: "026a183f8a5f9dd4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # rdc vs renet
@@ -21,7 +23,7 @@ O Rediacc tem dois binários. Veja quando usar cada um.
 
 ## Como Trabalham em Conjunto
 
-O `rdc` liga-se ao seu servidor via SSH e executa comandos `renet` em seu nome. Escreve um único comando na sua estação de trabalho e o `rdc` trata do resto:
+Na sua estação de trabalho executa o `rdc`. Ele abre uma ligação SSH ao servidor e executa o comando `renet` correspondente lá por si. Um comando, um sítio para o executar:
 
 1. Lê a sua config local (`~/.config/rediacc/rediacc.json`)
 2. Liga-se ao servidor via SSH
@@ -79,6 +81,6 @@ Estes comandos executam o `renet` localmente (não via SSH). Consulte [VMs Exper
 
 ## Nota sobre o Rediaccfile
 
-Pode ver `renet compose -- ...` dentro de um `Rediaccfile`. É normal: as funções do Rediaccfile são executadas no servidor onde o `renet` está disponível.
+Vai ver `renet compose -- ...` dentro de um `Rediaccfile`. Não se preocupe. As funções do Rediaccfile são executadas no servidor, onde o `renet` já está instalado.
 
 A partir da sua estação de trabalho, inicie e pare cargas de trabalho com `rdc repo up` e `rdc repo down`.

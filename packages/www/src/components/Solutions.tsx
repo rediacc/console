@@ -95,27 +95,35 @@ const Solutions: React.FC<SolutionsProps> = ({ lang = 'en' }) => {
           ))}
         </div>
         <div className="solution-illustration">
-          <button
-            type="button"
-            className="image-button"
-            onClick={() =>
-              openImageModal('/assets/images/solution.svg', t('problem.solution.imageAlt'))
-            }
-            aria-label={t('common.aria.clickToEnlarge')}
-            data-track="cta_click"
-            data-track-label="solution-image"
-            data-track-dest="modal"
-          >
-            <img
-              src="/assets/images/solution.svg"
-              alt={t('problem.solution.imageAlt')}
-              className="scenario-image clickable-image"
-              loading="lazy"
-              decoding="async"
-              width="1200"
-              height="675"
-            />
-          </button>
+          {(() => {
+            const langSuffix = lang === 'en' ? '' : `.${lang}`;
+            const landscape = `/assets/images/solution${langSuffix}.svg`;
+            const mobile = `/assets/images/solution${langSuffix}.mobile.svg`;
+            return (
+              <button
+                type="button"
+                className="image-button"
+                onClick={() => openImageModal(landscape, t('problem.solution.imageAlt'))}
+                aria-label={t('common.aria.clickToEnlarge')}
+                data-track="cta_click"
+                data-track-label="solution-image"
+                data-track-dest="modal"
+              >
+                <picture>
+                  <source media="(max-width: 768px)" srcSet={mobile} />
+                  <img
+                    src={landscape}
+                    alt={t('problem.solution.imageAlt')}
+                    className="scenario-image clickable-image"
+                    loading="lazy"
+                    decoding="async"
+                    width="800"
+                    height="450"
+                  />
+                </picture>
+              </button>
+            );
+          })()}
         </div>
       </div>
     </section>

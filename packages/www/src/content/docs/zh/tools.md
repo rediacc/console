@@ -4,13 +4,13 @@ description: 文件同步、终端访问、VS Code 集成、更新和诊断。
 category: Guides
 order: 9
 language: zh
-sourceHash: "d089cea510a69bfb"
-sourceCommit: "1b6c53f52954d63959d8176bfa70a91405a2a87f"
+sourceHash: "f350872720c99d58"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 工具
 
-Rediacc 包含用于远程仓库操作的生产力工具：文件同步、SSH 终端、VS Code 集成和 CLI 更新。
+Rediacc 内置了用于远程仓库操作的工具：文件同步、SSH 终端、VS Code 集成和 CLI 更新。
 
 ## 文件同步 (sync)
 
@@ -23,6 +23,8 @@ rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
 ```
 
 ### 下载文件
+
+使用 `--remote` 表示目录（默认），或 `--remote-file` 表示单个文件。两个标志互斥。
 
 ```bash
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
@@ -76,7 +78,7 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 
 ### connect 子命令
 
-`connect` 子命令通过显式标志提供相同的功能：
+`connect` 子命令通过显式标志实现相同效果：
 
 ```bash
 rdc term connect -m server-1

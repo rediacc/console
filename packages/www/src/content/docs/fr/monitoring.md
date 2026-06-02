@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "2289d50dac21f9bf"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1d0af1a74a12d49e"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Supervision
@@ -16,7 +16,7 @@ Rediacc fournit des commandes de supervision intégrées pour inspecter la sant�
 
 ## Santé de la machine
 
-Obtenez un rapport de santé complet pour une machine :
+Obtenez un rapport de santé détaillé pour une machine :
 
 ```bash
 rdc machine health --name server-1
@@ -215,7 +215,7 @@ Options :
 
 ## Diagnostics (doctor)
 
-Exécutez une vérification diagnostique complète de votre environnement Rediacc :
+Exécutez une vérification diagnostique de votre environnement Rediacc :
 
 ```bash
 rdc doctor

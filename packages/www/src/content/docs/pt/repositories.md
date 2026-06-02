@@ -4,8 +4,8 @@ description: "Criar, gerir e operar repositórios encriptados com LUKS em máqui
 category: "Guides"
 order: 4
 language: pt
-sourceHash: "25063a999a6e4880"
-sourceCommit: "1e6b2d0400cac5fdcf537bfb1cf349dbc3180f52"
+sourceHash: "531ee9648611844e"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 untranslated: true
 ---
 
@@ -98,6 +98,18 @@ Forks use the name:tag model: the resulting fork is named `my-app:staging`. This
 > Forks share the parent's data via BTRFS reflink, including any credentials stored on disk. See [What Rediacc does not isolate](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) for the implications when those credentials authorize external services like Stripe, AWS, or Railway. To keep deploy-time credentials out of the fork's reach, use [per-repo secrets](#secrets) instead of baking values into `.env` files inside the repo.
 
 At fork creation, `repo fork` writes the [state mirror sidecar](#type-column-and-the-state-mirror) at `<datastore>/.interim/state/<fork-guid>/.rediacc.json` immediately. Without unlocking the volume. So the new fork is correctly identified as `is_fork: true` from the moment of creation. This lets scheduled backups skip it (forks are excluded from the upload pipeline by default) even if it's never mounted. When forking a fork, `grand_guid` chains correctly: the new fork's mirror points at the original grand parent's GUID, not at the intermediate fork.
+
+## Versionamento semelhante ao git
+
+Os forks podem funcionar como commits git. `rdc repo commit` congela um fork de trabalho num commit imutável e byte-estável; `rdc repo branch` nomeia uma linha de histórico; `rdc repo checkout` clona um commit via reflink de volta num fork gravável; `rdc repo log` percorre a cadeia de pais; e `rdc repo merge` combina duas linhas sem modificar um repositório em produção no local. `rdc repo fork --immutable` produz uma base equivalente a um commit num único passo.
+
+```bash
+rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
+rdc repo branch --branch staging --name my-app:work
+rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
+```
+
+Veja a [referência de ramificação semelhante ao git](/pt/docs/repo-branching) para o conjunto completo de comandos, opções e exemplos práticos.
 
 ## Secrets
 

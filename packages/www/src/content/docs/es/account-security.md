@@ -4,8 +4,8 @@ description: Autenticación, tokens de API, gestión de sesiones y el modelo de 
 category: Guides
 order: 13
 language: es
-sourceHash: "c4e24e7a3494b6f6"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "dcd061b971573573"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Autenticación
@@ -96,3 +96,9 @@ rdc update --channel edge      # Cambiar a edge
 rdc update --channel stable    # Volver a stable
 rdc update --status            # Mostrar canal actual
 ```
+
+### Postura de seguridad de la CLI para agentes de IA
+
+Los agentes de código que invocan `rdc` son una superficie de amenaza real, por lo que los tratamos como un principal separado. Cada invocación de `rdc` se clasifica al inicio como **humano** o **agente** según señales del entorno (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) más un recorrido de ascendencia Linux `/proc`. La detección es de mejor esfuerzo. Un wrapper determinado puede falsificar variables de entorno, por eso importa la ascendencia. Los agentes obtienen un conjunto de permisos reducido: las mutaciones de configuración sensibles requieren la compuerta de conocimiento (`--current <antiguo>`), el editor interactivo se rechaza sin una anulación `REDIACC_ALLOW_CONFIG_EDIT` verificada por ascendencia, y `--reveal` en cualquier comando de visualización está bloqueado. Cada decisión (permitir, rechazar o conceder `--reveal`) escribe una línea JSONL encadenada por hash en `~/.config/rediacc/audit.log.jsonl`. Ejecuta `rdc config audit verify` para comprobar la integridad de la cadena.
+
+Consulta [Seguridad y salvaguardas de agentes de IA](/es/docs/ai-agents-safety) para la matriz completa de lo que los agentes pueden y no pueden hacer, ejemplos de la compuerta de conocimiento y la mecánica de anulación de alcance.

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: it
-sourceHash: "ee2c8fc465b846e4"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "181ba0512ff98f9c"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Servizi
@@ -150,7 +150,7 @@ Ogni repository supporta fino a **61 servizi** (slot da 0 a 60).
 
 ### Uso degli IP dei servizi in Docker Compose
 
-Poiché ogni repository esegue un daemon Docker isolato, `renet compose` configura automaticamente `network_mode: host` per tutti i servizi. Il kernel riscrive in modo trasparente le chiamate `bind()` all'IP loopback assegnato al servizio, in modo che i servizi possano fare bind su `0.0.0.0` o `localhost` senza conflitti. Per le connessioni **verso altri servizi**, usa il **nome del servizio** - renet inietta ogni nome di servizio come hostname che risolve sempre all'IP corretto, anche nei fork:
+Poiche' ogni repository esegue un daemon Docker isolato, `renet compose` configura automaticamente `network_mode: host` per tutti i servizi. Il kernel riscrive in modo trasparente le chiamate `bind()` all'IP loopback assegnato al servizio, in modo che i servizi possano fare bind su `0.0.0.0` o `localhost` senza conflitti. Per le connessioni **verso altri servizi**, usa il **nome del servizio**. renet inietta ogni nome di servizio come hostname che risolve sempre all'IP corretto, anche nei fork:
 
 ```yaml
 services:

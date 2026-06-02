@@ -4,8 +4,8 @@ description: "إزالة النسخ الاحتياطية المعزولة وال
 category: "Guides"
 order: 12
 language: ar
-sourceHash: "881513fbe657978e"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # التنظيف

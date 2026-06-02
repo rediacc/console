@@ -4,8 +4,8 @@ description: Authentification, tokens API, gestion des sessions et modèle de pe
 category: Guides
 order: 13
 language: fr
-sourceHash: "c4e24e7a3494b6f6"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "dcd061b971573573"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Authentification
@@ -96,3 +96,9 @@ rdc update --channel edge      # Passer à edge
 rdc update --channel stable    # Revenir à stable
 rdc update --status            # Afficher le canal actuel
 ```
+
+### Posture de sécurité CLI pour les agents IA
+
+Les agents de codage qui invoquent `rdc` constituent une vraie surface d'attaque, et nous les traitons donc comme un principal distinct. Chaque invocation de `rdc` est classée au démarrage comme **humaine** ou **agent** sur la base de signaux d'environnement (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) et d'un parcours de l'arborescence `/proc` sous Linux. La détection est au mieux-effort. Un wrapper déterminé peut usurper les variables d'environnement, d'où l'importance du parcours de l'arborescence. Les agents bénéficient d'un ensemble de permissions réduit : les mutations de configuration sensibles nécessitent la barrière de connaissance (`--current <ancienne-valeur>`), l'éditeur interactif est refusé sans une dérogation `REDIACC_ALLOW_CONFIG_EDIT` vérifiée par l'arborescence, et `--reveal` sur toute commande d'affichage est bloqué. Chaque décision (autoriser, refuser ou accorder `--reveal`) écrit une ligne JSONL chaînée par hachage dans `~/.config/rediacc/audit.log.jsonl`. Exécutez `rdc config audit verify` pour vérifier l'intégrité de la chaîne.
+
+Voir [Sûreté et garde-fous des agents IA](/fr/docs/ai-agents-safety) pour la matrice complète de ce que les agents peuvent et ne peuvent pas faire, des exemples de la barrière de connaissance et la mécanique de dérogation de portée.

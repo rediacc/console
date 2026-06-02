@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: ko
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -165,4 +165,4 @@ Hetzner에서 Rediacc으로 이전 후:
 
 저희가 후보 목록의 대안이라면, 제안은 구체적입니다. 벤더 설문지를 보내십시오. 배포된 인스턴스를 기준으로 공백을 포함한 실제 답변으로 작성하겠습니다. 서류를 보내기 전에 아키텍처를 검토하고 싶다면, 창업자와 30분 아키텍처 리뷰를 예약하겠습니다. 방어 가능한 등록부 항목으로 가는 길은 화려한 브로슈어가 아닙니다. 불편한 것을 포함한 답변입니다.
 
-Rediacc의 NIS2 조항별 역량 공개 매핑은 [NIS2 및 DORA](/ko/docs/legal-nis2-dora)를 참조하십시오. 더 넓은 컴플라이언스 프레임은 [컴플라이언스 개요](/ko/docs/legal-overview), [데이터 주권](/ko/docs/legal-data-sovereignty), [온프레미스](/ko/docs/on-premise)를 참조하십시오.
+조항별 Rediacc 지도가 필요하십니까? [NIS2 및 DORA](/ko/docs/legal-nis2-dora)를 참조하십시오. 더 넓은 프레임이 필요하십니까? [컴플라이언스 개요](/ko/docs/legal-overview)를 읽으십시오. 데이터 거주에 대해서는 [데이터 주권](/ko/docs/legal-data-sovereignty)을 참조하십시오. 자체 호스팅이 중요한 이유는 [온프레미스](/ko/docs/on-premise)를 참조하십시오.

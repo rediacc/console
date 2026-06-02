@@ -1,14 +1,14 @@
 ---
 title: "Conformité SOC 2"
-description: "Comment Rediacc correspond aux critères de services de confiance SOC 2 pour la sécurité, la disponibilité et la confidentialité."
+description: "Ce que Rediacc vous apporte pour SOC 2 : les journaux, la piste de gestion des changements et les contrôles que les auditeurs demandent."
 category: "Legal"
 order: 2
 language: fr
-sourceHash: "ebdae97034aa3cce"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "29b0c745e631e4f8"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-SOC 2 (System and Organization Controls 2) est un cadre développé par l'American Institute of Certified Public Accountants (AICPA) pour évaluer les contrôles d'une organisation en matière de sécurité, disponibilité, intégrité du traitement, confidentialité et vie privée.
+SOC 2 est le cadre de l'AICPA auquel les auditeurs ont recours quand ils veulent des preuves que vos contrôles fonctionnent réellement. Il couvre cinq critères de services de confiance : sécurité, disponibilité, intégrité du traitement, confidentialité et vie privée.
 
 Référence : [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -35,7 +35,7 @@ Ces journaux sont accessibles via le tableau de bord d'administration (avec filt
 
 ## Gestion des changements
 
-Le workflow basé sur les forks soutient une gestion des changements contrôlée :
+Les forks rendent la gestion des changements auditable : chaque fork est une copie de l'état en production que vous pouvez tester, examiner et soit promouvoir soit abandonner, avec chaque étape horodatée et attribuée à un acteur :
 
 1. Forker un dépôt de production (`rdc repo fork`)
 2. Appliquer et tester les changements sur le fork

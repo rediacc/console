@@ -1,14 +1,14 @@
 ---
 title: "Cumplimiento de SOC 2"
-description: "Cómo Rediacc se ajusta a los Criterios de Servicio de Confianza de SOC 2 para seguridad, disponibilidad y confidencialidad."
+description: "Dónde proporciona Rediacc evidencia SOC 2: los registros, el rastro de gestión de cambios y los controles que los auditores preguntan."
 category: "Legal"
 order: 2
 language: es
-sourceHash: "ebdae97034aa3cce"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "29b0c745e631e4f8"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-SOC 2 (Controles de Sistema y Organización 2) es un marco desarrollado por el Instituto Americano de Contadores Públicos Certificados (AICPA) para evaluar los controles de una organización relacionados con seguridad, disponibilidad, integridad del procesamiento, confidencialidad y privacidad.
+SOC 2 es el marco de la AICPA al que recurren los auditores cuando quieren evidencia de que tus controles realmente funcionan. Cubre cinco Criterios de Servicio de Confianza: seguridad, disponibilidad, integridad del procesamiento, confidencialidad y privacidad.
 
 Referencia: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -35,7 +35,7 @@ Estos registros son accesibles a través del panel de administración (con filtr
 
 ## Gestión de cambios
 
-El flujo de trabajo basado en fork soporta gestión de cambios controlada:
+Los forks hacen que la gestión de cambios sea auditable: cada fork es una copia del estado en vivo contra la que puedes probar, revisar, y luego promover o descartar, con cada paso con marca de tiempo asignada a un actor.
 
 1. Hacer fork de un repositorio de producción (`rdc repo fork`)
 2. Aplicar y probar cambios en el fork

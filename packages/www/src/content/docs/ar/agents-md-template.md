@@ -6,10 +6,11 @@ description: >-
 category: Reference
 order: 50
 language: ar
-sourceHash: 37be1e401927ed9a
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-استخدم هذا القالب لتهيئة مساعدي البرمجة الذكية (Claude Code، Cursor، Cline، Windsurf) لإدارة بنية Rediacc التحتية بشكل مستقل. انسخ الكتلة أدناه إلى ملف `CLAUDE.md` أو `.cursorrules` أو ملف تهيئة الوكيل المعادل في مشروعك.
+هذه هي المشكلة: مساعدو البرمجة الذكية (Claude Code، Cursor، Cline، Windsurf) يخترعون باستمرار أعلاماً لـ `rdc` غير موجودة، ولا يستطيعون معرفة اسم مستودع Rediacc المرتبط بأي GUID دون سؤالك في كل مرة. هذا القالب يحل ذلك. الصق الكتلة أدناه في ملف `CLAUDE.md` أو `.cursorrules` أو أي ملف تهيئة وكيل تستخدمه أداتك.
 
 ## القالب
 

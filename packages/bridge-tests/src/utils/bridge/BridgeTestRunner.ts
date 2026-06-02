@@ -1004,6 +1004,46 @@ export class BridgeTestRunner {
     this.repositoryHelpers.isContainerRunning(containerName, networkId);
   createRepositoryFork = (parentRepo: string, tag: string, datastorePath: string) =>
     this.repositoryHelpers.createRepositoryFork(parentRepo, tag, datastorePath);
+  repositoryCommit = (
+    workingFork: string,
+    commitGuid: string,
+    message: string,
+    datastorePath: string,
+    commitParent?: string
+  ) =>
+    this.repositoryHelpers.repositoryCommit(
+      workingFork,
+      commitGuid,
+      message,
+      datastorePath,
+      commitParent
+    );
+  repositoryCheckout = (commitGuid: string, tag: string, datastorePath: string) =>
+    this.repositoryHelpers.repositoryCheckout(commitGuid, tag, datastorePath);
+  repositoryLog = (startGuid: string, datastorePath: string) =>
+    this.repositoryHelpers.repositoryLog(startGuid, datastorePath);
+  repositoryMerge = (
+    target: string,
+    source: string,
+    datastorePath: string,
+    opts?: { force?: boolean; resolve?: 'ours' | 'theirs'; base?: string; password?: string }
+  ) => this.repositoryHelpers.repositoryMerge(target, source, datastorePath, opts);
+  repositoryForkImmutable = (parentRepo: string, tag: string, datastorePath: string) =>
+    this.repositoryHelpers.repositoryForkImmutable(parentRepo, tag, datastorePath);
+  deltaPushToMachine = (
+    repoGuid: string,
+    destHost: string,
+    datastorePath: string,
+    opts?: { destUser?: string; deltaBase?: string; retainBase?: string }
+  ) => this.repositoryHelpers.deltaPushToMachine(repoGuid, destHost, datastorePath, opts);
+  deltaPullFromMachine = (
+    repoGuid: string,
+    srcHost: string,
+    datastorePath: string,
+    opts?: { srcUser?: string; deltaBase?: string; force?: boolean }
+  ) => this.repositoryHelpers.deltaPullFromMachine(repoGuid, srcHost, datastorePath, opts);
+  repositoryImageSha256 = (repoGuid: string, datastorePath: string) =>
+    this.repositoryHelpers.repositoryImageSha256(repoGuid, datastorePath);
   repositoryExists = (repositoryName: string, datastorePath: string) =>
     this.repositoryHelpers.repositoryExists(repositoryName, datastorePath);
   waitForPostgresReady = (

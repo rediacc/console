@@ -1324,6 +1324,13 @@
       "batchIterating": "{{action}} ({{current}}/{{total}}): \"{{repo}}\"...",
       "batchResult": "{{action}} 완료: {{total}} 중 {{succeeded}} 성공",
       "batchStarting": "{{action}} 시작: \"{{repo}}\"...",
+      "branch": {
+        "branchOption": "새 브랜치의 이름",
+        "completed": "branch \"{{branch}}\" -> {{commit}}",
+        "description": "작업 fork의 현재 commit(팁)을 가리키는 이름 있는 branch 참조를 생성합니다. branch 참조는 CLI 설정에 저장됩니다(머신 = 오브젝트 저장소, 설정 = 참조 저장소).",
+        "descriptionShort": "현재 commit을 가리키는 branch 참조를 생성합니다",
+        "workingOption": "branch가 가리킬 현재 commit의 작업 fork"
+      },
       "cat": {
         "description": "저장소 내 파일의 제한된 범위를 읽어 stdout에 씁니다 (서버 측에서 범위 제한; 진단 정보는 stderr로 출력)",
         "failed": "읽기 실패",
@@ -1338,6 +1345,22 @@
       },
       "certSync": {
         "updated": "{{machine}}에서 ACME 인증서 캐시 업데이트 완료 ({{count}}개 인증서)"
+      },
+      "checkout": {
+        "description": "불변 commit(또는 branch 팁)을 새로운 쓰기 가능한 작업 fork로 reflink 복제하고 HEAD가 이를 가리키도록 합니다. 거의 즉각적이며 크기와 무관하게 일정한 시간이 소요됩니다(BTRFS reflink).",
+        "descriptionShort": "commit/branch를 쓰기 가능한 작업 fork로 reflink 복제합니다",
+        "fromOption": "--ref를 이 작업 포크의 브랜치 이름으로 확인",
+        "refOption": "체크아웃할 commit GUID(또는 --from과 함께 브랜치 이름)",
+        "tagOption": "새 쓰기 가능한 작업 fork의 이름"
+      },
+      "commit": {
+        "authorOption": "commit 작성자",
+        "completed": "{{commit}} commit됨: {{message}}",
+        "description": "마운트된 작업 fork의 현재 상태를 새로운 불변 commit으로 고정합니다(git과 유사). commit은 메시지, 작성자, 타임스탬프, 부모 정보를 볼륨 내부에 기록하므로 push 시 함께 이동하며, 읽기 전용으로 표시되어 마운트를 거부합니다. 작업 fork는 git이 작업 트리를 그대로 두는 것처럼 변경 없이 유지됩니다. 쓰기 가능한 사본을 얻으려면 'rdc repo checkout'으로 commit을 체크아웃하세요.",
+        "descriptionShort": "작업 중인 fork를 새로운 불변 commit으로 고정합니다",
+        "failed": "commit에 실패했습니다",
+        "messageOption": "commit 메시지",
+        "nameOption": "commit할 작업 fork(마운트되어 있어야 합니다)"
       },
       "create": {
         "alreadyExists": "저장소 \"{{name}}\"이 이미 설정에 존재합니다",
@@ -1415,6 +1438,8 @@
         "descriptionShort": "저장소의 즉각적인 CoW 포크 (새 GUID, networkId, IP 범위)",
         "examples": "\n예시:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "포크 생성 실패",
+        "immutableOption": "포크를 읽기 전용으로 표시합니다. 마운트를 거부하고 이미지를 영구적으로 바이트 수준에서 안정적으로 유지합니다(머신 간 델타 푸시를 위한 고정된 커밋/베이스)",
+        "immutableUpConflict": "repo fork: --immutable과 --up은 함께 사용할 수 없습니다. 불변 포크는 마운트를 거부하므로 시작할 수 없습니다. --up을 제거하거나 일반 포크를 배포하려면 --immutable을 제거하세요.",
         "registered": "포크 \"{{repository}}\" 등록 완료 ({{guid}}, 네트워크 {{networkId}})",
         "rollback": "\"{{repository}}\"의 설정을 롤백했습니다",
         "starting": "\"{{machine}}\"에서 \"{{parent}}\"를 \"{{repository}}\"로 포크하는 중...",
@@ -1423,6 +1448,25 @@
         "tagReservedLatest": "repo fork: 태그 \"latest\"는 그랜드(프로덕션) 저장소용으로 예약되어 있습니다 — 다른 --tag을 선택하세요 (예: \"test\", \"staging\", \"<feature>\")",
         "upOption": "포크 후 서비스를 마운트하고 시작합니다 (fork + mount + up을 하나의 명령으로)"
       },
+      "fsck": {
+        "clean": "{{machine}}에 드리프트 없음: 모든 참조가 해석되고 고아 commit이 없습니다",
+        "danglingHeader": "댕글링 참조 {{count}}개(누락된 객체를 가리킴):",
+        "description": "CLI 구성의 참조(branch, HEAD)를 머신에 실제로 존재하는 객체와 대조하여 검증합니다. 댕글링 참조(누락된 객체를 가리키는 참조)와 고아 commit(어떤 참조도 도달하지 못하는 불변 commit)을 보고합니다. 읽기 전용입니다.",
+        "descriptionShort": "구성 참조를 머신 객체와 대조하여 확인합니다",
+        "orphanHeader": "고아 commit {{count}}개(어떤 참조도 도달하지 못함):",
+        "orphanHint": "고아를 회수하려면: rdc repo gc --apply -m <machine>"
+      },
+      "gc": {
+        "applied": "가비지 컬렉션 완료: commit {{deleted}}/{{total}}개 삭제됨",
+        "applyOption": "도달 불가능한 commit을 실제로 삭제합니다(기본값은 미리보기 dry-run)",
+        "deleted": "commit {{commit}} 삭제됨",
+        "deleteFailed": "commit {{commit}} 삭제 실패",
+        "description": "어떤 branch나 HEAD에서도 도달할 수 없는 머신의 불변 commit 객체를 삭제합니다(도달성 GC). 머신은 객체 저장소이고, CLI 구성은 참조 저장소입니다. 기본은 dry-run이며, 삭제하려면 --apply를 전달하세요. 마운트된 객체나 작업 fork는 절대 건드리지 않습니다.",
+        "descriptionShort": "머신에서 도달 불가능한 불변 commit을 가비지 컬렉션합니다",
+        "dryRunHeader": "도달 불가능한 commit {{count}}개가 삭제됩니다:",
+        "dryRunHint": "삭제하려면 --apply로 다시 실행하세요.",
+        "nothing": "{{machine}}에서 수집할 항목이 없습니다: 모든 commit이 도달 가능합니다"
+      },
       "list": {
         "completed": "목록 조회 완료",
         "description": "머신의 저장소를 나열합니다",
@@ -1430,7 +1474,25 @@
         "serverNameLegend": "* 머신에서 읽은 이름 (로컬 구성에 없음)",
         "starting": "\"{{machine}}\"의 저장소를 나열하는 중..."
       },
+      "log": {
+        "description": "작업 fork의 현재 commit(또는 commit 참조)에서 도달 가능한 commit 이력을 출력하며, 'rdc repo commit'이 기록한 부모 체인을 따라갑니다. 볼륨 외부의 미러를 읽으므로 어떤 commit도 잠금 해제되지 않습니다.",
+        "descriptionShort": "fork 또는 commit의 commit 이력을 따라갑니다",
+        "failed": "log에 실패했습니다",
+        "jsonOption": "commit 이력을 JSON으로 출력합니다",
+        "nameOption": "이력 탐색을 시작할 작업 fork 또는 commit"
+      },
       "machineOption": "대상 머신 이름",
+      "merge": {
+        "baseOption": "3-way merge의 공통 조상 commit GUID(--resolve와 함께 사용). 기본값은 소스 commit의 부모 또는 대상의 현재 commit입니다.",
+        "completed": "{{source}}을(를) {{target}}으로 merge했습니다",
+        "description": "소스 commit 또는 fork를 대상 작업 fork로 merge합니다. 라이브 대상은 제자리에서 변경되지 않으며, 결과는 reflink 복제본에 만들어진 뒤 원자적으로 교체됩니다. 마운트되었거나 실행 중인 대상은 --force 없이는 거부되며, --force를 사용하면 먼저 대상을 깔끔하게 정지시킵니다. --resolve가 없으면 전체 이미지에 대한 take-theirs 방식입니다(대상이 소스가 됩니다). --resolve ours|theirs를 사용하면 공통 조상에 대한 파일별 3-way merge가 수행되어, 각 측의 고유한 변경 사항을 가져오고 양측 충돌은 플래그에 따라 ours 또는 theirs로 해결합니다.",
+        "descriptionShort": "commit/fork를 작업 fork로 라이프사이클 안전하게 merge합니다",
+        "failed": "merge에 실패했습니다",
+        "forceOption": "마운트/실행 중인 대상을 먼저 정지시킨 뒤 merge합니다(실행 중인 마운트는 절대 변경하지 않음)",
+        "fromOption": "merge할 소스 commit 또는 fork",
+        "nameOption": "merge 대상이 되는 작업 fork",
+        "resolveOption": "3-way merge의 파일별 충돌 해결: 'ours'는 대상의 버전을 유지하고, 'theirs'는 소스의 버전을 가져옵니다. 전체 이미지 fast-forward(take-theirs)에는 생략하세요."
+      },
       "migrate": {
         "checkpointing": "CRIU 체크포인트 생성 중...",
         "complete": "마이그레이션 완료: {{name}}이 {{from}}에서 {{to}}으로 이동되었습니다",
@@ -1443,9 +1505,11 @@
         "downtime": "다운타임: {{duration}}",
         "optionBwlimit": "rsync 전송의 대역폭 제한 (예: 10M)",
         "optionCheckpoint": "CRIU 라이브 마이그레이션: 프로세스 메모리 상태를 캡처하고 복원합니다",
+        "optionDeltaBase": "전환 델타를 위한 불변 베이스 GUID (고급; 기본값은 1단계 베이스)",
         "optionFrom": "소스 머신 이름",
         "optionProvision": "클라우드 공급자를 통해 대상을 자동 프로비저닝합니다 (예: hetzner, linode)",
         "optionSkipDns": "마이그레이션 후 DNS 레코드 전환을 건너뜁니다",
+        "optionStrategy": "전환을 위한 블록 델타 전략: auto, physical, 또는 shared",
         "optionTo": "대상 머신 이름",
         "phase1": "1단계: 대량 데이터 전송 중 (소스 계속 실행 중)...",
         "phase1Done": "대량 전송 완료",
@@ -1489,8 +1553,10 @@
         "description": "원격 (머신 또는 스토리지)에서 저장소를 가져옵니다. 이름을 생략하면 모든 저장소를 가져옵니다. 소스 유형은 설정에서 자동으로 감지됩니다. 가져온 후 배포하려면 --up을 사용하십시오",
         "descriptionShort": "원격 (머신 또는 스토리지)에서 저장소를 가져옵니다",
         "optionBwlimit": "rsync 전송의 대역폭 제한 (예: \"6M\", \"10M\")",
+        "optionDeltaBase": "두 머신에 바이트 단위로 동일하게 존재하는 불변 베이스 GUID; 변경된 블록만 수신합니다 (머신 소스)",
         "optionForce": "기존 저장소를 강제로 덮어씁니다",
         "optionFrom": "소스 머신 또는 스토리지 이름 (설정에서 자동 감지)",
+        "optionStrategy": "델타 베이스 사용 시 블록 델타 전략: auto, physical, 또는 shared",
         "optionUp": "가져온 후 이 머신에서 저장소를 마운트하고 배포합니다",
         "pulling": "\"{{repo}}\"의 백업을 가져오는 중...",
         "sourceRequired": "--from <remote>를 지정하십시오 (설정의 머신 또는 스토리지 이름)"
@@ -1504,8 +1570,10 @@
         "destRequired": "--to <remote>를 지정하십시오 (설정의 머신 또는 스토리지 이름)",
         "optionBwlimit": "rsync 전송의 대역폭 제한 (예: \"6M\", \"10M\")",
         "optionCheckpoint": "백업 전에 CRIU 체크포인트를 생성합니다 (라이브 마이그레이션을 위해 프로세스 메모리 상태를 캡처합니다)",
+        "optionDeltaBase": "두 머신에 바이트 단위로 동일하게 존재하는 불변 베이스 GUID; 변경된 블록만 전송합니다 (머신 대상). 자동 베이스를 사용하려면 생략하십시오",
         "optionForce": "기존 백업을 강제로 덮어씁니다",
         "optionProvision": "대상이 존재하지 않는 경우 클라우드 공급자를 통해 자동으로 대상 머신을 프로비저닝합니다",
+        "optionStrategy": "델타 베이스 사용 시 블록 델타 전략: auto, physical, 또는 shared",
         "optionTag": "버전 관리를 위한 배포 태그",
         "optionTo": "대상 머신 또는 스토리지 이름 (설정에서 자동 감지)",
         "optionUp": "푸시 후 대상 머신에서 저장소를 마운트하고 배포합니다",

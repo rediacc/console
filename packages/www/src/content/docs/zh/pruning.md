@@ -4,8 +4,8 @@ description: "删除孤立备份、过期快照、仓库镜像和本地配置遗
 category: "Guides"
 order: 12
 language: zh
-sourceHash: "881513fbe657978e"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # 清理
@@ -60,7 +60,7 @@ rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
 
 ## Machine Prune
 
-分三阶段清理机器上的资源。阶段 1 始终运行；阶段 2 和 3 是可选启用的，相互补充。
+分三阶段清理机器上的资源。阶段 1 始终运行；阶段 2 和 3 是可选启用的，可以组合使用。
 
 ### 阶段 1：数据存储清理（始终执行）
 
@@ -171,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-锚点为存活机器、仓库或 GUID 的证书名称. 以及任何单标签 `<service>.<base>` 或根 `*.<base>` 通配符. 都会保持不变。
+锚点为存活机器、仓库或 GUID 的证书名称将保持不变，任何单标签 `<service>.<base>` 或根 `*.<base>` 通配符同样如此。
 
 ## 迁移：状态镜像回填
 

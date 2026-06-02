@@ -4,13 +4,13 @@ description: "Rediacc'ta organizasyonlar, ekipler, üyeler ve abonelikler."
 category: Guides
 order: 12
 language: tr
-sourceHash: "e32952a1485133e0"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "974885635641ed70"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Organizasyonlar
 
-Kayıt olduğunuzda, Rediacc sizin için otomatik olarak bir organizasyon oluşturur. Organizasyonunuz tüm kaynaklar için üst düzey kapsayıcıdır -- makineler, depolar, abonelikler ve ekip üyeleri.
+Bir hesap oluşturduğunuzda Rediacc sizin için otomatik olarak bir organizasyon oluşturur. Bu organizasyon, burada sahip olduğunuz her şeyin üst düzey kapsayıcısıdır: makineler, depolar, abonelikler ve davet ettiğiniz kişiler. İkinci bir organizasyonu yanlışlıkla oluşturamazsınız. Hesap başına tam olarak bir organizasyon vardır ve her ekip ile kaynak ona bağlanır.
 
 ![Registration Flow](/img/account-registration-flow.svg)
 
@@ -117,7 +117,7 @@ UPSTREAM_URL=https://www.rediacc.com
 UPSTREAM_API_KEY=rdt_<token>
 ```
 
-Token **yalnızca** delegasyon sertifikası yenilemesine izin verir; başka hiçbir kaynağı okuyamaz veya değiştiremez. Bu, `delegation:renew` tokeni oluşturmanın tek yoludur; normal `/portal/api-tokens` akışı bu kapsamı içermez.
+Token **yalnızca** delegasyon sertifikası yenilemesine izin verir. Başka hiçbir kaynağı okuyamaz veya değiştiremez. Bu, `delegation:renew` tokeni oluşturmanın tek yoludur; normal `/portal/api-tokens` akışı bu kapsamı içermez.
 
 #### Hava Boşluklu Yenileme
 

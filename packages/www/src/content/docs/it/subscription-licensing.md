@@ -4,8 +4,8 @@ description: "Scopri come account, rdc e renet gestiscono gli slot macchina, le 
 category: "Guides"
 order: 7
 language: it
-sourceHash: "8e0a4976634ae323"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "98aede90642cfabc"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Abbonamento e licenze
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slot macchina (lato server)
 
-Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota degli slot macchina dell'abbonamento (es. 2 macchine per Community, 5 per Professional). Uno slot viene occupato per 1 ora dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Questo significa che un piano con 5 slot può servire decine di macchine nel tempo -- gli slot vengono occupati solo durante il provisioning attivo.
+Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota degli slot macchina dell'abbonamento (es. 2 macchine per Community, 5 per Professional). Uno slot viene occupato per 1 ora dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Un piano con 5 slot può quindi coprire decine di macchine nel tempo, poiché gli slot vengono occupati solo durante il provisioning attivo.
 
 Nessun file di licenza macchina viene memorizzato sulla macchina. L'applicazione degli slot avviene al momento dell'emissione sul server.
 
@@ -78,7 +78,7 @@ Viene usata per:
 
 Le licenze repo sono legate alla macchina e al repository target. Ogni licenza contiene l'ID macchina, il GUID del repository, l'ID abbonamento, i limiti del piano e la scadenza. Per i repository cifrati, Rediacc verifica anche l'identità LUKS del volume sottostante.
 
-Più abbonamenti possono coesistere sulla stessa macchina -- ogni repository porta la propria licenza con il proprio contesto di abbonamento.
+Più abbonamenti possono coesistere sulla stessa macchina. Ogni repository porta la propria licenza con il proprio contesto di abbonamento.
 
 ## Limiti predefiniti
 
@@ -135,7 +135,7 @@ Quella emissione supportata dall'account conta per il tuo utilizzo mensile di **
 
 ### Riavvio della macchina e autostart
 
-L'autostart usa le stesse regole di `rdc repo up`; la scadenza viene ignorata, quindi i repository si riavviano sempre liberamente.
+L'autostart usa le stesse regole di `rdc repo up`: la scadenza viene ignorata, quindi i repository si riavviano sempre liberamente.
 
 Le licenze repo usano un modello di validità a lungo termine:
 
@@ -204,7 +204,7 @@ Per la configurazione iniziale della macchina, consulta [Configurazione della ma
 
 ## Comportamento offline e scadenza
 
-La validazione della licenza avviene localmente sulla macchina; non richiede connettività live al server account.
+La validazione della licenza avviene localmente sulla macchina. Non richiede connettività live al server account.
 
 Ciò significa che:
 

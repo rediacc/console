@@ -4,6 +4,8 @@ description: "Come Rediacc si allinea ai requisiti PCI DSS per la protezione dei
 category: "Legal"
 order: 6
 language: it
+sourceHash: "7dfa2cbb5f86d910"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Il Payment Card Industry Data Security Standard (PCI DSS) è obbligatorio per qualsiasi organizzazione che memorizza, elabora o trasmette dati dei titolari di carta. La versione corrente è PCI DSS v4.0.1.
@@ -27,14 +29,14 @@ Riferimento: [PCI Security Standards Council](https://www.pcisecuritystandards.o
 
 ## Segmentazione di Rete
 
-Il PCI DSS pone grande enfasi sulla segmentazione di rete per isolare il cardholder data environment (CDE). Rediacc la fornisce per architettura:
+Il PCI DSS punta forte sulla segmentazione: isola il cardholder data environment (CDE), o fallisci l'audit. Rediacc ti fornisce quella segmentazione per default:
 
 - Ogni repository opera nel proprio daemon Docker in `/var/run/rediacc/docker-<networkId>.sock`
 - I repository dispongono di sottoreti IP di loopback isolate (127.0.x.x/26, 61 IP utilizzabili per rete)
 - Le regole iptables imposte da renet bloccano tutto il traffico tra daemon
 - I container di repository diversi non possono comunicare a livello di rete
 
-Un repository per l'elaborazione dei pagamenti è isolato a livello di rete da tutte le altre applicazioni sulla stessa macchina. Non è necessaria alcuna configurazione firewall aggiuntiva.
+Un repository per l'elaborazione dei pagamenti gira sul proprio daemon Docker e sulla propria sottorete loopback, isolato a livello di rete da ogni altra applicazione sulla stessa macchina. Nessuna regola firewall aggiuntiva da scrivere.
 
 ## Riduzione dell'Ambito
 
@@ -47,7 +49,7 @@ Il self-hosted di Rediacc riduce l'ambito di conformità PCI DSS:
 
 ## Casi di Applicazione
 
-Una segmentazione di rete inadeguata e la mancanza di crittografia hanno portato a costose azioni di enforcement PCI DSS:
+Una segmentazione debole e la mancanza di crittografia sono alla base delle azioni di enforcement PCI DSS piu' costose:
 
 - Heartland Payment Systems (2008): gli aggressori si sono spostati lateralmente su 48 database a causa di una scarsa segmentazione di rete, esponendo 130 milioni di numeri di carte. [Il costo totale ha superato i 200 milioni di dollari.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): gli aggressori sono passati dall'accesso di rete di un fornitore HVAC ai sistemi punto vendita a causa di un'architettura di rete piatta, acquisendo 40 milioni di carte di pagamento. [Accordo raggiunto per 18,5 milioni di dollari con 47 procuratori generali statali.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

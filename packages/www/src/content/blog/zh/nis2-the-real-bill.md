@@ -12,8 +12,8 @@ tags:
   - mid-market
 featured: false
 language: zh
-sourceHash: "95f07c80c1d91055"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "3fbb581ec14e3f80"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -92,15 +92,15 @@ ENISA 自身的实施成本指引（实施条例 (EU) 2024/2690 附件四）与 
 
 Rediacc 是一个带有统一审计日志的控制平面，取代了五个类别中四个的核心能力，适用于自托管基础设施。
 
-**备份**：热备份（基于 BTRFS 快照的崩溃一致性，无停机时间）和冷备份（应用一致性的停机-快照-启动）策略，通过 systemd timers 调度，通过 rclone 支持多目的地。LUKS 加密卷，操作员持有凭据，Rediacc 公司本身永远看不到明文数据。运营细节请参阅 [Backup & Restore](/zh/docs/backup-restore) 和 [Cross Backup Strategy](/zh/docs/cross-backup)。
+**备份**分两种模式。热备份是基于 BTRFS 快照的崩溃一致性，无停机时间。冷备份执行停机-快照-启动周期，以保证应用一致性。两种模式都通过 systemd timers 调度，通过 rclone 发送到多个目的地。卷使用 LUKS 加密，操作员持有密钥，Rediacc 公司本身永远看不到明文数据。运营细节请参阅 [Backup & Restore](/zh/docs/backup-restore) 和 [Cross Backup Strategy](/zh/docs/cross-backup)。
 
 **DR**：与备份相同的基础原语，加上 `rdc repo migrate` 用于跨机器数据迁移，以及 fork 原语用于在并行机器上快速启动已恢复状态。DR 站点可以是另一台 Hetzner 机器、OVH 机器、本地机架，任何 SSH 可达的地方都行。数据路径中没有 DR 供应商的云。
 
-**测试数据与全栈克隆**：基于 BTRFS reflink 的 fork，无论存储库大小均为常数时间，涵盖全栈（数据、配置、容器状态、服务）。在我们的 [PocketOS 测试](/zh/blog/i-tested-rediacc-against-the-pocketos-incident)中，fork 一个 128 GB 的存储库仅需 7.2 秒。fork 出的环境是当前生产环境，而非精简版预发布环境。请参阅 [Risk-Free Upgrades](/zh/docs/risk-free-upgrades)。
+**测试数据与全栈克隆**基于 BTRFS reflink，无论仓库大小均为常数时间，涵盖全栈内容：数据、配置、容器和服务。我们在 [PocketOS 测试](/zh/blog/i-tested-rediacc-against-the-pocketos-incident)中对一个 128 GB 的仓库进行 fork，仅需 7.2 秒。fork 出的环境是当前生产环境，而非精简版预发布环境。请参阅 [Risk-Free Upgrades](/zh/docs/risk-free-upgrades)。
 
 **即时恢复**：从任意 rclone 目标执行 `rdc repo backup pull`，在新的 fork 中启动，并在父存储库通配符证书覆盖的 fork 专属子域名下运行。无需 DNS 改动，无需证书操作。
 
-**统一审计日志**：覆盖整个控制平面的 70 多种事件类型（身份验证、API 令牌、配置写入、存储库生命周期、备份、同步、终端会话、机器操作）。在操作员工作站上进行哈希链式记录，`rdc audit verify` 验证端到端完整性。
+**统一审计日志**涵盖控制平面的 70 多种事件类型：登录、API 令牌、配置写入、仓库生命周期、备份、同步、终端会话以及机器操作。哈希链记录在操作员工作站上，`rdc audit verify` 端到端验证完整性。
 
 对于一家拥有 250 名员工的中型市场重要实体而言，整合结果是：从四个具名供应商（备份、DR、测试数据、即时恢复）缩减为一个。一份授权、一份审计日志、一组升级决策、一个注册表条目。
 
@@ -125,7 +125,7 @@ Rediacc 是一个带有统一审计日志的控制平面，取代了五个类别
 
 如果有采购方读完本文后得出"我可以用 Rediacc 替代 Drata"的结论，那他们的审计师会让他们失望的。正确的理解是：Rediacc 实现的数据平面供应商整合，是 GRC 工具做不到的事；而 GRC 工具所做的注册表和证据工作，是 Rediacc 不做的事。两者是互补关系。
 
-关于能力与 NIS2 条款的公开映射，请参阅 [NIS2 and DORA](/zh/docs/legal-nis2-dora)。关于更广泛的架构框架，请参阅 [Compliance Overview](/zh/docs/legal-overview)。关于 Rediacc 商业细节，请参阅 [Subscription & Licensing](/zh/docs/subscription-licensing)。
+想深入了解可参考以下三个链接。公开映射表在 [NIS2 and DORA](/zh/docs/legal-nis2-dora)。更广泛的框架在 [Compliance Overview](/zh/docs/legal-overview)。Rediacc 商业细节在 [Subscription & Licensing](/zh/docs/subscription-licensing)。
 
 ## 参考场景：结构性而非数字性
 
@@ -169,4 +169,4 @@ Rediacc 是一个带有统一审计日志的控制平面，取代了五个类别
 
 如果我们在你的候选名单上，具体方案如下：将去年安全和基础设施预算中最大的三个行项目发给我们。我们会在一周内以书面形式告诉你，哪些可以整合，哪些不能。答案会包括缺口说明，因为诚实命名缺口是让答案其余部分值得信赖的前提。
 
-关于[零成本备份](/zh/docs/zero-cost-backup)（我们在存储端比老牌竞争对手更轻量的架构论证）、[Cross Backup Strategy](/zh/docs/cross-backup)（洲际 DR）以及 [Subscription & Licensing](/zh/docs/subscription-licensing)（商业细节），请参阅对应文档。
+如果想进一步深入，这里是三份文档。[零成本备份](/zh/docs/zero-cost-backup)解释了为何我们在存储侧比老牌竞争对手更轻量。[Cross Backup Strategy](/zh/docs/cross-backup)涵盖洲际 DR。[Subscription & Licensing](/zh/docs/subscription-licensing)是商业侧内容。

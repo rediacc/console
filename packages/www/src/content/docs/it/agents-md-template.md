@@ -4,9 +4,11 @@ description: "Template copia-incolla per configurare Claude Code, Cursor e altri
 category: Reference
 order: 50
 language: it
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-Usa questo template per configurare gli assistenti AI di programmazione (Claude Code, Cursor, Cline, Windsurf) per la gestione autonoma dell'infrastruttura Rediacc. È già pronto all'uso: copia il blocco seguente nel file `CLAUDE.md`, `.cursorrules` o nel file di configurazione equivalente del tuo agente.
+Il problema e' questo: gli assistenti AI di programmazione (Claude Code, Cursor, Cline, Windsurf) continuano a inventare flag `rdc` che non esistono, e non riescono a capire quale nome di repository Rediacc corrisponde a quale GUID senza chiedertelo ogni volta. Questo template risolve il problema. Incolla il blocco seguente nel file `CLAUDE.md`, `.cursorrules` o nel file di configurazione agente che usi.
 
 ## Template
 

@@ -4,9 +4,11 @@ description: Modelo de copiar e colar para configurar o Claude Code, Cursor e ou
 category: Reference
 order: 50
 language: pt
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-Use este modelo para configurar assistentes de codificação com IA (Claude Code, Cursor, Cline, Windsurf) para a gestão autónoma da infraestrutura Rediacc. Copie o bloco abaixo para o ficheiro `CLAUDE.md`, `.cursorrules` ou equivalente de configuração de agente do seu projeto.
+O problema é este: os assistentes de codificação com IA (Claude Code, Cursor, Cline, Windsurf) continuam a inventar flags do `rdc` que não existem, e não conseguem saber qual o nome de repositório Rediacc que mapeia para qual GUID sem perguntar todas as vezes. Este modelo resolve isso. Cole o bloco abaixo no seu `CLAUDE.md`, `.cursorrules` ou em qualquer ficheiro de configuração de agente que a sua ferramenta utilize.
 
 ## Modelo
 

@@ -1,18 +1,20 @@
 ---
 title: Applicazione Web
-description: Comprensione dell'architettura dell'applicazione web e del deployment con Rediacc. È progettata per la massima semplicità operativa.
+description: "Guida all'uso della console web Rediacc per gestire macchine, repository e backup con più facilità"
 category: Reference
 order: 1
 language: it
+sourceHash: "0951a0a1b320f570"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Guida utente della piattaforma Rediacc
 
 ## Panoramica
 
-**Rediacc** è una piattaforma cloud che offre servizi di backup basati sull'intelligenza artificiale.
+**Rediacc** è un software self-hosted che installi sui tuoi server. Con esso esegui backup, fork e ripristino di interi sistemi live: app, database e configurazione insieme, non file per file. Questo è il punto centrale: la maggior parte degli strumenti di backup copia i file perdendo le relazioni tra di essi.
 
-Questa guida illustra l'utilizzo di base dell'interfaccia web disponibile su [https://www.rediacc.com/](https://www.rediacc.com/).
+Questa guida illustra la console web disponibile su [https://www.rediacc.com/](https://www.rediacc.com/).
 
 ### Scopo di questa guida
 
@@ -28,7 +30,7 @@ Questa guida illustra l'utilizzo di base dell'interfaccia web disponibile su [ht
 ![Procedura guidata di registrazione](/assets/videos/user-guide/01-01-registration.webm)
 *(Video: Flusso completo della registrazione dall'inizio alla fine)*
 
-Per iniziare a utilizzare la piattaforma Rediacc è necessario creare un account.
+Per utilizzare Rediacc, è necessario un account.
 
 ![Pagina di accesso Rediacc - infrastruttura sempre attiva](/assets/images/user-guide/01_login.png)
 *(Figura 1: Pagina di accesso principale, con le funzionalità principali della piattaforma Rediacc)*
@@ -109,7 +111,7 @@ Dopo l'accesso, la schermata che vedi è composta dalle seguenti sezioni princip
 
 ## 2.1 Organizzazione - Utenti
 
-La gestione degli utenti consente di controllare l'accesso alla piattaforma per le persone della tua organizzazione.
+La gestione degli utenti è il luogo in cui controlli chi nella tua organizzazione ottiene l'accesso.
 
 ### 2.1.1 Aggiunta di utenti
 
@@ -208,7 +210,7 @@ Puoi utilizzare la funzione di traccia per monitorare le attività degli utenti.
 
 ## 2.2 Organizzazione - Team
 
-I team ti consentono di raggruppare gli utenti e fornire accesso collettivo alle risorse.
+I team raggruppano gli utenti in modo da poter concedere l'accesso collettivamente.
 
 ### 2.2.1 Creazione di team
 
@@ -291,7 +293,7 @@ I team ti consentono di raggruppare gli utenti e fornire accesso collettivo alle
 
 ## 2.3 Organizzazione - Controllo degli accessi
 
-Il controllo degli accessi consente di gestire centralmente i permessi degli utenti creando gruppi di permessi.
+Il controllo degli accessi centralizza i permessi tramite gruppi, invece di gestirli per singolo utente.
 
 ### 2.3.1 Creazione di gruppi di permessi
 
@@ -327,7 +329,7 @@ Il controllo degli accessi consente di gestire centralmente i permessi degli ute
 
 ## 2.4 Macchine
 
-La sezione Macchine consente di gestire i tuoi server e le risorse dei repository.
+La sezione Macchine è il luogo in cui gestisci i tuoi server e i repository su di essi.
 
 ### 2.4.1 Aggiunta di macchine
 
@@ -483,7 +485,7 @@ Fai clic sul pulsante **{{t:common.actions.refresh}}** per aggiornare l'elenco d
 ![Procedura guidata di operazioni remote](/assets/videos/user-guide/02-04-08-remote-hello.webm)
 *(Video: Esecuzione di operazioni remote su una macchina)*
 
-Puoi eseguire varie operazioni remote sulle macchine.
+Puoi eseguire operazioni remote su una macchina direttamente dal web.
 
 1. Seleziona la macchina e fai clic sul pulsante **{{t:common.actions.remote}}**.
 2. Visualizza le opzioni nel menu a tendina:
@@ -544,7 +546,7 @@ Puoi eseguire varie operazioni remote sulle macchine.
 
 ## 2.5 Creazione e operazioni sui repository
 
-I repository sono le unità fondamentali in cui vengono archiviati i dati di backup.
+Un repository è un singolo deployment applicativo isolato: le sue app, i suoi dati, la sua configurazione, il proprio Docker daemon. Quasi ogni pulsante in questa pagina agisce su un repository, non sulla macchina su cui si trova. Vale la pena saperlo prima di fare clic su Elimina.
 
 ### 2.5.1 Creazione di repository
 
@@ -845,7 +847,7 @@ Per ottenere informazioni dettagliate sul repository:
 
 ## 2.6 Operazioni di connessione al repository
 
-Puoi connetterti ai repository utilizzando metodi diversi.
+Puoi connetterti a un repository in due modi. L'applicazione desktop offre un terminale reale e SSH. Il browser è adatto per ispezioni e gestione tramite clic, ma non è adatto per sessioni shell prolungate. Scegli l'applicazione desktop per il lavoro vero.
 
 ### 2.6.1 Connessione tramite applicazione desktop
 
@@ -914,7 +916,7 @@ Puoi gestire il tuo profilo e le impostazioni di sistema dalla sezione Impostazi
 
 ## 2.8 Archiviazione
 
-La sezione Archiviazione consente di gestire le aree fisiche in cui verranno archiviati i dati di backup.
+La sezione Archiviazione è il luogo in cui definisci le posizioni fisiche in cui verranno salvati i dati di backup.
 
 ### 2.8.1 Aggiunta di un'area di archiviazione
 
@@ -945,7 +947,7 @@ La sezione Archiviazione consente di gestire le aree fisiche in cui verranno arc
 
 ## 2.9 Credenziali
 
-La sezione Credenziali consente di gestire in modo sicuro le informazioni di accesso ai tuoi repository.
+La sezione Credenziali è il luogo in cui gestisci i segreti che i tuoi repository usano per accedere alle risorse.
 
 ### 2.9.1 Modifica delle credenziali
 
@@ -1008,7 +1010,7 @@ La sezione Credenziali consente di gestire in modo sicuro le informazioni di acc
 
 ## 2.10 Coda
 
-La sezione Coda consente di monitorare le operazioni in attesa e completate nel sistema.
+La sezione Coda monitora le operazioni in attesa e completate nel sistema.
 
 ### 2.10.1 Operazioni sulla coda
 
@@ -1042,7 +1044,7 @@ La sezione Coda consente di monitorare le operazioni in attesa e completate nel 
 
 ## 2.11 Audit
 
-La sezione Audit mantiene i registri di tutte le operazioni eseguite nel sistema.
+La sezione Audit tiene un registro di ogni operazione eseguita nel sistema.
 
 ### 2.11.1 Record di audit
 

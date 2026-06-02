@@ -50,6 +50,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .requiredOption('--tag <name>', t('commands.repo.fork.tagOption'))
     .option('--checkpoint', t('commands.repo.fork.checkpointOption'))
+    .option('--immutable', t('commands.repo.fork.immutableOption'))
     .option('--up', t('commands.repo.fork.upOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
@@ -59,6 +60,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
         machine: string;
         tag: string;
         checkpoint?: boolean;
+        immutable?: boolean;
         up?: boolean;
         debug?: boolean;
         skipRouterRestart?: boolean;

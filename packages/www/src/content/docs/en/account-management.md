@@ -8,7 +8,7 @@ language: en
 
 ### Organizations
 
-When you register, Rediacc automatically creates an organization for you. Your org is the top-level container for all resources -- machines, repositories, subscriptions, and team members.
+Register an account and Rediacc spins up an organization for you automatically. That org is the top-level container for everything you own here: machines, repositories, subscriptions, and the people you invite. You will not create a second one by accident. There is exactly one org per account, and every team and resource hangs off it.
 
 ![Registration Flow](/img/account-registration-flow.svg)
 
@@ -115,7 +115,7 @@ UPSTREAM_URL=https://www.rediacc.com
 UPSTREAM_API_KEY=rdt_<token>
 ```
 
-The token grants **only** delegation cert renewal - it cannot read or modify any other resource. This is the only path to mint a `delegation:renew` token; the regular `/portal/api-tokens` flow does not include this scope.
+The token grants **only** delegation cert renewal. It cannot read or modify any other resource. This is the only path to mint a `delegation:renew` token; the regular `/portal/api-tokens` flow does not include this scope.
 
 #### Air-gapped renewal
 

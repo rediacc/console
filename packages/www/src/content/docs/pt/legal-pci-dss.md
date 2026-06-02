@@ -4,6 +4,8 @@ description: "Como o Rediacc mapeia os requisitos PCI DSS para proteger dados de
 category: "Legal"
 order: 6
 language: pt
+sourceHash: "7dfa2cbb5f86d910"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 A Payment Card Industry Data Security Standard (PCI DSS) é obrigatória para qualquer organização que armazene, processe ou transmita dados de titulares de cartões. A versão atual é a PCI DSS v4.0.1.
@@ -27,14 +29,14 @@ Referência: [PCI Security Standards Council](https://www.pcisecuritystandards.o
 
 ## Segmentação de Rede
 
-O PCI DSS dá grande ênfase à segmentação de rede para isolar o ambiente de dados de titulares (CDE). O Rediacc proporciona isso por arquitetura:
+O PCI DSS aposta fortemente na segmentação: isole o ambiente de dados de titulares (CDE) ou reprove a auditoria. O Rediacc dá-lhe essa segmentação por defeito:
 
 - Cada repositório corre no seu próprio daemon Docker em `/var/run/rediacc/docker-<networkId>.sock`
 - Os repositórios têm sub-redes de loopback IP isoladas (127.0.x.x/26, 61 IPs utilizáveis por rede)
 - Regras iptables impostas pelo renet bloqueiam todo o tráfego entre daemons
 - Contentores de repositórios diferentes não conseguem comunicar ao nível da rede
 
-Um repositório de processamento de pagamentos fica isolado ao nível da rede de todas as outras aplicações na mesma máquina. Não é necessária nenhuma configuração adicional de firewall.
+Um repositório de processamento de pagamentos corre no seu próprio daemon Docker e na sua própria sub-rede de loopback, isolado ao nível da rede de todas as outras aplicações na mesma máquina. Sem regras de firewall adicionais para escrever.
 
 ## Redução do Âmbito
 
@@ -47,7 +49,7 @@ O Rediacc self-hosted reduz o âmbito de conformidade PCI DSS:
 
 ## Casos de Aplicação
 
-A fraca segmentação de rede e a ausência de encriptação levaram a ações de aplicação PCI DSS com custos elevados:
+A fraca segmentação e a ausência de encriptação estão por detrás das ações de aplicação PCI DSS mais dispendiosas:
 
 - Heartland Payment Systems (2008): os atacantes moveram-se lateralmente por 48 bases de dados devido à fraca segmentação de rede, expondo 130 milhões de números de cartões. [O custo total ultrapassou 200 milhões de dólares.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): os atacantes pivotaram da rede de um fornecedor de AVAC para os sistemas de ponto de venda devido à arquitetura de rede plana, capturando 40 milhões de cartões de pagamento. [Acordo por 18,5 milhões de dólares com 47 procuradores-gerais estaduais.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

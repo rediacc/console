@@ -198,9 +198,51 @@ export const RepositoryConfigSchema = z.object({
   networkId: z.number().int().optional(),
   grandGuid: z.string().optional(),
   parentGuid: z.string().optional(),
+  // Marks a fork read-only (refuses to mount on the machine). Producer:
+  // `repo fork --immutable` (and `repo commit` in Phase 2). The machine-side
+  // mirror is authoritative for enforcement; this is the config-side record.
+  immutable: z.boolean().optional(),
+  // Git-like branching (Phase 2). On a working fork, `headCommit` is the commit
+  // it currently sits on (its tip). Commit metadata is recorded for immutable
+  // commit entries. `branches` maps branch name -> tip commit GUID and
+  // `reflog` records tip moves; both are the config-side ref store (machine =
+  // object store, config = ref store).
+  headCommit: z.string().optional(),
+  commitMessage: z.string().optional(),
+  commitAuthor: z.string().optional(),
+  commitParent: z.string().optional(),
+  branches: z.record(z.string(), z.string()).optional(),
+  head: z.string().optional(),
+  reflog: z
+    .array(
+      z.object({
+        ref: z.string(),
+        from: z.string().optional(),
+        to: z.string(),
+        at: z.string(),
+        message: z.string().optional(),
+      })
+    )
+    .optional(),
   sshPrivateKey: z.string().optional(),
   sshPublicKey: z.string().optional(),
   secrets: z.record(SecretKeySchema, SecretEntrySchema).optional(),
+  // Hands-free CoW-delta push tracking (Phase 3). Per destination machine, the
+  // GUID of an immutable image proven to live byte-identical on both ends (so a
+  // later push of a descendant can ship only changed extents with no operator
+  // flag), the last push time, and how the last push transferred. `verifiedBase`
+  // is set only for an immutable push, whose image stays byte-stable and is
+  // therefore a safe delta base; a mutable push records method/time only.
+  pushState: z
+    .record(
+      z.string(),
+      z.object({
+        verifiedBase: z.string().optional(),
+        lastPushAt: z.string(),
+        method: z.enum(['rsync', 'delta']),
+      })
+    )
+    .optional(),
 });
 
 // Archives intentionally OMIT secrets — archiveRepository scrubs them.

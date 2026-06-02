@@ -1,6 +1,6 @@
 ---
-title: Rediaccブログへようこそ
-description: Rediaccの最新ニュース、チュートリアル、お知らせをお届けします。
+title: "Rediaccブログ：実戦記録とハウツー"
+description: "ここでは、Rediaccに関する実戦記録、ハウツー、製品ノートを掲載しています。"
 author: Rediacc Team
 publishedDate: 2025-01-20
 category: announcement
@@ -9,12 +9,13 @@ tags:
   - welcome
 featured: true
 language: ja
-sourceHash: "a292e24968f4bc9b"
+sourceHash: "73ff9dafe4309f78"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Rediaccブログへようこそ
 
-公式ブログへようこそ！ここでは、Rediaccを最大限に活用するためのチュートリアル、お知らせ、ガイドをご紹介します。
+このブログです。長年のサーバー運用からの実戦記録をお届けします。Rediaccの仕組みに関する詳細な解説。ときには深夜3時のインシデント報告も。
 
 ## 今後の予定
 
@@ -23,4 +24,4 @@ sourceHash: "a292e24968f4bc9b"
 - **ケーススタディ**: Rediaccの実践例
 - **ベストプラクティス**: チームからのヒントとコツ
 
-定期的に新しいコンテンツをチェックしてください！
+何か本当に言いたいことがある時に新しい投稿を書きます。カレンダーに言われてではなく。

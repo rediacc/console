@@ -12,7 +12,7 @@ Rediacc provides built-in monitoring commands to inspect machine health, running
 
 ## Machine Health
 
-Get a comprehensive health report for a machine:
+Get a full health report for a machine:
 
 ```bash
 rdc machine health --name server-1
@@ -211,7 +211,7 @@ Options:
 
 ## Diagnostics (doctor)
 
-Run a comprehensive diagnostic check of your Rediacc environment:
+Run a full diagnostic check of your Rediacc environment:
 
 ```bash
 rdc doctor

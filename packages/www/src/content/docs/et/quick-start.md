@@ -4,6 +4,8 @@ description: Konteineerpõhise teenuse käivitamine oma serveris minutitega.
 category: Guides
 order: -1
 language: et
+sourceHash: "15b3c42682a05678"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Kiirjuhend
@@ -18,7 +20,7 @@ Juuruta oma serveris krüpteeritud, isoleeritud konteinerikeskkond. Ilma pilveko
 
 Hoidla on üks krüpteeritud fail kettal. Liiguta seda, varunda see, tee sellest fork. See on lihtsalt fail. Ühendatuna muutub see kaustaks, mille sees on pühendatud Dockeri daemon ja sinu rakenduse andmed.
 
-Mõtle hoidlast kui USB-kettast. See on midagi sinu käes ja kui selle ühendad, muutub see süsteemile nähtavaks ja kättesaadavaks. Sinu rakendused ja andmed on täielikult kaasaskantavad. Ühenda ja käivita mis tahes masinal mis tahes pilveteenuse pakkuja juures.
+Mõtle hoidlast kui USB-kettast: ühenda see mis tahes masina külge ja rakendused ning andmed ühenduvad, valmis töötamiseks. Liiguta seda masinate või pilveteenuse pakkujate vahel ilma midagi uuesti ehitamata. Ühenda ja käivita.
 
 **Kaks tööriista, kaks rolli:**
 

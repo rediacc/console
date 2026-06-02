@@ -73,13 +73,13 @@ The market has answers. The answers are expensive.
 
 **Rubrik Live Mount**: similar concept, instant mount of a backup snapshot for testing. Better integration with cloud-native workloads. Same operational pattern. Same per-test engineering overhead.
 
-**Delphix (Perforce DevOps Data)**: data-virtualisation tool that creates near-instant clones of source databases for development and testing. Solves the "we want production-shaped data in dev" problem. Database-only. Does not clone application services, configurations, secrets, or container state. Annual licence runs into six figures for mid-market teams.
+**Delphix (Perforce DevOps Data)**: virtualises source databases so dev gets near-instant clones. Fixes the prod-shaped-data-in-dev problem. Database only. It will not clone your app services, configs, secrets, or container state. The annual licence hits six figures for mid-market teams.
 
-**Tonic.ai, Redgate Test Data Manager**: data-masking and synthetic-data approaches. Solve the privacy-vs-realism tradeoff for dev and test environments. Production-realistic where data shape and scale are concerned. Not full-stack clones. Not designed for security testing scenarios where the application configuration matters.
+**Tonic.ai, Redgate Test Data Manager**: mask or synthesise data for dev and test. Good fix for the privacy-vs-realism tradeoff. The data shape and scale look like prod. But these tools clone the data, not the app stack. Use them for QA, not for security drills where the config is the bug.
 
 **Custom build**: take a hot backup, restore it to a parallel environment, run the test, tear it down. Conceptually possible. Operationally a multi-day engineering effort per drill. The team does this once because they were forced to, then never again.
 
-The structural problem is that production cloning, full-stack and including application state, has historically required either (a) per-byte data transfer (slow and expensive at scale), (b) snapshot-based VM cloning (works for IaaS, breaks for containers and Kubernetes), or (c) data-virtualisation (database-only). All three approaches carry per-test cost that scales with environment size.
+Cloning full prod, including app state, has always meant one of three things. Copy every byte (slow, expensive at scale). Snapshot the VM (works for IaaS, breaks for containers and Kubernetes). Or virtualise the database only. All three cost more per drill as the environment grows.
 
 When per-test cost scales with size, drills become rare events. Rare events do not satisfy continuous effectiveness assessment.
 
@@ -113,7 +113,7 @@ Here is a concrete routine that satisfies Article 21(2)(e) and (f) for a product
 rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
 ```
 
-The fork is named with the ISO week so the audit log is self-describing. The repo is up under a fork-specific subdomain (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`) and the parent's wildcard certificate covers it. No new TLS handshake.
+The fork is named with the ISO week so the audit log reads itself. The repo comes up under a fork subdomain (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). The parent wildcard cert covers it. No new TLS handshake.
 
 **Step 2**: Apply the patch under test, on the fork.
 
@@ -156,7 +156,7 @@ The total wall-clock time for the routine, on a 128 GB repository, is under 15 m
 
 A single SRE running this once a week produces 52 timestamped, audit-logged effectiveness records per year. That is the evidence shape an auditor is asking for.
 
-For the broader recovery story including cross-machine and intercontinental drills, see [Cross Backup Strategy](/en/docs/cross-backup) and [Backup & Restore](/en/docs/backup-restore). For point-in-time semantics during a partial-corruption event, see [Time Travel Recovery](/en/docs/time-travel-recovery).
+Want the full recovery story? [Cross Backup Strategy](/en/docs/cross-backup) covers drills across machines and continents. [Backup & Restore](/en/docs/backup-restore) is the primer. For a partial-corruption event, see [Time Travel Recovery](/en/docs/time-travel-recovery).
 
 ## Article 23: the reporting timeline you cannot meet without artefacts
 
@@ -202,7 +202,7 @@ Two things an SRE should know upfront, before deciding the rest of the post is i
 
 **Rediacc does not write your runbooks**. The CLI commands above are the moving parts. The decisions about when to fork, when to fail over, how to communicate with customers, when to engage law enforcement, are runbook decisions. Those still need to be authored, exercised, and updated by your team. NIS2 Article 21(2)(b) (incident handling) is a process obligation, not a tooling obligation, and we satisfy a portion of it, not all of it.
 
-For the procurement-side scope (certifications, GRC, supplier-register collapse), see the [supply chain post](/en/blog/nis2-supply-chain-self-hosted). For the cost-side scope (what stays on the budget after a self-hosted control plane), see the [real bill post](/en/blog/nis2-the-real-bill).
+On the procurement side (certifications, GRC, the supplier-register problem), see the [supply chain post](/en/blog/nis2-supply-chain-self-hosted). On the cost side (what stays on the budget once you self-host), see the [real bill post](/en/blog/nis2-the-real-bill).
 
 The right read of these: Rediacc is a tooling layer, not a security program. It removes excuses and produces evidence. It does not run the program for you.
 
@@ -216,7 +216,7 @@ Three artefacts. Produce these and the Article 21(2)(e) and (f) conversation get
 
 **Artefact 3: the backup-verify trail**. For each scheduled backup strategy, the systemd unit produces a status sidecar at `/var/run/rediacc/cold-backup-<guid>.status.json` per repo per run, and a final summary log line. `rdc machine backup status` surfaces both. Combined with the weekly restore drill from Step 4 of the routine above, this gives the auditor a "backup-and-restore-tested" trail, not just a "backup-taken" trail. See [Monitoring](/en/docs/monitoring) for the diagnostic surface.
 
-The artefacts together answer the question "are your controls effective" with timestamps and hash-chained evidence, not with attestation.
+Together, the artefacts answer the question "are your controls effective" with timestamps and a hash chain. Not attestation. Evidence.
 
 ## What this means for the next quarterly planning meeting
 
@@ -230,4 +230,4 @@ If you want to see the fork timing on your largest repository, the offer is simp
 
 The structural cost story (what gets collapsed across the rest of the security stack and what stays on the budget line) is in the companion post on [the real bill](/en/blog/nis2-the-real-bill). For the supplier-register and procurement angle, see [Article 21(2)(d) and self-hosting](/en/blog/nis2-supply-chain-self-hosted).
 
-For the public mapping of capabilities to NIS2 articles, see [NIS2 and DORA](/en/docs/legal-nis2-dora).
+For the public map of what Rediacc does against each NIS2 article, see [NIS2 and DORA](/en/docs/legal-nis2-dora).

@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: ar
-sourceHash: "30fcebe300afa3f2"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "98f0b752bc5dbd4d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -165,4 +165,4 @@ translatedFrom: en
 
 إن كنا البديل على قائمتك المختصرة، فالعرض ملموس. أرسل إلينا استبيان بائعيك. سنملأه استناداً إلى نسخة منشورة فعلياً، مع إجاباتنا الحقيقية على أسئلتك، بما فيها الثغرات. إن أردت الاطلاع على البنية قبل إرسال الأوراق، سنحجز مراجعة معمارية مدتها 30 دقيقة مع المؤسس. الطريق إلى إدخال سجل قابل للدفاع عنه ليس كتيّباً لامعاً، بل هو الإجابات، بما فيها غير المريحة منها.
 
-للاطلاع على الربط العلني لقدرات Rediacc بمواد NIS2، راجع [NIS2 و DORA](/ar/docs/legal-nis2-dora). للإطار الأشمل للامتثال، راجع [نظرة عامة على الامتثال](/ar/docs/legal-overview)، و[السيادة على البيانات](/ar/docs/legal-data-sovereignty)، و[On-Premise](/ar/docs/on-premise).
+هل تريد خريطة Rediacc لكل مادة؟ راجع [NIS2 و DORA](/ar/docs/legal-nis2-dora). تحتاج الإطار الأشمل؟ اقرأ [نظرة عامة على الامتثال](/ar/docs/legal-overview). لمسألة إقامة البيانات، راجع [السيادة على البيانات](/ar/docs/legal-data-sovereignty). ولفهم أهمية الاستضافة الذاتية، راجع [On-Premise](/ar/docs/on-premise).

@@ -1,18 +1,20 @@
 ---
-title: Veebirakendus
-description: Veebirakenduse arhitektuuri ja juurutamise mõistmine Rediacc-iga
+title: "Veebirakenduse ülevaade"
+description: "Rediacc veebikonsooli täielik ülevaade: masinate, repositooriumide ja varukoopiate haldamine lihtsalt ja läbimõeldult."
 category: Reference
 order: 1
 language: et
+sourceHash: "0951a0a1b320f570"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Rediacc platvormi kasutusjuhend
 
 ## Ülevaade
 
-**Rediacc** on pilvplatvorm, mis pakub tehisintellektipõhiseid varundamisteenuseid.
+**Rediacc** on isehostatav tarkvara, mille paigaldad oma serveritele. Sellega saad varundada, kahveldada ja taastada terveid töötavaid süsteeme. Rakendused, andmebaasid ja konfiguratsioon koos, mitte faili kaupa. Just see ongi peamine erinevus: enamik varundamistööriistu kopeerivad faile ja kaotavad nendevahelised seosed.
 
-See juhend selgitab veebiliidese põhikasutust aadressil [https://www.rediacc.com/](https://www.rediacc.com/).
+See juhend tutvustab veebikonsooliga tööd aadressil [https://www.rediacc.com/](https://www.rediacc.com/).
 
 ### Juhendi eesmärk
 
@@ -28,7 +30,7 @@ See juhend selgitab veebiliidese põhikasutust aadressil [https://www.rediacc.co
 ![Registreerimisprotsessi ülevaade](/assets/videos/user-guide/01-01-registration.webm)
 *(Video: Täielik registreerimisvoog algusest lõpuni)*
 
-Rediacc platvormi kasutamiseks tuleb esmalt luua konto.
+Rediacc kasutamiseks on vaja konto luua.
 
 ![Rediacc sisselogimislehekülg – alati tööl olev taristu](/assets/images/user-guide/01_login.png)
 *(Joonis 1: Peamine sisselogimisleht, mis näitab Rediacc platvormi põhifunktsioone)*
@@ -109,7 +111,7 @@ Pärast sisselogimist koosneb nähtav ekraan järgmistest põhiosadest:
 
 ## 2.1 Organisatsioon – kasutajad
 
-Kasutajahaldus võimaldab kontrollida platvormi juurdepääsu oma organisatsiooni inimestele.
+Kasutajahaldus on koht, kus saad kontrollida, kes sinu organisatsioonist saab juurdepääsu.
 
 ### 2.1.1 Kasutajate lisamine
 
@@ -208,7 +210,7 @@ Kasutajate tegevuse jälgimiseks saad kasutada jälje funktsiooni.
 
 ## 2.2 Organisatsioon – meeskonnad
 
-Meeskonnad võimaldavad kasutajaid rühmitada ja anda ressurssidele hulgijuurdepääsu.
+Meeskonnad rühmitavad kasutajad, et saaksid juurdepääsu anda hulgi.
 
 ### 2.2.1 Meeskondade loomine
 
@@ -291,7 +293,7 @@ Meeskonnad võimaldavad kasutajaid rühmitada ja anda ressurssidele hulgijuurdep
 
 ## 2.3 Organisatsioon – juurdepääsukontroll
 
-Juurdepääsukontroll võimaldab hallata kasutajaõigusi tsentraalselt, luues õiguste rühmi.
+Juurdepääsukontroll tsentraliseerib õigused rühmade kaudu, kasutajapõhise halduse asemel.
 
 ### 2.3.1 Õiguste rühmade loomine
 
@@ -327,7 +329,7 @@ Juurdepääsukontroll võimaldab hallata kasutajaõigusi tsentraalselt, luues õ
 
 ## 2.4 Masinad
 
-Masinate jaotis võimaldab hallata servereid ja hoidla ressursse.
+Masinate jaotis on koht, kus hallatakse servereid ja nendel olevaid repositooriume.
 
 ### 2.4.1 Masinate lisamine
 
@@ -483,7 +485,7 @@ Masinate loendi uuendamiseks klõpsa nuppu **{{t:common.actions.refresh}}**.
 ![Kaugoperatsioonide ülevaade](/assets/videos/user-guide/02-04-08-remote-hello.webm)
 *(Video: Kaugoperatsioonide käivitamine masinal)*
 
-Saad teostada masinal erinevaid kaugoperatsioone.
+Saad veebist käivitada masinal kaugoperatsioone.
 
 1. Vali masin ja klõpsa nuppu **{{t:common.actions.remote}}**.
 2. Vaata rippmenüü valikuid:
@@ -544,7 +546,7 @@ Saad teostada masinal erinevaid kaugoperatsioone.
 
 ## 2.5 Hoidla loomine ja toimingud
 
-Hoidlad on põhilised üksused, kus sinu varundamisandmeid säilitatakse.
+Repositoorium on üks isoleeritud rakenduse juurutus. Selle rakendused, andmed, konfiguratsioon ja oma Docker-deemon. Seetõttu mõjutab peaaegu iga nupp sellel lehel repositooriumi, mitte masinat, millel see asub. Tasub teada enne, kui vajutad Kustuta.
 
 ### 2.5.1 Hoidlate loomine
 
@@ -845,7 +847,7 @@ Hoidla kohta üksikasjaliku teabe saamiseks:
 
 ## 2.6 Hoidlaga ühendamise toimingud
 
-Hoidlatega saab ühendust luua erinevate meetodite abil.
+Repositooriumiga saab ühenduda kahel viisil. Töölauarakendus annab päriskäsuriba ja SSH. Brauser sobib ülevaatamiseks ja klõpsamise teel haldamiseks, kuid ei suuda käitada pikki shellikogusid. Kui teed päris tööd, kasuta töölauarakendust.
 
 ### 2.6.1 Töölauarakenduse ühendus
 
@@ -914,7 +916,7 @@ Profiili ja süsteemi seadeid saad hallata jaotisest Seaded.
 
 ## 2.8 Salvestus
 
-Salvestuse jaotis võimaldab hallata füüsilisi alasid, kuhu varunduseandmeid salvestatakse.
+Salvestuse jaotis on koht, kus määratled füüsilised asukohad, kuhu varundamisandmed lähevad.
 
 ### 2.8.1 Salvestuse lisamine
 
@@ -945,7 +947,7 @@ Salvestuse jaotis võimaldab hallata füüsilisi alasid, kuhu varunduseandmeid s
 
 ## 2.9 Mandaadid
 
-Mandaatide jaotis võimaldab turvaliselt hallata hoidlate juurdepääsuteavet.
+Mandaatide jaotis on koht, kus hallatakse saladusi, mida repositooriumid kasutavad erinevatele teenustele juurdepääsuks.
 
 ### 2.9.1 Mandaadi muutmine
 
@@ -1008,7 +1010,7 @@ Mandaatide jaotis võimaldab turvaliselt hallata hoidlate juurdepääsuteavet.
 
 ## 2.10 Järjekord
 
-Järjekorra jaotis võimaldab jälgida süsteemis ootel ja lõpetatud toiminguid.
+Järjekorra jaotis jälgib kogu süsteemis ootel ja lõpetatud toiminguid.
 
 ### 2.10.1 Järjekorra toimingud
 
@@ -1042,7 +1044,7 @@ Järjekorra jaotis võimaldab jälgida süsteemis ootel ja lõpetatud toiminguid
 
 ## 2.11 Audit
 
-Auditi jaotis peab arvet kõigi süsteemis teostatud toimingute kohta.
+Auditi jaotis peab arvet kõigi süsteemis käivitatud toimingute kohta.
 
 ### 2.11.1 Auditi kirjed
 

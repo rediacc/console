@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "2289d50dac21f9bf"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1d0af1a74a12d49e"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # İzleme
@@ -16,7 +16,7 @@ Rediacc, makine sağlığını, çalışan konteynerleri, servisleri, depo durum
 
 ## Makine Sağlığı
 
-Bir makine için kapsamlı bir sağlık raporu alın:
+Bir makine için tam bir sağlık raporu alın:
 
 ```bash
 rdc machine health --name server-1
@@ -215,7 +215,7 @@ Seçenekler:
 
 ## Tanılama (doctor)
 
-Rediacc ortamınızın kapsamlı bir tanılama kontrolünü çalıştırın:
+Rediacc ortamınızın tam bir tanılama kontrolünü çalıştırın:
 
 ```bash
 rdc doctor

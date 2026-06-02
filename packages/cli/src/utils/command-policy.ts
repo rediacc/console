@@ -44,6 +44,10 @@ export const CMD = {
   REPO_EXPAND: 'repo expand',
   REPO_TAKEOVER: 'repo takeover',
   REPO_TUNNEL: 'repo tunnel',
+  REPO_COMMIT: 'repo commit',
+  REPO_BRANCH: 'repo branch',
+  REPO_CHECKOUT: 'repo checkout',
+  REPO_MERGE: 'repo merge',
   // NOTE: `repo secret` subcommands intentionally have no CMD entries.
   // The V2 write-only model removed grandGuard from secret commands —
   // mutation-gate is the safety property, not a command-level policy.

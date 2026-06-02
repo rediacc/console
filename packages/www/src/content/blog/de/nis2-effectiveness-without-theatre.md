@@ -12,8 +12,8 @@ tags:
   - vorfallsmeldung
 featured: false
 language: de
-sourceHash: "21965e5d5e9f25d5"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "4c2768e81f0ff03a"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -76,13 +76,13 @@ Der Markt hat Antworten. Die Antworten sind teuer.
 
 **Rubrik Live Mount**: Ähnliches Konzept, sofortiges Mounten eines Backup-Snapshots zum Testen. Bessere Integration mit Cloud-nativen Workloads. Dasselbe operative Muster. Derselbe Pro-Test-Engineering-Aufwand.
 
-**Delphix (Perforce DevOps Data)**: Data-Virtualisierungswerkzeug, das nahezu sofortige Klone von Quelldatenbanken für Entwicklung und Tests erstellt. Löst das Problem "wir wollen produktionsähnliche Daten in dev". Nur Datenbanken. Klont keine Anwendungsdienste, Konfigurationen, Secrets oder Container-Zustände. Die Jahreslizenz beläuft sich für mittelständische Teams auf sechsstellige Beträge.
+**Delphix (Perforce DevOps Data)**: Virtualisiert Quelldatenbanken, damit Dev nahezu sofortige Klone erhält. Löst das Problem produktionsähnlicher Daten in der Entwicklung. Nur Datenbanken. Klont keine Anwendungsdienste, Konfigurationen, Secrets oder Container-Zustände. Die Jahreslizenz erreicht sechsstellige Beträge für mittelständische Teams.
 
-**Tonic.ai, Redgate Test Data Manager**: Daten-Masking- und Synthetik-Daten-Ansätze. Lösen den Privacy-vs.-Realismus-Tradeoff für Dev- und Testumgebungen. Produktionsrealistisch was Datenform und Skalierung betrifft. Keine Full-Stack-Klone. Nicht für Sicherheitstestszenarien konzipiert, bei denen die Anwendungskonfiguration von Bedeutung ist.
+**Tonic.ai, Redgate Test Data Manager**: Maskieren oder synthetisieren Daten für Dev und Test. Gute Lösung für den Privacy-vs.-Realismus-Tradeoff. Form und Skalierung der Daten sehen wie Produktion aus. Aber diese Tools klonen die Daten, nicht den App-Stack. Für QA geeignet, nicht für Sicherheitsübungen, bei denen die Konfiguration der Fehler ist.
 
 **Eigenbau**: Ein Hot-Backup nehmen, in eine parallele Umgebung einspielen, den Test durchführen, abbauen. Konzeptionell möglich. Operativ ein mehrtägiger Engineering-Aufwand pro Drill. Das Team macht das einmal, weil sie dazu gezwungen wurden, und dann nie wieder.
 
-Das strukturelle Problem besteht darin, dass die Produktionsklonung, Full-Stack inklusive Anwendungsstatus, historisch entweder (a) einen Byte-für-Byte-Datentransfer (langsam und bei Skalierung teuer), (b) snapshot-basiertes VM-Klonen (funktioniert für IaaS, bricht für Container und Kubernetes), oder (c) Datenvirtualisierung (nur Datenbanken) erfordert hat. Alle drei Ansätze tragen Pro-Test-Kosten, die mit der Umgebungsgröße skalieren.
+Die vollständige Produktion zu klonen, inklusive Anwendungsstatus, bedeutete immer eines von drei Dingen. Jeden Byte kopieren (langsam, bei Skalierung teuer). Die VM snapshotten (funktioniert für IaaS, bricht für Container und Kubernetes). Oder nur die Datenbank virtualisieren. Alle drei kosten pro Drill mehr, je größer die Umgebung wird.
 
 Wenn Pro-Test-Kosten mit der Größe skalieren, werden Drills zu seltenen Ereignissen. Seltene Ereignisse erfüllen die kontinuierliche Wirksamkeitsbewertung nicht.
 
@@ -116,7 +116,7 @@ Hier ist eine konkrete Routine, die Artikel 21(2)(e) und (f) für ein Production
 rdc repo fork --parent prod-app --tag effectiveness-2026w19 -m hostinger
 ```
 
-Der Fork wird mit der ISO-Woche benannt, sodass das Audit-Log selbstbeschreibend ist. Das Repo läuft unter einer fork-spezifischen Subdomain (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`) und das Wildcard-Zertifikat des Elternteils deckt es ab. Kein neuer TLS-Handshake.
+Der Fork wird mit der ISO-Woche benannt, sodass das Audit-Log sich selbst erklärt. Das Repo läuft unter einer Fork-Subdomain (`<service>-fork-effectiveness-2026w19.prod-app.<machine>.<basedomain>`). Das Wildcard-Zertifikat des Elternteils deckt es ab. Kein neuer TLS-Handshake.
 
 **Schritt 2**: Den zu testenden Patch auf dem Fork anwenden.
 
@@ -159,7 +159,7 @@ Die gesamte Wanduhrzeit für die Routine, bei einem 128-GB-Repository, liegt unt
 
 Ein einzelner SRE, der dies einmal pro Woche ausführt, produziert 52 zeitgestempelte, audit-geloggte Wirksamkeitsnachweise pro Jahr. Das ist die Nachweis-Form, nach der ein Auditor fragt.
 
-Für die umfassendere Wiederherstellungsgeschichte einschließlich maschinenübergreifender und interkontinentaler Drills, siehe [Cross Backup Strategy](/de/docs/cross-backup) und [Backup & Restore](/de/docs/backup-restore). Für Point-in-Time-Semantik bei einem Teilkorruptionsereignis, siehe [Time Travel Recovery](/de/docs/time-travel-recovery).
+Die vollständige Wiederherstellungsgeschichte? [Cross Backup Strategy](/de/docs/cross-backup) behandelt Drills über Maschinen und Kontinente hinweg. [Backup & Restore](/de/docs/backup-restore) ist der Einstieg. Bei einem Teilkorruptionsereignis, siehe [Time Travel Recovery](/de/docs/time-travel-recovery).
 
 ## Artikel 23: die Meldefrist, die ohne Artefakte nicht einzuhalten ist
 
@@ -205,7 +205,7 @@ Zwei Dinge, die ein SRE vorab wissen sollte, bevor er entscheidet, ob der Rest d
 
 **Rediacc schreibt keine Runbooks**. Die obigen CLI-Befehle sind die beweglichen Teile. Die Entscheidungen darüber, wann zu forken ist, wann ein Failover durchzuführen ist, wie mit Kunden kommuniziert wird, wann Strafverfolgungsbehörden einzuschalten sind, sind Runbook-Entscheidungen. Diese müssen weiterhin von Ihrem Team verfasst, geübt und aktualisiert werden. NIS2 Artikel 21(2)(b) (Vorfallsbehandlung) ist eine Prozesspflicht, keine Tooling-Pflicht, und wir erfüllen einen Teil davon, nicht alles.
 
-Für den beschaffungsseitigen Umfang (Zertifizierungen, GRC, Lieferantenregister-Konsolidierung), siehe den [Lieferketten-Beitrag](/de/blog/nis2-supply-chain-self-hosted). Für den kostenseitigen Umfang (was nach einer selbst gehosteten Control Plane im Budget verbleibt), siehe den [Real-Bill-Beitrag](/de/blog/nis2-the-real-bill).
+Auf der Beschaffungsseite (Zertifizierungen, GRC, das Lieferantenregister-Problem), siehe den [Lieferketten-Beitrag](/de/blog/nis2-supply-chain-self-hosted). Auf der Kostenseite (was im Budget bleibt, wenn man selbst hostet), siehe den [Real-Bill-Beitrag](/de/blog/nis2-the-real-bill).
 
 Die richtige Lesart: Rediacc ist eine Tooling-Schicht, kein Sicherheitsprogramm. Es beseitigt Ausreden und produziert Nachweise. Es führt das Programm nicht für Sie.
 
@@ -219,7 +219,7 @@ Drei Artefakte. Produzieren Sie diese und die Unterhaltung zu Artikel 21(2)(e) u
 
 **Artefakt 3: der Backup-Verify-Trail**. Für jede geplante Backup-Strategie produziert die systemd-Unit eine Status-Sidecar-Datei unter `/var/run/rediacc/cold-backup-<guid>.status.json` pro Repo pro Durchlauf und eine abschließende Zusammenfassungslog-Zeile. `rdc machine backup status` zeigt beides an. Kombiniert mit dem wöchentlichen Wiederherstellungs-Drill aus Schritt 4 der obigen Routine ergibt das einen "Backup-und-Wiederherstellung-getestet"-Trail, nicht nur einen "Backup-genommen"-Trail. Siehe [Monitoring](/de/docs/monitoring) für die Diagnosefläche.
 
-Die Artefakte zusammen beantworten die Frage "Sind Ihre Controls wirksam" mit Zeitstempeln und hash-verketteten Nachweisen, nicht mit Attestierungen.
+Zusammen beantworten die Artefakte die Frage "Sind Ihre Controls wirksam" mit Zeitstempeln und einer Hash-Kette. Keine Attestierung. Nachweise.
 
 ## Was das für das nächste Quartalplanungsgespräch bedeutet
 
@@ -233,4 +233,4 @@ Wenn Sie die Fork-Zeit an Ihrem größten Repository sehen möchten, ist das Ang
 
 Die strukturelle Kostenstrategie (was über den Rest des Security-Stacks zusammenbricht und was in der Budgetzeile bleibt) steht im Begleitbeitrag über [die echte Rechnung](/de/blog/nis2-the-real-bill). Für den Lieferantenregister- und Beschaffungswinkel, siehe [Artikel 21(2)(d) und Self-Hosting](/de/blog/nis2-supply-chain-self-hosted).
 
-Für die öffentliche Zuordnung von Fähigkeiten zu NIS2-Artikeln, siehe [NIS2 und DORA](/de/docs/legal-nis2-dora).
+Für die öffentliche Zuordnung der Rediacc-Funktionen zu NIS2-Artikeln, siehe [NIS2 und DORA](/de/docs/legal-nis2-dora).

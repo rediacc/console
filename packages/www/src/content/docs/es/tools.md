@@ -6,13 +6,13 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: "d089cea510a69bfb"
-sourceCommit: "1b6c53f52954d63959d8176bfa70a91405a2a87f"
+sourceHash: "f350872720c99d58"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Herramientas
 
-Rediacc incluye herramientas de productividad para trabajar con repositorios remotos: sincronización de archivos, terminal SSH, integración con VS Code y actualizaciones de la CLI.
+Rediacc incluye herramientas para trabajar con repositorios remotos: sincronización de archivos, terminal SSH, integración con VS Code y actualizaciones de la CLI.
 
 ## Sincronización de Archivos (sync)
 
@@ -78,7 +78,7 @@ Al conectarse a un repositorio, `DOCKER_HOST` se configura automáticamente al s
 
 ### Subcomando Connect
 
-El subcomando `connect` proporciona la misma funcionalidad con flags explícitos:
+El subcomando `connect` hace lo mismo con flags explícitos:
 
 ```bash
 rdc term connect -m server-1

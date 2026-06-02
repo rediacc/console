@@ -10,6 +10,7 @@
  * Optional --provision to auto-create the target machine via cloud provider.
  */
 
+import { randomUUID } from 'node:crypto';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
@@ -36,6 +37,8 @@ export function registerRepoMigrateCommand(repoCommand: Command): void {
     .option('--provision <provider>', t('commands.repo.migrate.optionProvision'))
     .option('--bwlimit <limit>', t('commands.repo.migrate.optionBwlimit'))
     .option('--checkpoint', t('commands.repo.migrate.optionCheckpoint'))
+    .option('--delta-base <guid>', t('commands.repo.migrate.optionDeltaBase'))
+    .option('--strategy <strategy>', t('commands.repo.migrate.optionStrategy'))
     .option('--skip-dns', t('commands.repo.migrate.optionSkipDns'))
     .option('--debug', t('options.debug'))
     .action(async (options) => {
@@ -54,6 +57,8 @@ interface MigrateOptions {
   provision?: string;
   bwlimit?: string;
   checkpoint?: boolean;
+  deltaBase?: string;
+  strategy?: string;
   skipDns?: boolean;
   debug?: boolean;
 }
@@ -139,6 +144,8 @@ async function executePhase1(
   from: string,
   to: string,
   bwlimit: string | undefined,
+  strategy: string | undefined,
+  retainBase: string,
   debug: boolean | undefined
 ): Promise<void> {
   outputService.info(`\n${t('commands.repo.migrate.phase1')}`);
@@ -152,6 +159,10 @@ async function executePhase1(
   const uniqueSeeds = [...new Set(seeds)];
   if (uniqueSeeds.length > 0) pushParams.params.seed = uniqueSeeds.join(',');
   if (bwlimit) pushParams.params.bwlimit = bwlimit;
+  if (strategy) pushParams.params.strategy = strategy;
+  // Retain the hot pre-copy as an immutable base so the Phase-2 cutover ships
+  // only the bytes that changed during Phase 1 (FIEMAP delta, not a full scan).
+  pushParams.params.retainBase = retainBase;
 
   await deployRepoKeyIfNeeded(name, to);
   await withSpinner(
@@ -169,10 +180,21 @@ async function executePhase2(
   to: string,
   bwlimit: string | undefined,
   checkpoint: boolean | undefined,
+  delta: { base: string; prune: string; strategy?: string },
   debug: boolean | undefined
 ): Promise<number> {
   outputService.info(`\n${t('commands.repo.migrate.phase2')}`);
   const cutoverStart = Date.now();
+
+  // Cutover ships only the changes since the delta base, then prunes the
+  // temporary Phase-1 base from both machines (migration is a move, not an
+  // ongoing link). An explicit --delta-base is never pruned.
+  const applyDelta = (params: Record<string, unknown>): void => {
+    if (bwlimit) params.bwlimit = bwlimit;
+    params.deltaBase = delta.base;
+    params.retainBasePrune = delta.prune;
+    if (delta.strategy) params.strategy = delta.strategy;
+  };
 
   if (checkpoint) {
     await withSpinner(
@@ -182,7 +204,7 @@ async function executePhase2(
           force: true,
           checkpoint: true,
         });
-        if (bwlimit) deltaParams.params.bwlimit = bwlimit;
+        applyDelta(deltaParams.params);
         await executePush(name, from, deltaParams.params, debug);
       },
       t('commands.repo.migrate.deltaDone')
@@ -200,7 +222,7 @@ async function executePhase2(
         const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
           force: true,
         });
-        if (bwlimit) deltaParams.params.bwlimit = bwlimit;
+        applyDelta(deltaParams.params);
         await executePush(name, from, deltaParams.params, debug);
       },
       t('commands.repo.migrate.deltaDone')
@@ -244,7 +266,8 @@ async function executePhase3(
 }
 
 async function migrateRepo(options: MigrateOptions): Promise<void> {
-  const { name, from, to, provision, bwlimit, checkpoint, skipDns, debug } = options;
+  const { name, from, to, provision, bwlimit, checkpoint, deltaBase, strategy, skipDns, debug } =
+    options;
   const migrationStart = Date.now();
 
   await assertCommandPolicy(CMD.REPO_PUSH, name);
@@ -274,8 +297,24 @@ async function migrateRepo(options: MigrateOptions): Promise<void> {
     await assertNotMountedOnTarget(name, repoConfig.repositoryGuid, to);
   }
 
-  await executePhase1(name, repoConfig, from, to, bwlimit, debug);
-  const downtimeMs = await executePhase2(name, repoConfig, from, to, bwlimit, checkpoint, debug);
+  // Phase 1 retains this base; Phase 2 deltas against it (or an explicit
+  // --delta-base override) and prunes it.
+  const phase1Base = randomUUID();
+  await executePhase1(name, repoConfig, from, to, bwlimit, strategy, phase1Base, debug);
+  const downtimeMs = await executePhase2(
+    name,
+    repoConfig,
+    from,
+    to,
+    bwlimit,
+    checkpoint,
+    {
+      base: deltaBase ?? phase1Base,
+      prune: phase1Base,
+      strategy,
+    },
+    debug
+  );
   await executePhase3(name, to, skipDns, debug);
 
   const totalMs = Date.now() - migrationStart;

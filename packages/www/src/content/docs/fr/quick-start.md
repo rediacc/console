@@ -4,8 +4,8 @@ description: Lancez un service conteneurisé sur votre serveur en quelques minut
 category: Guides
 order: -1
 language: fr
-sourceHash: "71da41d42b1a6b4e"
-sourceCommit: "62f6c6e20c424566749c15efca685c8dc136f09b"
+sourceHash: "15b3c42682a05678"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Démarrage rapide
@@ -20,7 +20,7 @@ Déployez un environnement de conteneurs chiffré et isolé sur votre propre ser
 
 Un repo est un fichier chiffré unique sur le disque. Déplacez-le, sauvegardez-le, dupliquez-le. C'est juste un fichier. Une fois monté, il devient un dossier avec un démon Docker dédié et les données de votre application à l'intérieur.
 
-Pensez à un repo comme une clé USB. C'est quelque chose que vous avez en main, et quand vous le branchez, il devient visible et accessible pour le système. Vos applications et données sont entièrement portables. Branchez et exécutez sur n'importe quelle machine chez n'importe quel fournisseur cloud.
+Pensez à un repo comme une clé USB : branchez-la dans n'importe quelle machine et les applications et données se montent, prêtes à s'exécuter. Déplacez-la entre machines ou fournisseurs cloud sans tout reconstruire. Branchez et exécutez.
 
 **Deux outils, deux rôles :**
 

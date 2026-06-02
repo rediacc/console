@@ -6,10 +6,11 @@ description: >-
 category: Reference
 order: 50
 language: fr
-sourceHash: 37be1e401927ed9a
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-Utilisez ce modèle pour configurer les assistants de programmation IA (Claude Code, Cursor, Cline, Windsurf) pour la gestion autonome de l'infrastructure Rediacc. Copiez le bloc ci-dessous dans le fichier `CLAUDE.md`, `.cursorrules` ou le fichier de configuration d'agent équivalent de votre projet.
+Voici le problème : les assistants de programmation IA (Claude Code, Cursor, Cline, Windsurf) continuent d'inventer des options `rdc` inexistantes, et ils ne peuvent pas savoir quel nom de dépôt Rediacc correspond à quel GUID sans vous demander à chaque fois. Ce modèle règle cela. Collez le bloc ci-dessous dans le fichier `CLAUDE.md`, `.cursorrules` ou tout autre fichier de configuration d'agent utilisé par votre outil.
 
 ## Modèle
 

@@ -4,7 +4,8 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "edfb821962d35ccb"
+sourceHash: "2456daa4289ffb8c"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Настройка машины
@@ -129,7 +130,7 @@ rdc config infra set -m server-1 \
 | `--tcp-ports <ports>` | Machine | Дополнительные TCP-порты для проброса через запятую (например, `25,143,465,587,993`) |
 | `--udp-ports <ports>` | Machine | Дополнительные UDP-порты для проброса через запятую (например, `53`) |
 
-Опции области Machine хранятся для каждой машины. Опции области Config (`--cert-email`, `--cf-dns-token`) являются общими для всех машин в конфигурации, задайте их один раз, и они применяются повсюду.
+Опции области Machine хранятся для каждой машины. Опции области Config (`--cert-email`, `--cf-dns-token`) являются общими для каждой машины в конфигурации. Задайте их один раз, и они применяются повсюду.
 
 ### Просмотр инфраструктуры
 
@@ -150,7 +151,7 @@ rdc config infra push -m server-1
 2. Настраивает обратный прокси Traefik, маршрутизатор и службы systemd
 3. Создаёт DNS-записи Cloudflare для поддомена машины (`server-1.example.com` и `*.server-1.example.com`), если задан `--cf-dns-token`
 
-Шаг DNS выполняется автоматически и идемпотентно, создаёт недостающие записи, обновляет записи с изменёнными IP-адресами и пропускает записи, которые уже корректны. Если токен Cloudflare не настроен, DNS пропускается с предупреждением. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+Шаг DNS выполняется автоматически и идемпотентно: создаёт недостающие записи, обновляет записи с изменёнными IP-адресами и пропускает записи, которые уже корректны. Если токен Cloudflare не настроен, DNS пропускается с предупреждением. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
 
 ## Облачное провизионирование
 

@@ -4,8 +4,8 @@ description: "Eliminar copias de seguridad huérfanas, snapshots obsoletos e im�
 category: "Guides"
 order: 12
 language: es
-sourceHash: "881513fbe657978e"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "98bb2d50d75a1d3d"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Limpieza
@@ -60,7 +60,7 @@ Las eliminaciones se agrupan por subruta de almacenamiento: una llamada rclone p
 
 ## Machine Prune
 
-Limpia recursos en la máquina en tres fases. La fase 1 siempre se ejecuta; las fases 2 y 3 son opt-in y mutuamente complementarias.
+Limpia recursos en la máquina en tres fases. La fase 1 siempre se ejecuta; las fases 2 y 3 son opt-in y pueden combinarse.
 
 ### Fase 1: Limpieza del datastore (siempre se ejecuta)
 
@@ -171,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-Los nombres de certificado cuyo anclaje es una máquina, repositorio o GUID vivo. Y cualquier comodín de etiqueta única `<service>.<base>` o raíz `*.<base>`. Se dejan en paz.
+Los nombres de certificado cuyo anclaje es una máquina, repositorio o GUID vivo se dejan en paz, al igual que los comodines de etiqueta única `<service>.<base>` o raíz `*.<base>`.
 
 ## Backfill del espejo de estado de migración
 

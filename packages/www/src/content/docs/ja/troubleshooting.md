@@ -1,16 +1,16 @@
 ---
 title: トラブルシューティング
-description: SSH、セットアップ、リポジトリ、サービス、Dockerに関する一般的な問題の解決策。
+description: "SSH、セットアップ、リポジトリ、サービス、Dockerに関する一般的な問題の修正方法。"
 category: Guides
 order: 10
 language: ja
-sourceHash: "658b00b83875950d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "7cfabe7bbf3914c3"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # トラブルシューティング
 
-一般的な問題とその解決策です。迷った場合は、まず `rdc doctor` を実行して包括的な診断チェックを行ってください。
+一般的な問題とその修正方法です。迷った場合は、まず `rdc doctor` を実行して完全な診断チェックを行ってください。
 
 ## SSH接続の失敗
 
@@ -78,7 +78,7 @@ CRIUがAppArmorに引っかかる既知のケースです。Renetは `rediacc.ch
 Module btrfs not found
 ```
 
-...サーバーはRHEL 10の標準カーネルで動作しており、これにはツリー内のbtrfsモジュールが含まれていません。これはRediaccのバグではありません。RHEL 10はbtrfsを意図的に削除しました。解決策は **代わりにOracle Linux 10を使用すること** です。Oracle 10はデフォルトでUnbreakable Enterprise Kernel（UEK）を使用しており、btrfsが維持されています。詳細については [要件 - なぜUEKなのか?](/en/docs/requirements) を参照してください。
+...サーバーはRHEL 10の標準カーネルで動作しており、これにはツリー内のbtrfsモジュールが含まれていません。これはRediaccのバグではありません。RHEL 10はbtrfsを意図的に削除しました。修正方法は **代わりにOracle Linux 10を使用すること** です。Oracle 10はデフォルトでUnbreakable Enterprise Kernel（UEK）を使用しており、btrfsが維持されています。詳細については [要件 - なぜUEKなのか?](/en/docs/requirements) を参照してください。
 
 ## リポジトリの作成失敗
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code でサンドボックスファイルに Permission Denied が出る
 
-`rdc vscode connect -m <machine> -r <repo>` で接続した際、以前の VS Code セッションの後に `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` のようなエラーが出たことがあるかもしれません。これはサンドボックスディレクトリ内のファイル所有権が混在していたことが原因で、SSH ユーザーと内部の `rediacc` ユーザーの両方によって書かれたファイルが含まれていました。
+以前の VS Code セッションの後に `rdc vscode connect -m <machine> -r <repo>` で接続すると、古いバージョンの renet では `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` のようなエラーが発生していました。原因はサンドボックスディレクトリ内のファイル所有権の混在で、SSH ユーザーと内部の `rediacc` ユーザーの両方がファイルを書き込んでいました。
 
 最近のバージョンの renet は、以下の方法でこれを修正しています:
 
@@ -192,4 +192,4 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 rdc doctor
 ```
 
-このコマンドは環境、renetのインストール状況、設定、認証ステータスをチェックします。各チェックはOK、Warning、またはErrorを簡単な説明付きで報告します。
+このコマンドは環境、renetのインストール状況、設定、および認証ステータスをチェックします。各チェックはOK、Warning、またはErrorを簡単な説明付きで報告します。

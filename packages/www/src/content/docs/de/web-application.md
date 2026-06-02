@@ -1,19 +1,20 @@
 ---
 title: Webanwendung
-description: Verständnis der Webanwendungsarchitektur und Bereitstellung mit Rediacc
+description: "Die Rediacc-Webkonsole für die Verwaltung von Maschinen, Repositories und Datensicherungen nutzen"
 category: Reference
 order: 1
 language: de
-sourceHash: "ee9dff9ac2c8bce1"
+sourceHash: "0951a0a1b320f570"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Rediacc-Plattform Benutzerhandbuch
 
 ## Überblick
 
-**Rediacc** ist eine Cloud-Plattform, die KI-gestützte Backup-Dienste anbietet.
+**Rediacc** ist selbst gehostete Software, die Sie auf Ihren eigenen Servern installieren. Damit sichern, forken und stellen Sie ganze laufende Systeme wieder her. Apps, Datenbanken und Konfiguration gemeinsam, nicht Datei für Datei. Genau das ist der entscheidende Punkt: Die meisten Backup-Werkzeuge kopieren Dateien und verlieren dabei die Beziehungen zwischen ihnen.
 
-Dieses Handbuch beschreibt die grundlegende Verwendung der Weboberfläche unter [https://www.rediacc.com/](https://www.rediacc.com/).
+Dieses Handbuch führt durch die Webkonsole unter [https://www.rediacc.com/](https://www.rediacc.com/).
 
 ### Zweck dieses Handbuchs
 
@@ -29,7 +30,7 @@ Dieses Handbuch beschreibt die grundlegende Verwendung der Weboberfläche unter 
 ![Registration process walkthrough](/assets/videos/user-guide/01-01-registration.webm)
 *(Video: Complete registration flow from start to finish)*
 
-Um die Rediacc-Plattform nutzen zu können, müssen Sie zunächst ein Konto erstellen.
+Um Rediacc zu nutzen, benötigen Sie zunächst ein Konto.
 
 ![Rediacc Anmeldeseite - immer verfügbare Infrastruktur](/assets/images/user-guide/01_login.png)
 *(Abbildung 1: Hauptanmeldeseite mit den wichtigsten Funktionen der Rediacc-Plattform)*
@@ -110,7 +111,7 @@ Nach der Anmeldung besteht der Bildschirm aus diesen Hauptbereichen:
 
 ## 2.1 Organisation - Benutzer
 
-Die Benutzerverwaltung ermöglicht Ihnen, den Zugang zur Plattform für Personen in Ihrer Organisation zu kontrollieren.
+Die Benutzerverwaltung ist der Bereich, in dem Sie steuern, wer in Ihrer Organisation Zugang erhält.
 
 ### 2.1.1 Benutzer hinzufügen
 
@@ -209,7 +210,7 @@ Sie können die Trace-Funktion verwenden, um Benutzeraktivitäten zu überwachen
 
 ## 2.2 Organisation - Teams
 
-Teams ermöglichen es Ihnen, Benutzer zu gruppieren und Massenzugriff auf Ressourcen zu gewähren.
+Teams gruppieren Benutzer, damit Sie den Zugang gesammelt erteilen können.
 
 ### 2.2.1 Teams erstellen
 
@@ -292,7 +293,7 @@ Teams ermöglichen es Ihnen, Benutzer zu gruppieren und Massenzugriff auf Ressou
 
 ## 2.3 Organisation - Zugriffskontrolle
 
-Die Zugriffskontrolle ermöglicht es Ihnen, Benutzerberechtigungen zentral zu verwalten, indem Sie Berechtigungsgruppen erstellen.
+Die Zugriffskontrolle zentralisiert Berechtigungen über Gruppen, statt sie einzeln pro Benutzer zu vergeben.
 
 ### 2.3.1 Berechtigungsgruppen erstellen
 
@@ -328,7 +329,7 @@ Die Zugriffskontrolle ermöglicht es Ihnen, Benutzerberechtigungen zentral zu ve
 
 ## 2.4 Maschinen
 
-Der Maschinenbereich ermöglicht es Ihnen, Ihre Server und Repository-Ressourcen zu verwalten.
+Der Maschinenbereich ist der Ort, an dem Sie Ihre Server und die darauf liegenden Repositories verwalten.
 
 ### 2.4.1 Maschinen hinzufügen
 
@@ -484,7 +485,7 @@ Klicken Sie auf die Schaltfläche **{{t:common.actions.refresh}}**, um die Masch
 ![Remote operations walkthrough](/assets/videos/user-guide/02-04-08-remote-hello.webm)
 *(Video: Running remote operations on a machine)*
 
-Sie können verschiedene Remote-Operationen auf Maschinen durchführen.
+Sie können Remote-Operationen gegen eine Maschine direkt aus dem Web ausführen.
 
 1. Wählen Sie die Maschine und klicken Sie auf die Schaltfläche **{{t:common.actions.remote}}**.
 2. Sehen Sie Optionen im Dropdown-Menü:
@@ -545,7 +546,7 @@ Sie können verschiedene Remote-Operationen auf Maschinen durchführen.
 
 ## 2.5 Repository-Erstellung und Operationen
 
-Repositories sind die grundlegenden Einheiten, in denen Ihre Backup-Daten gespeichert werden.
+Ein Repository ist eine isolierte Anwendungsbereitstellung. Eigene Apps, eigene Daten, eigene Konfiguration, eigener Docker-Daemon. Daher wirkt sich fast jede Schaltfläche auf dieser Seite auf ein Repository aus, nicht auf die Maschine, auf der es läuft. Das sollten Sie wissen, bevor Sie auf "Löschen" klicken.
 
 ### 2.5.1 Repositories erstellen
 
@@ -846,7 +847,7 @@ Um detaillierte Informationen über das Repository zu erhalten:
 
 ## 2.6 Repository-Verbindungsoperationen
 
-Sie können sich mit verschiedenen Methoden mit Repositories verbinden.
+Sie verbinden sich auf zwei Arten mit einem Repository. Die Desktop-App bietet ein echtes Terminal und SSH. Der Browser eignet sich für die Überprüfung und klickbasierte Verwaltung, ist jedoch nicht für lange Shell-Sitzungen geeignet. Wählen Sie die Desktop-App, wenn Sie echte Arbeit erledigen.
 
 ### 2.6.1 Desktop-Anwendungsverbindung
 
@@ -915,7 +916,7 @@ Sie können Ihre Profil- und Systemeinstellungen im Einstellungsbereich verwalte
 
 ## 2.8 Speicher
 
-Der Speicherbereich ermöglicht es Ihnen, die physischen Bereiche zu verwalten, in denen Ihre Backup-Daten gespeichert werden.
+Der Speicherbereich ist der Ort, an dem Sie die physischen Orte definieren, an denen Ihre Backup-Daten landen.
 
 ### 2.8.1 Speicher hinzufügen
 
@@ -946,7 +947,7 @@ Der Speicherbereich ermöglicht es Ihnen, die physischen Bereiche zu verwalten, 
 
 ## 2.9 Anmeldedaten
 
-Der Anmeldedatenbereich ermöglicht es Ihnen, Zugangsinformationen für Ihre Repositories sicher zu verwalten.
+Der Anmeldedatenbereich ist der Ort, an dem Sie die Secrets verwalten, die Ihre Repositories für den Zugriff auf externe Dienste verwenden.
 
 ### 2.9.1 Anmeldedaten bearbeiten
 
@@ -1009,7 +1010,7 @@ Der Anmeldedatenbereich ermöglicht es Ihnen, Zugangsinformationen für Ihre Rep
 
 ## 2.10 Warteschlange
 
-Der Warteschlangenbereich ermöglicht es Ihnen, ausstehende und abgeschlossene Operationen im System zu verfolgen.
+Der Warteschlangenbereich verfolgt ausstehende und abgeschlossene Operationen im gesamten System.
 
 ### 2.10.1 Warteschlangenoperationen
 
@@ -1043,7 +1044,7 @@ Der Warteschlangenbereich ermöglicht es Ihnen, ausstehende und abgeschlossene O
 
 ## 2.11 Audit
 
-Der Audit-Bereich führt Aufzeichnungen über alle im System durchgeführten Operationen.
+Der Audit-Bereich führt eine Aufzeichnung jeder im System ausgeführten Operation.
 
 ### 2.11.1 Audit-Aufzeichnungen
 

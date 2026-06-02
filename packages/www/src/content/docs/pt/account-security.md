@@ -4,6 +4,8 @@ description: Autenticação, tokens de API, gestão de sessão e o modelo de per
 category: Guides
 order: 13
 language: pt
+sourceHash: "dcd061b971573573"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 ### Autenticação
@@ -97,6 +99,6 @@ rdc update --status            # Mostrar canal atual
 
 ### Postura de Segurança da CLI para Agentes de IA
 
-Cada invocação do `rdc` é classificada no arranque como **human** ou **agent** com base em sinais de ambiente (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) e uma travessia da árvore de processos `/proc` do Linux. Os agentes recebem um conjunto de permissões reduzido: as mutações de configuração sensíveis requerem o knowledge-gate (`--current <old>`), o editor interativo é recusado sem uma substituição `REDIACC_ALLOW_CONFIG_EDIT` verificada por ancestralidade, e `--reveal` em qualquer comando de exibição está bloqueado. Cada decisão -- permitir, recusar, conceder `--reveal` -- escreve uma linha JSONL encadeada por hash em `~/.config/rediacc/audit.log.jsonl`. Execute `rdc config audit verify` para verificar a integridade da cadeia.
+Os agentes de codificação que invocam o `rdc` são uma superfície de ameaça real, pelo que os tratamos como um principal separado. Cada invocação do `rdc` é classificada no arranque como **human** ou **agent** com base em sinais de ambiente (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) e uma travessia da árvore de processos `/proc` do Linux. A deteção é de melhor esforço. Um wrapper determinado pode falsificar variáveis de ambiente, razão pela qual a ancestralidade importa. Os agentes recebem um conjunto de permissões reduzido: as mutações de configuração sensíveis requerem o knowledge-gate (`--current <old>`), o editor interativo é recusado sem uma substituição `REDIACC_ALLOW_CONFIG_EDIT` verificada por ancestralidade, e `--reveal` em qualquer comando de exibição está bloqueado. Cada decisão (permitir, recusar ou conceder `--reveal`) escreve uma linha JSONL encadeada por hash em `~/.config/rediacc/audit.log.jsonl`. Execute `rdc config audit verify` para verificar a integridade da cadeia.
 
 Consulte [Segurança e Salvaguardas de Agentes de IA](/en/docs/ai-agents-safety) para a matriz completa do que os agentes podem e não podem fazer, exemplos práticos do knowledge-gate e a mecânica de substituição de âmbito.

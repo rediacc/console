@@ -1,11 +1,11 @@
 ---
 title: "Sürüm Kanalları"
-description: "Edge ve Stable sürüm kanallarını, farklılıklarını ve nasıl seçileceğini anlama."
+description: "Edge ve Stable'ın farkları ve hangi kanalı çalıştırmalısınız."
 category: "Concepts"
 order: 2
 language: tr
-sourceHash: "d6ff18f9265392d2"
-sourceCommit: "407174f41c12c0a2ee252a7812290c1ef9ecc9ca"
+sourceHash: "5fdcb0e8944f5d60"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 Rediacc güncellemeleri iki sürüm kanalı üzerinden yayınlar: **Stable** ve **Edge**. Her kanal farklı bir kitleye hizmet eder ve farklı dengeler sunar.

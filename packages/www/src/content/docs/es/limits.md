@@ -6,13 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: es
-sourceHash: "e663f13b2f78bc65"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "8f29c515be1b7fb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Límites y cuotas
 
-Esta página documenta los límites fijos y flexibles que se aplican a los despliegues de Rediacc. Comprender estos límites le ayuda a planificar la capacidad y evitar restricciones inesperadas.
+Esta página enumera los límites fijos y flexibles que se aplican a los despliegues de Rediacc. Léela antes de planificar la capacidad, para saber qué techos existen y cuáles no.
 
 ---
 
@@ -111,7 +111,7 @@ Cada imagen de repositorio tiene un tamaño máximo fijo establecido en el momen
 
 Cada servicio con la etiqueta `rediacc.service_port` obtiene una ruta HTTPS automáticamente. No hay límite en la cantidad de servicios con rutas, sujeto al máximo de 61 servicios por repositorio.
 
-Los certificados TLS comodín se provisionan por repositorio en el primer despliegue a través de Let's Encrypt (desafío Cloudflare DNS-01). Let's Encrypt impone un límite de **50 certificados por dominio registrado por semana**. Dado que Rediacc usa un certificado comodín por repositorio (no por servicio), un despliegue con 50+ nuevos repositorios en una sola semana puede alcanzar este límite.
+Los certificados TLS comodín se provisionan por repositorio en el primer despliegue a través de Let's Encrypt (desafío Cloudflare DNS-01). Let's Encrypt limita la emisión a **50 certificados por dominio registrado por semana**. Dado que Rediacc usa un certificado comodín por repositorio (no por servicio), un despliegue que cree 50+ nuevos repositorios en una sola semana alcanzará este límite.
 
 Los forks reutilizan el certificado comodín existente del repositorio padre y no consumen cuota de certificados.
 
@@ -173,7 +173,7 @@ Las máquinas remotas deben ejecutar uno de los siguientes sistemas para cumplir
 
 ### Matriz de características del kernel
 
-Los operadores pueden usar esta tabla para ver de un vistazo lo que cada SO probado en CI proporciona por defecto. Los cinco satisfacen todos los requisitos; la matriz es una referencia para operadores, no un criterio de selección.
+Usa la tabla como una vista de un solo vistazo de lo que cada SO probado en CI proporciona por defecto. Los cinco satisfacen todos los requisitos, así que esta es una referencia para operadores, no un criterio de selección.
 
 | SO | Módulo btrfs | cgroups v2 | Landlock (ABI >= 1) | Hooks eBPF cgroup |
 |----|--------------|------------|---------------------|-------------------|

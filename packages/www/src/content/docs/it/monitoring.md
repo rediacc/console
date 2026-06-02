@@ -4,8 +4,8 @@ description: "Monitora la salute della macchina, i container, i servizi, i repos
 category: "Guides"
 order: 9
 language: it
-sourceHash: "2289d50dac21f9bf"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1d0af1a74a12d49e"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Monitoraggio
@@ -14,7 +14,7 @@ Rediacc fornisce comandi di monitoraggio integrati per ispezionare la salute del
 
 ## Salute della Macchina
 
-Ottieni un report sanitario completo per una macchina:
+Ottieni un report sanitario completo di una macchina:
 
 ```bash
 rdc machine health --name server-1
@@ -213,7 +213,7 @@ Opzioni:
 
 ## Diagnostiche (doctor)
 
-Esegui un controllo diagnostico completo del tuo ambiente Rediacc:
+Esegui un controllo diagnostico completo dell'ambiente Rediacc:
 
 ```bash
 rdc doctor

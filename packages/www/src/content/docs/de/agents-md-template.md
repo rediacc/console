@@ -6,10 +6,11 @@ description: >-
 category: Reference
 order: 50
 language: de
-sourceHash: 37be1e401927ed9a
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-Verwenden Sie diese Vorlage, um KI-Coding-Assistenten (Claude Code, Cursor, Cline, Windsurf) für die autonome Verwaltung der Rediacc-Infrastruktur zu konfigurieren. Kopieren Sie den folgenden Block in die Datei `CLAUDE.md`, `.cursorrules` oder die entsprechende Agenten-Konfigurationsdatei Ihres Projekts.
+Das Problem: KI-Coding-Assistenten (Claude Code, Cursor, Cline, Windsurf) erfinden immer wieder `rdc`-Flags, die nicht existieren, und können nicht zuordnen, welcher Rediacc-Repository-Name welcher GUID entspricht, ohne Sie jedes Mal zu fragen. Diese Vorlage behebt das. Fügen Sie den folgenden Block in Ihre `CLAUDE.md`, `.cursorrules` oder die Agenten-Konfigurationsdatei Ihres Tools ein.
 
 ## Vorlage
 

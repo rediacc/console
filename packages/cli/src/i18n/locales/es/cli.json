@@ -1324,6 +1324,13 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} completado: {{succeeded}}/{{total}} exitosos",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "branch": {
+        "branchOption": "Nombre de la nueva rama",
+        "completed": "Rama \"{{branch}}\" -> {{commit}}",
+        "description": "Crea una referencia de branch con nombre que apunta al commit actual del fork de trabajo (su punta). Las referencias de branch residen en la configuración del CLI (máquina = almacén de objetos, configuración = almacén de referencias).",
+        "descriptionShort": "Crea una referencia de branch que apunta al commit actual",
+        "workingOption": "Fork de trabajo cuyo commit actual señala el branch"
+      },
       "cat": {
         "description": "Leer una ventana acotada de un archivo dentro de un repositorio y escribirla en stdout (acotado en el servidor; los diagnósticos van a stderr)",
         "failed": "La lectura falló",
@@ -1338,6 +1345,22 @@
       },
       "certSync": {
         "updated": "Caché de certificados ACME actualizada desde {{machine}} ({{count}} certificados)"
+      },
+      "checkout": {
+        "description": "Clona por reflink un commit inmutable (o la punta de un branch) en un nuevo fork de trabajo editable y apunta HEAD hacia él. Casi instantáneo y de tiempo constante (reflink de BTRFS).",
+        "descriptionShort": "Clona por reflink un commit/branch en un fork de trabajo editable",
+        "fromOption": "Resolver --ref como nombre de rama en este working fork",
+        "refOption": "GUID del commit (o nombre de rama con --from) para extraer",
+        "tagOption": "Nombre para el nuevo fork de trabajo editable"
+      },
+      "commit": {
+        "authorOption": "Autor del commit",
+        "completed": "Commit realizado {{commit}}: {{message}}",
+        "description": "Congela el estado actual de un fork de trabajo montado en un nuevo commit inmutable (similar a git). El commit registra su mensaje, autor, marca de tiempo y elemento padre dentro del volumen (para que viaje en el push) y se marca como solo lectura: rechaza ser montado. El fork de trabajo continúa sin cambios, igual que git deja intacto el árbol de trabajo. Extrae un commit con 'rdc repo checkout' para obtener una copia editable.",
+        "descriptionShort": "Congela un fork de trabajo en un nuevo commit inmutable",
+        "failed": "El commit falló",
+        "messageOption": "Mensaje del commit",
+        "nameOption": "Fork de trabajo a confirmar con commit (debe estar montado)"
       },
       "create": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",
@@ -1415,6 +1438,8 @@
         "descriptionShort": "Crear un fork CoW de un repositorio (nuevo GUID, networkId, rango IP)",
         "examples": "\nEjemplos:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Error al crear el fork",
+        "immutableOption": "Marca el fork como solo lectura: rechaza el montaje y mantiene su imagen estable a nivel de bytes para siempre (un commit/base congelado para el delta push entre máquinas)",
+        "immutableUpConflict": "repo fork: --immutable y --up son mutuamente excluyentes. Un fork inmutable rechaza el montaje, por lo que no se puede iniciar. Omite --up, u omite --immutable para desplegar un fork normal.",
         "registered": "Fork \"{{repository}}\" registrado ({{guid}}, red {{networkId}})",
         "rollback": "Configuración revertida para \"{{repository}}\"",
         "starting": "Creando fork de \"{{parent}}\" como \"{{repository}}\" en \"{{machine}}\"...",
@@ -1423,6 +1448,25 @@
         "tagReservedLatest": "repo fork: la etiqueta \"latest\" está reservada para el repositorio principal (producción) — elija un --tag distinto (p. ej. \"test\", \"staging\", \"<feature>\")",
         "upOption": "Montar e iniciar servicios después de fork (fork + mount + up en un solo comando)"
       },
+      "fsck": {
+        "clean": "Sin desviaciones en {{machine}}: todas las referencias resuelven y no hay commits huérfanos",
+        "danglingHeader": "{{count}} referencia(s) colgante(s) (apuntan a un objeto inexistente):",
+        "description": "Valida las referencias de la configuración del CLI (ramas, HEAD) frente a los objetos realmente presentes en una máquina. Informa de referencias colgantes (una referencia que apunta a un objeto inexistente) y commits huérfanos (un commit inmutable que ninguna referencia alcanza). Solo lectura.",
+        "descriptionShort": "Comprueba las referencias de configuración frente a los objetos de la máquina",
+        "orphanHeader": "{{count}} commit(s) huérfano(s) (ninguna referencia los alcanza):",
+        "orphanHint": "Recupera los huérfanos con: rdc repo gc --apply -m <machine>"
+      },
+      "gc": {
+        "applied": "Recolección de basura completada: {{deleted}}/{{total}} commit(s) eliminado(s)",
+        "applyOption": "Eliminar realmente los commits inaccesibles (por defecto es una vista previa en modo simulación)",
+        "deleted": "Commit {{commit}} eliminado",
+        "deleteFailed": "No se pudo eliminar el commit {{commit}}",
+        "description": "Elimina objetos de commit inmutables en una máquina que ninguna rama o HEAD alcanza (GC por accesibilidad). La máquina es el almacén de objetos; la configuración del CLI es el almacén de referencias. Modo simulación por defecto: usa --apply para eliminar. Nunca toca un objeto montado ni un fork de trabajo.",
+        "descriptionShort": "Recolecta commits inmutables inaccesibles en una máquina",
+        "dryRunHeader": "Se eliminarían {{count}} commit(s) inaccesible(s):",
+        "dryRunHint": "Vuelve a ejecutar con --apply para eliminarlos.",
+        "nothing": "Nada que recolectar en {{machine}}: todos los commits son accesibles"
+      },
       "list": {
         "completed": "Listado completado",
         "description": "Listar repositorios en una máquina",
@@ -1430,7 +1474,25 @@
         "serverNameLegend": "* nombre leído de la máquina (no está en tu configuración local)",
         "starting": "Listando repositorios en \"{{machine}}\"..."
       },
+      "log": {
+        "description": "Imprime el historial de commits accesible desde el commit actual de un fork de trabajo (o desde una referencia de commit), recorriendo la cadena de elementos padre registrada por 'rdc repo commit'. Lee el espejo externo al volumen, por lo que ningún commit se desbloquea.",
+        "descriptionShort": "Recorre el historial de commits de un fork o commit",
+        "failed": "El log falló",
+        "jsonOption": "Muestra el historial de commits como JSON",
+        "nameOption": "Fork de trabajo o commit desde el que iniciar el recorrido del historial"
+      },
       "machineOption": "Nombre de la máquina de destino",
+      "merge": {
+        "baseOption": "GUID del commit ancestro común para un merge a tres vías (se usa con --resolve). Por defecto, el padre del commit de origen o el commit actual del destino.",
+        "completed": "Se fusionó {{source}} en {{target}}",
+        "description": "Fusiona un commit o fork de origen en un fork de trabajo de destino. El destino activo nunca se modifica en su lugar: el resultado se construye en un clon reflink y se intercambia de forma atómica. Un destino montado o en ejecución se rechaza salvo que se use --force, que primero lo detiene de forma limpia. Sin --resolve es un take-theirs de imagen completa (el destino se convierte en el origen); con --resolve ours|theirs es un merge a tres vías por archivo contra el ancestro común, que toma los cambios únicos de cada lado y resuelve los conflictos de ambos lados según el flag.",
+        "descriptionShort": "merge de un commit/fork en un fork de trabajo con seguridad de ciclo de vida",
+        "failed": "Falló el merge",
+        "forceOption": "Detiene primero un destino montado/en ejecución y luego fusiona (nunca modifica un montaje activo)",
+        "fromOption": "Commit o fork de origen desde el que fusionar",
+        "nameOption": "Fork de trabajo de destino en el que fusionar",
+        "resolveOption": "Resolución de conflictos por archivo para una fusión a tres vías: 'ours' conserva la versión del destino, 'theirs' toma la del origen. Omítelo para un fast-forward de imagen completa (take-theirs)."
+      },
       "migrate": {
         "checkpointing": "Creando checkpoint CRIU...",
         "complete": "Migración completada: {{name}} movido de {{from}} a {{to}}",
@@ -1443,9 +1505,11 @@
         "downtime": "Tiempo de inactividad: {{duration}}",
         "optionBwlimit": "Límite de ancho de banda para transferencia rsync (ej: 10M)",
         "optionCheckpoint": "Migración en vivo CRIU: capturar y restaurar estado de memoria de procesos",
+        "optionDeltaBase": "GUID base inmutable para el delta del corte (avanzado; usa por defecto la base de la Fase 1)",
         "optionFrom": "Nombre de la máquina origen",
         "optionProvision": "Aprovisionamiento automático del destino vía proveedor cloud (ej: hetzner, linode)",
         "optionSkipDns": "Omitir cambio de registros DNS después de la migración",
+        "optionStrategy": "Estrategia de delta por bloques para el corte: auto, physical o shared",
         "optionTo": "Nombre de la máquina destino",
         "phase1": "Fase 1: Transfiriendo datos masivos (el origen sigue en ejecución)...",
         "phase1Done": "Transferencia masiva completada",
@@ -1489,8 +1553,10 @@
         "description": "Obtener repositorio de un remoto (máquina o almacenamiento). Omitir el nombre para obtener todos los repos. El tipo de origen se detecta automáticamente desde la configuración. Use --up para desplegar después del pull",
         "descriptionShort": "Obtener repositorio de un remoto (máquina o almacenamiento)",
         "optionBwlimit": "Límite de ancho de banda para transferencia rsync (ej: \"6M\", \"10M\")",
+        "optionDeltaBase": "GUID base inmutable presente byte a byte idéntico en ambas máquinas; recibe solo los bloques modificados (máquina origen)",
         "optionForce": "Forzar sobrescritura del repositorio existente",
         "optionFrom": "Nombre de la máquina o almacenamiento de origen (detectado automáticamente desde la configuración)",
+        "optionStrategy": "Estrategia de delta por bloques al usar una base delta: auto, physical o shared",
         "optionUp": "Después de pull, montar y desplegar el repositorio en esta máquina",
         "pulling": "Obteniendo respaldo de \"{{repo}}\"...",
         "sourceRequired": "Especifique --from <remote> (nombre de máquina o almacenamiento de la configuración)"
@@ -1504,8 +1570,10 @@
         "destRequired": "Especifique --to <remote> (nombre de máquina o almacenamiento de la configuración)",
         "optionBwlimit": "Límite de ancho de banda para transferencia rsync (ej: \"6M\", \"10M\")",
         "optionCheckpoint": "Crear checkpoint CRIU antes del respaldo (captura el estado de memoria del proceso para migración en vivo)",
+        "optionDeltaBase": "GUID base inmutable presente byte a byte idéntico en ambas máquinas; transfiere solo los bloques modificados (máquina destino). Omítelo para usar base automática sin intervención",
         "optionForce": "Forzar sobrescritura del respaldo existente",
         "optionProvision": "Aprovisionar automáticamente la máquina destino a través del proveedor de nube si no existe",
+        "optionStrategy": "Estrategia de delta por bloques al usar una base delta: auto, physical o shared",
         "optionTag": "Etiqueta de despliegue para versionamiento",
         "optionTo": "Nombre de la máquina o almacenamiento de destino (detectado automáticamente desde la configuración)",
         "optionUp": "Después del envío, montar y desplegar el repositorio en la máquina de destino",

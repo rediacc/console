@@ -30,27 +30,35 @@ const Problem: React.FC<ProblemProps> = ({ lang = 'en' }) => {
         </div>
         <div className="problem-content">
           <div className="problem-illustration">
-            <button
-              type="button"
-              className="image-button"
-              onClick={() =>
-                openImageModal('/assets/images/problem.svg', t('problem.reality.imageAlt'))
-              }
-              aria-label={t('common.aria.clickToEnlarge')}
-              data-track="cta_click"
-              data-track-label="problem-image"
-              data-track-dest="modal"
-            >
-              <img
-                src="/assets/images/problem.svg"
-                alt={t('problem.reality.imageAlt')}
-                className="scenario-image clickable-image"
-                loading="lazy"
-                decoding="async"
-                width="1200"
-                height="675"
-              />
-            </button>
+            {(() => {
+              const langSuffix = lang === 'en' ? '' : `.${lang}`;
+              const landscape = `/assets/images/problem${langSuffix}.svg`;
+              const mobile = `/assets/images/problem${langSuffix}.mobile.svg`;
+              return (
+                <button
+                  type="button"
+                  className="image-button"
+                  onClick={() => openImageModal(landscape, t('problem.reality.imageAlt'))}
+                  aria-label={t('common.aria.clickToEnlarge')}
+                  data-track="cta_click"
+                  data-track-label="problem-image"
+                  data-track-dest="modal"
+                >
+                  <picture>
+                    <source media="(max-width: 768px)" srcSet={mobile} />
+                    <img
+                      src={landscape}
+                      alt={t('problem.reality.imageAlt')}
+                      className="scenario-image clickable-image"
+                      loading="lazy"
+                      decoding="async"
+                      width="800"
+                      height="450"
+                    />
+                  </picture>
+                </button>
+              );
+            })()}
           </div>
         </div>
       </div>

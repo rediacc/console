@@ -7,10 +7,11 @@ description: >-
 category: Reference
 order: 50
 language: es
-sourceHash: 37be1e401927ed9a
+sourceHash: "468f701c500856c6"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
-Utilice esta plantilla para configurar asistentes de programación con IA (Claude Code, Cursor, Cline, Windsurf) para la gestión autónoma de infraestructura Rediacc. Copie el bloque siguiente en el archivo `CLAUDE.md`, `.cursorrules` o el archivo de configuración de agente equivalente de su proyecto.
+El problema es este: los asistentes de código con IA (Claude Code, Cursor, Cline, Windsurf) inventan flags de `rdc` que no existen, y no pueden saber qué nombre de repositorio de Rediacc corresponde a qué GUID sin preguntarte cada vez. Esta plantilla lo soluciona. Pega el bloque siguiente en tu `CLAUDE.md`, `.cursorrules`, o el archivo de configuración de agente que use tu herramienta.
 
 ## Plantilla
 

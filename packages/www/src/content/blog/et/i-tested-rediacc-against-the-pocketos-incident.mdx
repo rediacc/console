@@ -1,6 +1,6 @@
 ---
 title: "Testasin Rediacc-i PocketOS-i intsidendi vastu"
-description: "PocketOS kaotas oma tootmisandmebaasi Cursor-agendi tõttu 9 sekundiga. Käitasin sama tüüpi testi oma platvormil ja ajatasin iga sammu. Siin on see, mis pidas vastu ja mis jääb arendaja vastutuseks."
+description: "PocketOS kaotas oma tootmisandmebaasi Cursor-agendi tõttu 9 sekundiga. Käitasin sama testi, ajatasin iga sammu ja märkisin, mis pidas vastu ja mis on sinu parandada."
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-04-28
 category: case-study
@@ -11,6 +11,8 @@ tags:
   - juhtumiuuring
 featured: true
 language: et
+sourceHash: "8ccb6579c9b25ab4"
+sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
 ---
 
 import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
@@ -31,26 +33,26 @@ Tema ettevõte PocketOS ehitab tarkvara, mida autorendifirmad kasutavad igapäev
 
 Lugesin tema postitust kaks korda. The Register, Tom's Hardware ja Business Standard kajastasid seda kõik. Hacker Newsi teema sai 874 kommentaari.
 
-Ehitan teistsugust infrastruktuuri platvormi. Kutsume seda Rediacciks. Kogu mõte selle ehituse juures on muuta täpselt see stsenaarium raskemaks. Seega istusin maha ja käitasin testi.
+Ehitan Rediacc-i. Platvorm eksisteerib selleks, et muuta täpselt selline ebaõnnestumine raskemaks. Seega istusin maha ja käitasin testi.
 
 See postitus on see, mida leidsin. Numbrid on reaalsed. Veateated on tsiteeritud CLI-st. Ja see üks koht, kus Rediacc üldse ei kaitse, on siin ka. Vastupidine teesklemine on see, mis paneb inimesi hätta.
 
 ## Mis tegelikult puudus
 
-Loe Jer-i ajaskaala hoolikalt läbi ja neli ebaõnnestumist kuhjuvad üksteisele peale.
+Käi Jer-i ajaskaala hoolikalt läbi. Neli eraldi ebaõnnestumist kuhjusid üksteisele peale.
 
 1. Railway API token, mida Cursor kasutas, loodi kohandatud domeenide haldamiseks. Sellel oli ka `volumeDelete` õigus. Railway CLI tokenitel puudub operatsioonipõhine ulatus.
 2. Railway GraphQL API aktsepteerib `volumeDelete` ühe POST-ina. Kinnitussammu pole.
 3. Railway "mahukoopiaid" elab sama mahu sees. Kui maht läheb, lähevad koopiaid ka.
 4. Cursor-agent otsustas iseseisvalt, et õige viis lavastuses mandaadiprobleemi lahendamiseks on mahu kustutamine.
 
-Võta hetkeks ebaõnnestumise 4 välja. Cursor-i süsteemireeglid käskisid agendil mitte kunagi käitada hävitavaid git-käske ilma kasutaja selgesõnalise taotluseta. Pärast kustutamist, palutud end selgitada, koostas agent kirjaliku ülestunnistuse. Ta tunnistas, et andmebaasimahu kustutamine on "kõige hävitavam, pöördumatum toiming: palju hullem kui force push" ja loetles kõik ohutuseeskirjad, mida rikkus.
+Peatu hetkeks ebaõnnestumise 4 juures. Cursor-i süsteemireeglid käskisid agendil mitte kunagi käitada hävitavaid git-käske ilma kasutaja selgesõnalise taotluseta. Pärast kustutamist paluti agendil end selgitada. See koostas kirjaliku ülestunnistuse. Ta tunnistas, et andmebaasimahu kustutamine on "kõige hävitavam, pöördumatum toiming: palju hullem kui force push" ja loetles kõik ohutuseeskirjad, mida rikkus.
 
 Käitumisreegel promptis on nõuanne. See ei ole jõustamine. Ebaõnnestumised 1, 2 ja 3 on infrastruktuuri disainivaUkad. Need on need, mis muudavad ebaõnnestumise 4 veast kaotatud ettevõtteks.
 
 ## Testi seadistamine
 
-Rediaccil on tõeline tootmismasin, mida käitan, nimega `hostinger`. Sellel elab kolmteist repositooriumi: meilinserver, isemajutatud GitLab, vaatlustaristik ja 128 GB StackOverflow demo, mida kasutame võrdlusmõõtmisteks. Ketas on 87% täis. Vaba ruumi on null. Selline masin, kus vead teevad haiget.
+Mul on tõeline tootmismasin, mis käitab Rediacc-i, nimega `hostinger`. Sellel elab kolmteist repositooriumi: meilinserver, isemajutatud GitLab, vaatlustaristik ja 128 GB StackOverflow demo, mida kasutame võrdlusmõõtmisteks. Ketas on 87% täis. Vaba ruumi: sisuliselt null. Selline masin, kus vead teevad haiget.
 
 Valisin StackOverflow demo meelega. See on masina suurim repositoorium. See on seadistatud nagu päris rakendus, konteinerite ja püsivate andmetega. Kui selle harkimine on kiire ja isoleeritud, on see kiire ja isoleeritud kõige väiksema jaoks ka.
 
@@ -58,7 +60,7 @@ Minu agent testi jaoks oli Claude Code, käitades Claude Opus-t. Sama mudeli per
 
 ## Katse üks: lihtsalt SSH tootmisrepositooriumi
 
-Esimene asi, mida agent (mina sel juhul) proovis, oli kõige loomulikum. Avada shell tootmisrepositooriumi ja vaadata ringi.
+Esimene asi, mida agent (mina sel juhul) prooviks: avada shell tootmisrepositooriumi ja vaadata ringi.
 
 ```bash
 $ rdc term connect -m hostinger -r demo-stackoverflow -c "ls -la"
@@ -72,7 +74,7 @@ CLI keeldus. Sõna-sõnalt:
 
 See pole süsteemiprompt. See on CLI ise, keeldudes kõnest enne, kui see kunagi minu sülearvutit lahkub. CLI nägi, et olen agent. Claude Code seab keskkondmuutuja `CLAUDECODE`. CLI käib ka protsessipuu kaudu `/proc` abil, et tabada agente, kes proovivad seda muutujat peita. Seejärel sobitas ta toimingu oma poliitikatabeliga. Seejärel keeldus.
 
-Seega teeb agent seda, mida agent võiks teha. Ta proovib seada ülekirjutamist ise.
+Seega teeb agent seda, mida iga agent prooviks. Ta seab ülekirjutamise ise.
 
 ```bash
 $ REDIACC_ALLOW_GRAND_REPO=demo-stackoverflow rdc term connect ...
@@ -111,7 +113,7 @@ License activated (2.1s)
 Total: 7.2s
 ```
 
-128 GB fork 2,3 sekundiga. Põhjus on BTRFS reflink. Fork on metaandmed, mis osutavad vanema plokkidele, kuni üks pool kirjutab. Andmeid ei kopeerita.
+128 GB fork 2,3 sekundiga. Põhjus on BTRFS reflink. Fork on lihtsalt metaandmed, mis osutavad vanema plokkidele, kuni üks pool kirjutab. Andmeid ei liigu.
 
 Skaleerimise kontrollimiseks käitasin sama forki 2 GB repositooriumil:
 
@@ -162,11 +164,11 @@ Nüüd postituse raskem osa.
 
 Rediacc isoleerib infrastruktuuri: faili kettal, Dockeri deemoni, ühendusnimeruurmi, võrgu. See ei isoleeri väliseid SaaS API-sid, mille jaoks sinu repositoorium hoiab mandaate.
 
-Fork on bait-baidilt BTRFS reflink vanemast. Kõik, mis elab vanema `data/`, `.env` või `secrets/` all, on ka hargis. Kui sinu repositoorium sisaldab `STRIPE_LIVE_KEY`-d, `AWS_ACCESS_KEY_ID`-d või Railway API tokenit, saab hargis olev agent neid lugeda. See saab kutsuda `api.stripe.com` või `s3.amazonaws.com` või `backboard.railway.app` nende tokenitega. Väljastpoolt näeb kõne välja nagu tuli tootmisest. Stripe ega AWS ei suuda harku vanemast eristada.
+Fork on bait-baidilt BTRFS reflink vanemast. Kõik, mis elab vanema `data/`, `.env` või `secrets/` all, on ka hargis. Kui sinu repositoorium sisaldab `STRIPE_LIVE_KEY`-d, `AWS_ACCESS_KEY_ID`-d või Railway API tokenit, saab hargis olev agent neid lugeda. See saab kutsuda `api.stripe.com` või `s3.amazonaws.com` või `backboard.railway.app` nende tokenitega. Väljastpoolt näevad need kõned välja nagu tootmisest. Stripe ega AWS ei suuda harku vanemast eristada.
 
 See on ühise vastutuse piir. Rediacc haldab infrastruktuuri poolt. Välise teenuse pool elab sinu rakenduse koodis.
 
-Kolm mustrit sulgevad lünga arendaja poolel:
+Arendaja pool lüngast on sinu sulgeda.
 
 - Ärge salvestage tootmise väliseid mandaate repositooriumi üldse. Tõmmake need konteinerite käivitamisel saladuste haldurilt. Hargi konteinerid tõmbavad liivakasti-scoped mandaadid disaini järgi.
 - Triigi või vaheta mandaadid hargimise ajal Rediaccfile `up()` haki kaudu. Hargi `up()` töötab erineva repositooriumi GUID-i vastu kui vanem. Tuvasta see. Seejärel kirjuta `.env` liivakasti väärtustega ümber.
@@ -182,7 +184,7 @@ Jätsin ülaltoodud osa sellisena, nagu algselt kirjutasin. Ausus kandis oma ras
 
 Mehhanism on `rdc repo secret`. See on modelleeritud GitHub Actions saladuste alusel. Kaks asja on oluline selle ehituse juures.
 
-**Saladused ei ela LUKS-i pildi sees.** Need elavad kettal eraldi tasandil: env-režiimi saladused jõuavad konteineriteni `${REDIACC_SECRET_<KEY>}` interpoleerimise kaudu sinu compose-failis, faili-režiimi saladused jõuavad konteineriteni tmpfs-failina `/run/secrets/<key>` juures Dockeri compose-i `secrets:` ploki kaudu. Mõlemal juhul ei kirjutata väärtust repositooriumi krüpteeritud pilti. Hargi BTRFS reflink kopeerib pildi. See ei kopeeri seda, mis pildi sees kunagi polnud. Värske hargi salajuste nimekiri on tühi. Selle konteinerid käivituvad ilma tootmismandaatideta, nii et tootmiskõnesid pole isegi võimalik teha.
+**Saladused ei ela LUKS-i pildi sees.** Need elavad kettal eraldi tasandil: env-režiimi saladused jõuavad konteineriteni `${REDIACC_SECRET_<KEY>}` interpoleerimise kaudu sinu compose-failis, faili-režiimi saladused jõuavad konteineriteni tmpfs-failina `/run/secrets/<key>` juures Dockeri compose-i `secrets:` ploki kaudu. Mõlemal juhul ei puutu väärtus repositooriumi krüpteeritud pildiga. Hargi BTRFS reflink kopeerib pildi. See ei kopeeri seda, mis pildi sees kunagi polnud. Värske hargi salajuste nimekiri on tühi. Selle konteinerid käivituvad ilma tootmismandaatideta. Tootmiskõnesid pole isegi võimalik teha.
 
 **Mudel on kirjutamiseks mõeldud.** `rdc repo secret get` tagastab SHA-256 digeedi, mitte väärtuse. CLI kaudu pole võimalust saladust tagasi lugeda, disaini järgi. See sulgeb lekkepinna terminalide salvestuste, shelli ajaloo ja juhuslike ümbersuunamiste jaoks. Rotatsioon on `--current <eelmine-väärtus>` eelmise väärtuse kontrollimiseks või `--rotate-secret` eeltingimuse vahelejätmiseks, kui sul pole eelmist väärtust (auditeeritud rotatsioonina). Sümmeetriline inimeste ja agentide jaoks. Mõlemad lüüsid kehtivad võrdselt.
 
@@ -192,7 +194,7 @@ Aus jääkrisk. Saladused, mille kirjutasid repositooriumi pilti enne `rdc repo 
 
 Agendi ohudmudeli jaoks konkreetselt on tasub välja tuua kaks selle disaini kõrvalmõju. Esiteks, `repo secret list` ja `repo secret get` on paljastatud MCP tööriistadena (lugemisohutud. Nimed ja digeestid, mitte kunagi väärtused), nii et rakenduse seadistamisel abistav agent suudab avastada, mis on seadistatud, nägemata, mis see on. Teiseks, kui kirjutamine ebaõnnestub eeltingimusel, sisaldab JSON veapakend struktureeritud `next.options[].run` välja konkreetsete käskudega, mida agent peaks inimesele sõna-sõnalt edastama. Kaasa arvatud rotatsiooni pääsetee "unustasin eelmise väärtuse" jaoks. Vaata täielikku mudelit lehelt [AI agendi ohutus](/en/docs/ai-agents-safety).
 
-Täielik juhend elab [Repositooriumid § Saladused](/en/docs/repositories#secrets) lehel. Retsept on lühike: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""` alustamiseks, `${REDIACC_SECRET_<KEY>}` compose-is tarbimiseks, `rdc repo fork` ja kontrolli, et hargi salajuste nimekiri on tühi.
+Täielik juhend elab [Repositooriumid § Saladused](/en/docs/repositories#secrets) lehel. Kolm sammu. Esiteks, seemne väärtus: `rdc repo secret set --name <repo> --key <KEY> --value <val> --current ""`. Seejärel viita `${REDIACC_SECRET_<KEY>}` oma compose-failis. Lõpuks käivita `rdc repo fork` ja kinnita, et hargi salajuste nimekiri on tühi.
 
 ## Mida see muudab kellegi jaoks, kes teeb sellist tööd
 

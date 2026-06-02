@@ -4,6 +4,8 @@ description: "Võltsimiskindel litsentside väljastamine, delegeeritud allkirjas
 category: "Guides"
 order: 8
 language: et
+sourceHash: "9b062d6866c1ccb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Litsentsiahelad ja delegeerimine
@@ -100,7 +102,7 @@ Vaikeväärtus on see, mille loomise lõpp-punkt valib, kui helistaja jätab `va
 
 ### Tellimusepõhine alistamine
 
-Administraatorid saavad seada kohandatud `delegationCertDefaultDays` väärtuse konkreetsele tellimusele haldus-Subscription Detail lehe kaudu. **Alistamine asendab nii vaikeväärtuse KUI KA lae sellele tellimusele** -- see on pääsetee erilistele klientidele (nt ettevõttleping, mis vajab 200-päevast sertifikaati COMMUNITY plaanil). Zod-skeem jõustab siiski absoluutse `1..365` vahemiku.
+Administraatorid saavad seada kohandatud `delegationCertDefaultDays` väärtuse konkreetsele tellimusele haldus-Subscription Detail lehe kaudu. **Alistamine asendab nii vaikeväärtuse KUI KA lae sellele tellimusele.** See on pääsetee erilistele klientidele (nt ettevõttleping, mis vajab 200-päevast sertifikaati COMMUNITY plaanil). Zod-skeem jõustab siiski absoluutse `1..365` vahemiku.
 
 ### Kõva piir: tellimuse lõpp + 3-päevane armuaeg
 
@@ -141,7 +143,7 @@ Tellimusel võib olla **korraga maksimaalselt üks aktiivne delegeerimissertifik
 
 ### Miks üks?
 
-Iga kohapealne installatsioon jõustab `maxRepoLicenseIssuancesPerMonth`, `maxActivations` ja ahela terviklikkust oma kohaliku väljastamisregistri suhtes. Kohapealne installatsioon ei sünkrooni kasutusarvud ülesvoolu serveriga -- see on võrguühenduseta võimelise delegeerimise mõte.
+Iga kohapealne installatsioon jõustab `maxRepoLicenseIssuancesPerMonth`, `maxActivations` ja ahela terviklikkust oma kohaliku väljastamisregistri suhtes. Kohapealne installatsioon ei sünkrooni kasutusarve ülesvoolu serveriga. See ongi võrguühenduseta võimelise delegeerimise mõte.
 
 Kui tellimusel oleks mitu aktiivset sertifikaati (üks installi kohta), jõustaks iga installatsioon piirangu iseseisvalt:
 

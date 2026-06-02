@@ -12,8 +12,8 @@ tags:
   - keskturg
 featured: false
 language: et
-sourceHash: "95f07c80c1d91055"
-sourceCommit: "b05326db48cfbe9d4bb41ade1b723df93f1bc604"
+sourceHash: "3fbb581ec14e3f80"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 translatedFrom: en
 ---
 
@@ -92,15 +92,15 @@ Lüngad on kattuvustest huvitavamad, sest lüngad on see, mida NIS2 pinnale toob
 
 Rediacc on üks juhtimistasand ühtse auditilogi, asendades nelja viiest kategooriast põhivõimaluse ise majutatud taristu jaoks.
 
-**Backup**: kuum (crash-consistent BTRFS hetktõmmis, nullseiskus) ja külm (app-consistent peata-hetktõmmis-käivita) backup-strateegiad, ajastatud systemd taimerite kaudu, mitme sihtkohaga rclone'i kaudu. LUKS-krüpteeritud mahud; operaator hoiab mandaati; Rediacc-the-company ei näe kunagi lihttekstina andmeid. Tegevusliku kuju jaoks vaadake [Backup & Restore](/et/docs/backup-restore) ja [Cross Backup Strategy](/et/docs/cross-backup).
+**Backup** töötab kahes režiimis. Kuum on crash-consistent BTRFS hetktõmmis. Seisakut pole. Külm teeb peata-hetktõmmis-käivita tsükli. Mõlemad ajastavad systemd taimeritega. Mõlemad saadavad paljudesse sihtkohtadesse rclone'i kaudu. Mahud on LUKS-krüpteeritud. Operaator hoiab võtit. Rediacc OÜ ei näe kunagi lihtteksti. Vaata [Backup & Restore](/et/docs/backup-restore) ja [Cross Backup Strategy](/et/docs/cross-backup).
 
 **DR**: sama primitiiv mis backup'il, lisaks `rdc repo migrate` masinate vahel andmete liigutamiseks, lisaks fork-primitiiv taastatud seisundi kiireks käivitamiseks paralleelmasinas. DR-sait võib olla teine Hetzner masin, OVH masin, kohapealne riiuliserver, kuhu iganes SSH ulatub. Andmete teel ei ole DR-tarnija pilve.
 
-**Testandmed ja täisvõimsusel kloonimine**: BTRFS reflink-põhine fork, konstantse ajaga sõltumata repositooriumi suurusest, täisvõimsusel (andmed, konfiguratsioonid, konteinerite olek, teenused). 7,2 sekundit 128 GB repositooriumi forki loomiseks meie [PocketOS testis](/et/blog/i-tested-rediacc-against-the-pocketos-incident). Fork on praegune tootmine, mitte kärpitud staging-keskkond. Vaadake [Risk-Free Upgrades](/et/docs/risk-free-upgrades).
+**Testandmed ja täisvõimsusel kloonimine** töötab BTRFS reflingil. Fork on konstantaja, olenemata repositooriumi suurusest. Täisvõimsusel tähendab andmeid, konfiguratsioone, konteinereid ja teenuseid. Forke 128 GB repositooriumit 7,2 sekundiga meie [PocketOS testis](/et/blog/i-tested-rediacc-against-the-pocketos-incident). Fork on praegune tootmine, mitte kärpitud lavastuskoopia. Vaata [Risk-Free Upgrades](/et/docs/risk-free-upgrades).
 
 **Kiirtaaste**: `rdc repo backup pull` mis tahes rclone-sihtmärgist värskesse forki, mis käivitatakse fork-spetsiifilise alamdomeeni all, mida katab emRepositooriumi metamärgisertifikaat. Ei mingit DNS-i segadust, ei sertifikaadi tantsu.
 
-**Ühtne auditilog**: 70+ sündmuse tüüpi, mis katavad kogu juhtimistasandi (autentimine, API tokenid, konfiguratsiooni kirjutamine, repositooriumi elutsükkel, backup, sünkroonimine, terminaliseansid, masina toimingud). Räsi-aheldatud operaatori tööjaamas; `rdc audit verify` valideerib täieliku tervikluse.
+**Ühtne auditilog.** 70+ sündmusetüüpi juhtimistasandil. Need katavad sisselogimised, API tokenid, konfiguratsiooni kirjutamised, repositooriumi elutsükli, varunduse, sünkroonimise, terminaliseansid ja masina toimingud. Ahel on räsiga lingitud operaatori tööjaamal. `rdc audit verify` kontrollib seda otsast lõpuni.
 
 250 töötajaga keskturu olulise üksuse jaoks on koondamine neljalt nimetatud tarnijalt (backup, DR, testandmed, kiirtaaste) ühele. Üks litsents, üks auditilog, üks komplekt uuendamisotsuseid, üks registrikirje.
 
@@ -125,7 +125,7 @@ Tabeli parem pool on pikem kui vasak pool. See on aus kuju, mida NIS2 maksab. Ba
 
 Ostja, kes loeb seda ja järeldab "saan asendada Drata Rediacciga", valmistab oma audiitorile pettumuse. Õige lugemine on: andmetasandi tarnijate koondamine, mida Rediacc võimaldab, on see, mida GRC-tööriistad ei suuda teha, ja register-ja-tõendite töö, mida GRC-tööriistad teevad, on see, mida Rediacc ei tee. Need kaks on teineteist täiendavad.
 
-Võimaluste avaliku kaardistamise jaoks NIS2 artiklitele vaadake [NIS2 and DORA](/et/docs/legal-nis2-dora). Laiema arhitektuurilise raamistiku jaoks vaadake [Compliance Overview](/et/docs/legal-overview). Rediacc'i kaubandusliku poole jaoks vaadake [Subscription & Licensing](/et/docs/subscription-licensing).
+Veel kolm linki, kui soovid süvitsi. Avalik kaardistus on aadressil [NIS2 and DORA](/et/docs/legal-nis2-dora). Laiem raamistik on aadressil [Compliance Overview](/et/docs/legal-overview). Rediacc'i kaubanduslik pool on aadressil [Subscription & Licensing](/et/docs/subscription-licensing).
 
 ## Viitestsenaarium, struktuurne mitte numbriline
 
@@ -169,4 +169,4 @@ Kui suundute uuendusetsüklisse ja eelarve on avatud, kolm konkreetset sammu:
 
 Kui oleme lühikeses nimekirjas, on pakkumine konkreetne. Saatke oma kolm suurimat kulurea kirjet eelmise aasta turva- ja taristueelarvest. Ütleme teile, milliseid saab koondada ja milliseid mitte, kirjalikult, ühe nädala jooksul. Vastus sisaldab lünki, sest lünkade nimetamine on see, mis muudab ülejäänud vastuse usaldusväärseks.
 
-[Nullkuluga backup'i](/et/docs/zero-cost-backup) (arhitektuuriargument, miks töötame ladustamisküljel turuosalistest kergema koormusega), [Cross Backup Strategy](/et/docs/cross-backup) (mandritevaheline DR) ja [Subscription & Licensing](/et/docs/subscription-licensing) (kaubanduslik pool) jaoks vaadake viidatud dokumente.
+Veel kolm dokumenti, kui soovid sügavamale minna. [Nullkuluga backup](/et/docs/zero-cost-backup) selgitab, miks töötame ladustamisküljel turuosalistest kergemini. [Cross Backup Strategy](/et/docs/cross-backup) katab mandritevahelist DR-i. [Subscription & Licensing](/et/docs/subscription-licensing) on kaubanduslik pool.

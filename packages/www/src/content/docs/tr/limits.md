@@ -6,13 +6,13 @@ description: >-
 category: "Reference"
 order: 99
 language: tr
-sourceHash: "e663f13b2f78bc65"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "8f29c515be1b7fb4"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Limitler ve Kotalar
 
-Bu sayfa, Rediacc dağıtımlarına uygulanan katı ve esnek limitleri belgelemektedir. Bu limitleri anlamak, kapasite planlaması yapmanıza ve beklenmedik kısıtlamalardan kaçınmanıza yardımcı olur.
+Bu sayfa, Rediacc dağıtımlarına uygulanan katı ve esnek limitleri listeler. Hangi tavanların var olduğunu ve hangilerinin olmadığını bilmek için kapasite planlaması yapmadan önce okuyun.
 
 ---
 
@@ -36,7 +36,7 @@ Rediacc tarafından uygulanan katı bir üst sınır yoktur. Pratik limit, makin
 | RAM | Çalışan her depo kendi Docker daemon ve konteynerlerini başlatır. Bellek kullanımı iş yüklerinize bağlıdır. |
 | CPU | Paralel depo işlemleri (başlatma, yedekleme, çatallama) geçici CPU yükü ekler. |
 
-**Tipik dağıtımlar** makine başına 10 ile 50 depo arasında sorunsuz çalıştırır. 32 GB ve üzeri RAM ve 500 GB ve üzeri depolamaya sahip makineler düzenli olarak 100'den fazla depo çalıştırır.
+**Tipik dağıtımlar** makine başına 10 ila 50 depo arasında sorunsuz çalıştırır. 32 GB ve üzeri RAM ve 500 GB ve üzeri depolamaya sahip makineler düzenli olarak 100'den fazla depo çalıştırır.
 
 ### Sistem genelinde ağ kimliği limiti
 
@@ -111,7 +111,7 @@ Her depo görüntüsünün oluşturma sırasında belirlenen sabit bir maksimum 
 
 `rediacc.service_port` etiketine sahip her hizmet otomatik olarak bir HTTPS rotası alır. Rotalı hizmet sayısında limit yoktur (depo başına 61 hizmet maksimumuna tabidir).
 
-Joker TLS sertifikaları, ilk dağıtımda Let's Encrypt (Cloudflare DNS-01 doğrulaması) aracılığıyla depo başına verilir. Let's Encrypt, **kayıtlı alan adı başına haftada 50 sertifika** limiti uygular. Rediacc, depo başına (hizmet başına değil) tek bir joker sertifika kullandığından, tek bir haftada 50'den fazla yeni depoya sahip bir dağıtım bu limite ulaşabilir.
+Joker TLS sertifikaları, ilk dağıtımda Let's Encrypt (Cloudflare DNS-01 doğrulaması) aracılığıyla depo başına verilir. Let's Encrypt, **kayıtlı alan adı başına haftada 50 sertifika** ile sınırlar. Rediacc, depo başına (hizmet başına değil) tek bir joker sertifika kullandığından, tek bir haftada 50'den fazla yeni depo oluşturan bir dağıtım bu tavana ulaşır.
 
 Çatallar, ana deponun mevcut joker sertifikasını yeniden kullanır ve herhangi bir sertifika kotası tüketmez.
 
@@ -173,7 +173,7 @@ Uzak makinelerin, Rediacc'ın çekirdek, dosya sistemi ve ağ izolasyonu gereksi
 
 ### Çekirdek özellik matrisi
 
-Operatörler bu matrisi, CI'da test edilen her işletim sisteminin kutudan çıktığında neler sağladığına tek bakışta görmek için kullanabilir. Beşinin tümü her gereksinimi karşılar; matris operatör odaklı bir referanstır, bir seçim kriteri değildir.
+Matrisi, CI'da test edilen her işletim sisteminin kutudan çıktığında neler sağladığına tek bakışta görmek için okuyun. Beşinin tümü her gereksinimi karşılar; bu nedenle matris operatör odaklı bir referanstır, bir seçim kriteri değildir.
 
 | İşletim Sistemi | btrfs modülü | cgroups v2 | Landlock (ABI >= 1) | eBPF cgroup kancaları |
 |-----------------|-------------|------------|---------------------|----------------------|

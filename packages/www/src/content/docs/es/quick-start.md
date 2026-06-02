@@ -4,8 +4,8 @@ description: Ejecute un servicio en contenedores en su servidor en minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: "71da41d42b1a6b4e"
-sourceCommit: "62f6c6e20c424566749c15efca685c8dc136f09b"
+sourceHash: "15b3c42682a05678"
+sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 ---
 
 # Inicio rápido

@@ -1,6 +1,6 @@
 ---
-title: "Sinu fragmentatsiooninumber näeb kohutav välja. Mõõtsin, mida see tegelikult maksab."
-description: "Meie salvestuse-terviseraport märgib hoidlaid ligi 20 000 laiendiga gigabaidi kohta. See number kõlab häirivalt. Käitasin järjestikuste ja juhuslike lugemiste võrdlusmõõtmisi kõige halvematel juhtudel ja karistust polnud. Siin on andmed ja põhjus, miks Rediacc ei tarni defragmenteerimiskäsku."
+title: "Sinu fragmentatsioon näeb kohutav välja. Mõõtsin kulu."
+description: "Meie salvestuse-terviseraport märgib hoidlaid ligi 20 000 laiendiga GB kohta. Mõõtsin mõlemaid äärmusi: lugemiskaristust pole. Miks Rediaccil pole defragmenteerimiskäsku."
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-05-25
 category: guide
@@ -11,7 +11,8 @@ tags:
   - benchmarks
 featured: false
 language: et
-sourceHash: "73f1772f961bae0d"
+sourceHash: "5245c4e48a3a7074"
+sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
 ---
 
 > **TL;DR.** Rediacc'i `rdc machine query --storage-health` raporteerib fragmentatsiooninäitaja hoidla kohta. Ühel tootmismasinal märgib see GitLabi ligikaudu 19 650 laiendiga gigabaidi kohta. Instinkt ütleb defragmenteerida. Mõõtsin selle asemel.
@@ -20,7 +21,7 @@ sourceHash: "73f1772f961bae0d"
 > - Seade on välkmälu. Fragmentatsioon kahjustab ketaspõhiseid kettaid otsingusaja kaudu. SSD-l pole selleks peaaegu ühtegi mehhanismi.
 > - `btrfs filesystem defragment` käivitamine siin jagaks lahku umbes 250 GB reflingitud harke ja hetktõmmiseid basseiniga, kus on 4,4 GB vabalt. See on tegelik risk, ja võrdlusmõõtmine ütleb, et sellega kaalumiseks pole kasu.
 
-Salvestuse-terviseraport vastab ühele küsimusele: kuhu mu ketas läheb. See näitab iga hoidla suurust, kui palju andmeid see jagab oma hargedega, ja fragmentatsiooninäitajat. See viimane number võib tunduda hirmutav. Masinal, mida käitan, raporteerib GitLabi hoidlakujutis 268 771 laiendiga üle 14,6 GB. See on umbes 19 650 laiendiga gigabaidi kohta, ja tööriist märgib selle "kõrgeks".
+Ausalt öeldes on salvestuse-terviseraport seal, et vastata ühele küsimusele: kuhu mu ketas läheb. See näitab iga hoidla suurust, kui palju andmeid see jagab oma hargedega, ja fragmentatsiooninäitajat. See viimane number võib tunduda hirmutav. Masinal, mida käitan, raporteerib GitLabi hoidlakujutis 268 771 laiendiga üle 14,6 GB. See on umbes 19 650 laiendiga gigabaidi kohta, ja tööriist märgib selle "kõrgeks".
 
 Järgnev refleks on automaatne. Kõrge fragmentatsioon, seega defragmenteeri. Olen selle refleksi kirjutanud shellisskriptidesse ketaspõhiste kettaste jaoks viisteist aastat. Enne kui lisasin Rediaccile defragmenteerimise nupu, tahtsin teada, mida number tegelikult maksab riistvaral, mida käitame. Seega mõõtsin seda elava masina peal.
 
@@ -30,11 +31,11 @@ Rediacc'i hoidla on üks LUKS-pildifail, mis elab btrfs-basseinis. Fragmentatsio
 
 See on oluline, kuna andmete virnastamise tõttu. Alt üles: füüsiline SSD, seejärel hosti ext4 juurvälkmälustik, seejärel tsükliga toetatud basseenifail, seejärel loop0, seejärel btrfs-bassein, seejärel LUKS-kujutis, seejärel seadmekaardistaja krüptoseade, seejärel sisemine ext4, mida su konteinerid näevad. btrfs on copy-on-write. Iga juhuslik kirjutamine hoidla sees kirjutab kujutisesse uue laiendi. Andmebaasid ja konteinerite ülekattekihid kirjutavad juhuslikult terve päeva, seega akumuleerib kujutis laiendeid disaini järgi.
 
-Mahus olevad failid on teine lugu. Kontrollisin GitLabi hoidlat: selle gitaly binaarfail on 10 laiendis, git pack-fail 17-s. Sisemine välkmälustik ei ole fragmenteeritud. 19 650-per-gigabait näitaja kirjeldab copy-on-write konteinerit, mis on täpselt see, mida sa ootaksid, ja ei ütle midagi selle kohta, kas lugemised on aeglased.
+Mahus olevad failid on fragmenteerimata. Kontrollisin: GitLabi gitaly binaarfail on 10 laiendis, git pack-fail 17-s. 19 650-per-gigabait näitaja kirjeldab copy-on-write konteinerit. See on täpselt see, mida see peaks välja nägema, ja ei ütle midagi selle kohta, kas lugemised on aeglased.
 
 ## Võrdlusmõõtmine
 
-Valisin kaks hoidlat fragmentatsiooniskaala vastasotstest ja lugesin neist otse-IO-ga, mis möödub leheküljevahemlust ja sunnib füüsilist lugemist.
+Valisin kaks hoidlat skaala vastasotstest. Üks vaevalt fragmenteeritud, teine tugevalt. Lugesin mõlemast otse-IO-ga, mis möödub leheküljevahemälust ja sunnib päriselt kettalt lugemist.
 
 | Hoidla | Keskmine laiend | Laiendeid GB kohta | Järjestikune lugemine |
 |---|---|---|---|
@@ -73,10 +74,10 @@ Isegi kui see mahuks, ei kestaks see. Need kujutised re-fragmenteeruvad minutite
 
 Veerg, mis väärib samas raportis su tähelepanu, on divergents. See on hoidla kujutisest unikaalse osa protsent, mis on ainulaadne sellele hoidlale, mitte jagatud harkide ja hetktõmmistega. Värske hark on lähedal 0%, kuna see jagab peaaegu kõike. Hoidla, millesse on pärast hargimist palju kirjutatud, tõuseb 100% poole.
 
-Divergents vastab küsimusele, millele fragmentatsioon ei suuda vastata: kui palju reaalset, tagasinõutavat ketast see hoidla maksab. Kui bassein on tihe, on madala divergentsiga hoidla halb puhastamise sihtmärk, kuna selle baidid on jagatud ja selle kustutamine vabastab vähe. Baidid elavad seal, kus divergents on kõrge.
+Divergents vastab küsimusele, millele fragmentatsioon ei suuda vastata: kui palju reaalset, tagasinõutavat ketast see repositoorium maksab. Tiheda basseini korral on madala divergentsiga repositoorium halb puhastamise sihtmärk. Selle baidid on jagatud, seega vabastab selle kustutamine peaaegu mitte midagi. Baidid elavad seal, kus divergents on kõrge.
 
 ## Kokkuvõte
 
 Fragmentatsiooninumber on reaalne, ja copy-on-write kujutisel juhuslike kirjutustega näeb see alati kõrge välja. Välkmälul on see informatiivne. Mõõtsin 16-kordset vahet ja ei leidnud lugemiskaristust, kiiremat juhuslikku profiili rohkem fragmenteeritud failil, ja ühe väikese kulu taustaskaneerimise ajas. Tööriist, mis "parandaks" numbri, jagaks selle asemel lahku veerand terabaiti harke basseini, millel pole nende jaoks ruumi.
 
-Seega Rediacc raporteerib fragmentatsiooni ja selgitab seda, ja ei paku nuppu selle põhjal tegutsemiseks. Aus insenerlik vastus oli mõõta eeldus, mitte automatiseerida refleks.
+Seega Rediacc raporteerib fragmentatsiooni ja selgitab seda. See ei paku nuppu selle põhjal tegutsemiseks. Aus vastus oli mõõta eeldus, mitte automatiseerida refleks.

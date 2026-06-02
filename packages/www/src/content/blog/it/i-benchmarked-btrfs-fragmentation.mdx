@@ -1,6 +1,6 @@
 ---
-title: "Il Tuo Indice di Frammentazione Sembra Terrificante. Ho Misurato Quanto Costa."
-description: "Il report sulla salute dell'archiviazione segnala repository a quasi 20.000 estensioni per gigabyte. Il numero sembra allarmante. Ho eseguito benchmark di lettura sequenziale e casuale sui casi peggiori e la penalizzazione era zero. Ecco i dati, e perche' Rediacc non include un comando di deframmentazione."
+title: "La Tua Frammentazione Sembra Terrificante. Ho Misurato il Costo."
+description: "Il report sulla salute dell'archiviazione segnala repository a quasi 20.000 estensioni/GB. Ho misurato entrambi gli estremi: penalizzazione in lettura zero. Perché Rediacc non ha un comando di deframmentazione."
 author: Muhammed Fatih Bayraktar
 publishedDate: 2026-05-25
 category: guide
@@ -11,7 +11,8 @@ tags:
   - benchmarks
 featured: false
 language: it
-sourceHash: "73f1772f961bae0d"
+sourceHash: "5245c4e48a3a7074"
+sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
 ---
 
 > **TL;DR.** Il comando `rdc machine query --storage-health` di Rediacc riporta un indice di frammentazione per ogni repository. Su una macchina di produzione segnala GitLab a circa 19.650 estensioni per gigabyte. L'istinto e' di deframmentare. Ho misurato invece.
@@ -20,7 +21,7 @@ sourceHash: "73f1772f961bae0d"
 > - Il dispositivo e' flash. La frammentazione danneggia i dischi magnetici attraverso il tempo di seek. Su un SSD non rimane quasi nessun meccanismo per causare danni.
 > - Eseguire `btrfs filesystem defragment` qui rimuoverebbe la condivisione di circa 250 GB di fork e snapshot tramite reflink in un pool con 4,4 GB liberi. Questo e' il rischio reale, e il benchmark dice che non c'e' alcun beneficio da contrapporre.
 
-Il report sulla salute dell'archiviazione esiste per rispondere a una domanda: dove sta andando il mio disco. Mostra le dimensioni di ogni repository, quanti dati condivide con i suoi fork, e un indice di frammentazione. Quest'ultimo numero puo' sembrare spaventoso. Sulla macchina che gestisco, l'immagine del repository di GitLab riporta 268.771 estensioni su 14,6 GB. Sono circa 19.650 estensioni per gigabyte, e lo strumento la etichetta come "alta".
+Francamente, il report sulla salute dell'archiviazione esiste per rispondere a una domanda: dove sta andando il mio disco. Mostra le dimensioni di ogni repository, quanti dati condivide con i suoi fork, e un indice di frammentazione. Quest'ultimo numero sembra spaventoso. Sulla macchina che gestisco, l'immagine del repository di GitLab riporta 268.771 estensioni su 14,6 GB. Sono circa 19.650 estensioni per gigabyte, e lo strumento la etichetta come "alta".
 
 Il riflesso che segue e' automatico. Alta frammentazione, quindi deframmentare. Ho scritto quel riflesso in script shell su dischi magnetici per quindici anni. Prima di aggiungere un pulsante di deframmentazione a Rediacc, volevo sapere cosa costa davvero il numero sull'hardware che utilizziamo. Cosi' l'ho misurato sulla macchina in produzione.
 
@@ -30,11 +31,11 @@ Un repository Rediacc e' un singolo file immagine LUKS che vive su un pool btrfs
 
 Questo e' importante a causa di come sono organizzati i dati. Dal basso verso l'alto: un SSD fisico, poi il filesystem root ext4 dell'host, poi un file pool su loop device, poi loop0, poi il pool btrfs, poi l'immagine LUKS, poi un dispositivo device-mapper crypt, poi l'ext4 interno che vedono i tuoi container. btrfs e' copy-on-write. Ogni scrittura casuale all'interno di un repository scrive una nuova estensione nell'immagine. I database e i layer overlay dei container scrivono in modo casuale tutto il giorno, quindi l'immagine accumula estensioni per design.
 
-I file all'interno del volume sono un'altra storia. Ho controllato il repository di GitLab: il suo binario gitaly e' in 10 estensioni, un file pack di git in 17. Il filesystem interno non e' frammentato. Il numero di 19.650 per gigabyte descrive il contenitore copy-on-write, che e' esattamente come ti aspetteresti che appaia e non dice nulla sul fatto che le letture siano lente.
+I file all'interno del volume non sono frammentati. Ho controllato: il binario gitaly di GitLab è in 10 estensioni, un file pack di git in 17. Il numero di 19.650 per gigabyte descrive il contenitore copy-on-write. È esattamente come dovrebbe apparire, e non dice nulla sul fatto che le letture siano lente.
 
 ## Il benchmark
 
-Ho scelto due repository agli estremi opposti della scala di frammentazione e ho letto da loro con IO diretto, che bypassa la page cache e forza una lettura fisica.
+Ho scelto due repository agli estremi opposti della scala. Uno poco frammentato, uno molto. Ho letto da ciascuno con IO diretto, che salta la page cache e forza una lettura reale dal disco.
 
 | Repository | Estensione media | Estensioni per GB | Lettura sequenziale |
 |---|---|---|---|
@@ -73,10 +74,10 @@ Anche dove ci stesse, non durerebbe. Queste immagini si ri-frammentano in pochi 
 
 La colonna che merita la tua attenzione nello stesso report e' la divergenza. E' la percentuale dell'immagine di un repository che e' unica rispetto ai fork e agli snapshot. Un fork fresco si trova vicino allo 0%, perche' condivide quasi tutto. Un repository che ha subito molte scritture da quando e' stato forkato sale verso il 100%.
 
-La divergenza risponde alla domanda che la frammentazione non puo': quante risorse disco reali e recuperabili ha questo repository. Quando un pool e' in difficolta', un repository a bassa divergenza e' un obiettivo di pulizia scarso, perche' i suoi byte sono condivisi e cancellarlo libera poco. I byte vivono dove la divergenza e' alta.
+La divergenza risponde alla domanda che la frammentazione non può: quante risorse disco reali e recuperabili ha questo repository. Su un pool in difficoltà, un repository a bassa divergenza è un obiettivo di pulizia scarso. I suoi byte sono condivisi, quindi cancellarlo libera quasi nulla. I byte vivono dove la divergenza è alta.
 
 ## La conclusione
 
 Il numero di frammentazione e' reale, e su un'immagine copy-on-write sotto scritture casuali sara' sempre alto. Su flash e' informativo. Ho misurato uno spread di 16 volte e non ho trovato penalizzazione della lettura, un profilo casuale piu' veloce sul file piu' frammentato, e un unico piccolo costo nel tempo di scansione in background. Lo strumento che "correrebbe" il numero rimuoverebbe invece la condivisione di un quarto di terabyte di fork in un pool che non ha spazio per loro.
 
-Quindi Rediacc riporta la frammentazione e la spiega, e non offre alcun pulsante per agire su di essa. La risposta ingegneristica onesta era misurare l'assunzione piuttosto che automatizzare il riflesso.
+Quindi Rediacc riporta la frammentazione e la spiega. Non offre nessun pulsante per agire su di essa. La risposta onesta era misurare l'assunzione, non automatizzare il riflesso.

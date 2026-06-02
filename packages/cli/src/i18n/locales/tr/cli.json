@@ -1324,6 +1324,13 @@
       "batchIterating": "{{action}} {{current}}/{{total}}: «{{repo}}»...",
       "batchResult": "{{action}} tamamlandı: {{succeeded}}/{{total}} başarılı",
       "batchStarting": "{{action}}: «{{repo}}»...",
+      "branch": {
+        "branchOption": "Yeni dalın adı",
+        "completed": "Dal \"{{branch}}\" -> {{commit}}",
+        "description": "Çalışan fork'un mevcut commit'ini (ucunu) gösteren, adlandırılmış bir branch ref'i oluşturun. Branch ref'leri CLI yapılandırmasında bulunur (machine = nesne deposu, config = ref deposu).",
+        "descriptionShort": "Mevcut commit'i gösteren bir branch ref'i oluşturun",
+        "workingOption": "Branch'in mevcut commit'ini göstereceği çalışan fork"
+      },
       "cat": {
         "description": "Depo içindeki bir dosyanın sınırlı bir penceresini oku ve stdout'a yaz (sunucu tarafında sınırlı; tanılama bilgileri stderr'e gider)",
         "failed": "Okuma başarısız",
@@ -1338,6 +1345,22 @@
       },
       "certSync": {
         "updated": "{{machine}} makinesinden ACME sertifika önbelleği güncellendi ({{count}} sertifika)"
+      },
+      "checkout": {
+        "description": "Değişmez bir commit'i (veya bir branch ucunu) yeni, yazılabilir bir çalışan fork'a reflink ile klonlayın ve HEAD'i ona yöneltin. Neredeyse anlık ve sabit zamanlı (BTRFS reflink).",
+        "descriptionShort": "Bir commit/branch'i yazılabilir bir çalışan fork'a reflink ile klonlayın",
+        "fromOption": "--ref değerini bu çalışma çatalındaki bir dal adı olarak çöz",
+        "refOption": "Çıkış yapılacak commit GUID'i (veya --from ile dal adı)",
+        "tagOption": "Yeni yazılabilir çalışan fork için ad"
+      },
+      "commit": {
+        "authorOption": "Commit yazarı",
+        "completed": "Commit edildi {{commit}}: {{message}}",
+        "description": "Bağlı (mounted) bir çalışan fork'un mevcut durumunu yeni, değişmez bir commit olarak dondurun (git tarzı). Commit; mesajını, yazarını, zaman damgasını ve üst öğesini birim içinde (in-volume) kaydeder (böylece push sırasında birlikte taşınır) ve salt okunur olarak işaretlenir — mount edilmeyi reddeder. Çalışan fork, git'in çalışma ağacını olduğu gibi bırakması gibi değişmeden devam eder. Yazılabilir bir kopya elde etmek için bir commit'i 'rdc repo checkout' ile checkout edin.",
+        "descriptionShort": "Çalışan bir fork'u yeni, değişmez bir commit olarak dondurun",
+        "failed": "Commit başarısız oldu",
+        "messageOption": "Commit mesajı",
+        "nameOption": "Commit edilecek çalışan fork (mount edilmiş olmalıdır)"
       },
       "create": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
@@ -1415,6 +1438,8 @@
         "descriptionShort": "Deponun CoW çatalını oluştur (yeni GUID, networkId, IP aralığı)",
         "examples": "\nÖrnekler:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Çatal oluşturma başarısız",
+        "immutableOption": "Çatalı salt okunur olarak işaretler: bağlanmayı reddeder ve görüntüsünü kalıcı olarak bayt düzeyinde sabit tutar (makineler arası delta push için dondurulmuş bir commit/temel)",
+        "immutableUpConflict": "repo fork: --immutable ve --up birlikte kullanılamaz. Değişmez bir çatal bağlanmayı reddeder, bu nedenle başlatılamaz. --up seçeneğini kaldırın veya normal bir çatal dağıtmak için --immutable seçeneğini kaldırın.",
         "registered": "Çatal \"{{repository}}\" kaydedildi ({{guid}}, ağ {{networkId}})",
         "rollback": "\"{{repository}}\" yapılandırması geri alındı",
         "starting": "\"{{machine}}\" üzerinde \"{{parent}}\" deposunun \"{{repository}}\" olarak çatallanıyor...",
@@ -1423,6 +1448,25 @@
         "tagReservedLatest": "repo fork: \"latest\" etiketi ana (üretim) depo için ayrılmıştır — farklı bir --tag seçin (örn. \"test\", \"staging\", \"<feature>\")",
         "upOption": "Fork sonrası bağlayıp servisleri başlat (fork + mount + up tek komutta)"
       },
+      "fsck": {
+        "clean": "{{machine}} üzerinde sapma yok: her ref çözümleniyor ve yetim commit bulunamadı",
+        "danglingHeader": "{{count}} sarkan ref (eksik bir nesneyi gösteriyor):",
+        "description": "CLI yapılandırma ref'lerini (dallar, HEAD) bir makinede gerçekten mevcut olan nesnelere karşı doğrula. Sarkan ref'leri (eksik bir nesneyi gösteren bir ref) ve yetim commit'leri (hiçbir ref'in erişemediği değişmez bir commit) raporlar. Salt okunur.",
+        "descriptionShort": "Yapılandırma ref'lerini makine nesnelerine karşı kontrol et",
+        "orphanHeader": "{{count}} yetim commit (hiçbir ref bunlara erişmiyor):",
+        "orphanHint": "Yetimleri şununla geri kazanın: rdc repo gc --apply -m <machine>"
+      },
+      "gc": {
+        "applied": "Çöp toplama tamamlandı: {{deleted}}/{{total}} commit silindi",
+        "applyOption": "Erişilemez commit'leri gerçekten sil (varsayılan, deneme çalıştırması önizlemesidir)",
+        "deleted": "{{commit}} commit'i silindi",
+        "deleteFailed": "{{commit}} commit'i silinemedi",
+        "description": "Bir makinede hiçbir dalın veya HEAD'in erişemediği değişmez commit nesnelerini sil (erişilebilirlik GC'si). Makine nesne deposudur; CLI yapılandırması ref deposudur. Varsayılan olarak deneme çalıştırması yapar: silmek için --apply geçin. Bağlı bir nesneye veya çalışan bir fork'a asla dokunmaz.",
+        "descriptionShort": "Bir makinedeki erişilemez değişmez commit'leri temizle",
+        "dryRunHeader": "{{count}} erişilemez commit silinecek:",
+        "dryRunHint": "Bunları silmek için --apply ile yeniden çalıştırın.",
+        "nothing": "{{machine}} üzerinde temizlenecek bir şey yok: her commit'e erişilebilir"
+      },
       "list": {
         "completed": "Listeleme tamamlandı",
         "description": "Bir makinedeki depoları listele",
@@ -1430,7 +1474,25 @@
         "serverNameLegend": "* ad makineden okundu (yerel yapılandırmanızda yok)",
         "starting": "\"{{machine}}\" üzerindeki depolar listeleniyor..."
       },
+      "log": {
+        "description": "Bir çalışan fork'un mevcut commit'inden (veya bir commit referansından) erişilebilen commit geçmişini, 'rdc repo commit' tarafından kaydedilen üst zinciri izleyerek yazdırın. Birim dışı (out-of-volume) yansımayı okur, bu yüzden hiçbir commit kilidi açılmaz.",
+        "descriptionShort": "Bir fork'un veya commit'in commit geçmişinde gezinin",
+        "failed": "Log başarısız oldu",
+        "jsonOption": "Commit geçmişini JSON olarak çıktıla",
+        "nameOption": "Geçmiş gezinmesinin başlatılacağı çalışan fork veya commit"
+      },
       "machineOption": "Hedef makine adı",
+      "merge": {
+        "baseOption": "three-way (üç yönlü) merge için ortak ata commit GUID'i (--resolve ile kullanılır). Varsayılan olarak kaynak commit'in ebeveyni veya hedefin mevcut commit'idir.",
+        "completed": "{{source}}, {{target}} içine merge edildi",
+        "description": "Bir kaynak commit veya fork'u hedef çalışma fork'una merge eder. Canlı hedef yerinde asla değiştirilmez: sonuç bir reflink klonunda oluşturulur ve atomik olarak yerine takılır. Bağlı (mounted) veya çalışan bir hedef, --force kullanılmadıkça reddedilir; --force ise hedefi önce temiz biçimde durdurur. --resolve olmadan, tüm imaj üzerinde take-theirs uygulanır (hedef, kaynağın aynısı olur); --resolve ours|theirs ile, ortak ataya karşı dosya başına üç yönlü (three-way) merge yapılır; her tarafın benzersiz değişiklikleri alınır ve iki taraflı çakışmalar bayrağa göre çözülür.",
+        "descriptionShort": "Bir commit/fork'u bir çalışma fork'una yaşam döngüsü açısından güvenli şekilde merge eder",
+        "failed": "Merge başarısız oldu",
+        "forceOption": "Bağlı/çalışan hedefi önce durdurup ardından merge eder (canlı bir mount'u asla değiştirmez)",
+        "fromOption": "Merge için kaynak commit veya fork",
+        "nameOption": "Merge edilecek hedef çalışma fork'u",
+        "resolveOption": "Üç yönlü birleştirme için dosya bazında çakışma çözümü: 'ours' hedefin sürümünü korur, 'theirs' kaynağınkini alır. Tüm imaj için fast-forward (take-theirs) yapmak istiyorsanız atlayın."
+      },
       "migrate": {
         "checkpointing": "CRIU kontrol noktası oluşturuluyor...",
         "complete": "Taşıma tamamlandı: {{name}}, {{from}} konumundan {{to}} konumuna taşındı",
@@ -1443,9 +1505,11 @@
         "downtime": "Kesinti süresi: {{duration}}",
         "optionBwlimit": "rsync aktarımı için bant genişliği sınırı (ör. 10M)",
         "optionCheckpoint": "CRIU canlı taşıma: süreç belleği durumunu yakala ve geri yükle",
+        "optionDeltaBase": "Geçiş deltası için değişmez temel GUID (gelişmiş; varsayılan olarak Aşama 1 temeli kullanılır)",
         "optionFrom": "Kaynak makine adı",
         "optionProvision": "Bulut sağlayıcı aracılığıyla hedefi otomatik oluştur (ör. hetzner, linode)",
         "optionSkipDns": "Taşıma sonrası DNS kaydı geçişini atla",
+        "optionStrategy": "Geçiş için blok-delta stratejisi: auto, physical veya shared",
         "optionTo": "Hedef makine adı",
         "phase1": "Aşama 1: Toplu veri aktarılıyor (kaynak çalışmaya devam ediyor)...",
         "phase1Done": "Toplu aktarım tamamlandı",
@@ -1489,8 +1553,10 @@
         "description": "Depoyu uzak kaynaktan (makine veya depolama) çek. Tüm depoları çekmek için adı atlayın. Kaynak türü yapılandırmadan otomatik algılanır. Pull sonrası dağıtım için --up kullanın",
         "descriptionShort": "Depoyu uzak kaynaktan (makine veya depolama) çek",
         "optionBwlimit": "rsync aktarımı için bant genişliği sınırı (ör. \"6M\", \"10M\")",
+        "optionDeltaBase": "Her iki makinede de bayt düzeyinde birebir bulunan değişmez temel GUID; yalnızca değişen blokları al (makine kaynağı)",
         "optionForce": "Mevcut deponun üzerine yazmaya zorla",
         "optionFrom": "Kaynak makine veya depolama adı (yapılandırmadan otomatik algılanır)",
+        "optionStrategy": "Delta temeli kullanırken blok-delta stratejisi: auto, physical veya shared",
         "optionUp": "Pull sonrası bu makinede depoyu bağla ve dağıt",
         "pulling": "\"{{repo}}\" yedeği alınıyor...",
         "sourceRequired": "--from <remote> belirtin (yapılandırmadaki makine veya depolama adı)"
@@ -1504,8 +1570,10 @@
         "destRequired": "--to <remote> belirtin (yapılandırmadaki makine veya depolama adı)",
         "optionBwlimit": "rsync aktarımı için bant genişliği sınırı (ör. \"6M\", \"10M\")",
         "optionCheckpoint": "Yedekleme öncesi CRIU checkpoint oluştur (canlı taşıma için işlem bellek durumunu yakalar)",
+        "optionDeltaBase": "Her iki makinede de bayt düzeyinde birebir bulunan değişmez temel GUID; yalnızca değişen blokları aktar (makine hedefi). Otomatik temel için boş bırakın",
         "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",
         "optionProvision": "Hedef makine yoksa bulut sağlayıcısı üzerinden otomatik olarak oluştur",
+        "optionStrategy": "Delta temeli kullanırken blok-delta stratejisi: auto, physical veya shared",
         "optionTag": "Sürüm belirleme için dağıtım etiketi",
         "optionTo": "Hedef makine veya depolama adı (yapılandırmadan otomatik algılanır)",
         "optionUp": "Gönderdikten sonra hedef makinede depoyu bağla ve dağıt",
