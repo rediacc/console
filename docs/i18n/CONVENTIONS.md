@@ -28,6 +28,16 @@ sessions and humans keep translations aligned and cheap to maintain. The i18n CI
 - **Do not hand-translate literally or bulk machine-translate.** Use the
   naturalization pipeline at `private/growth/i18n_pipeline/` (or hand-write natural copy).
 
+### Model: use haiku (cheapest) — IMPORTANT for cost
+
+- Run the pipeline with **`--model haiku`**. It is the default and the cheapest
+  capable model, and it produced good results for English and Turkish. The
+  naturalization ledger records the model used per language (`$meta.models` in
+  `.naturalized-hashes.json`).
+- Only bump to `--model sonnet` / `--model opus` for a specific language whose haiku
+  output reads awkward (the judge's `naturalness` score is the signal). Do not default
+  to the expensive models — translations run ×12 languages, so model cost compounds.
+
 ## 3. What must be preserved verbatim in a translation
 
 - Every `{{placeholder}}` (exact name + braces) — enforced by `interpolation-consistency`.

@@ -142,6 +142,9 @@ translation.** Key rules:
 - **On English change, re-translate only the delta**: `npm run i18n:naturalize-status`
   lists the stale keys; re-naturalize just those via `private/growth/i18n_pipeline`
   (`./run.sh --lang <lang> --surface <surface>` — its ledger skips already-done keys).
+- **Use `--model haiku`** (the default, cheapest capable model — English/Turkish were
+  done on haiku; the ledger records the model per language). Only bump to sonnet/opus
+  for a language whose haiku output reads awkward. Cost compounds ×12 languages.
 - `check-i18n-naturalization` is a blocking gate in `check:i18n`: it fails when an
   already-naturalized key goes stale (English changed without re-naturalizing).
 

@@ -153,9 +153,9 @@ export const noPositionalCliSyntax = {
     ],
     messages: {
       positionalSyntaxExplicit:
-        'Locale string "{{key}}" teaches positional syntax for `{{path}}`, but this command requires {{requiredOptions}}. Rewrite the example to use the named form (e.g., `{{path}} {{firstOption}} <name>`). See issue #446.',
+        'Locale string "{{key}}" teaches positional syntax for `{{path}}`, but this command requires {{requiredOptions}}. Rewrite the example to use the named form (e.g., `{{path}} {{firstOption}} <name>`). See issue #446. See docs/i18n/CONVENTIONS.md.',
       positionalSyntaxDerived:
-        'Locale string "{{key}}" teaches positional syntax for `{{path}}`. This command accepts zero positional arguments — use named options instead (e.g., `{{path}} --name <value>`). See issue #446.',
+        'Locale string "{{key}}" teaches positional syntax for `{{path}}`. This command accepts zero positional arguments — use named options instead (e.g., `{{path}} --name <value>`). See issue #446. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

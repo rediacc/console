@@ -28,9 +28,9 @@ export const seoDescriptionLength = {
     ],
     messages: {
       tooShort:
-        'Description for key "{{key}}" is {{length}} chars (min {{min}}). Add more detail for search result snippets.',
+        'Description for key "{{key}}" is {{length}} chars (min {{min}}). Add more detail for search result snippets. See docs/i18n/CONVENTIONS.md.',
       tooLong:
-        'Description for key "{{key}}" is {{length}} chars (max {{max}}). Shorten to avoid truncation in search results.',
+        'Description for key "{{key}}" is {{length}} chars (max {{max}}). Shorten to avoid truncation in search results. See docs/i18n/CONVENTIONS.md.',
     },
   },
 
