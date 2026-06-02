@@ -40,16 +40,25 @@ function main(): number {
   }
   const en = JSON.parse(fs.readFileSync(EN_FILE, 'utf-8')) as Record<string, unknown>;
   const current = flattenAndHash(en, ''); // { "flat.key": "crc32" }
-  const ledger = JSON.parse(fs.readFileSync(LEDGER_FILE, 'utf-8')) as {
-    languages?: Record<string, Record<string, string>>;
-  };
-  const languages = ledger.languages ?? {};
+  let ledger: { languages?: Record<string, Record<string, string>> };
+  try {
+    ledger = JSON.parse(fs.readFileSync(LEDGER_FILE, 'utf-8'));
+  } catch (e) {
+    console.error(`[i18n-naturalization] could not parse ${LEDGER_FILE}: ${e}`);
+    return 1;
+  }
+  if (!ledger || typeof ledger !== 'object' || typeof ledger.languages !== 'object' || ledger.languages === null) {
+    console.log('[i18n-naturalization] ledger has no languages map; nothing to check.');
+    return 0;
+  }
+  const languages = ledger.languages;
 
   let staleTotal = 0;
   let orphanTotal = 0;
   const staleByLang: Record<string, string[]> = {};
 
   for (const [lang, keys] of Object.entries(languages)) {
+    if (!keys || typeof keys !== 'object') continue; // skip malformed language entry
     const stale: string[] = [];
     let orphan = 0;
     for (const [key, recordedCrc] of Object.entries(keys)) {
@@ -73,6 +82,11 @@ function main(): number {
     console.log(`\n${orphanTotal} ledger entries reference deleted English keys ` +
       `(harmless; will be cleaned on next run).`);
   }
+  if (report) {
+    console.log(`\nNever-naturalized keys (the backlog) are not enumerated here: that ` +
+      `requires the pipeline's classifier (frozen vs translatable). Get the per-language ` +
+      `worklist with: cd private/growth/i18n_pipeline && ./run.sh --dry-run-classify --lang <lang> --surface <surface>.`);
+  }
 
   if (staleTotal === 0) {
     console.log(`[i18n-naturalization] OK — all naturalized translations are fresh.`);
@@ -94,4 +108,5 @@ function main(): number {
   return 1;
 }
 
-process.exit(main());
+// Set exitCode rather than process.exit() so stdout/stderr flush fully in CI.
+process.exitCode = main();

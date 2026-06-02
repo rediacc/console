@@ -9,7 +9,8 @@ sessions and humans keep translations aligned and cheap to maintain. The i18n CI
 
 - English (`packages/www/src/i18n/translations/en.json`) must read as **natural, daily
   language**: grade 5-7 for marketing copy; precise and technical for docs. Clear,
-  natural English in produces clear, natural translations out.
+  natural English is easier to translate well; convoluted or jargon-heavy English
+  produces awkward translations.
 - English is optimized **first**, then **locked**: after any English value change, run
   `npm run i18n:generate-hashes` (updates `.translation-hashes.json`, the per-key
   English CRC32 manifest) so the freshness gates pass.
