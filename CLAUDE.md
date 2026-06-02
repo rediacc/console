@@ -126,6 +126,25 @@ When writing documentation, help text, error messages, or code comments, follow 
 - **Config auto-creation**: Default config is created automatically on first use. Don't tell users to run `rdc config init` for the default config. `config init <name>` is for named configs only.
 - **Keep docs concise**: No verbose explanations or workarounds for error messages. Document what the command does, not how to work around issues.
 
+## i18n / Translations
+
+English (`packages/www/src/i18n/translations/en.json`) is the source of truth; the 12
+other locales are derived. **Read `docs/i18n/CONVENTIONS.md` before touching any
+translation.** Key rules:
+
+- English must read as natural, daily language (grade 5-7 for marketing; technical for
+  docs). Optimize English first, then lock it: after any English value change run
+  `npm run i18n:generate-hashes`.
+- Non-English values are **naturalized** (native, idiomatic phrasing, NOT literal /
+  word-for-word). Never bulk-replace a locale file with machine/literal translations.
+- Preserve every `{{placeholder}}`, HTML tag, number, and product name; mirror English
+  keys/order/structure; change values only.
+- **On English change, re-translate only the delta**: `npm run i18n:naturalize-status`
+  lists the stale keys; re-naturalize just those via `private/growth/i18n_pipeline`
+  (`./run.sh --lang <lang> --surface <surface>` — its ledger skips already-done keys).
+- `check-i18n-naturalization` is a blocking gate in `check:i18n`: it fails when an
+  already-naturalized key goes stale (English changed without re-naturalizing).
+
 ## Build & Test
 
 **This monorepo uses npm, not pnpm.**

@@ -127,9 +127,9 @@ export const translationStaleness = {
       },
     ],
     messages: {
-      staleTranslation: 'Translation outdated: "{{key}}". English value changed (stored: {{storedHash}}, current: {{currentHash}}). Update translations and run: npm run i18n:update-hashes',
-      missingHashFile: 'Hash manifest file not found: {{path}}. Run: npm run i18n:generate-hashes',
-      newKey: 'New translation key: "{{key}}" (hash: {{currentHash}}). Run: npm run i18n:update-hashes',
+      staleTranslation: 'Translation outdated: "{{key}}". English value changed (stored: {{storedHash}}, current: {{currentHash}}). Regenerate hashes, then re-naturalize ONLY the changed keys (delta), not everything. See docs/i18n/CONVENTIONS.md.',
+      missingHashFile: 'Hash manifest file not found: {{path}}. Run: npm run i18n:generate-hashes. See docs/i18n/CONVENTIONS.md.',
+      newKey: 'New translation key: "{{key}}" (hash: {{currentHash}}). Run: npm run i18n:update-hashes. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

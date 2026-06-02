@@ -2,7 +2,7 @@
   "announcement": {
     "enabled": true,
     "link": "/account/",
-    "text": "Sınırlı süre: Design Partner Programı — BUSINESS planı ömür boyu"
+    "text": "Sınırlı süre: Design Partner Programı. BUSINESS planında ömür boyu ücretsiz."
   },
   "beforeAfter": {
     "after": {
@@ -10,16 +10,16 @@
       "points": [
         "60 saniyede kusursuz bir kopya.",
         "Saatlik yedekler. Ekstra depolama yok.",
-        "Kurtarma 60 saniyede test edildi.",
+        "Kurtarma 60 saniyede.",
         "Her geliştiriciye taze bir kopya."
       ]
     },
     "before": {
       "label": "Rediacc olmadan",
       "points": [
-        "Ekibiniz test kopyası için günlerce bekliyor. Gene de birebir olmuyor.",
+        "Ekibiniz test kopyası için günlerce bekliyor. Eşleşmiyor bile.",
         "Yedekler haftalar sürüyor. Çoğu uyarı vermeden başarısız oluyor.",
-        "Kurtarma planınız 4 saat diyor. Gerçek hayat 4 gün.",
+        "Kurtarma planında 4 saat yazıyor. Pratikte 4 gün.",
         "Geliştiriciler canlı sitede kod yazıyor. Test kopyası haftalar eski."
       ]
     },
@@ -148,14 +148,14 @@
   },
   "featureShowcase": {
     "categoryDescriptions": {
-      "backups": "Tam saklama uyumluluğu ile doğrulanmış, anında kurtarılabilir yedeklemeler. Her yedekleme test edilir — sadece saklanmaz.",
-      "defense": "İzole klonlar üzerinde yapay zeka destekli sızma testleriyle sürekli güvenlik testi. Güvenlik açıklarını saldırganlardan önce bulun.",
-      "dev-env": "Tüm üretim yığınınızı saniyeler içinde klonlayın. Sıfır ek depolama, mükemmel eşlik, anlık geliştirici ortamları.",
+      "backups": "Yedeklemeleri her hafta test ediyoruz, sadece depolamıyoruz. Geri getirme garantili. Denetçileri memnun edecek kadar uzun saklıyoruz.",
+      "defense": "Canlı sistemi klonla. Güvenlik testlerini klona çalıştır. Bulduklarını düzelt. Klonu sil.",
+      "dev-env": "Canlı sistemini saniyeler içinde takım için klonla. Aynı veri, hiç ek depolama. Değişiklikleri güvenle test et, gerçek şeyi riske atmadan.",
       "encryption": "Her depo, LUKS ile durağan halde ve aktarım sırasında şifrelenir. Tam denetim izleri ve ortamlar arası güvenli geçiş.",
-      "multi-cloud": "Altyapınızı sağlayıcılar arasında satıcı bağımlılığı olmadan taşıyın. Anlık yük devretme, test edilmiş felaket kurtarma, buluttan bağımsız taşınabilirlik.",
-      "ransomware": "Fidye yazılımının dokunamayacağı, kurcalamaya dayanıklı, kriptografik olarak doğrulanmış yedeklemeler. Tüm yığınınızı 60 saniyenin altında kurtarın."
+      "multi-cloud": "Sunucularını Amazon, Microsoft veya kendi binanda taşı. Bağlantı yok. Bir bulut kapanırsa, başka birine geç. Test ettik; çalışacak.",
+      "ransomware": "Fidye yazılımının dokunmayacağı kilitli yedeklemeler. Her birinin değişmediğini ispatlayan bir imzası var. Tüm sistemi 60 saniye altında geri getir."
     },
-    "subtitle": "Altı odak alanında 19 çözüm — fidye yazılımından kurtulmadan önleyici savunmaya kadar.",
+    "subtitle": "Altı yolla fidye yazılımından korun, çevrimiçi kalın, verileriniz size ait kalsın.",
     "title": "Rediacc ile neler yapabilirsiniz"
   },
   "footer": {
@@ -179,8 +179,8 @@
       "termsOfService": "Hizmet Koşulları"
     },
     "links": {
-      "contactSupport": "Destek Ekibiyle İletişime Geçin",
-      "returnToHome": "Ana Sayfaya Dönüş"
+      "contactSupport": "Desteğe Ulaş",
+      "returnToHome": "Ana Sayfaya Dön"
     },
     "organizationLinks": {
       "aboutUs": "Hakkımızda",
@@ -190,15 +190,15 @@
     "productLinks": {
       "disasterRecovery": "Felaket Kurtarma",
       "overview": "Genel Bakış",
-      "pricing": "Fiyatlandırma",
+      "pricing": "Fiyatlar",
       "professionalServices": "Profesyonel Hizmetler",
       "solutions": "Çözümler"
     },
     "supportLinks": {
-      "contactSupport": "Destek Ekibiyle İletişime Geçin",
+      "contactSupport": "Desteğe Ulaş",
       "helpCenter": "Yardım Merkezi"
     },
-    "tagline": "Yapay Zeka Odaklı Operasyonlar için Altyapı Otomasyon Platformu"
+    "tagline": "Kendi sunucularınızda yedekleme ve felaket kurtarma"
   },
   "getStarted": {
     "benefits": [
@@ -248,25 +248,25 @@
       "submit": "Başlayın"
     },
     "notice": {
-      "description": "E-postanızı açmak için gönder'i tıklayın. 48 saat içinde yanıt vereceğiz.",
+      "description": "Gönder'i tıklayın. 48 saat içinde yanıt vereceğiz.",
       "emailLabel": "contact@rediacc.com",
       "title": "Nasıl Gönderilir"
     },
-    "subtitle": "Gerçek üretim verileriyle test eden ekiplere katılın — risk olmadan.",
-    "title": "İlk yığınınızı klonlamaya hazır mısınız?"
+    "subtitle": "Çoğu takım test ortamında test eder, sonra dua eder. Canlı sisteminizi saniyeler içinde klonlayın, değişikliği gerçek verilerle test edin. Canlı sistem etkilenmez.",
+    "title": "İlk stack'inizi klonlamaya hazır mısınız?"
   },
   "hero": {
     "cta": {
-      "benefits": "Sınırsız ekip • 0 $",
-      "bookDemo": "Demo Talep Et",
-      "contactUs": "Hesap Oluştur",
+      "benefits": "Sınırsız Ekip • $0",
+      "bookDemo": "Demo Al",
+      "contactUs": "Tüm Kurulum Seçeneklerini Gör",
       "freeBadge": "SONSUZA DEK ÜCRETSİZ • Kredi kartı gerekmez",
       "getStarted": "Ücretsiz başlayın",
-      "learnMore": "Daha Fazla Bilgi",
+      "learnMore": "Nasıl Çalıştığını Gör",
       "readDocs": "Belgeleri okuyun",
-      "seeDetails": "Tüm ayrıntıları görün"
+      "seeDetails": "Tüm Detayları Gör"
     },
-    "eyebrow": "ALTYAPI OTOMASYON PLATFORMU",
+    "eyebrow": "KENDİ BARINDIRILAN · KENDI SUNUCULARINDA",
     "install": {
       "alt": {
         "apt": "apt",
@@ -284,8 +284,8 @@
       },
       "tabsLabel": "İşletim sistemi seçin"
     },
-    "subtitle": "Veritabanları, Docker hizmetleri ve her şey dahil, tüm üretim yığınınızın anında izole kopyalarını oluşturan kendi kendine barındırılan platform.",
-    "title": "Üretimi Klonla.",
+    "subtitle": "Rediacc kendi sunucularında çalışan yazılım. Canlı sisteminizin tamamını saniyeler içinde klonluyor: uygulamalar, veritabanları, ayarlar. Sonra test et, yedekle, hızlı kurtul.",
+    "title": "Canlı Ortamı Klonla.",
     "titleHighlight": " Hiçbir Şeyi Bozma."
   },
   "integrations": {
@@ -303,8 +303,8 @@
       "LUKS",
       "systemd"
     ],
-    "migrationMessage": "Rediacc, yığınınızı tek bir taşınabilir dosyaya dönüştürür. Zaten Docker kullanıyorsanız, geçiş oldukça kolaydır.",
-    "title": "Yığınınızla çalışır"
+    "migrationMessage": "Rediacc uygulamalarınızı, veritabanlarınızı ve ayarlarınızı tek dosyaya paketler. Nereye isterse oraya taşıyın. Docker zaten kullanıyor musunuz? Yarı yoldasınız.",
+    "title": "Kullandığın sistemlerle çalışır"
   },
   "layout": {
     "meta": {
@@ -325,12 +325,12 @@
   },
   "logoWall": {
     "categories": ["Git", "CI/CD", "Konteynerler", "Veritabanları", "İzleme", "Depolama"],
-    "title": "Altyapınızla çalışır"
+    "title": "Altyapınızla uyumlu"
   },
   "metrics": {
     "items": [
       {
-        "label": "60 sn altında kopyalandı",
+        "label": "60 saniyede kopyalandı",
         "number": "241 GB"
       },
       {
@@ -391,30 +391,30 @@
   },
   "newsletter": {
     "blogCta": {
-      "description": "Daha fazla kendi sunucunuzda barındırma kılavuzu ve ürün güncellemesi alın.",
+      "description": "Her ay self-hosting kılavuzları ve ürün haberleri gönderiyoruz. Abone olmak ister misiniz?",
       "title": "Bu makaleyi beğendiniz mi?"
     },
     "confirmed": "Aboneliğiniz onaylandı! Aramıza hoş geldiniz.",
-    "description": "Aylık ürün güncellemeleri ve kendi sunucunuzda barındırma ipuçları.",
+    "description": "Ayda bir kısa e-posta. Ürün haberleri ve self-hosting ipuçları.",
     "errorGeneric": "Bir şeyler ters gitti. Lütfen tekrar deneyin.",
-    "pageDescription": "Yeni özellikler, kendi sunucunuzda barındırma kılavuzları ve altyapı ipuçları hakkında aylık güncellemeler alın.",
-    "pageTitle": "Güncel Kalın",
+    "pageDescription": "Ayda bir kısa e-posta alırsınız. Yeni özellikler, self-hosting kılavuzları ve ürün konusunda sıkı yoldan kazandığımız bilgiler içerir.",
+    "pageTitle": "Haberin Başında Kal",
     "placeholder": "E-posta adresiniz",
     "privacyNote": "Gizliliğinize saygı duyuyoruz. İstediğiniz zaman aboneliğinizi iptal edebilirsiniz.",
     "returnPopup": {
-      "close": "Pencereyi kapat",
+      "close": "Kapat",
       "cta": "Abone Ol ve Randevu Al",
       "description": "Ürün güncellemelerine abone olun ve ekibimizle canlı kurulum randevusu alın.",
       "note": "E-posta adresinizi ürün güncellemeleri göndermek için kullanırız. İstediğiniz zaman abonelikten çıkabilirsiniz.",
-      "title": "Yönlendirmeli bir tanıtım ister misiniz?"
+      "title": "Rehberli bir tur ister misiniz?"
     },
     "roiGate": {
-      "description": "Tam maliyet dökümü ve tasarruf analizini açmak için e-posta adresinizi girin.",
+      "description": "Tam maliyet dökümünü ve tasarruf analizini görmek için e-posta adresinizi girin.",
       "title": "Ayrıntılı ROI raporunuzu alın",
       "unlock": "Raporu aç"
     },
     "stickyBar": {
-      "text": "Kendi sunucunuzda barındırma ipuçlarını gelen kutunuzda alın"
+      "text": "Self-hosting ipuçlarını gelen kutunuzda alın"
     },
     "subscribe": "Abone ol",
     "successMessage": "Aboneliğinizi onaylamak için gelen kutunuzu kontrol edin.",
@@ -429,17 +429,17 @@
         "title": "Veritabanı araçları"
       },
       {
-        "description": "Kodunuzu kopyalarlar. Kod tek başına bir test değildir.",
+        "description": "Kodunuzu kopyalarlar. Kod tek başına test değildir.",
         "title": "Dev-box araçları"
       },
       {
-        "description": "Her şeyi saklarlar. Kurtarma bir dakika değil, saatler sürer.",
+        "description": "Her şeyi saklarlar. Kurtarma saatler sürer, dakika değil.",
         "title": "Backup araçları"
       }
     ],
-    "title": "Çoğu araç bir parça kopyalar. Biz hepsini kopyalarız.",
+    "title": "Çoğu araç bir parçasını kopyalar. Biz tamamını.",
     "winner": {
-      "description": "Her takım kendi yazılabilir kopyasını alır. Veri, uygulamalar, ayarlar, hepsi. 60 saniyede hazır. Yalnızca bir şey değiştiğinde depolama için ödersiniz.",
+      "description": "Her takım kendi yazılabilir kopyasını alır. Veri, uygulamalar, ayarlar, hepsi. 60 saniyede hazır. Sadece değişikliklerin depolama ücretini ödersiniz.",
       "label": "Rediacc"
     }
   },
@@ -14416,20 +14416,20 @@
   },
   "pricingPreview": {
     "compareAll": "Tüm planları ve özellikleri karşılaştırın",
-    "subtitle": "Başlamak ücretsiz. Hazır olduğunuzda ölçeklendirin.",
-    "title": "Basit, şeffaf fiyatlandırma"
+    "subtitle": "Ücretsiz başla. Hazır olunca ölçekle.",
+    "title": "Postmortemde savunabileceğin fiyatlandırma"
   },
   "problem": {
     "reality": {
       "imageAlt": "Geleneksel altyapı iş akışı zorluklarını gösteren diyagram: Ortam tedariği için bekleyen hayal kırıklığına uğramış geliştiriciler, daha hızlı dağıtım talep eden paydaşlar ve yavaş korumalı alan güncellemeleri nedeniyle tehlikeli üretim testlerine başvuran ekipler",
-      "title": "Gerçek: Sinirli Ekipler, Tehlikeli Geçici Çözümler"
+      "title": "Gerçek: Yorgun Ekipler, Riskli Çalışmalar"
     },
     "solution": {
       "imageAlt": "Rediacc platform çözüm şeması: otomatik altyapı tedariği, anında üretim benzeri ortam klonları, kolaylaştırılmış geliştirici iş akışları ve Model Bağlam Protokolü entegrasyonuyla yapay zeka güvenli işlemler",
-      "title": "Çözüm: Rediacc Platformu"
+      "title": "Çözüm: Rediacc"
     },
-    "subtitle": "Üretim ortamlarında terabaytlarca veri bulunurken korumalı alan ortamları yalnızca aylık olarak senkronize edildiğinde, ekipler tehlikeli geçici çözümlere yol açan imkansız seçimlerle karşı karşıya kalır.",
-    "title": "Hız Uyuşmazlığı Krizi"
+    "subtitle": "Canlı ortamda terabaytlar. Test ortamı ayda bir güncelleniyor. Ekipler ya eski verilerle çalışmak ya da canlı sisteme riskli değişiklikler yapmak zorunda kalıyor.",
+    "title": "Neden Üretimde Test Ediyoruz?"
   },
   "regionPicker": {
     "channelEdge": "Edge",
@@ -14455,7 +14455,7 @@
       "multi-cloud": "Çoklu Bulut",
       "ransomware": "Fidye Yazılımından Kurtulma"
     },
-    "subtitle": "Altı odak alanında 19 çözüm — fidye yazılımından kurtulmadan proaktif savunmaya.",
+    "subtitle": "Fidye yazılımından kurtul, çevrimiçi kal, verilerinizin sahibi kalın — altı adımda.",
     "title": "İş Sürekliliğini Nasıl Sağlıyoruz"
   },
   "team": {
@@ -14481,12 +14481,12 @@
       {
         "company": "Finansal Hizmetler",
         "name": "Marcus R.",
-        "quote": "Kurtarma planımız dört saat diyordu. Gerçek dört gündü. Şimdi bir dakikadan kısa sürede bir klona yük devrediyoruz.",
-        "role": "Felaket Kurtarma Müdürü"
+        "quote": "Kurtarma planımız dört saat diyordu. Gerçekte dört gün oldu. Şimdi bir dakikadan kısa sürede bir klona yük devrediyoruz.",
+        "role": "Afet Kurtarma Müdürü"
       },
       {
         "name": "Sarah K.",
-        "quote": "Sandbox haftalarca geride olduğu için üretimde kodlama yapıyordum. Şimdi 60 saniyede taze bir klon alıyorum.",
+        "quote": "Sandbox haftalarca geride kalıyordu diye üretimde yazıyordum. Şimdi 60 saniyede taze bir klon alıyorum.",
         "role": "Geliştirici"
       },
       {
@@ -14497,11 +14497,11 @@
       },
       {
         "name": "Ayumi T.",
-        "quote": "CI'ı gerçek verilere karşı çalıştıramıyorduk. Şimdi her pipeline otomatik olarak kendi üretim klonunu alıyor.",
+        "quote": "CI'yi gerçek verilere karşı çalıştıramıyorduk. Şimdi her pipeline otomatik olarak kendi üretim klonunu alıyor.",
         "role": "DevOps Mühendisi"
       }
     ],
-    "subtitle": "Farklı roller Rediacc'ı nasıl deneyimliyor",
+    "subtitle": "Farklı rollerde çalışanlar Rediacc'ı nasıl görüyor",
     "title": "Ekipler ne diyor"
   },
   "tutorial": {
@@ -14522,7 +14522,7 @@
   "whyNow": {
     "cards": [
       {
-        "description": "AI dakikalar içinde kod yazıyor. Siz test etmek için günlerce kopya bekliyorsunuz.",
+        "description": "AI dakikalar içinde kod yazıyor. Siz test kopyanı günler bekliyorsunuz.",
         "title": "Geliştiriciler 10× daha hızlı"
       },
       {
@@ -14534,8 +14534,8 @@
         "title": "Kurulumunuz parçalı"
       }
     ],
-    "footer": "Çoğu ekip birden çok bulutta çalışır. Test kopyaları hiçbiriyle nadiren örtüşür.",
+    "footer": "İşletmeniz dakikalar içinde çalışıyor. Test kopyanız hâlâ günler çalışıyor.",
     "overline": "Neden şimdi",
-    "title": "Dünyanız hızlı hareket ediyor. Test kopyanız etmiyor."
+    "title": "Dünyanız hızlı hareket ediyor. Test kopyanız değil."
   }
 }

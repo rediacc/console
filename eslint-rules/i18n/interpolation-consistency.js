@@ -82,8 +82,8 @@ export const interpolationConsistency = {
       },
     ],
     messages: {
-      missingPlaceholder: 'Translation for "{{key}}" is missing placeholder: {{placeholder}}. English has: {{englishPlaceholders}}',
-      extraPlaceholder: 'Translation for "{{key}}" has extra placeholder: {{placeholder}}. English has: {{englishPlaceholders}}',
+      missingPlaceholder: 'Translation for "{{key}}" is missing placeholder: {{placeholder}}. English has: {{englishPlaceholders}}. Preserve all interpolation placeholders from English verbatim. See docs/i18n/CONVENTIONS.md.',
+      extraPlaceholder: 'Translation for "{{key}}" has extra placeholder: {{placeholder}}. English has: {{englishPlaceholders}}. Preserve all interpolation placeholders from English verbatim. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

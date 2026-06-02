@@ -106,9 +106,9 @@ export const interpolationMatch = {
       },
     ],
     messages: {
-      missingVariable: 'Translation "{{key}}" expects variable "{{variable}}" but it was not provided in the t() call.',
-      extraVariable: 'Variable "{{variable}}" provided to t("{{key}}") but not used in the translation string.',
-      unknownKey: 'Translation key "{{key}}" not found in namespace "{{namespace}}".',
+      missingVariable: 'Translation "{{key}}" expects variable "{{variable}}" but it was not provided in the t() call. See docs/i18n/CONVENTIONS.md.',
+      extraVariable: 'Variable "{{variable}}" provided to t("{{key}}") but not used in the translation string. See docs/i18n/CONVENTIONS.md.',
+      unknownKey: 'Translation key "{{key}}" not found in namespace "{{namespace}}". See docs/i18n/CONVENTIONS.md.',
     },
   },
 
