@@ -4,6 +4,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { TeamPageIDS } from '@/pages/team/TeamPageIDS';
 import { createTeamViaUI, waitForTeamRow } from '@/test-helpers/team-helpers';
+import { confirmYes } from '@/test-helpers/ui-helpers';
 import { E2E_DEFAULTS } from '@/utils/constants';
 
 test.describe('Team Delete Tests', () => {
@@ -69,10 +70,7 @@ test.describe('Team Delete Tests', () => {
       await actionsButton.click();
       await page.getByRole('menuitem', { name: /delete/i }).click();
     }
-    const confirmDelete = page.getByRole('button', { name: /yes/i });
-    if (await confirmDelete.isVisible().catch(() => false)) {
-      await confirmDelete.click();
-    }
+    await confirmYes(page);
     const privateTeamCell = page.getByRole('cell', { name: 'team Private Team' });
     if (await privateTeamCell.isVisible().catch(() => false)) {
       await expect(privateTeamCell).toBeVisible();

@@ -1,6 +1,7 @@
 import { test, expect } from '@/base/BaseTest';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+import { dismissDrawerMask } from '@/test-helpers/ui-helpers';
 import type { Locator } from '@playwright/test';
 
 test.describe('Dashboard Tests', () => {
@@ -33,10 +34,7 @@ test.describe('Dashboard Tests', () => {
       if ((await toggle.count()) > 0) {
         await toggle.click();
         await expect(locator).toBeVisible({ timeout: 5000 });
-        const drawerMask = page.locator('.ant-drawer-mask');
-        if (await drawerMask.isVisible().catch(() => false)) {
-          await drawerMask.click({ force: true });
-        }
+        await dismissDrawerMask(page);
       }
     };
 

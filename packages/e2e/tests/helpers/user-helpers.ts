@@ -4,6 +4,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { UserPageIDs } from '@/pages/user/UserPageIDs';
 import { loadGlobalState } from '@/setup/global-state';
 import { TestDataManager, type CreatedUser } from '@/utils/data/TestDataManager';
+import { confirmYes } from './ui-helpers';
 
 /* eslint-disable sonarjs/cognitive-complexity -- Complex user creation flow with multiple fallback strategies */
 export async function createUserViaUI(
@@ -20,14 +21,7 @@ export async function createUserViaUI(
 
   const userTable = page.getByTestId(UserPageIDs.systemUserTable);
   const listContainer = page.getByTestId('resource-list-container');
-  await expect
-    .poll(
-      async () =>
-        (await userTable.isVisible().catch(() => false)) ||
-        (await listContainer.isVisible().catch(() => false)),
-      { timeout: 10000 }
-    )
-    .toBe(true);
+  await expect(userTable.or(listContainer)).toBeVisible({ timeout: 10000 });
 
   // Find the first visible create button (handles both desktop and mobile layouts)
   const createUserButton = page.getByTestId(UserPageIDs.systemCreateUserButton).first();
@@ -211,3 +205,22 @@ export async function ensureCreatedUser(
 
   return await attemptCreate();
 }
+
+export const ensureUserActive = async (page: Page, email: string): Promise<void> => {
+  const nav = new NavigationHelper(page);
+  await nav.goToOrganizationUsers();
+
+  const searchInput = page.getByTestId('resource-list-search');
+  if (await searchInput.isVisible().catch(() => false)) {
+    await searchInput.fill('');
+    await searchInput.fill(email);
+    await searchInput.press('Enter');
+    await page.waitForLoadState('networkidle').catch(() => {});
+  }
+
+  const activateButton = page.getByTestId(UserPageIDs.systemUserActivateButton(email));
+  if (await activateButton.isVisible().catch(() => false)) {
+    await activateButton.click();
+    await confirmYes(page);
+  }
+};
