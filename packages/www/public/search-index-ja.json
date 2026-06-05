@@ -3133,7 +3133,7 @@
   {
     "id": "search-10557",
     "content": "CLIアプリケーション（クラウド / 実験的）",
-    "excerpt": "Rediacc CLI のクラウドアダプターコマンド（実験的）。設定の apiUrl とトークンが必要です。認証、組織、チーム、ユーザー、権限、リポジトリ、キュー、Ceph ブロックストレージ、監査ログをカバーしています。",
+    "excerpt": "Rediacc CLIのクラウド専用コマンド — 認証、チーム、組織、マルチテナント管理",
     "category": "Documentation",
     "page": "/ja/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.title",
@@ -3142,8 +3142,8 @@
   },
   {
     "id": "search-10558",
-    "content": "Rediacc CLI のクラウドアダプターコマンド（実験的）。設定の apiUrl とトークンが必要です。認証、組織、チーム、ユーザー、権限、リポジトリ、キュー、Ceph ブロックストレージ、監査ログをカバーしています。",
-    "excerpt": "Rediacc CLI のクラウドアダプターコマンド（実験的）。設定の apiUrl とトークンが必要です。認証、組織、チーム、ユーザー、権限、リポジトリ、キュー、Ceph ブロックストレージ、監査ログをカバーしています。",
+    "content": "Rediacc CLIのクラウド専用コマンド — 認証、チーム、組織、マルチテナント管理",
+    "excerpt": "Rediacc CLIのクラウド専用コマンド — 認証、チーム、組織、マルチテナント管理",
     "category": "Documentation",
     "page": "/ja/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.description",

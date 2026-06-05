@@ -112,8 +112,8 @@ rdc machine query --name server-1 --storage-health
 | Size | Dimensione del file immagine LUKS (come appare il repository) |
 | Unique | Dati unici effettivi posseduti solo da questo repository |
 | Shared | Blocchi di dati riutilizzati tra repository tramite reflink BTRFS (copie gratuite) |
-| Divergence | Percentuale dell'immagine unica in questo repository rispetto a quella condivisa (piu' alta significa piu' reclaimable se eliminato) |
-| Extents | Numero di estensioni di file nell'immagine copy-on-write (piu' alto = piu' frammentato) |
+| Divergence | Percentuale dell'immagine unica in questo repository rispetto a quella condivisa (più' alta significa più' reclaimable se eliminato) |
+| Extents | Numero di estensioni di file nell'immagine copy-on-write (più' alto = più' frammentato) |
 | Frag | Livello di frammentazione: basso, moderato o alto (solo informativo) |
 
 Il riepilogo mostra i risparmi totali dai reflink BTRFS:

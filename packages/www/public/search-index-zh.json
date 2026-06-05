@@ -3133,7 +3133,7 @@
   {
     "id": "search-17010",
     "content": "CLI 应用程序（云端 / 实验性）",
-    "excerpt": "Rediacc CLI 云端适配器命令（实验性）。配置需包含 apiUrl 和 token。涵盖身份验证、组织、团队、用户、权限、存储库、队列、Ceph 块存储和审计日志。",
+    "excerpt": "Rediacc CLI 的云端专属命令 — 身份验证、团队、组织和多租户管理",
     "category": "Documentation",
     "page": "/zh/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.title",
@@ -3142,8 +3142,8 @@
   },
   {
     "id": "search-17011",
-    "content": "Rediacc CLI 云端适配器命令（实验性）。配置需包含 apiUrl 和 token。涵盖身份验证、组织、团队、用户、权限、存储库、队列、Ceph 块存储和审计日志。",
-    "excerpt": "Rediacc CLI 云端适配器命令（实验性）。配置需包含 apiUrl 和 token。涵盖身份验证、组织、团队、用户、权限、存储库、队列、Ceph 块存储和审计日志。",
+    "content": "Rediacc CLI 的云端专属命令 — 身份验证、团队、组织和多租户管理",
+    "excerpt": "Rediacc CLI 的云端专属命令 — 身份验证、团队、组织和多租户管理",
     "category": "Documentation",
     "page": "/zh/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.description",
@@ -3879,7 +3879,7 @@
   {
     "id": "search-17078",
     "content": "CLI 应用程序",
-    "excerpt": "rdc Rediacc 命令行工具的完整参考手册，涵盖机器、存储库、配置、存储、密钥、文件同步、VS Code 远程会话和订阅管理",
+    "excerpt": "使用 Rediacc 命令行界面进行平台管理的完整指南",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "path": "docs.cli-application.title",
@@ -3888,8 +3888,8 @@
   },
   {
     "id": "search-17079",
-    "content": "rdc Rediacc 命令行工具的完整参考手册，涵盖机器、存储库、配置、存储、密钥、文件同步、VS Code 远程会话和订阅管理",
-    "excerpt": "rdc Rediacc 命令行工具的完整参考手册，涵盖机器、存储库、配置、存储、密钥、文件同步、VS Code 远程会话和订阅管理",
+    "content": "使用 Rediacc 命令行界面进行平台管理的完整指南",
+    "excerpt": "使用 Rediacc 命令行界面进行平台管理的完整指南",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "path": "docs.cli-application.description",

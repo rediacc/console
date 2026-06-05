@@ -3144,7 +3144,7 @@
   {
     "id": "search-2795",
     "content": "CLI-Anwendung (Cloud / Experimentell)",
-    "excerpt": "Cloud-Adapter-Befehle für die Rediacc CLI (experimentell). Erfordert apiUrl und Token in der Konfiguration. Behandelt Authentifizierung, Organisationen, Teams, Benutzer, Berechtigungen, Repositories, Warteschlangen, Ceph-Block-Speicher und Audit-Protokolle.",
+    "excerpt": "Cloud-exklusive Befehle für die Rediacc CLI — Authentifizierung, Teams, Organisationen und Multi-Tenant-Verwaltung",
     "category": "Documentation",
     "page": "/de/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.title",
@@ -3153,8 +3153,8 @@
   },
   {
     "id": "search-2796",
-    "content": "Cloud-Adapter-Befehle für die Rediacc CLI (experimentell). Erfordert apiUrl und Token in der Konfiguration. Behandelt Authentifizierung, Organisationen, Teams, Benutzer, Berechtigungen, Repositories, Warteschlangen, Ceph-Block-Speicher und Audit-Protokolle.",
-    "excerpt": "Cloud-Adapter-Befehle für die Rediacc CLI (experimentell). Erfordert apiUrl und Token in der Konfiguration. Behandelt Authentifizierung, Organisatione...",
+    "content": "Cloud-exklusive Befehle für die Rediacc CLI — Authentifizierung, Teams, Organisationen und Multi-Tenant-Verwaltung",
+    "excerpt": "Cloud-exklusive Befehle für die Rediacc CLI — Authentifizierung, Teams, Organisationen und Multi-Tenant-Verwaltung",
     "category": "Documentation",
     "page": "/de/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.description",
@@ -3890,7 +3890,7 @@
   {
     "id": "search-2863",
     "content": "CLI-Anwendung",
-    "excerpt": "Befehlsreferenz für rdc, die Rediacc CLI. Abdeckung von Maschinen, Repositories, Konfiguration, Speicher, Secrets, Dateisynchronisation, VS Code Remote-Sitzungen und Abonnementverwaltung.",
+    "excerpt": "Vollständige Anleitung zur Verwendung der Rediacc-Befehlszeilenschnittstelle für die Plattformverwaltung",
     "category": "Documentation",
     "page": "/de/docs/cli-application",
     "path": "docs.cli-application.title",
@@ -3899,8 +3899,8 @@
   },
   {
     "id": "search-2864",
-    "content": "Befehlsreferenz für rdc, die Rediacc CLI. Abdeckung von Maschinen, Repositories, Konfiguration, Speicher, Secrets, Dateisynchronisation, VS Code Remote-Sitzungen und Abonnementverwaltung.",
-    "excerpt": "Befehlsreferenz für rdc, die Rediacc CLI. Abdeckung von Maschinen, Repositories, Konfiguration, Speicher, Secrets, Dateisynchronisation, VS Code Remot...",
+    "content": "Vollständige Anleitung zur Verwendung der Rediacc-Befehlszeilenschnittstelle für die Plattformverwaltung",
+    "excerpt": "Vollständige Anleitung zur Verwendung der Rediacc-Befehlszeilenschnittstelle für die Plattformverwaltung",
     "category": "Documentation",
     "page": "/de/docs/cli-application",
     "path": "docs.cli-application.description",

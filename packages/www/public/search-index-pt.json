@@ -3144,7 +3144,7 @@
   {
     "id": "search-13136",
     "content": "Aplicação CLI (Cloud / Experimental)",
-    "excerpt": "Comandos da cloud para a CLI Rediacc (experimental). Requer apiUrl e token no ficheiro de configuração. Inclui autenticação, organizações, equipas, utilizadores, permissões, repositórios, filas, armazenamento Ceph e registos de auditoria.",
+    "excerpt": "Comandos exclusivos da cloud para a CLI Rediacc -- autenticação, equipas, organizações e gestão multi-tenant",
     "category": "Documentation",
     "page": "/pt/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.title",
@@ -3153,8 +3153,8 @@
   },
   {
     "id": "search-13137",
-    "content": "Comandos da cloud para a CLI Rediacc (experimental). Requer apiUrl e token no ficheiro de configuração. Inclui autenticação, organizações, equipas, utilizadores, permissões, repositórios, filas, armazenamento Ceph e registos de auditoria.",
-    "excerpt": "Comandos da cloud para a CLI Rediacc (experimental). Requer apiUrl e token no ficheiro de configuração. Inclui autenticação, organizações, equipas, ut...",
+    "content": "Comandos exclusivos da cloud para a CLI Rediacc -- autenticação, equipas, organizações e gestão multi-tenant",
+    "excerpt": "Comandos exclusivos da cloud para a CLI Rediacc -- autenticação, equipas, organizações e gestão multi-tenant",
     "category": "Documentation",
     "page": "/pt/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.description",
@@ -3889,8 +3889,8 @@
   },
   {
     "id": "search-13204",
-    "content": "Referência da Aplicação CLI",
-    "excerpt": "Guia de referência dos comandos rdc, a CLI Rediacc. Cobre máquinas, repositórios, configuração, armazenamento, segredos, sincronização de arquivos, sessões remotas VS Code e gerenciamento de subscrições.",
+    "content": "Aplicação CLI",
+    "excerpt": "Guia completo para utilizar a interface de linha de comandos Rediacc para gestão da plataforma",
     "category": "Documentation",
     "page": "/pt/docs/cli-application",
     "path": "docs.cli-application.title",
@@ -3899,8 +3899,8 @@
   },
   {
     "id": "search-13205",
-    "content": "Guia de referência dos comandos rdc, a CLI Rediacc. Cobre máquinas, repositórios, configuração, armazenamento, segredos, sincronização de arquivos, sessões remotas VS Code e gerenciamento de subscrições.",
-    "excerpt": "Guia de referência dos comandos rdc, a CLI Rediacc. Cobre máquinas, repositórios, configuração, armazenamento, segredos, sincronização de arquivos, se...",
+    "content": "Guia completo para utilizar a interface de linha de comandos Rediacc para gestão da plataforma",
+    "excerpt": "Guia completo para utilizar a interface de linha de comandos Rediacc para gestão da plataforma",
     "category": "Documentation",
     "page": "/pt/docs/cli-application",
     "path": "docs.cli-application.description",
@@ -3909,7 +3909,7 @@
   },
   {
     "id": "search-13206",
-    "content": "Referência da Aplicação CLI",
+    "content": "Aplicação CLI",
     "body": "# {{t:cli.docs.pageTitle}}",
     "excerpt": "# {{t:cli.docs.pageTitle}}",
     "category": "Documentation",

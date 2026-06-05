@@ -1,6 +1,6 @@
 ---
-title: "Repositooriumi hargnemine"
-description: "Klooni terve repositoorium (rakendus, andmebaas, failid) sekunditega. Ükskõik milline suurus. Null lisakettaruumi."
+title: "Hoidla hargitamine"
+description: "Kloonige täielik hoidla (rakendus, andmebaas, failid) sekundites. Ükskõik kui suur. Nullkasutus kettalt."
 category: "Tutorials"
 subcategory: advanced
 order: 7
@@ -11,19 +11,19 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
-# Repositooriumi forki tegemine
+# Hoidla hargitamine
 
-See on osa, mis muudab sinu tööviisi. Klooni terve tootmiskeskkond (rakendus, andmebaas, konfiguratsioonifailid) sekunditega. Suvaline suurus. Null lisaruumi kettal. Tee forki nii palju kordi kui soovid.
+Hargitagete kogu tootmiskeskkond (rakendus, andmebaas, konfiguratsioonifailid) sekundites. Ükskõik kui suur. Nullkasutus kettalt. Hargi nii palju kui tahate.
 
-Moto: **klooni tootmine, rikku mitte midagi.**
+Lühisõnum: **kloonige tootmine, ärge rikuge midagi.**
 
-## Vaata juhendvideot
+## Vaata õpetust
 
 ![Tutorial: Forking a repository](/assets/tutorials/tutorial-forking.cast)
 
-## Seadista midagi kaotada
+## Ettevalmistus: midagi kaduma pandava loomine
 
-Esmalt loo töötavas rakenduses fail, et saaksid tõestada forki isolatsiooni. Ava repositoorium VS Code'is, seejärel loo repositooriumi sees markerifail:
+Kõigepealt andke käivitavale rakendusele fail, et saaksite tõestada forgi isolatsiooni. Avage hoidla VS Code'is, seejärel looge hoidlas märkerfail:
 
 ```bash
 rdc vscode connect -m my-server -r my-app
@@ -33,84 +33,84 @@ rdc vscode connect -m my-server -r my-app
 echo "Hello from production" > index.html
 ```
 
-Nüüd tee fork.
+Nüüd hargitagete.
 
-## Fork
+## Hargitamine
 
 <TutorialStep number={1} />
 
 ![Parent fans out into independent clones](/img/tutorials/tutorial-forking/slide-1.svg)
 
-Üks käsk. See kloonib kõik (rakenduse, andmebaasi, konfiguratsioonifailid) sekunditega. Käivita uuesti ja saad veel ühe sõltumatu klooni.
+Üks käsk. See kloonis kõike (rakendus, andmebaas, konfiguratsioonifailid) ja see toimus sekundites. Käivitage uuesti ja saate veel ühe sõltumatu kloon.
 
 ## Miks on see nii kiire?
 
 ![Sharing a folder link is the same speed regardless of the folder's size](/img/tutorials/tutorial-forking/slide-2.svg)
 
-Selle põhjus on btrfs reflinks. Fork loob uue failisüsteemi puu, mis osutab samadele andmeplokidele, mis on vanemrepositoriumil. Fork'i ajal ühtegi andmeid ei kopeerita. See kõik on metaandmed, seega ei mõjuta vanema suurus kunagi seda, kui kaua fork võtab.
+Põhjuseks on btrfs reflinks. Fork loob uue failisüsteemi puu, mis osutab samadele andmeplokidele kui ema hoidla. Forkimise ajal ei kopeerita ühtegi andmeid. Selleks on vaid metaandmed, seega ei mõjuta ema suurus forkimise kestust.
 
 ![1 GB, 100 GB, 1 TB. Same time, every time.](/img/tutorials/tutorial-forking/slide-3.svg)
 
-Forki tegemine toimib samamoodi. 1 GB, 100 GB, 1 TB. Sama aeg, iga kord.
+Hargitamine toimib samal viisil. 1 GB, 100 GB, 1 TB. Alati sama kestus.
 
 ## Mis on jagatud, mis on sinu
 
 ![Many mirrors, one sun: shared base, your changes are yours](/img/tutorials/tutorial-forking/slide-4.svg)
 
-Mõtle vanemrepositooriumist kui fikseeritud allikast. Sinu fork on sellest koopia-kirjutamisel põhinev vaade. Kirjuta forki ja kirjutused jäävad forki. Vanem ei liigu, olenemata sellest, kui palju forke selle poole viitab.
+Kujutage ette, et ema hoidla on fikseeritud allikas. Teie fork on selle copy-on-write vaade. Kirjutage forki ja kirjutised jäävad forki. Ema ei liigu, olenemata sellest, kui palju forke sellele osutavad.
 
-> Sa ei saa päikest kinni hoida, kuid saad seda hoida peeglis.
+> Sa ei saa päikest kinni pidada, kuid sa saad seda peegli abil kinni pidada.
 
-## Mis juhtub, kui vanem muutub hiljem?
+## Mis juhtub, kui ema muutub hiljem?
 
 ![A fork is a frozen photograph; the parent keeps flowing like a river](/img/tutorials/tutorial-forking/slide-5.svg)
 
-Nüüd mõtle hetktõmmisele. Forki tehes külmutad vanema sellel täpsel hetkel. Vanem liigub edasi. Sinu fork mitte.
+Nüüd mõelge piltkillust. Kui te hargigate, jääditate ema täpselt sellele hetkele. Ema jätkab liikumist. Teie fork ei liigu.
 
-Kui vanemrepositoorium muutub hiljem, jääb sinu fork sinna, kus ta oli.
+Kui ema hoidla hiljem muutub, teie fork jääb sinna, kus ta oli.
 
-> Sa ei saa jõge kinni hoida, kuid saad seda hoida fotol.
+> Te ei saa jõge kinni pidada, kuid te saate seda fotoga kinni pidada.
 
 ## Kettakasutus jääb tasaseks
 
 ![Five forks of a 100 GB repo, still about 100 GB total](/img/tutorials/tutorial-forking/slide-6.svg)
 
-Seepärast sinu ketas ei plahvata. Viis forki 100 GB repositooriumist? Kokku ikka umbes 100 GB. Maksad kettaruumi ainult selle eest, mida igas forkis muudad.
+Sel põhjusel teie ketas ei plahvaata. Viis 100 GB hoidla forki? Kokku veel umbes 100 GB. Te maksate kettale ainult selle eest, mida te igas forkis muudate.
 
-> Tee fork viis korda kui soovid. Sinu ketas ei märkagi.
+> Hargi viis korda, kui soovid. Teie ketas ei märka seda isegi.
 
-## Mida forkid *ei* päri: saladusi
+## Mida forkid EI saa: saladused
 
-On üks asi, mida fork tahtlikult ei järgi: saladused. Fork algab ilma API võtmete, andmebaasi paroolide ja Stripe tokeniteta. Seepärast töötab "klooni tootmine, rikku mitte midagi" tegelikkuses. Sinu liivakast ei saa reaalsetelt klientidelt arveid väljastada, sest see ei saa sind imiteerida. Seadistame selle korralikult juhendis [Saladuste haldamine](/et/docs/tutorial-managing-secrets).
+On üks asi, mida fork tahtlikult ei järgi: saladused. Fork algab ilma API võtmete, andmebaasi paroolideta, Stripe' tokenideta. Sel põhjusel tegelikult toimib "kloonige tootmine, ärge rikuge midagi". Teie liivakast ei saa päris kliente arveldada, sest see ei saa väärata olevat te. Me seisime seda õigesti üles [Saladuste haldamise](/en/docs/tutorial-managing-secrets) õpetuses.
 
-## Kontrolli isolatsiooni
+## Isolatsiooni kontrollimine
 
-Loetlege mõlemad repositooriumid kõrvuti:
+Loetlege mõlemad hoidlad kõrvuti:
 
 <TutorialStep number={2} />
 
-Näed `my-app` ja `my-app:experiment` töötamas üheaegselt. Algses repositooriumis on markerifail täpselt seal, kuhu sa selle jätsid:
+Näete `my-app` ja `my-app:experiment` töötavat korraga. Originaalis asub märkerfail täpselt seal, kus te selle jätsite:
 
 <TutorialStep number={3} />
 
-Nüüd tee hävitav muudatus, aga ainult forkis:
+Nüüd tehke hävitav muudatus, kuid ainult forkis:
 
 <TutorialStep number={4} />
 
-Hüppa tagasi originaalile ja kontrolli:
+Hüppake tagasi originaalile ja kontrollige:
 
 <TutorialStep number={5} />
 
-Markerifail on siin ikka alles, puutumata. Forki muudatused jäid forki. Samad kujutised, eraldi Dockeri deemonid, eraldi failisüsteemid.
+Märkerfail on siin veel, puutumata. Forgi muudatused jäid forki. Samad pildid, eraldi Docker juhatajad, eraldi failisüsteemid.
 
 ## Puhastamine
 
-Kui oled lõpetanud, kustuta lihtsalt fork:
+Kui olete valmis, kustutage lihtsalt fork:
 
 <TutorialStep number={6} />
 
-Originaal jääb täpselt selliseks, nagu ta oli. **Tee fork, katse, riku asju, kustuta.** Oht puudub.
+Original jääb täpselt nii, nagu ta oli. **Hargi, katsetage, rikuge asju, kustutage.** Ilma riskita.
 
 ---
 
-Edasi: [Saladuste haldamine](/et/docs/tutorial-managing-secrets).
+Järgmine: [Saladuste haldamine](/en/docs/tutorial-managing-secrets).

@@ -148,7 +148,7 @@ Puoi richiedere il certificato dal portale account upstream in tre modi:
 
 **Opzione A: Self-service del cliente (consigliato).** Accedi al portale upstream come proprietario o amministratore dell'organizzazione e vai su **/account/delegation-certs**. Fai clic su **Create New**, incolla la chiave pubblica on-premise (SPKI base64), scegli una validita (o accetta il valore predefinito del piano) e scarica il file `.json` risultante.
 
-**Opzione B: Admin (cross-customer).** Il supporto Rediacc o l'amministratore di sistema upstream puo chiamare `POST /admin/delegation-certs` con gli stessi parametri.
+**Opzione B: Admin (cross-customer).** Il supporto Rediacc o l'amministratore di sistema upstream può chiamare `POST /admin/delegation-certs` con gli stessi parametri.
 
 **Opzione C: CLI `rdc` (pianificato).** Un futuro comando CLI integrera il flusso del portale.
 

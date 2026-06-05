@@ -1,13 +1,12 @@
 ---
 title: "CLI-rakendus (pilv / eksperimentaalne)"
-description: "Rediacc CLI pilvepõhise adapteriga saadaolevad käsud (eksperimentaalne). Nõuab apiUrl-i ja märgit seadistusest. Käsitleb autentimist, organisatsioone, meeskondasid, kasutajaid, lubade andmist, hoidlaid, järjekordi, Cephi blokksalvestust ja auditilogi."
+description: "Rediacc CLI pilvepõhised käsud -- autentimine, meeskonnad, organisatsioonid ja mitme-rentniku haldus"
 category: "Viide"
 order: 3
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "52ac28479ebdafd8"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c285d703825d9607"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

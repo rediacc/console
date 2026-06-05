@@ -1,13 +1,12 @@
 ---
 title: "CLI-Anwendung"
-description: "Befehlsreferenz für rdc, die Rediacc CLI. Abdeckung von Maschinen, Repositories, Konfiguration, Speicher, Secrets, Dateisynchronisation, VS Code Remote-Sitzungen und Abonnementverwaltung."
+description: "Vollständige Anleitung zur Verwendung der Rediacc-Befehlszeilenschnittstelle für die Plattformverwaltung"
 category: "Referenz"
 order: 2
 language: de
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/de/cli.json
-sourceHash: "a754193f03516b7a"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "233baf26d48ca547"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

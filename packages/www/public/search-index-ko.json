@@ -3144,7 +3144,7 @@
   {
     "id": "search-11843",
     "content": "CLI 애플리케이션 (클라우드 / 실험적)",
-    "excerpt": "Rediacc CLI의 클라우드 어댑터 명령(실험적). 구성에서 apiUrl과 토큰이 필요합니다. 인증, 조직, 팀, 사용자, 권한, 리포지토리, 큐, Ceph 블록 스토리지 및 감사 로그를 다룹니다.",
+    "excerpt": "Rediacc CLI의 클라우드 전용 명령 -- 인증, 팀, 조직, 멀티 테넌트 관리",
     "category": "Documentation",
     "page": "/ko/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.title",
@@ -3153,8 +3153,8 @@
   },
   {
     "id": "search-11844",
-    "content": "Rediacc CLI의 클라우드 어댑터 명령(실험적). 구성에서 apiUrl과 토큰이 필요합니다. 인증, 조직, 팀, 사용자, 권한, 리포지토리, 큐, Ceph 블록 스토리지 및 감사 로그를 다룹니다.",
-    "excerpt": "Rediacc CLI의 클라우드 어댑터 명령(실험적). 구성에서 apiUrl과 토큰이 필요합니다. 인증, 조직, 팀, 사용자, 권한, 리포지토리, 큐, Ceph 블록 스토리지 및 감사 로그를 다룹니다.",
+    "content": "Rediacc CLI의 클라우드 전용 명령 -- 인증, 팀, 조직, 멀티 테넌트 관리",
+    "excerpt": "Rediacc CLI의 클라우드 전용 명령 -- 인증, 팀, 조직, 멀티 테넌트 관리",
     "category": "Documentation",
     "page": "/ko/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.description",

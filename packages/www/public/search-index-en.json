@@ -3144,7 +3144,7 @@
   {
     "id": "search-4086",
     "content": "CLI Application (Cloud / Experimental)",
-    "excerpt": "Cloud adapter commands for the Rediacc CLI (experimental). Requires apiUrl and token in your config. Covers auth, organizations, teams, users, permissions, repositories, queues, Ceph block storage, and audit logs.",
+    "excerpt": "Cloud-only commands for the Rediacc CLI — authentication, teams, organizations, and multi-tenant management",
     "category": "Documentation",
     "page": "/en/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.title",
@@ -3153,8 +3153,8 @@
   },
   {
     "id": "search-4087",
-    "content": "Cloud adapter commands for the Rediacc CLI (experimental). Requires apiUrl and token in your config. Covers auth, organizations, teams, users, permissions, repositories, queues, Ceph block storage, and audit logs.",
-    "excerpt": "Cloud adapter commands for the Rediacc CLI (experimental). Requires apiUrl and token in your config. Covers auth, organizations, teams, users, permiss...",
+    "content": "Cloud-only commands for the Rediacc CLI — authentication, teams, organizations, and multi-tenant management",
+    "excerpt": "Cloud-only commands for the Rediacc CLI — authentication, teams, organizations, and multi-tenant management",
     "category": "Documentation",
     "page": "/en/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.description",
@@ -3890,7 +3890,7 @@
   {
     "id": "search-4154",
     "content": "CLI Application",
-    "excerpt": "Command reference for rdc, the Rediacc CLI. Covers machines, repositories, config, storage, secrets, file sync, VS Code remote sessions, and subscription management.",
+    "excerpt": "Complete guide to using the Rediacc command-line interface for platform management",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
     "path": "docs.cli-application.title",
@@ -3899,8 +3899,8 @@
   },
   {
     "id": "search-4155",
-    "content": "Command reference for rdc, the Rediacc CLI. Covers machines, repositories, config, storage, secrets, file sync, VS Code remote sessions, and subscription management.",
-    "excerpt": "Command reference for rdc, the Rediacc CLI. Covers machines, repositories, config, storage, secrets, file sync, VS Code remote sessions, and subscript...",
+    "content": "Complete guide to using the Rediacc command-line interface for platform management",
+    "excerpt": "Complete guide to using the Rediacc command-line interface for platform management",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
     "path": "docs.cli-application.description",

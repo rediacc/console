@@ -1,13 +1,12 @@
 ---
 title: "CLIアプリケーション（クラウド / 実験的）"
-description: "Rediacc CLI のクラウドアダプターコマンド（実験的）。設定の apiUrl とトークンが必要です。認証、組織、チーム、ユーザー、権限、リポジトリ、キュー、Ceph ブロックストレージ、監査ログをカバーしています。"
+description: "Rediacc CLIのクラウド専用コマンド — 認証、チーム、組織、マルチテナント管理"
 category: "リファレンス"
 order: 3
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "52ac28479ebdafd8"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c285d703825d9607"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

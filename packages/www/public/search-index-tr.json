@@ -3144,7 +3144,7 @@
   {
     "id": "search-15720",
     "content": "CLI Uygulaması (Bulut / Deneysel)",
-    "excerpt": "Rediacc CLI'nin bulut adaptörü komutları (deneysel). Yapılandırmanızda apiUrl ve token gereklidir. Kimlik doğrulama, organizasyonlar, ekipler, kullanıcılar, izinler, depolar, kuyruklar, Ceph blok depolama ve denetim günlükleri ile ilgili komutları kapsar.",
+    "excerpt": "Rediacc CLI için bulut özel komutları — kimlik doğrulama, ekipler, organizasyonlar ve çok kiracılı yönetim",
     "category": "Documentation",
     "page": "/tr/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.title",
@@ -3153,8 +3153,8 @@
   },
   {
     "id": "search-15721",
-    "content": "Rediacc CLI'nin bulut adaptörü komutları (deneysel). Yapılandırmanızda apiUrl ve token gereklidir. Kimlik doğrulama, organizasyonlar, ekipler, kullanıcılar, izinler, depolar, kuyruklar, Ceph blok depolama ve denetim günlükleri ile ilgili komutları kapsar.",
-    "excerpt": "Rediacc CLI'nin bulut adaptörü komutları (deneysel). Yapılandırmanızda apiUrl ve token gereklidir. Kimlik doğrulama, organizasyonlar, ekipler, kullanı...",
+    "content": "Rediacc CLI için bulut özel komutları — kimlik doğrulama, ekipler, organizasyonlar ve çok kiracılı yönetim",
+    "excerpt": "Rediacc CLI için bulut özel komutları — kimlik doğrulama, ekipler, organizasyonlar ve çok kiracılı yönetim",
     "category": "Documentation",
     "page": "/tr/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.description",
@@ -3890,7 +3890,7 @@
   {
     "id": "search-15788",
     "content": "CLI Uygulaması",
-    "excerpt": "rdc, Rediacc komut satırı aracı için komut referansı. Makineler, depolar, yapılandırma, depolama, gizli bilgiler, dosya eşitleme, VS Code uzak oturumlar ve abonelik yönetimini kapsar.",
+    "excerpt": "Platform yönetimi için Rediacc komut satırı arayüzünü kullanma rehberi",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
     "path": "docs.cli-application.title",
@@ -3899,8 +3899,8 @@
   },
   {
     "id": "search-15789",
-    "content": "rdc, Rediacc komut satırı aracı için komut referansı. Makineler, depolar, yapılandırma, depolama, gizli bilgiler, dosya eşitleme, VS Code uzak oturumlar ve abonelik yönetimini kapsar.",
-    "excerpt": "rdc, Rediacc komut satırı aracı için komut referansı. Makineler, depolar, yapılandırma, depolama, gizli bilgiler, dosya eşitleme, VS Code uzak oturuml...",
+    "content": "Platform yönetimi için Rediacc komut satırı arayüzünü kullanma rehberi",
+    "excerpt": "Platform yönetimi için Rediacc komut satırı arayüzünü kullanma rehberi",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
     "path": "docs.cli-application.description",

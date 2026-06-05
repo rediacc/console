@@ -1,13 +1,12 @@
 ---
 title: "CLI Uygulaması (Bulut / Deneysel)"
-description: "Rediacc CLI'nin bulut adaptörü komutları (deneysel). Yapılandırmanızda apiUrl ve token gereklidir. Kimlik doğrulama, organizasyonlar, ekipler, kullanıcılar, izinler, depolar, kuyruklar, Ceph blok depolama ve denetim günlükleri ile ilgili komutları kapsar."
+description: "Rediacc CLI için bulut özel komutları — kimlik doğrulama, ekipler, organizasyonlar ve çok kiracılı yönetim"
 category: "Başvuru"
 order: 3
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "52ac28479ebdafd8"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c285d703825d9607"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

@@ -43,7 +43,9 @@ const ENGLISH_PATTERNS = [
 
   // Common instruction patterns
   /\b(Click|Select|Enter|Choose|Pick|Use|Find|See|Watch|Review|Check)\s+the\s+\*\*/i,
-  /\*\*\s*(button|option|field|menu|tab|link|icon|checkbox|dropdown|list|panel|section|window|dialog|modal|form|input|text|label|value|setting|configuration)\b/i,
+  // NOTE: "option"/"section" dropped — cross-language cognates (FR/ES/IT/DE "Option",
+  // "section"/"sezione") false-positived on correctly-translated non-English docs.
+  /\*\*\s*(button|field|menu|tab|link|icon|checkbox|dropdown|list|panel|window|dialog|modal|form|input|label|setting|configuration)\b/i,
 
   // Instruction endings
   /\b(button|option|field|section|window|dialog|form|panel|tab|menu)\s*\.$/i,
@@ -576,6 +578,9 @@ function main(): void {
 
   const allIssues: UntranslatedLine[] = [];
   const allNativeIssues: NativeCharIssue[] = [];
+  // frontmatter-no-native is warning-only for Latin scripts (a title/description can
+  // legitimately lack diacritics, e.g. Italian "Architettura"); see analyzeNativeChars comment.
+  const nativeWarnings: NativeCharIssue[] = [];
 
   console.log('Checking non-English documentation for untranslated text...\n');
 
@@ -595,7 +600,11 @@ function main(): void {
       langPatternIssues += patternIssues.length;
 
       const nativeIssues = analyzeNativeChars(file, lang);
-      allNativeIssues.push(...nativeIssues);
+      const isLatin = LOCALE_CHAR_CONFIG[lang]?.scriptType !== 'non-latin';
+      for (const iss of nativeIssues) {
+        if (iss.kind === 'frontmatter-no-native' && isLatin) nativeWarnings.push(iss);
+        else allNativeIssues.push(iss);
+      }
     }
 
     const langNativeErrors = allNativeIssues.filter((i) => i.lang === lang).length;
@@ -660,7 +669,17 @@ function main(): void {
     console.log('');
   }
 
-  // Exit logic — all issues are errors
+  // Warnings (non-failing): Latin frontmatter without diacritics.
+  if (nativeWarnings.length > 0) {
+    console.log(`\x1b[33mWarnings (${nativeWarnings.length}, non-failing):\x1b[0m`);
+    for (const issue of nativeWarnings.slice(0, 10)) {
+      console.log(`  \x1b[33m!\x1b[0m ${path.relative(DOCS_DIR, issue.file)}: ${issue.message}`);
+    }
+    if (nativeWarnings.length > 10) console.log(`  ... and ${nativeWarnings.length - 10} more`);
+    console.log('');
+  }
+
+  // Exit logic — pattern matches + non-Latin/body native issues are errors
   const hasErrors = allIssues.length > 0 || allNativeIssues.length > 0;
 
   if (hasErrors) {

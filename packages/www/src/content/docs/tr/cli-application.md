@@ -1,13 +1,12 @@
 ---
 title: "CLI Uygulaması"
-description: "rdc, Rediacc komut satırı aracı için komut referansı. Makineler, depolar, yapılandırma, depolama, gizli bilgiler, dosya eşitleme, VS Code uzak oturumlar ve abonelik yönetimini kapsar."
-category: "Reference"
+description: "Platform yönetimi için Rediacc komut satırı arayüzünü kullanma rehberi"
+category: "Başvuru"
 order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "a754193f03516b7a"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "233baf26d48ca547"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

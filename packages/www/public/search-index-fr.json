@@ -3144,7 +3144,7 @@
   {
     "id": "search-7974",
     "content": "Application CLI (Cloud / Expérimental)",
-    "excerpt": "Commandes de l'adaptateur cloud pour la CLI Rediacc (expérimental). Nécessite apiUrl et token dans votre configuration. Couvre l'authentification, les organisations, les équipes, les utilisateurs, les permissions, les dépôts, les files d'attente, le stockage bloc Ceph et les journaux d'audit.",
+    "excerpt": "Commandes cloud exclusives pour la CLI Rediacc — authentification, équipes, organisations et gestion multi-tenant",
     "category": "Documentation",
     "page": "/fr/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.title",
@@ -3153,8 +3153,8 @@
   },
   {
     "id": "search-7975",
-    "content": "Commandes de l'adaptateur cloud pour la CLI Rediacc (expérimental). Nécessite apiUrl et token dans votre configuration. Couvre l'authentification, les organisations, les équipes, les utilisateurs, les permissions, les dépôts, les files d'attente, le stockage bloc Ceph et les journaux d'audit.",
-    "excerpt": "Commandes de l'adaptateur cloud pour la CLI Rediacc (expérimental). Nécessite apiUrl et token dans votre configuration. Couvre l'authentification, les...",
+    "content": "Commandes cloud exclusives pour la CLI Rediacc — authentification, équipes, organisations et gestion multi-tenant",
+    "excerpt": "Commandes cloud exclusives pour la CLI Rediacc — authentification, équipes, organisations et gestion multi-tenant",
     "category": "Documentation",
     "page": "/fr/docs/cli-application-cloud",
     "path": "docs.cli-application-cloud.description",
@@ -3890,7 +3890,7 @@
   {
     "id": "search-8042",
     "content": "Application CLI",
-    "excerpt": "Référence des commandes pour rdc, l'interface de ligne de commande Rediacc. Couvre les machines, les référentiels, la configuration, le stockage, les secrets, la synchronisation de fichiers, les sessions VS Code distantes et la gestion des abonnements.",
+    "excerpt": "Guide complet pour utiliser l'interface en ligne de commande Rediacc pour la gestion de la plateforme",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",
     "path": "docs.cli-application.title",
@@ -3899,8 +3899,8 @@
   },
   {
     "id": "search-8043",
-    "content": "Référence des commandes pour rdc, l'interface de ligne de commande Rediacc. Couvre les machines, les référentiels, la configuration, le stockage, les secrets, la synchronisation de fichiers, les sessions VS Code distantes et la gestion des abonnements.",
-    "excerpt": "Référence des commandes pour rdc, l'interface de ligne de commande Rediacc. Couvre les machines, les référentiels, la configuration, le stockage, les...",
+    "content": "Guide complet pour utiliser l'interface en ligne de commande Rediacc pour la gestion de la plateforme",
+    "excerpt": "Guide complet pour utiliser l'interface en ligne de commande Rediacc pour la gestion de la plateforme",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",
     "path": "docs.cli-application.description",
