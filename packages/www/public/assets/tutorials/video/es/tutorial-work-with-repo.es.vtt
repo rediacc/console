@@ -1,0 +1,208 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.674
+¡Muy bien!
+
+00:00:01.674 --> 00:00:03.023
+Tu app está corriendo,
+
+00:00:03.023 --> 00:00:05.719
+así que vamos a trabajar con ella de
+
+00:00:05.719 --> 00:00:06.057
+verdad.
+
+00:00:06.057 --> 00:00:08.079
+Tres comandos cubren el ciclo diario.
+
+00:00:08.859 --> 00:00:11.599
+Tunnel abre tu app en un
+
+00:00:11.599 --> 00:00:12.056
+navegador,
+
+00:00:12.056 --> 00:00:14.796
+term ejecuta comandos dentro del sandbox
+
+00:00:14.796 --> 00:00:17.536
+y sync mueve archivos de entrada
+
+00:00:17.536 --> 00:00:18.450
+y salida.
+
+00:00:18.450 --> 00:00:21.190
+Ese es el flujo de trabajo
+
+00:00:21.190 --> 00:00:22.103
+diario completo.
+
+00:00:25.371 --> 00:00:25.787
+Primero,
+
+00:00:25.787 --> 00:00:27.035
+el comando tunnel.
+
+00:00:27.035 --> 00:00:29.946
+La app se ejecuta en el servidor,
+
+00:00:29.946 --> 00:00:31.609
+no en tu laptop.
+
+00:00:31.609 --> 00:00:34.521
+El comando repo tunnel del CLI reenvía
+
+00:00:34.521 --> 00:00:37.432
+el puerto de un contenedor por SSH
+
+00:00:37.432 --> 00:00:40.343
+para que puedas abrirlo en localhost en
+
+00:00:40.343 --> 00:00:41.175
+tu navegador.
+
+00:00:41.975 --> 00:00:42.857
+Puerto reenviado.
+
+00:00:42.857 --> 00:00:45.505
+La app ya es accesible en
+
+00:00:45.505 --> 00:00:45.946
+localhost.
+
+00:00:46.751 --> 00:00:48.933
+Con el túnel en funcionamiento,
+
+00:00:48.933 --> 00:00:51.551
+la app se abre directamente en
+
+00:00:51.551 --> 00:00:52.424
+tu navegador.
+
+00:00:52.424 --> 00:00:54.606
+En esta demo cargamos rediacc.com,
+
+00:00:54.606 --> 00:00:57.225
+de la misma forma en que
+
+00:00:57.225 --> 00:00:59.843
+accederías a tu propia app servida
+
+00:00:59.843 --> 00:01:01.589
+directamente desde el container.
+
+00:01:02.651 --> 00:01:03.156
+Segundo,
+
+00:01:03.156 --> 00:01:04.669
+el comando term.
+
+00:01:04.669 --> 00:01:07.192
+El comando term connect del
+
+00:01:07.192 --> 00:01:09.716
+CLI te lleva dentro del
+
+00:01:09.716 --> 00:01:11.229
+sandbox del repo,
+
+00:01:11.229 --> 00:01:13.752
+la misma vista aislada que
+
+00:01:13.752 --> 00:01:15.771
+te daría VS Code.
+
+00:01:15.771 --> 00:01:18.294
+Ejecuta cualquier comando contra el
+
+00:01:18.294 --> 00:01:20.817
+Docker daemon de este repo
+
+00:01:20.817 --> 00:01:23.340
+sin salir de tu terminal.
+
+00:01:24.590 --> 00:01:26.628
+Dentro del sandbox del repo.
+
+00:01:26.628 --> 00:01:29.480
+Ejecuta lo que sea como si estuvieras
+
+00:01:29.480 --> 00:01:30.703
+conectado por SSH.
+
+00:01:34.007 --> 00:01:36.153
+Antes de subir archivos,
+
+00:01:36.153 --> 00:01:38.836
+usamos la previsualización con guion
+
+00:01:38.836 --> 00:01:40.982
+guion dry guion run.
+
+00:01:40.982 --> 00:01:43.664
+Muestra exactamente qué cambiaría sin
+
+00:01:43.664 --> 00:01:44.737
+copiar nada.
+
+00:01:44.737 --> 00:01:47.420
+Siempre previsualiza cuando no estés
+
+00:01:47.420 --> 00:01:47.956
+seguro.
+
+00:01:49.956 --> 00:01:51.158
+Solo previsualización.
+
+00:01:51.158 --> 00:01:54.162
+Ningún archivo se movió todavía.
+
+00:01:57.476 --> 00:02:00.211
+Ahora ejecutamos la subida real.
+
+00:02:00.211 --> 00:02:02.947
+El comando repo sync upload
+
+00:02:02.947 --> 00:02:05.682
+del CLI mueve archivos desde
+
+00:02:05.682 --> 00:02:08.418
+tu laptop al repo por
+
+00:02:08.418 --> 00:02:11.153
+SSH con compresión delta de
+
+00:02:11.153 --> 00:02:11.700
+rsync.
+
+00:02:11.700 --> 00:02:12.247
+Tunnel,
+
+00:02:12.247 --> 00:02:12.794
+term,
+
+00:02:12.794 --> 00:02:13.341
+sync:
+
+00:02:13.341 --> 00:02:16.077
+tres comandos cubren el ciclo
+
+00:02:16.077 --> 00:02:16.624
+diario.
+
+00:02:18.124 --> 00:02:19.107
+Archivos subidos.
+
+00:02:19.107 --> 00:02:22.056
+La compresión delta se encarga de
+
+00:02:22.056 --> 00:02:23.531
+los árboles grandes.
+
+00:02:24.329 --> 00:02:27.035
+¡Y esos son los tres comandos
+
+00:02:27.035 --> 00:02:28.839
+del día a día.
+
+00:02:28.839 --> 00:02:31.095
+Nos vemos en el siguiente!

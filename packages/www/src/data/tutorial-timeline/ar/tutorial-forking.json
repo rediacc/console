@@ -1,0 +1,149 @@
+{
+  "cast": "/assets/tutorials/tutorial-forking.cast",
+  "language": "ar",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-forking-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.41277,
+      "replayEndSec": 13.421721,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-01.2f627b22.mp3",
+      "audioDurationSec": 15.15102,
+      "textHash": "2f627b22641ccde22e2d5e1dae446ff47645af491bf680782ac69cb5664c9769",
+      "narrationText": "ننسخ المستودع بأمر واحد. نسخ كل شيء، التطبيق وقاعدة البيانات وملفات الإعداد، وحدث ذلك في ثوانٍ بغض النظر عن حجم المستودع. جيجابايت واحد، مئة جيجابايت، تيرابايت واحد: نفس الوقت، في كل مرة.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-01-after.461471d1.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "461471d1cd02998a3243cb26510bd3aadb1da2f404f061cfc34cd7ae8c4adb9f"
+    },
+    {
+      "id": "tutorial-forking-02",
+      "markerIndex": 1,
+      "replayStartSec": 13.421721,
+      "replayEndSec": 18.980206,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-02.f9334190.mp3",
+      "audioDurationSec": 7.88898,
+      "textHash": "f9334190b2f7c6803613df56763a9b4d48e742de07642c9936af00ce771f9402",
+      "narrationText": "كلا المستودعين موجودان جنبًا إلى جنب الآن. نفس الجهاز، نفس القرص، بيئتان مستقلتان تمامًا. للنسخة حاوياتها الخاصة ونظام ملفاتها الخاص ومحرك Docker الخاص بها.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-02-after.0db6276f.mp3",
+      "afterAudioDurationSec": 3.866122,
+      "afterTextHash": "0db6276f21b58e075539726da8a131f40cd65ddd59b36ca71fa440a23abb55ed"
+    },
+    {
+      "id": "tutorial-forking-03",
+      "markerIndex": 2,
+      "replayStartSec": 18.980206,
+      "replayEndSec": 26.216902,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-03.7d9d0a3a.mp3",
+      "audioDurationSec": 9.325714,
+      "textHash": "7d9d0a3af2f797109c5c88630d5990c32e11faf8d070fdd5da58d2f252f40986",
+      "narrationText": "لنُثبت العزل. في الأصلي، ملف العلامة لا يزال في مكانه. وجود النسخة لم يُغيّر أي شيء في الأصل.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-03-after.6a012f89.mp3",
+      "afterAudioDurationSec": 3.474286,
+      "afterTextHash": "6a012f895035005a7cf85510aab5258cd094c54b83e73e9fcc7d9e26742bd8e8"
+    },
+    {
+      "id": "tutorial-forking-04",
+      "markerIndex": 3,
+      "replayStartSec": 26.216902,
+      "replayEndSec": 34.456769,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-04.ce85c437.mp3",
+      "audioDurationSec": 5.877551,
+      "textHash": "ce85c4377c7c17a778906d10e858cfbaca6d2cbd7b798ef04774466821803c6a",
+      "narrationText": "الآن نحذف ذلك الملف، لكن فقط داخل النسخة. داخل النسخة اختفى. أجرينا تغييرًا تدميريًا وبقي داخل النسخة.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-04-after.846d677e.mp3",
+      "afterAudioDurationSec": 3.082449,
+      "afterTextHash": "846d677eb0b4cbc764d2ee591d378d0003d09ebbb377805f042ebe172de921ce"
+    },
+    {
+      "id": "tutorial-forking-05",
+      "markerIndex": 4,
+      "replayStartSec": 34.456769,
+      "replayEndSec": 41.647526,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-05.a0d89b45.mp3",
+      "audioDurationSec": 8.437551,
+      "textHash": "a0d89b45c839af6f9f38d65d32b8422f026ae32f101c36440c68833f2d70c88e",
+      "narrationText": "بالعودة إلى الأصلي، ملف العلامة لا يزال هنا سليمًا. لم يعلم الأصلي بأي شيء حدث. نفس الصورة، محركات Docker منفصلة، أنظمة ملفات منفصلة.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-05-after.5255fd6a.mp3",
+      "afterAudioDurationSec": 2.847347,
+      "afterTextHash": "5255fd6a0838c1079ccd5f13bf3757ac9f9a0f5151dec8f629ad7a75a3d5f0da"
+    },
+    {
+      "id": "tutorial-forking-06",
+      "markerIndex": 5,
+      "replayStartSec": 41.647526,
+      "replayEndSec": 51.671921,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-06.3480d69d.mp3",
+      "audioDurationSec": 10.03102,
+      "textHash": "3480d69d3d1c4105f8d065f38bc5111dbb1751b005842a06eb0e63b3ffcc0fb0",
+      "narrationText": "عند الانتهاء، احذف النسخة فقط. يبقى الأصلي كما كان تمامًا. انسخ وجرّب وكسّر الأشياء واحذف، دون أي خطر.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-06-after.dc610654.mp3",
+      "afterAudioDurationSec": 3.709388,
+      "afterTextHash": "dc6106548e42c093c327d461690d3f67a23aa41574af8d2e51512854a2ba39cf"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/intro.52c78504.mp3",
+      "textHash": "52c78504c16cab19064aa718534c5c7ea5a90ed6ad63a1b91aa79e13a4eb34e8",
+      "audioDurationSec": 6.844082,
+      "narrationText": "أهلًا بك مع الميزة المميزة! انسخ مستودع إنتاج كامل بغض النظر عن حجمه، دون أن تكسر شيئًا."
+    },
+    {
+      "id": "fan-out",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/fan-out.d6195195.mp3",
+      "textHash": "d61951959b64025bc25317d24dc0448393cc8efc4a1d599a13b53f5c5bfacebb",
+      "audioDurationSec": 9.874286,
+      "narrationText": "مستودع أصلي واحد يتفرّع إلى أي عدد من النُسخ المستقلة. كل نسخة هي بيئة معزولة خاصة بها تعمل جنبًا إلى جنب مع الأصلي."
+    },
+    {
+      "id": "link-speed",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/link-speed.1418de94.mp3",
+      "textHash": "1418de940e96edd8372967a1aaff5f0ce75947d33f9b7b7611cf44e892b67690",
+      "audioDurationSec": 8.907755,
+      "narrationText": "فكّر في مشاركة رابط مجلد. الرابط هو نفس الشيء الخفيف سواء كان المجلد صغيرًا أو ضخمًا، والنسخ يعمل على المبدأ نفسه."
+    },
+    {
+      "id": "scale-invariance",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/scale-invariance.7dda1e54.mp3",
+      "textHash": "7dda1e54aa5f757dafc83745b07dbfa7894e383f9213777fa5531f7a3f539a1c",
+      "audioDurationSec": 10.527347,
+      "narrationText": "جيجابايت واحد، مئة جيجابايت، تيرابايت واحد: تتصرف النسخة بنفس الطريقة. حجم المستودع لا يدخل في المعادلة."
+    },
+    {
+      "id": "sun-mirrors",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/sun-mirrors.1207afb5.mp3",
+      "textHash": "1207afb52238d7058dc8922459c141d46eea41044e6e6f8ff996b5af37d6ccbc",
+      "audioDurationSec": 10.605714,
+      "narrationText": "المستودع الأصلي هو الشمس، ونسختك مرآة تلتقط ضوءها. تبقى القاعدة المشتركة دون مساس، وأي شيء تطليه على المرآة يخصك وحدك."
+    },
+    {
+      "id": "river-photo",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/river-photo.c385ec2d.mp3",
+      "textHash": "c385ec2d7cf03016cc2ff92f09c2a14d0a6573674a7c260b2b73ec01287b18fa",
+      "audioDurationSec": 9.639184,
+      "narrationText": "النسخة هي صورة فوتوغرافية مجمَّدة للأصل في لحظة واحدة. يستمر الأصل في الجريان كالنهر، لكن لقطتك تبقى تمامًا حيث كانت."
+    },
+    {
+      "id": "flat-disk",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/flat-disk.959411f0.mp3",
+      "textHash": "959411f0a3c033f1a2e90cc1a91b6c1341964cd79fd4d6236d5988441253019a",
+      "audioDurationSec": 9.560816,
+      "narrationText": "خمس نسخ من مستودع بحجم مئة جيجابايت لا تزال تشكل حوالي مئة جيجابايت على القرص. تدفع فقط مقابل البايتات التي تُغيّرها فعليًا داخل كل نسخة."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/next-tutorial.54f42b40.mp3",
+      "textHash": "54f42b40fb5dbffe0401679445770753061d4189dda62112b20e562e10bb96ae",
+      "audioDurationSec": 9.325714,
+      "narrationText": "تترك النُسخ الأسرار خلفها عمدًا، وهذا ما يجعل شعار انسخ الإنتاج دون أن تكسر شيئًا آمنًا فعلًا. سنُهيئها بشكل صحيح في الدرس التالي!"
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "6d91fe11567d73d12e0bc0ac65c555c69f838fa01bb00a9d9f374b661ace4456"
+}

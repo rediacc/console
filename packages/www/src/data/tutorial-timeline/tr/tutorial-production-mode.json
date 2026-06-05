@@ -1,0 +1,88 @@
+{
+  "cast": "/assets/tutorials/tutorial-production-mode.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-production-mode-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.418632,
+      "replayEndSec": 9.548589,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-01.7c123a2a.mp3",
+      "audioDurationSec": 12.355918,
+      "textHash": "7c123a2aaa9bfa3399e27102c897526fcd82a077adf1fde6d5d7ea31dd38e351",
+      "narrationText": "Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz. Deploy komutu, geliştirme sırasında kullandığımız aynı up fonksiyonunu çağırır; ancak bağımsız çalışır. Dizüstü bilgisayarınızı kapatabilirsiniz; uygulama çalışmaya devam eder.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-01-after.65a7c0e6.mp3",
+      "afterAudioDurationSec": 4.284082,
+      "afterTextHash": "65a7c0e658035caad02ab6320e2644300ac117c2f67d77d1c0232020d419ba0d"
+    },
+    {
+      "id": "tutorial-production-mode-02",
+      "markerIndex": 1,
+      "replayStartSec": 9.548589,
+      "replayEndSec": 17.034078,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-02.b91bb5d9.mp3",
+      "audioDurationSec": 9.404082,
+      "textHash": "b91bb5d92ab1a9d80e28d43e1abab5559a354cab77c6d9c82a7ece138c55bc96",
+      "narrationText": "Uygulamanın sunucu yeniden başlamalarından kurtulması için otomatik başlatmayı etkinleştiriyoruz. Artık sunucu yeniden başlarsa bu depo otomatik olarak geri gelir.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-02-after.b578b439.mp3",
+      "afterAudioDurationSec": 3.239184,
+      "afterTextHash": "b578b439abfb9add1f6428afae8ac4c283b4fee16be19b7caa1af2e533040420"
+    },
+    {
+      "id": "tutorial-production-mode-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.034078,
+      "replayEndSec": 22.929505,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-03.196e7a8a.mp3",
+      "audioDurationSec": 5.485714,
+      "textHash": "196e7a8af9032b08662a8b48fd6600966fed76d1438cd8328c1b53a5a7d8b508",
+      "narrationText": "Hangi depolarda otomatik başlatmanın etkin olduğunu listeliyoruz. Uygulamamızın artık başlatma listesinde olduğunu doğruluyor.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-03-after.68d30d1b.mp3",
+      "afterAudioDurationSec": 1.802449,
+      "afterTextHash": "68d30d1be073f1fa6a835b63359a2b8b660111ce27f6734df85a9bfa0e829cdf"
+    },
+    {
+      "id": "tutorial-production-mode-04",
+      "markerIndex": 3,
+      "replayStartSec": 22.929505,
+      "replayEndSec": 30.37798,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-04.23ad7c29.mp3",
+      "audioDurationSec": 6.687347,
+      "textHash": "23ad7c296c5f53b2a183a8146c43da69f0e17da8ee87fbb525753689bb854808",
+      "narrationText": "Uygulamayı durdurmak için dizüstü bilgisayardan tek komut. Bir komutla açın, bir komutla kapatın. Hepsi terminalinizden; artık etkileşimli oturum gerekmez.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-04-after.89bce4c3.mp3",
+      "afterAudioDurationSec": 2.194286,
+      "afterTextHash": "89bce4c38ff140a7059f328c74209ba102048d7849fedff0d164081058d39148"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/intro.15cf4039.mp3",
+      "textHash": "15cf403931ae662bf9d54f63a81705d00749d0e4eb0f62cd2d3d081b79647a48",
+      "audioDurationSec": 6.269388,
+      "narrationText": "Pekâlâ! Uygulamanızı geliştirmeden üretime taşıyalım. Üç kısa adım, hepsi dizüstü bilgisayarınızdan."
+    },
+    {
+      "id": "dev-vs-prod",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/dev-vs-prod.a5562ae0.mp3",
+      "textHash": "a5562ae08a77c5e0a4d3567f7009427539d21ec8c57831994fcc4344f4739c2c",
+      "audioDurationSec": 11.807347,
+      "narrationText": "Geliştirme sırasında uygulamayı deponun içinden çalıştırırsınız; bu yüzden bağlantınız kesildiğinde durur. Üretimde uygulamayı dizüstü bilgisayarınızdan CLI ile başlatırsınız ve bağımsız olarak çalışmaya devam eder."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/next-tutorial.d0ea2c79.mp3",
+      "textHash": "d0ea2c793ca14b087013139e35327b6f69d8719de6670dd190cc2e6490045368",
+      "audioDurationSec": 4.04898,
+      "narrationText": "Özetle üretim modu bu kadar. Bir sonraki bölümde görüşmek üzere!"
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "1ccc55779eff4396f74477cdab90a632dc9acfd7d480119a33715ec6c3c5a7bf"
+}

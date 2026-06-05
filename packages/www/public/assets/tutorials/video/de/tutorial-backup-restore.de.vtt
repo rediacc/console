@@ -1,0 +1,190 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.734
+Deine App ist live,
+
+00:00:02.734 --> 00:00:04.468
+also sorgen wir dafür,
+
+00:00:04.468 --> 00:00:06.635
+dass du sie nie verlierst!
+
+00:00:06.635 --> 00:00:09.236
+In diesem Tutorial schicken wir das
+
+00:00:09.236 --> 00:00:11.837
+gesamte Repository in einen externen Storage
+
+00:00:11.837 --> 00:00:14.438
+und holen es bei Bedarf wieder
+
+00:00:14.438 --> 00:00:14.871
+zurück.
+
+00:00:15.662 --> 00:00:18.278
+Backup und Restore läuft in drei Schritten.
+
+00:00:18.278 --> 00:00:19.399
+Konfiguriere einen Storage-Anbieter,
+
+00:00:19.399 --> 00:00:22.014
+schick ein Backup hoch und stelle es
+
+00:00:22.014 --> 00:00:22.762
+wieder her,
+
+00:00:22.762 --> 00:00:24.256
+wenn du es brauchst.
+
+00:00:27.530 --> 00:00:28.739
+Schritt eins.
+
+00:00:28.739 --> 00:00:31.762
+Wir importieren eine bestehende rclone-Konfiguration.
+
+00:00:31.762 --> 00:00:33.575
+rclone unterstützt S3,
+
+00:00:33.575 --> 00:00:34.180
+Backblaze,
+
+00:00:34.180 --> 00:00:35.389
+Google Drive,
+
+00:00:35.389 --> 00:00:37.807
+Dropbox und viele mehr.
+
+00:00:37.807 --> 00:00:40.830
+Wenn Sie es bereits verwenden,
+
+00:00:40.830 --> 00:00:43.853
+können Sie dieselbe Konfiguration direkt
+
+00:00:43.853 --> 00:00:44.457
+importieren.
+
+00:00:45.457 --> 00:00:46.496
+Storage importiert.
+
+00:00:46.496 --> 00:00:49.094
+Deine CLI kann jetzt Backups
+
+00:00:49.094 --> 00:00:50.133
+dorthin schicken.
+
+00:00:53.430 --> 00:00:55.308
+Wir listen die Speicher auf,
+
+00:00:55.308 --> 00:00:57.187
+die die CLI jetzt kennt.
+
+00:00:57.187 --> 00:00:59.065
+Jeder Speicher ist ein Ziel,
+
+00:00:59.065 --> 00:01:01.319
+auf das wir Backups übertragen können.
+
+00:01:03.069 --> 00:01:04.924
+Da ist er.
+
+00:01:04.924 --> 00:01:05.542
+Bereit,
+
+00:01:05.542 --> 00:01:06.778
+Backups entgegenzunehmen.
+
+00:01:10.095 --> 00:01:11.347
+Schritt zwei.
+
+00:01:11.347 --> 00:01:13.852
+Wir übertragen ein vollständiges
+
+00:01:13.852 --> 00:01:14.478
+Backup.
+
+00:01:14.478 --> 00:01:16.356
+Das gesamte Repository,
+
+00:01:16.356 --> 00:01:16.982
+App,
+
+00:01:16.982 --> 00:01:17.608
+Datenbank,
+
+00:01:17.608 --> 00:01:18.234
+Dateien,
+
+00:01:18.234 --> 00:01:18.860
+Konfiguration,
+
+00:01:18.860 --> 00:01:20.113
+wird hochgeladen.
+
+00:01:20.113 --> 00:01:22.617
+Da das Repository im
+
+00:01:22.617 --> 00:01:24.495
+Ruhezustand verschlüsselt ist,
+
+00:01:24.495 --> 00:01:26.1000
+ist auch das Backup
+
+00:01:26.1000 --> 00:01:27.626
+verschlüsselt.
+
+00:01:27.626 --> 00:01:29.504
+Kein zusätzliches Schlüsselmanagement.
+
+00:01:31.754 --> 00:01:32.647
+Backup hochgeladen.
+
+00:01:32.647 --> 00:01:35.326
+Alles in diesem Repo liegt jetzt
+
+00:01:35.326 --> 00:01:36.665
+verschlüsselt im Remote-Storage.
+
+00:01:40.000 --> 00:01:42.564
+Wir listen die auf diesem
+
+00:01:42.564 --> 00:01:44.616
+Speicher verfügbaren Backups auf.
+
+00:01:44.616 --> 00:01:47.180
+Von hier aus ist die
+
+00:01:47.180 --> 00:01:49.745
+Wiederherstellung auf einem neuen Server
+
+00:01:49.745 --> 00:01:51.283
+ein einziger Befehl:
+
+00:01:51.283 --> 00:01:52.309
+der Repo-Pull-Befehl.
+
+00:01:52.309 --> 00:01:53.335
+Gleiche Daten,
+
+00:01:53.335 --> 00:01:54.360
+gleiche Container,
+
+00:01:54.360 --> 00:01:55.386
+andere Maschine.
+
+00:01:58.386 --> 00:02:00.706
+Alle deine Snapshots an einem Ort.
+
+00:02:00.706 --> 00:02:03.412
+Jeden davon holst du mit einem einzigen
+
+00:02:03.412 --> 00:02:04.185
+Befehl zurück.
+
+00:02:05.004 --> 00:02:07.640
+Deine Daten sind sicher und
+
+00:02:07.640 --> 00:02:08.694
+maschinenübergreifend portabel.
+
+00:02:08.694 --> 00:02:10.803
+Bis zum nächsten Mal!

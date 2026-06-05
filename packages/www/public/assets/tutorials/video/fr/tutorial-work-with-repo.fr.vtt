@@ -1,0 +1,205 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.263
+Très bien !
+
+00:00:02.263 --> 00:00:03.526
+Votre application tourne,
+
+00:00:03.526 --> 00:00:05.631
+alors travaillons réellement avec elle.
+
+00:00:05.631 --> 00:00:08.158
+Trois commandes couvrent la boucle quotidienne.
+
+00:00:08.928 --> 00:00:11.633
+Tunnel ouvre votre application dans
+
+00:00:11.633 --> 00:00:12.715
+un navigateur,
+
+00:00:12.715 --> 00:00:15.420
+term exécute des commandes à
+
+00:00:15.420 --> 00:00:17.043
+l'intérieur du sandbox,
+
+00:00:17.043 --> 00:00:19.748
+et sync déplace les fichiers
+
+00:00:19.748 --> 00:00:22.453
+dans un sens et dans
+
+00:00:22.453 --> 00:00:22.994
+l'autre.
+
+00:00:22.994 --> 00:00:25.699
+C'est tout le workflow quotidien.
+
+00:00:28.969 --> 00:00:29.414
+D'abord,
+
+00:00:29.414 --> 00:00:30.748
+la commande tunnel.
+
+00:00:30.748 --> 00:00:32.973
+L'application tourne sur le serveur,
+
+00:00:32.973 --> 00:00:34.752
+pas sur votre ordinateur.
+
+00:00:34.752 --> 00:00:37.422
+La commande tunnel transfère le port
+
+00:00:37.422 --> 00:00:40.091
+d'un conteneur via SSH pour que
+
+00:00:40.091 --> 00:00:42.760
+vous puissiez l'ouvrir à localhost dans
+
+00:00:42.760 --> 00:00:43.650
+votre navigateur.
+
+00:00:44.450 --> 00:00:45.619
+Port transféré.
+
+00:00:45.619 --> 00:00:48.541
+L'application est maintenant accessible à
+
+00:00:48.541 --> 00:00:49.126
+localhost.
+
+00:00:49.936 --> 00:00:52.083
+Le tunnel étant actif,
+
+00:00:52.083 --> 00:00:54.768
+l'application s'ouvre directement dans votre
+
+00:00:54.768 --> 00:00:55.305
+navigateur.
+
+00:00:55.305 --> 00:00:56.915
+Dans cette démo,
+
+00:00:56.915 --> 00:00:58.526
+nous chargeons rediacc.com,
+
+00:00:58.526 --> 00:01:01.210
+exactement comme vous accéderiez à
+
+00:01:01.210 --> 00:01:03.894
+votre propre application servie directement
+
+00:01:03.894 --> 00:01:05.505
+depuis le conteneur.
+
+00:01:05.969 --> 00:01:06.366
+Ensuite,
+
+00:01:06.366 --> 00:01:07.556
+la commande term.
+
+00:01:07.556 --> 00:01:10.332
+La commande de connexion terminal vous plonge
+
+00:01:10.332 --> 00:01:12.316
+dans le sandbox du dépôt,
+
+00:01:12.316 --> 00:01:15.092
+la même vue isolée que VS Code.
+
+00:01:15.092 --> 00:01:17.869
+Exécutez n'importe quelle commande contre le daemon
+
+00:01:17.869 --> 00:01:20.645
+Docker de ce dépôt sans quitter votre
+
+00:01:20.645 --> 00:01:21.042
+terminal.
+
+00:01:22.292 --> 00:01:24.768
+À l'intérieur du sandbox du repo.
+
+00:01:24.768 --> 00:01:27.658
+Lancez n'importe quoi comme si vous étiez
+
+00:01:27.658 --> 00:01:28.483
+en SSH.
+
+00:01:31.818 --> 00:01:34.336
+Avant de pousser des fichiers,
+
+00:01:34.336 --> 00:01:36.854
+voyons d'abord la prévisualisation avec
+
+00:01:36.854 --> 00:01:38.364
+le flag dry-run.
+
+00:01:38.364 --> 00:01:40.882
+Elle montre exactement ce qui
+
+00:01:40.882 --> 00:01:42.896
+changerait sans rien copier.
+
+00:01:42.896 --> 00:01:45.414
+Prévisualisez toujours quand vous n'êtes
+
+00:01:45.414 --> 00:01:46.421
+pas sûr.
+
+00:01:48.421 --> 00:01:49.453
+Prévisualisation uniquement.
+
+00:01:49.453 --> 00:01:52.032
+Aucun fichier n'a encore été
+
+00:01:52.032 --> 00:01:52.548
+déplacé.
+
+00:01:55.861 --> 00:01:58.639
+Maintenant nous lançons le vrai téléversement.
+
+00:01:58.639 --> 00:02:01.417
+La commande de synchronisation déplace les
+
+00:02:01.417 --> 00:02:04.194
+fichiers de votre ordinateur vers le
+
+00:02:04.194 --> 00:02:05.583
+dépôt via SSH,
+
+00:02:05.583 --> 00:02:08.361
+avec la compression delta de rsync.
+
+00:02:08.361 --> 00:02:08.824
+Tunnel,
+
+00:02:08.824 --> 00:02:09.287
+term,
+
+00:02:09.287 --> 00:02:09.750
+sync,
+
+00:02:09.750 --> 00:02:12.527
+trois commandes couvrent la boucle quotidienne.
+
+00:02:14.027 --> 00:02:14.927
+Fichiers téléversés.
+
+00:02:14.927 --> 00:02:17.627
+La compression delta gère les gros
+
+00:02:17.627 --> 00:02:18.076
+arbres.
+
+00:02:18.867 --> 00:02:21.575
+Et voilà les trois commandes
+
+00:02:21.575 --> 00:02:22.659
+du quotidien.
+
+00:02:22.659 --> 00:02:25.367
+On se retrouve dans la
+
+00:02:25.367 --> 00:02:26.991
+prochaine vidéo !

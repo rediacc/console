@@ -1,0 +1,118 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.631
+Olgu!
+
+00:00:01.631 --> 00:00:04.156
+Paigaldame käsurea tööriista sinu
+
+00:00:04.156 --> 00:00:04.788
+sülearvutisse.
+
+00:00:05.561 --> 00:00:06.728
+Kolm sammu.
+
+00:00:06.728 --> 00:00:08.478
+Ava paigalduse leht,
+
+00:00:08.478 --> 00:00:11.395
+vali oma operatsioonisüsteem ja kleebi
+
+00:00:11.395 --> 00:00:12.562
+käsk terminali.
+
+00:00:13.327 --> 00:00:15.881
+Mine paigalduse lehele ja keri alla
+
+00:00:15.881 --> 00:00:16.732
+kiirpaigalduse jaotiseni.
+
+00:00:16.732 --> 00:00:18.860
+See genereerib õige üherealise käsu,
+
+00:00:18.860 --> 00:00:20.563
+ükskõik mis platvormil oled.
+
+00:00:23.848 --> 00:00:26.022
+Esmalt kinnitame,
+
+00:00:26.022 --> 00:00:29.283
+et CLI on
+
+00:00:29.283 --> 00:00:30.370
+teel.
+
+00:00:30.370 --> 00:00:33.631
+CLI käivitamine versioonilipuga
+
+00:00:33.631 --> 00:00:36.892
+prindib paigaldatud versiooni
+
+00:00:36.892 --> 00:00:39.066
+ja näitab,
+
+00:00:39.066 --> 00:00:42.327
+et paigaldamine lõpetati
+
+00:00:42.327 --> 00:00:43.414
+edukalt.
+
+00:00:46.414 --> 00:00:47.406
+Paigaldus tehtud.
+
+00:00:47.406 --> 00:00:49.888
+rdc binaarfail on sinu teel.
+
+00:00:53.197 --> 00:00:54.104
+Järgmisena käivitame CLI doctor.
+
+00:00:54.104 --> 00:00:54.784
+See kontrollib sõltuvusi,
+
+00:00:54.784 --> 00:00:55.917
+mida CLI vajab -- Node,
+
+00:00:55.917 --> 00:00:57.731
+SSH ja ülejäänud -- ning teatab puuduvatest komponentidest.
+
+00:00:57.731 --> 00:00:58.411
+Puhas aruanne tähendab,
+
+00:00:58.411 --> 00:00:59.545
+et oled valmis serverit lisama.
+
+00:01:00.345 --> 00:01:01.097
+Versioon prinditud.
+
+00:01:01.097 --> 00:01:02.226
+Oled valmis alustama.
+
+00:01:03.044 --> 00:01:05.216
+Käsurea tööriist elab sinu sülearvutis.
+
+00:01:05.216 --> 00:01:07.822
+Serveris töötab eraldi komponent nimega renet,
+
+00:01:07.822 --> 00:01:10.429
+mille CLI varustab ja juhib üle
+
+00:01:10.429 --> 00:01:10.863
+SSH,
+
+00:01:10.863 --> 00:01:13.470
+nii et sa ei pea kunagi
+
+00:01:13.470 --> 00:01:14.773
+käsitsi sisse logima.
+
+00:01:15.547 --> 00:01:17.163
+Paigaldus on tehtud.
+
+00:01:17.163 --> 00:01:19.317
+Järgmisena seadistame SSH võtme,
+
+00:01:19.317 --> 00:01:22.009
+et CLI saaks su serveritesse
+
+00:01:22.009 --> 00:01:22.548
+jõuda.

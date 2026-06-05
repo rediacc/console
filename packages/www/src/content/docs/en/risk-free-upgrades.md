@@ -8,13 +8,13 @@ language: en
 
 > **Test Everything. Risk Nothing. Upgrade With Confidence.**
 
-**Note:** This is a **use case example** demonstrating how Rediacc can solve this problem. As a startup, these scenarios represent potential applications rather than completed case studies.
+Quick note: Rediacc has no production customers yet. This is a use case example showing how the architecture handles this scenario in practice, not a case study from a real deployment.
 
-**Crisis Scenario:** During a database upgrade, an **unexpected error** occurred that prevented reverting to the old version or proceeding to the new one. Customers couldn't access systems, and 5000+ employees couldn't work.
+**Crisis scenario:** During a database upgrade, an **unexpected error** occurred that prevented reverting to the old version or proceeding to the new one. Customers couldn't access systems, and 5000+ employees couldn't work. The only exit was a full system restore, costing hours of engineer time while the business was offline.
 
 ## The Problem
 
-Mehmet is an experienced system administrator who manages large-scale databases. He decides to **upgrade a 100 TB PostgreSQL database from version 13 to 14**. His plan:
+Mehmet manages production databases his team can't afford to take offline. Today he's upgrading a **100 TB PostgreSQL database from version 13 to 14**. His plan:
 
 1. **Take a backup** → However, backing up takes **several days** due to data size
 2. **Perform the upgrade on the weekend** → Departments are notified of an outage on **Saturday 01:00-05:00**
@@ -37,7 +37,7 @@ Mehmet is an experienced system administrator who manages large-scale databases.
 
 ## Rediacc Solution
 
-Mehmet solves the problem fundamentally with Rediacc:
+Here is what changes with Rediacc:
 
 ![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 

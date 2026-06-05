@@ -1,0 +1,142 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.820
+Tudo certo!
+
+00:00:01.820 --> 00:00:04.689
+Vamos instalar a ferramenta de linha de
+
+00:00:04.689 --> 00:00:06.329
+comandos no seu portátil.
+
+00:00:07.094 --> 00:00:07.991
+Três passos.
+
+00:00:07.991 --> 00:00:10.235
+Abrir a página de instalação,
+
+00:00:10.235 --> 00:00:12.927
+escolher o sistema operativo e colar
+
+00:00:12.927 --> 00:00:14.722
+o comando no terminal.
+
+00:00:15.510 --> 00:00:18.197
+Vá à página de instalação e desça
+
+00:00:18.197 --> 00:00:20.501
+até à secção de instalação rápida.
+
+00:00:20.501 --> 00:00:23.188
+Gera o comando correto para a plataforma
+
+00:00:23.188 --> 00:00:24.339
+em que está.
+
+00:00:27.610 --> 00:00:28.029
+Primeiro,
+
+00:00:28.029 --> 00:00:30.544
+vamos confirmar que a ferramenta está
+
+00:00:30.544 --> 00:00:30.963
+instalada.
+
+00:00:30.963 --> 00:00:33.477
+A opção de versão imprime a
+
+00:00:33.477 --> 00:00:34.316
+versão instalada,
+
+00:00:34.316 --> 00:00:36.830
+para sabermos que a instalação ficou
+
+00:00:36.830 --> 00:00:37.249
+completa.
+
+00:00:40.249 --> 00:00:41.375
+Instalação concluída.
+
+00:00:41.375 --> 00:00:44.191
+O binário rdc está no
+
+00:00:44.191 --> 00:00:45.317
+seu PATH.
+
+00:00:48.628 --> 00:00:51.539
+Agora vamos executar a verificação de
+
+00:00:51.539 --> 00:00:52.025
+diagnóstico.
+
+00:00:52.025 --> 00:00:54.936
+Este comando verifica todas as dependências
+
+00:00:54.936 --> 00:00:57.847
+de que a ferramenta necessita --
+
+00:00:57.847 --> 00:00:58.332
+Node,
+
+00:00:58.332 --> 00:00:58.818
+SSH,
+
+00:00:58.818 --> 00:00:59.303
+Docker,
+
+00:00:59.303 --> 00:01:02.214
+o binário renet -- e reporta
+
+00:01:02.214 --> 00:01:03.670
+o que faltar.
+
+00:01:03.670 --> 00:01:06.581
+Um relatório limpo significa que estamos
+
+00:01:06.581 --> 00:01:08.037
+prontos para avançar.
+
+00:01:08.837 --> 00:01:10.039
+Versão impressa.
+
+00:01:10.039 --> 00:01:11.841
+Está tudo pronto.
+
+00:01:12.656 --> 00:01:15.597
+A ferramenta de linha de comandos
+
+00:01:15.597 --> 00:01:17.558
+vive no seu portátil.
+
+00:01:17.558 --> 00:01:20.499
+O servidor corre um componente separado
+
+00:01:20.499 --> 00:01:21.479
+chamado renet,
+
+00:01:21.479 --> 00:01:24.420
+que a CLI provisiona e controla
+
+00:01:24.420 --> 00:01:25.401
+por SSH,
+
+00:01:25.401 --> 00:01:28.342
+para que nunca tenha de iniciar
+
+00:01:28.342 --> 00:01:29.322
+sessão manualmente.
+
+00:01:30.104 --> 00:01:31.061
+Instalação feita.
+
+00:01:31.061 --> 00:01:32.018
+A seguir,
+
+00:01:32.018 --> 00:01:34.889
+vamos configurar a sua chave SSH
+
+00:01:34.889 --> 00:01:37.759
+para que a CLI consiga aceder
+
+00:01:37.759 --> 00:01:39.195
+aos seus servidores.

@@ -1,0 +1,142 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.416
+Bene!
+
+00:00:01.416 --> 00:00:04.331
+Portiamo la tua app dallo sviluppo alla
+
+00:00:04.331 --> 00:00:04.748
+produzione.
+
+00:00:04.748 --> 00:00:05.997
+Tre brevi passaggi,
+
+00:00:05.997 --> 00:00:08.079
+tutti pilotati dal tuo laptop.
+
+00:00:08.859 --> 00:00:11.702
+Durante lo sviluppo esegui l'app dall'interno del
+
+00:00:11.702 --> 00:00:12.108
+repo,
+
+00:00:12.108 --> 00:00:14.545
+quindi si ferma quando ti disconnetti.
+
+00:00:14.545 --> 00:00:17.388
+In produzione la lanci dal tuo laptop
+
+00:00:17.388 --> 00:00:20.232
+con la CLI e continua a girare
+
+00:00:20.232 --> 00:00:21.450
+in modalita' distaccata.
+
+00:00:24.721 --> 00:00:27.265
+Avviamo l'app in modalita' produzione dal
+
+00:00:27.265 --> 00:00:27.689
+laptop.
+
+00:00:27.689 --> 00:00:30.232
+Il comando di deploy chiama la
+
+00:00:30.232 --> 00:00:32.776
+stessa funzione up usata durante lo
+
+00:00:32.776 --> 00:00:33.200
+sviluppo,
+
+00:00:33.200 --> 00:00:35.743
+ma viene eseguita in modalita' distaccata.
+
+00:00:35.743 --> 00:00:38.287
+Puoi chiudere il laptop e l'app
+
+00:00:38.287 --> 00:00:39.559
+continua a girare.
+
+00:00:42.309 --> 00:00:44.888
+App in esecuzione in produzione.
+
+00:00:44.888 --> 00:00:45.920
+Stesso comando,
+
+00:00:45.920 --> 00:00:46.952
+stesso risultato,
+
+00:00:46.952 --> 00:00:48.500
+sul server reale.
+
+00:00:51.837 --> 00:00:54.583
+Abilitiamo l'avvio automatico cosi' l'app sopravvive
+
+00:00:54.583 --> 00:00:56.414
+al riavvio del server.
+
+00:00:56.414 --> 00:00:57.787
+Da questo momento,
+
+00:00:57.787 --> 00:01:00.076
+se il server si riavvia,
+
+00:01:00.076 --> 00:01:02.364
+questo repo torna su automaticamente.
+
+00:01:04.614 --> 00:01:06.350
+Avvio automatico attivo.
+
+00:01:06.350 --> 00:01:08.663
+L'app sopravvive ai riavvii.
+
+00:01:11.960 --> 00:01:14.835
+Elenchiamo i repository con l'avvio automatico abilitato.
+
+00:01:14.835 --> 00:01:17.710
+Conferma che la nostra app e' ora
+
+00:01:17.710 --> 00:01:19.353
+nella lista di avvio.
+
+00:01:21.353 --> 00:01:21.713
+Eccola,
+
+00:01:21.713 --> 00:01:23.155
+nella lista di avvio.
+
+00:01:26.481 --> 00:01:27.900
+E per fermare l'app,
+
+00:01:27.900 --> 00:01:29.674
+un solo comando dal laptop.
+
+00:01:29.674 --> 00:01:31.094
+Un comando per avviare,
+
+00:01:31.094 --> 00:01:32.158
+uno per fermare.
+
+00:01:32.158 --> 00:01:33.578
+Tutto dal tuo terminale,
+
+00:01:33.578 --> 00:01:34.997
+senza piu' sessioni interattive.
+
+00:01:37.497 --> 00:01:38.032
+Fermata.
+
+00:01:38.032 --> 00:01:40.174
+Un comando per avviare,
+
+00:01:40.174 --> 00:01:41.781
+uno per fermare.
+
+00:01:42.586 --> 00:01:45.293
+Ed ecco la modalita' produzione
+
+00:01:45.293 --> 00:01:46.376
+in sintesi.
+
+00:01:46.376 --> 00:01:48.542
+Ci vediamo nel prossimo!

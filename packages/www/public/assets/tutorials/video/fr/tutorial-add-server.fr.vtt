@@ -1,0 +1,124 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.867
+Très bien !
+
+00:00:01.867 --> 00:00:03.022
+Ajoutons votre premier serveur.
+
+00:00:03.022 --> 00:00:05.622
+Cela tient en deux commandes et prend environ une
+
+00:00:05.622 --> 00:00:05.911
+minute.
+
+00:00:06.699 --> 00:00:08.836
+Il y a deux éléments.
+
+00:00:08.836 --> 00:00:11.400
+L'outil en ligne de commande vit
+
+00:00:11.400 --> 00:00:12.682
+sur votre ordinateur,
+
+00:00:12.682 --> 00:00:15.246
+et un orchestrateur appelé renet tourne
+
+00:00:15.246 --> 00:00:16.528
+sur le serveur.
+
+00:00:16.528 --> 00:00:19.092
+La CLI se connecte via SSH,
+
+00:00:19.092 --> 00:00:21.656
+vous n'avez donc jamais à vous
+
+00:00:21.656 --> 00:00:23.365
+connecter manuellement au serveur.
+
+00:00:26.647 --> 00:00:29.321
+Nous commençons par créer un profil de
+
+00:00:29.321 --> 00:00:29.702
+configuration.
+
+00:00:29.702 --> 00:00:31.994
+Ce profil contient la clé SSH,
+
+00:00:31.994 --> 00:00:34.667
+la liste des machines et les paramètres
+
+00:00:34.667 --> 00:00:37.341
+d'infrastructure pour tout ce que nous allons
+
+00:00:37.341 --> 00:00:37.723
+faire.
+
+00:00:38.973 --> 00:00:39.692
+Profil créé.
+
+00:00:39.692 --> 00:00:42.210
+Tout ce que nous configurons ensuite vit
+
+00:00:42.210 --> 00:00:43.649
+dans ce seul fichier.
+
+00:00:46.964 --> 00:00:47.376
+Maintenant,
+
+00:00:47.376 --> 00:00:50.259
+nous enregistrons le serveur depuis la ligne
+
+00:00:50.259 --> 00:00:52.730
+de commande en fournissant son nom,
+
+00:00:52.730 --> 00:00:55.201
+son adresse IP et l'utilisateur SSH.
+
+00:00:55.201 --> 00:00:58.084
+Les clés hôtes sont scannées automatiquement pour
+
+00:00:58.084 --> 00:00:59.320
+un accès sécurisé.
+
+00:00:59.320 --> 00:01:00.307
+Serveur enregistré.
+
+00:01:00.307 --> 00:01:03.267
+Les clés hôtes ont été scannées
+
+00:01:03.267 --> 00:01:03.761
+automatiquement.
+
+00:01:07.032 --> 00:01:09.327
+Voyons ensuite le provisionnement du serveur.
+
+00:01:09.327 --> 00:01:12.004
+Cette étape installe renet et crée le
+
+00:01:12.004 --> 00:01:12.769
+datastore chiffré.
+
+00:01:12.769 --> 00:01:13.533
+Après cela,
+
+00:01:13.533 --> 00:01:16.210
+le serveur est prêt à héberger des
+
+00:01:16.210 --> 00:01:16.593
+dépôts.
+
+00:01:16.593 --> 00:01:16.996
+Terminé.
+
+00:01:16.996 --> 00:01:19.820
+renet est installé et le datastore est
+
+00:01:19.820 --> 00:01:20.224
+prêt.
+
+00:01:21.010 --> 00:01:22.995
+Et voilà pour l'ajout d'un serveur !
+
+00:01:22.995 --> 00:01:24.981
+On se retrouve dans la prochaine vidéo.

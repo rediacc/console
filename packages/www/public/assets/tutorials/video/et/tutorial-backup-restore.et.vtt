@@ -1,0 +1,154 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.709
+Sinu rakendus on töös,
+
+00:00:02.709 --> 00:00:03.992
+nii et veendume,
+
+00:00:03.992 --> 00:00:06.556
+et sa seda kunagi ei kaota!
+
+00:00:06.556 --> 00:00:09.120
+Selles õpetuses tõukame terve repositooriumi välisesse
+
+00:00:09.120 --> 00:00:11.684
+salvestusse ja tõmbame selle nõudmisel tagasi.
+
+00:00:12.458 --> 00:00:14.972
+Varundamine ja taastamine taandub kolmele
+
+00:00:14.972 --> 00:00:15.475
+sammule.
+
+00:00:15.475 --> 00:00:16.984
+Seadista salvestuse pakkuja,
+
+00:00:16.984 --> 00:00:19.498
+tõuka varukoopia ja taasta see,
+
+00:00:19.498 --> 00:00:20.504
+kui vaja.
+
+00:00:23.769 --> 00:00:24.854
+Esimene samm.
+
+00:00:24.854 --> 00:00:27.024
+Impordime olemasoleva rclone konfiguratsiooni.
+
+00:00:27.024 --> 00:00:28.652
+rclone toetab S3,
+
+00:00:28.652 --> 00:00:29.194
+Backblaze,
+
+00:00:29.194 --> 00:00:30.280
+Google Drive,
+
+00:00:30.280 --> 00:00:32.992
+Dropbox ja paljusid teisi --
+
+00:00:32.992 --> 00:00:35.162
+kui kasutad seda juba,
+
+00:00:35.162 --> 00:00:37.875
+saad sama konfiguratsiooni otse importida.
+
+00:00:38.875 --> 00:00:40.085
+Salvestus on imporditud.
+
+00:00:40.085 --> 00:00:42.506
+CLI saab nüüd sinna varukoopiaid tõugata.
+
+00:00:45.814 --> 00:00:46.710
+Loetleme salvestused,
+
+00:00:46.710 --> 00:00:48.501
+millest CLI nüüd teab.
+
+00:00:48.501 --> 00:00:50.292
+Iga salvestus on sihtkoht,
+
+00:00:50.292 --> 00:00:52.083
+kuhu saame varukoopiad tõugata.
+
+00:00:53.833 --> 00:00:54.908
+Seal see on.
+
+00:00:54.908 --> 00:00:56.341
+Valmis varukoopiaid vastu võtma.
+
+00:00:59.638 --> 00:01:00.692
+Teine samm.
+
+00:01:00.692 --> 00:01:02.274
+Tõukame täieliku varukoopia.
+
+00:01:02.274 --> 00:01:04.382
+Terve repositoorium -- rakendus,
+
+00:01:04.382 --> 00:01:04.909
+andmebaas,
+
+00:01:04.909 --> 00:01:05.436
+failid,
+
+00:01:05.436 --> 00:01:07.545
+konfiguratsioon -- laaditakse üles.
+
+00:01:07.545 --> 00:01:10.180
+Kuna repositoorium on puhkeolekus krüpteeritud,
+
+00:01:10.180 --> 00:01:12.289
+on ka varukoopia krüpteeritud.
+
+00:01:12.289 --> 00:01:14.397
+Lisavõtme haldamine pole vajalik.
+
+00:01:16.647 --> 00:01:18.008
+Varukoopia üles laaditud.
+
+00:01:18.008 --> 00:01:20.729
+Kõik selle repo sisu on nüüd
+
+00:01:20.729 --> 00:01:21.183
+kaugsalvestusel,
+
+00:01:21.183 --> 00:01:21.637
+krüpteeritud.
+
+00:01:24.946 --> 00:01:26.775
+Loetleme sellel salvestusel saadaolevad varukoopiad.
+
+00:01:26.775 --> 00:01:29.335
+Edaspidi on taastamine uuel serveril üks käsk
+
+00:01:29.335 --> 00:01:30.797
+-- CLI repo pull.
+
+00:01:30.797 --> 00:01:31.529
+Samad andmed,
+
+00:01:31.529 --> 00:01:32.260
+samad konteinerid,
+
+00:01:32.260 --> 00:01:32.992
+erinev masin.
+
+00:01:35.992 --> 00:01:37.664
+Kõik tõmmised ühes kohas.
+
+00:01:37.664 --> 00:01:40.171
+Tõmba ükskõik milline neist ühe käsuga
+
+00:01:40.171 --> 00:01:40.589
+tagasi.
+
+00:01:41.410 --> 00:01:43.983
+Sinu andmed on turvalised ja
+
+00:01:43.983 --> 00:01:45.527
+masinate vahel kaasaskantavad.
+
+00:01:45.527 --> 00:01:46.556
+Kohtumiseni järgmises!

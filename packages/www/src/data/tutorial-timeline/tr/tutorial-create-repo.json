@@ -1,0 +1,75 @@
+{
+  "cast": "/assets/tutorials/tutorial-create-repo.cast",
+  "language": "tr",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-create-repo-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.409686,
+      "replayEndSec": 11.760396,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01.2981de92.mp3",
+      "audioDurationSec": 17.867755,
+      "textHash": "2981de9249d22aa26ebf5f07c6e88e6307db9d1a52cf2c90055c648486847339",
+      "narrationText": "Sunucuda 2 gigabaytlık şifreli bir depo oluşturuyoruz. Depo, depolandığında tek bir şifreli dosyadır. Bağlandığında kendi Docker daemon'ı ve kendi uygulama verisiyle birlikte bir klasöre dönüşür; sunucudaki her şeyden tamamen izole edilmiş.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01-after.7d567e11.mp3",
+      "afterAudioDurationSec": 4.205714,
+      "afterTextHash": "7d567e117985d070b0263db997d5ba1439207fa08fa91430e3261206240ad0c8"
+    },
+    {
+      "id": "tutorial-create-repo-02",
+      "markerIndex": 1,
+      "replayStartSec": 11.760396,
+      "replayEndSec": 17.238181,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02.a21498fe.mp3",
+      "audioDurationSec": 8.515918,
+      "textHash": "a21498fe88baf469e5e87a5fdacc5421eca968119651732c7f497b3afbfeabd9",
+      "narrationText": "Yeni deponun kayıtlı olduğunu doğrulamak için makinedeki depoları listeliyoruz. Buradan itibaren depo, VS Code'da açılabilir, dağıtılabilir, fork'lanabilir veya yedeklenebilir; hepsi dizüstü bilgisayarınızdan.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02-after.c9114639.mp3",
+      "afterAudioDurationSec": 2.586122,
+      "afterTextHash": "c91146398b47482722e6685a418d948d2e70bbdca5fc85df81f34760fa7aa30b"
+    },
+    {
+      "id": "tutorial-create-repo-03",
+      "markerIndex": 2,
+      "replayStartSec": 17.238181,
+      "replayEndSec": 21.33289,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03.3cd1fc9a.mp3",
+      "audioDurationSec": 12.355918,
+      "textHash": "3cd1fc9aa3cf2e6cb372327b5c4eaec86b990e38b349dca1b70aea04e2410f22",
+      "narrationText": "Kullanışlı bir seçenek: bu komutla repoyu doğrudan VS Code'da açabilirsiniz. Editörü burada başlatmayacağız, ancak SSH üzerinden repoya uzak bir oturum başlatarak dosyalarını düzenleyebilirsiniz.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03-after.fe26f5cd.mp3",
+      "afterAudioDurationSec": 3.866122,
+      "afterTextHash": "fe26f5cdfb45cb2f35cdd216b0dcdbe0ed7b157299333ea00b48079d58afa5f0"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/intro.d4921d84.mp3",
+      "textHash": "d4921d84022408545d2681c718d8d84a3c77dae8d3adc9c769419d656ab070a9",
+      "audioDurationSec": 8.907755,
+      "narrationText": "İlk deponuzu oluşturalım! Depolandığında şifreli bir dosyadır; bağlandığında tamamen izole bir ortama dönüşür."
+    },
+    {
+      "id": "file-on-disk",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/file-on-disk.5083fa24.mp3",
+      "textHash": "5083fa2473639e24068e94fe8890f45aafd8cde7de1b11ded47ff40b012a8c43",
+      "audioDurationSec": 13.714286,
+      "narrationText": "Diskte tek bir şifreli görüntü olarak durur. Bağlandığında size özel bir Docker daemon'ı, şifreli birim içindeki uygulama verisi ve sunucudaki başka hiçbir şeyle çakışmayan loopback IP'leri sunar."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/next-tutorial.d5cd8215.mp3",
+      "textHash": "d5cd821513cf45ff5e7cd66fbed1374b6b9da3fd9159498a99822933f6968a2f",
+      "audioDurationSec": 5.407347,
+      "narrationText": "İlk deponuz hazır! Sırada, içine bir uygulama dağıtmak var."
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d42e03dc38b2ea8cd5d10d86f5b51d4664e232cf3868abde535fa9badf0b9a8d"
+}

@@ -1,0 +1,205 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.389
+Bene!
+
+00:00:01.389 --> 00:00:04.111
+Diamo alla tua app un dominio vero
+
+00:00:04.111 --> 00:00:05.278
+con TLS automatico.
+
+00:00:05.278 --> 00:00:08.001
+Quattro brevi passaggi e sei su internet.
+
+00:00:08.766 --> 00:00:10.227
+Ecco il percorso.
+
+00:00:10.227 --> 00:00:13.149
+Procurati un token API di Cloudflare,
+
+00:00:13.149 --> 00:00:15.097
+configura l'infrastruttura sulla CLI,
+
+00:00:15.097 --> 00:00:16.558
+inviala al server,
+
+00:00:16.558 --> 00:00:19.480
+poi distribuisci un proxy Traefik che
+
+00:00:19.480 --> 00:00:22.402
+gestisce DNS e certificati per te.
+
+00:00:23.173 --> 00:00:24.322
+Prima di tutto,
+
+00:00:24.322 --> 00:00:27.002
+apri la dashboard di Cloudflare nel browser.
+
+00:00:27.002 --> 00:00:28.533
+Vai su My Profile,
+
+00:00:28.533 --> 00:00:29.682
+poi API Tokens,
+
+00:00:29.682 --> 00:00:32.362
+e crea un token con il permesso
+
+00:00:32.362 --> 00:00:35.042
+Zone DNS Edit cosi' la CLI potra'
+
+00:00:35.042 --> 00:00:36.574
+gestire i tuoi record.
+
+00:00:39.847 --> 00:00:40.661
+Passo due.
+
+00:00:40.661 --> 00:00:43.512
+Dalla riga di comando inseriamo l'IP pubblico,
+
+00:00:43.512 --> 00:00:44.734
+il dominio base,
+
+00:00:44.734 --> 00:00:47.585
+l'email per i certificati e il token
+
+00:00:47.585 --> 00:00:48.806
+API di Cloudflare.
+
+00:00:48.806 --> 00:00:51.657
+L'email e il token sono condivisi tra
+
+00:00:51.657 --> 00:00:53.286
+tutte le tue macchine,
+
+00:00:53.286 --> 00:00:55.729
+quindi li imposti una sola volta.
+
+00:00:56.529 --> 00:00:59.706
+Infrastruttura registrata nella tua
+
+00:00:59.706 --> 00:01:00.500
+configurazione.
+
+00:01:03.794 --> 00:01:06.506
+Confermiamo che le impostazioni dell'infrastruttura
+
+00:01:06.506 --> 00:01:08.133
+siano state salvate.
+
+00:01:08.133 --> 00:01:09.218
+IP pubblico,
+
+00:01:09.218 --> 00:01:10.302
+dominio base,
+
+00:01:10.302 --> 00:01:13.014
+email per i certificati --
+
+00:01:13.014 --> 00:01:15.183
+tutto visibile nella configurazione.
+
+00:01:16.933 --> 00:01:17.802
+Impostazioni salvate.
+
+00:01:17.802 --> 00:01:20.408
+Pronte a essere inviate al server.
+
+00:01:23.760 --> 00:01:24.696
+Passo tre.
+
+00:01:24.696 --> 00:01:27.036
+Carichiamo la configurazione sul server.
+
+00:01:27.036 --> 00:01:29.843
+Questo crea i record DNS su
+
+00:01:29.843 --> 00:01:32.651
+Cloudflare automaticamente e prepara la configurazione
+
+00:01:32.651 --> 00:01:34.522
+del proxy sulla macchina.
+
+00:01:37.522 --> 00:01:38.078
+Inviata.
+
+00:01:38.078 --> 00:01:40.853
+I record DNS vengono creati
+
+00:01:40.853 --> 00:01:41.963
+su Cloudflare.
+
+00:01:45.295 --> 00:01:46.938
+Inizia il passo quattro.
+
+00:01:46.938 --> 00:01:49.402
+Creiamo un piccolo repo chiamato infra.
+
+00:01:49.402 --> 00:01:51.045
+Qui vivra' il proxy,
+
+00:01:51.045 --> 00:01:52.688
+isolato dai repo applicativi.
+
+00:01:56.881 --> 00:01:58.850
+Repo infra creato.
+
+00:01:58.850 --> 00:02:01.475
+Isolato dai tuoi repo
+
+00:02:01.475 --> 00:02:02.132
+applicativi.
+
+00:02:05.395 --> 00:02:07.864
+Applichiamo il template proxy integrato.
+
+00:02:07.864 --> 00:02:10.827
+Include Traefik con la configurazione per
+
+00:02:10.827 --> 00:02:13.790
+Let's Encrypt e le challenge DNS-01
+
+00:02:13.790 --> 00:02:14.778
+di Cloudflare,
+
+00:02:14.778 --> 00:02:15.766
+pronto all'uso.
+
+00:02:18.016 --> 00:02:20.602
+Configurazione di Traefik in posizione.
+
+00:02:23.912 --> 00:02:25.223
+Avviamo il proxy.
+
+00:02:25.223 --> 00:02:27.844
+Traefik scopre i tuoi container ogni
+
+00:02:27.844 --> 00:02:28.718
+cinque secondi.
+
+00:02:28.718 --> 00:02:31.339
+I certificati TLS arrivano da Let's
+
+00:02:31.339 --> 00:02:32.213
+Encrypt automaticamente.
+
+00:02:32.213 --> 00:02:34.834
+La tua app e' ora raggiungibile
+
+00:02:34.834 --> 00:02:36.581
+su internet via HTTPS.
+
+00:02:36.581 --> 00:02:39.124
+Il proxy e' attivo.
+
+00:02:39.124 --> 00:02:41.667
+I certificati TLS arriveranno
+
+00:02:41.667 --> 00:02:42.302
+automaticamente.
+
+00:02:43.057 --> 00:02:45.584
+E con questo la rete e' sistemata!
+
+00:02:45.584 --> 00:02:47.028
+Ci vediamo nel prossimo.

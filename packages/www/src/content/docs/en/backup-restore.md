@@ -1,6 +1,6 @@
 ---
 title: "Backup & Restore"
-description: "Back up encrypted repositories to external storage, restore from backups, and schedule automated backups."
+description: "Back up encrypted repositories to any rclone-compatible storage, restore on any machine, and automate with named backup strategies and systemd timers."
 category: "Guides"
 order: 7
 language: en
@@ -9,7 +9,7 @@ sourceHash: "f5222efa9505ab5e"
 
 # Backup & Restore
 
-Rediacc can back up encrypted repositories to external storage providers and restore them on the same or different machines. Backups are encrypted; the repository's LUKS credential is required to restore.
+Rediacc backs up encrypted repositories to external storage and restores them on the same or a different machine. Backups are encrypted; your repository's LUKS credential is required to restore.
 
 ## Configure Storage
 
@@ -115,7 +115,7 @@ Scheduled backups land under per-mode subfolders inside the storage's configured
     └── ...
 ```
 
-A repo can appear in both `hot/` and `cold/` (the hourly schedule snapshots it; the weekly schedule snapshots it again). The merged listing surfaces both rows so it's clear which streams cover which repos.
+A repo can appear in both `hot/` and `cold/` (the hourly schedule snapshots it; the weekly schedule snapshots it again). The merged listing shows both rows so you can see which streams cover which repos.
 
 ## Bulk Sync
 
@@ -144,7 +144,7 @@ rdc repo pull --from my-storage -m server-1
 
 ## Scheduled Backups
 
-Rediacc uses named backup strategies. Each strategy defines a schedule, backup mode, optional bandwidth limit, and file filters. Machines reference strategies by name to determine which backups run on them.
+Rediacc uses named backup strategies. Each strategy defines a schedule, backup mode, optional bandwidth limit, and file filters. You bind strategy names to machines to control which backups run where.
 
 ### Backup Modes
 
@@ -157,7 +157,7 @@ Use `hot` for services that tolerate crash-consistent snapshots. Use `cold` when
 
 ### Cold Backup Semantics
 
-A cold backup runs in three phases per included repo: **stop → snapshot → start**. Understanding where guarantees end helps operators notice partial failures early.
+A cold backup runs in three phases per included repo: **stop → snapshot → start**. Know where the guarantees end and you'll catch partial failures early.
 
 **What cold backup guarantees:**
 
@@ -174,7 +174,7 @@ A cold backup runs in three phases per included repo: **stop → snapshot → st
 
 **Watchdog recovery:** on every tick, the watchdog checks for a running-sidecar. Any container ID listed there that is currently stopped gets restarted, *regardless of the container's saved `restart_policy`*. This means services with `restart: on-failure` (which Docker would NOT restart after a clean stop) still come back after a cold backup. Once every listed container is running, the sidecar is deleted.
 
-**How operators detect failures:**
+**How you detect failures:**
 
 - `rdc machine query --name <machine> --containers` shows running state. Compare against the expected set.
 - `/var/run/rediacc/cold-backup-<guid>.status.json` on the machine. Inspect via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` with a stale `startedAt` means the last backup didn't complete cleanly.
@@ -192,7 +192,7 @@ Each repo is down only for its own `down()` + `up()` window. On a warm host thes
 
 The snapshot step (`btrfs subvolume snapshot -r`) is O(1) regardless of repo size: 0.1-1 s. A repo is not kept down for other repos' snapshots. The uploader then runs against a read-only snapshot while every repo is already back up.
 
-**Total wall-clock for the whole run** is governed by how many repos restart concurrently. Renet derives this from the host:
+**Total wall-clock for the whole run** is governed by how many repos restart concurrently. renet derives this from the host:
 
 ```text
 concurrency = min(repoCount, max(2, NumCPU/2), 8)
@@ -225,7 +225,7 @@ Concretely, a run that starts Monday 03:00 UTC and finishes Thursday at noon:
 
 The timer's `Persistent=true` directive does **not** rescue these fires. `Persistent=true` replays fires that were missed because the timer itself was inactive (system off, timer disabled). Fires dropped because the service was busy are gone.
 
-This default is deliberate. Running two cold backups in parallel against the same datastore would contend on the BTRFS snapshot path, the rclone remote, and the per-repo sidecars at `/var/run/rediacc/cold-backup-<guid>.status.json`. Serialising behind a long-running instance is the safe outcome.
+This default is deliberate. Running two cold backups in parallel against the same datastore would contend on the BTRFS snapshot path, the rclone remote, and the per-repo sidecars at `/var/run/rediacc/cold-backup-<guid>.status.json`. Waiting behind a running instance beats thrashing the same data from two directions.
 
 **Monitoring implication.** A hung backup (for instance, rclone wedged on a network blackhole) silently drops every subsequent timer fire. The scheduler emits no alarm. Watch `systemctl show <unit> -p ActiveEnterTimestamp`: if the service has been `activating` for longer than your expected run length (for example, more than 48 h on a nightly timer), investigate.
 
@@ -233,7 +233,7 @@ This default is deliberate. Running two cold backups in parallel against the sam
 
 ### Define a Strategy
 
-The canonical default is a two-strategy split: a fast hourly hot stream that captures every repo, and a slower weekly cold stream that takes app-consistent snapshots. The two strategies write to different storage subfolders (`hot/` and `cold/`) so backups never mix.
+The default setup is a two-strategy split: a fast hourly hot stream that captures every repo, and a slower weekly cold stream for app-consistent snapshots. Both strategies write to separate storage subfolders (`hot/` and `cold/`), so the streams never mix.
 
 ```bash
 rdc config backup-strategy set \
@@ -308,7 +308,7 @@ In your config, bind one or more strategy names to a machine:
 | **Suitable frequency** | High (e.g. hourly) | Low (e.g. daily or weekly) |
 | **Typical use** | Frequent safety net | Scheduled guaranteed-consistency backup |
 
-**Hot** is the right default for high-frequency runs. Services keep running while the snapshot is taken, so the backup window does not interrupt users. The snapshot is crash-consistent: it is equivalent to what you would get after an unclean shutdown. For most modern databases and message queues this is acceptable.
+**Hot** is the right default for high-frequency runs. Services keep running while the snapshot is taken, so there's no downtime for your apps. The snapshot is crash-consistent: equivalent to what you'd get after an unclean shutdown. For most modern databases and message queues, that's fine.
 
 **Cold** is appropriate when you need a guaranteed application-consistent snapshot and can accept a brief per-repo restart. Services are stopped before the snapshot and restarted before the upload begins, so a slow or failed upload never prolongs the downtime window. See [Cold Backup Semantics](#cold-backup-semantics) for the full guarantee model.
 

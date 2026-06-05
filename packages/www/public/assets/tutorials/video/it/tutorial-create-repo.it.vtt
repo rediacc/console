@@ -1,0 +1,148 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.953
+Creiamo il tuo primo repository!
+
+00:00:02.953 --> 00:00:05.688
+E' un file cifrato a riposo che
+
+00:00:05.688 --> 00:00:08.422
+si trasforma in un ambiente completamente isolato
+
+00:00:08.422 --> 00:00:09.594
+quando viene montato.
+
+00:00:10.368 --> 00:00:13.240
+Su disco e' una singola immagine
+
+00:00:13.240 --> 00:00:13.719
+cifrata.
+
+00:00:13.719 --> 00:00:15.155
+Quando viene montato,
+
+00:00:15.155 --> 00:00:17.548
+ottieni un Docker daemon dedicato,
+
+00:00:17.548 --> 00:00:20.420
+dati applicativi all'interno del volume cifrato
+
+00:00:20.420 --> 00:00:23.292
+e IP di loopback che non
+
+00:00:23.292 --> 00:00:26.164
+entrano in conflitto con nient'altro sul
+
+00:00:26.164 --> 00:00:26.642
+server.
+
+00:00:29.922 --> 00:00:32.534
+Creiamo un repository cifrato da 2
+
+00:00:32.534 --> 00:00:33.840
+gigabyte sul server.
+
+00:00:33.840 --> 00:00:36.453
+Un repository e' un singolo file
+
+00:00:36.453 --> 00:00:37.759
+cifrato a riposo.
+
+00:00:37.759 --> 00:00:39.065
+Una volta montato,
+
+00:00:39.065 --> 00:00:41.677
+diventa una cartella con il proprio
+
+00:00:41.677 --> 00:00:44.289
+Docker daemon e i propri dati
+
+00:00:44.289 --> 00:00:44.725
+applicativi,
+
+00:00:44.725 --> 00:00:47.337
+completamente isolata da tutto il resto
+
+00:00:47.337 --> 00:00:48.208
+sul server.
+
+00:00:51.208 --> 00:00:52.266
+Repository creato.
+
+00:00:52.266 --> 00:00:54.911
+Il file cifrato e' sul
+
+00:00:54.911 --> 00:00:55.440
+server,
+
+00:00:55.440 --> 00:00:57.555
+pronto per essere montato.
+
+00:01:00.884 --> 00:01:03.742
+Elenchiamo i repository sulla macchina per confermare
+
+00:01:03.742 --> 00:01:05.783
+che il nuovo sia registrato.
+
+00:01:05.783 --> 00:01:06.600
+Da qui,
+
+00:01:06.600 --> 00:01:09.457
+il repo puo' essere aperto in VS
+
+00:01:09.457 --> 00:01:09.866
+Code,
+
+00:01:09.866 --> 00:01:10.274
+distribuito,
+
+00:01:10.274 --> 00:01:13.132
+clonato tramite fork o salvato in backup
+
+00:01:13.132 --> 00:01:15.173
+-- tutto dal tuo laptop.
+
+00:01:18.173 --> 00:01:18.742
+Eccolo,
+
+00:01:18.742 --> 00:01:21.020
+registrato e pronto all'uso.
+
+00:01:24.317 --> 00:01:25.167
+Un'opzione comoda:
+
+00:01:25.167 --> 00:01:27.715
+aprire il repo direttamente in VS
+
+00:01:27.715 --> 00:01:29.414
+Code con questo comando.
+
+00:01:29.414 --> 00:01:31.113
+Non avvieremo l'editor qui,
+
+00:01:31.113 --> 00:01:33.661
+ma avvia una sessione remota nel
+
+00:01:33.661 --> 00:01:36.209
+repo tramite SSH così puoi modificare
+
+00:01:36.209 --> 00:01:37.483
+i suoi file.
+
+00:01:38.283 --> 00:01:40.970
+Eseguilo sul tuo laptop per modificare i
+
+00:01:40.970 --> 00:01:43.272
+file del repo in VS Code.
+
+00:01:44.075 --> 00:01:47.184
+Ecco il tuo primo repository,
+
+00:01:47.184 --> 00:01:49.049
+pronto a partire.
+
+00:01:49.049 --> 00:01:52.158
+Nel prossimo distribuiremo un'app al
+
+00:01:52.158 --> 00:01:53.401
+suo interno!

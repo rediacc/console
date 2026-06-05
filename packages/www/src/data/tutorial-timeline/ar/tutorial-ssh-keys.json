@@ -1,0 +1,75 @@
+{
+  "cast": "/assets/tutorials/tutorial-ssh-keys.cast",
+  "language": "ar",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-ssh-keys-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.626287,
+      "replayEndSec": 6.456735,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01.d9e3eb30.mp3",
+      "audioDurationSec": 16.927347,
+      "textHash": "d9e3eb3031398f29505093133a919c00fc82417b87626d1bc574efd86046a593",
+      "narrationText": "الخطوة الأولى. ننشئ مفتاح SSH جديدًا من نوع ed25519. هو الخيار الحديث الافتراضي: صغير وسريع ومدعوم على نطاق واسع. تحتاج لفعل ذلك مرة واحدة فقط عبر كل خادم ستضيفه.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01-after.35e2a62c.mp3",
+      "afterAudioDurationSec": 3.709388,
+      "afterTextHash": "35e2a62c80dce929f07bb86575c2755ab1ca3e4c7fc130ca2418834e171866ee"
+    },
+    {
+      "id": "tutorial-ssh-keys-02",
+      "markerIndex": 1,
+      "replayStartSec": 6.456735,
+      "replayEndSec": 13.33617,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02.1290a416.mp3",
+      "audioDurationSec": 10.762449,
+      "textHash": "1290a4169f720cf49ab3dbb01ad781337534ebf7be0f1bbf3afc3aa4873ce986",
+      "narrationText": "الخطوة الثانية. ننسخ المفتاح العام إلى الخادم باستخدام ssh-copy-id. تُطلب كلمة مرور الخادم لآخر مرة. بعد ذلك، لن يكون التحقق بكلمة المرور مطلوبًا لذلك الخادم.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02-after.7acc6fe5.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "7acc6fe541a4697c14eeb95a1728982645fdc02cb6c5350d285cfdfbbf89cdf3"
+    },
+    {
+      "id": "tutorial-ssh-keys-03",
+      "markerIndex": 2,
+      "replayStartSec": 13.33617,
+      "replayEndSec": 19.159643,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03.31167cec.mp3",
+      "audioDurationSec": 8.672653,
+      "textHash": "31167cec061931d5a906821feda37668ab6bdccf63f10e0b9923b326670b8646",
+      "narrationText": "الخطوة الثالثة. نسجّل المفتاح مع الأداة. من الآن فصاعدًا، تتحقق كل أوامر الأداة باستخدام هذا المفتاح. لا كلمات مرور، لا موجّهات تفاعلية.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03-after.aab5eaf4.mp3",
+      "afterAudioDurationSec": 3.866122,
+      "afterTextHash": "aab5eaf4cc5f2ab1c0f01588cf3741c1c7611f7bf1953a3f00f432e0eff0cefa"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/intro.81ac38a9.mp3",
+      "textHash": "81ac38a9650ac8e79d9c844ba6f5fa737e33c91eaaf57e93d16d3fe7e64b476c",
+      "audioDurationSec": 8.437551,
+      "narrationText": "حسنًا! لنُعدّ مفاتيح SSH حتى تتمكن الأداة من الوصول إلى خوادمك بدون كلمات مرور."
+    },
+    {
+      "id": "three-steps-generate-copy-register",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/three-steps-generate-copy-register.a1b96f22.mp3",
+      "textHash": "a1b96f221c5f062461b2362c843ada618e4d5715b9befcfb2d9f4142c0911699",
+      "audioDurationSec": 10.44898,
+      "narrationText": "ثلاث خطوات إجمالًا. أنشئ مفتاحًا على حاسوبك، انسخه إلى الخادم، ثم سجّله مع أداة سطر الأوامر. خطوتان منها تفعلهما مرة واحدة فقط."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/next-tutorial.fb33610e.mp3",
+      "textHash": "fb33610ec7ff47b1fd6aa3a49928a3154448169026997a85b3271b9f79a68f98",
+      "audioDurationSec": 6.765714,
+      "narrationText": "تم تسجيل المفتاح والأداة جاهزة. في الدرس التالي، نضيف أول خادم لك."
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "dc45f480f28dd62958d71649798f6d8408c5f26eac95c991f0872519ff8decd6"
+}

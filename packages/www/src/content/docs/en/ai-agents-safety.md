@@ -9,7 +9,7 @@ order: 35
 language: en
 ---
 
-When Claude Code, Cursor, Gemini CLI, Copilot CLI, or any other AI coding assistant drives `rdc`, the CLI treats it differently from a human at a keyboard. This page explains what the agent can do, what it cannot do, and how the guardrails hold even when the agent tries to talk itself out of them.
+So you're pointing an AI coding assistant at your infrastructure. When Claude Code, Cursor, Gemini CLI, Copilot CLI, or anything similar drives `rdc`, the CLI detects it and applies a different ruleset than a human at a keyboard. This page covers what the agent can and can't do, and how the guardrails hold even when it tries to talk its way out of them.
 
 ## Quick reference: what agents can and can't do
 
@@ -30,7 +30,7 @@ When Claude Code, Cursor, Gemini CLI, Copilot CLI, or any other AI coding assist
 | `rdc config field rotate --pointer <pointer>` | 🔴 refused | Same override; uses interactive confirmation |
 | `rdc term connect -m <machine>` (direct machine SSH) | 🔴 refused | Fork a repo first and connect to the fork |
 
-Everything an agent is refused from gets written to the audit log with `outcome: refused` and a reason.
+Every refusal gets written to the audit log with `outcome: refused` and a reason.
 
 ## How agents are detected
 
@@ -141,7 +141,7 @@ That file does not exist on macOS or Windows. With no way to verify legitimacy, 
 
 > The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
 
-In practice, non-Linux users have no escape hatch from the fork-first workflow. That is intentional. Agents are pushed through a sandbox they cannot reach behind, regardless of how they were prompted. Run your agent inside WSL, a Linux container, or a Linux VM if you need the override; otherwise, work on a fork.
+Non-Linux users have no escape hatch from the fork-first workflow. That's intentional. There's no way for an agent to bypass the sandbox, regardless of how it was prompted. If you need the override, run your agent inside WSL, a Linux container, or a Linux VM. Otherwise, work on a fork.
 
 ## Audit log
 
@@ -187,9 +187,9 @@ The log is safe to share with a security reviewer or attach to a bug report.
 
 The agent guardrails are **behavioral, not cryptographic**. A determined or prompted agent running as the same UID as the config file can always do `cat ~/.config/rediacc/rediacc.json` and read the plaintext, because the file is readable by the process.
 
-For real cryptographic enforcement, use the [encrypted config store](/en/docs/config-storage): secrets live on the server side, each sensitive field carries a per-field HMAC commitment, and the account worker refuses writes whose `--current` precondition doesn't hash-match what it has stored. The server never sees the plaintext: zero-knowledge: but it does enforce the gate.
+For real cryptographic enforcement, use the [encrypted config store](/en/docs/config-storage): secrets live on the server side, each sensitive field carries a per-field HMAC commitment, and the account worker refuses writes whose `--current` precondition doesn't hash-match what it has stored. The server never sees the plaintext (zero-knowledge), but it does enforce the gate.
 
-The local-file path is "easy path is safe". The remote-store path is "hard path is hard too".
+Local files: the easy path is the safe one. Remote store: the bypass route is cryptographically hard too.
 
 ## What Rediacc does not isolate
 

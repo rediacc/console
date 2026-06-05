@@ -1,0 +1,31 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:09.486
+Redes e Domínios
+
+00:00:09.486 --> 00:00:28.931
+O caminho em quatro etapas
+
+00:00:28.931 --> 00:00:42.711
+Etapa 1: token de API do Cloudflare
+
+00:00:42.711 --> 00:01:07.864
+Etapa 2: Configurar infraestrutura
+
+00:01:07.864 --> 00:01:28.462
+Etapa 2: Verificar as configurações
+
+00:01:28.462 --> 00:01:50.547
+Etapa 3: Enviar para o servidor
+
+00:01:50.547 --> 00:02:11.405
+Etapa 4: Criar o repo de infra
+
+00:02:11.405 --> 00:02:29.997
+Etapa 4: Aplicar o template do proxy
+
+00:02:29.997 --> 00:02:53.982
+Etapa 4: Iniciar o proxy
+
+00:02:53.982 --> 00:02:57.582
+Próximo: Modo de Produção

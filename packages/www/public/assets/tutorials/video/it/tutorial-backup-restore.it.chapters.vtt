@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:11.808
+Backup e Ripristino
+
+00:00:11.808 --> 00:00:23.498
+Tre passaggi: configura, invia, ripristina
+
+00:00:23.498 --> 00:00:44.995
+Passaggio 1: importa la configurazione rclone
+
+00:00:44.995 --> 00:01:00.708
+Passaggio 2: elenca gli storage configurati
+
+00:01:00.708 --> 00:01:32.436
+Passaggio 3: invia un backup completo
+
+00:01:32.436 --> 00:02:00.269
+Passaggio 4: elenca i backup sullo storage
+
+00:02:00.269 --> 00:02:05.549
+Avanti: Monitoraggio

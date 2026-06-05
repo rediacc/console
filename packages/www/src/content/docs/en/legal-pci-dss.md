@@ -1,12 +1,12 @@
 ---
 title: "PCI DSS Compliance"
-description: "How Rediacc maps to PCI DSS requirements for protecting payment card data with encryption, network segmentation, and access control."
+description: "How Rediacc meets PCI DSS requirements: immutable backups, automatic network isolation, and access control at the infrastructure level."
 category: "Legal"
 order: 6
 language: en
 ---
 
-The Payment Card Industry Data Security Standard (PCI DSS) is required for any organization that stores, processes, or transmits cardholder data. The current version is PCI DSS v4.0.1.
+Look, PCI DSS v4.0.1. is not optional if you handle cardholder data. Version 4.0.1. comes down to one requirement: infrastructure-level isolation from everything else.
 
 Reference: [PCI Security Standards Council](https://www.pcisecuritystandards.org/document_library/)
 
@@ -27,7 +27,7 @@ Reference: [PCI Security Standards Council](https://www.pcisecuritystandards.org
 
 ## Network Segmentation
 
-PCI DSS leans hard on segmentation: isolate the cardholder data environment (CDE), or fail the audit. Rediacc gives you that segmentation by default:
+PCI DSS leans hard on segmentation. I keep seeing teams layer iptables rules on top of insufficient isolation. That doesn't work. The teams that pass have segmentation built into the architecture. Rediacc gives you that by default:
 
 - Each repository runs in its own Docker daemon at `/var/run/rediacc/docker-<networkId>.sock`
 - Repositories have isolated loopback IP subnets (127.0.x.x/26, 61 usable IPs per network)
@@ -38,7 +38,7 @@ A payment processing repository runs on its own Docker daemon and its own loopba
 
 ## Scope Reduction
 
-Self-hosted Rediacc reduces PCI DSS compliance scope:
+Self-hosted Rediacc reduces compliance scope. You don't need to manually configure network segmentation; it's automatic by design. Our documentation for this part still needs work, but the isolation is solid.
 
 - No third-party cloud provider in the cardholder data flow
 - No SaaS vendor to evaluate under Req 12.8 (third-party service providers)
@@ -47,7 +47,7 @@ Self-hosted Rediacc reduces PCI DSS compliance scope:
 
 ## Enforcement Cases
 
-Weak segmentation and missing encryption are behind the most costly PCI DSS enforcement actions:
+Most PCI audit failures come down to one of two things: segmentation that was never properly isolated, or encryption that was never tested against real attacks.
 
 - Heartland Payment Systems (2008): attackers moved laterally across 48 databases due to poor network segmentation, exposing 130 million card numbers. [Total cost exceeded $200 million.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): attackers pivoted from an HVAC vendor's network access to point-of-sale systems due to flat network architecture, capturing 40 million payment cards. [Settled for $18.5 million with 47 state AGs.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

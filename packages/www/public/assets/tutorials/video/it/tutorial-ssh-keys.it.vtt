@@ -1,0 +1,139 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.456
+Bene!
+
+00:00:01.456 --> 00:00:04.194
+Configuriamo le chiavi SSH cosi' la
+
+00:00:04.194 --> 00:00:06.932
+CLI potra' raggiungere i tuoi server
+
+00:00:06.932 --> 00:00:07.844
+senza password.
+
+00:00:08.603 --> 00:00:10.017
+Tre passi in totale.
+
+00:00:10.017 --> 00:00:12.138
+Genera una chiave sul tuo laptop,
+
+00:00:12.138 --> 00:00:13.199
+copiala sul server,
+
+00:00:13.199 --> 00:00:16.027
+poi registrala con lo strumento da riga di
+
+00:00:16.027 --> 00:00:16.381
+comando.
+
+00:00:16.381 --> 00:00:19.209
+Due di questi li fai una sola volta.
+
+00:00:22.468 --> 00:00:23.563
+Passo uno.
+
+00:00:23.563 --> 00:00:26.302
+Generiamo una nuova chiave SSH
+
+00:00:26.302 --> 00:00:26.850
+ed25519.
+
+00:00:26.850 --> 00:00:29.588
+ed25519 e' il formato moderno
+
+00:00:29.588 --> 00:00:30.136
+consigliato:
+
+00:00:30.136 --> 00:00:30.684
+compatto,
+
+00:00:30.684 --> 00:00:32.874
+veloce e ampiamente supportato.
+
+00:00:32.874 --> 00:00:35.613
+Devi farlo una sola volta
+
+00:00:35.613 --> 00:00:38.351
+per tutti i server che
+
+00:00:38.351 --> 00:00:38.899
+aggiungerai.
+
+00:00:39.699 --> 00:00:40.506
+Chiave generata.
+
+00:00:40.506 --> 00:00:43.332
+La meta' pubblica e' quella che copieremo
+
+00:00:43.332 --> 00:00:44.140
+sul server.
+
+00:00:47.469 --> 00:00:48.471
+Passo due.
+
+00:00:48.471 --> 00:00:50.978
+Copiamo la chiave pubblica sul
+
+00:00:50.978 --> 00:00:52.481
+server con ssh-copy-id.
+
+00:00:52.481 --> 00:00:54.987
+La password del server viene
+
+00:00:54.987 --> 00:00:56.992
+richiesta per l'ultima volta.
+
+00:00:56.992 --> 00:00:58.496
+Da questo momento,
+
+00:00:58.496 --> 00:01:01.002
+l'autenticazione con password non e'
+
+00:01:01.002 --> 00:01:03.508
+piu' necessaria per quel server.
+
+00:01:05.508 --> 00:01:07.197
+Eseguilo sul tuo laptop.
+
+00:01:07.197 --> 00:01:08.464
+Una volta riuscito,
+
+00:01:08.464 --> 00:01:10.576
+le password sono fuori discussione.
+
+00:01:13.920 --> 00:01:14.819
+Passo tre.
+
+00:01:14.819 --> 00:01:17.514
+Registriamo la chiave con la CLI.
+
+00:01:17.514 --> 00:01:18.862
+Da questo momento,
+
+00:01:18.862 --> 00:01:21.558
+ogni comando si autentica con questa
+
+00:01:21.558 --> 00:01:22.008
+chiave.
+
+00:01:22.008 --> 00:01:23.355
+Niente piu' password,
+
+00:01:23.355 --> 00:01:25.153
+niente piu' prompt interattivi.
+
+00:01:27.153 --> 00:01:29.843
+Chiave registrata con la CLI.
+
+00:01:30.623 --> 00:01:33.227
+La chiave e' registrata e la
+
+00:01:33.227 --> 00:01:35.396
+CLI e' pronta a partire.
+
+00:01:35.396 --> 00:01:37.1000
+Nel prossimo aggiungeremo il tuo primo
+
+00:01:37.1000 --> 00:01:38.434
+server.

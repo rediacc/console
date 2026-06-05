@@ -8,7 +8,7 @@ language: en
 
 # Quick Start
 
-Deploy an encrypted, isolated container environment on your own server. No cloud accounts or SaaS dependencies. Everything runs on hardware you control.
+You install Rediacc on your own server. Encrypted, isolated container environments, no cloud accounts, no SaaS dependencies. Your hardware, your control.
 
 ---
 
@@ -18,7 +18,7 @@ Deploy an encrypted, isolated container environment on your own server. No cloud
 
 A repo is a single encrypted file on disk. Move it, back it up, fork it. It's just a file. When mounted, it becomes a folder with a dedicated Docker daemon and your app data inside.
 
-Think of a repo like a USB drive: plug it into any machine and the apps and data mount, ready to run. Move it across machines or cloud providers without rebuilding anything. Plug & Run.
+Think of a repo like a USB drive: plug it into any machine and the apps and data mount, ready to run. Move it across machines or cloud providers without rebuilding anything.
 
 **Two tools, two roles:**
 
@@ -95,7 +95,7 @@ rdc repo template list                                        # Show embedded te
 rdc repo template apply --name app-postgres -m my-server -r my-app  # Deploy docker-compose.yml + Rediaccfile
 ```
 
-Templates provide a `docker-compose.yml`, `Rediaccfile`, and supporting files. Without a template (or your own compose file), there is nothing to start.
+Templates provide a `docker-compose.yml`, `Rediaccfile`, and supporting files. Without a template (or your own compose file), there is nothing to start. Use the built-in template for your first repo. It is the fastest path to seeing the full workflow end to end.
 
 ### 3. Start the Repo
 

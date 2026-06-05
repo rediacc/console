@@ -1,0 +1,154 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.917
+Tudo certo!
+
+00:00:01.917 --> 00:00:04.668
+Vamos levar a sua aplicação do
+
+00:00:04.668 --> 00:00:06.043
+desenvolvimento à produção.
+
+00:00:06.043 --> 00:00:07.418
+Três passos curtos,
+
+00:00:07.418 --> 00:00:10.169
+todos conduzidos a partir do portátil.
+
+00:00:10.925 --> 00:00:13.509
+Durante o desenvolvimento corre a aplicação
+
+00:00:13.509 --> 00:00:16.093
+a partir de dentro do repo,
+
+00:00:16.093 --> 00:00:18.677
+por isso para quando se desliga.
+
+00:00:18.677 --> 00:00:21.261
+Em produção lança-a a partir do
+
+00:00:21.261 --> 00:00:22.983
+portátil com a CLI,
+
+00:00:22.983 --> 00:00:25.567
+e continua a correr em segundo
+
+00:00:25.567 --> 00:00:25.998
+plano.
+
+00:00:29.271 --> 00:00:32.023
+Vamos iniciar a aplicação em modo de
+
+00:00:32.023 --> 00:00:33.988
+produção a partir do portátil.
+
+00:00:33.988 --> 00:00:36.740
+O comando de deploy chama a mesma
+
+00:00:36.740 --> 00:00:39.492
+função up que usámos durante o desenvolvimento,
+
+00:00:39.492 --> 00:00:41.457
+mas corre em segundo plano.
+
+00:00:41.457 --> 00:00:44.209
+Pode fechar o portátil e a aplicação
+
+00:00:44.209 --> 00:00:45.389
+continua a funcionar.
+
+00:00:48.139 --> 00:00:50.783
+Aplicação a correr em produção.
+
+00:00:50.783 --> 00:00:51.841
+Mesmo comando,
+
+00:00:51.841 --> 00:00:52.899
+mesmo resultado,
+
+00:00:52.899 --> 00:00:54.486
+no servidor real.
+
+00:00:57.816 --> 00:01:00.572
+Agora vamos ativar o arranque automático
+
+00:01:00.572 --> 00:01:03.329
+para que a aplicação sobreviva a
+
+00:01:03.329 --> 00:01:05.166
+um reinício do servidor.
+
+00:01:05.166 --> 00:01:06.545
+A partir daqui,
+
+00:01:06.545 --> 00:01:08.382
+se o servidor reiniciar,
+
+00:01:08.382 --> 00:01:11.138
+este repositório volta a arrancar automaticamente.
+
+00:01:13.388 --> 00:01:15.318
+Arranque automático ativo.
+
+00:01:15.318 --> 00:01:17.891
+A aplicação sobrevive a
+
+00:01:17.891 --> 00:01:18.535
+reinícios.
+
+00:01:21.854 --> 00:01:24.423
+Vamos listar os repositórios com arranque
+
+00:01:24.423 --> 00:01:25.279
+automático ativado.
+
+00:01:25.279 --> 00:01:27.848
+Confirma que a nossa aplicação está
+
+00:01:27.848 --> 00:01:29.560
+na lista de arranque.
+
+00:01:31.560 --> 00:01:32.344
+Aqui está,
+
+00:01:32.344 --> 00:01:33.911
+na lista de arranque.
+
+00:01:37.232 --> 00:01:39.369
+E para parar a aplicação,
+
+00:01:39.369 --> 00:01:41.933
+um único comando a partir do
+
+00:01:41.933 --> 00:01:42.360
+portátil.
+
+00:01:42.360 --> 00:01:44.070
+Um comando para iniciar,
+
+00:01:44.070 --> 00:01:45.779
+um comando para parar.
+
+00:01:45.779 --> 00:01:47.916
+Tudo a partir do terminal.
+
+00:01:50.416 --> 00:01:50.970
+Parada.
+
+00:01:50.970 --> 00:01:53.188
+Um comando para arrancar,
+
+00:01:53.188 --> 00:01:55.406
+um comando para parar.
+
+00:01:56.224 --> 00:01:59.141
+E é assim o modo
+
+00:01:59.141 --> 00:02:00.308
+de produção,
+
+00:02:00.308 --> 00:02:01.475
+em resumo.
+
+00:02:01.475 --> 00:02:03.225
+Até ao próximo!

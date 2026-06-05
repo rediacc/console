@@ -1,0 +1,124 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.541
+Pekâlâ!
+
+00:00:01.541 --> 00:00:04.247
+Komut satırı aracını dizüstü bilgisayarınıza
+
+00:00:04.247 --> 00:00:04.788
+kuralım.
+
+00:00:05.561 --> 00:00:06.638
+Üç adım.
+
+00:00:06.638 --> 00:00:08.254
+Kurulum sayfasını açın,
+
+00:00:08.254 --> 00:00:10.946
+işletim sisteminizi seçin ve ardından
+
+00:00:10.946 --> 00:00:12.562
+komutu terminalinize yapıştırın.
+
+00:00:13.327 --> 00:00:16.141
+Kurulum sayfasına gidin ve hızlı kurulum bölümüne
+
+00:00:16.141 --> 00:00:16.543
+kaydırın.
+
+00:00:16.543 --> 00:00:19.357
+Hangi platformda olursanız olun size uygun tek
+
+00:00:19.357 --> 00:00:20.563
+satırlık komutu üretir.
+
+00:00:23.848 --> 00:00:26.643
+Önce CLI'nin
+
+00:00:26.643 --> 00:00:29.438
+kurulu olduğunu
+
+00:00:29.438 --> 00:00:30.836
+doğrulayalım.
+
+00:00:30.836 --> 00:00:33.631
+Versiyon bayrağı
+
+00:00:33.631 --> 00:00:36.426
+kurulu versiyonu
+
+00:00:36.426 --> 00:00:37.824
+yazdırır;
+
+00:00:37.824 --> 00:00:40.619
+böylece kurulumun
+
+00:00:40.619 --> 00:00:43.414
+tamamlandığını anlayabiliriz.
+
+00:00:46.414 --> 00:00:47.406
+Kurulum tamam.
+
+00:00:47.406 --> 00:00:49.888
+rdc ikili dosyası artık path'te.
+
+00:00:53.197 --> 00:00:54.073
+Şimdi tanı denetimini çalıştıralım.
+
+00:00:54.073 --> 00:00:55.386
+CLI'nin ihtiyaç duyduğu her bağımlılığı (Node,
+
+00:00:55.386 --> 00:00:55.605
+SSH,
+
+00:00:55.605 --> 00:00:55.824
+Docker,
+
+00:00:55.824 --> 00:00:58.013
+renet ikili dosyası) tek tek kontrol eder ve eksikleri bildirir.
+
+00:00:58.013 --> 00:00:58.669
+Temiz bir rapor,
+
+00:00:58.669 --> 00:00:59.545
+hazır olduğumuz anlamına gelir.
+
+00:01:00.345 --> 00:01:01.599
+Versiyon yazdırıldı.
+
+00:01:01.599 --> 00:01:02.226
+Hazırsınız.
+
+00:01:03.044 --> 00:01:05.557
+Komut satırı aracı dizüstü bilgisayarınızda yaşar.
+
+00:01:05.557 --> 00:01:08.071
+Sunucuda renet adlı ayrı bir bileşen
+
+00:01:08.071 --> 00:01:08.490
+çalışır;
+
+00:01:08.490 --> 00:01:11.003
+CLI onu SSH üzerinden sağlar ve
+
+00:01:11.003 --> 00:01:11.422
+sürer,
+
+00:01:11.422 --> 00:01:13.935
+böylece sunucuya elle giriş yapmanıza hiç
+
+00:01:13.935 --> 00:01:14.773
+gerek kalmaz.
+
+00:01:15.547 --> 00:01:16.947
+Kurulum tamam!
+
+00:01:16.947 --> 00:01:17.647
+Sırada,
+
+00:01:17.647 --> 00:01:20.448
+CLI'nin sunucularınıza ulaşabilmesi için
+
+00:01:20.448 --> 00:01:22.548
+SSH anahtarınızı ayarlayacağız.

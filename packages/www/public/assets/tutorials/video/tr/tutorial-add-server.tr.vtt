@@ -1,0 +1,118 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.368
+Pekâlâ!
+
+00:00:01.368 --> 00:00:02.472
+İlk sunucunuzu ekleyelim.
+
+00:00:02.472 --> 00:00:05.049
+İki komut ve yaklaşık bir dakika sürüyor.
+
+00:00:05.817 --> 00:00:07.396
+İki parça var.
+
+00:00:07.396 --> 00:00:10.028
+Komut satırı aracı dizüstü bilgisayarınızda,
+
+00:00:10.028 --> 00:00:12.659
+renet adlı orkestratör ise sunucuda
+
+00:00:12.659 --> 00:00:13.185
+çalışır.
+
+00:00:13.185 --> 00:00:15.817
+CLI sunucuya SSH üzerinden bağlanır;
+
+00:00:15.817 --> 00:00:18.449
+yani sunucuya elle giriş yapmanıza
+
+00:00:18.449 --> 00:00:20.028
+hiç gerek kalmaz.
+
+00:00:23.281 --> 00:00:25.323
+SSH anahtarını,
+
+00:00:25.323 --> 00:00:28.386
+makine listesini ve
+
+00:00:28.386 --> 00:00:31.449
+altyapı ayarlarını barındıracak
+
+00:00:31.449 --> 00:00:34.513
+bir yapılandırma profili
+
+00:00:34.513 --> 00:00:36.555
+oluşturarak başlıyoruz.
+
+00:00:36.555 --> 00:00:38.597
+Bu profil,
+
+00:00:38.597 --> 00:00:41.660
+buradan itibaren yapacağımız
+
+00:00:41.660 --> 00:00:44.723
+her işlem için
+
+00:00:44.723 --> 00:00:46.765
+temel oluşturuyor.
+
+00:00:48.015 --> 00:00:48.770
+Profil oluşturuldu.
+
+00:00:48.770 --> 00:00:51.411
+Yapılandıracağımız her şey bu tek dosyada yaşar.
+
+00:00:54.721 --> 00:00:55.968
+Şimdi sunucuyu komut satırına kaydediyoruz:
+
+00:00:55.968 --> 00:00:56.218
+adını,
+
+00:00:56.218 --> 00:00:57.715
+IP adresini ve SSH kullanıcısını belirtiyoruz.
+
+00:00:57.715 --> 00:00:59.710
+Host anahtarları güvenilir erişim için otomatik olarak taranıyor.
+
+00:01:02.397 --> 00:01:03.390
+Sunucu kaydedildi.
+
+00:01:03.390 --> 00:01:05.871
+Host anahtarları otomatik olarak tarandı.
+
+00:01:11.837 --> 00:01:15.098
+Sırada sunucunun yapılandırılması
+
+00:01:15.098 --> 00:01:16.185
+var.
+
+00:01:16.185 --> 00:01:19.446
+Bu adım renet'i
+
+00:01:19.446 --> 00:01:22.707
+yüklüyor ve şifreli
+
+00:01:22.707 --> 00:01:25.968
+veri deposunu oluşturuyor.
+
+00:01:25.968 --> 00:01:29.229
+Tamamlandığında sunucu depo
+
+00:01:29.229 --> 00:01:31.403
+barındırmaya hazır.
+
+00:01:31.403 --> 00:01:32.026
+Tamam.
+
+00:01:32.026 --> 00:01:35.142
+Renet kuruldu ve veri deposu
+
+00:01:35.142 --> 00:01:35.765
+hazır.
+
+00:01:36.535 --> 00:01:38.194
+Sunucu ekleme işlemi böylece tamamlandı!
+
+00:01:38.194 --> 00:01:39.853
+Bir sonraki bölümde görüşmek üzere.

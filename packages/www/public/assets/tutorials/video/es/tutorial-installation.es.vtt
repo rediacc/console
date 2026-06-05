@@ -1,0 +1,136 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.657
+¡Muy bien!
+
+00:00:01.657 --> 00:00:04.284
+Vamos a instalar la herramienta de línea de
+
+00:00:04.284 --> 00:00:05.598
+comandos en tu laptop.
+
+00:00:06.374 --> 00:00:07.346
+Tres pasos.
+
+00:00:07.346 --> 00:00:09.777
+Abrir la página de instalación,
+
+00:00:09.777 --> 00:00:12.694
+elegir tu sistema operativo y pegar
+
+00:00:12.694 --> 00:00:15.125
+el comando en tu terminal.
+
+00:00:15.904 --> 00:00:18.713
+Ve a la página de instalación y
+
+00:00:18.713 --> 00:00:21.521
+desplázate hasta la sección de instalación rápida.
+
+00:00:21.521 --> 00:00:24.330
+Genera el comando correcto para la plataforma
+
+00:00:24.330 --> 00:00:25.935
+en la que estés.
+
+00:00:29.212 --> 00:00:29.776
+Primero,
+
+00:00:29.776 --> 00:00:32.599
+confirmamos que el CLI está
+
+00:00:32.599 --> 00:00:33.163
+disponible.
+
+00:00:33.163 --> 00:00:35.985
+Ejecutar el CLI con el
+
+00:00:35.985 --> 00:00:38.807
+flag de versión imprime la
+
+00:00:38.807 --> 00:00:41.629
+versión instalada y nos indica
+
+00:00:41.629 --> 00:00:44.452
+que la instalación se completó
+
+00:00:44.452 --> 00:00:45.016
+correctamente.
+
+00:00:48.016 --> 00:00:48.916
+Instalación lista.
+
+00:00:48.916 --> 00:00:51.615
+El binario rdc está en tu
+
+00:00:51.615 --> 00:00:52.065
+PATH.
+
+00:00:55.352 --> 00:00:58.097
+Ahora vamos a ejecutar el doctor
+
+00:00:58.097 --> 00:00:59.012
+del CLI.
+
+00:00:59.012 --> 00:01:01.757
+Revisa las dependencias que necesita el
+
+00:01:01.757 --> 00:01:02.214
+CLI,
+
+00:01:02.214 --> 00:01:03.129
+como Node,
+
+00:01:03.129 --> 00:01:04.959
+SSH y el resto,
+
+00:01:04.959 --> 00:01:07.247
+e informa sobre cualquier problema.
+
+00:01:07.247 --> 00:01:09.992
+Un reporte limpio significa que estás
+
+00:01:09.992 --> 00:01:12.279
+listo para agregar un servidor.
+
+00:01:13.079 --> 00:01:14.133
+Versión impresa.
+
+00:01:14.133 --> 00:01:16.240
+Todo listo para continuar.
+
+00:01:17.043 --> 00:01:19.762
+La herramienta de línea de
+
+00:01:19.762 --> 00:01:22.481
+comandos vive en tu laptop.
+
+00:01:22.481 --> 00:01:25.200
+El servidor ejecuta un componente
+
+00:01:25.200 --> 00:01:26.832
+separado llamado renet,
+
+00:01:26.832 --> 00:01:29.551
+que el CLI aprovisiona y
+
+00:01:29.551 --> 00:01:31.182
+maneja por SSH,
+
+00:01:31.182 --> 00:01:33.901
+así que nunca necesitas iniciar
+
+00:01:33.901 --> 00:01:34.989
+sesión manualmente.
+
+00:01:35.769 --> 00:01:37.446
+La instalación está lista.
+
+00:01:37.446 --> 00:01:39.962
+Lo siguiente es configurar tu clave
+
+00:01:39.962 --> 00:01:42.478
+SSH para que el CLI pueda
+
+00:01:42.478 --> 00:01:43.736
+alcanzar tus servidores.

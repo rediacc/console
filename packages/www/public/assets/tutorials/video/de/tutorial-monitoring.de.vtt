@@ -1,0 +1,247 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.735
+Alles klar!
+
+00:00:01.735 --> 00:00:03.939
+Deine App ist live und gesichert,
+
+00:00:03.939 --> 00:00:05.408
+jetzt sorgen wir dafür,
+
+00:00:05.408 --> 00:00:06.878
+dass sie gesund bleibt.
+
+00:00:07.651 --> 00:00:10.354
+Die CLI liefert dir vom
+
+00:00:10.354 --> 00:00:13.057
+Laptop aus ein vollständiges Bild
+
+00:00:13.057 --> 00:00:14.138
+jedes Servers.
+
+00:00:14.138 --> 00:00:16.301
+Drei Blickwinkel zum Prüfen:
+
+00:00:16.301 --> 00:00:16.842
+System-Status,
+
+00:00:16.842 --> 00:00:19.545
+laufende Container und die Repositories
+
+00:00:19.545 --> 00:00:20.085
+selbst.
+
+00:00:23.373 --> 00:00:26.076
+Wir beginnen mit der Systemansicht.
+
+00:00:26.076 --> 00:00:28.779
+Der Machine-Query-Befehl mit dem system-Filter
+
+00:00:28.779 --> 00:00:29.860
+zeigt Uptime,
+
+00:00:29.860 --> 00:00:31.482
+Festplattennutzung und Speicherstatus.
+
+00:00:31.482 --> 00:00:33.645
+Wenn etwas nicht stimmt,
+
+00:00:33.645 --> 00:00:35.807
+meldet der Bericht es.
+
+00:00:35.807 --> 00:00:36.236
+Laufzeit,
+
+00:00:36.236 --> 00:00:36.664
+Platte,
+
+00:00:36.664 --> 00:00:37.093
+Storage.
+
+00:00:37.093 --> 00:00:37.521
+Alles,
+
+00:00:37.521 --> 00:00:38.806
+was du brauchst,
+
+00:00:38.806 --> 00:00:40.091
+auf einen Blick.
+
+00:00:43.345 --> 00:00:44.468
+Jetzt Container.
+
+00:00:44.468 --> 00:00:47.276
+Diese Ansicht listet alle laufenden
+
+00:00:47.276 --> 00:00:50.085
+Container über alle Repositories auf
+
+00:00:50.085 --> 00:00:51.769
+der Maschine auf:
+
+00:00:51.769 --> 00:00:52.331
+Name,
+
+00:00:52.331 --> 00:00:52.893
+Status,
+
+00:00:52.893 --> 00:00:53.454
+Zustand,
+
+00:00:53.454 --> 00:00:54.016
+CPU,
+
+00:00:54.016 --> 00:00:54.578
+Speicher,
+
+00:00:54.578 --> 00:00:57.386
+plus welches Repo jeden Container
+
+00:00:57.386 --> 00:00:57.947
+besitzt.
+
+00:00:57.947 --> 00:01:00.364
+Jeder Container in jedem Repo,
+
+00:01:00.364 --> 00:01:01.814
+in einer Ansicht.
+
+00:01:05.089 --> 00:01:07.482
+Und die Repos selbst.
+
+00:01:07.482 --> 00:01:08.080
+Größe,
+
+00:01:08.080 --> 00:01:08.678
+Einhängestatus,
+
+00:01:08.678 --> 00:01:09.276
+Docker-Daemon-Status,
+
+00:01:09.276 --> 00:01:09.875
+Festplattennutzung.
+
+00:01:09.875 --> 00:01:10.473
+Alles,
+
+00:01:10.473 --> 00:01:13.464
+was Sie über jede isolierte
+
+00:01:13.464 --> 00:01:16.455
+Umgebung auf der Maschine wissen
+
+00:01:16.455 --> 00:01:17.053
+müssen.
+
+00:01:17.053 --> 00:01:18.202
+Alle Repos,
+
+00:01:18.202 --> 00:01:19.927
+alle ihre Daemons,
+
+00:01:19.927 --> 00:01:21.651
+ihre gesamte Plattennutzung.
+
+00:01:24.919 --> 00:01:27.708
+Der Machine-Query-Befehl gibt Ihnen alles
+
+00:01:27.708 --> 00:01:28.823
+auf einmal.
+
+00:01:28.823 --> 00:01:29.381
+Systeminformationen,
+
+00:01:29.381 --> 00:01:29.938
+Container,
+
+00:01:29.938 --> 00:01:30.496
+Repositories,
+
+00:01:30.496 --> 00:01:31.612
+alles zusammen.
+
+00:01:31.612 --> 00:01:34.400
+Einmal ausführen und Sie haben
+
+00:01:34.400 --> 00:01:36.073
+das vollständige Bild.
+
+00:01:36.073 --> 00:01:37.014
+Alles zusammen,
+
+00:01:37.014 --> 00:01:38.424
+kein Filter nötig.
+
+00:01:41.697 --> 00:01:44.781
+Und schließlich die Diagnoseprüfung für
+
+00:01:44.781 --> 00:01:47.865
+eine lokale Plausibilitätsprüfung auf Ihrem
+
+00:01:47.865 --> 00:01:48.482
+Laptop.
+
+00:01:48.482 --> 00:01:49.098
+Node,
+
+00:01:49.098 --> 00:01:49.715
+SSH-Schlüssel,
+
+00:01:49.715 --> 00:01:50.332
+renet,
+
+00:01:50.332 --> 00:01:50.949
+Docker,
+
+00:01:50.949 --> 00:01:51.565
+alles,
+
+00:01:51.565 --> 00:01:54.649
+wovon die CLI selbst abhängt.
+
+00:01:54.649 --> 00:01:57.733
+Das ist die vollständige Serie.
+
+00:01:57.733 --> 00:02:00.817
+Von der Installation bis zum
+
+00:02:00.817 --> 00:02:01.434
+Monitoring,
+
+00:02:01.434 --> 00:02:03.901
+alles aus Ihrem Terminal.
+
+00:02:03.901 --> 00:02:05.390
+Alles grün heißt,
+
+00:02:05.390 --> 00:02:07.872
+deine lokale CLI ist gesund.
+
+00:02:08.611 --> 00:02:11.609
+Damit schließt sich die Serie.
+
+00:02:11.609 --> 00:02:14.008
+Du kannst jetzt installieren,
+
+00:02:14.008 --> 00:02:14.608
+konfigurieren,
+
+00:02:14.608 --> 00:02:15.207
+deployen,
+
+00:02:15.207 --> 00:02:15.807
+forken,
+
+00:02:15.807 --> 00:02:17.007
+live gehen,
+
+00:02:17.007 --> 00:02:18.206
+Autostart einrichten,
+
+00:02:18.206 --> 00:02:20.005
+sichern und überwachen,
+
+00:02:20.005 --> 00:02:22.404
+alles aus deinem Terminal!

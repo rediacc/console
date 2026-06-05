@@ -1,0 +1,187 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.467
+Vamos implementar uma aplicação a sério!
+
+00:00:03.467 --> 00:00:06.344
+Passamos de um repositório vazio para contentores
+
+00:00:06.344 --> 00:00:08.811
+em execução em três passos curtos.
+
+00:00:09.578 --> 00:00:11.494
+O fluxo é simples:
+
+00:00:11.494 --> 00:00:12.930
+escolher um template,
+
+00:00:12.930 --> 00:00:15.325
+aplicá-lo ao repositório e executá-lo.
+
+00:00:15.325 --> 00:00:17.720
+A CLI traz templates incorporados,
+
+00:00:17.720 --> 00:00:20.593
+por isso nunca temos de escrever
+
+00:00:20.593 --> 00:00:22.509
+um docker-compose de raiz.
+
+00:00:25.765 --> 00:00:26.766
+Passo um.
+
+00:00:26.766 --> 00:00:29.267
+Vamos listar os templates disponíveis.
+
+00:00:29.267 --> 00:00:31.769
+O Rediacc inclui configurações prontas
+
+00:00:31.769 --> 00:00:34.271
+para as aplicações mais comuns,
+
+00:00:34.271 --> 00:00:36.773
+para não termos de escrever
+
+00:00:36.773 --> 00:00:38.774
+um docker-compose de raiz.
+
+00:00:40.274 --> 00:00:42.843
+O catálogo completo de templates.
+
+00:00:42.843 --> 00:00:45.411
+Cada um é uma combinação
+
+00:00:45.411 --> 00:00:47.980
+testada de compose e Rediaccfile.
+
+00:00:51.307 --> 00:00:52.175
+Passo dois.
+
+00:00:52.175 --> 00:00:54.780
+Vamos aplicar o template app-postgres ao
+
+00:00:54.780 --> 00:00:55.215
+repositório.
+
+00:00:55.215 --> 00:00:56.517
+Surgem dois ficheiros:
+
+00:00:56.517 --> 00:00:59.122
+o docker-compose.yml que descreve os contentores,
+
+00:00:59.122 --> 00:01:01.727
+e o Rediaccfile que define os
+
+00:01:01.727 --> 00:01:03.898
+hooks de arranque e paragem.
+
+00:01:06.148 --> 00:01:07.101
+Template aplicado.
+
+00:01:07.101 --> 00:01:09.962
+O repo tem agora o ficheiro
+
+00:01:09.962 --> 00:01:11.869
+compose e o Rediaccfile.
+
+00:01:15.202 --> 00:01:16.205
+Passo três.
+
+00:01:16.205 --> 00:01:18.210
+Vamos iniciar o repositório.
+
+00:01:18.210 --> 00:01:20.716
+A ferramenta arranca os contentores,
+
+00:01:20.716 --> 00:01:23.223
+monta o volume encriptado e
+
+00:01:23.223 --> 00:01:25.729
+liga o daemon Docker isolado.
+
+00:01:28.479 --> 00:01:30.256
+Contentores em execução,
+
+00:01:30.256 --> 00:01:31.440
+volume montado,
+
+00:01:31.440 --> 00:01:33.808
+daemon Docker isolado ativo.
+
+00:01:37.136 --> 00:01:39.832
+Vamos verificar o que está a
+
+00:01:39.832 --> 00:01:40.281
+correr.
+
+00:01:40.281 --> 00:01:42.977
+O docker ps mostra apenas os
+
+00:01:42.977 --> 00:01:44.325
+contentores deste repositório.
+
+00:01:44.325 --> 00:01:47.021
+Os outros repositórios no mesmo servidor
+
+00:01:47.021 --> 00:01:49.717
+têm os seus próprios daemons e
+
+00:01:49.717 --> 00:01:52.412
+são completamente invisíveis a partir desta
+
+00:01:52.412 --> 00:01:52.862
+vista.
+
+00:01:55.612 --> 00:01:58.333
+Apenas os contentores deste repo.
+
+00:01:58.333 --> 00:02:00.510
+O isolamento é real,
+
+00:02:00.510 --> 00:02:02.142
+não é configuração.
+
+00:02:05.477 --> 00:02:08.288
+Vamos verificar o que está em
+
+00:02:08.288 --> 00:02:08.757
+execução.
+
+00:02:08.757 --> 00:02:11.568
+docker ps aqui lista apenas os
+
+00:02:11.568 --> 00:02:12.974
+containers deste repo.
+
+00:02:12.974 --> 00:02:15.786
+Os outros repos no mesmo servidor
+
+00:02:15.786 --> 00:02:18.597
+têm seus próprios daemons e são
+
+00:02:18.597 --> 00:02:20.471
+completamente invisíveis nesta visão.
+
+00:02:21.721 --> 00:02:24.540
+Apenas os containers deste repo.
+
+00:02:24.540 --> 00:02:26.796
+O isolamento é real,
+
+00:02:26.796 --> 00:02:28.487
+não é configuração.
+
+00:02:29.283 --> 00:02:31.898
+E está concluída a sua primeira
+
+00:02:31.898 --> 00:02:32.334
+implementação.
+
+00:02:32.334 --> 00:02:33.641
+Até ao próximo,
+
+00:02:33.641 --> 00:02:36.256
+onde vamos aprofundar o trabalho com
+
+00:02:36.256 --> 00:02:37.564
+o próprio repositório.

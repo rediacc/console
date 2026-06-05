@@ -1,0 +1,25 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:07.419
+Repo'nuzla Çalışmak
+
+00:00:07.419 --> 00:00:17.901
+Günlük üçlü: tunnel, term, sync
+
+00:00:17.901 --> 00:00:36.583
+Tunnel: container portunu yönlendir
+
+00:00:36.583 --> 00:00:46.671
+Uygulamayı tarayıcıda aç
+
+00:00:46.671 --> 00:01:09.019
+Term: sandbox içinde komut çalıştır
+
+00:01:09.019 --> 00:01:26.023
+Sync: --dry-run ile önizle
+
+00:01:26.023 --> 00:01:48.038
+Sync: gerçekten yükle
+
+00:01:48.038 --> 00:01:51.718
+Sıradaki: Repository Fork'lama

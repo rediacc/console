@@ -1,0 +1,211 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.441
+Pekâlâ!
+
+00:00:01.441 --> 00:00:03.206
+Uygulamanız yayında ve yedekli;
+
+00:00:03.206 --> 00:00:04.971
+şimdi sağlıklı kalmasını sağlayalım.
+
+00:00:05.724 --> 00:00:06.236
+CLI,
+
+00:00:06.236 --> 00:00:08.799
+dizüstü bilgisayarınızdan herhangi bir sunucunun
+
+00:00:08.799 --> 00:00:10.336
+tam görüntüsünü verir.
+
+00:00:10.336 --> 00:00:12.899
+Kontrol edilecek üç açı var:
+
+00:00:12.899 --> 00:00:13.924
+sistem sağlığı,
+
+00:00:13.924 --> 00:00:16.486
+çalışan container'lar ve depoların kendisi.
+
+00:00:19.751 --> 00:00:20.811
+Sistem görünümüyle başlıyoruz.
+
+00:00:20.811 --> 00:00:22.577
+--system filtresiyle makine sorgu komutu,
+
+00:00:22.577 --> 00:00:23.636
+sistem çalışma süresi,
+
+00:00:23.636 --> 00:00:25.756
+disk kullanımı ve depolama durumunu gösterir.
+
+00:00:25.756 --> 00:00:27.875
+Bir sorun varsa rapor bizi bilgilendirir.
+
+00:00:27.875 --> 00:00:28.648
+Çalışma süresi,
+
+00:00:28.648 --> 00:00:29.035
+disk,
+
+00:00:29.035 --> 00:00:29.422
+depolama.
+
+00:00:29.422 --> 00:00:31.741
+Tek bakışta ihtiyacınız olan her şey.
+
+00:00:35.028 --> 00:00:36.075
+Şimdi container'lar.
+
+00:00:36.075 --> 00:00:37.122
+Bu görünüm,
+
+00:00:37.122 --> 00:00:39.740
+makinedeki her depodaki tüm çalışan
+
+00:00:39.740 --> 00:00:40.787
+container'ları listeler:
+
+00:00:40.787 --> 00:00:41.311
+ad,
+
+00:00:41.311 --> 00:00:41.835
+durum,
+
+00:00:41.835 --> 00:00:42.358
+sağlık,
+
+00:00:42.358 --> 00:00:42.882
+CPU,
+
+00:00:42.882 --> 00:00:45.500
+bellek ve her birinin hangi
+
+00:00:45.500 --> 00:00:47.070
+depoya ait olduğu.
+
+00:00:47.070 --> 00:00:49.235
+Tüm depolardaki tüm container'lar,
+
+00:00:49.235 --> 00:00:50.858
+tek bir görünümde.
+
+00:00:54.113 --> 00:00:55.571
+Şimdi depoların kendisi.
+
+00:00:55.571 --> 00:00:56.057
+Boyut,
+
+00:00:56.057 --> 00:00:57.028
+bağlama durumu,
+
+00:00:57.028 --> 00:00:58.486
+Docker daemon durumu,
+
+00:00:58.486 --> 00:00:59.458
+disk kullanımı.
+
+00:00:59.458 --> 00:01:02.373
+Makinedeki her izole ortam hakkında bilmeniz
+
+00:01:02.373 --> 00:01:03.831
+gereken her şey.
+
+00:01:03.831 --> 00:01:04.935
+Tüm depolar,
+
+00:01:04.935 --> 00:01:06.040
+tüm daemon'ları,
+
+00:01:06.040 --> 00:01:07.697
+tüm disk kullanımları.
+
+00:01:11.090 --> 00:01:13.850
+Makine sorgu komutu her şeyi tek seferde
+
+00:01:13.850 --> 00:01:14.244
+verir.
+
+00:01:14.244 --> 00:01:15.032
+Sistem bilgisi,
+
+00:01:15.032 --> 00:01:15.426
+container'lar,
+
+00:01:15.426 --> 00:01:15.821
+depolar;
+
+00:01:15.821 --> 00:01:17.003
+hepsi bir arada.
+
+00:01:17.003 --> 00:01:18.186
+Bir kez çalıştırın;
+
+00:01:18.186 --> 00:01:19.763
+tam görünümü elde edin.
+
+00:01:19.763 --> 00:01:21.556
+Her şey bir arada,
+
+00:01:21.556 --> 00:01:22.453
+filtre gerekmez.
+
+00:01:29.193 --> 00:01:32.013
+Son olarak dizüstü bilgisayarınızda yerel
+
+00:01:32.013 --> 00:01:34.834
+doğruluk kontrolü için tanı denetimi.
+
+00:01:34.834 --> 00:01:35.398
+Node,
+
+00:01:35.398 --> 00:01:36.526
+SSH anahtarı,
+
+00:01:36.526 --> 00:01:37.090
+renet,
+
+00:01:37.090 --> 00:01:37.654
+Docker;
+
+00:01:37.654 --> 00:01:40.474
+CLI'nin bağımlı olduğu her şey.
+
+00:01:40.474 --> 00:01:41.602
+Seri tamamlandı.
+
+00:01:41.602 --> 00:01:43.294
+Kurulumdan izlemeye kadar,
+
+00:01:43.294 --> 00:01:44.422
+hepsi terminalinizden.
+
+00:01:44.422 --> 00:01:47.270
+Hepsi yeşilse yerel CLI'nız sağlıklı demektir.
+
+00:01:48.026 --> 00:01:49.633
+Seri böylece tamamlandı.
+
+00:01:49.633 --> 00:01:51.239
+Artık kurulum yapabilir,
+
+00:01:51.239 --> 00:01:51.775
+yapılandırabilir,
+
+00:01:51.775 --> 00:01:52.310
+dağıtabilir,
+
+00:01:52.310 --> 00:01:52.846
+fork'layabilir,
+
+00:01:52.846 --> 00:01:53.917
+yayına alabilir,
+
+00:01:53.917 --> 00:01:54.988
+otomatik başlatabilir,
+
+00:01:54.988 --> 00:01:56.595
+yedekleyebilir ve izleyebilirsiniz;
+
+00:01:56.595 --> 00:01:57.666
+hepsi terminalinizden!

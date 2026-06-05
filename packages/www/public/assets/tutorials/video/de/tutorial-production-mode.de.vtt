@@ -1,0 +1,151 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.726
+Alles klar!
+
+00:00:01.726 --> 00:00:04.269
+Lass uns deine App von der Entwicklung
+
+00:00:04.269 --> 00:00:05.722
+in die Produktion bringen.
+
+00:00:05.722 --> 00:00:06.812
+Drei kurze Schritte,
+
+00:00:06.812 --> 00:00:08.628
+alle vom Laptop aus gesteuert.
+
+00:00:09.416 --> 00:00:11.979
+Während der Entwicklung startest du die
+
+00:00:11.979 --> 00:00:14.542
+App von innen aus dem Repo,
+
+00:00:14.542 --> 00:00:15.823
+also stoppt sie,
+
+00:00:15.823 --> 00:00:17.959
+sobald du die Verbindung trennst.
+
+00:00:17.959 --> 00:00:20.522
+In der Produktion startest du sie
+
+00:00:20.522 --> 00:00:23.084
+vom Laptop aus mit der CLI,
+
+00:00:23.084 --> 00:00:25.220
+und sie läuft abgekoppelt weiter.
+
+00:00:28.482 --> 00:00:31.012
+Wir starten die App im Produktionsmodus
+
+00:00:31.012 --> 00:00:32.277
+vom Laptop aus.
+
+00:00:32.277 --> 00:00:34.807
+Der Deployment-Befehl ruft dieselbe up-Funktion auf,
+
+00:00:34.807 --> 00:00:37.338
+die wir während der Entwicklung verwendet
+
+00:00:37.338 --> 00:00:37.759
+haben,
+
+00:00:37.759 --> 00:00:39.024
+läuft aber getrennt.
+
+00:00:39.024 --> 00:00:41.554
+Sie können Ihren Laptop zuklappen und
+
+00:00:41.554 --> 00:00:43.241
+die App läuft weiter.
+
+00:00:45.991 --> 00:00:47.680
+App läuft in Produktion.
+
+00:00:47.680 --> 00:00:48.525
+Gleicher Befehl,
+
+00:00:48.525 --> 00:00:49.370
+gleiches Ergebnis,
+
+00:00:49.370 --> 00:00:51.059
+auf dem echten Server.
+
+00:00:54.417 --> 00:00:55.710
+Wir aktivieren Autostart,
+
+00:00:55.710 --> 00:00:58.296
+damit die App einen Server-Neustart überlebt.
+
+00:00:58.296 --> 00:00:59.589
+Von nun an,
+
+00:00:59.589 --> 00:01:01.744
+wenn der Server neu startet,
+
+00:01:01.744 --> 00:01:03.899
+kommt dieses Repo automatisch zurück.
+
+00:01:06.149 --> 00:01:07.177
+Autostart an.
+
+00:01:07.177 --> 00:01:09.232
+Die App übersteht Neustarts.
+
+00:01:12.532 --> 00:01:13.764
+Wir listen auf,
+
+00:01:13.764 --> 00:01:15.818
+welche Repositories Autostart aktiviert haben.
+
+00:01:15.818 --> 00:01:16.639
+Das bestätigt,
+
+00:01:16.639 --> 00:01:19.514
+dass unsere App nun in der Startliste
+
+00:01:19.514 --> 00:01:19.925
+ist.
+
+00:01:21.925 --> 00:01:22.904
+Da steht es,
+
+00:01:22.904 --> 00:01:23.884
+in der Boot-Liste.
+
+00:01:27.215 --> 00:01:29.684
+Und um die App zu stoppen,
+
+00:01:29.684 --> 00:01:31.329
+ein Befehl vom Laptop.
+
+00:01:31.329 --> 00:01:32.564
+Ein Befehl hoch,
+
+00:01:32.564 --> 00:01:33.798
+ein Befehl runter.
+
+00:01:33.798 --> 00:01:35.444
+Alles aus Ihrem Terminal,
+
+00:01:35.444 --> 00:01:37.089
+keine interaktiven Sitzungen mehr.
+
+00:01:39.589 --> 00:01:40.030
+Gestoppt.
+
+00:01:40.030 --> 00:01:41.351
+Ein Befehl hoch,
+
+00:01:41.351 --> 00:01:42.672
+ein Befehl runter.
+
+00:01:43.482 --> 00:01:46.011
+Und das war der Produktivbetrieb
+
+00:01:46.011 --> 00:01:47.022
+in Kürze.
+
+00:01:47.022 --> 00:01:49.046
+Bis zum nächsten Mal!

@@ -6,11 +6,11 @@ order: 5
 language: en
 ---
 
-ISO/IEC 27001 is an international standard for information security management systems (ISMS), published by the International Organization for Standardization (ISO) and the International Electrotechnical Commission (IEC). The current version is ISO/IEC 27001:2022.
+Alright. ISO/IEC 27001:2022 is the international standard for information security management systems. Published by ISO/IEC, it is a long document listing controls for encryption, access management, incident response, and dozens of security domains. You almost certainly know what this is. So let me be direct: Rediacc does not address every control in the standard, and we are not going to pretend it does. What follows is an honest map of where Rediacc fits. The current version is ISO/IEC 27001:2022.
 
 Reference: [ISO/IEC 27001:2022](https://www.iso.org/standard/27001)
 
-Rediacc is one component of the technical controls layer within an ISMS. The table below maps Rediacc's capabilities to relevant Annex A control domains.
+Look, Rediacc is one component of the technical controls layer within an ISMS. The table below maps Rediacc's capabilities to relevant Annex A control domains.
 
 ## Annex A Controls Mapping
 
@@ -27,7 +27,7 @@ Rediacc is one component of the technical controls layer within an ISMS. The tab
 
 ## Asset Management
 
-Rediacc's repository model naturally supports asset inventory requirements:
+This one is straightforward: Rediacc's repository model naturally supports asset inventory requirements:
 
 - Every repository has a unique GUID assigned at creation
 - Repositories are enumerable per machine (`rdc machine query --repositories`)
@@ -36,7 +36,7 @@ Rediacc's repository model naturally supports asset inventory requirements:
 
 ## Change Management
 
-The fork-test-promote workflow aligns with ISO 27001's change management requirements:
+This is where it gets interesting: the fork-test-promote workflow aligns with ISO 27001's change management requirements:
 
 1. **Fork**: Create an isolated copy of the production environment
 2. **Test**: Apply and validate changes in the fork

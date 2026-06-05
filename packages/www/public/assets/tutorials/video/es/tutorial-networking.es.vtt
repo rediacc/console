@@ -1,0 +1,226 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.659
+¡Muy bien!
+
+00:00:01.659 --> 00:00:04.296
+Vamos a darle a tu app un dominio
+
+00:00:04.296 --> 00:00:05.615
+real con TLS automático.
+
+00:00:05.615 --> 00:00:07.922
+Cuatro pasos cortos y estás en internet.
+
+00:00:08.696 --> 00:00:10.848
+Este es el camino.
+
+00:00:10.848 --> 00:00:13.539
+Consigue un token de API
+
+00:00:13.539 --> 00:00:14.615
+de Cloudflare,
+
+00:00:14.615 --> 00:00:17.306
+configura la infraestructura en el
+
+00:00:17.306 --> 00:00:17.844
+CLI,
+
+00:00:17.844 --> 00:00:20.535
+envíala al servidor y luego
+
+00:00:20.535 --> 00:00:23.225
+despliega un proxy Traefik que
+
+00:00:23.225 --> 00:00:25.916
+maneja el DNS y los
+
+00:00:25.916 --> 00:00:27.530
+certificados por ti.
+
+00:00:28.304 --> 00:00:28.761
+Primero,
+
+00:00:28.761 --> 00:00:31.501
+abre el panel de Cloudflare en
+
+00:00:31.501 --> 00:00:32.415
+tu navegador.
+
+00:00:32.415 --> 00:00:34.242
+Ve a My Profile,
+
+00:00:34.242 --> 00:00:35.612
+luego API Tokens,
+
+00:00:35.612 --> 00:00:38.352
+y crea un token con permiso
+
+00:00:38.352 --> 00:00:41.093
+Zone DNS Edit para que el
+
+00:00:41.093 --> 00:00:43.377
+CLI pueda gestionar tus registros.
+
+00:00:45.837 --> 00:00:46.647
+Paso dos.
+
+00:00:46.647 --> 00:00:49.479
+Le indicamos al CLI la IP pública,
+
+00:00:49.479 --> 00:00:50.692
+el dominio base,
+
+00:00:50.692 --> 00:00:53.525
+el correo del certificado y el token
+
+00:00:53.525 --> 00:00:55.143
+de API de Cloudflare.
+
+00:00:55.143 --> 00:00:57.975
+El correo del certificado y el token
+
+00:00:57.975 --> 00:01:00.403
+se comparten entre todas tus máquinas,
+
+00:01:00.403 --> 00:01:03.235
+así que solo los configuras una vez.
+
+00:01:04.035 --> 00:01:06.804
+Infraestructura registrada en tu config.
+
+00:01:10.133 --> 00:01:13.019
+Confirmamos que los ajustes de
+
+00:01:13.019 --> 00:01:15.328
+infraestructura se guardaron correctamente.
+
+00:01:15.328 --> 00:01:16.482
+IP pública,
+
+00:01:16.482 --> 00:01:17.637
+dominio base,
+
+00:01:17.637 --> 00:01:19.368
+correo del certificado:
+
+00:01:19.368 --> 00:01:22.254
+todo visible en la configuración.
+
+00:01:24.004 --> 00:01:25.251
+Ajustes guardados.
+
+00:01:25.251 --> 00:01:28.367
+Listos para enviarse al servidor.
+
+00:01:31.715 --> 00:01:32.812
+Paso tres.
+
+00:01:32.812 --> 00:01:35.555
+Enviamos la configuración al servidor.
+
+00:01:35.555 --> 00:01:38.298
+Esto crea los registros DNS
+
+00:01:38.298 --> 00:01:41.041
+en Cloudflare automáticamente y prepara
+
+00:01:41.041 --> 00:01:43.784
+la configuración del proxy en
+
+00:01:43.784 --> 00:01:44.881
+la máquina.
+
+00:01:47.881 --> 00:01:48.374
+Enviado.
+
+00:01:48.374 --> 00:01:51.335
+Los registros DNS se están creando
+
+00:01:51.335 --> 00:01:52.322
+en Cloudflare.
+
+00:01:55.650 --> 00:01:57.307
+Comienza el paso cuatro.
+
+00:01:57.307 --> 00:01:59.791
+Creamos un pequeño repo llamado infra.
+
+00:01:59.791 --> 00:02:01.447
+Aquí vivirá el proxy,
+
+00:02:01.447 --> 00:02:03.931
+aislado de los repos de aplicación.
+
+00:02:07.236 --> 00:02:09.492
+Repo infra creado.
+
+00:02:09.492 --> 00:02:12.499
+Aislado de tus repos
+
+00:02:12.499 --> 00:02:14.002
+de aplicación.
+
+00:02:17.273 --> 00:02:19.859
+Aplicamos la plantilla de proxy
+
+00:02:19.859 --> 00:02:20.377
+integrada.
+
+00:02:20.377 --> 00:02:22.963
+Incluye Traefik más la configuración
+
+00:02:22.963 --> 00:02:25.549
+para Let's Encrypt y los
+
+00:02:25.549 --> 00:02:28.135
+desafíos DNS guion 01 de
+
+00:02:28.135 --> 00:02:28.652
+Cloudflare,
+
+00:02:28.652 --> 00:02:30.204
+lista para usar.
+
+00:02:32.454 --> 00:02:34.962
+Configuración de Traefik lista.
+
+00:02:38.264 --> 00:02:40.634
+Y levantamos el proxy.
+
+00:02:40.634 --> 00:02:43.596
+Traefik descubre tus contenedores cada
+
+00:02:43.596 --> 00:02:44.781
+cinco segundos.
+
+00:02:44.781 --> 00:02:47.743
+Los certificados TLS vienen de
+
+00:02:47.743 --> 00:02:49.520
+Let's Encrypt automáticamente.
+
+00:02:49.520 --> 00:02:52.482
+Tu app es ahora accesible
+
+00:02:52.482 --> 00:02:54.852
+en internet por HTTPS.
+
+00:02:54.852 --> 00:02:56.166
+Proxy activo.
+
+00:02:56.166 --> 00:02:58.793
+Los certificados TLS llegarán
+
+00:02:58.793 --> 00:02:59.450
+automáticamente.
+
+00:03:00.228 --> 00:03:02.949
+¡Y con eso queda lista la
+
+00:03:02.949 --> 00:03:04.309
+parte de redes!
+
+00:03:04.309 --> 00:03:06.576
+Nos vemos en el siguiente.

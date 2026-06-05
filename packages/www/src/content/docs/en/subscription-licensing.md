@@ -8,7 +8,7 @@ language: en
 
 # Subscription & Licensing
 
-Rediacc licensing has three moving parts:
+So Rediacc licensing breaks down into three moving parts:
 
 - `account` signs entitlements and tracks usage
 - `rdc` authenticates, requests licenses, delivers them to machines, and enforces them at runtime
@@ -202,7 +202,7 @@ For first-time machine setup, see [Machine Setup](/en/docs/setup).
 
 ## Offline Behavior and Expiry
 
-License validation happens locally on the machine. It does not require live connectivity to the account server.
+License validation happens locally on the machine. You don't need to contact the account server to operate your repositories.
 
 That means:
 
@@ -228,7 +228,7 @@ These fail-fast cases do not automatically consume account-backed refresh or iss
 
 ## Delegation Certificates for On-Premise
 
-For on-premise and air-gapped deployments, the upstream account server issues a **delegation certificate** authorizing your on-premise install to sign licenses with its own Ed25519 key. The cert constrains the on-premise to its plan limits and creates a tamper-evident chain.
+For on-premise and air-gapped deployments, this gets complex. The upstream account server issues a **delegation certificate** that authorizes your on-premise install to sign licenses with its own Ed25519 key. This constrains you to your plan limits and creates a tamper-evident chain.
 
 Key points for subscription owners:
 

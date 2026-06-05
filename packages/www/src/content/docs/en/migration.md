@@ -291,7 +291,7 @@ rdc term connect -m server-1 -r my-project -c "docker logs <container-name>"
 
 ### Port Conflict Between Repositories
 
-Each repository gets unique loopback IPs, and the kernel automatically rewrites `bind()` calls to the correct IP. Port conflicts between repositories don't occur. If you see unexpected behavior, verify that services are started via `renet compose` (not `docker compose`). For connecting **to** other services, use the service name (e.g. `postgres`) rather than raw IPs. Service names resolve correctly in every fork.
+One thing that trips people up: each repository gets unique loopback IPs, and the kernel automatically rewrites `bind()` calls to the correct IP. Port conflicts between repositories don't occur. If you see unexpected behavior, verify that services are started via `renet compose` (not `docker compose`). For connecting **to** other services, use the service name (e.g. `postgres`) rather than raw IPs. Service names resolve correctly in every fork.
 
 ### Ownership Fix Breaks Containers
 

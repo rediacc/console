@@ -1,0 +1,101 @@
+{
+  "cast": "/assets/tutorials/tutorial-deploy-app.cast",
+  "language": "ar",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-deploy-app-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.40432,
+      "replayEndSec": 6.041569,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01.a03f6661.mp3",
+      "audioDurationSec": 9.090612,
+      "textHash": "a03f6661f064088db609ba0bab02833bd3fd8d257453cbb27e7155535889c450",
+      "narrationText": "الخطوة الأولى. ندرج القوالب المتاحة. تأتي Rediacc بإعدادات جاهزة للتطبيقات الشائعة مثل Postgres وRedis وخوادم الويب، حتى لا نضطر لكتابة docker-compose من الصفر.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01-after.49ea345b.mp3",
+      "afterAudioDurationSec": 5.485714,
+      "afterTextHash": "49ea345b8e03b37388004425f3a7c9ea0229105747e82d5ac8a82ac20e390d9b"
+    },
+    {
+      "id": "tutorial-deploy-app-02",
+      "markerIndex": 1,
+      "replayStartSec": 6.041569,
+      "replayEndSec": 13.566247,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02.f7f3586c.mp3",
+      "audioDurationSec": 7.079184,
+      "textHash": "f7f3586cd23ffa7c4a85f6f8e7192c81cf82f3f5dc8cdd17f3100989ba359eee",
+      "narrationText": "الخطوة الثانية. نطبّق قالب app-postgres على مستودعنا. يظهر ملفان: docker-compose.yml الذي يصف الحاويات، وRediaccfile الذي يُعرّف خطافات دورة الحياة للبدء والإيقاف.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02-after.ee176ab2.mp3",
+      "afterAudioDurationSec": 3.709388,
+      "afterTextHash": "ee176ab26afd1159c5713df5d731121af0ae089bb5e56996a9e14a8296c856cc"
+    },
+    {
+      "id": "tutorial-deploy-app-03",
+      "markerIndex": 2,
+      "replayStartSec": 13.566247,
+      "replayEndSec": 23.282435,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03.2a5b2d6f.mp3",
+      "audioDurationSec": 22.674286,
+      "textHash": "2a5b2d6f51b0eb6bdd39976857088310aa36e9404f0fca207095d412a1c926e9",
+      "narrationText": "الخطوة الثالثة. نشغّل المستودع. تبدأ الأداة الحاويات وتُحمّل الحجم المشفر وتُهيئ محرك Docker المعزول. التطبيق يعمل الآن.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03-after.e6b5d919.mp3",
+      "afterAudioDurationSec": 6.347755,
+      "afterTextHash": "e6b5d91909508ef9f51ef81c94e32547c9e9073a3d19915a85990e92eadeee30"
+    },
+    {
+      "id": "tutorial-deploy-app-04",
+      "markerIndex": 3,
+      "replayStartSec": 23.282435,
+      "replayEndSec": 30.345778,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04.371e863c.mp3",
+      "audioDurationSec": 8.672653,
+      "textHash": "371e863cba1930c335e68285aa79fe5d64384caf6e645eb45cd197e908218977",
+      "narrationText": "نتحقق باستخدام docker ps. لاحظ أن هذا العرض يُظهر حاويات مستودعنا فقط. تمتلك المستودعات الأخرى على نفس الخادم محركات Docker خاصة بها وهي غير مرئية تمامًا من هنا.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04-after.cbbedc43.mp3",
+      "afterAudioDurationSec": 4.205714,
+      "afterTextHash": "cbbedc43643cab1c8d18b0cea121223b61b885b9396f39e22b369aca3927480d"
+    },
+    {
+      "id": "tutorial-deploy-app-05",
+      "markerIndex": 4,
+      "replayStartSec": 30.345778,
+      "replayEndSec": 38.921409,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05.17957cbc.mp3",
+      "audioDurationSec": 11.31102,
+      "textHash": "17957cbcb9ba52f2a9065df70a52de250a6c973d1db9747b7a68115f74833e9d",
+      "narrationText": "لنتحقق مما يعمل الآن. docker ps هنا يعرض فقط حاويات هذا الـ repo. الـ repos الأخرى على نفس الخادم لها daemon خاص بها وتكون غير مرئية تماماً من هذه النافذة.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05-after.df57dc44.mp3",
+      "afterAudioDurationSec": 4.91102,
+      "afterTextHash": "df57dc44ec60d28407863429c60f98fe46de072311613c3abf23c4c6fa853a96"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/intro.2adcedb1.mp3",
+      "textHash": "2adcedb11e6ea1b832b13cb27e9ddee2af0160625a92b685a5916320f2991117",
+      "audioDurationSec": 6.426122,
+      "narrationText": "حان وقت نشر تطبيق حقيقي! سننتقل من مستودع فارغ إلى حاويات تعمل في ثلاث خطوات قصيرة."
+    },
+    {
+      "id": "pick-apply-run",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/pick-apply-run.5e57841c.mp3",
+      "textHash": "5e57841c8c03c7720425d52a93571a693f527cd89a077242ec3eb8107d75d588",
+      "audioDurationSec": 9.482449,
+      "narrationText": "العملية بسيطة: اختر قالبًا وطبّقه على المستودع وشغّله. تأتي الأداة بقوالب مدمجة فلا نضطر لكتابة docker-compose من الصفر."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/next-tutorial.b444003f.mp3",
+      "textHash": "b444003fd2eb1b6d4161a755c252f481ce982b3cb7811249fa4e29a58be814e2",
+      "audioDurationSec": 7.706122,
+      "narrationText": "وبهذا اكتمل أول نشر لك. نراكم في الدرس التالي حيث نتعمق في العمل مع المستودع نفسه."
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "1263882e236de1befdb729dddc23c6b830ea44bb08c5d9e53daa1c8ebf36aa3d"
+}

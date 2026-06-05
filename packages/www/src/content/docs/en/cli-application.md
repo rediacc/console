@@ -1,6 +1,6 @@
 ---
 title: "CLI Application"
-description: "Complete guide to using the Rediacc command-line interface for platform management"
+description: "Command reference for rdc, the Rediacc CLI. Covers machines, repositories, config, storage, secrets, file sync, VS Code remote sessions, and subscription management."
 category: "Reference"
 order: 2
 language: en

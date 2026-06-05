@@ -31,7 +31,7 @@ Full text: [Directive (EU) 2022/2555](https://eur-lex.europa.eu/eli/dir/2022/255
 
 Supply chain security is a central NIS2 concern (Art. 21(2)(d)). Organizations must assess and manage risks from their ICT service providers and suppliers.
 
-Self-hosted Rediacc removes the largest supply chain attack surface: no third-party SaaS handles your data, no cloud provider has logical access to your infrastructure, and no shared-tenant environment creates exposure to other customers' security posture. SaaS vendor breaches have caused cascading damage across thousands of organizations. [Blackbaud's 2020 ransomware attack exposed data from 13,000+ customer organizations, costing $49.5 million in settlements.](https://www.sec.gov/newsroom/press-releases/2023-48)
+Self-hosted Rediacc removes the largest supply chain attack surface, and yes, I know that sounds obvious. Here's why it matters: no third-party SaaS handles your data, no cloud provider has logical access to your infrastructure, and no shared-tenant environment creates exposure to other customers' security posture. SaaS vendor breaches have caused cascading damage across thousands of organizations. [Blackbaud's 2020 ransomware attack exposed data from 13,000+ customer organizations, costing $49.5 million in settlements.](https://www.sec.gov/newsroom/press-releases/2023-48)
 
 ---
 
@@ -54,13 +54,13 @@ Full text: [Regulation (EU) 2022/2554](https://eur-lex.europa.eu/eli/reg/2022/25
 
 ### Third-Party ICT Provider Risk
 
-DORA's most burdensome requirements are around managing critical ICT third-party providers (Art. 28-30). Financial institutions must maintain registers of ICT providers, conduct risk assessments, negotiate specific contractual provisions, and plan exit strategies.
+Here's where DORA actually gets hard: managing critical ICT third-party providers (Art. 28-30). Financial institutions must maintain registers of ICT providers, conduct risk assessments, negotiate specific contractual provisions, and plan exit strategies.
 
 Self-hosted Rediacc avoids this entirely. No ICT third-party provider to register, assess, or monitor. The financial institution controls its own infrastructure directly.
 
 ### Resilience Testing
 
-DORA mandates digital operational resilience testing, including threat-led penetration testing (TLPT) for large institutions (Art. 26). CoW cloning handles this directly:
+DORA mandates digital operational resilience testing, including threat-led penetration testing (TLPT) for large institutions (Art. 26). Zero-copy cloning handles this directly:
 
 1. Fork the production environment (instant, same machine, no data transfer)
 2. Run penetration tests against the fork

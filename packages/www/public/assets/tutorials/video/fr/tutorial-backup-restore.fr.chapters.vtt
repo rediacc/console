@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:13.410
+Sauvegarde et Restauration
+
+00:00:13.410 --> 00:00:26.702
+Trois étapes : configurer, envoyer, restaurer
+
+00:00:26.702 --> 00:00:50.204
+Étape 1 : Importer la configuration rclone
+
+00:00:50.204 --> 00:01:06.154
+Étape 2 : Lister les stockages configurés
+
+00:01:06.154 --> 00:01:34.200
+Étape 3 : Envoyer une sauvegarde complète
+
+00:01:34.200 --> 00:02:01.402
+Étape 4 : Lister les sauvegardes sur le stockage
+
+00:02:01.402 --> 00:02:09.162
+Suivant : Monitoring

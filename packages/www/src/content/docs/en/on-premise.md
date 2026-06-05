@@ -31,7 +31,7 @@ The image serves:
 
 ## Installing the CLI from Your Server
 
-Users can install the CLI directly from your on-premise server. The install script auto-detects the update channel and configures the CLI to check your server for updates.
+Install the CLI directly from your on-premise server. The install script auto-detects the update channel and points the CLI at your server for updates.
 
 ```bash
 curl -fsSL https://account.example.com/install.sh | \
@@ -48,7 +48,7 @@ No `REDIACC_CHANNEL` variable is needed. The install script reads the channel fr
 
 ## CLI Configuration with Named Configs
 
-For users who connect to multiple servers (on-premise, production, edge), named configs keep each environment isolated:
+If you connect to multiple servers (on-premise, production, edge), named configs keep each environment isolated:
 
 ```bash
 # Create a config for your on-premise server
@@ -110,7 +110,7 @@ When the CLI connects to your server, it queries `/.well-known/server-info` to d
 - **Update channel**: tells the CLI which release channel to use for updates
 - **Environment**: which deploy profile the server runs in (standard-limits vs. edge-with-2X-limits)
 
-This auto-configuration means users only need the server URL. Everything else is discovered automatically.
+This auto-configuration means you only need the server URL. Everything else is discovered automatically.
 
 ## Licensing for Air-Gapped Deployments
 

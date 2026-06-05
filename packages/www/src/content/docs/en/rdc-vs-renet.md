@@ -8,7 +8,7 @@ language: en
 
 # rdc vs renet
 
-Rediacc has two binaries. Here is when to use each one.
+Rediacc ships two binaries. Two jobs, two places. Here is which is which.
 
 | | rdc | renet |
 |---|-----|-------|
@@ -58,7 +58,7 @@ You only need `renet` directly when you SSH into a server for:
 - Checking system internals not available through `rdc`
 - Low-level recovery operations
 
-All `renet` commands need root privileges (`sudo`). See [Server Reference](/en/docs/server-reference) for the full list of `renet` commands.
+All `renet` commands need root privileges (`sudo`). `rdc` does not wrap every `renet` subcommand; for anything not covered, SSH in and call `renet` directly. See [Server Reference](/en/docs/server-reference) for the full list of `renet` commands.
 
 ## Experimental: `rdc ops` (Local VMs)
 

@@ -1,0 +1,187 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.894
+Alles klar!
+
+00:00:01.894 --> 00:00:03.235
+Deine App läuft,
+
+00:00:03.235 --> 00:00:05.917
+also arbeiten wir jetzt wirklich damit.
+
+00:00:05.917 --> 00:00:08.599
+Drei Befehle decken den täglichen Ablauf
+
+00:00:08.599 --> 00:00:09.046
+ab.
+
+00:00:09.811 --> 00:00:12.439
+tunnel öffnet deine App im Browser,
+
+00:00:12.439 --> 00:00:15.068
+term führt Befehle in der Sandbox
+
+00:00:15.068 --> 00:00:15.506
+aus,
+
+00:00:15.506 --> 00:00:18.134
+und sync schiebt Dateien rein und
+
+00:00:18.134 --> 00:00:18.572
+raus.
+
+00:00:18.572 --> 00:00:21.200
+Das ist der komplette tägliche Workflow.
+
+00:00:24.488 --> 00:00:25.780
+Zuerst der tunnel-Befehl.
+
+00:00:25.780 --> 00:00:28.364
+Die App läuft auf dem Server,
+
+00:00:28.364 --> 00:00:30.086
+nicht auf Ihrem Laptop.
+
+00:00:30.086 --> 00:00:32.670
+Der Tunnel-Befehl leitet den Port eines
+
+00:00:32.670 --> 00:00:34.392
+Containers über SSH weiter,
+
+00:00:34.392 --> 00:00:36.976
+sodass Sie ihn unter localhost in
+
+00:00:36.976 --> 00:00:38.699
+Ihrem Browser öffnen können.
+
+00:00:39.499 --> 00:00:40.451
+Port weitergeleitet.
+
+00:00:40.451 --> 00:00:43.307
+Die App ist jetzt unter localhost
+
+00:00:43.307 --> 00:00:43.783
+erreichbar.
+
+00:00:44.593 --> 00:00:47.507
+Mit dem laufenden Tunnel öffnet sich die
+
+00:00:47.507 --> 00:00:49.589
+App direkt in deinem Browser.
+
+00:00:49.589 --> 00:00:52.087
+Für diese Demo laden wir rediacc.com,
+
+00:00:52.087 --> 00:00:55.001
+genauso wie du deine eigene App erreichst,
+
+00:00:55.001 --> 00:00:57.915
+die direkt aus dem container bereitgestellt wird.
+
+00:01:00.160 --> 00:01:01.554
+Zweitens der term-Befehl.
+
+00:01:01.554 --> 00:01:04.343
+Der Terminal-Connect-Befehl bringt Sie in die
+
+00:01:04.343 --> 00:01:05.738
+Sandbox des Repos,
+
+00:01:05.738 --> 00:01:08.527
+dieselbe isolierte Ansicht wie in VS
+
+00:01:08.527 --> 00:01:08.991
+Code.
+
+00:01:08.991 --> 00:01:11.780
+Führen Sie beliebige Befehle gegen den
+
+00:01:11.780 --> 00:01:13.640
+Docker-Daemon dieses Repos aus,
+
+00:01:13.640 --> 00:01:15.964
+ohne das Terminal zu verlassen.
+
+00:01:17.214 --> 00:01:18.442
+In der Repo-Sandbox.
+
+00:01:18.442 --> 00:01:19.669
+Führ alles aus,
+
+00:01:19.669 --> 00:01:22.125
+als wärst du per SSH eingeloggt.
+
+00:01:25.465 --> 00:01:27.469
+Bevor Dateien übertragen werden,
+
+00:01:27.469 --> 00:01:29.974
+zeigen wir eine Vorschau mit
+
+00:01:29.974 --> 00:01:30.475
+--dry-run.
+
+00:01:30.475 --> 00:01:31.978
+Das zeigt genau,
+
+00:01:31.978 --> 00:01:33.982
+was sich ändern würde,
+
+00:01:33.982 --> 00:01:35.986
+ohne irgendetwas zu kopieren.
+
+00:01:35.986 --> 00:01:37.488
+Immer Vorschau anzeigen,
+
+00:01:37.488 --> 00:01:39.492
+wenn Sie unsicher sind.
+
+00:01:41.492 --> 00:01:42.651
+Nur eine Vorschau.
+
+00:01:42.651 --> 00:01:44.967
+Es wurden noch keine Dateien verschoben.
+
+00:01:48.314 --> 00:01:51.273
+Jetzt führen wir den Upload
+
+00:01:51.273 --> 00:01:51.865
+durch.
+
+00:01:51.865 --> 00:01:54.824
+Der Sync-Upload-Befehl verschiebt Dateien von
+
+00:01:54.824 --> 00:01:57.783
+Ihrem Laptop ins Repo über
+
+00:01:57.783 --> 00:01:59.558
+SSH mit rsync-Delta-Kompression.
+
+00:01:59.558 --> 00:02:00.150
+Tunnel,
+
+00:02:00.150 --> 00:02:00.742
+term,
+
+00:02:00.742 --> 00:02:01.333
+sync:
+
+00:02:01.333 --> 00:02:04.293
+drei Befehle decken den täglichen
+
+00:02:04.293 --> 00:02:05.476
+Ablauf ab.
+
+00:02:06.976 --> 00:02:07.958
+Dateien hochgeladen.
+
+00:02:07.958 --> 00:02:10.905
+Die Delta-Kompression kommt auch mit großen
+
+00:02:10.905 --> 00:02:11.887
+Bäumen klar.
+
+00:02:12.703 --> 00:02:15.461
+Und das war das tägliche Dreigespann.
+
+00:02:15.461 --> 00:02:17.300
+Bis zum nächsten Mal!

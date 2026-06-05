@@ -1,0 +1,25 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:08.928
+Travailler avec Votre Repo
+
+00:00:08.928 --> 00:00:26.469
+Le trio quotidien : tunnel, term, sync
+
+00:00:26.469 --> 00:00:49.936
+Tunnel : transférer un port de container
+
+00:00:49.936 --> 00:01:03.469
+Ouvrir l'application dans votre navigateur
+
+00:01:03.469 --> 00:01:29.318
+Term : exécuter des commandes dans le sandbox
+
+00:01:29.318 --> 00:01:53.361
+Sync : aperçu avec --dry-run
+
+00:01:53.361 --> 00:02:18.867
+Sync : upload réel
+
+00:02:18.867 --> 00:02:26.947
+Suivant : Forker un Repository

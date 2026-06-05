@@ -1,0 +1,169 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.295
+Gerçek bir uygulama dağıtma zamanı!
+
+00:00:03.295 --> 00:00:06.049
+Üç kısa adımda boş bir depodan
+
+00:00:06.049 --> 00:00:07.426
+çalışan container'lara geçeceğiz.
+
+00:00:08.208 --> 00:00:09.156
+Akış basit:
+
+00:00:09.156 --> 00:00:10.579
+bir şablon seçin,
+
+00:00:10.579 --> 00:00:12.475
+depoya uygulayın ve çalıştırın.
+
+00:00:12.475 --> 00:00:14.372
+CLI yerleşik şablonlarla gelir;
+
+00:00:14.372 --> 00:00:17.216
+bu sayede sıfırdan docker-compose yazmak zorunda
+
+00:00:17.216 --> 00:00:17.690
+kalmazsınız.
+
+00:00:20.958 --> 00:00:21.716
+Birinci adım.
+
+00:00:21.716 --> 00:00:22.852
+Mevcut şablonları listeliyoruz.
+
+00:00:22.852 --> 00:00:23.231
+Rediacc,
+
+00:00:23.231 --> 00:00:25.503
+yaygın uygulamalar için hazır kurulumlar sunar:
+
+00:00:25.503 --> 00:00:25.882
+Postgres,
+
+00:00:25.882 --> 00:00:26.261
+Redis,
+
+00:00:26.261 --> 00:00:28.155
+web sunucuları ve daha fazlası.
+
+00:00:28.155 --> 00:00:30.049
+Sıfırdan docker-compose yazmak zorunda kalmıyorsunuz.
+
+00:00:31.549 --> 00:00:32.920
+Tam şablon kataloğu.
+
+00:00:32.920 --> 00:00:35.663
+Her biri test edilmiş bir compose
+
+00:00:35.663 --> 00:00:37.034
+ile Rediaccfile ikilisi.
+
+00:00:40.337 --> 00:00:41.011
+İkinci adım.
+
+00:00:41.011 --> 00:00:42.360
+app-postgres şablonunu depoya uyguluyoruz.
+
+00:00:42.360 --> 00:00:43.371
+İki dosya oluşuyor:
+
+00:00:43.371 --> 00:00:46.068
+container'ları tanımlayan docker-compose.yml ve başlatma ile durdurma yaşam
+
+00:00:46.068 --> 00:00:47.416
+döngüsü kancalarını tanımlayan Rediaccfile.
+
+00:00:49.666 --> 00:00:50.490
+Şablon uygulandı.
+
+00:00:50.490 --> 00:00:53.376
+Depoda artık compose dosyası ve Rediaccfile var.
+
+00:00:56.702 --> 00:00:59.089
+Üçüncü adım.
+
+00:00:59.089 --> 00:01:02.669
+Depoyu ayağa kaldırıyoruz.
+
+00:01:02.669 --> 00:01:06.249
+Araç container'ları başlatır,
+
+00:01:06.249 --> 00:01:09.829
+şifreli birimi bağlar
+
+00:01:09.829 --> 00:01:13.409
+ve izole Docker
+
+00:01:13.409 --> 00:01:15.796
+daemon'ını yapılandırır.
+
+00:01:15.796 --> 00:01:19.376
+Uygulama artık çalışıyor.
+
+00:01:22.126 --> 00:01:23.713
+Container'lar çalışıyor,
+
+00:01:23.713 --> 00:01:25.300
+birim bağlandı,
+
+00:01:25.300 --> 00:01:28.474
+izole Docker daemon ayakta.
+
+00:01:31.814 --> 00:01:33.202
+docker ps ile doğruluyoruz.
+
+00:01:33.202 --> 00:01:35.977
+Bu görünümün yalnızca kendi depomuzun container'larını gösterdiğine dikkat
+
+00:01:35.977 --> 00:01:36.324
+edin.
+
+00:01:36.324 --> 00:01:39.099
+Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahip
+
+00:01:39.099 --> 00:01:40.487
+ve buradan tamamen görünmez.
+
+00:01:43.237 --> 00:01:45.340
+Yalnızca bu deponun container'ları.
+
+00:01:45.340 --> 00:01:46.917
+İzolasyon yapılandırma değil,
+
+00:01:46.917 --> 00:01:47.442
+gerçek.
+
+00:01:50.766 --> 00:01:52.180
+Nelerin çalıştığını doğrulayalım.
+
+00:01:52.180 --> 00:01:55.008
+docker ps burada yalnızca bu repoya
+
+00:01:55.008 --> 00:01:56.422
+ait container'ları listeler.
+
+00:01:56.422 --> 00:01:59.249
+Aynı sunucudaki diğer repolar kendi daemon'larına
+
+00:01:59.249 --> 00:02:02.077
+sahiptir ve bu görünümden tamamen görünmezdir.
+
+00:02:03.327 --> 00:02:05.783
+Yalnızca bu reponun container'ları.
+
+00:02:05.783 --> 00:02:07.010
+İzolasyon gerçektir,
+
+00:02:07.010 --> 00:02:08.238
+yapılandırma değil.
+
+00:02:09.071 --> 00:02:11.640
+İlk dağıtımınız böylece tamamlandı.
+
+00:02:11.640 --> 00:02:14.208
+Bir sonraki bölümde deponun
+
+00:02:14.208 --> 00:02:16.777
+kendisiyle çalışmaya derinlemesine bakacağız.

@@ -8,7 +8,7 @@ language: en
 
 # Monitoring
 
-Rediacc provides built-in monitoring commands to inspect machine health, running containers, services, repository status, and system diagnostics.
+Rediacc ships monitoring commands for machine health, running containers, services, repository status, and system diagnostics.
 
 ## Machine Health
 
