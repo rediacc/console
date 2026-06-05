@@ -1,6 +1,6 @@
 ---
-title: Riskivabad uuendused
-description: Testige andmebaaside uuendusi riskivabalt, kasutades kohest kloonimist ja tunnipõhiseid hetktõmmiseid.
+title: Riskivabad täiendused
+description: Testi andmebaasi täiendusi riskivabalt hetkekloonitamise ja igatuunniste hetktõmmiste abil.
 category: Use Cases
 order: 4
 language: et
@@ -8,60 +8,60 @@ sourceHash: "242617b8bede9535"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-> **Testige kõike. Riskige mitte millegagi. Uuendage enesekindlalt.**
+> **Testi kõike. Riskita midagi. Värskendu enesekindlalt.**
 
-Märkus: Rediaccil puuduvad hetkel tootmiskliendid. See on kasutuskaasuse näide, mis näitab, kuidas arhitektuur seda stsenaariumit praktikas käsitleb — mitte reaalsest juurutusest pärinev juhtumiuuringut.
+Kiire märkus: Rediaccil ei ole hetkel tootmisettevõtete kliente. See on kasutusalade näide, mis näitab, kuidas arhitektuuri see stsenaarium praktikas käsitletakse, mitte reaalsest juurutusest pärinev juhtum.
 
-**Kriisistsenaariumil:** Andmebaasi uuendamise ajal ilmnes **ootamatu viga**, mis takistas naasmist vana versiooni juurde või edenemist uuele. Kliendid ei pääsenud süsteemidele ligi ja üle 5000 töötaja ei suutnud töötada. Ainus lahendus oli täielik süsteemi taastamine, mis nõudis paljusid inseneri-tunde, samal ajal kui ettevõte seisis.
+**Kriisistsenarium:** Andmebaasi täienduse käigus esines **oodamatu viga**, mis ei võimaldanud tagasi vanade versioonile pöörduda ega jätkata uue versiooniga. Kliendid ei pääsenud süsteemidele ligi ja 5000+ töötajat ei saanud töötada. Ainus lahendus oli süsteemi täielik taastamine, mis nõudis tundide jagu inseneride tööd, kuigi ettevõte oli ühenduseta.
 
 ## Probleem
 
-Mehmet haldab tootmise andmebaase, mida tema meeskond ei saa lubada seisata. Täna uuendab ta **100 TB suurust PostgreSQL andmebaasi versioonilt 13 versioonile 14**. Tema plaan:
+Mehmet haldab tootmisandmebaase, mida tema tiim ei saa lubada võrgust võtta. Täna on ta täiendamas **100 TB PostgreSQL andmebaasi versioonilt 13 versiooni 14**. Tema plaan:
 
-1. **Tehke varukoopia** → Kuid varundamine võtab **mitu päeva** andmete suuruse tõttu
-2. **Tehke uuendus nädalavahetusel** → Osakondadele teatatakse seiskumisest **laupäeval 01:00-05:00**
+1. **Varukoopia tegemine** → Siiski võtab varukoopia tegemine **mitme päeva aega** andmete suuruse tõttu
+2. **Täienduse läbiviimine nädalavahetusel** → Osakondi teavitatakse ühenduseta jäämisest **laupäeval 01:00-05:00**
 
 ## Kriisi mõju
 
-* Uuendamise ajal ilmneb **ootamatu viga**
-* Andmebaas **ei suuda naasta vana versioonini ega edeneda uuele versioonile**
-* Isegi välised tugimeeskonnad ei suuda probleemi lahendada
+* **Oodamatu viga** esineb täienduse käigus
+* Andmebaasi **ei saa tagasi vanade versioonile pöörduda ega jätkata uue versiooniga**
+* Isegi välised tugitöötajad ei saa probleemi lahendada
 
 **Mõjud:**
-* Kliendid **ei pääse makse- ja tellimussüsteemidele ligi**
-* Organisatsiooni töötajad (**üle 5000 inimese**) ei suuda töötada
+* Kliendid **ei pääse maksmis- ja tellimuste süsteemidele ligi**
+* Organisatsiooni töötajad (**5000+ inimest**) ei saa töötada
 * **Mainekahju** ja kasvavad kaebused algavad
 
 **Ajutine lahendus:**
-* Viimane varukoopia laaditakse **uude serverisse** → **Riistvara kulu kahekordistub**
-* Neljapäeva ja reede andmed on **ainult elukeskkonnas**, seega tekib andmekadu
-* **Kaks erineva versiooniga andmebaasi** luuakse → Vastuolud suurenevad
+* Viimane varukoopia laaditakse **uuele serverile** → **Riistvara maksumus kahekordistub**
+* Neljapäeva ja reede andmed on **ainult elussüsteemis**, seega tekib andmete kaotus
+* **Kaks andmebaasi erinevate versioonidega** luuakse → Vastuolud kasvavad
 
 ## Rediacci lahendus
 
-Nii muutub olukord Rediacciga:
+Siin näete, mis muutub Rediacciga:
 
-![Riskivabad uuendused](/img/risk-free-upgrades.svg)
+![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 
-### 1. **Kohene kloonimine**
-* **100 TB andmebaasi klooni luuakse sekundite jooksul**
-* Uuendamise teste tehakse **ilma elussüsteemi mõjutamata**
+### 1. **Hetkekloonimine**
+* **100 TB andmebaasi klooni luuakse sekundites**
+* Täienduse teste teostatakse **ilma elussüsteemi mõjutamata**
 
-### 2. **Tunnipõhised hetktõmmised**
-* Määratakse kindlaks, **millisest sammust ja millest alates on uuendamisprotsess ebaõnnestunud**
-* Probleemsed toimingud **tuvastatakse ette** ja parandatakse
+### 2. **Igatuunnised hetktõmmised**
+* **Määratakse, milline etapp on millest alates ebaõnnestunud** täiendusprotsessi käigus
+* Probleemkohad **tuvastatakse eelnevalt** ja parandatakse
 
-### 3. **Sujuv uuendamine**
-* Kui uuendamine ebaõnnestub, **ei mõjutata eluskeskkonda**
-* Kui uuendamine õnnestub, saab uus eluskeskkond viimaseks klooniks
+### 3. **Sujuv täiendus**
+* Kui täiendus ebaõnnestub, **ei mõjutata elussüsteemi**
+* Kui täiendus õnnestub, muutub klooni uueks elussüsteemiks
 
 ## Tulemus
 
 **Aja ja kulude kokkuhoid:**
-* Varundamisaeg vähenes **7 päevalt 10 sekundile**
+* Varukoopia aeg vähenes **7 päevast 10 sekundisse**
 
-**Riskivaba uuendamine:**
-* Vead tuvastati ette testkeskkonnas → **Elussüsteemis probleeme polnud**
+**Riskivaba täiendus:**
+* Vead tuvastatakse testikeskkonnas → **Elussüsteemis probleeme pole**
 
-**Null seisakuaega:**
-* Kliendid ja töötajad **ei tundnud mingit katkestust**
+**Seisakuid pole:**
+* Kliendid ja töötajad **ei märganud häireid**

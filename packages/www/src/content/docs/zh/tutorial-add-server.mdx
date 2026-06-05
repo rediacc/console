@@ -1,6 +1,6 @@
 ---
-title: "添加第一台服务器"
-description: "向 rdc 注册第一台服务器，完成配置，并了解 rdc 与 renet 的架构。"
+title: "添加您的第一个服务器"
+description: "使用 rdc 注册您的第一个服务器，完成配置，并理解 rdc 和 renet 的架构。"
 category: "Tutorials"
 subcategory: essentials
 order: 3
@@ -11,47 +11,47 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
-# 添加第一台服务器
+# 添加您的第一个服务器
 
-两个工具：笔记本上的 `rdc`，服务器上的 `renet`。这就是整个 Rediacc 架构。在添加服务器之前，先了解它们如何连接。
+两个工具：您笔记本上的 `rdc`，服务器上的 `renet`。这就是整个 Rediacc 架构。现在让我们看看在添加服务器之前它们如何连接。
 
 ## 观看教程
 
-![Tutorial: Adding your first server](/assets/tutorials/tutorial-add-server.cast)
+![教程：添加您的第一个服务器](/assets/tutorials/tutorial-add-server.cast)
 
 ## 为什么需要两个工具？
 
-![rdc 在笔记本上，renet 在服务器上，SSH 连接两者](/img/tutorials/tutorial-add-server/slide-1.svg)
+![笔记本上的 rdc，服务器上的 renet，通过 SSH 连接](/img/tutorials/tutorial-add-server/slide-1.svg)
 
-- **`rdc`** 是运行在笔记本上的 CLI，你在这里输入命令。
-- **`renet`** 是服务器上的编排器，负责管理加密、Docker 和隔离环境。
+- **`rdc`** 是您笔记本上的命令行界面。您在这里输入命令。
+- **`renet`** 是服务器上的编排工具。它管理加密、Docker 和隔离。
 
-当你在本地运行命令时，`rdc` 通过 SSH 连接并在服务器上执行 `renet`。你永远不需要手动 SSH 进入服务器，`rdc` 会替你完成这一切。
+当您在本地运行命令时，`rdc` 通过 SSH 连接并在服务器上执行 `renet`。您永远不需要手动 SSH 到您的服务器。`rdc` 为您完成这一切。
 
-## 第一步：注册服务器
+## 步骤 1: 注册服务器
 
 <TutorialStep number={1} />
 
-无需执行 `rdc config init`。配置文件在首次使用时自动创建，`rdc` 会回退使用你标准的 `~/.ssh` 密钥。密钥选择有意保持最小化 — 如果需要代理转发或跳转主机，按常规在 `~/.ssh/config` 中进行配置；`rdc` 会自动识别。
+不需要运行 `rdc config init`。配置文件在首次使用时会自动创建，`rdc` 会使用您的标准 `~/.ssh` 密钥。密钥选择有意保持最小化。如果您需要代理转发或跳转主机，请在 `~/.ssh/config` 中进行配置；`rdc` 会自动识别。
 
-## 第二步：配置服务器
+## 步骤 2: 完成配置
 
 <TutorialStep number={2} />
 
-服务器已准备好托管仓库。
+服务器现在可以托管存储库了。
 
-## 配置文件存放在哪里
+## 配置文件的位置
 
-CLI 将所有内容存储在 `~/.config/rediacc/rediacc.json` 这一个纯 JSON 文件中：
+CLI 在 `~/.config/rediacc/rediacc.json` 中存储所有配置，这是一个纯 JSON 文件:
 
 <TutorialStep number={3} />
 
-这个单一文件保存了你的机器列表、SSH 密钥和加密凭据。将它复制到另一台笔记本，即可从那台机器操作相同的服务器。
+这个文件包含您的机器、SSH 密钥和加密凭证。将其复制到另一台笔记本电脑，您就可以从那里驱动相同的服务器。
 
 ## 多个配置
 
-你可以保存多个配置，每个环境（生产、预发布、开发）一个，并在任意命令中使用 `--config` 标志切换。参见[设置多个配置](/zh/docs/setup#multiple-configs)。
+您可以保存多个配置文件，每个环境（生产、测试、开发）一个，并通过任何命令上的 `--config` 标志在它们之间切换。参见 [设置多个配置](/zh/docs/setup#multiple-configs)。
 
 ---
 
-下一篇：[创建第一个仓库](/zh/docs/tutorial-create-repo)。
+下一步: [创建您的第一个存储库](/zh/docs/tutorial-create-repo)。
