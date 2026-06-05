@@ -277,7 +277,7 @@ const categories = Object.keys(postsByCategory).sort();
     @media (max-width: 48rem) {
       /* 768px - respects user font size */
       .blog-page {
-        padding: var(--space-4);
+        padding: calc(var(--nav-top-offset) + var(--space-4)) var(--space-4) var(--space-4);
       }
 
       .blog-header h1 {
