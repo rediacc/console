@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: zh
-sourceHash: "73a4cb1d8c412531"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "14d013a82dbcbd4e"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Fork 仓库
 
-这是改变你工作方式的功能：在几秒内克隆整个生产环境（应用、数据库、配置文件）。任意大小，零额外磁盘占用，随心所欲地 fork。
+在几秒内克隆整个生产环境（应用、数据库、配置文件）。任意大小，零额外磁盘占用。想 fork 多少次都可以。
 
 一句话总结：**克隆生产环境，万无一失。**
 
@@ -47,7 +47,7 @@ echo "Hello from production" > index.html
 
 ![分享文件夹链接的速度与文件夹大小无关](/img/tutorials/tutorial-forking/slide-2.svg)
 
-想象一下分享文件夹链接。无论文件夹是大是小，链接本身是一样的。文件夹很重，链接很轻。
+原因是 btrfs reflinks。fork 创建了一个新的文件系统树，指向与父仓库相同的数据块。fork 时不复制任何数据，完全是元数据操作，因此父仓库的大小不会影响 fork 耗时。
 
 ![1 GB、100 GB、1 TB，每次时间相同。](/img/tutorials/tutorial-forking/slide-3.svg)
 

@@ -1,16 +1,16 @@
 ---
 title: "Riferimento server"
-description: "Layout delle directory, comandi renet, servizi systemd e workflow per il server remoto. È il riferimento più completo per la gestione avanzata del server."
+description: "Layout delle directory, comandi renet, servizi systemd e workflow per il server remoto."
 category: "Concepts"
 order: 3
 language: it
-sourceHash: "f68c27543a2fe3ff"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "4fb53bb4cb1512f6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Riferimento server
 
-Questa pagina descrive cosa trovi quando accedi tramite SSH a un server Rediacc: il layout delle directory, i comandi `renet`, i servizi systemd e i workflow comuni.
+Accedi tramite SSH a un server Rediacc e troverai: il layout delle directory, i comandi `renet`, i servizi systemd e i workflow di cui avrai bisogno.
 
 La maggior parte degli utenti gestisce i server tramite `rdc` dalla propria workstation e non ha mai bisogno di questa pagina. È qui per il debug avanzato o quando devi lavorare direttamente sul server.
 
@@ -120,7 +120,7 @@ renet sandbox-exec --allow-rw /path --allow-ro /usr --allow-exec /bin -- command
 L'Hub fornisce a ogni utente il proprio daemon Docker per gli ambienti di sviluppo, separato dai daemon `FlavorRediacc` per singolo repository.
 
 ```bash
-# Installare / rimuovere le unita systemd dell'Hub per utente
+# Installare / rimuovere le unità systemd dell'Hub per utente
 sudo renet hub install
 sudo renet hub uninstall
 
@@ -138,7 +138,7 @@ sudo renet daemon start-foreground --flavor=rediacc ...
 sudo renet daemon start-foreground --flavor=hub ...
 ```
 
-Il flavor `hub` abilita la normale rete bridge affinche i contenitori avviati dall'utente abbiano connettivita in uscita; il flavor `rediacc` impone l'isolamento loopback tra i repository. I log di audit dell'Hub vengono scritti in `/var/log/rediacc/hub/<user>.log`.
+Il flavor `hub` abilita la normale rete bridge affinché i contenitori avviati dall'utente abbiano connettività in uscita; il flavor `rediacc` impone l'isolamento loopback tra i repository. I log di audit dell'Hub vengono scritti in `/var/log/rediacc/hub/<user>.log`.
 
 **Flag:**
 - `--allow-rw`, `--allow-ro`, `--allow-exec`: regole di percorso Landlock

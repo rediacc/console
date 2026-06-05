@@ -1,12 +1,14 @@
 ---
 title: Visão Geral da Integração com Agentes de IA
-description: Como assistentes de programação com IA, como o Claude Code, o Cursor e o Cline, se integram com a infraestrutura Rediacc para implementação e gestão autónomas.
+description: "Como o Claude Code, o Cursor e o Cline gerem a infraestrutura Rediacc via rdc: saída JSON, introspeção de agentes e controlos de segurança."
 category: Guides
 order: 30
 language: pt
+sourceHash: "0aa0c975030d4856"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Os assistentes de programação com IA podem gerir a infraestrutura Rediacc de forma autónoma através do CLI `rdc`. Este guia aborda as abordagens de integração e como começar.
+Francamente, o `rdc` foi desenhado a pensar em agentes. Claude Code, Cursor, Cline: qualquer assistente de IA que chame `rdc` num subshell recebe saída JSON estruturada, erros legíveis por máquina e os controlos que se esperam para a gestão autónoma de infraestrutura Rediacc. Eis como funciona a integração.
 
 ## Por Que Self-Hosted + Agentes de IA
 
@@ -28,7 +30,7 @@ A forma mais rápida de começar. Copie o nosso [template AGENTS.md](/en/docs/ag
 - `.cursorrules` para o Cursor
 - `.windsurfrules` para o Windsurf
 
-Isto fornece ao agente contexto completo sobre os comandos disponíveis, a arquitetura e as convenções.
+Coloque-o na raiz e o agente fica com a referência completa de comandos, o contexto de arquitetura e as convenções de que precisa para trabalhar sem adivinhar.
 
 ### 2. Pipeline de Saída JSON
 
@@ -86,7 +88,7 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 
 ## Segurança e Controlos
 
-O CLI trata os agentes de IA de forma diferente dos utilizadores humanos. As operações sensíveis requerem prova de conhecimento prévio (a flag `--current`), os fluxos de editor interativo são recusados por omissão, e cada recusa é registada em auditoria. A referência [Segurança e Controlos para Agentes de IA](/en/docs/ai-agents-safety) cobre a tabela completa de firewall, o modelo de knowledge-gate, o scope-override `REDIACC_ALLOW_CONFIG_EDIT`, e o registo de auditoria com cadeia de hashes.
+O CLI não trata os agentes da mesma forma que um humano no terminal. As operações sensíveis requerem prova de que já conhece o estado atual (a flag `--current`), os fluxos de editor interativo são recusados por omissão, e cada recusa é registada em auditoria. A referência [Segurança e Controlos para Agentes de IA](/en/docs/ai-agents-safety) cobre a tabela completa de firewall, o modelo de knowledge-gate, o scope-override `REDIACC_ALLOW_CONFIG_EDIT`, e o registo de auditoria com cadeia de hashes.
 
 ## Próximos Passos
 

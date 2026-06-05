@@ -6,13 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: pt
-sourceHash: "8f29c515be1b7fb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1d0e48ed1094dda6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Limites e Quotas
 
-Esta página lista os limites rígidos e flexíveis que se aplicam às implementações do Rediacc. Leia-a antes de planear a capacidade, para saber quais os tetos que existem e quais não existem.
+Limites de implementação do Rediacc. Três são rígidos e não podem ser alterados com hardware adicional: o limite de 61 serviços por repositório (alocação de espaço de endereços de rede), o kernel 6.1 mínimo (requisitos de CRIU) e o limite de emissão de Let's Encrypt de 50 certificados wildcard por domínio registado por semana. Tudo o resto é flexível: move-se quando adiciona hardware. Compreenda a diferença antes de se comprometer com uma topologia.
 
 ---
 
@@ -22,7 +22,7 @@ Cada repositório suporta até **61 serviços** a correr em simultâneo.
 
 Este é um limite rígido determinado pelo espaço de endereços de rede alocado a cada repositório. Cada serviço obtém o seu próprio endereço IP privado dedicado, e o bloco de endereços de cada repositório acomoda exatamente 61 slots de serviço.
 
-Se estiver a aproximar-se deste limite, consolide serviços mais pequenos (por exemplo, mova sidecars ou agentes de monitorização para um repositório separado com o seu próprio limite de isolamento) ou refatore para reduzir o número de processos a correr de forma independente numa única aplicação.
+Tenha em conta: atingir 61 serviços num repositório geralmente sinaliza um problema arquitectónico, não uma restrição do Rediacc. A solução é mover sidecars e agentes de monitorização para o seu próprio repositório com um limite de isolamento separado, ou reduzir o número de processos a correr de forma independente na própria aplicação.
 
 ---
 
@@ -169,7 +169,7 @@ As máquinas remotas devem correr um dos seguintes para satisfazer os requisitos
 
 > **Porquê o kernel 6.1?** O Rediacc usa BTRFS para armazenamento encriptado de repositório e forking copy-on-write. O Linux 6.1 introduziu melhorias críticas no BTRFS que reduzem significativamente os tempos de montagem para grandes datastores, melhoram o desempenho de eliminação de snapshots e corrigem problemas de integridade de dados presentes em kernels anteriores. O kernel 6.1 também é necessário para os hooks de isolamento de rede ao nível do kernel que impõem o isolamento entre repositórios, reescrevendo transparentemente as chamadas `bind()` e bloqueando conexões entre repositórios.
 
-> **Porquê não o kernel stock do Rocky Linux 10 / RHEL 10?** O kernel stock do RHEL 10 é distribuído sem o módulo `btrfs` (`modprobe btrfs` falha com "Module btrfs not found"). O backend de armazenamento encriptado do Rediacc não consegue funcionar sem btrfs. **O Oracle Linux 10 é o único alvo compatível com RHEL na lista suportada** porque usa por predefinição o Unbreakable Enterprise Kernel (UEK), que mantém btrfs. Consulte [Requisitos -> Porquê o UEK?](/pt/docs/requirements) para a explicação completa.
+> **Porquê não o kernel stock do Rocky Linux 10 / RHEL 10?** O kernel stock do RHEL 10 é distribuído sem o módulo `btrfs` (`modprobe btrfs` falha com "Module btrfs not found"). O backend de armazenamento encriptado do Rediacc não consegue funcionar sem btrfs. **O Oracle Linux 10 é o único alvo compatível com RHEL na lista suportada** porque usa por predefinição o Unbreakable Enterprise Kernel (UEK), que mantém btrfs. Consulte [Requisitos - Porquê o UEK?](/pt/docs/requirements) para a explicação completa.
 
 ### Matriz de funcionalidades do kernel
 

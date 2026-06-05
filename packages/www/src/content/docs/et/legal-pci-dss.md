@@ -1,14 +1,14 @@
 ---
 title: "PCI DSS vastavus"
-description: "Kuidas Rediacc vastab PCI DSS nõuetele maksekaardi andmete kaitsmiseks krüptimise, võrgusegmenteerimise ja juurdepääsukontrolli kaudu."
+description: "Kuidas Rediacc vastab PCI DSS nõuetele: muutumatud varukoopiad, automaatne võrgusegmenteerimine ja juurdepääsukontroll infrastruktuuri tasemel."
 category: "Legal"
 order: 6
 language: et
-sourceHash: "7dfa2cbb5f86d910"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "d8391036876231a0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Maksekaardi tööstuse andmeturbestandard (PCI DSS) on kohustuslik igale organisatsioonile, mis talletab, töötleb või edastab kaardiomaniku andmeid. Praegune versioon on PCI DSS v4.0.1.
+Kuula: PCI DSS v4.0.1 pole valikuline, kui käsitlead kaardiomaniku andmeid. Versioon 4.0.1 taandub ühele nõudele: infrastruktuuri tasandi isoleerimisele kõigest muust.
 
 Viide: [PCI Security Standards Council](https://www.pcisecuritystandards.org/document_library/)
 
@@ -29,7 +29,7 @@ Viide: [PCI Security Standards Council](https://www.pcisecuritystandards.org/doc
 
 ## Võrgusegmenteerimine
 
-PCI DSS tugineb tugevalt segmenteerimisele: eralda kaardiomaniku andmekeskkond (CDE) või kukku audit läbi. Rediacc annab selle segmenteerimise vaikimisi:
+PCI DSS tugineb tugevalt segmenteerimisele. Näen pidevalt meeskondade katset rakendada iptables-reegleid ebapiisavate isolatsioonide peale. See ei tööta. Edukalt auditi läbinud meeskonnad on segmenteerimise üles ehitanud arhitektuuri. Rediacc annab selle sulle vaikimisi:
 
 - Iga hoidla töötab oma Dockeri deemonis aadressil `/var/run/rediacc/docker-<networkId>.sock`
 - Hoidlatel on eraldatud loopback-IP-alamvõrgud (127.0.x.x/26, 61 kasutatavat IP-d võrgu kohta)
@@ -40,7 +40,7 @@ Maksete töötlemise hoidla töötab oma Dockeri deemonis ja oma loopback-alamv�
 
 ## Ulatuse vähendamine
 
-Isehallatav Rediacc vähendab PCI DSS vastavuse ulatust:
+Isehallatav Rediacc vähendab PCI DSS vastavuse ulatust. Te ei pea käsitsi võrgusegmenteerimist konfigureerima; see on automaatne.
 
 - Kaardiomaniku andmevoos puudub kolmanda osapoole pilveserver
 - Pole SaaS-tarnijat, keda hinnata Nõude 12.8 alusel (kolmanda osapoole teenusepakkujad)

@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 3
 language: tr
-sourceHash: "4b76f7212633cdec"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "fc8bd1ff08e5611a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # İlk Sunucunuzu Ekleyin
 
-Sunucu eklemeden önce `rdc`'nin nasıl çalıştığına bakalım. Rediacc iki araçtan oluşur: dizüstü bilgisayarınızda `rdc`, sunucuda `renet`.
+İki araç: dizüstü bilgisayarınızda `rdc`, sunucuda `renet`. Bu, tam olarak Rediacc mimarisidir. Sunucu eklemeden önce bunların nasıl bağlantı kurduğunu görelim.
 
 ## Öğreticiyi izleyin
 
@@ -32,7 +32,7 @@ Yerel olarak bir komut çalıştırdığınızda `rdc`, SSH üzerinden bağlanı
 
 <TutorialStep number={1} />
 
-`rdc config init` gerekmez. Yapılandırma dosyası ilk kullanımda otomatik olarak oluşturulur ve `rdc`, standart `~/.ssh` anahtarınızı kullanır.
+`rdc config init` gerekmez. Yapılandırma dosyası ilk kullanımda otomatik olarak oluşturulur ve `rdc`, standart `~/.ssh` anahtarınızı kullanır. Anahtar seçimi kasıtlı olarak minimaldır - agent yönlendirmesi veya jump host'a ihtiyacınız varsa, bunları `~/.ssh/config`'de her zamanki gibi yapılandırın; `rdc` bunları otomatik olarak seçecektir.
 
 ## Adım 2: Yapılandırın
 

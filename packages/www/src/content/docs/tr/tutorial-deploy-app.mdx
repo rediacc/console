@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 5
 language: tr
-sourceHash: "08bd8fbaffc53a06"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "a40a843238f17e9f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # İlk Uygulamanızı Dağıtın
 
-Elinizde boş bir depo var. `rdc`, sıfırdan `docker-compose` yazmak zorunda kalmadan gerçek uygulamalar ayağa kaldırmanızı sağlayan yerleşik şablonlar sunar. Üç adım: bir şablon seçin, uygulayın, çalıştırın.
+Elinizde boş bir depo var. `rdc`, sıfırdan `docker-compose` yazmak zorunda kalmadan gerçek uygulamalar ayağa kaldırmanızı sağlayan yerleşik şablonlar sunar. Bir şablon seçin, uygulayın, çalıştırın.
 
 ## Öğreticiyi izleyin
 
@@ -33,7 +33,7 @@ Postgres, Redis, web sunucuları ve daha fazlası için hazır kurulumlar görec
 
 <TutorialStep number={2} />
 
-Bu, şablonun dosyalarını depoya kopyalar.
+Yapıldı. Bu, şablonun dosyalarını depoya kopyalar.
 
 ## Adım 3: Nelerin geldiğini görün
 
@@ -45,13 +45,13 @@ Bu, şablonun dosyalarını depoya kopyalar.
 
 <TutorialStep number={4} />
 
-CLI container'ları başlatır, şifreli birimi bağlar ve bu repo için izole bir Docker daemon'ı konfigüre eder. (VS Code aracılığıyla zaten deponun sandbox'ının içindeyseniz, `renet dev up` sandbox içinde eşdeğer bir alternatiftir.)
+CLI container'ları başlatır, şifreli birimi bağlar ve bu repo için izole bir Docker daemon'ı kurar. (VS Code aracılığıyla zaten deponun sandbox'ının içindeyseniz, `renet dev up` sandbox içinde eşdeğer bir alternatiftir.)
 
 ## Adım 5: Doğrula
 
 <TutorialStep number={5} />
 
-Buradaki `docker ps` yalnızca bu depoya ait container'ları listeler. Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahiptir ve bu görünümden tamamen görünmezdir.
+Buradaki `docker ps` yalnızca bu depoya ait container'ları listeler. Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahiptir ve bu görünümden tamamen görünmezdir. İşte bu izolasyon kasıtlıdır: komşu servisleri etkilemeden rahatça test yapabilirsiniz.
 
 ---
 

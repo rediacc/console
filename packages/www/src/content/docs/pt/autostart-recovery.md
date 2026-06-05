@@ -1,15 +1,16 @@
 ---
 title: "Autostart e Recuperação"
-description: "Como funciona o autostart, o reconciliador periódico que recupera repositórios que ficam inactivos após o arranque, e como inspeccionar o estado de recuperação."
+description: "Como funciona o autostart, o reconciliador periódico que recupera repositórios que caem após o arranque, e como inspeccionar o estado de recuperação."
 category: "Guides"
 order: 5
 language: pt
-sourceHash: "8e98fcd141e27da6"
+sourceHash: "00a1796a0b0d20da"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Autostart e Recuperação
 
-Esta página explica como os repositórios são montados e iniciados automaticamente no arranque, e como o reconciliador periódico repõe em funcionamento um repositório que fica inactivo depois de o servidor já estar a correr.
+Os repositórios com autostart ativado levantam-se automaticamente no arranque. Se um cair depois, o reconciliador periódico traz-o de volta. Sem avisos. Sem reinício manual.
 
 Para saber como activar ou desactivar o autostart num repositório, consulte [Serviços: Autostart no Arranque](/pt/docs/services#autostart-on-boot).
 

@@ -1,1 +1,589 @@
-{"version":1,"cues":[{"start":1,"end":3.295,"text":"Gerçek bir uygulama dağıtma zamanı!","words":[{"start":1,"end":1.459,"char":[0,6]},{"start":1.459,"end":1.918,"char":[7,10]},{"start":1.918,"end":2.377,"char":[11,19]},{"start":2.377,"end":2.836,"char":[20,27]},{"start":2.836,"end":3.295,"char":[28,35]}]},{"start":3.295,"end":6.049,"text":"Üç kısa adımda boş bir depodan","words":[{"start":3.295,"end":3.754,"char":[0,2]},{"start":3.754,"end":4.213,"char":[3,7]},{"start":4.213,"end":4.672,"char":[8,14]},{"start":4.672,"end":5.131,"char":[15,18]},{"start":5.131,"end":5.59,"char":[19,22]},{"start":5.59,"end":6.049,"char":[23,30]}]},{"start":6.049,"end":7.426,"text":"çalışan container'lara geçeceğiz.","words":[{"start":6.049,"end":6.508,"char":[0,7]},{"start":6.508,"end":6.967,"char":[8,22]},{"start":6.967,"end":7.426,"char":[23,33]}]},{"start":8.208,"end":9.156,"text":"Akış basit:","words":[{"start":8.208,"end":8.682,"char":[0,4]},{"start":8.682,"end":9.156,"char":[5,11]}]},{"start":9.156,"end":10.579,"text":"bir şablon seçin,","words":[{"start":9.156,"end":9.63,"char":[0,3]},{"start":9.63,"end":10.104,"char":[4,10]},{"start":10.104,"end":10.579,"char":[11,17]}]},{"start":10.579,"end":12.475,"text":"depoya uygulayın ve çalıştırın.","words":[{"start":10.579,"end":11.053,"char":[0,6]},{"start":11.053,"end":11.527,"char":[7,16]},{"start":11.527,"end":12.001,"char":[17,19]},{"start":12.001,"end":12.475,"char":[20,31]}]},{"start":12.475,"end":14.372,"text":"CLI yerleşik şablonlarla gelir;","words":[{"start":12.475,"end":12.949,"char":[0,3]},{"start":12.949,"end":13.423,"char":[4,12]},{"start":13.423,"end":13.897,"char":[13,24]},{"start":13.897,"end":14.372,"char":[25,31]}]},{"start":14.372,"end":17.216,"text":"bu sayede sıfırdan docker-compose yazmak zorunda","words":[{"start":14.372,"end":14.846,"char":[0,2]},{"start":14.846,"end":15.32,"char":[3,9]},{"start":15.32,"end":15.794,"char":[10,18]},{"start":15.794,"end":16.268,"char":[19,33]},{"start":16.268,"end":16.742,"char":[34,40]},{"start":16.742,"end":17.216,"char":[41,48]}]},{"start":17.216,"end":17.69,"text":"kalmazsınız.","words":[{"start":17.216,"end":17.69,"char":[0,12]}]},{"start":20.958,"end":21.716,"text":"Birinci adım.","words":[{"start":20.958,"end":21.337,"char":[0,7]},{"start":21.337,"end":21.716,"char":[8,13]}]},{"start":21.716,"end":22.852,"text":"Mevcut şablonları listeliyoruz.","words":[{"start":21.716,"end":22.094,"char":[0,6]},{"start":22.094,"end":22.473,"char":[7,17]},{"start":22.473,"end":22.852,"char":[18,31]}]},{"start":22.852,"end":23.231,"text":"Rediacc,","words":[{"start":22.852,"end":23.231,"char":[0,8]}]},{"start":23.231,"end":25.503,"text":"yaygın uygulamalar için hazır kurulumlar sunar:","words":[{"start":23.231,"end":23.609,"char":[0,6]},{"start":23.609,"end":23.988,"char":[7,18]},{"start":23.988,"end":24.367,"char":[19,23]},{"start":24.367,"end":24.746,"char":[24,29]},{"start":24.746,"end":25.125,"char":[30,40]},{"start":25.125,"end":25.503,"char":[41,47]}]},{"start":25.503,"end":25.882,"text":"Postgres,","words":[{"start":25.503,"end":25.882,"char":[0,9]}]},{"start":25.882,"end":26.261,"text":"Redis,","words":[{"start":25.882,"end":26.261,"char":[0,6]}]},{"start":26.261,"end":28.155,"text":"web sunucuları ve daha fazlası.","words":[{"start":26.261,"end":26.64,"char":[0,3]},{"start":26.64,"end":27.018,"char":[4,14]},{"start":27.018,"end":27.397,"char":[15,17]},{"start":27.397,"end":27.776,"char":[18,22]},{"start":27.776,"end":28.155,"char":[23,31]}]},{"start":28.155,"end":30.049,"text":"Sıfırdan docker-compose yazmak zorunda kalmıyorsunuz.","words":[{"start":28.155,"end":28.534,"char":[0,8]},{"start":28.534,"end":28.912,"char":[9,23]},{"start":28.912,"end":29.291,"char":[24,30]},{"start":29.291,"end":29.67,"char":[31,38]},{"start":29.67,"end":30.049,"char":[39,53]}]},{"start":31.549,"end":32.92,"text":"Tam şablon kataloğu.","words":[{"start":31.549,"end":32.006,"char":[0,3]},{"start":32.006,"end":32.463,"char":[4,10]},{"start":32.463,"end":32.92,"char":[11,20]}]},{"start":32.92,"end":35.663,"text":"Her biri test edilmiş bir compose","words":[{"start":32.92,"end":33.377,"char":[0,3]},{"start":33.377,"end":33.834,"char":[4,8]},{"start":33.834,"end":34.291,"char":[9,13]},{"start":34.291,"end":34.749,"char":[14,21]},{"start":34.749,"end":35.206,"char":[22,25]},{"start":35.206,"end":35.663,"char":[26,33]}]},{"start":35.663,"end":37.034,"text":"ile Rediaccfile ikilisi.","words":[{"start":35.663,"end":36.12,"char":[0,3]},{"start":36.12,"end":36.577,"char":[4,15]},{"start":36.577,"end":37.034,"char":[16,24]}]},{"start":40.337,"end":41.011,"text":"İkinci adım.","words":[{"start":40.337,"end":40.674,"char":[0,6]},{"start":40.674,"end":41.011,"char":[7,12]}]},{"start":41.011,"end":42.36,"text":"app-postgres şablonunu depoya uyguluyoruz.","words":[{"start":41.011,"end":41.348,"char":[0,12]},{"start":41.348,"end":41.685,"char":[13,22]},{"start":41.685,"end":42.023,"char":[23,29]},{"start":42.023,"end":42.36,"char":[30,42]}]},{"start":42.36,"end":43.371,"text":"İki dosya oluşuyor:","words":[{"start":42.36,"end":42.697,"char":[0,3]},{"start":42.697,"end":43.034,"char":[4,9]},{"start":43.034,"end":43.371,"char":[10,19]}]},{"start":43.371,"end":46.068,"text":"container'ları tanımlayan docker-compose.yml ve başlatma ile durdurma yaşam","words":[{"start":43.371,"end":43.708,"char":[0,14]},{"start":43.708,"end":44.045,"char":[15,25]},{"start":44.045,"end":44.382,"char":[26,44]},{"start":44.382,"end":44.719,"char":[45,47]},{"start":44.719,"end":45.056,"char":[48,56]},{"start":45.056,"end":45.394,"char":[57,60]},{"start":45.394,"end":45.731,"char":[61,69]},{"start":45.731,"end":46.068,"char":[70,75]}]},{"start":46.068,"end":47.416,"text":"döngüsü kancalarını tanımlayan Rediaccfile.","words":[{"start":46.068,"end":46.405,"char":[0,7]},{"start":46.405,"end":46.742,"char":[8,19]},{"start":46.742,"end":47.079,"char":[20,30]},{"start":47.079,"end":47.416,"char":[31,43]}]},{"start":49.666,"end":50.49,"text":"Şablon uygulandı.","words":[{"start":49.666,"end":50.078,"char":[0,6]},{"start":50.078,"end":50.49,"char":[7,17]}]},{"start":50.49,"end":53.376,"text":"Depoda artık compose dosyası ve Rediaccfile var.","words":[{"start":50.49,"end":50.903,"char":[0,6]},{"start":50.903,"end":51.315,"char":[7,12]},{"start":51.315,"end":51.727,"char":[13,20]},{"start":51.727,"end":52.139,"char":[21,28]},{"start":52.139,"end":52.551,"char":[29,31]},{"start":52.551,"end":52.963,"char":[32,43]},{"start":52.963,"end":53.376,"char":[44,48]}]},{"start":56.702,"end":59.089,"text":"Üçüncü adım.","words":[{"start":56.702,"end":57.895,"char":[0,6]},{"start":57.895,"end":59.089,"char":[7,12]}]},{"start":59.089,"end":62.669,"text":"Depoyu ayağa kaldırıyoruz.","words":[{"start":59.089,"end":60.282,"char":[0,6]},{"start":60.282,"end":61.476,"char":[7,12]},{"start":61.476,"end":62.669,"char":[13,26]}]},{"start":62.669,"end":66.249,"text":"Araç container'ları başlatır,","words":[{"start":62.669,"end":63.862,"char":[0,4]},{"start":63.862,"end":65.056,"char":[5,19]},{"start":65.056,"end":66.249,"char":[20,29]}]},{"start":66.249,"end":69.829,"text":"şifreli birimi bağlar","words":[{"start":66.249,"end":67.442,"char":[0,7]},{"start":67.442,"end":68.636,"char":[8,14]},{"start":68.636,"end":69.829,"char":[15,21]}]},{"start":69.829,"end":73.409,"text":"ve izole Docker","words":[{"start":69.829,"end":71.023,"char":[0,2]},{"start":71.023,"end":72.216,"char":[3,8]},{"start":72.216,"end":73.409,"char":[9,15]}]},{"start":73.409,"end":75.796,"text":"daemon'ını yapılandırır.","words":[{"start":73.409,"end":74.603,"char":[0,10]},{"start":74.603,"end":75.796,"char":[11,24]}]},{"start":75.796,"end":79.376,"text":"Uygulama artık çalışıyor.","words":[{"start":75.796,"end":76.99,"char":[0,8]},{"start":76.99,"end":78.183,"char":[9,14]},{"start":78.183,"end":79.376,"char":[15,25]}]},{"start":82.126,"end":83.713,"text":"Container'lar çalışıyor,","words":[{"start":82.126,"end":82.92,"char":[0,13]},{"start":82.92,"end":83.713,"char":[14,24]}]},{"start":83.713,"end":85.3,"text":"birim bağlandı,","words":[{"start":83.713,"end":84.507,"char":[0,5]},{"start":84.507,"end":85.3,"char":[6,15]}]},{"start":85.3,"end":88.474,"text":"izole Docker daemon ayakta.","words":[{"start":85.3,"end":86.094,"char":[0,5]},{"start":86.094,"end":86.887,"char":[6,12]},{"start":86.887,"end":87.681,"char":[13,19]},{"start":87.681,"end":88.474,"char":[20,27]}]},{"start":91.814,"end":93.202,"text":"docker ps ile doğruluyoruz.","words":[{"start":91.814,"end":92.161,"char":[0,6]},{"start":92.161,"end":92.508,"char":[7,9]},{"start":92.508,"end":92.855,"char":[10,13]},{"start":92.855,"end":93.202,"char":[14,27]}]},{"start":93.202,"end":95.977,"text":"Bu görünümün yalnızca kendi depomuzun container'larını gösterdiğine dikkat","words":[{"start":93.202,"end":93.549,"char":[0,2]},{"start":93.549,"end":93.895,"char":[3,12]},{"start":93.895,"end":94.242,"char":[13,21]},{"start":94.242,"end":94.589,"char":[22,27]},{"start":94.589,"end":94.936,"char":[28,37]},{"start":94.936,"end":95.283,"char":[38,54]},{"start":95.283,"end":95.63,"char":[55,67]},{"start":95.63,"end":95.977,"char":[68,74]}]},{"start":95.977,"end":96.324,"text":"edin.","words":[{"start":95.977,"end":96.324,"char":[0,5]}]},{"start":96.324,"end":99.099,"text":"Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahip","words":[{"start":96.324,"end":96.671,"char":[0,4]},{"start":96.671,"end":97.018,"char":[5,15]},{"start":97.018,"end":97.365,"char":[16,21]},{"start":97.365,"end":97.711,"char":[22,29]},{"start":97.711,"end":98.058,"char":[30,35]},{"start":98.058,"end":98.405,"char":[36,42]},{"start":98.405,"end":98.752,"char":[43,56]},{"start":98.752,"end":99.099,"char":[57,62]}]},{"start":99.099,"end":100.487,"text":"ve buradan tamamen görünmez.","words":[{"start":99.099,"end":99.446,"char":[0,2]},{"start":99.446,"end":99.793,"char":[3,10]},{"start":99.793,"end":100.14,"char":[11,18]},{"start":100.14,"end":100.487,"char":[19,28]}]},{"start":103.237,"end":105.34,"text":"Yalnızca bu deponun container'ları.","words":[{"start":103.237,"end":103.762,"char":[0,8]},{"start":103.762,"end":104.288,"char":[9,11]},{"start":104.288,"end":104.814,"char":[12,19]},{"start":104.814,"end":105.34,"char":[20,35]}]},{"start":105.34,"end":106.917,"text":"İzolasyon yapılandırma değil,","words":[{"start":105.34,"end":105.865,"char":[0,9]},{"start":105.865,"end":106.391,"char":[10,22]},{"start":106.391,"end":106.917,"char":[23,29]}]},{"start":106.917,"end":107.442,"text":"gerçek.","words":[{"start":106.917,"end":107.442,"char":[0,7]}]},{"start":110.766,"end":112.18,"text":"Nelerin çalıştığını doğrulayalım.","words":[{"start":110.766,"end":111.237,"char":[0,7]},{"start":111.237,"end":111.709,"char":[8,19]},{"start":111.709,"end":112.18,"char":[20,33]}]},{"start":112.18,"end":115.008,"text":"docker ps burada yalnızca bu repoya","words":[{"start":112.18,"end":112.651,"char":[0,6]},{"start":112.651,"end":113.122,"char":[7,9]},{"start":113.122,"end":113.594,"char":[10,16]},{"start":113.594,"end":114.065,"char":[17,25]},{"start":114.065,"end":114.536,"char":[26,28]},{"start":114.536,"end":115.008,"char":[29,35]}]},{"start":115.008,"end":116.422,"text":"ait container'ları listeler.","words":[{"start":115.008,"end":115.479,"char":[0,3]},{"start":115.479,"end":115.95,"char":[4,18]},{"start":115.95,"end":116.422,"char":[19,28]}]},{"start":116.422,"end":119.249,"text":"Aynı sunucudaki diğer repolar kendi daemon'larına","words":[{"start":116.422,"end":116.893,"char":[0,4]},{"start":116.893,"end":117.364,"char":[5,15]},{"start":117.364,"end":117.835,"char":[16,21]},{"start":117.835,"end":118.307,"char":[22,29]},{"start":118.307,"end":118.778,"char":[30,35]},{"start":118.778,"end":119.249,"char":[36,49]}]},{"start":119.249,"end":122.077,"text":"sahiptir ve bu görünümden tamamen görünmezdir.","words":[{"start":119.249,"end":119.721,"char":[0,8]},{"start":119.721,"end":120.192,"char":[9,11]},{"start":120.192,"end":120.663,"char":[12,14]},{"start":120.663,"end":121.134,"char":[15,25]},{"start":121.134,"end":121.606,"char":[26,33]},{"start":121.606,"end":122.077,"char":[34,46]}]},{"start":123.327,"end":125.783,"text":"Yalnızca bu reponun container'ları.","words":[{"start":123.327,"end":123.941,"char":[0,8]},{"start":123.941,"end":124.555,"char":[9,11]},{"start":124.555,"end":125.169,"char":[12,19]},{"start":125.169,"end":125.783,"char":[20,35]}]},{"start":125.783,"end":127.01,"text":"İzolasyon gerçektir,","words":[{"start":125.783,"end":126.396,"char":[0,9]},{"start":126.396,"end":127.01,"char":[10,20]}]},{"start":127.01,"end":128.238,"text":"yapılandırma değil.","words":[{"start":127.01,"end":127.624,"char":[0,12]},{"start":127.624,"end":128.238,"char":[13,19]}]},{"start":129.071,"end":131.64,"text":"İlk dağıtımınız böylece tamamlandı.","words":[{"start":129.071,"end":129.713,"char":[0,3]},{"start":129.713,"end":130.355,"char":[4,15]},{"start":130.355,"end":130.998,"char":[16,23]},{"start":130.998,"end":131.64,"char":[24,35]}]},{"start":131.64,"end":134.208,"text":"Bir sonraki bölümde deponun","words":[{"start":131.64,"end":132.282,"char":[0,3]},{"start":132.282,"end":132.924,"char":[4,11]},{"start":132.924,"end":133.566,"char":[12,19]},{"start":133.566,"end":134.208,"char":[20,27]}]},{"start":134.208,"end":136.777,"text":"kendisiyle çalışmaya derinlemesine bakacağız.","words":[{"start":134.208,"end":134.851,"char":[0,10]},{"start":134.851,"end":135.493,"char":[11,20]},{"start":135.493,"end":136.135,"char":[21,34]},{"start":136.135,"end":136.777,"char":[35,45]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.295,
+      "text": "Gerçek bir uygulama dağıtma zamanı!",
+      "words": [
+        { "start": 1, "end": 1.459, "char": [0, 6] },
+        { "start": 1.459, "end": 1.918, "char": [7, 10] },
+        { "start": 1.918, "end": 2.377, "char": [11, 19] },
+        { "start": 2.377, "end": 2.836, "char": [20, 27] },
+        { "start": 2.836, "end": 3.295, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 3.295,
+      "end": 6.049,
+      "text": "Üç kısa adımda boş bir depodan",
+      "words": [
+        { "start": 3.295, "end": 3.754, "char": [0, 2] },
+        { "start": 3.754, "end": 4.213, "char": [3, 7] },
+        { "start": 4.213, "end": 4.672, "char": [8, 14] },
+        { "start": 4.672, "end": 5.131, "char": [15, 18] },
+        { "start": 5.131, "end": 5.59, "char": [19, 22] },
+        { "start": 5.59, "end": 6.049, "char": [23, 30] }
+      ]
+    },
+    {
+      "start": 6.049,
+      "end": 7.426,
+      "text": "çalışan container'lara geçeceğiz.",
+      "words": [
+        { "start": 6.049, "end": 6.508, "char": [0, 7] },
+        { "start": 6.508, "end": 6.967, "char": [8, 22] },
+        { "start": 6.967, "end": 7.426, "char": [23, 33] }
+      ]
+    },
+    {
+      "start": 8.208,
+      "end": 9.156,
+      "text": "Akış basit:",
+      "words": [
+        { "start": 8.208, "end": 8.682, "char": [0, 4] },
+        { "start": 8.682, "end": 9.156, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 9.156,
+      "end": 10.579,
+      "text": "bir şablon seçin,",
+      "words": [
+        { "start": 9.156, "end": 9.63, "char": [0, 3] },
+        { "start": 9.63, "end": 10.104, "char": [4, 10] },
+        { "start": 10.104, "end": 10.579, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 10.579,
+      "end": 12.475,
+      "text": "depoya uygulayın ve çalıştırın.",
+      "words": [
+        { "start": 10.579, "end": 11.053, "char": [0, 6] },
+        { "start": 11.053, "end": 11.527, "char": [7, 16] },
+        { "start": 11.527, "end": 12.001, "char": [17, 19] },
+        { "start": 12.001, "end": 12.475, "char": [20, 31] }
+      ]
+    },
+    {
+      "start": 12.475,
+      "end": 14.372,
+      "text": "CLI yerleşik şablonlarla gelir;",
+      "words": [
+        { "start": 12.475, "end": 12.949, "char": [0, 3] },
+        { "start": 12.949, "end": 13.423, "char": [4, 12] },
+        { "start": 13.423, "end": 13.897, "char": [13, 24] },
+        { "start": 13.897, "end": 14.372, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 14.372,
+      "end": 17.216,
+      "text": "bu sayede sıfırdan docker-compose yazmak zorunda",
+      "words": [
+        { "start": 14.372, "end": 14.846, "char": [0, 2] },
+        { "start": 14.846, "end": 15.32, "char": [3, 9] },
+        { "start": 15.32, "end": 15.794, "char": [10, 18] },
+        { "start": 15.794, "end": 16.268, "char": [19, 33] },
+        { "start": 16.268, "end": 16.742, "char": [34, 40] },
+        { "start": 16.742, "end": 17.216, "char": [41, 48] }
+      ]
+    },
+    {
+      "start": 17.216,
+      "end": 17.69,
+      "text": "kalmazsınız.",
+      "words": [{ "start": 17.216, "end": 17.69, "char": [0, 12] }]
+    },
+    {
+      "start": 20.958,
+      "end": 21.716,
+      "text": "Birinci adım.",
+      "words": [
+        { "start": 20.958, "end": 21.337, "char": [0, 7] },
+        { "start": 21.337, "end": 21.716, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 21.716,
+      "end": 22.852,
+      "text": "Mevcut şablonları listeliyoruz.",
+      "words": [
+        { "start": 21.716, "end": 22.094, "char": [0, 6] },
+        { "start": 22.094, "end": 22.473, "char": [7, 17] },
+        { "start": 22.473, "end": 22.852, "char": [18, 31] }
+      ]
+    },
+    {
+      "start": 22.852,
+      "end": 23.231,
+      "text": "Rediacc,",
+      "words": [{ "start": 22.852, "end": 23.231, "char": [0, 8] }]
+    },
+    {
+      "start": 23.231,
+      "end": 25.503,
+      "text": "yaygın uygulamalar için hazır kurulumlar sunar:",
+      "words": [
+        { "start": 23.231, "end": 23.609, "char": [0, 6] },
+        { "start": 23.609, "end": 23.988, "char": [7, 18] },
+        { "start": 23.988, "end": 24.367, "char": [19, 23] },
+        { "start": 24.367, "end": 24.746, "char": [24, 29] },
+        { "start": 24.746, "end": 25.125, "char": [30, 40] },
+        { "start": 25.125, "end": 25.503, "char": [41, 47] }
+      ]
+    },
+    {
+      "start": 25.503,
+      "end": 25.882,
+      "text": "Postgres,",
+      "words": [{ "start": 25.503, "end": 25.882, "char": [0, 9] }]
+    },
+    {
+      "start": 25.882,
+      "end": 26.261,
+      "text": "Redis,",
+      "words": [{ "start": 25.882, "end": 26.261, "char": [0, 6] }]
+    },
+    {
+      "start": 26.261,
+      "end": 28.155,
+      "text": "web sunucuları ve daha fazlası.",
+      "words": [
+        { "start": 26.261, "end": 26.64, "char": [0, 3] },
+        { "start": 26.64, "end": 27.018, "char": [4, 14] },
+        { "start": 27.018, "end": 27.397, "char": [15, 17] },
+        { "start": 27.397, "end": 27.776, "char": [18, 22] },
+        { "start": 27.776, "end": 28.155, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 28.155,
+      "end": 30.049,
+      "text": "Sıfırdan docker-compose yazmak zorunda kalmıyorsunuz.",
+      "words": [
+        { "start": 28.155, "end": 28.534, "char": [0, 8] },
+        { "start": 28.534, "end": 28.912, "char": [9, 23] },
+        { "start": 28.912, "end": 29.291, "char": [24, 30] },
+        { "start": 29.291, "end": 29.67, "char": [31, 38] },
+        { "start": 29.67, "end": 30.049, "char": [39, 53] }
+      ]
+    },
+    {
+      "start": 31.549,
+      "end": 32.92,
+      "text": "Tam şablon kataloğu.",
+      "words": [
+        { "start": 31.549, "end": 32.006, "char": [0, 3] },
+        { "start": 32.006, "end": 32.463, "char": [4, 10] },
+        { "start": 32.463, "end": 32.92, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 32.92,
+      "end": 35.663,
+      "text": "Her biri test edilmiş bir compose",
+      "words": [
+        { "start": 32.92, "end": 33.377, "char": [0, 3] },
+        { "start": 33.377, "end": 33.834, "char": [4, 8] },
+        { "start": 33.834, "end": 34.291, "char": [9, 13] },
+        { "start": 34.291, "end": 34.749, "char": [14, 21] },
+        { "start": 34.749, "end": 35.206, "char": [22, 25] },
+        { "start": 35.206, "end": 35.663, "char": [26, 33] }
+      ]
+    },
+    {
+      "start": 35.663,
+      "end": 37.034,
+      "text": "ile Rediaccfile ikilisi.",
+      "words": [
+        { "start": 35.663, "end": 36.12, "char": [0, 3] },
+        { "start": 36.12, "end": 36.577, "char": [4, 15] },
+        { "start": 36.577, "end": 37.034, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 40.337,
+      "end": 41.011,
+      "text": "İkinci adım.",
+      "words": [
+        { "start": 40.337, "end": 40.674, "char": [0, 6] },
+        { "start": 40.674, "end": 41.011, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 41.011,
+      "end": 42.36,
+      "text": "app-postgres şablonunu depoya uyguluyoruz.",
+      "words": [
+        { "start": 41.011, "end": 41.348, "char": [0, 12] },
+        { "start": 41.348, "end": 41.685, "char": [13, 22] },
+        { "start": 41.685, "end": 42.023, "char": [23, 29] },
+        { "start": 42.023, "end": 42.36, "char": [30, 42] }
+      ]
+    },
+    {
+      "start": 42.36,
+      "end": 43.371,
+      "text": "İki dosya oluşuyor:",
+      "words": [
+        { "start": 42.36, "end": 42.697, "char": [0, 3] },
+        { "start": 42.697, "end": 43.034, "char": [4, 9] },
+        { "start": 43.034, "end": 43.371, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 43.371,
+      "end": 46.068,
+      "text": "container'ları tanımlayan docker-compose.yml ve başlatma ile durdurma yaşam",
+      "words": [
+        { "start": 43.371, "end": 43.708, "char": [0, 14] },
+        { "start": 43.708, "end": 44.045, "char": [15, 25] },
+        { "start": 44.045, "end": 44.382, "char": [26, 44] },
+        { "start": 44.382, "end": 44.719, "char": [45, 47] },
+        { "start": 44.719, "end": 45.056, "char": [48, 56] },
+        { "start": 45.056, "end": 45.394, "char": [57, 60] },
+        { "start": 45.394, "end": 45.731, "char": [61, 69] },
+        { "start": 45.731, "end": 46.068, "char": [70, 75] }
+      ]
+    },
+    {
+      "start": 46.068,
+      "end": 47.416,
+      "text": "döngüsü kancalarını tanımlayan Rediaccfile.",
+      "words": [
+        { "start": 46.068, "end": 46.405, "char": [0, 7] },
+        { "start": 46.405, "end": 46.742, "char": [8, 19] },
+        { "start": 46.742, "end": 47.079, "char": [20, 30] },
+        { "start": 47.079, "end": 47.416, "char": [31, 43] }
+      ]
+    },
+    {
+      "start": 49.666,
+      "end": 50.49,
+      "text": "Şablon uygulandı.",
+      "words": [
+        { "start": 49.666, "end": 50.078, "char": [0, 6] },
+        { "start": 50.078, "end": 50.49, "char": [7, 17] }
+      ]
+    },
+    {
+      "start": 50.49,
+      "end": 53.376,
+      "text": "Depoda artık compose dosyası ve Rediaccfile var.",
+      "words": [
+        { "start": 50.49, "end": 50.903, "char": [0, 6] },
+        { "start": 50.903, "end": 51.315, "char": [7, 12] },
+        { "start": 51.315, "end": 51.727, "char": [13, 20] },
+        { "start": 51.727, "end": 52.139, "char": [21, 28] },
+        { "start": 52.139, "end": 52.551, "char": [29, 31] },
+        { "start": 52.551, "end": 52.963, "char": [32, 43] },
+        { "start": 52.963, "end": 53.376, "char": [44, 48] }
+      ]
+    },
+    {
+      "start": 56.702,
+      "end": 59.089,
+      "text": "Üçüncü adım.",
+      "words": [
+        { "start": 56.702, "end": 57.895, "char": [0, 6] },
+        { "start": 57.895, "end": 59.089, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 59.089,
+      "end": 62.669,
+      "text": "Depoyu ayağa kaldırıyoruz.",
+      "words": [
+        { "start": 59.089, "end": 60.282, "char": [0, 6] },
+        { "start": 60.282, "end": 61.476, "char": [7, 12] },
+        { "start": 61.476, "end": 62.669, "char": [13, 26] }
+      ]
+    },
+    {
+      "start": 62.669,
+      "end": 66.249,
+      "text": "Araç container'ları başlatır,",
+      "words": [
+        { "start": 62.669, "end": 63.862, "char": [0, 4] },
+        { "start": 63.862, "end": 65.056, "char": [5, 19] },
+        { "start": 65.056, "end": 66.249, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 66.249,
+      "end": 69.829,
+      "text": "şifreli birimi bağlar",
+      "words": [
+        { "start": 66.249, "end": 67.442, "char": [0, 7] },
+        { "start": 67.442, "end": 68.636, "char": [8, 14] },
+        { "start": 68.636, "end": 69.829, "char": [15, 21] }
+      ]
+    },
+    {
+      "start": 69.829,
+      "end": 73.409,
+      "text": "ve izole Docker",
+      "words": [
+        { "start": 69.829, "end": 71.023, "char": [0, 2] },
+        { "start": 71.023, "end": 72.216, "char": [3, 8] },
+        { "start": 72.216, "end": 73.409, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 73.409,
+      "end": 75.796,
+      "text": "daemon'ını yapılandırır.",
+      "words": [
+        { "start": 73.409, "end": 74.603, "char": [0, 10] },
+        { "start": 74.603, "end": 75.796, "char": [11, 24] }
+      ]
+    },
+    {
+      "start": 75.796,
+      "end": 79.376,
+      "text": "Uygulama artık çalışıyor.",
+      "words": [
+        { "start": 75.796, "end": 76.99, "char": [0, 8] },
+        { "start": 76.99, "end": 78.183, "char": [9, 14] },
+        { "start": 78.183, "end": 79.376, "char": [15, 25] }
+      ]
+    },
+    {
+      "start": 82.126,
+      "end": 83.713,
+      "text": "Container'lar çalışıyor,",
+      "words": [
+        { "start": 82.126, "end": 82.92, "char": [0, 13] },
+        { "start": 82.92, "end": 83.713, "char": [14, 24] }
+      ]
+    },
+    {
+      "start": 83.713,
+      "end": 85.3,
+      "text": "birim bağlandı,",
+      "words": [
+        { "start": 83.713, "end": 84.507, "char": [0, 5] },
+        { "start": 84.507, "end": 85.3, "char": [6, 15] }
+      ]
+    },
+    {
+      "start": 85.3,
+      "end": 88.474,
+      "text": "izole Docker daemon ayakta.",
+      "words": [
+        { "start": 85.3, "end": 86.094, "char": [0, 5] },
+        { "start": 86.094, "end": 86.887, "char": [6, 12] },
+        { "start": 86.887, "end": 87.681, "char": [13, 19] },
+        { "start": 87.681, "end": 88.474, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 91.814,
+      "end": 93.202,
+      "text": "docker ps ile doğruluyoruz.",
+      "words": [
+        { "start": 91.814, "end": 92.161, "char": [0, 6] },
+        { "start": 92.161, "end": 92.508, "char": [7, 9] },
+        { "start": 92.508, "end": 92.855, "char": [10, 13] },
+        { "start": 92.855, "end": 93.202, "char": [14, 27] }
+      ]
+    },
+    {
+      "start": 93.202,
+      "end": 95.977,
+      "text": "Bu görünümün yalnızca kendi depomuzun container'larını gösterdiğine dikkat",
+      "words": [
+        { "start": 93.202, "end": 93.549, "char": [0, 2] },
+        { "start": 93.549, "end": 93.895, "char": [3, 12] },
+        { "start": 93.895, "end": 94.242, "char": [13, 21] },
+        { "start": 94.242, "end": 94.589, "char": [22, 27] },
+        { "start": 94.589, "end": 94.936, "char": [28, 37] },
+        { "start": 94.936, "end": 95.283, "char": [38, 54] },
+        { "start": 95.283, "end": 95.63, "char": [55, 67] },
+        { "start": 95.63, "end": 95.977, "char": [68, 74] }
+      ]
+    },
+    {
+      "start": 95.977,
+      "end": 96.324,
+      "text": "edin.",
+      "words": [{ "start": 95.977, "end": 96.324, "char": [0, 5] }]
+    },
+    {
+      "start": 96.324,
+      "end": 99.099,
+      "text": "Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahip",
+      "words": [
+        { "start": 96.324, "end": 96.671, "char": [0, 4] },
+        { "start": 96.671, "end": 97.018, "char": [5, 15] },
+        { "start": 97.018, "end": 97.365, "char": [16, 21] },
+        { "start": 97.365, "end": 97.711, "char": [22, 29] },
+        { "start": 97.711, "end": 98.058, "char": [30, 35] },
+        { "start": 98.058, "end": 98.405, "char": [36, 42] },
+        { "start": 98.405, "end": 98.752, "char": [43, 56] },
+        { "start": 98.752, "end": 99.099, "char": [57, 62] }
+      ]
+    },
+    {
+      "start": 99.099,
+      "end": 100.487,
+      "text": "ve buradan tamamen görünmez.",
+      "words": [
+        { "start": 99.099, "end": 99.446, "char": [0, 2] },
+        { "start": 99.446, "end": 99.793, "char": [3, 10] },
+        { "start": 99.793, "end": 100.14, "char": [11, 18] },
+        { "start": 100.14, "end": 100.487, "char": [19, 28] }
+      ]
+    },
+    {
+      "start": 103.237,
+      "end": 105.34,
+      "text": "Yalnızca bu deponun container'ları.",
+      "words": [
+        { "start": 103.237, "end": 103.762, "char": [0, 8] },
+        { "start": 103.762, "end": 104.288, "char": [9, 11] },
+        { "start": 104.288, "end": 104.814, "char": [12, 19] },
+        { "start": 104.814, "end": 105.34, "char": [20, 35] }
+      ]
+    },
+    {
+      "start": 105.34,
+      "end": 106.917,
+      "text": "İzolasyon yapılandırma değil,",
+      "words": [
+        { "start": 105.34, "end": 105.865, "char": [0, 9] },
+        { "start": 105.865, "end": 106.391, "char": [10, 22] },
+        { "start": 106.391, "end": 106.917, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 106.917,
+      "end": 107.442,
+      "text": "gerçek.",
+      "words": [{ "start": 106.917, "end": 107.442, "char": [0, 7] }]
+    },
+    {
+      "start": 110.766,
+      "end": 112.18,
+      "text": "Nelerin çalıştığını doğrulayalım.",
+      "words": [
+        { "start": 110.766, "end": 111.237, "char": [0, 7] },
+        { "start": 111.237, "end": 111.709, "char": [8, 19] },
+        { "start": 111.709, "end": 112.18, "char": [20, 33] }
+      ]
+    },
+    {
+      "start": 112.18,
+      "end": 115.008,
+      "text": "docker ps burada yalnızca bu repoya",
+      "words": [
+        { "start": 112.18, "end": 112.651, "char": [0, 6] },
+        { "start": 112.651, "end": 113.122, "char": [7, 9] },
+        { "start": 113.122, "end": 113.594, "char": [10, 16] },
+        { "start": 113.594, "end": 114.065, "char": [17, 25] },
+        { "start": 114.065, "end": 114.536, "char": [26, 28] },
+        { "start": 114.536, "end": 115.008, "char": [29, 35] }
+      ]
+    },
+    {
+      "start": 115.008,
+      "end": 116.422,
+      "text": "ait container'ları listeler.",
+      "words": [
+        { "start": 115.008, "end": 115.479, "char": [0, 3] },
+        { "start": 115.479, "end": 115.95, "char": [4, 18] },
+        { "start": 115.95, "end": 116.422, "char": [19, 28] }
+      ]
+    },
+    {
+      "start": 116.422,
+      "end": 119.249,
+      "text": "Aynı sunucudaki diğer repolar kendi daemon'larına",
+      "words": [
+        { "start": 116.422, "end": 116.893, "char": [0, 4] },
+        { "start": 116.893, "end": 117.364, "char": [5, 15] },
+        { "start": 117.364, "end": 117.835, "char": [16, 21] },
+        { "start": 117.835, "end": 118.307, "char": [22, 29] },
+        { "start": 118.307, "end": 118.778, "char": [30, 35] },
+        { "start": 118.778, "end": 119.249, "char": [36, 49] }
+      ]
+    },
+    {
+      "start": 119.249,
+      "end": 122.077,
+      "text": "sahiptir ve bu görünümden tamamen görünmezdir.",
+      "words": [
+        { "start": 119.249, "end": 119.721, "char": [0, 8] },
+        { "start": 119.721, "end": 120.192, "char": [9, 11] },
+        { "start": 120.192, "end": 120.663, "char": [12, 14] },
+        { "start": 120.663, "end": 121.134, "char": [15, 25] },
+        { "start": 121.134, "end": 121.606, "char": [26, 33] },
+        { "start": 121.606, "end": 122.077, "char": [34, 46] }
+      ]
+    },
+    {
+      "start": 123.327,
+      "end": 125.783,
+      "text": "Yalnızca bu reponun container'ları.",
+      "words": [
+        { "start": 123.327, "end": 123.941, "char": [0, 8] },
+        { "start": 123.941, "end": 124.555, "char": [9, 11] },
+        { "start": 124.555, "end": 125.169, "char": [12, 19] },
+        { "start": 125.169, "end": 125.783, "char": [20, 35] }
+      ]
+    },
+    {
+      "start": 125.783,
+      "end": 127.01,
+      "text": "İzolasyon gerçektir,",
+      "words": [
+        { "start": 125.783, "end": 126.396, "char": [0, 9] },
+        { "start": 126.396, "end": 127.01, "char": [10, 20] }
+      ]
+    },
+    {
+      "start": 127.01,
+      "end": 128.238,
+      "text": "yapılandırma değil.",
+      "words": [
+        { "start": 127.01, "end": 127.624, "char": [0, 12] },
+        { "start": 127.624, "end": 128.238, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 129.071,
+      "end": 131.64,
+      "text": "İlk dağıtımınız böylece tamamlandı.",
+      "words": [
+        { "start": 129.071, "end": 129.713, "char": [0, 3] },
+        { "start": 129.713, "end": 130.355, "char": [4, 15] },
+        { "start": 130.355, "end": 130.998, "char": [16, 23] },
+        { "start": 130.998, "end": 131.64, "char": [24, 35] }
+      ]
+    },
+    {
+      "start": 131.64,
+      "end": 134.208,
+      "text": "Bir sonraki bölümde deponun",
+      "words": [
+        { "start": 131.64, "end": 132.282, "char": [0, 3] },
+        { "start": 132.282, "end": 132.924, "char": [4, 11] },
+        { "start": 132.924, "end": 133.566, "char": [12, 19] },
+        { "start": 133.566, "end": 134.208, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 134.208,
+      "end": 136.777,
+      "text": "kendisiyle çalışmaya derinlemesine bakacağız.",
+      "words": [
+        { "start": 134.208, "end": 134.851, "char": [0, 10] },
+        { "start": 134.851, "end": 135.493, "char": [11, 20] },
+        { "start": 135.493, "end": 136.135, "char": [21, 34] },
+        { "start": 136.135, "end": 136.777, "char": [35, 45] }
+      ]
+    }
+  ]
+}

@@ -6,7 +6,8 @@ order: 2
 language: it
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/it/cli.json
-sourceHash: "233baf26d48ca547"
+sourceHash: "a754193f03516b7a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

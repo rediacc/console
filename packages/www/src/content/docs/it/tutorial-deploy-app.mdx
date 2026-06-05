@@ -1,19 +1,19 @@
 ---
 title: "Distribuire la Tua Prima App"
-description: "Distribuisci un'app containerizzata da un template integrato usando rdc repo up. È pronta in un attimo."
+description: "Distribuisci un'app containerizzata da un template integrato usando `rdc` repo up."
 category: "Tutorials"
 subcategory: essentials
 order: 5
 language: it
-sourceHash: "08bd8fbaffc53a06"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "a40a843238f17e9f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Distribuire la Tua Prima App
 
-Hai un repository vuoto. `rdc` include template integrati così puoi avviare app reali senza scrivere un `docker-compose` da zero. Tre passi: scegli un template, applicalo, eseguilo.
+Hai un repository vuoto. `rdc` include template integrati così puoi avviare app reali senza scrivere un `docker-compose` da zero. Scegli un template, applicalo, eseguilo.
 
 ## Guarda il tutorial
 
@@ -33,7 +33,7 @@ Vedrai configurazioni già pronte per app comuni: Postgres, Redis, web server e 
 
 <TutorialStep number={2} />
 
-Questo copia i file del template nel repo.
+Fatto. Questo copia i file del template nel repo.
 
 ## Passo 3: Vedi cosa è arrivato
 
@@ -45,13 +45,13 @@ Due file: `docker-compose.yml` descrive i container, e `Rediaccfile` definisce c
 
 <TutorialStep number={4} />
 
-La CLI avvia i container, monta il volume cifrato e collega un daemon Docker isolato per questo repo. (Se sei gia' all'interno della sandbox del repo tramite VS Code, `renet dev up` e' un'alternativa equivalente nel sandbox.)
+La CLI avvia i container, monta il volume cifrato e collega un daemon Docker isolato per questo repo. (Sei già all'interno della sandbox del repo tramite VS Code? `renet dev up` è un'alternativa equivalente in-sandbox.)
 
 ## Passo 5: Verifica
 
 <TutorialStep number={5} />
 
-`docker ps` qui elenca solo i container di questo repo. Gli altri repo sullo stesso server hanno i propri daemon Docker e sono completamente invisibili da questo.
+`docker ps` qui elenca solo i container di questo repo. Gli altri repo sullo stesso server hanno i propri daemon Docker: i loro container sono completamente invisibili da questo. Questo è il punto dell'isolamento: testa liberamente senza toccare i servizi adiacenti.
 
 ---
 

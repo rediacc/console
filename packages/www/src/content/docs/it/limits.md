@@ -2,17 +2,17 @@
 title: Limiti e Quote
 description: >-
   Riferimento per i limiti, i massimi e le quote applicabili a repository,
-  servizi, rete e archiviazione di Rediacc. È utile consultarlo prima di avviare un progetto più complesso.
+  servizi, rete e archiviazione di Rediacc.
 category: Reference
 order: 99
 language: it
-sourceHash: "8f29c515be1b7fb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1d0e48ed1094dda6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Limiti e Quote
 
-Questa pagina elenca i limiti rigidi e flessibili applicabili ai deployment di Rediacc. Leggila prima di pianificare la capacita', cosi' sai quali limiti esistono e quali no.
+Limiti di deployment di Rediacc. Tre sono rigidi e non possono essere modificati aggiungendo hardware: il limite di 61 servizi per repository (allocazione dello spazio di indirizzi di rete), il kernel 6.1 minimo (requisiti CRIU) e il limite di rilascio di Let's Encrypt di 50 certificati wildcard per dominio registrato per settimana. Tutto il resto è flessibile: si sposta quando aggiungi hardware. Conosci la differenza prima di impegnarti in una topologia.
 
 ---
 
@@ -22,7 +22,7 @@ Ogni repository supporta fino a **61 servizi** in esecuzione contemporaneamente.
 
 Questo è un limite rigido determinato dallo spazio degli indirizzi di rete allocato a ogni repository. Ogni servizio ottiene il proprio indirizzo IP privato dedicato, e il blocco di indirizzi di ogni repository accoglie esattamente 61 slot di servizio.
 
-Se ti stai avvicinando a questo limite, consolida i servizi più piccoli (ad esempio, sposta i sidecar o gli agenti di monitoraggio in un repository separato con il proprio confine di isolamento) o refactoring per ridurre il numero di processi in esecuzione indipendente all'interno di una singola applicazione.
+Consideralo così: quando raggiungi 61 servizi in un repository, di solito indica un problema architetturale, non un vincolo di Rediacc. La soluzione è spostare i sidecar e gli agenti di monitoraggio nel loro repository con un confine di isolamento separato, oppure ridurre il numero di processi in esecuzione indipendente all'interno dell'applicazione stessa.
 
 ---
 
@@ -47,7 +47,7 @@ A ogni repository viene assegnato un **ID di rete** univoco, un numero usato per
 | ID di rete totali disponibili | ~261.944 |
 | Ambito | Per configurazione (condiviso tra tutte le macchine in una configurazione) |
 
-Quando un repository viene eliminato, il suo ID di rete viene liberato e diventa disponibile per il riutilizzo. Rediacc alloca gli ID in modo sequenziale e cerca gli spazi liberi solo quando il contatore forward si avvicina al limite. In pratica questo limite non viene mai raggiunto. Richiederebbe la creazione e il tracciamento di centinaia di migliaia di repository nel corso della vita di una singola configurazione.
+Quando un repository viene eliminato, il suo ID di rete viene liberato e diventa disponibile per il riutilizzo. Rediacc alloca gli ID in modo sequenziale e cerca gli spazi liberi solo quando il contatore forward si avvicina al limite. In pratica questo limite non viene mai raggiunto. Non lo abbiamo mai visto accadere. L'esaurimento del pool richiederebbe la creazione e il tracciamento di centinaia di migliaia di repository nel corso della vita di una singola configurazione.
 
 ---
 
@@ -67,7 +67,7 @@ Le porte vengono aperte solo dopo aver configurato un IP pubblico con `rdc confi
 |------|----------|---------|
 | 80 | TCP | HTTP: gestito da Traefik; restituisce 404 per i domini non configurati, non viene passato ad alcun servizio |
 | 443 | TCP | HTTPS: come sopra; le richieste senza una route corrispondente vengono rifiutate al livello del proxy |
-| 10000-10010 | TCP | Intervallo dinamico per il forwarding TCP gestito da Rediacc |
+| 10000–10010 | TCP | Intervallo dinamico per il forwarding TCP gestito da Rediacc |
 
 HTTP/HTTPS differiscono dalle porte TCP raw: anche se le porte 80 e 443 sono aperte, ogni richiesta viene validata dal reverse proxy rispetto a una tabella di routing esplicita. Senza un servizio configurato e un dominio corrispondente, nessun codice applicativo viene raggiunto e nessun dato viene esposto.
 
@@ -111,7 +111,7 @@ Ogni immagine di repository ha una dimensione massima fissa impostata al momento
 
 Ogni servizio con l'etichetta `rediacc.service_port` ottiene automaticamente una route HTTPS. Non esiste un limite al numero di servizi con route, soggetto al massimo di 61 servizi per repository.
 
-I certificati TLS wildcard vengono provisioning per repository al primo deployment tramite Let's Encrypt (sfida DNS-01 Cloudflare). Let's Encrypt limita il rilascio a **50 certificati per dominio registrato per settimana**. Poiche' Rediacc usa un certificato wildcard per repository (non per servizio), un deployment che crea 50+ nuovi repository in una singola settimana raggiungera' questo limite.
+I certificati TLS wildcard vengono provisioning per repository al primo deployment tramite Let's Encrypt (sfida DNS-01 Cloudflare). Let's Encrypt limita il rilascio a **50 certificati per dominio registrato per settimana**. Poiché Rediacc usa un certificato wildcard per repository (non per servizio), un deployment che crea 50+ nuovi repository in una singola settimana raggiungerà questo limite.
 
 I fork riutilizzano il certificato wildcard esistente del repository genitore e non consumano alcuna quota di certificati.
 
@@ -173,7 +173,7 @@ Le macchine remote devono eseguire uno dei seguenti sistemi per soddisfare i req
 
 ### Matrice delle funzionalità del kernel
 
-Leggi la matrice come una panoramica rapida di cio' che ogni OS testato in CI fornisce immediatamente. Tutti e cinque soddisfano ogni requisito, quindi questa e' un riferimento per gli operatori, non un criterio di esclusione.
+Leggi la matrice come una panoramica rapida di ciò che ogni OS testato in CI fornisce immediatamente. Tutti e cinque soddisfano ogni requisito, quindi questa è un riferimento per gli operatori, non un criterio di esclusione.
 
 | OS | Modulo btrfs | cgroups v2 | Landlock (ABI >= 1) | Hook cgroup eBPF |
 |----|--------------|------------|--------------------|-------------------|

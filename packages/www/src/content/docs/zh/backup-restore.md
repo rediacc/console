@@ -1,16 +1,16 @@
 ---
 title: 备份与恢复
-description: 将加密仓库备份到外部存储、从备份恢复以及配置定时备份。
+description: 将加密仓库备份到任何与 rclone 兼容的存储，在任何机器上恢复，并通过具名备份策略和 systemd 定时器自动执行。
 category: Guides
 order: 7
 language: zh
-sourceHash: "196ee7b649ac7371"
-sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
+sourceHash: "6ed9a5b950de8ddb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 备份与恢复
 
-Rediacc 可以将加密仓库备份到外部存储提供商，并在同一台或不同的机器上进行恢复。备份是加密的，恢复时需要仓库的 LUKS 凭据。
+Rediacc 可以将加密仓库备份到外部存储，并在同一台或不同的机器上进行恢复。备份是加密的，恢复时需要仓库的 LUKS 凭据。
 
 ## 配置存储
 
@@ -47,7 +47,7 @@ rdc repo push --name my-app -m server-1 --to my-storage
 | `--to <storage>` | 目标存储位置 |
 | `--to-machine <machine>` | 用于机器到机器备份的目标机器 |
 | `--dest <filename>` | 自定义目标文件名 |
-| `--checkpoint` | 推送前创建CRIU检查点（用于带有`rediacc.checkpoint=true`标签的容器）。目标在`repo up`时自动恢复 |
+| `--checkpoint` | 推送前创建 CRIU 检查点（用于带有 `rediacc.checkpoint=true` 标签的容器）。目标在 `repo up` 时自动恢复 |
 | `--force` | 覆盖已有备份 |
 | `--bwlimit <limit>` | rsync 传输的带宽限制（例如 `10M`、`500K`） |
 | `--tag <tag>` | 为备份添加标签 |
@@ -87,7 +87,7 @@ rdc repo backup list --from my-storage -m server-1
 
 | 列 | 含义 |
 |---|---|
-| `Mode` | `hot` 或 `cold`. 此条目所属的计划备份文件夹 |
+| `Mode` | `hot` 或 `cold`。此条目所属的计划备份文件夹 |
 | `Name` | 从本地配置解析的仓库名称（对于不在配置中的仓库回退到 GUID） |
 | `GUID` | 磁盘上的仓库 GUID |
 | `Size` | 备份文件的可读大小 |
@@ -116,7 +116,7 @@ rdc repo backup list --from my-storage -m server-1 --path cold
     └── ...
 ```
 
-一个仓库可以同时出现在 `hot/` 和 `cold/` 中（每小时计划对其快照；每周计划再次快照）,  合并后的列表会将这两行同时显示出来，便于看清哪些流覆盖了哪些仓库。
+一个仓库可以同时出现在 `hot/` 和 `cold/` 中（每小时计划对其快照；每周计划再次快照）。合并后的列表会将这两行同时显示出来，便于看清哪些流覆盖了哪些仓库。
 
 ## 批量同步
 
@@ -158,7 +158,7 @@ Rediacc 使用具名备份策略。每个策略定义了一个计划、备份模
 
 ### 冷备份语义
 
-冷备份对每个包含的仓库执行三个阶段：**停止 -- 快照 -- 启动**。了解保证的边界有助于运维人员及早发现部分故障。
+冷备份对每个包含的仓库执行三个阶段：**停止 → 快照 → 启动**。了解保证的边界有助于运维人员及早发现部分故障。
 
 **冷备份保证的内容：**
 

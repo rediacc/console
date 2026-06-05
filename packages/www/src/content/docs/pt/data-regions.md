@@ -4,9 +4,11 @@ description: "Onde os seus dados são armazenados e como funciona a residência 
 category: "Concepts"
 order: 3
 language: pt
+sourceHash: "c87be32ef22a725d"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Quando cria uma conta Rediacc, escolhe uma região de dados. Todos os seus dados permanecem nessa região. Esta escolha é permanente e não pode ser alterada após o registo.
+Quando cria uma conta Rediacc, escolhe uma região de dados. Todos os seus dados permanecem nessa região. Esta escolha é permanente e não pode ser alterada após o registo. Nenhum caminho de migração existe. Escolha com base em onde os seus dados precisam residir legalmente, não em onde estão os seus servidores atualmente.
 
 ## Regiões Disponíveis
 
@@ -47,7 +49,7 @@ Cada região executa infraestrutura independente. Não existem consultas entre r
 
 ## Garantias de Dados da EU
 
-A região EU oferece garantias adicionais para organizações com requisitos de residência de dados europeus:
+Escute: se está sujeito a requisitos de residência de dados europeus, a região EU adiciona garantias específicas:
 
 - **Base de dados D1**: executa na Europa de Leste (dica de localização EEUR)
 - **Armazenamento de configurações R2**: utiliza imposição jurisdicional da EU (garantia contratual, não apenas uma dica de localização)

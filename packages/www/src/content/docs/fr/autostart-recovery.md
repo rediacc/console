@@ -4,12 +4,13 @@ description: "Comment fonctionne le démarrage automatique, le réconciliateur p
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "8e98fcd141e27da6"
+sourceHash: "00a1796a0b0d20da"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Démarrage automatique et récupération
 
-Cette page explique comment les dépôts sont automatiquement montés et démarrés au démarrage du système, et comment le réconciliateur périodique remet un dépôt en service s'il tombe après que le serveur est déjà en fonctionnement.
+Les dépôts avec le démarrage automatique se démarrent d'eux-mêmes au boot. Si l'un d'eux tombe en panne par la suite, le réconciliateur périodique le rétablit. Aucune intervention. Aucun redémarrage manuel.
 
 Pour savoir comment activer ou désactiver le démarrage automatique sur un dépôt, consultez [Services: Démarrage automatique au démarrage](/fr/docs/services#autostart-on-boot).
 

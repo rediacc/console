@@ -1,12 +1,13 @@
 ---
 title: "تطبيق سطر الأوامر"
-description: "دليل شامل لاستخدام واجهة سطر أوامر Rediacc لإدارة المنصة"
-category: "مرجع"
+description: "مرجع الأوامر لـ rdc، واجهة سطر أوامر Rediacc. يغطي الآلات والمستودعات والإعدادات والتخزين والأسرار ومزامنة الملفات وجلسات VS Code البعيدة وإدارة الاشتراكات."
+category: "Reference"
 order: 2
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "233baf26d48ca547"
+sourceHash: "a754193f03516b7a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

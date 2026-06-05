@@ -4,8 +4,8 @@ description: "Looge, hallake ja kasutage LUKS-krüpteeritud repositooriume kaugm
 category: "Guides"
 order: 4
 language: et
-sourceHash: "531ee9648611844e"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffb07e5870accfd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Repositooriumid
@@ -212,7 +212,7 @@ rdc repo delete --name my-app -m server-1
 
 ## Repositooriumi migreerimine
 
-Migreerige repositoorium ühelt masinalt teisele minimaalse seisakuajaga.
+Migreerige repositoorium ühelt masinalt teisele. Ainus seisakuaeg on lõplik deltasünkroonimise faas: tavaliselt sekundeid kuni mõni minut, sõltuvalt kirjutamise kiirusest ülelõikamise ajal.
 
 ```bash
 rdc repo migrate --name my-app --from server-1 --to server-2

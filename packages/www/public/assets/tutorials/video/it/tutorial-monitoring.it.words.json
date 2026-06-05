@@ -1,1 +1,753 @@
-{"version":1,"cues":[{"start":1,"end":1.442,"text":"Bene!","words":[{"start":1,"end":1.442,"char":[0,5]}]},{"start":1.442,"end":4.097,"text":"La tua app e' attiva e","words":[{"start":1.442,"end":1.885,"char":[0,2]},{"start":1.885,"end":2.327,"char":[3,6]},{"start":2.327,"end":2.77,"char":[7,10]},{"start":2.77,"end":3.212,"char":[11,13]},{"start":3.212,"end":3.655,"char":[14,20]},{"start":3.655,"end":4.097,"char":[21,22]}]},{"start":4.097,"end":5.424,"text":"ha un backup;","words":[{"start":4.097,"end":4.54,"char":[0,2]},{"start":4.54,"end":4.982,"char":[3,5]},{"start":4.982,"end":5.424,"char":[6,13]}]},{"start":5.424,"end":8.079,"text":"ora assicuriamoci che rimanga in salute.","words":[{"start":5.424,"end":5.867,"char":[0,3]},{"start":5.867,"end":6.309,"char":[4,17]},{"start":6.309,"end":6.752,"char":[18,21]},{"start":6.752,"end":7.194,"char":[22,29]},{"start":7.194,"end":7.637,"char":[30,32]},{"start":7.637,"end":8.079,"char":[33,40]}]},{"start":8.859,"end":11.837,"text":"La CLI ti da' un quadro","words":[{"start":8.859,"end":9.355,"char":[0,2]},{"start":9.355,"end":9.852,"char":[3,6]},{"start":9.852,"end":10.348,"char":[7,9]},{"start":10.348,"end":10.844,"char":[10,13]},{"start":10.844,"end":11.341,"char":[14,16]},{"start":11.341,"end":11.837,"char":[17,23]}]},{"start":11.837,"end":14.815,"text":"completo di qualsiasi server dal tuo","words":[{"start":11.837,"end":12.333,"char":[0,8]},{"start":12.333,"end":12.83,"char":[9,11]},{"start":12.83,"end":13.326,"char":[12,21]},{"start":13.326,"end":13.822,"char":[22,28]},{"start":13.822,"end":14.319,"char":[29,32]},{"start":14.319,"end":14.815,"char":[33,36]}]},{"start":14.815,"end":15.311,"text":"laptop.","words":[{"start":14.815,"end":15.311,"char":[0,7]}]},{"start":15.311,"end":17.297,"text":"Tre angolazioni da controllare:","words":[{"start":15.311,"end":15.808,"char":[0,3]},{"start":15.808,"end":16.304,"char":[4,15]},{"start":16.304,"end":16.8,"char":[16,18]},{"start":16.8,"end":17.297,"char":[19,31]}]},{"start":17.297,"end":18.786,"text":"salute del sistema,","words":[{"start":17.297,"end":17.793,"char":[0,6]},{"start":17.793,"end":18.289,"char":[7,10]},{"start":18.289,"end":18.786,"char":[11,19]}]},{"start":18.786,"end":21.763,"text":"container in esecuzione e i repository","words":[{"start":18.786,"end":19.282,"char":[0,9]},{"start":19.282,"end":19.778,"char":[10,12]},{"start":19.778,"end":20.275,"char":[13,23]},{"start":20.275,"end":20.771,"char":[24,25]},{"start":20.771,"end":21.267,"char":[26,27]},{"start":21.267,"end":21.763,"char":[28,38]}]},{"start":21.763,"end":22.26,"text":"stessi.","words":[{"start":21.763,"end":22.26,"char":[0,7]}]},{"start":25.533,"end":27.547,"text":"Iniziamo con la vista di sistema.","words":[{"start":25.533,"end":25.869,"char":[0,8]},{"start":25.869,"end":26.204,"char":[9,12]},{"start":26.204,"end":26.54,"char":[13,15]},{"start":26.54,"end":26.876,"char":[16,21]},{"start":26.876,"end":27.211,"char":[22,24]},{"start":27.211,"end":27.547,"char":[25,33]}]},{"start":27.547,"end":30.232,"text":"Il comando di query macchina con il filtro","words":[{"start":27.547,"end":27.882,"char":[0,2]},{"start":27.882,"end":28.218,"char":[3,10]},{"start":28.218,"end":28.554,"char":[11,13]},{"start":28.554,"end":28.889,"char":[14,19]},{"start":28.889,"end":29.225,"char":[20,28]},{"start":29.225,"end":29.561,"char":[29,32]},{"start":29.561,"end":29.896,"char":[33,35]},{"start":29.896,"end":30.232,"char":[36,42]}]},{"start":30.232,"end":31.239,"text":"system mostra uptime,","words":[{"start":30.232,"end":30.568,"char":[0,6]},{"start":30.568,"end":30.903,"char":[7,13]},{"start":30.903,"end":31.239,"char":[14,21]}]},{"start":31.239,"end":33.588,"text":"utilizzo del disco e stato dello storage.","words":[{"start":31.239,"end":31.574,"char":[0,8]},{"start":31.574,"end":31.91,"char":[9,12]},{"start":31.91,"end":32.246,"char":[13,18]},{"start":32.246,"end":32.581,"char":[19,20]},{"start":32.581,"end":32.917,"char":[21,26]},{"start":32.917,"end":33.253,"char":[27,32]},{"start":33.253,"end":33.588,"char":[33,41]}]},{"start":33.588,"end":34.931,"text":"Se qualcosa non va,","words":[{"start":33.588,"end":33.924,"char":[0,2]},{"start":33.924,"end":34.259,"char":[3,11]},{"start":34.259,"end":34.595,"char":[12,15]},{"start":34.595,"end":34.931,"char":[16,19]}]},{"start":34.931,"end":36.609,"text":"il rapporto ce lo dice.","words":[{"start":34.931,"end":35.266,"char":[0,2]},{"start":35.266,"end":35.602,"char":[3,11]},{"start":35.602,"end":35.938,"char":[12,14]},{"start":35.938,"end":36.273,"char":[15,17]},{"start":36.273,"end":36.609,"char":[18,23]}]},{"start":36.609,"end":37.029,"text":"Uptime,","words":[{"start":36.609,"end":37.029,"char":[0,7]}]},{"start":37.029,"end":37.45,"text":"disco,","words":[{"start":37.029,"end":37.45,"char":[0,6]}]},{"start":37.45,"end":37.871,"text":"storage.","words":[{"start":37.45,"end":37.871,"char":[0,8]}]},{"start":37.871,"end":40.394,"text":"Tutto cio' che serve a colpo","words":[{"start":37.871,"end":38.291,"char":[0,5]},{"start":38.291,"end":38.712,"char":[6,10]},{"start":38.712,"end":39.132,"char":[11,14]},{"start":39.132,"end":39.553,"char":[15,20]},{"start":39.553,"end":39.973,"char":[21,22]},{"start":39.973,"end":40.394,"char":[23,28]}]},{"start":40.394,"end":40.815,"text":"d'occhio.","words":[{"start":40.394,"end":40.815,"char":[0,9]}]},{"start":44.069,"end":45.77,"text":"Ora i container.","words":[{"start":44.069,"end":44.636,"char":[0,3]},{"start":44.636,"end":45.203,"char":[4,5]},{"start":45.203,"end":45.77,"char":[6,16]}]},{"start":45.77,"end":48.605,"text":"Questa vista elenca ogni container","words":[{"start":45.77,"end":46.337,"char":[0,6]},{"start":46.337,"end":46.904,"char":[7,12]},{"start":46.904,"end":47.471,"char":[13,19]},{"start":47.471,"end":48.038,"char":[20,24]},{"start":48.038,"end":48.605,"char":[25,34]}]},{"start":48.605,"end":51.439,"text":"in esecuzione su tutti i","words":[{"start":48.605,"end":49.172,"char":[0,2]},{"start":49.172,"end":49.739,"char":[3,13]},{"start":49.739,"end":50.305,"char":[14,16]},{"start":50.305,"end":50.872,"char":[17,22]},{"start":50.872,"end":51.439,"char":[23,24]}]},{"start":51.439,"end":54.274,"text":"repository della macchina -- nome,","words":[{"start":51.439,"end":52.006,"char":[0,10]},{"start":52.006,"end":52.573,"char":[11,16]},{"start":52.573,"end":53.14,"char":[17,25]},{"start":53.14,"end":53.707,"char":[26,28]},{"start":53.707,"end":54.274,"char":[29,34]}]},{"start":54.274,"end":54.841,"text":"stato,","words":[{"start":54.274,"end":54.841,"char":[0,6]}]},{"start":54.841,"end":55.408,"text":"salute,","words":[{"start":54.841,"end":55.408,"char":[0,7]}]},{"start":55.408,"end":55.975,"text":"CPU,","words":[{"start":55.408,"end":55.975,"char":[0,4]}]},{"start":55.975,"end":58.81,"text":"memoria e quale repo li","words":[{"start":55.975,"end":56.542,"char":[0,7]},{"start":56.542,"end":57.109,"char":[8,9]},{"start":57.109,"end":57.676,"char":[10,15]},{"start":57.676,"end":58.243,"char":[16,20]},{"start":58.243,"end":58.81,"char":[21,23]}]},{"start":58.81,"end":59.377,"text":"gestisce.","words":[{"start":58.81,"end":59.377,"char":[0,9]}]},{"start":59.377,"end":61.401,"text":"Ogni container su ogni repo,","words":[{"start":59.377,"end":59.782,"char":[0,4]},{"start":59.782,"end":60.187,"char":[5,14]},{"start":60.187,"end":60.591,"char":[15,17]},{"start":60.591,"end":60.996,"char":[18,22]},{"start":60.996,"end":61.401,"char":[23,28]}]},{"start":61.401,"end":62.616,"text":"in un'unica vista.","words":[{"start":61.401,"end":61.806,"char":[0,2]},{"start":61.806,"end":62.211,"char":[3,11]},{"start":62.211,"end":62.616,"char":[12,18]}]},{"start":65.869,"end":67.513,"text":"E i repo stessi.","words":[{"start":65.869,"end":66.28,"char":[0,1]},{"start":66.28,"end":66.691,"char":[2,3]},{"start":66.691,"end":67.102,"char":[4,8]},{"start":67.102,"end":67.513,"char":[9,16]}]},{"start":67.513,"end":67.924,"text":"Dimensione,","words":[{"start":67.513,"end":67.924,"char":[0,11]}]},{"start":67.924,"end":69.156,"text":"stato di montaggio,","words":[{"start":67.924,"end":68.335,"char":[0,5]},{"start":68.335,"end":68.745,"char":[6,8]},{"start":68.745,"end":69.156,"char":[9,19]}]},{"start":69.156,"end":70.8,"text":"stato del Docker daemon,","words":[{"start":69.156,"end":69.567,"char":[0,5]},{"start":69.567,"end":69.978,"char":[6,9]},{"start":69.978,"end":70.389,"char":[10,16]},{"start":70.389,"end":70.8,"char":[17,24]}]},{"start":70.8,"end":72.033,"text":"utilizzo del disco.","words":[{"start":70.8,"end":71.211,"char":[0,8]},{"start":71.211,"end":71.622,"char":[9,12]},{"start":71.622,"end":72.033,"char":[13,19]}]},{"start":72.033,"end":74.909,"text":"Tutto quello che devi sapere su ogni","words":[{"start":72.033,"end":72.444,"char":[0,5]},{"start":72.444,"end":72.855,"char":[6,12]},{"start":72.855,"end":73.266,"char":[13,16]},{"start":73.266,"end":73.677,"char":[17,21]},{"start":73.677,"end":74.088,"char":[22,28]},{"start":74.088,"end":74.498,"char":[29,31]},{"start":74.498,"end":74.909,"char":[32,36]}]},{"start":74.909,"end":76.553,"text":"ambiente isolato sulla macchina.","words":[{"start":74.909,"end":75.32,"char":[0,8]},{"start":75.32,"end":75.731,"char":[9,16]},{"start":75.731,"end":76.142,"char":[17,22]},{"start":76.142,"end":76.553,"char":[23,32]}]},{"start":76.553,"end":77.891,"text":"Tutti i repo,","words":[{"start":76.553,"end":76.999,"char":[0,5]},{"start":76.999,"end":77.445,"char":[6,7]},{"start":77.445,"end":77.891,"char":[8,13]}]},{"start":77.891,"end":79.676,"text":"tutti i loro daemon,","words":[{"start":77.891,"end":78.337,"char":[0,5]},{"start":78.337,"end":78.784,"char":[6,7]},{"start":78.784,"end":79.23,"char":[8,12]},{"start":79.23,"end":79.676,"char":[13,20]}]},{"start":79.676,"end":82.352,"text":"tutto il loro utilizzo del disco.","words":[{"start":79.676,"end":80.122,"char":[0,5]},{"start":80.122,"end":80.568,"char":[6,8]},{"start":80.568,"end":81.014,"char":[9,13]},{"start":81.014,"end":81.46,"char":[14,22]},{"start":81.46,"end":81.906,"char":[23,26]},{"start":81.906,"end":82.352,"char":[27,33]}]},{"start":85.74,"end":88.627,"text":"Il comando di query macchina ti da'","words":[{"start":85.74,"end":86.152,"char":[0,2]},{"start":86.152,"end":86.565,"char":[3,10]},{"start":86.565,"end":86.977,"char":[11,13]},{"start":86.977,"end":87.389,"char":[14,19]},{"start":87.389,"end":87.802,"char":[20,28]},{"start":87.802,"end":88.214,"char":[29,31]},{"start":88.214,"end":88.627,"char":[32,35]}]},{"start":88.627,"end":90.688,"text":"tutto in un colpo solo.","words":[{"start":88.627,"end":89.039,"char":[0,5]},{"start":89.039,"end":89.451,"char":[6,8]},{"start":89.451,"end":89.864,"char":[9,11]},{"start":89.864,"end":90.276,"char":[12,17]},{"start":90.276,"end":90.688,"char":[18,23]}]},{"start":90.688,"end":91.925,"text":"Informazioni di sistema,","words":[{"start":90.688,"end":91.101,"char":[0,12]},{"start":91.101,"end":91.513,"char":[13,15]},{"start":91.513,"end":91.925,"char":[16,24]}]},{"start":91.925,"end":92.338,"text":"container,","words":[{"start":91.925,"end":92.338,"char":[0,10]}]},{"start":92.338,"end":93.987,"text":"repository -- tutto insieme.","words":[{"start":92.338,"end":92.75,"char":[0,10]},{"start":92.75,"end":93.163,"char":[11,13]},{"start":93.163,"end":93.575,"char":[14,19]},{"start":93.575,"end":93.987,"char":[20,28]}]},{"start":93.987,"end":96.874,"text":"Eseguilo una volta e hai il quadro","words":[{"start":93.987,"end":94.4,"char":[0,8]},{"start":94.4,"end":94.812,"char":[9,12]},{"start":94.812,"end":95.224,"char":[13,18]},{"start":95.224,"end":95.637,"char":[19,20]},{"start":95.637,"end":96.049,"char":[21,24]},{"start":96.049,"end":96.461,"char":[25,27]},{"start":96.461,"end":96.874,"char":[28,34]}]},{"start":96.874,"end":97.286,"text":"completo.","words":[{"start":96.874,"end":97.286,"char":[0,9]}]},{"start":97.286,"end":98.34,"text":"Tutto insieme,","words":[{"start":97.286,"end":97.813,"char":[0,5]},{"start":97.813,"end":98.34,"char":[6,14]}]},{"start":98.34,"end":100.447,"text":"senza bisogno di filtri.","words":[{"start":98.34,"end":98.867,"char":[0,5]},{"start":98.867,"end":99.393,"char":[6,13]},{"start":99.393,"end":99.92,"char":[14,16]},{"start":99.92,"end":100.447,"char":[17,24]}]},{"start":103.697,"end":106.504,"text":"E infine il controllo diagnostico per un","words":[{"start":103.697,"end":104.098,"char":[0,1]},{"start":104.098,"end":104.499,"char":[2,8]},{"start":104.499,"end":104.9,"char":[9,11]},{"start":104.9,"end":105.301,"char":[12,21]},{"start":105.301,"end":105.702,"char":[22,33]},{"start":105.702,"end":106.103,"char":[34,37]},{"start":106.103,"end":106.504,"char":[38,40]}]},{"start":106.504,"end":108.509,"text":"controllo rapido sul tuo laptop.","words":[{"start":106.504,"end":106.905,"char":[0,9]},{"start":106.905,"end":107.306,"char":[10,16]},{"start":107.306,"end":107.707,"char":[17,20]},{"start":107.707,"end":108.108,"char":[21,24]},{"start":108.108,"end":108.509,"char":[25,32]}]},{"start":108.509,"end":108.91,"text":"Node,","words":[{"start":108.509,"end":108.91,"char":[0,5]}]},{"start":108.91,"end":109.712,"text":"chiave SSH,","words":[{"start":108.91,"end":109.311,"char":[0,6]},{"start":109.311,"end":109.712,"char":[7,11]}]},{"start":109.712,"end":110.113,"text":"renet,","words":[{"start":109.712,"end":110.113,"char":[0,6]}]},{"start":110.113,"end":112.92,"text":"Docker -- tutto cio' da cui dipende","words":[{"start":110.113,"end":110.514,"char":[0,6]},{"start":110.514,"end":110.915,"char":[7,9]},{"start":110.915,"end":111.316,"char":[10,15]},{"start":111.316,"end":111.717,"char":[16,20]},{"start":111.717,"end":112.118,"char":[21,23]},{"start":112.118,"end":112.519,"char":[24,27]},{"start":112.519,"end":112.92,"char":[28,35]}]},{"start":112.92,"end":113.722,"text":"la CLI.","words":[{"start":112.92,"end":113.321,"char":[0,2]},{"start":113.321,"end":113.722,"char":[3,7]}]},{"start":113.722,"end":115.727,"text":"Questa e' la serie completa.","words":[{"start":113.722,"end":114.123,"char":[0,6]},{"start":114.123,"end":114.524,"char":[7,9]},{"start":114.524,"end":114.925,"char":[10,12]},{"start":114.925,"end":115.326,"char":[13,18]},{"start":115.326,"end":115.727,"char":[19,28]}]},{"start":115.727,"end":116.93,"text":"Dall'installazione al monitoraggio,","words":[{"start":115.727,"end":116.128,"char":[0,18]},{"start":116.128,"end":116.529,"char":[19,21]},{"start":116.529,"end":116.93,"char":[22,35]}]},{"start":116.93,"end":118.535,"text":"tutto dal tuo terminale.","words":[{"start":116.93,"end":117.332,"char":[0,5]},{"start":117.332,"end":117.733,"char":[6,9]},{"start":117.733,"end":118.134,"char":[10,13]},{"start":118.134,"end":118.535,"char":[14,24]}]},{"start":118.535,"end":121.128,"text":"Tutto verde significa che la tua","words":[{"start":118.535,"end":118.967,"char":[0,5]},{"start":118.967,"end":119.399,"char":[6,11]},{"start":119.399,"end":119.831,"char":[12,21]},{"start":119.831,"end":120.263,"char":[22,25]},{"start":120.263,"end":120.696,"char":[26,28]},{"start":120.696,"end":121.128,"char":[29,32]}]},{"start":121.128,"end":123.289,"text":"CLI locale e' in salute.","words":[{"start":121.128,"end":121.56,"char":[0,3]},{"start":121.56,"end":121.992,"char":[4,10]},{"start":121.992,"end":122.424,"char":[11,13]},{"start":122.424,"end":122.857,"char":[14,16]},{"start":122.857,"end":123.289,"char":[17,24]}]},{"start":124.057,"end":126.879,"text":"E con questo chiudiamo la","words":[{"start":124.057,"end":124.621,"char":[0,1]},{"start":124.621,"end":125.186,"char":[2,5]},{"start":125.186,"end":125.75,"char":[6,12]},{"start":125.75,"end":126.315,"char":[13,22]},{"start":126.315,"end":126.879,"char":[23,25]}]},{"start":126.879,"end":127.444,"text":"serie.","words":[{"start":126.879,"end":127.444,"char":[0,6]}]},{"start":127.444,"end":129.137,"text":"Ora puoi installare,","words":[{"start":127.444,"end":128.008,"char":[0,3]},{"start":128.008,"end":128.572,"char":[4,8]},{"start":128.572,"end":129.137,"char":[9,20]}]},{"start":129.137,"end":129.701,"text":"configurare,","words":[{"start":129.137,"end":129.701,"char":[0,12]}]},{"start":129.701,"end":130.266,"text":"distribuire,","words":[{"start":129.701,"end":130.266,"char":[0,12]}]},{"start":130.266,"end":130.83,"text":"forkare,","words":[{"start":130.266,"end":130.83,"char":[0,8]}]},{"start":130.83,"end":132.523,"text":"andare in produzione,","words":[{"start":130.83,"end":131.395,"char":[0,6]},{"start":131.395,"end":131.959,"char":[7,9]},{"start":131.959,"end":132.523,"char":[10,21]}]},{"start":132.523,"end":134.217,"text":"avviare in automatico,","words":[{"start":132.523,"end":133.088,"char":[0,7]},{"start":133.088,"end":133.652,"char":[8,10]},{"start":133.652,"end":134.217,"char":[11,22]}]},{"start":134.217,"end":137.039,"text":"fare il backup e monitorare","words":[{"start":134.217,"end":134.781,"char":[0,4]},{"start":134.781,"end":135.346,"char":[5,7]},{"start":135.346,"end":135.91,"char":[8,14]},{"start":135.91,"end":136.475,"char":[15,16]},{"start":136.475,"end":137.039,"char":[17,27]}]},{"start":137.039,"end":139.861,"text":"-- tutto dal tuo terminale!","words":[{"start":137.039,"end":137.603,"char":[0,2]},{"start":137.603,"end":138.168,"char":[3,8]},{"start":138.168,"end":138.732,"char":[9,12]},{"start":138.732,"end":139.297,"char":[13,16]},{"start":139.297,"end":139.861,"char":[17,27]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.442,
+      "text": "Bene!",
+      "words": [{ "start": 1, "end": 1.442, "char": [0, 5] }]
+    },
+    {
+      "start": 1.442,
+      "end": 4.097,
+      "text": "La tua app e' attiva e",
+      "words": [
+        { "start": 1.442, "end": 1.885, "char": [0, 2] },
+        { "start": 1.885, "end": 2.327, "char": [3, 6] },
+        { "start": 2.327, "end": 2.77, "char": [7, 10] },
+        { "start": 2.77, "end": 3.212, "char": [11, 13] },
+        { "start": 3.212, "end": 3.655, "char": [14, 20] },
+        { "start": 3.655, "end": 4.097, "char": [21, 22] }
+      ]
+    },
+    {
+      "start": 4.097,
+      "end": 5.424,
+      "text": "ha un backup;",
+      "words": [
+        { "start": 4.097, "end": 4.54, "char": [0, 2] },
+        { "start": 4.54, "end": 4.982, "char": [3, 5] },
+        { "start": 4.982, "end": 5.424, "char": [6, 13] }
+      ]
+    },
+    {
+      "start": 5.424,
+      "end": 8.079,
+      "text": "ora assicuriamoci che rimanga in salute.",
+      "words": [
+        { "start": 5.424, "end": 5.867, "char": [0, 3] },
+        { "start": 5.867, "end": 6.309, "char": [4, 17] },
+        { "start": 6.309, "end": 6.752, "char": [18, 21] },
+        { "start": 6.752, "end": 7.194, "char": [22, 29] },
+        { "start": 7.194, "end": 7.637, "char": [30, 32] },
+        { "start": 7.637, "end": 8.079, "char": [33, 40] }
+      ]
+    },
+    {
+      "start": 8.859,
+      "end": 11.837,
+      "text": "La CLI ti da' un quadro",
+      "words": [
+        { "start": 8.859, "end": 9.355, "char": [0, 2] },
+        { "start": 9.355, "end": 9.852, "char": [3, 6] },
+        { "start": 9.852, "end": 10.348, "char": [7, 9] },
+        { "start": 10.348, "end": 10.844, "char": [10, 13] },
+        { "start": 10.844, "end": 11.341, "char": [14, 16] },
+        { "start": 11.341, "end": 11.837, "char": [17, 23] }
+      ]
+    },
+    {
+      "start": 11.837,
+      "end": 14.815,
+      "text": "completo di qualsiasi server dal tuo",
+      "words": [
+        { "start": 11.837, "end": 12.333, "char": [0, 8] },
+        { "start": 12.333, "end": 12.83, "char": [9, 11] },
+        { "start": 12.83, "end": 13.326, "char": [12, 21] },
+        { "start": 13.326, "end": 13.822, "char": [22, 28] },
+        { "start": 13.822, "end": 14.319, "char": [29, 32] },
+        { "start": 14.319, "end": 14.815, "char": [33, 36] }
+      ]
+    },
+    {
+      "start": 14.815,
+      "end": 15.311,
+      "text": "laptop.",
+      "words": [{ "start": 14.815, "end": 15.311, "char": [0, 7] }]
+    },
+    {
+      "start": 15.311,
+      "end": 17.297,
+      "text": "Tre angolazioni da controllare:",
+      "words": [
+        { "start": 15.311, "end": 15.808, "char": [0, 3] },
+        { "start": 15.808, "end": 16.304, "char": [4, 15] },
+        { "start": 16.304, "end": 16.8, "char": [16, 18] },
+        { "start": 16.8, "end": 17.297, "char": [19, 31] }
+      ]
+    },
+    {
+      "start": 17.297,
+      "end": 18.786,
+      "text": "salute del sistema,",
+      "words": [
+        { "start": 17.297, "end": 17.793, "char": [0, 6] },
+        { "start": 17.793, "end": 18.289, "char": [7, 10] },
+        { "start": 18.289, "end": 18.786, "char": [11, 19] }
+      ]
+    },
+    {
+      "start": 18.786,
+      "end": 21.763,
+      "text": "container in esecuzione e i repository",
+      "words": [
+        { "start": 18.786, "end": 19.282, "char": [0, 9] },
+        { "start": 19.282, "end": 19.778, "char": [10, 12] },
+        { "start": 19.778, "end": 20.275, "char": [13, 23] },
+        { "start": 20.275, "end": 20.771, "char": [24, 25] },
+        { "start": 20.771, "end": 21.267, "char": [26, 27] },
+        { "start": 21.267, "end": 21.763, "char": [28, 38] }
+      ]
+    },
+    {
+      "start": 21.763,
+      "end": 22.26,
+      "text": "stessi.",
+      "words": [{ "start": 21.763, "end": 22.26, "char": [0, 7] }]
+    },
+    {
+      "start": 25.533,
+      "end": 27.547,
+      "text": "Iniziamo con la vista di sistema.",
+      "words": [
+        { "start": 25.533, "end": 25.869, "char": [0, 8] },
+        { "start": 25.869, "end": 26.204, "char": [9, 12] },
+        { "start": 26.204, "end": 26.54, "char": [13, 15] },
+        { "start": 26.54, "end": 26.876, "char": [16, 21] },
+        { "start": 26.876, "end": 27.211, "char": [22, 24] },
+        { "start": 27.211, "end": 27.547, "char": [25, 33] }
+      ]
+    },
+    {
+      "start": 27.547,
+      "end": 30.232,
+      "text": "Il comando di query macchina con il filtro",
+      "words": [
+        { "start": 27.547, "end": 27.882, "char": [0, 2] },
+        { "start": 27.882, "end": 28.218, "char": [3, 10] },
+        { "start": 28.218, "end": 28.554, "char": [11, 13] },
+        { "start": 28.554, "end": 28.889, "char": [14, 19] },
+        { "start": 28.889, "end": 29.225, "char": [20, 28] },
+        { "start": 29.225, "end": 29.561, "char": [29, 32] },
+        { "start": 29.561, "end": 29.896, "char": [33, 35] },
+        { "start": 29.896, "end": 30.232, "char": [36, 42] }
+      ]
+    },
+    {
+      "start": 30.232,
+      "end": 31.239,
+      "text": "system mostra uptime,",
+      "words": [
+        { "start": 30.232, "end": 30.568, "char": [0, 6] },
+        { "start": 30.568, "end": 30.903, "char": [7, 13] },
+        { "start": 30.903, "end": 31.239, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 31.239,
+      "end": 33.588,
+      "text": "utilizzo del disco e stato dello storage.",
+      "words": [
+        { "start": 31.239, "end": 31.574, "char": [0, 8] },
+        { "start": 31.574, "end": 31.91, "char": [9, 12] },
+        { "start": 31.91, "end": 32.246, "char": [13, 18] },
+        { "start": 32.246, "end": 32.581, "char": [19, 20] },
+        { "start": 32.581, "end": 32.917, "char": [21, 26] },
+        { "start": 32.917, "end": 33.253, "char": [27, 32] },
+        { "start": 33.253, "end": 33.588, "char": [33, 41] }
+      ]
+    },
+    {
+      "start": 33.588,
+      "end": 34.931,
+      "text": "Se qualcosa non va,",
+      "words": [
+        { "start": 33.588, "end": 33.924, "char": [0, 2] },
+        { "start": 33.924, "end": 34.259, "char": [3, 11] },
+        { "start": 34.259, "end": 34.595, "char": [12, 15] },
+        { "start": 34.595, "end": 34.931, "char": [16, 19] }
+      ]
+    },
+    {
+      "start": 34.931,
+      "end": 36.609,
+      "text": "il rapporto ce lo dice.",
+      "words": [
+        { "start": 34.931, "end": 35.266, "char": [0, 2] },
+        { "start": 35.266, "end": 35.602, "char": [3, 11] },
+        { "start": 35.602, "end": 35.938, "char": [12, 14] },
+        { "start": 35.938, "end": 36.273, "char": [15, 17] },
+        { "start": 36.273, "end": 36.609, "char": [18, 23] }
+      ]
+    },
+    {
+      "start": 36.609,
+      "end": 37.029,
+      "text": "Uptime,",
+      "words": [{ "start": 36.609, "end": 37.029, "char": [0, 7] }]
+    },
+    {
+      "start": 37.029,
+      "end": 37.45,
+      "text": "disco,",
+      "words": [{ "start": 37.029, "end": 37.45, "char": [0, 6] }]
+    },
+    {
+      "start": 37.45,
+      "end": 37.871,
+      "text": "storage.",
+      "words": [{ "start": 37.45, "end": 37.871, "char": [0, 8] }]
+    },
+    {
+      "start": 37.871,
+      "end": 40.394,
+      "text": "Tutto cio' che serve a colpo",
+      "words": [
+        { "start": 37.871, "end": 38.291, "char": [0, 5] },
+        { "start": 38.291, "end": 38.712, "char": [6, 10] },
+        { "start": 38.712, "end": 39.132, "char": [11, 14] },
+        { "start": 39.132, "end": 39.553, "char": [15, 20] },
+        { "start": 39.553, "end": 39.973, "char": [21, 22] },
+        { "start": 39.973, "end": 40.394, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 40.394,
+      "end": 40.815,
+      "text": "d'occhio.",
+      "words": [{ "start": 40.394, "end": 40.815, "char": [0, 9] }]
+    },
+    {
+      "start": 44.069,
+      "end": 45.77,
+      "text": "Ora i container.",
+      "words": [
+        { "start": 44.069, "end": 44.636, "char": [0, 3] },
+        { "start": 44.636, "end": 45.203, "char": [4, 5] },
+        { "start": 45.203, "end": 45.77, "char": [6, 16] }
+      ]
+    },
+    {
+      "start": 45.77,
+      "end": 48.605,
+      "text": "Questa vista elenca ogni container",
+      "words": [
+        { "start": 45.77, "end": 46.337, "char": [0, 6] },
+        { "start": 46.337, "end": 46.904, "char": [7, 12] },
+        { "start": 46.904, "end": 47.471, "char": [13, 19] },
+        { "start": 47.471, "end": 48.038, "char": [20, 24] },
+        { "start": 48.038, "end": 48.605, "char": [25, 34] }
+      ]
+    },
+    {
+      "start": 48.605,
+      "end": 51.439,
+      "text": "in esecuzione su tutti i",
+      "words": [
+        { "start": 48.605, "end": 49.172, "char": [0, 2] },
+        { "start": 49.172, "end": 49.739, "char": [3, 13] },
+        { "start": 49.739, "end": 50.305, "char": [14, 16] },
+        { "start": 50.305, "end": 50.872, "char": [17, 22] },
+        { "start": 50.872, "end": 51.439, "char": [23, 24] }
+      ]
+    },
+    {
+      "start": 51.439,
+      "end": 54.274,
+      "text": "repository della macchina -- nome,",
+      "words": [
+        { "start": 51.439, "end": 52.006, "char": [0, 10] },
+        { "start": 52.006, "end": 52.573, "char": [11, 16] },
+        { "start": 52.573, "end": 53.14, "char": [17, 25] },
+        { "start": 53.14, "end": 53.707, "char": [26, 28] },
+        { "start": 53.707, "end": 54.274, "char": [29, 34] }
+      ]
+    },
+    {
+      "start": 54.274,
+      "end": 54.841,
+      "text": "stato,",
+      "words": [{ "start": 54.274, "end": 54.841, "char": [0, 6] }]
+    },
+    {
+      "start": 54.841,
+      "end": 55.408,
+      "text": "salute,",
+      "words": [{ "start": 54.841, "end": 55.408, "char": [0, 7] }]
+    },
+    {
+      "start": 55.408,
+      "end": 55.975,
+      "text": "CPU,",
+      "words": [{ "start": 55.408, "end": 55.975, "char": [0, 4] }]
+    },
+    {
+      "start": 55.975,
+      "end": 58.81,
+      "text": "memoria e quale repo li",
+      "words": [
+        { "start": 55.975, "end": 56.542, "char": [0, 7] },
+        { "start": 56.542, "end": 57.109, "char": [8, 9] },
+        { "start": 57.109, "end": 57.676, "char": [10, 15] },
+        { "start": 57.676, "end": 58.243, "char": [16, 20] },
+        { "start": 58.243, "end": 58.81, "char": [21, 23] }
+      ]
+    },
+    {
+      "start": 58.81,
+      "end": 59.377,
+      "text": "gestisce.",
+      "words": [{ "start": 58.81, "end": 59.377, "char": [0, 9] }]
+    },
+    {
+      "start": 59.377,
+      "end": 61.401,
+      "text": "Ogni container su ogni repo,",
+      "words": [
+        { "start": 59.377, "end": 59.782, "char": [0, 4] },
+        { "start": 59.782, "end": 60.187, "char": [5, 14] },
+        { "start": 60.187, "end": 60.591, "char": [15, 17] },
+        { "start": 60.591, "end": 60.996, "char": [18, 22] },
+        { "start": 60.996, "end": 61.401, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 61.401,
+      "end": 62.616,
+      "text": "in un'unica vista.",
+      "words": [
+        { "start": 61.401, "end": 61.806, "char": [0, 2] },
+        { "start": 61.806, "end": 62.211, "char": [3, 11] },
+        { "start": 62.211, "end": 62.616, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 65.869,
+      "end": 67.513,
+      "text": "E i repo stessi.",
+      "words": [
+        { "start": 65.869, "end": 66.28, "char": [0, 1] },
+        { "start": 66.28, "end": 66.691, "char": [2, 3] },
+        { "start": 66.691, "end": 67.102, "char": [4, 8] },
+        { "start": 67.102, "end": 67.513, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 67.513,
+      "end": 67.924,
+      "text": "Dimensione,",
+      "words": [{ "start": 67.513, "end": 67.924, "char": [0, 11] }]
+    },
+    {
+      "start": 67.924,
+      "end": 69.156,
+      "text": "stato di montaggio,",
+      "words": [
+        { "start": 67.924, "end": 68.335, "char": [0, 5] },
+        { "start": 68.335, "end": 68.745, "char": [6, 8] },
+        { "start": 68.745, "end": 69.156, "char": [9, 19] }
+      ]
+    },
+    {
+      "start": 69.156,
+      "end": 70.8,
+      "text": "stato del Docker daemon,",
+      "words": [
+        { "start": 69.156, "end": 69.567, "char": [0, 5] },
+        { "start": 69.567, "end": 69.978, "char": [6, 9] },
+        { "start": 69.978, "end": 70.389, "char": [10, 16] },
+        { "start": 70.389, "end": 70.8, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 70.8,
+      "end": 72.033,
+      "text": "utilizzo del disco.",
+      "words": [
+        { "start": 70.8, "end": 71.211, "char": [0, 8] },
+        { "start": 71.211, "end": 71.622, "char": [9, 12] },
+        { "start": 71.622, "end": 72.033, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 72.033,
+      "end": 74.909,
+      "text": "Tutto quello che devi sapere su ogni",
+      "words": [
+        { "start": 72.033, "end": 72.444, "char": [0, 5] },
+        { "start": 72.444, "end": 72.855, "char": [6, 12] },
+        { "start": 72.855, "end": 73.266, "char": [13, 16] },
+        { "start": 73.266, "end": 73.677, "char": [17, 21] },
+        { "start": 73.677, "end": 74.088, "char": [22, 28] },
+        { "start": 74.088, "end": 74.498, "char": [29, 31] },
+        { "start": 74.498, "end": 74.909, "char": [32, 36] }
+      ]
+    },
+    {
+      "start": 74.909,
+      "end": 76.553,
+      "text": "ambiente isolato sulla macchina.",
+      "words": [
+        { "start": 74.909, "end": 75.32, "char": [0, 8] },
+        { "start": 75.32, "end": 75.731, "char": [9, 16] },
+        { "start": 75.731, "end": 76.142, "char": [17, 22] },
+        { "start": 76.142, "end": 76.553, "char": [23, 32] }
+      ]
+    },
+    {
+      "start": 76.553,
+      "end": 77.891,
+      "text": "Tutti i repo,",
+      "words": [
+        { "start": 76.553, "end": 76.999, "char": [0, 5] },
+        { "start": 76.999, "end": 77.445, "char": [6, 7] },
+        { "start": 77.445, "end": 77.891, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 77.891,
+      "end": 79.676,
+      "text": "tutti i loro daemon,",
+      "words": [
+        { "start": 77.891, "end": 78.337, "char": [0, 5] },
+        { "start": 78.337, "end": 78.784, "char": [6, 7] },
+        { "start": 78.784, "end": 79.23, "char": [8, 12] },
+        { "start": 79.23, "end": 79.676, "char": [13, 20] }
+      ]
+    },
+    {
+      "start": 79.676,
+      "end": 82.352,
+      "text": "tutto il loro utilizzo del disco.",
+      "words": [
+        { "start": 79.676, "end": 80.122, "char": [0, 5] },
+        { "start": 80.122, "end": 80.568, "char": [6, 8] },
+        { "start": 80.568, "end": 81.014, "char": [9, 13] },
+        { "start": 81.014, "end": 81.46, "char": [14, 22] },
+        { "start": 81.46, "end": 81.906, "char": [23, 26] },
+        { "start": 81.906, "end": 82.352, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 85.74,
+      "end": 88.627,
+      "text": "Il comando di query macchina ti da'",
+      "words": [
+        { "start": 85.74, "end": 86.152, "char": [0, 2] },
+        { "start": 86.152, "end": 86.565, "char": [3, 10] },
+        { "start": 86.565, "end": 86.977, "char": [11, 13] },
+        { "start": 86.977, "end": 87.389, "char": [14, 19] },
+        { "start": 87.389, "end": 87.802, "char": [20, 28] },
+        { "start": 87.802, "end": 88.214, "char": [29, 31] },
+        { "start": 88.214, "end": 88.627, "char": [32, 35] }
+      ]
+    },
+    {
+      "start": 88.627,
+      "end": 90.688,
+      "text": "tutto in un colpo solo.",
+      "words": [
+        { "start": 88.627, "end": 89.039, "char": [0, 5] },
+        { "start": 89.039, "end": 89.451, "char": [6, 8] },
+        { "start": 89.451, "end": 89.864, "char": [9, 11] },
+        { "start": 89.864, "end": 90.276, "char": [12, 17] },
+        { "start": 90.276, "end": 90.688, "char": [18, 23] }
+      ]
+    },
+    {
+      "start": 90.688,
+      "end": 91.925,
+      "text": "Informazioni di sistema,",
+      "words": [
+        { "start": 90.688, "end": 91.101, "char": [0, 12] },
+        { "start": 91.101, "end": 91.513, "char": [13, 15] },
+        { "start": 91.513, "end": 91.925, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 91.925,
+      "end": 92.338,
+      "text": "container,",
+      "words": [{ "start": 91.925, "end": 92.338, "char": [0, 10] }]
+    },
+    {
+      "start": 92.338,
+      "end": 93.987,
+      "text": "repository -- tutto insieme.",
+      "words": [
+        { "start": 92.338, "end": 92.75, "char": [0, 10] },
+        { "start": 92.75, "end": 93.163, "char": [11, 13] },
+        { "start": 93.163, "end": 93.575, "char": [14, 19] },
+        { "start": 93.575, "end": 93.987, "char": [20, 28] }
+      ]
+    },
+    {
+      "start": 93.987,
+      "end": 96.874,
+      "text": "Eseguilo una volta e hai il quadro",
+      "words": [
+        { "start": 93.987, "end": 94.4, "char": [0, 8] },
+        { "start": 94.4, "end": 94.812, "char": [9, 12] },
+        { "start": 94.812, "end": 95.224, "char": [13, 18] },
+        { "start": 95.224, "end": 95.637, "char": [19, 20] },
+        { "start": 95.637, "end": 96.049, "char": [21, 24] },
+        { "start": 96.049, "end": 96.461, "char": [25, 27] },
+        { "start": 96.461, "end": 96.874, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 96.874,
+      "end": 97.286,
+      "text": "completo.",
+      "words": [{ "start": 96.874, "end": 97.286, "char": [0, 9] }]
+    },
+    {
+      "start": 97.286,
+      "end": 98.34,
+      "text": "Tutto insieme,",
+      "words": [
+        { "start": 97.286, "end": 97.813, "char": [0, 5] },
+        { "start": 97.813, "end": 98.34, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 98.34,
+      "end": 100.447,
+      "text": "senza bisogno di filtri.",
+      "words": [
+        { "start": 98.34, "end": 98.867, "char": [0, 5] },
+        { "start": 98.867, "end": 99.393, "char": [6, 13] },
+        { "start": 99.393, "end": 99.92, "char": [14, 16] },
+        { "start": 99.92, "end": 100.447, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 103.697,
+      "end": 106.504,
+      "text": "E infine il controllo diagnostico per un",
+      "words": [
+        { "start": 103.697, "end": 104.098, "char": [0, 1] },
+        { "start": 104.098, "end": 104.499, "char": [2, 8] },
+        { "start": 104.499, "end": 104.9, "char": [9, 11] },
+        { "start": 104.9, "end": 105.301, "char": [12, 21] },
+        { "start": 105.301, "end": 105.702, "char": [22, 33] },
+        { "start": 105.702, "end": 106.103, "char": [34, 37] },
+        { "start": 106.103, "end": 106.504, "char": [38, 40] }
+      ]
+    },
+    {
+      "start": 106.504,
+      "end": 108.509,
+      "text": "controllo rapido sul tuo laptop.",
+      "words": [
+        { "start": 106.504, "end": 106.905, "char": [0, 9] },
+        { "start": 106.905, "end": 107.306, "char": [10, 16] },
+        { "start": 107.306, "end": 107.707, "char": [17, 20] },
+        { "start": 107.707, "end": 108.108, "char": [21, 24] },
+        { "start": 108.108, "end": 108.509, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 108.509,
+      "end": 108.91,
+      "text": "Node,",
+      "words": [{ "start": 108.509, "end": 108.91, "char": [0, 5] }]
+    },
+    {
+      "start": 108.91,
+      "end": 109.712,
+      "text": "chiave SSH,",
+      "words": [
+        { "start": 108.91, "end": 109.311, "char": [0, 6] },
+        { "start": 109.311, "end": 109.712, "char": [7, 11] }
+      ]
+    },
+    {
+      "start": 109.712,
+      "end": 110.113,
+      "text": "renet,",
+      "words": [{ "start": 109.712, "end": 110.113, "char": [0, 6] }]
+    },
+    {
+      "start": 110.113,
+      "end": 112.92,
+      "text": "Docker -- tutto cio' da cui dipende",
+      "words": [
+        { "start": 110.113, "end": 110.514, "char": [0, 6] },
+        { "start": 110.514, "end": 110.915, "char": [7, 9] },
+        { "start": 110.915, "end": 111.316, "char": [10, 15] },
+        { "start": 111.316, "end": 111.717, "char": [16, 20] },
+        { "start": 111.717, "end": 112.118, "char": [21, 23] },
+        { "start": 112.118, "end": 112.519, "char": [24, 27] },
+        { "start": 112.519, "end": 112.92, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 112.92,
+      "end": 113.722,
+      "text": "la CLI.",
+      "words": [
+        { "start": 112.92, "end": 113.321, "char": [0, 2] },
+        { "start": 113.321, "end": 113.722, "char": [3, 7] }
+      ]
+    },
+    {
+      "start": 113.722,
+      "end": 115.727,
+      "text": "Questa e' la serie completa.",
+      "words": [
+        { "start": 113.722, "end": 114.123, "char": [0, 6] },
+        { "start": 114.123, "end": 114.524, "char": [7, 9] },
+        { "start": 114.524, "end": 114.925, "char": [10, 12] },
+        { "start": 114.925, "end": 115.326, "char": [13, 18] },
+        { "start": 115.326, "end": 115.727, "char": [19, 28] }
+      ]
+    },
+    {
+      "start": 115.727,
+      "end": 116.93,
+      "text": "Dall'installazione al monitoraggio,",
+      "words": [
+        { "start": 115.727, "end": 116.128, "char": [0, 18] },
+        { "start": 116.128, "end": 116.529, "char": [19, 21] },
+        { "start": 116.529, "end": 116.93, "char": [22, 35] }
+      ]
+    },
+    {
+      "start": 116.93,
+      "end": 118.535,
+      "text": "tutto dal tuo terminale.",
+      "words": [
+        { "start": 116.93, "end": 117.332, "char": [0, 5] },
+        { "start": 117.332, "end": 117.733, "char": [6, 9] },
+        { "start": 117.733, "end": 118.134, "char": [10, 13] },
+        { "start": 118.134, "end": 118.535, "char": [14, 24] }
+      ]
+    },
+    {
+      "start": 118.535,
+      "end": 121.128,
+      "text": "Tutto verde significa che la tua",
+      "words": [
+        { "start": 118.535, "end": 118.967, "char": [0, 5] },
+        { "start": 118.967, "end": 119.399, "char": [6, 11] },
+        { "start": 119.399, "end": 119.831, "char": [12, 21] },
+        { "start": 119.831, "end": 120.263, "char": [22, 25] },
+        { "start": 120.263, "end": 120.696, "char": [26, 28] },
+        { "start": 120.696, "end": 121.128, "char": [29, 32] }
+      ]
+    },
+    {
+      "start": 121.128,
+      "end": 123.289,
+      "text": "CLI locale e' in salute.",
+      "words": [
+        { "start": 121.128, "end": 121.56, "char": [0, 3] },
+        { "start": 121.56, "end": 121.992, "char": [4, 10] },
+        { "start": 121.992, "end": 122.424, "char": [11, 13] },
+        { "start": 122.424, "end": 122.857, "char": [14, 16] },
+        { "start": 122.857, "end": 123.289, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 124.057,
+      "end": 126.879,
+      "text": "E con questo chiudiamo la",
+      "words": [
+        { "start": 124.057, "end": 124.621, "char": [0, 1] },
+        { "start": 124.621, "end": 125.186, "char": [2, 5] },
+        { "start": 125.186, "end": 125.75, "char": [6, 12] },
+        { "start": 125.75, "end": 126.315, "char": [13, 22] },
+        { "start": 126.315, "end": 126.879, "char": [23, 25] }
+      ]
+    },
+    {
+      "start": 126.879,
+      "end": 127.444,
+      "text": "serie.",
+      "words": [{ "start": 126.879, "end": 127.444, "char": [0, 6] }]
+    },
+    {
+      "start": 127.444,
+      "end": 129.137,
+      "text": "Ora puoi installare,",
+      "words": [
+        { "start": 127.444, "end": 128.008, "char": [0, 3] },
+        { "start": 128.008, "end": 128.572, "char": [4, 8] },
+        { "start": 128.572, "end": 129.137, "char": [9, 20] }
+      ]
+    },
+    {
+      "start": 129.137,
+      "end": 129.701,
+      "text": "configurare,",
+      "words": [{ "start": 129.137, "end": 129.701, "char": [0, 12] }]
+    },
+    {
+      "start": 129.701,
+      "end": 130.266,
+      "text": "distribuire,",
+      "words": [{ "start": 129.701, "end": 130.266, "char": [0, 12] }]
+    },
+    {
+      "start": 130.266,
+      "end": 130.83,
+      "text": "forkare,",
+      "words": [{ "start": 130.266, "end": 130.83, "char": [0, 8] }]
+    },
+    {
+      "start": 130.83,
+      "end": 132.523,
+      "text": "andare in produzione,",
+      "words": [
+        { "start": 130.83, "end": 131.395, "char": [0, 6] },
+        { "start": 131.395, "end": 131.959, "char": [7, 9] },
+        { "start": 131.959, "end": 132.523, "char": [10, 21] }
+      ]
+    },
+    {
+      "start": 132.523,
+      "end": 134.217,
+      "text": "avviare in automatico,",
+      "words": [
+        { "start": 132.523, "end": 133.088, "char": [0, 7] },
+        { "start": 133.088, "end": 133.652, "char": [8, 10] },
+        { "start": 133.652, "end": 134.217, "char": [11, 22] }
+      ]
+    },
+    {
+      "start": 134.217,
+      "end": 137.039,
+      "text": "fare il backup e monitorare",
+      "words": [
+        { "start": 134.217, "end": 134.781, "char": [0, 4] },
+        { "start": 134.781, "end": 135.346, "char": [5, 7] },
+        { "start": 135.346, "end": 135.91, "char": [8, 14] },
+        { "start": 135.91, "end": 136.475, "char": [15, 16] },
+        { "start": 136.475, "end": 137.039, "char": [17, 27] }
+      ]
+    },
+    {
+      "start": 137.039,
+      "end": 139.861,
+      "text": "-- tutto dal tuo terminale!",
+      "words": [
+        { "start": 137.039, "end": 137.603, "char": [0, 2] },
+        { "start": 137.603, "end": 138.168, "char": [3, 8] },
+        { "start": 138.168, "end": 138.732, "char": [9, 12] },
+        { "start": 138.732, "end": 139.297, "char": [13, 16] },
+        { "start": 139.297, "end": 139.861, "char": [17, 27] }
+      ]
+    }
+  ]
+}

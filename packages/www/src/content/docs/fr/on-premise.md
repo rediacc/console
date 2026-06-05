@@ -4,8 +4,8 @@ description: "Exécuter le serveur de compte et la distribution de la CLI sur vo
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "c8c9aceeeeea1411"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "eea76db2d612133f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 Rediacc peut fonctionner entièrement sur votre propre infrastructure. L'image Docker autonome inclut le serveur de compte, le portail web, le site marketing et le point de terminaison de distribution de la CLI. Aucune dépendance externe aux services hébergés de Rediacc n'est requise.
@@ -33,7 +33,7 @@ L'image expose :
 
 ## Installation de la CLI depuis votre serveur
 
-Les utilisateurs peuvent installer la CLI directement depuis votre serveur on-premise. Le script d'installation détecte automatiquement le canal de mise à jour et configure la CLI pour vérifier les mises à jour sur votre serveur.
+Installez la CLI directement depuis votre serveur on-premise. Le script d'installation détecte automatiquement le canal de mise à jour et configure la CLI pour vérifier les mises à jour sur votre serveur.
 
 ```bash
 curl -fsSL https://account.example.com/install.sh | \
@@ -146,11 +146,11 @@ Stockez la clé privée avec vos autres secrets (par exemple, un secret Docker o
 
 Vous pouvez demander le certificat depuis le portail de compte amont de trois façons :
 
-**A : Libre-service client (recommandé).** Connectez-vous au portail amont en tant que propriétaire ou administrateur d'organisation et accédez à **/account/delegation-certs**. Cliquez sur « Create New », collez la clé publique on-premise (SPKI base64), choisissez une validité (ou acceptez le défaut par plan) et téléchargez le fichier `.json` résultant.
+**Option A : Libre-service client (recommandé).** Connectez-vous au portail amont en tant que propriétaire ou administrateur d'organisation et accédez à **/account/delegation-certs**. Cliquez sur **Create New**, collez la clé publique on-premise (base64 SPKI), choisissez une validité (ou acceptez le défaut par plan) et téléchargez le fichier `.json` résultant.
 
-**B : Admin (inter-client).** Le support Rediacc ou l'administrateur système amont peut appeler `POST /admin/delegation-certs` avec les mêmes paramètres.
+**Option B : Admin (inter-client).** Le support Rediacc ou l'administrateur système amont peut appeler `POST /admin/delegation-certs` avec les mêmes paramètres.
 
-**C : CLI `rdc` (prévu).** Une future commande CLI encapsulera le flux du portail.
+**Option C : CLI `rdc` (prévu).** Une future commande CLI encapsulera le flux du portail.
 
 Le `.json` retourné ressemble à :
 

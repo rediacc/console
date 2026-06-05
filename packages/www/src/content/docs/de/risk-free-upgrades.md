@@ -6,63 +6,64 @@ description: >-
 category: Use Cases
 order: 4
 language: de
-sourceHash: "c905d2f42d1108c2"
+sourceHash: "242617b8bede9535"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Alles testen. Nichts riskieren. Upgraden Sie mit Zuversicht.**
 
-**Hinweis:** Dies ist ein **Anwendungsbeispiel**, das zeigt, wie Rediacc dieses Problem lösen kann. Als Startup stellen diese Szenarien potenzielle Anwendungen und keine abgeschlossenen Fallstudien dar.
+Kurzer Hinweis: Rediacc hat derzeit keine produktiven Kunden. Dies ist ein Anwendungsbeispiel, das zeigt, wie die Architektur dieses Szenario in der Praxis bewältigt, keine Fallstudie einer echten Bereitstellung.
 
-**Krisenszenario:** Während eines Datenbank-Upgrades ist ein **unerwarteter Fehler** aufgetreten, der das Zurücksetzen auf die alte Version oder den Übergang zur neuen Version verhinderte. Kunden hatten keinen Zugriff auf Systeme und mehr als 5.000 Mitarbeiter konnten nicht arbeiten.
+**Krisenszenario:** Während eines Datenbank-Upgrades tritt ein **unerwarteter Fehler** auf, der sowohl das Zurücksetzen auf die alte Version als auch den Übergang zur neuen Version verhindert. Kunden können nicht auf Systeme zugreifen, und 5000+ Mitarbeiter können nicht arbeiten. Die einzige Lösung ist eine vollständige Systemwiederherstellung, die Stunden Engineerzeit kostet, während das Geschäft offline ist.
 
 ## Das Problem
 
-Mehmet ist ein erfahrener Systemadministrator, der große Datenbanken verwaltet. Er beschließt, **eine 100 TB große PostgreSQL-Datenbank von Version 13 auf 14 zu aktualisieren**. Sein Plan:
+Mehmet verwaltet Produktionsdatenbanken, die sein Team sich nicht leisten kann, offline zu nehmen. Heute führt er ein Upgrade einer **100 TB großen PostgreSQL-Datenbank von Version 13 auf 14** durch. Sein Plan:
 
-1. **Erstellen Sie ein Backup** → Allerdings dauert das Backup aufgrund der Datengröße **mehrere Tage** 
-2. **Führen Sie das Upgrade am Wochenende durch** → Abteilungen werden am **Samstag von 01:00–05:00 Uhr** über einen Ausfall benachrichtigt.
+1. **Ein Backup erstellen** → Allerdings dauert das Backup aufgrund der Datengröße **mehrere Tage**
+2. **Das Upgrade am Wochenende durchführen** → Abteilungen werden von einem Ausfall am **Samstag 01:00–05:00 Uhr** benachrichtigt
 
-## Krisenauswirkungen
+## Krisenszenario-Auswirkungen
 
-* Während des Upgrades tritt ein **unerwarteter Fehler** auf 
-* Die Datenbank **kann weder zur alten Version zurückkehren noch mit der neuen Version fortfahren** 
+* Ein **unerwarteter Fehler** tritt während des Upgrades auf
+* Die Datenbank **kann weder zur alten Version zurückkehren noch mit der neuen Version fortfahren**
 * Selbst externe Support-Teams können das Problem nicht lösen
 
-**Auswirkungen:** 
-* Kunden **können nicht auf Zahlungs- und Bestellsysteme zugreifen** 
-* Mitarbeiter des Unternehmens (**5000+ Personen**) können nicht arbeiten 
-* **Reputationsverlust** und zunehmende Beschwerden beginnen
+**Folgen:**
+* Kunden **können nicht auf Zahlungs- und Bestellsysteme zugreifen**
+* Mitarbeiter der Organisation (**5000+ Personen**) können nicht arbeiten
+* **Reputationsverlust** und zunehmende Beschwerden entstehen
 
-**Vorübergehende Lösung:** 
-* Das letzte Backup wird auf **einen neuen Server** geladen → **Hardwarekosten verdoppeln sich** 
-* Donnerstags- und Freitagsdaten liegen **nur in der Live-Umgebung** vor, daher kommt es zu Datenverlust 
-* **Es werden zwei Datenbanken mit unterschiedlichen Versionen** erstellt → Inkonsistenzen nehmen zu
+**Vorübergehende Lösung:**
+* Das letzte Backup wird auf **einen neuen Server** geladen → **Hardwarekosten verdoppeln sich**
+* Daten von Donnerstag und Freitag sind **nur in der Liveumgebung** vorhanden, daher tritt Datenverlust auf
+* **Zwei Datenbanken mit unterschiedlichen Versionen** werden erstellt → Inkonsistenzen nehmen zu
 
 ## Rediacc-Lösung
 
-Mehmet löst das Problem grundsätzlich mit Rediacc:
+So ändert sich alles mit Rediacc:
 
 ![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 
-### 1. **Sofortiges Klonen** 
-* Ein **Klon der 100-TB-Datenbank wird innerhalb von Sekunden erstellt** 
-* Upgrade-Tests werden durchgeführt, **ohne das Live-System zu beeinträchtigen**
+### 1. **Instant Cloning**
+* Ein **Klon der 100 TB großen Datenbank wird innerhalb von Sekunden erstellt**
+* Upgrade-Tests werden durchgeführt, **ohne das Livesystem zu beeinflussen**
 
-### 2. **Stündliche Schnappschüsse** 
-* Während des Upgrade-Vorgangs wird ermittelt, **welcher Schritt seit wann fehlschlägt** 
-* Problematische Vorgänge werden **vorab identifiziert** und korrigiert
+### 2. **Stündliche Snapshots**
+* Es wird bestimmt, **an welchem Schritt seit wann Fehler während des Upgrade-Prozesses auftreten**
+* Problematische Vorgänge werden **im Voraus identifiziert** und korrigiert
 
-### 3. **Nahtloses Upgrade** 
-* Wenn das Upgrade fehlschlägt, ist **die Live-Umgebung nicht betroffen** 
-* Wenn das Upgrade erfolgreich ist, wird die neue Live-Umgebung zum neuesten Klon
+### 3. **Nahtloses Upgrade**
+* Falls das Upgrade fehlschlägt, ist **die Liveumgebung nicht betroffen**
+* Falls das Upgrade erfolgreich ist, wird die neue Liveumgebung zum neuesten Klon
 
 ## Ergebnis
 
-**Zeit- und Kosteneinsparungen:** 
-* Die Backup-Zeit wurde von **7 Tagen auf 10 Sekunden** reduziert.
+**Zeit- und Kosteneinsparungen:**
+* Die Backup-Zeit wurde von **7 Tagen auf 10 Sekunden** reduziert
 
-**Risikofreies Upgrade:** 
-* Fehler wurden vorab in der Testumgebung erkannt → **Keine Probleme im Live-System**
+**Risikofreies Upgrade:**
+* Fehler wurden im Voraus in der Testumgebung erkannt → **Keine Probleme im Livesystem**
 
-**Keine Ausfallzeiten:** 
-* Kunden und Mitarbeiter **spürten keine Störung**
+**Keine Ausfallzeiten:**
+* Kunden und Mitarbeiter **spürten keine Beeinträchtigung**

@@ -1,12 +1,13 @@
 ---
 title: "CLI 애플리케이션 (클라우드 / 실험적)"
-description: "Rediacc CLI의 클라우드 전용 명령 -- 인증, 팀, 조직, 멀티 테넌트 관리"
+description: "Rediacc CLI의 클라우드 어댑터 명령(실험적). 구성에서 apiUrl과 토큰이 필요합니다. 인증, 조직, 팀, 사용자, 권한, 리포지토리, 큐, Ceph 블록 스토리지 및 감사 로그를 다룹니다."
 category: "참조"
 order: 3
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "c285d703825d9607"
+sourceHash: "52ac28479ebdafd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

@@ -1,1 +1,566 @@
-{"version":1,"cues":[{"start":1,"end":1.872,"text":"¡Muy bien!","words":[{"start":1,"end":1.436,"char":[0,4]},{"start":1.436,"end":1.872,"char":[5,10]}]},{"start":1.872,"end":4.487,"text":"Vamos a llevar tu app del","words":[{"start":1.872,"end":2.307,"char":[0,5]},{"start":2.307,"end":2.743,"char":[6,7]},{"start":2.743,"end":3.179,"char":[8,14]},{"start":3.179,"end":3.615,"char":[15,17]},{"start":3.615,"end":4.051,"char":[18,21]},{"start":4.051,"end":4.487,"char":[22,25]}]},{"start":4.487,"end":5.794,"text":"desarrollo a producción.","words":[{"start":4.487,"end":4.922,"char":[0,10]},{"start":4.922,"end":5.358,"char":[11,12]},{"start":5.358,"end":5.794,"char":[13,24]}]},{"start":5.794,"end":7.102,"text":"Tres pasos cortos,","words":[{"start":5.794,"end":6.23,"char":[0,4]},{"start":6.23,"end":6.666,"char":[5,10]},{"start":6.666,"end":7.102,"char":[11,18]}]},{"start":7.102,"end":9.281,"text":"todos manejados desde tu laptop.","words":[{"start":7.102,"end":7.537,"char":[0,5]},{"start":7.537,"end":7.973,"char":[6,15]},{"start":7.973,"end":8.409,"char":[16,21]},{"start":8.409,"end":8.845,"char":[22,24]},{"start":8.845,"end":9.281,"char":[25,32]}]},{"start":10.043,"end":12.755,"text":"Durante el desarrollo ejecutas la app","words":[{"start":10.043,"end":10.495,"char":[0,7]},{"start":10.495,"end":10.947,"char":[8,10]},{"start":10.947,"end":11.399,"char":[11,21]},{"start":11.399,"end":11.851,"char":[22,30]},{"start":11.851,"end":12.303,"char":[31,33]},{"start":12.303,"end":12.755,"char":[34,37]}]},{"start":12.755,"end":14.563,"text":"desde dentro del repo,","words":[{"start":12.755,"end":13.207,"char":[0,5]},{"start":13.207,"end":13.659,"char":[6,12]},{"start":13.659,"end":14.111,"char":[13,16]},{"start":14.111,"end":14.563,"char":[17,22]}]},{"start":14.563,"end":17.275,"text":"así que se detiene cuando te","words":[{"start":14.563,"end":15.015,"char":[0,3]},{"start":15.015,"end":15.467,"char":[4,7]},{"start":15.467,"end":15.919,"char":[8,10]},{"start":15.919,"end":16.371,"char":[11,18]},{"start":16.371,"end":16.823,"char":[19,25]},{"start":16.823,"end":17.275,"char":[26,28]}]},{"start":17.275,"end":17.727,"text":"desconectas.","words":[{"start":17.275,"end":17.727,"char":[0,12]}]},{"start":17.727,"end":20.439,"text":"En producción la lanzas desde tu","words":[{"start":17.727,"end":18.179,"char":[0,2]},{"start":18.179,"end":18.631,"char":[3,13]},{"start":18.631,"end":19.083,"char":[14,16]},{"start":19.083,"end":19.535,"char":[17,23]},{"start":19.535,"end":19.987,"char":[24,29]},{"start":19.987,"end":20.439,"char":[30,32]}]},{"start":20.439,"end":22.247,"text":"laptop con el CLI,","words":[{"start":20.439,"end":20.891,"char":[0,6]},{"start":20.891,"end":21.343,"char":[7,10]},{"start":21.343,"end":21.795,"char":[11,13]},{"start":21.795,"end":22.247,"char":[14,18]}]},{"start":22.247,"end":24.959,"text":"y sigue ejecutándose de forma desacoplada.","words":[{"start":22.247,"end":22.699,"char":[0,1]},{"start":22.699,"end":23.151,"char":[2,7]},{"start":23.151,"end":23.603,"char":[8,20]},{"start":23.603,"end":24.055,"char":[21,23]},{"start":24.055,"end":24.507,"char":[24,29]},{"start":24.507,"end":24.959,"char":[30,42]}]},{"start":28.227,"end":31.06,"text":"Vamos a arrancar la app en modo producción","words":[{"start":28.227,"end":28.581,"char":[0,5]},{"start":28.581,"end":28.935,"char":[6,7]},{"start":28.935,"end":29.289,"char":[8,16]},{"start":29.289,"end":29.644,"char":[17,19]},{"start":29.644,"end":29.998,"char":[20,23]},{"start":29.998,"end":30.352,"char":[24,26]},{"start":30.352,"end":30.706,"char":[27,31]},{"start":30.706,"end":31.06,"char":[32,42]}]},{"start":31.06,"end":32.123,"text":"desde la laptop.","words":[{"start":31.06,"end":31.415,"char":[0,5]},{"start":31.415,"end":31.769,"char":[6,8]},{"start":31.769,"end":32.123,"char":[9,16]}]},{"start":32.123,"end":34.956,"text":"El comando repo up del CLI llama a","words":[{"start":32.123,"end":32.477,"char":[0,2]},{"start":32.477,"end":32.831,"char":[3,10]},{"start":32.831,"end":33.185,"char":[11,15]},{"start":33.185,"end":33.54,"char":[16,18]},{"start":33.54,"end":33.894,"char":[19,22]},{"start":33.894,"end":34.248,"char":[23,26]},{"start":34.248,"end":34.602,"char":[27,32]},{"start":34.602,"end":34.956,"char":[33,34]}]},{"start":34.956,"end":37.79,"text":"la misma función up que usábamos durante el","words":[{"start":34.956,"end":35.31,"char":[0,2]},{"start":35.31,"end":35.665,"char":[3,8]},{"start":35.665,"end":36.019,"char":[9,16]},{"start":36.019,"end":36.373,"char":[17,19]},{"start":36.373,"end":36.727,"char":[20,23]},{"start":36.727,"end":37.081,"char":[24,32]},{"start":37.081,"end":37.435,"char":[33,40]},{"start":37.435,"end":37.79,"char":[41,43]}]},{"start":37.79,"end":38.144,"text":"desarrollo,","words":[{"start":37.79,"end":38.144,"char":[0,11]}]},{"start":38.144,"end":40.269,"text":"pero se ejecuta en segundo plano.","words":[{"start":38.144,"end":38.498,"char":[0,4]},{"start":38.498,"end":38.852,"char":[5,7]},{"start":38.852,"end":39.206,"char":[8,15]},{"start":39.206,"end":39.56,"char":[16,18]},{"start":39.56,"end":39.915,"char":[19,26]},{"start":39.915,"end":40.269,"char":[27,33]}]},{"start":40.269,"end":43.102,"text":"Puedes cerrar tu laptop y la app sigue","words":[{"start":40.269,"end":40.623,"char":[0,6]},{"start":40.623,"end":40.977,"char":[7,13]},{"start":40.977,"end":41.331,"char":[14,16]},{"start":41.331,"end":41.686,"char":[17,23]},{"start":41.686,"end":42.04,"char":[24,25]},{"start":42.04,"end":42.394,"char":[26,28]},{"start":42.394,"end":42.748,"char":[29,32]},{"start":42.748,"end":43.102,"char":[33,38]}]},{"start":43.102,"end":43.456,"text":"funcionando.","words":[{"start":43.102,"end":43.456,"char":[0,12]}]},{"start":46.206,"end":48.166,"text":"App corriendo en producción.","words":[{"start":46.206,"end":46.696,"char":[0,3]},{"start":46.696,"end":47.186,"char":[4,13]},{"start":47.186,"end":47.676,"char":[14,16]},{"start":47.676,"end":48.166,"char":[17,28]}]},{"start":48.166,"end":49.145,"text":"Mismo comando,","words":[{"start":48.166,"end":48.655,"char":[0,5]},{"start":48.655,"end":49.145,"char":[6,14]}]},{"start":49.145,"end":50.125,"text":"mismo resultado,","words":[{"start":49.145,"end":49.635,"char":[0,5]},{"start":49.635,"end":50.125,"char":[6,16]}]},{"start":50.125,"end":52.084,"text":"en el servidor real.","words":[{"start":50.125,"end":50.615,"char":[0,2]},{"start":50.615,"end":51.104,"char":[3,5]},{"start":51.104,"end":51.594,"char":[6,14]},{"start":51.594,"end":52.084,"char":[15,20]}]},{"start":55.418,"end":58.042,"text":"Habilitamos el arranque automático para que","words":[{"start":55.418,"end":55.855,"char":[0,11]},{"start":55.855,"end":56.293,"char":[12,14]},{"start":56.293,"end":56.73,"char":[15,23]},{"start":56.73,"end":57.167,"char":[24,34]},{"start":57.167,"end":57.605,"char":[35,39]},{"start":57.605,"end":58.042,"char":[40,43]}]},{"start":58.042,"end":60.666,"text":"la app sobreviva a un reinicio","words":[{"start":58.042,"end":58.479,"char":[0,2]},{"start":58.479,"end":58.916,"char":[3,6]},{"start":58.916,"end":59.354,"char":[7,16]},{"start":59.354,"end":59.791,"char":[17,18]},{"start":59.791,"end":60.228,"char":[19,21]},{"start":60.228,"end":60.666,"char":[22,30]}]},{"start":60.666,"end":61.54,"text":"del servidor.","words":[{"start":60.666,"end":61.103,"char":[0,3]},{"start":61.103,"end":61.54,"char":[4,13]}]},{"start":61.54,"end":63.29,"text":"A partir de ahora,","words":[{"start":61.54,"end":61.978,"char":[0,1]},{"start":61.978,"end":62.415,"char":[2,8]},{"start":62.415,"end":62.852,"char":[9,11]},{"start":62.852,"end":63.29,"char":[12,18]}]},{"start":63.29,"end":65.476,"text":"si el servidor se reinicia,","words":[{"start":63.29,"end":63.727,"char":[0,2]},{"start":63.727,"end":64.164,"char":[3,5]},{"start":64.164,"end":64.601,"char":[6,14]},{"start":64.601,"end":65.039,"char":[15,17]},{"start":65.039,"end":65.476,"char":[18,27]}]},{"start":65.476,"end":67.225,"text":"este repo vuelve automáticamente.","words":[{"start":65.476,"end":65.913,"char":[0,4]},{"start":65.913,"end":66.351,"char":[5,9]},{"start":66.351,"end":66.788,"char":[10,16]},{"start":66.788,"end":67.225,"char":[17,33]}]},{"start":69.475,"end":70.903,"text":"Arranque automático activado.","words":[{"start":69.475,"end":69.951,"char":[0,8]},{"start":69.951,"end":70.427,"char":[9,19]},{"start":70.427,"end":70.903,"char":[20,29]}]},{"start":70.903,"end":73.759,"text":"La app sobrevive a los reinicios.","words":[{"start":70.903,"end":71.379,"char":[0,2]},{"start":71.379,"end":71.855,"char":[3,6]},{"start":71.855,"end":72.331,"char":[7,16]},{"start":72.331,"end":72.807,"char":[17,18]},{"start":72.807,"end":73.283,"char":[19,22]},{"start":73.283,"end":73.759,"char":[23,33]}]},{"start":77.04,"end":79.618,"text":"Listamos los repositorios que tienen el","words":[{"start":77.04,"end":77.47,"char":[0,8]},{"start":77.47,"end":77.899,"char":[9,12]},{"start":77.899,"end":78.329,"char":[13,25]},{"start":78.329,"end":78.759,"char":[26,29]},{"start":78.759,"end":79.189,"char":[30,36]},{"start":79.189,"end":79.618,"char":[37,39]}]},{"start":79.618,"end":80.907,"text":"arranque automático habilitado.","words":[{"start":79.618,"end":80.048,"char":[0,8]},{"start":80.048,"end":80.478,"char":[9,19]},{"start":80.478,"end":80.907,"char":[20,31]}]},{"start":80.907,"end":83.486,"text":"Confirmamos que nuestra app está ahora","words":[{"start":80.907,"end":81.337,"char":[0,11]},{"start":81.337,"end":81.767,"char":[12,15]},{"start":81.767,"end":82.197,"char":[16,23]},{"start":82.197,"end":82.626,"char":[24,27]},{"start":82.626,"end":83.056,"char":[28,32]},{"start":83.056,"end":83.486,"char":[33,38]}]},{"start":83.486,"end":85.634,"text":"en la lista de inicio.","words":[{"start":83.486,"end":83.915,"char":[0,2]},{"start":83.915,"end":84.345,"char":[3,5]},{"start":84.345,"end":84.775,"char":[6,11]},{"start":84.775,"end":85.205,"char":[12,14]},{"start":85.205,"end":85.634,"char":[15,22]}]},{"start":87.634,"end":88.284,"text":"Ahí está,","words":[{"start":87.634,"end":87.959,"char":[0,3]},{"start":87.959,"end":88.284,"char":[4,9]}]},{"start":88.284,"end":89.907,"text":"en la lista de arranque.","words":[{"start":88.284,"end":88.608,"char":[0,2]},{"start":88.608,"end":88.933,"char":[3,5]},{"start":88.933,"end":89.258,"char":[6,11]},{"start":89.258,"end":89.582,"char":[12,14]},{"start":89.582,"end":89.907,"char":[15,24]}]},{"start":93.248,"end":95.288,"text":"Y para detener la app,","words":[{"start":93.248,"end":93.656,"char":[0,1]},{"start":93.656,"end":94.064,"char":[2,6]},{"start":94.064,"end":94.472,"char":[7,14]},{"start":94.472,"end":94.88,"char":[15,17]},{"start":94.88,"end":95.288,"char":[18,22]}]},{"start":95.288,"end":97.327,"text":"un comando desde la laptop.","words":[{"start":95.288,"end":95.695,"char":[0,2]},{"start":95.695,"end":96.103,"char":[3,10]},{"start":96.103,"end":96.511,"char":[11,16]},{"start":96.511,"end":96.919,"char":[17,19]},{"start":96.919,"end":97.327,"char":[20,27]}]},{"start":97.327,"end":98.959,"text":"Un comando para arrancar,","words":[{"start":97.327,"end":97.735,"char":[0,2]},{"start":97.735,"end":98.143,"char":[3,10]},{"start":98.143,"end":98.551,"char":[11,15]},{"start":98.551,"end":98.959,"char":[16,25]}]},{"start":98.959,"end":100.59,"text":"un comando para detener.","words":[{"start":98.959,"end":99.367,"char":[0,2]},{"start":99.367,"end":99.775,"char":[3,10]},{"start":99.775,"end":100.182,"char":[11,15]},{"start":100.182,"end":100.59,"char":[16,24]}]},{"start":100.59,"end":102.222,"text":"Todo desde tu terminal,","words":[{"start":100.59,"end":100.998,"char":[0,4]},{"start":100.998,"end":101.406,"char":[5,10]},{"start":101.406,"end":101.814,"char":[11,13]},{"start":101.814,"end":102.222,"char":[14,23]}]},{"start":102.222,"end":103.854,"text":"sin más sesiones interactivas.","words":[{"start":102.222,"end":102.63,"char":[0,3]},{"start":102.63,"end":103.038,"char":[4,7]},{"start":103.038,"end":103.446,"char":[8,16]},{"start":103.446,"end":103.854,"char":[17,30]}]},{"start":106.354,"end":106.963,"text":"Detenida.","words":[{"start":106.354,"end":106.963,"char":[0,9]}]},{"start":106.963,"end":109.401,"text":"Un comando para arrancar,","words":[{"start":106.963,"end":107.573,"char":[0,2]},{"start":107.573,"end":108.182,"char":[3,10]},{"start":108.182,"end":108.792,"char":[11,15]},{"start":108.792,"end":109.401,"char":[16,25]}]},{"start":109.401,"end":111.839,"text":"un comando para detener.","words":[{"start":109.401,"end":110.011,"char":[0,2]},{"start":110.011,"end":110.62,"char":[3,10]},{"start":110.62,"end":111.23,"char":[11,15]},{"start":111.23,"end":111.839,"char":[16,24]}]},{"start":112.627,"end":115.291,"text":"¡Y ese es el modo producción en","words":[{"start":112.627,"end":113.008,"char":[0,2]},{"start":113.008,"end":113.388,"char":[3,6]},{"start":113.388,"end":113.769,"char":[7,9]},{"start":113.769,"end":114.15,"char":[10,12]},{"start":114.15,"end":114.53,"char":[13,17]},{"start":114.53,"end":114.911,"char":[18,28]},{"start":114.911,"end":115.291,"char":[29,31]}]},{"start":115.291,"end":116.053,"text":"pocas palabras.","words":[{"start":115.291,"end":115.672,"char":[0,5]},{"start":115.672,"end":116.053,"char":[6,15]}]},{"start":116.053,"end":117.956,"text":"Nos vemos en el siguiente!","words":[{"start":116.053,"end":116.433,"char":[0,3]},{"start":116.433,"end":116.814,"char":[4,9]},{"start":116.814,"end":117.195,"char":[10,12]},{"start":117.195,"end":117.575,"char":[13,15]},{"start":117.575,"end":117.956,"char":[16,26]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.872,
+      "text": "¡Muy bien!",
+      "words": [
+        { "start": 1, "end": 1.436, "char": [0, 4] },
+        { "start": 1.436, "end": 1.872, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 1.872,
+      "end": 4.487,
+      "text": "Vamos a llevar tu app del",
+      "words": [
+        { "start": 1.872, "end": 2.307, "char": [0, 5] },
+        { "start": 2.307, "end": 2.743, "char": [6, 7] },
+        { "start": 2.743, "end": 3.179, "char": [8, 14] },
+        { "start": 3.179, "end": 3.615, "char": [15, 17] },
+        { "start": 3.615, "end": 4.051, "char": [18, 21] },
+        { "start": 4.051, "end": 4.487, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 4.487,
+      "end": 5.794,
+      "text": "desarrollo a producción.",
+      "words": [
+        { "start": 4.487, "end": 4.922, "char": [0, 10] },
+        { "start": 4.922, "end": 5.358, "char": [11, 12] },
+        { "start": 5.358, "end": 5.794, "char": [13, 24] }
+      ]
+    },
+    {
+      "start": 5.794,
+      "end": 7.102,
+      "text": "Tres pasos cortos,",
+      "words": [
+        { "start": 5.794, "end": 6.23, "char": [0, 4] },
+        { "start": 6.23, "end": 6.666, "char": [5, 10] },
+        { "start": 6.666, "end": 7.102, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 7.102,
+      "end": 9.281,
+      "text": "todos manejados desde tu laptop.",
+      "words": [
+        { "start": 7.102, "end": 7.537, "char": [0, 5] },
+        { "start": 7.537, "end": 7.973, "char": [6, 15] },
+        { "start": 7.973, "end": 8.409, "char": [16, 21] },
+        { "start": 8.409, "end": 8.845, "char": [22, 24] },
+        { "start": 8.845, "end": 9.281, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 10.043,
+      "end": 12.755,
+      "text": "Durante el desarrollo ejecutas la app",
+      "words": [
+        { "start": 10.043, "end": 10.495, "char": [0, 7] },
+        { "start": 10.495, "end": 10.947, "char": [8, 10] },
+        { "start": 10.947, "end": 11.399, "char": [11, 21] },
+        { "start": 11.399, "end": 11.851, "char": [22, 30] },
+        { "start": 11.851, "end": 12.303, "char": [31, 33] },
+        { "start": 12.303, "end": 12.755, "char": [34, 37] }
+      ]
+    },
+    {
+      "start": 12.755,
+      "end": 14.563,
+      "text": "desde dentro del repo,",
+      "words": [
+        { "start": 12.755, "end": 13.207, "char": [0, 5] },
+        { "start": 13.207, "end": 13.659, "char": [6, 12] },
+        { "start": 13.659, "end": 14.111, "char": [13, 16] },
+        { "start": 14.111, "end": 14.563, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 14.563,
+      "end": 17.275,
+      "text": "así que se detiene cuando te",
+      "words": [
+        { "start": 14.563, "end": 15.015, "char": [0, 3] },
+        { "start": 15.015, "end": 15.467, "char": [4, 7] },
+        { "start": 15.467, "end": 15.919, "char": [8, 10] },
+        { "start": 15.919, "end": 16.371, "char": [11, 18] },
+        { "start": 16.371, "end": 16.823, "char": [19, 25] },
+        { "start": 16.823, "end": 17.275, "char": [26, 28] }
+      ]
+    },
+    {
+      "start": 17.275,
+      "end": 17.727,
+      "text": "desconectas.",
+      "words": [{ "start": 17.275, "end": 17.727, "char": [0, 12] }]
+    },
+    {
+      "start": 17.727,
+      "end": 20.439,
+      "text": "En producción la lanzas desde tu",
+      "words": [
+        { "start": 17.727, "end": 18.179, "char": [0, 2] },
+        { "start": 18.179, "end": 18.631, "char": [3, 13] },
+        { "start": 18.631, "end": 19.083, "char": [14, 16] },
+        { "start": 19.083, "end": 19.535, "char": [17, 23] },
+        { "start": 19.535, "end": 19.987, "char": [24, 29] },
+        { "start": 19.987, "end": 20.439, "char": [30, 32] }
+      ]
+    },
+    {
+      "start": 20.439,
+      "end": 22.247,
+      "text": "laptop con el CLI,",
+      "words": [
+        { "start": 20.439, "end": 20.891, "char": [0, 6] },
+        { "start": 20.891, "end": 21.343, "char": [7, 10] },
+        { "start": 21.343, "end": 21.795, "char": [11, 13] },
+        { "start": 21.795, "end": 22.247, "char": [14, 18] }
+      ]
+    },
+    {
+      "start": 22.247,
+      "end": 24.959,
+      "text": "y sigue ejecutándose de forma desacoplada.",
+      "words": [
+        { "start": 22.247, "end": 22.699, "char": [0, 1] },
+        { "start": 22.699, "end": 23.151, "char": [2, 7] },
+        { "start": 23.151, "end": 23.603, "char": [8, 20] },
+        { "start": 23.603, "end": 24.055, "char": [21, 23] },
+        { "start": 24.055, "end": 24.507, "char": [24, 29] },
+        { "start": 24.507, "end": 24.959, "char": [30, 42] }
+      ]
+    },
+    {
+      "start": 28.227,
+      "end": 31.06,
+      "text": "Vamos a arrancar la app en modo producción",
+      "words": [
+        { "start": 28.227, "end": 28.581, "char": [0, 5] },
+        { "start": 28.581, "end": 28.935, "char": [6, 7] },
+        { "start": 28.935, "end": 29.289, "char": [8, 16] },
+        { "start": 29.289, "end": 29.644, "char": [17, 19] },
+        { "start": 29.644, "end": 29.998, "char": [20, 23] },
+        { "start": 29.998, "end": 30.352, "char": [24, 26] },
+        { "start": 30.352, "end": 30.706, "char": [27, 31] },
+        { "start": 30.706, "end": 31.06, "char": [32, 42] }
+      ]
+    },
+    {
+      "start": 31.06,
+      "end": 32.123,
+      "text": "desde la laptop.",
+      "words": [
+        { "start": 31.06, "end": 31.415, "char": [0, 5] },
+        { "start": 31.415, "end": 31.769, "char": [6, 8] },
+        { "start": 31.769, "end": 32.123, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 32.123,
+      "end": 34.956,
+      "text": "El comando repo up del CLI llama a",
+      "words": [
+        { "start": 32.123, "end": 32.477, "char": [0, 2] },
+        { "start": 32.477, "end": 32.831, "char": [3, 10] },
+        { "start": 32.831, "end": 33.185, "char": [11, 15] },
+        { "start": 33.185, "end": 33.54, "char": [16, 18] },
+        { "start": 33.54, "end": 33.894, "char": [19, 22] },
+        { "start": 33.894, "end": 34.248, "char": [23, 26] },
+        { "start": 34.248, "end": 34.602, "char": [27, 32] },
+        { "start": 34.602, "end": 34.956, "char": [33, 34] }
+      ]
+    },
+    {
+      "start": 34.956,
+      "end": 37.79,
+      "text": "la misma función up que usábamos durante el",
+      "words": [
+        { "start": 34.956, "end": 35.31, "char": [0, 2] },
+        { "start": 35.31, "end": 35.665, "char": [3, 8] },
+        { "start": 35.665, "end": 36.019, "char": [9, 16] },
+        { "start": 36.019, "end": 36.373, "char": [17, 19] },
+        { "start": 36.373, "end": 36.727, "char": [20, 23] },
+        { "start": 36.727, "end": 37.081, "char": [24, 32] },
+        { "start": 37.081, "end": 37.435, "char": [33, 40] },
+        { "start": 37.435, "end": 37.79, "char": [41, 43] }
+      ]
+    },
+    {
+      "start": 37.79,
+      "end": 38.144,
+      "text": "desarrollo,",
+      "words": [{ "start": 37.79, "end": 38.144, "char": [0, 11] }]
+    },
+    {
+      "start": 38.144,
+      "end": 40.269,
+      "text": "pero se ejecuta en segundo plano.",
+      "words": [
+        { "start": 38.144, "end": 38.498, "char": [0, 4] },
+        { "start": 38.498, "end": 38.852, "char": [5, 7] },
+        { "start": 38.852, "end": 39.206, "char": [8, 15] },
+        { "start": 39.206, "end": 39.56, "char": [16, 18] },
+        { "start": 39.56, "end": 39.915, "char": [19, 26] },
+        { "start": 39.915, "end": 40.269, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 40.269,
+      "end": 43.102,
+      "text": "Puedes cerrar tu laptop y la app sigue",
+      "words": [
+        { "start": 40.269, "end": 40.623, "char": [0, 6] },
+        { "start": 40.623, "end": 40.977, "char": [7, 13] },
+        { "start": 40.977, "end": 41.331, "char": [14, 16] },
+        { "start": 41.331, "end": 41.686, "char": [17, 23] },
+        { "start": 41.686, "end": 42.04, "char": [24, 25] },
+        { "start": 42.04, "end": 42.394, "char": [26, 28] },
+        { "start": 42.394, "end": 42.748, "char": [29, 32] },
+        { "start": 42.748, "end": 43.102, "char": [33, 38] }
+      ]
+    },
+    {
+      "start": 43.102,
+      "end": 43.456,
+      "text": "funcionando.",
+      "words": [{ "start": 43.102, "end": 43.456, "char": [0, 12] }]
+    },
+    {
+      "start": 46.206,
+      "end": 48.166,
+      "text": "App corriendo en producción.",
+      "words": [
+        { "start": 46.206, "end": 46.696, "char": [0, 3] },
+        { "start": 46.696, "end": 47.186, "char": [4, 13] },
+        { "start": 47.186, "end": 47.676, "char": [14, 16] },
+        { "start": 47.676, "end": 48.166, "char": [17, 28] }
+      ]
+    },
+    {
+      "start": 48.166,
+      "end": 49.145,
+      "text": "Mismo comando,",
+      "words": [
+        { "start": 48.166, "end": 48.655, "char": [0, 5] },
+        { "start": 48.655, "end": 49.145, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 49.145,
+      "end": 50.125,
+      "text": "mismo resultado,",
+      "words": [
+        { "start": 49.145, "end": 49.635, "char": [0, 5] },
+        { "start": 49.635, "end": 50.125, "char": [6, 16] }
+      ]
+    },
+    {
+      "start": 50.125,
+      "end": 52.084,
+      "text": "en el servidor real.",
+      "words": [
+        { "start": 50.125, "end": 50.615, "char": [0, 2] },
+        { "start": 50.615, "end": 51.104, "char": [3, 5] },
+        { "start": 51.104, "end": 51.594, "char": [6, 14] },
+        { "start": 51.594, "end": 52.084, "char": [15, 20] }
+      ]
+    },
+    {
+      "start": 55.418,
+      "end": 58.042,
+      "text": "Habilitamos el arranque automático para que",
+      "words": [
+        { "start": 55.418, "end": 55.855, "char": [0, 11] },
+        { "start": 55.855, "end": 56.293, "char": [12, 14] },
+        { "start": 56.293, "end": 56.73, "char": [15, 23] },
+        { "start": 56.73, "end": 57.167, "char": [24, 34] },
+        { "start": 57.167, "end": 57.605, "char": [35, 39] },
+        { "start": 57.605, "end": 58.042, "char": [40, 43] }
+      ]
+    },
+    {
+      "start": 58.042,
+      "end": 60.666,
+      "text": "la app sobreviva a un reinicio",
+      "words": [
+        { "start": 58.042, "end": 58.479, "char": [0, 2] },
+        { "start": 58.479, "end": 58.916, "char": [3, 6] },
+        { "start": 58.916, "end": 59.354, "char": [7, 16] },
+        { "start": 59.354, "end": 59.791, "char": [17, 18] },
+        { "start": 59.791, "end": 60.228, "char": [19, 21] },
+        { "start": 60.228, "end": 60.666, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 60.666,
+      "end": 61.54,
+      "text": "del servidor.",
+      "words": [
+        { "start": 60.666, "end": 61.103, "char": [0, 3] },
+        { "start": 61.103, "end": 61.54, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 61.54,
+      "end": 63.29,
+      "text": "A partir de ahora,",
+      "words": [
+        { "start": 61.54, "end": 61.978, "char": [0, 1] },
+        { "start": 61.978, "end": 62.415, "char": [2, 8] },
+        { "start": 62.415, "end": 62.852, "char": [9, 11] },
+        { "start": 62.852, "end": 63.29, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 63.29,
+      "end": 65.476,
+      "text": "si el servidor se reinicia,",
+      "words": [
+        { "start": 63.29, "end": 63.727, "char": [0, 2] },
+        { "start": 63.727, "end": 64.164, "char": [3, 5] },
+        { "start": 64.164, "end": 64.601, "char": [6, 14] },
+        { "start": 64.601, "end": 65.039, "char": [15, 17] },
+        { "start": 65.039, "end": 65.476, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 65.476,
+      "end": 67.225,
+      "text": "este repo vuelve automáticamente.",
+      "words": [
+        { "start": 65.476, "end": 65.913, "char": [0, 4] },
+        { "start": 65.913, "end": 66.351, "char": [5, 9] },
+        { "start": 66.351, "end": 66.788, "char": [10, 16] },
+        { "start": 66.788, "end": 67.225, "char": [17, 33] }
+      ]
+    },
+    {
+      "start": 69.475,
+      "end": 70.903,
+      "text": "Arranque automático activado.",
+      "words": [
+        { "start": 69.475, "end": 69.951, "char": [0, 8] },
+        { "start": 69.951, "end": 70.427, "char": [9, 19] },
+        { "start": 70.427, "end": 70.903, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 70.903,
+      "end": 73.759,
+      "text": "La app sobrevive a los reinicios.",
+      "words": [
+        { "start": 70.903, "end": 71.379, "char": [0, 2] },
+        { "start": 71.379, "end": 71.855, "char": [3, 6] },
+        { "start": 71.855, "end": 72.331, "char": [7, 16] },
+        { "start": 72.331, "end": 72.807, "char": [17, 18] },
+        { "start": 72.807, "end": 73.283, "char": [19, 22] },
+        { "start": 73.283, "end": 73.759, "char": [23, 33] }
+      ]
+    },
+    {
+      "start": 77.04,
+      "end": 79.618,
+      "text": "Listamos los repositorios que tienen el",
+      "words": [
+        { "start": 77.04, "end": 77.47, "char": [0, 8] },
+        { "start": 77.47, "end": 77.899, "char": [9, 12] },
+        { "start": 77.899, "end": 78.329, "char": [13, 25] },
+        { "start": 78.329, "end": 78.759, "char": [26, 29] },
+        { "start": 78.759, "end": 79.189, "char": [30, 36] },
+        { "start": 79.189, "end": 79.618, "char": [37, 39] }
+      ]
+    },
+    {
+      "start": 79.618,
+      "end": 80.907,
+      "text": "arranque automático habilitado.",
+      "words": [
+        { "start": 79.618, "end": 80.048, "char": [0, 8] },
+        { "start": 80.048, "end": 80.478, "char": [9, 19] },
+        { "start": 80.478, "end": 80.907, "char": [20, 31] }
+      ]
+    },
+    {
+      "start": 80.907,
+      "end": 83.486,
+      "text": "Confirmamos que nuestra app está ahora",
+      "words": [
+        { "start": 80.907, "end": 81.337, "char": [0, 11] },
+        { "start": 81.337, "end": 81.767, "char": [12, 15] },
+        { "start": 81.767, "end": 82.197, "char": [16, 23] },
+        { "start": 82.197, "end": 82.626, "char": [24, 27] },
+        { "start": 82.626, "end": 83.056, "char": [28, 32] },
+        { "start": 83.056, "end": 83.486, "char": [33, 38] }
+      ]
+    },
+    {
+      "start": 83.486,
+      "end": 85.634,
+      "text": "en la lista de inicio.",
+      "words": [
+        { "start": 83.486, "end": 83.915, "char": [0, 2] },
+        { "start": 83.915, "end": 84.345, "char": [3, 5] },
+        { "start": 84.345, "end": 84.775, "char": [6, 11] },
+        { "start": 84.775, "end": 85.205, "char": [12, 14] },
+        { "start": 85.205, "end": 85.634, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 87.634,
+      "end": 88.284,
+      "text": "Ahí está,",
+      "words": [
+        { "start": 87.634, "end": 87.959, "char": [0, 3] },
+        { "start": 87.959, "end": 88.284, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 88.284,
+      "end": 89.907,
+      "text": "en la lista de arranque.",
+      "words": [
+        { "start": 88.284, "end": 88.608, "char": [0, 2] },
+        { "start": 88.608, "end": 88.933, "char": [3, 5] },
+        { "start": 88.933, "end": 89.258, "char": [6, 11] },
+        { "start": 89.258, "end": 89.582, "char": [12, 14] },
+        { "start": 89.582, "end": 89.907, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 93.248,
+      "end": 95.288,
+      "text": "Y para detener la app,",
+      "words": [
+        { "start": 93.248, "end": 93.656, "char": [0, 1] },
+        { "start": 93.656, "end": 94.064, "char": [2, 6] },
+        { "start": 94.064, "end": 94.472, "char": [7, 14] },
+        { "start": 94.472, "end": 94.88, "char": [15, 17] },
+        { "start": 94.88, "end": 95.288, "char": [18, 22] }
+      ]
+    },
+    {
+      "start": 95.288,
+      "end": 97.327,
+      "text": "un comando desde la laptop.",
+      "words": [
+        { "start": 95.288, "end": 95.695, "char": [0, 2] },
+        { "start": 95.695, "end": 96.103, "char": [3, 10] },
+        { "start": 96.103, "end": 96.511, "char": [11, 16] },
+        { "start": 96.511, "end": 96.919, "char": [17, 19] },
+        { "start": 96.919, "end": 97.327, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 97.327,
+      "end": 98.959,
+      "text": "Un comando para arrancar,",
+      "words": [
+        { "start": 97.327, "end": 97.735, "char": [0, 2] },
+        { "start": 97.735, "end": 98.143, "char": [3, 10] },
+        { "start": 98.143, "end": 98.551, "char": [11, 15] },
+        { "start": 98.551, "end": 98.959, "char": [16, 25] }
+      ]
+    },
+    {
+      "start": 98.959,
+      "end": 100.59,
+      "text": "un comando para detener.",
+      "words": [
+        { "start": 98.959, "end": 99.367, "char": [0, 2] },
+        { "start": 99.367, "end": 99.775, "char": [3, 10] },
+        { "start": 99.775, "end": 100.182, "char": [11, 15] },
+        { "start": 100.182, "end": 100.59, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 100.59,
+      "end": 102.222,
+      "text": "Todo desde tu terminal,",
+      "words": [
+        { "start": 100.59, "end": 100.998, "char": [0, 4] },
+        { "start": 100.998, "end": 101.406, "char": [5, 10] },
+        { "start": 101.406, "end": 101.814, "char": [11, 13] },
+        { "start": 101.814, "end": 102.222, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 102.222,
+      "end": 103.854,
+      "text": "sin más sesiones interactivas.",
+      "words": [
+        { "start": 102.222, "end": 102.63, "char": [0, 3] },
+        { "start": 102.63, "end": 103.038, "char": [4, 7] },
+        { "start": 103.038, "end": 103.446, "char": [8, 16] },
+        { "start": 103.446, "end": 103.854, "char": [17, 30] }
+      ]
+    },
+    {
+      "start": 106.354,
+      "end": 106.963,
+      "text": "Detenida.",
+      "words": [{ "start": 106.354, "end": 106.963, "char": [0, 9] }]
+    },
+    {
+      "start": 106.963,
+      "end": 109.401,
+      "text": "Un comando para arrancar,",
+      "words": [
+        { "start": 106.963, "end": 107.573, "char": [0, 2] },
+        { "start": 107.573, "end": 108.182, "char": [3, 10] },
+        { "start": 108.182, "end": 108.792, "char": [11, 15] },
+        { "start": 108.792, "end": 109.401, "char": [16, 25] }
+      ]
+    },
+    {
+      "start": 109.401,
+      "end": 111.839,
+      "text": "un comando para detener.",
+      "words": [
+        { "start": 109.401, "end": 110.011, "char": [0, 2] },
+        { "start": 110.011, "end": 110.62, "char": [3, 10] },
+        { "start": 110.62, "end": 111.23, "char": [11, 15] },
+        { "start": 111.23, "end": 111.839, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 112.627,
+      "end": 115.291,
+      "text": "¡Y ese es el modo producción en",
+      "words": [
+        { "start": 112.627, "end": 113.008, "char": [0, 2] },
+        { "start": 113.008, "end": 113.388, "char": [3, 6] },
+        { "start": 113.388, "end": 113.769, "char": [7, 9] },
+        { "start": 113.769, "end": 114.15, "char": [10, 12] },
+        { "start": 114.15, "end": 114.53, "char": [13, 17] },
+        { "start": 114.53, "end": 114.911, "char": [18, 28] },
+        { "start": 114.911, "end": 115.291, "char": [29, 31] }
+      ]
+    },
+    {
+      "start": 115.291,
+      "end": 116.053,
+      "text": "pocas palabras.",
+      "words": [
+        { "start": 115.291, "end": 115.672, "char": [0, 5] },
+        { "start": 115.672, "end": 116.053, "char": [6, 15] }
+      ]
+    },
+    {
+      "start": 116.053,
+      "end": 117.956,
+      "text": "Nos vemos en el siguiente!",
+      "words": [
+        { "start": 116.053, "end": 116.433, "char": [0, 3] },
+        { "start": 116.433, "end": 116.814, "char": [4, 9] },
+        { "start": 116.814, "end": 117.195, "char": [10, 12] },
+        { "start": 117.195, "end": 117.575, "char": [13, 15] },
+        { "start": 117.575, "end": 117.956, "char": [16, 26] }
+      ]
+    }
+  ]
+}

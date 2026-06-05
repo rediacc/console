@@ -1,20 +1,22 @@
 ---
 title: Aggiornamenti senza rischi
-description: Testa gli aggiornamenti del database senza rischi grazie alla clonazione istantanea e agli snapshot orari. È finalmente possibile aggiornare in tutta tranquillità.
+description: Testa gli aggiornamenti del database senza rischi grazie alla clonazione istantanea e agli snapshot orari.
 category: Use Cases
 order: 4
 language: it
+sourceHash: "242617b8bede9535"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Testa tutto. Nessun rischio. Aggiorna con fiducia.**
 
-**Nota:** Questo è un **esempio di caso d'uso** che illustra come Rediacc può risolvere questo problema. In quanto startup, questi scenari rappresentano applicazioni potenziali piuttosto che casi di studio completati.
+Nota importante: Rediacc al momento non ha clienti in produzione. Questo è un esempio di caso d'uso che mostra come l'architettura gestisce questo scenario in pratica, non un caso di studio da una distribuzione reale.
 
-**Scenario di crisi:** Durante un aggiornamento del database, si è verificato un **errore inatteso** che ha impedito sia il ripristino della versione precedente sia il passaggio a quella nuova. I clienti non riuscivano ad accedere ai sistemi e oltre 5.000 dipendenti non potevano lavorare.
+**Scenario di crisi:** Durante un aggiornamento del database, si è verificato un **errore inatteso** che ha impedito sia il ripristino della versione precedente sia il passaggio a quella nuova. I clienti non riuscivano ad accedere ai sistemi e oltre 5.000 dipendenti non potevano lavorare. L'unica soluzione era un ripristino completo del sistema, che è costato ore di lavoro agli ingegneri mentre l'azienda era offline.
 
 ## Il problema
 
-Mehmet è un esperto amministratore di sistema che gestisce database di grandi dimensioni. Decide di **aggiornare un database PostgreSQL da 100 TB dalla versione 13 alla 14**. Il suo piano:
+Mehmet gestisce database di produzione che il suo team non può permettersi di portare offline. Oggi sta aggiornando un **database PostgreSQL da 100 TB dalla versione 13 alla 14**. Il suo piano:
 
 1. **Eseguire un backup** → Tuttavia, il backup richiede **diversi giorni** a causa delle dimensioni dei dati
 2. **Eseguire l'aggiornamento nel weekend** → I reparti vengono informati di un'interruzione **sabato dalle 01:00 alle 05:00**
@@ -37,7 +39,7 @@ Mehmet è un esperto amministratore di sistema che gestisce database di grandi d
 
 ## Soluzione Rediacc
 
-Mehmet risolve il problema alla radice con Rediacc:
+Ecco cosa cambia con Rediacc:
 
 ![Aggiornamenti senza rischi](/img/risk-free-upgrades.svg)
 
@@ -49,7 +51,7 @@ Mehmet risolve il problema alla radice con Rediacc:
 * Viene determinato **da quando e a quale passaggio si verifica il fallimento** durante il processo di aggiornamento
 * Le operazioni problematiche vengono **identificate in anticipo** e corrette
 
-### 3. **Aggiornamento senza interruzioni**
+### 3. **Aggiornamento fluido**
 * Se l'aggiornamento fallisce, **l'ambiente live non viene influenzato**
 * Se l'aggiornamento ha successo, il nuovo ambiente live diventa l'ultimo clone
 

@@ -1,12 +1,13 @@
 ---
 title: "تطبيق CLI (سحابي / تجريبي)"
-description: "أوامر سحابية حصرية لـ Rediacc CLI — المصادقة والفرق والمنظمات وإدارة المستأجرين المتعددين"
-category: "مرجع"
+description: "أوامر مخصصة للـ Rediacc CLI تدعم التكامل السحابي (في المرحلة التجريبية). تتطلب apiUrl وtoken في ملف الإعدادات. تغطي المصادقة والمنظمات والفرق والمستخدمين والصلاحيات والمستودعات والطوابير وتخزين Ceph وسجلات التدقيق."
+category: "Reference"
 order: 3
 language: ar
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ar/cli.json
-sourceHash: "c285d703825d9607"
+sourceHash: "52ac28479ebdafd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

@@ -1,47 +1,47 @@
 ---
-title: "Tõrkeotsing"
-description: "Parandused levinud SSH, seadistamise, repositooriumi, teenuse ja Dockeri probleemidele."
+title: "Probleemide lahendamine"
+description: "Lahendused tavalistele SSH, seadistuse, repositooriumi, teenuse ja Dockeri probleemidele."
 category: "Guides"
 order: 10
 language: et
-sourceHash: "7cfabe7bbf3914c3"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "17dc03eb0589d606"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# Tõrkeotsing
+# Probleemide lahendamine
 
-Levinud probleemid ja nende parandused. Kahtluse korral alusta käsuga `rdc doctor`, mis käivitab täieliku diagnostilise kontrolli.
+Levinud probleemid ja nende lahendused. Kui oled ebakindel, alusta käsuga `rdc doctor`, mis käivitab täieliku diagnostikakontrolli.
 
 ## SSH-ühendus ebaõnnestub
 
-- Veendu, et saad käsitsi ühenduda: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Käivita `rdc config machine scan-keys -m server-1`, et hostimisvõtmeid uuendada
-- Kontrolli, et SSH-port ühtib: `--port 22`
+- Kinnita, et saad käsitsi ühenduse luua: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
+- Käivita `rdc config machine scan-keys -m server-1` hostivõtmete värskendamiseks
+- Kontrolli, et SSH-port vastab: `--port 22`
 - Testi lihtsa käsuga: `rdc term connect -m server-1 -c "hostname"`
 
-## Hostimisvõtme lahknevus
+## Hostivõtme lahknevus
 
-Kui server paigaldati uuesti või selle SSH-võtmed muutusid, näed teadet "host key verification failed":
+Kui server paigaldati ümber või selle SSH-võtmed muutusid, näed "host key verification failed":
 
 ```bash
 rdc config machine scan-keys -m server-1
 ```
 
-See hangib värsked hostimisvõtmed ja uuendab sinu konfiguratsiooni.
+See tõmbib uued hostivõtmed ja värskendab sinu konfiguratsiooni.
 
 ## Masina seadistamine ebaõnnestub
 
-- Veendu, et SSH-kasutajal on sudo-ligipääs ilma paroolita, või konfigureeri vajalike käskude jaoks `NOPASSWD`
-- Kontrolli serveris saadaolevat kettaruumi
-- Käivita lipuga `--debug` üksikasjaliku väljundi saamiseks: `rdc config machine setup --name server-1 --debug`
+- Tagara, et SSH-kasutajal on sudo-juurdepääs ilma parooliga või konfigureerida `NOPASSWD` vajalike käskude jaoks
+- Kontrolli saadaolevat kettaruumi serveris
+- Käivita `--debug` piiretega, et näha üksikasjalikku väljundit: `rdc config machine setup --name server-1 --debug`
 
-## Distributsioonipõhised seadistamisprobleemid
+## Operatsioonisüsteem-spetsiifilised seadistusprobleemid
 
-Viis ametlikult toetatud serverit (Ubuntu 24.04, Debian 13, Fedora 43, openSUSE Leap 16.0, Oracle Linux 10) kasutavad erinevaid turvapoliitikaid ja paketihaldurid. Enamik seadistusi "lihtsalt toimib"; allpool on kirjeldatud juhtumid, mis ei toimi.
+Viis ametlikult toetatud serveriteoperatsioonisüsteemi (Ubuntu 24.04, Debian 13, Fedora 43, openSUSE Leap 16.0, Oracle Linux 10) kasutavad erinevaid turvalisuspoliitikaid ja paketihaldureid. Enamik seadistusi toimib otse; allpool käsitletakse juhtumeid, kus see nii ei ole.
 
-### SELinux keelud (Fedora 43, Oracle Linux 10)
+### SELinux keeldumised (Fedora 43, Oracle Linux 10)
 
-Mõlemad käitavad SELinuxi jõustamisrežiimis. rdc setup ei paigalda kohandatud SELinuxi poliitikat; repositooriumipõhine dockeri deemon töötab standardse `container_t` kontekstis. Kui seadistamine ebaõnnestub AVC keeldudega, kontrolli auditi logi ja tuvasta domeen:
+Mõlemad käitavad SELinuxi jõustuva režiimiga. rdc seadistus ei paigalda kohandatud SELinux-i poliitikat; repo kohta eraldi Docker-i daemon käitub standardse `container_t` konteksti all. Kui seadistus ebaõnnestub AVC keeldumiste tõttu, kontrolli auditilogi ja identifitseeri domeeni:
 
 ```bash
 sudo ausearch -m AVC -ts recent | head -40
@@ -49,49 +49,49 @@ sudo ausearch -m AVC -ts recent | head -40
 sudo tail -f /var/log/audit/audit.log | grep AVC
 ```
 
-Kui keeld osutab renet-binaarfailile või konkreetsele failitee, on lahendus peaaegu alati ümbersildimine (`restorecon -v /path`), mitte SELinuxi keelamine. Ajutise lahendusena uurimise ajal liigutab `sudo setenforce 0` süsteemi lubavasse režiimi. Luba uuesti käsuga `sudo setenforce 1`, kui kinnitad, et ümbersildistamine toimib.
+Kui keeldumine osutab renet-i binaari või konkreetsele faili teele, on lahendus peaaegu alati ümarmärkimine (`restorecon -v /path`) pigem kui SELinuxi keelamine. Ajutise lahendusena uurimise ajal käivita `sudo setenforce 0`, et liigutada süsteem permissiivse režiimi. Luba ümber käsuga `sudo setenforce 1`, kui kinnitad, et ümarmärkimine püsib.
 
-### AppArmor keelud (Ubuntu 24.04, openSUSE Leap 16.0)
+### AppArmor keeldumised (Ubuntu 24.04, openSUSE Leap 16.0)
 
-Mõlemad käitavad vaikimisi AppArmorit; repositooriumipõhine dockeri deemon kasutab konteineri vaikeprofiilit. Kui repositooriumi sees olev konteiner on blokeeritud:
+Mõlemad käitavad AppArmor-i vaikimisi; repo kohta eraldi Docker-i daemon kasutab vaikimisi konteineri profiili. Kui repositooriumi sees olev konteiner on blokeeritud:
 
 ```bash
 dmesg | grep -i apparmor
 sudo aa-status
 ```
 
-CRIU on teadaolev juhtum, mis puudutab AppArmorit. Renet seab automaatselt `security_opt: apparmor=unconfined` konteineritele, mille sildiks on `rediacc.checkpoint=true`. Muude asjade jaoks ei tohiks sul olla vaja ise AppArmori profiile konfigureerida. Vaata CRIU märkmeid jaotisest [Rediacc reeglid](/en/docs/rules-of-rediacc).
+CRIU on teada juhtum, mis tabab AppArmor-i. renet seab automaatselt `security_opt: apparmor=unconfined` konteineri sildile `rediacc.checkpoint=true`. Sa ei peaks ise konfigureerima AppArmor-i profiile millekski muuks. Vaata CRIU märkusi [Rediacc-i reeglites](/en/docs/rules-of-rediacc).
 
-### Paketihalduri veateated
+### Paketihalduri vea signatuurid
 
 | OS | Paketihaldur | Tüüpiline viga | Lahendus |
 |----|-----------------|---------------|------------|
-| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | Cloudflare'i servast peegeldumine. Proovi uuesti `apt-get update` ~15s pärast; terviklikkuse kontroll läbib järgmisel päringul. |
-| Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | Kettal olevad RPM-i repositooriumi metaandmed on aegunud. Käivita `sudo dnf clean all && sudo dnf makecache`. |
-| openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | Käivita üks kord `sudo zypper refresh rediacc`; järgnevad paigaldused peaksid õnnestuma. |
+| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | Cloudflare-i serverpiin päritolu taga. Proovi `apt-get update` umbes 15 sekundi pärast; integraalsusevalik läbib järgmisele küsitlusele. |
+| Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | RPM repo metaandmed kettal on vananenud. Käivita `sudo dnf clean all && sudo dnf makecache`. |
+| openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | Käivita `sudo zypper refresh rediacc` korra; järgnev paigaldamine peaks õnnestuma. |
 
-### btrfs-moodul puudub (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
+### btrfs moodul puudu (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-Kui `rdc config machine setup` või `renet system check-btrfs` ebaõnnestub veaga:
+Kui `rdc config machine setup` või `renet system check-btrfs` ebaõnnestub:
 
 ```
 Module btrfs not found
 ```
 
-...siis töötab server RHEL 10 standardse kernelil, mis ei sisalda btrfs-moodulit. See ei ole Rediacc'i viga; RHEL 10 eemaldas btrfs'i tahtlikult. Parandus on kasutada **Oracle Linux 10**. Oracle 10 kasutab vaikimisi Unbreakable Enterprise Kerneli (UEK), mis säilitab btrfs'i. Täielikku selgitust vaata jaotisest [Nõuded - miks UEK?](/en/docs/requirements).
+...server käitab RHEL 10 standardkerne, mis kaasas btrfs mooduli ilma. See pole Rediacc-i viga; RHEL 10 lobus btrfs-ist tahtlikult. Lahendus on käivitada **Oracle Linux 10 selle asemel**. Oracle 10 vaikimisi Unbreakable Enterprise Kernel (UEK), mis säilitab btrfs-i. Vaata [Nõuded → Miks UEK?](/en/docs/requirements) täisloo jaoks.
 
 ## Repositooriumi loomine ebaõnnestub
 
-- Veendu, et seadistamine on lõpetatud: andmehoidla kataloog peab eksisteerima
+- Kinnita seadistus oli lõpetatud: andmesalve kaust peab olemas olema
 - Kontrolli kettaruumi serveris
-- Veendu, et renet-binaarfail on paigaldatud (vajadusel käivita seadistamine uuesti)
+- Tagara renet-i binaari on paigaldatud (käivita seadistus uuesti vajaduse korral)
 
 ## Teenused ei käivitu
 
-- Kontrolli Rediaccfile'i süntaksit: see peab olema kehtiv Bash
-- Veendu, et sinu Rediaccfile kasutab `renet compose --` (mitte `docker compose`)
-- Kontrolli, et Dockeri kujutised on ligipääsetavad (kaalu `renet compose -- pull` funktsioonis `up()`)
-- Kontrolli konteineri logisid repositooriumi Dockeri soklit kasutades:
+- Kontrolli Rediaccfile-i süntaksit: see peab olema kehtiv Bash
+- Tagara Rediaccfile kasutab `renet compose --` (mitte `docker compose`)
+- Kinnita Docker-i pildid on ligipääsetavad (arvesta `renet compose -- pull` kasutamisega `up()`)
+- Kontrolli konteineri logisid, kasutades repositooriumi Docker-i soklit:
 
 ```bash
 rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
@@ -103,93 +103,93 @@ Või vaata kõiki konteinereid:
 rdc machine containers --name server-1
 ```
 
-## Ligipääsu keelamine vead
+## Juurdepääsu keeldumine vead
 
-- Repositooriumi toimingud nõuavad serveris juurkasutajat (renet töötab `sudo` kaudu)
-- Veendu, et sinu SSH-kasutaja on `sudo` grupis
-- Kontrolli, et andmehoidla kataloogil on õiged õigused
+- Repositooriumi toimingud nõuavad root õiguseid serveris (renet käitub läbi `sudo`)
+- Kinnita, et sinu SSH-kasutaja on `sudo` rühmas
+- Kontrolli, et andmesalve kataloogil on õiged õigused
 
-## Dockeri sokliprobleemid
+## Docker sokli probleemid
 
-Igal repositooriumil on oma Dockeri deemon. Dockeri käskude käsitsi käivitamisel tuleb määrata õige sokel:
+Igal repositooriumil on oma Docker daemon. Docker-i käskude käitamisel käsitsi pead määrama õige sokli:
 
 ```bash
-# Kasutades rdc term (automaatselt konfigureeritud):
+# rdc termini kasutamine (automaatselt konfigureeritud):
 rdc term connect -m server-1 -r my-app -c "docker ps"
 
-# Või käsitsi sokliga:
+# Või käsitsi soklist:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
-Asenda `2816` oma repositooriumi võrgu ID-ga (leiad selle `rediacc.json`-ist või käsuga `rdc repo status`).
+Asenda `2816` oma repositooriumi võrgu ID-ga (leitud `rediacc.json` või `rdc repo status` kohta).
 
-## `docker run` pole võrku, `apt update` ebaõnnestub, `curl` hangub
+## `docker run` on ilma võrguta, `apt update` ebaõnnestub, `curl` jääb jääma
 
-Repositooriumi kestas konteineri käivitamine ilma `--network host` annab sulle isoleeritud konteineri ainult loopback-liidesega, ilma DNS-i ja väljamineva ühenduvuseta. Käsud nagu `apt update`, `pip install`, `curl https://...` või mis tahes võrgupäring ebaõnnestuvad koheselt DNS-i vigadega.
+Repositooriumi kestis käivitamisel konteinerit ilma `--network host` annab sulle isoleeritud konteineri ainult loopback liidesega, DNS-ita ja ilma väljamineva ühenduseta. Käsud nagu `apt update`, `pip install`, `curl https://...` või mis tahes võrgutõmmis ebaõnnestuvad kohe DNS vigadega.
 
-See on tahtlik. Rediacc'i võrgumudel on **hosti võrgustamine iga teenuse jaoks**, mida jõustab `renet compose`. Vaikimisi Dockeri sild NAT-iga mööduks kerneli taseme loopback-isolatsioonist, mis takistab ühel repositooriumil teise repositooriumi teenustele jõudmast, seega on repositooriumipõhine Dockeri deemon (`FlavorRediacc`) konfigureeritud seadetega `"bridge": "none"` ja `"iptables": false`. Tavalisel `docker run` konteineril pole marsruutitavat silda, millega ühenduda. (Kasutajapõhised Hub-deemonid (`FlavorHub`), mida arenduskeskkonnad kasutavad, on erand: need lubavad sildu ja iptables-i, et kasutaja konteinerid saaksid väljuvat võrguühendust.)
+See on kavatsuslik. Rediacc-i võrgu mudel on **kõigi teenuste jaoks host võrk**, mille jõustab `renet compose`. Vaikimisi Docker bridge NAT-iga möödunuks südamiku taseme loopback isolatsiooni, mis takistab ühel repo-l teise repo teenuseid saavutamast, seega repo kohta Docker daemon (`FlavorRediacc`) on konfigureeritud `"bridge": "none"` ja `"iptables": false` koos. Lihtsa `docker run` konteineri jaoks reitavat bridge-i pole. (Kasutaja poolt Hub daemoniid (`FlavorHub`) töötajad arenduskeskkondadel on erand: nad lubavad bridge + iptables nii kasutaja poolt käituvatel konteineritest on väljaminev võrk.)
 
-**Võrguligipääsuks ad-hoc konteineris kasuta hosti võrgustamist:**
+**Võrguligipääsuks ad-hoc konteineris kasuta host võrgu:**
 
 ```bash
-# Repositooriumi kestas (rdc term connect -m <machine> -r <repo>)
+# Repositooriumi kestis (rdc term connect -m <machine> -r <repo>)
 docker run --rm --network host -it ubuntu bash
 # Nüüd toimivad apt update, curl, pip install.
 ```
 
-**Tootmisteenuste jaoks kasuta Rediaccfile'i koos `renet compose`'iga** tavalise `docker run` asemel. `renet compose` sisestab `network_mode: host`, teenuse IP-sildid ja Traefiki marsruutimise sildid automaatselt. Üksikasju vaata jaotisest [Teenused](/en/docs/services).
+**Tootmisteenus kasutavad Rediaccfile-i `renet compose` kasutamisega** raw `docker run` asemel. `renet compose` süstib `network_mode: host`, teenuse IP sildid ja Traefik-i marsruutimissildid automaatselt. Vaata [Teenused](/en/docs/services) täpsustamiseks.
 
-## VS Code "Permission Denied" liivakastifailides
+## VS Code juurdepääsu keeldumine liivakasti failidel
 
-Ühendamisel käsuga `rdc vscode connect -m <machine> -r <repo>` pärast eelmist VS Code seanssi tootsid vanemad renet'i versioonid vigu nagu `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. Põhjus: liivakasti kataloogis olid segamini failiomandiõigused, kus nii sinu SSH-kasutaja kui ka sisemine `rediacc` kasutaja olid faile kirjutanud.
+Kui ühendad `rdc vscode connect -m <machine> -r <repo>` pärast eelmist VS Code-i seanssi, vanemad renet-i versioonid tekitasid vigu nagu `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. Põhjus: segatõõ omandisuhe liivakasti kataloogis, kus nii sinu SSH-kasutaja kui sisemine `rediacc` kasutaja kirjutasid faile.
 
-Renet'i uuemad versioonid lahendavad selle:
+Kaasaegsed renet-i versioonid parandavad seda:
 
-- Luues repositooriumipõhise liivakasti tööruumi (`/mnt/rediacc/.interim/sandbox/<repo>/`) grupiga `rediacc` ja set-group-ID bitiga (režiim `2775`), nii et kõik alla kirjutatud failid pärivad õige grupi.
-- Rakendades liivakasti käitusajal umask `002`, nii et uued failid luuakse grupikirjutatavana (`0664`/`0775`).
-- Normaliseerides käivitumisel olemasoleva `.vscode-server/` alampuu, nii et paranduse eelsed aegunud failid saavad automaatselt parandatud.
+- Luumine repo kohta liivakasti tööruumi (`/mnt/rediacc/.interim/sandbox/<repo>/`) `rediacc` rühmaga ja määrake rühma-ID bitti (režiim `2775`), nii et iga selle alla kirjutatud fail pärib õige rühma.
+- Rakendada umask `002` liivakasti runtime-is nii et uued failid on loodud rühm-kirjutatavad (`0664`/`0775`).
+- Normaliseerib olemasoleva `.vscode-server/` alampuud käivitamisel nii staled failid enne parandust saavad automaatselt parandatud.
 
-Kui näed endiselt õiguste vigu, taaskäivita repositooriumi Dockeri deemon üks kord käsuga `sudo systemctl restart rediacc-docker-<network-id>` masinal olevast kestast, et normaliseerimise käik töötaks, seejärel proovi uuesti `rdc vscode connect`.
+Kui näed endiselt juurdepääsu vigu, käivita repo Docker daemon korra `sudo systemctl restart rediacc-docker-<network-id>` seest masina kestis nii normaliseerimise läbisõit käitub, siis proovi uuesti `rdc vscode connect`.
 
-## Deemon ei käivitu pärast renet'i uuendust
+## Daemon ei käivitu pärast renet-i uuendamist
 
-Enne iga käivitamist kirjutab `renet daemon start-foreground` `daemon.json` ja `containerd.toml` repositooriumi konfiguratsioonikataloogis uuesti praegustest mallidest üle, nii et vanemat renet'i versiooni konfiguratsiooni kasutav repositoorium võtab automaatselt kasutusele uue formaadi. Sa ei pea käivitama ühtegi migratsioonikommando ega käsitsi systemd ühikut uuesti genereerima. Lihtsalt taaskäivita teenus:
+Enne iga stardist `renet daemon start-foreground` kirjutab ümber `daemon.json` ja `containerd.toml` repositooriumi konfiguratsioonist praegusest mallidest, nii et repositoorium, kelle konfig oli genereeritud vanemast renet-i versioonist, korjab automaatselt uue vormingu. Sa ei pea käivitama mis tahes migratsiooni käsku ja sa ei pea käsitsi ümber loodud systemd üksust. Käivita teenus uuesti:
 
 ```bash
 sudo systemctl restart rediacc-docker-<network-id>
 ```
 
-Kui ühik ikka veel ebaõnnestub, kontrolli ajakirja konkreetse vea saamiseks:
+Kui üksus on endiselt ebaõnnestumises, kontrolli konkreetse vea jaoks päevaraamatut:
 
 ```bash
 sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 ```
 
-## Konteinerid luuakse vale Dockeri deemoniga
+## Konteinerid loodud vale Docker Daemon-i
 
-Kui sinu konteinerid ilmuvad hostsüsteemi Dockeri deemonis repositooriumi isoleeritud deemoni asemel, on kõige levinum põhjus `sudo docker` kasutamine Rediaccfile'is.
+Kui sinu konteinerid ilmuvad host-süsteemi Docker daemon-i asemel repo isoleeritud daemon-i, on kõige levinum põhjus `sudo docker` kasutamine Rediaccfile-is.
 
-`sudo` lähtestab keskkonna muutujad, nii et `DOCKER_HOST` läheb kaotsi ja Docker kasutab vaikimisi süsteemi soklit (`/var/run/docker.sock`). Rediacc blokeerib selle automaatselt, kuid kui see juhtub:
+`sudo` lähtestab keskkonna muutujad, seega `DOCKER_HOST` kaob ja Docker vaikimisi sokli (`/var/run/docker.sock`). Rediacc blokeerib seda automaatselt, aga kui sa selle kohta:
 
-- **Kasuta `docker` otse**, Rediaccfile'i funktsioonid töötavad juba piisavate õigustega
-- Kui pead sudo kasutama, kasuta `sudo -E docker`, et keskkonna muutujaid säilitada
-- Kontrolli oma Rediaccfile'i `sudo docker` käskude suhtes ja eemalda `sudo`
+- **Kasuta `docker` otse**, Rediaccfile funktsioonid käitavad juba piisavate õigustega
+- Kui pead kasutama sudo-t, kasuta `sudo -E docker` keskkonna muutujate säilitamiseks
+- Kontrolli oma Rediaccfile-i mis tahes `sudo docker` käskude jaoks ja eemalda `sudo`
 
-## Terminal ei tööta
+## Terminal ei toimi
 
-Kui `rdc term` ei suuda terminaliakent avada:
+Kui `rdc term` ei avane terminaliakent:
 
-- Kasuta ridade käivitamiseks sisemist režiimi lipuga `-c`:
+- Kasuta siseside režiimi koos `-c` käskude otseseks käivitamiseks:
   ```bash
   rdc term connect -m server-1 -c "ls -la"
   ```
-- Jõusta väline terminal lipuga `--external`, kui sisel režiimil on probleeme
-- Linuxis veendu, et sul on paigaldatud `gnome-terminal`, `xterm` või mõni muu terminaaliemulaat
+- Jõusta väline terminal `--external` kui siseside režiim on probleeme
+- Linux-is tagara sul on `gnome-terminal`, `xterm` või teised terminali emulaator paigaldatud
 
-## Diagnostika käivitamine
+## Käivita diagnostika
 
 ```bash
 rdc doctor
 ```
 
-See kontrollib sinu keskkonda, renet'i paigaldust, konfiguratsiooni ja autentimise olekut. Iga kontroll annab lühikese selgitusega tulemuse OK, Hoiatus või Viga.
+See kontrollib sinu keskkonda, renet paigaldust, konfiguratsiooni ja autentimise staatust. Iga kontroll teatab OK, Hoiatus või Viga lühikese selgitusega.

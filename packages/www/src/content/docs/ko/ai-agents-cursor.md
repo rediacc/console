@@ -4,9 +4,11 @@ description: .cursorrules 및 터미널 통합을 사용하여 Cursor IDE를 Red
 category: Guides
 order: 32
 language: ko
+sourceHash: "b5e835461de00400"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Cursor는 터미널 명령과 `.cursorrules` 설정 파일을 통해 Rediacc와 연동됩니다.
+요약: `.cursorrules`는 Rediacc 컨텍스트를 Cursor AI에 로드하고, 터미널을 통해 실제 머신에 `rdc` 명령을 실행할 수 있습니다.
 
 ## 빠른 설정
 
@@ -14,7 +16,7 @@ Cursor는 터미널 명령과 `.cursorrules` 설정 파일을 통해 Rediacc와 
 2. [AGENTS.md 템플릿](/en/docs/agents-md-template)을 프로젝트 루트에 `.cursorrules`로 복사
 3. Cursor에서 프로젝트 열기
 
-Cursor는 시작 시 `.cursorrules`를 읽어 AI 보조 개발의 컨텍스트로 사용합니다.
+Cursor는 시작 시 `.cursorrules`를 읽습니다. 중요한 점은 컨텍스트 윈도우 한계가 있으므로, 일반적인 보일러플레이트보다는 실제 사용하는 머신과 레포지토리 정보에 집중해서 파일을 작성하는 것이 좋습니다.
 
 ## .cursorrules 구성
 

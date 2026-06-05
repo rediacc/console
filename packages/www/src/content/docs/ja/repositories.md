@@ -4,8 +4,8 @@ description: リモートマシン上のLUKS暗号化リポジトリの作成、
 category: Guides
 order: 4
 language: ja
-sourceHash: "531ee9648611844e"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffb07e5870accfd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # リポジトリ
@@ -212,7 +212,7 @@ rdc repo delete --name my-app -m server-1
 
 ## リポジトリの移行
 
-最小限のダウンタイムで、あるマシンから別のマシンにリポジトリをライブ移行します。
+あるマシンから別のマシンにリポジトリをライブ移行します。唯一のダウンタイムは最終デルタシンク段階であり、カットオーバー時の書き込みレートに応じて通常は数秒から数分です。
 
 ```bash
 rdc repo migrate --name my-app --from server-1 --to server-2

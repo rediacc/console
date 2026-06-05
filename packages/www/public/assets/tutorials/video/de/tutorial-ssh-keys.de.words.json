@@ -1,1 +1,508 @@
-{"version":1,"cues":[{"start":1,"end":1.996,"text":"Alles klar!","words":[{"start":1,"end":1.498,"char":[0,5]},{"start":1.498,"end":1.996,"char":[6,11]}]},{"start":1.996,"end":3.988,"text":"Lass uns SSH-Schlüssel einrichten,","words":[{"start":1.996,"end":2.494,"char":[0,4]},{"start":2.494,"end":2.992,"char":[5,8]},{"start":2.992,"end":3.49,"char":[9,22]},{"start":3.49,"end":3.988,"char":[23,34]}]},{"start":3.988,"end":6.977,"text":"damit die CLI deine Server ohne","words":[{"start":3.988,"end":4.486,"char":[0,5]},{"start":4.486,"end":4.985,"char":[6,9]},{"start":4.985,"end":5.483,"char":[10,13]},{"start":5.483,"end":5.981,"char":[14,19]},{"start":5.981,"end":6.479,"char":[20,26]},{"start":6.479,"end":6.977,"char":[27,31]}]},{"start":6.977,"end":8.471,"text":"Passwörter erreichen kann.","words":[{"start":6.977,"end":7.475,"char":[0,10]},{"start":7.475,"end":7.973,"char":[11,20]},{"start":7.973,"end":8.471,"char":[21,26]}]},{"start":9.253,"end":10.772,"text":"Drei Schritte insgesamt.","words":[{"start":9.253,"end":9.759,"char":[0,4]},{"start":9.759,"end":10.266,"char":[5,13]},{"start":10.266,"end":10.772,"char":[14,24]}]},{"start":10.772,"end":13.304,"text":"Erzeuge einen Schlüssel auf deinem","words":[{"start":10.772,"end":11.278,"char":[0,7]},{"start":11.278,"end":11.785,"char":[8,13]},{"start":11.785,"end":12.291,"char":[14,23]},{"start":12.291,"end":12.798,"char":[24,27]},{"start":12.798,"end":13.304,"char":[28,34]}]},{"start":13.304,"end":13.81,"text":"Laptop,","words":[{"start":13.304,"end":13.81,"char":[0,7]}]},{"start":13.81,"end":16.342,"text":"kopiere ihn auf den Server","words":[{"start":13.81,"end":14.317,"char":[0,7]},{"start":14.317,"end":14.823,"char":[8,11]},{"start":14.823,"end":15.329,"char":[12,15]},{"start":15.329,"end":15.836,"char":[16,19]},{"start":15.836,"end":16.342,"char":[20,26]}]},{"start":16.342,"end":18.874,"text":"und registriere ihn dann beim","words":[{"start":16.342,"end":16.849,"char":[0,3]},{"start":16.849,"end":17.355,"char":[4,15]},{"start":17.355,"end":17.861,"char":[16,19]},{"start":17.861,"end":18.368,"char":[20,24]},{"start":18.368,"end":18.874,"char":[25,29]}]},{"start":18.874,"end":19.38,"text":"Kommandozeilen-Tool.","words":[{"start":18.874,"end":19.38,"char":[0,20]}]},{"start":19.38,"end":21.912,"text":"Zwei davon machst du nur","words":[{"start":19.38,"end":19.887,"char":[0,4]},{"start":19.887,"end":20.393,"char":[5,10]},{"start":20.393,"end":20.9,"char":[11,17]},{"start":20.9,"end":21.406,"char":[18,20]},{"start":21.406,"end":21.912,"char":[21,24]}]},{"start":21.912,"end":22.419,"text":"einmal.","words":[{"start":21.912,"end":22.419,"char":[0,7]}]},{"start":25.695,"end":26.952,"text":"Schritt eins.","words":[{"start":25.695,"end":26.324,"char":[0,7]},{"start":26.324,"end":26.952,"char":[8,13]}]},{"start":26.952,"end":29.466,"text":"Wir generieren einen neuen","words":[{"start":26.952,"end":27.581,"char":[0,3]},{"start":27.581,"end":28.209,"char":[4,14]},{"start":28.209,"end":28.838,"char":[15,20]},{"start":28.838,"end":29.466,"char":[21,26]}]},{"start":29.466,"end":30.724,"text":"ed25519 SSH-Schlüssel.","words":[{"start":29.466,"end":30.095,"char":[0,7]},{"start":30.095,"end":30.724,"char":[8,22]}]},{"start":30.724,"end":33.238,"text":"ed25519 ist der moderne","words":[{"start":30.724,"end":31.352,"char":[0,7]},{"start":31.352,"end":31.981,"char":[8,11]},{"start":31.981,"end":32.609,"char":[12,15]},{"start":32.609,"end":33.238,"char":[16,23]}]},{"start":33.238,"end":33.866,"text":"Standard:","words":[{"start":33.238,"end":33.866,"char":[0,9]}]},{"start":33.866,"end":34.495,"text":"klein,","words":[{"start":33.866,"end":34.495,"char":[0,6]}]},{"start":34.495,"end":37.009,"text":"schnell und gut unterstützt.","words":[{"start":34.495,"end":35.124,"char":[0,7]},{"start":35.124,"end":35.752,"char":[8,11]},{"start":35.752,"end":36.381,"char":[12,15]},{"start":36.381,"end":37.009,"char":[16,28]}]},{"start":37.009,"end":39.524,"text":"Das muss nur einmal","words":[{"start":37.009,"end":37.638,"char":[0,3]},{"start":37.638,"end":38.266,"char":[4,8]},{"start":38.266,"end":38.895,"char":[9,12]},{"start":38.895,"end":39.524,"char":[13,19]}]},{"start":39.524,"end":42.038,"text":"für alle Server gemacht","words":[{"start":39.524,"end":40.152,"char":[0,3]},{"start":40.152,"end":40.781,"char":[4,8]},{"start":40.781,"end":41.409,"char":[9,15]},{"start":41.409,"end":42.038,"char":[16,23]}]},{"start":42.038,"end":42.666,"text":"werden,","words":[{"start":42.038,"end":42.666,"char":[0,7]}]},{"start":42.666,"end":45.181,"text":"die Sie je hinzufügen","words":[{"start":42.666,"end":43.295,"char":[0,3]},{"start":43.295,"end":43.924,"char":[4,7]},{"start":43.924,"end":44.552,"char":[8,10]},{"start":44.552,"end":45.181,"char":[11,21]}]},{"start":45.181,"end":45.809,"text":"werden.","words":[{"start":45.181,"end":45.809,"char":[0,7]}]},{"start":46.609,"end":47.292,"text":"Schlüssel erzeugt.","words":[{"start":46.609,"end":46.951,"char":[0,9]},{"start":46.951,"end":47.292,"char":[10,18]}]},{"start":47.292,"end":49,"text":"Die öffentliche Hälfte ist das,","words":[{"start":47.292,"end":47.634,"char":[0,3]},{"start":47.634,"end":47.976,"char":[4,15]},{"start":47.976,"end":48.317,"char":[16,22]},{"start":48.317,"end":48.659,"char":[23,26]},{"start":48.659,"end":49,"char":[27,31]}]},{"start":49,"end":51.05,"text":"was wir auf den Server kopieren.","words":[{"start":49,"end":49.342,"char":[0,3]},{"start":49.342,"end":49.684,"char":[4,7]},{"start":49.684,"end":50.025,"char":[8,11]},{"start":50.025,"end":50.367,"char":[12,15]},{"start":50.367,"end":50.708,"char":[16,22]},{"start":50.708,"end":51.05,"char":[23,32]}]},{"start":54.363,"end":55.395,"text":"Schritt zwei.","words":[{"start":54.363,"end":54.879,"char":[0,7]},{"start":54.879,"end":55.395,"char":[8,13]}]},{"start":55.395,"end":57.974,"text":"Wir kopieren den öffentlichen Schlüssel","words":[{"start":55.395,"end":55.911,"char":[0,3]},{"start":55.911,"end":56.427,"char":[4,12]},{"start":56.427,"end":56.943,"char":[13,16]},{"start":56.943,"end":57.459,"char":[17,29]},{"start":57.459,"end":57.974,"char":[30,39]}]},{"start":57.974,"end":60.554,"text":"mit ssh-copy-id auf den Server.","words":[{"start":57.974,"end":58.49,"char":[0,3]},{"start":58.49,"end":59.006,"char":[4,15]},{"start":59.006,"end":59.522,"char":[16,19]},{"start":59.522,"end":60.038,"char":[20,23]},{"start":60.038,"end":60.554,"char":[24,31]}]},{"start":60.554,"end":63.134,"text":"Das Serverpasswort wird ein letztes","words":[{"start":60.554,"end":61.07,"char":[0,3]},{"start":61.07,"end":61.586,"char":[4,18]},{"start":61.586,"end":62.102,"char":[19,23]},{"start":62.102,"end":62.618,"char":[24,27]},{"start":62.618,"end":63.134,"char":[28,35]}]},{"start":63.134,"end":64.165,"text":"Mal abgefragt.","words":[{"start":63.134,"end":63.65,"char":[0,3]},{"start":63.65,"end":64.165,"char":[4,14]}]},{"start":64.165,"end":66.745,"text":"Danach ist für diesen Server","words":[{"start":64.165,"end":64.681,"char":[0,6]},{"start":64.681,"end":65.197,"char":[7,10]},{"start":65.197,"end":65.713,"char":[11,14]},{"start":65.713,"end":66.229,"char":[15,21]},{"start":66.229,"end":66.745,"char":[22,28]}]},{"start":66.745,"end":68.809,"text":"keine Passwortauthentifizierung mehr erforderlich.","words":[{"start":66.745,"end":67.261,"char":[0,5]},{"start":67.261,"end":67.777,"char":[6,31]},{"start":67.777,"end":68.293,"char":[32,36]},{"start":68.293,"end":68.809,"char":[37,50]}]},{"start":70.809,"end":72.88,"text":"Führ das auf deinem Laptop aus.","words":[{"start":70.809,"end":71.154,"char":[0,4]},{"start":71.154,"end":71.499,"char":[5,8]},{"start":71.499,"end":71.844,"char":[9,12]},{"start":71.844,"end":72.189,"char":[13,19]},{"start":72.189,"end":72.535,"char":[20,26]},{"start":72.535,"end":72.88,"char":[27,31]}]},{"start":72.88,"end":74.261,"text":"Sobald es durchgelaufen ist,","words":[{"start":72.88,"end":73.225,"char":[0,6]},{"start":73.225,"end":73.57,"char":[7,9]},{"start":73.57,"end":73.915,"char":[10,23]},{"start":73.915,"end":74.261,"char":[24,28]}]},{"start":74.261,"end":75.641,"text":"sind Passwörter vom Tisch.","words":[{"start":74.261,"end":74.606,"char":[0,4]},{"start":74.606,"end":74.951,"char":[5,15]},{"start":74.951,"end":75.296,"char":[16,19]},{"start":75.296,"end":75.641,"char":[20,26]}]},{"start":78.963,"end":79.901,"text":"Schritt drei.","words":[{"start":78.963,"end":79.432,"char":[0,7]},{"start":79.432,"end":79.901,"char":[8,13]}]},{"start":79.901,"end":82.717,"text":"Wir registrieren den Schlüssel bei der","words":[{"start":79.901,"end":80.371,"char":[0,3]},{"start":80.371,"end":80.84,"char":[4,16]},{"start":80.84,"end":81.309,"char":[17,20]},{"start":81.309,"end":81.778,"char":[21,30]},{"start":81.778,"end":82.247,"char":[31,34]},{"start":82.247,"end":82.717,"char":[35,38]}]},{"start":82.717,"end":83.186,"text":"CLI.","words":[{"start":82.717,"end":83.186,"char":[0,4]}]},{"start":83.186,"end":86.001,"text":"Von nun an authentifiziert sich jeder","words":[{"start":83.186,"end":83.655,"char":[0,3]},{"start":83.655,"end":84.124,"char":[4,7]},{"start":84.124,"end":84.593,"char":[8,10]},{"start":84.593,"end":85.063,"char":[11,26]},{"start":85.063,"end":85.532,"char":[27,31]},{"start":85.532,"end":86.001,"char":[32,37]}]},{"start":86.001,"end":87.878,"text":"CLI-Befehl mit diesem Schlüssel.","words":[{"start":86.001,"end":86.47,"char":[0,10]},{"start":86.47,"end":86.939,"char":[11,14]},{"start":86.939,"end":87.409,"char":[15,21]},{"start":87.409,"end":87.878,"char":[22,32]}]},{"start":87.878,"end":89.285,"text":"Keine Passwörter mehr,","words":[{"start":87.878,"end":88.347,"char":[0,5]},{"start":88.347,"end":88.816,"char":[6,16]},{"start":88.816,"end":89.285,"char":[17,22]}]},{"start":89.285,"end":91.162,"text":"keine interaktiven Abfragen mehr.","words":[{"start":89.285,"end":89.755,"char":[0,5]},{"start":89.755,"end":90.224,"char":[6,18]},{"start":90.224,"end":90.693,"char":[19,27]},{"start":90.693,"end":91.162,"char":[28,33]}]},{"start":93.162,"end":95.278,"text":"Schlüssel bei der CLI registriert.","words":[{"start":93.162,"end":93.585,"char":[0,9]},{"start":93.585,"end":94.009,"char":[10,13]},{"start":94.009,"end":94.432,"char":[14,17]},{"start":94.432,"end":94.855,"char":[18,21]},{"start":94.855,"end":95.278,"char":[22,34]}]},{"start":96.076,"end":98.713,"text":"Der Schlüssel ist registriert und die","words":[{"start":96.076,"end":96.515,"char":[0,3]},{"start":96.515,"end":96.955,"char":[4,13]},{"start":96.955,"end":97.394,"char":[14,17]},{"start":97.394,"end":97.834,"char":[18,29]},{"start":97.834,"end":98.273,"char":[30,33]},{"start":98.273,"end":98.713,"char":[34,37]}]},{"start":98.713,"end":100.031,"text":"CLI ist startklar.","words":[{"start":98.713,"end":99.152,"char":[0,3]},{"start":99.152,"end":99.592,"char":[4,7]},{"start":99.592,"end":100.031,"char":[8,18]}]},{"start":100.031,"end":102.668,"text":"Als Nächstes fügen wir deinen ersten","words":[{"start":100.031,"end":100.471,"char":[0,3]},{"start":100.471,"end":100.91,"char":[4,12]},{"start":100.91,"end":101.35,"char":[13,18]},{"start":101.35,"end":101.789,"char":[19,22]},{"start":101.789,"end":102.229,"char":[23,29]},{"start":102.229,"end":102.668,"char":[30,36]}]},{"start":102.668,"end":103.547,"text":"Server hinzu.","words":[{"start":102.668,"end":103.108,"char":[0,6]},{"start":103.108,"end":103.547,"char":[7,13]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.996,
+      "text": "Alles klar!",
+      "words": [
+        { "start": 1, "end": 1.498, "char": [0, 5] },
+        { "start": 1.498, "end": 1.996, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 1.996,
+      "end": 3.988,
+      "text": "Lass uns SSH-Schlüssel einrichten,",
+      "words": [
+        { "start": 1.996, "end": 2.494, "char": [0, 4] },
+        { "start": 2.494, "end": 2.992, "char": [5, 8] },
+        { "start": 2.992, "end": 3.49, "char": [9, 22] },
+        { "start": 3.49, "end": 3.988, "char": [23, 34] }
+      ]
+    },
+    {
+      "start": 3.988,
+      "end": 6.977,
+      "text": "damit die CLI deine Server ohne",
+      "words": [
+        { "start": 3.988, "end": 4.486, "char": [0, 5] },
+        { "start": 4.486, "end": 4.985, "char": [6, 9] },
+        { "start": 4.985, "end": 5.483, "char": [10, 13] },
+        { "start": 5.483, "end": 5.981, "char": [14, 19] },
+        { "start": 5.981, "end": 6.479, "char": [20, 26] },
+        { "start": 6.479, "end": 6.977, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 6.977,
+      "end": 8.471,
+      "text": "Passwörter erreichen kann.",
+      "words": [
+        { "start": 6.977, "end": 7.475, "char": [0, 10] },
+        { "start": 7.475, "end": 7.973, "char": [11, 20] },
+        { "start": 7.973, "end": 8.471, "char": [21, 26] }
+      ]
+    },
+    {
+      "start": 9.253,
+      "end": 10.772,
+      "text": "Drei Schritte insgesamt.",
+      "words": [
+        { "start": 9.253, "end": 9.759, "char": [0, 4] },
+        { "start": 9.759, "end": 10.266, "char": [5, 13] },
+        { "start": 10.266, "end": 10.772, "char": [14, 24] }
+      ]
+    },
+    {
+      "start": 10.772,
+      "end": 13.304,
+      "text": "Erzeuge einen Schlüssel auf deinem",
+      "words": [
+        { "start": 10.772, "end": 11.278, "char": [0, 7] },
+        { "start": 11.278, "end": 11.785, "char": [8, 13] },
+        { "start": 11.785, "end": 12.291, "char": [14, 23] },
+        { "start": 12.291, "end": 12.798, "char": [24, 27] },
+        { "start": 12.798, "end": 13.304, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 13.304,
+      "end": 13.81,
+      "text": "Laptop,",
+      "words": [{ "start": 13.304, "end": 13.81, "char": [0, 7] }]
+    },
+    {
+      "start": 13.81,
+      "end": 16.342,
+      "text": "kopiere ihn auf den Server",
+      "words": [
+        { "start": 13.81, "end": 14.317, "char": [0, 7] },
+        { "start": 14.317, "end": 14.823, "char": [8, 11] },
+        { "start": 14.823, "end": 15.329, "char": [12, 15] },
+        { "start": 15.329, "end": 15.836, "char": [16, 19] },
+        { "start": 15.836, "end": 16.342, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 16.342,
+      "end": 18.874,
+      "text": "und registriere ihn dann beim",
+      "words": [
+        { "start": 16.342, "end": 16.849, "char": [0, 3] },
+        { "start": 16.849, "end": 17.355, "char": [4, 15] },
+        { "start": 17.355, "end": 17.861, "char": [16, 19] },
+        { "start": 17.861, "end": 18.368, "char": [20, 24] },
+        { "start": 18.368, "end": 18.874, "char": [25, 29] }
+      ]
+    },
+    {
+      "start": 18.874,
+      "end": 19.38,
+      "text": "Kommandozeilen-Tool.",
+      "words": [{ "start": 18.874, "end": 19.38, "char": [0, 20] }]
+    },
+    {
+      "start": 19.38,
+      "end": 21.912,
+      "text": "Zwei davon machst du nur",
+      "words": [
+        { "start": 19.38, "end": 19.887, "char": [0, 4] },
+        { "start": 19.887, "end": 20.393, "char": [5, 10] },
+        { "start": 20.393, "end": 20.9, "char": [11, 17] },
+        { "start": 20.9, "end": 21.406, "char": [18, 20] },
+        { "start": 21.406, "end": 21.912, "char": [21, 24] }
+      ]
+    },
+    {
+      "start": 21.912,
+      "end": 22.419,
+      "text": "einmal.",
+      "words": [{ "start": 21.912, "end": 22.419, "char": [0, 7] }]
+    },
+    {
+      "start": 25.695,
+      "end": 26.952,
+      "text": "Schritt eins.",
+      "words": [
+        { "start": 25.695, "end": 26.324, "char": [0, 7] },
+        { "start": 26.324, "end": 26.952, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 26.952,
+      "end": 29.466,
+      "text": "Wir generieren einen neuen",
+      "words": [
+        { "start": 26.952, "end": 27.581, "char": [0, 3] },
+        { "start": 27.581, "end": 28.209, "char": [4, 14] },
+        { "start": 28.209, "end": 28.838, "char": [15, 20] },
+        { "start": 28.838, "end": 29.466, "char": [21, 26] }
+      ]
+    },
+    {
+      "start": 29.466,
+      "end": 30.724,
+      "text": "ed25519 SSH-Schlüssel.",
+      "words": [
+        { "start": 29.466, "end": 30.095, "char": [0, 7] },
+        { "start": 30.095, "end": 30.724, "char": [8, 22] }
+      ]
+    },
+    {
+      "start": 30.724,
+      "end": 33.238,
+      "text": "ed25519 ist der moderne",
+      "words": [
+        { "start": 30.724, "end": 31.352, "char": [0, 7] },
+        { "start": 31.352, "end": 31.981, "char": [8, 11] },
+        { "start": 31.981, "end": 32.609, "char": [12, 15] },
+        { "start": 32.609, "end": 33.238, "char": [16, 23] }
+      ]
+    },
+    {
+      "start": 33.238,
+      "end": 33.866,
+      "text": "Standard:",
+      "words": [{ "start": 33.238, "end": 33.866, "char": [0, 9] }]
+    },
+    {
+      "start": 33.866,
+      "end": 34.495,
+      "text": "klein,",
+      "words": [{ "start": 33.866, "end": 34.495, "char": [0, 6] }]
+    },
+    {
+      "start": 34.495,
+      "end": 37.009,
+      "text": "schnell und gut unterstützt.",
+      "words": [
+        { "start": 34.495, "end": 35.124, "char": [0, 7] },
+        { "start": 35.124, "end": 35.752, "char": [8, 11] },
+        { "start": 35.752, "end": 36.381, "char": [12, 15] },
+        { "start": 36.381, "end": 37.009, "char": [16, 28] }
+      ]
+    },
+    {
+      "start": 37.009,
+      "end": 39.524,
+      "text": "Das muss nur einmal",
+      "words": [
+        { "start": 37.009, "end": 37.638, "char": [0, 3] },
+        { "start": 37.638, "end": 38.266, "char": [4, 8] },
+        { "start": 38.266, "end": 38.895, "char": [9, 12] },
+        { "start": 38.895, "end": 39.524, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 39.524,
+      "end": 42.038,
+      "text": "für alle Server gemacht",
+      "words": [
+        { "start": 39.524, "end": 40.152, "char": [0, 3] },
+        { "start": 40.152, "end": 40.781, "char": [4, 8] },
+        { "start": 40.781, "end": 41.409, "char": [9, 15] },
+        { "start": 41.409, "end": 42.038, "char": [16, 23] }
+      ]
+    },
+    {
+      "start": 42.038,
+      "end": 42.666,
+      "text": "werden,",
+      "words": [{ "start": 42.038, "end": 42.666, "char": [0, 7] }]
+    },
+    {
+      "start": 42.666,
+      "end": 45.181,
+      "text": "die Sie je hinzufügen",
+      "words": [
+        { "start": 42.666, "end": 43.295, "char": [0, 3] },
+        { "start": 43.295, "end": 43.924, "char": [4, 7] },
+        { "start": 43.924, "end": 44.552, "char": [8, 10] },
+        { "start": 44.552, "end": 45.181, "char": [11, 21] }
+      ]
+    },
+    {
+      "start": 45.181,
+      "end": 45.809,
+      "text": "werden.",
+      "words": [{ "start": 45.181, "end": 45.809, "char": [0, 7] }]
+    },
+    {
+      "start": 46.609,
+      "end": 47.292,
+      "text": "Schlüssel erzeugt.",
+      "words": [
+        { "start": 46.609, "end": 46.951, "char": [0, 9] },
+        { "start": 46.951, "end": 47.292, "char": [10, 18] }
+      ]
+    },
+    {
+      "start": 47.292,
+      "end": 49,
+      "text": "Die öffentliche Hälfte ist das,",
+      "words": [
+        { "start": 47.292, "end": 47.634, "char": [0, 3] },
+        { "start": 47.634, "end": 47.976, "char": [4, 15] },
+        { "start": 47.976, "end": 48.317, "char": [16, 22] },
+        { "start": 48.317, "end": 48.659, "char": [23, 26] },
+        { "start": 48.659, "end": 49, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 49,
+      "end": 51.05,
+      "text": "was wir auf den Server kopieren.",
+      "words": [
+        { "start": 49, "end": 49.342, "char": [0, 3] },
+        { "start": 49.342, "end": 49.684, "char": [4, 7] },
+        { "start": 49.684, "end": 50.025, "char": [8, 11] },
+        { "start": 50.025, "end": 50.367, "char": [12, 15] },
+        { "start": 50.367, "end": 50.708, "char": [16, 22] },
+        { "start": 50.708, "end": 51.05, "char": [23, 32] }
+      ]
+    },
+    {
+      "start": 54.363,
+      "end": 55.395,
+      "text": "Schritt zwei.",
+      "words": [
+        { "start": 54.363, "end": 54.879, "char": [0, 7] },
+        { "start": 54.879, "end": 55.395, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 55.395,
+      "end": 57.974,
+      "text": "Wir kopieren den öffentlichen Schlüssel",
+      "words": [
+        { "start": 55.395, "end": 55.911, "char": [0, 3] },
+        { "start": 55.911, "end": 56.427, "char": [4, 12] },
+        { "start": 56.427, "end": 56.943, "char": [13, 16] },
+        { "start": 56.943, "end": 57.459, "char": [17, 29] },
+        { "start": 57.459, "end": 57.974, "char": [30, 39] }
+      ]
+    },
+    {
+      "start": 57.974,
+      "end": 60.554,
+      "text": "mit ssh-copy-id auf den Server.",
+      "words": [
+        { "start": 57.974, "end": 58.49, "char": [0, 3] },
+        { "start": 58.49, "end": 59.006, "char": [4, 15] },
+        { "start": 59.006, "end": 59.522, "char": [16, 19] },
+        { "start": 59.522, "end": 60.038, "char": [20, 23] },
+        { "start": 60.038, "end": 60.554, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 60.554,
+      "end": 63.134,
+      "text": "Das Serverpasswort wird ein letztes",
+      "words": [
+        { "start": 60.554, "end": 61.07, "char": [0, 3] },
+        { "start": 61.07, "end": 61.586, "char": [4, 18] },
+        { "start": 61.586, "end": 62.102, "char": [19, 23] },
+        { "start": 62.102, "end": 62.618, "char": [24, 27] },
+        { "start": 62.618, "end": 63.134, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 63.134,
+      "end": 64.165,
+      "text": "Mal abgefragt.",
+      "words": [
+        { "start": 63.134, "end": 63.65, "char": [0, 3] },
+        { "start": 63.65, "end": 64.165, "char": [4, 14] }
+      ]
+    },
+    {
+      "start": 64.165,
+      "end": 66.745,
+      "text": "Danach ist für diesen Server",
+      "words": [
+        { "start": 64.165, "end": 64.681, "char": [0, 6] },
+        { "start": 64.681, "end": 65.197, "char": [7, 10] },
+        { "start": 65.197, "end": 65.713, "char": [11, 14] },
+        { "start": 65.713, "end": 66.229, "char": [15, 21] },
+        { "start": 66.229, "end": 66.745, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 66.745,
+      "end": 68.809,
+      "text": "keine Passwortauthentifizierung mehr erforderlich.",
+      "words": [
+        { "start": 66.745, "end": 67.261, "char": [0, 5] },
+        { "start": 67.261, "end": 67.777, "char": [6, 31] },
+        { "start": 67.777, "end": 68.293, "char": [32, 36] },
+        { "start": 68.293, "end": 68.809, "char": [37, 50] }
+      ]
+    },
+    {
+      "start": 70.809,
+      "end": 72.88,
+      "text": "Führ das auf deinem Laptop aus.",
+      "words": [
+        { "start": 70.809, "end": 71.154, "char": [0, 4] },
+        { "start": 71.154, "end": 71.499, "char": [5, 8] },
+        { "start": 71.499, "end": 71.844, "char": [9, 12] },
+        { "start": 71.844, "end": 72.189, "char": [13, 19] },
+        { "start": 72.189, "end": 72.535, "char": [20, 26] },
+        { "start": 72.535, "end": 72.88, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 72.88,
+      "end": 74.261,
+      "text": "Sobald es durchgelaufen ist,",
+      "words": [
+        { "start": 72.88, "end": 73.225, "char": [0, 6] },
+        { "start": 73.225, "end": 73.57, "char": [7, 9] },
+        { "start": 73.57, "end": 73.915, "char": [10, 23] },
+        { "start": 73.915, "end": 74.261, "char": [24, 28] }
+      ]
+    },
+    {
+      "start": 74.261,
+      "end": 75.641,
+      "text": "sind Passwörter vom Tisch.",
+      "words": [
+        { "start": 74.261, "end": 74.606, "char": [0, 4] },
+        { "start": 74.606, "end": 74.951, "char": [5, 15] },
+        { "start": 74.951, "end": 75.296, "char": [16, 19] },
+        { "start": 75.296, "end": 75.641, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 78.963,
+      "end": 79.901,
+      "text": "Schritt drei.",
+      "words": [
+        { "start": 78.963, "end": 79.432, "char": [0, 7] },
+        { "start": 79.432, "end": 79.901, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 79.901,
+      "end": 82.717,
+      "text": "Wir registrieren den Schlüssel bei der",
+      "words": [
+        { "start": 79.901, "end": 80.371, "char": [0, 3] },
+        { "start": 80.371, "end": 80.84, "char": [4, 16] },
+        { "start": 80.84, "end": 81.309, "char": [17, 20] },
+        { "start": 81.309, "end": 81.778, "char": [21, 30] },
+        { "start": 81.778, "end": 82.247, "char": [31, 34] },
+        { "start": 82.247, "end": 82.717, "char": [35, 38] }
+      ]
+    },
+    {
+      "start": 82.717,
+      "end": 83.186,
+      "text": "CLI.",
+      "words": [{ "start": 82.717, "end": 83.186, "char": [0, 4] }]
+    },
+    {
+      "start": 83.186,
+      "end": 86.001,
+      "text": "Von nun an authentifiziert sich jeder",
+      "words": [
+        { "start": 83.186, "end": 83.655, "char": [0, 3] },
+        { "start": 83.655, "end": 84.124, "char": [4, 7] },
+        { "start": 84.124, "end": 84.593, "char": [8, 10] },
+        { "start": 84.593, "end": 85.063, "char": [11, 26] },
+        { "start": 85.063, "end": 85.532, "char": [27, 31] },
+        { "start": 85.532, "end": 86.001, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 86.001,
+      "end": 87.878,
+      "text": "CLI-Befehl mit diesem Schlüssel.",
+      "words": [
+        { "start": 86.001, "end": 86.47, "char": [0, 10] },
+        { "start": 86.47, "end": 86.939, "char": [11, 14] },
+        { "start": 86.939, "end": 87.409, "char": [15, 21] },
+        { "start": 87.409, "end": 87.878, "char": [22, 32] }
+      ]
+    },
+    {
+      "start": 87.878,
+      "end": 89.285,
+      "text": "Keine Passwörter mehr,",
+      "words": [
+        { "start": 87.878, "end": 88.347, "char": [0, 5] },
+        { "start": 88.347, "end": 88.816, "char": [6, 16] },
+        { "start": 88.816, "end": 89.285, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 89.285,
+      "end": 91.162,
+      "text": "keine interaktiven Abfragen mehr.",
+      "words": [
+        { "start": 89.285, "end": 89.755, "char": [0, 5] },
+        { "start": 89.755, "end": 90.224, "char": [6, 18] },
+        { "start": 90.224, "end": 90.693, "char": [19, 27] },
+        { "start": 90.693, "end": 91.162, "char": [28, 33] }
+      ]
+    },
+    {
+      "start": 93.162,
+      "end": 95.278,
+      "text": "Schlüssel bei der CLI registriert.",
+      "words": [
+        { "start": 93.162, "end": 93.585, "char": [0, 9] },
+        { "start": 93.585, "end": 94.009, "char": [10, 13] },
+        { "start": 94.009, "end": 94.432, "char": [14, 17] },
+        { "start": 94.432, "end": 94.855, "char": [18, 21] },
+        { "start": 94.855, "end": 95.278, "char": [22, 34] }
+      ]
+    },
+    {
+      "start": 96.076,
+      "end": 98.713,
+      "text": "Der Schlüssel ist registriert und die",
+      "words": [
+        { "start": 96.076, "end": 96.515, "char": [0, 3] },
+        { "start": 96.515, "end": 96.955, "char": [4, 13] },
+        { "start": 96.955, "end": 97.394, "char": [14, 17] },
+        { "start": 97.394, "end": 97.834, "char": [18, 29] },
+        { "start": 97.834, "end": 98.273, "char": [30, 33] },
+        { "start": 98.273, "end": 98.713, "char": [34, 37] }
+      ]
+    },
+    {
+      "start": 98.713,
+      "end": 100.031,
+      "text": "CLI ist startklar.",
+      "words": [
+        { "start": 98.713, "end": 99.152, "char": [0, 3] },
+        { "start": 99.152, "end": 99.592, "char": [4, 7] },
+        { "start": 99.592, "end": 100.031, "char": [8, 18] }
+      ]
+    },
+    {
+      "start": 100.031,
+      "end": 102.668,
+      "text": "Als Nächstes fügen wir deinen ersten",
+      "words": [
+        { "start": 100.031, "end": 100.471, "char": [0, 3] },
+        { "start": 100.471, "end": 100.91, "char": [4, 12] },
+        { "start": 100.91, "end": 101.35, "char": [13, 18] },
+        { "start": 101.35, "end": 101.789, "char": [19, 22] },
+        { "start": 101.789, "end": 102.229, "char": [23, 29] },
+        { "start": 102.229, "end": 102.668, "char": [30, 36] }
+      ]
+    },
+    {
+      "start": 102.668,
+      "end": 103.547,
+      "text": "Server hinzu.",
+      "words": [
+        { "start": 102.668, "end": 103.108, "char": [0, 6] },
+        { "start": 103.108, "end": 103.547, "char": [7, 13] }
+      ]
+    }
+  ]
+}

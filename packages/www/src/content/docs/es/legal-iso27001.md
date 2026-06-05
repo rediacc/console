@@ -4,15 +4,15 @@ description: "Cómo Rediacc se ajusta a los controles de seguridad de la informa
 category: "Legal"
 order: 5
 language: es
-sourceHash: "7c80000942b6196d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "52709a22c0b38178"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-ISO/IEC 27001 es un estándar internacional para sistemas de gestión de seguridad de la información (SGSI), publicado por la Organización Internacional de Normalización (ISO) y la Comisión Electrotécnica Internacional (IEC). La versión actual es ISO/IEC 27001:2022.
+Bien. ISO/IEC 27001:2022 es el estándar internacional para sistemas de gestión de seguridad de la información. Publicado por ISO/IEC, es un documento extenso que enumera controles para cifrado, gestión de acceso, respuesta ante incidentes y decenas de dominios de seguridad. Casi con certeza ya sabes qué es esto. Así que seré directo: Rediacc no aborda todos los controles del estándar, y no vamos a fingir que lo hace. Lo que sigue es un mapa honesto de dónde encaja Rediacc. La versión actual es ISO/IEC 27001:2022.
 
 Referencia: [ISO/IEC 27001:2022](https://www.iso.org/standard/27001)
 
-Rediacc es un componente de la capa de controles técnicos dentro de un SGSI. La tabla a continuación mapea las capacidades de Rediacc a los dominios de control del Anexo A relevantes.
+Mira, Rediacc es un componente de la capa de controles técnicos dentro de un SGSI. La tabla a continuación mapea las capacidades de Rediacc a los dominios de control del Anexo A relevantes.
 
 ## Mapeo de controles del Anexo A
 
@@ -23,7 +23,7 @@ Rediacc es un componente de la capa de controles técnicos dentro de un SGSI. La
 | **A.9**, Control de acceso | A.9.2 Gestión de acceso de usuarios | Autenticación por clave SSH. Tokens API con vinculación IP, alcance por equipos y revocación automática al remover del equipo. Autenticación de dos factores (TOTP). |
 | **A.10**, Criptografía | A.10.1 Controles criptográficos | LUKS2 con parámetros de clave configurables. Credenciales de cifrado por repositorio. Todo el transporte remoto por SSH. El almacén de configuración implementa cifrado de conocimiento cero: AES-256-GCM con derivación de clave HKDF, intercambio de claves X25519 para miembros y claves SDK con ventana temporal para revocación inmediata. |
 | **A.12**, Seguridad operativa | A.12.3 Respaldo | `rdc repo push/pull` con almacenamiento cifrado fuera del sitio a múltiples destinos (SSH, S3, B2, Azure, GDrive). Snapshots CoW para recuperación en punto en el tiempo. `rdc repo validate` verifica la salud del respaldo y la integridad del repositorio. |
-| **A.12**, Seguridad operativa | A.12.4 Registro y monitoreo | Más de 40 tipos de eventos a nivel de cuenta (autenticación, tokens API, configuración, licencias). Monitoreo de salud de máquinas vía `rdc machine query`. Monitoreo de estado de contenedores y recursos. |
+| **A.12**, Seguridad operativa | A.12.4 Registro y monitoreo | 70+ tipos de eventos (autenticación, tokens API, configuración, licencias, operaciones de máquina). Monitoreo de salud de máquinas vía `rdc machine query`. Monitoreo de estado de contenedores y recursos. |
 | **A.13**, Seguridad de comunicaciones | A.13.1 Gestión de seguridad de red | Aislamiento de Docker daemon por repositorio. Reglas de iptables bloquean tráfico entre repositorios. Subredes de IP loopback (/26) por repositorio. Proxy inverso con terminación TLS para acceso externo. |
 | **A.14**, Desarrollo de sistemas | A.14.2 Seguridad en el desarrollo | Entornos de desarrollo basados en fork proporcionan paridad con producción sin exposición de datos de producción. Los hooks del ciclo de vida de Rediaccfile permiten sanitización automatizada de datos en entornos clonados. |
 

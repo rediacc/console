@@ -1,64 +1,66 @@
 ---
-title: Sicurezza e guardrail degli agenti AI
+title: Sicurezza degli AI Agent e Guardrail
 description: >-
-  Come la CLI di Rediacc impedisce agli assistenti di programmazione AI di far
-  trapelare segreti, sovrascrivere credenziali o scalare i privilegi. Knowledge-gate,
-  redazione, override con verifica dell'ascendenza e log di audit con hash a catena. È progettato così perché la sicurezza è priorità assoluta.
+  Come la CLI di Rediacc impedisce agli assistenti di coding AI di divulgare
+  segreti, sovrascrivere credenziali o escalare i privilegi. Gate di conoscenza,
+  redazione, override verificati per ascendenza e log di audit con catena hash.
 category: Concepts
 order: 35
 language: it
+sourceHash: "ae23c9bc851ecfcd"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Quando Claude Code, Cursor, Gemini CLI, Copilot CLI o qualsiasi altro assistente di programmazione AI pilota `rdc`, la CLI lo tratta diversamente da un essere umano alla tastiera. Questa pagina spiega cosa può fare l'agente, cosa non può fare e come i guardrail reggono anche quando l'agente cerca di aggirarli.
+Stai indirizzando un assistente di coding AI alla tua infrastruttura. Quando Claude Code, Cursor, Gemini CLI, Copilot CLI o strumenti simili guidano `rdc`, la CLI lo rileva e applica un set di regole diverso da quello di un umano alla tastiera. Questa pagina spiega cosa l'agent può e non può fare, e come i guardrail resistono anche quando tenta di convincerti a lasciargli il controllo.
 
-## Riferimento rapido: cosa possono e non possono fare gli agenti
+## Riferimento rapido: cosa gli agent possono e non possono fare
 
-| Operazione | Comportamento predefinito | Come sbloccare per un caso d'uso specifico |
+| Operazione | Comportamento predefinito dell'agent | Come sbloccarla per un caso d'uso specifico |
 |---|---|---|
-| `rdc config show` (redatto) | Permesso |  |
-| `rdc config field get --pointer <pointer>` (stub redatto o digest) | Permesso |  |
-| `rdc config field get --pointer <pointer> --digest` | Permesso |  |
-| `rdc config field set --pointer <pointer>` (campo pubblico) | Permesso |  |
-| `rdc config field set --pointer <pointer>` (campo sensibile, **con `--current` corretto**) | Permesso |  |
-| `rdc config edit --dump` (JSONC redatto) | Permesso |  |
-| `rdc config audit {log, tail, verify}` | Permesso |  |
-| `rdc config field set --pointer <pointer>` (campo sensibile, senza `--current`) | Rifiutato | Fornire `--current "<vecchio valore>"` |
-| `rdc config field get --pointer <pointer> --reveal` | Rifiutato | Usare `--digest` al suo posto |
-| `rdc config show --reveal` | Rifiutato | Usare `rdc config show` senza opzioni |
-| `rdc config edit` (editor interattivo) | Rifiutato | L'utente imposta `REDIACC_ALLOW_CONFIG_EDIT=*` prima di avviare l'agente |
-| `rdc config edit --apply <file>` | Rifiutato | Stesso override |
-| `rdc config field rotate --pointer <pointer>` | Rifiutato | Stesso override; richiede conferma interattiva |
-| `rdc term connect -m <machine>` (SSH diretto alla macchina) | Rifiutato | Prima eseguire un fork del repository e connettersi al fork |
+| `rdc config show` (redatto) | ✅ consentito |  |
+| `rdc config field get --pointer <pointer>` (stub redatto o digest) | ✅ consentito |  |
+| `rdc config field get --pointer <pointer> --digest` | ✅ consentito |  |
+| `rdc config field set --pointer <pointer>` (campo pubblico) | ✅ consentito |  |
+| `rdc config field set --pointer <pointer>` (campo sensibile, **con `--current` corretto**) | ✅ consentito |  |
+| `rdc config edit --dump` (JSONC redatto) | ✅ consentito |  |
+| `rdc config audit {log, tail, verify}` | ✅ consentito |  |
+| `rdc config field set --pointer <pointer>` (campo sensibile, senza `--current`) | 🔴 rifiutato | Fornisci `--current "<old value>"` |
+| `rdc config field get --pointer <pointer> --reveal` | 🔴 rifiutato | Usa `--digest` invece |
+| `rdc config show --reveal` | 🔴 rifiutato | Usa il semplice `rdc config show` |
+| `rdc config edit` (editor interattivo) | 🔴 rifiutato | L'umano imposta `REDIACC_ALLOW_CONFIG_EDIT=*` prima di lanciare l'agent |
+| `rdc config edit --apply <file>` | 🔴 rifiutato | Stesso override |
+| `rdc config field rotate --pointer <pointer>` | 🔴 rifiutato | Stesso override; usa conferma interattiva |
+| `rdc term connect -m <machine>` (SSH diretto alla macchina) | 🔴 rifiutato | Fork prima un repo e connettiti al fork |
 
-Tutto ciò che viene rifiutato a un agente viene scritto nel log di audit con `outcome: refused` e una motivazione.
+Ogni rifiuto viene scritto nel log di audit con `outcome: refused` e una ragione.
 
-## Come vengono rilevati gli agenti
+## Come gli agent sono rilevati
 
-La CLI tratta un processo come agente quando si verifica almeno una di queste condizioni:
+La CLI tratta un processo come un agent quando uno di questi è vero:
 
-- Una delle variabili `REDIACC_AGENT`, `CLAUDECODE`, `GEMINI_CLI`, `COPILOT_CLI` è impostata a `"1"`, oppure `CURSOR_TRACE_ID` è impostata.
-- Su Linux: qualsiasi processo genitore nella catena di ascendenza possiede una di quelle variabili nel proprio ambiente (tramite `/proc/<pid>/environ`). Anche se l'agente annulla le proprie variabili con `env -i` o uno script wrapper, la catena dei genitori rivela comunque alla CLI chi lo ha avviato.
+- Uno di `REDIACC_AGENT`, `CLAUDECODE`, `GEMINI_CLI`, `COPILOT_CLI` è impostato su `"1"`, oppure `CURSOR_TRACE_ID` è impostato.
+- Su Linux: qualsiasi processo parent nella catena di ascendenza ha una di queste variabili nel suo ambiente (tramite `/proc/<pid>/environ`). Anche se l'agent cancella le sue variabili con `env -i` o uno script wrapper, la catena parent comunica sempre alla CLI chi l'ha avviato.
 
-Il rilevamento viene eseguito una volta per processo e viene memorizzato nella cache. Non può essere disabilitato.
+Il rilevamento viene eseguito una sola volta per processo ed è memorizzato in cache. Non può essere disabilitato.
 
 ## Il modello knowledge-gate
 
-Le mutazioni sensibili seguono la convenzione `passwd(1)`: per modificare un segreto, dimostra di conoscerlo già. **Simmetrico per esseri umani e agenti**: entrambi passano per lo stesso gate. Non esiste un bypass "sono alla tastiera".
+Le mutazioni sensibili seguono la convenzione `passwd(1)`: per cambiare un segreto, prova che lo conoscevi già. **Simmetrico per umani e agent**. Entrambi passano attraverso lo stesso gate. Non esiste il bypass "Sono io alla tastiera".
 
-- Si vuole ruotare un token API memorizzato in `/credentials/cfDnsApiToken`?
+- Vuoi ruotare un token API memorizzato in `/credentials/cfDnsApiToken`?
 - La CLI chiede: "qual è il valore attuale?"
-- L'agente (o l'utente) fornisce il testo in chiaro tramite `--current "$OLD"`. La CLI calcola l'hash SHA-256 di `$OLD` e lo confronta con il digest del valore attualmente memorizzato. Corrispondenza: la scrittura avviene. Mancata corrispondenza: rifiutato e registrato nel log.
-- Per ruotare senza verificare il valore precedente, passare `--rotate-secret` (mutuamente esclusivo con `--current`). Viene registrato esplicitamente come rotazione.
+- L'agent (o l'umano) fornisce il plaintext tramite `--current "$OLD"`. La CLI esegue l'hash di `$OLD` con SHA-256 e lo confronta con il digest del valore attualmente memorizzato. Match → la scrittura procede. Mismatch → rifiutato, registrato.
+- Per ruotare senza verificare il valore precedente, passa `--rotate-secret` (mutualmente esclusivo con `--current`). Questa azione viene chiaramente registrata come una rotazione.
 
 Il modello chiude tre superfici di attacco:
 
-1. **Rotazione silenziosa**: un chiamante (agente o umano) senza accesso precedente a `$OLD` non può sostituirlo con un valore arbitrario.
-2. **Esfiltrazione tramite probing**: la risposta con digest non contiene mai testo in chiaro; anche un log di audit compromesso mostra `expected abc12345..., got deadbeef...`, non i valori reali.
-3. **Sovrascrittura accidentale della configurazione di produzione**: richiede `--current` deliberato ogni volta, anche su un TTY. Intercetta l'errore "volevo impostare STRIPE_TEST ma sono nella shell di produzione".
+1. **Rotazione silenziosa**: un chiamante (agent o umano) senza accesso precedente a `$OLD` non può sostituirlo con un valore proprio.
+2. **Exfiltrazione tramite probing**: la risposta del digest non contiene mai plaintext; anche un log di audit compromesso mostra `expected abc12345…, got deadbeef…`, non i valori sottostanti.
+3. **Calpestamento accidentale della configurazione di produzione**: richiede `--current` deliberato ogni volta, anche al TTY. Cattura l'errore "Intendevo impostare STRIPE_TEST ma sono nella shell di produzione".
 
-### Suggerimenti strutturati per la prossima azione
+### Suggerimenti strutturati sulla prossima azione
 
-Quando la precondizione fallisce, l'envelope JSON (`--output json`) include un campo strutturato `errors[].next` che indica agli agenti esattamente cosa suggerire all'utente:
+Quando la precondizione fallisce, l'envelope JSON (`--output json`) contiene un campo `errors[].next` strutturato che dice agli agent esattamente cosa suggerire all'umano:
 
 ```json
 {
@@ -78,31 +80,31 @@ Quando la precondizione fallisce, l'envelope JSON (`--output json`) include un c
 }
 ```
 
-**Gli agenti devono trasmettere `next.options[].run` letteralmente all'utente invece di sintetizzare comandi propri.** Questo evita il problema "l'agente inventa un comando inesistente" e mantiene l'operatore in controllo dell'azione reale.
+**Gli agent dovrebbero trasmettere `next.options[].run` all'umano così come è piuttosto che sintetizzare i propri comandi.** Questo evita il fallimento "agent inventa un comando che non esiste" e mantiene l'operatore al controllo dell'azione effettiva.
 
 ### Esempio pratico
 
 ```bash
-# Scopri il digest breve dello stub di redazione (sicuro per gli agenti).
+# Scopri il digest breve dello stub di redazione (sicuro per gli agent).
 $ rdc config field get --pointer /credentials/cfDnsApiToken
 {"pointer": "/credentials/cfDnsApiToken", "value": "<redacted:secret>:abc12345"}
 
-# Tentativo di sovrascrittura senza prova: rifiutato.
+# Prova a sovrascrivere senza prova: rifiutato.
 $ rdc config field set --pointer /credentials/cfDnsApiToken --new '"agent-picked-value"'
 ✗ Precondition failed: sensitive path requires --current (or --rotate-secret)
 
-# Fornitura del testo in chiaro attuale: permesso.
+# Fornisci il plaintext attuale: consentito.
 $ rdc config field set --pointer /credentials/cfDnsApiToken \
     --current "$OLD_CF_TOKEN" \
     --new   "$NEW_CF_TOKEN"
 Set /credentials/cfDnsApiToken
 ```
 
-Se l'agente non ha mai avuto `$OLD_CF_TOKEN`, non può soddisfare la precondizione e la rotazione viene rifiutata. L'utente che *lo possiede* può ancora farlo tramite l'editor o passando `--current` dalla propria shell.
+Se l'agent non ha mai avuto `$OLD_CF_TOKEN`, non può soddisfare la precondizione e la rotazione viene rifiutata. L'utente che *ha* il valore può comunque farla tramite l'editor o passando `--current` dalla sua shell.
 
 ## Redazione per impostazione predefinita
 
-Ogni comando `rdc` che legge uno stato sensibile (`config show`, `config field get`, `config machine list`, `config edit --dump`) restituisce **stub di redazione** per i campi segreti, non il testo in chiaro:
+Ogni comando `rdc` che legge lo stato sensibile, `config show`, `config field get`, `config machine list`, `config edit --dump`, restituisce **stub di redazione** per i campi segreti, non plaintext:
 
 ```
 "sshKey":       "<redacted:credential>:9f3a2c1b"
@@ -110,42 +112,42 @@ Ogni comando `rdc` che legge uno stato sensibile (`config show`, `config field g
 "storages.s3-prod.vaultContent": "<redacted:secret>:1f2e3d4c"
 ```
 
-Il suffisso esadecimale a 8 caratteri dello stub è i primi 8 caratteri di `sha256(canonicalize(value))`: sufficiente per distinguere due valori diversi a colpo d'occhio, non abbastanza per invertirlo. Un agente può usare uno stub per monitorare se un valore è cambiato senza mai vederlo.
+Il suffisso hex di 8 caratteri dello stub è il primo 8 caratteri di `sha256(canonicalize(value))`: abbastanza per distinguere a prima vista due valori diversi, non abbastanza per invertire. Un agent può usare uno stub per tracciare se un valore è cambiato senza vederlo mai.
 
-`--reveal` mostra il testo in chiaro agli esseri umani su un TTY interattivo. Gli agenti vengono rifiutati indipendentemente dallo stato del TTY. Ogni concessione scrive una voce di audit `reveal_granted`; ogni rifiuto scrive una voce `refused` con i segnali dell'agente allegati.
+`--reveal` annulla la redazione per gli umani su un TTY interattivo. Gli agent sono rifiutati indipendentemente dallo stato del TTY. Ogni concessione scrive una voce di audit `reveal_granted`; ogni rifiuto scrive una voce `refused` con i segnali dell'agent allegati.
 
 ## L'override `REDIACC_ALLOW_CONFIG_EDIT`
 
-Alcune operazioni (l'editor interattivo, `--apply`, `field rotate`) esistono per gli esseri umani e non hanno un percorso sicuro per gli agenti. Se si vuole che un agente esegua una di queste operazioni, si imposta:
+Alcune operazioni, l'editor interattivo, `--apply`, `field rotate`, esistono per gli umani e non hanno percorsi sicuri per agent. Se vuoi attivamente che un agent ne faccia uno, imposta:
 
 ```bash
 export REDIACC_ALLOW_CONFIG_EDIT='*'          # bypass completo
 # oppure
 export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId'
-# (glob di scope separati da virgola: wildcard * permesse per segmento)
+# (glob di scope separati da virgola: i wildcard * sono consentiti per segmento)
 ```
 
-...e l'agente lo eredita.
+…e l'agent lo eredita.
 
-**Dettaglio cruciale**: l'override deve apparire in un processo **superiore** all'agente nella catena di ascendenza. Se l'agente lo imposta nel proprio ambiente (o in una subshell avviata da lui), la CLI rifiuta e lo comunica:
+**Dettaglio cruciale**: l'override deve apparire in un processo **al di sopra** dell'agent nella catena di ascendenza. Se l'agent lo imposta nel suo stesso ambiente (o in una subshell che ha generato), la CLI rifiuta e te lo dice:
 
 > `Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent).`
 
-L'effetto: un agente non può aggirare un guardrail eseguendo `export REDIACC_ALLOW_CONFIG_EDIT='*'` a sessione in corso. Solo un processo genitore (l'utente, nel suo terminale, prima di avviare l'agente) può aprire quella porta.
+L'effetto: un agent non può convincerti a superare un guardrail eseguendo `export REDIACC_ALLOW_CONFIG_EDIT='*'` a metà sessione. Solo un processo parent (tu, nel tuo terminale, prima di lanciare l'agent) può aprire quella porta.
 
-## Supporto piattaforma: solo Linux per gli override
+## Supporto della piattaforma: solo Linux per gli override
 
-`REDIACC_ALLOW_CONFIG_EDIT` e `REDIACC_ALLOW_GRAND_REPO` si affidano entrambi alla verifica dell'ascendenza per provare che l'override sia stato impostato dall'utente e non iniettato dall'agente. La verifica legge `/proc/<pid>/environ` per ogni processo nella catena. Quel file viene impostato dal kernel al momento dell'esecuzione e non può essere modificato dal processo stesso, quindi l'ambiente della shell genitore è un testimone a prova di manomissione.
+Sia `REDIACC_ALLOW_CONFIG_EDIT` che `REDIACC_ALLOW_GRAND_REPO` si basano sulla verifica dell'ascendenza per provare che l'override è stato impostato da te e non iniettato dall'agent. La verifica legge `/proc/<pid>/environ` per ogni processo nella catena. Quel file è impostato dal kernel al momento dell'exec e non può essere modificato dal processo stesso, quindi l'ambiente della shell parent è una testimone a prova di manomissione.
 
-Quel file non esiste su macOS o Windows. Senza un modo per verificare la legittimità, la CLI fallisce in modalità chiusa. Anche quando si imposta correttamente l'override nella propria shell prima di avviare l'agente, l'override viene rifiutato. Il messaggio di errore indica esattamente cosa fare:
+Quel file non esiste su macOS o Windows. Senza alcun modo di verificare la legittimità, la CLI fallisce in chiusura. Anche se imposti correttamente l'override nella tua shell prima di lanciare l'agent, viene comunque rifiutato. Il messaggio di errore ti dice esattamente cosa fare:
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. ... To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
 
-In pratica, gli utenti non Linux non hanno una via d'uscita dal flusso fork-first. Questo è intenzionale. Gli agenti vengono instradati attraverso una sandbox che non possono eludere, indipendentemente da come sono stati istruiti. Eseguire l'agente dentro WSL, un container Linux o una VM Linux se si ha bisogno dell'override; altrimenti, lavorare su un fork.
+Gli utenti non Linux non hanno escape hatch dal flusso di lavoro fork-first. Questo è intenzionale. Non c'è modo per un agent di aggirare la sandbox, indipendentemente da come è stato sollecitato. Se hai bisogno dell'override, esegui il tuo agent dentro WSL, un container Linux o una VM Linux. Altrimenti, lavora su un fork.
 
 ## Log di audit
 
-Ogni mutazione, ogni rifiuto, ogni concessione `--reveal` scrive una riga JSONL in `~/.config/rediacc/audit.log.jsonl` (modalità `0600`, rotato a 10 MB). Ogni riga è collegata tramite hash: il campo `prevHash` è `sha256("<riga precedente>")`. La manomissione di qualsiasi riga rompe la catena in tutte le righe successive.
+Ogni mutazione, ogni rifiuto, ogni concessione `--reveal` scrive una riga JSONL in `~/.config/rediacc/audit.log.jsonl` (modalità `0600`, ruotato a 10 MB). Ogni riga è collegata tramite hash: il campo `prevHash` è `sha256("<riga precedente>")`. La manomissione di qualsiasi riga rompe la catena in tutte le righe successive.
 
 ```jsonl
 {"ts":"2026-04-21T10:02:47.831Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config field set","paths":["/credentials/cfDnsApiToken"],"outcome":"ok","configId":"...","configVersion":48,"prevHash":"sha256:9f3a..."}
@@ -162,7 +164,7 @@ rdc config audit log --since 24h
 # Filtra per glob del puntatore
 rdc config audit log --path '/credentials/*'
 
-# Solo voci originate dagli agenti
+# Solo voci originate dagli agent
 rdc config audit log --actor agent
 
 # Mostra le nuove voci in tempo reale (Ctrl+C per fermare)
@@ -187,9 +189,9 @@ Il log è sicuro da condividere con un revisore della sicurezza o da allegare a 
 
 I guardrail degli agenti sono **comportamentali, non crittografici**. Un agente determinato o istruito che gira con lo stesso UID del file di configurazione può sempre eseguire `cat ~/.config/rediacc/rediacc.json` e leggere il testo in chiaro, perché il file è leggibile dal processo.
 
-Per un'applicazione crittografica reale, usare l'[archivio di configurazione cifrato](/en/docs/config-storage): i segreti risiedono lato server, ogni campo sensibile porta un commitment HMAC per campo e il worker dell'account rifiuta le scritture la cui precondizione `--current` non corrisponde all'hash memorizzato. Il server non vede mai il testo in chiaro (zero-knowledge), ma applica comunque il gate.
+Per un'applicazione crittografica reale, usa l'[archivio di configurazione cifrato](/en/docs/config-storage): i segreti risiedono lato server, ogni campo sensibile porta un commitment HMAC per campo e il worker dell'account rifiuta le scritture la cui precondizione `--current` non corrisponde all'hash memorizzato. Il server non vede mai il testo in chiaro (zero-knowledge), ma applica comunque il gate.
 
-Il percorso locale è "il percorso facile è sicuro". Il percorso con archivio remoto è "il percorso difficile è difficile anche lui".
+Il percorso locale: la via facile è quella sicura. L'archivio remoto: anche la via alternativa è crittograficamente difficile.
 
 ## Cosa Rediacc non isola
 
@@ -210,7 +212,7 @@ La mitigazione principale è integrata: i **[segreti per repository](/en/docs/re
 
 Due pattern aggiuntivi chiudono i casi limite:
 
-1. **Non inserire credenziali di produzione nel filesystem del repository.** Un file `.env` incluso nell'immagine, o una credenziale persistita in un volume durante `up()`, viene reflinkata nel fork. La funzionalità dei segreti per repository protegge solo i valori che si mantengono nel piano dei segreti. Non può proteggere retroattivamente i byte che già risiedono nell'immagine LUKS. Per i repository esistenti con file `.env` incorporati, spostarli manualmente nei segreti per repository.
+1. **Non inserire credenziali di produzione nel filesystem del repository.** Un file `.env` incluso nell'immagine, o una credenziale persistita in un volume durante `up()`, viene reflinkata nel fork. La funzionalità dei segreti per repository protegge solo i valori che si mantengono nel piano dei segreti. Non può proteggere retroattivamente i byte che già risiedono nell'immagine LUKS. Per i repository esistenti con file `.env` incorporati, spostali manualmente nei segreti per repository.
 2. **Limitare la rete in uscita del fork con il filtraggio egress eBPF** in modo che possa raggiungere solo localhost ed endpoint sandbox espliciti. L'isolamento di rete per repository di Rediacc è la base; le allowlist egress per fork non sono ancora costruite, ma il percorso è aperto.
 
 Rediacc gestisce l'iniezione al momento del deployment, l'isolamento tra fork e l'isolamento tra repository. La parte "non inserirlo nell'immagine" è a carico dell'utente.
@@ -225,7 +227,7 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken'
 claude-code              # oppure cursor, gemini, ecc.
 ```
 
-Ora l'agente può eseguire `config field rotate /credentials/cfDnsApiToken --new ...` ma non può ancora modificare `/credentials/ssh/privateKey` né aprire l'editor interattivo.
+Ora l'agente può eseguire `config field rotate /credentials/cfDnsApiToken --new …` ma non può ancora modificare `/credentials/ssh/privateKey` né aprire l'editor interattivo.
 
 ### Permettere a un agente una sessione di modifica della configurazione ampia
 

@@ -1,16 +1,18 @@
 ---
 title: Arhitektuur
 description: >-
-  Kuidas Rediacc töötab: kahe tööriista arhitektuur, adapteri tuvastamine, turvamudelja
-  konfiguratsioonistuktuur.
+  Kuidas Rediacc töötab: kahe tööriista arhitektuur, adapteri tuvastamine, turvamudel
+  ja konfiguratsioonistuktuur.
 category: Concepts
 order: 0
 language: et
+sourceHash: "6763cd925791d474"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Arhitektuur
 
-Sellel lehel selgitatakse, kuidas Rediacc kapoti all töötab: kahe tööriista arhitektuur, adapteri tuvastamine, turvamudelning konfiguratsioonistuktuur.
+Seega: rdc käib sinu tööjaamal, renet serveritel ja nad suhtlevad SSH-ühenduse kaudu. Rediacc kogu arhitektuur toetub sellele jagamisele. See leht käsitleb, kuidas kaks tööriista jagavad vastutust, kuidas adapteri tuvastamine suunab olekut, kuidas turvamudel välja näeb ja kuidas konfiguratsioon on struktureeritud.
 
 ## Täispinu ülevaade
 

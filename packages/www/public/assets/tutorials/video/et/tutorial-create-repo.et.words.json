@@ -1,1 +1,434 @@
-{"version":1,"cues":[{"start":1,"end":3.375,"text":"Loome su esimese repositooriumi!","words":[{"start":1,"end":1.594,"char":[0,5]},{"start":1.594,"end":2.188,"char":[6,8]},{"start":2.188,"end":2.782,"char":[9,16]},{"start":2.782,"end":3.375,"char":[17,32]}]},{"start":3.375,"end":6.345,"text":"See on puhkeolekus krüpteeritud fail,","words":[{"start":3.375,"end":3.969,"char":[0,3]},{"start":3.969,"end":4.563,"char":[4,6]},{"start":4.563,"end":5.157,"char":[7,18]},{"start":5.157,"end":5.751,"char":[19,31]},{"start":5.751,"end":6.345,"char":[32,37]}]},{"start":6.345,"end":9.314,"text":"mis ühendamisel muutub täielikult isoleeritud","words":[{"start":6.345,"end":6.939,"char":[0,3]},{"start":6.939,"end":7.532,"char":[4,15]},{"start":7.532,"end":8.126,"char":[16,22]},{"start":8.126,"end":8.72,"char":[23,33]},{"start":8.72,"end":9.314,"char":[34,45]}]},{"start":9.314,"end":9.908,"text":"keskkonnaks.","words":[{"start":9.314,"end":9.908,"char":[0,12]}]},{"start":10.693,"end":13.436,"text":"Kettal on see üksik krüpteeritud","words":[{"start":10.693,"end":11.242,"char":[0,6]},{"start":11.242,"end":11.79,"char":[7,9]},{"start":11.79,"end":12.339,"char":[10,13]},{"start":12.339,"end":12.887,"char":[14,19]},{"start":12.887,"end":13.436,"char":[20,32]}]},{"start":13.436,"end":13.984,"text":"kujutis.","words":[{"start":13.436,"end":13.984,"char":[0,8]}]},{"start":13.984,"end":16.727,"text":"Ühendamisel saad pühendatud Dockeri deemoni,","words":[{"start":13.984,"end":14.533,"char":[0,11]},{"start":14.533,"end":15.082,"char":[12,16]},{"start":15.082,"end":15.63,"char":[17,27]},{"start":15.63,"end":16.179,"char":[28,35]},{"start":16.179,"end":16.727,"char":[36,44]}]},{"start":16.727,"end":19.47,"text":"rakenduse andmed krüpteeritud mahu sees","words":[{"start":16.727,"end":17.276,"char":[0,9]},{"start":17.276,"end":17.824,"char":[10,16]},{"start":17.824,"end":18.373,"char":[17,29]},{"start":18.373,"end":18.922,"char":[30,34]},{"start":18.922,"end":19.47,"char":[35,39]}]},{"start":19.47,"end":21.116,"text":"ja loopback IP-d,","words":[{"start":19.47,"end":20.019,"char":[0,2]},{"start":20.019,"end":20.567,"char":[3,11]},{"start":20.567,"end":21.116,"char":[12,17]}]},{"start":21.116,"end":23.859,"text":"mis ei kattu millegi muuga","words":[{"start":21.116,"end":21.664,"char":[0,3]},{"start":21.664,"end":22.213,"char":[4,6]},{"start":22.213,"end":22.762,"char":[7,12]},{"start":22.762,"end":23.31,"char":[13,20]},{"start":23.31,"end":23.859,"char":[21,26]}]},{"start":23.859,"end":24.407,"text":"serveris.","words":[{"start":23.859,"end":24.407,"char":[0,9]}]},{"start":27.692,"end":30.67,"text":"Loome serverile 2 gigabaidise krüpteeritud","words":[{"start":27.692,"end":28.288,"char":[0,5]},{"start":28.288,"end":28.883,"char":[6,15]},{"start":28.883,"end":29.479,"char":[16,17]},{"start":29.479,"end":30.074,"char":[18,29]},{"start":30.074,"end":30.67,"char":[30,42]}]},{"start":30.67,"end":31.266,"text":"repositooriumi.","words":[{"start":30.67,"end":31.266,"char":[0,15]}]},{"start":31.266,"end":34.244,"text":"Repositoorium on puhkeolekus üksik krüpteeritud","words":[{"start":31.266,"end":31.861,"char":[0,13]},{"start":31.861,"end":32.457,"char":[14,16]},{"start":32.457,"end":33.052,"char":[17,28]},{"start":33.052,"end":33.648,"char":[29,34]},{"start":33.648,"end":34.244,"char":[35,47]}]},{"start":34.244,"end":34.839,"text":"fail.","words":[{"start":34.244,"end":34.839,"char":[0,5]}]},{"start":34.839,"end":37.221,"text":"Ühendamisel muutub see kaustaks,","words":[{"start":34.839,"end":35.435,"char":[0,11]},{"start":35.435,"end":36.03,"char":[12,18]},{"start":36.03,"end":36.626,"char":[19,22]},{"start":36.626,"end":37.221,"char":[23,32]}]},{"start":37.221,"end":40.199,"text":"millel on oma Dockeri deemon","words":[{"start":37.221,"end":37.817,"char":[0,6]},{"start":37.817,"end":38.413,"char":[7,9]},{"start":38.413,"end":39.008,"char":[10,13]},{"start":39.008,"end":39.604,"char":[14,21]},{"start":39.604,"end":40.199,"char":[22,28]}]},{"start":40.199,"end":42.582,"text":"ja oma rakenduse andmed,","words":[{"start":40.199,"end":40.795,"char":[0,2]},{"start":40.795,"end":41.391,"char":[3,6]},{"start":41.391,"end":41.986,"char":[7,16]},{"start":41.986,"end":42.582,"char":[17,24]}]},{"start":42.582,"end":45.56,"text":"täielikult isoleeritud kõigest muust serveris.","words":[{"start":42.582,"end":43.177,"char":[0,10]},{"start":43.177,"end":43.773,"char":[11,22]},{"start":43.773,"end":44.369,"char":[23,30]},{"start":44.369,"end":44.964,"char":[31,36]},{"start":44.964,"end":45.56,"char":[37,46]}]},{"start":48.56,"end":49.962,"text":"Repositoorium on loodud.","words":[{"start":48.56,"end":49.027,"char":[0,13]},{"start":49.027,"end":49.494,"char":[14,16]},{"start":49.494,"end":49.962,"char":[17,24]}]},{"start":49.962,"end":51.831,"text":"Krüpteeritud fail on serveris,","words":[{"start":49.962,"end":50.429,"char":[0,12]},{"start":50.429,"end":50.896,"char":[13,17]},{"start":50.896,"end":51.364,"char":[18,20]},{"start":51.364,"end":51.831,"char":[21,30]}]},{"start":51.831,"end":52.765,"text":"valmis ühendamiseks.","words":[{"start":51.831,"end":52.298,"char":[0,6]},{"start":52.298,"end":52.765,"char":[7,20]}]},{"start":56.061,"end":57.222,"text":"Loetleme masina repositooriumid,","words":[{"start":56.061,"end":56.448,"char":[0,8]},{"start":56.448,"end":56.835,"char":[9,15]},{"start":56.835,"end":57.222,"char":[16,32]}]},{"start":57.222,"end":58.771,"text":"et kinnitada uue registreerimist.","words":[{"start":57.222,"end":57.609,"char":[0,2]},{"start":57.609,"end":57.996,"char":[3,12]},{"start":57.996,"end":58.384,"char":[13,16]},{"start":58.384,"end":58.771,"char":[17,33]}]},{"start":58.771,"end":61.093,"text":"Edaspidi saab repositooriumi avada VS Code'is,","words":[{"start":58.771,"end":59.158,"char":[0,8]},{"start":59.158,"end":59.545,"char":[9,13]},{"start":59.545,"end":59.932,"char":[14,28]},{"start":59.932,"end":60.319,"char":[29,34]},{"start":60.319,"end":60.706,"char":[35,37]},{"start":60.706,"end":61.093,"char":[38,46]}]},{"start":61.093,"end":61.48,"text":"juurutada,","words":[{"start":61.093,"end":61.48,"char":[0,10]}]},{"start":61.48,"end":64.19,"text":"teha sellest forki või varundada -- kõik","words":[{"start":61.48,"end":61.867,"char":[0,4]},{"start":61.867,"end":62.254,"char":[5,12]},{"start":62.254,"end":62.641,"char":[13,18]},{"start":62.641,"end":63.029,"char":[19,22]},{"start":63.029,"end":63.416,"char":[23,32]},{"start":63.416,"end":63.803,"char":[33,35]},{"start":63.803,"end":64.19,"char":[36,40]}]},{"start":64.19,"end":64.577,"text":"sülearvutist.","words":[{"start":64.19,"end":64.577,"char":[0,13]}]},{"start":67.577,"end":68.87,"text":"Seal see on,","words":[{"start":67.577,"end":68.008,"char":[0,4]},{"start":68.008,"end":68.439,"char":[5,8]},{"start":68.439,"end":68.87,"char":[9,12]}]},{"start":68.87,"end":70.163,"text":"registreeritud ja kasutusvalmis.","words":[{"start":68.87,"end":69.301,"char":[0,14]},{"start":69.301,"end":69.732,"char":[15,17]},{"start":69.732,"end":70.163,"char":[18,32]}]},{"start":73.494,"end":74.867,"text":"Üks kasulik võimalus:","words":[{"start":73.494,"end":73.952,"char":[0,3]},{"start":73.952,"end":74.409,"char":[4,11]},{"start":74.409,"end":74.867,"char":[12,21]}]},{"start":74.867,"end":77.613,"text":"avada repo otse VS Code'is selle","words":[{"start":74.867,"end":75.324,"char":[0,5]},{"start":75.324,"end":75.782,"char":[6,10]},{"start":75.782,"end":76.24,"char":[11,15]},{"start":76.24,"end":76.697,"char":[16,18]},{"start":76.697,"end":77.155,"char":[19,26]},{"start":77.155,"end":77.613,"char":[27,32]}]},{"start":77.613,"end":78.07,"text":"käsuga.","words":[{"start":77.613,"end":78.07,"char":[0,7]}]},{"start":78.07,"end":80.358,"text":"Me ei käivita siin redaktorit,","words":[{"start":78.07,"end":78.528,"char":[0,2]},{"start":78.528,"end":78.986,"char":[3,5]},{"start":78.986,"end":79.443,"char":[6,13]},{"start":79.443,"end":79.901,"char":[14,18]},{"start":79.901,"end":80.358,"char":[19,30]}]},{"start":80.358,"end":83.104,"text":"kuid see alustab SSH kaudu repo'sse","words":[{"start":80.358,"end":80.816,"char":[0,4]},{"start":80.816,"end":81.274,"char":[5,8]},{"start":81.274,"end":81.731,"char":[9,16]},{"start":81.731,"end":82.189,"char":[17,20]},{"start":82.189,"end":82.647,"char":[21,26]},{"start":82.647,"end":83.104,"char":[27,35]}]},{"start":83.104,"end":83.562,"text":"kaugseanssi,","words":[{"start":83.104,"end":83.562,"char":[0,12]}]},{"start":83.562,"end":85.85,"text":"et saaksite selle faile muuta.","words":[{"start":83.562,"end":84.019,"char":[0,2]},{"start":84.019,"end":84.477,"char":[3,11]},{"start":84.477,"end":84.935,"char":[12,17]},{"start":84.935,"end":85.392,"char":[18,23]},{"start":85.392,"end":85.85,"char":[24,30]}]},{"start":86.65,"end":88.196,"text":"Käivitage see oma sülearvutis,","words":[{"start":86.65,"end":87.037,"char":[0,9]},{"start":87.037,"end":87.423,"char":[10,13]},{"start":87.423,"end":87.81,"char":[14,17]},{"start":87.81,"end":88.196,"char":[18,30]}]},{"start":88.196,"end":90.516,"text":"et muuta repo faile VS Code'is.","words":[{"start":88.196,"end":88.583,"char":[0,2]},{"start":88.583,"end":88.97,"char":[3,8]},{"start":88.97,"end":89.356,"char":[9,13]},{"start":89.356,"end":89.743,"char":[14,19]},{"start":89.743,"end":90.129,"char":[20,22]},{"start":90.129,"end":90.516,"char":[23,31]}]},{"start":91.338,"end":93.796,"text":"See on su esimene repositoorium,","words":[{"start":91.338,"end":91.83,"char":[0,3]},{"start":91.83,"end":92.321,"char":[4,6]},{"start":92.321,"end":92.813,"char":[7,9]},{"start":92.813,"end":93.304,"char":[10,17]},{"start":93.304,"end":93.796,"char":[18,32]}]},{"start":93.796,"end":94.287,"text":"kasutusvalmis.","words":[{"start":93.796,"end":94.287,"char":[0,14]}]},{"start":94.287,"end":96.745,"text":"Järgmisena juurutame selle sisse rakenduse!","words":[{"start":94.287,"end":94.779,"char":[0,10]},{"start":94.779,"end":95.271,"char":[11,20]},{"start":95.271,"end":95.762,"char":[21,26]},{"start":95.762,"end":96.254,"char":[27,32]},{"start":96.254,"end":96.745,"char":[33,43]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.375,
+      "text": "Loome su esimese repositooriumi!",
+      "words": [
+        { "start": 1, "end": 1.594, "char": [0, 5] },
+        { "start": 1.594, "end": 2.188, "char": [6, 8] },
+        { "start": 2.188, "end": 2.782, "char": [9, 16] },
+        { "start": 2.782, "end": 3.375, "char": [17, 32] }
+      ]
+    },
+    {
+      "start": 3.375,
+      "end": 6.345,
+      "text": "See on puhkeolekus krüpteeritud fail,",
+      "words": [
+        { "start": 3.375, "end": 3.969, "char": [0, 3] },
+        { "start": 3.969, "end": 4.563, "char": [4, 6] },
+        { "start": 4.563, "end": 5.157, "char": [7, 18] },
+        { "start": 5.157, "end": 5.751, "char": [19, 31] },
+        { "start": 5.751, "end": 6.345, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 6.345,
+      "end": 9.314,
+      "text": "mis ühendamisel muutub täielikult isoleeritud",
+      "words": [
+        { "start": 6.345, "end": 6.939, "char": [0, 3] },
+        { "start": 6.939, "end": 7.532, "char": [4, 15] },
+        { "start": 7.532, "end": 8.126, "char": [16, 22] },
+        { "start": 8.126, "end": 8.72, "char": [23, 33] },
+        { "start": 8.72, "end": 9.314, "char": [34, 45] }
+      ]
+    },
+    {
+      "start": 9.314,
+      "end": 9.908,
+      "text": "keskkonnaks.",
+      "words": [{ "start": 9.314, "end": 9.908, "char": [0, 12] }]
+    },
+    {
+      "start": 10.693,
+      "end": 13.436,
+      "text": "Kettal on see üksik krüpteeritud",
+      "words": [
+        { "start": 10.693, "end": 11.242, "char": [0, 6] },
+        { "start": 11.242, "end": 11.79, "char": [7, 9] },
+        { "start": 11.79, "end": 12.339, "char": [10, 13] },
+        { "start": 12.339, "end": 12.887, "char": [14, 19] },
+        { "start": 12.887, "end": 13.436, "char": [20, 32] }
+      ]
+    },
+    {
+      "start": 13.436,
+      "end": 13.984,
+      "text": "kujutis.",
+      "words": [{ "start": 13.436, "end": 13.984, "char": [0, 8] }]
+    },
+    {
+      "start": 13.984,
+      "end": 16.727,
+      "text": "Ühendamisel saad pühendatud Dockeri deemoni,",
+      "words": [
+        { "start": 13.984, "end": 14.533, "char": [0, 11] },
+        { "start": 14.533, "end": 15.082, "char": [12, 16] },
+        { "start": 15.082, "end": 15.63, "char": [17, 27] },
+        { "start": 15.63, "end": 16.179, "char": [28, 35] },
+        { "start": 16.179, "end": 16.727, "char": [36, 44] }
+      ]
+    },
+    {
+      "start": 16.727,
+      "end": 19.47,
+      "text": "rakenduse andmed krüpteeritud mahu sees",
+      "words": [
+        { "start": 16.727, "end": 17.276, "char": [0, 9] },
+        { "start": 17.276, "end": 17.824, "char": [10, 16] },
+        { "start": 17.824, "end": 18.373, "char": [17, 29] },
+        { "start": 18.373, "end": 18.922, "char": [30, 34] },
+        { "start": 18.922, "end": 19.47, "char": [35, 39] }
+      ]
+    },
+    {
+      "start": 19.47,
+      "end": 21.116,
+      "text": "ja loopback IP-d,",
+      "words": [
+        { "start": 19.47, "end": 20.019, "char": [0, 2] },
+        { "start": 20.019, "end": 20.567, "char": [3, 11] },
+        { "start": 20.567, "end": 21.116, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 21.116,
+      "end": 23.859,
+      "text": "mis ei kattu millegi muuga",
+      "words": [
+        { "start": 21.116, "end": 21.664, "char": [0, 3] },
+        { "start": 21.664, "end": 22.213, "char": [4, 6] },
+        { "start": 22.213, "end": 22.762, "char": [7, 12] },
+        { "start": 22.762, "end": 23.31, "char": [13, 20] },
+        { "start": 23.31, "end": 23.859, "char": [21, 26] }
+      ]
+    },
+    {
+      "start": 23.859,
+      "end": 24.407,
+      "text": "serveris.",
+      "words": [{ "start": 23.859, "end": 24.407, "char": [0, 9] }]
+    },
+    {
+      "start": 27.692,
+      "end": 30.67,
+      "text": "Loome serverile 2 gigabaidise krüpteeritud",
+      "words": [
+        { "start": 27.692, "end": 28.288, "char": [0, 5] },
+        { "start": 28.288, "end": 28.883, "char": [6, 15] },
+        { "start": 28.883, "end": 29.479, "char": [16, 17] },
+        { "start": 29.479, "end": 30.074, "char": [18, 29] },
+        { "start": 30.074, "end": 30.67, "char": [30, 42] }
+      ]
+    },
+    {
+      "start": 30.67,
+      "end": 31.266,
+      "text": "repositooriumi.",
+      "words": [{ "start": 30.67, "end": 31.266, "char": [0, 15] }]
+    },
+    {
+      "start": 31.266,
+      "end": 34.244,
+      "text": "Repositoorium on puhkeolekus üksik krüpteeritud",
+      "words": [
+        { "start": 31.266, "end": 31.861, "char": [0, 13] },
+        { "start": 31.861, "end": 32.457, "char": [14, 16] },
+        { "start": 32.457, "end": 33.052, "char": [17, 28] },
+        { "start": 33.052, "end": 33.648, "char": [29, 34] },
+        { "start": 33.648, "end": 34.244, "char": [35, 47] }
+      ]
+    },
+    {
+      "start": 34.244,
+      "end": 34.839,
+      "text": "fail.",
+      "words": [{ "start": 34.244, "end": 34.839, "char": [0, 5] }]
+    },
+    {
+      "start": 34.839,
+      "end": 37.221,
+      "text": "Ühendamisel muutub see kaustaks,",
+      "words": [
+        { "start": 34.839, "end": 35.435, "char": [0, 11] },
+        { "start": 35.435, "end": 36.03, "char": [12, 18] },
+        { "start": 36.03, "end": 36.626, "char": [19, 22] },
+        { "start": 36.626, "end": 37.221, "char": [23, 32] }
+      ]
+    },
+    {
+      "start": 37.221,
+      "end": 40.199,
+      "text": "millel on oma Dockeri deemon",
+      "words": [
+        { "start": 37.221, "end": 37.817, "char": [0, 6] },
+        { "start": 37.817, "end": 38.413, "char": [7, 9] },
+        { "start": 38.413, "end": 39.008, "char": [10, 13] },
+        { "start": 39.008, "end": 39.604, "char": [14, 21] },
+        { "start": 39.604, "end": 40.199, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 40.199,
+      "end": 42.582,
+      "text": "ja oma rakenduse andmed,",
+      "words": [
+        { "start": 40.199, "end": 40.795, "char": [0, 2] },
+        { "start": 40.795, "end": 41.391, "char": [3, 6] },
+        { "start": 41.391, "end": 41.986, "char": [7, 16] },
+        { "start": 41.986, "end": 42.582, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 42.582,
+      "end": 45.56,
+      "text": "täielikult isoleeritud kõigest muust serveris.",
+      "words": [
+        { "start": 42.582, "end": 43.177, "char": [0, 10] },
+        { "start": 43.177, "end": 43.773, "char": [11, 22] },
+        { "start": 43.773, "end": 44.369, "char": [23, 30] },
+        { "start": 44.369, "end": 44.964, "char": [31, 36] },
+        { "start": 44.964, "end": 45.56, "char": [37, 46] }
+      ]
+    },
+    {
+      "start": 48.56,
+      "end": 49.962,
+      "text": "Repositoorium on loodud.",
+      "words": [
+        { "start": 48.56, "end": 49.027, "char": [0, 13] },
+        { "start": 49.027, "end": 49.494, "char": [14, 16] },
+        { "start": 49.494, "end": 49.962, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 49.962,
+      "end": 51.831,
+      "text": "Krüpteeritud fail on serveris,",
+      "words": [
+        { "start": 49.962, "end": 50.429, "char": [0, 12] },
+        { "start": 50.429, "end": 50.896, "char": [13, 17] },
+        { "start": 50.896, "end": 51.364, "char": [18, 20] },
+        { "start": 51.364, "end": 51.831, "char": [21, 30] }
+      ]
+    },
+    {
+      "start": 51.831,
+      "end": 52.765,
+      "text": "valmis ühendamiseks.",
+      "words": [
+        { "start": 51.831, "end": 52.298, "char": [0, 6] },
+        { "start": 52.298, "end": 52.765, "char": [7, 20] }
+      ]
+    },
+    {
+      "start": 56.061,
+      "end": 57.222,
+      "text": "Loetleme masina repositooriumid,",
+      "words": [
+        { "start": 56.061, "end": 56.448, "char": [0, 8] },
+        { "start": 56.448, "end": 56.835, "char": [9, 15] },
+        { "start": 56.835, "end": 57.222, "char": [16, 32] }
+      ]
+    },
+    {
+      "start": 57.222,
+      "end": 58.771,
+      "text": "et kinnitada uue registreerimist.",
+      "words": [
+        { "start": 57.222, "end": 57.609, "char": [0, 2] },
+        { "start": 57.609, "end": 57.996, "char": [3, 12] },
+        { "start": 57.996, "end": 58.384, "char": [13, 16] },
+        { "start": 58.384, "end": 58.771, "char": [17, 33] }
+      ]
+    },
+    {
+      "start": 58.771,
+      "end": 61.093,
+      "text": "Edaspidi saab repositooriumi avada VS Code'is,",
+      "words": [
+        { "start": 58.771, "end": 59.158, "char": [0, 8] },
+        { "start": 59.158, "end": 59.545, "char": [9, 13] },
+        { "start": 59.545, "end": 59.932, "char": [14, 28] },
+        { "start": 59.932, "end": 60.319, "char": [29, 34] },
+        { "start": 60.319, "end": 60.706, "char": [35, 37] },
+        { "start": 60.706, "end": 61.093, "char": [38, 46] }
+      ]
+    },
+    {
+      "start": 61.093,
+      "end": 61.48,
+      "text": "juurutada,",
+      "words": [{ "start": 61.093, "end": 61.48, "char": [0, 10] }]
+    },
+    {
+      "start": 61.48,
+      "end": 64.19,
+      "text": "teha sellest forki või varundada -- kõik",
+      "words": [
+        { "start": 61.48, "end": 61.867, "char": [0, 4] },
+        { "start": 61.867, "end": 62.254, "char": [5, 12] },
+        { "start": 62.254, "end": 62.641, "char": [13, 18] },
+        { "start": 62.641, "end": 63.029, "char": [19, 22] },
+        { "start": 63.029, "end": 63.416, "char": [23, 32] },
+        { "start": 63.416, "end": 63.803, "char": [33, 35] },
+        { "start": 63.803, "end": 64.19, "char": [36, 40] }
+      ]
+    },
+    {
+      "start": 64.19,
+      "end": 64.577,
+      "text": "sülearvutist.",
+      "words": [{ "start": 64.19, "end": 64.577, "char": [0, 13] }]
+    },
+    {
+      "start": 67.577,
+      "end": 68.87,
+      "text": "Seal see on,",
+      "words": [
+        { "start": 67.577, "end": 68.008, "char": [0, 4] },
+        { "start": 68.008, "end": 68.439, "char": [5, 8] },
+        { "start": 68.439, "end": 68.87, "char": [9, 12] }
+      ]
+    },
+    {
+      "start": 68.87,
+      "end": 70.163,
+      "text": "registreeritud ja kasutusvalmis.",
+      "words": [
+        { "start": 68.87, "end": 69.301, "char": [0, 14] },
+        { "start": 69.301, "end": 69.732, "char": [15, 17] },
+        { "start": 69.732, "end": 70.163, "char": [18, 32] }
+      ]
+    },
+    {
+      "start": 73.494,
+      "end": 74.867,
+      "text": "Üks kasulik võimalus:",
+      "words": [
+        { "start": 73.494, "end": 73.952, "char": [0, 3] },
+        { "start": 73.952, "end": 74.409, "char": [4, 11] },
+        { "start": 74.409, "end": 74.867, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 74.867,
+      "end": 77.613,
+      "text": "avada repo otse VS Code'is selle",
+      "words": [
+        { "start": 74.867, "end": 75.324, "char": [0, 5] },
+        { "start": 75.324, "end": 75.782, "char": [6, 10] },
+        { "start": 75.782, "end": 76.24, "char": [11, 15] },
+        { "start": 76.24, "end": 76.697, "char": [16, 18] },
+        { "start": 76.697, "end": 77.155, "char": [19, 26] },
+        { "start": 77.155, "end": 77.613, "char": [27, 32] }
+      ]
+    },
+    {
+      "start": 77.613,
+      "end": 78.07,
+      "text": "käsuga.",
+      "words": [{ "start": 77.613, "end": 78.07, "char": [0, 7] }]
+    },
+    {
+      "start": 78.07,
+      "end": 80.358,
+      "text": "Me ei käivita siin redaktorit,",
+      "words": [
+        { "start": 78.07, "end": 78.528, "char": [0, 2] },
+        { "start": 78.528, "end": 78.986, "char": [3, 5] },
+        { "start": 78.986, "end": 79.443, "char": [6, 13] },
+        { "start": 79.443, "end": 79.901, "char": [14, 18] },
+        { "start": 79.901, "end": 80.358, "char": [19, 30] }
+      ]
+    },
+    {
+      "start": 80.358,
+      "end": 83.104,
+      "text": "kuid see alustab SSH kaudu repo'sse",
+      "words": [
+        { "start": 80.358, "end": 80.816, "char": [0, 4] },
+        { "start": 80.816, "end": 81.274, "char": [5, 8] },
+        { "start": 81.274, "end": 81.731, "char": [9, 16] },
+        { "start": 81.731, "end": 82.189, "char": [17, 20] },
+        { "start": 82.189, "end": 82.647, "char": [21, 26] },
+        { "start": 82.647, "end": 83.104, "char": [27, 35] }
+      ]
+    },
+    {
+      "start": 83.104,
+      "end": 83.562,
+      "text": "kaugseanssi,",
+      "words": [{ "start": 83.104, "end": 83.562, "char": [0, 12] }]
+    },
+    {
+      "start": 83.562,
+      "end": 85.85,
+      "text": "et saaksite selle faile muuta.",
+      "words": [
+        { "start": 83.562, "end": 84.019, "char": [0, 2] },
+        { "start": 84.019, "end": 84.477, "char": [3, 11] },
+        { "start": 84.477, "end": 84.935, "char": [12, 17] },
+        { "start": 84.935, "end": 85.392, "char": [18, 23] },
+        { "start": 85.392, "end": 85.85, "char": [24, 30] }
+      ]
+    },
+    {
+      "start": 86.65,
+      "end": 88.196,
+      "text": "Käivitage see oma sülearvutis,",
+      "words": [
+        { "start": 86.65, "end": 87.037, "char": [0, 9] },
+        { "start": 87.037, "end": 87.423, "char": [10, 13] },
+        { "start": 87.423, "end": 87.81, "char": [14, 17] },
+        { "start": 87.81, "end": 88.196, "char": [18, 30] }
+      ]
+    },
+    {
+      "start": 88.196,
+      "end": 90.516,
+      "text": "et muuta repo faile VS Code'is.",
+      "words": [
+        { "start": 88.196, "end": 88.583, "char": [0, 2] },
+        { "start": 88.583, "end": 88.97, "char": [3, 8] },
+        { "start": 88.97, "end": 89.356, "char": [9, 13] },
+        { "start": 89.356, "end": 89.743, "char": [14, 19] },
+        { "start": 89.743, "end": 90.129, "char": [20, 22] },
+        { "start": 90.129, "end": 90.516, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 91.338,
+      "end": 93.796,
+      "text": "See on su esimene repositoorium,",
+      "words": [
+        { "start": 91.338, "end": 91.83, "char": [0, 3] },
+        { "start": 91.83, "end": 92.321, "char": [4, 6] },
+        { "start": 92.321, "end": 92.813, "char": [7, 9] },
+        { "start": 92.813, "end": 93.304, "char": [10, 17] },
+        { "start": 93.304, "end": 93.796, "char": [18, 32] }
+      ]
+    },
+    {
+      "start": 93.796,
+      "end": 94.287,
+      "text": "kasutusvalmis.",
+      "words": [{ "start": 93.796, "end": 94.287, "char": [0, 14] }]
+    },
+    {
+      "start": 94.287,
+      "end": 96.745,
+      "text": "Järgmisena juurutame selle sisse rakenduse!",
+      "words": [
+        { "start": 94.287, "end": 94.779, "char": [0, 10] },
+        { "start": 94.779, "end": 95.271, "char": [11, 20] },
+        { "start": 95.271, "end": 95.762, "char": [21, 26] },
+        { "start": 95.762, "end": 96.254, "char": [27, 32] },
+        { "start": 96.254, "end": 96.745, "char": [33, 43] }
+      ]
+    }
+  ]
+}

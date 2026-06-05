@@ -1,1 +1,444 @@
-{"version":1,"cues":[{"start":1,"end":3.056,"text":"İlk deponuzu oluşturalım!","words":[{"start":1,"end":1.685,"char":[0,3]},{"start":1.685,"end":2.37,"char":[4,12]},{"start":2.37,"end":3.056,"char":[13,25]}]},{"start":3.056,"end":5.796,"text":"Depolandığında şifreli bir dosyadır;","words":[{"start":3.056,"end":3.741,"char":[0,14]},{"start":3.741,"end":4.426,"char":[15,22]},{"start":4.426,"end":5.111,"char":[23,26]},{"start":5.111,"end":5.796,"char":[27,36]}]},{"start":5.796,"end":8.537,"text":"bağlandığında tamamen izole bir","words":[{"start":5.796,"end":6.482,"char":[0,13]},{"start":6.482,"end":7.167,"char":[14,21]},{"start":7.167,"end":7.852,"char":[22,27]},{"start":7.852,"end":8.537,"char":[28,31]}]},{"start":8.537,"end":9.908,"text":"ortama dönüşür.","words":[{"start":8.537,"end":9.223,"char":[0,6]},{"start":9.223,"end":9.908,"char":[7,15]}]},{"start":10.693,"end":13.233,"text":"Diskte tek bir şifreli görüntü","words":[{"start":10.693,"end":11.201,"char":[0,6]},{"start":11.201,"end":11.709,"char":[7,10]},{"start":11.709,"end":12.217,"char":[11,14]},{"start":12.217,"end":12.725,"char":[15,22]},{"start":12.725,"end":13.233,"char":[23,30]}]},{"start":13.233,"end":14.249,"text":"olarak durur.","words":[{"start":13.233,"end":13.741,"char":[0,6]},{"start":13.741,"end":14.249,"char":[7,13]}]},{"start":14.249,"end":16.788,"text":"Bağlandığında size özel bir Docker","words":[{"start":14.249,"end":14.756,"char":[0,13]},{"start":14.756,"end":15.264,"char":[14,18]},{"start":15.264,"end":15.772,"char":[19,23]},{"start":15.772,"end":16.28,"char":[24,27]},{"start":16.28,"end":16.788,"char":[28,34]}]},{"start":16.788,"end":17.296,"text":"daemon'ı,","words":[{"start":16.788,"end":17.296,"char":[0,9]}]},{"start":17.296,"end":19.836,"text":"şifreli birim içindeki uygulama verisi","words":[{"start":17.296,"end":17.804,"char":[0,7]},{"start":17.804,"end":18.312,"char":[8,13]},{"start":18.312,"end":18.82,"char":[14,22]},{"start":18.82,"end":19.328,"char":[23,31]},{"start":19.328,"end":19.836,"char":[32,38]}]},{"start":19.836,"end":22.376,"text":"ve sunucudaki başka hiçbir şeyle","words":[{"start":19.836,"end":20.344,"char":[0,2]},{"start":20.344,"end":20.852,"char":[3,13]},{"start":20.852,"end":21.36,"char":[14,19]},{"start":21.36,"end":21.868,"char":[20,26]},{"start":21.868,"end":22.376,"char":[27,32]}]},{"start":22.376,"end":24.407,"text":"çakışmayan loopback IP'leri sunar.","words":[{"start":22.376,"end":22.883,"char":[0,10]},{"start":22.883,"end":23.391,"char":[11,19]},{"start":23.391,"end":23.899,"char":[20,27]},{"start":23.899,"end":24.407,"char":[28,34]}]},{"start":27.692,"end":30.574,"text":"Sunucuda 2 gigabaytlık şifreli bir","words":[{"start":27.692,"end":28.268,"char":[0,8]},{"start":28.268,"end":28.845,"char":[9,10]},{"start":28.845,"end":29.421,"char":[11,22]},{"start":29.421,"end":29.998,"char":[23,30]},{"start":29.998,"end":30.574,"char":[31,34]}]},{"start":30.574,"end":31.727,"text":"depo oluşturuyoruz.","words":[{"start":30.574,"end":31.15,"char":[0,4]},{"start":31.15,"end":31.727,"char":[5,19]}]},{"start":31.727,"end":32.303,"text":"Depo,","words":[{"start":31.727,"end":32.303,"char":[0,5]}]},{"start":32.303,"end":35.185,"text":"depolandığında tek bir şifreli dosyadır.","words":[{"start":32.303,"end":32.879,"char":[0,14]},{"start":32.879,"end":33.456,"char":[15,18]},{"start":33.456,"end":34.032,"char":[19,22]},{"start":34.032,"end":34.609,"char":[23,30]},{"start":34.609,"end":35.185,"char":[31,40]}]},{"start":35.185,"end":38.067,"text":"Bağlandığında kendi Docker daemon'ı ve","words":[{"start":35.185,"end":35.761,"char":[0,13]},{"start":35.761,"end":36.338,"char":[14,19]},{"start":36.338,"end":36.914,"char":[20,26]},{"start":36.914,"end":37.49,"char":[27,35]},{"start":37.49,"end":38.067,"char":[36,38]}]},{"start":38.067,"end":40.949,"text":"kendi uygulama verisiyle birlikte bir","words":[{"start":38.067,"end":38.643,"char":[0,5]},{"start":38.643,"end":39.22,"char":[6,14]},{"start":39.22,"end":39.796,"char":[15,24]},{"start":39.796,"end":40.372,"char":[25,33]},{"start":40.372,"end":40.949,"char":[34,37]}]},{"start":40.949,"end":42.101,"text":"klasöre dönüşür;","words":[{"start":40.949,"end":41.525,"char":[0,7]},{"start":41.525,"end":42.101,"char":[8,16]}]},{"start":42.101,"end":44.983,"text":"sunucudaki her şeyden tamamen izole","words":[{"start":42.101,"end":42.678,"char":[0,10]},{"start":42.678,"end":43.254,"char":[11,14]},{"start":43.254,"end":43.831,"char":[15,21]},{"start":43.831,"end":44.407,"char":[22,29]},{"start":44.407,"end":44.983,"char":[30,35]}]},{"start":44.983,"end":45.56,"text":"edilmiş.","words":[{"start":44.983,"end":45.56,"char":[0,8]}]},{"start":48.56,"end":49.761,"text":"Depo oluşturuldu.","words":[{"start":48.56,"end":49.161,"char":[0,4]},{"start":49.161,"end":49.761,"char":[5,17]}]},{"start":49.761,"end":51.564,"text":"Şifreli dosya sunucuda,","words":[{"start":49.761,"end":50.362,"char":[0,7]},{"start":50.362,"end":50.963,"char":[8,13]},{"start":50.963,"end":51.564,"char":[14,23]}]},{"start":51.564,"end":52.765,"text":"bağlanmaya hazır.","words":[{"start":51.564,"end":52.165,"char":[0,10]},{"start":52.165,"end":52.765,"char":[11,17]}]},{"start":56.061,"end":58.771,"text":"Yeni deponun kayıtlı olduğunu doğrulamak için makinedeki","words":[{"start":56.061,"end":56.448,"char":[0,4]},{"start":56.448,"end":56.835,"char":[5,12]},{"start":56.835,"end":57.222,"char":[13,20]},{"start":57.222,"end":57.609,"char":[21,29]},{"start":57.609,"end":57.996,"char":[30,40]},{"start":57.996,"end":58.384,"char":[41,45]},{"start":58.384,"end":58.771,"char":[46,56]}]},{"start":58.771,"end":59.545,"text":"depoları listeliyoruz.","words":[{"start":58.771,"end":59.158,"char":[0,8]},{"start":59.158,"end":59.545,"char":[9,22]}]},{"start":59.545,"end":60.706,"text":"Buradan itibaren depo,","words":[{"start":59.545,"end":59.932,"char":[0,7]},{"start":59.932,"end":60.319,"char":[8,16]},{"start":60.319,"end":60.706,"char":[17,22]}]},{"start":60.706,"end":61.867,"text":"VS Code'da açılabilir,","words":[{"start":60.706,"end":61.093,"char":[0,2]},{"start":61.093,"end":61.48,"char":[3,10]},{"start":61.48,"end":61.867,"char":[11,22]}]},{"start":61.867,"end":62.254,"text":"dağıtılabilir,","words":[{"start":61.867,"end":62.254,"char":[0,14]}]},{"start":62.254,"end":63.416,"text":"fork'lanabilir veya yedeklenebilir;","words":[{"start":62.254,"end":62.641,"char":[0,14]},{"start":62.641,"end":63.029,"char":[15,19]},{"start":63.029,"end":63.416,"char":[20,35]}]},{"start":63.416,"end":64.577,"text":"hepsi dizüstü bilgisayarınızdan.","words":[{"start":63.416,"end":63.803,"char":[0,5]},{"start":63.803,"end":64.19,"char":[6,13]},{"start":64.19,"end":64.577,"char":[14,32]}]},{"start":67.577,"end":68.439,"text":"İşte burada;","words":[{"start":67.577,"end":68.008,"char":[0,4]},{"start":68.008,"end":68.439,"char":[5,12]}]},{"start":68.439,"end":70.163,"text":"kayıtlı ve kullanıma hazır.","words":[{"start":68.439,"end":68.87,"char":[0,7]},{"start":68.87,"end":69.301,"char":[8,10]},{"start":69.301,"end":69.732,"char":[11,20]},{"start":69.732,"end":70.163,"char":[21,27]}]},{"start":73.494,"end":75.106,"text":"Kullanışlı bir seçenek:","words":[{"start":73.494,"end":74.031,"char":[0,10]},{"start":74.031,"end":74.568,"char":[11,14]},{"start":74.568,"end":75.106,"char":[15,23]}]},{"start":75.106,"end":77.792,"text":"bu komutla repoyu doğrudan VS","words":[{"start":75.106,"end":75.643,"char":[0,2]},{"start":75.643,"end":76.18,"char":[3,10]},{"start":76.18,"end":76.717,"char":[11,17]},{"start":76.717,"end":77.254,"char":[18,26]},{"start":77.254,"end":77.792,"char":[27,29]}]},{"start":77.792,"end":78.866,"text":"Code'da açabilirsiniz.","words":[{"start":77.792,"end":78.329,"char":[0,7]},{"start":78.329,"end":78.866,"char":[8,22]}]},{"start":78.866,"end":80.478,"text":"Editörü burada başlatmayacağız,","words":[{"start":78.866,"end":79.403,"char":[0,7]},{"start":79.403,"end":79.941,"char":[8,14]},{"start":79.941,"end":80.478,"char":[15,31]}]},{"start":80.478,"end":83.164,"text":"ancak SSH üzerinden repoya uzak","words":[{"start":80.478,"end":81.015,"char":[0,5]},{"start":81.015,"end":81.552,"char":[6,9]},{"start":81.552,"end":82.089,"char":[10,19]},{"start":82.089,"end":82.627,"char":[20,26]},{"start":82.627,"end":83.164,"char":[27,31]}]},{"start":83.164,"end":85.85,"text":"bir oturum başlatarak dosyalarını düzenleyebilirsiniz.","words":[{"start":83.164,"end":83.701,"char":[0,3]},{"start":83.701,"end":84.238,"char":[4,10]},{"start":84.238,"end":84.775,"char":[11,21]},{"start":84.775,"end":85.313,"char":[22,33]},{"start":85.313,"end":85.85,"char":[34,54]}]},{"start":86.65,"end":89.356,"text":"Reponun dosyalarını VS Code'da düzenlemek için bunu","words":[{"start":86.65,"end":87.037,"char":[0,7]},{"start":87.037,"end":87.423,"char":[8,19]},{"start":87.423,"end":87.81,"char":[20,22]},{"start":87.81,"end":88.196,"char":[23,30]},{"start":88.196,"end":88.583,"char":[31,41]},{"start":88.583,"end":88.97,"char":[42,46]},{"start":88.97,"end":89.356,"char":[47,51]}]},{"start":89.356,"end":90.516,"text":"dizüstü bilgisayarınızda çalıştırın.","words":[{"start":89.356,"end":89.743,"char":[0,7]},{"start":89.743,"end":90.129,"char":[8,24]},{"start":90.129,"end":90.516,"char":[25,36]}]},{"start":91.338,"end":93.14,"text":"İlk deponuz hazır!","words":[{"start":91.338,"end":91.939,"char":[0,3]},{"start":91.939,"end":92.54,"char":[4,11]},{"start":92.54,"end":93.14,"char":[12,18]}]},{"start":93.14,"end":93.741,"text":"Sırada,","words":[{"start":93.14,"end":93.741,"char":[0,7]}]},{"start":93.741,"end":96.745,"text":"içine bir uygulama dağıtmak var.","words":[{"start":93.741,"end":94.342,"char":[0,5]},{"start":94.342,"end":94.943,"char":[6,9]},{"start":94.943,"end":95.544,"char":[10,18]},{"start":95.544,"end":96.145,"char":[19,27]},{"start":96.145,"end":96.745,"char":[28,32]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.056,
+      "text": "İlk deponuzu oluşturalım!",
+      "words": [
+        { "start": 1, "end": 1.685, "char": [0, 3] },
+        { "start": 1.685, "end": 2.37, "char": [4, 12] },
+        { "start": 2.37, "end": 3.056, "char": [13, 25] }
+      ]
+    },
+    {
+      "start": 3.056,
+      "end": 5.796,
+      "text": "Depolandığında şifreli bir dosyadır;",
+      "words": [
+        { "start": 3.056, "end": 3.741, "char": [0, 14] },
+        { "start": 3.741, "end": 4.426, "char": [15, 22] },
+        { "start": 4.426, "end": 5.111, "char": [23, 26] },
+        { "start": 5.111, "end": 5.796, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 5.796,
+      "end": 8.537,
+      "text": "bağlandığında tamamen izole bir",
+      "words": [
+        { "start": 5.796, "end": 6.482, "char": [0, 13] },
+        { "start": 6.482, "end": 7.167, "char": [14, 21] },
+        { "start": 7.167, "end": 7.852, "char": [22, 27] },
+        { "start": 7.852, "end": 8.537, "char": [28, 31] }
+      ]
+    },
+    {
+      "start": 8.537,
+      "end": 9.908,
+      "text": "ortama dönüşür.",
+      "words": [
+        { "start": 8.537, "end": 9.223, "char": [0, 6] },
+        { "start": 9.223, "end": 9.908, "char": [7, 15] }
+      ]
+    },
+    {
+      "start": 10.693,
+      "end": 13.233,
+      "text": "Diskte tek bir şifreli görüntü",
+      "words": [
+        { "start": 10.693, "end": 11.201, "char": [0, 6] },
+        { "start": 11.201, "end": 11.709, "char": [7, 10] },
+        { "start": 11.709, "end": 12.217, "char": [11, 14] },
+        { "start": 12.217, "end": 12.725, "char": [15, 22] },
+        { "start": 12.725, "end": 13.233, "char": [23, 30] }
+      ]
+    },
+    {
+      "start": 13.233,
+      "end": 14.249,
+      "text": "olarak durur.",
+      "words": [
+        { "start": 13.233, "end": 13.741, "char": [0, 6] },
+        { "start": 13.741, "end": 14.249, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 14.249,
+      "end": 16.788,
+      "text": "Bağlandığında size özel bir Docker",
+      "words": [
+        { "start": 14.249, "end": 14.756, "char": [0, 13] },
+        { "start": 14.756, "end": 15.264, "char": [14, 18] },
+        { "start": 15.264, "end": 15.772, "char": [19, 23] },
+        { "start": 15.772, "end": 16.28, "char": [24, 27] },
+        { "start": 16.28, "end": 16.788, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 16.788,
+      "end": 17.296,
+      "text": "daemon'ı,",
+      "words": [{ "start": 16.788, "end": 17.296, "char": [0, 9] }]
+    },
+    {
+      "start": 17.296,
+      "end": 19.836,
+      "text": "şifreli birim içindeki uygulama verisi",
+      "words": [
+        { "start": 17.296, "end": 17.804, "char": [0, 7] },
+        { "start": 17.804, "end": 18.312, "char": [8, 13] },
+        { "start": 18.312, "end": 18.82, "char": [14, 22] },
+        { "start": 18.82, "end": 19.328, "char": [23, 31] },
+        { "start": 19.328, "end": 19.836, "char": [32, 38] }
+      ]
+    },
+    {
+      "start": 19.836,
+      "end": 22.376,
+      "text": "ve sunucudaki başka hiçbir şeyle",
+      "words": [
+        { "start": 19.836, "end": 20.344, "char": [0, 2] },
+        { "start": 20.344, "end": 20.852, "char": [3, 13] },
+        { "start": 20.852, "end": 21.36, "char": [14, 19] },
+        { "start": 21.36, "end": 21.868, "char": [20, 26] },
+        { "start": 21.868, "end": 22.376, "char": [27, 32] }
+      ]
+    },
+    {
+      "start": 22.376,
+      "end": 24.407,
+      "text": "çakışmayan loopback IP'leri sunar.",
+      "words": [
+        { "start": 22.376, "end": 22.883, "char": [0, 10] },
+        { "start": 22.883, "end": 23.391, "char": [11, 19] },
+        { "start": 23.391, "end": 23.899, "char": [20, 27] },
+        { "start": 23.899, "end": 24.407, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 27.692,
+      "end": 30.574,
+      "text": "Sunucuda 2 gigabaytlık şifreli bir",
+      "words": [
+        { "start": 27.692, "end": 28.268, "char": [0, 8] },
+        { "start": 28.268, "end": 28.845, "char": [9, 10] },
+        { "start": 28.845, "end": 29.421, "char": [11, 22] },
+        { "start": 29.421, "end": 29.998, "char": [23, 30] },
+        { "start": 29.998, "end": 30.574, "char": [31, 34] }
+      ]
+    },
+    {
+      "start": 30.574,
+      "end": 31.727,
+      "text": "depo oluşturuyoruz.",
+      "words": [
+        { "start": 30.574, "end": 31.15, "char": [0, 4] },
+        { "start": 31.15, "end": 31.727, "char": [5, 19] }
+      ]
+    },
+    {
+      "start": 31.727,
+      "end": 32.303,
+      "text": "Depo,",
+      "words": [{ "start": 31.727, "end": 32.303, "char": [0, 5] }]
+    },
+    {
+      "start": 32.303,
+      "end": 35.185,
+      "text": "depolandığında tek bir şifreli dosyadır.",
+      "words": [
+        { "start": 32.303, "end": 32.879, "char": [0, 14] },
+        { "start": 32.879, "end": 33.456, "char": [15, 18] },
+        { "start": 33.456, "end": 34.032, "char": [19, 22] },
+        { "start": 34.032, "end": 34.609, "char": [23, 30] },
+        { "start": 34.609, "end": 35.185, "char": [31, 40] }
+      ]
+    },
+    {
+      "start": 35.185,
+      "end": 38.067,
+      "text": "Bağlandığında kendi Docker daemon'ı ve",
+      "words": [
+        { "start": 35.185, "end": 35.761, "char": [0, 13] },
+        { "start": 35.761, "end": 36.338, "char": [14, 19] },
+        { "start": 36.338, "end": 36.914, "char": [20, 26] },
+        { "start": 36.914, "end": 37.49, "char": [27, 35] },
+        { "start": 37.49, "end": 38.067, "char": [36, 38] }
+      ]
+    },
+    {
+      "start": 38.067,
+      "end": 40.949,
+      "text": "kendi uygulama verisiyle birlikte bir",
+      "words": [
+        { "start": 38.067, "end": 38.643, "char": [0, 5] },
+        { "start": 38.643, "end": 39.22, "char": [6, 14] },
+        { "start": 39.22, "end": 39.796, "char": [15, 24] },
+        { "start": 39.796, "end": 40.372, "char": [25, 33] },
+        { "start": 40.372, "end": 40.949, "char": [34, 37] }
+      ]
+    },
+    {
+      "start": 40.949,
+      "end": 42.101,
+      "text": "klasöre dönüşür;",
+      "words": [
+        { "start": 40.949, "end": 41.525, "char": [0, 7] },
+        { "start": 41.525, "end": 42.101, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 42.101,
+      "end": 44.983,
+      "text": "sunucudaki her şeyden tamamen izole",
+      "words": [
+        { "start": 42.101, "end": 42.678, "char": [0, 10] },
+        { "start": 42.678, "end": 43.254, "char": [11, 14] },
+        { "start": 43.254, "end": 43.831, "char": [15, 21] },
+        { "start": 43.831, "end": 44.407, "char": [22, 29] },
+        { "start": 44.407, "end": 44.983, "char": [30, 35] }
+      ]
+    },
+    {
+      "start": 44.983,
+      "end": 45.56,
+      "text": "edilmiş.",
+      "words": [{ "start": 44.983, "end": 45.56, "char": [0, 8] }]
+    },
+    {
+      "start": 48.56,
+      "end": 49.761,
+      "text": "Depo oluşturuldu.",
+      "words": [
+        { "start": 48.56, "end": 49.161, "char": [0, 4] },
+        { "start": 49.161, "end": 49.761, "char": [5, 17] }
+      ]
+    },
+    {
+      "start": 49.761,
+      "end": 51.564,
+      "text": "Şifreli dosya sunucuda,",
+      "words": [
+        { "start": 49.761, "end": 50.362, "char": [0, 7] },
+        { "start": 50.362, "end": 50.963, "char": [8, 13] },
+        { "start": 50.963, "end": 51.564, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 51.564,
+      "end": 52.765,
+      "text": "bağlanmaya hazır.",
+      "words": [
+        { "start": 51.564, "end": 52.165, "char": [0, 10] },
+        { "start": 52.165, "end": 52.765, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 56.061,
+      "end": 58.771,
+      "text": "Yeni deponun kayıtlı olduğunu doğrulamak için makinedeki",
+      "words": [
+        { "start": 56.061, "end": 56.448, "char": [0, 4] },
+        { "start": 56.448, "end": 56.835, "char": [5, 12] },
+        { "start": 56.835, "end": 57.222, "char": [13, 20] },
+        { "start": 57.222, "end": 57.609, "char": [21, 29] },
+        { "start": 57.609, "end": 57.996, "char": [30, 40] },
+        { "start": 57.996, "end": 58.384, "char": [41, 45] },
+        { "start": 58.384, "end": 58.771, "char": [46, 56] }
+      ]
+    },
+    {
+      "start": 58.771,
+      "end": 59.545,
+      "text": "depoları listeliyoruz.",
+      "words": [
+        { "start": 58.771, "end": 59.158, "char": [0, 8] },
+        { "start": 59.158, "end": 59.545, "char": [9, 22] }
+      ]
+    },
+    {
+      "start": 59.545,
+      "end": 60.706,
+      "text": "Buradan itibaren depo,",
+      "words": [
+        { "start": 59.545, "end": 59.932, "char": [0, 7] },
+        { "start": 59.932, "end": 60.319, "char": [8, 16] },
+        { "start": 60.319, "end": 60.706, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 60.706,
+      "end": 61.867,
+      "text": "VS Code'da açılabilir,",
+      "words": [
+        { "start": 60.706, "end": 61.093, "char": [0, 2] },
+        { "start": 61.093, "end": 61.48, "char": [3, 10] },
+        { "start": 61.48, "end": 61.867, "char": [11, 22] }
+      ]
+    },
+    {
+      "start": 61.867,
+      "end": 62.254,
+      "text": "dağıtılabilir,",
+      "words": [{ "start": 61.867, "end": 62.254, "char": [0, 14] }]
+    },
+    {
+      "start": 62.254,
+      "end": 63.416,
+      "text": "fork'lanabilir veya yedeklenebilir;",
+      "words": [
+        { "start": 62.254, "end": 62.641, "char": [0, 14] },
+        { "start": 62.641, "end": 63.029, "char": [15, 19] },
+        { "start": 63.029, "end": 63.416, "char": [20, 35] }
+      ]
+    },
+    {
+      "start": 63.416,
+      "end": 64.577,
+      "text": "hepsi dizüstü bilgisayarınızdan.",
+      "words": [
+        { "start": 63.416, "end": 63.803, "char": [0, 5] },
+        { "start": 63.803, "end": 64.19, "char": [6, 13] },
+        { "start": 64.19, "end": 64.577, "char": [14, 32] }
+      ]
+    },
+    {
+      "start": 67.577,
+      "end": 68.439,
+      "text": "İşte burada;",
+      "words": [
+        { "start": 67.577, "end": 68.008, "char": [0, 4] },
+        { "start": 68.008, "end": 68.439, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 68.439,
+      "end": 70.163,
+      "text": "kayıtlı ve kullanıma hazır.",
+      "words": [
+        { "start": 68.439, "end": 68.87, "char": [0, 7] },
+        { "start": 68.87, "end": 69.301, "char": [8, 10] },
+        { "start": 69.301, "end": 69.732, "char": [11, 20] },
+        { "start": 69.732, "end": 70.163, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 73.494,
+      "end": 75.106,
+      "text": "Kullanışlı bir seçenek:",
+      "words": [
+        { "start": 73.494, "end": 74.031, "char": [0, 10] },
+        { "start": 74.031, "end": 74.568, "char": [11, 14] },
+        { "start": 74.568, "end": 75.106, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 75.106,
+      "end": 77.792,
+      "text": "bu komutla repoyu doğrudan VS",
+      "words": [
+        { "start": 75.106, "end": 75.643, "char": [0, 2] },
+        { "start": 75.643, "end": 76.18, "char": [3, 10] },
+        { "start": 76.18, "end": 76.717, "char": [11, 17] },
+        { "start": 76.717, "end": 77.254, "char": [18, 26] },
+        { "start": 77.254, "end": 77.792, "char": [27, 29] }
+      ]
+    },
+    {
+      "start": 77.792,
+      "end": 78.866,
+      "text": "Code'da açabilirsiniz.",
+      "words": [
+        { "start": 77.792, "end": 78.329, "char": [0, 7] },
+        { "start": 78.329, "end": 78.866, "char": [8, 22] }
+      ]
+    },
+    {
+      "start": 78.866,
+      "end": 80.478,
+      "text": "Editörü burada başlatmayacağız,",
+      "words": [
+        { "start": 78.866, "end": 79.403, "char": [0, 7] },
+        { "start": 79.403, "end": 79.941, "char": [8, 14] },
+        { "start": 79.941, "end": 80.478, "char": [15, 31] }
+      ]
+    },
+    {
+      "start": 80.478,
+      "end": 83.164,
+      "text": "ancak SSH üzerinden repoya uzak",
+      "words": [
+        { "start": 80.478, "end": 81.015, "char": [0, 5] },
+        { "start": 81.015, "end": 81.552, "char": [6, 9] },
+        { "start": 81.552, "end": 82.089, "char": [10, 19] },
+        { "start": 82.089, "end": 82.627, "char": [20, 26] },
+        { "start": 82.627, "end": 83.164, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 83.164,
+      "end": 85.85,
+      "text": "bir oturum başlatarak dosyalarını düzenleyebilirsiniz.",
+      "words": [
+        { "start": 83.164, "end": 83.701, "char": [0, 3] },
+        { "start": 83.701, "end": 84.238, "char": [4, 10] },
+        { "start": 84.238, "end": 84.775, "char": [11, 21] },
+        { "start": 84.775, "end": 85.313, "char": [22, 33] },
+        { "start": 85.313, "end": 85.85, "char": [34, 54] }
+      ]
+    },
+    {
+      "start": 86.65,
+      "end": 89.356,
+      "text": "Reponun dosyalarını VS Code'da düzenlemek için bunu",
+      "words": [
+        { "start": 86.65, "end": 87.037, "char": [0, 7] },
+        { "start": 87.037, "end": 87.423, "char": [8, 19] },
+        { "start": 87.423, "end": 87.81, "char": [20, 22] },
+        { "start": 87.81, "end": 88.196, "char": [23, 30] },
+        { "start": 88.196, "end": 88.583, "char": [31, 41] },
+        { "start": 88.583, "end": 88.97, "char": [42, 46] },
+        { "start": 88.97, "end": 89.356, "char": [47, 51] }
+      ]
+    },
+    {
+      "start": 89.356,
+      "end": 90.516,
+      "text": "dizüstü bilgisayarınızda çalıştırın.",
+      "words": [
+        { "start": 89.356, "end": 89.743, "char": [0, 7] },
+        { "start": 89.743, "end": 90.129, "char": [8, 24] },
+        { "start": 90.129, "end": 90.516, "char": [25, 36] }
+      ]
+    },
+    {
+      "start": 91.338,
+      "end": 93.14,
+      "text": "İlk deponuz hazır!",
+      "words": [
+        { "start": 91.338, "end": 91.939, "char": [0, 3] },
+        { "start": 91.939, "end": 92.54, "char": [4, 11] },
+        { "start": 92.54, "end": 93.14, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 93.14,
+      "end": 93.741,
+      "text": "Sırada,",
+      "words": [{ "start": 93.14, "end": 93.741, "char": [0, 7] }]
+    },
+    {
+      "start": 93.741,
+      "end": 96.745,
+      "text": "içine bir uygulama dağıtmak var.",
+      "words": [
+        { "start": 93.741, "end": 94.342, "char": [0, 5] },
+        { "start": 94.342, "end": 94.943, "char": [6, 9] },
+        { "start": 94.943, "end": 95.544, "char": [10, 18] },
+        { "start": 95.544, "end": 96.145, "char": [19, 27] },
+        { "start": 96.145, "end": 96.745, "char": [28, 32] }
+      ]
+    }
+  ]
+}

@@ -1,13 +1,14 @@
 ---
 title: Yedekleme ve Geri Yükleme
 description: >-
-  Şifrelenmiş depoları harici depolamaya yedekleyin, yedeklerden geri yükleyin
-  ve otomatik yedeklemeler planlayın.
+  Şifrelenmiş depoları herhangi bir rclone uyumlu depolama hizmetine yedekleyin,
+  herhangi bir makinede geri yükleyin ve adlandırılmış yedekleme stratejileri ile
+  systemd zamanlayıcıları aracılığıyla otomatikleştirin.
 category: Guides
 order: 7
 language: tr
-sourceHash: "196ee7b649ac7371"
-sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
+sourceHash: "6ed9a5b950de8ddb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Yedekleme ve Geri Yükleme

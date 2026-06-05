@@ -1,12 +1,13 @@
 ---
-title: "CLI-rakendus"
-description: "Täielik juhend Rediacc käsurea liidese kasutamiseks platvormihalduses"
+title: "CLI rakendus"
+description: "rdc käsurea liidese täielik käskude teatmik. Hõlmab masinatehaldust, hoidlaid, konfiguratsiooni, salvestusruumi, salasõnu, failide sünkroonimist, VS Code kaugsessioone ja tellimuste haldust."
 category: "Viide"
 order: 2
 language: et
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/et/cli.json
-sourceHash: "233baf26d48ca547"
+sourceHash: "a754193f03516b7a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

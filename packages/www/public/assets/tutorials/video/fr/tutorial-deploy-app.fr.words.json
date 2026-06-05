@@ -1,1 +1,760 @@
-{"version":1,"cues":[{"start":1,"end":3.826,"text":"Il est temps de déployer une vraie application","words":[{"start":1,"end":1.353,"char":[0,2]},{"start":1.353,"end":1.706,"char":[3,6]},{"start":1.706,"end":2.06,"char":[7,12]},{"start":2.06,"end":2.413,"char":[13,15]},{"start":2.413,"end":2.766,"char":[16,24]},{"start":2.766,"end":3.119,"char":[25,28]},{"start":3.119,"end":3.473,"char":[29,34]},{"start":3.473,"end":3.826,"char":[35,46]}]},{"start":3.826,"end":4.179,"text":"!","words":[{"start":3.826,"end":4.179,"char":[0,1]}]},{"start":4.179,"end":7.005,"text":"Nous passons d'un repo vide à des conteneurs","words":[{"start":4.179,"end":4.532,"char":[0,4]},{"start":4.532,"end":4.885,"char":[5,12]},{"start":4.885,"end":5.239,"char":[13,17]},{"start":5.239,"end":5.592,"char":[18,22]},{"start":5.592,"end":5.945,"char":[23,27]},{"start":5.945,"end":6.298,"char":[28,29]},{"start":6.298,"end":6.652,"char":[30,33]},{"start":6.652,"end":7.005,"char":[34,44]}]},{"start":7.005,"end":9.124,"text":"en marche en trois courtes étapes.","words":[{"start":7.005,"end":7.358,"char":[0,2]},{"start":7.358,"end":7.711,"char":[3,9]},{"start":7.711,"end":8.064,"char":[10,12]},{"start":8.064,"end":8.418,"char":[13,18]},{"start":8.418,"end":8.771,"char":[19,26]},{"start":8.771,"end":9.124,"char":[27,34]}]},{"start":9.88,"end":12.235,"text":"Le flux est simple :","words":[{"start":9.88,"end":10.351,"char":[0,2]},{"start":10.351,"end":10.822,"char":[3,7]},{"start":10.822,"end":11.293,"char":[8,11]},{"start":11.293,"end":11.764,"char":[12,18]},{"start":11.764,"end":12.235,"char":[19,20]}]},{"start":12.235,"end":13.648,"text":"choisir un modèle,","words":[{"start":12.235,"end":12.706,"char":[0,7]},{"start":12.706,"end":13.177,"char":[8,10]},{"start":13.177,"end":13.648,"char":[11,18]}]},{"start":13.648,"end":15.062,"text":"l'appliquer au repo,","words":[{"start":13.648,"end":14.119,"char":[0,11]},{"start":14.119,"end":14.59,"char":[12,14]},{"start":14.59,"end":15.062,"char":[15,20]}]},{"start":15.062,"end":16.004,"text":"puis l'exécuter.","words":[{"start":15.062,"end":15.533,"char":[0,4]},{"start":15.533,"end":16.004,"char":[5,16]}]},{"start":16.004,"end":18.83,"text":"La CLI fournit des modèles intégrés,","words":[{"start":16.004,"end":16.475,"char":[0,2]},{"start":16.475,"end":16.946,"char":[3,6]},{"start":16.946,"end":17.417,"char":[7,14]},{"start":17.417,"end":17.888,"char":[15,18]},{"start":17.888,"end":18.359,"char":[19,26]},{"start":18.359,"end":18.83,"char":[27,36]}]},{"start":18.83,"end":21.656,"text":"donc nous n'avons jamais à écrire","words":[{"start":18.83,"end":19.301,"char":[0,4]},{"start":19.301,"end":19.772,"char":[5,9]},{"start":19.772,"end":20.243,"char":[10,17]},{"start":20.243,"end":20.714,"char":[18,24]},{"start":20.714,"end":21.185,"char":[25,26]},{"start":21.185,"end":21.656,"char":[27,33]}]},{"start":21.656,"end":24.482,"text":"un docker-compose à partir de zéro.","words":[{"start":21.656,"end":22.127,"char":[0,2]},{"start":22.127,"end":22.598,"char":[3,17]},{"start":22.598,"end":23.069,"char":[18,19]},{"start":23.069,"end":23.54,"char":[20,26]},{"start":23.54,"end":24.011,"char":[27,29]},{"start":24.011,"end":24.482,"char":[30,35]}]},{"start":27.762,"end":28.662,"text":"Première étape.","words":[{"start":27.762,"end":28.212,"char":[0,8]},{"start":28.212,"end":28.662,"char":[9,15]}]},{"start":28.662,"end":31.361,"text":"Nous allons lister les modèles disponibles.","words":[{"start":28.662,"end":29.112,"char":[0,4]},{"start":29.112,"end":29.562,"char":[5,11]},{"start":29.562,"end":30.011,"char":[12,18]},{"start":30.011,"end":30.461,"char":[19,22]},{"start":30.461,"end":30.911,"char":[23,30]},{"start":30.911,"end":31.361,"char":[31,43]}]},{"start":31.361,"end":34.06,"text":"Rediacc fournit des configurations prêtes à","words":[{"start":31.361,"end":31.811,"char":[0,7]},{"start":31.811,"end":32.261,"char":[8,15]},{"start":32.261,"end":32.711,"char":[16,19]},{"start":32.711,"end":33.161,"char":[20,34]},{"start":33.161,"end":33.611,"char":[35,41]},{"start":33.611,"end":34.06,"char":[42,43]}]},{"start":34.06,"end":36.31,"text":"l'emploi pour les applications courantes,","words":[{"start":34.06,"end":34.51,"char":[0,8]},{"start":34.51,"end":34.96,"char":[9,13]},{"start":34.96,"end":35.41,"char":[14,17]},{"start":35.41,"end":35.86,"char":[18,30]},{"start":35.86,"end":36.31,"char":[31,41]}]},{"start":36.31,"end":36.76,"text":"Postgres,","words":[{"start":36.31,"end":36.76,"char":[0,9]}]},{"start":36.76,"end":37.21,"text":"Redis,","words":[{"start":36.76,"end":37.21,"char":[0,6]}]},{"start":37.21,"end":38.109,"text":"serveurs web,","words":[{"start":37.21,"end":37.66,"char":[0,8]},{"start":37.66,"end":38.109,"char":[9,13]}]},{"start":38.109,"end":40.809,"text":"pour ne pas avoir à écrire","words":[{"start":38.109,"end":38.559,"char":[0,4]},{"start":38.559,"end":39.009,"char":[5,7]},{"start":39.009,"end":39.459,"char":[8,11]},{"start":39.459,"end":39.909,"char":[12,17]},{"start":39.909,"end":40.359,"char":[18,19]},{"start":40.359,"end":40.809,"char":[20,26]}]},{"start":40.809,"end":43.508,"text":"un docker compose point yml from","words":[{"start":40.809,"end":41.259,"char":[0,2]},{"start":41.259,"end":41.708,"char":[3,9]},{"start":41.708,"end":42.158,"char":[10,17]},{"start":42.158,"end":42.608,"char":[18,23]},{"start":42.608,"end":43.058,"char":[24,27]},{"start":43.058,"end":43.508,"char":[28,32]}]},{"start":43.508,"end":43.958,"text":"scratch.","words":[{"start":43.508,"end":43.958,"char":[0,8]}]},{"start":45.458,"end":48.09,"text":"Le catalogue complet des modèles.","words":[{"start":45.458,"end":45.984,"char":[0,2]},{"start":45.984,"end":46.511,"char":[3,12]},{"start":46.511,"end":47.037,"char":[13,20]},{"start":47.037,"end":47.564,"char":[21,24]},{"start":47.564,"end":48.09,"char":[25,33]}]},{"start":48.09,"end":50.723,"text":"Chacun associe un compose testé","words":[{"start":48.09,"end":48.617,"char":[0,6]},{"start":48.617,"end":49.143,"char":[7,14]},{"start":49.143,"end":49.67,"char":[15,17]},{"start":49.67,"end":50.196,"char":[18,25]},{"start":50.196,"end":50.723,"char":[26,31]}]},{"start":50.723,"end":52.302,"text":"et un Rediaccfile.","words":[{"start":50.723,"end":51.249,"char":[0,2]},{"start":51.249,"end":51.776,"char":[3,5]},{"start":51.776,"end":52.302,"char":[6,18]}]},{"start":55.595,"end":56.45,"text":"Deuxième étape.","words":[{"start":55.595,"end":56.023,"char":[0,8]},{"start":56.023,"end":56.45,"char":[9,15]}]},{"start":56.45,"end":59.013,"text":"Nous appliquons le modèle app-postgres dans","words":[{"start":56.45,"end":56.877,"char":[0,4]},{"start":56.877,"end":57.304,"char":[5,15]},{"start":57.304,"end":57.731,"char":[16,18]},{"start":57.731,"end":58.158,"char":[19,25]},{"start":58.158,"end":58.586,"char":[26,38]},{"start":58.586,"end":59.013,"char":[39,43]}]},{"start":59.013,"end":59.867,"text":"notre dépôt.","words":[{"start":59.013,"end":59.44,"char":[0,5]},{"start":59.44,"end":59.867,"char":[6,12]}]},{"start":59.867,"end":61.576,"text":"Deux fichiers apparaissent :","words":[{"start":59.867,"end":60.294,"char":[0,4]},{"start":60.294,"end":60.721,"char":[5,13]},{"start":60.721,"end":61.149,"char":[14,26]},{"start":61.149,"end":61.576,"char":[27,28]}]},{"start":61.576,"end":64.139,"text":"le docker compose point yml qui","words":[{"start":61.576,"end":62.003,"char":[0,2]},{"start":62.003,"end":62.43,"char":[3,9]},{"start":62.43,"end":62.857,"char":[10,17]},{"start":62.857,"end":63.285,"char":[18,23]},{"start":63.285,"end":63.712,"char":[24,27]},{"start":63.712,"end":64.139,"char":[28,31]}]},{"start":64.139,"end":65.42,"text":"décrit les conteneurs,","words":[{"start":64.139,"end":64.566,"char":[0,6]},{"start":64.566,"end":64.993,"char":[7,10]},{"start":64.993,"end":65.42,"char":[11,22]}]},{"start":65.42,"end":67.984,"text":"et le Rediaccfile qui définit les","words":[{"start":65.42,"end":65.848,"char":[0,2]},{"start":65.848,"end":66.275,"char":[3,5]},{"start":66.275,"end":66.702,"char":[6,17]},{"start":66.702,"end":67.129,"char":[18,21]},{"start":67.129,"end":67.556,"char":[22,29]},{"start":67.556,"end":67.984,"char":[30,33]}]},{"start":67.984,"end":70.119,"text":"hooks de démarrage et d'arrêt.","words":[{"start":67.984,"end":68.411,"char":[0,5]},{"start":68.411,"end":68.838,"char":[6,8]},{"start":68.838,"end":69.265,"char":[9,18]},{"start":69.265,"end":69.692,"char":[19,21]},{"start":69.692,"end":70.119,"char":[22,30]}]},{"start":72.369,"end":73.31,"text":"Modèle appliqué.","words":[{"start":72.369,"end":72.84,"char":[0,6]},{"start":72.84,"end":73.31,"char":[7,16]}]},{"start":73.31,"end":76.131,"text":"Le repo possède maintenant son fichier","words":[{"start":73.31,"end":73.78,"char":[0,2]},{"start":73.78,"end":74.25,"char":[3,7]},{"start":74.25,"end":74.72,"char":[8,15]},{"start":74.72,"end":75.191,"char":[16,26]},{"start":75.191,"end":75.661,"char":[27,30]},{"start":75.661,"end":76.131,"char":[31,38]}]},{"start":76.131,"end":78.012,"text":"compose et son Rediaccfile.","words":[{"start":76.131,"end":76.601,"char":[0,7]},{"start":76.601,"end":77.071,"char":[8,10]},{"start":77.071,"end":77.542,"char":[11,14]},{"start":77.542,"end":78.012,"char":[15,27]}]},{"start":81.354,"end":82.2,"text":"Troisième étape.","words":[{"start":81.354,"end":81.777,"char":[0,9]},{"start":81.777,"end":82.2,"char":[10,16]}]},{"start":82.2,"end":83.892,"text":"Nous démarrons le dépôt.","words":[{"start":82.2,"end":82.623,"char":[0,4]},{"start":82.623,"end":83.046,"char":[5,14]},{"start":83.046,"end":83.469,"char":[15,17]},{"start":83.469,"end":83.892,"char":[18,24]}]},{"start":83.892,"end":85.584,"text":"L'outil lance les conteneurs,","words":[{"start":83.892,"end":84.315,"char":[0,7]},{"start":84.315,"end":84.738,"char":[8,13]},{"start":84.738,"end":85.161,"char":[14,17]},{"start":85.161,"end":85.584,"char":[18,29]}]},{"start":85.584,"end":88.122,"text":"monte le volume chiffré et configure","words":[{"start":85.584,"end":86.007,"char":[0,5]},{"start":86.007,"end":86.43,"char":[6,8]},{"start":86.43,"end":86.853,"char":[9,15]},{"start":86.853,"end":87.276,"char":[16,23]},{"start":87.276,"end":87.699,"char":[24,26]},{"start":87.699,"end":88.122,"char":[27,36]}]},{"start":88.122,"end":89.814,"text":"le daemon Docker isolé.","words":[{"start":88.122,"end":88.545,"char":[0,2]},{"start":88.545,"end":88.968,"char":[3,9]},{"start":88.968,"end":89.391,"char":[10,16]},{"start":89.391,"end":89.814,"char":[17,23]}]},{"start":89.814,"end":92.352,"text":"L'application est maintenant en cours d'exécution.","words":[{"start":89.814,"end":90.237,"char":[0,13]},{"start":90.237,"end":90.66,"char":[14,17]},{"start":90.66,"end":91.083,"char":[18,28]},{"start":91.083,"end":91.506,"char":[29,31]},{"start":91.506,"end":91.929,"char":[32,37]},{"start":91.929,"end":92.352,"char":[38,50]}]},{"start":95.102,"end":97.453,"text":"Conteneurs en cours d'exécution,","words":[{"start":95.102,"end":95.69,"char":[0,10]},{"start":95.69,"end":96.277,"char":[11,13]},{"start":96.277,"end":96.865,"char":[14,19]},{"start":96.865,"end":97.453,"char":[20,32]}]},{"start":97.453,"end":98.628,"text":"volume monté,","words":[{"start":97.453,"end":98.041,"char":[0,6]},{"start":98.041,"end":98.628,"char":[7,13]}]},{"start":98.628,"end":100.979,"text":"daemon Docker isolé démarré.","words":[{"start":98.628,"end":99.216,"char":[0,6]},{"start":99.216,"end":99.804,"char":[7,13]},{"start":99.804,"end":100.392,"char":[14,19]},{"start":100.392,"end":100.979,"char":[20,28]}]},{"start":104.311,"end":106.1,"text":"Vérifions avec docker ps.","words":[{"start":104.311,"end":104.759,"char":[0,9]},{"start":104.759,"end":105.206,"char":[10,14]},{"start":105.206,"end":105.653,"char":[15,21]},{"start":105.653,"end":106.1,"char":[22,25]}]},{"start":106.1,"end":108.784,"text":"Notez que cette vue n'affiche que","words":[{"start":106.1,"end":106.548,"char":[0,5]},{"start":106.548,"end":106.995,"char":[6,9]},{"start":106.995,"end":107.442,"char":[10,15]},{"start":107.442,"end":107.889,"char":[16,19]},{"start":107.889,"end":108.337,"char":[20,29]},{"start":108.337,"end":108.784,"char":[30,33]}]},{"start":108.784,"end":111.02,"text":"les conteneurs de notre dépôt.","words":[{"start":108.784,"end":109.231,"char":[0,3]},{"start":109.231,"end":109.678,"char":[4,14]},{"start":109.678,"end":110.126,"char":[15,17]},{"start":110.126,"end":110.573,"char":[18,23]},{"start":110.573,"end":111.02,"char":[24,30]}]},{"start":111.02,"end":113.704,"text":"Les autres dépôts sur le même","words":[{"start":111.02,"end":111.467,"char":[0,3]},{"start":111.467,"end":111.915,"char":[4,10]},{"start":111.915,"end":112.362,"char":[11,17]},{"start":112.362,"end":112.809,"char":[18,21]},{"start":112.809,"end":113.256,"char":[22,24]},{"start":113.256,"end":113.704,"char":[25,29]}]},{"start":113.704,"end":116.387,"text":"serveur ont leurs propres daemons Docker","words":[{"start":113.704,"end":114.151,"char":[0,7]},{"start":114.151,"end":114.598,"char":[8,11]},{"start":114.598,"end":115.045,"char":[12,17]},{"start":115.045,"end":115.493,"char":[18,25]},{"start":115.493,"end":115.94,"char":[26,33]},{"start":115.94,"end":116.387,"char":[34,40]}]},{"start":116.387,"end":119.071,"text":"et sont complètement invisibles depuis ici.","words":[{"start":116.387,"end":116.834,"char":[0,2]},{"start":116.834,"end":117.282,"char":[3,7]},{"start":117.282,"end":117.729,"char":[8,20]},{"start":117.729,"end":118.176,"char":[21,31]},{"start":118.176,"end":118.623,"char":[32,38]},{"start":118.623,"end":119.071,"char":[39,43]}]},{"start":121.821,"end":124.393,"text":"Seuls les conteneurs de ce","words":[{"start":121.821,"end":122.335,"char":[0,5]},{"start":122.335,"end":122.849,"char":[6,9]},{"start":122.849,"end":123.364,"char":[10,20]},{"start":123.364,"end":123.878,"char":[21,23]},{"start":123.878,"end":124.393,"char":[24,26]}]},{"start":124.393,"end":125.421,"text":"repo apparaissent.","words":[{"start":124.393,"end":124.907,"char":[0,4]},{"start":124.907,"end":125.421,"char":[5,18]}]},{"start":125.421,"end":126.965,"text":"L'isolation est réelle,","words":[{"start":125.421,"end":125.936,"char":[0,11]},{"start":125.936,"end":126.45,"char":[12,15]},{"start":126.45,"end":126.965,"char":[16,23]}]},{"start":126.965,"end":128.508,"text":"pas seulement déclarative.","words":[{"start":126.965,"end":127.479,"char":[0,3]},{"start":127.479,"end":127.993,"char":[4,13]},{"start":127.993,"end":128.508,"char":[14,26]}]},{"start":131.825,"end":133.079,"text":"Vérifions ce qui tourne.","words":[{"start":131.825,"end":132.139,"char":[0,9]},{"start":132.139,"end":132.452,"char":[10,12]},{"start":132.452,"end":132.766,"char":[13,16]},{"start":132.766,"end":133.079,"char":[17,24]}]},{"start":133.079,"end":135.587,"text":"docker ps liste ici uniquement les conteneurs de","words":[{"start":133.079,"end":133.393,"char":[0,6]},{"start":133.393,"end":133.706,"char":[7,9]},{"start":133.706,"end":134.02,"char":[10,15]},{"start":134.02,"end":134.333,"char":[16,19]},{"start":134.333,"end":134.647,"char":[20,30]},{"start":134.647,"end":134.96,"char":[31,34]},{"start":134.96,"end":135.273,"char":[35,45]},{"start":135.273,"end":135.587,"char":[46,48]}]},{"start":135.587,"end":136.214,"text":"ce repo.","words":[{"start":135.587,"end":135.9,"char":[0,2]},{"start":135.9,"end":136.214,"char":[3,8]}]},{"start":136.214,"end":138.722,"text":"Les autres repos du même serveur ont leurs","words":[{"start":136.214,"end":136.527,"char":[0,3]},{"start":136.527,"end":136.841,"char":[4,10]},{"start":136.841,"end":137.154,"char":[11,16]},{"start":137.154,"end":137.468,"char":[17,19]},{"start":137.468,"end":137.781,"char":[20,24]},{"start":137.781,"end":138.095,"char":[25,32]},{"start":138.095,"end":138.408,"char":[33,36]},{"start":138.408,"end":138.722,"char":[37,42]}]},{"start":138.722,"end":141.229,"text":"propres daemons et sont totalement invisibles depuis cette","words":[{"start":138.722,"end":139.035,"char":[0,7]},{"start":139.035,"end":139.349,"char":[8,15]},{"start":139.349,"end":139.662,"char":[16,18]},{"start":139.662,"end":139.976,"char":[19,23]},{"start":139.976,"end":140.289,"char":[24,34]},{"start":140.289,"end":140.602,"char":[35,45]},{"start":140.602,"end":140.916,"char":[46,52]},{"start":140.916,"end":141.229,"char":[53,58]}]},{"start":141.229,"end":141.543,"text":"vue.","words":[{"start":141.229,"end":141.543,"char":[0,4]}]},{"start":142.793,"end":145.252,"text":"Uniquement les conteneurs de ce repo.","words":[{"start":142.793,"end":143.203,"char":[0,10]},{"start":143.203,"end":143.613,"char":[11,14]},{"start":143.613,"end":144.023,"char":[15,25]},{"start":144.023,"end":144.433,"char":[26,28]},{"start":144.433,"end":144.842,"char":[29,31]},{"start":144.842,"end":145.252,"char":[32,37]}]},{"start":145.252,"end":146.482,"text":"L'isolation est réelle,","words":[{"start":145.252,"end":145.662,"char":[0,11]},{"start":145.662,"end":146.072,"char":[12,15]},{"start":146.072,"end":146.482,"char":[16,23]}]},{"start":146.482,"end":148.122,"text":"pas de la configuration.","words":[{"start":146.482,"end":146.892,"char":[0,3]},{"start":146.892,"end":147.302,"char":[4,6]},{"start":147.302,"end":147.712,"char":[7,9]},{"start":147.712,"end":148.122,"char":[10,24]}]},{"start":148.925,"end":150.723,"text":"Et voilà votre premier déploiement.","words":[{"start":148.925,"end":149.285,"char":[0,2]},{"start":149.285,"end":149.644,"char":[3,8]},{"start":149.644,"end":150.004,"char":[9,14]},{"start":150.004,"end":150.363,"char":[15,22]},{"start":150.363,"end":150.723,"char":[23,35]}]},{"start":150.723,"end":153.239,"text":"On se retrouve dans la prochaine vidéo,","words":[{"start":150.723,"end":151.082,"char":[0,2]},{"start":151.082,"end":151.442,"char":[3,5]},{"start":151.442,"end":151.801,"char":[6,14]},{"start":151.801,"end":152.161,"char":[15,19]},{"start":152.161,"end":152.52,"char":[20,22]},{"start":152.52,"end":152.88,"char":[23,32]},{"start":152.88,"end":153.239,"char":[33,39]}]},{"start":153.239,"end":155.756,"text":"où nous explorerons le travail avec le","words":[{"start":153.239,"end":153.599,"char":[0,2]},{"start":153.599,"end":153.958,"char":[3,7]},{"start":153.958,"end":154.318,"char":[8,19]},{"start":154.318,"end":154.677,"char":[20,22]},{"start":154.677,"end":155.037,"char":[23,30]},{"start":155.037,"end":155.396,"char":[31,35]},{"start":155.396,"end":155.756,"char":[36,38]}]},{"start":155.756,"end":156.475,"text":"repo lui-même.","words":[{"start":155.756,"end":156.115,"char":[0,4]},{"start":156.115,"end":156.475,"char":[5,14]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.826,
+      "text": "Il est temps de déployer une vraie application",
+      "words": [
+        { "start": 1, "end": 1.353, "char": [0, 2] },
+        { "start": 1.353, "end": 1.706, "char": [3, 6] },
+        { "start": 1.706, "end": 2.06, "char": [7, 12] },
+        { "start": 2.06, "end": 2.413, "char": [13, 15] },
+        { "start": 2.413, "end": 2.766, "char": [16, 24] },
+        { "start": 2.766, "end": 3.119, "char": [25, 28] },
+        { "start": 3.119, "end": 3.473, "char": [29, 34] },
+        { "start": 3.473, "end": 3.826, "char": [35, 46] }
+      ]
+    },
+    {
+      "start": 3.826,
+      "end": 4.179,
+      "text": "!",
+      "words": [{ "start": 3.826, "end": 4.179, "char": [0, 1] }]
+    },
+    {
+      "start": 4.179,
+      "end": 7.005,
+      "text": "Nous passons d'un repo vide à des conteneurs",
+      "words": [
+        { "start": 4.179, "end": 4.532, "char": [0, 4] },
+        { "start": 4.532, "end": 4.885, "char": [5, 12] },
+        { "start": 4.885, "end": 5.239, "char": [13, 17] },
+        { "start": 5.239, "end": 5.592, "char": [18, 22] },
+        { "start": 5.592, "end": 5.945, "char": [23, 27] },
+        { "start": 5.945, "end": 6.298, "char": [28, 29] },
+        { "start": 6.298, "end": 6.652, "char": [30, 33] },
+        { "start": 6.652, "end": 7.005, "char": [34, 44] }
+      ]
+    },
+    {
+      "start": 7.005,
+      "end": 9.124,
+      "text": "en marche en trois courtes étapes.",
+      "words": [
+        { "start": 7.005, "end": 7.358, "char": [0, 2] },
+        { "start": 7.358, "end": 7.711, "char": [3, 9] },
+        { "start": 7.711, "end": 8.064, "char": [10, 12] },
+        { "start": 8.064, "end": 8.418, "char": [13, 18] },
+        { "start": 8.418, "end": 8.771, "char": [19, 26] },
+        { "start": 8.771, "end": 9.124, "char": [27, 34] }
+      ]
+    },
+    {
+      "start": 9.88,
+      "end": 12.235,
+      "text": "Le flux est simple :",
+      "words": [
+        { "start": 9.88, "end": 10.351, "char": [0, 2] },
+        { "start": 10.351, "end": 10.822, "char": [3, 7] },
+        { "start": 10.822, "end": 11.293, "char": [8, 11] },
+        { "start": 11.293, "end": 11.764, "char": [12, 18] },
+        { "start": 11.764, "end": 12.235, "char": [19, 20] }
+      ]
+    },
+    {
+      "start": 12.235,
+      "end": 13.648,
+      "text": "choisir un modèle,",
+      "words": [
+        { "start": 12.235, "end": 12.706, "char": [0, 7] },
+        { "start": 12.706, "end": 13.177, "char": [8, 10] },
+        { "start": 13.177, "end": 13.648, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 13.648,
+      "end": 15.062,
+      "text": "l'appliquer au repo,",
+      "words": [
+        { "start": 13.648, "end": 14.119, "char": [0, 11] },
+        { "start": 14.119, "end": 14.59, "char": [12, 14] },
+        { "start": 14.59, "end": 15.062, "char": [15, 20] }
+      ]
+    },
+    {
+      "start": 15.062,
+      "end": 16.004,
+      "text": "puis l'exécuter.",
+      "words": [
+        { "start": 15.062, "end": 15.533, "char": [0, 4] },
+        { "start": 15.533, "end": 16.004, "char": [5, 16] }
+      ]
+    },
+    {
+      "start": 16.004,
+      "end": 18.83,
+      "text": "La CLI fournit des modèles intégrés,",
+      "words": [
+        { "start": 16.004, "end": 16.475, "char": [0, 2] },
+        { "start": 16.475, "end": 16.946, "char": [3, 6] },
+        { "start": 16.946, "end": 17.417, "char": [7, 14] },
+        { "start": 17.417, "end": 17.888, "char": [15, 18] },
+        { "start": 17.888, "end": 18.359, "char": [19, 26] },
+        { "start": 18.359, "end": 18.83, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 18.83,
+      "end": 21.656,
+      "text": "donc nous n'avons jamais à écrire",
+      "words": [
+        { "start": 18.83, "end": 19.301, "char": [0, 4] },
+        { "start": 19.301, "end": 19.772, "char": [5, 9] },
+        { "start": 19.772, "end": 20.243, "char": [10, 17] },
+        { "start": 20.243, "end": 20.714, "char": [18, 24] },
+        { "start": 20.714, "end": 21.185, "char": [25, 26] },
+        { "start": 21.185, "end": 21.656, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 21.656,
+      "end": 24.482,
+      "text": "un docker-compose à partir de zéro.",
+      "words": [
+        { "start": 21.656, "end": 22.127, "char": [0, 2] },
+        { "start": 22.127, "end": 22.598, "char": [3, 17] },
+        { "start": 22.598, "end": 23.069, "char": [18, 19] },
+        { "start": 23.069, "end": 23.54, "char": [20, 26] },
+        { "start": 23.54, "end": 24.011, "char": [27, 29] },
+        { "start": 24.011, "end": 24.482, "char": [30, 35] }
+      ]
+    },
+    {
+      "start": 27.762,
+      "end": 28.662,
+      "text": "Première étape.",
+      "words": [
+        { "start": 27.762, "end": 28.212, "char": [0, 8] },
+        { "start": 28.212, "end": 28.662, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 28.662,
+      "end": 31.361,
+      "text": "Nous allons lister les modèles disponibles.",
+      "words": [
+        { "start": 28.662, "end": 29.112, "char": [0, 4] },
+        { "start": 29.112, "end": 29.562, "char": [5, 11] },
+        { "start": 29.562, "end": 30.011, "char": [12, 18] },
+        { "start": 30.011, "end": 30.461, "char": [19, 22] },
+        { "start": 30.461, "end": 30.911, "char": [23, 30] },
+        { "start": 30.911, "end": 31.361, "char": [31, 43] }
+      ]
+    },
+    {
+      "start": 31.361,
+      "end": 34.06,
+      "text": "Rediacc fournit des configurations prêtes à",
+      "words": [
+        { "start": 31.361, "end": 31.811, "char": [0, 7] },
+        { "start": 31.811, "end": 32.261, "char": [8, 15] },
+        { "start": 32.261, "end": 32.711, "char": [16, 19] },
+        { "start": 32.711, "end": 33.161, "char": [20, 34] },
+        { "start": 33.161, "end": 33.611, "char": [35, 41] },
+        { "start": 33.611, "end": 34.06, "char": [42, 43] }
+      ]
+    },
+    {
+      "start": 34.06,
+      "end": 36.31,
+      "text": "l'emploi pour les applications courantes,",
+      "words": [
+        { "start": 34.06, "end": 34.51, "char": [0, 8] },
+        { "start": 34.51, "end": 34.96, "char": [9, 13] },
+        { "start": 34.96, "end": 35.41, "char": [14, 17] },
+        { "start": 35.41, "end": 35.86, "char": [18, 30] },
+        { "start": 35.86, "end": 36.31, "char": [31, 41] }
+      ]
+    },
+    {
+      "start": 36.31,
+      "end": 36.76,
+      "text": "Postgres,",
+      "words": [{ "start": 36.31, "end": 36.76, "char": [0, 9] }]
+    },
+    {
+      "start": 36.76,
+      "end": 37.21,
+      "text": "Redis,",
+      "words": [{ "start": 36.76, "end": 37.21, "char": [0, 6] }]
+    },
+    {
+      "start": 37.21,
+      "end": 38.109,
+      "text": "serveurs web,",
+      "words": [
+        { "start": 37.21, "end": 37.66, "char": [0, 8] },
+        { "start": 37.66, "end": 38.109, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 38.109,
+      "end": 40.809,
+      "text": "pour ne pas avoir à écrire",
+      "words": [
+        { "start": 38.109, "end": 38.559, "char": [0, 4] },
+        { "start": 38.559, "end": 39.009, "char": [5, 7] },
+        { "start": 39.009, "end": 39.459, "char": [8, 11] },
+        { "start": 39.459, "end": 39.909, "char": [12, 17] },
+        { "start": 39.909, "end": 40.359, "char": [18, 19] },
+        { "start": 40.359, "end": 40.809, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 40.809,
+      "end": 43.508,
+      "text": "un docker compose point yml from",
+      "words": [
+        { "start": 40.809, "end": 41.259, "char": [0, 2] },
+        { "start": 41.259, "end": 41.708, "char": [3, 9] },
+        { "start": 41.708, "end": 42.158, "char": [10, 17] },
+        { "start": 42.158, "end": 42.608, "char": [18, 23] },
+        { "start": 42.608, "end": 43.058, "char": [24, 27] },
+        { "start": 43.058, "end": 43.508, "char": [28, 32] }
+      ]
+    },
+    {
+      "start": 43.508,
+      "end": 43.958,
+      "text": "scratch.",
+      "words": [{ "start": 43.508, "end": 43.958, "char": [0, 8] }]
+    },
+    {
+      "start": 45.458,
+      "end": 48.09,
+      "text": "Le catalogue complet des modèles.",
+      "words": [
+        { "start": 45.458, "end": 45.984, "char": [0, 2] },
+        { "start": 45.984, "end": 46.511, "char": [3, 12] },
+        { "start": 46.511, "end": 47.037, "char": [13, 20] },
+        { "start": 47.037, "end": 47.564, "char": [21, 24] },
+        { "start": 47.564, "end": 48.09, "char": [25, 33] }
+      ]
+    },
+    {
+      "start": 48.09,
+      "end": 50.723,
+      "text": "Chacun associe un compose testé",
+      "words": [
+        { "start": 48.09, "end": 48.617, "char": [0, 6] },
+        { "start": 48.617, "end": 49.143, "char": [7, 14] },
+        { "start": 49.143, "end": 49.67, "char": [15, 17] },
+        { "start": 49.67, "end": 50.196, "char": [18, 25] },
+        { "start": 50.196, "end": 50.723, "char": [26, 31] }
+      ]
+    },
+    {
+      "start": 50.723,
+      "end": 52.302,
+      "text": "et un Rediaccfile.",
+      "words": [
+        { "start": 50.723, "end": 51.249, "char": [0, 2] },
+        { "start": 51.249, "end": 51.776, "char": [3, 5] },
+        { "start": 51.776, "end": 52.302, "char": [6, 18] }
+      ]
+    },
+    {
+      "start": 55.595,
+      "end": 56.45,
+      "text": "Deuxième étape.",
+      "words": [
+        { "start": 55.595, "end": 56.023, "char": [0, 8] },
+        { "start": 56.023, "end": 56.45, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 56.45,
+      "end": 59.013,
+      "text": "Nous appliquons le modèle app-postgres dans",
+      "words": [
+        { "start": 56.45, "end": 56.877, "char": [0, 4] },
+        { "start": 56.877, "end": 57.304, "char": [5, 15] },
+        { "start": 57.304, "end": 57.731, "char": [16, 18] },
+        { "start": 57.731, "end": 58.158, "char": [19, 25] },
+        { "start": 58.158, "end": 58.586, "char": [26, 38] },
+        { "start": 58.586, "end": 59.013, "char": [39, 43] }
+      ]
+    },
+    {
+      "start": 59.013,
+      "end": 59.867,
+      "text": "notre dépôt.",
+      "words": [
+        { "start": 59.013, "end": 59.44, "char": [0, 5] },
+        { "start": 59.44, "end": 59.867, "char": [6, 12] }
+      ]
+    },
+    {
+      "start": 59.867,
+      "end": 61.576,
+      "text": "Deux fichiers apparaissent :",
+      "words": [
+        { "start": 59.867, "end": 60.294, "char": [0, 4] },
+        { "start": 60.294, "end": 60.721, "char": [5, 13] },
+        { "start": 60.721, "end": 61.149, "char": [14, 26] },
+        { "start": 61.149, "end": 61.576, "char": [27, 28] }
+      ]
+    },
+    {
+      "start": 61.576,
+      "end": 64.139,
+      "text": "le docker compose point yml qui",
+      "words": [
+        { "start": 61.576, "end": 62.003, "char": [0, 2] },
+        { "start": 62.003, "end": 62.43, "char": [3, 9] },
+        { "start": 62.43, "end": 62.857, "char": [10, 17] },
+        { "start": 62.857, "end": 63.285, "char": [18, 23] },
+        { "start": 63.285, "end": 63.712, "char": [24, 27] },
+        { "start": 63.712, "end": 64.139, "char": [28, 31] }
+      ]
+    },
+    {
+      "start": 64.139,
+      "end": 65.42,
+      "text": "décrit les conteneurs,",
+      "words": [
+        { "start": 64.139, "end": 64.566, "char": [0, 6] },
+        { "start": 64.566, "end": 64.993, "char": [7, 10] },
+        { "start": 64.993, "end": 65.42, "char": [11, 22] }
+      ]
+    },
+    {
+      "start": 65.42,
+      "end": 67.984,
+      "text": "et le Rediaccfile qui définit les",
+      "words": [
+        { "start": 65.42, "end": 65.848, "char": [0, 2] },
+        { "start": 65.848, "end": 66.275, "char": [3, 5] },
+        { "start": 66.275, "end": 66.702, "char": [6, 17] },
+        { "start": 66.702, "end": 67.129, "char": [18, 21] },
+        { "start": 67.129, "end": 67.556, "char": [22, 29] },
+        { "start": 67.556, "end": 67.984, "char": [30, 33] }
+      ]
+    },
+    {
+      "start": 67.984,
+      "end": 70.119,
+      "text": "hooks de démarrage et d'arrêt.",
+      "words": [
+        { "start": 67.984, "end": 68.411, "char": [0, 5] },
+        { "start": 68.411, "end": 68.838, "char": [6, 8] },
+        { "start": 68.838, "end": 69.265, "char": [9, 18] },
+        { "start": 69.265, "end": 69.692, "char": [19, 21] },
+        { "start": 69.692, "end": 70.119, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 72.369,
+      "end": 73.31,
+      "text": "Modèle appliqué.",
+      "words": [
+        { "start": 72.369, "end": 72.84, "char": [0, 6] },
+        { "start": 72.84, "end": 73.31, "char": [7, 16] }
+      ]
+    },
+    {
+      "start": 73.31,
+      "end": 76.131,
+      "text": "Le repo possède maintenant son fichier",
+      "words": [
+        { "start": 73.31, "end": 73.78, "char": [0, 2] },
+        { "start": 73.78, "end": 74.25, "char": [3, 7] },
+        { "start": 74.25, "end": 74.72, "char": [8, 15] },
+        { "start": 74.72, "end": 75.191, "char": [16, 26] },
+        { "start": 75.191, "end": 75.661, "char": [27, 30] },
+        { "start": 75.661, "end": 76.131, "char": [31, 38] }
+      ]
+    },
+    {
+      "start": 76.131,
+      "end": 78.012,
+      "text": "compose et son Rediaccfile.",
+      "words": [
+        { "start": 76.131, "end": 76.601, "char": [0, 7] },
+        { "start": 76.601, "end": 77.071, "char": [8, 10] },
+        { "start": 77.071, "end": 77.542, "char": [11, 14] },
+        { "start": 77.542, "end": 78.012, "char": [15, 27] }
+      ]
+    },
+    {
+      "start": 81.354,
+      "end": 82.2,
+      "text": "Troisième étape.",
+      "words": [
+        { "start": 81.354, "end": 81.777, "char": [0, 9] },
+        { "start": 81.777, "end": 82.2, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 82.2,
+      "end": 83.892,
+      "text": "Nous démarrons le dépôt.",
+      "words": [
+        { "start": 82.2, "end": 82.623, "char": [0, 4] },
+        { "start": 82.623, "end": 83.046, "char": [5, 14] },
+        { "start": 83.046, "end": 83.469, "char": [15, 17] },
+        { "start": 83.469, "end": 83.892, "char": [18, 24] }
+      ]
+    },
+    {
+      "start": 83.892,
+      "end": 85.584,
+      "text": "L'outil lance les conteneurs,",
+      "words": [
+        { "start": 83.892, "end": 84.315, "char": [0, 7] },
+        { "start": 84.315, "end": 84.738, "char": [8, 13] },
+        { "start": 84.738, "end": 85.161, "char": [14, 17] },
+        { "start": 85.161, "end": 85.584, "char": [18, 29] }
+      ]
+    },
+    {
+      "start": 85.584,
+      "end": 88.122,
+      "text": "monte le volume chiffré et configure",
+      "words": [
+        { "start": 85.584, "end": 86.007, "char": [0, 5] },
+        { "start": 86.007, "end": 86.43, "char": [6, 8] },
+        { "start": 86.43, "end": 86.853, "char": [9, 15] },
+        { "start": 86.853, "end": 87.276, "char": [16, 23] },
+        { "start": 87.276, "end": 87.699, "char": [24, 26] },
+        { "start": 87.699, "end": 88.122, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 88.122,
+      "end": 89.814,
+      "text": "le daemon Docker isolé.",
+      "words": [
+        { "start": 88.122, "end": 88.545, "char": [0, 2] },
+        { "start": 88.545, "end": 88.968, "char": [3, 9] },
+        { "start": 88.968, "end": 89.391, "char": [10, 16] },
+        { "start": 89.391, "end": 89.814, "char": [17, 23] }
+      ]
+    },
+    {
+      "start": 89.814,
+      "end": 92.352,
+      "text": "L'application est maintenant en cours d'exécution.",
+      "words": [
+        { "start": 89.814, "end": 90.237, "char": [0, 13] },
+        { "start": 90.237, "end": 90.66, "char": [14, 17] },
+        { "start": 90.66, "end": 91.083, "char": [18, 28] },
+        { "start": 91.083, "end": 91.506, "char": [29, 31] },
+        { "start": 91.506, "end": 91.929, "char": [32, 37] },
+        { "start": 91.929, "end": 92.352, "char": [38, 50] }
+      ]
+    },
+    {
+      "start": 95.102,
+      "end": 97.453,
+      "text": "Conteneurs en cours d'exécution,",
+      "words": [
+        { "start": 95.102, "end": 95.69, "char": [0, 10] },
+        { "start": 95.69, "end": 96.277, "char": [11, 13] },
+        { "start": 96.277, "end": 96.865, "char": [14, 19] },
+        { "start": 96.865, "end": 97.453, "char": [20, 32] }
+      ]
+    },
+    {
+      "start": 97.453,
+      "end": 98.628,
+      "text": "volume monté,",
+      "words": [
+        { "start": 97.453, "end": 98.041, "char": [0, 6] },
+        { "start": 98.041, "end": 98.628, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 98.628,
+      "end": 100.979,
+      "text": "daemon Docker isolé démarré.",
+      "words": [
+        { "start": 98.628, "end": 99.216, "char": [0, 6] },
+        { "start": 99.216, "end": 99.804, "char": [7, 13] },
+        { "start": 99.804, "end": 100.392, "char": [14, 19] },
+        { "start": 100.392, "end": 100.979, "char": [20, 28] }
+      ]
+    },
+    {
+      "start": 104.311,
+      "end": 106.1,
+      "text": "Vérifions avec docker ps.",
+      "words": [
+        { "start": 104.311, "end": 104.759, "char": [0, 9] },
+        { "start": 104.759, "end": 105.206, "char": [10, 14] },
+        { "start": 105.206, "end": 105.653, "char": [15, 21] },
+        { "start": 105.653, "end": 106.1, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 106.1,
+      "end": 108.784,
+      "text": "Notez que cette vue n'affiche que",
+      "words": [
+        { "start": 106.1, "end": 106.548, "char": [0, 5] },
+        { "start": 106.548, "end": 106.995, "char": [6, 9] },
+        { "start": 106.995, "end": 107.442, "char": [10, 15] },
+        { "start": 107.442, "end": 107.889, "char": [16, 19] },
+        { "start": 107.889, "end": 108.337, "char": [20, 29] },
+        { "start": 108.337, "end": 108.784, "char": [30, 33] }
+      ]
+    },
+    {
+      "start": 108.784,
+      "end": 111.02,
+      "text": "les conteneurs de notre dépôt.",
+      "words": [
+        { "start": 108.784, "end": 109.231, "char": [0, 3] },
+        { "start": 109.231, "end": 109.678, "char": [4, 14] },
+        { "start": 109.678, "end": 110.126, "char": [15, 17] },
+        { "start": 110.126, "end": 110.573, "char": [18, 23] },
+        { "start": 110.573, "end": 111.02, "char": [24, 30] }
+      ]
+    },
+    {
+      "start": 111.02,
+      "end": 113.704,
+      "text": "Les autres dépôts sur le même",
+      "words": [
+        { "start": 111.02, "end": 111.467, "char": [0, 3] },
+        { "start": 111.467, "end": 111.915, "char": [4, 10] },
+        { "start": 111.915, "end": 112.362, "char": [11, 17] },
+        { "start": 112.362, "end": 112.809, "char": [18, 21] },
+        { "start": 112.809, "end": 113.256, "char": [22, 24] },
+        { "start": 113.256, "end": 113.704, "char": [25, 29] }
+      ]
+    },
+    {
+      "start": 113.704,
+      "end": 116.387,
+      "text": "serveur ont leurs propres daemons Docker",
+      "words": [
+        { "start": 113.704, "end": 114.151, "char": [0, 7] },
+        { "start": 114.151, "end": 114.598, "char": [8, 11] },
+        { "start": 114.598, "end": 115.045, "char": [12, 17] },
+        { "start": 115.045, "end": 115.493, "char": [18, 25] },
+        { "start": 115.493, "end": 115.94, "char": [26, 33] },
+        { "start": 115.94, "end": 116.387, "char": [34, 40] }
+      ]
+    },
+    {
+      "start": 116.387,
+      "end": 119.071,
+      "text": "et sont complètement invisibles depuis ici.",
+      "words": [
+        { "start": 116.387, "end": 116.834, "char": [0, 2] },
+        { "start": 116.834, "end": 117.282, "char": [3, 7] },
+        { "start": 117.282, "end": 117.729, "char": [8, 20] },
+        { "start": 117.729, "end": 118.176, "char": [21, 31] },
+        { "start": 118.176, "end": 118.623, "char": [32, 38] },
+        { "start": 118.623, "end": 119.071, "char": [39, 43] }
+      ]
+    },
+    {
+      "start": 121.821,
+      "end": 124.393,
+      "text": "Seuls les conteneurs de ce",
+      "words": [
+        { "start": 121.821, "end": 122.335, "char": [0, 5] },
+        { "start": 122.335, "end": 122.849, "char": [6, 9] },
+        { "start": 122.849, "end": 123.364, "char": [10, 20] },
+        { "start": 123.364, "end": 123.878, "char": [21, 23] },
+        { "start": 123.878, "end": 124.393, "char": [24, 26] }
+      ]
+    },
+    {
+      "start": 124.393,
+      "end": 125.421,
+      "text": "repo apparaissent.",
+      "words": [
+        { "start": 124.393, "end": 124.907, "char": [0, 4] },
+        { "start": 124.907, "end": 125.421, "char": [5, 18] }
+      ]
+    },
+    {
+      "start": 125.421,
+      "end": 126.965,
+      "text": "L'isolation est réelle,",
+      "words": [
+        { "start": 125.421, "end": 125.936, "char": [0, 11] },
+        { "start": 125.936, "end": 126.45, "char": [12, 15] },
+        { "start": 126.45, "end": 126.965, "char": [16, 23] }
+      ]
+    },
+    {
+      "start": 126.965,
+      "end": 128.508,
+      "text": "pas seulement déclarative.",
+      "words": [
+        { "start": 126.965, "end": 127.479, "char": [0, 3] },
+        { "start": 127.479, "end": 127.993, "char": [4, 13] },
+        { "start": 127.993, "end": 128.508, "char": [14, 26] }
+      ]
+    },
+    {
+      "start": 131.825,
+      "end": 133.079,
+      "text": "Vérifions ce qui tourne.",
+      "words": [
+        { "start": 131.825, "end": 132.139, "char": [0, 9] },
+        { "start": 132.139, "end": 132.452, "char": [10, 12] },
+        { "start": 132.452, "end": 132.766, "char": [13, 16] },
+        { "start": 132.766, "end": 133.079, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 133.079,
+      "end": 135.587,
+      "text": "docker ps liste ici uniquement les conteneurs de",
+      "words": [
+        { "start": 133.079, "end": 133.393, "char": [0, 6] },
+        { "start": 133.393, "end": 133.706, "char": [7, 9] },
+        { "start": 133.706, "end": 134.02, "char": [10, 15] },
+        { "start": 134.02, "end": 134.333, "char": [16, 19] },
+        { "start": 134.333, "end": 134.647, "char": [20, 30] },
+        { "start": 134.647, "end": 134.96, "char": [31, 34] },
+        { "start": 134.96, "end": 135.273, "char": [35, 45] },
+        { "start": 135.273, "end": 135.587, "char": [46, 48] }
+      ]
+    },
+    {
+      "start": 135.587,
+      "end": 136.214,
+      "text": "ce repo.",
+      "words": [
+        { "start": 135.587, "end": 135.9, "char": [0, 2] },
+        { "start": 135.9, "end": 136.214, "char": [3, 8] }
+      ]
+    },
+    {
+      "start": 136.214,
+      "end": 138.722,
+      "text": "Les autres repos du même serveur ont leurs",
+      "words": [
+        { "start": 136.214, "end": 136.527, "char": [0, 3] },
+        { "start": 136.527, "end": 136.841, "char": [4, 10] },
+        { "start": 136.841, "end": 137.154, "char": [11, 16] },
+        { "start": 137.154, "end": 137.468, "char": [17, 19] },
+        { "start": 137.468, "end": 137.781, "char": [20, 24] },
+        { "start": 137.781, "end": 138.095, "char": [25, 32] },
+        { "start": 138.095, "end": 138.408, "char": [33, 36] },
+        { "start": 138.408, "end": 138.722, "char": [37, 42] }
+      ]
+    },
+    {
+      "start": 138.722,
+      "end": 141.229,
+      "text": "propres daemons et sont totalement invisibles depuis cette",
+      "words": [
+        { "start": 138.722, "end": 139.035, "char": [0, 7] },
+        { "start": 139.035, "end": 139.349, "char": [8, 15] },
+        { "start": 139.349, "end": 139.662, "char": [16, 18] },
+        { "start": 139.662, "end": 139.976, "char": [19, 23] },
+        { "start": 139.976, "end": 140.289, "char": [24, 34] },
+        { "start": 140.289, "end": 140.602, "char": [35, 45] },
+        { "start": 140.602, "end": 140.916, "char": [46, 52] },
+        { "start": 140.916, "end": 141.229, "char": [53, 58] }
+      ]
+    },
+    {
+      "start": 141.229,
+      "end": 141.543,
+      "text": "vue.",
+      "words": [{ "start": 141.229, "end": 141.543, "char": [0, 4] }]
+    },
+    {
+      "start": 142.793,
+      "end": 145.252,
+      "text": "Uniquement les conteneurs de ce repo.",
+      "words": [
+        { "start": 142.793, "end": 143.203, "char": [0, 10] },
+        { "start": 143.203, "end": 143.613, "char": [11, 14] },
+        { "start": 143.613, "end": 144.023, "char": [15, 25] },
+        { "start": 144.023, "end": 144.433, "char": [26, 28] },
+        { "start": 144.433, "end": 144.842, "char": [29, 31] },
+        { "start": 144.842, "end": 145.252, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 145.252,
+      "end": 146.482,
+      "text": "L'isolation est réelle,",
+      "words": [
+        { "start": 145.252, "end": 145.662, "char": [0, 11] },
+        { "start": 145.662, "end": 146.072, "char": [12, 15] },
+        { "start": 146.072, "end": 146.482, "char": [16, 23] }
+      ]
+    },
+    {
+      "start": 146.482,
+      "end": 148.122,
+      "text": "pas de la configuration.",
+      "words": [
+        { "start": 146.482, "end": 146.892, "char": [0, 3] },
+        { "start": 146.892, "end": 147.302, "char": [4, 6] },
+        { "start": 147.302, "end": 147.712, "char": [7, 9] },
+        { "start": 147.712, "end": 148.122, "char": [10, 24] }
+      ]
+    },
+    {
+      "start": 148.925,
+      "end": 150.723,
+      "text": "Et voilà votre premier déploiement.",
+      "words": [
+        { "start": 148.925, "end": 149.285, "char": [0, 2] },
+        { "start": 149.285, "end": 149.644, "char": [3, 8] },
+        { "start": 149.644, "end": 150.004, "char": [9, 14] },
+        { "start": 150.004, "end": 150.363, "char": [15, 22] },
+        { "start": 150.363, "end": 150.723, "char": [23, 35] }
+      ]
+    },
+    {
+      "start": 150.723,
+      "end": 153.239,
+      "text": "On se retrouve dans la prochaine vidéo,",
+      "words": [
+        { "start": 150.723, "end": 151.082, "char": [0, 2] },
+        { "start": 151.082, "end": 151.442, "char": [3, 5] },
+        { "start": 151.442, "end": 151.801, "char": [6, 14] },
+        { "start": 151.801, "end": 152.161, "char": [15, 19] },
+        { "start": 152.161, "end": 152.52, "char": [20, 22] },
+        { "start": 152.52, "end": 152.88, "char": [23, 32] },
+        { "start": 152.88, "end": 153.239, "char": [33, 39] }
+      ]
+    },
+    {
+      "start": 153.239,
+      "end": 155.756,
+      "text": "où nous explorerons le travail avec le",
+      "words": [
+        { "start": 153.239, "end": 153.599, "char": [0, 2] },
+        { "start": 153.599, "end": 153.958, "char": [3, 7] },
+        { "start": 153.958, "end": 154.318, "char": [8, 19] },
+        { "start": 154.318, "end": 154.677, "char": [20, 22] },
+        { "start": 154.677, "end": 155.037, "char": [23, 30] },
+        { "start": 155.037, "end": 155.396, "char": [31, 35] },
+        { "start": 155.396, "end": 155.756, "char": [36, 38] }
+      ]
+    },
+    {
+      "start": 155.756,
+      "end": 156.475,
+      "text": "repo lui-même.",
+      "words": [
+        { "start": 155.756, "end": 156.115, "char": [0, 4] },
+        { "start": 156.115, "end": 156.475, "char": [5, 14] }
+      ]
+    }
+  ]
+}

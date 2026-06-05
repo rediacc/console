@@ -4,17 +4,19 @@ description: Testige andmebaaside uuendusi riskivabalt, kasutades kohest kloonim
 category: Use Cases
 order: 4
 language: et
+sourceHash: "242617b8bede9535"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Testige kõike. Riskige mitte millegagi. Uuendage enesekindlalt.**
 
-**Märkus:** See on **kasutuskaasuse näide**, mis demonstreerib, kuidas Rediacc saab selle probleemi lahendada. Idufirmana esindavad need stsenaariumid potentsiaalseid rakendusi, mitte lõpetatud juhtumiuuringuid.
+Märkus: Rediaccil puuduvad hetkel tootmiskliendid. See on kasutuskaasuse näide, mis näitab, kuidas arhitektuur seda stsenaariumit praktikas käsitleb — mitte reaalsest juurutusest pärinev juhtumiuuringut.
 
-**Kriisistsenaariumil:** Andmebaasi uuendamise ajal ilmnes **ootamatu viga**, mis takistas naasmist vana versiooni juurde või edenemist uuele. Kliendid ei pääsenud süsteemidele ligi ja üle 5000 töötaja ei suutnud töötada.
+**Kriisistsenaariumil:** Andmebaasi uuendamise ajal ilmnes **ootamatu viga**, mis takistas naasmist vana versiooni juurde või edenemist uuele. Kliendid ei pääsenud süsteemidele ligi ja üle 5000 töötaja ei suutnud töötada. Ainus lahendus oli täielik süsteemi taastamine, mis nõudis paljusid inseneri-tunde, samal ajal kui ettevõte seisis.
 
 ## Probleem
 
-Mehmet on kogenud süsteemiadministraator, kes haldab suuremahulisi andmebaase. Ta otsustab **uuendada 100 TB suurust PostgreSQL andmebaasi versioonilt 13 versioonile 14**. Tema plaan:
+Mehmet haldab tootmise andmebaase, mida tema meeskond ei saa lubada seisata. Täna uuendab ta **100 TB suurust PostgreSQL andmebaasi versioonilt 13 versioonile 14**. Tema plaan:
 
 1. **Tehke varukoopia** → Kuid varundamine võtab **mitu päeva** andmete suuruse tõttu
 2. **Tehke uuendus nädalavahetusel** → Osakondadele teatatakse seiskumisest **laupäeval 01:00-05:00**
@@ -37,7 +39,7 @@ Mehmet on kogenud süsteemiadministraator, kes haldab suuremahulisi andmebaase. 
 
 ## Rediacci lahendus
 
-Mehmet lahendab probleemi põhjalikult Rediacciga:
+Nii muutub olukord Rediacciga:
 
 ![Riskivabad uuendused](/img/risk-free-upgrades.svg)
 

@@ -4,13 +4,13 @@ description: Konteineerpõhise teenuse käivitamine oma serveris minutitega.
 category: Guides
 order: -1
 language: et
-sourceHash: "15b3c42682a05678"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2047fd1ce3a47944"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Kiirjuhend
 
-Juuruta oma serveris krüpteeritud, isoleeritud konteinerikeskkond. Ilma pilvekontoide või SaaS-sõltuvusteta. Kõik töötab riistvaral, mida sa kontrollid.
+Juuruta Rediacc oma serveris. Krüpteeritud, isoleeritud konteinerikeskkond, ilma pilvekontoide ega SaaS-sõltuvusteta. Sinu riistvara, sinu kontroll.
 
 ---
 
@@ -20,7 +20,7 @@ Juuruta oma serveris krüpteeritud, isoleeritud konteinerikeskkond. Ilma pilveko
 
 Hoidla on üks krüpteeritud fail kettal. Liiguta seda, varunda see, tee sellest fork. See on lihtsalt fail. Ühendatuna muutub see kaustaks, mille sees on pühendatud Dockeri daemon ja sinu rakenduse andmed.
 
-Mõtle hoidlast kui USB-kettast: ühenda see mis tahes masina külge ja rakendused ning andmed ühenduvad, valmis töötamiseks. Liiguta seda masinate või pilveteenuse pakkujate vahel ilma midagi uuesti ehitamata. Ühenda ja käivita.
+Mõtle hoidlast kui USB-kettast: ühenda see mis tahes masina külge ja rakendused ning andmed ühenduvad, valmis töötamiseks. Liiguta seda masinate või pilveteenuse pakkujate vahel ilma midagi uuesti ehitamata.
 
 **Kaks tööriista, kaks rolli:**
 
@@ -97,7 +97,7 @@ rdc repo template list                                        # Kuva sisseehitat
 rdc repo template apply --name app-postgres -m my-server -r my-app  # Juuruta docker-compose.yml + Rediaccfile
 ```
 
-Mallid pakuvad `docker-compose.yml`, `Rediaccfile` ja toetavad faile. Ilma mallit (või oma compose-faili) pole midagi käivitada.
+Mallid pakuvad `docker-compose.yml`, `Rediaccfile` ja toetavad faile. Ilma mallit (või oma compose-faili) pole midagi käivitada. Kasuta sisseehitatud malli oma esimese hoidla jaoks. See on kiireim viis kogu töövoo nägemiseks otsast lõpuni.
 
 ### 3. Käivita hoidla
 
@@ -200,7 +200,7 @@ rdc repo push --name my-app -m my-server --to backup-server --up
 # Lükka CRIU kontrollpunktiga (elav migreerimine, säilitab mäluoleku)
 rdc repo push --name my-app -m my-server --to new-server --checkpoint --up
 
-# Lükka uuele masinale (automaatne provissioneerimine pilvepakkuja kaudu)
+# Lükka uuele masinale (automaatne provisioneerimine pilvepakkuja kaudu)
 rdc repo push --name my-app -m my-server --to new-server --provision linode --up
 ```
 

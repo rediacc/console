@@ -1,19 +1,19 @@
 ---
 title: "Criar um Fork de um Repositório"
-description: "Clone um repositório inteiro -- aplicação, base de dados, ficheiros -- em segundos. Qualquer tamanho. Zero disco extra."
+description: "Clone um repositório inteiro (aplicação, base de dados, ficheiros) em segundos. Qualquer tamanho. Zero disco extra."
 category: "Tutorials"
 subcategory: advanced
 order: 7
 language: pt
-sourceHash: "73a4cb1d8c412531"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "14d013a82dbcbd4e"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Criar um Fork de um Repositório
 
-Esta é a parte que muda a forma como trabalha. Clone um ambiente de produção inteiro -- a aplicação, a base de dados, os ficheiros de configuração -- em segundos. Qualquer tamanho. Zero disco extra. Faça fork quantas vezes quiser.
+Clone um ambiente de produção inteiro (a aplicação, a base de dados, os ficheiros de configuração) em segundos. Qualquer tamanho. Zero disco extra. Faça fork quantas vezes quiser.
 
 O lema: **clone production, break nothing.**
 
@@ -41,21 +41,21 @@ Agora faça o fork.
 
 ![Parent fans out into independent clones](/img/tutorials/tutorial-forking/slide-1.svg)
 
-Um comando. Clonou tudo -- a aplicação, a base de dados, os ficheiros de configuração -- e aconteceu em segundos. Execute novamente e obtém outro clone independente.
+Um comando. Clonou tudo (a aplicação, a base de dados, os ficheiros de configuração) e aconteceu em segundos. Execute novamente e obtém outro clone independente.
 
 ## Porquê tão rápido?
 
 ![Sharing a folder link is the same speed regardless of the folder's size](/img/tutorials/tutorial-forking/slide-2.svg)
 
-Imagine partilhar uma hiperligação para uma pasta. A hiperligação é a mesma seja a pasta pequena ou enorme -- a pasta é pesada, a hiperligação é leve.
+A razão é btrfs reflinks. Um fork cria uma nova árvore de sistema de ficheiros apontando para os mesmos blocos de dados que o pai. Nenhum dado é copiado no momento do fork. É tudo metadados, por isso o tamanho do pai nunca influencia quanto tempo o fork demora.
 
-![1 GB, 100 GB, 1 TB -- same time, every time](/img/tutorials/tutorial-forking/slide-3.svg)
+![1 GB, 100 GB, 1 TB. Same time, every time.](/img/tutorials/tutorial-forking/slide-3.svg)
 
-O fork funciona da mesma forma. 1 GB, 100 GB, 1 TB -- o mesmo tempo, sempre.
+O fork funciona da mesma forma. 1 GB, 100 GB, 1 TB. O mesmo tempo, sempre.
 
 ## O que é partilhado, o que é seu
 
-![Many mirrors, one sun -- shared base, your changes are yours](/img/tutorials/tutorial-forking/slide-4.svg)
+![Many mirrors, one sun: shared base, your changes are yours](/img/tutorials/tutorial-forking/slide-4.svg)
 
 Pense no repositório pai como uma fonte fixa. O seu fork é uma vista copy-on-write sobre ele. Escreva no fork e as escritas ficam no fork. O pai não se move, independentemente de quantos forks apontem para ele.
 
@@ -73,15 +73,15 @@ Se o repositório pai mudar mais tarde, o seu fork fica onde estava.
 
 ## O uso do disco mantém-se estável
 
-![Five forks of a 100 GB repo -- still about 100 GB](/img/tutorials/tutorial-forking/slide-6.svg)
+![Five forks of a 100 GB repo, still about 100 GB total](/img/tutorials/tutorial-forking/slide-6.svg)
 
 É por isso que o seu disco não explode. Cinco forks de um repositório de 100 GB? Ainda cerca de 100 GB no total. Só paga disco pelo que alterar em cada fork.
 
-> Faça fork cinco vezes se quiser -- o seu disco nem vai dar conta.
+> Faça fork cinco vezes se quiser. O seu disco nem vai dar conta.
 
 ## O que os forks *não* herdam: segredos
 
-Há uma coisa que o fork deliberadamente não segue: segredos. Um fork começa sem chaves de API, sem palavras-passe de bases de dados, sem tokens Stripe. É por isso que "clone production, break nothing" funciona de verdade -- o seu sandbox não pode faturar clientes reais porque não consegue fazer-se passar por si. Configuramos isto corretamente no tutorial [Gerir Segredos](/pt/docs/tutorial-managing-secrets).
+Há uma coisa que o fork deliberadamente não segue: segredos. Um fork começa sem chaves de API, sem palavras-passe de bases de dados, sem tokens Stripe. É por isso que "clone production, break nothing" funciona de verdade. O seu sandbox não pode faturar clientes reais porque não consegue fazer-se passar por si. Configuramos isto corretamente no tutorial [Gerir Segredos](/pt/docs/tutorial-managing-secrets).
 
 ## Verificar o isolamento
 

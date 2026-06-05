@@ -1,12 +1,13 @@
 ---
 title: "Приложение CLI (Облако / Экспериментальный)"
-description: "Облачные команды для Rediacc CLI — аутентификация, команды, организации и мультитенантное управление"
+description: "Команды облачного адаптера для Rediacc CLI (экспериментальный). Требует apiUrl и token в конфигурации. Охватывает аутентификацию, организации, команды, пользователей, разрешения, репозитории, очереди, блочное хранилище Ceph и журналы аудита."
 category: "Справочник"
 order: 3
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "c285d703825d9607"
+sourceHash: "52ac28479ebdafd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

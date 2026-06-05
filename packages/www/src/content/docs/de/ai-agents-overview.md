@@ -1,13 +1,14 @@
 ---
 title: Übersicht zur KI-Agenten-Integration
-description: Wie KI-Coding-Assistenten wie Claude Code, Cursor und Cline sich mit der Rediacc-Infrastruktur für autonome Bereitstellung und Verwaltung integrieren.
+description: "Wie Claude Code, Cursor und Cline die Rediacc-Infrastruktur über rdc verwalten: JSON-Ausgabe, Agenten-Introspektion und Sicherheitsmechanismen."
 category: Guides
 order: 30
 language: de
-sourceHash: "7789f1e26755c779"
+sourceHash: "0aa0c975030d4856"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-KI-Coding-Assistenten können die Rediacc-Infrastruktur über die `rdc` CLI autonom verwalten. Diese Anleitung behandelt die Integrationsansaetze und den Einstieg.
+Ehrlich gesagt ist `rdc` von Grund auf agentenkompatibel entworfen. Claude Code, Cursor, Cline: Jeder KI-Assistent, der `rdc` in einer Subshell aufruft, erhält strukturierte JSON-Ausgabe, maschinenlesbare Fehlermeldungen und die Sicherheitsmechanismen, die man für die autonome Verwaltung der Rediacc-Infrastruktur erwartet. So funktioniert die Integration.
 
 ## Warum Self-Hosted + KI-Agenten
 
@@ -16,10 +17,10 @@ Die Architektur von Rediacc ist von Natur aus agentenfreundlich:
 - **CLI-first**: Jede Operation ist ein `rdc`-Befehl, keine GUI erforderlich
 - **SSH-basiert**: Das Protokoll, das Agenten aus Trainingsdaten am besten kennen
 - **JSON-Ausgabe**: Alle Befehle unterstützen `--output json` mit einheitlichem Envelope
-- **Docker-Isolation**: Jedes Repository erhaelt seinen eigenen Daemon und Netzwerk-Namespace
-- **Skriptfaehig**: `--yes` überspringt Bestaetigungen, `--dry-run` zeigt destruktive Operationen in der Vorschau
+- **Docker-Isolation**: Jedes Repository erhält seinen eigenen Daemon und Netzwerk-Namespace
+- **Skriptfähig**: `--yes` überspringt Bestätigungen, `--dry-run` zeigt destruktive Operationen in der Vorschau
 
-## Integrationsansaetze
+## Integrationsansätze
 
 ### 1. AGENTS.md / CLAUDE.md-Vorlage
 
@@ -29,7 +30,7 @@ Der schnellste Einstieg. Kopieren Sie unsere [AGENTS.md-Vorlage](/de/docs/agents
 - `.cursorrules` für Cursor
 - `.windsurfrules` für Windsurf
 
-Dies gibt dem Agenten den vollstaendigen Kontext über verfügbare Befehle, Architektur und Konventionen.
+Einmal eingefügt, verfügt der Agent über die vollständige Befehlsreferenz, den Architekturkontext und die Konventionen, die er braucht, um ohne Raten zu arbeiten.
 
 ### 2. JSON-Ausgabe-Pipeline
 
@@ -60,7 +61,7 @@ Fehlerantworten enthalten die Felder `retryable` und `guidance`:
 }
 ```
 
-### 3. Agenten-Faehigkeitserkennung
+### 3. Agenten-Fähigkeitserkennung
 
 Der `rdc agent`-Unterbefehl bietet strukturierte Introspektion:
 
@@ -80,13 +81,18 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 | Flag | Zweck |
 |------|---------|
 | `--output json` / `-o json` | Maschinenlesbare JSON-Ausgabe |
-| `--yes` / `-y` | Interaktive Bestaetigungen überspringen |
-| `--quiet` / `-q` | Informative stderr-Ausgabe unterdruecken |
-| `--fields name,status` | Ausgabe auf bestimmte Felder beschraenken |
+| `--yes` / `-y` | Interaktive Bestätigungen überspringen |
+| `--quiet` / `-q` | Informative stderr-Ausgabe unterdrücken |
+| `--fields name,status` | Ausgabe auf bestimmte Felder beschränken |
 | `--dry-run` | Destruktive Operationen ohne Ausführung in der Vorschau anzeigen |
 
-## Naechste Schritte
+## Sicherheit und Schutzmaßnahmen
 
+Die CLI behandelt Agenten nicht gleich wie einen Menschen am Terminal. Sensible Operationen erfordern den Nachweis, dass der aktuelle Zustand bekannt ist (das Flag `--current`), interaktive Editor-Abläufe werden standardmäßig abgelehnt, und jede Ablehnung wird im Audit-Log festgehalten. Die Referenz [KI-Agenten: Sicherheit und Schutzmaßnahmen](/de/docs/ai-agents-safety) enthält die vollständige Firewall-Tabelle, das Knowledge-Gate-Modell, die Scope-Überschreibung `REDIACC_ALLOW_CONFIG_EDIT` und das hash-verkettete Audit-Log.
+
+## Nächste Schritte
+
+- [KI-Agenten: Sicherheit und Schutzmaßnahmen](/de/docs/ai-agents-safety), Was Agenten können und nicht können, Knowledge-Gate, Audit-Log
 - [Claude Code Einrichtungsanleitung](/de/docs/ai-agents-claude-code), Schritt-für-Schritt Claude Code-Konfiguration
 - [Cursor Einrichtungsanleitung](/de/docs/ai-agents-cursor), Cursor-IDE-Integration
 - [JSON-Ausgabe-Referenz](/de/docs/ai-agents-json-output), Vollständige JSON-Ausgabe-Dokumentation

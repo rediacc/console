@@ -1,1 +1,658 @@
-{"version":1,"cues":[{"start":1,"end":1.441,"text":"Pekâlâ!","words":[{"start":1,"end":1.441,"char":[0,7]}]},{"start":1.441,"end":3.206,"text":"Uygulamanız yayında ve yedekli;","words":[{"start":1.441,"end":1.882,"char":[0,11]},{"start":1.882,"end":2.324,"char":[12,19]},{"start":2.324,"end":2.765,"char":[20,22]},{"start":2.765,"end":3.206,"char":[23,31]}]},{"start":3.206,"end":4.971,"text":"şimdi sağlıklı kalmasını sağlayalım.","words":[{"start":3.206,"end":3.647,"char":[0,5]},{"start":3.647,"end":4.088,"char":[6,14]},{"start":4.088,"end":4.529,"char":[15,24]},{"start":4.529,"end":4.971,"char":[25,36]}]},{"start":5.724,"end":6.236,"text":"CLI,","words":[{"start":5.724,"end":6.236,"char":[0,4]}]},{"start":6.236,"end":8.799,"text":"dizüstü bilgisayarınızdan herhangi bir sunucunun","words":[{"start":6.236,"end":6.749,"char":[0,7]},{"start":6.749,"end":7.261,"char":[8,25]},{"start":7.261,"end":7.774,"char":[26,34]},{"start":7.774,"end":8.286,"char":[35,38]},{"start":8.286,"end":8.799,"char":[39,48]}]},{"start":8.799,"end":10.336,"text":"tam görüntüsünü verir.","words":[{"start":8.799,"end":9.311,"char":[0,3]},{"start":9.311,"end":9.824,"char":[4,15]},{"start":9.824,"end":10.336,"char":[16,22]}]},{"start":10.336,"end":12.899,"text":"Kontrol edilecek üç açı var:","words":[{"start":10.336,"end":10.849,"char":[0,7]},{"start":10.849,"end":11.361,"char":[8,16]},{"start":11.361,"end":11.874,"char":[17,19]},{"start":11.874,"end":12.386,"char":[20,23]},{"start":12.386,"end":12.899,"char":[24,28]}]},{"start":12.899,"end":13.924,"text":"sistem sağlığı,","words":[{"start":12.899,"end":13.411,"char":[0,6]},{"start":13.411,"end":13.924,"char":[7,15]}]},{"start":13.924,"end":16.486,"text":"çalışan container'lar ve depoların kendisi.","words":[{"start":13.924,"end":14.436,"char":[0,7]},{"start":14.436,"end":14.949,"char":[8,21]},{"start":14.949,"end":15.461,"char":[22,24]},{"start":15.461,"end":15.974,"char":[25,34]},{"start":15.974,"end":16.486,"char":[35,43]}]},{"start":19.751,"end":20.811,"text":"Sistem görünümüyle başlıyoruz.","words":[{"start":19.751,"end":20.104,"char":[0,6]},{"start":20.104,"end":20.457,"char":[7,18]},{"start":20.457,"end":20.811,"char":[19,30]}]},{"start":20.811,"end":22.577,"text":"--system filtresiyle makine sorgu komutu,","words":[{"start":20.811,"end":21.164,"char":[0,8]},{"start":21.164,"end":21.517,"char":[9,20]},{"start":21.517,"end":21.87,"char":[21,27]},{"start":21.87,"end":22.224,"char":[28,33]},{"start":22.224,"end":22.577,"char":[34,41]}]},{"start":22.577,"end":23.636,"text":"sistem çalışma süresi,","words":[{"start":22.577,"end":22.93,"char":[0,6]},{"start":22.93,"end":23.283,"char":[7,14]},{"start":23.283,"end":23.636,"char":[15,22]}]},{"start":23.636,"end":25.756,"text":"disk kullanımı ve depolama durumunu gösterir.","words":[{"start":23.636,"end":23.99,"char":[0,4]},{"start":23.99,"end":24.343,"char":[5,14]},{"start":24.343,"end":24.696,"char":[15,17]},{"start":24.696,"end":25.049,"char":[18,26]},{"start":25.049,"end":25.403,"char":[27,35]},{"start":25.403,"end":25.756,"char":[36,45]}]},{"start":25.756,"end":27.875,"text":"Bir sorun varsa rapor bizi bilgilendirir.","words":[{"start":25.756,"end":26.109,"char":[0,3]},{"start":26.109,"end":26.462,"char":[4,9]},{"start":26.462,"end":26.815,"char":[10,15]},{"start":26.815,"end":27.169,"char":[16,21]},{"start":27.169,"end":27.522,"char":[22,26]},{"start":27.522,"end":27.875,"char":[27,41]}]},{"start":27.875,"end":28.648,"text":"Çalışma süresi,","words":[{"start":27.875,"end":28.262,"char":[0,7]},{"start":28.262,"end":28.648,"char":[8,15]}]},{"start":28.648,"end":29.035,"text":"disk,","words":[{"start":28.648,"end":29.035,"char":[0,5]}]},{"start":29.035,"end":29.422,"text":"depolama.","words":[{"start":29.035,"end":29.422,"char":[0,9]}]},{"start":29.422,"end":31.741,"text":"Tek bakışta ihtiyacınız olan her şey.","words":[{"start":29.422,"end":29.808,"char":[0,3]},{"start":29.808,"end":30.195,"char":[4,11]},{"start":30.195,"end":30.581,"char":[12,23]},{"start":30.581,"end":30.968,"char":[24,28]},{"start":30.968,"end":31.355,"char":[29,32]},{"start":31.355,"end":31.741,"char":[33,37]}]},{"start":35.028,"end":36.075,"text":"Şimdi container'lar.","words":[{"start":35.028,"end":35.552,"char":[0,5]},{"start":35.552,"end":36.075,"char":[6,20]}]},{"start":36.075,"end":37.122,"text":"Bu görünüm,","words":[{"start":36.075,"end":36.599,"char":[0,2]},{"start":36.599,"end":37.122,"char":[3,11]}]},{"start":37.122,"end":39.74,"text":"makinedeki her depodaki tüm çalışan","words":[{"start":37.122,"end":37.646,"char":[0,10]},{"start":37.646,"end":38.17,"char":[11,14]},{"start":38.17,"end":38.693,"char":[15,23]},{"start":38.693,"end":39.217,"char":[24,27]},{"start":39.217,"end":39.74,"char":[28,35]}]},{"start":39.74,"end":40.787,"text":"container'ları listeler:","words":[{"start":39.74,"end":40.264,"char":[0,14]},{"start":40.264,"end":40.787,"char":[15,24]}]},{"start":40.787,"end":41.311,"text":"ad,","words":[{"start":40.787,"end":41.311,"char":[0,3]}]},{"start":41.311,"end":41.835,"text":"durum,","words":[{"start":41.311,"end":41.835,"char":[0,6]}]},{"start":41.835,"end":42.358,"text":"sağlık,","words":[{"start":41.835,"end":42.358,"char":[0,7]}]},{"start":42.358,"end":42.882,"text":"CPU,","words":[{"start":42.358,"end":42.882,"char":[0,4]}]},{"start":42.882,"end":45.5,"text":"bellek ve her birinin hangi","words":[{"start":42.882,"end":43.405,"char":[0,6]},{"start":43.405,"end":43.929,"char":[7,9]},{"start":43.929,"end":44.453,"char":[10,13]},{"start":44.453,"end":44.976,"char":[14,21]},{"start":44.976,"end":45.5,"char":[22,27]}]},{"start":45.5,"end":47.07,"text":"depoya ait olduğu.","words":[{"start":45.5,"end":46.023,"char":[0,6]},{"start":46.023,"end":46.547,"char":[7,10]},{"start":46.547,"end":47.07,"char":[11,18]}]},{"start":47.07,"end":49.235,"text":"Tüm depolardaki tüm container'lar,","words":[{"start":47.07,"end":47.612,"char":[0,3]},{"start":47.612,"end":48.153,"char":[4,15]},{"start":48.153,"end":48.694,"char":[16,19]},{"start":48.694,"end":49.235,"char":[20,34]}]},{"start":49.235,"end":50.858,"text":"tek bir görünümde.","words":[{"start":49.235,"end":49.776,"char":[0,3]},{"start":49.776,"end":50.317,"char":[4,7]},{"start":50.317,"end":50.858,"char":[8,18]}]},{"start":54.113,"end":55.571,"text":"Şimdi depoların kendisi.","words":[{"start":54.113,"end":54.599,"char":[0,5]},{"start":54.599,"end":55.085,"char":[6,15]},{"start":55.085,"end":55.571,"char":[16,24]}]},{"start":55.571,"end":56.057,"text":"Boyut,","words":[{"start":55.571,"end":56.057,"char":[0,6]}]},{"start":56.057,"end":57.028,"text":"bağlama durumu,","words":[{"start":56.057,"end":56.542,"char":[0,7]},{"start":56.542,"end":57.028,"char":[8,15]}]},{"start":57.028,"end":58.486,"text":"Docker daemon durumu,","words":[{"start":57.028,"end":57.514,"char":[0,6]},{"start":57.514,"end":58,"char":[7,13]},{"start":58,"end":58.486,"char":[14,21]}]},{"start":58.486,"end":59.458,"text":"disk kullanımı.","words":[{"start":58.486,"end":58.972,"char":[0,4]},{"start":58.972,"end":59.458,"char":[5,15]}]},{"start":59.458,"end":62.373,"text":"Makinedeki her izole ortam hakkında bilmeniz","words":[{"start":59.458,"end":59.944,"char":[0,10]},{"start":59.944,"end":60.429,"char":[11,14]},{"start":60.429,"end":60.915,"char":[15,20]},{"start":60.915,"end":61.401,"char":[21,26]},{"start":61.401,"end":61.887,"char":[27,35]},{"start":61.887,"end":62.373,"char":[36,44]}]},{"start":62.373,"end":63.831,"text":"gereken her şey.","words":[{"start":62.373,"end":62.859,"char":[0,7]},{"start":62.859,"end":63.345,"char":[8,11]},{"start":63.345,"end":63.831,"char":[12,16]}]},{"start":63.831,"end":64.935,"text":"Tüm depolar,","words":[{"start":63.831,"end":64.383,"char":[0,3]},{"start":64.383,"end":64.935,"char":[4,12]}]},{"start":64.935,"end":66.04,"text":"tüm daemon'ları,","words":[{"start":64.935,"end":65.487,"char":[0,3]},{"start":65.487,"end":66.04,"char":[4,16]}]},{"start":66.04,"end":67.697,"text":"tüm disk kullanımları.","words":[{"start":66.04,"end":66.592,"char":[0,3]},{"start":66.592,"end":67.144,"char":[4,8]},{"start":67.144,"end":67.697,"char":[9,22]}]},{"start":71.09,"end":73.85,"text":"Makine sorgu komutu her şeyi tek seferde","words":[{"start":71.09,"end":71.484,"char":[0,6]},{"start":71.484,"end":71.878,"char":[7,12]},{"start":71.878,"end":72.273,"char":[13,19]},{"start":72.273,"end":72.667,"char":[20,23]},{"start":72.667,"end":73.061,"char":[24,28]},{"start":73.061,"end":73.455,"char":[29,32]},{"start":73.455,"end":73.85,"char":[33,40]}]},{"start":73.85,"end":74.244,"text":"verir.","words":[{"start":73.85,"end":74.244,"char":[0,6]}]},{"start":74.244,"end":75.032,"text":"Sistem bilgisi,","words":[{"start":74.244,"end":74.638,"char":[0,6]},{"start":74.638,"end":75.032,"char":[7,15]}]},{"start":75.032,"end":75.426,"text":"container'lar,","words":[{"start":75.032,"end":75.426,"char":[0,14]}]},{"start":75.426,"end":75.821,"text":"depolar;","words":[{"start":75.426,"end":75.821,"char":[0,8]}]},{"start":75.821,"end":77.003,"text":"hepsi bir arada.","words":[{"start":75.821,"end":76.215,"char":[0,5]},{"start":76.215,"end":76.609,"char":[6,9]},{"start":76.609,"end":77.003,"char":[10,16]}]},{"start":77.003,"end":78.186,"text":"Bir kez çalıştırın;","words":[{"start":77.003,"end":77.397,"char":[0,3]},{"start":77.397,"end":77.792,"char":[4,7]},{"start":77.792,"end":78.186,"char":[8,19]}]},{"start":78.186,"end":79.763,"text":"tam görünümü elde edin.","words":[{"start":78.186,"end":78.58,"char":[0,3]},{"start":78.58,"end":78.974,"char":[4,12]},{"start":78.974,"end":79.368,"char":[13,17]},{"start":79.368,"end":79.763,"char":[18,23]}]},{"start":79.763,"end":81.556,"text":"Her şey bir arada,","words":[{"start":79.763,"end":80.211,"char":[0,3]},{"start":80.211,"end":80.66,"char":[4,7]},{"start":80.66,"end":81.108,"char":[8,11]},{"start":81.108,"end":81.556,"char":[12,18]}]},{"start":81.556,"end":82.453,"text":"filtre gerekmez.","words":[{"start":81.556,"end":82.005,"char":[0,6]},{"start":82.005,"end":82.453,"char":[7,16]}]},{"start":89.193,"end":92.013,"text":"Son olarak dizüstü bilgisayarınızda yerel","words":[{"start":89.193,"end":89.757,"char":[0,3]},{"start":89.757,"end":90.321,"char":[4,10]},{"start":90.321,"end":90.885,"char":[11,18]},{"start":90.885,"end":91.449,"char":[19,35]},{"start":91.449,"end":92.013,"char":[36,41]}]},{"start":92.013,"end":94.834,"text":"doğruluk kontrolü için tanı denetimi.","words":[{"start":92.013,"end":92.577,"char":[0,8]},{"start":92.577,"end":93.141,"char":[9,17]},{"start":93.141,"end":93.705,"char":[18,22]},{"start":93.705,"end":94.269,"char":[23,27]},{"start":94.269,"end":94.834,"char":[28,37]}]},{"start":94.834,"end":95.398,"text":"Node,","words":[{"start":94.834,"end":95.398,"char":[0,5]}]},{"start":95.398,"end":96.526,"text":"SSH anahtarı,","words":[{"start":95.398,"end":95.962,"char":[0,3]},{"start":95.962,"end":96.526,"char":[4,13]}]},{"start":96.526,"end":97.09,"text":"renet,","words":[{"start":96.526,"end":97.09,"char":[0,6]}]},{"start":97.09,"end":97.654,"text":"Docker;","words":[{"start":97.09,"end":97.654,"char":[0,7]}]},{"start":97.654,"end":100.474,"text":"CLI'nin bağımlı olduğu her şey.","words":[{"start":97.654,"end":98.218,"char":[0,7]},{"start":98.218,"end":98.782,"char":[8,15]},{"start":98.782,"end":99.346,"char":[16,22]},{"start":99.346,"end":99.91,"char":[23,26]},{"start":99.91,"end":100.474,"char":[27,31]}]},{"start":100.474,"end":101.602,"text":"Seri tamamlandı.","words":[{"start":100.474,"end":101.038,"char":[0,4]},{"start":101.038,"end":101.602,"char":[5,16]}]},{"start":101.602,"end":103.294,"text":"Kurulumdan izlemeye kadar,","words":[{"start":101.602,"end":102.166,"char":[0,10]},{"start":102.166,"end":102.73,"char":[11,19]},{"start":102.73,"end":103.294,"char":[20,26]}]},{"start":103.294,"end":104.422,"text":"hepsi terminalinizden.","words":[{"start":103.294,"end":103.858,"char":[0,5]},{"start":103.858,"end":104.422,"char":[6,22]}]},{"start":104.422,"end":107.27,"text":"Hepsi yeşilse yerel CLI'nız sağlıklı demektir.","words":[{"start":104.422,"end":104.897,"char":[0,5]},{"start":104.897,"end":105.372,"char":[6,13]},{"start":105.372,"end":105.846,"char":[14,19]},{"start":105.846,"end":106.321,"char":[20,27]},{"start":106.321,"end":106.795,"char":[28,36]},{"start":106.795,"end":107.27,"char":[37,46]}]},{"start":108.026,"end":109.633,"text":"Seri böylece tamamlandı.","words":[{"start":108.026,"end":108.562,"char":[0,4]},{"start":108.562,"end":109.097,"char":[5,12]},{"start":109.097,"end":109.633,"char":[13,24]}]},{"start":109.633,"end":111.239,"text":"Artık kurulum yapabilir,","words":[{"start":109.633,"end":110.168,"char":[0,5]},{"start":110.168,"end":110.704,"char":[6,13]},{"start":110.704,"end":111.239,"char":[14,24]}]},{"start":111.239,"end":111.775,"text":"yapılandırabilir,","words":[{"start":111.239,"end":111.775,"char":[0,17]}]},{"start":111.775,"end":112.31,"text":"dağıtabilir,","words":[{"start":111.775,"end":112.31,"char":[0,12]}]},{"start":112.31,"end":112.846,"text":"fork'layabilir,","words":[{"start":112.31,"end":112.846,"char":[0,15]}]},{"start":112.846,"end":113.917,"text":"yayına alabilir,","words":[{"start":112.846,"end":113.381,"char":[0,6]},{"start":113.381,"end":113.917,"char":[7,16]}]},{"start":113.917,"end":114.988,"text":"otomatik başlatabilir,","words":[{"start":113.917,"end":114.452,"char":[0,8]},{"start":114.452,"end":114.988,"char":[9,22]}]},{"start":114.988,"end":116.595,"text":"yedekleyebilir ve izleyebilirsiniz;","words":[{"start":114.988,"end":115.523,"char":[0,14]},{"start":115.523,"end":116.059,"char":[15,17]},{"start":116.059,"end":116.595,"char":[18,35]}]},{"start":116.595,"end":117.666,"text":"hepsi terminalinizden!","words":[{"start":116.595,"end":117.13,"char":[0,5]},{"start":117.13,"end":117.666,"char":[6,22]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.441,
+      "text": "Pekâlâ!",
+      "words": [{ "start": 1, "end": 1.441, "char": [0, 7] }]
+    },
+    {
+      "start": 1.441,
+      "end": 3.206,
+      "text": "Uygulamanız yayında ve yedekli;",
+      "words": [
+        { "start": 1.441, "end": 1.882, "char": [0, 11] },
+        { "start": 1.882, "end": 2.324, "char": [12, 19] },
+        { "start": 2.324, "end": 2.765, "char": [20, 22] },
+        { "start": 2.765, "end": 3.206, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 3.206,
+      "end": 4.971,
+      "text": "şimdi sağlıklı kalmasını sağlayalım.",
+      "words": [
+        { "start": 3.206, "end": 3.647, "char": [0, 5] },
+        { "start": 3.647, "end": 4.088, "char": [6, 14] },
+        { "start": 4.088, "end": 4.529, "char": [15, 24] },
+        { "start": 4.529, "end": 4.971, "char": [25, 36] }
+      ]
+    },
+    {
+      "start": 5.724,
+      "end": 6.236,
+      "text": "CLI,",
+      "words": [{ "start": 5.724, "end": 6.236, "char": [0, 4] }]
+    },
+    {
+      "start": 6.236,
+      "end": 8.799,
+      "text": "dizüstü bilgisayarınızdan herhangi bir sunucunun",
+      "words": [
+        { "start": 6.236, "end": 6.749, "char": [0, 7] },
+        { "start": 6.749, "end": 7.261, "char": [8, 25] },
+        { "start": 7.261, "end": 7.774, "char": [26, 34] },
+        { "start": 7.774, "end": 8.286, "char": [35, 38] },
+        { "start": 8.286, "end": 8.799, "char": [39, 48] }
+      ]
+    },
+    {
+      "start": 8.799,
+      "end": 10.336,
+      "text": "tam görüntüsünü verir.",
+      "words": [
+        { "start": 8.799, "end": 9.311, "char": [0, 3] },
+        { "start": 9.311, "end": 9.824, "char": [4, 15] },
+        { "start": 9.824, "end": 10.336, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 10.336,
+      "end": 12.899,
+      "text": "Kontrol edilecek üç açı var:",
+      "words": [
+        { "start": 10.336, "end": 10.849, "char": [0, 7] },
+        { "start": 10.849, "end": 11.361, "char": [8, 16] },
+        { "start": 11.361, "end": 11.874, "char": [17, 19] },
+        { "start": 11.874, "end": 12.386, "char": [20, 23] },
+        { "start": 12.386, "end": 12.899, "char": [24, 28] }
+      ]
+    },
+    {
+      "start": 12.899,
+      "end": 13.924,
+      "text": "sistem sağlığı,",
+      "words": [
+        { "start": 12.899, "end": 13.411, "char": [0, 6] },
+        { "start": 13.411, "end": 13.924, "char": [7, 15] }
+      ]
+    },
+    {
+      "start": 13.924,
+      "end": 16.486,
+      "text": "çalışan container'lar ve depoların kendisi.",
+      "words": [
+        { "start": 13.924, "end": 14.436, "char": [0, 7] },
+        { "start": 14.436, "end": 14.949, "char": [8, 21] },
+        { "start": 14.949, "end": 15.461, "char": [22, 24] },
+        { "start": 15.461, "end": 15.974, "char": [25, 34] },
+        { "start": 15.974, "end": 16.486, "char": [35, 43] }
+      ]
+    },
+    {
+      "start": 19.751,
+      "end": 20.811,
+      "text": "Sistem görünümüyle başlıyoruz.",
+      "words": [
+        { "start": 19.751, "end": 20.104, "char": [0, 6] },
+        { "start": 20.104, "end": 20.457, "char": [7, 18] },
+        { "start": 20.457, "end": 20.811, "char": [19, 30] }
+      ]
+    },
+    {
+      "start": 20.811,
+      "end": 22.577,
+      "text": "--system filtresiyle makine sorgu komutu,",
+      "words": [
+        { "start": 20.811, "end": 21.164, "char": [0, 8] },
+        { "start": 21.164, "end": 21.517, "char": [9, 20] },
+        { "start": 21.517, "end": 21.87, "char": [21, 27] },
+        { "start": 21.87, "end": 22.224, "char": [28, 33] },
+        { "start": 22.224, "end": 22.577, "char": [34, 41] }
+      ]
+    },
+    {
+      "start": 22.577,
+      "end": 23.636,
+      "text": "sistem çalışma süresi,",
+      "words": [
+        { "start": 22.577, "end": 22.93, "char": [0, 6] },
+        { "start": 22.93, "end": 23.283, "char": [7, 14] },
+        { "start": 23.283, "end": 23.636, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 23.636,
+      "end": 25.756,
+      "text": "disk kullanımı ve depolama durumunu gösterir.",
+      "words": [
+        { "start": 23.636, "end": 23.99, "char": [0, 4] },
+        { "start": 23.99, "end": 24.343, "char": [5, 14] },
+        { "start": 24.343, "end": 24.696, "char": [15, 17] },
+        { "start": 24.696, "end": 25.049, "char": [18, 26] },
+        { "start": 25.049, "end": 25.403, "char": [27, 35] },
+        { "start": 25.403, "end": 25.756, "char": [36, 45] }
+      ]
+    },
+    {
+      "start": 25.756,
+      "end": 27.875,
+      "text": "Bir sorun varsa rapor bizi bilgilendirir.",
+      "words": [
+        { "start": 25.756, "end": 26.109, "char": [0, 3] },
+        { "start": 26.109, "end": 26.462, "char": [4, 9] },
+        { "start": 26.462, "end": 26.815, "char": [10, 15] },
+        { "start": 26.815, "end": 27.169, "char": [16, 21] },
+        { "start": 27.169, "end": 27.522, "char": [22, 26] },
+        { "start": 27.522, "end": 27.875, "char": [27, 41] }
+      ]
+    },
+    {
+      "start": 27.875,
+      "end": 28.648,
+      "text": "Çalışma süresi,",
+      "words": [
+        { "start": 27.875, "end": 28.262, "char": [0, 7] },
+        { "start": 28.262, "end": 28.648, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 28.648,
+      "end": 29.035,
+      "text": "disk,",
+      "words": [{ "start": 28.648, "end": 29.035, "char": [0, 5] }]
+    },
+    {
+      "start": 29.035,
+      "end": 29.422,
+      "text": "depolama.",
+      "words": [{ "start": 29.035, "end": 29.422, "char": [0, 9] }]
+    },
+    {
+      "start": 29.422,
+      "end": 31.741,
+      "text": "Tek bakışta ihtiyacınız olan her şey.",
+      "words": [
+        { "start": 29.422, "end": 29.808, "char": [0, 3] },
+        { "start": 29.808, "end": 30.195, "char": [4, 11] },
+        { "start": 30.195, "end": 30.581, "char": [12, 23] },
+        { "start": 30.581, "end": 30.968, "char": [24, 28] },
+        { "start": 30.968, "end": 31.355, "char": [29, 32] },
+        { "start": 31.355, "end": 31.741, "char": [33, 37] }
+      ]
+    },
+    {
+      "start": 35.028,
+      "end": 36.075,
+      "text": "Şimdi container'lar.",
+      "words": [
+        { "start": 35.028, "end": 35.552, "char": [0, 5] },
+        { "start": 35.552, "end": 36.075, "char": [6, 20] }
+      ]
+    },
+    {
+      "start": 36.075,
+      "end": 37.122,
+      "text": "Bu görünüm,",
+      "words": [
+        { "start": 36.075, "end": 36.599, "char": [0, 2] },
+        { "start": 36.599, "end": 37.122, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 37.122,
+      "end": 39.74,
+      "text": "makinedeki her depodaki tüm çalışan",
+      "words": [
+        { "start": 37.122, "end": 37.646, "char": [0, 10] },
+        { "start": 37.646, "end": 38.17, "char": [11, 14] },
+        { "start": 38.17, "end": 38.693, "char": [15, 23] },
+        { "start": 38.693, "end": 39.217, "char": [24, 27] },
+        { "start": 39.217, "end": 39.74, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 39.74,
+      "end": 40.787,
+      "text": "container'ları listeler:",
+      "words": [
+        { "start": 39.74, "end": 40.264, "char": [0, 14] },
+        { "start": 40.264, "end": 40.787, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 40.787,
+      "end": 41.311,
+      "text": "ad,",
+      "words": [{ "start": 40.787, "end": 41.311, "char": [0, 3] }]
+    },
+    {
+      "start": 41.311,
+      "end": 41.835,
+      "text": "durum,",
+      "words": [{ "start": 41.311, "end": 41.835, "char": [0, 6] }]
+    },
+    {
+      "start": 41.835,
+      "end": 42.358,
+      "text": "sağlık,",
+      "words": [{ "start": 41.835, "end": 42.358, "char": [0, 7] }]
+    },
+    {
+      "start": 42.358,
+      "end": 42.882,
+      "text": "CPU,",
+      "words": [{ "start": 42.358, "end": 42.882, "char": [0, 4] }]
+    },
+    {
+      "start": 42.882,
+      "end": 45.5,
+      "text": "bellek ve her birinin hangi",
+      "words": [
+        { "start": 42.882, "end": 43.405, "char": [0, 6] },
+        { "start": 43.405, "end": 43.929, "char": [7, 9] },
+        { "start": 43.929, "end": 44.453, "char": [10, 13] },
+        { "start": 44.453, "end": 44.976, "char": [14, 21] },
+        { "start": 44.976, "end": 45.5, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 45.5,
+      "end": 47.07,
+      "text": "depoya ait olduğu.",
+      "words": [
+        { "start": 45.5, "end": 46.023, "char": [0, 6] },
+        { "start": 46.023, "end": 46.547, "char": [7, 10] },
+        { "start": 46.547, "end": 47.07, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 47.07,
+      "end": 49.235,
+      "text": "Tüm depolardaki tüm container'lar,",
+      "words": [
+        { "start": 47.07, "end": 47.612, "char": [0, 3] },
+        { "start": 47.612, "end": 48.153, "char": [4, 15] },
+        { "start": 48.153, "end": 48.694, "char": [16, 19] },
+        { "start": 48.694, "end": 49.235, "char": [20, 34] }
+      ]
+    },
+    {
+      "start": 49.235,
+      "end": 50.858,
+      "text": "tek bir görünümde.",
+      "words": [
+        { "start": 49.235, "end": 49.776, "char": [0, 3] },
+        { "start": 49.776, "end": 50.317, "char": [4, 7] },
+        { "start": 50.317, "end": 50.858, "char": [8, 18] }
+      ]
+    },
+    {
+      "start": 54.113,
+      "end": 55.571,
+      "text": "Şimdi depoların kendisi.",
+      "words": [
+        { "start": 54.113, "end": 54.599, "char": [0, 5] },
+        { "start": 54.599, "end": 55.085, "char": [6, 15] },
+        { "start": 55.085, "end": 55.571, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 55.571,
+      "end": 56.057,
+      "text": "Boyut,",
+      "words": [{ "start": 55.571, "end": 56.057, "char": [0, 6] }]
+    },
+    {
+      "start": 56.057,
+      "end": 57.028,
+      "text": "bağlama durumu,",
+      "words": [
+        { "start": 56.057, "end": 56.542, "char": [0, 7] },
+        { "start": 56.542, "end": 57.028, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 57.028,
+      "end": 58.486,
+      "text": "Docker daemon durumu,",
+      "words": [
+        { "start": 57.028, "end": 57.514, "char": [0, 6] },
+        { "start": 57.514, "end": 58, "char": [7, 13] },
+        { "start": 58, "end": 58.486, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 58.486,
+      "end": 59.458,
+      "text": "disk kullanımı.",
+      "words": [
+        { "start": 58.486, "end": 58.972, "char": [0, 4] },
+        { "start": 58.972, "end": 59.458, "char": [5, 15] }
+      ]
+    },
+    {
+      "start": 59.458,
+      "end": 62.373,
+      "text": "Makinedeki her izole ortam hakkında bilmeniz",
+      "words": [
+        { "start": 59.458, "end": 59.944, "char": [0, 10] },
+        { "start": 59.944, "end": 60.429, "char": [11, 14] },
+        { "start": 60.429, "end": 60.915, "char": [15, 20] },
+        { "start": 60.915, "end": 61.401, "char": [21, 26] },
+        { "start": 61.401, "end": 61.887, "char": [27, 35] },
+        { "start": 61.887, "end": 62.373, "char": [36, 44] }
+      ]
+    },
+    {
+      "start": 62.373,
+      "end": 63.831,
+      "text": "gereken her şey.",
+      "words": [
+        { "start": 62.373, "end": 62.859, "char": [0, 7] },
+        { "start": 62.859, "end": 63.345, "char": [8, 11] },
+        { "start": 63.345, "end": 63.831, "char": [12, 16] }
+      ]
+    },
+    {
+      "start": 63.831,
+      "end": 64.935,
+      "text": "Tüm depolar,",
+      "words": [
+        { "start": 63.831, "end": 64.383, "char": [0, 3] },
+        { "start": 64.383, "end": 64.935, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 64.935,
+      "end": 66.04,
+      "text": "tüm daemon'ları,",
+      "words": [
+        { "start": 64.935, "end": 65.487, "char": [0, 3] },
+        { "start": 65.487, "end": 66.04, "char": [4, 16] }
+      ]
+    },
+    {
+      "start": 66.04,
+      "end": 67.697,
+      "text": "tüm disk kullanımları.",
+      "words": [
+        { "start": 66.04, "end": 66.592, "char": [0, 3] },
+        { "start": 66.592, "end": 67.144, "char": [4, 8] },
+        { "start": 67.144, "end": 67.697, "char": [9, 22] }
+      ]
+    },
+    {
+      "start": 71.09,
+      "end": 73.85,
+      "text": "Makine sorgu komutu her şeyi tek seferde",
+      "words": [
+        { "start": 71.09, "end": 71.484, "char": [0, 6] },
+        { "start": 71.484, "end": 71.878, "char": [7, 12] },
+        { "start": 71.878, "end": 72.273, "char": [13, 19] },
+        { "start": 72.273, "end": 72.667, "char": [20, 23] },
+        { "start": 72.667, "end": 73.061, "char": [24, 28] },
+        { "start": 73.061, "end": 73.455, "char": [29, 32] },
+        { "start": 73.455, "end": 73.85, "char": [33, 40] }
+      ]
+    },
+    {
+      "start": 73.85,
+      "end": 74.244,
+      "text": "verir.",
+      "words": [{ "start": 73.85, "end": 74.244, "char": [0, 6] }]
+    },
+    {
+      "start": 74.244,
+      "end": 75.032,
+      "text": "Sistem bilgisi,",
+      "words": [
+        { "start": 74.244, "end": 74.638, "char": [0, 6] },
+        { "start": 74.638, "end": 75.032, "char": [7, 15] }
+      ]
+    },
+    {
+      "start": 75.032,
+      "end": 75.426,
+      "text": "container'lar,",
+      "words": [{ "start": 75.032, "end": 75.426, "char": [0, 14] }]
+    },
+    {
+      "start": 75.426,
+      "end": 75.821,
+      "text": "depolar;",
+      "words": [{ "start": 75.426, "end": 75.821, "char": [0, 8] }]
+    },
+    {
+      "start": 75.821,
+      "end": 77.003,
+      "text": "hepsi bir arada.",
+      "words": [
+        { "start": 75.821, "end": 76.215, "char": [0, 5] },
+        { "start": 76.215, "end": 76.609, "char": [6, 9] },
+        { "start": 76.609, "end": 77.003, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 77.003,
+      "end": 78.186,
+      "text": "Bir kez çalıştırın;",
+      "words": [
+        { "start": 77.003, "end": 77.397, "char": [0, 3] },
+        { "start": 77.397, "end": 77.792, "char": [4, 7] },
+        { "start": 77.792, "end": 78.186, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 78.186,
+      "end": 79.763,
+      "text": "tam görünümü elde edin.",
+      "words": [
+        { "start": 78.186, "end": 78.58, "char": [0, 3] },
+        { "start": 78.58, "end": 78.974, "char": [4, 12] },
+        { "start": 78.974, "end": 79.368, "char": [13, 17] },
+        { "start": 79.368, "end": 79.763, "char": [18, 23] }
+      ]
+    },
+    {
+      "start": 79.763,
+      "end": 81.556,
+      "text": "Her şey bir arada,",
+      "words": [
+        { "start": 79.763, "end": 80.211, "char": [0, 3] },
+        { "start": 80.211, "end": 80.66, "char": [4, 7] },
+        { "start": 80.66, "end": 81.108, "char": [8, 11] },
+        { "start": 81.108, "end": 81.556, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 81.556,
+      "end": 82.453,
+      "text": "filtre gerekmez.",
+      "words": [
+        { "start": 81.556, "end": 82.005, "char": [0, 6] },
+        { "start": 82.005, "end": 82.453, "char": [7, 16] }
+      ]
+    },
+    {
+      "start": 89.193,
+      "end": 92.013,
+      "text": "Son olarak dizüstü bilgisayarınızda yerel",
+      "words": [
+        { "start": 89.193, "end": 89.757, "char": [0, 3] },
+        { "start": 89.757, "end": 90.321, "char": [4, 10] },
+        { "start": 90.321, "end": 90.885, "char": [11, 18] },
+        { "start": 90.885, "end": 91.449, "char": [19, 35] },
+        { "start": 91.449, "end": 92.013, "char": [36, 41] }
+      ]
+    },
+    {
+      "start": 92.013,
+      "end": 94.834,
+      "text": "doğruluk kontrolü için tanı denetimi.",
+      "words": [
+        { "start": 92.013, "end": 92.577, "char": [0, 8] },
+        { "start": 92.577, "end": 93.141, "char": [9, 17] },
+        { "start": 93.141, "end": 93.705, "char": [18, 22] },
+        { "start": 93.705, "end": 94.269, "char": [23, 27] },
+        { "start": 94.269, "end": 94.834, "char": [28, 37] }
+      ]
+    },
+    {
+      "start": 94.834,
+      "end": 95.398,
+      "text": "Node,",
+      "words": [{ "start": 94.834, "end": 95.398, "char": [0, 5] }]
+    },
+    {
+      "start": 95.398,
+      "end": 96.526,
+      "text": "SSH anahtarı,",
+      "words": [
+        { "start": 95.398, "end": 95.962, "char": [0, 3] },
+        { "start": 95.962, "end": 96.526, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 96.526,
+      "end": 97.09,
+      "text": "renet,",
+      "words": [{ "start": 96.526, "end": 97.09, "char": [0, 6] }]
+    },
+    {
+      "start": 97.09,
+      "end": 97.654,
+      "text": "Docker;",
+      "words": [{ "start": 97.09, "end": 97.654, "char": [0, 7] }]
+    },
+    {
+      "start": 97.654,
+      "end": 100.474,
+      "text": "CLI'nin bağımlı olduğu her şey.",
+      "words": [
+        { "start": 97.654, "end": 98.218, "char": [0, 7] },
+        { "start": 98.218, "end": 98.782, "char": [8, 15] },
+        { "start": 98.782, "end": 99.346, "char": [16, 22] },
+        { "start": 99.346, "end": 99.91, "char": [23, 26] },
+        { "start": 99.91, "end": 100.474, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 100.474,
+      "end": 101.602,
+      "text": "Seri tamamlandı.",
+      "words": [
+        { "start": 100.474, "end": 101.038, "char": [0, 4] },
+        { "start": 101.038, "end": 101.602, "char": [5, 16] }
+      ]
+    },
+    {
+      "start": 101.602,
+      "end": 103.294,
+      "text": "Kurulumdan izlemeye kadar,",
+      "words": [
+        { "start": 101.602, "end": 102.166, "char": [0, 10] },
+        { "start": 102.166, "end": 102.73, "char": [11, 19] },
+        { "start": 102.73, "end": 103.294, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 103.294,
+      "end": 104.422,
+      "text": "hepsi terminalinizden.",
+      "words": [
+        { "start": 103.294, "end": 103.858, "char": [0, 5] },
+        { "start": 103.858, "end": 104.422, "char": [6, 22] }
+      ]
+    },
+    {
+      "start": 104.422,
+      "end": 107.27,
+      "text": "Hepsi yeşilse yerel CLI'nız sağlıklı demektir.",
+      "words": [
+        { "start": 104.422, "end": 104.897, "char": [0, 5] },
+        { "start": 104.897, "end": 105.372, "char": [6, 13] },
+        { "start": 105.372, "end": 105.846, "char": [14, 19] },
+        { "start": 105.846, "end": 106.321, "char": [20, 27] },
+        { "start": 106.321, "end": 106.795, "char": [28, 36] },
+        { "start": 106.795, "end": 107.27, "char": [37, 46] }
+      ]
+    },
+    {
+      "start": 108.026,
+      "end": 109.633,
+      "text": "Seri böylece tamamlandı.",
+      "words": [
+        { "start": 108.026, "end": 108.562, "char": [0, 4] },
+        { "start": 108.562, "end": 109.097, "char": [5, 12] },
+        { "start": 109.097, "end": 109.633, "char": [13, 24] }
+      ]
+    },
+    {
+      "start": 109.633,
+      "end": 111.239,
+      "text": "Artık kurulum yapabilir,",
+      "words": [
+        { "start": 109.633, "end": 110.168, "char": [0, 5] },
+        { "start": 110.168, "end": 110.704, "char": [6, 13] },
+        { "start": 110.704, "end": 111.239, "char": [14, 24] }
+      ]
+    },
+    {
+      "start": 111.239,
+      "end": 111.775,
+      "text": "yapılandırabilir,",
+      "words": [{ "start": 111.239, "end": 111.775, "char": [0, 17] }]
+    },
+    {
+      "start": 111.775,
+      "end": 112.31,
+      "text": "dağıtabilir,",
+      "words": [{ "start": 111.775, "end": 112.31, "char": [0, 12] }]
+    },
+    {
+      "start": 112.31,
+      "end": 112.846,
+      "text": "fork'layabilir,",
+      "words": [{ "start": 112.31, "end": 112.846, "char": [0, 15] }]
+    },
+    {
+      "start": 112.846,
+      "end": 113.917,
+      "text": "yayına alabilir,",
+      "words": [
+        { "start": 112.846, "end": 113.381, "char": [0, 6] },
+        { "start": 113.381, "end": 113.917, "char": [7, 16] }
+      ]
+    },
+    {
+      "start": 113.917,
+      "end": 114.988,
+      "text": "otomatik başlatabilir,",
+      "words": [
+        { "start": 113.917, "end": 114.452, "char": [0, 8] },
+        { "start": 114.452, "end": 114.988, "char": [9, 22] }
+      ]
+    },
+    {
+      "start": 114.988,
+      "end": 116.595,
+      "text": "yedekleyebilir ve izleyebilirsiniz;",
+      "words": [
+        { "start": 114.988, "end": 115.523, "char": [0, 14] },
+        { "start": 115.523, "end": 116.059, "char": [15, 17] },
+        { "start": 116.059, "end": 116.595, "char": [18, 35] }
+      ]
+    },
+    {
+      "start": 116.595,
+      "end": 117.666,
+      "text": "hepsi terminalinizden!",
+      "words": [
+        { "start": 116.595, "end": 117.13, "char": [0, 5] },
+        { "start": 117.13, "end": 117.666, "char": [6, 22] }
+      ]
+    }
+  ]
+}

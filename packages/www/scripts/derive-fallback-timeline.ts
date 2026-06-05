@@ -88,9 +88,7 @@ function parseArgs(argv: string[]): { lang?: FallbackLang } {
     if (argv[i] === '--lang') {
       const v = argv[++i];
       if (!FALLBACK_LANGUAGES.includes(v as FallbackLang)) {
-        throw new Error(
-          `--lang must be one of ${FALLBACK_LANGUAGES.join(', ')} (got "${v}")`
-        );
+        throw new Error(`--lang must be one of ${FALLBACK_LANGUAGES.join(', ')} (got "${v}")`);
       }
       return { lang: v as FallbackLang };
     }
@@ -108,7 +106,8 @@ function deriveOne(lang: FallbackLang, slug: string): { wrote: boolean; reason?:
   const outPath = path.join(timelineDir, lang, `${slug}.json`);
 
   if (!fs.existsSync(enPath)) return { wrote: false, reason: `en timeline missing: ${enPath}` };
-  if (!fs.existsSync(transcriptPath)) return { wrote: false, reason: `transcript missing: ${transcriptPath}` };
+  if (!fs.existsSync(transcriptPath))
+    return { wrote: false, reason: `transcript missing: ${transcriptPath}` };
 
   const en = readJson<Timeline>(enPath);
   const transcript = readJson<Transcript>(transcriptPath);
@@ -141,7 +140,8 @@ function deriveOne(lang: FallbackLang, slug: string): { wrote: boolean; reason?:
     const localText = eventTextById.get(s.id);
     next.narrationText = localText ?? s.narrationText ?? '';
     if (typeof s.afterAudioSrc === 'string') next.afterAudioSrc = s.afterAudioSrc;
-    if (typeof s.afterAudioDurationSec === 'number') next.afterAudioDurationSec = s.afterAudioDurationSec;
+    if (typeof s.afterAudioDurationSec === 'number')
+      next.afterAudioDurationSec = s.afterAudioDurationSec;
     if (typeof s.afterTextHash === 'string') next.afterTextHash = s.afterTextHash;
     // wordTimings / afterWordTimings deliberately dropped — see header comment.
     return next;

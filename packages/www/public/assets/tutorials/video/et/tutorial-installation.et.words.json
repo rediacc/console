@@ -1,1 +1,399 @@
-{"version":1,"cues":[{"start":1,"end":1.631,"text":"Olgu!","words":[{"start":1,"end":1.631,"char":[0,5]}]},{"start":1.631,"end":4.156,"text":"Paigaldame käsurea tööriista sinu","words":[{"start":1.631,"end":2.263,"char":[0,10]},{"start":2.263,"end":2.894,"char":[11,18]},{"start":2.894,"end":3.525,"char":[19,28]},{"start":3.525,"end":4.156,"char":[29,33]}]},{"start":4.156,"end":4.788,"text":"sülearvutisse.","words":[{"start":4.156,"end":4.788,"char":[0,14]}]},{"start":5.561,"end":6.728,"text":"Kolm sammu.","words":[{"start":5.561,"end":6.144,"char":[0,4]},{"start":6.144,"end":6.728,"char":[5,11]}]},{"start":6.728,"end":8.478,"text":"Ava paigalduse leht,","words":[{"start":6.728,"end":7.311,"char":[0,3]},{"start":7.311,"end":7.895,"char":[4,14]},{"start":7.895,"end":8.478,"char":[15,20]}]},{"start":8.478,"end":11.395,"text":"vali oma operatsioonisüsteem ja kleebi","words":[{"start":8.478,"end":9.061,"char":[0,4]},{"start":9.061,"end":9.645,"char":[5,8]},{"start":9.645,"end":10.228,"char":[9,28]},{"start":10.228,"end":10.812,"char":[29,31]},{"start":10.812,"end":11.395,"char":[32,38]}]},{"start":11.395,"end":12.562,"text":"käsk terminali.","words":[{"start":11.395,"end":11.978,"char":[0,4]},{"start":11.978,"end":12.562,"char":[5,15]}]},{"start":13.327,"end":15.881,"text":"Mine paigalduse lehele ja keri alla","words":[{"start":13.327,"end":13.753,"char":[0,4]},{"start":13.753,"end":14.178,"char":[5,15]},{"start":14.178,"end":14.604,"char":[16,22]},{"start":14.604,"end":15.03,"char":[23,25]},{"start":15.03,"end":15.455,"char":[26,30]},{"start":15.455,"end":15.881,"char":[31,35]}]},{"start":15.881,"end":16.732,"text":"kiirpaigalduse jaotiseni.","words":[{"start":15.881,"end":16.307,"char":[0,14]},{"start":16.307,"end":16.732,"char":[15,25]}]},{"start":16.732,"end":18.86,"text":"See genereerib õige üherealise käsu,","words":[{"start":16.732,"end":17.158,"char":[0,3]},{"start":17.158,"end":17.583,"char":[4,14]},{"start":17.583,"end":18.009,"char":[15,19]},{"start":18.009,"end":18.435,"char":[20,30]},{"start":18.435,"end":18.86,"char":[31,36]}]},{"start":18.86,"end":20.563,"text":"ükskõik mis platvormil oled.","words":[{"start":18.86,"end":19.286,"char":[0,7]},{"start":19.286,"end":19.712,"char":[8,11]},{"start":19.712,"end":20.137,"char":[12,22]},{"start":20.137,"end":20.563,"char":[23,28]}]},{"start":23.848,"end":26.022,"text":"Esmalt kinnitame,","words":[{"start":23.848,"end":24.935,"char":[0,6]},{"start":24.935,"end":26.022,"char":[7,17]}]},{"start":26.022,"end":29.283,"text":"et CLI on","words":[{"start":26.022,"end":27.109,"char":[0,2]},{"start":27.109,"end":28.196,"char":[3,6]},{"start":28.196,"end":29.283,"char":[7,9]}]},{"start":29.283,"end":30.37,"text":"teel.","words":[{"start":29.283,"end":30.37,"char":[0,5]}]},{"start":30.37,"end":33.631,"text":"CLI käivitamine versioonilipuga","words":[{"start":30.37,"end":31.457,"char":[0,3]},{"start":31.457,"end":32.544,"char":[4,15]},{"start":32.544,"end":33.631,"char":[16,31]}]},{"start":33.631,"end":36.892,"text":"prindib paigaldatud versiooni","words":[{"start":33.631,"end":34.718,"char":[0,7]},{"start":34.718,"end":35.805,"char":[8,19]},{"start":35.805,"end":36.892,"char":[20,29]}]},{"start":36.892,"end":39.066,"text":"ja näitab,","words":[{"start":36.892,"end":37.979,"char":[0,2]},{"start":37.979,"end":39.066,"char":[3,10]}]},{"start":39.066,"end":42.327,"text":"et paigaldamine lõpetati","words":[{"start":39.066,"end":40.153,"char":[0,2]},{"start":40.153,"end":41.24,"char":[3,15]},{"start":41.24,"end":42.327,"char":[16,24]}]},{"start":42.327,"end":43.414,"text":"edukalt.","words":[{"start":42.327,"end":43.414,"char":[0,8]}]},{"start":46.414,"end":47.406,"text":"Paigaldus tehtud.","words":[{"start":46.414,"end":46.91,"char":[0,9]},{"start":46.91,"end":47.406,"char":[10,17]}]},{"start":47.406,"end":49.888,"text":"rdc binaarfail on sinu teel.","words":[{"start":47.406,"end":47.903,"char":[0,3]},{"start":47.903,"end":48.399,"char":[4,14]},{"start":48.399,"end":48.895,"char":[15,17]},{"start":48.895,"end":49.392,"char":[18,22]},{"start":49.392,"end":49.888,"char":[23,28]}]},{"start":53.197,"end":54.104,"text":"Järgmisena käivitame CLI doctor.","words":[{"start":53.197,"end":53.424,"char":[0,10]},{"start":53.424,"end":53.65,"char":[11,20]},{"start":53.65,"end":53.877,"char":[21,24]},{"start":53.877,"end":54.104,"char":[25,32]}]},{"start":54.104,"end":54.784,"text":"See kontrollib sõltuvusi,","words":[{"start":54.104,"end":54.331,"char":[0,3]},{"start":54.331,"end":54.557,"char":[4,14]},{"start":54.557,"end":54.784,"char":[15,25]}]},{"start":54.784,"end":55.917,"text":"mida CLI vajab -- Node,","words":[{"start":54.784,"end":55.011,"char":[0,4]},{"start":55.011,"end":55.237,"char":[5,8]},{"start":55.237,"end":55.464,"char":[9,14]},{"start":55.464,"end":55.691,"char":[15,17]},{"start":55.691,"end":55.917,"char":[18,23]}]},{"start":55.917,"end":57.731,"text":"SSH ja ülejäänud -- ning teatab puuduvatest komponentidest.","words":[{"start":55.917,"end":56.144,"char":[0,3]},{"start":56.144,"end":56.371,"char":[4,6]},{"start":56.371,"end":56.598,"char":[7,16]},{"start":56.598,"end":56.824,"char":[17,19]},{"start":56.824,"end":57.051,"char":[20,24]},{"start":57.051,"end":57.278,"char":[25,31]},{"start":57.278,"end":57.504,"char":[32,43]},{"start":57.504,"end":57.731,"char":[44,59]}]},{"start":57.731,"end":58.411,"text":"Puhas aruanne tähendab,","words":[{"start":57.731,"end":57.958,"char":[0,5]},{"start":57.958,"end":58.185,"char":[6,13]},{"start":58.185,"end":58.411,"char":[14,23]}]},{"start":58.411,"end":59.545,"text":"et oled valmis serverit lisama.","words":[{"start":58.411,"end":58.638,"char":[0,2]},{"start":58.638,"end":58.865,"char":[3,7]},{"start":58.865,"end":59.091,"char":[8,14]},{"start":59.091,"end":59.318,"char":[15,23]},{"start":59.318,"end":59.545,"char":[24,31]}]},{"start":60.345,"end":61.097,"text":"Versioon prinditud.","words":[{"start":60.345,"end":60.721,"char":[0,8]},{"start":60.721,"end":61.097,"char":[9,19]}]},{"start":61.097,"end":62.226,"text":"Oled valmis alustama.","words":[{"start":61.097,"end":61.473,"char":[0,4]},{"start":61.473,"end":61.849,"char":[5,11]},{"start":61.849,"end":62.226,"char":[12,21]}]},{"start":63.044,"end":65.216,"text":"Käsurea tööriist elab sinu sülearvutis.","words":[{"start":63.044,"end":63.478,"char":[0,7]},{"start":63.478,"end":63.913,"char":[8,16]},{"start":63.913,"end":64.347,"char":[17,21]},{"start":64.347,"end":64.782,"char":[22,26]},{"start":64.782,"end":65.216,"char":[27,39]}]},{"start":65.216,"end":67.822,"text":"Serveris töötab eraldi komponent nimega renet,","words":[{"start":65.216,"end":65.65,"char":[0,8]},{"start":65.65,"end":66.085,"char":[9,15]},{"start":66.085,"end":66.519,"char":[16,22]},{"start":66.519,"end":66.954,"char":[23,32]},{"start":66.954,"end":67.388,"char":[33,39]},{"start":67.388,"end":67.822,"char":[40,46]}]},{"start":67.822,"end":70.429,"text":"mille CLI varustab ja juhib üle","words":[{"start":67.822,"end":68.257,"char":[0,5]},{"start":68.257,"end":68.691,"char":[6,9]},{"start":68.691,"end":69.126,"char":[10,18]},{"start":69.126,"end":69.56,"char":[19,21]},{"start":69.56,"end":69.995,"char":[22,27]},{"start":69.995,"end":70.429,"char":[28,31]}]},{"start":70.429,"end":70.863,"text":"SSH,","words":[{"start":70.429,"end":70.863,"char":[0,4]}]},{"start":70.863,"end":73.47,"text":"nii et sa ei pea kunagi","words":[{"start":70.863,"end":71.298,"char":[0,3]},{"start":71.298,"end":71.732,"char":[4,6]},{"start":71.732,"end":72.167,"char":[7,9]},{"start":72.167,"end":72.601,"char":[10,12]},{"start":72.601,"end":73.035,"char":[13,16]},{"start":73.035,"end":73.47,"char":[17,23]}]},{"start":73.47,"end":74.773,"text":"käsitsi sisse logima.","words":[{"start":73.47,"end":73.904,"char":[0,7]},{"start":73.904,"end":74.339,"char":[8,13]},{"start":74.339,"end":74.773,"char":[14,21]}]},{"start":75.547,"end":77.163,"text":"Paigaldus on tehtud.","words":[{"start":75.547,"end":76.086,"char":[0,9]},{"start":76.086,"end":76.624,"char":[10,12]},{"start":76.624,"end":77.163,"char":[13,20]}]},{"start":77.163,"end":79.317,"text":"Järgmisena seadistame SSH võtme,","words":[{"start":77.163,"end":77.701,"char":[0,10]},{"start":77.701,"end":78.24,"char":[11,21]},{"start":78.24,"end":78.778,"char":[22,25]},{"start":78.778,"end":79.317,"char":[26,32]}]},{"start":79.317,"end":82.009,"text":"et CLI saaks su serveritesse","words":[{"start":79.317,"end":79.855,"char":[0,2]},{"start":79.855,"end":80.394,"char":[3,6]},{"start":80.394,"end":80.932,"char":[7,12]},{"start":80.932,"end":81.471,"char":[13,15]},{"start":81.471,"end":82.009,"char":[16,28]}]},{"start":82.009,"end":82.548,"text":"jõuda.","words":[{"start":82.009,"end":82.548,"char":[0,6]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.631,
+      "text": "Olgu!",
+      "words": [{ "start": 1, "end": 1.631, "char": [0, 5] }]
+    },
+    {
+      "start": 1.631,
+      "end": 4.156,
+      "text": "Paigaldame käsurea tööriista sinu",
+      "words": [
+        { "start": 1.631, "end": 2.263, "char": [0, 10] },
+        { "start": 2.263, "end": 2.894, "char": [11, 18] },
+        { "start": 2.894, "end": 3.525, "char": [19, 28] },
+        { "start": 3.525, "end": 4.156, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 4.156,
+      "end": 4.788,
+      "text": "sülearvutisse.",
+      "words": [{ "start": 4.156, "end": 4.788, "char": [0, 14] }]
+    },
+    {
+      "start": 5.561,
+      "end": 6.728,
+      "text": "Kolm sammu.",
+      "words": [
+        { "start": 5.561, "end": 6.144, "char": [0, 4] },
+        { "start": 6.144, "end": 6.728, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 6.728,
+      "end": 8.478,
+      "text": "Ava paigalduse leht,",
+      "words": [
+        { "start": 6.728, "end": 7.311, "char": [0, 3] },
+        { "start": 7.311, "end": 7.895, "char": [4, 14] },
+        { "start": 7.895, "end": 8.478, "char": [15, 20] }
+      ]
+    },
+    {
+      "start": 8.478,
+      "end": 11.395,
+      "text": "vali oma operatsioonisüsteem ja kleebi",
+      "words": [
+        { "start": 8.478, "end": 9.061, "char": [0, 4] },
+        { "start": 9.061, "end": 9.645, "char": [5, 8] },
+        { "start": 9.645, "end": 10.228, "char": [9, 28] },
+        { "start": 10.228, "end": 10.812, "char": [29, 31] },
+        { "start": 10.812, "end": 11.395, "char": [32, 38] }
+      ]
+    },
+    {
+      "start": 11.395,
+      "end": 12.562,
+      "text": "käsk terminali.",
+      "words": [
+        { "start": 11.395, "end": 11.978, "char": [0, 4] },
+        { "start": 11.978, "end": 12.562, "char": [5, 15] }
+      ]
+    },
+    {
+      "start": 13.327,
+      "end": 15.881,
+      "text": "Mine paigalduse lehele ja keri alla",
+      "words": [
+        { "start": 13.327, "end": 13.753, "char": [0, 4] },
+        { "start": 13.753, "end": 14.178, "char": [5, 15] },
+        { "start": 14.178, "end": 14.604, "char": [16, 22] },
+        { "start": 14.604, "end": 15.03, "char": [23, 25] },
+        { "start": 15.03, "end": 15.455, "char": [26, 30] },
+        { "start": 15.455, "end": 15.881, "char": [31, 35] }
+      ]
+    },
+    {
+      "start": 15.881,
+      "end": 16.732,
+      "text": "kiirpaigalduse jaotiseni.",
+      "words": [
+        { "start": 15.881, "end": 16.307, "char": [0, 14] },
+        { "start": 16.307, "end": 16.732, "char": [15, 25] }
+      ]
+    },
+    {
+      "start": 16.732,
+      "end": 18.86,
+      "text": "See genereerib õige üherealise käsu,",
+      "words": [
+        { "start": 16.732, "end": 17.158, "char": [0, 3] },
+        { "start": 17.158, "end": 17.583, "char": [4, 14] },
+        { "start": 17.583, "end": 18.009, "char": [15, 19] },
+        { "start": 18.009, "end": 18.435, "char": [20, 30] },
+        { "start": 18.435, "end": 18.86, "char": [31, 36] }
+      ]
+    },
+    {
+      "start": 18.86,
+      "end": 20.563,
+      "text": "ükskõik mis platvormil oled.",
+      "words": [
+        { "start": 18.86, "end": 19.286, "char": [0, 7] },
+        { "start": 19.286, "end": 19.712, "char": [8, 11] },
+        { "start": 19.712, "end": 20.137, "char": [12, 22] },
+        { "start": 20.137, "end": 20.563, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 23.848,
+      "end": 26.022,
+      "text": "Esmalt kinnitame,",
+      "words": [
+        { "start": 23.848, "end": 24.935, "char": [0, 6] },
+        { "start": 24.935, "end": 26.022, "char": [7, 17] }
+      ]
+    },
+    {
+      "start": 26.022,
+      "end": 29.283,
+      "text": "et CLI on",
+      "words": [
+        { "start": 26.022, "end": 27.109, "char": [0, 2] },
+        { "start": 27.109, "end": 28.196, "char": [3, 6] },
+        { "start": 28.196, "end": 29.283, "char": [7, 9] }
+      ]
+    },
+    {
+      "start": 29.283,
+      "end": 30.37,
+      "text": "teel.",
+      "words": [{ "start": 29.283, "end": 30.37, "char": [0, 5] }]
+    },
+    {
+      "start": 30.37,
+      "end": 33.631,
+      "text": "CLI käivitamine versioonilipuga",
+      "words": [
+        { "start": 30.37, "end": 31.457, "char": [0, 3] },
+        { "start": 31.457, "end": 32.544, "char": [4, 15] },
+        { "start": 32.544, "end": 33.631, "char": [16, 31] }
+      ]
+    },
+    {
+      "start": 33.631,
+      "end": 36.892,
+      "text": "prindib paigaldatud versiooni",
+      "words": [
+        { "start": 33.631, "end": 34.718, "char": [0, 7] },
+        { "start": 34.718, "end": 35.805, "char": [8, 19] },
+        { "start": 35.805, "end": 36.892, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 36.892,
+      "end": 39.066,
+      "text": "ja näitab,",
+      "words": [
+        { "start": 36.892, "end": 37.979, "char": [0, 2] },
+        { "start": 37.979, "end": 39.066, "char": [3, 10] }
+      ]
+    },
+    {
+      "start": 39.066,
+      "end": 42.327,
+      "text": "et paigaldamine lõpetati",
+      "words": [
+        { "start": 39.066, "end": 40.153, "char": [0, 2] },
+        { "start": 40.153, "end": 41.24, "char": [3, 15] },
+        { "start": 41.24, "end": 42.327, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 42.327,
+      "end": 43.414,
+      "text": "edukalt.",
+      "words": [{ "start": 42.327, "end": 43.414, "char": [0, 8] }]
+    },
+    {
+      "start": 46.414,
+      "end": 47.406,
+      "text": "Paigaldus tehtud.",
+      "words": [
+        { "start": 46.414, "end": 46.91, "char": [0, 9] },
+        { "start": 46.91, "end": 47.406, "char": [10, 17] }
+      ]
+    },
+    {
+      "start": 47.406,
+      "end": 49.888,
+      "text": "rdc binaarfail on sinu teel.",
+      "words": [
+        { "start": 47.406, "end": 47.903, "char": [0, 3] },
+        { "start": 47.903, "end": 48.399, "char": [4, 14] },
+        { "start": 48.399, "end": 48.895, "char": [15, 17] },
+        { "start": 48.895, "end": 49.392, "char": [18, 22] },
+        { "start": 49.392, "end": 49.888, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 53.197,
+      "end": 54.104,
+      "text": "Järgmisena käivitame CLI doctor.",
+      "words": [
+        { "start": 53.197, "end": 53.424, "char": [0, 10] },
+        { "start": 53.424, "end": 53.65, "char": [11, 20] },
+        { "start": 53.65, "end": 53.877, "char": [21, 24] },
+        { "start": 53.877, "end": 54.104, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 54.104,
+      "end": 54.784,
+      "text": "See kontrollib sõltuvusi,",
+      "words": [
+        { "start": 54.104, "end": 54.331, "char": [0, 3] },
+        { "start": 54.331, "end": 54.557, "char": [4, 14] },
+        { "start": 54.557, "end": 54.784, "char": [15, 25] }
+      ]
+    },
+    {
+      "start": 54.784,
+      "end": 55.917,
+      "text": "mida CLI vajab -- Node,",
+      "words": [
+        { "start": 54.784, "end": 55.011, "char": [0, 4] },
+        { "start": 55.011, "end": 55.237, "char": [5, 8] },
+        { "start": 55.237, "end": 55.464, "char": [9, 14] },
+        { "start": 55.464, "end": 55.691, "char": [15, 17] },
+        { "start": 55.691, "end": 55.917, "char": [18, 23] }
+      ]
+    },
+    {
+      "start": 55.917,
+      "end": 57.731,
+      "text": "SSH ja ülejäänud -- ning teatab puuduvatest komponentidest.",
+      "words": [
+        { "start": 55.917, "end": 56.144, "char": [0, 3] },
+        { "start": 56.144, "end": 56.371, "char": [4, 6] },
+        { "start": 56.371, "end": 56.598, "char": [7, 16] },
+        { "start": 56.598, "end": 56.824, "char": [17, 19] },
+        { "start": 56.824, "end": 57.051, "char": [20, 24] },
+        { "start": 57.051, "end": 57.278, "char": [25, 31] },
+        { "start": 57.278, "end": 57.504, "char": [32, 43] },
+        { "start": 57.504, "end": 57.731, "char": [44, 59] }
+      ]
+    },
+    {
+      "start": 57.731,
+      "end": 58.411,
+      "text": "Puhas aruanne tähendab,",
+      "words": [
+        { "start": 57.731, "end": 57.958, "char": [0, 5] },
+        { "start": 57.958, "end": 58.185, "char": [6, 13] },
+        { "start": 58.185, "end": 58.411, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 58.411,
+      "end": 59.545,
+      "text": "et oled valmis serverit lisama.",
+      "words": [
+        { "start": 58.411, "end": 58.638, "char": [0, 2] },
+        { "start": 58.638, "end": 58.865, "char": [3, 7] },
+        { "start": 58.865, "end": 59.091, "char": [8, 14] },
+        { "start": 59.091, "end": 59.318, "char": [15, 23] },
+        { "start": 59.318, "end": 59.545, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 60.345,
+      "end": 61.097,
+      "text": "Versioon prinditud.",
+      "words": [
+        { "start": 60.345, "end": 60.721, "char": [0, 8] },
+        { "start": 60.721, "end": 61.097, "char": [9, 19] }
+      ]
+    },
+    {
+      "start": 61.097,
+      "end": 62.226,
+      "text": "Oled valmis alustama.",
+      "words": [
+        { "start": 61.097, "end": 61.473, "char": [0, 4] },
+        { "start": 61.473, "end": 61.849, "char": [5, 11] },
+        { "start": 61.849, "end": 62.226, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 63.044,
+      "end": 65.216,
+      "text": "Käsurea tööriist elab sinu sülearvutis.",
+      "words": [
+        { "start": 63.044, "end": 63.478, "char": [0, 7] },
+        { "start": 63.478, "end": 63.913, "char": [8, 16] },
+        { "start": 63.913, "end": 64.347, "char": [17, 21] },
+        { "start": 64.347, "end": 64.782, "char": [22, 26] },
+        { "start": 64.782, "end": 65.216, "char": [27, 39] }
+      ]
+    },
+    {
+      "start": 65.216,
+      "end": 67.822,
+      "text": "Serveris töötab eraldi komponent nimega renet,",
+      "words": [
+        { "start": 65.216, "end": 65.65, "char": [0, 8] },
+        { "start": 65.65, "end": 66.085, "char": [9, 15] },
+        { "start": 66.085, "end": 66.519, "char": [16, 22] },
+        { "start": 66.519, "end": 66.954, "char": [23, 32] },
+        { "start": 66.954, "end": 67.388, "char": [33, 39] },
+        { "start": 67.388, "end": 67.822, "char": [40, 46] }
+      ]
+    },
+    {
+      "start": 67.822,
+      "end": 70.429,
+      "text": "mille CLI varustab ja juhib üle",
+      "words": [
+        { "start": 67.822, "end": 68.257, "char": [0, 5] },
+        { "start": 68.257, "end": 68.691, "char": [6, 9] },
+        { "start": 68.691, "end": 69.126, "char": [10, 18] },
+        { "start": 69.126, "end": 69.56, "char": [19, 21] },
+        { "start": 69.56, "end": 69.995, "char": [22, 27] },
+        { "start": 69.995, "end": 70.429, "char": [28, 31] }
+      ]
+    },
+    {
+      "start": 70.429,
+      "end": 70.863,
+      "text": "SSH,",
+      "words": [{ "start": 70.429, "end": 70.863, "char": [0, 4] }]
+    },
+    {
+      "start": 70.863,
+      "end": 73.47,
+      "text": "nii et sa ei pea kunagi",
+      "words": [
+        { "start": 70.863, "end": 71.298, "char": [0, 3] },
+        { "start": 71.298, "end": 71.732, "char": [4, 6] },
+        { "start": 71.732, "end": 72.167, "char": [7, 9] },
+        { "start": 72.167, "end": 72.601, "char": [10, 12] },
+        { "start": 72.601, "end": 73.035, "char": [13, 16] },
+        { "start": 73.035, "end": 73.47, "char": [17, 23] }
+      ]
+    },
+    {
+      "start": 73.47,
+      "end": 74.773,
+      "text": "käsitsi sisse logima.",
+      "words": [
+        { "start": 73.47, "end": 73.904, "char": [0, 7] },
+        { "start": 73.904, "end": 74.339, "char": [8, 13] },
+        { "start": 74.339, "end": 74.773, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 75.547,
+      "end": 77.163,
+      "text": "Paigaldus on tehtud.",
+      "words": [
+        { "start": 75.547, "end": 76.086, "char": [0, 9] },
+        { "start": 76.086, "end": 76.624, "char": [10, 12] },
+        { "start": 76.624, "end": 77.163, "char": [13, 20] }
+      ]
+    },
+    {
+      "start": 77.163,
+      "end": 79.317,
+      "text": "Järgmisena seadistame SSH võtme,",
+      "words": [
+        { "start": 77.163, "end": 77.701, "char": [0, 10] },
+        { "start": 77.701, "end": 78.24, "char": [11, 21] },
+        { "start": 78.24, "end": 78.778, "char": [22, 25] },
+        { "start": 78.778, "end": 79.317, "char": [26, 32] }
+      ]
+    },
+    {
+      "start": 79.317,
+      "end": 82.009,
+      "text": "et CLI saaks su serveritesse",
+      "words": [
+        { "start": 79.317, "end": 79.855, "char": [0, 2] },
+        { "start": 79.855, "end": 80.394, "char": [3, 6] },
+        { "start": 80.394, "end": 80.932, "char": [7, 12] },
+        { "start": 80.932, "end": 81.471, "char": [13, 15] },
+        { "start": 81.471, "end": 82.009, "char": [16, 28] }
+      ]
+    },
+    {
+      "start": 82.009,
+      "end": 82.548,
+      "text": "jõuda.",
+      "words": [{ "start": 82.009, "end": 82.548, "char": [0, 6] }]
+    }
+  ]
+}

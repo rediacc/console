@@ -1,1 +1,1139 @@
-{"version":1,"cues":[{"start":1,"end":3.149,"text":"Bem-vindo à funcionalidade matadora!","words":[{"start":1,"end":1.537,"char":[0,9]},{"start":1.537,"end":2.074,"char":[10,11]},{"start":2.074,"end":2.611,"char":[12,26]},{"start":2.611,"end":3.149,"char":[27,36]}]},{"start":3.149,"end":5.834,"text":"Clone um repositório de produção","words":[{"start":3.149,"end":3.686,"char":[0,5]},{"start":3.686,"end":4.223,"char":[6,8]},{"start":4.223,"end":4.76,"char":[9,20]},{"start":4.76,"end":5.297,"char":[21,23]},{"start":5.297,"end":5.834,"char":[24,32]}]},{"start":5.834,"end":7.983,"text":"inteiro independentemente do tamanho,","words":[{"start":5.834,"end":6.371,"char":[0,7]},{"start":6.371,"end":6.909,"char":[8,25]},{"start":6.909,"end":7.446,"char":[26,28]},{"start":7.446,"end":7.983,"char":[29,37]}]},{"start":7.983,"end":9.594,"text":"sem partir nada.","words":[{"start":7.983,"end":8.52,"char":[0,3]},{"start":8.52,"end":9.057,"char":[4,10]},{"start":9.057,"end":9.594,"char":[11,16]}]},{"start":10.368,"end":13.079,"text":"Um repositório pai dá origem a","words":[{"start":10.368,"end":10.82,"char":[0,2]},{"start":10.82,"end":11.272,"char":[3,14]},{"start":11.272,"end":11.723,"char":[15,18]},{"start":11.723,"end":12.175,"char":[19,21]},{"start":12.175,"end":12.627,"char":[22,28]},{"start":12.627,"end":13.079,"char":[29,30]}]},{"start":13.079,"end":15.338,"text":"tantas cópias independentes quantas quiser.","words":[{"start":13.079,"end":13.531,"char":[0,6]},{"start":13.531,"end":13.983,"char":[7,13]},{"start":13.983,"end":14.434,"char":[14,27]},{"start":14.434,"end":14.886,"char":[28,35]},{"start":14.886,"end":15.338,"char":[36,43]}]},{"start":15.338,"end":18.049,"text":"Cada bifurcação é o seu próprio","words":[{"start":15.338,"end":15.79,"char":[0,4]},{"start":15.79,"end":16.242,"char":[5,15]},{"start":16.242,"end":16.694,"char":[16,17]},{"start":16.694,"end":17.145,"char":[18,19]},{"start":17.145,"end":17.597,"char":[20,23]},{"start":17.597,"end":18.049,"char":[24,31]}]},{"start":18.049,"end":18.953,"text":"ambiente isolado,","words":[{"start":18.049,"end":18.501,"char":[0,8]},{"start":18.501,"end":18.953,"char":[9,17]}]},{"start":18.953,"end":21.664,"text":"a correr lado a lado com","words":[{"start":18.953,"end":19.404,"char":[0,1]},{"start":19.404,"end":19.856,"char":[2,8]},{"start":19.856,"end":20.308,"char":[9,13]},{"start":20.308,"end":20.76,"char":[14,15]},{"start":20.76,"end":21.212,"char":[16,20]},{"start":21.212,"end":21.664,"char":[21,24]}]},{"start":21.664,"end":22.567,"text":"o original.","words":[{"start":21.664,"end":22.115,"char":[0,1]},{"start":22.115,"end":22.567,"char":[2,11]}]},{"start":23.335,"end":26.233,"text":"Pense em partilhar uma ligação","words":[{"start":23.335,"end":23.915,"char":[0,5]},{"start":23.915,"end":24.494,"char":[6,8]},{"start":24.494,"end":25.074,"char":[9,18]},{"start":25.074,"end":25.653,"char":[19,22]},{"start":25.653,"end":26.233,"char":[23,30]}]},{"start":26.233,"end":27.971,"text":"para uma pasta.","words":[{"start":26.233,"end":26.812,"char":[0,4]},{"start":26.812,"end":27.392,"char":[5,8]},{"start":27.392,"end":27.971,"char":[9,15]}]},{"start":27.971,"end":30.869,"text":"A ligação é igualmente leve","words":[{"start":27.971,"end":28.551,"char":[0,1]},{"start":28.551,"end":29.13,"char":[2,9]},{"start":29.13,"end":29.71,"char":[10,11]},{"start":29.71,"end":30.289,"char":[12,22]},{"start":30.289,"end":30.869,"char":[23,27]}]},{"start":30.869,"end":33.767,"text":"quer a pasta seja pequena","words":[{"start":30.869,"end":31.448,"char":[0,4]},{"start":31.448,"end":32.028,"char":[5,6]},{"start":32.028,"end":32.608,"char":[7,12]},{"start":32.608,"end":33.187,"char":[13,17]},{"start":33.187,"end":33.767,"char":[18,25]}]},{"start":33.767,"end":34.926,"text":"ou enorme,","words":[{"start":33.767,"end":34.346,"char":[0,2]},{"start":34.346,"end":34.926,"char":[3,10]}]},{"start":34.926,"end":37.823,"text":"e a bifurcação funciona pelo","words":[{"start":34.926,"end":35.505,"char":[0,1]},{"start":35.505,"end":36.085,"char":[2,3]},{"start":36.085,"end":36.664,"char":[4,14]},{"start":36.664,"end":37.244,"char":[15,23]},{"start":37.244,"end":37.823,"char":[24,28]}]},{"start":37.823,"end":38.982,"text":"mesmo princípio.","words":[{"start":37.823,"end":38.403,"char":[0,5]},{"start":38.403,"end":38.982,"char":[6,16]}]},{"start":39.739,"end":41.056,"text":"Um gigabyte,","words":[{"start":39.739,"end":40.397,"char":[0,2]},{"start":40.397,"end":41.056,"char":[3,12]}]},{"start":41.056,"end":42.372,"text":"cem gigabytes,","words":[{"start":41.056,"end":41.714,"char":[0,3]},{"start":41.714,"end":42.372,"char":[4,14]}]},{"start":42.372,"end":43.689,"text":"um terabyte:","words":[{"start":42.372,"end":43.03,"char":[0,2]},{"start":43.03,"end":43.689,"char":[3,12]}]},{"start":43.689,"end":46.322,"text":"a bifurcação comporta-se da","words":[{"start":43.689,"end":44.347,"char":[0,1]},{"start":44.347,"end":45.005,"char":[2,12]},{"start":45.005,"end":45.664,"char":[13,24]},{"start":45.664,"end":46.322,"char":[25,27]}]},{"start":46.322,"end":47.638,"text":"mesma forma.","words":[{"start":46.322,"end":46.98,"char":[0,5]},{"start":46.98,"end":47.638,"char":[6,12]}]},{"start":47.638,"end":50.272,"text":"O tamanho do repo","words":[{"start":47.638,"end":48.297,"char":[0,1]},{"start":48.297,"end":48.955,"char":[2,9]},{"start":48.955,"end":49.613,"char":[10,12]},{"start":49.613,"end":50.272,"char":[13,17]}]},{"start":50.272,"end":52.905,"text":"não entra na equação.","words":[{"start":50.272,"end":50.93,"char":[0,3]},{"start":50.93,"end":51.588,"char":[4,9]},{"start":51.588,"end":52.246,"char":[10,12]},{"start":52.246,"end":52.905,"char":[13,21]}]},{"start":56.181,"end":57.683,"text":"Agora a bifurcação.","words":[{"start":56.181,"end":56.682,"char":[0,5]},{"start":56.682,"end":57.182,"char":[6,7]},{"start":57.182,"end":57.683,"char":[8,19]}]},{"start":57.683,"end":60.185,"text":"Um único comando clona o","words":[{"start":57.683,"end":58.183,"char":[0,2]},{"start":58.183,"end":58.684,"char":[3,8]},{"start":58.684,"end":59.184,"char":[9,16]},{"start":59.184,"end":59.685,"char":[17,22]},{"start":59.685,"end":60.185,"char":[23,24]}]},{"start":60.185,"end":62.688,"text":"repositório inteiro -- a aplicação,","words":[{"start":60.185,"end":60.686,"char":[0,11]},{"start":60.686,"end":61.187,"char":[12,19]},{"start":61.187,"end":61.687,"char":[20,22]},{"start":61.687,"end":62.188,"char":[23,24]},{"start":62.188,"end":62.688,"char":[25,35]}]},{"start":62.688,"end":64.691,"text":"a base de dados,","words":[{"start":62.688,"end":63.189,"char":[0,1]},{"start":63.189,"end":63.689,"char":[2,6]},{"start":63.689,"end":64.19,"char":[7,9]},{"start":64.19,"end":64.691,"char":[10,16]}]},{"start":64.691,"end":67.193,"text":"os ficheiros de configuração --","words":[{"start":64.691,"end":65.191,"char":[0,2]},{"start":65.191,"end":65.692,"char":[3,12]},{"start":65.692,"end":66.192,"char":[13,15]},{"start":66.192,"end":66.693,"char":[16,28]},{"start":66.693,"end":67.193,"char":[29,31]}]},{"start":67.193,"end":68.195,"text":"em segundos,","words":[{"start":67.193,"end":67.694,"char":[0,2]},{"start":67.694,"end":68.195,"char":[3,12]}]},{"start":68.195,"end":69.696,"text":"independentemente do tamanho.","words":[{"start":68.195,"end":68.695,"char":[0,17]},{"start":68.695,"end":69.196,"char":[18,20]},{"start":69.196,"end":69.696,"char":[21,29]}]},{"start":69.696,"end":70.697,"text":"Um gigabyte,","words":[{"start":69.696,"end":70.197,"char":[0,2]},{"start":70.197,"end":70.697,"char":[3,12]}]},{"start":70.697,"end":71.698,"text":"cem gigabytes,","words":[{"start":70.697,"end":71.198,"char":[0,3]},{"start":71.198,"end":71.698,"char":[4,14]}]},{"start":71.698,"end":72.7,"text":"um terabyte:","words":[{"start":71.698,"end":72.199,"char":[0,2]},{"start":72.199,"end":72.7,"char":[3,12]}]},{"start":72.7,"end":74.201,"text":"o mesmo tempo,","words":[{"start":72.7,"end":73.2,"char":[0,1]},{"start":73.2,"end":73.701,"char":[2,7]},{"start":73.701,"end":74.201,"char":[8,14]}]},{"start":74.201,"end":74.702,"text":"sempre.","words":[{"start":74.201,"end":74.702,"char":[0,7]}]},{"start":77.702,"end":78.534,"text":"Bifurcação concluída.","words":[{"start":77.702,"end":78.118,"char":[0,10]},{"start":78.118,"end":78.534,"char":[11,21]}]},{"start":78.534,"end":81.029,"text":"O clone está pronto a usar,","words":[{"start":78.534,"end":78.95,"char":[0,1]},{"start":78.95,"end":79.366,"char":[2,7]},{"start":79.366,"end":79.782,"char":[8,12]},{"start":79.782,"end":80.198,"char":[13,19]},{"start":80.198,"end":80.613,"char":[20,21]},{"start":80.613,"end":81.029,"char":[22,27]}]},{"start":81.029,"end":83.109,"text":"qualquer que seja o tamanho.","words":[{"start":81.029,"end":81.445,"char":[0,8]},{"start":81.445,"end":81.861,"char":[9,12]},{"start":81.861,"end":82.277,"char":[13,17]},{"start":82.277,"end":82.693,"char":[18,19]},{"start":82.693,"end":83.109,"char":[20,28]}]},{"start":86.401,"end":89.16,"text":"Os dois repositórios coexistem agora","words":[{"start":86.401,"end":86.953,"char":[0,2]},{"start":86.953,"end":87.505,"char":[3,7]},{"start":87.505,"end":88.057,"char":[8,20]},{"start":88.057,"end":88.608,"char":[21,30]},{"start":88.608,"end":89.16,"char":[31,36]}]},{"start":89.16,"end":90.816,"text":"lado a lado.","words":[{"start":89.16,"end":89.712,"char":[0,4]},{"start":89.712,"end":90.264,"char":[5,6]},{"start":90.264,"end":90.816,"char":[7,12]}]},{"start":90.816,"end":91.919,"text":"Mesma máquina,","words":[{"start":90.816,"end":91.368,"char":[0,5]},{"start":91.368,"end":91.919,"char":[6,14]}]},{"start":91.919,"end":93.023,"text":"mesmo disco,","words":[{"start":91.919,"end":92.471,"char":[0,5]},{"start":92.471,"end":93.023,"char":[6,12]}]},{"start":93.023,"end":95.23,"text":"dois ambientes completamente independentes.","words":[{"start":93.023,"end":93.575,"char":[0,4]},{"start":93.575,"end":94.127,"char":[5,14]},{"start":94.127,"end":94.679,"char":[15,28]},{"start":94.679,"end":95.23,"char":[29,43]}]},{"start":98.23,"end":99.15,"text":"Dois repos,","words":[{"start":98.23,"end":98.69,"char":[0,4]},{"start":98.69,"end":99.15,"char":[5,11]}]},{"start":99.15,"end":100.069,"text":"um disco.","words":[{"start":99.15,"end":99.61,"char":[0,2]},{"start":99.61,"end":100.069,"char":[3,9]}]},{"start":100.069,"end":100.989,"text":"Mesmos dados,","words":[{"start":100.069,"end":100.529,"char":[0,6]},{"start":100.529,"end":100.989,"char":[7,13]}]},{"start":100.989,"end":102.828,"text":"tudo o resto separado.","words":[{"start":100.989,"end":101.449,"char":[0,4]},{"start":101.449,"end":101.908,"char":[5,6]},{"start":101.908,"end":102.368,"char":[7,12]},{"start":102.368,"end":102.828,"char":[13,22]}]},{"start":106.165,"end":108.114,"text":"Vamos provar o isolamento.","words":[{"start":106.165,"end":106.652,"char":[0,5]},{"start":106.652,"end":107.14,"char":[6,12]},{"start":107.14,"end":107.627,"char":[13,14]},{"start":107.627,"end":108.114,"char":[15,26]}]},{"start":108.114,"end":109.089,"text":"No original,","words":[{"start":108.114,"end":108.601,"char":[0,2]},{"start":108.601,"end":109.089,"char":[3,12]}]},{"start":109.089,"end":112.012,"text":"o nosso ficheiro de marcação está","words":[{"start":109.089,"end":109.576,"char":[0,1]},{"start":109.576,"end":110.063,"char":[2,7]},{"start":110.063,"end":110.551,"char":[8,16]},{"start":110.551,"end":111.038,"char":[17,19]},{"start":111.038,"end":111.525,"char":[20,28]},{"start":111.525,"end":112.012,"char":[29,33]}]},{"start":112.012,"end":113.962,"text":"exatamente onde o deixámos.","words":[{"start":112.012,"end":112.5,"char":[0,10]},{"start":112.5,"end":112.987,"char":[11,15]},{"start":112.987,"end":113.474,"char":[16,17]},{"start":113.474,"end":113.962,"char":[18,27]}]},{"start":113.962,"end":116.885,"text":"A existência da bifurcação não alterou","words":[{"start":113.962,"end":114.449,"char":[0,1]},{"start":114.449,"end":114.936,"char":[2,12]},{"start":114.936,"end":115.423,"char":[13,15]},{"start":115.423,"end":115.911,"char":[16,26]},{"start":115.911,"end":116.398,"char":[27,30]},{"start":116.398,"end":116.885,"char":[31,38]}]},{"start":116.885,"end":118.834,"text":"nada no repositório pai.","words":[{"start":116.885,"end":117.373,"char":[0,4]},{"start":117.373,"end":117.86,"char":[5,7]},{"start":117.86,"end":118.347,"char":[8,19]},{"start":118.347,"end":118.834,"char":[20,24]}]},{"start":119.634,"end":122.051,"text":"O ficheiro original continua lá.","words":[{"start":119.634,"end":120.118,"char":[0,1]},{"start":120.118,"end":120.601,"char":[2,10]},{"start":120.601,"end":121.084,"char":[11,19]},{"start":121.084,"end":121.567,"char":[20,28]},{"start":121.567,"end":122.051,"char":[29,32]}]},{"start":122.051,"end":124.467,"text":"A bifurcação não lhe tocou.","words":[{"start":122.051,"end":122.534,"char":[0,1]},{"start":122.534,"end":123.017,"char":[2,12]},{"start":123.017,"end":123.5,"char":[13,16]},{"start":123.5,"end":123.984,"char":[17,20]},{"start":123.984,"end":124.467,"char":[21,27]}]},{"start":125.265,"end":127.782,"text":"O repositório pai é o sol","words":[{"start":125.265,"end":125.684,"char":[0,1]},{"start":125.684,"end":126.104,"char":[2,13]},{"start":126.104,"end":126.523,"char":[14,17]},{"start":126.523,"end":126.943,"char":[18,19]},{"start":126.943,"end":127.362,"char":[20,21]},{"start":127.362,"end":127.782,"char":[22,25]}]},{"start":127.782,"end":130.298,"text":"e a sua bifurcação é um","words":[{"start":127.782,"end":128.201,"char":[0,1]},{"start":128.201,"end":128.621,"char":[2,3]},{"start":128.621,"end":129.04,"char":[4,7]},{"start":129.04,"end":129.46,"char":[8,18]},{"start":129.46,"end":129.879,"char":[19,20]},{"start":129.879,"end":130.298,"char":[21,23]}]},{"start":130.298,"end":132.815,"text":"espelho que apanha a sua luz.","words":[{"start":130.298,"end":130.718,"char":[0,7]},{"start":130.718,"end":131.137,"char":[8,11]},{"start":131.137,"end":131.557,"char":[12,18]},{"start":131.557,"end":131.976,"char":[19,20]},{"start":131.976,"end":132.396,"char":[21,24]},{"start":132.396,"end":132.815,"char":[25,29]}]},{"start":132.815,"end":135.332,"text":"A base partilhada permanece intacta enquanto","words":[{"start":132.815,"end":133.235,"char":[0,1]},{"start":133.235,"end":133.654,"char":[2,6]},{"start":133.654,"end":134.073,"char":[7,17]},{"start":134.073,"end":134.493,"char":[18,27]},{"start":134.493,"end":134.912,"char":[28,35]},{"start":134.912,"end":135.332,"char":[36,44]}]},{"start":135.332,"end":137.849,"text":"tudo o que pintar no espelho","words":[{"start":135.332,"end":135.751,"char":[0,4]},{"start":135.751,"end":136.171,"char":[5,6]},{"start":136.171,"end":136.59,"char":[7,10]},{"start":136.59,"end":137.01,"char":[11,17]},{"start":137.01,"end":137.429,"char":[18,20]},{"start":137.429,"end":137.849,"char":[21,28]}]},{"start":137.849,"end":139.946,"text":"lhe pertence apenas a si.","words":[{"start":137.849,"end":138.268,"char":[0,3]},{"start":138.268,"end":138.687,"char":[4,12]},{"start":138.687,"end":139.107,"char":[13,19]},{"start":139.107,"end":139.526,"char":[20,21]},{"start":139.526,"end":139.946,"char":[22,25]}]},{"start":143.217,"end":145.606,"text":"Agora vamos apagar esse ficheiro,","words":[{"start":143.217,"end":143.695,"char":[0,5]},{"start":143.695,"end":144.173,"char":[6,11]},{"start":144.173,"end":144.651,"char":[12,18]},{"start":144.651,"end":145.129,"char":[19,23]},{"start":145.129,"end":145.606,"char":[24,33]}]},{"start":145.606,"end":147.996,"text":"mas apenas dentro da bifurcação.","words":[{"start":145.606,"end":146.084,"char":[0,3]},{"start":146.084,"end":146.562,"char":[4,10]},{"start":146.562,"end":147.04,"char":[11,17]},{"start":147.04,"end":147.518,"char":[18,20]},{"start":147.518,"end":147.996,"char":[21,32]}]},{"start":147.996,"end":150.863,"text":"Estamos a fazer uma alteração destrutiva","words":[{"start":147.996,"end":148.474,"char":[0,7]},{"start":148.474,"end":148.952,"char":[8,9]},{"start":148.952,"end":149.43,"char":[10,15]},{"start":149.43,"end":149.907,"char":[16,19]},{"start":149.907,"end":150.385,"char":[20,29]},{"start":150.385,"end":150.863,"char":[30,40]}]},{"start":150.863,"end":151.341,"text":"aqui.","words":[{"start":150.863,"end":151.341,"char":[0,5]}]},{"start":152.141,"end":154.111,"text":"Desapareceu da bifurcação.","words":[{"start":152.141,"end":152.798,"char":[0,11]},{"start":152.798,"end":153.455,"char":[12,14]},{"start":153.455,"end":154.111,"char":[15,26]}]},{"start":154.111,"end":156.739,"text":"O original permanece intacto.","words":[{"start":154.111,"end":154.768,"char":[0,1]},{"start":154.768,"end":155.425,"char":[2,10]},{"start":155.425,"end":156.082,"char":[11,20]},{"start":156.082,"end":156.739,"char":[21,29]}]},{"start":160.081,"end":162.021,"text":"De volta ao original.","words":[{"start":160.081,"end":160.566,"char":[0,2]},{"start":160.566,"end":161.051,"char":[3,8]},{"start":161.051,"end":161.536,"char":[9,11]},{"start":161.536,"end":162.021,"char":[12,21]}]},{"start":162.021,"end":164.932,"text":"O ficheiro de marcação ainda está","words":[{"start":162.021,"end":162.507,"char":[0,1]},{"start":162.507,"end":162.992,"char":[2,10]},{"start":162.992,"end":163.477,"char":[11,13]},{"start":163.477,"end":163.962,"char":[14,22]},{"start":163.962,"end":164.447,"char":[23,28]},{"start":164.447,"end":164.932,"char":[29,33]}]},{"start":164.932,"end":165.417,"text":"aqui,","words":[{"start":164.932,"end":165.417,"char":[0,5]}]},{"start":165.417,"end":165.903,"text":"intacto.","words":[{"start":165.417,"end":165.903,"char":[0,8]}]},{"start":165.903,"end":166.873,"text":"Mesma imagem,","words":[{"start":165.903,"end":166.388,"char":[0,5]},{"start":166.388,"end":166.873,"char":[6,13]}]},{"start":166.873,"end":168.328,"text":"daemons Docker separados,","words":[{"start":166.873,"end":167.358,"char":[0,7]},{"start":167.358,"end":167.843,"char":[8,14]},{"start":167.843,"end":168.328,"char":[15,25]}]},{"start":168.328,"end":170.269,"text":"sistemas de ficheiros separados.","words":[{"start":168.328,"end":168.813,"char":[0,8]},{"start":168.813,"end":169.298,"char":[9,11]},{"start":169.298,"end":169.784,"char":[12,21]},{"start":169.784,"end":170.269,"char":[22,32]}]},{"start":171.069,"end":172.494,"text":"Continua aqui.","words":[{"start":171.069,"end":171.781,"char":[0,8]},{"start":171.781,"end":172.494,"char":[9,14]}]},{"start":172.494,"end":175.345,"text":"As bifurcações estão devidamente","words":[{"start":172.494,"end":173.207,"char":[0,2]},{"start":173.207,"end":173.92,"char":[3,14]},{"start":173.92,"end":174.633,"char":[15,20]},{"start":174.633,"end":175.345,"char":[21,32]}]},{"start":175.345,"end":176.058,"text":"isoladas.","words":[{"start":175.345,"end":176.058,"char":[0,9]}]},{"start":179.373,"end":180.755,"text":"Quando terminar,","words":[{"start":179.373,"end":180.064,"char":[0,6]},{"start":180.064,"end":180.755,"char":[7,16]}]},{"start":180.755,"end":183.518,"text":"basta apagar a bifurcação.","words":[{"start":180.755,"end":181.445,"char":[0,5]},{"start":181.445,"end":182.136,"char":[6,12]},{"start":182.136,"end":182.827,"char":[13,14]},{"start":182.827,"end":183.518,"char":[15,26]}]},{"start":183.518,"end":186.281,"text":"O original fica exatamente","words":[{"start":183.518,"end":184.209,"char":[0,1]},{"start":184.209,"end":184.899,"char":[2,10]},{"start":184.899,"end":185.59,"char":[11,15]},{"start":185.59,"end":186.281,"char":[16,26]}]},{"start":186.281,"end":187.662,"text":"como estava.","words":[{"start":186.281,"end":186.972,"char":[0,4]},{"start":186.972,"end":187.662,"char":[5,12]}]},{"start":187.662,"end":188.353,"text":"Bifurcar,","words":[{"start":187.662,"end":188.353,"char":[0,9]}]},{"start":188.353,"end":189.044,"text":"experimentar,","words":[{"start":188.353,"end":189.044,"char":[0,13]}]},{"start":189.044,"end":189.735,"text":"destruir,","words":[{"start":189.044,"end":189.735,"char":[0,9]}]},{"start":189.735,"end":190.426,"text":"apagar.","words":[{"start":189.735,"end":190.426,"char":[0,7]}]},{"start":190.426,"end":191.807,"text":"Sem risco.","words":[{"start":190.426,"end":191.116,"char":[0,3]},{"start":191.116,"end":191.807,"char":[4,10]}]},{"start":194.807,"end":195.881,"text":"Bifurcação removida.","words":[{"start":194.807,"end":195.344,"char":[0,10]},{"start":195.344,"end":195.881,"char":[11,20]}]},{"start":195.881,"end":198.566,"text":"O original está exatamente como","words":[{"start":195.881,"end":196.418,"char":[0,1]},{"start":196.418,"end":196.955,"char":[2,10]},{"start":196.955,"end":197.492,"char":[11,15]},{"start":197.492,"end":198.029,"char":[16,26]},{"start":198.029,"end":198.566,"char":[27,31]}]},{"start":198.566,"end":199.64,"text":"o deixámos.","words":[{"start":198.566,"end":199.103,"char":[0,1]},{"start":199.103,"end":199.64,"char":[2,11]}]},{"start":200.473,"end":203.361,"text":"Uma bifurcação é uma fotografia congelada","words":[{"start":200.473,"end":200.954,"char":[0,3]},{"start":200.954,"end":201.435,"char":[4,14]},{"start":201.435,"end":201.917,"char":[15,16]},{"start":201.917,"end":202.398,"char":[17,20]},{"start":202.398,"end":202.879,"char":[21,31]},{"start":202.879,"end":203.361,"char":[32,41]}]},{"start":203.361,"end":205.286,"text":"do pai num instante.","words":[{"start":203.361,"end":203.842,"char":[0,2]},{"start":203.842,"end":204.323,"char":[3,6]},{"start":204.323,"end":204.804,"char":[7,10]},{"start":204.804,"end":205.286,"char":[11,20]}]},{"start":205.286,"end":208.173,"text":"O pai continua a fluir como","words":[{"start":205.286,"end":205.767,"char":[0,1]},{"start":205.767,"end":206.248,"char":[2,5]},{"start":206.248,"end":206.729,"char":[6,14]},{"start":206.729,"end":207.211,"char":[15,16]},{"start":207.211,"end":207.692,"char":[17,22]},{"start":207.692,"end":208.173,"char":[23,27]}]},{"start":208.173,"end":209.136,"text":"um rio,","words":[{"start":208.173,"end":208.654,"char":[0,2]},{"start":208.654,"end":209.136,"char":[3,7]}]},{"start":209.136,"end":212.023,"text":"mas o seu instantâneo permanece exatamente","words":[{"start":209.136,"end":209.617,"char":[0,3]},{"start":209.617,"end":210.098,"char":[4,5]},{"start":210.098,"end":210.579,"char":[6,9]},{"start":210.579,"end":211.061,"char":[10,21]},{"start":211.061,"end":211.542,"char":[22,31]},{"start":211.542,"end":212.023,"char":[32,42]}]},{"start":212.023,"end":212.986,"text":"onde estava.","words":[{"start":212.023,"end":212.504,"char":[0,4]},{"start":212.504,"end":212.986,"char":[5,12]}]},{"start":213.765,"end":216.76,"text":"Cinco bifurcações de um repo de","words":[{"start":213.765,"end":214.264,"char":[0,5]},{"start":214.264,"end":214.763,"char":[6,17]},{"start":214.763,"end":215.263,"char":[18,20]},{"start":215.263,"end":215.762,"char":[21,23]},{"start":215.762,"end":216.261,"char":[24,28]},{"start":216.261,"end":216.76,"char":[29,31]}]},{"start":216.76,"end":219.756,"text":"cem gigabytes ainda somam cerca de","words":[{"start":216.76,"end":217.26,"char":[0,3]},{"start":217.26,"end":217.759,"char":[4,13]},{"start":217.759,"end":218.258,"char":[14,19]},{"start":218.258,"end":218.757,"char":[20,25]},{"start":218.757,"end":219.256,"char":[26,31]},{"start":219.256,"end":219.756,"char":[32,34]}]},{"start":219.756,"end":221.753,"text":"cem gigabytes no disco.","words":[{"start":219.756,"end":220.255,"char":[0,3]},{"start":220.255,"end":220.754,"char":[4,13]},{"start":220.754,"end":221.253,"char":[14,16]},{"start":221.253,"end":221.753,"char":[17,23]}]},{"start":221.753,"end":224.748,"text":"Só paga pelos bytes que efetivamente","words":[{"start":221.753,"end":222.252,"char":[0,2]},{"start":222.252,"end":222.751,"char":[3,7]},{"start":222.751,"end":223.25,"char":[8,13]},{"start":223.25,"end":223.75,"char":[14,19]},{"start":223.75,"end":224.249,"char":[20,23]},{"start":224.249,"end":224.748,"char":[24,36]}]},{"start":224.748,"end":227.244,"text":"alterar dentro de cada bifurcação.","words":[{"start":224.748,"end":225.247,"char":[0,7]},{"start":225.247,"end":225.746,"char":[8,14]},{"start":225.746,"end":226.246,"char":[15,17]},{"start":226.246,"end":226.745,"char":[18,22]},{"start":226.745,"end":227.244,"char":[23,34]}]},{"start":228.009,"end":230.582,"text":"As bifurcações deixam deliberadamente os segredos","words":[{"start":228.009,"end":228.438,"char":[0,2]},{"start":228.438,"end":228.866,"char":[3,14]},{"start":228.866,"end":229.295,"char":[15,21]},{"start":229.295,"end":229.724,"char":[22,37]},{"start":229.724,"end":230.153,"char":[38,40]},{"start":230.153,"end":230.582,"char":[41,49]}]},{"start":230.582,"end":231.439,"text":"para trás,","words":[{"start":230.582,"end":231.01,"char":[0,4]},{"start":231.01,"end":231.439,"char":[5,10]}]},{"start":231.439,"end":234.012,"text":"e é isso que torna o","words":[{"start":231.439,"end":231.868,"char":[0,1]},{"start":231.868,"end":232.297,"char":[2,3]},{"start":232.297,"end":232.725,"char":[4,8]},{"start":232.725,"end":233.154,"char":[9,12]},{"start":233.154,"end":233.583,"char":[13,18]},{"start":233.583,"end":234.012,"char":[19,20]}]},{"start":234.012,"end":236.584,"text":"clonar produção sem partir nada realmente","words":[{"start":234.012,"end":234.44,"char":[0,6]},{"start":234.44,"end":234.869,"char":[7,15]},{"start":234.869,"end":235.298,"char":[16,19]},{"start":235.298,"end":235.727,"char":[20,26]},{"start":235.727,"end":236.156,"char":[27,31]},{"start":236.156,"end":236.584,"char":[32,41]}]},{"start":236.584,"end":237.013,"text":"seguro.","words":[{"start":236.584,"end":237.013,"char":[0,7]}]},{"start":237.013,"end":239.586,"text":"Vamos tratar disso a sério no","words":[{"start":237.013,"end":237.442,"char":[0,5]},{"start":237.442,"end":237.871,"char":[6,12]},{"start":237.871,"end":238.299,"char":[13,18]},{"start":238.299,"end":238.728,"char":[19,20]},{"start":238.728,"end":239.157,"char":[21,26]},{"start":239.157,"end":239.586,"char":[27,29]}]},{"start":239.586,"end":240.443,"text":"próximo tutorial!","words":[{"start":239.586,"end":240.014,"char":[0,7]},{"start":240.014,"end":240.443,"char":[8,17]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.149,
+      "text": "Bem-vindo à funcionalidade matadora!",
+      "words": [
+        { "start": 1, "end": 1.537, "char": [0, 9] },
+        { "start": 1.537, "end": 2.074, "char": [10, 11] },
+        { "start": 2.074, "end": 2.611, "char": [12, 26] },
+        { "start": 2.611, "end": 3.149, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 3.149,
+      "end": 5.834,
+      "text": "Clone um repositório de produção",
+      "words": [
+        { "start": 3.149, "end": 3.686, "char": [0, 5] },
+        { "start": 3.686, "end": 4.223, "char": [6, 8] },
+        { "start": 4.223, "end": 4.76, "char": [9, 20] },
+        { "start": 4.76, "end": 5.297, "char": [21, 23] },
+        { "start": 5.297, "end": 5.834, "char": [24, 32] }
+      ]
+    },
+    {
+      "start": 5.834,
+      "end": 7.983,
+      "text": "inteiro independentemente do tamanho,",
+      "words": [
+        { "start": 5.834, "end": 6.371, "char": [0, 7] },
+        { "start": 6.371, "end": 6.909, "char": [8, 25] },
+        { "start": 6.909, "end": 7.446, "char": [26, 28] },
+        { "start": 7.446, "end": 7.983, "char": [29, 37] }
+      ]
+    },
+    {
+      "start": 7.983,
+      "end": 9.594,
+      "text": "sem partir nada.",
+      "words": [
+        { "start": 7.983, "end": 8.52, "char": [0, 3] },
+        { "start": 8.52, "end": 9.057, "char": [4, 10] },
+        { "start": 9.057, "end": 9.594, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 10.368,
+      "end": 13.079,
+      "text": "Um repositório pai dá origem a",
+      "words": [
+        { "start": 10.368, "end": 10.82, "char": [0, 2] },
+        { "start": 10.82, "end": 11.272, "char": [3, 14] },
+        { "start": 11.272, "end": 11.723, "char": [15, 18] },
+        { "start": 11.723, "end": 12.175, "char": [19, 21] },
+        { "start": 12.175, "end": 12.627, "char": [22, 28] },
+        { "start": 12.627, "end": 13.079, "char": [29, 30] }
+      ]
+    },
+    {
+      "start": 13.079,
+      "end": 15.338,
+      "text": "tantas cópias independentes quantas quiser.",
+      "words": [
+        { "start": 13.079, "end": 13.531, "char": [0, 6] },
+        { "start": 13.531, "end": 13.983, "char": [7, 13] },
+        { "start": 13.983, "end": 14.434, "char": [14, 27] },
+        { "start": 14.434, "end": 14.886, "char": [28, 35] },
+        { "start": 14.886, "end": 15.338, "char": [36, 43] }
+      ]
+    },
+    {
+      "start": 15.338,
+      "end": 18.049,
+      "text": "Cada bifurcação é o seu próprio",
+      "words": [
+        { "start": 15.338, "end": 15.79, "char": [0, 4] },
+        { "start": 15.79, "end": 16.242, "char": [5, 15] },
+        { "start": 16.242, "end": 16.694, "char": [16, 17] },
+        { "start": 16.694, "end": 17.145, "char": [18, 19] },
+        { "start": 17.145, "end": 17.597, "char": [20, 23] },
+        { "start": 17.597, "end": 18.049, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 18.049,
+      "end": 18.953,
+      "text": "ambiente isolado,",
+      "words": [
+        { "start": 18.049, "end": 18.501, "char": [0, 8] },
+        { "start": 18.501, "end": 18.953, "char": [9, 17] }
+      ]
+    },
+    {
+      "start": 18.953,
+      "end": 21.664,
+      "text": "a correr lado a lado com",
+      "words": [
+        { "start": 18.953, "end": 19.404, "char": [0, 1] },
+        { "start": 19.404, "end": 19.856, "char": [2, 8] },
+        { "start": 19.856, "end": 20.308, "char": [9, 13] },
+        { "start": 20.308, "end": 20.76, "char": [14, 15] },
+        { "start": 20.76, "end": 21.212, "char": [16, 20] },
+        { "start": 21.212, "end": 21.664, "char": [21, 24] }
+      ]
+    },
+    {
+      "start": 21.664,
+      "end": 22.567,
+      "text": "o original.",
+      "words": [
+        { "start": 21.664, "end": 22.115, "char": [0, 1] },
+        { "start": 22.115, "end": 22.567, "char": [2, 11] }
+      ]
+    },
+    {
+      "start": 23.335,
+      "end": 26.233,
+      "text": "Pense em partilhar uma ligação",
+      "words": [
+        { "start": 23.335, "end": 23.915, "char": [0, 5] },
+        { "start": 23.915, "end": 24.494, "char": [6, 8] },
+        { "start": 24.494, "end": 25.074, "char": [9, 18] },
+        { "start": 25.074, "end": 25.653, "char": [19, 22] },
+        { "start": 25.653, "end": 26.233, "char": [23, 30] }
+      ]
+    },
+    {
+      "start": 26.233,
+      "end": 27.971,
+      "text": "para uma pasta.",
+      "words": [
+        { "start": 26.233, "end": 26.812, "char": [0, 4] },
+        { "start": 26.812, "end": 27.392, "char": [5, 8] },
+        { "start": 27.392, "end": 27.971, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 27.971,
+      "end": 30.869,
+      "text": "A ligação é igualmente leve",
+      "words": [
+        { "start": 27.971, "end": 28.551, "char": [0, 1] },
+        { "start": 28.551, "end": 29.13, "char": [2, 9] },
+        { "start": 29.13, "end": 29.71, "char": [10, 11] },
+        { "start": 29.71, "end": 30.289, "char": [12, 22] },
+        { "start": 30.289, "end": 30.869, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 30.869,
+      "end": 33.767,
+      "text": "quer a pasta seja pequena",
+      "words": [
+        { "start": 30.869, "end": 31.448, "char": [0, 4] },
+        { "start": 31.448, "end": 32.028, "char": [5, 6] },
+        { "start": 32.028, "end": 32.608, "char": [7, 12] },
+        { "start": 32.608, "end": 33.187, "char": [13, 17] },
+        { "start": 33.187, "end": 33.767, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 33.767,
+      "end": 34.926,
+      "text": "ou enorme,",
+      "words": [
+        { "start": 33.767, "end": 34.346, "char": [0, 2] },
+        { "start": 34.346, "end": 34.926, "char": [3, 10] }
+      ]
+    },
+    {
+      "start": 34.926,
+      "end": 37.823,
+      "text": "e a bifurcação funciona pelo",
+      "words": [
+        { "start": 34.926, "end": 35.505, "char": [0, 1] },
+        { "start": 35.505, "end": 36.085, "char": [2, 3] },
+        { "start": 36.085, "end": 36.664, "char": [4, 14] },
+        { "start": 36.664, "end": 37.244, "char": [15, 23] },
+        { "start": 37.244, "end": 37.823, "char": [24, 28] }
+      ]
+    },
+    {
+      "start": 37.823,
+      "end": 38.982,
+      "text": "mesmo princípio.",
+      "words": [
+        { "start": 37.823, "end": 38.403, "char": [0, 5] },
+        { "start": 38.403, "end": 38.982, "char": [6, 16] }
+      ]
+    },
+    {
+      "start": 39.739,
+      "end": 41.056,
+      "text": "Um gigabyte,",
+      "words": [
+        { "start": 39.739, "end": 40.397, "char": [0, 2] },
+        { "start": 40.397, "end": 41.056, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 41.056,
+      "end": 42.372,
+      "text": "cem gigabytes,",
+      "words": [
+        { "start": 41.056, "end": 41.714, "char": [0, 3] },
+        { "start": 41.714, "end": 42.372, "char": [4, 14] }
+      ]
+    },
+    {
+      "start": 42.372,
+      "end": 43.689,
+      "text": "um terabyte:",
+      "words": [
+        { "start": 42.372, "end": 43.03, "char": [0, 2] },
+        { "start": 43.03, "end": 43.689, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 43.689,
+      "end": 46.322,
+      "text": "a bifurcação comporta-se da",
+      "words": [
+        { "start": 43.689, "end": 44.347, "char": [0, 1] },
+        { "start": 44.347, "end": 45.005, "char": [2, 12] },
+        { "start": 45.005, "end": 45.664, "char": [13, 24] },
+        { "start": 45.664, "end": 46.322, "char": [25, 27] }
+      ]
+    },
+    {
+      "start": 46.322,
+      "end": 47.638,
+      "text": "mesma forma.",
+      "words": [
+        { "start": 46.322, "end": 46.98, "char": [0, 5] },
+        { "start": 46.98, "end": 47.638, "char": [6, 12] }
+      ]
+    },
+    {
+      "start": 47.638,
+      "end": 50.272,
+      "text": "O tamanho do repo",
+      "words": [
+        { "start": 47.638, "end": 48.297, "char": [0, 1] },
+        { "start": 48.297, "end": 48.955, "char": [2, 9] },
+        { "start": 48.955, "end": 49.613, "char": [10, 12] },
+        { "start": 49.613, "end": 50.272, "char": [13, 17] }
+      ]
+    },
+    {
+      "start": 50.272,
+      "end": 52.905,
+      "text": "não entra na equação.",
+      "words": [
+        { "start": 50.272, "end": 50.93, "char": [0, 3] },
+        { "start": 50.93, "end": 51.588, "char": [4, 9] },
+        { "start": 51.588, "end": 52.246, "char": [10, 12] },
+        { "start": 52.246, "end": 52.905, "char": [13, 21] }
+      ]
+    },
+    {
+      "start": 56.181,
+      "end": 57.683,
+      "text": "Agora a bifurcação.",
+      "words": [
+        { "start": 56.181, "end": 56.682, "char": [0, 5] },
+        { "start": 56.682, "end": 57.182, "char": [6, 7] },
+        { "start": 57.182, "end": 57.683, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 57.683,
+      "end": 60.185,
+      "text": "Um único comando clona o",
+      "words": [
+        { "start": 57.683, "end": 58.183, "char": [0, 2] },
+        { "start": 58.183, "end": 58.684, "char": [3, 8] },
+        { "start": 58.684, "end": 59.184, "char": [9, 16] },
+        { "start": 59.184, "end": 59.685, "char": [17, 22] },
+        { "start": 59.685, "end": 60.185, "char": [23, 24] }
+      ]
+    },
+    {
+      "start": 60.185,
+      "end": 62.688,
+      "text": "repositório inteiro -- a aplicação,",
+      "words": [
+        { "start": 60.185, "end": 60.686, "char": [0, 11] },
+        { "start": 60.686, "end": 61.187, "char": [12, 19] },
+        { "start": 61.187, "end": 61.687, "char": [20, 22] },
+        { "start": 61.687, "end": 62.188, "char": [23, 24] },
+        { "start": 62.188, "end": 62.688, "char": [25, 35] }
+      ]
+    },
+    {
+      "start": 62.688,
+      "end": 64.691,
+      "text": "a base de dados,",
+      "words": [
+        { "start": 62.688, "end": 63.189, "char": [0, 1] },
+        { "start": 63.189, "end": 63.689, "char": [2, 6] },
+        { "start": 63.689, "end": 64.19, "char": [7, 9] },
+        { "start": 64.19, "end": 64.691, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 64.691,
+      "end": 67.193,
+      "text": "os ficheiros de configuração --",
+      "words": [
+        { "start": 64.691, "end": 65.191, "char": [0, 2] },
+        { "start": 65.191, "end": 65.692, "char": [3, 12] },
+        { "start": 65.692, "end": 66.192, "char": [13, 15] },
+        { "start": 66.192, "end": 66.693, "char": [16, 28] },
+        { "start": 66.693, "end": 67.193, "char": [29, 31] }
+      ]
+    },
+    {
+      "start": 67.193,
+      "end": 68.195,
+      "text": "em segundos,",
+      "words": [
+        { "start": 67.193, "end": 67.694, "char": [0, 2] },
+        { "start": 67.694, "end": 68.195, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 68.195,
+      "end": 69.696,
+      "text": "independentemente do tamanho.",
+      "words": [
+        { "start": 68.195, "end": 68.695, "char": [0, 17] },
+        { "start": 68.695, "end": 69.196, "char": [18, 20] },
+        { "start": 69.196, "end": 69.696, "char": [21, 29] }
+      ]
+    },
+    {
+      "start": 69.696,
+      "end": 70.697,
+      "text": "Um gigabyte,",
+      "words": [
+        { "start": 69.696, "end": 70.197, "char": [0, 2] },
+        { "start": 70.197, "end": 70.697, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 70.697,
+      "end": 71.698,
+      "text": "cem gigabytes,",
+      "words": [
+        { "start": 70.697, "end": 71.198, "char": [0, 3] },
+        { "start": 71.198, "end": 71.698, "char": [4, 14] }
+      ]
+    },
+    {
+      "start": 71.698,
+      "end": 72.7,
+      "text": "um terabyte:",
+      "words": [
+        { "start": 71.698, "end": 72.199, "char": [0, 2] },
+        { "start": 72.199, "end": 72.7, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 72.7,
+      "end": 74.201,
+      "text": "o mesmo tempo,",
+      "words": [
+        { "start": 72.7, "end": 73.2, "char": [0, 1] },
+        { "start": 73.2, "end": 73.701, "char": [2, 7] },
+        { "start": 73.701, "end": 74.201, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 74.201,
+      "end": 74.702,
+      "text": "sempre.",
+      "words": [{ "start": 74.201, "end": 74.702, "char": [0, 7] }]
+    },
+    {
+      "start": 77.702,
+      "end": 78.534,
+      "text": "Bifurcação concluída.",
+      "words": [
+        { "start": 77.702, "end": 78.118, "char": [0, 10] },
+        { "start": 78.118, "end": 78.534, "char": [11, 21] }
+      ]
+    },
+    {
+      "start": 78.534,
+      "end": 81.029,
+      "text": "O clone está pronto a usar,",
+      "words": [
+        { "start": 78.534, "end": 78.95, "char": [0, 1] },
+        { "start": 78.95, "end": 79.366, "char": [2, 7] },
+        { "start": 79.366, "end": 79.782, "char": [8, 12] },
+        { "start": 79.782, "end": 80.198, "char": [13, 19] },
+        { "start": 80.198, "end": 80.613, "char": [20, 21] },
+        { "start": 80.613, "end": 81.029, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 81.029,
+      "end": 83.109,
+      "text": "qualquer que seja o tamanho.",
+      "words": [
+        { "start": 81.029, "end": 81.445, "char": [0, 8] },
+        { "start": 81.445, "end": 81.861, "char": [9, 12] },
+        { "start": 81.861, "end": 82.277, "char": [13, 17] },
+        { "start": 82.277, "end": 82.693, "char": [18, 19] },
+        { "start": 82.693, "end": 83.109, "char": [20, 28] }
+      ]
+    },
+    {
+      "start": 86.401,
+      "end": 89.16,
+      "text": "Os dois repositórios coexistem agora",
+      "words": [
+        { "start": 86.401, "end": 86.953, "char": [0, 2] },
+        { "start": 86.953, "end": 87.505, "char": [3, 7] },
+        { "start": 87.505, "end": 88.057, "char": [8, 20] },
+        { "start": 88.057, "end": 88.608, "char": [21, 30] },
+        { "start": 88.608, "end": 89.16, "char": [31, 36] }
+      ]
+    },
+    {
+      "start": 89.16,
+      "end": 90.816,
+      "text": "lado a lado.",
+      "words": [
+        { "start": 89.16, "end": 89.712, "char": [0, 4] },
+        { "start": 89.712, "end": 90.264, "char": [5, 6] },
+        { "start": 90.264, "end": 90.816, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 90.816,
+      "end": 91.919,
+      "text": "Mesma máquina,",
+      "words": [
+        { "start": 90.816, "end": 91.368, "char": [0, 5] },
+        { "start": 91.368, "end": 91.919, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 91.919,
+      "end": 93.023,
+      "text": "mesmo disco,",
+      "words": [
+        { "start": 91.919, "end": 92.471, "char": [0, 5] },
+        { "start": 92.471, "end": 93.023, "char": [6, 12] }
+      ]
+    },
+    {
+      "start": 93.023,
+      "end": 95.23,
+      "text": "dois ambientes completamente independentes.",
+      "words": [
+        { "start": 93.023, "end": 93.575, "char": [0, 4] },
+        { "start": 93.575, "end": 94.127, "char": [5, 14] },
+        { "start": 94.127, "end": 94.679, "char": [15, 28] },
+        { "start": 94.679, "end": 95.23, "char": [29, 43] }
+      ]
+    },
+    {
+      "start": 98.23,
+      "end": 99.15,
+      "text": "Dois repos,",
+      "words": [
+        { "start": 98.23, "end": 98.69, "char": [0, 4] },
+        { "start": 98.69, "end": 99.15, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 99.15,
+      "end": 100.069,
+      "text": "um disco.",
+      "words": [
+        { "start": 99.15, "end": 99.61, "char": [0, 2] },
+        { "start": 99.61, "end": 100.069, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 100.069,
+      "end": 100.989,
+      "text": "Mesmos dados,",
+      "words": [
+        { "start": 100.069, "end": 100.529, "char": [0, 6] },
+        { "start": 100.529, "end": 100.989, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 100.989,
+      "end": 102.828,
+      "text": "tudo o resto separado.",
+      "words": [
+        { "start": 100.989, "end": 101.449, "char": [0, 4] },
+        { "start": 101.449, "end": 101.908, "char": [5, 6] },
+        { "start": 101.908, "end": 102.368, "char": [7, 12] },
+        { "start": 102.368, "end": 102.828, "char": [13, 22] }
+      ]
+    },
+    {
+      "start": 106.165,
+      "end": 108.114,
+      "text": "Vamos provar o isolamento.",
+      "words": [
+        { "start": 106.165, "end": 106.652, "char": [0, 5] },
+        { "start": 106.652, "end": 107.14, "char": [6, 12] },
+        { "start": 107.14, "end": 107.627, "char": [13, 14] },
+        { "start": 107.627, "end": 108.114, "char": [15, 26] }
+      ]
+    },
+    {
+      "start": 108.114,
+      "end": 109.089,
+      "text": "No original,",
+      "words": [
+        { "start": 108.114, "end": 108.601, "char": [0, 2] },
+        { "start": 108.601, "end": 109.089, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 109.089,
+      "end": 112.012,
+      "text": "o nosso ficheiro de marcação está",
+      "words": [
+        { "start": 109.089, "end": 109.576, "char": [0, 1] },
+        { "start": 109.576, "end": 110.063, "char": [2, 7] },
+        { "start": 110.063, "end": 110.551, "char": [8, 16] },
+        { "start": 110.551, "end": 111.038, "char": [17, 19] },
+        { "start": 111.038, "end": 111.525, "char": [20, 28] },
+        { "start": 111.525, "end": 112.012, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 112.012,
+      "end": 113.962,
+      "text": "exatamente onde o deixámos.",
+      "words": [
+        { "start": 112.012, "end": 112.5, "char": [0, 10] },
+        { "start": 112.5, "end": 112.987, "char": [11, 15] },
+        { "start": 112.987, "end": 113.474, "char": [16, 17] },
+        { "start": 113.474, "end": 113.962, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 113.962,
+      "end": 116.885,
+      "text": "A existência da bifurcação não alterou",
+      "words": [
+        { "start": 113.962, "end": 114.449, "char": [0, 1] },
+        { "start": 114.449, "end": 114.936, "char": [2, 12] },
+        { "start": 114.936, "end": 115.423, "char": [13, 15] },
+        { "start": 115.423, "end": 115.911, "char": [16, 26] },
+        { "start": 115.911, "end": 116.398, "char": [27, 30] },
+        { "start": 116.398, "end": 116.885, "char": [31, 38] }
+      ]
+    },
+    {
+      "start": 116.885,
+      "end": 118.834,
+      "text": "nada no repositório pai.",
+      "words": [
+        { "start": 116.885, "end": 117.373, "char": [0, 4] },
+        { "start": 117.373, "end": 117.86, "char": [5, 7] },
+        { "start": 117.86, "end": 118.347, "char": [8, 19] },
+        { "start": 118.347, "end": 118.834, "char": [20, 24] }
+      ]
+    },
+    {
+      "start": 119.634,
+      "end": 122.051,
+      "text": "O ficheiro original continua lá.",
+      "words": [
+        { "start": 119.634, "end": 120.118, "char": [0, 1] },
+        { "start": 120.118, "end": 120.601, "char": [2, 10] },
+        { "start": 120.601, "end": 121.084, "char": [11, 19] },
+        { "start": 121.084, "end": 121.567, "char": [20, 28] },
+        { "start": 121.567, "end": 122.051, "char": [29, 32] }
+      ]
+    },
+    {
+      "start": 122.051,
+      "end": 124.467,
+      "text": "A bifurcação não lhe tocou.",
+      "words": [
+        { "start": 122.051, "end": 122.534, "char": [0, 1] },
+        { "start": 122.534, "end": 123.017, "char": [2, 12] },
+        { "start": 123.017, "end": 123.5, "char": [13, 16] },
+        { "start": 123.5, "end": 123.984, "char": [17, 20] },
+        { "start": 123.984, "end": 124.467, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 125.265,
+      "end": 127.782,
+      "text": "O repositório pai é o sol",
+      "words": [
+        { "start": 125.265, "end": 125.684, "char": [0, 1] },
+        { "start": 125.684, "end": 126.104, "char": [2, 13] },
+        { "start": 126.104, "end": 126.523, "char": [14, 17] },
+        { "start": 126.523, "end": 126.943, "char": [18, 19] },
+        { "start": 126.943, "end": 127.362, "char": [20, 21] },
+        { "start": 127.362, "end": 127.782, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 127.782,
+      "end": 130.298,
+      "text": "e a sua bifurcação é um",
+      "words": [
+        { "start": 127.782, "end": 128.201, "char": [0, 1] },
+        { "start": 128.201, "end": 128.621, "char": [2, 3] },
+        { "start": 128.621, "end": 129.04, "char": [4, 7] },
+        { "start": 129.04, "end": 129.46, "char": [8, 18] },
+        { "start": 129.46, "end": 129.879, "char": [19, 20] },
+        { "start": 129.879, "end": 130.298, "char": [21, 23] }
+      ]
+    },
+    {
+      "start": 130.298,
+      "end": 132.815,
+      "text": "espelho que apanha a sua luz.",
+      "words": [
+        { "start": 130.298, "end": 130.718, "char": [0, 7] },
+        { "start": 130.718, "end": 131.137, "char": [8, 11] },
+        { "start": 131.137, "end": 131.557, "char": [12, 18] },
+        { "start": 131.557, "end": 131.976, "char": [19, 20] },
+        { "start": 131.976, "end": 132.396, "char": [21, 24] },
+        { "start": 132.396, "end": 132.815, "char": [25, 29] }
+      ]
+    },
+    {
+      "start": 132.815,
+      "end": 135.332,
+      "text": "A base partilhada permanece intacta enquanto",
+      "words": [
+        { "start": 132.815, "end": 133.235, "char": [0, 1] },
+        { "start": 133.235, "end": 133.654, "char": [2, 6] },
+        { "start": 133.654, "end": 134.073, "char": [7, 17] },
+        { "start": 134.073, "end": 134.493, "char": [18, 27] },
+        { "start": 134.493, "end": 134.912, "char": [28, 35] },
+        { "start": 134.912, "end": 135.332, "char": [36, 44] }
+      ]
+    },
+    {
+      "start": 135.332,
+      "end": 137.849,
+      "text": "tudo o que pintar no espelho",
+      "words": [
+        { "start": 135.332, "end": 135.751, "char": [0, 4] },
+        { "start": 135.751, "end": 136.171, "char": [5, 6] },
+        { "start": 136.171, "end": 136.59, "char": [7, 10] },
+        { "start": 136.59, "end": 137.01, "char": [11, 17] },
+        { "start": 137.01, "end": 137.429, "char": [18, 20] },
+        { "start": 137.429, "end": 137.849, "char": [21, 28] }
+      ]
+    },
+    {
+      "start": 137.849,
+      "end": 139.946,
+      "text": "lhe pertence apenas a si.",
+      "words": [
+        { "start": 137.849, "end": 138.268, "char": [0, 3] },
+        { "start": 138.268, "end": 138.687, "char": [4, 12] },
+        { "start": 138.687, "end": 139.107, "char": [13, 19] },
+        { "start": 139.107, "end": 139.526, "char": [20, 21] },
+        { "start": 139.526, "end": 139.946, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 143.217,
+      "end": 145.606,
+      "text": "Agora vamos apagar esse ficheiro,",
+      "words": [
+        { "start": 143.217, "end": 143.695, "char": [0, 5] },
+        { "start": 143.695, "end": 144.173, "char": [6, 11] },
+        { "start": 144.173, "end": 144.651, "char": [12, 18] },
+        { "start": 144.651, "end": 145.129, "char": [19, 23] },
+        { "start": 145.129, "end": 145.606, "char": [24, 33] }
+      ]
+    },
+    {
+      "start": 145.606,
+      "end": 147.996,
+      "text": "mas apenas dentro da bifurcação.",
+      "words": [
+        { "start": 145.606, "end": 146.084, "char": [0, 3] },
+        { "start": 146.084, "end": 146.562, "char": [4, 10] },
+        { "start": 146.562, "end": 147.04, "char": [11, 17] },
+        { "start": 147.04, "end": 147.518, "char": [18, 20] },
+        { "start": 147.518, "end": 147.996, "char": [21, 32] }
+      ]
+    },
+    {
+      "start": 147.996,
+      "end": 150.863,
+      "text": "Estamos a fazer uma alteração destrutiva",
+      "words": [
+        { "start": 147.996, "end": 148.474, "char": [0, 7] },
+        { "start": 148.474, "end": 148.952, "char": [8, 9] },
+        { "start": 148.952, "end": 149.43, "char": [10, 15] },
+        { "start": 149.43, "end": 149.907, "char": [16, 19] },
+        { "start": 149.907, "end": 150.385, "char": [20, 29] },
+        { "start": 150.385, "end": 150.863, "char": [30, 40] }
+      ]
+    },
+    {
+      "start": 150.863,
+      "end": 151.341,
+      "text": "aqui.",
+      "words": [{ "start": 150.863, "end": 151.341, "char": [0, 5] }]
+    },
+    {
+      "start": 152.141,
+      "end": 154.111,
+      "text": "Desapareceu da bifurcação.",
+      "words": [
+        { "start": 152.141, "end": 152.798, "char": [0, 11] },
+        { "start": 152.798, "end": 153.455, "char": [12, 14] },
+        { "start": 153.455, "end": 154.111, "char": [15, 26] }
+      ]
+    },
+    {
+      "start": 154.111,
+      "end": 156.739,
+      "text": "O original permanece intacto.",
+      "words": [
+        { "start": 154.111, "end": 154.768, "char": [0, 1] },
+        { "start": 154.768, "end": 155.425, "char": [2, 10] },
+        { "start": 155.425, "end": 156.082, "char": [11, 20] },
+        { "start": 156.082, "end": 156.739, "char": [21, 29] }
+      ]
+    },
+    {
+      "start": 160.081,
+      "end": 162.021,
+      "text": "De volta ao original.",
+      "words": [
+        { "start": 160.081, "end": 160.566, "char": [0, 2] },
+        { "start": 160.566, "end": 161.051, "char": [3, 8] },
+        { "start": 161.051, "end": 161.536, "char": [9, 11] },
+        { "start": 161.536, "end": 162.021, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 162.021,
+      "end": 164.932,
+      "text": "O ficheiro de marcação ainda está",
+      "words": [
+        { "start": 162.021, "end": 162.507, "char": [0, 1] },
+        { "start": 162.507, "end": 162.992, "char": [2, 10] },
+        { "start": 162.992, "end": 163.477, "char": [11, 13] },
+        { "start": 163.477, "end": 163.962, "char": [14, 22] },
+        { "start": 163.962, "end": 164.447, "char": [23, 28] },
+        { "start": 164.447, "end": 164.932, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 164.932,
+      "end": 165.417,
+      "text": "aqui,",
+      "words": [{ "start": 164.932, "end": 165.417, "char": [0, 5] }]
+    },
+    {
+      "start": 165.417,
+      "end": 165.903,
+      "text": "intacto.",
+      "words": [{ "start": 165.417, "end": 165.903, "char": [0, 8] }]
+    },
+    {
+      "start": 165.903,
+      "end": 166.873,
+      "text": "Mesma imagem,",
+      "words": [
+        { "start": 165.903, "end": 166.388, "char": [0, 5] },
+        { "start": 166.388, "end": 166.873, "char": [6, 13] }
+      ]
+    },
+    {
+      "start": 166.873,
+      "end": 168.328,
+      "text": "daemons Docker separados,",
+      "words": [
+        { "start": 166.873, "end": 167.358, "char": [0, 7] },
+        { "start": 167.358, "end": 167.843, "char": [8, 14] },
+        { "start": 167.843, "end": 168.328, "char": [15, 25] }
+      ]
+    },
+    {
+      "start": 168.328,
+      "end": 170.269,
+      "text": "sistemas de ficheiros separados.",
+      "words": [
+        { "start": 168.328, "end": 168.813, "char": [0, 8] },
+        { "start": 168.813, "end": 169.298, "char": [9, 11] },
+        { "start": 169.298, "end": 169.784, "char": [12, 21] },
+        { "start": 169.784, "end": 170.269, "char": [22, 32] }
+      ]
+    },
+    {
+      "start": 171.069,
+      "end": 172.494,
+      "text": "Continua aqui.",
+      "words": [
+        { "start": 171.069, "end": 171.781, "char": [0, 8] },
+        { "start": 171.781, "end": 172.494, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 172.494,
+      "end": 175.345,
+      "text": "As bifurcações estão devidamente",
+      "words": [
+        { "start": 172.494, "end": 173.207, "char": [0, 2] },
+        { "start": 173.207, "end": 173.92, "char": [3, 14] },
+        { "start": 173.92, "end": 174.633, "char": [15, 20] },
+        { "start": 174.633, "end": 175.345, "char": [21, 32] }
+      ]
+    },
+    {
+      "start": 175.345,
+      "end": 176.058,
+      "text": "isoladas.",
+      "words": [{ "start": 175.345, "end": 176.058, "char": [0, 9] }]
+    },
+    {
+      "start": 179.373,
+      "end": 180.755,
+      "text": "Quando terminar,",
+      "words": [
+        { "start": 179.373, "end": 180.064, "char": [0, 6] },
+        { "start": 180.064, "end": 180.755, "char": [7, 16] }
+      ]
+    },
+    {
+      "start": 180.755,
+      "end": 183.518,
+      "text": "basta apagar a bifurcação.",
+      "words": [
+        { "start": 180.755, "end": 181.445, "char": [0, 5] },
+        { "start": 181.445, "end": 182.136, "char": [6, 12] },
+        { "start": 182.136, "end": 182.827, "char": [13, 14] },
+        { "start": 182.827, "end": 183.518, "char": [15, 26] }
+      ]
+    },
+    {
+      "start": 183.518,
+      "end": 186.281,
+      "text": "O original fica exatamente",
+      "words": [
+        { "start": 183.518, "end": 184.209, "char": [0, 1] },
+        { "start": 184.209, "end": 184.899, "char": [2, 10] },
+        { "start": 184.899, "end": 185.59, "char": [11, 15] },
+        { "start": 185.59, "end": 186.281, "char": [16, 26] }
+      ]
+    },
+    {
+      "start": 186.281,
+      "end": 187.662,
+      "text": "como estava.",
+      "words": [
+        { "start": 186.281, "end": 186.972, "char": [0, 4] },
+        { "start": 186.972, "end": 187.662, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 187.662,
+      "end": 188.353,
+      "text": "Bifurcar,",
+      "words": [{ "start": 187.662, "end": 188.353, "char": [0, 9] }]
+    },
+    {
+      "start": 188.353,
+      "end": 189.044,
+      "text": "experimentar,",
+      "words": [{ "start": 188.353, "end": 189.044, "char": [0, 13] }]
+    },
+    {
+      "start": 189.044,
+      "end": 189.735,
+      "text": "destruir,",
+      "words": [{ "start": 189.044, "end": 189.735, "char": [0, 9] }]
+    },
+    {
+      "start": 189.735,
+      "end": 190.426,
+      "text": "apagar.",
+      "words": [{ "start": 189.735, "end": 190.426, "char": [0, 7] }]
+    },
+    {
+      "start": 190.426,
+      "end": 191.807,
+      "text": "Sem risco.",
+      "words": [
+        { "start": 190.426, "end": 191.116, "char": [0, 3] },
+        { "start": 191.116, "end": 191.807, "char": [4, 10] }
+      ]
+    },
+    {
+      "start": 194.807,
+      "end": 195.881,
+      "text": "Bifurcação removida.",
+      "words": [
+        { "start": 194.807, "end": 195.344, "char": [0, 10] },
+        { "start": 195.344, "end": 195.881, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 195.881,
+      "end": 198.566,
+      "text": "O original está exatamente como",
+      "words": [
+        { "start": 195.881, "end": 196.418, "char": [0, 1] },
+        { "start": 196.418, "end": 196.955, "char": [2, 10] },
+        { "start": 196.955, "end": 197.492, "char": [11, 15] },
+        { "start": 197.492, "end": 198.029, "char": [16, 26] },
+        { "start": 198.029, "end": 198.566, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 198.566,
+      "end": 199.64,
+      "text": "o deixámos.",
+      "words": [
+        { "start": 198.566, "end": 199.103, "char": [0, 1] },
+        { "start": 199.103, "end": 199.64, "char": [2, 11] }
+      ]
+    },
+    {
+      "start": 200.473,
+      "end": 203.361,
+      "text": "Uma bifurcação é uma fotografia congelada",
+      "words": [
+        { "start": 200.473, "end": 200.954, "char": [0, 3] },
+        { "start": 200.954, "end": 201.435, "char": [4, 14] },
+        { "start": 201.435, "end": 201.917, "char": [15, 16] },
+        { "start": 201.917, "end": 202.398, "char": [17, 20] },
+        { "start": 202.398, "end": 202.879, "char": [21, 31] },
+        { "start": 202.879, "end": 203.361, "char": [32, 41] }
+      ]
+    },
+    {
+      "start": 203.361,
+      "end": 205.286,
+      "text": "do pai num instante.",
+      "words": [
+        { "start": 203.361, "end": 203.842, "char": [0, 2] },
+        { "start": 203.842, "end": 204.323, "char": [3, 6] },
+        { "start": 204.323, "end": 204.804, "char": [7, 10] },
+        { "start": 204.804, "end": 205.286, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 205.286,
+      "end": 208.173,
+      "text": "O pai continua a fluir como",
+      "words": [
+        { "start": 205.286, "end": 205.767, "char": [0, 1] },
+        { "start": 205.767, "end": 206.248, "char": [2, 5] },
+        { "start": 206.248, "end": 206.729, "char": [6, 14] },
+        { "start": 206.729, "end": 207.211, "char": [15, 16] },
+        { "start": 207.211, "end": 207.692, "char": [17, 22] },
+        { "start": 207.692, "end": 208.173, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 208.173,
+      "end": 209.136,
+      "text": "um rio,",
+      "words": [
+        { "start": 208.173, "end": 208.654, "char": [0, 2] },
+        { "start": 208.654, "end": 209.136, "char": [3, 7] }
+      ]
+    },
+    {
+      "start": 209.136,
+      "end": 212.023,
+      "text": "mas o seu instantâneo permanece exatamente",
+      "words": [
+        { "start": 209.136, "end": 209.617, "char": [0, 3] },
+        { "start": 209.617, "end": 210.098, "char": [4, 5] },
+        { "start": 210.098, "end": 210.579, "char": [6, 9] },
+        { "start": 210.579, "end": 211.061, "char": [10, 21] },
+        { "start": 211.061, "end": 211.542, "char": [22, 31] },
+        { "start": 211.542, "end": 212.023, "char": [32, 42] }
+      ]
+    },
+    {
+      "start": 212.023,
+      "end": 212.986,
+      "text": "onde estava.",
+      "words": [
+        { "start": 212.023, "end": 212.504, "char": [0, 4] },
+        { "start": 212.504, "end": 212.986, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 213.765,
+      "end": 216.76,
+      "text": "Cinco bifurcações de um repo de",
+      "words": [
+        { "start": 213.765, "end": 214.264, "char": [0, 5] },
+        { "start": 214.264, "end": 214.763, "char": [6, 17] },
+        { "start": 214.763, "end": 215.263, "char": [18, 20] },
+        { "start": 215.263, "end": 215.762, "char": [21, 23] },
+        { "start": 215.762, "end": 216.261, "char": [24, 28] },
+        { "start": 216.261, "end": 216.76, "char": [29, 31] }
+      ]
+    },
+    {
+      "start": 216.76,
+      "end": 219.756,
+      "text": "cem gigabytes ainda somam cerca de",
+      "words": [
+        { "start": 216.76, "end": 217.26, "char": [0, 3] },
+        { "start": 217.26, "end": 217.759, "char": [4, 13] },
+        { "start": 217.759, "end": 218.258, "char": [14, 19] },
+        { "start": 218.258, "end": 218.757, "char": [20, 25] },
+        { "start": 218.757, "end": 219.256, "char": [26, 31] },
+        { "start": 219.256, "end": 219.756, "char": [32, 34] }
+      ]
+    },
+    {
+      "start": 219.756,
+      "end": 221.753,
+      "text": "cem gigabytes no disco.",
+      "words": [
+        { "start": 219.756, "end": 220.255, "char": [0, 3] },
+        { "start": 220.255, "end": 220.754, "char": [4, 13] },
+        { "start": 220.754, "end": 221.253, "char": [14, 16] },
+        { "start": 221.253, "end": 221.753, "char": [17, 23] }
+      ]
+    },
+    {
+      "start": 221.753,
+      "end": 224.748,
+      "text": "Só paga pelos bytes que efetivamente",
+      "words": [
+        { "start": 221.753, "end": 222.252, "char": [0, 2] },
+        { "start": 222.252, "end": 222.751, "char": [3, 7] },
+        { "start": 222.751, "end": 223.25, "char": [8, 13] },
+        { "start": 223.25, "end": 223.75, "char": [14, 19] },
+        { "start": 223.75, "end": 224.249, "char": [20, 23] },
+        { "start": 224.249, "end": 224.748, "char": [24, 36] }
+      ]
+    },
+    {
+      "start": 224.748,
+      "end": 227.244,
+      "text": "alterar dentro de cada bifurcação.",
+      "words": [
+        { "start": 224.748, "end": 225.247, "char": [0, 7] },
+        { "start": 225.247, "end": 225.746, "char": [8, 14] },
+        { "start": 225.746, "end": 226.246, "char": [15, 17] },
+        { "start": 226.246, "end": 226.745, "char": [18, 22] },
+        { "start": 226.745, "end": 227.244, "char": [23, 34] }
+      ]
+    },
+    {
+      "start": 228.009,
+      "end": 230.582,
+      "text": "As bifurcações deixam deliberadamente os segredos",
+      "words": [
+        { "start": 228.009, "end": 228.438, "char": [0, 2] },
+        { "start": 228.438, "end": 228.866, "char": [3, 14] },
+        { "start": 228.866, "end": 229.295, "char": [15, 21] },
+        { "start": 229.295, "end": 229.724, "char": [22, 37] },
+        { "start": 229.724, "end": 230.153, "char": [38, 40] },
+        { "start": 230.153, "end": 230.582, "char": [41, 49] }
+      ]
+    },
+    {
+      "start": 230.582,
+      "end": 231.439,
+      "text": "para trás,",
+      "words": [
+        { "start": 230.582, "end": 231.01, "char": [0, 4] },
+        { "start": 231.01, "end": 231.439, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 231.439,
+      "end": 234.012,
+      "text": "e é isso que torna o",
+      "words": [
+        { "start": 231.439, "end": 231.868, "char": [0, 1] },
+        { "start": 231.868, "end": 232.297, "char": [2, 3] },
+        { "start": 232.297, "end": 232.725, "char": [4, 8] },
+        { "start": 232.725, "end": 233.154, "char": [9, 12] },
+        { "start": 233.154, "end": 233.583, "char": [13, 18] },
+        { "start": 233.583, "end": 234.012, "char": [19, 20] }
+      ]
+    },
+    {
+      "start": 234.012,
+      "end": 236.584,
+      "text": "clonar produção sem partir nada realmente",
+      "words": [
+        { "start": 234.012, "end": 234.44, "char": [0, 6] },
+        { "start": 234.44, "end": 234.869, "char": [7, 15] },
+        { "start": 234.869, "end": 235.298, "char": [16, 19] },
+        { "start": 235.298, "end": 235.727, "char": [20, 26] },
+        { "start": 235.727, "end": 236.156, "char": [27, 31] },
+        { "start": 236.156, "end": 236.584, "char": [32, 41] }
+      ]
+    },
+    {
+      "start": 236.584,
+      "end": 237.013,
+      "text": "seguro.",
+      "words": [{ "start": 236.584, "end": 237.013, "char": [0, 7] }]
+    },
+    {
+      "start": 237.013,
+      "end": 239.586,
+      "text": "Vamos tratar disso a sério no",
+      "words": [
+        { "start": 237.013, "end": 237.442, "char": [0, 5] },
+        { "start": 237.442, "end": 237.871, "char": [6, 12] },
+        { "start": 237.871, "end": 238.299, "char": [13, 18] },
+        { "start": 238.299, "end": 238.728, "char": [19, 20] },
+        { "start": 238.728, "end": 239.157, "char": [21, 26] },
+        { "start": 239.157, "end": 239.586, "char": [27, 29] }
+      ]
+    },
+    {
+      "start": 239.586,
+      "end": 240.443,
+      "text": "próximo tutorial!",
+      "words": [
+        { "start": 239.586, "end": 240.014, "char": [0, 7] },
+        { "start": 240.014, "end": 240.443, "char": [8, 17] }
+      ]
+    }
+  ]
+}

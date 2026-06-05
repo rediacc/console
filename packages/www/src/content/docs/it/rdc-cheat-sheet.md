@@ -1,16 +1,16 @@
 ---
-title: "Riferimento Rapido RDC CLI"
-description: "Guida rapida ai comandi rdc più usati: configurazione, repository, macchine, sincronizzazione e gestione dei container così da avere tutto a portata di mano."
+title: Foglio di Aiuto RDC CLI
+description: "Guida rapida a rdc: configurazioni, repository, macchine, sincronizzazione file e container. Per l'insieme completo delle opzioni, aggiungi --help a qualsiasi comando."
 category: Guides
 order: 3
 language: it
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# Riferimento Rapido RDC CLI
+# Foglio di Aiuto RDC CLI
 
-Riferimento rapido per i comandi `rdc` più comuni. Esegui qualsiasi comando con `--help` per le opzioni complete.
+Non tutti i comandi `rdc` sono elencati qui, solo quelli che incontri in ogni deployment. Per l'insieme completo delle opzioni, esegui un qualsiasi comando rdc con `--help`. I casi particolari e le opzioni raramente utilizzate sono nel riferimento completo.
 
 ## Ciclo di Vita della Repository
 

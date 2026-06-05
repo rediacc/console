@@ -1,14 +1,14 @@
 ---
 title: "Cumplimiento de PCI DSS"
-description: "Cómo Rediacc se ajusta a los requisitos de PCI DSS para proteger datos de tarjetas de pago con cifrado, segmentación de red y control de acceso."
+description: "Cómo Rediacc cumple con los requisitos de PCI DSS: copias de seguridad inmutables, aislamiento automático de red y control de acceso a nivel de infraestructura."
 category: "Legal"
 order: 6
 language: es
-sourceHash: "7dfa2cbb5f86d910"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "d8391036876231a0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-El Estándar de Seguridad de Datos de la Industria de Tarjetas de Pago (PCI DSS) es requerido para cualquier organización que almacene, procese o transmita datos de titulares de tarjetas. La versión actual es PCI DSS v4.0.1.
+Mira, PCI DSS v4.0.1. no es opcional si manejas datos de titular de tarjeta. La versión 4.0.1. se reduce a un requisito: aislamiento a nivel de infraestructura de todo lo demás.
 
 Referencia: [PCI Security Standards Council](https://www.pcisecuritystandards.org/document_library/)
 
@@ -24,12 +24,12 @@ Referencia: [PCI Security Standards Council](https://www.pcisecuritystandards.or
 | **Req 7**, Restringir acceso | Restringir acceso a componentes del sistema y datos del titular por necesidad de negocio | Sockets de Docker daemon por repositorio. El acceso a un repositorio no otorga acceso a otro. Autenticación basada en clave SSH. |
 | **Req 8**, Identificar usuarios y autenticar | Identificar usuarios y autenticar acceso a componentes del sistema | Autenticación por clave SSH. Tokens API con vinculación IP y permisos de alcance definido. Autenticación de dos factores (TOTP). |
 | **Req 9**, Restringir acceso físico | Restringir acceso físico a datos del titular de tarjetas | Autoalojado: la seguridad física está bajo tu control directo. El cifrado LUKS hace ilegibles los discos robados. |
-| **Req 10**, Registrar y monitorear | Registrar y monitorear todo acceso a componentes del sistema y datos del titular | Más de 40 tipos de eventos a nivel de cuenta (autenticación, tokens API, configuración, licencias). Panel de administración con filtrado por usuario, equipo y fecha. `rdc audit` CLI para exportación programática. Operaciones a nivel de máquina auditables vía SSH y registros del sistema. |
+| **Req 10**, Registrar y monitorear | Registrar y monitorear todo acceso a componentes del sistema y datos del titular | Más de 70 tipos de eventos (autenticación, tokens API, configuración, licencias, operaciones de máquina). Panel de administración y portal con filtrado por usuario, equipo, tipo y fecha. CLI `rdc audit` para exportación programática. Operaciones de máquina también en registros del sistema para defensa en profundidad. |
 | **Req 12**, Políticas organizacionales | Apoyar la seguridad de la información con políticas y programas organizacionales | El autoalojamiento elimina el alcance del procesador tercero (Req 12.8). Reduce el perímetro de cumplimiento PCI DSS. |
 
 ## Segmentación de red
 
-PCI DSS exige segmentación: aisla el entorno de datos del titular (CDE) o falla la auditoría. Rediacc te da esa segmentación por defecto:
+PCI DSS enfatiza mucho la segmentación. Veo constantemente que los equipos superponen reglas iptables sobre aislamiento insuficiente. Eso no funciona. Los equipos que pasan tienen segmentación integrada en la arquitectura. Rediacc te da eso por defecto:
 
 - Cada repositorio se ejecuta en su propio Docker daemon en `/var/run/rediacc/docker-<networkId>.sock`
 - Los repositorios tienen subredes de IP loopback aisladas (127.0.x.x/26, 61 IPs utilizables por red)
@@ -40,7 +40,7 @@ Un repositorio de procesamiento de pagos se ejecuta en su propio Docker daemon y
 
 ## Reducción de alcance
 
-Rediacc autoalojado reduce el alcance de cumplimiento PCI DSS:
+Rediacc autoalojado reduce el alcance de cumplimiento. No necesitas configurar manualmente la segmentación de red; es automática por diseño. Nuestra documentación para esta parte aún necesita trabajo, pero el aislamiento es sólido.
 
 - Sin proveedor de nube tercero en el flujo de datos del titular
 - Sin proveedor SaaS que evaluar bajo Req 12.8 (proveedores de servicio terceros)
@@ -49,7 +49,7 @@ Rediacc autoalojado reduce el alcance de cumplimiento PCI DSS:
 
 ## Casos de aplicación
 
-La segmentación débil y el cifrado ausente están detrás de las acciones de aplicación de PCI DSS más costosas:
+La mayoría de los fallos de auditoría PCI se reducen a una de dos cosas: segmentación que nunca fue aislada adecuadamente, o cifrado que nunca fue probado contra ataques reales.
 
 - Heartland Payment Systems (2008): los atacantes se movieron lateralmente a través de 48 bases de datos debido a la pobre segmentación de red, exponiendo 130 millones de números de tarjetas. [El costo total superó los 200 millones de dólares.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): los atacantes pivotaron del acceso de red de un proveedor HVAC a sistemas de punto de venta debido a la arquitectura de red plana, capturando 40 millones de tarjetas de pago. [Acuerdo por 18,5 millones de dólares con 47 fiscales generales estatales.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

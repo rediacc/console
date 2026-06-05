@@ -4,13 +4,13 @@ description: Configuration requise et plateformes prises en charge pour exécute
 category: Guides
 order: 0
 language: fr
-sourceHash: "eb237c7beb1bb942"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "e84db3bb90270473"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Prérequis
 
-Avant de déployer avec Rediacc, assurez-vous que votre poste de travail et vos serveurs distants répondent aux exigences suivantes.
+La plupart de cela relève d'une configuration Linux standard. Quelques détails sont spécifiques au fonctionnement de Rediacc, alors vérifiez-les avant de commencer.
 
 ## Poste de travail (Plan de contrôle)
 

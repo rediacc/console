@@ -1,1 +1,1188 @@
-{"version":1,"cues":[{"start":1,"end":2.523,"text":"Willkommen beim Killer-Feature!","words":[{"start":1,"end":1.508,"char":[0,10]},{"start":1.508,"end":2.016,"char":[11,15]},{"start":2.016,"end":2.523,"char":[16,31]}]},{"start":2.523,"end":5.062,"text":"Klone ein komplettes Produktions-Repo unabhängig","words":[{"start":2.523,"end":3.031,"char":[0,5]},{"start":3.031,"end":3.539,"char":[6,9]},{"start":3.539,"end":4.047,"char":[10,20]},{"start":4.047,"end":4.554,"char":[21,37]},{"start":4.554,"end":5.062,"char":[38,48]}]},{"start":5.062,"end":6.585,"text":"von der Größe,","words":[{"start":5.062,"end":5.57,"char":[0,3]},{"start":5.57,"end":6.078,"char":[4,7]},{"start":6.078,"end":6.585,"char":[8,14]}]},{"start":6.585,"end":9.124,"text":"ohne irgendetwas kaputt zu machen.","words":[{"start":6.585,"end":7.093,"char":[0,4]},{"start":7.093,"end":7.601,"char":[5,16]},{"start":7.601,"end":8.109,"char":[17,23]},{"start":8.109,"end":8.616,"char":[24,26]},{"start":8.616,"end":9.124,"char":[27,34]}]},{"start":9.88,"end":12.487,"text":"Ein Eltern-Repo fächert in beliebig","words":[{"start":9.88,"end":10.401,"char":[0,3]},{"start":10.401,"end":10.923,"char":[4,15]},{"start":10.923,"end":11.444,"char":[16,23]},{"start":11.444,"end":11.965,"char":[24,26]},{"start":11.965,"end":12.487,"char":[27,35]}]},{"start":12.487,"end":14.572,"text":"viele unabhängige Klone auf.","words":[{"start":12.487,"end":13.008,"char":[0,5]},{"start":13.008,"end":13.53,"char":[6,17]},{"start":13.53,"end":14.051,"char":[18,23]},{"start":14.051,"end":14.572,"char":[24,28]}]},{"start":14.572,"end":17.179,"text":"Jeder Fork ist seine eigene","words":[{"start":14.572,"end":15.094,"char":[0,5]},{"start":15.094,"end":15.615,"char":[6,10]},{"start":15.615,"end":16.136,"char":[11,14]},{"start":16.136,"end":16.658,"char":[15,20]},{"start":16.658,"end":17.179,"char":[21,27]}]},{"start":17.179,"end":18.222,"text":"isolierte Umgebung,","words":[{"start":17.179,"end":17.7,"char":[0,9]},{"start":17.7,"end":18.222,"char":[10,19]}]},{"start":18.222,"end":20.829,"text":"die Seite an Seite mit","words":[{"start":18.222,"end":18.743,"char":[0,3]},{"start":18.743,"end":19.264,"char":[4,9]},{"start":19.264,"end":19.786,"char":[10,12]},{"start":19.786,"end":20.307,"char":[13,18]},{"start":20.307,"end":20.829,"char":[19,22]}]},{"start":20.829,"end":22.393,"text":"dem Original läuft.","words":[{"start":20.829,"end":21.35,"char":[0,3]},{"start":21.35,"end":21.871,"char":[4,12]},{"start":21.871,"end":22.393,"char":[13,19]}]},{"start":23.172,"end":25.324,"text":"Denk an einen geteilten Ordner-Link.","words":[{"start":23.172,"end":23.602,"char":[0,4]},{"start":23.602,"end":24.033,"char":[5,7]},{"start":24.033,"end":24.463,"char":[8,13]},{"start":24.463,"end":24.894,"char":[14,23]},{"start":24.894,"end":25.324,"char":[24,36]}]},{"start":25.324,"end":27.907,"text":"Der Link ist immer dasselbe leichte","words":[{"start":25.324,"end":25.755,"char":[0,3]},{"start":25.755,"end":26.185,"char":[4,8]},{"start":26.185,"end":26.616,"char":[9,12]},{"start":26.616,"end":27.046,"char":[13,18]},{"start":27.046,"end":27.477,"char":[19,27]},{"start":27.477,"end":27.907,"char":[28,35]}]},{"start":27.907,"end":28.338,"text":"Ding,","words":[{"start":27.907,"end":28.338,"char":[0,5]}]},{"start":28.338,"end":30.921,"text":"ob der Ordner klein oder riesig","words":[{"start":28.338,"end":28.768,"char":[0,2]},{"start":28.768,"end":29.199,"char":[3,6]},{"start":29.199,"end":29.629,"char":[7,13]},{"start":29.629,"end":30.06,"char":[14,19]},{"start":30.06,"end":30.49,"char":[20,24]},{"start":30.49,"end":30.921,"char":[25,31]}]},{"start":30.921,"end":31.351,"text":"ist,","words":[{"start":30.921,"end":31.351,"char":[0,4]}]},{"start":31.351,"end":33.934,"text":"und Forking funktioniert nach demselben Prinzip.","words":[{"start":31.351,"end":31.782,"char":[0,3]},{"start":31.782,"end":32.212,"char":[4,11]},{"start":32.212,"end":32.643,"char":[12,24]},{"start":32.643,"end":33.073,"char":[25,29]},{"start":33.073,"end":33.504,"char":[30,39]},{"start":33.504,"end":33.934,"char":[40,48]}]},{"start":34.699,"end":35.662,"text":"Ein Gigabyte,","words":[{"start":34.699,"end":35.181,"char":[0,3]},{"start":35.181,"end":35.662,"char":[4,13]}]},{"start":35.662,"end":36.626,"text":"hundert Gigabyte,","words":[{"start":35.662,"end":36.144,"char":[0,7]},{"start":36.144,"end":36.626,"char":[8,17]}]},{"start":36.626,"end":37.589,"text":"ein Terabyte:","words":[{"start":36.626,"end":37.107,"char":[0,3]},{"start":37.107,"end":37.589,"char":[4,13]}]},{"start":37.589,"end":39.997,"text":"der Fork verhält sich gleich.","words":[{"start":37.589,"end":38.07,"char":[0,3]},{"start":38.07,"end":38.552,"char":[4,8]},{"start":38.552,"end":39.034,"char":[9,16]},{"start":39.034,"end":39.515,"char":[17,21]},{"start":39.515,"end":39.997,"char":[22,29]}]},{"start":39.997,"end":42.405,"text":"Die Repo-Größe spielt keine Rolle.","words":[{"start":39.997,"end":40.479,"char":[0,3]},{"start":40.479,"end":40.96,"char":[4,14]},{"start":40.96,"end":41.442,"char":[15,21]},{"start":41.442,"end":41.923,"char":[22,27]},{"start":41.923,"end":42.405,"char":[28,34]}]},{"start":45.685,"end":48.373,"text":"Wir forken das Repository mit","words":[{"start":45.685,"end":46.223,"char":[0,3]},{"start":46.223,"end":46.76,"char":[4,10]},{"start":46.76,"end":47.298,"char":[11,14]},{"start":47.298,"end":47.835,"char":[15,25]},{"start":47.835,"end":48.373,"char":[26,29]}]},{"start":48.373,"end":49.986,"text":"einem einzigen Befehl.","words":[{"start":48.373,"end":48.91,"char":[0,5]},{"start":48.91,"end":49.448,"char":[6,14]},{"start":49.448,"end":49.986,"char":[15,22]}]},{"start":49.986,"end":51.598,"text":"Alles wurde geklont,","words":[{"start":49.986,"end":50.523,"char":[0,5]},{"start":50.523,"end":51.061,"char":[6,11]},{"start":51.061,"end":51.598,"char":[12,20]}]},{"start":51.598,"end":52.673,"text":"die App,","words":[{"start":51.598,"end":52.136,"char":[0,3]},{"start":52.136,"end":52.673,"char":[4,8]}]},{"start":52.673,"end":53.749,"text":"die Datenbank,","words":[{"start":52.673,"end":53.211,"char":[0,3]},{"start":53.211,"end":53.749,"char":[4,14]}]},{"start":53.749,"end":54.824,"text":"die Konfigurationsdateien.","words":[{"start":53.749,"end":54.286,"char":[0,3]},{"start":54.286,"end":54.824,"char":[4,26]}]},{"start":54.824,"end":56.974,"text":"Und es dauerte Sekunden,","words":[{"start":54.824,"end":55.361,"char":[0,3]},{"start":55.361,"end":55.899,"char":[4,6]},{"start":55.899,"end":56.436,"char":[7,14]},{"start":56.436,"end":56.974,"char":[15,24]}]},{"start":56.974,"end":58.049,"text":"unabhängig davon,","words":[{"start":56.974,"end":57.512,"char":[0,10]},{"start":57.512,"end":58.049,"char":[11,17]}]},{"start":58.049,"end":60.737,"text":"wie groß das Repo ist.","words":[{"start":58.049,"end":58.587,"char":[0,3]},{"start":58.587,"end":59.124,"char":[4,8]},{"start":59.124,"end":59.662,"char":[9,12]},{"start":59.662,"end":60.199,"char":[13,17]},{"start":60.199,"end":60.737,"char":[18,22]}]},{"start":60.737,"end":61.812,"text":"Ein Gigabyte,","words":[{"start":60.737,"end":61.275,"char":[0,3]},{"start":61.275,"end":61.812,"char":[4,13]}]},{"start":61.812,"end":62.887,"text":"hundert Gigabyte,","words":[{"start":61.812,"end":62.35,"char":[0,7]},{"start":62.35,"end":62.887,"char":[8,17]}]},{"start":62.887,"end":63.962,"text":"ein Terabyte:","words":[{"start":62.887,"end":63.425,"char":[0,3]},{"start":63.425,"end":63.962,"char":[4,13]}]},{"start":63.962,"end":66.113,"text":"immer die gleiche Zeit.","words":[{"start":63.962,"end":64.5,"char":[0,5]},{"start":64.5,"end":65.038,"char":[6,9]},{"start":65.038,"end":65.575,"char":[10,17]},{"start":65.575,"end":66.113,"char":[18,23]}]},{"start":69.113,"end":69.863,"text":"Fork erledigt.","words":[{"start":69.113,"end":69.488,"char":[0,4]},{"start":69.488,"end":69.863,"char":[5,14]}]},{"start":69.863,"end":70.989,"text":"Der Klon läuft,","words":[{"start":69.863,"end":70.238,"char":[0,3]},{"start":70.238,"end":70.614,"char":[4,8]},{"start":70.614,"end":70.989,"char":[9,15]}]},{"start":70.989,"end":73.24,"text":"egal wie groß das Repo ist.","words":[{"start":70.989,"end":71.364,"char":[0,4]},{"start":71.364,"end":71.739,"char":[5,8]},{"start":71.739,"end":72.114,"char":[9,13]},{"start":72.114,"end":72.49,"char":[14,17]},{"start":72.49,"end":72.865,"char":[18,22]},{"start":72.865,"end":73.24,"char":[23,27]}]},{"start":76.528,"end":79.249,"text":"Beide Repos existieren jetzt","words":[{"start":76.528,"end":77.208,"char":[0,5]},{"start":77.208,"end":77.888,"char":[6,11]},{"start":77.888,"end":78.569,"char":[12,22]},{"start":78.569,"end":79.249,"char":[23,28]}]},{"start":79.249,"end":79.929,"text":"nebeneinander.","words":[{"start":79.249,"end":79.929,"char":[0,14]}]},{"start":79.929,"end":81.29,"text":"Gleiche Maschine,","words":[{"start":79.929,"end":80.609,"char":[0,7]},{"start":80.609,"end":81.29,"char":[8,17]}]},{"start":81.29,"end":82.65,"text":"gleiche Festplatte,","words":[{"start":81.29,"end":81.97,"char":[0,7]},{"start":81.97,"end":82.65,"char":[8,19]}]},{"start":82.65,"end":85.371,"text":"zwei vollständig unabhängige Umgebungen.","words":[{"start":82.65,"end":83.33,"char":[0,4]},{"start":83.33,"end":84.011,"char":[5,16]},{"start":84.011,"end":84.691,"char":[17,28]},{"start":84.691,"end":85.371,"char":[29,40]}]},{"start":85.371,"end":88.092,"text":"Der Fork hat eigene","words":[{"start":85.371,"end":86.051,"char":[0,3]},{"start":86.051,"end":86.731,"char":[4,8]},{"start":86.731,"end":87.412,"char":[9,12]},{"start":87.412,"end":88.092,"char":[13,19]}]},{"start":88.092,"end":88.772,"text":"Container,","words":[{"start":88.092,"end":88.772,"char":[0,10]}]},{"start":88.772,"end":91.493,"text":"ein eigenes Dateisystem und","words":[{"start":88.772,"end":89.452,"char":[0,3]},{"start":89.452,"end":90.133,"char":[4,11]},{"start":90.133,"end":90.813,"char":[12,23]},{"start":90.813,"end":91.493,"char":[24,27]}]},{"start":91.493,"end":93.534,"text":"einen eigenen Docker-Daemon.","words":[{"start":91.493,"end":92.173,"char":[0,5]},{"start":92.173,"end":92.853,"char":[6,13]},{"start":92.853,"end":93.534,"char":[14,28]}]},{"start":96.534,"end":97.521,"text":"Zwei Repos,","words":[{"start":96.534,"end":97.027,"char":[0,4]},{"start":97.027,"end":97.521,"char":[5,11]}]},{"start":97.521,"end":98.507,"text":"eine Platte.","words":[{"start":97.521,"end":98.014,"char":[0,4]},{"start":98.014,"end":98.507,"char":[5,12]}]},{"start":98.507,"end":99.494,"text":"Gleiche Daten,","words":[{"start":98.507,"end":99.001,"char":[0,7]},{"start":99.001,"end":99.494,"char":[8,14]}]},{"start":99.494,"end":100.975,"text":"alles andere getrennt.","words":[{"start":99.494,"end":99.988,"char":[0,5]},{"start":99.988,"end":100.481,"char":[6,12]},{"start":100.481,"end":100.975,"char":[13,22]}]},{"start":104.296,"end":106.068,"text":"Wir beweisen die Isolation.","words":[{"start":104.296,"end":104.739,"char":[0,3]},{"start":104.739,"end":105.182,"char":[4,12]},{"start":105.182,"end":105.625,"char":[13,16]},{"start":105.625,"end":106.068,"char":[17,27]}]},{"start":106.068,"end":108.726,"text":"Im Original ist unsere Markierungsdatei genau","words":[{"start":106.068,"end":106.511,"char":[0,2]},{"start":106.511,"end":106.954,"char":[3,11]},{"start":106.954,"end":107.397,"char":[12,15]},{"start":107.397,"end":107.84,"char":[16,22]},{"start":107.84,"end":108.283,"char":[23,39]},{"start":108.283,"end":108.726,"char":[40,45]}]},{"start":108.726,"end":109.169,"text":"dort,","words":[{"start":108.726,"end":109.169,"char":[0,5]}]},{"start":109.169,"end":111.385,"text":"wo wir sie gelassen haben.","words":[{"start":109.169,"end":109.612,"char":[0,2]},{"start":109.612,"end":110.055,"char":[3,6]},{"start":110.055,"end":110.499,"char":[7,10]},{"start":110.499,"end":110.942,"char":[11,19]},{"start":110.942,"end":111.385,"char":[20,26]}]},{"start":111.385,"end":114.043,"text":"Die Existenz des Forks hat nichts","words":[{"start":111.385,"end":111.828,"char":[0,3]},{"start":111.828,"end":112.271,"char":[4,12]},{"start":112.271,"end":112.714,"char":[13,16]},{"start":112.714,"end":113.157,"char":[17,22]},{"start":113.157,"end":113.6,"char":[23,26]},{"start":113.6,"end":114.043,"char":[27,33]}]},{"start":114.043,"end":115.372,"text":"am Parent geändert.","words":[{"start":114.043,"end":114.486,"char":[0,2]},{"start":114.486,"end":114.929,"char":[3,9]},{"start":114.929,"end":115.372,"char":[10,19]}]},{"start":116.172,"end":118.297,"text":"Originaldatei ist immer noch da.","words":[{"start":116.172,"end":116.597,"char":[0,13]},{"start":116.597,"end":117.022,"char":[14,17]},{"start":117.022,"end":117.447,"char":[18,23]},{"start":117.447,"end":117.872,"char":[24,28]},{"start":117.872,"end":118.297,"char":[29,32]}]},{"start":118.297,"end":120.848,"text":"Der Fork hat sie nicht angefasst.","words":[{"start":118.297,"end":118.722,"char":[0,3]},{"start":118.722,"end":119.148,"char":[4,8]},{"start":119.148,"end":119.573,"char":[9,12]},{"start":119.573,"end":119.998,"char":[13,16]},{"start":119.998,"end":120.423,"char":[17,22]},{"start":120.423,"end":120.848,"char":[23,33]}]},{"start":121.663,"end":124.225,"text":"Das Eltern-Repo ist die Sonne","words":[{"start":121.663,"end":122.175,"char":[0,3]},{"start":122.175,"end":122.688,"char":[4,15]},{"start":122.688,"end":123.2,"char":[16,19]},{"start":123.2,"end":123.712,"char":[20,23]},{"start":123.712,"end":124.225,"char":[24,29]}]},{"start":124.225,"end":126.786,"text":"und dein Fork ist ein","words":[{"start":124.225,"end":124.737,"char":[0,3]},{"start":124.737,"end":125.249,"char":[4,8]},{"start":125.249,"end":125.762,"char":[9,13]},{"start":125.762,"end":126.274,"char":[14,17]},{"start":126.274,"end":126.786,"char":[18,21]}]},{"start":126.786,"end":127.299,"text":"Spiegel,","words":[{"start":126.786,"end":127.299,"char":[0,8]}]},{"start":127.299,"end":129.348,"text":"der ihr Licht einfängt.","words":[{"start":127.299,"end":127.811,"char":[0,3]},{"start":127.811,"end":128.323,"char":[4,7]},{"start":128.323,"end":128.836,"char":[8,13]},{"start":128.836,"end":129.348,"char":[14,23]}]},{"start":129.348,"end":131.91,"text":"Die geteilte Basis bleibt unberührt,","words":[{"start":129.348,"end":129.86,"char":[0,3]},{"start":129.86,"end":130.373,"char":[4,12]},{"start":130.373,"end":130.885,"char":[13,18]},{"start":130.885,"end":131.397,"char":[19,25]},{"start":131.397,"end":131.91,"char":[26,36]}]},{"start":131.91,"end":132.934,"text":"während alles,","words":[{"start":131.91,"end":132.422,"char":[0,7]},{"start":132.422,"end":132.934,"char":[8,14]}]},{"start":132.934,"end":135.496,"text":"was du auf den Spiegel","words":[{"start":132.934,"end":133.447,"char":[0,3]},{"start":133.447,"end":133.959,"char":[4,6]},{"start":133.959,"end":134.471,"char":[7,10]},{"start":134.471,"end":134.984,"char":[11,14]},{"start":134.984,"end":135.496,"char":[15,22]}]},{"start":135.496,"end":136.008,"text":"malst,","words":[{"start":135.496,"end":136.008,"char":[0,6]}]},{"start":136.008,"end":137.545,"text":"allein dir gehört.","words":[{"start":136.008,"end":136.521,"char":[0,6]},{"start":136.521,"end":137.033,"char":[7,10]},{"start":137.033,"end":137.545,"char":[11,18]}]},{"start":140.822,"end":142.57,"text":"Jetzt löschen wir die Datei,","words":[{"start":140.822,"end":141.172,"char":[0,5]},{"start":141.172,"end":141.521,"char":[6,13]},{"start":141.521,"end":141.871,"char":[14,17]},{"start":141.871,"end":142.221,"char":[18,21]},{"start":142.221,"end":142.57,"char":[22,28]}]},{"start":142.57,"end":144.318,"text":"aber nur innerhalb des Forks.","words":[{"start":142.57,"end":142.92,"char":[0,4]},{"start":142.92,"end":143.269,"char":[5,8]},{"start":143.269,"end":143.619,"char":[9,18]},{"start":143.619,"end":143.969,"char":[19,22]},{"start":143.969,"end":144.318,"char":[23,29]}]},{"start":144.318,"end":146.067,"text":"Im Fork ist sie weg.","words":[{"start":144.318,"end":144.668,"char":[0,2]},{"start":144.668,"end":145.018,"char":[3,7]},{"start":145.018,"end":145.367,"char":[8,11]},{"start":145.367,"end":145.717,"char":[12,15]},{"start":145.717,"end":146.067,"char":[16,20]}]},{"start":146.067,"end":148.164,"text":"Wir haben eine destruktive Änderung vorgenommen,","words":[{"start":146.067,"end":146.416,"char":[0,3]},{"start":146.416,"end":146.766,"char":[4,9]},{"start":146.766,"end":147.116,"char":[10,14]},{"start":147.116,"end":147.465,"char":[15,26]},{"start":147.465,"end":147.815,"char":[27,35]},{"start":147.815,"end":148.164,"char":[36,48]}]},{"start":148.164,"end":149.913,"text":"und sie blieb im Fork.","words":[{"start":148.164,"end":148.514,"char":[0,3]},{"start":148.514,"end":148.864,"char":[4,7]},{"start":148.864,"end":149.213,"char":[8,13]},{"start":149.213,"end":149.563,"char":[14,16]},{"start":149.563,"end":149.913,"char":[17,22]}]},{"start":150.713,"end":151.933,"text":"Im Fork weg.","words":[{"start":150.713,"end":151.119,"char":[0,2]},{"start":151.119,"end":151.526,"char":[3,7]},{"start":151.526,"end":151.933,"char":[8,12]}]},{"start":151.933,"end":153.56,"text":"Das Original bleibt unberührt.","words":[{"start":151.933,"end":152.34,"char":[0,3]},{"start":152.34,"end":152.746,"char":[4,12]},{"start":152.746,"end":153.153,"char":[13,19]},{"start":153.153,"end":153.56,"char":[20,30]}]},{"start":156.889,"end":158.52,"text":"Zurück zum Original.","words":[{"start":156.889,"end":157.433,"char":[0,6]},{"start":157.433,"end":157.976,"char":[7,10]},{"start":157.976,"end":158.52,"char":[11,20]}]},{"start":158.52,"end":161.239,"text":"Die Markierungsdatei ist noch hier,","words":[{"start":158.52,"end":159.064,"char":[0,3]},{"start":159.064,"end":159.608,"char":[4,20]},{"start":159.608,"end":160.152,"char":[21,24]},{"start":160.152,"end":160.695,"char":[25,29]},{"start":160.695,"end":161.239,"char":[30,35]}]},{"start":161.239,"end":161.783,"text":"unberührt.","words":[{"start":161.239,"end":161.783,"char":[0,10]}]},{"start":161.783,"end":164.502,"text":"Das Original hat nie etwas","words":[{"start":161.783,"end":162.327,"char":[0,3]},{"start":162.327,"end":162.871,"char":[4,12]},{"start":162.871,"end":163.415,"char":[13,16]},{"start":163.415,"end":163.958,"char":[17,20]},{"start":163.958,"end":164.502,"char":[21,26]}]},{"start":164.502,"end":165.59,"text":"davon mitbekommen.","words":[{"start":164.502,"end":165.046,"char":[0,5]},{"start":165.046,"end":165.59,"char":[6,18]}]},{"start":165.59,"end":166.677,"text":"Gleiches Image,","words":[{"start":165.59,"end":166.134,"char":[0,8]},{"start":166.134,"end":166.677,"char":[9,15]}]},{"start":166.677,"end":167.765,"text":"getrennte Docker-Daemons,","words":[{"start":166.677,"end":167.221,"char":[0,9]},{"start":167.221,"end":167.765,"char":[10,25]}]},{"start":167.765,"end":168.853,"text":"getrennte Dateisysteme.","words":[{"start":167.765,"end":168.309,"char":[0,9]},{"start":168.309,"end":168.853,"char":[10,23]}]},{"start":169.653,"end":170.907,"text":"Immer noch da.","words":[{"start":169.653,"end":170.071,"char":[0,5]},{"start":170.071,"end":170.489,"char":[6,10]},{"start":170.489,"end":170.907,"char":[11,14]}]},{"start":170.907,"end":172.578,"text":"Forks sind sauber isoliert.","words":[{"start":170.907,"end":171.325,"char":[0,5]},{"start":171.325,"end":171.743,"char":[6,10]},{"start":171.743,"end":172.161,"char":[11,17]},{"start":172.161,"end":172.578,"char":[18,27]}]},{"start":175.881,"end":178.005,"text":"Wenn Sie fertig sind,","words":[{"start":175.881,"end":176.412,"char":[0,4]},{"start":176.412,"end":176.943,"char":[5,8]},{"start":176.943,"end":177.474,"char":[9,15]},{"start":177.474,"end":178.005,"char":[16,21]}]},{"start":178.005,"end":180.661,"text":"löschen Sie einfach den Fork.","words":[{"start":178.005,"end":178.536,"char":[0,7]},{"start":178.536,"end":179.068,"char":[8,11]},{"start":179.068,"end":179.599,"char":[12,19]},{"start":179.599,"end":180.13,"char":[20,23]},{"start":180.13,"end":180.661,"char":[24,29]}]},{"start":180.661,"end":183.317,"text":"Das Original bleibt genau so,","words":[{"start":180.661,"end":181.192,"char":[0,3]},{"start":181.192,"end":181.723,"char":[4,12]},{"start":181.723,"end":182.255,"char":[13,19]},{"start":182.255,"end":182.786,"char":[20,25]},{"start":182.786,"end":183.317,"char":[26,29]}]},{"start":183.317,"end":184.91,"text":"wie es war.","words":[{"start":183.317,"end":183.848,"char":[0,3]},{"start":183.848,"end":184.379,"char":[4,6]},{"start":184.379,"end":184.91,"char":[7,11]}]},{"start":184.91,"end":185.441,"text":"Forken,","words":[{"start":184.91,"end":185.441,"char":[0,7]}]},{"start":185.441,"end":185.973,"text":"experimentieren,","words":[{"start":185.441,"end":185.973,"char":[0,16]}]},{"start":185.973,"end":187.035,"text":"Dinge kaputtmachen,","words":[{"start":185.973,"end":186.504,"char":[0,5]},{"start":186.504,"end":187.035,"char":[6,19]}]},{"start":187.035,"end":187.566,"text":"löschen:","words":[{"start":187.035,"end":187.566,"char":[0,8]}]},{"start":187.566,"end":188.628,"text":"kein Risiko.","words":[{"start":187.566,"end":188.097,"char":[0,4]},{"start":188.097,"end":188.628,"char":[5,12]}]},{"start":191.628,"end":192.408,"text":"Fork entfernt.","words":[{"start":191.628,"end":192.018,"char":[0,4]},{"start":192.018,"end":192.408,"char":[5,14]}]},{"start":192.408,"end":194.356,"text":"Das Original ist genau so,","words":[{"start":192.408,"end":192.797,"char":[0,3]},{"start":192.797,"end":193.187,"char":[4,12]},{"start":193.187,"end":193.577,"char":[13,16]},{"start":193.577,"end":193.966,"char":[17,22]},{"start":193.966,"end":194.356,"char":[23,26]}]},{"start":194.356,"end":196.304,"text":"wie wir es zurückgelassen haben.","words":[{"start":194.356,"end":194.746,"char":[0,3]},{"start":194.746,"end":195.135,"char":[4,7]},{"start":195.135,"end":195.525,"char":[8,10]},{"start":195.525,"end":195.915,"char":[11,25]},{"start":195.915,"end":196.304,"char":[26,32]}]},{"start":197.114,"end":199.842,"text":"Ein Fork ist ein eingefrorenes Foto","words":[{"start":197.114,"end":197.569,"char":[0,3]},{"start":197.569,"end":198.023,"char":[4,8]},{"start":198.023,"end":198.478,"char":[9,12]},{"start":198.478,"end":198.933,"char":[13,16]},{"start":198.933,"end":199.388,"char":[17,30]},{"start":199.388,"end":199.842,"char":[31,35]}]},{"start":199.842,"end":202.116,"text":"des Eltern-Repos in einem Moment.","words":[{"start":199.842,"end":200.297,"char":[0,3]},{"start":200.297,"end":200.752,"char":[4,16]},{"start":200.752,"end":201.207,"char":[17,19]},{"start":201.207,"end":201.661,"char":[20,25]},{"start":201.661,"end":202.116,"char":[26,33]}]},{"start":202.116,"end":204.844,"text":"Das Eltern-Repo fließt weiter wie ein","words":[{"start":202.116,"end":202.571,"char":[0,3]},{"start":202.571,"end":203.025,"char":[4,15]},{"start":203.025,"end":203.48,"char":[16,22]},{"start":203.48,"end":203.935,"char":[23,29]},{"start":203.935,"end":204.39,"char":[30,33]},{"start":204.39,"end":204.844,"char":[34,37]}]},{"start":204.844,"end":205.299,"text":"Fluss,","words":[{"start":204.844,"end":205.299,"char":[0,6]}]},{"start":205.299,"end":208.027,"text":"aber deine Momentaufnahme bleibt genau dort,","words":[{"start":205.299,"end":205.754,"char":[0,4]},{"start":205.754,"end":206.208,"char":[5,10]},{"start":206.208,"end":206.663,"char":[11,25]},{"start":206.663,"end":207.118,"char":[26,32]},{"start":207.118,"end":207.573,"char":[33,38]},{"start":207.573,"end":208.027,"char":[39,44]}]},{"start":208.027,"end":209.392,"text":"wo sie war.","words":[{"start":208.027,"end":208.482,"char":[0,2]},{"start":208.482,"end":208.937,"char":[3,6]},{"start":208.937,"end":209.392,"char":[7,11]}]},{"start":210.174,"end":212.692,"text":"Fünf Forks eines hundert Gigabyte großen","words":[{"start":210.174,"end":210.594,"char":[0,4]},{"start":210.594,"end":211.013,"char":[5,10]},{"start":211.013,"end":211.433,"char":[11,16]},{"start":211.433,"end":211.853,"char":[17,24]},{"start":211.853,"end":212.273,"char":[25,33]},{"start":212.273,"end":212.692,"char":[34,40]}]},{"start":212.692,"end":215.21,"text":"Repos summieren sich auf der Platte","words":[{"start":212.692,"end":213.112,"char":[0,5]},{"start":213.112,"end":213.532,"char":[6,15]},{"start":213.532,"end":213.951,"char":[16,20]},{"start":213.951,"end":214.371,"char":[21,24]},{"start":214.371,"end":214.791,"char":[25,28]},{"start":214.791,"end":215.21,"char":[29,35]}]},{"start":215.21,"end":217.309,"text":"trotzdem auf etwa hundert Gigabyte.","words":[{"start":215.21,"end":215.63,"char":[0,8]},{"start":215.63,"end":216.05,"char":[9,12]},{"start":216.05,"end":216.47,"char":[13,17]},{"start":216.47,"end":216.889,"char":[18,25]},{"start":216.889,"end":217.309,"char":[26,35]}]},{"start":217.309,"end":219.827,"text":"Du zahlst nur für die Bytes,","words":[{"start":217.309,"end":217.729,"char":[0,2]},{"start":217.729,"end":218.148,"char":[3,9]},{"start":218.148,"end":218.568,"char":[10,13]},{"start":218.568,"end":218.988,"char":[14,17]},{"start":218.988,"end":219.407,"char":[18,21]},{"start":219.407,"end":219.827,"char":[22,28]}]},{"start":219.827,"end":222.345,"text":"die du innerhalb jedes Forks tatsächlich","words":[{"start":219.827,"end":220.247,"char":[0,3]},{"start":220.247,"end":220.667,"char":[4,6]},{"start":220.667,"end":221.086,"char":[7,16]},{"start":221.086,"end":221.506,"char":[17,22]},{"start":221.506,"end":221.926,"char":[23,28]},{"start":221.926,"end":222.345,"char":[29,40]}]},{"start":222.345,"end":222.765,"text":"änderst.","words":[{"start":222.345,"end":222.765,"char":[0,8]}]},{"start":223.536,"end":226.169,"text":"Forks lassen Secrets bewusst zurück,","words":[{"start":223.536,"end":224.063,"char":[0,5]},{"start":224.063,"end":224.589,"char":[6,12]},{"start":224.589,"end":225.116,"char":[13,20]},{"start":225.116,"end":225.643,"char":[21,28]},{"start":225.643,"end":226.169,"char":[29,36]}]},{"start":226.169,"end":228.802,"text":"und genau das macht das","words":[{"start":226.169,"end":226.696,"char":[0,3]},{"start":226.696,"end":227.222,"char":[4,9]},{"start":227.222,"end":227.749,"char":[10,13]},{"start":227.749,"end":228.276,"char":[14,19]},{"start":228.276,"end":228.802,"char":[20,23]}]},{"start":228.802,"end":230.382,"text":"Motto „Produktion klonen,","words":[{"start":228.802,"end":229.329,"char":[0,5]},{"start":229.329,"end":229.856,"char":[6,17]},{"start":229.856,"end":230.382,"char":[18,25]}]},{"start":230.382,"end":233.015,"text":"nichts kaputt machen“ wirklich sicher.","words":[{"start":230.382,"end":230.909,"char":[0,6]},{"start":230.909,"end":231.435,"char":[7,13]},{"start":231.435,"end":231.962,"char":[14,21]},{"start":231.962,"end":232.489,"char":[22,30]},{"start":232.489,"end":233.015,"char":[31,38]}]},{"start":233.015,"end":235.648,"text":"Das verdrahten wir im nächsten","words":[{"start":233.015,"end":233.542,"char":[0,3]},{"start":233.542,"end":234.069,"char":[4,14]},{"start":234.069,"end":234.595,"char":[15,18]},{"start":234.595,"end":235.122,"char":[19,21]},{"start":235.122,"end":235.648,"char":[22,30]}]},{"start":235.648,"end":236.702,"text":"Tutorial richtig!","words":[{"start":235.648,"end":236.175,"char":[0,8]},{"start":236.175,"end":236.702,"char":[9,17]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.523,
+      "text": "Willkommen beim Killer-Feature!",
+      "words": [
+        { "start": 1, "end": 1.508, "char": [0, 10] },
+        { "start": 1.508, "end": 2.016, "char": [11, 15] },
+        { "start": 2.016, "end": 2.523, "char": [16, 31] }
+      ]
+    },
+    {
+      "start": 2.523,
+      "end": 5.062,
+      "text": "Klone ein komplettes Produktions-Repo unabhängig",
+      "words": [
+        { "start": 2.523, "end": 3.031, "char": [0, 5] },
+        { "start": 3.031, "end": 3.539, "char": [6, 9] },
+        { "start": 3.539, "end": 4.047, "char": [10, 20] },
+        { "start": 4.047, "end": 4.554, "char": [21, 37] },
+        { "start": 4.554, "end": 5.062, "char": [38, 48] }
+      ]
+    },
+    {
+      "start": 5.062,
+      "end": 6.585,
+      "text": "von der Größe,",
+      "words": [
+        { "start": 5.062, "end": 5.57, "char": [0, 3] },
+        { "start": 5.57, "end": 6.078, "char": [4, 7] },
+        { "start": 6.078, "end": 6.585, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 6.585,
+      "end": 9.124,
+      "text": "ohne irgendetwas kaputt zu machen.",
+      "words": [
+        { "start": 6.585, "end": 7.093, "char": [0, 4] },
+        { "start": 7.093, "end": 7.601, "char": [5, 16] },
+        { "start": 7.601, "end": 8.109, "char": [17, 23] },
+        { "start": 8.109, "end": 8.616, "char": [24, 26] },
+        { "start": 8.616, "end": 9.124, "char": [27, 34] }
+      ]
+    },
+    {
+      "start": 9.88,
+      "end": 12.487,
+      "text": "Ein Eltern-Repo fächert in beliebig",
+      "words": [
+        { "start": 9.88, "end": 10.401, "char": [0, 3] },
+        { "start": 10.401, "end": 10.923, "char": [4, 15] },
+        { "start": 10.923, "end": 11.444, "char": [16, 23] },
+        { "start": 11.444, "end": 11.965, "char": [24, 26] },
+        { "start": 11.965, "end": 12.487, "char": [27, 35] }
+      ]
+    },
+    {
+      "start": 12.487,
+      "end": 14.572,
+      "text": "viele unabhängige Klone auf.",
+      "words": [
+        { "start": 12.487, "end": 13.008, "char": [0, 5] },
+        { "start": 13.008, "end": 13.53, "char": [6, 17] },
+        { "start": 13.53, "end": 14.051, "char": [18, 23] },
+        { "start": 14.051, "end": 14.572, "char": [24, 28] }
+      ]
+    },
+    {
+      "start": 14.572,
+      "end": 17.179,
+      "text": "Jeder Fork ist seine eigene",
+      "words": [
+        { "start": 14.572, "end": 15.094, "char": [0, 5] },
+        { "start": 15.094, "end": 15.615, "char": [6, 10] },
+        { "start": 15.615, "end": 16.136, "char": [11, 14] },
+        { "start": 16.136, "end": 16.658, "char": [15, 20] },
+        { "start": 16.658, "end": 17.179, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 17.179,
+      "end": 18.222,
+      "text": "isolierte Umgebung,",
+      "words": [
+        { "start": 17.179, "end": 17.7, "char": [0, 9] },
+        { "start": 17.7, "end": 18.222, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 18.222,
+      "end": 20.829,
+      "text": "die Seite an Seite mit",
+      "words": [
+        { "start": 18.222, "end": 18.743, "char": [0, 3] },
+        { "start": 18.743, "end": 19.264, "char": [4, 9] },
+        { "start": 19.264, "end": 19.786, "char": [10, 12] },
+        { "start": 19.786, "end": 20.307, "char": [13, 18] },
+        { "start": 20.307, "end": 20.829, "char": [19, 22] }
+      ]
+    },
+    {
+      "start": 20.829,
+      "end": 22.393,
+      "text": "dem Original läuft.",
+      "words": [
+        { "start": 20.829, "end": 21.35, "char": [0, 3] },
+        { "start": 21.35, "end": 21.871, "char": [4, 12] },
+        { "start": 21.871, "end": 22.393, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 23.172,
+      "end": 25.324,
+      "text": "Denk an einen geteilten Ordner-Link.",
+      "words": [
+        { "start": 23.172, "end": 23.602, "char": [0, 4] },
+        { "start": 23.602, "end": 24.033, "char": [5, 7] },
+        { "start": 24.033, "end": 24.463, "char": [8, 13] },
+        { "start": 24.463, "end": 24.894, "char": [14, 23] },
+        { "start": 24.894, "end": 25.324, "char": [24, 36] }
+      ]
+    },
+    {
+      "start": 25.324,
+      "end": 27.907,
+      "text": "Der Link ist immer dasselbe leichte",
+      "words": [
+        { "start": 25.324, "end": 25.755, "char": [0, 3] },
+        { "start": 25.755, "end": 26.185, "char": [4, 8] },
+        { "start": 26.185, "end": 26.616, "char": [9, 12] },
+        { "start": 26.616, "end": 27.046, "char": [13, 18] },
+        { "start": 27.046, "end": 27.477, "char": [19, 27] },
+        { "start": 27.477, "end": 27.907, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 27.907,
+      "end": 28.338,
+      "text": "Ding,",
+      "words": [{ "start": 27.907, "end": 28.338, "char": [0, 5] }]
+    },
+    {
+      "start": 28.338,
+      "end": 30.921,
+      "text": "ob der Ordner klein oder riesig",
+      "words": [
+        { "start": 28.338, "end": 28.768, "char": [0, 2] },
+        { "start": 28.768, "end": 29.199, "char": [3, 6] },
+        { "start": 29.199, "end": 29.629, "char": [7, 13] },
+        { "start": 29.629, "end": 30.06, "char": [14, 19] },
+        { "start": 30.06, "end": 30.49, "char": [20, 24] },
+        { "start": 30.49, "end": 30.921, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 30.921,
+      "end": 31.351,
+      "text": "ist,",
+      "words": [{ "start": 30.921, "end": 31.351, "char": [0, 4] }]
+    },
+    {
+      "start": 31.351,
+      "end": 33.934,
+      "text": "und Forking funktioniert nach demselben Prinzip.",
+      "words": [
+        { "start": 31.351, "end": 31.782, "char": [0, 3] },
+        { "start": 31.782, "end": 32.212, "char": [4, 11] },
+        { "start": 32.212, "end": 32.643, "char": [12, 24] },
+        { "start": 32.643, "end": 33.073, "char": [25, 29] },
+        { "start": 33.073, "end": 33.504, "char": [30, 39] },
+        { "start": 33.504, "end": 33.934, "char": [40, 48] }
+      ]
+    },
+    {
+      "start": 34.699,
+      "end": 35.662,
+      "text": "Ein Gigabyte,",
+      "words": [
+        { "start": 34.699, "end": 35.181, "char": [0, 3] },
+        { "start": 35.181, "end": 35.662, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 35.662,
+      "end": 36.626,
+      "text": "hundert Gigabyte,",
+      "words": [
+        { "start": 35.662, "end": 36.144, "char": [0, 7] },
+        { "start": 36.144, "end": 36.626, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 36.626,
+      "end": 37.589,
+      "text": "ein Terabyte:",
+      "words": [
+        { "start": 36.626, "end": 37.107, "char": [0, 3] },
+        { "start": 37.107, "end": 37.589, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 37.589,
+      "end": 39.997,
+      "text": "der Fork verhält sich gleich.",
+      "words": [
+        { "start": 37.589, "end": 38.07, "char": [0, 3] },
+        { "start": 38.07, "end": 38.552, "char": [4, 8] },
+        { "start": 38.552, "end": 39.034, "char": [9, 16] },
+        { "start": 39.034, "end": 39.515, "char": [17, 21] },
+        { "start": 39.515, "end": 39.997, "char": [22, 29] }
+      ]
+    },
+    {
+      "start": 39.997,
+      "end": 42.405,
+      "text": "Die Repo-Größe spielt keine Rolle.",
+      "words": [
+        { "start": 39.997, "end": 40.479, "char": [0, 3] },
+        { "start": 40.479, "end": 40.96, "char": [4, 14] },
+        { "start": 40.96, "end": 41.442, "char": [15, 21] },
+        { "start": 41.442, "end": 41.923, "char": [22, 27] },
+        { "start": 41.923, "end": 42.405, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 45.685,
+      "end": 48.373,
+      "text": "Wir forken das Repository mit",
+      "words": [
+        { "start": 45.685, "end": 46.223, "char": [0, 3] },
+        { "start": 46.223, "end": 46.76, "char": [4, 10] },
+        { "start": 46.76, "end": 47.298, "char": [11, 14] },
+        { "start": 47.298, "end": 47.835, "char": [15, 25] },
+        { "start": 47.835, "end": 48.373, "char": [26, 29] }
+      ]
+    },
+    {
+      "start": 48.373,
+      "end": 49.986,
+      "text": "einem einzigen Befehl.",
+      "words": [
+        { "start": 48.373, "end": 48.91, "char": [0, 5] },
+        { "start": 48.91, "end": 49.448, "char": [6, 14] },
+        { "start": 49.448, "end": 49.986, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 49.986,
+      "end": 51.598,
+      "text": "Alles wurde geklont,",
+      "words": [
+        { "start": 49.986, "end": 50.523, "char": [0, 5] },
+        { "start": 50.523, "end": 51.061, "char": [6, 11] },
+        { "start": 51.061, "end": 51.598, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 51.598,
+      "end": 52.673,
+      "text": "die App,",
+      "words": [
+        { "start": 51.598, "end": 52.136, "char": [0, 3] },
+        { "start": 52.136, "end": 52.673, "char": [4, 8] }
+      ]
+    },
+    {
+      "start": 52.673,
+      "end": 53.749,
+      "text": "die Datenbank,",
+      "words": [
+        { "start": 52.673, "end": 53.211, "char": [0, 3] },
+        { "start": 53.211, "end": 53.749, "char": [4, 14] }
+      ]
+    },
+    {
+      "start": 53.749,
+      "end": 54.824,
+      "text": "die Konfigurationsdateien.",
+      "words": [
+        { "start": 53.749, "end": 54.286, "char": [0, 3] },
+        { "start": 54.286, "end": 54.824, "char": [4, 26] }
+      ]
+    },
+    {
+      "start": 54.824,
+      "end": 56.974,
+      "text": "Und es dauerte Sekunden,",
+      "words": [
+        { "start": 54.824, "end": 55.361, "char": [0, 3] },
+        { "start": 55.361, "end": 55.899, "char": [4, 6] },
+        { "start": 55.899, "end": 56.436, "char": [7, 14] },
+        { "start": 56.436, "end": 56.974, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 56.974,
+      "end": 58.049,
+      "text": "unabhängig davon,",
+      "words": [
+        { "start": 56.974, "end": 57.512, "char": [0, 10] },
+        { "start": 57.512, "end": 58.049, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 58.049,
+      "end": 60.737,
+      "text": "wie groß das Repo ist.",
+      "words": [
+        { "start": 58.049, "end": 58.587, "char": [0, 3] },
+        { "start": 58.587, "end": 59.124, "char": [4, 8] },
+        { "start": 59.124, "end": 59.662, "char": [9, 12] },
+        { "start": 59.662, "end": 60.199, "char": [13, 17] },
+        { "start": 60.199, "end": 60.737, "char": [18, 22] }
+      ]
+    },
+    {
+      "start": 60.737,
+      "end": 61.812,
+      "text": "Ein Gigabyte,",
+      "words": [
+        { "start": 60.737, "end": 61.275, "char": [0, 3] },
+        { "start": 61.275, "end": 61.812, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 61.812,
+      "end": 62.887,
+      "text": "hundert Gigabyte,",
+      "words": [
+        { "start": 61.812, "end": 62.35, "char": [0, 7] },
+        { "start": 62.35, "end": 62.887, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 62.887,
+      "end": 63.962,
+      "text": "ein Terabyte:",
+      "words": [
+        { "start": 62.887, "end": 63.425, "char": [0, 3] },
+        { "start": 63.425, "end": 63.962, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 63.962,
+      "end": 66.113,
+      "text": "immer die gleiche Zeit.",
+      "words": [
+        { "start": 63.962, "end": 64.5, "char": [0, 5] },
+        { "start": 64.5, "end": 65.038, "char": [6, 9] },
+        { "start": 65.038, "end": 65.575, "char": [10, 17] },
+        { "start": 65.575, "end": 66.113, "char": [18, 23] }
+      ]
+    },
+    {
+      "start": 69.113,
+      "end": 69.863,
+      "text": "Fork erledigt.",
+      "words": [
+        { "start": 69.113, "end": 69.488, "char": [0, 4] },
+        { "start": 69.488, "end": 69.863, "char": [5, 14] }
+      ]
+    },
+    {
+      "start": 69.863,
+      "end": 70.989,
+      "text": "Der Klon läuft,",
+      "words": [
+        { "start": 69.863, "end": 70.238, "char": [0, 3] },
+        { "start": 70.238, "end": 70.614, "char": [4, 8] },
+        { "start": 70.614, "end": 70.989, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 70.989,
+      "end": 73.24,
+      "text": "egal wie groß das Repo ist.",
+      "words": [
+        { "start": 70.989, "end": 71.364, "char": [0, 4] },
+        { "start": 71.364, "end": 71.739, "char": [5, 8] },
+        { "start": 71.739, "end": 72.114, "char": [9, 13] },
+        { "start": 72.114, "end": 72.49, "char": [14, 17] },
+        { "start": 72.49, "end": 72.865, "char": [18, 22] },
+        { "start": 72.865, "end": 73.24, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 76.528,
+      "end": 79.249,
+      "text": "Beide Repos existieren jetzt",
+      "words": [
+        { "start": 76.528, "end": 77.208, "char": [0, 5] },
+        { "start": 77.208, "end": 77.888, "char": [6, 11] },
+        { "start": 77.888, "end": 78.569, "char": [12, 22] },
+        { "start": 78.569, "end": 79.249, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 79.249,
+      "end": 79.929,
+      "text": "nebeneinander.",
+      "words": [{ "start": 79.249, "end": 79.929, "char": [0, 14] }]
+    },
+    {
+      "start": 79.929,
+      "end": 81.29,
+      "text": "Gleiche Maschine,",
+      "words": [
+        { "start": 79.929, "end": 80.609, "char": [0, 7] },
+        { "start": 80.609, "end": 81.29, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 81.29,
+      "end": 82.65,
+      "text": "gleiche Festplatte,",
+      "words": [
+        { "start": 81.29, "end": 81.97, "char": [0, 7] },
+        { "start": 81.97, "end": 82.65, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 82.65,
+      "end": 85.371,
+      "text": "zwei vollständig unabhängige Umgebungen.",
+      "words": [
+        { "start": 82.65, "end": 83.33, "char": [0, 4] },
+        { "start": 83.33, "end": 84.011, "char": [5, 16] },
+        { "start": 84.011, "end": 84.691, "char": [17, 28] },
+        { "start": 84.691, "end": 85.371, "char": [29, 40] }
+      ]
+    },
+    {
+      "start": 85.371,
+      "end": 88.092,
+      "text": "Der Fork hat eigene",
+      "words": [
+        { "start": 85.371, "end": 86.051, "char": [0, 3] },
+        { "start": 86.051, "end": 86.731, "char": [4, 8] },
+        { "start": 86.731, "end": 87.412, "char": [9, 12] },
+        { "start": 87.412, "end": 88.092, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 88.092,
+      "end": 88.772,
+      "text": "Container,",
+      "words": [{ "start": 88.092, "end": 88.772, "char": [0, 10] }]
+    },
+    {
+      "start": 88.772,
+      "end": 91.493,
+      "text": "ein eigenes Dateisystem und",
+      "words": [
+        { "start": 88.772, "end": 89.452, "char": [0, 3] },
+        { "start": 89.452, "end": 90.133, "char": [4, 11] },
+        { "start": 90.133, "end": 90.813, "char": [12, 23] },
+        { "start": 90.813, "end": 91.493, "char": [24, 27] }
+      ]
+    },
+    {
+      "start": 91.493,
+      "end": 93.534,
+      "text": "einen eigenen Docker-Daemon.",
+      "words": [
+        { "start": 91.493, "end": 92.173, "char": [0, 5] },
+        { "start": 92.173, "end": 92.853, "char": [6, 13] },
+        { "start": 92.853, "end": 93.534, "char": [14, 28] }
+      ]
+    },
+    {
+      "start": 96.534,
+      "end": 97.521,
+      "text": "Zwei Repos,",
+      "words": [
+        { "start": 96.534, "end": 97.027, "char": [0, 4] },
+        { "start": 97.027, "end": 97.521, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 97.521,
+      "end": 98.507,
+      "text": "eine Platte.",
+      "words": [
+        { "start": 97.521, "end": 98.014, "char": [0, 4] },
+        { "start": 98.014, "end": 98.507, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 98.507,
+      "end": 99.494,
+      "text": "Gleiche Daten,",
+      "words": [
+        { "start": 98.507, "end": 99.001, "char": [0, 7] },
+        { "start": 99.001, "end": 99.494, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 99.494,
+      "end": 100.975,
+      "text": "alles andere getrennt.",
+      "words": [
+        { "start": 99.494, "end": 99.988, "char": [0, 5] },
+        { "start": 99.988, "end": 100.481, "char": [6, 12] },
+        { "start": 100.481, "end": 100.975, "char": [13, 22] }
+      ]
+    },
+    {
+      "start": 104.296,
+      "end": 106.068,
+      "text": "Wir beweisen die Isolation.",
+      "words": [
+        { "start": 104.296, "end": 104.739, "char": [0, 3] },
+        { "start": 104.739, "end": 105.182, "char": [4, 12] },
+        { "start": 105.182, "end": 105.625, "char": [13, 16] },
+        { "start": 105.625, "end": 106.068, "char": [17, 27] }
+      ]
+    },
+    {
+      "start": 106.068,
+      "end": 108.726,
+      "text": "Im Original ist unsere Markierungsdatei genau",
+      "words": [
+        { "start": 106.068, "end": 106.511, "char": [0, 2] },
+        { "start": 106.511, "end": 106.954, "char": [3, 11] },
+        { "start": 106.954, "end": 107.397, "char": [12, 15] },
+        { "start": 107.397, "end": 107.84, "char": [16, 22] },
+        { "start": 107.84, "end": 108.283, "char": [23, 39] },
+        { "start": 108.283, "end": 108.726, "char": [40, 45] }
+      ]
+    },
+    {
+      "start": 108.726,
+      "end": 109.169,
+      "text": "dort,",
+      "words": [{ "start": 108.726, "end": 109.169, "char": [0, 5] }]
+    },
+    {
+      "start": 109.169,
+      "end": 111.385,
+      "text": "wo wir sie gelassen haben.",
+      "words": [
+        { "start": 109.169, "end": 109.612, "char": [0, 2] },
+        { "start": 109.612, "end": 110.055, "char": [3, 6] },
+        { "start": 110.055, "end": 110.499, "char": [7, 10] },
+        { "start": 110.499, "end": 110.942, "char": [11, 19] },
+        { "start": 110.942, "end": 111.385, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 111.385,
+      "end": 114.043,
+      "text": "Die Existenz des Forks hat nichts",
+      "words": [
+        { "start": 111.385, "end": 111.828, "char": [0, 3] },
+        { "start": 111.828, "end": 112.271, "char": [4, 12] },
+        { "start": 112.271, "end": 112.714, "char": [13, 16] },
+        { "start": 112.714, "end": 113.157, "char": [17, 22] },
+        { "start": 113.157, "end": 113.6, "char": [23, 26] },
+        { "start": 113.6, "end": 114.043, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 114.043,
+      "end": 115.372,
+      "text": "am Parent geändert.",
+      "words": [
+        { "start": 114.043, "end": 114.486, "char": [0, 2] },
+        { "start": 114.486, "end": 114.929, "char": [3, 9] },
+        { "start": 114.929, "end": 115.372, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 116.172,
+      "end": 118.297,
+      "text": "Originaldatei ist immer noch da.",
+      "words": [
+        { "start": 116.172, "end": 116.597, "char": [0, 13] },
+        { "start": 116.597, "end": 117.022, "char": [14, 17] },
+        { "start": 117.022, "end": 117.447, "char": [18, 23] },
+        { "start": 117.447, "end": 117.872, "char": [24, 28] },
+        { "start": 117.872, "end": 118.297, "char": [29, 32] }
+      ]
+    },
+    {
+      "start": 118.297,
+      "end": 120.848,
+      "text": "Der Fork hat sie nicht angefasst.",
+      "words": [
+        { "start": 118.297, "end": 118.722, "char": [0, 3] },
+        { "start": 118.722, "end": 119.148, "char": [4, 8] },
+        { "start": 119.148, "end": 119.573, "char": [9, 12] },
+        { "start": 119.573, "end": 119.998, "char": [13, 16] },
+        { "start": 119.998, "end": 120.423, "char": [17, 22] },
+        { "start": 120.423, "end": 120.848, "char": [23, 33] }
+      ]
+    },
+    {
+      "start": 121.663,
+      "end": 124.225,
+      "text": "Das Eltern-Repo ist die Sonne",
+      "words": [
+        { "start": 121.663, "end": 122.175, "char": [0, 3] },
+        { "start": 122.175, "end": 122.688, "char": [4, 15] },
+        { "start": 122.688, "end": 123.2, "char": [16, 19] },
+        { "start": 123.2, "end": 123.712, "char": [20, 23] },
+        { "start": 123.712, "end": 124.225, "char": [24, 29] }
+      ]
+    },
+    {
+      "start": 124.225,
+      "end": 126.786,
+      "text": "und dein Fork ist ein",
+      "words": [
+        { "start": 124.225, "end": 124.737, "char": [0, 3] },
+        { "start": 124.737, "end": 125.249, "char": [4, 8] },
+        { "start": 125.249, "end": 125.762, "char": [9, 13] },
+        { "start": 125.762, "end": 126.274, "char": [14, 17] },
+        { "start": 126.274, "end": 126.786, "char": [18, 21] }
+      ]
+    },
+    {
+      "start": 126.786,
+      "end": 127.299,
+      "text": "Spiegel,",
+      "words": [{ "start": 126.786, "end": 127.299, "char": [0, 8] }]
+    },
+    {
+      "start": 127.299,
+      "end": 129.348,
+      "text": "der ihr Licht einfängt.",
+      "words": [
+        { "start": 127.299, "end": 127.811, "char": [0, 3] },
+        { "start": 127.811, "end": 128.323, "char": [4, 7] },
+        { "start": 128.323, "end": 128.836, "char": [8, 13] },
+        { "start": 128.836, "end": 129.348, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 129.348,
+      "end": 131.91,
+      "text": "Die geteilte Basis bleibt unberührt,",
+      "words": [
+        { "start": 129.348, "end": 129.86, "char": [0, 3] },
+        { "start": 129.86, "end": 130.373, "char": [4, 12] },
+        { "start": 130.373, "end": 130.885, "char": [13, 18] },
+        { "start": 130.885, "end": 131.397, "char": [19, 25] },
+        { "start": 131.397, "end": 131.91, "char": [26, 36] }
+      ]
+    },
+    {
+      "start": 131.91,
+      "end": 132.934,
+      "text": "während alles,",
+      "words": [
+        { "start": 131.91, "end": 132.422, "char": [0, 7] },
+        { "start": 132.422, "end": 132.934, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 132.934,
+      "end": 135.496,
+      "text": "was du auf den Spiegel",
+      "words": [
+        { "start": 132.934, "end": 133.447, "char": [0, 3] },
+        { "start": 133.447, "end": 133.959, "char": [4, 6] },
+        { "start": 133.959, "end": 134.471, "char": [7, 10] },
+        { "start": 134.471, "end": 134.984, "char": [11, 14] },
+        { "start": 134.984, "end": 135.496, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 135.496,
+      "end": 136.008,
+      "text": "malst,",
+      "words": [{ "start": 135.496, "end": 136.008, "char": [0, 6] }]
+    },
+    {
+      "start": 136.008,
+      "end": 137.545,
+      "text": "allein dir gehört.",
+      "words": [
+        { "start": 136.008, "end": 136.521, "char": [0, 6] },
+        { "start": 136.521, "end": 137.033, "char": [7, 10] },
+        { "start": 137.033, "end": 137.545, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 140.822,
+      "end": 142.57,
+      "text": "Jetzt löschen wir die Datei,",
+      "words": [
+        { "start": 140.822, "end": 141.172, "char": [0, 5] },
+        { "start": 141.172, "end": 141.521, "char": [6, 13] },
+        { "start": 141.521, "end": 141.871, "char": [14, 17] },
+        { "start": 141.871, "end": 142.221, "char": [18, 21] },
+        { "start": 142.221, "end": 142.57, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 142.57,
+      "end": 144.318,
+      "text": "aber nur innerhalb des Forks.",
+      "words": [
+        { "start": 142.57, "end": 142.92, "char": [0, 4] },
+        { "start": 142.92, "end": 143.269, "char": [5, 8] },
+        { "start": 143.269, "end": 143.619, "char": [9, 18] },
+        { "start": 143.619, "end": 143.969, "char": [19, 22] },
+        { "start": 143.969, "end": 144.318, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 144.318,
+      "end": 146.067,
+      "text": "Im Fork ist sie weg.",
+      "words": [
+        { "start": 144.318, "end": 144.668, "char": [0, 2] },
+        { "start": 144.668, "end": 145.018, "char": [3, 7] },
+        { "start": 145.018, "end": 145.367, "char": [8, 11] },
+        { "start": 145.367, "end": 145.717, "char": [12, 15] },
+        { "start": 145.717, "end": 146.067, "char": [16, 20] }
+      ]
+    },
+    {
+      "start": 146.067,
+      "end": 148.164,
+      "text": "Wir haben eine destruktive Änderung vorgenommen,",
+      "words": [
+        { "start": 146.067, "end": 146.416, "char": [0, 3] },
+        { "start": 146.416, "end": 146.766, "char": [4, 9] },
+        { "start": 146.766, "end": 147.116, "char": [10, 14] },
+        { "start": 147.116, "end": 147.465, "char": [15, 26] },
+        { "start": 147.465, "end": 147.815, "char": [27, 35] },
+        { "start": 147.815, "end": 148.164, "char": [36, 48] }
+      ]
+    },
+    {
+      "start": 148.164,
+      "end": 149.913,
+      "text": "und sie blieb im Fork.",
+      "words": [
+        { "start": 148.164, "end": 148.514, "char": [0, 3] },
+        { "start": 148.514, "end": 148.864, "char": [4, 7] },
+        { "start": 148.864, "end": 149.213, "char": [8, 13] },
+        { "start": 149.213, "end": 149.563, "char": [14, 16] },
+        { "start": 149.563, "end": 149.913, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 150.713,
+      "end": 151.933,
+      "text": "Im Fork weg.",
+      "words": [
+        { "start": 150.713, "end": 151.119, "char": [0, 2] },
+        { "start": 151.119, "end": 151.526, "char": [3, 7] },
+        { "start": 151.526, "end": 151.933, "char": [8, 12] }
+      ]
+    },
+    {
+      "start": 151.933,
+      "end": 153.56,
+      "text": "Das Original bleibt unberührt.",
+      "words": [
+        { "start": 151.933, "end": 152.34, "char": [0, 3] },
+        { "start": 152.34, "end": 152.746, "char": [4, 12] },
+        { "start": 152.746, "end": 153.153, "char": [13, 19] },
+        { "start": 153.153, "end": 153.56, "char": [20, 30] }
+      ]
+    },
+    {
+      "start": 156.889,
+      "end": 158.52,
+      "text": "Zurück zum Original.",
+      "words": [
+        { "start": 156.889, "end": 157.433, "char": [0, 6] },
+        { "start": 157.433, "end": 157.976, "char": [7, 10] },
+        { "start": 157.976, "end": 158.52, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 158.52,
+      "end": 161.239,
+      "text": "Die Markierungsdatei ist noch hier,",
+      "words": [
+        { "start": 158.52, "end": 159.064, "char": [0, 3] },
+        { "start": 159.064, "end": 159.608, "char": [4, 20] },
+        { "start": 159.608, "end": 160.152, "char": [21, 24] },
+        { "start": 160.152, "end": 160.695, "char": [25, 29] },
+        { "start": 160.695, "end": 161.239, "char": [30, 35] }
+      ]
+    },
+    {
+      "start": 161.239,
+      "end": 161.783,
+      "text": "unberührt.",
+      "words": [{ "start": 161.239, "end": 161.783, "char": [0, 10] }]
+    },
+    {
+      "start": 161.783,
+      "end": 164.502,
+      "text": "Das Original hat nie etwas",
+      "words": [
+        { "start": 161.783, "end": 162.327, "char": [0, 3] },
+        { "start": 162.327, "end": 162.871, "char": [4, 12] },
+        { "start": 162.871, "end": 163.415, "char": [13, 16] },
+        { "start": 163.415, "end": 163.958, "char": [17, 20] },
+        { "start": 163.958, "end": 164.502, "char": [21, 26] }
+      ]
+    },
+    {
+      "start": 164.502,
+      "end": 165.59,
+      "text": "davon mitbekommen.",
+      "words": [
+        { "start": 164.502, "end": 165.046, "char": [0, 5] },
+        { "start": 165.046, "end": 165.59, "char": [6, 18] }
+      ]
+    },
+    {
+      "start": 165.59,
+      "end": 166.677,
+      "text": "Gleiches Image,",
+      "words": [
+        { "start": 165.59, "end": 166.134, "char": [0, 8] },
+        { "start": 166.134, "end": 166.677, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 166.677,
+      "end": 167.765,
+      "text": "getrennte Docker-Daemons,",
+      "words": [
+        { "start": 166.677, "end": 167.221, "char": [0, 9] },
+        { "start": 167.221, "end": 167.765, "char": [10, 25] }
+      ]
+    },
+    {
+      "start": 167.765,
+      "end": 168.853,
+      "text": "getrennte Dateisysteme.",
+      "words": [
+        { "start": 167.765, "end": 168.309, "char": [0, 9] },
+        { "start": 168.309, "end": 168.853, "char": [10, 23] }
+      ]
+    },
+    {
+      "start": 169.653,
+      "end": 170.907,
+      "text": "Immer noch da.",
+      "words": [
+        { "start": 169.653, "end": 170.071, "char": [0, 5] },
+        { "start": 170.071, "end": 170.489, "char": [6, 10] },
+        { "start": 170.489, "end": 170.907, "char": [11, 14] }
+      ]
+    },
+    {
+      "start": 170.907,
+      "end": 172.578,
+      "text": "Forks sind sauber isoliert.",
+      "words": [
+        { "start": 170.907, "end": 171.325, "char": [0, 5] },
+        { "start": 171.325, "end": 171.743, "char": [6, 10] },
+        { "start": 171.743, "end": 172.161, "char": [11, 17] },
+        { "start": 172.161, "end": 172.578, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 175.881,
+      "end": 178.005,
+      "text": "Wenn Sie fertig sind,",
+      "words": [
+        { "start": 175.881, "end": 176.412, "char": [0, 4] },
+        { "start": 176.412, "end": 176.943, "char": [5, 8] },
+        { "start": 176.943, "end": 177.474, "char": [9, 15] },
+        { "start": 177.474, "end": 178.005, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 178.005,
+      "end": 180.661,
+      "text": "löschen Sie einfach den Fork.",
+      "words": [
+        { "start": 178.005, "end": 178.536, "char": [0, 7] },
+        { "start": 178.536, "end": 179.068, "char": [8, 11] },
+        { "start": 179.068, "end": 179.599, "char": [12, 19] },
+        { "start": 179.599, "end": 180.13, "char": [20, 23] },
+        { "start": 180.13, "end": 180.661, "char": [24, 29] }
+      ]
+    },
+    {
+      "start": 180.661,
+      "end": 183.317,
+      "text": "Das Original bleibt genau so,",
+      "words": [
+        { "start": 180.661, "end": 181.192, "char": [0, 3] },
+        { "start": 181.192, "end": 181.723, "char": [4, 12] },
+        { "start": 181.723, "end": 182.255, "char": [13, 19] },
+        { "start": 182.255, "end": 182.786, "char": [20, 25] },
+        { "start": 182.786, "end": 183.317, "char": [26, 29] }
+      ]
+    },
+    {
+      "start": 183.317,
+      "end": 184.91,
+      "text": "wie es war.",
+      "words": [
+        { "start": 183.317, "end": 183.848, "char": [0, 3] },
+        { "start": 183.848, "end": 184.379, "char": [4, 6] },
+        { "start": 184.379, "end": 184.91, "char": [7, 11] }
+      ]
+    },
+    {
+      "start": 184.91,
+      "end": 185.441,
+      "text": "Forken,",
+      "words": [{ "start": 184.91, "end": 185.441, "char": [0, 7] }]
+    },
+    {
+      "start": 185.441,
+      "end": 185.973,
+      "text": "experimentieren,",
+      "words": [{ "start": 185.441, "end": 185.973, "char": [0, 16] }]
+    },
+    {
+      "start": 185.973,
+      "end": 187.035,
+      "text": "Dinge kaputtmachen,",
+      "words": [
+        { "start": 185.973, "end": 186.504, "char": [0, 5] },
+        { "start": 186.504, "end": 187.035, "char": [6, 19] }
+      ]
+    },
+    {
+      "start": 187.035,
+      "end": 187.566,
+      "text": "löschen:",
+      "words": [{ "start": 187.035, "end": 187.566, "char": [0, 8] }]
+    },
+    {
+      "start": 187.566,
+      "end": 188.628,
+      "text": "kein Risiko.",
+      "words": [
+        { "start": 187.566, "end": 188.097, "char": [0, 4] },
+        { "start": 188.097, "end": 188.628, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 191.628,
+      "end": 192.408,
+      "text": "Fork entfernt.",
+      "words": [
+        { "start": 191.628, "end": 192.018, "char": [0, 4] },
+        { "start": 192.018, "end": 192.408, "char": [5, 14] }
+      ]
+    },
+    {
+      "start": 192.408,
+      "end": 194.356,
+      "text": "Das Original ist genau so,",
+      "words": [
+        { "start": 192.408, "end": 192.797, "char": [0, 3] },
+        { "start": 192.797, "end": 193.187, "char": [4, 12] },
+        { "start": 193.187, "end": 193.577, "char": [13, 16] },
+        { "start": 193.577, "end": 193.966, "char": [17, 22] },
+        { "start": 193.966, "end": 194.356, "char": [23, 26] }
+      ]
+    },
+    {
+      "start": 194.356,
+      "end": 196.304,
+      "text": "wie wir es zurückgelassen haben.",
+      "words": [
+        { "start": 194.356, "end": 194.746, "char": [0, 3] },
+        { "start": 194.746, "end": 195.135, "char": [4, 7] },
+        { "start": 195.135, "end": 195.525, "char": [8, 10] },
+        { "start": 195.525, "end": 195.915, "char": [11, 25] },
+        { "start": 195.915, "end": 196.304, "char": [26, 32] }
+      ]
+    },
+    {
+      "start": 197.114,
+      "end": 199.842,
+      "text": "Ein Fork ist ein eingefrorenes Foto",
+      "words": [
+        { "start": 197.114, "end": 197.569, "char": [0, 3] },
+        { "start": 197.569, "end": 198.023, "char": [4, 8] },
+        { "start": 198.023, "end": 198.478, "char": [9, 12] },
+        { "start": 198.478, "end": 198.933, "char": [13, 16] },
+        { "start": 198.933, "end": 199.388, "char": [17, 30] },
+        { "start": 199.388, "end": 199.842, "char": [31, 35] }
+      ]
+    },
+    {
+      "start": 199.842,
+      "end": 202.116,
+      "text": "des Eltern-Repos in einem Moment.",
+      "words": [
+        { "start": 199.842, "end": 200.297, "char": [0, 3] },
+        { "start": 200.297, "end": 200.752, "char": [4, 16] },
+        { "start": 200.752, "end": 201.207, "char": [17, 19] },
+        { "start": 201.207, "end": 201.661, "char": [20, 25] },
+        { "start": 201.661, "end": 202.116, "char": [26, 33] }
+      ]
+    },
+    {
+      "start": 202.116,
+      "end": 204.844,
+      "text": "Das Eltern-Repo fließt weiter wie ein",
+      "words": [
+        { "start": 202.116, "end": 202.571, "char": [0, 3] },
+        { "start": 202.571, "end": 203.025, "char": [4, 15] },
+        { "start": 203.025, "end": 203.48, "char": [16, 22] },
+        { "start": 203.48, "end": 203.935, "char": [23, 29] },
+        { "start": 203.935, "end": 204.39, "char": [30, 33] },
+        { "start": 204.39, "end": 204.844, "char": [34, 37] }
+      ]
+    },
+    {
+      "start": 204.844,
+      "end": 205.299,
+      "text": "Fluss,",
+      "words": [{ "start": 204.844, "end": 205.299, "char": [0, 6] }]
+    },
+    {
+      "start": 205.299,
+      "end": 208.027,
+      "text": "aber deine Momentaufnahme bleibt genau dort,",
+      "words": [
+        { "start": 205.299, "end": 205.754, "char": [0, 4] },
+        { "start": 205.754, "end": 206.208, "char": [5, 10] },
+        { "start": 206.208, "end": 206.663, "char": [11, 25] },
+        { "start": 206.663, "end": 207.118, "char": [26, 32] },
+        { "start": 207.118, "end": 207.573, "char": [33, 38] },
+        { "start": 207.573, "end": 208.027, "char": [39, 44] }
+      ]
+    },
+    {
+      "start": 208.027,
+      "end": 209.392,
+      "text": "wo sie war.",
+      "words": [
+        { "start": 208.027, "end": 208.482, "char": [0, 2] },
+        { "start": 208.482, "end": 208.937, "char": [3, 6] },
+        { "start": 208.937, "end": 209.392, "char": [7, 11] }
+      ]
+    },
+    {
+      "start": 210.174,
+      "end": 212.692,
+      "text": "Fünf Forks eines hundert Gigabyte großen",
+      "words": [
+        { "start": 210.174, "end": 210.594, "char": [0, 4] },
+        { "start": 210.594, "end": 211.013, "char": [5, 10] },
+        { "start": 211.013, "end": 211.433, "char": [11, 16] },
+        { "start": 211.433, "end": 211.853, "char": [17, 24] },
+        { "start": 211.853, "end": 212.273, "char": [25, 33] },
+        { "start": 212.273, "end": 212.692, "char": [34, 40] }
+      ]
+    },
+    {
+      "start": 212.692,
+      "end": 215.21,
+      "text": "Repos summieren sich auf der Platte",
+      "words": [
+        { "start": 212.692, "end": 213.112, "char": [0, 5] },
+        { "start": 213.112, "end": 213.532, "char": [6, 15] },
+        { "start": 213.532, "end": 213.951, "char": [16, 20] },
+        { "start": 213.951, "end": 214.371, "char": [21, 24] },
+        { "start": 214.371, "end": 214.791, "char": [25, 28] },
+        { "start": 214.791, "end": 215.21, "char": [29, 35] }
+      ]
+    },
+    {
+      "start": 215.21,
+      "end": 217.309,
+      "text": "trotzdem auf etwa hundert Gigabyte.",
+      "words": [
+        { "start": 215.21, "end": 215.63, "char": [0, 8] },
+        { "start": 215.63, "end": 216.05, "char": [9, 12] },
+        { "start": 216.05, "end": 216.47, "char": [13, 17] },
+        { "start": 216.47, "end": 216.889, "char": [18, 25] },
+        { "start": 216.889, "end": 217.309, "char": [26, 35] }
+      ]
+    },
+    {
+      "start": 217.309,
+      "end": 219.827,
+      "text": "Du zahlst nur für die Bytes,",
+      "words": [
+        { "start": 217.309, "end": 217.729, "char": [0, 2] },
+        { "start": 217.729, "end": 218.148, "char": [3, 9] },
+        { "start": 218.148, "end": 218.568, "char": [10, 13] },
+        { "start": 218.568, "end": 218.988, "char": [14, 17] },
+        { "start": 218.988, "end": 219.407, "char": [18, 21] },
+        { "start": 219.407, "end": 219.827, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 219.827,
+      "end": 222.345,
+      "text": "die du innerhalb jedes Forks tatsächlich",
+      "words": [
+        { "start": 219.827, "end": 220.247, "char": [0, 3] },
+        { "start": 220.247, "end": 220.667, "char": [4, 6] },
+        { "start": 220.667, "end": 221.086, "char": [7, 16] },
+        { "start": 221.086, "end": 221.506, "char": [17, 22] },
+        { "start": 221.506, "end": 221.926, "char": [23, 28] },
+        { "start": 221.926, "end": 222.345, "char": [29, 40] }
+      ]
+    },
+    {
+      "start": 222.345,
+      "end": 222.765,
+      "text": "änderst.",
+      "words": [{ "start": 222.345, "end": 222.765, "char": [0, 8] }]
+    },
+    {
+      "start": 223.536,
+      "end": 226.169,
+      "text": "Forks lassen Secrets bewusst zurück,",
+      "words": [
+        { "start": 223.536, "end": 224.063, "char": [0, 5] },
+        { "start": 224.063, "end": 224.589, "char": [6, 12] },
+        { "start": 224.589, "end": 225.116, "char": [13, 20] },
+        { "start": 225.116, "end": 225.643, "char": [21, 28] },
+        { "start": 225.643, "end": 226.169, "char": [29, 36] }
+      ]
+    },
+    {
+      "start": 226.169,
+      "end": 228.802,
+      "text": "und genau das macht das",
+      "words": [
+        { "start": 226.169, "end": 226.696, "char": [0, 3] },
+        { "start": 226.696, "end": 227.222, "char": [4, 9] },
+        { "start": 227.222, "end": 227.749, "char": [10, 13] },
+        { "start": 227.749, "end": 228.276, "char": [14, 19] },
+        { "start": 228.276, "end": 228.802, "char": [20, 23] }
+      ]
+    },
+    {
+      "start": 228.802,
+      "end": 230.382,
+      "text": "Motto „Produktion klonen,",
+      "words": [
+        { "start": 228.802, "end": 229.329, "char": [0, 5] },
+        { "start": 229.329, "end": 229.856, "char": [6, 17] },
+        { "start": 229.856, "end": 230.382, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 230.382,
+      "end": 233.015,
+      "text": "nichts kaputt machen“ wirklich sicher.",
+      "words": [
+        { "start": 230.382, "end": 230.909, "char": [0, 6] },
+        { "start": 230.909, "end": 231.435, "char": [7, 13] },
+        { "start": 231.435, "end": 231.962, "char": [14, 21] },
+        { "start": 231.962, "end": 232.489, "char": [22, 30] },
+        { "start": 232.489, "end": 233.015, "char": [31, 38] }
+      ]
+    },
+    {
+      "start": 233.015,
+      "end": 235.648,
+      "text": "Das verdrahten wir im nächsten",
+      "words": [
+        { "start": 233.015, "end": 233.542, "char": [0, 3] },
+        { "start": 233.542, "end": 234.069, "char": [4, 14] },
+        { "start": 234.069, "end": 234.595, "char": [15, 18] },
+        { "start": 234.595, "end": 235.122, "char": [19, 21] },
+        { "start": 235.122, "end": 235.648, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 235.648,
+      "end": 236.702,
+      "text": "Tutorial richtig!",
+      "words": [
+        { "start": 235.648, "end": 236.175, "char": [0, 8] },
+        { "start": 236.175, "end": 236.702, "char": [9, 17] }
+      ]
+    }
+  ]
+}

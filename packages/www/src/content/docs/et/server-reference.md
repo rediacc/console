@@ -4,15 +4,15 @@ description: "Kataloogipaigutus, renet-käsud, systemd-teenused ja tööprotsess
 category: "Concepts"
 order: 3
 language: et
-sourceHash: "f68c27543a2fe3ff"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "4fb53bb4cb1512f6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Serveri viide
 
-See leht katab selle, mida leiate SSH-ga Rediacci serverisse sisenedes: kataloogipaigutuse, `renet`-käsud, systemd-teenused ja tavalised tööprotsessid.
+SSH-ga Rediacci serverisse sisenedes leiate: kataloogipaigutuse, `renet`-käsud, systemd-teenused ja tööprotsessid, mida vajate.
 
-Enamik kasutajaid haldab servereid `rdc` kaudu oma tööjaamast ja ei vaja seda lehte kunagi. See on siin täpsema silumise või serveri otse töötamise jaoks.
+Enamik kasutajaid haldab servereid `rdc` kaudu oma tööjaamast ja ei vaja seda lehte kunagi. See leht on täpsema silumise või serveri otsese töötamise jaoks.
 
 Kõrgetasemelise arhitektuuri kohta vaadake [Arhitektuur](/en/docs/architecture). `rdc` ja `renet` erinevuse kohta vaadake [rdc vs renet](/en/docs/rdc-vs-renet).
 

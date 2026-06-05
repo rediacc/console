@@ -1,1 +1,450 @@
-{"version":1,"cues":[{"start":1,"end":1.309,"text":"Bene!","words":[{"start":1,"end":1.309,"char":[0,5]}]},{"start":1.309,"end":4.087,"text":"Installiamo lo strumento da riga di comando sul tuo","words":[{"start":1.309,"end":1.617,"char":[0,11]},{"start":1.617,"end":1.926,"char":[12,14]},{"start":1.926,"end":2.235,"char":[15,24]},{"start":2.235,"end":2.544,"char":[25,27]},{"start":2.544,"end":2.852,"char":[28,32]},{"start":2.852,"end":3.161,"char":[33,35]},{"start":3.161,"end":3.47,"char":[36,43]},{"start":3.47,"end":3.778,"char":[44,47]},{"start":3.778,"end":4.087,"char":[48,51]}]},{"start":4.087,"end":4.396,"text":"laptop.","words":[{"start":4.087,"end":4.396,"char":[0,7]}]},{"start":5.167,"end":6.105,"text":"Tre passi.","words":[{"start":5.167,"end":5.636,"char":[0,3]},{"start":5.636,"end":6.105,"char":[4,10]}]},{"start":6.105,"end":8.448,"text":"Apri la pagina di installazione,","words":[{"start":6.105,"end":6.573,"char":[0,4]},{"start":6.573,"end":7.042,"char":[5,7]},{"start":7.042,"end":7.511,"char":[8,14]},{"start":7.511,"end":7.98,"char":[15,17]},{"start":7.98,"end":8.448,"char":[18,32]}]},{"start":8.448,"end":10.792,"text":"scegli il tuo sistema operativo,","words":[{"start":8.448,"end":8.917,"char":[0,6]},{"start":8.917,"end":9.386,"char":[7,9]},{"start":9.386,"end":9.855,"char":[10,13]},{"start":9.855,"end":10.323,"char":[14,21]},{"start":10.323,"end":10.792,"char":[22,32]}]},{"start":10.792,"end":13.605,"text":"poi incolla il comando nel terminale.","words":[{"start":10.792,"end":11.261,"char":[0,3]},{"start":11.261,"end":11.73,"char":[4,11]},{"start":11.73,"end":12.198,"char":[12,14]},{"start":12.198,"end":12.667,"char":[15,22]},{"start":12.667,"end":13.136,"char":[23,26]},{"start":13.136,"end":13.605,"char":[27,37]}]},{"start":14.372,"end":17.186,"text":"Vai alla pagina di installazione e scorri","words":[{"start":14.372,"end":14.774,"char":[0,3]},{"start":14.774,"end":15.176,"char":[4,8]},{"start":15.176,"end":15.578,"char":[9,15]},{"start":15.578,"end":15.98,"char":[16,18]},{"start":15.98,"end":16.382,"char":[19,32]},{"start":16.382,"end":16.784,"char":[33,34]},{"start":16.784,"end":17.186,"char":[35,41]}]},{"start":17.186,"end":19.599,"text":"fino alla sezione di installazione rapida.","words":[{"start":17.186,"end":17.588,"char":[0,4]},{"start":17.588,"end":17.991,"char":[5,9]},{"start":17.991,"end":18.393,"char":[10,17]},{"start":18.393,"end":18.795,"char":[18,20]},{"start":18.795,"end":19.197,"char":[21,34]},{"start":19.197,"end":19.599,"char":[35,42]}]},{"start":19.599,"end":22.413,"text":"Genera il one-liner giusto per la piattaforma","words":[{"start":19.599,"end":20.001,"char":[0,6]},{"start":20.001,"end":20.403,"char":[7,9]},{"start":20.403,"end":20.805,"char":[10,19]},{"start":20.805,"end":21.207,"char":[20,26]},{"start":21.207,"end":21.609,"char":[27,30]},{"start":21.609,"end":22.011,"char":[31,33]},{"start":22.011,"end":22.413,"char":[34,45]}]},{"start":22.413,"end":23.619,"text":"che stai usando.","words":[{"start":22.413,"end":22.815,"char":[0,3]},{"start":22.815,"end":23.217,"char":[4,8]},{"start":23.217,"end":23.619,"char":[9,16]}]},{"start":26.89,"end":27.943,"text":"Prima di tutto,","words":[{"start":26.89,"end":27.241,"char":[0,5]},{"start":27.241,"end":27.592,"char":[6,8]},{"start":27.592,"end":27.943,"char":[9,15]}]},{"start":27.943,"end":30.4,"text":"confermiamo che la CLI sia nel path.","words":[{"start":27.943,"end":28.294,"char":[0,11]},{"start":28.294,"end":28.645,"char":[12,15]},{"start":28.645,"end":28.996,"char":[16,18]},{"start":28.996,"end":29.347,"char":[19,22]},{"start":29.347,"end":29.698,"char":[23,26]},{"start":29.698,"end":30.049,"char":[27,30]},{"start":30.049,"end":30.4,"char":[31,36]}]},{"start":30.4,"end":33.208,"text":"Eseguendo la CLI con il flag version si","words":[{"start":30.4,"end":30.751,"char":[0,9]},{"start":30.751,"end":31.102,"char":[10,12]},{"start":31.102,"end":31.453,"char":[13,16]},{"start":31.453,"end":31.804,"char":[17,20]},{"start":31.804,"end":32.155,"char":[21,23]},{"start":32.155,"end":32.506,"char":[24,28]},{"start":32.506,"end":32.857,"char":[29,36]},{"start":32.857,"end":33.208,"char":[37,39]}]},{"start":33.208,"end":36.017,"text":"ottiene la versione installata e si verifica che","words":[{"start":33.208,"end":33.559,"char":[0,7]},{"start":33.559,"end":33.91,"char":[8,10]},{"start":33.91,"end":34.261,"char":[11,19]},{"start":34.261,"end":34.612,"char":[20,30]},{"start":34.612,"end":34.963,"char":[31,32]},{"start":34.963,"end":35.315,"char":[33,35]},{"start":35.315,"end":35.666,"char":[36,44]},{"start":35.666,"end":36.017,"char":[45,48]}]},{"start":36.017,"end":38.123,"text":"l'installazione sia andata a buon fine.","words":[{"start":36.017,"end":36.368,"char":[0,15]},{"start":36.368,"end":36.719,"char":[16,19]},{"start":36.719,"end":37.07,"char":[20,26]},{"start":37.07,"end":37.421,"char":[27,28]},{"start":37.421,"end":37.772,"char":[29,33]},{"start":37.772,"end":38.123,"char":[34,39]}]},{"start":41.123,"end":42.197,"text":"Installazione completata.","words":[{"start":41.123,"end":41.66,"char":[0,13]},{"start":41.66,"end":42.197,"char":[14,25]}]},{"start":42.197,"end":44.881,"text":"Il binario rdc e' nel","words":[{"start":42.197,"end":42.734,"char":[0,2]},{"start":42.734,"end":43.271,"char":[3,10]},{"start":43.271,"end":43.807,"char":[11,14]},{"start":43.807,"end":44.344,"char":[15,17]},{"start":44.344,"end":44.881,"char":[18,21]}]},{"start":44.881,"end":45.955,"text":"tuo path.","words":[{"start":44.881,"end":45.418,"char":[0,3]},{"start":45.418,"end":45.955,"char":[4,9]}]},{"start":49.257,"end":51.519,"text":"Ora eseguiamo il controllo diagnostico.","words":[{"start":49.257,"end":49.709,"char":[0,3]},{"start":49.709,"end":50.162,"char":[4,13]},{"start":50.162,"end":50.614,"char":[14,16]},{"start":50.614,"end":51.067,"char":[17,26]},{"start":51.067,"end":51.519,"char":[27,39]}]},{"start":51.519,"end":54.235,"text":"Controlla tutte le dipendenze necessarie alla","words":[{"start":51.519,"end":51.972,"char":[0,9]},{"start":51.972,"end":52.424,"char":[10,15]},{"start":52.424,"end":52.877,"char":[16,18]},{"start":52.877,"end":53.329,"char":[19,29]},{"start":53.329,"end":53.782,"char":[30,40]},{"start":53.782,"end":54.235,"char":[41,45]}]},{"start":54.235,"end":55.592,"text":"CLI -- Node,","words":[{"start":54.235,"end":54.687,"char":[0,3]},{"start":54.687,"end":55.14,"char":[4,6]},{"start":55.14,"end":55.592,"char":[7,12]}]},{"start":55.592,"end":58.307,"text":"SSH e le restanti -- e","words":[{"start":55.592,"end":56.045,"char":[0,3]},{"start":56.045,"end":56.497,"char":[4,5]},{"start":56.497,"end":56.95,"char":[6,8]},{"start":56.95,"end":57.402,"char":[9,17]},{"start":57.402,"end":57.855,"char":[18,20]},{"start":57.855,"end":58.307,"char":[21,22]}]},{"start":58.307,"end":59.665,"text":"segnala eventuali mancanze.","words":[{"start":58.307,"end":58.76,"char":[0,7]},{"start":58.76,"end":59.212,"char":[8,17]},{"start":59.212,"end":59.665,"char":[18,27]}]},{"start":59.665,"end":62.38,"text":"Un rapporto pulito significa che sei","words":[{"start":59.665,"end":60.117,"char":[0,2]},{"start":60.117,"end":60.57,"char":[3,11]},{"start":60.57,"end":61.023,"char":[12,18]},{"start":61.023,"end":61.475,"char":[19,28]},{"start":61.475,"end":61.928,"char":[29,32]},{"start":61.928,"end":62.38,"char":[33,36]}]},{"start":62.38,"end":64.643,"text":"pronto ad aggiungere un server.","words":[{"start":62.38,"end":62.833,"char":[0,6]},{"start":62.833,"end":63.285,"char":[7,9]},{"start":63.285,"end":63.738,"char":[10,20]},{"start":63.738,"end":64.19,"char":[21,23]},{"start":64.19,"end":64.643,"char":[24,31]}]},{"start":65.443,"end":66.736,"text":"Versione stampata.","words":[{"start":65.443,"end":66.089,"char":[0,8]},{"start":66.089,"end":66.736,"char":[9,18]}]},{"start":66.736,"end":68.029,"text":"Sei pronto.","words":[{"start":66.736,"end":67.382,"char":[0,3]},{"start":67.382,"end":68.029,"char":[4,11]}]},{"start":68.857,"end":71.542,"text":"Lo strumento da riga di comando vive","words":[{"start":68.857,"end":69.24,"char":[0,2]},{"start":69.24,"end":69.624,"char":[3,12]},{"start":69.624,"end":70.008,"char":[13,15]},{"start":70.008,"end":70.391,"char":[16,20]},{"start":70.391,"end":70.775,"char":[21,23]},{"start":70.775,"end":71.159,"char":[24,31]},{"start":71.159,"end":71.542,"char":[32,36]}]},{"start":71.542,"end":72.693,"text":"sul tuo laptop.","words":[{"start":71.542,"end":71.926,"char":[0,3]},{"start":71.926,"end":72.31,"char":[4,7]},{"start":72.31,"end":72.693,"char":[8,15]}]},{"start":72.693,"end":75.379,"text":"Il server esegue un componente separato chiamato","words":[{"start":72.693,"end":73.077,"char":[0,2]},{"start":73.077,"end":73.461,"char":[3,9]},{"start":73.461,"end":73.844,"char":[10,16]},{"start":73.844,"end":74.228,"char":[17,19]},{"start":74.228,"end":74.612,"char":[20,30]},{"start":74.612,"end":74.995,"char":[31,39]},{"start":74.995,"end":75.379,"char":[40,48]}]},{"start":75.379,"end":75.763,"text":"renet,","words":[{"start":75.379,"end":75.763,"char":[0,6]}]},{"start":75.763,"end":78.449,"text":"che la CLI provisiona e pilota via","words":[{"start":75.763,"end":76.146,"char":[0,3]},{"start":76.146,"end":76.53,"char":[4,6]},{"start":76.53,"end":76.914,"char":[7,10]},{"start":76.914,"end":77.298,"char":[11,21]},{"start":77.298,"end":77.681,"char":[22,23]},{"start":77.681,"end":78.065,"char":[24,30]},{"start":78.065,"end":78.449,"char":[31,34]}]},{"start":78.449,"end":78.832,"text":"SSH,","words":[{"start":78.449,"end":78.832,"char":[0,4]}]},{"start":78.832,"end":81.134,"text":"quindi non devi mai collegarti manualmente.","words":[{"start":78.832,"end":79.216,"char":[0,6]},{"start":79.216,"end":79.6,"char":[7,10]},{"start":79.6,"end":79.983,"char":[11,15]},{"start":79.983,"end":80.367,"char":[16,19]},{"start":80.367,"end":80.751,"char":[20,30]},{"start":80.751,"end":81.134,"char":[31,43]}]},{"start":81.917,"end":83.06,"text":"Installazione completata.","words":[{"start":81.917,"end":82.488,"char":[0,13]},{"start":82.488,"end":83.06,"char":[14,25]}]},{"start":83.06,"end":85.918,"text":"Nel prossimo configureremo la tua","words":[{"start":83.06,"end":83.632,"char":[0,3]},{"start":83.632,"end":84.203,"char":[4,12]},{"start":84.203,"end":84.775,"char":[13,26]},{"start":84.775,"end":85.346,"char":[27,29]},{"start":85.346,"end":85.918,"char":[30,33]}]},{"start":85.918,"end":88.776,"text":"chiave SSH cosi' la CLI","words":[{"start":85.918,"end":86.49,"char":[0,6]},{"start":86.49,"end":87.061,"char":[7,10]},{"start":87.061,"end":87.633,"char":[11,16]},{"start":87.633,"end":88.205,"char":[17,19]},{"start":88.205,"end":88.776,"char":[20,23]}]},{"start":88.776,"end":91.634,"text":"potra' raggiungere i tuoi server.","words":[{"start":88.776,"end":89.348,"char":[0,6]},{"start":89.348,"end":89.919,"char":[7,18]},{"start":89.919,"end":90.491,"char":[19,20]},{"start":90.491,"end":91.063,"char":[21,25]},{"start":91.063,"end":91.634,"char":[26,33]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.309,
+      "text": "Bene!",
+      "words": [{ "start": 1, "end": 1.309, "char": [0, 5] }]
+    },
+    {
+      "start": 1.309,
+      "end": 4.087,
+      "text": "Installiamo lo strumento da riga di comando sul tuo",
+      "words": [
+        { "start": 1.309, "end": 1.617, "char": [0, 11] },
+        { "start": 1.617, "end": 1.926, "char": [12, 14] },
+        { "start": 1.926, "end": 2.235, "char": [15, 24] },
+        { "start": 2.235, "end": 2.544, "char": [25, 27] },
+        { "start": 2.544, "end": 2.852, "char": [28, 32] },
+        { "start": 2.852, "end": 3.161, "char": [33, 35] },
+        { "start": 3.161, "end": 3.47, "char": [36, 43] },
+        { "start": 3.47, "end": 3.778, "char": [44, 47] },
+        { "start": 3.778, "end": 4.087, "char": [48, 51] }
+      ]
+    },
+    {
+      "start": 4.087,
+      "end": 4.396,
+      "text": "laptop.",
+      "words": [{ "start": 4.087, "end": 4.396, "char": [0, 7] }]
+    },
+    {
+      "start": 5.167,
+      "end": 6.105,
+      "text": "Tre passi.",
+      "words": [
+        { "start": 5.167, "end": 5.636, "char": [0, 3] },
+        { "start": 5.636, "end": 6.105, "char": [4, 10] }
+      ]
+    },
+    {
+      "start": 6.105,
+      "end": 8.448,
+      "text": "Apri la pagina di installazione,",
+      "words": [
+        { "start": 6.105, "end": 6.573, "char": [0, 4] },
+        { "start": 6.573, "end": 7.042, "char": [5, 7] },
+        { "start": 7.042, "end": 7.511, "char": [8, 14] },
+        { "start": 7.511, "end": 7.98, "char": [15, 17] },
+        { "start": 7.98, "end": 8.448, "char": [18, 32] }
+      ]
+    },
+    {
+      "start": 8.448,
+      "end": 10.792,
+      "text": "scegli il tuo sistema operativo,",
+      "words": [
+        { "start": 8.448, "end": 8.917, "char": [0, 6] },
+        { "start": 8.917, "end": 9.386, "char": [7, 9] },
+        { "start": 9.386, "end": 9.855, "char": [10, 13] },
+        { "start": 9.855, "end": 10.323, "char": [14, 21] },
+        { "start": 10.323, "end": 10.792, "char": [22, 32] }
+      ]
+    },
+    {
+      "start": 10.792,
+      "end": 13.605,
+      "text": "poi incolla il comando nel terminale.",
+      "words": [
+        { "start": 10.792, "end": 11.261, "char": [0, 3] },
+        { "start": 11.261, "end": 11.73, "char": [4, 11] },
+        { "start": 11.73, "end": 12.198, "char": [12, 14] },
+        { "start": 12.198, "end": 12.667, "char": [15, 22] },
+        { "start": 12.667, "end": 13.136, "char": [23, 26] },
+        { "start": 13.136, "end": 13.605, "char": [27, 37] }
+      ]
+    },
+    {
+      "start": 14.372,
+      "end": 17.186,
+      "text": "Vai alla pagina di installazione e scorri",
+      "words": [
+        { "start": 14.372, "end": 14.774, "char": [0, 3] },
+        { "start": 14.774, "end": 15.176, "char": [4, 8] },
+        { "start": 15.176, "end": 15.578, "char": [9, 15] },
+        { "start": 15.578, "end": 15.98, "char": [16, 18] },
+        { "start": 15.98, "end": 16.382, "char": [19, 32] },
+        { "start": 16.382, "end": 16.784, "char": [33, 34] },
+        { "start": 16.784, "end": 17.186, "char": [35, 41] }
+      ]
+    },
+    {
+      "start": 17.186,
+      "end": 19.599,
+      "text": "fino alla sezione di installazione rapida.",
+      "words": [
+        { "start": 17.186, "end": 17.588, "char": [0, 4] },
+        { "start": 17.588, "end": 17.991, "char": [5, 9] },
+        { "start": 17.991, "end": 18.393, "char": [10, 17] },
+        { "start": 18.393, "end": 18.795, "char": [18, 20] },
+        { "start": 18.795, "end": 19.197, "char": [21, 34] },
+        { "start": 19.197, "end": 19.599, "char": [35, 42] }
+      ]
+    },
+    {
+      "start": 19.599,
+      "end": 22.413,
+      "text": "Genera il one-liner giusto per la piattaforma",
+      "words": [
+        { "start": 19.599, "end": 20.001, "char": [0, 6] },
+        { "start": 20.001, "end": 20.403, "char": [7, 9] },
+        { "start": 20.403, "end": 20.805, "char": [10, 19] },
+        { "start": 20.805, "end": 21.207, "char": [20, 26] },
+        { "start": 21.207, "end": 21.609, "char": [27, 30] },
+        { "start": 21.609, "end": 22.011, "char": [31, 33] },
+        { "start": 22.011, "end": 22.413, "char": [34, 45] }
+      ]
+    },
+    {
+      "start": 22.413,
+      "end": 23.619,
+      "text": "che stai usando.",
+      "words": [
+        { "start": 22.413, "end": 22.815, "char": [0, 3] },
+        { "start": 22.815, "end": 23.217, "char": [4, 8] },
+        { "start": 23.217, "end": 23.619, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 26.89,
+      "end": 27.943,
+      "text": "Prima di tutto,",
+      "words": [
+        { "start": 26.89, "end": 27.241, "char": [0, 5] },
+        { "start": 27.241, "end": 27.592, "char": [6, 8] },
+        { "start": 27.592, "end": 27.943, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 27.943,
+      "end": 30.4,
+      "text": "confermiamo che la CLI sia nel path.",
+      "words": [
+        { "start": 27.943, "end": 28.294, "char": [0, 11] },
+        { "start": 28.294, "end": 28.645, "char": [12, 15] },
+        { "start": 28.645, "end": 28.996, "char": [16, 18] },
+        { "start": 28.996, "end": 29.347, "char": [19, 22] },
+        { "start": 29.347, "end": 29.698, "char": [23, 26] },
+        { "start": 29.698, "end": 30.049, "char": [27, 30] },
+        { "start": 30.049, "end": 30.4, "char": [31, 36] }
+      ]
+    },
+    {
+      "start": 30.4,
+      "end": 33.208,
+      "text": "Eseguendo la CLI con il flag version si",
+      "words": [
+        { "start": 30.4, "end": 30.751, "char": [0, 9] },
+        { "start": 30.751, "end": 31.102, "char": [10, 12] },
+        { "start": 31.102, "end": 31.453, "char": [13, 16] },
+        { "start": 31.453, "end": 31.804, "char": [17, 20] },
+        { "start": 31.804, "end": 32.155, "char": [21, 23] },
+        { "start": 32.155, "end": 32.506, "char": [24, 28] },
+        { "start": 32.506, "end": 32.857, "char": [29, 36] },
+        { "start": 32.857, "end": 33.208, "char": [37, 39] }
+      ]
+    },
+    {
+      "start": 33.208,
+      "end": 36.017,
+      "text": "ottiene la versione installata e si verifica che",
+      "words": [
+        { "start": 33.208, "end": 33.559, "char": [0, 7] },
+        { "start": 33.559, "end": 33.91, "char": [8, 10] },
+        { "start": 33.91, "end": 34.261, "char": [11, 19] },
+        { "start": 34.261, "end": 34.612, "char": [20, 30] },
+        { "start": 34.612, "end": 34.963, "char": [31, 32] },
+        { "start": 34.963, "end": 35.315, "char": [33, 35] },
+        { "start": 35.315, "end": 35.666, "char": [36, 44] },
+        { "start": 35.666, "end": 36.017, "char": [45, 48] }
+      ]
+    },
+    {
+      "start": 36.017,
+      "end": 38.123,
+      "text": "l'installazione sia andata a buon fine.",
+      "words": [
+        { "start": 36.017, "end": 36.368, "char": [0, 15] },
+        { "start": 36.368, "end": 36.719, "char": [16, 19] },
+        { "start": 36.719, "end": 37.07, "char": [20, 26] },
+        { "start": 37.07, "end": 37.421, "char": [27, 28] },
+        { "start": 37.421, "end": 37.772, "char": [29, 33] },
+        { "start": 37.772, "end": 38.123, "char": [34, 39] }
+      ]
+    },
+    {
+      "start": 41.123,
+      "end": 42.197,
+      "text": "Installazione completata.",
+      "words": [
+        { "start": 41.123, "end": 41.66, "char": [0, 13] },
+        { "start": 41.66, "end": 42.197, "char": [14, 25] }
+      ]
+    },
+    {
+      "start": 42.197,
+      "end": 44.881,
+      "text": "Il binario rdc e' nel",
+      "words": [
+        { "start": 42.197, "end": 42.734, "char": [0, 2] },
+        { "start": 42.734, "end": 43.271, "char": [3, 10] },
+        { "start": 43.271, "end": 43.807, "char": [11, 14] },
+        { "start": 43.807, "end": 44.344, "char": [15, 17] },
+        { "start": 44.344, "end": 44.881, "char": [18, 21] }
+      ]
+    },
+    {
+      "start": 44.881,
+      "end": 45.955,
+      "text": "tuo path.",
+      "words": [
+        { "start": 44.881, "end": 45.418, "char": [0, 3] },
+        { "start": 45.418, "end": 45.955, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 49.257,
+      "end": 51.519,
+      "text": "Ora eseguiamo il controllo diagnostico.",
+      "words": [
+        { "start": 49.257, "end": 49.709, "char": [0, 3] },
+        { "start": 49.709, "end": 50.162, "char": [4, 13] },
+        { "start": 50.162, "end": 50.614, "char": [14, 16] },
+        { "start": 50.614, "end": 51.067, "char": [17, 26] },
+        { "start": 51.067, "end": 51.519, "char": [27, 39] }
+      ]
+    },
+    {
+      "start": 51.519,
+      "end": 54.235,
+      "text": "Controlla tutte le dipendenze necessarie alla",
+      "words": [
+        { "start": 51.519, "end": 51.972, "char": [0, 9] },
+        { "start": 51.972, "end": 52.424, "char": [10, 15] },
+        { "start": 52.424, "end": 52.877, "char": [16, 18] },
+        { "start": 52.877, "end": 53.329, "char": [19, 29] },
+        { "start": 53.329, "end": 53.782, "char": [30, 40] },
+        { "start": 53.782, "end": 54.235, "char": [41, 45] }
+      ]
+    },
+    {
+      "start": 54.235,
+      "end": 55.592,
+      "text": "CLI -- Node,",
+      "words": [
+        { "start": 54.235, "end": 54.687, "char": [0, 3] },
+        { "start": 54.687, "end": 55.14, "char": [4, 6] },
+        { "start": 55.14, "end": 55.592, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 55.592,
+      "end": 58.307,
+      "text": "SSH e le restanti -- e",
+      "words": [
+        { "start": 55.592, "end": 56.045, "char": [0, 3] },
+        { "start": 56.045, "end": 56.497, "char": [4, 5] },
+        { "start": 56.497, "end": 56.95, "char": [6, 8] },
+        { "start": 56.95, "end": 57.402, "char": [9, 17] },
+        { "start": 57.402, "end": 57.855, "char": [18, 20] },
+        { "start": 57.855, "end": 58.307, "char": [21, 22] }
+      ]
+    },
+    {
+      "start": 58.307,
+      "end": 59.665,
+      "text": "segnala eventuali mancanze.",
+      "words": [
+        { "start": 58.307, "end": 58.76, "char": [0, 7] },
+        { "start": 58.76, "end": 59.212, "char": [8, 17] },
+        { "start": 59.212, "end": 59.665, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 59.665,
+      "end": 62.38,
+      "text": "Un rapporto pulito significa che sei",
+      "words": [
+        { "start": 59.665, "end": 60.117, "char": [0, 2] },
+        { "start": 60.117, "end": 60.57, "char": [3, 11] },
+        { "start": 60.57, "end": 61.023, "char": [12, 18] },
+        { "start": 61.023, "end": 61.475, "char": [19, 28] },
+        { "start": 61.475, "end": 61.928, "char": [29, 32] },
+        { "start": 61.928, "end": 62.38, "char": [33, 36] }
+      ]
+    },
+    {
+      "start": 62.38,
+      "end": 64.643,
+      "text": "pronto ad aggiungere un server.",
+      "words": [
+        { "start": 62.38, "end": 62.833, "char": [0, 6] },
+        { "start": 62.833, "end": 63.285, "char": [7, 9] },
+        { "start": 63.285, "end": 63.738, "char": [10, 20] },
+        { "start": 63.738, "end": 64.19, "char": [21, 23] },
+        { "start": 64.19, "end": 64.643, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 65.443,
+      "end": 66.736,
+      "text": "Versione stampata.",
+      "words": [
+        { "start": 65.443, "end": 66.089, "char": [0, 8] },
+        { "start": 66.089, "end": 66.736, "char": [9, 18] }
+      ]
+    },
+    {
+      "start": 66.736,
+      "end": 68.029,
+      "text": "Sei pronto.",
+      "words": [
+        { "start": 66.736, "end": 67.382, "char": [0, 3] },
+        { "start": 67.382, "end": 68.029, "char": [4, 11] }
+      ]
+    },
+    {
+      "start": 68.857,
+      "end": 71.542,
+      "text": "Lo strumento da riga di comando vive",
+      "words": [
+        { "start": 68.857, "end": 69.24, "char": [0, 2] },
+        { "start": 69.24, "end": 69.624, "char": [3, 12] },
+        { "start": 69.624, "end": 70.008, "char": [13, 15] },
+        { "start": 70.008, "end": 70.391, "char": [16, 20] },
+        { "start": 70.391, "end": 70.775, "char": [21, 23] },
+        { "start": 70.775, "end": 71.159, "char": [24, 31] },
+        { "start": 71.159, "end": 71.542, "char": [32, 36] }
+      ]
+    },
+    {
+      "start": 71.542,
+      "end": 72.693,
+      "text": "sul tuo laptop.",
+      "words": [
+        { "start": 71.542, "end": 71.926, "char": [0, 3] },
+        { "start": 71.926, "end": 72.31, "char": [4, 7] },
+        { "start": 72.31, "end": 72.693, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 72.693,
+      "end": 75.379,
+      "text": "Il server esegue un componente separato chiamato",
+      "words": [
+        { "start": 72.693, "end": 73.077, "char": [0, 2] },
+        { "start": 73.077, "end": 73.461, "char": [3, 9] },
+        { "start": 73.461, "end": 73.844, "char": [10, 16] },
+        { "start": 73.844, "end": 74.228, "char": [17, 19] },
+        { "start": 74.228, "end": 74.612, "char": [20, 30] },
+        { "start": 74.612, "end": 74.995, "char": [31, 39] },
+        { "start": 74.995, "end": 75.379, "char": [40, 48] }
+      ]
+    },
+    {
+      "start": 75.379,
+      "end": 75.763,
+      "text": "renet,",
+      "words": [{ "start": 75.379, "end": 75.763, "char": [0, 6] }]
+    },
+    {
+      "start": 75.763,
+      "end": 78.449,
+      "text": "che la CLI provisiona e pilota via",
+      "words": [
+        { "start": 75.763, "end": 76.146, "char": [0, 3] },
+        { "start": 76.146, "end": 76.53, "char": [4, 6] },
+        { "start": 76.53, "end": 76.914, "char": [7, 10] },
+        { "start": 76.914, "end": 77.298, "char": [11, 21] },
+        { "start": 77.298, "end": 77.681, "char": [22, 23] },
+        { "start": 77.681, "end": 78.065, "char": [24, 30] },
+        { "start": 78.065, "end": 78.449, "char": [31, 34] }
+      ]
+    },
+    {
+      "start": 78.449,
+      "end": 78.832,
+      "text": "SSH,",
+      "words": [{ "start": 78.449, "end": 78.832, "char": [0, 4] }]
+    },
+    {
+      "start": 78.832,
+      "end": 81.134,
+      "text": "quindi non devi mai collegarti manualmente.",
+      "words": [
+        { "start": 78.832, "end": 79.216, "char": [0, 6] },
+        { "start": 79.216, "end": 79.6, "char": [7, 10] },
+        { "start": 79.6, "end": 79.983, "char": [11, 15] },
+        { "start": 79.983, "end": 80.367, "char": [16, 19] },
+        { "start": 80.367, "end": 80.751, "char": [20, 30] },
+        { "start": 80.751, "end": 81.134, "char": [31, 43] }
+      ]
+    },
+    {
+      "start": 81.917,
+      "end": 83.06,
+      "text": "Installazione completata.",
+      "words": [
+        { "start": 81.917, "end": 82.488, "char": [0, 13] },
+        { "start": 82.488, "end": 83.06, "char": [14, 25] }
+      ]
+    },
+    {
+      "start": 83.06,
+      "end": 85.918,
+      "text": "Nel prossimo configureremo la tua",
+      "words": [
+        { "start": 83.06, "end": 83.632, "char": [0, 3] },
+        { "start": 83.632, "end": 84.203, "char": [4, 12] },
+        { "start": 84.203, "end": 84.775, "char": [13, 26] },
+        { "start": 84.775, "end": 85.346, "char": [27, 29] },
+        { "start": 85.346, "end": 85.918, "char": [30, 33] }
+      ]
+    },
+    {
+      "start": 85.918,
+      "end": 88.776,
+      "text": "chiave SSH cosi' la CLI",
+      "words": [
+        { "start": 85.918, "end": 86.49, "char": [0, 6] },
+        { "start": 86.49, "end": 87.061, "char": [7, 10] },
+        { "start": 87.061, "end": 87.633, "char": [11, 16] },
+        { "start": 87.633, "end": 88.205, "char": [17, 19] },
+        { "start": 88.205, "end": 88.776, "char": [20, 23] }
+      ]
+    },
+    {
+      "start": 88.776,
+      "end": 91.634,
+      "text": "potra' raggiungere i tuoi server.",
+      "words": [
+        { "start": 88.776, "end": 89.348, "char": [0, 6] },
+        { "start": 89.348, "end": 89.919, "char": [7, 18] },
+        { "start": 89.919, "end": 90.491, "char": [19, 20] },
+        { "start": 90.491, "end": 91.063, "char": [21, 25] },
+        { "start": 91.063, "end": 91.634, "char": [26, 33] }
+      ]
+    }
+  ]
+}

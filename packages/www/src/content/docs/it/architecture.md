@@ -2,15 +2,17 @@
 title: Architettura
 description: >-
   Come funziona Rediacc: architettura a due strumenti, rilevamento dell'adattatore, modello di sicurezza e
-  struttura della configurazione. È più semplice di quanto sembri.
+  struttura della configurazione.
 category: Concepts
 order: 0
 language: it
+sourceHash: "6763cd925791d474"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Architettura
 
-Questa pagina spiega come funziona Rediacc sotto il cofano: l'architettura a due strumenti, il rilevamento dell'adattatore, il modello di sicurezza e la struttura della configurazione.
+Quindi: rdc sulla tua workstation, renet sui tuoi server, comunicano tramite SSH. L'intera architettura di Rediacc poggia su questa separazione. Questa pagina spiega come i due strumenti dividono le responsabilità, come il rilevamento dell'adattatore instrada lo stato, come funziona il modello di sicurezza e come è strutturata la configurazione.
 
 ## Panoramica dello stack completo
 

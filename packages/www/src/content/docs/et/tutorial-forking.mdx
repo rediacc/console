@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: et
-sourceHash: "73a4cb1d8c412531"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "14d013a82dbcbd4e"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -47,7 +47,7 @@ Nüüd tee fork.
 
 ![Sharing a folder link is the same speed regardless of the folder's size](/img/tutorials/tutorial-forking/slide-2.svg)
 
-Kujuta ette kausta lingi jagamist. Link on sama olenemata sellest, kas kaust on väike või suur. Kaust on raske, link on kerge.
+Selle põhjus on btrfs reflinks. Fork loob uue failisüsteemi puu, mis osutab samadele andmeplokidele, mis on vanemrepositoriumil. Fork'i ajal ühtegi andmeid ei kopeerita. See kõik on metaandmed, seega ei mõjuta vanema suurus kunagi seda, kui kaua fork võtab.
 
 ![1 GB, 100 GB, 1 TB. Same time, every time.](/img/tutorials/tutorial-forking/slide-3.svg)
 
@@ -81,7 +81,7 @@ Seepärast sinu ketas ei plahvata. Viis forki 100 GB repositooriumist? Kokku ikk
 
 ## Mida forkid *ei* päri: saladusi
 
-On üks asi, mida fork tahtlikult ei järgi: saladused. Fork algab ilma API võtmete, andmebaasi paroolide ja Stripe tokeniteta. Seepärast töötab "klooni tootmine, rikku mitte midagi" tegelikkuses. Sinu liivakast ei saa reaalsetelt klientidelt arveid väljastada, sest see ei saa sind imiteerida. Seadistame selle korralikult juhendvideol [Saladuste haldamine](/et/docs/tutorial-managing-secrets).
+On üks asi, mida fork tahtlikult ei järgi: saladused. Fork algab ilma API võtmete, andmebaasi paroolide ja Stripe tokeniteta. Seepärast töötab "klooni tootmine, rikku mitte midagi" tegelikkuses. Sinu liivakast ei saa reaalsetelt klientidelt arveid väljastada, sest see ei saa sind imiteerida. Seadistame selle korralikult juhendis [Saladuste haldamine](/et/docs/tutorial-managing-secrets).
 
 ## Kontrolli isolatsiooni
 
@@ -109,7 +109,7 @@ Kui oled lõpetanud, kustuta lihtsalt fork:
 
 <TutorialStep number={6} />
 
-Originaal jääb täpselt selliseks, nagu ta oli. **Tee fork, katse, riku asju, kustuta.** Riskita.
+Originaal jääb täpselt selliseks, nagu ta oli. **Tee fork, katse, riku asju, kustuta.** Oht puudub.
 
 ---
 

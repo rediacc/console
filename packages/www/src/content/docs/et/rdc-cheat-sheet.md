@@ -1,16 +1,16 @@
 ---
 title: RDC CLI petuleht
-description: "Kiirviide rdc käskudele: konfiguratsioonid, hoidlad, masinad, sünkroonimine ja konteinerid."
+description: "Kiirviide rdc käskudele: konfiguratsioonid, hoidlad, masinad, sünkroonimine ja konteinerid. Täielik valikute kogum: lisa --help käskule."
 category: Guides
 order: 3
 language: et
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # RDC CLI petuleht
 
-Kiirviide kõige levinumate `rdc` käskude jaoks. Käivita mis tahes käsk `--help`-iga täielike valikute saamiseks.
+Siia pole loetletud kõiki `rdc` käske, vaid ainult need, mis igal juurutamisel ette tulevad. Täielike valikute saamiseks käivita mis tahes käsk `--help`-iga. Erijuhud ja harva kasutatavad valikud asuvad täielikul viitel.
 
 ## Hoidla elutsükkel
 
@@ -112,7 +112,7 @@ Ainult kirjutatavad juurutamisaegsed mandaadid. `get` tagastab ainult kontrollsu
 | `rdc term connect -m <machine> -r <repo>` | Ava SSH-terminal hoidlale (seab DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Käivita käsk masinal |
 | `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Laadi üles üks või mitu kohalikku faili/kataloogi hoidlasse |
-| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | Laadi üks kohalik fail üles sõnaselgele kaugteele |
+| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | Laadi üles üks kohalik fail sõnaselgele kaugteele |
 | `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Laadi hoidla kataloog kohalikult alla |
 | `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Laadi üks kaugfail kohalikku kataloogi |
 | `rdc vscode connect -m <machine> -r <repo>` | Ava VS Code kaugühenduse SSH seanss |

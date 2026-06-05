@@ -1,12 +1,13 @@
 ---
 title: "Aplicação CLI (Cloud / Experimental)"
-description: "Comandos exclusivos da cloud para a CLI Rediacc -- autenticação, equipas, organizações e gestão multi-tenant"
-category: "Referência"
+description: "Comandos da cloud para a CLI Rediacc (experimental). Requer apiUrl e token no ficheiro de configuração. Inclui autenticação, organizações, equipas, utilizadores, permissões, repositórios, filas, armazenamento Ceph e registos de auditoria."
+category: "Reference"
 order: 3
 language: pt
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/pt/cli.json
-sourceHash: "c285d703825d9607"
+sourceHash: "52ac28479ebdafd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

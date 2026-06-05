@@ -1,14 +1,14 @@
 ---
 title: "Conformidade com SOC 2"
-description: "Onde o Rediacc fornece evidências SOC 2: os registos, o rasto de gestão de alterações e os controlos que os auditores pedem."
+description: "A verdade sobre SOC 2: os auditores querem evidências de que os seus controlos funcionam. O Rediacc fornece os registos, o rasto de gestão de alterações e tudo o resto que vão pedir."
 category: "Legal"
 order: 2
 language: pt
-sourceHash: "29b0c745e631e4f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "27d2366f84e21d8c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-O SOC 2 é o referencial AICPA a que os auditores recorrem quando querem evidências de que os seus controlos realmente funcionam. Abrange cinco Critérios de Serviço de Confiança: segurança, disponibilidade, integridade de processamento, confidencialidade e privacidade.
+Sei o que é SOC 2 porque já estive em reuniões de auditoria. Os auditores usam o referencial AICPA para verificar se os seus controlos realmente funcionam, não apenas se afirma que funcionam. Cinco Critérios de Serviço de Confiança: segurança, disponibilidade, integridade de processamento, confidencialidade e privacidade.
 
 Referência: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -24,7 +24,7 @@ Referência: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audi
 
 ## Registo de Auditoria
 
-O Rediacc regista mais de 70 tipos de evento que cobrem:
+Portanto, o Rediacc regista mais de 70 tipos de evento diferentes. Ações de utilizador, alterações de sistema, atualizações de configuração, modificações de controlo de acesso, eventos de segurança, operações de fork, registos de auditoria. Sei que parece muito, mas os auditores realmente querem ver isto.
 
 - **Autenticação**: login, logout, alterações de palavra-passe, ativação/desativação de 2FA, revogação de sessão
 - **Autorização**: criação/revogação de tokens de API, alterações de função, adesão a equipas
@@ -32,18 +32,18 @@ O Rediacc regista mais de 70 tipos de evento que cobrem:
 - **Licenciamento**: emissão de licenças de repositório, rastreamento de slots de máquina, alterações de subscrição
 - **Operações de máquina**: criar/iniciar/parar/eliminar repositório, fork, push/pull de cópias de segurança, sincronização de ficheiros, sessões de terminal
 
-Estes registos são acessíveis através do painel de administração (com filtragem por utilizador, equipa e data), da página de atividade do portal (com filtragem por tipo e data com âmbito de organização para administradores) e da CLI `rdc audit` para exportação programática. As operações de máquina também ficam registadas nos registos do sistema para defesa em profundidade.
+Há três formas de aceder a estes registos. Painel de administração com filtragem por utilizador, equipa e data. Página de atividade do portal para administradores de organização, com filtragem por tipo e data. Ou a CLI `rdc audit` para exportação programática. Redirecione para as suas ferramentas, integre em qualquer lugar. As operações de máquina também são registadas nos registos do sistema, de modo que tem defesa em profundidade.
 
 ## Gestão de Alterações
 
-Os forks tornam a gestão de alterações auditável: cada fork é uma cópia do estado em produção que pode testar, rever e depois promover ou descartar, com cada passo com timestamp atribuído a um ator.
+Os forks tornam a gestão de alterações auditável. Faz fork da produção, obtém uma cópia do estado em direto. Teste. Reveja. Promova ou descarte. Cada passo com marca de tempo e ligado a uma pessoa. É isto que os auditores querem ver: sem alterações anónimas.
 
 1. Fazer fork de um repositório de produção (`rdc repo fork`)
 2. Aplicar e testar alterações no fork
 3. Validar o fork de forma independente
 4. Promover o fork para produção (`rdc repo takeover`)
 
-Cada passo é registado com marcas de data e hora e identificação do ator.
+Cada passo: registado. Com marca de tempo. Atribuído a uma pessoa. Sem momentos de "Não sei quem alterou isto".
 
 ## Controlo de Acesso
 

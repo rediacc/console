@@ -1,14 +1,14 @@
 ---
 title: "Conformité SOC 2"
-description: "Ce que Rediacc vous apporte pour SOC 2 : les journaux, la piste de gestion des changements et les contrôles que les auditeurs demandent."
+description: "Voilà SOC 2 : les auditeurs veulent des preuves que vos contrôles fonctionnent. Rediacc vous donne les journaux, la piste de gestion des changements et tout ce qu'ils demandent d'autre."
 category: "Legal"
 order: 2
 language: fr
-sourceHash: "29b0c745e631e4f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "27d2366f84e21d8c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-SOC 2 est le cadre de l'AICPA auquel les auditeurs ont recours quand ils veulent des preuves que vos contrôles fonctionnent réellement. Il couvre cinq critères de services de confiance : sécurité, disponibilité, intégrité du traitement, confidentialité et vie privée.
+Je sais ce qu'est SOC 2 parce que j'ai participé à des réunions d'audit. Les auditeurs utilisent le cadre de l'AICPA pour vérifier que vos contrôles fonctionnent réellement, pas seulement que vous prétendez qu'ils fonctionnent. Cinq critères de services de confiance : sécurité, disponibilité, intégrité du traitement, confidentialité et vie privée.
 
 Référence : [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -24,25 +24,26 @@ Référence : [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/aud
 
 ## Piste d'audit
 
-Rediacc enregistre plus de 40 types d'événements au niveau du compte couvrant :
+Donc Rediacc enregistre plus de 70 types d'événements différents. Les actions des utilisateurs, les changements système, les mises à jour de configuration, les modifications de contrôle d'accès, les événements de sécurité, les opérations de fork, les pistes d'audit. Je sais que ça semble beaucoup, mais les auditeurs tiennent vraiment à voir tout ça.
 
 - **Authentification** : connexion, déconnexion, changements de mot de passe, activation/désactivation 2FA, révocation de sessions
 - **Autorisation** : création/révocation de jetons API, changements de rôles, appartenance aux équipes
 - **Paramétrage** : envoi/récupération du magasin de configuration, gestion des membres, échecs d'accès (discordance IP, refus SDK)
-- **Licences** : activation de machines, émission de licences, changements d'abonnement
+- **Licences** : émission de licences de dépôt, suivi des emplacements machine, changements d'abonnement
+- **Opérations machine** : création/démarrage/arrêt/suppression de dépôt, fork, envoi/récupération de sauvegarde, synchronisation de fichiers, sessions terminal
 
-Ces journaux sont accessibles via le tableau de bord d'administration (avec filtrage par utilisateur, équipe et date) et `rdc audit` CLI pour l'export programmatique. Les opérations au niveau machine (fork, sauvegarde, déploiement) s'exécutent via SSH sur votre infrastructure, leurs pistes d'audit se trouvent donc dans vos journaux système.
+Trois façons d'accéder à ces journaux. Tableau de bord d'administration avec filtrage par utilisateur, équipe et date. Page d'activité du portail pour les administrateurs org, avec filtrage par type et date. Ou `rdc audit` CLI pour l'export programmatique. Vous pouvez les diriger vers vos propres outils, les intégrer partout. Les opérations machine s'enregistrent également dans vos journaux système, donc vous avez une protection en profondeur.
 
 ## Gestion des changements
 
-Les forks rendent la gestion des changements auditable : chaque fork est une copie de l'état en production que vous pouvez tester, examiner et soit promouvoir soit abandonner, avec chaque étape horodatée et attribuée à un acteur :
+Les forks rendent la gestion des changements auditable. Vous forquez la production et obtenez une copie de l'état en direct. Testez-la. Examinez-la. Promouvez-la ou abandonnez-la. Chaque étape horodatée et attribuée à une personne. C'est ce que les auditeurs veulent voir : aucun changement anonyme.
 
 1. Forker un dépôt de production (`rdc repo fork`)
 2. Appliquer et tester les changements sur le fork
 3. Valider le fork de manière indépendante
 4. Promouvoir le fork en production (`rdc repo takeover`)
 
-Chaque étape est enregistrée avec horodatage et identification de l'acteur.
+Chaque étape : enregistrée. Horodatée. Attribuée à une personne. Pas de 'je ne sais pas qui a changé ça'.
 
 ## Contrôle d'accès
 

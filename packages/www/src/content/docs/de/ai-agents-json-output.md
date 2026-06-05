@@ -6,10 +6,11 @@ description: >-
 category: Reference
 order: 51
 language: de
-sourceHash: "18996ab708715227"
+sourceHash: "9f8d61df26b59757"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Alle `rdc`-Befehle unterstützen strukturierte JSON-Ausgabe für die programmatische Nutzung durch KI-Agenten und Skripte.
+Alle `rdc`-Befehle geben strukturiertes JSON aus. Das Ergebnis lässt sich direkt in ein Skript pipen oder an einen Agenten übergeben.
 
 ## JSON-Ausgabe aktivieren
 
@@ -22,7 +23,7 @@ rdc machine query --name prod-1 -o json
 
 ### Automatische Erkennung
 
-Wenn `rdc` in einer non-TTY-Umgebung laeuft (gepipt, Subshell oder von einem KI-Agenten gestartet), wechselt die Ausgabe automatisch zu JSON. Kein Flag erforderlich.
+Wenn `rdc` in einer non-TTY-Umgebung läuft (gepipt, Subshell oder von einem KI-Agenten gestartet), wechselt die Ausgabe automatisch zu JSON. Kein Flag erforderlich.
 
 ```bash
 # These all produce JSON automatically
@@ -54,10 +55,10 @@ Jede JSON-Antwort verwendet ein einheitliches Envelope-Format:
 | Feld | Typ | Beschreibung |
 |-------|------|-------------|
 | `success` | `boolean` | Ob der Befehl erfolgreich abgeschlossen wurde |
-| `command` | `string` | Der vollstaendige Befehlspfad (z.B. `"machine query"`, `"repo up"`) |
+| `command` | `string` | Der vollständige Befehlspfad (z.B. `"machine query"`, `"repo up"`) |
 | `data` | `object \| array \| null` | Befehlsspezifische Nutzlast bei Erfolg, `null` bei Fehler |
 | `errors` | `array \| null` | Fehlerobjekte bei Misserfolg, `null` bei Erfolg |
-| `warnings` | `string[]` | Nicht-fatale Warnungen, die waehrend der Ausführung gesammelt wurden |
+| `warnings` | `string[]` | Nicht-fatale Warnungen, die während der Ausführung gesammelt wurden |
 | `metrics` | `object` | Ausführungsmetadaten |
 
 ## Fehlerantworten
@@ -88,10 +89,46 @@ Fehlgeschlagene Befehle geben strukturierte Fehler mit Wiederherstellungshinweis
 
 | Feld | Typ | Beschreibung |
 |-------|------|-------------|
-| `code` | `string` | Maschinenlesbarer Fehlercode |
+| `code` | `string` | Maschinenlesbarer Fehlercode (die vollständige Liste steht in den `ERROR_CODES`-Konstanten) |
 | `message` | `string` | Menschenlesbare Beschreibung |
-| `retryable` | `boolean` | Ob ein erneuter Versuch desselben Befehls erfolgreich sein koennte |
-| `guidance` | `string` | Vorgeschlagene naechste Aktion zur Behebung des Fehlers |
+| `retryable` | `boolean` | Ob ein erneuter Versuch desselben Befehls erfolgreich sein könnte |
+| `guidance` | `string` | Freitexthinweis (veraltet. Bevorzuge `next` für strukturierte Aktionsdaten) |
+| `next` | `object?` | Strukturierter Hinweis auf die nächste Aktion (wenn vorhanden). Siehe unten |
+
+### Strukturierte `next`-Aktionshinweise
+
+Bei hochwertigen Fehlercodes wie `PRECONDITION_MISMATCH` enthält der Fehler ein `next`-Feld mit den exakten Befehlen, die dem Benutzer angeboten werden sollen. Nicht jeder Fehlercode trägt dieses Feld, sondern nur solche mit einem definierten Wiederherstellungspfad. **Agenten sollten `next.options[].run` wörtlich an den Menschen weitergeben, anstatt eigene Befehle zu konstruieren.** Das vermeidet den Fehlerfall, bei dem der Agent einen Befehl erfindet, der gar nicht existiert. Es kommt häufiger vor, als man denkt.
+
+```json
+{
+  "errors": [{
+    "code": "PRECONDITION_MISMATCH",
+    "message": "--current digest mismatch (expected 3264f8ee…, got 611dfd8a…)",
+    "next": {
+      "summary": "Provide the current value or acknowledge rotation.",
+      "options": [
+        {
+          "description": "Re-read current digest, then retry with --current",
+          "run": "rdc repo secret get --name mail --key STRIPE_KEY"
+        },
+        {
+          "description": "Skip the precondition (rotation, audited)",
+          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
+        }
+      ]
+    }
+  }]
+}
+```
+
+Schema:
+
+| Feld | Typ | Beschreibung |
+|-------|------|-------------|
+| `next.summary` | `string` | Einzeilige Beschreibung, was der Benutzer entscheiden muss |
+| `next.options[]` | `array` | Konkrete Aktionen; jede ist eine Alternative, die der Benutzer wählen kann |
+| `next.options[].description` | `string` | Menschenlesbare Erklärung dieser Option |
+| `next.options[].run` | `string` | Exakter CLI-Befehl. Wörtlich an den Benutzer weitergeben |
 
 ### Wiederholbare Fehler
 
@@ -101,11 +138,11 @@ Diese Fehlertypen sind mit `retryable: true` gekennzeichnet:
 - **RATE_LIMITED**, Zu viele Anfragen, warten und erneut versuchen
 - **API_ERROR**, Vorübergehender Backend-Fehler
 
-Nicht wiederholbare Fehler (Authentifizierung, nicht gefunden, ungueltige Argumente) erfordern korrektive Massnahmen vor einem erneuten Versuch.
+Nicht wiederholbare Fehler (Authentifizierung, nicht gefunden, ungültige Argumente) erfordern eine Korrektur, bevor ein erneuter Versuch sinnvoll ist.
 
 ## Ausgabe filtern
 
-Verwenden Sie `--fields`, um die Ausgabe auf bestimmte Schluessel zu beschraenken. Dies reduziert den Token-Verbrauch, wenn nur bestimmte Daten benoetigt werden:
+Verwende `--fields`, um die Ausgabe auf bestimmte Schlüssel zu beschränken und den Token-Verbrauch zu reduzieren:
 
 ```bash
 rdc machine containers --name prod-1 -o json --fields name,status,repository
@@ -137,11 +174,11 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 }
 ```
 
-Befehle mit `--dry-run`-Unterstuetzung: `repo up`, `repo down`, `repo delete`, `snapshot delete`, `sync upload`, `sync download`.
+Befehle mit `--dry-run`-Unterstützung: `repo up`, `repo down`, `repo delete`, `snapshot delete`, `sync upload`, `sync download`.
 
 ## Agenten-Erkennungsbefehle
 
-Der `rdc agent`-Unterbefehl bietet strukturierte Introspektion, damit KI-Agenten verfügbare Operationen zur Laufzeit entdecken können.
+Der `rdc agent`-Unterbefehl bietet KI-Agenten einen strukturierten Weg, verfügbare Operationen zur Laufzeit zu entdecken.
 
 ### Alle Befehle auflisten
 
@@ -149,7 +186,7 @@ Der `rdc agent`-Unterbefehl bietet strukturierte Introspektion, damit KI-Agenten
 rdc agent capabilities
 ```
 
-Gibt den vollstaendigen Befehlsbaum mit Argumenten, Optionen und Beschreibungen zurück:
+Gibt den vollständigen Befehlsbaum mit Argumenten, Optionen und Beschreibungen zurück:
 
 ```json
 {
@@ -179,7 +216,7 @@ Gibt den vollstaendigen Befehlsbaum mit Argumenten, Optionen und Beschreibungen 
 rdc agent schema --command "machine query"
 ```
 
-Gibt das detaillierte Schema für einen einzelnen Befehl zurück, einschliesslich aller Argumente und Optionen mit ihren Typen und Standardwerten.
+Gibt das vollständige Schema für einen einzelnen Befehl zurück: alle Argumente und Optionen mit ihren Typen und Standardwerten.
 
 ### Ausführung über JSON
 
@@ -187,7 +224,7 @@ Gibt das detaillierte Schema für einen einzelnen Befehl zurück, einschliesslic
 echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
-Akzeptiert JSON über stdin, ordnet Schluessel den Befehlsargumenten und -optionen zu und fuehrt mit erzwungener JSON-Ausgabe aus. Nuetzlich für strukturierte Agent-zu-CLI-Kommunikation ohne Shell-Befehlszeichenfolgen erstellen zu müssen.
+Akzeptiert JSON über stdin, ordnet Schlüssel den Befehlsargumenten und -optionen zu und führt den Befehl mit erzwungener JSON-Ausgabe aus. Nützlich, wenn keine Shell-Befehlszeichenketten für Agent-zu-CLI-Aufrufe konstruiert werden sollen.
 
 ## Parsing-Beispiele
 
@@ -203,7 +240,7 @@ status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 import subprocess, json
 
 result = subprocess.run(
-    ["rdc", "machine", "query", "prod-1", "-o", "json"],
+    ["rdc", "machine", "query", "--name", "prod-1", "-o", "json"],
     capture_output=True, text=True
 )
 envelope = json.loads(result.stdout)
@@ -225,7 +262,7 @@ else:
 ```javascript
 import { execFileSync } from 'child_process';
 
-const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
+const raw = execFileSync('rdc', ['machine', 'query', '--name', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
 const { success, data, errors } = JSON.parse(raw);
 
 if (!success) {

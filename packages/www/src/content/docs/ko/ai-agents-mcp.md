@@ -4,11 +4,13 @@ description: Model Context Protocol (MCP) 서버를 사용하여 AI 에이전트
 category: Guides
 order: 33
 language: ko
+sourceHash: "ce5f1392ebaa380b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 ## 개요
 
-`rdc mcp serve` 명령은 AI 에이전트가 인프라를 관리하는 데 사용할 수 있는 로컬 MCP (Model Context Protocol) 서버를 시작합니다. 서버는 stdio 전송을 사용하며, AI 에이전트가 이를 서브프로세스로 생성하고 JSON-RPC를 통해 통신합니다.
+참고로, `rdc mcp serve` 명령은 AI 에이전트가 인프라를 관리하는 데 사용할 수 있는 로컬 MCP (Model Context Protocol) 서버를 시작합니다. 서버는 stdio 전송을 사용하며, AI 에이전트가 이를 서브프로세스로 생성하고 JSON-RPC를 통해 통신합니다.
 
 **사전 요구사항:** `rdc`가 설치되고 최소 하나의 머신으로 구성되어 있어야 합니다.
 
@@ -42,7 +44,7 @@ language: ko
 
 ## Cursor
 
-설정 열기 > MCP Servers > Add Server:
+설정 열기 → MCP Servers → Add Server:
 
 - **Name**: `rdc`
 - **Command**: `rdc mcp serve`
@@ -89,17 +91,17 @@ language: ko
 **머신 상태 확인:**
 > "내 프로덕션 머신의 상태가 어떤가요?"
 
-에이전트가 `machine_query`를 호출 -> 시스템 정보, 실행 중인 컨테이너, 서비스 및 리소스 사용량을 반환합니다.
+에이전트가 `machine_query`를 호출 → 시스템 정보, 실행 중인 컨테이너, 서비스 및 리소스 사용량을 반환합니다.
 
 **애플리케이션 배포:**
 > "스테이징 머신에 gitlab을 배포해 주세요"
 
-에이전트가 `name: "gitlab"` 및 `machine: "staging"`으로 `repo_up`을 호출 -> 리포지토리를 배포하고 성공/실패를 반환합니다.
+에이전트가 `name: "gitlab"` 및 `machine: "staging"`으로 `repo_up`을 호출 → 리포지토리를 배포하고 성공/실패를 반환합니다.
 
 **서비스 오류 디버깅:**
 > "nextcloud가 느립니다, 문제를 파악해 주세요"
 
-에이전트가 `machine_health` -> `machine_containers` -> `term_exec`를 호출하여 로그를 읽고 -> 문제를 식별하고 수정 방법을 제안합니다.
+에이전트가 `machine_health` → `machine_containers` → `term_exec`를 호출하여 로그를 읽고 → 문제를 식별하고 수정 방법을 제안합니다.
 
 ## 설정 옵션
 
@@ -115,7 +117,7 @@ MCP 서버는 두 가지 보호 레이어를 적용합니다:
 
 ### 포크 전용 모드 (기본값)
 
-기본적으로 서버는 **포크 전용 모드**로 실행됩니다. 쓰기 도구(`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`)는 포크 리포지토리에서만 작동할 수 있습니다. Grand (원본) 리포지토리는 에이전트 수정으로부터 보호됩니다.
+기본적으로 서버는 **포크 전용 모드**로 실행됩니다. 쓰기 도구(`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`)는 포크 리포지토리에서만 작동할 수 있습니다. Grand (원본) 리포지토리는 에이전트 수정으로부터 보호됩니다. 이는 설계에 의한 동작입니다.
 
 > **리포별 시크릿은 설계상 CLI 전용입니다.** `repo_secret_set`과 `repo_secret_unset`은 의도적으로 MCP 도구로 노출되지 않습니다. 쓰기에는 `--current <previous-value>` 전제조건(또는 검증되지 않은 교체를 승인하는 `--rotate-secret`)이 필요하며, 이 절차는 사람이 직접 확인해야 합니다. 시크릿 교체를 제안해야 하는 에이전트는 `repo_secret_get`을 호출하여 다이제스트를 확인한 다음, JSON 오류 엔벨로프의 `next.options[].run` 필드를 통해 운영자 대상 CLI 명령을 사용자에게 전달해야 합니다. 전체 패턴은 [AI 에이전트 안전](/en/docs/ai-agents-safety#structured-next-action-hints)을 참조하고, 사용자 대상 방법은 [리포지토리 § 시크릿](/en/docs/repositories#secrets)을 참조하세요.
 

@@ -1,107 +1,106 @@
 ---
-title: 仓库
-description: 在远程机器上创建、管理和操作 LUKS 加密仓库。
+title: "仓库"
+description: "在远程机器上创建、管理和操作 LUKS 加密仓库。"
 category: Guides
 order: 4
 language: zh
-sourceHash: "531ee9648611844e"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
-untranslated: true
+sourceHash: "ffb07e5870accfd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# Repositories
+# 仓库
 
-A **repository** is a LUKS-encrypted disk image on a remote server. When mounted, it provides:
-- An isolated filesystem for your application data
-- A dedicated Docker daemon (separate from the host's Docker)
-- Unique loopback IPs for each service within a /26 subnet
+**仓库**是远程服务器上的 LUKS 加密磁盘镜像。挂载后，它提供：
+- 用于应用程序数据的隔离文件系统
+- 专用 Docker 守护进程（独立于主机的 Docker）
+- /26 子网内每个服务的唯一环回 IP
 
-## Create a Repository
+## 创建仓库
 
 ```bash
 rdc repo create --name my-app -m server-1 --size 10G
 ```
 
-| Option | Required | Description |
+| 选项 | 必需 | 描述 |
 |--------|----------|-------------|
-| `-m, --machine <name>` | Yes | Target machine where the repository will be created |
-| `--size <size>` | Yes | Size of the encrypted disk image (e.g., `5G`, `10G`, `50G`) |
-| `--skip-router-restart` | No | Skip restarting the route server after the operation |
+| `-m, --machine <name>` | 是 | 将创建仓库的目标机器 |
+| `--size <size>` | 是 | 加密磁盘镜像的大小（例如 `5G`、`10G`、`50G`） |
+| `--skip-router-restart` | 否 | 跳过操作后重启路由服务器 |
 
-The output will show three auto-generated values:
+输出会显示三个自动生成的值：
 
-- **Repository GUID** -- A UUID that identifies the encrypted disk image on the server.
-- **Credential** -- A random passphrase used to encrypt/decrypt the LUKS volume.
-- **Network ID** -- An integer (starting at 2816, incrementing by 64) that determines the IP subnet for this repository's services.
+- **仓库 GUID** -- 标识服务器上加密磁盘镜像的 UUID。
+- **凭证** -- 用于加密/解密 LUKS 卷的随机密码短语。
+- **网络 ID** -- 整数（从 2816 开始，每次增加 64），确定此仓库的服务的 IP 子网。
 
-> **Store the credential securely.** It is the encryption key for your repository. If lost, data cannot be recovered. The credential is stored in your local `config.json` but is not stored on the server.
+> **安全保存凭证。** 它是仓库的加密密钥。如果丢失，数据无法恢复。凭证存储在本地 `config.json` 中，但不存储在服务器上。
 
-## Mount and Unmount
+## 挂载和卸载
 
-Mount decrypts and makes the repository filesystem accessible. Unmount closes the encrypted volume.
+挂载解密并使仓库文件系统可访问。卸载关闭加密卷。
 
 ```bash
-rdc repo mount --name my-app -m server-1  # Decrypt and mount
-rdc repo unmount --name my-app -m server-1  # Unmount and re-encrypt
+rdc repo mount --name my-app -m server-1  # 解密并挂载
+rdc repo unmount --name my-app -m server-1  # 卸载并重新加密
 ```
 
-| Option | Description |
+| 选项 | 描述 |
 |--------|-------------|
-| `--checkpoint` | Create a CRIU checkpoint before mount/unmount (for containers with `rediacc.checkpoint=true` label) |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--checkpoint` | 在挂载/卸载前创建 CRIU 检查点（用于标记 `rediacc.checkpoint=true` 的容器） |
+| `--skip-router-restart` | 跳过操作后重启路由服务器 |
 
-## Check Status
+## 检查状态
 
 ```bash
 rdc repo status --name my-app -m server-1
 ```
 
-## List Repositories
+## 列出仓库
 
 ```bash
 rdc repo list -m server-1
 ```
 
-### Type column and the state mirror
+### 类型列和状态镜像
 
-The output table includes a `Type` column with three values:
+输出表格包括一个 `Type` 列，有三个值：
 
-- **`grand`**. A top-level repository registered in your local CLI config without a parent. The base case.
-- **`fork`**. A copy-on-write fork of another repo. Identified either via `grandGuid` in the local config **or** via the renet `.interim/state` mirror on the machine. Either source is authoritative; both should agree once the mirror is populated.
-- **`unknown`**. Neither signal can classify the repo. Most often a pre-mirror legacy fork (created before the mirror code shipped and never re-mounted since), or a stale `grand` whose local-config entry was deleted by mistake. The CLI refuses to guess; the operator should run [the mirror backfill](/en/docs/pruning#migration-state-mirror-backfill) or remove the directory if it's genuinely orphaned.
+- **`grand`**。在本地 CLI 配置中注册的顶级仓库，没有父级。这是基本情况。
+- **`fork`**。另一个仓库的写时复制分支。通过本地配置中的 `grandGuid` **或** 机器上的 renet `.interim/state` 镜像标识。任一源都是权威的；一旦镜像被填充，两者应该一致。
+- **`unknown`**。两个信号都无法分类仓库。通常是镜像前的遗留分支（在镜像代码发布前创建，之后从未重新挂载过），或本地配置条目被误删的陈旧 `grand`。CLI 拒绝猜测；操作员应运行[镜像反填](/zh/docs/pruning#migration-state-mirror-backfill)或删除目录（如果确实是孤立的）。
 
-The `.interim/state/<guid>/.rediacc.json` mirror is a small sidecar file written **outside** the LUKS-encrypted volume so backup tooling and `repo list` can read fork lineage without unlocking each image. It carries the same shape as the in-volume `.rediacc.json` (`is_fork`, `grand_guid`, `name`, etc.) and is refreshed on every `Repository.SaveState`. I.e. every mount and every state mutation. It's the source of truth for fork detection in scheduled backups: an unmounted fork with a mirror that says `is_fork: true` is correctly skipped from `cold` and `hot` uploads.
+`.interim/state/<guid>/.rediacc.json` 镜像是在 LUKS 加密卷**外**写入的小伴侣文件，因此备份工具和 `repo list` 可以读取分支族谱而无需解锁每个镜像。它具有与卷内 `.rediacc.json` 相同的形状（`is_fork`、`grand_guid`、`name` 等），并在每个 `Repository.SaveState` 时刷新。即每次挂载和每次状态变化。它是计划备份中分支检测的真实来源：具有说 `is_fork: true` 的镜像的未挂载分支从 `cold` 和 `hot` 上传中正确跳过。
 
-For routine cleanup of unknown entries, see [`rdc machine prune --prune-unknown`](/en/docs/pruning#phase-3---prune-unknown-surgical).
+例行清理未知条目，请参阅[`rdc machine prune --prune-unknown`](/zh/docs/pruning#phase-3---prune-unknown-surgical)。
 
-## Resize
+## 调整大小
 
-Set the repository to an exact size or expand by a given amount:
+将仓库设置为精确大小或按给定数量扩展：
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # Set to exact size
-rdc repo expand --name my-app -m server-1 --size 5G  # Add 5G to current size
+rdc repo resize --name my-app -m server-1 --size 20G  # 设置为精确大小
+rdc repo expand --name my-app -m server-1 --size 5G  # 在当前大小基础上增加 5G
 ```
 
-> The repository must be unmounted before resizing.
+> 调整大小前，仓库必须处于卸载状态。
 
-## Fork
+## 分支
 
-Create a copy of an existing repository at its current state:
+创建现有仓库在其当前状态的副本：
 
 ```bash
 rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
-Forks use the name:tag model: the resulting fork is named `my-app:staging`. This creates a new encrypted copy with its own GUID and network ID, while sharing the parent's name. The fork shares the same LUKS credential as the parent.
+分支使用 name:tag 模型：生成的分支命名为 `my-app:staging`。这创建了一个具有自己 GUID 和网络 ID 的新加密副本，同时共享父级的名称。分支与父级共享相同的 LUKS 凭证。
 
-> Forks share the parent's data via BTRFS reflink, including any credentials stored on disk. See [What Rediacc does not isolate](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) for the implications when those credentials authorize external services like Stripe, AWS, or Railway. To keep deploy-time credentials out of the fork's reach, use [per-repo secrets](#secrets) instead of baking values into `.env` files inside the repo.
+> 分支通过 BTRFS reflink 与父级共享数据，包括磁盘上存储的任何凭证。关于当这些凭证授权 Stripe、AWS 或 Railway 等外部服务时的含义，请参阅 [Rediacc 不隔离的内容](/zh/docs/ai-agents-safety#what-rediacc-does-not-isolate)。要使部署时凭证不被分支访问，使用[每仓库密钥](#secrets)而不是将值硬编码到仓库内的 `.env` 文件。
 
-At fork creation, `repo fork` writes the [state mirror sidecar](#type-column-and-the-state-mirror) at `<datastore>/.interim/state/<fork-guid>/.rediacc.json` immediately. Without unlocking the volume. So the new fork is correctly identified as `is_fork: true` from the moment of creation. This lets scheduled backups skip it (forks are excluded from the upload pipeline by default) even if it's never mounted. When forking a fork, `grand_guid` chains correctly: the new fork's mirror points at the original grand parent's GUID, not at the intermediate fork.
+在分支创建时，`repo fork` 立即在 `<datastore>/.interim/state/<fork-guid>/.rediacc.json` 处写入[状态镜像伴侣文件](#type-column-and-the-state-mirror)。无需解锁卷。因此新分支从创建时刻正确标识为 `is_fork: true`。这使计划备份可以跳过它（分支默认从上传管道中排除），即使它从未挂载过。分支一个分支时，`grand_guid` 正确链接：新分支的镜像指向原始祖先的 GUID，而不是中间分支。
 
 ## 类 Git 版本控制
 
-fork 可以充当 git 提交的角色。`rdc repo commit` 将工作 fork 冻结为不可变的、字节稳定的提交；`rdc repo branch` 命名历史线；`rdc repo checkout` 将提交通过 reflink 克隆回可写 fork；`rdc repo log` 遍历父链；`rdc repo merge` 在不就地改变实时仓库的情况下合并两条历史线。`rdc repo fork --immutable` 一步产生等同于提交的基础。
+分支可以充当 git 提交的角色。`rdc repo commit` 将工作分支冻结为不可变的、字节稳定的提交；`rdc repo branch` 命名历史线；`rdc repo checkout` 将提交通过 reflink 克隆回可写分支；`rdc repo log` 遍历父链；`rdc repo merge` 在不就地改变实时仓库的情况下合并两条历史线。`rdc repo fork --immutable` 一步产生等同于提交的基础。
 
 ```bash
 rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
@@ -111,33 +110,33 @@ rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-
 
 完整的命令集、选项和示例请参阅[类 Git 分支管理参考](/zh/docs/repo-branching)。
 
-## Secrets
+## 密钥
 
-Per-repo secrets are deploy-time credentials injected into containers without being written to the encrypted repository image. They are kept on a separate plane from the repository's data, so `rdc repo fork` does not propagate them. A fork starts with an empty secrets map and its containers boot identifying themselves as a different external principal than the parent.
+每仓库密钥是部署时凭证，注入容器而不写入加密仓库镜像。它们与仓库数据保持在独立平面上，因此 `rdc repo fork` 不会传播它们。分支以空密钥映射开始，其容器启动时将自己标识为不同于父级的外部主体。
 
-> Want a step-by-step walkthrough? See the [Managing Secrets tutorial](/en/docs/tutorial-managing-secrets) for the full set/list/deploy/verify/rotate cycle.
+> 想要逐步演练？请参阅[管理密钥教程](/zh/docs/tutorial-managing-secrets)了解完整的设置/列出/部署/验证/轮换周期。
 
-**Write-only model (GitHub-style):** `get` returns the SHA-256 digest only. The plaintext value is never returned to anyone, human or agent. If you forget what a value is, look it up in your password manager and rotate; you cannot read it back from Rediacc by design. This eliminates an entire class of leak: terminal recordings, shell history, accidental redirection, shoulder-surfing.
+**仅写模型 (GitHub 风格)：** `get` 仅返回 SHA-256 摘要。纯文本值永远不会返回给任何人，人类或代理。如果忘记值是什么，在密码管理器中查找并轮换；根据设计，你无法从 Rediacc 读取它回来。这消除了整个泄漏类别：终端录像、shell 历史、意外重定向、肩头冲浪。
 
-Two delivery modes:
+两种交付模式：
 
-- `env`. The secret is exported as `REDIACC_SECRET_<KEY>` in the renet shell on the target machine. Reference it from your `docker-compose.yml` via `${REDIACC_SECRET_<KEY>}` interpolation. Visible inside the container's environment, so use this for connection-string-shaped values that the application already expects in env.
-- `file`. The secret is written to `/var/run/rediacc/secrets/<networkID>/<KEY>` on the host (tmpfs, never persisted). Reference it from your compose file via a top-level `secrets:` declaration with `file:` source, plus a per-service `secrets:` list. Containers read from `/run/secrets/<key>`. Prefer this mode for anything sensitive. It never appears in `docker inspect` or `/proc/<pid>/environ`.
+- `env`。密钥在目标机器上的 renet shell 中导出为 `REDIACC_SECRET_<KEY>`。通过 `${REDIACC_SECRET_<KEY>}` 插值从 `docker-compose.yml` 中引用它。在容器环境中可见，因此使用此模式处理应用程序已期望在 env 中的连接字符串形状的值。
+- `file`。密钥写入主机上的 `/var/run/rediacc/secrets/<networkID>/<KEY>`（tmpfs，从不持久化）。通过带 `file:` 源的顶级 `secrets:` 声明以及每个服务的 `secrets:` 列表从 compose 文件中引用它。容器从 `/run/secrets/<key>` 读取。对任何敏感数据优选此模式。它不会出现在 `docker inspect` 或 `/proc/<pid>/environ` 中。
 
 ```bash
-# Set, list, get (digest only), unset
+# 设置、列出、获取（仅摘要）、取消设置
 rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
 rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
 rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — no value
+rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — 无值
 rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
-**Symmetric mutation gate.** Both humans and agents need `--current <previous-value>` to overwrite or unset a secret (passwd-style precondition). For first-write of a new key, pass `--current ""` (empty). To rotate without verifying the prior value, pass `--rotate-secret` instead. This is loudly audited as a rotation. `--current` and `--rotate-secret` are mutually exclusive.
+**对称变化门。** 人类和代理都需要 `--current <previous-value>` 来覆盖或取消设置密钥（passwd 风格前置条件）。对于新密钥的首次写入，传递 `--current ""`（空）。要在不验证先前值的情况下轮换，改用 `--rotate-secret`。这会被大声审计为轮换。`--current` 和 `--rotate-secret` 互斥。
 
-Pass `--value -` to read from stdin instead of argv (avoids shell-history exposure for one-shot writes).
+传递 `--value -` 从 stdin 而不是 argv 读取（避免 shell 历史泄漏以用于一次写入）。
 
-In your `docker-compose.yml`:
+在 `docker-compose.yml` 中：
 
 ```yaml
 services:
@@ -153,107 +152,107 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-The lowercase service-side reference (`stripe_live_key`) is the in-container `/run/secrets/<name>` filename; the uppercase tail of the host path (`STRIPE_LIVE_KEY`) matches what you set with `--key`. `${REDIACC_NETWORK_ID}` is interpolated by `renet compose` automatically.
+小写服务端引用（`stripe_live_key`）是容器内 `/run/secrets/<name>` 文件名；主机路径尾部的大写（`STRIPE_LIVE_KEY`）与使用 `--key` 设置的内容匹配。`${REDIACC_NETWORK_ID}` 由 `renet compose` 自动插值。
 
-> **Cross-repo isolation enforced**: renet's compose validator rejects `secrets: file:` (and `configs: file:`, and `env_file:`) paths that reference any other repo's network ID. The literal `${REDIACC_NETWORK_ID}` token (or your own network's int) is the only accepted form for `/var/run/rediacc/secrets/...` references. And `--unsafe` does NOT override this check. The Landlock sandbox around the Rediaccfile bash subprocess also scopes filesystem access to your own network's secrets directory only, so a malicious `cat /var/run/rediacc/secrets/<other>/X` from a Rediaccfile fails with EACCES at the kernel layer.
+> **跨仓库隔离执行**：renet 的 compose 验证器拒绝引用任何其他仓库网络 ID 的 `secrets: file:`（以及 `configs: file:` 和 `env_file:`）路径。字面 `${REDIACC_NETWORK_ID}` 令牌（或你自己网络的整数）是 `/var/run/rediacc/secrets/...` 引用的唯一接受形式。`--unsafe` **不会**覆盖此检查。Rediaccfile bash 子进程周围的 Landlock 沙箱也仅将文件系统访问限定于你自己网络的密钥目录，所以来自 Rediaccfile 的恶意 `cat /var/run/rediacc/secrets/<other>/X` 在内核层面失败，错误码为 EACCES。
 
-> **Forks**: `rdc repo fork` does **not** copy secrets. To use secrets in a fork, run `rdc repo secret set --name <fork>` on the fork explicitly. This is the load-bearing safety property. The fork's containers should not be able to act as the production principal against external services.
+> **分支**：`rdc repo fork` **不会**复制密钥。要在分支中使用密钥，在分支上显式运行 `rdc repo secret set --name <fork>`。这是负载承载安全属性。分支的容器不应能在外部服务上充当生产主体。
 
-> **Agents** (Claude Code, Cursor, etc.): `repo secret list` and `repo secret get` are exposed as MCP tools (read-safe. Names + digests only, never values). `set` and `unset` are CLI-only because the `--current`/`--rotate-secret` ceremony requires human eyes-on; agents calling them via shell get the same gate as humans. When precondition fails, the JSON envelope contains a structured `errors[].next.options[].run` field. Agents should relay those commands verbatim to the user. See [AI agent safety](/en/docs/ai-agents-safety) for the full model.
+> **代理** (Claude Code、Cursor 等)：`repo secret list` 和 `repo secret get` 作为 MCP 工具公开（读安全。仅名称和摘要，永不值）。`set` 和 `unset` 仅限 CLI，因为 `--current`/`--rotate-secret` 仪式需要人工审视；通过 shell 调用它们的代理获得与人类相同的门。前置条件失败时，JSON 封装包含结构化 `errors[].next.options[].run` 字段。代理应将这些命令逐字中继给用户。完整模型请参阅 [AI 代理安全](/zh/docs/ai-agents-safety)。
 
-## Validate
+## 验证
 
-Check the filesystem integrity of a repository:
+检查仓库的文件系统完整性：
 
 ```bash
 rdc repo validate --name my-app -m server-1
 ```
 
-## Ownership
+## 所有权
 
-Set file ownership within a repository to the universal user (UID 7111). This is typically needed after uploading files from your workstation, which arrive with your local UID.
+将仓库内的文件所有权设置为通用用户（UID 7111）。这通常在从工作站上传文件后需要，那些文件到达时带有本地 UID。
 
 ```bash
 rdc repo ownership --name my-app -m server-1
 ```
 
-The command automatically detects Docker container data directories (writable bind mounts) and excludes them. This prevents breaking containers that manage files with their own UIDs (e.g., MariaDB=999, www-data=33).
+命令自动检测 Docker 容器数据目录（可写绑定挂载）并排除它们。这防止破坏用自己的 UID 管理文件的容器（例如 MariaDB=999、www-data=33）。
 
-| Option | Description |
+| 选项 | 描述 |
 |--------|-------------|
-| `--uid <uid>` | Set a custom UID instead of 7111 |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--uid <uid>` | 设置自定义 UID 而不是 7111 |
+| `--skip-router-restart` | 跳过操作后重启路由服务器 |
 
-To force ownership on all files, including container data:
+要强制对所有文件设置所有权，包括容器数据：
 
 ```bash
 rdc repo ownership --name my-app -m server-1
 ```
 
 
-See the [Migration Guide](/en/docs/migration) for a complete walkthrough of when and how to use ownership during project migration.
+查看[迁移指南](/zh/docs/migration)了解项目迁移期间何时以及如何使用所有权的完整演练。
 
-## Template
+## 模板
 
-Apply a template to initialize a repository with files:
+应用模板以使用文件初始化仓库：
 
 ```bash
 rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
-## Delete
+## 删除
 
-Permanently destroy a repository and all data inside it:
+永久销毁仓库及其内所有数据：
 
 ```bash
 rdc repo delete --name my-app -m server-1
 ```
 
-> This permanently destroys the encrypted disk image. This action cannot be undone.
+> 这会永久销毁加密磁盘镜像。此操作无法撤销。
 
-## Migrate Repository
+## 迁移仓库
 
-Live-migrate a repository from one machine to another with minimal downtime.
+将仓库从一台机器实时迁移到另一台。唯一的停机时间是最后的增量同步阶段：通常是几秒到数分钟，具体取决于转换时的写入速率。
 
 ```bash
 rdc repo migrate --name my-app --from server-1 --to server-2
 ```
 
-| Option | Description |
+| 选项 | 描述 |
 |--------|-------------|
-| `--provision` | Provision the repository on the target machine before migrating (creates LUKS image and registers config) |
-| `--checkpoint` | Create a CRIU checkpoint of running containers before cutover |
-| `--bwlimit <kbps>` | Limit rsync bandwidth in kilobytes per second |
-| `--skip-dns` | Skip updating DNS records after cutover |
+| `--provision` | 在迁移前在目标机器上预配仓库（创建 LUKS 镜像并注册配置） |
+| `--checkpoint` | 转换前创建运行容器的 CRIU 检查点 |
+| `--bwlimit <kbps>` | 限制 rsync 带宽，单位为每秒千字节 |
+| `--skip-dns` | 转换后跳过更新 DNS 记录 |
 
-**Three-phase flow:**
+**三阶段流程：**
 
-1. **Hot pre-copy** - rsync transfers data while the repository stays running on the source. Large files are transferred before any downtime.
-2. **Cutover** - the repository is stopped on the source, a final rsync pass syncs remaining changes, and the repository starts on the target.
-3. **Start on target** - renet mounts and starts the repository on the target machine. DNS is updated unless `--skip-dns` is passed.
+1. **热预复制** - rsync 在仓库继续在源上运行时传输数据。大文件在任何停机前传输。
+2. **转换** - 仓库在源上停止，最后的 rsync 传递同步剩余变化，仓库在目标上启动。
+3. **在目标上启动** - renet 在目标机器上挂载并启动仓库。DNS 已更新，除非传递 `--skip-dns`。
 
-![Repository Live Migration](/img/repo-migrate-flow.svg)
+![仓库实时迁移](/img/repo-migrate-flow.svg)
 
-**Push vs migrate:**
+**Push vs migrate：**
 
 | | `repo push` | `repo migrate` |
 |--|-------------|----------------|
-| Operation | Copy | Move |
-| Source after | Unchanged | Stopped |
-| Downtime | None (copy only) | Brief cutover window |
-| DNS update | No | Yes (unless `--skip-dns`) |
-| Use case | Backup, staging clone | Machine replacement, server move |
+| 操作 | 复制 | 移动 |
+| 源之后 | 不变 | 已停止 |
+| 停机时间 | 无（仅复制） | 简短转换窗口 |
+| DNS 更新 | 否 | 是（除非 `--skip-dns`） |
+| 用例 | 备份、暂存克隆 | 机器替换、服务器移动 |
 
-## Prune
+## 清理
 
-After deleting repositories or recovering from failed operations, orphaned mount directories, lock files, and immovable markers may remain. Prune removes these safely:
+删除仓库或从失败操作恢复后，孤立的挂载目录、锁文件和不可移动的标记可能保留。清理安全删除这些：
 
 ```bash
-# Preview what would be removed
+# 预览将删除的内容
 rdc machine prune --name server-1 --dry-run
 
-# Remove orphaned resources
+# 删除孤立资源
 rdc machine prune --name server-1
 ```
 
-Only resources with no matching repository image are affected. Non-empty mount directories are never removed.
+只有无匹配仓库镜像的资源受影响。非空挂载目录永不删除。

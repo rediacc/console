@@ -1,1 +1,403 @@
-{"version":1,"cues":[{"start":1,"end":1.938,"text":"Pekâlâ!","words":[{"start":1,"end":1.938,"char":[0,7]}]},{"start":1.938,"end":4.75,"text":"CLI'nin sunucularınıza parolasız","words":[{"start":1.938,"end":2.875,"char":[0,7]},{"start":2.875,"end":3.813,"char":[8,22]},{"start":3.813,"end":4.75,"char":[23,32]}]},{"start":4.75,"end":7.563,"text":"ulaşabilmesi için SSH","words":[{"start":4.75,"end":5.688,"char":[0,12]},{"start":5.688,"end":6.625,"char":[13,17]},{"start":6.625,"end":7.563,"char":[18,21]}]},{"start":7.563,"end":9.438,"text":"anahtarlarını ayarlayalım.","words":[{"start":7.563,"end":8.5,"char":[0,13]},{"start":8.5,"end":9.438,"char":[14,26]}]},{"start":10.205,"end":11.698,"text":"Toplam üç adım.","words":[{"start":10.205,"end":10.703,"char":[0,6]},{"start":10.703,"end":11.2,"char":[7,9]},{"start":11.2,"end":11.698,"char":[10,15]}]},{"start":11.698,"end":14.186,"text":"Dizüstü bilgisayarınızda bir anahtar oluşturun,","words":[{"start":11.698,"end":12.195,"char":[0,7]},{"start":12.195,"end":12.693,"char":[8,24]},{"start":12.693,"end":13.19,"char":[25,28]},{"start":13.19,"end":13.688,"char":[29,36]},{"start":13.688,"end":14.186,"char":[37,47]}]},{"start":14.186,"end":15.181,"text":"sunucuya kopyalayın,","words":[{"start":14.186,"end":14.683,"char":[0,8]},{"start":14.683,"end":15.181,"char":[9,20]}]},{"start":15.181,"end":17.669,"text":"ardından komut satırı aracına kaydedin.","words":[{"start":15.181,"end":15.678,"char":[0,8]},{"start":15.678,"end":16.176,"char":[9,14]},{"start":16.176,"end":16.673,"char":[15,21]},{"start":16.673,"end":17.171,"char":[22,29]},{"start":17.171,"end":17.669,"char":[30,39]}]},{"start":17.669,"end":20.654,"text":"Bunlardan ikisini yalnızca bir kez yaparsınız.","words":[{"start":17.669,"end":18.166,"char":[0,9]},{"start":18.166,"end":18.664,"char":[10,17]},{"start":18.664,"end":19.161,"char":[18,26]},{"start":19.161,"end":19.659,"char":[27,30]},{"start":19.659,"end":20.156,"char":[31,34]},{"start":20.156,"end":20.654,"char":[35,46]}]},{"start":23.907,"end":25.209,"text":"Birinci adım.","words":[{"start":23.907,"end":24.558,"char":[0,7]},{"start":24.558,"end":25.209,"char":[8,13]}]},{"start":25.209,"end":27.813,"text":"Yeni bir ed25519 SSH","words":[{"start":25.209,"end":25.86,"char":[0,4]},{"start":25.86,"end":26.511,"char":[5,8]},{"start":26.511,"end":27.162,"char":[9,16]},{"start":27.162,"end":27.813,"char":[17,20]}]},{"start":27.813,"end":29.115,"text":"anahtarı oluşturacağız.","words":[{"start":27.813,"end":28.464,"char":[0,8]},{"start":28.464,"end":29.115,"char":[9,23]}]},{"start":29.115,"end":31.069,"text":"ed25519 modern standarttır:","words":[{"start":29.115,"end":29.766,"char":[0,7]},{"start":29.766,"end":30.418,"char":[8,14]},{"start":30.418,"end":31.069,"char":[15,27]}]},{"start":31.069,"end":31.72,"text":"küçük,","words":[{"start":31.069,"end":31.72,"char":[0,6]}]},{"start":31.72,"end":34.324,"text":"hızlı ve geniş destekli.","words":[{"start":31.72,"end":32.371,"char":[0,5]},{"start":32.371,"end":33.022,"char":[6,8]},{"start":33.022,"end":33.673,"char":[9,14]},{"start":33.673,"end":34.324,"char":[15,24]}]},{"start":34.324,"end":36.928,"text":"Bunu ekleyeceğiniz her sunucu","words":[{"start":34.324,"end":34.975,"char":[0,4]},{"start":34.975,"end":35.626,"char":[5,18]},{"start":35.626,"end":36.277,"char":[19,22]},{"start":36.277,"end":36.928,"char":[23,29]}]},{"start":36.928,"end":39.532,"text":"için yalnızca bir kez","words":[{"start":36.928,"end":37.579,"char":[0,4]},{"start":37.579,"end":38.23,"char":[5,13]},{"start":38.23,"end":38.881,"char":[14,17]},{"start":38.881,"end":39.532,"char":[18,21]}]},{"start":39.532,"end":40.834,"text":"yapmanız yeterlidir.","words":[{"start":39.532,"end":40.183,"char":[0,8]},{"start":40.183,"end":40.834,"char":[9,20]}]},{"start":41.634,"end":42.694,"text":"Anahtar oluşturuldu.","words":[{"start":41.634,"end":42.164,"char":[0,7]},{"start":42.164,"end":42.694,"char":[8,20]}]},{"start":42.694,"end":44.284,"text":"Sunucuya kopyalayacağımız kısım,","words":[{"start":42.694,"end":43.224,"char":[0,8]},{"start":43.224,"end":43.754,"char":[9,25]},{"start":43.754,"end":44.284,"char":[26,32]}]},{"start":44.284,"end":45.344,"text":"genel anahtar.","words":[{"start":44.284,"end":44.814,"char":[0,5]},{"start":44.814,"end":45.344,"char":[6,14]}]},{"start":48.688,"end":49.624,"text":"İkinci adım.","words":[{"start":48.688,"end":49.156,"char":[0,6]},{"start":49.156,"end":49.624,"char":[7,12]}]},{"start":49.624,"end":52.431,"text":"Genel anahtarı ssh-copy-id ile sunucuya kopyalıyoruz.","words":[{"start":49.624,"end":50.092,"char":[0,5]},{"start":50.092,"end":50.56,"char":[6,14]},{"start":50.56,"end":51.028,"char":[15,26]},{"start":51.028,"end":51.496,"char":[27,30]},{"start":51.496,"end":51.964,"char":[31,39]},{"start":51.964,"end":52.431,"char":[40,53]}]},{"start":52.431,"end":54.771,"text":"Sunucu parolası son kez isteniyor.","words":[{"start":52.431,"end":52.899,"char":[0,6]},{"start":52.899,"end":53.367,"char":[7,15]},{"start":53.367,"end":53.835,"char":[16,19]},{"start":53.835,"end":54.303,"char":[20,23]},{"start":54.303,"end":54.771,"char":[24,34]}]},{"start":54.771,"end":57.579,"text":"Bundan sonra o sunucu için parola","words":[{"start":54.771,"end":55.239,"char":[0,6]},{"start":55.239,"end":55.707,"char":[7,12]},{"start":55.707,"end":56.175,"char":[13,14]},{"start":56.175,"end":56.643,"char":[15,21]},{"start":56.643,"end":57.111,"char":[22,26]},{"start":57.111,"end":57.579,"char":[27,33]}]},{"start":57.579,"end":59.45,"text":"ile kimlik doğrulama gerekmez.","words":[{"start":57.579,"end":58.047,"char":[0,3]},{"start":58.047,"end":58.515,"char":[4,10]},{"start":58.515,"end":58.983,"char":[11,20]},{"start":58.983,"end":59.45,"char":[21,30]}]},{"start":61.45,"end":62.635,"text":"Komutu dizüstünüzde çalıştırın.","words":[{"start":61.45,"end":61.845,"char":[0,6]},{"start":61.845,"end":62.24,"char":[7,19]},{"start":62.24,"end":62.635,"char":[20,31]}]},{"start":62.635,"end":65.003,"text":"Başarılı olduğunda parolalar devre dışı kalır.","words":[{"start":62.635,"end":63.029,"char":[0,8]},{"start":63.029,"end":63.424,"char":[9,18]},{"start":63.424,"end":63.819,"char":[19,28]},{"start":63.819,"end":64.214,"char":[29,34]},{"start":64.214,"end":64.608,"char":[35,39]},{"start":64.608,"end":65.003,"char":[40,46]}]},{"start":68.34,"end":69.166,"text":"Üçüncü adım.","words":[{"start":68.34,"end":68.753,"char":[0,6]},{"start":68.753,"end":69.166,"char":[7,12]}]},{"start":69.166,"end":70.405,"text":"Anahtarı CLI'ye kaydediyoruz.","words":[{"start":69.166,"end":69.579,"char":[0,8]},{"start":69.579,"end":69.992,"char":[9,15]},{"start":69.992,"end":70.405,"char":[16,29]}]},{"start":70.405,"end":73.296,"text":"Bundan itibaren her komut bu anahtarla kimlik","words":[{"start":70.405,"end":70.818,"char":[0,6]},{"start":70.818,"end":71.231,"char":[7,15]},{"start":71.231,"end":71.644,"char":[16,19]},{"start":71.644,"end":72.057,"char":[20,25]},{"start":72.057,"end":72.47,"char":[26,28]},{"start":72.47,"end":72.883,"char":[29,38]},{"start":72.883,"end":73.296,"char":[39,45]}]},{"start":73.296,"end":74.122,"text":"doğrulaması yapar.","words":[{"start":73.296,"end":73.709,"char":[0,11]},{"start":73.709,"end":74.122,"char":[12,18]}]},{"start":74.122,"end":75.361,"text":"Artık parola gerekmez,","words":[{"start":74.122,"end":74.535,"char":[0,5]},{"start":74.535,"end":74.948,"char":[6,12]},{"start":74.948,"end":75.361,"char":[13,22]}]},{"start":75.361,"end":77.013,"text":"etkileşimli istemler de olmaz.","words":[{"start":75.361,"end":75.774,"char":[0,11]},{"start":75.774,"end":76.187,"char":[12,20]},{"start":76.187,"end":76.6,"char":[21,23]},{"start":76.6,"end":77.013,"char":[24,30]}]},{"start":79.013,"end":81.59,"text":"Anahtar CLI'ye","words":[{"start":79.013,"end":80.301,"char":[0,7]},{"start":80.301,"end":81.59,"char":[8,14]}]},{"start":81.59,"end":82.879,"text":"kaydedildi.","words":[{"start":81.59,"end":82.879,"char":[0,11]}]},{"start":83.717,"end":86.724,"text":"Anahtar kaydedildi ve CLI","words":[{"start":83.717,"end":84.469,"char":[0,7]},{"start":84.469,"end":85.22,"char":[8,18]},{"start":85.22,"end":85.972,"char":[19,21]},{"start":85.972,"end":86.724,"char":[22,25]}]},{"start":86.724,"end":87.476,"text":"hazır.","words":[{"start":86.724,"end":87.476,"char":[0,6]}]},{"start":87.476,"end":88.227,"text":"Sırada,","words":[{"start":87.476,"end":88.227,"char":[0,7]}]},{"start":88.227,"end":90.483,"text":"ilk sunucunuzu ekleyeceğiz.","words":[{"start":88.227,"end":88.979,"char":[0,3]},{"start":88.979,"end":89.731,"char":[4,14]},{"start":89.731,"end":90.483,"char":[15,27]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.938,
+      "text": "Pekâlâ!",
+      "words": [{ "start": 1, "end": 1.938, "char": [0, 7] }]
+    },
+    {
+      "start": 1.938,
+      "end": 4.75,
+      "text": "CLI'nin sunucularınıza parolasız",
+      "words": [
+        { "start": 1.938, "end": 2.875, "char": [0, 7] },
+        { "start": 2.875, "end": 3.813, "char": [8, 22] },
+        { "start": 3.813, "end": 4.75, "char": [23, 32] }
+      ]
+    },
+    {
+      "start": 4.75,
+      "end": 7.563,
+      "text": "ulaşabilmesi için SSH",
+      "words": [
+        { "start": 4.75, "end": 5.688, "char": [0, 12] },
+        { "start": 5.688, "end": 6.625, "char": [13, 17] },
+        { "start": 6.625, "end": 7.563, "char": [18, 21] }
+      ]
+    },
+    {
+      "start": 7.563,
+      "end": 9.438,
+      "text": "anahtarlarını ayarlayalım.",
+      "words": [
+        { "start": 7.563, "end": 8.5, "char": [0, 13] },
+        { "start": 8.5, "end": 9.438, "char": [14, 26] }
+      ]
+    },
+    {
+      "start": 10.205,
+      "end": 11.698,
+      "text": "Toplam üç adım.",
+      "words": [
+        { "start": 10.205, "end": 10.703, "char": [0, 6] },
+        { "start": 10.703, "end": 11.2, "char": [7, 9] },
+        { "start": 11.2, "end": 11.698, "char": [10, 15] }
+      ]
+    },
+    {
+      "start": 11.698,
+      "end": 14.186,
+      "text": "Dizüstü bilgisayarınızda bir anahtar oluşturun,",
+      "words": [
+        { "start": 11.698, "end": 12.195, "char": [0, 7] },
+        { "start": 12.195, "end": 12.693, "char": [8, 24] },
+        { "start": 12.693, "end": 13.19, "char": [25, 28] },
+        { "start": 13.19, "end": 13.688, "char": [29, 36] },
+        { "start": 13.688, "end": 14.186, "char": [37, 47] }
+      ]
+    },
+    {
+      "start": 14.186,
+      "end": 15.181,
+      "text": "sunucuya kopyalayın,",
+      "words": [
+        { "start": 14.186, "end": 14.683, "char": [0, 8] },
+        { "start": 14.683, "end": 15.181, "char": [9, 20] }
+      ]
+    },
+    {
+      "start": 15.181,
+      "end": 17.669,
+      "text": "ardından komut satırı aracına kaydedin.",
+      "words": [
+        { "start": 15.181, "end": 15.678, "char": [0, 8] },
+        { "start": 15.678, "end": 16.176, "char": [9, 14] },
+        { "start": 16.176, "end": 16.673, "char": [15, 21] },
+        { "start": 16.673, "end": 17.171, "char": [22, 29] },
+        { "start": 17.171, "end": 17.669, "char": [30, 39] }
+      ]
+    },
+    {
+      "start": 17.669,
+      "end": 20.654,
+      "text": "Bunlardan ikisini yalnızca bir kez yaparsınız.",
+      "words": [
+        { "start": 17.669, "end": 18.166, "char": [0, 9] },
+        { "start": 18.166, "end": 18.664, "char": [10, 17] },
+        { "start": 18.664, "end": 19.161, "char": [18, 26] },
+        { "start": 19.161, "end": 19.659, "char": [27, 30] },
+        { "start": 19.659, "end": 20.156, "char": [31, 34] },
+        { "start": 20.156, "end": 20.654, "char": [35, 46] }
+      ]
+    },
+    {
+      "start": 23.907,
+      "end": 25.209,
+      "text": "Birinci adım.",
+      "words": [
+        { "start": 23.907, "end": 24.558, "char": [0, 7] },
+        { "start": 24.558, "end": 25.209, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 25.209,
+      "end": 27.813,
+      "text": "Yeni bir ed25519 SSH",
+      "words": [
+        { "start": 25.209, "end": 25.86, "char": [0, 4] },
+        { "start": 25.86, "end": 26.511, "char": [5, 8] },
+        { "start": 26.511, "end": 27.162, "char": [9, 16] },
+        { "start": 27.162, "end": 27.813, "char": [17, 20] }
+      ]
+    },
+    {
+      "start": 27.813,
+      "end": 29.115,
+      "text": "anahtarı oluşturacağız.",
+      "words": [
+        { "start": 27.813, "end": 28.464, "char": [0, 8] },
+        { "start": 28.464, "end": 29.115, "char": [9, 23] }
+      ]
+    },
+    {
+      "start": 29.115,
+      "end": 31.069,
+      "text": "ed25519 modern standarttır:",
+      "words": [
+        { "start": 29.115, "end": 29.766, "char": [0, 7] },
+        { "start": 29.766, "end": 30.418, "char": [8, 14] },
+        { "start": 30.418, "end": 31.069, "char": [15, 27] }
+      ]
+    },
+    {
+      "start": 31.069,
+      "end": 31.72,
+      "text": "küçük,",
+      "words": [{ "start": 31.069, "end": 31.72, "char": [0, 6] }]
+    },
+    {
+      "start": 31.72,
+      "end": 34.324,
+      "text": "hızlı ve geniş destekli.",
+      "words": [
+        { "start": 31.72, "end": 32.371, "char": [0, 5] },
+        { "start": 32.371, "end": 33.022, "char": [6, 8] },
+        { "start": 33.022, "end": 33.673, "char": [9, 14] },
+        { "start": 33.673, "end": 34.324, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 34.324,
+      "end": 36.928,
+      "text": "Bunu ekleyeceğiniz her sunucu",
+      "words": [
+        { "start": 34.324, "end": 34.975, "char": [0, 4] },
+        { "start": 34.975, "end": 35.626, "char": [5, 18] },
+        { "start": 35.626, "end": 36.277, "char": [19, 22] },
+        { "start": 36.277, "end": 36.928, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 36.928,
+      "end": 39.532,
+      "text": "için yalnızca bir kez",
+      "words": [
+        { "start": 36.928, "end": 37.579, "char": [0, 4] },
+        { "start": 37.579, "end": 38.23, "char": [5, 13] },
+        { "start": 38.23, "end": 38.881, "char": [14, 17] },
+        { "start": 38.881, "end": 39.532, "char": [18, 21] }
+      ]
+    },
+    {
+      "start": 39.532,
+      "end": 40.834,
+      "text": "yapmanız yeterlidir.",
+      "words": [
+        { "start": 39.532, "end": 40.183, "char": [0, 8] },
+        { "start": 40.183, "end": 40.834, "char": [9, 20] }
+      ]
+    },
+    {
+      "start": 41.634,
+      "end": 42.694,
+      "text": "Anahtar oluşturuldu.",
+      "words": [
+        { "start": 41.634, "end": 42.164, "char": [0, 7] },
+        { "start": 42.164, "end": 42.694, "char": [8, 20] }
+      ]
+    },
+    {
+      "start": 42.694,
+      "end": 44.284,
+      "text": "Sunucuya kopyalayacağımız kısım,",
+      "words": [
+        { "start": 42.694, "end": 43.224, "char": [0, 8] },
+        { "start": 43.224, "end": 43.754, "char": [9, 25] },
+        { "start": 43.754, "end": 44.284, "char": [26, 32] }
+      ]
+    },
+    {
+      "start": 44.284,
+      "end": 45.344,
+      "text": "genel anahtar.",
+      "words": [
+        { "start": 44.284, "end": 44.814, "char": [0, 5] },
+        { "start": 44.814, "end": 45.344, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 48.688,
+      "end": 49.624,
+      "text": "İkinci adım.",
+      "words": [
+        { "start": 48.688, "end": 49.156, "char": [0, 6] },
+        { "start": 49.156, "end": 49.624, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 49.624,
+      "end": 52.431,
+      "text": "Genel anahtarı ssh-copy-id ile sunucuya kopyalıyoruz.",
+      "words": [
+        { "start": 49.624, "end": 50.092, "char": [0, 5] },
+        { "start": 50.092, "end": 50.56, "char": [6, 14] },
+        { "start": 50.56, "end": 51.028, "char": [15, 26] },
+        { "start": 51.028, "end": 51.496, "char": [27, 30] },
+        { "start": 51.496, "end": 51.964, "char": [31, 39] },
+        { "start": 51.964, "end": 52.431, "char": [40, 53] }
+      ]
+    },
+    {
+      "start": 52.431,
+      "end": 54.771,
+      "text": "Sunucu parolası son kez isteniyor.",
+      "words": [
+        { "start": 52.431, "end": 52.899, "char": [0, 6] },
+        { "start": 52.899, "end": 53.367, "char": [7, 15] },
+        { "start": 53.367, "end": 53.835, "char": [16, 19] },
+        { "start": 53.835, "end": 54.303, "char": [20, 23] },
+        { "start": 54.303, "end": 54.771, "char": [24, 34] }
+      ]
+    },
+    {
+      "start": 54.771,
+      "end": 57.579,
+      "text": "Bundan sonra o sunucu için parola",
+      "words": [
+        { "start": 54.771, "end": 55.239, "char": [0, 6] },
+        { "start": 55.239, "end": 55.707, "char": [7, 12] },
+        { "start": 55.707, "end": 56.175, "char": [13, 14] },
+        { "start": 56.175, "end": 56.643, "char": [15, 21] },
+        { "start": 56.643, "end": 57.111, "char": [22, 26] },
+        { "start": 57.111, "end": 57.579, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 57.579,
+      "end": 59.45,
+      "text": "ile kimlik doğrulama gerekmez.",
+      "words": [
+        { "start": 57.579, "end": 58.047, "char": [0, 3] },
+        { "start": 58.047, "end": 58.515, "char": [4, 10] },
+        { "start": 58.515, "end": 58.983, "char": [11, 20] },
+        { "start": 58.983, "end": 59.45, "char": [21, 30] }
+      ]
+    },
+    {
+      "start": 61.45,
+      "end": 62.635,
+      "text": "Komutu dizüstünüzde çalıştırın.",
+      "words": [
+        { "start": 61.45, "end": 61.845, "char": [0, 6] },
+        { "start": 61.845, "end": 62.24, "char": [7, 19] },
+        { "start": 62.24, "end": 62.635, "char": [20, 31] }
+      ]
+    },
+    {
+      "start": 62.635,
+      "end": 65.003,
+      "text": "Başarılı olduğunda parolalar devre dışı kalır.",
+      "words": [
+        { "start": 62.635, "end": 63.029, "char": [0, 8] },
+        { "start": 63.029, "end": 63.424, "char": [9, 18] },
+        { "start": 63.424, "end": 63.819, "char": [19, 28] },
+        { "start": 63.819, "end": 64.214, "char": [29, 34] },
+        { "start": 64.214, "end": 64.608, "char": [35, 39] },
+        { "start": 64.608, "end": 65.003, "char": [40, 46] }
+      ]
+    },
+    {
+      "start": 68.34,
+      "end": 69.166,
+      "text": "Üçüncü adım.",
+      "words": [
+        { "start": 68.34, "end": 68.753, "char": [0, 6] },
+        { "start": 68.753, "end": 69.166, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 69.166,
+      "end": 70.405,
+      "text": "Anahtarı CLI'ye kaydediyoruz.",
+      "words": [
+        { "start": 69.166, "end": 69.579, "char": [0, 8] },
+        { "start": 69.579, "end": 69.992, "char": [9, 15] },
+        { "start": 69.992, "end": 70.405, "char": [16, 29] }
+      ]
+    },
+    {
+      "start": 70.405,
+      "end": 73.296,
+      "text": "Bundan itibaren her komut bu anahtarla kimlik",
+      "words": [
+        { "start": 70.405, "end": 70.818, "char": [0, 6] },
+        { "start": 70.818, "end": 71.231, "char": [7, 15] },
+        { "start": 71.231, "end": 71.644, "char": [16, 19] },
+        { "start": 71.644, "end": 72.057, "char": [20, 25] },
+        { "start": 72.057, "end": 72.47, "char": [26, 28] },
+        { "start": 72.47, "end": 72.883, "char": [29, 38] },
+        { "start": 72.883, "end": 73.296, "char": [39, 45] }
+      ]
+    },
+    {
+      "start": 73.296,
+      "end": 74.122,
+      "text": "doğrulaması yapar.",
+      "words": [
+        { "start": 73.296, "end": 73.709, "char": [0, 11] },
+        { "start": 73.709, "end": 74.122, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 74.122,
+      "end": 75.361,
+      "text": "Artık parola gerekmez,",
+      "words": [
+        { "start": 74.122, "end": 74.535, "char": [0, 5] },
+        { "start": 74.535, "end": 74.948, "char": [6, 12] },
+        { "start": 74.948, "end": 75.361, "char": [13, 22] }
+      ]
+    },
+    {
+      "start": 75.361,
+      "end": 77.013,
+      "text": "etkileşimli istemler de olmaz.",
+      "words": [
+        { "start": 75.361, "end": 75.774, "char": [0, 11] },
+        { "start": 75.774, "end": 76.187, "char": [12, 20] },
+        { "start": 76.187, "end": 76.6, "char": [21, 23] },
+        { "start": 76.6, "end": 77.013, "char": [24, 30] }
+      ]
+    },
+    {
+      "start": 79.013,
+      "end": 81.59,
+      "text": "Anahtar CLI'ye",
+      "words": [
+        { "start": 79.013, "end": 80.301, "char": [0, 7] },
+        { "start": 80.301, "end": 81.59, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 81.59,
+      "end": 82.879,
+      "text": "kaydedildi.",
+      "words": [{ "start": 81.59, "end": 82.879, "char": [0, 11] }]
+    },
+    {
+      "start": 83.717,
+      "end": 86.724,
+      "text": "Anahtar kaydedildi ve CLI",
+      "words": [
+        { "start": 83.717, "end": 84.469, "char": [0, 7] },
+        { "start": 84.469, "end": 85.22, "char": [8, 18] },
+        { "start": 85.22, "end": 85.972, "char": [19, 21] },
+        { "start": 85.972, "end": 86.724, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 86.724,
+      "end": 87.476,
+      "text": "hazır.",
+      "words": [{ "start": 86.724, "end": 87.476, "char": [0, 6] }]
+    },
+    {
+      "start": 87.476,
+      "end": 88.227,
+      "text": "Sırada,",
+      "words": [{ "start": 87.476, "end": 88.227, "char": [0, 7] }]
+    },
+    {
+      "start": 88.227,
+      "end": 90.483,
+      "text": "ilk sunucunuzu ekleyeceğiz.",
+      "words": [
+        { "start": 88.227, "end": 88.979, "char": [0, 3] },
+        { "start": 88.979, "end": 89.731, "char": [4, 14] },
+        { "start": 89.731, "end": 90.483, "char": [15, 27] }
+      ]
+    }
+  ]
+}

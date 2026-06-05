@@ -1,18 +1,16 @@
 ---
 title: ورقة مرجعية لـ RDC CLI
-description: >-
-  مرجع سريع لجميع أوامر rdc، الإعدادات، المستودعات، الأجهزة، المزامنة، الحاويات
-  والمزيد.
+description: "مرجع سريع لـ rdc: الإعدادات والمستودعات والأجهزة ومزامنة الملفات والحاويات. للحصول على الخيارات الكاملة، أضف --help إلى أي أمر."
 category: Guides
 order: 3
 language: ar
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # ورقة مرجعية لـ RDC CLI
 
-مرجع سريع لأكثر أوامر `rdc` استخداماً. شغّل أي أمر مع `--help` للاطلاع على كامل الخيارات.
+لا تتضمن هذه الورقة جميع أوامر `rdc`، فقط تلك التي تستخدم في كل نشر. للحصول على مجموعة الخيارات الكاملة، شغّل أي أمر مع `--help`. الحالات الخاصة والخيارات النادرة موجودة في المرجع الكامل.
 
 ## دورة حياة المستودع
 
@@ -25,6 +23,22 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc repo fork --parent <repo> --tag <tag> -m <machine>` | تفريع مستودع (شبه فوري، باستخدام BTRFS reflink) |
 | `rdc repo takeover --name <repo> -m <machine>` | تولي ملكية مستودع موجود |
 | `rdc config repository list` | عرض جميع المستودعات باسمها ومعرف GUID |
+
+## أسرار المستودع
+
+بيانات اعتماد وقت النشر (كتابة فقط). يعيد `get` الملخص فقط. لا تُرجع القيمة أبداً. راجع [المستودعات § الأسرار](/ar/docs/repositories#secrets) للدليل الكامل.
+
+| الأمر | الوصف |
+|-------|-------|
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\|file] --current ""` | إنشاء سر جديد (`--current ""` للكتابة الأولى) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev>` | الكتابة فوق سر موجود (شرط على نمط كلمة المرور) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret` | الكتابة فوق دون التحقق من القيمة السابقة (مسجلة كدوران) |
+| `rdc repo secret list --name <repo>` | عرض أسماء الأسرار ووسائط التسليم (بدون قيم أبداً، بدون ملخصات) |
+| `rdc repo secret get --name <repo> --key <KEY>` | عرض ملخص السر والوضع (بدون قيمة نصية عادية أبداً) |
+| `rdc repo secret unset --name <repo> --key <KEY> --current <prev>` | حذف سر |
+| `rdc repo secret unset --name <repo> --key <KEY> --rotate-secret` | حذف دون التحقق من القيمة السابقة |
+
+> التفريعات لا ترث أي أسرار. اضبطها على التفرع بشكل صريح مع `rdc repo secret set --name <repo>:<tag>`.
 
 ## النسخ الاحتياطي والاستعادة
 
@@ -98,6 +112,7 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc term connect -m <machine> -r <repo>` | فتح طرفية SSH للمستودع (تعيين DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | تشغيل أمر على الجهاز |
 | `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | رفع ملف أو مجلد أو عدة مصادر إلى المستودع |
+| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | رفع ملف محلي واحد إلى مسار بعيد محدد |
 | `rdc repo sync download -m <machine> -r <repo> --local <dir>` | تنزيل مجلد المستودع محلياً |
 | `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | تنزيل ملف واحد من المستودع إلى مجلد محلي |
 | `rdc vscode connect -m <machine> -r <repo>` | فتح جلسة VS Code Remote SSH |

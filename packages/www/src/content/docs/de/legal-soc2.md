@@ -1,14 +1,14 @@
 ---
 title: "SOC 2-Konformität"
-description: "Wo Rediacc Ihnen SOC 2-Nachweise liefert: die Logs, den Änderungsmanagement-Trail und die Controls, nach denen Auditoren fragen."
+description: "Das ist der Knackpunkt bei SOC 2: Auditoren brauchen Nachweise, dass Ihre Controls funktionieren. Rediacc liefert Ihnen die Logs, den Änderungsmanagement-Trail und alles andere, das Auditoren fragen werden."
 category: "Legal"
 order: 2
 language: de
-sourceHash: "29b0c745e631e4f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "27d2366f84e21d8c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-SOC 2 ist das AICPA-Framework, das Auditoren heranziehen, wenn sie Nachweise dafür wollen, dass Ihre Controls tatsächlich funktionieren. Es umfasst fünf Trust Service Criteria: Sicherheit, Verfügbarkeit, Verarbeitungsintegrität, Vertraulichkeit und Datenschutz.
+Ich kenne SOC 2 aus Audit-Meetings. Auditoren nutzen das AICPA-Framework, um zu prüfen, ob Ihre Controls tatsächlich funktionieren, nicht nur, ob Sie behaupten, dass sie funktionieren. Es gibt fünf Trust Service Criteria: Sicherheit, Verfügbarkeit, Verarbeitungsintegrität, Vertraulichkeit und Datenschutz.
 
 Referenz: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -24,18 +24,19 @@ Referenz: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-a
 
 ## Audit-Trail
 
-Rediacc protokolliert über 40 Ereignistypen auf Kontoebene:
+Rediacc protokolliert also über 70 verschiedene Ereignistypen. Benutzeraktionen, Systemänderungen, Konfigurationsaktualisierungen, Zugriffskontroll-Modifikationen, Sicherheitsereignisse, Fork-Operationen, Audit-Trails. Das klingt nach viel, aber Auditoren interessieren sich tatsächlich für diese Daten.
 
 - **Authentifizierung**: Login, Logout, Passwortänderungen, 2FA-Aktivierung/-Deaktivierung, Sitzungswiderruf
 - **Autorisierung**: API-Token-Erstellung/-Widerruf, Rollenänderungen, Teammitgliedschaft
-- **Konfiguration**: Config-Store-Push/Pull, Mitgliederverwaltung, Zugriffsfehler (IP-Mismatch, SDK-Verweigerung)
-- **Lizenzierung**: Maschinenaktivierung, Lizenzausstellung, Abonnementänderungen
+- **Konfiguration**: Config-Store-Push/Pull, Mitgliederverwaltung, Zugriffsfehler (IP-Mismatch, SDK verweigert)
+- **Lizenzierung**: Repository-Lizenzausstellung, Maschinenschlitz-Tracking, Abonnementänderungen
+- **Maschinenoperationen**: Repository erstellen/starten/stoppen/löschen, Fork, Backup Push/Pull, Dateisynchronisierung, Terminal-Sitzungen
 
-Diese Logs sind über das Admin-Dashboard (mit Filterung nach Benutzer, Team und Datum) und `rdc audit` CLI für programmatischen Export zugänglich. Operationen auf Maschinenebene (Fork, Backup, Deploy) werden über SSH auf Ihrer Infrastruktur ausgeführt, sodass diese Audit-Trails in Ihren Systemlogs liegen.
+Es gibt drei Wege, an diese Logs zu kommen. Admin-Dashboard mit Benutzer-, Team- und Datumsfilter. Portal-Aktivitätsseite für Org-Admins, Typ- und Datumsfilter. Oder die `rdc audit` CLI für programmatischen Export. Sie können die Logs in Ihre eigenen Tools pipen und überall integrieren. Maschinenoperationen protokollieren auch auf Ihren Systemlogs, was eine mehrschichtige Sicherheit bietet.
 
 ## Änderungsmanagement
 
-Forks machen das Änderungsmanagement auditierbar: Jeder Fork ist eine Kopie des Live-Zustands, gegen die getestet, überprüft und entweder hochgestuft oder verworfen werden kann, wobei jeder Schritt mit Zeitstempel und Akteuridentifikation protokolliert wird.
+Forks machen Änderungsmanagement auditierbar. Forken Sie Ihre Produktionsumgebung und Sie haben eine Kopie des aktuellen Zustands. Testen Sie diese. Überprüfen Sie sie. Stufen Sie sie hoch oder verwerfen Sie sie. Jeder Schritt wird mit Zeitstempel versehen und an eine Person gebunden. Das ist das, was Auditoren sehen wollen: keine anonymen Änderungen.
 
 1. Produktions-Repository forken (`rdc repo fork`)
 2. Änderungen am Fork anwenden und testen

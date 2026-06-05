@@ -1,20 +1,22 @@
 ---
-title: Strategia di Backup Intercontinentale
-description: Proteggi i dati dai disastri con backup intercontinentali efficienti e un ripristino più rapido che mai.
+title: Strategia di Backup Incrociato
+description: "Il backup fallisce nel momento in cui la macchina si guasta. Rediacc replica gli snapshot su una macchina separata affinché un singolo guasto del disco non comporti la perdita di tutto."
 category: Use Cases
 order: 5
 language: it
+sourceHash: "39dbeac1faec121c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Quando Colpisce il Disastro, i Tuoi Dati Sopravviveranno? Con Rediacc, Sempre.**
 
-**Nota:** Questo è un **esempio d'uso** che dimostra come Rediacc può risolvere questo problema. In quanto startup, questi scenari rappresentano applicazioni potenziali piuttosto che casi di studio completati.
+**Nota:** Questo è un **esempio d'uso** che dimostra come Rediacc può risolvere questo problema. Questi scenari rappresentano applicazioni potenziali, non casi di studio completati.
 
-**Scenario di crisi:** Dopo una chiamata di un cliente, i servizi sono stati trovati non funzionanti a causa di un **guasto al disco**. L'ultimo backup del server di backup remoto risaliva a **3 settimane prima**, comportando una perdita significativa di dati.
+**Scenario di crisi:** Una chiamata di un cliente rivela l'interruzione del servizio: **guasto al disco**. L'ultimo backup del server di backup remoto risaliva a **3 settimane prima**. Tre settimane di dati, persi.
 
 ## Il Problema
 
-L'organizzazione diventa consapevole dei rischi di eseguire il backup dei dati **solo sulla stessa macchina**:
+Mantenere il backup solo sulla stessa macchina dei dati che protegge non è una strategia. Ecco cosa conferma questo fallimento:
 * Guasti hardware
 * Attacchi informatici
 * Disastri fisici come guerra, terremoto, incendio, alluvione

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "1d0af1a74a12d49e"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "d3b8ff142fe2df34"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # İzleme
@@ -128,7 +128,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 - **Sanal boyut**, tüm depo imaj boyutlarının toplamıdır. Bu, depoların görünümüdür; ancak reflinkler aracılığıyla paylaşılan blokları çift sayar.
 - **Benzersiz veriler**, yalnızca bir depoda var olan depo verileri tarafından tüketilen gerçek depolama alanıdır. Bir depoyu silerken serbest bırakacağınız alan budur.
 - **Paylaşılan**, BTRFS reflinkleri aracılığıyla depolar arasında yeniden kullanılan verilerdir. Bir depoyu çatallama, her iki taraftan biri yeni veriler yazana kadar blokları paylaşan reflink kopyaları oluşturur; bu noktada bloklar ayrışır.
-- **Verimlilik**, reflinkler aracılığıyla yeniden kullanılan verilerin yüzdesidir. Yüksek olması iyidir. Aynı üst depodan çok sayıda çatallanmaya sahip bir makine, %100'e yakın verimlilik gösterir.
+- **Verimlilik**, reflinkler aracılığıyla yeniden kullanılan verilerin yüzdesidir. Yüksek olması iyidir. Aynı üst depodan çok sayıda çatallanmaya sahip bir makine, yüzde 100'e yakın verimlilik gösterir.
 
 Frag sütunu yalnızca bilgi amaçlıdır. Copy-on-write görüntü dosyasının extentlerini sayar, uygulamanızın içinde okuduğu dosyaları değil; bu nedenle normal rastgele yazma iş yükleri (veritabanları, konteyner katmanları) altında yüksek görünür ve SSD destekli depolarda okuma performansını tahmin etmez. Rediacc kasıtlı olarak birleştirme komutu sunmaz: `btrfs filesystem defragment`, reflink bağlantılı çatallamaların ve anlık görüntülerin paylaşımını kaldırır; bu durum, neredeyse dolu bir havuzda kullanımı önemli ölçüde artırabilirken kıyaslamalar ölçülebilir bir okuma kazancı olmadığını gösterir. Tam ölçümler ve gerekçe için bkz. [Parçalanma Sayınız Korkunç Görünüyor. Ne Kadara Mal Olduğunu Ölçtüm.](/tr/blog/i-benchmarked-btrfs-fragmentation).
 
@@ -136,7 +136,7 @@ Tarama paralel olarak çalışır ve depo sayısına ve boyutuna bağlı olarak 
 
 ## BTRFS Scrub
 
-Rediacc, her makinede haftalık BTRFS scrub işlemini otomatik olarak zamanlar. Scrub, veri deposundaki her veri bloğunu okur, sağlama toplamlarını doğrular ve herhangi bir bozulmayı raporlar. Bu, sessiz veri bozulmasını (bitrot) yedeklemelere ve çatallara yayılmadan önce tespit eder.
+Rediacc, her makinede haftalık BTRFS scrub işlemini otomatik olarak zamanlar. Scrub, veri deposundaki her veri bloğunu okur, sağlama toplamlarını doğrular ve herhangi bir bozulmayı raportar. Bu, sessiz veri bozulmasını (bitrot) yedeklemelere ve çatallara yayılmadan önce tespit eder.
 
 Scrub, her Pazar günü 02:00 yerel saatte (makine zaman dilimi) en fazla 1 saate kadar rastgele bir gecikme ile çalışır. Çalışan servislerle çakışmaması için en düşük G/Ç önceliğiyle (`ionice idle`, `nice 19`) çalışır. SSD destekli makinelerde, her 100 GB veri deposu için yaklaşık 8 dakika bekleyin.
 

@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 3
 language: zh
-sourceHash: "4b76f7212633cdec"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "fc8bd1ff08e5611a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # 添加第一台服务器
 
-在添加服务器之前，先了解 `rdc` 的工作原理。Rediacc 由两个工具组成：笔记本上运行 `rdc`，服务器上运行 `renet`。
+两个工具：笔记本上的 `rdc`，服务器上的 `renet`。这就是整个 Rediacc 架构。在添加服务器之前，先了解它们如何连接。
 
 ## 观看教程
 
@@ -32,7 +32,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={1} />
 
-无需执行 `rdc config init`。配置文件在首次使用时自动创建，`rdc` 会回退使用你标准的 `~/.ssh` 密钥。
+无需执行 `rdc config init`。配置文件在首次使用时自动创建，`rdc` 会回退使用你标准的 `~/.ssh` 密钥。密钥选择有意保持最小化 — 如果需要代理转发或跳转主机，按常规在 `~/.ssh/config` 中进行配置；`rdc` 会自动识别。
 
 ## 第二步：配置服务器
 

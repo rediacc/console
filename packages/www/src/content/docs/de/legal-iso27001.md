@@ -4,15 +4,15 @@ description: "Wie Rediacc den Informationssicherheitskontrollen von ISO 27001 f�
 category: "Legal"
 order: 5
 language: de
-sourceHash: "7c80000942b6196d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "52709a22c0b38178"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-ISO/IEC 27001 ist ein internationaler Standard für Informationssicherheits-Managementsysteme (ISMS), veröffentlicht von der Internationalen Organisation für Normung (ISO) und der Internationalen Elektrotechnischen Kommission (IEC). Die aktuelle Version ist ISO/IEC 27001:2022.
+Alright. ISO/IEC 27001:2022 ist der internationale Standard für Informationssicherheits-Managementsysteme. Veröffentlicht von der ISO/IEC, ist es ein umfassendes Dokument, das Kontrollen für Verschlüsselung, Zugangsverwaltung, Incident Response und Dutzende von Sicherheitsbereichen auflistet. Du kennst das mit Sicherheit bereits. Lass mich also direkt sein: Rediacc behandelt nicht jede Kontrolle des Standards, und wir werden auch nicht so tun, als würde es das. Das Folgende ist eine ehrliche Übersicht darüber, wo Rediacc passt. Die aktuelle Version ist ISO/IEC 27001:2022.
 
 Referenz: [ISO/IEC 27001:2022](https://www.iso.org/standard/27001)
 
-Rediacc ist eine Komponente der technischen Kontrollschicht innerhalb eines ISMS. Die folgende Tabelle ordnet die Fähigkeiten von Rediacc den relevanten Kontrolldomänen des Annex A zu.
+Schau, Rediacc ist eine Komponente der technischen Kontrollschicht innerhalb eines ISMS. Die Tabelle unten ordnet die Fähigkeiten von Rediacc den relevanten Kontrolldomänen von Annex A zu.
 
 ## Annex A Kontrollen-Zuordnung
 
@@ -23,13 +23,13 @@ Rediacc ist eine Komponente der technischen Kontrollschicht innerhalb eines ISMS
 | **A.9**, Zugangskontrolle | A.9.2 Benutzerzugangsverwaltung | SSH-Schlüssel-Authentifizierung. API-Tokens mit IP-Bindung, Team-Scoping und automatischem Widerruf bei Team-Entfernung. Zwei-Faktor-Authentifizierung (TOTP). |
 | **A.10**, Kryptographie | A.10.1 Kryptographische Kontrollen | LUKS2 mit konfigurierbaren Schlüsselparametern. Pro-Repository-Verschlüsselungsanmeldedaten. Gesamter Remote-Transport über SSH. Config Store implementiert Zero-Knowledge-Verschlüsselung: AES-256-GCM mit HKDF-Schlüsselableitung, X25519-Mitglieder-Schlüsselaustausch und zeitlich begrenzte SDK-Schlüssel für sofortigen Widerruf. |
 | **A.12**, Betriebssicherheit | A.12.3 Backup | `rdc repo push/pull` mit verschlüsseltem Offsite-Speicher auf mehrere Ziele (SSH, S3, B2, Azure, GDrive). CoW-Snapshots für Point-in-Time-Recovery. `rdc repo validate` überprüft Backup-Gesundheit und Repository-Integrität. |
-| **A.12**, Betriebssicherheit | A.12.4 Protokollierung und Überwachung | Über 40 Ereignistypen auf Kontoebene (Auth, API-Tokens, Config, Lizenzierung). Maschinengesundheitsüberwachung via `rdc machine query`. Container-Status und Ressourcenüberwachung. |
+| **A.12**, Betriebssicherheit | A.12.4 Protokollierung und Überwachung | 70+ Ereignistypen (Auth, API-Tokens, Config, Lizenzierung, Maschinenoperationen). Maschinengesundheitsüberwachung via `rdc machine query`. Container-Status und Ressourcenüberwachung. |
 | **A.13**, Kommunikationssicherheit | A.13.1 Netzwerksicherheitsmanagement | Pro-Repository Docker-Daemon-Isolation. iptables-Regeln blockieren repositoryübergreifenden Verkehr. Loopback-IP-Subnetze (/26) pro Repository. Reverse Proxy mit TLS-Terminierung für externen Zugang. |
 | **A.14**, Systementwicklung | A.14.2 Sicherheit in der Entwicklung | Fork-basierte Entwicklungsumgebungen bieten Produktionsparität ohne Produktionsdatenexposition. Rediaccfile-Lebenszyklus-Hooks ermöglichen automatisierte Datenbereinigung in geklonten Umgebungen. |
 
 ## Asset-Management
 
-Das Repository-Modell von Rediacc unterstützt natürlich die Anforderungen an das Asset-Inventar:
+Das ist einfach: Das Repository-Modell von Rediacc unterstützt natürlich die Anforderungen an das Asset-Inventar:
 
 - Jedes Repository hat eine einzigartige GUID, die bei der Erstellung zugewiesen wird
 - Repositories sind pro Maschine aufzählbar (`rdc machine query --repositories`)
@@ -38,7 +38,7 @@ Das Repository-Modell von Rediacc unterstützt natürlich die Anforderungen an d
 
 ## Änderungsmanagement
 
-Der Fork-Test-Promote-Workflow entspricht den Änderungsmanagement-Anforderungen von ISO 27001:
+Das wird interessant: Der Fork-Test-Promote-Workflow entspricht den Änderungsmanagement-Anforderungen von ISO 27001:
 
 1. **Fork**: Erstellen einer isolierten Kopie der Produktionsumgebung
 2. **Test**: Anwenden und Validieren von Änderungen im Fork

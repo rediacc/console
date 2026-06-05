@@ -1,17 +1,14 @@
 ---
-title: "CLI-приложение"
-description: "Полное руководство по использованию интерфейса командной строки Rediacc для управления платформой"
-category: "Справочник"
+title: "Приложение CLI"
+description: "Справочник команд для rdc, интерфейса командной строки Rediacc. Охватывает управление машинами, репозиториями, конфигурацией, хранилищем, секретами, синхронизацией файлов, удаленными сеансами VS Code и управлением подписками."
+category: "Reference"
 order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "233baf26d48ca547"
+sourceHash: "a754193f03516b7a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
-
-<!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
-<!-- To regenerate: npm run generate:cli-docs -w @rediacc/www -->
-
 # {{t:cli.docs.pageTitle}}
 
 ## {{t:cli.docs.overview.heading}}

@@ -1,16 +1,16 @@
 ---
 title: "rdc vs renet"
-description: "Quando usare rdc e quando usare renet. È una distinzione fondamentale, più semplice di quanto sembri."
+description: "Quando usare rdc e quando usare renet."
 category: "Concepts"
 order: 1
 language: it
-sourceHash: "026a183f8a5f9dd4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2ccc8590bc6f67c6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # rdc vs renet
 
-Rediacc ha due binari. Ecco quando usare ciascuno.
+Rediacc fornisce due binari. Due compiti, due posti. Ecco quale è quale.
 
 | | rdc | renet |
 |---|-----|-------|
@@ -60,7 +60,7 @@ Hai bisogno di `renet` direttamente solo quando accedi via SSH a un server per:
 - Controllo degli interni del sistema non disponibili tramite `rdc`
 - Operazioni di ripristino a basso livello
 
-Tutti i comandi `renet` richiedono privilegi root (`sudo`). Vedi [Server Reference](/it/docs/server-reference) per l'elenco completo dei comandi `renet`.
+Tutti i comandi `renet` richiedono privilegi root (`sudo`). `rdc` non include ogni subcommand di `renet`; per qualsiasi cosa non supportata, accedi via SSH ed esegui `renet` direttamente. Vedi [Server Reference](/it/docs/server-reference) per l'elenco completo dei comandi `renet`.
 
 ## Sperimentale: `rdc ops` (VM Locali)
 

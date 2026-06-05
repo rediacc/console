@@ -1,1 +1,527 @@
-{"version":1,"cues":[{"start":1,"end":1.978,"text":"Très bien !","words":[{"start":1,"end":1.326,"char":[0,4]},{"start":1.326,"end":1.652,"char":[5,9]},{"start":1.652,"end":1.978,"char":[10,11]}]},{"start":1.978,"end":4.584,"text":"Configurons les clés SSH pour que la CLI","words":[{"start":1.978,"end":2.303,"char":[0,11]},{"start":2.303,"end":2.629,"char":[12,15]},{"start":2.629,"end":2.955,"char":[16,20]},{"start":2.955,"end":3.281,"char":[21,24]},{"start":3.281,"end":3.607,"char":[25,29]},{"start":3.607,"end":3.933,"char":[30,33]},{"start":3.933,"end":4.258,"char":[34,36]},{"start":4.258,"end":4.584,"char":[37,40]}]},{"start":4.584,"end":7.191,"text":"puisse atteindre vos serveurs sans mot de passe.","words":[{"start":4.584,"end":4.91,"char":[0,6]},{"start":4.91,"end":5.236,"char":[7,16]},{"start":5.236,"end":5.562,"char":[17,20]},{"start":5.562,"end":5.888,"char":[21,29]},{"start":5.888,"end":6.213,"char":[30,34]},{"start":6.213,"end":6.539,"char":[35,38]},{"start":6.539,"end":6.865,"char":[39,41]},{"start":6.865,"end":7.191,"char":[42,48]}]},{"start":7.976,"end":9.543,"text":"Trois étapes au total.","words":[{"start":7.976,"end":8.368,"char":[0,5]},{"start":8.368,"end":8.76,"char":[6,12]},{"start":8.76,"end":9.152,"char":[13,15]},{"start":9.152,"end":9.543,"char":[16,22]}]},{"start":9.543,"end":11.894,"text":"Générer une clé sur votre ordinateur,","words":[{"start":9.543,"end":9.935,"char":[0,7]},{"start":9.935,"end":10.327,"char":[8,11]},{"start":10.327,"end":10.719,"char":[12,15]},{"start":10.719,"end":11.111,"char":[16,19]},{"start":11.111,"end":11.503,"char":[20,25]},{"start":11.503,"end":11.894,"char":[26,37]}]},{"start":11.894,"end":13.854,"text":"la copier sur le serveur,","words":[{"start":11.894,"end":12.286,"char":[0,2]},{"start":12.286,"end":12.678,"char":[3,9]},{"start":12.678,"end":13.07,"char":[10,13]},{"start":13.07,"end":13.462,"char":[14,16]},{"start":13.462,"end":13.854,"char":[17,25]}]},{"start":13.854,"end":16.596,"text":"puis l'enregistrer auprès de l'outil en ligne","words":[{"start":13.854,"end":14.245,"char":[0,4]},{"start":14.245,"end":14.637,"char":[5,18]},{"start":14.637,"end":15.029,"char":[19,25]},{"start":15.029,"end":15.421,"char":[26,28]},{"start":15.421,"end":15.813,"char":[29,36]},{"start":15.813,"end":16.205,"char":[37,39]},{"start":16.205,"end":16.596,"char":[40,45]}]},{"start":16.596,"end":17.38,"text":"de commande.","words":[{"start":16.596,"end":16.988,"char":[0,2]},{"start":16.988,"end":17.38,"char":[3,12]}]},{"start":17.38,"end":20.123,"text":"Deux de ces étapes ne se font","words":[{"start":17.38,"end":17.772,"char":[0,4]},{"start":17.772,"end":18.164,"char":[5,7]},{"start":18.164,"end":18.556,"char":[8,11]},{"start":18.556,"end":18.947,"char":[12,18]},{"start":18.947,"end":19.339,"char":[19,21]},{"start":19.339,"end":19.731,"char":[22,24]},{"start":19.731,"end":20.123,"char":[25,29]}]},{"start":20.123,"end":21.298,"text":"qu'une seule fois.","words":[{"start":20.123,"end":20.515,"char":[0,6]},{"start":20.515,"end":20.907,"char":[7,12]},{"start":20.907,"end":21.298,"char":[13,18]}]},{"start":24.558,"end":25.589,"text":"Première étape.","words":[{"start":24.558,"end":25.073,"char":[0,8]},{"start":25.073,"end":25.589,"char":[9,15]}]},{"start":25.589,"end":28.166,"text":"Nous allons générer une nouvelle","words":[{"start":25.589,"end":26.104,"char":[0,4]},{"start":26.104,"end":26.62,"char":[5,11]},{"start":26.62,"end":27.135,"char":[12,19]},{"start":27.135,"end":27.65,"char":[20,23]},{"start":27.65,"end":28.166,"char":[24,32]}]},{"start":28.166,"end":29.712,"text":"clé SSH ed25519.","words":[{"start":28.166,"end":28.681,"char":[0,3]},{"start":28.681,"end":29.197,"char":[4,7]},{"start":29.197,"end":29.712,"char":[8,16]}]},{"start":29.712,"end":32.289,"text":"ed25519 est le standard moderne","words":[{"start":29.712,"end":30.227,"char":[0,7]},{"start":30.227,"end":30.743,"char":[8,11]},{"start":30.743,"end":31.258,"char":[12,14]},{"start":31.258,"end":31.773,"char":[15,23]},{"start":31.773,"end":32.289,"char":[24,31]}]},{"start":32.289,"end":32.804,"text":":","words":[{"start":32.289,"end":32.804,"char":[0,1]}]},{"start":32.804,"end":33.32,"text":"compact,","words":[{"start":32.804,"end":33.32,"char":[0,8]}]},{"start":33.32,"end":35.381,"text":"rapide et bien supporté.","words":[{"start":33.32,"end":33.835,"char":[0,6]},{"start":33.835,"end":34.35,"char":[7,9]},{"start":34.35,"end":34.866,"char":[10,14]},{"start":34.866,"end":35.381,"char":[15,24]}]},{"start":35.381,"end":37.958,"text":"Vous n'avez besoin de faire","words":[{"start":35.381,"end":35.897,"char":[0,4]},{"start":35.897,"end":36.412,"char":[5,11]},{"start":36.412,"end":36.927,"char":[12,18]},{"start":36.927,"end":37.443,"char":[19,21]},{"start":37.443,"end":37.958,"char":[22,27]}]},{"start":37.958,"end":40.535,"text":"cela qu'une seule fois pour","words":[{"start":37.958,"end":38.474,"char":[0,4]},{"start":38.474,"end":38.989,"char":[5,11]},{"start":38.989,"end":39.504,"char":[12,17]},{"start":39.504,"end":40.02,"char":[18,22]},{"start":40.02,"end":40.535,"char":[23,27]}]},{"start":40.535,"end":43.112,"text":"tous les serveurs que vous","words":[{"start":40.535,"end":41.05,"char":[0,4]},{"start":41.05,"end":41.566,"char":[5,8]},{"start":41.566,"end":42.081,"char":[9,17]},{"start":42.081,"end":42.597,"char":[18,21]},{"start":42.597,"end":43.112,"char":[22,26]}]},{"start":43.112,"end":43.627,"text":"ajouterez.","words":[{"start":43.112,"end":43.627,"char":[0,10]}]},{"start":44.427,"end":45.285,"text":"Clé générée.","words":[{"start":44.427,"end":44.856,"char":[0,3]},{"start":44.856,"end":45.285,"char":[4,12]}]},{"start":45.285,"end":47.858,"text":"C'est la partie publique que nous","words":[{"start":45.285,"end":45.714,"char":[0,5]},{"start":45.714,"end":46.143,"char":[6,8]},{"start":46.143,"end":46.572,"char":[9,15]},{"start":46.572,"end":47,"char":[16,24]},{"start":47,"end":47.429,"char":[25,28]},{"start":47.429,"end":47.858,"char":[29,33]}]},{"start":47.858,"end":49.574,"text":"copierons sur le serveur.","words":[{"start":47.858,"end":48.287,"char":[0,9]},{"start":48.287,"end":48.716,"char":[10,13]},{"start":48.716,"end":49.145,"char":[14,16]},{"start":49.145,"end":49.574,"char":[17,25]}]},{"start":52.912,"end":53.674,"text":"Deuxième étape.","words":[{"start":52.912,"end":53.293,"char":[0,8]},{"start":53.293,"end":53.674,"char":[9,15]}]},{"start":53.674,"end":56.341,"text":"Nous copions la clé publique sur le","words":[{"start":53.674,"end":54.055,"char":[0,4]},{"start":54.055,"end":54.436,"char":[5,12]},{"start":54.436,"end":54.817,"char":[13,15]},{"start":54.817,"end":55.198,"char":[16,19]},{"start":55.198,"end":55.579,"char":[20,28]},{"start":55.579,"end":55.96,"char":[29,32]},{"start":55.96,"end":56.341,"char":[33,35]}]},{"start":56.341,"end":57.483,"text":"serveur avec ssh-copy-id.","words":[{"start":56.341,"end":56.722,"char":[0,7]},{"start":56.722,"end":57.102,"char":[8,12]},{"start":57.102,"end":57.483,"char":[13,25]}]},{"start":57.483,"end":60.15,"text":"Le mot de passe du serveur est","words":[{"start":57.483,"end":57.864,"char":[0,2]},{"start":57.864,"end":58.245,"char":[3,6]},{"start":58.245,"end":58.626,"char":[7,9]},{"start":58.626,"end":59.007,"char":[10,15]},{"start":59.007,"end":59.388,"char":[16,18]},{"start":59.388,"end":59.769,"char":[19,26]},{"start":59.769,"end":60.15,"char":[27,30]}]},{"start":60.15,"end":61.674,"text":"demandé une dernière fois.","words":[{"start":60.15,"end":60.531,"char":[0,7]},{"start":60.531,"end":60.912,"char":[8,11]},{"start":60.912,"end":61.293,"char":[12,20]},{"start":61.293,"end":61.674,"char":[21,26]}]},{"start":61.674,"end":62.436,"text":"Après cela,","words":[{"start":61.674,"end":62.055,"char":[0,5]},{"start":62.055,"end":62.436,"char":[6,11]}]},{"start":62.436,"end":65.102,"text":"l'authentification par mot de passe n'est plus","words":[{"start":62.436,"end":62.817,"char":[0,18]},{"start":62.817,"end":63.198,"char":[19,22]},{"start":63.198,"end":63.579,"char":[23,26]},{"start":63.579,"end":63.96,"char":[27,29]},{"start":63.96,"end":64.341,"char":[30,35]},{"start":64.341,"end":64.722,"char":[36,41]},{"start":64.722,"end":65.102,"char":[42,46]}]},{"start":65.102,"end":66.626,"text":"nécessaire pour ce serveur.","words":[{"start":65.102,"end":65.483,"char":[0,10]},{"start":65.483,"end":65.864,"char":[11,15]},{"start":65.864,"end":66.245,"char":[16,18]},{"start":66.245,"end":66.626,"char":[19,27]}]},{"start":68.626,"end":70.557,"text":"Lancez ceci sur votre ordinateur.","words":[{"start":68.626,"end":69.013,"char":[0,6]},{"start":69.013,"end":69.399,"char":[7,11]},{"start":69.399,"end":69.785,"char":[12,15]},{"start":69.785,"end":70.171,"char":[16,21]},{"start":70.171,"end":70.557,"char":[22,33]}]},{"start":70.557,"end":71.716,"text":"Une fois réussi,","words":[{"start":70.557,"end":70.944,"char":[0,3]},{"start":70.944,"end":71.33,"char":[4,8]},{"start":71.33,"end":71.716,"char":[9,16]}]},{"start":71.716,"end":74.034,"text":"les mots de passe sont écartés.","words":[{"start":71.716,"end":72.102,"char":[0,3]},{"start":72.102,"end":72.489,"char":[4,8]},{"start":72.489,"end":72.875,"char":[9,11]},{"start":72.875,"end":73.261,"char":[12,17]},{"start":73.261,"end":73.647,"char":[18,22]},{"start":73.647,"end":74.034,"char":[23,31]}]},{"start":77.332,"end":78.065,"text":"Troisième étape.","words":[{"start":77.332,"end":77.699,"char":[0,9]},{"start":77.699,"end":78.065,"char":[10,16]}]},{"start":78.065,"end":80.632,"text":"Nous enregistrons maintenant la clé auprès de","words":[{"start":78.065,"end":78.432,"char":[0,4]},{"start":78.432,"end":78.799,"char":[5,17]},{"start":78.799,"end":79.165,"char":[18,28]},{"start":79.165,"end":79.532,"char":[29,31]},{"start":79.532,"end":79.899,"char":[32,35]},{"start":79.899,"end":80.265,"char":[36,42]},{"start":80.265,"end":80.632,"char":[43,45]}]},{"start":80.632,"end":82.098,"text":"la ligne de commande.","words":[{"start":80.632,"end":80.998,"char":[0,2]},{"start":80.998,"end":81.365,"char":[3,8]},{"start":81.365,"end":81.732,"char":[9,11]},{"start":81.732,"end":82.098,"char":[12,21]}]},{"start":82.098,"end":82.465,"text":"Désormais,","words":[{"start":82.098,"end":82.465,"char":[0,10]}]},{"start":82.465,"end":84.665,"text":"chaque commande s'authentifie avec cette clé.","words":[{"start":82.465,"end":82.832,"char":[0,6]},{"start":82.832,"end":83.198,"char":[7,15]},{"start":83.198,"end":83.565,"char":[16,29]},{"start":83.565,"end":83.932,"char":[30,34]},{"start":83.932,"end":84.298,"char":[35,40]},{"start":84.298,"end":84.665,"char":[41,45]}]},{"start":84.665,"end":86.498,"text":"Plus de mots de passe,","words":[{"start":84.665,"end":85.032,"char":[0,4]},{"start":85.032,"end":85.398,"char":[5,7]},{"start":85.398,"end":85.765,"char":[8,12]},{"start":85.765,"end":86.132,"char":[13,15]},{"start":86.132,"end":86.498,"char":[16,22]}]},{"start":86.498,"end":87.598,"text":"plus d'invites interactives.","words":[{"start":86.498,"end":86.865,"char":[0,4]},{"start":86.865,"end":87.231,"char":[5,14]},{"start":87.231,"end":87.598,"char":[15,28]}]},{"start":89.598,"end":92.524,"text":"Clé enregistrée auprès de la CLI.","words":[{"start":89.598,"end":90.086,"char":[0,3]},{"start":90.086,"end":90.573,"char":[4,15]},{"start":90.573,"end":91.061,"char":[16,22]},{"start":91.061,"end":91.549,"char":[23,25]},{"start":91.549,"end":92.036,"char":[26,28]},{"start":92.036,"end":92.524,"char":[29,33]}]},{"start":93.324,"end":96.016,"text":"La clé est enregistrée et la CLI est","words":[{"start":93.324,"end":93.661,"char":[0,2]},{"start":93.661,"end":93.997,"char":[3,6]},{"start":93.997,"end":94.334,"char":[7,10]},{"start":94.334,"end":94.67,"char":[11,22]},{"start":94.67,"end":95.007,"char":[23,25]},{"start":95.007,"end":95.343,"char":[26,28]},{"start":95.343,"end":95.68,"char":[29,32]},{"start":95.68,"end":96.016,"char":[33,36]}]},{"start":96.016,"end":96.353,"text":"prête.","words":[{"start":96.016,"end":96.353,"char":[0,6]}]},{"start":96.353,"end":97.362,"text":"Dans la suite,","words":[{"start":96.353,"end":96.689,"char":[0,4]},{"start":96.689,"end":97.026,"char":[5,7]},{"start":97.026,"end":97.362,"char":[8,14]}]},{"start":97.362,"end":99.045,"text":"nous ajoutons votre premier serveur.","words":[{"start":97.362,"end":97.699,"char":[0,4]},{"start":97.699,"end":98.035,"char":[5,13]},{"start":98.035,"end":98.372,"char":[14,19]},{"start":98.372,"end":98.708,"char":[20,27]},{"start":98.708,"end":99.045,"char":[28,36]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.978,
+      "text": "Très bien !",
+      "words": [
+        { "start": 1, "end": 1.326, "char": [0, 4] },
+        { "start": 1.326, "end": 1.652, "char": [5, 9] },
+        { "start": 1.652, "end": 1.978, "char": [10, 11] }
+      ]
+    },
+    {
+      "start": 1.978,
+      "end": 4.584,
+      "text": "Configurons les clés SSH pour que la CLI",
+      "words": [
+        { "start": 1.978, "end": 2.303, "char": [0, 11] },
+        { "start": 2.303, "end": 2.629, "char": [12, 15] },
+        { "start": 2.629, "end": 2.955, "char": [16, 20] },
+        { "start": 2.955, "end": 3.281, "char": [21, 24] },
+        { "start": 3.281, "end": 3.607, "char": [25, 29] },
+        { "start": 3.607, "end": 3.933, "char": [30, 33] },
+        { "start": 3.933, "end": 4.258, "char": [34, 36] },
+        { "start": 4.258, "end": 4.584, "char": [37, 40] }
+      ]
+    },
+    {
+      "start": 4.584,
+      "end": 7.191,
+      "text": "puisse atteindre vos serveurs sans mot de passe.",
+      "words": [
+        { "start": 4.584, "end": 4.91, "char": [0, 6] },
+        { "start": 4.91, "end": 5.236, "char": [7, 16] },
+        { "start": 5.236, "end": 5.562, "char": [17, 20] },
+        { "start": 5.562, "end": 5.888, "char": [21, 29] },
+        { "start": 5.888, "end": 6.213, "char": [30, 34] },
+        { "start": 6.213, "end": 6.539, "char": [35, 38] },
+        { "start": 6.539, "end": 6.865, "char": [39, 41] },
+        { "start": 6.865, "end": 7.191, "char": [42, 48] }
+      ]
+    },
+    {
+      "start": 7.976,
+      "end": 9.543,
+      "text": "Trois étapes au total.",
+      "words": [
+        { "start": 7.976, "end": 8.368, "char": [0, 5] },
+        { "start": 8.368, "end": 8.76, "char": [6, 12] },
+        { "start": 8.76, "end": 9.152, "char": [13, 15] },
+        { "start": 9.152, "end": 9.543, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 9.543,
+      "end": 11.894,
+      "text": "Générer une clé sur votre ordinateur,",
+      "words": [
+        { "start": 9.543, "end": 9.935, "char": [0, 7] },
+        { "start": 9.935, "end": 10.327, "char": [8, 11] },
+        { "start": 10.327, "end": 10.719, "char": [12, 15] },
+        { "start": 10.719, "end": 11.111, "char": [16, 19] },
+        { "start": 11.111, "end": 11.503, "char": [20, 25] },
+        { "start": 11.503, "end": 11.894, "char": [26, 37] }
+      ]
+    },
+    {
+      "start": 11.894,
+      "end": 13.854,
+      "text": "la copier sur le serveur,",
+      "words": [
+        { "start": 11.894, "end": 12.286, "char": [0, 2] },
+        { "start": 12.286, "end": 12.678, "char": [3, 9] },
+        { "start": 12.678, "end": 13.07, "char": [10, 13] },
+        { "start": 13.07, "end": 13.462, "char": [14, 16] },
+        { "start": 13.462, "end": 13.854, "char": [17, 25] }
+      ]
+    },
+    {
+      "start": 13.854,
+      "end": 16.596,
+      "text": "puis l'enregistrer auprès de l'outil en ligne",
+      "words": [
+        { "start": 13.854, "end": 14.245, "char": [0, 4] },
+        { "start": 14.245, "end": 14.637, "char": [5, 18] },
+        { "start": 14.637, "end": 15.029, "char": [19, 25] },
+        { "start": 15.029, "end": 15.421, "char": [26, 28] },
+        { "start": 15.421, "end": 15.813, "char": [29, 36] },
+        { "start": 15.813, "end": 16.205, "char": [37, 39] },
+        { "start": 16.205, "end": 16.596, "char": [40, 45] }
+      ]
+    },
+    {
+      "start": 16.596,
+      "end": 17.38,
+      "text": "de commande.",
+      "words": [
+        { "start": 16.596, "end": 16.988, "char": [0, 2] },
+        { "start": 16.988, "end": 17.38, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 17.38,
+      "end": 20.123,
+      "text": "Deux de ces étapes ne se font",
+      "words": [
+        { "start": 17.38, "end": 17.772, "char": [0, 4] },
+        { "start": 17.772, "end": 18.164, "char": [5, 7] },
+        { "start": 18.164, "end": 18.556, "char": [8, 11] },
+        { "start": 18.556, "end": 18.947, "char": [12, 18] },
+        { "start": 18.947, "end": 19.339, "char": [19, 21] },
+        { "start": 19.339, "end": 19.731, "char": [22, 24] },
+        { "start": 19.731, "end": 20.123, "char": [25, 29] }
+      ]
+    },
+    {
+      "start": 20.123,
+      "end": 21.298,
+      "text": "qu'une seule fois.",
+      "words": [
+        { "start": 20.123, "end": 20.515, "char": [0, 6] },
+        { "start": 20.515, "end": 20.907, "char": [7, 12] },
+        { "start": 20.907, "end": 21.298, "char": [13, 18] }
+      ]
+    },
+    {
+      "start": 24.558,
+      "end": 25.589,
+      "text": "Première étape.",
+      "words": [
+        { "start": 24.558, "end": 25.073, "char": [0, 8] },
+        { "start": 25.073, "end": 25.589, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 25.589,
+      "end": 28.166,
+      "text": "Nous allons générer une nouvelle",
+      "words": [
+        { "start": 25.589, "end": 26.104, "char": [0, 4] },
+        { "start": 26.104, "end": 26.62, "char": [5, 11] },
+        { "start": 26.62, "end": 27.135, "char": [12, 19] },
+        { "start": 27.135, "end": 27.65, "char": [20, 23] },
+        { "start": 27.65, "end": 28.166, "char": [24, 32] }
+      ]
+    },
+    {
+      "start": 28.166,
+      "end": 29.712,
+      "text": "clé SSH ed25519.",
+      "words": [
+        { "start": 28.166, "end": 28.681, "char": [0, 3] },
+        { "start": 28.681, "end": 29.197, "char": [4, 7] },
+        { "start": 29.197, "end": 29.712, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 29.712,
+      "end": 32.289,
+      "text": "ed25519 est le standard moderne",
+      "words": [
+        { "start": 29.712, "end": 30.227, "char": [0, 7] },
+        { "start": 30.227, "end": 30.743, "char": [8, 11] },
+        { "start": 30.743, "end": 31.258, "char": [12, 14] },
+        { "start": 31.258, "end": 31.773, "char": [15, 23] },
+        { "start": 31.773, "end": 32.289, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 32.289,
+      "end": 32.804,
+      "text": ":",
+      "words": [{ "start": 32.289, "end": 32.804, "char": [0, 1] }]
+    },
+    {
+      "start": 32.804,
+      "end": 33.32,
+      "text": "compact,",
+      "words": [{ "start": 32.804, "end": 33.32, "char": [0, 8] }]
+    },
+    {
+      "start": 33.32,
+      "end": 35.381,
+      "text": "rapide et bien supporté.",
+      "words": [
+        { "start": 33.32, "end": 33.835, "char": [0, 6] },
+        { "start": 33.835, "end": 34.35, "char": [7, 9] },
+        { "start": 34.35, "end": 34.866, "char": [10, 14] },
+        { "start": 34.866, "end": 35.381, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 35.381,
+      "end": 37.958,
+      "text": "Vous n'avez besoin de faire",
+      "words": [
+        { "start": 35.381, "end": 35.897, "char": [0, 4] },
+        { "start": 35.897, "end": 36.412, "char": [5, 11] },
+        { "start": 36.412, "end": 36.927, "char": [12, 18] },
+        { "start": 36.927, "end": 37.443, "char": [19, 21] },
+        { "start": 37.443, "end": 37.958, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 37.958,
+      "end": 40.535,
+      "text": "cela qu'une seule fois pour",
+      "words": [
+        { "start": 37.958, "end": 38.474, "char": [0, 4] },
+        { "start": 38.474, "end": 38.989, "char": [5, 11] },
+        { "start": 38.989, "end": 39.504, "char": [12, 17] },
+        { "start": 39.504, "end": 40.02, "char": [18, 22] },
+        { "start": 40.02, "end": 40.535, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 40.535,
+      "end": 43.112,
+      "text": "tous les serveurs que vous",
+      "words": [
+        { "start": 40.535, "end": 41.05, "char": [0, 4] },
+        { "start": 41.05, "end": 41.566, "char": [5, 8] },
+        { "start": 41.566, "end": 42.081, "char": [9, 17] },
+        { "start": 42.081, "end": 42.597, "char": [18, 21] },
+        { "start": 42.597, "end": 43.112, "char": [22, 26] }
+      ]
+    },
+    {
+      "start": 43.112,
+      "end": 43.627,
+      "text": "ajouterez.",
+      "words": [{ "start": 43.112, "end": 43.627, "char": [0, 10] }]
+    },
+    {
+      "start": 44.427,
+      "end": 45.285,
+      "text": "Clé générée.",
+      "words": [
+        { "start": 44.427, "end": 44.856, "char": [0, 3] },
+        { "start": 44.856, "end": 45.285, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 45.285,
+      "end": 47.858,
+      "text": "C'est la partie publique que nous",
+      "words": [
+        { "start": 45.285, "end": 45.714, "char": [0, 5] },
+        { "start": 45.714, "end": 46.143, "char": [6, 8] },
+        { "start": 46.143, "end": 46.572, "char": [9, 15] },
+        { "start": 46.572, "end": 47, "char": [16, 24] },
+        { "start": 47, "end": 47.429, "char": [25, 28] },
+        { "start": 47.429, "end": 47.858, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 47.858,
+      "end": 49.574,
+      "text": "copierons sur le serveur.",
+      "words": [
+        { "start": 47.858, "end": 48.287, "char": [0, 9] },
+        { "start": 48.287, "end": 48.716, "char": [10, 13] },
+        { "start": 48.716, "end": 49.145, "char": [14, 16] },
+        { "start": 49.145, "end": 49.574, "char": [17, 25] }
+      ]
+    },
+    {
+      "start": 52.912,
+      "end": 53.674,
+      "text": "Deuxième étape.",
+      "words": [
+        { "start": 52.912, "end": 53.293, "char": [0, 8] },
+        { "start": 53.293, "end": 53.674, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 53.674,
+      "end": 56.341,
+      "text": "Nous copions la clé publique sur le",
+      "words": [
+        { "start": 53.674, "end": 54.055, "char": [0, 4] },
+        { "start": 54.055, "end": 54.436, "char": [5, 12] },
+        { "start": 54.436, "end": 54.817, "char": [13, 15] },
+        { "start": 54.817, "end": 55.198, "char": [16, 19] },
+        { "start": 55.198, "end": 55.579, "char": [20, 28] },
+        { "start": 55.579, "end": 55.96, "char": [29, 32] },
+        { "start": 55.96, "end": 56.341, "char": [33, 35] }
+      ]
+    },
+    {
+      "start": 56.341,
+      "end": 57.483,
+      "text": "serveur avec ssh-copy-id.",
+      "words": [
+        { "start": 56.341, "end": 56.722, "char": [0, 7] },
+        { "start": 56.722, "end": 57.102, "char": [8, 12] },
+        { "start": 57.102, "end": 57.483, "char": [13, 25] }
+      ]
+    },
+    {
+      "start": 57.483,
+      "end": 60.15,
+      "text": "Le mot de passe du serveur est",
+      "words": [
+        { "start": 57.483, "end": 57.864, "char": [0, 2] },
+        { "start": 57.864, "end": 58.245, "char": [3, 6] },
+        { "start": 58.245, "end": 58.626, "char": [7, 9] },
+        { "start": 58.626, "end": 59.007, "char": [10, 15] },
+        { "start": 59.007, "end": 59.388, "char": [16, 18] },
+        { "start": 59.388, "end": 59.769, "char": [19, 26] },
+        { "start": 59.769, "end": 60.15, "char": [27, 30] }
+      ]
+    },
+    {
+      "start": 60.15,
+      "end": 61.674,
+      "text": "demandé une dernière fois.",
+      "words": [
+        { "start": 60.15, "end": 60.531, "char": [0, 7] },
+        { "start": 60.531, "end": 60.912, "char": [8, 11] },
+        { "start": 60.912, "end": 61.293, "char": [12, 20] },
+        { "start": 61.293, "end": 61.674, "char": [21, 26] }
+      ]
+    },
+    {
+      "start": 61.674,
+      "end": 62.436,
+      "text": "Après cela,",
+      "words": [
+        { "start": 61.674, "end": 62.055, "char": [0, 5] },
+        { "start": 62.055, "end": 62.436, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 62.436,
+      "end": 65.102,
+      "text": "l'authentification par mot de passe n'est plus",
+      "words": [
+        { "start": 62.436, "end": 62.817, "char": [0, 18] },
+        { "start": 62.817, "end": 63.198, "char": [19, 22] },
+        { "start": 63.198, "end": 63.579, "char": [23, 26] },
+        { "start": 63.579, "end": 63.96, "char": [27, 29] },
+        { "start": 63.96, "end": 64.341, "char": [30, 35] },
+        { "start": 64.341, "end": 64.722, "char": [36, 41] },
+        { "start": 64.722, "end": 65.102, "char": [42, 46] }
+      ]
+    },
+    {
+      "start": 65.102,
+      "end": 66.626,
+      "text": "nécessaire pour ce serveur.",
+      "words": [
+        { "start": 65.102, "end": 65.483, "char": [0, 10] },
+        { "start": 65.483, "end": 65.864, "char": [11, 15] },
+        { "start": 65.864, "end": 66.245, "char": [16, 18] },
+        { "start": 66.245, "end": 66.626, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 68.626,
+      "end": 70.557,
+      "text": "Lancez ceci sur votre ordinateur.",
+      "words": [
+        { "start": 68.626, "end": 69.013, "char": [0, 6] },
+        { "start": 69.013, "end": 69.399, "char": [7, 11] },
+        { "start": 69.399, "end": 69.785, "char": [12, 15] },
+        { "start": 69.785, "end": 70.171, "char": [16, 21] },
+        { "start": 70.171, "end": 70.557, "char": [22, 33] }
+      ]
+    },
+    {
+      "start": 70.557,
+      "end": 71.716,
+      "text": "Une fois réussi,",
+      "words": [
+        { "start": 70.557, "end": 70.944, "char": [0, 3] },
+        { "start": 70.944, "end": 71.33, "char": [4, 8] },
+        { "start": 71.33, "end": 71.716, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 71.716,
+      "end": 74.034,
+      "text": "les mots de passe sont écartés.",
+      "words": [
+        { "start": 71.716, "end": 72.102, "char": [0, 3] },
+        { "start": 72.102, "end": 72.489, "char": [4, 8] },
+        { "start": 72.489, "end": 72.875, "char": [9, 11] },
+        { "start": 72.875, "end": 73.261, "char": [12, 17] },
+        { "start": 73.261, "end": 73.647, "char": [18, 22] },
+        { "start": 73.647, "end": 74.034, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 77.332,
+      "end": 78.065,
+      "text": "Troisième étape.",
+      "words": [
+        { "start": 77.332, "end": 77.699, "char": [0, 9] },
+        { "start": 77.699, "end": 78.065, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 78.065,
+      "end": 80.632,
+      "text": "Nous enregistrons maintenant la clé auprès de",
+      "words": [
+        { "start": 78.065, "end": 78.432, "char": [0, 4] },
+        { "start": 78.432, "end": 78.799, "char": [5, 17] },
+        { "start": 78.799, "end": 79.165, "char": [18, 28] },
+        { "start": 79.165, "end": 79.532, "char": [29, 31] },
+        { "start": 79.532, "end": 79.899, "char": [32, 35] },
+        { "start": 79.899, "end": 80.265, "char": [36, 42] },
+        { "start": 80.265, "end": 80.632, "char": [43, 45] }
+      ]
+    },
+    {
+      "start": 80.632,
+      "end": 82.098,
+      "text": "la ligne de commande.",
+      "words": [
+        { "start": 80.632, "end": 80.998, "char": [0, 2] },
+        { "start": 80.998, "end": 81.365, "char": [3, 8] },
+        { "start": 81.365, "end": 81.732, "char": [9, 11] },
+        { "start": 81.732, "end": 82.098, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 82.098,
+      "end": 82.465,
+      "text": "Désormais,",
+      "words": [{ "start": 82.098, "end": 82.465, "char": [0, 10] }]
+    },
+    {
+      "start": 82.465,
+      "end": 84.665,
+      "text": "chaque commande s'authentifie avec cette clé.",
+      "words": [
+        { "start": 82.465, "end": 82.832, "char": [0, 6] },
+        { "start": 82.832, "end": 83.198, "char": [7, 15] },
+        { "start": 83.198, "end": 83.565, "char": [16, 29] },
+        { "start": 83.565, "end": 83.932, "char": [30, 34] },
+        { "start": 83.932, "end": 84.298, "char": [35, 40] },
+        { "start": 84.298, "end": 84.665, "char": [41, 45] }
+      ]
+    },
+    {
+      "start": 84.665,
+      "end": 86.498,
+      "text": "Plus de mots de passe,",
+      "words": [
+        { "start": 84.665, "end": 85.032, "char": [0, 4] },
+        { "start": 85.032, "end": 85.398, "char": [5, 7] },
+        { "start": 85.398, "end": 85.765, "char": [8, 12] },
+        { "start": 85.765, "end": 86.132, "char": [13, 15] },
+        { "start": 86.132, "end": 86.498, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 86.498,
+      "end": 87.598,
+      "text": "plus d'invites interactives.",
+      "words": [
+        { "start": 86.498, "end": 86.865, "char": [0, 4] },
+        { "start": 86.865, "end": 87.231, "char": [5, 14] },
+        { "start": 87.231, "end": 87.598, "char": [15, 28] }
+      ]
+    },
+    {
+      "start": 89.598,
+      "end": 92.524,
+      "text": "Clé enregistrée auprès de la CLI.",
+      "words": [
+        { "start": 89.598, "end": 90.086, "char": [0, 3] },
+        { "start": 90.086, "end": 90.573, "char": [4, 15] },
+        { "start": 90.573, "end": 91.061, "char": [16, 22] },
+        { "start": 91.061, "end": 91.549, "char": [23, 25] },
+        { "start": 91.549, "end": 92.036, "char": [26, 28] },
+        { "start": 92.036, "end": 92.524, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 93.324,
+      "end": 96.016,
+      "text": "La clé est enregistrée et la CLI est",
+      "words": [
+        { "start": 93.324, "end": 93.661, "char": [0, 2] },
+        { "start": 93.661, "end": 93.997, "char": [3, 6] },
+        { "start": 93.997, "end": 94.334, "char": [7, 10] },
+        { "start": 94.334, "end": 94.67, "char": [11, 22] },
+        { "start": 94.67, "end": 95.007, "char": [23, 25] },
+        { "start": 95.007, "end": 95.343, "char": [26, 28] },
+        { "start": 95.343, "end": 95.68, "char": [29, 32] },
+        { "start": 95.68, "end": 96.016, "char": [33, 36] }
+      ]
+    },
+    {
+      "start": 96.016,
+      "end": 96.353,
+      "text": "prête.",
+      "words": [{ "start": 96.016, "end": 96.353, "char": [0, 6] }]
+    },
+    {
+      "start": 96.353,
+      "end": 97.362,
+      "text": "Dans la suite,",
+      "words": [
+        { "start": 96.353, "end": 96.689, "char": [0, 4] },
+        { "start": 96.689, "end": 97.026, "char": [5, 7] },
+        { "start": 97.026, "end": 97.362, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 97.362,
+      "end": 99.045,
+      "text": "nous ajoutons votre premier serveur.",
+      "words": [
+        { "start": 97.362, "end": 97.699, "char": [0, 4] },
+        { "start": 97.699, "end": 98.035, "char": [5, 13] },
+        { "start": 98.035, "end": 98.372, "char": [14, 19] },
+        { "start": 98.372, "end": 98.708, "char": [20, 27] },
+        { "start": 98.708, "end": 99.045, "char": [28, 36] }
+      ]
+    }
+  ]
+}

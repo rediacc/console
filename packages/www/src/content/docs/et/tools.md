@@ -4,13 +4,13 @@ description: "Failide sünkroonimine, terminali ligipääs, VS Code integratsioo
 category: "Guides"
 order: 9
 language: et
-sourceHash: "f350872720c99d58"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4b3aebff5e82416f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Tööriistad
 
-Rediacc sisaldab kaugrepositooriumidega töötamiseks tööriistu: failide sünkroonimine, SSH-terminal, VS Code integratsioon ja CLI uuendused.
+Rediacc sisaldab nelja tööriista igapäevaseks tööks oma masinate ja repositooriumidega: failide sünkroonimine SSH üle, SSH-terminal, VS Code integratsioon ja CLI uuendused. Kõik neli töötavad SSH üle. Kaugmasinale ei pea installima agenti ega deemooni. Kui soovid graafilist kasutajaliidest, siis vaata teisele leheküljele.
 
 ## Failide sünkroonimine (sync)
 

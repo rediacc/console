@@ -4,8 +4,8 @@ description: "Ejecutar el servidor de cuentas y la distribución del CLI en tu p
 category: "Guides"
 order: 5
 language: es
-sourceHash: "c8c9aceeeeea1411"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "eea76db2d612133f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 Rediacc puede ejecutarse completamente en tu propia infraestructura. La imagen Docker independiente incluye el servidor de cuentas, el portal web, el sitio de marketing y el endpoint de distribución del CLI. No se requieren dependencias externas de los servicios alojados de Rediacc.
@@ -33,7 +33,7 @@ La imagen sirve:
 
 ## Instalación del CLI desde tu Servidor
 
-Los usuarios pueden instalar el CLI directamente desde tu servidor on-premise. El script de instalación detecta automáticamente el canal de actualizaciones y configura el CLI para verificar actualizaciones en tu servidor.
+Instala el CLI directamente desde tu servidor on-premise. El script de instalación detecta automáticamente el canal de actualizaciones y configura el CLI para verificar actualizaciones en tu servidor.
 
 ```bash
 curl -fsSL https://account.example.com/install.sh | \
@@ -50,7 +50,7 @@ No se necesita la variable `REDIACC_CHANNEL`. El script de instalación lee el c
 
 ## Configuración del CLI con Configs con Nombre
 
-Para usuarios que se conectan a múltiples servidores (on-premise, producción, edge), las configs con nombre mantienen cada entorno aislado:
+Si te conectas a múltiples servidores (on-premise, producción, edge), las configs con nombre mantienen cada entorno aislado:
 
 ```bash
 # Crear una config para tu servidor on-premise
@@ -112,7 +112,7 @@ Cuando el CLI se conecta a tu servidor, consulta `/.well-known/server-info` para
 - **Canal de actualizaciones**: indica al CLI qué canal de release usar para las actualizaciones
 - **Entorno**: qué perfil de despliegue ejecuta el servidor (límites estándar vs. edge-con-2X-límites)
 
-Esta autoconfiguración significa que los usuarios solo necesitan la URL del servidor. Todo lo demás se descubre automáticamente.
+Esta autoconfiguración significa que solo necesitas la URL del servidor. Todo lo demás se descubre automáticamente.
 
 ## Licencias para Despliegues Sin Acceso a Internet
 

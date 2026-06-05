@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 3
 language: ja
-sourceHash: "4b76f7212633cdec"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "fc8bd1ff08e5611a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # 最初のサーバーを追加する
 
-サーバーを追加する前に、`rdc` の仕組みを紹介します。Rediacc は2つのツールです。ラップトップ上の `rdc` と、サーバー上の `renet` です。
+2つのツール: ラップトップ上の `rdc` とサーバー上の `renet` です。これが Rediacc のアーキテクチャの全体像です。サーバーを追加する前に、まずこれらの接続方法を紹介します。
 
 ## チュートリアル動画
 
@@ -32,7 +32,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={1} />
 
-`rdc config init` は不要です。設定ファイルは初回使用時に自動で作成され、`rdc` は標準の `~/.ssh` キーにフォールバックします。
+`rdc config init` は不要です。設定ファイルは初回使用時に自動で作成され、`rdc` は標準の `~/.ssh` キーにフォールバックします。キー選択は意図的に最小限に設計されています。エージェント転送やジャンプホストが必要な場合は、通常通り `~/.ssh/config` に設定してください。`rdc` がそれを自動で認識します。
 
 ## ステップ2: プロビジョニングする
 

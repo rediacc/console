@@ -1,12 +1,13 @@
 ---
 title: "CLI 应用程序"
-description: "使用 Rediacc 命令行界面进行平台管理的完整指南"
+description: "rdc Rediacc 命令行工具的完整参考手册，涵盖机器、存储库、配置、存储、密钥、文件同步、VS Code 远程会话和订阅管理"
 category: "参考"
 order: 2
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "233baf26d48ca547"
+sourceHash: "a754193f03516b7a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

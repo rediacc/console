@@ -4,12 +4,13 @@ description: "自动启动的工作原理、在启动后发生故障的仓库的
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "8e98fcd141e27da6"
+sourceHash: "00a1796a0b0d20da"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 自动启动与恢复
 
-本页介绍仓库在启动时如何自动挂载和启动，以及当服务器已运行后仓库停止时，周期性协调器如何将其恢复。
+启用了自动启动的仓库会在开机时自动启动并运行。如果之后停止了，周期性协调器会自动将其恢复。无需提示。无需手动重启。
 
 如需了解如何为仓库启用或禁用自动启动，请参阅[服务: 开机自启](/zh/docs/services#autostart-on-boot)。
 

@@ -1,11 +1,11 @@
 ---
 title: "Guida alla Migrazione"
-description: "Migra i progetti esistenti in repository Rediacc cifrati. È più semplice di quanto sembri: basta un singolo comando."
+description: "Migra i progetti esistenti in repository Rediacc cifrati."
 category: "Guides"
 order: 11
 language: it
-sourceHash: "24c62c7fa0d043c2"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4517142676f9fa8f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Guida alla Migrazione
@@ -191,7 +191,7 @@ Modifiche chiave:
 4. **Usa i nomi dei servizi per le connessioni tra servizi** (ad esempio `postgres`, `redis`) - renet inietta ogni nome di servizio come hostname risolvibile. Non incorporare IP raw nelle stringhe di connessione che vengono memorizzate in database o file di configurazione; usa il nome del servizio per mantenere l'isolamento del fork
 5. **Il binding è automatico** - il kernel riscrive `bind()` all'IP di loopback corretto. I servizi possono usare `0.0.0.0` o `localhost`
 
-Le variabili `{SERVICE}_IP` sono ancora disponibili se ne hai bisogno, ma il binding esplicito non e' piu' necessario. Il binding avviene automaticamente. La convenzione di denominazione: maiuscolo, trattini sostituiti con underscore, con suffisso `_IP`. Ad esempio, `listmonk-app` diventa `LISTMONK_APP_IP`.
+Le variabili `{SERVICE}_IP` sono ancora disponibili se ne hai bisogno, ma il binding esplicito non è più necessario. Il binding avviene automaticamente. La convenzione di denominazione: maiuscolo, trattini sostituiti con underscore, con suffisso `_IP`. Ad esempio, `listmonk-app` diventa `LISTMONK_APP_IP`.
 
 Vedi [Rete dei Servizi](/en/docs/services#service-networking-rediaccjson) per i dettagli sull'assegnazione degli IP e su `.rediacc.json`.
 

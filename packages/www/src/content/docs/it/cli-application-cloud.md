@@ -1,12 +1,13 @@
 ---
 title: "Applicazione CLI (Cloud / Sperimentale)"
-description: "Comandi esclusivi del cloud per la CLI Rediacc: autenticazione, team, organizzazioni e gestione multi-tenant"
+description: "Comandi dell'adattatore cloud per la CLI Rediacc (sperimentale). Richiede apiUrl e token nella tua configurazione. Copre autenticazione, organizzazioni, team, utenti, autorizzazioni, repository, code, storage a blocchi Ceph e log di audit."
 category: "Riferimento"
 order: 3
 language: it
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/it/cli.json
-sourceHash: "c285d703825d9607"
+sourceHash: "52ac28479ebdafd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

@@ -6,13 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: es
-sourceHash: "8f29c515be1b7fb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1d0e48ed1094dda6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Límites y cuotas
 
-Esta página enumera los límites fijos y flexibles que se aplican a los despliegues de Rediacc. Léela antes de planificar la capacidad, para saber qué techos existen y cuáles no.
+Límites de despliegue de Rediacc. Tres son duros y no pueden cambiarse simplemente agregando hardware: el límite de 61 servicios por repositorio (asignación de espacio de direcciones de red), el requisito mínimo de kernel 6.1 (requisitos de CRIU) y el límite de emisión de Let's Encrypt de 50 certificados comodín por dominio registrado por semana. Todo lo demás es flexible: cambia cuando se agrega hardware. Conozca esta diferencia antes de comprometerse con una topología.
 
 ---
 
@@ -22,7 +22,7 @@ Cada repositorio admite hasta **61 servicios** ejecutándose simultáneamente.
 
 Este es un límite fijo determinado por el espacio de direcciones de red asignado a cada repositorio. Cada servicio recibe su propia dirección IP privada dedicada, y el bloque de direcciones de cada repositorio permite exactamente 61 espacios de servicio.
 
-Si se está acercando a este límite, consolide servicios más pequeños (por ejemplo, mueva sidecars o agentes de monitoreo a un repositorio separado con su propio límite de aislamiento) o refactorice para reducir la cantidad de procesos que se ejecutan de forma independiente dentro de una sola aplicación.
+Observe: alcanzar 61 servicios en un repositorio generalmente señala un problema de arquitectura, no una restricción de Rediacc. La solución es trasladar los sidecars y agentes de monitoreo a su propio repositorio con su propio límite de aislamiento, o reducir la cantidad de procesos que se ejecutan independientemente dentro de la aplicación misma.
 
 ---
 
@@ -136,7 +136,7 @@ La migración en vivo a través de CRIU tiene las siguientes restricciones:
 |--------|-------|
 | Destinos de backup por repositorio | Ilimitados |
 | Trabajos de backup simultáneos | 1 por repositorio (los trabajos se ponen en cola si se activan simultáneamente) |
-| Frecuencia de backup | Sin intervalo mínimo impuesto; limitado por el ancho de banda de su almacenamiento. Use `rdc config backup-strategy set --name <name> --bwlimit "6M"` para limitar la velocidad de subida |
+| Frecuencia de backup | Sin intervalo mínimo impuesto; limitado por el ancho de banda de su almacenamiento. Use `rdc config backup-strategy set --name <name> --bwlimit "6M"` para limitar la velocidad de subida (sintaxis rclone `--bwlimit`: simple `6M`, direccional `6M:off`, o tabla de tiempo `08:00,3M;22:00,10M`) |
 | Retención | Controlada por su proveedor de almacenamiento (S3, Cloudflare R2, etc.). Rediacc no impone políticas de retención. |
 | Backup entre máquinas | Soportado; la máquina de destino debe tener suficiente espacio en el datastore |
 
@@ -175,7 +175,7 @@ Las máquinas remotas deben ejecutar uno de los siguientes sistemas para cumplir
 
 Usa la tabla como una vista de un solo vistazo de lo que cada SO probado en CI proporciona por defecto. Los cinco satisfacen todos los requisitos, así que esta es una referencia para operadores, no un criterio de selección.
 
-| SO | Módulo btrfs | cgroups v2 | Landlock (ABI >= 1) | Hooks eBPF cgroup |
+| SO | Módulo btrfs | cgroups v2 | Landlock (ABI ≥ 1) | Hooks eBPF cgroup |
 |----|--------------|------------|---------------------|-------------------|
 | Ubuntu 24.04 | integrado | unified hierarchy | sí (5.13+) | sí |
 | Debian 13 | integrado | unified hierarchy | sí | sí |

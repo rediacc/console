@@ -1,12 +1,13 @@
 ---
 title: "Application CLI"
-description: "Guide complet pour utiliser l'interface en ligne de commande Rediacc pour la gestion de la plateforme"
-category: "Référence"
+description: "Référence des commandes pour rdc, l'interface de ligne de commande Rediacc. Couvre les machines, les référentiels, la configuration, le stockage, les secrets, la synchronisation de fichiers, les sessions VS Code distantes et la gestion des abonnements."
+category: "Reference"
 order: 2
 language: fr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/fr/cli.json
-sourceHash: "233baf26d48ca547"
+sourceHash: "a754193f03516b7a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

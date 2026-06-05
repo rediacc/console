@@ -1,1 +1,603 @@
-{"version":1,"cues":[{"start":1,"end":2.929,"text":"La tua app e' attiva,","words":[{"start":1,"end":1.386,"char":[0,2]},{"start":1.386,"end":1.772,"char":[3,6]},{"start":1.772,"end":2.157,"char":[7,10]},{"start":2.157,"end":2.543,"char":[11,13]},{"start":2.543,"end":2.929,"char":[14,21]}]},{"start":2.929,"end":5.244,"text":"quindi assicuriamoci di non perderla mai!","words":[{"start":2.929,"end":3.315,"char":[0,6]},{"start":3.315,"end":3.701,"char":[7,20]},{"start":3.701,"end":4.086,"char":[21,23]},{"start":4.086,"end":4.472,"char":[24,27]},{"start":4.472,"end":4.858,"char":[28,36]},{"start":4.858,"end":5.244,"char":[37,41]}]},{"start":5.244,"end":7.945,"text":"In questo tutorial inviamo l'intero repository a","words":[{"start":5.244,"end":5.63,"char":[0,2]},{"start":5.63,"end":6.016,"char":[3,9]},{"start":6.016,"end":6.401,"char":[10,18]},{"start":6.401,"end":6.787,"char":[19,26]},{"start":6.787,"end":7.173,"char":[27,35]},{"start":7.173,"end":7.559,"char":[36,46]},{"start":7.559,"end":7.945,"char":[47,48]}]},{"start":7.945,"end":10.645,"text":"uno storage esterno e lo recuperiamo a","words":[{"start":7.945,"end":8.33,"char":[0,3]},{"start":8.33,"end":8.716,"char":[4,11]},{"start":8.716,"end":9.102,"char":[12,19]},{"start":9.102,"end":9.488,"char":[20,21]},{"start":9.488,"end":9.874,"char":[22,24]},{"start":9.874,"end":10.259,"char":[25,36]},{"start":10.259,"end":10.645,"char":[37,38]}]},{"start":10.645,"end":11.031,"text":"richiesta.","words":[{"start":10.645,"end":11.031,"char":[0,10]}]},{"start":11.808,"end":14.786,"text":"Il backup e il ripristino si","words":[{"start":11.808,"end":12.304,"char":[0,2]},{"start":12.304,"end":12.801,"char":[3,9]},{"start":12.801,"end":13.297,"char":[10,11]},{"start":13.297,"end":13.793,"char":[12,14]},{"start":13.793,"end":14.29,"char":[15,25]},{"start":14.29,"end":14.786,"char":[26,28]}]},{"start":14.786,"end":16.771,"text":"riducono a tre passaggi.","words":[{"start":14.786,"end":15.282,"char":[0,8]},{"start":15.282,"end":15.779,"char":[9,10]},{"start":15.779,"end":16.275,"char":[11,14]},{"start":16.275,"end":16.771,"char":[15,24]}]},{"start":16.771,"end":19.253,"text":"Configura un provider di storage,","words":[{"start":16.771,"end":17.268,"char":[0,9]},{"start":17.268,"end":17.764,"char":[10,12]},{"start":17.764,"end":18.26,"char":[13,21]},{"start":18.26,"end":18.757,"char":[22,24]},{"start":18.757,"end":19.253,"char":[25,33]}]},{"start":19.253,"end":22.231,"text":"esegui un backup e ripristinalo quando","words":[{"start":19.253,"end":19.749,"char":[0,6]},{"start":19.749,"end":20.246,"char":[7,9]},{"start":20.246,"end":20.742,"char":[10,16]},{"start":20.742,"end":21.238,"char":[17,18]},{"start":21.238,"end":21.735,"char":[19,31]},{"start":21.735,"end":22.231,"char":[32,38]}]},{"start":22.231,"end":22.727,"text":"serve.","words":[{"start":22.231,"end":22.727,"char":[0,6]}]},{"start":25.998,"end":26.897,"text":"Passo uno.","words":[{"start":25.998,"end":26.448,"char":[0,5]},{"start":26.448,"end":26.897,"char":[6,10]}]},{"start":26.897,"end":29.146,"text":"Importiamo una configurazione rclone esistente.","words":[{"start":26.897,"end":27.347,"char":[0,10]},{"start":27.347,"end":27.797,"char":[11,14]},{"start":27.797,"end":28.246,"char":[15,29]},{"start":28.246,"end":28.696,"char":[30,36]},{"start":28.696,"end":29.146,"char":[37,47]}]},{"start":29.146,"end":30.495,"text":"rclone supporta S3,","words":[{"start":29.146,"end":29.595,"char":[0,6]},{"start":29.595,"end":30.045,"char":[7,15]},{"start":30.045,"end":30.495,"char":[16,19]}]},{"start":30.495,"end":30.944,"text":"Backblaze,","words":[{"start":30.495,"end":30.944,"char":[0,10]}]},{"start":30.944,"end":31.844,"text":"Google Drive,","words":[{"start":30.944,"end":31.394,"char":[0,6]},{"start":31.394,"end":31.844,"char":[7,13]}]},{"start":31.844,"end":34.542,"text":"Dropbox e molti altri -- se","words":[{"start":31.844,"end":32.294,"char":[0,7]},{"start":32.294,"end":32.743,"char":[8,9]},{"start":32.743,"end":33.193,"char":[10,15]},{"start":33.193,"end":33.643,"char":[16,21]},{"start":33.643,"end":34.092,"char":[22,24]},{"start":34.092,"end":34.542,"char":[25,27]}]},{"start":34.542,"end":35.891,"text":"lo usi gia',","words":[{"start":34.542,"end":34.992,"char":[0,2]},{"start":34.992,"end":35.441,"char":[3,6]},{"start":35.441,"end":35.891,"char":[7,12]}]},{"start":35.891,"end":38.589,"text":"puoi importare la stessa configurazione direttamente.","words":[{"start":35.891,"end":36.341,"char":[0,4]},{"start":36.341,"end":36.79,"char":[5,14]},{"start":36.79,"end":37.24,"char":[15,17]},{"start":37.24,"end":37.69,"char":[18,24]},{"start":37.69,"end":38.139,"char":[25,39]},{"start":38.139,"end":38.589,"char":[40,53]}]},{"start":39.589,"end":40.611,"text":"Storage importato.","words":[{"start":39.589,"end":40.1,"char":[0,7]},{"start":40.1,"end":40.611,"char":[8,18]}]},{"start":40.611,"end":43.165,"text":"La CLI puo' ora inviarci","words":[{"start":40.611,"end":41.122,"char":[0,2]},{"start":41.122,"end":41.632,"char":[3,6]},{"start":41.632,"end":42.143,"char":[7,11]},{"start":42.143,"end":42.654,"char":[12,15]},{"start":42.654,"end":43.165,"char":[16,24]}]},{"start":43.165,"end":44.187,"text":"i backup.","words":[{"start":43.165,"end":43.676,"char":[0,1]},{"start":43.676,"end":44.187,"char":[2,9]}]},{"start":47.495,"end":50.401,"text":"Elenchiamo gli storage che lo strumento conosce","words":[{"start":47.495,"end":47.91,"char":[0,10]},{"start":47.91,"end":48.325,"char":[11,14]},{"start":48.325,"end":48.741,"char":[15,22]},{"start":48.741,"end":49.156,"char":[23,26]},{"start":49.156,"end":49.571,"char":[27,29]},{"start":49.571,"end":49.986,"char":[30,39]},{"start":49.986,"end":50.401,"char":[40,47]}]},{"start":50.401,"end":50.817,"text":"ora.","words":[{"start":50.401,"end":50.817,"char":[0,4]}]},{"start":50.817,"end":53.723,"text":"Ogni storage e' una destinazione verso cui","words":[{"start":50.817,"end":51.232,"char":[0,4]},{"start":51.232,"end":51.647,"char":[5,12]},{"start":51.647,"end":52.062,"char":[13,15]},{"start":52.062,"end":52.478,"char":[16,19]},{"start":52.478,"end":52.893,"char":[20,32]},{"start":52.893,"end":53.308,"char":[33,38]},{"start":53.308,"end":53.723,"char":[39,42]}]},{"start":53.723,"end":55.384,"text":"possiamo inviare i backup.","words":[{"start":53.723,"end":54.138,"char":[0,8]},{"start":54.138,"end":54.554,"char":[9,16]},{"start":54.554,"end":54.969,"char":[17,18]},{"start":54.969,"end":55.384,"char":[19,26]}]},{"start":57.134,"end":57.688,"text":"Eccolo.","words":[{"start":57.134,"end":57.688,"char":[0,7]}]},{"start":57.688,"end":59.903,"text":"Pronto a ricevere backup.","words":[{"start":57.688,"end":58.242,"char":[0,6]},{"start":58.242,"end":58.795,"char":[7,8]},{"start":58.795,"end":59.349,"char":[9,17]},{"start":59.349,"end":59.903,"char":[18,25]}]},{"start":63.208,"end":64.446,"text":"Passo due.","words":[{"start":63.208,"end":63.827,"char":[0,5]},{"start":63.827,"end":64.446,"char":[6,10]}]},{"start":64.446,"end":66.922,"text":"Eseguiamo un backup completo.","words":[{"start":64.446,"end":65.065,"char":[0,9]},{"start":65.065,"end":65.684,"char":[10,12]},{"start":65.684,"end":66.303,"char":[13,19]},{"start":66.303,"end":66.922,"char":[20,29]}]},{"start":66.922,"end":69.398,"text":"L'intero repository -- app,","words":[{"start":66.922,"end":67.541,"char":[0,8]},{"start":67.541,"end":68.16,"char":[9,19]},{"start":68.16,"end":68.779,"char":[20,22]},{"start":68.779,"end":69.398,"char":[23,27]}]},{"start":69.398,"end":70.017,"text":"database,","words":[{"start":69.398,"end":70.017,"char":[0,9]}]},{"start":70.017,"end":70.636,"text":"file,","words":[{"start":70.017,"end":70.636,"char":[0,5]}]},{"start":70.636,"end":73.112,"text":"configurazione -- viene caricato.","words":[{"start":70.636,"end":71.255,"char":[0,14]},{"start":71.255,"end":71.874,"char":[15,17]},{"start":71.874,"end":72.493,"char":[18,23]},{"start":72.493,"end":73.112,"char":[24,33]}]},{"start":73.112,"end":76.207,"text":"Poiche' il repository e' cifrato","words":[{"start":73.112,"end":73.731,"char":[0,7]},{"start":73.731,"end":74.35,"char":[8,10]},{"start":74.35,"end":74.969,"char":[11,21]},{"start":74.969,"end":75.588,"char":[22,24]},{"start":75.588,"end":76.207,"char":[25,32]}]},{"start":76.207,"end":77.446,"text":"a riposo,","words":[{"start":76.207,"end":76.827,"char":[0,1]},{"start":76.827,"end":77.446,"char":[2,9]}]},{"start":77.446,"end":80.541,"text":"anche il backup e' cifrato.","words":[{"start":77.446,"end":78.065,"char":[0,5]},{"start":78.065,"end":78.684,"char":[6,8]},{"start":78.684,"end":79.303,"char":[9,15]},{"start":79.303,"end":79.922,"char":[16,18]},{"start":79.922,"end":80.541,"char":[19,27]}]},{"start":80.541,"end":83.636,"text":"Nessuna gestione aggiuntiva delle chiavi.","words":[{"start":80.541,"end":81.16,"char":[0,7]},{"start":81.16,"end":81.779,"char":[8,16]},{"start":81.779,"end":82.398,"char":[17,27]},{"start":82.398,"end":83.017,"char":[28,33]},{"start":83.017,"end":83.636,"char":[34,41]}]},{"start":85.886,"end":86.601,"text":"Backup caricato.","words":[{"start":85.886,"end":86.243,"char":[0,6]},{"start":86.243,"end":86.601,"char":[7,16]}]},{"start":86.601,"end":89.104,"text":"Tutto cio' che c'e' in questo repo","words":[{"start":86.601,"end":86.958,"char":[0,5]},{"start":86.958,"end":87.316,"char":[6,10]},{"start":87.316,"end":87.674,"char":[11,14]},{"start":87.674,"end":88.031,"char":[15,19]},{"start":88.031,"end":88.389,"char":[20,22]},{"start":88.389,"end":88.746,"char":[23,29]},{"start":88.746,"end":89.104,"char":[30,34]}]},{"start":89.104,"end":91.249,"text":"si trova ora sullo storage remoto,","words":[{"start":89.104,"end":89.461,"char":[0,2]},{"start":89.461,"end":89.819,"char":[3,8]},{"start":89.819,"end":90.176,"char":[9,12]},{"start":90.176,"end":90.534,"char":[13,18]},{"start":90.534,"end":90.891,"char":[19,26]},{"start":90.891,"end":91.249,"char":[27,34]}]},{"start":91.249,"end":91.607,"text":"cifrato.","words":[{"start":91.249,"end":91.607,"char":[0,8]}]},{"start":94.936,"end":97.808,"text":"Elenchiamo i backup disponibili su questo","words":[{"start":94.936,"end":95.415,"char":[0,10]},{"start":95.415,"end":95.893,"char":[11,12]},{"start":95.893,"end":96.372,"char":[13,19]},{"start":96.372,"end":96.851,"char":[20,31]},{"start":96.851,"end":97.329,"char":[32,34]},{"start":97.329,"end":97.808,"char":[35,41]}]},{"start":97.808,"end":98.286,"text":"storage.","words":[{"start":97.808,"end":98.286,"char":[0,8]}]},{"start":98.286,"end":99.244,"text":"Da qui,","words":[{"start":98.286,"end":98.765,"char":[0,2]},{"start":98.765,"end":99.244,"char":[3,7]}]},{"start":99.244,"end":102.115,"text":"il ripristino su un nuovo server","words":[{"start":99.244,"end":99.722,"char":[0,2]},{"start":99.722,"end":100.201,"char":[3,13]},{"start":100.201,"end":100.68,"char":[14,16]},{"start":100.68,"end":101.158,"char":[17,19]},{"start":101.158,"end":101.637,"char":[20,25]},{"start":101.637,"end":102.115,"char":[26,32]}]},{"start":102.115,"end":104.987,"text":"richiede un solo comando -- il","words":[{"start":102.115,"end":102.594,"char":[0,8]},{"start":102.594,"end":103.073,"char":[9,11]},{"start":103.073,"end":103.551,"char":[12,16]},{"start":103.551,"end":104.03,"char":[17,24]},{"start":104.03,"end":104.509,"char":[25,27]},{"start":104.509,"end":104.987,"char":[28,30]}]},{"start":104.987,"end":106.902,"text":"comando pull del repository.","words":[{"start":104.987,"end":105.466,"char":[0,7]},{"start":105.466,"end":105.945,"char":[8,12]},{"start":105.945,"end":106.423,"char":[13,16]},{"start":106.423,"end":106.902,"char":[17,28]}]},{"start":106.902,"end":107.859,"text":"Stessi dati,","words":[{"start":106.902,"end":107.38,"char":[0,6]},{"start":107.38,"end":107.859,"char":[7,12]}]},{"start":107.859,"end":108.816,"text":"stessi container,","words":[{"start":107.859,"end":108.338,"char":[0,6]},{"start":108.338,"end":108.816,"char":[7,17]}]},{"start":108.816,"end":109.774,"text":"macchina diversa.","words":[{"start":108.816,"end":109.295,"char":[0,8]},{"start":109.295,"end":109.774,"char":[9,17]}]},{"start":112.774,"end":115.448,"text":"Tutti i tuoi snapshot in un","words":[{"start":112.774,"end":113.219,"char":[0,5]},{"start":113.219,"end":113.665,"char":[6,7]},{"start":113.665,"end":114.111,"char":[8,12]},{"start":114.111,"end":114.557,"char":[13,21]},{"start":114.557,"end":115.003,"char":[22,24]},{"start":115.003,"end":115.448,"char":[25,27]}]},{"start":115.448,"end":116.34,"text":"unico posto.","words":[{"start":115.448,"end":115.894,"char":[0,5]},{"start":115.894,"end":116.34,"char":[6,12]}]},{"start":116.34,"end":119.015,"text":"Recuperane uno qualsiasi con un singolo","words":[{"start":116.34,"end":116.786,"char":[0,10]},{"start":116.786,"end":117.232,"char":[11,14]},{"start":117.232,"end":117.678,"char":[15,24]},{"start":117.678,"end":118.123,"char":[25,28]},{"start":118.123,"end":118.569,"char":[29,31]},{"start":118.569,"end":119.015,"char":[32,39]}]},{"start":119.015,"end":119.461,"text":"comando.","words":[{"start":119.015,"end":119.461,"char":[0,8]}]},{"start":120.269,"end":123.111,"text":"I tuoi dati sono al sicuro e portabili","words":[{"start":120.269,"end":120.625,"char":[0,1]},{"start":120.625,"end":120.98,"char":[2,6]},{"start":120.98,"end":121.335,"char":[7,11]},{"start":121.335,"end":121.69,"char":[12,16]},{"start":121.69,"end":122.046,"char":[17,19]},{"start":122.046,"end":122.401,"char":[20,26]},{"start":122.401,"end":122.756,"char":[27,28]},{"start":122.756,"end":123.111,"char":[29,38]}]},{"start":123.111,"end":124.177,"text":"tra le macchine.","words":[{"start":123.111,"end":123.467,"char":[0,3]},{"start":123.467,"end":123.822,"char":[4,6]},{"start":123.822,"end":124.177,"char":[7,16]}]},{"start":124.177,"end":125.598,"text":"Ci vediamo nel prossimo!","words":[{"start":124.177,"end":124.533,"char":[0,2]},{"start":124.533,"end":124.888,"char":[3,10]},{"start":124.888,"end":125.243,"char":[11,14]},{"start":125.243,"end":125.598,"char":[15,24]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.929,
+      "text": "La tua app e' attiva,",
+      "words": [
+        { "start": 1, "end": 1.386, "char": [0, 2] },
+        { "start": 1.386, "end": 1.772, "char": [3, 6] },
+        { "start": 1.772, "end": 2.157, "char": [7, 10] },
+        { "start": 2.157, "end": 2.543, "char": [11, 13] },
+        { "start": 2.543, "end": 2.929, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 2.929,
+      "end": 5.244,
+      "text": "quindi assicuriamoci di non perderla mai!",
+      "words": [
+        { "start": 2.929, "end": 3.315, "char": [0, 6] },
+        { "start": 3.315, "end": 3.701, "char": [7, 20] },
+        { "start": 3.701, "end": 4.086, "char": [21, 23] },
+        { "start": 4.086, "end": 4.472, "char": [24, 27] },
+        { "start": 4.472, "end": 4.858, "char": [28, 36] },
+        { "start": 4.858, "end": 5.244, "char": [37, 41] }
+      ]
+    },
+    {
+      "start": 5.244,
+      "end": 7.945,
+      "text": "In questo tutorial inviamo l'intero repository a",
+      "words": [
+        { "start": 5.244, "end": 5.63, "char": [0, 2] },
+        { "start": 5.63, "end": 6.016, "char": [3, 9] },
+        { "start": 6.016, "end": 6.401, "char": [10, 18] },
+        { "start": 6.401, "end": 6.787, "char": [19, 26] },
+        { "start": 6.787, "end": 7.173, "char": [27, 35] },
+        { "start": 7.173, "end": 7.559, "char": [36, 46] },
+        { "start": 7.559, "end": 7.945, "char": [47, 48] }
+      ]
+    },
+    {
+      "start": 7.945,
+      "end": 10.645,
+      "text": "uno storage esterno e lo recuperiamo a",
+      "words": [
+        { "start": 7.945, "end": 8.33, "char": [0, 3] },
+        { "start": 8.33, "end": 8.716, "char": [4, 11] },
+        { "start": 8.716, "end": 9.102, "char": [12, 19] },
+        { "start": 9.102, "end": 9.488, "char": [20, 21] },
+        { "start": 9.488, "end": 9.874, "char": [22, 24] },
+        { "start": 9.874, "end": 10.259, "char": [25, 36] },
+        { "start": 10.259, "end": 10.645, "char": [37, 38] }
+      ]
+    },
+    {
+      "start": 10.645,
+      "end": 11.031,
+      "text": "richiesta.",
+      "words": [{ "start": 10.645, "end": 11.031, "char": [0, 10] }]
+    },
+    {
+      "start": 11.808,
+      "end": 14.786,
+      "text": "Il backup e il ripristino si",
+      "words": [
+        { "start": 11.808, "end": 12.304, "char": [0, 2] },
+        { "start": 12.304, "end": 12.801, "char": [3, 9] },
+        { "start": 12.801, "end": 13.297, "char": [10, 11] },
+        { "start": 13.297, "end": 13.793, "char": [12, 14] },
+        { "start": 13.793, "end": 14.29, "char": [15, 25] },
+        { "start": 14.29, "end": 14.786, "char": [26, 28] }
+      ]
+    },
+    {
+      "start": 14.786,
+      "end": 16.771,
+      "text": "riducono a tre passaggi.",
+      "words": [
+        { "start": 14.786, "end": 15.282, "char": [0, 8] },
+        { "start": 15.282, "end": 15.779, "char": [9, 10] },
+        { "start": 15.779, "end": 16.275, "char": [11, 14] },
+        { "start": 16.275, "end": 16.771, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 16.771,
+      "end": 19.253,
+      "text": "Configura un provider di storage,",
+      "words": [
+        { "start": 16.771, "end": 17.268, "char": [0, 9] },
+        { "start": 17.268, "end": 17.764, "char": [10, 12] },
+        { "start": 17.764, "end": 18.26, "char": [13, 21] },
+        { "start": 18.26, "end": 18.757, "char": [22, 24] },
+        { "start": 18.757, "end": 19.253, "char": [25, 33] }
+      ]
+    },
+    {
+      "start": 19.253,
+      "end": 22.231,
+      "text": "esegui un backup e ripristinalo quando",
+      "words": [
+        { "start": 19.253, "end": 19.749, "char": [0, 6] },
+        { "start": 19.749, "end": 20.246, "char": [7, 9] },
+        { "start": 20.246, "end": 20.742, "char": [10, 16] },
+        { "start": 20.742, "end": 21.238, "char": [17, 18] },
+        { "start": 21.238, "end": 21.735, "char": [19, 31] },
+        { "start": 21.735, "end": 22.231, "char": [32, 38] }
+      ]
+    },
+    {
+      "start": 22.231,
+      "end": 22.727,
+      "text": "serve.",
+      "words": [{ "start": 22.231, "end": 22.727, "char": [0, 6] }]
+    },
+    {
+      "start": 25.998,
+      "end": 26.897,
+      "text": "Passo uno.",
+      "words": [
+        { "start": 25.998, "end": 26.448, "char": [0, 5] },
+        { "start": 26.448, "end": 26.897, "char": [6, 10] }
+      ]
+    },
+    {
+      "start": 26.897,
+      "end": 29.146,
+      "text": "Importiamo una configurazione rclone esistente.",
+      "words": [
+        { "start": 26.897, "end": 27.347, "char": [0, 10] },
+        { "start": 27.347, "end": 27.797, "char": [11, 14] },
+        { "start": 27.797, "end": 28.246, "char": [15, 29] },
+        { "start": 28.246, "end": 28.696, "char": [30, 36] },
+        { "start": 28.696, "end": 29.146, "char": [37, 47] }
+      ]
+    },
+    {
+      "start": 29.146,
+      "end": 30.495,
+      "text": "rclone supporta S3,",
+      "words": [
+        { "start": 29.146, "end": 29.595, "char": [0, 6] },
+        { "start": 29.595, "end": 30.045, "char": [7, 15] },
+        { "start": 30.045, "end": 30.495, "char": [16, 19] }
+      ]
+    },
+    {
+      "start": 30.495,
+      "end": 30.944,
+      "text": "Backblaze,",
+      "words": [{ "start": 30.495, "end": 30.944, "char": [0, 10] }]
+    },
+    {
+      "start": 30.944,
+      "end": 31.844,
+      "text": "Google Drive,",
+      "words": [
+        { "start": 30.944, "end": 31.394, "char": [0, 6] },
+        { "start": 31.394, "end": 31.844, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 31.844,
+      "end": 34.542,
+      "text": "Dropbox e molti altri -- se",
+      "words": [
+        { "start": 31.844, "end": 32.294, "char": [0, 7] },
+        { "start": 32.294, "end": 32.743, "char": [8, 9] },
+        { "start": 32.743, "end": 33.193, "char": [10, 15] },
+        { "start": 33.193, "end": 33.643, "char": [16, 21] },
+        { "start": 33.643, "end": 34.092, "char": [22, 24] },
+        { "start": 34.092, "end": 34.542, "char": [25, 27] }
+      ]
+    },
+    {
+      "start": 34.542,
+      "end": 35.891,
+      "text": "lo usi gia',",
+      "words": [
+        { "start": 34.542, "end": 34.992, "char": [0, 2] },
+        { "start": 34.992, "end": 35.441, "char": [3, 6] },
+        { "start": 35.441, "end": 35.891, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 35.891,
+      "end": 38.589,
+      "text": "puoi importare la stessa configurazione direttamente.",
+      "words": [
+        { "start": 35.891, "end": 36.341, "char": [0, 4] },
+        { "start": 36.341, "end": 36.79, "char": [5, 14] },
+        { "start": 36.79, "end": 37.24, "char": [15, 17] },
+        { "start": 37.24, "end": 37.69, "char": [18, 24] },
+        { "start": 37.69, "end": 38.139, "char": [25, 39] },
+        { "start": 38.139, "end": 38.589, "char": [40, 53] }
+      ]
+    },
+    {
+      "start": 39.589,
+      "end": 40.611,
+      "text": "Storage importato.",
+      "words": [
+        { "start": 39.589, "end": 40.1, "char": [0, 7] },
+        { "start": 40.1, "end": 40.611, "char": [8, 18] }
+      ]
+    },
+    {
+      "start": 40.611,
+      "end": 43.165,
+      "text": "La CLI puo' ora inviarci",
+      "words": [
+        { "start": 40.611, "end": 41.122, "char": [0, 2] },
+        { "start": 41.122, "end": 41.632, "char": [3, 6] },
+        { "start": 41.632, "end": 42.143, "char": [7, 11] },
+        { "start": 42.143, "end": 42.654, "char": [12, 15] },
+        { "start": 42.654, "end": 43.165, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 43.165,
+      "end": 44.187,
+      "text": "i backup.",
+      "words": [
+        { "start": 43.165, "end": 43.676, "char": [0, 1] },
+        { "start": 43.676, "end": 44.187, "char": [2, 9] }
+      ]
+    },
+    {
+      "start": 47.495,
+      "end": 50.401,
+      "text": "Elenchiamo gli storage che lo strumento conosce",
+      "words": [
+        { "start": 47.495, "end": 47.91, "char": [0, 10] },
+        { "start": 47.91, "end": 48.325, "char": [11, 14] },
+        { "start": 48.325, "end": 48.741, "char": [15, 22] },
+        { "start": 48.741, "end": 49.156, "char": [23, 26] },
+        { "start": 49.156, "end": 49.571, "char": [27, 29] },
+        { "start": 49.571, "end": 49.986, "char": [30, 39] },
+        { "start": 49.986, "end": 50.401, "char": [40, 47] }
+      ]
+    },
+    {
+      "start": 50.401,
+      "end": 50.817,
+      "text": "ora.",
+      "words": [{ "start": 50.401, "end": 50.817, "char": [0, 4] }]
+    },
+    {
+      "start": 50.817,
+      "end": 53.723,
+      "text": "Ogni storage e' una destinazione verso cui",
+      "words": [
+        { "start": 50.817, "end": 51.232, "char": [0, 4] },
+        { "start": 51.232, "end": 51.647, "char": [5, 12] },
+        { "start": 51.647, "end": 52.062, "char": [13, 15] },
+        { "start": 52.062, "end": 52.478, "char": [16, 19] },
+        { "start": 52.478, "end": 52.893, "char": [20, 32] },
+        { "start": 52.893, "end": 53.308, "char": [33, 38] },
+        { "start": 53.308, "end": 53.723, "char": [39, 42] }
+      ]
+    },
+    {
+      "start": 53.723,
+      "end": 55.384,
+      "text": "possiamo inviare i backup.",
+      "words": [
+        { "start": 53.723, "end": 54.138, "char": [0, 8] },
+        { "start": 54.138, "end": 54.554, "char": [9, 16] },
+        { "start": 54.554, "end": 54.969, "char": [17, 18] },
+        { "start": 54.969, "end": 55.384, "char": [19, 26] }
+      ]
+    },
+    {
+      "start": 57.134,
+      "end": 57.688,
+      "text": "Eccolo.",
+      "words": [{ "start": 57.134, "end": 57.688, "char": [0, 7] }]
+    },
+    {
+      "start": 57.688,
+      "end": 59.903,
+      "text": "Pronto a ricevere backup.",
+      "words": [
+        { "start": 57.688, "end": 58.242, "char": [0, 6] },
+        { "start": 58.242, "end": 58.795, "char": [7, 8] },
+        { "start": 58.795, "end": 59.349, "char": [9, 17] },
+        { "start": 59.349, "end": 59.903, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 63.208,
+      "end": 64.446,
+      "text": "Passo due.",
+      "words": [
+        { "start": 63.208, "end": 63.827, "char": [0, 5] },
+        { "start": 63.827, "end": 64.446, "char": [6, 10] }
+      ]
+    },
+    {
+      "start": 64.446,
+      "end": 66.922,
+      "text": "Eseguiamo un backup completo.",
+      "words": [
+        { "start": 64.446, "end": 65.065, "char": [0, 9] },
+        { "start": 65.065, "end": 65.684, "char": [10, 12] },
+        { "start": 65.684, "end": 66.303, "char": [13, 19] },
+        { "start": 66.303, "end": 66.922, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 66.922,
+      "end": 69.398,
+      "text": "L'intero repository -- app,",
+      "words": [
+        { "start": 66.922, "end": 67.541, "char": [0, 8] },
+        { "start": 67.541, "end": 68.16, "char": [9, 19] },
+        { "start": 68.16, "end": 68.779, "char": [20, 22] },
+        { "start": 68.779, "end": 69.398, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 69.398,
+      "end": 70.017,
+      "text": "database,",
+      "words": [{ "start": 69.398, "end": 70.017, "char": [0, 9] }]
+    },
+    {
+      "start": 70.017,
+      "end": 70.636,
+      "text": "file,",
+      "words": [{ "start": 70.017, "end": 70.636, "char": [0, 5] }]
+    },
+    {
+      "start": 70.636,
+      "end": 73.112,
+      "text": "configurazione -- viene caricato.",
+      "words": [
+        { "start": 70.636, "end": 71.255, "char": [0, 14] },
+        { "start": 71.255, "end": 71.874, "char": [15, 17] },
+        { "start": 71.874, "end": 72.493, "char": [18, 23] },
+        { "start": 72.493, "end": 73.112, "char": [24, 33] }
+      ]
+    },
+    {
+      "start": 73.112,
+      "end": 76.207,
+      "text": "Poiche' il repository e' cifrato",
+      "words": [
+        { "start": 73.112, "end": 73.731, "char": [0, 7] },
+        { "start": 73.731, "end": 74.35, "char": [8, 10] },
+        { "start": 74.35, "end": 74.969, "char": [11, 21] },
+        { "start": 74.969, "end": 75.588, "char": [22, 24] },
+        { "start": 75.588, "end": 76.207, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 76.207,
+      "end": 77.446,
+      "text": "a riposo,",
+      "words": [
+        { "start": 76.207, "end": 76.827, "char": [0, 1] },
+        { "start": 76.827, "end": 77.446, "char": [2, 9] }
+      ]
+    },
+    {
+      "start": 77.446,
+      "end": 80.541,
+      "text": "anche il backup e' cifrato.",
+      "words": [
+        { "start": 77.446, "end": 78.065, "char": [0, 5] },
+        { "start": 78.065, "end": 78.684, "char": [6, 8] },
+        { "start": 78.684, "end": 79.303, "char": [9, 15] },
+        { "start": 79.303, "end": 79.922, "char": [16, 18] },
+        { "start": 79.922, "end": 80.541, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 80.541,
+      "end": 83.636,
+      "text": "Nessuna gestione aggiuntiva delle chiavi.",
+      "words": [
+        { "start": 80.541, "end": 81.16, "char": [0, 7] },
+        { "start": 81.16, "end": 81.779, "char": [8, 16] },
+        { "start": 81.779, "end": 82.398, "char": [17, 27] },
+        { "start": 82.398, "end": 83.017, "char": [28, 33] },
+        { "start": 83.017, "end": 83.636, "char": [34, 41] }
+      ]
+    },
+    {
+      "start": 85.886,
+      "end": 86.601,
+      "text": "Backup caricato.",
+      "words": [
+        { "start": 85.886, "end": 86.243, "char": [0, 6] },
+        { "start": 86.243, "end": 86.601, "char": [7, 16] }
+      ]
+    },
+    {
+      "start": 86.601,
+      "end": 89.104,
+      "text": "Tutto cio' che c'e' in questo repo",
+      "words": [
+        { "start": 86.601, "end": 86.958, "char": [0, 5] },
+        { "start": 86.958, "end": 87.316, "char": [6, 10] },
+        { "start": 87.316, "end": 87.674, "char": [11, 14] },
+        { "start": 87.674, "end": 88.031, "char": [15, 19] },
+        { "start": 88.031, "end": 88.389, "char": [20, 22] },
+        { "start": 88.389, "end": 88.746, "char": [23, 29] },
+        { "start": 88.746, "end": 89.104, "char": [30, 34] }
+      ]
+    },
+    {
+      "start": 89.104,
+      "end": 91.249,
+      "text": "si trova ora sullo storage remoto,",
+      "words": [
+        { "start": 89.104, "end": 89.461, "char": [0, 2] },
+        { "start": 89.461, "end": 89.819, "char": [3, 8] },
+        { "start": 89.819, "end": 90.176, "char": [9, 12] },
+        { "start": 90.176, "end": 90.534, "char": [13, 18] },
+        { "start": 90.534, "end": 90.891, "char": [19, 26] },
+        { "start": 90.891, "end": 91.249, "char": [27, 34] }
+      ]
+    },
+    {
+      "start": 91.249,
+      "end": 91.607,
+      "text": "cifrato.",
+      "words": [{ "start": 91.249, "end": 91.607, "char": [0, 8] }]
+    },
+    {
+      "start": 94.936,
+      "end": 97.808,
+      "text": "Elenchiamo i backup disponibili su questo",
+      "words": [
+        { "start": 94.936, "end": 95.415, "char": [0, 10] },
+        { "start": 95.415, "end": 95.893, "char": [11, 12] },
+        { "start": 95.893, "end": 96.372, "char": [13, 19] },
+        { "start": 96.372, "end": 96.851, "char": [20, 31] },
+        { "start": 96.851, "end": 97.329, "char": [32, 34] },
+        { "start": 97.329, "end": 97.808, "char": [35, 41] }
+      ]
+    },
+    {
+      "start": 97.808,
+      "end": 98.286,
+      "text": "storage.",
+      "words": [{ "start": 97.808, "end": 98.286, "char": [0, 8] }]
+    },
+    {
+      "start": 98.286,
+      "end": 99.244,
+      "text": "Da qui,",
+      "words": [
+        { "start": 98.286, "end": 98.765, "char": [0, 2] },
+        { "start": 98.765, "end": 99.244, "char": [3, 7] }
+      ]
+    },
+    {
+      "start": 99.244,
+      "end": 102.115,
+      "text": "il ripristino su un nuovo server",
+      "words": [
+        { "start": 99.244, "end": 99.722, "char": [0, 2] },
+        { "start": 99.722, "end": 100.201, "char": [3, 13] },
+        { "start": 100.201, "end": 100.68, "char": [14, 16] },
+        { "start": 100.68, "end": 101.158, "char": [17, 19] },
+        { "start": 101.158, "end": 101.637, "char": [20, 25] },
+        { "start": 101.637, "end": 102.115, "char": [26, 32] }
+      ]
+    },
+    {
+      "start": 102.115,
+      "end": 104.987,
+      "text": "richiede un solo comando -- il",
+      "words": [
+        { "start": 102.115, "end": 102.594, "char": [0, 8] },
+        { "start": 102.594, "end": 103.073, "char": [9, 11] },
+        { "start": 103.073, "end": 103.551, "char": [12, 16] },
+        { "start": 103.551, "end": 104.03, "char": [17, 24] },
+        { "start": 104.03, "end": 104.509, "char": [25, 27] },
+        { "start": 104.509, "end": 104.987, "char": [28, 30] }
+      ]
+    },
+    {
+      "start": 104.987,
+      "end": 106.902,
+      "text": "comando pull del repository.",
+      "words": [
+        { "start": 104.987, "end": 105.466, "char": [0, 7] },
+        { "start": 105.466, "end": 105.945, "char": [8, 12] },
+        { "start": 105.945, "end": 106.423, "char": [13, 16] },
+        { "start": 106.423, "end": 106.902, "char": [17, 28] }
+      ]
+    },
+    {
+      "start": 106.902,
+      "end": 107.859,
+      "text": "Stessi dati,",
+      "words": [
+        { "start": 106.902, "end": 107.38, "char": [0, 6] },
+        { "start": 107.38, "end": 107.859, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 107.859,
+      "end": 108.816,
+      "text": "stessi container,",
+      "words": [
+        { "start": 107.859, "end": 108.338, "char": [0, 6] },
+        { "start": 108.338, "end": 108.816, "char": [7, 17] }
+      ]
+    },
+    {
+      "start": 108.816,
+      "end": 109.774,
+      "text": "macchina diversa.",
+      "words": [
+        { "start": 108.816, "end": 109.295, "char": [0, 8] },
+        { "start": 109.295, "end": 109.774, "char": [9, 17] }
+      ]
+    },
+    {
+      "start": 112.774,
+      "end": 115.448,
+      "text": "Tutti i tuoi snapshot in un",
+      "words": [
+        { "start": 112.774, "end": 113.219, "char": [0, 5] },
+        { "start": 113.219, "end": 113.665, "char": [6, 7] },
+        { "start": 113.665, "end": 114.111, "char": [8, 12] },
+        { "start": 114.111, "end": 114.557, "char": [13, 21] },
+        { "start": 114.557, "end": 115.003, "char": [22, 24] },
+        { "start": 115.003, "end": 115.448, "char": [25, 27] }
+      ]
+    },
+    {
+      "start": 115.448,
+      "end": 116.34,
+      "text": "unico posto.",
+      "words": [
+        { "start": 115.448, "end": 115.894, "char": [0, 5] },
+        { "start": 115.894, "end": 116.34, "char": [6, 12] }
+      ]
+    },
+    {
+      "start": 116.34,
+      "end": 119.015,
+      "text": "Recuperane uno qualsiasi con un singolo",
+      "words": [
+        { "start": 116.34, "end": 116.786, "char": [0, 10] },
+        { "start": 116.786, "end": 117.232, "char": [11, 14] },
+        { "start": 117.232, "end": 117.678, "char": [15, 24] },
+        { "start": 117.678, "end": 118.123, "char": [25, 28] },
+        { "start": 118.123, "end": 118.569, "char": [29, 31] },
+        { "start": 118.569, "end": 119.015, "char": [32, 39] }
+      ]
+    },
+    {
+      "start": 119.015,
+      "end": 119.461,
+      "text": "comando.",
+      "words": [{ "start": 119.015, "end": 119.461, "char": [0, 8] }]
+    },
+    {
+      "start": 120.269,
+      "end": 123.111,
+      "text": "I tuoi dati sono al sicuro e portabili",
+      "words": [
+        { "start": 120.269, "end": 120.625, "char": [0, 1] },
+        { "start": 120.625, "end": 120.98, "char": [2, 6] },
+        { "start": 120.98, "end": 121.335, "char": [7, 11] },
+        { "start": 121.335, "end": 121.69, "char": [12, 16] },
+        { "start": 121.69, "end": 122.046, "char": [17, 19] },
+        { "start": 122.046, "end": 122.401, "char": [20, 26] },
+        { "start": 122.401, "end": 122.756, "char": [27, 28] },
+        { "start": 122.756, "end": 123.111, "char": [29, 38] }
+      ]
+    },
+    {
+      "start": 123.111,
+      "end": 124.177,
+      "text": "tra le macchine.",
+      "words": [
+        { "start": 123.111, "end": 123.467, "char": [0, 3] },
+        { "start": 123.467, "end": 123.822, "char": [4, 6] },
+        { "start": 123.822, "end": 124.177, "char": [7, 16] }
+      ]
+    },
+    {
+      "start": 124.177,
+      "end": 125.598,
+      "text": "Ci vediamo nel prossimo!",
+      "words": [
+        { "start": 124.177, "end": 124.533, "char": [0, 2] },
+        { "start": 124.533, "end": 124.888, "char": [3, 10] },
+        { "start": 124.888, "end": 125.243, "char": [11, 14] },
+        { "start": 125.243, "end": 125.598, "char": [15, 24] }
+      ]
+    }
+  ]
+}

@@ -4,10 +4,11 @@ description: 使用 .cursorrules 和终端集成配置 Cursor IDE 以使用 Redi
 category: Guides
 order: 32
 language: zh
-sourceHash: "f2de270cae1a7ac1"
+sourceHash: "b5e835461de00400"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Cursor 通过终端命令和 `.cursorrules` 配置文件与 Rediacc 集成。
+简而言之：`.cursorrules` 将 Rediacc 上下文加载到 Cursor 的 AI 中；终端则让它能够对实际机器运行 `rdc` 命令。
 
 ## 快速设置
 
@@ -15,7 +16,7 @@ Cursor 通过终端命令和 `.cursorrules` 配置文件与 Rediacc 集成。
 2. 将 [AGENTS.md 模板](/zh/docs/agents-md-template)复制到项目根目录并命名为 `.cursorrules`
 3. 在 Cursor 中打开项目
 
-Cursor 在启动时读取 `.cursorrules`，并将其作为 AI 辅助开发的上下文。
+Cursor 在启动时读取 `.cursorrules`。需要注意的是：上下文窗口有容量限制，因此文件内容应聚焦于你的实际机器和仓库，而非通用样板内容。
 
 ## .cursorrules 配置
 

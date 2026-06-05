@@ -1,14 +1,14 @@
 ---
 title: "SOC 2 vastavus"
-description: "Kus Rediacc annab SOC 2 tõendeid: logid, muutuste haldamise rada ja kontrollid, mida audiitorid küsivad."
+description: "SOC 2-ga on asi lihtne: audiitorid tahavad tõendeid, et sinu kontrollid toimivad. Rediacc annab sulle logid, muudatuste haldamise jälje ja kõik muu, mida nad küsivad."
 category: "Legal"
 order: 2
 language: et
-sourceHash: "29b0c745e631e4f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "27d2366f84e21d8c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-SOC 2 on AICPA raamistik, mille poole audiitorid pöörduvad, kui soovivad tõendeid, et su kontrollid tegelikult toimivad. See katab viis usaldusteenuse kriteeriumi: turvalisus, kättesaadavus, töötlemise terviklikkus, konfidentsiaalsus ja privaatsus.
+Tean SOC 2-st, sest olen paaril auditoorimiskoosolekul käinud. Audiitorid kasutavad AICPA raamistikku, et kontrollida, kas sinu kontrollid tegelikult toimivad, mitte ainult seda, et sa väidad nende toimivat. Viis usaldusteenuse kriteeriumi: turvalisus, kättesaadavus, töötlemise terviklikkus, konfidentsiaalsus ja privaatsus.
 
 Viide: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -24,7 +24,7 @@ Viide: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-
 
 ## Auditijälg
 
-Rediacc logib 70+ sündmusetüüpi, sealhulgas:
+Rediacc logib 70+ erinevat sündmusetüüpi - kasutajatoimingud, süsteemimuutused, konfiguratsiooniotsustused, juurdepääsukontroli muudatused, turvalisussündmused, hargnemisteoperatsioonid, auditijäljed. Tea, et see kuulob palju, kuid audiitorid tahavad just neid näha.
 
 - **Autentimine**: sisselogimine, väljalogimine, paroolimuutused, 2FA lubamine/keelamine, seansi tühistamine
 - **Autoriseerimine**: API-tokeni loomine/tühistamine, rolli muutused, meeskonna liikmelisus
@@ -32,11 +32,11 @@ Rediacc logib 70+ sündmusetüüpi, sealhulgas:
 - **Litsentsimine**: hoidla litsentsi väljastamine, masina pesa jälgimine, tellimuse muutused
 - **Masina toimingud**: hoidla loomine/käivitamine/peatamine/kustutamine, hargnemine, varukoopia tõukamine/tõmbamine, faili sünkroonimine, terminaliseanssid
 
-Need logid on kättesaadavad haldusarmatuurlaua kaudu (filtreerimisega kasutaja, meeskonna ja kuupäeva järgi), portaali tegevuslehe kaudu (organisatsioonipõhise tüübi ja kuupäeva filtreerimisega organisatsiooni administraatoritele) ning `rdc audit` CLI kaudu programmiliseks ekspordiks. Masina toimingud salvestatakse ka teie süsteemilogidesse kaitsesügavuse eesmärgil.
+Neid logisid saad kolmel viisil: haldusarmatuurlaud kasutaja-, meeskonna- ja kuupäevafiltreerimisega, organisatsiooniadministraatoritele portaali tegevusleht tüübi- ja kuupäevafiltreerimisega, või `rdc audit` CLI programmiliseks ekspordiks. Paiguta need oma tööriistadesse, integreeri kuhu tahad. Masina toimingud logitakse ka sinu süsteemilogidesse, nii et sul on kaitses sügavus.
 
 ## Muudatuste haldus
 
-Hargid muudavad muudatuste halduse auditeeritavaks: iga hark on elusalla koopia, mida saad testida, üle vaadata ja kas edendada või ära visata, iga sammuga ajatemplile kinnitatuna.
+Hargid muudavad muudatuste halduse auditeeritavaks. Hargnedes tootmisest saad tegeoleku koopia. Testi seda. Vaata seda üle. Edenda seda või visata minema. Iga samm ajatemplega ja isikuga seotud. Just seda tahavad audiitorid näha - ei anonüümseid muudatusi.
 
 1. Tootmishoidla hargnemine (`rdc repo fork`)
 2. Muudatuste rakendamine ja testimine harul

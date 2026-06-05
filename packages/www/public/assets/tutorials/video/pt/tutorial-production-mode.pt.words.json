@@ -1,1 +1,569 @@
-{"version":1,"cues":[{"start":1,"end":1.917,"text":"Tudo certo!","words":[{"start":1,"end":1.458,"char":[0,4]},{"start":1.458,"end":1.917,"char":[5,11]}]},{"start":1.917,"end":4.668,"text":"Vamos levar a sua aplicação do","words":[{"start":1.917,"end":2.375,"char":[0,5]},{"start":2.375,"end":2.834,"char":[6,11]},{"start":2.834,"end":3.292,"char":[12,13]},{"start":3.292,"end":3.751,"char":[14,17]},{"start":3.751,"end":4.209,"char":[18,27]},{"start":4.209,"end":4.668,"char":[28,30]}]},{"start":4.668,"end":6.043,"text":"desenvolvimento à produção.","words":[{"start":4.668,"end":5.126,"char":[0,15]},{"start":5.126,"end":5.584,"char":[16,17]},{"start":5.584,"end":6.043,"char":[18,27]}]},{"start":6.043,"end":7.418,"text":"Três passos curtos,","words":[{"start":6.043,"end":6.501,"char":[0,4]},{"start":6.501,"end":6.96,"char":[5,11]},{"start":6.96,"end":7.418,"char":[12,19]}]},{"start":7.418,"end":10.169,"text":"todos conduzidos a partir do portátil.","words":[{"start":7.418,"end":7.877,"char":[0,5]},{"start":7.877,"end":8.335,"char":[6,16]},{"start":8.335,"end":8.794,"char":[17,18]},{"start":8.794,"end":9.252,"char":[19,25]},{"start":9.252,"end":9.711,"char":[26,28]},{"start":9.711,"end":10.169,"char":[29,38]}]},{"start":10.925,"end":13.509,"text":"Durante o desenvolvimento corre a aplicação","words":[{"start":10.925,"end":11.356,"char":[0,7]},{"start":11.356,"end":11.786,"char":[8,9]},{"start":11.786,"end":12.217,"char":[10,25]},{"start":12.217,"end":12.648,"char":[26,31]},{"start":12.648,"end":13.078,"char":[32,33]},{"start":13.078,"end":13.509,"char":[34,43]}]},{"start":13.509,"end":16.093,"text":"a partir de dentro do repo,","words":[{"start":13.509,"end":13.94,"char":[0,1]},{"start":13.94,"end":14.37,"char":[2,8]},{"start":14.37,"end":14.801,"char":[9,11]},{"start":14.801,"end":15.231,"char":[12,18]},{"start":15.231,"end":15.662,"char":[19,21]},{"start":15.662,"end":16.093,"char":[22,27]}]},{"start":16.093,"end":18.677,"text":"por isso para quando se desliga.","words":[{"start":16.093,"end":16.523,"char":[0,3]},{"start":16.523,"end":16.954,"char":[4,8]},{"start":16.954,"end":17.385,"char":[9,13]},{"start":17.385,"end":17.815,"char":[14,20]},{"start":17.815,"end":18.246,"char":[21,23]},{"start":18.246,"end":18.677,"char":[24,32]}]},{"start":18.677,"end":21.261,"text":"Em produção lança-a a partir do","words":[{"start":18.677,"end":19.107,"char":[0,2]},{"start":19.107,"end":19.538,"char":[3,11]},{"start":19.538,"end":19.969,"char":[12,19]},{"start":19.969,"end":20.399,"char":[20,21]},{"start":20.399,"end":20.83,"char":[22,28]},{"start":20.83,"end":21.261,"char":[29,31]}]},{"start":21.261,"end":22.983,"text":"portátil com a CLI,","words":[{"start":21.261,"end":21.691,"char":[0,8]},{"start":21.691,"end":22.122,"char":[9,12]},{"start":22.122,"end":22.552,"char":[13,14]},{"start":22.552,"end":22.983,"char":[15,19]}]},{"start":22.983,"end":25.567,"text":"e continua a correr em segundo","words":[{"start":22.983,"end":23.414,"char":[0,1]},{"start":23.414,"end":23.844,"char":[2,10]},{"start":23.844,"end":24.275,"char":[11,12]},{"start":24.275,"end":24.706,"char":[13,19]},{"start":24.706,"end":25.136,"char":[20,22]},{"start":25.136,"end":25.567,"char":[23,30]}]},{"start":25.567,"end":25.998,"text":"plano.","words":[{"start":25.567,"end":25.998,"char":[0,6]}]},{"start":29.271,"end":32.023,"text":"Vamos iniciar a aplicação em modo de","words":[{"start":29.271,"end":29.664,"char":[0,5]},{"start":29.664,"end":30.057,"char":[6,13]},{"start":30.057,"end":30.45,"char":[14,15]},{"start":30.45,"end":30.843,"char":[16,25]},{"start":30.843,"end":31.237,"char":[26,28]},{"start":31.237,"end":31.63,"char":[29,33]},{"start":31.63,"end":32.023,"char":[34,36]}]},{"start":32.023,"end":33.988,"text":"produção a partir do portátil.","words":[{"start":32.023,"end":32.416,"char":[0,8]},{"start":32.416,"end":32.809,"char":[9,10]},{"start":32.809,"end":33.202,"char":[11,17]},{"start":33.202,"end":33.595,"char":[18,20]},{"start":33.595,"end":33.988,"char":[21,30]}]},{"start":33.988,"end":36.74,"text":"O comando de deploy chama a mesma","words":[{"start":33.988,"end":34.381,"char":[0,1]},{"start":34.381,"end":34.775,"char":[2,9]},{"start":34.775,"end":35.168,"char":[10,12]},{"start":35.168,"end":35.561,"char":[13,19]},{"start":35.561,"end":35.954,"char":[20,25]},{"start":35.954,"end":36.347,"char":[26,27]},{"start":36.347,"end":36.74,"char":[28,33]}]},{"start":36.74,"end":39.492,"text":"função up que usámos durante o desenvolvimento,","words":[{"start":36.74,"end":37.133,"char":[0,6]},{"start":37.133,"end":37.526,"char":[7,9]},{"start":37.526,"end":37.919,"char":[10,13]},{"start":37.919,"end":38.313,"char":[14,20]},{"start":38.313,"end":38.706,"char":[21,28]},{"start":38.706,"end":39.099,"char":[29,30]},{"start":39.099,"end":39.492,"char":[31,47]}]},{"start":39.492,"end":41.457,"text":"mas corre em segundo plano.","words":[{"start":39.492,"end":39.885,"char":[0,3]},{"start":39.885,"end":40.278,"char":[4,9]},{"start":40.278,"end":40.671,"char":[10,12]},{"start":40.671,"end":41.064,"char":[13,20]},{"start":41.064,"end":41.457,"char":[21,27]}]},{"start":41.457,"end":44.209,"text":"Pode fechar o portátil e a aplicação","words":[{"start":41.457,"end":41.851,"char":[0,4]},{"start":41.851,"end":42.244,"char":[5,11]},{"start":42.244,"end":42.637,"char":[12,13]},{"start":42.637,"end":43.03,"char":[14,22]},{"start":43.03,"end":43.423,"char":[23,24]},{"start":43.423,"end":43.816,"char":[25,26]},{"start":43.816,"end":44.209,"char":[27,36]}]},{"start":44.209,"end":45.389,"text":"continua a funcionar.","words":[{"start":44.209,"end":44.602,"char":[0,8]},{"start":44.602,"end":44.995,"char":[9,10]},{"start":44.995,"end":45.389,"char":[11,21]}]},{"start":48.139,"end":50.783,"text":"Aplicação a correr em produção.","words":[{"start":48.139,"end":48.668,"char":[0,9]},{"start":48.668,"end":49.197,"char":[10,11]},{"start":49.197,"end":49.726,"char":[12,18]},{"start":49.726,"end":50.254,"char":[19,21]},{"start":50.254,"end":50.783,"char":[22,31]}]},{"start":50.783,"end":51.841,"text":"Mesmo comando,","words":[{"start":50.783,"end":51.312,"char":[0,5]},{"start":51.312,"end":51.841,"char":[6,14]}]},{"start":51.841,"end":52.899,"text":"mesmo resultado,","words":[{"start":51.841,"end":52.37,"char":[0,5]},{"start":52.37,"end":52.899,"char":[6,16]}]},{"start":52.899,"end":54.486,"text":"no servidor real.","words":[{"start":52.899,"end":53.428,"char":[0,2]},{"start":53.428,"end":53.957,"char":[3,11]},{"start":53.957,"end":54.486,"char":[12,17]}]},{"start":57.816,"end":60.572,"text":"Agora vamos ativar o arranque automático","words":[{"start":57.816,"end":58.275,"char":[0,5]},{"start":58.275,"end":58.735,"char":[6,11]},{"start":58.735,"end":59.194,"char":[12,18]},{"start":59.194,"end":59.654,"char":[19,20]},{"start":59.654,"end":60.113,"char":[21,29]},{"start":60.113,"end":60.572,"char":[30,40]}]},{"start":60.572,"end":63.329,"text":"para que a aplicação sobreviva a","words":[{"start":60.572,"end":61.032,"char":[0,4]},{"start":61.032,"end":61.491,"char":[5,8]},{"start":61.491,"end":61.951,"char":[9,10]},{"start":61.951,"end":62.41,"char":[11,20]},{"start":62.41,"end":62.869,"char":[21,30]},{"start":62.869,"end":63.329,"char":[31,32]}]},{"start":63.329,"end":65.166,"text":"um reinício do servidor.","words":[{"start":63.329,"end":63.788,"char":[0,2]},{"start":63.788,"end":64.248,"char":[3,11]},{"start":64.248,"end":64.707,"char":[12,14]},{"start":64.707,"end":65.166,"char":[15,24]}]},{"start":65.166,"end":66.545,"text":"A partir daqui,","words":[{"start":65.166,"end":65.626,"char":[0,1]},{"start":65.626,"end":66.085,"char":[2,8]},{"start":66.085,"end":66.545,"char":[9,15]}]},{"start":66.545,"end":68.382,"text":"se o servidor reiniciar,","words":[{"start":66.545,"end":67.004,"char":[0,2]},{"start":67.004,"end":67.463,"char":[3,4]},{"start":67.463,"end":67.923,"char":[5,13]},{"start":67.923,"end":68.382,"char":[14,24]}]},{"start":68.382,"end":71.138,"text":"este repositório volta a arrancar automaticamente.","words":[{"start":68.382,"end":68.842,"char":[0,4]},{"start":68.842,"end":69.301,"char":[5,16]},{"start":69.301,"end":69.76,"char":[17,22]},{"start":69.76,"end":70.22,"char":[23,24]},{"start":70.22,"end":70.679,"char":[25,33]},{"start":70.679,"end":71.138,"char":[34,50]}]},{"start":73.388,"end":75.318,"text":"Arranque automático ativo.","words":[{"start":73.388,"end":74.032,"char":[0,8]},{"start":74.032,"end":74.675,"char":[9,19]},{"start":74.675,"end":75.318,"char":[20,26]}]},{"start":75.318,"end":77.891,"text":"A aplicação sobrevive a","words":[{"start":75.318,"end":75.962,"char":[0,1]},{"start":75.962,"end":76.605,"char":[2,11]},{"start":76.605,"end":77.248,"char":[12,21]},{"start":77.248,"end":77.891,"char":[22,23]}]},{"start":77.891,"end":78.535,"text":"reinícios.","words":[{"start":77.891,"end":78.535,"char":[0,10]}]},{"start":81.854,"end":84.423,"text":"Vamos listar os repositórios com arranque","words":[{"start":81.854,"end":82.282,"char":[0,5]},{"start":82.282,"end":82.71,"char":[6,12]},{"start":82.71,"end":83.138,"char":[13,15]},{"start":83.138,"end":83.567,"char":[16,28]},{"start":83.567,"end":83.995,"char":[29,32]},{"start":83.995,"end":84.423,"char":[33,41]}]},{"start":84.423,"end":85.279,"text":"automático ativado.","words":[{"start":84.423,"end":84.851,"char":[0,10]},{"start":84.851,"end":85.279,"char":[11,19]}]},{"start":85.279,"end":87.848,"text":"Confirma que a nossa aplicação está","words":[{"start":85.279,"end":85.707,"char":[0,8]},{"start":85.707,"end":86.135,"char":[9,12]},{"start":86.135,"end":86.563,"char":[13,14]},{"start":86.563,"end":86.991,"char":[15,20]},{"start":86.991,"end":87.42,"char":[21,30]},{"start":87.42,"end":87.848,"char":[31,35]}]},{"start":87.848,"end":89.56,"text":"na lista de arranque.","words":[{"start":87.848,"end":88.276,"char":[0,2]},{"start":88.276,"end":88.704,"char":[3,8]},{"start":88.704,"end":89.132,"char":[9,11]},{"start":89.132,"end":89.56,"char":[12,21]}]},{"start":91.56,"end":92.344,"text":"Aqui está,","words":[{"start":91.56,"end":91.952,"char":[0,4]},{"start":91.952,"end":92.344,"char":[5,10]}]},{"start":92.344,"end":93.911,"text":"na lista de arranque.","words":[{"start":92.344,"end":92.736,"char":[0,2]},{"start":92.736,"end":93.128,"char":[3,8]},{"start":93.128,"end":93.519,"char":[9,11]},{"start":93.519,"end":93.911,"char":[12,21]}]},{"start":97.232,"end":99.369,"text":"E para parar a aplicação,","words":[{"start":97.232,"end":97.659,"char":[0,1]},{"start":97.659,"end":98.087,"char":[2,6]},{"start":98.087,"end":98.514,"char":[7,12]},{"start":98.514,"end":98.941,"char":[13,14]},{"start":98.941,"end":99.369,"char":[15,25]}]},{"start":99.369,"end":101.933,"text":"um único comando a partir do","words":[{"start":99.369,"end":99.796,"char":[0,2]},{"start":99.796,"end":100.224,"char":[3,8]},{"start":100.224,"end":100.651,"char":[9,16]},{"start":100.651,"end":101.078,"char":[17,18]},{"start":101.078,"end":101.506,"char":[19,25]},{"start":101.506,"end":101.933,"char":[26,28]}]},{"start":101.933,"end":102.36,"text":"portátil.","words":[{"start":101.933,"end":102.36,"char":[0,9]}]},{"start":102.36,"end":104.07,"text":"Um comando para iniciar,","words":[{"start":102.36,"end":102.788,"char":[0,2]},{"start":102.788,"end":103.215,"char":[3,10]},{"start":103.215,"end":103.642,"char":[11,15]},{"start":103.642,"end":104.07,"char":[16,24]}]},{"start":104.07,"end":105.779,"text":"um comando para parar.","words":[{"start":104.07,"end":104.497,"char":[0,2]},{"start":104.497,"end":104.925,"char":[3,10]},{"start":104.925,"end":105.352,"char":[11,15]},{"start":105.352,"end":105.779,"char":[16,22]}]},{"start":105.779,"end":107.916,"text":"Tudo a partir do terminal.","words":[{"start":105.779,"end":106.207,"char":[0,4]},{"start":106.207,"end":106.634,"char":[5,6]},{"start":106.634,"end":107.061,"char":[7,13]},{"start":107.061,"end":107.489,"char":[14,16]},{"start":107.489,"end":107.916,"char":[17,26]}]},{"start":110.416,"end":110.97,"text":"Parada.","words":[{"start":110.416,"end":110.97,"char":[0,7]}]},{"start":110.97,"end":113.188,"text":"Um comando para arrancar,","words":[{"start":110.97,"end":111.525,"char":[0,2]},{"start":111.525,"end":112.079,"char":[3,10]},{"start":112.079,"end":112.634,"char":[11,15]},{"start":112.634,"end":113.188,"char":[16,25]}]},{"start":113.188,"end":115.406,"text":"um comando para parar.","words":[{"start":113.188,"end":113.742,"char":[0,2]},{"start":113.742,"end":114.297,"char":[3,10]},{"start":114.297,"end":114.851,"char":[11,15]},{"start":114.851,"end":115.406,"char":[16,22]}]},{"start":116.224,"end":119.141,"text":"E é assim o modo","words":[{"start":116.224,"end":116.807,"char":[0,1]},{"start":116.807,"end":117.391,"char":[2,3]},{"start":117.391,"end":117.974,"char":[4,9]},{"start":117.974,"end":118.558,"char":[10,11]},{"start":118.558,"end":119.141,"char":[12,16]}]},{"start":119.141,"end":120.308,"text":"de produção,","words":[{"start":119.141,"end":119.724,"char":[0,2]},{"start":119.724,"end":120.308,"char":[3,12]}]},{"start":120.308,"end":121.475,"text":"em resumo.","words":[{"start":120.308,"end":120.891,"char":[0,2]},{"start":120.891,"end":121.475,"char":[3,10]}]},{"start":121.475,"end":123.225,"text":"Até ao próximo!","words":[{"start":121.475,"end":122.058,"char":[0,3]},{"start":122.058,"end":122.641,"char":[4,6]},{"start":122.641,"end":123.225,"char":[7,15]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.917,
+      "text": "Tudo certo!",
+      "words": [
+        { "start": 1, "end": 1.458, "char": [0, 4] },
+        { "start": 1.458, "end": 1.917, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 1.917,
+      "end": 4.668,
+      "text": "Vamos levar a sua aplicação do",
+      "words": [
+        { "start": 1.917, "end": 2.375, "char": [0, 5] },
+        { "start": 2.375, "end": 2.834, "char": [6, 11] },
+        { "start": 2.834, "end": 3.292, "char": [12, 13] },
+        { "start": 3.292, "end": 3.751, "char": [14, 17] },
+        { "start": 3.751, "end": 4.209, "char": [18, 27] },
+        { "start": 4.209, "end": 4.668, "char": [28, 30] }
+      ]
+    },
+    {
+      "start": 4.668,
+      "end": 6.043,
+      "text": "desenvolvimento à produção.",
+      "words": [
+        { "start": 4.668, "end": 5.126, "char": [0, 15] },
+        { "start": 5.126, "end": 5.584, "char": [16, 17] },
+        { "start": 5.584, "end": 6.043, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 6.043,
+      "end": 7.418,
+      "text": "Três passos curtos,",
+      "words": [
+        { "start": 6.043, "end": 6.501, "char": [0, 4] },
+        { "start": 6.501, "end": 6.96, "char": [5, 11] },
+        { "start": 6.96, "end": 7.418, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 7.418,
+      "end": 10.169,
+      "text": "todos conduzidos a partir do portátil.",
+      "words": [
+        { "start": 7.418, "end": 7.877, "char": [0, 5] },
+        { "start": 7.877, "end": 8.335, "char": [6, 16] },
+        { "start": 8.335, "end": 8.794, "char": [17, 18] },
+        { "start": 8.794, "end": 9.252, "char": [19, 25] },
+        { "start": 9.252, "end": 9.711, "char": [26, 28] },
+        { "start": 9.711, "end": 10.169, "char": [29, 38] }
+      ]
+    },
+    {
+      "start": 10.925,
+      "end": 13.509,
+      "text": "Durante o desenvolvimento corre a aplicação",
+      "words": [
+        { "start": 10.925, "end": 11.356, "char": [0, 7] },
+        { "start": 11.356, "end": 11.786, "char": [8, 9] },
+        { "start": 11.786, "end": 12.217, "char": [10, 25] },
+        { "start": 12.217, "end": 12.648, "char": [26, 31] },
+        { "start": 12.648, "end": 13.078, "char": [32, 33] },
+        { "start": 13.078, "end": 13.509, "char": [34, 43] }
+      ]
+    },
+    {
+      "start": 13.509,
+      "end": 16.093,
+      "text": "a partir de dentro do repo,",
+      "words": [
+        { "start": 13.509, "end": 13.94, "char": [0, 1] },
+        { "start": 13.94, "end": 14.37, "char": [2, 8] },
+        { "start": 14.37, "end": 14.801, "char": [9, 11] },
+        { "start": 14.801, "end": 15.231, "char": [12, 18] },
+        { "start": 15.231, "end": 15.662, "char": [19, 21] },
+        { "start": 15.662, "end": 16.093, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 16.093,
+      "end": 18.677,
+      "text": "por isso para quando se desliga.",
+      "words": [
+        { "start": 16.093, "end": 16.523, "char": [0, 3] },
+        { "start": 16.523, "end": 16.954, "char": [4, 8] },
+        { "start": 16.954, "end": 17.385, "char": [9, 13] },
+        { "start": 17.385, "end": 17.815, "char": [14, 20] },
+        { "start": 17.815, "end": 18.246, "char": [21, 23] },
+        { "start": 18.246, "end": 18.677, "char": [24, 32] }
+      ]
+    },
+    {
+      "start": 18.677,
+      "end": 21.261,
+      "text": "Em produção lança-a a partir do",
+      "words": [
+        { "start": 18.677, "end": 19.107, "char": [0, 2] },
+        { "start": 19.107, "end": 19.538, "char": [3, 11] },
+        { "start": 19.538, "end": 19.969, "char": [12, 19] },
+        { "start": 19.969, "end": 20.399, "char": [20, 21] },
+        { "start": 20.399, "end": 20.83, "char": [22, 28] },
+        { "start": 20.83, "end": 21.261, "char": [29, 31] }
+      ]
+    },
+    {
+      "start": 21.261,
+      "end": 22.983,
+      "text": "portátil com a CLI,",
+      "words": [
+        { "start": 21.261, "end": 21.691, "char": [0, 8] },
+        { "start": 21.691, "end": 22.122, "char": [9, 12] },
+        { "start": 22.122, "end": 22.552, "char": [13, 14] },
+        { "start": 22.552, "end": 22.983, "char": [15, 19] }
+      ]
+    },
+    {
+      "start": 22.983,
+      "end": 25.567,
+      "text": "e continua a correr em segundo",
+      "words": [
+        { "start": 22.983, "end": 23.414, "char": [0, 1] },
+        { "start": 23.414, "end": 23.844, "char": [2, 10] },
+        { "start": 23.844, "end": 24.275, "char": [11, 12] },
+        { "start": 24.275, "end": 24.706, "char": [13, 19] },
+        { "start": 24.706, "end": 25.136, "char": [20, 22] },
+        { "start": 25.136, "end": 25.567, "char": [23, 30] }
+      ]
+    },
+    {
+      "start": 25.567,
+      "end": 25.998,
+      "text": "plano.",
+      "words": [{ "start": 25.567, "end": 25.998, "char": [0, 6] }]
+    },
+    {
+      "start": 29.271,
+      "end": 32.023,
+      "text": "Vamos iniciar a aplicação em modo de",
+      "words": [
+        { "start": 29.271, "end": 29.664, "char": [0, 5] },
+        { "start": 29.664, "end": 30.057, "char": [6, 13] },
+        { "start": 30.057, "end": 30.45, "char": [14, 15] },
+        { "start": 30.45, "end": 30.843, "char": [16, 25] },
+        { "start": 30.843, "end": 31.237, "char": [26, 28] },
+        { "start": 31.237, "end": 31.63, "char": [29, 33] },
+        { "start": 31.63, "end": 32.023, "char": [34, 36] }
+      ]
+    },
+    {
+      "start": 32.023,
+      "end": 33.988,
+      "text": "produção a partir do portátil.",
+      "words": [
+        { "start": 32.023, "end": 32.416, "char": [0, 8] },
+        { "start": 32.416, "end": 32.809, "char": [9, 10] },
+        { "start": 32.809, "end": 33.202, "char": [11, 17] },
+        { "start": 33.202, "end": 33.595, "char": [18, 20] },
+        { "start": 33.595, "end": 33.988, "char": [21, 30] }
+      ]
+    },
+    {
+      "start": 33.988,
+      "end": 36.74,
+      "text": "O comando de deploy chama a mesma",
+      "words": [
+        { "start": 33.988, "end": 34.381, "char": [0, 1] },
+        { "start": 34.381, "end": 34.775, "char": [2, 9] },
+        { "start": 34.775, "end": 35.168, "char": [10, 12] },
+        { "start": 35.168, "end": 35.561, "char": [13, 19] },
+        { "start": 35.561, "end": 35.954, "char": [20, 25] },
+        { "start": 35.954, "end": 36.347, "char": [26, 27] },
+        { "start": 36.347, "end": 36.74, "char": [28, 33] }
+      ]
+    },
+    {
+      "start": 36.74,
+      "end": 39.492,
+      "text": "função up que usámos durante o desenvolvimento,",
+      "words": [
+        { "start": 36.74, "end": 37.133, "char": [0, 6] },
+        { "start": 37.133, "end": 37.526, "char": [7, 9] },
+        { "start": 37.526, "end": 37.919, "char": [10, 13] },
+        { "start": 37.919, "end": 38.313, "char": [14, 20] },
+        { "start": 38.313, "end": 38.706, "char": [21, 28] },
+        { "start": 38.706, "end": 39.099, "char": [29, 30] },
+        { "start": 39.099, "end": 39.492, "char": [31, 47] }
+      ]
+    },
+    {
+      "start": 39.492,
+      "end": 41.457,
+      "text": "mas corre em segundo plano.",
+      "words": [
+        { "start": 39.492, "end": 39.885, "char": [0, 3] },
+        { "start": 39.885, "end": 40.278, "char": [4, 9] },
+        { "start": 40.278, "end": 40.671, "char": [10, 12] },
+        { "start": 40.671, "end": 41.064, "char": [13, 20] },
+        { "start": 41.064, "end": 41.457, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 41.457,
+      "end": 44.209,
+      "text": "Pode fechar o portátil e a aplicação",
+      "words": [
+        { "start": 41.457, "end": 41.851, "char": [0, 4] },
+        { "start": 41.851, "end": 42.244, "char": [5, 11] },
+        { "start": 42.244, "end": 42.637, "char": [12, 13] },
+        { "start": 42.637, "end": 43.03, "char": [14, 22] },
+        { "start": 43.03, "end": 43.423, "char": [23, 24] },
+        { "start": 43.423, "end": 43.816, "char": [25, 26] },
+        { "start": 43.816, "end": 44.209, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 44.209,
+      "end": 45.389,
+      "text": "continua a funcionar.",
+      "words": [
+        { "start": 44.209, "end": 44.602, "char": [0, 8] },
+        { "start": 44.602, "end": 44.995, "char": [9, 10] },
+        { "start": 44.995, "end": 45.389, "char": [11, 21] }
+      ]
+    },
+    {
+      "start": 48.139,
+      "end": 50.783,
+      "text": "Aplicação a correr em produção.",
+      "words": [
+        { "start": 48.139, "end": 48.668, "char": [0, 9] },
+        { "start": 48.668, "end": 49.197, "char": [10, 11] },
+        { "start": 49.197, "end": 49.726, "char": [12, 18] },
+        { "start": 49.726, "end": 50.254, "char": [19, 21] },
+        { "start": 50.254, "end": 50.783, "char": [22, 31] }
+      ]
+    },
+    {
+      "start": 50.783,
+      "end": 51.841,
+      "text": "Mesmo comando,",
+      "words": [
+        { "start": 50.783, "end": 51.312, "char": [0, 5] },
+        { "start": 51.312, "end": 51.841, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 51.841,
+      "end": 52.899,
+      "text": "mesmo resultado,",
+      "words": [
+        { "start": 51.841, "end": 52.37, "char": [0, 5] },
+        { "start": 52.37, "end": 52.899, "char": [6, 16] }
+      ]
+    },
+    {
+      "start": 52.899,
+      "end": 54.486,
+      "text": "no servidor real.",
+      "words": [
+        { "start": 52.899, "end": 53.428, "char": [0, 2] },
+        { "start": 53.428, "end": 53.957, "char": [3, 11] },
+        { "start": 53.957, "end": 54.486, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 57.816,
+      "end": 60.572,
+      "text": "Agora vamos ativar o arranque automático",
+      "words": [
+        { "start": 57.816, "end": 58.275, "char": [0, 5] },
+        { "start": 58.275, "end": 58.735, "char": [6, 11] },
+        { "start": 58.735, "end": 59.194, "char": [12, 18] },
+        { "start": 59.194, "end": 59.654, "char": [19, 20] },
+        { "start": 59.654, "end": 60.113, "char": [21, 29] },
+        { "start": 60.113, "end": 60.572, "char": [30, 40] }
+      ]
+    },
+    {
+      "start": 60.572,
+      "end": 63.329,
+      "text": "para que a aplicação sobreviva a",
+      "words": [
+        { "start": 60.572, "end": 61.032, "char": [0, 4] },
+        { "start": 61.032, "end": 61.491, "char": [5, 8] },
+        { "start": 61.491, "end": 61.951, "char": [9, 10] },
+        { "start": 61.951, "end": 62.41, "char": [11, 20] },
+        { "start": 62.41, "end": 62.869, "char": [21, 30] },
+        { "start": 62.869, "end": 63.329, "char": [31, 32] }
+      ]
+    },
+    {
+      "start": 63.329,
+      "end": 65.166,
+      "text": "um reinício do servidor.",
+      "words": [
+        { "start": 63.329, "end": 63.788, "char": [0, 2] },
+        { "start": 63.788, "end": 64.248, "char": [3, 11] },
+        { "start": 64.248, "end": 64.707, "char": [12, 14] },
+        { "start": 64.707, "end": 65.166, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 65.166,
+      "end": 66.545,
+      "text": "A partir daqui,",
+      "words": [
+        { "start": 65.166, "end": 65.626, "char": [0, 1] },
+        { "start": 65.626, "end": 66.085, "char": [2, 8] },
+        { "start": 66.085, "end": 66.545, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 66.545,
+      "end": 68.382,
+      "text": "se o servidor reiniciar,",
+      "words": [
+        { "start": 66.545, "end": 67.004, "char": [0, 2] },
+        { "start": 67.004, "end": 67.463, "char": [3, 4] },
+        { "start": 67.463, "end": 67.923, "char": [5, 13] },
+        { "start": 67.923, "end": 68.382, "char": [14, 24] }
+      ]
+    },
+    {
+      "start": 68.382,
+      "end": 71.138,
+      "text": "este repositório volta a arrancar automaticamente.",
+      "words": [
+        { "start": 68.382, "end": 68.842, "char": [0, 4] },
+        { "start": 68.842, "end": 69.301, "char": [5, 16] },
+        { "start": 69.301, "end": 69.76, "char": [17, 22] },
+        { "start": 69.76, "end": 70.22, "char": [23, 24] },
+        { "start": 70.22, "end": 70.679, "char": [25, 33] },
+        { "start": 70.679, "end": 71.138, "char": [34, 50] }
+      ]
+    },
+    {
+      "start": 73.388,
+      "end": 75.318,
+      "text": "Arranque automático ativo.",
+      "words": [
+        { "start": 73.388, "end": 74.032, "char": [0, 8] },
+        { "start": 74.032, "end": 74.675, "char": [9, 19] },
+        { "start": 74.675, "end": 75.318, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 75.318,
+      "end": 77.891,
+      "text": "A aplicação sobrevive a",
+      "words": [
+        { "start": 75.318, "end": 75.962, "char": [0, 1] },
+        { "start": 75.962, "end": 76.605, "char": [2, 11] },
+        { "start": 76.605, "end": 77.248, "char": [12, 21] },
+        { "start": 77.248, "end": 77.891, "char": [22, 23] }
+      ]
+    },
+    {
+      "start": 77.891,
+      "end": 78.535,
+      "text": "reinícios.",
+      "words": [{ "start": 77.891, "end": 78.535, "char": [0, 10] }]
+    },
+    {
+      "start": 81.854,
+      "end": 84.423,
+      "text": "Vamos listar os repositórios com arranque",
+      "words": [
+        { "start": 81.854, "end": 82.282, "char": [0, 5] },
+        { "start": 82.282, "end": 82.71, "char": [6, 12] },
+        { "start": 82.71, "end": 83.138, "char": [13, 15] },
+        { "start": 83.138, "end": 83.567, "char": [16, 28] },
+        { "start": 83.567, "end": 83.995, "char": [29, 32] },
+        { "start": 83.995, "end": 84.423, "char": [33, 41] }
+      ]
+    },
+    {
+      "start": 84.423,
+      "end": 85.279,
+      "text": "automático ativado.",
+      "words": [
+        { "start": 84.423, "end": 84.851, "char": [0, 10] },
+        { "start": 84.851, "end": 85.279, "char": [11, 19] }
+      ]
+    },
+    {
+      "start": 85.279,
+      "end": 87.848,
+      "text": "Confirma que a nossa aplicação está",
+      "words": [
+        { "start": 85.279, "end": 85.707, "char": [0, 8] },
+        { "start": 85.707, "end": 86.135, "char": [9, 12] },
+        { "start": 86.135, "end": 86.563, "char": [13, 14] },
+        { "start": 86.563, "end": 86.991, "char": [15, 20] },
+        { "start": 86.991, "end": 87.42, "char": [21, 30] },
+        { "start": 87.42, "end": 87.848, "char": [31, 35] }
+      ]
+    },
+    {
+      "start": 87.848,
+      "end": 89.56,
+      "text": "na lista de arranque.",
+      "words": [
+        { "start": 87.848, "end": 88.276, "char": [0, 2] },
+        { "start": 88.276, "end": 88.704, "char": [3, 8] },
+        { "start": 88.704, "end": 89.132, "char": [9, 11] },
+        { "start": 89.132, "end": 89.56, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 91.56,
+      "end": 92.344,
+      "text": "Aqui está,",
+      "words": [
+        { "start": 91.56, "end": 91.952, "char": [0, 4] },
+        { "start": 91.952, "end": 92.344, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 92.344,
+      "end": 93.911,
+      "text": "na lista de arranque.",
+      "words": [
+        { "start": 92.344, "end": 92.736, "char": [0, 2] },
+        { "start": 92.736, "end": 93.128, "char": [3, 8] },
+        { "start": 93.128, "end": 93.519, "char": [9, 11] },
+        { "start": 93.519, "end": 93.911, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 97.232,
+      "end": 99.369,
+      "text": "E para parar a aplicação,",
+      "words": [
+        { "start": 97.232, "end": 97.659, "char": [0, 1] },
+        { "start": 97.659, "end": 98.087, "char": [2, 6] },
+        { "start": 98.087, "end": 98.514, "char": [7, 12] },
+        { "start": 98.514, "end": 98.941, "char": [13, 14] },
+        { "start": 98.941, "end": 99.369, "char": [15, 25] }
+      ]
+    },
+    {
+      "start": 99.369,
+      "end": 101.933,
+      "text": "um único comando a partir do",
+      "words": [
+        { "start": 99.369, "end": 99.796, "char": [0, 2] },
+        { "start": 99.796, "end": 100.224, "char": [3, 8] },
+        { "start": 100.224, "end": 100.651, "char": [9, 16] },
+        { "start": 100.651, "end": 101.078, "char": [17, 18] },
+        { "start": 101.078, "end": 101.506, "char": [19, 25] },
+        { "start": 101.506, "end": 101.933, "char": [26, 28] }
+      ]
+    },
+    {
+      "start": 101.933,
+      "end": 102.36,
+      "text": "portátil.",
+      "words": [{ "start": 101.933, "end": 102.36, "char": [0, 9] }]
+    },
+    {
+      "start": 102.36,
+      "end": 104.07,
+      "text": "Um comando para iniciar,",
+      "words": [
+        { "start": 102.36, "end": 102.788, "char": [0, 2] },
+        { "start": 102.788, "end": 103.215, "char": [3, 10] },
+        { "start": 103.215, "end": 103.642, "char": [11, 15] },
+        { "start": 103.642, "end": 104.07, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 104.07,
+      "end": 105.779,
+      "text": "um comando para parar.",
+      "words": [
+        { "start": 104.07, "end": 104.497, "char": [0, 2] },
+        { "start": 104.497, "end": 104.925, "char": [3, 10] },
+        { "start": 104.925, "end": 105.352, "char": [11, 15] },
+        { "start": 105.352, "end": 105.779, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 105.779,
+      "end": 107.916,
+      "text": "Tudo a partir do terminal.",
+      "words": [
+        { "start": 105.779, "end": 106.207, "char": [0, 4] },
+        { "start": 106.207, "end": 106.634, "char": [5, 6] },
+        { "start": 106.634, "end": 107.061, "char": [7, 13] },
+        { "start": 107.061, "end": 107.489, "char": [14, 16] },
+        { "start": 107.489, "end": 107.916, "char": [17, 26] }
+      ]
+    },
+    {
+      "start": 110.416,
+      "end": 110.97,
+      "text": "Parada.",
+      "words": [{ "start": 110.416, "end": 110.97, "char": [0, 7] }]
+    },
+    {
+      "start": 110.97,
+      "end": 113.188,
+      "text": "Um comando para arrancar,",
+      "words": [
+        { "start": 110.97, "end": 111.525, "char": [0, 2] },
+        { "start": 111.525, "end": 112.079, "char": [3, 10] },
+        { "start": 112.079, "end": 112.634, "char": [11, 15] },
+        { "start": 112.634, "end": 113.188, "char": [16, 25] }
+      ]
+    },
+    {
+      "start": 113.188,
+      "end": 115.406,
+      "text": "um comando para parar.",
+      "words": [
+        { "start": 113.188, "end": 113.742, "char": [0, 2] },
+        { "start": 113.742, "end": 114.297, "char": [3, 10] },
+        { "start": 114.297, "end": 114.851, "char": [11, 15] },
+        { "start": 114.851, "end": 115.406, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 116.224,
+      "end": 119.141,
+      "text": "E é assim o modo",
+      "words": [
+        { "start": 116.224, "end": 116.807, "char": [0, 1] },
+        { "start": 116.807, "end": 117.391, "char": [2, 3] },
+        { "start": 117.391, "end": 117.974, "char": [4, 9] },
+        { "start": 117.974, "end": 118.558, "char": [10, 11] },
+        { "start": 118.558, "end": 119.141, "char": [12, 16] }
+      ]
+    },
+    {
+      "start": 119.141,
+      "end": 120.308,
+      "text": "de produção,",
+      "words": [
+        { "start": 119.141, "end": 119.724, "char": [0, 2] },
+        { "start": 119.724, "end": 120.308, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 120.308,
+      "end": 121.475,
+      "text": "em resumo.",
+      "words": [
+        { "start": 120.308, "end": 120.891, "char": [0, 2] },
+        { "start": 120.891, "end": 121.475, "char": [3, 10] }
+      ]
+    },
+    {
+      "start": 121.475,
+      "end": 123.225,
+      "text": "Até ao próximo!",
+      "words": [
+        { "start": 121.475, "end": 122.058, "char": [0, 3] },
+        { "start": 122.058, "end": 122.641, "char": [4, 6] },
+        { "start": 122.641, "end": 123.225, "char": [7, 15] }
+      ]
+    }
+  ]
+}

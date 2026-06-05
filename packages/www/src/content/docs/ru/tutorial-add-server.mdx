@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 3
 language: ru
-sourceHash: "4b76f7212633cdec"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "fc8bd1ff08e5611a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Добавление первого сервера
 
-Вот как работает `rdc`. Rediacc состоит из двух инструментов: `rdc` на вашем ноутбуке и `renet` на сервере.
+Два инструмента: `rdc` на вашем ноутбуке и `renet` на сервере. Вот вся архитектура Rediacc. Вот как они взаимодействуют перед добавлением сервера.
 
 ## Смотреть урок
 
@@ -23,8 +23,8 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 ![rdc on laptop, renet on server, SSH between](/img/tutorials/tutorial-add-server/slide-1.svg)
 
-- **`rdc`**: CLI на вашем ноутбуке. Здесь вы вводите команды.
-- **`renet`**: оркестратор на сервере. Он управляет шифрованием, Docker и изоляцией.
+- **`rdc`** — это CLI на вашем ноутбуке. Здесь вы вводите команды.
+- **`renet`** — это оркестратор на сервере. Он управляет шифрованием, Docker и изоляцией.
 
 Когда вы выполняете команду локально, `rdc` подключается по SSH и запускает `renet` на сервере. Вам никогда не придётся вручную заходить на серверы по SSH: `rdc` сделает это за вас.
 
@@ -32,7 +32,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={1} />
 
-`rdc config init` не требуется. Файл конфигурации создаётся автоматически при первом использовании, а `rdc` использует ваш стандартный ключ `~/.ssh`.
+`rdc config init` не требуется. Файл конфигурации создаётся автоматически при первом использовании, а `rdc` использует ваш стандартный ключ `~/.ssh`. Выбор ключа намеренно минимален. Если вам нужна переадресация агента или jump host, настройте их в `~/.ssh/config` как обычно; `rdc` их подберёт.
 
 ## Шаг 2: Подготовка сервера
 
@@ -42,11 +42,11 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 ## Где хранится конфигурация
 
-CLI хранит всё в `~/.config/rediacc/rediacc.json`: единый файл в формате обычного JSON.
+CLI хранит всё в `~/.config/rediacc/rediacc.json` — это один файл в обычном JSON-формате:
 
 <TutorialStep number={3} />
 
-В этом одном файле хранится всё: машины, SSH-ключ и учётные данные шифрования. Скопируйте его на другой ноутбук, и вы сможете управлять теми же серверами с него.
+В этом одном файле хранятся машины, SSH-ключ и учётные данные шифрования. Скопируйте его на другой ноутбук, и вы сможете управлять теми же серверами с него.
 
 ## Несколько конфигураций
 

@@ -1,11 +1,11 @@
 ---
-title: Zeitreise-Erholung
-description: "Stellen Sie vor Wochen gelöschte Daten mithilfe von btrfs-Snapshots wieder her, auch nachdem Ihre normalen Backups darüber hinweg rotiert sind."
+title: Zeitreisen-Wiederherstellung
+description: "Stellen Sie vor Wochen gelöschte Daten mithilfe von btrfs-Snapshots wieder her, auch wenn Ihre normalen Sicherungen diese Zeit bereits überschritten haben."
 category: Use Cases
 order: 2
 language: de
-sourceHash: "4c1fcb1667a89759"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "e55d51b8df91b20f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Wenn andere Daten für immer verlieren, können Sie in die Vergangenheit reisen.**
@@ -18,26 +18,26 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 
 Mehmet ist für die Datenbank einer großen E-Commerce-Plattform zuständig. Eines Morgens beschweren sich Kunden, dass frühere Bestelldaten **nicht mehr sichtbar** sind. Er untersucht die Situation. Ein neu eingestellter Entwickler hatte vor drei Wochen **versehentlich** kritische Zeilen aus der Live-Datenbank gelöscht, indem er **sich mit der Live-Datenbank statt mit der Testumgebung verband**. Der klassische Fehler, den jeder DBA entweder selbst gemacht hat oder bei einem Junior beobachtet hat.
 
-**Vorhandenes Backup-System:** 
-* Vollständige Backups werden einmal pro Woche erstellt 
+**Vorhandenes Backup-System:**
+* Vollständige Backups werden einmal pro Woche erstellt
 * **Inkrementelle Backups** werden täglich aufgezeichnet
 
 **Das Dilemma:** Die Löschung erfolgte **vor dem Datum der Vollsicherungen**, sodass die verlorenen Daten in keiner Backup-Datei enthalten sind. Tägliche Backups zeichnen **nur die neuesten Daten auf**, sodass **gelöschte Elemente nicht wiederhergestellt werden können**.
 
 ## Krisenauswirkungen
 
-Aufgrund verlorener Daten: 
-* Kunden können **Rückerstattungsanträge nicht bearbeiten** 
-* Im Zahlungssystem treten Inkonsistenzen auf 
+Aufgrund verlorener Daten:
+* Kunden können **Rückerstattungsanträge nicht bearbeiten**
+* Im Zahlungssystem treten Inkonsistenzen auf
 * Beschwerden verbreiten sich schnell in den sozialen Medien
 
-**Ergebnisse:** 
-* Das Kundensupport-Team steht unter **starkem Druck** 
-* Der Ruf des Unternehmens wird **schnell geschädigt** 
+**Ergebnisse:**
+* Das Kundensupport-Team steht unter **starkem Druck**
+* Der Ruf des Unternehmens wird **schnell geschädigt**
 * Manuelle Datenwiederherstellungsbemühungen erzielen **nur 15 % Erfolg**
 
-**Zusätzliche Herausforderung:** 
-* Um die Speicherkosten zu senken, behält das Unternehmen **nur die Backups der letzten 2 Wochen** 
+**Zusätzliche Herausforderung:**
+* Um die Speicherkosten zu senken, behält das Unternehmen **nur die Backups der letzten 2 Wochen**
 * Die gelöschten Daten befinden sich nicht in den **aktuellen Backups**
 
 ## Rediacc-Lösung
@@ -46,19 +46,19 @@ Hier ist das Zeitmaschinen-Setup, das Mehmet mit Rediacc aufbaut:
 
 ![Time Travel Recovery](/img/time-travel-recovery.svg)
 
-### 1. **Schnappschüsse** 
-* Rediacc erstellt automatisch stündlich Snapshots des Systems 
+### 1. **Schnappschüsse**
+* Rediacc erstellt automatisch stündlich Snapshots des Systems
 * Diese Schnappschüsse decken auch die Momente unmittelbar vor dem Löschen der Daten ab
 
-### 2. **Reise in die Vergangenheit** 
-* Mehmet wählt das Datum und die Uhrzeit des Löschvorgangs in der Rediacc-Schnittstelle aus 
+### 2. **Reise in die Vergangenheit**
+* Mehmet wählt das Datum und die Uhrzeit des Löschvorgangs in der Rediacc-Schnittstelle aus
 * Stellt in 1 Minute einen Snapshot des Systems von vor 3 Wochen auf einer neuen Instanz wieder her
 
-### 3. **Vollständige Wiederherstellung** 
+### 3. **Vollständige Wiederherstellung**
 * Verlorene Daten werden vollständig und konsistent wiederhergestellt
 
 ## Ergebnis
 
-* Der Ruf des Unternehmens wurde **innerhalb von 24 Stunden** wiederhergestellt 
-* Finanzieller Verlust wurde um **95 %** verhindert 
+* Der Ruf des Unternehmens wurde **innerhalb von 24 Stunden** wiederhergestellt
+* Finanzieller Verlust wurde um **95 %** verhindert
 * Rediacc hat bewiesen, dass häufige Backups erstellt werden können, **ohne die Speicherkosten zu erhöhen**

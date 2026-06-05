@@ -1,15 +1,16 @@
 ---
 title: "Avvio automatico e ripristino"
-description: "Come funziona l'avvio automatico, il riconciliatore periodico che riavvia i repository che non sono più attivi dopo l'avvio, e come verificarne lo stato di ripristino."
+description: "Come funziona l'avvio automatico, il riconciliatore periodico che ripristina i repository che si interrompono dopo l'avvio, e come verificare lo stato di ripristino."
 category: "Guides"
 order: 5
 language: it
-sourceHash: "8e98fcd141e27da6"
+sourceHash: "00a1796a0b0d20da"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# Autostart e Ripristino
+# Avvio automatico e ripristino
 
-Questa pagina spiega come i repository vengono montati e avviati automaticamente all'avvio, e come il riconciliatore periodico riporta in funzione un repository che si interrompe dopo che il server è già in esecuzione.
+I repository con l'autostart abilitato si avviano automaticamente al boot. Se uno si interrompe in seguito, il riconciliatore periodico lo riporta in funzione. Nessuna richiesta. Nessun riavvio manuale.
 
 Per abilitare o disabilitare l'autostart su un repository, vedere [Servizi: Autostart all'avvio](/it/docs/services#autostart-on-boot).
 

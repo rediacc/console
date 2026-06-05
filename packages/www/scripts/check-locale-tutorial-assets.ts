@@ -151,9 +151,7 @@ function main(): number {
     }
     console.error('');
   }
-  console.error(
-    `Generate via:  npm run tutorials:tts:generate -- --lang <code>  (TTS locales)`
-  );
+  console.error(`Generate via:  npm run tutorials:tts:generate -- --lang <code>  (TTS locales)`);
   console.error(
     `              npm run tutorials:derive-fallback-timeline -- --lang <code>  (ar/et/tr)`
   );

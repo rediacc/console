@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 3
 language: ko
-sourceHash: "4b76f7212633cdec"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "fc8bd1ff08e5611a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # 첫 번째 서버 추가하기
 
-서버를 추가하기 전에, `rdc`가 어떻게 작동하는지 알아봅시다. Rediacc는 두 가지 도구입니다: 노트북의 `rdc`와 서버의 `renet`.
+두 가지 도구입니다: 노트북의 `rdc`, 서버의 `renet`. 이것이 전체 Rediacc 아키텍처입니다. 서버를 추가하기 전에, 이들이 어떻게 연결되는지 알아봅시다.
 
 ## 튜토리얼 보기
 
@@ -32,7 +32,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={1} />
 
-`rdc config init`은 필요하지 않습니다. 구성 파일은 첫 사용 시 자동으로 생성되며, `rdc`는 표준 `~/.ssh` 키를 기본으로 사용합니다.
+`rdc config init`은 필요하지 않습니다. 구성 파일은 첫 사용 시 자동으로 생성되며, `rdc`는 표준 `~/.ssh` 키를 기본으로 사용합니다. 키 선택은 의도적으로 최소화되었습니다. 에이전트 포워딩이나 점프 호스트가 필요하면 `~/.ssh/config`에서 일반적인 방식으로 설정하세요. `rdc`가 자동으로 인식합니다.
 
 ## 2단계: 프로비저닝
 

@@ -1,1 +1,989 @@
-{"version":1,"cues":[{"start":1,"end":2.61,"text":"Asıl özelliğe hoş geldiniz!","words":[{"start":1,"end":1.403,"char":[0,4]},{"start":1.403,"end":1.805,"char":[5,13]},{"start":1.805,"end":2.208,"char":[14,17]},{"start":2.208,"end":2.61,"char":[18,27]}]},{"start":2.61,"end":5.429,"text":"Boyutu ne olursa olsun tüm bir üretim","words":[{"start":2.61,"end":3.013,"char":[0,6]},{"start":3.013,"end":3.416,"char":[7,9]},{"start":3.416,"end":3.818,"char":[10,16]},{"start":3.818,"end":4.221,"char":[17,22]},{"start":4.221,"end":4.623,"char":[23,26]},{"start":4.623,"end":5.026,"char":[27,30]},{"start":5.026,"end":5.429,"char":[31,37]}]},{"start":5.429,"end":7.844,"text":"deposunu klonlayın ve hiçbir şeyi bozmayın.","words":[{"start":5.429,"end":5.831,"char":[0,8]},{"start":5.831,"end":6.234,"char":[9,18]},{"start":6.234,"end":6.636,"char":[19,21]},{"start":6.636,"end":7.039,"char":[22,28]},{"start":7.039,"end":7.441,"char":[29,33]},{"start":7.441,"end":7.844,"char":[34,43]}]},{"start":8.603,"end":10.346,"text":"Bir üst depo,","words":[{"start":8.603,"end":9.184,"char":[0,3]},{"start":9.184,"end":9.765,"char":[4,7]},{"start":9.765,"end":10.346,"char":[8,13]}]},{"start":10.346,"end":13.25,"text":"istediğiniz sayıda bağımsız klona dağılır.","words":[{"start":10.346,"end":10.926,"char":[0,11]},{"start":10.926,"end":11.507,"char":[12,18]},{"start":11.507,"end":12.088,"char":[19,27]},{"start":12.088,"end":12.669,"char":[28,33]},{"start":12.669,"end":13.25,"char":[34,42]}]},{"start":13.25,"end":14.411,"text":"Her fork,","words":[{"start":13.25,"end":13.831,"char":[0,3]},{"start":13.831,"end":14.411,"char":[4,9]}]},{"start":14.411,"end":17.316,"text":"orijinalle yan yana çalışan kendi","words":[{"start":14.411,"end":14.992,"char":[0,10]},{"start":14.992,"end":15.573,"char":[11,14]},{"start":15.573,"end":16.154,"char":[15,19]},{"start":16.154,"end":16.735,"char":[20,27]},{"start":16.735,"end":17.316,"char":[28,33]}]},{"start":17.316,"end":18.477,"text":"izole ortamıdır.","words":[{"start":17.316,"end":17.896,"char":[0,5]},{"start":17.896,"end":18.477,"char":[6,16]}]},{"start":19.248,"end":21.369,"text":"Bir klasör bağlantısı paylaşmayı düşünün.","words":[{"start":19.248,"end":19.672,"char":[0,3]},{"start":19.672,"end":20.096,"char":[4,10]},{"start":20.096,"end":20.521,"char":[11,21]},{"start":20.521,"end":20.945,"char":[22,32]},{"start":20.945,"end":21.369,"char":[33,41]}]},{"start":21.369,"end":23.914,"text":"Klasör küçük de olsa devasa da","words":[{"start":21.369,"end":21.793,"char":[0,6]},{"start":21.793,"end":22.217,"char":[7,12]},{"start":22.217,"end":22.641,"char":[13,15]},{"start":22.641,"end":23.066,"char":[16,20]},{"start":23.066,"end":23.49,"char":[21,27]},{"start":23.49,"end":23.914,"char":[28,30]}]},{"start":23.914,"end":26.035,"text":"olsa bağlantı aynı hafif şeydir;","words":[{"start":23.914,"end":24.338,"char":[0,4]},{"start":24.338,"end":24.762,"char":[5,13]},{"start":24.762,"end":25.187,"char":[14,18]},{"start":25.187,"end":25.611,"char":[19,24]},{"start":25.611,"end":26.035,"char":[25,32]}]},{"start":26.035,"end":28.156,"text":"fork da aynı prensiple çalışır.","words":[{"start":26.035,"end":26.459,"char":[0,4]},{"start":26.459,"end":26.883,"char":[5,7]},{"start":26.883,"end":27.307,"char":[8,12]},{"start":27.307,"end":27.732,"char":[13,22]},{"start":27.732,"end":28.156,"char":[23,31]}]},{"start":28.941,"end":30.445,"text":"1 gigabayt,","words":[{"start":28.941,"end":29.693,"char":[0,1]},{"start":29.693,"end":30.445,"char":[2,11]}]},{"start":30.445,"end":31.949,"text":"100 gigabayt,","words":[{"start":30.445,"end":31.197,"char":[0,3]},{"start":31.197,"end":31.949,"char":[4,13]}]},{"start":31.949,"end":33.453,"text":"1 terabayt:","words":[{"start":31.949,"end":32.701,"char":[0,1]},{"start":32.701,"end":33.453,"char":[2,11]}]},{"start":33.453,"end":36.461,"text":"fork aynı şekilde davranır.","words":[{"start":33.453,"end":34.205,"char":[0,4]},{"start":34.205,"end":34.957,"char":[5,9]},{"start":34.957,"end":35.709,"char":[10,17]},{"start":35.709,"end":36.461,"char":[18,27]}]},{"start":36.461,"end":39.468,"text":"Depo boyutu denkleme girmez.","words":[{"start":36.461,"end":37.212,"char":[0,4]},{"start":37.212,"end":37.964,"char":[5,11]},{"start":37.964,"end":38.716,"char":[12,20]},{"start":38.716,"end":39.468,"char":[21,28]}]},{"start":42.736,"end":45.18,"text":"Depoyu tek bir komutla fork'lıyoruz.","words":[{"start":42.736,"end":43.225,"char":[0,6]},{"start":43.225,"end":43.713,"char":[7,10]},{"start":43.713,"end":44.202,"char":[11,14]},{"start":44.202,"end":44.691,"char":[15,22]},{"start":44.691,"end":45.18,"char":[23,36]}]},{"start":45.18,"end":46.646,"text":"Her şeyi klonladı:","words":[{"start":45.18,"end":45.668,"char":[0,3]},{"start":45.668,"end":46.157,"char":[4,8]},{"start":46.157,"end":46.646,"char":[9,18]}]},{"start":46.646,"end":47.135,"text":"uygulama,","words":[{"start":46.646,"end":47.135,"char":[0,9]}]},{"start":47.135,"end":47.623,"text":"veritabanı,","words":[{"start":47.135,"end":47.623,"char":[0,11]}]},{"start":47.623,"end":48.601,"text":"yapılandırma dosyaları.","words":[{"start":47.623,"end":48.112,"char":[0,12]},{"start":48.112,"end":48.601,"char":[13,23]}]},{"start":48.601,"end":51.045,"text":"Ve bu saniyeler içinde oldu;","words":[{"start":48.601,"end":49.09,"char":[0,2]},{"start":49.09,"end":49.578,"char":[3,5]},{"start":49.578,"end":50.067,"char":[6,15]},{"start":50.067,"end":50.556,"char":[16,22]},{"start":50.556,"end":51.045,"char":[23,28]}]},{"start":51.045,"end":53,"text":"deponun boyutundan bağımsız olarak.","words":[{"start":51.045,"end":51.533,"char":[0,7]},{"start":51.533,"end":52.022,"char":[8,18]},{"start":52.022,"end":52.511,"char":[19,27]},{"start":52.511,"end":53,"char":[28,35]}]},{"start":53,"end":53.977,"text":"1 gigabayt,","words":[{"start":53,"end":53.488,"char":[0,1]},{"start":53.488,"end":53.977,"char":[2,11]}]},{"start":53.977,"end":54.955,"text":"100 gigabayt,","words":[{"start":53.977,"end":54.466,"char":[0,3]},{"start":54.466,"end":54.955,"char":[4,13]}]},{"start":54.955,"end":55.932,"text":"1 terabayt:","words":[{"start":54.955,"end":55.443,"char":[0,1]},{"start":55.443,"end":55.932,"char":[2,11]}]},{"start":55.932,"end":57.887,"text":"her seferinde aynı süre.","words":[{"start":55.932,"end":56.421,"char":[0,3]},{"start":56.421,"end":56.91,"char":[4,13]},{"start":56.91,"end":57.398,"char":[14,18]},{"start":57.398,"end":57.887,"char":[19,24]}]},{"start":60.887,"end":61.677,"text":"Fork tamam.","words":[{"start":60.887,"end":61.282,"char":[0,4]},{"start":61.282,"end":61.677,"char":[5,11]}]},{"start":61.677,"end":63.255,"text":"Klon ayakta ve çalışıyor;","words":[{"start":61.677,"end":62.071,"char":[0,4]},{"start":62.071,"end":62.466,"char":[5,11]},{"start":62.466,"end":62.861,"char":[12,14]},{"start":62.861,"end":63.255,"char":[15,25]}]},{"start":63.255,"end":64.44,"text":"boyuttan bağımsız olarak.","words":[{"start":63.255,"end":63.65,"char":[0,8]},{"start":63.65,"end":64.045,"char":[9,17]},{"start":64.045,"end":64.44,"char":[18,25]}]},{"start":67.755,"end":69.648,"text":"Her iki depo yan yana var.","words":[{"start":67.755,"end":68.071,"char":[0,3]},{"start":68.071,"end":68.386,"char":[4,7]},{"start":68.386,"end":68.702,"char":[8,12]},{"start":68.702,"end":69.017,"char":[13,16]},{"start":69.017,"end":69.333,"char":[17,21]},{"start":69.333,"end":69.648,"char":[22,26]}]},{"start":69.648,"end":70.279,"text":"Aynı makine,","words":[{"start":69.648,"end":69.964,"char":[0,4]},{"start":69.964,"end":70.279,"char":[5,12]}]},{"start":70.279,"end":70.911,"text":"aynı disk,","words":[{"start":70.279,"end":70.595,"char":[0,4]},{"start":70.595,"end":70.911,"char":[5,10]}]},{"start":70.911,"end":72.173,"text":"iki tamamen bağımsız ortam.","words":[{"start":70.911,"end":71.226,"char":[0,3]},{"start":71.226,"end":71.542,"char":[4,11]},{"start":71.542,"end":71.857,"char":[12,20]},{"start":71.857,"end":72.173,"char":[21,27]}]},{"start":72.173,"end":73.12,"text":"Fork'un kendi container'ları,","words":[{"start":72.173,"end":72.488,"char":[0,7]},{"start":72.488,"end":72.804,"char":[8,13]},{"start":72.804,"end":73.12,"char":[14,29]}]},{"start":73.12,"end":75.644,"text":"kendi dosya sistemi ve kendi Docker daemon'ı var.","words":[{"start":73.12,"end":73.435,"char":[0,5]},{"start":73.435,"end":73.751,"char":[6,11]},{"start":73.751,"end":74.066,"char":[12,19]},{"start":74.066,"end":74.382,"char":[20,22]},{"start":74.382,"end":74.697,"char":[23,28]},{"start":74.697,"end":75.013,"char":[29,35]},{"start":75.013,"end":75.328,"char":[36,44]},{"start":75.328,"end":75.644,"char":[45,49]}]},{"start":78.644,"end":79.347,"text":"İki depo,","words":[{"start":78.644,"end":78.995,"char":[0,3]},{"start":78.995,"end":79.347,"char":[4,9]}]},{"start":79.347,"end":80.05,"text":"tek disk.","words":[{"start":79.347,"end":79.698,"char":[0,3]},{"start":79.698,"end":80.05,"char":[4,9]}]},{"start":80.05,"end":80.753,"text":"Aynı veri,","words":[{"start":80.05,"end":80.401,"char":[0,4]},{"start":80.401,"end":80.753,"char":[5,10]}]},{"start":80.753,"end":82.51,"text":"geri kalan her şey ayrı.","words":[{"start":80.753,"end":81.104,"char":[0,4]},{"start":81.104,"end":81.456,"char":[5,10]},{"start":81.456,"end":81.807,"char":[11,14]},{"start":81.807,"end":82.159,"char":[15,18]},{"start":82.159,"end":82.51,"char":[19,24]}]},{"start":85.832,"end":87.075,"text":"İzolasyonu kanıtlayalım.","words":[{"start":85.832,"end":86.454,"char":[0,10]},{"start":86.454,"end":87.075,"char":[11,24]}]},{"start":87.075,"end":90.184,"text":"Orijinalde işaret dosyamız bıraktığımız yerde","words":[{"start":87.075,"end":87.697,"char":[0,10]},{"start":87.697,"end":88.319,"char":[11,17]},{"start":88.319,"end":88.941,"char":[18,26]},{"start":88.941,"end":89.562,"char":[27,39]},{"start":89.562,"end":90.184,"char":[40,45]}]},{"start":90.184,"end":90.806,"text":"duruyor.","words":[{"start":90.184,"end":90.806,"char":[0,8]}]},{"start":90.806,"end":93.914,"text":"Fork'un varlığı üst depoda hiçbir","words":[{"start":90.806,"end":91.427,"char":[0,7]},{"start":91.427,"end":92.049,"char":[8,15]},{"start":92.049,"end":92.671,"char":[16,19]},{"start":92.671,"end":93.293,"char":[20,26]},{"start":93.293,"end":93.914,"char":[27,33]}]},{"start":93.914,"end":95.158,"text":"şeyi değiştirmedi.","words":[{"start":93.914,"end":94.536,"char":[0,4]},{"start":94.536,"end":95.158,"char":[5,18]}]},{"start":95.958,"end":97.943,"text":"Orijinal dosya hâlâ orada.","words":[{"start":95.958,"end":96.454,"char":[0,8]},{"start":96.454,"end":96.95,"char":[9,14]},{"start":96.95,"end":97.447,"char":[15,19]},{"start":97.447,"end":97.943,"char":[20,26]}]},{"start":97.943,"end":99.432,"text":"Fork ona dokunmadı.","words":[{"start":97.943,"end":98.439,"char":[0,4]},{"start":98.439,"end":98.936,"char":[5,8]},{"start":98.936,"end":99.432,"char":[9,19]}]},{"start":100.248,"end":101.763,"text":"Üst depo güneş,","words":[{"start":100.248,"end":100.753,"char":[0,3]},{"start":100.753,"end":101.258,"char":[4,8]},{"start":101.258,"end":101.763,"char":[9,15]}]},{"start":101.763,"end":104.288,"text":"fork'unuz ise onun ışığını yakalayan","words":[{"start":101.763,"end":102.268,"char":[0,9]},{"start":102.268,"end":102.773,"char":[10,13]},{"start":102.773,"end":103.278,"char":[14,18]},{"start":103.278,"end":103.783,"char":[19,26]},{"start":103.783,"end":104.288,"char":[27,36]}]},{"start":104.288,"end":105.298,"text":"bir aynadır.","words":[{"start":104.288,"end":104.793,"char":[0,3]},{"start":104.793,"end":105.298,"char":[4,12]}]},{"start":105.298,"end":107.824,"text":"Paylaşılan temel dokunulmadan kalırken aynaya","words":[{"start":105.298,"end":105.803,"char":[0,10]},{"start":105.803,"end":106.308,"char":[11,16]},{"start":106.308,"end":106.813,"char":[17,29]},{"start":106.813,"end":107.319,"char":[30,38]},{"start":107.319,"end":107.824,"char":[39,45]}]},{"start":107.824,"end":110.349,"text":"boyadığınız her şey yalnızca size","words":[{"start":107.824,"end":108.329,"char":[0,11]},{"start":108.329,"end":108.834,"char":[12,15]},{"start":108.834,"end":109.339,"char":[16,19]},{"start":109.339,"end":109.844,"char":[20,28]},{"start":109.844,"end":110.349,"char":[29,33]}]},{"start":110.349,"end":110.854,"text":"aittir.","words":[{"start":110.349,"end":110.854,"char":[0,7]}]},{"start":114.113,"end":115.233,"text":"Şimdi o dosyayı siliyoruz;","words":[{"start":114.113,"end":114.393,"char":[0,5]},{"start":114.393,"end":114.673,"char":[6,7]},{"start":114.673,"end":114.953,"char":[8,15]},{"start":114.953,"end":115.233,"char":[16,26]}]},{"start":115.233,"end":116.352,"text":"ama yalnızca fork içinde.","words":[{"start":115.233,"end":115.512,"char":[0,3]},{"start":115.512,"end":115.792,"char":[4,12]},{"start":115.792,"end":116.072,"char":[13,17]},{"start":116.072,"end":116.352,"char":[18,25]}]},{"start":116.352,"end":117.192,"text":"Fork içinde silindi.","words":[{"start":116.352,"end":116.632,"char":[0,4]},{"start":116.632,"end":116.912,"char":[5,11]},{"start":116.912,"end":117.192,"char":[12,20]}]},{"start":117.192,"end":119.711,"text":"Yıkıcı bir değişiklik yaptık ve bu değişiklik fork içinde","words":[{"start":117.192,"end":117.472,"char":[0,6]},{"start":117.472,"end":117.752,"char":[7,10]},{"start":117.752,"end":118.031,"char":[11,21]},{"start":118.031,"end":118.311,"char":[22,28]},{"start":118.311,"end":118.591,"char":[29,31]},{"start":118.591,"end":118.871,"char":[32,34]},{"start":118.871,"end":119.151,"char":[35,45]},{"start":119.151,"end":119.431,"char":[46,50]},{"start":119.431,"end":119.711,"char":[51,57]}]},{"start":119.711,"end":119.991,"text":"kaldı.","words":[{"start":119.711,"end":119.991,"char":[0,6]}]},{"start":122.385,"end":123.926,"text":"Fork'ta gitti.","words":[{"start":122.385,"end":123.156,"char":[0,7]},{"start":123.156,"end":123.926,"char":[8,14]}]},{"start":123.926,"end":125.467,"text":"Orijinale dokunulmadı.","words":[{"start":123.926,"end":124.697,"char":[0,9]},{"start":124.697,"end":125.467,"char":[10,22]}]},{"start":128.746,"end":129.897,"text":"Orijinale geri döndük.","words":[{"start":128.746,"end":129.13,"char":[0,9]},{"start":129.13,"end":129.513,"char":[10,14]},{"start":129.513,"end":129.897,"char":[15,22]}]},{"start":129.897,"end":131.431,"text":"İşaret dosyası hâlâ burada,","words":[{"start":129.897,"end":130.28,"char":[0,6]},{"start":130.28,"end":130.664,"char":[7,14]},{"start":130.664,"end":131.048,"char":[15,19]},{"start":131.048,"end":131.431,"char":[20,27]}]},{"start":131.431,"end":131.815,"text":"dokunulmamış.","words":[{"start":131.431,"end":131.815,"char":[0,13]}]},{"start":131.815,"end":132.198,"text":"Orijinal,","words":[{"start":131.815,"end":132.198,"char":[0,9]}]},{"start":132.198,"end":134.116,"text":"hiçbir şeyin olduğunu fark etmedi.","words":[{"start":132.198,"end":132.582,"char":[0,6]},{"start":132.582,"end":132.965,"char":[7,12]},{"start":132.965,"end":133.349,"char":[13,21]},{"start":133.349,"end":133.732,"char":[22,26]},{"start":133.732,"end":134.116,"char":[27,34]}]},{"start":134.116,"end":134.883,"text":"Aynı görüntüler,","words":[{"start":134.116,"end":134.499,"char":[0,4]},{"start":134.499,"end":134.883,"char":[5,16]}]},{"start":134.883,"end":136.033,"text":"ayrı Docker daemon'ları,","words":[{"start":134.883,"end":135.266,"char":[0,4]},{"start":135.266,"end":135.65,"char":[5,11]},{"start":135.65,"end":136.033,"char":[12,24]}]},{"start":136.033,"end":137.184,"text":"ayrı dosya sistemleri.","words":[{"start":136.033,"end":136.417,"char":[0,4]},{"start":136.417,"end":136.8,"char":[5,10]},{"start":136.8,"end":137.184,"char":[11,22]}]},{"start":137.984,"end":138.933,"text":"Hâlâ burada.","words":[{"start":137.984,"end":138.458,"char":[0,4]},{"start":138.458,"end":138.933,"char":[5,12]}]},{"start":138.933,"end":140.831,"text":"Fork'lar doğru biçimde izole.","words":[{"start":138.933,"end":139.408,"char":[0,8]},{"start":139.408,"end":139.882,"char":[9,14]},{"start":139.882,"end":140.357,"char":[15,22]},{"start":140.357,"end":140.831,"char":[23,29]}]},{"start":144.113,"end":146.119,"text":"İşiniz bittiğinde fork'u silin.","words":[{"start":144.113,"end":144.615,"char":[0,6]},{"start":144.615,"end":145.116,"char":[7,17]},{"start":145.116,"end":145.618,"char":[18,24]},{"start":145.618,"end":146.119,"char":[25,31]}]},{"start":146.119,"end":148.627,"text":"Orijinal tam olarak olduğu gibi","words":[{"start":146.119,"end":146.621,"char":[0,8]},{"start":146.621,"end":147.122,"char":[9,12]},{"start":147.122,"end":147.624,"char":[13,19]},{"start":147.624,"end":148.125,"char":[20,26]},{"start":148.125,"end":148.627,"char":[27,31]}]},{"start":148.627,"end":149.129,"text":"kalır.","words":[{"start":148.627,"end":149.129,"char":[0,6]}]},{"start":149.129,"end":150.132,"text":"Fork alın,","words":[{"start":149.129,"end":149.63,"char":[0,4]},{"start":149.63,"end":150.132,"char":[5,10]}]},{"start":150.132,"end":150.633,"text":"deneyin,","words":[{"start":150.132,"end":150.633,"char":[0,8]}]},{"start":150.633,"end":152.138,"text":"bir şeyleri bozun,","words":[{"start":150.633,"end":151.135,"char":[0,3]},{"start":151.135,"end":151.636,"char":[4,11]},{"start":151.636,"end":152.138,"char":[12,18]}]},{"start":152.138,"end":152.639,"text":"silin;","words":[{"start":152.138,"end":152.639,"char":[0,6]}]},{"start":152.639,"end":154.144,"text":"hiçbir risk yok.","words":[{"start":152.639,"end":153.141,"char":[0,6]},{"start":153.141,"end":153.643,"char":[7,11]},{"start":153.643,"end":154.144,"char":[12,16]}]},{"start":157.144,"end":158.381,"text":"Fork kaldırıldı.","words":[{"start":157.144,"end":157.762,"char":[0,4]},{"start":157.762,"end":158.381,"char":[5,16]}]},{"start":158.381,"end":160.853,"text":"Orijinal tam bıraktığımız gibi.","words":[{"start":158.381,"end":158.999,"char":[0,8]},{"start":158.999,"end":159.617,"char":[9,12]},{"start":159.617,"end":160.235,"char":[13,25]},{"start":160.235,"end":160.853,"char":[26,31]}]},{"start":161.694,"end":162.132,"text":"Fork,","words":[{"start":161.694,"end":162.132,"char":[0,5]}]},{"start":162.132,"end":164.761,"text":"üst deponun bir andaki donmuş fotoğrafıdır.","words":[{"start":162.132,"end":162.57,"char":[0,3]},{"start":162.57,"end":163.008,"char":[4,11]},{"start":163.008,"end":163.447,"char":[12,15]},{"start":163.447,"end":163.885,"char":[16,22]},{"start":163.885,"end":164.323,"char":[23,29]},{"start":164.323,"end":164.761,"char":[30,43]}]},{"start":164.761,"end":167.39,"text":"Üst depo bir nehir gibi akmaya","words":[{"start":164.761,"end":165.199,"char":[0,3]},{"start":165.199,"end":165.637,"char":[4,8]},{"start":165.637,"end":166.075,"char":[9,12]},{"start":166.075,"end":166.514,"char":[13,18]},{"start":166.514,"end":166.952,"char":[19,23]},{"start":166.952,"end":167.39,"char":[24,30]}]},{"start":167.39,"end":168.266,"text":"devam eder;","words":[{"start":167.39,"end":167.828,"char":[0,5]},{"start":167.828,"end":168.266,"char":[6,11]}]},{"start":168.266,"end":170.895,"text":"ama sizin fotoğrafınız tam olduğu yerde","words":[{"start":168.266,"end":168.704,"char":[0,3]},{"start":168.704,"end":169.142,"char":[4,9]},{"start":169.142,"end":169.581,"char":[10,22]},{"start":169.581,"end":170.019,"char":[23,26]},{"start":170.019,"end":170.457,"char":[27,33]},{"start":170.457,"end":170.895,"char":[34,39]}]},{"start":170.895,"end":171.333,"text":"kalır.","words":[{"start":170.895,"end":171.333,"char":[0,6]}]},{"start":172.107,"end":174.715,"text":"100 gigabaytlık bir deponun beş fork'u,","words":[{"start":172.107,"end":172.542,"char":[0,3]},{"start":172.542,"end":172.976,"char":[4,15]},{"start":172.976,"end":173.411,"char":[16,19]},{"start":173.411,"end":173.845,"char":[20,27]},{"start":173.845,"end":174.28,"char":[28,31]},{"start":174.28,"end":174.715,"char":[32,39]}]},{"start":174.715,"end":177.322,"text":"diskte hâlâ yaklaşık 100 gigabayt eder.","words":[{"start":174.715,"end":175.149,"char":[0,6]},{"start":175.149,"end":175.584,"char":[7,11]},{"start":175.584,"end":176.018,"char":[12,20]},{"start":176.018,"end":176.453,"char":[21,24]},{"start":176.453,"end":176.887,"char":[25,33]},{"start":176.887,"end":177.322,"char":[34,39]}]},{"start":177.322,"end":179.93,"text":"Yalnızca her fork içinde gerçekten değiştirdiğiniz","words":[{"start":177.322,"end":177.757,"char":[0,8]},{"start":177.757,"end":178.191,"char":[9,12]},{"start":178.191,"end":178.626,"char":[13,17]},{"start":178.626,"end":179.06,"char":[18,24]},{"start":179.06,"end":179.495,"char":[25,34]},{"start":179.495,"end":179.93,"char":[35,50]}]},{"start":179.93,"end":181.668,"text":"baytlar için bedel ödersiniz.","words":[{"start":179.93,"end":180.364,"char":[0,7]},{"start":180.364,"end":180.799,"char":[8,12]},{"start":180.799,"end":181.233,"char":[13,18]},{"start":181.233,"end":181.668,"char":[19,29]}]},{"start":182.427,"end":185.038,"text":"Fork'lar gizli bilgileri bilinçli olarak arkalarında bırakır;","words":[{"start":182.427,"end":182.8,"char":[0,8]},{"start":182.8,"end":183.173,"char":[9,14]},{"start":183.173,"end":183.546,"char":[15,24]},{"start":183.546,"end":183.919,"char":[25,33]},{"start":183.919,"end":184.292,"char":[34,40]},{"start":184.292,"end":184.665,"char":[41,52]},{"start":184.665,"end":185.038,"char":[53,61]}]},{"start":185.038,"end":185.784,"text":"'üretimi klonla,","words":[{"start":185.038,"end":185.411,"char":[0,8]},{"start":185.411,"end":185.784,"char":[9,16]}]},{"start":185.784,"end":188.395,"text":"hiçbir şeyi bozma' yaklaşımını gerçekten güvenli kılan","words":[{"start":185.784,"end":186.157,"char":[0,6]},{"start":186.157,"end":186.53,"char":[7,11]},{"start":186.53,"end":186.903,"char":[12,18]},{"start":186.903,"end":187.276,"char":[19,30]},{"start":187.276,"end":187.649,"char":[31,40]},{"start":187.649,"end":188.022,"char":[41,48]},{"start":188.022,"end":188.395,"char":[49,54]}]},{"start":188.395,"end":189.142,"text":"da budur.","words":[{"start":188.395,"end":188.769,"char":[0,2]},{"start":188.769,"end":189.142,"char":[3,9]}]},{"start":189.142,"end":191.753,"text":"Bir sonraki bölümde bunları doğru biçimde bağlayacağız!","words":[{"start":189.142,"end":189.515,"char":[0,3]},{"start":189.515,"end":189.888,"char":[4,11]},{"start":189.888,"end":190.261,"char":[12,19]},{"start":190.261,"end":190.634,"char":[20,27]},{"start":190.634,"end":191.007,"char":[28,33]},{"start":191.007,"end":191.38,"char":[34,41]},{"start":191.38,"end":191.753,"char":[42,55]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.61,
+      "text": "Asıl özelliğe hoş geldiniz!",
+      "words": [
+        { "start": 1, "end": 1.403, "char": [0, 4] },
+        { "start": 1.403, "end": 1.805, "char": [5, 13] },
+        { "start": 1.805, "end": 2.208, "char": [14, 17] },
+        { "start": 2.208, "end": 2.61, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 2.61,
+      "end": 5.429,
+      "text": "Boyutu ne olursa olsun tüm bir üretim",
+      "words": [
+        { "start": 2.61, "end": 3.013, "char": [0, 6] },
+        { "start": 3.013, "end": 3.416, "char": [7, 9] },
+        { "start": 3.416, "end": 3.818, "char": [10, 16] },
+        { "start": 3.818, "end": 4.221, "char": [17, 22] },
+        { "start": 4.221, "end": 4.623, "char": [23, 26] },
+        { "start": 4.623, "end": 5.026, "char": [27, 30] },
+        { "start": 5.026, "end": 5.429, "char": [31, 37] }
+      ]
+    },
+    {
+      "start": 5.429,
+      "end": 7.844,
+      "text": "deposunu klonlayın ve hiçbir şeyi bozmayın.",
+      "words": [
+        { "start": 5.429, "end": 5.831, "char": [0, 8] },
+        { "start": 5.831, "end": 6.234, "char": [9, 18] },
+        { "start": 6.234, "end": 6.636, "char": [19, 21] },
+        { "start": 6.636, "end": 7.039, "char": [22, 28] },
+        { "start": 7.039, "end": 7.441, "char": [29, 33] },
+        { "start": 7.441, "end": 7.844, "char": [34, 43] }
+      ]
+    },
+    {
+      "start": 8.603,
+      "end": 10.346,
+      "text": "Bir üst depo,",
+      "words": [
+        { "start": 8.603, "end": 9.184, "char": [0, 3] },
+        { "start": 9.184, "end": 9.765, "char": [4, 7] },
+        { "start": 9.765, "end": 10.346, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 10.346,
+      "end": 13.25,
+      "text": "istediğiniz sayıda bağımsız klona dağılır.",
+      "words": [
+        { "start": 10.346, "end": 10.926, "char": [0, 11] },
+        { "start": 10.926, "end": 11.507, "char": [12, 18] },
+        { "start": 11.507, "end": 12.088, "char": [19, 27] },
+        { "start": 12.088, "end": 12.669, "char": [28, 33] },
+        { "start": 12.669, "end": 13.25, "char": [34, 42] }
+      ]
+    },
+    {
+      "start": 13.25,
+      "end": 14.411,
+      "text": "Her fork,",
+      "words": [
+        { "start": 13.25, "end": 13.831, "char": [0, 3] },
+        { "start": 13.831, "end": 14.411, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 14.411,
+      "end": 17.316,
+      "text": "orijinalle yan yana çalışan kendi",
+      "words": [
+        { "start": 14.411, "end": 14.992, "char": [0, 10] },
+        { "start": 14.992, "end": 15.573, "char": [11, 14] },
+        { "start": 15.573, "end": 16.154, "char": [15, 19] },
+        { "start": 16.154, "end": 16.735, "char": [20, 27] },
+        { "start": 16.735, "end": 17.316, "char": [28, 33] }
+      ]
+    },
+    {
+      "start": 17.316,
+      "end": 18.477,
+      "text": "izole ortamıdır.",
+      "words": [
+        { "start": 17.316, "end": 17.896, "char": [0, 5] },
+        { "start": 17.896, "end": 18.477, "char": [6, 16] }
+      ]
+    },
+    {
+      "start": 19.248,
+      "end": 21.369,
+      "text": "Bir klasör bağlantısı paylaşmayı düşünün.",
+      "words": [
+        { "start": 19.248, "end": 19.672, "char": [0, 3] },
+        { "start": 19.672, "end": 20.096, "char": [4, 10] },
+        { "start": 20.096, "end": 20.521, "char": [11, 21] },
+        { "start": 20.521, "end": 20.945, "char": [22, 32] },
+        { "start": 20.945, "end": 21.369, "char": [33, 41] }
+      ]
+    },
+    {
+      "start": 21.369,
+      "end": 23.914,
+      "text": "Klasör küçük de olsa devasa da",
+      "words": [
+        { "start": 21.369, "end": 21.793, "char": [0, 6] },
+        { "start": 21.793, "end": 22.217, "char": [7, 12] },
+        { "start": 22.217, "end": 22.641, "char": [13, 15] },
+        { "start": 22.641, "end": 23.066, "char": [16, 20] },
+        { "start": 23.066, "end": 23.49, "char": [21, 27] },
+        { "start": 23.49, "end": 23.914, "char": [28, 30] }
+      ]
+    },
+    {
+      "start": 23.914,
+      "end": 26.035,
+      "text": "olsa bağlantı aynı hafif şeydir;",
+      "words": [
+        { "start": 23.914, "end": 24.338, "char": [0, 4] },
+        { "start": 24.338, "end": 24.762, "char": [5, 13] },
+        { "start": 24.762, "end": 25.187, "char": [14, 18] },
+        { "start": 25.187, "end": 25.611, "char": [19, 24] },
+        { "start": 25.611, "end": 26.035, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 26.035,
+      "end": 28.156,
+      "text": "fork da aynı prensiple çalışır.",
+      "words": [
+        { "start": 26.035, "end": 26.459, "char": [0, 4] },
+        { "start": 26.459, "end": 26.883, "char": [5, 7] },
+        { "start": 26.883, "end": 27.307, "char": [8, 12] },
+        { "start": 27.307, "end": 27.732, "char": [13, 22] },
+        { "start": 27.732, "end": 28.156, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 28.941,
+      "end": 30.445,
+      "text": "1 gigabayt,",
+      "words": [
+        { "start": 28.941, "end": 29.693, "char": [0, 1] },
+        { "start": 29.693, "end": 30.445, "char": [2, 11] }
+      ]
+    },
+    {
+      "start": 30.445,
+      "end": 31.949,
+      "text": "100 gigabayt,",
+      "words": [
+        { "start": 30.445, "end": 31.197, "char": [0, 3] },
+        { "start": 31.197, "end": 31.949, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 31.949,
+      "end": 33.453,
+      "text": "1 terabayt:",
+      "words": [
+        { "start": 31.949, "end": 32.701, "char": [0, 1] },
+        { "start": 32.701, "end": 33.453, "char": [2, 11] }
+      ]
+    },
+    {
+      "start": 33.453,
+      "end": 36.461,
+      "text": "fork aynı şekilde davranır.",
+      "words": [
+        { "start": 33.453, "end": 34.205, "char": [0, 4] },
+        { "start": 34.205, "end": 34.957, "char": [5, 9] },
+        { "start": 34.957, "end": 35.709, "char": [10, 17] },
+        { "start": 35.709, "end": 36.461, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 36.461,
+      "end": 39.468,
+      "text": "Depo boyutu denkleme girmez.",
+      "words": [
+        { "start": 36.461, "end": 37.212, "char": [0, 4] },
+        { "start": 37.212, "end": 37.964, "char": [5, 11] },
+        { "start": 37.964, "end": 38.716, "char": [12, 20] },
+        { "start": 38.716, "end": 39.468, "char": [21, 28] }
+      ]
+    },
+    {
+      "start": 42.736,
+      "end": 45.18,
+      "text": "Depoyu tek bir komutla fork'lıyoruz.",
+      "words": [
+        { "start": 42.736, "end": 43.225, "char": [0, 6] },
+        { "start": 43.225, "end": 43.713, "char": [7, 10] },
+        { "start": 43.713, "end": 44.202, "char": [11, 14] },
+        { "start": 44.202, "end": 44.691, "char": [15, 22] },
+        { "start": 44.691, "end": 45.18, "char": [23, 36] }
+      ]
+    },
+    {
+      "start": 45.18,
+      "end": 46.646,
+      "text": "Her şeyi klonladı:",
+      "words": [
+        { "start": 45.18, "end": 45.668, "char": [0, 3] },
+        { "start": 45.668, "end": 46.157, "char": [4, 8] },
+        { "start": 46.157, "end": 46.646, "char": [9, 18] }
+      ]
+    },
+    {
+      "start": 46.646,
+      "end": 47.135,
+      "text": "uygulama,",
+      "words": [{ "start": 46.646, "end": 47.135, "char": [0, 9] }]
+    },
+    {
+      "start": 47.135,
+      "end": 47.623,
+      "text": "veritabanı,",
+      "words": [{ "start": 47.135, "end": 47.623, "char": [0, 11] }]
+    },
+    {
+      "start": 47.623,
+      "end": 48.601,
+      "text": "yapılandırma dosyaları.",
+      "words": [
+        { "start": 47.623, "end": 48.112, "char": [0, 12] },
+        { "start": 48.112, "end": 48.601, "char": [13, 23] }
+      ]
+    },
+    {
+      "start": 48.601,
+      "end": 51.045,
+      "text": "Ve bu saniyeler içinde oldu;",
+      "words": [
+        { "start": 48.601, "end": 49.09, "char": [0, 2] },
+        { "start": 49.09, "end": 49.578, "char": [3, 5] },
+        { "start": 49.578, "end": 50.067, "char": [6, 15] },
+        { "start": 50.067, "end": 50.556, "char": [16, 22] },
+        { "start": 50.556, "end": 51.045, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 51.045,
+      "end": 53,
+      "text": "deponun boyutundan bağımsız olarak.",
+      "words": [
+        { "start": 51.045, "end": 51.533, "char": [0, 7] },
+        { "start": 51.533, "end": 52.022, "char": [8, 18] },
+        { "start": 52.022, "end": 52.511, "char": [19, 27] },
+        { "start": 52.511, "end": 53, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 53,
+      "end": 53.977,
+      "text": "1 gigabayt,",
+      "words": [
+        { "start": 53, "end": 53.488, "char": [0, 1] },
+        { "start": 53.488, "end": 53.977, "char": [2, 11] }
+      ]
+    },
+    {
+      "start": 53.977,
+      "end": 54.955,
+      "text": "100 gigabayt,",
+      "words": [
+        { "start": 53.977, "end": 54.466, "char": [0, 3] },
+        { "start": 54.466, "end": 54.955, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 54.955,
+      "end": 55.932,
+      "text": "1 terabayt:",
+      "words": [
+        { "start": 54.955, "end": 55.443, "char": [0, 1] },
+        { "start": 55.443, "end": 55.932, "char": [2, 11] }
+      ]
+    },
+    {
+      "start": 55.932,
+      "end": 57.887,
+      "text": "her seferinde aynı süre.",
+      "words": [
+        { "start": 55.932, "end": 56.421, "char": [0, 3] },
+        { "start": 56.421, "end": 56.91, "char": [4, 13] },
+        { "start": 56.91, "end": 57.398, "char": [14, 18] },
+        { "start": 57.398, "end": 57.887, "char": [19, 24] }
+      ]
+    },
+    {
+      "start": 60.887,
+      "end": 61.677,
+      "text": "Fork tamam.",
+      "words": [
+        { "start": 60.887, "end": 61.282, "char": [0, 4] },
+        { "start": 61.282, "end": 61.677, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 61.677,
+      "end": 63.255,
+      "text": "Klon ayakta ve çalışıyor;",
+      "words": [
+        { "start": 61.677, "end": 62.071, "char": [0, 4] },
+        { "start": 62.071, "end": 62.466, "char": [5, 11] },
+        { "start": 62.466, "end": 62.861, "char": [12, 14] },
+        { "start": 62.861, "end": 63.255, "char": [15, 25] }
+      ]
+    },
+    {
+      "start": 63.255,
+      "end": 64.44,
+      "text": "boyuttan bağımsız olarak.",
+      "words": [
+        { "start": 63.255, "end": 63.65, "char": [0, 8] },
+        { "start": 63.65, "end": 64.045, "char": [9, 17] },
+        { "start": 64.045, "end": 64.44, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 67.755,
+      "end": 69.648,
+      "text": "Her iki depo yan yana var.",
+      "words": [
+        { "start": 67.755, "end": 68.071, "char": [0, 3] },
+        { "start": 68.071, "end": 68.386, "char": [4, 7] },
+        { "start": 68.386, "end": 68.702, "char": [8, 12] },
+        { "start": 68.702, "end": 69.017, "char": [13, 16] },
+        { "start": 69.017, "end": 69.333, "char": [17, 21] },
+        { "start": 69.333, "end": 69.648, "char": [22, 26] }
+      ]
+    },
+    {
+      "start": 69.648,
+      "end": 70.279,
+      "text": "Aynı makine,",
+      "words": [
+        { "start": 69.648, "end": 69.964, "char": [0, 4] },
+        { "start": 69.964, "end": 70.279, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 70.279,
+      "end": 70.911,
+      "text": "aynı disk,",
+      "words": [
+        { "start": 70.279, "end": 70.595, "char": [0, 4] },
+        { "start": 70.595, "end": 70.911, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 70.911,
+      "end": 72.173,
+      "text": "iki tamamen bağımsız ortam.",
+      "words": [
+        { "start": 70.911, "end": 71.226, "char": [0, 3] },
+        { "start": 71.226, "end": 71.542, "char": [4, 11] },
+        { "start": 71.542, "end": 71.857, "char": [12, 20] },
+        { "start": 71.857, "end": 72.173, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 72.173,
+      "end": 73.12,
+      "text": "Fork'un kendi container'ları,",
+      "words": [
+        { "start": 72.173, "end": 72.488, "char": [0, 7] },
+        { "start": 72.488, "end": 72.804, "char": [8, 13] },
+        { "start": 72.804, "end": 73.12, "char": [14, 29] }
+      ]
+    },
+    {
+      "start": 73.12,
+      "end": 75.644,
+      "text": "kendi dosya sistemi ve kendi Docker daemon'ı var.",
+      "words": [
+        { "start": 73.12, "end": 73.435, "char": [0, 5] },
+        { "start": 73.435, "end": 73.751, "char": [6, 11] },
+        { "start": 73.751, "end": 74.066, "char": [12, 19] },
+        { "start": 74.066, "end": 74.382, "char": [20, 22] },
+        { "start": 74.382, "end": 74.697, "char": [23, 28] },
+        { "start": 74.697, "end": 75.013, "char": [29, 35] },
+        { "start": 75.013, "end": 75.328, "char": [36, 44] },
+        { "start": 75.328, "end": 75.644, "char": [45, 49] }
+      ]
+    },
+    {
+      "start": 78.644,
+      "end": 79.347,
+      "text": "İki depo,",
+      "words": [
+        { "start": 78.644, "end": 78.995, "char": [0, 3] },
+        { "start": 78.995, "end": 79.347, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 79.347,
+      "end": 80.05,
+      "text": "tek disk.",
+      "words": [
+        { "start": 79.347, "end": 79.698, "char": [0, 3] },
+        { "start": 79.698, "end": 80.05, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 80.05,
+      "end": 80.753,
+      "text": "Aynı veri,",
+      "words": [
+        { "start": 80.05, "end": 80.401, "char": [0, 4] },
+        { "start": 80.401, "end": 80.753, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 80.753,
+      "end": 82.51,
+      "text": "geri kalan her şey ayrı.",
+      "words": [
+        { "start": 80.753, "end": 81.104, "char": [0, 4] },
+        { "start": 81.104, "end": 81.456, "char": [5, 10] },
+        { "start": 81.456, "end": 81.807, "char": [11, 14] },
+        { "start": 81.807, "end": 82.159, "char": [15, 18] },
+        { "start": 82.159, "end": 82.51, "char": [19, 24] }
+      ]
+    },
+    {
+      "start": 85.832,
+      "end": 87.075,
+      "text": "İzolasyonu kanıtlayalım.",
+      "words": [
+        { "start": 85.832, "end": 86.454, "char": [0, 10] },
+        { "start": 86.454, "end": 87.075, "char": [11, 24] }
+      ]
+    },
+    {
+      "start": 87.075,
+      "end": 90.184,
+      "text": "Orijinalde işaret dosyamız bıraktığımız yerde",
+      "words": [
+        { "start": 87.075, "end": 87.697, "char": [0, 10] },
+        { "start": 87.697, "end": 88.319, "char": [11, 17] },
+        { "start": 88.319, "end": 88.941, "char": [18, 26] },
+        { "start": 88.941, "end": 89.562, "char": [27, 39] },
+        { "start": 89.562, "end": 90.184, "char": [40, 45] }
+      ]
+    },
+    {
+      "start": 90.184,
+      "end": 90.806,
+      "text": "duruyor.",
+      "words": [{ "start": 90.184, "end": 90.806, "char": [0, 8] }]
+    },
+    {
+      "start": 90.806,
+      "end": 93.914,
+      "text": "Fork'un varlığı üst depoda hiçbir",
+      "words": [
+        { "start": 90.806, "end": 91.427, "char": [0, 7] },
+        { "start": 91.427, "end": 92.049, "char": [8, 15] },
+        { "start": 92.049, "end": 92.671, "char": [16, 19] },
+        { "start": 92.671, "end": 93.293, "char": [20, 26] },
+        { "start": 93.293, "end": 93.914, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 93.914,
+      "end": 95.158,
+      "text": "şeyi değiştirmedi.",
+      "words": [
+        { "start": 93.914, "end": 94.536, "char": [0, 4] },
+        { "start": 94.536, "end": 95.158, "char": [5, 18] }
+      ]
+    },
+    {
+      "start": 95.958,
+      "end": 97.943,
+      "text": "Orijinal dosya hâlâ orada.",
+      "words": [
+        { "start": 95.958, "end": 96.454, "char": [0, 8] },
+        { "start": 96.454, "end": 96.95, "char": [9, 14] },
+        { "start": 96.95, "end": 97.447, "char": [15, 19] },
+        { "start": 97.447, "end": 97.943, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 97.943,
+      "end": 99.432,
+      "text": "Fork ona dokunmadı.",
+      "words": [
+        { "start": 97.943, "end": 98.439, "char": [0, 4] },
+        { "start": 98.439, "end": 98.936, "char": [5, 8] },
+        { "start": 98.936, "end": 99.432, "char": [9, 19] }
+      ]
+    },
+    {
+      "start": 100.248,
+      "end": 101.763,
+      "text": "Üst depo güneş,",
+      "words": [
+        { "start": 100.248, "end": 100.753, "char": [0, 3] },
+        { "start": 100.753, "end": 101.258, "char": [4, 8] },
+        { "start": 101.258, "end": 101.763, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 101.763,
+      "end": 104.288,
+      "text": "fork'unuz ise onun ışığını yakalayan",
+      "words": [
+        { "start": 101.763, "end": 102.268, "char": [0, 9] },
+        { "start": 102.268, "end": 102.773, "char": [10, 13] },
+        { "start": 102.773, "end": 103.278, "char": [14, 18] },
+        { "start": 103.278, "end": 103.783, "char": [19, 26] },
+        { "start": 103.783, "end": 104.288, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 104.288,
+      "end": 105.298,
+      "text": "bir aynadır.",
+      "words": [
+        { "start": 104.288, "end": 104.793, "char": [0, 3] },
+        { "start": 104.793, "end": 105.298, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 105.298,
+      "end": 107.824,
+      "text": "Paylaşılan temel dokunulmadan kalırken aynaya",
+      "words": [
+        { "start": 105.298, "end": 105.803, "char": [0, 10] },
+        { "start": 105.803, "end": 106.308, "char": [11, 16] },
+        { "start": 106.308, "end": 106.813, "char": [17, 29] },
+        { "start": 106.813, "end": 107.319, "char": [30, 38] },
+        { "start": 107.319, "end": 107.824, "char": [39, 45] }
+      ]
+    },
+    {
+      "start": 107.824,
+      "end": 110.349,
+      "text": "boyadığınız her şey yalnızca size",
+      "words": [
+        { "start": 107.824, "end": 108.329, "char": [0, 11] },
+        { "start": 108.329, "end": 108.834, "char": [12, 15] },
+        { "start": 108.834, "end": 109.339, "char": [16, 19] },
+        { "start": 109.339, "end": 109.844, "char": [20, 28] },
+        { "start": 109.844, "end": 110.349, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 110.349,
+      "end": 110.854,
+      "text": "aittir.",
+      "words": [{ "start": 110.349, "end": 110.854, "char": [0, 7] }]
+    },
+    {
+      "start": 114.113,
+      "end": 115.233,
+      "text": "Şimdi o dosyayı siliyoruz;",
+      "words": [
+        { "start": 114.113, "end": 114.393, "char": [0, 5] },
+        { "start": 114.393, "end": 114.673, "char": [6, 7] },
+        { "start": 114.673, "end": 114.953, "char": [8, 15] },
+        { "start": 114.953, "end": 115.233, "char": [16, 26] }
+      ]
+    },
+    {
+      "start": 115.233,
+      "end": 116.352,
+      "text": "ama yalnızca fork içinde.",
+      "words": [
+        { "start": 115.233, "end": 115.512, "char": [0, 3] },
+        { "start": 115.512, "end": 115.792, "char": [4, 12] },
+        { "start": 115.792, "end": 116.072, "char": [13, 17] },
+        { "start": 116.072, "end": 116.352, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 116.352,
+      "end": 117.192,
+      "text": "Fork içinde silindi.",
+      "words": [
+        { "start": 116.352, "end": 116.632, "char": [0, 4] },
+        { "start": 116.632, "end": 116.912, "char": [5, 11] },
+        { "start": 116.912, "end": 117.192, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 117.192,
+      "end": 119.711,
+      "text": "Yıkıcı bir değişiklik yaptık ve bu değişiklik fork içinde",
+      "words": [
+        { "start": 117.192, "end": 117.472, "char": [0, 6] },
+        { "start": 117.472, "end": 117.752, "char": [7, 10] },
+        { "start": 117.752, "end": 118.031, "char": [11, 21] },
+        { "start": 118.031, "end": 118.311, "char": [22, 28] },
+        { "start": 118.311, "end": 118.591, "char": [29, 31] },
+        { "start": 118.591, "end": 118.871, "char": [32, 34] },
+        { "start": 118.871, "end": 119.151, "char": [35, 45] },
+        { "start": 119.151, "end": 119.431, "char": [46, 50] },
+        { "start": 119.431, "end": 119.711, "char": [51, 57] }
+      ]
+    },
+    {
+      "start": 119.711,
+      "end": 119.991,
+      "text": "kaldı.",
+      "words": [{ "start": 119.711, "end": 119.991, "char": [0, 6] }]
+    },
+    {
+      "start": 122.385,
+      "end": 123.926,
+      "text": "Fork'ta gitti.",
+      "words": [
+        { "start": 122.385, "end": 123.156, "char": [0, 7] },
+        { "start": 123.156, "end": 123.926, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 123.926,
+      "end": 125.467,
+      "text": "Orijinale dokunulmadı.",
+      "words": [
+        { "start": 123.926, "end": 124.697, "char": [0, 9] },
+        { "start": 124.697, "end": 125.467, "char": [10, 22] }
+      ]
+    },
+    {
+      "start": 128.746,
+      "end": 129.897,
+      "text": "Orijinale geri döndük.",
+      "words": [
+        { "start": 128.746, "end": 129.13, "char": [0, 9] },
+        { "start": 129.13, "end": 129.513, "char": [10, 14] },
+        { "start": 129.513, "end": 129.897, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 129.897,
+      "end": 131.431,
+      "text": "İşaret dosyası hâlâ burada,",
+      "words": [
+        { "start": 129.897, "end": 130.28, "char": [0, 6] },
+        { "start": 130.28, "end": 130.664, "char": [7, 14] },
+        { "start": 130.664, "end": 131.048, "char": [15, 19] },
+        { "start": 131.048, "end": 131.431, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 131.431,
+      "end": 131.815,
+      "text": "dokunulmamış.",
+      "words": [{ "start": 131.431, "end": 131.815, "char": [0, 13] }]
+    },
+    {
+      "start": 131.815,
+      "end": 132.198,
+      "text": "Orijinal,",
+      "words": [{ "start": 131.815, "end": 132.198, "char": [0, 9] }]
+    },
+    {
+      "start": 132.198,
+      "end": 134.116,
+      "text": "hiçbir şeyin olduğunu fark etmedi.",
+      "words": [
+        { "start": 132.198, "end": 132.582, "char": [0, 6] },
+        { "start": 132.582, "end": 132.965, "char": [7, 12] },
+        { "start": 132.965, "end": 133.349, "char": [13, 21] },
+        { "start": 133.349, "end": 133.732, "char": [22, 26] },
+        { "start": 133.732, "end": 134.116, "char": [27, 34] }
+      ]
+    },
+    {
+      "start": 134.116,
+      "end": 134.883,
+      "text": "Aynı görüntüler,",
+      "words": [
+        { "start": 134.116, "end": 134.499, "char": [0, 4] },
+        { "start": 134.499, "end": 134.883, "char": [5, 16] }
+      ]
+    },
+    {
+      "start": 134.883,
+      "end": 136.033,
+      "text": "ayrı Docker daemon'ları,",
+      "words": [
+        { "start": 134.883, "end": 135.266, "char": [0, 4] },
+        { "start": 135.266, "end": 135.65, "char": [5, 11] },
+        { "start": 135.65, "end": 136.033, "char": [12, 24] }
+      ]
+    },
+    {
+      "start": 136.033,
+      "end": 137.184,
+      "text": "ayrı dosya sistemleri.",
+      "words": [
+        { "start": 136.033, "end": 136.417, "char": [0, 4] },
+        { "start": 136.417, "end": 136.8, "char": [5, 10] },
+        { "start": 136.8, "end": 137.184, "char": [11, 22] }
+      ]
+    },
+    {
+      "start": 137.984,
+      "end": 138.933,
+      "text": "Hâlâ burada.",
+      "words": [
+        { "start": 137.984, "end": 138.458, "char": [0, 4] },
+        { "start": 138.458, "end": 138.933, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 138.933,
+      "end": 140.831,
+      "text": "Fork'lar doğru biçimde izole.",
+      "words": [
+        { "start": 138.933, "end": 139.408, "char": [0, 8] },
+        { "start": 139.408, "end": 139.882, "char": [9, 14] },
+        { "start": 139.882, "end": 140.357, "char": [15, 22] },
+        { "start": 140.357, "end": 140.831, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 144.113,
+      "end": 146.119,
+      "text": "İşiniz bittiğinde fork'u silin.",
+      "words": [
+        { "start": 144.113, "end": 144.615, "char": [0, 6] },
+        { "start": 144.615, "end": 145.116, "char": [7, 17] },
+        { "start": 145.116, "end": 145.618, "char": [18, 24] },
+        { "start": 145.618, "end": 146.119, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 146.119,
+      "end": 148.627,
+      "text": "Orijinal tam olarak olduğu gibi",
+      "words": [
+        { "start": 146.119, "end": 146.621, "char": [0, 8] },
+        { "start": 146.621, "end": 147.122, "char": [9, 12] },
+        { "start": 147.122, "end": 147.624, "char": [13, 19] },
+        { "start": 147.624, "end": 148.125, "char": [20, 26] },
+        { "start": 148.125, "end": 148.627, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 148.627,
+      "end": 149.129,
+      "text": "kalır.",
+      "words": [{ "start": 148.627, "end": 149.129, "char": [0, 6] }]
+    },
+    {
+      "start": 149.129,
+      "end": 150.132,
+      "text": "Fork alın,",
+      "words": [
+        { "start": 149.129, "end": 149.63, "char": [0, 4] },
+        { "start": 149.63, "end": 150.132, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 150.132,
+      "end": 150.633,
+      "text": "deneyin,",
+      "words": [{ "start": 150.132, "end": 150.633, "char": [0, 8] }]
+    },
+    {
+      "start": 150.633,
+      "end": 152.138,
+      "text": "bir şeyleri bozun,",
+      "words": [
+        { "start": 150.633, "end": 151.135, "char": [0, 3] },
+        { "start": 151.135, "end": 151.636, "char": [4, 11] },
+        { "start": 151.636, "end": 152.138, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 152.138,
+      "end": 152.639,
+      "text": "silin;",
+      "words": [{ "start": 152.138, "end": 152.639, "char": [0, 6] }]
+    },
+    {
+      "start": 152.639,
+      "end": 154.144,
+      "text": "hiçbir risk yok.",
+      "words": [
+        { "start": 152.639, "end": 153.141, "char": [0, 6] },
+        { "start": 153.141, "end": 153.643, "char": [7, 11] },
+        { "start": 153.643, "end": 154.144, "char": [12, 16] }
+      ]
+    },
+    {
+      "start": 157.144,
+      "end": 158.381,
+      "text": "Fork kaldırıldı.",
+      "words": [
+        { "start": 157.144, "end": 157.762, "char": [0, 4] },
+        { "start": 157.762, "end": 158.381, "char": [5, 16] }
+      ]
+    },
+    {
+      "start": 158.381,
+      "end": 160.853,
+      "text": "Orijinal tam bıraktığımız gibi.",
+      "words": [
+        { "start": 158.381, "end": 158.999, "char": [0, 8] },
+        { "start": 158.999, "end": 159.617, "char": [9, 12] },
+        { "start": 159.617, "end": 160.235, "char": [13, 25] },
+        { "start": 160.235, "end": 160.853, "char": [26, 31] }
+      ]
+    },
+    {
+      "start": 161.694,
+      "end": 162.132,
+      "text": "Fork,",
+      "words": [{ "start": 161.694, "end": 162.132, "char": [0, 5] }]
+    },
+    {
+      "start": 162.132,
+      "end": 164.761,
+      "text": "üst deponun bir andaki donmuş fotoğrafıdır.",
+      "words": [
+        { "start": 162.132, "end": 162.57, "char": [0, 3] },
+        { "start": 162.57, "end": 163.008, "char": [4, 11] },
+        { "start": 163.008, "end": 163.447, "char": [12, 15] },
+        { "start": 163.447, "end": 163.885, "char": [16, 22] },
+        { "start": 163.885, "end": 164.323, "char": [23, 29] },
+        { "start": 164.323, "end": 164.761, "char": [30, 43] }
+      ]
+    },
+    {
+      "start": 164.761,
+      "end": 167.39,
+      "text": "Üst depo bir nehir gibi akmaya",
+      "words": [
+        { "start": 164.761, "end": 165.199, "char": [0, 3] },
+        { "start": 165.199, "end": 165.637, "char": [4, 8] },
+        { "start": 165.637, "end": 166.075, "char": [9, 12] },
+        { "start": 166.075, "end": 166.514, "char": [13, 18] },
+        { "start": 166.514, "end": 166.952, "char": [19, 23] },
+        { "start": 166.952, "end": 167.39, "char": [24, 30] }
+      ]
+    },
+    {
+      "start": 167.39,
+      "end": 168.266,
+      "text": "devam eder;",
+      "words": [
+        { "start": 167.39, "end": 167.828, "char": [0, 5] },
+        { "start": 167.828, "end": 168.266, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 168.266,
+      "end": 170.895,
+      "text": "ama sizin fotoğrafınız tam olduğu yerde",
+      "words": [
+        { "start": 168.266, "end": 168.704, "char": [0, 3] },
+        { "start": 168.704, "end": 169.142, "char": [4, 9] },
+        { "start": 169.142, "end": 169.581, "char": [10, 22] },
+        { "start": 169.581, "end": 170.019, "char": [23, 26] },
+        { "start": 170.019, "end": 170.457, "char": [27, 33] },
+        { "start": 170.457, "end": 170.895, "char": [34, 39] }
+      ]
+    },
+    {
+      "start": 170.895,
+      "end": 171.333,
+      "text": "kalır.",
+      "words": [{ "start": 170.895, "end": 171.333, "char": [0, 6] }]
+    },
+    {
+      "start": 172.107,
+      "end": 174.715,
+      "text": "100 gigabaytlık bir deponun beş fork'u,",
+      "words": [
+        { "start": 172.107, "end": 172.542, "char": [0, 3] },
+        { "start": 172.542, "end": 172.976, "char": [4, 15] },
+        { "start": 172.976, "end": 173.411, "char": [16, 19] },
+        { "start": 173.411, "end": 173.845, "char": [20, 27] },
+        { "start": 173.845, "end": 174.28, "char": [28, 31] },
+        { "start": 174.28, "end": 174.715, "char": [32, 39] }
+      ]
+    },
+    {
+      "start": 174.715,
+      "end": 177.322,
+      "text": "diskte hâlâ yaklaşık 100 gigabayt eder.",
+      "words": [
+        { "start": 174.715, "end": 175.149, "char": [0, 6] },
+        { "start": 175.149, "end": 175.584, "char": [7, 11] },
+        { "start": 175.584, "end": 176.018, "char": [12, 20] },
+        { "start": 176.018, "end": 176.453, "char": [21, 24] },
+        { "start": 176.453, "end": 176.887, "char": [25, 33] },
+        { "start": 176.887, "end": 177.322, "char": [34, 39] }
+      ]
+    },
+    {
+      "start": 177.322,
+      "end": 179.93,
+      "text": "Yalnızca her fork içinde gerçekten değiştirdiğiniz",
+      "words": [
+        { "start": 177.322, "end": 177.757, "char": [0, 8] },
+        { "start": 177.757, "end": 178.191, "char": [9, 12] },
+        { "start": 178.191, "end": 178.626, "char": [13, 17] },
+        { "start": 178.626, "end": 179.06, "char": [18, 24] },
+        { "start": 179.06, "end": 179.495, "char": [25, 34] },
+        { "start": 179.495, "end": 179.93, "char": [35, 50] }
+      ]
+    },
+    {
+      "start": 179.93,
+      "end": 181.668,
+      "text": "baytlar için bedel ödersiniz.",
+      "words": [
+        { "start": 179.93, "end": 180.364, "char": [0, 7] },
+        { "start": 180.364, "end": 180.799, "char": [8, 12] },
+        { "start": 180.799, "end": 181.233, "char": [13, 18] },
+        { "start": 181.233, "end": 181.668, "char": [19, 29] }
+      ]
+    },
+    {
+      "start": 182.427,
+      "end": 185.038,
+      "text": "Fork'lar gizli bilgileri bilinçli olarak arkalarında bırakır;",
+      "words": [
+        { "start": 182.427, "end": 182.8, "char": [0, 8] },
+        { "start": 182.8, "end": 183.173, "char": [9, 14] },
+        { "start": 183.173, "end": 183.546, "char": [15, 24] },
+        { "start": 183.546, "end": 183.919, "char": [25, 33] },
+        { "start": 183.919, "end": 184.292, "char": [34, 40] },
+        { "start": 184.292, "end": 184.665, "char": [41, 52] },
+        { "start": 184.665, "end": 185.038, "char": [53, 61] }
+      ]
+    },
+    {
+      "start": 185.038,
+      "end": 185.784,
+      "text": "'üretimi klonla,",
+      "words": [
+        { "start": 185.038, "end": 185.411, "char": [0, 8] },
+        { "start": 185.411, "end": 185.784, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 185.784,
+      "end": 188.395,
+      "text": "hiçbir şeyi bozma' yaklaşımını gerçekten güvenli kılan",
+      "words": [
+        { "start": 185.784, "end": 186.157, "char": [0, 6] },
+        { "start": 186.157, "end": 186.53, "char": [7, 11] },
+        { "start": 186.53, "end": 186.903, "char": [12, 18] },
+        { "start": 186.903, "end": 187.276, "char": [19, 30] },
+        { "start": 187.276, "end": 187.649, "char": [31, 40] },
+        { "start": 187.649, "end": 188.022, "char": [41, 48] },
+        { "start": 188.022, "end": 188.395, "char": [49, 54] }
+      ]
+    },
+    {
+      "start": 188.395,
+      "end": 189.142,
+      "text": "da budur.",
+      "words": [
+        { "start": 188.395, "end": 188.769, "char": [0, 2] },
+        { "start": 188.769, "end": 189.142, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 189.142,
+      "end": 191.753,
+      "text": "Bir sonraki bölümde bunları doğru biçimde bağlayacağız!",
+      "words": [
+        { "start": 189.142, "end": 189.515, "char": [0, 3] },
+        { "start": 189.515, "end": 189.888, "char": [4, 11] },
+        { "start": 189.888, "end": 190.261, "char": [12, 19] },
+        { "start": 190.261, "end": 190.634, "char": [20, 27] },
+        { "start": 190.634, "end": 191.007, "char": [28, 33] },
+        { "start": 191.007, "end": 191.38, "char": [34, 41] },
+        { "start": 191.38, "end": 191.753, "char": [42, 55] }
+      ]
+    }
+  ]
+}

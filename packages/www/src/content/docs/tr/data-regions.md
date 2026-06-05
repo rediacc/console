@@ -4,11 +4,11 @@ description: "Verilerinizin nerede saklandığı ve bölgesel veri yerleşiminin
 category: "Concepts"
 order: 3
 language: tr
-sourceHash: "107d8ef496686b0e"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "c87be32ef22a725d"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Bir Rediacc hesabı oluşturduğunuzda bir veri bölgesi seçersiniz. Tüm verileriniz o bölgede kalır. Bu seçim kalıcıdır ve kayıt sonrasında değiştirilemez.
+Bir Rediacc hesabı oluşturduğunuzda bir veri bölgesi seçersiniz. Tüm verileriniz o bölgede kalır. Bu seçim kalıcıdır ve kayıt sonrasında değiştirilemez. Geçiş yolu yoktur. Verilerinizin yasal olarak nerede bulunması gerektiğine göre seçin, bugün sunucularınızın nerede olduğuna göre değil.
 
 ## Mevcut Bölgeler
 
@@ -43,13 +43,13 @@ Bunlar bölgeye özgü değildir:
 |---|---|---|---|
 | Veritabanı (D1) | Doğu Avrupa (EEUR) | Doğu Kuzey Amerika (ENAM) | Asya Pasifik (APAC) |
 | Yapılandırma depolama (R2) | AB yetki alanı | US | Asya Pasifik |
-| E-posta (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Tokyo (ap-northeast-1) |
+| E-posta (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Frankfurt (eu-central-1) |
 
 Her bölge bağımsız altyapı üzerinde çalışır. Bölgeler arasında çapraz bölge sorguları veya veri akışları yoktur.
 
 ## AB Veri Güvenceleri
 
-AB bölgesi, Avrupa veri yerleşimi gereksinimlerine sahip organizasyonlar için ek güvenceler sağlar:
+Bakın: AB veri yerleşimi gereksinimlerine sahipseniz, AB bölgesi belirli güvenceler sunar:
 
 - **D1 veritabanı**: Doğu Avrupa'da çalışır (EEUR konum ipucu)
 - **R2 yapılandırma depolama**: AB yetki alanı uygulaması kullanır (yalnızca konum ipucu değil, sözleşmeli güvence)
@@ -78,7 +78,7 @@ Bölgesel mimarinin teknik özellikleri:
 
 - **Bölge başına ayrı veritabanları**: her bölgenin kendi Cloudflare D1 veritabanı vardır. Çapraz bölge sorgusu yoktur.
 - **Bölge başına ayrı depolama**: her bölgenin kendi R2 bucket'ı vardır. AB yetki alanı uygulaması kullanır.
-- **Bölge başına ayrı e-posta uç noktaları**: işlemsel e-postalar bölgesel AWS SES uç noktalarından gönderilir.
+- **AWS SES aracılığıyla e-posta teslimi**: işlemsel e-postalar AWS SES aracılığıyla gönderilir. AB ve US, özel bölgesel uç noktalar kullanır; Asya Pasifik, AB uç noktası (eu-central-1) üzerinden yönlendirilir.
 - **Bir kullanıcı, bir bölge**: kullanıcı hesabı tam olarak bir bölgede bulunur. Birden fazla bölgeye yayılamaz.
 - **Webhook izolasyonu**: Stripe webhook olayları tüm bölgesel worker'lar tarafından alınır ancak yalnızca müşteri kaydına sahip olan bölge tarafından işlenir.
 - **Sıfır bilgi yapılandırma şifreleme**: sunucu yapılandırma verilerini okuyamaz. Şifreleme anahtarları asla istemci cihazından çıkmaz.

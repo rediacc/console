@@ -4,8 +4,8 @@ description: "account, rdc ve renet'in makine slotlarını, depo lisanslarını 
 category: "Guides"
 order: 7
 language: tr
-sourceHash: "98aede90642cfabc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "0e18efe91c91f74c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Abonelik ve Lisanslama
@@ -29,7 +29,7 @@ Bunlar ilişkilidir, ancak aynı artefakt değildir.
 
 ## Lisanslama Nasıl Çalışır
 
-`account`, planlar, sözleşme geçersiz kılmaları, makine aktivasyon durumu ve aylık depo lisansı düzenlemeleri için gerçeğin kaynağıdır.
+`account`, planlar, sözleşme geçersiz kılmaları, makine slot durumu ve aylık depo lisansı düzenlemeleri için gerçeğin kaynağıdır.
 
 `rdc` iş istasyonunuzda çalışır. Hesap sunucusuna giriş yapmanızı sağlar, ihtiyaç duyduğu lisansları talep eder ve SSH üzerinden uzak makinelere yükler. Bir depo komutu çalıştırdığınızda, `rdc` gerekli lisansların yerinde olduğundan emin olur ve çalışma zamanında makine üzerinde doğrular.
 
@@ -56,32 +56,29 @@ export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
-## Makine Lisansları ve Depo Lisansları
+## Makine Slotları ve Depo Lisansları
 
-### Makine Aktivasyonu
+### Makine slotları (sunucu tarafı)
 
-Makine aktivasyonu çift rol üstlenir:
+Makine slot takibi sunucu tarafında uygulanır. CLI bir depo lisansı düzenlediğinde, hesap sunucusu aboneliğin makine slot kotasını kontrol eder (örneğin, Community için 2 makine, Professional için 5). Bir slot, o makinedeki son depo lisansı düzenlemesinden itibaren 1 saat süresince tutulur ve inaktiviteden sonra otomatik olarak serbest bırakılır. Slotlar yalnızca aktif olarak sağlama yaparken tutulduğundan, 5 slotlu bir plan zaman içinde düzinelerce makineyi kapsayabilir.
 
-- **Sunucu tarafında**: yüzen makine slotu muhasebesi, makine düzeyinde aktivasyon kontrolleri, hesap destekli depo düzenlemesini belirli bir makineye köprüleme
-- **Diskte**: `rdc` aktivasyon sırasında `/var/lib/rediacc/license/machine.json` konumuna imzalı bir abonelik blobu yazar. Bu blob, sağlama işlemleri (`rdc repo create`, `rdc repo fork`) için yerel olarak doğrulanır. Makine lisansı, son aktivasyondan itibaren 1 saat geçerlidir.
+Makinede hiçbir makine lisans dosyası depolanmaz. Slot uygulaması, sunucuda düzenleme zamanında gerçekleşir.
 
-### Depo Lisansı
+### Depo lisansı
 
-Depo lisansı, bir makinedeki bir depo için imzalı bir lisanstır.
+Depo lisansı, bir makinedeki bir depo için imzalı bir lisanstır. Makinede depolanan tek lisans dosyasıdır (`/var/lib/rediacc/license/repos/{guid}.json`).
 
 Şunlar için kullanılır:
 
+- `rdc repo create` ve `rdc repo fork`, sağlamadan önce doğrulanır (kimlik kanıtı olmadan önceden düzenlenir, oluşturulduktan sonra kimlik kanıtlarıyla yeniden düzenlenir)
 - `rdc repo resize` ve `rdc repo expand`, son kullanma tarihi dahil tam doğrulama
 - `rdc repo up`, `rdc repo down`, `rdc repo delete`, **son kullanma tarihi atlanarak** doğrulanır
 - `rdc repo push`, `rdc repo pull`, `rdc repo sync`, **son kullanma tarihi atlanarak** doğrulanır
 - makine yeniden başlatılırken depo otomatik başlatma, **son kullanma tarihi atlanarak** doğrulanır
 
-Depo lisansları makineye ve hedef depoya bağlıdır; Rediacc bu bağlamayı depo kimlik meta verileriyle güçlendirir. Şifrelenmiş depolar için bu, altta yatan birimin LUKS kimliğini içerir.
+Depo lisansları makineye ve hedef depoya bağlıdır. Her lisans, makine kimliği, depo GUID'i, abonelik kimliği, plan limitleri ve son kullanma tarihini içerir. Şifrelenmiş depolar için Rediacc, altta yatan birimin LUKS kimliğini de doğrular.
 
-Uygulamada:
-
-- makine aktivasyonu şunu yanıtlar: "bu makine yeni depolar sağlayabilir mi?"
-- depo lisansı şunu yanıtlar: "bu belirli depo bu belirli makinede çalışabilir mi?"
+Aynı makinede birden fazla abonelik birlikte var olabilir. Her depo, kendi abonelik bağlamıyla birlikte kendi lisansını taşır.
 
 ## Varsayılan Limitler
 
@@ -99,9 +96,21 @@ Depo boyutu hak düzeyine bağlıdır:
 | Business | 20 | 500 GB | 20.000 | 90g / 180g |
 | Enterprise | 50 | 2048 GB | 100.000 | 120g / 365g |
 
-Sözleşmeye özgü limitler, belirli bir müşteri için bu değerleri artırabilir veya azaltabilir. Delegasyon sertifikası geçerliliği aynı zamanda `subscription.expiresAt + 3 günlük ek süre` ile kesin olarak sınırlandırılmıştır; dolayısıyla aylık faturalandırılan abonelikler doğal olarak faturalama döngüleriyle uyumlu sertifikalar alır. Tam kurallar için [Lisans Zinciri ve Delegasyon - Geçerlilik Politikası](/en/docs/license-chain) sayfasına bakın.
+Sözleşmeye özgü limitler, belirli bir müşteri için bu değerleri artırabilir veya azaltabilir. Delegasyon sertifikası geçerliliği aynı zamanda `subscription.expiresAt + 3 günlük ek süre` ile kesin olarak sınırlandırılmıştır; dolayısıyla aylık faturalandırılan abonelikler doğal olarak faturalama döngüleriyle uyumlu sertifikalar alır. Tam kurallar için [Lisans Zinciri ve Delegasyon - Geçerlilik Politikası](/tr/docs/license-chain) sayfasına bakın.
 
-**Edge kanalı kullanıcıları** 2X Community sınırlarını ücretsiz alır (20 GB depolar, ayda 1.000 düzenleme, 4 makine). Ücretli planlar yalnızca Stable kanalında mevcuttur. Ayrıntılar için [Yayın Kanalları](/en/docs/release-channels) sayfasına bakın.
+## Makine Geçişi Uyum Dönemi
+
+Bir barındırma sağlayıcısı VM'yi farklı fiziksel donanıma taşıdığında, makine kimliği değişir (DMI UUID, `/etc/machine-id` ve NIC MAC adresleri gibi donanım tanımlayıcılarından türetilir). Depo lisansları makine kimliğine bağlıdır, bu nedenle bir geçiş normalde tüm lisansları geçersiz kılarsa.
+
+Bunu şeffaf bir şekilde işlemek için, depo lisansları **40 günlük makine kimliği uyum dönemini** içerir. Makine kimliği eşleşmese bile lisans 40 günden az zaman önce düzenlenmiş ise, lisans yine de kabul edilir. Lisanslar her 30 günde bir yenilendiğinden, sonraki yenileme otomatik olarak yeni makine kimliğine bağlanır.
+
+Pratikte:
+- VM taşındı, makine kimliği değişti: depolar çalışmaya devam eder (40 günlük pencere içinde)
+- Sonraki `rdc` işlemi lisansı yeni makine kimliğiyle yeniler
+- El ile müdahale gerekli değil
+- `rdc machine query --system --licenses --name <machine>` ile makine kimliği ve lisans durumunu kontrol edin
+
+**Edge kanalı kullanıcıları** 2X Community limitlerini ücretsiz alır (20 GB depolar, ayda 1.000 düzenleme, 4 makine). Ücretli planlar yalnızca Stable kanalında mevcuttur. Ayrıntılar için [Yayın Kanalları](/tr/docs/release-channels) sayfasına bakın.
 
 ## Depo Oluşturma, Başlatma, Durdurma ve Yeniden Başlatma Sırasında Ne Olur
 
@@ -110,9 +119,9 @@ Sözleşmeye özgü limitler, belirli bir müşteri için bu değerleri artırab
 Bir depo oluşturduğunuzda veya çatalladığınızda:
 
 1. `rdc` abonelik tokeninizin mevcut olduğundan emin olur (gerekirse cihaz kodu kimlik doğrulamasını tetikler)
-2. `rdc` makineyi etkinleştirir ve imzalı abonelik blobunu uzak makineye yazar
-3. Makine lisansı yerel olarak doğrulanır (aktivasyondan itibaren 1 saat içinde olmalıdır); makine lisansı aynı zamanda planın depo boyutu limitini uygular ve istenen boyut limiti aşarsa oluşturma işlemini engeller
-4. Başarılı oluşturmanın ardından `rdc`, yeni depo için depo lisansı düzenler
+2. `rdc` hesap sunucusundan bir depo lisansı önceden düzenler (sunucu bu noktada makine slot kotasını ve aylık düzenleme limitlerini kontrol eder)
+3. Önceden düzenlenen depo lisansı makineye yazılır ve yerel olarak doğrulanır (imza, makine kimliği, depo GUID'i, son kullanma tarihi ve boyut limiti)
+4. Başarılı oluşturmanın ardından `rdc`, depo lisansını depo kimlik kanıtlarıyla (LUKS UUID veya depolama parmak izi) yeniden düzenler
 
 Bu hesap destekli düzenleme, aylık **depo lisansı düzenlemeleri** kullanımınıza sayılır. Her lisans, renet lisansı doğrularken günlüğe kaydedilen hesap sahibinin e-posta adresini ve şirket adını içerir.
 
@@ -173,7 +182,7 @@ Bir makinede yüklü depo lisansı ayrıntılarını göster:
 rdc subscription repo status -m hostinger
 ```
 
-Makine aktivasyonunu yenile ve depo lisanslarını toplu olarak yenile:
+Bir makinedeki depo lisanslarını toplu olarak yenile:
 
 ```bash
 rdc subscription refresh repos -m hostinger
@@ -201,11 +210,9 @@ Bu şu anlama gelir:
 
 - çalışan bir ortam her komutta hesaba canlı bağlantı gerektirmez
 - tüm depolar süresi dolmuş lisanslarla bile her zaman başlatılabilir, durdurulabilir ve silinebilir; kullanıcılar kendi depolarını işletmekten hiçbir zaman engellenmez
-- sağlama işlemleri (`create`, `fork`) geçerli bir makine lisansı gerektirir ve büyüme işlemleri (`resize`, `expand`) geçerli bir depo lisansı gerektirir
+- sağlama işlemleri (`create`, `fork`) önceden düzenlenen bir depo lisansı gerektirir ve büyüme işlemleri (`resize`, `expand`) geçerli bir depo lisansı gerektirir
 - gerçekten süresi dolmuş depo lisansları, resize/expand öncesinde `rdc` aracılığıyla yenilenmelidir
 - lisans imzaları gömülü bir ortak anahtar ile doğrulanır; imza doğrulama devre dışı bırakılamaz
-
-Makine aktivasyonu ve depo çalışma zamanı lisansları ayrı yüzeylerdir. Bir makine hesap durumunda aktif olmayabilirken bazı depolar hala geçerli yüklü depo lisanslarına sahip olabilir. Bu durumda her iki yüzeyin aynı şeyi ifade ettiğini varsaymak yerine ayrı ayrı inceleyin.
 
 ## Kurtarma Davranışı
 
@@ -228,12 +235,12 @@ Bu hızlı başarısızlık durumları otomatik olarak hesap destekli yenileme v
 Abonelik sahipleri için temel noktalar:
 
 - **Abonelik başına bir aktif sertifika.** Her şirket içi kurulum, aylık ve makine başına kotaları kendi yerel defterine göre uygular; çoklu kurulum, uzlaştırma imkansız şekilde efektif kotayı çoğaltır. Üretim + hazırlık + DR gerektiren müşteriler her kurulum için ayrı abonelik satın almalıdır.
-- **Katman bazlı varsayılan geçerlilik** (15g / 60g / 90g / 120g) ve tavanlar (30g / 120g / 180g / 365g) -- yukarıdaki limitler tablosuna bakın.
+- **Katman bazlı varsayılan geçerlilik** (15g / 60g / 90g / 120g) ve tavanlar (30g / 120g / 180g / 365g) - yukarıdaki limitler tablosuna bakın.
 - **Müşteri portalından self-servis.** Org sahipleri ve yöneticileri `/account/delegation-certs` adresinden delegasyon sertifikası oluşturabilir, yenileyebilir ve iptal edebilir. Bu sayfa plan düzeyinden bağımsız olarak tüm müşterilere görünür; yalnızca limitler farklılık gösterir.
 - **Otomatik yenileme**, şirket içi kurulumun yukarı akış yenileme çağrıları için kullanacağı `delegation:renew` kapsamlı bir api tokeni oluşturan tek tıklamalı başlangıç aracılığıyla desteklenir.
 - **Hava boşluklu yenileme**, şirket içi yöneticinin indirdiği, çevrimdışı olarak yukarı akışa aktardığı ve yukarı akışın yeni sertifika düzenlemek için işlediği imzalı bir yenileme isteği manifesti aracılığıyla desteklenir.
 
-Operasyonel kurulum için [Şirket İçi Kurulum - Hava Boşluklu Dağıtımlar için Lisanslama](/en/docs/on-premise) sayfasına, kriptografik tasarım için [Lisans Zinciri ve Delegasyon](/en/docs/license-chain) sayfasına bakın.
+Operasyonel kurulum için [Şirket İçi Kurulum - Hava Boşluklu Dağıtımlar için Lisanslama](/tr/docs/on-premise) sayfasına, kriptografik tasarım için [Lisans Zinciri ve Delegasyon](/tr/docs/license-chain) sayfasına bakın.
 
 ## Aylık Depo Lisansı Düzenlemeleri
 

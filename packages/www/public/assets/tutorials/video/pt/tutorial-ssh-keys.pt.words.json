@@ -1,1 +1,497 @@
-{"version":1,"cues":[{"start":1,"end":1.885,"text":"Tudo certo!","words":[{"start":1,"end":1.443,"char":[0,4]},{"start":1.443,"end":1.885,"char":[5,11]}]},{"start":1.885,"end":4.541,"text":"Vamos configurar as chaves SSH para","words":[{"start":1.885,"end":2.328,"char":[0,5]},{"start":2.328,"end":2.771,"char":[6,16]},{"start":2.771,"end":3.213,"char":[17,19]},{"start":3.213,"end":3.656,"char":[20,26]},{"start":3.656,"end":4.098,"char":[27,30]},{"start":4.098,"end":4.541,"char":[31,35]}]},{"start":4.541,"end":7.197,"text":"que a CLI possa aceder aos","words":[{"start":4.541,"end":4.984,"char":[0,3]},{"start":4.984,"end":5.426,"char":[4,5]},{"start":5.426,"end":5.869,"char":[6,9]},{"start":5.869,"end":6.312,"char":[10,15]},{"start":6.312,"end":6.754,"char":[16,22]},{"start":6.754,"end":7.197,"char":[23,26]}]},{"start":7.197,"end":8.967,"text":"seus servidores sem palavras-passe.","words":[{"start":7.197,"end":7.639,"char":[0,4]},{"start":7.639,"end":8.082,"char":[5,15]},{"start":8.082,"end":8.525,"char":[16,19]},{"start":8.525,"end":8.967,"char":[20,35]}]},{"start":9.741,"end":11.413,"text":"Três passos no total.","words":[{"start":9.741,"end":10.159,"char":[0,4]},{"start":10.159,"end":10.577,"char":[5,11]},{"start":10.577,"end":10.995,"char":[12,14]},{"start":10.995,"end":11.413,"char":[15,21]}]},{"start":11.413,"end":13.503,"text":"Gerar uma chave no portátil,","words":[{"start":11.413,"end":11.831,"char":[0,5]},{"start":11.831,"end":12.249,"char":[6,9]},{"start":12.249,"end":12.667,"char":[10,15]},{"start":12.667,"end":13.085,"char":[16,18]},{"start":13.085,"end":13.503,"char":[19,28]}]},{"start":13.503,"end":15.174,"text":"copiá-la para o servidor,","words":[{"start":13.503,"end":13.921,"char":[0,8]},{"start":13.921,"end":14.339,"char":[9,13]},{"start":14.339,"end":14.757,"char":[14,15]},{"start":14.757,"end":15.174,"char":[16,25]}]},{"start":15.174,"end":17.682,"text":"e depois registá-la na ferramenta de","words":[{"start":15.174,"end":15.592,"char":[0,1]},{"start":15.592,"end":16.01,"char":[2,8]},{"start":16.01,"end":16.428,"char":[9,19]},{"start":16.428,"end":16.846,"char":[20,22]},{"start":16.846,"end":17.264,"char":[23,33]},{"start":17.264,"end":17.682,"char":[34,36]}]},{"start":17.682,"end":18.936,"text":"linha de comandos.","words":[{"start":17.682,"end":18.1,"char":[0,5]},{"start":18.1,"end":18.518,"char":[6,8]},{"start":18.518,"end":18.936,"char":[9,18]}]},{"start":18.936,"end":21.444,"text":"Dois destes só se fazem uma","words":[{"start":18.936,"end":19.354,"char":[0,4]},{"start":19.354,"end":19.772,"char":[5,11]},{"start":19.772,"end":20.19,"char":[12,14]},{"start":20.19,"end":20.608,"char":[15,17]},{"start":20.608,"end":21.026,"char":[18,23]},{"start":21.026,"end":21.444,"char":[24,27]}]},{"start":21.444,"end":21.862,"text":"vez.","words":[{"start":21.444,"end":21.862,"char":[0,4]}]},{"start":25.138,"end":26.201,"text":"Passo um.","words":[{"start":25.138,"end":25.669,"char":[0,5]},{"start":25.669,"end":26.201,"char":[6,9]}]},{"start":26.201,"end":28.858,"text":"Vamos gerar uma nova chave","words":[{"start":26.201,"end":26.732,"char":[0,5]},{"start":26.732,"end":27.264,"char":[6,11]},{"start":27.264,"end":27.795,"char":[12,15]},{"start":27.795,"end":28.326,"char":[16,20]},{"start":28.326,"end":28.858,"char":[21,26]}]},{"start":28.858,"end":29.921,"text":"SSH ed25519.","words":[{"start":28.858,"end":29.389,"char":[0,3]},{"start":29.389,"end":29.921,"char":[4,12]}]},{"start":29.921,"end":32.578,"text":"O ed25519 é o padrão","words":[{"start":29.921,"end":30.452,"char":[0,1]},{"start":30.452,"end":30.983,"char":[2,9]},{"start":30.983,"end":31.515,"char":[10,11]},{"start":31.515,"end":32.046,"char":[12,13]},{"start":32.046,"end":32.578,"char":[14,20]}]},{"start":32.578,"end":33.109,"text":"moderno:","words":[{"start":32.578,"end":33.109,"char":[0,8]}]},{"start":33.109,"end":33.64,"text":"compacto,","words":[{"start":33.109,"end":33.64,"char":[0,9]}]},{"start":33.64,"end":35.766,"text":"rápido e bem suportado.","words":[{"start":33.64,"end":34.172,"char":[0,6]},{"start":34.172,"end":34.703,"char":[7,8]},{"start":34.703,"end":35.235,"char":[9,12]},{"start":35.235,"end":35.766,"char":[13,23]}]},{"start":35.766,"end":38.423,"text":"Só é necessário fazer isto","words":[{"start":35.766,"end":36.298,"char":[0,2]},{"start":36.298,"end":36.829,"char":[3,4]},{"start":36.829,"end":37.36,"char":[5,15]},{"start":37.36,"end":37.892,"char":[16,21]},{"start":37.892,"end":38.423,"char":[22,26]}]},{"start":38.423,"end":41.08,"text":"uma vez para todos os","words":[{"start":38.423,"end":38.955,"char":[0,3]},{"start":38.955,"end":39.486,"char":[4,7]},{"start":39.486,"end":40.017,"char":[8,12]},{"start":40.017,"end":40.549,"char":[13,18]},{"start":40.549,"end":41.08,"char":[19,21]}]},{"start":41.08,"end":43.737,"text":"servidores que venha a adicionar.","words":[{"start":41.08,"end":41.612,"char":[0,10]},{"start":41.612,"end":42.143,"char":[11,14]},{"start":42.143,"end":42.674,"char":[15,20]},{"start":42.674,"end":43.206,"char":[21,22]},{"start":43.206,"end":43.737,"char":[23,33]}]},{"start":44.537,"end":45.405,"text":"Chave gerada.","words":[{"start":44.537,"end":44.971,"char":[0,5]},{"start":44.971,"end":45.405,"char":[6,13]}]},{"start":45.405,"end":48.009,"text":"A metade pública é a que","words":[{"start":45.405,"end":45.839,"char":[0,1]},{"start":45.839,"end":46.273,"char":[2,8]},{"start":46.273,"end":46.707,"char":[9,16]},{"start":46.707,"end":47.141,"char":[17,18]},{"start":47.141,"end":47.575,"char":[19,20]},{"start":47.575,"end":48.009,"char":[21,24]}]},{"start":48.009,"end":50.18,"text":"vamos copiar para o servidor.","words":[{"start":48.009,"end":48.443,"char":[0,5]},{"start":48.443,"end":48.878,"char":[6,12]},{"start":48.878,"end":49.312,"char":[13,17]},{"start":49.312,"end":49.746,"char":[18,19]},{"start":49.746,"end":50.18,"char":[20,29]}]},{"start":53.513,"end":54.38,"text":"Passo dois.","words":[{"start":53.513,"end":53.946,"char":[0,5]},{"start":53.946,"end":54.38,"char":[6,11]}]},{"start":54.38,"end":56.981,"text":"Vamos copiar a chave pública para","words":[{"start":54.38,"end":54.813,"char":[0,5]},{"start":54.813,"end":55.247,"char":[6,12]},{"start":55.247,"end":55.68,"char":[13,14]},{"start":55.68,"end":56.114,"char":[15,20]},{"start":56.114,"end":56.547,"char":[21,28]},{"start":56.547,"end":56.981,"char":[29,33]}]},{"start":56.981,"end":58.715,"text":"o servidor com ssh-copy-id.","words":[{"start":56.981,"end":57.414,"char":[0,1]},{"start":57.414,"end":57.848,"char":[2,10]},{"start":57.848,"end":58.281,"char":[11,14]},{"start":58.281,"end":58.715,"char":[15,27]}]},{"start":58.715,"end":61.315,"text":"A palavra-passe do servidor é pedida","words":[{"start":58.715,"end":59.148,"char":[0,1]},{"start":59.148,"end":59.582,"char":[2,15]},{"start":59.582,"end":60.015,"char":[16,18]},{"start":60.015,"end":60.449,"char":[19,27]},{"start":60.449,"end":60.882,"char":[28,29]},{"start":60.882,"end":61.315,"char":[30,36]}]},{"start":61.315,"end":62.616,"text":"pela última vez.","words":[{"start":61.315,"end":61.749,"char":[0,4]},{"start":61.749,"end":62.182,"char":[5,11]},{"start":62.182,"end":62.616,"char":[12,16]}]},{"start":62.616,"end":63.916,"text":"A partir daqui,","words":[{"start":62.616,"end":63.049,"char":[0,1]},{"start":63.049,"end":63.483,"char":[2,8]},{"start":63.483,"end":63.916,"char":[9,15]}]},{"start":63.916,"end":66.517,"text":"a autenticação por palavra-passe já não","words":[{"start":63.916,"end":64.35,"char":[0,1]},{"start":64.35,"end":64.783,"char":[2,14]},{"start":64.783,"end":65.217,"char":[15,18]},{"start":65.217,"end":65.65,"char":[19,32]},{"start":65.65,"end":66.084,"char":[33,35]},{"start":66.084,"end":66.517,"char":[36,39]}]},{"start":66.517,"end":67.384,"text":"é necessária.","words":[{"start":66.517,"end":66.951,"char":[0,1]},{"start":66.951,"end":67.384,"char":[2,13]}]},{"start":69.384,"end":71.313,"text":"Execute isso no portátil.","words":[{"start":69.384,"end":69.866,"char":[0,7]},{"start":69.866,"end":70.349,"char":[8,12]},{"start":70.349,"end":70.831,"char":[13,15]},{"start":70.831,"end":71.313,"char":[16,25]}]},{"start":71.313,"end":72.76,"text":"Depois de bem-sucedido,","words":[{"start":71.313,"end":71.795,"char":[0,6]},{"start":71.795,"end":72.278,"char":[7,9]},{"start":72.278,"end":72.76,"char":[10,23]}]},{"start":72.76,"end":75.653,"text":"as palavras-passe ficam fora de questão.","words":[{"start":72.76,"end":73.242,"char":[0,2]},{"start":73.242,"end":73.724,"char":[3,17]},{"start":73.724,"end":74.207,"char":[18,23]},{"start":74.207,"end":74.689,"char":[24,28]},{"start":74.689,"end":75.171,"char":[29,31]},{"start":75.171,"end":75.653,"char":[32,40]}]},{"start":78.982,"end":79.834,"text":"Passo três.","words":[{"start":78.982,"end":79.408,"char":[0,5]},{"start":79.408,"end":79.834,"char":[6,11]}]},{"start":79.834,"end":82.388,"text":"Agora vamos registar a chave na","words":[{"start":79.834,"end":80.259,"char":[0,5]},{"start":80.259,"end":80.685,"char":[6,11]},{"start":80.685,"end":81.111,"char":[12,20]},{"start":81.111,"end":81.537,"char":[21,22]},{"start":81.537,"end":81.963,"char":[23,28]},{"start":81.963,"end":82.388,"char":[29,31]}]},{"start":82.388,"end":82.814,"text":"ferramenta.","words":[{"start":82.388,"end":82.814,"char":[0,11]}]},{"start":82.814,"end":84.517,"text":"A partir deste momento,","words":[{"start":82.814,"end":83.24,"char":[0,1]},{"start":83.24,"end":83.666,"char":[2,8]},{"start":83.666,"end":84.092,"char":[9,14]},{"start":84.092,"end":84.517,"char":[15,23]}]},{"start":84.517,"end":87.072,"text":"todos os comandos autenticam com esta","words":[{"start":84.517,"end":84.943,"char":[0,5]},{"start":84.943,"end":85.369,"char":[6,8]},{"start":85.369,"end":85.795,"char":[9,17]},{"start":85.795,"end":86.221,"char":[18,28]},{"start":86.221,"end":86.646,"char":[29,32]},{"start":86.646,"end":87.072,"char":[33,37]}]},{"start":87.072,"end":87.498,"text":"chave.","words":[{"start":87.072,"end":87.498,"char":[0,6]}]},{"start":89.498,"end":91.849,"text":"Chave registada na CLI.","words":[{"start":89.498,"end":90.086,"char":[0,5]},{"start":90.086,"end":90.673,"char":[6,15]},{"start":90.673,"end":91.261,"char":[16,18]},{"start":91.261,"end":91.849,"char":[19,23]}]},{"start":92.66,"end":95.432,"text":"A chave está registada e a","words":[{"start":92.66,"end":93.122,"char":[0,1]},{"start":93.122,"end":93.584,"char":[2,7]},{"start":93.584,"end":94.046,"char":[8,12]},{"start":94.046,"end":94.508,"char":[13,22]},{"start":94.508,"end":94.97,"char":[23,24]},{"start":94.97,"end":95.432,"char":[25,26]}]},{"start":95.432,"end":96.818,"text":"CLI está pronta.","words":[{"start":95.432,"end":95.894,"char":[0,3]},{"start":95.894,"end":96.356,"char":[4,8]},{"start":96.356,"end":96.818,"char":[9,16]}]},{"start":96.818,"end":97.742,"text":"A seguir,","words":[{"start":96.818,"end":97.28,"char":[0,1]},{"start":97.28,"end":97.742,"char":[2,9]}]},{"start":97.742,"end":100.053,"text":"adicionamos o seu primeiro servidor.","words":[{"start":97.742,"end":98.205,"char":[0,11]},{"start":98.205,"end":98.667,"char":[12,13]},{"start":98.667,"end":99.129,"char":[14,17]},{"start":99.129,"end":99.591,"char":[18,26]},{"start":99.591,"end":100.053,"char":[27,36]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.885,
+      "text": "Tudo certo!",
+      "words": [
+        { "start": 1, "end": 1.443, "char": [0, 4] },
+        { "start": 1.443, "end": 1.885, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 1.885,
+      "end": 4.541,
+      "text": "Vamos configurar as chaves SSH para",
+      "words": [
+        { "start": 1.885, "end": 2.328, "char": [0, 5] },
+        { "start": 2.328, "end": 2.771, "char": [6, 16] },
+        { "start": 2.771, "end": 3.213, "char": [17, 19] },
+        { "start": 3.213, "end": 3.656, "char": [20, 26] },
+        { "start": 3.656, "end": 4.098, "char": [27, 30] },
+        { "start": 4.098, "end": 4.541, "char": [31, 35] }
+      ]
+    },
+    {
+      "start": 4.541,
+      "end": 7.197,
+      "text": "que a CLI possa aceder aos",
+      "words": [
+        { "start": 4.541, "end": 4.984, "char": [0, 3] },
+        { "start": 4.984, "end": 5.426, "char": [4, 5] },
+        { "start": 5.426, "end": 5.869, "char": [6, 9] },
+        { "start": 5.869, "end": 6.312, "char": [10, 15] },
+        { "start": 6.312, "end": 6.754, "char": [16, 22] },
+        { "start": 6.754, "end": 7.197, "char": [23, 26] }
+      ]
+    },
+    {
+      "start": 7.197,
+      "end": 8.967,
+      "text": "seus servidores sem palavras-passe.",
+      "words": [
+        { "start": 7.197, "end": 7.639, "char": [0, 4] },
+        { "start": 7.639, "end": 8.082, "char": [5, 15] },
+        { "start": 8.082, "end": 8.525, "char": [16, 19] },
+        { "start": 8.525, "end": 8.967, "char": [20, 35] }
+      ]
+    },
+    {
+      "start": 9.741,
+      "end": 11.413,
+      "text": "Três passos no total.",
+      "words": [
+        { "start": 9.741, "end": 10.159, "char": [0, 4] },
+        { "start": 10.159, "end": 10.577, "char": [5, 11] },
+        { "start": 10.577, "end": 10.995, "char": [12, 14] },
+        { "start": 10.995, "end": 11.413, "char": [15, 21] }
+      ]
+    },
+    {
+      "start": 11.413,
+      "end": 13.503,
+      "text": "Gerar uma chave no portátil,",
+      "words": [
+        { "start": 11.413, "end": 11.831, "char": [0, 5] },
+        { "start": 11.831, "end": 12.249, "char": [6, 9] },
+        { "start": 12.249, "end": 12.667, "char": [10, 15] },
+        { "start": 12.667, "end": 13.085, "char": [16, 18] },
+        { "start": 13.085, "end": 13.503, "char": [19, 28] }
+      ]
+    },
+    {
+      "start": 13.503,
+      "end": 15.174,
+      "text": "copiá-la para o servidor,",
+      "words": [
+        { "start": 13.503, "end": 13.921, "char": [0, 8] },
+        { "start": 13.921, "end": 14.339, "char": [9, 13] },
+        { "start": 14.339, "end": 14.757, "char": [14, 15] },
+        { "start": 14.757, "end": 15.174, "char": [16, 25] }
+      ]
+    },
+    {
+      "start": 15.174,
+      "end": 17.682,
+      "text": "e depois registá-la na ferramenta de",
+      "words": [
+        { "start": 15.174, "end": 15.592, "char": [0, 1] },
+        { "start": 15.592, "end": 16.01, "char": [2, 8] },
+        { "start": 16.01, "end": 16.428, "char": [9, 19] },
+        { "start": 16.428, "end": 16.846, "char": [20, 22] },
+        { "start": 16.846, "end": 17.264, "char": [23, 33] },
+        { "start": 17.264, "end": 17.682, "char": [34, 36] }
+      ]
+    },
+    {
+      "start": 17.682,
+      "end": 18.936,
+      "text": "linha de comandos.",
+      "words": [
+        { "start": 17.682, "end": 18.1, "char": [0, 5] },
+        { "start": 18.1, "end": 18.518, "char": [6, 8] },
+        { "start": 18.518, "end": 18.936, "char": [9, 18] }
+      ]
+    },
+    {
+      "start": 18.936,
+      "end": 21.444,
+      "text": "Dois destes só se fazem uma",
+      "words": [
+        { "start": 18.936, "end": 19.354, "char": [0, 4] },
+        { "start": 19.354, "end": 19.772, "char": [5, 11] },
+        { "start": 19.772, "end": 20.19, "char": [12, 14] },
+        { "start": 20.19, "end": 20.608, "char": [15, 17] },
+        { "start": 20.608, "end": 21.026, "char": [18, 23] },
+        { "start": 21.026, "end": 21.444, "char": [24, 27] }
+      ]
+    },
+    {
+      "start": 21.444,
+      "end": 21.862,
+      "text": "vez.",
+      "words": [{ "start": 21.444, "end": 21.862, "char": [0, 4] }]
+    },
+    {
+      "start": 25.138,
+      "end": 26.201,
+      "text": "Passo um.",
+      "words": [
+        { "start": 25.138, "end": 25.669, "char": [0, 5] },
+        { "start": 25.669, "end": 26.201, "char": [6, 9] }
+      ]
+    },
+    {
+      "start": 26.201,
+      "end": 28.858,
+      "text": "Vamos gerar uma nova chave",
+      "words": [
+        { "start": 26.201, "end": 26.732, "char": [0, 5] },
+        { "start": 26.732, "end": 27.264, "char": [6, 11] },
+        { "start": 27.264, "end": 27.795, "char": [12, 15] },
+        { "start": 27.795, "end": 28.326, "char": [16, 20] },
+        { "start": 28.326, "end": 28.858, "char": [21, 26] }
+      ]
+    },
+    {
+      "start": 28.858,
+      "end": 29.921,
+      "text": "SSH ed25519.",
+      "words": [
+        { "start": 28.858, "end": 29.389, "char": [0, 3] },
+        { "start": 29.389, "end": 29.921, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 29.921,
+      "end": 32.578,
+      "text": "O ed25519 é o padrão",
+      "words": [
+        { "start": 29.921, "end": 30.452, "char": [0, 1] },
+        { "start": 30.452, "end": 30.983, "char": [2, 9] },
+        { "start": 30.983, "end": 31.515, "char": [10, 11] },
+        { "start": 31.515, "end": 32.046, "char": [12, 13] },
+        { "start": 32.046, "end": 32.578, "char": [14, 20] }
+      ]
+    },
+    {
+      "start": 32.578,
+      "end": 33.109,
+      "text": "moderno:",
+      "words": [{ "start": 32.578, "end": 33.109, "char": [0, 8] }]
+    },
+    {
+      "start": 33.109,
+      "end": 33.64,
+      "text": "compacto,",
+      "words": [{ "start": 33.109, "end": 33.64, "char": [0, 9] }]
+    },
+    {
+      "start": 33.64,
+      "end": 35.766,
+      "text": "rápido e bem suportado.",
+      "words": [
+        { "start": 33.64, "end": 34.172, "char": [0, 6] },
+        { "start": 34.172, "end": 34.703, "char": [7, 8] },
+        { "start": 34.703, "end": 35.235, "char": [9, 12] },
+        { "start": 35.235, "end": 35.766, "char": [13, 23] }
+      ]
+    },
+    {
+      "start": 35.766,
+      "end": 38.423,
+      "text": "Só é necessário fazer isto",
+      "words": [
+        { "start": 35.766, "end": 36.298, "char": [0, 2] },
+        { "start": 36.298, "end": 36.829, "char": [3, 4] },
+        { "start": 36.829, "end": 37.36, "char": [5, 15] },
+        { "start": 37.36, "end": 37.892, "char": [16, 21] },
+        { "start": 37.892, "end": 38.423, "char": [22, 26] }
+      ]
+    },
+    {
+      "start": 38.423,
+      "end": 41.08,
+      "text": "uma vez para todos os",
+      "words": [
+        { "start": 38.423, "end": 38.955, "char": [0, 3] },
+        { "start": 38.955, "end": 39.486, "char": [4, 7] },
+        { "start": 39.486, "end": 40.017, "char": [8, 12] },
+        { "start": 40.017, "end": 40.549, "char": [13, 18] },
+        { "start": 40.549, "end": 41.08, "char": [19, 21] }
+      ]
+    },
+    {
+      "start": 41.08,
+      "end": 43.737,
+      "text": "servidores que venha a adicionar.",
+      "words": [
+        { "start": 41.08, "end": 41.612, "char": [0, 10] },
+        { "start": 41.612, "end": 42.143, "char": [11, 14] },
+        { "start": 42.143, "end": 42.674, "char": [15, 20] },
+        { "start": 42.674, "end": 43.206, "char": [21, 22] },
+        { "start": 43.206, "end": 43.737, "char": [23, 33] }
+      ]
+    },
+    {
+      "start": 44.537,
+      "end": 45.405,
+      "text": "Chave gerada.",
+      "words": [
+        { "start": 44.537, "end": 44.971, "char": [0, 5] },
+        { "start": 44.971, "end": 45.405, "char": [6, 13] }
+      ]
+    },
+    {
+      "start": 45.405,
+      "end": 48.009,
+      "text": "A metade pública é a que",
+      "words": [
+        { "start": 45.405, "end": 45.839, "char": [0, 1] },
+        { "start": 45.839, "end": 46.273, "char": [2, 8] },
+        { "start": 46.273, "end": 46.707, "char": [9, 16] },
+        { "start": 46.707, "end": 47.141, "char": [17, 18] },
+        { "start": 47.141, "end": 47.575, "char": [19, 20] },
+        { "start": 47.575, "end": 48.009, "char": [21, 24] }
+      ]
+    },
+    {
+      "start": 48.009,
+      "end": 50.18,
+      "text": "vamos copiar para o servidor.",
+      "words": [
+        { "start": 48.009, "end": 48.443, "char": [0, 5] },
+        { "start": 48.443, "end": 48.878, "char": [6, 12] },
+        { "start": 48.878, "end": 49.312, "char": [13, 17] },
+        { "start": 49.312, "end": 49.746, "char": [18, 19] },
+        { "start": 49.746, "end": 50.18, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 53.513,
+      "end": 54.38,
+      "text": "Passo dois.",
+      "words": [
+        { "start": 53.513, "end": 53.946, "char": [0, 5] },
+        { "start": 53.946, "end": 54.38, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 54.38,
+      "end": 56.981,
+      "text": "Vamos copiar a chave pública para",
+      "words": [
+        { "start": 54.38, "end": 54.813, "char": [0, 5] },
+        { "start": 54.813, "end": 55.247, "char": [6, 12] },
+        { "start": 55.247, "end": 55.68, "char": [13, 14] },
+        { "start": 55.68, "end": 56.114, "char": [15, 20] },
+        { "start": 56.114, "end": 56.547, "char": [21, 28] },
+        { "start": 56.547, "end": 56.981, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 56.981,
+      "end": 58.715,
+      "text": "o servidor com ssh-copy-id.",
+      "words": [
+        { "start": 56.981, "end": 57.414, "char": [0, 1] },
+        { "start": 57.414, "end": 57.848, "char": [2, 10] },
+        { "start": 57.848, "end": 58.281, "char": [11, 14] },
+        { "start": 58.281, "end": 58.715, "char": [15, 27] }
+      ]
+    },
+    {
+      "start": 58.715,
+      "end": 61.315,
+      "text": "A palavra-passe do servidor é pedida",
+      "words": [
+        { "start": 58.715, "end": 59.148, "char": [0, 1] },
+        { "start": 59.148, "end": 59.582, "char": [2, 15] },
+        { "start": 59.582, "end": 60.015, "char": [16, 18] },
+        { "start": 60.015, "end": 60.449, "char": [19, 27] },
+        { "start": 60.449, "end": 60.882, "char": [28, 29] },
+        { "start": 60.882, "end": 61.315, "char": [30, 36] }
+      ]
+    },
+    {
+      "start": 61.315,
+      "end": 62.616,
+      "text": "pela última vez.",
+      "words": [
+        { "start": 61.315, "end": 61.749, "char": [0, 4] },
+        { "start": 61.749, "end": 62.182, "char": [5, 11] },
+        { "start": 62.182, "end": 62.616, "char": [12, 16] }
+      ]
+    },
+    {
+      "start": 62.616,
+      "end": 63.916,
+      "text": "A partir daqui,",
+      "words": [
+        { "start": 62.616, "end": 63.049, "char": [0, 1] },
+        { "start": 63.049, "end": 63.483, "char": [2, 8] },
+        { "start": 63.483, "end": 63.916, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 63.916,
+      "end": 66.517,
+      "text": "a autenticação por palavra-passe já não",
+      "words": [
+        { "start": 63.916, "end": 64.35, "char": [0, 1] },
+        { "start": 64.35, "end": 64.783, "char": [2, 14] },
+        { "start": 64.783, "end": 65.217, "char": [15, 18] },
+        { "start": 65.217, "end": 65.65, "char": [19, 32] },
+        { "start": 65.65, "end": 66.084, "char": [33, 35] },
+        { "start": 66.084, "end": 66.517, "char": [36, 39] }
+      ]
+    },
+    {
+      "start": 66.517,
+      "end": 67.384,
+      "text": "é necessária.",
+      "words": [
+        { "start": 66.517, "end": 66.951, "char": [0, 1] },
+        { "start": 66.951, "end": 67.384, "char": [2, 13] }
+      ]
+    },
+    {
+      "start": 69.384,
+      "end": 71.313,
+      "text": "Execute isso no portátil.",
+      "words": [
+        { "start": 69.384, "end": 69.866, "char": [0, 7] },
+        { "start": 69.866, "end": 70.349, "char": [8, 12] },
+        { "start": 70.349, "end": 70.831, "char": [13, 15] },
+        { "start": 70.831, "end": 71.313, "char": [16, 25] }
+      ]
+    },
+    {
+      "start": 71.313,
+      "end": 72.76,
+      "text": "Depois de bem-sucedido,",
+      "words": [
+        { "start": 71.313, "end": 71.795, "char": [0, 6] },
+        { "start": 71.795, "end": 72.278, "char": [7, 9] },
+        { "start": 72.278, "end": 72.76, "char": [10, 23] }
+      ]
+    },
+    {
+      "start": 72.76,
+      "end": 75.653,
+      "text": "as palavras-passe ficam fora de questão.",
+      "words": [
+        { "start": 72.76, "end": 73.242, "char": [0, 2] },
+        { "start": 73.242, "end": 73.724, "char": [3, 17] },
+        { "start": 73.724, "end": 74.207, "char": [18, 23] },
+        { "start": 74.207, "end": 74.689, "char": [24, 28] },
+        { "start": 74.689, "end": 75.171, "char": [29, 31] },
+        { "start": 75.171, "end": 75.653, "char": [32, 40] }
+      ]
+    },
+    {
+      "start": 78.982,
+      "end": 79.834,
+      "text": "Passo três.",
+      "words": [
+        { "start": 78.982, "end": 79.408, "char": [0, 5] },
+        { "start": 79.408, "end": 79.834, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 79.834,
+      "end": 82.388,
+      "text": "Agora vamos registar a chave na",
+      "words": [
+        { "start": 79.834, "end": 80.259, "char": [0, 5] },
+        { "start": 80.259, "end": 80.685, "char": [6, 11] },
+        { "start": 80.685, "end": 81.111, "char": [12, 20] },
+        { "start": 81.111, "end": 81.537, "char": [21, 22] },
+        { "start": 81.537, "end": 81.963, "char": [23, 28] },
+        { "start": 81.963, "end": 82.388, "char": [29, 31] }
+      ]
+    },
+    {
+      "start": 82.388,
+      "end": 82.814,
+      "text": "ferramenta.",
+      "words": [{ "start": 82.388, "end": 82.814, "char": [0, 11] }]
+    },
+    {
+      "start": 82.814,
+      "end": 84.517,
+      "text": "A partir deste momento,",
+      "words": [
+        { "start": 82.814, "end": 83.24, "char": [0, 1] },
+        { "start": 83.24, "end": 83.666, "char": [2, 8] },
+        { "start": 83.666, "end": 84.092, "char": [9, 14] },
+        { "start": 84.092, "end": 84.517, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 84.517,
+      "end": 87.072,
+      "text": "todos os comandos autenticam com esta",
+      "words": [
+        { "start": 84.517, "end": 84.943, "char": [0, 5] },
+        { "start": 84.943, "end": 85.369, "char": [6, 8] },
+        { "start": 85.369, "end": 85.795, "char": [9, 17] },
+        { "start": 85.795, "end": 86.221, "char": [18, 28] },
+        { "start": 86.221, "end": 86.646, "char": [29, 32] },
+        { "start": 86.646, "end": 87.072, "char": [33, 37] }
+      ]
+    },
+    {
+      "start": 87.072,
+      "end": 87.498,
+      "text": "chave.",
+      "words": [{ "start": 87.072, "end": 87.498, "char": [0, 6] }]
+    },
+    {
+      "start": 89.498,
+      "end": 91.849,
+      "text": "Chave registada na CLI.",
+      "words": [
+        { "start": 89.498, "end": 90.086, "char": [0, 5] },
+        { "start": 90.086, "end": 90.673, "char": [6, 15] },
+        { "start": 90.673, "end": 91.261, "char": [16, 18] },
+        { "start": 91.261, "end": 91.849, "char": [19, 23] }
+      ]
+    },
+    {
+      "start": 92.66,
+      "end": 95.432,
+      "text": "A chave está registada e a",
+      "words": [
+        { "start": 92.66, "end": 93.122, "char": [0, 1] },
+        { "start": 93.122, "end": 93.584, "char": [2, 7] },
+        { "start": 93.584, "end": 94.046, "char": [8, 12] },
+        { "start": 94.046, "end": 94.508, "char": [13, 22] },
+        { "start": 94.508, "end": 94.97, "char": [23, 24] },
+        { "start": 94.97, "end": 95.432, "char": [25, 26] }
+      ]
+    },
+    {
+      "start": 95.432,
+      "end": 96.818,
+      "text": "CLI está pronta.",
+      "words": [
+        { "start": 95.432, "end": 95.894, "char": [0, 3] },
+        { "start": 95.894, "end": 96.356, "char": [4, 8] },
+        { "start": 96.356, "end": 96.818, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 96.818,
+      "end": 97.742,
+      "text": "A seguir,",
+      "words": [
+        { "start": 96.818, "end": 97.28, "char": [0, 1] },
+        { "start": 97.28, "end": 97.742, "char": [2, 9] }
+      ]
+    },
+    {
+      "start": 97.742,
+      "end": 100.053,
+      "text": "adicionamos o seu primeiro servidor.",
+      "words": [
+        { "start": 97.742, "end": 98.205, "char": [0, 11] },
+        { "start": 98.205, "end": 98.667, "char": [12, 13] },
+        { "start": 98.667, "end": 99.129, "char": [14, 17] },
+        { "start": 99.129, "end": 99.591, "char": [18, 26] },
+        { "start": 99.591, "end": 100.053, "char": [27, 36] }
+      ]
+    }
+  ]
+}

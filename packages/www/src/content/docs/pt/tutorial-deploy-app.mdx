@@ -1,19 +1,19 @@
 ---
 title: "Implementar a Sua Primeira Aplicação"
-description: "Implemente uma aplicação em contentor a partir de um modelo integrado usando rdc repo up."
+description: "Implemente uma aplicação em contentor a partir de um modelo integrado usando `rdc` repo up."
 category: "Tutorials"
 subcategory: essentials
 order: 5
 language: pt
-sourceHash: "08bd8fbaffc53a06"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "a40a843238f17e9f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Implementar a Sua Primeira Aplicação
 
-Tem um repositório vazio. O `rdc` inclui modelos integrados para que possa lançar aplicações reais sem escrever um `docker-compose` do zero. Três passos: escolha um modelo, aplique-o, execute-o.
+Tem um repositório vazio. O `rdc` inclui modelos integrados para que possa lançar aplicações reais sem escrever um `docker-compose` do zero. Escolha um modelo, aplique-o, execute-o.
 
 ## Ver o tutorial
 
@@ -51,7 +51,7 @@ A CLI inicia os contentores, monta o volume cifrado e liga um daemon Docker isol
 
 <TutorialStep number={5} />
 
-`docker ps` aqui lista apenas os contentores deste repositório. Os outros repositórios no mesmo servidor têm os seus próprios daemons Docker e são completamente invisíveis a partir deste.
+`docker ps` aqui lista apenas os contentores deste repositório. Os outros repositórios no mesmo servidor têm os seus próprios daemons Docker e são completamente invisíveis a partir deste. Esse isolamento é o objetivo: teste livremente sem afetar serviços adjacentes.
 
 ---
 

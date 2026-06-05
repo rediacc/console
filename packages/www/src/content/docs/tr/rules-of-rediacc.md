@@ -1,19 +1,16 @@
 ---
-title: Rediacc Kuralları
-description: >-
-  Rediacc platformunda uygulama geliştirmek için temel kurallar ve
-  konvansiyonlar. Rediaccfile, compose, ağ, depolama, CRIU ve dağıtım konularını
-  kapsar.
+title: "Rediacc Kuralları"
+description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve konvansiyonlar. Rediaccfile, compose, ağ, depolama, CRIU ve dağıtım konularını kapsar."
 category: Guides
 order: 5
 language: tr
-sourceHash: "1d227a06272a0050"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "74803e91ef07b03c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Rediacc Kuralları
 
-Her Rediacc deposu, kendi Docker daemon'ı, şifrelenmiş LUKS birimi ve ayrılmış IP aralığına sahip izole bir ortamda çalışır. Bu kurallar, uygulamanızın bu mimari içinde doğru şekilde çalışmasını sağlar.
+Her Rediacc deposu, kendi Docker daemon'ı, şifreli LUKS birimi ve ayrılmış IP aralığına sahip izole bir ortamda çalışır. Bu kurallar, uygulamanızın bu mimari içinde doğru şekilde çalışmasını sağlar.
 
 ## Rediaccfile
 
@@ -57,7 +54,7 @@ down() {
 - **`rediacc.*` etiketleri ayarlamayın**, renet otomatik olarak `rediacc.network_id`, `rediacc.service_ip` ve `rediacc.service_name` enjekte eder.
 - **`ports:` eşlemeleri** host ağ modunda yok sayılır. HTTP yönlendirmesi için `rediacc.service_port` etiketini ekleyin (bu etikete sahip olmayan servisler HTTP rotaları almaz). TCP/UDP yönlendirme için `rediacc.tcp_ports`/`rediacc.udp_ports` etiketlerini kullanın.
 - **Yeniden başlatma politikaları (`restart: always`, `on-failure`, vb.) kullanmak güvenlidir**, renet bunları CRIU uyumluluğu için otomatik olarak kaldırır. Router watchdog, `.rediacc.json` içinde kaydedilen orijinal politikaya göre durmuş konteynerleri otomatik olarak kurtarır.
-- **Tehlikeli ayarlar varsayılan olarak engellenir**, `privileged: true`, `pid: host`, `ipc: host` ve sistem yollarına bind mount'lar reddedilir. Kendi sorumluluğunuzda geçersiz kılmak için `renet compose --unsafe` kullanın.
+- **Tehlikeli ayarlar varsayılan olarak engellenir**, `privileged: true`, `pid: host`, `ipc: host` ve sistem yollarına host bind mount'ları reddedilir. Kendi sorumluluğunuzda geçersiz kılmak için `renet compose --unsafe` kullanın.
 
 ### Konteyner içindeki ortam değişkenleri
 
@@ -109,7 +106,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - **Etiketle etkinleştirme**: Checkpoint almak istediğiniz konteynerlere `rediacc.checkpoint=true` ekleyin. Bu etiketi olmayan konteynerler (veritabanları, önbellekler) temiz başlar ve kendi mekanizmalarıyla (WAL, LDF, AOF) kurtarılır.
 - **`repo down --checkpoint`** durdurmadan önce süreç durumunu kaydeder, sonraki `repo up` otomatik geri yükler. **Bu, aynı makinedeki birincil akıştır** ve çalıştığı doğrulanmıştır.
 - **`backup push --checkpoint`** etiketli konteynerler için çalışan süreçlerin bellek durumunu + disk durumunu yakalar, ardından birimi başka bir makineye aktarır. Hedef makinede `repo up` ile geri yüklenir.
-- **`repo fork --checkpoint`** fork öncesi süreç durumunu yakalar ve checkpoint'i fork ile birlikte CoW-klonlar. ⚠️ Aynı makinede, ebeveyn hala çalışırken fork üzerindeki sonraki `repo up` **su anda** `criu failed: type RESTORE errno 0` ile **başarısız olur**. Upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Yerinde kayıt/geri yükleme için `repo down --checkpoint`, makineler arası geçiş için `backup push --checkpoint` kullanın.
+- **`repo fork --checkpoint`** fork öncesi süreç durumunu yakalar ve checkpoint'i fork ile birlikte CoW-klonlar. ⚠️ Aynı makinede, ebeveyn hala çalışırken fork üzerindeki sonraki `repo up` **şu anda** `criu failed: type RESTORE errno 0` ile **başarısız olur**. Upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Yerinde kayıt/geri yükleme için `repo down --checkpoint`, makineler arası geçiş için `backup push --checkpoint` kullanın.
 - **`repo up`** checkpoint verilerini otomatik algılar ve bulunursa geri yükler. Temiz başlatma için `--skip-checkpoint` kullanın.
 - **Bağımlılık farkındalıklı geri yükleme**: Compose `depends_on` kullanarak veritabanlarını önce başlatır (healthy bekler), ardından uygulama konteynerlerini CRIU ile geri yükler.
 - **TCP bağlantıları geri yüklemeden sonra eski olur**, uygulamalar `ECONNRESET` hatasını ele almalı ve yeniden bağlanmalıdır. CRIU, desteklenen hiçbir akışta geri yükleme boyunca aktif TCP bağlantı durumunu korumaz.
@@ -135,13 +132,13 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 
 ### İsletim sistemine göre host güvenlik politikaları
 
-Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/en/docs/requirements)), her deponun Docker daemon'ı ve çalıştırdığı konteynerler **varsayılan konteyner etiketleri** kullanır. `rdc config machine setup`, özel bir SELinux politikası veya AppArmor profili yüklemez.
+Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/en/docs/requirements)), her deponun Docker daemon'ı ve çalıştırdığı konteynerler **varsayılan konteyner etiketleri** kullanır. `rdc config machine setup`, özel bir SELinux politikası veya AppArmor profili yüklemez. Bu bilinçli bir tercihdir: ödünleşim, konteyner proseslerinin Rediacc'a özgü bir sınırlama profili değil, host işletim sisteminin varsayılan etiket politikası altında çalışmasıdır. Tehdit modeliniz konteyner katmanında zorunlu erişim kontrolleri gerektiriyorsa, bunları dağıtmadan önce host seviyesinde yapılandırın.
 
-- **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor varsayılan olarak etkindir. Konteynerler varsayılan docker-container profili altında çalışır. Tek istisna CRIU'dur (yukarıdaki nota bakın; `rediacc.checkpoint=true` etiketli konteynerler için `apparmor=unconfined` eklenir).
+- **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor varsayılan olarak etkindir. Konteynerler varsayılan docker-container profili altında çalışır. Tek istisna CRIU'dur (`rediacc.checkpoint=true` etiketli konteynerler için `apparmor=unconfined` eklenir, yukarıdaki nota bakın).
 - **Fedora 43 / Oracle Linux 10**: SELinux varsayılan olarak enforcing modda çalışır. Konteynerler standart `container_t` bağlamını alır. Ek politika yüklenmesi gerekmez. Bir kurulum adımı AVC reddiyle başarısız olursa, bkz. [Sorun giderme: SELinux redleri](/en/docs/troubleshooting).
 - **Debian 13**: AppArmor mevcut ancak tüm alanlarda varsayılan olarak uygulanmaz. Konteynerler yine de docker-container profilini kullanır.
 
-İsletim sistemine özgü bir güvenlik duruş bayrağı gerekli değildir; `rdc` ve `renet` neyin çalıştığını algılar ve beş dağıtımın tamamında aynı depo başına izolasyonu sağlar.
+Sonuç: `rdc` ve `renet` çalışan işletim sistemini otomatik algılar ve beş desteklenen dağıtımın tamamında aynı depo başına izolasyonu sağlar. İsletim sistemine özgü bir güvenlik duruş bayrağı gerekli değildir.
 
 ## Güvenlik
 
@@ -149,7 +146,7 @@ Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/e
 - **Kimlik bilgileri CLI yapılandırmasında saklanır** (`~/.config/rediacc/rediacc.json`). Yapılandırmayı kaybetmek, şifreli birimlere erişimi kaybetmek anlamına gelir.
 - **Kimlik bilgilerini asla** sürüm kontrolüne commit etmeyin. `env_file` kullanın ve sırları `up()` içinde oluşturun.
 - **Depo izolasyonu**: Her deponun Docker daemon'ı, ağı ve depolaması aynı makinedeki diğer depolardan tamamen izole edilmiştir.
-- **Ajan izolasyonu**: Yapay zeka ajanları varsayılan olarak yalnızca fork modunda çalışır. Her deponun, sunucu tarafında sandbox uygulaması (ForceCommand `sandbox-gateway`) olan kendi SSH anahtarı vardır. Tüm bağlantılar Landlock LSM, OverlayFS home overlay ve depo başına TMPDIR ile sandbox içine alınır. Depolar arası dosya sistemi erişimi çekirdek tarafından engellenir.
+- **Ajan izolasyonu**: Yapay zeka ajanları varsayılan olarak yalnızca fork modunda çalışır. Her deponun, sunucu tarafında sandbox uygulaması (`sandbox-gateway` ForceCommand) olan kendi SSH anahtarı vardır. Tüm bağlantılar Landlock LSM, OverlayFS home overlay ve depo başına TMPDIR ile sandbox içine alınır. Depolar arası dosya sistemi erişimi çekirdek tarafından engellenir.
 - **Bir depo sandbox'ı içinde `sudo` tasarım gereği devre dışıdır.** Landlock dosya sistemi izolasyonu `NoNewPrivs` gerektirir ve bu, herhangi bir yetki yükseltmesini engeller, bu nedenle `sudo` komutu `no new privileges flag is set` hatasıyla başarısız olur. Deponun sahip kullanıcısı, deponun bağlama noktası ve Docker soketi içindeki her şey için zaten gerekli izinlere sahiptir. Gerçekten ayrıcalıklı işlemler (host paketleri yükleme, çekirdek ayarlama) için bunları sandbox dışında ya da altyapı yolu tarafından çalıştırılan bir Rediaccfile `up()` fonksiyonundan çalıştırın.
 - **Docker bridge ağı depo başına daemonlarda devre dışıdır.** Her deponun `daemon.json` (`FlavorRediacc`) dosyası `"bridge": "none"` ve `"iptables": false` içerir, bu nedenle düz bir `docker run <image>` komutu yalnızca loopback arayüzü olan ve dışa doğru bağlantısı olmayan bir konteyner oluşturur. Bu bir hata değil, depolar arası izolasyonun uygulanma biçimidir: bir deponun başka bir deponun loopback IP'lerine ulaşmasını engelleyen çekirdek düzeyindeki eBPF kancaları yalnızca host ağ ad alanında yaşayan konteynerlere uygulanır. Üretim servisleri için otomatik olarak `network_mode: host` enjekte eden `renet compose` kullanın. Bir kabukta tek seferlik, geçici konteynerler için `--network host` parametresini açıkça geçin. (Kullanıcı başına Hub daemonları (`FlavorHub`, geliştirme ortamları) istisnadır: `bridge="docker0"` ve `iptables=true` etkinleştirerek kullanıcı tarafından çalıştırılan konteynerlerin normal dışa bağlantı almasını sağlar.)
 
@@ -168,6 +165,6 @@ Resmi olarak desteklenen beş sunucu isletim sisteminde (bkz. [Gereksinimler](/e
 - `renet compose` yerine `docker compose` kullanmak, konteynerler ağ izolasyonu alamaz.
 - Yeniden başlatma politikaları güvenlidir, renet bunları otomatik olarak kaldırır ve watchdog kurtarmayı üstlenir.
 - `privileged: true` kullanmak, gerekli değildir, renet bunun yerine belirli CRIU capability'lerini enjekte eder.
-- Ham IP'leri kalıcı yapılandırma dosyalarına sabit kodlamak - fork izolasyonunu sağlam tutmak için bağlantılarda servis adlarını kullanın.
+- Ham IP'leri kalıcı yapılandırma dosyalarına sabit kodlamak, fork izolasyonunu sağlam tutmak için bağlantılarda servis adlarını kullanın.
 - Başarısız komutlar için geçici çözüm olarak `rdc term connect -c` kullanmak, bunun yerine hataları bildirin.
 - `repo delete` loopback IP'leri ve systemd birimlerini de dahil ederek tam temizlik yapar. Eski silmelerden kalan artıkları temizlemek için `rdc machine prune --name <name>` çalıştırın.

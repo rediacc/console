@@ -1,11 +1,11 @@
 ---
 title: "Limpieza"
-description: "Eliminar copias de seguridad huérfanas, snapshots obsoletos e imágenes de repositorio no utilizadas para recuperar espacio en disco."
+description: "Eliminar copias de seguridad huérfanas, snapshots obsoletos, imágenes de repositorio y restos de configuración local para recuperar espacio en disco y mantener el estado coherente."
 category: "Guides"
 order: 12
 language: es
-sourceHash: "98bb2d50d75a1d3d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "9b74e1ea24b9735f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Limpieza
@@ -64,7 +64,7 @@ Limpia recursos en la máquina en tres fases. La fase 1 siempre se ejecuta; las 
 
 ### Fase 1: Limpieza del datastore (siempre se ejecuta)
 
-Elimina todo tipo de recurso que pueda quedar olvidado cuando se borra un repositorio o cuando una refactorización a nivel de máquina retira una convención de nomenclatura. Cada categoría se escanea de forma independiente y la limpieza es una única pasada idempotente, por lo que ejecutar prune de forma repetida es seguro y converge hacia un datastore limpio.
+Elimina todo lo que queda cuando se borra un repositorio o se retira una convención de nomenclatura. Cada categoría se escanea de forma independiente. Ejecutar prune de forma repetida es seguro: es una única pasada idempotente, por lo que los huérfanos que la última ejecución pasó por alto se capturan en la siguiente.
 
 | Categoría | Qué elimina |
 |-----------|-------------|
@@ -192,7 +192,7 @@ El backfill copia el estado vivo dentro del volumen al espejo para los repos act
 
 ## Modelo de seguridad
 
-La limpieza está diseñada para ser segura por defecto en configuraciones múltiples.
+Todos los tres comandos adoptan un enfoque seguro por defecto en configuraciones múltiples.
 
 ### Reconocimiento de múltiples configuraciones
 
@@ -204,7 +204,7 @@ Cuando un repositorio se elimina de una configuración con `--archive-config`, s
 
 ### Verificación previa de seguridad de montaje
 
-Cubierto más arriba. `storage prune` y `machine prune --prune-unknown` se niegan a eliminar repos que están actualmente montados o en ejecución en la máquina ejecutora. Anular solo con `--force-delete-mounted`.
+Cubierto más arriba. `storage prune` y `machine prune --prune-unknown` se niegan a eliminar repos que están actualmente montados o en ejecución en la máquina ejecutora. Anula solo con `--force-delete-mounted`.
 
 ### Aplicar por defecto; `--dry-run` para previsualizar
 

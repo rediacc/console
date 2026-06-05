@@ -4,15 +4,15 @@ description: "원격 서버의 디렉터리 구조, renet 명령, systemd 서비
 category: "Concepts"
 order: 3
 language: ko
-sourceHash: "f68c27543a2fe3ff"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "4fb53bb4cb1512f6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 서버 레퍼런스
 
-이 페이지는 Rediacc 서버에 SSH로 접속했을 때 볼 수 있는 내용을 다룹니다. 디렉터리 구조, `renet` 명령, systemd 서비스, 일반적인 워크플로가 포함됩니다.
+Rediacc 서버에 SSH로 접속하면 다음을 접하게 됩니다: 디렉터리 구조, `renet` 명령, systemd 서비스, 그리고 필요한 워크플로입니다.
 
-대부분의 사용자는 워크스테이션에서 `rdc`를 통해 서버를 관리하므로 이 페이지가 필요하지 않습니다. 고급 디버깅이나 서버에서 직접 작업해야 하는 경우를 위해 작성되었습니다.
+대부분의 사용자는 워크스테이션에서 `rdc`를 통해 서버를 관리하므로 이 페이지가 필요하지 않습니다. 이 페이지는 고급 디버깅이나 서버에서 직접 작업해야 할 때를 위해 작성되었습니다.
 
 고수준 아키텍처는 [아키텍처](/en/docs/architecture)를 참조하고, `rdc`와 `renet`의 차이점은 [rdc vs renet](/en/docs/rdc-vs-renet)을 참조하십시오.
 
@@ -95,7 +95,7 @@ sudo renet docker --network-id {id} -- logs -f {container}
 sudo renet docker --network-id {id} -- exec -it {container} bash
 ```
 
-Docker 소켓을 직접 사용할 수도 있습니다.
+Docker 소켓을 직접 사용할 수도 있습니다:
 
 ```bash
 DOCKER_HOST=unix:///run/rediacc/docker-{id}.sock docker ps
@@ -175,7 +175,7 @@ renet ips --network-id {id} # 네트워크의 IP 할당
 
 ### 데몬 관리
 
-각 저장소는 자체 Docker 데몬을 실행합니다. 개별적으로 관리할 수 있습니다.
+각 저장소는 자체 Docker 데몬을 실행합니다. 개별적으로 관리할 수 있습니다:
 
 ```bash
 renet daemon status --network-id {id}    # Docker 데몬 상태
@@ -209,7 +209,7 @@ renet backup list --source machine --src-host {host} --src-user {user} --src-pat
 
 ### 체크포인팅 (CRIU)
 
-체크포인트는 실행 중인 컨테이너의 상태를 저장하여 나중에 복원할 수 있게 합니다.
+체크포인트는 실행 중인 컨테이너의 상태를 저장하여 나중에 복원할 수 있게 합니다:
 
 ```bash
 renet checkpoint create    --network-id {id}   # 실행 중인 컨테이너 상태 저장
@@ -229,7 +229,7 @@ renet datastore expand      # 온라인으로 데이터스토어 확장
 
 ## Systemd 서비스
 
-각 저장소는 다음 systemd 유닛을 생성합니다.
+각 저장소는 다음 systemd 유닛을 생성합니다:
 
 | 유닛 | 목적 |
 |------|------|
@@ -244,7 +244,7 @@ renet datastore expand      # 온라인으로 데이터스토어 확장
 | `rediacc-router.service` | 경로 검색 (포트 7111) |
 | `rediacc-autostart.service` | 부팅 시 저장소 마운트 |
 | `rediacc-autostart-reconcile.service` | 주기적 자동 시작 조정자 (아래 타이머에 의해 실행) |
-| `rediacc-autostart-reconcile.timer` | 부팅 후 중단된 자동 시작 레포지토리를 복구하기 위해 약 3분마다 `renet repository reconcile` 실행 |
+| `rediacc-autostart-reconcile.timer` | 부팅 후 중단된 자동 시작 저장소를 복구하기 위해 약 3분마다 `renet repository reconcile` 실행 |
 
 ## 일반 워크플로
 

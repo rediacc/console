@@ -1,19 +1,18 @@
 ---
 title: Çapraz Yedekleme Stratejisi
-description: >-
-  Kıtalar arası verimli yedeklemeler ve hızlı kurtarmayla verileri felaketlere
-  karşı koruyun.
+description: "Yedeklemeleriniz makinesi çöktüğü anda çöker. Rediacc anlık görüntüleri ayrı bir makineye çoğaltarak, tek bir disk arızasının tüm verileri ele geçirmesini engeller."
 category: Use Cases
 order: 5
 language: tr
-sourceHash: "592ecfdf6477dbba"
+sourceHash: "39dbeac1faec121c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Felaket Geldiğinde Verileriniz Hayatta Kalacak mı? Rediacc ile Her Zaman İşe Yarar.**
 
-**Not:** Bu, Rediacc'ın bu sorunu nasıl çözebileceğini gösteren bir **kullanım örneğidir**. Bir startup olarak bu senaryolar, tamamlanmış vaka çalışmalarından ziyade potansiyel uygulamaları temsil ediyor.
+**Not:** Bu, Rediacc'ın bu sorunu nasıl çözebileceğini gösteren bir **kullanım örneğidir**. Bu senaryolar tamamlanmış vaka çalışmalarından ziyade potansiyel uygulamalardır.
 
-**Kriz Senaryosu:** Bir müşteri aramasının ardından hizmetlerin **disk arızası** nedeniyle çalışmadığı tespit edildi. Uzak yedekleme sunucusunun son yedeği **3 haftalık** idi ve bu da önemli miktarda veri kaybına yol açıyordu.
+**Kriz Senaryosu:** Müşteri çağrısı sorunu açığa çıkarır: **disk arızası**. Uzak yedekleme sunucusunun en son yedeği **3 hafta öncesinden**. Yani, haftalarca veri kaybedilmiş.
 
 ## Sorun
 

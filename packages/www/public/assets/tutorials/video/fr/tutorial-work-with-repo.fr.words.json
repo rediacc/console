@@ -1,1 +1,727 @@
-{"version":1,"cues":[{"start":1,"end":2.263,"text":"Très bien !","words":[{"start":1,"end":1.421,"char":[0,4]},{"start":1.421,"end":1.842,"char":[5,9]},{"start":1.842,"end":2.263,"char":[10,11]}]},{"start":2.263,"end":3.526,"text":"Votre application tourne,","words":[{"start":2.263,"end":2.684,"char":[0,5]},{"start":2.684,"end":3.105,"char":[6,17]},{"start":3.105,"end":3.526,"char":[18,25]}]},{"start":3.526,"end":5.631,"text":"alors travaillons réellement avec elle.","words":[{"start":3.526,"end":3.947,"char":[0,5]},{"start":3.947,"end":4.368,"char":[6,17]},{"start":4.368,"end":4.789,"char":[18,28]},{"start":4.789,"end":5.21,"char":[29,33]},{"start":5.21,"end":5.631,"char":[34,39]}]},{"start":5.631,"end":8.158,"text":"Trois commandes couvrent la boucle quotidienne.","words":[{"start":5.631,"end":6.052,"char":[0,5]},{"start":6.052,"end":6.473,"char":[6,15]},{"start":6.473,"end":6.894,"char":[16,24]},{"start":6.894,"end":7.315,"char":[25,27]},{"start":7.315,"end":7.737,"char":[28,34]},{"start":7.737,"end":8.158,"char":[35,47]}]},{"start":8.928,"end":11.633,"text":"Tunnel ouvre votre application dans","words":[{"start":8.928,"end":9.469,"char":[0,6]},{"start":9.469,"end":10.01,"char":[7,12]},{"start":10.01,"end":10.551,"char":[13,18]},{"start":10.551,"end":11.092,"char":[19,30]},{"start":11.092,"end":11.633,"char":[31,35]}]},{"start":11.633,"end":12.715,"text":"un navigateur,","words":[{"start":11.633,"end":12.174,"char":[0,2]},{"start":12.174,"end":12.715,"char":[3,14]}]},{"start":12.715,"end":15.42,"text":"term exécute des commandes à","words":[{"start":12.715,"end":13.256,"char":[0,4]},{"start":13.256,"end":13.797,"char":[5,12]},{"start":13.797,"end":14.338,"char":[13,16]},{"start":14.338,"end":14.879,"char":[17,26]},{"start":14.879,"end":15.42,"char":[27,28]}]},{"start":15.42,"end":17.043,"text":"l'intérieur du sandbox,","words":[{"start":15.42,"end":15.961,"char":[0,11]},{"start":15.961,"end":16.502,"char":[12,14]},{"start":16.502,"end":17.043,"char":[15,23]}]},{"start":17.043,"end":19.748,"text":"et sync déplace les fichiers","words":[{"start":17.043,"end":17.584,"char":[0,2]},{"start":17.584,"end":18.125,"char":[3,7]},{"start":18.125,"end":18.666,"char":[8,15]},{"start":18.666,"end":19.207,"char":[16,19]},{"start":19.207,"end":19.748,"char":[20,28]}]},{"start":19.748,"end":22.453,"text":"dans un sens et dans","words":[{"start":19.748,"end":20.289,"char":[0,4]},{"start":20.289,"end":20.83,"char":[5,7]},{"start":20.83,"end":21.371,"char":[8,12]},{"start":21.371,"end":21.912,"char":[13,15]},{"start":21.912,"end":22.453,"char":[16,20]}]},{"start":22.453,"end":22.994,"text":"l'autre.","words":[{"start":22.453,"end":22.994,"char":[0,8]}]},{"start":22.994,"end":25.699,"text":"C'est tout le workflow quotidien.","words":[{"start":22.994,"end":23.535,"char":[0,5]},{"start":23.535,"end":24.076,"char":[6,10]},{"start":24.076,"end":24.617,"char":[11,13]},{"start":24.617,"end":25.158,"char":[14,22]},{"start":25.158,"end":25.699,"char":[23,33]}]},{"start":28.969,"end":29.414,"text":"D'abord,","words":[{"start":28.969,"end":29.414,"char":[0,8]}]},{"start":29.414,"end":30.748,"text":"la commande tunnel.","words":[{"start":29.414,"end":29.859,"char":[0,2]},{"start":29.859,"end":30.304,"char":[3,11]},{"start":30.304,"end":30.748,"char":[12,19]}]},{"start":30.748,"end":32.973,"text":"L'application tourne sur le serveur,","words":[{"start":30.748,"end":31.193,"char":[0,13]},{"start":31.193,"end":31.638,"char":[14,20]},{"start":31.638,"end":32.083,"char":[21,24]},{"start":32.083,"end":32.528,"char":[25,27]},{"start":32.528,"end":32.973,"char":[28,36]}]},{"start":32.973,"end":34.752,"text":"pas sur votre ordinateur.","words":[{"start":32.973,"end":33.418,"char":[0,3]},{"start":33.418,"end":33.863,"char":[4,7]},{"start":33.863,"end":34.307,"char":[8,13]},{"start":34.307,"end":34.752,"char":[14,25]}]},{"start":34.752,"end":37.422,"text":"La commande tunnel transfère le port","words":[{"start":34.752,"end":35.197,"char":[0,2]},{"start":35.197,"end":35.642,"char":[3,11]},{"start":35.642,"end":36.087,"char":[12,18]},{"start":36.087,"end":36.532,"char":[19,28]},{"start":36.532,"end":36.977,"char":[29,31]},{"start":36.977,"end":37.422,"char":[32,36]}]},{"start":37.422,"end":40.091,"text":"d'un conteneur via SSH pour que","words":[{"start":37.422,"end":37.866,"char":[0,4]},{"start":37.866,"end":38.311,"char":[5,14]},{"start":38.311,"end":38.756,"char":[15,18]},{"start":38.756,"end":39.201,"char":[19,22]},{"start":39.201,"end":39.646,"char":[23,27]},{"start":39.646,"end":40.091,"char":[28,31]}]},{"start":40.091,"end":42.76,"text":"vous puissiez l'ouvrir à localhost dans","words":[{"start":40.091,"end":40.536,"char":[0,4]},{"start":40.536,"end":40.981,"char":[5,13]},{"start":40.981,"end":41.425,"char":[14,22]},{"start":41.425,"end":41.87,"char":[23,24]},{"start":41.87,"end":42.315,"char":[25,34]},{"start":42.315,"end":42.76,"char":[35,39]}]},{"start":42.76,"end":43.65,"text":"votre navigateur.","words":[{"start":42.76,"end":43.205,"char":[0,5]},{"start":43.205,"end":43.65,"char":[6,17]}]},{"start":44.45,"end":45.619,"text":"Port transféré.","words":[{"start":44.45,"end":45.034,"char":[0,4]},{"start":45.034,"end":45.619,"char":[5,15]}]},{"start":45.619,"end":48.541,"text":"L'application est maintenant accessible à","words":[{"start":45.619,"end":46.203,"char":[0,13]},{"start":46.203,"end":46.788,"char":[14,17]},{"start":46.788,"end":47.372,"char":[18,28]},{"start":47.372,"end":47.957,"char":[29,39]},{"start":47.957,"end":48.541,"char":[40,41]}]},{"start":48.541,"end":49.126,"text":"localhost.","words":[{"start":48.541,"end":49.126,"char":[0,10]}]},{"start":49.936,"end":52.083,"text":"Le tunnel étant actif,","words":[{"start":49.936,"end":50.473,"char":[0,2]},{"start":50.473,"end":51.01,"char":[3,9]},{"start":51.01,"end":51.547,"char":[10,15]},{"start":51.547,"end":52.083,"char":[16,22]}]},{"start":52.083,"end":54.768,"text":"l'application s'ouvre directement dans votre","words":[{"start":52.083,"end":52.62,"char":[0,13]},{"start":52.62,"end":53.157,"char":[14,21]},{"start":53.157,"end":53.694,"char":[22,33]},{"start":53.694,"end":54.231,"char":[34,38]},{"start":54.231,"end":54.768,"char":[39,44]}]},{"start":54.768,"end":55.305,"text":"navigateur.","words":[{"start":54.768,"end":55.305,"char":[0,11]}]},{"start":55.305,"end":56.915,"text":"Dans cette démo,","words":[{"start":55.305,"end":55.841,"char":[0,4]},{"start":55.841,"end":56.378,"char":[5,10]},{"start":56.378,"end":56.915,"char":[11,16]}]},{"start":56.915,"end":58.526,"text":"nous chargeons rediacc.com,","words":[{"start":56.915,"end":57.452,"char":[0,4]},{"start":57.452,"end":57.989,"char":[5,14]},{"start":57.989,"end":58.526,"char":[15,27]}]},{"start":58.526,"end":61.21,"text":"exactement comme vous accéderiez à","words":[{"start":58.526,"end":59.063,"char":[0,10]},{"start":59.063,"end":59.6,"char":[11,16]},{"start":59.6,"end":60.136,"char":[17,21]},{"start":60.136,"end":60.673,"char":[22,32]},{"start":60.673,"end":61.21,"char":[33,34]}]},{"start":61.21,"end":63.894,"text":"votre propre application servie directement","words":[{"start":61.21,"end":61.747,"char":[0,5]},{"start":61.747,"end":62.284,"char":[6,12]},{"start":62.284,"end":62.821,"char":[13,24]},{"start":62.821,"end":63.358,"char":[25,31]},{"start":63.358,"end":63.894,"char":[32,43]}]},{"start":63.894,"end":65.505,"text":"depuis le conteneur.","words":[{"start":63.894,"end":64.431,"char":[0,6]},{"start":64.431,"end":64.968,"char":[7,9]},{"start":64.968,"end":65.505,"char":[10,20]}]},{"start":65.969,"end":66.366,"text":"Ensuite,","words":[{"start":65.969,"end":66.366,"char":[0,8]}]},{"start":66.366,"end":67.556,"text":"la commande term.","words":[{"start":66.366,"end":66.763,"char":[0,2]},{"start":66.763,"end":67.159,"char":[3,11]},{"start":67.159,"end":67.556,"char":[12,17]}]},{"start":67.556,"end":70.332,"text":"La commande de connexion terminal vous plonge","words":[{"start":67.556,"end":67.953,"char":[0,2]},{"start":67.953,"end":68.349,"char":[3,11]},{"start":68.349,"end":68.746,"char":[12,14]},{"start":68.746,"end":69.143,"char":[15,24]},{"start":69.143,"end":69.539,"char":[25,33]},{"start":69.539,"end":69.936,"char":[34,38]},{"start":69.936,"end":70.332,"char":[39,45]}]},{"start":70.332,"end":72.316,"text":"dans le sandbox du dépôt,","words":[{"start":70.332,"end":70.729,"char":[0,4]},{"start":70.729,"end":71.126,"char":[5,7]},{"start":71.126,"end":71.522,"char":[8,15]},{"start":71.522,"end":71.919,"char":[16,18]},{"start":71.919,"end":72.316,"char":[19,25]}]},{"start":72.316,"end":75.092,"text":"la même vue isolée que VS Code.","words":[{"start":72.316,"end":72.712,"char":[0,2]},{"start":72.712,"end":73.109,"char":[3,7]},{"start":73.109,"end":73.506,"char":[8,11]},{"start":73.506,"end":73.902,"char":[12,18]},{"start":73.902,"end":74.299,"char":[19,22]},{"start":74.299,"end":74.696,"char":[23,25]},{"start":74.696,"end":75.092,"char":[26,31]}]},{"start":75.092,"end":77.869,"text":"Exécutez n'importe quelle commande contre le daemon","words":[{"start":75.092,"end":75.489,"char":[0,8]},{"start":75.489,"end":75.886,"char":[9,18]},{"start":75.886,"end":76.282,"char":[19,25]},{"start":76.282,"end":76.679,"char":[26,34]},{"start":76.679,"end":77.076,"char":[35,41]},{"start":77.076,"end":77.472,"char":[42,44]},{"start":77.472,"end":77.869,"char":[45,51]}]},{"start":77.869,"end":80.645,"text":"Docker de ce dépôt sans quitter votre","words":[{"start":77.869,"end":78.265,"char":[0,6]},{"start":78.265,"end":78.662,"char":[7,9]},{"start":78.662,"end":79.059,"char":[10,12]},{"start":79.059,"end":79.455,"char":[13,18]},{"start":79.455,"end":79.852,"char":[19,23]},{"start":79.852,"end":80.249,"char":[24,31]},{"start":80.249,"end":80.645,"char":[32,37]}]},{"start":80.645,"end":81.042,"text":"terminal.","words":[{"start":80.645,"end":81.042,"char":[0,9]}]},{"start":82.292,"end":84.768,"text":"À l'intérieur du sandbox du repo.","words":[{"start":82.292,"end":82.705,"char":[0,1]},{"start":82.705,"end":83.117,"char":[2,13]},{"start":83.117,"end":83.53,"char":[14,16]},{"start":83.53,"end":83.943,"char":[17,24]},{"start":83.943,"end":84.356,"char":[25,27]},{"start":84.356,"end":84.768,"char":[28,33]}]},{"start":84.768,"end":87.658,"text":"Lancez n'importe quoi comme si vous étiez","words":[{"start":84.768,"end":85.181,"char":[0,6]},{"start":85.181,"end":85.594,"char":[7,16]},{"start":85.594,"end":86.007,"char":[17,21]},{"start":86.007,"end":86.419,"char":[22,27]},{"start":86.419,"end":86.832,"char":[28,30]},{"start":86.832,"end":87.245,"char":[31,35]},{"start":87.245,"end":87.658,"char":[36,41]}]},{"start":87.658,"end":88.483,"text":"en SSH.","words":[{"start":87.658,"end":88.07,"char":[0,2]},{"start":88.07,"end":88.483,"char":[3,7]}]},{"start":91.818,"end":94.336,"text":"Avant de pousser des fichiers,","words":[{"start":91.818,"end":92.322,"char":[0,5]},{"start":92.322,"end":92.825,"char":[6,8]},{"start":92.825,"end":93.329,"char":[9,16]},{"start":93.329,"end":93.832,"char":[17,20]},{"start":93.832,"end":94.336,"char":[21,30]}]},{"start":94.336,"end":96.854,"text":"voyons d'abord la prévisualisation avec","words":[{"start":94.336,"end":94.84,"char":[0,6]},{"start":94.84,"end":95.343,"char":[7,14]},{"start":95.343,"end":95.847,"char":[15,17]},{"start":95.847,"end":96.35,"char":[18,34]},{"start":96.35,"end":96.854,"char":[35,39]}]},{"start":96.854,"end":98.364,"text":"le flag dry-run.","words":[{"start":96.854,"end":97.357,"char":[0,2]},{"start":97.357,"end":97.861,"char":[3,7]},{"start":97.861,"end":98.364,"char":[8,16]}]},{"start":98.364,"end":100.882,"text":"Elle montre exactement ce qui","words":[{"start":98.364,"end":98.868,"char":[0,4]},{"start":98.868,"end":99.371,"char":[5,11]},{"start":99.371,"end":99.875,"char":[12,22]},{"start":99.875,"end":100.378,"char":[23,25]},{"start":100.378,"end":100.882,"char":[26,29]}]},{"start":100.882,"end":102.896,"text":"changerait sans rien copier.","words":[{"start":100.882,"end":101.385,"char":[0,10]},{"start":101.385,"end":101.889,"char":[11,15]},{"start":101.889,"end":102.393,"char":[16,20]},{"start":102.393,"end":102.896,"char":[21,28]}]},{"start":102.896,"end":105.414,"text":"Prévisualisez toujours quand vous n'êtes","words":[{"start":102.896,"end":103.4,"char":[0,13]},{"start":103.4,"end":103.903,"char":[14,22]},{"start":103.903,"end":104.407,"char":[23,28]},{"start":104.407,"end":104.91,"char":[29,33]},{"start":104.91,"end":105.414,"char":[34,40]}]},{"start":105.414,"end":106.421,"text":"pas sûr.","words":[{"start":105.414,"end":105.917,"char":[0,3]},{"start":105.917,"end":106.421,"char":[4,8]}]},{"start":108.421,"end":109.453,"text":"Prévisualisation uniquement.","words":[{"start":108.421,"end":108.937,"char":[0,16]},{"start":108.937,"end":109.453,"char":[17,28]}]},{"start":109.453,"end":112.032,"text":"Aucun fichier n'a encore été","words":[{"start":109.453,"end":109.969,"char":[0,5]},{"start":109.969,"end":110.484,"char":[6,13]},{"start":110.484,"end":111,"char":[14,17]},{"start":111,"end":111.516,"char":[18,24]},{"start":111.516,"end":112.032,"char":[25,28]}]},{"start":112.032,"end":112.548,"text":"déplacé.","words":[{"start":112.032,"end":112.548,"char":[0,8]}]},{"start":115.861,"end":118.639,"text":"Maintenant nous lançons le vrai téléversement.","words":[{"start":115.861,"end":116.324,"char":[0,10]},{"start":116.324,"end":116.787,"char":[11,15]},{"start":116.787,"end":117.25,"char":[16,23]},{"start":117.25,"end":117.713,"char":[24,26]},{"start":117.713,"end":118.176,"char":[27,31]},{"start":118.176,"end":118.639,"char":[32,46]}]},{"start":118.639,"end":121.417,"text":"La commande de synchronisation déplace les","words":[{"start":118.639,"end":119.102,"char":[0,2]},{"start":119.102,"end":119.565,"char":[3,11]},{"start":119.565,"end":120.028,"char":[12,14]},{"start":120.028,"end":120.491,"char":[15,30]},{"start":120.491,"end":120.954,"char":[31,38]},{"start":120.954,"end":121.417,"char":[39,42]}]},{"start":121.417,"end":124.194,"text":"fichiers de votre ordinateur vers le","words":[{"start":121.417,"end":121.88,"char":[0,8]},{"start":121.88,"end":122.343,"char":[9,11]},{"start":122.343,"end":122.806,"char":[12,17]},{"start":122.806,"end":123.269,"char":[18,28]},{"start":123.269,"end":123.731,"char":[29,33]},{"start":123.731,"end":124.194,"char":[34,36]}]},{"start":124.194,"end":125.583,"text":"dépôt via SSH,","words":[{"start":124.194,"end":124.657,"char":[0,5]},{"start":124.657,"end":125.12,"char":[6,9]},{"start":125.12,"end":125.583,"char":[10,14]}]},{"start":125.583,"end":128.361,"text":"avec la compression delta de rsync.","words":[{"start":125.583,"end":126.046,"char":[0,4]},{"start":126.046,"end":126.509,"char":[5,7]},{"start":126.509,"end":126.972,"char":[8,19]},{"start":126.972,"end":127.435,"char":[20,25]},{"start":127.435,"end":127.898,"char":[26,28]},{"start":127.898,"end":128.361,"char":[29,35]}]},{"start":128.361,"end":128.824,"text":"Tunnel,","words":[{"start":128.361,"end":128.824,"char":[0,7]}]},{"start":128.824,"end":129.287,"text":"term,","words":[{"start":128.824,"end":129.287,"char":[0,5]}]},{"start":129.287,"end":129.75,"text":"sync,","words":[{"start":129.287,"end":129.75,"char":[0,5]}]},{"start":129.75,"end":132.527,"text":"trois commandes couvrent la boucle quotidienne.","words":[{"start":129.75,"end":130.213,"char":[0,5]},{"start":130.213,"end":130.676,"char":[6,15]},{"start":130.676,"end":131.139,"char":[16,24]},{"start":131.139,"end":131.602,"char":[25,27]},{"start":131.602,"end":132.065,"char":[28,34]},{"start":132.065,"end":132.527,"char":[35,47]}]},{"start":134.027,"end":134.927,"text":"Fichiers téléversés.","words":[{"start":134.027,"end":134.477,"char":[0,8]},{"start":134.477,"end":134.927,"char":[9,20]}]},{"start":134.927,"end":137.627,"text":"La compression delta gère les gros","words":[{"start":134.927,"end":135.377,"char":[0,2]},{"start":135.377,"end":135.827,"char":[3,14]},{"start":135.827,"end":136.277,"char":[15,20]},{"start":136.277,"end":136.727,"char":[21,25]},{"start":136.727,"end":137.177,"char":[26,29]},{"start":137.177,"end":137.627,"char":[30,34]}]},{"start":137.627,"end":138.076,"text":"arbres.","words":[{"start":137.627,"end":138.076,"char":[0,7]}]},{"start":138.867,"end":141.575,"text":"Et voilà les trois commandes","words":[{"start":138.867,"end":139.409,"char":[0,2]},{"start":139.409,"end":139.951,"char":[3,8]},{"start":139.951,"end":140.492,"char":[9,12]},{"start":140.492,"end":141.034,"char":[13,18]},{"start":141.034,"end":141.575,"char":[19,28]}]},{"start":141.575,"end":142.659,"text":"du quotidien.","words":[{"start":141.575,"end":142.117,"char":[0,2]},{"start":142.117,"end":142.659,"char":[3,13]}]},{"start":142.659,"end":145.367,"text":"On se retrouve dans la","words":[{"start":142.659,"end":143.2,"char":[0,2]},{"start":143.2,"end":143.742,"char":[3,5]},{"start":143.742,"end":144.283,"char":[6,14]},{"start":144.283,"end":144.825,"char":[15,19]},{"start":144.825,"end":145.367,"char":[20,22]}]},{"start":145.367,"end":146.991,"text":"prochaine vidéo !","words":[{"start":145.367,"end":145.908,"char":[0,9]},{"start":145.908,"end":146.45,"char":[10,15]},{"start":146.45,"end":146.991,"char":[16,17]}]}]}
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.263,
+      "text": "Très bien !",
+      "words": [
+        { "start": 1, "end": 1.421, "char": [0, 4] },
+        { "start": 1.421, "end": 1.842, "char": [5, 9] },
+        { "start": 1.842, "end": 2.263, "char": [10, 11] }
+      ]
+    },
+    {
+      "start": 2.263,
+      "end": 3.526,
+      "text": "Votre application tourne,",
+      "words": [
+        { "start": 2.263, "end": 2.684, "char": [0, 5] },
+        { "start": 2.684, "end": 3.105, "char": [6, 17] },
+        { "start": 3.105, "end": 3.526, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 3.526,
+      "end": 5.631,
+      "text": "alors travaillons réellement avec elle.",
+      "words": [
+        { "start": 3.526, "end": 3.947, "char": [0, 5] },
+        { "start": 3.947, "end": 4.368, "char": [6, 17] },
+        { "start": 4.368, "end": 4.789, "char": [18, 28] },
+        { "start": 4.789, "end": 5.21, "char": [29, 33] },
+        { "start": 5.21, "end": 5.631, "char": [34, 39] }
+      ]
+    },
+    {
+      "start": 5.631,
+      "end": 8.158,
+      "text": "Trois commandes couvrent la boucle quotidienne.",
+      "words": [
+        { "start": 5.631, "end": 6.052, "char": [0, 5] },
+        { "start": 6.052, "end": 6.473, "char": [6, 15] },
+        { "start": 6.473, "end": 6.894, "char": [16, 24] },
+        { "start": 6.894, "end": 7.315, "char": [25, 27] },
+        { "start": 7.315, "end": 7.737, "char": [28, 34] },
+        { "start": 7.737, "end": 8.158, "char": [35, 47] }
+      ]
+    },
+    {
+      "start": 8.928,
+      "end": 11.633,
+      "text": "Tunnel ouvre votre application dans",
+      "words": [
+        { "start": 8.928, "end": 9.469, "char": [0, 6] },
+        { "start": 9.469, "end": 10.01, "char": [7, 12] },
+        { "start": 10.01, "end": 10.551, "char": [13, 18] },
+        { "start": 10.551, "end": 11.092, "char": [19, 30] },
+        { "start": 11.092, "end": 11.633, "char": [31, 35] }
+      ]
+    },
+    {
+      "start": 11.633,
+      "end": 12.715,
+      "text": "un navigateur,",
+      "words": [
+        { "start": 11.633, "end": 12.174, "char": [0, 2] },
+        { "start": 12.174, "end": 12.715, "char": [3, 14] }
+      ]
+    },
+    {
+      "start": 12.715,
+      "end": 15.42,
+      "text": "term exécute des commandes à",
+      "words": [
+        { "start": 12.715, "end": 13.256, "char": [0, 4] },
+        { "start": 13.256, "end": 13.797, "char": [5, 12] },
+        { "start": 13.797, "end": 14.338, "char": [13, 16] },
+        { "start": 14.338, "end": 14.879, "char": [17, 26] },
+        { "start": 14.879, "end": 15.42, "char": [27, 28] }
+      ]
+    },
+    {
+      "start": 15.42,
+      "end": 17.043,
+      "text": "l'intérieur du sandbox,",
+      "words": [
+        { "start": 15.42, "end": 15.961, "char": [0, 11] },
+        { "start": 15.961, "end": 16.502, "char": [12, 14] },
+        { "start": 16.502, "end": 17.043, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 17.043,
+      "end": 19.748,
+      "text": "et sync déplace les fichiers",
+      "words": [
+        { "start": 17.043, "end": 17.584, "char": [0, 2] },
+        { "start": 17.584, "end": 18.125, "char": [3, 7] },
+        { "start": 18.125, "end": 18.666, "char": [8, 15] },
+        { "start": 18.666, "end": 19.207, "char": [16, 19] },
+        { "start": 19.207, "end": 19.748, "char": [20, 28] }
+      ]
+    },
+    {
+      "start": 19.748,
+      "end": 22.453,
+      "text": "dans un sens et dans",
+      "words": [
+        { "start": 19.748, "end": 20.289, "char": [0, 4] },
+        { "start": 20.289, "end": 20.83, "char": [5, 7] },
+        { "start": 20.83, "end": 21.371, "char": [8, 12] },
+        { "start": 21.371, "end": 21.912, "char": [13, 15] },
+        { "start": 21.912, "end": 22.453, "char": [16, 20] }
+      ]
+    },
+    {
+      "start": 22.453,
+      "end": 22.994,
+      "text": "l'autre.",
+      "words": [{ "start": 22.453, "end": 22.994, "char": [0, 8] }]
+    },
+    {
+      "start": 22.994,
+      "end": 25.699,
+      "text": "C'est tout le workflow quotidien.",
+      "words": [
+        { "start": 22.994, "end": 23.535, "char": [0, 5] },
+        { "start": 23.535, "end": 24.076, "char": [6, 10] },
+        { "start": 24.076, "end": 24.617, "char": [11, 13] },
+        { "start": 24.617, "end": 25.158, "char": [14, 22] },
+        { "start": 25.158, "end": 25.699, "char": [23, 33] }
+      ]
+    },
+    {
+      "start": 28.969,
+      "end": 29.414,
+      "text": "D'abord,",
+      "words": [{ "start": 28.969, "end": 29.414, "char": [0, 8] }]
+    },
+    {
+      "start": 29.414,
+      "end": 30.748,
+      "text": "la commande tunnel.",
+      "words": [
+        { "start": 29.414, "end": 29.859, "char": [0, 2] },
+        { "start": 29.859, "end": 30.304, "char": [3, 11] },
+        { "start": 30.304, "end": 30.748, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 30.748,
+      "end": 32.973,
+      "text": "L'application tourne sur le serveur,",
+      "words": [
+        { "start": 30.748, "end": 31.193, "char": [0, 13] },
+        { "start": 31.193, "end": 31.638, "char": [14, 20] },
+        { "start": 31.638, "end": 32.083, "char": [21, 24] },
+        { "start": 32.083, "end": 32.528, "char": [25, 27] },
+        { "start": 32.528, "end": 32.973, "char": [28, 36] }
+      ]
+    },
+    {
+      "start": 32.973,
+      "end": 34.752,
+      "text": "pas sur votre ordinateur.",
+      "words": [
+        { "start": 32.973, "end": 33.418, "char": [0, 3] },
+        { "start": 33.418, "end": 33.863, "char": [4, 7] },
+        { "start": 33.863, "end": 34.307, "char": [8, 13] },
+        { "start": 34.307, "end": 34.752, "char": [14, 25] }
+      ]
+    },
+    {
+      "start": 34.752,
+      "end": 37.422,
+      "text": "La commande tunnel transfère le port",
+      "words": [
+        { "start": 34.752, "end": 35.197, "char": [0, 2] },
+        { "start": 35.197, "end": 35.642, "char": [3, 11] },
+        { "start": 35.642, "end": 36.087, "char": [12, 18] },
+        { "start": 36.087, "end": 36.532, "char": [19, 28] },
+        { "start": 36.532, "end": 36.977, "char": [29, 31] },
+        { "start": 36.977, "end": 37.422, "char": [32, 36] }
+      ]
+    },
+    {
+      "start": 37.422,
+      "end": 40.091,
+      "text": "d'un conteneur via SSH pour que",
+      "words": [
+        { "start": 37.422, "end": 37.866, "char": [0, 4] },
+        { "start": 37.866, "end": 38.311, "char": [5, 14] },
+        { "start": 38.311, "end": 38.756, "char": [15, 18] },
+        { "start": 38.756, "end": 39.201, "char": [19, 22] },
+        { "start": 39.201, "end": 39.646, "char": [23, 27] },
+        { "start": 39.646, "end": 40.091, "char": [28, 31] }
+      ]
+    },
+    {
+      "start": 40.091,
+      "end": 42.76,
+      "text": "vous puissiez l'ouvrir à localhost dans",
+      "words": [
+        { "start": 40.091, "end": 40.536, "char": [0, 4] },
+        { "start": 40.536, "end": 40.981, "char": [5, 13] },
+        { "start": 40.981, "end": 41.425, "char": [14, 22] },
+        { "start": 41.425, "end": 41.87, "char": [23, 24] },
+        { "start": 41.87, "end": 42.315, "char": [25, 34] },
+        { "start": 42.315, "end": 42.76, "char": [35, 39] }
+      ]
+    },
+    {
+      "start": 42.76,
+      "end": 43.65,
+      "text": "votre navigateur.",
+      "words": [
+        { "start": 42.76, "end": 43.205, "char": [0, 5] },
+        { "start": 43.205, "end": 43.65, "char": [6, 17] }
+      ]
+    },
+    {
+      "start": 44.45,
+      "end": 45.619,
+      "text": "Port transféré.",
+      "words": [
+        { "start": 44.45, "end": 45.034, "char": [0, 4] },
+        { "start": 45.034, "end": 45.619, "char": [5, 15] }
+      ]
+    },
+    {
+      "start": 45.619,
+      "end": 48.541,
+      "text": "L'application est maintenant accessible à",
+      "words": [
+        { "start": 45.619, "end": 46.203, "char": [0, 13] },
+        { "start": 46.203, "end": 46.788, "char": [14, 17] },
+        { "start": 46.788, "end": 47.372, "char": [18, 28] },
+        { "start": 47.372, "end": 47.957, "char": [29, 39] },
+        { "start": 47.957, "end": 48.541, "char": [40, 41] }
+      ]
+    },
+    {
+      "start": 48.541,
+      "end": 49.126,
+      "text": "localhost.",
+      "words": [{ "start": 48.541, "end": 49.126, "char": [0, 10] }]
+    },
+    {
+      "start": 49.936,
+      "end": 52.083,
+      "text": "Le tunnel étant actif,",
+      "words": [
+        { "start": 49.936, "end": 50.473, "char": [0, 2] },
+        { "start": 50.473, "end": 51.01, "char": [3, 9] },
+        { "start": 51.01, "end": 51.547, "char": [10, 15] },
+        { "start": 51.547, "end": 52.083, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 52.083,
+      "end": 54.768,
+      "text": "l'application s'ouvre directement dans votre",
+      "words": [
+        { "start": 52.083, "end": 52.62, "char": [0, 13] },
+        { "start": 52.62, "end": 53.157, "char": [14, 21] },
+        { "start": 53.157, "end": 53.694, "char": [22, 33] },
+        { "start": 53.694, "end": 54.231, "char": [34, 38] },
+        { "start": 54.231, "end": 54.768, "char": [39, 44] }
+      ]
+    },
+    {
+      "start": 54.768,
+      "end": 55.305,
+      "text": "navigateur.",
+      "words": [{ "start": 54.768, "end": 55.305, "char": [0, 11] }]
+    },
+    {
+      "start": 55.305,
+      "end": 56.915,
+      "text": "Dans cette démo,",
+      "words": [
+        { "start": 55.305, "end": 55.841, "char": [0, 4] },
+        { "start": 55.841, "end": 56.378, "char": [5, 10] },
+        { "start": 56.378, "end": 56.915, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 56.915,
+      "end": 58.526,
+      "text": "nous chargeons rediacc.com,",
+      "words": [
+        { "start": 56.915, "end": 57.452, "char": [0, 4] },
+        { "start": 57.452, "end": 57.989, "char": [5, 14] },
+        { "start": 57.989, "end": 58.526, "char": [15, 27] }
+      ]
+    },
+    {
+      "start": 58.526,
+      "end": 61.21,
+      "text": "exactement comme vous accéderiez à",
+      "words": [
+        { "start": 58.526, "end": 59.063, "char": [0, 10] },
+        { "start": 59.063, "end": 59.6, "char": [11, 16] },
+        { "start": 59.6, "end": 60.136, "char": [17, 21] },
+        { "start": 60.136, "end": 60.673, "char": [22, 32] },
+        { "start": 60.673, "end": 61.21, "char": [33, 34] }
+      ]
+    },
+    {
+      "start": 61.21,
+      "end": 63.894,
+      "text": "votre propre application servie directement",
+      "words": [
+        { "start": 61.21, "end": 61.747, "char": [0, 5] },
+        { "start": 61.747, "end": 62.284, "char": [6, 12] },
+        { "start": 62.284, "end": 62.821, "char": [13, 24] },
+        { "start": 62.821, "end": 63.358, "char": [25, 31] },
+        { "start": 63.358, "end": 63.894, "char": [32, 43] }
+      ]
+    },
+    {
+      "start": 63.894,
+      "end": 65.505,
+      "text": "depuis le conteneur.",
+      "words": [
+        { "start": 63.894, "end": 64.431, "char": [0, 6] },
+        { "start": 64.431, "end": 64.968, "char": [7, 9] },
+        { "start": 64.968, "end": 65.505, "char": [10, 20] }
+      ]
+    },
+    {
+      "start": 65.969,
+      "end": 66.366,
+      "text": "Ensuite,",
+      "words": [{ "start": 65.969, "end": 66.366, "char": [0, 8] }]
+    },
+    {
+      "start": 66.366,
+      "end": 67.556,
+      "text": "la commande term.",
+      "words": [
+        { "start": 66.366, "end": 66.763, "char": [0, 2] },
+        { "start": 66.763, "end": 67.159, "char": [3, 11] },
+        { "start": 67.159, "end": 67.556, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 67.556,
+      "end": 70.332,
+      "text": "La commande de connexion terminal vous plonge",
+      "words": [
+        { "start": 67.556, "end": 67.953, "char": [0, 2] },
+        { "start": 67.953, "end": 68.349, "char": [3, 11] },
+        { "start": 68.349, "end": 68.746, "char": [12, 14] },
+        { "start": 68.746, "end": 69.143, "char": [15, 24] },
+        { "start": 69.143, "end": 69.539, "char": [25, 33] },
+        { "start": 69.539, "end": 69.936, "char": [34, 38] },
+        { "start": 69.936, "end": 70.332, "char": [39, 45] }
+      ]
+    },
+    {
+      "start": 70.332,
+      "end": 72.316,
+      "text": "dans le sandbox du dépôt,",
+      "words": [
+        { "start": 70.332, "end": 70.729, "char": [0, 4] },
+        { "start": 70.729, "end": 71.126, "char": [5, 7] },
+        { "start": 71.126, "end": 71.522, "char": [8, 15] },
+        { "start": 71.522, "end": 71.919, "char": [16, 18] },
+        { "start": 71.919, "end": 72.316, "char": [19, 25] }
+      ]
+    },
+    {
+      "start": 72.316,
+      "end": 75.092,
+      "text": "la même vue isolée que VS Code.",
+      "words": [
+        { "start": 72.316, "end": 72.712, "char": [0, 2] },
+        { "start": 72.712, "end": 73.109, "char": [3, 7] },
+        { "start": 73.109, "end": 73.506, "char": [8, 11] },
+        { "start": 73.506, "end": 73.902, "char": [12, 18] },
+        { "start": 73.902, "end": 74.299, "char": [19, 22] },
+        { "start": 74.299, "end": 74.696, "char": [23, 25] },
+        { "start": 74.696, "end": 75.092, "char": [26, 31] }
+      ]
+    },
+    {
+      "start": 75.092,
+      "end": 77.869,
+      "text": "Exécutez n'importe quelle commande contre le daemon",
+      "words": [
+        { "start": 75.092, "end": 75.489, "char": [0, 8] },
+        { "start": 75.489, "end": 75.886, "char": [9, 18] },
+        { "start": 75.886, "end": 76.282, "char": [19, 25] },
+        { "start": 76.282, "end": 76.679, "char": [26, 34] },
+        { "start": 76.679, "end": 77.076, "char": [35, 41] },
+        { "start": 77.076, "end": 77.472, "char": [42, 44] },
+        { "start": 77.472, "end": 77.869, "char": [45, 51] }
+      ]
+    },
+    {
+      "start": 77.869,
+      "end": 80.645,
+      "text": "Docker de ce dépôt sans quitter votre",
+      "words": [
+        { "start": 77.869, "end": 78.265, "char": [0, 6] },
+        { "start": 78.265, "end": 78.662, "char": [7, 9] },
+        { "start": 78.662, "end": 79.059, "char": [10, 12] },
+        { "start": 79.059, "end": 79.455, "char": [13, 18] },
+        { "start": 79.455, "end": 79.852, "char": [19, 23] },
+        { "start": 79.852, "end": 80.249, "char": [24, 31] },
+        { "start": 80.249, "end": 80.645, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 80.645,
+      "end": 81.042,
+      "text": "terminal.",
+      "words": [{ "start": 80.645, "end": 81.042, "char": [0, 9] }]
+    },
+    {
+      "start": 82.292,
+      "end": 84.768,
+      "text": "À l'intérieur du sandbox du repo.",
+      "words": [
+        { "start": 82.292, "end": 82.705, "char": [0, 1] },
+        { "start": 82.705, "end": 83.117, "char": [2, 13] },
+        { "start": 83.117, "end": 83.53, "char": [14, 16] },
+        { "start": 83.53, "end": 83.943, "char": [17, 24] },
+        { "start": 83.943, "end": 84.356, "char": [25, 27] },
+        { "start": 84.356, "end": 84.768, "char": [28, 33] }
+      ]
+    },
+    {
+      "start": 84.768,
+      "end": 87.658,
+      "text": "Lancez n'importe quoi comme si vous étiez",
+      "words": [
+        { "start": 84.768, "end": 85.181, "char": [0, 6] },
+        { "start": 85.181, "end": 85.594, "char": [7, 16] },
+        { "start": 85.594, "end": 86.007, "char": [17, 21] },
+        { "start": 86.007, "end": 86.419, "char": [22, 27] },
+        { "start": 86.419, "end": 86.832, "char": [28, 30] },
+        { "start": 86.832, "end": 87.245, "char": [31, 35] },
+        { "start": 87.245, "end": 87.658, "char": [36, 41] }
+      ]
+    },
+    {
+      "start": 87.658,
+      "end": 88.483,
+      "text": "en SSH.",
+      "words": [
+        { "start": 87.658, "end": 88.07, "char": [0, 2] },
+        { "start": 88.07, "end": 88.483, "char": [3, 7] }
+      ]
+    },
+    {
+      "start": 91.818,
+      "end": 94.336,
+      "text": "Avant de pousser des fichiers,",
+      "words": [
+        { "start": 91.818, "end": 92.322, "char": [0, 5] },
+        { "start": 92.322, "end": 92.825, "char": [6, 8] },
+        { "start": 92.825, "end": 93.329, "char": [9, 16] },
+        { "start": 93.329, "end": 93.832, "char": [17, 20] },
+        { "start": 93.832, "end": 94.336, "char": [21, 30] }
+      ]
+    },
+    {
+      "start": 94.336,
+      "end": 96.854,
+      "text": "voyons d'abord la prévisualisation avec",
+      "words": [
+        { "start": 94.336, "end": 94.84, "char": [0, 6] },
+        { "start": 94.84, "end": 95.343, "char": [7, 14] },
+        { "start": 95.343, "end": 95.847, "char": [15, 17] },
+        { "start": 95.847, "end": 96.35, "char": [18, 34] },
+        { "start": 96.35, "end": 96.854, "char": [35, 39] }
+      ]
+    },
+    {
+      "start": 96.854,
+      "end": 98.364,
+      "text": "le flag dry-run.",
+      "words": [
+        { "start": 96.854, "end": 97.357, "char": [0, 2] },
+        { "start": 97.357, "end": 97.861, "char": [3, 7] },
+        { "start": 97.861, "end": 98.364, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 98.364,
+      "end": 100.882,
+      "text": "Elle montre exactement ce qui",
+      "words": [
+        { "start": 98.364, "end": 98.868, "char": [0, 4] },
+        { "start": 98.868, "end": 99.371, "char": [5, 11] },
+        { "start": 99.371, "end": 99.875, "char": [12, 22] },
+        { "start": 99.875, "end": 100.378, "char": [23, 25] },
+        { "start": 100.378, "end": 100.882, "char": [26, 29] }
+      ]
+    },
+    {
+      "start": 100.882,
+      "end": 102.896,
+      "text": "changerait sans rien copier.",
+      "words": [
+        { "start": 100.882, "end": 101.385, "char": [0, 10] },
+        { "start": 101.385, "end": 101.889, "char": [11, 15] },
+        { "start": 101.889, "end": 102.393, "char": [16, 20] },
+        { "start": 102.393, "end": 102.896, "char": [21, 28] }
+      ]
+    },
+    {
+      "start": 102.896,
+      "end": 105.414,
+      "text": "Prévisualisez toujours quand vous n'êtes",
+      "words": [
+        { "start": 102.896, "end": 103.4, "char": [0, 13] },
+        { "start": 103.4, "end": 103.903, "char": [14, 22] },
+        { "start": 103.903, "end": 104.407, "char": [23, 28] },
+        { "start": 104.407, "end": 104.91, "char": [29, 33] },
+        { "start": 104.91, "end": 105.414, "char": [34, 40] }
+      ]
+    },
+    {
+      "start": 105.414,
+      "end": 106.421,
+      "text": "pas sûr.",
+      "words": [
+        { "start": 105.414, "end": 105.917, "char": [0, 3] },
+        { "start": 105.917, "end": 106.421, "char": [4, 8] }
+      ]
+    },
+    {
+      "start": 108.421,
+      "end": 109.453,
+      "text": "Prévisualisation uniquement.",
+      "words": [
+        { "start": 108.421, "end": 108.937, "char": [0, 16] },
+        { "start": 108.937, "end": 109.453, "char": [17, 28] }
+      ]
+    },
+    {
+      "start": 109.453,
+      "end": 112.032,
+      "text": "Aucun fichier n'a encore été",
+      "words": [
+        { "start": 109.453, "end": 109.969, "char": [0, 5] },
+        { "start": 109.969, "end": 110.484, "char": [6, 13] },
+        { "start": 110.484, "end": 111, "char": [14, 17] },
+        { "start": 111, "end": 111.516, "char": [18, 24] },
+        { "start": 111.516, "end": 112.032, "char": [25, 28] }
+      ]
+    },
+    {
+      "start": 112.032,
+      "end": 112.548,
+      "text": "déplacé.",
+      "words": [{ "start": 112.032, "end": 112.548, "char": [0, 8] }]
+    },
+    {
+      "start": 115.861,
+      "end": 118.639,
+      "text": "Maintenant nous lançons le vrai téléversement.",
+      "words": [
+        { "start": 115.861, "end": 116.324, "char": [0, 10] },
+        { "start": 116.324, "end": 116.787, "char": [11, 15] },
+        { "start": 116.787, "end": 117.25, "char": [16, 23] },
+        { "start": 117.25, "end": 117.713, "char": [24, 26] },
+        { "start": 117.713, "end": 118.176, "char": [27, 31] },
+        { "start": 118.176, "end": 118.639, "char": [32, 46] }
+      ]
+    },
+    {
+      "start": 118.639,
+      "end": 121.417,
+      "text": "La commande de synchronisation déplace les",
+      "words": [
+        { "start": 118.639, "end": 119.102, "char": [0, 2] },
+        { "start": 119.102, "end": 119.565, "char": [3, 11] },
+        { "start": 119.565, "end": 120.028, "char": [12, 14] },
+        { "start": 120.028, "end": 120.491, "char": [15, 30] },
+        { "start": 120.491, "end": 120.954, "char": [31, 38] },
+        { "start": 120.954, "end": 121.417, "char": [39, 42] }
+      ]
+    },
+    {
+      "start": 121.417,
+      "end": 124.194,
+      "text": "fichiers de votre ordinateur vers le",
+      "words": [
+        { "start": 121.417, "end": 121.88, "char": [0, 8] },
+        { "start": 121.88, "end": 122.343, "char": [9, 11] },
+        { "start": 122.343, "end": 122.806, "char": [12, 17] },
+        { "start": 122.806, "end": 123.269, "char": [18, 28] },
+        { "start": 123.269, "end": 123.731, "char": [29, 33] },
+        { "start": 123.731, "end": 124.194, "char": [34, 36] }
+      ]
+    },
+    {
+      "start": 124.194,
+      "end": 125.583,
+      "text": "dépôt via SSH,",
+      "words": [
+        { "start": 124.194, "end": 124.657, "char": [0, 5] },
+        { "start": 124.657, "end": 125.12, "char": [6, 9] },
+        { "start": 125.12, "end": 125.583, "char": [10, 14] }
+      ]
+    },
+    {
+      "start": 125.583,
+      "end": 128.361,
+      "text": "avec la compression delta de rsync.",
+      "words": [
+        { "start": 125.583, "end": 126.046, "char": [0, 4] },
+        { "start": 126.046, "end": 126.509, "char": [5, 7] },
+        { "start": 126.509, "end": 126.972, "char": [8, 19] },
+        { "start": 126.972, "end": 127.435, "char": [20, 25] },
+        { "start": 127.435, "end": 127.898, "char": [26, 28] },
+        { "start": 127.898, "end": 128.361, "char": [29, 35] }
+      ]
+    },
+    {
+      "start": 128.361,
+      "end": 128.824,
+      "text": "Tunnel,",
+      "words": [{ "start": 128.361, "end": 128.824, "char": [0, 7] }]
+    },
+    {
+      "start": 128.824,
+      "end": 129.287,
+      "text": "term,",
+      "words": [{ "start": 128.824, "end": 129.287, "char": [0, 5] }]
+    },
+    {
+      "start": 129.287,
+      "end": 129.75,
+      "text": "sync,",
+      "words": [{ "start": 129.287, "end": 129.75, "char": [0, 5] }]
+    },
+    {
+      "start": 129.75,
+      "end": 132.527,
+      "text": "trois commandes couvrent la boucle quotidienne.",
+      "words": [
+        { "start": 129.75, "end": 130.213, "char": [0, 5] },
+        { "start": 130.213, "end": 130.676, "char": [6, 15] },
+        { "start": 130.676, "end": 131.139, "char": [16, 24] },
+        { "start": 131.139, "end": 131.602, "char": [25, 27] },
+        { "start": 131.602, "end": 132.065, "char": [28, 34] },
+        { "start": 132.065, "end": 132.527, "char": [35, 47] }
+      ]
+    },
+    {
+      "start": 134.027,
+      "end": 134.927,
+      "text": "Fichiers téléversés.",
+      "words": [
+        { "start": 134.027, "end": 134.477, "char": [0, 8] },
+        { "start": 134.477, "end": 134.927, "char": [9, 20] }
+      ]
+    },
+    {
+      "start": 134.927,
+      "end": 137.627,
+      "text": "La compression delta gère les gros",
+      "words": [
+        { "start": 134.927, "end": 135.377, "char": [0, 2] },
+        { "start": 135.377, "end": 135.827, "char": [3, 14] },
+        { "start": 135.827, "end": 136.277, "char": [15, 20] },
+        { "start": 136.277, "end": 136.727, "char": [21, 25] },
+        { "start": 136.727, "end": 137.177, "char": [26, 29] },
+        { "start": 137.177, "end": 137.627, "char": [30, 34] }
+      ]
+    },
+    {
+      "start": 137.627,
+      "end": 138.076,
+      "text": "arbres.",
+      "words": [{ "start": 137.627, "end": 138.076, "char": [0, 7] }]
+    },
+    {
+      "start": 138.867,
+      "end": 141.575,
+      "text": "Et voilà les trois commandes",
+      "words": [
+        { "start": 138.867, "end": 139.409, "char": [0, 2] },
+        { "start": 139.409, "end": 139.951, "char": [3, 8] },
+        { "start": 139.951, "end": 140.492, "char": [9, 12] },
+        { "start": 140.492, "end": 141.034, "char": [13, 18] },
+        { "start": 141.034, "end": 141.575, "char": [19, 28] }
+      ]
+    },
+    {
+      "start": 141.575,
+      "end": 142.659,
+      "text": "du quotidien.",
+      "words": [
+        { "start": 141.575, "end": 142.117, "char": [0, 2] },
+        { "start": 142.117, "end": 142.659, "char": [3, 13] }
+      ]
+    },
+    {
+      "start": 142.659,
+      "end": 145.367,
+      "text": "On se retrouve dans la",
+      "words": [
+        { "start": 142.659, "end": 143.2, "char": [0, 2] },
+        { "start": 143.2, "end": 143.742, "char": [3, 5] },
+        { "start": 143.742, "end": 144.283, "char": [6, 14] },
+        { "start": 144.283, "end": 144.825, "char": [15, 19] },
+        { "start": 144.825, "end": 145.367, "char": [20, 22] }
+      ]
+    },
+    {
+      "start": 145.367,
+      "end": 146.991,
+      "text": "prochaine vidéo !",
+      "words": [
+        { "start": 145.367, "end": 145.908, "char": [0, 9] },
+        { "start": 145.908, "end": 146.45, "char": [10, 15] },
+        { "start": 146.45, "end": 146.991, "char": [16, 17] }
+      ]
+    }
+  ]
+}

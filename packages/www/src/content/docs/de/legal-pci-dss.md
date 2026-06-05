@@ -1,14 +1,14 @@
 ---
 title: "PCI DSS-Konformität"
-description: "Wie Rediacc den PCI DSS-Anforderungen zum Schutz von Zahlungskartendaten durch Verschlüsselung, Netzwerksegmentierung und Zugriffskontrolle entspricht."
+description: "So erfüllt Rediacc die PCI DSS-Anforderungen: unveränderbare Sicherungen, automatische Netzwerksegmentierung und Zugriffskontrolle auf Infrastruktur-Ebene."
 category: "Legal"
 order: 6
 language: de
-sourceHash: "7dfa2cbb5f86d910"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "d8391036876231a0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Der Payment Card Industry Data Security Standard (PCI DSS) ist für jede Organisation erforderlich, die Karteninhaberdaten speichert, verarbeitet oder überträgt. Die aktuelle Version ist PCI DSS v4.0.1.
+Mal ehrlich: PCI DSS v4.0.1. ist nicht optional, wenn Sie Karteninhaberdaten verarbeiten. Version 4.0.1. läuft auf eine Anforderung hinaus: infrastrukturelle Isolierung von allem anderen.
 
 Referenz: [PCI Security Standards Council](https://www.pcisecuritystandards.org/document_library/)
 
@@ -24,12 +24,12 @@ Referenz: [PCI Security Standards Council](https://www.pcisecuritystandards.org/
 | **Anf. 7**, Zugriff einschränken | Zugriff auf Systemkomponenten und Karteninhaberdaten nach Geschäftsbedarf einschränken | Pro-Repository-Docker-Daemon-Sockets. Zugang zu einem Repository gewährt keinen Zugang zu einem anderen. SSH-Schlüssel-basierte Authentifizierung. |
 | **Anf. 8**, Benutzer identifizieren und authentifizieren | Benutzer identifizieren und Zugang zu Systemkomponenten authentifizieren | SSH-Schlüssel-Authentifizierung. API-Tokens mit IP-Bindung und bereichsbezogenen Berechtigungen. Zwei-Faktor-Authentifizierung (TOTP). |
 | **Anf. 9**, Physischen Zugang einschränken | Physischen Zugang zu Karteninhaberdaten einschränken | Self-Hosted: physische Sicherheit unter Ihrer direkten Kontrolle. LUKS-Verschlüsselung macht gestohlene Laufwerke unlesbar. |
-| **Anf. 10**, Protokollieren und überwachen | Alle Zugriffe auf Systemkomponenten und Karteninhaberdaten protokollieren und überwachen | Über 40 Ereignistypen auf Kontoebene (Auth, API-Tokens, Config, Lizenzierung). Admin-Dashboard mit Filterung nach Benutzer, Team und Datum. `rdc audit` CLI für programmatischen Export. Operationen auf Maschinenebene über SSH und Systemlogs auditierbar. |
+| **Anf. 10**, Protokollieren und überwachen | Alle Zugriffe auf Systemkomponenten und Karteninhaberdaten protokollieren und überwachen | 70+ Ereignistypen (Auth, API-Tokens, Config, Lizenzierung, Maschinenoperationen). Admin-Dashboard und Portal mit Filterung nach Benutzer, Team, Typ und Datum. `rdc audit` CLI für programmatischen Export. Maschinenoperationen auch in Systemlogs für Defense in Depth. |
 | **Anf. 12**, Organisatorische Richtlinien | Informationssicherheit mit organisatorischen Richtlinien und Programmen unterstützen | Self-Hosted eliminiert den Drittanbieter-Verarbeiter-Scope (Anf. 12.8). Reduziert die PCI DSS-Konformitätsgrenze. |
 
 ## Netzwerksegmentierung
 
-PCI DSS setzt stark auf Segmentierung: Die Karteninhaberdatenumgebung (CDE) muss isoliert werden, sonst schlägt das Audit fehl. Rediacc liefert diese Segmentierung standardmäßig:
+PCI DSS setzt hart auf Segmentierung. Ich sehe immer wieder Teams, die iptables-Regeln auf unzureichende Isolierung aufsetzen. Das funktioniert nicht. Die Teams, die bestehen, haben Segmentierung in die Architektur eingebaut. Rediacc liefert Ihnen das standardmäßig:
 
 - Jedes Repository läuft in seinem eigenen Docker Daemon unter `/var/run/rediacc/docker-<networkId>.sock`
 - Repositories haben isolierte Loopback-IP-Subnetze (127.0.x.x/26, 61 nutzbare IPs pro Netzwerk)
@@ -40,7 +40,7 @@ Ein Zahlungsverarbeitungs-Repository läuft auf seinem eigenen Docker Daemon und
 
 ## Scope-Reduktion
 
-Self-Hosted Rediacc reduziert den PCI DSS-Konformitätsumfang:
+Self-Hosted Rediacc reduziert den PCI DSS-Konformitätsumfang. Sie müssen die Netzwerksegmentierung nicht manuell konfigurieren; sie ist automatisch nach Design. Unsere Dokumentation für diesen Teil muss noch verbessert werden, aber die Isolierung ist solide.
 
 - Kein Drittanbieter-Cloud-Provider im Karteninhaberdatenfluss
 - Kein SaaS-Anbieter zur Bewertung unter Anf. 12.8 (Drittanbieter-Dienstleister)
@@ -49,7 +49,7 @@ Self-Hosted Rediacc reduziert den PCI DSS-Konformitätsumfang:
 
 ## Durchsetzungsfälle
 
-Schwache Segmentierung und fehlende Verschlüsselung stehen hinter den kostspieligsten PCI DSS-Durchsetzungsmaßnahmen:
+Die meisten PCI-Audit-Ausfälle sind auf eines von zwei Dingen zurückzuführen: Segmentierung, die niemals ordnungsgemäß isoliert war, oder Verschlüsselung, die niemals gegen echte Angriffe getestet wurde.
 
 - Heartland Payment Systems (2008): Angreifer bewegten sich lateral über 48 Datenbanken aufgrund schlechter Netzwerksegmentierung und legten 130 Millionen Kartennummern offen. [Die Gesamtkosten überstiegen 200 Millionen Dollar.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): Angreifer wechselten vom Netzwerkzugang eines HVAC-Lieferanten zu Point-of-Sale-Systemen aufgrund flacher Netzwerkarchitektur und erbeuteten 40 Millionen Zahlungskarten. [Einigung auf 18,5 Millionen Dollar mit 47 Staatsanwaltschaften.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

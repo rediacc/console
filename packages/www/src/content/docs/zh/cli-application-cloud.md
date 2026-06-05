@@ -1,12 +1,13 @@
 ---
 title: "CLI 应用程序（云端 / 实验性）"
-description: "Rediacc CLI 的云端专属命令 — 身份验证、团队、组织和多租户管理"
+description: "Rediacc CLI 云端适配器命令（实验性）。配置需包含 apiUrl 和 token。涵盖身份验证、组织、团队、用户、权限、存储库、队列、Ceph 块存储和审计日志。"
 category: "参考"
 order: 3
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "c285d703825d9607"
+sourceHash: "52ac28479ebdafd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->

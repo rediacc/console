@@ -1,22 +1,21 @@
 ---
 title: サービス
-description: Rediaccfile、サービスネットワーキング、自動開始を使用してコンテナ化されたサービスをデプロイ・管理。
+description: >-
+  Rediaccfile、サービスネットワーキング、自動開始を使用してコンテナ化されたサービスをデプロイおよび管理します。
 category: Guides
 order: 5
 language: ja
-sourceHash: "181ba0512ff98f9c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "88734af48d9648d5"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # サービス
 
-どのツールを使うべきか迷う場合は、[rdc vs renet](/ja/docs/rdc-vs-renet) を参照してください。
-
-このページでは、コンテナ化されたサービスのデプロイと管理方法について説明します：Rediaccfile、サービスネットワーキング、開始/停止、一括操作、自動開始。
+このページでは、以下の内容を説明します：コンテナ化されたサービスのデプロイと管理、Rediaccfile、サービスネットワーキング、開始/停止、一括操作、自動開始。
 
 ## Rediaccfile
 
-**Rediaccfile**は、サービスの開始と停止の方法を定義するBashスクリプトです。ファイル名は`Rediaccfile`または`rediaccfile`（大文字小文字を区別しない）で、リポジトリのマウントされたファイルシステム内に配置する必要があります。
+**Rediaccfile**は、サービスの開始と停止方法を定義するBashスクリプトです。（別プロセスとして実行されるのではなく）**ソースされる**ため、関数は同じシェルコンテキストを共有し、エクスポートされたすべての環境変数にアクセスできます。ファイル名は`Rediaccfile`または`rediaccfile`（大文字小文字を区別しない）で、リポジトリのマウントされたファイルシステム内に配置する必要があります。
 
 Rediaccfileは2つの場所で検出されます：
 1. リポジトリマウントパスの**ルート**
@@ -30,8 +29,8 @@ Rediaccfileは最大2つの関数を含みます：
 
 | 関数 | 実行タイミング | 目的 | エラー動作 |
 |----------|-------------|---------|----------------|
-| `up()` | 開始時 | サービスの開始（例：`renet compose -- up -d`） | ルートの失敗は**クリティカル**（すべて停止）。サブディレクトリの失敗は**非クリティカル**（ログに記録し、次に進む） |
-| `down()` | 停止時 | サービスの停止（例：`renet compose -- down`） | **ベストエフォート** -- 失敗はログに記録されますが、すべてのRediaccfileが常に試行 |
+| `up()` | 開始時 | サービスの開始（例：`renet compose -- up -d`） | ルートの失敗は**クリティカル**（すべて停止）。サブディレクトリの失敗は**非クリティカル**（ログに記録し、続行） |
+| `down()` | 停止時 | サービスの停止（例：`renet compose -- down`） | **ベストエフォート** - 失敗はログに記録されますが、すべてのRediaccfileが常に試行されます |
 
 両方の関数はオプションです。関数が定義されていない場合、サイレントにスキップされます。
 
@@ -52,11 +51,13 @@ Rediaccfile関数の実行時、以下の環境変数が利用可能です：
 | `DOCKER_HOST` | このリポジトリの隔離デーモン用Dockerソケット | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | `.rediacc.json`で定義された各サービスのループバックIP | `POSTGRES_IP=127.0.11.2` |
 
-`{SERVICE}_IP`変数は`.rediacc.json`から自動生成されます。命名規則では、サービス名を大文字に変換し、ハイフンをアンダースコアに置き換え、`_IP`を付加します。例えば、`listmonk-app`は`LISTMONK_APP_IP`になります。
+`{SERVICE}_IP`変数は`.rediacc.json`のスロットマッピングから自動生成され、Rediaccfile関数が実行される前にエクスポートされます。命名規則では、サービス名を大文字に変換し、ハイフンをアンダースコアに置き換え、`_IP`を付加します。例えば、スロット`0`の`listmonk-app`というサービスは`LISTMONK_APP_IP=127.0.11.2`になります。
 
 > **警告：Rediaccfile内で`sudo docker`を使用しないでください。** `sudo`コマンドは環境変数をリセットするため、`DOCKER_HOST`が失われ、Dockerコマンドがリポジトリの隔離デーモンではなくシステムデーモンを対象にします。これによりコンテナの隔離が壊れ、ポート競合が発生する可能性があります。Rediaccは`-E`なしの`sudo docker`を検出すると実行をブロックします。
 >
 > Rediaccfile内では`renet compose`を使用してください。`DOCKER_HOST`を自動的に処理し、ルート検出用のネットワーキングラベルを注入し、サービスネットワーキングを設定します。リバースプロキシ経由でサービスを公開する方法の詳細については、[ネットワーキング](/ja/docs/networking)を参照してください。Dockerを直接呼び出す場合は、`sudo`なしで`docker`を使用してください。Rediaccfile関数は既に十分な権限で実行されます。sudoを使用する必要がある場合は、環境変数を保持するために`sudo -E docker`を使用してください。
+>
+> `renet`はリモートロー・レベルツールです。ワークステーションから通常のユーザー作業フローを行う場合は、`rdc repo up`や`rdc repo down`などの`rdc`コマンドを優先してください。[rdc vs renet](/ja/docs/rdc-vs-renet)を参照してください。
 
 ### 例
 
@@ -74,14 +75,14 @@ down() {
 }
 ```
 
-> **重要:** `docker compose`の代わりに常に`renet compose --`を使用してください。`renet compose`ラッパーは、ホストネットワーキング、IPアロケーション、およびrenet-proxyに必要なサービスディスカバリラベルを強制適用します。CRIUチェックポイント/リストア機能は`rediacc.checkpoint=true`ラベル付きコンテナに追加されます。`docker compose`の直接使用はRediaccfileのバリデーションで拒否されます。詳細については[ネットワーキング](/ja/docs/networking)を参照してください。
+> **重要：** `docker compose`の代わりに常に`renet compose --`を使用してください。`renet compose`ラッパーは、ホストネットワーキング、IPアロケーション、およびrenet-proxyに必要なサービスディスカバリラベルを強制適用します。CRIUチェックポイント/リストア機能は`rediacc.checkpoint=true`ラベル付きコンテナに追加されます。直接的な`docker compose`の使用はRediaccfileのバリデーションで拒否されます。詳細については[ネットワーキング](/ja/docs/networking)を参照してください。
 
 ### マルチサービスレイアウト
 
 複数の独立したサービスグループを持つプロジェクトでは、サブディレクトリを使用します：
 
 ```
-/mnt/rediacc/mounts/my-app/
+/mnt/rediacc/repos/my-app/
 ├── Rediaccfile              # ルート：共有セットアップ
 ├── docker-compose.yml
 ├── database/
@@ -127,13 +128,13 @@ down() {
 
 ### IP計算
 
-サービスのIPは、リポジトリのネットワークIDとサービスのスロットから計算されます。ネットワークIDは`127.x.y.z`ループバックアドレスの第2、第3、第4オクテットに分割されます。各サービスにはネットワークIDに`slot + 2`のオフセットが加算されます（オフセット0と1はネットワークアドレスとゲートウェイ用に予約）。
+サービスのIPは、リポジトリのネットワークIDとサービスのスロットから計算されます。ネットワークIDは`127.x.y.z`ループバックアドレスの第2、第3、第4オクテットに分割されます。サービスはオフセット2から開始します：
 
 | Offset | Address | Purpose |
 |--------|---------|---------|
 | .0 | `127.0.11.0` | Network address (reserved) |
 | .1 | `127.0.11.1` | Gateway (reserved) |
-| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .2 - .62 | `127.0.11.2` - `127.0.11.62` | Services (`slot + 2`) |
 | .63 | `127.0.11.63` | Broadcast (reserved) |
 
 **例**：ネットワークID `2816`（`0x0B00`）の場合、ベースアドレスは`127.0.11.0`：
@@ -157,7 +158,7 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
-    # 明示的なlisten_addressesは不要 -- カーネルがbindを正しいループバックIPに書き換えます
+    # 明示的なlisten_addressesは不要 - カーネルがbindを正しいループバックIPに書き換えます
 
   api:
     image: my-api:latest
@@ -166,9 +167,9 @@ services:
       LISTEN_ADDR: 0.0.0.0:8080                                      # カーネルがサービスIPに書き換え
 ```
 
-> **接続へのサービス名の使用：** 他のサービスへ**接続する**際は**サービス名**（例：`postgres`、`redis`）を使用してください -- renetは`/etc/hosts`経由で各サービス名をそのループバックIPに自動的にマッピングします。データベースや設定ファイルに保存された接続文字列に`${POSTGRES_IP}`を埋め込むと生のIPが固定され、フォークの隔離を壊す**バリデーションエラー**になります。`${SERVICE_IP}`変数は明示的な使用のために引き続き利用可能ですが、バインドはカーネルが自動的に処理します。
+> **接続へのサービス名の使用：** 他のサービスへ**接続する**際は**サービス名**（例：`postgres`、`redis`）を使用してください - renetは`/etc/hosts`経由で各サービス名をそのループバックIPに自動的にマッピングします。データベースや設定ファイルに保存された接続文字列に`${POSTGRES_IP}`を埋め込むと生のIPが固定され、フォークの隔離を壊す**バリデーションエラー**になります。`${SERVICE_IP}`変数は明示的な使用のために引き続き利用可能ですが、バインドはカーネルが自動的に処理します。
 
-> **注意：** `network_mode: host`を手動で追加しないでください, `renet compose`が自動的に注入します。再起動ポリシー（例：`restart: always`）は安全に使用できます, renetがCRIU互換性のために自動的に削除し、ルーターウォッチドッグがコンテナの回復を処理します。
+> **注意：** `network_mode: host`を手動で追加しないでください。`renet compose`が自動的に注入します。再起動ポリシー（例：`restart: always`）は安全に使用できます。renetはCRIU互換性のために自動的に削除し、ルーターウォッチドッグがコンテナの回復を処理します。
 
 ### コンテナの回復と再起動ポリシー
 
@@ -186,8 +187,8 @@ renetとDockerは、コンテナの再起動処理について意図的に見解
 
 **ランタイム状態の解釈方法：**
 
-- `docker inspect <container>` → `RestartPolicy.Name`：renet管理コンテナでは常に`no`になります。セマンティックポリシーの判断には使用しないでください。
-- リポジトリマウントルートの`.rediacc.json` → `services.<name>.restart_policy`：真の意図。
+- `docker inspect <container>` -> `RestartPolicy.Name`：renet管理コンテナでは常に`no`になります。セマンティックポリシーの判断には使用しないでください。
+- リポジトリマウントルートの`.rediacc.json` -> `services.<name>.restart_policy`：真の意図。
 - `docker ps --format '{{.Status}}'`：ランタイム状態。
 
 **ドリフトの修正方法。** コンテナの`.rediacc.json`に保存されたポリシーが誤っている場合（例：composeを編集したがコンテナを再作成しなかった場合）、`rdc repo up --name <repo> -m <machine>`を再実行してください。コンテナは更新されたポリシーを記録した状態で再作成されます。
@@ -218,7 +219,7 @@ rdc repo up --name my-app -m server-1
 3. composeファイルから`.rediacc.json`を自動生成
 4. すべてのRediaccfileで`up()`を実行（A-Z順）
 
-デプロイ後、出力には各サービスの実際のURLを示す**PROXY ROUTES**セクションが表示されます。カスタムTraefikラベルを持つサービスはカスタムドメインをプライマリURLとして表示します：
+デプロイ後、出力には各サービスの実際のURLを示す**PROXY ROUTES**セクションが表示されます。カスタムTraefikラベルを持つサービス（例：`traefik.http.routers.myapp.rule=Host(...)`）は、カスタムドメインをプライマリURLとして表示します：
 
 ```
 HTTP services (accessible via proxy after ~3s):
@@ -227,6 +228,8 @@ HTTP services (accessible via proxy after ~3s):
     Auto:  https://gitlab-server.gitlab.server-1.example.com
     IP:    127.0.11.130
 ```
+
+カスタムTraefikラベルを持たないサービスは、自動生成されたルートのみを表示します。ブラウザアクセス、API呼び出し、サービス間設定にはこれらのURL（CLIで表示される汎用パターンではなく）を使用してください。
 
 ## サービスの停止
 
@@ -323,7 +326,7 @@ Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 rdc repo autostart list -m server-1
 ```
 
-起動後に停止したリポジトリを定期リコンサイラーが回復する仕組みの詳細については、[自動起動と回復](/ja/docs/autostart-recovery)を参照してください。
+起動後に停止したリポジトリを定期リコンサイラーが回復する仕組みの詳細については、[自動開始と回復](/ja/docs/autostart-recovery)を参照してください。
 
 ## 完全な例
 
@@ -409,3 +412,31 @@ rdc repo up --name webapp -m prod-1
 ```bash
 rdc repo autostart enable --name webapp -m prod-1
 ```
+
+## composeでリポジトリごとのシークレットを使用する
+
+上記の`POSTGRES_PASSWORD: changeme`プレースホルダーはチュートリアル用ですが、実アプリケーションは実クレデンシャルが必要で、composeファイル（またはリポジトリ内の`.env`ファイル）にコミットするということは、フォークもそれを継承することを意味します。デプロイ時のクレデンシャルについては、`rdc repo secret`を使用してください。値は暗号化リポジトリイメージの外側にあるため、フォークは空のシークレットマップで開始します。
+
+composeで機能する2つの配信モードがあります：
+
+**`env`モード**。任意の`environment:`値内で`${REDIACC_SECRET_<KEY>}`を使用して補間します。renetラッパーはデプロイ時にコンテナの環境に値を渡します。
+
+**`file`モード**。値はホスト側のtmpfsファイル（`/var/run/rediacc/secrets/<networkID>/<KEY>`）に配置され、Dockerのcomposeの標準`secrets:`ブロック経由でコンテナにマウントします。コンテナは`/run/secrets/<key>`を読みます。何か機密情報がある場合はこのモードを優先してください。値は`docker inspect`や`/proc/<pid>/environ`に表示されません。
+
+```yaml
+services:
+  api:
+    image: myregistry/api:latest
+    environment:
+      DATABASE_URL: ${REDIACC_SECRET_DATABASE_URL}
+    secrets:
+      - stripe_live_key
+
+secrets:
+  stripe_live_key:
+    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+```
+
+`rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""`でファイルモード相当の値をシードします。詳細については[リポジトリ » シークレット](/ja/docs/repositories#secrets)を参照し、コマンドリファレンスについてはチートシートの[リポジトリごとのシークレット](/ja/docs/rdc-cheat-sheet#per-repo-secrets)を参照してください。
+
+> **クロスリポパスはバリデーション時に拒否されます。** composeの`secrets: file:`（または`configs: file:`、または`env_file:`）が別のリポジトリの`/var/run/rediacc/secrets/<other-networkID>/`ディレクトリを指していると、renetラッパーによって`docker compose`実行前に厳密に拒否されます。`--unsafe`はオーバーライドしません。深層防御：Rediaccfileシェルの周囲のLandlockサンドボックスはリードを現在のネットワークのシークレットディレクトリにスコープするため、YAMLバリデーターをバイパスしても、Rediaccfileのbashから`cat /var/run/rediacc/secrets/<other>/X`を実行するとEACCESで失敗します。オプトインする必要はありません。これはすべての`repo up`でデフォルトで有効です。
