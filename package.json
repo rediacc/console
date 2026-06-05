@@ -134,7 +134,7 @@
     "@typescript-eslint/parser": "^8.50.0",
     "astro": "^5.17.3",
     "eslint": "^9.39.2",
-    "eslint-import-resolver-typescript": "^4.4.4",
+    "eslint-import-resolver-typescript": "^4.4.5",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-playwright": "^2.10.4",
@@ -145,12 +145,12 @@
     "eslint-plugin-unicorn": "^64.0.0",
     "globals": "^17.6.0",
     "jsdom": "^29.0.0",
-    "knip": "^6.15.0",
+    "knip": "^6.16.0",
     "lockfile-lint": "^5.0.0",
     "syncpack": "^15.3.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.60.0"
+    "typescript-eslint": "^8.60.1"
   },
   "engines": {
     "node": ">=22.12.0"
