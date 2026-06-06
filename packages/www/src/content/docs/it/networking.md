@@ -174,7 +174,7 @@ services:
 | `traefik.http.routers.{name}.tls.certresolver` | Resolver del certificato, usa `letsencrypt` per Let's Encrypt automatico |
 | `traefik.http.services.{name}.loadbalancer.server.port` | La porta su cui la tua applicazione è in ascolto all'interno del container |
 
-`{name}` nelle etichette e' un identificatore arbitrario. Deve solo restare coerente tra le etichette router/servizio/middleware correlate.
+`{name}` nelle etichette è un identificatore arbitrario. Deve solo restare coerente tra le etichette router/servizio/middleware correlate.
 
 > **Nota:** Le etichette `rediacc.*` (`rediacc.service_name`, `rediacc.service_ip`, `rediacc.network_id`) vengono iniettate automaticamente da `renet compose`. Non è necessario aggiungerle al tuo file compose.
 
@@ -323,7 +323,7 @@ Quando `--cf-dns-token` è configurato, `rdc config infra push` crea automaticam
 
 I record a livello di macchina vengono creati da `push-infra` e coprono le route con dominio personalizzato (`rediacc.domain`). I record wildcard per repository vengono creati automaticamente da `repo up` e coprono le auto-route per quel repository.
 
-Questa operazione e' idempotente: i record esistenti vengono aggiornati se l'IP cambia, e lasciati invariati se gia' corretti.
+Questa operazione è idempotente: i record esistenti vengono aggiornati se l'IP cambia, e lasciati invariati se già' corretti.
 
 Il wildcard del dominio base (`*.example.com`) deve essere creato manualmente se usi etichette di dominio personalizzato come `rediacc.domain=erp`.
 

@@ -4,15 +4,15 @@ description: "Rediacc가 암호화, 접근 관리 및 운영 보안에 관한 IS
 category: "Legal"
 order: 5
 language: ko
-sourceHash: "7c80000942b6196d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "52709a22c0b38178"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-ISO/IEC 27001은 국제표준화기구(ISO)와 국제전기기술위원회(IEC)가 발행한 정보 보안 관리 시스템(ISMS)에 관한 국제 표준입니다. 현재 버전은 ISO/IEC 27001:2022입니다.
+좋습니다. ISO/IEC 27001:2022는 정보 보안 관리 시스템을 위한 국제 표준입니다. ISO/IEC에서 발행한 이 표준은 암호화, 접근 관리, 사건 대응 및 수십 가지 보안 영역에 관한 통제를 다루는 광범위한 문서입니다. 아마도 이미 알고 계실 것입니다. 솔직하게 말하면, Rediacc는 표준의 모든 통제를 다루지 않으며, 그렇게 하지도 않을 것입니다. 다음은 Rediacc가 적용되는 부분에 대한 정직한 매핑입니다. 현재 버전은 ISO/IEC 27001:2022입니다.
 
 참고: [ISO/IEC 27001:2022](https://www.iso.org/standard/27001)
 
-Rediacc는 ISMS 내 기술 통제 레이어의 한 구성 요소입니다. 아래 표는 Rediacc의 기능을 관련 부속서 A 통제 도메인에 매핑합니다.
+자, Rediacc는 ISMS 내의 기술 통제 계층의 한 구성 요소입니다. 다음 표는 Rediacc의 기능을 관련 부속서 A 통제 도메인에 매핑합니다.
 
 ## 부속서 A 통제 매핑
 

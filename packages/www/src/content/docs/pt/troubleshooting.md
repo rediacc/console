@@ -4,8 +4,8 @@ description: "Correções para problemas comuns com SSH, configuração, reposit
 category: "Guides"
 order: 10
 language: pt
-sourceHash: "7cfabe7bbf3914c3"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "17dc03eb0589d606"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Resolução de Problemas
@@ -33,7 +33,7 @@ Isto obtém as chaves atualizadas e atualiza a sua configuração.
 
 - Certifique-se de que o utilizador SSH tem acesso sudo sem palavra-passe, ou configure `NOPASSWD` para os comandos necessários
 - Verifique o espaço disponível em disco no servidor
-- Execute com `--debug` para output detalhado: `rdc config machine setup --name server-1 --debug`
+- Execute com `--debug` para saída detalhada: `rdc config machine setup --name server-1 --debug`
 
 ## Problemas de Configuração Específicos por Distribuição
 
@@ -41,7 +41,7 @@ Os cinco sistemas operativos de servidor oficialmente suportados (Ubuntu 24.04, 
 
 ### Negações SELinux (Fedora 43, Oracle Linux 10)
 
-Ambos executam o SELinux em modo de aplicação estrita. O setup do rdc não instala uma política SELinux personalizada; o daemon docker por repositório executa no contexto padrão `container_t`. Se o setup falhar com negações AVC, verifique o registo de auditoria e identifique o domínio:
+Ambos executam o SELinux em modo de imposição. O setup do rdc não instala uma política SELinux personalizada; o daemon docker por repositório executa no contexto padrão `container_t`. Se o setup falhar com negações AVC, verifique o registo de auditoria e identifique o domínio:
 
 ```bash
 sudo ausearch -m AVC -ts recent | head -40
@@ -60,7 +60,7 @@ dmesg | grep -i apparmor
 sudo aa-status
 ```
 
-O CRIU é o caso conhecido que aciona o AppArmor. O renet define automaticamente `security_opt: apparmor=unconfined` nos contentores com a etiqueta `rediacc.checkpoint=true`. Não deverá precisar de configurar perfis AppArmor para mais nada. Consulte as notas sobre CRIU em [Rules of Rediacc](/pt/docs/rules-of-rediacc).
+O CRIU é o caso conhecido que aciona o AppArmor. O renet define automaticamente `security_opt: apparmor=unconfined` nos contentores etiquetados com `rediacc.checkpoint=true`. Não deverá precisar de configurar perfis AppArmor para mais nada. Consulte as notas sobre CRIU em [Rules of Rediacc](/pt/docs/rules-of-rediacc).
 
 ### Assinaturas de erros do gestor de pacotes
 

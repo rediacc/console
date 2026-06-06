@@ -4,13 +4,13 @@ description: "Yapılandırma oluşturma, makine ekleme, sunucuları hazırlama v
 category: "Guides"
 order: 3
 language: tr
-sourceHash: "2456daa4289ffb8c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "b3c8c42db1b8d99b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Makine Kurulumu
 
-Bu sayfa, ilk makinenizi kurma sürecini anlatır: yapılandırma oluşturma, sunucu kaydetme, hazırlama ve isteğe bağlı olarak genel erişim için altyapı yapılandırması.
+İlk makinenizi çalışmaya hazır hale getirmek için dört adım gerekir: yapılandırma oluşturma, sunucuyu kaydetme, hazırlama ve isteğe bağlı olarak genel erişim için altyapı kurulumu.
 
 ## Adım 1: Yapılandırma Oluşturma
 
@@ -122,8 +122,8 @@ rdc config infra set -m server-1 \
 
 | Seçenek | Kapsam | Açıklama |
 |---------|--------|----------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Genel IPv4 adresi, proxy giriş noktaları yalnızca yapılandırılmış adres aileleri için oluşturulur |
+| `--public-ipv6 <ip>` | Machine | Genel IPv6 adresi, proxy giriş noktaları yalnızca yapılandırılmış adres aileleri için oluşturulur |
 | `--base-domain <domain>` | Machine | Uygulamalar için temel alan adı (ör. `example.com`) |
 | `--cert-email <email>` | Config | Let's Encrypt TLS sertifikaları için e-posta (makineler arasında paylaşılır) |
 | `--cf-dns-token <token>` | Config | ACME DNS-01 doğrulamaları için Cloudflare DNS API anahtarı (makineler arasında paylaşılır) |
@@ -151,7 +151,7 @@ Bu komut:
 2. Traefik ters proxy, yönlendirici ve systemd hizmetlerini yapılandırır
 3. `--cf-dns-token` ayarlanmışsa makine alt alan adı için Cloudflare DNS kayıtları oluşturur (`server-1.example.com` ve `*.server-1.example.com`)
 
-DNS adımı otomatik ve etkisizdir (idempotent): eksik kayıtları oluşturur, IP'leri değişen kayıtları günceller ve zaten doğru olan kayıtları atlar. Cloudflare anahtarı yapılandırılmamışsa DNS bir uyarıyla atlanır. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+DNS adımı otomatik ve idempotent'dir: eksik kayıtları oluşturur, IP'leri değişen kayıtları günceller ve zaten doğru olan kayıtları atlar. Cloudflare anahtarı yapılandırılmamışsa DNS bir uyarıyla atlanır. Her depo için wildcard DNS kayıtları (`rdc repo up`'ı çalıştırdığınızda otomatik olarak oluşturulur) otomatik olarak oluşturulur.
 
 ## Bulut Hazırlama
 
@@ -161,10 +161,11 @@ VM'leri manuel olarak oluşturmak yerine, bir bulut sağlayıcı yapılandırabi
 
 OpenTofu'yu kurun: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
 
-SSH yapılandırmanızın bir genel anahtar içerdiğinden emin olun:
+SSH yapılandırmanızda `rdc` ile kayıtlı bir anahtar bulunduğundan emin olun:
 
 ```bash
-rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
+# Anahtar dosyasını okur ve içeriğini /credentials/ssh altında satır içine alır.
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
 ### Bulut Sağlayıcı Ekleme
@@ -200,7 +201,7 @@ Bu tek komut:
 2. SSH bağlantısını bekler
 3. Makineyi yapılandırmanıza kaydeder
 4. renet ve tüm bağımlılıkları kurar
-5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+5. Traefik proxy'si ve Cloudflare DNS'i yapılandırır (kardeş makinelerden temel alan adını otomatik olarak algılar veya `--base-domain`'i açıkça iletir)
 
 | Seçenek | Açıklama |
 |---------|----------|
@@ -208,8 +209,8 @@ Bu tek komut:
 | `--region <region>` | Sağlayıcının varsayılan bölgesini geçersiz kılar |
 | `--type <type>` | Varsayılan örnek türünü geçersiz kılar |
 | `--image <image>` | Varsayılan işletim sistemi imajını geçersiz kılar |
-| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
-| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--base-domain <domain>` | Altyapı için temel alan adı. Belirtilmediği takdirde kardeş makinelerden otomatik olarak algılanır |
+| `--no-infra` | Altyapı yapılandırmasını (proxy + DNS) tamamen atla |
 | `--debug` | Ayrıntılı hazırlama çıktısını gösterir |
 
 ### Makine Kaldırma
@@ -231,8 +232,8 @@ rdc config provider list
 Her komutta belirtmek zorunda kalmamak için varsayılan değerler ayarlayın:
 
 ```bash
-rdc config set --key machine --value server-1  # Varsayılan makine
-rdc config set --key team --value my-team  # Varsayılan ekip (bulut adaptörü, deneysel)
+rdc config field set --pointer /defaults/machine --new '"server-1"'   # Varsayılan makine
+rdc config set --key team --value my-team                   # Varsayılan ekip (bulut adaptörü, deneysel)
 ```
 
 Varsayılan makineyi ayarladıktan sonra komutlardan `-m server-1` ifadesini çıkarabilirsiniz:

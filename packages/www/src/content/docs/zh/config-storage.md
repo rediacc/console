@@ -4,29 +4,30 @@ description: 基于通行密钥加密的零知识加密配置同步
 category: Guides
 order: 8
 language: zh
-sourceHash: "9612a5fecf063eea"
+sourceHash: "daf79946b8925246"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 配置存储
 
-配置存储提供跨设备的零知识加密CLI配置同步。您的配置使用从通行密钥派生的密钥进行加密, 服务器永远无法看到明文数据。
+配置存储提供跨设备的零知识加密CLI配置同步。您的配置使用从通行密钥派生的密钥进行加密，服务器永远无法看到明文数据。
 
 ## 先决条件
 
 - **双因素认证**已在您的账户上启用
-- **支持PRF的通行密钥提供商**: FIDO2安全密钥（如YubiKey）、iCloud Keychain、Google Password Manager、1Password或Dashlane
-- **浏览器**: Chrome 133+、Edge 133+、Firefox 130+或Safari 17+
+- **支持PRF的通行密钥提供商**：FIDO2安全密钥（如YubiKey）、iCloud Keychain、Google Password Manager、1Password或Dashlane
+- **浏览器**：Chrome 133+、Edge 133+、Firefox 130+或Safari 17+
 
 ## 设置
 
 1. 在侧边栏导航至**配置存储**，然后点击**设置配置存储**
 2. 需求检查表验证您的浏览器、双因素认证和会话状态
-3. 点击**开始设置**, 您需要触摸安全密钥两次：
+3. 点击**开始设置**，您需要触摸安全密钥两次：
    - 第一次触摸：注册通行密钥
    - 第二次触摸：通过PRF派生加密密钥
-4. 设置完成, 您的通行密钥密钥存储在操作系统的密钥环中
+4. 设置完成，您的通行密钥密钥存储在操作系统的密钥环中
 
-设置完成后，日常CLI操作（push/pull）无需通行密钥即可工作。
+设置完成后，日常CLI操作（push/pull）无需通行密钥即可工作。需要提醒的是：设置需要支持PRF扩展的通行密钥。并非所有硬件令牌或平台认证器都支持此功能。
 
 ## PRF提供商兼容性
 

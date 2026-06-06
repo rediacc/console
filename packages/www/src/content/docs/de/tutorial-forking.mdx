@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: de
-sourceHash: "73a4cb1d8c412531"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "14d013a82dbcbd4e"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Ein Repository forken
 
-Das ist der Teil, der Ihre Arbeitsweise verändert: Eine gesamte Produktionsumgebung (die App, die Datenbank, die Konfigurationsdateien) in Sekunden klonen. Beliebige Größe. Null zusätzlicher Speicher. So oft forken, wie Sie möchten.
+Forken Sie eine gesamte Produktionsumgebung (die App, die Datenbank, die Konfigurationsdateien) in Sekunden. Beliebige Größe. Null zusätzlicher Speicher. Forken Sie beliebig oft.
 
 Der Leitspruch: **Produktion klonen, nichts kaputt machen.**
 
@@ -47,7 +47,7 @@ Ein Befehl. Alles wurde geklont (die App, die Datenbank, die Konfigurationsdatei
 
 ![Das Teilen eines Ordner-Links ist gleich schnell, unabhängig von der Größe des Ordners](/img/tutorials/tutorial-forking/slide-2.svg)
 
-Stellen Sie sich vor, Sie teilen einen Ordner-Link. Der Link ist gleich, egal ob der Ordner klein oder riesig ist. Der Ordner ist schwer, der Link ist leicht.
+Der Grund sind btrfs Reflinks. Ein Fork erstellt einen neuen Dateisystem-Baum, der auf dieselben Datenblocke wie der Parent zeigt. Beim Forken werden keine Daten kopiert. Es handelt sich nur um Metadaten, daher spielt die Größe des Parent keine Rolle für die Dauer des Forkens.
 
 ![1 GB, 100 GB, 1 TB. Immer die gleiche Zeit.](/img/tutorials/tutorial-forking/slide-3.svg)
 

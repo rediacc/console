@@ -1,12 +1,14 @@
 ---
 title: "Regioni dei Dati"
-description: "Dove vengono archiviati i tuoi dati e come funziona la residenza regionale dei dati. La scelta è permanente ed è importante farla con cura."
+description: "Dove vengono archiviati i tuoi dati e come funziona la residenza regionale dei dati."
 category: "Concepts"
 order: 3
 language: it
+sourceHash: "c87be32ef22a725d"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Quando crei un account Rediacc, scegli una regione dei dati. Tutti i tuoi dati rimangono in quella regione. Questa scelta è permanente e non può essere modificata dopo la registrazione.
+Quando crei un account Rediacc, scegli una regione dei dati. Tutti i tuoi dati rimangono in quella regione. Questa scelta è permanente e non può essere modificata dopo la registrazione. Non esiste un percorso di migrazione. Scegli in base a dove i tuoi dati devono risiedere legalmente, non dove si trovano i tuoi server oggi.
 
 ## Regioni Disponibili
 
@@ -47,7 +49,7 @@ Ogni regione esegue un'infrastruttura indipendente. Non esistono query interregi
 
 ## Garanzie dei Dati EU
 
-La regione EU fornisce garanzie aggiuntive per le organizzazioni con requisiti di residenza dei dati europei:
+Se sei soggetto a requisiti di residenza dei dati europei, la regione EU aggiunge garanzie specifiche:
 
 - **Database D1**: eseguito in Europa Orientale (hint di posizione EEUR)
 - **Archiviazione config R2**: utilizza l'applicazione giurisdizionale EU (garanzia contrattuale, non solo un hint di posizione)

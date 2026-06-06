@@ -1,16 +1,16 @@
 ---
 title: RDC CLI チートシート
-description: "rdc コマンドのクイックリファレンス：設定、リポジトリ、マシン、同期、コンテナ。"
+description: "rdc コマンドのクイックリファレンス：設定、リポジトリ、マシン、同期、コンテナ。全オプション一覧は任意のコマンドに --help を付けて確認できます。"
 category: Guides
 order: 3
 language: ja
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # RDC CLI チートシート
 
-最もよく使われる `rdc` コマンドのクイックリファレンスです。全オプションを確認するには、任意のコマンドに `--help` を付けて実行してください。
+ここでは全ての `rdc` コマンドをリストしているのではなく、デプロイ時に頻繁に使用されるコマンドのみを掲載しています。全オプションを確認するには、任意のコマンドに `--help` を付けて実行してください。エッジケースと滅多に使わないオプションは、完全なリファレンスに記載されています。
 
 ## リポジトリのライフサイクル
 
@@ -23,6 +23,22 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc repo fork --parent <repo> --tag <tag> -m <machine>` | リポジトリをフォークする (ほぼ瞬時、BTRFS reflink) |
 | `rdc repo takeover --name <repo> -m <machine>` | 既存リポジトリの所有権を取得する |
 | `rdc config repository list` | 名前と GUID を含む全リポジトリを一覧表示する |
+
+## リポジトリごとのシークレット
+
+デプロイ時のみに使用される書き込み専用の認証情報です。`get` はダイジェストのみを返します。値は決して返されません。完全なガイドは [リポジトリ § シークレット](/ja/docs/repositories#secrets) を参照してください。
+
+| コマンド | 説明 |
+|---------|------|
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\|file] --current ""` | 新しいシークレットを作成する (`--current ""` で初回書き込み) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev>` | 既存シークレットを上書きする (パスワードスタイルの事前条件) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret` | 事前値を検証せずに上書きする (ローテーションとして監査される) |
+| `rdc repo secret list --name <repo>` | シークレット名と配信モードを一覧表示する (値とダイジェストは表示されない) |
+| `rdc repo secret get --name <repo> --key <KEY>` | シークレットダイジェストとモードを表示する (プレーンテキスト値は表示されない) |
+| `rdc repo secret unset --name <repo> --key <KEY> --current <prev>` | シークレットを削除する |
+| `rdc repo secret unset --name <repo> --key <KEY> --rotate-secret` | 事前値を検証せずに削除する |
+
+> フォークはシークレットを継承しません。フォーク上で `rdc repo secret set --name <repo>:<tag>` で明示的に設定してください。
 
 ## バックアップと復元
 
@@ -95,8 +111,9 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc term connect -m <machine>` | マシンへの SSH ターミナルを開く |
 | `rdc term connect -m <machine> -r <repo>` | リポジトリへの SSH ターミナルを開く (DOCKER_HOST を設定) |
 | `rdc term connect -m <machine> -c "<command>"` | マシン上でコマンドを実行する |
-| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | ファイル・ディレクトリ・複数ソースをリポジトリにアップロードする |
-| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | リポジトリのディレクトリをローカルにダウンロードする |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | 1 つ以上のローカルファイル/ディレクトリをリポジトリにアップロードする |
+| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | 単一のローカルファイルを明示的なリモートパスにアップロードする |
+| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | リポジトリディレクトリをローカルにダウンロードする |
 | `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | 単一のリモートファイルをローカルディレクトリにダウンロードする |
 | `rdc vscode connect -m <machine> -r <repo>` | VS Code Remote SSH セッションを開く |
 

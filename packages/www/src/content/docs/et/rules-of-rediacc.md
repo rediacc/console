@@ -4,8 +4,8 @@ description: "Olulised reeglid ja kokkulepped rakenduste ehitamiseks Rediacci pl
 category: "Guides"
 order: 5
 language: et
-sourceHash: "1d227a06272a0050"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "74803e91ef07b03c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Rediacci reeglid
@@ -132,13 +132,13 @@ Renet süstib need automaatselt igasse konteinerisse:
 
 ### Hosti turvapoliitikad OS-i kaupa
 
-Kõigil viiel ametlikult toetatud serveri OS-il (vaadake [Nõuded](/en/docs/requirements)) kasutavad repositooriumipõhine dockeri deemon ja selle käitatavad konteinerid **vaikimisi konteinersilte**. `rdc config machine setup` ei installi kohandatud SELinuxi poliitikat ega AppArmori profiili.
+Kõigil viiel ametlikult toetatud serveri OS-il (vaadake [Nõuded](/en/docs/requirements)) kasutavad repositooriumipõhine dockeri deemon ja selle käitatavad konteinerid **vaikimisi konteinersilte**. `rdc config machine setup` ei installi kohandatud SELinuxi poliitikat ega AppArmori profiili. See on tahtlik: kompromiss seisneb selles, et konteineri protsessid töötavad hosti OS-i vaikimisi sildi poliitika all, mitte Rediacci-spetsiifilise pidamispoliitika all. Kui teie ohumudelis on vajalikud kohustusliku juurdepääsu kontrollid konteineri tasandil, konfigureerige need hosti tasandil enne juurutamist.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor on vaikimisi lubatud. Konteinerid töötavad vaikimisi docker-container profiili all. Ainus erand on CRIU (`apparmor=unconfined` `rediacc.checkpoint=true`-konteinerite jaoks, vastavalt ülaltoodud märkusele).
-- **Fedora 43 / Oracle Linux 10**: SELinux töötab vaikimisi jõustataval režiimil. Konteinerid saavad standardse `container_t` konteksti. Lisapoliitika installimine pole vajalik. Kui seadistamise samm ebaõnnestub AVC-keeldumistega, vaadake [Tõrkeotsing → SELinuxi keeldumised](/en/docs/troubleshooting).
+- **Fedora 43 / Oracle Linux 10**: SELinux töötab vaikimisi jõustataval režiimil. Konteinerid saavad standardse `container_t` konteksti. Lisapoliitika installimine pole vajalik. Kui seadistamise samm ebaõnnestub AVC-keeldumistega, vaadake [Tõrkeotsing – SELinuxi keeldumised](/en/docs/troubleshooting).
 - **Debian 13**: AppArmor on saadaval, kuid ei jõustata vaikimisi kõigil domeenidel. Konteinerid kasutavad endiselt docker-container profiili.
 
-OS-põhist turvaasendi lippu pole vaja; `rdc` ja `renet` tuvastavad, mis töötab, ja toodavad sama repositooriumipõhise isoleerimise kõigil viiel distributsioonil.
+Kokkuvõte: `rdc` ja `renet` tuvastavad käitatava OS-i automaatselt ja toodavad sama repositooriumipõhise isoleerimise kõigil viiel toetatud distributsioonil. OS-põhist turvaasendi lippu pole vaja.
 
 ## Turvalisus
 

@@ -1439,7 +1439,7 @@
   /* 968px - respects user font size */
   .pricing-hero {
     min-height: auto;
-    padding: var(--space-16) var(--space-4);
+    padding: calc(var(--nav-top-offset) + var(--space-6)) var(--space-4) var(--space-16);
   }
 
   .pricing-hero h1 {

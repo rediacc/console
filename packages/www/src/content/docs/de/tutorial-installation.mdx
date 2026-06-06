@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: essentials
 order: 1
 language: de
-sourceHash: "9b8f5c6aa1b44fd5"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "45226ad6fbefa4f2"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -49,9 +49,9 @@ Führen Sie `rdc doctor` aus, um Node, SSH und die übrigen Abhängigkeiten von 
 
 ![rdc auf Ihrem Laptop, renet auf dem Server](/img/tutorials/tutorial-installation/slide-2.svg)
 
-`rdc` ist die CLI auf Ihrem Laptop. Der Server betreibt eine separate Komponente namens `renet`, die `rdc` über SSH bereitstellt und steuert. Sie müssen sich niemals manuell per SSH in einen Server einloggen. `rdc` erledigt das für Sie.
+`rdc` ist die CLI auf Ihrem Laptop. Der Server betreibt eine separate Komponente namens `renet`, die `rdc` über SSH bereitstellt und steuert. Sie müssen sich niemals manuell per SSH in einen Server einloggen. `rdc` erledigt das für Sie. Das ist das Modell: ein Tool auf Ihrem Computer, nichts, das Sie direkt auf dem Server verwalten müssen.
 
-Das richten wir in den nächsten zwei Tutorials ordentlich ein.
+Wir behandeln die renet-Konfiguration in den nächsten zwei Tutorials. Sie ist aufwendiger als die CLI-Installation, aber Sie müssen sie nur einmal pro Machine durchführen.
 
 ---
 

@@ -1,107 +1,106 @@
 ---
 title: "Repositórios"
-description: "Criar, gerir e operar repositórios encriptados com LUKS em máquinas remotas."
+description: "Crie, gerencie e opere repositórios criptografados com LUKS em máquinas remotas."
 category: "Guides"
 order: 4
 language: pt
-sourceHash: "531ee9648611844e"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
-untranslated: true
+sourceHash: "ffb07e5870accfd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# Repositories
+# Repositórios
 
-A **repository** is a LUKS-encrypted disk image on a remote server. When mounted, it provides:
-- An isolated filesystem for your application data
-- A dedicated Docker daemon (separate from the host's Docker)
-- Unique loopback IPs for each service within a /26 subnet
+Um **repositório** é uma imagem de disco criptografada com LUKS em um servidor remoto. Quando montado, fornece:
+- Um sistema de arquivos isolado para os dados da sua aplicação
+- Um daemon Docker dedicado (separado do Docker do host)
+- IPs de loopback únicos para cada serviço dentro de uma subnet /26
 
-## Create a Repository
+## Criar um Repositório
 
 ```bash
 rdc repo create --name my-app -m server-1 --size 10G
 ```
 
-| Option | Required | Description |
+| Opção | Obrigatório | Descrição |
 |--------|----------|-------------|
-| `-m, --machine <name>` | Yes | Target machine where the repository will be created |
-| `--size <size>` | Yes | Size of the encrypted disk image (e.g., `5G`, `10G`, `50G`) |
-| `--skip-router-restart` | No | Skip restarting the route server after the operation |
+| `-m, --machine <name>` | Sim | Máquina de destino onde o repositório será criado |
+| `--size <size>` | Sim | Tamanho da imagem de disco criptografada (por ex: `5G`, `10G`, `50G`) |
+| `--skip-router-restart` | Não | Pular o reinício do servidor de rota após a operação |
 
-The output will show three auto-generated values:
+A saída mostrará três valores gerados automaticamente:
 
-- **Repository GUID** -- A UUID that identifies the encrypted disk image on the server.
-- **Credential** -- A random passphrase used to encrypt/decrypt the LUKS volume.
-- **Network ID** -- An integer (starting at 2816, incrementing by 64) that determines the IP subnet for this repository's services.
+- **Repository GUID**: Uma UUID que identifica a imagem de disco criptografada no servidor.
+- **Credential**: Uma frase de senha aleatória usada para criptografar/descriptografar o volume LUKS.
+- **Network ID**: Um inteiro (começando em 2816, incrementando em 64) que determina a subnet de IP para os serviços deste repositório.
 
-> **Store the credential securely.** It is the encryption key for your repository. If lost, data cannot be recovered. The credential is stored in your local `config.json` but is not stored on the server.
+> **Armazene a credencial com segurança.** É a chave de criptografia do seu repositório. Se perdida, os dados não poderão ser recuperados. A credencial é armazenada no seu `config.json` local, mas não é armazenada no servidor.
 
-## Mount and Unmount
+## Montar e Desmontar
 
-Mount decrypts and makes the repository filesystem accessible. Unmount closes the encrypted volume.
+Montar descriptografa e torna o sistema de arquivos do repositório acessível. Desmontar fecha o volume criptografado.
 
 ```bash
-rdc repo mount --name my-app -m server-1  # Decrypt and mount
-rdc repo unmount --name my-app -m server-1  # Unmount and re-encrypt
+rdc repo mount --name my-app -m server-1  # Descriptografa e monta
+rdc repo unmount --name my-app -m server-1  # Desmonta e re-criptografa
 ```
 
-| Option | Description |
+| Opção | Descrição |
 |--------|-------------|
-| `--checkpoint` | Create a CRIU checkpoint before mount/unmount (for containers with `rediacc.checkpoint=true` label) |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--checkpoint` | Cria um checkpoint CRIU antes de montar/desmontar (para contêineres com label `rediacc.checkpoint=true`) |
+| `--skip-router-restart` | Pula o reinício do servidor de rota após a operação |
 
-## Check Status
+## Verificar Status
 
 ```bash
 rdc repo status --name my-app -m server-1
 ```
 
-## List Repositories
+## Listar Repositórios
 
 ```bash
 rdc repo list -m server-1
 ```
 
-### Type column and the state mirror
+### Coluna Type e o espelho de estado
 
-The output table includes a `Type` column with three values:
+A tabela de saída inclui uma coluna `Type` com três valores:
 
-- **`grand`**. A top-level repository registered in your local CLI config without a parent. The base case.
-- **`fork`**. A copy-on-write fork of another repo. Identified either via `grandGuid` in the local config **or** via the renet `.interim/state` mirror on the machine. Either source is authoritative; both should agree once the mirror is populated.
-- **`unknown`**. Neither signal can classify the repo. Most often a pre-mirror legacy fork (created before the mirror code shipped and never re-mounted since), or a stale `grand` whose local-config entry was deleted by mistake. The CLI refuses to guess; the operator should run [the mirror backfill](/en/docs/pruning#migration-state-mirror-backfill) or remove the directory if it's genuinely orphaned.
+- **`grand`**: Um repositório de nível superior registrado na sua configuração de CLI local sem um pai. O caso base.
+- **`fork`**: Uma cópia copy-on-write de outro repositório. Identificado via `grandGuid` na configuração local **ou** via o espelho `.interim/state` do renet na máquina. Qualquer uma das fontes é autoritária; ambas devem concordar uma vez que o espelho está preenchido.
+- **`unknown`**: Nenhum sinal consegue classificar o repositório. Frequentemente um fork legacy pré-espelho (criado antes do código do espelho ser entregue e nunca remontado desde então), ou um `grand` obsoleto cuja entrada de configuração local foi deletada por engano. O CLI recusa adivinhar; o operador deve executar o [preenchimento de backfill do espelho de estado](/en/docs/pruning#migration-state-mirror-backfill) ou remover o diretório se for genuinamente órfão.
 
-The `.interim/state/<guid>/.rediacc.json` mirror is a small sidecar file written **outside** the LUKS-encrypted volume so backup tooling and `repo list` can read fork lineage without unlocking each image. It carries the same shape as the in-volume `.rediacc.json` (`is_fork`, `grand_guid`, `name`, etc.) and is refreshed on every `Repository.SaveState`. I.e. every mount and every state mutation. It's the source of truth for fork detection in scheduled backups: an unmounted fork with a mirror that says `is_fork: true` is correctly skipped from `cold` and `hot` uploads.
+O arquivo de espelho `.interim/state/<guid>/.rediacc.json` é um pequeno arquivo sidecar escrito **fora** do volume criptografado com LUKS para que ferramentas de backup e `repo list` possam ler a linhagem de fork sem desbloquear cada imagem. Carrega a mesma forma que o `.rediacc.json` no volume (`is_fork`, `grand_guid`, `name`, etc.) e é atualizado a cada `Repository.SaveState`. Ou seja, a cada montagem e toda mutação de estado. É a fonte da verdade para detecção de fork em backups agendados: um fork desmontado com um espelho que diz `is_fork: true` é corretamente ignorado dos uploads `cold` e `hot`.
 
-For routine cleanup of unknown entries, see [`rdc machine prune --prune-unknown`](/en/docs/pruning#phase-3---prune-unknown-surgical).
+Para limpeza rotineira de entradas desconhecidas, veja [`rdc machine prune --prune-unknown`](/en/docs/pruning#phase-3---prune-unknown-surgical).
 
-## Resize
+## Redimensionar
 
-Set the repository to an exact size or expand by a given amount:
+Defina o repositório para um tamanho exato ou expanda por uma quantidade específica:
 
 ```bash
-rdc repo resize --name my-app -m server-1 --size 20G  # Set to exact size
-rdc repo expand --name my-app -m server-1 --size 5G  # Add 5G to current size
+rdc repo resize --name my-app -m server-1 --size 20G  # Define para tamanho exato
+rdc repo expand --name my-app -m server-1 --size 5G  # Adiciona 5G ao tamanho atual
 ```
 
-> The repository must be unmounted before resizing.
+> O repositório deve estar desmontado antes de redimensionar.
 
 ## Fork
 
-Create a copy of an existing repository at its current state:
+Crie uma cópia de um repositório existente em seu estado atual:
 
 ```bash
 rdc repo fork --parent my-app --tag staging -m server-1
 ```
 
-Forks use the name:tag model: the resulting fork is named `my-app:staging`. This creates a new encrypted copy with its own GUID and network ID, while sharing the parent's name. The fork shares the same LUKS credential as the parent.
+Forks usam o modelo name:tag: o fork resultante é nomeado `my-app:staging`. Isto cria uma nova cópia criptografada com seu próprio GUID e ID de rede, enquanto compartilha o nome do pai. O fork compartilha a mesma credencial LUKS do pai.
 
-> Forks share the parent's data via BTRFS reflink, including any credentials stored on disk. See [What Rediacc does not isolate](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) for the implications when those credentials authorize external services like Stripe, AWS, or Railway. To keep deploy-time credentials out of the fork's reach, use [per-repo secrets](#secrets) instead of baking values into `.env` files inside the repo.
+> Forks compartilham os dados do pai via reflink BTRFS, incluindo quaisquer credenciais armazenadas em disco. Veja [O que o Rediacc não isola](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) para as implicações quando essas credenciais autorizam serviços externos como Stripe, AWS ou Railway. Para manter credenciais de tempo de deploy fora do alcance do fork, use [per-repo secrets](#secrets) em vez de baking valores em arquivos `.env` dentro do repositório.
 
-At fork creation, `repo fork` writes the [state mirror sidecar](#type-column-and-the-state-mirror) at `<datastore>/.interim/state/<fork-guid>/.rediacc.json` immediately. Without unlocking the volume. So the new fork is correctly identified as `is_fork: true` from the moment of creation. This lets scheduled backups skip it (forks are excluded from the upload pipeline by default) even if it's never mounted. When forking a fork, `grand_guid` chains correctly: the new fork's mirror points at the original grand parent's GUID, not at the intermediate fork.
+Na criação do fork, `repo fork` escreve o [arquivo sidecar do espelho de estado](#type-column-and-the-state-mirror) em `<datastore>/.interim/state/<fork-guid>/.rediacc.json` imediatamente. Sem desbloquear o volume. Então o novo fork é corretamente identificado como `is_fork: true` a partir do momento da criação. Isto permite que backups agendados o ignorem (forks são excluídos do pipeline de upload por padrão) mesmo que nunca seja montado. Ao fazer fork de um fork, `grand_guid` encadeia corretamente: o espelho do novo fork aponta para o GUID do avô original, não para o fork intermediário.
 
-## Versionamento semelhante ao git
+## Versionamento tipo Git
 
-Os forks podem funcionar como commits git. `rdc repo commit` congela um fork de trabalho num commit imutável e byte-estável; `rdc repo branch` nomeia uma linha de histórico; `rdc repo checkout` clona um commit via reflink de volta num fork gravável; `rdc repo log` percorre a cadeia de pais; e `rdc repo merge` combina duas linhas sem modificar um repositório em produção no local. `rdc repo fork --immutable` produz uma base equivalente a um commit num único passo.
+Forks podem atuar como commits git. `rdc repo commit` congela um fork de trabalho em um commit imutável e byte-estável; `rdc repo branch` nomeia uma linha de histórico; `rdc repo checkout` reflink-clona um commit de volta para um fork gravável; `rdc repo log` caminha a cadeia de pais; e `rdc repo merge` combina duas linhas sem mutar um repositório vivo no local. `rdc repo fork --immutable` produz uma base equivalente a um commit em um único passo.
 
 ```bash
 rdc repo commit --name my-app:work --message "schema migration applied" -m server-1
@@ -109,20 +108,20 @@ rdc repo branch --branch staging --name my-app:work
 rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-1
 ```
 
-Veja a [referência de ramificação semelhante ao git](/pt/docs/repo-branching) para o conjunto completo de comandos, opções e exemplos práticos.
+Veja a [referência de branching tipo Git](/en/docs/repo-branching) para o conjunto completo de comandos, opções e exemplos práticos.
 
 ## Secrets
 
-Per-repo secrets are deploy-time credentials injected into containers without being written to the encrypted repository image. They are kept on a separate plane from the repository's data, so `rdc repo fork` does not propagate them. A fork starts with an empty secrets map and its containers boot identifying themselves as a different external principal than the parent.
+Secrets por repositório são credenciais de tempo de deploy injetadas em contêineres sem ser escritas para a imagem do repositório criptografado. Elas são mantidas em um plano separado dos dados do repositório, então `rdc repo fork` não as propaga. Um fork começa com um mapa de secrets vazio e seus contêineres inicializam se identificando como um principal externo diferente do pai.
 
-> Want a step-by-step walkthrough? See the [Managing Secrets tutorial](/en/docs/tutorial-managing-secrets) for the full set/list/deploy/verify/rotate cycle.
+> Quer um passo a passo? Veja o [tutorial Gerenciando Secrets](/en/docs/tutorial-managing-secrets) para o conjunto completo de ciclo de set/list/deploy/verify/rotate.
 
-**Write-only model (GitHub-style):** `get` returns the SHA-256 digest only. The plaintext value is never returned to anyone, human or agent. If you forget what a value is, look it up in your password manager and rotate; you cannot read it back from Rediacc by design. This eliminates an entire class of leak: terminal recordings, shell history, accidental redirection, shoulder-surfing.
+**Modelo write-only (estilo GitHub)**: `get` retorna apenas o digest SHA-256. O valor de texto simples nunca é retornado para ninguém, humano ou agente. Se esquecer qual é um valor, procure-o no seu gerenciador de senhas e rotacione; você não pode lê-lo de volta do Rediacc por design. Isto elimina uma classe inteira de vazamento: gravações de terminal, histórico de shell, redirecionamento acidental, espiação de ombro.
 
-Two delivery modes:
+Dois modos de entrega:
 
-- `env`. The secret is exported as `REDIACC_SECRET_<KEY>` in the renet shell on the target machine. Reference it from your `docker-compose.yml` via `${REDIACC_SECRET_<KEY>}` interpolation. Visible inside the container's environment, so use this for connection-string-shaped values that the application already expects in env.
-- `file`. The secret is written to `/var/run/rediacc/secrets/<networkID>/<KEY>` on the host (tmpfs, never persisted). Reference it from your compose file via a top-level `secrets:` declaration with `file:` source, plus a per-service `secrets:` list. Containers read from `/run/secrets/<key>`. Prefer this mode for anything sensitive. It never appears in `docker inspect` or `/proc/<pid>/environ`.
+- `env`: O secret é exportado como `REDIACC_SECRET_<KEY>` no shell do renet na máquina de destino. Referencie-o do seu `docker-compose.yml` via interpolação `${REDIACC_SECRET_<KEY>}`. Visível dentro do ambiente do contêiner, então use isso para valores em forma de string de conexão que a aplicação já espera em env.
+- `file`: O secret é escrito em `/var/run/rediacc/secrets/<networkID>/<KEY>` no host (tmpfs, nunca persistido). Referencie-o do seu arquivo compose via declaração `secrets:` de nível superior com fonte `file:`, mais uma lista `secrets:` por serviço. Contêineres leem de `/run/secrets/<key>`. Prefira este modo para qualquer coisa sensível. Nunca aparece em `docker inspect` ou `/proc/<pid>/environ`.
 
 ```bash
 # Set, list, get (digest only), unset
@@ -133,11 +132,11 @@ rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } 
 rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 
-**Symmetric mutation gate.** Both humans and agents need `--current <previous-value>` to overwrite or unset a secret (passwd-style precondition). For first-write of a new key, pass `--current ""` (empty). To rotate without verifying the prior value, pass `--rotate-secret` instead. This is loudly audited as a rotation. `--current` and `--rotate-secret` are mutually exclusive.
+**Gate de mutação simétrica**: Tanto humanos quanto agentes precisam de `--current <previous-value>` para sobrescrever ou desabilitar um secret (precondição estilo passwd). Para primeira escrita de uma chave nova, passe `--current ""` (vazio). Para rotacionar sem verificar o valor anterior, passe `--rotate-secret` em vez disso. Isto é loudly auditado como uma rotação. `--current` e `--rotate-secret` são mutuamente exclusivos.
 
-Pass `--value -` to read from stdin instead of argv (avoids shell-history exposure for one-shot writes).
+Passe `--value -` para ler de stdin em vez de argv (evita exposição de histórico de shell para escritas únicas).
 
-In your `docker-compose.yml`:
+No seu `docker-compose.yml`:
 
 ```yaml
 services:
@@ -153,84 +152,84 @@ secrets:
     file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
 ```
 
-The lowercase service-side reference (`stripe_live_key`) is the in-container `/run/secrets/<name>` filename; the uppercase tail of the host path (`STRIPE_LIVE_KEY`) matches what you set with `--key`. `${REDIACC_NETWORK_ID}` is interpolated by `renet compose` automatically.
+A referência no lado do serviço em minúsculas (`stripe_live_key`) é o nome do arquivo `/run/secrets/<name>` no contêiner; a cauda em maiúsculas do caminho do host (`STRIPE_LIVE_KEY`) coincide com o que você definiu com `--key`. `${REDIACC_NETWORK_ID}` é interpolado pelo `renet compose` automaticamente.
 
-> **Cross-repo isolation enforced**: renet's compose validator rejects `secrets: file:` (and `configs: file:`, and `env_file:`) paths that reference any other repo's network ID. The literal `${REDIACC_NETWORK_ID}` token (or your own network's int) is the only accepted form for `/var/run/rediacc/secrets/...` references. And `--unsafe` does NOT override this check. The Landlock sandbox around the Rediaccfile bash subprocess also scopes filesystem access to your own network's secrets directory only, so a malicious `cat /var/run/rediacc/secrets/<other>/X` from a Rediaccfile fails with EACCES at the kernel layer.
+> **Isolamento entre repositórios executado**: o validador compose do renet rejeita caminhos `secrets: file:` (e `configs: file:`, e `env_file:`) que referenciem qualquer outro network ID de repositório. O token literal `${REDIACC_NETWORK_ID}` (ou o inteiro da sua própria rede) é a única forma aceita para referências `/var/run/rediacc/secrets/...`. E `--unsafe` NÃO sobrescreve esta verificação. A sandbox Landlock ao redor do subprocess bash do Rediaccfile também limita o acesso do sistema de arquivos apenas ao diretório de secrets da sua própria rede, então um `cat /var/run/rediacc/secrets/<other>/X` malicioso de um Rediaccfile falha com EACCES na camada do kernel.
 
-> **Forks**: `rdc repo fork` does **not** copy secrets. To use secrets in a fork, run `rdc repo secret set --name <fork>` on the fork explicitly. This is the load-bearing safety property. The fork's containers should not be able to act as the production principal against external services.
+> **Forks**: `rdc repo fork` **não** copia secrets. Para usar secrets em um fork, execute `rdc repo secret set --name <fork>` no fork explicitamente. Esta é a propriedade de segurança que sustenta a carga. Os contêineres do fork não devem ser capazes de agir como o principal de produção contra serviços externos.
 
-> **Agents** (Claude Code, Cursor, etc.): `repo secret list` and `repo secret get` are exposed as MCP tools (read-safe. Names + digests only, never values). `set` and `unset` are CLI-only because the `--current`/`--rotate-secret` ceremony requires human eyes-on; agents calling them via shell get the same gate as humans. When precondition fails, the JSON envelope contains a structured `errors[].next.options[].run` field. Agents should relay those commands verbatim to the user. See [AI agent safety](/en/docs/ai-agents-safety) for the full model.
+> **Agentes** (Claude Code, Cursor, etc.): `repo secret list` e `repo secret get` são expostos como ferramentas MCP (read-safe: apenas nomes + digests, nunca valores). `set` e `unset` são apenas CLI porque a cerimônia `--current`/`--rotate-secret` requer olhos humanos; agentes que os chamam via shell recebem o mesmo gate que humanos. Quando a precondição falha, o envelope JSON contém um campo estruturado `errors[].next.options[].run`. Agentes devem retransmitir esses comandos verbatim para o usuário. Veja [AI agent safety](/en/docs/ai-agents-safety) para o modelo completo.
 
-## Validate
+## Validar
 
-Check the filesystem integrity of a repository:
+Verifique a integridade do sistema de arquivos de um repositório:
 
 ```bash
 rdc repo validate --name my-app -m server-1
 ```
 
-## Ownership
+## Propriedade
 
-Set file ownership within a repository to the universal user (UID 7111). This is typically needed after uploading files from your workstation, which arrive with your local UID.
+Defina a propriedade de arquivo dentro de um repositório para o usuário universal (UID 7111). Isto é tipicamente necessário após fazer upload de arquivos da sua estação de trabalho, que chegam com seu UID local.
 
 ```bash
 rdc repo ownership --name my-app -m server-1
 ```
 
-The command automatically detects Docker container data directories (writable bind mounts) and excludes them. This prevents breaking containers that manage files with their own UIDs (e.g., MariaDB=999, www-data=33).
+O comando detecta automaticamente diretórios de dados de contêiner Docker (bind mounts graváveis) e os exclui. Isto previne quebrar contêineres que gerenciam arquivos com seus próprios UIDs (ex: MariaDB=999, www-data=33).
 
-| Option | Description |
+| Opção | Descrição |
 |--------|-------------|
-| `--uid <uid>` | Set a custom UID instead of 7111 |
-| `--skip-router-restart` | Skip restarting the route server after the operation |
+| `--uid <uid>` | Define um UID customizado em vez de 7111 |
+| `--skip-router-restart` | Pula o reinício do servidor de rota após a operação |
 
-To force ownership on all files, including container data:
+Para forçar propriedade em todos os arquivos, incluindo dados de contêiner:
 
 ```bash
 rdc repo ownership --name my-app -m server-1
 ```
 
 
-See the [Migration Guide](/en/docs/migration) for a complete walkthrough of when and how to use ownership during project migration.
+Veja o [Guia de Migração](/en/docs/migration) para um passo a passo completo de quando e como usar propriedade durante migração de projeto.
 
 ## Template
 
-Apply a template to initialize a repository with files:
+Aplique um template para inicializar um repositório com arquivos:
 
 ```bash
 rdc repo template apply --name my-template -m server-1 -r my-app --file ./my-template.tar.gz
 ```
 
-## Delete
+## Deletar
 
-Permanently destroy a repository and all data inside it:
+Destrua permanentemente um repositório e todos os dados dentro dele:
 
 ```bash
 rdc repo delete --name my-app -m server-1
 ```
 
-> This permanently destroys the encrypted disk image. This action cannot be undone.
+> Isto destrói permanentemente a imagem de disco criptografada. Esta ação não pode ser desfeita.
 
-## Migrate Repository
+## Migrar Repositório
 
-Live-migrate a repository from one machine to another with minimal downtime.
+Migre um repositório ao vivo de uma máquina para outra. O único downtime é a fase final de delta-sync: tipicamente segundos a poucos minutos dependendo da taxa de escrita no cutover.
 
 ```bash
 rdc repo migrate --name my-app --from server-1 --to server-2
 ```
 
-| Option | Description |
+| Opção | Descrição |
 |--------|-------------|
-| `--provision` | Provision the repository on the target machine before migrating (creates LUKS image and registers config) |
-| `--checkpoint` | Create a CRIU checkpoint of running containers before cutover |
-| `--bwlimit <kbps>` | Limit rsync bandwidth in kilobytes per second |
-| `--skip-dns` | Skip updating DNS records after cutover |
+| `--provision` | Provision o repositório na máquina de destino antes de migrar (cria imagem LUKS e registra configuração) |
+| `--checkpoint` | Cria um checkpoint CRIU de contêineres em execução antes do cutover |
+| `--bwlimit <kbps>` | Limita largura de banda do rsync em kilobytes por segundo |
+| `--skip-dns` | Pula atualização de registros DNS após cutover |
 
-**Three-phase flow:**
+**Fluxo de três fases:**
 
-1. **Hot pre-copy** - rsync transfers data while the repository stays running on the source. Large files are transferred before any downtime.
-2. **Cutover** - the repository is stopped on the source, a final rsync pass syncs remaining changes, and the repository starts on the target.
-3. **Start on target** - renet mounts and starts the repository on the target machine. DNS is updated unless `--skip-dns` is passed.
+1. **Hot pre-copy**: rsync transfere dados enquanto o repositório fica em execução na origem. Arquivos grandes são transferidos antes de qualquer downtime.
+2. **Cutover**: o repositório é parado na origem, um passe final do rsync sincroniza mudanças restantes, e o repositório inicia na máquina de destino.
+3. **Start on target**: renet monta e inicia o repositório na máquina de destino. DNS é atualizado a menos que `--skip-dns` seja passado.
 
 ![Repository Live Migration](/img/repo-migrate-flow.svg)
 
@@ -238,22 +237,22 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 
 | | `repo push` | `repo migrate` |
 |--|-------------|----------------|
-| Operation | Copy | Move |
-| Source after | Unchanged | Stopped |
-| Downtime | None (copy only) | Brief cutover window |
-| DNS update | No | Yes (unless `--skip-dns`) |
-| Use case | Backup, staging clone | Machine replacement, server move |
+| Operação | Cópia | Movimento |
+| Origem depois | Inalterada | Parada |
+| Downtime | Nenhum (apenas cópia) | Breve janela de cutover |
+| Atualização DNS | Não | Sim (a menos que `--skip-dns`) |
+| Caso de uso | Backup, clone de staging | Substituição de máquina, mudança de servidor |
 
 ## Prune
 
-After deleting repositories or recovering from failed operations, orphaned mount directories, lock files, and immovable markers may remain. Prune removes these safely:
+Depois de deletar repositórios ou recuperar de operações falhadas, diretórios de montagem órfãos, arquivos de lock e marcadores imóveis podem permanecer. Prune remove estes com segurança:
 
 ```bash
-# Preview what would be removed
+# Preview o que seria removido
 rdc machine prune --name server-1 --dry-run
 
-# Remove orphaned resources
+# Remove recursos órfãos
 rdc machine prune --name server-1
 ```
 
-Only resources with no matching repository image are affected. Non-empty mount directories are never removed.
+Apenas recursos sem imagem de repositório correspondente são afetados. Diretórios de montagem não vazios nunca são removidos.

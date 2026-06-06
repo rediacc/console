@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 10
 language: fr
-sourceHash: "7cfabe7bbf3914c3"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "17dc03eb0589d606"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Dépannage
@@ -80,7 +80,7 @@ Si `rdc config machine setup` ou `renet system check-btrfs` échoue avec :
 Module btrfs not found
 ```
 
-...le serveur utilise le noyau standard de RHEL 10, livré sans le module btrfs intégré. Il ne s'agit pas d'un bug Rediacc ; RHEL 10 a supprimé btrfs intentionnellement. La solution est d'utiliser **Oracle Linux 10 à la place**. Oracle 10 utilise par défaut l'Unbreakable Enterprise Kernel (UEK), qui conserve btrfs. Consultez [Prérequis -- Pourquoi UEK ?](/en/docs/requirements) pour l'explication complète.
+...le serveur utilise le noyau standard de RHEL 10, livré sans le module btrfs intégré. Il ne s'agit pas d'un bug Rediacc ; RHEL 10 a supprimé btrfs intentionnellement. La solution est d'utiliser **Oracle Linux 10 à la place**. Oracle 10 utilise par défaut l'Unbreakable Enterprise Kernel (UEK), qui conserve btrfs. Consultez [Prérequis - Pourquoi UEK ?](/en/docs/requirements) pour l'explication complète.
 
 ## Échec de la création du dépôt
 
@@ -175,7 +175,7 @@ Si vos conteneurs apparaissent sur le Docker daemon du système hôte au lieu du
 
 - **Utilisez `docker` directement**, les fonctions du Rediaccfile s'exécutent déjà avec des privilèges suffisants
 - Si vous devez utiliser sudo, utilisez `sudo -E docker` pour préserver les variables d'environnement
-- Vérifiez votre Rediaccfile pour tout commande `sudo docker` et supprimez le `sudo`
+- Vérifiez votre Rediaccfile pour toute commande `sudo docker` et supprimez le `sudo`
 
 ## Le terminal ne fonctionne pas
 

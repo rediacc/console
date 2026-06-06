@@ -4,8 +4,8 @@ description: "Haftalar önce silinen verileri btrfs anlık görüntüleriyle kur
 category: Use Cases
 order: 2
 language: tr
-sourceHash: "4c1fcb1667a89759"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "e55d51b8df91b20f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Başkaları Verilerini Sonsuza Kadar Kaybedince, Zamanda Geriye Yolculuk Yapabilirsiniz.**
@@ -60,5 +60,5 @@ Mehmet'in Rediacc ile kurduğu zaman makinesi çözümü şu şekilde:
 ## Sonuç
 
 * Şirketin itibarı **24 saat içinde** onarıldı 
-*Mali kayıp **%95** oranında önlendi 
+* Mali kayıp **%95** oranında önlendi 
 * Rediacc, **depolama maliyetlerini artırmadan** sık sık yedekleme yapılabileceğini kanıtladı

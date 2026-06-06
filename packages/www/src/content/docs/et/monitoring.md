@@ -4,8 +4,8 @@ description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning k�
 category: "Guides"
 order: 9
 language: et
-sourceHash: "1d0af1a74a12d49e"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "d3b8ff142fe2df34"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Jälgimine
@@ -130,7 +130,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 
 Frag-veerg on informatiivne. See loeb copy-on-write pildifaili laiendeid, mitte faile, mida su rakendus selle sees loeb, seega loeb see kõrgeks tavapäraste juhuslik-kirjutamise töökoormate korral (andmebaasid, konteinerite kihid) ega ennusta lugemise jõudlust SSD-toega salvestusel. Rediacc ei paku tahtlikult defragmenteerimiskäsku: `btrfs filesystem defragment` jagab lahku reflingitud harked ja hetktõmmised, mis täis-basseiniga võib kasutust dramatiliselt paisutada, samas kui võrdlusmõõtmised ei näita mõõdetavat lugemiskasumit. Täielikud mõõtmised ja põhjendused leiad siit: [Sinu fragmentatsiooninumber näeb kohutav välja. Mõõtsin, mida see tegelikult maksab.](/et/blog/i-benchmarked-btrfs-fragmentation).
 
-Skaneerimine töötab paralleelselt ja võtab 5--15 sekundit sõltuvalt hoidlate arvust ja suurusest. Kui `--storage-health` ei ole täpsustatud, ilmub päringuväljundi järel üherealise vihje meeldetuletusena.
+Skaneerimine töötab paralleelselt ja võtab 5-15 sekundit sõltuvalt hoidlate arvust ja suurusest. Kui `--storage-health` ei ole täpsustatud, ilmub päringuväljundi järel üherealise vihje meeldetuletusena.
 
 ## BTRFS-i skrubb
 

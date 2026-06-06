@@ -1,16 +1,16 @@
 ---
-title: "rdc vs renet: võrdlus"
-description: "Millal kasutada rdc-d ja millal renet'i: kahe tööriista erinevused."
+title: "rdc vs renet"
+description: "Millal kasutada rdc-d ja millal renet'i."
 category: "Concepts"
 order: 1
 language: et
-sourceHash: "026a183f8a5f9dd4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2ccc8590bc6f67c6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # rdc vs renet
 
-Rediacc'il on kaks binaari. Siin on selgitus, millal kumbagi kasutada.
+Rediacc'il on kaks binaari. Kaks erinevat ülesannet, kaks erinevat paika. Siin on selgitus.
 
 | | rdc | renet |
 |---|-----|-------|
@@ -60,7 +60,7 @@ Täieliku läbikäigu leiad [Kiirjuhendist](/et/docs/quick-start).
 - Süsteemi sisekamise kontrollimisel, mis pole `rdc` kaudu saadaval
 - Madala taseme taasteoperatsioonidel
 
-Kõik `renet`-käsud vajavad root-õigusi (`sudo`). Täieliku `renet`-käskude loendi leiad [Serveri viitest](/et/docs/server-reference).
+Kõik `renet`-käsud vajavad root-õigusi (`sudo`). `rdc` ei mähegi kõiki `renet`-alamkäske; selleks, mis pole kaetud, SSH-d sisse ja käivita `renet` otse. Täieliku `renet`-käskude loendi leiad [Serveri viitest](/et/docs/server-reference).
 
 ## Eksperimentaalne: `rdc ops` (kohalikud VM-id)
 

@@ -4,8 +4,8 @@ description: "Comment Rediacc répond aux exigences de la directive européenne 
 category: "Legal"
 order: 8
 language: fr
-sourceHash: "a2078388f7ae1906"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "72a61496d38955d3"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 NIS2 et DORA sont des réglementations européennes qui imposent des exigences de cybersécurité et de résilience opérationnelle aux organisations d'infrastructures critiques et du secteur financier. Les deux sont entrées en vigueur en 2025 et s'appliquent largement aux industries de l'UE.
@@ -20,8 +20,8 @@ Texte intégral : [Directive (UE) 2022/2555](https://eur-lex.europa.eu/eli/dir/2
 
 | Exigence NIS2 | Capacité Rediacc |
 |--------------|-----------------|
-| Mesures de gestion des risques (Art. 21) | Chiffrement LUKS2 au repos, isolation réseau par dépôt, accès SSH uniquement, journalisation d'audit au niveau du compte (40+ types d'événements) |
-| Gestion des incidents (Art. 21(2)(b)) | 40+ types d'événements au niveau du compte (auth, jetons, config, licences) fournissent une piste forensique. L'isolation par dépôt limite le rayon d'impact. |
+| Mesures de gestion des risques (Art. 21) | Chiffrement LUKS2 au repos, isolation réseau par dépôt, accès SSH uniquement, journalisation d'audit (70+ types d'événements incluant opérations machine) |
+| Gestion des incidents (Art. 21(2)(b)) | 70+ types d'événements (auth, jetons, config, licences, opérations machine) fournissent une piste forensique. L'isolation par dépôt limite le rayon d'impact. |
 | Continuité d'activité (Art. 21(2)(c)) | `rdc repo push/pull` avec sauvegarde chiffrée multi-destination. Snapshots CoW pour restauration instantanée. |
 | Sécurité de la chaîne d'approvisionnement (Art. 21(2)(d)) | L'auto-hébergement élimine les risques liés à la chaîne d'approvisionnement SaaS. Aucun fournisseur cloud tiers ne traite vos données. |
 | Sécurité réseau (Art. 21(2)(e)) | Docker daemons par dépôt, règles iptables, isolation IP loopback (sous-réseaux /26). |
@@ -33,7 +33,7 @@ Texte intégral : [Directive (UE) 2022/2555](https://eur-lex.europa.eu/eli/dir/2
 
 La sécurité de la chaîne d'approvisionnement est une préoccupation centrale de NIS2 (Art. 21(2)(d)). Les organisations doivent évaluer et gérer les risques de leurs fournisseurs de services TIC et de leurs sous-traitants.
 
-Rediacc auto-hébergé supprime la plus grande surface d'attaque de la chaîne d'approvisionnement : aucun SaaS tiers ne traite vos données, aucun fournisseur cloud n'a d'accès logique à votre infrastructure, et aucun environnement multi-locataire ne crée d'exposition à la posture de sécurité d'autres clients. [L'attaque de ransomware contre Blackbaud en 2020 a exposé les données de plus de 13 000 organisations clientes, coûtant 49,5 millions de dollars en règlements.](https://www.sec.gov/newsroom/press-releases/2023-48)
+Rediacc auto-hébergé supprime la plus grande surface d'attaque de la chaîne d'approvisionnement, et je sais que cela semble évident. Voici pourquoi c'est important : aucun SaaS tiers ne traite vos données, aucun fournisseur cloud n'a d'accès logique à votre infrastructure, et aucun environnement multi-locataire ne crée d'exposition à la posture de sécurité d'autres clients. Les violations de fournisseurs SaaS ont causé des dégâts en cascade à travers des milliers d'organisations. [L'attaque de ransomware contre Blackbaud en 2020 a exposé les données de plus de 13 000 organisations clientes, coûtant 49,5 millions de dollars en règlements.](https://www.sec.gov/newsroom/press-releases/2023-48)
 
 ---
 
@@ -49,14 +49,14 @@ Texte intégral : [Règlement (UE) 2022/2554](https://eur-lex.europa.eu/eli/reg/
 |--------------|-----------------|
 | Cadre de gestion des risques TIC (Art. 6) | Le chiffrement, l'isolation, la journalisation d'audit et la sauvegarde forment la couche de contrôles techniques. |
 | Protection et prévention (Art. 9) | Chiffrement LUKS2 AES-256 au repos. L'isolation réseau empêche le déplacement latéral. Accès SSH uniquement. |
-| Détection (Art. 10) | 40+ types d'événements au niveau du compte. Tableau de bord d'administration avec filtrage par utilisateur et équipe. Opérations machine auditables via SSH et journaux système. |
+| Détection (Art. 10) | 70+ types d'événements incluant opérations machine (cycle de vie dépôt, sauvegarde, synchronisation, terminal). Tableau de bord d'administration et portail avec filtrage par utilisateur et équipe. Opérations machine également dans les journaux système pour une défense en profondeur. |
 | Réponse et récupération (Art. 11) | Snapshots CoW pour restauration instantanée. `rdc repo push/pull` pour récupération multi-destination. Tests de reprise après sinistre basés sur les forks. |
 | Risque TIC tiers (Art. 28-30) | L'auto-hébergement élimine entièrement la classification de "fournisseur tiers critique de TIC". |
 | Tests de résilience opérationnelle numérique (Art. 24-27) | Le clonage CoW permet des tests de pénétration dirigés par les menaces sur des environnements similaires à la production sans exposition de données. Cloner, tester, détruire. |
 
 ### Risque des fournisseurs TIC tiers
 
-Les exigences les plus contraignantes de DORA concernent la gestion des fournisseurs tiers critiques de TIC (Art. 28-30). Les institutions financières doivent tenir des registres de fournisseurs TIC, mener des évaluations de risques, négocier des dispositions contractuelles spécifiques et planifier des stratégies de sortie.
+C'est ici que DORA devient réellement difficile : gérer les fournisseurs tiers critiques de TIC (Art. 28-30). Les institutions financières doivent tenir des registres de fournisseurs TIC, mener des évaluations de risques, négocier des dispositions contractuelles spécifiques et planifier des stratégies de sortie.
 
 Rediacc auto-hébergé évite cela entièrement. Aucun fournisseur tiers de TIC à enregistrer, évaluer ou surveiller. L'institution financière contrôle directement sa propre infrastructure.
 

@@ -1,12 +1,14 @@
 ---
 title: Riferimento output JSON
-description: Riferimento completo per il formato di output JSON della CLI rdc, schema dell'envelope, gestione degli errori e comandi di discovery per agenti. È già disponibile tramite il flag --output json oppure -o json.
+description: Riferimento completo per il formato di output JSON della CLI rdc, schema dell'envelope, gestione degli errori e comandi di discovery per agenti.
 category: Reference
 order: 51
 language: it
+sourceHash: "9f8d61df26b59757"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Tutti i comandi `rdc` supportano l'output JSON strutturato per il consumo programmatico da parte di agenti AI e script.
+Tutti i comandi `rdc` producono JSON strutturato. Passalo via pipe a uno script oppure forniscilo direttamente a un agente.
 
 ## Abilitazione dell'output JSON
 
@@ -93,7 +95,7 @@ I comandi falliti restituiscono errori strutturati con suggerimenti di ripristin
 
 ### Suggerimenti di azione strutturati `next`
 
-Per i codici di errore ad alto valore (es. `PRECONDITION_MISMATCH`), gli errori includono un campo `next` strutturato che indica all'agente esattamente quale comando suggerire all'utente. **Gli agenti devono riprodurre `next.options[].run` testualmente all'utente, senza sintetizzare un comando proprio**. Questo evita il problema "l'agente inventa un comando inesistente".
+Per i codici di errore ad alto valore come `PRECONDITION_MISMATCH`, l'errore include un campo `next` con i comandi esatti da proporre all'utente. Non tutti i codici di errore espongono questo campo: solo quelli con un percorso di recupero definito. **Gli agenti devono riprodurre `next.options[].run` testualmente all'utente, senza sintetizzare un comando proprio.** Questo evita il caso in cui l'agente inventa un comando inesistente. Succede più spesso di quanto si pensi.
 
 ```json
 {
@@ -138,7 +140,7 @@ Gli errori non riprovabili (autenticazione, non trovato, argomenti non validi) r
 
 ## Filtraggio dell'output
 
-Usa `--fields` per limitare l'output a chiavi specifiche. Questo riduce l'utilizzo dei token quando servono solo dati specifici:
+Usa `--fields` per limitare l'output a chiavi specifiche e ridurre l'utilizzo dei token:
 
 ```bash
 rdc machine containers --name prod-1 -o json --fields name,status,repository
@@ -174,7 +176,7 @@ Comandi con supporto `--dry-run`: `repo up`, `repo down`, `repo delete`, `snapsh
 
 ## Comandi di discovery per agenti
 
-Il sottocomando `rdc agent` fornisce introspezione strutturata agli agenti AI per scoprire le operazioni disponibili in fase di esecuzione.
+Il sottocomando `rdc agent` fornisce agli agenti AI un modo strutturato per scoprire le operazioni disponibili in fase di esecuzione.
 
 ### Elenca tutti i comandi
 
@@ -212,7 +214,7 @@ Restituisce l'albero completo dei comandi con argomenti, opzioni e descrizioni:
 rdc agent schema --command "machine query"
 ```
 
-Restituisce lo schema dettagliato per un singolo comando, inclusi tutti gli argomenti e le opzioni con i loro tipi e valori predefiniti.
+Restituisce lo schema completo per un singolo comando: ogni argomento e opzione con il proprio tipo e valore predefinito.
 
 ### Esegui tramite JSON
 
@@ -220,7 +222,7 @@ Restituisce lo schema dettagliato per un singolo comando, inclusi tutti gli argo
 echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
-Accetta JSON da stdin, mappa le chiavi agli argomenti e alle opzioni del comando, ed esegue con output JSON forzato. Utile per la comunicazione strutturata agente-CLI senza costruire stringhe di comandi shell.
+Accetta JSON da stdin, mappa le chiavi agli argomenti e alle opzioni del comando ed esegue il tutto con output JSON forzato. Usalo quando preferisci non costruire stringhe di comando shell per le chiamate agente-CLI.
 
 ## Esempi di parsing
 

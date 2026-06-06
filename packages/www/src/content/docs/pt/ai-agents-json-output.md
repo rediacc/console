@@ -4,9 +4,11 @@ description: Referência completa para o formato de saída JSON da CLI rdc, esqu
 category: Reference
 order: 51
 language: pt
+sourceHash: "9f8d61df26b59757"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Todos os comandos `rdc` suportam saída JSON estruturada para consumo programático por agentes de IA e scripts.
+Todos os comandos `rdc` produzem JSON estruturado. Encaminhe para um script ou passe diretamente a um agente.
 
 ## Ativar Saída JSON
 
@@ -93,7 +95,7 @@ Os comandos falhados devolvem erros estruturados com sugestões de recuperação
 
 ### Sugestões de ação `next` estruturadas
 
-Para códigos de erro de alto valor (ex. `PRECONDITION_MISMATCH`), os erros incluem um campo `next` estruturado que indica ao agente exatamente que comando sugerir ao utilizador. **Os agentes devem transmitir `next.options[].run` literalmente ao ser humano, em vez de sintetizarem o seu próprio comando**. Isto evita o modo de falha em que o agente inventa um comando que não existe.
+Para códigos de erro de alto valor como `PRECONDITION_MISMATCH`, o erro inclui um campo `next` com os comandos exatos a apresentar ao utilizador. Nem todos os códigos de erro incluem este campo. Apenas aqueles com um caminho de recuperação definido. **Os agentes devem transmitir `next.options[].run` literalmente ao ser humano, em vez de sintetizarem o seu próprio comando.** Isto evita o modo de falha em que o agente inventa um comando que não existe. Acontece mais do que se pensa.
 
 ```json
 {
@@ -138,7 +140,7 @@ Os erros não repetíveis (autenticação, não encontrado, argumentos inválido
 
 ## Filtrar Saída
 
-Use `--fields` para limitar a saída a chaves específicas. Isto reduz o uso de tokens quando apenas são necessários dados específicos:
+Use `--fields` para limitar a saída a chaves específicas e reduzir o uso de tokens:
 
 ```bash
 rdc machine containers --name prod-1 -o json --fields name,status,repository
@@ -174,7 +176,7 @@ Comandos com suporte a `--dry-run`: `repo up`, `repo down`, `repo delete`, `snap
 
 ## Comandos de Descoberta para Agentes
 
-O subcomando `rdc agent` fornece introspecção estruturada para os agentes de IA descobrirem as operações disponíveis em tempo de execução.
+O subcomando `rdc agent` fornece aos agentes de IA uma forma estruturada de descobrir as operações disponíveis em tempo de execução.
 
 ### Listar Todos os Comandos
 
@@ -212,7 +214,7 @@ Devolve a árvore completa de comandos com argumentos, opções e descrições:
 rdc agent schema --command "machine query"
 ```
 
-Devolve o esquema detalhado para um único comando, incluindo todos os argumentos e opções com os seus tipos e valores predefinidos.
+Devolve o esquema completo para um único comando: cada argumento e opção com o seu tipo e valor predefinido.
 
 ### Executar via JSON
 
@@ -220,7 +222,7 @@ Devolve o esquema detalhado para um único comando, incluindo todos os argumento
 echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
-Aceita JSON no stdin, mapeia chaves para argumentos e opções do comando e executa com saída JSON forçada. Útil para comunicação estruturada agente-para-CLI sem construir strings de comandos shell.
+Aceita JSON no stdin, mapeia chaves para argumentos e opções do comando e executa com saída JSON forçada. Use isto quando preferir não construir strings de comandos shell para chamadas agente-para-CLI.
 
 ## Exemplos de Análise
 

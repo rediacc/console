@@ -1,17 +1,17 @@
 ---
 title: "Git-laadne hargnemine"
-description: "Käsitle koopiakirjutamise harke git-komitidena: külmuta hark muutumatuks komitiks, nimeta harusid, tee komitidest kirjutavaid harke, jaluta ajalugu ja ühenda ilma elavat repositooriumi muutmata."
+description: "Käsitle koopiakirjutamise harke git-komitidena: külmuta hark muutumatuks komitiks, nimeta harusid, võta komitid välja kirjutatavate harkidena, jaluta ajalugu ja ühenda ilma kunagi elavat repositooriumi muutmata."
 category: Reference
 subcategory: advanced
 order: 41
 language: et
-sourceHash: "6ca18986dfd6e237"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2448559f0fcfc0e0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Git-laadne hargnemine
 
-Rediacci repositooriumid toetavad git-laadset versioonimist, mis on ehitatud koopiakirjutamise harkide peale. Iga muutumatu hark on **komit**: baidiliselt stabiilne, külmutatud kujutis, mis keeldub ühendamast. Harud on nimega viited, mis osutavad komitile. `rdc repo checkout` reflink-kloonib komiti tagasi kirjutatavaks töötavaks hargiks ja `rdc repo merge` ühendab kaks ajalooliini ilma elavat repositooriumi muutmata.
+Siin on mõttermudel: Rediacc muudab koopiakirjutamise hargid git-laadseks versiooniajalooks. Iga muutumatu hark on **komit**: baidiliselt stabiilne, külmutatud kujutis, mis keeldub ühendamast. Harud on nimega viited, mis osutavad komitile. `rdc repo checkout` reflink-kloonib komiti tagasi kirjutatavaks töötavaks hargiks ja `rdc repo merge` ühendab kaks ajalooliini ilma kunagi elavat repositooriumi muutmata.
 
 Mudel kaardistub kahele hoidlale. **Masin on objektihoidla**: komitid on muutumatud hargikujutised, mis elavad andmehoidlas. **CLI konfiguratsioon on viitehoidla**: harunimed, praegune `HEAD` ja reflog elavad sinu lokaalses konfiguratsioonis, mitte masinal. See on sama jaotus, mida git kasutab `.git/objects` ja `.git/refs` vahel.
 
@@ -155,7 +155,7 @@ Raporteerib rippuvad viited (haru tipp või HEAD, mis osutab GUID-ile ilma objek
 
 ### Muutumatud hargid
 
-`rdc repo fork --immutable` märgib uue hargi loomise hetkel ainult lugemiseks, tootes komitiekvivalentse aluse ilma eraldi `commit` sammuta.
+`rdc repo fork --immutable` märgib uue harki loomise hetkel ainult lugemiseks, tootes komitiekvivalentse aluse ilma eraldi `commit` sammuta.
 
 ```bash
 rdc repo fork --parent <nimi> --tag <tag> --immutable -m <masin>

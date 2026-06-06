@@ -6,7 +6,7 @@ order: 51
 language: en
 ---
 
-All `rdc` commands support structured JSON output for programmatic consumption by AI agents and scripts.
+All `rdc` commands output structured JSON. Pipe it to a script or feed it directly to an agent.
 
 ## Enabling JSON Output
 
@@ -93,7 +93,7 @@ Failed commands return structured errors with recovery hints:
 
 ### Structured `next` action hints
 
-For high-value error codes (e.g. `PRECONDITION_MISMATCH`), errors carry a structured `next` field telling the agent exactly what command to suggest the user run. **Agents should relay `next.options[].run` verbatim to the human rather than synthesizing their own command**. This avoids the "agent invents a command that doesn't exist" failure mode.
+For high-value error codes like `PRECONDITION_MISMATCH`, the error includes a `next` field with the exact commands to offer the user. Not every error code carries this field. Only those with a defined recovery path. **Agents should relay `next.options[].run` verbatim to the human rather than synthesizing their own command.** This cuts the failure mode where the agent invents a command that doesn't exist. It happens more than you'd think.
 
 ```json
 {
@@ -134,11 +134,11 @@ These error types are marked `retryable: true`:
 - **RATE_LIMITED**, Too many requests, wait and retry
 - **API_ERROR**, Transient backend failure
 
-Non-retryable errors (authentication, not found, invalid arguments) require corrective action before retrying.
+Non-retryable errors (authentication, not found, invalid arguments) need a fix before you try again.
 
 ## Filtering Output
 
-Use `--fields` to limit output to specific keys. This reduces token usage when only specific data is needed:
+Use `--fields` to limit output to specific keys and cut token usage:
 
 ```bash
 rdc machine containers --name prod-1 -o json --fields name,status,repository
@@ -174,7 +174,7 @@ Commands with `--dry-run` support: `repo up`, `repo down`, `repo delete`, `snaps
 
 ## Agent Discovery Commands
 
-The `rdc agent` subcommand provides structured introspection for AI agents to discover available operations at runtime.
+The `rdc agent` subcommand gives AI agents a structured way to discover available operations at runtime.
 
 ### List All Commands
 
@@ -212,7 +212,7 @@ Returns the full command tree with arguments, options, and descriptions:
 rdc agent schema --command "machine query"
 ```
 
-Returns detailed schema for a single command, including all arguments and options with their types and defaults.
+Returns the full schema for a single command: every argument and option with its type and default.
 
 ### Execute via JSON
 
@@ -220,7 +220,7 @@ Returns detailed schema for a single command, including all arguments and option
 echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
-Accepts JSON on stdin, maps keys to command arguments and options, and executes with JSON output forced. Useful for structured agent-to-CLI communication without constructing shell command strings.
+Accepts JSON on stdin, maps keys to command arguments and options, and runs the command with JSON output forced. Use this when you'd rather not construct shell command strings for agent-to-CLI calls.
 
 ## Parsing Examples
 

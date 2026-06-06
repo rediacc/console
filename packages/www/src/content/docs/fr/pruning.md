@@ -4,8 +4,8 @@ description: "Supprimer les sauvegardes orphelines, les snapshots obsolètes, le
 category: "Guides"
 order: 12
 language: fr
-sourceHash: "98bb2d50d75a1d3d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "9b74e1ea24b9735f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Nettoyage
@@ -18,7 +18,7 @@ Le nettoyage balaie les états qui ne correspondent plus à une ressource vivant
 | `rdc machine prune --name <machine>` | Artefacts du datastore sur la machine (toujours) ; images de dépôt orphelines ou inconnues (opt-in) | Configuration CLI locale + le miroir `.interim/state` de la machine |
 | `rdc config prune` | Résidus de la configuration locale (cache de certificats, archives expirées, références croisées orphelines) | Configuration CLI locale uniquement |
 
-Les trois sont indépendantes. Vous pouvez exécuter n'importe laquelle sans les autres. Elles partagent un modèle de sécurité commun décrit sous [Sécurité](#safety-model) ci-dessous.
+Les trois sont indépendantes. Vous pouvez exécuter n'importe laquelle sans les autres. Elles partagent un modèle de sécurité commun décrit sous [Sécurité](#modèle-de-sécurité) ci-dessous.
 
 ## Préflight de sécurité de montage
 
@@ -64,7 +64,7 @@ Nettoie les ressources sur la machine en trois phases. La phase 1 s'exécute tou
 
 ### Phase 1 : Nettoyage du datastore (s'exécute toujours)
 
-Supprime toute catégorie de ressource pouvant subsister lorsqu'un dépôt est supprimé ou lorsqu'un refactoring au niveau de la machine met à la retraite une convention de nommage. Chaque catégorie est analysée indépendamment, et le nettoyage est une passe idempotente unique, de sorte qu'exécuter prune plusieurs fois est sûr et converge vers un datastore propre.
+Supprime tout ce qui subsiste lorsqu'un dépôt est supprimé ou une convention de nommage mise à la retraite. Chaque catégorie est analysée indépendamment. L'exécution répétée de prune est sûre : c'est une seule passe idempotente, donc les orphelins manqués lors de la dernière exécution sont rattrapés par la suivante.
 
 | Catégorie | Ce qui est supprimé |
 |---------|-----------------|

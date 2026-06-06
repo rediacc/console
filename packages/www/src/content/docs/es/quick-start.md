@@ -4,13 +4,13 @@ description: Ejecute un servicio en contenedores en su servidor en minutos.
 category: Guides
 order: -1
 language: es
-sourceHash: "15b3c42682a05678"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2047fd1ce3a47944"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Inicio rápido
 
-Despliegue un entorno de contenedores cifrado y aislado en su propio servidor. Sin cuentas en la nube ni dependencias de SaaS. Todo se ejecuta en hardware que usted controla.
+Instale Rediacc en su propio servidor. Entornos de contenedores cifrados y aislados, sin cuentas en la nube ni dependencias de SaaS. Su hardware, su control.
 
 ---
 
@@ -20,7 +20,7 @@ Despliegue un entorno de contenedores cifrado y aislado en su propio servidor. S
 
 Un repo es un único archivo cifrado en disco. Muévalo, haga una copia de seguridad, bifúrquelo. Es solo un archivo. Cuando se monta, se convierte en una carpeta con un daemon Docker dedicado y los datos de su aplicación dentro.
 
-Piense en un repo como una unidad USB. Es algo en su mano, y cuando lo conecta se vuelve visible y accesible para el sistema. Sus aplicaciones y datos son completamente portátiles. Conecte y ejecute en cualquier máquina en cualquier proveedor de nube.
+Piense en un repo como una unidad USB. Conéctela a cualquier máquina y las aplicaciones y datos se montan listos para ejecutarse. Muévase entre máquinas o proveedores de nube sin reconstruir nada.
 
 **Dos herramientas, dos roles:**
 
@@ -97,7 +97,7 @@ rdc repo template list                                        # Mostrar plantill
 rdc repo template apply --name app-postgres -m my-server -r my-app  # Despliega docker-compose.yml + Rediaccfile
 ```
 
-Las plantillas proporcionan un `docker-compose.yml`, `Rediaccfile` y archivos de soporte. Sin una plantilla (o su propio archivo compose), no hay nada que iniciar.
+Las plantillas proporcionan un `docker-compose.yml`, `Rediaccfile` y archivos de soporte. Sin una plantilla (o su propio archivo compose), no hay nada que iniciar. Use la plantilla integrada para su primer repo. Es el camino más rápido para ver el flujo de trabajo completo de principio a fin.
 
 ### 3. Iniciar el repo
 

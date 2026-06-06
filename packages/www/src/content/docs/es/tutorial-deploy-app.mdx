@@ -1,19 +1,19 @@
 ---
 title: "Desplegar tu primera aplicación"
-description: "Despliega una app en contenedor a partir de una plantilla integrada usando rdc repo up."
+description: "Despliega una app en contenedor a partir de una plantilla integrada usando `rdc` repo up."
 category: "Tutorials"
 subcategory: essentials
 order: 5
 language: es
-sourceHash: "08bd8fbaffc53a06"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "a40a843238f17e9f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Desplegar tu primera aplicación
 
-Tienes un repositorio vacío. `rdc` incluye plantillas integradas para que puedas levantar apps reales sin escribir un `docker-compose` desde cero. Tres pasos: elige una plantilla, aplícala y ejecútala.
+Tienes un repositorio vacío. `rdc` incluye plantillas integradas para que puedas levantar apps reales sin escribir un `docker-compose` desde cero. Elige una plantilla, aplícala y ejecútala.
 
 ## Ver el tutorial
 
@@ -51,7 +51,7 @@ La CLI inicia los contenedores, monta el volumen cifrado y conecta un Docker dae
 
 <TutorialStep number={5} />
 
-`docker ps` aquí lista solo los contenedores de este repo. Los demás repos en el mismo servidor tienen sus propios Docker daemons y son completamente invisibles desde este.
+`docker ps` aquí lista solo los contenedores de este repo. Los demás repos en el mismo servidor tienen sus propios Docker daemons y son completamente invisibles desde este. Ese aislamiento es lo importante: prueba libremente sin afectar servicios adyacentes.
 
 ---
 

@@ -4,8 +4,8 @@ description: Conecta agentes de IA a la infraestructura de Rediacc mediante el s
 category: Guides
 order: 33
 language: es
-sourceHash: "0b98f5640252bd23"
-sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
+sourceHash: "ce5f1392ebaa380b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 ## Descripción general
@@ -56,33 +56,35 @@ Abre Configuración → MCP Servers → Añadir servidor:
 
 | Herramienta | Descripción |
 |------|-------------|
-| `machine_query` | Get system info, containers, services, and resource usage for a machine |
-| `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
-| `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
-| `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
-| `machine_health` | Run health check on a machine (system, containers, services, storage) |
-| `machine_list` | List all configured machines |
-| `config_repositories` | List configured repositories with name-to-GUID mappings |
-| `config_show_infra` | Show infrastructure configuration for a machine (base domain, public IPs, TLS, Cloudflare zone) |
-| `config_providers` | List configured cloud providers for machine provisioning |
-| `agent_capabilities` | List all available rdc CLI commands with their arguments and options |
+| `machine_query` | Obtiene información del sistema, contenedores, servicios y uso de recursos de una máquina |
+| `machine_containers` | Lista contenedores Docker con estado, salud, uso de recursos, etiquetas y dominio de ruta automática |
+| `machine_services` | Lista servicios systemd gestionados por Rediacc (nombre, estado, subestado, reintentos, memoria, repositorio propietario) |
+| `machine_repos` | Lista repositorios desplegados (nombre, GUID, tamaño, estado de montaje, estado Docker, número de contenedores, uso de disco, fecha de modificación, presencia de Rediaccfile) |
+| `machine_health` | Ejecuta una comprobación de salud en una máquina (sistema, contenedores, servicios, almacenamiento) |
+| `machine_list` | Lista todas las máquinas configuradas |
+| `config_repositories` | Lista repositorios configurados con sus asignaciones nombre-GUID |
+| `config_show_infra` | Muestra la configuración de infraestructura de una máquina (dominio base, IPs públicas, TLS, zona de Cloudflare) |
+| `config_providers` | Lista proveedores de nube configurados para el aprovisionamiento de máquinas |
+| `agent_capabilities` | Lista todos los comandos rdc CLI disponibles con sus argumentos y opciones |
+| `repo_secret_list` | Lista nombres de secretos y modos de entrega de un repositorio (nunca los valores, nunca los hashes). Seguro para lectura. |
+| `repo_secret_get` | Obtiene el hash SHA-256 y el modo de entrega de un secreto. El valor en texto plano no se devuelve por diseño. Úsalo para verificar que un secreto existe o ha sido rotado. |
 
 ### Herramientas de escritura (destructivas)
 
 | Herramienta | Descripción |
 |------|-------------|
-| `repo_create` | Create a new encrypted repository on a machine |
-| `repo_up` | Deploy/update a repository (runs Rediaccfile up, starts containers). Use `mount` for first deploy or after pull |
-| `repo_down` | Stop repository containers. Does NOT unmount by default. Use `unmount` to also close the LUKS container |
-| `repo_delete` | Delete a repository (destroys containers, volumes, encrypted image). Credential archived for recovery |
-| `repo_fork` | Create a CoW fork with new GUID and networkId (fully independent copy, online forking supported) |
-| `backup_push` | Push repository backup to storage or another machine (same GUID -- backup/migration, not fork) |
-| `backup_pull` | Pull repository backup from storage or machine. After pull, deploy with `repo_up` (mount=true) |
-| `machine_provision` | Provision a new machine on a cloud provider using OpenTofu |
-| `machine_deprovision` | Destroy a cloud-provisioned machine and remove from config |
-| `config_add_provider` | Add a cloud provider configuration for machine provisioning |
-| `config_remove_provider` | Remove a cloud provider configuration |
-| `term_exec` | Execute a command on a remote machine via SSH |
+| `repo_create` | Crea un nuevo repositorio cifrado en una máquina |
+| `repo_up` | Despliega/actualiza un repositorio (ejecuta Rediaccfile up, inicia contenedores). Usa `mount` para el primer despliegue o tras un pull |
+| `repo_down` | Detiene los contenedores del repositorio. NO desmonta por defecto. Usa `unmount` para también cerrar el contenedor LUKS |
+| `repo_delete` | Elimina un repositorio (destruye contenedores, volúmenes e imagen cifrada). La credencial se archiva para recuperación |
+| `repo_fork` | Crea un fork CoW con nuevo GUID y networkId (copia totalmente independiente, forking en línea disponible) |
+| `backup_push` | Envía una copia de seguridad del repositorio a almacenamiento u otra máquina (mismo GUID -- copia de seguridad/migración, no fork) |
+| `backup_pull` | Descarga una copia de seguridad del repositorio desde almacenamiento o una máquina. Tras el pull, despliega con `repo_up` (mount=true) |
+| `machine_provision` | Aprovisiona una nueva máquina en un proveedor de nube usando OpenTofu |
+| `machine_deprovision` | Destruye una máquina aprovisionada en la nube y la elimina de la configuración |
+| `config_add_provider` | Añade una configuración de proveedor de nube para el aprovisionamiento de máquinas |
+| `config_remove_provider` | Elimina una configuración de proveedor de nube |
+| `term_exec` | Ejecuta un comando en una máquina remota mediante SSH |
 
 ## Flujos de trabajo de ejemplo
 
@@ -107,17 +109,19 @@ El agente llama a `machine_health` → `machine_containers` → `term_exec` para
 |--------|---------|-------------|
 | `--config <name>` | (configuración predeterminada) | Configuración con nombre a usar para todos los comandos |
 | `--timeout <ms>` | `120000` | Tiempo de espera predeterminado para comandos en milisegundos |
-| `--allow-grand` | off | Allow destructive operations on grand (non-fork) repositories |
+| `--allow-grand` | off | Permite operaciones destructivas en repositorios grand (no fork) |
 
 ## Seguridad
 
-The MCP server enforces two layers of protection:
+El servidor MCP aplica dos capas de protección:
 
-### Fork-only mode (default)
+### Modo solo-fork (predeterminado)
 
-By default, the server runs in **fork-only mode**, write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
+Por defecto, el servidor opera en **modo solo-fork**: las herramientas de escritura (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) solo pueden operar sobre repositorios fork. Los agentes no pueden tocar repositorios grand (originales). Es así por diseño.
 
-To allow an agent to modify grand repos, start with `--allow-grand`:
+> **Los secretos por repositorio son exclusivos de la CLI por diseño.** `repo_secret_set` y `repo_secret_unset` no se exponen como herramientas MCP de manera intencional. Las escrituras requieren una precondición `--current <valor-anterior>` (o `--rotate-secret` para confirmar una rotación no verificada), y esa ceremonia necesita supervisión humana. Los agentes que necesiten sugerir una rotación de secreto deben llamar a `repo_secret_get` para confirmar el hash, y luego transmitir al usuario el comando CLI correspondiente mediante el campo `next.options[].run` del envelope de error JSON. Consulta [Seguridad de agentes IA](/en/docs/ai-agents-safety#structured-next-action-hints) para ver el patrón completo, y [Repositorios § Secretos](/en/docs/repositories#secrets) para la guía dirigida al operador.
+
+Para permitir que un agente modifique repositorios grand, inícialo con `--allow-grand`:
 
 ```json
 {
@@ -130,16 +134,30 @@ To allow an agent to modify grand repos, start with `--allow-grand`:
 }
 ```
 
-También puede establecer la variable de entorno `REDIACC_ALLOW_GRAND_REPO` en un único nombre de repositorio, en una lista de nombres separados por comas (por ejemplo `repo1,repo2,repo3`) o en `*` para todos los repositorios. Los espacios alrededor de cada entrada se ignoran, por lo que `repo1, repo2` también funciona. El acceso a nivel de máquina (por ejemplo `term connect -m <machine>` sin repositorio) sigue requiriendo `*`; una lista de nombres de repositorios no lo desbloquea.
+También puedes establecer la variable de entorno `REDIACC_ALLOW_GRAND_REPO` con un único nombre de repositorio, una lista de nombres separados por comas (por ejemplo `repo1,repo2,repo3`) o `*` para todos los repositorios. Los espacios alrededor de cada entrada se ignoran, por lo que `repo1, repo2` también funciona. El acceso a nivel de máquina (por ejemplo `term connect -m <machine>` sin repositorio) sigue requiriendo `*`; una lista de nombres de repositorios no lo desbloquea.
 
-### Kernel-level filesystem sandbox (Landlock)
+### Claves SSH por repositorio y sandbox en el servidor
 
-When `term_exec` runs a command on a repository, the command is wrapped with `renet sandbox-exec` on the remote machine. This applies Linux Landlock LSM restrictions at the kernel level:
+Cada repositorio tiene su propio par de claves SSH. La clave pública se despliega en `authorized_keys` con un prefijo `command=` que obliga a todas las sesiones SSH a pasar por `renet sandbox-gateway <repo-name>`, un ForceCommand en el servidor que ningún cliente puede eludir, incluido VS Code.
 
-- **Allowed**: the repository's own mount path, `/tmp`, system binaries (`/usr`, `/bin`, `/etc`), the repo's Docker socket
-- **Blocked**: other repositories' mount paths, home directory writes, arbitrary filesystem access
+**Funcionamiento:**
+1. `rdc repo create` o `rdc repo fork` genera un par de claves ed25519 únicas por repositorio
+2. La clave pública se despliega en el remoto con `command="renet sandbox-gateway <name>"`
+3. Cada conexión SSH que usa esa clave pasa por el gateway, que aplica:
+   - **Landlock LSM**, restricciones de sistema de archivos a nivel de kernel sobre la ruta de montaje del repositorio
+   - **OverlayFS home overlay**, las escrituras en `$HOME` se capturan por repositorio, las lecturas se pasan al home real
+   - **TMPDIR por repositorio** en `<datastore>/.interim/sandbox/<name>/tmp/`
+   - **Acceso a Docker** a través del socket Docker aislado del repositorio
+   - **Reducción de privilegios** al usuario universal (`rediacc`)
+4. El `.envrc` del repositorio se carga automáticamente para Docker y la configuración del entorno
 
-This prevents lateral movement, even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) is not sandboxed.
+**Lectura/escritura permitida**: ruta de montaje del repositorio, espacio de trabajo sandbox por repositorio, directorio home (mediante overlay), socket Docker
+**Solo lectura permitida**: rutas del sistema (`/usr`, `/bin`, `/etc`, `/proc`, `/sys`)
+**Bloqueado**: rutas de montaje de otros repositorios, archivos del sistema fuera de la lista permitida
+
+**Integración con VS Code**: cada repositorio tiene su propia instalación del servidor VS Code en `<datastore>/.interim/sandbox/<name>/.vscode-server/`. Varios repositorios pueden estar abiertos simultáneamente con entornos sandbox independientes, sin compartir servidor entre repositorios.
+
+Esto evita el movimiento lateral. Aunque un agente obtenga acceso shell a un fork, no puede leer ni modificar otros repositorios en la misma máquina. El SSH a nivel de máquina (sin repositorio) usa la clave de equipo y no tiene sandbox.
 
 ## Arquitectura
 

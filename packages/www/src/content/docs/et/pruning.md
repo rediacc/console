@@ -4,8 +4,8 @@ description: "Eemalda orvuks jäänud varukoopiad, aegunud hetktõmmised, hoidla
 category: "Guides"
 order: 12
 language: et
-sourceHash: "98bb2d50d75a1d3d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "9b74e1ea24b9735f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Kärpimine
@@ -18,7 +18,7 @@ Kärpimine eemaldab olekud, mis ei vasta enam elusale ressursile. Kolm käsku ka
 | `rdc machine prune --name <machine>` | Masinal olevad andmehoidla artefaktid (alati); orvuks jäänud või tundmatud hoidlakujutised (valikuline) | Kohalik CLI konfiguratsioon + masina `.interim/state` peegel |
 | `rdc config prune` | Kohaliku konfiguratsiooni jäänukid (serdi vahemälu, aegunud arhiivid, rippuvad ristviited) | Ainult kohalik CLI konfiguratsioon |
 
-Need kolm on sõltumatud. Saad käivitada mis tahes ühe ilma teisteta. Need jagavad ühist ohutusmudelit, mida kirjeldatakse allpool jaotises [Ohutus](#ohutusмudel).
+Need kolm on sõltumatud. Saad käivitada mis tahes ühe ilma teisteta. Need jagavad ühist ohutusmudelit, mida kirjeldatakse allpool jaotises [Ohutus](#ohutusmudel).
 
 ## Ühendamise ohutuse eelkontroll
 
@@ -190,7 +190,7 @@ sudo /usr/local/bin/renet repository backfill-state-mirror \
 
 Tagasiasustamine kopeerib hetkel ühendatud hoidlate jaoks otse mahus oleva oleku peeglisse ja kirjutab sünteetilise fork-märgistusega peegli mis tahes GUID-idele, mille lisad `--mark-as-fork` alla. Pärast tagasiasustamist lõpetavad ajakavastatud varukoopiad loetletud forkide üleslaadimise (üleslaadimise konveier kontrollib peegli `is_fork: true` olekut).
 
-## Ohutusмudel
+## Ohutusmudel
 
 Kärpimine on loodud olema mitme konfiguratsiooni seadistustes vaikimisi ohutu.
 

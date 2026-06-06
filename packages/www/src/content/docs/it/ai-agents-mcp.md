@@ -1,14 +1,16 @@
 ---
 title: Configurazione del server MCP
-description: Collega gli agenti AI all'infrastruttura Rediacc usando il server Model Context Protocol (MCP). È più efficiente rispetto all'uso diretto della CLI e già pronto all'uso.
+description: Collega gli agenti AI all'infrastruttura Rediacc usando il server Model Context Protocol (MCP).
 category: Guides
 order: 33
 language: it
+sourceHash: "ce5f1392ebaa380b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 ## Panoramica
 
-Il comando `rdc mcp serve` avvia un server MCP (Model Context Protocol) locale che gli agenti AI possono usare per gestire la tua infrastruttura. Il server utilizza il trasporto stdio: l'agente AI lo avvia come sottoprocesso e comunica tramite JSON-RPC.
+Dunque, `rdc mcp serve` avvia un server MCP (Model Context Protocol) locale che gli agenti AI possono usare per gestire la tua infrastruttura. Il server utilizza il trasporto stdio: l'agente lo avvia come sottoprocesso e comunica tramite JSON-RPC.
 
 **Prerequisiti:** `rdc` installato e configurato con almeno una macchina.
 
@@ -115,7 +117,7 @@ Il server MCP applica due livelli di protezione:
 
 ### Modalità fork-only (predefinita)
 
-Per impostazione predefinita, il server opera in **modalità fork-only**: gli strumenti di scrittura (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) possono operare solo sui repository fork. I repository grand (originali) sono protetti dalle modifiche degli agenti.
+Per impostazione predefinita, il server opera in **modalità fork-only**: gli strumenti di scrittura (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) possono operare solo sui repository fork. Gli agenti non possono intervenire sui repository grand (originali). Per design.
 
 > **I segreti per repository sono accessibili solo tramite CLI per design.** `repo_secret_set` e `repo_secret_unset` sono intenzionalmente **non** esposti come strumenti MCP. Le scritture richiedono una precondizione `--current <previous-value>` (oppure `--rotate-secret` per riconoscere una rotazione non verificata), e quella procedura richiede la supervisione umana. Gli agenti che devono suggerire la rotazione di un segreto dovranno chiamare `repo_secret_get` per confermare il digest, quindi trasmettere il comando CLI destinato all'operatore all'utente tramite il campo `next.options[].run` strutturato nell'envelope di errore JSON. Consulta [Sicurezza agenti AI](/en/docs/ai-agents-safety#structured-next-action-hints) per il pattern completo e [Repository - Segreti](/en/docs/repositories#secrets) per le istruzioni rivolte all'utente.
 

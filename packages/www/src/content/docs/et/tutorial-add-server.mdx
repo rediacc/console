@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 3
 language: et
-sourceHash: "4b76f7212633cdec"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "fc8bd1ff08e5611a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Esimese serveri lisamine
 
-Enne serveri lisamist: nii `rdc` töötab. Rediacc on kaks tööriista: `rdc` sinu sülearvutis ja `renet` serveris.
+Kaks tööriista: `rdc` sinu sülearvutis ja `renet` serveris. See on kogu Rediacc arhitektuur. Siin on kirjeldus, kuidas need enne serveri lisamist ühenduvad.
 
 ## Vaata juhendvideot
 
@@ -32,7 +32,7 @@ Kui käivitad käsu kohalikult, ühendub `rdc` üle SSH ja täidab `renet`-i ser
 
 <TutorialStep number={1} />
 
-`rdc config init` ei ole vajalik. Konfiguratsioonifail luuakse automaatselt esimesel kasutamisel ja `rdc` kasutab tagavaravalikuna sinu standardset `~/.ssh` võtit.
+`rdc config init` ei ole vajalik. Konfiguratsioonifail luuakse automaatselt esimesel kasutamisel ja `rdc` kasutab tagavaravalikuna sinu standardset `~/.ssh` võtit. Võtmete valik on teadlikult minimaalne -- kui sa vajad agent forwarding-ut või jump host-i, seadista need `~/.ssh/config` failist nagu tavaliselt; `rdc` võtab need kasutusele.
 
 ## 2. samm: valmista see ette
 

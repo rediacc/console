@@ -6,13 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: et
-sourceHash: "8f29c515be1b7fb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1d0e48ed1094dda6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Piirangud ja kvoodid
 
-See leht loetleb Rediacc juurutuste suhtes kohaldatavaid kõvasid ja pehmeid piiranguid. Loe seda enne mahu planeerimist, et teaksid, millised laed on olemas ja millised mitte.
+Rediacc juurutuse piirangud. Kolm neist on kõvad ja ei saa riistvara lisamisega muuta: 61 teenuse piirang hoidla kohta (võrguaadressi ruumi eraldus), tuuma miinimumversioon 6.1 (CRIU nõuded) ja Let's Encrypt'i väljastamise piirang 50 metamärgi sertifikaadiga registreeritud domeeni kohta nädalas. Kõik muud on pehmed: muutuvad riistvara lisamisel. Tea erinevust enne topoloogia planeerimist.
 
 ---
 
@@ -22,7 +22,7 @@ Iga hoidla toetab kuni **61 teenust** samaaegselt.
 
 See on kõva piirang, mis on määratud igale hoidlale eraldatud võrguaadressi ruumiga. Iga teenus saab oma spetsiaalse privaatse IP-aadressi ja iga hoidla aadressiblokk mahutab täpselt 61 teenuse pesa.
 
-Kui lähenete sellele piirangule, konsolideerige väiksemaid teenuseid (nt teisaldage kõrvalmoodulit või jälgimisagendid eraldi hoidlasse oma eralduspiiriga) või refaktoreerige, et vähendada ühe rakenduse sees iseseisvalt töötavate protsesside arvu.
+Märkus: 61 teenuseni jõudmine ühes hoidlas näitab tavaliselt arhitektuuriprobleemi, mitte Rediacc piirangut. Lahendus on teisaldada külgmoodulid ja jälgimisagendid oma hoidlasse eraldi eralduspiiriga, või vähendada rakenduse sees iseseisvalt töötavate protsesside arvu.
 
 ---
 

@@ -1,19 +1,19 @@
 ---
-title: "Supervisión del sistema"
-description: "Comprueba el estado de salud de tus servidores y repositorios desde tu portátil con los comandos rdc machine."
+title: "Monitoreo"
+description: "Ve el estado de salud de tus servidores y repositorios en tiempo real desde tu portátil con los comandos rdc machine."
 category: "Tutorials"
 subcategory: advanced
 order: 12
 language: es
-sourceHash: "7690e2a129161381"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "6b1363b30c1f96a8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Monitoreo
 
-Tu app está desplegada, en producción y con backup. Ahora asegúrate de que todo se mantenga saludable. `rdc` te da una imagen completa de cualquier servidor (salud, contenedores, repos) desde tu laptop.
+Así que tu app está desplegada y con backup. Ahora mantenla saludable. Eso es lo que rdc hace. `rdc` te da la imagen completa de cualquier servidor (salud, contenedores, repos) desde tu laptop.
 
 ## Ver el tutorial
 
@@ -27,25 +27,25 @@ Tu app está desplegada, en producción y con backup. Ahora asegúrate de que to
 
 <TutorialStep number={1} />
 
-Muestra el tiempo de actividad del sistema, el uso del disco y el estado del almacenamiento. Si algo está mal, te lo indica.
+Verás el tiempo de actividad del sistema, el uso del disco y el estado del almacenamiento. Si algo está mal, lo verás.
 
 ## Contenedores
 
 <TutorialStep number={2} />
 
-Obtienes nombre, estado, salud, CPU y memoria por cada contenedor, además de qué repo lo pertenece.
+Obtienes el nombre, estado, salud, CPU y memoria de cada contenedor, además de saber a qué repo pertenece.
 
 ## Repos
 
 <TutorialStep number={3} />
 
-Muestra cada repo con su tamaño, estado de montaje, estado de Docker y uso del disco.
+Ves cada repo: su tamaño, estado de montaje, estado de Docker y uso del disco.
 
 ## Todo de una vez
 
 <TutorialStep number={4} />
 
-Información del sistema, repos y contenedores, todo en un comando. El mismo comando `query` sin filtros devuelve la imagen completa; con `--system`, `--containers`, `--repositories`, `--services`, `--network` o `--block-devices` se limita a esa sección.
+`query` sin banderas te da la imagen completa: información del sistema, repos y contenedores. Agrega `--system`, `--containers`, `--repositories`, `--services`, `--network` o `--block-devices` para limitarlo a solo esa sección.
 
 ## Verificación local
 

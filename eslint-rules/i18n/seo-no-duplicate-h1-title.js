@@ -37,7 +37,7 @@ export const seoNoDuplicateH1Title = {
     ],
     messages: {
       duplicate:
-        'H1 "{{h1}}" is identical to the title (after brand suffix removal) at "{{titleKey}}". Make H1 and title distinct for better SEO.',
+        'H1 "{{h1}}" is identical to the title (after brand suffix removal) at "{{titleKey}}". Make H1 and title distinct for better SEO. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

@@ -1,12 +1,12 @@
 ---
 title: "SOC 2 Compliance"
-description: "Where Rediacc gives you SOC 2 evidence: the logs, the change-management trail, and the controls auditors ask about."
+description: "Here's the thing about SOC 2: auditors want evidence your controls work. Rediacc gives you the logs, the change-management trail, and everything else they're going to ask for."
 category: "Legal"
 order: 2
 language: en
 ---
 
-SOC 2 is the AICPA framework auditors reach for when they want evidence your controls actually work. It covers five Trust Service Criteria: security, availability, processing integrity, confidentiality, and privacy.
+I know what SOC 2 is because I've sat through audit meetings. Auditors use the AICPA framework to check if your controls actually work, not just if you claim they work. Five Trust Service Criteria: security, availability, processing integrity, confidentiality, and privacy.
 
 Reference: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -22,7 +22,7 @@ Reference: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-
 
 ## Audit Trail
 
-Rediacc logs 70+ event types covering:
+So Rediacc logs 70+ different event types. User actions, system changes, configuration updates, access control modifications, security events, fork operations, audit trails. I know that sounds like a lot, but auditors actually care about seeing this stuff.
 
 - **Authentication**: login, logout, password changes, 2FA enable/disable, session revocation
 - **Authorization**: API token creation/revocation, role changes, team membership
@@ -30,18 +30,18 @@ Rediacc logs 70+ event types covering:
 - **Licensing**: repo license issuance, machine slot tracking, subscription changes
 - **Machine operations**: repository create/start/stop/delete, fork, backup push/pull, file sync, terminal sessions
 
-These logs are accessible through the admin dashboard (with filtering by user, team, and date), the portal activity page (with org-scoped type and date filtering for org admins), and the `rdc audit` CLI for programmatic export. Machine operations are also recorded in your system logs for defense in depth.
+Three ways to get these logs. Admin dashboard with user, team, and date filtering. Portal activity page for org admins, type and date filtering. Or the `rdc audit` CLI for programmatic export. Pipe it into your own tools, integrate it wherever. Machine operations also log to your system logs, so you've got defense in depth.
 
 ## Change Management
 
-Forks make change management auditable: each fork is a copy of live state you can test against, review, and either promote or discard, with every step timestamped to an actor.
+Forks make change management auditable. You fork production, you get a copy of live state. Test it. Review it. Promote it or discard it. Every step timestamped and tied to a person. That's what auditors want to see: no anonymous changes.
 
 1. Fork a production repository (`rdc repo fork`)
 2. Apply and test changes on the fork
 3. Validate the fork independently
 4. Promote the fork to production (`rdc repo takeover`)
 
-Each step is logged with timestamps and actor identification.
+Every step: logged. Timestamped. Pinned to a person. No 'I don't know who changed that' moments.
 
 ## Access Control
 

@@ -1,154 +1,154 @@
 ---
-title: "Subscrição e Licenciamento"
-description: "Compreenda como o account, o rdc e o renet gerem os slots de máquinas, as licenças de repositórios e os limites dos planos."
+title: "Assinatura e Licenciamento"
+description: "Compreenda como account, rdc e renet lidam com slots de máquina, licenças de repositório e limites de plano."
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "98aede90642cfabc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "0e18efe91c91f74c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# Subscrição e Licenciamento
+# Assinatura e Licenciamento
 
-O licenciamento do Rediacc tem três componentes:
+O licenciamento do Rediacc se divide em três componentes principais:
 
-- `account` assina os direitos e acompanha o uso
-- `rdc` autentica, solicita licenças, entrega-as nas máquinas e aplica-as em tempo de execução
-- `renet` (o runtime na máquina) valida as licenças instaladas localmente sem chamar o servidor de contas
+- `account` assina direitos e rastreia uso
+- `rdc` autentica, solicita licenças, as entrega para máquinas e as valida em tempo de execução
+- `renet` (o runtime na máquina) valida licenças instaladas localmente sem chamar o servidor de conta
 
-Esta página explica como estes componentes se encaixam para deployments locais.
+Esta página explica como essas partes se encaixam para implantações locais.
 
 ## O que o Licenciamento Faz
 
-O licenciamento controla duas coisas distintas:
+O licenciamento controla duas coisas diferentes:
 
-- **Contabilizacao de acesso a maquinas** atraves de **Licencas Flutuantes**
-- **Autorizacao de runtime de repositorios** atraves de **licencas de repositorios**
+- **Contabilidade de acesso à máquina** através de **Floating Licenses**
+- **Autorização de runtime de repositório** através de **licenças de repositório**
 
-Estas estao relacionadas, mas nao sao o mesmo artefacto.
+Esses estão relacionados, mas não são o mesmo artefato.
 
-## Como Funciona o Licenciamento
+## Como o Licenciamento Funciona
 
-`account` e a fonte de verdade para planos, substituicoes contratuais, estado dos slots de maquinas e emissoes mensais de licencas de repositorios.
+`account` é a fonte de verdade para planos, substituições de contrato, estado de slots de máquina e emissões mensais de licenças de repositório.
 
-`rdc` corre no seu computador de trabalho. Autentica-o no servidor de contas, solicita as licencas necessarias e instala-as nas maquinas remotas via SSH. Quando executa um comando de repositorio, `rdc` garante que as licencas necessarias estao no lugar e valida-as na maquina em tempo de execucao.
+`rdc` executa em sua estação de trabalho. Ele o conecta ao servidor de conta, solicita as licenças que precisa e as instala em máquinas remotas via SSH. Quando você executa um comando de repositório, `rdc` garante que as licenças necessárias estejam em vigor e as valida na máquina em tempo de execução.
 
-O fluxo normal e o seguinte:
+O fluxo normal é assim:
 
-1. Autentica-se com `rdc subscription login`
-2. Executa um comando de repositorio como `rdc repo create`, `rdc repo up` ou `rdc repo down`
-3. Se a licenca necessaria estiver em falta ou expirada, `rdc` solicita-a ao `account`
-4. `rdc` escreve a licenca assinada na maquina
-5. A licenca e validada localmente na maquina e a operacao continua
+1. Você autentica com `rdc subscription login`
+2. Você executa um comando de repositório como `rdc repo create`, `rdc repo up` ou `rdc repo down`
+3. Se a licença necessária estiver ausente ou expirada, `rdc` a solicita de `account`
+4. `rdc` escreve a licença assinada na máquina
+5. A licença é validada localmente na máquina e a operação continua
 
-Consulte [rdc vs renet](/pt/docs/rdc-vs-renet) para a divisao computador de trabalho vs servidor, e [Repositorios](/pt/docs/repositories) para o proprio ciclo de vida do repositorio.
+Veja [rdc vs renet](/en/docs/rdc-vs-renet) para a divisão estação de trabalho versus servidor, e [Repositories](/en/docs/repositories) para o ciclo de vida do repositório em si.
 
-Para automacao e agentes de IA, use um token de subscricao com ambito em vez de login no browser:
+Para automação e agentes de IA, use um token de assinatura com escopo em vez de login pelo navegador:
 
 ```bash
 rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
 ```
 
-Tambem pode injectar o token directamente atraves do ambiente para que o CLI possa emitir e renovar licencas de repositorios sem qualquer passo de login interactivo:
+Você também pode injetar o token diretamente através do ambiente para que a CLI possa emitir e atualizar licenças de repositório sem qualquer etapa de login interativo:
 
 ```bash
 export REDIACC_SUBSCRIPTION_TOKEN="rdt_..."
 export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 ```
 
-## Slots de Maquinas e Licencas de Repositorios
+## Slots de Máquina e Licenças de Repositório
 
-### Slots de maquinas (lado do servidor)
+### Slots de máquina (lado do servidor)
 
-O acompanhamento de slots de maquinas e aplicado do lado do servidor. Quando o CLI emite uma licenca de repositorio, o servidor de contas verifica a quota de slots de maquinas da subscricao (por exemplo, 2 maquinas para Community, 5 para Professional). Um slot e reservado durante 1 hora a partir da ultima emissao de licenca de repositorio nessa maquina e e libertado automaticamente apos inatividade. Um plano de 5 slots pode por isso cobrir dezenas de maquinas ao longo do tempo, uma vez que os slots so sao reservados durante o provisionamento activo.
+O rastreamento de slots de máquina é aplicado pelo lado do servidor. Quando a CLI emite uma licença de repositório, o servidor de conta verifica a cota de slots de máquina da assinatura (por exemplo, 2 máquinas para Community, 5 para Professional). Um slot é mantido por 1 hora a partir da última emissão de licença de repositório naquela máquina e é liberado automaticamente após inatividade. Um plano com 5 slots pode, portanto, cobrir dezenas de máquinas ao longo do tempo, já que os slots são apenas retidos enquanto você está provisionando ativamente.
 
-Nenhum ficheiro de licenca de maquina e guardado na maquina. A aplicacao de slots ocorre no momento da emissao no servidor.
+Nenhum arquivo de licença de máquina é armazenado na máquina. A aplicação de slots acontece no momento da emissão no servidor.
 
-### Licenca de repositorio
+### Licença de repositório
 
-Uma licenca de repositorio e uma licenca assinada para um repositorio numa maquina. E o unico ficheiro de licenca guardado na maquina (`/var/lib/rediacc/license/repos/{guid}.json`).
+Uma licença de repositório é uma licença assinada para um repositório em uma máquina. É o único arquivo de licença armazenado na máquina (`/var/lib/rediacc/license/repos/{guid}.json`).
 
-E usada para:
+É utilizada para:
 
-- `rdc repo create` e `rdc repo fork`, validadas antes do provisionamento (pre-emitidas sem provas de identidade, depois re-emitidas com provas de identidade apos a criacao)
-- `rdc repo resize` e `rdc repo expand`, validacao completa incluindo expiracao
-- `rdc repo up`, `rdc repo down`, `rdc repo delete`, validadas com **expiracao ignorada**
-- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validadas com **expiracao ignorada**
-- autostart de repositorio no reinicio da maquina, validado com **expiracao ignorada**
+- `rdc repo create` e `rdc repo fork`, validada antes do provisionamento (pré-emitida sem provas de identidade, depois re-emitida com provas de identidade após criação)
+- `rdc repo resize` e `rdc repo expand`, validação completa incluindo expiração
+- `rdc repo up`, `rdc repo down`, `rdc repo delete`, validada com **expiração pulada**
+- `rdc repo push`, `rdc repo pull`, `rdc repo sync`, validada com **expiração pulada**
+- autostart de repositório no reinício da máquina, validada com **expiração pulada**
 
-As licencas de repositorios estao vinculadas a maquina e ao repositorio alvo. Cada licenca contem o ID da maquina, o GUID do repositorio, o ID da subscricao, os limites do plano e a expiracao. Para repositorios encriptados, o Rediacc tambem verifica a identidade LUKS do volume subjacente.
+Licenças de repositório são vinculadas à máquina e ao repositório de destino. Cada licença contém o ID da máquina, GUID do repositório, ID da assinatura, limites de plano e expiração. Para repositórios criptografados, o Rediacc também verifica a identidade LUKS do volume subjacente.
 
-Multiplas subscricoes podem coexistir na mesma maquina. Cada repositorio carrega a sua propria licenca com o seu proprio contexto de subscricao.
+Múltiplas assinaturas podem coexistir na mesma máquina. Cada repositório carrega sua própria licença com seu próprio contexto de assinatura.
 
-## Limites Predefinidos
+## Limites Padrão
 
-O tamanho do repositorio depende do nivel de direitos:
+O tamanho do repositório depende do nível de direito:
 
-- Community: ate `10 GB`
-- planos pagos: limite do plano ou contrato
+- Community: até `10 GB`
+- planos pagos: limite de plano ou contrato
 
-Os limites predefinidos dos planos pagos sao:
+Os limites padrão para planos pagos são:
 
-| Plano | Licencas Flutuantes | Tamanho do Repositorio | Emissoes mensais de licencas de repositorios | Validade padrao / max do cert de delegacao |
-|-------|---------------------|------------------------|----------------------------------------------|--------------------------------------------|
+| Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
+|------|-------------------|-----------------|-------------------------------|---|
 | Community | 2 | 10 GB | 500 | 15d / 30d |
-| Professional | 5 | 100 GB | 5.000 | 60d / 120d |
-| Business | 20 | 500 GB | 20.000 | 90d / 180d |
-| Enterprise | 50 | 2048 GB | 100.000 | 120d / 365d |
+| Professional | 5 | 100 GB | 5,000 | 60d / 120d |
+| Business | 20 | 500 GB | 20,000 | 90d / 180d |
+| Enterprise | 50 | 2048 GB | 100,000 | 120d / 365d |
 
-Os limites especificos de contrato podem aumentar ou diminuir estes valores para um cliente especifico. A validade do cert de delegacao tambem e limitada a `subscription.expiresAt + 3 dias de graca`, pelo que as subscricoes facturadas mensalmente obtem naturalmente certs alinhados com o seu ciclo de facturacao. Consulte [Cadeia de Licencas e Delegacao - Politica de Validade](/pt/docs/license-chain) para as regras completas.
+Limites específicos do contrato podem aumentar ou diminuir esses valores para um cliente específico. A validade do certificado de delegação também é limitada a `subscription.expiresAt + 3 day grace`, portanto assinaturas faturadas mensalmente naturalmente obtêm certificados alinhados ao seu ciclo de faturamento. Veja [License Chain & Delegation - Validity Policy](/en/docs/license-chain) para as regras completas.
 
-## Periodo de Graca de Migracao de VM
+## Período de Graça de Migração de VM
 
-Quando um fornecedor de hosting migra uma VM para hardware fisico diferente, o ID da maquina muda (e derivado de identificadores de hardware como DMI UUID, `/etc/machine-id` e enderecos MAC de NIC). As licencas de repositorios estao vinculadas ao ID da maquina, pelo que uma migracao normalmente invalidaria todas as licencas.
+Quando um provedor de hospedagem migra uma VM para hardware físico diferente, o ID da máquina muda (é derivado de identificadores de hardware como UUID DMI, `/etc/machine-id` e endereços MAC de NIC). Licenças de repositório são vinculadas ao ID da máquina, portanto uma migração normalmente invalidaria todas as licenças.
 
-Para tratar isto de forma transparente, as licencas de repositorios incluem um **periodo de graca de 40 dias para o ID da maquina**. Se o ID da maquina nao corresponder, mas a licenca tiver sido emitida ha menos de 40 dias, a licenca e ainda aceite. Como as licencas sao renovadas a cada 30 dias, a proxima renovacao vincula automaticamente ao novo ID da maquina.
+Para lidar com isso de forma transparente, licenças de repositório incluem um **período de graça de ID de máquina de 40 dias**. Se o ID da máquina não corresponder mas a licença foi emitida há menos de 40 dias, a licença ainda é aceita. Como as licenças são atualizadas a cada 30 dias, a próxima atualização vincula automaticamente ao novo ID da máquina.
 
-Na pratica:
-- VM migrada, ID da maquina muda: os repositorios continuam a funcionar (dentro do periodo de 40 dias)
-- A proxima operacao `rdc` renova a licenca com o novo ID da maquina
-- Nao e necessaria intervencao manual
-- Verifique o ID da maquina e o estado da licenca com `rdc machine query --system --licenses --name <machine>`
+Na prática:
+- VM migrada, ID da máquina muda: repositórios continuam executando (dentro da janela de 40 dias)
+- Próxima operação `rdc` atualiza a licença com o novo ID da máquina
+- Nenhuma intervenção manual necessária
+- Verifique o ID da máquina e o status da licença com `rdc machine query --system --licenses --name <machine>`
 
-**Os utilizadores do canal edge** recebem 2X os limites Community sem custo (repositorios de 20 GB, 1.000 emissoes/mes, 4 maquinas). Os planos pagos so estao disponiveis no canal Stable. Consulte [Canais de Lancamento](/pt/docs/release-channels) para detalhes.
+**Usuários do edge channel** recebem 2X dos limites Community sem custo (repositórios de 20 GB, 1.000 emissões/mês, 4 máquinas). Planos pagos estão disponíveis apenas no canal Stable. Veja [Release Channels](/en/docs/release-channels) para detalhes.
 
-## O que Acontece Durante Repo Create, Up, Down e Restart
+## O que Acontece Durante Criação, Up, Down e Reinício de Repositório
 
-### Criar e fazer fork de repositorio
+### Criação e fork de repositório
 
-Quando cria ou faz fork de um repositorio:
+Quando você cria ou faz fork de um repositório:
 
-1. `rdc` garante que o seu token de subscricao esta disponivel (acciona autenticacao por codigo de dispositivo se necessario)
-2. `rdc` pre-emite uma licenca de repositorio do servidor de contas (o servidor verifica a quota de slots de maquinas e os limites de emissao mensais neste ponto)
-3. A licenca de repositorio pre-emitida e escrita na maquina e validada localmente (assinatura, ID da maquina, GUID do repositorio, expiracao e limite de tamanho)
-4. Apos criacao bem sucedida, `rdc` re-emite a licenca de repositorio com provas de identidade do repositorio (UUID LUKS ou impressao digital de armazenamento)
+1. `rdc` garante que seu token de assinatura esteja disponível (aciona autenticação por código de dispositivo se necessário)
+2. `rdc` pré-emite uma licença de repositório do servidor de conta (o servidor verifica cota de slots de máquina e limites de emissões mensais neste ponto)
+3. A licença de repositório pré-emitida é escrita na máquina e validada localmente (assinatura, ID da máquina, GUID do repositório, expiração e limite de tamanho)
+4. Após criação bem-sucedida, `rdc` re-emite a licença do repositório com provas de identidade do repositório (UUID LUKS ou impressão digital de armazenamento)
 
-Essa emissao suportada pela conta conta para o seu uso mensal de **emissoes de licencas de repositorios**. Cada licenca contem o email e o nome da empresa do titular da conta, que e registado quando o renet valida a licenca.
+Essa emissão respaldada por conta conta em relação ao seu uso mensal de **emissões de licenças de repositório**. Cada licença contém o email do titular da conta e nome da empresa, que é registado quando renet valida a licença.
 
-### Repo up, down e delete
+### Repositório up, down e delete
 
-`rdc` valida a licenca de repositorio instalada na maquina mas **ignora a verificacao de expiracao**. A assinatura, o ID da maquina, o GUID do repositorio e a identidade sao ainda verificados. Os utilizadores nunca ficam impedidos de operar os seus repositorios, mesmo com uma subscricao expirada.
+`rdc` valida a licença de repositório instalada na máquina mas **pula a verificação de expiração**. Assinatura, ID da máquina, GUID do repositório e identidade ainda são verificados. Os usuários nunca são bloqueados de operar seus repositórios, mesmo com uma assinatura expirada.
 
-### Repo resize e expand
+### Redimensionamento e expansão de repositório
 
-`rdc` realiza validacao completa da licenca de repositorio incluindo expiracao e limites de tamanho.
+`rdc` executa validação completa de licença de repositório incluindo expiração e limites de tamanho.
 
-### Reinicio da maquina e autostart
+### Reinício de máquina e autostart
 
-O autostart usa as mesmas regras que `rdc repo up`: a expiracao e ignorada, pelo que os repositorios reiniciam sempre livremente.
+Autostart usa as mesmas regras que `rdc repo up`: expiração é pulada, portanto os repositórios sempre reiniciam livremente.
 
-As licencas de repositorios usam um modelo de validade de longa duracao:
+Licenças de repositório usam um modelo de validade de longa duração:
 
-- `refreshRecommendedAt` e o ponto de renovacao suave
-- `hardExpiresAt` e o ponto de bloqueio
+- `refreshRecommendedAt` é o ponto de atualização suave
+- `hardExpiresAt` é o ponto de bloqueio
 
-Se a licenca de repositorio estiver desactualizada mas ainda antes da expiracao rigida, o runtime pode continuar. Uma vez atingida a expiracao rigida, `rdc` deve renova-la para operacoes de resize/expand.
+Se a licença do repositório estiver desatualizada mas ainda antes da expiração dura, o runtime pode continuar. Depois de atingir a expiração dura, `rdc` deve atualizá-la para operações de redimensionamento/expansão.
 
-### Outras operacoes de repositorio
+### Outras operações de repositório
 
-Operacoes como listar repositorios, inspeccionar informacoes de repositorios e montar nao requerem qualquer validacao de licenca.
+Operações como listar repositórios, inspecionar informações de repositório e montar não requerem qualquer validação de licença.
 
-## Verificar Estado e Renovar Licencas
+## Verificando Status e Atualizando Licenças
 
 Login humano:
 
@@ -156,105 +156,105 @@ Login humano:
 rdc subscription login
 ```
 
-Login de automacao ou agente de IA:
+Login de automação ou agente de IA:
 
 ```bash
 rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
 ```
 
-Para ambientes nao interactivos, definir `REDIACC_SUBSCRIPTION_TOKEN` e a opcao mais simples. O token deve ter ambito apenas para as operacoes de subscricao e licenca de repositorio de que o agente necessita.
+Para ambientes não interativos, definir `REDIACC_SUBSCRIPTION_TOKEN` é a opção mais simples. O token deve ter escopo apenas para as operações de assinatura e licenças de repositório que o agente precisa.
 
-Mostrar estado de subscricao suportado pela conta:
+Mostrar status de assinatura respaldado por conta:
 
 ```bash
 rdc subscription status
 ```
 
-Mostrar detalhes de activacao da maquina para uma maquina:
+Mostrar detalhes de ativação de máquina para uma máquina:
 
 ```bash
 rdc subscription activation status -m hostinger
 ```
 
-Mostrar detalhes de licenca de repositorio instalada numa maquina:
+Mostrar detalhes de licenças de repositório instaladas em uma máquina:
 
 ```bash
 rdc subscription repo status -m hostinger
 ```
 
-Renovar em massa as licencas de repositorios numa maquina:
+Atualizar em lote licenças de repositório em uma máquina:
 
 ```bash
 rdc subscription refresh repos -m hostinger
 ```
 
-Os repositorios descobertos na maquina mas em falta na configuracao local do `rdc` sao rejeitados durante a renovacao em massa. Sao reportados como falhas e nao sao classificados automaticamente.
+Repositórios descobertos na máquina mas ausentes da configuração `rdc` local são rejeitados durante atualização em lote. Eles são reportados como falhas e não são auto-classificados.
 
-Forcar a renovacao de uma licenca de repositorio para um repositorio existente:
+Forçar uma atualização de licença de repositório para um repositório existente:
 
 ```bash
 rdc subscription refresh repo --name my-app -m hostinger
 ```
 
-No primeiro uso, uma operacao de repositorio ou backup licenciada que nao encontre uma licenca de repositorio utilizavel pode acionar automaticamente uma transferencia de autorizacao de conta. O CLI mostra um URL de autorizacao, tenta abrir o browser em terminais interactivos e retenta a operacao uma vez apos autorizacao e emissao bem sucedidas.
+No primeiro uso, uma operação de repositório licenciado ou backup que não encontra nenhuma licença de repositório utilizável pode acionar um handoff de autorização de conta automaticamente. A CLI imprime uma URL de autorização, tenta abrir o navegador em terminais interativos e tenta novamente a operação uma vez após autorização e emissão bem-sucedidas.
 
-Em ambientes nao interactivos, o CLI nao aguarda aprovacao do browser. Em vez disso, indica que deve fornecer um token com ambito com `rdc subscription login --token ...` ou `REDIACC_SUBSCRIPTION_TOKEN`.
+Em ambientes não interativos, a CLI não aguarda aprovação do navegador. Em vez disso, ela informa para você fornecer um token com escopo usando `rdc subscription login --token ...` ou `REDIACC_SUBSCRIPTION_TOKEN`.
 
-Para a configuracao inicial da maquina, consulte [Configuracao da Maquina](/pt/docs/setup).
+Para configuração inicial de máquina, veja [Machine Setup](/en/docs/setup).
 
-## Comportamento Offline e Expiracao
+## Comportamento Offline e Expiração
 
-A validacao de licencas ocorre localmente na maquina. Nao requer conectividade ao vivo com o servidor de contas.
+A validação de licença acontece localmente na máquina. Você não precisa entrar em contato com o servidor de conta para operar seus repositórios.
 
-Isso significa que:
+Isso significa:
 
-- um ambiente em execucao nao precisa de conectividade ao vivo com a conta em cada comando
-- todos os repositorios podem sempre iniciar, parar e ser eliminados mesmo com licencas expiradas; os utilizadores nunca ficam impedidos de operar os seus proprios repositorios
-- as operacoes de provisionamento (`create`, `fork`) requerem uma licenca de repositorio pre-emitida, e as operacoes de crescimento (`resize`, `expand`) requerem uma licenca de repositorio valida
-- as licencas de repositorios verdadeiramente expiradas devem ser renovadas atraves do `rdc` antes de operacoes de resize/expand
-- as assinaturas de licencas sao verificadas contra uma chave publica incorporada; a verificacao de assinatura nao pode ser desactivada
+- um ambiente em execução não precisa de conectividade de conta ativa em cada comando
+- todos os repositórios sempre podem iniciar, parar e ser deletados mesmo com licenças expiradas, os usuários nunca são bloqueados de operar seus próprios repositórios
+- operações de provisionamento (`create`, `fork`) requerem uma licença de repositório pré-emitida, e operações de crescimento (`resize`, `expand`) requerem uma licença de repositório válida
+- licenças de repositório verdadeiramente expiradas devem ser atualizadas através de `rdc` antes de redimensionamento/expansão
+- assinaturas de licença são verificadas contra uma chave pública incorporada, verificação de assinatura não pode ser desabilitada
 
-## Comportamento de Recuperacao
+## Comportamento de Recuperação
 
-A recuperacao automatica e intencionalmente limitada:
+A recuperação automática é intencionalmente restrita:
 
-- `missing`: `rdc` pode autorizar acesso a conta se necessario, renovar em massa as licencas de repositorios e retentar uma vez
-- `expired`: `rdc` pode renovar em massa as licencas de repositorios e retentar uma vez
-- `machine_mismatch`: falha rapidamente e indica que deve re-emitir a partir do contexto da maquina actual
-- `repository_mismatch`: falha rapidamente e indica que deve renovar as licencas de repositorios explicitamente
-- `sequence_regression`: falha rapidamente como um problema de integridade/estado de licenca de repositorio
-- `invalid_signature`: falha rapidamente como um problema de integridade/estado de licenca de repositorio
-- `identity_mismatch`: falha rapidamente; a identidade do repositorio nao corresponde a licenca instalada
+- `missing`: `rdc` pode autorizar acesso a conta se necessário, atualizar licenças de repositório em lote e tentar novamente uma vez
+- `expired`: `rdc` pode atualizar licenças de repositório em lote e tentar novamente uma vez
+- `machine_mismatch`: falha rápido e informa para você re-emitir do contexto de máquina atual
+- `repository_mismatch`: falha rápido e informa para você atualizar licenças de repositório explicitamente
+- `sequence_regression`: falha rápido como um problema de integridade/estado de licença de repositório
+- `invalid_signature`: falha rápido como um problema de integridade/estado de licença de repositório
+- `identity_mismatch`: falha rápido, a identidade do repositório não corresponde à licença instalada
 
-Estes casos de falha rapida nao consomem automaticamente chamadas de renovacao ou emissao suportadas pela conta.
+Esses casos de falha rápida não consomem automaticamente chamadas de atualização ou emissão respaldadas por conta.
 
-## Certificados de Delegacao para On-Premise
+## Certificados de Delegação para On-Premise
 
-Para deployments on-premise e air-gapped, o servidor de contas upstream emite um **certificado de delegacao** que autoriza a sua instalacao on-premise a assinar licencas com a sua propria chave Ed25519. O certificado limita a instalacao on-premise aos seus limites de plano e cria uma cadeia a prova de adulteracao.
+Para implantações on-premise e isoladas de ar, isso fica complexo. O servidor de conta upstream emite um **certificado de delegação** que autoriza sua instalação on-premise a assinar licenças com sua própria chave Ed25519. Isso o restringe aos limites do seu plano e cria uma cadeia à prova de adulteração.
 
-Pontos-chave para proprietarios de subscricoes:
+Pontos principais para proprietários de assinatura:
 
-- **Um certificado activo por subscricao.** Cada instalacao on-premise aplica quotas por mes e por maquina contra o seu proprio livro de registos local, pelo que multiplas instalacoes multiplicariam a quota efectiva sem possibilidade de reconciliacao. Os clientes que necessitam de producao + staging + DR devem comprar uma subscricao por instalacao.
-- **Validade padrao baseada em nivel** (15d / 60d / 90d / 120d) e limites maximos (30d / 120d / 180d / 365d); consulte a tabela de limites acima.
-- **Self-service a partir do portal do cliente.** Os proprietarios e administradores de organizacoes podem criar, renovar e revogar certificados de delegacao em `/account/delegation-certs`. A pagina e visivel para todos os clientes independentemente do nivel do plano; apenas os limites diferem.
-- **Renovacao automatica** e suportada via um bootstrap de um clique que cria um token de API com ambito `delegation:renew` para a instalacao on-premise usar em chamadas de renovacao upstream.
-- **Renovacao air-gapped** e suportada via um manifesto de pedido de renovacao assinado que o administrador on-premise transfere, transporta offline para o upstream, e o upstream processa para emitir um novo certificado.
+- **Um certificado ativo por assinatura.** Cada instalação on-premise aplica cotas por mês e por máquina contra seu próprio ledger local, portanto múltiplas instalações multiplicariam a cota efetiva sem nenhuma possibilidade de reconciliação. Clientes que precisam de produção, staging e DR devem comprar uma assinatura por instalação.
+- **Validade baseada em nível** (15d / 60d / 90d / 120d) e limites (30d / 120d / 180d / 365d) - veja a tabela de limites acima.
+- **Auto-atendimento do portal do cliente.** Proprietários de org e admins podem criar, renovar e revogar certificados de delegação em `/account/delegation-certs`. A página é visível para todos os clientes independentemente do nível de plano - apenas os limites diferem.
+- **Auto-renovação** é suportada via um bootstrap de um clique que emite um token de api com escopo `delegation:renew` para on-premise usar para chamadas de renovação upstream.
+- **Renovação isolada de ar** é suportada via um manifesto de solicitação de renovação assinado que o admin on-premise baixa, transfere offline para upstream, e upstream processa para emitir um novo certificado.
 
-Consulte [Instalacao On-Premise - Licenciamento para Deployments Air-Gapped](/pt/docs/on-premise) para a configuracao operacional, e [Cadeia de Licencas e Delegacao](/pt/docs/license-chain) para o design criptografico.
+Veja [On-Premise Installation - Licensing for Air-Gapped Deployments](/en/docs/on-premise) para a configuração operacional, e [License Chain & Delegation](/en/docs/license-chain) para o design criptográfico.
 
-## Emissoes Mensais de Licencas de Repositorios
+## Emissões Mensais de Licenças de Repositório
 
-Esta metrica conta a actividade de emissao de licencas de repositorios suportada pela conta no mes de calendario UTC actual.
+Esta métrica conta a atividade de emissão de licenças de repositório respaldada por conta bem-sucedida no mês de calendário UTC atual.
 
 Inclui:
 
-- emissao de licenca de repositorio pela primeira vez
-- renovacao de licenca de repositorio bem sucedida que devolve uma licenca recentemente assinada
+- emissão de licença de repositório pela primeira vez
+- atualização bem-sucedida de licença de repositório que retorna uma licença recém-assinada
 
-Nao inclui:
+Não inclui:
 
 - entradas de lote inalteradas
-- tentativas de emissao falhadas
-- repositorios nao rastreados rejeitados antes da emissao
+- tentativas de emissão falhadas
+- repositórios rastreados rejeitados antes da emissão
 
-Se precisar de uma vista orientada para o cliente do uso e historico recente de emissoes de licencas de repositorios, use o portal de conta. Se precisar de inspeccao do lado da maquina, use `rdc subscription activation status -m` e `rdc subscription repo status -m`.
+Se você precisar de uma visualização de uso voltada para o cliente e histórico recente de emissão de licenças de repositório, use o portal de conta. Se você precisar de inspeção do lado da máquina, use `rdc subscription activation status -m` e `rdc subscription repo status -m`.

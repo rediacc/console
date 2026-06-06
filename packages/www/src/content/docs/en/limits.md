@@ -10,7 +10,7 @@ language: en
 
 # Limits & Quotas
 
-This page lists the hard and soft limits that apply to Rediacc deployments. Read it before you plan capacity, so you know which ceilings exist and which do not.
+Rediacc deployment limits. Three are hard and cannot be changed by adding hardware: the 61-service cap per repository (network address space allocation), the kernel 6.1 minimum (CRIU requirements), and the Let's Encrypt issuance cap of 50 wildcard certificates per registered domain per week. Everything else is soft: it moves when you add hardware. Know the difference before you commit to a topology.
 
 ---
 
@@ -20,7 +20,7 @@ Each repository supports up to **61 services** running simultaneously.
 
 This is a hard limit determined by the network address space allocated to each repository. Every service gets its own dedicated private IP address, and each repository's address block accommodates exactly 61 service slots.
 
-If you are approaching this limit, consolidate smaller services (e.g., move sidecars or monitoring agents into a separate repository with their own isolation boundary) or refactor to reduce the number of independently running processes within a single application.
+Look: hitting 61 services in one repository usually signals an architecture problem, not a Rediacc constraint. The fix is to move sidecars and monitoring agents into their own repository with a separate isolation boundary, or to reduce the number of independently running processes in the application itself.
 
 ---
 
@@ -45,7 +45,7 @@ Each repository is assigned a unique **network ID**, a number used to calculate 
 | Total available network IDs | ~261,944 |
 | Scope | Per config (shared across all machines in a config) |
 
-When a repository is deleted, its network ID is freed and becomes available for reuse. Rediacc allocates IDs sequentially and only scans for freed gaps once the forward counter approaches the ceiling. In practice this limit is never reached. It would require creating and tracking hundreds of thousands of repositories over the lifetime of a single config.
+When a repository is deleted, its network ID is freed and becomes available for reuse. Rediacc allocates IDs sequentially and only scans for freed gaps once the forward counter approaches the ceiling. In practice you will never hit this. We have not seen it happen. Exhausting the pool would require creating and tracking hundreds of thousands of repositories under a single config.
 
 ---
 

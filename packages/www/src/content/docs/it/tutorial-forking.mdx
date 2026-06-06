@@ -1,19 +1,19 @@
 ---
 title: "Fare il Fork di un Repository"
-description: "Clona un intero repository (app, database, file) in pochi secondi. Qualsiasi dimensione. Zero disco aggiuntivo. È sempre istantaneo."
+description: "Clona un intero repository (app, database, file) in pochi secondi. Qualsiasi dimensione. Zero disco aggiuntivo."
 category: "Tutorials"
 subcategory: advanced
 order: 7
 language: it
-sourceHash: "73a4cb1d8c412531"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "14d013a82dbcbd4e"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Fare il Fork di un Repository
 
-Questa è la parte che cambia il modo in cui lavori. Clona un intero ambiente di produzione, l'app, il database, i file di configurazione, in pochi secondi. Qualsiasi dimensione. Zero disco aggiuntivo. Fai il fork tutte le volte che vuoi.
+Fai il fork di un intero ambiente di produzione (l'app, il database, i file di configurazione) in pochi secondi. Qualsiasi dimensione. Zero disco aggiuntivo. Puoi fare il fork tutte le volte che vuoi.
 
 Il motto: **clona la produzione, non rompere nulla.**
 
@@ -45,9 +45,9 @@ Un solo comando. Ha clonato tutto, l'app, il database, i file di configurazione,
 
 ## Perché è così veloce?
 
-![Condividere un link a una cartella ha la stessa velocita' indipendentemente dalla dimensione della cartella](/img/tutorials/tutorial-forking/slide-2.svg)
+![Condividere un link a una cartella ha la stessa velocità indipendentemente dalla dimensione della cartella](/img/tutorials/tutorial-forking/slide-2.svg)
 
-Immagina di condividere un link a una cartella. Il link è lo stesso che la cartella sia piccola o enorme: la cartella è pesante, il link è leggero.
+Il motivo sono i btrfs reflinks. Un fork crea un nuovo albero del filesystem che punta agli stessi blocchi di dati del parent. Nessun dato viene copiato al momento del fork. È tutto metadata, quindi la dimensione del parent non influisce mai sul tempo impiegato dal fork.
 
 ![1 GB, 100 GB, 1 TB: stesso tempo, ogni volta](/img/tutorials/tutorial-forking/slide-3.svg)
 
@@ -63,7 +63,7 @@ Pensa al repo parent come a una sorgente fissa. Il tuo fork è una vista copy-on
 
 ## E se il parent cambia dopo?
 
-![Un fork e' una fotografia congelata; il parent continua a scorrere come un fiume](/img/tutorials/tutorial-forking/slide-5.svg)
+![Un fork è una fotografia congelata; il parent continua a scorrere come un fiume](/img/tutorials/tutorial-forking/slide-5.svg)
 
 Ora pensa a uno snapshot. Quando fai il fork, congeli il parent in quell'esatto momento. Il parent continua a muoversi. Il tuo fork no.
 

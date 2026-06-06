@@ -8,7 +8,7 @@ language: en
 
 # Tools
 
-Rediacc bundles tools for working with remote repositories: file sync, SSH terminal, VS Code integration, and CLI updates.
+Rediacc ships four tools for day-to-day work on your machines and repositories: file sync over SSH, an SSH terminal, VS Code integration, and CLI self-updates. All four run over SSH. No agent or daemon required on the remote side. If you need a GUI for any of this, you are looking at the wrong page.
 
 ## File Synchronization (sync)
 
@@ -96,7 +96,7 @@ When connecting to a repository, `DOCKER_HOST` is automatically set to the repos
 
 ### Connect Subcommand
 
-The `connect` subcommand does the same with explicit flags:
+Or use the `connect` subcommand for the same result, with explicit flags:
 
 ```bash
 rdc term connect -m server-1

@@ -1,16 +1,16 @@
 ---
 title: RDC CLI Hızlı Referans
-description: "rdc komutları için hızlı referans: yapılandırmalar, depolar, makineler, senkronizasyon ve konteynerler."
+description: "rdc komutları için hızlı referans: yapılandırmalar, depolar, makineler, senkronizasyon ve konteynerler. Tüm seçenekleri görmek için herhangi bir komuta --help ekleyin."
 category: Guides
 order: 3
 language: tr
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # RDC CLI Hızlı Referans
 
-En sık kullanılan `rdc` komutları için hızlı referans. Tüm seçenekleri görmek için herhangi bir komutu `--help` ile çalıştırın.
+Burada her `rdc` komutu listelenmemiştir, yalnızca her dağıtımda ortaya çıkan komutlar vardır. Tüm seçenekleri görmek için herhangi bir `rdc` komutunu `--help` ile çalıştırın. Kenar durumları ve nadiren kullanılan seçenekler tam referansta bulunmaktadır.
 
 ## Depo Yaşam Döngüsü
 
@@ -23,6 +23,22 @@ En sık kullanılan `rdc` komutları için hızlı referans. Tüm seçenekleri g
 | `rdc repo fork --parent <repo> --tag <tag> -m <machine>` | Depoyu çatalla (neredeyse anında, BTRFS reflink) |
 | `rdc repo takeover --name <repo> -m <machine>` | Mevcut bir deponun sahipliğini al |
 | `rdc config repository list` | Ad ve GUID ile tüm depoları listele |
+
+## Depo Gizli Anahtarları
+
+Yalnızca dağıtım sırasında yazılabilen kimlik bilgileri. `get` komutu yalnızca özeti döndürür. Değer hiçbir zaman döndürülmez. Tam kılavuz için [Depolar § Gizli Anahtarlar](/en/docs/repositories#secrets) bölümüne bakın.
+
+| Komut | Açıklama |
+|-------|----------|
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\|file] --current ""` | Yeni bir gizli anahtar oluştur (`--current ""` ilk yazma için) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev>` | Mevcut bir gizli anahtarın üzerine yaz (şifre tarzı ön koşul) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret` | Önceki değeri doğrulamadan üzerine yaz (denetim günlüğüne rotasyon olarak kaydedilir) |
+| `rdc repo secret list --name <repo>` | Gizli anahtar adlarını ve iletim modlarını listele (hiçbir zaman değerleri, hiçbir zaman özetleri değil) |
+| `rdc repo secret get --name <repo> --key <KEY>` | Gizli anahtar özetini ve modunu göster (hiçbir zaman düz metin değer yok) |
+| `rdc repo secret unset --name <repo> --key <KEY> --current <prev>` | Bir gizli anahtarı sil |
+| `rdc repo secret unset --name <repo> --key <KEY> --rotate-secret` | Önceki değeri doğrulamadan sil |
+
+> Çatallar hiçbir gizli anahtar devralmaz. Bunları çatal üzerinde açıkça `rdc repo secret set --name <repo>:<tag>` komutu ile ayarlayın.
 
 ## Yedekleme ve Geri Yükleme
 
@@ -95,10 +111,11 @@ En sık kullanılan `rdc` komutları için hızlı referans. Tüm seçenekleri g
 | `rdc term connect -m <machine>` | Makineye SSH terminali aç |
 | `rdc term connect -m <machine> -r <repo>` | Depoya SSH terminali aç (DOCKER_HOST ayarlar) |
 | `rdc term connect -m <machine> -c "<command>"` | Makinede komut çalıştır |
-| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Bir dosyayı, dizini veya birden çok kaynağı depoya yükle |
-| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Depo dizinini yerele indir |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Bir veya daha fazla yerel dosya/dizini depoya yükle |
+| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | Tek bir yerel dosyayı belirli bir uzak yola yükle |
+| `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Depo dizinini yerel olarak indir |
 | `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Tek bir uzak dosyayı yerel bir dizine indir |
-| `rdc vscode connect -m <machine> -r <repo>` | VS Code Remote SSH oturumu aç |
+| `rdc vscode connect -m <machine> -r <repo>` | VS Code Remote SSH oturumunu aç |
 
 ## Yapılandırma
 

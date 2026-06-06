@@ -7,9 +7,11 @@ description: >-
 category: Concepts
 order: 35
 language: et
+sourceHash: "ae23c9bc851ecfcd"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Kui Claude Code, Cursor, Gemini CLI, Copilot CLI või mõni muu AI-koodiabistaja juhib `rdc`-d, kohtleb CLI seda klaviatuuri taga olevast inimesest erinevalt. Sellel lehel selgitatakse, mida agent saab teha, mida mitte, ja kuidas turvamehhanismid kehtivad isegi siis, kui agent üritab neist mööda rääkida.
+Niisiis suunad AI-koodiabistaja oma infrastruktuuri peale. Kui Claude Code, Cursor, Gemini CLI, Copilot CLI või mõni muu sarnane tööriist juhib `rdc`-d, kohtleb CLI seda klaviatuuri taga olevast inimesest erinevalt. Sellel lehel selgitatakse, mida agent saab teha, mida mitte, ja kuidas turvamehhanismid kehtivad isegi siis, kui agent üritab neist mööda rääkida.
 
 ## Kiirviide: mida agendid saavad ja ei saa teha
 
@@ -141,7 +143,7 @@ See fail pole macOS-il ega Windowsil olemas. Kuna legitiimsust pole võimalik ko
 
 > The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
 
-Praktikas pole mitte-Linuxi kasutajatele ümbersõitu fork-esmase töövoo alt. See on tahtlik. Agendid suunatakse läbi liivakasti, mille taha nad ei saa jõuda, olenemata sellest, kuidas neid käsutati. Kui vajad ülekannet, käivita oma agent WSL-is, Linuxi konteineris või Linuxi VM-is; vastasel juhul tööta fork'il.
+Mitte-Linuxi kasutajatele pole ümbersõitu fork-esmase töövoo alt. See on tahtlik. Agendil pole võimalust liivakastist mööda pääseda, olenemata sellest, kuidas teda käsutati. Kui vajad ülekannet, käivita oma agent WSL-is, Linuxi konteineris või Linuxi VM-is; vastasel juhul tööta fork'il.
 
 ## Auditi logi
 
@@ -187,9 +189,9 @@ Logi on ohutu jagamiseks turvaülevaatajaga või veaportaalis esitamiseks.
 
 Agendi turvamehhanismid on **käitumuslikud, mitte krüptograafilised**. Sihikindel või suunatud agent, mis töötab sama UID-ga kui konfiguratsioonifail, saab alati teha `cat ~/.config/rediacc/rediacc.json` ja lugeda lihtteksti, kuna fail on protsessile loetav.
 
-Tõeliseks krüptograafiliseks jõustamiseks kasuta [krüpteeritud konfiguratsioonisalve](/et/docs/config-storage): saladused elavad serveripoolel, iga tundlik väli kannab välja kohast HMAC-sidet ja konto töötaja keeldub kirjutustest, mille `--current` eeltingimus ei kata selle salvestatut räsiga. Server ei näe kunagi lihtteksti: null-teadmine: kuid ta jõustab värava.
+Tõeliseks krüptograafiliseks jõustamiseks kasuta [krüpteeritud konfiguratsioonisalve](/et/docs/config-storage): saladused elavad serveripoolel, iga tundlik väli kannab välja kohast HMAC-sidet ja konto töötaja keeldub kirjutustest, mille `--current` eeltingimus ei kata selle salvestatut räsiga. Server ei näe kunagi lihtteksti (null-teadmine), kuid ta jõustab värava.
 
-Kohalike failide tee on "lihtne tee on turvaline". Kaugmälu tee on "raske tee on ka raske".
+Kohalike failide puhul on lihtne tee turvaline tee. Kaugmälu puhul on ka ümbersõidutee krüptograafiliselt raske.
 
 ## Mida Rediacc ei isoleeri
 
@@ -217,7 +219,7 @@ Rediacc hoolitseb juurutusaegse süstimise, fork-vahelise eristamise ja repo-vah
 
 ## Kiiretseptid
 
-### Luba agendil pöörata üht pilvekontot
+### Luba agendil pöörata üht pilvetokenit
 
 ```bash
 # Sina, enne agendi käivitamist:

@@ -14,7 +14,7 @@ language: en
 
 ## The Problem
 
-Mehmet runs the database for a large e-commerce platform. One morning customers start complaining that past order records **are not visible** anymore. He investigates. A newly hired engineer had **accidentally deleted** critical rows from the live database 3 weeks ago, **connecting to the live database instead of the test environment**. The classic mistake every DBA has either made themselves or watched a junior make.
+Mehmet runs the database for a large e-commerce platform. One morning customers start complaining that past order records **are not visible** anymore. He investigates. A newly hired engineer had **accidentally deleted** critical rows from the live database 3 weeks ago, **connecting to the live database instead of the test environment**. The classic mistake. Every DBA has either made it themselves or watched a new hire make it.
 
 **Existing Backup System:**
 * Full backups are taken once a week

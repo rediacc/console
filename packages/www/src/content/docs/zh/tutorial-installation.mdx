@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: essentials
 order: 1
 language: zh
-sourceHash: "9b8f5c6aa1b44fd5"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "45226ad6fbefa4f2"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -49,9 +49,9 @@ iwr -useb https://www.rediacc.com/install.ps1 | iex
 
 ![rdc 在笔记本上，renet 在服务器上](/img/tutorials/tutorial-installation/slide-2.svg)
 
-`rdc` 是运行在笔记本上的 CLI。服务器运行一个名为 `renet` 的独立组件，`rdc` 通过 SSH 对其进行配置和驱动。你永远不需要手动 SSH 进入服务器，`rdc` 会替你完成这一切。
+`rdc` 是运行在笔记本上的 CLI。服务器运行一个名为 `renet` 的独立组件，`rdc` 通过 SSH 对其进行配置和驱动。你永远不需要手动 SSH 进入服务器，`rdc` 会替你完成这一切。这就是我们的设计理念：笔记本上只需一个工具，服务器端无需直接管理任何东西。
 
-我们会在接下来的两个教程中完成这部分设置。
+接下来的两个教程中，我们会讲解 renet 的配置。这部分配置比 CLI 安装要复杂，但每台机器只需要做一次。
 
 ---
 

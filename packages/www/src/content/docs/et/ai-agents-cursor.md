@@ -4,9 +4,11 @@ description: Konfigureerige Cursor IDE töötama Rediacc infrastruktuuriga .curs
 category: Guides
 order: 32
 language: et
+sourceHash: "b5e835461de00400"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Cursor integreerub Rediacciga terminali käskude ja `.cursorrules` konfiguratsioonifaili kaudu.
+Lühiversioon: `.cursorrules` laadib Rediacc konteksti Cursori AI-sse; terminal võimaldab käivitada `rdc` käske otse sinu tegelike masinate vastu.
 
 ## Kiirseadistus
 
@@ -14,7 +16,7 @@ Cursor integreerub Rediacciga terminali käskude ja `.cursorrules` konfiguratsio
 2. Kopeerige [AGENTS.md mall](/et/docs/agents-md-template) oma projekti juurkausta nimena `.cursorrules`
 3. Avage projekt Cursoris
 
-Cursor loeb käivitamisel `.cursorrules`-i ja kasutab seda AI-assisteeritud arenduse kontekstina.
+Cursor loeb käivitamisel `.cursorrules`-i. Oluline on teada: kontekstiakna piirangud kehtivad, seega hoia fail fokuseerituna oma tegelike masinate ja repode peale, mitte üldise täitematerjali peale.
 
 ## .cursorrules konfiguratsioon
 

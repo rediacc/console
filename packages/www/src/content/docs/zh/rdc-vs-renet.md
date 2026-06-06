@@ -1,16 +1,16 @@
 ---
-title: rdc vs renet
-description: 什么时候使用 rdc，什么时候使用 renet。
-category: Concepts
+title: "rdc vs renet"
+description: "何时使用 rdc，何时使用 renet。"
+category: "Concepts"
 order: 1
 language: zh
-sourceHash: "026a183f8a5f9dd4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2ccc8590bc6f67c6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # rdc vs renet
 
-Rediacc 有两个二进制文件。以下是各自的使用场景。
+Rediacc 有两个二进制文件。两个任务，两个地方。以下是各自的使用场景。
 
 | | rdc | renet |
 |---|-----|-------|
@@ -60,7 +60,7 @@ rdc machine health --name server-1
 - 检查通过 `rdc` 无法获取的系统内部信息
 - 底层恢复操作
 
-所有 `renet` 命令都需要 root 权限（`sudo`）。完整的 `renet` 命令列表请参阅[服务器参考](/zh/docs/server-reference)。
+所有 `renet` 命令都需要 root 权限（`sudo`）。`rdc` 并不包装每个 `renet` 子命令；对于未涵盖的功能，请 SSH 登录并直接调用 `renet`。完整的 `renet` 命令列表请参阅[服务器参考](/zh/docs/server-reference)。
 
 ## 实验性功能：`rdc ops`（本地虚拟机）
 

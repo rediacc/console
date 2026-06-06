@@ -4,8 +4,8 @@ description: "Rediacc 플랫폼에서 애플리케이션을 구축하기 위한 
 category: "Guides"
 order: 5
 language: ko
-sourceHash: "1d227a06272a0050"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "74803e91ef07b03c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Rediacc 규칙
@@ -106,7 +106,7 @@ Renet이 모든 컨테이너에 자동으로 주입합니다.
 - **레이블로 활성화**: 체크포인트하려는 컨테이너에 `rediacc.checkpoint=true`를 추가하십시오. 이 레이블이 없는 컨테이너(데이터베이스, 캐시)는 새로 시작하여 자체 메커니즘(WAL, LDF, AOF)으로 복구합니다.
 - **`repo down --checkpoint`**는 중지 전에 프로세스 상태를 저장하며, 다음 `repo up` 시 자동으로 복원합니다. **이것이 동일 머신에서의 기본 흐름**으로, 작동이 검증되었습니다.
 - **`backup push --checkpoint`**는 레이블이 있는 컨테이너의 실행 중인 프로세스 메모리와 디스크 상태를 캡처한 후 볼륨을 다른 머신으로 전송합니다. 대상 머신에서 `repo up`으로 복원합니다.
-- **`repo fork --checkpoint`**는 fork 전에 프로세스 상태를 캡처하고 체크포인트를 fork와 함께 CoW 클론합니다. ⚠️ 동일 머신에서 부모가 실행 중인 상태로 fork에 대한 후속 `repo up`이 `criu failed: type RESTORE errno 0`으로 **현재 실패합니다.** 업스트림 CRIU 버그 [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). 제자리 저장/복원에는 `repo down --checkpoint`를, 머신 간 마이그레이션에는 `backup push --checkpoint`를 사용하십시오.
+- **`repo fork --checkpoint`**는 fork 전에 프로세스 상태를 캡처하고 체크포인트를 fork와 함께 CoW 클론합니다. ⚠️ 동일 머신에서 부모가 실행 중인 상태로 fork에 대한 후속 `repo up`이 `criu failed: type RESTORE errno 0`으로 **현재 실패합니다.** 업스트림 CRIU 버그 [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). 제자리 저장/복원에는 `repo down --checkpoint`를 사용하고, 머신 간 마이그레이션에는 `backup push --checkpoint`를 사용하십시오.
 - **`repo up`**은 체크포인트 데이터를 자동 감지하고 발견 시 복원합니다. 강제로 새로 시작하려면 `--skip-checkpoint`를 사용하십시오.
 - **의존성 인식 복원**: compose `depends_on`을 사용하여 먼저 데이터베이스를 시작(정상 상태까지 대기)한 후 앱 컨테이너를 CRIU 복원합니다.
 - **복원 후 TCP 연결이 오래되므로** 앱은 `ECONNRESET`을 처리하고 재연결해야 합니다. CRIU는 지원되는 어떤 흐름에서도 복원 후 활성 TCP 연결 상태를 보존하지 않습니다.

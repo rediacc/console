@@ -4,13 +4,13 @@ description: Requisitos mínimos del sistema y plataformas compatibles para ejec
 category: Guides
 order: 0
 language: es
-sourceHash: "eb237c7beb1bb942"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "e84db3bb90270473"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Requisitos
 
-Antes de desplegar con Rediacc, asegúrese de que su estación de trabajo y los servidores remotos cumplan con los siguientes requisitos.
+La mayoría de esto es configuración estándar de servidores Linux. Algunos detalles son específicos de cómo funciona Rediacc, así que revíselos antes de empezar.
 
 ## Estación de Trabajo (Plano de Control)
 
@@ -30,7 +30,7 @@ La CLI `rdc` se ejecuta en su estación de trabajo y orquesta servidores remotos
 
 El binario `renet` se ejecuta en servidores remotos con privilegios de root. Gestiona imágenes de disco cifradas, daemons Docker aislados y orquestación de servicios.
 
-Si no tiene claro qué herramienta usar, consulte [rdc vs renet](/en/docs/rdc-vs-renet). En resumen: use `rdc` para operaciones normales y `renet` directamente solo para tareas avanzadas en el lado del servidor.
+Si no tiene claro qué binario usar, consulte [rdc vs renet](/en/docs/rdc-vs-renet). En resumen: use `rdc` para operaciones normales y `renet` directamente solo para tareas avanzadas en el lado del servidor.
 
 ### Sistemas Operativos Compatibles
 
@@ -64,7 +64,7 @@ El daemon Docker por repositorio y los propios contenedores del repositorio se e
 - **Fedora 43, Oracle Linux 10**: SELinux funciona en modo enforcing. El daemon por repositorio etiqueta los contenedores con el contexto estándar `container_t`. No se necesita ninguna política SELinux personalizada.
 - **CRIU** (checkpoint/restore) es el único caso que omite el perfil AppArmor con `apparmor=unconfined`, ya que el soporte AppArmor de CRIU upstream aún no es estable. Consulte las notas de CRIU en [Reglas de Rediacc](/en/docs/rules-of-rediacc).
 
-Si un paso de configuración falla con rechazos AVC de SELinux o rechazos de AppArmor, consulte [Solución de problemas](/en/docs/troubleshooting), sección "Problemas de configuración específicos de la distribución".
+Si un paso de configuración falla con rechazos AVC de SELinux o rechazos de AppArmor, consulte [Solución de problemas](/en/docs/troubleshooting) → Problemas de configuración específicos de la distribución.
 
 ### Requisitos Previos del Servidor
 

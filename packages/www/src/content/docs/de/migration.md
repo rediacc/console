@@ -4,8 +4,8 @@ description: Bestehende Projekte in verschlüsselte Rediacc-Repositories migrier
 category: Guides
 order: 11
 language: de
-sourceHash: "24c62c7fa0d043c2"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4517142676f9fa8f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Migrationsleitfaden
@@ -97,7 +97,7 @@ Um eine andere UID als die Standard-UID 7111 festzulegen:
 rdc repo ownership --name my-project -m server-1 --uid 1000
 ```
 
-> **Vorsicht:** `7111` ist die universelle Rediacc-UID, die überall verwendet wird (sie entspricht dem `rediacc`-Benutzer, der in das Devcontainer-Image eingebaut ist). Überschreiben Sie sie nur mit `--uid` für Legacy-Kompatibilität mit Dateien, die einem bestimmten externen UID gehören – sie ist **kein** Migrationsziel. Neue Repositories sollten den Standard beibehalten.
+> **Vorsicht:** `7111` ist die universelle Rediacc-UID, die überall verwendet wird (sie entspricht dem `rediacc`-Benutzer, der in das Devcontainer-Image eingebaut ist). Überschreiben Sie sie nur mit `--uid` für Legacy-Kompatibilität mit Dateien, die einem bestimmten externen UID gehören. Sie ist **kein** Migrationsziel. Neue Repositories sollten den Standard beibehalten.
 
 ## Schritt 4: Rediaccfile einrichten
 
@@ -124,7 +124,7 @@ Die zwei Lebenszyklus-Funktionen:
 
 > **Wichtig:** Verwenden Sie in Ihrem Rediaccfile immer `renet compose --` anstelle von `docker compose`. Der `renet compose`-Wrapper erzwingt Host-Netzwerk, CRIU-Checkpoint/Restore-Fähigkeiten, IP-Zuweisung und Service-Discovery, die von renet-proxy benötigt werden. Die direkte Verwendung von `docker compose` umgeht all dies und wird bei der Validierung abgelehnt.
 >
-> Verwenden Sie auch niemals `sudo docker`, `sudo` setzt Umgebungsvariablen einschließlich `DOCKER_HOST` zurück, wodurch Container auf dem System-Docker-Daemon statt auf dem isolierten Daemon des Repositorys erstellt werden. Rediaccfile-Funktionen laufen bereits mit ausreichenden Berechtigungen.
+> Verwenden Sie auch niemals `sudo docker`. `sudo` setzt Umgebungsvariablen einschließlich `DOCKER_HOST` zurück, wodurch Container auf dem System-Docker-Daemon statt auf dem isolierten Daemon des Repositorys erstellt werden. Rediaccfile-Funktionen laufen bereits mit ausreichenden Berechtigungen.
 
 Siehe [Dienste](/de/docs/services) für vollständige Details zu Rediaccfiles, Multi-Service-Layouts und Ausführungsreihenfolge.
 

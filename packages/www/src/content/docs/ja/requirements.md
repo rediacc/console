@@ -4,13 +4,13 @@ description: Rediaccを実行するためのシステム要件とサポートさ
 category: Guides
 order: 0
 language: ja
-sourceHash: "eb237c7beb1bb942"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "e84db3bb90270473"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # システム要件
 
-Rediaccでデプロイする前に、ワークステーションとリモートサーバーが以下の要件を満たしていることを確認してください。
+ほとんどは標準的なLinuxサーバーのセットアップです。いくつかの詳細はRediaccの動作方法に固有なため、開始前に確認してください。
 
 ## ワークステーション（コントロールプレーン）
 

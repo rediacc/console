@@ -1,11 +1,11 @@
 ---
 title: "Installazione On-Premise"
-description: "Esecuzione del server account e distribuzione della CLI sulla propria infrastruttura. È pensato per chi preferisce il controllo totale dei propri dati."
+description: "Esecuzione del server account e distribuzione della CLI sulla propria infrastruttura."
 category: "Guides"
 order: 5
 language: it
-sourceHash: "c8c9aceeeeea1411"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "eea76db2d612133f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 Rediacc può funzionare interamente sulla propria infrastruttura. L'immagine Docker standalone include il server account, il portale web, il sito di marketing e l'endpoint di distribuzione della CLI. Non è richiesta alcuna dipendenza esterna dai servizi ospitati da Rediacc.
@@ -33,7 +33,7 @@ L'immagine serve:
 
 ## Installazione della CLI dal Proprio Server
 
-Gli utenti possono installare la CLI direttamente dal proprio server on-premise. Lo script di installazione rileva automaticamente il canale di aggiornamento e configura la CLI per controllare gli aggiornamenti sul tuo server.
+Installa la CLI direttamente dal tuo server on-premise. Lo script di installazione rileva automaticamente il canale di aggiornamento e configura la CLI per controllare gli aggiornamenti sul tuo server.
 
 ```bash
 curl -fsSL https://account.example.com/install.sh | \
@@ -50,7 +50,7 @@ La variabile `REDIACC_CHANNEL` non è necessaria. Lo script di installazione leg
 
 ## Configurazione della CLI con Config Nominati
 
-Per gli utenti che si connettono a più server (on-premise, produzione, edge), i config nominati mantengono ogni ambiente isolato:
+Se ti connetti a più server (on-premise, produzione, edge), i config nominati mantengono ogni ambiente isolato:
 
 ```bash
 # Crea un config per il tuo server on-premise
@@ -112,7 +112,7 @@ Quando la CLI si connette al tuo server, interroga `/.well-known/server-info` pe
 - **Canale di aggiornamento**: indica alla CLI quale canale di rilascio usare per gli aggiornamenti
 - **Ambiente**: quale profilo di deploy esegue il server (limiti standard vs. edge con limiti 2X)
 
-Questa auto-configurazione significa che gli utenti hanno bisogno solo dell'URL del server. Tutto il resto viene scoperto automaticamente.
+Questa auto-configurazione significa che hai bisogno solo dell'URL del server. Tutto il resto viene scoperto automaticamente.
 
 ## Licenza per Deployment Air-Gapped
 
@@ -146,11 +146,11 @@ Memorizza la chiave privata insieme agli altri segreti (ad esempio, un Docker se
 
 Puoi richiedere il certificato dal portale account upstream in tre modi:
 
-**Opzione A: Self-service del cliente (consigliato).** Accedi al portale upstream come proprietario o amministratore dell'organizzazione e vai su **/account/delegation-certs**. Fai clic su **Create New**, incolla la chiave pubblica on-premise (SPKI base64), scegli una validita' (o accetta il valore predefinito del piano) e scarica il file `.json` risultante.
+**Opzione A: Self-service del cliente (consigliato).** Accedi al portale upstream come proprietario o amministratore dell'organizzazione e vai su **/account/delegation-certs**. Fai clic su **Create New**, incolla la chiave pubblica on-premise (SPKI base64), scegli una validita (o accetta il valore predefinito del piano) e scarica il file `.json` risultante.
 
-**Opzione B: Admin (cross-customer).** Il supporto Rediacc o l'amministratore di sistema upstream puo' chiamare `POST /admin/delegation-certs` con gli stessi parametri.
+**Opzione B: Admin (cross-customer).** Il supporto Rediacc o l'amministratore di sistema upstream può chiamare `POST /admin/delegation-certs` con gli stessi parametri.
 
-**Opzione C: CLI `rdc` (pianificato).** Un futuro comando CLI integrera' il flusso del portale.
+**Opzione C: CLI `rdc` (pianificato).** Un futuro comando CLI integrera il flusso del portale.
 
 Il `.json` restituito appare come:
 

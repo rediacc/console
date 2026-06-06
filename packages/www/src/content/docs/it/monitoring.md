@@ -1,16 +1,16 @@
 ---
 title: "Monitoraggio"
-description: "Monitora la salute della macchina, i container, i servizi, i repository ed esegui diagnostiche. È possibile controllare tutto dal tuo laptop senza bisogno di SSH."
+description: "Monitora la salute della macchina, i container, i servizi, i repository ed esegui diagnostiche."
 category: "Guides"
 order: 9
 language: it
-sourceHash: "1d0af1a74a12d49e"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "d3b8ff142fe2df34"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Monitoraggio
 
-Rediacc fornisce comandi di monitoraggio integrati per ispezionare la salute della macchina, i container in esecuzione, i servizi, lo stato dei repository e le diagnostiche di sistema.
+Rediacc fornisce comandi di monitoraggio per la salute della macchina, i container in esecuzione, i servizi, lo stato dei repository e le diagnostiche di sistema.
 
 ## Salute della Macchina
 
@@ -112,8 +112,8 @@ rdc machine query --name server-1 --storage-health
 | Size | Dimensione del file immagine LUKS (come appare il repository) |
 | Unique | Dati unici effettivi posseduti solo da questo repository |
 | Shared | Blocchi di dati riutilizzati tra repository tramite reflink BTRFS (copie gratuite) |
-| Divergence | Percentuale dell'immagine unica in questo repository rispetto a quella condivisa (piu' alta = piu' recuperabile se eliminato) |
-| Extents | Numero di estensioni di file nell'immagine copy-on-write (piu' alto = piu' frammentato) |
+| Divergence | Percentuale dell'immagine unica in questo repository rispetto a quella condivisa (più' alta significa più' reclaimable se eliminato) |
+| Extents | Numero di estensioni di file nell'immagine copy-on-write (più' alto = più' frammentato) |
 | Frag | Livello di frammentazione: basso, moderato o alto (solo informativo) |
 
 Il riepilogo mostra i risparmi totali dai reflink BTRFS:
@@ -128,7 +128,7 @@ Unique data: 323.7 MB | Shared: 224.0 GB | Efficiency: 99.9%
 - **Shared** è la quantità di dati riutilizzati tra repository tramite reflink BTRFS. Il fork di un repository crea copie tramite reflink che condividono blocchi finché uno dei due lati non scrive nuovi dati, a quel punto i blocchi divergono.
 - **Efficiency** è la percentuale di dati riutilizzati tramite reflink. Maggiore è meglio. Una macchina con molti fork dallo stesso genitore mostrerà un'efficienza vicina al 100%.
 
-La colonna Frag e' informativa. Conta le estensioni del file immagine copy-on-write, non i file che la tua applicazione legge al suo interno, quindi risulta alta sotto normali carichi di lavoro con scritture casuali (database, layer container) e non predice le prestazioni di lettura su archiviazione con supporto SSD. Rediacc non offre deliberatamente un comando di deframmentazione: `btrfs filesystem defragment` rimuove la condivisione tramite reflink di fork e snapshot, il che su un pool quasi pieno puo' aumentare drasticamente l'utilizzo dello spazio mentre i benchmark non mostrano alcun guadagno misurabile in lettura. Per le misurazioni complete e il ragionamento, vedi [Il Tuo Indice di Frammentazione Sembra Terrificante. Ho Misurato Quanto Costa.](/it/blog/i-benchmarked-btrfs-fragmentation).
+La colonna Frag è informativa. Conta le estensioni del file immagine copy-on-write, non i file che la tua applicazione legge al suo interno, quindi risulta alta sotto normali carichi di lavoro con scritture casuali (database, layer container) e non predice le prestazioni di lettura su archiviazione con supporto SSD. Rediacc non offre deliberatamente un comando di deframmentazione: `btrfs filesystem defragment` rimuove la condivisione tramite reflink di fork e snapshot, il che su un pool quasi pieno può aumentare drasticamente l'utilizzo dello spazio mentre i benchmark non mostrano alcun guadagno misurabile in lettura. Per le misurazioni complete e il ragionamento, vedi [Il Tuo Indice di Frammentazione Sembra Terrificante. Ho Misurato Quanto Costa.](/it/blog/i-benchmarked-btrfs-fragmentation).
 
 La scansione viene eseguita in parallelo e richiede 5-15 secondi a seconda del numero e della dimensione dei repository. Quando `--storage-health` non è specificato, dopo l'output della query appare un suggerimento di una riga come promemoria.
 

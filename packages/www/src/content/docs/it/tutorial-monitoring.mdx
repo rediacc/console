@@ -1,19 +1,19 @@
 ---
 title: "Monitoraggio"
-description: "Controlla la salute dei tuoi server e repo dal tuo laptop con i comandi rdc machine. Più visibilità, zero agenti."
+description: "Vedi lo stato di salute dei tuoi server e repo in tempo reale dal tuo laptop con i comandi rdc machine."
 category: "Tutorials"
 subcategory: advanced
 order: 12
 language: it
-sourceHash: "7690e2a129161381"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "6b1363b30c1f96a8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Monitoraggio
 
-La tua app è distribuita, online e con backup. Ora assicurati che tutto rimanga in buona salute. `rdc` ti offre un quadro completo di qualsiasi server (salute, container, repo) dal tuo laptop.
+La tua app è distribuita e con backup. Ora mantienila in buona salute. È quello che fa rdc. `rdc` ti dà il quadro completo di qualsiasi server (salute, container, repo) dal tuo laptop.
 
 ## Guarda il tutorial
 
@@ -27,25 +27,25 @@ La tua app è distribuita, online e con backup. Ora assicurati che tutto rimanga
 
 <TutorialStep number={1} />
 
-Questo mostra l'uptime del sistema, l'utilizzo del disco e lo stato dello storage. Se qualcosa non va, te lo dice.
+Vedrai l'uptime del sistema, l'utilizzo del disco e lo stato dello storage. Se c'è qualcosa che non va, lo vedrai subito.
 
 ## Container
 
 <TutorialStep number={2} />
 
-Ottieni nome, stato, salute, CPU e memoria per ogni container, più il repo che lo possiede.
+Ottieni nome, stato, salute, CPU e memoria per ogni container, oltre a quale repo lo possiede.
 
 ## Repo
 
 <TutorialStep number={3} />
 
-Questo mostra ogni repo con la sua dimensione, stato di mount, stato Docker e utilizzo del disco.
+Vedi ogni repo: la sua dimensione, lo stato di mount, lo stato di Docker e l'utilizzo del disco.
 
 ## Tutto in un colpo solo
 
 <TutorialStep number={4} />
 
-Informazioni di sistema, repo, container: tutto in un unico comando. Lo stesso comando `query` senza filtri restituisce il quadro completo; con `--system`, `--containers`, `--repositories`, `--services`, `--network` o `--block-devices` si restringe a quella sezione.
+`query` senza flag ti dà il quadro completo: informazioni di sistema, repo e container. Aggiungi `--system`, `--containers`, `--repositories`, `--services`, `--network` o `--block-devices` per restringere a quella sezione.
 
 ## Controllo locale di sanità
 
@@ -55,4 +55,4 @@ Informazioni di sistema, repo, container: tutto in un unico comando. Lo stesso c
 
 ## Hai finito
 
-Questa è la serie completa. Ora sai come installare, configurare, distribuire, fare il fork, andare live, configurare l'avvio automatico, fare il backup e monitorare. Tutto dal tuo terminale, tutto sui tuoi server.
+Questa è la serie completa. Ora puoi installare, configurare, distribuire, fare il fork, andare live, abilitare l'avvio automatico, eseguire il backup e monitorare. Tutto dal tuo terminale, tutto sui tuoi server.

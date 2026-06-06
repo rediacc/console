@@ -1,19 +1,19 @@
 ---
 title: "Déployer votre première application"
-description: "Déployez une application conteneurisée à partir d'un modèle intégré en utilisant rdc repo up."
+description: "Déployez une application conteneurisée à partir d'un modèle intégré en utilisant `rdc` repo up."
 category: "Tutorials"
 subcategory: essentials
 order: 5
 language: fr
-sourceHash: "08bd8fbaffc53a06"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "a40a843238f17e9f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Déployer votre première application
 
-Vous avez un dépôt vide. `rdc` est livré avec des modèles intégrés pour vous permettre de lancer de vraies applications sans écrire un `docker-compose` from scratch. Trois étapes : choisir un modèle, l'appliquer, l'exécuter.
+Vous avez un dépôt vide. `rdc` est livré avec des modèles intégrés pour vous permettre de lancer de vraies applications sans écrire un `docker-compose` from scratch. Choisissez un modèle, appliquez-le, exécutez-le.
 
 ## Regarder le tutoriel
 
@@ -33,7 +33,7 @@ Vous verrez des configurations prêtes à l'emploi pour les applications courant
 
 <TutorialStep number={2} />
 
-Cela copie les fichiers du modèle dans le dépôt.
+C'est fait. Cela copie les fichiers du modèle dans le dépôt.
 
 ## Étape 3 : Voir ce qui a atterri
 
@@ -51,7 +51,7 @@ La CLI démarre les conteneurs, monte le volume chiffré et câble un daemon Doc
 
 <TutorialStep number={5} />
 
-`docker ps` liste ici uniquement les conteneurs de ce dépôt. Les autres dépôts sur le même serveur ont leurs propres daemons Docker et sont complètement invisibles depuis celui-ci.
+`docker ps` liste ici uniquement les conteneurs de ce dépôt. Les autres dépôts sur le même serveur exécutent des daemons Docker séparés : leurs conteneurs sont complètement invisibles depuis celui-ci. C'est précisément l'objectif de cet isolement : tester librement sans affecter les services adjacents.
 
 ---
 

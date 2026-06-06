@@ -1,19 +1,19 @@
 ---
 title: "المراقبة"
-description: "تحقق من صحة خوادمك ومستودعاتك من حاسوبك باستخدام أوامر rdc machine."
+description: "راقب صحة خوادمك ومستودعاتك بشكل مباشر من حاسوبك باستخدام أوامر rdc machine."
 category: "Tutorials"
 subcategory: advanced
 order: 12
 language: ar
-sourceHash: "7690e2a129161381"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "6b1363b30c1f96a8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # المراقبة
 
-تطبيقك منشور ويعمل ومنسوخ احتياطيًا. الآن تأكد من بقاء كل شيء سليمًا. تمنحك `rdc` صورة كاملة عن أي خادم (الصحة والحاويات والمستودعات) من حاسوبك.
+تطبيقك منشور ومنسوخ احتياطيًا. الآن حافظ عليه سليمًا. هذا ما تفعله `rdc`. تمنحك `rdc` صورة كاملة عن أي خادم (الصحة والحاويات والمستودعات) من حاسوبك.
 
 ## شاهد الدرس التعليمي
 
@@ -45,7 +45,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={4} />
 
-معلومات النظام والمستودعات والحاويات، كلها في أمر واحد. يُرجع نفس أمر `query` بدون مرشحات الصورة الكاملة؛ مع `--system` أو `--containers` أو `--repositories` أو `--services` أو `--network` أو `--block-devices` يُضيّق النتائج إلى ذلك القسم فقط.
+أمر `query` بدون مرشحات يعطيك الصورة الكاملة: معلومات النظام والمستودعات والحاويات. أضف `--system` أو `--containers` أو `--repositories` أو `--services` أو `--network` أو `--block-devices` لتضييق النتائج إلى ذلك القسم فقط.
 
 ## فحص محلي سريع
 

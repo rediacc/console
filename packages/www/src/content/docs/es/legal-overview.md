@@ -1,16 +1,16 @@
 ---
-title: "Resumen de cumplimiento"
-description: "Cómo la arquitectura autoalojada de Rediacc aborda los requisitos de protección de datos, privacidad y cumplimiento de seguridad."
+title: "Lo que el cumplimiento realmente requiere"
+description: "Rediacc se ejecuta en tu infraestructura. Controlas tus datos. Aquí te mostramos cómo se alinea con los principales marcos de cumplimiento."
 category: "Legal"
 order: 0
 language: es
-sourceHash: "e20385eb9adfe180"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1e36a25c724f4185"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Rediacc se ejecuta completamente en tu infraestructura. Durante las operaciones de clonación de entornos, respaldo y despliegue, los datos nunca salen de tu máquina. Tú sigues siendo tanto el controlador como el procesador de datos. Ningún SaaS de terceros maneja tus datos.
+Rediacc se ejecuta completamente en tu infraestructura. Durante las operaciones de clonación, respaldo y despliegue, tus datos permanecen en tus máquinas. Eres tanto el controlador como el procesador de datos. Sin SaaS de terceros, sin acceso externo.
 
-Esta sección mapea las capacidades técnicas de Rediacc a los requisitos de los principales marcos de cumplimiento. Cada página cubre una regulación específica con referencias a nivel de artículo de los textos legales oficiales.
+Mapeamos las capacidades técnicas de Rediacc a los requisitos de los principales marcos de cumplimiento. Cada página desglosa una regulación específica con referencias a los textos legales oficiales.
 
 ## Matriz de cumplimiento
 
@@ -27,12 +27,12 @@ Esta sección mapea las capacidades técnicas de Rediacc a los requisitos de los
 
 ## Fundamentos arquitectónicos
 
-Cada marco de cumplimiento en esta sección se remite a las mismas propiedades técnicas:
+Aquí está lo que los conecta todos: cada marco de cumplimiento en esta sección se remite a los mismos fundamentos técnicos.
 
 - **Cifrado en reposo**: Cada repositorio está cifrado con LUKS2 AES-256. Las credenciales se almacenan solo en la configuración local del operador, nunca en el servidor.
 - **Aislamiento de red**: Cada repositorio obtiene su propio Docker daemon, subred de IP loopback (/26) y reglas de iptables. Los contenedores de diferentes repositorios no pueden comunicarse entre sí.
 - **Clonación copy-on-write**: `rdc repo fork` utiliza reflinks del sistema de archivos (`cp --reflink=always`). Los datos se duplican en la misma máquina sin ninguna transferencia de red.
-- **Registro de auditoría**: Más de 40 tipos de eventos que cubren autenticación (inicio de sesión, 2FA, cambios de contraseña, revocación de sesiones), ciclo de vida de tokens API, operaciones del almacén de configuración y actividad de suscripción/licencias. Accesible a través del panel de administración y `rdc audit` CLI. Las operaciones a nivel de máquina (fork, respaldo, despliegue) se realizan en la propia máquina vía SSH y registros del sistema.
+- **Registro de auditoría**: Más de 70 tipos de eventos que cubren autenticación (inicio de sesión, 2FA, cambios de contraseña, revocación de sesiones), ciclo de vida de tokens API, operaciones del almacén de configuración, actividad de suscripción/licencias y operaciones de máquina CLI (ciclo de vida de repositorio, respaldo, sincronización, sesiones de terminal). Accesible a través del panel de administración, página de actividad del portal (con filtrado por ámbito de organización) y `rdc audit` CLI. Las operaciones de máquina también se registran en tus registros del sistema para defensa en profundidad.
 - **Respaldo cifrado**: `rdc repo push/pull` transfiere datos por SSH. El destino de respaldo recibe volúmenes cifrados con LUKS.
 - **Almacén de configuración de conocimiento cero**: Sincronización opcional de configuración cifrada entre dispositivos. Las configuraciones se cifran del lado del cliente con AES-256-GCM antes de subirse. El servidor solo almacena blobs opacos. El servidor no puede leer claves SSH, credenciales, direcciones IP ni datos de configuración en texto plano. La derivación de claves usa passkey PRF extension + HKDF con separación de dominio. El acceso de miembros se gestiona mediante intercambio de claves X25519, y la revocación es inmediata.
 
@@ -40,7 +40,7 @@ Para detalles sobre estas capacidades, consulta [Arquitectura](/es/docs/architec
 
 ## Por qué importa
 
-Las fallas de cumplimiento son costosas. Estos casos de aplicación involucraron problemas que la arquitectura de Rediacc previene estructuralmente:
+Las fallas de cumplimiento son costosas. Muy costosas. Los casos a continuación muestran problemas que la arquitectura de Rediacc previene estructuralmente:
 
 | Incidente | Multa | Qué salió mal |
 |-----------|-------|---------------|
@@ -54,4 +54,4 @@ Las fallas de cumplimiento son costosas. Estos casos de aplicación involucraron
 
 ## Aviso importante
 
-Estas páginas describen las capacidades técnicas de Rediacc en relación con los requisitos de cumplimiento. El cumplimiento de cualquier regulación requiere políticas organizacionales, procedimientos, capacitación del personal y potencialmente auditorías de terceros que van más allá del alcance de cualquier herramienta individual. Consulta a tu equipo legal y de cumplimiento para orientación específica de tu organización.
+Estas páginas explican cómo la arquitectura de Rediacc se alinea con los requisitos de cumplimiento. Pero aquí está la realidad: el cumplimiento es más grande que el software. Necesitarás políticas, procedimientos, capacitación y probablemente auditorías de terceros. Rediacc maneja la parte de infraestructura. Trabaja con tus equipos legal y de cumplimiento en el resto.

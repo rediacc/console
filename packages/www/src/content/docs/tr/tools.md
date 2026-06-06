@@ -6,13 +6,13 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "f350872720c99d58"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4b3aebff5e82416f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Araçlar
 
-Rediacc, uzak depolarla çalışmak için araçlar sunar: dosya senkronizasyonu, SSH terminali, VS Code entegrasyonu ve CLI güncellemeleri.
+Rediacc, makinelerinizde ve depolarınızda günlük çalışma için dört araç sunar: SSH üzerinden dosya senkronizasyonu, bir SSH terminali, VS Code entegrasyonu ve CLI otomatik güncellemeleri. Dördü de SSH üzerinde çalışır. Uzak taraf için hiçbir ajan veya daemon gerekli değildir. Bunların herhangi biri için bir GUI arıyorsanız, yanlış sayfaya bakmaktasınız.
 
 ## Dosya Senkronizasyonu (sync)
 
@@ -20,14 +20,36 @@ SSH üzerinden rsync kullanarak iş istasyonunuz ile uzak depo arasında dosya a
 
 ### Dosya Yükleme
 
+`--local` bir veya daha fazla yolu kabul eder. Her yol bir dosya veya dizin olabilir. Dosyalar `<remote>/<basename>` konumuna indirilir; dizin içeriği `<remote>/` konumuna birleştirilir. Tek bir dosya için dosyaya açıkça hedef yolunu vermek üzere `--remote-file` tercih edin.
+
 ```bash
+# Dizin (içeriği uzak konuma birleştirilir)
 rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+
+# Tek dosya, uzak dizine bırakılır (temel ad korunur)
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+
+# Tek dosya, açık hedef yolu
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+
+# Bir çağrıda birden fazla kaynak
+rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
 ```
+
+`--remote` ve `--remote-file` karşılıklı olarak dışlayıcıdır. `--remote-file` tamamen bir dosyaya işaret eden bir `--local` yolu gerektirir.
+
+`--mirror` bir dosya kaynağıyla birleştirilemez; uzak dizindeki eşdüzey dosyaları silecektir.
 
 ### Dosya İndirme
 
+Bir dizin için `--remote` (varsayılan) veya tek bir dosya için `--remote-file` kullanın. İki bayrak karşılıklı olarak dışlayıcıdır.
+
 ```bash
+# Dizin
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+
+# Tek dosya — `--local` mevcut bir dizin olmalıdır
+rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Senkronizasyon Durumunu Kontrol Etme
@@ -44,9 +66,9 @@ rdc repo sync status -m server-1 -r my-app
 | `-r, --repository <name>` | Hedef depo |
 | `--local <paths...>` | Bir veya daha fazla yerel dosya/dizin yolu (yükleme) ya da yerel hedef dizin (indirme) |
 | `--remote <path>` | Uzak dizin (depo bağlama noktasına göre) |
-| `--remote-file <path>` | Tek bir uzak dosya (yalnızca indirme, `--remote` yerine kullanılır) |
+| `--remote-file <path>` | Tek dosya yüklemeleri veya indirmeleri için uzak dosya yolu (`--remote` yerine) |
 | `--dry-run` | Aktarım yapmadan değişiklikleri önizle |
-| `--mirror` | Kaynağı hedefe yansıt (fazla dosyaları sil) |
+| `--mirror` | Kaynağı hedefe yansıt, fazla dosyaları sil (yalnızca dizin kaynakları) |
 | `--verify` | Aktarım sonrası sağlama toplamlarını doğrula |
 | `--confirm` | Ayrıntılı görünümle etkileşimli onay |
 | `--exclude <patterns...>` | Dosya desenlerini hariç tut |
@@ -78,7 +100,7 @@ Bir depoya bağlanırken, `DOCKER_HOST` otomatik olarak deponun izole Docker sok
 
 ### Connect Alt Komutu
 
-`connect` alt komutu aynı şeyi açık bayraklarla yapar:
+Veya aynı sonuç için açık bayraklarla `connect` alt komutunu kullanın:
 
 ```bash
 rdc term connect -m server-1
@@ -186,12 +208,12 @@ rdc update --rollback
 rdc update --status
 ```
 
-Mevcut surumu, guncelleme kanalini ve otomatik guncelleme yapilandirmasini gosterir.
+Mevcut sürümü, güncelleme kanalını ve otomatik güncelleme yapılandırmasını gösterir.
 
-#### Yayin Kanallari
+#### Yayın Kanalları
 
 ```bash
-rdc update --channel edge      # En son ozellikler, sik guncellenir
-rdc update --channel stable    # Uretim icin hazir surumler (varsayilan)
-rdc update --status            # Mevcut kanal ve surum bilgisini goster
+rdc update --channel edge      # Sürekli dağıtılan üretim güncellemeleri
+rdc update --channel stable    # Edge'den 7 gün sonra tercih edilen (varsayılan)
+rdc update --status            # Mevcut kanal ve sürüm bilgisini göster
 ```

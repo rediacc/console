@@ -1,14 +1,14 @@
 ---
-title: "Compliance Overview"
-description: "How Rediacc's self-hosted architecture addresses data protection, privacy, and security compliance requirements."
+title: "What Compliance Actually Requires"
+description: "Rediacc runs on your infrastructure. You control your data. Here's how that aligns with major compliance frameworks."
 category: "Legal"
 order: 0
 language: en
 ---
 
-Rediacc runs entirely on your infrastructure. During environment cloning, backup, and deployment operations, data never leaves your machine. You remain both the data controller and processor. No third-party SaaS handles your data.
+Rediacc runs entirely on your infrastructure. During cloning, backups, and deployments, your data stays on your machines. You're both the controller and processor. No third-party SaaS, no external access.
 
-This section maps Rediacc's technical capabilities to the requirements of major compliance frameworks. Each page covers a specific regulation with article-level references to the official legal texts.
+We map Rediacc's technical capabilities to major compliance requirements. Each page breaks down a specific regulation with references to the official legal text.
 
 ## Compliance Matrix
 
@@ -25,7 +25,7 @@ This section maps Rediacc's technical capabilities to the requirements of major 
 
 ## Architectural Foundations
 
-Every compliance framework in this section maps back to the same technical properties:
+Here's what connects them all: every compliance framework in this section maps back to the same technical foundation.
 
 - **Encryption at rest**: Every repository is LUKS2 AES-256 encrypted. Credentials are stored only in the operator's local config, never on the server.
 - **Network isolation**: Each repository gets its own Docker daemon, loopback IP subnet (/26), and iptables rules. Containers from different repositories cannot communicate.
@@ -38,7 +38,7 @@ For details on these capabilities, see [Architecture](/en/docs/architecture), [R
 
 ## Why It Matters
 
-Compliance failures are costly. These enforcement cases involved problems that Rediacc's architecture structurally prevents:
+Compliance failures are expensive. Really expensive. The cases below show problems Rediacc's architecture structurally prevents:
 
 | Incident | Fine | What went wrong |
 |----------|------|----------------|
@@ -52,4 +52,4 @@ Compliance failures are costly. These enforcement cases involved problems that R
 
 ## Important Notice
 
-These pages describe Rediacc's technical capabilities as they relate to compliance requirements. Compliance with any regulation requires organizational policies, procedures, staff training, and potentially third-party audits beyond the scope of any single tool. Consult your legal and compliance team for guidance specific to your organization.
+These pages explain how Rediacc's architecture aligns with compliance requirements. But here's the reality: compliance is bigger than software. You'll need policies, procedures, training, and probably third-party audits. Rediacc handles the infrastructure part. Work with your legal and compliance teams on the rest.

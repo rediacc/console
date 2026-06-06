@@ -1,16 +1,16 @@
 ---
-title: Шпаргалка RDC CLI
-description: "Краткий справочник по командам rdc: конфигурация, репозитории, машины, синхронизация и контейнеры."
+title: Шпаргалка по CLI RDC
+description: "Краткая справка по rdc: конфиги, репозитории, машины, синхронизация файлов и контейнеры. Полный набор опций: добавьте --help к любой команде."
 category: Guides
 order: 3
 language: ru
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# Шпаргалка RDC CLI
+# Шпаргалка по CLI RDC
 
-Краткий справочник по наиболее часто используемым командам `rdc`. Запустите любую команду с `--help` для просмотра всех параметров.
+Здесь приведены не все команды `rdc`, а только те, которые встречаются при каждом развертывании. Для полного набора опций запустите любую команду rdc с флагом `--help`. Граничные случаи и редко используемые опции описаны в полной справке.
 
 ## Жизненный цикл репозитория
 
@@ -20,11 +20,27 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc repo up --name <repo> -m <machine>` | Развернуть или обновить репозиторий |
 | `rdc repo down --name <repo> -m <machine>` | Остановить репозиторий |
 | `rdc repo delete --name <repo> -m <machine>` | Удалить репозиторий |
-| `rdc repo fork --parent <repo> --tag <tag> -m <machine>` | Создать форк репозитория (почти мгновенно, BTRFS reflink) |
-| `rdc repo takeover --name <repo> -m <machine>` | Взять на себя управление существующим репозиторием |
-| `rdc config repository list` | Вывести список всех репозиториев с именем и GUID |
+| `rdc repo fork --parent <repo> --tag <tag> -m <machine>` | Создать форк репозитория (мгновенно, BTRFS reflink) |
+| `rdc repo takeover --name <repo> -m <machine>` | Взять на себя владение существующим репозиторием |
+| `rdc config repository list` | Список всех репозиториев с именем и GUID |
 
-## Резервное копирование и восстановление
+## Секреты репозитория
+
+Учетные данные с доступом только на запись при развертывании. `get` возвращает только дайджест. Значение никогда не возвращается. Полное руководство см. в разделе [Repositories § Secrets](/en/docs/repositories#secrets).
+
+| Команда | Описание |
+|---------|----------|
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\|file] --current ""` | Создать новый секрет (`--current ""` при первой записи) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev>` | Перезаписать существующий секрет (проверка как при смене пароля) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret` | Перезаписать без проверки предыдущего значения (учитывается как ротация) |
+| `rdc repo secret list --name <repo>` | Список имен секретов и режимов доставки (значения и дайджесты не показываются) |
+| `rdc repo secret get --name <repo> --key <KEY>` | Показать дайджест секрета и режим (открытые значения никогда не выводятся) |
+| `rdc repo secret unset --name <repo> --key <KEY> --current <prev>` | Удалить секрет |
+| `rdc repo secret unset --name <repo> --key <KEY> --rotate-secret` | Удалить без проверки предыдущего значения |
+
+> Форки не наследуют секреты. Установите их на форке явно с помощью `rdc repo secret set --name <repo>:<tag>`.
+
+## Резервная копия и восстановление
 
 | Команда | Описание |
 |---------|----------|
@@ -32,18 +48,18 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc repo push --to <storage> -m <machine>` | Отправить все репозитории в хранилище |
 | `rdc repo pull --name <repo> -m <machine> --from <storage>` | Восстановить репозиторий из хранилища |
 | `rdc repo pull --from <storage> -m <machine>` | Восстановить все репозитории из хранилища |
-| `rdc repo push ... --bwlimit <limit>` | Ограничить пропускную способность rsync при отправке (например, `10M`) |
+| `rdc repo push ... --bwlimit <limit>` | Ограничить пропускную способность rsync при отправке (например `10M`) |
 | `rdc repo pull ... --bwlimit <limit>` | Ограничить пропускную способность rsync при получении |
 | `rdc repo push ... --checkpoint` | Создать контрольную точку контейнеров перед отправкой |
-| `rdc repo backup list --from <storage> -m <machine>` | Вывести список доступных резервных копий в хранилище |
+| `rdc repo backup list --from <storage> -m <machine>` | Список доступных резервных копий в хранилище |
 | `rdc storage browse --name <storage>` | Просмотреть содержимое хранилища |
 
 ## Миграция репозитория
 
 | Команда | Описание |
 |---------|----------|
-| `rdc repo migrate --name <repo> --from <machine> --to <machine>` | Перенести репозиторий между машинами |
-| `rdc repo migrate ... --provision` | Подготовить целевую машину перед переносом |
+| `rdc repo migrate --name <repo> --from <machine> --to <machine>` | Переместить репозиторий между машинами |
+| `rdc repo migrate ... --provision` | Подготовить целевую машину перед передачей |
 | `rdc repo migrate ... --checkpoint` | Создать контрольную точку перед миграцией |
 | `rdc repo migrate ... --skip-dns` | Пропустить обновление DNS после миграции |
 | `rdc repo migrate ... --bwlimit <limit>` | Ограничить пропускную способность передачи |
@@ -53,23 +69,23 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | Команда | Описание |
 |---------|----------|
 | `rdc config backup-strategy set --name <name> --destination <storage> --cron <expr> --mode <hot\|cold> --enable` | Создать или обновить именованную стратегию резервного копирования |
-| `rdc config backup-strategy list` | Вывести список всех определённых стратегий |
+| `rdc config backup-strategy list` | Список всех определенных стратегий резервного копирования |
 | `rdc config backup-strategy show --name <name>` | Показать детали стратегии |
 | `rdc config backup-strategy remove --name <name>` | Удалить стратегию |
-| `rdc machine backup schedule -m <machine>` | Развернуть настроенные стратегии резервного копирования на машине |
+| `rdc machine backup schedule -m <machine>` | Развернуть настроенные стратегии на машине |
 
 ## Операции резервного копирования
 
 | Команда | Описание |
 |---------|----------|
-| `rdc machine backup schedule -m <machine>` | Развернуть привязанные стратегии как таймеры systemd |
-| `rdc machine backup schedule -m <machine> --dry-run` | Предварительный просмотр единиц таймера без развёртывания (токены скрыты) |
-| `rdc machine backup now -m <machine>` | Немедленно запустить все привязанные стратегии |
-| `rdc machine backup now -m <machine> --strategy <name>` | Немедленно запустить конкретную стратегию |
-| `rdc machine backup status -m <machine>` | Показать состояние таймеров и результаты последних задач |
-| `rdc machine backup status -m <machine> --strategy <name>` | Показать состояние конкретной стратегии |
-| `rdc machine backup cancel -m <machine>` | Отменить выполняющееся резервное копирование |
-| `rdc machine backup cancel -m <machine> --strategy <name>` | Отменить конкретное выполняющееся резервное копирование |
+| `rdc machine backup schedule -m <machine>` | Развернуть привязанные стратегии как systemd таймеры |
+| `rdc machine backup schedule -m <machine> --dry-run` | Просмотреть модули таймеров без развертывания (токены скрыты) |
+| `rdc machine backup now -m <machine>` | Запустить все привязанные стратегии сразу же |
+| `rdc machine backup now -m <machine> --strategy <name>` | Запустить конкретную стратегию немедленно |
+| `rdc machine backup status -m <machine>` | Показать статус таймера и результаты последних работ |
+| `rdc machine backup status -m <machine> --strategy <name>` | Показать статус для конкретной стратегии |
+| `rdc machine backup cancel -m <machine>` | Отменить выполняющиеся резервные копии |
+| `rdc machine backup cancel -m <machine> --strategy <name>` | Отменить конкретную выполняющуюся резервную копию |
 
 ## Управление машинами
 
@@ -83,7 +99,7 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc machine query --name <machine> --network` | Только сетевая информация |
 | `rdc machine query --name <machine> --block-devices` | Только информация о блочных устройствах |
 | `rdc machine list` | Вывести список всех машин в конфигурации |
-| `rdc config machine setup --name <machine>` | Запустить первоначальное развёртывание машины |
+| `rdc config machine setup --name <machine>` | Запустить первоначальное развертывание машины |
 | `rdc machine prune --name <machine>` | Удалить неиспользуемые ресурсы с машины |
 | `rdc machine deprovision --name <machine>` | Полностью депровизионировать машину |
 | `rdc machine vault-status --name <machine>` | Показать состояние хранилища LUKS |
@@ -95,7 +111,8 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc term connect -m <machine>` | Открыть SSH-терминал к машине |
 | `rdc term connect -m <machine> -r <repo>` | Открыть SSH-терминал к репозиторию (устанавливает DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Выполнить команду на машине |
-| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Загрузить файл, каталог или несколько источников в репозиторий |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Загрузить один или несколько локальных файлов или каталогов в репозиторий |
+| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | Загрузить один локальный файл на явно указанный путь в репозитории |
 | `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Скачать каталог репозитория локально |
 | `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Скачать один файл из репозитория в локальный каталог |
 | `rdc vscode connect -m <machine> -r <repo>` | Открыть сеанс VS Code Remote SSH |

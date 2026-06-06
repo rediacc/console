@@ -117,7 +117,7 @@ export const noUndefinedCliFlags = {
     ],
     messages: {
       undefinedFlag:
-        'Locale string "{{key}}" references CLI flag `{{flag}}`, which is not a registered option of any rdc command. `rdc … {{flag}}` fails with "unknown option \'{{flag}}\'". Fix the flag name or remove the reference. See issue #489.',
+        'Locale string "{{key}}" references CLI flag `{{flag}}`, which is not a registered option of any rdc command. `rdc … {{flag}}` fails with "unknown option \'{{flag}}\'". Fix the flag name or remove the reference. See issue #489. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

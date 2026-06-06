@@ -4,10 +4,11 @@ description: Configure el IDE Cursor para trabajar con la infraestructura Rediac
 category: Guides
 order: 32
 language: es
-sourceHash: "f2de270cae1a7ac1"
+sourceHash: "b5e835461de00400"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Cursor se integra con Rediacc a través de comandos de terminal y el archivo de configuración `.cursorrules`.
+Versión resumida: `.cursorrules` carga el contexto de Rediacc en la IA de Cursor; el terminal le permite ejecutar comandos `rdc` contra sus máquinas reales.
 
 ## Configuración rápida
 
@@ -15,7 +16,7 @@ Cursor se integra con Rediacc a través de comandos de terminal y el archivo de 
 2. Copie la [plantilla AGENTS.md](/es/docs/agents-md-template) en la raíz de su proyecto como `.cursorrules`
 3. Abra el proyecto en Cursor
 
-Cursor lee `.cursorrules` al iniciarse y lo utiliza como contexto para el desarrollo asistido por IA.
+Cursor lee `.cursorrules` al iniciarse. Tenga en cuenta que se aplican límites de ventana de contexto, así que mantenga el archivo centrado en sus máquinas y repositorios reales en lugar de texto genérico.
 
 ## Configuración de .cursorrules
 

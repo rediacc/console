@@ -4,7 +4,8 @@ description: 패스키 기반 암호화를 통한 영지식 암호화 설정 동
 category: Guides
 order: 8
 language: ko
-sourceHash: "d20655e3e306b85b"
+sourceHash: "daf79946b8925246"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 설정 저장소
@@ -26,7 +27,7 @@ sourceHash: "d20655e3e306b85b"
    - 두 번째 터치: PRF를 통한 암호화 키 파생
 4. 설정 완료, 패스키 시크릿이 OS 키링에 저장됩니다.
 
-설정 후 일상적인 CLI 작업(push/pull)은 패스키 없이 작동합니다.
+설정 후 일상적인 CLI 작업(push/pull)은 패스키 없이 작동합니다. 주의: 설정에는 PRF 확장 지원이 있는 패스키가 필요합니다. 모든 하드웨어 토큰이나 플랫폼 인증자가 이를 지원하지는 않습니다.
 
 ## PRF 제공자 호환성
 

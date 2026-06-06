@@ -1,12 +1,12 @@
 ---
 title: "Creare il Tuo Primo Repository"
-description: "Crea un repository cifrato sul tuo server e aprilo in VS Code: è pronto in pochi secondi."
+description: "Crea un repository cifrato sul tuo server e aprilo in VS Code."
 category: "Tutorials"
 subcategory: essentials
 order: 4
 language: it
-sourceHash: "0e8255f05b01469b"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "309e03e15d4181a1"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -25,13 +25,13 @@ Pensalo come una chiavetta USB per la produzione: un file a riposo, un server in
 
 ![Il file cifrato viene montato come cartella isolata](/img/tutorials/tutorial-create-repo/slide-1.svg)
 
-Su disco e' una singola immagine cifrata. Quando viene montata, ottieni:
+Su disco è una singola immagine cifrata. Quando viene montata, ottieni:
 
 - Un daemon Docker dedicato (separato da quello dell'host)
 - Dati applicativi all'interno del volume cifrato
-- IP loopback che non vanno in conflitto con nient'altro sulla macchina
+- IP loopback che non vanno in conflitto con null'altro sulla macchina
 
-I repository si spostano. Copiarne uno tra macchine, farne il backup o forkarlo (i fork sono quasi istantanei e a tempo costante: un repo da 100 GB fa fork veloce quanto uno da 1 GB). Ogni repo e' isolato da ogni altro repo sullo stesso server.
+I repository si spostano. Copiarne uno tra macchine, farne il backup o forkarlo (i fork sono quasi istantanei e a tempo costante: un repo da 100 GB fa fork veloce quanto uno da 1 GB). Ogni repo è isolato da ogni altro repo sullo stesso server. L'isolamento è il punto essenziale.
 
 ## Creane uno
 
@@ -45,7 +45,7 @@ Questo crea un repository cifrato da 2 GB e lo monta. Verifica:
 
 <TutorialStep number={3} />
 
-VS Code si apre all'interno del repository via SSH. Lo spazio di lavoro inizia vuoto per scelta. Tutto cio' che crei qui vive all'interno del volume cifrato ed e' invisibile a ogni altro repo sul server.
+VS Code si apre all'interno del repository via SSH. Lo spazio di lavoro inizia vuoto per scelta. Tutto ciò che crei qui vive all'interno del volume cifrato ed è invisibile a ogni altro repo sul server.
 
 ---
 

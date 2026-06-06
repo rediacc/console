@@ -1,19 +1,19 @@
 ---
 title: "モニタリング"
-description: "rdc machine コマンドでラップトップからサーバーとリポジトリのヘルスを確認します。"
+description: "rdc machine コマンドでラップトップからサーバーのヘルス状態とリポジトリのステータスをリアルタイムに確認します。"
 category: "Tutorials"
 subcategory: advanced
 order: 12
 language: ja
-sourceHash: "7690e2a129161381"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "6b1363b30c1f96a8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # モニタリング
 
-アプリがデプロイされ、稼働中で、バックアップも取れています。次はすべてが健全に動き続けているか確認しましょう。`rdc` はラップトップから任意のサーバーの全体像（ヘルス、コンテナ、リポジトリ）を把握できます。
+アプリがデプロイされ、バックアップも取られています。次はサーバーを健全に保つことが大切です。それが `rdc` の役割です。`rdc` ならラップトップから任意のサーバーの全体像（ヘルス、コンテナ、リポジトリ）を把握できます。
 
 ## チュートリアル動画
 
@@ -45,7 +45,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={4} />
 
-システム情報、リポジトリ、コンテナ、すべてを1つのコマンドで確認できます。同じ `query` コマンドにフィルターなしで使うと全体像が表示され、`--system`、`--containers`、`--repositories`、`--services`、`--network`、`--block-devices` で該当セクションに絞り込めます。
+フィルターなしで `query` コマンドを実行すると、全体像（システム情報、リポジトリ、コンテナ）が表示されます。`--system`、`--containers`、`--repositories`、`--services`、`--network`、`--block-devices` を追加して、特定のセクションに絞り込むことができます。
 
 ## ローカルの動作確認
 

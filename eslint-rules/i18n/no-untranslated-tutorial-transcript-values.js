@@ -54,7 +54,7 @@ export const noUntranslatedTutorialTranscriptValues = {
     ],
     messages: {
       untranslated:
-        'events[{{index}}].text is identical to English and appears untranslated: "{{value}}"',
+        'events[{{index}}].text is identical to English and appears untranslated: "{{value}}". See docs/i18n/CONVENTIONS.md.',
     },
   },
 

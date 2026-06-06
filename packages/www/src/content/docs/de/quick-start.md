@@ -1,11 +1,11 @@
 ---
 title: Schnellstart
-description: Starten Sie einen containerisierten Dienst auf Ihrem Server in wenigen Minuten. Für alle gängigen Linux-Distributionen verfügbar.
+description: Starten Sie einen containerisierten Dienst auf Ihrem Server in wenigen Minuten.
 category: Guides
 order: -1
 language: de
-sourceHash: "15b3c42682a05678"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2047fd1ce3a47944"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Schnellstart
@@ -97,7 +97,7 @@ rdc repo template list                                        # Eingebettete Tem
 rdc repo template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile bereitstellen
 ```
 
-Templates liefern eine `docker-compose.yml`, ein `Rediaccfile` und unterstützende Dateien. Ohne ein Template (oder Ihre eigene Compose-Datei) gibt es nichts zu starten.
+Templates liefern eine `docker-compose.yml`, ein `Rediaccfile` und unterstützende Dateien. Ohne ein Template (oder Ihre eigene Compose-Datei) gibt es nichts zu starten. Verwenden Sie das integrierte Template für Ihr erstes Repo. Es ist der schnellste Weg, den gesamten Workflow von Anfang bis Ende kennenzulernen.
 
 ### 3. Repo starten
 

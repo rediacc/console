@@ -4,8 +4,8 @@ description: "独自インフラ上でアカウントサーバーとCLIディス
 category: "Guides"
 order: 5
 language: ja
-sourceHash: "c8c9aceeeeea1411"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "eea76db2d612133f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 Rediaccは完全に独自インフラ上で運用できます。スタンドアロンDockerイメージには、アカウントサーバー、ウェブポータル、マーケティングサイト、およびCLIディストリビューションエンドポイントが含まれます。Rediaccのホスト型サービスへの外部依存は不要です。
@@ -96,9 +96,9 @@ npm install -g https://account.example.com/npm/rediacc-cli-latest.tgz
 
 ## サーバー設定
 
-オンプレミスDockerイメージはホスト型サービスと同じ`ENVIRONMENT`変数を使用します。DockerまたはオーケストレーションのConfig内に設定してください：
+オンプレミスDockerイメージはホスト型サービスと同じ`ENVIRONMENT`変数を使用します。DockerまたはオーケストレーションのConfigに設定してください：
 
-- `ENVIRONMENT=production`（デフォルト）：標準のリソース制限。このサーバーに接続するCLIはデフォルトで**stable**アップデートチャネルを使用します。値名`production`はレガシーデプロイ識別子です。`production`モードと`edge`モードはどちらも本番環境品質です。
+- `ENVIRONMENT=production`（デフォルト）：標準のリソース制限。このサーバーに接続するCLIはデフォルトで**stable**アップデートチャネルを使用します。値名`production`はレガシーデプロイ識別子です。`production`と`edge`はどちらも本番環境品質です。
 - `ENVIRONMENT=edge`：Communityの2倍制限。CLIはデフォルトで**edge**アップデートチャネルを使用します
 
 各環境の詳細については[リリースチャネル](/en/docs/release-channels)を参照してください。

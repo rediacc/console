@@ -1,13 +1,11 @@
 ---
-title: Solución de problemas
-description: >-
-  Soluciones para problemas comunes de SSH, configuración, repositorios,
-  servicios y Docker.
-category: Guides
+title: "Solución de problemas"
+description: "Soluciones para problemas comunes de SSH, configuración, repositorio, servicios y Docker."
+category: "Guides"
 order: 10
 language: es
-sourceHash: "7cfabe7bbf3914c3"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "17dc03eb0589d606"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Solución de problemas
@@ -80,7 +78,7 @@ Si `rdc config machine setup` o `renet system check-btrfs` falla con:
 Module btrfs not found
 ```
 
-...el servidor está ejecutando el kernel estándar de RHEL 10, que no incluye el módulo btrfs integrado. Esto no es un error de Rediacc; RHEL 10 eliminó btrfs intencionalmente. La solución es usar **Oracle Linux 10 en su lugar**. Oracle 10 usa por defecto el Unbreakable Enterprise Kernel (UEK), que conserva btrfs. Consulte [Requisitos -- Por que UEK?](/en/docs/requirements) para la historia completa.
+...el servidor está ejecutando el kernel estándar de RHEL 10, que no incluye el módulo btrfs integrado. Esto no es un error de Rediacc; RHEL 10 eliminó btrfs intencionalmente. La solución es usar **Oracle Linux 10 en su lugar**. Oracle 10 usa por defecto el Unbreakable Enterprise Kernel (UEK), que conserva btrfs. Consulte [Requisitos → ¿Por qué UEK?](/en/docs/requirements) para la historia completa.
 
 ## Falla la creación de repositorio
 
@@ -134,12 +132,12 @@ Esto es intencional. El modelo de red de Rediacc es **red de host para cada serv
 **Para obtener acceso de red en un contenedor ad-hoc, use la red de host:**
 
 ```bash
-# Inside a repository shell (rdc term connect -m <machine> -r <repo>)
+# Dentro de un shell de repositorio (rdc term connect -m <machine> -r <repo>)
 docker run --rm --network host -it ubuntu bash
-# Now apt update, curl, pip install all work.
+# Ahora apt update, curl, pip install todos funcionan.
 ```
 
-**Para servicios de producción, use un Rediaccfile con `renet compose`** en lugar de un `docker run` directo. `renet compose` inyecta `network_mode: host`, las etiquetas de IP de servicio y las etiquetas de enrutamiento de Traefik automáticamente. Consulte [Servicios](/es/docs/services) para más detalles.
+**Para servicios de producción, use un Rediaccfile con `renet compose`** en lugar de un `docker run` directo. `renet compose` inyecta `network_mode: host`, las etiquetas de IP de servicio y las etiquetas de enrutamiento de Traefik automáticamente. Consulte [Servicios](/en/docs/services) para más detalles.
 
 ## VS Code Permission Denied en archivos del sandbox
 

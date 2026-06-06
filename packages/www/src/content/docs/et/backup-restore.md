@@ -1,11 +1,11 @@
 ---
 title: "Varundamine ja taastamine"
-description: "Varunda krüpteeritud repositooriumeid välisesse salvestusse, taasta varukoopiaid ja seadista automaatne varundamine."
+description: "Varunda krüpteeritud repositooriumeid mis tahes rclone-ühilduvasse salvestusse, taasta neid mis tahes masinal ja automatiseeri varundamine nimetatud strateegiate ja systemd-taimerite abil."
 category: "Guides"
 order: 7
 language: et
-sourceHash: "196ee7b649ac7371"
-sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
+sourceHash: "6ed9a5b950de8ddb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Varundamine ja taastamine
@@ -339,7 +339,7 @@ rdc config backup-strategy set \
 
 ### Millal jätta repositoorium kõrgsagedusliku kuuma strateegia vahele
 
-Jätke repositoorium kõrgsageduslikust käivitamisest välja, kui:
+Jätage repositoorium kõrgsageduslikust käivitamisest välja, kui:
 
 - Repositoorium on suur ja **täielikult taasgenereeritav** köitel juba olevatest lähteandmetest, nii et iga tunnine varukoopia raiskab märkimisväärset ribalaiust ilma sisukaid taasteandmeid lisamata.
 - Varundamise käivitamine ületaks oma ajakavaintervallit teie saadaoleval üleslaadimiskiirusel.

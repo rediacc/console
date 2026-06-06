@@ -1,20 +1,22 @@
 ---
-title: Ristvarundusstrateegia
-description: Kaitske andmeid katastroofide eest tõhusa mandritevahelise varunduse ja kiire taastamisega.
+title: Ristivarunduse strateegia
+description: "Teie varukoopia ei toimi hetkel, kui tema masin rikki läheb. Rediacc kopeerib hetktõmmised eraldi masinasse, et ühe ketta rike ei võtaks kaasa kõike."
 category: Use Cases
 order: 5
 language: et
+sourceHash: "39dbeac1faec121c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Kui katastroof tabab, kas teie andmed jäävad ellu? Rediacciga jäävad alati.**
 
-**Märkus:** See on **kasutusjuhtumi näide**, mis demonstreerib, kuidas Rediacc suudab seda probleemi lahendada. Idufirmana esindavad need stsenaariumid potentsiaalseid rakendusi, mitte lõpetatud juhtumiuuringuid.
+**Märkus:** See on **kasutusjuhtumi näide**, mis näitab, kuidas Rediacc suudab seda probleemi lahendada. Need stsenaariumid esindavad potentsiaalseid rakendusi, mitte lõpetatud juhtumiuuringuid.
 
-**Kriisiolukord:** Pärast kliendikõnet selgus, et teenused ei tööta **ketta rikke** tõttu. Kaugvarundusserveri viimane varukoopia oli **3 nädalat vana**, mis põhjustas olulise andmekao.
+**Kriisiolukord:** Kliendikõne paljastab katkestuse: **ketta rike**. Kaugvarundusserveri viimane varukoopia oli **3 nädalat vana**. Kolm nädalat andmeid on kadunud.
 
 ## Probleem
 
-Organisatsioon saab teadlikuks andmete varundamise riskidest **ainult samal masinal**:
+Andmete varundamine samale masinale, millel nad asuvad, ei ole strateegia. Siin on, mida see rike tõestab:
 * Riistvara rikked
 * Küberrünnakud
 * Füüsilised katastroofid nagu sõda, maavärin, tulekahju, üleujutus
@@ -38,7 +40,7 @@ Pärast kliendikõnet:
 
 ## Rediacci lahendus
 
-![Ristvarundusstrateegia](/img/cross-backup.svg)
+![Ristivarunduse strateegia](/img/cross-backup.svg)
 
 ### 1. **Esmane varukoopia**
 * Esimesel korral võtab 20 TB andmete ülekanne kaugserverisse 2 nädalat

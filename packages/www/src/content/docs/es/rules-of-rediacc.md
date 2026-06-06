@@ -1,14 +1,11 @@
 ---
-title: Reglas de Rediacc
-description: >-
-  Información esencial sobre reglas y convenciones para crear aplicaciones en la
-  plataforma Rediacc. Cubre Rediaccfile, compose, configuración de red,
-  almacenamiento, CRIU e implementación.
-category: Guides
+title: "Reglas de Rediacc"
+description: "Información esencial sobre reglas y convenciones para crear aplicaciones en la plataforma Rediacc. Cubre Rediaccfile, compose, configuración de red, almacenamiento, CRIU e implementación."
+category: "Guides"
 order: 5
 language: es
-sourceHash: "1d227a06272a0050"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "74803e91ef07b03c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Reglas de Rediacc
@@ -73,7 +70,7 @@ Renet auto-inyecta estas en cada contenedor:
 - El **nombre del servicio** en compose se convierte en el prefijo de la URL de auto-ruta.
 - **Grand repos**: `https://{service}.{repo}.{machine}.{baseDomain}` (ej.: `https://myapp.marketing.server-1.example.com`).
 - **Fork repos**: `https://{service}-fork-{tag}.{repo}.{machine}.{baseDomain}` (ej.: `https://myapp-fork-staging.marketing.server-1.example.com`). El separador `-fork-` evita colisiones de URL con los nombres de servicio del grand repo. La URL del fork siempre usa el certificado wildcard existente del repo padre, por lo que no se necesita un nuevo certificado.
-- Para dominios personalizados, use etiquetas de Traefik (nota: los dominios personalizados NO son compatibles con fork, el dominio pertenece al grand repo).
+- Para dominios personalizados, usa etiquetas de Traefik (nota: los dominios personalizados NO son compatibles con fork, el dominio pertenece al grand repo).
 
 ## Redes
 
@@ -106,11 +103,11 @@ Renet auto-inyecta estas en cada contenedor:
 
 ## CRIU (Migración en vivo)
 
-- **Activación por etiqueta**: Añada `rediacc.checkpoint=true` a los contenedores que desee checkpointear. Los contenedores sin esta etiqueta (bases de datos, cachés) se inician desde cero y se recuperan mediante sus propios mecanismos (WAL, LDF, AOF).
+- **Activación por etiqueta**: Añade `rediacc.checkpoint=true` a los contenedores que desees checkpointear. Los contenedores sin esta etiqueta (bases de datos, cachés) se inician desde cero y se recuperan mediante sus propios mecanismos (WAL, LDF, AOF).
 - **`repo down --checkpoint`** guarda el estado del proceso antes de detenerse, el siguiente `repo up` restaura automáticamente. **Este es el flujo principal en la misma máquina**, verificado y funcional.
 - **`backup push --checkpoint`** captura el estado de memoria de procesos en ejecución más el estado del disco para contenedores etiquetados, y después transfiere el volumen a otra máquina. La restauración en la máquina destino se realiza con `repo up`.
-- **`repo fork --checkpoint`** captura el estado del proceso antes del fork y CoW-clona el checkpoint junto con el fork. ⚠️ En la misma máquina, el `repo up` posterior sobre el fork **actualmente falla** con `criu failed: type RESTORE errno 0` mientras el padre sigue en ejecución. Se trata de bugs upstream de CRIU [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Use `repo down --checkpoint` para guardar y restaurar in situ, o `backup push --checkpoint` para migración entre máquinas.
-- **`repo up`** detecta automáticamente datos de checkpoint y restaura si los encuentra. Use `--skip-checkpoint` para forzar un inicio limpio.
+- **`repo fork --checkpoint`** captura el estado del proceso antes del fork y CoW-clona el checkpoint junto con el fork. En la misma máquina, el `repo up` posterior sobre el fork **actualmente falla** con `criu failed: type RESTORE errno 0` mientras el padre sigue en ejecución. Se trata de bugs upstream de CRIU [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Usa `repo down --checkpoint` para guardar y restaurar in situ, o `backup push --checkpoint` para migración entre máquinas.
+- **`repo up`** detecta automáticamente datos de checkpoint y restaura si los encuentra. Usa `--skip-checkpoint` para forzar un inicio limpio.
 - **Restauración con reconocimiento de dependencias**: Usa `depends_on` de compose para iniciar bases de datos primero (esperando a que estén saludables) y después restaurar mediante CRIU los contenedores de aplicación.
 - **Las conexiones TCP quedan obsoletas tras la restauración**, las aplicaciones deben gestionar `ECONNRESET` y reconectar. CRIU no preserva el estado de las conexiones TCP activas a través de la restauración en ningún flujo soportado.
 - **El modo experimental de Docker** se activa automáticamente en los daemons por repositorio.
@@ -122,7 +119,7 @@ Renet auto-inyecta estas en cada contenedor:
   - `userns_mode: host` (CRIU requiere acceso al namespace init para `/proc/pid/map_files`)
 - Los contenedores sin la etiqueta ejecutan con una postura de seguridad más limpia (sin capabilities extra).
 - El perfil seccomp predeterminado de Docker se mantiene, CRIU usa `PTRACE_O_SUSPEND_SECCOMP` (kernel 4.3+) para suspender temporalmente los filtros durante checkpoint/restore.
-- **NO configure las capabilities de CRIU manualmente** en su archivo compose, renet se encarga según la etiqueta.
+- **NO configures las capabilities de CRIU manualmente** en tu archivo compose, renet se encarga según la etiqueta.
 - Consulta la [plantilla heartbeat](https://github.com/rediacc/console/tree/main/packages/json/templates/monitoring/heartbeat) para una implementación de referencia compatible con CRIU.
 
 ### Patrones de aplicación compatibles con CRIU
@@ -135,13 +132,13 @@ Renet auto-inyecta estas en cada contenedor:
 
 ### Políticas de seguridad del host por sistema operativo
 
-En los cinco sistemas operativos de servidor oficialmente soportados (consulta [Requisitos](/en/docs/requirements)), el daemon Docker de cada repositorio y los contenedores que ejecuta usan **etiquetas de contenedor predeterminadas**. `rdc config machine setup` no instala ninguna política SELinux personalizada ni perfil AppArmor personalizado.
+En los cinco sistemas operativos de servidor oficialmente soportados (consulta [Requisitos](/en/docs/requirements)), el daemon Docker de cada repositorio y los contenedores que ejecuta usan **etiquetas de contenedor predeterminadas**. `rdc config machine setup` no instala ninguna política SELinux personalizada ni perfil AppArmor personalizado. Esto es intencional: la compensación es que los procesos de los contenedores se ejecutan bajo la política de etiqueta predeterminada del host, no bajo un perfil de confinamiento específico de Rediacc. Si tu modelo de amenaza requiere controles de acceso obligatorios a nivel de contenedor, configúralos a nivel del host antes de desplegar.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor está habilitado por defecto. Los contenedores se ejecutan bajo el perfil docker-container predeterminado. La única excepción es CRIU (`apparmor=unconfined` para los contenedores con `rediacc.checkpoint=true`, según la nota anterior).
 - **Fedora 43 / Oracle Linux 10**: SELinux se ejecuta en modo enforcing por defecto. Los contenedores obtienen el contexto `container_t` estándar. No se necesita instalar ninguna política adicional. Si un paso de configuración falla con denegaciones AVC, consulta [Solución de problemas: denegaciones SELinux](/en/docs/troubleshooting).
 - **Debian 13**: AppArmor está disponible pero no se aplica por defecto en todos los dominios. Los contenedores siguen usando el perfil docker-container.
 
-No se requiere ningún indicador de postura de seguridad por sistema operativo; `rdc` y `renet` detectan lo que está en ejecución y producen el mismo aislamiento por repositorio en las cinco distribuciones.
+En conclusión: `rdc` y `renet` detectan automáticamente el sistema operativo que se está ejecutando y producen el mismo aislamiento por repositorio en las cinco distribuciones soportadas. No se requiere ningún indicador de postura de seguridad por sistema operativo.
 
 ## Seguridad
 
@@ -150,8 +147,8 @@ No se requiere ningún indicador de postura de seguridad por sistema operativo; 
 - **Nunca hagas commit de credenciales** en el control de versiones. Usa `env_file` y genera secretos en `up()`.
 - **Aislamiento de repositorio**: El daemon Docker, la red y el almacenamiento de cada repo están completamente aislados de otros repos en la misma máquina.
 - **Aislamiento de agentes**: Los agentes de IA operan en modo solo-fork por defecto. Cada repo tiene su propia clave SSH con aplicación de sandbox del lado del servidor (ForceCommand `sandbox-gateway`). Todas las conexiones están en sandbox con Landlock LSM, overlay OverlayFS del home y TMPDIR por repo. El acceso al sistema de archivos entre repos está bloqueado por el kernel.
-- **`sudo` está deshabilitado dentro del sandbox de un repositorio por diseño.** El aislamiento del sistema de archivos con Landlock exige `NoNewPrivs`, que impide cualquier elevación de privilegios, por lo que `sudo` fallará con `no new privileges flag is set`. El usuario propietario del repo ya cuenta con los permisos necesarios para todo lo que haya dentro del montaje del repo y del socket de Docker. Para operaciones realmente privilegiadas (instalar paquetes del host, ajustar el kernel), ejecútelas fuera del sandbox o desde una función `up()` de un Rediaccfile ejecutada por la ruta de infraestructura.
-- **La red bridge de Docker está deshabilitada en los daemons por repositorio.** El `daemon.json` (`FlavorRediacc`) de cada repo lleva `"bridge": "none"` e `"iptables": false`, por lo que un simple `docker run <imagen>` crea un contenedor con solo una interfaz de loopback y sin conectividad saliente. Esto no es un bug, así es como se impone el aislamiento entre repos: los ganchos eBPF a nivel de kernel que bloquean que un repo alcance las IPs de loopback de otro repo solo se aplican a contenedores que viven en el namespace de red del host. Para servicios de producción use `renet compose`, que inyecta `network_mode: host` automáticamente. Para contenedores ad-hoc en una shell, pase `--network host` explícitamente. (Los daemons Hub por usuario (`FlavorHub`, entornos de desarrollo) son la excepción: habilitan `bridge="docker0"` e `iptables=true` para que los contenedores del usuario tengan conectividad saliente normal.)
+- **`sudo` está deshabilitado dentro del sandbox de un repositorio por diseño.** El aislamiento del sistema de archivos con Landlock exige `NoNewPrivs`, que impide cualquier elevación de privilegios, por lo que `sudo` fallará con `no new privileges flag is set`. El usuario propietario del repo ya cuenta con los permisos necesarios para todo lo que haya dentro del montaje del repo y del socket de Docker. Para operaciones realmente privilegiadas (instalar paquetes del host, ajustar el kernel), ejecútalas fuera del sandbox o desde una función `up()` de un Rediaccfile ejecutada por la ruta de infraestructura.
+- **La red bridge de Docker está deshabilitada en los daemons por repositorio.** El `daemon.json` (`FlavorRediacc`) de cada repo lleva `"bridge": "none"` e `"iptables": false`, por lo que un simple `docker run <imagen>` crea un contenedor con solo una interfaz de loopback y sin conectividad saliente. Esto no es un bug, así es como se impone el aislamiento entre repos: los ganchos eBPF a nivel de kernel que bloquean que un repo alcance las IPs de loopback de otro repo solo se aplican a contenedores que viven en el namespace de red del host. Para servicios de producción usa `renet compose`, que inyecta `network_mode: host` automáticamente. Para contenedores ad-hoc en una shell, pasa `--network host` explícitamente. (Los daemons Hub por usuario (`FlavorHub`, entornos de desarrollo) son la excepción: habilitan `bridge="docker0"` e `iptables=true` para que los contenedores del usuario tengan conectividad saliente normal.)
 
 ## Despliegue
 

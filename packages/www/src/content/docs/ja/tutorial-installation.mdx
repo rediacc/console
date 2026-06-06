@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: essentials
 order: 1
 language: ja
-sourceHash: "9b8f5c6aa1b44fd5"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "45226ad6fbefa4f2"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -49,9 +49,9 @@ iwr -useb https://www.rediacc.com/install.ps1 | iex
 
 ![ラップトップの rdc、サーバーの renet](/img/tutorials/tutorial-installation/slide-2.svg)
 
-`rdc` はラップトップ上の CLI です。サーバーは `renet` という別のコンポーネントを実行しており、`rdc` が SSH 経由でプロビジョニングして操作します。サーバーに手動で SSH 接続する必要はありません。`rdc` がすべて行います。
+`rdc` はラップトップ上の CLI です。サーバーは `renet` という別のコンポーネントを実行しており、`rdc` が SSH 経由でプロビジョニングして操作します。サーバーに手動で SSH 接続する必要はありません。`rdc` がすべて行います。これが基本的な設計です。ラップトップに1つのツールを置くだけで、サーバー側で何かを直接管理する必要はありません。
 
-次の2つのチュートリアルで、この仕組みをきちんとセットアップします。
+次の2つのチュートリアルで、renet の設定を取り上げます。CLI のインストールより複雑な内容ですが、マシンごとに一度だけ行えばよいものです。
 
 ---
 

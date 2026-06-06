@@ -132,8 +132,8 @@ export const translationCoverage = {
       },
     ],
     messages: {
-      lowCoverage: '{{language}} translation coverage is {{percentage}}% ({{count}}/{{total}} keys). Minimum required: {{minimum}}%.',
-      missingFile: '{{language}} is missing translation file for namespace "{{namespace}}".',
+      lowCoverage: '{{language}} translation coverage is {{percentage}}% ({{count}}/{{total}} keys). Minimum required: {{minimum}}%. See docs/i18n/CONVENTIONS.md.',
+      missingFile: '{{language}} is missing translation file for namespace "{{namespace}}". See docs/i18n/CONVENTIONS.md.',
     },
   },
 

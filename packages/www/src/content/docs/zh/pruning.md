@@ -4,8 +4,8 @@ description: "删除孤立备份、过期快照、仓库镜像和本地配置遗
 category: "Guides"
 order: 12
 language: zh
-sourceHash: "98bb2d50d75a1d3d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "9b74e1ea24b9735f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 清理
@@ -18,11 +18,11 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc machine prune --name <machine>` | 机器上的数据存储工件（始终）；孤立或未知的仓库镜像（可选启用） | 本地 CLI 配置 + 机器的 `.interim/state` 镜像 |
 | `rdc config prune` | 本地配置遗留物（证书缓存、过期归档、悬空交叉引用） | 仅本地 CLI 配置 |
 
-三者相互独立. 您可以在不运行其他命令的情况下运行任何一个。它们共享下文 [安全模型](#safety-model) 中描述的通用安全模型。
+三者相互独立。您可以在不运行其他命令的情况下运行任何一个。它们共享下文 [安全模型](#safety-model) 中描述的通用安全模型。
 
 ## 挂载安全预检
 
-`storage prune` 和 `machine prune --prune-unknown` 都会在删除任何内容之前运行 **挂载安全预检**：它们查询执行机器上当前已挂载或正在运行的仓库，将其与删除候选取交集，并 **拒绝删除仍在机器上存活的候选**。删除已挂载仓库的离机备份，或删除存活的仓库镜像，是真实的数据丢失陷阱. 预检让这种意外不可能发生。
+`storage prune` 和 `machine prune --prune-unknown` 都会在删除任何内容之前运行 **挂载安全预检**：它们查询执行机器上当前已挂载或正在运行的仓库，将其与删除候选取交集，并 **拒绝删除仍在机器上存活的候选**。删除已挂载仓库的离机备份，或删除存活的仓库镜像，是真实的数据丢失陷阱。预检让这种意外不可能发生。
 
 如要覆盖（罕见；仅当您确实知道存活状态有误时），传入 `--force-delete-mounted`。这是与 `--force`（控制归档宽限期）独立的标志，所以两个逃生口保持区分。
 
@@ -44,14 +44,14 @@ rdc storage prune --name my-s3 -m server-1 --grace-days 14
 rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
 ```
 
-`--machine` 是必需的，因为 rclone 调用在执行机器上运行，而不是在您的笔记本电脑上. 客户端不必在本地安装 rclone。存储凭据仍来自您的本地配置；机器只是 rclone 的运行者。
+`--machine` 是必需的，因为 rclone 调用在执行机器上运行，而不是在您的笔记本电脑上。客户端不必在本地安装 rclone。存储凭据仍来自您的本地配置；机器只是 rclone 的运行者。
 
 ### 检查内容
 
-1. 列出指定存储中的所有备份 GUID（横跨 `hot/` 和 `cold/` 子目录. 参见[备份与恢复](/zh/docs/backup-restore#scheduled-backups)）。
+1. 列出指定存储中的所有备份 GUID（横跨 `hot/` 和 `cold/` 子目录。参见 [备份与恢复](/zh/docs/backup-restore#scheduled-backups)）。
 2. 扫描磁盘上的每个配置文件（`~/.config/rediacc/*.json`）。
 3. 如果备份的 GUID 未被任何配置的 repositories 部分引用，则该备份为 **孤立**。
-4. 在宽限期内最近归档的仓库即使已从活跃配置中移除，也会**受到保护**。
+4. 在宽限期内最近归档的仓库即使已从活跃配置中移除，也会 **受到保护**。
 5. 挂载安全预检：当前挂载在 `--machine` 上的 GUID 会被跳过并报告，永远不会被删除。
 
 ### 性能
@@ -64,7 +64,7 @@ rdc storage prune --name my-s3 -m server-1 --force-delete-mounted
 
 ### 阶段 1：数据存储清理（始终执行）
 
-移除删除仓库或机器级别重构淘汰命名约定后可能残留的各种资源。每一类别都会独立扫描，并且清理是一次幂等过程，因此可以安全地重复执行 prune，最终会收敛到干净的数据存储状态。
+移除删除仓库或机器级别重构淘汰命名约定后可能残留的各种资源。每一类别都会独立扫描。运行 prune 一次是幂等的，所以可以安全地重复执行，最后一次运行遗漏的孤立项会被下一次运行捕获。
 
 | 类别 | 清理内容 |
 |------|----------|
@@ -97,18 +97,18 @@ rdc machine prune --name server-1 --orphaned-repos --dry-run
 rdc machine prune --name server-1 --orphaned-repos
 ```
 
-这是 **粗放的**. 它会删除所有不在您本地配置中的内容，包括其他工具或其他操作员 CLI 检出管理的合法复刻。如果 renet `.interim/state` 镜像正确地将仓库标识为复刻，但本地配置从未见过它，此阶段仍会将其移除。如希望保守，请优先使用阶段 3（`--prune-unknown`）。
+这是 **粗放的**。它会删除所有不在您本地配置中的内容，包括其他工具或其他操作员 CLI 检出管理的合法复刻。如果 renet `.interim/state` 镜像正确地将仓库标识为复刻，但本地配置从未见过它，此阶段仍会将其移除。如希望保守，请优先使用阶段 3（`--prune-unknown`）。
 
 ### 阶段 3：`--prune-unknown`（精准）
 
-使用 `--prune-unknown` 时，CLI 仅删除两种信号都无法分类的仓库：既不在任何本地配置中，**也**没有在机器的 `.interim/state` 镜像中存在 fork 标记条目（参见[仓库. `Type` 列](/zh/docs/repositories#type-column-and-the-state-mirror)）。
+使用 `--prune-unknown` 时，CLI 仅删除两种信号都无法分类的仓库：既不在任何本地配置中，**也** 没有在机器的 `.interim/state` 镜像中存在 fork 标记条目（参见 [仓库. `Type` 列](/zh/docs/repositories#type-column-and-the-state-mirror)）。
 
 ```bash
 rdc machine prune --name server-1 --prune-unknown --dry-run
 rdc machine prune --name server-1 --prune-unknown
 ```
 
-实践中，`--prune-unknown` 是您进行例行清理时所需要的；`--orphaned-repos` 仅在您确信本地配置是机器上每个仓库的完整且权威清单时才正确。镜像之前的遗留孤立项以及配置条目被误删的仓库都会落入 "unknown" 类别. 它们的状态确实不确定，精准标志要求操作员明确确认这一点。
+实践中，`--prune-unknown` 是您进行例行清理时所需要的；`--orphaned-repos` 仅在您确信本地配置是机器上每个仓库的完整且权威清单时才正确。镜像之前的遗留孤立项以及配置条目被误删的仓库都会落入 "unknown" 类别。它们的状态确实不确定，精准标志要求操作员明确确认这一点。
 
 挂载安全预检在此阶段也会运行：当前挂载在 `--machine` 上的仓库会被报告并跳过，除非传入 `--force-delete-mounted`。
 
@@ -119,14 +119,14 @@ rdc machine prune --name server-1 --prune-unknown
 
 ## Config Prune
 
-清扫 `~/.config/rediacc/<config>.json` **本地配置文件内**的过期遗留物。纯本地. 不涉及 SSH，不调用 renet。清理三类内容：
+清扫 `~/.config/rediacc/<config>.json` **本地配置文件内** 的过期遗留物。纯本地。不涉及 SSH，不调用 renet。清理三类内容：
 
 1. **ACME 证书缓存条目**，其锚点（GUID、仓库名称或机器名称）不再存在于活跃配置中。证书通配符无法路由到任何地方，因此是死重。
-2. **过期的归档仓库**，存于 `resources.deletedRepositories[]` 中. `deletedAt` 早于 `defaults.pruneGraceDays`（默认 7 天）的条目。仍在宽限期内的条目会被报告（显示剩余天数）并保留。
+2. **过期的归档仓库**，存于 `resources.deletedRepositories[]` 中。`deletedAt` 早于 `defaults.pruneGraceDays`（默认 7 天）的条目。仍在宽限期内的条目会被报告（显示剩余天数）并保留。
 3. **悬空的交叉引用**，存在于不同配置桶之间：
    - `resources.machines.<m>.backupStrategies[]` 中命名的策略不再存在。
    - `resources.backupStrategies.<s>.exclude[]` 和 `include[]` 中命名的仓库不再存在。
-   - 存储目标的目标存储缺失. 标记为警告，不自动移除（自动移除会改变策略语义）。
+   - 存储目标的目标存储缺失。标记为警告，不自动移除（自动移除会改变策略语义）。
 
 ```bash
 # 仅预览
@@ -151,7 +151,7 @@ rdc config prune --grace-days 30
 
 - 活跃资源（机器、存储、仓库、备份策略、云提供商）。
 - 凭据、account 块、加密块、defaults。
-- 存储 `vaultContent`（包括过期的 OneDrive `access_token`. Refresh_token 仍可铸造新 token；清理会强制重新认证）。
+- 存储 `vaultContent`（包括过期的 OneDrive `access_token`。Refresh_token 仍可铸造新 token；清理会强制重新认证）。
 - `knownHosts` 条目（自动刷新路径为 `rdc config machine scan-keys`）。
 - 压缩证书 blob 数组（`infra.acmeCertCache.<base>.data[]`）会从清理后的证书列表自动重建；您不会丢失任何仍覆盖保留名称的证书链。
 
@@ -177,8 +177,8 @@ Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 
 为 `--prune-unknown` 和 `rdc repo list -m` 中的 `Type` 列提供支持的 `.interim/state/<guid>/.rediacc.json` 镜像在以下时机写入：
 
-- **复刻时**（`rdc repo fork`）,  立即写入，甚至在复刻被挂载之前。
-- **每次状态保存时**（`rdc repo mount` 以及任何更新仓库状态的操作）,  适用于在镜像代码发布之前创建的仓库。
+- **复刻时**（`rdc repo fork`）。立即写入，甚至在复刻被挂载之前。
+- **每次状态保存时**（`rdc repo mount` 以及任何更新仓库状态的操作）。适用于在镜像代码发布之前创建的仓库。
 
 在 **镜像存在之前创建且自升级以来未重新挂载** 的仓库没有镜像文件。它们在 `rdc repo list -m` 中显示为 `unknown`，即使其中一些是合法的复刻。要为遗留孤立项修复此问题，请在机器上运行一次性回填：
 
@@ -204,7 +204,7 @@ sudo /usr/local/bin/renet repository backfill-state-mirror \
 
 ### 挂载安全预检
 
-如上所述. `storage prune` 和 `machine prune --prune-unknown` 拒绝删除当前在执行机器上挂载或正在运行的仓库。仅使用 `--force-delete-mounted` 来覆盖。
+如上所述。`storage prune` 和 `machine prune --prune-unknown` 拒绝删除当前在执行机器上挂载或正在运行的仓库。仅使用 `--force-delete-mounted` 来覆盖。
 
 ### 默认应用；`--dry-run` 用于预览
 

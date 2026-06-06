@@ -1,6 +1,6 @@
 ---
 title: RDC CLI Cheat Sheet
-description: "Quick reference for rdc commands: configs, repos, machines, sync, and containers."
+description: "Quick reference for rdc: configs, repos, machines, file sync, and containers. Full option set: add --help to any command."
 category: Guides
 order: 3
 language: en
@@ -8,7 +8,7 @@ language: en
 
 # RDC CLI Cheat Sheet
 
-Quick reference for the most common `rdc` commands. Run any command with `--help` for full options.
+Not every `rdc` command is listed here, just the ones that come up on every deployment. For the full option set, run any rdc command with `--help`. Edge cases and rarely-used options are in the full reference.
 
 ## Repository Lifecycle
 

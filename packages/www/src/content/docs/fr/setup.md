@@ -4,13 +4,13 @@ description: "Créez une configuration, ajoutez des machines, provisionnez des s
 category: "Guides"
 order: 3
 language: fr
-sourceHash: "2456daa4289ffb8c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "b3c8c42db1b8d99b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Configuration de la machine
 
-Cette page vous guide dans la configuration de votre première machine : création d'une configuration, enregistrement d'un serveur, provisionnement et configuration optionnelle de l'infrastructure pour l'accès public.
+Quatre étapes mettent votre première machine en service : créer une configuration, enregistrer le serveur, le provisionner et, optionnellement, configurer l'infrastructure pour le trafic public.
 
 ## Étape 1 : Créer une configuration
 
@@ -151,7 +151,7 @@ Cette commande :
 2. Configure le proxy inverse Traefik, le routeur et les services systemd
 3. Crée les enregistrements DNS Cloudflare pour le sous-domaine de la machine (`server-1.example.com` et `*.server-1.example.com`) si `--cf-dns-token` est défini
 
-L'étape DNS est automatique et idempotente : elle crée les enregistrements manquants, met à jour les enregistrements dont les IPs ont changé et ignore les enregistrements déjà corrects. Si aucun jeton Cloudflare n'est configuré, le DNS est ignoré avec un avertissement. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+L'étape DNS est automatique et idempotente : elle crée les enregistrements manquants, met à jour les enregistrements dont les IPs ont changé et ignore les enregistrements déjà corrects. Si aucun jeton Cloudflare n'est configuré, le DNS est ignoré avec un avertissement. Les enregistrements DNS wildcard par dépôt (pour les auto-routes) sont créés automatiquement quand vous exécutez `rdc repo up`.
 
 ## Provisionnement cloud
 
@@ -161,10 +161,11 @@ Au lieu de créer des VMs manuellement, vous pouvez configurer un fournisseur cl
 
 Installez OpenTofu : [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
 
-Assurez-vous que votre configuration SSH inclut une clé publique :
+Assurez-vous que votre clé SSH est enregistrée auprès de `rdc` :
 
 ```bash
-rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
+# Reads the key file and inlines the content under /credentials/ssh.
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
 ### Ajouter un fournisseur cloud
@@ -200,7 +201,7 @@ Cette unique commande :
 2. Attend la connectivité SSH
 3. Enregistre la machine dans votre configuration
 4. Installe renet et toutes les dépendances
-5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+5. Configure le proxy Traefik et le DNS Cloudflare (détecte automatiquement le domaine de base à partir des machines voisines, ou spécifiez `--base-domain` explicitement)
 
 | Option | Description |
 |--------|-------------|
@@ -231,8 +232,8 @@ rdc config provider list
 Définissez des valeurs par défaut pour ne pas avoir à les spécifier à chaque commande :
 
 ```bash
-rdc config set --key machine --value server-1  # Machine par défaut
-rdc config set --key team --value my-team  # Équipe par défaut (adaptateur cloud, expérimental)
+rdc config field set --pointer /defaults/machine --new '"server-1"'   # Machine par défaut
+rdc config set --key team --value my-team                   # Équipe par défaut (adaptateur cloud, expérimental)
 ```
 
 Après avoir défini une machine par défaut, vous pouvez omettre `-m server-1` dans les commandes :

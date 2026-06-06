@@ -62,7 +62,7 @@ Cleans up on-machine resources in three phases. Phase 1 always runs; phases 2 an
 
 ### Phase 1: Datastore cleanup (always runs)
 
-Removes every kind of resource that can be left behind when a repository is deleted or when a machine-level refactor retires a naming convention. Each category is scanned independently, and the cleanup is a single idempotent pass, so running prune repeatedly is safe and converges on a clean datastore.
+Removes everything left behind when a repo is deleted or a naming convention is retired. Each category is scanned independently. Running prune repeatedly is safe: it's a single idempotent pass, so orphans the last run missed get caught by the next.
 
 | Category | What it removes |
 |---------|-----------------|
@@ -190,7 +190,7 @@ The backfill copies live in-volume state to the mirror for currently-mounted rep
 
 ## Safety Model
 
-Pruning is designed to be safe by default across multi-config setups.
+All three commands default to safe across multi-config setups.
 
 ### Multi-config awareness
 

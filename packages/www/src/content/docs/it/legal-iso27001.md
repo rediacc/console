@@ -4,11 +4,11 @@ description: "Come Rediacc si mappa ai controlli di sicurezza delle informazioni
 category: "Legal"
 order: 5
 language: it
-sourceHash: "7c80000942b6196d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "52709a22c0b38178"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-ISO/IEC 27001 è uno standard internazionale per i sistemi di gestione della sicurezza delle informazioni (ISMS), pubblicato dall'International Organization for Standardization (ISO) e dalla International Electrotechnical Commission (IEC). La versione corrente è ISO/IEC 27001:2022.
+Bene. ISO/IEC 27001:2022 è lo standard internazionale per i sistemi di gestione della sicurezza delle informazioni. Pubblicato da ISO/IEC, è un documento corposo che elenca controlli per la cifratura, la gestione degli accessi, la risposta agli incidenti e decine di domini di sicurezza. Probabilmente conosci già di cosa si tratta. Quindi sii franco: Rediacc non affronta ogni controllo dello standard, e non faremo finta che lo faccia. Quello che segue è una mappatura onesta di dove Rediacc si colloca. La versione corrente è ISO/IEC 27001:2022.
 
 Riferimento: [ISO/IEC 27001:2022](https://www.iso.org/standard/27001)
 

@@ -1,16 +1,16 @@
 ---
 title: "rdc vs renet"
-description: "rdc와 renet을 각각 언제 사용해야 하는지 설명합니다."
+description: "rdc와 renet을 언제 사용할지 알아봅니다."
 category: "Concepts"
 order: 1
 language: ko
-sourceHash: "026a183f8a5f9dd4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2ccc8590bc6f67c6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # rdc vs renet
 
-Rediacc에는 두 개의 바이너리가 있습니다. 각각을 언제 사용할지 알아보세요.
+Rediacc는 두 개의 바이너리를 제공합니다. 각각은 다른 역할을 합니다. 어떤 것을 언제 사용하는지 알아보겠습니다.
 
 | | rdc | renet |
 |---|-----|-------|
@@ -60,7 +60,7 @@ rdc machine health --name server-1
 - `rdc`를 통해 사용할 수 없는 시스템 내부 확인
 - 저수준 복구 작업
 
-모든 `renet` 명령에는 루트 권한(`sudo`)이 필요합니다. 전체 `renet` 명령 목록은 [서버 참조](/ko/docs/server-reference)를 참조하세요.
+모든 `renet` 명령에는 루트 권한(`sudo`)이 필요합니다. `rdc`가 모든 `renet` 서브 명령을 래핑하지는 않습니다. 다루지 않는 경우 서버에 SSH로 접속하여 `renet`을 직접 호출하세요. 전체 `renet` 명령 목록은 [서버 참조](/ko/docs/server-reference)를 참조하세요.
 
 ## 실험적: `rdc ops` (로컬 VM)
 

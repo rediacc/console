@@ -2,14 +2,14 @@
   "announcement": {
     "enabled": true,
     "link": "/account/",
-    "text": "Piiratud aja jooksul: Disainipartneri programm — BUSINESS pakett eluaegselt"
+    "text": "Piiratud ajal: Design Partner Program. BUSINESS pakett igavesti tasuta."
   },
   "beforeAfter": {
     "after": {
-      "label": "Rediacciga",
+      "label": "Rediaccga",
       "points": [
         "Täiuslik koopia 60 sekundiga.",
-        "Tunnipõhised varukoopiad. Ilma lisasalvestuseta.",
+        "Varukoopiad iga tund. Ekstra salvestust pole vaja.",
         "Taastamine testitud 60 sekundiga.",
         "Iga arendaja saab värske koopia."
       ]
@@ -17,9 +17,9 @@
     "before": {
       "label": "Ilma Rediaccita",
       "points": [
-        "Sinu meeskond ootab testikoopiat päevi. Ja see ikka ei vasta tootmisele.",
+        "Meeskond ootab testikoopiat päevi. See pole tootmisega sama.",
         "Varukoopiad võtavad nädalaid. Paljud ebaõnnestuvad hoiatuseta.",
-        "Sinu taasteplaan ütleb 4 tundi. Päriselus on see 4 päeva.",
+        "Plaan ütleb: 4 tundi. Tegelikkuses: 4 päeva.",
         "Arendajad kirjutavad koodi otse tootmises. Testikoopia on nädalaid vana."
       ]
     },
@@ -149,10 +149,10 @@
   "featureShowcase": {
     "categoryDescriptions": {
       "backups": "Kontrollitud, koheselt taastatavad varukoopiad täieliku säilitusvastavusega. Iga varukoopia on testitud, mitte ainult salvestatud.",
-      "defense": "Klooni tootmine. Suuna oma turvatestimise tööriistad klooni peale. Paranda leitud probleemid. Kustuta kloon.",
+      "defense": "Klooni tootmine. Suuna omi turvatestimise tööriistad klooni peale. Paranda leitud probleemid. Kustuta kloon.",
       "dev-env": "Klooni kogu tootmispinu sekunditega. Null lisasalvestust, samad andmed, kohesed arenduskeskkonnad.",
-      "encryption": "Iga hoidla on puhkeolekus LUKS-iga krüptitud ja transiidil kaitstud. Täielikud auditirajad ja turvaline migratsioon keskkondade vahel.",
-      "multi-cloud": "Liiguta infrastruktuuri pakkujate vahel ilma tarnija lukustuseta. Kohene failover, testitud avariitaaste, pilvest sõltumatu kaasaskantavus.",
+      "encryption": "Iga süsteem on LUKS-iga lukus kettal ja krüptitud liikumisel. Täielikud audit-logid. Turvaline migratsioon saitide vahel.",
+      "multi-cloud": "Liiguta oma serverid Amazoni, Microsofti või oma hoonesse. Miski ei lukusta sind. Kui üks pilv langeb, lülited teisele. Kõik on testitud, et see töötab siis, kui sind vaja on.",
       "ransomware": "Rikkumiskindlad, krüptograafiliselt kontrollitud varukoopiad, mida lunavarad ei puutu. Taasta kogu pinu vähem kui 60 sekundiga."
     },
     "subtitle": "Lahendused kuues fookusalas — lunavararünnakutest ellujäämisest ennetava kaitseni.",
@@ -198,11 +198,11 @@
       "contactSupport": "Võta toega ühendust",
       "helpCenter": "Abikeskus"
     },
-    "tagline": "Infrastruktuuri Automatiseerimisplatvorm AI-põhistele operatsioonidele"
+    "tagline": "Varukoopia ja avariitaaste oma serverites"
   },
   "getStarted": {
     "benefits": [
-      "Töötad otse meie meeskonnaga",
+      "Töötad otse meie tiimiga",
       "Täisfunktsionaalne platvorm",
       "Prioriteetne tugi",
       "Regulaarsed funktsioonide uuendused"
@@ -248,12 +248,12 @@
       "submit": "Alusta"
     },
     "notice": {
-      "description": "Klõpsa saada, et avada oma e-post. Vastame 48 tunni jooksul.",
+      "description": "Klõpsa Saada, et avada oma e-post. Vastame 48 tunni jooksul.",
       "emailLabel": "contact@rediacc.com",
       "title": "Kuidas esitada"
     },
-    "subtitle": "Liitu meeskondadega, kes testivad päristootmisandmetega — ilma riskideta.",
-    "title": "Valmis kloonima oma esimest pinu?"
+    "subtitle": "Enaikus meeskonnad testivad vale staginges — siis loodavad. Kopeeri oma aktiivset süsteemi sekunditega. Käivita riskantne muudatus päris andmetega. Tootmine ei tunne midagi.",
+    "title": "Valmis kloonima oma esimest stacki?"
   },
   "hero": {
     "cta": {
@@ -262,11 +262,11 @@
       "contactUs": "Vaata kõiki installimise võimalusi",
       "freeBadge": "TASUTA IGAVESTI · Ilma krediitkaaardita",
       "getStarted": "Alusta tasuta",
-      "learnMore": "Loe lähemalt",
+      "learnMore": "Vaata, kuidas see toimib",
       "readDocs": "Loe dokumentatsiooni",
-      "seeDetails": "Vaata täielikke andmeid"
+      "seeDetails": "Loe täielikku teavet"
     },
-    "eyebrow": "INFRASTRUKTUURI AUTOMATISEERIMISPLATVORM",
+    "eyebrow": "ISEMAJUTATUD · KÄIB SINU SERVERITEL",
     "install": {
       "alt": {
         "apt": "apt",
@@ -284,9 +284,9 @@
       },
       "tabsLabel": "Vali operatsioonisüsteem"
     },
-    "subtitle": "Isemajutatud platvorm, mis loob koheseid, isoleeritud koopiaid kogu sinu tootmispinost — andmebaasid, Dockeri teenused ja kõik muu.",
-    "title": "Klooni tootmiskeskkond.",
-    "titleHighlight": " Riku mitte midagi."
+    "subtitle": "Rediacc on tarkvara, mille paigaldad oma serveritesse. See kopeerib sinu terve tootmiskeskkonda sekundites — rakendused, andmebaasid, seaded. Siis saad kiiresti testida, varundada ja taastada.",
+    "title": "Klooni tootmine.",
+    "titleHighlight": " Ei riku midagi."
   },
   "integrations": {
     "items": [
@@ -303,8 +303,8 @@
       "LUKS",
       "systemd"
     ],
-    "migrationMessage": "Rediacc muudab sinu pinu üheks porditavaks failiks. Kui kasutad juba Dockerit, on migratsioon lihtne.",
-    "title": "Töötab sinu pinu ja kaugemalgi"
+    "migrationMessage": "Rediacc pakendab sinu rakendused, andmebaasid ja seadistused ühte faili. Liiguta see kuhu tahes. Kasutad juba Docker? Siis oled enam kui poolel teel.",
+    "title": "Sobib sinu praegusele"
   },
   "layout": {
     "meta": {
@@ -324,8 +324,8 @@
     }
   },
   "logoWall": {
-    "categories": ["Git", "CI/CD", "Konteinerid", "Andmebaasid", "Monitooring", "Salvestus"],
-    "title": "Töötab sinu infrastruktuuriga"
+    "categories": ["Git", "CI/CD", "Konteinerid", "Andmebaasid", "Seire", "Salvestus"],
+    "title": "Ühildub sinu infrastruktuuriga"
   },
   "metrics": {
     "items": [
@@ -334,11 +334,11 @@
         "number": "241 GB"
       },
       {
-        "label": "Lisasalvestust",
+        "label": "Lisasalvestus",
         "number": "0 baiti"
       },
       {
-        "label": "Taastumisaeg",
+        "label": "Taastusaeg",
         "number": "< 1 min"
       }
     ]
@@ -391,13 +391,13 @@
   },
   "newsletter": {
     "blogCta": {
-      "description": "Saa rohkem isemajutamise juhendeid ja tooteuuendusi otse oma postkasti.",
+      "description": "Igal kuul saadame isemajutamise juhendeid ja tooteuuendusi. Soovid neid?",
       "title": "Meeldis see artikkel?"
     },
     "confirmed": "Sinu tellimus on kinnitatud! Tere tulemast.",
-    "description": "Igakuised tooteuuendused ja isemajutamise näpunäited.",
+    "description": "Üks e-kiri kuus — tooteuuendused ja isemajutamise näpunäited.",
     "errorGeneric": "Midagi läks valesti. Proovi uuesti.",
-    "pageDescription": "Saa igakuiseid uuendusi uute funktsioonide, isemajutamise juhendite ja infrastruktuuri näpunäidete kohta.",
+    "pageDescription": "Üks e-kiri kuus. Uued funktsioonid, isemajutamise näpunäited ja valdkonnas raskuste käigus õpitud tunnid.",
     "pageTitle": "Püsi kursis",
     "placeholder": "Sinu e-posti aadress",
     "privacyNote": "Austame sinu privaatsust. Loobu tellimusest igal ajal.",
@@ -425,21 +425,21 @@
     "overline": "Üks tööriist. Kogu pinu.",
     "slices": [
       {
-        "description": "Need kopeerivad sinu andmeid. Sinu rakendus on rohkem kui andmed.",
+        "description": "Nad kopeerivad sinu andmeid. Sinu rakendus on rohkem kui andmed.",
         "title": "Andmebaasi tööriistad"
       },
       {
-        "description": "Need kopeerivad sinu koodi. Kood üksi ei ole test.",
+        "description": "Nad kopeerivad sinu koodi. Kood üksi ei ole test.",
         "title": "Arenduskeskkonna tööriistad"
       },
       {
-        "description": "Need salvestavad kõik. Taastamine võtab tunde, mitte minuti.",
+        "description": "Nad salvestavad kõik. Taastamine võtab tunde, mitte minuti.",
         "title": "Varundamise tööriistad"
       }
     ],
-    "title": "Enamik tööriistu kopeerib ühe osa. Meie kopeerime kõik.",
+    "title": "Enamik tööriistu kopeerib ühe osa. Me kopeerime kõike.",
     "winner": {
-      "description": "Iga meeskond saab oma kirjutatava koopia. Andmed, rakendused, seaded — kõik. Valmis 60 sekundiga. Sa maksad salvestuse eest ainult siis, kui midagi muutub.",
+      "description": "Iga meeskond saab oma kirjutatava koopia. Andmed, rakendused, seaded, kõik. Valmis 60 sekundiga. Sa maksad salvestuse eest ainult siis, kui midagi muutub.",
       "label": "Rediacc"
     }
   },
@@ -449,17 +449,17 @@
       "backToBlog": "Tagasi blogi juurde",
       "byAuthor": "Autor: {{author}}",
       "category": "Kategooria",
-      "featured": "Esilehtede artiklid",
+      "featured": "Esiletoodud artiklid",
       "meta": {
-        "description": "Loe teadmisi, juhendeid ja uuendusi hajutatud ülesannete täitmise, infrastruktuuri automatiseerimise ja DevOpsi parimate tavade kohta.",
+        "description": "Varukoopiad, millele ransomware ei pääse. Kiirem taastamine. Hallake servereid rahulikult.",
         "keywords": "infrastruktuuri automatiseerimise blogi, DevOpsi juhendid, hajutatud süsteemid, ülesannete täitmine, pilveinfrastruktuur",
-        "title": "Blogi | Rediacc - Infrastruktuuri teadmised"
+        "title": "Blogi | Rediacc - Infrastruktuuri sissekanded"
       },
       "published": "Avaldatud",
       "readMore": "Loe edasi",
       "relatedArticles": "Seotud artiklid",
       "sharingIs": "Jagamine on hoolimine",
-      "subtitle": "Teadmised, juhendid ja uuendused hajutatud ülesannete täitmise kohta",
+      "subtitle": "Juhendid varundamise, taastamise ja oma serverite kohta",
       "title": "Blogi"
     },
     "changelog": {
@@ -468,13 +468,13 @@
         "home": "Avaleht"
       },
       "meta": {
-        "description": "Jälgi uusimaid Rediacc väljalaskeid, täiustusi ja veaparandusi.",
+        "description": "Vaata, mis Rediacc-s välja lasti: uuendused, täiustused ja parandused.",
         "keywords": "Rediacc muudatuste logi, väljalaskemärkmed, uuendused, uued funktsioonid",
-        "title": "Muudatuste logi - uusimad uuendused ja väljalasked | Rediacc"
+        "title": "Muudatuste logi – uusimad uuendused ja väljalasked | Rediacc"
       },
-      "subscribeDescription": "Saad lühikese teavituse iga kord, kui midagi uut on valmis saadetud.",
-      "subscribeTitle": "Saa teada uutest väljalasetest",
-      "subtitle": "Jälgi uusimaid uuendusi, täiustusi ja parandusi.",
+      "subscribeDescription": "Saad teavituse iga kord, kui midagi uut välja tuleb. Ilma reklaamita!",
+      "subscribeTitle": "Saa teavitus uutest väljalasetest",
+      "subtitle": "Vaata, mida me välja lasime, mida parandasime ja mis tuleb järgmisena.",
       "title": "Muudatuste logi"
     },
     "checkout": {
@@ -544,12 +544,12 @@
         "title": "Mida sa saad"
       },
       "meta": {
-        "description": "Võta ühendust Rediacc meeskonnaga toe, partnerluse või üldiste küsimuste jaoks meie infrastruktuuri platvormi kohta.",
+        "description": "Võta ühendust Rediacc meeskonnaga - katastroofitaaste, partnerlus või tehniline abi. Vastame 48 tunni jooksul.",
         "keywords": "Rediacc kontakt, katastroofitaaste platvorm, kinnitatud varukoopiad",
-        "title": "Võta meiega ühendust - tugi ja abi | Rediacc"
+        "title": "Võta ühendust Rediacc-ga | Räägi meeskonnaga"
       },
       "notice": {
-        "description": "Klõpsa esita, et avada oma e-postirakendus. Küsimused? Saada e-kiri aadressile",
+        "description": "Klõpsa nuppu Esita - avatakse sinu e-postiklient. Küsimused? Saada e-kiri aadressile",
         "emailLabel": "contact@rediacc.com",
         "title": "Kuidas esitada"
       }
@@ -664,99 +664,99 @@
       "ask": {
         "items": [
           {
-            "body": "Saada üherealise e-kirja, kui midagi sind üllatab. Stack trace valikuline. Frustratsioon soovitatav.",
+            "body": "Saada üherealise e-kiri, kui midagi sind üllatab. Stack trace valikuline. Pettumust teretulnud.",
             "title": "Ütle meile, kui midagi katki läheb"
           },
           {
-            "body": "30 minutit korra kvartalis või nii. Meie kuulame, sina räägid. Ei demosid, ei lisaostusoovitusi.",
-            "title": "Hüppa aeg-ajalt kõnele"
+            "body": "30 minutit kvartalis korra-kaks. Meie kuulame, sina räägid. Demosid pole, ülesmüügit pole.",
+            "title": "Pea aeg-ajalt kõne"
           },
           {
-            "body": "Kui saadame midagi, mis sind puudutab, tahame saada sinuga ühendust enne avaldamist. Tavaline e-post sobib.",
+            "body": "Kui saadame midagi, mis sind puudutab, tahame sinult eelnevalt teada saada. Tavameil sobib.",
             "title": "Ole kättesaadav"
           }
         ],
-        "lede": "Kerge koorem. Eesmärk ei ole tasuta tööd pressida, vaid hoida meid ausana.",
-        "title": "Mida me vastu palume"
+        "lede": "Kerge koorem. Eesmärk ei ole tasuta tööjõudu välja pressida, vaid hoida ennast ausana.",
+        "title": "Mida me palume vastuseks"
       },
       "faq": {
         "items": [
           {
-            "a": "Jah. Toetus on kirjas sinu tellimuse andmetes ilma aegumiskuupäevata ja automaatse alandamiseta. Kui peame seda kunagi muutma, saadame kõigile disainipartneritele esmalt e-kirja. Seni pole me seda teinud. Plaanis ka pole.",
+            "a": "Jah. See on fikseeritud sinu tellimuses, aegumiseta ja ilma automaatse alandamiseta. Kui peaksime seda kunagi muutma, saadame esmalt kõigile disainipartneritele e-kirja. Seni pole me nii teinud. Plaanis pole ka.",
             "q": "Kas see on tõesti eluaegne?"
           },
           {
-            "a": "Siis lõpetab sinu konto töötamise, nagu igal teisel kasutajal. Eluaegne lubadus kehtib ettevõtte eluea kohta. Oleme enne kliente; see on risk, mida sa ausalt võtad.",
+            "a": "Siis lõpeb ka sinu juurdepääs, nagu igal teisele kasutajale. Eluaegne lubadus tähendab ettevõtte eluaega. Oleme enne kliente; see on risk, mille sa ausalt võtad.",
             "q": "Mis juhtub, kui Rediacc suletakse?"
           },
           {
-            "a": "Ei makseseinu, ei lepinguid, ei automaatarvet. Ainus palve on ülalnimetatud kerge tagasiside. Sa võid meid ignoreerida. Me ei tühista sinu paketti.",
-            "q": "Kas on varjatud tingimusi?"
+            "a": "Makseseinu pole, lepinguid pole, autoarvet pole. Ainus palve on ülal nimetatud kerge tagasiside. Võid meid ignoreerida. Ei tühista sinu paketti.",
+            "q": "Kas lepingus on varjatud tingimusi?"
           },
           {
-            "a": "Jah. Saad jääda BUSINESS paketti igavesti või liikuda Enterprise paketti, kui piirid kitsaks jäävad. Ülespoole liikumine toimub tavalise arve alusel; eluaegne privileeg kehtib ainult BUSINESS paketile.",
+            "a": "Jah. Võid jääda BUSINESS paketti igavesti või liikuda Enterprise juurde, kui piirid liiga tihedaks tulevad. Ülespoole liikumine on tavaline arveldus; eluaegne privileeg kehtib ainult BUSINESS paketile.",
             "q": "Kas saan hiljem paketti vahetada?"
           },
           {
-            "a": "Kuni me selle sulgeme. Me ei teata sulgemisest ette, seega on täna hea päev registreerumiseks. Olemasolevatest disainipartneritest säilitavad kõik oma paketi, mis iganes juhtub.",
-            "q": "Kui kaua programm avatud on?"
+            "a": "Kuni me selle sulgeme. Sulgemisest ette ei teata, seega on täna hea päev registreerumiseks. Olemasolevatest disainipartneritest kõik oma paketi säilitavad, mis iganes juhtubki.",
+            "q": "Kui kaua on programm avatud?"
           }
         ],
         "title": "Ausad vastused"
       },
       "finalCta": {
-        "button": "Nõua oma BUSINESS paketti",
-        "note": "Saadame sulle e-kirja onboarding-kõne korraldamiseks ühe-kahe päeva jooksul.",
-        "subtitle": "Üks registreerimine. Krediitkaart puudub. Eluaegne BUSINESS pakett, lukustatud.",
-        "title": "Valmis olema pioneer?"
+        "button": "Võta oma BUSINESS pakett",
+        "note": "Saadame sulle e-kirja onboarding-kõne korraldamiseks ühe-kahe päeva pärast.",
+        "subtitle": "Üks registreerimine. Krediitkaart pole vaja. Eluaegne BUSINESS pakett, lukustatud.",
+        "title": "Kas oled valmis pioneer saama?"
       },
       "hero": {
-        "eyebrow": "Piiratud programm",
-        "note": "Krediitkaart puudub. Taotlus puudub. Registreeru ja oledki sees.",
-        "primaryCta": "Nõua oma BUSINESS paketti",
-        "secondaryCta": "Vaata hinnakirja",
-        "subtitle": "Oleme enne kliente. Tahame pioneerid, kes toote kasutusele võtavad ja meile ütlevad, kui midagi katki läheb. Vastu saad meie BUSINESS paketi tasuta nii kaua, kui Rediacc eksisteerib.",
-        "title": "Saa disainipartneriks. Saa BUSINESS eluks ajaks. Tasuta."
+        "eyebrow": "Piiratud aeg",
+        "note": "Krediitkaart pole vaja. Taotlust pole. Me võime programmi igal ajal sulgeda, seega registreeru täna.",
+        "primaryCta": "Võta oma BUSINESS pakett",
+        "secondaryCta": "Vaata hindu",
+        "subtitle": "Oleme enne kliente. Tahame pioneere, kes kasutavad toodet ja räägivad meile, kui midagi katki läheb. Vastuseks saad meie BUSINESS paketi tasuta nii kaua, kui Rediacc eksisteerib.",
+        "title": "Saa disainipartneriks. BUSINESS eluks. Tasuta."
       },
       "meta": {
-        "description": "Liitu disainipartnerina tasuta ja saa meie BUSINESS pakett eluks ajaks. Otsime pioneerid, kes jagavad tagasisidet, kuni me toote valmis ehitame.",
-        "title": "Disainipartneri programm | BUSINESS tasuta eluks ajaks"
+        "description": "Liitu tasuta disainipartnerina ja saad meie BUSINESS paketi eluks ajaks. Otsime pioneere, kes jagavad siirast tagasisidet, kui koos areneme.",
+        "title": "Disainipartner — BUSINESS eluks tasuta"
       },
       "why": {
         "items": [
           {
-            "body": "Õpime ühe tootmises töötava tiimiga 100x rohkem kui sajast proovijast. Disainipartnerid on see, kuidas me toote enne massturule minekut teravaks lihvime.",
-            "title": "Päristiimid, päriskoormused"
+            "body": "Õpime ühe produktiivsest tiimist 100x rohkem kui sajast proovijast. Disainipartnerid on viis, kuidas me toote enne massiturule minekut suurepäraseks teeme.",
+            "title": "Päristiimid, päris-süsteemid"
           },
           {
-            "body": "Me ei vaja sinu raha veel. Vajame sinu murede kirjeldusi, äärjuhtumeid ja küsimusi. Tasuta ausu eest on õiglane.",
-            "title": "Vaheta raha tagasiside vastu"
+            "body": "Raha me ei vaja veel. Vajame sinu teadmisi, äärjuhtumeid ja küsimusi. Tasuta aususe eest on aus lepe.",
+            "title": "Raha asemel tagasiside"
           },
           {
-            "body": "Sinu eluaegne BUSINESS pakett ei aegu, ei degradeeru kunagi ja ei küsi kunagi krediitkaardi andmeid. See on diil.",
-            "title": "Alaline tänuavaldus"
+            "body": "Sinu eluaegne BUSINESS pakett ei aegu, kunagi ei alandatu ja kunagi krediitkaarte ei küsi. See on kokkulepe.",
+            "title": "Eluaegne tänuavaldus"
           }
         ],
-        "title": "Miks me seda korraldame"
+        "title": "Miks me seda teeme"
       },
       "youGet": {
         "items": [
-          "BUSINESS pakett: 500 GB repositooriumi kohta, 20 ujuvlitsentsi, 20 000 litsentsipäringut kuus",
-          "Edge kanalil: 2x piirangud (1 TB repo kohta, 40 litsentsi, 40 000 päringut)",
-          "Piiramatu arv repositooriume, kasutajaid ja tiime",
-          "Hetktõmmise taastamine, tume reziim, kõik 9 keelt",
-          "Otsene suhtlusliin asutajaga onboardimise ja toe jaoks",
-          "Lukustatud eluks ajaks. Ei aegu, ei degradeeru, kaarti pole vaja."
+          "BUSINESS pakett: 500 GB repositooriumi kohta, 20 kasutajat, 20 000 aktiveerimist kuus",
+          "Varajases juurdepääsus: 2x piirangud (1 TB repo kohta, 40 kasutajat, 40 000 aktiveerimist)",
+          "Piiramatu repositooriume, kasutajaid ja tiime",
+          "Varukoopiate taastamine, tume režiim, 9 keelt",
+          "Otsene suhtlemine asutajaga",
+          "Lukustatud eluks ajaks. Ei aegu, kunagi ei lõpe, krediitkaart pole vaja."
         ],
-        "lede": "Kõik BUSINESS taseme funktsioonid, tasuta kogu konto eluea jooksul.",
+        "lede": "Kogu BUSINESS pakett tasuta. Nii kaua, kui Rediacc eksisteerib.",
         "title": "Mida sa saad"
       }
     },
     "disasterRecovery": {
       "enterpriseCta": {
         "button": "Võta müügiga ühendust",
-        "description": "Hankige organisatsioonile kohandatud infrastruktuuri kaitse",
-        "heading": "Vajad kohandatud Enterprise lahendust?"
+        "description": "Kui ükski ülaltoodud pakett ei sobi, räägi meile, mida kasutad. Me lahendame selle.",
+        "heading": "Ebatavaline seadistus? Räägi meile, mida kasutad."
       },
       "faq": {
         "heading": "Korduma kippuvad küsimused",
@@ -766,27 +766,27 @@
             "question": "Kas saan paketti uuendada või alandada?"
           },
           {
-            "answer": "Aktsepteerime kõiki peamisi krediitkaarte (Visa, MasterCard, American Express) ja toetame arve alusel arveldamist aastaste Enterprise pakettide jaoks.",
+            "answer": "Aktsepteerime Visa, MasterCard ja American Expressi. Aastaste Enterprise pakettide jaoks pakume ka arveldamist.",
             "question": "Milliseid makseviise aktsepteerite?"
           },
           {
-            "answer": "Meie kogukonna pakett on igavesti tasuta. Äripakettide jaoks võtke ühendust meie müügimeeskonnaga, et arutada proovivõimalusi.",
+            "answer": "Kogukonna pakett on tasuta igavesti. Äripakettide jaoks küsi müügimeeskonnalt proovivõimaluste kohta.",
             "question": "Kas on saadaval tasuta prooviaeg?"
           },
           {
-            "answer": "Kogukonna pakett sisaldab kogukonna tuge ja iseabi dokumentatsiooni. Professional sisaldab e-posti ja vestluse tuge. Äripakett lisab telefonito ja pühendatud kliendiedukuse halduri. Enterprise sisaldab ööpäevaringset täisteeninduslikku tuge juhtivtaseme eskalatsiooniga.",
+            "answer": "Kogukond: kogukonna tugi ja dokud. Professional: e-post ja vestlus. Äri: telefonitugi ja kliendiedukuse haldur. Enterprise: 24/7 tiimtugi juhtivtaseme juurdepääsuga.",
             "question": "Mis on toe hulka kaasatud?"
           },
           {
-            "answer": "Taastumisaeg sõltub teie paketist: Kogukond taastab uusimad hetktõmmised minutitega, Professional pakub ajahetke taastet (24 tundi), Äripakett garanteerib 4-tunnise SLA ja Enterprise pakub 15–60-minutilist kohandatud RTO-d.",
+            "answer": "Taastumisaeg sõltub paketist. Kogukond – uusimast varukoopiast minutite jooksul. Professional – igasse hetke viimase 24 tunni jooksul. Äri – garanteeritud 4 tundi. Enterprise – 15–60 minutit kohandatud graafikuga.",
             "question": "Kui kiiresti saan katastroofist taastuda?"
           },
           {
-            "answer": "Jah. Erinevalt traditsioonilistest varukoopiate süsteemidest kontrollime varukoopiate toimimist automaatselt, testides taastamisprotsesse, et teaksite, et need toimivad enne hädaolukorda.",
+            "answer": "Jah, ja see on mulle isiklikult oluline. Testame igal varukoopiast taastust. Nii tead, et see toimib, enne kui sul seda vaja läheb.",
             "question": "Kas minu varukoopiad on tegelikult testitud ja kontrollitud?"
           },
           {
-            "answer": "Teie andmed jäävad krüpteerituna teie valitud salvestuskohta. Teil on täielik kontroll ja pääsete krüpteeritud varukoopiatele ligi sõltumata meie teenustest.",
+            "answer": "Teie andmed jäävad krüpteerituna valitud asukohas. Olete kontrollis ja pääsete varukoopiatele ligi, kuigi meie teenus langeks.",
             "question": "Mis juhtub minu andmetega, kui teenus läheb maha?"
           }
         ]
@@ -796,82 +796,82 @@
           "startFree": "Alusta tasuta",
           "talkToSales": "Räägi müügiga"
         },
-        "description": "Installi Rediacc ja käivita oma esimene varukoopia alla 10 minutiga.",
+        "description": "Paigalda Rediacc ja käivita esimene varukoopia alla 10 minutiga.",
         "heading": "Alusta kiiremini taastuma"
       },
       "hero": {
-        "subtitle": "Vali katastroofitaaste pakett, mis kaitseb sinu infrastruktuuri täna ja kasvab koos sinuga.",
-        "title": "Ehitatud tõelisteks taastetoiminguteks"
+        "subtitle": "Enamik meeskondi alustab tasuta tasemelt ja jäävad sinna. Kui võrgust eemalolekud muutuksid ärikuluks, tõuse järgmisele. Sama toode, vahetamist pole.",
+        "title": "Ehitatud tõelistele taastusoperatsioonidele"
       },
       "meta": {
-        "description": "Vali sobiv katastroofitaaste pakett. Tasuta kogukonna pakett kaasas. Funktsioonide piiranguid ei ole.",
+        "description": "Vali sobiv katastroofi taastamise pakett. Tasuta kogukonna tase kaasas. Funktsioonide piiranguid ei ole.",
         "keywords": "katastroofitaaste hinnad, varukoopia hinnad, äritegevuse järjepidevuse paketid, infrastruktuuri kaitse, lunavararünnetest taastumine",
-        "title": "Katastroofitaaste hinnad | Rediacc"
+        "title": "Katastroofi taastamise hinnad | Rediacc"
       },
       "plans": {
         "business": {
-          "description": "Missioonikriitiline kaitse ja ekspertide seadistamine",
+          "description": "Ekspertide seadistus kaasas. Kaitse süsteemide jaoks, milleta te toime ei tule.",
           "features": [
-            "Kõik Professional paketis sisalduv +",
-            "9 999 $ suurune juurutustoetus kaasas (käivituspakkumine)",
-            "Geo-redundantne salvestus (3 piirkonda) - üks rike ei peata teid",
-            "Pidev andmekaitse - nullist andmekadu",
+            "Kõik Professional paketist +",
+            "9 999 $ juurutuskrediiti kaasas (käivituspakkumine)",
+            "Salvestus 3 piirkonna üle. Üks rike ei peata teid.",
+            "Pidev andmekaitse. Andmekadu on minimaalne.",
             "4-tunnine taaste SLA (garanteeritud)",
-            "Piiramatu arv hoidlaid, igaüks 500 GB",
-            "7 aktiivset / 3 reserveeritud tööd",
-            "90-päevane auditi logide säilitamine",
-            "Rollipõhine juurdepääsukontroll ja põhjalikud auditi logid",
-            "Vastavusnõuetega auditi aruandlus",
-            "Pühendatud kliendiedukuse haldur",
+            "Piiramatu hulk rakendusi, igaüks 500 GB",
+            "7 aktiivset ja 3 reserveeritud tööd",
+            "Auditi logid 90 päeva jooksul",
+            "Rollide järgi määratud juurdepääs ja täielik auditi logi",
+            "Vastavuskohane auditi aruandlus",
+            "Pühendatud kliendiedukuse juht",
             "Telefonitugi ja koostööruumid"
           ],
           "name": "Äri"
         },
         "community": {
-          "description": "Tootmiseks valmis katastroofitaaste esimesest päevast - igavesti tasuta",
+          "description": "Katastroofitaaste on valmis kohe esimesest päevast. Ja igaveseks tasuta.",
           "features": [
-            "Piiramatu arv kasutajaid ja meeskondi - tee koostööd vabalt",
-            "Uusima hetktõmmise taastamine - taastu rikketest minutitega",
-            "Piiramatu arv hoidlaid, igaüks 10 GB",
-            "2-tunnine töö ajalõpp, 2 aktiivset / 1 reserveeritud tööd",
-            "7-päevane auditi logide säilitamine",
-            "Käsitsi varukoopiate ajastamine",
-            "Juurdepääs kogukonna Slacki",
-            "Iseabi tugi ja dokumendid",
-            "\"Põhineb Rediaccil\" märgistus"
+            "Piiramatu hulk kasutajaid ja meeskondi. Tee koostööd vabalt.",
+            "Taasta viimane varukoopia minutitega mis tahes rikke korral.",
+            "Piiramatu hulk rakendusi, igaüks 10 GB",
+            "2-tunnine töö ajapiir. 2 aktiivset ja 1 reserveeritud tööd.",
+            "Auditi logid 7 päeva jooksul",
+            "Käsitsi tehtav varukoopiate planeerimine",
+            "Juurdepääs kogukonna Slack-i kanalile",
+            "Iseabitund ja dokumentatsioon",
+            "\"Rediacc poolt juhitud\" märgistus nõutav"
           ],
           "name": "Kogukond"
         },
         "enterprise": {
-          "description": "Täisteeninduslik katastroofitaaste keeruka ettevõtte infrastruktuuri jaoks",
+          "description": "Täisteeninduslik katastroofitaaste suurte ja keerukate operatsioonide jaoks.",
           "features": [
-            "Kõik äripaketis sisalduv +",
-            "Kohandatud SLA (15–60-minutiline RTO) - teie nõuded, meie kohustus",
-            "Pühendatud infrastruktuuri üürnik - maksimaalne turvalisus ja jõudlus",
-            "Ööpäevaringne täisteeninduslik tugi 365 päeval aastas",
-            "Piiramatu arv hoidlaid, igaüks 2 TB+",
-            "96+ tunnised tööaknad koos 10+ aktiivsete / 5+ reserveeritud töödega",
-            "1 aasta+ auditi logide säilitamine",
-            "Kvartalipõhised katastroofitaaste harjutused - testitud valmisolek",
-            "Juhtivtaseme eskalatsiooni otseliin",
+            "Kõik äripaketist +",
+            "Kohandatud SLA (15–60 minutit). Teie nõuded, meie kohustus.",
+            "Teie enda pühendatud keskkond. Maksimaalne turvalisus ja jõudlus.",
+            "24/7 eksperttoe, 365 päeva aastas",
+            "Piiramatu hulk rakendusi, igaüks 2 TB+",
+            "96+ tunnised tööaknad, 10+ aktiivset ja 5+ reserveeritud tööd",
+            "Auditi logid 1 aasta või kauem",
+            "Kvartalipõhised katastroofitaaste harjutused. Olge valmis enne, kui vajate.",
+            "Juhtkonna eskalatsioonihotline",
             "Kohandatud integratsioonid ja töövood",
-            "Auditi dokumentatsiooni tugi ja turvaülevaated"
+            "Auditi dokumentatsiooni abi ja turbeülevaated"
           ],
           "name": "Enterprise",
           "priceNote": "*Alates"
         },
         "professional": {
-          "description": "Professionaalse taseme katastroofitaaste ilma ettevõtte keerukuseta",
+          "description": "Tõsine katastroofitaaste. Ilma ettevõtte peavaluta.",
           "features": [
-            "Kõik kogukonnapaketis sisalduv +",
-            "Automaatne varukoopiate ajastamine - seadista ja unusta",
-            "Ajahetke taaste (24 tundi)",
-            "Piiramatu arv hoidlaid, igaüks 100 GB",
-            "24-tunnine töö ajalõpp, 5 aktiivset / 2 reserveeritud tööd",
-            "30-päevane auditi logide säilitamine",
-            "E-posti ja vestluse tugi",
+            "Kõik kogukonna paketist +",
+            "Automaatne varukoopiate ajastamine. Seadista ja unusta.",
+            "Hetktaaste (24 tundi)",
+            "Piiramatu hulk rakendusi, igaüks 100 GB",
+            "24-tunnine töö ajapiir. 5 aktiivset ja 2 reserveeritud tööd.",
+            "Auditi logid 30 päeva jooksul",
+            "E-maili ja jututoa tugi",
             "Slack ja PagerDuty teavitused",
-            "Ilma \"Põhineb Rediaccil\" märgistuseta",
+            "Ilma Rediacc nimetamise nõudeta",
             "Integratsioonide API juurdepääs"
           ],
           "name": "Professional"
@@ -879,43 +879,43 @@
       },
       "professionalServices": {
         "access": {
-          "description": "Hübriidkatvus ühendab kaasasoleva sisseelamistoega valikulised lisandmoodulid, nii et iga meeskond saab õigel ajal õige abi.",
-          "heading": "Professionaalsete teenuste juurdepääs paketi alusel",
+          "description": "Kõigiga kaasneb mingi abi. Saad juurde võtta rohkem, kui vaja.",
+          "heading": "Professionaalse teenuse juurdepääs paketi järgi",
           "labels": {
-            "available": "Saadaolevad lisandmoodulid",
+            "available": "Saad lisada",
             "included": "Kaasas"
           },
           "tiers": [
             {
               "available": [
-                "Standard juurutamine (9 999 $) või astmeline pakett (Väike 7 499 $ · Keskmine 14 999 $ · Suur 29 999 $ · Enterprise kohandatud)",
-                "Emergency Response kaasamine (29 999 $ nõudmisel)"
+                "Standard seadistamine (9 999 $) või astmeline pakett (Väike 7 499 $ · Keskmine 14 999 $ · Suur 29 999 $ · Enterprise kohandatud)",
+                "Emergency Response teenus (29 999 $ nõudmisel)"
               ],
               "included": ["Iseabi dokumentatsioon, videoõpetused ja kogukonna foorum"],
               "planId": "kogukond"
             },
             {
               "available": [
-                "Priority juurutamine (19 999 $)",
-                "Emergency Response kaasamine (29 999 $ nõudmisel)",
+                "Priority seadistamine (19 999 $)",
+                "Emergency Response teenus (29 999 $ nõudmisel)",
                 "Kohandatud integratsiooniprojektid (ulatuse järgi)"
               ],
               "included": [
                 "E-posti tugi",
-                "Standardne sisseelamisseanssi (seadistamiskõne ja konfiguratsiooni juhend)"
+                "Standardne sisseelamine (seadistuskõne ja konfiguratsiooni juhend)"
               ],
               "planId": "professionaalne"
             },
             {
               "available": [
-                "Priority juurutamise täiendus (19 999 $)",
-                "Emergency Response kaasamine (29 999 $ nõudmisel)",
+                "Priority seadistamise täiendus (19 999 $)",
+                "Emergency Response teenus (29 999 $ nõudmisel)",
                 "Kohandatud arendus ja turbearhitektuuri konsultatsioon"
               ],
               "included": [
-                "Priority e-posti / vestluse / telefonitugi",
-                "Pühendatud sisseelamine konfiguratsiooni ja käitusjuhendi üleandmisega",
-                "Standard juurutamise pakett kaasas (9 999 $ väärtuses)",
+                "Priority e-posti/vestluse/telefonitugi",
+                "Pühendatud sisseelamine konfiguratsiooni ja juhendi üleandmisega",
+                "Standard seadistamise pakett kaasas (9 999 $ väärtuses)",
                 "Kvartalipõhised edukuse ülevaated"
               ],
               "planId": "ettevõte"
@@ -923,57 +923,57 @@
             {
               "available": [
                 "Kohandatud arendus ja täiustatud integratsioonid",
-                "Turbe- ja auditarhitektuuri konsultatsioon",
-                "Emergency Response jooksev leping (5 000–7 500 $/kuus)"
+                "Turbe- ja infrastruktuuri disaini konsultatsioon",
+                "Emergency Response kuuleping (5 000–7 500 $/kuus)"
               ],
               "included": [
-                "Ööpäevaringne täisteeninduslik tugi 365 päeval aastas ja pühendatud CSM",
-                "Priority juurutamine kaasas (19 999 $ väärtuses)",
+                "Ööpäevaringne käepigem eksperditugi 365 päeval aastas ja pühendatud kliendihaldur",
+                "Priority seadistamine kaasas (19 999 $ väärtuses)",
                 "Kvartalipõhised katastroofitaaste testid",
-                "Aastane äritegevuse järjepidevuse planeerimise töötuba",
-                "Juhtivtaseme eskalatsiooni otseliin"
+                "Aastane ärikontinuumsuse planeerimise töötuba",
+                "Juhtivtaseme eskalatsiooni otseline liin"
               ],
               "planId": "suurettevõte"
             }
           ]
         },
         "advancedDetails": {
-          "description": "Teenuste paketid, juurutamise astmed, hinnakujunduse tegurid ja jooksva lepingu võimalused",
-          "heading": "Juurutamise ja hinnakujunduse üksikasjad"
+          "description": "Teenuste paketid, seadistamise astmed, hinnakujunduse tegurid ja kuuleping toevõimalused",
+          "heading": "Seadistamise ja hinnakujunduse üksikasjad"
         },
         "benefits": {
-          "description": "Pühendatud insenerid sinu poolel, kui infrastruktuur ebaõnnestub.",
-          "heading": "Miks professionaalsed teenused?",
+          "description": "Pühendatud insenerid sinu kõrval, kui süsteemid ebaõnnestuvad.",
+          "heading": "Miks valida professionaalsed teenused",
           "items": [
-            "Teie projektile määratud pühendatud ekspertide meeskond",
+            "Teie projektile määratud pühendatud spetsialistide meeskond",
             "Garanteeritud reageerimisajad SLA-ga",
-            "Vaheta teenuse pakettide vahel vastavalt vajadusele",
+            "Vaheta teenuste vahel vastavalt vajadusele",
             "Ööpäevaringne hädaabiinfo Emergency paketi kasutajatele"
           ],
           "statistics": [
-            "Lunavararünnaku keskmine maksumus on 4,62 miljonit $ (IBM Security, 2023)",
-            "Ettevõtete seisaku keskmine maksumus on 5 600 $ minutis"
+            "Lunavararünnaku keskmine kulu on 4,62 miljonit $ (IBM Security, 2023)",
+            "Seisakust tuleneva kulu keskmine on 5 600 $ minutis suurettevõtete jaoks"
           ]
         },
         "cta": {
-          "button": "Planeeri konsultatsioon",
-          "description": "Meie eksperdid on valmis aitama teid edule",
+          "button": "Broneeri nõu",
+          "description": "Meie eksperdid on valmis sind edule aitama",
           "heading": "Vajad professionaalset abi?"
         },
         "header": {
-          "badge": "Kiirendage oma edu professionaalse abiga",
-          "eligibility": "Professionaalsed teenused sobivad iga paketiga hübriidjuurdepääsu kaudu. Kasutage allolevat maatriksit, et näha, mis on kaasas ja mida saab lisada.",
-          "subtitle": "Saage ekspertabi siis, kui seda kõige rohkem vajate",
-          "title": "Professionaalsete teenuste paketid"
+          "badge": "Kiire seadistus meie spetsialistide abiga",
+          "eligibility": "Igas paketis on mingi tase ekspertabi. Vaata allpool tabelit, et näha, mis on sinu paketiga kaasas ja mida saad lisada.",
+          "subtitle": "Saate ekspertabi siis, kui teil seda kõige rohkem vaja on",
+          "title": "Professionaalse teenuse paketid"
         },
         "packages": {
           "emergency": {
             "benefits": [
-              "Kohene kaasamine (alla 2 tunni)",
-              "Kohtuekspertiis, ohjeldamine ja taasteplaan",
-              "Stabiliseerimise aruanne koos tugevdamise tegevuskavaga"
+              "Otseselt töösse alla 2 tunniga",
+              "Uurimine, ohjeldamine ja taasteplaan",
+              "Aruanne, mis juhtus, ja plaan, et see ei korduks"
             ],
-            "description": "Nõudmispõhine intsidentidele reageerimise meeskond, mis on valmis kriitilisi süsteeme ohjeldama ja taastama.",
+            "description": "Kui juhtub midagi ootamatut, helistage meile. Reageerime 2 tunni jooksul ja alustame süsteemide taastamist samal päeval.",
             "name": "Hädaolukord",
             "price": "29 999 $",
             "tiers": [],
@@ -981,11 +981,11 @@
           },
           "priority": {
             "benefits": [
-              "Pühendatud haldur",
-              "Õhtune ja nädalavahetuse kättesaadavus",
-              "Tootmise üleviimise abi"
+              "Pühendatud juhendaja",
+              "Juurdepääs ka õhtuti ja nädalavahetusel",
+              "Reaalne abi, kui lähete reaalsesse kasutusesse"
             ],
-            "description": "Kiirendatud kohaletoimetamine laiendatud kättesaadavuse ja juhendatud üleviimise toega.",
+            "description": "Kiirendatud kohaletoimetamine. Meie tiim aitab sind ka õhtuti ja nädalavahetusel.",
             "name": "Priority",
             "price": "19 999 $",
             "tiers": [],
@@ -994,19 +994,19 @@
           "standard": {
             "benefits": [
               "Projekti avastamine ja eduplaan",
-              "Keskkonna ettevalmistamine ja konfigureerimine",
-              "Valideerimise kontrollnimekiri ja teadmiste üleandmine"
+              "Keskkonna seadistamine ja konfigureerimine",
+              "Valideerimise kontrollnimekiri ja meeskonna üleandmine"
             ],
-            "description": "Struktureeritud juurutamine, mis hõlmab arhitektuuri, juurutamist, valideerimist ja koolitust.",
+            "description": "Planeerimine, seadistamine, testimine ja koolitamine – teeme kõik.",
             "name": "Standard",
             "price": "Alates 7 499 $",
-            "tierHeading": "Töökoormusepõhine juurutamise hinnakujundus",
-            "tierNote": "Töökoormus esindab eraldiseisvat äriprotsessi, rakendust või teenust, mis vajab varukoopiate ja katastroofitaaste kaitset. Juurutamine hõlmab arhitektuuri kavandamist, juurutamist, valideerimist ja meeskonna koolitust.",
+            "tierHeading": "Hind sõltub serverite arvust",
+            "tierNote": "Iga server (või rakendus) loetakse üheks ühikuks. Seadistamine hõlmab disaini, konfiguratsiooni, testimist ja meeskonna koolitust.",
             "tiers": [
-              "Starter (1–4 töökoormust): 7 499 $",
-              "Growth (5–10 töökoormust): 14 999 $",
-              "Scale (11–25 töökoormust): 29 999 $",
-              "Enterprise (25+ töökoormust): Kohandatud hinnapakkumine"
+              "Starter (1–4 serverit): 7 499 $",
+              "Growth (5–10 serverit): 14 999 $",
+              "Scale (11–25 serverit): 29 999 $",
+              "Enterprise (25+ serverit): Kohandatud pakkumine"
             ],
             "turnaround": "3–5 tööpäeva"
           }
@@ -1014,34 +1014,34 @@
         "pricingFactors": {
           "factors": [
             {
-              "description": "Seotud süsteemide, integratsioonide ja sõltuvuste arv",
-              "title": "Ulatuse keerukus"
+              "description": "Süsteemide, integratsioonide ja sõltuvuste arv",
+              "title": "Ulatus ja keerukus"
             },
             {
-              "description": "Standardlahendused versus kohandatud arenduse nõuded",
-              "title": "Kohandamise tase"
+              "description": "Standardlahendused või kohandatud arendus",
+              "title": "Kohandamine"
             },
             {
-              "description": "Üksik ekspert versus täielik pühendatud spetsialistide meeskond",
+              "description": "Üksik ekspert või täielik spetsialistide meeskond",
               "title": "Meeskonna suurus"
             }
           ],
-          "heading": "Professionaalsete teenuste hinnakujunduse mõistmine",
-          "intro": "Lõplikud projektikulud määratakse järgmiste tegurite alusel:",
-          "note": "Näide: keskmise suurusega juurutamine (120 masinat) koos turbearhitektuuri ülevaatusega jääb tavaliselt vahemikku 14 999–24 999 $, olenevalt integratsioonidest ja jooksva teenuse katvusest."
+          "heading": "Kuidas määratakse professionaalse teenuse hind",
+          "intro": "Lõplik projekti maksumus sõltub järgmistest teguritest:",
+          "note": "Näiteks: keskmise suurusega seadistamine (120 masinat) turvalisuse ülevaatusega maksab tavaliselt 14 999–24 999 $, sõltuvalt integratsioonidest ja jooksva toe mahust."
         },
         "retainers": {
-          "description": "Juhtivtaseme sidusrühmad saavad otsese juurdepääsu meie spetsialistidele. Prognoositav igakuine hinnakujundus.",
-          "heading": "Pideva valmisoleku jooksva lepingu võimalused",
+          "description": "Otsene juurdepääs meie tiimile. Ennustatav kuine hinnakujundus.",
+          "heading": "Kuulepingud pidevaks kindluseks",
           "items": [
             {
               "bullets": [
                 "Garanteeritud 2-tunnine reageerimisaeg",
-                "Priority eskalatsioon sõjakeskuse koordinatsiooniga",
-                "Kvartalipõhine valmisoleku ülevaatus ja mängureeglite uuendused"
+                "Otseühendus vaneminseneridega, kui sul seda kõige rohkem vaja on",
+                "Kvartalipõhine valmisoleku ülevaatus ja vastuseplani uuendused"
               ],
               "price": "5 000–7 500 $/kuus",
-              "title": "Emergency Response jooksev leping"
+              "title": "Emergency Response kuuleping"
             }
           ]
         },
@@ -1051,70 +1051,70 @@
             "priority": "Priority",
             "standard": "Standard"
           },
-          "heading": "Saadaolevad teenused",
-          "intro": "Klõpsa teenusele, et näha tarneaegu iga paketi jaoks",
+          "heading": "Mis teenuseid pakume",
+          "intro": "Klõpsa teenusel ja näe, kui kiiresti pakud igat paketit",
           "services": [
             {
-              "emergency": "Kohene hindamine + kriitilised süsteemid võrgus samal päeval + täielik migreerimine algab",
+              "emergency": "Kohene hindamine + kriitilised süsteemid üles samal päeval + täielik migreerimine algab",
               "id": "data-migration",
               "name": "Andmete migreerimine",
-              "priority": "Kiirendatud migreerimiskonveieri seadistamine + põhiandmed üle kantud 48 tunniga",
+              "priority": "Kiire migreerimisseadistus, põhiandmed üle kantud 48 tunniga",
               "standard": "Täielik otsast-otsani migreerimine täieliku valideerimisega"
             },
             {
               "emergency": "Kohene ohjeldamine + kriitilised süsteemid taastatud samal päeval + täielik taastumine algab",
               "id": "ransomware-recovery",
               "name": "Lunavararünnakust taastumine",
-              "priority": "Kiirendatud ohuanalüüs + põhitegevused taastatud 48 tunniga",
-              "standard": "Täielik taastumine kohtuekspertiisiga ja tugevdamine"
+              "priority": "Kiire ohuanalüüs, põhitegevused taastatud 48 tunniga",
+              "standard": "Täielik taastumine uuringutega ja tugevdamisega"
             },
             {
-              "emergency": "Kriitiliste nõrkuste skannimine + suure riskiga paigad juurutatud samal päeval + täielik audit algab",
+              "emergency": "Kriitiliste haavatavuste skan + ohtlikud paigad rakendatud samal päeval + täielik audit algab",
               "id": "security-assessment",
               "name": "Turbeanalüüs",
-              "priority": "Täielik nõrkuste hindamine + parandusplaan 48 tunniga",
-              "standard": "Täielik turbeaudit koos juurutamise tegevuskavaga"
+              "priority": "Täielik haavatavuste hindamine + parandusplaan 48 tunniga",
+              "standard": "Täielik turvalisuse audit koos tegevuskavaga"
             },
             {
-              "emergency": "Kriitilised ressursid ette valmistatud samal päeval + automaatne skaleerumine konfigureeritud + täielik plaan algab",
+              "emergency": "Kriitilised ressursid valmis samal päeval + automaatne skaleerumine seadistatud + täielik plaan algab",
               "id": "infrastructure-scaling",
               "name": "Infrastruktuuri skaleerumine",
-              "priority": "Kiirendatud võimsuse suurendamine + seire seadistamine 48 tunniga",
-              "standard": "Täielik infrastruktuuri ümberkavandamine optimeerimisega"
+              "priority": "Kiire võimsuse suurendamine, seire konfigureeritud 48 tunniga",
+              "standard": "Täielik infrastruktuuri ümberkavandamine koos jõudluse parandamisega"
             },
             {
               "emergency": "Kriitiliste protseduuride ülevaade samal päeval + intsidentidele reageerimise ettevalmistus + täielik programm algab",
               "id": "team-training",
               "name": "Meeskonnakoolitus",
-              "priority": "Intensiivne praktiline töötuba + põhilised töövood kaetud 2 päevaga",
+              "priority": "Intensiivne praktiline töötuba + olulised töövood kaetud 2 päevaga",
               "standard": "Mitmepäevane praktiline koolitusprogramm"
             },
             {
-              "emergency": "Kriitiline kitsaskoht tuvastatud + kohene kiirparandus juurutatud samal päeval + täielik optimeerimine algab",
+              "emergency": "Kriitiline kitsaskoht leitud, kohene parandus rakendatud samal päeval + täielik optimeerimine algab",
               "id": "performance-optimization",
               "name": "Jõudluse optimeerimine",
-              "priority": "Kiire profileerimine + suure mõjuga optimeerimine juurutatud 48 tunniga",
+              "priority": "Kiire profileerimine, suurte mõjuga parandused rakendatud 48 tunniga",
               "standard": "Põhjalik analüüs täieliku jõudluse häälestamisega"
             },
             {
-              "emergency": "Kriitiline ühendus loodud samal päeval + põhiline andmevoog toimib + täielik arendus algab",
+              "emergency": "Kriitiline ühendus loodud samal päeval + andmevoog toimib + täielik arendus algab",
               "id": "custom-integration",
               "name": "Kohandatud integratsioon",
-              "priority": "Põhiintegratsioon toimib + olulised funktsioonid kättesaadavad 48 tunniga",
+              "priority": "Põhiintegratsioon toimib + olulised funktsioonid elus 48 tunniga",
               "standard": "Täielik integratsioon testimise ja dokumentatsiooniga"
             },
             {
-              "emergency": "Kettad ühendatud + RAID-konversioon algatatud samal päeval + kriitilised hoidlad kontrollitud + täielik tugevdamine algab",
+              "emergency": "Kettad ühendatud, RAID konversioon algatatud samal päeval + kriitilised talletused kontrollitud + täielik tugevdamine algab",
               "id": "storage-hardening",
               "name": "Salvestuse tugevdamine",
-              "priority": "BTRFS RAID1 või RAID10 konfigureeritud + reaalajas tasakaalu migreerimine alustatud + skrubi taimer aktiivne 48 tunniga",
-              "standard": "Täielik BTRFS-i redundantse salvestuse seadistamine iseparaneva skrubiga, reaalajas andmete migreerimine ühe kettaga kettalt, reflingi kontroll ja seire integratsioon. RAID1 (2 SSD-d, peegeldatud) standardjuurutuste jaoks või RAID10 (4+ SSD-d, ühendatud peeglid) suure läbilaskevõimega tootmiskoormuste jaoks. Skrub parandab automaatselt rikked redundantse koopia põhjal, mitte ei tuvasta neid. Sisaldab mahu planeerimist ja varukoopiate strateegia ülevaatust."
+              "priority": "BTRFS RAID1 või RAID10 seadistus, reaalajas migreerimine alustatud, automaatne parandamine aktiivne – kõik 48 tunniga",
+              "standard": "Täielik BTRFS redundantne talletamine, kus RAID1 (2 peeglitud kettast) standardjuurutustes või RAID10 (4+ kettast) suure liiklusega süsteemides. Kaasas reaalajas migreerimine, linkide kontrollimine, automaatne parandamine ja seire. Lõpeb salvestusplaaniga ja varukoopia strateegia ülevaatusega."
             }
           ]
         }
       },
       "psTeaser": {
-        "heading": "Vajad ekspertabi alustamiseks?",
+        "heading": "Vajad ekspertabi?",
         "packages": {
           "emergency": {
             "name": "Hädaolukord",
@@ -1129,19 +1129,19 @@
             "price": "Alates 7 499 $"
           }
         },
-        "subtitle": "Kõigi pakettide jaoks saadaval professionaalne juurutamine ja tugiteenused",
+        "subtitle": "Professionaalset juurutamist ja tuge saadaval igas pakettis.",
         "viewDetails": "Tutvu professionaalsete teenustega"
       },
       "strategy": {
-        "copy": "Vali pakett, mis sobib sinu praeguse töötamisetapiga, ja skaleeru ilma platvormi vahetamata.",
+        "copy": "Alusta sealt, kus oled. Enamik meeskondi jäävad arvust pikemaks. Tõusta ainult siis, kui aeglane taastumine teeks ärikuluks. Sama toode kogu ulatuses.",
         "distribution": [
-          "Professional → Äri: Lisa geo-redundantne salvestus, pidev andmekaitse, garanteeritud 4-tunnine RTO ja pühendatud kliendiedukuse haldur, kui meeskond kasvab.",
-          "Äri → Enterprise: Lisa kohandatud SLA-d 15–60-minutilise RTO-ga, pühendatud infrastruktuuri üürimisõigus ja täisteeninduslik partnerlus, kui panused on kõrgeimad."
+          "Professional → Äri: Geo-redundantne varundamine, reaalajas andmekaitse, garanteeritud 4-tunnine taastumisaeg ja pühendatud kliendiedukuse juhendaja.",
+          "Äri → Enterprise: Valid taastumiskiiruse – 15–60 minutit. Taastumine toimub täiesti eraldatud keskkonnas, mida sinu tööajad juurde ei pääse. Tiimtugi on seal, kui loeb."
         ],
         "heading": "Ehitatud igaks etapiks"
       },
       "technicalSummary": {
-        "description": "Andke oma platvormimeeskonnale täpne ülevaade läbilaskevõimest, säilitamisest ja taaste ootustest.",
+        "description": "Andge oma IT-meeskonnale selge ülevaade salvestuspiiritest ja taaste eesmärkidest.",
         "heading": "Tehnilised piirid ühel pilgul",
         "metrics": [
           {
@@ -1188,30 +1188,30 @@
       "ui": {
         "anchor": "Strateegiline ankur",
         "bestValue": "Parim väärtus",
-        "contactSales": "Võta müügiga ühendust",
+        "contactSales": "Kontakteeri müüki",
         "cta": {
           "business": {
             "guarantee": "Raha tagasi garantii",
-            "launchBadge": "Piiratud käivituspakkumine",
+            "launchBadge": "Avamispakkumine",
             "primary": "Broneeri seadistamiskõne",
-            "secondary": "Võta müügiga ühendust",
+            "secondary": "Kontakteeri müüki",
             "valueNote": "Sisaldab 9 999 $ seadistamiskrediiti"
           },
           "community": {
-            "note": "Krediitkaart ei ole nõutav",
+            "note": "Krediitkaart pole vaja",
             "primary": "Alusta tasuta",
             "secondary": "Vaata, mis on kaasas"
           },
           "enterprise": {
             "guarantee": "Raha tagasi garantii",
             "primary": "Broneeri demo",
-            "secondary": "Võta müügiga ühendust",
+            "secondary": "Kontakteeri müüki",
             "subtext": "Kohandatud SLA · Pühendatud tugi"
           },
           "professional": {
             "guarantee": "Raha tagasi garantii",
             "primary": "Alusta Professionaliga",
-            "secondary": "Võta müügiga ühendust"
+            "secondary": "Kontakteeri müüki"
           }
         },
         "foreverFree": "Igavesti tasuta",
@@ -1223,7 +1223,7 @@
         },
         "keyBenefits": "Peamised eelised",
         "learnMore": "Võrdle pakette",
-        "limitedOffer": "Piiratud käivituspakkumine",
+        "limitedOffer": "Avamispakkumine",
         "monthOrYear": "kuus või {{price}} aastas",
         "popular": "Kõige populaarsem",
         "startingAt": "*Alates",
@@ -1233,29 +1233,29 @@
     },
     "docs": {
       "allDocumentation": "Kogu dokumentatsioon",
-      "backToDocs": "Tagasi dokumentide juurde",
+      "backToDocs": "Tagasi dokumentidesse",
       "cliReference": "CLI viide",
-      "cliReferenceDesc": "Täielik viide kõigi käsurea liidese käskude ja valikute jaoks.",
+      "cliReferenceDesc": "Kõik käsud, mida vajad Rediacci kasutamiseks terminalst. Otsi siit lipud ja näited.",
       "fallbackNotice": {
         "helpTranslate": "Aita seda lehte tõlkida",
-        "message": "See leht ei ole teie valitud keeles veel saadaval. Kuvame ingliskeelset versiooni.",
+        "message": "See leht ei ole teie valitud keeles veel saadaval. Näitame ingliskeelset versiooni.",
         "title": "Tõlge ei ole saadaval"
       },
       "gettingStarted": "Alustamine",
-      "gettingStartedDesc": "Uus Rediaccis? Alusta põhitõdedega ja õpi põhimõisteid.",
+      "gettingStartedDesc": "Oled Rediaccis uus? Alusta siit. Õpi põhitõed ja tee esimene varumine käima kiiresti.",
       "meta": {
-        "description": "Rediacc dokumentatsioon - alustamine, CLI viide, API dokumendid ja juurutamisjuhendid.",
+        "description": "Rediacc dokumentatsioon: seadistamise juhendid, CLI viide, API dokumendid ja samm-sammuline juurutamise abi.",
         "keywords": "dokumentatsioon, API viide, juhendid, infrastruktuuri automatiseerimine, CLI viide, järjekorrasüsteem",
-        "title": "Dokumentatsioon | Rediacc - automatiseerimisplatvorm"
+        "title": "Dokumentatsioon | Rediacc - Serveri varumine ja taastamine"
       },
-      "queueSystem": "Järjekorrasüsteem",
-      "queueSystemDesc": "Mõista, kuidas ülesandeid hallatakse ja täidetakse masinate vahel.",
+      "queueSystem": "Töö mitmel serveril",
+      "queueSystemDesc": "Siin õpid, kuidas Rediacc töid mitme serveri vahel koordineerib. Kui kasutad ainult ühte masinat, võid selle nüüal vahele jätta.",
       "searchPlaceholder": "Otsi dokumentidest...",
-      "subtitle": "Õpi Rediacci kasutama ja valda hajutatud ülesannete täitmist",
+      "subtitle": "Õpi Rediacci kasutama, varundama oma servereid ja kiiresti taastama.",
       "tableOfContents": "Sellel lehel",
       "title": "Dokumentatsioon",
       "welcome": "Tere tulemast Rediacc dokumentatsiooni",
-      "welcomeDescription": "Rediacc haldab Dockeri-põhiseid hoidlaid krüpteeritud, isoleeritud keskkondades. Alusta algaja juhendiga või hüppa otse CLI viitesse."
+      "welcomeDescription": "Rediacc töötab sinu enda serveritel ja hoiab igast Docker rakendusest – koos andmebaaside ja seadistustega – turvakoopia. Kui server katkestatakse, saad selle asemel kiiresti tagasi ja sa ei pea kõike uuesti ehitama. Oled uus? Alusta alustamisjuhendiga. Juba käes? Mine käskude viite juurde."
     },
     "downloads": {
       "actions": {
@@ -1269,32 +1269,32 @@
         "x64_intel": "Intel (x64)"
       },
       "autoUpdate": {
-        "description": "Rediacc Desktop rakendus sisaldab sisseehitatud automaatse uuendamise funktsionaalsust. Pärast algset paigaldust kontrollib rakendus automaatselt uuendusi ja teavitab teid uute versioonide saadavusest. Uuendusi saab paigaldada ühe klõpsuga, ilma käsitsi allalaadimiseta.",
+        "description": "Rediacc Desktop uuendab ennast automaatselt. Pärast paigaldamist otsib see uusi versioone ja teatab teile, kui uus versioon on valmis. Ühe klõpsuga saate selle paigaldada. Aeglase ühenduse puhul kulub mõni minut.",
         "title": "Automaatse uuendamise teave"
       },
       "cli": {
         "binary": "Kahendmoodul",
-        "description": "Kerge käsuriavahend automatiseerimiseks ja skriptimiseks."
+        "description": "Kerge ja kiire tööriist, mida käivitate terminaliaknast. Ideaalne kuvarita serverite juhtimiseks, või sama käsu käitamiseks mitmel masinal korraga. Kui see on teie seadistus, on käsuriadapter parem valik kui lauarakendus. Ühendage serveritega, käivitage käske, saatke uuendusi. Brauserit pole vaja."
       },
       "hero": {
-        "released": "Välja antud",
+        "released": "Avaldatud",
         "subtitle": "Rediacc Desktop ja CLI",
-        "title": "Laadi alla Rediacc CLI"
+        "title": "Laadi Rediacc CLI alla"
       },
       "installation": {
-        "cli": "CLI: Laadige alla oma platvormi kahendmoodul, muutke see käivitatavaks (chmod +x Linuxis/macOS-is) ja asetage see oma PATH-i.",
+        "cli": "CLI: Laadige alla oma süsteemile sobiv fail. Avage Linux-is või macOS-is terminal, käivitage 'chmod +x failinimi' ja teisaldage see /usr/local/bin kausta.",
         "linux_appimage": "Linux AppImage: Muutke fail käivitatavaks käsuga 'chmod +x failinimi.AppImage' ja käivitage see otse. Paigaldamine ei ole vajalik.",
-        "linux_deb": "Linux DEB: Paigaldage käsuga 'sudo dpkg -i failinimi.deb' või topeltklõpsake faili oma failihalduri.",
-        "macos": "macOS: Avage .dmg fail ja lohistage Rediacc Desktop rakenduste kausta. Võimalik, et peate lubama rakenduse süsteemi eelistustes Turvalisuse all.",
+        "linux_deb": "Linux DEB: Paigaldage käsuga 'sudo dpkg -i failinimi.deb' või topeltklõpsake faili failihalduri abil.",
+        "macos": "macOS: Avage .dmg-fail ja lohistage Rediacc Desktop rakenduste kausta. Kui macOS blokeerib selle, lubake see eelistustes jaotises Turvalisus ja privaatsus.",
         "title": "Paigaldusjuhised",
-        "windows": "Windows: Käivitage .exe installiprogramm ja järgige seadistusviisardit. Rakendus paigaldatakse teie Program Files kausta."
+        "windows": "Windows: Käivitage .exe-fail ja järgige ekraanile kuvatavaid juhiseid. Rakendus paigaldatakse Program Files kausta."
       },
       "meta": {
-        "description": "Laadi alla Rediacc Desktop ja CLI Windowsile, macOS-ile ja Linuxile.",
+        "description": "Laadi Rediacc Desktop ja CLI alla Windowsile, macOS-ile ja Linuxile.",
         "keywords": "Rediacc allalaadimine, töölauarakendus, CLI, Windowsi rakendus, macOS-i rakendus, Linuxi rakendus",
-        "title": "Laadi alla Rediacc CLI kõigile platvormidele | Rediacc"
+        "title": "Laadi Rediacc CLI alla kõigile platvormidele | Rediacc"
       },
-      "noReleases": "Praegu pole väljalaske saadaval. Palun kontrollige hiljem uuesti.",
+      "noReleases": "Hetkel pole väljalaske saadaval. Palun vaadake hiljem uuesti.",
       "platforms": {
         "linux": "Linux",
         "macos": "macOS",
@@ -1311,8 +1311,8 @@
         "windows": "Windows 10 või uuem (64-bitine)"
       },
       "sections": {
-        "cli": "Käsuriariistad (CLI)",
-        "desktop": "Töölauarakendus"
+        "cli": "Käsurea liides (CLI)",
+        "desktop": "Lauarakendus"
       },
       "types": {
         "appimage": "AppImage (kaasaskantav)",
@@ -1324,7 +1324,7 @@
         "indicator": "{{current}} / {{total}}"
       },
       "meta": {
-        "description": "Kloonige tootmist 60 sekundiga. Taastuge katastroofidest alla 5 minutiga. Omahosting, töötab teie riistvaral.",
+        "description": "Kloonige tootmist 60 sekundiga. Taastuge katastroofidest alla 5 minutiga. Omahosted, töötab teie riistvaral.",
         "keywords": "infrastruktuuri automatiseerimine, arenduskeskkonnad, katastroofitaaste, DevOpsi automatiseerimine, CI/CD konveier, pilveinfrastruktuur, arenduse operatsioonid, mudeli konteksti protokoll, tehisintellektile ohutu infrastruktuur",
         "title": "Rediacc - Kloonige tootmist. Ärge rikkuge midagi."
       }
@@ -1339,14 +1339,14 @@
       "copy": "Kopeeri",
       "hero": {
         "downloadsLink": "Külasta allalaadimiste lehte",
-        "downloadsNote": "Otsid töölauarakendusi või otseühenduseid?",
-        "subtitle": "Vali eelistatud paigaldusmeetod",
-        "title": "Installi Rediacc CLI"
+        "downloadsNote": "Otsid töölaualikku rakendust?",
+        "subtitle": "Vali sobiv paigaldusmeetod",
+        "title": "Paigalda Rediacc CLI"
       },
       "meta": {
-        "description": "Installi Rediacc CLI Linuxile, macOS-ile või Windowsile APT, DNF, npm või otsese allalaadimise kaudu.",
+        "description": "Paigalda Rediacc CLI Linux-le, macOS-ile ja Windowsile - APT, DNF, npm või otseallalaadimine.",
         "keywords": "installi rediacc, apt install, dnf install, npm install, CLI paigaldamine",
-        "title": "Installi Rediacc CLI - kiire seadistamise juhend"
+        "title": "Rediacc CLI paigaldamine - kiirjuhend"
       },
       "methods": {
         "apk": {
@@ -1358,7 +1358,7 @@
           "title": "APT (Debian / Ubuntu)"
         },
         "binary": {
-          "description": "Eraldiseisev kahendmoodul, paketihaldur ei ole vajalik",
+          "description": "Eraldiseisev kahendmoodul - paketihaldur pole vaja.",
           "title": "Otse allalaadimine"
         },
         "dnf": {
@@ -1366,7 +1366,7 @@
           "title": "DNF (Fedora / RHEL)"
         },
         "docker": {
-          "description": "Konteineripõhiste keskkondade jaoks",
+          "description": "Docker-kasutajatele",
           "title": "Docker"
         },
         "homebrew": {
@@ -1378,7 +1378,7 @@
           "title": "Pacman (Arch Linux)"
         },
         "quick": {
-          "description": "Soovitatav - automaatne paigaldus versioonihaldusega",
+          "description": "Soovitatav! Automaatne paigaldus ja uuendused.",
           "title": "Kiirpaigaldus"
         }
       },
@@ -1428,9 +1428,9 @@
       },
       "expectations": {
         "items": [
-          "Igakuised tooteuuendused ja uued funktsioonid",
+          "Kuukaupa tooteuuendused ja uued funktsioonid",
           "Omahosting juhendid ja parimad tavad",
-          "Infrastruktuuri näpunäited ja DevOpsi teadmised",
+          "Serveri näpunäited ja õppetunnid päriselust",
           "Varajane juurdepääs uutele funktsioonidele"
         ],
         "title": "Mida oodata"
@@ -1440,11 +1440,11 @@
         "title": "Telli meie uudiskiri"
       },
       "meta": {
-        "description": "Telli Rediacc uudiskiri igakuiste tooteuuenduste, omahosting juhendite ja infrastruktuuri näpunäidete jaoks.",
+        "description": "Saad kuukausiti Rediacc uuendusi. Uued funktsioonid, omahosting juhendid ja näpunäited serveri turvalisuse jaoks.",
         "keywords": "Rediacc uudiskiri, omahosting uuendused, infrastruktuuri näpunäited, DevOpsi uudiskiri",
-        "title": "Uudiskiri - infrastruktuuri uuendused | Rediacc"
+        "title": "Rediacc Uudiskiri | Isemajandamise kuulised uuendused"
       },
-      "privacy": "Kasutame Plausible Analyticsi ega jaga teie e-posti kolmandate osapooltega."
+      "privacy": "Kasutame Plausible'it. Teie e-posti aadressi me ei jaga."
     },
     "notFound": {
       "actions": {
@@ -1499,15 +1499,15 @@
             {
               "description": "Lisa AGENTS.md oma projekti. Teie tehisintellekti abistaja teab koheselt kõiki saadaolevaid käske, lippe ja töövoogusid.",
               "icon": "zap",
-              "title": "Nullist integratsioonikulusid"
+              "title": "Integratsioon: null kulusid"
             },
             {
-              "description": "JSON vastused keskmiselt ~200 märki. --fields lipp lubab agentidel nõuda ainult vajalikke andmeid. Raiskamist ei ole.",
+              "description": "JSON vastused keskmiselt ~200 märki. --fields lipp võimaldab agentidel taotleda vaid vajalikke andmeid. Konteksti ei raiskita.",
               "icon": "terminal",
               "title": "Kontekstiakna sõbralik"
             },
             {
-              "description": "--dry-run kuvab hävitavate toimingute eelvaate. --yes lubab automatiseerimise. Agendid saavad kindlalt juurutada sisseehitatud turvameetmetega.",
+              "description": "--dry-run näitab hävitavate toimingute eelvaate. --yes lubab automatiseerimist. Agendid saavad kindlalt juurutada sisseehitatud turvameetmete abil.",
               "icon": "shield",
               "title": "Vaikimisi turvaline"
             }
@@ -1517,16 +1517,16 @@
         },
         "bottomCta": {
           "command": "curl -fsSL https://www.rediacc.com/install.sh | bash",
-          "description": "Installi CLI. Lisa AGENTS.md mall. Teie tehisintellekti abistaja hoolitseb ülejäänu eest.",
+          "description": "Installi CLI. Lisa AGENTS.md mall. Teie AI-abistaja teeb ülejäänu.",
           "primaryCta": "Alusta tasuta",
-          "title": "Laske oma tehisintellekti agendil hallata teie infrastruktuuri"
+          "title": "Laske oma AI-agendil hallata teie infrastruktuuri"
         },
         "hero": {
-          "badge": "TEHISINTELLEKTI AGENTIDELE",
+          "badge": "AI-AGENTIDELE",
           "primaryCta": "Alusta tasuta",
           "secondaryCta": "Loe dokumente",
-          "subtitle": "CLI-esimene. SSH-põhine. JSON vaikimisi. Iga rdc käsk on kavandatud autonoomsetele agentidele - graafilist liidest ei ole, brauseri automatiseerimist ei ole, kohandatud integratsioonid ei ole vajalikud.",
-          "title": "Infrastruktuur, mida teie tehisintellekti agent juba oskab kasutada."
+          "subtitle": "CLI-esimene. SSH-põhine. JSON vaikimisi. Iga rdc käsk on kavandatud autonoomsetele agentidele: GUI-ta, brauseri automatiseerimiseta, kohandatud integratsioonideta.",
+          "title": "Infrastruktuur, mida teie AI-agent juba teab kuidas kasutada."
         },
         "howItWorks": {
           "cloneVisual": {
@@ -1586,53 +1586,53 @@
           "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
-              "description": "Lisa AGENTS.md mall oma projekti juurkausta. Teie tehisintellekti abistaja loeb selle käivitamisel ja tunneb kõiki rdc käske.",
+              "description": "Lisa AGENTS.md mall oma projekti juurkausta. Teie tehisintellekti abistaja loeb selle käivitamise ajal ja teab kõiki rdc käske.",
               "icon": "terminal",
-              "title": "Konfigureeri"
+              "title": "Seadistamine"
             },
             {
-              "description": "Käivita rdc agent capabilities, et saada struktureeritud JSON käsupuu. Agent teab, mis on saadaval, ilma dokumentatsioonita.",
+              "description": "Käivita rdc agent capabilities ja saa struktureeritud JSON käsupuu. Agent teab, mis on saadaval – dokumentatsioon pole vajalik.",
               "icon": "code",
-              "title": "Avasta"
+              "title": "Avastamine"
             },
             {
-              "description": "Juuruta, jälgi, pöörake tagasi - kõik CLI käskude kaudu JSON-väljundiga. Graafilist liidest ei ole, brauserit ei ole, kohandatud integratsiooni ei ole.",
+              "description": "Juuruta, jälgi, pöörduke tagasi – kõik CLI käskude kaudu JSON-väljundiga. GUI-ta, brauserit, kohandamist pole.",
               "icon": "shield",
-              "title": "Opereeri"
+              "title": "Juhtimine"
             }
           ],
-          "title": "Kolm sammu agendi hallatud infrastruktuuri juurde"
+          "title": "Kolm sammu agendiga hallatud infrastruktuuri juurde"
         },
         "meta": {
-          "description": "Rediacc on ehitatud tehisintellekti kodeerimisabistajatele. CLI-esimesed toimingud, JSON-väljund, SSH-juurdepääs ja agendi avastamine rdc agent käskude kaudu.",
+          "description": "Rediacc on loodud AI-kodeerimisabistajatele. CLI-esimene, JSON-struktureeritud, SSH-juurdepääs, täielik agendi avastamine rdc agendi käskude kaudu.",
           "keywords": "tehisintellekti agendid, Claude Code, Cursor, Cline, infrastruktuuri automatiseerimine, CLI, JSON-väljund, omahosting, agendi-põhine, MCP",
-          "title": "Tehisintellekti agentidele - CLI automatiseerimine"
+          "title": "AI-agentidele - CLI-põhine automatiseerimine | Rediacc"
         },
         "problem": {
-          "description": "Teie tehisintellekti kodeerimisabistaja suudab autonoomselt kirjutada, testida ja siluda koodi. Kuid kui see peab juurutama, kontrollima olekut või haldama infrastruktuuri, põrkub see vastu seina: ainult GUI-põhised armatuurlauad, OAuth brauseri vood, ebastabiilsed API-d ja vastused, mis purustavad kontekstiakna.",
+          "description": "Teie tehisintellekti kodeerimisabistaja kirjutab, testib ja silutseb koodi täiesti iseseisvalt. Kuid infrastruktuuri juurutamisel, oleku kontrollil või haldamisel põrkab ta vastu seina: ainult GUI-ga armatuurlauad, OAuth brauserivoolu, ebastabiilsed API-d ja vastused, mis paisutavad kontekstiakna üle.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "73%",
               "ref": 1,
               "source": "GitHub 2025",
-              "text": "arendajatest plaanib kasutada tehisintellekti agente infrastruktuuri ülesannete jaoks 2026. aastaks"
+              "text": "arendajatest plaanib 2026. aastaks kasutada tehisintellekti agente infrastruktuuritöödele"
             },
             {
               "number": "4x",
               "ref": 2,
-              "source": "Tööstuse analüüs",
-              "text": "rohkem kontekstiakent kasutab struktureerimata vs JSON-väljund"
+              "source": "Valdkonna analüüs",
+              "text": "rohkem kontekstiakna kasutab struktureerimata väljund kui JSON-väljund"
             },
             {
               "number": "0%",
               "ref": 3,
-              "source": "Turu-uuring",
-              "text": "traditsioonilistest infrastruktuuri platvormidest on kavandatud tehisintellekti agentidele"
+              "source": "Turuuuring",
+              "text": "traditsioonilistest infrastruktuuriplatvormidest on disainitud tehisintellekti agentidele"
             }
           ],
           "timeline": {
-            "newLabel": "Rediacciga",
+            "newLabel": "Rediacc abil",
             "newSteps": ["rdc repo up", "JSON", "Valmis"],
             "oldLabel": "Traditsiooniline infrastruktuur",
             "oldSteps": [
@@ -1658,7 +1658,7 @@
               }
             ]
           },
-          "title": "Tehisintellekti agendid on võimsad - kuid enamik infrastruktuure võitleb nendega"
+          "title": "Tehisintellekti agendid on võimsad, kuid enamik infrastruktuuridest neid ei toeta"
         },
         "relatedSolutions": {
           "title": "Tutvu seotud lahendustega"
@@ -1681,8 +1681,8 @@
           }
         ],
         "techDiff": {
-          "description": "Iga disainiotsus Rediaccis seab esikohale masinloetavad liidesed. Mitte-TTY tuvastamine lülitub automaatselt JSON-ile. Ühtne ümbrikvorm tähendab, et agendid parsivad iga vastust samamoodi. SSH-põhine autentimine tähendab, et OAuth vooge ega märgiste haldamist ei ole.",
-          "overline": "AGENDI-PÕHINE DISAIN",
+          "description": "Iga disainiotsus Rediaccs prioriteerib masinloetavaid liidesi. Mitte-TTY tuvastus lülitub automaatselt JSON-iks. Ühtne vastusevorm tagab, et agendid parsivad kõik vastused ühtemoodi. SSH-autentimine tähendab – OAuth sisselogimist ja märgiste haldust pole.",
+          "overline": "AGENDILE EHITATUD DISAIN",
           "rediaccLabel": "Rediacc (rdc CLI)",
           "rows": [
             {
@@ -1695,11 +1695,11 @@
             },
             {
               "rediacc": "JSON ümbrik: ühtne skeem, ~200 märki vastuse kohta",
-              "traditional": "HTML/struktureerimata väljund: 4x märkide kasutamine, habras parsimine"
+              "traditional": "HTML/struktureerimata väljund: 4x märkide kasutamine, ebastabiilne parsimine"
             },
             {
               "rediacc": "rdc agent capabilities: struktureeritud käsupuu käitamisajal",
-              "traditional": "Avastamist ei ole: agendid vajavad dokumente või päringutel põhinevaid API kõnesid"
+              "traditional": "Avastust ei ole: agendid vajavad dokumentatsiooni või käsitsi kirjutatud API kutseid"
             }
           ],
           "title": "Miks rdc on ehitatud tehisintellekti agentidele",
@@ -1724,11 +1724,11 @@
             },
             {
               "result": "tehtud",
-              "text": "Renet deemoni päring",
+              "text": "renet deemoni pärimine",
               "type": "check"
             },
             {
-              "result": "kõik terved",
+              "result": "kõik korras",
               "text": "12 hoidlat, 47 konteinerit",
               "type": "check"
             },
@@ -1767,45 +1767,45 @@
         "benefits": {
           "items": [
             {
-              "description": "Üks kindel hind masina kohta. Isikupõhiseid tasusid ei ole, üllatuslikke arveid ei ole, väljunditasusid ei ole. Teie eelarve jääb kasvades prognoositavaks.",
+              "description": "Üks hind masina kohta. Isikupõhiseid tasusid ei ole, üllatusarveid ei ole, väljunditasusid ei ole. Teie eelarve jääb kasvades stabiilseks.",
               "icon": "tag",
-              "title": "Prognoositavad kulud"
+              "title": "Kindlad kulud"
             },
             {
-              "description": "Andmed jäävad teile kuuluvale riistvarale avatud vormingutes. Ükski tarnija ei saa teie andmeid pantvangis hoida ega teilt nende eest tasu küsida.",
+              "description": "Andmed asuvad teile kuuluval riistvaral, avatud vormingutes. Ükski pakkuja ei saa teie andmeid pantvangis hoida ega neid lukustaada.",
               "icon": "lock",
               "title": "Teie andmed, teie kontroll"
             },
             {
-              "description": "Täielik katastroofitaaste alla 5 minutiga. Muutmatud varukoopiad, mida lunavara ei suuda puutuda. Teie äri jätkab tööd.",
+              "description": "Täielik taastamine alla 5 minutiga. Muutmatud varukopiad, mida lunavara ei saa muuta. Teie äri jätkab tööd.",
               "icon": "shield",
-              "title": "Äritegevuse järjepidevus"
+              "title": "Äri järjepidevus"
             }
           ],
           "overline": "ÄRIVÄÄRTUS",
-          "title": "Mida see teie äri jaoks tähendab"
+          "title": "Mida te saate."
         },
         "bottomCta": {
-          "description": "Üks kindel hind masina kohta. Isikupõhiseid tasusid ei ole. Üllatusi ei ole. Alusta tasuta kogukonna väljaandega.",
+          "description": "Üks kindel hind masina kohta. Puuduvad isikupõhised tasud. Pole üllatusi. Alusta tasuta Community-väljaandega.",
           "primaryCta": "Vaata hindasid",
           "title": "Vaata hindasid"
         },
         "calculator": {
           "annualLabel": "Aastane kogukulud",
-          "description": "Kohandage liugureid vastavalt oma ettevõttele. Vaadake pilve ja omahosting tegelikku hinda.",
-          "footnote": "Hinnangud põhinevad tööstuse TCO mudelitel. Tegelikud säästud sõltuvad teie praegusest infrastruktuurist ja ulatusest.",
+          "description": "Kohandage liugureid oma äri järgi. Näete, milline on pilve tegelik hind võrreldes omahosting lahendusega.",
+          "footnote": "Hinnangud põhinevad tavalistel TCO mudelitel. Tegeliku säästu määr sõltub teie praegusest infrastruktuurist ja majapidamise suurusest.",
           "headerTitle": "Arvutage oma säästud",
           "overline": "NUMBRID",
           "results": {
             "blockedTime": "Aastane infrastruktuuri kulu",
             "contextSwitching": "Taastumisaeg",
             "quarterlySlip": "Andmete omandiõigus",
-            "sprintCapacity": "Seisakurisk"
+            "sprintCapacity": "Seisakuriski maksumus"
           },
           "sliders": {
             "devs": "Meeskonnaliikmed",
-            "reqs": "Praegune igakuine pilvekulutus ($)",
-            "wait": "Seisakutunde aastas"
+            "reqs": "Kuu pilvekulud ($)",
+            "wait": "Seisaku tunde aastas"
           },
           "title": "Kui palju saaksite säästa?",
           "withAnnual": "Arvuta →",
@@ -1814,7 +1814,7 @@
             "blockedTime": "60% vähem",
             "contextSwitching": "<5 minutit",
             "quarterlySlip": "100% teie oma",
-            "sprintCapacity": "Minimaalne"
+            "sprintCapacity": "Pidurdatud"
           },
           "withTag": "Rediacciga"
         },
@@ -1822,16 +1822,16 @@
           "badge": "CEO-DELE JA ASUTAJATELE",
           "primaryCta": "Vaata hindasid",
           "secondaryCta": "Räägi müügiga",
-          "subtitle": "Kaitske oma äriandmeid teile kuuluval riistvaral. Üks kindel hind masina kohta - isikupõhiseid tasusid ei ole, üllatuslikke pilvearveid ei ole, tarnija ei hoia teie andmeid pantvangis.",
-          "title": "Prognoositavad infrastruktuuri kulud. Tarnija lukustust ei ole."
+          "subtitle": "Kaitske oma äriandmeid teile kuuluval riistvaral. Üks kindel hind masina kohta. Puuduvad isikupõhised tasud ja üllatuslikud arveid. Teie andmed jäävad teile.",
+          "title": "Fikseeritud hind iga serveri eest. Teie andmed jäävad teile."
         },
         "meta": {
-          "description": "Omahosting infrastruktuuri kaitse prognoositava hinnakujunduse ja nullist tarnija lukustusega. Kaitske oma ettevõtet ilma pilvearveta.",
+          "description": "Varundage süsteeme oma serverites. Fikseeritud hind masina kohta. Puuduvad isikupõhised tasud. Pole üllatusi. Teie andmed jäävad teile.",
           "keywords": "CEO, infrastruktuuri kulud, omahosting, andmekaitse, tarnija lukustus, prognoositav hinnakujundus, äritegevuse järjepidevus, VKE",
-          "title": "CEO-dele - prognoositavad kulud, vaba tarnijast"
+          "title": "CEO-dele: prognoositavad kulud, ilma sõltuvuseta Rediacc"
         },
         "problem": {
-          "description": "Teie meeskond alustas väikese pilvearvega. Nüüd on see teie kolmas suurim kulutus ja kasvab aastas 20%. Isikupõhine hinnakujundus karistab teid tööle võtmise eest. Teie andmed asuvad kellegi teise andmekeskuses, nende patenteeritud vormingus. Kui soovite lahkuda, küsivad nad teie enda andmetele juurdepääsuks väljunditasusid.",
+          "description": "Teie meeskond alustas väikese pilvearvega. Nüüd on see teie kolmas suurim kulutus ja kasvab aastas 20%. Isikupõhine hinnakujundus karistab teid palkade kasvatamise eest. Teie andmed paiknevad kellegi teise andmekeskuses, nende suletud vormingus. Kui tahate lahkuda, küsivad nad andmetele juurdepääsuks tasu.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
@@ -1844,7 +1844,7 @@
               "number": "98%",
               "ref": 2,
               "source": "TrustRadius 2024",
-              "text": "VKE-de tehnoloogiaotsustest tehakse otse tippjuhtide poolt"
+              "text": "VKE-de tehnoloogiaotsustest teeb tippjuht"
             },
             {
               "number": "9,36 miljonit $",
@@ -1856,7 +1856,7 @@
           "timeline": {
             "newLabel": "Rediacciga",
             "newSteps": ["204 $/kuus", "Kindel", "Teie oma"],
-            "oldLabel": "Pilve infrastruktuur",
+            "oldLabel": "Pilvinfrastruktuur",
             "oldSteps": [
               {
                 "day": "A1",
@@ -1876,11 +1876,11 @@
               },
               {
                 "day": "A5",
-                "text": "Lukustatud"
+                "text": "Seotud"
               }
             ]
           },
-          "title": "Pilvearveid kasvavad pidevalt. Teie andmed ei kuulu tegelikult teile."
+          "title": "Pilvekulud kasvavad pidevalt. Teie andmed ei ole tegelikult teie omad."
         },
         "relatedSolutions": {
           "title": "Kuidas see toimib"
@@ -1888,12 +1888,12 @@
         "shareWithTeam": {
           "ctaSlug": "for-ctos",
           "ctaText": "Jaga CTO süvaanalüüsi",
-          "description": "Teie tehniline meeskond peab hindama arhitektuuri ja integratsiooni. Jaga CTO süvaanalüüsi vajalike tehniliste üksikasjadega.",
+          "description": "Tehniline meeskond kontrollib, kuidas see sobib teie arhitektuuriga. Saada neile CTO süvaanalüüs - seal on kõik, mida nad küsivad.",
           "overline": "JÄRGMINE SAMM",
           "title": "Jaga oma CTO-ga"
         },
         "socialProof": {
-          "author": "CEO ja asutaja",
+          "author": "Juhataja ja asutaja",
           "company": "SaaS idufirma, 45 töötajat",
           "impact": {
             "afterLabel": "Rediacciga",
@@ -1902,7 +1902,7 @@
             "beforeValue": "18 000 $",
             "improvement": "62% kulude vähenemine, kohene taastamine"
           },
-          "quote": "Kulutasime 18 000 dollarit kuus pilve infrastruktuurile 47 töökoormuse jaoks. Pärast Rediaccile oma serveritele migreerumist langes arve 6 800 dollarile - ja taastumisaeg läks 4 tunnilt 3 minutile. Esimesel kuul oli ROI ilmselge."
+          "quote": "Kulutasime 18 000 dollarit kuus 47 töökoormuse pilvinfrastruktuurile. Pärast Rediaccile oma serveritele migreerumist langes arve 6 800 dollarile – taastumisaeg läks 4 tunnilt 3 minutile. Esimesel kuul oli ROI ilmselge."
         },
         "stats": [
           {
@@ -1945,7 +1945,7 @@
             },
             {
               "result": "2 tundi tagasi",
-              "text": "Viimane varukoopia kontrollitud",
+              "text": "Viimane varukoopia tõestatud",
               "type": "check"
             },
             {
@@ -1957,13 +1957,13 @@
               "type": "spacer"
             },
             {
-              "text": "Kõik süsteemid kaitstud. Selles kvartalis intsidente ei olnud.",
+              "text": "Kõik on turvaline. Selles kvartalis probleeme ei olnud.",
               "type": "success"
             },
             {
               "pairs": [
                 {
-                  "label": "Tööaeg",
+                  "label": "Saadavus",
                   "value": "99,99%"
                 },
                 {
@@ -1988,34 +1988,34 @@
         "benefits": {
           "items": [
             {
-              "description": "Kaotage pilve juurdehindlus, isikupõhine litsentsimiskorraldus ja väljunditasud. Töötage juba omataval riistvaral.",
+              "description": "Ilma pilve juurdehindluseta, isikupõhise maksimiseta ja väljamineku tasudeta. Kasuta oma riistvara.",
               "icon": "trend-up",
               "title": "60% madalam TCO"
             },
             {
-              "description": "Täielik katastroofitaaste alla 5 minutiga. Btrfs hetktõmmised tähendavad, et taastamine on osuti vahetus, mitte taastetöö.",
+              "description": "Täielik taastamine alla 5 minutiga. btrfs hetktõmmised teevad taastamisest osundi vahetus – mitte pikad taastetööd.",
               "icon": "zap",
               "title": "Minutid, mitte tunnid"
             },
             {
-              "description": "Teie andmed jäävad teie infrastruktuurile avatud vormingutes. Vaheta teenusepakkujat või halda ise - teie valik alati.",
+              "description": "Andmed jäävad oma riistvarale avatud vormingutes. Vahetad pakkujat, haldasid ise või liigutad mujale – valik on sinu käes.",
               "icon": "lock",
-              "title": "Nullist tarnija lukustust"
+              "title": "Tarnijast vaba"
             }
           ],
           "overline": "STRATEEGILINE VÄÄRTUS",
-          "title": "Mida Rediacc teie organisatsiooni jaoks tähendab"
+          "title": "Mida Rediacc sinu tehisele tähendab"
         },
         "bottomCta": {
-          "description": "Planeerige 30-minutiline arhitektuuriülevaade meie meeskonnaga. Näitame teile TCO prognoose teie konkreetse infrastruktuuri jaoks.",
-          "primaryCta": "Planeeri demo",
-          "title": "Vaadake seda toimimas"
+          "description": "Broneeri 30-minutiline arhitektuuriülevaade. Näitame sulle TCO prognoose sinu infrastruktuuri jaoks.",
+          "primaryCta": "Broneeri demo",
+          "title": "Vaata seda tööl"
         },
         "calculator": {
-          "annualLabel": "Aastane kogukulud",
-          "description": "Liigutage liugurid vastavalt oma organisatsioonile. Vaadake, kuidas Rediacc teie praeguse kulutusega võrreldes seisab.",
-          "footnote": "Hinnangud põhinevad tööstuse TCO mudelitel, mis võrdlevad omahosting infrastruktuuri samaväärsete pilveteenustega. Tegelikud säästud varieeruvad töökoormuse, konfiguratsiooni ja ulatuse alusel.",
-          "headerTitle": "Arvutage oma infrastruktuuri säästud",
+          "annualLabel": "Aastased kogukulud",
+          "description": "Seadistage liugured oma infrastruktuurile. Vaadake, kuidas Rediacc teie hetkekuludega võrreldes välja näeb.",
+          "footnote": "Hinnangud põhinevad tööstuse TCO mudelitel, mis võrdlevad omahosting infrastruktuuri samaväärsete pilveteenustega. Tegelikud säästud sõltuvad töökoormuse, seadistuse ja skaala.",
+          "headerTitle": "Arvutage oma infrastruktuuri kulusäästud",
           "overline": "TEGELIK KULU",
           "results": {
             "blockedTime": "Aastane infrastruktuuri kulu",
@@ -2024,8 +2024,8 @@
             "sprintCapacity": "Seisakukulu aastas"
           },
           "sliders": {
-            "devs": "Hallatavad serverid / töökoormus",
-            "reqs": "Keskmine pilvekulutus kuus ($)",
+            "devs": "Hallatavad serverid / töökoormused",
+            "reqs": "Keskmine igakuine pilvekulutus ($)",
             "wait": "Seisakutunde aastas"
           },
           "title": "Mida teie infrastruktuur tegelikult maksab?",
@@ -2040,8 +2040,8 @@
           "withTag": "Rediacciga"
         },
         "comparison": {
-          "capabilityLabel": "Võimalus",
-          "description": "Ettevõtete varundustööriistad küsivad tasu pesapesa, VM-i või TB alusel. Rediacc küsib tasu masina kohta ja töötab teie riistvaral.",
+          "capabilityLabel": "Omadus",
+          "description": "Ettevõtete varundustööriistad küsivad tasu sokli, VM-i või TB alusel. Rediacc küsib tasu masina kohta ja jookseb sinu riistvaral.",
           "features": [
             {
               "name": "Omahosting / ettevõttesisene",
@@ -2072,30 +2072,30 @@
               "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
-          "overline": "KONKURENTSIPÕLD",
-          "title": "Kuidas Rediacc võrdleb"
+          "overline": "KONKURENTSISITUATSIOON",
+          "title": "Kuidas Rediacc konkurentidega võrdleb"
         },
         "hero": {
           "badge": "CTO-DELE",
-          "primaryCta": "Planeeri demo",
+          "primaryCta": "Broneeri demo",
           "secondaryCta": "Arvuta oma ROI",
-          "subtitle": "Omahosting infrastruktuuri kaitse, mis kaotab pilve juurdehindluse, skaleerub ilma isikupõhise hinnakujunduseta ja taastub mis tahes katastroofist minutitega, mitte tundidega.",
-          "title": "Vähendage infrastruktuuri TCO 60% võrra. Skaleerige oma riistvaral."
+          "subtitle": "Enda riistvaral jooksev infrastruktuuri kaitse. Pole pilve juurdehindlust, pole isikupõhist hinnakujundust, taastamine minutites, mitte tundides.",
+          "title": "Infrastruktuuri TCO 60% väiksem. Skaleeruge oma riistvaral."
         },
         "meta": {
-          "description": "Omahosting infrastruktuuri kaitse teie riistvaral. Vähendage TCO 60%, kaotage tarnija lukustus ja taastuge mis tahes katastroofist minutitega.",
+          "description": "Enda riistvaral jooksev infrastruktuuri kaitse. TCO 60% väiksem, pole tarnijasõltuvust, taastamine minutites, mitte tundides.",
           "keywords": "CTO, infrastruktuuri TCO, omahosting, katastroofitaaste, tarnija lukustus, btrfs hetktõmmised, vastavus, skaleeritavus",
-          "title": "CTO-dele - vähendage infrastruktuuri TCO 60% võrra | Rediacc"
+          "title": "CTO-dele: TCO 60% madalam | Rediacc"
         },
         "problem": {
-          "description": "Teie pilvearvete kasv on aastas 15-20%. Isikupõhine litsentsimiskorraldus karistab meeskonna kasvu eest. Katastroofi korral võtab teie \"kohene taastamine\" tunde - kuna varundustööriist, mis lubas RPO-d minutites, annab tegelikult RPO-d päevades. Samal ajal olete lukustatud tarnija ökosüsteemi, mis muutub iga uuendusega kallimaks.",
+          "description": "Pilvekulud kasvavad igal aastal 15–20% võrra. Isikupõhine litsentsimiskorraldus teeb meeskonna kasvu kalliks. Kui midagi läheb katki, võtab teie \"kohene taastamine\" tegelikult tunde, sest varundustööriistad, mis lubavad minutilise RPO-d, annavad tegelikult päevaseid viivitusi. Ja iga uuendusega muutub tarnija ökosüsteem, kuhu olete kinni jäänud, veelgi kallimaks.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "17%",
               "ref": 1,
               "source": "Flexera 2025",
-              "text": "keskmine pilveeelarve ületamine ettevõtetes"
+              "text": "ettevõtete keskmiselt pilvekulude ületamine"
             },
             {
               "number": "76%",
@@ -2137,49 +2137,49 @@
               }
             ]
           },
-          "title": "Pilvekulud tõusevad pidevalt. Taastamine ebaõnnestub ikka."
+          "title": "Pilvekulud kasvavad. Taastamine ebaõnnestub."
         },
         "relatedSolutions": {
-          "title": "Tutvu platvormiga"
+          "title": "Veel platvormist"
         },
         "shareWithTeam": {
           "ctaSlug": "for-devops",
-          "ctaText": "Jaga DevOpsi süvaanalüüsi",
-          "description": "Teie insenerid armastavad CLI-esimest töövoodu ja koheseid keskkondi. Jagage tehnilist süvaanalüüsi oma DevOpsi meeskonnaga.",
-          "overline": "JAGA OMA MEESKONNAGA",
-          "title": "Alustage DevOpsi meeskonnaga"
+          "ctaText": "Jaga DevOpsi materjale",
+          "description": "Insenerid armstavad käsurea töövooge ja kiireid keskkondi. Jaga tehnilist ülevaadet DevOpsi meeskonnaga.",
+          "overline": "JAGA MEESKONNAGA",
+          "title": "Kaasage DevOpsi tiim"
         },
         "socialProof": {
           "author": "CTO",
           "company": "SaaS-ettevõte, 200 töötajat",
           "impact": {
-            "afterLabel": "Rediacciga",
+            "afterLabel": "Koos Rediaccga",
             "afterValue": "6 800 $/kuus",
             "beforeLabel": "Pilvekulud",
             "beforeValue": "18 000 $/kuus",
-            "improvement": "62% infrastruktuuri kulude vähenemine"
+            "improvement": "Infrastruktuuri kulud 62% väiksem"
           },
-          "quote": "Kolisime 47 tootmistöökoormusest suure pilve teenusepakkuja juurest Rediaccile oma riistvaral. Infrastruktuuri kulud langesid esimese kvartaliga 62%. Kui meil tekkis esimene intsident, võttis taastamine 3 minutit, mitte 4 tundi, nagu meie eelmine tööriist lubas."
+          "quote": "Kolisime 47 tootmistöökoormust suure pilve pakkuja juurest Rediaccile oma riistvarale. Infrastruktuuri kulud langesid 62% esimese kvartaliga. Esimene intsident taastati 3 minutiga, mitte 4 tunniga nagu eelmine lahendus lubas."
         },
         "stats": [
           {
             "icon": "trend-up",
-            "label": "Madalam TCO vs pilv",
+            "label": "TCO madalam kui pilveles",
             "number": "60%"
           },
           {
             "icon": "clock",
-            "label": "Täielik katastroofitaaste",
+            "label": "Taastamine minutites",
             "number": "<5 min"
           },
           {
             "icon": "lock",
-            "label": "Tarnija lukustust",
+            "label": "Pole tarnijasõltuvust",
             "number": "0"
           }
         ],
         "techDiff": {
-          "description": "Rediacc töötab teie riistvaral, kasutades btrfs copy-on-write hetktõmmiseid koheste varukoopiate ja taaste jaoks. Iga hetktõmmis on failisüsteemi tasemel muutmatu - lunavara ei suuda krüpteerida seda, mida kernel kaitseb. Taastamine tähendab osuti vahetamist, mitte terabaitide taastamist.",
+          "description": "Rediacc töötab teie riistvaral, kasutades btrfs copy-on-write hetktõmmiseid koheste varukoopiate ja taaste jaoks. Iga hetktõmmis on failisüsteemi tasemel muutmatu. Lunavara ei suuda krüpteerida seda, mida kernel kaitseb. Taastamine tähendab osuti vahetamist, mitte terabaitide taastamist.",
           "overline": "ARHITEKTUUR",
           "rediaccLabel": "Rediacc (omahosting)",
           "rows": [
@@ -2217,29 +2217,29 @@
             },
             {
               "result": "tehtud",
-              "text": "47 hoidla skannimine 3 masinal",
+              "text": "Skannitakse 47 hoidlat 3 masinal",
               "type": "check"
             },
             {
               "result": "47/47",
-              "text": "Muutmatute btrfs hetktõmmiste loomine",
+              "text": "Luuakse muutmatuid btrfs hetktõmmiseid",
               "type": "check"
             },
             {
               "result": "läbitud",
-              "text": "Varukoopia tervikluse kontrollimine (taaste test)",
+              "text": "Varukoopia tervikluse kontroll (taastamise test)",
               "type": "check"
             },
             {
               "result": "sünkroniseeritud",
-              "text": "Replikeerimine varundussõlmesse",
+              "text": "Replikeeritakse varundussõlmesse",
               "type": "check"
             },
             {
               "type": "spacer"
             },
             {
-              "text": "Kõik hoidlad kaitstud. Järgmine käivitamine: homme kell 02:00 UTC",
+              "text": "Kõik hoidlad on kaitstud. Järgmine käivitamine: homme kell 02:00 UTC",
               "type": "success"
             },
             {
@@ -2257,7 +2257,7 @@
                   "value": "3,2 s"
                 },
                 {
-                  "label": "Salvestuse delta",
+                  "label": "Salvestuse muutus",
                   "value": "+12 GB"
                 }
               ],
@@ -2275,7 +2275,7 @@
               "title": "60-sekundilised keskkonnad"
             },
             {
-              "description": "Kõik on käsk. Integreeri CI/CD, Giti hookide või oma automatiseerimisega. Graafilist liidest ei nõuta.",
+              "description": "Kõik on käsk. Integreeri CI/CD-ga, Git hookidega või enda automaatikaga. GUI pole vajalik.",
               "icon": "terminal",
               "title": "CLI-esimene, skriptitav"
             },
@@ -2298,8 +2298,8 @@
           "badge": "DEVOPS-INSENERIDELE",
           "primaryCta": "Alusta tasuta",
           "secondaryCta": "Loe dokumente",
-          "subtitle": "CLI-esimene infrastruktuur, mis kloonib tootmist 60 sekundiga, pöörab tagasi alla viie minutiga ja töötab teie enda riistvaral. Pileteid ei ole. Ootamist ei ole. Tarnija lukustust ei ole.",
-          "title": "Tarnige kiiremini. Taastuge koheselt. Magage paremini."
+          "subtitle": "CLI-esimene infrastruktuur, mis kloonib tootmist 60 sekundiga, taastab alla viie minutiga ja töötab teie riistvaral. Pileteid pole. Ootamist pole. Teie andmed jäävad teile.",
+          "title": "Kloonige prod minutiga. Taastage viies. Ära esitage pileteid."
         },
         "howItWorks": {
           "cloneVisual": {
@@ -2359,12 +2359,12 @@
           "overline": "KUIDAS SEE TOIMIB",
           "steps": [
             {
-              "description": "Käivita rdc ceph snapshot create production. Btrfs CoW loob kohese hetktõmmise - rakendus, andmebaas, konfiguratsioon, kõik.",
+              "description": "Käivita rdc ceph snapshot create production. Btrfs CoW loob hetktõmmise hetkeliselt – rakendus, andmebaas, konfiguratsioon, kõik.",
               "icon": "terminal",
               "title": "Klooni"
             },
             {
-              "description": "Alusta kohe tootmisega identse andmete põhjal kodeerimist. Tõuka haru, saa värske kloon.",
+              "description": "Alusta kodeerimist kohe tootmisega identses andmestikus. Tõuka haru, saa värske kloon.",
               "icon": "code",
               "title": "Tööta"
             },
@@ -2377,19 +2377,19 @@
           "title": "Üks käsk. Täielik tootmise kloon."
         },
         "meta": {
-          "description": "Tarnige kiiremini kohese keskkonna kloonimise, automatiseeritud katastroofitaaste ja CLI-põhiste töövoogudega, mis on ehitatud DevOps-inseneridele.",
+          "description": "Klooni produktsioon 60 sekundiga, taasta alla viie minutiga, käita oma riistvaral. CLI-põhine DR DevOps-tiimidele.",
           "keywords": "devops, infrastruktuuri automatiseerimine, CLI, btrfs hetktõmmised, omahosting, keskkonna kloonimine, kohene tagasipööramine, tootmise vastavus",
-          "title": "DevOps-inseneridele - tarnige kiiremini | Rediacc"
+          "title": "Rediacc DevOpsile: kloooni prod, taasta kiiresti"
         },
         "problem": {
-          "description": "Teie CI/CD konveier juurutab minutitega. IaC ettevalmistab sekunditega. Kuid kui vajate tesktkeskkonda päris andmetega, esitate pileti ja ootate kolm päeva. Samal ajal on lavastus jagatud, ebastabiilne ja ei sarnane kuidagi tootmisele.",
+          "description": "Teie CI/CD konveier juurutab minutitega. IaC ettevalmistab sekunditega. Kuid kui vajate testimiskeskkonda päris andmetega, esitate pileti ja ootate kolm päeva. Samal ajal on etapp jagatud, ebastabiilne ja ei sarnanegi tootmisele.",
           "overline": "PROBLEEM",
           "statCallouts": [
             {
               "number": "69%",
               "ref": 1,
               "source": "Atlassian 2024",
-              "text": "arendajatest kaotab tööriistavigade tõttu nädalas 8+ tundi"
+              "text": "arendajad kaotavad tööriistavigade tõttu nädalas 8+ tundi"
             },
             {
               "number": "3 päeva",
@@ -2415,7 +2415,7 @@
               },
               {
                 "day": "T",
-                "text": "Operatsioonid vaatavad üle"
+                "text": "Operatsioonide ülevaade"
               },
               {
                 "day": "K",
@@ -2431,13 +2431,13 @@
               }
             ]
           },
-          "title": "Automatiseerite kõike - välja arvatud keskkonna hankimist"
+          "title": "Automatiseerite kõike. Välja arvatud testimiskeskkonna saamist."
         },
         "relatedSolutions": {
-          "title": "Tutvu seotud lahendustega"
+          "title": "Seotud lahendused"
         },
         "socialProof": {
-          "author": "Vanemdevopsi insener",
+          "author": "Vanem DevOps-insener",
           "company": "Fintech, 80 arendajat",
           "impact": {
             "afterLabel": "Pärast",
@@ -2446,7 +2446,7 @@
             "beforeValue": "3 päeva",
             "improvement": "Keskkonna ettevalmistamine 5 000x kiiremini"
           },
-          "quote": "Läksime 3-päevaselt keskkonna ettevalmistamise tsüklilt alla minuti. Meie arendajad lõpetasid piletite esitamise ja alustasid tarnimist. Btrfs hetktõmmised lihtsalt toimivad - 380 GB kloonitud 52 sekundiga peaaegu nullist täiendava salvestusega."
+          "quote": "Läksime 3-päevaselt keskkonna ettevalmistamise tsüklilt alla minuti. Arendajad lõpetasid piletite esitamise ja alustasid tarnimist. btrfs hetktõmmised toimivad lihtsalt: 380 GB kloonitud 52 sekundiga praktiliselt ilma lisasalvestuseta."
         },
         "stats": [
           {
@@ -2461,13 +2461,13 @@
           },
           {
             "icon": "ticket-x",
-            "label": "Vajalikke operatsioonide pileteid",
+            "label": "Vajalikud op-pileteid",
             "number": "0"
           }
         ],
         "techDiff": {
           "description": "Rediacc kasutab btrfs copy-on-write hetktõmmiseid failisüsteemi tasemel. 380 GB tootmiskeskkonna hetktõmmis valmib alam-sekunditega ja ei kasuta algselt täiendavat salvestust. Kui kloon erineb, kasutavad ainult muutunud plokid uut ruumi.",
-          "overline": "KONSKI ALL",
+          "overline": "KAPOTI ALL",
           "rediaccLabel": "Rediacc (btrfs CoW)",
           "rows": [
             {
@@ -2509,12 +2509,12 @@
             },
             {
               "result": "tehtud",
-              "text": "8 konteineri ja andmebaasi replitseerimine",
+              "text": "Replikeeritakse 8 konteinerit ja andmebaase",
               "type": "check"
             },
             {
               "result": "tehtud",
-              "text": "Krüpteeritud salvestuse paigaldamine (380 GB)",
+              "text": "Paigaldatakse krüpteeritud salvestus (380 GB)",
               "type": "check"
             },
             {
@@ -2544,7 +2544,7 @@
                   "value": "380 GB"
                 },
                 {
-                  "label": "Kasutatud ketta",
+                  "label": "Kasutatud kettaruum",
                   "value": "1,8 GB (CoW)"
                 }
               ],
@@ -2556,7 +2556,7 @@
     },
     "pricing": {
       "comparison": {
-        "allPlansInclude": "Kõik paketid sisaldavad: piiramatu arv kasutajaid ja meeskondi, piiramatu arv hoidlaid, hetktõmmise taastamine, tume režiim, 9 keelt",
+        "allPlansInclude": "Kõik paketid sisaldavad: piiramatud kasutajad ja meeskonnad, piiramatud hoidlad, hetktõmmise taastamine, tume režiim, 9 keelt",
         "categories": {
           "automation": {
             "label": "Ajastamine ja automatiseerimine",
@@ -2631,7 +2631,7 @@
                 "business": "20 000",
                 "community": "1 000",
                 "enterprise": "100 000+",
-                "label": "Ujuva litsentsi päringud",
+                "label": "Ujuva litsentsi taotlused",
                 "professional": "5 000"
               },
               {
@@ -2671,7 +2671,7 @@
                 "business": "—",
                 "community": "—",
                 "enterprise": "✓",
-                "label": "Turbeülevaated",
+                "label": "Turvaülevaated",
                 "professional": "—"
               }
             ]
@@ -2697,7 +2697,7 @@
                 "business": "✓",
                 "community": "—",
                 "enterprise": "✓",
-                "label": "Pühendatud CSM",
+                "label": "Pühendatud kontohaldur",
                 "professional": "—"
               },
               {
@@ -2711,14 +2711,14 @@
                 "business": "—",
                 "community": "—",
                 "enterprise": "✓",
-                "label": "Ööpäevaringne tugi 365 päeval",
+                "label": "Ööpäevaringne tugi 365 päeva aastas",
                 "professional": "—"
               },
               {
                 "business": "—",
                 "community": "—",
                 "enterprise": "✓",
-                "label": "Juhtivtaseme eskalaatioon",
+                "label": "Juhtkonna eskalatsioon",
                 "professional": "—"
               }
             ]
@@ -2728,116 +2728,116 @@
       },
       "edgeChannel": {
         "cta": "Alusta tasuta",
-        "description": "2x kogukonna piirid, uusimad funktsioonid, nullist kulud. Krediitkaart ei ole nõutav.",
-        "heading": "Proovi Edge kanalit"
+        "description": "2x kogukonna piirid, uusimad funktsioonid, täiesti tasuta. Krediitkaart pole nõutav.",
+        "heading": "Proovi Edge versioon"
       },
       "faq": {
         "heading": "Korduma kippuvad küsimused",
         "items": [
           {
-            "answer": "Jah. Kogukonna pakett on igavesti tasuta kuni 2 masinaga, 500 hoidla litsentsi väljastamisega kuus ja täielike hetktõmmise taaste võimalustega. Krediitkaart ei ole nõutav.",
-            "question": "Kas on olemas tasuta pakett?"
+            "answer": "Jah. Kogukonna plaani on tasuta. See hõlmab kuni 2 serverit, 500 serveri seadistust kuus ja varukoopiate taastamist. Krediitkaart pole nõutav.",
+            "question": "Kas on olemas tasuta plaani?"
           },
           {
-            "answer": "Jah, saate paketti igal ajal muuta. Uuendused jõustuvad koheselt ja alandamised rakenduvad järgmise arvestusperioodi alguses. Trahve ega tasusid ei ole.",
-            "question": "Kas saan paketti uuendada või alandada?"
+            "answer": "Jah, saad oma plaani igal ajal muuta. Parendused jõustuvad koheselt, alandamised alates järgmise arveldusperioodi algusest. Trahve ega tasusid pole.",
+            "question": "Kas saan oma plaani muuta?"
           },
           {
-            "answer": "Jah. Aastane arvestus säästab 17% - see on 2 tasuta kuud. Kõik tasulised paketid on saadaval igakuise või aastase arvestusega.",
-            "question": "Kas pakute aastast arvestust?"
+            "answer": "Jah. Aastane arveldus säästab 17% – see on nagu 2 kuud tasuta. Kõik tasulised plaanid on saadaval kuu- või aastaarveldusega.",
+            "question": "Kas on saadaval aastane arveldus?"
           },
           {
-            "answer": "Aktsepteerime kõiki peamisi krediitkaarte (Visa, MasterCard, American Express) ja toetame arve alusel arveldamist aastaste Enterprise pakettide jaoks.",
+            "answer": "Aktsepteerime kõiki peamisi krediitkaarte (Visa, MasterCard, American Express) ja pakume arvepõhist arveldamist aastaste Enterprise plaanide jaoks.",
             "question": "Milliseid makseviise aktsepteerite?"
           },
           {
-            "answer": "Iga füüsiline või virtuaalne server, kuhu Rediacc on paigaldatud, loendatakse ühe masinana (ujuv litsents). Nendel masinatel loodud kloonid ei loeta eraldi - ainult hostmasinaid arvestatakse.",
+            "answer": "Iga füüsiline või virtuaalne server, kuhu Rediacc on paigaldatud, loendatakse ühe masinana. Nendel masinatel loodud kloonid ei loeta eraldi – ainult peamasinaid arvestatakse.",
             "question": "Kuidas masinaid loendatakse?"
           },
           {
-            "answer": "Jah. Rediacc töötab mis tahes Linuxi serveril btrfs failisüsteemi toega. Paljasmetall, VM-id ja pilveeksemplarid (AWS, Azure, GCP, Hetzner, OVH jne) on kõik toetatud.",
-            "question": "Kas saan omahosting mis tahes infrastruktuuril?"
+            "answer": "Jah. Rediacc töötab kõigil Linux serveritel btrfs toega. Füüsilised serverid, virtuaalmasinaid ja pilveteenused (AWS, Azure, GCP, Hetzner, OVH jne) – kõik toetatud.",
+            "question": "Kas Rediacc töötab minu enda serverites?"
           },
           {
-            "answer": "Kogukond sisaldab põhilist kloonimist, hetktõmmise taastet ja kogukonna tuge kuni 2 masina jaoks. Professional lisab automatiseeritud ajastamise, 24-tunnise ajahetke taaste, prioriteetse toe, integratsioonide API ja toetab kuni 5 masinat.",
-            "question": "Mis on kaasas kogukonna vs Professional paketis?"
+            "answer": "Tasuta plaaniga saad 2 masinat, serverite kloonid nõudmisel, varukoopiate taastamise ja kogukonna toe. Tasulise plaaniga saad 5 masinat, ajastatud varundamise, 24-tunnise ajaloo, kiirema toe ja API juurdepääsu.",
+            "question": "Mis on erinevus kogukonna ja Professional plaani vahel?"
           },
           {
-            "answer": "Enterprise paketid on kohandatud teie infrastruktuuri ulatuse, vastavusnõuete ja toe vajaduste alusel. Need sisaldavad pühendatud infrastruktuuri, kohandatud SLA-sid, ööpäevaringset tuge 365 päeval aastas, turbeülevaateid ja kvartalipõhiseid valmisoleku harjutusi.",
-            "question": "Mida Enterprise hinnakujundus sisaldab?"
+            "answer": "Enterprise on ehitatud teie jaoks. Teie valite tingimused. Saate oma serveriruumi, kohandatud taastamise tõotuse ja 24/7/365 tugiteenuse. Juurde turbeülevaated ja regulaarsed harjutused.",
+            "question": "Mis on kaasas Enterprise plaaniga?"
           },
           {
-            "answer": "Jah. Võtke meiega ühendust, et arutada erihinda haridusasutustele ja mittetulundusühingutele.",
+            "answer": "Jah. Võtke meiega ühendust – koolide ja mittetulundusühingute jaoks on erihind saadaval.",
             "question": "Kas pakute allahindlusi haridusasutustele või mittetulundusühingutele?"
           },
           {
-            "answer": "Jah. Kõik tasulised paketid sisaldavad 14-päevast raha tagasi garantiid. Kui Rediacc ei vasta teie vajadustele, tagastame kogu summa - küsimusi ei esitata.",
-            "question": "Kas on olemas raha tagasi garantii?"
+            "answer": "Jah. Kõik tasulised plaanid sisaldavad 14-päevast raha tagastamise garantiid. Kui Rediacc teie vajadustele ei vasta, tagastame raha täielikult – küsimusi ei esitata.",
+            "question": "Kas on rahade tagastamise garantii?"
           }
         ]
       },
       "finalCta": {
         "buttons": {
           "startFree": "Alusta tasuta",
-          "talkToSales": "Räägi müügiga"
+          "talkToSales": "Räägi müügitiimiga"
         },
-        "description": "Paigalda 5 minutiga. Kogukonna pakett on igavesti tasuta.",
+        "description": "Paigalda 5 minutiga. Tasuta alustamiseks.",
         "heading": "Kaitse oma infrastruktuuri"
       },
       "hero": {
-        "subtitle": "Vali pakett, mis sobib teie meeskonnaga. Lihtne hinnakujundus, varjatud tasusid ei ole, tühista igal ajal.",
-        "title": "Ehitatud tõelisteks toiminguteks"
+        "subtitle": "Vali meeskonnale sobiv plaani. Lihtne hinnakujundus, varjatud kulusid pole, tühista igal ajal.",
+        "title": "Tegeliku käituse jaoks ehitatud"
       },
       "meta": {
-        "description": "Vali oma ettevõttele sobiv pakett. Lihtne hinnakujundus, varjatud tasusid ei ole, tühista igal ajal.",
+        "description": "Leia oma äri jaoks sobiv plaani. Lihtne hinnakujundus, varjatud kulusid pole, tühista igal ajal.",
         "keywords": "hinnad, infrastruktuuri automatiseerimine, CI/CD hinnad, DevOpsi paketid, ülesannete täitmine",
-        "title": "Hinnad | Ehitatud tõelisteks toiminguteks"
+        "title": "Hinnakujundus | Tegeliku käituse jaoks"
       },
       "plans": {
         "business": {
-          "description": "Missioonikriitiline infrastruktuur ekspertide sisseelamisega",
+          "description": "Ekspertne seadistamine, varundus mitmes piirkonnas ja 4-tunnine taastamine.",
           "features": [
             "Kõik Professional paketis sisalduv +",
-            "20 samaaegset ujuvat litsentsi",
-            "Piiramatu arv hoidlaid",
-            "20 000 hoidla litsentsi väljastamist kuus",
-            "9 999 $ suurune juurutustugi kaasas (käivituspakkumine)",
+            "20 seadistuspaika",
+            "Piiramata hoidlaid",
+            "20 000 serveriseadistust kuus",
+            "9 999 $ juurutustugi kaasas (käivituspakkumine)",
             "Geo-redundantne salvestus (3 piirkonda)",
             "Pidev andmekaitse",
-            "4-tunnine taaste SLA",
+            "4-tunnine taastamise SLA",
             "Rollipõhine juurdepääsukontroll ja auditi logid",
-            "Vastavusnõuetega aruandlus",
+            "Vastavusele valmis aruandlus",
             "Telefonitugi ja koostööruumid"
           ],
           "name": "Äri"
         },
         "community": {
-          "description": "Tootmiseks valmis infrastruktuuri automatiseerimine - igavesti tasuta",
+          "description": "Varundus ja taastamine kuni 2 serveri jaoks, igavesti tasuta.",
           "features": [
-            "Piiramatu arv kasutajaid ja meeskondi",
-            "Piiramatu arv hoidlaid",
-            "500 hoidla litsentsi väljastamist kuus",
-            "2 samaaegset ujuvat litsentsi",
-            "Hetktõmmise taastamine",
+            "Piiramata kasutajaid ja meeskondi",
+            "Piiramata hoidlaid",
+            "500 serveriseadistust kuus",
+            "2 seadistuspaika",
+            "Varunduse taastamine",
             "Käsitsi ajastamine",
-            "Juurdepääs kogukonna Slacki",
-            "Iseabi tugi ja dokumendid"
+            "Juurdepääs kogukonna Slack-kanalile",
+            "Iseseisev tugi ja dokumendid"
           ],
           "name": "Kogukond"
         },
         "enterprise": {
-          "description": "Täisteeninduslik tugi keeruka ettevõtte infrastruktuuri jaoks",
+          "description": "Pühendatud tugi ja kohandatud tingimused keeruliste keskkondade jaoks.",
           "features": [
             "Kõik äripaketis sisalduv +",
-            "50+ samaaegset ujuvat litsentsi",
-            "Piiramatu arv hoidlaid",
-            "100 000+ hoidla litsentsi väljastamist kuus",
-            "Kohandatud SLA garanteeritud taastemisaegadega",
-            "Pühendatud infrastruktuuri üürnik",
-            "Ööpäevaringne täisteeninduslik tugi 365 päeval aastas",
-            "Pühendatud kliendiedukuse haldur",
+            "50+ seadistuspaika",
+            "Piiramata hoidlaid",
+            "100 000+ serveriseadistust kuus",
+            "Kohandatud SLA garanteeritud taastamisaegadega",
+            "Pühendatud serveriressurss ja ruum",
+            "24/7/365 pühendatud tugi",
+            "Pühendatud kliendiedukuse juht",
             "Kvartalipõhised valmisoleku harjutused",
-            "Juhtivtaseme eskalatsiooni otseliin",
+            "Juhtkonna eskalatsiooni otseliin",
             "Kohandatud integratsioonid ja töövood",
             "Auditi dokumentatsiooni tugi ja turbeülevaated"
           ],
@@ -2845,17 +2845,17 @@
           "priceNote": "*Alates"
         },
         "professional": {
-          "description": "Professionaalne automatiseerimine ja ajastamine kasvavate meeskondade jaoks",
+          "description": "Professionaalne automatiseerimine ja ajastamine teie kasvavale meeskonnale",
           "features": [
             "Kõik kogukonnapaketis sisalduv +",
-            "5 samaaegset ujuvat litsentsi",
-            "Piiramatu arv hoidlaid",
-            "5 000 hoidla litsentsi väljastamist kuus",
+            "5 seadistuspaika",
+            "Piiramata hoidlaid",
+            "5 000 serveriseadistust kuus",
             "Automaatne ajastamine",
-            "24-tunnine ajahetke taaste",
+            "Taastamine viimase 24 tunni mis tahes hetkel",
             "E-posti ja vestluse tugi",
             "Slack ja PagerDuty teavitused",
-            "Ilma \"Põhineb Rediaccil\" märgistuseta",
+            "Ilma \"Powered by Rediacc\" märgistuseta",
             "Integratsioonide API juurdepääs"
           ],
           "name": "Professional"
@@ -2926,7 +2926,7 @@
           "heading": "Juurutamise ja hinnakujunduse üksikasjad"
         },
         "benefits": {
-          "description": "Pühendatud insenerid sinu poolel, kui infrastruktuur ebaõnnestub.",
+          "description": "Päris insenerid telefonis, kui su serverid kukkuvad. Pole pileti järjekorda. Päris inimene, samal päeval.",
           "heading": "Miks professionaalsed teenused?",
           "items": [
             "Teie projektile määratud pühendatud ekspertide meeskond",
@@ -2945,8 +2945,8 @@
           "heading": "Vajad professionaalset abi?"
         },
         "header": {
-          "badge": "Kiirendage oma edu professionaalse abiga",
-          "eligibility": "Professionaalsed teenused sobivad iga paketiga hübriidjuurdepääsu kaudu. Kasutage allolevat maatriksit, et näha, mis on kaasas ja mida saab lisada.",
+          "badge": "Ekspertabi iga sammul",
+          "eligibility": "Kõik paketid annavad juurdepääsu professionaalsetele teenustele. Allolevast tabelist näed, mis on kaasas ja mida saad juurde valida.",
           "subtitle": "Saage ekspertabi siis, kui seda kõige rohkem vajate",
           "title": "Professionaalsete teenuste paketid"
         },
@@ -2957,7 +2957,7 @@
               "Kohtuekspertiis, ohjeldamine ja taasteplaan",
               "Stabiliseerimise aruanne koos tugevdamise tegevuskavaga"
             ],
-            "description": "Nõudmispõhine intsidentidele reageerimise meeskond, mis on valmis kriitilisi süsteeme ohjeldama ja taastama.",
+            "description": "Ohjeldame kriisi, seejärel toome kriitilised süsteemid tagasi tööle.",
             "name": "Hädaolukord",
             "price": "29 999 $",
             "tiers": [],
@@ -2969,7 +2969,7 @@
               "Õhtune ja nädalavahetuse kättesaadavus",
               "Tootmise üleviimise abi"
             ],
-            "description": "Kiirendatud kohaletoimetamine laiendatud kättesaadavuse ja juhendatud üleviimise toega.",
+            "description": "Kiire juurutamine, tugi ka õhtul ja nädalavahetusel, oleme teiega kuni tootmisse minumiseni.",
             "name": "Priority",
             "price": "19 999 $",
             "tiers": [],
@@ -2981,11 +2981,11 @@
               "Keskkonna ettevalmistamine ja konfigureerimine",
               "Valideerimise kontrollnimekiri ja teadmiste üleandmine"
             ],
-            "description": "Struktureeritud juurutamine, mis hõlmab arhitektuuri, juurutamist, valideerimist ja koolitust.",
+            "description": "Planeerime lahenduse, juurutame selle, testame ja koolitame su meeskonda.",
             "name": "Standard",
             "price": "Alates 7 499 $",
-            "tierHeading": "Töökoormusepõhine juurutamise hinnakujundus",
-            "tierNote": "Töökoormus esindab eraldiseisvat äriprotsessi, rakendust või teenust, mis vajab varukoopiate ja katastroofitaaste kaitset. Juurutamine hõlmab arhitektuuri kavandamist, juurutamist, valideerimist ja meeskonna koolitust.",
+            "tierHeading": "Hinnakujundus serverite arvu järgi",
+            "tierNote": "Iga server ja rakendus loeb ühe üksusena. Juurutamine hõlmab planeerimist, juurutamist, testimist ja su meeskonna koolitust.",
             "tiers": [
               "Starter (1–4 töökoormust): 7 499 $",
               "Growth (5–10 töökoormust): 14 999 $",
@@ -3012,7 +3012,7 @@
           ],
           "heading": "Professionaalsete teenuste hinnakujunduse mõistmine",
           "intro": "Lõplikud projektikulud määratakse järgmiste tegurite alusel:",
-          "note": "Näide: keskmise suurusega juurutamine (120 masinat) koos turbearhitektuuri ülevaatusega jääb tavaliselt vahemikku 14 999–24 999 $, olenevalt integratsioonidest ja jooksva teenuse katvusest."
+          "note": "Näide: 120-serveri projekt koos turbeauditiga on Enterprise'i mahus. Tavaliselt 14 999–24 999 $. Need on hinnangud. Lõpliku hinna määrame seadistuse nägemise järgi. Hind sõltub tööriistadest ja jooksva lepingu valikust."
         },
         "retainers": {
           "description": "Juhtivtaseme sidusrühmad saavad otsese juurdepääsu meie spetsialistidele. Prognoositav igakuine hinnakujundus.",
@@ -3098,12 +3098,12 @@
         }
       },
       "roiCta": {
-        "description": "Kasuta meie interaktiivset ROI kalkulaatorit, et näha, kui palju saad Rediacciga säästa.",
-        "heading": "Pole kindel, milline pakett sobib?"
+        "description": "Kasuta meie interaktiivset ROI kalkulaatorit, et näha, kui palju saad Rediacc-ga säästa.",
+        "heading": "Pole kindel, milline plaani sobib?"
       },
       "technicalSummary": {
-        "description": "Kõrvutlev vaade peamistest infrastruktuuri piirangutest kõigis pakettides.",
-        "heading": "Pakettide võrdlus",
+        "description": "Kõrvutvaade peamistest infrastruktuuri piirangutest kõigis plaanides.",
+        "heading": "Plaanide võrdlus",
         "metrics": [
           {
             "key": "repositories",
@@ -3112,17 +3112,17 @@
           {
             "key": "repoSize",
             "label": "Hoidla suurus",
-            "tooltip": "Kogukonna kasutajad saavad kasutada kuni 10 GB. Suuremad hoidlad vajavad tasulise paketi."
+            "tooltip": "Kogukonna kasutajad saavad kasutada kuni 10 GB serveri kohta. Suuremad seadistused vajavad tasulise plaani."
           },
           {
             "key": "floatingLicenses",
-            "label": "Ujuvad litsentsid",
-            "tooltip": "Mitu masinat saab korraga hoida aktiivseid aktiveerimiskohti."
+            "label": "Seadistusslotid",
+            "tooltip": "Mitu masinat saab samaaegselt servereid luua või kopeerida."
           },
           {
             "key": "jobsPerMonth",
-            "label": "Ujuva litsentsi päringud",
-            "tooltip": "Edukad aktiveerimispõhised hoidla litsentsi väljastamised, mis on loendatud praeguses UTC kalendrikuus."
+            "label": "Serveri seadistusi kuus",
+            "tooltip": "Mitu uut serveri seadistust loendatakse kalenderikuus. Serveri loomine või kopeerimine loendatakse mõlemad ühe seadistusena."
           },
           {
             "key": "usersTeams",
@@ -3162,46 +3162,46 @@
       },
       "trust": {
         "heading": "Turvalisus ja töökindlus",
-        "items": ["AES-256 krüpteerimisstandard", "99,99% tööaja SLA"]
+        "items": ["AES-256 krüpteerimisstandard", "99,99% saadavuse SLA"]
       },
       "trustSection": {
         "heading": "Teie infrastruktuur. Teie reeglid.",
         "rows": [
           {
-            "description": "Käivita, peata, kustuta ja varunda - töötab alati, isegi aastaid pärast tellimuse lõppemist. Need toimingud ei kontrolli kunagi aegumist. Teie andmed on alati kättesaadavad.",
+            "description": "Käivita, peata, kustuta ja varunda - töötavad alati, isegi aastaid pärast tellimuse lõppemist. Teie andmed on alati kättesaadavad.",
             "title": "Teie hoidlad töötavad igavesti."
           },
           {
-            "description": "Failisünkroonimine, VS Code kaugjuurdepääs, SSH terminal ja kõik haldusfunktsioonid töötavad ilma ühegi litsentsita. Täiesti piiranguteta, igavesti.",
+            "description": "Kõik tööristad töötavad jätkuvalt. Failisünkroonimine, SSH juurdepääs, kaugeditid, kõik haldusfunktsioonid. Litsentsi ei ole kunagi vaja.",
             "title": "Täielik juurdepääs teie tööriistadele."
           },
           {
-            "description": "Aktiivne tellimus on nõutav uute hoidlate loomiseks või olemasolevate kloonimiseks. Suurus ja laiendamine töötavad 60 päeva pärast aegumist. Kõik muu on püsiv.",
+            "description": "Aktiivne pakett on vajalik uute hoidlate loomiseks ja olemasolevate kloonimisel. Suurendamine ja laiendamine töötavad 60 päeva pärast aegumist. Ülejäänu on igavene.",
             "title": "Ainult uued hoidlad vajavad tellimust."
           },
           {
-            "description": "Kui teie tellimus lõpeb, jätkavad suurus ja laiendamine tööd veel 60 päeva. Käivitamine, peatamine, kustutamine ja varundamine ei ole mõjutatud - need töötavad igavesti.",
+            "description": "Kui pakett lõpeb, töötavad suurendamine ja laiendamine veel 60 päeva. Käivitamine, peatamine, kustutamine ja varundamine - need töötavad igavesti.",
             "title": "60-päevane ajapikendus skaleerimiseks."
           },
           {
-            "description": "Litsentsikoht on vajalik ainult hoidla loomisel või kloonimisel - igapäevased toimingud ei tarbi kunagi ühte. Kohad vabanevad automaatselt 1 tunni tegevusetuse järel, seega võib 5-kohane pakett teenindada kümneid masinaid. Masinapõhiseid tasusid ei ole kunagi.",
-            "title": "Piiramatu arv masinaid. Loomispõhine litsentsimiskorraldus."
+            "description": "Kohti kasutatakse ainult uute ja kloonitud hoidlate loomisel - igapäevased toimingud ei tarbigi kunagi ühte. Kohad vabanevad automaatselt 1 tunni pärast. 5-kohaline pakett teenindab kümneid masinaid. Masinapõhiseid tasusid pole kunagi.",
+            "title": "Piiramatu arv masinaid. Tasud ainult uute loomisel."
           },
           {
-            "description": "Iga hoidla litsents on seotud masinaga, mille jaoks see väljastati. Kui teie hostiteenuse pakkuja migreerib teie VM-i teisele riistvarale, muutub masina identiteet - kuid teie litsentsid töötavad veel 40 päeva. Järgmine uuendamine seob automaatselt uue masinaga. Seisakut ei ole, käsitsi samme ei ole.",
-            "title": "40-päevane VM migreerimise ajapikendus."
+            "description": "Iga hoidla litsents on seotud masinaga, millele see paigaldati. Kui hostiteenuse pakkuja migreerib hoidla teisele riistvarale, muutub masina identiteet - kuid litsentsid töötavad veel 40 päeva. Järgmine kontroll uuendab automaatselt. Seisakut ei ole, käsitsi samme ei ole.",
+            "title": "40-päevane ajapikendus riistvara muutumisel."
           }
         ],
-        "subtitle": "Rediacc litsentsid on kavandatud nii, et te ei oleks kunagi lukustatud. Siin on, mida see praktikas tähendab.",
+        "subtitle": "Rediacc litsentsid on loodud selleks, et te ei jääks kunagi lukusse. Siin, kuidas see praktikas toimib.",
         "svg": {
           "allOperations": "Kõik toimingud",
           "newMachineId": "Uus masina ID",
           "noLicenseNeeded": "Litsentsi ei ole vaja",
           "noLicenseRequired": "Litsentsi ei nõuta - töötab alati",
-          "reposKeepRunning": "Hoidlad jätkavad tööd kogu selle aja jooksul. Käsitsi samme ei ole vaja.",
+          "reposKeepRunning": "Hoidlad töötavad kogu selle aja. Käsitsi samme pole vaja.",
           "requiredOnlyHere": "Nõutav ainult siin",
-          "slotsAutoRelease": "Kohad vabanevad automaatselt pärast 1 tunni tegevusetust",
-          "slotsCreateFork": "Kohti kasutatakse ainult loomine ja kloonimine jaoks - igapäevased toimingud on alati tasuta"
+          "slotsAutoRelease": "Kohad vabanevad automaatselt 1 tunni pärast",
+          "slotsCreateFork": "Kohti kasutatakse ainult uute ja kloonitud hoidlate jaoks. Igapäevased toimingud on alati tasuta."
         }
       },
       "ui": {
@@ -3245,7 +3245,7 @@
           "period": "Eluaegne · Kaarti ei nõuta",
           "price": "FREE"
         },
-        "edgeLimitsNote": "Näidatud piirid Edge kanali jaoks. Stabiilsel kanalil poole vähem.",
+        "edgeLimitsNote": "Näidatud piirid Edge kanali jaoks. Stabiilsel kanalil on pooled piirid.",
         "foreverFree": "Igavesti tasuta",
         "getStarted": "Installi nüüd",
         "guarantees": {
@@ -3420,19 +3420,19 @@
     "professionalServices": {
       "cta": {
         "button": "Planeeri konsultatsioon",
-        "description": "Planeerige konsultatsioon, et arutada oma infrastruktuuri vajadusi ja saada kohandatud hinnapakkumine.",
+        "description": "Broneeri kõne ja räägi oma vajadustest. Saadame kohandatud hinnapakkumise kahe tööpäevaga. Kui sa kiirustled, ütle seda kõnel ja ütleme sulle ausalt, kas me seda jõuame teha.",
         "heading": "Rääkige meie meeskonnaga",
-        "subtext": "Enamik konsultatsioone lõpetatud 48 tunni jooksul"
+        "subtext": "Konsultatsioonid tavaliselt 48 tunni jooksul"
       },
       "hero": {
-        "badge": "Saadaval kõigile tellimuse pakettidele",
-        "subtitle": "Kiirendage oma infrastruktuuri juurutamist professionaalse juurutamise, migreerimistoe ja hädaabi reageerimise teenustega.",
-        "title": "Ekspertabi siis, kui seda kõige rohkem vajate"
+        "badge": "Saadaval kõigile tellimuspaketitele",
+        "subtitle": "Installite Rediacc omaenda serveritele. Me aitame seda teha ilma nädalavahetust raisata, migreerimisel oma andmeid ilma katki panemata ja võtame telefonitoru, kui midagi süttib.",
+        "title": "Ekspertabi, just siis kui kõige rohkem vaja"
       },
       "meta": {
-        "description": "Juurutustugi, migreerimisabi ja hädaabireageerimine. 2-tunnine reageerimisaeg. 100% migreerimise edukuse määr.",
+        "description": "Aitame paigaldamisel, migreerimisel ja häirete korral. Reageerime 2 tunni jooksul. Juhendatud migratsioone õnnestuvad 100%.",
         "keywords": "professionaalsed teenused, juurutustugi, infrastruktuuri konsulteerimine, hädaabireageerimine, migreerimise teenused, lunavararünnakust taastumine",
-        "title": "Professionaalsed teenused | Ekspertide juurutamine ja tugi"
+        "title": "Professionaalsed teenused | Ekspertabi, juurutamine ja tugi"
       },
       "packages": {
         "heading": "Professionaalsete teenuste paketid",
@@ -3442,9 +3442,9 @@
         "description": "75% kiiremad juurutamised. 100% migreerimise edukuse määr. 2-tunnine hädaabireageerimine. Seda pakub meie professionaalsete teenuste meeskond.",
         "heading": "Miks professionaalsed teenused on olulised",
         "statistics": [
-          "Keskmist juurutamise aega vähendatakse 75% professionaalse toega",
-          "Hädaabireageerimise meeskond saadaval 2 tunni jooksul kriitiliste intsidentide korral",
-          "100% edukuse määr juhendatud infrastruktuuri migreerimistel"
+          "Juurutamise aeg väheneb professionaalse abil keskmiselt 75%",
+          "Kriitiliste intsidentide korral reageerime 2 tunni jooksul",
+          "Juhendatud infrastruktuuri migratsioone õnnestuvad 100%"
         ]
       }
     },
@@ -3568,7 +3568,7 @@
     "resourcesBrief": {
       "devEnvironments": {
         "about": {
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "body": "Rediacc on Tallinnas asuv ettevõte, kes ehitab varukoopia ja katastroofiabi lahendusi btrfs-l ja tavalisel Linux-l. Selle ülevaate kirjutas meie inseneride meeskond. Redigeerisime seda anti-slop stiilguidi järgi ja kontrollisime iga väitest enne avaldamist.",
           "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
           "downloadButton": "Laadi ülevaade alla",
           "heading": "Sellest ülevaatest"
@@ -3582,11 +3582,11 @@
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, salvestamise põhitõdete ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
               "q": "Kellele see ülevaade on kirjutatud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt juhtkonnaversioon (PDF), mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
@@ -3594,11 +3594,11 @@
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "a": "Ülevaade käsitleb seda põhjalikult. Lühiversioon: btrfs paigutab muutumatuse ja hetktõmmiste otse salvestuskihti, mitte rakendusele. Saatmisfunktsioon viib need kopiad väljaspoole. Nii ründaja, kes teie administraatori parooli omab, ei saa neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "a": "Mitte otse. Arhitektuur käsitleb ise hallatavaid servereid, kus andmebaasid jooksevad Docker-il btrfs salvestusel. Kui teie kriitilised andmed asuvad RDS-is või Auroras, märgib ülevaade seda ja näitab, kus mudel kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
@@ -3608,62 +3608,62 @@
           "downloadButton": "Laadi tehniline ülevaade alla",
           "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
           "openInBrowser": "Ava brauseris",
-          "subtitle": "Sinu arendajad kirjutavad koodi 4,5 tundi nädalas. Ülejäänud aeg kulub keskkondade ootamisele. 50-liikmeline meeskond kaotab seadistamisele aastas 720 000–1 200 000 dollarit.",
+          "subtitle": "Sinu arendajad kirjutavad koodi 4,5 tundi nädalas. Ülejäänud aeg läheb keskkondade ootamisele. 50-liikmelise meeskonna seadistuskulu on aastas 720 000–1 200 000 dollarit.",
           "title": "Arenduskeskkonnad"
         },
         "meta": {
-          "description": "Tootmisega identsed arenduskeskkonnad 60 sekundiga btrfs nullkoopiakloone kasutades. Tasuta CISO/CTO ülevaade Rediaccilt ja viie minuti juhtkonnaversioon.",
+          "description": "Tootmisega samad arenduskeskkonnad 60 sekundiga btrfs kiire kloonimise abil. Tasuta CISO/CTO-ülevaade Rediaccilt, pluss juhtide lühiversioon.",
           "keywords": "arenduskeskkonnad, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
           "title": "Arenduskeskkonnad: tasuta tehniline ülevaade PDF"
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "intro": "Ülevaade käsitleb kaitsearhitektuuri, ohusituatsioonide liike, mida see blokeerib, regulatiivset maastikku ning tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
           "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
+            "Mida te tegelikult kaitsete – lihtsatel sõnadel",
+            "Kuidas see töötab ja miks ründajad selle murra ei saa",
+            "Mida see blokeerib – tegelike näidete põhjal",
             "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
+            "Kuluarvutused avaldatud andmete põhjal",
             "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
             "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
+            "Tõendid, mida teie audiitor küsib"
           ]
         }
       },
       "encryptionControl": {
         "about": {
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
+          "body": "Rediacc on Tallinnas asuv ettevõte. Teeme andmetevaruamist ja katastroofiotsivust btrfs peal ja tavalist Linux-t. Meie insenerid kirjutasid selle ülevaate. Toimetasime rämpsukaitse juhiste järgi. Siis kontrollisime kõik väited enne avaldamist.",
+          "cta": "Kas sul on küsimus, mille peaks siia lisama? Saada hello@rediacc.com.",
           "downloadButton": "Laadi ülevaade alla",
           "heading": "Sellest ülevaatest"
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "intro": "Sama lähenemine, teie küsimuste jaoks:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuriinsenerile. Eeldame, et tead varundustöövoogusid, failisüsteeme ja reegleid, millega su infrastruktuur juba kokku puutub.",
               "q": "Kellele see ülevaade on kirjutatud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "a": "Jah. Pärast e-posti sisestamist näitab leht viie-minutilise juhtversiooni, mida saad CFO-le, IT-direktorile või juhatuse liikmele edasi saata.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirjale (üks posti kuus, kogu tootest). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is Rediacc andmete asukohapoliitika järgi.",
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "a": "Ülevaade käsitleb seda detailselt. Lühidalt: btrfs paigutab kirjutuskaitse, hetktõmmised ja saadetised salvestuskihti, mitte rakenduse peale. Nii ei saa ründaja administraatoriparoolist neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "a": "Mitte otse. Arhitektuur käsitleb teie enda servereid, mis käitavad andmebaase Docker-s btrfs salvestamisel. Kui teie kriitilised andmed asuvad RDS-is või Auroras, märgime seda selgelt. Seejärel näitame, kus mudel kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
@@ -3673,50 +3673,50 @@
           "downloadButton": "Laadi tehniline ülevaade alla",
           "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
           "openInBrowser": "Ava brauseris",
-          "subtitle": "Schrems II ei ole poliitiline valik. See on arhitektuurinõue ja enamik varundustarnijaid ei täida seda.",
+          "subtitle": "Schrems II pole poliitika küsimus — see on arhitektuuri nõue. Enamik varunduspakkujaid ei läbi seda.",
           "title": "Krüpteerimise kontroll"
         },
         "meta": {
-          "description": "Kliendihaldusega võtmed ja krüpteeritud andmed, mis ei sõltu teenusepakkujast. Schrems II nõuetele vastav. CISO/CTO ülevaade ja juhtkonna versioon.",
+          "description": "Juhtid ise võtmeid. Andmed jäävad krüpteerituks ka teenusepakkujat vahetades. Schrems II kooskõlas. CISO/CTO ja juhtkonnaversioon.",
           "keywords": "krüpteerimise kontroll, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
-          "title": "Krüpteerimisjuhtimine: tasuta tehniline ülevaade"
+          "title": "Krüpteerimise kontroll: tasuta tehniline ülevaade"
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "intro": "Sees: mida see kaitseb ja kuidas see töötab. Milliste reeglitega saad kooskõlla jõuda. Tõendid, mida audiitor küsib. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
+            "Mida sa tegelikult kaitsed — lihtsal keelel",
+            "Kuidas see töötab ja miks ründaja seda murra ei saa",
+            "Mida see peatab: päris näited ja juhtumid",
+            "Millised reeglid kehtivad: trahvid, tähtajad, sõnastus",
+            "Kulude matemaatika avalike arvude järgi",
+            "Kuidas me võrdleme teistega — tehniliselt, mitte hinna järgi",
+            "Kuidas seadistamine käib ja millega ei tegelda",
+            "Tõendid, mida audiitor kindlasti küsib"
           ]
         }
       },
       "multiCloudAlways": {
         "about": {
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "body": "Rediacc on Tallinnas registreeritud ettevõte. Ehitame varukoopiate ja katastroofitagastamise lahendusi btrfs-l ja tavalisel Linux-l. Meie inseneride tiim kirjutas selle briefi. Me redigeerisime seda anti-slopi juhiste järgi. Siis kontrollisime enne avaldamist kõik väited.",
           "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
-          "downloadButton": "Laadi ülevaade alla",
+          "downloadButton": "Laadi brief alla",
           "heading": "Sellest ülevaatest"
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "intro": "Sama lahendus, raamitud tellija küsimustele:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuriinsenerile, kes hindab arhitektuuri. Eeldame, et tunned varundustöövoogusid, talletamise põhitõdesid ja regulatiivset maastikku, millega sinu infrastruktuur juba kohatub.",
               "q": "Kellele see ülevaade on kirjutatud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "a": "Jah. Pärast e-posti sisestamist näitab sama leht juhtimisbrieffi (5 minutit, PDF), mida saad saata CFO-le, IT-direktorile või juhatuse liikmele.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
@@ -3724,141 +3724,141 @@
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "a": "Brief käsitleb seda põhjalikult. Lühiversioon: btrfs paneb muutumatused ja hetkeliste kloonide kopiad salvestuskihti, mitte rakenduse sisse. Send/receive-funktsioon viib neid koopaid masina välja. Nii et ründaja admin-parooliga ei saa neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "a": "Mitte otseselt. Mudel hõlmab teie servereid, kus andmebaasid töötavad Docker-l btrfs-salvestusel. Kui kriitilised andmed asuvad RDS-is või Auroras, märgib brief seda ja näitab, kus lahendus kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
         },
         "hero": {
           "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga.",
-          "downloadButton": "Laadi tehniline ülevaade alla",
+          "downloadButton": "Laadi tehniline brief alla",
           "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
           "openInBrowser": "Ava brauseris",
           "subtitle": "AWS US-EAST-1 katkestas töö 15 tunniks 20. oktoobril 2025. Snapchat, Robinhood, Uber, Delta. Kas oleksid saanud pilve vahetada õigeaegselt?",
           "title": "Multi-Cloud Always"
         },
         "meta": {
-          "description": "Porditavad hetktõmmised ja testitud pilveülene tõrkesiire – teie äri püsib üles ka pilverikke ajal. CISO/CTO ülevaade ja juhtkonna versioon.",
+          "description": "Varundused pilvede vahel ja testitud failover – teie äri jätkab tööd ka pilve häire ajal. CISO/CTO ülevaade ja juhtkonna versioon.",
           "keywords": "multi-cloud always, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
-          "title": "Multi-Cloud alati: tasuta tehniline ülevaade PDF"
+          "title": "Multi-Cloud alati: tasuta tehniline brief PDF"
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "intro": "Kuidas see kaitseb ja toimib. Millised reeglid kehtivad. Tõendid, mida audiitor küsib. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
+            "Millest sa tõesti kaitstud oled – selgeid sõnadega",
+            "Kuidas see töötab ja miks ründaja ei saa seda murda",
+            "Mida see peatab – reaalsed näited",
+            "Millised reeglid kehtivad: trahvid, tähtajad, täpne sõnastus",
+            "Kulude arvutus: avalike andmete põhjal",
+            "Kuidas me vahime: tehnilisel poole, mitte hinna poolest",
+            "Kuidas paigaldada – ja mida me ei kata",
+            "Tõendid, mida audiitor küsib"
           ]
         }
       },
       "preemptiveDefense": {
         "about": {
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
+          "body": "Rediacc on Tallinnas asuv ettevõte. Ehitame varundus- ja kriisitaastekindlust btrfs-l ja Linux-l. Meie insenerid kirjutasid selle ülevaate. Redigeerisime seda kvaliteedistandardi järgi. Kontrollisime iga väite enne avaldamist.",
+          "cta": "Idee, mille peaksime siia lisama? Saada meile: hello@rediacc.com.",
           "downloadButton": "Laadi ülevaade alla",
           "heading": "Sellest ülevaatest"
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "intro": "Sama arhitektuur, aga vastused, mida teilt küsitakse:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuriinsenerile, kes arhitektuuri hindab. Eeldame, et tead, kuidas varukoopiad ja salvestus toimivad, ja milliseid nõudeid sinu infrastruktuur juba järgib.",
               "q": "Kellele see ülevaade on kirjutatud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "a": "Jah. Pärast e-posti sisestamist leiad sama lehelt viie-minuti juhtkonnaversiooni PDF-na, mida saad CFO-le, IT-direktorile või juhatuse liikmele saata.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "a": "Üks kinnituse e-kiri. Lisame sinut uudiskirjale (üks lühipostitus kuus, kogu toote kohta). Tühista ühe klikiga. Sinu e-post asub vaikimisi EL-is Rediacc andmekaitenõudluse alusel.",
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "a": "Ülevaade selgitab seda põhjalikult. Lühidalt: btrfs asetab muutumatud koopiad ja hetketõmmised salvestuskihile, mitte rakenduse peale. Saatmis/vastuvõtufunktsioon lohistab koopiad seadmest välja. Nii et ründaja, kel sul admin-parool käes, neid kustutada ei saa.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "a": "Mitte otse. Disain hõlmab enda servereid, mis käitavad andmebaaside konteinereid Docker-il btrfs salvetusel. Kui sinu kriitilised andmed elavad RDS-is või Auroras, märgib ülevaade seda. Näitab, kus mudel töötab ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
         },
         "hero": {
-          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga.",
-          "downloadButton": "Laadi tehniline ülevaade alla",
-          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
+          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista ühe klikiga.",
+          "downloadButton": "Laadi ülevaade alla",
+          "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO/CTO tase",
           "openInBrowser": "Ava brauseris",
-          "subtitle": "Testi oma päris infrastruktuuri vastu. Ära riku midagi. Kloon võtab ohtlikud löögid vastu.",
+          "subtitle": "Testi päris süsteeme kloonil. Midagi ei katkeegi. Kloon võtab ohtlikud löögid vastu.",
           "title": "Ennetav kaitse"
         },
         "meta": {
-          "description": "Turvatestid tootmiskloonil ilma tootmisriskita. Tehisaru permestatsioonitestid korduvkasutatamatul koopial. CISO/CTO ülevaade ja juhtkonna versioon.",
+          "description": "Turvatestid tootmise koopial – nullrisk päris infrale. AI permetestid hetkekloonil. CISO/CTO ja juhtkonnaversioon.",
           "keywords": "ennetav kaitse, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
-          "title": "Ennetav kaitse: tasuta tehniline ülevaade PDF"
+          "title": "Ennetav kaitse: tasuta tehniline ülevaade"
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "intro": "Millest kaitseb ja kuidas töötab. Millised reeglid kehtivad. Tõendid, mida audiitor nõuab. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
+            "Mis on tegelikult ohuks – selgesti sõnadega",
+            "Kuidas töötab ja miks ründaja seda murra ei saa",
+            "Mida see peatab – päriseluliste näidetega",
+            "Millised reeglid kehtivad: trahvid, tähtajad, sõnastus",
+            "Kuidas maksab – faktidele toetudes",
+            "Kuidas võistleme – tehnikal, mitte hinnal",
+            "Kuidas alustada ja millised piirangud",
+            "Tõendid, mida audiitor küsib"
           ]
         }
       },
       "ransomwareSurvival": {
         "about": {
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
-          "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
+          "body": "Rediacc on Tallinnas asuv ettevõte, mis ehitab varundust ja katastroofi taastamist btrfs-i ja tavaliste Linux peal. Meie insenerid kirjutasid selle ülevaate. Toimetasime seda rangete stiilijuhiste järgi. Seejärel kontrollesime kõik väited enne avaldamist.",
+          "cta": "Kas sul on küsimus, mille peaks siia lisama? Kirjuta meile hello@rediacc.com.",
           "downloadButton": "Laadi ülevaade alla",
           "heading": "Sellest ülevaatest"
         },
         "companions": {
           "heading": "Seotud lahenduste lehed",
-          "intro": "Sama arhitektuur, rakendatuna konkreetsetele ostjaküsimustele:",
+          "intro": "Sama lähenemine, eri küsimuste jaoks sõnastatud:",
           "readMore": "Loe edasi"
         },
         "faq": {
           "heading": "Lugejate küsimused",
           "items": [
             {
-              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab arhitektuuri. Eeldatakse, et oled kursis varundustöövoogude, failisüsteemi põhitõdede ning regulatiivse maastikuga, millega sinu infrastruktuur juba kokku puutub.",
-              "q": "Kellele see ülevaade on kirjutatud?"
+              "a": "CISO-le, CTO-le või vaneminfrastruktuuri insenerile, kes hindab lahendust. Eeldame, et tunnete varundustöövoogasid, salvestust ja reegleid, millega juba kokkupuutes.",
+              "q": "Kellele see ülevaade on mõeldud?"
             },
             {
-              "a": "Jah. Pärast e-posti sisestamist viitab sama leht viie minuti juhtivversioonile PDF-ina, mida saad edasi saata CFO-le, IT-direktorile või juhatuse liikmele.",
+              "a": "Jah. Pärast e-posti sisestamist näed sama lehel juhtivversionit – viie minuti PDF, mida saad CFO-le, IT-direktorile või juhatuse liikmele edasi saata.",
               "q": "Kas on ka mittetehniline versioon?"
             },
             {
-              "a": "Üks kinnituse e-kiri. Sind lisatakse meie uudiskirja (üks lühipostitus kuus, kogu toote kohta). Tühista tellimus ühe klikiga. Sinu e-post asub vaikimisi EL-is vastavalt Rediacc andmete asukohapoliitikale.",
+              "a": "Saad meie uudiskirja (üks lühike postitus kuus, kogu toote kohta). Sinu e-post asub EL-is vastavalt Rediacc andmete asukohapoliitikale.",
               "q": "Mis saab minu e-postiga?"
             },
             {
-              "a": "Ülevaade selgitab seda üksikasjalikult. Lühiversioon: btrfs muudab muutumatuse, copy-on-write hetktõmmised ning inkrementaalsed saatmis-/vastuvõtmisomadused salvestuskihi omadusteks, mitte nende peal jooksva rakenduse omadusteks. See muudab seda, mida ründaja root-õigustega suudab ületada.",
+              "a": "Ülevaade käsitleb seda põhjalikult. Lühiversioon: btrfs paneb muutumatuse ja hetktõmmised otse salvestuskihti, mitte rakenduse peale. Saatmis- ja vastuvõtufunktsioon viib kopiad masinast välja. Nii et ründaja, isegi administraatoriõigustega, ei saa neid muuta ega kustutada.",
               "q": "Miks btrfs?"
             },
             {
-              "a": "Mitte otse. Arhitektuur hõlmab ise hallatavat arvutust, kus on btrfs-tagatud mahutitel töötavad konteineriseeritud andmebaasid. Kui sinu taastetähtsusega keskkond asub RDS-is või Auroras, märgib ülevaade seda selgesõnaliselt ja osutab, kus mudel kehtib ja kus mitte.",
+              "a": "Mitte otse. Käsitlus hõlmab enda andmebaase btrfs salvestuses. Kui sinu kriitilised andmed on RDS-is või Auroras, märgib ülevaade seda. Näitab, kus mudel kehtib ja kus mitte.",
               "q": "Kas see kehtib haldatavate teenuste kohta, nagu AWS RDS?"
             }
           ]
@@ -3868,32 +3868,32 @@
           "downloadButton": "Laadi tehniline ülevaade alla",
           "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
           "openInBrowser": "Ava brauseris",
-          "subtitle": "94% lunavararünnakutest sihib varundust. 57% õnnestub.",
-          "title": "Lunavarast ellujäämine"
+          "subtitle": "94% lunavara-rünnakutest sihib varundust. 57% neist õnnestub.",
+          "title": "Lunavara käest päässemine"
         },
         "meta": {
-          "description": "Failisüsteemi tasemel muutumatud varukoopiad, mida ründajad ei saa krüpteerida ega kustutada. Tasuta CISO/CTO-tasemel ülevaade Rediaccilt.",
+          "description": "Salvestuskihis muutumatud varukoopiad, mida ründajad ei saa krüpteerida ega kustutada. Tasuta CISO/CTO-tasemel ülevaade Rediaccilt ja juhtivversioon.",
           "keywords": "lunavarast ellujäämine, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
-          "title": "Lunavararünnetele vastupidav varukoopiastrateegia"
+          "title": "Lunavara käest päässemine: tasuta ülevaade"
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "intro": "Sees: millist ohtu kaitstakse ja kuidas see töötab. Milliseid reegleid tuleb täita. Operaatoritaseme tõendid, mida audiitor küsib. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
-            "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
-            "Auditiks valmis tõendid, mida arhitektuur toodab"
+            "Millist ohtu tõesti kaitstakse",
+            "Kuidas see töötab ja miks ründaja seda murda ei saa",
+            "Mida see peatab – tõeliste näidetega",
+            "Millised reeglid kehtivad: trahvid, tähtajad, täpne tekst",
+            "Kuluarvutused avaldatud andmete põhjal",
+            "Kuidas jääme teiste kõrval – tehnoloogial, mitte hinnaga",
+            "Kuidas paigaldada ja mis jääb välja",
+            "Tõendid, mida audiitor küsib"
           ]
         }
       },
       "verifiedBackups": {
         "about": {
-          "body": "Rediacc is a Tallinn-based infrastructure protection company building btrfs-native backup and disaster recovery on commodity Linux. This brief was written by the engineering team, edited against an anti-AI-slop style guide, and reviewed for technical accuracy before publication.",
+          "body": "Rediacc on Tallinna asuv infrastruktuuri kaitse ettevõte. Me teeme varukoopiad ja häire taastamist btrfs-il ja tavapärastel Linux-del. Meie insenerite meeskond kirjutas selle ülevaate, toimetasime seda anti-jama stiilimeetodi järgi ja kontrollis igas väites enne avaldamist.",
           "cta": "Kas sul on küsimus, mille peaksime sellele lehele lisama? Kirjuta meile aadressil hello@rediacc.com.",
           "downloadButton": "Laadi ülevaade alla",
           "heading": "Sellest ülevaatest"
@@ -3929,29 +3929,29 @@
           ]
         },
         "hero": {
-          "disclaimer": "Üks e-kiri. Kinnitus e-postiga. Tühista tellimus ühe klikiga.",
+          "disclaimer": "Üks e-kiri. Kinnitus e-postile. Tühista tellimus ühe klikiga.",
           "downloadButton": "Laadi tehniline ülevaade alla",
           "eyebrow": "Tasuta allalaadimine · A4 PDF · CISO / CTO tase",
           "openInBrowser": "Ava brauseris",
-          "subtitle": "58% varukoopiatest ebaõnnestub taastamiskatsel. Enamik ettevõtteid saab sellest teada alles katastroofi ajal.",
-          "title": "Kinnitatud varukoopiad"
+          "subtitle": "Taastamisel ebaõnnestub 58% varukoopiatest. Enamusele ettevõtetest selgub see alles katastroofi ajal.",
+          "title": "Tõendatud varukoopiad"
         },
         "meta": {
-          "description": "Käivitus- ja kontrolltest igal varukoopial, igal tsüklil – mitte kord kvartalis. Tasuta CISO/CTO ülevaade Rediaccilt ja viie minuti juhtkonnaversioon.",
+          "description": "Iga varukoopia käivitatakse ja kontrollitakse igal tsüklil – mitte kvartali kaupa. Tasuta CISO/CTO ülevaade Rediaccilt ja juhtkonnaversioon.",
           "keywords": "kinnitatud varukoopiad, pdf, rediacc, btrfs varundus, muutumatu varundus, tehniline ülevaade",
-          "title": "Tõendatud varukoopiad: tasuta tehniline ülevaade"
+          "title": "Tõendatud varukoopiad – tasuta ülevaade"
         },
         "toc": {
           "heading": "Mis on sees",
-          "intro": "Ülevaade käsitleb arhitektuuri, rikete liike, mida see blokeerib, regulatiivset kaarti ning operaatoritaseme tõendeid, mida audiitor küsib. Ligikaudu 10–14 tihedat lehekülge.",
+          "intro": "Ülevaade käsitleb, mida arhitektuur kaitseb, kuidas see töötab, milliseid reegleid see täidab ja auditoritõendeid. Umbes 10–14 tihedat lehekülge.",
           "items": [
-            "Ohumudel konkreetsetes operaatoritingimustes",
-            "Arhitektuuriline mehhanism koos vastase-mudeli põhjendusega",
-            "Blokeeritud rikete liigid koos nimetatud pretsedentidega",
-            "Vastavuskaart: konkreetsed reeglid, trahvid, aruandlustähtajad",
+            "Mida sa tegelikult kaitsed – selgesõnaliselt",
+            "Kuidas süsteem töötab ja miks ründaja seda ei murra",
+            "Mida see peatab – päriseluliste näidetega",
+            "Milliseid reegleid pead järgima: trahvid, tähtajad, täpne tekst",
             "ROI-arvutus avaldatud andmete põhjal",
-            "Tarnijate võrdlus tehnilise lähenemise alusel (mitte ARR põhjal)",
-            "Kasutuselevõtu kuju ja teadaolevad ulatus-piirangud",
+            "Meie vs teised – tehnika järgi, mitte hind",
+            "Kuidas seda seadistada ja mida me ei katvame",
             "Auditiks valmis tõendid, mida arhitektuur toodab"
           ]
         }
@@ -3959,29 +3959,29 @@
     },
     "resourcesNis2Directive": {
       "about": {
-        "body": "Rediacc on isehostitav infrastruktuuri platvorm, mis on registreeritud Eestis (OÜ 17363830, KM EE102920091). Selle kokkuvõtte koostas Rediacc oma NIS2 sisuprogrammi raames. Ülaltoodud täiendavad juhendid kirjeldavad, kuidas Rediacc käsitleb direktiivi konkreetseid artikleid, sealhulgas lüngad, kus Rediacc ei ole lahendus (sertifikaadid puuduvad; GRC kiht puudub; Article 23 aruandlust ei haldata; ainult portaali kaudu MFA). Avaliku võimekuse kaardistuse jaoks vaata dokumentatsioonis {nis2DoraLink}.",
-        "cta": "Saada meile oma hankijate küsimustik või eelmise aasta eelarve kolm suurimat turvalisuserida. Vastame juurutatud instantsi põhjal kirjalikult, sealhulgas lünkadega. Või laadi PDF alla ja edasta see kolleegile.",
+        "body": "Rediacc on Eestis registreeritud (OÜ 17363830, KM EE102920091) isehostitav infrastruktuuriplatvorm. Selle kokkuvõtte koostas Rediacc oma NIS2 sisuprogrammi raames. Täiendavad juhendid kirjeldavad, kuidas Rediacc käsitleb direktiivi konkreetseid artikleid, sealhulgas lüngad, kus Rediacc ei ole lahendus (sertifikaadid puuduvad; GRC kihti pole; Article 23 aruandlust ei haldata; portaalipoolne MFA). Avaliku võimekuse kaardistuse jaoks vaata dokumentatsioonis {nis2DoraLink}.",
+        "cta": "Saada meile oma hankija-küsimustik või eelmise aasta kolm suurimat turvalisuseelarve-rida. Vastame meie enda serveril jooksvalt lahenduselt kirjalikult, sealhulgas lüngadega. Või laadi PDF alla ja edasta see kolleegile.",
         "downloadButton": "Laadi PDF alla",
         "heading": "Selle kokkuvõtte kohta"
       },
       "companions": {
         "heading": "Kolm täiendavat juhendit",
-        "intro": "PDF kaardistab direktiivi. Täiendavad juhendid muudavad kohustused hankimis- ja operatiivseteks otsusteks, üks sihtrühm korraga.",
+        "intro": "PDF kaardistab direktiivi. Täiendavad juhendid muudavad kohustused hankimis- ja operatiivseteks otsusteks, ühe sihtrühma kaupa.",
         "items": [
           {
-            "blurb": "Miks kolmanda osapoole IKT-register kahaneb, kui andmetasand ei lahku kunagi sinu üürimisest. CISO-dele ja hankeekspertidele, kes 2026. aastal DPA-sid uuesti läbi räägivad.",
+            "blurb": "Kuidas vendor-nõuded muutuvad, kui tarkvara jookseb teie enda serveril, mitte teenusepakkuja omadel. CISO-dele ja hankeekspertidele, kes 2026. aastal hankemäärusi uuesti kirjutavad.",
             "slug": "nis2-supply-chain-self-hosted",
             "title": "Article 21(2)(d) on hankijapoolne küsimus"
           },
           {
-            "blurb": "Article 21(2)(e), (f) ja 23 koos loetud. Konstantse ajaga fork, mis muudab iganädalased harjutused realistlikuks, ja Article 23 teavitamistähtaeg, mida ei saa täita ilma kohtuekspertiisi-taseme artefaktideta. SRE ja ops-juhtidele.",
+            "blurb": "Article 21(2)(e), (f) ja 23 koos loetud. Konstantse-ajaga fork, mis teeb nädalalased harjutused realistlikuks, ja Article 23 teavitamistähtaeg, mida ei saa täita ilma kohtuekspertiisi-taseme artefaktideta. SRE ja ops-juhtidele.",
             "slug": "nis2-effectiveness-without-theatre",
             "title": "Pidev tõhusus ilma näitemänguta"
           },
           {
-            "blurb": "Viis tööriista vastavuspakk, mida keskturu olulised üksused vaikselt kokku panevad, mida ühendab isehostitav juhtimistasand, ja kuluread, mis jäävad sinu kanda mõlemal juhul. CFO-dele ja ostjatele, kes on suunas uuendusring.",
+            "blurb": "Viie tööriista vastavuse pakk, mida keskturu olulised üksused vaikselt kokku panevad, millest isehostitav lahendus ühe asendab, ja kuluread, mis jäävad teie kanda igatahes. CFO-dele ja ostjatele, kes uuendusringi ees seisavad.",
             "slug": "nis2-the-real-bill",
-            "title": "Mida ostjad meile esimeses NIS2 audititsüklis ütlesid"
+            "title": "Mida ostjad esimeses NIS2 audititsüklis ütlesid"
           }
         ],
         "readMore": "Loe juhendit →"
@@ -3990,23 +3990,23 @@
         "heading": "Korduvad küsimused",
         "items": [
           {
-            "a": "Ei. Tegemist on mitteametliku ingliskeelse kokkuvõttega, mille eesmärk on muuta direktiivi struktuur ja kohustused kättesaadavaks. Siduva tõlgenduse saamiseks konsulteerige ametliku tekstiga OJ L 333/80 (27. detsember 2022) või EUR-Lexi kaudu (CELEX 32022L2555). Liikmesriigi siseriiklikud ülevõtmisaktid võivad kehtestada rangemad või erinevas ulatuses kohustused kui direktiiv ise.",
+            "a": "Ei. Tegemist on mitteametliku ingliskeelse kokkuvõttega, mille eesmärk on muuta direktiivi struktuur ja kohustused kättesaadavaks. Siduva tõlgenduse saamiseks konsulteerige ametliku tekstiga OJ L 333/80 (27. detsember 2022) või EUR-Lexi kaudu (CELEX 32022L2555). Teie liikmesriigi siseriiklikud ülevõtmisaktid võivad kehtestada rangemad või erinevas ulatuses kohustused kui direktiiv ise.",
             "q": "Kas see on direktiivi ametlik tõlge?"
           },
           {
-            "a": "Üksustele, mis tegutsevad Annex I (kõrge kriitilisusega) või Annex II (muud kriitilised) loetletud sektorites ja vastavad keskmise suurusega ettevõtte lävele (50+ töötajat või 10 miljonit eurot+ käive, vastavalt soovitusele 2003/361/EÜ). Mõned üksused on kohaldamisalas suurusest sõltumata, sealhulgas TLD-registrid, DNS-teenusepakkujad, usaldusteenuste osutajad ja kesksed avaliku halduse asutused. PDF-i jaotised 4, 6 ja 7 käsitlevad kohaldamisala üksikasjalikult.",
+            "a": "Annex I või II loetletud sektori üksused, mis vastavad keskmise suurusega kriteeriumile: 50+ töötajat või üle 10 miljoni euro käive (Recommendation 2003/361/EÜ). Annex I katab EU-s kõige kriitilisemaks peetavad sectorid: energia, transport, pangandus, finantsturud, tervishoiuteenus, veemajandus, digitaalinfrastruktuur, avalik haldus, kosmos. Annex II katab muud kriitilised sectorid: post, jäätmed, keemia, toiduainetööstus, tootmine, digitaalsed teenusepakkujad, teadusuuringud. Sõltumata suurusest kohaldatakse TLD-registrite, DNS-pakkujate, usaldusteenuste osutajate ja kesksete avaliku halduse asutuste suhtes. Jaotised 4, 6 ja 7 käsitlevad kohaldamisala üksikasjalikult.",
             "q": "Kellele NIS2 kohaldub?"
           },
           {
-            "a": "Direktiiv jõustus 16. jaanuaril 2023. Liikmesriikidel oli kuni 17. oktoobrini 2024 aega see siseriiklikku õigusesse üle võtta; kohaldamine algas 18. oktoobril 2024 (samal kuupäeval tunnistati NIS1 kehtetuks). Täielik ajakava, sealhulgas üksuste-nimekirja Komisjonile esitamise tähtaeg (17. aprill 2025) ja perioodilise läbivaatamise ajakava, on jaotises 16.",
+            "a": "Direktiiv jõustus 16. jaanuaril 2023. Liikmesriikidel oli kuni 17. oktoobrini 2024 aega see siseriiklikku õigusesse üle võtta. Kohaldamine algas 18. oktoobril 2024 – samal päeval tunnistati NIS1 kehtetuks. Täielik ajakava, sealhulgas üksuste nimekirjade esitamise tähtaeg Komisjonile (17. aprill 2025) ja perioodilise arvustamise kava, on jaotises 16. Enamik meeskondi alahindavad, kui palju sellest ajast on juba möödunud.",
             "q": "Millal NIS2 jõustus ja mis on ülevõtmistähtaeg?"
           },
           {
-            "a": "Oluliste üksuste puhul: 10 000 000 eurot või 2% ülemaailmsest aastakäibest, olenevalt sellest, kumb on suurem. Tähtsate üksuste puhul: 7 000 000 eurot või 1,4% ülemaailmsest aastakäibest, olenevalt sellest, kumb on suurem. Direktiiv lubab ka mitterahalisi sanktsioone, sealhulgas ajutist juhtkonnakeeldu oluliste üksuste tippjuhtide suhtes (viimase abinõuna). Jaotis 15 käsitleb trahvi suuruse määramise tegureid.",
+            "a": "Oluliste üksuste puhul: 10 000 000 eurot või 2% ülemaailmsest aastakäibest, olenevalt sellest, kumb on suurem. Tähtsate üksuste puhul: 7 000 000 eurot või 1,4% ülemaailmsest aastakäibest, olenevalt sellest, kumb on suurem. Direktiiv lubab ka muud sanktsioone. Viimase abinõuna võivad reguleerijad ajutiselt keelata oluliste üksuste tippjuhtide ametitegevust. Jaotis 15 käsitleb trahvide määramise kriteeriume.",
             "q": "Millised on maksimaalsed trahvid?"
           },
           {
-            "a": "Jah, kahel viisil. Otseselt: EL-i välised DNS-, pilveteenuse-, andmekeskuste-, CDN-, MSP/MSSP-, veebituruplatsi-, otsingu- ja sotsiaalvõrgustikupakkujad, kes pakuvad teenuseid EL-is, peavad määrama EL-i esindaja ja täitma nõudeid. Kaudselt: iga EL-i väline tarnija, kes pakub tooteid või teenuseid EL-i olulistele või tähtsatele üksustele, allub tarneahela turvalisuse lepingulistele nõuetele, mille nende EL-i kliendid kehtestasid Article 21(2)(d) alusel. Jaotis 17 käsitleb mõlemat.",
+            "a": "Jah, kahel viisil. Otseselt: EL-i välised DNS-, pilveteenuse-, andmekeskuste-, CDN-, MSP/MSSP-, veebituruplatsi-, otsingu- ja sotsiaalvõrgustikupakkujad, kes pakuvad teenuseid EL-is, peavad määrama EL-i esindaja ja täitma nõudeid. Kaudselt: iga EL-i väline tarnija, kes pakub tooteid või teenuseid EL-i olulistele või tähtsatele üksustele, allub tarneahela turvalisuse lepingulistele nõuetele, mille nende EL-i kliendid kehtestasid Article 21(2)(d) alusel. Jaotis 17 käsitleb mõlemat juhtumit.",
             "q": "Kas NIS2 kohaldub EL-i välistele ettevõtetele?"
           },
           {
@@ -4020,17 +4020,17 @@
         "downloadButton": "Laadi PDF alla",
         "eyebrow": "Tasuta allalaadimine · 24 lehekülge · A4 PDF",
         "openInBrowser": "Ava brauseris",
-        "subtitle": "24-leheküljeline ingliskeelne kokkuvõte Directive (EU) 2022/2555. Katab kohaldamisala, kümme Article 21 meedet, 24h/72h/1-kuuse Article 23 teavitamistähtaega, Annex I ja Annex II sektoreid, haldustrahve ning 10-sammulist praktilist vastavuse teekaarti. Rediacci koostatud; ei ole ametlik tõlge.",
+        "subtitle": "24-leheküljeline ingliskeelne kokkuvõte direktiivist 2022/2555. Katab kohaldamisala, kümmet Article 21 meedet, Article 23 teavitamistähtaegasid (24h/72h/1 kuu), Annex I ja II sektore, haldustrahve ja 10-sammulist praktilist vastavuse teekaarti. Rediacci koostatud; ei ole ametlik tõlge.",
         "title": "NIS2 direktiiv: ingliskeelne kokkuvõte CISO-dele ja vastavusjuhtidele"
       },
       "meta": {
-        "description": "Tasuta NIS2 direktiivi 24-leheküljeline kokkuvõte. Article 21 meetmed, Article 23 aruandlus, Annex I/II sektorid, trahvid, 10-sammuline tegevuskava.",
+        "description": "Tasuta kokkuvõte NIS2 direktiivist. 24 lehekülge, katab Article 21 meetmed, Article 23 teavitamise, Annex-sektore, haldustrahvid ja 10-sammulist tegevuskava.",
         "keywords": "NIS2, NIS2 direktiiv, NIS2 kokkuvõte, NIS2 vastavus, EL küberjulgeoleku direktiiv, Directive 2022/2555, Article 21, Article 23, NIS2 PDF",
-        "title": "NIS2 direktiivi kokkuvõte CISO-dele (Tasuta PDF)"
+        "title": "NIS2 direktiivi kokkuvõte CISO-dele (tasuta PDF)"
       },
       "toc": {
         "heading": "Mis on PDF-is",
-        "intro": "Üheksateist jaotist, struktureeritud töötavale CISO-le või vastavusjuhile, kes soovib direktiivi sisu ilma 73 lehekülge põhjendusi ja artikleid läbi uurimata.",
+        "intro": "Üheksateist jaotist CISO-dele ja vastavusjuhtidele, kes vajavad direktiivi sisu selges keeles – ilma 73 lehekülje põhjendustest ja artiklitest.",
         "items": [
           "Juhtkonna kokkuvõte",
           "Eesmärk ja õiguslik alus",
@@ -4077,12 +4077,12 @@
         "devProductivity": {
           "dollarValue": "Rahaline väärtus",
           "hoursSaved": "Aastas säästetud tunde",
-          "provisioningReduction": "Ettevalmistamise aja vähenemine",
+          "provisioningReduction": "Ettevalmistamise aeg",
           "title": "Arendajate tootlikkus"
         },
         "drAvailability": {
           "currentRisk": "Praegune seisakurisk",
-          "rediaccRisk": "Rediacciga",
+          "rediaccRisk": "Rediacc-ga",
           "rtoImprovement": "RTO paranemine",
           "savings": "Aastased katastroofitaaste säästud",
           "title": "Katastroofitaaste ja kättesaadavus"
@@ -4094,13 +4094,13 @@
           "title": "TCO säästud"
         }
       },
-      "description": "Valige oma ettevõtte suurus ja kohandage sisendeid, et näha reaalajas TCO võrdlust, arendajate tootlikkuse kasvu ja tasuvusperioodi.",
-      "footnote": "Hinnangud põhinevad tööstuse võrdlusalustel ITIC, IBM/Ponemon, Sophos, Cortex ja KPMG uuringutest (2024). TCO hõlmab infrastruktuuri, administreerimist, katastroofitaaste testimist ja hooldust. Arendajate tootlikkus kasutab konservatiivset 40% realiseerimise määra. Katastroofitaaste säästud põhinevad RTO paranemisel, kasutades btrfs copy-on-write hetktõmmiseid. Salvestuse säästud eeldavad CoW efektiivsust versus traditsioonilisi varukoopiate ahelaid. Tegelikud tulemused varieeruvad töökoormuse ja konfiguratsiooni alusel.",
+      "description": "Valige oma ettevõtte suurus ja kohandage sisendeid – näete TCO võrdlust reaalajas, arendajate säästetud tunde ja tasuvusperioodi.",
+      "footnote": "Hinnangud põhinevad ITIC, IBM/Ponemon, Sophos, Cortex ja KPMG tööstuse võrdlusalustel (2024). TCO hõlmab infrastruktuuri, administreerimist, katastroofi taastamise testimist ja hooldust. Arendajate tootlikkus kasutab konservatiivset 40% realiseerimise määra. Katastroofi taastamise säästud saavutatakse btrfs-ga, mis võimaldab kiiremaid taastusi (avatud lähtekoodiga salvestussüsteem, mis on Linux sisse ehitatud). Salvestuse säästud tulevad kopiatest, mis ei nõua lisaruumi, erinevalt täielikult varukoopiaahelatest. Tegelikud tulemused erinevad töökoormuse ja seadistuse alusel.",
       "hero": {
         "title": "Arvutage oma infrastruktuuri ROI"
       },
       "meta": {
-        "description": "Arvutage koguomamiskulude säästud, tasuvusperiood ja ROI Rediacc omahosting infrastruktuurile üleminekul.",
+        "description": "Vaata, kui palju Rediacc sulle säästa võib. Sisesta oma arvud ja näe TCO-d, tasuvusperioodi ja 3-aastase ROI-d.",
         "keywords": "ROI kalkulaator, TCO võrdlus, infrastruktuuri säästud, omahosting ROI, tasuvusperiood, varukoopiate kulude vähendamine",
         "title": "ROI kalkulaator - infrastruktuuri säästud | Rediacc"
       },
@@ -4117,7 +4117,7 @@
             "url": "https://newsroom.ibm.com/2024-07-30-ibm-report-escalating-data-breach-disruption-pushes-costs-to-new-highs"
           },
           {
-            "text": "Sophos, \"The State of Ransomware 2024.\" Keskmine taastumise kulu (ilma lunarahata): 2,73 miljonit $, 50% kasv 1,82 miljonilt 2023. aastal. 59% organisatsioonidest sattus eelmisel aastal lunavararünnaku ohvriks.",
+            "text": "Sophos, \"The State of Ransomware 2024.\" Keskmine taastumise kulu (ilma lunarahata): 2,73 miljonit $, 50% kasv 1,82 miljonist dollarist 2023. aastal. 59% organisatsioonidest sattus eelmisel aastal lunavararünnaku ohvriks.",
             "url": "https://www.sophos.com/en-us/content/state-of-ransomware"
           },
           {
@@ -4147,7 +4147,7 @@
         "enterprise": "Enterprise",
         "enterpriseDesc": "200–1 000 töötajat",
         "label": "Ettevõtte suurus",
-        "large": "Suur Enterprise",
+        "large": "Suur ettevõte",
         "largeDesc": "1 000+ töötajat",
         "mid": "Keskturg",
         "midDesc": "25–200 töötajat",
@@ -4168,7 +4168,7 @@
         "paybackUnit": "kuud",
         "threeYearRoi": "3-aastane ROI"
       },
-      "title": "Kui palju saab Rediacc teie organisatsioonile säästa?"
+      "title": "Kui palju saab Rediacc teie ettevõttele säästa?"
     },
     "solutionPages": {
       "aiPentesting": {
@@ -13824,43 +13824,43 @@
       "cta": {
         "buttons": {
           "contact": "Võta ühendust",
-          "learnMore": "Loe lähemalt"
+          "learnMore": "Kuidas see töötab"
         },
-        "subtitle": "Installi Rediacc alla 5 minutiga. Kogukonna pakett on igavesti tasuta.",
+        "subtitle": "Paigalda Rediacc viie minutiga. Kogukonna pakett on igavesti tasuta.",
         "title": "Proovi tasuta"
       },
       "hero": {
-        "subtitle": "Insenerid, kes on pühendunud sellele, et katastroofid oleksid teie ettevõtte jaoks võimatud.",
-        "title": "Meeskond, kes ehitab infrastruktuuri, mis peab vastu"
+        "subtitle": "Insenerid, kes väsisid 3 öösel helistavatest andmekadutest. Nii ehitasime lahenduse.",
+        "title": "Tiim, kes ehitab varundust, mida rünnak murra ei saa"
       },
       "meta": {
-        "description": "Tutvu meeskonnaga, kes ehitab katastroofidele vastupidavat infrastruktuuri. Insenerid, kes on pühendunud teie süsteemide vastupidavuse tagamisele.",
+        "description": "Tutvu tiimiga, kes ehitab Rediacc-i. Väsisid 3 öösel andmekadude helistustest ja ehitasid varunduse, mida rünnak ei murra.",
         "keywords": "Rediacc meeskond, infrastruktuuri insenerid, katastroofitaaste eksperdid, süsteemi töökindlus, DevOpsi meeskond",
-        "title": "Meie meeskond | Rediacc - vastupidav infrastruktuur"
+        "title": "Meie meeskond | Rediacc - varundus rünnakule vastupidav"
       },
       "mission": {
-        "belief": "Kogukonna pakett teeb kõike, mida tasulised paketid teevad - sama btrfs kloonimine, sama LUKS krüpteerimine, samad muutmatud varukoopiad. Lihtsalt väiksemate piirangutega. Funktsioonide lukke ei ole, peibutust ega vahetamist ei ole.",
-        "description": "Iga 47 päeva tagasi kustutab tehisintellekt tootmise andmebaasi. Iga aasta ebaõnnestub 1,71% draividest. 75% lunavarast sihib varukoopiad. Muudame kõik need katastroofid 60 sekundiga taastatavaks.",
+        "belief": "Kogukonna pakett teeb täpselt sama, mis tasulised paketid: sama btrfs kloonimine, sama LUKS krüpteerimine, samad lukustatud, ühekordse kirjutusega varundused. Vaid väiksemate piirangutega. Funktsioonide ees pole uksi, peibutust ega trikke.",
+        "description": "Iga 47 päeval hävitatakse kuskil andmebaas. Aastas riknevad 1,71% kettaid. Lunarvarad sihivad 75% korral varukoopiad. 60 sekundiga oled taas online.",
         "title": "Meie missioon: muuta katastroofid võimatuks"
       },
       "story": {
         "beginning": {
-          "paragraph1": "2018. aastal lahkusin oma tarkvarainseneeri ametikohalt, et järgida oma visiooni. Põnevus hoidis mind 18 tundi päevas töötamas ja ainult 4-5 tundi magamas. Panustasin kõik projekti 5-6 kuu jooksul.",
-          "paragraph2": "Siis kaotasin ootamatult juurdepääsu kogu oma arenduse infrastruktuurile. Kõik, mida olin ehitanud, muutus äkki kättesaamatuks. Varukoopiad puudusid ja isegi kui need oleksid olemas, ei saanud ma endale lubada kasutatud ettevõttesisese riistvara asendamist.",
-          "paragraph3": "Võlgade tasumiseks ja pere ülalpidamiseks pidin naasma palgalise töötaja juurde. Juurdepääsu taastamine minu tööle võttis 20 kuud. Selle aja jooksul eeldasin kaugele oma unistustest, elades ebakindluse ja kasvava majandusliku surve all.",
+          "paragraph1": "2018. aastal jätin oma tarkvarainseneeri töö, et jäljendada oma unistusi. Põnevus pidas mind peal: 18-tunnised tööpäevad, 4-5 tunni uni. Panustasin kõik 5-6 kuusse.",
+          "paragraph2": "Siis kaotasin juurdepääsu kogu arendusinfrale. Käigus. Kõik, mida olin ehitanud, oli äkki kättesaamatu. Varukoopiat ei olnud. Isegi kui oleks olnud, ei oleks saanud endale uusi servereid lubada.",
+          "paragraph3": "Võlgade tasumiseks ja pere toitmiseks pidin tavalisele tööle naasma. 20 kuud juurdepääsu taastamiseks. 20 kuud ebakindlust, kasvavaid arveid, eemalduv uni.",
           "title": "Algus"
         },
         "birth": {
-          "paragraph1": "Kõik algas kaasaskantava failisüsteemi loogika arendamisest. Sealt integreerisin varunduse mooduli. Siis tuli üks kõige kriitilisemaid väljakutseid: minimaalse seisakuga reaalajas süsteemide ülekannete võimaldamine, sõltumata andmete suurusest. Lisasin ainulaadseid funktsioone tegelike vajaduste põhjal.",
-          "paragraph2": "Nii sündis Rediacc - toode, mis on loodud raskemaid väljakutseid ületades. Nüüd on see kõigile kättesaadav. Kasuta seda ja ära lase milleski oma äri tagasi hoida - ole valmis vastu pidama ja kiirendama.",
+          "paragraph1": "Algus oli kaasaskantav failisüsteem. Sealt tulivad varunduse moodulid. Siis kõige raskeim: reaalajas süsteemide liigutus, peaaegu seisatamata, andmemahu suurusest sõltumata. Lisasin need funktsioonid, mida ise vajatasin.",
+          "paragraph2": "Nii sündis Rediacc – toode, mis on foreeritud raskematel väljakutsetel. Nüüd on see kõigile avatud. Kasuta seda. Ära lase seisatustel oma äri seisata. Ole valmis säilima ja kasvama.",
           "quote": "Kui kaotasin juurdepääsu oma infrastruktuurile, teadsin, mida pean ehitama: süsteemi, mis muudab katastroofid võimatuks.",
           "title": "Rediacc sünd"
         },
         "title": "Meie lugu",
         "turningPoint": {
-          "paragraph1": "Aastate pärast mõtlesin pidevalt sellele, mida saaksin teha, et sellist probleemi uuesti vältida. Vajasin tööriista, mis võimaldaks mul igal ajal oma süsteeme teise keskkonda kolida, vajadusel aktiveerida, hõlpsasti varundada ja turvaliselt salvestada, olenemata sellest, kuhu ma neid liigutan.",
-          "paragraph2": "2021. aastal avastasin Dockeri NetworkChucki video kaudu. Olin šokeeritud sellest, mis oli võimalik. Soovisin, et oleksin varem selle tehnoloogia kohta teadnud - see oleks kõike muutnud.",
-          "paragraph3": "Kuid Docker üksi ei lahendanud kõiki minu probleeme. Konteineri failide teisaldamine süsteemide vahel oli keeruline. Seisisin silmitsi failide omandiõiguse ühilduvuse probleemidega ja andmete suuruse kasvades võtsid ülekanded kauem aega. Kõige kriitilisem oli see, et pidin teenused migreerimise lõpuni ühendusest lahti ühendama ja Docker pakkus minimaalseid turbefunktsioone.",
+          "paragraph1": "Aastate pärast mõtlesin pidevalt: kuidas sellist katastrooft vältida? Vajasin tööriista – liiguta süsteemid kuhugi, käivita kohe, varunda hõlpsasti, turva igal ajal, sõltumata sellest, kuhu need minna peavad.",
+          "paragraph2": "2021. aastal leidsin Docker-i NetworkChucki videos. Šokeeritus. Selline asi oli võimalik! Kahetsesin, et pole seda varem teadnud – oleks kõike muutnud.",
+          "paragraph3": "Aga Docker üksi ei pidanud vastu. Failide teisaldamine oli piin: omandiõigused katkesid, andmemahu kasvades aeglustumine, teenused pidi seisakule, turvalisus praktiliselt puudus. Polnud piisav.",
           "title": "Pöördepunkt"
         }
       },
@@ -13870,27 +13870,27 @@
       "values": {
         "items": {
           "global": {
-            "description": "9 keelt. EL-is hostiitud telemetria. Eesti ettevõte GDPR-i vastavusega sisseehitatult.",
+            "description": "9 keelt. Kasutusandmed jäävad Euroopasse. Eesti ettevõte, GDPR sees.",
             "title": "Globaalne mõtlemine"
           },
           "innovation": {
-            "description": "Tarnime iganädalaselt. Iga väljalase lahendab tegeliku juurutamise probleemi, mille meie kasutajad teatasid.",
+            "description": "Tarnime iganädalaselt. Iga väljalase lahendab konkreetse juurutamise probleemi, mille kasutajad meile teatasid.",
             "title": "Pidev innovatsioon"
           },
           "security": {
-            "description": "LUKS krüpteerimine puhkeolekus. TLS edastamisel. Isoleeritud Dockeri deemonid hoidla kohta. Iga kiht lukustatud.",
+            "description": "LUKS krüpteerimine puhkeolekus. TLS võrgu kaudu. Eraldi Docker mootor iga rakenduse jaoks. Iga kiht lukustatud.",
             "title": "Turvalisus disainis"
           },
           "simplicity": {
-            "description": "Üks käsk 241 GB tootmisandmete kloonimiseks. See on meie keerukuse eelarve.",
+            "description": "Üks käsk – 241 GB tootmisandmeid kopeeritud. Sellest piisab meie keerukuse eelarveks.",
             "title": "Lihtsus esikohal"
           },
           "success": {
-            "description": "Mõõdame ennast teie taastumisaja järgi - mitte meie funktsioonide arvu järgi.",
+            "description": "Mõõdame edu teie taastumisajaga – mitte meie funktsioonide arvuga.",
             "title": "Kliendi edu"
           },
           "transparency": {
-            "description": "Avatud kommunikatsioon, aus hinnakujundus ja selge dokumentatsioon. Varjatud tasusid ei ole, üllatusi ei ole, peenkirja ei ole.",
+            "description": "Avatud kommunikatsioon, aus hinnakujundus ja selge dokumentatsioon. Varjatud tasusid pole, üllatusi pole, peenkirja pole.",
             "title": "Läbipaistvus"
           }
         },
@@ -14433,21 +14433,21 @@
     }
   },
   "pricingPreview": {
-    "compareAll": "Võrdle kõiki pakette ja funktsioone",
-    "subtitle": "Alusta tasuta. Skaleeri, kui oled valmis.",
-    "title": "Hinnad, mida saad postmortemi ajal kaitsta"
+    "compareAll": "Võrdle kõiki plaane ja funktsioone",
+    "subtitle": "Tasuta algus. Kasva, kui valmis.",
+    "title": "Hinnakiri, mida kaitsed postmortemis"
   },
   "problem": {
     "reality": {
       "imageAlt": "Diagramm, mis illustreerib traditsioonilise infrastruktuuri töövoo probleeme: frustreeritud arendajad, kes ootavad keskkonna ettevalmistamist, nõudlikud sidusrühmad ja meeskonnad, kes kasutavad ohtlikku tootmistestimist",
-      "title": "Reaalsus: frustreeritud meeskonnad, ohtlikud möödapääsud"
+      "title": "Tegelikult: väsinud meeskonnad, riskantsed kompromissid"
     },
     "solution": {
       "imageAlt": "Rediacc platvormi lahenduse diagramm: automatiseeritud infrastruktuuri ettevalmistamine, kohesed tootmissarnased keskkonnakloonimine, kiiremad arendajate töövood ja AI-turvalised operatsioonid MCP integratsiooniga",
-      "title": "Lahendus: Rediacc platvorm"
+      "title": "Kuidas Rediacc lahendab selle"
     },
-    "subtitle": "Kui tootmiskeskkonnas on terabaite andmeid, aga liivakastikeskkonda sünkroonitakse kord kuus, seisavad meeskonnad võimatute valikute ees, mis viivad ohtlike möödapääsudeni.",
-    "title": "Kiiruse mittevastavuse kriis"
+    "subtitle": "Tootmises terabaite andmeid. Testkeskkond vananenud. Meeskonnad seisavad valiku ees: kas testida vanast kopiaast või riskida muudatustega otse tootmisse?",
+    "title": "Miks teie meeskond testib tootmises"
   },
   "regionPicker": {
     "channelEdge": "Edge",
@@ -14473,7 +14473,7 @@
       "multi-cloud": "Mitu pilve",
       "ransomware": "Lunavararünnakutest ellujäämine"
     },
-    "subtitle": "Lahendused kuues fookusalas — lunavararünnakutest ellujäämisest ennetava kaitseni.",
+    "subtitle": "Kuus viisi, kuidas ellujääda lunavararünnakutest, jääda veebis ja kaitsta oma andmeid",
     "title": "Kuidas tagame äri järjepidevuse"
   },
   "team": {
@@ -14499,18 +14499,18 @@
       {
         "company": "Finantsteenused",
         "name": "Marcus R.",
-        "quote": "Meie taasteplaan lubas neli tundi. Tegelikkuses oli see neli päeva. Nüüd lülitume kloonile üle vähem kui minutiga.",
+        "quote": "Taasteplaan lubas neli tundi, tegelikkus oli neli päeva. Nüüd lülitume kloonile üle vähem kui minutiga.",
         "role": "Avariitaaste juht"
       },
       {
         "name": "Sarah K.",
-        "quote": "Enne kodeerisin otse tootmises, sest liivakast oli nädalaid maas. Nüüd saan värske klooni 60 sekundiga.",
+        "quote": "Enne kodeerisin otse tootmises, sest liivakast oli nädalate kaupa mahajäänud. Nüüd saan värske klooni 60 sekundiga.",
         "role": "Arendaja"
       },
       {
         "company": "SaaS-platvorm",
         "name": "James L.",
-        "quote": "Skaleerisime ühelt andmebaasilt kaheteistkümnele, ostmata uut riistvara. Rediacc kloonid jagavad salvestust — maksame ainult muutuste eest.",
+        "quote": "Skaleerisime ühest andmebaasist kaheteistkümnele, ilma uut riistvara ostmata. Rediacc kloonid jagavad salvestust — maksame ainult muutuste eest.",
         "role": "CTO"
       },
       {
@@ -14519,7 +14519,7 @@
         "role": "DevOpsi insener"
       }
     ],
-    "subtitle": "Kuidas eri rollid Rediacci kogevad",
+    "subtitle": "Kuidas erinevad rollid Rediacc-d tajuvad",
     "title": "Mida meeskonnad ütlevad"
   },
   "tutorial": {
@@ -14540,20 +14540,20 @@
   "whyNow": {
     "cards": [
       {
-        "description": "AI kirjutab koodi minutitega. Sa ootad päevi, et saada koopia testimiseks.",
+        "description": "AI kirjutab koodi minutitega. Aga testimiseks ootad päevi.",
         "title": "Arendajad on 10× kiiremad"
       },
       {
-        "description": "AI ründab sekunditega. Turvatest kord kolme kuu tagant ei piisa.",
+        "description": "AI ründab sekunditega. Turvatest kolme kuuga? Liiga harva.",
         "title": "Häkkerid on 10× kiiremad"
       },
       {
-        "description": "Sa töötad mitmes pilves. Sinu testikoopia ei sobi ühelegi neist.",
-        "title": "Sinu seadistus on hajutatud"
+        "description": "Mitut pilvet käitad. Testiversioon neist ei sobi ühegile.",
+        "title": "Sinu seadistus on killustunud"
       }
     ],
-    "footer": "Enamik meeskondi töötab mitmes pilves. Nende testikoopia vastab harva mõnele neist.",
-    "overline": "Miks just nüüd",
-    "title": "Sinu maailm liigub kiiresti. Sinu testikoopia mitte."
+    "footer": "Äri käib minutitega. Aga testikeskkond päivadel.",
+    "overline": "Miks nüüd",
+    "title": "Maailm jookseb ruttu. Sinu testiversioon jääb jalgu."
   }
 }

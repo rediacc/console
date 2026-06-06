@@ -60,7 +60,7 @@ const interest = Astro.url.searchParams.get('interest') || '';
 
 <style>
 .contact-page {
-  padding: var(--space-24) 0 var(--space-20);
+  padding: calc(var(--nav-top-offset) + var(--space-10)) 0 var(--space-20);
 }
 
 .contact-grid {
@@ -135,7 +135,7 @@ const interest = Astro.url.searchParams.get('interest') || '';
   }
 
   .contact-page {
-    padding: var(--space-16) 0 var(--space-12);
+    padding: calc(var(--nav-top-offset) + var(--space-6)) 0 var(--space-12);
   }
 }
 </style>

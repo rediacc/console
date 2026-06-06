@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: ko
-sourceHash: "73a4cb1d8c412531"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "14d013a82dbcbd4e"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # 저장소 포크하기
 
-이것이 작업 방식을 바꾸는 기능입니다. 앱, 데이터베이스, 구성 파일을 포함한 전체 프로덕션 환경을 몇 초 만에 복제합니다. 크기 무관. 추가 디스크 없음. 원하는 만큼 포크할 수 있습니다.
+앱, 데이터베이스, 구성 파일을 포함한 전체 프로덕션 환경을 몇 초 만에 복제합니다. 크기 무관. 추가 디스크 없음. 원하는 만큼 포크할 수 있습니다.
 
 핵심 문구: **프로덕션을 복제하되, 아무것도 망가뜨리지 않습니다.**
 
@@ -47,15 +47,15 @@ echo "Hello from production" > index.html
 
 ![Sharing a folder link is the same speed regardless of the folder's size](/img/tutorials/tutorial-forking/slide-2.svg)
 
-폴더 링크를 공유하는 것을 상상해 보세요. 링크는 폴더가 작든 크든 동일합니다. 폴더는 무겁지만, 링크는 가볍습니다.
+원인은 btrfs reflink입니다. 포크는 부모와 동일한 데이터 블록을 가리키는 새로운 파일 시스템 트리를 생성합니다. 포크 시에 데이터가 복사되지 않습니다. 모두 메타데이터이므로 부모의 크기는 포크가 얼마나 오래 걸리는지에 영향을 주지 않습니다.
 
-![1 GB, 100 GB, 1 TB -- same time, every time](/img/tutorials/tutorial-forking/slide-3.svg)
+![1 GB, 100 GB, 1 TB. Same time, every time.](/img/tutorials/tutorial-forking/slide-3.svg)
 
 포크도 마찬가지입니다. 1 GB, 100 GB, 1 TB 언제나 같은 시간.
 
 ## 무엇이 공유되고, 무엇이 내 것인가요?
 
-![Many mirrors, one sun -- shared base, your changes are yours](/img/tutorials/tutorial-forking/slide-4.svg)
+![Many mirrors, one sun: shared base, your changes are yours](/img/tutorials/tutorial-forking/slide-4.svg)
 
 부모 저장소를 고정된 원본이라고 생각하세요. 포크는 그것의 쓰기 시 복사(copy-on-write) 뷰입니다. 포크에 쓰면 그 내용은 포크에만 남습니다. 아무리 많은 포크가 가리키고 있어도 부모는 변하지 않습니다.
 
@@ -73,7 +73,7 @@ echo "Hello from production" > index.html
 
 ## 디스크 사용량이 증가하지 않습니다
 
-![Five forks of a 100 GB repo -- still about 100 GB](/img/tutorials/tutorial-forking/slide-6.svg)
+![Five forks of a 100 GB repo, still about 100 GB total](/img/tutorials/tutorial-forking/slide-6.svg)
 
 그래서 디스크가 폭발하지 않습니다. 100 GB 저장소의 포크가 다섯 개? 총 여전히 약 100 GB입니다. 각 포크에서 변경한 내용에 대해서만 디스크 비용을 지불합니다.
 

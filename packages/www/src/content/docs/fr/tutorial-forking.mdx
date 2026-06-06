@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: fr
-sourceHash: "73a4cb1d8c412531"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "14d013a82dbcbd4e"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Forker un dépôt
 
-C'est la partie qui change votre façon de travailler. Clonez un environnement de production entier (l'application, la base de données, les fichiers de configuration) en quelques secondes. Toute taille. Zéro disque supplémentaire. Forkez autant de fois que vous le souhaitez.
+Forkez un environnement de production entier (l'application, la base de données, les fichiers de configuration) en quelques secondes. Toute taille. Zéro disque supplémentaire. Forkez autant de fois que vous le souhaitez.
 
 Le slogan : **clonez la production, ne cassez rien.**
 
@@ -47,7 +47,7 @@ Une seule commande. Tout a été cloné (l'application, la base de données, les
 
 ![Partager un lien de dossier prend le même temps quelle que soit la taille du dossier](/img/tutorials/tutorial-forking/slide-2.svg)
 
-Imaginez partager un lien de dossier. Le lien est le même que le dossier soit petit ou énorme. Le dossier est lourd, le lien est léger.
+La raison en est les reflinks btrfs. Un fork crée un nouvel arbre système de fichiers pointant vers les mêmes blocs de données que le parent. Aucune donnée n'est copiée au moment du fork. C'est purement une affaire de métadonnées, donc la taille du parent n'influe jamais sur le temps de création du fork.
 
 ![1 Go, 100 Go, 1 To. Même temps, à chaque fois.](/img/tutorials/tutorial-forking/slide-3.svg)
 

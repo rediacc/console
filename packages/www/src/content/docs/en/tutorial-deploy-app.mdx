@@ -1,6 +1,6 @@
 ---
-title: "Deploying Your First App"
-description: "Deploy a containerized app from a built-in template using rdc repo up."
+title: "Deploy Your First App"
+description: "Get a containerized app running from a built-in template using `rdc` repo up."
 category: "Tutorials"
 subcategory: essentials
 order: 5
@@ -11,7 +11,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Deploying Your First App
 
-You have an empty repository. `rdc` ships built-in templates so you can spin up real apps without writing a `docker-compose` from scratch. Three steps: pick a template, apply it, run it.
+You have an empty repository. `rdc` ships built-in templates so you can spin up real apps without writing a `docker-compose` from scratch. Pick a template, apply it, run it.
 
 ## Watch the tutorial
 
@@ -25,13 +25,13 @@ You have an empty repository. `rdc` ships built-in templates so you can spin up 
 
 <TutorialStep number={1} />
 
-You'll see ready-made setups for common apps: Postgres, Redis, web servers, and more.
+You'll find ready-made setups for common apps: Postgres, Redis, web servers, and more.
 
 ## Step 2: Apply
 
 <TutorialStep number={2} />
 
-This copies the template's files into the repo.
+Done. This copies the template's files into the repo.
 
 ## Step 3: See what landed
 
@@ -43,13 +43,13 @@ Two files: `docker-compose.yml` describing the containers, and `Rediaccfile` def
 
 <TutorialStep number={4} />
 
-The CLI starts the containers, mounts the encrypted volume, and wires up an isolated Docker daemon for this repo. (If you're already inside the repo's sandbox via VS Code, `renet dev up` is an equivalent in-sandbox alternative.)
+The CLI starts the containers, mounts the encrypted volume, and wires up an isolated Docker daemon for this repo. (Already inside the repo sandbox via VS Code? `renet dev up` is an equivalent in-sandbox alternative.)
 
 ## Step 5: Verify
 
 <TutorialStep number={5} />
 
-`docker ps` here lists only this repo's containers. Other repos on the same server have their own Docker daemons and are completely invisible from this one.
+`docker ps` here lists only this repo's containers. Other repos on the same server run separate Docker daemons: their containers are completely invisible from this one. That isolation is the point: test freely without touching adjacent services.
 
 ---
 

@@ -1,16 +1,16 @@
 ---
-title: "Vue d'ensemble de la conformité"
-description: "Comment l'architecture auto-hébergée de Rediacc répond aux exigences de protection des données, de confidentialité et de conformité en matière de sécurité."
+title: "Ce que la conformité requiert vraiment"
+description: "Rediacc s'exécute sur votre infrastructure. Vous contrôlez vos données. Voici comment cela s'aligne avec les principaux cadres de conformité."
 category: "Legal"
 order: 0
 language: fr
-sourceHash: "e20385eb9adfe180"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1e36a25c724f4185"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Rediacc fonctionne entièrement sur votre infrastructure. Lors des opérations de clonage d'environnement, de sauvegarde et de déploiement, les données ne quittent jamais votre machine. Vous restez à la fois le responsable du traitement et le sous-traitant des données. Aucun SaaS tiers ne traite vos données.
+Rediacc s'exécute entièrement sur votre infrastructure. Lors du clonage, des sauvegardes et des déploiements, vos données restent sur vos machines. Vous êtes à la fois le responsable du traitement et le prestataire de traitement. Aucun SaaS tiers, aucun accès externe.
 
-Cette section met en correspondance les capacités techniques de Rediacc avec les exigences des principaux cadres de conformité. Chaque page couvre une réglementation spécifique avec des références au niveau des articles des textes juridiques officiels.
+Nous mettons en correspondance les capacités techniques de Rediacc avec les exigences majeures de conformité. Chaque page détaille une réglementation spécifique avec des références au texte juridique officiel.
 
 ## Matrice de conformité
 
@@ -27,12 +27,12 @@ Cette section met en correspondance les capacités techniques de Rediacc avec le
 
 ## Fondations architecturales
 
-Chaque cadre de conformité dans cette section renvoie aux mêmes propriétés techniques :
+Voici ce qui les relie : chaque cadre de conformité dans cette section revient à la même fondation technique.
 
 - **Chiffrement au repos** : Chaque dépôt est chiffré en LUKS2 AES-256. Les identifiants sont stockés uniquement dans la configuration locale de l'opérateur, jamais sur le serveur.
 - **Isolation réseau** : Chaque dépôt dispose de son propre Docker daemon, sous-réseau IP loopback (/26) et règles iptables. Les conteneurs de différents dépôts ne peuvent pas communiquer entre eux.
 - **Clonage copy-on-write** : `rdc repo fork` utilise des reflinks du système de fichiers (`cp --reflink=always`). Les données sont dupliquées sur la même machine sans aucun transfert réseau.
-- **Journalisation d'audit** : Plus de 40 types d'événements couvrant l'authentification (connexion, 2FA, changements de mot de passe, révocation de sessions), le cycle de vie des jetons API, les opérations du magasin de configuration et l'activité d'abonnement/licence. Accessible via le tableau de bord d'administration et `rdc audit` CLI. Les opérations au niveau machine (fork, sauvegarde, déploiement) sont effectuées sur la machine elle-même via SSH et les journaux système.
+- **Journalisation d'audit** : Plus de 70 types d'événements couvrant l'authentification (connexion, 2FA, changements de mot de passe, révocation de session), le cycle de vie des jetons API, les opérations du magasin de configuration, l'activité d'abonnement/licence et les opérations CLI au niveau machine (cycle de vie du dépôt, sauvegarde, synchronisation, sessions terminales). Accessible via le tableau de bord d'administration, la page d'activité du portail (avec filtrage au niveau de l'organisation) et `rdc audit` CLI. Les opérations au niveau machine sont également enregistrées dans vos journaux système pour la défense en profondeur.
 - **Sauvegarde chiffrée** : `rdc repo push/pull` transfère les données via SSH. La destination de sauvegarde reçoit des volumes chiffrés LUKS.
 - **Magasin de configuration à connaissance nulle** : Synchronisation chiffrée optionnelle des configurations entre appareils. Les configurations sont chiffrées côté client avec AES-256-GCM avant l'envoi. Le serveur ne stocke que des blobs opaques. Le serveur ne peut pas lire les clés SSH, les identifiants, les adresses IP ou les données de configuration en clair. La dérivation de clé utilise passkey PRF extension + HKDF avec séparation de domaine. L'accès des membres est géré via l'échange de clés X25519, et la révocation est immédiate.
 
@@ -40,7 +40,7 @@ Pour plus de détails sur ces capacités, consultez [Architecture](/fr/docs/arch
 
 ## Pourquoi c'est important
 
-Les manquements à la conformité sont coûteux. Ces cas d'application impliquaient des problèmes que l'architecture de Rediacc empêche structurellement :
+Les manquements à la conformité sont coûteux. Vraiment coûteux. Les cas ci-dessous montrent des problèmes que l'architecture de Rediacc empêche structurellement :
 
 | Incident | Amende | Ce qui a mal tourné |
 |----------|--------|---------------------|
@@ -54,4 +54,4 @@ Les manquements à la conformité sont coûteux. Ces cas d'application impliquai
 
 ## Avis important
 
-Ces pages décrivent les capacités techniques de Rediacc en rapport avec les exigences de conformité. La conformité à toute réglementation nécessite des politiques organisationnelles, des procédures, une formation du personnel et potentiellement des audits tiers qui dépassent le cadre d'un seul outil. Consultez votre équipe juridique et de conformité pour des conseils spécifiques à votre organisation.
+Ces pages expliquent comment l'architecture de Rediacc s'aligne avec les exigences de conformité. Mais voici la réalité : la conformité est plus vaste que le simple logiciel. Vous aurez besoin de politiques, de procédures, de formation et probablement d'audits tiers. Rediacc gère la partie infrastructure. Travaillez avec vos équipes juridique et de conformité pour le reste.

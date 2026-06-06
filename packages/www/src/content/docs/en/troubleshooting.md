@@ -58,7 +58,7 @@ dmesg | grep -i apparmor
 sudo aa-status
 ```
 
-CRIU is the known case that hits AppArmor. Renet auto-sets `security_opt: apparmor=unconfined` on containers labeled `rediacc.checkpoint=true`. You should not need to configure AppArmor profiles yourself for anything else. See the CRIU notes in [Rules of Rediacc](/en/docs/rules-of-rediacc).
+CRIU is the known case that hits AppArmor. renet auto-sets `security_opt: apparmor=unconfined` on containers labeled `rediacc.checkpoint=true`. You should not need to configure AppArmor profiles yourself for anything else. See the CRIU notes in [Rules of Rediacc](/en/docs/rules-of-rediacc).
 
 ### Package manager error signatures
 

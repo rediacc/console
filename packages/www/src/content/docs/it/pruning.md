@@ -1,11 +1,11 @@
 ---
 title: "Pruning"
-description: "Rimuovi backup orfani, snapshot obsoleti, immagini di repository e residui di config locali per recuperare spazio su disco e mantenere lo stato più coerente possibile."
+description: "Rimuovi backup orfani, snapshot obsoleti, immagini di repository e residui di config locali per recuperare spazio su disco e mantenere lo stato coerente."
 category: "Guides"
 order: 12
 language: it
-sourceHash: "98bb2d50d75a1d3d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "9b74e1ea24b9735f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Pruning
@@ -64,7 +64,7 @@ Pulisce le risorse sulla macchina in tre fasi. La fase 1 viene sempre eseguita; 
 
 ### Fase 1: Pulizia del datastore (viene sempre eseguita)
 
-Rimuove ogni tipo di risorsa che può essere lasciata indietro quando una repository viene eliminata o quando un refactoring a livello di macchina ritira una convenzione di denominazione. Ogni categoria viene scansionata indipendentemente, e la pulizia è un singolo passaggio idempotente, quindi eseguire il pruning ripetutamente è sicuro e converge verso un datastore pulito.
+Rimuove tutto ciò che viene lasciato indietro quando una repository viene eliminata o quando una convenzione di denominazione viene dismessa. Ogni categoria viene scansionata indipendentemente. Eseguire il pruning ripetutamente è sicuro: è un singolo passaggio idempotente, quindi gli orfani che l'ultima esecuzione ha perso vengono catturati dalla successiva.
 
 | Categoria | Cosa rimuove |
 |---------|-----------------|
@@ -171,7 +171,7 @@ Scanning local config for stale leftovers...
 Dry run: 6 change(s) would be applied. Re-run without --dry-run to commit.
 ```
 
-I nomi di certificato il cui anchor e' una macchina, repository o GUID attivo vengono lasciati intatti, come pure qualsiasi wildcard a etichetta singola `<service>.<base>` o radice `*.<base>`.
+I nomi di certificato il cui anchor è una macchina, repository o GUID attivo vengono lasciati intatti, come pure qualsiasi wildcard a etichetta singola `<service>.<base>` o radice `*.<base>`.
 
 ## Migrazione: backfill dello specchio di stato
 
@@ -192,7 +192,7 @@ Il backfill copia lo stato in-volume attivo sullo specchio per le repository att
 
 ## Modello di Sicurezza
 
-Il pruning è progettato per essere sicuro di default in configurazioni multi-config.
+Tutti e tre i comandi sono sicuri per default in configurazioni multi-config.
 
 ### Consapevolezza multi-config
 

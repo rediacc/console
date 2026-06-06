@@ -4,12 +4,13 @@ description: "Kuidas automaatkäivitus toimib, perioodiline leppija, mis taastab
 category: "Guides"
 order: 5
 language: et
-sourceHash: "8e98fcd141e27da6"
+sourceHash: "00a1796a0b0d20da"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Automaatkäivitus ja taastamine
 
-See leht selgitab, kuidas repositooriumid käivitamisel automaatselt ühendatakse ja käivitatakse, ning kuidas perioodiline leppija toob repositooriumi taas üles, kui see langeb pärast serveri käivitamist.
+Automaatkäivitusega repositooriumid käivituvad käivitamisel iseenest. Kui üks pärast seda seiskub, toob perioodiline leppija selle automaatselt taas käigule. Küsimusi pole, käsitsi taaskäivitamist pole vaja.
 
 Automaatkäivituse lubamiseks või keelamiseks repositooriumil vt [Teenused: Automaatkäivitus käivitamisel](/et/docs/services#autostart-on-boot).
 

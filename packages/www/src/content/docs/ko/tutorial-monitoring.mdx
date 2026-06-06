@@ -1,19 +1,19 @@
 ---
 title: "모니터링"
-description: "rdc machine 명령으로 노트북에서 서버와 저장소의 상태를 확인합니다."
+description: "rdc machine 명령으로 노트북에서 서버와 저장소 상태를 실시간으로 모니터링합니다."
 category: "Tutorials"
 subcategory: advanced
 order: 12
 language: ko
-sourceHash: "7690e2a129161381"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "6b1363b30c1f96a8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # 모니터링
 
-앱이 배포되고, 실행 중이고, 백업되었습니다. 이제 모든 것이 건강하게 유지되도록 합니다. `rdc`는 노트북에서 상태, 컨테이너, 저장소 등 모든 서버의 전체 모습을 제공합니다.
+앱이 배포되고 백업되었습니다. 이제 건강한 상태를 유지해야 합니다. 그것이 `rdc`의 역할입니다. `rdc`는 노트북에서 모든 서버의 전체 모습(상태, 컨테이너, 저장소)을 파악할 수 있게 해줍니다.
 
 ## 튜토리얼 보기
 
@@ -27,7 +27,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={1} />
 
-시스템 가동 시간, 디스크 사용량, 스토리지 상태를 표시합니다. 문제가 있으면 알려줍니다.
+시스템 가동 시간, 디스크 사용량, 스토리지 상태를 표시합니다. 문제가 있으면 바로 알 수 있습니다.
 
 ## 컨테이너
 
@@ -39,13 +39,13 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={3} />
 
-크기, 마운트 상태, Docker 상태, 디스크 사용량과 함께 모든 저장소를 표시합니다.
+모든 저장소의 크기, 마운트 상태, Docker 상태, 디스크 사용량을 확인할 수 있습니다.
 
 ## 한 번에 모든 것 확인
 
 <TutorialStep number={4} />
 
-시스템 정보, 저장소, 컨테이너 모두 하나의 명령으로. 필터 없이 사용하는 `query` 명령은 전체 모습을 반환하고, `--system`, `--containers`, `--repositories`, `--services`, `--network`, `--block-devices`로 해당 섹션만 좁힐 수 있습니다.
+필터 없이 `query` 명령을 사용하면 전체 모습을 볼 수 있습니다: 시스템 정보, 저장소, 컨테이너. `--system`, `--containers`, `--repositories`, `--services`, `--network`, `--block-devices` 플래그를 추가하여 특정 섹션만 필터링할 수 있습니다.
 
 ## 로컬 상태 확인
 

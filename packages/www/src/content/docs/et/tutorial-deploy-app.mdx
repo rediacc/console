@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: essentials
 order: 5
 language: et
-sourceHash: "08bd8fbaffc53a06"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "a40a843238f17e9f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -39,7 +39,7 @@ See kopeerib malli failid repositooriumisse.
 
 <TutorialStep number={3} />
 
-Kaks faili: `docker-compose.yml` kirjeldab konteinereid ja `Rediaccfile` määrab, mis juhtub rakenduse käivitumisel ja peatamisel (selle `up`- ja `down`-elutsükli konksud). `2>/dev/null` peidab ühenduslogid, nii et kuvatakse ainult failide loend.
+Kaks faili: `docker-compose.yml` kirjeldab konteinerid ja `Rediaccfile` määrab, mis juhtub rakenduse käivitumisel ja peatamisel (selle `up`- ja `down`-elutsükli konksud). `2>/dev/null` peidab ühenduslogid, nii et kuvatakse ainult failide loend.
 
 ## 4. samm: käivita
 
@@ -51,7 +51,7 @@ CLI käivitab konteinerid, ühendab krüptitud köite ja seadistab selle reposit
 
 <TutorialStep number={5} />
 
-`docker ps` loetleb siin ainult selle repositooriumi konteinerid. Teistel repositooriumidel samal serveril on oma Dockeri deemonid ja need on siit täielikult nähtamatud.
+`docker ps` loetleb siin ainult selle repositooriumi konteinerid. Teistel repositooriumidel samal serveril on oma Dockeri deemonid ja need on siit täielikult nähtamatud. Isoleerituse eesmärk ongi just see: testi vabalt, ilma naaberteenus tööd häirimata.
 
 ---
 

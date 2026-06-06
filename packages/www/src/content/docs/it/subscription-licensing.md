@@ -1,20 +1,20 @@
 ---
 title: "Abbonamento e licenze"
-description: "Scopri come account, rdc e renet gestiscono gli slot macchina, le licenze repository e i limiti del piano. È più trasparente di quanto pensi."
+description: "Scopri come account, rdc e renet gestiscono gli slot macchina, le licenze repository e i limiti del piano."
 category: "Guides"
 order: 7
 language: it
-sourceHash: "98aede90642cfabc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "0e18efe91c91f74c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Abbonamento e licenze
 
-Le licenze Rediacc hanno tre componenti principali:
+Le licenze Rediacc si dividono in tre componenti principali:
 
-- `account` firma i diritti e tiene traccia dell'utilizzo
+- `account` firma i diritti di utilizzo e tiene traccia dell'utilizzo
 - `rdc` si autentica, richiede le licenze, le consegna alle macchine e le applica a runtime
-- `renet` (il runtime sulla macchina) valida le licenze installate localmente senza chiamare il server account
+- `renet` (il runtime sulla macchina) valida le licenze installate localmente senza contattare il server account
 
 Questa pagina spiega come questi componenti si integrano tra loro per i deployment locali.
 
@@ -22,20 +22,20 @@ Questa pagina spiega come questi componenti si integrano tra loro per i deployme
 
 Le licenze controllano due aspetti distinti:
 
-- **Contabilizzazione dell'accesso alla macchina** tramite **Licenze floating**
+- **Contabilizzazione dell'accesso alla macchina** tramite **licenze floating**
 - **Autorizzazione runtime del repository** tramite **licenze repo**
 
-Questi aspetti sono correlati, ma non sono lo stesso artefatto.
+Questi aspetti sono correlati, ma non rappresentano lo stesso artefatto.
 
 ## Come funzionano le licenze
 
 `account` è la fonte di verità per i piani, le sovrascritture contrattuali, lo stato degli slot macchina e le emissioni mensili di licenze repo.
 
-`rdc` viene eseguito sulla tua workstation. Ti registra nel server account, richiede le licenze necessarie e le installa sulle macchine remote tramite SSH. Quando esegui un comando repository, `rdc` assicura che le licenze richieste siano in atto e le valida sulla macchina a runtime.
+`rdc` viene eseguito sulla tua workstation. Effettua il login sul server account, richiede le licenze necessarie e le installa sulle macchine remote tramite SSH. Quando esegui un comando repository, `rdc` assicura che le licenze richieste siano in atto e le valida sulla macchina a runtime.
 
-Il flusso normale è questo:
+Il flusso normale è il seguente:
 
-1. Ti autentichi con `rdc subscription login`
+1. Ti autentica con `rdc subscription login`
 2. Esegui un comando repository come `rdc repo create`, `rdc repo up` o `rdc repo down`
 3. Se la licenza richiesta è mancante o scaduta, `rdc` la richiede ad `account`
 4. `rdc` scrive la licenza firmata sulla macchina
@@ -43,7 +43,7 @@ Il flusso normale è questo:
 
 Consulta [rdc vs renet](/it/docs/rdc-vs-renet) per la divisione workstation/server, e [Repository](/it/docs/repositories) per il ciclo di vita del repository stesso.
 
-Per automazione e agenti AI, usa un token di abbonamento con scope specifico invece del login tramite browser:
+Per automazione e agenti AI, utilizza un token di abbonamento con scope specifico invece del login tramite browser:
 
 ```bash
 rdc subscription login --token "$REDIACC_SUBSCRIPTION_TOKEN"
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slot macchina (lato server)
 
-Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota degli slot macchina dell'abbonamento (es. 2 macchine per Community, 5 per Professional). Uno slot viene occupato per 1 ora dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Un piano con 5 slot può quindi coprire decine di macchine nel tempo, poiché gli slot vengono occupati solo durante il provisioning attivo.
+Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota degli slot macchina dell'abbonamento (ad esempio, 2 macchine per Community, 5 per Professional). Uno slot viene occupato per 1 ora dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Un piano con 5 slot può quindi coprire dozzine di macchine nel tempo, poiché gli slot vengono occupati solo durante il provisioning attivo.
 
 Nessun file di licenza macchina viene memorizzato sulla macchina. L'applicazione degli slot avviene al momento dell'emissione sul server.
 
@@ -68,7 +68,7 @@ Nessun file di licenza macchina viene memorizzato sulla macchina. L'applicazione
 
 Una licenza repo è una licenza firmata per un repository su una macchina. È l'unico file di licenza memorizzato sulla macchina (`/var/lib/rediacc/license/repos/{guid}.json`).
 
-Viene usata per:
+Viene utilizzata per:
 
 - `rdc repo create` e `rdc repo fork`, validata prima del provisioning (pre-emessa senza prove di identità, poi ri-emessa con prove di identità dopo la creazione)
 - `rdc repo resize` e `rdc repo expand`, validazione completa inclusa la scadenza
@@ -89,24 +89,24 @@ La dimensione del repository dipende dal livello di diritti:
 
 I limiti predefiniti dei piani a pagamento sono:
 
-| Piano | Licenze floating | Dimensione repository | Emissioni licenze repo mensili | Validità cert. delega predefinita / massima |
-|-------|------------------|-----------------------|--------------------------------|---------------------------------------------|
+| Piano | Licenze floating | Dimensione repository | Emissioni di licenze repo al mese | Validità certificato delega predefinita / massima |
+|-------|------------------|-----------------------|-------------------------------------|---------------------------------------------------|
 | Community | 2 | 10 GB | 500 | 15g / 30g |
 | Professional | 5 | 100 GB | 5.000 | 60g / 120g |
 | Business | 20 | 500 GB | 20.000 | 90g / 180g |
 | Enterprise | 50 | 2048 GB | 100.000 | 120g / 365g |
 
-I limiti specifici del contratto possono aumentare o ridurre questi valori per un cliente specifico. La validità del certificato di delega è anche limitata a `subscription.expiresAt + 3 giorni di grazia`, quindi gli abbonamenti con fatturazione mensile ottengono naturalmente certificati allineati al loro ciclo di fatturazione. Consulta [Catena di licenze e delega - Policy di validità](/it/docs/license-chain) per le regole complete.
+I limiti specifici del contratto possono aumentare o ridurre questi valori per un cliente specifico. La validità del certificato di delega è anche limitata a `subscription.expiresAt + 3 giorno di grazia`, quindi gli abbonamenti con fatturazione mensile ottengono naturalmente certificati allineati al loro ciclo di fatturazione. Consulta [Catena di licenze e delega - Policy di validità](/it/docs/license-chain) per le regole complete.
 
 ## Periodo di grazia per migrazione VM
 
-Quando un provider di hosting migra una VM su hardware fisico diverso, l'ID macchina cambia (è derivato da identificatori hardware come UUID DMI, `/etc/machine-id` e indirizzi MAC della NIC). Le licenze repo sono legate all'ID macchina, quindi una migrazione invaliderebbe normalmente tutte le licenze.
+Quando un provider di hosting migra una VM su hardware fisico diverso, l'ID macchina cambia (è derivato da identificatori hardware come UUID DMI, `/etc/machine-id` e indirizzi MAC della scheda di rete). Le licenze repo sono legate all'ID macchina, quindi una migrazione invaliderebbe normalmente tutte le licenze.
 
-Per gestire questo in modo trasparente, le licenze repo includono un **periodo di grazia di 40 giorni per l'ID macchina**. Se l'ID macchina non corrisponde ma la licenza è stata emessa meno di 40 giorni fa, la licenza viene comunque accettata. Poiché le licenze vengono aggiornate ogni 30 giorni, il prossimo aggiornamento si lega automaticamente al nuovo ID macchina.
+Per gestire questo in modo trasparente, le licenze repo includono un **periodo di grazia di 40 giorni per l'ID macchina**. Se l'ID macchina non corrisponde ma la licenza è stata emessa meno di 40 giorni fa, la licenza viene comunque accettata. Poiché le licenze vengono aggiornate ogni 30 giorni, l'aggiornamento successivo si lega automaticamente al nuovo ID macchina.
 
 In pratica:
 - VM migrata, ID macchina cambia: i repository continuano a funzionare (entro la finestra di 40 giorni)
-- La successiva operazione `rdc` aggiorna la licenza con il nuovo ID macchina
+- L'operazione `rdc` successiva aggiorna la licenza con il nuovo ID macchina
 - Nessun intervento manuale richiesto
 - Verifica l'ID macchina e lo stato della licenza con `rdc machine query --system --licenses --name <machine>`
 
@@ -118,16 +118,16 @@ In pratica:
 
 Quando crei o forki un repository:
 
-1. `rdc` assicura che il tuo token di abbonamento sia disponibile (attiva l'auth con device-code se necessario)
+1. `rdc` assicura che il tuo token di abbonamento sia disponibile (attiva l'autenticazione con device-code se necessario)
 2. `rdc` pre-emette una licenza repo dal server account (il server verifica la quota degli slot macchina e i limiti mensili di emissione in questo momento)
-3. La licenza repo pre-emessa viene scritta sulla macchina e validata localmente (firma, ID macchina, GUID repository, scadenza e limite dimensione)
+3. La licenza repo pre-emessa viene scritta sulla macchina e validata localmente (firma, ID macchina, GUID del repository, scadenza e limite di dimensione)
 4. Dopo la creazione riuscita, `rdc` ri-emette la licenza repo con le prove di identità del repository (UUID LUKS o fingerprint dello storage)
 
 Quella emissione supportata dall'account conta per il tuo utilizzo mensile di **emissioni di licenze repo**. Ogni licenza contiene l'email e il nome dell'azienda del titolare dell'account, che vengono registrati quando renet valida la licenza.
 
 ### Avvio, arresto ed eliminazione del repository
 
-`rdc` valida la licenza repo installata sulla macchina ma **ignora la verifica della scadenza**. Firma, ID macchina, GUID repository e identità vengono comunque verificati. Gli utenti non vengono mai bloccati dall'operare i propri repository, anche con un abbonamento scaduto.
+`rdc` valida la licenza repo installata sulla macchina ma **ignora il controllo della scadenza**. Firma, ID macchina, GUID del repository e identità vengono comunque verificati. Gli utenti non vengono mai bloccati dall'operare i propri repository, anche con un abbonamento scaduto.
 
 ### Ridimensionamento ed espansione del repository
 
@@ -135,9 +135,9 @@ Quella emissione supportata dall'account conta per il tuo utilizzo mensile di **
 
 ### Riavvio della macchina e autostart
 
-L'autostart usa le stesse regole di `rdc repo up`: la scadenza viene ignorata, quindi i repository si riavviano sempre liberamente.
+L'autostart utilizza le stesse regole di `rdc repo up`: la scadenza viene ignorata, quindi i repository si riavviano sempre liberamente.
 
-Le licenze repo usano un modello di validità a lungo termine:
+Le licenze repo utilizzano un modello di validità a lungo termine:
 
 - `refreshRecommendedAt` è il punto di aggiornamento soft
 - `hardExpiresAt` è il punto di blocco
@@ -188,7 +188,7 @@ Aggiornamento in blocco delle licenze repo su una macchina:
 rdc subscription refresh repos -m hostinger
 ```
 
-I repository rilevati sulla macchina ma assenti dalla config `rdc` locale vengono rifiutati durante l'aggiornamento in blocco. Vengono segnalati come fallimenti e non vengono classificati automaticamente.
+I repository rilevati sulla macchina ma assenti dalla configurazione `rdc` locale vengono rifiutati durante l'aggiornamento in blocco. Vengono segnalati come errori e non vengono classificati automaticamente.
 
 Forza l'aggiornamento della licenza repo per un repository esistente:
 
@@ -196,17 +196,17 @@ Forza l'aggiornamento della licenza repo per un repository esistente:
 rdc subscription refresh repo --name my-app -m hostinger
 ```
 
-Al primo utilizzo, un'operazione su un repository o backup con licenza che non trova una licenza repo utilizzabile può attivare automaticamente un handoff di autorizzazione account. La CLI stampa un URL di autorizzazione, cerca di aprire il browser nei terminali interattivi e riprova l'operazione una volta dopo che l'autorizzazione e l'emissione hanno avuto successo.
+Al primo utilizzo, un'operazione su un repository con licenza o un backup che non trova una licenza repo utilizzabile può attivare automaticamente un handoff di autorizzazione account. La CLI stampa un URL di autorizzazione, cerca di aprire il browser nei terminali interattivi e riprova l'operazione una volta dopo che l'autorizzazione e l'emissione hanno avuto successo.
 
-Negli ambienti non interattivi, la CLI non attende l'approvazione del browser. Invece, ti indica di fornire un token con scope specifico con `rdc subscription login --token ...` o `REDIACC_SUBSCRIPTION_TOKEN`.
+Negli ambienti non interattivi, la CLI non attende l'approvazione del browser. Invece, ti dice di fornire un token con scope specifico con `rdc subscription login --token ...` o `REDIACC_SUBSCRIPTION_TOKEN`.
 
 Per la configurazione iniziale della macchina, consulta [Configurazione della macchina](/it/docs/setup).
 
 ## Comportamento offline e scadenza
 
-La validazione della licenza avviene localmente sulla macchina. Non richiede connettività live al server account.
+La validazione della licenza avviene localmente sulla macchina. Non hai bisogno di contattare il server account per operare i tuoi repository.
 
-Ciò significa che:
+Questo significa che:
 
 - un ambiente in esecuzione non ha bisogno di connettività live all'account su ogni comando
 - tutti i repository possono sempre essere avviati, fermati ed eliminati anche con licenze scadute; gli utenti non vengono mai bloccati dall'operare i propri repository
@@ -220,24 +220,24 @@ Il ripristino automatico è intenzionalmente limitato:
 
 - `missing`: `rdc` può autorizzare l'accesso all'account se necessario, aggiornare in blocco le licenze repo e riprovare una volta
 - `expired`: `rdc` può aggiornare in blocco le licenze repo e riprovare una volta
-- `machine_mismatch`: fallisce immediatamente e indica di ri-emettere dal contesto della macchina corrente
-- `repository_mismatch`: fallisce immediatamente e indica di aggiornare le licenze repo esplicitamente
+- `machine_mismatch`: fallisce immediatamente e ti dice di ri-emettere dal contesto della macchina corrente
+- `repository_mismatch`: fallisce immediatamente e ti dice di aggiornare le licenze repo esplicitamente
 - `sequence_regression`: fallisce immediatamente come problema di integrità/stato della licenza repo
 - `invalid_signature`: fallisce immediatamente come problema di integrità/stato della licenza repo
-- `identity_mismatch`: fallisce immediatamente; l'identità del repository non corrisponde alla licenza installata
+- `identity_mismatch`: fallisce immediatamente, l'identità del repository non corrisponde alla licenza installata
 
 Questi casi di fallimento immediato non consumano automaticamente chiamate di aggiornamento o emissione supportate dall'account.
 
 ## Certificati di delega per on-premise
 
-Per i deployment on-premise e air-gapped, il server account upstream emette un **certificato di delega** che autorizza la tua installazione on-premise a firmare licenze con la propria chiave Ed25519. Il certificato vincola l'on-premise ai limiti del piano e crea una catena a prova di manomissione.
+Per i deployment on-premise e air-gapped, questo diventa complesso. Il server account upstream emette un **certificato di delega** che autorizza la tua installazione on-premise a firmare licenze con la propria chiave Ed25519. Questo ti vincola ai limiti del tuo piano e crea una catena a prova di manomissione.
 
 Punti chiave per i titolari dell'abbonamento:
 
-- **Un certificato attivo per abbonamento.** Ogni installazione on-premise applica le quote mensili e per macchina rispetto al proprio registro locale, quindi le installazioni multiple moltiplicherebbero la quota effettiva senza possibilità di riconciliazione. I clienti che necessitano di produzione + staging + DR devono acquistare un abbonamento per installazione.
+- **Un certificato attivo per abbonamento.** Ogni installazione on-premise applica le quote mensili e per macchina rispetto al proprio registro locale, quindi installazioni multiple moltiplicherebbero la quota effettiva senza possibilità di riconciliazione. I clienti che hanno bisogno di produzione + staging + DR devono acquistare un abbonamento per installazione.
 - **Validità predefinita basata sul tier** (15g / 60g / 90g / 120g) e limiti massimi (30g / 120g / 180g / 365g) - consulta la tabella dei limiti sopra.
 - **Self-service dal portale clienti.** I proprietari e gli amministratori dell'organizzazione possono creare, rinnovare e revocare i certificati di delega su `/account/delegation-certs`. La pagina è visibile a tutti i clienti indipendentemente dal tier del piano - solo i limiti differiscono.
-- **Il rinnovo automatico** è supportato tramite un bootstrap con un clic che conia un token API con scope `delegation:renew` per l'on-premise da usare per le chiamate di rinnovo upstream.
+- **Il rinnovo automatico** è supportato tramite un bootstrap con un clic che conia un token API con scope `delegation:renew` per l'on-premise da utilizzare per le chiamate di rinnovo upstream.
 - **Il rinnovo air-gapped** è supportato tramite un manifesto di richiesta di rinnovo firmato che l'amministratore on-premise scarica, trasferisce offline all'upstream, e l'upstream elabora per emettere un nuovo certificato.
 
 Consulta [Installazione on-premise - Licenze per deployment air-gapped](/it/docs/on-premise) per la configurazione operativa, e [Catena di licenze e delega](/it/docs/license-chain) per il design crittografico.
@@ -254,7 +254,7 @@ Include:
 Non include:
 
 - voci in blocco non modificate
-- tentativi di emissione falliti
+- tentativi di emissione non riusciti
 - repository non tracciati rifiutati prima dell'emissione
 
-Se hai bisogno di una vista rivolta al cliente dell'utilizzo e della cronologia recente delle emissioni di licenze repo, usa il portale account. Se hai bisogno dell'ispezione lato macchina, usa `rdc subscription activation status -m` e `rdc subscription repo status -m`.
+Se hai bisogno di una vista rivolta al cliente dell'utilizzo e della cronologia recente delle emissioni di licenze repo, utilizza il portale account. Se hai bisogno dell'ispezione lato macchina, utilizza `rdc subscription activation status -m` e `rdc subscription repo status -m`.

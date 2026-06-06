@@ -1,18 +1,16 @@
 ---
 title: Outils
-description: >-
-  Synchronisation de fichiers, accès terminal, intégration VS Code, mises à jour
-  et diagnostics.
+description: "Synchronisation de fichiers, accès terminal, intégration VS Code et mises à jour du CLI."
 category: Guides
 order: 9
 language: fr
-sourceHash: "f350872720c99d58"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4b3aebff5e82416f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Outils
 
-Rediacc inclut des outils de productivité pour travailler avec les dépôts distants : synchronisation de fichiers, terminal SSH, intégration VS Code et mises à jour du CLI.
+Rediacc propose quatre outils pour travailler quotidiennement avec vos machines et dépôts : synchronisation de fichiers via SSH, terminal SSH, intégration VS Code et mises à jour automatiques du CLI. Les quatre outils fonctionnent sur SSH. Aucun agent ni daemon n'est requis côté distant. Si vous avez besoin d'une interface graphique pour cela, vous êtes sur la mauvaise page.
 
 ## Synchronisation de fichiers (sync)
 
@@ -20,14 +18,36 @@ Transférez des fichiers entre votre poste de travail et un dépôt distant via 
 
 ### Envoyer des fichiers
 
+`--local` accepte un ou plusieurs chemins. Chaque chemin peut être un fichier ou un répertoire. Les fichiers sont placés à `<remote>/<basename>`; les contenus des répertoires fusionnent dans `<remote>/`. Pour un seul fichier, préférez `--remote-file` pour spécifier explicitement le chemin de destination.
+
 ```bash
+# Répertoire (contents merged into remote)
 rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+
+# Single file dropped into a remote directory (basename preserved)
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+
+# Single file, explicit destination path
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+
+# Multiple sources in one call
+rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
 ```
+
+`--remote` et `--remote-file` s'excluent mutuellement. `--remote-file` requiert exactement un seul chemin `--local` qui pointe vers un fichier.
+
+`--mirror` ne peut pas être combiné avec une source fichier; cela supprimerait les fichiers frères dans le répertoire distant.
 
 ### Télécharger des fichiers
 
+Utilisez `--remote` pour un répertoire (par défaut) ou `--remote-file` pour un seul fichier. Les deux options s'excluent mutuellement.
+
 ```bash
+# Répertoire
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+
+# Single file — --local must be an existing directory
+rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Vérifier l'état de la synchronisation
@@ -42,11 +62,11 @@ rdc repo sync status -m server-1 -r my-app
 |--------|-------------|
 | `-m, --machine <name>` | Machine cible |
 | `-r, --repository <name>` | Dépôt cible |
-| `--local <paths...>` | Un ou plusieurs chemins locaux de fichier/répertoire (téléversement) ou répertoire local de destination (téléchargement) |
+| `--local <paths...>` | Un ou plusieurs chemins locaux de fichier/répertoire (envoi) ou répertoire local de destination (téléchargement) |
 | `--remote <path>` | Répertoire distant (relatif au point de montage du dépôt) |
-| `--remote-file <path>` | Fichier distant unique (téléchargement uniquement, alternative à `--remote`) |
+| `--remote-file <path>` | Chemin du fichier distant pour les envois ou téléchargements de fichier unique (alternative à `--remote`) |
 | `--dry-run` | Prévisualiser les changements sans transférer |
-| `--mirror` | Miroir de la source vers la destination (supprimer les fichiers en trop) |
+| `--mirror` | Miroir de la source vers la destination, supprimer les fichiers en trop (sources répertoires uniquement) |
 | `--verify` | Vérifier les sommes de contrôle après le transfert |
 | `--confirm` | Confirmation interactive avec vue détaillée |
 | `--exclude <patterns...>` | Exclure des motifs de fichiers |
@@ -78,7 +98,7 @@ Lors de la connexion à un dépôt, `DOCKER_HOST` est automatiquement configuré
 
 ### Sous-commande connect
 
-La sous-commande `connect` offre la même fonctionnalité avec des options explicites :
+Ou utilisez la sous-commande `connect` pour le même résultat, avec des options explicites :
 
 ```bash
 rdc term connect -m server-1
@@ -186,12 +206,12 @@ Revient à la version précédemment installée. Disponible uniquement après l'
 rdc update --status
 ```
 
-Affiche la version actuelle, le canal de mise a jour et la configuration de la mise a jour automatique.
+Affiche la version actuelle, le canal de mise à jour et la configuration de la mise à jour automatique.
 
 #### Canaux de publication
 
 ```bash
-rdc update --channel edge      # Dernieres fonctionnalites, mis a jour frequemment
-rdc update --channel stable    # Versions pretes pour la production (par defaut)
+rdc update --channel edge      # Mises à jour continuelles en production
+rdc update --channel stable    # Promu à partir d'edge après 7 jours de test (par défaut)
 rdc update --status            # Afficher le canal actuel et les informations de version
 ```

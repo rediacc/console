@@ -1,33 +1,53 @@
 ---
 title: 工具
-description: 文件同步、终端访问、VS Code 集成、更新和诊断。
+description: 文件同步、终端访问、VS Code 集成和 CLI 更新。
 category: Guides
 order: 9
 language: zh
-sourceHash: "f350872720c99d58"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4b3aebff5e82416f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 工具
 
-Rediacc 内置了用于远程仓库操作的工具：文件同步、SSH 终端、VS Code 集成和 CLI 更新。
+Rediacc 提供四个工具用于日常远程工作：基于 SSH 的文件同步、SSH 终端、VS Code 集成和 CLI 自更新。四个工具都通过 SSH 运行。远程端无需代理或守护程序。如果您需要图形界面，那么这个页面不是您要找的。
 
 ## 文件同步 (sync)
 
-使用基于 SSH 的 rsync 在工作站和远程仓库之间传输文件。
+使用 SSH 上的 rsync 在工作站和远程仓库之间传输文件。
 
 ### 上传文件
 
+`--local` 接受一个或多个路径。每个路径可以是文件或目录。文件落地到 `<remote>/<basename>`；目录内容合并到 `<remote>/`。对于单个文件，建议使用 `--remote-file` 明确指定文件的目标路径。
+
 ```bash
+# 目录（内容合并到远程）
 rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+
+# 单个文件放入远程目录（保留基础名称）
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+
+# 单个文件，明确指定目标路径
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+
+# 一次调用中的多个源
+rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
 ```
+
+`--remote` 和 `--remote-file` 互斥。`--remote-file` 要求恰好一个 `--local` 路径指向文件。
+
+`--mirror` 不能与文件源组合使用；它会删除远程目录中的同级文件。
 
 ### 下载文件
 
-使用 `--remote` 表示目录（默认），或 `--remote-file` 表示单个文件。两个标志互斥。
+对于目录使用 `--remote`（默认），对于单个文件使用 `--remote-file`。两个标志互斥。
 
 ```bash
+# 目录
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+
+# 单个文件 — --local 必须是现有目录
+rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### 检查同步状态
@@ -42,11 +62,11 @@ rdc repo sync status -m server-1 -r my-app
 |--------|-------------|
 | `-m, --machine <name>` | 目标机器 |
 | `-r, --repository <name>` | 目标仓库 |
-| `--local <paths...>` | 一个或多个本地文件/目录路径（上传）或本地目标目录（下载） |
+| `--local <paths...>` | 一个或多个本地文件或目录路径（上传）或本地目标目录（下载） |
 | `--remote <path>` | 远程目录（相对于仓库挂载点） |
-| `--remote-file <path>` | 单个远程文件（仅限下载，`--remote` 的替代项） |
+| `--remote-file <path>` | 远程文件路径，用于单文件上传或下载（`--remote` 的替代项） |
 | `--dry-run` | 预览更改，不实际传输 |
-| `--mirror` | 将源镜像到目标（删除多余文件） |
+| `--mirror` | 将源镜像到目标，删除多余文件（仅限目录源） |
 | `--verify` | 传输后验证校验和 |
 | `--confirm` | 交互式确认，带详细视图 |
 | `--exclude <patterns...>` | 排除文件模式 |
@@ -78,7 +98,7 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 
 ### connect 子命令
 
-`connect` 子命令通过显式标志实现相同效果：
+或使用 `connect` 子命令实现相同结果，并带有显式标志：
 
 ```bash
 rdc term connect -m server-1
@@ -191,7 +211,7 @@ rdc update --status
 #### 发布通道
 
 ```bash
-rdc update --channel edge      # 最新功能，频繁更新
-rdc update --channel stable    # 生产就绪版本（默认）
+rdc update --channel edge      # 连续部署的生产更新
+rdc update --channel stable    # 从 edge 经过 7 天稳定期后提升（默认）
 rdc update --status            # 显示当前通道和版本信息
 ```

@@ -1,19 +1,19 @@
 ---
 title: "Aggiungere il Tuo Primo Server"
-description: "Registra il tuo primo server con rdc, eseguine il provisioning e comprendi l'architettura rdc + renet. È più rapido di quanto ci si aspetti."
+description: "Registra il tuo primo server con rdc, eseguine il provisioning e comprendi l'architettura rdc + renet."
 category: "Tutorials"
 subcategory: essentials
 order: 3
 language: it
-sourceHash: "4b76f7212633cdec"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "fc8bd1ff08e5611a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Aggiungere il Tuo Primo Server
 
-Prima di aggiungere un server, ecco come funziona `rdc`. Rediacc è composto da due strumenti: `rdc` sul tuo laptop, `renet` sul server.
+Due strumenti: `rdc` sul tuo laptop, `renet` sul server. Questa è l'intera architettura Rediacc. Ecco come si connettono prima di aggiungere un server.
 
 ## Guarda il tutorial
 
@@ -26,13 +26,13 @@ Prima di aggiungere un server, ecco come funziona `rdc`. Rediacc è composto da 
 - **`rdc`** è la CLI sul tuo laptop. Digiti i comandi qui.
 - **`renet`** è l'orchestratore sul server. Gestisce crittografia, Docker e isolamento.
 
-Quando esegui un comando localmente, `rdc` si connette tramite SSH ed esegue `renet` sul server. Non hai mai bisogno di fare SSH manualmente sui tuoi server: `rdc` lo fa per te.
+Quando esegui un comando localmente, `rdc` si connette tramite SSH ed esegue `renet` sul server. Non devi mai fare SSH manualmente nei tuoi server: `rdc` lo fa per te.
 
 ## Passo 1: Registra il server
 
 <TutorialStep number={1} />
 
-`rdc config init` non è necessario. Il file di configurazione viene creato automaticamente al primo utilizzo, e `rdc` utilizza la tua chiave `~/.ssh` standard.
+`rdc config init` non è necessario. Il file di configurazione viene creato automaticamente al primo utilizzo e `rdc` utilizza la tua chiave `~/.ssh` standard. La selezione della chiave è intenzionalmente minimalista: se hai bisogno di agent forwarding o di un jump host, configurali in `~/.ssh/config` come al solito; `rdc` li rileverà.
 
 ## Passo 2: Esegui il provisioning
 
@@ -46,7 +46,7 @@ Il CLI memorizza tutto in `~/.config/rediacc/rediacc.json`, un unico file JSON s
 
 <TutorialStep number={3} />
 
-Questo singolo file contiene le tue macchine, la chiave SSH e le credenziali di crittografia. Copialo su un altro laptop ed è subito pronto all'uso anche da quella macchina.
+Questo singolo file contiene le tue macchine, la chiave SSH e le credenziali di crittografia. Copialo su un altro laptop e sei pronto a gestire gli stessi server da lì.
 
 ## Configurazioni multiple
 

@@ -1,16 +1,16 @@
 ---
 title: Werkzeuge
-description: 'Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und CLI-Updates.'
+description: Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und CLI-Updates.
 category: Guides
 order: 9
 language: de
-sourceHash: "f350872720c99d58"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4b3aebff5e82416f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Werkzeuge
 
-Rediacc bündelt Werkzeuge für die Arbeit mit entfernten Repositories: Dateisynchronisation, SSH-Terminal, VS Code-Integration und CLI-Updates.
+Rediacc bündelt vier Werkzeuge für die tägliche Arbeit an Ihren Maschinen und Repositories: Dateisynchronisation über SSH, ein SSH-Terminal, VS Code-Integration und CLI-Updates. Alle vier Tools arbeiten über SSH. Auf der Fernseite ist kein Agent oder Daemon erforderlich. Wenn Sie für diese Aufgaben ein GUI benötigen, sind Sie auf dieser Seite falsch.
 
 ## Dateisynchronisation (sync)
 
@@ -18,16 +18,36 @@ Rediacc bündelt Werkzeuge für die Arbeit mit entfernten Repositories: Dateisyn
 
 ### Dateien hochladen
 
+`--local` akzeptiert einen oder mehrere Pfade. Jeder Pfad kann eine Datei oder ein Verzeichnis sein. Dateien landen bei `<remote>/<basename>`; Verzeichnisinhalte werden in `<remote>/` zusammengeführt. Für eine einzelne Datei verwenden Sie vorzugsweise `--remote-file`, um dem Ziel explizit den Dateipfad zu geben.
+
 ```bash
+# Verzeichnis (Inhalt in Fernverzeichnis zusammengeführt)
 rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+
+# Einzelne Datei in ein Fernverzeichnis (Basename erhalten)
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+
+# Einzelne Datei mit explizitem Zielpfad
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+
+# Mehrere Quellen in einem Aufruf
+rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
 ```
+
+`--remote` und `--remote-file` schließen sich gegenseitig aus. `--remote-file` erfordert genau einen `--local`-Pfad, der auf eine Datei zeigt.
+
+`--mirror` kann nicht mit einer Dateiquiselle kombiniert werden; es würde Nachbardateien im Fernverzeichnis löschen.
 
 ### Dateien herunterladen
 
 Verwenden Sie `--remote` für ein Verzeichnis (Standard) oder `--remote-file` für eine einzelne Datei. Die beiden Flags schließen sich gegenseitig aus.
 
 ```bash
+# Verzeichnis
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+
+# Einzelne Datei - --local muss ein vorhandenes Verzeichnis sein
+rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### Synchronisierungsstatus prüfen
@@ -44,9 +64,9 @@ rdc repo sync status -m server-1 -r my-app
 | `-r, --repository <name>` | Ziel-Repository |
 | `--local <paths...>` | Ein oder mehrere lokale Datei-/Verzeichnispfade (Upload) oder lokales Zielverzeichnis (Download) |
 | `--remote <path>` | Entferntes Verzeichnis (relativ zum Repository-Einbindungspunkt) |
-| `--remote-file <path>` | Einzelne entfernte Datei (nur Download, Alternative zu `--remote`) |
+| `--remote-file <path>` | Entferner Dateipfad für einzelne Datei-Uploads oder Downloads (Alternative zu `--remote`) |
 | `--dry-run` | Änderungen anzeigen, ohne zu übertragen |
-| `--mirror` | Quelle auf Ziel spiegeln (zusätzliche Dateien löschen) |
+| `--mirror` | Quelle auf Ziel spiegeln, zusätzliche Dateien löschen (nur Verzeichnisquellen) |
 | `--verify` | Prüfsummen nach der Übertragung verifizieren |
 | `--confirm` | Interaktive Bestätigung mit Detailansicht |
 | `--exclude <patterns...>` | Dateimuster ausschließen |
@@ -78,7 +98,7 @@ Bei der Verbindung zu einem Repository wird `DOCKER_HOST` automatisch auf den is
 
 ### Connect-Unterbefehl
 
-Der `connect`-Unterbefehl macht dasselbe mit expliziten Flags:
+Oder verwenden Sie den `connect`-Unterbefehl mit demselben Ergebnis und expliziten Flags:
 
 ```bash
 rdc term connect -m server-1
@@ -191,7 +211,7 @@ Zeigt die aktuelle Version, den Update-Kanal und die Auto-Update-Konfiguration a
 #### Release-Kanale
 
 ```bash
-rdc update --channel edge      # Neueste Funktionen, haufig aktualisiert
-rdc update --channel stable    # Produktionsreife Versionen (Standard)
-rdc update --status            # Aktuellen Kanal und Versionsinformationen anzeigen
+rdc update --channel edge      # Kontinuierlich bereitgestellte Produktions-Updates
+rdc update --channel stable    # Nach 7-tägiger Erprobung von edge befördert (Standard)
+rdc update --status            # Zeigt aktuellen Kanal und Versionsinformationen an
 ```

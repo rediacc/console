@@ -1,12 +1,12 @@
 ---
 title: "Installazione"
-description: "Installa la CLI rdc sul tuo laptop con un singolo comando: è subito pronta; verificala con rdc doctor."
+description: "Installa la CLI rdc sul tuo laptop con un singolo comando e verificala con rdc doctor."
 category: "Tutorials"
 subcategory: essentials
 order: 1
 language: it
-sourceHash: "9b8f5c6aa1b44fd5"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "45226ad6fbefa4f2"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -49,9 +49,9 @@ Esegui `rdc doctor` per controllare Node, SSH e le restanti dipendenze di `rdc` 
 
 ![rdc sul tuo laptop, renet sul server](/img/tutorials/tutorial-installation/slide-2.svg)
 
-`rdc` è la CLI sul tuo laptop. Il server esegue un componente separato chiamato `renet`, che `rdc` provisiona e gestisce via SSH. Non hai mai bisogno di fare SSH su un server manualmente: `rdc` lo fa per te.
+`rdc` è la CLI sul tuo laptop. Il server esegue un componente separato chiamato `renet`, che `rdc` provisiona e gestisce via SSH. Non hai mai bisogno di connetterti via SSH a un server manualmente: `rdc` se ne occupa per te. Questo è il modello: uno strumento sulla tua macchina, niente da gestire direttamente sul server.
 
-Configureremo tutto correttamente nei prossimi due tutorial.
+Affronteremo la configurazione di renet nei prossimi due tutorial. È più complessa dell'installazione del CLI, ma la fai una sola volta per macchina.
 
 ---
 

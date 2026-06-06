@@ -4,11 +4,11 @@ description: "Où vos données sont stockées et comment fonctionne la résidenc
 category: "Concepts"
 order: 3
 language: fr
-sourceHash: "107d8ef496686b0e"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "c87be32ef22a725d"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Lorsque vous créez un compte Rediacc, vous choisissez une région de données. Toutes vos données restent dans cette région. Ce choix est permanent et ne peut pas être modifié après l'inscription.
+Lorsque vous créez un compte Rediacc, vous choisissez une région de données. Toutes vos données restent dans cette région. Ce choix est permanent et ne peut pas être modifié après l'inscription. Aucune migration n'est possible. Choisissez votre région en fonction de l'endroit où vos données doivent résider légalement, et non en fonction de l'emplacement actuel de vos serveurs.
 
 ## Régions disponibles
 
@@ -43,13 +43,13 @@ Ces éléments ne sont pas spécifiques à une région :
 |---|---|---|---|
 | Base de données (D1) | Europe de l'Est (EEUR) | Amérique du Nord Est (ENAM) | Asie-Pacifique (APAC) |
 | Stockage de config (R2) | Juridiction EU | US | Asie-Pacifique |
-| Email (SES) | Francfort (eu-central-1) | Virginie (us-east-1) | Tokyo (ap-northeast-1) |
+| Email (SES) | Francfort (eu-central-1) | Virginie (us-east-1) | Francfort (eu-central-1) |
 
 Chaque région fonctionne avec une infrastructure indépendante. Il n'y a pas de requêtes inter-régions ni de flux de données entre les régions.
 
 ## Garanties pour la région EU
 
-La région EU offre des garanties supplémentaires pour les organisations soumises à des exigences de résidence des données européennes :
+Si vous êtes soumis aux exigences de résidence des données européennes, la région EU offre des garanties spécifiques :
 
 - **Base de données D1** : fonctionne en Europe de l'Est (indicateur de localisation EEUR)
 - **Stockage de config R2** : utilise l'application juridictionnelle EU (garantie contractuelle, pas seulement un indicateur de localisation)
@@ -78,7 +78,7 @@ Propriétés techniques de l'architecture régionale :
 
 - **Bases de données séparées par région** : chaque région possède sa propre base de données Cloudflare D1. Pas de requêtes inter-régions.
 - **Stockage séparé par région** : chaque région possède son propre bucket R2. L'EU utilise l'application juridictionnelle.
-- **Points de terminaison email séparés par région** : les emails transactionnels sont envoyés depuis des points de terminaison AWS SES régionaux.
+- **Livraison des emails via AWS SES** : les emails transactionnels sont envoyés via AWS SES. L'EU et les États-Unis utilisent des points de terminaison régionaux dédiés ; l'Asie-Pacifique achemine les messages via le point de terminaison EU (eu-central-1).
 - **Un utilisateur, une région** : un compte utilisateur existe dans exactement une région. Il ne peut pas couvrir plusieurs régions.
 - **Isolation des webhooks** : les événements webhook Stripe sont reçus par tous les workers régionaux mais traités uniquement par la région qui possède l'enregistrement client.
 - **Chiffrement zéro-connaissance de la configuration** : le serveur ne peut pas lire les données de configuration. Les clés de chiffrement ne quittent jamais l'appareil client.

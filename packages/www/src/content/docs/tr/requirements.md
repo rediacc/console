@@ -4,13 +4,13 @@ description: Rediacc'ı çalıştırmak için sistem gereksinimleri ve desteklen
 category: Guides
 order: 0
 language: tr
-sourceHash: "eb237c7beb1bb942"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "e84db3bb90270473"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Gereksinimler
 
-Rediacc ile dağıtım yapmadan önce, iş istasyonunuzun ve uzak sunucularınızın aşağıdaki gereksinimleri karşıladığından emin olun.
+Bunların çoğu standart Linux sunucu kurulumudur. Bazı ayrıntılar ise Rediacc'a özgüdür, bu nedenle başlamadan önce bunları gözden geçirin.
 
 ## İş İstasyonu (Kontrol Düzlemi)
 

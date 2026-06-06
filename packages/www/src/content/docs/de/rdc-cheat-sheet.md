@@ -1,16 +1,16 @@
 ---
 title: RDC CLI Cheat Sheet
-description: "Kurzreferenz für rdc-Befehle: Konfigurationen, Repos, Maschinen, Sync und Container."
+description: "Kurzreferenz für rdc: Konfigurationen, Repos, Maschinen, Dateisynchronisierung und Container. Vollständiger Optionssatz: füge --help zu einem beliebigen Befehl hinzu."
 category: Guides
 order: 3
 language: de
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # RDC CLI Cheat Sheet
 
-Kurzreferenz für die gebräuchlichsten `rdc`-Befehle. Führe jeden Befehl mit `--help` aus, um alle Optionen zu sehen.
+Nicht alle `rdc`-Befehle sind hier aufgelistet, nur die, die bei jeder Bereitstellung verwendet werden. Für den vollständigen Optionssatz führe einen beliebigen rdc-Befehl mit `--help` aus. Spezialfälle und selten verwendete Optionen findest du in der vollständigen Referenz.
 
 ## Repository-Lebenszyklus
 
@@ -23,6 +23,22 @@ Kurzreferenz für die gebräuchlichsten `rdc`-Befehle. Führe jeden Befehl mit `
 | `rdc repo fork --parent <repo> --tag <tag> -m <machine>` | Repository forken (nahezu sofort, BTRFS-Reflink) |
 | `rdc repo takeover --name <repo> -m <machine>` | Eigentümerschaft eines vorhandenen Repositorys übernehmen |
 | `rdc config repository list` | Alle Repositories mit Name und GUID auflisten |
+
+## Per-Repository-Geheimnisse
+
+Schreibgeschützte Anmeldedaten zur Bereitstellungszeit. `get` gibt nur den Digest zurück. Der Wert wird niemals zurückgegeben. Siehe [Repositories § Geheimnisse](/en/docs/repositories#secrets) für das vollständige Handbuch.
+
+| Befehl | Beschreibung |
+|--------|--------------|
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\|file] --current ""` | Neues Geheimnis erstellen (`--current ""` beim ersten Schreiben) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev>` | Vorhandenes Geheimnis überschreiben (Passwort-ähnliche Vorbedingung) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret` | Überschreiben ohne Überprüfung des vorherigen Wertes (wird als Rotation protokolliert) |
+| `rdc repo secret list --name <repo>` | Geheimnisnamen und Lieferungsmodi auflisten (nie Werte, nie Digests) |
+| `rdc repo secret get --name <repo> --key <KEY>` | Geheimnis-Digest und Modus anzeigen (kein Klartext-Wert, niemals) |
+| `rdc repo secret unset --name <repo> --key <KEY> --current <prev>` | Geheimnis löschen |
+| `rdc repo secret unset --name <repo> --key <KEY> --rotate-secret` | Löschen ohne Überprüfung des vorherigen Wertes |
+
+> Forks erben keine Geheimnisse. Lege sie auf dem Fork explizit mit `rdc repo secret set --name <repo>:<tag>` fest.
 
 ## Sicherung und Wiederherstellung
 
@@ -95,9 +111,10 @@ Kurzreferenz für die gebräuchlichsten `rdc`-Befehle. Führe jeden Befehl mit `
 | `rdc term connect -m <machine>` | SSH-Terminal zur Maschine öffnen |
 | `rdc term connect -m <machine> -r <repo>` | SSH-Terminal zum Repository öffnen (setzt DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Befehl auf der Maschine ausführen |
-| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Datei, Verzeichnis oder mehrere Quellen ins Repository hochladen |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Eine oder mehrere lokale Dateien/Verzeichnisse ins Repository hochladen |
+| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | Einzelne lokale Datei in einen expliziten Remote-Pfad hochladen |
 | `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Repository-Verzeichnis lokal herunterladen |
-| `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Einzelne Datei in ein lokales Verzeichnis herunterladen |
+| `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Einzelne Remote-Datei in ein lokales Verzeichnis herunterladen |
 | `rdc vscode connect -m <machine> -r <repo>` | VS Code Remote SSH-Sitzung öffnen |
 
 ## Konfiguration

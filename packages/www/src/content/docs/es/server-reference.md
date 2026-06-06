@@ -1,16 +1,16 @@
 ---
 title: "Referencia del Servidor"
-description: "Organización de directorios, comandos de renet, servicios systemd y flujos de operación para el servidor remoto."
+description: "Organización de directorios, comandos de renet, servicios systemd y flujos de trabajo para el servidor remoto."
 category: "Concepts"
 order: 3
 language: es
-sourceHash: "f68c27543a2fe3ff"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "4fb53bb4cb1512f6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Referencia del Servidor
 
-Esta página describe lo que encontrarás al conectarte por SSH a un servidor Rediacc: la organización de directorios, los comandos `renet`, los servicios systemd y los flujos de trabajo habituales.
+Conecta por SSH a un servidor Rediacc y aquí está lo que necesitas: la organización de directorios, los comandos `renet`, los servicios systemd y los flujos de trabajo que necesitarás.
 
 La mayoría de los usuarios gestionan los servidores desde su estación de trabajo mediante `rdc` y nunca necesitan esta página. Está aquí para depuración avanzada o cuando necesitas trabajar directamente en el servidor.
 

@@ -6,11 +6,13 @@ description: >-
 category: Concepts
 order: 0
 language: pt
+sourceHash: "6763cd925791d474"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Arquitetura
 
-Esta página explica como a Rediacc funciona internamente: a arquitetura de duas ferramentas, a deteção de adaptador, o modelo de segurança e a estrutura de configuração.
+Assim: rdc na sua workstation, renet nos seus servidores, comunicando via SSH. Toda a arquitetura da Rediacc assenta nessa divisão. Esta página cobre como as duas ferramentas dividem responsabilidades, como a deteção do adaptador encaminha o estado, como o modelo de segurança se parece e como a configuração é estruturada.
 
 ## Visão Geral da Stack Completa
 

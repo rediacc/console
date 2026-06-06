@@ -1,16 +1,16 @@
 ---
 title: Aide-mémoire RDC CLI
-description: "Référence rapide des commandes rdc : configurations, dépôts, machines, synchronisation et conteneurs."
+description: "Référence rapide des commandes rdc : configurations, dépôts, machines, synchronisation et conteneurs. Ensemble complet d'options : ajoutez --help à toute commande."
 category: Guides
 order: 3
 language: fr
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Aide-mémoire RDC CLI
 
-Référence rapide des commandes `rdc` les plus courantes. Exécutez n'importe quelle commande avec `--help` pour voir toutes les options.
+Cette aide-mémoire couvre les commandes `rdc` essentielles au déploiement quotidien, non la liste exhaustive. Pour voir toutes les options, ajoutez `--help` à n'importe quelle commande. Les cas particuliers et options rarement utilisées figurent dans la documentation complète.
 
 ## Cycle de vie du dépôt
 
@@ -23,6 +23,22 @@ Référence rapide des commandes `rdc` les plus courantes. Exécutez n'importe q
 | `rdc repo fork --parent <repo> --tag <tag> -m <machine>` | Bifurquer un dépôt (quasi-instantané, BTRFS reflink) |
 | `rdc repo takeover --name <repo> -m <machine>` | Prendre possession d'un dépôt existant |
 | `rdc config repository list` | Lister tous les dépôts avec leur nom et GUID |
+
+## Secrets par dépôt
+
+Identifiants de déploiement en lecture seule. `get` retourne seulement un digest. La valeur n'est jamais retournée. Consultez [Dépôts § Secrets](/en/docs/repositories#secrets) pour le guide complet.
+
+| Commande | Description |
+|----------|-------------|
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\|file] --current ""` | Créer un nouveau secret (`--current ""` pour la première écriture) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev>` | Écraser un secret existant (précondition de type passwd) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret` | Écraser sans vérifier la valeur précédente (audité comme rotation) |
+| `rdc repo secret list --name <repo>` | Lister les noms des secrets et modes de livraison (jamais les valeurs, jamais les digests) |
+| `rdc repo secret get --name <repo> --key <KEY>` | Afficher le digest du secret et le mode (aucune valeur en clair, jamais) |
+| `rdc repo secret unset --name <repo> --key <KEY> --current <prev>` | Supprimer un secret |
+| `rdc repo secret unset --name <repo> --key <KEY> --rotate-secret` | Supprimer sans vérifier la valeur précédente |
+
+> Les bifurcations n'héritent pas des secrets. Définissez-les explicitement sur la bifurcation avec `rdc repo secret set --name <repo>:<tag>`.
 
 ## Sauvegarde et restauration
 
@@ -95,7 +111,8 @@ Référence rapide des commandes `rdc` les plus courantes. Exécutez n'importe q
 | `rdc term connect -m <machine>` | Ouvrir un terminal SSH vers la machine |
 | `rdc term connect -m <machine> -r <repo>` | Ouvrir un terminal SSH vers le dépôt (définit DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Exécuter une commande sur la machine |
-| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Téléverser un fichier, un répertoire ou plusieurs sources vers le dépôt |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Téléverser un ou plusieurs fichiers/répertoires locaux vers le dépôt |
+| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | Téléverser un fichier local unique vers un chemin distant explicite |
 | `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Télécharger un répertoire du dépôt localement |
 | `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Télécharger un fichier distant dans un répertoire local |
 | `rdc vscode connect -m <machine> -r <repo>` | Ouvrir une session VS Code Remote SSH |

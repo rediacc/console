@@ -1,14 +1,14 @@
 ---
 title: "Datenregionen"
-description: "Wo Daten gespeichert werden und wie regionale Datenhaltung für Compliance-Anforderungen funktioniert."
+description: "Wo Ihre Daten gespeichert werden und wie regionale Datenhaltung funktioniert."
 category: "Concepts"
 order: 3
 language: de
-sourceHash: "107d8ef496686b0e"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "c87be32ef22a725d"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Bei der Erstellung eines Rediacc-Kontos wird eine Datenregion gewählt. Alle Daten verbleiben in dieser Region. Diese Entscheidung ist dauerhaft und kann nach der Registrierung nicht mehr geändert werden.
+Bei der Anmeldung für Rediacc wählen Sie eine Datenregion. Alle Daten verbleiben in dieser Region. Diese Entscheidung ist dauerhaft und kann nach der Registrierung nicht mehr geändert werden. Es gibt keinen Migrationspfad. Wählen Sie die Region basierend darauf, wo Ihre Daten rechtlich ansässig sein müssen, nicht wo Ihre Server heute sind.
 
 ## Verfügbare Regionen
 
@@ -43,13 +43,13 @@ Folgendes ist nicht regionsspezifisch:
 |---|---|---|---|
 | Datenbank (D1) | Osteuropa (EEUR) | Ostnordamerika (ENAM) | Asien-Pazifik (APAC) |
 | Konfigurationsspeicher (R2) | EU-Jurisdiktion | US | Asien-Pazifik |
-| E-Mail (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Tokio (ap-northeast-1) |
+| E-Mail (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Frankfurt (eu-central-1) |
 
 Jede Region betreibt unabhängige Infrastruktur. Es gibt keine regionsübergreifenden Abfragen oder Datenflüsse zwischen Regionen.
 
 ## EU-Datengarantien
 
-Die EU-Region bietet zusätzliche Garantien für Organisationen mit europäischen Datenhaltungsanforderungen:
+Wenn Sie europäischen Datenhaltungsanforderungen unterliegen, bietet die EU-Region zusätzliche Garantien:
 
 - **D1-Datenbank**: läuft in Osteuropa (EEUR-Standorthinweis)
 - **R2-Konfigurationsspeicher**: verwendet EU-Jurisdiktionsdurchsetzung (vertragliche Garantie, nicht nur ein Standorthinweis)
@@ -78,7 +78,7 @@ Technische Eigenschaften der regionalen Architektur:
 
 - **Separate Datenbanken pro Region**: Jede Region hat ihre eigene Cloudflare-D1-Datenbank. Keine regionsübergreifenden Abfragen.
 - **Separater Speicher pro Region**: Jede Region hat ihren eigenen R2-Bucket. EU verwendet Jurisdiktionsdurchsetzung.
-- **Separate E-Mail-Endpunkte pro Region**: Transaktions-E-Mails werden von regionalen AWS-SES-Endpunkten gesendet.
+- **E-Mail-Bereitstellung über AWS SES**: Transaktions-E-Mails werden über AWS SES gesendet. EU und US verwenden dedizierte regionale Endpunkte; Asien-Pazifik wird über den EU-Endpunkt (eu-central-1) geroutet.
 - **Ein Benutzer, eine Region**: Ein Benutzerkonto existiert in genau einer Region. Es kann keine mehreren Regionen umfassen.
 - **Webhook-Isolation**: Stripe-Webhook-Ereignisse werden von allen regionalen Workern empfangen, aber nur von der Region verarbeitet, der der Kundendatensatz gehört.
 - **Zero-Knowledge-Konfigurationsverschlüsselung**: Der Server kann keine Konfigurationsdaten lesen. Verschlüsselungsschlüssel verlassen das Client-Gerät nie.

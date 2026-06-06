@@ -1,18 +1,18 @@
 ---
 title: Monitoreo
 description: >-
-  Monitoree el estado de las máquinas, contenedores, servicios, repositorios y
+  Monitoree el estado de máquinas, contenedores, servicios, repositorios y
   ejecute diagnósticos.
 category: Guides
 order: 9
 language: es
-sourceHash: "1d0af1a74a12d49e"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "d3b8ff142fe2df34"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Monitoreo
 
-Rediacc proporciona comandos de monitoreo integrados para inspeccionar el estado de las máquinas, contenedores en ejecución, servicios, estado de repositorios y diagnósticos del sistema.
+Rediacc proporciona comandos de monitoreo para inspeccionar el estado de las máquinas, contenedores en ejecución, servicios, estado de repositorios y diagnósticos del sistema.
 
 ## Estado de la Máquina
 

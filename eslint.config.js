@@ -1119,7 +1119,12 @@ export default tseslint.config(
   // WWW translation JSON files - basic JSON linting + SEO validation
   {
     files: ['packages/www/src/i18n/translations/*.json'],
-    ignores: ['packages/www/src/i18n/translations/.translation-hashes.json'],
+    // Hash sidecar files store key->hash maps (not real translations), so they
+    // must be excluded from translation/SEO content rules like the localized JSON.
+    ignores: [
+      'packages/www/src/i18n/translations/.translation-hashes.json',
+      'packages/www/src/i18n/translations/.naturalized-hashes.json',
+    ],
     plugins: {
       json,
       'i18n': i18nJsonPlugin,

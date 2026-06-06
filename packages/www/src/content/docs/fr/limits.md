@@ -6,13 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: fr
-sourceHash: "8f29c515be1b7fb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1d0e48ed1094dda6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Limites et quotas
 
-Cette page liste les limites fixes et souples qui s'appliquent aux déploiements Rediacc. Lisez-la avant de planifier la capacité, afin de connaître quels plafonds existent et lesquels n'existent pas.
+Limites de déploiement Rediacc. Trois sont incontournables et ne peuvent pas être contournées en ajoutant du matériel : le plafond de 61 services par repository (allocation d'espace d'adressage réseau), la version minimale de kernel 6.1 (exigences CRIU), et le plafond d'émission Let's Encrypt de 50 certificats génériques par domaine enregistré par semaine. Tout le reste est souple : cela évolue quand vous ajoutez du matériel. Connaître cette distinction avant de définir votre topologie.
 
 ---
 
@@ -22,7 +22,7 @@ Chaque repository prend en charge jusqu'à **61 services** fonctionnant simultan
 
 Il s'agit d'une limite fixe déterminée par l'espace d'adresses réseau alloué à chaque repository. Chaque service reçoit sa propre adresse IP privée dédiée, et le bloc d'adresses de chaque repository accueille exactement 61 emplacements de service.
 
-Si vous approchez de cette limite, consolidez les petits services (par exemple, déplacez les sidecars ou les agents de surveillance dans un repository séparé avec sa propre frontière d'isolation) ou refactorisez pour réduire le nombre de processus fonctionnant indépendamment au sein d'une seule application.
+Atteindre 61 services dans un seul repository signale généralement un problème architectural, pas une contrainte Rediacc. La solution est de déplacer les sidecars et les agents de surveillance dans un repository séparé avec sa propre frontière d'isolation, ou de réduire le nombre de processus fonctionnant indépendamment dans l'application elle-même.
 
 ---
 
@@ -47,7 +47,7 @@ Chaque repository se voit attribuer un **ID réseau** unique, un nombre utilisé
 | IDs réseau disponibles au total | ~261 944 |
 | Portée | Par configuration (partagé entre toutes les machines d'une configuration) |
 
-Lorsqu'un repository est supprimé, son ID réseau est libéré et devient disponible pour réutilisation. Rediacc attribue les IDs séquentiellement et ne recherche les espaces libérés que lorsque le compteur progressif approche du plafond. En pratique, cette limite n'est jamais atteinte. Il faudrait créer et gérer des centaines de milliers de repositories sur la durée de vie d'une seule configuration.
+Lorsqu'un repository est supprimé, son ID réseau est libéré et devient disponible pour réutilisation. Rediacc attribue les identifiants de manière séquentielle et ne recherche les espaces libérés que lorsque le compteur progressif approche du plafond. En pratique, vous n'atteindrez jamais cette limite. Nous ne l'avons jamais observé. Épuiser le pool nécessiterait de créer et gérer des centaines de milliers de repositories sous une seule configuration.
 
 ---
 
@@ -136,7 +136,7 @@ La migration à chaud via CRIU a les contraintes suivantes :
 |--------|--------|
 | Destinations de backup par repository | Illimitées |
 | Jobs de backup simultanés | 1 par repository (les jobs sont mis en file d'attente s'ils sont déclenchés simultanément) |
-| Fréquence de backup | Aucun intervalle minimum imposé ; limité par la bande passante de votre stockage. Utilisez `rdc config backup-strategy set --name <name> --bwlimit "6M"` pour limiter la vitesse d'envoi |
+| Fréquence de backup | Aucun intervalle minimum imposé ; limité par la bande passante de votre stockage. Utilisez `rdc config backup-strategy set --name <name> --bwlimit "6M"` pour limiter la vitesse d'envoi (syntaxe rclone `--bwlimit` : simple `6M`, directionnelle `6M:off`, ou tableau horaire `08:00,3M;22:00,10M`) |
 | Rétention | Contrôlée par votre fournisseur de stockage (S3, Cloudflare R2, etc.). Rediacc n'impose pas de politiques de rétention. |
 | Backup inter-machines | Pris en charge ; la machine de destination doit disposer d'un espace datastore suffisant |
 
@@ -155,7 +155,7 @@ La migration à chaud via CRIU a les contraintes suivantes :
 
 ## Versions de système d'exploitation prises en charge
 
-Les machines distantes doivent exécuter l'un des systèmes suivants pour satisfaire les exigences de kernel, de système de fichiers et d'isolation réseau de Rediacc. Cette liste est l'ensemble canonique testé en CI (matrice Bridge Workers) et doit rester synchronisée avec [Prérequis](/en/docs/requirements) :
+Les machines distantes doivent exécuter l'une des options suivantes pour répondre aux exigences de kernel, système de fichiers et isolation réseau de Rediacc. Cette liste est l'ensemble canonique testé en CI (matrice Bridge Workers) et doit rester synchronisée avec [Prérequis](/en/docs/requirements) :
 
 | SE | Version minimale | Kernel par défaut | Notes |
 |----|------------------|-------------------|-------|

@@ -4,8 +4,8 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "15b3c42682a05678"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2047fd1ce3a47944"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Hızlı Başlangıç
@@ -20,7 +20,7 @@ Kendi sunucunuzda şifrelenmiş, izole bir konteyner ortamı dağıtın. Bulut h
 
 Bir repo, disk üzerinde tek bir şifrelenmiş dosyadır. Taşıyabilir, yedekleyebilir, çatallayabilirsiniz. Sadece bir dosyadır. Bağlandığında, içinde özel bir Docker daemon'u ve uygulama verileriniz bulunan bir klasöre dönüşür.
 
-Bir repoyu USB bellek gibi düşünün: herhangi bir makineye takın; uygulamalar ve veriler bağlanır, çalışmaya hazır. Hiçbir şeyi yeniden oluşturmadan makineler veya bulut sağlayıcıları arasında taşıyın. Tak ve Çalıştır.
+Bir repoyu USB bellek gibi düşünün: herhangi bir makineye takın; uygulamalar ve veriler bağlanır, çalışmaya hazır. Hiçbir şeyi yeniden oluşturmadan makineler veya bulut sağlayıcıları arasında taşıyın.
 
 **İki araç, iki rol:**
 
@@ -97,7 +97,7 @@ rdc repo template list                                        # Gömülü şablo
 rdc repo template apply --name app-postgres -m my-server -r my-app  # docker-compose.yml + Rediaccfile dağıt
 ```
 
-Şablonlar bir `docker-compose.yml`, `Rediaccfile` ve destekleyici dosyalar sağlar. Bir şablon (veya kendi compose dosyanız) olmadan başlatılacak bir şey yoktur.
+Şablonlar bir `docker-compose.yml`, `Rediaccfile` ve destekleyici dosyalar sağlar. Bir şablon (veya kendi compose dosyanız) olmadan başlatılacak bir şey yoktur. İlk reponuz için yerleşik şablonu kullanın. Tüm iş akışını baştan sona görmek için en hızlı yoldur.
 
 ### 3. Repoyu Başlatma
 

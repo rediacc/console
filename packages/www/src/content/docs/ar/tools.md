@@ -1,16 +1,16 @@
 ---
 title: الأدوات
-description: مزامنة الملفات، والوصول عبر الطرفية، وتكامل VS Code، والتحديثات، والتشخيصات.
+description: مزامنة الملفات والوصول عبر SSH وتكامل VS Code وتحديثات CLI.
 category: Guides
 order: 9
 language: ar
-sourceHash: "f350872720c99d58"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4b3aebff5e82416f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # الأدوات
 
-يتضمن Rediacc أدوات إنتاجية للعمل مع المستودعات البعيدة: مزامنة الملفات، وطرفية SSH، وتكامل VS Code، وتحديثات واجهة سطر الأوامر.
+يوفر Rediacc أربع أدوات للعمل اليومي على آلاتك ومستودعاتك: مزامنة الملفات عبر SSH، طرفية SSH، تكامل VS Code، وتحديثات واجهة سطر الأوامر. جميع هذه الأدوات تعمل عبر SSH. لا يلزم أي عامل أو daemon على الجانب البعيد. إذا كنت تبحث عن واجهة رسومية، فأنت في الصفحة الخاطئة.
 
 ## مزامنة الملفات (sync)
 
@@ -18,14 +18,36 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 
 ### رفع الملفات
 
+يقبل `--local` مسارًا واحدًا أو أكثر. قد يكون كل مسار ملفًا أو مجلدًا. تُنزل الملفات في `<remote>/<basename>`؛ محتويات المجلد تندمج في `<remote>/`. لملف واحد، يُفضل استخدام `--remote-file` لتحديد مسار الوجهة بوضوح.
+
 ```bash
+# Directory (contents merged into remote)
 rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+
+# Single file dropped into a remote directory (basename preserved)
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+
+# Single file, explicit destination path
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+
+# Multiple sources in one call
+rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
 ```
+
+`--remote` و `--remote-file` متنافيتان. يتطلب `--remote-file` مسار `--local` واحد بالضبط يشير إلى ملف.
+
+لا يمكن دمج `--mirror` مع مصدر ملف؛ سيحذف الملفات الشقيقة في المجلد البعيد.
 
 ### تنزيل الملفات
 
+استخدم `--remote` للمجلد (الافتراضي) أو `--remote-file` لملف واحد. الرايتان متنافيتان.
+
 ```bash
+# Directory
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+
+# Single file — --local must be an existing directory
+rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### التحقق من حالة المزامنة
@@ -41,10 +63,10 @@ rdc repo sync status -m server-1 -r my-app
 | `-m, --machine <name>` | الجهاز المستهدف |
 | `-r, --repository <name>` | المستودع المستهدف |
 | `--local <paths...>` | مسار واحد أو أكثر لملف أو مجلد محلي (رفع) أو مجلد الوجهة المحلي (تنزيل) |
-| `--remote <path>` | المسار البعيد للمجلد (نسبي إلى نقطة تحميل المستودع) |
-| `--remote-file <path>` | ملف بعيد واحد (تنزيل فقط، بديل لـ `--remote`) |
+| `--remote <path>` | مجلد بعيد (نسبي إلى نقطة تحميل المستودع) |
+| `--remote-file <path>` | مسار ملف بعيد لعمليات الرفع أو التنزيل الفردية (بديل لـ `--remote`) |
 | `--dry-run` | معاينة التغييرات دون نقل الملفات |
-| `--mirror` | مطابقة المصدر مع الوجهة (حذف الملفات الزائدة) |
+| `--mirror` | مطابقة المصدر مع الوجهة، حذف الملفات الزائدة (مصادر المجلدات فقط) |
 | `--verify` | التحقق من المجاميع الاختبارية بعد النقل |
 | `--confirm` | تأكيد تفاعلي مع عرض التفاصيل |
 | `--exclude <patterns...>` | استثناء أنماط الملفات |
@@ -76,7 +98,7 @@ rdc term connect -m server-1 -r my-app -c "docker ps"
 
 ### الأمر الفرعي connect
 
-يوفر الأمر الفرعي `connect` نفس الوظيفة مع خيارات صريحة:
+أو استخدم الأمر الفرعي `connect` للحصول على نفس النتيجة، مع رايات صريحة:
 
 ```bash
 rdc term connect -m server-1
@@ -184,12 +206,12 @@ rdc update --rollback
 rdc update --status
 ```
 
-عرض الاصدار الحالي، وقناة التحديث، وتكوين التحديث التلقائي.
+عرض الإصدار الحالي وقناة التحديث وتكوين التحديث التلقائي.
 
-#### قنوات الاصدار
+#### قنوات الإصدار
 
 ```bash
-rdc update --channel edge      # احدث الميزات، يتم التحديث بشكل متكرر
-rdc update --channel stable    # اصدارات جاهزة للانتاج (افتراضي)
-rdc update --status            # عرض القناة الحالية ومعلومات الاصدار
+rdc update --channel edge      # التحديثات المنشورة بشكل مستمر للإنتاج
+rdc update --channel stable    # الإصدارات المعززة من edge بعد 7 أيام من التثبيت (الافتراضي)
+rdc update --status            # عرض القناة الحالية ومعلومات الإصدار
 ```

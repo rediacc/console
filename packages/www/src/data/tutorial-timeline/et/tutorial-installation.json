@@ -1,0 +1,76 @@
+{
+  "cast": "/assets/tutorials/tutorial-installation.cast",
+  "language": "et",
+  "version": 1,
+  "steps": [
+    {
+      "id": "tutorial-installation-01",
+      "markerIndex": 0,
+      "replayStartSec": 1.626476,
+      "replayEndSec": 7.903516,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-01.259d62a6.mp3",
+      "audioDurationSec": 19.565714,
+      "textHash": "259d62a6337ffd068912f1851d4b7f2c830494dfc8093acaab5f7b4e0613a8a3",
+      "narrationText": "Esmalt kinnitame, et CLI on teel. CLI käivitamine versioonilipuga prindib paigaldatud versiooni ja näitab, et paigaldamine lõpetati edukalt.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-01-after.9358f2b7.mp3",
+      "afterAudioDurationSec": 3.474286,
+      "afterTextHash": "9358f2b793833ef9623f4d2367c6cef4d028559be0594f2f02d22aa3cf4fdcbb"
+    },
+    {
+      "id": "tutorial-installation-02",
+      "markerIndex": 1,
+      "replayStartSec": 7.903516,
+      "replayEndSec": 10.095825,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-02.b3ec043b.mp3",
+      "audioDurationSec": 6.347755,
+      "textHash": "b3ec043bddee40e09a9c7ae8ba7b8ee800901d4a9cc795a9922c8ad1fb5b68db",
+      "narrationText": "Järgmisena käivitame CLI doctor. See kontrollib sõltuvusi, mida CLI vajab -- Node, SSH ja ülejäänud -- ning teatab puuduvatest komponentidest. Puhas aruanne tähendab, et oled valmis serverit lisama.",
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-02-after.ba4b38e7.mp3",
+      "afterAudioDurationSec": 1.880816,
+      "afterTextHash": "ba4b38e751086e310a48c5ccf1475f848a0a1e5c6b983900cf9ff8cbba6934e4"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/intro.622bab70.mp3",
+      "textHash": "622bab701622b2f408ab73ae313a4bd1e0ad7f3fc2610fbe9310c0ab414bfe36",
+      "audioDurationSec": 3.787755,
+      "narrationText": "Olgu! Paigaldame käsurea tööriista sinu sülearvutisse."
+    },
+    {
+      "id": "three-steps",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/three-steps.1e03c43c.mp3",
+      "textHash": "1e03c43cfdc5f9a4e55595ff1ebc78a01febe8a2c2968fa07c69cb7232cb2b8b",
+      "audioDurationSec": 7.000816,
+      "narrationText": "Kolm sammu. Ava paigalduse leht, vali oma operatsioonisüsteem ja kleebi käsk terminali."
+    },
+    {
+      "id": "open-install-page",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/open-install-page.d928832f.mp3",
+      "textHash": "d928832f598206f6b018ced77b4f3b13b28243bd633272a9f61cf5ebddd9f80b",
+      "audioDurationSec": 7.235918,
+      "narrationText": "Mine paigalduse lehele ja keri alla kiirpaigalduse jaotiseni. See genereerib õige üherealise käsu, ükskõik mis platvormil oled."
+    },
+    {
+      "id": "laptop-vs-server",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/laptop-vs-server.d8722404.mp3",
+      "textHash": "d8722404dd854e6f045e400f54ce6c3b560ae8bf69a245a9ceabe3276ad0ccd6",
+      "audioDurationSec": 11.72898,
+      "narrationText": "Käsurea tööriist elab sinu sülearvutis. Serveris töötab eraldi komponent nimega renet, mille CLI varustab ja juhib üle SSH, nii et sa ei pea kunagi käsitsi sisse logima."
+    },
+    {
+      "id": "next-tutorial",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/next-tutorial.65708b9b.mp3",
+      "textHash": "65708b9b3733b4c02ceff79eb8529f02aa371d67e7feadeee02ea9b30a463503",
+      "audioDurationSec": 7.000816,
+      "narrationText": "Paigaldus on tehtud. Järgmisena seadistame SSH võtme, et CLI saaks su serveritesse jõuda."
+    }
+  ],
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "34fc595825b52740ee98b93c5ed73ef352397876f103fa5f76daf928e48f7df9"
+}

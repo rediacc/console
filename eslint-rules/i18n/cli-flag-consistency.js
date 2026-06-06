@@ -104,7 +104,7 @@ export const cliFlagConsistency = {
     ],
     messages: {
       mangledFlag:
-        'Translation for "{{key}}" contains CLI flag token `{{flag}}`, which is not a valid flag — it looks like a translated/declined/compounded form of an English flag. Flag names are part of the CLI contract and must appear verbatim. English flags for this key: {{englishFlags}}.',
+        'Translation for "{{key}}" contains CLI flag token `{{flag}}`, which is not a valid flag — it looks like a translated/declined/compounded form of an English flag. Flag names are part of the CLI contract and must appear verbatim. English flags for this key: {{englishFlags}}. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

@@ -4,8 +4,8 @@ description: "Remover backups órfãos, snapshots obsoletos, imagens de reposit�
 category: "Guides"
 order: 12
 language: pt
-sourceHash: "98bb2d50d75a1d3d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "9b74e1ea24b9735f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Pruning

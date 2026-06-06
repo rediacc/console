@@ -1,24 +1,22 @@
 ---
 title: Dienste
 description: >-
-  Überblick über containerisierte Dienste mit Rediaccfiles, Dienst-Netzwerk und
+  Containerisierte Dienste mithilfe von Rediaccfiles, Dienst-Netzwerk und
   Autostart bereitstellen und verwalten.
 category: Guides
 order: 5
 language: de
-sourceHash: "181ba0512ff98f9c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "88734af48d9648d5"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Dienste
 
-Wenn Sie unsicher sind, welches Tool Sie verwenden sollen, lesen Sie [rdc vs renet](/de/docs/rdc-vs-renet).
-
-Diese Seite behandelt die Bereitstellung und Verwaltung containerisierter Dienste: Rediaccfiles, Dienst-Netzwerk, Starten/Stoppen, Massenoperationen und Autostart.
+Auf dieser Seite werden die Bereitstellung und Verwaltung containerisierter Dienste behandelt: Rediaccfiles, Dienst-Netzwerk, Starten/Stoppen, Massenoperationen und Autostart.
 
 ## Das Rediaccfile
 
-Das **Rediaccfile** ist ein Bash-Skript, das definiert, wie Ihre Dienste gestartet und gestoppt werden. Es muss `Rediaccfile` oder `rediaccfile` (Groß-/Kleinschreibung wird nicht unterschieden) heißen und im eingebundenen Dateisystem des Repositories platziert werden.
+Das **Rediaccfile** ist ein Bash-Skript, das definiert, wie Ihre Dienste gestartet und gestoppt werden. Es wird **sourced** (nicht als separater Prozess ausgeführt), daher teilen sich seine Funktionen denselben Shell-Kontext und haben Zugriff auf alle exportierten Umgebungsvariablen. Es muss `Rediaccfile` oder `rediaccfile` (Groß-/Kleinschreibung wird nicht unterschieden) heißen und muss im eingebundenen Dateisystem des Repositories platziert werden.
 
 Rediaccfiles werden an zwei Orten gesucht:
 1. Im **Stammverzeichnis** des Repository-Einbindungspfads
@@ -54,11 +52,13 @@ Wenn eine Rediaccfile-Funktion ausgeführt wird, stehen folgende Umgebungsvariab
 | `DOCKER_HOST` | Docker-Socket für den isolierten Daemon dieses Repositories | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | Loopback-IP für jeden in `.rediacc.json` definierten Dienst | `POSTGRES_IP=127.0.11.2` |
 
-Die `{SERVICE}_IP`-Variablen werden automatisch aus `.rediacc.json` generiert. Die Namenskonvention wandelt den Dienstnamen in Großbuchstaben um, ersetzt Bindestriche durch Unterstriche und hängt `_IP` an. Zum Beispiel wird `listmonk-app` zu `LISTMONK_APP_IP`.
+Die `{SERVICE}_IP`-Variablen werden automatisch aus den Slot-Zuordnungen in `.rediacc.json` generiert und werden vor der Ausführung Ihrer Rediaccfile-Funktionen exportiert. Die Namenskonvention wandelt den Dienstnamen in Großbuchstaben um, ersetzt Bindestriche durch Unterstriche und hängt `_IP` an. Beispiel: Ein Dienst namens `listmonk-app` mit Slot `0` wird zu `LISTMONK_APP_IP=127.0.11.2`.
 
 > **Warnung: Verwenden Sie kein `sudo docker` in Rediaccfiles.** Der `sudo`-Befehl setzt Umgebungsvariablen zurück, wodurch `DOCKER_HOST` verloren geht und Docker-Befehle den System-Daemon statt des isolierten Repository-Daemons ansprechen. Dies bricht die Container-Isolation und kann Port-Konflikte verursachen. Rediacc blockiert die Ausführung, wenn es `sudo docker` ohne `-E` erkennt.
 >
-> Verwenden Sie `renet compose` in Ihren Rediaccfiles -- es übernimmt automatisch `DOCKER_HOST`, injiziert Netzwerk-Labels für die Routen-Erkennung und konfiguriert das Dienst-Netzwerk. Siehe [Netzwerk](/de/docs/networking) für Details, wie Dienste über den Reverse Proxy bereitgestellt werden. Wenn Sie Docker direkt aufrufen, verwenden Sie `docker` ohne `sudo` -- Rediaccfile-Funktionen laufen bereits mit ausreichenden Rechten. Wenn Sie sudo verwenden müssen, nutzen Sie `sudo -E docker`, um Umgebungsvariablen zu erhalten.
+> Verwenden Sie `renet compose` in Ihren Rediaccfiles. Es übernimmt automatisch `DOCKER_HOST`, injiziert Netzwerk-Labels für die Routen-Erkennung und konfiguriert das Dienst-Netzwerk. Siehe [Netzwerk](/de/docs/networking) für Details, wie Dienste über den Reverse Proxy bereitgestellt werden. Wenn Sie Docker direkt aufrufen, verwenden Sie `docker` ohne `sudo`, da Rediaccfile-Funktionen bereits mit ausreichenden Rechten laufen. Wenn Sie sudo verwenden müssen, nutzen Sie `sudo -E docker`, um Umgebungsvariablen zu erhalten.
+>
+> `renet` ist das remote Low-Level-Tool. Für normale Benutzer-Workflows von Ihrer Workstation bevorzugen Sie `rdc`-Befehle wie `rdc repo up` und `rdc repo down`. Siehe [rdc vs renet](/de/docs/rdc-vs-renet).
 
 ### Beispiel
 
@@ -83,7 +83,7 @@ down() {
 Für Projekte mit mehreren unabhängigen Dienstgruppen verwenden Sie Unterverzeichnisse:
 
 ```
-/mnt/rediacc/mounts/my-app/
+/mnt/rediacc/repos/my-app/
 ├── Rediaccfile              # Root: gemeinsames Setup
 ├── docker-compose.yml
 ├── database/
@@ -129,7 +129,7 @@ Sie müssen `.rediacc.json` nicht manuell erstellen. Wenn Sie `rdc repo up` ausf
 
 ### IP-Berechnung
 
-Die IP eines Dienstes wird aus der Netzwerk-ID des Repositories und dem Slot des Dienstes berechnet. Die Netzwerk-ID wird auf das zweite, dritte und vierte Oktett einer `127.x.y.z`-Loopback-Adresse aufgeteilt. Jeder Dienst erhält einen Offset von `slot + 2` (Offsets 0 und 1 sind reserviert).
+Die IP eines Dienstes wird aus der Netzwerk-ID des Repositories und dem Slot des Dienstes berechnet. Die Netzwerk-ID wird auf das zweite, dritte und vierte Oktett einer `127.x.y.z`-Loopback-Adresse aufgeteilt. Dienste starten bei Offset 2:
 
 | Offset | Address | Purpose |
 |--------|---------|---------|
@@ -220,7 +220,7 @@ Die Ausführungssequenz ist:
 3. `.rediacc.json` automatisch aus Compose-Dateien generieren
 4. `up()` in allen Rediaccfiles ausführen (A-Z-Reihenfolge)
 
-Nach der Bereitstellung zeigt die Ausgabe einen **PROXY ROUTES**-Abschnitt mit den tatsächlichen URLs für jeden Dienst. Dienste mit benutzerdefinierten Traefik-Labels zeigen ihre benutzerdefinierten Domains als primäre URLs:
+Nach der Bereitstellung zeigt die Ausgabe einen **PROXY ROUTES**-Abschnitt mit den tatsächlichen URLs für jeden Dienst. Dienste mit benutzerdefinierten Traefik-Labels (z.B. `traefik.http.routers.myapp.rule=Host(...)`) zeigen ihre benutzerdefinierten Domains als primäre URLs:
 
 ```
 HTTP services (accessible via proxy after ~3s):
@@ -229,6 +229,8 @@ HTTP services (accessible via proxy after ~3s):
     Auto:  https://gitlab-server.gitlab.server-1.example.com
     IP:    127.0.11.130
 ```
+
+Dienste ohne benutzerdefinierte Traefik-Labels zeigen nur die auto-generierte Route. Verwenden Sie diese URLs (nicht das generische Muster, das von der CLI gedruckt wird) für Browserzugriff, API-Aufrufe und Konfiguration zwischen Diensten.
 
 ## Dienste stoppen
 
@@ -316,7 +318,7 @@ Killing LUKS slot 1: /mnt/rediacc/repositories/<guid>
 Adding keyfile to LUKS slot 1: /mnt/rediacc/repositories/<guid>
 ```
 
-Dies ist sicher -- Slot 0 (Ihre Passphrase) wird nie geändert. Wenn Autostart nicht
+Dies ist sicher, Slot 0 (Ihre Passphrase) wird nie geändert. Wenn Autostart nicht
 aktiviert ist, wird die Prüfung stillschweigend übersprungen. Fehler sind nicht-kritisch und blockieren das Deployment nicht.
 
 ### Status anzeigen
@@ -411,3 +413,31 @@ rdc repo up --name webapp -m prod-1
 ```bash
 rdc repo autostart enable --name webapp -m prod-1
 ```
+
+## Pro-Repo-Geheimnisse in Compose verwenden
+
+Der Platzhalter `POSTGRES_PASSWORD: changeme` oben ist für ein Tutorial in Ordnung, aber echte Apps benötigen echte Anmeldedaten, und das Committen davon in die Compose-Datei (oder eine `.env`-Datei innerhalb des Repositories) bedeutet, dass Forks diese auch erben. Verwenden Sie für Deploy-Zeit-Anmeldedaten `rdc repo secret`. Werte liegen außerhalb des verschlüsselten Repository-Images, daher starten Forks mit einer leeren Secrets-Map.
+
+Zwei Liefermodi funktionieren in Compose:
+
+**`env`-Modus.** Interpoliert via `${REDIACC_SECRET_<KEY>}` in jedem `environment:`-Wert. Der renet-Wrapper übergibt den Wert zur Deploy-Zeit in die Container-Umgebung.
+
+**`file`-Modus.** Der Wert landet in einer Host-seitigen tmpfs-Datei unter `/var/run/rediacc/secrets/<networkID>/<KEY>`, und Sie mounten ihn in den Container via Docker Compose's Standard `secrets:`-Block. Der Container liest `/run/secrets/<key>`. Bevorzugen Sie diesen Modus für alles Sensible. Werte erscheinen niemals in `docker inspect` oder `/proc/<pid>/environ`.
+
+```yaml
+services:
+  api:
+    image: myregistry/api:latest
+    environment:
+      DATABASE_URL: ${REDIACC_SECRET_DATABASE_URL}
+    secrets:
+      - stripe_live_key
+
+secrets:
+  stripe_live_key:
+    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+```
+
+Seeden Sie die Werte mit `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` und dem Äquivalent für File-Modus. Siehe [Repositories § Geheimnisse](/de/docs/repositories#secrets) für die vollständige Anleitung und [Pro-Repo-Geheimnisse](/de/docs/rdc-cheat-sheet#per-repo-secrets) im Spickzettel für die Befehlsreferenz.
+
+> **Cross-Repo-Pfade werden zur Validierungszeit abgelehnt.** Ein Compose-`secrets: file:` (oder `configs: file:`, oder `env_file:`), das auf das `/var/run/rediacc/secrets/<other-networkID>/`-Verzeichnis eines anderen Repositories zeigt, wird von dem renet-Wrapper vor docker compose mit Hard-Reject blockiert. `--unsafe` überschreibt es NICHT. Defense-in-depth: Der Landlock-Sandbox um die Rediaccfile-Shell bewältigt Lesen auf das secrets-Verzeichnis des aktuellen Netzwerks, sodass ein `cat /var/run/rediacc/secrets/<other>/X` aus Rediaccfile-Bash mit EACCES fehlschlägt, selbst wenn es den YAML-Validator umgeht. Sie müssen es nicht explizit aktivieren; dies ist standardmäßig für alle `repo up` aktiviert.

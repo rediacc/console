@@ -4,8 +4,8 @@ description: "Soluzioni per i problemi più comuni con SSH, configurazione, repo
 category: "Guides"
 order: 10
 language: it
-sourceHash: "7cfabe7bbf3914c3"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "17dc03eb0589d606"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Risoluzione dei Problemi
@@ -125,9 +125,9 @@ Sostituisci `2816` con l'ID di rete del tuo repository (trovabile in `rediacc.js
 
 ## `docker run` non ha rete, `apt update` fallisce, `curl` si blocca
 
-All'interno di una shell di repository, eseguire un container senza `--network host` ti fornisce un container isolato con solo un'interfaccia loopback, senza DNS e senza connettivita' in uscita. Comandi come `apt update`, `pip install`, `curl https://...`, o qualsiasi richiesta di rete falliranno immediatamente con errori DNS.
+All'interno di una shell di repository, eseguire un container senza `--network host` ti fornisce un container isolato con solo un'interfaccia loopback, senza DNS e senza connettività in uscita. Comandi come `apt update`, `pip install`, `curl https://...`, o qualsiasi richiesta di rete falliranno immediatamente con errori DNS.
 
-Questo e' intenzionale. Il modello di rete di Rediacc e' **host networking per ogni servizio**, imposto da `renet compose`. Un bridge Docker predefinito con NAT aggirerebbe l'isolamento loopback a livello kernel che impedisce a un repo di raggiungere i servizi di un altro repo, quindi il daemon Docker per repository (`FlavorRediacc`) e' configurato con `"bridge": "none"` e `"iptables": false`. Non esiste un bridge instradabile a cui un container `docker run` normale possa connettersi. (I daemon Hub per utente (`FlavorHub`) utilizzati dagli ambienti di sviluppo sono l'eccezione: abilitano bridge e iptables in modo che i container dell'utente abbiano connettivita' di rete in uscita.)
+Questo è intenzionale. Il modello di rete di Rediacc è **host networking per ogni servizio**, imposto da `renet compose`. Un bridge Docker predefinito con NAT aggirerebbe l'isolamento loopback a livello kernel che impedisce a un repo di raggiungere i servizi di un altro repo, quindi il daemon Docker per repository (`FlavorRediacc`) è configurato con `"bridge": "none"` e `"iptables": false`. Non esiste un bridge instradabile a cui un container `docker run` normale possa connettersi. (I daemon Hub per utente (`FlavorHub`) utilizzati dagli ambienti di sviluppo sono l'eccezione: abilitano bridge e iptables in modo che i container dell'utente abbiano connettività di rete in uscita.)
 
 **Per ottenere accesso alla rete in un container ad hoc, usa host networking:**
 
@@ -141,7 +141,7 @@ docker run --rm --network host -it ubuntu bash
 
 ## VS Code: Permesso Negato sui File Sandbox
 
-Quando ci si connette con `rdc vscode connect -m <machine> -r <repo>` dopo una sessione VS Code precedente, le versioni precedenti di renet producevano errori come `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. La causa: proprieta' mista dei file all'interno della directory sandbox, dove sia l'utente SSH che l'utente interno `rediacc` avevano scritto file.
+Quando ci si connette con `rdc vscode connect -m <machine> -r <repo>` dopo una sessione VS Code precedente, le versioni precedenti di renet producevano errori come `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied`. La causa: proprietà mista dei file all'interno della directory sandbox, dove sia l'utente SSH che l'utente interno `rediacc` avevano scritto file.
 
 Le versioni moderne di renet risolvono questo problema:
 
@@ -153,13 +153,13 @@ Se vedi ancora errori di permesso, riavvia il daemon Docker del repository una v
 
 ## Il Daemon Non Si Avvia Dopo un Aggiornamento di renet
 
-Prima di ogni avvio, `renet daemon start-foreground` riscrive `daemon.json` e `containerd.toml` nella directory di configurazione del repository dai template correnti, quindi un repository la cui configurazione e' stata generata da una versione precedente di renet acquisisce automaticamente il nuovo formato. Non e' necessario eseguire alcun comando di migrazione ne' rigenerare manualmente l'unita' systemd. Riavvia semplicemente il servizio:
+Prima di ogni avvio, `renet daemon start-foreground` riscrive `daemon.json` e `containerd.toml` nella directory di configurazione del repository dai template correnti, quindi un repository la cui configurazione è stata generata da una versione precedente di renet acquisisce automaticamente il nuovo formato. Non è necessario eseguire alcun comando di migrazione né rigenerare manualmente l'unità systemd. Riavvia semplicemente il servizio:
 
 ```bash
 sudo systemctl restart rediacc-docker-<network-id>
 ```
 
-Se l'unita' continua a fallire, controlla il journal per un errore specifico:
+Se l'unità continua a fallire, controlla il journal per un errore specifico:
 
 ```bash
 sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
@@ -167,11 +167,11 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 
 ## Container Creati sul Daemon Docker Sbagliato
 
-Se i tuoi container appaiono sul daemon Docker del sistema host invece del daemon isolato del repository, la causa piu' comune e' l'uso di `sudo docker` all'interno di un Rediaccfile.
+Se i tuoi container appaiono sul daemon Docker del sistema host invece del daemon isolato del repository, la causa più comune è l'uso di `sudo docker` all'interno di un Rediaccfile.
 
 `sudo` reimposta le variabili d'ambiente, quindi `DOCKER_HOST` viene perso e Docker usa il socket di sistema (`/var/run/docker.sock`). Rediacc blocca questo automaticamente, ma se lo incontri:
 
-- **Usa `docker` direttamente**, le funzioni del Rediaccfile vengono gia' eseguite con privilegi sufficienti
+- **Usa `docker` direttamente**, le funzioni del Rediaccfile vengono già eseguite con privilegi sufficienti
 - Se devi usare sudo, usa `sudo -E docker` per preservare le variabili d'ambiente
 - Controlla il tuo Rediaccfile per eventuali comandi `sudo docker` e rimuovi il `sudo`
 
@@ -179,11 +179,11 @@ Se i tuoi container appaiono sul daemon Docker del sistema host invece del daemo
 
 Se `rdc term` non riesce ad aprire una finestra del terminale:
 
-- Usa la modalita' inline con `-c` per eseguire comandi direttamente:
+- Usa la modalità inline con `-c` per eseguire comandi direttamente:
   ```bash
   rdc term connect -m server-1 -c "ls -la"
   ```
-- Forza il terminale esterno con `--external` se la modalita' inline ha problemi
+- Forza il terminale esterno con `--external` se la modalità inline ha problemi
 - Su Linux, assicurati di avere `gnome-terminal`, `xterm` o un altro emulatore di terminale installato
 
 ## Esegui la Diagnostica

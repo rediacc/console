@@ -157,5 +157,37 @@
     "playwright",
     "vfile"
   ],
-  "ignoreBinaries": ["rimraf", "vite", "vitest", "wrangler"]
+  "ignoreBinaries": [
+    "rimraf",
+    "vite",
+    "vitest",
+    "wrangler",
+    "agent-browser",
+    "cmd.exe",
+    "dscl",
+    "duti",
+    "getent",
+    "gnome-terminal",
+    "keyctl",
+    "konsole",
+    "mate-terminal",
+    "osascript",
+    "pdftotext",
+    "powershell.exe",
+    "rclone",
+    "reg",
+    "security",
+    "ssh-add",
+    "ssh-agent",
+    "ssh-keyscan",
+    "systemctl",
+    "terminator",
+    "update-desktop-database",
+    "where",
+    "which",
+    "wsl.exe",
+    "xdg-mime",
+    "xfce4-terminal",
+    "xterm"
+  ]
 }

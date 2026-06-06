@@ -1,17 +1,17 @@
 ---
-title: "Branching simile a git"
-description: "Tratta i fork copy-on-write come commit git: congela un fork in uno stato immutabile, assegna nomi ai branch, ripristina i commit in fork scrivibili e unisci le storie così com'è senza mutare mai un repository live."
+title: "Git-like branching"
+description: "Tratta i fork copy-on-write come commit git: congela un fork in uno stato immutabile, assegna nomi ai branch, ripristina i commit in fork scrivibili e unisci le storie senza mai mutare un repository live."
 category: Reference
 subcategory: advanced
 order: 41
 language: it
-sourceHash: "6ca18986dfd6e237"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2448559f0fcfc0e0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# Branching simile a git
+# Git-like branching
 
-I repository Rediacc supportano il versionamento simile a git basato su fork copy-on-write. Ogni fork immutabile è un **commit**: un'immagine byte-stabile e congelata che rifiuta il mount. I branch sono riferimenti nominati che puntano a un commit. `rdc repo checkout` clona tramite reflink un commit in un fork di lavoro scrivibile, e `rdc repo merge` combina due linee di storia senza mai mutare un repository live in place.
+Ecco il modello concettuale: Rediacc trasforma i fork copy-on-write in una storia di versioni simile a git. Ogni fork immutabile è un **commit**: un'immagine byte-stabile e congelata che rifiuta il mount. I branch sono riferimenti nominati che puntano a un commit. `rdc repo checkout` clona tramite reflink un commit in un fork di lavoro scrivibile, e `rdc repo merge` combina due linee di storia senza mai mutare un repository live in place.
 
 Il modello si mappa su due store. La **macchina è l'object store**: i commit sono immagini di fork immutabili che vivono sul datastore. Il **config CLI è il ref store**: i nomi dei branch, l'`HEAD` corrente e il reflog vivono nella config locale, non sulla macchina. È la stessa divisione che git usa tra `.git/objects` e `.git/refs`.
 

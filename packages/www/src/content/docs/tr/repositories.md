@@ -1,11 +1,11 @@
 ---
-title: Depolar
-description: 'Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yönetme ve işletme.'
-category: Guides
+title: "Depolar"
+description: "Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yönetme ve işletme."
+category: "Guides"
 order: 4
 language: tr
-sourceHash: "531ee9648611844e"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffb07e5870accfd8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Depolar
@@ -120,7 +120,7 @@ Depo başına gizli diziler, şifrelenmiş depo görüntüsüne yazılmadan kaps
 
 İki teslimat modu:
 
-- `env`. Gizli dizi, hedef makinedeki renet kabuğunda `REDIACC_SECRET_<KEY>` olarak dışa aktarılır. `docker-compose.yml` dosyanızdan `${REDIACC_SECRET_<KEY>}` enterpolasyonu aracılığıyla referans alın. Kapsayıcının ortamında görünür olduğundan, uygulamanın env'de zaten beklediği bağlantı dizisi şeklindeki değerler için bunu kullanın.
+- `env`. Gizli dizi, hedef makinedeki renet kabuğunda `REDIACC_SECRET_<KEY>` olarak dışa aktarılır. `docker-compose.yml` dosyanızdan `${REDIACC_SECRET_<KEY>}` enterpolasyonu aracılığıyla referans alın. Kapsayıcının ortamında görünür olduğundan, uygulamanın env'de zaten beklediği bağlantı dizesi şeklindeki değerler için bunu kullanın.
 - `file`. Gizli dizi, ana makinede `/var/run/rediacc/secrets/<networkID>/<KEY>` konumuna yazılır (tmpfs, hiçbir zaman kalıcı değil). Compose dosyanızdan `file:` kaynağıyla üst düzey bir `secrets:` bildirimi ve hizmet başına bir `secrets:` listesi aracılığıyla referans alın. Kapsayıcılar `/run/secrets/<key>` konumundan okur. Hassas her şey için bu modu tercih edin. `docker inspect` veya `/proc/<pid>/environ` içinde hiçbir zaman görünmez.
 
 ```bash
@@ -212,7 +212,7 @@ rdc repo delete --name my-app -m server-1
 
 ## Depo Geçişi
 
-Bir depoyu minimum kesinti süresiyle bir makineden diğerine canlı olarak geçirin.
+Bir depoyu bir makineden diğerine canlı olarak geçirin. Kesinti yalnızca son delta-senkronizasyon aşamasında oluşur: kesme noktasındaki yazma hızına bağlı olarak tipik olarak birkaç saniyeden az dakikaya kadar.
 
 ```bash
 rdc repo migrate --name my-app --from server-1 --to server-2

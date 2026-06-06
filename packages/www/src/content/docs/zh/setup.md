@@ -4,13 +4,13 @@ description: "创建配置、添加机器、配置服务器和设置基础设施
 category: "Guides"
 order: 3
 language: zh
-sourceHash: "2456daa4289ffb8c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "b3c8c42db1b8d99b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 机器设置
 
-本页面将引导您完成首台机器的设置：创建配置、注册服务器、配置服务器，以及可选的公网访问基础设施配置。
+通过四个步骤让您的首台机器运行：创建配置、注册服务器、配置它，以及可选地为公网流量配置基础设施。
 
 ## 步骤 1：创建配置
 
@@ -122,8 +122,8 @@ rdc config infra set -m server-1 \
 
 | 选项 | 范围 | 描述 |
 |--------|------|-------------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | 公网 IPv4 地址，仅为已配置的地址族创建代理入口点 |
+| `--public-ipv6 <ip>` | Machine | 公网 IPv6 地址，仅为已配置的地址族创建代理入口点 |
 | `--base-domain <domain>` | Machine | 应用的基础域名（例如 `example.com`） |
 | `--cert-email <email>` | Config | 用于 Let's Encrypt TLS 证书的电子邮件（跨机器共享） |
 | `--cf-dns-token <token>` | Config | 用于 ACME DNS-01 挑战的 Cloudflare DNS API 令牌（跨机器共享） |
@@ -161,10 +161,11 @@ DNS 步骤是自动且幂等的：它会创建缺失的记录、更新 IP 已变
 
 安装 OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
 
-确保您的 SSH 配置包含公钥：
+确保您的 SSH 配置已将密钥注册到 `rdc`：
 
 ```bash
-rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
+# 读取密钥文件并将内容内联到 /credentials/ssh 下。
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
 ### 添加云服务提供商
@@ -200,7 +201,7 @@ rdc machine provision --name prod-2 --provider my-linode
 2. 等待 SSH 连接就绪
 3. 将机器注册到您的配置中
 4. 安装 renet 和所有依赖项
-5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+5. 配置 Traefik 反向代理和 Cloudflare DNS（从同级机器自动检测基础域名，或显式传递 `--base-domain`）
 
 | 选项 | 描述 |
 |--------|-------------|
@@ -208,8 +209,8 @@ rdc machine provision --name prod-2 --provider my-linode
 | `--region <region>` | 覆盖提供商的默认区域 |
 | `--type <type>` | 覆盖默认实例类型 |
 | `--image <image>` | 覆盖默认操作系统镜像 |
-| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
-| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--base-domain <domain>` | 基础设施的基础域名。未指定时从同级机器自动检测 |
+| `--no-infra` | 完全跳过基础设施配置（代理 + DNS） |
 | `--debug` | 显示详细的配置输出 |
 
 ### 取消配置机器
@@ -231,8 +232,8 @@ rdc config provider list
 设置默认值以避免在每条命令中重复指定：
 
 ```bash
-rdc config set --key machine --value server-1  # 默认机器
-rdc config set --key team --value my-team  # 默认团队（云适配器，实验性）
+rdc config field set --pointer /defaults/machine --new '"server-1"'   # 默认机器
+rdc config set --key team --value my-team                   # 默认团队（云适配器，实验性）
 ```
 
 设置默认机器后，您可以在命令中省略 `-m server-1`：

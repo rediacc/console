@@ -1,16 +1,16 @@
 ---
 title: "Backup e Ripristino"
-description: "Esegui il backup dei repository cifrati su storage esterni, ripristina dai backup e pianifica backup automatici. È già incluso nella CLI."
+description: "Esegui il backup dei repository cifrati su qualsiasi storage compatibile con rclone, ripristina su una macchina qualsiasi e automatizza con strategie di backup denominate e timer systemd."
 category: "Guides"
 order: 7
 language: it
-sourceHash: "196ee7b649ac7371"
-sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
+sourceHash: "6ed9a5b950de8ddb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Backup e Ripristino
 
-Rediacc può eseguire il backup dei repository cifrati su provider di storage esterni e ripristinarli sulla stessa macchina o su macchine diverse. I backup sono cifrati; per il ripristino è necessaria la credenziale LUKS del repository.
+Rediacc esegue il backup dei repository cifrati su storage esterno e li ripristina sulla stessa o su una macchina diversa. I backup sono cifrati; per il ripristino è necessaria la credenziale LUKS del repository.
 
 ## Configurare lo Storage
 
@@ -158,7 +158,7 @@ Usare `hot` per i servizi che tollerano snapshot crash-consistent. Usare `cold` 
 
 ### Semantica del Backup Cold
 
-Un backup cold viene eseguito in tre fasi per ogni repository incluso: **stop → snapshot → start**. Capire dove finiscono le garanzie aiuta gli operatori a individuare precocemente i fallimenti parziali.
+Un backup cold viene eseguito in tre fasi per ogni repository incluso: **stop > snapshot > start**. Capire dove finiscono le garanzie aiuta gli operatori a individuare precocemente i fallimenti parziali.
 
 **Cosa garantisce il backup cold:**
 
@@ -189,7 +189,7 @@ Ogni repository è fermo solo per la propria finestra `down()` + `up()`. Su un h
 |------------|--------------------|
 | Piccolo (1-2 container, nessun DB) | 5-15 s |
 | Medio (web app + cache) | 20-45 s |
-| Pesante (DB + code + mail) | 60-120 s |
+| Pesante (DB + queues + mail) | 60-120 s |
 
 Il passo di snapshot (`btrfs subvolume snapshot -r`) è O(1) indipendentemente dalla dimensione del repository: 0,1-1 s. Un repository non rimane fermo per gli snapshot degli altri repository. L'uploader poi gira su uno snapshot in sola lettura mentre ogni repository è già tornato attivo.
 
@@ -304,7 +304,7 @@ Nella tua configurazione, associa uno o più nomi di strategia a una macchina:
 
 | | Hot | Cold |
 |---|-----|------|
-| **Consistenza** | Crash-consistent (snapshot BTRFS durante l'esecuzione) | Application-consistent (stop → snapshot → start) |
+| **Consistenza** | Crash-consistent (snapshot BTRFS durante l'esecuzione) | Application-consistent (stop > snapshot > start) |
 | **Downtime** | Nessuno | Finestra di stop+start per repository (tipicamente 5-120 s) |
 | **Frequenza adatta** | Alta (ad es. oraria) | Bassa (ad es. giornaliera o settimanale) |
 | **Uso tipico** | Rete di sicurezza ad alta frequenza | Backup pianificato con consistenza garantita |
@@ -367,7 +367,7 @@ La distribuzione è un riconciliatore di stato. Legge i file unit correnti e lo 
 
 Se un backup è attualmente in esecuzione per una strategia che si sta per aggiornare o rimuovere, la distribuzione fallisce rapidamente con un suggerimento di annullarlo o di passare `--force`. Con `--force`, l'invocazione in esecuzione mantiene la propria unit in memoria e la nuova configurazione si applica al prossimo tick del timer, quindi il backup in esecuzione non viene mai interrotto.
 
-`--reset-failed` è opt-in. Se passato, cancella lo stato di fallimento di systemd sui servizi toccati dopo una distribuzione riuscita. Disabilitato per impostazione predefinita affinché i segnali di fallimento precedenti rimangano visibili agli alert.
+`--reset-failed` è opt-in. Se passato, cancella lo stato di fallimento di systemd sui servizi toccati dopo una distribuzione riuscita. Disabilitato per impostazione predefinita affinché i segnali di fallimento precedenti rimangono visibili agli alert.
 
 ### Esegui un Backup Ora
 

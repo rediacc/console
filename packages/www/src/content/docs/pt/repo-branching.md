@@ -5,13 +5,13 @@ category: Reference
 subcategory: advanced
 order: 41
 language: pt
-sourceHash: "6ca18986dfd6e237"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2448559f0fcfc0e0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Ramificação semelhante ao git
 
-Os repositórios Rediacc suportam versionamento semelhante ao git baseado em forks copy-on-write. Cada fork imutável é um **commit**: uma imagem congelada e byte-estável que recusa ser montada. Os branches são refs com nome que apontam para um commit. `rdc repo checkout` clona um commit via reflink de volta para um fork de trabalho gravável, e `rdc repo merge` combina duas linhas de histórico sem nunca modificar um repositório em produção no local.
+Eis o modelo mental: Rediacc transforma forks copy-on-write em um histórico de versões semelhante ao git. Cada fork imutável é um **commit**: uma imagem congelada e byte-estável que recusa ser montada. Os branches são refs com nome que apontam para um commit. `rdc repo checkout` clona um commit via reflink de volta para um fork de trabalho gravável, e `rdc repo merge` combina duas linhas de histórico sem nunca modificar um repositório em produção no local.
 
 O modelo mapeia para duas estruturas de armazenamento. A **máquina é o object store**: os commits são imagens de fork imutáveis que vivem no datastore. A **config do CLI é o ref store**: os nomes de branches, o `HEAD` atual e o reflog vivem na sua config local, não na máquina. Esta é a mesma divisão que o git usa entre `.git/objects` e `.git/refs`.
 
@@ -283,7 +283,7 @@ $ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
 
 ## Transferência delta push e pull
 
-Uma imagem imutável e byte-estável é também a base para **transferência delta ao nível dos blocos**. Quando a mesma base imutável existe em duas máquinas, um push ou pull pode calcular os blocos alterados relativamente a essa base e mover apenas esses, em vez de analisar toda a imagem encriptada. Um repositório de 1 GB com alguns blocos alterados transfere então em megabytes.
+Uma imagem imutável e byte-estável é o que torna possível a **transferência delta ao nível dos blocos**. Quando a mesma base imutável existe em duas máquinas, um push ou pull pode calcular os blocos alterados relativamente a essa base e mover apenas esses, em vez de analisar toda a imagem encriptada. Um repositório de 1 GB com alguns blocos alterados transfere então em megabytes.
 
 Normalmente não precisa de passar uma base manualmente. Após um push completo, o CLI retém a imagem enviada como base imutável em ambas as máquinas e regista-a, pelo que o **próximo** push desse repositório envia automaticamente apenas o delta, sem qualquer flag, mesmo para um fork que já existe no alvo. (Um re-push *completo* de um fork existente ainda precisa de `--force`, pois isso substitui toda a imagem em vez de aplicar um delta verificado.) Passe `--delta-base <guid>` para fixar uma base específica, e `--strategy <auto|physical|shared>` para controlar como os blocos alterados são detetados (`auto` é correto em quase todos os casos).
 

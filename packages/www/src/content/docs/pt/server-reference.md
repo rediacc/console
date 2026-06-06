@@ -4,13 +4,13 @@ description: "Estrutura de directórios, comandos renet, serviços systemd e flu
 category: "Concepts"
 order: 3
 language: pt
-sourceHash: "f68c27543a2fe3ff"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "4fb53bb4cb1512f6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Referência do Servidor
 
-Esta página cobre o que encontra ao fazer SSH para um servidor Rediacc: a estrutura de directórios, comandos `renet`, serviços systemd e fluxos de trabalho comuns.
+Ao ligar-se por SSH a um servidor Rediacc, aqui está o que encontra: a estrutura de directórios, comandos `renet`, serviços systemd e os fluxos de trabalho que vai precisar.
 
 A maioria dos utilizadores gere os servidores através do `rdc` a partir do seu computador de trabalho e nunca precisará desta página. Esta aqui para depuração avançada ou quando precisa de trabalhar directamente no servidor.
 
@@ -254,7 +254,7 @@ Servicos globais partilhados entre todos os repositorios:
    ```bash
    renet repository create --name {uuid} --network-id {id} --size 2G --encrypted
    ```
-2. Montelo e adicione os seus ficheiros `docker-compose.yml`, `Rediaccfile` e `.rediacc.json`.
+2. Monte-o e adicione os seus ficheiros `docker-compose.yml`, `Rediaccfile` e `.rediacc.json`.
 3. Inicie-o:
    ```bash
    renet repository up --name {uuid} --network-id {id} --password-stdin

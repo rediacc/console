@@ -1,16 +1,16 @@
 ---
 title: "Strumenti"
-description: "Sincronizzazione file, accesso al terminale, integrazione con VS Code e aggiornamenti della CLI. È possibile gestire tutto senza mai lasciare il tuo ambiente di sviluppo preferito."
+description: "Sincronizzazione file, accesso al terminale, integrazione con VS Code e aggiornamenti della CLI."
 category: "Guides"
 order: 9
 language: it
-sourceHash: "f350872720c99d58"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4b3aebff5e82416f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Strumenti
 
-Rediacc include strumenti per lavorare con repository remoti: sincronizzazione file, terminale SSH, integrazione con VS Code e aggiornamenti della CLI.
+Rediacc fornisce quattro strumenti per il lavoro quotidiano sulle tue macchine e repository: sincronizzazione file su SSH, un terminale SSH, integrazione con VS Code e aggiornamenti automatici della CLI. Tutti e quattro funzionano su SSH. Nessun agente o daemon richiesto lato remoto. Se hai bisogno di una GUI per qualcosa di questo, stai guardando la pagina sbagliata.
 
 ## Sincronizzazione File (sync)
 
@@ -98,7 +98,7 @@ Quando ci si connette a un repository, `DOCKER_HOST` viene impostato automaticam
 
 ### Sottocomando connect
 
-Il sottocomando `connect` fa la stessa cosa con flag espliciti:
+O usa il sottocomando `connect` per lo stesso risultato, con flag espliciti:
 
 ```bash
 rdc term connect -m server-1

@@ -4,11 +4,13 @@ description: Süsteeminõuded ja toetatud platvormid Rediacci käitamiseks.
 category: Guides
 order: 0
 language: et
+sourceHash: "e84db3bb90270473"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Nõuded
 
-Enne Rediacciga juurutamist veenduge, et teie tööjaam ja kaugserverid vastavad järgmistele nõuetele.
+Enamik on tavaline Linux serveri seadistamine. Mõned detailid on Rediacci-spetsiifilised, mistõttu kontrollige neid enne alustamist.
 
 ## Tööjaam (juhtimistasand)
 

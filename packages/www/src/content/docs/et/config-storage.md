@@ -4,7 +4,8 @@ description: Null-teadmisega krüpteeritud konfiguratsioonisünkroonimine passke
 category: Guides
 order: 8
 language: et
-sourceHash: "d20655e3e306b85b"
+sourceHash: "daf79946b8925246"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Konfiguratsioonisalv
@@ -26,7 +27,7 @@ Konfiguratsioonisalv pakub sinu CLI konfiguratsiooni null-teadmisega krüpteerit
    - Teine puudutus: tuletab krüpteerimisvõtmed PRF kaudu
 4. Seadistamine lõpetatud, sinu passkey saladus salvestatakse sinu OS-i võtmehoidlasse
 
-Pärast seadistamist toimivad igapäevased CLI toimingud (push/pull) ilma passkey'ta.
+Pärast seadistamist toimivad igapäevased CLI toimingud (push/pull) ilma passkey'ta. Hoiatus: seadistamine nõuab passkey'i PRF-laienduse toega. Mitte kõigil riistvara- või platvormiauthentimiseadmetel ei ole seda.
 
 ## PRF-pakkuja ühilduvus
 

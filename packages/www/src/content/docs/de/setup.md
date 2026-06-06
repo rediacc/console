@@ -4,13 +4,13 @@ description: "Konfiguration erstellen, Maschinen hinzufügen, Server provisionie
 category: "Guides"
 order: 3
 language: de
-sourceHash: "2456daa4289ffb8c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "b3c8c42db1b8d99b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Maschineneinrichtung
 
-Diese Seite führt Sie durch die Einrichtung Ihrer ersten Maschine: eine Konfiguration erstellen, einen Server registrieren, ihn provisionieren und optional die Infrastruktur für öffentlichen Zugriff konfigurieren.
+Vier Schritte bringen Ihre erste Maschine zum Laufen: eine Konfiguration erstellen, den Server registrieren, ihn provisionieren und optional die Infrastruktur für öffentlichen Traffic konfigurieren.
 
 ## Schritt 1: Konfiguration erstellen
 
@@ -151,7 +151,7 @@ Dieser Befehl:
 2. Konfiguriert den Traefik-Reverse-Proxy, Router und systemd-Dienste
 3. Erstellt Cloudflare-DNS-Einträge für die Maschinen-Subdomain (`server-1.example.com` und `*.server-1.example.com`), wenn `--cf-dns-token` gesetzt ist
 
-Der DNS-Schritt ist automatisch und idempotent: er erstellt fehlende Einträge, aktualisiert Einträge mit geänderten IPs und überspringt bereits korrekte Einträge. Wenn kein Cloudflare-Token konfiguriert ist, wird DNS mit einer Warnung übersprungen. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+Der DNS-Schritt ist automatisch und idempotent: er erstellt fehlende Einträge, aktualisiert Einträge mit geänderten IPs und überspringt bereits korrekte Einträge. Wenn kein Cloudflare-Token konfiguriert ist, wird DNS mit einer Warnung übersprungen. Per-Repo-Wildcard-DNS-Einträge (für automatische Routen) werden automatisch erstellt, wenn Sie `rdc repo up` ausführen.
 
 ## Cloud-Provisionierung
 
@@ -161,10 +161,11 @@ Anstatt VMs manuell zu erstellen, können Sie einen Cloud-Provider konfigurieren
 
 Installieren Sie OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
 
-Stellen Sie sicher, dass Ihre SSH-Konfiguration einen öffentlichen Schlüssel enthält:
+Stellen Sie sicher, dass Ihre SSH-Konfiguration einen registrierten Schlüssel bei `rdc` hat:
 
 ```bash
-rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
+# Liest die Schlüsseldatei und inline ihren Inhalt unter /credentials/ssh.
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
 ### Einen Cloud-Provider hinzufügen
@@ -200,7 +201,7 @@ Dieser einzelne Befehl:
 2. Wartet auf SSH-Konnektivität
 3. Registriert die Maschine in Ihrer Konfiguration
 4. Installiert renet und alle Abhängigkeiten
-5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+5. Konfiguriert Traefik-Proxy und Cloudflare DNS (erkennt automatisch die Basis-Domain von benachbarten Maschinen, oder geben Sie `--base-domain` explizit an)
 
 | Option | Beschreibung |
 |--------|--------------|
@@ -208,8 +209,8 @@ Dieser einzelne Befehl:
 | `--region <region>` | Überschreibt die Standard-Region des Providers |
 | `--type <type>` | Überschreibt den Standard-Instanztyp |
 | `--image <image>` | Überschreibt das Standard-Betriebssystem-Image |
-| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
-| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--base-domain <domain>` | Basis-Domain für die Infrastruktur. Wird automatisch von benachbarten Maschinen erkannt, falls nicht angegeben |
+| `--no-infra` | Infrastruktur-Konfiguration (Proxy und DNS) vollständig überspringen |
 | `--debug` | Zeigt detaillierte Provisionierungsausgabe |
 
 ### Eine Maschine deprovisionieren
@@ -231,8 +232,8 @@ rdc config provider list
 Legen Sie Standardwerte fest, damit Sie sie nicht bei jedem Befehl angeben müssen:
 
 ```bash
-rdc config set --key machine --value server-1  # Standard-Maschine
-rdc config set --key team --value my-team  # Standard-Team (Cloud-Adapter, experimentell)
+rdc config field set --pointer /defaults/machine --new '"server-1"'   # Standard-Maschine
+rdc config set --key team --value my-team                   # Standard-Team (Cloud-Adapter, experimentell)
 ```
 
 Nach dem Festlegen einer Standard-Maschine können Sie `-m server-1` bei Befehlen weglassen:

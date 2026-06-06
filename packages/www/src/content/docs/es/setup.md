@@ -4,13 +4,13 @@ description: "Cree una configuración, agregue máquinas, aprovisione servidores
 category: "Guides"
 order: 3
 language: es
-sourceHash: "2456daa4289ffb8c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "b3c8c42db1b8d99b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Configuración de Máquinas
 
-Esta página le guía a través de la configuración de su primera máquina: crear una configuración, registrar un servidor, aprovisionarlo y opcionalmente configurar la infraestructura para acceso público.
+Cuatro pasos para que su primera máquina funcione: crear una configuración, registrar el servidor, aprovisionarlo y opcionalmente configurar la infraestructura para tráfico público.
 
 ## Paso 1: Crear una Configuración
 
@@ -122,8 +122,8 @@ rdc config infra set -m server-1 \
 
 | Opción | Alcance | Descripción |
 |--------|---------|-------------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Dirección IPv4 pública, los puntos de entrada del proxy solo se crean para familias de direcciones configuradas |
+| `--public-ipv6 <ip>` | Machine | Dirección IPv6 pública, los puntos de entrada del proxy solo se crean para familias de direcciones configuradas |
 | `--base-domain <domain>` | Machine | Dominio base para aplicaciones (por ejemplo, `example.com`) |
 | `--cert-email <email>` | Config | Correo electrónico para certificados TLS de Let's Encrypt (compartido entre máquinas) |
 | `--cf-dns-token <token>` | Config | Token de la API DNS de Cloudflare para desafíos ACME DNS-01 (compartido entre máquinas) |
@@ -151,7 +151,7 @@ Este comando:
 2. Configura el proxy inverso Traefik, el enrutador y los servicios systemd
 3. Crea registros DNS de Cloudflare para el subdominio de la máquina (`server-1.example.com` y `*.server-1.example.com`) si se ha establecido `--cf-dns-token`
 
-El paso de DNS es automático e idempotente: crea registros faltantes, actualiza registros con IPs cambiadas y omite registros que ya son correctos. Si no se ha configurado un token de Cloudflare, se omite el DNS con una advertencia. Per-repo wildcard DNS records (for auto-routes) are created automatically when you run `rdc repo up`.
+El paso de DNS es automático e idempotente: crea registros faltantes, actualiza registros con IPs cambiadas y omite registros que ya son correctos. Si no se ha configurado un token de Cloudflare, se omite el DNS con una advertencia. Los registros DNS de comodín por repositorio (para rutas automáticas) se crean automáticamente cuando ejecuta `rdc repo up`.
 
 ## Aprovisionamiento en la Nube
 
@@ -161,10 +161,11 @@ En lugar de crear VMs manualmente, puede configurar un proveedor de nube y dejar
 
 Instale OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
 
-Asegúrese de que su configuración SSH incluya una clave pública:
+Asegúrese de que su configuración SSH tenga una clave registrada con `rdc`:
 
 ```bash
-rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
+# Lee el archivo de clave e inserta el contenido en /credentials/ssh.
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
 ### Agregar un Proveedor de Nube
@@ -200,7 +201,7 @@ Este único comando:
 2. Espera la conectividad SSH
 3. Registra la máquina en su configuración
 4. Instala renet y todas las dependencias
-5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+5. Configura el proxy Traefik y DNS de Cloudflare (detecta automáticamente el dominio base de máquinas hermanas, o pase `--base-domain` explícitamente)
 
 | Opción | Descripción |
 |--------|-------------|
@@ -208,8 +209,8 @@ Este único comando:
 | `--region <region>` | Anula la región predeterminada del proveedor |
 | `--type <type>` | Anula el tipo de instancia predeterminado |
 | `--image <image>` | Anula la imagen de SO predeterminada |
-| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
-| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--base-domain <domain>` | Dominio base para la infraestructura. Se detecta automáticamente de máquinas hermanas si no se especifica |
+| `--no-infra` | Omitir completamente la configuración de infraestructura (proxy + DNS) |
 | `--debug` | Muestra salida detallada del aprovisionamiento |
 
 ### Desaprovisionar una Máquina
@@ -231,8 +232,8 @@ rdc config provider list
 Configure valores predeterminados para no tener que especificarlos en cada comando:
 
 ```bash
-rdc config set --key machine --value server-1  # Máquina predeterminada
-rdc config set --key team --value my-team  # Equipo predeterminado (adaptador cloud, experimental)
+rdc config field set --pointer /defaults/machine --new '"server-1"'   # Máquina predeterminada
+rdc config set --key team --value my-team                   # Equipo predeterminado (adaptador cloud, experimental)
 ```
 
 Después de establecer una máquina predeterminada, puede omitir `-m server-1` en los comandos:

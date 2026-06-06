@@ -9,7 +9,7 @@ language: en
 
 # Git-like branching
 
-Rediacc repositories support git-like versioning built on copy-on-write forks. Each immutable fork is a **commit**: a byte-stable, frozen image that refuses to mount. Branches are named refs that point at a commit. `rdc repo checkout` reflink-clones a commit back into a writable working fork, and `rdc repo merge` combines two lines of history without ever mutating a live repository in place.
+Here is the mental model: Rediacc turns copy-on-write forks into a git-like version history. Each immutable fork is a **commit**: a byte-stable, frozen image that refuses to mount. Branches are named refs that point at a commit. `rdc repo checkout` reflink-clones a commit back into a writable working fork, and `rdc repo merge` combines two lines of history without ever mutating a live repository in place.
 
 The model maps onto two stores. The **machine is the object store**: commits are immutable fork images living on the datastore. The **CLI config is the ref store**: branch names, the current `HEAD`, and the reflog live in your local config, not on the machine. This is the same split git uses between `.git/objects` and `.git/refs`.
 
@@ -281,7 +281,7 @@ $ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
 
 ## Delta push and pull
 
-An immutable, byte-stable image is also the foundation for **block-level delta transfer**. When the same immutable base exists on two machines, a push or pull can compute the changed blocks against that base and move only those, instead of scanning the whole encrypted image. A 1 GB repository with a few changed blocks then transfers in megabytes.
+An immutable, byte-stable image is what makes **block-level delta transfer** possible. When the same immutable base exists on two machines, a push or pull computes the changed blocks against that base and moves only those, instead of scanning the whole encrypted image. A 1 GB repository with a few changed blocks transfers in megabytes.
 
 You do not normally pass a base by hand. After a full push, the CLI retains the pushed image as an immutable base on both machines and records it, so the **next** push of that repository automatically ships only the delta, with no flag, even for a fork that already exists on the target. (A *full* re-push of an existing fork still needs `--force`, since that replaces the whole image rather than applying a verified delta.) Pass `--delta-base <guid>` to pin a specific base, and `--strategy <auto|physical|shared>` to control how changed blocks are detected (`auto` is correct in nearly all cases).
 

@@ -4,12 +4,13 @@ description: "Wie Autostart funktioniert, der periodische Reconciler, der Reposi
 category: "Guides"
 order: 5
 language: de
-sourceHash: "8e98fcd141e27da6"
+sourceHash: "00a1796a0b0d20da"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Autostart & Wiederherstellung
 
-Diese Seite erklärt, wie Repositories beim Systemstart automatisch eingebunden und gestartet werden, und wie der periodische Reconciler ein Repository wieder hochfährt, falls es nach dem Serverstart ausfällt.
+Repositories mit aktiviertem Autostart starten beim Boot automatisch auf. Sollte eines später ausfallen, bringt es der periodische Reconciler wieder zurück. Keine Aufforderungen. Kein manueller Neustart.
 
 Informationen zum Aktivieren oder Deaktivieren von Autostart für ein Repository finden Sie unter [Dienste: Autostart beim Start](/de/docs/services#autostart-on-boot).
 

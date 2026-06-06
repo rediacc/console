@@ -4,9 +4,11 @@ description: "Kus teie andmeid hoitakse ja kuidas töötab regionaalne andmeresi
 category: "Concepts"
 order: 3
 language: et
+sourceHash: "c87be32ef22a725d"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad sellesse regiooni. See valik on püsiv ega ole pärast registreerumist muudetav.
+Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad sellesse regiooni. See valik on püsiv ega ole pärast registreerumist muudetav. Migratsiooniviis puudub. Valige regioon selle alusel, kus teie andmed seaduslikult asuda peavad, mitte kus teie serverid täna asuvad.
 
 ## Saadaolevad regioonid
 
@@ -47,7 +49,7 @@ Iga regioon töötab sõltumatu infrastruktuuriga. Regioonidevahelisi päringuid
 
 ## EL-i andmegarantiid
 
-EL-i regioon pakub lisagarantiisid organisatsioonidele, kellel on Euroopa andmeresidentsuse nõuded:
+Kui te allute Euroopa andmeresidentsuse nõuetele, pakub EL-i regioon konkreetseid garantiisid:
 
 - **D1 andmebaas**: töötab Ida-Euroopas (EEUR asukohaviide)
 - **R2 konfiguratsioonitalletus**: kasutab EL-i jurisdiktsioonilist jõustamist (lepinguline garantii, mitte ainult asukohaviide)

@@ -5,13 +5,13 @@ category: Reference
 subcategory: advanced
 order: 41
 language: ko
-sourceHash: "6ca18986dfd6e237"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2448559f0fcfc0e0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Git 방식의 브랜칭
 
-Rediacc 리포지터리는 copy-on-write 포크 위에 구축된 git 방식의 버전 관리를 지원합니다. 각 변경 불가능한 포크는 **커밋**입니다. 마운트를 거부하는 바이트 안정적이고 고정된 이미지입니다. 브랜치는 커밋을 가리키는 명명된 참조입니다. `rdc repo checkout`은 커밋을 reflink 복제하여 쓰기 가능한 작업 포크로 만들고, `rdc repo merge`는 라이브 리포지터리를 직접 변경하지 않고 두 이력 라인을 결합합니다.
+다음과 같이 생각해보세요: Rediacc는 copy-on-write 포크를 git 방식의 버전 이력으로 변환합니다. 각 변경 불가능한 포크는 **커밋**입니다. 마운트를 거부하는 바이트 안정적이고 고정된 이미지입니다. 브랜치는 커밋을 가리키는 명명된 참조입니다. `rdc repo checkout`은 커밋을 reflink 복제하여 쓰기 가능한 작업 포크로 만들고, `rdc repo merge`는 라이브 리포지터리를 직접 변경하지 않고 두 이력 라인을 결합합니다.
 
 이 모델은 두 개의 저장소로 구성됩니다. **머신이 객체 저장소**입니다. 커밋은 데이터스토어에 있는 변경 불가능한 포크 이미지입니다. **CLI config가 참조 저장소**입니다. 브랜치 이름, 현재 `HEAD`, 참조 로그는 머신이 아닌 로컬 config에 있습니다. 이것은 git이 `.git/objects`와 `.git/refs` 사이에서 사용하는 것과 동일한 분리입니다.
 

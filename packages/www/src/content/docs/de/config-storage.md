@@ -1,17 +1,16 @@
 ---
 title: Konfigurationsspeicher
-description: >-
-  Zero-Knowledge-verschlüsselte Konfigurationssynchronisierung mit
-  Passkey-basierter Verschlüsselung
+description: Zero-Knowledge-verschlüsselte Konfigurationssynchronisierung mit Passkey-basierter Verschlüsselung
 category: Guides
 order: 8
 language: de
-sourceHash: "9612a5fecf063eea"
+sourceHash: "daf79946b8925246"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Konfigurationsspeicher
 
-Der Konfigurationsspeicher bietet Zero-Knowledge-verschlüsselte Synchronisierung Ihrer CLI-Konfiguration über Geräte hinweg. Ihre Konfigurationen werden mit Schlüsseln verschlüsselt, die von Ihrem Passkey abgeleitet werden -- der Server sieht niemals Klartextdaten.
+Der Konfigurationsspeicher bietet Zero-Knowledge-verschlüsselte Synchronisierung Ihrer CLI-Konfiguration über Geräte hinweg. Ihre Konfigurationen werden mit Schlüsseln verschlüsselt, die von Ihrem Passkey abgeleitet werden - der Server sieht niemals Klartextdaten.
 
 ## Voraussetzungen
 
@@ -23,12 +22,12 @@ Der Konfigurationsspeicher bietet Zero-Knowledge-verschlüsselte Synchronisierun
 
 1. Navigieren Sie zu **Konfigurationsspeicher** in der Seitenleiste und klicken Sie auf **Konfigurationsspeicher einrichten**
 2. Die Anforderungscheckliste überprüft Ihren Browser, 2FA und den Sitzungsstatus
-3. Klicken Sie auf **Einrichtung starten** -- Sie müssen Ihren Sicherheitsschlüssel zweimal berühren:
+3. Klicken Sie auf **Einrichtung starten** - Sie müssen Ihren Sicherheitsschlüssel zweimal berühren:
    - Erste Berührung: registriert den Passkey
    - Zweite Berührung: leitet Verschlüsselungsschlüssel über PRF ab
-4. Einrichtung abgeschlossen -- Ihr Passkey-Geheimnis wird in Ihrem Betriebssystem-Schlüsselbund gespeichert
+4. Einrichtung abgeschlossen - Ihr Passkey-Geheimnis wird in Ihrem Betriebssystem-Schlüsselbund gespeichert
 
-Nach der Einrichtung funktionieren tägliche CLI-Operationen (Push/Pull) ohne den Passkey.
+Nach der Einrichtung funktionieren tägliche CLI-Operationen (Push/Pull) ohne den Passkey. Wichtiger Hinweis: Für die Einrichtung ist ein Passkey mit PRF-Erweiterungsunterstützung erforderlich. Nicht jedes Hardware-Token oder jeder Plattform-Authentifikator verfügt über diese Funktion.
 
 ## PRF-Anbieter-Kompatibilität
 

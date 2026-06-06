@@ -5,19 +5,19 @@ category: Reference
 subcategory: advanced
 order: 41
 language: es
-sourceHash: "6ca18986dfd6e237"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2448559f0fcfc0e0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Ramificación tipo git
 
-Los repositorios de Rediacc admiten un control de versiones similar a git basado en bifurcaciones de copia en escritura. Cada bifurcación inmutable es un **commit**: una imagen estable a nivel de bytes, congelada, que se niega a montarse. Las ramas son referencias con nombre que apuntan a un commit. `rdc repo checkout` clona un commit mediante reflink de vuelta a una bifurcación de trabajo escribible, y `rdc repo merge` combina dos líneas de historial sin mutar nunca un repositorio activo en su lugar.
+El modelo mental es el siguiente: Rediacc convierte las bifurcaciones de copia en escritura en un historial de versiones similar a git. Cada bifurcación inmutable es un **commit**: una imagen estable a nivel de bytes, congelada, que se niega a montarse. Las ramas son referencias con nombre que apuntan a un commit. `rdc repo checkout` clona mediante reflink un commit de vuelta a una bifurcación de trabajo escribible, y `rdc repo merge` combina dos líneas de historial sin mutar nunca un repositorio activo en su lugar.
 
 El modelo se aplica a dos almacenes. La **máquina es el almacén de objetos**: los commits son imágenes de bifurcación inmutables que viven en el almacén de datos. La **configuración del CLI es el almacén de referencias**: los nombres de ramas, el `HEAD` actual y el reflog viven en su configuración local, no en la máquina. Esta es la misma división que git usa entre `.git/objects` y `.git/refs`.
 
 ## Cuándo usarlo
 
-Use la ramificación cuando una bifurcación haya ganado un nombre. Un agente de IA corrió sin control en una bifurcación de producción, el resultado se ve bien, y quiere un punto de control congelado y con nombre al que pueda regresar o promover más tarde: `rdc repo commit` lo congela, `rdc repo branch` le da nombre. Antes de una migración arriesgada, confirme la bifurcación de trabajo para tener un punto de reversión exacto que garantizadamente nunca cambiará (un commit inmutable se niega a montarse, por lo que nada puede escribir en él). Para comparar dos puntos de control, `rdc repo diff` funciona entre dos commits cualesquiera porque comparten un ancestro de copia en escritura. Para incorporar una línea de trabajo revisada de vuelta en una bifurcación de destino, `rdc repo merge` construye el resultado en un clon con reflink y lo intercambia atómicamente, de modo que un destino en ejecución nunca queda corrupto a mitad de la fusión.
+Use la ramificación cuando una bifurcación haya ganado un nombre. Un agente de IA corrió sin control en una bifurcación de producción, el resultado se ve bien, y quiere un punto de control congelado y con nombre al que pueda regresar o promover después: `rdc repo commit` lo congela, `rdc repo branch` le da nombre. Antes de una migración arriesgada, confirme la bifurcación de trabajo para tener un punto de reversión exacto que garantizadamente nunca cambiará (un commit inmutable se niega a montarse, por lo que nada puede escribir en él). Para comparar dos puntos de control, `rdc repo diff` funciona entre dos commits cualesquiera porque comparten un ancestro de copia en escritura. Para incorporar una línea de trabajo revisada de vuelta en una bifurcación de destino, `rdc repo merge` construye el resultado en un clon con reflink y lo intercambia atómicamente, de modo que un destino en ejecución nunca queda corrupto a mitad de la fusión.
 
 No lo use como sustituto de `rdc repo fork` cuando solo necesita una copia desechable. Una bifurcación simple es la unidad correcta para el aislamiento efímero por prueba. Los commits añaden valor cuando un estado vale la pena conservar, nombrar o publicar.
 
@@ -58,7 +58,7 @@ rdc repo branch --branch <name> --name <fork>
 | Opción | Descripción | Predeterminado |
 |--------|-------------|----------------|
 | `--branch <branch>` | Nombre de la nueva rama. Obligatorio. | obligatorio |
-| `--name <name>` | Bifurcación de trabajo cuyo commit actual señala la rama. Obligatorio. | obligatorio |
+| `--name <name>` | Bifurcación de trabajo cuyo commit actual apunta la rama. Obligatorio. | obligatorio |
 
 Esta es una operación solo de configuración. No se realiza ningún trabajo en la máquina. La referencia de rama asigna un nombre al `headCommit` de la bifurcación de trabajo, por lo que la bifurcación debe tener al menos un commit primero.
 
@@ -283,7 +283,7 @@ $ rdc repo fork --parent myapp --tag baseline-v1 --immutable -m server-1
 
 ## Transferencia delta de push y pull
 
-Una imagen inmutable y estable a nivel de bytes es también la base para la **transferencia delta a nivel de bloque**. Cuando la misma base inmutable existe en dos máquinas, un push o pull puede calcular los bloques cambiados contra esa base y mover solo esos, en lugar de escanear toda la imagen cifrada. Un repositorio de 1 GB con unos pocos bloques cambiados se transfiere en megabytes.
+Una imagen inmutable y estable a nivel de bytes es lo que hace posible la **transferencia delta a nivel de bloque**. Cuando la misma base inmutable existe en dos máquinas, un push o pull puede calcular los bloques cambiados contra esa base y mover solo esos, en lugar de escanear toda la imagen cifrada. Un repositorio de 1 GB con unos pocos bloques cambiados se transfiere en megabytes.
 
 Normalmente no es necesario pasar una base manualmente. Después de un push completo, el CLI retiene la imagen publicada como base inmutable en ambas máquinas y la registra, de modo que el **siguiente** push de ese repositorio envía automáticamente solo el delta, sin ningún flag, incluso para una bifurcación que ya existe en el destino. (Un re-push *completo* de una bifurcación existente sigue necesitando `--force`, ya que reemplaza toda la imagen en lugar de aplicar un delta verificado.) Pase `--delta-base <guid>` para fijar una base específica, y `--strategy <auto|physical|shared>` para controlar cómo se detectan los bloques cambiados (`auto` es correcto en casi todos los casos).
 

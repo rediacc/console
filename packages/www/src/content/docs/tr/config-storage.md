@@ -1,12 +1,11 @@
 ---
 title: Yapılandırma Depolama
-description: >-
-  Passkey tabanlı şifreleme ile sıfır bilgi şifreli yapılandırma
-  senkronizasyonu
+description: Passkey tabanlı şifreleme ile sıfır bilgi şifreli yapılandırma senkronizasyonu
 category: Guides
 order: 8
 language: tr
-sourceHash: "9612a5fecf063eea"
+sourceHash: "daf79946b8925246"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Yapılandırma Depolama
@@ -28,7 +27,7 @@ Yapılandırma depolama, CLI yapılandırmanızın cihazlar arasında sıfır bi
    - İkinci dokunuş: PRF aracılığıyla şifreleme anahtarlarını türetir
 4. Kurulum tamamlandı, passkey sırrınız işletim sisteminizin anahtar zincirinde saklanır
 
-Kurulumdan sonra, günlük CLI işlemleri (push/pull) passkey olmadan çalışır.
+Kurulumdan sonra, günlük CLI işlemleri (push/pull) passkey olmadan çalışır. Uyarı: kurulum, PRF uzantısı desteğine sahip bir passkey gerektirir. Her donanım belirteci veya platform kimlik doğrulayıcısı bunu desteklemez.
 
 ## PRF Sağlayıcı Uyumluluğu
 

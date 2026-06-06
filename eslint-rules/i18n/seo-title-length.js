@@ -28,9 +28,9 @@ export const seoTitleLength = {
     ],
     messages: {
       tooShort:
-        'Title "{{value}}" for key "{{key}}" is {{length}} chars (min {{min}}). Expand with descriptive keywords.',
+        'Title "{{value}}" for key "{{key}}" is {{length}} chars (min {{min}}). Expand with descriptive keywords. See docs/i18n/CONVENTIONS.md.',
       tooLong:
-        'Title "{{value}}" for key "{{key}}" is {{length}} chars (max {{max}}). Shorten to fit search result display.',
+        'Title "{{value}}" for key "{{key}}" is {{length}} chars (max {{max}}). Shorten to fit search result display. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

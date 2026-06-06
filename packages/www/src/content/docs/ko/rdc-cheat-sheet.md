@@ -1,16 +1,16 @@
 ---
 title: RDC CLI 치트 시트
-description: "rdc 명령 빠른 참조: config, 리포지터리, 머신, 동기화, 컨테이너."
+description: "rdc 빠른 참조: 설정, 리포지터리, 머신, 파일 동기화, 컨테이너. 전체 옵션: 모든 명령에 --help 추가."
 category: Guides
 order: 3
 language: ko
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # RDC CLI 치트 시트
 
-가장 일반적인 `rdc` 명령에 대한 빠른 참조입니다. 전체 옵션은 `--help`와 함께 명령을 실행하세요.
+모든 `rdc` 명령이 나열되어 있지는 않으며, 배포할 때마다 자주 사용되는 명령만 포함되어 있습니다. 전체 옵션 집합을 보려면 모든 `rdc` 명령을 `--help`와 함께 실행하세요. 엣지 케이스 및 거의 사용되지 않는 옵션은 전체 참고서에 있습니다.
 
 ## 리포지터리 수명 주기
 

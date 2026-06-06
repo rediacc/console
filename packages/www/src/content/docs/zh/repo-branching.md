@@ -5,13 +5,13 @@ category: Reference
 subcategory: advanced
 order: 41
 language: zh
-sourceHash: "6ca18986dfd6e237"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2448559f0fcfc0e0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 类 Git 分支管理
 
-Rediacc 仓库支持构建在写时复制 fork 之上的类 Git 版本控制。每个不可变 fork 都是一个**提交**：字节稳定的冻结镜像，拒绝挂载。分支是指向提交的命名引用。`rdc repo checkout` 将提交通过 reflink 克隆回可写的工作 fork，`rdc repo merge` 在不改变任何实时仓库的情况下合并两条历史线。
+思维模型如下：Rediacc 将写时复制 fork 转换为类似 git 的版本历史。每个不可变 fork 都是一个**提交**：字节稳定的冻结镜像，拒绝挂载。分支是指向提交的命名引用。`rdc repo checkout` 将提交通过 reflink 克隆回可写的工作 fork，`rdc repo merge` 在不改变任何实时仓库的情况下合并两条历史线。
 
 该模型映射到两个存储层。**机器是对象存储**：提交是驻留在数据存储上的不可变 fork 镜像。**CLI 配置是引用存储**：分支名称、当前 `HEAD` 和引用日志存在于本地配置中，而非机器上。这与 git 在 `.git/objects` 和 `.git/refs` 之间的分割方式相同。
 

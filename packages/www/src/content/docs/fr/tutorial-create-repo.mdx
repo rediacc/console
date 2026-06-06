@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: essentials
 order: 4
 language: fr
-sourceHash: "0e8255f05b01469b"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "309e03e15d4181a1"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Créer votre premier dépôt
 
-Un dépôt Rediacc est un seul fichier chiffré sur votre serveur. Montez-le et vous obtenez un dossier avec son propre daemon Docker et ses propres données d'application, isolé de tout le reste sur la machine.
+Ainsi, un dépôt Rediacc est un seul fichier chiffré sur votre serveur. Montez-le et vous obtenez un dossier avec son propre daemon Docker et ses propres données d'application, isolé de tout le reste sur la machine.
 
 Pensez-y comme une clé USB pour la production : un fichier au repos, un serveur en exécution.
 
@@ -31,7 +31,7 @@ Sur disque, c'est une seule image chiffrée. Une fois montée, vous obtenez :
 - Les données d'application à l'intérieur du volume chiffré
 - Des adresses IP loopback qui n'entrent pas en conflit avec quoi que ce soit d'autre sur la machine
 
-Les dépôts se déplacent. Copiez-en un entre machines, sauvegardez-le, ou forkez-le (les forks sont quasi-instantanés et en temps constant : un dépôt de 100 Go se forke aussi vite qu'un de 1 Go). Chaque dépôt est isolé de tous les autres sur le même serveur.
+Les dépôts se déplacent. Copiez-en un entre machines, sauvegardez-le, ou forkez-le (les forks sont quasi-instantanés et en temps constant : un dépôt de 100 Go se forke aussi vite qu'un de 1 Go). Chaque dépôt est isolé de tous les autres sur le même serveur. Cet isolement est le but recherché.
 
 ## En créer un
 

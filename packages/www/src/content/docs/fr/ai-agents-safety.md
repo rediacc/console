@@ -1,14 +1,17 @@
 ---
 title: Sécurité et garde-fous pour les agents IA
-description: 'Comment la CLI de Rediacc empêche les assistants de codage IA de divulguer des secrets, d''écraser des identifiants ou d''escalader des privilèges. Compuertas de connaissance, rédaction, substitutions vérifiées par ascendance et un journal d''audit enchaîné par hash.'
+description: >-
+  Comment la CLI de Rediacc empêche les assistants de codage IA de divulguer des secrets,
+  d'écraser des identifiants ou d'escalader des privilèges. Portes de connaissance,
+  rédaction, substitutions vérifiées par ascendance et un journal d'audit enchaîné par hachage.
 category: Concepts
 order: 35
 language: fr
-sourceHash: "43f8eb06d0f5f7a1"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "ae23c9bc851ecfcd"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Lorsque Claude Code, Cursor, Gemini CLI, Copilot CLI ou tout autre assistant de codage IA pilote `rdc`, la CLI le traite différemment d'un humain au clavier. Cette page explique ce que l'agent peut faire, ce qu'il ne peut pas faire, et comment les garde-fous tiennent même lorsque l'agent essaie de les contourner.
+Vous pointez un assistant de codage IA vers votre infrastructure. Lorsque Claude Code, Cursor, Gemini CLI, Copilot CLI ou tout outil similaire pilote `rdc`, la CLI le détecte et applique un ensemble de règles différent de celui applicable à un humain au clavier. Cette page explique ce que l'agent peut faire, ce qu'il ne peut pas faire, et comment les garde-fous tiennent même lorsqu'il cherche à les contourner.
 
 ## Référence rapide: ce que les agents peuvent et ne peuvent pas faire
 
@@ -40,19 +43,44 @@ La CLI traite un processus comme un agent lorsque l'une de ces conditions est vr
 
 La détection s'exécute une fois par processus et est mise en cache. Elle ne peut pas être désactivée.
 
-## Le modèle de compuerta de connaissance
+## Le modèle de la porte de connaissance
 
-Les mutations sensibles suivent la convention `passwd(1)` : pour modifier un secret, prouvez que vous le connaissiez déjà.
+Les mutations sensibles suivent la convention `passwd(1)` : pour modifier un secret, prouvez que vous le connaissiez déjà. **Symétrique pour les humains et les agents.** Les deux passent par la même porte. Il n'existe aucun contournement au prétexte « je suis au clavier ».
 
 - Vous voulez faire tourner un token API stocké à `/credentials/cfDnsApiToken` ?
 - La CLI demande : « quelle est la valeur actuelle ? »
-- L'agent fournit le texte brut via `--current "$OLD"`. La CLI applique SHA-256 à `$OLD` et compare avec le digest de la valeur actuellement stockée. Correspondance → l'écriture passe. Discordance → refusé, audité.
+- L'agent (ou l'humain) fournit le texte brut via `--current "$OLD"`. La CLI applique SHA-256 à `$OLD` et compare avec le digest de la valeur actuellement stockée. Correspondance → l'écriture passe. Discordance → refusé, audité.
+- Pour faire tourner sans vérifier la valeur précédente, passez `--rotate-secret` (mutuellement exclusif avec `--current`). Cette opération est lourdement auditée en tant que rotation.
 
-Le modèle est simple mais ferme trois surfaces d'attaque :
+Le modèle ferme trois surfaces d'attaque :
 
-1. **Rotation silencieuse** : un agent sans accès préalable à `$OLD` ne peut pas le remplacer par une valeur de son choix.
+1. **Rotation silencieuse** : un appelant (agent ou humain) sans accès préalable à `$OLD` ne peut pas le remplacer par une valeur de son choix.
 2. **Exfiltration par sondage** : la réponse du digest ne contient jamais de texte brut ; même un journal d'audit compromis affiche `expected abc12345…, got deadbeef…`, pas les valeurs sous-jacentes.
-3. **Écrasement accidentel de la configuration utilisateur** : nécessite un `--current` délibéré à chaque fois ; pas de remplacement automatique sur `set`.
+3. **Écrasement accidentel de la configuration de production** : nécessite un `--current` délibéré à chaque fois, même sur un TTY. Évite l'erreur classique « je voulais définir STRIPE_TEST mais je suis dans le shell de prod ».
+
+### Indications structurées sur l'action suivante
+
+Lorsque la précondition échoue, l'enveloppe JSON (`--output json`) contient un champ structuré `errors[].next` indiquant aux agents exactement ce qu'ils doivent suggérer à l'humain :
+
+```json
+{
+  "errors": [{
+    "code": "PRECONDITION_MISMATCH",
+    "message": "...",
+    "next": {
+      "summary": "Provide the current value or acknowledge rotation.",
+      "options": [
+        { "description": "Re-read current digest, then retry with --current",
+          "run": "rdc repo secret get --name mail --key STRIPE_KEY" },
+        { "description": "Skip the precondition (rotation, audited)",
+          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret" }
+      ]
+    }
+  }]
+}
+```
+
+**Les agents doivent relayer `next.options[].run` mot pour mot à l'humain plutôt que de synthétiser leurs propres commandes.** Cela évite le scénario où l'agent invente une commande inexistante et maintient l'opérateur en contrôle de l'action réelle.
 
 ### Exemple concret
 
@@ -115,11 +143,11 @@ Ce fichier n'existe pas sur macOS ou Windows. Sans moyen de vérifier la légiti
 
 > The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
 
-En pratique, les utilisateurs non-Linux n'ont aucune issue de secours hors du flux fork-first. C'est intentionnel. Les agents sont poussés à travers un bac à sable qu'ils ne peuvent pas contourner, quelle que soit la façon dont ils ont été instruits. Exécutez votre agent dans WSL, un conteneur Linux ou une VM Linux si vous avez besoin de la substitution ; sinon, travaillez sur un fork.
+Les utilisateurs non-Linux n'ont aucune issue de secours hors du flux fork-first. C'est intentionnel. Il n'existe aucun moyen pour un agent de contourner le bac à sable, quelle que soit la façon dont il a été instruit. Si vous avez besoin de la substitution, exécutez votre agent dans WSL, un conteneur Linux ou une VM Linux. Sinon, travaillez sur un fork.
 
 ## Journal d'audit
 
-Chaque mutation, chaque refus, chaque autorisation `--reveal` écrit une ligne JSONL dans `~/.config/rediacc/audit.log.jsonl` (mode `0600`, pivoté à 10 Mo). Chaque ligne est enchaînée par hash : son champ `prevHash` est `sha256("<ligne précédente>")`. Altérer une ligne brise la chaîne sur toutes les lignes suivantes.
+Chaque mutation, chaque refus, chaque autorisation `--reveal` écrit une ligne JSONL dans `~/.config/rediacc/audit.log.jsonl` (mode `0600`, pivoté à 10 Mo). Chaque ligne est enchaînée par hachage : son champ `prevHash` est `sha256("<ligne précédente>")`. Altérer une ligne brise la chaîne sur toutes les lignes suivantes.
 
 ```jsonl
 {"ts":"2026-04-21T10:02:47.831Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config field set","paths":["/credentials/cfDnsApiToken"],"outcome":"ok","configId":"...","configVersion":48,"prevHash":"sha256:9f3a..."}
@@ -142,7 +170,7 @@ rdc config audit log --actor agent
 # Diffuser les nouvelles entrées en direct (Ctrl+C pour arrêter)
 rdc config audit tail
 
-# Vérifier que la chaîne de hash est intacte
+# Vérifier que la chaîne de hachage est intacte
 rdc config audit verify
 # → "Chain integrity verified across 247 entries."
 #   OU
@@ -161,9 +189,9 @@ Le journal peut être partagé en toute sécurité avec un auditeur de sécurit�
 
 Les garde-fous de l'agent sont **comportementaux, pas cryptographiques**. Un agent déterminé ou dirigé s'exécutant sous le même UID que le fichier de configuration peut toujours faire `cat ~/.config/rediacc/rediacc.json` et lire le texte brut, car le fichier est lisible par le processus.
 
-Pour une application cryptographique réelle, utilisez le [magasin de configuration chiffré](/fr/docs/config-storage) : les secrets résident côté serveur, chaque champ sensible porte un engagement HMAC par champ, et le worker de compte refuse les écritures dont la précondition `--current` ne correspond pas par hash à ce qu'il a stocké. Le serveur ne voit jamais le texte brut: zero-knowledge: mais il applique bien la compuerta.
+Pour une application cryptographique réelle, utilisez le [magasin de configuration chiffré](/fr/docs/config-storage) : les secrets résident côté serveur, chaque champ sensible porte un engagement HMAC par champ, et le worker de compte refuse les écritures dont la précondition `--current` ne correspond pas par hachage à ce qu'il a stocké. Le serveur ne voit jamais le texte brut (zero-knowledge), mais il applique bien la porte.
 
-Le chemin du fichier local est « le chemin facile est sûr ». Le chemin du magasin distant est « le chemin difficile est difficile aussi ».
+Fichiers locaux : le chemin facile est le chemin sûr. Magasin distant : le chemin de contournement est également cryptographiquement difficile.
 
 ## Ce que Rediacc n'isole pas
 
@@ -175,16 +203,19 @@ Voici la ligne de responsabilité partagée :
 
 | Frontière | Propriétaire |
 |---|---|
-| Données du dépôt, espace de noms de montage, périmètre Docker, garde-fous des agents, journal d'audit | Rediacc |
-| Rayon d'impact des services externes (Stripe, AWS, Railway, GitHub, etc.) | Développeur du dépôt |
+| Données du dépôt, espace de noms de montage, périmètre Docker, garde-fous des agents, journal d'audit, injection de secrets au déploiement | Rediacc |
+| Le code applicatif qui utilise ces secrets et tout identifiant gravé dans l'image lors de la compilation | Développeur du dépôt |
 
-Trois patterns comblent le fossé côté développeur :
+La principale atténuation est intégrée : les **[secrets par dépôt](/fr/docs/repositories#secrets)** sont stockés dans un plan séparé de l'image de dépôt chiffrée et ne sont pas copiés à travers la limite du fork. Les conteneurs d'un fork démarrent avec une carte de secrets vide et s'identifient comme un principal externe différent de celui du parent. Définissez-les avec `rdc repo secret set` (mode env pour l'interpolation compose, mode fichier pour les blocs `secrets:` tmpfs). La porte de mutation est symétrique. Les humains et les agents doivent également fournir `--current` (précondition de style passwd) ou `--rotate-secret` (rotation auditée) pour écraser ou supprimer une valeur existante.
 
-1. **Ne stockez pas du tout les identifiants externes de production dans le dépôt.** Récupérez-les depuis un gestionnaire de secrets externe (HashiCorp Vault, AWS Secrets Manager, 1Password Connect) au démarrage du conteneur. Les conteneurs du fork récupèrent par conception des identifiants limités au bac à sable, car ils s'identifient différemment.
-2. **Supprimez ou échangez les identifiants au moment du fork via le hook `up()` du Rediaccfile.** Le `up()` d'un fork s'exécute avec un GUID de dépôt différent de celui du parent. Détectez cela, puis réécrivez `.env` avec des valeurs de bac à sable, provisionnez un compte Stripe sandbox par fork, dirigez les chaînes de connexion à la base vers une instance de test par fork, et ainsi de suite. Consultez [Services](/fr/docs/services) pour la référence des hooks de cycle de vie.
-3. **Restreignez le réseau sortant du fork avec un filtrage egress eBPF** afin que le fork ne puisse atteindre que localhost et les points de terminaison sandbox explicites. L'isolation réseau par dépôt de Rediacc en est la fondation ; les listes d'autorisation egress par fork ne sont pas implémentées aujourd'hui, mais la voie est ouverte.
+**L'isolation inter-dépôts est imposée.** Un fichier compose malveillant ou négligent dans le dépôt B ne peut pas référencer le répertoire de secrets du dépôt A. Le validateur compose de renet rejette catégoriquement tout chemin `secrets: file:`, `configs: file:` ou `env_file:` qui pointe en dehors du répertoire `${REDIACC_NETWORK_ID}` du dépôt courant, et ce rejet n'est PAS contournable par `--unsafe`. Défense en profondeur : le bac à sable Landlock autour du sous-processus bash du Rediaccfile restreint les lectures du système de fichiers au seul répertoire de secrets du réseau courant, de sorte qu'un `cat /var/run/rediacc/secrets/<other>/X` depuis un Rediaccfile malveillant échoue avec EACCES au niveau du noyau.
 
-Rediacc gère la moitié infrastructure de la sécurité des agents. La moitié services externes vit dans votre Rediaccfile.
+Deux patterns supplémentaires comblent les cas limites :
+
+1. **Ne gravez pas les identifiants de production dans le système de fichiers du dépôt lui-même.** Un fichier `.env` validé dans l'image, ou un identifiant persisté dans un volume pendant `up()`, est reflinkié dans le fork. La fonctionnalité de secrets par dépôt ne protège que les valeurs que vous conservez dans le plan des secrets. Elle ne peut pas protéger rétroactivement les octets qui se trouvent déjà à l'intérieur de l'image LUKS. Pour les dépôts existants avec des fichiers `.env` intégrés, migrez-les manuellement vers les secrets par dépôt.
+2. **Restreignez le réseau sortant du fork avec un filtrage egress eBPF** afin que le fork ne puisse atteindre que localhost et les points de terminaison sandbox explicites. L'isolation réseau par dépôt de Rediacc en est la fondation ; les listes d'autorisation egress par fork ne sont pas implémentées aujourd'hui, mais la voie est ouverte.
+
+Rediacc gère l'injection au déploiement, l'isolation inter-fork et l'isolation inter-dépôts. La moitié « ne gravez pas dans l'image » vous revient.
 
 ## Recettes rapides
 

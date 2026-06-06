@@ -130,13 +130,13 @@ Renet auto-injects these into every container:
 
 ### Host security policies by OS
 
-Across the five officially supported server OSes (see [Requirements](/en/docs/requirements)), the per-repo docker daemon and the containers it runs use **default container labels**. `rdc config machine setup` does not install a custom SELinux policy or AppArmor profile.
+Across the five officially supported server OSes (see [Requirements](/en/docs/requirements)), the per-repo docker daemon and the containers it runs use **default container labels**. `rdc config machine setup` does not install a custom SELinux policy or AppArmor profile. That is intentional: the trade-off is that container processes run under the host OS default label policy, not a Rediacc-specific confinement profile. If your threat model requires mandatory access controls at the container layer, configure them at the host level before deploying.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor is enabled by default. Containers run under the default docker-container profile. The only carve-out is CRIU (`apparmor=unconfined` for `rediacc.checkpoint=true` containers, per the note above).
 - **Fedora 43 / Oracle Linux 10**: SELinux runs enforcing by default. Containers get the standard `container_t` context. No extra policy installation is needed. If a setup step fails with AVC denials, see [Troubleshooting → SELinux denials](/en/docs/troubleshooting).
 - **Debian 13**: AppArmor is available but not enforced by default on all domains. Containers still use the docker-container profile.
 
-No per-OS security posture flag is required; `rdc` and `renet` detect what is running and produce the same per-repo isolation on all five distributions.
+Bottom line: `rdc` and `renet` auto-detect the running OS and produce the same per-repo isolation on all five supported distributions. No per-OS security-posture flag required.
 
 ## Security
 

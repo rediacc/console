@@ -4,13 +4,13 @@ description: ربط وكلاء الذكاء الاصطناعي بالبنية ا
 category: Guides
 order: 33
 language: ar
-sourceHash: "0b98f5640252bd23"
-sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
+sourceHash: "ce5f1392ebaa380b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 ## نظرة عامة
 
-يقوم أمر `rdc mcp serve` بتشغيل خادم MCP (Model Context Protocol) محلي يمكن لوكلاء الذكاء الاصطناعي استخدامه لإدارة البنية التحتية الخاصة بك. يستخدم الخادم نقل stdio, يقوم وكيل الذكاء الاصطناعي بتشغيله كعملية فرعية ويتواصل عبر JSON-RPC.
+يقوم أمر `rdc mcp serve` بتشغيل خادم MCP (Model Context Protocol) محلي يمكن لوكلاء الذكاء الاصطناعي استخدامه لإدارة البنية التحتية الخاصة بك. يستخدم الخادم نقل stdio، ويقوم وكيل الذكاء الاصطناعي بتشغيله كعملية فرعية ويتواصل عبر JSON-RPC.
 
 **المتطلبات الأساسية:** تثبيت `rdc` وتكوينه مع جهاز واحد على الأقل.
 
@@ -56,33 +56,35 @@ sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 
 | الأداة | الوصف |
 |------|-------------|
-| `machine_query` | Get system info, containers, services, and resource usage for a machine |
-| `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
-| `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
-| `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
-| `machine_health` | Run health check on a machine (system, containers, services, storage) |
-| `machine_list` | List all configured machines |
-| `config_repositories` | List configured repositories with name-to-GUID mappings |
-| `config_show_infra` | Show infrastructure configuration for a machine (base domain, public IPs, TLS, Cloudflare zone) |
-| `config_providers` | List configured cloud providers for machine provisioning |
-| `agent_capabilities` | List all available rdc CLI commands with their arguments and options |
+| `machine_query` | الحصول على معلومات النظام والحاويات والخدمات واستخدام الموارد لجهاز معين |
+| `machine_containers` | عرض حاويات Docker مع الحالة والصحة واستخدام الموارد والتصنيفات ونطاق التوجيه التلقائي |
+| `machine_services` | عرض خدمات systemd المُدارة بواسطة Rediacc (الاسم والحالة والحالة الفرعية وعدد إعادة التشغيل والذاكرة والمستودع المالك) |
+| `machine_repos` | عرض المستودعات المنشورة (الاسم وGUID والحجم وحالة التثبيت وحالة Docker وعدد الحاويات واستخدام القرص وتاريخ التعديل ووجود Rediaccfile) |
+| `machine_health` | تشغيل فحص صحة على جهاز ما (النظام والحاويات والخدمات والتخزين) |
+| `machine_list` | عرض جميع الأجهزة المُكوَّنة |
+| `config_repositories` | عرض المستودعات المُكوَّنة مع تعيينات الاسم إلى GUID |
+| `config_show_infra` | عرض تكوين البنية التحتية لجهاز معين (النطاق الأساسي وعناوين IP العامة وTLS ومنطقة Cloudflare) |
+| `config_providers` | عرض موفري الخدمات السحابية المُكوَّنين لتوفير الأجهزة |
+| `agent_capabilities` | عرض جميع أوامر rdc CLI المتاحة مع وسائطها وخياراتها |
+| `repo_secret_list` | عرض أسماء الأسرار وأوضاع التسليم لمستودع معين (دون القيم أو البصمات). آمن للقراءة. |
+| `repo_secret_get` | الحصول على بصمة SHA-256 للسر وضع تسليمه. لا تُعاد القيمة النصية أبدا بحكم التصميم. استخدمه للتحقق من وجود سر أو تدويره. |
 
 ### أدوات الكتابة (تدميرية)
 
 | الأداة | الوصف |
 |------|-------------|
-| `repo_create` | Create a new encrypted repository on a machine |
-| `repo_up` | Deploy/update a repository (runs Rediaccfile up, starts containers). Use `mount` for first deploy or after pull |
-| `repo_down` | Stop repository containers. Does NOT unmount by default. Use `unmount` to also close the LUKS container |
-| `repo_delete` | Delete a repository (destroys containers, volumes, encrypted image). Credential archived for recovery |
-| `repo_fork` | Create a CoW fork with new GUID and networkId (fully independent copy, online forking supported) |
-| `backup_push` | Push repository backup to storage or another machine (same GUID -- backup/migration, not fork) |
-| `backup_pull` | Pull repository backup from storage or machine. After pull, deploy with `repo_up` (mount=true) |
-| `machine_provision` | Provision a new machine on a cloud provider using OpenTofu |
-| `machine_deprovision` | Destroy a cloud-provisioned machine and remove from config |
-| `config_add_provider` | Add a cloud provider configuration for machine provisioning |
-| `config_remove_provider` | Remove a cloud provider configuration |
-| `term_exec` | Execute a command on a remote machine via SSH |
+| `repo_create` | إنشاء مستودع مشفر جديد على جهاز ما |
+| `repo_up` | نشر/تحديث مستودع (يشغّل Rediaccfile up ويبدأ الحاويات). استخدم `mount` للنشر الأول أو بعد السحب |
+| `repo_down` | إيقاف حاويات المستودع. لا يُفكّك التثبيت افتراضيا. استخدم `unmount` لإغلاق حاوية LUKS أيضا |
+| `repo_delete` | حذف مستودع (يدمر الحاويات والأحجام والصورة المشفرة). تُحفظ بيانات الاعتماد للاسترداد |
+| `repo_fork` | إنشاء نسخة CoW مع GUID و networkId جديدين (نسخة مستقلة تماما، يدعم النسخ أثناء التشغيل) |
+| `backup_push` | دفع نسخة احتياطية للمستودع إلى التخزين أو جهاز آخر (نفس GUID، للنسخ الاحتياطي/الترحيل لا للنسخ CoW) |
+| `backup_pull` | سحب نسخة احتياطية للمستودع من التخزين أو جهاز ما. بعد السحب، انشر باستخدام `repo_up` مع `mount=true` |
+| `machine_provision` | توفير جهاز جديد لدى موفر خدمة سحابية باستخدام OpenTofu |
+| `machine_deprovision` | تدمير جهاز موفَّر سحابيا وإزالته من التكوين |
+| `config_add_provider` | إضافة تكوين موفر خدمة سحابية لتوفير الأجهزة |
+| `config_remove_provider` | إزالة تكوين موفر خدمة سحابية |
+| `term_exec` | تنفيذ أمر على جهاز بعيد عبر SSH |
 
 ## أمثلة على سير العمل
 
@@ -107,17 +109,19 @@ sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 |--------|---------|-------------|
 | `--config <name>` | (التكوين الافتراضي) | التكوين المُسمّى لاستخدامه في جميع الأوامر |
 | `--timeout <ms>` | `120000` | مهلة الأمر الافتراضية بالمللي ثانية |
-| `--allow-grand` | off | Allow destructive operations on grand (non-fork) repositories |
+| `--allow-grand` | off | السماح بالعمليات التدميرية على المستودعات الأصلية (غير المنسوخة) |
 
 ## الأمان
 
-The MCP server enforces two layers of protection:
+يُطبّق خادم MCP طبقتين من الحماية:
 
-### Fork-only mode (default)
+### وضع النسخ فقط (الافتراضي)
 
-By default, the server runs in **fork-only mode**, write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
+افتراضيا، يعمل الخادم في **وضع النسخ فقط**: لا تستطيع أدوات الكتابة (`repo_up`، `repo_down`، `repo_delete`، `backup_push`، `backup_pull`، `term_exec`) إلا التعامل مع مستودعات النسخ (forks). لا يمكن للوكلاء المساس بالمستودعات الأصلية (grand). هذا بحكم التصميم.
 
-To allow an agent to modify grand repos, start with `--allow-grand`:
+> **أسرار المستودعات متاحة عبر CLI فقط بحكم التصميم.** أداتا `repo_secret_set` و `repo_secret_unset` مستبعدتان عمدا من أدوات MCP. تستلزم عمليات الكتابة شرطا مسبقا `--current <previous-value>` (أو `--rotate-secret` للإقرار بتدوير غير مُتحقق منه)، وهذا الإجراء يستوجب إشراف بشري مباشر. على الوكلاء الذين يريدون اقتراح تدوير سر أن يستدعوا `repo_secret_get` للتحقق من البصمة، ثم يُمرروا أمر CLI الموجّه للمشغّل إلى المستخدم عبر الحقل `next.options[].run` في غلاف أخطاء JSON. راجع [أمان وكلاء الذكاء الاصطناعي](/en/docs/ai-agents-safety#structured-next-action-hints) للاطلاع على النمط الكامل، و[المستودعات § الأسرار](/en/docs/repositories#secrets) لتعليمات الاستخدام.
+
+لمنح وكيل صلاحية تعديل المستودعات الأصلية، شغّل الخادم مع `--allow-grand`:
 
 ```json
 {
@@ -132,14 +136,28 @@ To allow an agent to modify grand repos, start with `--allow-grand`:
 
 يمكنك أيضا ضبط متغير البيئة `REDIACC_ALLOW_GRAND_REPO` على اسم مستودع واحد، أو على قائمة أسماء مستودعات مفصولة بفواصل (على سبيل المثال `repo1,repo2,repo3`)، أو على `*` لجميع المستودعات. تُتجاهل المسافات البيضاء حول كل مُدخَل، لذا فإن `repo1, repo2` يعمل أيضا. لا يزال الوصول على مستوى الآلة (مثل `term connect -m <machine>` دون تحديد مستودع) يتطلب `*`؛ قائمة أسماء المستودعات لا تفتح هذا الوصول.
 
-### Kernel-level filesystem sandbox (Landlock)
+### مفاتيح SSH لكل مستودع والصندوق المحمي من جانب الخادم
 
-When `term_exec` runs a command on a repository, the command is wrapped with `renet sandbox-exec` on the remote machine. This applies Linux Landlock LSM restrictions at the kernel level:
+لكل مستودع زوج مفاتيح SSH خاص به. يُنشر المفتاح العام في `authorized_keys` بادئةً `command=` تُجبر جميع جلسات SSH على المرور عبر `renet sandbox-gateway <repo-name>`، وهو ForceCommand من جانب الخادم لا يمكن لأي عميل تجاوزه، بما في ذلك VS Code.
 
-- **Allowed**: the repository's own mount path, `/tmp`, system binaries (`/usr`, `/bin`, `/etc`), the repo's Docker socket
-- **Blocked**: other repositories' mount paths, home directory writes, arbitrary filesystem access
+**آلية العمل:**
+1. ينشئ `rdc repo create` أو `rdc repo fork` زوج مفاتيح ed25519 فريدا لكل مستودع
+2. يُنشر المفتاح العام على الخادم البعيد مع `command="renet sandbox-gateway <name>"`
+3. تمر كل اتصالات SSH التي تستخدم هذا المفتاح عبر البوابة التي تطبّق:
+   - **Landlock LSM**، قيود نظام الملفات على مستوى النواة مقيّدة بمسار تثبيت المستودع
+   - **OverlayFS home overlay**، تُسجَّل الكتابات إلى `$HOME` لكل مستودع بشكل منفصل، بينما تمر القراءات إلى المجلد الرئيسي الفعلي
+   - **TMPDIR خاص بالمستودع** في `<datastore>/.interim/sandbox/<name>/tmp/`
+   - **وصول Docker** عبر مقبس Docker المعزول الخاص بالمستودع
+   - **تخفيض الصلاحيات** إلى المستخدم الموحد (`rediacc`)
+4. يُحمَّل ملف `.envrc` الخاص بالمستودع تلقائيا لإعداد Docker والبيئة
 
-This prevents lateral movement, even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) is not sandboxed.
+**مسموح بالقراءة والكتابة**: مسار تثبيت المستودع، مساحة عمل الصندوق المحمي الخاصة بالمستودع، المجلد الرئيسي (عبر overlay)، مقبس Docker
+**مسموح بالقراءة فقط**: مسارات النظام (`/usr`، `/bin`، `/etc`، `/proc`، `/sys`)
+**محظور**: مسارات تثبيت المستودعات الأخرى، ملفات النظام خارج القائمة المسموح بها
+
+**تكامل VS Code**: يحصل كل مستودع على تثبيت خادم VS Code خاص به في `<datastore>/.interim/sandbox/<name>/.vscode-server/`. يمكن فتح مستودعات متعددة في آن واحد ببيئات صندوق محمي مستقلة، دون مشاركة الخادم بين المستودعات.
+
+هذا يمنع الانتقال الجانبي. حتى لو استطاع وكيل الحصول على وصول صدفة إلى نسخة ما، فلن يستطيع قراءة أو تعديل مستودعات أخرى على نفس الجهاز. تستخدم الاتصالات SSH على مستوى الجهاز (دون مستودع) مفتاح الفريق وليست مقيّدة بصندوق محمي.
 
 ## البنية المعمارية
 

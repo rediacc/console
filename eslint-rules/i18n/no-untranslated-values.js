@@ -112,7 +112,7 @@ export const noUntranslatedValues = {
       },
     ],
     messages: {
-      untranslated: 'Value for key "{{key}}" is identical to English. Consider translating: "{{value}}"',
+      untranslated: 'Value for key "{{key}}" is identical to English. Translate it naturally and idiomatically (not literal/word-for-word): "{{value}}". See docs/i18n/CONVENTIONS.md.',
     },
   },
 

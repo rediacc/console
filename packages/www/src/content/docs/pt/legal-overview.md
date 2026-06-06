@@ -1,16 +1,16 @@
 ---
-title: "Visão Geral de Conformidade"
-description: "Como a arquitetura self-hosted da Rediacc responde aos requisitos de conformidade em matéria de proteção de dados, privacidade e segurança."
+title: "O Que a Conformidade Realmente Exige"
+description: "A Rediacc funciona na sua infraestrutura. Os seus dados estão sob o seu controlo. Veja como isto se alinha com os principais referenciais de conformidade."
 category: "Legal"
 order: 0
 language: pt
-sourceHash: "e20385eb9adfe180"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1e36a25c724f4185"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-A Rediacc funciona inteiramente na sua infraestrutura. Durante as operações de clonagem de ambientes, backup e implementação, os dados nunca saem da sua máquina. A sua organização mantém-se simultaneamente responsável pelo tratamento e subcontratante dos dados. Nenhum SaaS de terceiros gere os seus dados.
+A Rediacc funciona inteiramente na sua infraestrutura. Durante clonagem, backup e implementação, os seus dados ficam nas suas máquinas. Você é simultaneamente o responsável pelo tratamento e o processador dos dados. Nenhum SaaS de terceiros, nenhum acesso externo.
 
-Esta secção mapeia as capacidades técnicas da Rediacc com os requisitos dos principais referenciais de conformidade. Cada página cobre um regulamento específico com referências ao nível do artigo para os textos jurídicos oficiais.
+Mapeamos as capacidades técnicas da Rediacc para os principais requisitos de conformidade. Cada página aborda um regulamento específico com referências ao texto legal oficial.
 
 ## Matriz de Conformidade
 
@@ -27,7 +27,7 @@ Esta secção mapeia as capacidades técnicas da Rediacc com os requisitos dos p
 
 ## Fundamentos Arquitetónicos
 
-Todos os referenciais de conformidade desta secção remetem para as mesmas propriedades técnicas:
+Aqui está o que as conecta: cada referencial de conformidade nesta secção mapeia para a mesma fundação técnica.
 
 - **Encriptação em repouso**: cada repositório é encriptado com LUKS2 AES-256. As credenciais são armazenadas apenas na configuração local do operador, nunca no servidor.
 - **Isolamento de rede**: cada repositório dispõe do seu próprio daemon Docker, sub-rede IP de loopback (/26) e regras iptables. Os contentores de repositórios diferentes não conseguem comunicar entre si.
@@ -40,7 +40,7 @@ Para mais detalhes sobre estas capacidades, consulte [Arquitetura](/pt/docs/arch
 
 ## Por que é Importante
 
-Os incumprimentos em matéria de conformidade são dispendiosos. Estes casos de execução envolveram problemas que a arquitetura da Rediacc impede estruturalmente:
+Os incumprimentos em matéria de conformidade são dispendiosos. Muito dispendiosos. Os casos abaixo mostram problemas que a arquitetura da Rediacc impede estruturalmente:
 
 | Incidente | Coima | O que correu mal |
 |----------|------|----------------|
@@ -54,4 +54,4 @@ Os incumprimentos em matéria de conformidade são dispendiosos. Estes casos de 
 
 ## Aviso Importante
 
-Estas páginas descrevem as capacidades técnicas da Rediacc em relação aos requisitos de conformidade. A conformidade com qualquer regulamento exige políticas organizacionais, procedimentos, formação de pessoal e, potencialmente, auditorias por terceiros que ultrapassam o âmbito de qualquer ferramenta individual. Consulte a sua equipa jurídica e de conformidade para obter orientação específica para a sua organização.
+Estas páginas explicam como a arquitetura da Rediacc se alinha com os requisitos de conformidade. Mas aqui está a realidade: conformidade é mais do que software. Você precisará de políticas, procedimentos, formação e, provavelmente, auditorias de terceiros. A Rediacc lida com a parte infraestrutural. Trabalhe com as suas equipas de assuntos jurídicos e de conformidade para o resto.

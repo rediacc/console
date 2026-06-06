@@ -4,8 +4,8 @@ description: Lancez un service conteneurisé sur votre serveur en quelques minut
 category: Guides
 order: -1
 language: fr
-sourceHash: "15b3c42682a05678"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2047fd1ce3a47944"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Démarrage rapide
@@ -20,7 +20,7 @@ Déployez un environnement de conteneurs chiffré et isolé sur votre propre ser
 
 Un repo est un fichier chiffré unique sur le disque. Déplacez-le, sauvegardez-le, dupliquez-le. C'est juste un fichier. Une fois monté, il devient un dossier avec un démon Docker dédié et les données de votre application à l'intérieur.
 
-Pensez à un repo comme une clé USB : branchez-la dans n'importe quelle machine et les applications et données se montent, prêtes à s'exécuter. Déplacez-la entre machines ou fournisseurs cloud sans tout reconstruire. Branchez et exécutez.
+Pensez à un repo comme une clé USB : branchez-la dans n'importe quelle machine et les applications et données se montent, prêtes à s'exécuter. Déplacez-la entre machines ou fournisseurs cloud sans tout reconstruire.
 
 **Deux outils, deux rôles :**
 
@@ -97,7 +97,7 @@ rdc repo template list                                        # Afficher les mod
 rdc repo template apply --name app-postgres -m my-server -r my-app  # Déployer docker-compose.yml + Rediaccfile
 ```
 
-Les modèles fournissent un `docker-compose.yml`, un `Rediaccfile` et des fichiers de support. Sans modèle (ou votre propre fichier compose), il n'y a rien à démarrer.
+Les modèles fournissent un `docker-compose.yml`, un `Rediaccfile` et des fichiers de support. Sans modèle (ou votre propre fichier compose), il n'y a rien à démarrer. Utilisez le modèle intégré pour votre premier repo. C'est le chemin le plus rapide pour voir tout le flux de travail de bout en bout.
 
 ### 3. Démarrer le repo
 

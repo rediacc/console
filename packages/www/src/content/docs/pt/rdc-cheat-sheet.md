@@ -1,16 +1,16 @@
 ---
 title: Folha de Consulta do CLI RDC
-description: "Referência rápida para comandos rdc: configs, repositórios, máquinas, sincronização e contentores."
+description: "Referência rápida para rdc: configs, repositórios, máquinas, sincronização e contentores. Conjunto completo de opções: adicione --help a qualquer comando."
 category: Guides
 order: 3
 language: pt
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Folha de Consulta do CLI RDC
 
-Referência rápida para os comandos `rdc` mais comuns. Execute qualquer comando com `--help` para ver todas as opções.
+Nem todos os comandos `rdc` estão listados aqui, apenas os que surgem em todas as implementações. Para ver o conjunto completo de opções, execute qualquer comando rdc com `--help`. Casos extremos e opções raramente utilizadas estão na referência completa.
 
 ## Ciclo de Vida do Repositório
 

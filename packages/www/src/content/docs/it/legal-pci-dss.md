@@ -1,14 +1,14 @@
 ---
 title: "Conformità PCI DSS"
-description: "Come Rediacc si allinea ai requisiti PCI DSS per la protezione dei dati delle carte di pagamento tramite crittografia, segmentazione di rete e controllo degli accessi."
+description: "Come Rediacc rispetta i requisiti PCI DSS: backup immutabili, isolamento automatico della rete e controllo degli accessi a livello infrastrutturale."
 category: "Legal"
 order: 6
 language: it
-sourceHash: "7dfa2cbb5f86d910"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "d8391036876231a0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Il Payment Card Industry Data Security Standard (PCI DSS) è obbligatorio per qualsiasi organizzazione che memorizza, elabora o trasmette dati dei titolari di carta. La versione corrente è PCI DSS v4.0.1.
+Ascolta, PCI DSS v4.0.1. non è opzionale se gestisci i dati dei titolari di carta. La versione 4.0.1. si riduce a un requisito: isolamento a livello infrastrutturale da tutto il resto.
 
 Riferimento: [PCI Security Standards Council](https://www.pcisecuritystandards.org/document_library/)
 
@@ -29,7 +29,7 @@ Riferimento: [PCI Security Standards Council](https://www.pcisecuritystandards.o
 
 ## Segmentazione di Rete
 
-Il PCI DSS punta forte sulla segmentazione: isola il cardholder data environment (CDE), o fallisci l'audit. Rediacc ti fornisce quella segmentazione per default:
+Il PCI DSS punta forte sulla segmentazione. Continuo a vedere team che stratificano regole iptables su un isolamento insufficiente. Non funziona. I team che passano l'audit hanno la segmentazione integrata nell'architettura. Rediacc te la fornisce per default:
 
 - Ogni repository opera nel proprio daemon Docker in `/var/run/rediacc/docker-<networkId>.sock`
 - I repository dispongono di sottoreti IP di loopback isolate (127.0.x.x/26, 61 IP utilizzabili per rete)
@@ -40,7 +40,7 @@ Un repository per l'elaborazione dei pagamenti gira sul proprio daemon Docker e 
 
 ## Riduzione dell'Ambito
 
-Il self-hosted di Rediacc riduce l'ambito di conformità PCI DSS:
+Il self-hosted di Rediacc riduce l'ambito di conformità. Non è necessario configurare manualmente la segmentazione di rete: è automatica per design. La nostra documentazione per questa parte richiede ancora lavoro, ma l'isolamento è solido.
 
 - Nessun provider cloud di terze parti nel flusso dei dati dei titolari di carta
 - Nessun vendor SaaS da valutare ai sensi del Req 12.8 (fornitori di servizi di terze parti)
@@ -49,7 +49,7 @@ Il self-hosted di Rediacc riduce l'ambito di conformità PCI DSS:
 
 ## Casi di Applicazione
 
-Una segmentazione debole e la mancanza di crittografia sono alla base delle azioni di enforcement PCI DSS piu' costose:
+La maggior parte dei fallimenti dell'audit PCI si riduce a una di due cose: la segmentazione che non è stata mai adeguatamente isolata, o la crittografia che non è mai stata testata contro attacchi reali.
 
 - Heartland Payment Systems (2008): gli aggressori si sono spostati lateralmente su 48 database a causa di una scarsa segmentazione di rete, esponendo 130 milioni di numeri di carte. [Il costo totale ha superato i 200 milioni di dollari.](https://www.philadelphiafed.org/-/media/frbp/assets/consumer-finance/discussion-papers/d-2010-january-heartland-payment-systems.pdf)
 - Target (2013): gli aggressori sono passati dall'accesso di rete di un fornitore HVAC ai sistemi punto vendita a causa di un'architettura di rete piatta, acquisendo 40 milioni di carte di pagamento. [Accordo raggiunto per 18,5 milioni di dollari con 47 procuratori generali statali.](https://oag.ca.gov/news/press-releases/attorney-general-becerra-target-settles-record-185-million-credit-card-data)

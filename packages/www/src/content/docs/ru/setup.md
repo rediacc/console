@@ -4,13 +4,13 @@ description: "Создание конфигурации, добавление м
 category: "Guides"
 order: 3
 language: ru
-sourceHash: "2456daa4289ffb8c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "b3c8c42db1b8d99b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Настройка машины
 
-На этой странице описывается процесс настройки первой машины: создание конфигурации, регистрация сервера, его подготовка и опциональная настройка инфраструктуры для публичного доступа.
+Четыре шага для запуска первой машины: создание конфигурации, регистрация сервера, его подготовка и опциональная настройка инфраструктуры для публичного трафика.
 
 ## Шаг 1: Создание конфигурации
 
@@ -122,8 +122,8 @@ rdc config infra set -m server-1 \
 
 | Опция | Область | Описание |
 |-------|---------|----------|
-| `--public-ipv4 <ip>` | Machine | Public IPv4 address, proxy entrypoints are only created for configured address families |
-| `--public-ipv6 <ip>` | Machine | Public IPv6 address, proxy entrypoints are only created for configured address families |
+| `--public-ipv4 <ip>` | Machine | Публичный IPv4 адрес, точки входа прокси создаются только для настроенных семейств адресов |
+| `--public-ipv6 <ip>` | Machine | Публичный IPv6 адрес, точки входа прокси создаются только для настроенных семейств адресов |
 | `--base-domain <domain>` | Machine | Базовый домен для приложений (например, `example.com`) |
 | `--cert-email <email>` | Config | Email для TLS-сертификатов Let's Encrypt (общий для всех машин) |
 | `--cf-dns-token <token>` | Config | API-токен Cloudflare DNS для ACME DNS-01 проверок (общий для всех машин) |
@@ -161,10 +161,11 @@ rdc config infra push -m server-1
 
 Установите OpenTofu: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
 
-Убедитесь, что ваша конфигурация SSH включает публичный ключ:
+Убедитесь, что ваша конфигурация SSH имеет зарегистрированный у `rdc` ключ:
 
 ```bash
-rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
+# Читает файл ключа и встраивает содержимое под /credentials/ssh.
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
 ### Добавление облачного провайдера
@@ -200,7 +201,7 @@ rdc machine provision --name prod-2 --provider my-linode
 2. Ожидает SSH-подключения
 3. Регистрирует машину в вашей конфигурации
 4. Устанавливает renet и все зависимости
-5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+5. Настраивает прокси Traefik и DNS Cloudflare (автоматически определяет базовый домен из соседних машин или явно передайте `--base-domain`)
 
 | Опция | Описание |
 |-------|----------|
@@ -208,8 +209,8 @@ rdc machine provision --name prod-2 --provider my-linode
 | `--region <region>` | Переопределяет регион провайдера по умолчанию |
 | `--type <type>` | Переопределяет тип экземпляра по умолчанию |
 | `--image <image>` | Переопределяет образ ОС по умолчанию |
-| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
-| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--base-domain <domain>` | Базовый домен для инфраструктуры. Автоматически определяется из соседних машин, если не указано |
+| `--no-infra` | Полностью пропустить конфигурацию инфраструктуры (прокси + DNS) |
 | `--debug` | Показывает подробный вывод провизионирования |
 
 ### Депровизионирование машины
@@ -231,8 +232,8 @@ rdc config provider list
 Установите значения по умолчанию, чтобы не указывать их в каждой команде:
 
 ```bash
-rdc config set --key machine --value server-1  # Машина по умолчанию
-rdc config set --key team --value my-team  # Команда по умолчанию (облачный адаптер, экспериментальный)
+rdc config field set --pointer /defaults/machine --new '"server-1"'   # Машина по умолчанию
+rdc config set --key team --value my-team                   # Команда по умолчанию (облачный адаптер, экспериментальный)
 ```
 
 После установки машины по умолчанию можно опускать `-m server-1` в командах:

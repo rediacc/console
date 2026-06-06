@@ -4,13 +4,13 @@ description: "Dizin yapısı, renet komutları, systemd servisleri ve uzak sunuc
 category: "Concepts"
 order: 3
 language: tr
-sourceHash: "f68c27543a2fe3ff"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "4fb53bb4cb1512f6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Sunucu Referansı
 
-Bu sayfa, bir Rediacc sunucusuna SSH ile bağlandığınızda karşılaşacaklarınızı açıklar: dizin yapısı, `renet` komutları, systemd servisleri ve yaygın iş akışları.
+SSH ile bir Rediacc sunucusuna bağlandığınızda karşılaşacaklarınız: dizin yapısı, `renet` komutları, systemd servisleri ve ihtiyaç duyacağınız iş akışları.
 
 Kullanıcıların büyük çoğunluğu sunucuları iş istasyonlarından `rdc` aracılığıyla yönetir ve bu sayfaya ihtiyaç duymaz. Bu sayfa, gelişmiş hata ayıklama veya doğrudan sunucu üzerinde çalışmanız gerektiğinde başvurmanız içindir.
 
@@ -289,7 +289,7 @@ Bunu `docker-compose.yml` içeren dizinden çalıştırın. Değiştirilen konte
 renet list containers
 ```
 
-## Ipuclari
+## İpuçları
 
 - `renet compose`, `renet repository` ve `renet docker` komutları için her zaman `sudo` kullanın; LUKS ve Docker işlemleri için root yetkisi gerekir
 - `renet compose` ve `renet docker`'a argüman geçirmeden önce `--` ayracı zorunludur

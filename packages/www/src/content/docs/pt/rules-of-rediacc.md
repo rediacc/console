@@ -4,8 +4,8 @@ description: "Regras e convenções essenciais para construir aplicações na pl
 category: "Guides"
 order: 5
 language: pt
-sourceHash: "1d227a06272a0050"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "74803e91ef07b03c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Regras do Rediacc
@@ -132,13 +132,13 @@ O renet injeta-as automaticamente em cada contentor:
 
 ### Politicas de seguranca do host por SO
 
-Nos cinco SOs de servidor com suporte oficial (consulte [Requisitos](/pt/docs/requirements)), o daemon Docker por repositorio e os contentores que executa usam **labels de contentor padrao**. `rdc config machine setup` nao instala uma politica SELinux personalizada nem um perfil AppArmor.
+Nos cinco SOs de servidor com suporte oficial (consulte [Requisitos](/pt/docs/requirements)), o daemon Docker por repositorio e os contentores que executa usam **labels de contentor padrao**. `rdc config machine setup` nao instala uma politica SELinux personalizada nem um perfil AppArmor. Isto e intencional: o trade-off e que os processos de contentor funcionam sob a politica de rotulo do SO anfitrao por defeito, nao sob um perfil de confinamento especifico do Rediacc. Se o seu modelo de ameaca exigir controles de acesso obrigatorio ao nivel do contentor, configure-os ao nivel do anfitrao antes de implementar.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor esta activo por padrao. Os contentores correm sob o perfil docker-container padrao. A unica excepcao e o CRIU (`apparmor=unconfined` para contentores com `rediacc.checkpoint=true`, conforme a nota acima).
 - **Fedora 43 / Oracle Linux 10**: SELinux corre em modo enforcing por padrao. Os contentores recebem o contexto `container_t` padrao. Nao e necessaria instalacao de politica adicional. Se um passo de configuracao falhar com negacoes AVC, consulte [Resolucao de Problemas -> Negacoes SELinux](/pt/docs/troubleshooting).
 - **Debian 13**: AppArmor esta disponivel mas nao e aplicado por padrao em todos os dominios. Os contentores continuam a usar o perfil docker-container.
 
-Nao e necessaria nenhuma flag de postura de seguranca por SO; `rdc` e `renet` detectam o que esta em execucao e produzem o mesmo isolamento por repositorio nas cinco distribuicoes.
+Bottom line: `rdc` e `renet` detectam automaticamente o SO em execucao e produzem o mesmo isolamento por repositorio nas cinco distribuicoes com suporte. Nao e necessaria nenhuma flag de postura de seguranca por SO.
 
 ## Seguranca
 

@@ -1,12 +1,12 @@
 ---
 title: Rediaccのルール
 description: >-
-  Rediaccプラットフォームでアプリケーションを構築するための基本ルールと規則。Rediaccfile、compose、ネットワーク、ストレージ、CRIU、デプロイについて説明します。
+  Rediaccプラットフォームでアプリケーションを構築するための必須ルールと規則。Rediaccfile、Compose、ネットワーク、ストレージ、CRIU、デプロイについて説明します。
 category: Guides
 order: 5
 language: ja
-sourceHash: "1d227a06272a0050"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "74803e91ef07b03c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Rediaccのルール
@@ -100,7 +100,7 @@ Renetはすべてのコンテナに以下を自動注入します:
   ```
 - LUKSボリュームは`/mnt/rediacc/mounts/<guid>/`にマウントされます。
 - BTRFSスナップショットは、すべてのバインドマウントデータを含むLUKSバッキングファイル全体をキャプチャします。
-- データストアはシステムディスク上の固定サイズのBTRFSプールファイルです。`rdc machine query --name <name> --system`で実際の空き容量を確認できます。`rdc datastore resize`で拡張できます。
+- データストアはシステムディスク上の固定サイズのBTRFSプールファイルです。`rdc machine query --name <name> --system`で実効的な空き容量を確認できます。`rdc datastore resize`で拡張できます。
 
 ## CRIU（ライブマイグレーション）
 
@@ -133,13 +133,13 @@ Renetはすべてのコンテナに以下を自動注入します:
 
 ### OSごとのホストセキュリティポリシー
 
-公式にサポートされている5つのサーバーOS（[要件](/en/docs/requirements)を参照）において、各リポジトリのDockerデーモンとその上で動作するコンテナは**デフォルトのコンテナラベル**を使用します。`rdc config machine setup`はカスタムSELinuxポリシーやAppArmorプロファイルをインストールしません。
+公式にサポートされている5つのサーバーOS（[要件](/en/docs/requirements)を参照）において、各リポジトリのDockerデーモンとその上で動作するコンテナは**デフォルトのコンテナラベル**を使用します。`rdc config machine setup`はカスタムSELinuxポリシーやAppArmorプロファイルをインストールしません。これは意図的です。トレードオフとしては、コンテナプロセスがRediacc固有の制限プロファイルではなく、ホストOSのデフォルトラベルポリシーで実行されることです。コンテナレイヤーでの強制アクセス制御を脅威モデルで必要とする場合は、デプロイ前にホストレベルで設定してください。
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmorはデフォルトで有効です。コンテナはデフォルトのdocker-containerプロファイルで動作します。唯一の例外はCRIUです（上記の注意書きのとおり、`rediacc.checkpoint=true`を持つコンテナには`apparmor=unconfined`が適用されます）。
 - **Fedora 43 / Oracle Linux 10**: SELinuxはデフォルトでenforcing（強制）モードで動作します。コンテナは標準の`container_t`コンテキストを取得します。追加のポリシーインストールは不要です。AVCの拒否によってセットアップステップが失敗した場合は、[トラブルシューティング: SELinuxの拒否](/en/docs/troubleshooting)を参照してください。
 - **Debian 13**: AppArmorは利用可能ですが、すべてのドメインでデフォルトで強制適用されるわけではありません。コンテナは引き続きdocker-containerプロファイルを使用します。
 
-OS固有のセキュリティ姿勢フラグは必要ありません。`rdc`と`renet`は実行中の環境を検出し、5つのディストリビューションすべてで同じリポジトリごとの分離を実現します。
+結論: `rdc`と`renet`は実行中の環境を検出し、5つのディストリビューションすべてで同じリポジトリごとの分離を実現します。OS固有のセキュリティ姿勢フラグは必要ありません。
 
 ## セキュリティ
 

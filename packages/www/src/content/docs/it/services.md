@@ -2,12 +2,12 @@
 title: Servizi
 description: >-
   Distribuisci e gestisci servizi containerizzati usando Rediaccfile, networking
-  dei servizi e autostart. È possibile configurare l'avvio automatico così il servizio non si interrompe mai.
+  dei servizi e autostart.
 category: Guides
 order: 5
 language: it
-sourceHash: "181ba0512ff98f9c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "88734af48d9648d5"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Servizi

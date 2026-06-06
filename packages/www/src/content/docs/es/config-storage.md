@@ -1,12 +1,13 @@
 ---
 title: Almacenamiento de configuración
 description: >-
-  Sincronización cifrada de conocimiento cero para configuraciones con cifrado
+  Sincronización cifrada de configuración de conocimiento cero con cifrado
   basado en passkeys
 category: Guides
 order: 8
 language: es
-sourceHash: "9612a5fecf063eea"
+sourceHash: "daf79946b8925246"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Almacenamiento de configuración
@@ -28,7 +29,7 @@ El almacenamiento de configuración proporciona sincronización cifrada de conoc
    - Segundo toque: deriva las claves de cifrado vía PRF
 4. Configuración completa, su secreto de passkey se almacena en el llavero de su sistema operativo
 
-Después de la configuración, las operaciones diarias del CLI (push/pull) funcionan sin el passkey.
+Después de la configuración, las operaciones diarias del CLI (push/pull) funcionan sin el passkey. Advertencia: la configuración requiere un passkey con soporte de extensión PRF. No todos los tokens de hardware o autenticadores de plataforma lo tienen.
 
 ## Compatibilidad de proveedores PRF
 

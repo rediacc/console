@@ -4,13 +4,13 @@ description: 运行 Rediacc 的系统要求和支持的平台。
 category: Guides
 order: 0
 language: zh
-sourceHash: "eb237c7beb1bb942"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "e84db3bb90270473"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 系统要求
 
-在使用 Rediacc 进行部署之前，请确保您的工作站和远程服务器满足以下要求。
+这些基本上都是标准的 Linux 服务器设置。有些细节特定于 Rediacc 的工作方式，所以在开始之前请检查一下。
 
 ## 工作站（控制平面）
 

@@ -1,47 +1,47 @@
 ---
-title: Sorun Giderme
-description: "Yaygın SSH, kurulum, depo, servis ve Docker sorunlarının çözümleri."
-category: Guides
+title: "Sorun Giderme"
+description: "SSH, kurulum, depo, hizmet ve Docker sorunlarının yaygın çözümleri."
+category: "Guides"
 order: 10
 language: tr
-sourceHash: "7cfabe7bbf3914c3"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "17dc03eb0589d606"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Sorun Giderme
 
-Yaygın sorunlar ve nasıl düzeltileceği. Şüphe durumunda, tam bir tanılama kontrolü yapmak için `rdc doctor` ile başlayın.
+Yaygın sorunlar ve bunları nasıl düzeltileceği. Emin olmadığınız durumlarda, tam bir tanı kontrolü çalıştırmak için `rdc doctor` komutuyla başlayın.
 
-## SSH Bağlantısı Başarısız
+## SSH Bağlantısı Başarısız Oluyor
 
 - Manuel olarak bağlanabildiğinizi doğrulayın: `ssh -i ~/.ssh/id_ed25519 deploy@203.0.113.50`
-- Host anahtarlarını yenilemek için `rdc config machine scan-keys -m server-1` komutunu çalıştırın
-- SSH portunun eşleştiğini kontrol edin: `--port 22`
+- Ana bilgisayar anahtarlarını yenilemek için `rdc config machine scan-keys -m server-1` komutunu çalıştırın
+- SSH bağlantı noktasının eşleşip eşleşmediğini kontrol edin: `--port 22`
 - Basit bir komutla test edin: `rdc term connect -m server-1 -c "hostname"`
 
-## Host Anahtarı Uyuşmazlığı
+## Ana Bilgisayar Anahtarı Uyuşmuyor
 
-Bir sunucu yeniden kurulduysa veya SSH anahtarları değiştiyse, "host key verification failed" hatası görürsünüz:
+Bir sunucu yeniden yüklenirse veya SSH anahtarları değişirse, "host key verification failed" (ana bilgisayar anahtarı doğrulaması başarısız) hatası görürsünüz:
 
 ```bash
 rdc config machine scan-keys -m server-1
 ```
 
-Bu komut yeni host anahtarlarını alır ve yapılandırmanızı günceller.
+Bu, yeni ana bilgisayar anahtarlarını alır ve yapılandırmanızı günceller.
 
-## Makine Kurulumu Başarısız
+## Makine Kurulumu Başarısız Oluyor
 
-- SSH kullanıcısının şifresiz sudo erişimine sahip olduğundan emin olun veya gerekli komutlar için `NOPASSWD` yapılandırın
-- Sunucudaki kullanılabilir disk alanını kontrol edin
+- SSH kullanıcısının parola olmaksızın sudo erişimine sahip olduğundan emin olun veya gerekli komutlar için `NOPASSWD` yapılandırın
+- Sunucuda kullanılabilir disk alanını kontrol edin
 - Ayrıntılı çıktı için `--debug` ile çalıştırın: `rdc config machine setup --name server-1 --debug`
 
 ## Dağıtıma Özgü Kurulum Sorunları
 
-Resmi olarak desteklenen beş sunucu işletim sistemi (Ubuntu 24.04, Debian 13, Fedora 43, openSUSE Leap 16.0, Oracle Linux 10) farklı güvenlik politikaları ve paket yöneticileriyle gelir. Kurulumların büyük çoğunluğu sorunsuz çalışır; aşağıdaki durumlar çalışmayan durumları kapsar.
+Resmi olarak desteklenen beş sunucu işletim sistemi (Ubuntu 24.04, Debian 13, Fedora 43, openSUSE Leap 16.0, Oracle Linux 10) farklı güvenlik politikaları ve paket yöneticileriyle gelir. Çoğu kurulum sorunsuz işler; aşağıdaki durumlar çalışmayanları kapsar.
 
-### SELinux Redleri (Fedora 43, Oracle Linux 10)
+### SELinux İhlalleri (Fedora 43, Oracle Linux 10)
 
-Her ikisi de SELinux'u zorlayıcı (enforcing) modda çalıştırır. rdc setup özel bir SELinux politikası yüklemez; depo başına docker daemon standart `container_t` bağlamında çalışır. Kurulum AVC redleriyle başarısız olursa, audit günlüğünü kontrol edin ve etki alanını belirleyin:
+Her ikisi de SELinux'u zorla uygulama modunda çalıştırır. rdc setup özel bir SELinux politikası yüklemez; depo başına docker daemon standart `container_t` bağlamı altında çalışır. Kurulum AVC ihlalleriyle başarısız olursa, denetim günlüğünü kontrol edin ve etki alanını tanımlayın:
 
 ```bash
 sudo ausearch -m AVC -ts recent | head -40
@@ -49,55 +49,55 @@ sudo ausearch -m AVC -ts recent | head -40
 sudo tail -f /var/log/audit/audit.log | grep AVC
 ```
 
-Bir red renet ikili dosyasına veya belirli bir dosya yoluna işaret ediyorsa, çözüm neredeyse her zaman SELinux'u devre dışı bırakmak yerine yeniden etiketlemektir (`restorecon -v /path`). Araştırma sırasında geçici bir çözüm olarak `sudo setenforce 0` sistemi izinli moda alır. Yeniden etiketlemenin kalıcı olduğunu doğruladıktan sonra `sudo setenforce 1` ile yeniden etkinleştirin.
+Bir reddedilme renet ikilisini veya belirli bir dosya yolunu gösterirse, düzeltme neredeyse her zaman SELinux'u devre dışı bırakmak yerine yeniden etiketlemektir (`restorecon -v /path`). Araştırma yaparken geçici bir çözüm olarak, `sudo setenforce 0` sistemi izin verici moda taşır. Yeniden etiketlemenin işe yaradığını doğruladıktan sonra `sudo setenforce 1` ile yeniden etkinleştirin.
 
-### AppArmor Redleri (Ubuntu 24.04, openSUSE Leap 16.0)
+### AppArmor İhlalleri (Ubuntu 24.04, openSUSE Leap 16.0)
 
-Her ikisi de varsayılan olarak AppArmor kullanır; depo başına docker daemon varsayılan konteyner profilini kullanır. Bir depodaki konteyner engelleniyorsa:
+Her ikisi de varsayılan olarak AppArmor çalıştırır; depo başına docker daemon varsayılan kapsayıcı profilini kullanır. Bir depodaki bir kapsayıcı engelleniyorsa:
 
 ```bash
 dmesg | grep -i apparmor
 sudo aa-status
 ```
 
-CRIU, AppArmor ile karşılaşan bilinen durumdur. Renet, `rediacc.checkpoint=true` etiketli konteynerlere otomatik olarak `security_opt: apparmor=unconfined` ayarlar. Bunun dışında herhangi bir şey için AppArmor profillerini kendiniz yapılandırmanıza gerek yoktur. CRIU notları için [Rediacc Kuralları](/en/docs/rules-of-rediacc) sayfasına bakın.
+CRIU, AppArmor'u vuran bilinen bir durumdur. renet, `rediacc.checkpoint=true` etiketli kapsayıcılarda otomatik olarak `security_opt: apparmor=unconfined` ayarını yapar. Başka bir şey için AppArmor profillerini kendiniz yapılandırmanız gerekmez. [Rediacc Kuralları](/en/docs/rules-of-rediacc) bölümündeki CRIU notlarına bakın.
 
 ### Paket Yöneticisi Hata İmzaları
 
 | İşletim Sistemi | Paket Yöneticisi | Tipik Hata | Çözüm |
-|---|---|---|---|
-| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | Cloudflare edge cache kaynağın gerisinde. `apt-get update` komutunu ~15 saniye sonra yeniden deneyin; bütünlük denetimi bir sonraki sorguda geçer. |
-| Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | Diskte önbelleğe alınmış RPM depo meta verileri güncel değil. `sudo dnf clean all && sudo dnf makecache` komutunu çalıştırın. |
-| openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | `sudo zypper refresh rediacc` komutunu bir kez çalıştırın; sonraki kurulumlar başarılı olacaktır. |
+|----|-----------------|---------------|------------|
+| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | Köken arkasında Cloudflare edge cache. ~15s sonra `apt-get update`'i yeniden deneyin; bütünlük kontrolü sonraki ankette geçer. |
+| Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | Diskte önbelleğe alınan RPM depo meta verileri eski. `sudo dnf clean all && sudo dnf makecache` komutunu çalıştırın. |
+| openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | `sudo zypper refresh rediacc` komutunu bir kez çalıştırın; sonraki yüklemeler başarılı olmalıdır. |
 
 ### btrfs Modülü Eksik (RHEL 10 / Rocky Linux 10 / AlmaLinux 10)
 
-`rdc config machine setup` veya `renet system check-btrfs` aşağıdaki hatayla başarısız olursa:
+`rdc config machine setup` veya `renet system check-btrfs` şu hatalarla başarısız olursa:
 
 ```
 Module btrfs not found
 ```
 
-...sunucu, yerleşik btrfs modülü olmadan gelen RHEL 10'un stok çekirdeğini çalıştırıyordur. Bu bir Rediacc hatası değildir; RHEL 10 btrfs'i kasıtlı olarak kaldırdı. Düzeltme, **bunun yerine Oracle Linux 10 kullanmaktır**. Oracle 10 varsayılan olarak btrfs'i koruyan Unbreakable Enterprise Kernel (UEK) kullanır. Tam hikaye için [Gereksinimler -- Neden UEK?](/en/docs/requirements) sayfasına bakın.
+...sunucu RHEL 10'un standart çekirdeğini çalıştırıyor; bu, ağaçta btrfs modülü olmadan gelir. Bu bir Rediacc hatası değildir; RHEL 10 btrfs'i kasıtlı olarak bıraktı. Düzeltme **bunun yerine Oracle Linux 10 çalıştırmaktır**. Oracle 10, btrfs'i koruyan Unbreakable Enterprise Kernel (UEK) varsayılanlarına sahiptir. Tam hikaye için [Gereksinimler: Neden UEK?](/en/docs/requirements) bölümüne bakın.
 
-## Depo Oluşturma Başarısız
+## Depo Oluşturma Başarısız Oluyor
 
-- Kurulumun tamamlandığını doğrulayın: veri deposu dizini mevcut olmalıdır
-- Sunucudaki disk alanını kontrol edin
-- renet ikili dosyasının yüklü olduğundan emin olun (gerekirse kurulumu yeniden çalıştırın)
+- Kurulumun tamamlandığını doğrulayın: datastore dizini var olmalıdır
+- Sunucuda disk alanını kontrol edin
+- renet ikilisinin yüklendiğinden emin olun (gerekirse kurulumu tekrar çalıştırın)
 
-## Servisler Başlatılamıyor
+## Hizmetler Başlamıyor
 
-- Rediaccfile sözdizimini kontrol edin: geçerli Bash olmalıdır
-- Rediaccfile'ınızın `renet compose --` kullandığından emin olun (`docker compose` değil)
-- Docker imajlarının erişilebilir olduğunu doğrulayın (`up()` içinde `renet compose -- pull` kullanmayı düşünün)
-- Deponun Docker soketi üzerinden konteyner günlüklerini kontrol edin:
+- Rediaccfile söz dizimini kontrol edin: geçerli Bash olmalıdır
+- Rediaccfile'ınızın `renet compose --` (değil `docker compose`) kullandığından emin olun
+- Docker görüntülerinin erişilebilir olduğunu doğrulayın (`up()` içinde `renet compose -- pull` kullanmayı düşünün)
+- Deponun Docker soketi kullanarak kapsayıcı günlüklerini kontrol edin:
 
 ```bash
 rdc term connect -m server-1 -r my-app -c "docker logs <container-name>"
 ```
 
-Veya tüm konteynerleri görüntüleyin:
+Veya tüm kapsayıcıları görüntüleyin:
 
 ```bash
 rdc machine containers --name server-1
@@ -105,55 +105,55 @@ rdc machine containers --name server-1
 
 ## İzin Reddedildi Hataları
 
-- Depo işlemleri sunucuda root gerektirir (renet `sudo` ile çalışır)
+- Depo işlemleri sunucuda kök gerektirir (renet `sudo` aracılığıyla çalışır)
 - SSH kullanıcınızın `sudo` grubunda olduğunu doğrulayın
-- Veri deposu dizininin doğru izinlere sahip olduğunu kontrol edin
+- Datastore dizininin doğru izinlere sahip olduğunu kontrol edin
 
-## Docker Soket Sorunları
+## Docker Soketi Sorunları
 
-Her deponun kendi Docker daemon'u vardır. Docker komutlarını manuel olarak çalıştırırken doğru soketi belirtmeniz gerekir:
+Her depo kendi Docker daemon'unu vardır. Docker komutlarını manuel olarak çalıştırırken, doğru soketi belirtmeniz gerekir:
 
 ```bash
-# rdc term kullanarak (otomatik yapılandırılmış):
+# rdc term (otomatik yapılandırma) kullanarak:
 rdc term connect -m server-1 -r my-app -c "docker ps"
 
-# Veya soket ile manuel olarak:
+# Veya soketi manual olarak belirterek:
 docker -H unix:///var/run/rediacc/docker-2816.sock ps
 ```
 
-`2816` değerini deponuzun ağ kimliği ile değiştirin (`rediacc.json` veya `rdc repo status` içinde bulunabilir).
+`2816` öğesini depo ağ kimliğinizle değiştirin (`rediacc.json` veya `rdc repo status` içinde bulunur).
 
-## `docker run` ağı yok, `apt update` başarısız, `curl` yanıt vermiyor
+## `docker run` ağa sahip değil, `apt update` başarısız, `curl` askıda kalıyor
 
-Bir depo kabuğu içinde, bir konteyneri `--network host` olmadan çalıştırmak, yalnızca loopback arayüzü olan, DNS içermeyen ve dışa doğru bağlantısı olmayan izole bir konteyner verir. `apt update`, `pip install`, `curl https://...` gibi komutlar ya da herhangi bir ağ isteği DNS hatalarıyla anında başarısız olur.
+Bir depo kabuğu içinde, `--network host` olmadan bir kapsayıcı çalıştırmak yalnızca bir loopback arabirimi, DNS yok ve giden bağlantı olmayan izole bir kapsayıcı verir. `apt update`, `pip install`, `curl https://...` veya herhangi bir ağ getirme gibi komutlar DNS hataları ile hemen başarısız olur.
 
-Bu kasıtlıdır. Rediacc'in ağ modeli, `renet compose` tarafından zorunlu kılınan **her servis için host ağı**dır. NAT'lı varsayılan bir Docker bridge'i, bir deponun başka bir deponun servislerine ulaşmasını engelleyen çekirdek düzeyindeki loopback izolasyonunu atlayacağı için, depo başına Docker daemon'u (`FlavorRediacc`) `"bridge": "none"` ve `"iptables": false` ile yapılandırılır. Düz bir `docker run` konteynerinin bağlanabileceği yönlendirilebilir bir bridge yoktur. (Geliştirme ortamları tarafından kullanılan kullanıcı başına Hub daemon'ları (`FlavorHub`) istisnadır: kullanıcı konteynerlerinin dışa doğru ağ bağlantısına sahip olması için bridge ve iptables'ı etkinleştirirler.)
+Bu kasıtlıdır. Rediacc'ın ağ modeli `renet compose` tarafından zorlanan **her hizmet için ana bilgisayar ağlarıdır**. NAT ile varsayılan bir Docker köprüsü, bir depoyu başka bir deponun hizmetlerine ulaşmasını engelleyen çekirdek düzeyinde loopback yalıtımını atlatacaktır, bu nedenle depo başına Docker daemon (`FlavorRediacc`) `"bridge": "none"` ve `"iptables": false` ile yapılandırılmıştır. Düz bir `docker run` kapsayıcısının bağlanması için yönlendirilebilir bir köprü yoktur. (Geliştirme ortamları tarafından kullanılan kullanıcı başına Hub daemon'ları (`FlavorHub`) istisnadır: kullanıcı tarafından çalıştırılan kapsayıcıların giden ağa sahip olması için köprü ve iptables'ı etkinleştirirler.)
 
-**Geçici bir konteynerde ağ erişimi elde etmek için host ağını kullanın:**
+**Geçici bir kapsayıcıda ağ erişimi sağlamak için ana bilgisayar ağını kullanın:**
 
 ```bash
-# Bir depo kabuğunda (rdc term connect -m <machine> -r <repo>)
+# Bir depo kabuğu içinde (rdc term connect -m <machine> -r <repo>)
 docker run --rm --network host -it ubuntu bash
-# Artık apt update, curl, pip install komutlarının tamamı çalışır.
+# Şimdi apt update, curl, pip install hepsi çalışır.
 ```
 
-**Üretim servisleri için ham `docker run` yerine `renet compose` ile bir Rediaccfile kullanın.** `renet compose`, `network_mode: host`, servis IP etiketleri ve Traefik yönlendirme etiketlerini otomatik olarak enjekte eder. Ayrıntılar için [Servisler](/tr/docs/services) sayfasına bakın.
+**Üretim hizmetleri için, ham `docker run` yerine `renet compose` ile bir Rediaccfile kullanın**. `renet compose` otomatik olarak `network_mode: host`, hizmet IP etiketleri ve Traefik yönlendirme etiketlerini enjekte eder. Ayrıntılar için [Hizmetler](/en/docs/services) bölümüne bakın.
 
-## VS Code sandbox dosyalarında İzin Reddedildi
+## VS Code Sandbox Dosyalarında İzin Reddedildi
 
-Önceki bir VS Code oturumunun ardından `rdc vscode connect -m <machine> -r <repo>` ile bağlanırken, eski renet sürümleri `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` gibi hatalar üretiyordu. Neden: sandbox dizininde hem SSH kullanıcınızın hem de dahili `rediacc` kullanıcısının dosya yazmış olduğu karışık dosya sahipliği.
+`rdc vscode connect -m <machine> -r <repo>` ile önceki bir VS Code oturumundan sonra bağlantı kurarken, eski renet sürümleri `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` gibi hatalar üretti. Neden: sandbox dizini içinde karışık dosya sahipliği, burada SSH kullanıcınız ve dahili `rediacc` kullanıcısı dosya yazmışlardır.
 
 Renet'in modern sürümleri bunu şu şekilde düzeltir:
 
-- Depo başına sandbox çalışma alanını (`/mnt/rediacc/.interim/sandbox/<repo>/`) `rediacc` grubu ve set-group-ID biti (mod `2775`) ile oluşturur, böylece altına yazılan her dosya doğru grubu devralır.
-- Sandbox çalışma zamanı içinde `002` umask'ini uygular, böylece yeni dosyalar grup yazılabilir (`0664`/`0775`) olarak oluşturulur.
-- Başlatmada mevcut bir `.vscode-server/` alt ağacını normalize eder, böylece düzeltmeden önceki eski dosyalar otomatik olarak onarılır.
+- Depo başına sandbox çalışma alanı (`/mnt/rediacc/.interim/sandbox/<repo>/`) `rediacc` grubu ve set-group-ID biti (mod `2775`) ile oluşturma, böylece altında yazılan her dosya doğru grubu devralır.
+- Sandbox çalışma zamanı içinde umask `002` uygulama, böylece yeni dosyalar grup yazılabilir (`0664`/`0775`) oluşturulur.
+- Başlangıçta mevcut `.vscode-server/` alt ağacını normalleştirme, böylece düzeltmeden önceki eski dosyalar otomatik olarak onarılır.
 
-Yine de izin hatalarıyla karşılaşırsanız, normalize işleminin çalışması için makinedeki bir kabuktan `sudo systemctl restart rediacc-docker-<network-id>` komutuyla deponun Docker daemon'unu bir kez yeniden başlatın, ardından `rdc vscode connect` komutunu tekrar deneyin.
+Yine de izin hataları görürseniz, normalleştirme geçişinin çalışması için makinede bir kabuktan bir kez `sudo systemctl restart rediacc-docker-<network-id>` ile deponun Docker daemon'ını yeniden başlatın, ardından `rdc vscode connect`'i yeniden deneyin.
 
-## Renet yükseltmesinden sonra daemon başlatılamıyor
+## Renet Yükseltmesinden Sonra Daemon Başlamıyor
 
-Her başlatmadan önce `renet daemon start-foreground`, deponun yapılandırma dizinindeki `daemon.json` ve `containerd.toml` dosyalarını mevcut şablonlardan yeniden yazar, bu nedenle yapılandırması daha eski bir renet sürümüyle oluşturulmuş bir depo, yeni formatı otomatik olarak alır. Herhangi bir göç komutu çalıştırmanıza gerek yoktur ve systemd birimini manuel olarak yeniden oluşturmanız gerekmez. Yalnızca servisi yeniden başlatın:
+Her başlangıçtan önce, `renet daemon start-foreground` geçerli şablonlardan depo yapılandırma dizinindeki `daemon.json` ve `containerd.toml`'yi yeniden yazar, böylece yapılandırması eski bir renet sürümü tarafından oluşturulan bir depo otomatik olarak yeni biçimi alır. Herhangi bir göç komutu çalıştırmanız gerekmez ve systemd birimini manuel olarak yeniden oluşturmanız gerekmez. Hizmeti yeniden başlatmanız yeterli:
 
 ```bash
 sudo systemctl restart rediacc-docker-<network-id>
@@ -165,31 +165,31 @@ Birim hâlâ başarısız oluyorsa, belirli bir hata için günlüğü kontrol e
 sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 ```
 
-## Konteynerler Yanlış Docker Daemon'da Oluşturulmuş
+## Yanlış Docker Daemon'unda Oluşturulan Kapsayıcılar
 
-Konteynerleriniz deponun izole daemon'u yerine ana sistemin Docker daemon'unda görünüyorsa, en yaygın neden Rediaccfile içinde `sudo docker` kullanımıdır.
+Kapsayıcılarınız depo'nun izole daemon'u yerine ana bilgisayar sisteminin Docker daemon'unda görülürse, en yaygın neden Rediaccfile içinde `sudo docker` kullanmaktır.
 
-`sudo` ortam değişkenlerini sıfırlar, bu nedenle `DOCKER_HOST` kaybolur ve Docker varsayılan olarak sistem soketini (`/var/run/docker.sock`) kullanır. Rediacc bunu otomatik olarak engeller, ancak karşılaşırsanız:
+`sudo` ortam değişkenlerini sıfırlar, bu nedenle `DOCKER_HOST` kaybolur ve Docker sistem soketine varsayılan olur (`/var/run/docker.sock`). Rediacc bunu otomatik olarak engeller, ancak bununla karşılaşırsanız:
 
-- **`docker` komutunu doğrudan kullanın**, Rediaccfile fonksiyonları zaten yeterli yetkilerle çalışır
-- sudo kullanmanız gerekiyorsa, ortam değişkenlerini korumak için `sudo -E docker` kullanın
-- Rediaccfile dosyanızı `sudo docker` komutları için kontrol edin ve `sudo` kısmını kaldırın
+- **`docker`'ı doğrudan kullanın**, Rediaccfile işlevleri zaten yeterli ayrıcalıklarla çalışır
+- Sudo kullanmanız gerekiyorsa, ortam değişkenlerini korumak için `sudo -E docker` kullanın
+- Rediaccfile'ınızda herhangi bir `sudo docker` komutu olup olmadığını kontrol edin ve `sudo`'yu kaldırın
 
 ## Terminal Çalışmıyor
 
-`rdc term` bir terminal penceresi açamıyorsa:
+`rdc term` terminal penceresi açılamadığında:
 
 - Komutları doğrudan çalıştırmak için `-c` ile satır içi modu kullanın:
   ```bash
   rdc term connect -m server-1 -c "ls -la"
   ```
-- Satır içi modda sorun varsa `--external` ile harici terminali zorlayın
-- Linux'ta `gnome-terminal`, `xterm` veya başka bir terminal emülatörünün yüklü olduğundan emin olun
+- Satır içi mod sorunları varsa `--external` ile harici terminali zorlayın
+- Linux'ta, `gnome-terminal`, `xterm` veya başka bir terminal emulatörünün yüklü olduğundan emin olun
 
-## Tanılama Çalıştırma
+## Tanı Çalıştırın
 
 ```bash
 rdc doctor
 ```
 
-Bu komut ortamınızı, renet kurulumunu, yapılandırmayı ve kimlik doğrulama durumunu kontrol eder. Her kontrol, kısa bir açıklama ile birlikte OK, Warning veya Error durumunu bildirir.
+Bu, ortamınız, renet kurulumu, yapılandırması ve kimlik doğrulama durumunu kontrol eder. Her kontrol kısa bir açıklama ile OK, Uyarı veya Hata rapor eder.

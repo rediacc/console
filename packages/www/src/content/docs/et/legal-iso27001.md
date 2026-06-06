@@ -4,15 +4,15 @@ description: "Kuidas Rediacc vastab ISO 27001 infoturbe kontrollidele krüptimis
 category: "Legal"
 order: 5
 language: et
-sourceHash: "7c80000942b6196d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "52709a22c0b38178"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-ISO/IEC 27001 on infoturbe haldussüsteemide (ISMS) rahvusvaheline standard, mille on avaldanud Rahvusvaheline Standardiorganisatsioon (ISO) ja Rahvusvaheline Elektrotehnikakomisjon (IEC). Kehtiv versioon on ISO/IEC 27001:2022.
+Okei. ISO/IEC 27001:2022 on rahvusvaheline infoturbe haldussüsteemide standard. ISO/IEC on selle avaldanud ja tegemist on pika dokumendiga, mis käsitleb kontrolle krüptimise, juurdepääsuhalduse, juhtumitevastase reageerimise ja kümnete muude turvavaldkondade osas. Te kindlasti teate, mis see on. Ütlen siis otse: Rediacc ei käsitle kõiki selle standardi kontrolle ja me ei kavatse seda teeskella. Järgnev on aus kaardistus sellest, kuidas Rediacc sobib. Kehtiv versioon on ISO/IEC 27001:2022.
 
 Viide: [ISO/IEC 27001:2022](https://www.iso.org/standard/27001)
 
-Rediacc on üks komponent ISMS-i tehniliste kontrollide kihis. Alljärgnev tabel kaardistab Rediacc'i võimalused asjakohaste Lisa A kontrollvaldkondadega.
+Noh, Rediacc on üks komponent ISMS-i tehniliste kontrollide kihis. Alljärgnev tabel kaardistab Rediacc'i võimalused asjakohaste Lisa A kontrollvaldkondadega.
 
 ## Lisa A kontrollide kaardistamine
 
@@ -38,7 +38,7 @@ Rediacc'i hoidlamudel toetab varade inventuuri nõudeid loomulikul viisil:
 
 ## Muudatuste haldamine
 
-Hargi-testimise-edendamise töövoog on kooskõlas ISO 27001 muudatuste haldamise nõuetega:
+Siin läheb huvitavaks: hargi-testimise-edendamise töövoog on kooskõlas ISO 27001 muudatuste haldamise nõuetega:
 
 1. **Hark**: loo tootmiskeskkonnast eraldatud koopia
 2. **Testimine**: rakenda ja valideeri muudatused hargis

@@ -1,16 +1,16 @@
 ---
 title: "rdc vs renet"
-description: "Quando usar o rdc e quando usar o renet. Introdução à configuração de cada ferramenta."
+description: "Quando usar rdc e quando usar renet."
 category: "Concepts"
 order: 1
 language: pt
-sourceHash: "026a183f8a5f9dd4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2ccc8590bc6f67c6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # rdc vs renet
 
-O Rediacc tem dois binários. Veja quando usar cada um.
+O Rediacc fornece dois binários. Dois trabalhos, dois lugares. Eis qual é qual.
 
 | | rdc | renet |
 |---|-----|-------|
@@ -60,7 +60,7 @@ Só precisa de `renet` diretamente quando faz SSH para um servidor para:
 - Verificar internos do sistema não disponíveis através do `rdc`
 - Operações de recuperação de baixo nível
 
-Todos os comandos `renet` precisam de privilégios de root (`sudo`). Consulte a [Referência do Servidor](/pt/docs/server-reference) para a lista completa de comandos `renet`.
+Todos os comandos `renet` precisam de privilégios de root (`sudo`). O `rdc` não encapsula todos os subcomandos `renet`; para qualquer coisa não coberta, faça SSH e chame o `renet` diretamente. Consulte a [Referência do Servidor](/pt/docs/server-reference) para a lista completa de comandos `renet`.
 
 ## Experimental: `rdc ops` (VMs Locais)
 

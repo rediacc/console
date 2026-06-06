@@ -1,12 +1,14 @@
 ---
 title: Panoramica sull'integrazione degli agenti AI
-description: Come gli assistenti di programmazione AI come Claude Code, Cursor e Cline si integrano con l'infrastruttura Rediacc per il deployment e la gestione autonoma. È possibile iniziare subito.
+description: "Come Claude Code, Cursor e Cline gestiscono l'infrastruttura Rediacc tramite rdc: output JSON, introspezione degli agenti e guardrail di sicurezza."
 category: Guides
 order: 30
 language: it
+sourceHash: "0aa0c975030d4856"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Gli assistenti di programmazione AI possono gestire l'infrastruttura Rediacc in modo autonomo tramite la CLI `rdc`. Questa guida illustra gli approcci di integrazione e come iniziare.
+A dirla tutta, `rdc` è progettato con piena consapevolezza degli agenti. Claude Code, Cursor, Cline: qualsiasi assistente AI che invoca `rdc` in una subshell ottiene output JSON strutturato, errori leggibili dalla macchina e i guardrail che ti aspetteresti per la gestione autonoma dell'infrastruttura Rediacc. Ecco come funziona l'integrazione.
 
 ## Perché self-hosted e agenti AI
 
@@ -28,7 +30,7 @@ Il modo più rapido per iniziare. Copia il nostro [template AGENTS.md](/en/docs/
 - `.cursorrules` per Cursor
 - `.windsurfrules` per Windsurf
 
-Questo fornisce all'agente il contesto completo sui comandi disponibili, l'architettura e le convenzioni.
+Inseriscilo nel progetto e l'agente avrà il riferimento completo ai comandi, il contesto architetturale e le convenzioni necessarie per lavorare senza dover indovinare.
 
 ### 2. Pipeline di output JSON
 
@@ -86,7 +88,7 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 
 ## Sicurezza e guardrail
 
-La CLI tratta gli agenti AI diversamente dagli esseri umani alla tastiera. Le operazioni sensibili richiedono la prova di una conoscenza previa (il flag `--current`), i flussi con editor interattivo vengono rifiutati per impostazione predefinita e ogni rifiuto viene registrato nel log di audit. Il riferimento [Sicurezza e guardrail degli agenti AI](/en/docs/ai-agents-safety) descrive la tabella completa del firewall, il modello knowledge-gate, il scope-override `REDIACC_ALLOW_CONFIG_EDIT` e il log di audit con hash a catena.
+Va detto che la CLI non tratta gli agenti allo stesso modo di un essere umano alla tastiera. Le operazioni sensibili richiedono la prova di una conoscenza previa dello stato corrente (il flag `--current`), i flussi con editor interattivo vengono rifiutati per impostazione predefinita e ogni rifiuto viene registrato nel log di audit. Il riferimento [Sicurezza e guardrail degli agenti AI](/en/docs/ai-agents-safety) descrive la tabella completa del firewall, il modello knowledge-gate, il scope-override `REDIACC_ALLOW_CONFIG_EDIT` e il log di audit con hash a catena.
 
 ## Passi successivi
 
@@ -94,4 +96,4 @@ La CLI tratta gli agenti AI diversamente dagli esseri umani alla tastiera. Le op
 - [Guida alla configurazione di Claude Code](/en/docs/ai-agents-claude-code), configurazione passo-passo di Claude Code
 - [Guida alla configurazione di Cursor](/en/docs/ai-agents-cursor), integrazione con Cursor IDE
 - [Riferimento output JSON](/en/docs/ai-agents-json-output), documentazione completa dell'output JSON
-- [Template AGENTS.md](/en/docs/agents-md-template), template di configurazione dell'agente pronto all'uso
+- [Template AGENTS.md](/en/docs/agents-md-template), template di configurazione dell'agente pronto da copiare

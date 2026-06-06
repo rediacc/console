@@ -5,13 +5,13 @@ category: Reference
 subcategory: advanced
 order: 41
 language: tr
-sourceHash: "6ca18986dfd6e237"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2448559f0fcfc0e0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Git benzeri dallanma
 
-Rediacc depoları, kopyala-yaz fork'ları üzerine inşa edilmiş git benzeri sürümlemeyi destekler. Her değişmez fork bir **commit**'tir: bağlanmayı reddeden, bayt kararlı ve dondurulmuş bir görüntü. Dallar, bir commit'i işaret eden adlandırılmış referanslardır. `rdc repo checkout`, bir commit'i yeni bir yazılabilir çalışma fork'una reflink olarak klonlar; `rdc repo merge` ise canlı bir depoyu yerinde hiç değiştirmeden iki geçmiş çizgisini birleştirir.
+İşte zihinsel model: Rediacc, kopyala-yaz fork'larını git benzeri bir sürüm geçmişine dönüştürür. Her değişmez fork bir **commit**'tir: bayt kararlı, dondurulmuş ve bağlanmayı reddeden bir görüntü. Dallar, bir commit'i işaret eden adlandırılmış referanslardır. `rdc repo checkout`, bir commit'i reflink-klonlar ve yeni bir yazılabilir çalışma fork'una geri aktarır; `rdc repo merge` ise canlı bir depoyu yerinde hiç değiştirmeden iki geçmiş çizgisini birleştirir.
 
 Model iki depoya eşlenir. **Makine nesne deposudur**: commit'ler, veri deposunda yaşayan değişmez fork görüntüleridir. **CLI yapılandırması ref deposudur**: dal adları, geçerli `HEAD` ve reflog, makinede değil yerel yapılandırmanızda yaşar. Bu, git'in `.git/objects` ile `.git/refs` arasında kullandığı ayrımın aynısıdır.
 

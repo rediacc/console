@@ -792,7 +792,11 @@ function main(): void {
     console.log('Errors:');
     allErrors.forEach((e) => console.log(`  \u001B[31m\u2717\u001B[0m ${e}`));
     console.log('\nTo fix missing keys, run: npm run i18n:sync');
-    console.log('Untranslated strings need manual translation or AI assistance.\n');
+    console.log(
+      'Untranslated strings must be NATURALIZED (natural, idiomatic copy -- not literal/word-for-word).\n' +
+        'Use the pipeline: cd private/growth/i18n_pipeline && ./run.sh --lang <lang> --surface <surface>.\n' +
+        'See docs/i18n/CONVENTIONS.md.\n',
+    );
     process.exit(1);
   }
 

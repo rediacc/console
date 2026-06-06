@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: ru
-sourceHash: "73a4cb1d8c412531"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "14d013a82dbcbd4e"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Форк репозитория
 
-Это то, что меняет принцип работы. Клонируйте целую продакшен-среду (приложение, базу данных, конфигурационные файлы) за секунды. Любой размер. Без лишнего места на диске. Форкайте сколько угодно раз.
+Форкируйте целую продакшен-среду (приложение, базу данных, конфигурационные файлы) за секунды. Любой размер. Без лишнего места на диске. Форкируйте столько раз, сколько хотите.
 
 Девиз: **клонируй продакшен, ничего не сломай.**
 
@@ -47,7 +47,7 @@ echo "Hello from production" > index.html
 
 ![Sharing a folder link is the same speed regardless of the folder's size](/img/tutorials/tutorial-forking/slide-2.svg)
 
-Представьте, что вы делитесь ссылкой на папку. Ссылка одинакова, маленькая папка или огромная. Папка тяжёлая, ссылка лёгкая.
+Всё дело в btrfs reflinks. При форке создаётся новое дерево файловой системы, указывающее на те же блоки данных, что и родитель. При форке данные не копируются. Всё это просто метаданные, поэтому размер родителя никогда не влияет на скорость форка.
 
 ![1 GB, 100 GB, 1 TB. Same time, every time.](/img/tutorials/tutorial-forking/slide-3.svg)
 

@@ -1,18 +1,18 @@
 ---
-title: "Limitler ve Kotalar"
+title: Limitler ve Kotalar
 description: >-
   Rediacc depoları, hizmetleri, ağ yapılandırması ve depolamaya uygulanan
   limitler, maksimum değerler ve kotalar için başvuru kaynağı.
-category: "Reference"
+category: Reference
 order: 99
 language: tr
-sourceHash: "8f29c515be1b7fb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1d0e48ed1094dda6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Limitler ve Kotalar
 
-Bu sayfa, Rediacc dağıtımlarına uygulanan katı ve esnek limitleri listeler. Hangi tavanların var olduğunu ve hangilerinin olmadığını bilmek için kapasite planlaması yapmadan önce okuyun.
+Rediacc dağıtım limitleri. Üçü katıdır ve donanım eklenerek değiştirilemez: depo başına 61 hizmet sınırlaması (ağ adres alanı tahsisi), çekirdek 6.1 minimumu (CRIU gereksinimleri) ve Let's Encrypt'in kayıtlı alan adı başına haftalık 50 joker sertifika yayınlama sınırlaması. Diğer her şey esnek: donanım eklediğinizde hareket eder. Bir topolojiye geçmeden önce farkı bilin.
 
 ---
 
@@ -22,7 +22,7 @@ Her depo aynı anda çalışan en fazla **61 hizmeti** destekler.
 
 Bu, her depoya ayrılan ağ adres alanı tarafından belirlenen katı bir limittir. Her hizmet kendi özel IP adresini alır ve her deponun adres bloğu tam olarak 61 hizmet yuvası barındırır.
 
-Bu limite yaklaşıyorsanız, küçük hizmetleri birleştirin (örneğin, yardımcı konteynerları veya izleme ajanlarını kendi izolasyon sınırlarına sahip ayrı bir depoya taşıyın) veya tek bir uygulama içindeki bağımsız çalışan süreç sayısını azaltmak için yeniden yapılandırma yapın.
+Bakınız: bir depoda 61 hizmete ulaşmak genellikle Rediacc kısıtlaması değil, bir mimari sorunun göstergesidir. Çözüm, yardımcı konteynerları ve izleme ajanlarını kendi izolasyon sınırına sahip başka bir depoya taşımak veya uygulamanın kendisindeki bağımsız çalışan süreç sayısını azaltmaktır.
 
 ---
 
@@ -44,7 +44,7 @@ Her depoya, özel IP adres aralığını hesaplamak için kullanılan benzersiz 
 
 | Limit | Değer |
 |-------|-------|
-| Toplam kullanılabilir ağ kimlikleri | ~261.944 |
+| Toplam kullanılabilir ağ kimlikleri | ~261,944 |
 | Kapsam | Yapılandırma başına (yapılandırmadaki tüm makineler arasında paylaşılır) |
 
 Bir depo silindiğinde, ağ kimliği serbest bırakılır ve yeniden kullanılabilir hale gelir. Rediacc kimlikleri sıralı olarak atar ve yalnızca ileri sayaç tavana yaklaştığında serbest bırakılmış boşlukları tarar. Pratikte bu limite asla ulaşılmaz. Tek bir yapılandırmanın ömrü boyunca yüz binlerce depo oluşturmayı ve izlemeyi gerektirir.
@@ -136,7 +136,7 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 |-------|-------|
 | Depo başına yedekleme hedefleri | Sınırsız |
 | Eş zamanlı yedekleme görevleri | Depo başına 1 (eş zamanlı tetiklenirse görevler kuyruğa alınır) |
-| Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır. Yükleme hızını sınırlamak için `rdc config backup-strategy set --name <name> --bwlimit "6M"` kullanın |
+| Yedekleme sıklığı | Zorunlu minimum aralık yok; depolama bant genişliğinizle sınırlıdır. Yükleme hızını sınırlamak için `rdc config backup-strategy set --name <name> --bwlimit "6M"` kullanın (rclone `--bwlimit` sözdizimi: basit `6M`, yönlü `6M:off` veya zaman çizelgesi `08:00,3M;22:00,10M`) |
 | Saklama | Depolama sağlayıcınız (S3, Cloudflare R2 vb.) tarafından kontrol edilir. Rediacc saklama politikaları uygulamaz. |
 | Makineler arası yedekleme | Desteklenir; hedef makinede yeterli veri deposu alanı olmalıdır |
 

@@ -1,14 +1,17 @@
 ---
 title: KI-Agent-Sicherheit & Schutzmaßnahmen
-description: 'Wie Rediaccs CLI KI-Coding-Assistenten daran hindert, Geheimnisse preiszugeben, Anmeldedaten zu überschreiben oder Berechtigungen zu eskalieren. Wissens-Gates, Schwärzung, abstammungsverifizierte Überschreibungen und ein hash-verkettetes Audit-Log.'
+description: >-
+  Wie Rediaccs CLI KI-Coding-Assistenten daran hindert, Geheimnisse preiszugeben,
+  Anmeldedaten zu überschreiben oder Berechtigungen zu eskalieren. Wissens-Gates,
+  Schwärzung, abstammungsverifizierte Überschreibungen und ein hash-verkettetes Audit-Log.
 category: Concepts
 order: 35
 language: de
-sourceHash: "43f8eb06d0f5f7a1"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "ae23c9bc851ecfcd"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Wenn Claude Code, Cursor, Gemini CLI, Copilot CLI oder ein anderer KI-Coding-Assistent `rdc` steuert, behandelt die CLI ihn anders als einen Menschen an der Tastatur. Diese Seite erklärt, was der Agent tun kann, was er nicht tun kann, und wie die Schutzmaßnahmen auch dann greifen, wenn der Agent versucht, sie zu umgehen.
+Sie setzen einen KI-Coding-Assistenten auf Ihre Infrastruktur an. Wenn Claude Code, Cursor, Gemini CLI, Copilot CLI oder etwas Ähnliches `rdc` steuert, erkennt die CLI das und wendet einen anderen Regelsatz an als bei einem Menschen an der Tastatur. Diese Seite erklärt, was der Agent tun kann, was er nicht tun kann, und wie die Schutzmaßnahmen auch dann greifen, wenn der Agent versucht, sie zu umgehen.
 
 ## Kurzreferenz: was Agents können und nicht können
 
@@ -42,19 +45,44 @@ Die Erkennung läuft einmal pro Prozess und wird gecacht. Sie kann nicht deaktiv
 
 ## Das Wissens-Gate-Modell
 
-Sensible Mutationen folgen der `passwd(1)`-Konvention: Um ein Geheimnis zu ändern, muss man beweisen, dass man es bereits kannte.
+Sensible Mutationen folgen der `passwd(1)`-Konvention: Um ein Geheimnis zu ändern, muss man beweisen, dass man es bereits kannte. **Symmetrisch für Menschen und Agents**. Beide durchlaufen dasselbe Gate. Es gibt keinen „Ich sitze an der Tastatur"-Bypass.
 
 - Sie wollen ein API-Token, das unter `/credentials/cfDnsApiToken` gespeichert ist, rotieren?
 - Die CLI fragt: „Was ist der aktuelle Wert?"
-- Der Agent gibt den Klartext über `--current "$OLD"` an. Die CLI hasht `$OLD` mit SHA-256 und vergleicht ihn mit dem Digest des aktuell gespeicherten Werts. Übereinstimmung → Schreibvorgang wird durchgeführt. Abweichung → verweigert, protokolliert.
+- Der Agent (oder Mensch) gibt den Klartext über `--current "$OLD"` an. Die CLI hasht `$OLD` mit SHA-256 und vergleicht ihn mit dem Digest des aktuell gespeicherten Werts. Übereinstimmung → Schreibvorgang wird durchgeführt. Abweichung → verweigert, protokolliert.
+- Um ohne Verifizierung des vorherigen Werts zu rotieren, übergeben Sie `--rotate-secret` (schließt sich mit `--current` gegenseitig aus). Dies wird explizit als Rotation protokolliert.
 
-Das Modell ist einfach, schließt aber drei Angriffsflächen:
+Das Modell schließt drei Angriffsflächen:
 
 1. **Stille Rotation**: Ein Agent ohne vorherigen Zugriff auf `$OLD` kann ihn nicht durch einen eigenen Wert ersetzen.
 2. **Exfiltration durch Sondierung**: Die Digest-Antwort enthält niemals Klartext; selbst ein kompromittiertes Audit-Log zeigt `expected abc12345…, got deadbeef…`, nicht die zugrunde liegenden Werte.
-3. **Versehentliches Überschreiben der Benutzerkonfiguration**: Erfordert bei jedem Mal ein explizites `--current`; kein automatisches Überschreiben bei `set`.
+3. **Versehentliches Überschreiben der Produktionskonfiguration**: erfordert bei jedem Mal ein explizites `--current`, sogar an einem TTY. Deckt den Fehler „Ich wollte STRIPE_TEST setzen, bin aber in der Prod-Shell" auf.
 
-### Beispiel
+### Strukturierte Next-Action-Hinweise
+
+Wenn die Vorbedingung nicht erfüllt wird, enthält der JSON-Envelope (`--output json`) ein strukturiertes `errors[].next`-Feld, das Agents genau mitteilt, was sie dem Menschen vorschlagen sollen:
+
+```json
+{
+  "errors": [{
+    "code": "PRECONDITION_MISMATCH",
+    "message": "...",
+    "next": {
+      "summary": "Provide the current value or acknowledge rotation.",
+      "options": [
+        { "description": "Re-read current digest, then retry with --current",
+          "run": "rdc repo secret get --name mail --key STRIPE_KEY" },
+        { "description": "Skip the precondition (rotation, audited)",
+          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret" }
+      ]
+    }
+  }]
+}
+```
+
+**Agents sollten `next.options[].run` wortgenau an den Menschen weitergeben, anstatt eigene Befehle zu erfinden.** Das vermeidet das Fehlermuster, bei dem ein Agent einen nicht existierenden Befehl erfindet, und hält den Operator über die tatsächliche Aktion in der Kontrolle.
+
+### Konkretes Beispiel
 
 ```bash
 # Den kurzen Digest des Schwärzungs-Stubs abrufen (sicher für Agents).
@@ -115,7 +143,7 @@ Diese Datei existiert auf macOS oder Windows nicht. Ohne Möglichkeit, die Legit
 
 > The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
 
-In der Praxis haben Nicht-Linux-Benutzer keinen Notausstieg aus dem Fork-First-Workflow. Das ist beabsichtigt. Agents werden durch eine Sandbox geschoben, hinter die sie nicht greifen können, unabhängig davon, wie sie aufgefordert wurden. Führen Sie Ihren Agent in WSL, einem Linux-Container oder einer Linux-VM aus, wenn Sie die Überschreibung benötigen; andernfalls arbeiten Sie auf einem Fork.
+Nicht-Linux-Benutzer haben keinen Notausstieg aus dem Fork-First-Workflow. Das ist beabsichtigt. Es gibt keine Möglichkeit für einen Agent, die Sandbox zu umgehen, unabhängig davon, wie er aufgefordert wurde. Führen Sie Ihren Agent in WSL, einem Linux-Container oder einer Linux-VM aus, wenn Sie die Überschreibung benötigen; andernfalls arbeiten Sie auf einem Fork.
 
 ## Audit-Log
 
@@ -161,9 +189,9 @@ Das Log ist sicher für Sicherheitsprüfer oder als Anhang an einen Fehlerberich
 
 Die Agent-Schutzmaßnahmen sind **verhaltensbasiert, nicht kryptografisch**. Ein entschlossener oder gesteuerter Agent, der unter derselben UID wie die Konfigurationsdatei läuft, kann immer `cat ~/.config/rediacc/rediacc.json` ausführen und den Klartext lesen, da die Datei vom Prozess lesbar ist.
 
-Für echte kryptografische Durchsetzung verwenden Sie den [verschlüsselten Config-Speicher](/de/docs/config-storage): Geheimnisse liegen serverseitig, jedes sensible Feld trägt eine Feld-spezifische HMAC-Bindung, und der Account-Worker verweigert Schreibvorgänge, deren `--current`-Vorbedingung nicht mit dem gespeicherten Hash übereinstimmt. Der Server sieht niemals den Klartext: Zero-Knowledge: aber er erzwingt das Gate.
+Für echte kryptografische Durchsetzung verwenden Sie den [verschlüsselten Config-Speicher](/de/docs/config-storage): Geheimnisse liegen serverseitig, jedes sensible Feld trägt eine feldspezifische HMAC-Bindung, und der Account-Worker verweigert Schreibvorgänge, deren `--current`-Vorbedingung nicht mit dem gespeicherten Hash übereinstimmt. Der Server sieht niemals den Klartext (Zero-Knowledge), erzwingt aber das Gate.
 
-Der lokale Datei-Pfad ist „einfacher Weg ist sicher". Der Remote-Store-Pfad ist „schwieriger Weg ist auch schwierig".
+Der lokale Dateipfad: einfacher Weg ist sicher. Der Remote-Store-Pfad: der Umgehungsweg ist kryptografisch ebenfalls schwierig.
 
 ## Was Rediacc nicht isoliert
 
@@ -175,16 +203,19 @@ Dies ist die Linie der gemeinsamen Verantwortung:
 
 | Grenze | Eigentümer |
 |---|---|
-| Repository-Daten, Mount-Namespace, Docker-Geltungsbereich, Agent-Schutzmaßnahmen, Audit-Log | Rediacc |
-| Wirkungsbereich externer Dienste (Stripe, AWS, Railway, GitHub, etc.) | Repository-Entwickler |
+| Repository-Daten, Mount-Namespace, Docker-Geltungsbereich, Agent-Schutzmaßnahmen, Audit-Log, Deploy-Zeit-Geheimnisinjektion | Rediacc |
+| Anwendungscode, der diese Geheimnisse verwendet, und alle ins Image eingebackenen Anmeldedaten | Repository-Entwickler |
 
-Drei Muster schließen die Lücke auf der Entwicklerseite:
+Die primäre Gegenmaßnahme ist bereits eingebaut: **[Repository-Geheimnisse](/de/docs/repositories#secrets)** werden in einer separaten Ebene vom verschlüsselten Repository-Image gespeichert und nicht über die Fork-Grenze hinweg kopiert. Die Container eines Forks starten mit einer leeren Secrets-Map und identifizieren sich gegenüber externen Diensten als ein anderes Subjekt als das übergeordnete Repository. Setzen Sie sie mit `rdc repo secret set` (env-Modus für Compose-Interpolation, file-Modus für tmpfs-`secrets:`-Blöcke). Das Mutations-Gate ist symmetrisch. Menschen und Agents müssen gleichermaßen `--current` (passwd-ähnliche Vorbedingung) oder `--rotate-secret` (protokollierte Rotation) angeben, um einen bestehenden Wert zu überschreiben oder zu löschen.
 
-1. **Speichern Sie Produktions-Anmeldedaten externer Dienste überhaupt nicht im Repository.** Holen Sie sie beim Start des Containers von einem externen Secrets-Manager (HashiCorp Vault, AWS Secrets Manager, 1Password Connect) ab. Die Container des Forks holen per Design Sandbox-Anmeldedaten ab, weil sie sich anders identifizieren.
-2. **Entfernen oder tauschen Sie Anmeldedaten zur Fork-Zeit über den Rediaccfile-Hook `up()`.** Das `up()` eines Forks läuft gegen eine andere Repository-GUID als das übergeordnete. Erkennen Sie das, schreiben Sie dann `.env` mit Sandbox-Werten um, stellen Sie ein Stripe-Sandbox-Konto pro Fork bereit, lassen Sie Datenbankverbindungszeichenfolgen auf eine Testinstanz pro Fork zeigen und so weiter. Siehe [Services](/de/docs/services) für die Lifecycle-Hook-Referenz.
-3. **Beschränken Sie das ausgehende Netzwerk des Forks mit eBPF-Egress-Filterung**, sodass der Fork nur Localhost und explizite Sandbox-Endpunkte erreichen kann. Rediaccs Pro-Repository-Netzwerkisolation ist die Grundlage; Egress-Allowlists pro Fork sind heute noch nicht eingebaut, aber der Weg ist offen.
+**Cross-Repository-Isolation ist durchgesetzt.** Eine böswillige oder fehlerhafte Compose-Datei in Repository B kann nicht auf das Secrets-Verzeichnis von Repository A verweisen. Renets Compose-Validator lehnt jeden `secrets: file:`, `configs: file:` oder `env_file:`-Pfad hart ab, der außerhalb des `${REDIACC_NETWORK_ID}`-Verzeichnisses des aktuellen Repositories liegt, und diese Ablehnung ist durch `--unsafe` NICHT überschreibbar. Defense-in-Depth: Die Landlock-Sandbox um den Rediaccfile-Bash-Subprozess begrenzt Dateisystem-Lesevorgänge ausschließlich auf das Secrets-Verzeichnis des aktuellen Netzwerks, sodass ein `cat /var/run/rediacc/secrets/<other>/X` aus einer böswilligen Rediaccfile auf Kernel-Ebene mit EACCES fehlschlägt.
 
-Rediacc kümmert sich um die Infrastrukturhälfte der Agent-Sicherheit. Die Hälfte für externe Dienste lebt in Ihrem Rediaccfile.
+Zwei weitere Muster schließen Randfälle:
+
+1. **Keine Produktions-Anmeldedaten direkt im Repository-Dateisystem ablegen.** Eine ins Image eingecheckte `.env`-Datei oder Anmeldedaten, die während `up()` in ein Volume geschrieben wurden, werden in den Fork reflinkt. Das Per-Repository-Secrets-Feature schützt nur Werte, die in der Secrets-Ebene liegen. Es kann keine Bytes, die bereits im LUKS-Image existieren, nachträglich schützen. Bei bestehenden Repositories mit eingecheckten `.env`-Dateien müssen diese manuell in Repository-Geheimnisse überführt werden.
+2. **Das ausgehende Netzwerk des Forks mit eBPF-Egress-Filterung einschränken**, sodass der Fork nur Localhost und explizite Sandbox-Endpunkte erreichen kann. Rediaccs Pro-Repository-Netzwerkisolation ist die Grundlage; Egress-Allowlists pro Fork sind heute noch nicht eingebaut, aber der Weg ist offen.
+
+Rediacc übernimmt die Deploy-Zeit-Injektion, die Cross-Fork-Isolation und die Cross-Repository-Isolation. Die Hälfte „Nichts ins Image einbacken" liegt bei Ihnen.
 
 ## Schnellrezepte
 

@@ -211,7 +211,7 @@ rdc repo delete --name my-app -m server-1
 
 ## Migrate Repository
 
-Live-migrate a repository from one machine to another with minimal downtime.
+Live-migrate a repository from one machine to another. The only downtime is the final delta-sync phase: typically seconds to low minutes depending on write rate at cutover.
 
 ```bash
 rdc repo migrate --name my-app --from server-1 --to server-2

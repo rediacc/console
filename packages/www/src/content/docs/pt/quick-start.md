@@ -4,13 +4,13 @@ description: Coloque um serviço em contentor a funcionar no seu servidor em min
 category: Guides
 order: -1
 language: pt
-sourceHash: "15b3c42682a05678"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2047fd1ce3a47944"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Início Rápido
 
-Implante um ambiente de contentores encriptado e isolado no seu próprio servidor. Sem contas na nuvem nem dependências SaaS. Tudo corre em hardware que controla.
+Instale o Rediacc no seu próprio servidor. Ambientes de contentores encriptados e isolados, sem contas na nuvem, sem dependências SaaS. Hardware seu, controlo seu.
 
 ---
 
@@ -20,7 +20,7 @@ Implante um ambiente de contentores encriptado e isolado no seu próprio servido
 
 Um repositório é um único ficheiro encriptado em disco. Mova-o, faça backup, crie um fork. É apenas um ficheiro. Quando montado, torna-se uma pasta com um daemon Docker dedicado e os dados da sua aplicação no interior.
 
-Pense num repositório como uma pen USB: ligue-a a qualquer máquina e as aplicações e dados são montados, prontos a correr. Mova-o entre máquinas ou fornecedores de nuvem sem reconstruir nada. Ligue e Execute.
+Pense num repositório como uma pen USB: ligue-a a qualquer máquina e as aplicações e dados são montados, prontos a correr. Mova-o entre máquinas ou fornecedores de nuvem sem reconstruir nada.
 
 **Duas ferramentas, dois papéis:**
 
@@ -97,7 +97,7 @@ rdc repo template list                                        # Mostrar modelos 
 rdc repo template apply --name app-postgres -m my-server -r my-app  # Implementar docker-compose.yml + Rediaccfile
 ```
 
-Os modelos fornecem um `docker-compose.yml`, um `Rediaccfile` e ficheiros de suporte. Sem um modelo (ou o seu próprio ficheiro compose), não há nada para iniciar.
+Os modelos fornecem um `docker-compose.yml`, um `Rediaccfile` e ficheiros de suporte. Sem um modelo (ou o seu próprio ficheiro compose), não há nada para iniciar. Utilize o modelo incorporado para o seu primeiro repositório. É o caminho mais rápido para ver o fluxo de trabalho completo de ponta a ponta.
 
 ### 3. Iniciar o Repositório
 

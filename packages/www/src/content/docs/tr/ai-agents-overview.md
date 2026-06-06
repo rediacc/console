@@ -1,17 +1,18 @@
 ---
 title: AI Ajan Entegrasyonuna Genel Bakış
-description: Claude Code, Cursor ve Cline gibi AI kodlama asistanlarının otonom dağıtım ve yönetim için Rediacc altyapısıyla nasıl entegre olduğu.
+description: "Claude Code, Cursor ve Cline'ın rdc aracılığıyla Rediacc altyapısını nasıl yönettiği: JSON çıktısı, ajan iç gözlemi ve güvenlik koruyucuları."
 category: Guides
 order: 30
 language: tr
-sourceHash: "7789f1e26755c779"
+sourceHash: "0aa0c975030d4856"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-AI kodlama asistanları, `rdc` CLI aracılığıyla Rediacc altyapısını otonom olarak yönetebilir. Bu kılavuz entegrasyon yaklaşımlarını ve nasıl başlayacağınızı kapsar.
+Açıkçası, `rdc` tasarım gereği ajan bilinçlidir. Claude Code, Cursor, Cline: bir alt kabukta `rdc` çağıran herhangi bir AI asistanı yapılandırılmış JSON çıktısı, makine tarafından okunabilir hatalar ve otonom Rediacc altyapı yönetimi için isteyeceğiniz güvenlik koruyucularını elde eder. Entegrasyonun nasıl çalıştığına bakalım.
 
 ## Neden Self-Hosted + AI Ajanları
 
-Rediacc'ın mimarisi doğal olarak ajan dostudur:
+Rediacc'ın mimarisi ajanlar için oldukça uygun çalışır:
 
 - **CLI öncelikli**: Her işlem bir `rdc` komutudur, GUI gerekmez
 - **SSH tabanlı**: Ajanların eğitim verilerinden en iyi bildiği protokol
@@ -29,7 +30,7 @@ Başlamanın en hızlı yolu. [AGENTS.md şablonumuzu](/tr/docs/agents-md-templa
 - Cursor için `.cursorrules`
 - Windsurf için `.windsurfrules`
 
-Bu, ajana mevcut komutlar, mimari ve kurallar hakkında tam bağlam sağlar.
+Dosyayı yerleştirin; ajan tahmin etmek zorunda kalmadan çalışabilmek için ihtiyaç duyduğu tam komut referansına, mimari bağlama ve kurallara sahip olur.
 
 ### 2. JSON Çıktı Hattı
 
@@ -85,8 +86,13 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 | `--fields name,status` | Çıktıyı belirli alanlarla sınırla |
 | `--dry-run` | Yıkıcı işlemleri çalıştırmadan önizle |
 
+## Güvenlik ve Koruyucular
+
+CLI, ajanları terminaldeki bir kullanıcıyla aynı şekilde ele almaz. Hassas işlemlerin gerçekleştirilebilmesi için mevcut durumu önceden bildiğinizin kanıtlanması gerekir (`--current` bayrağı), etkileşimli editör akışları varsayılan olarak reddedilir ve her red işlemi denetim günlüğüne kaydedilir. [AI Ajan Güvenliği ve Koruyucular](/tr/docs/ai-agents-safety) referansı tam güvenlik duvarı tablosunu, bilgi geçidi modelini, `REDIACC_ALLOW_CONFIG_EDIT` kapsam geçersiz kılma özelliğini ve karma zincirli denetim günlüğünü kapsar.
+
 ## Sonraki Adımlar
 
+- [AI Ajan Güvenliği ve Koruyucular](/tr/docs/ai-agents-safety), Ajanların yapabilecekleri ve yapamayacakları, bilgi geçidi, denetim günlüğü
 - [Claude Code Kurulum Kılavuzu](/tr/docs/ai-agents-claude-code), Adım adım Claude Code yapılandırması
 - [Cursor Kurulum Kılavuzu](/tr/docs/ai-agents-cursor), Cursor IDE entegrasyonu
 - [JSON Çıktı Referansı](/tr/docs/ai-agents-json-output), Eksiksiz JSON çıktı belgeleri

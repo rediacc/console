@@ -6,7 +6,7 @@ order: 32
 language: en
 ---
 
-Cursor integrates with Rediacc through terminal commands and the `.cursorrules` configuration file.
+Short version: `.cursorrules` loads Rediacc context into Cursor's AI; the terminal lets it run `rdc` commands against your actual machines.
 
 ## Quick Setup
 
@@ -14,7 +14,7 @@ Cursor integrates with Rediacc through terminal commands and the `.cursorrules` 
 2. Copy the [AGENTS.md template](/en/docs/agents-md-template) to your project root as `.cursorrules`
 3. Open the project in Cursor
 
-Cursor reads `.cursorrules` on startup and uses it as context for AI-assisted development.
+Cursor reads `.cursorrules` at startup. Here's the thing: context window limits apply, so keep the file focused on your actual machines and repos rather than generic boilerplate.
 
 ## .cursorrules Configuration
 

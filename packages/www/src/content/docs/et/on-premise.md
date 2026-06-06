@@ -4,8 +4,8 @@ description: "Konto-serveri ja CLI jaotuse käitamine oma infrastruktuuris."
 category: "Guides"
 order: 5
 language: et
-sourceHash: "c8c9aceeeeea1411"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "eea76db2d612133f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 Rediacc saab töötada täielikult sinu enda infrastruktuuris. Eraldiseisev Dockeri pilt sisaldab konto-serverit, veebiportaali, turunduslehte ja CLI jaotuse lõpp-punkti. Rediacc hostitud teenustele pole väliseid sõltuvusi.
@@ -33,7 +33,7 @@ Pilt pakub:
 
 ## CLI paigaldamine oma serverist
 
-Kasutajad saavad CLI paigaldada otse sinu kohapealsest serverist. Paigaldusskript tuvastab automaatselt uuenduskanali ja seadistab CLI, et see kontrolliks uuendusi sinu serverist.
+Paigalda CLI otse oma kohapealsest serverist. Paigaldusskript tuvastab automaatselt uuenduskanali ja seadistab CLI, et see kontrolliks uuendusi oma serverist.
 
 ```bash
 curl -fsSL https://account.example.com/install.sh | \
@@ -50,7 +50,7 @@ See üks käsk:
 
 ## CLI seadistamine nimega konfiguratsioonidega
 
-Kasutajatele, kes ühenduvad mitme serveriga (kohapealne, tootmine, edge), hoiavad nimega konfiguratsioonid iga keskkonna eraldatuna:
+Mitme serveriga (kohapealne, tootmine, edge) ühendamisel hoiavad nimega konfiguratsioonid iga keskkonna eraldatuna:
 
 ```bash
 # Loo konfiguratsioon sinu kohapealsele serverile
@@ -208,7 +208,7 @@ Kui sinu kohapealne server ei suuda ülesvoolu jõuda, kasuta käsitsi ülekande
 
 1. **Laadi alla uuendustaotlus kohapealsest administraatoriportaalist.** Kohapealne süsteemi root pärib `GET /onprem/renewal-request`. See tagastab JSON-manifesti, mis sisaldab kohaliku ahela otsa, delegeeritud avalikku võtit ja rikkumiskindlat Ed25519 allkirja sinu kohapealsest privaatvõtmest.
 2. **Kanna manifest ülesvoolu** USB-ketta, krüpteeritud meili või mis tahes riba-välise kanali kaudu. Manifest on väike (mõni KB) ja ei sisalda saladusi.
-3. **Töötle manifest ülesvoolu.** Org omanik/admin avab **/account/delegation-certs** → **Upload renewal request** → valib manifesti faili. Ülesvool kontrollib manifesti allkirja aktiivse serdi `delegatedPublicKey` vastu (tõestab, et see pärineb kohapeelse privaatvõtme hoidjalt), kontrollib anti-korduse (üle 7 päeva vanad manifestid lükatakse tagasi), seejärel väljastab uue serdi.
+3. **Töötle manifest ülesvoolu.** Org omanik/admin avab **/account/delegation-certs** > **Upload renewal request** > valib manifesti faili. Ülesvool kontrollib manifesti allkirja aktiivse serdi `delegatedPublicKey` vastu (tõestab, et see pärineb kohapeelse privaatvõtme hoidjalt), kontrollib anti-korduse (üle 7 päeva vanad manifestid lükatakse tagasi), seejärel väljastab uue serdi.
 4. **Laadi alla uus sert** ülesvoolu portaalist `.json` failina.
 5. **Kanna sert tagasi** kohapealsele.
 6. **Laadi üles kohapealsele** kohaliku administraatoriportaali kaudu (`POST /onprem/cert-upload`). Kohapealne kontrollib uut serti `UPSTREAM_PUBLIC_KEY` vastu ja kinnitab, et serdi `genesisSequence` seob endiselt kohaliku väljastamise raamatu ahela kirjega (järjestuse edasiliikumine transiidi ajal on toetatud -- ahel laieneb loomulikult).

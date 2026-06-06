@@ -1,11 +1,11 @@
 ---
 title: "백업 및 복원"
-description: "암호화된 레포지토리를 외부 스토리지에 백업하고, 백업에서 복원하고, 자동 백업을 예약하는 방법입니다."
+description: "암호화된 레포지토리를 rclone 호환 스토리지에 백업하고, 모든 머신에서 복원하고, 명명된 백업 전략 및 systemd 타이머로 자동화합니다."
 category: "Guides"
 order: 7
 language: ko
-sourceHash: "196ee7b649ac7371"
-sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
+sourceHash: "6ed9a5b950de8ddb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # 백업 및 복원

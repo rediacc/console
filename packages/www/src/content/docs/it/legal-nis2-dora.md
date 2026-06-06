@@ -1,11 +1,11 @@
 ---
 title: "NIS2 e DORA"
-description: "Come Rediacc risponde ai requisiti della direttiva UE NIS2 sulla cybersicurezza e ai requisiti di resilienza operativa digitale del regolamento DORA. La conformità è già integrata nell'architettura."
+description: "Come Rediacc risponde alla direttiva UE NIS2 sulla cybersicurezza e ai requisiti di resilienza operativa digitale di DORA."
 category: "Legal"
 order: 8
 language: it
-sourceHash: "a2078388f7ae1906"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "72a61496d38955d3"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 NIS2 e DORA sono regolamenti dell'UE che impongono requisiti di cybersicurezza e resilienza operativa alle organizzazioni che operano in infrastrutture critiche e nel settore finanziario. Entrambi sono entrati in vigore nel 2025 e si applicano in modo trasversale ai settori dell'UE.

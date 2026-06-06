@@ -1,16 +1,16 @@
 ---
-title: "Panoramica sulla conformità"
-description: "Come l'architettura self-hosted di Rediacc risponde ai requisiti di conformità in materia di protezione dei dati, privacy e sicurezza."
+title: "Cosa la conformità effettivamente richiede"
+description: "Rediacc gira sulla vostra infrastruttura. Controllate i vostri dati. Ecco come questo si allinea ai principali framework di conformità."
 category: "Legal"
 order: 0
 language: it
-sourceHash: "e20385eb9adfe180"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1e36a25c724f4185"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Rediacc gira interamente sulla propria infrastruttura. Durante le operazioni di clonazione dell'ambiente, backup e distribuzione, i dati non lasciano mai la macchina. L'organizzazione rimane sia titolare sia responsabile del trattamento dei dati. Nessun SaaS di terze parti gestisce i propri dati.
+Rediacc gira interamente sulla vostra infrastruttura. Durante la clonazione, i backup e gli deployment, i vostri dati rimangono sulle vostre macchine. Siete sia il titolare sia il responsabile del trattamento. Nessun SaaS di terze parti, nessun accesso esterno.
 
-Questa sezione mappa le capacità tecniche di Rediacc ai requisiti dei principali framework di conformità. Ogni pagina tratta un regolamento specifico con riferimenti a livello di articolo ai testi legali ufficiali.
+Questa sezione mappa le capacità tecniche di Rediacc ai requisiti dei principali framework di conformità. Ogni pagina analizza un regolamento specifico con riferimenti al testo legale ufficiale.
 
 ## Matrice di conformità
 
@@ -40,7 +40,7 @@ Per i dettagli su queste capacità, vedere [Architettura](/it/docs/architecture)
 
 ## Perché questo è rilevante
 
-I fallimenti in materia di conformità sono costosi. Questi casi sanzionatori hanno riguardato problemi che l'architettura di Rediacc previene strutturalmente:
+I fallimenti di conformità sono costosi. Davvero costosi. I casi qui di seguito mostrano i problemi che l'architettura di Rediacc previene strutturalmente:
 
 | Incidente | Sanzione | Cosa è andato storto |
 |----------|------|----------------|
@@ -54,4 +54,4 @@ I fallimenti in materia di conformità sono costosi. Questi casi sanzionatori ha
 
 ## Avviso importante
 
-Queste pagine descrivono le capacità tecniche di Rediacc in relazione ai requisiti di conformità. La conformità a qualsiasi regolamento richiede politiche organizzative, procedure, formazione del personale e potenzialmente audit di terze parti che esulano dall'ambito di qualsiasi singolo strumento. Si raccomanda di consultare il proprio team legale e di conformità per una guida specifica alla propria organizzazione.
+Queste pagine spiegano come l'architettura di Rediacc si allinea ai requisiti di conformità. Ma ecco la realtà: la conformità è più di un software. Avrete bisogno di politiche, procedure, formazione e probabilmente audit di terze parti. Rediacc gestisce la parte infrastrutturale. Per il resto lavorate con i vostri team legali e di conformità.

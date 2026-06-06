@@ -4,13 +4,13 @@ description: 使用模型上下文协议 (MCP) 服务器将 AI 代理连接到 R
 category: Guides
 order: 33
 language: zh
-sourceHash: "0b98f5640252bd23"
-sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
+sourceHash: "ce5f1392ebaa380b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 ## 概述
 
-`rdc mcp serve` 命令启动一个本地 MCP（模型上下文协议）服务器，AI 代理可以使用该服务器来管理您的基础设施。服务器使用 stdio 传输方式, , AI 代理将其作为子进程启动，并通过 JSON-RPC 进行通信。
+`rdc mcp serve` 命令启动一个本地 MCP（模型上下文协议）服务器，AI 代理可以使用该服务器管理您的基础设施。服务器使用 stdio 传输方式，代理将其作为子进程启动，并通过 JSON-RPC 进行通信。
 
 **前提条件：** 已安装并配置 `rdc`，且至少配置了一台机器。
 
@@ -56,33 +56,35 @@ sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 
 | 工具 | 描述 |
 |------|------|
-| `machine_query` | Get system info, containers, services, and resource usage for a machine |
-| `machine_containers` | List Docker containers with status, health, resource usage, labels, and auto-route domain |
-| `machine_services` | List rediacc-managed systemd services (name, state, sub-state, restart count, memory, owning repository) |
-| `machine_repos` | List deployed repositories (name, GUID, size, mount status, Docker state, container count, disk usage, modified date, Rediaccfile present) |
-| `machine_health` | Run health check on a machine (system, containers, services, storage) |
-| `machine_list` | List all configured machines |
-| `config_repositories` | List configured repositories with name-to-GUID mappings |
-| `config_show_infra` | Show infrastructure configuration for a machine (base domain, public IPs, TLS, Cloudflare zone) |
-| `config_providers` | List configured cloud providers for machine provisioning |
-| `agent_capabilities` | List all available rdc CLI commands with their arguments and options |
+| `machine_query` | 获取机器的系统信息、容器、服务和资源使用情况 |
+| `machine_containers` | 列出 Docker 容器的状态、健康状况、资源使用、标签和自动路由域名 |
+| `machine_services` | 列出 rediacc 管理的 systemd 服务（名称、状态、子状态、重启次数、内存、所属仓库） |
+| `machine_repos` | 列出已部署的仓库（名称、GUID、大小、挂载状态、Docker 状态、容器数量、磁盘用量、修改日期、Rediaccfile 是否存在） |
+| `machine_health` | 对机器执行健康检查（系统、容器、服务、存储） |
+| `machine_list` | 列出所有已配置的机器 |
+| `config_repositories` | 列出已配置的仓库及其名称与 GUID 的映射关系 |
+| `config_show_infra` | 显示机器的基础设施配置（基础域名、公网 IP、TLS、Cloudflare 区域） |
+| `config_providers` | 列出用于机器供应的已配置云服务商 |
+| `agent_capabilities` | 列出所有可用的 rdc CLI 命令及其参数和选项 |
+| `repo_secret_list` | 列出仓库的密钥名称和投递模式（不含值，不含摘要）。只读操作，安全无副作用。 |
+| `repo_secret_get` | 获取密钥的 SHA-256 摘要和投递模式。出于设计原因，永远不返回明文值。可用于验证密钥是否存在或已完成轮换。 |
 
 ### 写入工具（具有破坏性）
 
 | 工具 | 描述 |
 |------|------|
-| `repo_create` | Create a new encrypted repository on a machine |
-| `repo_up` | Deploy/update a repository (runs Rediaccfile up, starts containers). Use `mount` for first deploy or after pull |
-| `repo_down` | Stop repository containers. Does NOT unmount by default. Use `unmount` to also close the LUKS container |
-| `repo_delete` | Delete a repository (destroys containers, volumes, encrypted image). Credential archived for recovery |
-| `repo_fork` | Create a CoW fork with new GUID and networkId (fully independent copy, online forking supported) |
-| `backup_push` | Push repository backup to storage or another machine (same GUID -- backup/migration, not fork) |
-| `backup_pull` | Pull repository backup from storage or machine. After pull, deploy with `repo_up` (mount=true) |
-| `machine_provision` | Provision a new machine on a cloud provider using OpenTofu |
-| `machine_deprovision` | Destroy a cloud-provisioned machine and remove from config |
-| `config_add_provider` | Add a cloud provider configuration for machine provisioning |
-| `config_remove_provider` | Remove a cloud provider configuration |
-| `term_exec` | Execute a command on a remote machine via SSH |
+| `repo_create` | 在机器上创建新的加密仓库 |
+| `repo_up` | 部署/更新仓库（运行 Rediaccfile up，启动容器）。首次部署或拉取后使用 `mount` |
+| `repo_down` | 停止仓库容器。默认不卸载。使用 `unmount` 同时关闭 LUKS 容器 |
+| `repo_delete` | 删除仓库（销毁容器、卷和加密镜像）。凭据归档以供恢复 |
+| `repo_fork` | 创建具有新 GUID 和 networkId 的 CoW 分叉（完全独立的副本，支持在线分叉） |
+| `backup_push` | 将仓库备份推送到存储或其他机器（相同 GUID，备份/迁移，非分叉） |
+| `backup_pull` | 从存储或机器拉取仓库备份。拉取后使用 `repo_up`（mount=true）进行部署 |
+| `machine_provision` | 使用 OpenTofu 在云服务商上供应新机器 |
+| `machine_deprovision` | 销毁云供应的机器并从配置中移除 |
+| `config_add_provider` | 添加用于机器供应的云服务商配置 |
+| `config_remove_provider` | 移除云服务商配置 |
+| `term_exec` | 通过 SSH 在远程机器上执行命令 |
 
 ## 示例工作流
 
@@ -107,17 +109,19 @@ sourceCommit: "5bffc959d9ddd689bfe8e7815270d800d9dca662"
 |------|--------|------|
 | `--config <name>` | （默认配置） | 用于所有命令的命名配置 |
 | `--timeout <ms>` | `120000` | 默认命令超时时间（毫秒） |
-| `--allow-grand` | off | Allow destructive operations on grand (non-fork) repositories |
+| `--allow-grand` | off | 允许对 grand（非分叉）仓库执行破坏性操作 |
 
 ## 安全
 
-The MCP server enforces two layers of protection:
+MCP 服务器通过两层保护机制来保障安全：
 
-### Fork-only mode (default)
+### 仅分叉模式（默认）
 
-By default, the server runs in **fork-only mode**, write tools (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) can only operate on fork repositories. Grand (original) repositories are protected from agent modifications.
+默认情况下，服务器以**仅分叉模式**运行：写入工具（`repo_up`、`repo_down`、`repo_delete`、`backup_push`、`backup_pull`、`term_exec`）只能操作分叉仓库。代理无法修改 grand（原始）仓库，此为设计行为。
 
-To allow an agent to modify grand repos, start with `--allow-grand`:
+> **每个仓库的密钥管理仅限 CLI 操作，此为设计决策。** `repo_secret_set` 和 `repo_secret_unset` 有意**不**作为 MCP 工具暴露。写入操作需要 `--current <previous-value>` 前置条件（或使用 `--rotate-secret` 确认未经验证的轮换），该操作需要人工审核。如果代理需要建议密钥轮换，应先调用 `repo_secret_get` 确认摘要，然后通过 JSON 错误信封中 `next.options[].run` 字段的结构化输出，将面向操作人员的 CLI 命令传递给用户。完整模式请参阅 [AI 代理安全](/en/docs/ai-agents-safety#structured-next-action-hints)，用户操作指南请参阅[仓库 § 密钥](/en/docs/repositories#secrets)。
+
+要允许代理修改 grand 仓库，请使用 `--allow-grand` 启动：
 
 ```json
 {
@@ -132,14 +136,28 @@ To allow an agent to modify grand repos, start with `--allow-grand`:
 
 你也可以将环境变量 `REDIACC_ALLOW_GRAND_REPO` 设置为单个仓库名称、以逗号分隔的仓库名称列表（例如 `repo1,repo2,repo3`），或者设置为适用于所有仓库的 `*`。各条目周围的空白会被忽略，因此 `repo1, repo2` 也可以使用。机器级访问（例如不指定仓库的 `term connect -m <machine>`）仍然需要 `*`；仓库名称列表无法解锁该权限。
 
-### Kernel-level filesystem sandbox (Landlock)
+### 每仓库 SSH 密钥与服务端沙箱
 
-When `term_exec` runs a command on a repository, the command is wrapped with `renet sandbox-exec` on the remote machine. This applies Linux Landlock LSM restrictions at the kernel level:
+每个仓库都有独立的 SSH 密钥对。公钥部署到 `authorized_keys` 时带有 `command=` 前缀，强制所有 SSH 会话通过 `renet sandbox-gateway <repo-name>` 进行，这是一个服务端 ForceCommand，任何客户端（包括 VS Code）都无法绕过。
 
-- **Allowed**: the repository's own mount path, `/tmp`, system binaries (`/usr`, `/bin`, `/etc`), the repo's Docker socket
-- **Blocked**: other repositories' mount paths, home directory writes, arbitrary filesystem access
+**工作原理：**
+1. `rdc repo create` 或 `rdc repo fork` 为每个仓库生成独立的 ed25519 密钥对
+2. 公钥以 `command="renet sandbox-gateway <name>"` 形式部署到远端
+3. 使用该密钥的所有 SSH 连接均通过网关，网关会执行：
+   - **Landlock LSM**，内核级文件系统限制，作用范围为仓库的挂载路径
+   - **OverlayFS 家目录覆盖**，对 `$HOME` 的写入按仓库捕获，读取则穿透到真实家目录
+   - **每仓库 TMPDIR**，位于 `<datastore>/.interim/sandbox/<name>/tmp/`
+   - **Docker 访问**，通过仓库隔离的 Docker socket
+   - **权限降级**，切换到通用用户（`rediacc`）
+4. 仓库的 `.envrc` 会自动加载，用于 Docker 和环境配置
 
-This prevents lateral movement, even if an agent gains shell access to a fork, it cannot read or modify other repositories on the same machine. Machine-level SSH (without a repository) is not sandboxed.
+**允许读写（RW）**：仓库挂载路径、每仓库沙箱工作区、家目录（通过覆盖层）、Docker socket
+**允许只读（RO）**：系统路径（`/usr`、`/bin`、`/etc`、`/proc`、`/sys`）
+**阻止**：其他仓库的挂载路径、允许列表之外的系统文件
+
+**VS Code 集成**：每个仓库在 `<datastore>/.interim/sandbox/<name>/.vscode-server/` 目录下拥有独立的 VS Code 服务器实例。多个仓库可同时打开，各自拥有独立的沙箱环境，仓库之间不共享服务器。
+
+这可以防止横向移动。即使代理获得了对某个分叉的 shell 访问权限，也无法读取或修改同一机器上的其他仓库。机器级 SSH（不指定仓库）使用团队密钥，不受沙箱限制。
 
 ## 架构
 

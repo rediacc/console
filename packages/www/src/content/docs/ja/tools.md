@@ -1,31 +1,53 @@
 ---
-title: ツール
-description: ファイル同期、ターミナルアクセス、VS Code統合、アップデート、診断。
+title: "ツール"
+description: "ファイル同期、ターミナルアクセス、VS Code統合、CLIアップデート。"
 category: Guides
 order: 9
 language: ja
-sourceHash: "f350872720c99d58"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "4b3aebff5e82416f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # ツール
 
-Rediaccには、リモートリポジトリを操作するためのツールが組み込まれています：ファイル同期、SSHターミナル、VS Code統合、CLIアップデート。
+Rediaccは、マシンとリポジトリの日々の作業向けに4つのツールを備えています：SSH経由のファイル同期、SSHターミナル、VS Code統合、CLIの自己更新。これら4つはすべてSSH経由で動作し、リモート側にエージェントやデーモンは必要ありません。これらの操作用GUIが必要な場合は、このページは対象外です。
 
 ## ファイル同期 (sync)
 
-rsync over SSHを使用して、ワークステーションとリモートリポジトリ間でファイルを転送します。
+SSH経由のrsyncを使用して、ワークステーションとリモートリポジトリ間でファイルを転送します。
 
 ### ファイルのアップロード
 
+`--local`は1つまたは複数のパスを受け入れます。各パスはファイルまたはディレクトリです。ファイルは`<remote>/<basename>`に配置され、ディレクトリの内容は`<remote>/`にマージされます。単一のファイルの場合、`--remote-file`を使用してファイルの宛先パスを明示的に指定することをお勧めします。
+
 ```bash
+# ディレクトリ（内容がリモートにマージされます）
 rdc repo sync upload -m server-1 -r my-app --local ./src --remote /app/src
+
+# 単一ファイルをリモートディレクトリに配置（ベース名は保持される）
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote /app/conf
+
+# 単一ファイル、明示的な宛先パス
+rdc repo sync upload -m server-1 -r my-app --local ./config.yml --remote-file /app/conf/config.yml
+
+# 1つのコマンドで複数のソース
+rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote /app
 ```
+
+`--remote`と`--remote-file`は相互排他的です。`--remote-file`は、ファイルを指すちょうど1つの`--local`パスが必要です。
+
+`--mirror`はファイルソースと組み合わせることはできません。リモートディレクトリ内の関連ファイルが削除されてしまいます。
 
 ### ファイルのダウンロード
 
+ディレクトリの場合は`--remote`（デフォルト）を、単一ファイルの場合は`--remote-file`を使用します。この2つのフラグは相互排他的です。
+
 ```bash
+# ディレクトリ
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
+
+# 単一ファイル：--localは既存のディレクトリである必要があります
+rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
 ### 同期ステータスの確認
@@ -42,9 +64,9 @@ rdc repo sync status -m server-1 -r my-app
 | `-r, --repository <name>` | 対象リポジトリ |
 | `--local <paths...>` | 1つ以上のローカルファイル/ディレクトリパス（アップロード）またはローカル出力ディレクトリ（ダウンロード） |
 | `--remote <path>` | リモートディレクトリ（リポジトリマウントからの相対パス） |
-| `--remote-file <path>` | 単一のリモートファイル（ダウンロードのみ、`--remote` の代替） |
+| `--remote-file <path>` | 単一ファイルアップロード/ダウンロード用リモートファイルパス（`--remote`の代替） |
 | `--dry-run` | 転送せずに変更をプレビュー |
-| `--mirror` | ソースをデスティネーションにミラーリング（余分なファイルを削除） |
+| `--mirror` | ソースをデスティネーションにミラーリング、余分なファイルを削除（ディレクトリソースのみ） |
 | `--verify` | 転送後にチェックサムを検証 |
 | `--confirm` | 詳細ビューによるインタラクティブな確認 |
 | `--exclude <patterns...>` | ファイルパターンを除外 |
@@ -189,7 +211,7 @@ rdc update --status
 #### リリースチャンネル
 
 ```bash
-rdc update --channel edge      # 最新機能、頻繁に更新
-rdc update --channel stable    # 本番環境向けリリース（デフォルト）
+rdc update --channel edge      # 継続的にデプロイされる本番環境アップデート
+rdc update --channel stable    # エッジから7日間のテスト後にプロモート（デフォルト）
 rdc update --status            # 現在のチャンネルとバージョン情報を表示
 ```

@@ -1,25 +1,25 @@
 ---
 title: "نشر تطبيقك الأول"
-description: "انشر تطبيقًا في حاويات من قالب مدمج باستخدام rdc repo up."
+description: "شغّل تطبيقًا مُحزّمًا من قالب مدمج باستخدام rdc repo up."
 category: "Tutorials"
 subcategory: essentials
 order: 5
 language: ar
-sourceHash: "08bd8fbaffc53a06"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "a40a843238f17e9f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # نشر تطبيقك الأول
 
-لديك مستودع فارغ. تأتي `rdc` بقوالب مدمجة حتى تتمكن من تشغيل تطبيقات حقيقية دون كتابة `docker-compose` من الصفر. ثلاث خطوات: اختر قالبًا، طبّقه، شغّله.
+لديك مستودع فارغ. تأتي `rdc` بقوالب مدمجة حتى تتمكن من تشغيل تطبيقات حقيقية دون كتابة `docker-compose` من الصفر. اختر قالبًا، طبّقه، شغّله.
 
 ## شاهد الدرس التعليمي
 
 ![Tutorial: Deploying your first app](/assets/tutorials/tutorial-deploy-app.cast)
 
-## اختر . طبّق . شغّل
+## اختر، طبّق، شغّل
 
 ![Pick a template, apply it, run it](/img/tutorials/tutorial-deploy-app/slide-1.svg)
 
@@ -33,7 +33,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={2} />
 
-يقوم هذا بنسخ مجموعة من الملفات المُختبرة إلى المستودع.
+تم. يقوم هذا بنسخ ملفات القالب إلى المستودع.
 
 ## الخطوة 3: مراجعة ما تم إضافته
 
@@ -45,13 +45,13 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 <TutorialStep number={4} />
 
-تبدأ واجهة سطر الأوامر الحاويات، وتُوصّل المجلد المشفر، وتُعدّ Dockerd معزولًا لهذا المستودع. (إذا كنت بالفعل داخل صندوق الرمل الخاص بالمستودع عبر VS Code، فإن `renet dev up` هو بديل مكافئ داخل الصندوق.)
+تبدأ واجهة سطر الأوامر الحاويات، وتُهيّئ المجلد المشفر، وتُنشئ محرك Docker معزولًا لهذا المستودع. (إذا كنت بالفعل داخل صندوق الرمل الخاص بالمستودع عبر VS Code، فإن `renet dev up` هو بديل مكافئ داخل الصندوق.)
 
 ## الخطوة 5: التحقق
 
 <TutorialStep number={5} />
 
-يُدرج `docker ps` هنا حاويات هذا المستودع فقط. تمتلك المستودعات الأخرى على نفس الخادم محركات Docker خاصة بها وهي غير مرئية تمامًا من هنا.
+يُدرج `docker ps` هنا حاويات هذا المستودع فقط. تمتلك المستودعات الأخرى على نفس الخادم محركات Docker منفصلة، وهي غير مرئية تمامًا من هنا. هذا العزل هو الهدف: اختبر بحرية دون التأثير على الخدمات المجاورة.
 
 ---
 

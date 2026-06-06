@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 5
 language: de
-sourceHash: "1d227a06272a0050"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "74803e91ef07b03c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Regeln von Rediacc
@@ -135,13 +135,13 @@ Renet injiziert diese automatisch in jeden Container:
 
 ### Host-Sicherheitsrichtlinien nach Betriebssystem
 
-Auf allen fünf offiziell unterstützten Server-Betriebssystemen (siehe [Anforderungen](/en/docs/requirements)) verwendet der pro-Repo-Docker-Daemon und die darin laufenden Container **Standard-Container-Labels**. `rdc config machine setup` installiert keine eigene SELinux-Richtlinie und kein eigenes AppArmor-Profil.
+Auf allen fünf offiziell unterstützten Server-Betriebssystemen (siehe [Anforderungen](/en/docs/requirements)) verwendet der pro-Repo-Docker-Daemon und die darin laufenden Container **Standard-Container-Labels**. `rdc config machine setup` installiert keine eigene SELinux-Richtlinie und kein eigenes AppArmor-Profil. Das ist beabsichtigt: Der Kompromiss besteht darin, dass Container-Prozesse unter der Standard-Label-Richtlinie des Host-Betriebssystems laufen, nicht unter einem Rediacc-spezifischen Isolierungsprofil. Wenn Ihr Threat-Modell obligatorische Zugriffskontrolle auf der Container-Ebene erfordert, konfigurieren Sie diese auf Host-Ebene vor dem Deployment.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0**: AppArmor ist standardmäßig aktiviert. Container laufen unter dem Standard-Docker-Container-Profil. Die einzige Ausnahme ist CRIU (`apparmor=unconfined` für Container mit `rediacc.checkpoint=true`, wie oben beschrieben).
 - **Fedora 43 / Oracle Linux 10**: SELinux läuft standardmäßig im Enforcing-Modus. Container erhalten den Standard-`container_t`-Kontext. Es ist keine zusätzliche Richtlinieninstallation erforderlich. Wenn ein Setup-Schritt mit AVC-Verweigerungen fehlschlägt, lesen Sie [Fehlerbehebung: SELinux-Verweigerungen](/en/docs/troubleshooting).
 - **Debian 13**: AppArmor ist verfügbar, wird aber nicht standardmäßig auf allen Domains durchgesetzt. Container verwenden weiterhin das Docker-Container-Profil.
 
-Es ist kein betriebssystemspezifisches Sicherheitspositions-Flag erforderlich; `rdc` und `renet` erkennen die laufende Umgebung und liefern auf allen fünf Distributionen dieselbe pro-Repo-Isolation.
+Fazit: `rdc` und `renet` erkennen das laufende Betriebssystem automatisch und liefern auf allen fünf unterstützten Distributionen dieselbe pro-Repo-Isolation. Kein betriebssystemspezifisches Sicherheitspositions-Flag erforderlich.
 
 ## Sicherheit
 

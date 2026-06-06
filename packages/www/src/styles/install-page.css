@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--section-padding);
+  padding: calc(var(--nav-top-offset) + var(--space-6)) 0 var(--space-20);
   text-align: center;
 }
 

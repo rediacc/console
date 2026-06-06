@@ -382,6 +382,20 @@ jobs:
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         run: npm run check:ci-tutorial-parity
 
+  quality-locale-tutorial-assets:
+    name: Locale Tutorial Assets
+    runs-on: ubuntu-slim
+    if: inputs.is_bot != 'true'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: .ci/scripts/setup/install-deps.sh
+      - name: Validate per-locale tutorial video assets exist
+        run: npm run check:ci-locale-tutorial-assets
+
   quality-cli-examples:
     name: CLI Examples
     runs-on: ubuntu-slim
