@@ -4,12 +4,13 @@ description: "Cómo funciona el inicio automático, el reconciliador periódico 
 category: "Guides"
 order: 5
 language: es
-sourceHash: "8e98fcd141e27da6"
+sourceHash: "00a1796a0b0d20da"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Inicio Automático y Recuperación
 
-Esta página explica cómo los repositorios se montan e inician automáticamente al arrancar, y cómo el reconciliador periódico vuelve a poner en marcha un repositorio si se cae después de que el servidor ya está en funcionamiento.
+Los repositorios con inicio automático habilitado se inician solos en el arranque. Si uno se cae después, el reconciliador periódico lo vuelve a poner en marcha. Sin avisos. Sin reinicio manual.
 
 Para saber cómo habilitar o deshabilitar el inicio automático en un repositorio, consulte [Servicios: Inicio automático en el arranque](/es/docs/services#autostart-on-boot).
 

@@ -87,8 +87,8 @@ export const crossLanguageConsistency = {
       },
     ],
     messages: {
-      missingInLanguage: 'Key "{{key}}" exists in {{source}} but is missing in {{language}}.',
-      extraInLanguage: 'Key "{{key}}" exists in {{language}} but not in {{source}} (source of truth).',
+      missingInLanguage: 'Key "{{key}}" exists in {{source}} but is missing in {{language}}. See docs/i18n/CONVENTIONS.md.',
+      extraInLanguage: 'Key "{{key}}" exists in {{language}} but not in {{source}} (source of truth). See docs/i18n/CONVENTIONS.md.',
     },
   },
 

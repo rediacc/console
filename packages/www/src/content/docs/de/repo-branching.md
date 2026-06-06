@@ -5,13 +5,13 @@ category: Reference
 subcategory: advanced
 order: 41
 language: de
-sourceHash: "6ca18986dfd6e237"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2448559f0fcfc0e0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Git-ähnliches Branching
 
-Rediacc-Repositories unterstützen git-ähnliche Versionierung, die auf Copy-on-Write-Forks aufbaut. Jeder unveränderliche Fork ist ein **Commit**: ein bytegenau eingefrorenes Abbild, das sich nicht einbinden lässt. Branches sind benannte Referenzen, die auf einen Commit zeigen. `rdc repo checkout` klont einen Commit per Reflink zurück in einen beschreibbaren Arbeitsfork, und `rdc repo merge` kombiniert zwei Verlaufslinien, ohne jemals ein aktives Repository direkt zu verändern.
+Hier ist das Denkmuster: Rediacc verwandelt Copy-on-Write-Forks in eine git-ähnliche Versionsgeschichte. Jeder unveränderliche Fork ist ein **Commit**: ein bytegenau eingefrorenes Abbild, das sich nicht einbinden lässt. Branches sind benannte Refs, die auf einen Commit zeigen. `rdc repo checkout` klont einen Commit per Reflink zurück in einen beschreibbaren Arbeitsfork, und `rdc repo merge` kombiniert zwei Verlaufslinien, ohne jemals ein aktives Repository direkt zu verändern.
 
 Das Modell bildet sich auf zwei Speicher ab. Die **Maschine ist der Objektspeicher**: Commits sind unveränderliche Fork-Abbilder, die auf dem Datenspeicher liegen. Die **CLI-Konfiguration ist der Ref-Speicher**: Branch-Namen, der aktuelle `HEAD` und das Reflog liegen in Ihrer lokalen Konfiguration, nicht auf der Maschine. Das ist dieselbe Aufteilung, die Git zwischen `.git/objects` und `.git/refs` verwendet.
 

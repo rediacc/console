@@ -1,0 +1,133 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.051
+Très bien !
+
+00:00:02.051 --> 00:00:04.855
+Installons l'outil en ligne de commande sur votre
+
+00:00:04.855 --> 00:00:05.206
+ordinateur.
+
+00:00:05.979 --> 00:00:07.067
+Trois étapes.
+
+00:00:07.067 --> 00:00:09.243
+Ouvrir la page d'installation,
+
+00:00:09.243 --> 00:00:11.419
+choisir votre système d'exploitation,
+
+00:00:11.419 --> 00:00:14.138
+puis coller la commande dans
+
+00:00:14.138 --> 00:00:15.226
+votre terminal.
+
+00:00:15.997 --> 00:00:18.768
+Rendez-vous sur la page d'installation et faites défiler
+
+00:00:18.768 --> 00:00:20.500
+jusqu'à la section installation rapide.
+
+00:00:20.500 --> 00:00:23.272
+Elle génère la bonne ligne de commande pour
+
+00:00:23.272 --> 00:00:23.964
+votre plateforme.
+
+00:00:27.238 --> 00:00:29.997
+Commençons par confirmer que l'outil est installé.
+
+00:00:29.997 --> 00:00:32.757
+Le flag version affiche la version installée
+
+00:00:32.757 --> 00:00:35.516
+et nous confirme que l'installation s'est bien
+
+00:00:35.516 --> 00:00:35.911
+déroulée.
+
+00:00:38.911 --> 00:00:39.683
+Installation terminée.
+
+00:00:39.683 --> 00:00:42.385
+Le binaire rdc est sur votre PATH.
+
+00:00:45.687 --> 00:00:46.123
+Maintenant,
+
+00:00:46.123 --> 00:00:48.301
+lançons le contrôle de diagnostic.
+
+00:00:48.301 --> 00:00:50.914
+Il parcourt toutes les dépendances dont
+
+00:00:50.914 --> 00:00:53.528
+la ligne de commande a besoin,
+
+00:00:53.528 --> 00:00:53.964
+Node,
+
+00:00:53.964 --> 00:00:54.399
+SSH,
+
+00:00:54.399 --> 00:00:54.835
+Docker,
+
+00:00:54.835 --> 00:00:56.142
+le binaire renet,
+
+00:00:56.142 --> 00:00:58.320
+et signale les éventuels manques.
+
+00:00:58.320 --> 00:01:00.933
+Un rapport propre signifie que vous
+
+00:01:00.933 --> 00:01:01.805
+êtes prêt.
+
+00:01:02.605 --> 00:01:03.396
+Version affichée.
+
+00:01:03.396 --> 00:01:05.374
+Vous êtes prêt à enchaîner.
+
+00:01:06.183 --> 00:01:09.142
+L'outil en ligne de commande vit
+
+00:01:09.142 --> 00:01:10.621
+sur votre ordinateur.
+
+00:01:10.621 --> 00:01:13.580
+Le serveur exécute un composant séparé
+
+00:01:13.580 --> 00:01:14.567
+appelé renet,
+
+00:01:14.567 --> 00:01:17.526
+que la CLI provisionne et pilote
+
+00:01:17.526 --> 00:01:18.512
+via SSH,
+
+00:01:18.512 --> 00:01:21.471
+vous n'avez donc jamais à vous
+
+00:01:21.471 --> 00:01:22.457
+connecter manuellement.
+
+00:01:23.237 --> 00:01:24.532
+Voilà pour l'installation.
+
+00:01:24.532 --> 00:01:25.827
+Dans la suite,
+
+00:01:25.827 --> 00:01:28.418
+nous configurerons votre clé SSH pour
+
+00:01:28.418 --> 00:01:31.008
+que la CLI puisse atteindre vos
+
+00:01:31.008 --> 00:01:31.439
+serveurs.

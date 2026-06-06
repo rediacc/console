@@ -11,7 +11,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Forking a Repository
 
-This is the part that changes how you work. Clone an entire production environment (the app, the database, the config files) in seconds. Any size. Zero extra disk. Fork as many times as you want.
+Fork an entire production environment (the app, the database, the config files) in seconds. Any size. Zero extra disk. Fork as many times as you want.
 
 The tagline: **clone production, break nothing.**
 
@@ -45,7 +45,7 @@ One command. It cloned everything (the app, the database, the config files) and 
 
 ![Sharing a folder link is the same speed regardless of the folder's size](/img/tutorials/tutorial-forking/slide-2.svg)
 
-Imagine sharing a folder link. The link is the same whether the folder is small or huge. The folder is heavy, the link is light.
+The reason is btrfs reflinks. A fork creates a new filesystem tree pointing at the same data blocks as the parent. No data is copied at fork time. It's all metadata, so the parent's size never factors into how long the fork takes.
 
 ![1 GB, 100 GB, 1 TB. Same time, every time.](/img/tutorials/tutorial-forking/slide-3.svg)
 

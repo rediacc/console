@@ -1,0 +1,431 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.57,
+      "text": "Pekâlâ!",
+      "words": [{ "start": 1, "end": 1.57, "char": [0, 7] }]
+    },
+    {
+      "start": 1.57,
+      "end": 3.85,
+      "text": "Uygulamanızı geliştirmeden üretime taşıyalım.",
+      "words": [
+        { "start": 1.57, "end": 2.14, "char": [0, 12] },
+        { "start": 2.14, "end": 2.71, "char": [13, 26] },
+        { "start": 2.71, "end": 3.28, "char": [27, 34] },
+        { "start": 3.28, "end": 3.85, "char": [35, 45] }
+      ]
+    },
+    {
+      "start": 3.85,
+      "end": 5.56,
+      "text": "Üç kısa adım,",
+      "words": [
+        { "start": 3.85, "end": 4.42, "char": [0, 2] },
+        { "start": 4.42, "end": 4.99, "char": [3, 7] },
+        { "start": 4.99, "end": 5.56, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 5.56,
+      "end": 7.269,
+      "text": "hepsi dizüstü bilgisayarınızdan.",
+      "words": [
+        { "start": 5.56, "end": 6.129, "char": [0, 5] },
+        { "start": 6.129, "end": 6.699, "char": [6, 13] },
+        { "start": 6.699, "end": 7.269, "char": [14, 32] }
+      ]
+    },
+    {
+      "start": 8.046,
+      "end": 10.998,
+      "text": "Geliştirme sırasında uygulamayı deponun içinden çalıştırırsınız;",
+      "words": [
+        { "start": 8.046, "end": 8.538, "char": [0, 10] },
+        { "start": 8.538, "end": 9.03, "char": [11, 20] },
+        { "start": 9.03, "end": 9.522, "char": [21, 31] },
+        { "start": 9.522, "end": 10.014, "char": [32, 39] },
+        { "start": 10.014, "end": 10.506, "char": [40, 47] },
+        { "start": 10.506, "end": 10.998, "char": [48, 64] }
+      ]
+    },
+    {
+      "start": 10.998,
+      "end": 13.458,
+      "text": "bu yüzden bağlantınız kesildiğinde durur.",
+      "words": [
+        { "start": 10.998, "end": 11.49, "char": [0, 2] },
+        { "start": 11.49, "end": 11.982, "char": [3, 9] },
+        { "start": 11.982, "end": 12.474, "char": [10, 21] },
+        { "start": 12.474, "end": 12.966, "char": [22, 34] },
+        { "start": 12.966, "end": 13.458, "char": [35, 41] }
+      ]
+    },
+    {
+      "start": 13.458,
+      "end": 16.41,
+      "text": "Üretimde uygulamayı dizüstü bilgisayarınızdan CLI ile",
+      "words": [
+        { "start": 13.458, "end": 13.95, "char": [0, 8] },
+        { "start": 13.95, "end": 14.442, "char": [9, 19] },
+        { "start": 14.442, "end": 14.934, "char": [20, 27] },
+        { "start": 14.934, "end": 15.426, "char": [28, 45] },
+        { "start": 15.426, "end": 15.918, "char": [46, 49] },
+        { "start": 15.918, "end": 16.41, "char": [50, 53] }
+      ]
+    },
+    {
+      "start": 16.41,
+      "end": 19.361,
+      "text": "başlatırsınız ve bağımsız olarak çalışmaya devam",
+      "words": [
+        { "start": 16.41, "end": 16.902, "char": [0, 13] },
+        { "start": 16.902, "end": 17.393, "char": [14, 16] },
+        { "start": 17.393, "end": 17.885, "char": [17, 25] },
+        { "start": 17.885, "end": 18.377, "char": [26, 32] },
+        { "start": 18.377, "end": 18.869, "char": [33, 42] },
+        { "start": 18.869, "end": 19.361, "char": [43, 48] }
+      ]
+    },
+    {
+      "start": 19.361,
+      "end": 19.853,
+      "text": "eder.",
+      "words": [{ "start": 19.361, "end": 19.853, "char": [0, 5] }]
+    },
+    {
+      "start": 23.118,
+      "end": 26.083,
+      "text": "Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz.",
+      "words": [
+        { "start": 23.118, "end": 23.612, "char": [0, 10] },
+        { "start": 23.612, "end": 24.106, "char": [11, 18] },
+        { "start": 24.106, "end": 24.601, "char": [19, 32] },
+        { "start": 24.601, "end": 25.095, "char": [33, 39] },
+        { "start": 25.095, "end": 25.589, "char": [40, 47] },
+        { "start": 25.589, "end": 26.083, "char": [48, 61] }
+      ]
+    },
+    {
+      "start": 26.083,
+      "end": 27.072,
+      "text": "Deploy komutu,",
+      "words": [
+        { "start": 26.083, "end": 26.578, "char": [0, 6] },
+        { "start": 26.578, "end": 27.072, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 27.072,
+      "end": 30.037,
+      "text": "geliştirme sırasında kullandığımız aynı up fonksiyonunu",
+      "words": [
+        { "start": 27.072, "end": 27.566, "char": [0, 10] },
+        { "start": 27.566, "end": 28.06, "char": [11, 20] },
+        { "start": 28.06, "end": 28.555, "char": [21, 34] },
+        { "start": 28.555, "end": 29.049, "char": [35, 39] },
+        { "start": 29.049, "end": 29.543, "char": [40, 42] },
+        { "start": 29.543, "end": 30.037, "char": [43, 55] }
+      ]
+    },
+    {
+      "start": 30.037,
+      "end": 30.532,
+      "text": "çağırır;",
+      "words": [{ "start": 30.037, "end": 30.532, "char": [0, 8] }]
+    },
+    {
+      "start": 30.532,
+      "end": 32.014,
+      "text": "ancak bağımsız çalışır.",
+      "words": [
+        { "start": 30.532, "end": 31.026, "char": [0, 5] },
+        { "start": 31.026, "end": 31.52, "char": [6, 14] },
+        { "start": 31.52, "end": 32.014, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 32.014,
+      "end": 33.497,
+      "text": "Dizüstü bilgisayarınızı kapatabilirsiniz;",
+      "words": [
+        { "start": 32.014, "end": 32.509, "char": [0, 7] },
+        { "start": 32.509, "end": 33.003, "char": [8, 23] },
+        { "start": 33.003, "end": 33.497, "char": [24, 41] }
+      ]
+    },
+    {
+      "start": 33.497,
+      "end": 35.474,
+      "text": "uygulama çalışmaya devam eder.",
+      "words": [
+        { "start": 33.497, "end": 33.991, "char": [0, 8] },
+        { "start": 33.991, "end": 34.485, "char": [9, 18] },
+        { "start": 34.485, "end": 34.98, "char": [19, 24] },
+        { "start": 34.98, "end": 35.474, "char": [25, 30] }
+      ]
+    },
+    {
+      "start": 38.224,
+      "end": 39.652,
+      "text": "Uygulama üretimde çalışıyor.",
+      "words": [
+        { "start": 38.224, "end": 38.7, "char": [0, 8] },
+        { "start": 38.7, "end": 39.176, "char": [9, 17] },
+        { "start": 39.176, "end": 39.652, "char": [18, 28] }
+      ]
+    },
+    {
+      "start": 39.652,
+      "end": 40.604,
+      "text": "Aynı komut,",
+      "words": [
+        { "start": 39.652, "end": 40.128, "char": [0, 4] },
+        { "start": 40.128, "end": 40.604, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 40.604,
+      "end": 41.556,
+      "text": "aynı sonuç,",
+      "words": [
+        { "start": 40.604, "end": 41.08, "char": [0, 4] },
+        { "start": 41.08, "end": 41.556, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 41.556,
+      "end": 42.508,
+      "text": "gerçek sunucuda.",
+      "words": [
+        { "start": 41.556, "end": 42.032, "char": [0, 6] },
+        { "start": 42.032, "end": 42.508, "char": [7, 16] }
+      ]
+    },
+    {
+      "start": 45.807,
+      "end": 48.777,
+      "text": "Uygulamanın sunucu yeniden başlamalarından kurtulması için",
+      "words": [
+        { "start": 45.807, "end": 46.302, "char": [0, 11] },
+        { "start": 46.302, "end": 46.797, "char": [12, 18] },
+        { "start": 46.797, "end": 47.292, "char": [19, 26] },
+        { "start": 47.292, "end": 47.787, "char": [27, 42] },
+        { "start": 47.787, "end": 48.282, "char": [43, 53] },
+        { "start": 48.282, "end": 48.777, "char": [54, 58] }
+      ]
+    },
+    {
+      "start": 48.777,
+      "end": 50.262,
+      "text": "otomatik başlatmayı etkinleştiriyoruz.",
+      "words": [
+        { "start": 48.777, "end": 49.272, "char": [0, 8] },
+        { "start": 49.272, "end": 49.767, "char": [9, 19] },
+        { "start": 49.767, "end": 50.262, "char": [20, 38] }
+      ]
+    },
+    {
+      "start": 50.262,
+      "end": 53.231,
+      "text": "Artık sunucu yeniden başlarsa bu depo",
+      "words": [
+        { "start": 50.262, "end": 50.757, "char": [0, 5] },
+        { "start": 50.757, "end": 51.251, "char": [6, 12] },
+        { "start": 51.251, "end": 51.746, "char": [13, 20] },
+        { "start": 51.746, "end": 52.241, "char": [21, 29] },
+        { "start": 52.241, "end": 52.736, "char": [30, 32] },
+        { "start": 52.736, "end": 53.231, "char": [33, 37] }
+      ]
+    },
+    {
+      "start": 53.231,
+      "end": 55.211,
+      "text": "otomatik olarak geri gelir.",
+      "words": [
+        { "start": 53.231, "end": 53.726, "char": [0, 8] },
+        { "start": 53.726, "end": 54.221, "char": [9, 15] },
+        { "start": 54.221, "end": 54.716, "char": [16, 20] },
+        { "start": 54.716, "end": 55.211, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 57.461,
+      "end": 58.676,
+      "text": "Otomatik başlatma açık.",
+      "words": [
+        { "start": 57.461, "end": 57.866, "char": [0, 8] },
+        { "start": 57.866, "end": 58.271, "char": [9, 17] },
+        { "start": 58.271, "end": 58.676, "char": [18, 23] }
+      ]
+    },
+    {
+      "start": 58.676,
+      "end": 60.7,
+      "text": "Uygulama yeniden başlatmalardan sağ çıkar.",
+      "words": [
+        { "start": 58.676, "end": 59.081, "char": [0, 8] },
+        { "start": 59.081, "end": 59.486, "char": [9, 16] },
+        { "start": 59.486, "end": 59.89, "char": [17, 31] },
+        { "start": 59.89, "end": 60.295, "char": [32, 35] },
+        { "start": 60.295, "end": 60.7, "char": [36, 42] }
+      ]
+    },
+    {
+      "start": 63.984,
+      "end": 66.516,
+      "text": "Hangi depolarda otomatik başlatmanın etkin olduğunu",
+      "words": [
+        { "start": 63.984, "end": 64.406, "char": [0, 5] },
+        { "start": 64.406, "end": 64.828, "char": [6, 15] },
+        { "start": 64.828, "end": 65.25, "char": [16, 24] },
+        { "start": 65.25, "end": 65.672, "char": [25, 36] },
+        { "start": 65.672, "end": 66.094, "char": [37, 42] },
+        { "start": 66.094, "end": 66.516, "char": [43, 51] }
+      ]
+    },
+    {
+      "start": 66.516,
+      "end": 66.938,
+      "text": "listeliyoruz.",
+      "words": [{ "start": 66.516, "end": 66.938, "char": [0, 13] }]
+    },
+    {
+      "start": 66.938,
+      "end": 69.47,
+      "text": "Uygulamamızın artık başlatma listesinde olduğunu doğruluyor.",
+      "words": [
+        { "start": 66.938, "end": 67.36, "char": [0, 13] },
+        { "start": 67.36, "end": 67.782, "char": [14, 19] },
+        { "start": 67.782, "end": 68.204, "char": [20, 28] },
+        { "start": 68.204, "end": 68.626, "char": [29, 39] },
+        { "start": 68.626, "end": 69.048, "char": [40, 48] },
+        { "start": 69.048, "end": 69.47, "char": [49, 60] }
+      ]
+    },
+    {
+      "start": 71.47,
+      "end": 72.371,
+      "text": "İşte burada,",
+      "words": [
+        { "start": 71.47, "end": 71.92, "char": [0, 4] },
+        { "start": 71.92, "end": 72.371, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 72.371,
+      "end": 73.272,
+      "text": "başlatma listesinde.",
+      "words": [
+        { "start": 72.371, "end": 72.822, "char": [0, 8] },
+        { "start": 72.822, "end": 73.272, "char": [9, 20] }
+      ]
+    },
+    {
+      "start": 76.571,
+      "end": 79.035,
+      "text": "Uygulamayı durdurmak için dizüstü bilgisayardan tek komut.",
+      "words": [
+        { "start": 76.571, "end": 76.923, "char": [0, 10] },
+        { "start": 76.923, "end": 77.275, "char": [11, 20] },
+        { "start": 77.275, "end": 77.627, "char": [21, 25] },
+        { "start": 77.627, "end": 77.979, "char": [26, 33] },
+        { "start": 77.979, "end": 78.331, "char": [34, 47] },
+        { "start": 78.331, "end": 78.683, "char": [48, 51] },
+        { "start": 78.683, "end": 79.035, "char": [52, 58] }
+      ]
+    },
+    {
+      "start": 79.035,
+      "end": 80.091,
+      "text": "Bir komutla açın,",
+      "words": [
+        { "start": 79.035, "end": 79.387, "char": [0, 3] },
+        { "start": 79.387, "end": 79.739, "char": [4, 11] },
+        { "start": 79.739, "end": 80.091, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 80.091,
+      "end": 81.147,
+      "text": "bir komutla kapatın.",
+      "words": [
+        { "start": 80.091, "end": 80.443, "char": [0, 3] },
+        { "start": 80.443, "end": 80.795, "char": [4, 11] },
+        { "start": 80.795, "end": 81.147, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 81.147,
+      "end": 81.851,
+      "text": "Hepsi terminalinizden;",
+      "words": [
+        { "start": 81.147, "end": 81.499, "char": [0, 5] },
+        { "start": 81.499, "end": 81.851, "char": [6, 22] }
+      ]
+    },
+    {
+      "start": 81.851,
+      "end": 83.258,
+      "text": "artık etkileşimli oturum gerekmez.",
+      "words": [
+        { "start": 81.851, "end": 82.202, "char": [0, 5] },
+        { "start": 82.202, "end": 82.554, "char": [6, 17] },
+        { "start": 82.554, "end": 82.906, "char": [18, 24] },
+        { "start": 82.906, "end": 83.258, "char": [25, 34] }
+      ]
+    },
+    {
+      "start": 85.758,
+      "end": 86.072,
+      "text": "Durduruldu.",
+      "words": [{ "start": 85.758, "end": 86.072, "char": [0, 11] }]
+    },
+    {
+      "start": 86.072,
+      "end": 87.012,
+      "text": "Tek komutla aç,",
+      "words": [
+        { "start": 86.072, "end": 86.385, "char": [0, 3] },
+        { "start": 86.385, "end": 86.699, "char": [4, 11] },
+        { "start": 86.699, "end": 87.012, "char": [12, 15] }
+      ]
+    },
+    {
+      "start": 87.012,
+      "end": 87.953,
+      "text": "tek komutla kapat.",
+      "words": [
+        { "start": 87.012, "end": 87.326, "char": [0, 3] },
+        { "start": 87.326, "end": 87.639, "char": [4, 11] },
+        { "start": 87.639, "end": 87.953, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 88.776,
+      "end": 90.801,
+      "text": "Özetle üretim modu bu kadar.",
+      "words": [
+        { "start": 88.776, "end": 89.181, "char": [0, 6] },
+        { "start": 89.181, "end": 89.586, "char": [7, 13] },
+        { "start": 89.586, "end": 89.991, "char": [14, 18] },
+        { "start": 89.991, "end": 90.396, "char": [19, 21] },
+        { "start": 90.396, "end": 90.801, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 90.801,
+      "end": 92.825,
+      "text": "Bir sonraki bölümde görüşmek üzere!",
+      "words": [
+        { "start": 90.801, "end": 91.205, "char": [0, 3] },
+        { "start": 91.205, "end": 91.61, "char": [4, 11] },
+        { "start": 91.61, "end": 92.015, "char": [12, 19] },
+        { "start": 92.015, "end": 92.42, "char": [20, 28] },
+        { "start": 92.42, "end": 92.825, "char": [29, 35] }
+      ]
+    }
+  ]
+}

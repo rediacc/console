@@ -1,0 +1,124 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.570
+Pekâlâ!
+
+00:00:01.570 --> 00:00:03.850
+Uygulamanızı geliştirmeden üretime taşıyalım.
+
+00:00:03.850 --> 00:00:05.560
+Üç kısa adım,
+
+00:00:05.560 --> 00:00:07.269
+hepsi dizüstü bilgisayarınızdan.
+
+00:00:08.046 --> 00:00:10.998
+Geliştirme sırasında uygulamayı deponun içinden çalıştırırsınız;
+
+00:00:10.998 --> 00:00:13.458
+bu yüzden bağlantınız kesildiğinde durur.
+
+00:00:13.458 --> 00:00:16.410
+Üretimde uygulamayı dizüstü bilgisayarınızdan CLI ile
+
+00:00:16.410 --> 00:00:19.361
+başlatırsınız ve bağımsız olarak çalışmaya devam
+
+00:00:19.361 --> 00:00:19.853
+eder.
+
+00:00:23.118 --> 00:00:26.083
+Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz.
+
+00:00:26.083 --> 00:00:27.072
+Deploy komutu,
+
+00:00:27.072 --> 00:00:30.037
+geliştirme sırasında kullandığımız aynı up fonksiyonunu
+
+00:00:30.037 --> 00:00:30.532
+çağırır;
+
+00:00:30.532 --> 00:00:32.014
+ancak bağımsız çalışır.
+
+00:00:32.014 --> 00:00:33.497
+Dizüstü bilgisayarınızı kapatabilirsiniz;
+
+00:00:33.497 --> 00:00:35.474
+uygulama çalışmaya devam eder.
+
+00:00:38.224 --> 00:00:39.652
+Uygulama üretimde çalışıyor.
+
+00:00:39.652 --> 00:00:40.604
+Aynı komut,
+
+00:00:40.604 --> 00:00:41.556
+aynı sonuç,
+
+00:00:41.556 --> 00:00:42.508
+gerçek sunucuda.
+
+00:00:45.807 --> 00:00:48.777
+Uygulamanın sunucu yeniden başlamalarından kurtulması için
+
+00:00:48.777 --> 00:00:50.262
+otomatik başlatmayı etkinleştiriyoruz.
+
+00:00:50.262 --> 00:00:53.231
+Artık sunucu yeniden başlarsa bu depo
+
+00:00:53.231 --> 00:00:55.211
+otomatik olarak geri gelir.
+
+00:00:57.461 --> 00:00:58.676
+Otomatik başlatma açık.
+
+00:00:58.676 --> 00:01:00.700
+Uygulama yeniden başlatmalardan sağ çıkar.
+
+00:01:03.984 --> 00:01:06.516
+Hangi depolarda otomatik başlatmanın etkin olduğunu
+
+00:01:06.516 --> 00:01:06.938
+listeliyoruz.
+
+00:01:06.938 --> 00:01:09.470
+Uygulamamızın artık başlatma listesinde olduğunu doğruluyor.
+
+00:01:11.470 --> 00:01:12.371
+İşte burada,
+
+00:01:12.371 --> 00:01:13.272
+başlatma listesinde.
+
+00:01:16.571 --> 00:01:19.035
+Uygulamayı durdurmak için dizüstü bilgisayardan tek komut.
+
+00:01:19.035 --> 00:01:20.091
+Bir komutla açın,
+
+00:01:20.091 --> 00:01:21.147
+bir komutla kapatın.
+
+00:01:21.147 --> 00:01:21.851
+Hepsi terminalinizden;
+
+00:01:21.851 --> 00:01:23.258
+artık etkileşimli oturum gerekmez.
+
+00:01:25.758 --> 00:01:26.072
+Durduruldu.
+
+00:01:26.072 --> 00:01:27.012
+Tek komutla aç,
+
+00:01:27.012 --> 00:01:27.953
+tek komutla kapat.
+
+00:01:28.776 --> 00:01:30.801
+Özetle üretim modu bu kadar.
+
+00:01:30.801 --> 00:01:32.825
+Bir sonraki bölümde görüşmek üzere!

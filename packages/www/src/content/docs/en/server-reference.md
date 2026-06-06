@@ -8,7 +8,7 @@ language: en
 
 # Server Reference
 
-This page covers what you find when you SSH into a Rediacc server: the directory layout, `renet` commands, systemd services, and common workflows.
+SSH into a Rediacc server and here's what you're working with: the directory layout, `renet` commands, systemd services, and the workflows you'll need.
 
 Most users manage servers through `rdc` from their workstation and never need this page. It is here for advanced debugging or when you need to work directly on the server.
 
@@ -207,7 +207,7 @@ renet backup list --source machine --src-host {host} --src-user {user} --src-pat
 
 ### Checkpointing (CRIU)
 
-Checkpoint saves the state of running containers so they can be restored later:
+Checkpoint saves the state of running containers so you can restore them later:
 
 ```bash
 renet checkpoint create    --network-id {id}   # Save running container state

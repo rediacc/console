@@ -1,0 +1,223 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.305
+Olgu!
+
+00:00:01.305 --> 00:00:03.138
+Sinu rakendus on töös ja varundatud,
+
+00:00:03.138 --> 00:00:03.749
+nüüd veendume,
+
+00:00:03.749 --> 00:00:04.971
+et see jääb terveks.
+
+00:00:05.724 --> 00:00:08.556
+CLI annab sulle täieliku pildi
+
+00:00:08.556 --> 00:00:10.822
+igast serverist sinu sülearvutist.
+
+00:00:10.822 --> 00:00:12.521
+Kolm vaatenurka kontrolliks:
+
+00:00:12.521 --> 00:00:13.654
+süsteemi tervis,
+
+00:00:13.654 --> 00:00:16.486
+töötavad konteinerid ja repositooriumid ise.
+
+00:00:19.751 --> 00:00:20.563
+Alustame süsteemivaatega.
+
+00:00:20.563 --> 00:00:23.001
+CLI machine query süsteemifiltriga näitab tööaega,
+
+00:00:23.001 --> 00:00:24.625
+kettakasutust ja salvestuse olekut.
+
+00:00:24.625 --> 00:00:26.250
+Kui midagi on valesti,
+
+00:00:26.250 --> 00:00:27.875
+ütleb aruanne meile seda.
+
+00:00:27.875 --> 00:00:28.358
+Tööaeg,
+
+00:00:28.358 --> 00:00:28.842
+ketas,
+
+00:00:28.842 --> 00:00:29.325
+salvestus.
+
+00:00:29.325 --> 00:00:29.808
+Kõik,
+
+00:00:29.808 --> 00:00:30.775
+mida vajad,
+
+00:00:30.775 --> 00:00:31.741
+ühe pilguga.
+
+00:00:35.028 --> 00:00:36.075
+Nüüd konteinerid.
+
+00:00:36.075 --> 00:00:38.693
+See vaade loetleb kõik töötavad
+
+00:00:38.693 --> 00:00:41.311
+konteinerid kõigis masina repositooriumides --
+
+00:00:41.311 --> 00:00:41.835
+nimi,
+
+00:00:41.835 --> 00:00:42.358
+olek,
+
+00:00:42.358 --> 00:00:42.882
+tervis,
+
+00:00:42.882 --> 00:00:43.405
+CPU,
+
+00:00:43.405 --> 00:00:43.929
+mälu,
+
+00:00:43.929 --> 00:00:44.976
+lisaks sellele,
+
+00:00:44.976 --> 00:00:47.070
+millisele repositooriumile igaüks kuulub.
+
+00:00:47.070 --> 00:00:49.596
+Iga konteiner igas repos,
+
+00:00:49.596 --> 00:00:50.858
+ühes vaates.
+
+00:00:54.113 --> 00:00:55.647
+Ja repositooriumid ise.
+
+00:00:55.647 --> 00:00:56.159
+Suurus,
+
+00:00:56.159 --> 00:00:57.182
+ühendamise olek,
+
+00:00:57.182 --> 00:00:58.716
+Dockeri deemoni olek,
+
+00:00:58.716 --> 00:00:59.228
+kettakasutus.
+
+00:00:59.228 --> 00:00:59.739
+Kõik,
+
+00:00:59.739 --> 00:01:02.296
+mida pead teadma iga isoleeritud
+
+00:01:02.296 --> 00:01:03.831
+keskkonna kohta masinas.
+
+00:01:03.831 --> 00:01:04.797
+Kõik repod,
+
+00:01:04.797 --> 00:01:06.247
+kõik nende deemonid,
+
+00:01:06.247 --> 00:01:07.697
+kogu nende kettakasutus.
+
+00:01:11.090 --> 00:01:13.829
+CLI machine query annab sulle kõik
+
+00:01:13.829 --> 00:01:14.285
+korraga.
+
+00:01:14.285 --> 00:01:14.742
+Süsteemiteave,
+
+00:01:14.742 --> 00:01:15.198
+konteinerid,
+
+00:01:15.198 --> 00:01:15.655
+repositooriumid,
+
+00:01:15.655 --> 00:01:16.567
+kõik koos.
+
+00:01:16.567 --> 00:01:19.306
+Käivita korra ja sul on täielik
+
+00:01:19.306 --> 00:01:19.763
+pilt.
+
+00:01:19.763 --> 00:01:20.839
+Kõik koos,
+
+00:01:20.839 --> 00:01:22.453
+filtrit pole vaja.
+
+00:01:29.193 --> 00:01:31.819
+Ja lõpuks CLI doctor kohaliku
+
+00:01:31.819 --> 00:01:33.394
+tervise kontrolliks sülearvutis.
+
+00:01:33.394 --> 00:01:33.919
+Node,
+
+00:01:33.919 --> 00:01:34.970
+SSH võti,
+
+00:01:34.970 --> 00:01:35.495
+renet,
+
+00:01:35.495 --> 00:01:37.595
+Docker -- kõik asjad,
+
+00:01:37.595 --> 00:01:39.696
+millest CLI ise sõltub.
+
+00:01:39.696 --> 00:01:41.797
+See on terve sari.
+
+00:01:41.797 --> 00:01:42.847
+Paigaldamisest monitoorimiseni,
+
+00:01:42.847 --> 00:01:44.422
+kõik sinu terminalist.
+
+00:01:44.422 --> 00:01:45.372
+Kõik roheline tähendab,
+
+00:01:45.372 --> 00:01:47.270
+et su kohalik CLI on terve.
+
+00:01:48.026 --> 00:01:50.217
+Ja sellega on sari pakitud.
+
+00:01:50.217 --> 00:01:51.970
+Sa oskad nüüd paigaldada,
+
+00:01:51.970 --> 00:01:52.408
+seadistada,
+
+00:01:52.408 --> 00:01:52.846
+juurutada,
+
+00:01:52.846 --> 00:01:53.284
+forkida,
+
+00:01:53.284 --> 00:01:54.160
+minna live'i,
+
+00:01:54.160 --> 00:01:54.599
+autostartida,
+
+00:01:54.599 --> 00:01:57.227
+varundada ja monitoorida -- kõik oma
+
+00:01:57.227 --> 00:01:57.666
+terminalist!

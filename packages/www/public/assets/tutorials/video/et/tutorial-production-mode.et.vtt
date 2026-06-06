@@ -1,0 +1,133 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.522
+Olgu!
+
+00:00:01.522 --> 00:00:04.135
+Viime su rakenduse arendusest tootmisse.
+
+00:00:04.135 --> 00:00:05.702
+Kolm lühikest sammu,
+
+00:00:05.702 --> 00:00:07.269
+kõik juhitud sülearvutist.
+
+00:00:08.046 --> 00:00:10.998
+Arenduse ajal käivitad rakenduse repositooriumi seest,
+
+00:00:10.998 --> 00:00:12.966
+nii et see peatub,
+
+00:00:12.966 --> 00:00:14.934
+kui sa lahti ühendud.
+
+00:00:14.934 --> 00:00:17.885
+Tootmises käivitad selle sülearvutist CLI-ga ja
+
+00:00:17.885 --> 00:00:19.853
+see jätkab tööd eraldatult.
+
+00:00:23.118 --> 00:00:25.019
+Käivitame rakenduse tootmisrežiimis sülearvutist.
+
+00:00:25.019 --> 00:00:27.870
+CLI repo up kutsub sama up
+
+00:00:27.870 --> 00:00:28.346
+funktsiooni,
+
+00:00:28.346 --> 00:00:30.246
+mida kasutasime arenduse ajal,
+
+00:00:30.246 --> 00:00:32.147
+kuid käivitab selle eraldatult.
+
+00:00:32.147 --> 00:00:34.999
+Saad sülearvuti sulgeda ja rakendus jätkab
+
+00:00:34.999 --> 00:00:35.474
+tööd.
+
+00:00:38.224 --> 00:00:39.652
+Rakendus töötab tootmises.
+
+00:00:39.652 --> 00:00:40.604
+Sama käsk,
+
+00:00:40.604 --> 00:00:41.556
+sama tulemus,
+
+00:00:41.556 --> 00:00:42.508
+päris serveris.
+
+00:00:45.807 --> 00:00:46.852
+Lubame autostarti,
+
+00:00:46.852 --> 00:00:49.464
+et rakendus jääks ellu serveri
+
+00:00:49.464 --> 00:00:50.509
+taaskäivituse korral.
+
+00:00:50.509 --> 00:00:51.031
+Edaspidi,
+
+00:00:51.031 --> 00:00:52.599
+kui server taaskäivitub,
+
+00:00:52.599 --> 00:00:55.211
+tuleb see repositoorium automaatselt tagasi.
+
+00:00:57.461 --> 00:00:58.541
+Autostart sees.
+
+00:00:58.541 --> 00:01:00.700
+Rakendus elab taaskäivituse üle.
+
+00:01:03.984 --> 00:01:04.406
+Loetleme,
+
+00:01:04.406 --> 00:01:06.516
+millel repositooriumidel on autostart lubatud.
+
+00:01:06.516 --> 00:01:06.938
+Kinnitab,
+
+00:01:06.938 --> 00:01:09.470
+et meie rakendus on nüüd käivitusnimekirjas.
+
+00:01:11.470 --> 00:01:12.822
+Seal see on,
+
+00:01:12.822 --> 00:01:13.272
+käivitusnimekirjas.
+
+00:01:16.571 --> 00:01:18.538
+Rakenduse peatamiseks üks käsk sülearvutist.
+
+00:01:18.538 --> 00:01:19.718
+Üks käsk üles,
+
+00:01:19.718 --> 00:01:20.898
+üks käsk alla.
+
+00:01:20.898 --> 00:01:22.078
+Kõik sinu terminalist,
+
+00:01:22.078 --> 00:01:23.258
+ilma interaktiivsete seanssideta.
+
+00:01:25.758 --> 00:01:26.072
+Peatatud.
+
+00:01:26.072 --> 00:01:27.012
+Üks käsk üles,
+
+00:01:27.012 --> 00:01:27.953
+üks käsk alla.
+
+00:01:28.776 --> 00:01:31.668
+Ja see on tootmisrežiim lühidalt.
+
+00:01:31.668 --> 00:01:32.825
+Kohtumiseni järgmises!

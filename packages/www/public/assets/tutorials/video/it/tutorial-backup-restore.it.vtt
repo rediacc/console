@@ -1,0 +1,172 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.929
+La tua app e' attiva,
+
+00:00:02.929 --> 00:00:05.244
+quindi assicuriamoci di non perderla mai!
+
+00:00:05.244 --> 00:00:07.945
+In questo tutorial inviamo l'intero repository a
+
+00:00:07.945 --> 00:00:10.645
+uno storage esterno e lo recuperiamo a
+
+00:00:10.645 --> 00:00:11.031
+richiesta.
+
+00:00:11.808 --> 00:00:14.786
+Il backup e il ripristino si
+
+00:00:14.786 --> 00:00:16.771
+riducono a tre passaggi.
+
+00:00:16.771 --> 00:00:19.253
+Configura un provider di storage,
+
+00:00:19.253 --> 00:00:22.231
+esegui un backup e ripristinalo quando
+
+00:00:22.231 --> 00:00:22.727
+serve.
+
+00:00:25.998 --> 00:00:26.897
+Passo uno.
+
+00:00:26.897 --> 00:00:29.146
+Importiamo una configurazione rclone esistente.
+
+00:00:29.146 --> 00:00:30.495
+rclone supporta S3,
+
+00:00:30.495 --> 00:00:30.944
+Backblaze,
+
+00:00:30.944 --> 00:00:31.844
+Google Drive,
+
+00:00:31.844 --> 00:00:34.542
+Dropbox e molti altri -- se
+
+00:00:34.542 --> 00:00:35.891
+lo usi gia',
+
+00:00:35.891 --> 00:00:38.589
+puoi importare la stessa configurazione direttamente.
+
+00:00:39.589 --> 00:00:40.611
+Storage importato.
+
+00:00:40.611 --> 00:00:43.165
+La CLI puo' ora inviarci
+
+00:00:43.165 --> 00:00:44.187
+i backup.
+
+00:00:47.495 --> 00:00:50.401
+Elenchiamo gli storage che lo strumento conosce
+
+00:00:50.401 --> 00:00:50.817
+ora.
+
+00:00:50.817 --> 00:00:53.723
+Ogni storage e' una destinazione verso cui
+
+00:00:53.723 --> 00:00:55.384
+possiamo inviare i backup.
+
+00:00:57.134 --> 00:00:57.688
+Eccolo.
+
+00:00:57.688 --> 00:00:59.903
+Pronto a ricevere backup.
+
+00:01:03.208 --> 00:01:04.446
+Passo due.
+
+00:01:04.446 --> 00:01:06.922
+Eseguiamo un backup completo.
+
+00:01:06.922 --> 00:01:09.398
+L'intero repository -- app,
+
+00:01:09.398 --> 00:01:10.017
+database,
+
+00:01:10.017 --> 00:01:10.636
+file,
+
+00:01:10.636 --> 00:01:13.112
+configurazione -- viene caricato.
+
+00:01:13.112 --> 00:01:16.207
+Poiche' il repository e' cifrato
+
+00:01:16.207 --> 00:01:17.446
+a riposo,
+
+00:01:17.446 --> 00:01:20.541
+anche il backup e' cifrato.
+
+00:01:20.541 --> 00:01:23.636
+Nessuna gestione aggiuntiva delle chiavi.
+
+00:01:25.886 --> 00:01:26.601
+Backup caricato.
+
+00:01:26.601 --> 00:01:29.104
+Tutto cio' che c'e' in questo repo
+
+00:01:29.104 --> 00:01:31.249
+si trova ora sullo storage remoto,
+
+00:01:31.249 --> 00:01:31.607
+cifrato.
+
+00:01:34.936 --> 00:01:37.808
+Elenchiamo i backup disponibili su questo
+
+00:01:37.808 --> 00:01:38.286
+storage.
+
+00:01:38.286 --> 00:01:39.244
+Da qui,
+
+00:01:39.244 --> 00:01:42.115
+il ripristino su un nuovo server
+
+00:01:42.115 --> 00:01:44.987
+richiede un solo comando -- il
+
+00:01:44.987 --> 00:01:46.902
+comando pull del repository.
+
+00:01:46.902 --> 00:01:47.859
+Stessi dati,
+
+00:01:47.859 --> 00:01:48.816
+stessi container,
+
+00:01:48.816 --> 00:01:49.774
+macchina diversa.
+
+00:01:52.774 --> 00:01:55.448
+Tutti i tuoi snapshot in un
+
+00:01:55.448 --> 00:01:56.340
+unico posto.
+
+00:01:56.340 --> 00:01:59.015
+Recuperane uno qualsiasi con un singolo
+
+00:01:59.015 --> 00:01:59.461
+comando.
+
+00:02:00.269 --> 00:02:03.111
+I tuoi dati sono al sicuro e portabili
+
+00:02:03.111 --> 00:02:04.177
+tra le macchine.
+
+00:02:04.177 --> 00:02:05.598
+Ci vediamo nel prossimo!

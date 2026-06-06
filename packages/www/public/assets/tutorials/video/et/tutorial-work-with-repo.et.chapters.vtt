@@ -1,0 +1,25 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:07.419
+Töötamine oma repo-ga
+
+00:00:07.419 --> 00:00:17.901
+Igapäevane kolmik: tunnel, term, sync
+
+00:00:17.901 --> 00:00:36.583
+Tunnel: edasta konteineri port
+
+00:00:36.583 --> 00:00:46.671
+Ava rakendus brauseris
+
+00:00:46.671 --> 00:01:09.019
+Term: käivita käske sandbox-is
+
+00:01:09.019 --> 00:01:26.023
+Sync: eelvaade --dry-run-iga
+
+00:01:26.023 --> 00:01:48.038
+Sync: lae päriselt üles
+
+00:01:48.038 --> 00:01:51.718
+Järgmine: repository fork-imine

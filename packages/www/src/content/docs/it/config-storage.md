@@ -1,10 +1,11 @@
 ---
 title: Archivio di Configurazione
-description: Sincronizzazione cifrata zero-knowledge della configurazione con cifratura basata su passkey. È disponibile gratuitamente per tutti gli utenti.
+description: Sincronizzazione cifrata zero-knowledge della configurazione con cifratura basata su passkey
 category: Guides
 order: 8
 language: it
-sourceHash: "d20655e3e306b85b"
+sourceHash: "daf79946b8925246"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Archivio di Configurazione
@@ -26,19 +27,19 @@ L'archivio di configurazione fornisce la sincronizzazione cifrata zero-knowledge
    - Secondo tocco: deriva le chiavi di cifratura tramite PRF
 4. Configurazione completata; il segreto della passkey è memorizzato nel portachiavi del sistema operativo
 
-Dopo la configurazione, le operazioni CLI quotidiane (push/pull) funzionano senza la passkey.
+Dopo la configurazione, le operazioni CLI quotidiane (push/pull) funzionano senza la passkey. Avvertenza: la configurazione richiede una passkey con supporto dell'estensione PRF. Non tutti i token hardware o gli autenticatori di piattaforma dispongono di essa.
 
 ## Compatibilità dei Provider PRF
 
 | Provider | Supporto PRF | Piattaforme |
 |----------|:-----------:|-----------|
-| YubiKey / chiavi di sicurezza FIDO2 | Si | Windows 11, macOS, Linux |
-| iCloud Keychain | Si | macOS 15+, iOS 18+ |
-| Google Password Manager | Si | Android |
-| 1Password | Si | Android, iOS |
-| Dashlane | Si | Multipiattaforma |
-| Estensione Bitwarden | No | In sviluppo |
-| Windows Hello | No | Non supportato |
+| YubiKey / chiavi di sicurezza FIDO2 | ✅ | Windows 11, macOS, Linux |
+| iCloud Keychain | ✅ | macOS 15+, iOS 18+ |
+| Google Password Manager | ✅ | Android |
+| 1Password | ✅ | Android, iOS |
+| Dashlane | ✅ | Multipiattaforma |
+| Estensione Bitwarden | ❌ | In sviluppo |
+| Windows Hello | ❌ | Non supportato |
 
 ## Gestione dei Membri
 

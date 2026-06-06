@@ -1,64 +1,64 @@
 ---
 title: Servicios
 description: >-
-  Despliegue y gestione servicios en contenedores usando Rediaccfiles, red de
-  servicios e inicio automático.
+  Despliegue y administre servicios en contenedores mediante Rediaccfiles,
+  redes de servicios e inicio automático.
 category: Guides
 order: 5
 language: es
-sourceHash: "181ba0512ff98f9c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "88734af48d9648d5"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Servicios
 
-Si no tienes claro qué herramienta usar, consulta [rdc vs renet](/es/docs/rdc-vs-renet).
-
-Esta página cubre cómo desplegar y gestionar servicios en contenedores: Rediaccfiles, red de servicios, inicio/detención, operaciones masivas e inicio automático.
+En esta página se cubre: despliegue y administración de servicios en contenedores, incluyendo Rediaccfiles, redes de servicios, inicio/parada, operaciones en lote e inicio automático.
 
 ## El Rediaccfile
 
-El **Rediaccfile** es un script Bash que define cómo se inician y detienen sus servicios. Debe llamarse `Rediaccfile` o `rediaccfile` (insensible a mayúsculas) y colocarse dentro del sistema de archivos montado del repositorio.
+El **Rediaccfile** es un script de Bash que define cómo se inician y detienen sus servicios. Se **carga** (no se ejecuta como un proceso separado), de modo que sus funciones comparten el mismo contexto de shell y tienen acceso a todas las variables de entorno exportadas. Debe tener el nombre `Rediaccfile` o `rediaccfile` (sin distinción de mayúsculas) y ubicarse dentro del sistema de archivos montado del repositorio.
 
 Los Rediaccfiles se descubren en dos ubicaciones:
 1. La **raíz** de la ruta de montaje del repositorio
 2. **Subdirectorios de primer nivel** de la ruta de montaje (no recursivo)
 
-Los directorios ocultos (nombres que comienzan con `.`) se omiten.
+Se omiten los directorios ocultos (nombres que comienzan con `.`).
 
 ### Funciones del Ciclo de Vida
 
 Un Rediaccfile contiene hasta dos funciones:
 
 | Función | Cuándo se ejecuta | Propósito | Comportamiento en caso de error |
-|---------|-------------------|-----------|--------------------------------|
-| `up()` | Al iniciar | Iniciar servicios (por ejemplo, `renet compose -- up -d`) | La falla del Rediaccfile raíz es **crítica** (detiene todo). Las fallas en subdirectorios son **no críticas** (se registran, continúa al siguiente) |
-| `down()` | Al detener | Detener servicios (por ejemplo, `renet compose -- down`) | **Mejor esfuerzo** -- las fallas se registran pero siempre se intentan todos los Rediaccfiles |
+|----------|-------------|---------|----------------|
+| `up()` | Al iniciar | Iniciar servicios (por ejemplo, `renet compose -- up -d`) | El fallo raíz es **crítico** (detiene todo). Los fallos en subdirectorios son **no críticos** (registrados, continúa) |
+| `down()` | Al detener | Detener servicios (por ejemplo, `renet compose -- down`) | **Mejor esfuerzo** -- los fallos se registran pero siempre se intenta ejecutar todos los Rediaccfiles |
 
 Ambas funciones son opcionales. Si una función no está definida, se omite silenciosamente.
 
 ### Orden de Ejecución
 
-- **Inicio (`up`):** Primero el Rediaccfile raíz, luego los subdirectorios en **orden alfabético** (A a Z).
-- **Detención (`down`):** Subdirectorios en **orden alfabético inverso** (Z a A), luego el raíz al final.
+- **Iniciando (`up`):** Rediaccfile raíz primero, luego subdirectorios en **orden alfabético** (A a Z).
+- **Deteniendo (`down`):** Subdirectorios en **orden alfabético inverso** (Z a A), luego raíz al final.
 
 ### Variables de Entorno
 
-Cuando se ejecuta una función del Rediaccfile, las siguientes variables de entorno están disponibles:
+Cuando se ejecuta una función de Rediaccfile, están disponibles las siguientes variables de entorno:
 
 | Variable | Descripción | Ejemplo |
 |----------|-------------|---------|
 | `REDIACC_WORKING_DIR` | Ruta de montaje del repositorio | `/mnt/rediacc/mounts/abc123` |
 | `REDIACC_REPOSITORY` | GUID del repositorio | `a1b2c3d4-e5f6-...` |
 | `REDIACC_NETWORK_ID` | ID de red (entero) | `2816` |
-| `DOCKER_HOST` | Socket Docker del daemon aislado de este repositorio | `unix:///var/run/rediacc/docker-2816.sock` |
+| `DOCKER_HOST` | Socket de Docker para el daemon aislado de este repositorio | `unix:///var/run/rediacc/docker-2816.sock` |
 | `{SERVICE}_IP` | IP de loopback para cada servicio definido en `.rediacc.json` | `POSTGRES_IP=127.0.11.2` |
 
-Las variables `{SERVICE}_IP` se generan automáticamente a partir de `.rediacc.json`. La convención de nomenclatura convierte el nombre del servicio a mayúsculas con guiones reemplazados por guiones bajos, y luego agrega `_IP`. Por ejemplo, `listmonk-app` se convierte en `LISTMONK_APP_IP`.
+Las variables `{SERVICE}_IP` se generan automáticamente a partir de las asignaciones de slot en `.rediacc.json` y se exportan antes de que se ejecuten sus funciones de Rediaccfile. La convención de nombres convierte el nombre del servicio a mayúsculas con guiones reemplazados por guiones bajos, luego añade `_IP`. Por ejemplo, un servicio denominado `listmonk-app` con slot `0` se convierte en `LISTMONK_APP_IP=127.0.11.2`.
 
-> **Advertencia: No use `sudo docker` en los Rediaccfiles.** El comando `sudo` restablece las variables de entorno, lo que significa que `DOCKER_HOST` se pierde y los comandos de Docker apuntarán al daemon del sistema en lugar del daemon aislado del repositorio. Esto rompe el aislamiento de contenedores y puede causar conflictos de puertos. Rediacc bloqueará la ejecución si detecta `sudo docker` sin `-E`.
+> **Advertencia: No use `sudo docker` en Rediaccfiles.** El comando `sudo` restablece las variables de entorno, lo que significa que se pierde `DOCKER_HOST` y los comandos de Docker se dirigirán al daemon del sistema en lugar del daemon aislado del repositorio. Esto rompe el aislamiento de contenedores y puede causar conflictos de puerto. Rediacc bloqueará la ejecución si detecta `sudo docker` sin `-E`.
 >
-> Use `renet compose` en sus Rediaccfiles -- automáticamente gestiona `DOCKER_HOST`, inyecta etiquetas de red para el descubrimiento de rutas y configura la red de servicios. Consulte [Red](/es/docs/networking) para detalles sobre cómo se exponen los servicios a través del proxy inverso. Si llama a Docker directamente, use `docker` sin `sudo` -- las funciones del Rediaccfile ya se ejecutan con privilegios suficientes. Si debe usar sudo, use `sudo -E docker` para preservar las variables de entorno.
+> Use `renet compose` en sus Rediaccfiles, maneja automáticamente `DOCKER_HOST`, inyecta etiquetas de red para descubrimiento de rutas y configura redes de servicios. Véase [Redes](/es/docs/networking) para detalles sobre cómo se exponen los servicios a través del proxy inverso. Si llama a Docker directamente, use `docker` sin `sudo`, las funciones de Rediaccfile ya se ejecutan con privilegios suficientes. Si debe usar sudo, use `sudo -E docker` para preservar las variables de entorno.
+>
+> `renet` es la herramienta remota de bajo nivel. Para flujos de trabajo normales de usuario desde su estación de trabajo, prefiera comandos `rdc` como `rdc repo up` y `rdc repo down`. Véase [rdc vs renet](/es/docs/rdc-vs-renet).
 
 ### Ejemplo
 
@@ -76,14 +76,14 @@ down() {
 }
 ```
 
-> **Importante:** Use siempre `renet compose --` en lugar de `docker compose`. El wrapper `renet compose` impone la red del host, la asignación de IP y las etiquetas de descubrimiento de servicios requeridas por renet-proxy. Las capacidades de checkpoint/restauración CRIU se añaden a los contenedores con la etiqueta `rediacc.checkpoint=true`. El uso directo de `docker compose` es rechazado por la validación del Rediaccfile. Consulte [Red](/es/docs/networking) para más detalles.
+> **Importante:** Siempre use `renet compose --` en lugar de `docker compose`. El envoltorio `renet compose` impone redes host, asignación de IP y etiquetas de descubrimiento de servicios requeridas por renet-proxy. Se añaden capacidades de punto de control/restauración CRIU a contenedores con la etiqueta `rediacc.checkpoint=true`. La prueba de Rediaccfile rechaza el uso directo de `docker compose`. Véase [Redes](/es/docs/networking) para detalles.
 
 ### Diseño Multi-Servicio
 
 Para proyectos con múltiples grupos de servicios independientes, use subdirectorios:
 
 ```
-/mnt/rediacc/mounts/my-app/
+/mnt/rediacc/repos/my-app/
 ├── Rediaccfile              # Raíz: configuración compartida
 ├── docker-compose.yml
 ├── database/
@@ -129,13 +129,13 @@ No necesita crear `.rediacc.json` manualmente. Cuando ejecuta `rdc repo up`, Red
 
 ### Cálculo de IP
 
-La IP de un servicio se calcula a partir del ID de red del repositorio y el slot del servicio. El ID de red se distribuye entre el segundo, tercer y cuarto octeto de una dirección de loopback `127.x.y.z`. Cada servicio recibe un desplazamiento de `slot + 2` (los desplazamientos 0 y 1 están reservados).
+La IP de un servicio se calcula a partir del ID de red del repositorio y el slot del servicio. El ID de red se distribuye entre el segundo, tercer y cuarto octeto de una dirección de loopback `127.x.y.z`. Los servicios comienzan en el offset 2:
 
 | Offset | Address | Purpose |
 |--------|---------|---------|
 | .0 | `127.0.11.0` | Network address (reserved) |
 | .1 | `127.0.11.1` | Gateway (reserved) |
-| .2 – .62 | `127.0.11.2` – `127.0.11.62` | Services (`slot + 2`) |
+| .2. .62 | `127.0.11.2`. `127.0.11.62` | Services (`slot + 2`) |
 | .63 | `127.0.11.63` | Broadcast (reserved) |
 
 **Ejemplo** para ID de red `2816` (`0x0B00`), dirección base `127.0.11.0`:
@@ -159,7 +159,7 @@ services:
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_PASSWORD: secret
-    # No se necesita listen_addresses explícito -- el kernel reescribe bind a la IP de loopback correcta
+    # No se necesita listen_addresses explícito - el kernel reescribe bind a la IP de loopback correcta
 
   api:
     image: my-api:latest
@@ -168,7 +168,7 @@ services:
       LISTEN_ADDR: 0.0.0.0:8080                                      # el kernel reescribe a IP de servicio
 ```
 
-> **Nombres de servicio para conexiones:** Use el **nombre de servicio** (p.ej. `postgres`, `redis`) para **conectarse a** otros servicios -- renet mapea automáticamente cada nombre de servicio a su IP de loopback via `/etc/hosts`. Incrustar `${POSTGRES_IP}` en cadenas de conexión almacenadas en bases de datos o archivos de configuración fijará la IP bruta, lo que rompe el aislamiento de forks y es un **error de validación**. Las variables `${SERVICE_IP}` siguen disponibles para uso explícito, pero el binding es manejado automáticamente por el kernel.
+> **Nombres de servicio para conexiones:** Use el **nombre de servicio** (p.ej. `postgres`, `redis`) para **conectarse a** otros servicios -- renet mapea automáticamente cada nombre de servicio a su IP de loopback vía `/etc/hosts`. Incrustar `${POSTGRES_IP}` en cadenas de conexión almacenadas en bases de datos o archivos de configuración fijará la IP bruta, lo que rompe el aislamiento de forks y es un **error de validación**. Las variables `${SERVICE_IP}` siguen disponibles para uso explícito, pero el binding es manejado automáticamente por el kernel.
 
 > **Nota:** No agregue `network_mode: host` manualmente, `renet compose` lo inyecta automáticamente. Las políticas de reinicio (p.ej., `restart: always`) son seguras de usar, renet las elimina automáticamente para compatibilidad CRIU y el watchdog del router maneja la recuperación de contenedores.
 
@@ -188,8 +188,8 @@ renet y Docker difieren deliberadamente en cómo manejar los reinicios de conten
 
 **Cómo interpretar el estado en tiempo de ejecución:**
 
-- `docker inspect <container>` → `RestartPolicy.Name`: siempre será `no` para contenedores gestionados por renet. No se base en esto para la política semántica.
-- `.rediacc.json` en el root del montaje del repositorio → `services.<name>.restart_policy`: la intención real.
+- `docker inspect <container>` -> `RestartPolicy.Name`: siempre será `no` para contenedores gestionados por renet. No se base en esto para la política semántica.
+- `.rediacc.json` en el root del montaje del repositorio -> `services.<name>.restart_policy`: la intención real.
 - `docker ps --format '{{.Status}}'`: estado en tiempo de ejecución.
 
 **Cómo corregir una desviación.** Si la política guardada en `.rediacc.json` de un contenedor es incorrecta (por ejemplo, porque editó compose pero nunca recreó el contenedor), vuelva a ejecutar `rdc repo up --name <repo> -m <machine>`. El contenedor se recrea con la política actualizada registrada.
@@ -220,7 +220,7 @@ La secuencia de ejecución es:
 3. Generar automáticamente `.rediacc.json` a partir de archivos compose
 4. Ejecutar `up()` en todos los Rediaccfiles (orden A-Z)
 
-Después del despliegue, la salida muestra una sección **PROXY ROUTES** con las URLs reales para cada servicio. Los servicios con etiquetas Traefik personalizadas muestran sus dominios personalizados como URLs principales:
+Después del despliegue, la salida muestra una sección **PROXY ROUTES** con las URLs reales para cada servicio. Los servicios con etiquetas Traefik personalizadas (p.ej. `traefik.http.routers.myapp.rule=Host(...)`) muestran sus dominios personalizados como URLs principales:
 
 ```
 HTTP services (accessible via proxy after ~3s):
@@ -229,6 +229,8 @@ HTTP services (accessible via proxy after ~3s):
     Auto:  https://gitlab-server.gitlab.server-1.example.com
     IP:    127.0.11.130
 ```
+
+Los servicios sin etiquetas Traefik personalizadas muestran solo la ruta auto-generada. Use estas URLs (no el patrón genérico impreso por la CLI) para acceso desde el navegador, llamadas API y configuración entre servicios.
 
 ## Detener Servicios
 
@@ -306,7 +308,7 @@ Esto elimina el archivo de clave y destruye el slot 1 de LUKS.
 Cuando el inicio automático está habilitado, `rdc repo up` valida el archivo de clave del slot 1 de LUKS.
 Si el archivo de clave en disco aún coincide con el slot LUKS, no se realizan cambios.
 
-Después de transferir un repositorio entre máquinas via `repo push` / `repo pull`,
+Después de transferir un repositorio entre máquinas vía `repo push` / `repo pull`,
 el archivo de clave en la nueva máquina no coincidirá. En este caso, `repo up` regenera automáticamente
 el archivo de clave y actualiza el slot 1 de LUKS. Verá mensajes de registro:
 
@@ -411,3 +413,31 @@ rdc repo up --name webapp -m prod-1
 ```bash
 rdc repo autostart enable --name webapp -m prod-1
 ```
+
+## Usar secretos por repositorio en compose
+
+El placeholder `POSTGRES_PASSWORD: changeme` anterior es correcto para un tutorial, pero las aplicaciones reales necesitan credenciales reales, y confirmar éstas en el archivo compose (o en un archivo `.env` dentro del repositorio) significa que un fork hereda también esas credenciales. Para credenciales en tiempo de despliegue, use `rdc repo secret`. Los valores viven fuera de la imagen de repositorio cifrada, por lo que los forks comienzan con un mapa de secretos vacío.
+
+Dos modos de entrega funcionan en compose:
+
+**Modo `env`.** Interpole vía `${REDIACC_SECRET_<KEY>}` en cualquier valor `environment:`. El wrapper renet pasa el valor al entorno del contenedor en tiempo de despliegue.
+
+**Modo `file`.** El valor aterriza en un archivo tmpfs del lado del host en `/var/run/rediacc/secrets/<networkID>/<KEY>`, y usted lo monta en el contenedor vía el bloque `secrets:` estándar de Docker compose. El contenedor lee `/run/secrets/<key>`. Prefiera este modo para cualquier cosa sensible. Los valores nunca aparecen en `docker inspect` o `/proc/<pid>/environ`.
+
+```yaml
+services:
+  api:
+    image: myregistry/api:latest
+    environment:
+      DATABASE_URL: ${REDIACC_SECRET_DATABASE_URL}
+    secrets:
+      - stripe_live_key
+
+secrets:
+  stripe_live_key:
+    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_LIVE_KEY
+```
+
+Siembre los valores con `rdc repo secret set --name <repo> --key DATABASE_URL --value <val> --mode env --current ""` y el equivalente en modo file. Consulte [Repositorios § Secretos](/es/docs/repositories#secrets) para la guía completa y [Secretos por repositorio](/es/docs/rdc-cheat-sheet#per-repo-secrets) en la hoja de trucos para la referencia de comandos.
+
+> **Las rutas entre repositorios se rechazan en tiempo de validación.** Un `secrets: file:` (o `configs: file:`, o `env_file:`) de compose que apunta a `/var/run/rediacc/secrets/<other-networkID>/` de otro repositorio se rechaza duramente por el wrapper renet antes de que docker compose se ejecute. `--unsafe` NO anula esto. Defensa en profundidad: el sandbox Landlock alrededor de la shell del Rediaccfile restringe lecturas al directorio de secretos de la red actual, por lo que un `cat /var/run/rediacc/secrets/<other>/X` desde bash del Rediaccfile falla con EACCES incluso si evita el validador YAML. No necesita optar por esto; está activado por defecto para cada `repo up`.

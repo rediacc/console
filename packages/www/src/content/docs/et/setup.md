@@ -4,13 +4,13 @@ description: "Loo konfiguratsioon, lisa masinad, häälesta serverid ja konfigur
 category: "Guides"
 order: 3
 language: et
-sourceHash: "2456daa4289ffb8c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "b3c8c42db1b8d99b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# Masina seadistamine
+# Masina ülesseadmine
 
-See leht juhendab sind esimese masina seadistamisel: konfiguratsioonifaili loomisest serveri registreerimise, selle ettevalmistamise ja soovi korral avaliku ligipääsu infrastruktuuri konfigureerimiseni.
+Esimese masina käivitamiseks on neli sammu: loo konfiguratsioon, registreeri server, valmista see ette ja seadista vajadusel infrastruktuur avalikule liiklusele.
 
 ## 1. samm: loo konfiguratsioon
 
@@ -27,7 +27,7 @@ rdc config init --name my-infra --ssh-key ~/.ssh/id_ed25519
 
 See loob konfiguratsioonifaili nimega `my-infra` ja salvestab selle asukohta `~/.config/rediacc/my-infra.json`. Vaikekonfiguratsioon (kui nime ei anta) salvestatakse failina `~/.config/rediacc/rediacc.json`.
 
-> Sul võib olla mitu konfiguratsioonifaili (nt `production`, `staging`, `dev`). Nende vahel saab lülituda iga käsu puhul lipuga `--config`.
+> Sul võib olla mitu konfiguratsioonifaili (nt `production`, `staging`, `dev`). Nende vahel saad lülituda iga käsu puhul lipuga `--config`.
 
 ## 2. samm: lisa masin
 

@@ -1,0 +1,232 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.734
+Alles klar!
+
+00:00:01.734 --> 00:00:04.303
+Lass uns deiner App eine echte Domain
+
+00:00:04.303 --> 00:00:05.770
+mit automatischem TLS verpassen.
+
+00:00:05.770 --> 00:00:08.339
+Vier kurze Schritte und du bist im
+
+00:00:08.339 --> 00:00:08.706
+Internet.
+
+00:00:09.486 --> 00:00:11.919
+So sieht der Weg aus.
+
+00:00:11.919 --> 00:00:13.865
+Hol dir ein Cloudflare-API-Token,
+
+00:00:13.865 --> 00:00:16.784
+konfiguriere die Infrastruktur in der CLI,
+
+00:00:16.784 --> 00:00:19.703
+push sie auf den Server und
+
+00:00:19.703 --> 00:00:21.649
+deploye dann einen Traefik-Proxy,
+
+00:00:21.649 --> 00:00:24.568
+der DNS und Zertifikate für dich
+
+00:00:24.568 --> 00:00:25.055
+übernimmt.
+
+00:00:25.820 --> 00:00:28.631
+Zuerst öffnest du das Cloudflare-Dashboard im
+
+00:00:28.631 --> 00:00:29.100
+Browser.
+
+00:00:29.100 --> 00:00:30.974
+Geh zu „My Profile“,
+
+00:00:30.974 --> 00:00:33.786
+dann zu „API Tokens“ und erstelle
+
+00:00:33.786 --> 00:00:36.597
+ein Token mit der Berechtigung Zone
+
+00:00:36.597 --> 00:00:37.534
+DNS Edit,
+
+00:00:37.534 --> 00:00:40.346
+damit die CLI deine Einträge verwalten
+
+00:00:40.346 --> 00:00:40.814
+kann.
+
+00:00:43.453 --> 00:00:44.543
+Schritt zwei.
+
+00:00:44.543 --> 00:00:47.267
+Wir teilen der CLI die
+
+00:00:47.267 --> 00:00:48.357
+öffentliche IP,
+
+00:00:48.357 --> 00:00:49.447
+die Basisdomain,
+
+00:00:49.447 --> 00:00:52.171
+die Zertifikats-E-Mail und das Cloudflare-API-Token
+
+00:00:52.171 --> 00:00:52.716
+mit.
+
+00:00:52.716 --> 00:00:55.440
+Die Zertifikats-E-Mail und das Token
+
+00:00:55.440 --> 00:00:58.164
+werden über alle Ihre Maschinen
+
+00:00:58.164 --> 00:00:58.709
+geteilt,
+
+00:00:58.709 --> 00:01:01.433
+sodass Sie sie nur einmal
+
+00:01:01.433 --> 00:01:02.523
+setzen müssen.
+
+00:01:03.323 --> 00:01:05.830
+Infrastruktur in deiner Konfig hinterlegt.
+
+00:01:09.160 --> 00:01:10.835
+Wir bestätigen,
+
+00:01:10.835 --> 00:01:13.348
+dass die Infrastruktureinstellungen
+
+00:01:13.348 --> 00:01:15.023
+gespeichert wurden.
+
+00:01:15.023 --> 00:01:16.698
+Öffentliche IP,
+
+00:01:16.698 --> 00:01:17.536
+Basisdomain,
+
+00:01:17.536 --> 00:01:18.373
+Zertifikats-E-Mail,
+
+00:01:18.373 --> 00:01:20.886
+alles in der
+
+00:01:20.886 --> 00:01:22.561
+Konfiguration sichtbar.
+
+00:01:24.311 --> 00:01:25.281
+Einstellungen gespeichert.
+
+00:01:25.281 --> 00:01:25.765
+Bereit,
+
+00:01:25.765 --> 00:01:28.674
+sie auf den Server zu pushen.
+
+00:01:32.008 --> 00:01:32.999
+Schritt drei.
+
+00:01:32.999 --> 00:01:35.970
+Wir übertragen die Konfiguration auf den
+
+00:01:35.970 --> 00:01:36.465
+Server.
+
+00:01:36.465 --> 00:01:39.437
+Dabei werden die DNS-Einträge bei Cloudflare
+
+00:01:39.437 --> 00:01:42.408
+automatisch erstellt und die Proxy-Konfiguration auf
+
+00:01:42.408 --> 00:01:43.894
+der Maschine vorbereitet.
+
+00:01:46.894 --> 00:01:47.700
+Gepusht.
+
+00:01:47.700 --> 00:01:50.921
+DNS-Einträge werden auf Cloudflare
+
+00:01:50.921 --> 00:01:51.727
+angelegt.
+
+00:01:55.042 --> 00:01:56.386
+Schritt vier beginnt.
+
+00:01:56.386 --> 00:01:59.076
+Wir erstellen ein kleines Repo namens
+
+00:01:59.076 --> 00:01:59.524
+infra.
+
+00:01:59.524 --> 00:02:01.765
+Dort wird der Proxy leben,
+
+00:02:01.765 --> 00:02:03.558
+isoliert von den Anwendungsrepos.
+
+00:02:06.628 --> 00:02:07.838
+Infra-Repo angelegt.
+
+00:02:07.838 --> 00:02:10.259
+Isoliert von deinen App-Repos.
+
+00:02:13.554 --> 00:02:16.323
+Wir wenden die integrierte proxy-Vorlage
+
+00:02:16.323 --> 00:02:16.876
+an.
+
+00:02:16.876 --> 00:02:19.645
+Sie enthält Traefik sowie die
+
+00:02:19.645 --> 00:02:22.414
+Konfiguration für Let's Encrypt und
+
+00:02:22.414 --> 00:02:23.522
+Cloudflare DNS-01-Challenges,
+
+00:02:23.522 --> 00:02:24.630
+direkt einsatzbereit.
+
+00:02:26.880 --> 00:02:29.570
+Traefik-Konfiguration steht.
+
+00:02:32.840 --> 00:02:35.452
+Und wir starten den Proxy.
+
+00:02:35.452 --> 00:02:38.064
+Traefik erkennt Ihre Container alle
+
+00:02:38.064 --> 00:02:39.109
+fünf Sekunden.
+
+00:02:39.109 --> 00:02:41.721
+TLS-Zertifikate kommen automatisch von Let's
+
+00:02:41.721 --> 00:02:42.244
+Encrypt.
+
+00:02:42.244 --> 00:02:44.856
+Ihre App ist jetzt über
+
+00:02:44.856 --> 00:02:46.946
+HTTPS im Internet erreichbar.
+
+00:02:46.946 --> 00:02:49.009
+Proxy ist live.
+
+00:02:49.009 --> 00:02:51.073
+TLS-Zertifikate kommen automatisch.
+
+00:02:51.816 --> 00:02:54.574
+Und damit ist das Netzwerk erledigt!
+
+00:02:54.574 --> 00:02:56.413
+Bis zum nächsten Mal.

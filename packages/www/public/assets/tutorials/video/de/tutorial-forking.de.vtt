@@ -1,0 +1,343 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.523
+Willkommen beim Killer-Feature!
+
+00:00:02.523 --> 00:00:05.062
+Klone ein komplettes Produktions-Repo unabhängig
+
+00:00:05.062 --> 00:00:06.585
+von der Größe,
+
+00:00:06.585 --> 00:00:09.124
+ohne irgendetwas kaputt zu machen.
+
+00:00:09.880 --> 00:00:12.487
+Ein Eltern-Repo fächert in beliebig
+
+00:00:12.487 --> 00:00:14.572
+viele unabhängige Klone auf.
+
+00:00:14.572 --> 00:00:17.179
+Jeder Fork ist seine eigene
+
+00:00:17.179 --> 00:00:18.222
+isolierte Umgebung,
+
+00:00:18.222 --> 00:00:20.829
+die Seite an Seite mit
+
+00:00:20.829 --> 00:00:22.393
+dem Original läuft.
+
+00:00:23.172 --> 00:00:25.324
+Denk an einen geteilten Ordner-Link.
+
+00:00:25.324 --> 00:00:27.907
+Der Link ist immer dasselbe leichte
+
+00:00:27.907 --> 00:00:28.338
+Ding,
+
+00:00:28.338 --> 00:00:30.921
+ob der Ordner klein oder riesig
+
+00:00:30.921 --> 00:00:31.351
+ist,
+
+00:00:31.351 --> 00:00:33.934
+und Forking funktioniert nach demselben Prinzip.
+
+00:00:34.699 --> 00:00:35.662
+Ein Gigabyte,
+
+00:00:35.662 --> 00:00:36.626
+hundert Gigabyte,
+
+00:00:36.626 --> 00:00:37.589
+ein Terabyte:
+
+00:00:37.589 --> 00:00:39.997
+der Fork verhält sich gleich.
+
+00:00:39.997 --> 00:00:42.405
+Die Repo-Größe spielt keine Rolle.
+
+00:00:45.685 --> 00:00:48.373
+Wir forken das Repository mit
+
+00:00:48.373 --> 00:00:49.986
+einem einzigen Befehl.
+
+00:00:49.986 --> 00:00:51.598
+Alles wurde geklont,
+
+00:00:51.598 --> 00:00:52.673
+die App,
+
+00:00:52.673 --> 00:00:53.749
+die Datenbank,
+
+00:00:53.749 --> 00:00:54.824
+die Konfigurationsdateien.
+
+00:00:54.824 --> 00:00:56.974
+Und es dauerte Sekunden,
+
+00:00:56.974 --> 00:00:58.049
+unabhängig davon,
+
+00:00:58.049 --> 00:01:00.737
+wie groß das Repo ist.
+
+00:01:00.737 --> 00:01:01.812
+Ein Gigabyte,
+
+00:01:01.812 --> 00:01:02.887
+hundert Gigabyte,
+
+00:01:02.887 --> 00:01:03.962
+ein Terabyte:
+
+00:01:03.962 --> 00:01:06.113
+immer die gleiche Zeit.
+
+00:01:09.113 --> 00:01:09.863
+Fork erledigt.
+
+00:01:09.863 --> 00:01:10.989
+Der Klon läuft,
+
+00:01:10.989 --> 00:01:13.240
+egal wie groß das Repo ist.
+
+00:01:16.528 --> 00:01:19.249
+Beide Repos existieren jetzt
+
+00:01:19.249 --> 00:01:19.929
+nebeneinander.
+
+00:01:19.929 --> 00:01:21.290
+Gleiche Maschine,
+
+00:01:21.290 --> 00:01:22.650
+gleiche Festplatte,
+
+00:01:22.650 --> 00:01:25.371
+zwei vollständig unabhängige Umgebungen.
+
+00:01:25.371 --> 00:01:28.092
+Der Fork hat eigene
+
+00:01:28.092 --> 00:01:28.772
+Container,
+
+00:01:28.772 --> 00:01:31.493
+ein eigenes Dateisystem und
+
+00:01:31.493 --> 00:01:33.534
+einen eigenen Docker-Daemon.
+
+00:01:36.534 --> 00:01:37.521
+Zwei Repos,
+
+00:01:37.521 --> 00:01:38.507
+eine Platte.
+
+00:01:38.507 --> 00:01:39.494
+Gleiche Daten,
+
+00:01:39.494 --> 00:01:40.975
+alles andere getrennt.
+
+00:01:44.296 --> 00:01:46.068
+Wir beweisen die Isolation.
+
+00:01:46.068 --> 00:01:48.726
+Im Original ist unsere Markierungsdatei genau
+
+00:01:48.726 --> 00:01:49.169
+dort,
+
+00:01:49.169 --> 00:01:51.385
+wo wir sie gelassen haben.
+
+00:01:51.385 --> 00:01:54.043
+Die Existenz des Forks hat nichts
+
+00:01:54.043 --> 00:01:55.372
+am Parent geändert.
+
+00:01:56.172 --> 00:01:58.297
+Originaldatei ist immer noch da.
+
+00:01:58.297 --> 00:02:00.848
+Der Fork hat sie nicht angefasst.
+
+00:02:01.663 --> 00:02:04.225
+Das Eltern-Repo ist die Sonne
+
+00:02:04.225 --> 00:02:06.786
+und dein Fork ist ein
+
+00:02:06.786 --> 00:02:07.299
+Spiegel,
+
+00:02:07.299 --> 00:02:09.348
+der ihr Licht einfängt.
+
+00:02:09.348 --> 00:02:11.910
+Die geteilte Basis bleibt unberührt,
+
+00:02:11.910 --> 00:02:12.934
+während alles,
+
+00:02:12.934 --> 00:02:15.496
+was du auf den Spiegel
+
+00:02:15.496 --> 00:02:16.008
+malst,
+
+00:02:16.008 --> 00:02:17.545
+allein dir gehört.
+
+00:02:20.822 --> 00:02:22.570
+Jetzt löschen wir die Datei,
+
+00:02:22.570 --> 00:02:24.318
+aber nur innerhalb des Forks.
+
+00:02:24.318 --> 00:02:26.067
+Im Fork ist sie weg.
+
+00:02:26.067 --> 00:02:28.164
+Wir haben eine destruktive Änderung vorgenommen,
+
+00:02:28.164 --> 00:02:29.913
+und sie blieb im Fork.
+
+00:02:30.713 --> 00:02:31.933
+Im Fork weg.
+
+00:02:31.933 --> 00:02:33.560
+Das Original bleibt unberührt.
+
+00:02:36.889 --> 00:02:38.520
+Zurück zum Original.
+
+00:02:38.520 --> 00:02:41.239
+Die Markierungsdatei ist noch hier,
+
+00:02:41.239 --> 00:02:41.783
+unberührt.
+
+00:02:41.783 --> 00:02:44.502
+Das Original hat nie etwas
+
+00:02:44.502 --> 00:02:45.590
+davon mitbekommen.
+
+00:02:45.590 --> 00:02:46.677
+Gleiches Image,
+
+00:02:46.677 --> 00:02:47.765
+getrennte Docker-Daemons,
+
+00:02:47.765 --> 00:02:48.853
+getrennte Dateisysteme.
+
+00:02:49.653 --> 00:02:50.907
+Immer noch da.
+
+00:02:50.907 --> 00:02:52.578
+Forks sind sauber isoliert.
+
+00:02:55.881 --> 00:02:58.005
+Wenn Sie fertig sind,
+
+00:02:58.005 --> 00:03:00.661
+löschen Sie einfach den Fork.
+
+00:03:00.661 --> 00:03:03.317
+Das Original bleibt genau so,
+
+00:03:03.317 --> 00:03:04.910
+wie es war.
+
+00:03:04.910 --> 00:03:05.441
+Forken,
+
+00:03:05.441 --> 00:03:05.973
+experimentieren,
+
+00:03:05.973 --> 00:03:07.035
+Dinge kaputtmachen,
+
+00:03:07.035 --> 00:03:07.566
+löschen:
+
+00:03:07.566 --> 00:03:08.628
+kein Risiko.
+
+00:03:11.628 --> 00:03:12.408
+Fork entfernt.
+
+00:03:12.408 --> 00:03:14.356
+Das Original ist genau so,
+
+00:03:14.356 --> 00:03:16.304
+wie wir es zurückgelassen haben.
+
+00:03:17.114 --> 00:03:19.842
+Ein Fork ist ein eingefrorenes Foto
+
+00:03:19.842 --> 00:03:22.116
+des Eltern-Repos in einem Moment.
+
+00:03:22.116 --> 00:03:24.844
+Das Eltern-Repo fließt weiter wie ein
+
+00:03:24.844 --> 00:03:25.299
+Fluss,
+
+00:03:25.299 --> 00:03:28.027
+aber deine Momentaufnahme bleibt genau dort,
+
+00:03:28.027 --> 00:03:29.392
+wo sie war.
+
+00:03:30.174 --> 00:03:32.692
+Fünf Forks eines hundert Gigabyte großen
+
+00:03:32.692 --> 00:03:35.210
+Repos summieren sich auf der Platte
+
+00:03:35.210 --> 00:03:37.309
+trotzdem auf etwa hundert Gigabyte.
+
+00:03:37.309 --> 00:03:39.827
+Du zahlst nur für die Bytes,
+
+00:03:39.827 --> 00:03:42.345
+die du innerhalb jedes Forks tatsächlich
+
+00:03:42.345 --> 00:03:42.765
+änderst.
+
+00:03:43.536 --> 00:03:46.169
+Forks lassen Secrets bewusst zurück,
+
+00:03:46.169 --> 00:03:48.802
+und genau das macht das
+
+00:03:48.802 --> 00:03:50.382
+Motto „Produktion klonen,
+
+00:03:50.382 --> 00:03:53.015
+nichts kaputt machen“ wirklich sicher.
+
+00:03:53.015 --> 00:03:55.648
+Das verdrahten wir im nächsten
+
+00:03:55.648 --> 00:03:56.702
+Tutorial richtig!

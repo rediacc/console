@@ -1,11 +1,11 @@
 ---
-title: Recuperação com Viagem no Tempo
-description: Recupere dados apagados acidentalmente há semanas com recuperação no tempo baseada em snapshots.
+title: Time Travel Recovery
+description: Recupere dados apagados há semanas usando snapshots do btrfs, mesmo quando seus backups normais já não cobrem esse período.
 category: Use Cases
 order: 2
 language: pt
-sourceHash: "4c1fcb1667a89759"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "e55d51b8df91b20f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Quando os outros perdem dados para sempre, você pode viajar de volta no tempo.**
@@ -16,7 +16,7 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 
 ## O Problema
 
-Mehmet é especialista em sistemas e responsável pela base de dados de uma grande organização de comércio eletrónico. Numa manhã, perante reclamações de clientes, apercebe-se de que alguns registos de encomendas anteriores **não estão visíveis** no sistema. A investigação revela que um funcionário recém-contratado **apagou acidentalmente** alguns dados críticos da base de dados em produção há 3 semanas, **ligando-se à base de dados de produção em vez do ambiente de testes**.
+Mehmet é especialista em sistemas e responsável pela base de dados de uma grande organização de comércio eletrónico. Numa manhã, perante reclamações de clientes, apercebe-se de que alguns registos de encomendas anteriores **não estão visíveis** no sistema. A investigação revela que um funcionário recém-contratado **apagou acidentalmente** alguns dados críticos da base de dados em produção há 3 semanas, **ligando-se à base de dados de produção em vez do ambiente de testes**. É o erro clássico. Todo DBA ou já cometeu este erro ou viu alguém recém-contratado cometê-lo.
 
 **Sistema de Backup Existente:**
 * Backups completos são feitos uma vez por semana
@@ -42,7 +42,7 @@ Devido à perda de dados:
 
 ## Solução Rediacc
 
-Mehmet propõe uma solução semelhante a uma "máquina do tempo" com o Rediacc:
+Aqui está a solução de viagem no tempo que Mehmet constrói com o Rediacc:
 
 ![Time Travel Recovery](/img/time-travel-recovery.svg)
 

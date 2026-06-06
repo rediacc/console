@@ -4,8 +4,8 @@ description: "Cómo Rediacc aborda la directiva de ciberseguridad NIS2 de la UE 
 category: "Legal"
 order: 8
 language: es
-sourceHash: "a2078388f7ae1906"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "72a61496d38955d3"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 NIS2 y DORA son regulaciones de la UE que imponen requisitos de ciberseguridad y resiliencia operativa a organizaciones de infraestructura critica y del sector financiero. Ambas entraron en vigor en 2025 y se aplican ampliamente en las industrias de la UE.
@@ -20,8 +20,8 @@ Texto completo: [Directiva (UE) 2022/2555](https://eur-lex.europa.eu/eli/dir/202
 
 | Requisito NIS2 | Capacidad de Rediacc |
 |---------------|---------------------|
-| Medidas de gestion de riesgos (Art. 21) | Cifrado LUKS2 en reposo, aislamiento de red por repositorio, acceso solo SSH, registro de auditoria a nivel de cuenta (40+ tipos de eventos) |
-| Manejo de incidentes (Art. 21(2)(b)) | 40+ tipos de eventos (autenticacion, tokens, configuracion, licencias) proporcionan rastro forense. Aislamiento por repositorio limita el radio de impacto. |
+| Medidas de gestion de riesgos (Art. 21) | Cifrado LUKS2 en reposo, aislamiento de red por repositorio, acceso solo SSH, registro de auditoria (70+ tipos de eventos incluyendo operaciones de máquina) |
+| Manejo de incidentes (Art. 21(2)(b)) | 70+ tipos de eventos (autenticacion, tokens, configuracion, licencias, operaciones de maquina) proporcionan rastro forense. Aislamiento por repositorio limita el radio de impacto. |
 | Continuidad del negocio (Art. 21(2)(c)) | `rdc repo push/pull` con respaldo cifrado a multiples destinos. Snapshots CoW para rollback instantaneo. |
 | Seguridad de la cadena de suministro (Art. 21(2)(d)) | El autoalojamiento elimina riesgos de cadena de suministro SaaS. Ningun proveedor de nube tercero procesa tus datos. |
 | Seguridad de red (Art. 21(2)(e)) | Docker daemons por repositorio, reglas iptables, aislamiento de IP loopback (subredes /26). |
@@ -33,7 +33,7 @@ Texto completo: [Directiva (UE) 2022/2555](https://eur-lex.europa.eu/eli/dir/202
 
 La seguridad de la cadena de suministro es una preocupacion central de NIS2 (Art. 21(2)(d)). Las organizaciones deben evaluar y gestionar riesgos de sus proveedores de servicios TIC y suministradores.
 
-Rediacc autoalojado elimina la mayor superficie de ataque de la cadena de suministro: ningun SaaS tercero maneja tus datos, ningun proveedor de nube tiene acceso logico a tu infraestructura, y ningun entorno multi-tenant crea exposicion a la postura de seguridad de otros clientes. [El ataque de ransomware a Blackbaud en 2020 expuso datos de mas de 13,000 organizaciones clientes, costando 49.5 millones de dolares en acuerdos.](https://www.sec.gov/newsroom/press-releases/2023-48)
+Rediacc autoalojado elimina la mayor superficie de ataque de la cadena de suministro, y sí, sé que suena obvio. Aquí es por qué importa: ningun SaaS tercero maneja tus datos, ningun proveedor de nube tiene acceso logico a tu infraestructura, y ningun entorno multi-tenant crea exposicion a la postura de seguridad de otros clientes. Los incumplimientos de proveedores SaaS han causado daños en cascada en miles de organizaciones. [El ataque de ransomware a Blackbaud en 2020 expuso datos de mas de 13,000 organizaciones clientes, costando 49.5 millones de dolares en acuerdos.](https://www.sec.gov/newsroom/press-releases/2023-48)
 
 ---
 
@@ -49,7 +49,7 @@ Texto completo: [Reglamento (UE) 2022/2554](https://eur-lex.europa.eu/eli/reg/20
 |---------------|---------------------|
 | Marco de gestion de riesgos TIC (Art. 6) | Cifrado, aislamiento, registro de auditoria y respaldo forman la capa de controles tecnicos. |
 | Proteccion y prevencion (Art. 9) | Cifrado LUKS2 AES-256 en reposo. Aislamiento de red previene movimiento lateral. Acceso solo SSH. |
-| Deteccion (Art. 10) | 40+ tipos de eventos a nivel de cuenta. Panel de administracion con filtrado por usuario y equipo. Operaciones de maquina auditables via SSH y registros del sistema. |
+| Deteccion (Art. 10) | 70+ tipos de eventos incluyendo operaciones de máquina (ciclo de vida de repositorio, respaldo, sincronizacion, terminal). Panel de administracion y portal con filtrado por usuario y equipo. Operaciones de máquina también en registros del sistema para defensa en profundidad. |
 | Respuesta y recuperacion (Art. 11) | Snapshots CoW para rollback instantaneo. `rdc repo push/pull` para recuperacion multi-destino. Pruebas de recuperacion ante desastres basadas en fork. |
 | Riesgo TIC de terceros (Art. 28-30) | El autoalojamiento elimina completamente la clasificacion de "proveedor critico de TIC tercero". |
 | Pruebas de resiliencia operativa digital (Art. 24-27) | La clonacion CoW permite pruebas de penetracion dirigidas por amenazas en entornos similares a produccion sin exposicion de datos. Clonar, probar, destruir. |

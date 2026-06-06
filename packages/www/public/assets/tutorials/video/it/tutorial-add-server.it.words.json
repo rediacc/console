@@ -1,0 +1,450 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.416,
+      "text": "Bene!",
+      "words": [{ "start": 1, "end": 1.416, "char": [0, 5] }]
+    },
+    {
+      "start": 1.416,
+      "end": 3.496,
+      "text": "Aggiungiamo il tuo primo server.",
+      "words": [
+        { "start": 1.416, "end": 1.832, "char": [0, 11] },
+        { "start": 1.832, "end": 2.248, "char": [12, 14] },
+        { "start": 2.248, "end": 2.664, "char": [15, 18] },
+        { "start": 2.664, "end": 3.08, "char": [19, 24] },
+        { "start": 3.08, "end": 3.496, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 3.496,
+      "end": 6.407,
+      "text": "Bastano due comandi e circa un minuto.",
+      "words": [
+        { "start": 3.496, "end": 3.912, "char": [0, 7] },
+        { "start": 3.912, "end": 4.328, "char": [8, 11] },
+        { "start": 4.328, "end": 4.744, "char": [12, 19] },
+        { "start": 4.744, "end": 5.159, "char": [20, 21] },
+        { "start": 5.159, "end": 5.575, "char": [22, 27] },
+        { "start": 5.575, "end": 5.991, "char": [28, 30] },
+        { "start": 5.991, "end": 6.407, "char": [31, 38] }
+      ]
+    },
+    {
+      "start": 7.164,
+      "end": 8.946,
+      "text": "I componenti sono due.",
+      "words": [
+        { "start": 7.164, "end": 7.61, "char": [0, 1] },
+        { "start": 7.61, "end": 8.055, "char": [2, 12] },
+        { "start": 8.055, "end": 8.501, "char": [13, 17] },
+        { "start": 8.501, "end": 8.946, "char": [18, 22] }
+      ]
+    },
+    {
+      "start": 8.946,
+      "end": 11.619,
+      "text": "Lo strumento da riga di comando",
+      "words": [
+        { "start": 8.946, "end": 9.392, "char": [0, 2] },
+        { "start": 9.392, "end": 9.837, "char": [3, 12] },
+        { "start": 9.837, "end": 10.283, "char": [13, 15] },
+        { "start": 10.283, "end": 10.728, "char": [16, 20] },
+        { "start": 10.728, "end": 11.174, "char": [21, 23] },
+        { "start": 11.174, "end": 11.619, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 11.619,
+      "end": 13.401,
+      "text": "vive sul tuo laptop,",
+      "words": [
+        { "start": 11.619, "end": 12.065, "char": [0, 4] },
+        { "start": 12.065, "end": 12.51, "char": [5, 8] },
+        { "start": 12.51, "end": 12.956, "char": [9, 12] },
+        { "start": 12.956, "end": 13.401, "char": [13, 20] }
+      ]
+    },
+    {
+      "start": 13.401,
+      "end": 16.075,
+      "text": "e un orchestratore chiamato renet gira",
+      "words": [
+        { "start": 13.401, "end": 13.847, "char": [0, 1] },
+        { "start": 13.847, "end": 14.293, "char": [2, 4] },
+        { "start": 14.293, "end": 14.738, "char": [5, 18] },
+        { "start": 14.738, "end": 15.184, "char": [19, 27] },
+        { "start": 15.184, "end": 15.629, "char": [28, 33] },
+        { "start": 15.629, "end": 16.075, "char": [34, 38] }
+      ]
+    },
+    {
+      "start": 16.075,
+      "end": 16.966,
+      "text": "sul server.",
+      "words": [
+        { "start": 16.075, "end": 16.52, "char": [0, 3] },
+        { "start": 16.52, "end": 16.966, "char": [4, 11] }
+      ]
+    },
+    {
+      "start": 16.966,
+      "end": 19.639,
+      "text": "La CLI si connette via SSH,",
+      "words": [
+        { "start": 16.966, "end": 17.411, "char": [0, 2] },
+        { "start": 17.411, "end": 17.857, "char": [3, 6] },
+        { "start": 17.857, "end": 18.302, "char": [7, 9] },
+        { "start": 18.302, "end": 18.748, "char": [10, 18] },
+        { "start": 18.748, "end": 19.193, "char": [19, 22] },
+        { "start": 19.193, "end": 19.639, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 19.639,
+      "end": 22.312,
+      "text": "quindi non devi mai collegarti al",
+      "words": [
+        { "start": 19.639, "end": 20.084, "char": [0, 6] },
+        { "start": 20.084, "end": 20.53, "char": [7, 10] },
+        { "start": 20.53, "end": 20.976, "char": [11, 15] },
+        { "start": 20.976, "end": 21.421, "char": [16, 19] },
+        { "start": 21.421, "end": 21.867, "char": [20, 30] },
+        { "start": 21.867, "end": 22.312, "char": [31, 33] }
+      ]
+    },
+    {
+      "start": 22.312,
+      "end": 23.203,
+      "text": "server manualmente.",
+      "words": [
+        { "start": 22.312, "end": 22.758, "char": [0, 6] },
+        { "start": 22.758, "end": 23.203, "char": [7, 19] }
+      ]
+    },
+    {
+      "start": 26.485,
+      "end": 29.273,
+      "text": "Iniziamo creando un profilo di configurazione.",
+      "words": [
+        { "start": 26.485, "end": 26.95, "char": [0, 8] },
+        { "start": 26.95, "end": 27.414, "char": [9, 16] },
+        { "start": 27.414, "end": 27.879, "char": [17, 19] },
+        { "start": 27.879, "end": 28.343, "char": [20, 27] },
+        { "start": 28.343, "end": 28.808, "char": [28, 30] },
+        { "start": 28.808, "end": 29.273, "char": [31, 46] }
+      ]
+    },
+    {
+      "start": 29.273,
+      "end": 32.06,
+      "text": "Il profilo contiene la chiave SSH,",
+      "words": [
+        { "start": 29.273, "end": 29.737, "char": [0, 2] },
+        { "start": 29.737, "end": 30.202, "char": [3, 10] },
+        { "start": 30.202, "end": 30.666, "char": [11, 19] },
+        { "start": 30.666, "end": 31.131, "char": [20, 22] },
+        { "start": 31.131, "end": 31.596, "char": [23, 29] },
+        { "start": 31.596, "end": 32.06, "char": [30, 34] }
+      ]
+    },
+    {
+      "start": 32.06,
+      "end": 34.848,
+      "text": "l'elenco delle macchine e le impostazioni",
+      "words": [
+        { "start": 32.06, "end": 32.525, "char": [0, 8] },
+        { "start": 32.525, "end": 32.989, "char": [9, 14] },
+        { "start": 32.989, "end": 33.454, "char": [15, 23] },
+        { "start": 33.454, "end": 33.919, "char": [24, 25] },
+        { "start": 33.919, "end": 34.383, "char": [26, 28] },
+        { "start": 34.383, "end": 34.848, "char": [29, 41] }
+      ]
+    },
+    {
+      "start": 34.848,
+      "end": 37.636,
+      "text": "dell'infrastruttura per tutto cio' che faremo",
+      "words": [
+        { "start": 34.848, "end": 35.313, "char": [0, 19] },
+        { "start": 35.313, "end": 35.777, "char": [20, 23] },
+        { "start": 35.777, "end": 36.242, "char": [24, 29] },
+        { "start": 36.242, "end": 36.706, "char": [30, 34] },
+        { "start": 36.706, "end": 37.171, "char": [35, 38] },
+        { "start": 37.171, "end": 37.636, "char": [39, 45] }
+      ]
+    },
+    {
+      "start": 37.636,
+      "end": 39.494,
+      "text": "da qui in avanti.",
+      "words": [
+        { "start": 37.636, "end": 38.1, "char": [0, 2] },
+        { "start": 38.1, "end": 38.565, "char": [3, 6] },
+        { "start": 38.565, "end": 39.029, "char": [7, 9] },
+        { "start": 39.029, "end": 39.494, "char": [10, 17] }
+      ]
+    },
+    {
+      "start": 40.744,
+      "end": 41.465,
+      "text": "Profilo creato.",
+      "words": [
+        { "start": 40.744, "end": 41.104, "char": [0, 7] },
+        { "start": 41.104, "end": 41.465, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 41.465,
+      "end": 43.988,
+      "text": "Tutto cio' che configuriamo da qui in",
+      "words": [
+        { "start": 41.465, "end": 41.825, "char": [0, 5] },
+        { "start": 41.825, "end": 42.186, "char": [6, 10] },
+        { "start": 42.186, "end": 42.546, "char": [11, 14] },
+        { "start": 42.546, "end": 42.907, "char": [15, 27] },
+        { "start": 42.907, "end": 43.267, "char": [28, 30] },
+        { "start": 43.267, "end": 43.628, "char": [31, 34] },
+        { "start": 43.628, "end": 43.988, "char": [35, 37] }
+      ]
+    },
+    {
+      "start": 43.988,
+      "end": 46.151,
+      "text": "poi vive in questo unico file.",
+      "words": [
+        { "start": 43.988, "end": 44.349, "char": [0, 3] },
+        { "start": 44.349, "end": 44.709, "char": [4, 8] },
+        { "start": 44.709, "end": 45.07, "char": [9, 11] },
+        { "start": 45.07, "end": 45.43, "char": [12, 18] },
+        { "start": 45.43, "end": 45.791, "char": [19, 24] },
+        { "start": 45.791, "end": 46.151, "char": [25, 30] }
+      ]
+    },
+    {
+      "start": 49.455,
+      "end": 52.379,
+      "text": "Ora registriamo il server dalla riga",
+      "words": [
+        { "start": 49.455, "end": 49.942, "char": [0, 3] },
+        { "start": 49.942, "end": 50.43, "char": [4, 15] },
+        { "start": 50.43, "end": 50.917, "char": [16, 18] },
+        { "start": 50.917, "end": 51.404, "char": [19, 25] },
+        { "start": 51.404, "end": 51.891, "char": [26, 31] },
+        { "start": 51.891, "end": 52.379, "char": [32, 36] }
+      ]
+    },
+    {
+      "start": 52.379,
+      "end": 53.353,
+      "text": "di comando,",
+      "words": [
+        { "start": 52.379, "end": 52.866, "char": [0, 2] },
+        { "start": 52.866, "end": 53.353, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 53.353,
+      "end": 54.815,
+      "text": "fornendo il nome,",
+      "words": [
+        { "start": 53.353, "end": 53.841, "char": [0, 8] },
+        { "start": 53.841, "end": 54.328, "char": [9, 11] },
+        { "start": 54.328, "end": 54.815, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 54.815,
+      "end": 57.252,
+      "text": "l'indirizzo IP e l'utente SSH.",
+      "words": [
+        { "start": 54.815, "end": 55.302, "char": [0, 11] },
+        { "start": 55.302, "end": 55.79, "char": [12, 14] },
+        { "start": 55.79, "end": 56.277, "char": [15, 16] },
+        { "start": 56.277, "end": 56.764, "char": [17, 25] },
+        { "start": 56.764, "end": 57.252, "char": [26, 30] }
+      ]
+    },
+    {
+      "start": 57.252,
+      "end": 60.175,
+      "text": "Le host key vengono scansionate automaticamente",
+      "words": [
+        { "start": 57.252, "end": 57.739, "char": [0, 2] },
+        { "start": 57.739, "end": 58.226, "char": [3, 7] },
+        { "start": 58.226, "end": 58.713, "char": [8, 11] },
+        { "start": 58.713, "end": 59.201, "char": [12, 19] },
+        { "start": 59.201, "end": 59.688, "char": [20, 31] },
+        { "start": 59.688, "end": 60.175, "char": [32, 47] }
+      ]
+    },
+    {
+      "start": 60.175,
+      "end": 62.124,
+      "text": "per un accesso sicuro.",
+      "words": [
+        { "start": 60.175, "end": 60.663, "char": [0, 3] },
+        { "start": 60.663, "end": 61.15, "char": [4, 6] },
+        { "start": 61.15, "end": 61.637, "char": [7, 14] },
+        { "start": 61.637, "end": 62.124, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 62.124,
+      "end": 63.216,
+      "text": "Server registrato.",
+      "words": [
+        { "start": 62.124, "end": 62.67, "char": [0, 6] },
+        { "start": 62.67, "end": 63.216, "char": [7, 18] }
+      ]
+    },
+    {
+      "start": 63.216,
+      "end": 65.944,
+      "text": "Le host key sono state",
+      "words": [
+        { "start": 63.216, "end": 63.761, "char": [0, 2] },
+        { "start": 63.761, "end": 64.307, "char": [3, 7] },
+        { "start": 64.307, "end": 64.853, "char": [8, 11] },
+        { "start": 64.853, "end": 65.398, "char": [12, 16] },
+        { "start": 65.398, "end": 65.944, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 65.944,
+      "end": 67.035,
+      "text": "scansionate automaticamente.",
+      "words": [
+        { "start": 65.944, "end": 66.49, "char": [0, 11] },
+        { "start": 66.49, "end": 67.035, "char": [12, 28] }
+      ]
+    },
+    {
+      "start": 70.31,
+      "end": 72.845,
+      "text": "Poi effettuiamo il provisioning del server.",
+      "words": [
+        { "start": 70.31, "end": 70.733, "char": [0, 3] },
+        { "start": 70.733, "end": 71.155, "char": [4, 15] },
+        { "start": 71.155, "end": 71.578, "char": [16, 18] },
+        { "start": 71.578, "end": 72, "char": [19, 31] },
+        { "start": 72, "end": 72.423, "char": [32, 35] },
+        { "start": 72.423, "end": 72.845, "char": [36, 43] }
+      ]
+    },
+    {
+      "start": 72.845,
+      "end": 75.38,
+      "text": "Questo installa renet e crea il",
+      "words": [
+        { "start": 72.845, "end": 73.268, "char": [0, 6] },
+        { "start": 73.268, "end": 73.69, "char": [7, 15] },
+        { "start": 73.69, "end": 74.113, "char": [16, 21] },
+        { "start": 74.113, "end": 74.535, "char": [22, 23] },
+        { "start": 74.535, "end": 74.958, "char": [24, 28] },
+        { "start": 74.958, "end": 75.38, "char": [29, 31] }
+      ]
+    },
+    {
+      "start": 75.38,
+      "end": 76.225,
+      "text": "datastore cifrato.",
+      "words": [
+        { "start": 75.38, "end": 75.803, "char": [0, 9] },
+        { "start": 75.803, "end": 76.225, "char": [10, 18] }
+      ]
+    },
+    {
+      "start": 76.225,
+      "end": 77.07,
+      "text": "Al termine,",
+      "words": [
+        { "start": 76.225, "end": 76.648, "char": [0, 2] },
+        { "start": 76.648, "end": 77.07, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 77.07,
+      "end": 79.605,
+      "text": "il server e' pronto ad ospitare",
+      "words": [
+        { "start": 77.07, "end": 77.493, "char": [0, 2] },
+        { "start": 77.493, "end": 77.915, "char": [3, 9] },
+        { "start": 77.915, "end": 78.338, "char": [10, 12] },
+        { "start": 78.338, "end": 78.76, "char": [13, 19] },
+        { "start": 78.76, "end": 79.183, "char": [20, 22] },
+        { "start": 79.183, "end": 79.605, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 79.605,
+      "end": 80.028,
+      "text": "repository.",
+      "words": [{ "start": 79.605, "end": 80.028, "char": [0, 11] }]
+    },
+    {
+      "start": 80.028,
+      "end": 80.495,
+      "text": "Fatto.",
+      "words": [{ "start": 80.028, "end": 80.495, "char": [0, 6] }]
+    },
+    {
+      "start": 80.495,
+      "end": 83.299,
+      "text": "renet e' installato e il datastore",
+      "words": [
+        { "start": 80.495, "end": 80.962, "char": [0, 5] },
+        { "start": 80.962, "end": 81.429, "char": [6, 8] },
+        { "start": 81.429, "end": 81.897, "char": [9, 19] },
+        { "start": 81.897, "end": 82.364, "char": [20, 21] },
+        { "start": 82.364, "end": 82.831, "char": [22, 24] },
+        { "start": 82.831, "end": 83.299, "char": [25, 34] }
+      ]
+    },
+    {
+      "start": 83.299,
+      "end": 84.233,
+      "text": "e' pronto.",
+      "words": [
+        { "start": 83.299, "end": 83.766, "char": [0, 2] },
+        { "start": 83.766, "end": 84.233, "char": [3, 10] }
+      ]
+    },
+    {
+      "start": 85.012,
+      "end": 87.716,
+      "text": "E con questo abbiamo finito con l'aggiunta di un",
+      "words": [
+        { "start": 85.012, "end": 85.312, "char": [0, 1] },
+        { "start": 85.312, "end": 85.613, "char": [2, 5] },
+        { "start": 85.613, "end": 85.913, "char": [6, 12] },
+        { "start": 85.913, "end": 86.214, "char": [13, 20] },
+        { "start": 86.214, "end": 86.514, "char": [21, 27] },
+        { "start": 86.514, "end": 86.814, "char": [28, 31] },
+        { "start": 86.814, "end": 87.115, "char": [32, 42] },
+        { "start": 87.115, "end": 87.415, "char": [43, 45] },
+        { "start": 87.415, "end": 87.716, "char": [46, 48] }
+      ]
+    },
+    {
+      "start": 87.716,
+      "end": 88.016,
+      "text": "server!",
+      "words": [{ "start": 87.716, "end": 88.016, "char": [0, 7] }]
+    },
+    {
+      "start": 88.016,
+      "end": 89.218,
+      "text": "Ci vediamo nel prossimo.",
+      "words": [
+        { "start": 88.016, "end": 88.316, "char": [0, 2] },
+        { "start": 88.316, "end": 88.617, "char": [3, 10] },
+        { "start": 88.617, "end": 88.917, "char": [11, 14] },
+        { "start": 88.917, "end": 89.218, "char": [15, 24] }
+      ]
+    }
+  ]
+}

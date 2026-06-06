@@ -1,16 +1,16 @@
 ---
-title: rdc vs renet
-description: 'Когда использовать rdc, а когда renet.'
+title: "rdc vs renet"
+description: "Когда использовать rdc и когда использовать renet."
 category: Concepts
 order: 1
 language: ru
-sourceHash: "026a183f8a5f9dd4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2ccc8590bc6f67c6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # rdc vs renet
 
-У Rediacc два исполняемых файла. Вот когда использовать каждый из них.
+Rediacc поставляется с двумя исполняемыми файлами. Два назначения, два места. Вот какой использовать в каждом случае.
 
 | | rdc | renet |
 |---|-----|-------|
@@ -60,7 +60,7 @@ rdc machine health --name server-1
 - Проверки системных внутренностей, недоступных через `rdc`
 - Низкоуровневых операций восстановления
 
-Все команды `renet` требуют привилегий root (`sudo`). Полный список команд `renet` см. в разделе [Справочник по серверу](/ru/docs/server-reference).
+Все команды `renet` требуют привилегий root (`sudo`). `rdc` не оборачивает каждую подкоманду `renet`; для всего остального подключитесь по SSH и вызовите `renet` напрямую. Полный список команд `renet` см. в разделе [Справочник по серверу](/ru/docs/server-reference).
 
 ## Экспериментальная функция: `rdc ops` (локальные VM)
 

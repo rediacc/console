@@ -4,8 +4,8 @@ description: "Hesap sunucusunu ve CLI dağıtımını kendi altyapınızda çal�
 category: "Guides"
 order: 5
 language: tr
-sourceHash: "c8c9aceeeeea1411"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "eea76db2d612133f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 Rediacc tamamen kendi altyapınızda çalışabilir. Bağımsız Docker imajı hesap sunucusunu, web portalını, pazarlama sitesini ve CLI dağıtım uç noktasını içerir. Rediacc'ın barındırılan servislerine harici bağımlılık gerekmez.
@@ -33,7 +33,7 @@ docker run -p 80:80 -p 443:443 ghcr.io/rediacc/server:stable
 
 ## CLI'ı Sunucunuzdan Kurma
 
-Kullanıcılar CLI'ı doğrudan yerinde sunucunuzdan kurabilir. Kurulum betiği güncelleme kanalını otomatik algılar ve CLI'ı güncellemeler için sunucunuzu kontrol edecek şekilde yapılandırır.
+CLI'ı doğrudan yerinde sunucunuzdan kurun. Kurulum betiği güncelleme kanalını otomatik algılar ve CLI'ı güncellemeler için sunucunuzu kontrol edecek şekilde yapılandırır.
 
 ```bash
 curl -fsSL https://account.example.com/install.sh | \

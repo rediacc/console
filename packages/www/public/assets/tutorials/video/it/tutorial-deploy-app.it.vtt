@@ -1,0 +1,187 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.335
+E' ora di distribuire un'app vera!
+
+00:00:03.335 --> 00:00:06.058
+Passeremo da un repo vuoto a container
+
+00:00:06.058 --> 00:00:08.393
+in esecuzione in tre brevi passaggi.
+
+00:00:09.160 --> 00:00:10.964
+Il flusso e' semplice:
+
+00:00:10.964 --> 00:00:12.318
+scegli un template,
+
+00:00:12.318 --> 00:00:14.573
+applicalo al repo ed eseguilo.
+
+00:00:14.573 --> 00:00:16.829
+La CLI include template integrati,
+
+00:00:16.829 --> 00:00:19.536
+cosi' non dobbiamo mai scrivere un
+
+00:00:19.536 --> 00:00:20.889
+docker-compose da zero.
+
+00:00:24.163 --> 00:00:25.051
+Passo uno.
+
+00:00:25.051 --> 00:00:26.827
+Elenchiamo i template disponibili.
+
+00:00:26.827 --> 00:00:29.492
+Rediacc include configurazioni pronte all'uso per
+
+00:00:29.492 --> 00:00:32.156
+le app piu' comuni -- Postgres,
+
+00:00:32.156 --> 00:00:32.601
+Redis,
+
+00:00:32.601 --> 00:00:35.265
+web server -- cosi' non devi
+
+00:00:35.265 --> 00:00:37.485
+scrivere un docker-compose da zero.
+
+00:00:38.985 --> 00:00:41.588
+Il catalogo completo dei template.
+
+00:00:41.588 --> 00:00:44.190
+Ognuno e' una coppia compose
+
+00:00:44.190 --> 00:00:45.751
++ Rediaccfile testata.
+
+00:00:49.053 --> 00:00:50.132
+Passo due.
+
+00:00:50.132 --> 00:00:52.830
+Applichiamo il template app-postgres al
+
+00:00:52.830 --> 00:00:53.909
+nostro repo.
+
+00:00:53.909 --> 00:00:55.528
+Compaiono due file:
+
+00:00:55.528 --> 00:00:58.226
+il docker-compose.yml che descrive i
+
+00:00:58.226 --> 00:01:00.923
+container e il Rediaccfile che
+
+00:01:00.923 --> 00:01:03.621
+definisce gli hook di avvio
+
+00:01:03.621 --> 00:01:04.700
+e arresto.
+
+00:01:06.950 --> 00:01:07.835
+Template applicato.
+
+00:01:07.835 --> 00:01:10.488
+Il repo ora ha il suo
+
+00:01:10.488 --> 00:01:13.141
+file compose e il suo Rediaccfile.
+
+00:01:16.469 --> 00:01:17.299
+Passo tre.
+
+00:01:17.299 --> 00:01:18.543
+Avviamo il repo.
+
+00:01:18.543 --> 00:01:20.617
+Lo strumento avvia i container,
+
+00:01:20.617 --> 00:01:23.521
+monta il volume cifrato e collega il
+
+00:01:23.521 --> 00:01:24.765
+Docker daemon isolato.
+
+00:01:24.765 --> 00:01:26.840
+L'app e' ora in esecuzione.
+
+00:01:29.590 --> 00:01:31.392
+Container in esecuzione,
+
+00:01:31.392 --> 00:01:32.594
+volume montato,
+
+00:01:32.594 --> 00:01:34.997
+Docker daemon isolato attivo.
+
+00:01:38.306 --> 00:01:39.922
+Verifichiamo con docker ps.
+
+00:01:39.922 --> 00:01:42.751
+Nota che questa vista mostra solo i
+
+00:01:42.751 --> 00:01:44.367
+container del nostro repository.
+
+00:01:44.367 --> 00:01:47.196
+Gli altri repo sullo stesso server hanno
+
+00:01:47.196 --> 00:01:50.024
+i propri Docker daemon e sono completamente
+
+00:01:50.024 --> 00:01:51.237
+invisibili da qui.
+
+00:01:53.987 --> 00:01:56.663
+Solo i container di questo repo.
+
+00:01:56.663 --> 00:01:58.001
+L'isolamento e' reale,
+
+00:01:58.001 --> 00:01:59.786
+non solo di configurazione.
+
+00:02:03.127 --> 00:02:05.033
+Verifichiamo cosa è in esecuzione.
+
+00:02:05.033 --> 00:02:07.702
+docker ps qui elenca solo i container
+
+00:02:07.702 --> 00:02:08.845
+di questo repo.
+
+00:02:08.845 --> 00:02:11.514
+Gli altri repo sullo stesso server hanno
+
+00:02:11.514 --> 00:02:14.183
+i propri daemon e sono completamente invisibili
+
+00:02:14.183 --> 00:02:15.326
+da questa vista.
+
+00:02:16.576 --> 00:02:18.953
+Solo i container di questo repo.
+
+00:02:18.953 --> 00:02:20.142
+L'isolamento è reale,
+
+00:02:20.142 --> 00:02:21.330
+non è configurazione.
+
+00:02:22.137 --> 00:02:24.642
+Ed e' tutto per il tuo primo
+
+00:02:24.642 --> 00:02:25.000
+deploy.
+
+00:02:25.000 --> 00:02:26.432
+Ci vediamo nel prossimo,
+
+00:02:26.432 --> 00:02:28.937
+dove approfondiremo come lavorare con il repo
+
+00:02:28.937 --> 00:02:29.295
+stesso.

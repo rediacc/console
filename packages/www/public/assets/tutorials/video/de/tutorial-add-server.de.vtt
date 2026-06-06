@@ -1,0 +1,127 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.856
+Los geht's!
+
+00:00:01.856 --> 00:00:04.425
+Lass uns deinen ersten Server hinzufügen.
+
+00:00:04.425 --> 00:00:06.994
+Das geht mit zwei Befehlen und
+
+00:00:06.994 --> 00:00:08.706
+dauert ungefähr eine Minute.
+
+00:00:09.486 --> 00:00:11.182
+Es gibt zwei Teile.
+
+00:00:11.182 --> 00:00:13.725
+Das Kommandozeilen-Tool läuft auf deinem Laptop,
+
+00:00:13.725 --> 00:00:16.269
+und ein Orchestrator namens `renet` läuft
+
+00:00:16.269 --> 00:00:17.541
+auf dem Server.
+
+00:00:17.541 --> 00:00:20.084
+Das CLI verbindet sich per SSH,
+
+00:00:20.084 --> 00:00:22.628
+also musst du dich nie manuell
+
+00:00:22.628 --> 00:00:24.324
+auf dem Server einloggen.
+
+00:00:27.600 --> 00:00:29.083
+Wir beginnen damit,
+
+00:00:29.083 --> 00:00:31.060
+ein Konfigurationsprofil zu erstellen.
+
+00:00:31.060 --> 00:00:33.531
+Das Profil enthält den SSH-Schlüssel,
+
+00:00:33.531 --> 00:00:36.496
+die Maschinenliste und die Infrastruktureinstellungen für
+
+00:00:36.496 --> 00:00:36.990
+alles,
+
+00:00:36.990 --> 00:00:39.956
+was wir von hier an tun.
+
+00:00:41.206 --> 00:00:42.195
+Profil erstellt.
+
+00:00:42.195 --> 00:00:42.689
+Alles,
+
+00:00:42.689 --> 00:00:45.160
+was wir sonst noch konfigurieren,
+
+00:00:45.160 --> 00:00:47.632
+lebt in dieser einen Datei.
+
+00:00:50.948 --> 00:00:53.649
+Jetzt registrieren wir den Server
+
+00:00:53.649 --> 00:00:55.270
+bei der CLI,
+
+00:00:55.270 --> 00:00:56.891
+indem wir Namen,
+
+00:00:56.891 --> 00:00:59.052
+IP-Adresse und SSH-Benutzer angeben.
+
+00:00:59.052 --> 00:01:01.753
+Host-Schlüssel werden automatisch für vertrauenswürdigen
+
+00:01:01.753 --> 00:01:02.834
+Zugang gescannt.
+
+00:01:02.834 --> 00:01:04.125
+Server registriert.
+
+00:01:04.125 --> 00:01:06.707
+Die Host-Keys wurden automatisch
+
+00:01:06.707 --> 00:01:07.353
+eingelesen.
+
+00:01:10.619 --> 00:01:13.270
+Als Nächstes stellen wir den Server
+
+00:01:13.270 --> 00:01:13.712
+bereit.
+
+00:01:13.712 --> 00:01:16.364
+Dabei wird renet installiert und der
+
+00:01:16.364 --> 00:01:17.689
+verschlüsselte Datenspeicher erstellt.
+
+00:01:17.689 --> 00:01:19.899
+Danach ist der Server bereit,
+
+00:01:19.899 --> 00:01:21.225
+Repositories zu hosten.
+
+00:01:21.225 --> 00:01:21.692
+Fertig.
+
+00:01:21.692 --> 00:01:24.496
+renet ist installiert und der Datastore
+
+00:01:24.496 --> 00:01:25.430
+ist bereit.
+
+00:01:26.188 --> 00:01:28.741
+Und das war's mit dem Hinzufügen
+
+00:01:28.741 --> 00:01:29.591
+eines Servers!
+
+00:01:29.591 --> 00:01:32.144
+Wir sehen uns im nächsten Tutorial.

@@ -1,0 +1,142 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.978
+Très bien !
+
+00:00:01.978 --> 00:00:04.584
+Configurons les clés SSH pour que la CLI
+
+00:00:04.584 --> 00:00:07.191
+puisse atteindre vos serveurs sans mot de passe.
+
+00:00:07.976 --> 00:00:09.543
+Trois étapes au total.
+
+00:00:09.543 --> 00:00:11.894
+Générer une clé sur votre ordinateur,
+
+00:00:11.894 --> 00:00:13.854
+la copier sur le serveur,
+
+00:00:13.854 --> 00:00:16.596
+puis l'enregistrer auprès de l'outil en ligne
+
+00:00:16.596 --> 00:00:17.380
+de commande.
+
+00:00:17.380 --> 00:00:20.123
+Deux de ces étapes ne se font
+
+00:00:20.123 --> 00:00:21.298
+qu'une seule fois.
+
+00:00:24.558 --> 00:00:25.589
+Première étape.
+
+00:00:25.589 --> 00:00:28.166
+Nous allons générer une nouvelle
+
+00:00:28.166 --> 00:00:29.712
+clé SSH ed25519.
+
+00:00:29.712 --> 00:00:32.289
+ed25519 est le standard moderne
+
+00:00:32.289 --> 00:00:32.804
+:
+
+00:00:32.804 --> 00:00:33.320
+compact,
+
+00:00:33.320 --> 00:00:35.381
+rapide et bien supporté.
+
+00:00:35.381 --> 00:00:37.958
+Vous n'avez besoin de faire
+
+00:00:37.958 --> 00:00:40.535
+cela qu'une seule fois pour
+
+00:00:40.535 --> 00:00:43.112
+tous les serveurs que vous
+
+00:00:43.112 --> 00:00:43.627
+ajouterez.
+
+00:00:44.427 --> 00:00:45.285
+Clé générée.
+
+00:00:45.285 --> 00:00:47.858
+C'est la partie publique que nous
+
+00:00:47.858 --> 00:00:49.574
+copierons sur le serveur.
+
+00:00:52.912 --> 00:00:53.674
+Deuxième étape.
+
+00:00:53.674 --> 00:00:56.341
+Nous copions la clé publique sur le
+
+00:00:56.341 --> 00:00:57.483
+serveur avec ssh-copy-id.
+
+00:00:57.483 --> 00:01:00.150
+Le mot de passe du serveur est
+
+00:01:00.150 --> 00:01:01.674
+demandé une dernière fois.
+
+00:01:01.674 --> 00:01:02.436
+Après cela,
+
+00:01:02.436 --> 00:01:05.102
+l'authentification par mot de passe n'est plus
+
+00:01:05.102 --> 00:01:06.626
+nécessaire pour ce serveur.
+
+00:01:08.626 --> 00:01:10.557
+Lancez ceci sur votre ordinateur.
+
+00:01:10.557 --> 00:01:11.716
+Une fois réussi,
+
+00:01:11.716 --> 00:01:14.034
+les mots de passe sont écartés.
+
+00:01:17.332 --> 00:01:18.065
+Troisième étape.
+
+00:01:18.065 --> 00:01:20.632
+Nous enregistrons maintenant la clé auprès de
+
+00:01:20.632 --> 00:01:22.098
+la ligne de commande.
+
+00:01:22.098 --> 00:01:22.465
+Désormais,
+
+00:01:22.465 --> 00:01:24.665
+chaque commande s'authentifie avec cette clé.
+
+00:01:24.665 --> 00:01:26.498
+Plus de mots de passe,
+
+00:01:26.498 --> 00:01:27.598
+plus d'invites interactives.
+
+00:01:29.598 --> 00:01:32.524
+Clé enregistrée auprès de la CLI.
+
+00:01:33.324 --> 00:01:36.016
+La clé est enregistrée et la CLI est
+
+00:01:36.016 --> 00:01:36.353
+prête.
+
+00:01:36.353 --> 00:01:37.362
+Dans la suite,
+
+00:01:37.362 --> 00:01:39.045
+nous ajoutons votre premier serveur.

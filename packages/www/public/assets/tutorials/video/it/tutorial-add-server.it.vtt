@@ -1,0 +1,121 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.416
+Bene!
+
+00:00:01.416 --> 00:00:03.496
+Aggiungiamo il tuo primo server.
+
+00:00:03.496 --> 00:00:06.407
+Bastano due comandi e circa un minuto.
+
+00:00:07.164 --> 00:00:08.946
+I componenti sono due.
+
+00:00:08.946 --> 00:00:11.619
+Lo strumento da riga di comando
+
+00:00:11.619 --> 00:00:13.401
+vive sul tuo laptop,
+
+00:00:13.401 --> 00:00:16.075
+e un orchestratore chiamato renet gira
+
+00:00:16.075 --> 00:00:16.966
+sul server.
+
+00:00:16.966 --> 00:00:19.639
+La CLI si connette via SSH,
+
+00:00:19.639 --> 00:00:22.312
+quindi non devi mai collegarti al
+
+00:00:22.312 --> 00:00:23.203
+server manualmente.
+
+00:00:26.485 --> 00:00:29.273
+Iniziamo creando un profilo di configurazione.
+
+00:00:29.273 --> 00:00:32.060
+Il profilo contiene la chiave SSH,
+
+00:00:32.060 --> 00:00:34.848
+l'elenco delle macchine e le impostazioni
+
+00:00:34.848 --> 00:00:37.636
+dell'infrastruttura per tutto cio' che faremo
+
+00:00:37.636 --> 00:00:39.494
+da qui in avanti.
+
+00:00:40.744 --> 00:00:41.465
+Profilo creato.
+
+00:00:41.465 --> 00:00:43.988
+Tutto cio' che configuriamo da qui in
+
+00:00:43.988 --> 00:00:46.151
+poi vive in questo unico file.
+
+00:00:49.455 --> 00:00:52.379
+Ora registriamo il server dalla riga
+
+00:00:52.379 --> 00:00:53.353
+di comando,
+
+00:00:53.353 --> 00:00:54.815
+fornendo il nome,
+
+00:00:54.815 --> 00:00:57.252
+l'indirizzo IP e l'utente SSH.
+
+00:00:57.252 --> 00:01:00.175
+Le host key vengono scansionate automaticamente
+
+00:01:00.175 --> 00:01:02.124
+per un accesso sicuro.
+
+00:01:02.124 --> 00:01:03.216
+Server registrato.
+
+00:01:03.216 --> 00:01:05.944
+Le host key sono state
+
+00:01:05.944 --> 00:01:07.035
+scansionate automaticamente.
+
+00:01:10.310 --> 00:01:12.845
+Poi effettuiamo il provisioning del server.
+
+00:01:12.845 --> 00:01:15.380
+Questo installa renet e crea il
+
+00:01:15.380 --> 00:01:16.225
+datastore cifrato.
+
+00:01:16.225 --> 00:01:17.070
+Al termine,
+
+00:01:17.070 --> 00:01:19.605
+il server e' pronto ad ospitare
+
+00:01:19.605 --> 00:01:20.028
+repository.
+
+00:01:20.028 --> 00:01:20.495
+Fatto.
+
+00:01:20.495 --> 00:01:23.299
+renet e' installato e il datastore
+
+00:01:23.299 --> 00:01:24.233
+e' pronto.
+
+00:01:25.012 --> 00:01:27.716
+E con questo abbiamo finito con l'aggiunta di un
+
+00:01:27.716 --> 00:01:28.016
+server!
+
+00:01:28.016 --> 00:01:29.218
+Ci vediamo nel prossimo.

@@ -1,0 +1,679 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.82,
+      "text": "Votre application est en ligne,",
+      "words": [
+        { "start": 1, "end": 1.364, "char": [0, 5] },
+        { "start": 1.364, "end": 1.728, "char": [6, 17] },
+        { "start": 1.728, "end": 2.092, "char": [18, 21] },
+        { "start": 2.092, "end": 2.456, "char": [22, 24] },
+        { "start": 2.456, "end": 2.82, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 2.82,
+      "end": 5.369,
+      "text": "alors assurons-nous que vous ne la perdiez",
+      "words": [
+        { "start": 2.82, "end": 3.184, "char": [0, 5] },
+        { "start": 3.184, "end": 3.549, "char": [6, 19] },
+        { "start": 3.549, "end": 3.913, "char": [20, 23] },
+        { "start": 3.913, "end": 4.277, "char": [24, 28] },
+        { "start": 4.277, "end": 4.641, "char": [29, 31] },
+        { "start": 4.641, "end": 5.005, "char": [32, 34] },
+        { "start": 5.005, "end": 5.369, "char": [35, 42] }
+      ]
+    },
+    {
+      "start": 5.369,
+      "end": 6.097,
+      "text": "jamais !",
+      "words": [
+        { "start": 5.369, "end": 5.733, "char": [0, 6] },
+        { "start": 5.733, "end": 6.097, "char": [7, 8] }
+      ]
+    },
+    {
+      "start": 6.097,
+      "end": 7.189,
+      "text": "Dans ce tutoriel,",
+      "words": [
+        { "start": 6.097, "end": 6.461, "char": [0, 4] },
+        { "start": 6.461, "end": 6.825, "char": [5, 7] },
+        { "start": 6.825, "end": 7.189, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 7.189,
+      "end": 9.738,
+      "text": "nous poussons le dépôt entier vers un",
+      "words": [
+        { "start": 7.189, "end": 7.553, "char": [0, 4] },
+        { "start": 7.553, "end": 7.918, "char": [5, 13] },
+        { "start": 7.918, "end": 8.282, "char": [14, 16] },
+        { "start": 8.282, "end": 8.646, "char": [17, 22] },
+        { "start": 8.646, "end": 9.01, "char": [23, 29] },
+        { "start": 9.01, "end": 9.374, "char": [30, 34] },
+        { "start": 9.374, "end": 9.738, "char": [35, 37] }
+      ]
+    },
+    {
+      "start": 9.738,
+      "end": 12.287,
+      "text": "stockage externe et le récupérons à la",
+      "words": [
+        { "start": 9.738, "end": 10.102, "char": [0, 8] },
+        { "start": 10.102, "end": 10.466, "char": [9, 16] },
+        { "start": 10.466, "end": 10.83, "char": [17, 19] },
+        { "start": 10.83, "end": 11.194, "char": [20, 22] },
+        { "start": 11.194, "end": 11.558, "char": [23, 33] },
+        { "start": 11.558, "end": 11.922, "char": [34, 35] },
+        { "start": 11.922, "end": 12.287, "char": [36, 38] }
+      ]
+    },
+    {
+      "start": 12.287,
+      "end": 12.651,
+      "text": "demande.",
+      "words": [{ "start": 12.287, "end": 12.651, "char": [0, 8] }]
+    },
+    {
+      "start": 13.41,
+      "end": 16.298,
+      "text": "La sauvegarde et la restauration se",
+      "words": [
+        { "start": 13.41, "end": 13.891, "char": [0, 2] },
+        { "start": 13.891, "end": 14.373, "char": [3, 13] },
+        { "start": 14.373, "end": 14.854, "char": [14, 16] },
+        { "start": 14.854, "end": 15.335, "char": [17, 19] },
+        { "start": 15.335, "end": 15.816, "char": [20, 32] },
+        { "start": 15.816, "end": 16.298, "char": [33, 35] }
+      ]
+    },
+    {
+      "start": 16.298,
+      "end": 18.223,
+      "text": "résument à trois étapes.",
+      "words": [
+        { "start": 16.298, "end": 16.779, "char": [0, 8] },
+        { "start": 16.779, "end": 17.26, "char": [9, 10] },
+        { "start": 17.26, "end": 17.741, "char": [11, 16] },
+        { "start": 17.741, "end": 18.223, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 18.223,
+      "end": 20.629,
+      "text": "Configurer un fournisseur de stockage,",
+      "words": [
+        { "start": 18.223, "end": 18.704, "char": [0, 10] },
+        { "start": 18.704, "end": 19.185, "char": [11, 13] },
+        { "start": 19.185, "end": 19.666, "char": [14, 25] },
+        { "start": 19.666, "end": 20.148, "char": [26, 28] },
+        { "start": 20.148, "end": 20.629, "char": [29, 38] }
+      ]
+    },
+    {
+      "start": 20.629,
+      "end": 22.073,
+      "text": "pousser une sauvegarde,",
+      "words": [
+        { "start": 20.629, "end": 21.11, "char": [0, 7] },
+        { "start": 21.11, "end": 21.591, "char": [8, 11] },
+        { "start": 21.591, "end": 22.073, "char": [12, 23] }
+      ]
+    },
+    {
+      "start": 22.073,
+      "end": 24.96,
+      "text": "et la restaurer quand vous en",
+      "words": [
+        { "start": 22.073, "end": 22.554, "char": [0, 2] },
+        { "start": 22.554, "end": 23.035, "char": [3, 5] },
+        { "start": 23.035, "end": 23.516, "char": [6, 15] },
+        { "start": 23.516, "end": 23.998, "char": [16, 21] },
+        { "start": 23.998, "end": 24.479, "char": [22, 26] },
+        { "start": 24.479, "end": 24.96, "char": [27, 29] }
+      ]
+    },
+    {
+      "start": 24.96,
+      "end": 25.923,
+      "text": "avez besoin.",
+      "words": [
+        { "start": 24.96, "end": 25.441, "char": [0, 4] },
+        { "start": 25.441, "end": 25.923, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 29.202,
+      "end": 30.139,
+      "text": "Première étape.",
+      "words": [
+        { "start": 29.202, "end": 29.671, "char": [0, 8] },
+        { "start": 29.671, "end": 30.139, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 30.139,
+      "end": 32.951,
+      "text": "Nous allons importer une configuration rclone",
+      "words": [
+        { "start": 30.139, "end": 30.608, "char": [0, 4] },
+        { "start": 30.608, "end": 31.076, "char": [5, 11] },
+        { "start": 31.076, "end": 31.545, "char": [12, 20] },
+        { "start": 31.545, "end": 32.013, "char": [21, 24] },
+        { "start": 32.013, "end": 32.482, "char": [25, 38] },
+        { "start": 32.482, "end": 32.951, "char": [39, 45] }
+      ]
+    },
+    {
+      "start": 32.951,
+      "end": 33.419,
+      "text": "existante.",
+      "words": [{ "start": 32.951, "end": 33.419, "char": [0, 10] }]
+    },
+    {
+      "start": 33.419,
+      "end": 35.762,
+      "text": "rclone prend en charge S3,",
+      "words": [
+        { "start": 33.419, "end": 33.888, "char": [0, 6] },
+        { "start": 33.888, "end": 34.356, "char": [7, 12] },
+        { "start": 34.356, "end": 34.825, "char": [13, 15] },
+        { "start": 34.825, "end": 35.293, "char": [16, 22] },
+        { "start": 35.293, "end": 35.762, "char": [23, 26] }
+      ]
+    },
+    {
+      "start": 35.762,
+      "end": 36.231,
+      "text": "Backblaze,",
+      "words": [{ "start": 35.762, "end": 36.231, "char": [0, 10] }]
+    },
+    {
+      "start": 36.231,
+      "end": 37.168,
+      "text": "Google Drive,",
+      "words": [
+        { "start": 36.231, "end": 36.699, "char": [0, 6] },
+        { "start": 36.699, "end": 37.168, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 37.168,
+      "end": 39.042,
+      "text": "Dropbox et bien d'autres.",
+      "words": [
+        { "start": 37.168, "end": 37.636, "char": [0, 7] },
+        { "start": 37.636, "end": 38.105, "char": [8, 10] },
+        { "start": 38.105, "end": 38.573, "char": [11, 15] },
+        { "start": 38.573, "end": 39.042, "char": [16, 25] }
+      ]
+    },
+    {
+      "start": 39.042,
+      "end": 40.916,
+      "text": "Si vous l'utilisez déjà,",
+      "words": [
+        { "start": 39.042, "end": 39.511, "char": [0, 2] },
+        { "start": 39.511, "end": 39.979, "char": [3, 7] },
+        { "start": 39.979, "end": 40.448, "char": [8, 18] },
+        { "start": 40.448, "end": 40.916, "char": [19, 24] }
+      ]
+    },
+    {
+      "start": 40.916,
+      "end": 43.728,
+      "text": "vous pouvez importer la même configuration",
+      "words": [
+        { "start": 40.916, "end": 41.385, "char": [0, 4] },
+        { "start": 41.385, "end": 41.853, "char": [5, 11] },
+        { "start": 41.853, "end": 42.322, "char": [12, 20] },
+        { "start": 42.322, "end": 42.791, "char": [21, 23] },
+        { "start": 42.791, "end": 43.259, "char": [24, 28] },
+        { "start": 43.259, "end": 43.728, "char": [29, 42] }
+      ]
+    },
+    {
+      "start": 43.728,
+      "end": 44.196,
+      "text": "directement.",
+      "words": [{ "start": 43.728, "end": 44.196, "char": [0, 12] }]
+    },
+    {
+      "start": 45.196,
+      "end": 46.037,
+      "text": "Stockage importé.",
+      "words": [
+        { "start": 45.196, "end": 45.617, "char": [0, 8] },
+        { "start": 45.617, "end": 46.037, "char": [9, 17] }
+      ]
+    },
+    {
+      "start": 46.037,
+      "end": 48.561,
+      "text": "Votre CLI peut maintenant y pousser",
+      "words": [
+        { "start": 46.037, "end": 46.458, "char": [0, 5] },
+        { "start": 46.458, "end": 46.879, "char": [6, 9] },
+        { "start": 46.879, "end": 47.299, "char": [10, 14] },
+        { "start": 47.299, "end": 47.72, "char": [15, 25] },
+        { "start": 47.72, "end": 48.14, "char": [26, 27] },
+        { "start": 48.14, "end": 48.561, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 48.561,
+      "end": 49.402,
+      "text": "des sauvegardes.",
+      "words": [
+        { "start": 48.561, "end": 48.981, "char": [0, 3] },
+        { "start": 48.981, "end": 49.402, "char": [4, 16] }
+      ]
+    },
+    {
+      "start": 52.704,
+      "end": 55.319,
+      "text": "Listons les stockages que l'outil connaît",
+      "words": [
+        { "start": 52.704, "end": 53.14, "char": [0, 7] },
+        { "start": 53.14, "end": 53.576, "char": [8, 11] },
+        { "start": 53.576, "end": 54.011, "char": [12, 21] },
+        { "start": 54.011, "end": 54.447, "char": [22, 25] },
+        { "start": 54.447, "end": 54.883, "char": [26, 33] },
+        { "start": 54.883, "end": 55.319, "char": [34, 41] }
+      ]
+    },
+    {
+      "start": 55.319,
+      "end": 55.755,
+      "text": "maintenant.",
+      "words": [{ "start": 55.319, "end": 55.755, "char": [0, 11] }]
+    },
+    {
+      "start": 55.755,
+      "end": 58.37,
+      "text": "Chaque stockage est une destination vers",
+      "words": [
+        { "start": 55.755, "end": 56.191, "char": [0, 6] },
+        { "start": 56.191, "end": 56.626, "char": [7, 15] },
+        { "start": 56.626, "end": 57.062, "char": [16, 19] },
+        { "start": 57.062, "end": 57.498, "char": [20, 23] },
+        { "start": 57.498, "end": 57.934, "char": [24, 35] },
+        { "start": 57.934, "end": 58.37, "char": [36, 40] }
+      ]
+    },
+    {
+      "start": 58.37,
+      "end": 60.985,
+      "text": "laquelle nous pouvons pousser des sauvegardes.",
+      "words": [
+        { "start": 58.37, "end": 58.806, "char": [0, 8] },
+        { "start": 58.806, "end": 59.241, "char": [9, 13] },
+        { "start": 59.241, "end": 59.677, "char": [14, 21] },
+        { "start": 59.677, "end": 60.113, "char": [22, 29] },
+        { "start": 60.113, "end": 60.549, "char": [30, 33] },
+        { "start": 60.549, "end": 60.985, "char": [34, 46] }
+      ]
+    },
+    {
+      "start": 62.735,
+      "end": 63.474,
+      "text": "Le voilà.",
+      "words": [
+        { "start": 62.735, "end": 63.104, "char": [0, 2] },
+        { "start": 63.104, "end": 63.474, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 63.474,
+      "end": 65.321,
+      "text": "Prêt à recevoir des sauvegardes.",
+      "words": [
+        { "start": 63.474, "end": 63.843, "char": [0, 4] },
+        { "start": 63.843, "end": 64.213, "char": [5, 6] },
+        { "start": 64.213, "end": 64.582, "char": [7, 15] },
+        { "start": 64.582, "end": 64.951, "char": [16, 19] },
+        { "start": 64.951, "end": 65.321, "char": [20, 32] }
+      ]
+    },
+    {
+      "start": 68.654,
+      "end": 69.495,
+      "text": "Deuxième étape.",
+      "words": [
+        { "start": 68.654, "end": 69.074, "char": [0, 8] },
+        { "start": 69.074, "end": 69.495, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 69.495,
+      "end": 71.596,
+      "text": "Nous poussons une sauvegarde complète.",
+      "words": [
+        { "start": 69.495, "end": 69.915, "char": [0, 4] },
+        { "start": 69.915, "end": 70.335, "char": [5, 13] },
+        { "start": 70.335, "end": 70.755, "char": [14, 17] },
+        { "start": 70.755, "end": 71.176, "char": [18, 28] },
+        { "start": 71.176, "end": 71.596, "char": [29, 38] }
+      ]
+    },
+    {
+      "start": 71.596,
+      "end": 72.857,
+      "text": "Le dépôt entier,",
+      "words": [
+        { "start": 71.596, "end": 72.016, "char": [0, 2] },
+        { "start": 72.016, "end": 72.436, "char": [3, 8] },
+        { "start": 72.436, "end": 72.857, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 72.857,
+      "end": 73.277,
+      "text": "application,",
+      "words": [{ "start": 72.857, "end": 73.277, "char": [0, 12] }]
+    },
+    {
+      "start": 73.277,
+      "end": 74.538,
+      "text": "base de données,",
+      "words": [
+        { "start": 73.277, "end": 73.697, "char": [0, 4] },
+        { "start": 73.697, "end": 74.117, "char": [5, 7] },
+        { "start": 74.117, "end": 74.538, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 74.538,
+      "end": 74.958,
+      "text": "fichiers,",
+      "words": [{ "start": 74.538, "end": 74.958, "char": [0, 9] }]
+    },
+    {
+      "start": 74.958,
+      "end": 75.378,
+      "text": "configuration,",
+      "words": [{ "start": 74.958, "end": 75.378, "char": [0, 14] }]
+    },
+    {
+      "start": 75.378,
+      "end": 76.219,
+      "text": "est téléversé.",
+      "words": [
+        { "start": 75.378, "end": 75.798, "char": [0, 3] },
+        { "start": 75.798, "end": 76.219, "char": [4, 14] }
+      ]
+    },
+    {
+      "start": 76.219,
+      "end": 78.74,
+      "text": "Comme le dépôt est chiffré au",
+      "words": [
+        { "start": 76.219, "end": 76.639, "char": [0, 5] },
+        { "start": 76.639, "end": 77.059, "char": [6, 8] },
+        { "start": 77.059, "end": 77.48, "char": [9, 14] },
+        { "start": 77.48, "end": 77.9, "char": [15, 18] },
+        { "start": 77.9, "end": 78.32, "char": [19, 26] },
+        { "start": 78.32, "end": 78.74, "char": [27, 29] }
+      ]
+    },
+    {
+      "start": 78.74,
+      "end": 79.161,
+      "text": "repos,",
+      "words": [{ "start": 78.74, "end": 79.161, "char": [0, 6] }]
+    },
+    {
+      "start": 79.161,
+      "end": 80.842,
+      "text": "la sauvegarde l'est aussi.",
+      "words": [
+        { "start": 79.161, "end": 79.581, "char": [0, 2] },
+        { "start": 79.581, "end": 80.001, "char": [3, 13] },
+        { "start": 80.001, "end": 80.421, "char": [14, 19] },
+        { "start": 80.421, "end": 80.842, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 80.842,
+      "end": 82.943,
+      "text": "Aucune gestion de clé supplémentaire.",
+      "words": [
+        { "start": 80.842, "end": 81.262, "char": [0, 6] },
+        { "start": 81.262, "end": 81.682, "char": [7, 14] },
+        { "start": 81.682, "end": 82.102, "char": [15, 17] },
+        { "start": 82.102, "end": 82.523, "char": [18, 21] },
+        { "start": 82.523, "end": 82.943, "char": [22, 37] }
+      ]
+    },
+    {
+      "start": 85.193,
+      "end": 86.158,
+      "text": "Sauvegarde téléversée.",
+      "words": [
+        { "start": 85.193, "end": 85.675, "char": [0, 10] },
+        { "start": 85.675, "end": 86.158, "char": [11, 22] }
+      ]
+    },
+    {
+      "start": 86.158,
+      "end": 89.053,
+      "text": "Tout ce qui se trouve dans",
+      "words": [
+        { "start": 86.158, "end": 86.64, "char": [0, 4] },
+        { "start": 86.64, "end": 87.123, "char": [5, 7] },
+        { "start": 87.123, "end": 87.605, "char": [8, 11] },
+        { "start": 87.605, "end": 88.088, "char": [12, 14] },
+        { "start": 88.088, "end": 88.57, "char": [15, 21] },
+        { "start": 88.57, "end": 89.053, "char": [22, 26] }
+      ]
+    },
+    {
+      "start": 89.053,
+      "end": 91.948,
+      "text": "ce repo est désormais sur le",
+      "words": [
+        { "start": 89.053, "end": 89.535, "char": [0, 2] },
+        { "start": 89.535, "end": 90.018, "char": [3, 7] },
+        { "start": 90.018, "end": 90.5, "char": [8, 11] },
+        { "start": 90.5, "end": 90.983, "char": [12, 21] },
+        { "start": 90.983, "end": 91.465, "char": [22, 25] },
+        { "start": 91.465, "end": 91.948, "char": [26, 28] }
+      ]
+    },
+    {
+      "start": 91.948,
+      "end": 92.913,
+      "text": "stockage distant,",
+      "words": [
+        { "start": 91.948, "end": 92.43, "char": [0, 8] },
+        { "start": 92.43, "end": 92.913, "char": [9, 17] }
+      ]
+    },
+    {
+      "start": 92.913,
+      "end": 93.395,
+      "text": "chiffré.",
+      "words": [{ "start": 92.913, "end": 93.395, "char": [0, 8] }]
+    },
+    {
+      "start": 96.7,
+      "end": 99.463,
+      "text": "Listons les sauvegardes disponibles sur ce stockage.",
+      "words": [
+        { "start": 96.7, "end": 97.095, "char": [0, 7] },
+        { "start": 97.095, "end": 97.489, "char": [8, 11] },
+        { "start": 97.489, "end": 97.884, "char": [12, 23] },
+        { "start": 97.884, "end": 98.279, "char": [24, 35] },
+        { "start": 98.279, "end": 98.673, "char": [36, 39] },
+        { "start": 98.673, "end": 99.068, "char": [40, 42] },
+        { "start": 99.068, "end": 99.463, "char": [43, 52] }
+      ]
+    },
+    {
+      "start": 99.463,
+      "end": 101.041,
+      "text": "À partir de là,",
+      "words": [
+        { "start": 99.463, "end": 99.857, "char": [0, 1] },
+        { "start": 99.857, "end": 100.252, "char": [2, 8] },
+        { "start": 100.252, "end": 100.647, "char": [9, 11] },
+        { "start": 100.647, "end": 101.041, "char": [12, 15] }
+      ]
+    },
+    {
+      "start": 101.041,
+      "end": 103.804,
+      "text": "la restauration sur un tout nouveau serveur",
+      "words": [
+        { "start": 101.041, "end": 101.436, "char": [0, 2] },
+        { "start": 101.436, "end": 101.831, "char": [3, 15] },
+        { "start": 101.831, "end": 102.225, "char": [16, 19] },
+        { "start": 102.225, "end": 102.62, "char": [20, 22] },
+        { "start": 102.62, "end": 103.015, "char": [23, 27] },
+        { "start": 103.015, "end": 103.409, "char": [28, 35] },
+        { "start": 103.409, "end": 103.804, "char": [36, 43] }
+      ]
+    },
+    {
+      "start": 103.804,
+      "end": 106.567,
+      "text": "se fait en une seule commande :",
+      "words": [
+        { "start": 103.804, "end": 104.199, "char": [0, 2] },
+        { "start": 104.199, "end": 104.593, "char": [3, 7] },
+        { "start": 104.593, "end": 104.988, "char": [8, 10] },
+        { "start": 104.988, "end": 105.383, "char": [11, 14] },
+        { "start": 105.383, "end": 105.777, "char": [15, 20] },
+        { "start": 105.777, "end": 106.172, "char": [21, 29] },
+        { "start": 106.172, "end": 106.567, "char": [30, 31] }
+      ]
+    },
+    {
+      "start": 106.567,
+      "end": 108.934,
+      "text": "la commande de restauration de dépôt.",
+      "words": [
+        { "start": 106.567, "end": 106.961, "char": [0, 2] },
+        { "start": 106.961, "end": 107.356, "char": [3, 11] },
+        { "start": 107.356, "end": 107.751, "char": [12, 14] },
+        { "start": 107.751, "end": 108.145, "char": [15, 27] },
+        { "start": 108.145, "end": 108.54, "char": [28, 30] },
+        { "start": 108.54, "end": 108.934, "char": [31, 37] }
+      ]
+    },
+    {
+      "start": 108.934,
+      "end": 109.724,
+      "text": "Mêmes données,",
+      "words": [
+        { "start": 108.934, "end": 109.329, "char": [0, 5] },
+        { "start": 109.329, "end": 109.724, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 109.724,
+      "end": 110.513,
+      "text": "mêmes conteneurs,",
+      "words": [
+        { "start": 109.724, "end": 110.118, "char": [0, 5] },
+        { "start": 110.118, "end": 110.513, "char": [6, 17] }
+      ]
+    },
+    {
+      "start": 110.513,
+      "end": 111.302,
+      "text": "machine différente.",
+      "words": [
+        { "start": 110.513, "end": 110.908, "char": [0, 7] },
+        { "start": 110.908, "end": 111.302, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 114.302,
+      "end": 116.915,
+      "text": "Tous vos instantanés au même",
+      "words": [
+        { "start": 114.302, "end": 114.825, "char": [0, 4] },
+        { "start": 114.825, "end": 115.347, "char": [5, 8] },
+        { "start": 115.347, "end": 115.87, "char": [9, 20] },
+        { "start": 115.87, "end": 116.392, "char": [21, 23] },
+        { "start": 116.392, "end": 116.915, "char": [24, 28] }
+      ]
+    },
+    {
+      "start": 116.915,
+      "end": 117.437,
+      "text": "endroit.",
+      "words": [{ "start": 116.915, "end": 117.437, "char": [0, 8] }]
+    },
+    {
+      "start": 117.437,
+      "end": 120.049,
+      "text": "Restaurez n'importe lequel d'une seule",
+      "words": [
+        { "start": 117.437, "end": 117.96, "char": [0, 9] },
+        { "start": 117.96, "end": 118.482, "char": [10, 19] },
+        { "start": 118.482, "end": 119.004, "char": [20, 26] },
+        { "start": 119.004, "end": 119.527, "char": [27, 32] },
+        { "start": 119.527, "end": 120.049, "char": [33, 38] }
+      ]
+    },
+    {
+      "start": 120.049,
+      "end": 120.572,
+      "text": "commande.",
+      "words": [{ "start": 120.049, "end": 120.572, "char": [0, 9] }]
+    },
+    {
+      "start": 121.402,
+      "end": 124.28,
+      "text": "Vos données sont en sécurité et portables",
+      "words": [
+        { "start": 121.402, "end": 121.813, "char": [0, 3] },
+        { "start": 121.813, "end": 122.224, "char": [4, 11] },
+        { "start": 122.224, "end": 122.635, "char": [12, 16] },
+        { "start": 122.635, "end": 123.046, "char": [17, 19] },
+        { "start": 123.046, "end": 123.457, "char": [20, 28] },
+        { "start": 123.457, "end": 123.869, "char": [29, 31] },
+        { "start": 123.869, "end": 124.28, "char": [32, 41] }
+      ]
+    },
+    {
+      "start": 124.28,
+      "end": 125.924,
+      "text": "d'une machine à l'autre.",
+      "words": [
+        { "start": 124.28, "end": 124.691, "char": [0, 5] },
+        { "start": 124.691, "end": 125.102, "char": [6, 13] },
+        { "start": 125.102, "end": 125.513, "char": [14, 15] },
+        { "start": 125.513, "end": 125.924, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 125.924,
+      "end": 128.802,
+      "text": "On se retrouve dans la prochaine vidéo",
+      "words": [
+        { "start": 125.924, "end": 126.335, "char": [0, 2] },
+        { "start": 126.335, "end": 126.746, "char": [3, 5] },
+        { "start": 126.746, "end": 127.157, "char": [6, 14] },
+        { "start": 127.157, "end": 127.568, "char": [15, 19] },
+        { "start": 127.568, "end": 127.979, "char": [20, 22] },
+        { "start": 127.979, "end": 128.39, "char": [23, 32] },
+        { "start": 128.39, "end": 128.802, "char": [33, 38] }
+      ]
+    },
+    {
+      "start": 128.802,
+      "end": 129.213,
+      "text": "!",
+      "words": [{ "start": 128.802, "end": 129.213, "char": [0, 1] }]
+    }
+  ]
+}

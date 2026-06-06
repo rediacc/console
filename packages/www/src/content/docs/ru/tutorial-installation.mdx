@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: essentials
 order: 1
 language: ru
-sourceHash: "9b8f5c6aa1b44fd5"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "45226ad6fbefa4f2"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -49,9 +49,9 @@ iwr -useb https://www.rediacc.com/install.ps1 | iex
 
 ![rdc on your laptop, renet on the server](/img/tutorials/tutorial-installation/slide-2.svg)
 
-`rdc` является CLI на вашем ноутбуке. На сервере работает отдельный компонент `renet`, которым `rdc` управляет по SSH. Вам никогда не придётся вручную подключаться к серверу по SSH: `rdc` сделает это за вас.
+`rdc` является CLI на вашем ноутбуке. На сервере работает отдельный компонент `renet`, которым `rdc` управляет по SSH. Вам никогда не придётся вручную подключаться к серверу по SSH: `rdc` сделает это за вас. Это главная идея: один инструмент на вашей машине, ничего не требует управления на сервере.
 
-В следующих двух уроках мы всё это настроим как положено.
+Мы рассмотрим конфигурацию renet в следующих двух уроках. Это более сложный процесс, чем установка CLI, но вы делаете это только один раз для каждой машины.
 
 ---
 

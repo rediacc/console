@@ -4,8 +4,8 @@ description: "Mõista, kuidas account, rdc ja renet haldavad masina kohti, repos
 category: "Guides"
 order: 7
 language: et
-sourceHash: "98aede90642cfabc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "0e18efe91c91f74c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Tellimus ja litsentsid

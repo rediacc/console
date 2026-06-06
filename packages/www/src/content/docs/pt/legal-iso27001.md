@@ -4,15 +4,15 @@ description: "Como a Rediacc se mapeia com os controlos de segurança da informa
 category: "Legal"
 order: 5
 language: pt
-sourceHash: "7c80000942b6196d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "52709a22c0b38178"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-A ISO/IEC 27001 é uma norma internacional para sistemas de gestão de segurança da informação (ISMS), publicada pela International Organization for Standardization (ISO) e pela International Electrotechnical Commission (IEC). A versão atual é a ISO/IEC 27001:2022.
+Pois bem. A ISO/IEC 27001:2022 é a norma internacional para sistemas de gestão de segurança da informação. Publicada pela ISO/IEC, é um documento extenso que lista controlos de encriptação, gestão de acessos, resposta a incidentes e dezenas de domínios de segurança. Muito provavelmente já tem conhecimento disto. Portanto, vou ser direto: a Rediacc não aborda todos os controlos da norma, e não vamos fingir que aborda. O que se segue é um mapeamento honesto de onde a Rediacc se encaixa. A versão atual é ISO/IEC 27001:2022.
 
 Referência: [ISO/IEC 27001:2022](https://www.iso.org/standard/27001)
 
-A Rediacc é um componente da camada de controlos técnicos dentro de um ISMS. A tabela seguinte mapeia as capacidades da Rediacc com os domínios de controlo relevantes do Anexo A.
+Ora bem, a Rediacc é um componente da camada de controlos técnicos dentro de um ISMS. A tabela seguinte mapeia as capacidades da Rediacc com os domínios de controlo relevantes do Anexo A.
 
 ## Mapeamento dos Controlos do Anexo A
 

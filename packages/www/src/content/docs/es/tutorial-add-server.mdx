@@ -1,19 +1,19 @@
 ---
 title: "Agregar tu primer servidor"
-description: "Registra tu primer servidor en rdc, aprovisiónalo y comprende la arquitectura de rdc + renet."
+description: "Registra tu primer servidor con rdc, aprovisiónalo y comprende la arquitectura de rdc + renet."
 category: "Tutorials"
 subcategory: essentials
 order: 3
 language: es
-sourceHash: "4b76f7212633cdec"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "fc8bd1ff08e5611a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Agregar tu primer servidor
 
-Antes de agregar un servidor, así es como funciona `rdc`. Rediacc son dos herramientas: `rdc` en tu laptop y `renet` en el servidor.
+Dos herramientas: `rdc` en tu laptop, `renet` en el servidor. Esa es toda la arquitectura de Rediacc. Así es cómo se conectan antes de agregar un servidor.
 
 ## Ver el tutorial
 
@@ -32,7 +32,7 @@ Cuando ejecutas un comando localmente, `rdc` se conecta por SSH y ejecuta `renet
 
 <TutorialStep number={1} />
 
-No se necesita `rdc config init`. El archivo de configuración se crea automáticamente al primer uso, y `rdc` usa tu clave `~/.ssh` estándar.
+No se necesita ejecutar `rdc config init`. El archivo de configuración se crea automáticamente al primer uso, y `rdc` recurre a tu clave estándar de `~/.ssh`. La selección de claves es intencionalmente mínima; si necesitas reenvío de agente o un servidor intermedio, configúralos en `~/.ssh/config` como de costumbre; `rdc` los detectará.
 
 ## Paso 2: Aprovisionarlo
 

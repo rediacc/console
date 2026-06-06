@@ -1,0 +1,757 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.389,
+      "text": "Bene!",
+      "words": [{ "start": 1, "end": 1.389, "char": [0, 5] }]
+    },
+    {
+      "start": 1.389,
+      "end": 4.111,
+      "text": "Diamo alla tua app un dominio vero",
+      "words": [
+        { "start": 1.389, "end": 1.778, "char": [0, 5] },
+        { "start": 1.778, "end": 2.167, "char": [6, 10] },
+        { "start": 2.167, "end": 2.556, "char": [11, 14] },
+        { "start": 2.556, "end": 2.945, "char": [15, 18] },
+        { "start": 2.945, "end": 3.334, "char": [19, 21] },
+        { "start": 3.334, "end": 3.723, "char": [22, 29] },
+        { "start": 3.723, "end": 4.111, "char": [30, 34] }
+      ]
+    },
+    {
+      "start": 4.111,
+      "end": 5.278,
+      "text": "con TLS automatico.",
+      "words": [
+        { "start": 4.111, "end": 4.5, "char": [0, 3] },
+        { "start": 4.5, "end": 4.889, "char": [4, 7] },
+        { "start": 4.889, "end": 5.278, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 5.278,
+      "end": 8.001,
+      "text": "Quattro brevi passaggi e sei su internet.",
+      "words": [
+        { "start": 5.278, "end": 5.667, "char": [0, 7] },
+        { "start": 5.667, "end": 6.056, "char": [8, 13] },
+        { "start": 6.056, "end": 6.445, "char": [14, 22] },
+        { "start": 6.445, "end": 6.834, "char": [23, 24] },
+        { "start": 6.834, "end": 7.223, "char": [25, 28] },
+        { "start": 7.223, "end": 7.612, "char": [29, 31] },
+        { "start": 7.612, "end": 8.001, "char": [32, 41] }
+      ]
+    },
+    {
+      "start": 8.766,
+      "end": 10.227,
+      "text": "Ecco il percorso.",
+      "words": [
+        { "start": 8.766, "end": 9.253, "char": [0, 4] },
+        { "start": 9.253, "end": 9.74, "char": [5, 7] },
+        { "start": 9.74, "end": 10.227, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 10.227,
+      "end": 13.149,
+      "text": "Procurati un token API di Cloudflare,",
+      "words": [
+        { "start": 10.227, "end": 10.714, "char": [0, 9] },
+        { "start": 10.714, "end": 11.201, "char": [10, 12] },
+        { "start": 11.201, "end": 11.688, "char": [13, 18] },
+        { "start": 11.688, "end": 12.175, "char": [19, 22] },
+        { "start": 12.175, "end": 12.662, "char": [23, 25] },
+        { "start": 12.662, "end": 13.149, "char": [26, 37] }
+      ]
+    },
+    {
+      "start": 13.149,
+      "end": 15.097,
+      "text": "configura l'infrastruttura sulla CLI,",
+      "words": [
+        { "start": 13.149, "end": 13.636, "char": [0, 9] },
+        { "start": 13.636, "end": 14.123, "char": [10, 26] },
+        { "start": 14.123, "end": 14.61, "char": [27, 32] },
+        { "start": 14.61, "end": 15.097, "char": [33, 37] }
+      ]
+    },
+    {
+      "start": 15.097,
+      "end": 16.558,
+      "text": "inviala al server,",
+      "words": [
+        { "start": 15.097, "end": 15.584, "char": [0, 7] },
+        { "start": 15.584, "end": 16.071, "char": [8, 10] },
+        { "start": 16.071, "end": 16.558, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 16.558,
+      "end": 19.48,
+      "text": "poi distribuisci un proxy Traefik che",
+      "words": [
+        { "start": 16.558, "end": 17.045, "char": [0, 3] },
+        { "start": 17.045, "end": 17.532, "char": [4, 16] },
+        { "start": 17.532, "end": 18.019, "char": [17, 19] },
+        { "start": 18.019, "end": 18.506, "char": [20, 25] },
+        { "start": 18.506, "end": 18.993, "char": [26, 33] },
+        { "start": 18.993, "end": 19.48, "char": [34, 37] }
+      ]
+    },
+    {
+      "start": 19.48,
+      "end": 22.402,
+      "text": "gestisce DNS e certificati per te.",
+      "words": [
+        { "start": 19.48, "end": 19.967, "char": [0, 8] },
+        { "start": 19.967, "end": 20.454, "char": [9, 12] },
+        { "start": 20.454, "end": 20.941, "char": [13, 14] },
+        { "start": 20.941, "end": 21.428, "char": [15, 26] },
+        { "start": 21.428, "end": 21.915, "char": [27, 30] },
+        { "start": 21.915, "end": 22.402, "char": [31, 34] }
+      ]
+    },
+    {
+      "start": 23.173,
+      "end": 24.322,
+      "text": "Prima di tutto,",
+      "words": [
+        { "start": 23.173, "end": 23.556, "char": [0, 5] },
+        { "start": 23.556, "end": 23.939, "char": [6, 8] },
+        { "start": 23.939, "end": 24.322, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 24.322,
+      "end": 27.002,
+      "text": "apri la dashboard di Cloudflare nel browser.",
+      "words": [
+        { "start": 24.322, "end": 24.705, "char": [0, 4] },
+        { "start": 24.705, "end": 25.087, "char": [5, 7] },
+        { "start": 25.087, "end": 25.47, "char": [8, 17] },
+        { "start": 25.47, "end": 25.853, "char": [18, 20] },
+        { "start": 25.853, "end": 26.236, "char": [21, 31] },
+        { "start": 26.236, "end": 26.619, "char": [32, 35] },
+        { "start": 26.619, "end": 27.002, "char": [36, 44] }
+      ]
+    },
+    {
+      "start": 27.002,
+      "end": 28.533,
+      "text": "Vai su My Profile,",
+      "words": [
+        { "start": 27.002, "end": 27.385, "char": [0, 3] },
+        { "start": 27.385, "end": 27.768, "char": [4, 6] },
+        { "start": 27.768, "end": 28.15, "char": [7, 9] },
+        { "start": 28.15, "end": 28.533, "char": [10, 18] }
+      ]
+    },
+    {
+      "start": 28.533,
+      "end": 29.682,
+      "text": "poi API Tokens,",
+      "words": [
+        { "start": 28.533, "end": 28.916, "char": [0, 3] },
+        { "start": 28.916, "end": 29.299, "char": [4, 7] },
+        { "start": 29.299, "end": 29.682, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 29.682,
+      "end": 32.362,
+      "text": "e crea un token con il permesso",
+      "words": [
+        { "start": 29.682, "end": 30.065, "char": [0, 1] },
+        { "start": 30.065, "end": 30.448, "char": [2, 6] },
+        { "start": 30.448, "end": 30.831, "char": [7, 9] },
+        { "start": 30.831, "end": 31.214, "char": [10, 15] },
+        { "start": 31.214, "end": 31.596, "char": [16, 19] },
+        { "start": 31.596, "end": 31.979, "char": [20, 22] },
+        { "start": 31.979, "end": 32.362, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 32.362,
+      "end": 35.042,
+      "text": "Zone DNS Edit cosi' la CLI potra'",
+      "words": [
+        { "start": 32.362, "end": 32.745, "char": [0, 4] },
+        { "start": 32.745, "end": 33.128, "char": [5, 8] },
+        { "start": 33.128, "end": 33.511, "char": [9, 13] },
+        { "start": 33.511, "end": 33.894, "char": [14, 19] },
+        { "start": 33.894, "end": 34.277, "char": [20, 22] },
+        { "start": 34.277, "end": 34.659, "char": [23, 26] },
+        { "start": 34.659, "end": 35.042, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 35.042,
+      "end": 36.574,
+      "text": "gestire i tuoi record.",
+      "words": [
+        { "start": 35.042, "end": 35.425, "char": [0, 7] },
+        { "start": 35.425, "end": 35.808, "char": [8, 9] },
+        { "start": 35.808, "end": 36.191, "char": [10, 14] },
+        { "start": 36.191, "end": 36.574, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 39.847,
+      "end": 40.661,
+      "text": "Passo due.",
+      "words": [
+        { "start": 39.847, "end": 40.254, "char": [0, 5] },
+        { "start": 40.254, "end": 40.661, "char": [6, 10] }
+      ]
+    },
+    {
+      "start": 40.661,
+      "end": 43.512,
+      "text": "Dalla riga di comando inseriamo l'IP pubblico,",
+      "words": [
+        { "start": 40.661, "end": 41.069, "char": [0, 5] },
+        { "start": 41.069, "end": 41.476, "char": [6, 10] },
+        { "start": 41.476, "end": 41.883, "char": [11, 13] },
+        { "start": 41.883, "end": 42.29, "char": [14, 21] },
+        { "start": 42.29, "end": 42.698, "char": [22, 31] },
+        { "start": 42.698, "end": 43.105, "char": [32, 36] },
+        { "start": 43.105, "end": 43.512, "char": [37, 46] }
+      ]
+    },
+    {
+      "start": 43.512,
+      "end": 44.734,
+      "text": "il dominio base,",
+      "words": [
+        { "start": 43.512, "end": 43.919, "char": [0, 2] },
+        { "start": 43.919, "end": 44.327, "char": [3, 10] },
+        { "start": 44.327, "end": 44.734, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 44.734,
+      "end": 47.585,
+      "text": "l'email per i certificati e il token",
+      "words": [
+        { "start": 44.734, "end": 45.141, "char": [0, 7] },
+        { "start": 45.141, "end": 45.548, "char": [8, 11] },
+        { "start": 45.548, "end": 45.956, "char": [12, 13] },
+        { "start": 45.956, "end": 46.363, "char": [14, 25] },
+        { "start": 46.363, "end": 46.77, "char": [26, 27] },
+        { "start": 46.77, "end": 47.177, "char": [28, 30] },
+        { "start": 47.177, "end": 47.585, "char": [31, 36] }
+      ]
+    },
+    {
+      "start": 47.585,
+      "end": 48.806,
+      "text": "API di Cloudflare.",
+      "words": [
+        { "start": 47.585, "end": 47.992, "char": [0, 3] },
+        { "start": 47.992, "end": 48.399, "char": [4, 6] },
+        { "start": 48.399, "end": 48.806, "char": [7, 18] }
+      ]
+    },
+    {
+      "start": 48.806,
+      "end": 51.657,
+      "text": "L'email e il token sono condivisi tra",
+      "words": [
+        { "start": 48.806, "end": 49.214, "char": [0, 7] },
+        { "start": 49.214, "end": 49.621, "char": [8, 9] },
+        { "start": 49.621, "end": 50.028, "char": [10, 12] },
+        { "start": 50.028, "end": 50.435, "char": [13, 18] },
+        { "start": 50.435, "end": 50.843, "char": [19, 23] },
+        { "start": 50.843, "end": 51.25, "char": [24, 33] },
+        { "start": 51.25, "end": 51.657, "char": [34, 37] }
+      ]
+    },
+    {
+      "start": 51.657,
+      "end": 53.286,
+      "text": "tutte le tue macchine,",
+      "words": [
+        { "start": 51.657, "end": 52.064, "char": [0, 5] },
+        { "start": 52.064, "end": 52.472, "char": [6, 8] },
+        { "start": 52.472, "end": 52.879, "char": [9, 12] },
+        { "start": 52.879, "end": 53.286, "char": [13, 22] }
+      ]
+    },
+    {
+      "start": 53.286,
+      "end": 55.729,
+      "text": "quindi li imposti una sola volta.",
+      "words": [
+        { "start": 53.286, "end": 53.693, "char": [0, 6] },
+        { "start": 53.693, "end": 54.1, "char": [7, 9] },
+        { "start": 54.1, "end": 54.508, "char": [10, 17] },
+        { "start": 54.508, "end": 54.915, "char": [18, 21] },
+        { "start": 54.915, "end": 55.322, "char": [22, 26] },
+        { "start": 55.322, "end": 55.729, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 56.529,
+      "end": 59.706,
+      "text": "Infrastruttura registrata nella tua",
+      "words": [
+        { "start": 56.529, "end": 57.324, "char": [0, 14] },
+        { "start": 57.324, "end": 58.118, "char": [15, 25] },
+        { "start": 58.118, "end": 58.912, "char": [26, 31] },
+        { "start": 58.912, "end": 59.706, "char": [32, 35] }
+      ]
+    },
+    {
+      "start": 59.706,
+      "end": 60.5,
+      "text": "configurazione.",
+      "words": [{ "start": 59.706, "end": 60.5, "char": [0, 15] }]
+    },
+    {
+      "start": 63.794,
+      "end": 66.506,
+      "text": "Confermiamo che le impostazioni dell'infrastruttura",
+      "words": [
+        { "start": 63.794, "end": 64.336, "char": [0, 11] },
+        { "start": 64.336, "end": 64.879, "char": [12, 15] },
+        { "start": 64.879, "end": 65.421, "char": [16, 18] },
+        { "start": 65.421, "end": 65.963, "char": [19, 31] },
+        { "start": 65.963, "end": 66.506, "char": [32, 51] }
+      ]
+    },
+    {
+      "start": 66.506,
+      "end": 68.133,
+      "text": "siano state salvate.",
+      "words": [
+        { "start": 66.506, "end": 67.048, "char": [0, 5] },
+        { "start": 67.048, "end": 67.59, "char": [6, 11] },
+        { "start": 67.59, "end": 68.133, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 68.133,
+      "end": 69.218,
+      "text": "IP pubblico,",
+      "words": [
+        { "start": 68.133, "end": 68.675, "char": [0, 2] },
+        { "start": 68.675, "end": 69.218, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 69.218,
+      "end": 70.302,
+      "text": "dominio base,",
+      "words": [
+        { "start": 69.218, "end": 69.76, "char": [0, 7] },
+        { "start": 69.76, "end": 70.302, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 70.302,
+      "end": 73.014,
+      "text": "email per i certificati --",
+      "words": [
+        { "start": 70.302, "end": 70.845, "char": [0, 5] },
+        { "start": 70.845, "end": 71.387, "char": [6, 9] },
+        { "start": 71.387, "end": 71.929, "char": [10, 11] },
+        { "start": 71.929, "end": 72.472, "char": [12, 23] },
+        { "start": 72.472, "end": 73.014, "char": [24, 26] }
+      ]
+    },
+    {
+      "start": 73.014,
+      "end": 75.183,
+      "text": "tutto visibile nella configurazione.",
+      "words": [
+        { "start": 73.014, "end": 73.556, "char": [0, 5] },
+        { "start": 73.556, "end": 74.099, "char": [6, 14] },
+        { "start": 74.099, "end": 74.641, "char": [15, 20] },
+        { "start": 74.641, "end": 75.183, "char": [21, 36] }
+      ]
+    },
+    {
+      "start": 76.933,
+      "end": 77.802,
+      "text": "Impostazioni salvate.",
+      "words": [
+        { "start": 76.933, "end": 77.368, "char": [0, 12] },
+        { "start": 77.368, "end": 77.802, "char": [13, 21] }
+      ]
+    },
+    {
+      "start": 77.802,
+      "end": 80.408,
+      "text": "Pronte a essere inviate al server.",
+      "words": [
+        { "start": 77.802, "end": 78.236, "char": [0, 6] },
+        { "start": 78.236, "end": 78.671, "char": [7, 8] },
+        { "start": 78.671, "end": 79.105, "char": [9, 15] },
+        { "start": 79.105, "end": 79.539, "char": [16, 23] },
+        { "start": 79.539, "end": 79.973, "char": [24, 26] },
+        { "start": 79.973, "end": 80.408, "char": [27, 34] }
+      ]
+    },
+    {
+      "start": 83.76,
+      "end": 84.696,
+      "text": "Passo tre.",
+      "words": [
+        { "start": 83.76, "end": 84.228, "char": [0, 5] },
+        { "start": 84.228, "end": 84.696, "char": [6, 10] }
+      ]
+    },
+    {
+      "start": 84.696,
+      "end": 87.036,
+      "text": "Carichiamo la configurazione sul server.",
+      "words": [
+        { "start": 84.696, "end": 85.164, "char": [0, 10] },
+        { "start": 85.164, "end": 85.632, "char": [11, 13] },
+        { "start": 85.632, "end": 86.1, "char": [14, 28] },
+        { "start": 86.1, "end": 86.568, "char": [29, 32] },
+        { "start": 86.568, "end": 87.036, "char": [33, 40] }
+      ]
+    },
+    {
+      "start": 87.036,
+      "end": 89.843,
+      "text": "Questo crea i record DNS su",
+      "words": [
+        { "start": 87.036, "end": 87.503, "char": [0, 6] },
+        { "start": 87.503, "end": 87.971, "char": [7, 11] },
+        { "start": 87.971, "end": 88.439, "char": [12, 13] },
+        { "start": 88.439, "end": 88.907, "char": [14, 20] },
+        { "start": 88.907, "end": 89.375, "char": [21, 24] },
+        { "start": 89.375, "end": 89.843, "char": [25, 27] }
+      ]
+    },
+    {
+      "start": 89.843,
+      "end": 92.651,
+      "text": "Cloudflare automaticamente e prepara la configurazione",
+      "words": [
+        { "start": 89.843, "end": 90.311, "char": [0, 10] },
+        { "start": 90.311, "end": 90.779, "char": [11, 26] },
+        { "start": 90.779, "end": 91.247, "char": [27, 28] },
+        { "start": 91.247, "end": 91.715, "char": [29, 36] },
+        { "start": 91.715, "end": 92.183, "char": [37, 39] },
+        { "start": 92.183, "end": 92.651, "char": [40, 54] }
+      ]
+    },
+    {
+      "start": 92.651,
+      "end": 94.522,
+      "text": "del proxy sulla macchina.",
+      "words": [
+        { "start": 92.651, "end": 93.119, "char": [0, 3] },
+        { "start": 93.119, "end": 93.587, "char": [4, 9] },
+        { "start": 93.587, "end": 94.055, "char": [10, 15] },
+        { "start": 94.055, "end": 94.522, "char": [16, 25] }
+      ]
+    },
+    {
+      "start": 97.522,
+      "end": 98.078,
+      "text": "Inviata.",
+      "words": [{ "start": 97.522, "end": 98.078, "char": [0, 8] }]
+    },
+    {
+      "start": 98.078,
+      "end": 100.853,
+      "text": "I record DNS vengono creati",
+      "words": [
+        { "start": 98.078, "end": 98.633, "char": [0, 1] },
+        { "start": 98.633, "end": 99.188, "char": [2, 8] },
+        { "start": 99.188, "end": 99.743, "char": [9, 12] },
+        { "start": 99.743, "end": 100.298, "char": [13, 20] },
+        { "start": 100.298, "end": 100.853, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 100.853,
+      "end": 101.963,
+      "text": "su Cloudflare.",
+      "words": [
+        { "start": 100.853, "end": 101.408, "char": [0, 2] },
+        { "start": 101.408, "end": 101.963, "char": [3, 14] }
+      ]
+    },
+    {
+      "start": 105.295,
+      "end": 106.938,
+      "text": "Inizia il passo quattro.",
+      "words": [
+        { "start": 105.295, "end": 105.706, "char": [0, 6] },
+        { "start": 105.706, "end": 106.116, "char": [7, 9] },
+        { "start": 106.116, "end": 106.527, "char": [10, 15] },
+        { "start": 106.527, "end": 106.938, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 106.938,
+      "end": 109.402,
+      "text": "Creiamo un piccolo repo chiamato infra.",
+      "words": [
+        { "start": 106.938, "end": 107.349, "char": [0, 7] },
+        { "start": 107.349, "end": 107.759, "char": [8, 10] },
+        { "start": 107.759, "end": 108.17, "char": [11, 18] },
+        { "start": 108.17, "end": 108.581, "char": [19, 23] },
+        { "start": 108.581, "end": 108.991, "char": [24, 32] },
+        { "start": 108.991, "end": 109.402, "char": [33, 39] }
+      ]
+    },
+    {
+      "start": 109.402,
+      "end": 111.045,
+      "text": "Qui vivra' il proxy,",
+      "words": [
+        { "start": 109.402, "end": 109.813, "char": [0, 3] },
+        { "start": 109.813, "end": 110.223, "char": [4, 10] },
+        { "start": 110.223, "end": 110.634, "char": [11, 13] },
+        { "start": 110.634, "end": 111.045, "char": [14, 20] }
+      ]
+    },
+    {
+      "start": 111.045,
+      "end": 112.688,
+      "text": "isolato dai repo applicativi.",
+      "words": [
+        { "start": 111.045, "end": 111.456, "char": [0, 7] },
+        { "start": 111.456, "end": 111.866, "char": [8, 11] },
+        { "start": 111.866, "end": 112.277, "char": [12, 16] },
+        { "start": 112.277, "end": 112.688, "char": [17, 29] }
+      ]
+    },
+    {
+      "start": 116.881,
+      "end": 118.85,
+      "text": "Repo infra creato.",
+      "words": [
+        { "start": 116.881, "end": 117.537, "char": [0, 4] },
+        { "start": 117.537, "end": 118.194, "char": [5, 10] },
+        { "start": 118.194, "end": 118.85, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 118.85,
+      "end": 121.475,
+      "text": "Isolato dai tuoi repo",
+      "words": [
+        { "start": 118.85, "end": 119.506, "char": [0, 7] },
+        { "start": 119.506, "end": 120.163, "char": [8, 11] },
+        { "start": 120.163, "end": 120.819, "char": [12, 16] },
+        { "start": 120.819, "end": 121.475, "char": [17, 21] }
+      ]
+    },
+    {
+      "start": 121.475,
+      "end": 122.132,
+      "text": "applicativi.",
+      "words": [{ "start": 121.475, "end": 122.132, "char": [0, 12] }]
+    },
+    {
+      "start": 125.395,
+      "end": 127.864,
+      "text": "Applichiamo il template proxy integrato.",
+      "words": [
+        { "start": 125.395, "end": 125.889, "char": [0, 11] },
+        { "start": 125.889, "end": 126.383, "char": [12, 14] },
+        { "start": 126.383, "end": 126.877, "char": [15, 23] },
+        { "start": 126.877, "end": 127.37, "char": [24, 29] },
+        { "start": 127.37, "end": 127.864, "char": [30, 40] }
+      ]
+    },
+    {
+      "start": 127.864,
+      "end": 130.827,
+      "text": "Include Traefik con la configurazione per",
+      "words": [
+        { "start": 127.864, "end": 128.358, "char": [0, 7] },
+        { "start": 128.358, "end": 128.852, "char": [8, 15] },
+        { "start": 128.852, "end": 129.346, "char": [16, 19] },
+        { "start": 129.346, "end": 129.84, "char": [20, 22] },
+        { "start": 129.84, "end": 130.333, "char": [23, 37] },
+        { "start": 130.333, "end": 130.827, "char": [38, 41] }
+      ]
+    },
+    {
+      "start": 130.827,
+      "end": 133.79,
+      "text": "Let's Encrypt e le challenge DNS-01",
+      "words": [
+        { "start": 130.827, "end": 131.321, "char": [0, 5] },
+        { "start": 131.321, "end": 131.815, "char": [6, 13] },
+        { "start": 131.815, "end": 132.309, "char": [14, 15] },
+        { "start": 132.309, "end": 132.803, "char": [16, 18] },
+        { "start": 132.803, "end": 133.296, "char": [19, 28] },
+        { "start": 133.296, "end": 133.79, "char": [29, 35] }
+      ]
+    },
+    {
+      "start": 133.79,
+      "end": 134.778,
+      "text": "di Cloudflare,",
+      "words": [
+        { "start": 133.79, "end": 134.284, "char": [0, 2] },
+        { "start": 134.284, "end": 134.778, "char": [3, 14] }
+      ]
+    },
+    {
+      "start": 134.778,
+      "end": 135.766,
+      "text": "pronto all'uso.",
+      "words": [
+        { "start": 134.778, "end": 135.272, "char": [0, 6] },
+        { "start": 135.272, "end": 135.766, "char": [7, 15] }
+      ]
+    },
+    {
+      "start": 138.016,
+      "end": 140.602,
+      "text": "Configurazione di Traefik in posizione.",
+      "words": [
+        { "start": 138.016, "end": 138.533, "char": [0, 14] },
+        { "start": 138.533, "end": 139.05, "char": [15, 17] },
+        { "start": 139.05, "end": 139.567, "char": [18, 25] },
+        { "start": 139.567, "end": 140.085, "char": [26, 28] },
+        { "start": 140.085, "end": 140.602, "char": [29, 39] }
+      ]
+    },
+    {
+      "start": 143.912,
+      "end": 145.223,
+      "text": "Avviamo il proxy.",
+      "words": [
+        { "start": 143.912, "end": 144.349, "char": [0, 7] },
+        { "start": 144.349, "end": 144.786, "char": [8, 10] },
+        { "start": 144.786, "end": 145.223, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 145.223,
+      "end": 147.844,
+      "text": "Traefik scopre i tuoi container ogni",
+      "words": [
+        { "start": 145.223, "end": 145.66, "char": [0, 7] },
+        { "start": 145.66, "end": 146.096, "char": [8, 14] },
+        { "start": 146.096, "end": 146.533, "char": [15, 16] },
+        { "start": 146.533, "end": 146.97, "char": [17, 21] },
+        { "start": 146.97, "end": 147.407, "char": [22, 31] },
+        { "start": 147.407, "end": 147.844, "char": [32, 36] }
+      ]
+    },
+    {
+      "start": 147.844,
+      "end": 148.718,
+      "text": "cinque secondi.",
+      "words": [
+        { "start": 147.844, "end": 148.281, "char": [0, 6] },
+        { "start": 148.281, "end": 148.718, "char": [7, 15] }
+      ]
+    },
+    {
+      "start": 148.718,
+      "end": 151.339,
+      "text": "I certificati TLS arrivano da Let's",
+      "words": [
+        { "start": 148.718, "end": 149.155, "char": [0, 1] },
+        { "start": 149.155, "end": 149.591, "char": [2, 13] },
+        { "start": 149.591, "end": 150.028, "char": [14, 17] },
+        { "start": 150.028, "end": 150.465, "char": [18, 26] },
+        { "start": 150.465, "end": 150.902, "char": [27, 29] },
+        { "start": 150.902, "end": 151.339, "char": [30, 35] }
+      ]
+    },
+    {
+      "start": 151.339,
+      "end": 152.213,
+      "text": "Encrypt automaticamente.",
+      "words": [
+        { "start": 151.339, "end": 151.776, "char": [0, 7] },
+        { "start": 151.776, "end": 152.213, "char": [8, 24] }
+      ]
+    },
+    {
+      "start": 152.213,
+      "end": 154.834,
+      "text": "La tua app e' ora raggiungibile",
+      "words": [
+        { "start": 152.213, "end": 152.65, "char": [0, 2] },
+        { "start": 152.65, "end": 153.086, "char": [3, 6] },
+        { "start": 153.086, "end": 153.523, "char": [7, 10] },
+        { "start": 153.523, "end": 153.96, "char": [11, 13] },
+        { "start": 153.96, "end": 154.397, "char": [14, 17] },
+        { "start": 154.397, "end": 154.834, "char": [18, 31] }
+      ]
+    },
+    {
+      "start": 154.834,
+      "end": 156.581,
+      "text": "su internet via HTTPS.",
+      "words": [
+        { "start": 154.834, "end": 155.271, "char": [0, 2] },
+        { "start": 155.271, "end": 155.708, "char": [3, 11] },
+        { "start": 155.708, "end": 156.145, "char": [12, 15] },
+        { "start": 156.145, "end": 156.581, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 156.581,
+      "end": 159.124,
+      "text": "Il proxy e' attivo.",
+      "words": [
+        { "start": 156.581, "end": 157.217, "char": [0, 2] },
+        { "start": 157.217, "end": 157.853, "char": [3, 8] },
+        { "start": 157.853, "end": 158.488, "char": [9, 11] },
+        { "start": 158.488, "end": 159.124, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 159.124,
+      "end": 161.667,
+      "text": "I certificati TLS arriveranno",
+      "words": [
+        { "start": 159.124, "end": 159.76, "char": [0, 1] },
+        { "start": 159.76, "end": 160.395, "char": [2, 13] },
+        { "start": 160.395, "end": 161.031, "char": [14, 17] },
+        { "start": 161.031, "end": 161.667, "char": [18, 29] }
+      ]
+    },
+    {
+      "start": 161.667,
+      "end": 162.302,
+      "text": "automaticamente.",
+      "words": [{ "start": 161.667, "end": 162.302, "char": [0, 16] }]
+    },
+    {
+      "start": 163.057,
+      "end": 165.584,
+      "text": "E con questo la rete e' sistemata!",
+      "words": [
+        { "start": 163.057, "end": 163.418, "char": [0, 1] },
+        { "start": 163.418, "end": 163.779, "char": [2, 5] },
+        { "start": 163.779, "end": 164.14, "char": [6, 12] },
+        { "start": 164.14, "end": 164.501, "char": [13, 15] },
+        { "start": 164.501, "end": 164.862, "char": [16, 20] },
+        { "start": 164.862, "end": 165.223, "char": [21, 23] },
+        { "start": 165.223, "end": 165.584, "char": [24, 34] }
+      ]
+    },
+    {
+      "start": 165.584,
+      "end": 167.028,
+      "text": "Ci vediamo nel prossimo.",
+      "words": [
+        { "start": 165.584, "end": 165.945, "char": [0, 2] },
+        { "start": 165.945, "end": 166.306, "char": [3, 10] },
+        { "start": 166.306, "end": 166.667, "char": [11, 14] },
+        { "start": 166.667, "end": 167.028, "char": [15, 24] }
+      ]
+    }
+  ]
+}

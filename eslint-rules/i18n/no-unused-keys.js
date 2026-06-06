@@ -32,7 +32,7 @@ export const noUnusedKeys = {
       },
     ],
     messages: {
-      unusedKey: 'Translation key "{{key}}" is not used in any source file.',
+      unusedKey: 'Translation key "{{key}}" is not used in any source file. See docs/i18n/CONVENTIONS.md.',
     },
   },
 

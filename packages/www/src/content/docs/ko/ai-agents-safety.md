@@ -1,14 +1,16 @@
 ---
 title: AI 에이전트 안전성 및 가드레일
 description: >-
-  Rediacc CLI가 AI 코딩 어시스턴트의 시크릿 유출, 자격 증명 덮어쓰기, 권한 상승을 방지하는 방법입니다. 지식 게이트,
-  리댁션, 조상 검증된 재정의, 해시 체인 감사 로그를 설명합니다.
+  Rediacc CLI가 AI 코딩 어시스턴트의 시크릿 유출, 자격 증명 덮어쓰기, 권한 상승을 방지하는 방법입니다.
+  지식 게이트, 리댁션, 조상 검증된 재정의, 해시 체인 감사 로그를 설명합니다.
 category: Concepts
 order: 35
 language: ko
+sourceHash: "ae23c9bc851ecfcd"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Claude Code, Cursor, Gemini CLI, Copilot CLI 또는 다른 AI 코딩 어시스턴트가 `rdc`를 구동할 때, CLI는 이를 키보드 앞의 사람과 다르게 처리합니다. 이 페이지에서는 에이전트가 할 수 있는 것, 할 수 없는 것, 그리고 에이전트가 스스로 가드레일을 벗어나려 해도 가드레일이 유지되는 방법을 설명합니다.
+당신의 인프라에 AI 코딩 어시스턴트를 배치하려고 합니다. Claude Code, Cursor, Gemini CLI, Copilot CLI 또는 유사한 것이 `rdc`를 구동할 때, CLI는 이를 감지하여 키보드 앞의 사람과는 다른 규칙 집합을 적용합니다. 이 페이지에서는 에이전트가 할 수 있는 것, 할 수 없는 것, 그리고 에이전트가 스스로 가드레일을 벗어나려 해도 가드레일이 유지되는 방법을 설명합니다.
 
 ## 빠른 참조: 에이전트가 할 수 있는 것과 없는 것
 
@@ -140,7 +142,7 @@ macOS나 Windows에는 해당 파일이 존재하지 않습니다. 정당성을 
 
 > The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
 
-실제로 비 Linux 사용자는 포크 우선 워크플로우에서 벗어날 방법이 없습니다. 이는 의도적입니다. 에이전트는 어떻게 프롬프트를 받았든 상관없이 도달할 수 없는 샌드박스를 통해 진행됩니다. 재정의가 필요하다면 WSL, Linux 컨테이너, 또는 Linux VM 내에서 에이전트를 실행하세요. 그렇지 않으면 포크에서 작업하세요.
+비 Linux 사용자는 포크 우선 워크플로우에서 벗어날 방법이 없습니다. 이는 의도적입니다. 에이전트는 어떻게 프롬프트를 받았든 샌드박스를 우회할 방법이 없습니다. 재정의가 필요하다면 WSL, Linux 컨테이너, 또는 Linux VM 내에서 에이전트를 실행하세요. 그렇지 않으면 포크에서 작업하세요.
 
 ## 감사 로그
 

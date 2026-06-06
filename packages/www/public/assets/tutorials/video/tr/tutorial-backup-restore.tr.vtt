@@ -1,0 +1,160 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.125
+Uygulamanız yayında;
+
+00:00:02.125 --> 00:00:04.936
+şimdi onu asla kaybetmediğinizden emin
+
+00:00:04.936 --> 00:00:05.499
+olalım!
+
+00:00:05.499 --> 00:00:08.310
+Bu eğitimde tüm depoyu harici
+
+00:00:08.310 --> 00:00:11.122
+depolamaya gönderiyor ve gerektiğinde geri
+
+00:00:11.122 --> 00:00:11.684
+çekiyoruz.
+
+00:00:12.458 --> 00:00:15.140
+Yedekleme ve geri yükleme üç adıma
+
+00:00:15.140 --> 00:00:15.587
+iner.
+
+00:00:15.587 --> 00:00:17.375
+Bir depolama sağlayıcısını yapılandırın,
+
+00:00:17.375 --> 00:00:20.057
+yedek gönderin ve ihtiyaç olduğunda geri
+
+00:00:20.057 --> 00:00:20.504
+yükleyin.
+
+00:00:23.769 --> 00:00:24.854
+Birinci adım.
+
+00:00:24.854 --> 00:00:27.567
+Mevcut bir rclone yapılandırmasını içe
+
+00:00:27.567 --> 00:00:28.109
+aktarıyoruz.
+
+00:00:28.109 --> 00:00:28.652
+rclone;
+
+00:00:28.652 --> 00:00:29.194
+S3,
+
+00:00:29.194 --> 00:00:29.737
+Backblaze,
+
+00:00:29.737 --> 00:00:30.822
+Google Drive,
+
+00:00:30.822 --> 00:00:33.535
+Dropbox ve çok daha fazlasını
+
+00:00:33.535 --> 00:00:34.077
+destekler.
+
+00:00:34.077 --> 00:00:36.790
+Halihazırda kullanıyorsanız aynı yapılandırmayı doğrudan
+
+00:00:36.790 --> 00:00:37.875
+içe aktarabilirsiniz.
+
+00:00:38.875 --> 00:00:40.237
+Depolama içe aktarıldı.
+
+00:00:40.237 --> 00:00:42.506
+CLI artık buraya yedek gönderebilir.
+
+00:00:45.814 --> 00:00:48.708
+Aracın artık tanıdığı depolama alanlarını listeliyoruz.
+
+00:00:48.708 --> 00:00:50.154
+Her depolama alanı,
+
+00:00:50.154 --> 00:00:52.083
+yedek gönderebileceğimiz bir hedef.
+
+00:00:53.833 --> 00:00:54.837
+İşte burada.
+
+00:00:54.837 --> 00:00:56.341
+Yedek almaya hazır.
+
+00:00:59.638 --> 00:01:00.868
+İkinci adım.
+
+00:01:00.868 --> 00:01:02.713
+Tam yedek gönderiyoruz.
+
+00:01:02.713 --> 00:01:04.558
+Tüm depo yükleniyor:
+
+00:01:04.558 --> 00:01:05.173
+uygulama,
+
+00:01:05.173 --> 00:01:05.788
+veritabanı,
+
+00:01:05.788 --> 00:01:06.403
+dosyalar,
+
+00:01:06.403 --> 00:01:07.018
+yapılandırma.
+
+00:01:07.018 --> 00:01:10.092
+Depo depolandığında şifreli olduğundan yedek
+
+00:01:10.092 --> 00:01:11.937
+de şifreli olur.
+
+00:01:11.937 --> 00:01:14.397
+Ek anahtar yönetimi gerekmez.
+
+00:01:16.647 --> 00:01:17.479
+Yedek yüklendi.
+
+00:01:17.479 --> 00:01:20.389
+Bu depodaki her şey artık uzak depolamada,
+
+00:01:20.389 --> 00:01:21.637
+şifreli olarak duruyor.
+
+00:01:24.946 --> 00:01:26.803
+Bu depolama alanında bulunan yedekleri listeliyoruz.
+
+00:01:26.803 --> 00:01:27.422
+Buradan itibaren,
+
+00:01:27.422 --> 00:01:29.897
+yeni bir sunucuda geri yükleme tek komutla yapılır:
+
+00:01:29.897 --> 00:01:31.135
+depo geri yükleme komutu.
+
+00:01:31.135 --> 00:01:31.754
+Aynı veri,
+
+00:01:31.754 --> 00:01:32.373
+aynı container'lar,
+
+00:01:32.373 --> 00:01:32.992
+farklı makine.
+
+00:01:35.992 --> 00:01:38.114
+Tüm anlık görüntüleriniz tek bir yerde.
+
+00:01:38.114 --> 00:01:40.589
+Tek bir komutla herhangi birini geri çekebilirsiniz.
+
+00:01:41.410 --> 00:01:44.217
+Verileriniz güvende ve makineler arasında taşınabilir.
+
+00:01:44.217 --> 00:01:46.556
+Bir sonraki bölümde görüşmek üzere!

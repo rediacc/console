@@ -1,6 +1,6 @@
 ---
 title: "Monitoring"
-description: "Check the health of your servers and repos from your laptop with rdc machine commands."
+description: "See your servers' health and repo status live from your laptop with rdc machine commands."
 category: "Tutorials"
 subcategory: advanced
 order: 12
@@ -11,7 +11,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Monitoring
 
-Your app is deployed, live, and backed up. Now make sure everything stays healthy. `rdc` gives you a full picture of any server (health, containers, repos) from your laptop.
+So your app is deployed and backed up. Now keep it healthy. That's what rdc does. `rdc` gives you the full picture of any server (health, containers, repos) from your laptop.
 
 ## Watch the tutorial
 
@@ -25,7 +25,7 @@ Your app is deployed, live, and backed up. Now make sure everything stays health
 
 <TutorialStep number={1} />
 
-This shows system uptime, disk usage, and storage status. If something is wrong, it tells you.
+You'll see system uptime, disk usage, and storage status. Anything wrong and you'll spot it.
 
 ## Containers
 
@@ -37,13 +37,13 @@ You get name, status, health, CPU, and memory for each container, plus which rep
 
 <TutorialStep number={3} />
 
-This shows every repo with its size, mount status, Docker status, and disk usage.
+You see every repo: its size, mount status, Docker status, and disk usage.
 
 ## Everything in one shot
 
 <TutorialStep number={4} />
 
-System info, repos, containers, all in one command. The same `query` command with no filters returns the full picture; with `--system`, `--containers`, `--repositories`, `--services`, `--network`, or `--block-devices` it narrows to just that section.
+`query` with no flags gives you the full picture: system info, repos, and containers. Add `--system`, `--containers`, `--repositories`, `--services`, `--network`, or `--block-devices` to narrow it to just that section.
 
 ## Local sanity check
 

@@ -1,0 +1,253 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.856
+¡Muy bien!
+
+00:00:01.856 --> 00:00:04.425
+Tu app está en producción y
+
+00:00:04.425 --> 00:00:04.853
+respaldada,
+
+00:00:04.853 --> 00:00:07.422
+ahora vamos a asegurarnos de que
+
+00:00:07.422 --> 00:00:08.706
+se mantenga saludable.
+
+00:00:09.486 --> 00:00:12.103
+El CLI te da una imagen
+
+00:00:12.103 --> 00:00:14.721
+completa de cualquier servidor desde tu
+
+00:00:14.721 --> 00:00:15.157
+laptop.
+
+00:00:15.157 --> 00:00:16.902
+Tres ángulos para revisar:
+
+00:00:16.902 --> 00:00:18.647
+la salud del sistema,
+
+00:00:18.647 --> 00:00:21.265
+los contenedores en ejecución y los
+
+00:00:21.265 --> 00:00:22.573
+repositorios en sí.
+
+00:00:25.835 --> 00:00:28.159
+Empezamos con la vista del sistema.
+
+00:00:28.159 --> 00:00:30.869
+El comando machine query del CLI con
+
+00:00:30.869 --> 00:00:33.580
+el filtro de sistema muestra el tiempo
+
+00:00:33.580 --> 00:00:34.355
+de actividad,
+
+00:00:34.355 --> 00:00:37.066
+el uso del disco y el estado
+
+00:00:37.066 --> 00:00:37.840
+del almacenamiento.
+
+00:00:37.840 --> 00:00:39.389
+Si algo está mal,
+
+00:00:39.389 --> 00:00:41.326
+el reporte nos lo indica.
+
+00:00:41.326 --> 00:00:43.115
+Tiempo de actividad,
+
+00:00:43.115 --> 00:00:43.711
+disco,
+
+00:00:43.711 --> 00:00:44.308
+almacenamiento.
+
+00:00:44.308 --> 00:00:47.290
+Todo lo que necesitas de
+
+00:00:47.290 --> 00:00:48.483
+un vistazo.
+
+00:00:51.753 --> 00:00:53.312
+Ahora los contenedores.
+
+00:00:53.312 --> 00:00:55.911
+Esta vista lista todos los
+
+00:00:55.911 --> 00:00:58.510
+contenedores en ejecución en cada
+
+00:00:58.510 --> 00:01:00.589
+repositorio de la máquina:
+
+00:01:00.589 --> 00:01:01.108
+nombre,
+
+00:01:01.108 --> 00:01:01.628
+estado,
+
+00:01:01.628 --> 00:01:02.148
+salud,
+
+00:01:02.148 --> 00:01:02.668
+CPU,
+
+00:01:02.668 --> 00:01:05.266
+memoria y qué repo pertenece
+
+00:01:05.266 --> 00:01:06.826
+a cada uno.
+
+00:01:06.826 --> 00:01:08.930
+Cada contenedor en cada repo,
+
+00:01:08.930 --> 00:01:10.613
+en una sola vista.
+
+00:01:13.871 --> 00:01:16.894
+Y los repos en sí.
+
+00:01:16.894 --> 00:01:17.498
+Tamaño,
+
+00:01:17.498 --> 00:01:19.312
+estado de montaje,
+
+00:01:19.312 --> 00:01:21.730
+estado del Docker daemon,
+
+00:01:21.730 --> 00:01:23.544
+uso del disco.
+
+00:01:23.544 --> 00:01:26.567
+Todo lo que necesitas saber
+
+00:01:26.567 --> 00:01:29.589
+sobre cada entorno aislado en
+
+00:01:29.589 --> 00:01:30.798
+la máquina.
+
+00:01:30.798 --> 00:01:32.337
+Todos los repos,
+
+00:01:32.337 --> 00:01:33.876
+todos sus daemons,
+
+00:01:33.876 --> 00:01:36.441
+todo su uso de disco.
+
+00:01:39.713 --> 00:01:42.232
+El comando machine query del
+
+00:01:42.232 --> 00:01:44.751
+CLI te da todo de
+
+00:01:44.751 --> 00:01:46.262
+una sola vez.
+
+00:01:46.262 --> 00:01:47.774
+Información del sistema,
+
+00:01:47.774 --> 00:01:48.277
+contenedores,
+
+00:01:48.277 --> 00:01:48.781
+repositorios,
+
+00:01:48.781 --> 00:01:49.789
+todo junto.
+
+00:01:49.789 --> 00:01:52.308
+Ejecútalo una vez y tienes
+
+00:01:52.308 --> 00:01:53.819
+la imagen completa.
+
+00:01:53.819 --> 00:01:54.768
+Todo junto,
+
+00:01:54.768 --> 00:01:56.666
+sin necesidad de filtros.
+
+00:01:59.913 --> 00:02:02.583
+Y por último el doctor
+
+00:02:02.583 --> 00:02:05.252
+del CLI para una verificación
+
+00:02:05.252 --> 00:02:07.388
+local en tu laptop.
+
+00:02:07.388 --> 00:02:07.922
+Node,
+
+00:02:07.922 --> 00:02:08.990
+clave SSH,
+
+00:02:08.990 --> 00:02:09.524
+renet,
+
+00:02:09.524 --> 00:02:10.057
+Docker:
+
+00:02:10.057 --> 00:02:12.727
+todo de lo que depende
+
+00:02:12.727 --> 00:02:13.795
+el CLI.
+
+00:02:13.795 --> 00:02:16.464
+Esa es la serie completa.
+
+00:02:16.464 --> 00:02:19.134
+Desde la instalación hasta el
+
+00:02:19.134 --> 00:02:19.668
+monitoreo,
+
+00:02:19.668 --> 00:02:21.804
+todo desde tu terminal.
+
+00:02:21.804 --> 00:02:24.656
+Todo en verde significa que tu
+
+00:02:24.656 --> 00:02:26.558
+CLI local está saludable.
+
+00:02:27.339 --> 00:02:30.437
+¡Y con eso cerramos la
+
+00:02:30.437 --> 00:02:31.057
+serie!
+
+00:02:31.057 --> 00:02:32.916
+Ya puedes instalar,
+
+00:02:32.916 --> 00:02:33.535
+configurar,
+
+00:02:33.535 --> 00:02:34.155
+desplegar,
+
+00:02:34.155 --> 00:02:35.394
+hacer fork,
+
+00:02:35.394 --> 00:02:37.253
+salir a producción,
+
+00:02:37.253 --> 00:02:38.492
+arrancar automáticamente,
+
+00:02:38.492 --> 00:02:40.351
+respaldar y monitorear,
+
+00:02:40.351 --> 00:02:42.830
+todo desde tu terminal.

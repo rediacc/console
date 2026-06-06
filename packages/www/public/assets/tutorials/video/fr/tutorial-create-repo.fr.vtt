@@ -1,0 +1,142 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.760
+Créons votre premier dépôt !
+
+00:00:02.760 --> 00:00:05.576
+C'est un fichier chiffré au repos qui se
+
+00:00:05.576 --> 00:00:08.393
+transforme en environnement totalement isolé une fois monté.
+
+00:00:09.160 --> 00:00:10.277
+Sur le disque,
+
+00:00:10.277 --> 00:00:12.139
+c'est une image chiffrée unique.
+
+00:00:12.139 --> 00:00:13.257
+Une fois monté,
+
+00:00:13.257 --> 00:00:15.491
+vous obtenez un daemon Docker dédié,
+
+00:00:15.491 --> 00:00:18.098
+des données d'application à l'intérieur du volume
+
+00:00:18.098 --> 00:00:18.470
+chiffré,
+
+00:00:18.470 --> 00:00:21.077
+et des IP loopback qui n'entrent en
+
+00:00:21.077 --> 00:00:23.684
+conflit avec rien d'autre sur le serveur.
+
+00:00:26.949 --> 00:00:29.746
+Nous allons créer un dépôt chiffré de 2
+
+00:00:29.746 --> 00:00:31.144
+gigaoctets sur le serveur.
+
+00:00:31.144 --> 00:00:33.941
+Un dépôt est un fichier chiffré unique au
+
+00:00:33.941 --> 00:00:34.291
+repos.
+
+00:00:34.291 --> 00:00:35.339
+Une fois monté,
+
+00:00:35.339 --> 00:00:38.136
+il devient un dossier avec son propre daemon
+
+00:00:38.136 --> 00:00:40.234
+Docker et ses propres données d'application,
+
+00:00:40.234 --> 00:00:43.030
+complètement isolé de tout le reste sur le
+
+00:00:43.030 --> 00:00:43.380
+serveur.
+
+00:00:46.380 --> 00:00:47.051
+Dépôt créé.
+
+00:00:47.051 --> 00:00:49.400
+Le fichier chiffré est sur le serveur,
+
+00:00:49.400 --> 00:00:50.742
+prêt à être monté.
+
+00:00:54.047 --> 00:00:56.919
+Listons les dépôts sur la machine pour
+
+00:00:56.919 --> 00:00:59.791
+confirmer que le nouveau est bien enregistré.
+
+00:00:59.791 --> 00:01:01.432
+À partir de là,
+
+00:01:01.432 --> 00:01:04.304
+le dépôt peut être ouvert dans VS
+
+00:01:04.304 --> 00:01:04.714
+Code,
+
+00:01:04.714 --> 00:01:05.124
+déployé,
+
+00:01:05.124 --> 00:01:06.355
+forké ou sauvegardé,
+
+00:01:06.355 --> 00:01:07.996
+tout depuis votre ordinateur.
+
+00:01:10.996 --> 00:01:11.922
+Le voilà,
+
+00:01:11.922 --> 00:01:14.236
+enregistré et prêt à l'emploi.
+
+00:01:17.547 --> 00:01:19.205
+Une option bien pratique :
+
+00:01:19.205 --> 00:01:21.857
+ouvrir le repo directement dans VS Code avec
+
+00:01:21.857 --> 00:01:22.520
+cette commande.
+
+00:01:22.520 --> 00:01:24.510
+Nous ne lancerons pas l'éditeur ici,
+
+00:01:24.510 --> 00:01:27.162
+mais elle démarre une session distante dans le
+
+00:01:27.162 --> 00:01:29.815
+repo via SSH pour que vous puissiez éditer
+
+00:01:29.815 --> 00:01:30.478
+ses fichiers.
+
+00:01:31.278 --> 00:01:34.020
+Lancez cela depuis votre ordinateur portable pour
+
+00:01:34.020 --> 00:01:36.763
+éditer les fichiers du repo dans VS
+
+00:01:36.763 --> 00:01:37.155
+Code.
+
+00:01:37.954 --> 00:01:39.201
+Voilà votre premier dépôt,
+
+00:01:39.201 --> 00:01:40.137
+prêt à servir.
+
+00:01:40.137 --> 00:01:41.072
+Dans la suite,
+
+00:01:41.072 --> 00:01:42.943
+nous y déploierons une application !

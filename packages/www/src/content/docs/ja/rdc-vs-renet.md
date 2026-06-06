@@ -1,11 +1,11 @@
 ---
-title: rdc vs renet
-description: rdc を使う場面と renet を使う場面。
-category: Concepts
+title: "rdc vs renet"
+description: "rdc を使う場面と renet を使う場面。"
+category: "Concepts"
 order: 1
 language: ja
-sourceHash: "026a183f8a5f9dd4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2ccc8590bc6f67c6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # rdc vs renet
@@ -60,7 +60,7 @@ rdc machine health --name server-1
 - `rdc`を通じて利用できないシステム内部の確認
 - 低レベルの復旧操作
 
-すべての`renet`コマンドにはroot権限（`sudo`）が必要です。`renet`コマンドの完全なリストについては、[サーバーリファレンス](/ja/docs/server-reference)を参照してください。
+すべての`renet`コマンドにはroot権限（`sudo`）が必要です。`rdc`は全ての`renet`サブコマンドをラップしていません。対応していないコマンドについては、SSHで接続して`renet`を直接呼び出してください。`renet`コマンドの完全なリストについては、[サーバーリファレンス](/ja/docs/server-reference)を参照してください。
 
 ## 実験的機能：`rdc ops`（ローカルVM）
 

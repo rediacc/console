@@ -4,10 +4,11 @@ description: تهيئة بيئة تطوير Cursor للعمل مع بنية Redi
 category: Guides
 order: 32
 language: ar
-sourceHash: "f2de270cae1a7ac1"
+sourceHash: "b5e835461de00400"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-يتكامل Cursor مع Rediacc من خلال أوامر الطرفية وملف التهيئة `.cursorrules`.
+الملخص: يُحمِّل ملف `.cursorrules` سياق Rediacc في ذاكرة Cursor الذكية، بينما تتيح له الطرفية تشغيل أوامر `rdc` على أجهزتك الفعلية.
 
 ## الإعداد السريع
 
@@ -15,7 +16,7 @@ sourceHash: "f2de270cae1a7ac1"
 2. انسخ [قالب AGENTS.md](/ar/docs/agents-md-template) إلى جذر مشروعك كملف `.cursorrules`
 3. افتح المشروع في Cursor
 
-يقرأ Cursor ملف `.cursorrules` عند بدء التشغيل ويستخدمه كسياق للتطوير بمساعدة الذكاء الاصطناعي.
+يقرأ Cursor ملف `.cursorrules` عند بدء التشغيل. المهم هنا أن حدود نافذة السياق تنطبق، لذا احرص على أن يكون الملف مركّزًا على أجهزتك ومستودعاتك الفعلية بدلًا من نصوص عامة.
 
 ## تهيئة .cursorrules
 

@@ -1,18 +1,17 @@
 ---
-title: البنية التحتية
+title: البنية المعمارية
 description: >-
-  كيف يعمل Rediacc: بنية الأداتين، اكتشاف المحوّلات، نموذج الأمان، وهيكل
-  الإعدادات.
+  كيف يعمل Rediacc: بنية الأداتين، اكتشاف المحوّلات، نموذج الأمان، وهيكل الإعدادات.
 category: Concepts
 order: 0
 language: ar
-sourceHash: "e2087964f996186f"
-sourceCommit: c6db1fb9ec9979425e22578d31c3c188bc7e73f9
+sourceHash: "6763cd925791d474"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-# البنية التحتية
+# البنية المعمارية
 
-تشرح هذه الصفحة كيف يعمل Rediacc من الداخل: بنية الأداتين، اكتشاف المحوّلات، نموذج الأمان، وهيكل الإعدادات.
+إذن: rdc على محطة عملك، renet على خوادمك، يتصلان عبر SSH. تستند بنية Rediacc الكاملة على هذا الفصل. تغطي هذه الصفحة كيف تقسم الأداتان المسؤوليات، وكيف يوجه اكتشاف المحوّل الحالة، وكيف يبدو نموذج الأمان، وكيف تُنظَّم الإعدادات.
 
 ## نظرة عامة على المكدس الكامل
 
@@ -33,9 +32,9 @@ sourceCommit: c6db1fb9ec9979425e22578d31c3c188bc7e73f9
 
 كل أمر تكتبه محلياً يُترجم إلى استدعاء SSH ينفّذ renet على الجهاز البعيد. لن تحتاج أبداً إلى الاتصال بالخوادم يدوياً عبر SSH.
 
-للاطلاع على قاعدة إبهام موجهة للمشغّل، راجع [rdc vs renet](/en/docs/rdc-vs-renet). يمكنك أيضاً استخدام `rdc ops` لتشغيل مجموعة VM محلية للاختبار، راجع [الأجهزة الافتراضية التجريبية](/en/docs/experimental-vms).
+للاطلاع على قاعدة إبهام موجهة للمشغّل، راجع [rdc vs renet](/ar/docs/rdc-vs-renet). يمكنك أيضاً استخدام `rdc ops` لتشغيل مجموعة VM محلية للاختبار، راجع [الأجهزة الافتراضية التجريبية](/ar/docs/experimental-vms).
 
-## الإعداد
+## الإعدادات
 
 تُخزَّن جميع حالات CLI في ملفات إعداد JSON مسطّحة تحت `~/.config/rediacc/`.
 
@@ -54,7 +53,7 @@ sourceCommit: c6db1fb9ec9979425e22578d31c3c188bc7e73f9
 
 - تُخزَّن الحالة في واجهة برمجة التطبيقات السحابية
 - فرق متعددة المستخدمين مع التحكم في الوصول بناءً على الأدوار
-- وحدة تحكم ويب للإدارة المرئية
+- لوحة تحكم ويب للإدارة المرئية
 - يُعدّ باستخدام `rdc auth login`
 
 > **ملاحظة:** أوامر محوّل السحابة تجريبية. فعّلها بتعيين `REDIACC_EXPERIMENTAL=1`.
@@ -122,13 +121,13 @@ sourceCommit: c6db1fb9ec9979425e22578d31c3c188bc7e73f9
 /run/rediacc/docker-{N}.sock
 ```
 
-يُزيل هذا التخطيط الموحّد تعارضات التحميل للقراءة فقط والقراءة-الكتابة التي كانت تحدث عندما كانت مسارات العمليات مقسّمة بين نظام ملفات المضيف والحجم المشفر. تتبع عمليات المستودعات والعمليات المستقلة نفس هيكل الدليل، لذا تعمل الأدوات والتشخيصات بشكل متطابق في كلتا الحالتين.
+يُزيل هذا التخطيط الموحّد تعارضات التحميل للقراءة فقط والقراءة-الكتابة التي كانت تحدث عندما كانت مسارات العمليات مقسّمة بين نظام ملفات المضيف والحجم المشفر. واجهنا هذا الفصل أكثر من مرة قبل الاستقرار على هذا. تتبع عمليات المستودعات والعمليات المستقلة نفس هيكل الدليل، لذا تعمل الأدوات والتشخيصات بشكل متطابق في كلتا الحالتين.
 
 ## تشفير LUKS
 
 المستودعات هي صور أقراص مشفرة بـ LUKS مخزّنة على مخزن بيانات الخادم (الافتراضي: `/mnt/rediacc`). كل مستودع:
 
-1. لديه عبارة مرور تشفير مُولّدة عشوائياً ("بيانات الاعتماد")
+1. لديه عبارة مرور تشفير مُولّدة عشوائياً (بيانات الاعتماد)
 2. يُخزّن كملف: `{datastore}/repos/{guid}.img`
 3. يُحمّل عبر `cryptsetup` عند الوصول إليه
 
@@ -136,55 +135,106 @@ sourceCommit: c6db1fb9ec9979425e22578d31c3c188bc7e73f9
 
 ## هيكل الإعدادات
 
-كل إعداد هو ملف JSON مسطّح مخزّن في `~/.config/rediacc/`. الإعداد الافتراضي هو `rediacc.json`؛ تستخدم الإعدادات المسمّاة الاسم كاسم للملف (مثلاً `production.json`). فيما يلي مثال مشروح:
+كل إعداد هو ملف JSON مسطّح مخزّن في `~/.config/rediacc/`. الإعداد الافتراضي هو `rediacc.json`؛ تستخدم الإعدادات المسمّاة الاسم كاسم للملف (مثلاً `production.json`). تُنظّم الحقول حسب الغرض: `resources` يحتفظ بالنشرات، `credentials` يحتفظ بالأسرار، `account` يحتفظ بقيم السحابة الافتراضية، `infra` يحتفظ بـ TLS و DNS، و `encryption` يحتفظ بحالة في باقي الحقول. يثبّت المميز `schemaVersion: 2` على المستوى الأعلى توافق الإصدارات الأمامية.
 
 ```json
 {
+  "schemaVersion": 2,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "version": 1,
-  "ssh": {
-    "privateKeyPath": "/home/you/.ssh/id_ed25519"
+  "version": 47,
+  "defaults": {
+    "language": "en",
+    "machine": "prod-1",
+    "nextNetworkId": 2880,
+    "universalUser": "rediacc"
   },
-  "machines": {
-    "prod-1": {
-      "ip": "203.0.113.50",
-      "user": "deploy",
-      "port": 22,
-      "datastore": "/mnt/rediacc",
-      "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+  "credentials": {
+    "ssh": {
+      "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+      "publicKey": "ssh-ed25519 AAAA...",
+      "knownHosts": "..."
+    },
+    "cfDnsApiToken": "cf-token-xxxxxxxxxxxx"
+  },
+  "resources": {
+    "machines": {
+      "prod-1": {
+        "ip": "203.0.113.50",
+        "user": "deploy",
+        "port": 22,
+        "datastore": "/mnt/rediacc",
+        "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+      }
+    },
+    "storages": {
+      "backblaze": {
+        "provider": "b2",
+        "vaultContent": { "...": "..." }
+      }
+    },
+    "repositories": {
+      "webapp": {
+        "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "credential": "base64-encoded-random-passphrase",
+        "networkId": 2816
+      }
     }
   },
-  "storages": {
-    "backblaze": {
-      "provider": "b2",
-      "vaultContent": { "...": "..." }
-    }
+  "infra": {
+    "certEmail": "admin@example.com",
+    "cfDnsZoneId": "..."
   },
-  "repositories": {
-    "webapp": {
-      "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "credential": "base64-encoded-random-passphrase",
-      "networkId": 2816
-    }
-  },
-  "nextNetworkId": 2880,
-  "universalUser": "rediacc"
+  "encryption": {
+    "mode": "plaintext"
+  }
 }
 ```
 
-**الحقول الرئيسية:**
+**البكتات الرئيسية:**
 
-| الحقل | الوصف |
-|-------|-------|
-| `id` | معرّف فريد لملف الإعداد هذا |
-| `version` | إصدار مخطط ملف الإعداد |
-| `ssh.privateKeyPath` | مفتاح SSH الخاص المستخدم لجميع اتصالات الأجهزة |
-| `machines.<name>.user` | اسم مستخدم SSH للاتصال بالجهاز |
-| `machines.<name>.knownHosts` | مفاتيح مضيف SSH من `ssh-keyscan` |
-| `repositories.<name>.repositoryGuid` | معرّف UUID يحدد صورة القرص المشفرة |
-| `repositories.<name>.credential` | عبارة مرور تشفير LUKS (**لا تُخزّن على الخادم**) |
-| `repositories.<name>.networkId` | يحدد الشبكة الفرعية لعناوين IP (2816 + n*64)، يُعيَّن تلقائياً |
-| `nextNetworkId` | عدّاد عام لتعيين معرّفات الشبكة |
-| `universalUser` | تجاوز مستخدم النظام الافتراضي (`rediacc`) |
+| البكتة | المحتويات |
+|---|---|
+| `schemaVersion` | المميز (حالياً `2`). ترفض أدوات التحميل الإصدارات المجهولة. |
+| `id` / `version` | معرّف UUID غير قابل للتغيير + عدّاد أحادي الاتجاه؛ يُستخدم للقفل المتفائل على متجر الإعدادات البعيد. |
+| `defaults.*` | قيم افتراضية غير حساسة في وقت التشغيل (`machine` و `language` و `pruneGraceDays` و `universalUser` و `nextNetworkId`). |
+| `credentials.ssh` | مفاتيح SSH مضمنة + `knownHosts`. يحل محل `ssh.privateKeyPath` القديم (لا مزيد من المسارات غير المباشرة؛ يتم حل المحتوى عند التحميل ويُخزّن مضمناً). |
+| `credentials.cfDnsApiToken` | رمز Cloudflare DNS-01 ACME. |
+| `credentials.masterPasswordVerifier` | موجود فقط عندما `encryption.mode === "master-password"`. |
+| `resources.machines.*` | تفاصيل اتصال SSH لكل جهاز. |
+| `resources.storages.*` | بيانات اعتماد النسخ الاحتياطي خارج الموقع متوافقة مع rclone. |
+| `resources.repositories.*` | معرّف GUID لكل مستودع + بيانات اعتماد LUKS + مفتاح SSH للوصول المعزول للوكيل. |
+| `infra.acmeCertCache.*` | ذاكرة مؤقتة Traefik acme.json، gzip + base64، مفهرسة حسب المجال. |
+| `encryption.mode` | `"plaintext"` (افتراضي) أو `"master-password"`. |
+| `encryption.encryptedFields` | عند التشفير، خريطة بكلوب AES-GCM لكل مؤشر (`/resources/repositories/webapp/credential` → `{ciphertext, nonce, tag}`). توجيه فك تشفير واحد لكل جلسة يفك تشفير الحقول عند قراءتها. |
+| `remote` | موجود فقط عندما يتم مزامنة الإعداد إلى متجر الإعدادات المشفر؛ راجع [متجر الإعدادات المشفر](/ar/docs/config-storage). |
 
-> يحتوي هذا الملف على بيانات حساسة (مسارات مفاتيح SSH، بيانات اعتماد LUKS). يُخزّن بصلاحيات `0600` (قراءة/كتابة للمالك فقط). لا تشاركه أو تضعه في نظام التحكم بالإصدارات.
+**عدّل بأمان باستخدام CLI وليس `vim`:**
+
+```bash
+# تعديلات حقل واحد موجهة بالمؤشر (معرّفة بناءً على المعرفة للمسارات الحساسة)
+rdc config field set --pointer /resources/machines/prod-1/port --new 2222
+rdc config field set --pointer /credentials/cfDnsApiToken --current "$OLD" --new "$NEW"
+
+# محرر كامل مع إسقاط JSONC مخفي (البشر فقط)
+rdc config edit
+
+# تفريغ JSONC للقراءة فقط، آمن للنصوص البرمجية والوكلاء
+rdc config edit --dump
+
+# افحص كل طفرة + رفض + كشف في سجل التدقيق
+rdc config audit log --since 24h
+rdc config audit verify
+```
+
+> يحتوي هذا الملف على بيانات حساسة (مفاتيح SSH الخاصة، بيانات اعتماد LUKS، رموز Cloudflare). يُخزّن بصلاحيات `0600` (قراءة/كتابة للمالك فقط). لا تشاركه أو تضعه في نظام التحكم بالإصدارات. عندما يقرأ أي أمر `rdc` الملف، تُخفي الحقول الحساسة افتراضياً [الحقول الحساسة](/ar/docs/ai-agents-safety): يظهر النص العادي فقط مع `--reveal` على تيرمينال تفاعلي بشري.
+
+### Envelope v2 والإنفاذ من جانب الخادم
+
+عند مزامنة الإعداد إلى [متجر الإعدادات المشفر](/ar/docs/config-storage)، يلف CLI كل حقل حساس في التزام HMAC لكل حقل ويحمل تلك الالتزامات في الغلاف نص واضح. يرى الخادم فقط الملخصات السادسة عشرية: لا يرى القيم أبداً: لكنه يمكنه إنفاذ بوابات المعرفة على كل كتابة:
+
+- **فحص الشرط المسبق**: على `PUT /configs/<id>`، يرسل العميل الملخصات التي يدّعي معرفتها للمسارات التي يريد طفرها. يقارن الخادم مقابل الالتزامات المخزّنة في غلاف الإعداد. عدم تطابق → `409 precondition_failed` مع `mismatchedPaths`. صفري المعرفة: الخادم لا يرى نص واضح.
+- **مكافحة التنزيل**: يجب أن يلتزم الغلاف الجديد بكل مسار حساس التزم به الغلاف السابق. لا يمكن لوكيل إسقاط مسار من الالتزامات للالتفاف حول بوابة معرفة مستقبلية.
+- **تثبيت إصدار الغلاف**: يرفض الخادم الأغلفة التي تفتقد `envelopeVersion: 2` مع `400 unsupported_envelope_version`. لا نافذة قبول مزدوجة.
+- **تشفير لكل حقل في باقي الحقول** (جانب العميل): عندما `encryption.mode === "master-password"`، يصبح كل سر كلوب AES-GCM فردياً مفتاحه بكلمة المرور الرئيسية. القراءات لا تؤدي إلى موجه ما لم تمس الأمر الفعلي سراً (لذا `rdc machine list` تظل خالية من الموجهات).
+
+يُشتقّ مفتاح الالتزام (FCK) من جانب العميل من CEK عبر `HKDF-SHA256(ikm=CEK, salt=fckSalt, info="rediacc-config-fck-v1")` مع ملح لكل إعداد. يلغي تدوير `fckSalt` كل الالتزامات السابقة، مما يفرض إعادة حساب كاملة: مفيد عند تدوير CEK.

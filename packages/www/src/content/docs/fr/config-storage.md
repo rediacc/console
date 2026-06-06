@@ -6,7 +6,8 @@ description: >-
 category: Guides
 order: 8
 language: fr
-sourceHash: "9612a5fecf063eea"
+sourceHash: "daf79946b8925246"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Stockage de configuration
@@ -28,7 +29,7 @@ Le stockage de configuration fournit une synchronisation chiffrée à connaissan
    - Second toucher : dérive les clés de chiffrement via PRF
 4. Configuration terminée, votre secret de passkey est stocké dans le trousseau de clés de votre système d'exploitation
 
-Après la configuration, les opérations CLI quotidiennes (push/pull) fonctionnent sans le passkey.
+Après la configuration, les opérations CLI quotidiennes (push/pull) fonctionnent sans le passkey. Attention : la configuration nécessite un passkey avec support de l'extension PRF. Tous les jetons matériels ou authentificateurs de plateforme ne la proposent pas.
 
 ## Compatibilité des fournisseurs PRF
 

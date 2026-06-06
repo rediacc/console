@@ -1,0 +1,202 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.826
+Il est temps de déployer une vraie application
+
+00:00:03.826 --> 00:00:04.179
+!
+
+00:00:04.179 --> 00:00:07.005
+Nous passons d'un repo vide à des conteneurs
+
+00:00:07.005 --> 00:00:09.124
+en marche en trois courtes étapes.
+
+00:00:09.880 --> 00:00:12.235
+Le flux est simple :
+
+00:00:12.235 --> 00:00:13.648
+choisir un modèle,
+
+00:00:13.648 --> 00:00:15.062
+l'appliquer au repo,
+
+00:00:15.062 --> 00:00:16.004
+puis l'exécuter.
+
+00:00:16.004 --> 00:00:18.830
+La CLI fournit des modèles intégrés,
+
+00:00:18.830 --> 00:00:21.656
+donc nous n'avons jamais à écrire
+
+00:00:21.656 --> 00:00:24.482
+un docker-compose à partir de zéro.
+
+00:00:27.762 --> 00:00:28.662
+Première étape.
+
+00:00:28.662 --> 00:00:31.361
+Nous allons lister les modèles disponibles.
+
+00:00:31.361 --> 00:00:34.060
+Rediacc fournit des configurations prêtes à
+
+00:00:34.060 --> 00:00:36.310
+l'emploi pour les applications courantes,
+
+00:00:36.310 --> 00:00:36.760
+Postgres,
+
+00:00:36.760 --> 00:00:37.210
+Redis,
+
+00:00:37.210 --> 00:00:38.109
+serveurs web,
+
+00:00:38.109 --> 00:00:40.809
+pour ne pas avoir à écrire
+
+00:00:40.809 --> 00:00:43.508
+un docker compose point yml from
+
+00:00:43.508 --> 00:00:43.958
+scratch.
+
+00:00:45.458 --> 00:00:48.090
+Le catalogue complet des modèles.
+
+00:00:48.090 --> 00:00:50.723
+Chacun associe un compose testé
+
+00:00:50.723 --> 00:00:52.302
+et un Rediaccfile.
+
+00:00:55.595 --> 00:00:56.450
+Deuxième étape.
+
+00:00:56.450 --> 00:00:59.013
+Nous appliquons le modèle app-postgres dans
+
+00:00:59.013 --> 00:00:59.867
+notre dépôt.
+
+00:00:59.867 --> 00:01:01.576
+Deux fichiers apparaissent :
+
+00:01:01.576 --> 00:01:04.139
+le docker compose point yml qui
+
+00:01:04.139 --> 00:01:05.420
+décrit les conteneurs,
+
+00:01:05.420 --> 00:01:07.984
+et le Rediaccfile qui définit les
+
+00:01:07.984 --> 00:01:10.119
+hooks de démarrage et d'arrêt.
+
+00:01:12.369 --> 00:01:13.310
+Modèle appliqué.
+
+00:01:13.310 --> 00:01:16.131
+Le repo possède maintenant son fichier
+
+00:01:16.131 --> 00:01:18.012
+compose et son Rediaccfile.
+
+00:01:21.354 --> 00:01:22.200
+Troisième étape.
+
+00:01:22.200 --> 00:01:23.892
+Nous démarrons le dépôt.
+
+00:01:23.892 --> 00:01:25.584
+L'outil lance les conteneurs,
+
+00:01:25.584 --> 00:01:28.122
+monte le volume chiffré et configure
+
+00:01:28.122 --> 00:01:29.814
+le daemon Docker isolé.
+
+00:01:29.814 --> 00:01:32.352
+L'application est maintenant en cours d'exécution.
+
+00:01:35.102 --> 00:01:37.453
+Conteneurs en cours d'exécution,
+
+00:01:37.453 --> 00:01:38.628
+volume monté,
+
+00:01:38.628 --> 00:01:40.979
+daemon Docker isolé démarré.
+
+00:01:44.311 --> 00:01:46.100
+Vérifions avec docker ps.
+
+00:01:46.100 --> 00:01:48.784
+Notez que cette vue n'affiche que
+
+00:01:48.784 --> 00:01:51.020
+les conteneurs de notre dépôt.
+
+00:01:51.020 --> 00:01:53.704
+Les autres dépôts sur le même
+
+00:01:53.704 --> 00:01:56.387
+serveur ont leurs propres daemons Docker
+
+00:01:56.387 --> 00:01:59.071
+et sont complètement invisibles depuis ici.
+
+00:02:01.821 --> 00:02:04.393
+Seuls les conteneurs de ce
+
+00:02:04.393 --> 00:02:05.421
+repo apparaissent.
+
+00:02:05.421 --> 00:02:06.965
+L'isolation est réelle,
+
+00:02:06.965 --> 00:02:08.508
+pas seulement déclarative.
+
+00:02:11.825 --> 00:02:13.079
+Vérifions ce qui tourne.
+
+00:02:13.079 --> 00:02:15.587
+docker ps liste ici uniquement les conteneurs de
+
+00:02:15.587 --> 00:02:16.214
+ce repo.
+
+00:02:16.214 --> 00:02:18.722
+Les autres repos du même serveur ont leurs
+
+00:02:18.722 --> 00:02:21.229
+propres daemons et sont totalement invisibles depuis cette
+
+00:02:21.229 --> 00:02:21.543
+vue.
+
+00:02:22.793 --> 00:02:25.252
+Uniquement les conteneurs de ce repo.
+
+00:02:25.252 --> 00:02:26.482
+L'isolation est réelle,
+
+00:02:26.482 --> 00:02:28.122
+pas de la configuration.
+
+00:02:28.925 --> 00:02:30.723
+Et voilà votre premier déploiement.
+
+00:02:30.723 --> 00:02:33.239
+On se retrouve dans la prochaine vidéo,
+
+00:02:33.239 --> 00:02:35.756
+où nous explorerons le travail avec le
+
+00:02:35.756 --> 00:02:36.475
+repo lui-même.

@@ -4,9 +4,11 @@ description: Täielik viide rdc CLI JSON-väljundi formaadi, ümbriku skeemi, ve
 category: Reference
 order: 51
 language: et
+sourceHash: "9f8d61df26b59757"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Kõik `rdc` käsud toetavad struktureeritud JSON-väljundit AI-agentide ja skriptide programmiliseks tarbimiseks.
+Kõik `rdc` käsud väljustavad struktureeritud JSON-i. Suunake see skripti või edastage otse agendile.
 
 ## JSON-väljundi lubamine
 
@@ -93,7 +95,7 @@ Ebaõnnestunud käsud tagastavad struktureeritud vead koos taastumisvihjete:
 
 ### Struktureeritud `next` toiminguvihjed
 
-Kõrge väärtusega veakoodide jaoks (nt `PRECONDITION_MISMATCH`) sisaldavad vead struktureeritud välja `next`, mis ütleb agendile täpselt, millist käsku kasutajale soovitada. **Agendid peaksid edastama `next.options[].run` sõna-sõnalt inimesele, mitte sünteesima oma käsku**. See väldib "agent leiutab käsu, mida pole olemas" ebaõnnestumise mustrit.
+Kõrge väärtusega veakoodide jaoks (nt `PRECONDITION_MISMATCH`) sisaldab vea objekt välja `next`, kus on täpselt need käsud, mida kasutajale pakkuda. Mitte iga veakood ei sisalda seda välja. Ainult need, millel on määratletud taastumistee. **Agendid peaksid edastama `next.options[].run` sõna-sõnalt inimesele, mitte sünteesima oma käsku.** See väldib ebaõnnestumise mustrit, kus agent leiutab käsu, mida pole olemas. See juhtub sagedamini, kui arvata võiks.
 
 ```json
 {
@@ -121,7 +123,7 @@ Skeem:
 
 | Väli | Tüüp | Kirjeldus |
 |------|------|-----------|
-| `next.summary` | `string` | Üherealise kirjeldus sellest, mida kasutaja otsustama peab |
+| `next.summary` | `string` | Üherealine kirjeldus sellest, mida kasutaja otsustama peab |
 | `next.options[]` | `array` | Konkreetsed toimingud; iga on alternatiiv, mille kasutaja saab valida |
 | `next.options[].description` | `string` | Selle valiku inimloetav selgitus |
 | `next.options[].run` | `string` | Täpne CLI-käsk. Edastage sõna-sõnalt kasutajale |
@@ -130,15 +132,15 @@ Skeem:
 
 Need veatüübid on märgitud `retryable: true`:
 
-- **NETWORK_ERROR** - SSH-ühenduse või võrgu tõrge
-- **RATE_LIMITED** - Liiga palju päringuid, oodake ja proovige uuesti
-- **API_ERROR** - Mööduv taustaprogrammi tõrge
+- **NETWORK_ERROR**, SSH-ühenduse või võrgu tõrge
+- **RATE_LIMITED**, Liiga palju päringuid, oodake ja proovige uuesti
+- **API_ERROR**, Mööduv taustaprogrammi tõrge
 
 Mittekorduskatseid väärivad vead (autentimine, ei leitud, valed argumendid) nõuavad enne korduskatset parandusmeetmeid.
 
 ## Väljundi filtreerimine
 
-Kasutage `--fields`, et piirata väljundit konkreetsete võtmetega. See vähendab tokenikasutust, kui vajatakse ainult konkreetseid andmeid:
+Kasutage `--fields`, et piirata väljundit konkreetsete võtmetega ja vähendada tokenikasutust:
 
 ```bash
 rdc machine containers --name prod-1 -o json --fields name,status,repository
@@ -174,7 +176,7 @@ Käsud koos `--dry-run` toetusega: `repo up`, `repo down`, `repo delete`, `snaps
 
 ## Agendi avastamiskäsud
 
-Alamkäsk `rdc agent` pakub struktureeritud introspekat AI-agentidele, et avastada käitusajal saadaolevaid toiminguid.
+Alamkäsk `rdc agent` pakub AI-agentidele struktureeritud viisi saadaolevate toimingute avastamiseks käitusajal.
 
 ### Kõigi käskude loetlemine
 
@@ -212,7 +214,7 @@ Tagastab täieliku käskude puu koos argumentide, valikute ja kirjeldustega:
 rdc agent schema --command "machine query"
 ```
 
-Tagastab üksiku käsu üksikasjaliku skeemi, sealhulgas kõik argumendid ja valikud koos nende tüüpide ja vaikeväärtustega.
+Tagastab üksiku käsu täieliku skeemi: kõik argumendid ja valikud koos nende tüüpide ja vaikeväärtustega.
 
 ### Täitmine JSON kaudu
 
@@ -220,7 +222,7 @@ Tagastab üksiku käsu üksikasjaliku skeemi, sealhulgas kõik argumendid ja val
 echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
-Aktsepteerib stdin-i JSON-i, kaardistab võtmed käsu argumentide ja valikutega ning täidab JSON-väljundiga. Kasulik struktureeritud agent-CLI suhtluseks ilma kesta käsustringide koostamiseta.
+Aktsepteerib stdin-i JSON-i, kaardistab võtmed käsu argumentide ja valikutega ning täidab käsu JSON-väljund sunnitud olekus. Kasulik siis, kui eelistate vältida kesta käsustringide koostamist agent-CLI päringute jaoks.
 
 ## Sõelumise näited
 

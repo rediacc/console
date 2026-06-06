@@ -4,7 +4,8 @@ description: Sincronização de configuração encriptada zero-knowledge com enc
 category: Guides
 order: 8
 language: pt
-sourceHash: "d20655e3e306b85b"
+sourceHash: "daf79946b8925246"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Armazenamento de Configuração
@@ -26,7 +27,7 @@ O armazenamento de configuração fornece sincronização encriptada zero-knowle
    - Segundo toque: deriva as chaves de encriptação via PRF
 4. Configuração concluída; o segredo da sua passkey fica armazenado no keyring do seu sistema operativo
 
-Após a configuração, as operações diárias do CLI (push/pull) funcionam sem a passkey.
+Após a configuração, as operações diárias do CLI (push/pull) funcionam sem a passkey. Aviso importante: a configuração requer uma passkey com suporte de extensão PRF. Nem todos os tokens de hardware ou autenticadores de plataforma possuem este suporte.
 
 ## Compatibilidade de Fornecedores PRF
 
@@ -44,7 +45,7 @@ Após a configuração, as operações diárias do CLI (push/pull) funcionam sem
 
 O armazenamento de configuração tem âmbito por organização. Os membros são geridos via portal web:
 
-- **Ver membros**: Armazenamento de Configuração > Membros
+- **Ver membros**: Armazenamento de Configuração → Membros
 - **Adicionar membro**: Atualmente apenas via CLI (interface web planeada)
 - **Remover membro**: Clique no botão de remoção na página Membros (requer 2FA + reautenticação)
 

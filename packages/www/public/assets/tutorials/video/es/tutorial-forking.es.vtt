@@ -1,0 +1,349 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.076
+¡Bienvenido a la función estrella!
+
+00:00:03.076 --> 00:00:05.983
+Clona un repo de producción entero sin
+
+00:00:05.983 --> 00:00:07.228
+importar su tamaño,
+
+00:00:07.228 --> 00:00:08.889
+y sin romper nada.
+
+00:00:09.648 --> 00:00:12.325
+Un repo padre se ramifica en
+
+00:00:12.325 --> 00:00:14.556
+tantos clones independientes como quieras.
+
+00:00:14.556 --> 00:00:17.233
+Cada fork es su propio entorno
+
+00:00:17.233 --> 00:00:19.910
+aislado que corre en paralelo con
+
+00:00:19.910 --> 00:00:20.802
+el original.
+
+00:00:21.570 --> 00:00:24.548
+Piensa en compartir el enlace de
+
+00:00:24.548 --> 00:00:25.541
+una carpeta.
+
+00:00:25.541 --> 00:00:28.519
+El enlace es algo igual de
+
+00:00:28.519 --> 00:00:31.497
+ligero ya sea que la carpeta
+
+00:00:31.497 --> 00:00:33.482
+sea pequeña o enorme,
+
+00:00:33.482 --> 00:00:36.460
+y hacer fork funciona con el
+
+00:00:36.460 --> 00:00:37.452
+mismo principio.
+
+00:00:38.229 --> 00:00:39.337
+Un gigabyte,
+
+00:00:39.337 --> 00:00:40.444
+cien gigabytes,
+
+00:00:40.444 --> 00:00:41.552
+un terabyte:
+
+00:00:41.552 --> 00:00:44.321
+el fork se comporta igual.
+
+00:00:44.321 --> 00:00:47.090
+El tamaño del repo no
+
+00:00:47.090 --> 00:00:49.305
+entra en la ecuación.
+
+00:00:52.581 --> 00:00:55.254
+Vamos a hacer un fork
+
+00:00:55.254 --> 00:00:57.927
+del repositorio con un único
+
+00:00:57.927 --> 00:00:58.462
+comando.
+
+00:00:58.462 --> 00:00:59.531
+Clonó todo:
+
+00:00:59.531 --> 00:01:00.600
+la app,
+
+00:01:00.600 --> 00:01:02.738
+la base de datos,
+
+00:01:02.738 --> 00:01:04.877
+los archivos de configuración.
+
+00:01:04.877 --> 00:01:07.015
+Y ocurrió en segundos,
+
+00:01:07.015 --> 00:01:09.688
+sin importar el tamaño del
+
+00:01:09.688 --> 00:01:10.223
+repo.
+
+00:01:10.223 --> 00:01:11.292
+Un gigabyte,
+
+00:01:11.292 --> 00:01:12.361
+cien gigabytes,
+
+00:01:12.361 --> 00:01:13.430
+un terabyte:
+
+00:01:13.430 --> 00:01:15.034
+el mismo tiempo,
+
+00:01:15.034 --> 00:01:15.569
+siempre.
+
+00:01:18.569 --> 00:01:19.598
+Fork listo.
+
+00:01:19.598 --> 00:01:22.170
+El clon está activo y
+
+00:01:22.170 --> 00:01:23.198
+en ejecución,
+
+00:01:23.198 --> 00:01:25.256
+sin importar el tamaño.
+
+00:01:28.548 --> 00:01:31.205
+Ambos repos existen en paralelo
+
+00:01:31.205 --> 00:01:31.736
+ahora.
+
+00:01:31.736 --> 00:01:33.331
+La misma máquina,
+
+00:01:33.331 --> 00:01:34.925
+el mismo disco,
+
+00:01:34.925 --> 00:01:37.051
+dos entornos completamente independientes.
+
+00:01:37.051 --> 00:01:39.708
+El fork tiene sus propios
+
+00:01:39.708 --> 00:01:40.239
+contenedores,
+
+00:01:40.239 --> 00:01:42.896
+su propio sistema de archivos
+
+00:01:42.896 --> 00:01:45.553
+y su propio Docker daemon.
+
+00:01:48.553 --> 00:01:49.567
+Dos repos,
+
+00:01:49.567 --> 00:01:50.580
+un disco.
+
+00:01:50.580 --> 00:01:51.594
+Mismos datos,
+
+00:01:51.594 --> 00:01:53.621
+todo lo demás separado.
+
+00:01:56.966 --> 00:01:58.819
+Vamos a probar el aislamiento.
+
+00:01:58.819 --> 00:01:59.932
+En el original,
+
+00:01:59.932 --> 00:02:02.527
+nuestro archivo marcador está justo donde lo
+
+00:02:02.527 --> 00:02:02.897
+dejamos.
+
+00:02:02.897 --> 00:02:05.493
+La existencia del fork no cambió nada
+
+00:02:05.493 --> 00:02:06.605
+en el padre.
+
+00:02:07.405 --> 00:02:09.299
+El archivo original sigue ahí.
+
+00:02:09.299 --> 00:02:11.193
+El fork no lo tocó.
+
+00:02:12.017 --> 00:02:14.792
+El repo padre es el sol y
+
+00:02:14.792 --> 00:02:17.567
+tu fork es un espejo que atrapa
+
+00:02:17.567 --> 00:02:18.360
+su luz.
+
+00:02:18.360 --> 00:02:21.135
+La base compartida permanece intacta mientras que
+
+00:02:21.135 --> 00:02:23.910
+lo que pintes en el espejo te
+
+00:02:23.910 --> 00:02:25.496
+pertenece solo a ti.
+
+00:02:28.761 --> 00:02:30.619
+Ahora eliminamos ese archivo,
+
+00:02:30.619 --> 00:02:32.941
+pero solo dentro del fork.
+
+00:02:32.941 --> 00:02:34.335
+Dentro del fork,
+
+00:02:34.335 --> 00:02:34.799
+desapareció.
+
+00:02:34.799 --> 00:02:37.587
+Hicimos un cambio destructivo y se
+
+00:02:37.587 --> 00:02:39.445
+quedó dentro del fork.
+
+00:02:40.245 --> 00:02:42.021
+Eliminado en el fork.
+
+00:02:42.021 --> 00:02:43.797
+El original permanece intacto.
+
+00:02:47.113 --> 00:02:49.001
+De vuelta al original.
+
+00:02:49.001 --> 00:02:51.362
+El archivo marcador sigue aquí,
+
+00:02:51.362 --> 00:02:51.834
+intacto.
+
+00:02:51.834 --> 00:02:54.667
+El original nunca supo que pasó
+
+00:02:54.667 --> 00:02:55.139
+algo.
+
+00:02:55.139 --> 00:02:56.555
+La misma imagen,
+
+00:02:56.555 --> 00:02:57.972
+Docker daemons separados,
+
+00:02:57.972 --> 00:02:59.860
+sistemas de archivos separados.
+
+00:03:00.660 --> 00:03:01.720
+Sigue aquí.
+
+00:03:01.720 --> 00:03:04.370
+Los forks están correctamente aislados.
+
+00:03:07.694 --> 00:03:08.818
+Cuando termines,
+
+00:03:08.818 --> 00:03:11.068
+simplemente elimina el fork.
+
+00:03:11.068 --> 00:03:13.879
+El original queda exactamente como
+
+00:03:13.879 --> 00:03:14.441
+estaba.
+
+00:03:14.441 --> 00:03:15.004
+Fork,
+
+00:03:15.004 --> 00:03:15.566
+experimenta,
+
+00:03:15.566 --> 00:03:16.691
+rompe cosas,
+
+00:03:16.691 --> 00:03:17.253
+elimina:
+
+00:03:17.253 --> 00:03:18.378
+sin riesgo.
+
+00:03:21.378 --> 00:03:22.701
+Fork eliminado.
+
+00:03:22.701 --> 00:03:25.348
+El original quedó exactamente
+
+00:03:25.348 --> 00:03:27.334
+como lo dejamos.
+
+00:03:28.138 --> 00:03:30.739
+Un fork es una fotografía congelada
+
+00:03:30.739 --> 00:03:32.908
+del padre en un instante.
+
+00:03:32.908 --> 00:03:35.509
+El padre sigue fluyendo como un
+
+00:03:35.509 --> 00:03:35.943
+río,
+
+00:03:35.943 --> 00:03:38.545
+pero tu snapshot permanece exactamente donde
+
+00:03:38.545 --> 00:03:38.978
+estaba.
+
+00:03:39.758 --> 00:03:42.546
+Cinco forks de un repo de cien
+
+00:03:42.546 --> 00:03:45.335
+gigabytes siguen sumando alrededor de cien gigabytes
+
+00:03:45.335 --> 00:03:46.132
+en disco.
+
+00:03:46.132 --> 00:03:48.920
+Solo pagas por los bytes que realmente
+
+00:03:48.920 --> 00:03:50.912
+cambias dentro de cada fork.
+
+00:03:51.680 --> 00:03:54.600
+Los forks deliberadamente dejan los
+
+00:03:54.600 --> 00:03:55.768
+secrets atrás,
+
+00:03:55.768 --> 00:03:58.688
+que es lo que hace
+
+00:03:58.688 --> 00:04:01.608
+que clonar producción sin romper
+
+00:04:01.608 --> 00:04:03.944
+nada sea realmente seguro.
+
+00:04:03.944 --> 00:04:06.864
+¡Los configuramos correctamente en el
+
+00:04:06.864 --> 00:04:08.032
+siguiente tutorial!

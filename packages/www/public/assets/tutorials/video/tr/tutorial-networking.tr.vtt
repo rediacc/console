@@ -1,0 +1,190 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.398
+Pekâlâ!
+
+00:00:01.398 --> 00:00:04.184
+Uygulamanıza otomatik TLS ile gerçek bir alan
+
+00:00:04.184 --> 00:00:04.980
+adı verelim.
+
+00:00:04.980 --> 00:00:07.766
+Dört kısa adım ve internette yerinizi alıyorsunuz.
+
+00:00:08.534 --> 00:00:09.574
+İşte yol.
+
+00:00:09.574 --> 00:00:11.655
+Cloudflare API token'ı alın,
+
+00:00:11.655 --> 00:00:13.736
+altyapıyı CLI üzerinde yapılandırın,
+
+00:00:13.736 --> 00:00:16.337
+sunucuya gönderin ve DNS ile
+
+00:00:16.337 --> 00:00:18.938
+sertifikaları sizin için yöneten bir
+
+00:00:18.938 --> 00:00:20.498
+Traefik proxy'si dağıtın.
+
+00:00:21.269 --> 00:00:23.674
+Önce tarayıcınızda Cloudflare panelini açın.
+
+00:00:23.674 --> 00:00:24.637
+My Profile,
+
+00:00:24.637 --> 00:00:27.523
+ardından API Tokens'a gidin ve CLI'nin
+
+00:00:27.523 --> 00:00:30.410
+kayıtlarınızı yönetebilmesi için Zone DNS Edit
+
+00:00:30.410 --> 00:00:32.815
+yetkisine sahip bir token oluşturun.
+
+00:00:36.109 --> 00:00:37.179
+İkinci adım.
+
+00:00:37.179 --> 00:00:39.319
+Komut satırından genel IP'yi,
+
+00:00:39.319 --> 00:00:40.924
+temel alan adını,
+
+00:00:40.924 --> 00:00:43.599
+sertifika e-postasını ve Cloudflare API
+
+00:00:43.599 --> 00:00:44.669
+token'ını giriyoruz.
+
+00:00:44.669 --> 00:00:47.345
+Sertifika e-postası ve token tüm
+
+00:00:47.345 --> 00:00:48.415
+makinelerinizde paylaşılır;
+
+00:00:48.415 --> 00:00:50.555
+yalnızca bir kez ayarlarsınız.
+
+00:00:51.355 --> 00:00:53.706
+Altyapı bilgileri yapılandırmanıza kaydedildi.
+
+00:00:57.020 --> 00:00:59.274
+Altyapı ayarlarının kaydedildiğini doğruluyoruz.
+
+00:00:59.274 --> 00:01:00.401
+Genel IP,
+
+00:01:00.401 --> 00:01:02.091
+temel alan adı,
+
+00:01:02.091 --> 00:01:03.218
+sertifika e-postası;
+
+00:01:03.218 --> 00:01:04.909
+hepsi yapılandırmada görünüyor.
+
+00:01:06.659 --> 00:01:07.631
+Ayarlar kaydedildi.
+
+00:01:07.631 --> 00:01:09.088
+Sunucuya gönderilmeye hazır.
+
+00:01:12.441 --> 00:01:13.503
+Üçüncü adım.
+
+00:01:13.503 --> 00:01:15.097
+Yapılandırmayı sunucuya gönderiyoruz.
+
+00:01:15.097 --> 00:01:16.159
+Bu komut,
+
+00:01:16.159 --> 00:01:18.815
+Cloudflare'de DNS kayıtlarını otomatik olarak
+
+00:01:18.815 --> 00:01:21.471
+oluşturur ve makinede proxy yapılandırmasını
+
+00:01:21.471 --> 00:01:22.002
+hazırlar.
+
+00:01:25.002 --> 00:01:25.728
+Gönderildi.
+
+00:01:25.728 --> 00:01:28.633
+Cloudflare'de DNS kayıtları oluşturuluyor.
+
+00:01:31.986 --> 00:01:33.721
+Dördüncü adım başlıyor.
+
+00:01:33.721 --> 00:01:36.611
+infra adlı küçük bir depo
+
+00:01:36.611 --> 00:01:37.190
+oluşturuyoruz.
+
+00:01:37.190 --> 00:01:38.924
+Proxy burada yaşayacak;
+
+00:01:38.924 --> 00:01:40.659
+uygulama depolarından izole.
+
+00:01:43.659 --> 00:01:45.396
+Infra deposu oluşturuldu.
+
+00:01:45.396 --> 00:01:47.133
+Uygulama depolarınızdan izole.
+
+00:01:50.468 --> 00:01:52.204
+Yerleşik proxy şablonunu uyguluyoruz.
+
+00:01:52.204 --> 00:01:54.807
+Traefik ile birlikte Let's Encrypt ve
+
+00:01:54.807 --> 00:01:57.411
+Cloudflare DNS-01 doğrulaması için yapılandırma hazır
+
+00:01:57.411 --> 00:01:58.279
+olarak geliyor.
+
+00:02:00.529 --> 00:02:02.331
+Traefik yapılandırması yerinde.
+
+00:02:05.605 --> 00:02:07.176
+Proxy'yi ayağa kaldırıyoruz.
+
+00:02:07.176 --> 00:02:07.699
+Traefik,
+
+00:02:07.699 --> 00:02:10.317
+container'larınızı her beş saniyede bir
+
+00:02:10.317 --> 00:02:10.841
+keşfeder.
+
+00:02:10.841 --> 00:02:13.459
+TLS sertifikaları Let's Encrypt'ten otomatik
+
+00:02:13.459 --> 00:02:14.506
+olarak gelir.
+
+00:02:14.506 --> 00:02:17.124
+Uygulamanız artık HTTPS üzerinden internetten
+
+00:02:17.124 --> 00:02:17.647
+erişilebilir.
+
+00:02:17.647 --> 00:02:18.804
+Proxy yayında.
+
+00:02:18.804 --> 00:02:21.696
+TLS sertifikaları otomatik olarak gelecek.
+
+00:02:22.445 --> 00:02:23.895
+Ağ tarafı halloldu!
+
+00:02:23.895 --> 00:02:26.311
+Bir sonraki bölümde görüşmek üzere.

@@ -11,7 +11,7 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Creating Your First Repository
 
-A Rediacc repository is one encrypted file on your server. Mount it and you get a folder with its own Docker daemon and its own application data, sealed off from everything else on the box.
+So, a Rediacc repository is one encrypted file on your server. Mount it and you get a folder with its own Docker daemon and its own application data, sealed off from everything else on the box.
 
 Think of it like a USB drive for production: a file at rest, a server at run.
 
@@ -23,13 +23,13 @@ Think of it like a USB drive for production: a file at rest, a server at run.
 
 ![Encrypted file mounts as an isolated folder](/img/tutorials/tutorial-create-repo/slide-1.svg)
 
-On disk it's a single encrypted image. When it mounts, you get:
+So on disk it's a single encrypted image. When it mounts, you get:
 
 - A dedicated Docker daemon (separate from the host's)
 - Application data inside the encrypted volume
 - Loopback IPs that don't collide with anything else on the box
 
-Repositories move. Copy one between machines, back it up, or fork it (forks are near-instant and constant-time, a 100 GB repo forks as fast as a 1 GB one). Each repo is sealed off from every other repo on the same server.
+Repositories move. Copy one between machines, back it up, or fork it (forks are near-instant and constant-time, a 100 GB repo forks as fast as a 1 GB one). Each repo is sealed off from every other repo on the same server. That isolation is the whole point.
 
 ## Create one
 

@@ -6,18 +6,19 @@ description: >-
 category: Use Cases
 order: 4
 language: tr
-sourceHash: "c905d2f42d1108c2"
+sourceHash: "242617b8bede9535"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Her Şeyi Test Edin. Risk Yok. Güvenle Yükseltin.**
 
-**Not:** Bu, Rediacc'ın bu sorunu nasıl çözebileceğini gösteren bir **kullanım örneğidir**. Bir startup olarak bu senaryolar, tamamlanmış vaka çalışmalarından ziyade potansiyel uygulamaları temsil ediyor.
+Kısa not: Rediacc henüz hiçbir üretim müşteriye sahip değil. Bu, mimarinin bu senaryoyu pratikte nasıl işlediğini gösteren bir kullanım örneğidir ve gerçek bir dağıtımdan bir vaka çalışması değildir.
 
-**Kriz Senaryosu:** Veritabanı yükseltmesi sırasında, eski sürüme dönmeyi veya yeni sürüme geçmeyi engelleyen **beklenmeyen bir hata** oluştu. Müşteriler sistemlere erişemedi ve 5000'den fazla çalışan çalışamadı.
+**Kriz Senaryosu:** Veritabanı yükseltmesi sırasında, eski sürüme dönmeyi veya yeni sürüme geçmeyi engelleyen **beklenmeyen bir hata** oluştu. Müşteriler sistemlere erişemedi ve 5000'den fazla çalışan çalışamadı. Tek çözüm tam bir sistem geri yükleme yapılmaktan geçiyordu ve bu işletme çevrimdışıyken mühendis saatlerine mal oldu.
 
 ## Sorun
 
-Mehmet, büyük ölçekli veritabanlarını yöneten deneyimli bir sistem yöneticisidir. **100 TB PostgreSQL veritabanını sürüm 13'ten 14'e yükseltmeye** karar verir. Planı:
+Mehmet, ekibi çevrimdışı alamayan üretim veritabanlarını yönetiyor. Bugün bir **100 TB PostgreSQL veritabanını sürüm 13'ten 14'e yükseltme** yapıyor. Planı:
 
 1. **Yedek alın** → Ancak veri boyutu nedeniyle yedekleme **birkaç gün** sürer 
 2. **Yükseltmeyi hafta sonu yapın** → Departmanlara **Cumartesi 01:00-05:00** arasında kesinti bildirilir.
@@ -40,7 +41,7 @@ Mehmet, büyük ölçekli veritabanlarını yöneten deneyimli bir sistem yönet
 
 ## Rediacc Çözümü
 
-Mehmet, Rediacc ile sorunu temelden çözüyor:
+İşte Rediacc ile neler değişiyor:
 
 ![Risk-Free Upgrades](/img/risk-free-upgrades.svg)
 

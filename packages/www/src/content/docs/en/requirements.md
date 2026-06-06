@@ -8,7 +8,7 @@ language: en
 
 # Requirements
 
-Before deploying with Rediacc, make sure your workstation and remote servers meet the following requirements.
+Most of this is standard Linux server setup. A few details are specific to how Rediacc works, so check them before you start.
 
 ## Workstation (Control Plane)
 

@@ -10,7 +10,7 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 
 ### Organizzazioni
 
-Registra un account e Rediacc crea automaticamente un'organizzazione per te. Quella org e' il contenitore di livello superiore per tutto cio' che possiedi: macchine, repository, abbonamenti e le persone che inviti. Non ne creerai una seconda per errore. C'e' esattamente una org per account, e ogni team e risorsa dipende da essa.
+Registra un account e Rediacc crea automaticamente un'organizzazione per te. Quella org è il contenitore di livello superiore per tutto cio' che possiedi: macchine, repository, abbonamenti e le persone che inviti. Non ne creerai una seconda per errore. C'è esattamente una org per account, e ogni team e risorsa dipende da essa.
 
 ![Registration Flow](/img/account-registration-flow.svg)
 
@@ -117,7 +117,7 @@ UPSTREAM_URL=https://www.rediacc.com
 UPSTREAM_API_KEY=rdt_<token>
 ```
 
-Il token concede **solo** il rinnovo del certificato di delegazione. Non puo' leggere o modificare nessun'altra risorsa. Questo e' l'unico modo per generare un token `delegation:renew`; il flusso standard `/portal/api-tokens` non include questo scope.
+Il token concede **solo** il rinnovo del certificato di delegazione. Non può' leggere o modificare nessun'altra risorsa. Questo è l'unico modo per generare un token `delegation:renew`; il flusso standard `/portal/api-tokens` non include questo scope.
 
 #### Rinnovo air-gapped
 

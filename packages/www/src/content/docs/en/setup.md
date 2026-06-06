@@ -8,7 +8,7 @@ language: en
 
 # Machine Setup
 
-This page walks you through setting up your first machine: creating a config, registering a server, provisioning it, and optionally configuring infrastructure for public access.
+Four steps get your first machine running: create a config, register the server, provision it, and optionally wire up infrastructure for public traffic.
 
 ## Step 1: Create a Config
 
@@ -94,7 +94,7 @@ After adding a machine, verify it's reachable:
 rdc term connect -m server-1 -c "hostname"
 ```
 
-This opens an SSH connection to the machine and runs the command. If it succeeds, your SSH configuration is correct.
+That opens an SSH connection and runs the command. If it works, your SSH config is correct.
 
 For more detailed diagnostics, run:
 

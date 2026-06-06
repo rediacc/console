@@ -1,11 +1,11 @@
 ---
-title: トラブルシューティング
+title: "トラブルシューティング"
 description: "SSH、セットアップ、リポジトリ、サービス、Dockerに関する一般的な問題の修正方法。"
-category: Guides
+category: "Guides"
 order: 10
 language: ja
-sourceHash: "7cfabe7bbf3914c3"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "17dc03eb0589d606"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # トラブルシューティング
@@ -60,13 +60,13 @@ dmesg | grep -i apparmor
 sudo aa-status
 ```
 
-CRIUがAppArmorに引っかかる既知のケースです。Renetは `rediacc.checkpoint=true` とラベル付けされたコンテナに対して自動的に `security_opt: apparmor=unconfined` を設定します。それ以外についてはAppArmorプロファイルを手動で設定する必要はないはずです。CRIUに関する注意事項は [Rediaccのルール](/en/docs/rules-of-rediacc) を参照してください。
+CRIUがAppArmorに引っかかる既知のケースです。Renetは `rediacc.checkpoint=true` とラベル付けされたコンテナに対して自動的に `security_opt: apparmor=unconfined` を設定します。それ以外についてはAppArmorプロファイルを手動で設定する必要はないはずです。CRIUに関する注意事項は [Rediaccのルール](/ja/docs/rules-of-rediacc) を参照してください。
 
 ### パッケージマネージャーのエラーシグネチャ
 
 | OS | パッケージマネージャー | 典型的なエラー | 解決策 |
 |---|---|---|---|
-| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | オリジンの後ろにあるCloudflareエッジキャッシュの問題です。~15秒後に `apt-get update` を再試行してください。次のポーリングで整合性チェックが通過します。 |
+| Ubuntu / Debian | apt-get | `File has unexpected size (N != M). Mirror sync in progress?` | Cloudflareエッジキャッシュが原因です。約15秒後に `apt-get update` を再試行してください。次のポーリングで整合性チェックが通過します。 |
 | Fedora / Oracle | dnf | `Problem: nothing provides rediacc-cli` | ディスクにキャッシュされているRPMリポジトリのメタデータが古くなっています。`sudo dnf clean all && sudo dnf makecache` を実行してください。 |
 | openSUSE | zypper | `Repository 'rediacc' needs to be refreshed.` | `sudo zypper refresh rediacc` を一度実行してください。それ以降のインストールは成功するはずです。 |
 
@@ -78,7 +78,7 @@ CRIUがAppArmorに引っかかる既知のケースです。Renetは `rediacc.ch
 Module btrfs not found
 ```
 
-...サーバーはRHEL 10の標準カーネルで動作しており、これにはツリー内のbtrfsモジュールが含まれていません。これはRediaccのバグではありません。RHEL 10はbtrfsを意図的に削除しました。修正方法は **代わりにOracle Linux 10を使用すること** です。Oracle 10はデフォルトでUnbreakable Enterprise Kernel（UEK）を使用しており、btrfsが維持されています。詳細については [要件 - なぜUEKなのか?](/en/docs/requirements) を参照してください。
+...サーバーはRHEL 10の標準カーネルで動作しており、これにはツリー内のbtrfsモジュールが含まれていません。これはRediaccのバグではありません。RHEL 10はbtrfsを意図的に削除しました。修正方法は **代わりにOracle Linux 10を使用すること** です。Oracle 10はデフォルトでUnbreakable Enterprise Kernel（UEK）を使用しており、btrfsが維持されています。詳細については [要件 - なぜUEKなのか?](/ja/docs/requirements) を参照してください。
 
 ## リポジトリの作成失敗
 
@@ -125,9 +125,9 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 
 ## `docker run` にネットワークがない、`apt update` が失敗する、`curl` がハングする
 
-リポジトリシェル内で `--network host` を付けずにコンテナを実行すると、ループバックインターフェースしか持たず、DNS も外向きの接続性もない分離されたコンテナが得られます。`apt update`、`pip install`、`curl https://...` のようなコマンドや、ネットワーク取得を行うあらゆる処理は、DNS エラーで即座に失敗します。
+リポジトリシェル内で `--network host` を付けずにコンテナを実行すると、ループバックインターフェースしか持たず、DNSも外向きの接続性もない分離されたコンテナが得られます。`apt update`、`pip install`、`curl https://...` のようなコマンドや、ネットワーク取得を行うあらゆる処理は、DNSエラーで即座に失敗します。
 
-これは意図的な仕様です。Rediacc のネットワーキングモデルは**すべてのサービスでホストネットワーキングを使用する**というものであり、`renet compose` によって強制されています。NAT 付きの標準的な Docker ブリッジは、あるリポジトリが別のリポジトリのサービスに到達することを防ぐカーネルレベルのループバック分離を迂回してしまうため、リポジトリごとの Docker デーモン（`FlavorRediacc`）は `"bridge": "none"` と `"iptables": false` で構成されており、単純な `docker run` コンテナが接続できるルーティング可能なブリッジは存在しません。（開発環境で使用されるユーザーごとの Hub デーモン（`FlavorHub`）は例外であり、ブリッジと iptables を有効にすることでユーザーが実行するコンテナに外向きのネットワーク接続を提供します。）
+これは意図的な仕様です。Rediaccのネットワーキングモデルは**すべてのサービスでホストネットワーキングを使用する**というものであり、`renet compose` によって強制されています。NATが付いた標準的なDockerブリッジは、あるリポジトリが別のリポジトリのサービスに到達することを防ぐカーネルレベルのループバック分離を迂回してしまうため、リポジトリごとのDocker daemon（`FlavorRediacc`）は `"bridge": "none"` と `"iptables": false` で構成されており、単純な `docker run` コンテナが接続できるルーティング可能なブリッジは存在しません。（開発環境で使用されるユーザーごとのHubデーモン（`FlavorHub`）は例外であり、ブリッジとiptablesを有効にすることでユーザーが実行するコンテナに外向きのネットワーク接続を提供します。）
 
 **アドホックなコンテナでネットワークアクセスを得るには、ホストネットワーキングを使用してください:**
 
@@ -137,23 +137,23 @@ docker run --rm --network host -it ubuntu bash
 # これで apt update、curl、pip install はすべて動作します。
 ```
 
-**本番サービスでは、生の `docker run` の代わりに Rediaccfile で `renet compose` を使用してください。** `renet compose` は `network_mode: host`、サービス IP ラベル、Traefik のルーティングラベルを自動的に注入します。詳細は [サービス](/ja/docs/services) を参照してください。
+**本番サービスでは、生の `docker run` の代わりに Rediaccfile で `renet compose` を使用してください。** `renet compose` は `network_mode: host`、サービスIPラベル、Traefikのルーティングラベルを自動的に注入します。詳細は [サービス](/ja/docs/services) を参照してください。
 
 ## VS Code でサンドボックスファイルに Permission Denied が出る
 
-以前の VS Code セッションの後に `rdc vscode connect -m <machine> -r <repo>` で接続すると、古いバージョンの renet では `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` のようなエラーが発生していました。原因はサンドボックスディレクトリ内のファイル所有権の混在で、SSH ユーザーと内部の `rediacc` ユーザーの両方がファイルを書き込んでいました。
+以前のVS Codeセッションの後に `rdc vscode connect -m <machine> -r <repo>` で接続すると、古いバージョンのrenetでは `scp: .../.vscode-server/vscode-cli-*.tar.gz: Permission denied` のようなエラーが発生していました。原因はサンドボックスディレクトリ内のファイル所有権の混在で、SSHユーザーと内部の `rediacc` ユーザーの両方がファイルを書き込んでいました。
 
-最近のバージョンの renet は、以下の方法でこれを修正しています:
+最近のバージョンのrenetは、以下の方法でこれを修正しています:
 
-- リポジトリごとのサンドボックスワークスペース（`/mnt/rediacc/.interim/sandbox/<repo>/`）を、グループ `rediacc` と set-group-ID ビット（モード `2775`）付きで作成するため、配下に書かれるすべてのファイルは正しいグループを継承します。
-- サンドボックスランタイム内で umask `002` を適用し、新しいファイルがグループ書き込み可能（`0664`/`0775`）で作成されるようにします。
+- リポジトリごとのサンドボックスワークスペース（`/mnt/rediacc/.interim/sandbox/<repo>/`）を、グループ `rediacc` とset-group-IDビット（モード `2775`）付きで作成するため、配下に書かれるすべてのファイルは正しいグループを継承します。
+- サンドボックスランタイム内でumask `002` を適用し、新しいファイルがグループ書き込み可能（`0664`/`0775`）で作成されるようにします。
 - 起動時に既存の `.vscode-server/` サブツリーを正規化するため、修正前からある古いファイルが自動的に修復されます。
 
-それでもパーミッションエラーが発生する場合は、マシン上のシェルから一度 `sudo systemctl restart rediacc-docker-<network-id>` でリポジトリの Docker デーモンを再起動して正規化パスを走らせてから、再度 `rdc vscode connect` を試してください。
+それでもパーミッションエラーが発生する場合は、マシン上のシェルから一度 `sudo systemctl restart rediacc-docker-<network-id>` でリポジトリのDocker daemonを再起動して正規化パスを走らせてから、再度 `rdc vscode connect` を試してください。
 
-## renet のアップグレード後にデーモンが起動しない
+## renetのアップグレード後にデーモンが起動しない
 
-`renet daemon start-foreground` は起動のたびに、リポジトリの設定ディレクトリ内の `daemon.json` と `containerd.toml` を現在のテンプレートから書き換えるため、古いバージョンの renet で生成された設定を持つリポジトリも新しいフォーマットを自動的に取り込みます。マイグレーションコマンドを実行する必要はなく、systemd ユニットを手動で再生成する必要もありません。サービスを再起動するだけです:
+`renet daemon start-foreground` は起動のたびに、リポジトリの設定ディレクトリ内の `daemon.json` と `containerd.toml` を現在のテンプレートから書き換えるため、古いバージョンのrenetで生成された設定を持つリポジトリも新しいフォーマットを自動的に取り込みます。マイグレーションコマンドを実行する必要はなく、systemdユニットを手動で再生成する必要もありません。サービスを再起動するだけです:
 
 ```bash
 sudo systemctl restart rediacc-docker-<network-id>
@@ -171,7 +171,7 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 
 `sudo` は環境変数をリセットするため、`DOCKER_HOST` が失われ、Dockerはシステムソケット（`/var/run/docker.sock`）をデフォルトで使用します。Rediaccはこれを自動的にブロックしますが、発生した場合:
 
-- **`docker` を直接使用してください**, Rediaccfileの関数は既に十分な権限で実行されています
+- **`docker` を直接使用してください**。Rediaccfileの関数は既に十分な権限で実行されています
 - sudoを使用する必要がある場合は、`sudo -E docker` を使用して環境変数を保持してください
 - Rediaccfileで `sudo docker` コマンドがないか確認し、`sudo` を削除してください
 
@@ -192,4 +192,4 @@ sudo journalctl -u rediacc-docker-<network-id> --no-pager -n 50
 rdc doctor
 ```
 
-このコマンドは環境、renetのインストール状況、設定、および認証ステータスをチェックします。各チェックはOK、Warning、またはErrorを簡単な説明付きで報告します。
+このコマンドは環境、renetのインストール状況、設定、および認証ステータスをチェックします。各チェックはOK、Warning、またはErrorを簡潔な説明付きで報告します。

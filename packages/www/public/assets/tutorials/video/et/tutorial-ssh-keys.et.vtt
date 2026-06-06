@@ -1,0 +1,115 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.703
+Olgu!
+
+00:00:01.703 --> 00:00:03.813
+Seadistame SSH võtmed,
+
+00:00:03.813 --> 00:00:06.625
+et CLI saaks su
+
+00:00:06.625 --> 00:00:09.438
+serveritesse jõuda ilma paroolideta.
+
+00:00:10.205 --> 00:00:11.630
+Kokku kolm sammu.
+
+00:00:11.630 --> 00:00:13.530
+Genereeri võti oma sülearvutis,
+
+00:00:13.530 --> 00:00:16.379
+kopeeri see serverisse ja siis registreeri
+
+00:00:16.379 --> 00:00:17.804
+see käsurea tööriistas.
+
+00:00:17.804 --> 00:00:20.654
+Kahte neist teed ainult üks kord.
+
+00:00:23.907 --> 00:00:25.035
+Esimene samm.
+
+00:00:25.035 --> 00:00:27.857
+Genereerime uue ed25519 SSH võtme.
+
+00:00:27.857 --> 00:00:30.678
+ed25519 on kaasaegne vaikimisi valik
+
+00:00:30.678 --> 00:00:31.806
+-- väike,
+
+00:00:31.806 --> 00:00:34.063
+kiire ja laialt toetatud.
+
+00:00:34.063 --> 00:00:36.885
+Seda tuleb teha ainult üks
+
+00:00:36.885 --> 00:00:39.142
+kord kõigi serverite jaoks,
+
+00:00:39.142 --> 00:00:40.834
+mida kunagi lisad.
+
+00:00:41.634 --> 00:00:42.459
+Võti genereeritud.
+
+00:00:42.459 --> 00:00:44.107
+Avalik pool on see,
+
+00:00:44.107 --> 00:00:45.344
+mille serverisse kopeerime.
+
+00:00:48.688 --> 00:00:49.585
+Teine samm.
+
+00:00:49.585 --> 00:00:52.275
+Kopeerime avaliku võtme serverisse ssh-copy-id abil.
+
+00:00:52.275 --> 00:00:54.518
+Serveri parooli küsitakse viimast korda.
+
+00:00:54.518 --> 00:00:57.208
+Pärast seda ei ole selle serveri
+
+00:00:57.208 --> 00:00:59.450
+jaoks parooliga autentimine enam vajalik.
+
+00:01:01.450 --> 00:01:02.872
+Käivita see oma sülearvutis.
+
+00:01:02.872 --> 00:01:03.937
+Kui see õnnestub,
+
+00:01:03.937 --> 00:01:05.003
+on paroolid välistatud.
+
+00:01:08.340 --> 00:01:09.360
+Kolmas samm.
+
+00:01:09.360 --> 00:01:10.891
+Registreerime võtme CLI-s.
+
+00:01:10.891 --> 00:01:13.442
+Edaspidi autentib iga CLI käsk
+
+00:01:13.442 --> 00:01:14.462
+selle võtmega.
+
+00:01:14.462 --> 00:01:17.013
+Rohkem paroole ega interaktiivseid päringuid.
+
+00:01:19.013 --> 00:01:21.590
+Võti registreeritud
+
+00:01:21.590 --> 00:01:22.879
+CLI-s.
+
+00:01:23.717 --> 00:01:26.536
+Võti on registreeritud ja CLI
+
+00:01:26.536 --> 00:01:27.664
+on töövalmis.
+
+00:01:27.664 --> 00:01:30.483
+Järgmisena lisame su esimese serveri.

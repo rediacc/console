@@ -1,13 +1,11 @@
 ---
-title: Backup & Wiederherstellung
-description: >-
-  Verschlüsselte Repositories auf externem Speicher sichern, aus Backups
-  wiederherstellen und automatische Backups planen.
-category: Guides
+title: "Backup & Wiederherstellung"
+description: "Verschlüsselte Repositories auf rclone-kompatiblem Speicher sichern, auf jeder Maschine wiederherstellen und mit benannten Strategien und systemd-Timern automatisieren."
+category: "Guides"
 order: 7
 language: de
-sourceHash: "196ee7b649ac7371"
-sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
+sourceHash: "6ed9a5b950de8ddb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Backup & Wiederherstellung
@@ -147,7 +145,7 @@ rdc repo pull --from my-storage -m server-1
 
 ## Geplante Backups
 
-Rediacc verwendet benannte Backup-Strategien. Jede Strategie definiert einen Zeitplan, einen Backup-Modus, ein optionales Bandbreitenlimit und Dateifilter. Maschinen referenzieren Strategien nach Namen, um festzulegen, welche Backups auf ihnen ausgeführt werden.
+Rediacc verwendet benannte Backup-Strategien. Jede Strategie definiert einen Zeitplan, einen Backup-Modus, ein optionales Bandbreitenlimit und Dateifilter. Sie binden Strategienamen an Maschinen, um zu steuern, welche Backups dort ausgeführt werden.
 
 ### Backup-Modi
 
@@ -160,7 +158,7 @@ Verwenden Sie `hot` für Dienste, die absturzkonsistente Snapshots tolerieren. V
 
 ### Cold-Backup-Semantik
 
-Ein Cold-Backup läuft in drei Phasen pro enthaltenem Repository: **Stopp -- Snapshot -- Start**. Das Verstehen der Grenzen der Garantien hilft Betreibern, Teilausfälle frühzeitig zu erkennen.
+Ein Cold-Backup läuft in drei Phasen pro enthaltenem Repository: **Stopp - Snapshot - Start**. Das Verstehen der Grenzen der Garantien hilft Betreibern, Teilausfälle frühzeitig zu erkennen.
 
 **Was Cold-Backup garantiert:**
 
@@ -232,7 +230,7 @@ Dieses Verhalten ist bewusst gewählt. Zwei parallele Cold-Backups gegen denselb
 
 **Monitoring-Konsequenz.** Ein hängendes Backup (zum Beispiel rclone, das an einem Netzwerk-Blackhole hängenbleibt) verwirft still jedes nachfolgende Timer-Feuern. Der Scheduler gibt keinen Alarm aus. Beobachten Sie `systemctl show <unit> -p ActiveEnterTimestamp`: Wenn der Dienst länger als erwartet `activating` ist (zum Beispiel mehr als 48 h bei einem nächtlichen Timer), untersuchen Sie dies.
 
-**Wenn Sie möchten, dass jedes geplante Feuer läuft**, wechseln Sie den Timer von `OnCalendar=<cron>` zu `OnUnitInactiveSec=<Intervall>`. Das feuert N Stunden nach Abschluss des vorherigen Laufs statt nach einem festen Wall-Clock-Zeitplan, sodass lange Läufe keine Verluste verursachen. Sie schieben nur den nächsten Lauf nach hinten. Der Kompromiss ist Zeitplan-Drift: Ihr nächtliches 03:00 wird zu "24 h nach Abschluss des letzten Laufs."
+**Wenn Sie möchten, dass jedes geplante Feuern läuft**, wechseln Sie den Timer von `OnCalendar=<cron>` zu `OnUnitInactiveSec=<Intervall>`. Das feuert N Stunden nach Abschluss des vorherigen Laufs statt nach einem festen Wall-Clock-Zeitplan, sodass lange Läufe keine Verluste verursachen. Sie schieben nur den nächsten Lauf nach hinten. Der Kompromiss ist Zeitplan-Drift: Ihr nächtliches 03:00 wird zu "24 h nach Abschluss des letzten Laufs."
 
 ### Strategie definieren
 
@@ -306,7 +304,7 @@ Binden Sie in Ihrer Konfiguration einen oder mehrere Strategienamen an eine Masc
 
 | | Hot | Cold |
 |---|-----|------|
-| **Konsistenz** | Absturzkonsistent (BTRFS-Snapshot bei laufenden Diensten) | Anwendungskonsistent (Stopp → Snapshot → Start) |
+| **Konsistenz** | Absturzkonsistent (BTRFS-Snapshot bei laufenden Diensten) | Anwendungskonsistent (Stopp - Snapshot - Start) |
 | **Ausfallzeit** | Keine | Stop+Start-Fenster pro Repo (typischerweise 5-120 s) |
 | **Geeignete Häufigkeit** | Hoch (z. B. stündlich) | Niedrig (z. B. täglich oder wöchentlich) |
 | **Typischer Einsatz** | Häufiges Sicherheitsnetz | Geplantes Backup mit garantierter Konsistenz |

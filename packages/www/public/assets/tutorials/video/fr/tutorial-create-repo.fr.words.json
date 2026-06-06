@@ -1,0 +1,553 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.76,
+      "text": "Créons votre premier dépôt !",
+      "words": [
+        { "start": 1, "end": 1.352, "char": [0, 6] },
+        { "start": 1.352, "end": 1.704, "char": [7, 12] },
+        { "start": 1.704, "end": 2.056, "char": [13, 20] },
+        { "start": 2.056, "end": 2.408, "char": [21, 26] },
+        { "start": 2.408, "end": 2.76, "char": [27, 28] }
+      ]
+    },
+    {
+      "start": 2.76,
+      "end": 5.576,
+      "text": "C'est un fichier chiffré au repos qui se",
+      "words": [
+        { "start": 2.76, "end": 3.112, "char": [0, 5] },
+        { "start": 3.112, "end": 3.464, "char": [6, 8] },
+        { "start": 3.464, "end": 3.816, "char": [9, 16] },
+        { "start": 3.816, "end": 4.168, "char": [17, 24] },
+        { "start": 4.168, "end": 4.52, "char": [25, 27] },
+        { "start": 4.52, "end": 4.872, "char": [28, 33] },
+        { "start": 4.872, "end": 5.224, "char": [34, 37] },
+        { "start": 5.224, "end": 5.576, "char": [38, 40] }
+      ]
+    },
+    {
+      "start": 5.576,
+      "end": 8.393,
+      "text": "transforme en environnement totalement isolé une fois monté.",
+      "words": [
+        { "start": 5.576, "end": 5.928, "char": [0, 10] },
+        { "start": 5.928, "end": 6.28, "char": [11, 13] },
+        { "start": 6.28, "end": 6.632, "char": [14, 27] },
+        { "start": 6.632, "end": 6.985, "char": [28, 38] },
+        { "start": 6.985, "end": 7.337, "char": [39, 44] },
+        { "start": 7.337, "end": 7.689, "char": [45, 48] },
+        { "start": 7.689, "end": 8.041, "char": [49, 53] },
+        { "start": 8.041, "end": 8.393, "char": [54, 60] }
+      ]
+    },
+    {
+      "start": 9.16,
+      "end": 10.277,
+      "text": "Sur le disque,",
+      "words": [
+        { "start": 9.16, "end": 9.532, "char": [0, 3] },
+        { "start": 9.532, "end": 9.905, "char": [4, 6] },
+        { "start": 9.905, "end": 10.277, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 10.277,
+      "end": 12.139,
+      "text": "c'est une image chiffrée unique.",
+      "words": [
+        { "start": 10.277, "end": 10.65, "char": [0, 5] },
+        { "start": 10.65, "end": 11.022, "char": [6, 9] },
+        { "start": 11.022, "end": 11.394, "char": [10, 15] },
+        { "start": 11.394, "end": 11.767, "char": [16, 24] },
+        { "start": 11.767, "end": 12.139, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 12.139,
+      "end": 13.257,
+      "text": "Une fois monté,",
+      "words": [
+        { "start": 12.139, "end": 12.512, "char": [0, 3] },
+        { "start": 12.512, "end": 12.884, "char": [4, 8] },
+        { "start": 12.884, "end": 13.257, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 13.257,
+      "end": 15.491,
+      "text": "vous obtenez un daemon Docker dédié,",
+      "words": [
+        { "start": 13.257, "end": 13.629, "char": [0, 4] },
+        { "start": 13.629, "end": 14.001, "char": [5, 12] },
+        { "start": 14.001, "end": 14.374, "char": [13, 15] },
+        { "start": 14.374, "end": 14.746, "char": [16, 22] },
+        { "start": 14.746, "end": 15.119, "char": [23, 29] },
+        { "start": 15.119, "end": 15.491, "char": [30, 36] }
+      ]
+    },
+    {
+      "start": 15.491,
+      "end": 18.098,
+      "text": "des données d'application à l'intérieur du volume",
+      "words": [
+        { "start": 15.491, "end": 15.863, "char": [0, 3] },
+        { "start": 15.863, "end": 16.236, "char": [4, 11] },
+        { "start": 16.236, "end": 16.608, "char": [12, 25] },
+        { "start": 16.608, "end": 16.981, "char": [26, 27] },
+        { "start": 16.981, "end": 17.353, "char": [28, 39] },
+        { "start": 17.353, "end": 17.725, "char": [40, 42] },
+        { "start": 17.725, "end": 18.098, "char": [43, 49] }
+      ]
+    },
+    {
+      "start": 18.098,
+      "end": 18.47,
+      "text": "chiffré,",
+      "words": [{ "start": 18.098, "end": 18.47, "char": [0, 8] }]
+    },
+    {
+      "start": 18.47,
+      "end": 21.077,
+      "text": "et des IP loopback qui n'entrent en",
+      "words": [
+        { "start": 18.47, "end": 18.843, "char": [0, 2] },
+        { "start": 18.843, "end": 19.215, "char": [3, 6] },
+        { "start": 19.215, "end": 19.588, "char": [7, 9] },
+        { "start": 19.588, "end": 19.96, "char": [10, 18] },
+        { "start": 19.96, "end": 20.332, "char": [19, 22] },
+        { "start": 20.332, "end": 20.705, "char": [23, 32] },
+        { "start": 20.705, "end": 21.077, "char": [33, 35] }
+      ]
+    },
+    {
+      "start": 21.077,
+      "end": 23.684,
+      "text": "conflit avec rien d'autre sur le serveur.",
+      "words": [
+        { "start": 21.077, "end": 21.45, "char": [0, 7] },
+        { "start": 21.45, "end": 21.822, "char": [8, 12] },
+        { "start": 21.822, "end": 22.194, "char": [13, 17] },
+        { "start": 22.194, "end": 22.567, "char": [18, 25] },
+        { "start": 22.567, "end": 22.939, "char": [26, 29] },
+        { "start": 22.939, "end": 23.312, "char": [30, 32] },
+        { "start": 23.312, "end": 23.684, "char": [33, 41] }
+      ]
+    },
+    {
+      "start": 26.949,
+      "end": 29.746,
+      "text": "Nous allons créer un dépôt chiffré de 2",
+      "words": [
+        { "start": 26.949, "end": 27.299, "char": [0, 4] },
+        { "start": 27.299, "end": 27.648, "char": [5, 11] },
+        { "start": 27.648, "end": 27.998, "char": [12, 17] },
+        { "start": 27.998, "end": 28.347, "char": [18, 20] },
+        { "start": 28.347, "end": 28.697, "char": [21, 26] },
+        { "start": 28.697, "end": 29.047, "char": [27, 34] },
+        { "start": 29.047, "end": 29.396, "char": [35, 37] },
+        { "start": 29.396, "end": 29.746, "char": [38, 39] }
+      ]
+    },
+    {
+      "start": 29.746,
+      "end": 31.144,
+      "text": "gigaoctets sur le serveur.",
+      "words": [
+        { "start": 29.746, "end": 30.095, "char": [0, 10] },
+        { "start": 30.095, "end": 30.445, "char": [11, 14] },
+        { "start": 30.445, "end": 30.795, "char": [15, 17] },
+        { "start": 30.795, "end": 31.144, "char": [18, 26] }
+      ]
+    },
+    {
+      "start": 31.144,
+      "end": 33.941,
+      "text": "Un dépôt est un fichier chiffré unique au",
+      "words": [
+        { "start": 31.144, "end": 31.494, "char": [0, 2] },
+        { "start": 31.494, "end": 31.843, "char": [3, 8] },
+        { "start": 31.843, "end": 32.193, "char": [9, 12] },
+        { "start": 32.193, "end": 32.543, "char": [13, 15] },
+        { "start": 32.543, "end": 32.892, "char": [16, 23] },
+        { "start": 32.892, "end": 33.242, "char": [24, 31] },
+        { "start": 33.242, "end": 33.591, "char": [32, 38] },
+        { "start": 33.591, "end": 33.941, "char": [39, 41] }
+      ]
+    },
+    {
+      "start": 33.941,
+      "end": 34.291,
+      "text": "repos.",
+      "words": [{ "start": 33.941, "end": 34.291, "char": [0, 6] }]
+    },
+    {
+      "start": 34.291,
+      "end": 35.339,
+      "text": "Une fois monté,",
+      "words": [
+        { "start": 34.291, "end": 34.64, "char": [0, 3] },
+        { "start": 34.64, "end": 34.99, "char": [4, 8] },
+        { "start": 34.99, "end": 35.339, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 35.339,
+      "end": 38.136,
+      "text": "il devient un dossier avec son propre daemon",
+      "words": [
+        { "start": 35.339, "end": 35.689, "char": [0, 2] },
+        { "start": 35.689, "end": 36.039, "char": [3, 10] },
+        { "start": 36.039, "end": 36.388, "char": [11, 13] },
+        { "start": 36.388, "end": 36.738, "char": [14, 21] },
+        { "start": 36.738, "end": 37.087, "char": [22, 26] },
+        { "start": 37.087, "end": 37.437, "char": [27, 30] },
+        { "start": 37.437, "end": 37.786, "char": [31, 37] },
+        { "start": 37.786, "end": 38.136, "char": [38, 44] }
+      ]
+    },
+    {
+      "start": 38.136,
+      "end": 40.234,
+      "text": "Docker et ses propres données d'application,",
+      "words": [
+        { "start": 38.136, "end": 38.486, "char": [0, 6] },
+        { "start": 38.486, "end": 38.835, "char": [7, 9] },
+        { "start": 38.835, "end": 39.185, "char": [10, 13] },
+        { "start": 39.185, "end": 39.534, "char": [14, 21] },
+        { "start": 39.534, "end": 39.884, "char": [22, 29] },
+        { "start": 39.884, "end": 40.234, "char": [30, 44] }
+      ]
+    },
+    {
+      "start": 40.234,
+      "end": 43.03,
+      "text": "complètement isolé de tout le reste sur le",
+      "words": [
+        { "start": 40.234, "end": 40.583, "char": [0, 12] },
+        { "start": 40.583, "end": 40.933, "char": [13, 18] },
+        { "start": 40.933, "end": 41.282, "char": [19, 21] },
+        { "start": 41.282, "end": 41.632, "char": [22, 26] },
+        { "start": 41.632, "end": 41.982, "char": [27, 29] },
+        { "start": 41.982, "end": 42.331, "char": [30, 35] },
+        { "start": 42.331, "end": 42.681, "char": [36, 39] },
+        { "start": 42.681, "end": 43.03, "char": [40, 42] }
+      ]
+    },
+    {
+      "start": 43.03,
+      "end": 43.38,
+      "text": "serveur.",
+      "words": [{ "start": 43.03, "end": 43.38, "char": [0, 8] }]
+    },
+    {
+      "start": 46.38,
+      "end": 47.051,
+      "text": "Dépôt créé.",
+      "words": [
+        { "start": 46.38, "end": 46.716, "char": [0, 5] },
+        { "start": 46.716, "end": 47.051, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 47.051,
+      "end": 49.4,
+      "text": "Le fichier chiffré est sur le serveur,",
+      "words": [
+        { "start": 47.051, "end": 47.387, "char": [0, 2] },
+        { "start": 47.387, "end": 47.722, "char": [3, 10] },
+        { "start": 47.722, "end": 48.058, "char": [11, 18] },
+        { "start": 48.058, "end": 48.393, "char": [19, 22] },
+        { "start": 48.393, "end": 48.729, "char": [23, 26] },
+        { "start": 48.729, "end": 49.065, "char": [27, 29] },
+        { "start": 49.065, "end": 49.4, "char": [30, 38] }
+      ]
+    },
+    {
+      "start": 49.4,
+      "end": 50.742,
+      "text": "prêt à être monté.",
+      "words": [
+        { "start": 49.4, "end": 49.736, "char": [0, 4] },
+        { "start": 49.736, "end": 50.071, "char": [5, 6] },
+        { "start": 50.071, "end": 50.407, "char": [7, 11] },
+        { "start": 50.407, "end": 50.742, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 54.047,
+      "end": 56.919,
+      "text": "Listons les dépôts sur la machine pour",
+      "words": [
+        { "start": 54.047, "end": 54.457, "char": [0, 7] },
+        { "start": 54.457, "end": 54.868, "char": [8, 11] },
+        { "start": 54.868, "end": 55.278, "char": [12, 18] },
+        { "start": 55.278, "end": 55.688, "char": [19, 22] },
+        { "start": 55.688, "end": 56.098, "char": [23, 25] },
+        { "start": 56.098, "end": 56.509, "char": [26, 33] },
+        { "start": 56.509, "end": 56.919, "char": [34, 38] }
+      ]
+    },
+    {
+      "start": 56.919,
+      "end": 59.791,
+      "text": "confirmer que le nouveau est bien enregistré.",
+      "words": [
+        { "start": 56.919, "end": 57.329, "char": [0, 9] },
+        { "start": 57.329, "end": 57.739, "char": [10, 13] },
+        { "start": 57.739, "end": 58.15, "char": [14, 16] },
+        { "start": 58.15, "end": 58.56, "char": [17, 24] },
+        { "start": 58.56, "end": 58.97, "char": [25, 28] },
+        { "start": 58.97, "end": 59.381, "char": [29, 33] },
+        { "start": 59.381, "end": 59.791, "char": [34, 45] }
+      ]
+    },
+    {
+      "start": 59.791,
+      "end": 61.432,
+      "text": "À partir de là,",
+      "words": [
+        { "start": 59.791, "end": 60.201, "char": [0, 1] },
+        { "start": 60.201, "end": 60.611, "char": [2, 8] },
+        { "start": 60.611, "end": 61.022, "char": [9, 11] },
+        { "start": 61.022, "end": 61.432, "char": [12, 15] }
+      ]
+    },
+    {
+      "start": 61.432,
+      "end": 64.304,
+      "text": "le dépôt peut être ouvert dans VS",
+      "words": [
+        { "start": 61.432, "end": 61.842, "char": [0, 2] },
+        { "start": 61.842, "end": 62.253, "char": [3, 8] },
+        { "start": 62.253, "end": 62.663, "char": [9, 13] },
+        { "start": 62.663, "end": 63.073, "char": [14, 18] },
+        { "start": 63.073, "end": 63.483, "char": [19, 25] },
+        { "start": 63.483, "end": 63.894, "char": [26, 30] },
+        { "start": 63.894, "end": 64.304, "char": [31, 33] }
+      ]
+    },
+    {
+      "start": 64.304,
+      "end": 64.714,
+      "text": "Code,",
+      "words": [{ "start": 64.304, "end": 64.714, "char": [0, 5] }]
+    },
+    {
+      "start": 64.714,
+      "end": 65.124,
+      "text": "déployé,",
+      "words": [{ "start": 64.714, "end": 65.124, "char": [0, 8] }]
+    },
+    {
+      "start": 65.124,
+      "end": 66.355,
+      "text": "forké ou sauvegardé,",
+      "words": [
+        { "start": 65.124, "end": 65.535, "char": [0, 5] },
+        { "start": 65.535, "end": 65.945, "char": [6, 8] },
+        { "start": 65.945, "end": 66.355, "char": [9, 20] }
+      ]
+    },
+    {
+      "start": 66.355,
+      "end": 67.996,
+      "text": "tout depuis votre ordinateur.",
+      "words": [
+        { "start": 66.355, "end": 66.766, "char": [0, 4] },
+        { "start": 66.766, "end": 67.176, "char": [5, 11] },
+        { "start": 67.176, "end": 67.586, "char": [12, 17] },
+        { "start": 67.586, "end": 67.996, "char": [18, 29] }
+      ]
+    },
+    {
+      "start": 70.996,
+      "end": 71.922,
+      "text": "Le voilà,",
+      "words": [
+        { "start": 70.996, "end": 71.459, "char": [0, 2] },
+        { "start": 71.459, "end": 71.922, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 71.922,
+      "end": 74.236,
+      "text": "enregistré et prêt à l'emploi.",
+      "words": [
+        { "start": 71.922, "end": 72.385, "char": [0, 10] },
+        { "start": 72.385, "end": 72.847, "char": [11, 13] },
+        { "start": 72.847, "end": 73.31, "char": [14, 18] },
+        { "start": 73.31, "end": 73.773, "char": [19, 20] },
+        { "start": 73.773, "end": 74.236, "char": [21, 30] }
+      ]
+    },
+    {
+      "start": 77.547,
+      "end": 79.205,
+      "text": "Une option bien pratique :",
+      "words": [
+        { "start": 77.547, "end": 77.879, "char": [0, 3] },
+        { "start": 77.879, "end": 78.21, "char": [4, 10] },
+        { "start": 78.21, "end": 78.542, "char": [11, 15] },
+        { "start": 78.542, "end": 78.873, "char": [16, 24] },
+        { "start": 78.873, "end": 79.205, "char": [25, 26] }
+      ]
+    },
+    {
+      "start": 79.205,
+      "end": 81.857,
+      "text": "ouvrir le repo directement dans VS Code avec",
+      "words": [
+        { "start": 79.205, "end": 79.536, "char": [0, 6] },
+        { "start": 79.536, "end": 79.868, "char": [7, 9] },
+        { "start": 79.868, "end": 80.199, "char": [10, 14] },
+        { "start": 80.199, "end": 80.531, "char": [15, 26] },
+        { "start": 80.531, "end": 80.863, "char": [27, 31] },
+        { "start": 80.863, "end": 81.194, "char": [32, 34] },
+        { "start": 81.194, "end": 81.526, "char": [35, 39] },
+        { "start": 81.526, "end": 81.857, "char": [40, 44] }
+      ]
+    },
+    {
+      "start": 81.857,
+      "end": 82.52,
+      "text": "cette commande.",
+      "words": [
+        { "start": 81.857, "end": 82.189, "char": [0, 5] },
+        { "start": 82.189, "end": 82.52, "char": [6, 15] }
+      ]
+    },
+    {
+      "start": 82.52,
+      "end": 84.51,
+      "text": "Nous ne lancerons pas l'éditeur ici,",
+      "words": [
+        { "start": 82.52, "end": 82.852, "char": [0, 4] },
+        { "start": 82.852, "end": 83.183, "char": [5, 7] },
+        { "start": 83.183, "end": 83.515, "char": [8, 17] },
+        { "start": 83.515, "end": 83.847, "char": [18, 21] },
+        { "start": 83.847, "end": 84.178, "char": [22, 31] },
+        { "start": 84.178, "end": 84.51, "char": [32, 36] }
+      ]
+    },
+    {
+      "start": 84.51,
+      "end": 87.162,
+      "text": "mais elle démarre une session distante dans le",
+      "words": [
+        { "start": 84.51, "end": 84.841, "char": [0, 4] },
+        { "start": 84.841, "end": 85.173, "char": [5, 9] },
+        { "start": 85.173, "end": 85.504, "char": [10, 17] },
+        { "start": 85.504, "end": 85.836, "char": [18, 21] },
+        { "start": 85.836, "end": 86.167, "char": [22, 29] },
+        { "start": 86.167, "end": 86.499, "char": [30, 38] },
+        { "start": 86.499, "end": 86.831, "char": [39, 43] },
+        { "start": 86.831, "end": 87.162, "char": [44, 46] }
+      ]
+    },
+    {
+      "start": 87.162,
+      "end": 89.815,
+      "text": "repo via SSH pour que vous puissiez éditer",
+      "words": [
+        { "start": 87.162, "end": 87.494, "char": [0, 4] },
+        { "start": 87.494, "end": 87.825, "char": [5, 8] },
+        { "start": 87.825, "end": 88.157, "char": [9, 12] },
+        { "start": 88.157, "end": 88.488, "char": [13, 17] },
+        { "start": 88.488, "end": 88.82, "char": [18, 21] },
+        { "start": 88.82, "end": 89.151, "char": [22, 26] },
+        { "start": 89.151, "end": 89.483, "char": [27, 35] },
+        { "start": 89.483, "end": 89.815, "char": [36, 42] }
+      ]
+    },
+    {
+      "start": 89.815,
+      "end": 90.478,
+      "text": "ses fichiers.",
+      "words": [
+        { "start": 89.815, "end": 90.146, "char": [0, 3] },
+        { "start": 90.146, "end": 90.478, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 91.278,
+      "end": 94.02,
+      "text": "Lancez cela depuis votre ordinateur portable pour",
+      "words": [
+        { "start": 91.278, "end": 91.669, "char": [0, 6] },
+        { "start": 91.669, "end": 92.061, "char": [7, 11] },
+        { "start": 92.061, "end": 92.453, "char": [12, 18] },
+        { "start": 92.453, "end": 92.845, "char": [19, 24] },
+        { "start": 92.845, "end": 93.237, "char": [25, 35] },
+        { "start": 93.237, "end": 93.629, "char": [36, 44] },
+        { "start": 93.629, "end": 94.02, "char": [45, 49] }
+      ]
+    },
+    {
+      "start": 94.02,
+      "end": 96.763,
+      "text": "éditer les fichiers du repo dans VS",
+      "words": [
+        { "start": 94.02, "end": 94.412, "char": [0, 6] },
+        { "start": 94.412, "end": 94.804, "char": [7, 10] },
+        { "start": 94.804, "end": 95.196, "char": [11, 19] },
+        { "start": 95.196, "end": 95.588, "char": [20, 22] },
+        { "start": 95.588, "end": 95.98, "char": [23, 27] },
+        { "start": 95.98, "end": 96.371, "char": [28, 32] },
+        { "start": 96.371, "end": 96.763, "char": [33, 35] }
+      ]
+    },
+    {
+      "start": 96.763,
+      "end": 97.155,
+      "text": "Code.",
+      "words": [{ "start": 96.763, "end": 97.155, "char": [0, 5] }]
+    },
+    {
+      "start": 97.954,
+      "end": 99.201,
+      "text": "Voilà votre premier dépôt,",
+      "words": [
+        { "start": 97.954, "end": 98.266, "char": [0, 5] },
+        { "start": 98.266, "end": 98.578, "char": [6, 11] },
+        { "start": 98.578, "end": 98.89, "char": [12, 19] },
+        { "start": 98.89, "end": 99.201, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 99.201,
+      "end": 100.137,
+      "text": "prêt à servir.",
+      "words": [
+        { "start": 99.201, "end": 99.513, "char": [0, 4] },
+        { "start": 99.513, "end": 99.825, "char": [5, 6] },
+        { "start": 99.825, "end": 100.137, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 100.137,
+      "end": 101.072,
+      "text": "Dans la suite,",
+      "words": [
+        { "start": 100.137, "end": 100.449, "char": [0, 4] },
+        { "start": 100.449, "end": 100.761, "char": [5, 7] },
+        { "start": 100.761, "end": 101.072, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 101.072,
+      "end": 102.943,
+      "text": "nous y déploierons une application !",
+      "words": [
+        { "start": 101.072, "end": 101.384, "char": [0, 4] },
+        { "start": 101.384, "end": 101.696, "char": [5, 6] },
+        { "start": 101.696, "end": 102.008, "char": [7, 18] },
+        { "start": 102.008, "end": 102.32, "char": [19, 22] },
+        { "start": 102.32, "end": 102.632, "char": [23, 34] },
+        { "start": 102.632, "end": 102.943, "char": [35, 36] }
+      ]
+    }
+  ]
+}

@@ -1,11 +1,11 @@
 ---
-title: Устранение неполадок
+title: "Устранение неполадок"
 description: "Решения распространённых проблем с SSH, настройкой, репозиториями, сервисами и Docker."
-category: Guides
+category: "Guides"
 order: 10
 language: ru
-sourceHash: "7cfabe7bbf3914c3"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "17dc03eb0589d606"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Устранение неполадок
@@ -78,7 +78,7 @@ CRIU является известным случаем, который стал
 Module btrfs not found
 ```
 
-...сервер работает на стандартном ядре RHEL 10, которое поставляется без встроенного модуля btrfs. Это не ошибка Rediacc; RHEL 10 намеренно исключил btrfs. Решением является использование **Oracle Linux 10**. Oracle 10 по умолчанию использует Unbreakable Enterprise Kernel (UEK), который сохраняет btrfs. Смотрите [Требования -- Почему UEK?](/en/docs/requirements) для полного объяснения.
+...сервер работает на стандартном ядре RHEL 10, которое поставляется без встроенного модуля btrfs. Это не ошибка Rediacc; RHEL 10 намеренно исключил btrfs. Решением является использование **Oracle Linux 10**. Oracle 10 по умолчанию использует Unbreakable Enterprise Kernel (UEK), который сохраняет btrfs. Смотрите [Требования - Почему UEK?](/en/docs/requirements) для полного объяснения.
 
 ## Ошибка создания репозитория
 
@@ -132,12 +132,12 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 **Чтобы получить доступ к сети в разовом контейнере, используйте host-сеть:**
 
 ```bash
-# Inside a repository shell (rdc term connect -m <machine> -r <repo>)
+# Внутри оболочки репозитория (rdc term connect -m <machine> -r <repo>)
 docker run --rm --network host -it ubuntu bash
-# Now apt update, curl, pip install all work.
+# Теперь apt update, curl, pip install все работают.
 ```
 
-**Для production-сервисов используйте Rediaccfile с `renet compose`** вместо прямого `docker run`. `renet compose` автоматически внедряет `network_mode: host`, метки IP сервисов и метки маршрутизации Traefik. Подробнее см. [Сервисы](/ru/docs/services).
+**Для production-сервисов используйте Rediaccfile с `renet compose`** вместо прямого `docker run`. `renet compose` автоматически внедряет `network_mode: host`, метки IP сервисов и метки маршрутизации Traefik. Подробнее см. [Services](/en/docs/services).
 
 ## Permission Denied для файлов sandbox в VS Code
 

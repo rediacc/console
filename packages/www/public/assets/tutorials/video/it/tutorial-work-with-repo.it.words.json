@@ -1,0 +1,657 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.438,
+      "text": "Bene!",
+      "words": [{ "start": 1, "end": 1.438, "char": [0, 5] }]
+    },
+    {
+      "start": 1.438,
+      "end": 4.063,
+      "text": "La tua app e' in esecuzione,",
+      "words": [
+        { "start": 1.438, "end": 1.875, "char": [0, 2] },
+        { "start": 1.875, "end": 2.313, "char": [3, 6] },
+        { "start": 2.313, "end": 2.75, "char": [7, 10] },
+        { "start": 2.75, "end": 3.188, "char": [11, 13] },
+        { "start": 3.188, "end": 3.625, "char": [14, 16] },
+        { "start": 3.625, "end": 4.063, "char": [17, 28] }
+      ]
+    },
+    {
+      "start": 4.063,
+      "end": 5.376,
+      "text": "quindi lavoriamoci davvero.",
+      "words": [
+        { "start": 4.063, "end": 4.5, "char": [0, 6] },
+        { "start": 4.5, "end": 4.938, "char": [7, 18] },
+        { "start": 4.938, "end": 5.376, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 5.376,
+      "end": 8.001,
+      "text": "Tre comandi coprono il ciclo quotidiano.",
+      "words": [
+        { "start": 5.376, "end": 5.813, "char": [0, 3] },
+        { "start": 5.813, "end": 6.251, "char": [4, 11] },
+        { "start": 6.251, "end": 6.688, "char": [12, 19] },
+        { "start": 6.688, "end": 7.126, "char": [20, 22] },
+        { "start": 7.126, "end": 7.563, "char": [23, 28] },
+        { "start": 7.563, "end": 8.001, "char": [29, 40] }
+      ]
+    },
+    {
+      "start": 8.766,
+      "end": 11.671,
+      "text": "Tunnel apre la tua app nel",
+      "words": [
+        { "start": 8.766, "end": 9.25, "char": [0, 6] },
+        { "start": 9.25, "end": 9.734, "char": [7, 11] },
+        { "start": 9.734, "end": 10.219, "char": [12, 14] },
+        { "start": 10.219, "end": 10.703, "char": [15, 18] },
+        { "start": 10.703, "end": 11.187, "char": [19, 22] },
+        { "start": 11.187, "end": 11.671, "char": [23, 26] }
+      ]
+    },
+    {
+      "start": 11.671,
+      "end": 12.155,
+      "text": "browser,",
+      "words": [{ "start": 11.671, "end": 12.155, "char": [0, 8] }]
+    },
+    {
+      "start": 12.155,
+      "end": 15.061,
+      "text": "term esegue comandi dentro la sandbox",
+      "words": [
+        { "start": 12.155, "end": 12.64, "char": [0, 4] },
+        { "start": 12.64, "end": 13.124, "char": [5, 11] },
+        { "start": 13.124, "end": 13.608, "char": [12, 19] },
+        { "start": 13.608, "end": 14.092, "char": [20, 26] },
+        { "start": 14.092, "end": 14.576, "char": [27, 29] },
+        { "start": 14.576, "end": 15.061, "char": [30, 37] }
+      ]
+    },
+    {
+      "start": 15.061,
+      "end": 17.966,
+      "text": "e sync sposta i file dentro",
+      "words": [
+        { "start": 15.061, "end": 15.545, "char": [0, 1] },
+        { "start": 15.545, "end": 16.029, "char": [2, 6] },
+        { "start": 16.029, "end": 16.513, "char": [7, 13] },
+        { "start": 16.513, "end": 16.997, "char": [14, 15] },
+        { "start": 16.997, "end": 17.482, "char": [16, 20] },
+        { "start": 17.482, "end": 17.966, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 17.966,
+      "end": 18.934,
+      "text": "e fuori.",
+      "words": [
+        { "start": 17.966, "end": 18.45, "char": [0, 1] },
+        { "start": 18.45, "end": 18.934, "char": [2, 8] }
+      ]
+    },
+    {
+      "start": 18.934,
+      "end": 21.839,
+      "text": "Questo e' l'intero flusso di lavoro",
+      "words": [
+        { "start": 18.934, "end": 19.418, "char": [0, 6] },
+        { "start": 19.418, "end": 19.903, "char": [7, 9] },
+        { "start": 19.903, "end": 20.387, "char": [10, 18] },
+        { "start": 20.387, "end": 20.871, "char": [19, 25] },
+        { "start": 20.871, "end": 21.355, "char": [26, 28] },
+        { "start": 21.355, "end": 21.839, "char": [29, 35] }
+      ]
+    },
+    {
+      "start": 21.839,
+      "end": 22.324,
+      "text": "quotidiano.",
+      "words": [{ "start": 21.839, "end": 22.324, "char": [0, 11] }]
+    },
+    {
+      "start": 25.603,
+      "end": 26.678,
+      "text": "Prima di tutto,",
+      "words": [
+        { "start": 25.603, "end": 25.961, "char": [0, 5] },
+        { "start": 25.961, "end": 26.32, "char": [6, 8] },
+        { "start": 26.32, "end": 26.678, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 26.678,
+      "end": 27.753,
+      "text": "il comando tunnel.",
+      "words": [
+        { "start": 26.678, "end": 27.036, "char": [0, 2] },
+        { "start": 27.036, "end": 27.395, "char": [3, 10] },
+        { "start": 27.395, "end": 27.753, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 27.753,
+      "end": 29.187,
+      "text": "L'app gira sul server,",
+      "words": [
+        { "start": 27.753, "end": 28.112, "char": [0, 5] },
+        { "start": 28.112, "end": 28.47, "char": [6, 10] },
+        { "start": 28.47, "end": 28.828, "char": [11, 14] },
+        { "start": 28.828, "end": 29.187, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 29.187,
+      "end": 30.62,
+      "text": "non sul tuo laptop.",
+      "words": [
+        { "start": 29.187, "end": 29.545, "char": [0, 3] },
+        { "start": 29.545, "end": 29.903, "char": [4, 7] },
+        { "start": 29.903, "end": 30.262, "char": [8, 11] },
+        { "start": 30.262, "end": 30.62, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 30.62,
+      "end": 33.129,
+      "text": "Il comando tunnel inoltra la porta di",
+      "words": [
+        { "start": 30.62, "end": 30.979, "char": [0, 2] },
+        { "start": 30.979, "end": 31.337, "char": [3, 10] },
+        { "start": 31.337, "end": 31.695, "char": [11, 17] },
+        { "start": 31.695, "end": 32.054, "char": [18, 25] },
+        { "start": 32.054, "end": 32.412, "char": [26, 28] },
+        { "start": 32.412, "end": 32.77, "char": [29, 34] },
+        { "start": 32.77, "end": 33.129, "char": [35, 37] }
+      ]
+    },
+    {
+      "start": 33.129,
+      "end": 35.637,
+      "text": "un container via SSH cosi' puoi aprirla",
+      "words": [
+        { "start": 33.129, "end": 33.487, "char": [0, 2] },
+        { "start": 33.487, "end": 33.845, "char": [3, 12] },
+        { "start": 33.845, "end": 34.204, "char": [13, 16] },
+        { "start": 34.204, "end": 34.562, "char": [17, 20] },
+        { "start": 34.562, "end": 34.921, "char": [21, 26] },
+        { "start": 34.921, "end": 35.279, "char": [27, 31] },
+        { "start": 35.279, "end": 35.637, "char": [32, 39] }
+      ]
+    },
+    {
+      "start": 35.637,
+      "end": 37.071,
+      "text": "su localhost nel browser.",
+      "words": [
+        { "start": 35.637, "end": 35.996, "char": [0, 2] },
+        { "start": 35.996, "end": 36.354, "char": [3, 12] },
+        { "start": 36.354, "end": 36.712, "char": [13, 16] },
+        { "start": 36.712, "end": 37.071, "char": [17, 25] }
+      ]
+    },
+    {
+      "start": 37.871,
+      "end": 39.059,
+      "text": "Porta inoltrata.",
+      "words": [
+        { "start": 37.871, "end": 38.465, "char": [0, 5] },
+        { "start": 38.465, "end": 39.059, "char": [6, 16] }
+      ]
+    },
+    {
+      "start": 39.059,
+      "end": 42.031,
+      "text": "L'app e' ora raggiungibile su",
+      "words": [
+        { "start": 39.059, "end": 39.654, "char": [0, 5] },
+        { "start": 39.654, "end": 40.248, "char": [6, 8] },
+        { "start": 40.248, "end": 40.842, "char": [9, 12] },
+        { "start": 40.842, "end": 41.436, "char": [13, 26] },
+        { "start": 41.436, "end": 42.031, "char": [27, 29] }
+      ]
+    },
+    {
+      "start": 42.031,
+      "end": 42.625,
+      "text": "localhost.",
+      "words": [{ "start": 42.031, "end": 42.625, "char": [0, 10] }]
+    },
+    {
+      "start": 43.463,
+      "end": 45.352,
+      "text": "Con il tunnel attivo,",
+      "words": [
+        { "start": 43.463, "end": 43.935, "char": [0, 3] },
+        { "start": 43.935, "end": 44.407, "char": [4, 6] },
+        { "start": 44.407, "end": 44.88, "char": [7, 13] },
+        { "start": 44.88, "end": 45.352, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 45.352,
+      "end": 48.185,
+      "text": "l'app si apre direttamente nel tuo",
+      "words": [
+        { "start": 45.352, "end": 45.824, "char": [0, 5] },
+        { "start": 45.824, "end": 46.296, "char": [6, 8] },
+        { "start": 46.296, "end": 46.769, "char": [9, 13] },
+        { "start": 46.769, "end": 47.241, "char": [14, 26] },
+        { "start": 47.241, "end": 47.713, "char": [27, 30] },
+        { "start": 47.713, "end": 48.185, "char": [31, 34] }
+      ]
+    },
+    {
+      "start": 48.185,
+      "end": 48.657,
+      "text": "browser.",
+      "words": [{ "start": 48.185, "end": 48.657, "char": [0, 8] }]
+    },
+    {
+      "start": 48.657,
+      "end": 51.018,
+      "text": "In questa demo carichiamo rediacc.com,",
+      "words": [
+        { "start": 48.657, "end": 49.13, "char": [0, 2] },
+        { "start": 49.13, "end": 49.602, "char": [3, 9] },
+        { "start": 49.602, "end": 50.074, "char": [10, 14] },
+        { "start": 50.074, "end": 50.546, "char": [15, 25] },
+        { "start": 50.546, "end": 51.018, "char": [26, 38] }
+      ]
+    },
+    {
+      "start": 51.018,
+      "end": 53.852,
+      "text": "esattamente come raggiungesti la tua app",
+      "words": [
+        { "start": 51.018, "end": 51.491, "char": [0, 11] },
+        { "start": 51.491, "end": 51.963, "char": [12, 16] },
+        { "start": 51.963, "end": 52.435, "char": [17, 29] },
+        { "start": 52.435, "end": 52.907, "char": [30, 32] },
+        { "start": 52.907, "end": 53.379, "char": [33, 36] },
+        { "start": 53.379, "end": 53.852, "char": [37, 40] }
+      ]
+    },
+    {
+      "start": 53.852,
+      "end": 55.741,
+      "text": "servita direttamente dal container.",
+      "words": [
+        { "start": 53.852, "end": 54.324, "char": [0, 7] },
+        { "start": 54.324, "end": 54.796, "char": [8, 20] },
+        { "start": 54.796, "end": 55.268, "char": [21, 24] },
+        { "start": 55.268, "end": 55.741, "char": [25, 35] }
+      ]
+    },
+    {
+      "start": 59.023,
+      "end": 59.467,
+      "text": "Secondo,",
+      "words": [{ "start": 59.023, "end": 59.467, "char": [0, 8] }]
+    },
+    {
+      "start": 59.467,
+      "end": 60.799,
+      "text": "il comando term.",
+      "words": [
+        { "start": 59.467, "end": 59.911, "char": [0, 2] },
+        { "start": 59.911, "end": 60.355, "char": [3, 10] },
+        { "start": 60.355, "end": 60.799, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 60.799,
+      "end": 63.464,
+      "text": "Il comando di connessione al terminale",
+      "words": [
+        { "start": 60.799, "end": 61.243, "char": [0, 2] },
+        { "start": 61.243, "end": 61.688, "char": [3, 10] },
+        { "start": 61.688, "end": 62.132, "char": [11, 13] },
+        { "start": 62.132, "end": 62.576, "char": [14, 25] },
+        { "start": 62.576, "end": 63.02, "char": [26, 28] },
+        { "start": 63.02, "end": 63.464, "char": [29, 38] }
+      ]
+    },
+    {
+      "start": 63.464,
+      "end": 66.128,
+      "text": "ti porta all'interno della sandbox del",
+      "words": [
+        { "start": 63.464, "end": 63.908, "char": [0, 2] },
+        { "start": 63.908, "end": 64.352, "char": [3, 8] },
+        { "start": 64.352, "end": 64.796, "char": [9, 20] },
+        { "start": 64.796, "end": 65.24, "char": [21, 26] },
+        { "start": 65.24, "end": 65.684, "char": [27, 34] },
+        { "start": 65.684, "end": 66.128, "char": [35, 38] }
+      ]
+    },
+    {
+      "start": 66.128,
+      "end": 68.793,
+      "text": "repo -- la stessa vista isolata",
+      "words": [
+        { "start": 66.128, "end": 66.572, "char": [0, 4] },
+        { "start": 66.572, "end": 67.016, "char": [5, 7] },
+        { "start": 67.016, "end": 67.461, "char": [8, 10] },
+        { "start": 67.461, "end": 67.905, "char": [11, 17] },
+        { "start": 67.905, "end": 68.349, "char": [18, 23] },
+        { "start": 68.349, "end": 68.793, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 68.793,
+      "end": 70.569,
+      "text": "che offre VS Code.",
+      "words": [
+        { "start": 68.793, "end": 69.237, "char": [0, 3] },
+        { "start": 69.237, "end": 69.681, "char": [4, 9] },
+        { "start": 69.681, "end": 70.125, "char": [10, 12] },
+        { "start": 70.125, "end": 70.569, "char": [13, 18] }
+      ]
+    },
+    {
+      "start": 70.569,
+      "end": 73.234,
+      "text": "Puoi eseguire qualsiasi comando sul Docker",
+      "words": [
+        { "start": 70.569, "end": 71.013, "char": [0, 4] },
+        { "start": 71.013, "end": 71.457, "char": [5, 13] },
+        { "start": 71.457, "end": 71.901, "char": [14, 23] },
+        { "start": 71.901, "end": 72.345, "char": [24, 31] },
+        { "start": 72.345, "end": 72.79, "char": [32, 35] },
+        { "start": 72.79, "end": 73.234, "char": [36, 42] }
+      ]
+    },
+    {
+      "start": 73.234,
+      "end": 75.898,
+      "text": "daemon di questo repo senza mai",
+      "words": [
+        { "start": 73.234, "end": 73.678, "char": [0, 6] },
+        { "start": 73.678, "end": 74.122, "char": [7, 9] },
+        { "start": 74.122, "end": 74.566, "char": [10, 16] },
+        { "start": 74.566, "end": 75.01, "char": [17, 21] },
+        { "start": 75.01, "end": 75.454, "char": [22, 27] },
+        { "start": 75.454, "end": 75.898, "char": [28, 31] }
+      ]
+    },
+    {
+      "start": 75.898,
+      "end": 77.23,
+      "text": "uscire dal terminale.",
+      "words": [
+        { "start": 75.898, "end": 76.342, "char": [0, 6] },
+        { "start": 76.342, "end": 76.786, "char": [7, 10] },
+        { "start": 76.786, "end": 77.23, "char": [11, 21] }
+      ]
+    },
+    {
+      "start": 78.48,
+      "end": 80.552,
+      "text": "Sei nella sandbox del repo.",
+      "words": [
+        { "start": 78.48, "end": 78.895, "char": [0, 3] },
+        { "start": 78.895, "end": 79.309, "char": [4, 9] },
+        { "start": 79.309, "end": 79.723, "char": [10, 17] },
+        { "start": 79.723, "end": 80.137, "char": [18, 21] },
+        { "start": 80.137, "end": 80.552, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 80.552,
+      "end": 83.451,
+      "text": "Esegui qualsiasi cosa come se fossi connesso",
+      "words": [
+        { "start": 80.552, "end": 80.966, "char": [0, 6] },
+        { "start": 80.966, "end": 81.38, "char": [7, 16] },
+        { "start": 81.38, "end": 81.794, "char": [17, 21] },
+        { "start": 81.794, "end": 82.208, "char": [22, 26] },
+        { "start": 82.208, "end": 82.623, "char": [27, 29] },
+        { "start": 82.623, "end": 83.037, "char": [30, 35] },
+        { "start": 83.037, "end": 83.451, "char": [36, 44] }
+      ]
+    },
+    {
+      "start": 83.451,
+      "end": 84.28,
+      "text": "via SSH.",
+      "words": [
+        { "start": 83.451, "end": 83.865, "char": [0, 3] },
+        { "start": 83.865, "end": 84.28, "char": [4, 8] }
+      ]
+    },
+    {
+      "start": 87.611,
+      "end": 90.401,
+      "text": "Prima di trasferire i file,",
+      "words": [
+        { "start": 87.611, "end": 88.169, "char": [0, 5] },
+        { "start": 88.169, "end": 88.727, "char": [6, 8] },
+        { "start": 88.727, "end": 89.285, "char": [9, 19] },
+        { "start": 89.285, "end": 89.843, "char": [20, 21] },
+        { "start": 89.843, "end": 90.401, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 90.401,
+      "end": 92.076,
+      "text": "anteprima con --dry-run.",
+      "words": [
+        { "start": 90.401, "end": 90.959, "char": [0, 9] },
+        { "start": 90.959, "end": 91.518, "char": [10, 13] },
+        { "start": 91.518, "end": 92.076, "char": [14, 24] }
+      ]
+    },
+    {
+      "start": 92.076,
+      "end": 94.866,
+      "text": "Mostra esattamente cosa cambierebbe senza",
+      "words": [
+        { "start": 92.076, "end": 92.634, "char": [0, 6] },
+        { "start": 92.634, "end": 93.192, "char": [7, 18] },
+        { "start": 93.192, "end": 93.75, "char": [19, 23] },
+        { "start": 93.75, "end": 94.308, "char": [24, 35] },
+        { "start": 94.308, "end": 94.866, "char": [36, 41] }
+      ]
+    },
+    {
+      "start": 94.866,
+      "end": 95.982,
+      "text": "copiare nulla.",
+      "words": [
+        { "start": 94.866, "end": 95.424, "char": [0, 7] },
+        { "start": 95.424, "end": 95.982, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 95.982,
+      "end": 98.772,
+      "text": "Usa sempre l'anteprima quando non",
+      "words": [
+        { "start": 95.982, "end": 96.54, "char": [0, 3] },
+        { "start": 96.54, "end": 97.098, "char": [4, 10] },
+        { "start": 97.098, "end": 97.656, "char": [11, 22] },
+        { "start": 97.656, "end": 98.214, "char": [23, 29] },
+        { "start": 98.214, "end": 98.772, "char": [30, 33] }
+      ]
+    },
+    {
+      "start": 98.772,
+      "end": 99.889,
+      "text": "sei sicuro.",
+      "words": [
+        { "start": 98.772, "end": 99.331, "char": [0, 3] },
+        { "start": 99.331, "end": 99.889, "char": [4, 11] }
+      ]
+    },
+    {
+      "start": 101.889,
+      "end": 103.099,
+      "text": "Solo anteprima.",
+      "words": [
+        { "start": 101.889, "end": 102.494, "char": [0, 4] },
+        { "start": 102.494, "end": 103.099, "char": [5, 15] }
+      ]
+    },
+    {
+      "start": 103.099,
+      "end": 105.52,
+      "text": "Nessun file ancora spostato.",
+      "words": [
+        { "start": 103.099, "end": 103.704, "char": [0, 6] },
+        { "start": 103.704, "end": 104.309, "char": [7, 11] },
+        { "start": 104.309, "end": 104.914, "char": [12, 18] },
+        { "start": 104.914, "end": 105.52, "char": [19, 28] }
+      ]
+    },
+    {
+      "start": 108.856,
+      "end": 110.711,
+      "text": "Ora eseguiamo l'upload reale.",
+      "words": [
+        { "start": 108.856, "end": 109.32, "char": [0, 3] },
+        { "start": 109.32, "end": 109.783, "char": [4, 13] },
+        { "start": 109.783, "end": 110.247, "char": [14, 22] },
+        { "start": 110.247, "end": 110.711, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 110.711,
+      "end": 113.493,
+      "text": "Il comando di sincronizzazione sposta i",
+      "words": [
+        { "start": 110.711, "end": 111.174, "char": [0, 2] },
+        { "start": 111.174, "end": 111.638, "char": [3, 10] },
+        { "start": 111.638, "end": 112.102, "char": [11, 13] },
+        { "start": 112.102, "end": 112.565, "char": [14, 30] },
+        { "start": 112.565, "end": 113.029, "char": [31, 37] },
+        { "start": 113.029, "end": 113.493, "char": [38, 39] }
+      ]
+    },
+    {
+      "start": 113.493,
+      "end": 116.275,
+      "text": "file dal tuo laptop nel repo",
+      "words": [
+        { "start": 113.493, "end": 113.956, "char": [0, 4] },
+        { "start": 113.956, "end": 114.42, "char": [5, 8] },
+        { "start": 114.42, "end": 114.884, "char": [9, 12] },
+        { "start": 114.884, "end": 115.347, "char": [13, 19] },
+        { "start": 115.347, "end": 115.811, "char": [20, 23] },
+        { "start": 115.811, "end": 116.275, "char": [24, 28] }
+      ]
+    },
+    {
+      "start": 116.275,
+      "end": 117.202,
+      "text": "via SSH,",
+      "words": [
+        { "start": 116.275, "end": 116.738, "char": [0, 3] },
+        { "start": 116.738, "end": 117.202, "char": [4, 8] }
+      ]
+    },
+    {
+      "start": 117.202,
+      "end": 119.057,
+      "text": "con compressione delta rsync.",
+      "words": [
+        { "start": 117.202, "end": 117.666, "char": [0, 3] },
+        { "start": 117.666, "end": 118.13, "char": [4, 16] },
+        { "start": 118.13, "end": 118.593, "char": [17, 22] },
+        { "start": 118.593, "end": 119.057, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 119.057,
+      "end": 119.521,
+      "text": "Tunnel,",
+      "words": [{ "start": 119.057, "end": 119.521, "char": [0, 7] }]
+    },
+    {
+      "start": 119.521,
+      "end": 119.984,
+      "text": "term,",
+      "words": [{ "start": 119.521, "end": 119.984, "char": [0, 5] }]
+    },
+    {
+      "start": 119.984,
+      "end": 122.766,
+      "text": "sync -- tre comandi coprono il",
+      "words": [
+        { "start": 119.984, "end": 120.448, "char": [0, 4] },
+        { "start": 120.448, "end": 120.912, "char": [5, 7] },
+        { "start": 120.912, "end": 121.375, "char": [8, 11] },
+        { "start": 121.375, "end": 121.839, "char": [12, 19] },
+        { "start": 121.839, "end": 122.303, "char": [20, 27] },
+        { "start": 122.303, "end": 122.766, "char": [28, 30] }
+      ]
+    },
+    {
+      "start": 122.766,
+      "end": 123.694,
+      "text": "ciclo quotidiano.",
+      "words": [
+        { "start": 122.766, "end": 123.23, "char": [0, 5] },
+        { "start": 123.23, "end": 123.694, "char": [6, 17] }
+      ]
+    },
+    {
+      "start": 125.194,
+      "end": 126.284,
+      "text": "File caricati.",
+      "words": [
+        { "start": 125.194, "end": 125.739, "char": [0, 4] },
+        { "start": 125.739, "end": 126.284, "char": [5, 14] }
+      ]
+    },
+    {
+      "start": 126.284,
+      "end": 129.011,
+      "text": "La compressione delta gestisce alberi",
+      "words": [
+        { "start": 126.284, "end": 126.83, "char": [0, 2] },
+        { "start": 126.83, "end": 127.375, "char": [3, 15] },
+        { "start": 127.375, "end": 127.92, "char": [16, 21] },
+        { "start": 127.92, "end": 128.465, "char": [22, 30] },
+        { "start": 128.465, "end": 129.011, "char": [31, 37] }
+      ]
+    },
+    {
+      "start": 129.011,
+      "end": 129.556,
+      "text": "grandi.",
+      "words": [{ "start": 129.011, "end": 129.556, "char": [0, 7] }]
+    },
+    {
+      "start": 130.388,
+      "end": 133.194,
+      "text": "Ed ecco i tre comandi quotidiani.",
+      "words": [
+        { "start": 130.388, "end": 130.856, "char": [0, 2] },
+        { "start": 130.856, "end": 131.323, "char": [3, 7] },
+        { "start": 131.323, "end": 131.791, "char": [8, 9] },
+        { "start": 131.791, "end": 132.258, "char": [10, 13] },
+        { "start": 132.258, "end": 132.726, "char": [14, 21] },
+        { "start": 132.726, "end": 133.194, "char": [22, 33] }
+      ]
+    },
+    {
+      "start": 133.194,
+      "end": 135.064,
+      "text": "Ci vediamo nel prossimo!",
+      "words": [
+        { "start": 133.194, "end": 133.661, "char": [0, 2] },
+        { "start": 133.661, "end": 134.129, "char": [3, 10] },
+        { "start": 134.129, "end": 134.596, "char": [11, 14] },
+        { "start": 134.596, "end": 135.064, "char": [15, 24] }
+      ]
+    }
+  ]
+}

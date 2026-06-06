@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:14.524
+Copia de Seguridad y Restauración
+
+00:00:14.524 --> 00:00:26.609
+Tres pasos: configurar, enviar, restaurar
+
+00:00:26.609 --> 00:00:54.834
+Paso 1: Importa la configuración de rclone
+
+00:00:54.834 --> 00:01:11.074
+Paso 2: Lista los almacenamientos configurados
+
+00:01:11.074 --> 00:01:42.221
+Paso 3: Envía una copia de seguridad completa
+
+00:01:42.221 --> 00:02:11.991
+Paso 4: Lista las copias de seguridad en el almacenamiento
+
+00:02:11.991 --> 00:02:18.151
+Siguiente: Monitorización

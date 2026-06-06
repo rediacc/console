@@ -1,0 +1,121 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.913
+Tudo certo!
+
+00:00:01.913 --> 00:00:04.194
+Vamos adicionar seu primeiro servidor.
+
+00:00:04.194 --> 00:00:06.932
+Leva dois comandos e cerca de
+
+00:00:06.932 --> 00:00:07.844
+um minuto.
+
+00:00:08.603 --> 00:00:09.970
+São duas partes.
+
+00:00:09.970 --> 00:00:12.703
+A ferramenta de linha de comando
+
+00:00:12.703 --> 00:00:14.526
+vive no seu notebook,
+
+00:00:14.526 --> 00:00:17.260
+e um orquestrador chamado renet roda
+
+00:00:17.260 --> 00:00:18.171
+no servidor.
+
+00:00:18.171 --> 00:00:20.449
+A CLI conecta via SSH,
+
+00:00:20.449 --> 00:00:23.182
+então você nunca precisa entrar no
+
+00:00:23.182 --> 00:00:24.094
+servidor manualmente.
+
+00:00:27.344 --> 00:00:29.879
+Começamos por criar um perfil de configuração
+
+00:00:29.879 --> 00:00:32.052
+que vai guardar a chave SSH,
+
+00:00:32.052 --> 00:00:34.587
+a lista de máquinas e as definições
+
+00:00:34.587 --> 00:00:35.311
+de infraestrutura.
+
+00:00:36.561 --> 00:00:37.419
+Perfil criado.
+
+00:00:37.419 --> 00:00:39.992
+Tudo o que configurarmos a seguir
+
+00:00:39.992 --> 00:00:41.707
+vive neste único ficheiro.
+
+00:00:45.048 --> 00:00:47.874
+Agora vamos registar o servidor a
+
+00:00:47.874 --> 00:00:50.229
+partir da linha de comandos,
+
+00:00:50.229 --> 00:00:51.643
+fornecendo o nome,
+
+00:00:51.643 --> 00:00:54.469
+o endereço IP e o utilizador
+
+00:00:54.469 --> 00:00:54.940
+SSH.
+
+00:00:54.940 --> 00:00:57.766
+As chaves de anfitrião são verificadas
+
+00:00:57.766 --> 00:00:59.650
+automaticamente para acesso seguro.
+
+00:00:59.650 --> 00:01:00.991
+Servidor registado.
+
+00:01:00.991 --> 00:01:03.673
+As chaves de anfitrião
+
+00:01:03.673 --> 00:01:05.685
+foram verificadas automaticamente.
+
+00:01:08.951 --> 00:01:09.854
+De seguida,
+
+00:01:09.854 --> 00:01:11.659
+vamos provisionar o servidor.
+
+00:01:11.659 --> 00:01:14.367
+Este passo instala o renet e
+
+00:01:14.367 --> 00:01:17.075
+cria o repositório de dados encriptado.
+
+00:01:17.075 --> 00:01:17.665
+Pronto.
+
+00:01:17.665 --> 00:01:20.615
+O renet está instalado e
+
+00:01:20.615 --> 00:01:23.564
+o repositório de dados está
+
+00:01:23.564 --> 00:01:24.154
+preparado.
+
+00:01:24.933 --> 00:01:27.503
+E é isso para adicionar um
+
+00:01:27.503 --> 00:01:27.932
+servidor!
+
+00:01:27.932 --> 00:01:29.217
+Até o próximo.

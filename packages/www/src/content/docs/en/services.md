@@ -10,7 +10,7 @@ language: en
 
 # Services
 
-This page covers how to deploy and manage containerized services: Rediaccfiles, service networking, starting/stopping, bulk operations, and autostart.
+Here's what this page covers: deploying and managing containerized services, including Rediaccfiles, service networking, starting/stopping, bulk operations, and autostart.
 
 ## The Rediaccfile
 
@@ -174,7 +174,7 @@ services:
 
 renet and Docker disagree, on purpose, about how to handle container restarts. Understanding the split is important when debugging why a container did or didn't come back.
 
-**Restart policy translation.** When you write `restart: always` (or `unless-stopped`, or `on-failure`) in your compose file, renet **strips it** when synthesizing the actual compose deployment and replaces it with `restart: no`. The original value is saved into the repo's `.rediacc.json` under `services.<name>.restart_policy`. This prevents Docker's daemon-level auto-restart from interfering with CRIU checkpoint/restore (a daemon-driven restart would resume from a stale pre-checkpoint state).
+**Restart policy translation.** When you write `restart: always` (or `unless-stopped`, or `on-failure`) in your compose file, renet **strips it** when synthesizing the actual compose deployment and replaces it with `restart: no`. The original value is saved into the repo's `.rediacc.json` under `services.<name>.restart_policy`. This prevents Docker's daemon-level auto-restart from interfering with CRIU checkpoint/restore (a daemon-driven restart would resume from a stale pre-checkpoint state). Worth keeping in mind if you hit unexpected restart loops.
 
 **Watchdog enforcement.** The router watchdog runs periodically on every machine. Every tick:
 
@@ -265,7 +265,7 @@ rdc repo up -m server-1
 
 ## Autostart on Boot
 
-By default, repositories must be manually mounted and started after a server reboot. **Autostart** configures repositories to automatically mount, start Docker, and run Rediaccfile `up()` when the server boots.
+By default, repositories must be manually mounted and started after a server reboot. **Autostart** changes that: it configures repositories to automatically mount, start Docker, and run Rediaccfile `up()` when the server boots.
 
 ### How It Works
 

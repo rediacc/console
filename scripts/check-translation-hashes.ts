@@ -251,7 +251,9 @@ function main(): void {
   if (errors.length > 0) {
     console.error('Translation hash check FAILED:\n');
     errors.forEach((e) => console.error(e));
-    console.error('\nTo fix, run: npm run i18n:generate-hashes');
+    console.error('\nTo fix: run `npm run i18n:generate-hashes`, then re-naturalize ONLY the');
+    console.error('changed keys (delta) via private/growth/i18n_pipeline -- not everything.');
+    console.error('`npm run i18n:naturalize-status` shows the stale keys. See docs/i18n/CONVENTIONS.md.');
     process.exit(1);
   }
 

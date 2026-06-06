@@ -7,10 +7,11 @@ description: >-
 category: Reference
 order: 51
 language: es
-sourceHash: "18996ab708715227"
+sourceHash: "9f8d61df26b59757"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Todos los comandos `rdc` admiten salida JSON estructurada para consumo programático por agentes de IA y scripts.
+Todos los comandos `rdc` producen JSON estructurado. Páselo a un script o aliméntelo directamente a un agente.
 
 ## Activar la salida JSON
 
@@ -89,10 +90,46 @@ Los comandos fallidos devuelven errores estructurados con sugerencias de recuper
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
-| `code` | `string` | Código de error legible por máquina |
+| `code` | `string` | Código de error legible por máquina (consulte las constantes `ERROR_CODES` para la lista canónica) |
 | `message` | `string` | Descripción legible por humanos |
 | `retryable` | `boolean` | Si reintentar el mismo comando puede tener éxito |
-| `guidance` | `string` | Acción sugerida para resolver el error |
+| `guidance` | `string` | Sugerencia en texto libre (heredado. Prefiera `next` para datos de acción estructurados) |
+| `next` | `object?` | Sugerencia de próxima acción estructurada (cuando está presente). Véase más abajo |
+
+### Sugerencias de acción estructuradas con `next`
+
+Para códigos de error de alto valor como `PRECONDITION_MISMATCH`, el error incluye un campo `next` con los comandos exactos que ofrecer al usuario. No todos los códigos de error incluyen este campo, solo aquellos con una ruta de recuperación definida. **Los agentes deben transmitir `next.options[].run` literalmente al usuario en lugar de sintetizar su propio comando.** Esto elimina el fallo donde el agente inventa un comando que no existe. Ocurre con más frecuencia de lo que se podría pensar.
+
+```json
+{
+  "errors": [{
+    "code": "PRECONDITION_MISMATCH",
+    "message": "--current digest mismatch (expected 3264f8ee…, got 611dfd8a…)",
+    "next": {
+      "summary": "Provide the current value or acknowledge rotation.",
+      "options": [
+        {
+          "description": "Re-read current digest, then retry with --current",
+          "run": "rdc repo secret get --name mail --key STRIPE_KEY"
+        },
+        {
+          "description": "Skip the precondition (rotation, audited)",
+          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
+        }
+      ]
+    }
+  }]
+}
+```
+
+Esquema:
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| `next.summary` | `string` | Descripción en una línea de lo que el usuario debe decidir |
+| `next.options[]` | `array` | Acciones concretas; cada una es una alternativa que el usuario puede elegir |
+| `next.options[].description` | `string` | Explicación legible por humanos de esta opción |
+| `next.options[].run` | `string` | Comando CLI exacto. Transmítalo literalmente al usuario |
 
 ### Errores reintentables
 
@@ -106,7 +143,7 @@ Los errores no reintentables (autenticación, no encontrado, argumentos inválid
 
 ## Filtrar la salida
 
-Use `--fields` para limitar la salida a claves específicas. Esto reduce el uso de tokens cuando solo se necesitan datos específicos:
+Use `--fields` para limitar la salida a claves específicas y reducir el uso de tokens:
 
 ```bash
 rdc machine containers --name prod-1 -o json --fields name,status,repository
@@ -142,7 +179,7 @@ Comandos con soporte de `--dry-run`: `repo up`, `repo down`, `repo delete`, `sna
 
 ## Comandos de descubrimiento para agentes
 
-El subcomando `rdc agent` proporciona introspección estructurada para que los agentes de IA descubran las operaciones disponibles en tiempo de ejecución.
+El subcomando `rdc agent` proporciona a los agentes de IA una forma estructurada de descubrir las operaciones disponibles en tiempo de ejecución.
 
 ### Listar todos los comandos
 
@@ -180,7 +217,7 @@ Devuelve el árbol completo de comandos con argumentos, opciones y descripciones
 rdc agent schema --command "machine query"
 ```
 
-Devuelve el esquema detallado de un solo comando, incluyendo todos los argumentos y opciones con sus tipos y valores predeterminados.
+Devuelve el esquema completo de un solo comando: todos los argumentos y opciones con sus tipos y valores predeterminados.
 
 ### Ejecutar mediante JSON
 
@@ -188,7 +225,7 @@ Devuelve el esquema detallado de un solo comando, incluyendo todos los argumento
 echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
-Acepta JSON en stdin, mapea las claves a los argumentos y opciones del comando, y ejecuta con salida JSON forzada. Útil para la comunicación estructurada agente-CLI sin construir cadenas de comandos de shell.
+Acepta JSON en stdin, mapea las claves a los argumentos y opciones del comando, y ejecuta con salida JSON forzada. Úselo cuando prefiera no construir cadenas de comandos de shell para las llamadas agente-CLI.
 
 ## Ejemplos de análisis
 
@@ -204,7 +241,7 @@ status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 import subprocess, json
 
 result = subprocess.run(
-    ["rdc", "machine", "query", "prod-1", "-o", "json"],
+    ["rdc", "machine", "query", "--name", "prod-1", "-o", "json"],
     capture_output=True, text=True
 )
 envelope = json.loads(result.stdout)
@@ -226,7 +263,7 @@ else:
 ```javascript
 import { execFileSync } from 'child_process';
 
-const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
+const raw = execFileSync('rdc', ['machine', 'query', '--name', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
 const { success, data, errors } = JSON.parse(raw);
 
 if (!success) {

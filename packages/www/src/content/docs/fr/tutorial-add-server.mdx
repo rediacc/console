@@ -1,19 +1,19 @@
 ---
-title: "Ajouter votre première machine"
-description: "Enregistrez votre première machine avec rdc, préparez-la et découvrez l'architecture rdc et renet."
+title: "Ajouter votre premier serveur"
+description: "Enregistrez votre premier serveur avec rdc, préparez-le et découvrez l'architecture rdc + renet."
 category: "Tutorials"
 subcategory: essentials
 order: 3
 language: fr
-sourceHash: "4b76f7212633cdec"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "fc8bd1ff08e5611a"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Ajouter votre premier serveur
 
-Avant d'ajouter un serveur, voici comment `rdc` fonctionne. Rediacc, c'est deux outils : `rdc` sur votre ordinateur, `renet` sur le serveur.
+Deux outils : `rdc` sur votre ordinateur portable, `renet` sur le serveur. C'est toute l'architecture Rediacc. Voici comment ils se connectent avant d'ajouter un serveur.
 
 ## Regarder le tutoriel
 
@@ -21,7 +21,7 @@ Avant d'ajouter un serveur, voici comment `rdc` fonctionne. Rediacc, c'est deux 
 
 ## Pourquoi deux outils ?
 
-![rdc sur l'ordinateur, renet sur le serveur, SSH entre les deux](/img/tutorials/tutorial-add-server/slide-1.svg)
+![rdc sur votre ordinateur portable, renet sur le serveur, SSH entre eux](/img/tutorials/tutorial-add-server/slide-1.svg)
 
 - **`rdc`** est le CLI sur votre ordinateur. Vous saisissez les commandes ici.
 - **`renet`** est l'orchestrateur sur le serveur. Il gère le chiffrement, Docker et l'isolation.
@@ -32,7 +32,7 @@ Lorsque vous exécutez une commande localement, `rdc` se connecte via SSH et ex�
 
 <TutorialStep number={1} />
 
-Aucun `rdc config init` n'est nécessaire. Le fichier de configuration est créé automatiquement à la première utilisation, et `rdc` utilise votre clé `~/.ssh` standard.
+Aucun `rdc config init` n'est nécessaire. Le fichier de configuration est créé automatiquement à la première utilisation, et `rdc` utilise votre clé `~/.ssh` standard. La sélection de clé est intentionnellement minimaliste. Si vous avez besoin du forwarding d'agent ou d'un jump host, configurez-les dans `~/.ssh/config` comme d'habitude ; `rdc` les détectera.
 
 ## Étape 2 : Le provisionner
 

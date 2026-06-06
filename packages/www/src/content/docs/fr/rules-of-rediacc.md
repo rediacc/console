@@ -1,14 +1,11 @@
 ---
-title: Règles de Rediacc
-description: >-
-  Règles et conventions essentielles pour construire des applications sur la
-  plateforme Rediacc. Couvre Rediaccfile, compose, réseau, stockage, CRIU et
-  déploiement.
+title: "Règles de Rediacc"
+description: "Règles et conventions essentielles pour construire des applications sur la plateforme Rediacc. Couvre Rediaccfile, compose, réseau, stockage, CRIU et déploiement."
 category: Guides
 order: 5
 language: fr
-sourceHash: "1d227a06272a0050"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "74803e91ef07b03c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Règles de Rediacc
@@ -135,13 +132,13 @@ Renet auto-injecte celles-ci dans chaque conteneur :
 
 ### Politiques de sécurité de l'hôte par système d'exploitation
 
-Sur les cinq systèmes d'exploitation serveur officiellement supportés (voir [Prérequis](/en/docs/requirements)), le daemon Docker de chaque dépôt et les conteneurs qu'il exécute utilisent les **labels de conteneur par défaut**. `rdc config machine setup` n'installe ni politique SELinux personnalisée ni profil AppArmor personnalisé.
+Sur les cinq systèmes d'exploitation serveur officiellement supportés (voir [Prérequis](/en/docs/requirements)), le daemon Docker de chaque dépôt et les conteneurs qu'il exécute utilisent les **labels de conteneur par défaut**. `rdc config machine setup` n'installe ni politique SELinux personnalisée ni profil AppArmor personnalisé. C'est volontaire : le compromis est que les processus conteneur s'exécutent sous la politique de label par défaut du système d'exploitation hôte, et non sous un profil de confinement spécifique à Rediacc. Si votre modèle de menace nécessite des contrôles d'accès obligatoires au niveau du conteneur, configurez-les au niveau de l'hôte avant de déployer.
 
 - **Ubuntu 24.04 / openSUSE Leap 16.0** : AppArmor est activé par défaut. Les conteneurs s'exécutent sous le profil docker-container par défaut. La seule exception est CRIU (`apparmor=unconfined` pour les conteneurs portant `rediacc.checkpoint=true`, comme indiqué ci-dessus).
 - **Fedora 43 / Oracle Linux 10** : SELinux s'exécute en mode enforcing par défaut. Les conteneurs reçoivent le contexte `container_t` standard. Aucune installation de politique supplémentaire n'est nécessaire. Si une étape de configuration échoue avec des refus AVC, consultez [Dépannage : refus SELinux](/en/docs/troubleshooting).
 - **Debian 13** : AppArmor est disponible mais n'est pas appliqué par défaut sur tous les domaines. Les conteneurs utilisent tout de même le profil docker-container.
 
-Aucun indicateur de posture de sécurité spécifique au système d'exploitation n'est requis ; `rdc` et `renet` détectent ce qui est en cours d'exécution et produisent la même isolation par dépôt sur les cinq distributions.
+Conclusion : `rdc` et `renet` détectent automatiquement le système d'exploitation en cours d'exécution et produisent la même isolation par dépôt sur les cinq distributions supportées. Aucun indicateur de posture de sécurité spécifique au système d'exploitation n'est requis.
 
 ## Sécurité
 

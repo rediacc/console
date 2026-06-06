@@ -1,14 +1,14 @@
 ---
 title: "SOC 2 Uyumluluğu"
-description: "Rediacc'ın SOC 2 kanıtı nerede sunduğu: günlükler, değişiklik yönetimi izi ve denetçilerin sorduğu kontroller."
+description: "SOC 2'nin özü: denetçiler kontrollerinizin çalıştığına dair kanıt isterler. Rediacc size günlükleri, değişiklik yönetimi izini ve denetçilerin talep edecekleri her şeyi sağlar."
 category: "Legal"
 order: 2
 language: tr
-sourceHash: "29b0c745e631e4f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "27d2366f84e21d8c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-SOC 2, denetçilerin kontrollerinizin gerçekten çalıştığına dair kanıt istediklerinde başvurdukları AICPA çerçevesidir. Beş Güven Hizmeti Kriterini kapsar: güvenlik, kullanılabilirlik, işleme bütünlüğü, gizlilik ve mahremiyet.
+SOC 2'yi biliyorum çünkü denetim toplantılarında bulundum. Denetçiler, kontrollerinizin gerçekten çalıştığını kontrol etmek için AICPA çerçevesini kullanırlar; sadece söze inanmak değil. Beş Güven Hizmeti Kriterleri: güvenlik, kullanılabilirlik, işleme bütünlüğü, gizlilik ve mahremiyet.
 
 Referans: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -24,14 +24,15 @@ Referans: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-a
 
 ## Denetim İzi
 
-Rediacc hesap düzeyinde 40'tan fazla olay türünü kaydeder:
+Rediacc 70+ farklı olay türünü kaydeder. Kullanıcı işlemleri, sistem değişiklikleri, yapılandırma güncellemeleri, erişim kontrolü değişiklikleri, güvenlik olayları, fork işlemleri, denetim izleri. Çok gibi gelebilir, ama denetçiler gerçekten bunu görmek isterler.
 
 - **Kimlik doğrulama**: giriş, çıkış, parola değişiklikleri, 2FA etkinleştirme/devre dışı bırakma, oturum iptali
 - **Yetkilendirme**: API token oluşturma/iptali, rol değişiklikleri, ekip üyeliği
 - **Yapılandırma**: yapılandırma deposu push/pull, üye yönetimi, erişim hataları (IP uyuşmazlığı, SDK reddi)
-- **Lisanslama**: makine aktivasyonu, lisans yayınlama, abonelik değişiklikleri
+- **Lisanslama**: depo lisans verilişi, makine yuvası izleme, abonelik değişiklikleri
+- **Makine işlemleri**: depo oluştur/başlat/durdur/sil, fork, yedekleme push/pull, dosya senkronizasyonu, terminal oturumları
 
-Bu günlükler yönetici paneli (kullanıcı, ekip ve tarih bazında filtreleme ile) ve programatik dışa aktarım için `rdc audit` CLI üzerinden erişilebilir. Makine düzeyindeki işlemler (fork, yedekleme, dağıtım) altyapınızda SSH üzerinden yürütülür, dolayısıyla bu denetim izleri sistem günlüklerinizde bulunur.
+Bu günlüklere ulaşmanın üç yolu var. Yönetici panosu kullanıcı, ekip ve tarih filtrelemesi ile. Org yöneticileri için portal aktivite sayfası tür ve tarih filtrelemesi ile. Ya da `rdc audit` CLI programatik dışa aktarım için. Günlükleri kendi araçlarınıza aktarabilir, istediğiniz yerde entegre edebilirsiniz. Makine işlemleri sistem günlüklerinize de kaydedilir, böylece çok katmanlı korumaya sahip olursunuz.
 
 ## Değişiklik Yönetimi
 

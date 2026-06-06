@@ -1,16 +1,16 @@
 ---
 title: "Configurazione della macchina"
-description: "Crea una config, aggiungi macchine, esegui il provisioning dei server e configura l'infrastruttura. È il primo passo: una volta fatto, è tutto più semplice."
+description: "Crea una config, aggiungi macchine, esegui il provisioning dei server e configura l'infrastruttura."
 category: "Guides"
 order: 3
 language: it
-sourceHash: "2456daa4289ffb8c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "b3c8c42db1b8d99b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Configurazione della macchina
 
-Questa pagina ti guida nella configurazione della tua prima macchina: creare una config, registrare un server, eseguirne il provisioning e, opzionalmente, configurare l'infrastruttura per l'accesso pubblico.
+Quattro passi mettono in funzione la tua prima macchina: creare una config, registrare il server, eseguirne il provisioning e, facoltativamente, configurare l'infrastruttura per il traffico pubblico.
 
 ## Passo 1: Crea una config
 

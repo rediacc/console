@@ -1,0 +1,175 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.612
+A sua aplicação está no
+
+00:00:03.612 --> 00:00:04.135
+ar,
+
+00:00:04.135 --> 00:00:06.747
+por isso vamos garantir que
+
+00:00:06.747 --> 00:00:08.314
+nunca a perde!
+
+00:00:08.314 --> 00:00:10.927
+Neste tutorial enviamos o repositório
+
+00:00:10.927 --> 00:00:13.539
+inteiro para armazenamento externo e
+
+00:00:13.539 --> 00:00:15.106
+recuperamo-lo quando precisarmos.
+
+00:00:15.894 --> 00:00:18.855
+A cópia de segurança e
+
+00:00:18.855 --> 00:00:21.815
+a restauração resumem-se a três
+
+00:00:21.815 --> 00:00:22.407
+passos.
+
+00:00:22.407 --> 00:00:25.368
+Configurar um fornecedor de armazenamento,
+
+00:00:25.368 --> 00:00:28.328
+enviar uma cópia e restaurá-la
+
+00:00:28.328 --> 00:00:30.105
+quando for necessário.
+
+00:00:33.358 --> 00:00:34.305
+Passo um.
+
+00:00:34.305 --> 00:00:37.147
+Vamos importar uma configuração rclone existente.
+
+00:00:37.147 --> 00:00:39.042
+O rclone suporta S3,
+
+00:00:39.042 --> 00:00:39.516
+Backblaze,
+
+00:00:39.516 --> 00:00:40.463
+Google Drive,
+
+00:00:40.463 --> 00:00:42.358
+Dropbox e muitos outros.
+
+00:00:42.358 --> 00:00:44.253
+Se já o utiliza,
+
+00:00:44.253 --> 00:00:47.095
+a mesma configuração pode ser importada
+
+00:00:47.095 --> 00:00:47.569
+diretamente.
+
+00:00:48.569 --> 00:00:49.485
+Armazenamento importado.
+
+00:00:49.485 --> 00:00:52.234
+A sua CLI já pode enviar
+
+00:00:52.234 --> 00:00:54.525
+cópias de segurança para ele.
+
+00:00:57.835 --> 00:01:00.544
+Vamos listar os armazenamentos que a
+
+00:01:00.544 --> 00:01:01.899
+ferramenta conhece agora.
+
+00:01:01.899 --> 00:01:04.608
+Cada um é um destino para
+
+00:01:04.608 --> 00:01:07.317
+onde podemos enviar cópias de segurança.
+
+00:01:09.067 --> 00:01:09.897
+Aqui está.
+
+00:01:09.897 --> 00:01:12.385
+Pronto a receber cópias de segurança.
+
+00:01:15.705 --> 00:01:16.667
+Passo dois.
+
+00:01:16.667 --> 00:01:19.553
+Vamos enviar uma cópia de segurança
+
+00:01:19.553 --> 00:01:20.034
+completa.
+
+00:01:20.034 --> 00:01:22.439
+O repositório inteiro -- aplicação,
+
+00:01:22.439 --> 00:01:23.883
+base de dados,
+
+00:01:23.883 --> 00:01:24.364
+ficheiros,
+
+00:01:24.364 --> 00:01:26.288
+configuração -- é carregado.
+
+00:01:26.288 --> 00:01:29.174
+Como o repositório está encriptado em
+
+00:01:29.174 --> 00:01:29.655
+repouso,
+
+00:01:29.655 --> 00:01:32.541
+a cópia de segurança também fica
+
+00:01:32.541 --> 00:01:33.022
+encriptada.
+
+00:01:33.022 --> 00:01:35.427
+Sem gestão adicional de chaves.
+
+00:01:37.677 --> 00:01:39.928
+Cópia de segurança enviada.
+
+00:01:39.928 --> 00:01:42.741
+Tudo neste repositório está agora
+
+00:01:42.741 --> 00:01:44.429
+no armazenamento remoto,
+
+00:01:44.429 --> 00:01:44.992
+encriptado.
+
+00:01:48.302 --> 00:01:51.297
+E aqui estão as cópias de
+
+00:01:51.297 --> 00:01:53.294
+segurança disponíveis neste armazenamento.
+
+00:01:53.294 --> 00:01:54.792
+A partir daqui,
+
+00:01:54.792 --> 00:01:57.787
+restaurar num servidor novo é um
+
+00:01:57.787 --> 00:01:58.786
+único comando:
+
+00:01:58.786 --> 00:02:01.781
+o comando de restauração do repositório.
+
+00:02:04.781 --> 00:02:07.485
+Todos os seus snapshots num só sítio.
+
+00:02:07.485 --> 00:02:10.189
+Recupere qualquer um com um único comando.
+
+00:02:10.989 --> 00:02:13.523
+Os seus dados estão seguros e
+
+00:02:13.523 --> 00:02:14.790
+portáveis entre máquinas.
+
+00:02:14.790 --> 00:02:16.057
+Até ao próximo!

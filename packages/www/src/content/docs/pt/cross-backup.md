@@ -1,16 +1,18 @@
 ---
 title: Estratégia de Backup Cruzado
-description: Proteja os dados contra desastres com backups transcontinentais eficientes e recuperação rápida.
+description: "Seu backup falha no momento em que sua máquina falha. A Rediacc replica snapshots para uma máquina separada, portanto uma falha de disco não leva tudo consigo."
 category: Use Cases
 order: 5
 language: pt
+sourceHash: "39dbeac1faec121c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 > **Quando o Desastre Acontece, os Seus Dados Sobrevivem? Com a Rediacc, Sempre.**
 
-**Nota:** Este é um **exemplo de caso de uso** que demonstra como a Rediacc pode resolver este problema. Como startup, estes cenários representam aplicações potenciais e não estudos de caso concluídos.
+**Nota:** Este é um **exemplo de caso de uso** que demonstra como a Rediacc pode resolver este problema. Estes cenários representam aplicações potenciais e não estudos de caso concluídos.
 
-**Cenário de Crise:** Após uma chamada de cliente, descobriu-se que os serviços não estavam a funcionar devido a uma **falha de disco**. O último backup do servidor de backup remoto tinha **3 semanas de antiguidade**, resultando em perda significativa de dados.
+**Cenário de Crise:** Uma chamada de cliente revela a indisponibilidade: **falha de disco**. O último backup do servidor remoto tinha **3 semanas**. Semanas de dados, perdidos.
 
 ## O Problema
 

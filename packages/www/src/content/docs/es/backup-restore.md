@@ -1,22 +1,20 @@
 ---
-title: Respaldo y Restauración
-description: >-
-  Respalde repositorios cifrados en almacenamiento externo, restaure desde
-  respaldos y programe respaldos automatizados.
+title: "Respaldo y Restauración"
+description: "Respalde repositorios cifrados en almacenamiento compatible con rclone, restaure en cualquier máquina y automatice con estrategias de respaldo nombradas y temporizadores systemd."
 category: Guides
 order: 7
 language: es
-sourceHash: "196ee7b649ac7371"
-sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
+sourceHash: "6ed9a5b950de8ddb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Respaldo y Restauración
 
-Rediacc puede respaldar repositorios cifrados en proveedores de almacenamiento externo y restaurarlos en la misma o en diferentes máquinas. Los respaldos están cifrados; se requiere la credencial LUKS del repositorio para restaurar.
+Rediacc respalda repositorios cifrados en almacenamiento externo y los restaura en la misma máquina o en máquinas diferentes. Los respaldos están cifrados; se requiere la credencial LUKS del repositorio para restaurar.
 
 ## Configurar Almacenamiento
 
-Antes de enviar respaldos, registre un proveedor de almacenamiento. Rediacc soporta cualquier almacenamiento compatible con rclone: S3, B2, Google Drive y muchos más.
+Antes de enviar respaldos, registre un proveedor de almacenamiento. Rediacc admite cualquier almacenamiento compatible con rclone: S3, B2, Google Drive y muchos más.
 
 ### Importar desde rclone
 
@@ -118,7 +116,7 @@ Los respaldos programados se escriben en subcarpetas por modo dentro de la carpe
     └── ...
 ```
 
-Un repositorio puede aparecer tanto en `hot/` como en `cold/` (el cronograma horario lo captura; el cronograma semanal lo vuelve a capturar), y el listado combinado muestra ambas filas para que quede claro qué flujos cubren qué repositorios.
+Un repositorio puede aparecer tanto en `hot/` como en `cold/` (el cronograma horario lo captura; el cronograma semanal lo vuelve a capturar). El listado combinado muestra ambas filas para que pueda ver qué flujos cubren qué repositorios.
 
 ## Sincronización Masiva
 
@@ -147,7 +145,7 @@ rdc repo pull --from my-storage -m server-1
 
 ## Respaldos Programados
 
-Rediacc utiliza estrategias de respaldo con nombre. Cada estrategia define un cronograma, modo de respaldo, límite de ancho de banda opcional y filtros de archivo. Las máquinas referencian estrategias por nombre para determinar qué respaldos se ejecutan en ellas.
+Rediacc utiliza estrategias de respaldo nombradas. Cada estrategia define un cronograma, modo de respaldo, límite de ancho de banda opcional y filtros de archivo. Vincula nombres de estrategia a máquinas para controlar qué respaldos se ejecutan donde.
 
 ### Modos de Respaldo
 
@@ -158,30 +156,30 @@ Rediacc utiliza estrategias de respaldo con nombre. Cada estrategia define un cr
 
 Use `hot` para servicios que toleran snapshots consistentes ante fallos. Use `cold` cuando necesite consistencia garantizada y pueda aceptar un breve reinicio.
 
-### Semantica del Respaldo en Frio
+### Semántica del Respaldo en Frío
 
-Un respaldo frio ejecuta tres fases por repositorio incluido: **detener -- snapshot -- iniciar**. Comprender los limites de las garantias ayuda a los operadores a detectar fallos parciales a tiempo.
+Un respaldo frío ejecuta tres fases por repositorio incluido: **detener - snapshot - iniciar**. Comprender los límites de las garantías ayuda a los operadores a detectar fallos parciales a tiempo.
 
-**Lo que el respaldo frio garantiza:**
+**Lo que el respaldo frío garantiza:**
 
-- Antes del snapshot, cada contenedor en ejecucion en cada repositorio incluido se detiene de forma controlada mediante el hook `down()` del Rediaccfile, y el Docker daemon por repositorio queda en reposo. El snapshot es por lo tanto consistente a nivel de aplicacion, no solo consistente ante fallos.
-- El conjunto de IDs de contenedor que estaban en ejecucion antes del snapshot se persiste en un archivo sidecar en `/var/run/rediacc/cold-backup-<guid>.running.json`. Esta es la fuente de verdad de "que debe volver a estar activo cuando terminemos."
-- Despues del snapshot, se invoca el hook `up()` del Rediaccfile del repositorio para restaurar el stack completo de compose.
-- Un archivo sidecar de estado por ejecucion en `/var/run/rediacc/cold-backup-<guid>.status.json` registra la fase, resultado y cualquier error de cada intento.
+- Antes del snapshot, cada contenedor en ejecución en cada repositorio incluido se detiene de forma controlada mediante el hook `down()` del Rediaccfile, y el Docker daemon por repositorio queda en reposo. El snapshot es por lo tanto consistente a nivel de aplicación, no solo consistente ante fallos.
+- El conjunto de IDs de contenedor que estaban en ejecución antes del snapshot se persiste en un archivo sidecar en `/var/run/rediacc/cold-backup-<guid>.running.json`. Esta es la fuente de verdad de "qué debe volver a estar activo cuando terminemos."
+- Después del snapshot, se invoca el hook `up()` del Rediaccfile del repositorio para restaurar el stack completo de compose.
+- Un archivo sidecar de estado por ejecución en `/var/run/rediacc/cold-backup-<guid>.status.json` registra la fase, resultado y cualquier error de cada intento.
 
-**Lo que el respaldo frio NO garantiza:**
+**Lo que el respaldo frío NO garantiza:**
 
-- `up()` es de mejor esfuerzo. Puede fallar por razones fuera del control del respaldo frio (una condicion `depends_on: service_healthy` aun esperando, un error de sintaxis en el archivo compose, un fallo de red transitorio al descargar una imagen). Cuando falla, el respaldo frio registra el error a nivel de error, escribe el sidecar de estado y pasa al siguiente repositorio.
-- Cuando `up()` falla, se activa un **reinicio directo de respaldo**: se lee el sidecar de ejecucion y cada ID de contenedor registrado se reinicia mediante la API de Docker directamente (sin compose). Esto pone los servicios de vuelta en marcha incluso si el flujo de compose tiene un problema, aunque sin volver a ejecutar ningun hook de Rediaccfile.
-- Si incluso el respaldo falla para algunos IDs de contenedor (por ejemplo, el propio Docker daemon esta caido), el sidecar se **deja en su lugar** para que el watchdog del router pueda seguir reintentando en cada ciclo.
+- `up()` es de mejor esfuerzo. Puede fallar por razones fuera del control del respaldo frío (una condición `depends_on: service_healthy` aún esperando, un error de sintaxis en el archivo compose, un fallo de red transitorio al descargar una imagen). Cuando falla, el respaldo frío registra el error a nivel de error, escribe el sidecar de estado y pasa al siguiente repositorio.
+- Cuando `up()` falla, se activa un **reinicio directo de respaldo**: se lee el sidecar de ejecución y cada ID de contenedor registrado se reinicia mediante la API de Docker directamente (sin compose). Esto pone los servicios de vuelta en marcha incluso si el flujo de compose tiene un problema, aunque sin volver a ejecutar ningún hook de Rediaccfile.
+- Si incluso el respaldo falla para algunos IDs de contenedor (por ejemplo, el propio Docker daemon está caído), el sidecar se **deja en su lugar** para que el watchdog del router pueda seguir reintentando en cada ciclo.
 
-**Recuperacion del Watchdog:** en cada ciclo, el watchdog comprueba si existe un sidecar de ejecucion. Cualquier ID de contenedor listado ahi que este actualmente detenido se reinicia, *independientemente de la `restart_policy` guardada del contenedor*. Esto significa que los servicios con `restart: on-failure` (que Docker NO reiniciaria despues de una detencion limpia) siguen volviendo despues de un respaldo frio. Una vez que todos los contenedores listados esten en ejecucion, el sidecar se elimina.
+**Recuperación del Watchdog:** en cada ciclo, el watchdog comprueba si existe un sidecar de ejecución. Cualquier ID de contenedor listado ahí que esté actualmente detenido se reinicia, *independientemente de la `restart_policy` guardada del contenedor*. Esto significa que los servicios con `restart: on-failure` (que Docker NO reiniciaría después de una detención limpia) siguen volviendo después de un respaldo frío. Una vez que todos los contenedores listados estén en ejecución, el sidecar se elimina.
 
-**Como los operadores detectan fallos:**
+**Cómo los operadores detectan fallos:**
 
-- `rdc machine query --name <machine> --containers` muestra el estado de ejecucion. Compare con el conjunto esperado.
-- `/var/run/rediacc/cold-backup-<guid>.status.json` en la maquina. Inspeccione via `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el ultimo respaldo no se completo correctamente.
-- Los registros del respaldo de renet (`journalctl -u renet-*` o la invocacion directa `rdc machine backup schedule`) emiten una linea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacio es el objetivo de grep.
+- `rdc machine query --name <machine> --containers` muestra el estado de ejecución. Compare con el conjunto esperado.
+- `/var/run/rediacc/cold-backup-<guid>.status.json` en la máquina. Inspeccione vía `rdc term connect -m <machine> -r <repo> -c "cat /var/run/rediacc/cold-backup-$GUID.status.json"`. `success: false` con un `startedAt` obsoleto significa que el último respaldo no se completó correctamente.
+- Los registros del respaldo de renet (`journalctl -u renet-*` o la invocación directa `rdc machine backup schedule`) emiten una línea de resumen final de la forma `Cold backup: post-snapshot restart summary total=N compose_ok=N fallback_ok=N failed=N failed_repos=[...]`. Un `failed_repos` no vacío es el objetivo de grep.
 
 ### Estimación del tiempo de inactividad del respaldo en frío
 
@@ -228,15 +226,15 @@ Concretamente, una ejecución que comienza el lunes a las 03:00 UTC y termina el
 
 La directiva `Persistent=true` del temporizador **no** rescata estos disparos. `Persistent=true` repite disparos que se perdieron porque el temporizador mismo estaba inactivo (sistema apagado, temporizador deshabilitado). Los disparos descartados porque el servicio estaba ocupado se pierden.
 
-Este comportamiento predeterminado es deliberado. Ejecutar dos respaldos en frío en paralelo contra el mismo datastore contendería por la ruta del snapshot BTRFS, el remote de rclone y los sidecars por repositorio en `/var/run/rediacc/cold-backup-<guid>.status.json`. Serializar detrás de una instancia de larga duración es el resultado seguro.
+Este comportamiento predeterminado es deliberado. Ejecutar dos respaldos en frío en paralelo contra el mismo datastore contendería por la ruta del snapshot BTRFS, el remote de rclone y los sidecars por repositorio en `/var/run/rediacc/cold-backup-<guid>.status.json`. Esperar detrás de una instancia en ejecución es el resultado seguro.
 
 **Implicación de monitoreo.** Un respaldo colgado (por ejemplo, rclone atascado en un agujero negro de red) descarta silenciosamente cada disparo posterior del temporizador. El planificador no emite alarma. Observe `systemctl show <unit> -p ActiveEnterTimestamp`: si el servicio ha estado `activating` por más tiempo del esperado (por ejemplo, más de 48 h en un temporizador nocturno), investigue.
 
-**Si necesita que cada disparo programado se ejecute**, cambie el temporizador de `OnCalendar=<cron>` a `OnUnitInactiveSec=<intervalo>`. Eso dispara N horas después de la finalización de la ejecución previa en lugar de en un cronograma de reloj de pared fijo, así las ejecuciones largas no causan descartes. Solo empujan la siguiente ejecución más tarde. La contrapartida es la deriva del cronograma: su nocturno de 03:00 se convierte en "24 h después del término del último."
+**Si necesita que cada disparo programado se ejecute**, cambie el temporizador de `OnCalendar=<cron>` a `OnUnitInactiveSec=<intervalo>`. Eso dispara N horas después de la finalización de la ejecución previa en lugar de en un cronograma de reloj de pared fijo, así las ejecuciones largas no causan descartes. Solo empujan la siguiente ejecución más tarde. La contrapartida es la deriva del cronograma: su nocturno de 03:00 se convierte en "24 h después de que la última terminó."
 
 ### Definir una Estrategia
 
-El valor predeterminado canónico es una división en dos estrategias: un flujo hot horario rápido que captura todos los repositorios, y un flujo cold semanal más lento que toma snapshots consistentes a nivel de aplicación. Las dos estrategias escriben en subcarpetas distintas del almacenamiento (`hot/` y `cold/`) por lo que los respaldos nunca se mezclan.
+El valor predeterminado canónico es una división en dos estrategias: un flujo hot horario rápido que captura todos los repositorios, y un flujo cold semanal más lento que toma snapshots consistentes a nivel de aplicación. Las dos estrategias escriben en subcarpetas distintas del almacenamiento (`hot/` y `cold/`) por lo que los flujos nunca se mezclan.
 
 ```bash
 rdc config backup-strategy set \
@@ -267,8 +265,8 @@ El filtro `--exclude` en la estrategia cold es la vía de escape recomendada par
 | `--cron <expression>` | Expresión cron (p. ej. `"0 2 * * *"` para diario a las 2 AM) |
 | `--mode <hot\|cold>` | Modo de respaldo |
 | `--bwlimit <limit>` | Límite de ancho de banda para cargas (p. ej. `10M`) |
-| `--include <pattern>` | Filtro de inclusion (repetible) |
-| `--exclude <pattern>` | Filtro de exclusion (repetible) |
+| `--include <pattern>` | Filtro de inclusión (repetible) |
+| `--exclude <pattern>` | Filtro de exclusión (repetible) |
 | `--enable` / `--disable` | Habilitar o deshabilitar la estrategia |
 
 ### Ver Estrategias
@@ -284,7 +282,7 @@ rdc config backup-strategy show --name weekly-cold
 rdc config backup-strategy remove --name weekly-cold
 ```
 
-### Vincular Estrategias a una Maquina
+### Vincular Estrategias a una Máquina
 
 En su configuración, vincule uno o más nombres de estrategia a una máquina:
 
@@ -306,14 +304,14 @@ En su configuración, vincule uno o más nombres de estrategia a una máquina:
 
 | | Hot | Cold |
 |---|-----|------|
-| **Consistencia** | Consistente ante fallos (snapshot BTRFS mientras los servicios están en ejecución) | Consistente a nivel de aplicación (detener → snapshot → iniciar) |
+| **Consistencia** | Consistente ante fallos (snapshot BTRFS mientras los servicios están en ejecución) | Consistente a nivel de aplicación (detener - snapshot - iniciar) |
 | **Tiempo de inactividad** | Ninguno | Ventana stop+start por repositorio (típicamente 5-120 s) |
 | **Frecuencia adecuada** | Alta (p. ej. horaria) | Baja (p. ej. diaria o semanal) |
 | **Uso típico** | Red de seguridad frecuente | Respaldo programado con consistencia garantizada |
 
 **Hot** es la opción predeterminada correcta para ejecuciones de alta frecuencia. Los servicios siguen en funcionamiento mientras se toma el snapshot, por lo que la ventana de respaldo no interrumpe a los usuarios. El snapshot es consistente ante fallos: es equivalente a lo que obtendría tras un apagado incorrecto. Para la mayoría de las bases de datos modernas y colas de mensajes esto es aceptable.
 
-**Cold** es apropiado cuando necesita un snapshot consistente a nivel de aplicación garantizado y puede aceptar un breve reinicio por repositorio. Los servicios se detienen antes del snapshot y se reinician antes de que comience la carga, de modo que una carga lenta o fallida nunca prolonga la ventana de tiempo de inactividad. Consulte [Semantica del Respaldo en Frio](#semantica-del-respaldo-en-frio) para el modelo de garantía completo.
+**Cold** es apropiado cuando necesita un snapshot consistente a nivel de aplicación garantizado y puede aceptar un breve reinicio por repositorio. Los servicios se detienen antes del snapshot y se reinician antes de que comience la carga, de modo que una carga lenta o fallida nunca prolonga la ventana de tiempo de inactividad. Consulte [Semántica del Respaldo en Frío](#semántica-del-respaldo-en-frío) para el modelo de garantía completo.
 
 ### Filtrar repositorios por estrategia
 
@@ -414,7 +412,7 @@ rdc repo migrate --name my-app --from server-1 --to server-2
 | `--skip-dns` | Omitir la actualización de registros DNS después de la migración |
 | `--bwlimit <limit>` | Límite de ancho de banda para la transferencia (p. ej. `50M`) |
 
-La migración transfiere los datos del repositorio cifrado via rsync. El repositorio de origen permanece intacto hasta que lo elimine explícitamente.
+La migración transfiere los datos del repositorio cifrado vía rsync. El repositorio de origen permanece intacto hasta que lo elimine explícitamente.
 
 ## Explorar Almacenamiento
 
@@ -426,7 +424,7 @@ rdc storage browse --name my-storage
 
 ## Mejores Prácticas
 
-- Programar respaldos frios diarios para snapshots consistentes a nivel de aplicacion de datos criticos
+- Programar respaldos fríos diarios para snapshots consistentes a nivel de aplicación de datos críticos
 - Usar respaldos calientes para snapshots de alta frecuencia donde se requiere tiempo de actividad total
 - Probar las restauraciones periódicamente para verificar la integridad de los respaldos
 - Usar múltiples proveedores de almacenamiento para datos críticos (p. ej. S3 + B2)

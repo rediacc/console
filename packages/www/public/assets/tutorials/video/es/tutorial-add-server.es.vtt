@@ -1,0 +1,127 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.764
+¡Muy bien!
+
+00:00:01.764 --> 00:00:04.056
+Vamos a agregar tu primer servidor.
+
+00:00:04.056 --> 00:00:06.731
+Toma dos comandos y alrededor de un
+
+00:00:06.731 --> 00:00:07.113
+minuto.
+
+00:00:07.883 --> 00:00:09.290
+Hay dos piezas.
+
+00:00:09.290 --> 00:00:12.103
+La herramienta de línea de comandos
+
+00:00:12.103 --> 00:00:13.979
+vive en tu laptop,
+
+00:00:13.979 --> 00:00:16.792
+y un orquestador llamado renet se
+
+00:00:16.792 --> 00:00:18.668
+ejecuta en el servidor.
+
+00:00:18.668 --> 00:00:21.481
+El CLI se conecta por SSH,
+
+00:00:21.481 --> 00:00:24.294
+así que nunca tienes que iniciar
+
+00:00:24.294 --> 00:00:26.639
+sesión en el servidor manualmente.
+
+00:00:29.921 --> 00:00:32.408
+Empezamos creando un perfil de configuración.
+
+00:00:32.408 --> 00:00:34.895
+El perfil contiene la clave SSH,
+
+00:00:34.895 --> 00:00:37.796
+la lista de máquinas y los ajustes
+
+00:00:37.796 --> 00:00:40.697
+de infraestructura para todo lo que haremos
+
+00:00:40.697 --> 00:00:42.355
+a partir de aquí.
+
+00:00:43.605 --> 00:00:44.450
+Perfil creado.
+
+00:00:44.450 --> 00:00:46.984
+Todo lo demás que configuremos vive
+
+00:00:46.984 --> 00:00:48.673
+en este único archivo.
+
+00:00:52.022 --> 00:00:54.576
+Ahora registramos el servidor en
+
+00:00:54.576 --> 00:00:55.598
+el CLI,
+
+00:00:55.598 --> 00:00:57.130
+indicando su nombre,
+
+00:00:57.130 --> 00:00:59.685
+dirección IP y usuario SSH.
+
+00:00:59.685 --> 00:01:02.239
+Las claves de host se
+
+00:01:02.239 --> 00:01:04.793
+escanean automáticamente para un acceso
+
+00:01:04.793 --> 00:01:05.815
+de confianza.
+
+00:01:05.815 --> 00:01:06.923
+Servidor registrado.
+
+00:01:06.923 --> 00:01:09.695
+Las claves de host se
+
+00:01:09.695 --> 00:01:10.804
+escanearon automáticamente.
+
+00:01:14.080 --> 00:01:16.403
+Vamos a aprovisionar el servidor.
+
+00:01:16.403 --> 00:01:19.190
+Esto instala renet y crea el
+
+00:01:19.190 --> 00:01:20.119
+almacén cifrado.
+
+00:01:20.119 --> 00:01:21.512
+Después de esto,
+
+00:01:21.512 --> 00:01:24.300
+el servidor está listo para alojar
+
+00:01:24.300 --> 00:01:24.764
+repositorios.
+
+00:01:24.764 --> 00:01:25.356
+Listo.
+
+00:01:25.356 --> 00:01:28.317
+Renet está instalado y el
+
+00:01:28.317 --> 00:01:30.093
+almacén está preparado.
+
+00:01:30.864 --> 00:01:33.436
+¡Y con eso terminamos de
+
+00:01:33.436 --> 00:01:34.979
+agregar un servidor!
+
+00:01:34.979 --> 00:01:37.551
+Nos vemos en el siguiente.

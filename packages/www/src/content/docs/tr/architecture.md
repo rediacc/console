@@ -6,34 +6,34 @@ description: >-
 category: Concepts
 order: 0
 language: tr
-sourceHash: "e2087964f996186f"
-sourceCommit: c6db1fb9ec9979425e22578d31c3c188bc7e73f9
+sourceHash: "6763cd925791d474"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Mimari
 
-Bu sayfa, Rediacc'ın altyapısını açıklar: iki araçlı mimari, adaptör algılama, güvenlik modeli ve yapılandırma yapısı.
+Özetle: iş istasyonunuzda rdc, sunucularınızda renet, SSH üzerinden iletişim. Rediacc'ın tüm mimarisi bu ayrımı temel alır. Bu sayfa, iki aracın sorumlulukları nasıl bölüştüğünü, adaptör algılamasının durumu nasıl yönlendirdiğini, güvenlik modelinin nasıl çalıştığını ve yapılandırmanın nasıl yapılandırıldığını açıklar.
 
-## Tam Yığın Genel Bakış
+## Tam Yığın Genel Bakışı
 
-Trafik internetten ters proxy aracılığıyla, her biri şifreli depolama ile desteklenen izole Docker daemon'larına akar:
+Trafik internetten ters proxy üzerinden, her biri şifreli depolama ile desteklenen izole Docker daemon'larına akar:
 
 ![Tam Yığın Mimarisi](/img/arch-full-stack.svg)
 
-Her depo kendi Docker daemon'una, geri döngü IP alt ağına (/26 = 64 IP) ve LUKS ile şifrelenmiş BTRFS birimine sahip olur. Rota sunucusu tüm daemon'lardaki çalışan konteynerleri keşfeder ve yönlendirme yapılandırmasını Traefik'e aktarır.
+Her depo kendi Docker daemon'una, geri döngü IP alt ağına (/26 = 64 IP) ve LUKS ile şifrelenmiş BTRFS birimine sahip olur. Yönlendirme sunucusu tüm daemon'lar arasında çalışan konteynerleri keşfeder ve yönlendirme yapılandırmasını Traefik'e gönderir.
 
 ## İki Araçlı Mimari
 
-Rediacc, SSH üzerinden birlikte çalışan iki ikili dosya kullanır:
+Rediacc, SSH üzerinden birlikte çalışan iki ikili dosyadan yararlanır:
 
 ![İki Araçlı Mimari](/img/arch-two-tool.svg)
 
 - **rdc** iş istasyonunuzda (macOS, Linux veya Windows) çalışır. Yerel yapılandırmanızı okur, uzak makinelere SSH üzerinden bağlanır ve renet komutlarını çalıştırır.
-- **renet** uzak sunucuda root yetkileriyle çalışır. LUKS ile şifrelenmiş disk imajlarını, izole Docker daemon'larını, servis orkestrasyonunu ve ters proxy yapılandırmasını yönetir.
+- **renet** uzak sunucuda root yetkileriyle çalışır. LUKS ile şifrelenmiş disk imajlarını, izole Docker daemon'larını, hizmet orkestrasyonunu ve ters proxy yapılandırmasını yönetir.
 
-Yerel olarak yazdığınız her komut, uzak makinede renet'i çalıştıran bir SSH çağrısına dönüştürülür. Sunuculara manuel olarak SSH bağlantısı yapmanız gerekmez.
+Yerel olarak yazdığınız her komut, uzak makinede renet'i çalıştıran bir SSH çağrısına çevrilir. Sunuculara el ile SSH bağlantısı yapmak gerekmez.
 
-Operatör odaklı bir genel kural için [rdc vs renet](/en/docs/rdc-vs-renet) sayfasına bakın. Ayrıca test için yerel VM kümesi çalıştırmak amacıyla `rdc ops` kullanabilirsiniz, bkz. [Deneysel VM'ler](/en/docs/experimental-vms).
+İşletmen odaklı bir pratik kural için [rdc vs renet](/en/docs/rdc-vs-renet) sayfasına bakın. Ayrıca sınama için yerel bir VM kümesi çalıştırmak üzere `rdc ops` kullanabilirsiniz; bkz. [Deneysel VM'ler](/en/docs/experimental-vms).
 
 ## Yapılandırma
 
@@ -41,18 +41,18 @@ Tüm CLI durumu `~/.config/rediacc/` altındaki düz JSON yapılandırma dosyala
 
 ### Yerel Adaptör (Varsayılan)
 
-Kendi sunucunuzda barındırma için varsayılandır. Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır (ör. `~/.config/rediacc/rediacc.json`).
+Kendi sunucunuzda barındırma için varsayılandır. Tüm durum bilgisi iş istasyonunuzdaki bir yapılandırma dosyasında saklanır (örneğin `~/.config/rediacc/rediacc.json`).
 
 - Makinelere doğrudan SSH bağlantısı
-- Harici servis gerekmez
+- Harici hizmet gerekmez
 - Tek kullanıcı, tek iş istasyonu
 - Varsayılan yapılandırma ilk CLI kullanımında otomatik oluşturulur. Adlandırılmış yapılandırmalar `rdc config init --name <name>` ile oluşturulur
 
 ### Bulut Adaptörü (Deneysel)
 
-Bir yapılandırma `apiUrl` ve `token` alanları içerdiğinde otomatik olarak etkinleşir. Durum yönetimi ve ekip iş birliği için Rediacc API'sini kullanır.
+Bir yapılandırma `apiUrl` ve `token` alanları içerdiğinde otomatik olarak etkinleşir. Durum yönetimi ve ekip işbirliği için Rediacc API'sini kullanır.
 
-- Durum bilgisi bulut API'sinde saklanır
+- Durum bulut API'sinde saklanır
 - Rol tabanlı erişimle çok kullanıcılı ekipler
 - Görsel yönetim için web konsolu
 - `rdc auth login` ile kurulur
@@ -66,16 +66,16 @@ Her iki adaptör de aynı CLI komutlarını kullanır. Adaptör yalnızca durumu
 `rdc config machine setup` komutunu çalıştırdığınızda, renet uzak sunucuda `rediacc` adında bir sistem kullanıcısı oluşturur:
 
 - **UID**: 7111
-- **Kabuk**: `/sbin/nologin` (SSH ile giriş yapılamaz)
-- **Amacı**: Depo dosyalarının sahibidir ve Rediaccfile fonksiyonlarını çalıştırır
+- **Kabuk**: `/sbin/nologin` (SSH üzerinden oturum açılamaz)
+- **Amaç**: Depo dosyalarının sahibidir ve Rediaccfile işlevlerini çalıştırır
 
-`rediacc` kullanıcısına doğrudan SSH ile erişilemez. Bunun yerine rdc, yapılandırdığınız SSH kullanıcısı (ör. `deploy`) olarak bağlanır ve renet depo işlemlerini `sudo -u rediacc /bin/sh -c '...'` aracılığıyla çalıştırır. Bu şu anlama gelir:
+`rediacc` kullanıcısına doğrudan SSH üzerinden erişilemez. Bunun yerine rdc, yapılandırdığınız SSH kullanıcısı (örneğin `deploy`) olarak bağlanır ve renet depo işlemlerini `sudo -u rediacc /bin/sh -c '...'` aracılığıyla yürütür. Bu şu anlama gelir:
 
 1. SSH kullanıcınızın `sudo` yetkisine sahip olması gerekir
 2. Tüm depo verileri SSH kullanıcınız değil, `rediacc` kullanıcısına aittir
-3. Rediaccfile fonksiyonları (`up()`, `down()`) `rediacc` olarak çalışır
+3. Rediaccfile işlevleri (`up()`, `down()`) `rediacc` olarak çalışır
 
-Bu ayrım, depo verilerinin hangi SSH kullanıcısı yönetirse yönetsin tutarlı sahipliğe sahip olmasını sağlar.
+Bu ayrım, depo verilerinin hangi SSH kullanıcısı tarafından yönetilirse yönetilsin tutarlı sahipliğe sahip olmasını sağlar.
 
 ## Docker İzolasyonu
 
@@ -97,13 +97,13 @@ Bu şu anlama gelir:
 - Her deponun kendi imaj önbelleği, ağları ve birimleri vardır
 - Ana bilgisayarın Docker daemon'u (varsa) tamamen ayrıdır
 
-Rediaccfile fonksiyonlarında `DOCKER_HOST` otomatik olarak doğru sokete ayarlanır.
+Rediaccfile işlevleri otomatik olarak `DOCKER_HOST` değerini doğru sokete ayarlar.
 
-Bir AI ajanı `rdc term connect -r <repo>` aracılığıyla bir depoya girdiğinde aynı izolasyon geçerlidir: oturum, ayrıcalıksız `rediacc` kullanıcısı (UID 7111) olarak, ayrı bir mount ad alanında ve `DOCKER_HOST` yalnızca o tek deponun daemon soketine kapsamlanmış şekilde çalışır. Önce-fork iş akışı bu çalışma zamanı izolasyonunu CoW klon ilkel işlemiyle birleştirir: ajan, asla ana (üretim) depolar üzerinde değil, görev başına bir fork üzerinde çalışır. Tam sandbox modeli, geçersiz kılma anlamları ve harici servis kimlik bilgileri için geliştirici sorumluluk sınırı için [AI Ajan Güvenliği ve Koruma Önlemleri](/en/docs/ai-agents-safety) bölümüne bakın.
+Bir yapay zeka ajanı `rdc term connect -r <repo>` aracılığıyla bir depoya girdiğinde, aynı izolasyon geçerli olur: oturum, ayrıcalıksız `rediacc` kullanıcısı (UID 7111) olarak, ayrı bir bağlama ad alanında, `DOCKER_HOST` yalnızca o deponun daemon soketine kapsanmış şekilde çalışır. Önce-fork iş akışı bu çalışma zamanı izolasyonunu CoW klon ilkelleştirilmesiyle birleştirir: ajan, asla ana (üretim) depolar üzerinde değil, görev başına bir fork üzerinde işlem yapar. Tam sandbox modeli, geçersiz kılma anlamı ve harici hizmet kimlik bilgileri için geliştirici sorumluluğu sınırı için [AI Ajan Güvenliği ve Koruma](/en/docs/ai-agents-safety) sayfasına bakın.
 
 ### Daemon Yol Düzeni
 
-Docker verileri ve yapılandırması, deponun bağlama noktasının içinde saklanır; bu sayede her daemon, ana bilgisayardan ve diğer depolardan tamamen izole kalır.
+Docker verileri ve yapılandırması deponun bağlama noktasının içinde saklanır; bu sayede her daemon ana bilgisayardan ve diğer depolardan tamamen izole kalır.
 
 **Depo başına düzen:**
 ```
@@ -122,7 +122,7 @@ Docker verileri ve yapılandırması, deponun bağlama noktasının içinde sakl
 /run/rediacc/docker-{N}.sock
 ```
 
-Bu birleşik düzen, daemon yolları ana bilgisayar dosya sistemi ile şifreli birim arasında bölündüğünde oluşan salt okunur ve okuma-yazma bağlama çakışmalarını ortadan kaldırır. Hem depo başına hem de bağımsız daemon'lar aynı dizin yapısını izler; bu nedenle araçlar ve tanılamalar her iki durumda da aynı şekilde çalışır.
+Bu birleşik düzen, daemon yolları ana bilgisayar dosya sistemi ile şifreli birim arasında bölündüğünde oluşan salt okunur ve okuma yazma bağlama çatışmalarını ortadan kaldırır. Hem depo başına hem de bağımsız daemon'lar aynı dizin yapısını izler; bu nedenle araçlar ve tanılama her iki durumda da aynı şekilde çalışır.
 
 ## LUKS Şifreleme
 
@@ -132,59 +132,110 @@ Depolar, sunucunun veri deposunda (varsayılan: `/mnt/rediacc`) saklanan LUKS il
 2. Bir dosya olarak saklanır: `{datastore}/repos/{guid}.img`
 3. Erişildiğinde `cryptsetup` ile bağlanır
 
-Kimlik bilgisi yapılandırma dosyanızda saklanır ancak **asla** sunucuda saklanmaz. Kimlik bilgisi olmadan depo verileri okunamaz. Otomatik başlatma etkinleştirildiğinde, açılışta otomatik bağlama için sunucuda ikincil bir LUKS anahtar dosyası saklanır.
+Kimlik bilgisi yapılandırma dosyanızda saklanır ancak sunucuda **hiçbir zaman** saklanmaz. Kimlik bilgisi olmadan depo verilerine erişilemez. Otomatik başlatma etkinleştirildiğinde, önyüklemede otomatik bağlama için sunucuda ikincil bir LUKS anahtar dosyası saklanır.
 
 ## Yapılandırma Yapısı
 
-Her yapılandırma `~/.config/rediacc/` dizininde saklanan düz bir JSON dosyasıdır. Varsayılan yapılandırma `rediacc.json`'dır; adlandırılmış yapılandırmalar dosya adı olarak adı kullanır (ör. `production.json`). Açıklamalı bir örnek:
+Her yapılandırma `~/.config/rediacc/` içinde saklanan düz bir JSON dosyasıdır. Varsayılan yapılandırma `rediacc.json`'dır; adlandırılmış yapılandırmalar ad'ı dosya adı olarak kullanır (örneğin `production.json`). Alanlar amaç açısından gruplandırılır: `resources` dağıtımları barındırır, `credentials` sırları barındırır, `account` bulut varsayılanlarını barındırır, `infra` TLS/DNS'i barındırır ve `encryption` alan başına şifreleme durumunu barındırır. Üst düzey `schemaVersion: 2` ayırıcısı ileri uyumluluğu garanti eder.
 
 ```json
 {
+  "schemaVersion": 2,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "version": 1,
-  "ssh": {
-    "privateKeyPath": "/home/you/.ssh/id_ed25519"
+  "version": 47,
+  "defaults": {
+    "language": "en",
+    "machine": "prod-1",
+    "nextNetworkId": 2880,
+    "universalUser": "rediacc"
   },
-  "machines": {
-    "prod-1": {
-      "ip": "203.0.113.50",
-      "user": "deploy",
-      "port": 22,
-      "datastore": "/mnt/rediacc",
-      "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+  "credentials": {
+    "ssh": {
+      "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+      "publicKey": "ssh-ed25519 AAAA...",
+      "knownHosts": "..."
+    },
+    "cfDnsApiToken": "cf-token-xxxxxxxxxxxx"
+  },
+  "resources": {
+    "machines": {
+      "prod-1": {
+        "ip": "203.0.113.50",
+        "user": "deploy",
+        "port": 22,
+        "datastore": "/mnt/rediacc",
+        "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+      }
+    },
+    "storages": {
+      "backblaze": {
+        "provider": "b2",
+        "vaultContent": { "...": "..." }
+      }
+    },
+    "repositories": {
+      "webapp": {
+        "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "credential": "base64-encoded-random-passphrase",
+        "networkId": 2816
+      }
     }
   },
-  "storages": {
-    "backblaze": {
-      "provider": "b2",
-      "vaultContent": { "...": "..." }
-    }
+  "infra": {
+    "certEmail": "admin@example.com",
+    "cfDnsZoneId": "..."
   },
-  "repositories": {
-    "webapp": {
-      "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "credential": "base64-encoded-random-passphrase",
-      "networkId": 2816
-    }
-  },
-  "nextNetworkId": 2880,
-  "universalUser": "rediacc"
+  "encryption": {
+    "mode": "plaintext"
+  }
 }
 ```
 
-**Temel alanlar:**
+**Ana kutular:**
 
-| Alan | Açıklama |
-|------|----------|
-| `id` | Bu yapılandırma dosyası için benzersiz tanımlayıcı |
-| `version` | Yapılandırma dosyası şema sürümü |
-| `ssh.privateKeyPath` | Tüm makine bağlantıları için kullanılan SSH özel anahtarının yolu |
-| `machines.<name>.user` | Makineye bağlanmak için SSH kullanıcı adı |
-| `machines.<name>.knownHosts` | `ssh-keyscan`'den alınan SSH host anahtarları |
-| `repositories.<name>.repositoryGuid` | Şifrelenmiş disk imajını tanımlayan UUID |
-| `repositories.<name>.credential` | LUKS şifreleme parolası (**sunucuda saklanmaz**) |
-| `repositories.<name>.networkId` | IP alt ağını belirleyen ağ kimliği (2816 + n*64), otomatik atanır |
-| `nextNetworkId` | Ağ kimliklerini atamak için genel sayaç |
-| `universalUser` | Varsayılan sistem kullanıcısını (`rediacc`) geçersiz kılar |
+| Kutu | İçerik |
+|---|---|
+| `schemaVersion` | Ayırıcı (şu anda `2`). Yükleyiciler bilinmeyen sürümleri reddeder. |
+| `id` / `version` | Değişmez UUID + monotonik sayaç; uzak yapılandırma deposunda iyimser kilitleme için kullanılır. |
+| `defaults.*` | Hassas olmayan çalışma zamanı varsayılanları (`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
+| `credentials.ssh` | Satır içi SSH anahtar çifti + `knownHosts`. Eski `ssh.privateKeyPath` yerini alır (dosya yolu indirektion yok; içerik yükleme zamanında çözümlenir ve satır içinde saklanır). |
+| `credentials.cfDnsApiToken` | Cloudflare DNS-01 ACME jetonu. |
+| `credentials.masterPasswordVerifier` | Yalnızca `encryption.mode === "master-password"` olduğunda mevcuttur. |
+| `resources.machines.*` | Makine başına SSH bağlantı detayları. |
+| `resources.storages.*` | rclone uyumlu site dışı yedekleme kimlik bilgileri. |
+| `resources.repositories.*` | Depo başına GUID + LUKS kimlik bilgisi + sandbox izole ajan erişimi için SSH anahtarı. |
+| `infra.acmeCertCache.*` | Cached Traefik acme.json, gzip+base64, alan adı ile anahtarlanmıştır. |
+| `encryption.mode` | `"plaintext"` (varsayılan) veya `"master-password"`. |
+| `encryption.encryptedFields` | Şifreli olduğunda, işaretçi başına AES-GCM blob haritası (`/resources/repositories/webapp/credential` → `{ciphertext, nonce, tag}`). Oturum başına bir kilit açma istemi alanlar okunurken şifresini çözer. |
+| `remote` | Yapılandırma şifreli yapılandırma deposu ile senkronize edildiğinde yalnızca mevcuttur; bkz. [Şifreli yapılandırma deposu](/en/docs/config-storage). |
 
-> Bu dosya hassas veriler (SSH anahtar yolları, LUKS kimlik bilgileri) içerir. `0600` izinleriyle (yalnızca sahip okuma/yazma) saklanır. Paylaşmayın veya sürüm kontrolüne eklemeyin.
+**CLI ile güvenli bir şekilde düzenleyin, vim kullanmayın:**
+
+```bash
+# İşaretçi adresli tek alan düzenlemeleri (hassas yollar için bilgi kapısı)
+rdc config field set --pointer /resources/machines/prod-1/port --new 2222
+rdc config field set --pointer /credentials/cfDnsApiToken --current "$OLD" --new "$NEW"
+
+# Redakte edilmiş JSONC projeksiyonlu tam düzenleyici (yalnızca insanlar)
+rdc config edit
+
+# Salt okunur JSONC dökümü, komut dosyaları ve ajanlar için güvenli
+rdc config edit --dump
+
+# Denetim günlüğünde her mutasyon + reddetme + açıklama kontrol edin
+rdc config audit log --since 24h
+rdc config audit verify
+```
+
+> Bu dosya hassas veriler (SSH özel anahtarları, LUKS kimlik bilgileri, Cloudflare jetonları) içerir. `0600` izinleriyle (yalnızca sahip okuma/yazma) saklanır. Paylaşmayın veya sürüm denetimine eklemeyin. Herhangi bir `rdc` komutu onu okuduğunda, hassas alanlar varsayılan olarak [redakte edilir](/en/docs/ai-agents-safety): düz metin yalnızca etkileşimli insan TTY'de `--reveal` ile görünür.
+
+### Envelope v2 ve sunucu tarafında zorlama
+
+Yapılandırma [şifreli yapılandırma deposu](/en/docs/config-storage) ile senkronize edildiğinde, CLI her hassas alanı işaretçi başına HMAC taahhüdüyle sarar ve bu taahhütleri düz metin zarf içinde taşır. Sunucu yalnızca onaltılık özetleri görür: asla değerleri değil; ancak yine de her yazma işleminde bilgi kapılarını zorlayabilir:
+
+- **Ön koşul kontrolü**: `PUT /configs/<id>` üzerinde istemci, bildiğini iddia ettiği yollar için özetleri gönderir. Sunucu bunları saklanan zarfın taahhütlerine karşı karşılaştırır. Uyuşmazlık → `409 precondition_failed` ile `mismatchedPaths`. Sıfır bilgi: sunucu asla düz metin görmez.
+- **İndir karşıtı**: yeni zarfın önceki zarfın taahhüt ettiği her hassas yolu taahhüt etmesi gerekir. Bir ajan bir yolu taahhütlerden bırakarak gelecekteki bir ön koşulu atlamak için yapamaz.
+- **Zarif sürüm sabitleme**: sunucu `envelopeVersion: 2` olmayan zarfları `400 unsupported_envelope_version` ile reddeder. Çift kabul penceresi yok.
+- **Alan başına dinlenme durumunda şifreleme** (CLI tarafı): `encryption.mode === "master-password"` olduğunda, her sır ana şifreyle anahtarlanmış bireysel bir AES-GCM blob olur. Okumalar, komut gerçekten bir sırra dokunana kadar istemi tetiklemez (bu nedenle `rdc machine list` istem içermez).
+
+Taahhüt anahtarı (FCK) istemci tarafında CEK'den `HKDF-SHA256(ikm=CEK, salt=fckSalt, info="rediacc-config-fck-v1")` ile yapılandırma başına bir tuzla türetilir. `fckSalt` döndürümü tüm önceki taahhütleri geçersiz kılar ve tam yeniden hesaplamaya zorlar: CEK döndürülürken kullanışlıdır.

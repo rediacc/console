@@ -4,11 +4,11 @@ description: "Rediacc'ın şifreleme, erişim yönetimi ve operasyon güvenliği
 category: "Legal"
 order: 5
 language: tr
-sourceHash: "7c80000942b6196d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "52709a22c0b38178"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-ISO/IEC 27001, Uluslararası Standardizasyon Örgütü (ISO) ve Uluslararası Elektroteknik Komisyonu (IEC) tarafından yayımlanan bilgi güvenliği yönetim sistemleri (BGYS) için uluslararası bir standarttır. Mevcut sürüm ISO/IEC 27001:2022'dir.
+Tamam. ISO/IEC 27001:2022, bilgi güvenliği yönetim sistemleri için uluslararası standarttır. ISO/IEC tarafından yayımlanmış olup, şifreleme, erişim yönetimi, olay yanıtı ve pek çok güvenlik alanı için kontroller içeren uzun bir belgedir. Muhtemelen ne olduğunu zaten biliyorsunuz. O halde açık söyleyim: Rediacc standarttaki tüm kontrolleri ele almaz ve bunu gizlemeye çalışmayacağız. Aşağıda Rediacc'ın nereye uyum sağladığının dürüst bir haritası sunulmaktadır. Mevcut sürüm ISO/IEC 27001:2022'dir.
 
 Referans: [ISO/IEC 27001:2022](https://www.iso.org/standard/27001)
 
@@ -23,7 +23,7 @@ Rediacc, bir BGYS içindeki teknik kontrol katmanının bir bileşenidir. Aşağ
 | **A.9**, Erişim kontrolü | A.9.2 Kullanıcı erişim yönetimi | SSH anahtar kimlik doğrulaması. IP bağlama, ekip kapsamı ve ekipten çıkarılma durumunda otomatik iptal ile API token'ları. İki faktörlü kimlik doğrulama (TOTP). |
 | **A.10**, Kriptografi | A.10.1 Kriptografik kontroller | Yapılandırılabilir anahtar parametreleri ile LUKS2. Depo başına şifreleme kimlik bilgileri. Tüm uzak aktarım SSH üzerinden. Yapılandırma deposu sıfır bilgi şifrelemesi uygular: HKDF anahtar türetme ile AES-256-GCM, üyeler için X25519 anahtar değişimi ve anında iptal için zaman pencereli SDK anahtarları. |
 | **A.12**, Operasyon güvenliği | A.12.3 Yedekleme | `rdc repo push/pull` ile birden fazla hedefe (SSH, S3, B2, Azure, GDrive) şifreli uzak site depolama. Belirli bir zamana geri dönüş için CoW anlık görüntüleri. `rdc repo validate` yedekleme sağlığını ve depo bütünlüğünü doğrular. |
-| **A.12**, Operasyon güvenliği | A.12.4 Günlük kaydı ve izleme | Hesap düzeyinde 40'tan fazla olay türü (kimlik doğrulama, API token'ları, yapılandırma, lisanslama). `rdc machine query` ile makine sağlığı izleme. Konteyner durumu ve kaynak izleme. |
+| **A.12**, Operasyon güvenliği | A.12.4 Günlük kaydı ve izleme | 70'den fazla olay türü (kimlik doğrulama, API token'ları, yapılandırma, lisanslama, makine işlemleri). `rdc machine query` ile makine sağlığı izleme. Konteyner durumu ve kaynak izleme. |
 | **A.13**, İletişim güvenliği | A.13.1 Ağ güvenliği yönetimi | Depo başına Docker daemon izolasyonu. iptables kuralları depolar arası trafiği engeller. Depo başına loopback IP alt ağları (/26). Dış erişim için TLS sonlandırma ile ters proxy. |
 | **A.14**, Sistem geliştirme | A.14.2 Geliştirmede güvenlik | Fork tabanlı geliştirme ortamları üretim verisi açığa çıkarmadan üretim eşdeğerliği sağlar. Rediaccfile yaşam döngüsü kancaları klonlanmış ortamlarda otomatik veri temizleme sağlar. |
 

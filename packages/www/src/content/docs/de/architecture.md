@@ -1,18 +1,18 @@
 ---
 title: Architektur
 description: >-
-  Überblick über die Funktionsweise von Rediacc: Zwei-Tool-Architektur,
-  Adapter-Erkennung, Sicherheitsmodell und Konfigurationsstruktur.
+  Wie Rediacc funktioniert: Zwei-Tool-Architektur, Adapter-Erkennung,
+  Sicherheitsmodell und Konfigurationsstruktur.
 category: Concepts
 order: 0
 language: de
-sourceHash: "e2087964f996186f"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "6763cd925791d474"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Architektur
 
-Diese Seite erklärt, wie Rediacc unter der Haube funktioniert: die Zwei-Tool-Architektur, Adapter-Erkennung, das Sicherheitsmodell und die Konfigurationsstruktur.
+Also: rdc auf Ihrer Workstation, renet auf Ihren Servern, Kommunikation über SSH. Auf dieser Aufteilung ruht die gesamte Architektur von Rediacc. Diese Seite beschreibt, wie die beiden Tools ihre Verantwortungen aufteilen, wie die Adapter-Erkennung den Zustand leitet, wie das Sicherheitsmodell aussieht und wie die Konfiguration strukturiert ist.
 
 ## Gesamtstack-Überblick
 
@@ -99,7 +99,7 @@ Das bedeutet:
 
 Rediaccfile-Funktionen haben automatisch `DOCKER_HOST` auf den korrekten Socket gesetzt.
 
-Wenn ein KI-Agent über `rdc term connect -r <repo>` ein Repository betritt, gilt dieselbe Isolation: Die Sitzung läuft als unprivilegierter `rediacc`-Benutzer (UID 7111), in einem eigenen Mount-Namespace, mit `DOCKER_HOST`, das auf den Daemon-Socket dieses einen Repositories beschränkt ist. Der Fork-First-Workflow kombiniert diese Laufzeitisolation mit einer CoW-Klon-Primitive: Der Agent arbeitet auf einem Fork pro Aufgabe, niemals auf Grand-Repositories (Produktion). Siehe [KI-Agent-Sicherheit & Schutzmaßnahmen](/de/docs/ai-agents-safety) für das vollständige Sandbox-Modell, die Überschreibungssemantik und die Entwicklerverantwortungsgrenze für Anmeldedaten externer Dienste.
+Wenn ein KI-Agent über `rdc term connect -r <repo>` ein Repository betritt, gilt dieselbe Isolation: Die Sitzung läuft als unprivilegierter `rediacc`-Benutzer (UID 7111), in einem eigenen Mount-Namespace, mit `DOCKER_HOST`, das auf den Daemon-Socket dieses einen Repositories beschränkt ist. Der Fork-First-Workflow kombiniert diese Laufzeitisolation mit einer CoW-Klon-Primitive: Der Agent arbeitet auf einem Fork pro Aufgabe, niemals auf Grand-Repositories (Produktion). Siehe [KI-Agent-Sicherheit & Schutzmaßnahmen](/en/docs/ai-agents-safety) für das vollständige Sandbox-Modell, die Überschreibungssemantik und die Entwicklerverantwortungsgrenze für Anmeldedaten externer Dienste.
 
 ### Daemon-Pfadstruktur
 
@@ -122,7 +122,7 @@ Docker-Daten und -Konfiguration werden innerhalb des Repository-Einhängepunkts 
 /run/rediacc/docker-{N}.sock
 ```
 
-Diese einheitliche Struktur beseitigt Konflikte zwischen schreibgeschützten und schreibbaren Einhängepunkten, die auftraten, wenn Daemon-Pfade zwischen dem Host-Dateisystem und dem verschlüsselten Volume aufgeteilt waren. Sowohl Pro-Repository- als auch Standalone-Daemons folgen derselben Verzeichnisstruktur, sodass Werkzeuge und Diagnosen in beiden Fällen identisch funktionieren.
+Diese einheitliche Struktur beseitigt Konflikte zwischen schreibgeschützten und schreibbaren Einhängepunkten, die auftraten, wenn Daemon-Pfade zwischen dem Host-Dateisystem und dem verschlüsselten Volume aufgeteilt waren. Wir sind auf diese Aufteilung mehr als einmal gestoßen, bevor wir uns auf diese Lösung einigten. Sowohl Pro-Repository- als auch Standalone-Daemons folgen derselben Verzeichnisstruktur, sodass Werkzeuge und Diagnosen in beiden Fällen identisch funktionieren.
 
 ## LUKS-Verschlüsselung
 
@@ -136,55 +136,106 @@ Das Credential wird in Ihrer Konfigurationsdatei gespeichert, jedoch **niemals**
 
 ## Konfigurationsstruktur
 
-Jede Konfiguration ist eine flache JSON-Datei, die unter `~/.config/rediacc/` gespeichert wird. Die Standardkonfiguration ist `rediacc.json`; benannte Konfigurationen verwenden den Namen als Dateiname (z. B. `production.json`). Hier ist ein kommentiertes Beispiel:
+Jede Konfiguration ist eine flache JSON-Datei, die in `~/.config/rediacc/` gespeichert wird. Die Standardkonfiguration ist `rediacc.json`; benannte Konfigurationen verwenden den Namen als Dateiname (z. B. `production.json`). Felder sind nach Zweck eingeteilt: `resources` enthält Deployments, `credentials` enthält Geheimnisse, `account` enthält Cloud-Standardwerte, `infra` enthält TLS/DNS und `encryption` enthält den verschlüsselten Zustand einzelner Felder. Der Top-Level-Diskriminator `schemaVersion: 2` verankert die Vorwärtskompatibilität.
 
 ```json
 {
+  "schemaVersion": 2,
   "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "version": 1,
-  "ssh": {
-    "privateKeyPath": "/home/you/.ssh/id_ed25519"
+  "version": 47,
+  "defaults": {
+    "language": "en",
+    "machine": "prod-1",
+    "nextNetworkId": 2880,
+    "universalUser": "rediacc"
   },
-  "machines": {
-    "prod-1": {
-      "ip": "203.0.113.50",
-      "user": "deploy",
-      "port": 22,
-      "datastore": "/mnt/rediacc",
-      "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+  "credentials": {
+    "ssh": {
+      "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+      "publicKey": "ssh-ed25519 AAAA...",
+      "knownHosts": "..."
+    },
+    "cfDnsApiToken": "cf-token-xxxxxxxxxxxx"
+  },
+  "resources": {
+    "machines": {
+      "prod-1": {
+        "ip": "203.0.113.50",
+        "user": "deploy",
+        "port": 22,
+        "datastore": "/mnt/rediacc",
+        "knownHosts": "203.0.113.50 ssh-ed25519 AAAA..."
+      }
+    },
+    "storages": {
+      "backblaze": {
+        "provider": "b2",
+        "vaultContent": { "...": "..." }
+      }
+    },
+    "repositories": {
+      "webapp": {
+        "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "credential": "base64-encoded-random-passphrase",
+        "networkId": 2816
+      }
     }
   },
-  "storages": {
-    "backblaze": {
-      "provider": "b2",
-      "vaultContent": { "...": "..." }
-    }
+  "infra": {
+    "certEmail": "admin@example.com",
+    "cfDnsZoneId": "..."
   },
-  "repositories": {
-    "webapp": {
-      "repositoryGuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "credential": "base64-encoded-random-passphrase",
-      "networkId": 2816
-    }
-  },
-  "nextNetworkId": 2880,
-  "universalUser": "rediacc"
+  "encryption": {
+    "mode": "plaintext"
+  }
 }
 ```
 
-**Wichtige Felder:**
+**Wichtige Buckets:**
 
-| Feld | Beschreibung |
-|------|-------------|
-| `id` | Eindeutiger Bezeichner für diese Konfigurationsdatei |
-| `version` | Schema-Version der Konfigurationsdatei |
-| `ssh.privateKeyPath` | Privater SSH-Schlüssel, der für alle Maschinenverbindungen verwendet wird |
-| `machines.<name>.user` | SSH-Benutzername für die Verbindung zur Maschine |
-| `machines.<name>.knownHosts` | SSH-Host-Schlüssel von `ssh-keyscan` |
-| `repositories.<name>.repositoryGuid` | UUID, die das verschlüsselte Disk-Image identifiziert |
-| `repositories.<name>.credential` | LUKS-Verschlüsselungs-Passphrase (**wird nicht auf dem Server gespeichert**) |
-| `repositories.<name>.networkId` | Bestimmt das IP-Subnetz (2816 + n*64), automatisch zugewiesen |
-| `nextNetworkId` | Globaler Zähler für die Vergabe von Netzwerk-IDs |
-| `universalUser` | Überschreibt den Standard-Systembenutzer (`rediacc`) |
+| Bucket | Inhalt |
+|---|---|
+| `schemaVersion` | Diskriminator (aktuell `2`). Loader lehnen unbekannte Versionen ab. |
+| `id` / `version` | Unveränderliche UUID + monotoner Zähler; werden für optimistisches Locking im Remote-Config-Store verwendet. |
+| `defaults.*` | Nicht-sensible Laufzeit-Standardwerte (`machine`, `language`, `pruneGraceDays`, `universalUser`, `nextNetworkId`). |
+| `credentials.ssh` | Inline-SSH-Schlüsselpaar + `knownHosts`. Ersetzt den veralteten `ssh.privateKeyPath` (keine Datei-Pfad-Indirection mehr; der Inhalt wird zur Ladezeit aufgelöst und inline gespeichert). |
+| `credentials.cfDnsApiToken` | Cloudflare-DNS-01-ACME-Token. |
+| `credentials.masterPasswordVerifier` | Nur vorhanden, wenn `encryption.mode === "master-password"`. |
+| `resources.machines.*` | SSH-Verbindungsdetails pro Maschine. |
+| `resources.storages.*` | rclone-kompatible Backups-Anmeldedaten für externe Speicher. |
+| `resources.repositories.*` | Pro-Repo GUID + LUKS-Credential + SSH-Schlüssel für Sandbox-isolierten Agent-Zugriff. |
+| `infra.acmeCertCache.*` | Gecachte Traefik-acme.json, gzip+base64, nach Domäne indiziert. |
+| `encryption.mode` | `"plaintext"` (Standard) oder `"master-password"`. |
+| `encryption.encryptedFields` | Wenn verschlüsselt, eine Per-Pointer-AES-GCM-Blob-Map (`/resources/repositories/webapp/credential` → `{ciphertext, nonce, tag}`). Eine Entsperraufforderung pro Sitzung entschlüsselt Felder bei Lesezugriff. |
+| `remote` | Nur vorhanden, wenn die Konfiguration mit dem verschlüsselten Config-Store synchronisiert wird; siehe [Verschlüsselter Config-Store](/en/docs/config-storage). |
 
-> Diese Datei enthält sensible Daten (SSH-Schlüsselpfade, LUKS-Credentials). Sie wird mit `0600`-Berechtigungen gespeichert (nur Eigentümer lesen/schreiben). Teilen Sie sie nicht und committen Sie sie nicht in die Versionsverwaltung.
+**Sicher mit der CLI bearbeiten, nicht mit `vim`:**
+
+```bash
+# Pointer-adressierte Einzelfeld-Bearbeitungen (Wissens-gated für sensible Pfade)
+rdc config field set --pointer /resources/machines/prod-1/port --new 2222
+rdc config field set --pointer /credentials/cfDnsApiToken --current "$OLD" --new "$NEW"
+
+# Vollständiger Editor mit redaktierter JSONC-Projektion (nur Menschen)
+rdc config edit
+
+# Schreibgeschützter JSONC-Dump, sicher für Skripte und Agenten
+rdc config edit --dump
+
+# Inspizieren Sie jede Mutation, Verweigerung und Offenlegung im Audit-Log
+rdc config audit log --since 24h
+rdc config audit verify
+```
+
+> Diese Datei enthält sensible Daten (SSH-Privatschlüssel, LUKS-Credentials, Cloudflare-Token). Sie wird mit `0600`-Berechtigungen gespeichert (nur Eigentümer lesen/schreiben). Teilen Sie sie nicht und committen Sie sie nicht in die Versionsverwaltung. Wenn ein `rdc`-Befehl sie liest, werden sensible Felder standardmäßig [redaktiert](/en/docs/ai-agents-safety): Klartext erscheint nur mit `--reveal` auf einem interaktiven menschlichen TTY.
+
+### Envelope v2 und serverseitige Durchsetzung
+
+Wenn die Konfiguration mit dem [verschlüsselten Config-Store](/en/docs/config-storage) synchronisiert wird, wickelt die CLI jedes sensible Feld in eine Per-Feld-HMAC-Verpflichtung ein und trägt diese Verpflichtungen in der Klartext-Hülle. Der Server sieht nur Hex-Digests: Niemals die Werte: Kann aber Wissens-Gates auf jeden Schreibzugriff durchsetzen:
+
+- **Vorbedingungsprüfung**: Bei `PUT /configs/<id>` sendet der Client die Digests, die er für die Pfade, die er mutieren möchte, kennt. Der Server vergleicht gegen die Verpflichtungen der gespeicherten Hülle. Nichtübereinstimmung -> `409 precondition_failed` mit `mismatchedPaths`. Zero-Knowledge: Der Server sieht niemals Klartext.
+- **Anti-Downgrade**: Die neue Hülle muss jeden sensiblen Pfad committen, den die vorherige Hülle committed. Ein Agent kann einen Pfad nicht aus den Verpflichtungen streichen, um zukünftige Vorbedingungen zu umgehen.
+- **Hüllen-Versionsfreigabe**: Der Server lehnt Hüllen ohne `envelopeVersion: 2` mit `400 unsupported_envelope_version` ab. Kein Dual-Accept-Fenster.
+- **Pro-Feld-Verschlüsselung-im-Ruhezustand** (CLI-Seite): Wenn `encryption.mode === "master-password"`, wird jedes Geheimnis zu einem einzelnen AES-GCM-Blob mit Schlüssel vom Master-Passwort. Lesezugriffe triggern keine Aufforderung, es sei denn, der Befehl berührt tatsächlich ein Geheimnis (daher bleibt `rdc machine list` aufforderungsfrei).
+
+Der Commitments-Schlüssel (FCK) wird clientseitig vom CEK über `HKDF-SHA256(ikm=CEK, salt=fckSalt, info="rediacc-config-fck-v1")` mit einem Pro-Config-Salt abgeleitet. Das Rotieren von `fckSalt` macht alle bisherigen Verpflichtungen ungültig, erzwingt eine Neuberechnung: nützlich beim Rotieren von CEK.

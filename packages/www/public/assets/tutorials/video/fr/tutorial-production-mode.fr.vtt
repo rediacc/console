@@ -1,0 +1,154 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.015
+Très bien !
+
+00:00:02.015 --> 00:00:04.721
+Faisons passer votre application du développement à la
+
+00:00:04.721 --> 00:00:05.059
+production.
+
+00:00:05.059 --> 00:00:06.074
+Trois courtes étapes,
+
+00:00:06.074 --> 00:00:07.766
+toutes pilotées depuis votre ordinateur.
+
+00:00:08.534 --> 00:00:09.313
+En développement,
+
+00:00:09.313 --> 00:00:12.040
+vous lancez l'application depuis l'intérieur du repo,
+
+00:00:12.040 --> 00:00:14.768
+donc elle s'arrête quand vous vous déconnectez.
+
+00:00:14.768 --> 00:00:15.547
+En production,
+
+00:00:15.547 --> 00:00:18.274
+vous la lancez depuis votre ordinateur avec
+
+00:00:18.274 --> 00:00:19.053
+la CLI,
+
+00:00:19.053 --> 00:00:21.780
+et elle continue à tourner en mode
+
+00:00:21.780 --> 00:00:22.170
+détaché.
+
+00:00:25.441 --> 00:00:28.334
+Démarrons maintenant l'application en mode production depuis
+
+00:00:28.334 --> 00:00:28.747
+l'ordinateur.
+
+00:00:28.747 --> 00:00:31.640
+La commande de déploiement appelle la même
+
+00:00:31.640 --> 00:00:34.533
+fonction up que nous avons utilisée en
+
+00:00:34.533 --> 00:00:34.946
+développement,
+
+00:00:34.946 --> 00:00:37.426
+mais elle s'exécute en mode détaché.
+
+00:00:37.426 --> 00:00:40.319
+Vous pouvez fermer votre ordinateur et l'application
+
+00:00:40.319 --> 00:00:41.559
+continue de tourner.
+
+00:00:44.309 --> 00:00:45.933
+Application en production.
+
+00:00:45.933 --> 00:00:47.016
+Même commande,
+
+00:00:47.016 --> 00:00:48.099
+même résultat,
+
+00:00:48.099 --> 00:00:50.264
+sur le vrai serveur.
+
+00:00:53.568 --> 00:00:56.368
+Activons le démarrage automatique pour que
+
+00:00:56.368 --> 00:00:59.168
+l'application survive à un redémarrage du
+
+00:00:59.168 --> 00:00:59.634
+serveur.
+
+00:00:59.634 --> 00:01:00.101
+Désormais,
+
+00:01:00.101 --> 00:01:01.968
+si le serveur redémarre,
+
+00:01:01.968 --> 00:01:03.834
+ce dépôt revient automatiquement.
+
+00:01:06.084 --> 00:01:08.290
+Démarrage automatique activé.
+
+00:01:08.290 --> 00:01:11.230
+L'application survit aux redémarrages.
+
+00:01:14.539 --> 00:01:17.410
+Listons quels dépôts ont le démarrage automatique
+
+00:01:17.410 --> 00:01:17.820
+activé.
+
+00:01:17.820 --> 00:01:20.691
+Cela confirme que notre application est bien
+
+00:01:20.691 --> 00:01:22.741
+dans la liste de démarrage.
+
+00:01:24.741 --> 00:01:25.458
+Le voilà,
+
+00:01:25.458 --> 00:01:27.249
+dans la liste de démarrage.
+
+00:01:30.580 --> 00:01:32.457
+Et pour arrêter l'application,
+
+00:01:32.457 --> 00:01:34.802
+une seule commande depuis l'ordinateur.
+
+00:01:34.802 --> 00:01:36.679
+Une commande pour démarrer,
+
+00:01:36.679 --> 00:01:38.556
+une commande pour arrêter.
+
+00:01:38.556 --> 00:01:40.432
+Tout depuis votre terminal,
+
+00:01:40.432 --> 00:01:42.309
+plus de sessions interactives.
+
+00:01:44.809 --> 00:01:45.239
+Arrêté.
+
+00:01:45.239 --> 00:01:46.957
+Une commande pour démarrer,
+
+00:01:46.957 --> 00:01:48.675
+une commande pour arrêter.
+
+00:01:49.491 --> 00:01:52.014
+Et voilà le mode production en résumé.
+
+00:01:52.014 --> 00:01:54.538
+On se retrouve dans la prochaine vidéo
+
+00:01:54.538 --> 00:01:54.898
+!

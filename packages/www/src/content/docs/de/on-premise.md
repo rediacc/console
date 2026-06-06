@@ -1,11 +1,11 @@
 ---
 title: "On-Premise-Installation"
-description: "Den Account-Server und die CLI-Distribution auf eigener Infrastruktur für vollständige Datenkontrolle betreiben."
+description: "Den Account-Server und die CLI-Distribution auf eigener Infrastruktur betreiben."
 category: "Guides"
 order: 5
 language: de
-sourceHash: "c8c9aceeeeea1411"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "eea76db2d612133f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 Rediacc kann vollständig auf eigener Infrastruktur betrieben werden. Das Standalone-Docker-Image enthält den Account-Server, das Webportal, die Marketing-Website und den CLI-Distributionsendpunkt. Externe Abhängigkeiten von Rediacccs gehosteten Diensten sind nicht erforderlich.
@@ -33,7 +33,7 @@ Das Image stellt Folgendes bereit:
 
 ## CLI vom eigenen Server installieren
 
-Benutzer können die CLI direkt vom On-Premise-Server installieren. Das Installationsskript erkennt den Update-Kanal automatisch und konfiguriert die CLI so, dass sie den eigenen Server auf Updates prüft.
+Die CLI kann direkt vom On-Premise-Server installiert werden. Das Installationsskript erkennt den Update-Kanal automatisch und konfiguriert die CLI so, dass sie den eigenen Server auf Updates prüft.
 
 ```bash
 curl -fsSL https://account.example.com/install.sh | \
@@ -50,7 +50,7 @@ Die Variable `REDIACC_CHANNEL` wird nicht benötigt. Das Installationsskript lie
 
 ## CLI-Konfiguration mit benannten Konfigurationen
 
-Für Benutzer, die sich mit mehreren Servern verbinden (On-Premise, Produktion, Edge), isolieren benannte Konfigurationen jede Umgebung voneinander:
+Für Umgebungen, in denen sich mehrere Server verbunden werden (On-Premise, Produktion, Edge), isolieren benannte Konfigurationen jede Umgebung voneinander:
 
 ```bash
 # Konfiguration für den On-Premise-Server erstellen
@@ -112,7 +112,7 @@ Wenn die CLI sich mit dem Server verbindet, ruft sie `/.well-known/server-info` 
 - **Update-Kanal**: teilt der CLI mit, welchen Release-Kanal sie für Updates verwenden soll
 - **Umgebung**: Welches Deploy-Profil der Server ausführt (Standard-Limits vs. Edge-mit-2X-Limits)
 
-Diese automatische Konfiguration bedeutet, dass Benutzer nur die Server-URL benötigen. Alles andere wird automatisch ermittelt.
+Diese automatische Konfiguration bedeutet, dass nur die Server-URL benötigt wird. Alles andere wird automatisch ermittelt.
 
 ## Lizenzierung für Air-Gapped-Bereitstellungen
 
@@ -162,7 +162,7 @@ Das zurückgegebene `.json` sieht wie folgt aus:
 }
 ```
 
-Die Gültigkeit des Zertifikats wird durch die Gültigkeitsrichtlinie bestimmt (planmäßige Standards und Obergrenzen, abonnementbezogene Überschreibung, gedeckelt auf Abonnementende + 3 Tage Nachfrist). Die Antwort enthält auch `effectiveDays` und `reason`, damit der Wert nachvollzogen werden kann. Die vollständigen Regeln finden sich unter [Lizenz-Chain - Gültigkeitsrichtlinie](/de/docs/license-chain).
+Die Gültigkeit des Zertifikats wird durch die Gültigkeitsrichtlinie bestimmt (planmäßige Standards und Obergrenzen, abonnementbezogene Überschreibung, gedeckelt auf Abonnementende plus 3 Tage Nachfrist). Die Antwort enthält auch `effectiveDays` und `reason`, damit der Wert nachvollzogen werden kann. Die vollständigen Regeln finden sich unter [Lizenz-Chain - Gültigkeitsrichtlinie](/de/docs/license-chain).
 
 ### 3. Zertifikat auf dem On-Premise-Server installieren
 
@@ -208,7 +208,7 @@ Wenn der On-Premise-Server das vorgelagerte System nicht erreichen kann, wird de
 
 1. **Erneuerungsanforderung vom On-Premise-Adminportal herunterladen.** Als On-Premise-Systemroot `GET /onprem/renewal-request` aufrufen. Dies gibt ein JSON-Manifest zurück, das den lokalen Kettenkopf, den delegierten öffentlichen Schlüssel und eine manipulationssichere Ed25519-Signatur des privaten On-Premise-Schlüssels enthält.
 2. **Das Manifest an das vorgelagerte System übertragen** per USB, verschlüsselter E-Mail oder einem anderen Out-of-Band-Kanal. Das Manifest ist klein (einige KB) und enthält keine Geheimnisse.
-3. **Das Manifest beim vorgelagerten System verarbeiten.** Org-Owner/Admin öffnet **/account/delegation-certs** - **Erneuerungsanforderung hochladen** - wählt die Manifestdatei aus. Das vorgelagerte System verifiziert die Manifestsignatur gegen den `delegatedPublicKey` des aktiven Zertifikats (beweist, dass es von einem Inhaber des privaten On-Premise-Schlüssels stammt), prüft Anti-Replay (Manifeste älter als 7 Tage werden abgelehnt) und stellt dann ein neues Zertifikat aus.
+3. **Das Manifest beim vorgelagerten System verarbeiten.** Org-Owner/Admin öffnet **/account/delegation-certs** > **Erneuerungsanforderung hochladen** > wählt die Manifestdatei aus. Das vorgelagerte System verifiziert die Manifestsignatur gegen den `delegatedPublicKey` des aktiven Zertifikats (beweist, dass es von einem Inhaber des privaten On-Premise-Schlüssels stammt), prüft Anti-Replay (Manifeste älter als 7 Tage werden abgelehnt) und stellt dann ein neues Zertifikat aus.
 4. **Das neue Zertifikat** vom vorgelagerten Portal als `.json`-Datei herunterladen.
 5. **Das Zertifikat zurück** auf den On-Premise-Server übertragen.
 6. **Auf den On-Premise-Server hochladen** über das lokale Adminportal (`POST /onprem/cert-upload`). Der On-Premise-Server verifiziert das neue Zertifikat gegen `UPSTREAM_PUBLIC_KEY` und prüft, ob `genesisSequence` des Zertifikats noch mit einem Eintrag im lokalen Ausstellungs-Ledger verbunden ist (Sequenzfortschritt während des Transits wird unterstützt - die Kette verlängert sich natürlich).

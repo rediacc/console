@@ -1,14 +1,14 @@
 ---
 title: "Cumplimiento de SOC 2"
-description: "Dónde proporciona Rediacc evidencia SOC 2: los registros, el rastro de gestión de cambios y los controles que los auditores preguntan."
+description: "Aquí está el punto sobre SOC 2: los auditores quieren evidencia de que tus controles funcionan. Rediacc te proporciona los registros, el rastro de gestión de cambios y todo lo demás que van a pedir."
 category: "Legal"
 order: 2
 language: es
-sourceHash: "29b0c745e631e4f8"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "27d2366f84e21d8c"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-SOC 2 es el marco de la AICPA al que recurren los auditores cuando quieren evidencia de que tus controles realmente funcionan. Cubre cinco Criterios de Servicio de Confianza: seguridad, disponibilidad, integridad del procesamiento, confidencialidad y privacidad.
+Sé qué es SOC 2 porque he asistido a reuniones de auditoría. Los auditores utilizan el marco de la AICPA para verificar que tus controles realmente funcionan, no solo si dices que funcionan. Cinco Criterios de Servicio de Confianza: seguridad, disponibilidad, integridad del procesamiento, confidencialidad y privacidad.
 
 Referencia: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit-and-assurance-greater-than-soc-2)
 
@@ -24,14 +24,15 @@ Referencia: [AICPA SOC 2](https://www.aicpa-cima.com/topic/audit-assurance/audit
 
 ## Rastro de auditoría
 
-Rediacc registra más de 40 tipos de eventos a nivel de cuenta que cubren:
+Así que Rediacc registra más de 70 tipos de eventos diferentes. Acciones de usuario, cambios del sistema, actualizaciones de configuración, modificaciones de control de acceso, eventos de seguridad, operaciones de fork, rastros de auditoría. Sé que suena como mucho, pero a los auditores realmente les importa ver esto.
 
 - **Autenticación**: inicio de sesión, cierre de sesión, cambios de contraseña, habilitación/deshabilitación de 2FA, revocación de sesiones
 - **Autorización**: creación/revocación de tokens API, cambios de roles, membresía de equipos
 - **Configuración**: push/pull del almacén de configuración, gestión de miembros, fallos de acceso (discrepancia de IP, denegación de SDK)
-- **Licencias**: activación de máquinas, emisión de licencias, cambios de suscripción
+- **Licencias**: emisión de licencias de repositorio, seguimiento de ranuras de máquina, cambios de suscripción
+- **Operaciones de máquina**: crear/iniciar/detener/eliminar repositorio, fork, push/pull de respaldo, sincronización de archivos, sesiones de terminal
 
-Estos registros son accesibles a través del panel de administración (con filtrado por usuario, equipo y fecha) y `rdc audit` CLI para exportación programática. Las operaciones a nivel de máquina (fork, respaldo, despliegue) se ejecutan por SSH en tu infraestructura, por lo que esos rastros de auditoría residen en tus registros del sistema.
+Tres formas de obtener estos registros. Panel de administración con filtrado por usuario, equipo y fecha. Página de actividad del portal para administradores de organizaciones, filtrado por tipo y fecha. O la CLI `rdc audit` para exportación programática. Canalízalos a tus propias herramientas, intégralos donde quieras. Las operaciones de máquina también se registran en tus registros del sistema, así que tienes defensa en profundidad.
 
 ## Gestión de cambios
 
@@ -42,7 +43,7 @@ Los forks hacen que la gestión de cambios sea auditable: cada fork es una copia
 3. Validar el fork de forma independiente
 4. Promover el fork a producción (`rdc repo takeover`)
 
-Cada paso se registra con marcas de tiempo e identificación del actor.
+Cada paso: registrado. Con marca de tiempo. Vinculado a una persona. Sin 'no sé quién cambió eso'.
 
 ## Control de acceso
 

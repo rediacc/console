@@ -6,13 +6,13 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "8f29c515be1b7fb4"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1d0e48ed1094dda6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Limits & Kontingente
 
-Diese Seite listet die festen und weichen Limits auf, die für Rediacc-Deployments gelten. Lesen Sie sie vor der Kapazitätsplanung, damit Sie wissen, welche Obergrenzen existieren und welche nicht.
+Rediacc-Deployment-Limits. Drei davon sind hart und können nicht durch Hardware-Ergänzungen geändert werden: die Obergrenze von 61 Diensten pro Repository (Netzwerkadressraum-Zuteilung), die Kernel-6.1-Mindestversion (CRIU-Anforderungen) und das Let's Encrypt-Ausstellungs-Limit von 50 Wildcard-Zertifikaten pro registrierter Domain pro Woche. Alles andere ist weich: es ändert sich mit zusätzlicher Hardware. Kennen Sie den Unterschied, bevor Sie sich auf eine Topologie festlegen.
 
 ---
 
@@ -22,7 +22,7 @@ Jedes Repository unterstützt bis zu **61 Dienste**, die gleichzeitig ausgeführ
 
 Dies ist ein festes Limit, das durch den Netzwerkadressraum bestimmt wird, der jedem Repository zugewiesen ist. Jeder Dienst erhält seine eigene dedizierte private IP-Adresse, und der Adressblock jedes Repositories bietet Platz für genau 61 Dienst-Slots.
 
-Wenn Sie sich diesem Limit nähern, konsolidieren Sie kleinere Dienste (z. B. verschieben Sie Sidecars oder Monitoring-Agenten in ein separates Repository mit eigener Isolationsgrenze) oder refaktorisieren Sie, um die Anzahl der unabhängig laufenden Prozesse innerhalb einer einzelnen Anwendung zu reduzieren.
+Das Erreichen von 61 Diensten in einem Repository signalisiert normalerweise ein Architektur-Problem, kein Rediacc-Limit. Verschieben Sie Sidecars und Monitoring-Agenten in ihr eigenes Repository mit separater Isolationsgrenze, oder reduzieren Sie die Anzahl der unabhängig laufenden Prozesse in der Anwendung selbst.
 
 ---
 
@@ -136,7 +136,7 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 |-------|------|
 | Backup-Ziele pro Repository | Unbegrenzt |
 | Gleichzeitige Backup-Jobs | 1 pro Repository (Jobs werden in die Warteschlange gestellt, wenn sie gleichzeitig ausgelöst werden) |
-| Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite. Verwenden Sie `rdc config backup-strategy set --name <name> --bwlimit "6M"` zum Begrenzen der Upload-Geschwindigkeit |
+| Backup-Häufigkeit | Kein Mindestintervall erzwungen; begrenzt durch Ihre Speicherbandbreite. Verwenden Sie `rdc config backup-strategy set --name <name> --bwlimit "6M"` zum Begrenzen der Upload-Geschwindigkeit (rclone `--bwlimit` Syntax: einfach `6M`, direktional `6M:off`, oder Zeitplan `08:00,3M;22:00,10M`) |
 | Aufbewahrung | Gesteuert durch Ihren Speicheranbieter (S3, Cloudflare R2, usw.). Rediacc erzwingt keine Aufbewahrungsrichtlinien. |
 | Maschinenübergreifendes Backup | Unterstützt; die Zielmaschine muss über ausreichend Datastore-Speicherplatz verfügen |
 

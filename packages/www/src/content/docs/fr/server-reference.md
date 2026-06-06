@@ -1,16 +1,16 @@
 ---
 title: "Référence serveur"
-description: "Organisation des répertoires, commandes renet, services systemd et procédures pour le serveur distant."
+description: "Organisation des répertoires, commandes renet, services systemd et procédures du serveur distant."
 category: "Concepts"
 order: 3
 language: fr
-sourceHash: "f68c27543a2fe3ff"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "4fb53bb4cb1512f6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Référence serveur
 
-Cette page décrit ce que vous trouvez lorsque vous vous connectez en SSH à un serveur Rediacc : l'organisation des répertoires, les commandes `renet`, les services systemd et les procédures courantes.
+Connectez-vous en SSH à un serveur Rediacc et voici ce que vous manipulerez : l'organisation des répertoires, les commandes `renet`, les services systemd et les procédures courantes.
 
 La plupart des utilisateurs gèrent les serveurs via `rdc` depuis leur poste de travail et n'ont pas besoin de cette page. Elle est destinée au débogage avancé ou aux situations où vous devez travailler directement sur le serveur.
 

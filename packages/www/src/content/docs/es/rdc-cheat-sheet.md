@@ -1,16 +1,16 @@
 ---
 title: Hoja de referencia de RDC CLI
-description: "Referencia rápida de comandos rdc: configuraciones, repositorios, máquinas, sincronización y contenedores."
+description: "Referencia rápida de rdc: configuraciones, repositorios, máquinas, sincronización y contenedores. Conjunto completo de opciones: agregar --help a cualquier comando."
 category: Guides
 order: 3
 language: es
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Hoja de referencia de RDC CLI
 
-Referencia rápida de los comandos `rdc` más comunes. Ejecuta cualquier comando con `--help` para ver todas las opciones.
+No se enumeran todos los comandos de `rdc` aquí, solo los que aparecen en cada despliegue. Para ver el conjunto completo de opciones, ejecuta cualquier comando de rdc con `--help`. Los casos especiales y las opciones raramente utilizadas se encuentran en la referencia completa.
 
 ## Ciclo de vida del repositorio
 
@@ -23,6 +23,22 @@ Referencia rápida de los comandos `rdc` más comunes. Ejecuta cualquier comando
 | `rdc repo fork --parent <repo> --tag <tag> -m <machine>` | Bifurcar un repositorio (casi instantáneo, BTRFS reflink) |
 | `rdc repo takeover --name <repo> -m <machine>` | Tomar propiedad de un repositorio existente |
 | `rdc config repository list` | Listar todos los repositorios con nombre y GUID |
+
+## Secretos por repositorio
+
+Credenciales de solo escritura en tiempo de despliegue. `get` devuelve solo el resumen. El valor nunca se devuelve. Consulta [Repositorios § Secretos](/en/docs/repositories#secrets) para la guía completa.
+
+| Comando | Descripción |
+|---------|-------------|
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\|file] --current ""` | Crear un nuevo secreto (`--current ""` para la primera escritura) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev>` | Sobrescribir un secreto existente (precondición de estilo contraseña) |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret` | Sobrescribir sin verificar el valor anterior (auditado como rotación) |
+| `rdc repo secret list --name <repo>` | Listar nombres de secretos y modos de entrega (nunca valores, nunca resúmenes) |
+| `rdc repo secret get --name <repo> --key <KEY>` | Mostrar resumen del secreto y modo (nunca valor en texto plano) |
+| `rdc repo secret unset --name <repo> --key <KEY> --current <prev>` | Eliminar un secreto |
+| `rdc repo secret unset --name <repo> --key <KEY> --rotate-secret` | Eliminar sin verificar el valor anterior |
+
+> Los forks no heredan secretos. Establécelos en el fork explícitamente con `rdc repo secret set --name <repo>:<tag>`.
 
 ## Copia de seguridad y restauración
 
@@ -95,7 +111,8 @@ Referencia rápida de los comandos `rdc` más comunes. Ejecuta cualquier comando
 | `rdc term connect -m <machine>` | Abrir terminal SSH a la máquina |
 | `rdc term connect -m <machine> -r <repo>` | Abrir terminal SSH al repositorio (establece DOCKER_HOST) |
 | `rdc term connect -m <machine> -c "<command>"` | Ejecutar un comando en la máquina |
-| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Subir un archivo, directorio o varios orígenes al repositorio |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | Subir uno o más archivos o directorios locales al repositorio |
+| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | Subir un único archivo local a una ruta remota específica |
 | `rdc repo sync download -m <machine> -r <repo> --local <dir>` | Descargar un directorio del repositorio localmente |
 | `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | Descargar un archivo remoto a un directorio local |
 | `rdc vscode connect -m <machine> -r <repo>` | Abrir sesión VS Code Remote SSH |

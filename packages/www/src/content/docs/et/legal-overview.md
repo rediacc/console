@@ -1,14 +1,14 @@
 ---
 title: "Vastavuse ülevaade"
-description: "Kuidas Rediacc isehallatav arhitektuur vastab andmekaitse, privaatsuse ja turvanõuete raamnõuetele."
+description: "Rediacc töötab teie infrastruktuuril. Te kontrolliite oma andmeid. Kuidas see vastab peamiste vastavusraamistike nõuetele."
 category: "Legal"
 order: 0
 language: et
-sourceHash: "e20385eb9adfe180"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1e36a25c724f4185"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Rediacc töötab täielikult teie infrastruktuuril. Keskkonna kloonimise, varundamise ja juurutamise toimingute ajal ei lahku andmed teie masinast. Teie jääte nii andmete töötlejaks kui ka vastutavaks töötlejaks. Ükski kolmanda osapoole SaaS-teenus teie andmeid ei käsitle.
+Rediacc töötab täielikult teie infrastruktuuril. Keskkonna kloonimise, varundamise ja juurutamise toimingute ajal ei lahku andmed teie masinast. Teie ollete nii andmete kontrollija kui ka töötleja. Kolmandate osapoolte SaaS-teenuseid pole, välist juurdepääsu pole.
 
 See jaotis seob Rediacc tehnilised võimalused peamiste vastavusraamistike nõuetega. Iga leht käsitleb konkreetset määrust koos viidetega ametlike õigustekstide asjakohastele artiklitele.
 
@@ -40,7 +40,7 @@ Nende võimaluste kohta vt [Arhitektuur](/en/docs/architecture), [Hoidlad](/en/d
 
 ## Miks see on oluline
 
-Vastavusrikkumised on kulukad. Järgmised täitemenetlused hõlmasid probleeme, mida Rediacc arhitektuur struktuuriliselt ennetab:
+Vastavusrikkumised on väga kulukad. Järgmised juhtumid näitavad probleeme, mida Rediacc arhitektuur struktuuriliselt ennetab:
 
 | Juhtum | Trahv | Mis läks valesti |
 |--------|-------|----------------|
@@ -54,4 +54,4 @@ Vastavusrikkumised on kulukad. Järgmised täitemenetlused hõlmasid probleeme, 
 
 ## Oluline teadaanne
 
-Need lehed kirjeldavad Rediacc tehnilisi võimalusi seoses vastavusnõuetega. Mis tahes määruse järgimine eeldab organisatsioonipoliitikaid, protseduure, töötajate koolitust ning potentsiaalselt kolmanda osapoole auditeid, mis jäävad ükskõik millise tööriista ulatusest välja. Konsulteerige oma organisatsioonile spetsiifiliste juhiste saamiseks oma juriidilise ja vastavusmeeskonnaga.
+Need lehed kirjeldavad, kuidas Rediacc arhitektuur vastavusnõuetega ühtib. Kuid tegelikkus on selline: vastavus on rohkem kui tarkvara. Te vajate poliitikaid, protseduure, koolitust ja tõenäoliselt kolmanda osapoole auditeid. Rediacc käsitleb infrastruktuuri osa. Ülejäänud osaga töötage koos oma juriidilise ja vastavusmeeskonnaga.

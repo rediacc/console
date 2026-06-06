@@ -4,8 +4,8 @@ description: "Wie Rediacc die Anforderungen der EU NIS2-Cybersicherheitsrichtlin
 category: "Legal"
 order: 8
 language: de
-sourceHash: "a2078388f7ae1906"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "72a61496d38955d3"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 NIS2 und DORA sind EU-Verordnungen, die Cybersicherheits- und operationelle Resilienzanforderungen an kritische Infrastruktur- und Finanzsektor-Organisationen stellen. Beide traten 2025 in Kraft und gelten breit über EU-Branchen hinweg.
@@ -20,8 +20,8 @@ Volltext: [Richtlinie (EU) 2022/2555](https://eur-lex.europa.eu/eli/dir/2022/255
 
 | NIS2-Anforderung | Rediacc-Fähigkeit |
 |-----------------|-------------------|
-| Risikomanagement-Maßnahmen (Art. 21) | LUKS2-Verschlüsselung im Ruhezustand, Netzwerkisolation pro Repository, ausschließlicher SSH-Zugang, Audit-Logging auf Kontoebene (40+ Ereignistypen) |
-| Vorfallsbehandlung (Art. 21(2)(b)) | 40+ Ereignistypen auf Kontoebene (Auth, Tokens, Config, Lizenzierung) bieten forensischen Trail. Repository-Isolation begrenzt den Wirkungsradius. |
+| Risikomanagement-Maßnahmen (Art. 21) | LUKS2-Verschlüsselung im Ruhezustand, Netzwerkisolation pro Repository, ausschließlicher SSH-Zugang, Audit-Logging (70+ Ereignistypen einschließlich Maschinenoperationen) |
+| Vorfallsbehandlung (Art. 21(2)(b)) | 70+ Ereignistypen (Auth, Tokens, Config, Lizenzierung, Maschinenoperationen) bieten forensischen Trail. Repository-Isolation begrenzt den Wirkungsradius. |
 | Geschäftskontinuität (Art. 21(2)(c)) | `rdc repo push/pull` mit verschlüsseltem Multi-Destination-Backup. CoW-Snapshots für sofortiges Rollback. |
 | Lieferkettensicherheit (Art. 21(2)(d)) | Self-Hosting eliminiert SaaS-Lieferkettenrisiken. Kein Drittanbieter-Cloud-Provider verarbeitet Ihre Daten. |
 | Netzwerksicherheit (Art. 21(2)(e)) | Pro-Repository Docker Daemons, iptables-Regeln, Loopback-IP-Isolation (/26-Subnetze). |
@@ -49,7 +49,7 @@ Volltext: [Verordnung (EU) 2022/2554](https://eur-lex.europa.eu/eli/reg/2022/255
 |-----------------|-------------------|
 | ICT-Risikomanagement-Framework (Art. 6) | Verschlüsselung, Isolation, Audit-Logging und Backup bilden die technische Kontrollschicht. |
 | Schutz und Prävention (Art. 9) | LUKS2 AES-256-Verschlüsselung im Ruhezustand. Netzwerkisolation verhindert laterale Bewegung. Ausschließlicher SSH-Zugang. |
-| Erkennung (Art. 10) | 40+ Ereignistypen auf Kontoebene. Admin-Dashboard mit Filterung pro Benutzer und Team. Maschinenoperationen über SSH und Systemlogs auditierbar. |
+| Erkennung (Art. 10) | 70+ Ereignistypen einschließlich Maschinenoperationen (Repository-Lebenszyklus, Backup, Sync, Terminal). Admin-Dashboard und Portal mit Filterung pro Benutzer und Team. Maschinenoperationen auch in Systemlogs für Verteidigungstiefe. |
 | Reaktion und Wiederherstellung (Art. 11) | CoW-Snapshots für sofortiges Rollback. `rdc repo push/pull` für Multi-Destination-Recovery. Fork-basierte Disaster-Recovery-Tests. |
 | ICT-Drittanbieter-Risiko (Art. 28-30) | Self-Hosting eliminiert die Klassifikation als "kritischer ICT-Drittanbieter" vollständig. |
 | Digitale operationelle Resilienztests (Art. 24-27) | CoW-Kloning ermöglicht bedrohungsgeleitete Penetrationstests auf produktionsnahen Umgebungen ohne Datenexposition. Klonen, testen, zerstören. |

@@ -1,18 +1,16 @@
 ---
-title: Sauvegarde et restauration
-description: >-
-  Sauvegardez des dépôts chiffrés vers un stockage externe, restaurez à partir
-  de sauvegardes et planifiez des sauvegardes automatisées.
+title: "Sauvegarde et restauration"
+description: "Sauvegardez des dépôts chiffrés vers n'importe quel stockage compatible rclone, restaurez-les sur n'importe quelle machine, et automatisez avec des stratégies de sauvegarde nommées et des timers systemd."
 category: Guides
 order: 7
 language: fr
-sourceHash: "196ee7b649ac7371"
-sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
+sourceHash: "6ed9a5b950de8ddb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Sauvegarde et restauration
 
-Rediacc peut sauvegarder des dépôts chiffrés vers des fournisseurs de stockage externes et les restaurer sur la même machine ou sur une machine différente. Les sauvegardes sont chiffrées ; l'identifiant LUKS du dépôt est nécessaire pour la restauration.
+Rediacc sauvegarde des dépôts chiffrés vers un stockage externe et les restaure sur la même machine ou sur une machine différente. Les sauvegardes sont chiffrées ; l'identifiant LUKS du dépôt est nécessaire pour la restauration.
 
 ## Configurer le stockage
 

@@ -4,8 +4,8 @@ description: حلول للمشاكل الشائعة مع SSH والإعداد و
 category: Guides
 order: 10
 language: ar
-sourceHash: "7cfabe7bbf3914c3"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "17dc03eb0589d606"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # استكشاف الأخطاء وإصلاحها
@@ -132,12 +132,12 @@ docker -H unix:///var/run/rediacc/docker-2816.sock ps
 **للحصول على وصول شبكي في حاوية عابرة، استخدم شبكة المضيف:**
 
 ```bash
-# Inside a repository shell (rdc term connect -m <machine> -r <repo>)
+# داخل شل المستودع (rdc term connect -m <machine> -r <repo>)
 docker run --rm --network host -it ubuntu bash
-# Now apt update, curl, pip install all work.
+# الآن apt update و curl و pip install تعمل جميعها.
 ```
 
-**لخدمات الإنتاج، استخدم Rediaccfile مع `renet compose`** بدلاً من `docker run` مباشرة. يحقن `renet compose` تلقائياً `network_mode: host` وتسميات IP للخدمة وتسميات توجيه Traefik. راجع [الخدمات](/ar/docs/services) للتفاصيل.
+**لخدمات الإنتاج، استخدم Rediaccfile مع `renet compose`** بدلاً من `docker run` مباشرة. يحقن `renet compose` تلقائياً `network_mode: host` وتسميات IP للخدمة وتسميات توجيه Traefik. راجع [الخدمات](/en/docs/services) للتفاصيل.
 
 ## رفض صلاحيات VS Code على ملفات sandbox
 

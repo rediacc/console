@@ -1,0 +1,652 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.142,
+      "text": "Aeg juurutada päris rakendus!",
+      "words": [
+        { "start": 1, "end": 1.536, "char": [0, 3] },
+        { "start": 1.536, "end": 2.071, "char": [4, 13] },
+        { "start": 2.071, "end": 2.607, "char": [14, 19] },
+        { "start": 2.607, "end": 3.142, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 3.142,
+      "end": 5.82,
+      "text": "Liigume tühjast repost töötavate konteineriteni",
+      "words": [
+        { "start": 3.142, "end": 3.678, "char": [0, 7] },
+        { "start": 3.678, "end": 4.213, "char": [8, 15] },
+        { "start": 4.213, "end": 4.749, "char": [16, 22] },
+        { "start": 4.749, "end": 5.284, "char": [23, 32] },
+        { "start": 5.284, "end": 5.82, "char": [33, 47] }
+      ]
+    },
+    {
+      "start": 5.82,
+      "end": 7.426,
+      "text": "kolme lühikese sammuga.",
+      "words": [
+        { "start": 5.82, "end": 6.355, "char": [0, 5] },
+        { "start": 6.355, "end": 6.891, "char": [6, 14] },
+        { "start": 6.891, "end": 7.426, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 8.208,
+      "end": 9.501,
+      "text": "Voog on lihtne:",
+      "words": [
+        { "start": 8.208, "end": 8.639, "char": [0, 4] },
+        { "start": 8.639, "end": 9.07, "char": [5, 7] },
+        { "start": 9.07, "end": 9.501, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 9.501,
+      "end": 10.363,
+      "text": "vali mall,",
+      "words": [
+        { "start": 9.501, "end": 9.932, "char": [0, 4] },
+        { "start": 9.932, "end": 10.363, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 10.363,
+      "end": 12.518,
+      "text": "rakenda see repositooriumisse ja käivita.",
+      "words": [
+        { "start": 10.363, "end": 10.794, "char": [0, 7] },
+        { "start": 10.794, "end": 11.225, "char": [8, 11] },
+        { "start": 11.225, "end": 11.656, "char": [12, 29] },
+        { "start": 11.656, "end": 12.087, "char": [30, 32] },
+        { "start": 12.087, "end": 12.518, "char": [33, 41] }
+      ]
+    },
+    {
+      "start": 12.518,
+      "end": 14.673,
+      "text": "CLI-l on kaasas sisseehitatud mallid,",
+      "words": [
+        { "start": 12.518, "end": 12.949, "char": [0, 5] },
+        { "start": 12.949, "end": 13.38, "char": [6, 8] },
+        { "start": 13.38, "end": 13.811, "char": [9, 15] },
+        { "start": 13.811, "end": 14.242, "char": [16, 29] },
+        { "start": 14.242, "end": 14.673, "char": [30, 37] }
+      ]
+    },
+    {
+      "start": 14.673,
+      "end": 17.259,
+      "text": "nii et docker-compose'i pole vaja nullist",
+      "words": [
+        { "start": 14.673, "end": 15.104, "char": [0, 3] },
+        { "start": 15.104, "end": 15.535, "char": [4, 6] },
+        { "start": 15.535, "end": 15.966, "char": [7, 23] },
+        { "start": 15.966, "end": 16.397, "char": [24, 28] },
+        { "start": 16.397, "end": 16.828, "char": [29, 33] },
+        { "start": 16.828, "end": 17.259, "char": [34, 41] }
+      ]
+    },
+    {
+      "start": 17.259,
+      "end": 17.69,
+      "text": "kirjutada.",
+      "words": [{ "start": 17.259, "end": 17.69, "char": [0, 10] }]
+    },
+    {
+      "start": 20.958,
+      "end": 21.748,
+      "text": "Esimene samm.",
+      "words": [
+        { "start": 20.958, "end": 21.353, "char": [0, 7] },
+        { "start": 21.353, "end": 21.748, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 21.748,
+      "end": 22.934,
+      "text": "Loetleme saadaolevad mallid.",
+      "words": [
+        { "start": 21.748, "end": 22.144, "char": [0, 8] },
+        { "start": 22.144, "end": 22.539, "char": [9, 20] },
+        { "start": 22.539, "end": 22.934, "char": [21, 28] }
+      ]
+    },
+    {
+      "start": 22.934,
+      "end": 25.701,
+      "text": "Rediacc sisaldab valmis seadistusi levinud rakendustele --",
+      "words": [
+        { "start": 22.934, "end": 23.329, "char": [0, 7] },
+        { "start": 23.329, "end": 23.725, "char": [8, 16] },
+        { "start": 23.725, "end": 24.12, "char": [17, 23] },
+        { "start": 24.12, "end": 24.515, "char": [24, 34] },
+        { "start": 24.515, "end": 24.91, "char": [35, 42] },
+        { "start": 24.91, "end": 25.306, "char": [43, 55] },
+        { "start": 25.306, "end": 25.701, "char": [56, 58] }
+      ]
+    },
+    {
+      "start": 25.701,
+      "end": 26.096,
+      "text": "Postgres,",
+      "words": [{ "start": 25.701, "end": 26.096, "char": [0, 9] }]
+    },
+    {
+      "start": 26.096,
+      "end": 26.491,
+      "text": "Redis,",
+      "words": [{ "start": 26.096, "end": 26.491, "char": [0, 6] }]
+    },
+    {
+      "start": 26.491,
+      "end": 29.258,
+      "text": "veebiserverid -- nii et docker-compose'i pole vaja",
+      "words": [
+        { "start": 26.491, "end": 26.887, "char": [0, 13] },
+        { "start": 26.887, "end": 27.282, "char": [14, 16] },
+        { "start": 27.282, "end": 27.677, "char": [17, 20] },
+        { "start": 27.677, "end": 28.072, "char": [21, 23] },
+        { "start": 28.072, "end": 28.468, "char": [24, 40] },
+        { "start": 28.468, "end": 28.863, "char": [41, 45] },
+        { "start": 28.863, "end": 29.258, "char": [46, 50] }
+      ]
+    },
+    {
+      "start": 29.258,
+      "end": 30.049,
+      "text": "nullist kirjutada.",
+      "words": [
+        { "start": 29.258, "end": 29.653, "char": [0, 7] },
+        { "start": 29.653, "end": 30.049, "char": [8, 18] }
+      ]
+    },
+    {
+      "start": 31.549,
+      "end": 33.045,
+      "text": "Täielik mallide kataloog.",
+      "words": [
+        { "start": 31.549, "end": 32.047, "char": [0, 7] },
+        { "start": 32.047, "end": 32.546, "char": [8, 15] },
+        { "start": 32.546, "end": 33.045, "char": [16, 25] }
+      ]
+    },
+    {
+      "start": 33.045,
+      "end": 36.037,
+      "text": "Iga mall on testitud compose'i ja",
+      "words": [
+        { "start": 33.045, "end": 33.543, "char": [0, 3] },
+        { "start": 33.543, "end": 34.042, "char": [4, 8] },
+        { "start": 34.042, "end": 34.541, "char": [9, 11] },
+        { "start": 34.541, "end": 35.04, "char": [12, 20] },
+        { "start": 35.04, "end": 35.538, "char": [21, 30] },
+        { "start": 35.538, "end": 36.037, "char": [31, 33] }
+      ]
+    },
+    {
+      "start": 36.037,
+      "end": 37.034,
+      "text": "Rediaccfile'i paar.",
+      "words": [
+        { "start": 36.037, "end": 36.536, "char": [0, 13] },
+        { "start": 36.536, "end": 37.034, "char": [14, 19] }
+      ]
+    },
+    {
+      "start": 40.337,
+      "end": 40.953,
+      "text": "Teine samm.",
+      "words": [
+        { "start": 40.337, "end": 40.645, "char": [0, 5] },
+        { "start": 40.645, "end": 40.953, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 40.953,
+      "end": 42.492,
+      "text": "Rakendame app-postgres malli oma repositooriumisse.",
+      "words": [
+        { "start": 40.953, "end": 41.26, "char": [0, 9] },
+        { "start": 41.26, "end": 41.568, "char": [10, 22] },
+        { "start": 41.568, "end": 41.876, "char": [23, 28] },
+        { "start": 41.876, "end": 42.184, "char": [29, 32] },
+        { "start": 42.184, "end": 42.492, "char": [33, 51] }
+      ]
+    },
+    {
+      "start": 42.492,
+      "end": 43.415,
+      "text": "Ilmub kaks faili:",
+      "words": [
+        { "start": 42.492, "end": 42.799, "char": [0, 5] },
+        { "start": 42.799, "end": 43.107, "char": [6, 10] },
+        { "start": 43.107, "end": 43.415, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 43.415,
+      "end": 43.723,
+      "text": "docker-compose.yml,",
+      "words": [{ "start": 43.415, "end": 43.723, "char": [0, 19] }]
+    },
+    {
+      "start": 43.723,
+      "end": 44.646,
+      "text": "mis kirjeldab konteinereid,",
+      "words": [
+        { "start": 43.723, "end": 44.03, "char": [0, 3] },
+        { "start": 44.03, "end": 44.338, "char": [4, 13] },
+        { "start": 44.338, "end": 44.646, "char": [14, 27] }
+      ]
+    },
+    {
+      "start": 44.646,
+      "end": 45.262,
+      "text": "ja Rediaccfile,",
+      "words": [
+        { "start": 44.646, "end": 44.954, "char": [0, 2] },
+        { "start": 44.954, "end": 45.262, "char": [3, 15] }
+      ]
+    },
+    {
+      "start": 45.262,
+      "end": 47.416,
+      "text": "mis määrab käivitamise ja peatamise elutsükli konksud.",
+      "words": [
+        { "start": 45.262, "end": 45.569, "char": [0, 3] },
+        { "start": 45.569, "end": 45.877, "char": [4, 10] },
+        { "start": 45.877, "end": 46.185, "char": [11, 22] },
+        { "start": 46.185, "end": 46.493, "char": [23, 25] },
+        { "start": 46.493, "end": 46.801, "char": [26, 35] },
+        { "start": 46.801, "end": 47.108, "char": [36, 45] },
+        { "start": 47.108, "end": 47.416, "char": [46, 54] }
+      ]
+    },
+    {
+      "start": 49.666,
+      "end": 50.779,
+      "text": "Mall on rakendatud.",
+      "words": [
+        { "start": 49.666, "end": 50.037, "char": [0, 4] },
+        { "start": 50.037, "end": 50.408, "char": [5, 7] },
+        { "start": 50.408, "end": 50.779, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 50.779,
+      "end": 53.376,
+      "text": "Repol on nüüd oma compose-fail ja Rediaccfile.",
+      "words": [
+        { "start": 50.779, "end": 51.15, "char": [0, 5] },
+        { "start": 51.15, "end": 51.521, "char": [6, 8] },
+        { "start": 51.521, "end": 51.892, "char": [9, 13] },
+        { "start": 51.892, "end": 52.263, "char": [14, 17] },
+        { "start": 52.263, "end": 52.634, "char": [18, 30] },
+        { "start": 52.634, "end": 53.005, "char": [31, 33] },
+        { "start": 53.005, "end": 53.376, "char": [34, 46] }
+      ]
+    },
+    {
+      "start": 56.702,
+      "end": 59.221,
+      "text": "Kolmas samm.",
+      "words": [
+        { "start": 56.702, "end": 57.962, "char": [0, 6] },
+        { "start": 57.962, "end": 59.221, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 59.221,
+      "end": 61.741,
+      "text": "Käivitame repositooriumi.",
+      "words": [
+        { "start": 59.221, "end": 60.481, "char": [0, 9] },
+        { "start": 60.481, "end": 61.741, "char": [10, 25] }
+      ]
+    },
+    {
+      "start": 61.741,
+      "end": 64.26,
+      "text": "CLI käivitab",
+      "words": [
+        { "start": 61.741, "end": 63, "char": [0, 3] },
+        { "start": 63, "end": 64.26, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 64.26,
+      "end": 65.52,
+      "text": "konteinerid,",
+      "words": [{ "start": 64.26, "end": 65.52, "char": [0, 12] }]
+    },
+    {
+      "start": 65.52,
+      "end": 68.039,
+      "text": "ühendab krüpteeritud",
+      "words": [
+        { "start": 65.52, "end": 66.779, "char": [0, 7] },
+        { "start": 66.779, "end": 68.039, "char": [8, 20] }
+      ]
+    },
+    {
+      "start": 68.039,
+      "end": 70.559,
+      "text": "mahu ja",
+      "words": [
+        { "start": 68.039, "end": 69.299, "char": [0, 4] },
+        { "start": 69.299, "end": 70.559, "char": [5, 7] }
+      ]
+    },
+    {
+      "start": 70.559,
+      "end": 73.078,
+      "text": "seadistab isoleeritud",
+      "words": [
+        { "start": 70.559, "end": 71.818, "char": [0, 9] },
+        { "start": 71.818, "end": 73.078, "char": [10, 21] }
+      ]
+    },
+    {
+      "start": 73.078,
+      "end": 75.597,
+      "text": "Dockeri deemoni.",
+      "words": [
+        { "start": 73.078, "end": 74.338, "char": [0, 7] },
+        { "start": 74.338, "end": 75.597, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 75.597,
+      "end": 78.117,
+      "text": "Rakendus töötab",
+      "words": [
+        { "start": 75.597, "end": 76.857, "char": [0, 8] },
+        { "start": 76.857, "end": 78.117, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 78.117,
+      "end": 79.376,
+      "text": "nüüd.",
+      "words": [{ "start": 78.117, "end": 79.376, "char": [0, 5] }]
+    },
+    {
+      "start": 82.126,
+      "end": 83.396,
+      "text": "Konteinerid töötavad,",
+      "words": [
+        { "start": 82.126, "end": 82.761, "char": [0, 11] },
+        { "start": 82.761, "end": 83.396, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 83.396,
+      "end": 85.3,
+      "text": "maht on ühendatud,",
+      "words": [
+        { "start": 83.396, "end": 84.031, "char": [0, 4] },
+        { "start": 84.031, "end": 84.665, "char": [5, 7] },
+        { "start": 84.665, "end": 85.3, "char": [8, 18] }
+      ]
+    },
+    {
+      "start": 85.3,
+      "end": 87.839,
+      "text": "isoleeritud Dockeri deemon on",
+      "words": [
+        { "start": 85.3, "end": 85.935, "char": [0, 11] },
+        { "start": 85.935, "end": 86.57, "char": [12, 19] },
+        { "start": 86.57, "end": 87.205, "char": [20, 26] },
+        { "start": 87.205, "end": 87.839, "char": [27, 29] }
+      ]
+    },
+    {
+      "start": 87.839,
+      "end": 88.474,
+      "text": "üleval.",
+      "words": [{ "start": 87.839, "end": 88.474, "char": [0, 7] }]
+    },
+    {
+      "start": 91.814,
+      "end": 93.053,
+      "text": "Kontrollime docker ps abil.",
+      "words": [
+        { "start": 91.814, "end": 92.124, "char": [0, 11] },
+        { "start": 92.124, "end": 92.433, "char": [12, 18] },
+        { "start": 92.433, "end": 92.743, "char": [19, 21] },
+        { "start": 92.743, "end": 93.053, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 93.053,
+      "end": 93.672,
+      "text": "Pane tähele,",
+      "words": [
+        { "start": 93.053, "end": 93.363, "char": [0, 4] },
+        { "start": 93.363, "end": 93.672, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 93.672,
+      "end": 96.15,
+      "text": "et see vaade näitab ainult meie repositooriumi konteinereid.",
+      "words": [
+        { "start": 93.672, "end": 93.982, "char": [0, 2] },
+        { "start": 93.982, "end": 94.292, "char": [3, 6] },
+        { "start": 94.292, "end": 94.602, "char": [7, 12] },
+        { "start": 94.602, "end": 94.911, "char": [13, 19] },
+        { "start": 94.911, "end": 95.221, "char": [20, 26] },
+        { "start": 95.221, "end": 95.531, "char": [27, 31] },
+        { "start": 95.531, "end": 95.841, "char": [32, 46] },
+        { "start": 95.841, "end": 96.15, "char": [47, 60] }
+      ]
+    },
+    {
+      "start": 96.15,
+      "end": 98.938,
+      "text": "Teistel repositooriumidel samal serveril on oma Dockeri deemonid ja",
+      "words": [
+        { "start": 96.15, "end": 96.46, "char": [0, 7] },
+        { "start": 96.46, "end": 96.77, "char": [8, 25] },
+        { "start": 96.77, "end": 97.08, "char": [26, 31] },
+        { "start": 97.08, "end": 97.389, "char": [32, 40] },
+        { "start": 97.389, "end": 97.699, "char": [41, 43] },
+        { "start": 97.699, "end": 98.009, "char": [44, 47] },
+        { "start": 98.009, "end": 98.319, "char": [48, 55] },
+        { "start": 98.319, "end": 98.628, "char": [56, 64] },
+        { "start": 98.628, "end": 98.938, "char": [65, 67] }
+      ]
+    },
+    {
+      "start": 98.938,
+      "end": 100.487,
+      "text": "need on siit täielikult nähtamatud.",
+      "words": [
+        { "start": 98.938, "end": 99.248, "char": [0, 4] },
+        { "start": 99.248, "end": 99.557, "char": [5, 7] },
+        { "start": 99.557, "end": 99.867, "char": [8, 12] },
+        { "start": 99.867, "end": 100.177, "char": [13, 23] },
+        { "start": 100.177, "end": 100.487, "char": [24, 35] }
+      ]
+    },
+    {
+      "start": 103.237,
+      "end": 104.919,
+      "text": "Ainult selle repo konteinerid.",
+      "words": [
+        { "start": 103.237, "end": 103.657, "char": [0, 6] },
+        { "start": 103.657, "end": 104.078, "char": [7, 12] },
+        { "start": 104.078, "end": 104.498, "char": [13, 17] },
+        { "start": 104.498, "end": 104.919, "char": [18, 30] }
+      ]
+    },
+    {
+      "start": 104.919,
+      "end": 106.181,
+      "text": "Isolatsioon on tegelik,",
+      "words": [
+        { "start": 104.919, "end": 105.34, "char": [0, 11] },
+        { "start": 105.34, "end": 105.76, "char": [12, 14] },
+        { "start": 105.76, "end": 106.181, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 106.181,
+      "end": 107.442,
+      "text": "mitte ainult konfiguratsioon.",
+      "words": [
+        { "start": 106.181, "end": 106.601, "char": [0, 5] },
+        { "start": 106.601, "end": 107.022, "char": [6, 12] },
+        { "start": 107.022, "end": 107.442, "char": [13, 29] }
+      ]
+    },
+    {
+      "start": 110.766,
+      "end": 111.218,
+      "text": "Kontrollime,",
+      "words": [{ "start": 110.766, "end": 111.218, "char": [0, 12] }]
+    },
+    {
+      "start": 111.218,
+      "end": 112.123,
+      "text": "mis töötab.",
+      "words": [
+        { "start": 111.218, "end": 111.671, "char": [0, 3] },
+        { "start": 111.671, "end": 112.123, "char": [4, 11] }
+      ]
+    },
+    {
+      "start": 112.123,
+      "end": 114.838,
+      "text": "docker ps kuvab siin ainult selle",
+      "words": [
+        { "start": 112.123, "end": 112.576, "char": [0, 6] },
+        { "start": 112.576, "end": 113.028, "char": [7, 9] },
+        { "start": 113.028, "end": 113.481, "char": [10, 15] },
+        { "start": 113.481, "end": 113.933, "char": [16, 20] },
+        { "start": 113.933, "end": 114.386, "char": [21, 27] },
+        { "start": 114.386, "end": 114.838, "char": [28, 33] }
+      ]
+    },
+    {
+      "start": 114.838,
+      "end": 115.743,
+      "text": "repo konteinereid.",
+      "words": [
+        { "start": 114.838, "end": 115.29, "char": [0, 4] },
+        { "start": 115.29, "end": 115.743, "char": [5, 18] }
+      ]
+    },
+    {
+      "start": 115.743,
+      "end": 118.458,
+      "text": "Teistel repo'del samal serveril on oma",
+      "words": [
+        { "start": 115.743, "end": 116.195, "char": [0, 7] },
+        { "start": 116.195, "end": 116.648, "char": [8, 16] },
+        { "start": 116.648, "end": 117.1, "char": [17, 22] },
+        { "start": 117.1, "end": 117.553, "char": [23, 31] },
+        { "start": 117.553, "end": 118.005, "char": [32, 34] },
+        { "start": 118.005, "end": 118.458, "char": [35, 38] }
+      ]
+    },
+    {
+      "start": 118.458,
+      "end": 121.172,
+      "text": "daemonid ja need on siit vaates",
+      "words": [
+        { "start": 118.458, "end": 118.91, "char": [0, 8] },
+        { "start": 118.91, "end": 119.362, "char": [9, 11] },
+        { "start": 119.362, "end": 119.815, "char": [12, 16] },
+        { "start": 119.815, "end": 120.267, "char": [17, 19] },
+        { "start": 120.267, "end": 120.72, "char": [20, 24] },
+        { "start": 120.72, "end": 121.172, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 121.172,
+      "end": 122.077,
+      "text": "täiesti nähtamatud.",
+      "words": [
+        { "start": 121.172, "end": 121.625, "char": [0, 7] },
+        { "start": 121.625, "end": 122.077, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 123.327,
+      "end": 125.291,
+      "text": "Ainult selle repo konteinerid.",
+      "words": [
+        { "start": 123.327, "end": 123.818, "char": [0, 6] },
+        { "start": 123.818, "end": 124.309, "char": [7, 12] },
+        { "start": 124.309, "end": 124.8, "char": [13, 17] },
+        { "start": 124.8, "end": 125.291, "char": [18, 30] }
+      ]
+    },
+    {
+      "start": 125.291,
+      "end": 126.765,
+      "text": "Isolatsioon on päris,",
+      "words": [
+        { "start": 125.291, "end": 125.783, "char": [0, 11] },
+        { "start": 125.783, "end": 126.274, "char": [12, 14] },
+        { "start": 126.274, "end": 126.765, "char": [15, 21] }
+      ]
+    },
+    {
+      "start": 126.765,
+      "end": 128.238,
+      "text": "mitte lihtsalt konfiguratsioon.",
+      "words": [
+        { "start": 126.765, "end": 127.256, "char": [0, 5] },
+        { "start": 127.256, "end": 127.747, "char": [6, 14] },
+        { "start": 127.747, "end": 128.238, "char": [15, 31] }
+      ]
+    },
+    {
+      "start": 129.071,
+      "end": 132.035,
+      "text": "Ja sellega on su esimene",
+      "words": [
+        { "start": 129.071, "end": 129.664, "char": [0, 2] },
+        { "start": 129.664, "end": 130.257, "char": [3, 10] },
+        { "start": 130.257, "end": 130.849, "char": [11, 13] },
+        { "start": 130.849, "end": 131.442, "char": [14, 16] },
+        { "start": 131.442, "end": 132.035, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 132.035,
+      "end": 133.22,
+      "text": "juurutus tehtud.",
+      "words": [
+        { "start": 132.035, "end": 132.628, "char": [0, 8] },
+        { "start": 132.628, "end": 133.22, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 133.22,
+      "end": 134.406,
+      "text": "Kohtumiseni järgmises,",
+      "words": [
+        { "start": 133.22, "end": 133.813, "char": [0, 11] },
+        { "start": 133.813, "end": 134.406, "char": [12, 22] }
+      ]
+    },
+    {
+      "start": 134.406,
+      "end": 136.777,
+      "text": "kus süveneme repositooriumiga töötamisse.",
+      "words": [
+        { "start": 134.406, "end": 134.999, "char": [0, 3] },
+        { "start": 134.999, "end": 135.592, "char": [4, 12] },
+        { "start": 135.592, "end": 136.184, "char": [13, 29] },
+        { "start": 136.184, "end": 136.777, "char": [30, 41] }
+      ]
+    }
+  ]
+}

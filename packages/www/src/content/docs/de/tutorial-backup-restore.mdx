@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: de
-sourceHash: "d9d8ffef900b509d"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "bfdacd91b2d3b93b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Backup und Wiederherstellung
 
-Ihre App läuft in der Produktion. Stellen Sie jetzt sicher, dass Sie sie nie verlieren. `rdc` kann Ihr gesamtes Repository (App, Datenbank, Dateien, Konfigurationen) auf externen Speicher übertragen und jederzeit zurückziehen. Ransomware, Hardwareausfall, alles überlebbar.
+Ihre App läuft im Produktivbetrieb. Sichern Sie sie ab. `rdc` überträgt Ihr gesamtes Repository (App, Datenbank, Dateien, Konfigurationen) auf externen Speicher und ruft es jederzeit zurück. Ransomware, Hardwareausfall - alles ist überwindbar.
 
 ## Tutorial ansehen
 
@@ -77,7 +77,7 @@ Sie können auch direkt zwischen Maschinen übertragen, ohne Cloud-Speicher dazw
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **Tipp.** Speicher-Uploads senden immer alles. Maschine-zu-Maschine sendet nur den Unterschied. Der erste Maschine-zu-Maschine-Push dauert die übliche Zeit, aber jeder folgende Push ist deutlich schneller. Ideal für häufige Backups.
+> **Profi-Tipp.** Speicher-Uploads senden immer alles. Maschine-zu-Maschine sendet nur den Unterschied. Der erste Maschine-zu-Maschine-Push dauert die übliche Zeit, aber jeder folgende Push ist deutlich schneller. Ideal für häufige Backups.
 
 ---
 

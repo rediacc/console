@@ -4,13 +4,13 @@ description: "設定の作成、マシンの追加、サーバーのプロビジ
 category: "Guides"
 order: 3
 language: ja
-sourceHash: "2456daa4289ffb8c"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "b3c8c42db1b8d99b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # マシンセットアップ
 
-このページでは、最初のマシンのセットアップ手順を説明します：設定の作成、サーバーの登録、プロビジョニング、およびオプションでパブリックアクセス用のインフラストラクチャ設定。
+最初のマシンを実行するには4つのステップが必要です：設定の作成、サーバーの登録、プロビジョニング、およびオプションでパブリックトラフィック用のインフラストラクチャの設定。
 
 ## ステップ1：Configの作成
 
@@ -161,10 +161,10 @@ VMを手動で作成する代わりに、クラウドプロバイダーを設定
 
 OpenTofu をインストールしてください: [opentofu.org/docs/intro/install](https://opentofu.org/docs/intro/install/)
 
-SSH設定に公開鍵が含まれていることを確認してください：
+SSH秘密鍵が `rdc` に登録されていることを確認してください：
 
 ```bash
-rdc config set --key ssh.privateKeyPath --value ~/.ssh/id_ed25519
+rdc config ssh set --key ~/.ssh/id_ed25519
 ```
 
 ### クラウドプロバイダーの追加
@@ -200,7 +200,7 @@ rdc machine provision --name prod-2 --provider my-linode
 2. SSH接続を待機
 3. マシンを設定に登録
 4. renetとすべての依存関係をインストール
-5. Configures Traefik proxy and Cloudflare DNS (auto-detects base domain from sibling machines, or pass `--base-domain` explicitly)
+5. Traefikプロキシとローカルflare DNSを設定（兄弟マシンからベースドメインを自動検出、または `--base-domain` を明示的に渡す）
 
 | オプション | 説明 |
 |--------|-------------|
@@ -208,8 +208,8 @@ rdc machine provision --name prod-2 --provider my-linode
 | `--region <region>` | プロバイダーのデフォルトリージョンを上書き |
 | `--type <type>` | デフォルトのインスタンスタイプを上書き |
 | `--image <image>` | デフォルトのOSイメージを上書き |
-| `--base-domain <domain>` | Base domain for infrastructure. Auto-detected from sibling machines if not specified |
-| `--no-infra` | Skip infrastructure configuration (proxy + DNS) entirely |
+| `--base-domain <domain>` | インフラストラクチャ用のベースドメイン。指定されていない場合は兄弟マシンから自動検出 |
+| `--no-infra` | インフラストラクチャ設定（プロキシ + DNS）をスキップ |
 | `--debug` | 詳細なプロビジョニング出力を表示 |
 
 ### マシンのデプロビジョニング
@@ -231,8 +231,8 @@ rdc config provider list
 毎回のコマンドで指定する必要がないように、デフォルト値を設定します：
 
 ```bash
-rdc config set --key machine --value server-1  # デフォルトマシン
-rdc config set --key team --value my-team  # デフォルトチーム（クラウドアダプター、実験的）
+rdc config field set --pointer /defaults/machine --new '"server-1"'   # デフォルトマシン
+rdc config set --key team --value my-team                   # デフォルトチーム（クラウドアダプター、実験的）
 ```
 
 デフォルトマシンを設定した後は、コマンドから`-m server-1`を省略できます：

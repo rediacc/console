@@ -1,11 +1,11 @@
 ---
 title: "Backup e Restauro"
-description: "Faça backup de repositórios encriptados para armazenamento externo, restaure a partir de backups e agende backups automáticos."
+description: "Faça backup de repositórios encriptados para qualquer armazenamento compatível com rclone, restaure em qualquer máquina e automatize com estratégias de backup nomeadas e temporizadores systemd."
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "196ee7b649ac7371"
-sourceCommit: "c6b8f8b9e4b708273e922469c7a454bb49702265"
+sourceHash: "6ed9a5b950de8ddb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Backup e Restauro
@@ -296,7 +296,7 @@ Na sua configuração, associe um ou mais nomes de estratégia a uma máquina:
 }
 ```
 
-> **A vinculação é apenas configuração local.** Definir uma estratégia e vinculá-la a uma máquina não afeta a máquina. Execute `rdc machine backup schedule -m <machine>` (consulte [Implementar Agendamento na Máquina](#implementar-agendamento-na-máquina)) para implantar os temporizadores systemd, e execute novamente após qualquer alteração de estratégia ou vinculação.
+> **A vinculação é apenas configuração local.** Definir uma estratégia e vinculá-la a uma máquina não afeta a máquina. Execute `rdc machine backup schedule -m <machine>` (consulte [Implementar Agendamento na Máquina](#implementar-agendamento-na-maquina)) para implantar os temporizadores systemd, e execute novamente após qualquer alteração de estratégia ou vinculação.
 
 ## Escolher entre Hot e Cold e Filtragem por Repositório
 
@@ -304,12 +304,12 @@ Na sua configuração, associe um ou mais nomes de estratégia a uma máquina:
 
 | | Hot | Cold |
 |---|-----|------|
-| **Consistência** | Crash-consistent (snapshot BTRFS durante a execução) | Application-consistent (stop → snapshot → start) |
+| **Consistência** | Crash-consistent (snapshot BTRFS durante a execução) | Application-consistent (stop -> snapshot -> start) |
 | **Downtime** | Nenhum | Janela de stop+start por repositório (normalmente 5-120 s) |
 | **Frequência adequada** | Alta (ex: de hora em hora) | Baixa (ex: diária ou semanal) |
 | **Uso típico** | Rede de segurança de alta frequência | Backup agendado com consistência garantida |
 
-**Hot** é o padrão correcto para execuções de alta frequência. Os serviços continuam a correr enquanto o snapshot é efectuado, por isso a janela de backup não interrompe os utilizadores. O snapshot é crash-consistent: é equivalente ao que se obteria após um encerramento não limpo. Para a maioria das bases de dados modernas e filas de mensagens, isto é aceitável.
+**Hot** é o padrão correto para execuções de alta frequência. Os serviços continuam a correr enquanto o snapshot é efectuado, por isso a janela de backup não interrompe os utilizadores. O snapshot é crash-consistent: é equivalente ao que se obteria após um encerramento não limpo. Para a maioria das bases de dados modernas e filas de mensagens, isto é aceitável.
 
 **Cold** é apropriado quando precisa de um snapshot application-consistent garantido e pode aceitar um breve reinício por repositório. Os serviços são parados antes do snapshot e reiniciados antes de o carregamento começar, por isso um carregamento lento ou falhado nunca prolonga a janela de downtime. Consulte [Semântica do Backup Cold](#semantica-do-backup-cold) para o modelo de garantia completo.
 

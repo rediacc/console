@@ -4,11 +4,11 @@ description: "Dónde se almacenan tus datos y cómo funciona la residencia de da
 category: "Concepts"
 order: 3
 language: es
-sourceHash: "107d8ef496686b0e"
-sourceCommit: "a97009927c347f7090e4f4f60f3948997654ae4b"
+sourceHash: "c87be32ef22a725d"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Al crear una cuenta en Rediacc, eliges una región de datos. Todos tus datos permanecen en esa región. Esta elección es permanente y no puede cambiarse después del registro.
+Al crear una cuenta en Rediacc, eliges una región de datos. Todos tus datos permanecen en esa región. Esta elección es permanente: no puedes cambiarla después del registro. No existe una ruta de migración. Elige según dónde tus datos deben residir legalmente, no según dónde estén tus servidores hoy.
 
 ## Regiones Disponibles
 
@@ -43,13 +43,13 @@ Estos elementos no son específicos de una región:
 |---|---|---|---|
 | Base de datos (D1) | Europa del Este (EEUR) | América del Norte Oriental (ENAM) | Asia Pacífico (APAC) |
 | Almacenamiento de config (R2) | Jurisdicción EU | US | Asia Pacífico |
-| Correo (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Tokio (ap-northeast-1) |
+| Correo (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Frankfurt (eu-central-1) |
 
 Cada región ejecuta infraestructura independiente. No hay consultas entre regiones ni flujos de datos entre ellas.
 
 ## Garantías de Datos en la EU
 
-La región EU proporciona garantías adicionales para organizaciones con requisitos de residencia de datos europeos:
+Si estás sujeto a requisitos europeos de residencia de datos, la región EU proporciona garantías específicas:
 
 - **Base de datos D1**: funciona en Europa del Este (pista de ubicación EEUR)
 - **Almacenamiento de config R2**: usa aplicación jurisdiccional de la EU (garantía contractual, no solo una pista de ubicación)
@@ -62,7 +62,7 @@ Para un mapeo detallado del RGPD, consulta [Cumplimiento del RGPD](/es/docs/lega
 
 Los blobs de configuración almacenados en R2 se cifran del lado del cliente antes de subirse usando intercambio de claves X25519 y AES-256-GCM. El servidor solo almacena texto cifrado. Ni Rediacc ni ningún proveedor de infraestructura puede leer tus datos de configuración.
 
-Las claves se derivan de una passkey con extensión PRF. El servidor almacena un secreto del lado del servidor que participa en la derivación de claves, pero ni la passkey sola ni el secreto del servidor solo pueden descifrar los datos.
+Las claves se derivan de una passkey con extensión PRF. El servidor almacena un secreto que participa en la derivación de claves, pero ni la passkey sola ni el secreto del servidor solo pueden descifrar los datos.
 
 Para detalles sobre la arquitectura de cifrado, consulta [Almacenamiento de Config](/es/docs/config-storage).
 
@@ -78,7 +78,7 @@ Propiedades técnicas de la arquitectura regional:
 
 - **Bases de datos separadas por región**: cada región tiene su propia base de datos Cloudflare D1. Sin consultas entre regiones.
 - **Almacenamiento separado por región**: cada región tiene su propio bucket R2. La EU usa aplicación jurisdiccional.
-- **Endpoints de correo separados por región**: los correos electrónicos transaccionales se envían desde endpoints AWS SES regionales.
+- **Entrega de correo mediante AWS SES**: los correos electrónicos transaccionales se envían mediante AWS SES. EU y US utilizan endpoints regionales dedicados; Asia Pacífico se enruta a través del endpoint EU (eu-central-1).
 - **Un usuario, una región**: una cuenta de usuario existe en exactamente una región. No puede abarcar múltiples regiones.
 - **Aislamiento de webhooks**: los eventos de webhook de Stripe son recibidos por todos los workers regionales, pero solo procesados por la región propietaria del registro del cliente.
 - **Cifrado de config de conocimiento cero**: el servidor no puede leer los datos de configuración. Las claves de cifrado nunca abandonan el dispositivo del cliente.

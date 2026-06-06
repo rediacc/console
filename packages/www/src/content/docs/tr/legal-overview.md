@@ -1,16 +1,16 @@
 ---
-title: "Uyumluluk Genel Bakışı"
-description: "Rediacc'ın kendi sunucunuzda barındırma mimarisi veri koruma, gizlilik ve güvenlik uyumluluk gereksinimlerini nasıl karşılar."
+title: "Uyumluluk Gerçekte Neler Gerektirir"
+description: "Rediacc sizin altyapınızda çalışır. Verilerinizi siz kontrol edersiniz. İşte bunun başlıca uyumluluk çerçeveleriyle nasıl hizalandığı."
 category: "Legal"
 order: 0
 language: tr
-sourceHash: "e20385eb9adfe180"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "1e36a25c724f4185"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Rediacc tamamen sizin altyapınızda çalışır. Ortam klonlama, yedekleme ve dağıtım işlemleri sırasında veriler makinenizi asla terk etmez. Hem veri sorumlusu hem de veri işleyen siz olmaya devam edersiniz. Hiçbir üçüncü taraf SaaS verilerinizi işlemez.
+Rediacc tamamen sizin altyapınızda çalışır. Klonlama, yedekleme ve dağıtım işlemleri sırasında verileriniz makinelerinizi asla terk etmez. Hem veri denetleyicisi hem de veri işleyeni siz olmaya devam edersiniz. Hiçbir üçüncü taraf SaaS hizmeti veya dış erişim yoktur.
 
-Bu bölüm, Rediacc'ın teknik yeteneklerini başlıca uyumluluk çerçevelerinin gereksinimleriyle eşleştirir. Her sayfa, resmi yasal metinlere madde düzeyinde referanslarla belirli bir düzenlemeyi kapsar.
+Rediacc'ın teknik yeteneklerini başlıca uyumluluk gereksinimlerine eşleştiriyoruz. Her sayfa, resmi yasal metne referanslar içererek belirli bir düzenlemeyi ayrıntılarıyla açıklar.
 
 ## Uyumluluk Matrisi
 
@@ -27,12 +27,12 @@ Bu bölüm, Rediacc'ın teknik yeteneklerini başlıca uyumluluk çerçevelerini
 
 ## Mimari Temeller
 
-Bu bölümdeki her uyumluluk çerçevesi aynı teknik özelliklere dayanır:
+Hepsi bu ortak noktada birleşiyor: bu bölümdeki her uyumluluk çerçevesi aynı teknik temellere dayanır.
 
 - **Durağan halde şifreleme**: Her depo LUKS2 AES-256 ile şifrelenir. Kimlik bilgileri yalnızca operatörün yerel yapılandırmasında saklanır, asla sunucuda değil.
 - **Ağ izolasyonu**: Her depo kendi Docker daemon'ına, loopback IP alt ağına (/26) ve iptables kurallarına sahiptir. Farklı depolardan konteynerler birbirleriyle iletişim kuramaz.
 - **Copy-on-write klonlama**: `rdc repo fork` dosya sistemi reflink'lerini (`cp --reflink=always`) kullanır. Veriler herhangi bir ağ transferi olmadan aynı makinede çoğaltılır.
-- **Denetim günlüğü**: Kimlik doğrulama (giriş, 2FA, parola değişiklikleri, oturum iptali), API token yaşam döngüsü, yapılandırma deposu işlemleri ve abonelik/lisans etkinliğini kapsayan 40'tan fazla olay türü. Yönetici paneli ve `rdc audit` CLI üzerinden erişilebilir. Makine düzeyindeki işlemler (fork, yedekleme, dağıtım) makinenin kendisinde SSH ve sistem günlükleri aracılığıyla gerçekleştirilir.
+- **Denetim günlüğü**: Kimlik doğrulama (giriş, 2FA, parola değişiklikleri, oturum iptali), API token yaşam döngüsü, yapılandırma deposu işlemleri, abonelik/lisans etkinliği ve CLI makine işlemleri (depo yaşam döngüsü, yedekleme, senkronizasyon, terminal oturumları) başta olmak üzere 70+ olay türü. Yönetici paneli, portal aktivite sayfası (org kapsamlı filtreleme ile) ve `rdc audit` CLI aracılığıyla erişilebilir. Makine işlemleri, derinlemesine savunma için sistem günlüklerinizde de kaydedilir.
 - **Şifreli yedekleme**: `rdc repo push/pull` verileri SSH üzerinden aktarır. Yedekleme hedefi LUKS ile şifrelenmiş birimler alır.
 - **Sıfır bilgi yapılandırma deposu**: Cihazlar arası isteğe bağlı şifreli yapılandırma senkronizasyonu. Yapılandırmalar yüklenmeden önce istemci tarafında AES-256-GCM ile şifrelenir. Sunucu yalnızca opak blob'lar saklar. Sunucu SSH anahtarlarını, kimlik bilgilerini, IP adreslerini veya herhangi bir düz metin yapılandırma verisini okuyamaz. Anahtar türetme passkey PRF extension + HKDF ile alan ayırma kullanır. Üye erişimi X25519 anahtar değişimi ile yönetilir ve iptal anında gerçekleşir.
 
@@ -40,7 +40,7 @@ Bu yetenekler hakkında ayrıntılı bilgi için [Mimari](/tr/docs/architecture)
 
 ## Neden Önemli
 
-Uyumluluk başarısızlıkları maliyetlidir. Bu uygulama vakaları, Rediacc'ın mimarisinin yapısal olarak önlediği sorunları içeriyordu:
+Uyumluluk başarısızlıkları maliyetlidir. Çok maliyetlidir. Aşağıdaki vakalar, Rediacc'ın mimarisinin yapısal olarak önlediği sorunları göstermektedir:
 
 | Olay | Ceza | Ne yanlış gitti |
 |------|------|-----------------|
@@ -54,4 +54,4 @@ Uyumluluk başarısızlıkları maliyetlidir. Bu uygulama vakaları, Rediacc'ın
 
 ## Önemli Uyarı
 
-Bu sayfalar, Rediacc'ın teknik yeteneklerini uyumluluk gereksinimleriyle ilişkili olarak açıklar. Herhangi bir düzenlemeye uyum, tek bir aracın kapsamının ötesinde kurumsal politikalar, prosedürler, personel eğitimi ve potansiyel olarak üçüncü taraf denetimleri gerektirir. Kuruluşunuza özel rehberlik için hukuk ve uyumluluk ekibinize danışın.
+Bu sayfalar, Rediacc'ın mimarisinin uyumluluk gereksinimleriyle nasıl hizalandığını açıklamaktadır. Ancak gerçek şu: uyumluluk yazılımdan daha geniş bir konsepttir. Politikalar, prosedürler, eğitim ve muhtemelen üçüncü taraf denetimlerine ihtiyacınız olacak. Rediacc altyapı kısmını yönetir. Geri kalan konularda hukuk ve uyumluluk ekiplerinizle çalışın.

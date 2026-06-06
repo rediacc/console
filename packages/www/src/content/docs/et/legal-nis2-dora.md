@@ -4,8 +4,8 @@ description: "Kuidas Rediacc käsitleb EL-i NIS2 küberturvalisuse direktiivi ja
 category: "Legal"
 order: 8
 language: et
-sourceHash: "a2078388f7ae1906"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "72a61496d38955d3"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 NIS2 ja DORA on EL-i määrused, mis seavad kriitilistele infrastruktuuridele ja finantssektori organisatsioonidele küberturvalisuse ja tegevuskerksuse nõuded. Mõlemad jõustusid 2025. aastal ja kehtivad laialdaselt EL-i tööstusharudes.

@@ -1,16 +1,16 @@
 ---
-title: rdc vs renet
-description: متى تستخدم rdc ومتى تستخدم renet.
+title: "rdc مقابل renet"
+description: "متى تستخدم rdc ومتى تستخدم renet."
 category: Concepts
 order: 1
 language: ar
-sourceHash: 026a183f8a5f9dd4
-sourceCommit: 4e60a12e0664cdee5ad9079a7b75e2d05980d0f5
+sourceHash: "2ccc8590bc6f67c6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # rdc مقابل renet
 
-يحتوي Rediacc على ملفين تنفيذيين. إليك متى تستخدم كلا منهما.
+يتضمن Rediacc ملفين تنفيذيين. وظيفتان، مكانان. إليك أيهما الذي يُستخدم.
 
 | | rdc | renet |
 |---|-----|-------|
@@ -60,7 +60,7 @@ rdc machine health --name server-1
 - فحص تفاصيل النظام الداخلية غير المتاحة عبر `rdc`
 - عمليات الاسترداد منخفضة المستوى
 
-جميع أوامر `renet` تتطلب صلاحيات الجذر (`sudo`). راجع [مرجع الخادم](/ar/docs/server-reference) للاطلاع على القائمة الكاملة لأوامر `renet`.
+جميع أوامر `renet` تتطلب صلاحيات الجذر (`sudo`). لا يغلف `rdc` كل أمر فرعي من أوامر `renet`؛ لأي عملية غير مغطاة، قم بالاتصال عبر SSH واستدع `renet` مباشرة. راجع [مرجع الخادم](/ar/docs/server-reference) للاطلاع على القائمة الكاملة لأوامر `renet`.
 
 ## تجريبي: `rdc ops` (أجهزة افتراضية محلية)
 

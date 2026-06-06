@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:15.662
+Backup & Wiederherstellung
+
+00:00:15.662 --> 00:00:25.030
+Drei Schritte: Konfigurieren, Pushen, Wiederherstellen
+
+00:00:25.030 --> 00:00:50.930
+Schritt 1: rclone-Konfiguration importieren
+
+00:00:50.930 --> 00:01:07.595
+Schritt 2: Konfigurierte Speicher auflisten
+
+00:01:07.595 --> 00:01:37.500
+Schritt 3: Vollständiges Backup pushen
+
+00:01:37.500 --> 00:02:05.004
+Schritt 4: Backups auf dem Speicher auflisten
+
+00:02:05.004 --> 00:02:10.764
+Weiter: Monitoring

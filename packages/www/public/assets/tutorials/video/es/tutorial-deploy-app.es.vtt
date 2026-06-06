@@ -1,0 +1,202 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.708
+¡Es hora de desplegar una app de
+
+00:00:03.708 --> 00:00:04.095
+verdad!
+
+00:00:04.095 --> 00:00:06.803
+Pasaremos de un repo vacío a contenedores
+
+00:00:06.803 --> 00:00:09.124
+en ejecución en tres pasos cortos.
+
+00:00:09.880 --> 00:00:12.148
+El flujo es simple:
+
+00:00:12.148 --> 00:00:13.849
+elige una plantilla,
+
+00:00:13.849 --> 00:00:16.683
+aplícala al repo y ejecútala.
+
+00:00:16.683 --> 00:00:19.518
+El CLI incluye plantillas integradas,
+
+00:00:19.518 --> 00:00:22.353
+así que nunca tenemos que
+
+00:00:22.353 --> 00:00:25.188
+escribir un docker-compose desde cero.
+
+00:00:28.482 --> 00:00:29.667
+Paso uno.
+
+00:00:29.667 --> 00:00:32.036
+Listamos las plantillas disponibles.
+
+00:00:32.036 --> 00:00:34.998
+Rediacc incluye configuraciones listas para
+
+00:00:34.998 --> 00:00:37.368
+apps comunes como Postgres,
+
+00:00:37.368 --> 00:00:39.737
+Redis y servidores web,
+
+00:00:39.737 --> 00:00:42.699
+para que no tengas que
+
+00:00:42.699 --> 00:00:45.661
+escribir un docker guion compose
+
+00:00:45.661 --> 00:00:46.846
+desde cero.
+
+00:00:48.346 --> 00:00:50.836
+El catálogo completo de plantillas.
+
+00:00:50.836 --> 00:00:53.825
+Cada una es un par compose
+
+00:00:53.825 --> 00:00:55.817
+más Rediaccfile ya probado.
+
+00:00:59.125 --> 00:01:00.137
+Paso dos.
+
+00:01:00.137 --> 00:01:02.667
+Aplicamos la plantilla app guion
+
+00:01:02.667 --> 00:01:04.690
+postgres a nuestro repo.
+
+00:01:04.690 --> 00:01:06.208
+Aparecen dos archivos:
+
+00:01:06.208 --> 00:01:08.738
+el docker compose punto yml
+
+00:01:08.738 --> 00:01:10.762
+que describe los contenedores,
+
+00:01:10.762 --> 00:01:13.292
+y el Rediaccfile que define
+
+00:01:13.292 --> 00:01:15.821
+los hooks de ciclo de
+
+00:01:15.821 --> 00:01:18.351
+vida de arranque y parada.
+
+00:01:20.601 --> 00:01:21.568
+Plantilla aplicada.
+
+00:01:21.568 --> 00:01:24.467
+El repo ya tiene su archivo
+
+00:01:24.467 --> 00:01:26.400
+compose y su Rediaccfile.
+
+00:01:29.746 --> 00:01:30.648
+Paso tres.
+
+00:01:30.648 --> 00:01:32.002
+Levantamos el repo.
+
+00:01:32.002 --> 00:01:34.257
+El CLI arranca los contenedores,
+
+00:01:34.257 --> 00:01:36.964
+monta el volumen cifrado y conecta
+
+00:01:36.964 --> 00:01:38.768
+el Docker daemon aislado.
+
+00:01:38.768 --> 00:01:41.475
+La app está en ejecución ahora.
+
+00:01:44.225 --> 00:01:46.132
+Contenedores en ejecución,
+
+00:01:46.132 --> 00:01:47.403
+volumen montado,
+
+00:01:47.403 --> 00:01:49.946
+Docker daemon aislado activo.
+
+00:01:53.274 --> 00:01:55.294
+Verificamos con docker ps.
+
+00:01:55.294 --> 00:01:57.819
+Observa que esta vista solo
+
+00:01:57.819 --> 00:02:00.344
+muestra los contenedores de nuestro
+
+00:02:00.344 --> 00:02:00.850
+repositorio.
+
+00:02:00.850 --> 00:02:03.375
+Los demás repos en el
+
+00:02:03.375 --> 00:02:05.900
+mismo servidor tienen sus propios
+
+00:02:05.900 --> 00:02:08.425
+Docker daemons y son completamente
+
+00:02:08.425 --> 00:02:09.940
+invisibles desde aquí.
+
+00:02:12.690 --> 00:02:14.921
+Solo los contenedores de este repo.
+
+00:02:14.921 --> 00:02:16.408
+El aislamiento es real,
+
+00:02:16.408 --> 00:02:17.523
+no de configuración.
+
+00:02:20.853 --> 00:02:23.384
+Verifiquemos qué está en ejecución.
+
+00:02:23.384 --> 00:02:25.914
+docker ps aquí solo lista
+
+00:02:25.914 --> 00:02:28.445
+los contenedores de este repo.
+
+00:02:28.445 --> 00:02:30.975
+Los demás repos del mismo
+
+00:02:30.975 --> 00:02:33.506
+servidor tienen sus propios daemons
+
+00:02:33.506 --> 00:02:36.037
+y son completamente invisibles desde
+
+00:02:36.037 --> 00:02:37.049
+esta vista.
+
+00:02:38.299 --> 00:02:40.903
+Solo los contenedores de este repo.
+
+00:02:40.903 --> 00:02:42.639
+El aislamiento es real,
+
+00:02:42.639 --> 00:02:43.941
+no es configuración.
+
+00:02:44.745 --> 00:02:47.427
+Y con eso terminamos tu primer despliegue.
+
+00:02:47.427 --> 00:02:49.343
+Nos vemos en el siguiente,
+
+00:02:49.343 --> 00:02:52.024
+donde profundizamos en trabajar con el repo
+
+00:02:52.024 --> 00:02:52.791
+en sí.

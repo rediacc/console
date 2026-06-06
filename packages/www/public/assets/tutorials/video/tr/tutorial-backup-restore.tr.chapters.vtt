@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:12.458
+Yedekleme ve Geri Yükleme
+
+00:00:12.458 --> 00:00:21.269
+Üç adım: yapılandır, gönder, geri yükle
+
+00:00:21.269 --> 00:00:43.314
+Adım 1: rclone yapılandırmasını içe aktar
+
+00:00:43.314 --> 00:00:57.138
+Adım 2: Yapılandırılmış depolamaları listele
+
+00:00:57.138 --> 00:01:22.446
+Adım 3: Tam yedek gönder
+
+00:01:22.446 --> 00:01:41.410
+Adım 4: Depolamadaki yedekleri listele
+
+00:01:41.410 --> 00:01:46.530
+Sıradaki: İzleme

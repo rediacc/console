@@ -1,19 +1,20 @@
 ---
 title: Intégration des agents IA - Vue d'ensemble
-description: Comment les assistants de programmation IA comme Claude Code, Cursor et Cline s'intègrent à l'infrastructure Rediacc pour le déploiement et la gestion autonomes.
+description: "Comment Claude Code, Cursor et Cline gèrent l'infrastructure Rediacc via rdc : sortie JSON, introspection des agents et garde-fous de sécurité."
 category: Guides
 order: 30
 language: fr
-sourceHash: "7789f1e26755c779"
+sourceHash: "0aa0c975030d4856"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Les assistants de programmation IA peuvent gérer l'infrastructure Rediacc de manière autonome via le CLI `rdc`. Ce guide couvre les approches d'intégration et comment démarrer.
+De fait, `rdc` est conçu pour les agents dès sa conception. Claude Code, Cursor, Cline : tout assistant IA qui appelle `rdc` dans un sous-shell obtient une sortie JSON structurée, des erreurs lisibles par machine et les garde-fous nécessaires à la gestion autonome de l'infrastructure Rediacc. Voici comment fonctionne l'intégration.
 
 ## Pourquoi l'auto-hébergement + agents IA
 
 L'architecture de Rediacc est naturellement compatible avec les agents :
 
-- **CLI d'abord** : Chaque opération est une commande `rdc`, aucune GUI requise
+- **CLI d'abord** : Chaque opération est une commande `rdc`, aucune interface graphique requise
 - **Basé sur SSH** : Le protocole que les agents connaissent le mieux grâce aux données d'entraînement
 - **Sortie JSON** : Toutes les commandes prennent en charge `--output json` avec une enveloppe cohérente
 - **Isolation Docker** : Chaque dépôt dispose de son propre daemon et espace de noms réseau
@@ -29,7 +30,7 @@ Le moyen le plus rapide de commencer. Copiez notre [modèle AGENTS.md](/fr/docs/
 - `.cursorrules` pour Cursor
 - `.windsurfrules` pour Windsurf
 
-Cela donne à l'agent un contexte complet sur les commandes disponibles, l'architecture et les conventions.
+Déposez-le à la racine et l'agent dispose de la référence complète des commandes, du contexte d'architecture et des conventions dont il a besoin pour travailler sans tâtonner.
 
 ### 2. Pipeline de sortie JSON
 
@@ -62,7 +63,7 @@ Les réponses d'erreur incluent les champs `retryable` et `guidance` :
 
 ### 3. Découverte des capacités de l'agent
 
-Le sous-commande `rdc agent` fournit une introspection structurée :
+La sous-commande `rdc agent` fournit une introspection structurée :
 
 ```bash
 # List all commands with arguments and options
@@ -85,8 +86,13 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 | `--fields name,status` | Limiter la sortie à des champs spécifiques |
 | `--dry-run` | Prévisualiser les opérations destructives sans exécuter |
 
+## Sécurité et garde-fous
+
+Le CLI ne traite pas les agents comme un humain devant un terminal. Les opérations sensibles requièrent la preuve que l'état courant est déjà connu (l'option `--current`), les flux nécessitant un éditeur interactif sont refusés par défaut, et chaque refus est consigné dans le journal d'audit. La référence [Sécurité et garde-fous des agents IA](/fr/docs/ai-agents-safety) couvre la table de blocage complète, le modèle de validation des connaissances, la portée `REDIACC_ALLOW_CONFIG_EDIT` et le journal d'audit chaîné par hachage.
+
 ## Prochaines étapes
 
+- [Sécurité et garde-fous des agents IA](/fr/docs/ai-agents-safety), Ce que les agents peuvent et ne peuvent pas faire, validation des connaissances, journal d'audit
 - [Guide de configuration de Claude Code](/fr/docs/ai-agents-claude-code), Configuration étape par étape de Claude Code
 - [Guide de configuration de Cursor](/fr/docs/ai-agents-cursor), Intégration avec l'IDE Cursor
 - [Référence de la sortie JSON](/fr/docs/ai-agents-json-output), Documentation complète de la sortie JSON

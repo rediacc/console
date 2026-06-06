@@ -4,10 +4,11 @@ description: rdc CLI JSON 输出格式、信封模式、错误处理和代理发
 category: Reference
 order: 51
 language: zh
-sourceHash: "18996ab708715227"
+sourceHash: "9f8d61df26b59757"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-所有 `rdc` 命令都支持结构化 JSON 输出，供 AI 代理和脚本进行程序化消费。
+所有 `rdc` 命令均输出结构化 JSON，可直接传入脚本或 AI 代理。
 
 ## 启用 JSON 输出
 
@@ -86,10 +87,46 @@ echo '{}' | rdc agent exec "machine query"
 
 | 字段 | 类型 | 描述 |
 |-------|------|-------------|
-| `code` | `string` | 机器可读的错误代码 |
+| `code` | `string` | 机器可读的错误代码（规范列表见 `ERROR_CODES` 常量） |
 | `message` | `string` | 人类可读的描述 |
 | `retryable` | `boolean` | 重试相同命令是否可能成功 |
-| `guidance` | `string` | 解决错误的建议下一步操作 |
+| `guidance` | `string` | 自由文本提示（已过时，结构化操作数据请使用 `next`） |
+| `next` | `object?` | 结构化的下一步操作提示（存在时）。详见下文 |
+
+### 结构化 `next` 操作提示
+
+对于 `PRECONDITION_MISMATCH` 等高价值错误码，错误对象会包含 `next` 字段，提供可直接呈现给用户的精确命令。并非所有错误码都携带此字段，仅有明确恢复路径的错误才会包含。**代理应将 `next.options[].run` 原样转达给用户，而不是自行合成命令。** 这能有效避免代理凭空捏造不存在命令的情况，此类问题比你想象的更常见。
+
+```json
+{
+  "errors": [{
+    "code": "PRECONDITION_MISMATCH",
+    "message": "--current digest mismatch (expected 3264f8ee…, got 611dfd8a…)",
+    "next": {
+      "summary": "Provide the current value or acknowledge rotation.",
+      "options": [
+        {
+          "description": "Re-read current digest, then retry with --current",
+          "run": "rdc repo secret get --name mail --key STRIPE_KEY"
+        },
+        {
+          "description": "Skip the precondition (rotation, audited)",
+          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret"
+        }
+      ]
+    }
+  }]
+}
+```
+
+Schema：
+
+| 字段 | 类型 | 描述 |
+|-------|------|-------------|
+| `next.summary` | `string` | 用户需要做出决策的单行说明 |
+| `next.options[]` | `array` | 可供用户选择的具体操作列表 |
+| `next.options[].description` | `string` | 该选项的人类可读说明 |
+| `next.options[].run` | `string` | 精确的 CLI 命令，原样转达给用户 |
 
 ### 可重试错误
 
@@ -99,11 +136,11 @@ echo '{}' | rdc agent exec "machine query"
 - **RATE_LIMITED**, 请求过多，等待后重试
 - **API_ERROR**, 暂时性后端故障
 
-不可重试的错误（身份验证、未找到、无效参数）需要在重试前采取纠正措施。
+不可重试的错误（身份验证、未找到、无效参数）需要修正后才能重试。
 
 ## 过滤输出
 
-使用 `--fields` 将输出限制为特定键。当只需要特定数据时，这可以减少 token 使用量：
+使用 `--fields` 将输出限制为特定键，减少 token 用量：
 
 ```bash
 rdc machine containers --name prod-1 -o json --fields name,status,repository
@@ -139,7 +176,7 @@ rdc repo delete --name mail -m prod-1 --dry-run -o json
 
 ## 代理发现命令
 
-`rdc agent` 子命令提供结构化内省功能，供 AI 代理在运行时发现可用操作。
+`rdc agent` 子命令为 AI 代理提供结构化的方式，在运行时发现可用操作。
 
 ### 列出所有命令
 
@@ -177,7 +214,7 @@ rdc agent capabilities
 rdc agent schema --command "machine query"
 ```
 
-返回单个命令的详细模式，包括所有参数和选项的类型和默认值。
+返回单个命令的完整模式，包括每个参数和选项的类型与默认值。
 
 ### 通过 JSON 执行
 
@@ -185,7 +222,7 @@ rdc agent schema --command "machine query"
 echo '{"machine": "prod-1"}' | rdc agent exec "machine query"
 ```
 
-通过 stdin 接受 JSON，将键映射到命令参数和选项，并强制以 JSON 输出执行。适用于无需构建 shell 命令字符串的结构化代理到 CLI 通信。
+通过 stdin 接受 JSON，将键映射到命令参数和选项，并强制以 JSON 输出执行。当你不想为代理到 CLI 调用构建 shell 命令字符串时，使用此方式更为便捷。
 
 ## 解析示例
 
@@ -201,7 +238,7 @@ status=$(rdc machine query --name prod-1 -o json | jq -r '.data.status')
 import subprocess, json
 
 result = subprocess.run(
-    ["rdc", "machine", "query", "prod-1", "-o", "json"],
+    ["rdc", "machine", "query", "--name", "prod-1", "-o", "json"],
     capture_output=True, text=True
 )
 envelope = json.loads(result.stdout)
@@ -223,7 +260,7 @@ else:
 ```javascript
 import { execFileSync } from 'child_process';
 
-const raw = execFileSync('rdc', ['machine', 'query', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
+const raw = execFileSync('rdc', ['machine', 'query', '--name', 'prod-1', '-o', 'json'], { encoding: 'utf-8' });
 const { success, data, errors } = JSON.parse(raw);
 
 if (!success) {

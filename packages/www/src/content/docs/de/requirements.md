@@ -6,13 +6,13 @@ description: >-
 category: Guides
 order: 0
 language: de
-sourceHash: "eb237c7beb1bb942"
-sourceCommit: "d5c06171af0ef58b551a9682905d98af81e496cd"
+sourceHash: "e84db3bb90270473"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Voraussetzungen
 
-Bevor Sie mit Rediacc bereitstellen, stellen Sie sicher, dass Ihre Workstation und Ihre entfernten Server die folgenden Voraussetzungen erfüllen.
+Größtenteils handelt es sich um Standard-Setup für Linux-Server. Ein paar Details sind spezifisch für die Funktionsweise von Rediacc - überprüfen Sie diese unbedingt, bevor Sie starten.
 
 ## Workstation (Steuerungsebene)
 

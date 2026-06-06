@@ -4,11 +4,11 @@ description: 'Cómo la CLI de Rediacc evita que los asistentes de codificación 
 category: Concepts
 order: 35
 language: es
-sourceHash: "43f8eb06d0f5f7a1"
-sourceCommit: "c6db1fb9ec9979425e22578d31c3c188bc7e73f9"
+sourceHash: "ae23c9bc851ecfcd"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Cuando Claude Code, Cursor, Gemini CLI, Copilot CLI o cualquier otro asistente de codificación con IA maneja `rdc`, la CLI lo trata de forma diferente a un humano en el teclado. Esta página explica qué puede hacer el agente, qué no puede hacer y cómo las salvaguardas se mantienen incluso cuando el agente intenta sortearlas.
+Así que estás apuntando un asistente de codificación con IA a tu infraestructura. Cuando Claude Code, Cursor, Gemini CLI, Copilot CLI o cualquier otro asistente similar maneja `rdc`, la CLI lo detecta y aplica un conjunto de reglas diferente al de un humano en el teclado. Esta página explica qué puede hacer el agente, qué no puede hacer y cómo las salvaguardas se mantienen incluso cuando el agente intenta sortearlas.
 
 ## Referencia rápida: qué pueden y no pueden hacer los agentes
 
@@ -42,17 +42,42 @@ La detección se ejecuta una vez por proceso y se almacena en caché. No se pued
 
 ## El modelo de compuerta de conocimiento
 
-Las mutaciones sensibles siguen la convención `passwd(1)`: para cambiar un secreto, demuestra que ya lo conocías.
+Las mutaciones sensibles siguen la convención `passwd(1)`: para cambiar un secreto, demuestra que ya lo conocías. **Simétrico para humanos y agentes**. Ambos pasan por la misma compuerta. No existe ningún atajo por estar "en el teclado".
 
 - ¿Quieres rotar un token de API almacenado en `/credentials/cfDnsApiToken`?
 - La CLI pregunta: "¿cuál es el valor actual?"
-- El agente proporciona el texto plano mediante `--current "$OLD"`. La CLI aplica SHA-256 a `$OLD` y lo compara con el digest del valor almacenado actualmente. Coincidencia → la escritura se realiza. Discrepancia → rechazado, auditado.
+- El agente (o el humano) proporciona el texto plano mediante `--current "$OLD"`. La CLI aplica SHA-256 a `$OLD` y lo compara con el digest del valor almacenado actualmente. Coincidencia → la escritura se realiza. Discrepancia → rechazado, auditado.
+- Para rotar sin verificar el valor anterior, usa `--rotate-secret` (mutuamente excluyente con `--current`). Esto queda registrado explícitamente en la auditoría como una rotación.
 
-El modelo es simple pero cierra tres superficies de ataque:
+El modelo cierra tres superficies de ataque:
 
-1. **Rotación silenciosa**: un agente sin acceso previo a `$OLD` no puede reemplazarlo con un valor propio.
+1. **Rotación silenciosa**: un llamante (agente o humano) sin acceso previo a `$OLD` no puede reemplazarlo con un valor propio.
 2. **Exfiltración mediante sondeo**: la respuesta del digest nunca contiene texto plano; incluso un registro de auditoría comprometido muestra `expected abc12345…, got deadbeef…`, no los valores subyacentes.
-3. **Sobreescritura accidental de la configuración del usuario**: requiere un `--current` deliberado cada vez; sin sobreescritura automática en `set`.
+3. **Sobreescritura accidental de la configuración de producción**: requiere un `--current` deliberado cada vez, incluso desde un TTY. Detecta el error de "quería establecer STRIPE_TEST pero estoy en el shell de producción".
+
+### Sugerencias de próxima acción estructuradas
+
+Cuando la precondición falla, el sobre JSON (`--output json`) incluye un campo estructurado `errors[].next` que indica a los agentes exactamente qué sugerir al humano:
+
+```json
+{
+  "errors": [{
+    "code": "PRECONDITION_MISMATCH",
+    "message": "...",
+    "next": {
+      "summary": "Provide the current value or acknowledge rotation.",
+      "options": [
+        { "description": "Re-read current digest, then retry with --current",
+          "run": "rdc repo secret get --name mail --key STRIPE_KEY" },
+        { "description": "Skip the precondition (rotation, audited)",
+          "run": "rdc repo secret set --name mail --key STRIPE_KEY --value <new> --mode file --rotate-secret" }
+      ]
+    }
+  }]
+}
+```
+
+**Los agentes deben transmitir `next.options[].run` al humano textualmente, en lugar de sintetizar sus propios comandos.** Esto evita el modo de fallo en que el agente inventa un comando que no existe y mantiene al operador en control de la acción real.
 
 ### Ejemplo práctico
 
@@ -115,7 +140,7 @@ Ese archivo no existe en macOS ni en Windows. Sin forma de verificar la legitimi
 
 > The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
 
-En la práctica, los usuarios que no son de Linux no tienen vía de escape del flujo de trabajo basado en bifurcación. Esto es intencional. Los agentes son empujados a través de un sandbox al que no pueden acceder por detrás, sin importar cómo se les haya indicado. Ejecuta tu agente dentro de WSL, un contenedor Linux o una VM Linux si necesitas la anulación; de lo contrario, trabaja sobre una bifurcación.
+Los usuarios que no son de Linux no tienen vía de escape del flujo de trabajo fork-first. Eso es intencional. No hay forma de que un agente eluda el sandbox, independientemente de cómo se le haya indicado. Si necesitas la anulación, ejecuta tu agente dentro de WSL, un contenedor Linux o una VM Linux. Si no, trabaja sobre un fork.
 
 ## Registro de auditoría
 
@@ -161,9 +186,9 @@ El registro es seguro para compartir con un revisor de seguridad o adjuntar a un
 
 Las salvaguardas del agente son **de comportamiento, no criptográficas**. Un agente decidido o dirigido que se ejecuta bajo el mismo UID que el archivo de configuración siempre puede hacer `cat ~/.config/rediacc/rediacc.json` y leer el texto plano, porque el proceso puede leer el archivo.
 
-Para una aplicación criptográfica real, usa el [almacén de configuración cifrado](/es/docs/config-storage): los secretos viven en el lado del servidor, cada campo sensible lleva un compromiso HMAC por campo, y el account worker rechaza escrituras cuya precondición `--current` no coincida por hash con lo que tiene almacenado. El servidor nunca ve el texto plano: zero-knowledge: pero sí aplica la compuerta.
+Para una aplicación criptográfica real, usa el [almacén de configuración cifrado](/es/docs/config-storage): los secretos viven en el lado del servidor, cada campo sensible lleva un compromiso HMAC por campo, y el account worker rechaza escrituras cuya precondición `--current` no coincida por hash con lo que tiene almacenado. El servidor nunca ve el texto plano (zero-knowledge), pero sí aplica la compuerta.
 
-La ruta de archivo local es "el camino fácil es seguro". La ruta del almacén remoto es "el camino difícil también es difícil".
+Archivos locales: el camino fácil es el seguro. Almacén remoto: la ruta de evasión también es criptográficamente difícil.
 
 ## Lo que Rediacc no aísla
 
@@ -175,16 +200,19 @@ Esta es la línea de responsabilidad compartida:
 
 | Frontera | Responsable |
 |---|---|
-| Datos del repositorio, espacio de nombres de montaje, alcance de Docker, salvaguardas del agente, registro de auditoría | Rediacc |
-| Radio de impacto en servicios externos (Stripe, AWS, Railway, GitHub, etc.) | Desarrollador del repositorio |
+| Datos del repositorio, espacio de nombres de montaje, alcance de Docker, salvaguardas del agente, registro de auditoría, inyección de secretos en el momento del despliegue | Rediacc |
+| El código de la aplicación que usa esos secretos, y cualquier credencial integrada en la imagen en el momento de la compilación | Desarrollador del repositorio |
 
-Tres patrones cierran la brecha del lado del desarrollador:
+La mitigación principal está integrada: los **[secretos por repositorio](/es/docs/repositories#secrets)** se almacenan en un plano separado de la imagen del repositorio cifrado y no se copian a través del límite del fork. Los contenedores de un fork arrancan con un mapa de secretos vacío y se identifican como un principal externo diferente al del padre. Configúralos con `rdc repo secret set` (modo env para interpolación de compose, modo file para bloques tmpfs `secrets:`). La compuerta de mutación es simétrica. Tanto humanos como agentes deben proporcionar `--current` (precondición estilo passwd) o `--rotate-secret` (rotación auditada) para sobrescribir o eliminar un valor existente.
 
-1. **No almacenes credenciales externas de producción en el repositorio en absoluto.** Recupéralas desde un gestor de secretos externo (HashiCorp Vault, AWS Secrets Manager, 1Password Connect) al iniciar el contenedor. Los contenedores de la bifurcación recuperan credenciales acotadas al sandbox por diseño porque se identifican de manera diferente.
-2. **Elimina o sustituye credenciales en el momento de la bifurcación mediante el hook `up()` del Rediaccfile.** El `up()` de una bifurcación se ejecuta contra un GUID de repositorio diferente al del padre. Detéctalo, y luego reescribe `.env` con valores de sandbox, aprovisiona una cuenta de sandbox de Stripe por bifurcación, apunta las cadenas de conexión a la base de datos a una instancia de prueba por bifurcación, etc. Consulta [Servicios](/es/docs/services) para la referencia del hook de ciclo de vida.
-3. **Restringe la red saliente de la bifurcación con filtrado de egreso eBPF** para que la bifurcación solo pueda alcanzar localhost y endpoints de sandbox explícitos. El aislamiento de red por repositorio de Rediacc es la base; las listas de permitidos de egreso por bifurcación no están construidas hoy, pero el camino está abierto.
+**El aislamiento entre repositorios está impuesto.** Un compose file malicioso o descuidado en el repositorio B no puede referenciar el directorio de secretos del repositorio A. El validador de compose de renet rechaza terminantemente cualquier ruta `secrets: file:`, `configs: file:` o `env_file:` que apunte fuera del directorio `${REDIACC_NETWORK_ID}` del repositorio actual, y ese rechazo NO es anulable con `--unsafe`. Defensa en profundidad: el sandbox Landlock alrededor del subproceso bash del Rediaccfile limita las lecturas del sistema de archivos únicamente al directorio de secretos de la red actual, por lo que un `cat /var/run/rediacc/secrets/<other>/X` desde un Rediaccfile malicioso falla con EACCES a nivel de kernel.
 
-Rediacc maneja la mitad de infraestructura de la seguridad del agente. La mitad del servicio externo vive en tu Rediaccfile.
+Dos patrones adicionales cierran los casos extremos:
+
+1. **No integres credenciales de producción en el sistema de archivos del repositorio.** Un archivo `.env` incorporado en la imagen, o una credencial persistida en un volumen durante `up()`, se reflinks a la bifurcación. La función de secretos por repositorio solo protege los valores que guardas en el plano de secretos. No puede proteger retroactivamente los bytes que ya viven dentro de la imagen LUKS. Para repositorios existentes con archivos `.env` integrados, llévalos manualmente a secretos por repositorio.
+2. **Restringe la red saliente del fork con filtrado de egreso eBPF** para que el fork solo pueda alcanzar localhost y endpoints de sandbox explícitos. El aislamiento de red por repositorio de Rediacc es la base; las listas de permitidos de egreso por fork no están disponibles hoy, pero el camino está abierto.
+
+Rediacc gestiona la inyección en el momento del despliegue, el aislamiento entre forks y el aislamiento entre repositorios. La parte de "no lo integres en la imagen" es tu responsabilidad.
 
 ## Recetas rápidas
 

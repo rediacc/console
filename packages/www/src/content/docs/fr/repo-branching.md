@@ -5,15 +5,15 @@ category: Reference
 subcategory: advanced
 order: 41
 language: fr
-sourceHash: "6ca18986dfd6e237"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2448559f0fcfc0e0"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Gestion de branches façon Git
 
-Les dépôts Rediacc prennent en charge une gestion des versions façon Git, construite sur des forks copy-on-write. Chaque fork immuable est un **commit** : une image stabilisée en octets, figée, qui refuse de monter. Les branches sont des références nommées pointant vers un commit. `rdc repo checkout` clone par reflink un commit dans un fork de travail modifiable, et `rdc repo merge` combine deux lignes d'historique sans jamais muter un dépôt en cours d'exécution.
+Voici le modèle : Rediacc transforme les forks copy-on-write en historique des versions façon Git. Chaque fork immuable est un **commit** : une image stable en octets, figée, qui refuse de monter. Les branches sont des références nommées pointant vers un commit. `rdc repo checkout` clone par reflink un commit dans un fork de travail modifiable, et `rdc repo merge` combine deux lignes d'historique sans jamais muter un dépôt en cours d'exécution.
 
-Le modèle repose sur deux couches. La **machine est le magasin d'objets** : les commits sont des images de forks immuables résidant sur le datastore. La **config CLI est le magasin de références** : les noms de branches, le `HEAD` courant et le reflog résident dans votre configuration locale, pas sur la machine. C'est la même séparation que git utilise entre `.git/objects` et `.git/refs`.
+Le modèle repose sur deux magasins. La **machine est le magasin d'objets** : les commits sont des images de forks immuables résidant sur le datastore. La **config CLI est le magasin de références** : les noms de branches, le `HEAD` courant et le reflog résident dans votre configuration locale, pas sur la machine. C'est la même séparation que git utilise entre `.git/objects` et `.git/refs`.
 
 ## Quand l'utiliser
 

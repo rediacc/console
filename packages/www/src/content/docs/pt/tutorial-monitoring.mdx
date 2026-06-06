@@ -1,19 +1,19 @@
 ---
 title: "Monitorização"
-description: "Verifique o estado de saúde dos seus servidores e repositórios a partir do seu computador portátil com os comandos rdc machine."
+description: "Verifique o estado de saúde dos seus servidores e o status dos repositórios a partir do seu computador portátil com comandos rdc machine."
 category: "Tutorials"
 subcategory: advanced
 order: 12
 language: pt
-sourceHash: "7690e2a129161381"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "6b1363b30c1f96a8"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Monitorização
 
-A sua aplicação está implementada, em produção e com backup. Agora certifique-se de que tudo continua saudável. O `rdc` dá-lhe uma visão completa de qualquer servidor (saúde, contentores, repositórios) a partir do seu computador portátil.
+A sua aplicação está implementada e com backup. Agora mantenha-a saudável. É isto que o `rdc` faz. O `rdc` dá-lhe a imagem completa de qualquer servidor (saúde, contentores, repositórios) a partir do seu computador portátil.
 
 ## Ver o tutorial
 
@@ -45,7 +45,7 @@ Mostra cada repositório com o seu tamanho, estado de montagem, estado Docker e 
 
 <TutorialStep number={4} />
 
-Informação do sistema, repositórios, contentores, tudo num único comando. O mesmo comando `query` sem filtros devolve a imagem completa; com `--system`, `--containers`, `--repositories`, `--services`, `--network` ou `--block-devices` limita-se a essa secção.
+O comando `query` sem filtros dá-lhe a imagem completa: informação do sistema, repositórios e contentores. Adicione `--system`, `--containers`, `--repositories`, `--services`, `--network` ou `--block-devices` para restringir-se a essa secção.
 
 ## Verificação local
 

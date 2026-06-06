@@ -1,16 +1,16 @@
 ---
 title: RDC CLI 快速参考
-description: "rdc 命令快速参考：配置、仓库、机器、同步和容器。"
+description: "rdc 快速参考：配置、仓库、机器、文件同步和容器。完整选项集：在任意命令后添加 --help。"
 category: Guides
 order: 3
 language: zh
-sourceHash: "ad0ae49efa847fbc"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "bc52628ba870dfbb"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # RDC CLI 快速参考
 
-最常用 `rdc` 命令的快速参考。在任意命令后加 `--help` 可查看完整选项。
+此处并未列出所有 `rdc` 命令，仅包含每次部署中常见的命令。要查看完整选项集，请在任意 rdc 命令后添加 `--help`。边界情况和较少使用的选项详见完整参考。
 
 ## 仓库生命周期
 
@@ -23,6 +23,22 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc repo fork --parent <repo> --tag <tag> -m <machine>` | 派生仓库（近乎瞬时，BTRFS reflink） |
 | `rdc repo takeover --name <repo> -m <machine>` | 接管现有仓库的所有权 |
 | `rdc config repository list` | 列出所有仓库及其名称和 GUID |
+
+## 仓库机密
+
+仅供部署时使用的一次性凭证。`get` 仅返回摘要，不返回值。完整指南请参阅 [仓库 § 机密](/en/docs/repositories#secrets)。
+
+| 命令 | 说明 |
+|------|------|
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> [--mode env\|file] --current ""` | 创建新机密（首次写入时使用 `--current ""`） |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --current <prev>` | 覆盖现有机密（密码风格的前置条件） |
+| `rdc repo secret set --name <repo> --key <KEY> --value <val> --rotate-secret` | 覆盖而不验证先前的值（作为轮换进行审计） |
+| `rdc repo secret list --name <repo>` | 列出机密名称和交付模式（从不返回值或摘要） |
+| `rdc repo secret get --name <repo> --key <KEY>` | 显示机密摘要和模式（永不返回明文值） |
+| `rdc repo secret unset --name <repo> --key <KEY> --current <prev>` | 删除机密 |
+| `rdc repo secret unset --name <repo> --key <KEY> --rotate-secret` | 删除而不验证先前的值 |
+
+> 派生仓库不继承机密。需在派生仓库上显式设置，使用 `rdc repo secret set --name <repo>:<tag>`。
 
 ## 备份与恢复
 
@@ -95,7 +111,8 @@ sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
 | `rdc term connect -m <machine>` | 打开到机器的 SSH 终端 |
 | `rdc term connect -m <machine> -r <repo>` | 打开到仓库的 SSH 终端（设置 DOCKER_HOST） |
 | `rdc term connect -m <machine> -c "<command>"` | 在机器上运行命令 |
-| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | 将文件、目录或多个来源上传到仓库 |
+| `rdc repo sync upload -m <machine> -r <repo> --local <paths...>` | 将一个或多个本地文件或目录上传到仓库 |
+| `rdc repo sync upload -m <machine> -r <repo> --local <file> --remote-file <path>` | 将单个本地文件上传到指定的远程路径 |
 | `rdc repo sync download -m <machine> -r <repo> --local <dir>` | 将仓库目录下载到本地 |
 | `rdc repo sync download -m <machine> -r <repo> --remote-file <path> --local <dir>` | 将单个远程文件下载到本地目录 |
 | `rdc vscode connect -m <machine> -r <repo>` | 打开 VS Code Remote SSH 会话 |

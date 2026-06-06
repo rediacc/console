@@ -193,3 +193,17 @@
 # BLOCKER: transitive via pinned @opentelemetry/sdk-node ^0.211.0; the vulnerable Prometheus HTTP listener is never started in our config (OTLP-only egress), so the malformed-request DoS is structurally unreachable; revisit when the syncpack OpenTelemetry pin advances past 0.220
 1117942
 1117943
+
+# BLOCKER: four newly-disclosed hono advisories on the transitive hono 4.12.19 (pulled by
+# @modelcontextprotocol/sdk + @hono/node-server for the rdc CLI MCP server, and used directly
+# by the account Cloudflare worker). All are fixed in hono 4.12.21+, but the repo .npmrc
+# minimum-release-age supply-chain guard refuses to install 4.12.21+ in this build environment
+# (npm pins the resolved copy at 4.12.19; npm ci honors the lockfile). Practical reachability is
+# nil: ipRestriction (1120082), JWT/bearer middleware (1120084) and app.mount() prefix routing
+# (1120085) are not imported or called anywhere (verified by grep); the cookie sameSite/priority
+# injection (1120083) needs user-controlled cookie attributes, but the account worker only ever
+# sets a hardcoded sameSite:'Strict'. Drop this allowlist once the release-age guard admits hono 4.12.21+.
+1120082
+1120083
+1120084
+1120085

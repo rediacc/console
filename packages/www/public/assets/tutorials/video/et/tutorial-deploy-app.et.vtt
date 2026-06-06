@@ -1,0 +1,193 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.142
+Aeg juurutada päris rakendus!
+
+00:00:03.142 --> 00:00:05.820
+Liigume tühjast repost töötavate konteineriteni
+
+00:00:05.820 --> 00:00:07.426
+kolme lühikese sammuga.
+
+00:00:08.208 --> 00:00:09.501
+Voog on lihtne:
+
+00:00:09.501 --> 00:00:10.363
+vali mall,
+
+00:00:10.363 --> 00:00:12.518
+rakenda see repositooriumisse ja käivita.
+
+00:00:12.518 --> 00:00:14.673
+CLI-l on kaasas sisseehitatud mallid,
+
+00:00:14.673 --> 00:00:17.259
+nii et docker-compose'i pole vaja nullist
+
+00:00:17.259 --> 00:00:17.690
+kirjutada.
+
+00:00:20.958 --> 00:00:21.748
+Esimene samm.
+
+00:00:21.748 --> 00:00:22.934
+Loetleme saadaolevad mallid.
+
+00:00:22.934 --> 00:00:25.701
+Rediacc sisaldab valmis seadistusi levinud rakendustele --
+
+00:00:25.701 --> 00:00:26.096
+Postgres,
+
+00:00:26.096 --> 00:00:26.491
+Redis,
+
+00:00:26.491 --> 00:00:29.258
+veebiserverid -- nii et docker-compose'i pole vaja
+
+00:00:29.258 --> 00:00:30.049
+nullist kirjutada.
+
+00:00:31.549 --> 00:00:33.045
+Täielik mallide kataloog.
+
+00:00:33.045 --> 00:00:36.037
+Iga mall on testitud compose'i ja
+
+00:00:36.037 --> 00:00:37.034
+Rediaccfile'i paar.
+
+00:00:40.337 --> 00:00:40.953
+Teine samm.
+
+00:00:40.953 --> 00:00:42.492
+Rakendame app-postgres malli oma repositooriumisse.
+
+00:00:42.492 --> 00:00:43.415
+Ilmub kaks faili:
+
+00:00:43.415 --> 00:00:43.723
+docker-compose.yml,
+
+00:00:43.723 --> 00:00:44.646
+mis kirjeldab konteinereid,
+
+00:00:44.646 --> 00:00:45.262
+ja Rediaccfile,
+
+00:00:45.262 --> 00:00:47.416
+mis määrab käivitamise ja peatamise elutsükli konksud.
+
+00:00:49.666 --> 00:00:50.779
+Mall on rakendatud.
+
+00:00:50.779 --> 00:00:53.376
+Repol on nüüd oma compose-fail ja Rediaccfile.
+
+00:00:56.702 --> 00:00:59.221
+Kolmas samm.
+
+00:00:59.221 --> 00:01:01.741
+Käivitame repositooriumi.
+
+00:01:01.741 --> 00:01:04.260
+CLI käivitab
+
+00:01:04.260 --> 00:01:05.520
+konteinerid,
+
+00:01:05.520 --> 00:01:08.039
+ühendab krüpteeritud
+
+00:01:08.039 --> 00:01:10.559
+mahu ja
+
+00:01:10.559 --> 00:01:13.078
+seadistab isoleeritud
+
+00:01:13.078 --> 00:01:15.597
+Dockeri deemoni.
+
+00:01:15.597 --> 00:01:18.117
+Rakendus töötab
+
+00:01:18.117 --> 00:01:19.376
+nüüd.
+
+00:01:22.126 --> 00:01:23.396
+Konteinerid töötavad,
+
+00:01:23.396 --> 00:01:25.300
+maht on ühendatud,
+
+00:01:25.300 --> 00:01:27.839
+isoleeritud Dockeri deemon on
+
+00:01:27.839 --> 00:01:28.474
+üleval.
+
+00:01:31.814 --> 00:01:33.053
+Kontrollime docker ps abil.
+
+00:01:33.053 --> 00:01:33.672
+Pane tähele,
+
+00:01:33.672 --> 00:01:36.150
+et see vaade näitab ainult meie repositooriumi konteinereid.
+
+00:01:36.150 --> 00:01:38.938
+Teistel repositooriumidel samal serveril on oma Dockeri deemonid ja
+
+00:01:38.938 --> 00:01:40.487
+need on siit täielikult nähtamatud.
+
+00:01:43.237 --> 00:01:44.919
+Ainult selle repo konteinerid.
+
+00:01:44.919 --> 00:01:46.181
+Isolatsioon on tegelik,
+
+00:01:46.181 --> 00:01:47.442
+mitte ainult konfiguratsioon.
+
+00:01:50.766 --> 00:01:51.218
+Kontrollime,
+
+00:01:51.218 --> 00:01:52.123
+mis töötab.
+
+00:01:52.123 --> 00:01:54.838
+docker ps kuvab siin ainult selle
+
+00:01:54.838 --> 00:01:55.743
+repo konteinereid.
+
+00:01:55.743 --> 00:01:58.458
+Teistel repo'del samal serveril on oma
+
+00:01:58.458 --> 00:02:01.172
+daemonid ja need on siit vaates
+
+00:02:01.172 --> 00:02:02.077
+täiesti nähtamatud.
+
+00:02:03.327 --> 00:02:05.291
+Ainult selle repo konteinerid.
+
+00:02:05.291 --> 00:02:06.765
+Isolatsioon on päris,
+
+00:02:06.765 --> 00:02:08.238
+mitte lihtsalt konfiguratsioon.
+
+00:02:09.071 --> 00:02:12.035
+Ja sellega on su esimene
+
+00:02:12.035 --> 00:02:13.220
+juurutus tehtud.
+
+00:02:13.220 --> 00:02:14.406
+Kohtumiseni järgmises,
+
+00:02:14.406 --> 00:02:16.777
+kus süveneme repositooriumiga töötamisse.

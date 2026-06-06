@@ -1,16 +1,16 @@
 ---
 title: Quick Start
-description: Avvia un servizio containerizzato sul tuo server in pochi minuti. È più veloce di quanto ti aspetti.
+description: Avvia un servizio containerizzato sul tuo server in pochi minuti.
 category: Guides
 order: -1
 language: it
-sourceHash: "15b3c42682a05678"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2047fd1ce3a47944"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Quick Start
 
-Distribuisci un ambiente container cifrato e isolato sul tuo server. Nessun account cloud o dipendenza da SaaS. Tutto gira sull'hardware che controlli tu.
+Installa Rediacc sul tuo server. Ambienti container cifrati e isolati, nessun account cloud, nessuna dipendenza da SaaS. Il tuo hardware, il tuo controllo.
 
 ---
 
@@ -20,7 +20,7 @@ Distribuisci un ambiente container cifrato e isolato sul tuo server. Nessun acco
 
 Una repository è un singolo file cifrato su disco. Spostala, fai il backup, esegui un fork. È solo un file. Quando viene montata, diventa una cartella con un demone Docker dedicato e i dati della tua app all'interno.
 
-Pensa a una repository come a una chiavetta USB: inseriscila in qualsiasi macchina e le app e i dati si montano, pronti all'uso. Spostala tra macchine o provider cloud senza ricostruire nulla. Plug & Run.
+Pensa a una repository come a una chiavetta USB: inseriscila in qualsiasi macchina e le app e i dati si montano, pronti all'uso. Spostala tra macchine o provider cloud senza ricostruire nulla.
 
 **Due strumenti, due ruoli:**
 
@@ -97,7 +97,7 @@ rdc repo template list                                        # Mostra i templat
 rdc repo template apply --name app-postgres -m my-server -r my-app  # Distribuisce docker-compose.yml + Rediaccfile
 ```
 
-I template forniscono un `docker-compose.yml`, un `Rediaccfile` e file di supporto. Senza un template (o il tuo file compose), non c'è nulla da avviare.
+I template forniscono un `docker-compose.yml`, un `Rediaccfile` e file di supporto. Senza un template (o il tuo file compose), non c'è nulla da avviare. Usa il template incorporato per il tuo primo repository. È il percorso più veloce per visualizzare il flusso di lavoro completo da capo a fondo.
 
 ### 3. Avvia la Repository
 

@@ -1,0 +1,208 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.381
+Zeit,
+
+00:00:01.381 --> 00:00:03.285
+eine echte App zu deployen!
+
+00:00:03.285 --> 00:00:05.951
+Wir gehen in drei kurzen Schritten von
+
+00:00:05.951 --> 00:00:08.236
+einem leeren Repo zu laufenden Containern.
+
+00:00:09.021 --> 00:00:10.866
+Der Ablauf ist simpel:
+
+00:00:10.866 --> 00:00:12.711
+such ein Template aus,
+
+00:00:12.711 --> 00:00:15.478
+wende es auf das Repo an
+
+00:00:15.478 --> 00:00:16.862
+und starte es.
+
+00:00:16.862 --> 00:00:19.629
+Die CLI bringt eingebaute Templates mit,
+
+00:00:19.629 --> 00:00:22.397
+damit wir nie eine docker-compose von
+
+00:00:22.397 --> 00:00:23.780
+Hand schreiben müssen.
+
+00:00:27.042 --> 00:00:28.087
+Schritt eins.
+
+00:00:28.087 --> 00:00:30.699
+Wir listen die verfügbaren Vorlagen
+
+00:00:30.699 --> 00:00:31.222
+auf.
+
+00:00:31.222 --> 00:00:33.834
+Rediacc enthält fertige Setups für
+
+00:00:33.834 --> 00:00:34.879
+gängige Apps,
+
+00:00:34.879 --> 00:00:35.924
+also Postgres,
+
+00:00:35.924 --> 00:00:36.446
+Redis,
+
+00:00:36.446 --> 00:00:36.969
+Webserver,
+
+00:00:36.969 --> 00:00:39.581
+sodass kein docker compose von
+
+00:00:39.581 --> 00:00:42.193
+Grund auf geschrieben werden muss.
+
+00:00:43.693 --> 00:00:45.620
+Der komplette Template-Katalog.
+
+00:00:45.620 --> 00:00:48.188
+Jedes ist eine getestete
+
+00:00:48.188 --> 00:00:50.757
+Kombination aus Compose und
+
+00:00:50.757 --> 00:00:51.399
+Rediaccfile.
+
+00:00:54.717 --> 00:00:55.617
+Schritt zwei.
+
+00:00:55.617 --> 00:00:58.317
+Wir wenden die app-postgres-Vorlage auf unser
+
+00:00:58.317 --> 00:00:59.217
+Repo an.
+
+00:00:59.217 --> 00:01:00.567
+Zwei Dateien erscheinen:
+
+00:01:00.567 --> 00:01:02.817
+die docker compose dot yml,
+
+00:01:02.817 --> 00:01:04.617
+die die Container beschreibt,
+
+00:01:04.617 --> 00:01:05.967
+und der Rediaccfile,
+
+00:01:05.967 --> 00:01:08.666
+der die Start- und Stopp-Lifecycle-Hooks definiert.
+
+00:01:10.916 --> 00:01:11.914
+Template angewendet.
+
+00:01:11.914 --> 00:01:14.906
+Das Repo hat jetzt seine Compose-Datei
+
+00:01:14.906 --> 00:01:16.402
+und das Rediaccfile.
+
+00:01:19.713 --> 00:01:20.683
+Schritt drei.
+
+00:01:20.683 --> 00:01:22.622
+Wir starten das Repo.
+
+00:01:22.622 --> 00:01:25.046
+Die CLI startet die Container,
+
+00:01:25.046 --> 00:01:27.955
+hängt das verschlüsselte Volume ein und
+
+00:01:27.955 --> 00:01:29.895
+verbindet den isolierten Docker-Daemon.
+
+00:01:29.895 --> 00:01:31.834
+Die App läuft jetzt.
+
+00:01:34.584 --> 00:01:35.812
+Container laufen,
+
+00:01:35.812 --> 00:01:37.039
+Volume gemountet,
+
+00:01:37.039 --> 00:01:39.495
+isolierter Docker-Daemon ist oben.
+
+00:01:42.852 --> 00:01:45.056
+Wir überprüfen mit docker ps.
+
+00:01:45.056 --> 00:01:45.938
+Beachten Sie,
+
+00:01:45.938 --> 00:01:48.583
+dass diese Ansicht nur die Container
+
+00:01:48.583 --> 00:01:49.905
+unseres Repositories zeigt.
+
+00:01:49.905 --> 00:01:52.550
+Andere Repos auf demselben Server haben
+
+00:01:52.550 --> 00:01:55.195
+ihre eigenen Docker-Daemons und sind von
+
+00:01:55.195 --> 00:01:56.958
+hier aus vollständig unsichtbar.
+
+00:01:59.708 --> 00:02:02.222
+Nur die Container dieses Repos.
+
+00:02:02.222 --> 00:02:04.234
+Die Isolation ist echt,
+
+00:02:04.234 --> 00:02:05.742
+nicht nur Konfiguration.
+
+00:02:09.072 --> 00:02:09.945
+Überprüfen wir,
+
+00:02:09.945 --> 00:02:10.817
+was läuft.
+
+00:02:10.817 --> 00:02:13.434
+docker ps listet hier nur die
+
+00:02:13.434 --> 00:02:15.179
+Container dieses Repos auf.
+
+00:02:15.179 --> 00:02:17.797
+Andere Repos auf demselben Server haben
+
+00:02:17.797 --> 00:02:20.414
+ihre eigenen Daemons und sind in
+
+00:02:20.414 --> 00:02:22.159
+dieser Ansicht vollständig unsichtbar.
+
+00:02:23.409 --> 00:02:26.196
+Nur die Container dieses Repos.
+
+00:02:26.196 --> 00:02:28.425
+Die Isolation ist real,
+
+00:02:28.425 --> 00:02:30.097
+keine bloße Konfiguration.
+
+00:02:30.886 --> 00:02:33.672
+Damit ist dein erstes Deployment im Kasten.
+
+00:02:33.672 --> 00:02:35.265
+Bis zum nächsten Mal,
+
+00:02:35.265 --> 00:02:38.051
+da gehen wir tiefer ins Arbeiten mit
+
+00:02:38.051 --> 00:02:39.245
+dem Repo selbst.

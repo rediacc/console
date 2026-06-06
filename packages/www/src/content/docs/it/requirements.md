@@ -1,21 +1,23 @@
 ---
 title: Requisiti
-description: Requisiti di sistema e piattaforme supportate per eseguire Rediacc. È compatibile con le configurazioni più diffuse, così puoi iniziare subito.
+description: Requisiti di sistema e piattaforme supportate per eseguire Rediacc.
 category: Guides
 order: 0
 language: it
+sourceHash: "e84db3bb90270473"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Requisiti
 
-Prima di effettuare un deployment con Rediacc, assicurati che la tua workstation e i server remoti soddisfino i seguenti requisiti.
+La maggior parte di questa configurazione è standard per server Linux. Alcuni dettagli sono specifici di come funziona Rediacc, quindi verificali prima di iniziare.
 
 ## Workstation (Control Plane)
 
 La CLI `rdc` viene eseguita sulla tua workstation e orchestra i server remoti tramite SSH.
 
 | Piattaforma | Versione minima | Note |
-|-------------|----------------|------|
+|-------------|-----------------|------|
 | macOS | 12 (Monterey)+ | Supporto Intel e Apple Silicon |
 | Linux (x86_64) | Qualsiasi distribuzione moderna | glibc 2.31+ (Ubuntu 20.04+, Debian 11+, Fedora 34+) |
 | Windows | 10+ | Supporto nativo tramite installer PowerShell |
@@ -35,7 +37,7 @@ Se non sei sicuro di quale binario usare, consulta [rdc vs renet](/it/docs/rdc-v
 I server remoti eseguono il binario `renet` e ospitano i daemon Docker cifrati per singolo repository. Le seguenti cinque distribuzioni sono verificate dalla matrice Bridge Workers in CI a ogni pull request e sono le uniche ufficialmente supportate:
 
 | OS | Versione | Kernel predefinito | Note |
-|----|----------|--------------------|------|
+|----|----------|-------------------|------|
 | Ubuntu | 24.04 LTS | 6.8 | Consigliato. AppArmor abilitato per impostazione predefinita. |
 | Debian | 13 (Trixie) | 6.12 | Debian 12 funziona anch'esso (kernel minimo 6.1). |
 | Fedora | 43 | 6.12 | SELinux in modalità enforcing per impostazione predefinita. |

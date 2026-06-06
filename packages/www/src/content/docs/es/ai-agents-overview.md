@@ -1,17 +1,18 @@
 ---
 title: Integración de agentes de IA - Descripción general
-description: Cómo los asistentes de programación con IA como Claude Code, Cursor y Cline se integran con la infraestructura Rediacc para el despliegue y la gestión autónomos.
+description: "Cómo Claude Code, Cursor y Cline gestionan la infraestructura Rediacc mediante rdc: salida JSON, introspección del agente y medidas de seguridad."
 category: Guides
 order: 30
 language: es
-sourceHash: "7789f1e26755c779"
+sourceHash: "0aa0c975030d4856"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
-Los asistentes de programación con IA pueden gestionar la infraestructura Rediacc de forma autónoma a través del CLI `rdc`. Esta guía cubre los enfoques de integración y cómo empezar.
+`rdc` está diseñado pensando en los agentes. Claude Code, Cursor, Cline: cualquier asistente de IA que llame a `rdc` desde un subshell obtiene salida JSON estructurada, errores legibles por máquina y las medidas de seguridad necesarias para gestionar infraestructura Rediacc de forma autónoma. Así es como funciona la integración.
 
 ## Por qué autoalojamiento + agentes de IA
 
-La arquitectura de Rediacc es naturalmente compatible con agentes:
+La arquitectura de Rediacc se adapta bien a los agentes:
 
 - **CLI primero**: Cada operación es un comando `rdc`, no se requiere GUI
 - **Basado en SSH**: El protocolo que los agentes mejor conocen de los datos de entrenamiento
@@ -29,7 +30,7 @@ La forma más rápida de empezar. Copie nuestra [plantilla AGENTS.md](/es/docs/a
 - `.cursorrules` para Cursor
 - `.windsurfrules` para Windsurf
 
-Esto da al agente contexto completo sobre los comandos disponibles, la arquitectura y las convenciones.
+Añádala al proyecto y el agente dispondrá de la referencia completa de comandos, el contexto de arquitectura y las convenciones que necesita para trabajar sin tener que adivinar.
 
 ### 2. Pipeline de salida JSON
 
@@ -85,8 +86,13 @@ echo '{"name": "prod-1"}' | rdc agent exec "machine query"
 | `--fields name,status` | Limitar la salida a campos específicos |
 | `--dry-run` | Previsualizar operaciones destructivas sin ejecutar |
 
+## Seguridad y medidas de protección
+
+El CLI no trata a los agentes igual que a un humano en el terminal. Las operaciones sensibles requieren demostrar que ya se conoce el estado actual (mediante el flag `--current`), los flujos con editor interactivo se rechazan por defecto, y cada rechazo queda registrado en el log de auditoría. La referencia [Seguridad y medidas de protección para agentes de IA](/es/docs/ai-agents-safety) incluye la tabla completa de restricciones, el modelo de verificación de conocimiento previo, el permiso `REDIACC_ALLOW_CONFIG_EDIT` y el log de auditoría con cadena de hashes.
+
 ## Próximos pasos
 
+- [Seguridad y medidas de protección para agentes de IA](/es/docs/ai-agents-safety), Qué pueden y no pueden hacer los agentes, verificación de conocimiento previo, log de auditoría
 - [Guía de configuración de Claude Code](/es/docs/ai-agents-claude-code), Configuración paso a paso de Claude Code
 - [Guía de configuración de Cursor](/es/docs/ai-agents-cursor), Integración con el IDE Cursor
 - [Referencia de salida JSON](/es/docs/ai-agents-json-output), Documentación completa de la salida JSON

@@ -1,0 +1,649 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.398,
+      "text": "Pekâlâ!",
+      "words": [{ "start": 1, "end": 1.398, "char": [0, 7] }]
+    },
+    {
+      "start": 1.398,
+      "end": 4.184,
+      "text": "Uygulamanıza otomatik TLS ile gerçek bir alan",
+      "words": [
+        { "start": 1.398, "end": 1.796, "char": [0, 12] },
+        { "start": 1.796, "end": 2.194, "char": [13, 21] },
+        { "start": 2.194, "end": 2.592, "char": [22, 25] },
+        { "start": 2.592, "end": 2.99, "char": [26, 29] },
+        { "start": 2.99, "end": 3.388, "char": [30, 36] },
+        { "start": 3.388, "end": 3.786, "char": [37, 40] },
+        { "start": 3.786, "end": 4.184, "char": [41, 45] }
+      ]
+    },
+    {
+      "start": 4.184,
+      "end": 4.98,
+      "text": "adı verelim.",
+      "words": [
+        { "start": 4.184, "end": 4.582, "char": [0, 3] },
+        { "start": 4.582, "end": 4.98, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 4.98,
+      "end": 7.766,
+      "text": "Dört kısa adım ve internette yerinizi alıyorsunuz.",
+      "words": [
+        { "start": 4.98, "end": 5.378, "char": [0, 4] },
+        { "start": 5.378, "end": 5.776, "char": [5, 9] },
+        { "start": 5.776, "end": 6.174, "char": [10, 14] },
+        { "start": 6.174, "end": 6.572, "char": [15, 17] },
+        { "start": 6.572, "end": 6.97, "char": [18, 28] },
+        { "start": 6.97, "end": 7.368, "char": [29, 37] },
+        { "start": 7.368, "end": 7.766, "char": [38, 50] }
+      ]
+    },
+    {
+      "start": 8.534,
+      "end": 9.574,
+      "text": "İşte yol.",
+      "words": [
+        { "start": 8.534, "end": 9.054, "char": [0, 4] },
+        { "start": 9.054, "end": 9.574, "char": [5, 9] }
+      ]
+    },
+    {
+      "start": 9.574,
+      "end": 11.655,
+      "text": "Cloudflare API token'ı alın,",
+      "words": [
+        { "start": 9.574, "end": 10.095, "char": [0, 10] },
+        { "start": 10.095, "end": 10.615, "char": [11, 14] },
+        { "start": 10.615, "end": 11.135, "char": [15, 22] },
+        { "start": 11.135, "end": 11.655, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 11.655,
+      "end": 13.736,
+      "text": "altyapıyı CLI üzerinde yapılandırın,",
+      "words": [
+        { "start": 11.655, "end": 12.175, "char": [0, 9] },
+        { "start": 12.175, "end": 12.695, "char": [10, 13] },
+        { "start": 12.695, "end": 13.216, "char": [14, 22] },
+        { "start": 13.216, "end": 13.736, "char": [23, 36] }
+      ]
+    },
+    {
+      "start": 13.736,
+      "end": 16.337,
+      "text": "sunucuya gönderin ve DNS ile",
+      "words": [
+        { "start": 13.736, "end": 14.256, "char": [0, 8] },
+        { "start": 14.256, "end": 14.776, "char": [9, 17] },
+        { "start": 14.776, "end": 15.296, "char": [18, 20] },
+        { "start": 15.296, "end": 15.816, "char": [21, 24] },
+        { "start": 15.816, "end": 16.337, "char": [25, 28] }
+      ]
+    },
+    {
+      "start": 16.337,
+      "end": 18.938,
+      "text": "sertifikaları sizin için yöneten bir",
+      "words": [
+        { "start": 16.337, "end": 16.857, "char": [0, 13] },
+        { "start": 16.857, "end": 17.377, "char": [14, 19] },
+        { "start": 17.377, "end": 17.897, "char": [20, 24] },
+        { "start": 17.897, "end": 18.417, "char": [25, 32] },
+        { "start": 18.417, "end": 18.938, "char": [33, 36] }
+      ]
+    },
+    {
+      "start": 18.938,
+      "end": 20.498,
+      "text": "Traefik proxy'si dağıtın.",
+      "words": [
+        { "start": 18.938, "end": 19.458, "char": [0, 7] },
+        { "start": 19.458, "end": 19.978, "char": [8, 16] },
+        { "start": 19.978, "end": 20.498, "char": [17, 25] }
+      ]
+    },
+    {
+      "start": 21.269,
+      "end": 23.674,
+      "text": "Önce tarayıcınızda Cloudflare panelini açın.",
+      "words": [
+        { "start": 21.269, "end": 21.75, "char": [0, 4] },
+        { "start": 21.75, "end": 22.231, "char": [5, 18] },
+        { "start": 22.231, "end": 22.712, "char": [19, 29] },
+        { "start": 22.712, "end": 23.193, "char": [30, 38] },
+        { "start": 23.193, "end": 23.674, "char": [39, 44] }
+      ]
+    },
+    {
+      "start": 23.674,
+      "end": 24.637,
+      "text": "My Profile,",
+      "words": [
+        { "start": 23.674, "end": 24.156, "char": [0, 2] },
+        { "start": 24.156, "end": 24.637, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 24.637,
+      "end": 27.523,
+      "text": "ardından API Tokens'a gidin ve CLI'nin",
+      "words": [
+        { "start": 24.637, "end": 25.118, "char": [0, 8] },
+        { "start": 25.118, "end": 25.599, "char": [9, 12] },
+        { "start": 25.599, "end": 26.08, "char": [13, 21] },
+        { "start": 26.08, "end": 26.561, "char": [22, 27] },
+        { "start": 26.561, "end": 27.042, "char": [28, 30] },
+        { "start": 27.042, "end": 27.523, "char": [31, 38] }
+      ]
+    },
+    {
+      "start": 27.523,
+      "end": 30.41,
+      "text": "kayıtlarınızı yönetebilmesi için Zone DNS Edit",
+      "words": [
+        { "start": 27.523, "end": 28.004, "char": [0, 13] },
+        { "start": 28.004, "end": 28.485, "char": [14, 27] },
+        { "start": 28.485, "end": 28.966, "char": [28, 32] },
+        { "start": 28.966, "end": 29.448, "char": [33, 37] },
+        { "start": 29.448, "end": 29.929, "char": [38, 41] },
+        { "start": 29.929, "end": 30.41, "char": [42, 46] }
+      ]
+    },
+    {
+      "start": 30.41,
+      "end": 32.815,
+      "text": "yetkisine sahip bir token oluşturun.",
+      "words": [
+        { "start": 30.41, "end": 30.891, "char": [0, 9] },
+        { "start": 30.891, "end": 31.372, "char": [10, 15] },
+        { "start": 31.372, "end": 31.853, "char": [16, 19] },
+        { "start": 31.853, "end": 32.334, "char": [20, 25] },
+        { "start": 32.334, "end": 32.815, "char": [26, 36] }
+      ]
+    },
+    {
+      "start": 36.109,
+      "end": 37.179,
+      "text": "İkinci adım.",
+      "words": [
+        { "start": 36.109, "end": 36.644, "char": [0, 6] },
+        { "start": 36.644, "end": 37.179, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 37.179,
+      "end": 39.319,
+      "text": "Komut satırından genel IP'yi,",
+      "words": [
+        { "start": 37.179, "end": 37.714, "char": [0, 5] },
+        { "start": 37.714, "end": 38.249, "char": [6, 16] },
+        { "start": 38.249, "end": 38.784, "char": [17, 22] },
+        { "start": 38.784, "end": 39.319, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 39.319,
+      "end": 40.924,
+      "text": "temel alan adını,",
+      "words": [
+        { "start": 39.319, "end": 39.854, "char": [0, 5] },
+        { "start": 39.854, "end": 40.389, "char": [6, 10] },
+        { "start": 40.389, "end": 40.924, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 40.924,
+      "end": 43.599,
+      "text": "sertifika e-postasını ve Cloudflare API",
+      "words": [
+        { "start": 40.924, "end": 41.459, "char": [0, 9] },
+        { "start": 41.459, "end": 41.994, "char": [10, 21] },
+        { "start": 41.994, "end": 42.529, "char": [22, 24] },
+        { "start": 42.529, "end": 43.064, "char": [25, 35] },
+        { "start": 43.064, "end": 43.599, "char": [36, 39] }
+      ]
+    },
+    {
+      "start": 43.599,
+      "end": 44.669,
+      "text": "token'ını giriyoruz.",
+      "words": [
+        { "start": 43.599, "end": 44.134, "char": [0, 9] },
+        { "start": 44.134, "end": 44.669, "char": [10, 20] }
+      ]
+    },
+    {
+      "start": 44.669,
+      "end": 47.345,
+      "text": "Sertifika e-postası ve token tüm",
+      "words": [
+        { "start": 44.669, "end": 45.204, "char": [0, 9] },
+        { "start": 45.204, "end": 45.739, "char": [10, 19] },
+        { "start": 45.739, "end": 46.275, "char": [20, 22] },
+        { "start": 46.275, "end": 46.81, "char": [23, 28] },
+        { "start": 46.81, "end": 47.345, "char": [29, 32] }
+      ]
+    },
+    {
+      "start": 47.345,
+      "end": 48.415,
+      "text": "makinelerinizde paylaşılır;",
+      "words": [
+        { "start": 47.345, "end": 47.88, "char": [0, 15] },
+        { "start": 47.88, "end": 48.415, "char": [16, 27] }
+      ]
+    },
+    {
+      "start": 48.415,
+      "end": 50.555,
+      "text": "yalnızca bir kez ayarlarsınız.",
+      "words": [
+        { "start": 48.415, "end": 48.95, "char": [0, 8] },
+        { "start": 48.95, "end": 49.485, "char": [9, 12] },
+        { "start": 49.485, "end": 50.02, "char": [13, 16] },
+        { "start": 50.02, "end": 50.555, "char": [17, 30] }
+      ]
+    },
+    {
+      "start": 51.355,
+      "end": 53.706,
+      "text": "Altyapı bilgileri yapılandırmanıza kaydedildi.",
+      "words": [
+        { "start": 51.355, "end": 51.942, "char": [0, 7] },
+        { "start": 51.942, "end": 52.53, "char": [8, 17] },
+        { "start": 52.53, "end": 53.118, "char": [18, 34] },
+        { "start": 53.118, "end": 53.706, "char": [35, 46] }
+      ]
+    },
+    {
+      "start": 57.02,
+      "end": 59.274,
+      "text": "Altyapı ayarlarının kaydedildiğini doğruluyoruz.",
+      "words": [
+        { "start": 57.02, "end": 57.583, "char": [0, 7] },
+        { "start": 57.583, "end": 58.147, "char": [8, 19] },
+        { "start": 58.147, "end": 58.71, "char": [20, 34] },
+        { "start": 58.71, "end": 59.274, "char": [35, 48] }
+      ]
+    },
+    {
+      "start": 59.274,
+      "end": 60.401,
+      "text": "Genel IP,",
+      "words": [
+        { "start": 59.274, "end": 59.837, "char": [0, 5] },
+        { "start": 59.837, "end": 60.401, "char": [6, 9] }
+      ]
+    },
+    {
+      "start": 60.401,
+      "end": 62.091,
+      "text": "temel alan adı,",
+      "words": [
+        { "start": 60.401, "end": 60.964, "char": [0, 5] },
+        { "start": 60.964, "end": 61.528, "char": [6, 10] },
+        { "start": 61.528, "end": 62.091, "char": [11, 15] }
+      ]
+    },
+    {
+      "start": 62.091,
+      "end": 63.218,
+      "text": "sertifika e-postası;",
+      "words": [
+        { "start": 62.091, "end": 62.655, "char": [0, 9] },
+        { "start": 62.655, "end": 63.218, "char": [10, 20] }
+      ]
+    },
+    {
+      "start": 63.218,
+      "end": 64.909,
+      "text": "hepsi yapılandırmada görünüyor.",
+      "words": [
+        { "start": 63.218, "end": 63.782, "char": [0, 5] },
+        { "start": 63.782, "end": 64.345, "char": [6, 20] },
+        { "start": 64.345, "end": 64.909, "char": [21, 31] }
+      ]
+    },
+    {
+      "start": 66.659,
+      "end": 67.631,
+      "text": "Ayarlar kaydedildi.",
+      "words": [
+        { "start": 66.659, "end": 67.145, "char": [0, 7] },
+        { "start": 67.145, "end": 67.631, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 67.631,
+      "end": 69.088,
+      "text": "Sunucuya gönderilmeye hazır.",
+      "words": [
+        { "start": 67.631, "end": 68.117, "char": [0, 8] },
+        { "start": 68.117, "end": 68.602, "char": [9, 21] },
+        { "start": 68.602, "end": 69.088, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 72.441,
+      "end": 73.503,
+      "text": "Üçüncü adım.",
+      "words": [
+        { "start": 72.441, "end": 72.972, "char": [0, 6] },
+        { "start": 72.972, "end": 73.503, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 73.503,
+      "end": 75.097,
+      "text": "Yapılandırmayı sunucuya gönderiyoruz.",
+      "words": [
+        { "start": 73.503, "end": 74.034, "char": [0, 14] },
+        { "start": 74.034, "end": 74.566, "char": [15, 23] },
+        { "start": 74.566, "end": 75.097, "char": [24, 37] }
+      ]
+    },
+    {
+      "start": 75.097,
+      "end": 76.159,
+      "text": "Bu komut,",
+      "words": [
+        { "start": 75.097, "end": 75.628, "char": [0, 2] },
+        { "start": 75.628, "end": 76.159, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 76.159,
+      "end": 78.815,
+      "text": "Cloudflare'de DNS kayıtlarını otomatik olarak",
+      "words": [
+        { "start": 76.159, "end": 76.69, "char": [0, 13] },
+        { "start": 76.69, "end": 77.221, "char": [14, 17] },
+        { "start": 77.221, "end": 77.753, "char": [18, 29] },
+        { "start": 77.753, "end": 78.284, "char": [30, 38] },
+        { "start": 78.284, "end": 78.815, "char": [39, 45] }
+      ]
+    },
+    {
+      "start": 78.815,
+      "end": 81.471,
+      "text": "oluşturur ve makinede proxy yapılandırmasını",
+      "words": [
+        { "start": 78.815, "end": 79.346, "char": [0, 9] },
+        { "start": 79.346, "end": 79.877, "char": [10, 12] },
+        { "start": 79.877, "end": 80.408, "char": [13, 21] },
+        { "start": 80.408, "end": 80.94, "char": [22, 27] },
+        { "start": 80.94, "end": 81.471, "char": [28, 44] }
+      ]
+    },
+    {
+      "start": 81.471,
+      "end": 82.002,
+      "text": "hazırlar.",
+      "words": [{ "start": 81.471, "end": 82.002, "char": [0, 9] }]
+    },
+    {
+      "start": 85.002,
+      "end": 85.728,
+      "text": "Gönderildi.",
+      "words": [{ "start": 85.002, "end": 85.728, "char": [0, 11] }]
+    },
+    {
+      "start": 85.728,
+      "end": 88.633,
+      "text": "Cloudflare'de DNS kayıtları oluşturuluyor.",
+      "words": [
+        { "start": 85.728, "end": 86.454, "char": [0, 13] },
+        { "start": 86.454, "end": 87.18, "char": [14, 17] },
+        { "start": 87.18, "end": 87.907, "char": [18, 27] },
+        { "start": 87.907, "end": 88.633, "char": [28, 42] }
+      ]
+    },
+    {
+      "start": 91.986,
+      "end": 93.721,
+      "text": "Dördüncü adım başlıyor.",
+      "words": [
+        { "start": 91.986, "end": 92.564, "char": [0, 8] },
+        { "start": 92.564, "end": 93.142, "char": [9, 13] },
+        { "start": 93.142, "end": 93.721, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 93.721,
+      "end": 96.611,
+      "text": "infra adlı küçük bir depo",
+      "words": [
+        { "start": 93.721, "end": 94.299, "char": [0, 5] },
+        { "start": 94.299, "end": 94.877, "char": [6, 10] },
+        { "start": 94.877, "end": 95.455, "char": [11, 16] },
+        { "start": 95.455, "end": 96.033, "char": [17, 20] },
+        { "start": 96.033, "end": 96.611, "char": [21, 25] }
+      ]
+    },
+    {
+      "start": 96.611,
+      "end": 97.19,
+      "text": "oluşturuyoruz.",
+      "words": [{ "start": 96.611, "end": 97.19, "char": [0, 14] }]
+    },
+    {
+      "start": 97.19,
+      "end": 98.924,
+      "text": "Proxy burada yaşayacak;",
+      "words": [
+        { "start": 97.19, "end": 97.768, "char": [0, 5] },
+        { "start": 97.768, "end": 98.346, "char": [6, 12] },
+        { "start": 98.346, "end": 98.924, "char": [13, 23] }
+      ]
+    },
+    {
+      "start": 98.924,
+      "end": 100.659,
+      "text": "uygulama depolarından izole.",
+      "words": [
+        { "start": 98.924, "end": 99.502, "char": [0, 8] },
+        { "start": 99.502, "end": 100.08, "char": [9, 21] },
+        { "start": 100.08, "end": 100.659, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 103.659,
+      "end": 105.396,
+      "text": "Infra deposu oluşturuldu.",
+      "words": [
+        { "start": 103.659, "end": 104.238, "char": [0, 5] },
+        { "start": 104.238, "end": 104.817, "char": [6, 12] },
+        { "start": 104.817, "end": 105.396, "char": [13, 25] }
+      ]
+    },
+    {
+      "start": 105.396,
+      "end": 107.133,
+      "text": "Uygulama depolarınızdan izole.",
+      "words": [
+        { "start": 105.396, "end": 105.975, "char": [0, 8] },
+        { "start": 105.975, "end": 106.554, "char": [9, 23] },
+        { "start": 106.554, "end": 107.133, "char": [24, 30] }
+      ]
+    },
+    {
+      "start": 110.468,
+      "end": 112.204,
+      "text": "Yerleşik proxy şablonunu uyguluyoruz.",
+      "words": [
+        { "start": 110.468, "end": 110.902, "char": [0, 8] },
+        { "start": 110.902, "end": 111.336, "char": [9, 14] },
+        { "start": 111.336, "end": 111.77, "char": [15, 24] },
+        { "start": 111.77, "end": 112.204, "char": [25, 37] }
+      ]
+    },
+    {
+      "start": 112.204,
+      "end": 114.807,
+      "text": "Traefik ile birlikte Let's Encrypt ve",
+      "words": [
+        { "start": 112.204, "end": 112.638, "char": [0, 7] },
+        { "start": 112.638, "end": 113.072, "char": [8, 11] },
+        { "start": 113.072, "end": 113.505, "char": [12, 20] },
+        { "start": 113.505, "end": 113.939, "char": [21, 26] },
+        { "start": 113.939, "end": 114.373, "char": [27, 34] },
+        { "start": 114.373, "end": 114.807, "char": [35, 37] }
+      ]
+    },
+    {
+      "start": 114.807,
+      "end": 117.411,
+      "text": "Cloudflare DNS-01 doğrulaması için yapılandırma hazır",
+      "words": [
+        { "start": 114.807, "end": 115.241, "char": [0, 10] },
+        { "start": 115.241, "end": 115.675, "char": [11, 17] },
+        { "start": 115.675, "end": 116.109, "char": [18, 29] },
+        { "start": 116.109, "end": 116.543, "char": [30, 34] },
+        { "start": 116.543, "end": 116.977, "char": [35, 47] },
+        { "start": 116.977, "end": 117.411, "char": [48, 53] }
+      ]
+    },
+    {
+      "start": 117.411,
+      "end": 118.279,
+      "text": "olarak geliyor.",
+      "words": [
+        { "start": 117.411, "end": 117.845, "char": [0, 6] },
+        { "start": 117.845, "end": 118.279, "char": [7, 15] }
+      ]
+    },
+    {
+      "start": 120.529,
+      "end": 122.331,
+      "text": "Traefik yapılandırması yerinde.",
+      "words": [
+        { "start": 120.529, "end": 121.129, "char": [0, 7] },
+        { "start": 121.129, "end": 121.73, "char": [8, 22] },
+        { "start": 121.73, "end": 122.331, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 125.605,
+      "end": 127.176,
+      "text": "Proxy'yi ayağa kaldırıyoruz.",
+      "words": [
+        { "start": 125.605, "end": 126.129, "char": [0, 8] },
+        { "start": 126.129, "end": 126.652, "char": [9, 14] },
+        { "start": 126.652, "end": 127.176, "char": [15, 28] }
+      ]
+    },
+    {
+      "start": 127.176,
+      "end": 127.699,
+      "text": "Traefik,",
+      "words": [{ "start": 127.176, "end": 127.699, "char": [0, 8] }]
+    },
+    {
+      "start": 127.699,
+      "end": 130.317,
+      "text": "container'larınızı her beş saniyede bir",
+      "words": [
+        { "start": 127.699, "end": 128.223, "char": [0, 18] },
+        { "start": 128.223, "end": 128.747, "char": [19, 22] },
+        { "start": 128.747, "end": 129.27, "char": [23, 26] },
+        { "start": 129.27, "end": 129.794, "char": [27, 35] },
+        { "start": 129.794, "end": 130.317, "char": [36, 39] }
+      ]
+    },
+    {
+      "start": 130.317,
+      "end": 130.841,
+      "text": "keşfeder.",
+      "words": [{ "start": 130.317, "end": 130.841, "char": [0, 9] }]
+    },
+    {
+      "start": 130.841,
+      "end": 133.459,
+      "text": "TLS sertifikaları Let's Encrypt'ten otomatik",
+      "words": [
+        { "start": 130.841, "end": 131.364, "char": [0, 3] },
+        { "start": 131.364, "end": 131.888, "char": [4, 17] },
+        { "start": 131.888, "end": 132.412, "char": [18, 23] },
+        { "start": 132.412, "end": 132.935, "char": [24, 35] },
+        { "start": 132.935, "end": 133.459, "char": [36, 44] }
+      ]
+    },
+    {
+      "start": 133.459,
+      "end": 134.506,
+      "text": "olarak gelir.",
+      "words": [
+        { "start": 133.459, "end": 133.982, "char": [0, 6] },
+        { "start": 133.982, "end": 134.506, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 134.506,
+      "end": 137.124,
+      "text": "Uygulamanız artık HTTPS üzerinden internetten",
+      "words": [
+        { "start": 134.506, "end": 135.03, "char": [0, 11] },
+        { "start": 135.03, "end": 135.553, "char": [12, 17] },
+        { "start": 135.553, "end": 136.077, "char": [18, 23] },
+        { "start": 136.077, "end": 136.6, "char": [24, 33] },
+        { "start": 136.6, "end": 137.124, "char": [34, 45] }
+      ]
+    },
+    {
+      "start": 137.124,
+      "end": 137.647,
+      "text": "erişilebilir.",
+      "words": [{ "start": 137.124, "end": 137.647, "char": [0, 13] }]
+    },
+    {
+      "start": 137.647,
+      "end": 138.804,
+      "text": "Proxy yayında.",
+      "words": [
+        { "start": 137.647, "end": 138.226, "char": [0, 5] },
+        { "start": 138.226, "end": 138.804, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 138.804,
+      "end": 141.696,
+      "text": "TLS sertifikaları otomatik olarak gelecek.",
+      "words": [
+        { "start": 138.804, "end": 139.383, "char": [0, 3] },
+        { "start": 139.383, "end": 139.961, "char": [4, 17] },
+        { "start": 139.961, "end": 140.54, "char": [18, 26] },
+        { "start": 140.54, "end": 141.118, "char": [27, 33] },
+        { "start": 141.118, "end": 141.696, "char": [34, 42] }
+      ]
+    },
+    {
+      "start": 142.445,
+      "end": 143.895,
+      "text": "Ağ tarafı halloldu!",
+      "words": [
+        { "start": 142.445, "end": 142.928, "char": [0, 2] },
+        { "start": 142.928, "end": 143.412, "char": [3, 9] },
+        { "start": 143.412, "end": 143.895, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 143.895,
+      "end": 146.311,
+      "text": "Bir sonraki bölümde görüşmek üzere.",
+      "words": [
+        { "start": 143.895, "end": 144.378, "char": [0, 3] },
+        { "start": 144.378, "end": 144.861, "char": [4, 11] },
+        { "start": 144.861, "end": 145.345, "char": [12, 19] },
+        { "start": 145.345, "end": 145.828, "char": [20, 28] },
+        { "start": 145.828, "end": 146.311, "char": [29, 35] }
+      ]
+    }
+  ]
+}

@@ -1,19 +1,19 @@
 ---
 title: "Ihre erste App deployen"
-description: "Stellen Sie eine containerisierte App über eine integrierte Vorlage bereit – mit rdc repo up."
+description: "Stellen Sie eine containerisierte App über eine integrierte Vorlage bereit mit `rdc` repo up."
 category: "Tutorials"
 subcategory: essentials
 order: 5
 language: de
-sourceHash: "08bd8fbaffc53a06"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "a40a843238f17e9f"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Ihre erste App deployen
 
-Sie haben ein leeres Repository. `rdc` enthält integrierte Vorlagen, mit denen Sie echte Apps starten können, ohne ein `docker-compose` von Grund auf schreiben zu müssen. Drei Schritte: Vorlage auswählen, anwenden, starten.
+Sie haben ein leeres Repository. `rdc` enthält integrierte Vorlagen, mit denen Sie echte Apps starten können, ohne ein `docker-compose` von Grund auf schreiben zu müssen. Vorlage auswählen, anwenden, starten.
 
 ## Tutorial ansehen
 
@@ -33,7 +33,7 @@ Sie sehen fertige Setups für gängige Apps: Postgres, Redis, Webserver und mehr
 
 <TutorialStep number={2} />
 
-Dadurch werden die Dateien der Vorlage in das Repo kopiert.
+Fertig. Dadurch werden die Dateien der Vorlage in das Repo kopiert.
 
 ## Schritt 3: Was wurde hinzugefügt
 
@@ -51,7 +51,7 @@ Die CLI startet die Container, hängt das verschlüsselte Volume ein und richtet
 
 <TutorialStep number={5} />
 
-`docker ps` listet hier nur die Container dieses Repos auf. Andere Repos auf demselben Server haben ihre eigenen Docker-Daemons und sind von diesem vollständig unsichtbar.
+`docker ps` listet hier nur die Container dieses Repos auf. Andere Repos auf demselben Server betreiben separate Docker-Daemons: ihre Container sind von diesem vollständig unsichtbar. Diese Isolation ist der Zweck: testen Sie frei, ohne angrenzende Dienste zu beeinflussen.
 
 ---
 

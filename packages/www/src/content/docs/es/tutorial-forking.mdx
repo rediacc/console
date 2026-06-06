@@ -5,15 +5,15 @@ category: "Tutorials"
 subcategory: advanced
 order: 7
 language: es
-sourceHash: "73a4cb1d8c412531"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "14d013a82dbcbd4e"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 # Fork de un repositorio
 
-Esta es la parte que cambia la forma en que trabajas: clonar un entorno de producción completo (la app, la base de datos, los archivos de configuración) en segundos. Cualquier tamaño. Cero disco extra. Haz fork tantas veces como quieras.
+Haz fork de un entorno de producción completo (la app, la base de datos, los archivos de configuración) en segundos. Cualquier tamaño. Cero disco extra. Haz fork tantas veces como quieras.
 
 El lema: **clona producción, no rompas nada.**
 
@@ -47,7 +47,7 @@ Un comando. Clonó todo (la app, la base de datos, los archivos de configuració
 
 ![Compartir un enlace de carpeta tiene la misma velocidad sin importar el tamaño de la carpeta](/img/tutorials/tutorial-forking/slide-2.svg)
 
-Imagina que compartes un enlace a una carpeta. El enlace es el mismo, ya sea que la carpeta sea pequeña o enorme. La carpeta es pesada, el enlace es ligero.
+La razón es los reflinks de btrfs. Un fork crea un nuevo árbol del sistema de archivos que apunta a los mismos bloques de datos que el padre. No se copian datos en el momento del fork. Todo es metadatos, por lo que el tamaño del padre nunca influye en cuánto tiempo tarda el fork.
 
 ![1 GB, 100 GB, 1 TB. El mismo tiempo, siempre.](/img/tutorials/tutorial-forking/slide-3.svg)
 

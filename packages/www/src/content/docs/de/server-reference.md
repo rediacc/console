@@ -4,13 +4,13 @@ description: "Verzeichnisstruktur, renet-Befehle, systemd-Dienste und Arbeitsabl
 category: "Concepts"
 order: 3
 language: de
-sourceHash: "f68c27543a2fe3ff"
-sourceCommit: "a3b80f4e653e80766813a8c1d7ef563f00904147"
+sourceHash: "4fb53bb4cb1512f6"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 # Server-Referenz
 
-Diese Seite beschreibt, was Sie vorfinden, wenn Sie sich per SSH bei einem Rediacc-Server anmelden: die Verzeichnisstruktur, `renet`-Befehle, systemd-Dienste und gängige Arbeitsabläufe.
+Melden Sie sich per SSH bei einem Rediacc-Server an und hier ist, was Sie erhalten: die Verzeichnisstruktur, `renet`-Befehle, systemd-Dienste und die erforderlichen Arbeitsabläufe.
 
 Die meisten Benutzer verwalten Server über `rdc` von ihrer Arbeitsstation aus und benötigen diese Seite nicht. Sie ist für erweitertes Debugging oder für den Fall gedacht, dass Sie direkt auf dem Server arbeiten müssen.
 

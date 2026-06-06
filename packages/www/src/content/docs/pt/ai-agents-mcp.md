@@ -4,6 +4,8 @@ description: Ligue agentes de IA à infraestrutura Rediacc usando o servidor Mod
 category: Guides
 order: 33
 language: pt
+sourceHash: "ce5f1392ebaa380b"
+sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
 ## Visão Geral
@@ -115,9 +117,9 @@ O servidor MCP impõe duas camadas de proteção:
 
 ### Modo apenas-fork (predefinição)
 
-Por omissão, o servidor corre em **modo apenas-fork**; as ferramentas de escrita (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) só podem operar em repositórios fork. Os repositórios grand (originais) estão protegidos de modificações por agentes.
+Por omissão, o servidor corre em **modo apenas-fork**: as ferramentas de escrita (`repo_up`, `repo_down`, `repo_delete`, `backup_push`, `backup_pull`, `term_exec`) só podem operar em repositórios fork. Os agentes não podem tocar em repositórios grand (originais). Por design.
 
-> **Os segredos por repositório são exclusivos da CLI por design.** `repo_secret_set` e `repo_secret_unset` são intencionalmente **não** expostos como ferramentas MCP. As escritas requerem uma pré-condição `--current <previous-value>` (ou `--rotate-secret` para reconhecer uma rotação não verificada), e essa cerimónia precisa de ser acompanhada por um humano. Os agentes que precisem de sugerir uma rotação de segredo devem chamar `repo_secret_get` para confirmar o digest e depois transmitir o comando CLI orientado ao operador ao utilizador através do campo estruturado `next.options[].run` no envelope de erro JSON. Consulte [Segurança de Agentes de IA](/en/docs/ai-agents-safety#structured-next-action-hints) para o padrão completo, e [Repositórios -- Segredos](/en/docs/repositories#secrets) para o procedimento orientado ao utilizador.
+> **Os segredos por repositório são exclusivos da CLI por design.** `repo_secret_set` e `repo_secret_unset` são intencionalmente **não** expostos como ferramentas MCP. As escritas requerem uma pré-condição `--current <previous-value>` (ou `--rotate-secret` para reconhecer uma rotação não verificada), e essa cerimónia precisa de ser acompanhada por um humano. Os agentes que precisem de sugerir uma rotação de segredo devem chamar `repo_secret_get` para confirmar o digest e depois transmitir o comando CLI orientado ao operador ao utilizador através do campo estruturado `next.options[].run` no envelope de erro JSON. Consulte [Segurança de Agentes de IA](/en/docs/ai-agents-safety#structured-next-action-hints) para o padrão completo, e [Repositórios § Segredos](/en/docs/repositories#secrets) para o procedimento orientado ao utilizador.
 
 Para permitir que um agente modifique repositórios grand, inicie com `--allow-grand`:
 
@@ -155,7 +157,7 @@ Cada repositório tem o seu próprio par de chaves SSH. A chave pública é impl
 
 **Integração com VS Code**: Cada repositório tem a sua própria instalação do servidor VS Code em `<datastore>/.interim/sandbox/<name>/.vscode-server/`. Múltiplos repositórios podem estar abertos simultaneamente com ambientes sandbox independentes, sem partilha de servidor entre repositórios.
 
-Isto previne o movimento lateral -- mesmo que um agente obtenha acesso shell a um fork, não pode ler nem modificar outros repositórios na mesma máquina. O SSH ao nível da máquina (sem repositório) usa a chave de equipa e não tem sandbox.
+Isto previne o movimento lateral. Mesmo que um agente obtenha acesso shell a um fork, não pode ler nem modificar outros repositórios na mesma máquina. O SSH ao nível da máquina (sem repositório) usa a chave de equipa e não tem sandbox.
 
 ## Arquitetura
 
