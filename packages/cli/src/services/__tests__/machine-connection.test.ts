@@ -132,6 +132,31 @@ describe('machineConnections', () => {
     b.release();
   });
 
+  it('early release during a shared connect does not close the late waiter (refcount reserved before await)', async () => {
+    const machine = makeMachine();
+    let resolveConnect!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      resolveConnect = resolve;
+    });
+    MockSFTPClient.nextConnectImpl = () => gate;
+
+    const p1 = machineConnections.acquireFor(machine, 'KEY');
+    const p2 = machineConnections.acquireFor(machine, 'KEY');
+    resolveConnect();
+    const a = await p1;
+    // First waiter acquires and releases before the second waiter resumes.
+    a.release();
+    const b = await p2;
+
+    const instances = instancesFor(machine.ip);
+    expect(instances).toHaveLength(1);
+    // The shared session must still be open for the late waiter.
+    expect(instances[0].closeCount).toBe(0);
+    expect(b.sftp.isConnected()).toBe(true);
+    b.release();
+    expect(instances[0].closeCount).toBe(1);
+  });
+
   it('evicts a dead session and reconnects with a fresh client', async () => {
     const machine = makeMachine();
     const a = await machineConnections.acquireFor(machine, 'KEY');

@@ -61,6 +61,11 @@ class MachineConnectionManager {
     const config = await configService.getLocalConfig();
     const machine = await configService.getLocalMachine(machineName);
     const sshPrivateKey = config.sshPrivateKey ?? (await readSSHKey(config.ssh.privateKeyPath));
+    if (!sshPrivateKey) {
+      throw new Error(
+        `No SSH key available for machine "${machineName}": config has neither sshPrivateKey nor a readable ssh.privateKeyPath`
+      );
+    }
     return this.acquireFor(machine, sshPrivateKey);
   }
 
@@ -72,16 +77,21 @@ class MachineConnectionManager {
       entry = this.createEntry(key, machine, sshPrivateKey);
       this.entries.set(key, entry);
     }
+    // Reserve the lease BEFORE awaiting the shared connect: with two
+    // concurrent first acquires, the early waiter could otherwise acquire,
+    // release, and close the entry while the late waiter is still awaiting
+    // connectPromise — handing the late waiter a closed session.
+    entry.refCount += 1;
     try {
       await this.ensureLive(entry);
     } catch (error) {
+      entry.refCount -= 1;
       // A failed connect with no holders leaves nothing worth caching.
       if (entry.refCount === 0 && this.entries.get(key) === entry) {
         this.entries.delete(key);
       }
       throw error;
     }
-    entry.refCount += 1;
     return this.createLease(entry);
   }
 

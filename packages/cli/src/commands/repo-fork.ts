@@ -322,6 +322,35 @@ async function runForkLeg(
   return { result, forkParams, compound };
 }
 
+/**
+ * Handle a failed fork leg. A compound --up failure can happen AFTER the
+ * remote fork exists (mount, compose, readiness); rolling back the local
+ * registration then would orphan a live remote repo. The cow_reflink /
+ * cow_clone step completing is the signal that the fork image was created.
+ */
+async function handleForkLegFailure(
+  plan: ForkPlan,
+  result: LocalExecuteResult,
+  orchestrated: TimelineStep[],
+  renetSteps: TimelineStep[],
+  dnsPromise: Promise<unknown> | undefined
+): Promise<void> {
+  const { forkKey, options } = plan;
+  if (dnsPromise) await Promise.allSettled([dnsPromise]);
+  const forkCreated = renetSteps.some((s) => s.name === 'cow_reflink' || s.name === 'cow_clone');
+  if (forkCreated) {
+    outputService.warn(
+      `Fork "${forkKey}" was created on the machine but its up phase failed; ` +
+        `keeping the local registration. Retry with: rdc repo up --name ${forkKey} -m ${options.machine}`
+    );
+  } else {
+    await configService.removeRepository(forkKey);
+    outputService.warn(t('commands.repo.fork.rollback', { repository: forkKey }));
+  }
+  renderLocalExecutionFailure(result, t('commands.repo.fork.failed'));
+  finishTimeline(plan, orchestrated, renetSteps, [result]);
+}
+
 /** Orchestrate fork (+ optional up) over a shared machine connection lease. */
 async function orchestrateFork(plan: ForkPlan): Promise<void> {
   const { options, forkKey } = plan;
@@ -342,11 +371,7 @@ async function orchestrateFork(plan: ForkPlan): Promise<void> {
   const { result, forkParams, compound } = await runForkLeg(plan, renetSteps);
 
   if (!result.success) {
-    if (dnsPromise) await Promise.allSettled([dnsPromise]);
-    await configService.removeRepository(forkKey);
-    outputService.warn(t('commands.repo.fork.rollback', { repository: forkKey }));
-    renderLocalExecutionFailure(result, t('commands.repo.fork.failed'));
-    finishTimeline(plan, orchestrated, renetSteps, [result]);
+    await handleForkLegFailure(plan, result, orchestrated, renetSteps, dnsPromise);
     return;
   }
 
