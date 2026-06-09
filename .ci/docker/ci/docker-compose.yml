@@ -127,7 +127,7 @@ services:
     container_name: rediacc-account-server
     hostname: rediacc-account-server
     ports:
-      - "3000:3000"
+      - "${ACCOUNT_PORT:-3000}:3000"
     environment:
       - PORT=3000
       - DATABASE_PATH=/data/account.db

@@ -12,14 +12,13 @@
 
 import { X509Certificate } from 'node:crypto';
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { DEFAULTS } from '@rediacc/shared/config';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { t } from '../i18n/index.js';
 import type { AcmeCertCache } from '../types/index.js';
 import { parseCertAnchor } from '../utils/cert-anchor.js';
 import { configService } from './config-resources.js';
+import { machineConnections } from './machine-connection.js';
 import { outputService } from './output.js';
-import { readSSHKey } from './renet-execution.js';
 
 /** Remote path to Traefik's acme.json. */
 const ACME_JSON_PATH = '/opt/rediacc/proxy/letsencrypt/acme.json';
@@ -405,11 +404,14 @@ export function pruneExpiredCerts(
 // ============================================================================
 
 /**
- * Create an SFTP connection to a machine.
+ * Connect to a machine via the shared connection pool, or reuse a
+ * caller-provided SFTP session. `release` is a no-op for shared sessions —
+ * the caller keeps ownership of its own connection.
  */
 async function connectToMachine(
-  machineName: string
-): Promise<{ sftp: SFTPClient; baseDomain?: string }> {
+  machineName: string,
+  sharedSftp?: SFTPClient
+): Promise<{ sftp: SFTPClient; baseDomain?: string; release: () => void }> {
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -417,18 +419,13 @@ async function connectToMachine(
     throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
   }
 
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+  if (sharedSftp) {
+    return { sftp: sharedSftp, baseDomain: machine.infra?.baseDomain, release: () => {} };
+  }
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
-  await sftp.connect();
-
-  return { sftp, baseDomain: machine.infra?.baseDomain };
+  const lease = await machineConnections.acquire(machineName);
+  const sftp = await lease.ensure();
+  return { sftp, baseDomain: machine.infra?.baseDomain, release: () => lease.release() };
 }
 
 /**
@@ -556,9 +553,10 @@ function pruneAndParse(raw: string, options: DownloadCertCacheOptions): AcmeJson
 
 export async function downloadCertCache(
   machineName: string,
-  options: DownloadCertCacheOptions = {}
+  options: DownloadCertCacheOptions = {},
+  sharedSftp?: SFTPClient
 ): Promise<{ certCount: number; compressedSize: number } | null> {
-  const { sftp, baseDomain } = await connectToMachine(machineName);
+  const { sftp, baseDomain, release } = await connectToMachine(machineName, sharedSftp);
 
   try {
     if (!baseDomain) {
@@ -599,7 +597,7 @@ export async function downloadCertCache(
 
     return { certCount: entry.certCount, compressedSize };
   } finally {
-    sftp.close();
+    release();
   }
 }
 
@@ -654,7 +652,7 @@ export async function uploadCertCache(
   machineName: string,
   _options: UploadCertCacheOptions = {}
 ): Promise<boolean> {
-  const { sftp, baseDomain } = await connectToMachine(machineName);
+  const { sftp, baseDomain, release } = await connectToMachine(machineName);
 
   try {
     if (!baseDomain) {
@@ -709,7 +707,7 @@ export async function uploadCertCache(
     );
     return true;
   } finally {
-    sftp.close();
+    release();
   }
 }
 

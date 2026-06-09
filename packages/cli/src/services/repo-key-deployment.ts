@@ -4,35 +4,29 @@
  * with the sandbox-gateway command= prefix for server-side isolation.
  */
 
-import { SSH_DEFAULTS } from '@rediacc/shared/config/defaults';
-import { SSHConnection, spawnSSH } from '@rediacc/shared-desktop/ssh';
-import type { MachineConfig } from '../types/index.js';
+import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { debugLog } from '../utils/debug.js';
 import { configService } from './config-resources.js';
-import { readSSHKey } from './renet-execution.js';
+import { machineConnections } from './machine-connection.js';
 import { REMOTE_RENET_PATH } from './renet-provisioner.js';
 
 const GATEWAY_BIN = REMOTE_RENET_PATH;
 
 /**
- * Deploy a repo's SSH public key to a machine's authorized_keys.
- * Uses the team key for SSH access (unsandboxed).
- * Idempotent — replaces existing key if prefix matches.
+ * Build the atomic authorized_keys deployment script for a repo key:
+ * check if exists → replace or append. Exported for snapshot testing —
+ * the script must stay byte-identical across transport changes.
  */
-export async function deployRepoKey(
-  machine: MachineConfig,
-  teamKey: string,
-  knownHosts: string,
+export function buildKeyDeploymentScript(
   repoName: string,
   sshPublicKey: string,
   repositoryGuid?: string
-): Promise<void> {
+): string {
   const guidFlag = repositoryGuid ? ` --guid ${repositoryGuid}` : '';
   const keyLine = `command="${GATEWAY_BIN} sandbox-gateway ${repoName}${guidFlag}" ${sshPublicKey}`;
   const keyPrefix = sshPublicKey.slice(0, 50);
 
-  // Atomic deployment script: check if exists → replace or append
-  const script = [
+  return [
     'set -e',
     'SSH_DIR="$HOME/.ssh"',
     'AUTH_KEYS="$SSH_DIR/authorized_keys"',
@@ -44,9 +38,21 @@ export async function deployRepoKey(
     `echo '${keyLine}' >> "$AUTH_KEYS"`,
     'chmod 600 "$AUTH_KEYS"',
   ].join('; ');
+}
 
-  await execSSHCommand(machine, teamKey, knownHosts, script);
-  debugLog(`Deployed SSH key for repo ${repoName} to ${machine.ip}`);
+/**
+ * Deploy a repo's SSH public key to a machine's authorized_keys over an
+ * established shared SSH session (team key, unsandboxed).
+ * Idempotent — replaces existing key if prefix matches.
+ */
+export async function deployRepoKey(
+  sftp: SFTPClient,
+  repoName: string,
+  sshPublicKey: string,
+  repositoryGuid?: string
+): Promise<void> {
+  await sftp.exec(buildKeyDeploymentScript(repoName, sshPublicKey, repositoryGuid));
+  debugLog(`Deployed SSH key for repo ${repoName}`);
 }
 
 /**
@@ -62,21 +68,18 @@ export async function deployRepoKeyIfNeeded(repoName: string, machineName: strin
     }
 
     const localConfig = await configService.getLocalConfig();
-    const machine = localConfig.machines[machineName];
-    if (!machine) {
+    if (!localConfig.machines[machineName]) {
       debugLog(`deployRepoKey: machine ${machineName} not found`);
       return;
     }
 
-    const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-    await deployRepoKey(
-      machine,
-      teamKey,
-      machine.knownHosts ?? '',
-      repoName,
-      repo.sshPublicKey,
-      repo.repositoryGuid
-    );
+    const lease = await machineConnections.acquire(machineName);
+    try {
+      const sftp = await lease.ensure();
+      await deployRepoKey(sftp, repoName, repo.sshPublicKey, repo.repositoryGuid);
+    } finally {
+      lease.release();
+    }
     debugLog(`Deployed SSH key for ${repoName} to ${machineName}`);
   } catch (error) {
     // Log visibly — silent failures here cause hard-to-debug connection issues
@@ -87,89 +90,31 @@ export async function deployRepoKeyIfNeeded(repoName: string, machineName: strin
 }
 
 /**
-  try {
-    const localConfig = await configService.getLocalConfig();
-    const machine = localConfig.machines[machineName];
-    if (!machine) return;
-
-    const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-    const sandboxPath = `/mnt/rediacc/.interim/sandbox/${repoName}`;
-    const script = `if [ -d "${sandboxPath}" ]; then rm -rf "${sandboxPath}"; fi`;
-    await execSSHCommand(machine, teamKey, machine.knownHosts ?? '', script);
-    debugLog(`Removed sandbox dir for ${repoName} on ${machine.ip}`);
-  } catch (error) {
-    debugLog(`Warning: failed to cleanup sandbox dir for ${repoName}: ${error}`);
-  }
-}
-
-/**
- * Deploy ALL repo keys to a machine. Used after setup-machine.
+ * Deploy ALL repo keys to a machine over a single shared SSH session.
+ * Used after setup-machine.
  */
 export async function deployAllRepoKeys(machineName: string): Promise<number> {
   const localConfig = await configService.getLocalConfig();
-  const machine = localConfig.machines[machineName];
-  if (!machine) return 0;
+  if (!localConfig.machines[machineName]) return 0;
 
-  const teamKey = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
   const repos = await configService.listRepositories();
+  if (!repos.some(({ config }) => config.sshPublicKey)) return 0;
 
+  const lease = await machineConnections.acquire(machineName);
   let deployed = 0;
-  for (const { name, config } of repos) {
-    if (config.sshPublicKey) {
+  try {
+    const sftp = await lease.ensure();
+    for (const { name, config } of repos) {
+      if (!config.sshPublicKey) continue;
       try {
-        await deployRepoKey(
-          machine,
-          teamKey,
-          machine.knownHosts ?? '',
-          name,
-          config.sshPublicKey,
-          config.repositoryGuid
-        );
+        await deployRepoKey(sftp, name, config.sshPublicKey, config.repositoryGuid);
         deployed++;
       } catch (error) {
         debugLog(`Warning: failed to deploy key for ${name}: ${error}`);
       }
     }
+  } finally {
+    lease.release();
   }
   return deployed;
-}
-
-async function execSSHCommand(
-  machine: MachineConfig,
-  teamKey: string,
-  knownHosts: string,
-  command: string
-): Promise<void> {
-  const sshConnection = new SSHConnection(teamKey, knownHosts, {
-    port: machine.port ?? SSH_DEFAULTS.PORT,
-  });
-
-  try {
-    await sshConnection.setup();
-    const destination = `${machine.user}@${machine.ip}`;
-
-    const child = spawnSSH(destination, sshConnection.sshOptions, command, {
-      env: process.env,
-      stdio: 'pipe',
-      agentSocketPath: sshConnection.agentSocketPath,
-    });
-
-    let stderr = '';
-    child.stderr?.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString();
-    });
-
-    await new Promise<void>((resolve, reject) => {
-      child.on('exit', (code: number | null) => {
-        if (code === 0 || code === null) resolve();
-        else
-          reject(
-            new Error(`SSH command failed with code ${code}${stderr ? `: ${stderr.trim()}` : ''}`)
-          );
-      });
-      child.on('error', reject);
-    });
-  } finally {
-    await sshConnection.cleanup();
-  }
 }
