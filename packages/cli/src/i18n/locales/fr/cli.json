@@ -1436,6 +1436,8 @@
         "completed": "Fork créé. Déployer localement : repo up {{repository}} -m {{machine}}. Pour migrer le fork vers une autre machine : repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Créer un fork CoW (Copy-on-Write) d'un dépôt",
         "descriptionShort": "Créer un fork CoW d'un dépôt (nouveau GUID, networkId, plage IP)",
+        "detachedHint": "Les services continuent de démarrer en arrière-plan — vérifiez l'état avec : rdc machine query --containers --name {{machine}}",
+        "detachOption": "Avec --up : rend la main dès que les conteneurs sont démarrés ; les healthchecks continuent en arrière-plan (idéal pour les forks jetables)",
         "examples": "\nExemples :\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Échec de la création du fork",
         "immutableOption": "Marque le fork en lecture seule : il refuse le montage et conserve son image stable au niveau des octets pour toujours (un commit/une base figé pour le push delta entre machines)",
@@ -1446,9 +1448,7 @@
         "tagOption": "Tag pour le fork (crée nom:tag)",
         "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork : le tag \"latest\" est réservé au dépôt principal (production) — choisissez un autre --tag (par exemple \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Monter et démarrer les services après le fork (fork + mount + up en une seule commande)",
-        "detachOption": "Avec --up : rend la main dès que les conteneurs sont démarrés ; les healthchecks continuent en arrière-plan (idéal pour les forks jetables)",
-        "detachedHint": "Les services continuent de démarrer en arrière-plan — vérifiez l'état avec : rdc machine query --containers --name {{machine}}"
+        "upOption": "Monter et démarrer les services après le fork (fork + mount + up en une seule commande)"
       },
       "fsck": {
         "clean": "Aucun écart sur {{machine}} : chaque référence se résout et aucun commit orphelin trouvé",
@@ -1705,13 +1705,13 @@
         "completed": "Services démarrés",
         "description": "Déployer ou mettre à jour un dépôt (montage, démarrage des services)",
         "descriptionShort": "Déployer ou mettre à jour un dépôt sur une machine",
+        "detachOption": "Rend la main dès que les conteneurs sont démarrés ; les healthchecks continuent en arrière-plan",
         "failed": "Échec du démarrage des services",
         "grandOption": "Nom du grand dépôt (résolution automatique vers le GUID)",
         "mountOption": "Monter le dépôt d'abord",
         "skipCheckpointOption": "Ignorer la restauration du checkpoint CRIU même si des données de checkpoint existent (forcer un démarrage propre)",
         "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)",
-        "detachOption": "Rend la main dès que les conteneurs sont démarrés ; les healthchecks continuent en arrière-plan"
+        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)"
       },
       "upAll": {
         "completed": "Tous les dépôts démarrés",

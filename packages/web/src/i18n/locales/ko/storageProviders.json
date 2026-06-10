@@ -148,7 +148,12 @@
       },
       "helpText": "Cloudflare R2는 송신 비용이 없는 S3 호환 오브젝트 스토리지입니다.",
       "name": "Cloudflare R2 스토리지",
-      "tips": ["송신 비용 없음", "S3 호환 API", "자동 복제", "Cloudflare CDN과 통합"]
+      "tips": [
+        "송신 비용 없음",
+        "S3 호환 API",
+        "자동 복제",
+        "Cloudflare CDN과 통합"
+      ]
     },
     "drive": {
       "description": "Google Drive 클라우드 스토리지",
@@ -305,7 +310,12 @@
       },
       "helpText": "Files.com은 고급 자동화 및 보안 기능을 갖춘 클라우드 FTP/SFTP 서비스입니다.",
       "name": "Files.com",
-      "tips": ["엔터프라이즈급 보안", "자동화 워크플로우", "상세한 감사 로그", "HIPAA 및 SOC2 준수"]
+      "tips": [
+        "엔터프라이즈급 보안",
+        "자동화 워크플로우",
+        "상세한 감사 로그",
+        "HIPAA 및 SOC2 준수"
+      ]
     },
     "ftp": {
       "description": "파일 전송 프로토콜",
@@ -637,7 +647,12 @@
       },
       "helpText": "Linkbox는 사용 편의성과 공유 기능에 중점을 둔 클라우드 스토리지를 제공합니다.",
       "name": "Linkbox",
-      "tips": ["간단한 공유 옵션", "직접 다운로드 링크", "클라이언트 앱 제공", "합리적인 가격 구성"]
+      "tips": [
+        "간단한 공유 옵션",
+        "직접 다운로드 링크",
+        "클라이언트 앱 제공",
+        "합리적인 가격 구성"
+      ]
     },
     "local": {
       "description": "로컬 파일 시스템 스토리지",
@@ -794,7 +809,12 @@
       },
       "helpText": "OpenDrive는 클라우드 스토리지, 온라인 백업 및 FTP 대체 서비스를 제공합니다.",
       "name": "OpenDrive",
-      "tips": ["무제한 스토리지 플랜 제공", "내장 문서 뷰어", "작업 관리 기능", "메모 작성 기능"]
+      "tips": [
+        "무제한 스토리지 플랜 제공",
+        "내장 문서 뷰어",
+        "작업 관리 기능",
+        "메모 작성 기능"
+      ]
     },
     "oracle": {
       "description": "Oracle Cloud Infrastructure 오브젝트 스토리지",
@@ -1017,7 +1037,12 @@
       },
       "helpText": "QingStor는 중국에서 인기 있는 QingCloud의 오브젝트 스토리지 서비스입니다.",
       "name": "QingStor",
-      "tips": ["중국 시장에서 인기", "S3 호환 API", "여러 가용 영역", "아시아에서 우수한 성능"]
+      "tips": [
+        "중국 시장에서 인기",
+        "S3 호환 API",
+        "여러 가용 영역",
+        "아시아에서 우수한 성능"
+      ]
     },
     "quatrix": {
       "description": "Quatrix 안전한 파일 전송",
@@ -1035,7 +1060,12 @@
       },
       "helpText": "Quatrix는 비즈니스 용도로 설계된 안전한 파일 전송 및 스토리지 플랫폼입니다.",
       "name": "Quatrix",
-      "tips": ["엔터프라이즈 중심 보안", "대용량 파일 전송 지원", "내장 암호화", "감사 추적 기능"]
+      "tips": [
+        "엔터프라이즈 중심 보안",
+        "대용량 파일 전송 지원",
+        "내장 암호화",
+        "감사 추적 기능"
+      ]
     },
     "s3": {
       "description": "S3 호환 오브젝트 스토리지 (AWS, Linode, DigitalOcean, Vultr 등)",

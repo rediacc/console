@@ -1436,6 +1436,8 @@
         "completed": "Fork oluşturuldu. Yerel olarak dağıt: repo up {{repository}} -m {{machine}}. Fork'u başka bir makineye taşımak için: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Bir deponun CoW (Copy-on-Write) çatalını oluştur",
         "descriptionShort": "Deponun CoW çatalını oluştur (yeni GUID, networkId, IP aralığı)",
+        "detachedHint": "Servisler arka planda başlamaya devam ediyor — durumu kontrol edin: rdc machine query --containers --name {{machine}}",
+        "detachOption": "--up ile: konteynerler başlar başlamaz döner; sağlık kontrolleri arka planda devam eder (kullan-at çatallar için ideal)",
         "examples": "\nÖrnekler:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Çatal oluşturma başarısız",
         "immutableOption": "Çatalı salt okunur olarak işaretler: bağlanmayı reddeder ve görüntüsünü kalıcı olarak bayt düzeyinde sabit tutar (makineler arası delta push için dondurulmuş bir commit/temel)",
@@ -1446,9 +1448,7 @@
         "tagOption": "Çatal için etiket (isim:etiket oluşturur)",
         "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: \"latest\" etiketi ana (üretim) depo için ayrılmıştır — farklı bir --tag seçin (örn. \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Fork sonrası bağlayıp servisleri başlat (fork + mount + up tek komutta)",
-        "detachOption": "--up ile: konteynerler başlar başlamaz döner; sağlık kontrolleri arka planda devam eder (kullan-at çatallar için ideal)",
-        "detachedHint": "Servisler arka planda başlamaya devam ediyor — durumu kontrol edin: rdc machine query --containers --name {{machine}}"
+        "upOption": "Fork sonrası bağlayıp servisleri başlat (fork + mount + up tek komutta)"
       },
       "fsck": {
         "clean": "{{machine}} üzerinde sapma yok: her ref çözümleniyor ve yetim commit bulunamadı",
@@ -1705,13 +1705,13 @@
         "completed": "Servisler başlatıldı",
         "description": "Bir depoyu dağıtın veya güncelleyin (bağlama, servisleri başlatma)",
         "descriptionShort": "Bir makinede depoyu dağıt veya güncelle",
+        "detachOption": "Konteynerler başlar başlamaz döner; sağlık kontrolleri arka planda devam eder",
         "failed": "Servis başlatma başarısız",
         "grandOption": "Ana depo adı (GUID'ye otomatik çözümlenir)",
         "mountOption": "Önce depoyu bağla",
         "skipCheckpointOption": "Checkpoint verileri mevcut olsa bile CRIU checkpoint geri yüklemesini atla (temiz başlatmayı zorla)",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor...",
-        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)",
-        "detachOption": "Konteynerler başlar başlamaz döner; sağlık kontrolleri arka planda devam eder"
+        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)"
       },
       "upAll": {
         "completed": "Tüm depolar başlatıldı",

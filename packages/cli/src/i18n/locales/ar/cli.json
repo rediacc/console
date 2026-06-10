@@ -1436,6 +1436,8 @@
         "completed": "تم إنشاء النسخة. للنشر محلياً: repo up {{repository}} -m {{machine}}. لترحيل النسخة إلى جهاز آخر: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "إنشاء نسخة CoW (نسخ عند الكتابة) من مستودع",
         "descriptionShort": "إنشاء نسخة CoW من مستودع (GUID جديد، networkId، نطاق IP)",
+        "detachedHint": "تستمر الخدمات في البدء في الخلفية — تحقق من الحالة عبر: rdc machine query --containers --name {{machine}}",
+        "detachOption": "مع --up: يعود فور بدء الحاويات؛ تستمر فحوصات الصحة في الخلفية (مثالي للفروع المؤقتة)",
         "examples": "\nأمثلة:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "فشل إنشاء النسخة",
         "immutableOption": "يضع علامة على الفرع كقراءة فقط: يرفض التحميل ويُبقي صورته مستقرة على مستوى البايت إلى الأبد (التزام/أساس مجمَّد للدفع التزايدي بين الأجهزة)",
@@ -1446,9 +1448,7 @@
         "tagOption": "وسم النسخة (ينشئ اسم:وسم)",
         "tagRequired": "الوسم مطلوب للنسخة. الاستخدام: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: الوسم \"latest\" محجوز للمستودع الرئيسي (الإنتاج) — اختر --tag مختلفًا (مثل \"test\" أو \"staging\" أو \"<feature>\")",
-        "upOption": "تركيب وبدء الخدمات بعد التفريع (fork + mount + up في أمر واحد)",
-        "detachOption": "مع --up: يعود فور بدء الحاويات؛ تستمر فحوصات الصحة في الخلفية (مثالي للفروع المؤقتة)",
-        "detachedHint": "تستمر الخدمات في البدء في الخلفية — تحقق من الحالة عبر: rdc machine query --containers --name {{machine}}"
+        "upOption": "تركيب وبدء الخدمات بعد التفريع (fork + mount + up في أمر واحد)"
       },
       "fsck": {
         "clean": "لا انحراف على {{machine}}: كل مرجع يُحَلّ ولم يُعثر على إيداعات يتيمة",
@@ -1705,13 +1705,13 @@
         "completed": "تم بدء الخدمات",
         "description": "نشر أو تحديث مستودع (تحميل، بدء الخدمات)",
         "descriptionShort": "نشر أو تحديث مستودع على جهاز",
+        "detachOption": "يعود فور بدء الحاويات؛ تستمر فحوصات الصحة في الخلفية",
         "failed": "فشل بدء الخدمات",
         "grandOption": "اسم المستودع الرئيسي (يُحلّ تلقائيًا إلى GUID)",
         "mountOption": "تثبيت المستودع أولاً",
         "skipCheckpointOption": "تخطي استعادة نقطة تفتيش CRIU حتى لو كانت بيانات checkpoint موجودة (فرض بدء جديد)",
         "starting": "جارٍ بدء الخدمات لـ \"{{repository}}\" على \"{{machine}}\"...",
-        "tlsOption": "طلب شهادة TLS مخصصة لهذا المستودع (النسخ المتفرعة تستخدم شهادة الجهاز المشتركة افتراضيًا)",
-        "detachOption": "يعود فور بدء الحاويات؛ تستمر فحوصات الصحة في الخلفية"
+        "tlsOption": "طلب شهادة TLS مخصصة لهذا المستودع (النسخ المتفرعة تستخدم شهادة الجهاز المشتركة افتراضيًا)"
       },
       "upAll": {
         "completed": "تم بدء جميع المستودعات",

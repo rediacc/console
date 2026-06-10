@@ -1436,6 +1436,8 @@
         "completed": "Fork creado. Desplegar localmente: repo up {{repository}} -m {{machine}}. Para migrar el fork a otra máquina: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "Crear un fork CoW (Copy-on-Write) de un repositorio",
         "descriptionShort": "Crear un fork CoW de un repositorio (nuevo GUID, networkId, rango IP)",
+        "detachedHint": "Los servicios siguen arrancando en segundo plano — comprueba el estado con: rdc machine query --containers --name {{machine}}",
+        "detachOption": "Con --up: vuelve en cuanto los contenedores arrancan; los healthchecks continúan en segundo plano (ideal para forks desechables)",
         "examples": "\nEjemplos:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Error al crear el fork",
         "immutableOption": "Marca el fork como solo lectura: rechaza el montaje y mantiene su imagen estable a nivel de bytes para siempre (un commit/base congelado para el delta push entre máquinas)",
@@ -1446,9 +1448,7 @@
         "tagOption": "Etiqueta para el fork (crea nombre:etiqueta)",
         "tagRequired": "La etiqueta es obligatoria para fork. Uso: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: la etiqueta \"latest\" está reservada para el repositorio principal (producción) — elija un --tag distinto (p. ej. \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Montar e iniciar servicios después de fork (fork + mount + up en un solo comando)",
-        "detachOption": "Con --up: vuelve en cuanto los contenedores arrancan; los healthchecks continúan en segundo plano (ideal para forks desechables)",
-        "detachedHint": "Los servicios siguen arrancando en segundo plano — comprueba el estado con: rdc machine query --containers --name {{machine}}"
+        "upOption": "Montar e iniciar servicios después de fork (fork + mount + up en un solo comando)"
       },
       "fsck": {
         "clean": "Sin desviaciones en {{machine}}: todas las referencias resuelven y no hay commits huérfanos",
@@ -1705,13 +1705,13 @@
         "completed": "Servicios iniciados",
         "description": "Desplegar o actualizar un repositorio (montar, iniciar servicios)",
         "descriptionShort": "Desplegar o actualizar un repositorio en una máquina",
+        "detachOption": "Vuelve en cuanto los contenedores arrancan; los healthchecks continúan en segundo plano",
         "failed": "Fallo al iniciar servicios",
         "grandOption": "Nombre del repositorio Grand (se resuelve automáticamente a GUID)",
         "mountOption": "Montar repositorio primero",
         "skipCheckpointOption": "Omitir restauración de checkpoint CRIU aunque existan datos de checkpoint (forzar inicio limpio)",
         "starting": "Iniciando servicios para \"{{repository}}\" en \"{{machine}}\"...",
-        "tlsOption": "Solicitar certificado TLS dedicado para este repositorio (los forks usan el certificado compartido de la máquina por defecto)",
-        "detachOption": "Vuelve en cuanto los contenedores arrancan; los healthchecks continúan en segundo plano"
+        "tlsOption": "Solicitar certificado TLS dedicado para este repositorio (los forks usan el certificado compartido de la máquina por defecto)"
       },
       "upAll": {
         "completed": "Todos los repositorios iniciados",

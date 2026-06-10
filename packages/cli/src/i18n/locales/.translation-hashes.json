@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2001,
-    "sourceCommit": "4f0e5c58ecbab2976120444667391006148fb7c9"
+    "keyCount": 2004,
+    "sourceCommit": "935c22bf6ed0a70ba298e0c8475934d9bb50a557"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1000,6 +1000,8 @@
     "commands.repo.fork.completed": "5fa7d32c",
     "commands.repo.fork.description": "35e29bfc",
     "commands.repo.fork.descriptionShort": "bed2d483",
+    "commands.repo.fork.detachedHint": "7d842597",
+    "commands.repo.fork.detachOption": "aa4a12af",
     "commands.repo.fork.examples": "89a5f7d8",
     "commands.repo.fork.failed": "b6deb539",
     "commands.repo.fork.immutableOption": "0c1e5b09",
@@ -1211,6 +1213,7 @@
     "commands.repo.up.completed": "3f22a56c",
     "commands.repo.up.description": "c427c432",
     "commands.repo.up.descriptionShort": "c728eb10",
+    "commands.repo.up.detachOption": "be612eb1",
     "commands.repo.up.failed": "16b0187a",
     "commands.repo.up.grandOption": "3d165fd0",
     "commands.repo.up.mountOption": "122a89e2",

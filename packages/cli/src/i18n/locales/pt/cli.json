@@ -1436,6 +1436,8 @@
         "completed": "Fork criado. Implementar localmente: repo up {{repository}} -m {{machine}}. Para migrar o fork para outra máquina: repo push {{repository}} -m {{machine}} --to <destino> --up",
         "description": "Criar um fork CoW (Copy-on-Write) de um repositório. O FORK É QUASE INSTANTÂNEO E DE TEMPO CONSTANTE independentemente do tamanho do repositório; o reflink BTRFS clona a imagem subjacente, pelo que um repositório de 100 GB e um de 1 GB são copiados no mesmo tempo (~segundos). O fork recebe um NOVO GUID, networkId, intervalo de IPs e domínio de rota automática ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}), sendo uma cópia totalmente independente. O fork online é suportado; o pai pode permanecer em execução. O fork herda automaticamente as credenciais de encriptação do pai. Use --checkpoint para capturar o estado do processo CRIU antes de copiar; o fork restaura automaticamente no primeiro 'repo up' (estado em memória preservado). FORK ENTRE MÁQUINAS: Para copiar para outra máquina, primeiro copie localmente e depois transfira: (1) repo fork --parent <pai> -m <origem> --tag <nome>, (2) backup push <nome> -m <origem> --to-machine <destino>, (3) repo up <nome> -m <destino>. AVISO: Não use 'backup push' isoladamente para copiar; cria uma cópia bruta com o MESMO GUID (não é um fork independente). Copie sempre primeiro para obter uma nova identidade. As rotas automáticas utilizam o nome do repositório, pelo que cada fork obtém automaticamente um domínio único.",
         "descriptionShort": "Fork CoW quase instantâneo de um repositório (novo GUID, networkId, intervalo de IPs)",
+        "detachedHint": "Os serviços continuam iniciando em segundo plano — verifique o status com: rdc machine query --containers --name {{machine}}",
+        "detachOption": "Com --up: retorna assim que os contêineres iniciam; os healthchecks continuam em segundo plano (ideal para forks descartáveis)",
         "examples": "\nExemplos:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Falha na criação do fork",
         "immutableOption": "Marca o fork como somente leitura: ele recusa a montagem e mantém sua imagem estável em nível de bytes para sempre (um commit/base congelado para o delta push entre máquinas)",
@@ -1446,9 +1448,7 @@
         "tagOption": "Etiqueta para o fork (cria nome:etiqueta)",
         "tagRequired": "A etiqueta é obrigatória para fork. Utilização: rdc repo fork --parent <pai> --tag <etiqueta> -m <máquina>",
         "tagReservedLatest": "repo fork: a tag \"latest\" é reservada para o repositório principal (produção) — escolha um --tag diferente (ex.: \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Montar e iniciar os serviços após copiar (fork + mount + up num único comando)",
-        "detachOption": "Com --up: retorna assim que os contêineres iniciam; os healthchecks continuam em segundo plano (ideal para forks descartáveis)",
-        "detachedHint": "Os serviços continuam iniciando em segundo plano — verifique o status com: rdc machine query --containers --name {{machine}}"
+        "upOption": "Montar e iniciar os serviços após copiar (fork + mount + up num único comando)"
       },
       "fsck": {
         "clean": "Nenhuma divergência em {{machine}}: todas as referências resolvem e nenhum commit órfão encontrado",
@@ -1705,13 +1705,13 @@
         "completed": "Serviços iniciados",
         "description": "Implementar ou actualizar um repositório (montar, executar o up do Rediaccfile que invoca renet compose). As rotas de proxy demoram ~3s a ficar activas após a implementação. Apresenta o padrão de URL para serviços expostos via HTTP (etiqueta rediacc.service_port) quando concluído. A primeira implementação e os forks são montados automaticamente. O restauro de ponto de verificação CRIU é detectado automaticamente -- use --skip-checkpoint para forçar arranque limpo. Omita o nome para implementar todos os repositórios na máquina.",
         "descriptionShort": "Implementar ou actualizar um repositório numa máquina",
+        "detachOption": "Retorna assim que os contêineres iniciam; os healthchecks continuam em segundo plano",
         "failed": "Falha ao iniciar os serviços",
         "grandOption": "Repositório de credenciais pai (resolve automaticamente o nome para GUID). Apenas para repositórios que partilham segredos com um pai.",
         "mountOption": "Montar o repositório primeiro (necessário para repositórios copiados na primeira implementação)",
         "skipCheckpointOption": "Ignorar o restauro de ponto de verificação CRIU mesmo que existam dados de verificação (forçar arranque limpo)",
         "starting": "A iniciar os serviços de \"{{repository}}\" em \"{{machine}}\"...",
-        "tlsOption": "Solicitar certificado TLS dedicado para este repositório (os forks utilizam o certificado partilhado da máquina por omissão)",
-        "detachOption": "Retorna assim que os contêineres iniciam; os healthchecks continuam em segundo plano"
+        "tlsOption": "Solicitar certificado TLS dedicado para este repositório (os forks utilizam o certificado partilhado da máquina por omissão)"
       },
       "upAll": {
         "completed": "Todos os repositórios iniciados",

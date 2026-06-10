@@ -1436,6 +1436,8 @@
         "completed": "Fork erstellt. Lokal bereitstellen: repo up {{repository}} -m {{machine}}. Fork auf anderen Rechner migrieren: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "CoW-Fork (Copy-on-Write) eines Repositorys erstellen",
         "descriptionShort": "CoW-Fork eines Repositorys erstellen (neue GUID, networkId, IP-Bereich)",
+        "detachedHint": "Dienste starten im Hintergrund — Status prüfen mit: rdc machine query --containers --name {{machine}}",
+        "detachOption": "Mit --up: Rückkehr, sobald Container gestartet sind; Healthchecks laufen im Hintergrund weiter (ideal für Wegwerf-Forks)",
         "examples": "\nBeispiele:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "Fork-Erstellung fehlgeschlagen",
         "immutableOption": "Markiert den Fork als schreibgeschützt: Er verweigert das Einhängen und hält sein Image dauerhaft byte-stabil (ein eingefrorener Commit/eine Basis für maschinenübergreifenden Delta-Push)",
@@ -1446,9 +1448,7 @@
         "tagOption": "Tag für den Fork (erstellt Name:Tag)",
         "tagRequired": "Tag ist für Fork erforderlich. Verwendung: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: Tag \"latest\" ist für das Grand-Repository (Produktion) reserviert — wählen Sie ein anderes --tag (z. B. \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Nach dem Fork mounten und Dienste starten (Fork + Mount + Up in einem Befehl)",
-        "detachOption": "Mit --up: Rückkehr, sobald Container gestartet sind; Healthchecks laufen im Hintergrund weiter (ideal für Wegwerf-Forks)",
-        "detachedHint": "Dienste starten im Hintergrund — Status prüfen mit: rdc machine query --containers --name {{machine}}"
+        "upOption": "Nach dem Fork mounten und Dienste starten (Fork + Mount + Up in einem Befehl)"
       },
       "fsck": {
         "clean": "Keine Abweichung auf {{machine}}: jede Referenz löst auf und keine verwaisten Commits gefunden",
@@ -1705,13 +1705,13 @@
         "completed": "Dienste gestartet",
         "description": "Repository deployen oder aktualisieren (Mount, Dienste starten)",
         "descriptionShort": "Repository auf einer Maschine bereitstellen oder aktualisieren",
+        "detachOption": "Rückkehr, sobald Container gestartet sind; Healthchecks laufen im Hintergrund weiter",
         "failed": "Starten der Dienste fehlgeschlagen",
         "grandOption": "Grand-Repository-Name (wird automatisch in GUID aufgelöst)",
         "mountOption": "Repository vorher mounten",
         "skipCheckpointOption": "CRIU checkpoint-Wiederherstellung überspringen, auch wenn checkpoint-Daten vorhanden sind (Neustart erzwingen)",
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet...",
-        "tlsOption": "Dediziertes TLS-Zertifikat für dieses Repository anfordern (Forks verwenden standardmäßig das gemeinsame Maschinenzertifikat)",
-        "detachOption": "Rückkehr, sobald Container gestartet sind; Healthchecks laufen im Hintergrund weiter"
+        "tlsOption": "Dediziertes TLS-Zertifikat für dieses Repository anfordern (Forks verwenden standardmäßig das gemeinsame Maschinenzertifikat)"
       },
       "upAll": {
         "completed": "Alle Repositories gestartet",

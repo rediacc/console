@@ -1436,6 +1436,8 @@
         "completed": "Fork已创建。本地部署: repo up {{repository}} -m {{machine}}。将fork迁移到另一台机器: repo push {{repository}} -m {{machine}} --to <target> --up",
         "description": "创建仓库的 CoW（写时复制）分支",
         "descriptionShort": "创建仓库的 CoW 分支（新 GUID、networkId、IP 范围）",
+        "detachedHint": "服务正在后台启动 — 查看状态：rdc machine query --containers --name {{machine}}",
+        "detachOption": "与 --up 搭配：容器启动后立即返回；健康检查在后台继续（适合一次性分叉）",
         "examples": "\n示例:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
         "failed": "分支创建失败",
         "immutableOption": "将分叉标记为只读：它会拒绝挂载，使其镜像永久保持字节级稳定（用于跨机器增量推送的冻结提交/基线）",
@@ -1446,9 +1448,7 @@
         "tagOption": "分支的标签（创建 名称:标签）",
         "tagRequired": "分支需要标签。用法：rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: 标签 \"latest\" 保留给主 (生产) 仓库 — 请选择其他 --tag (例如 \"test\"、\"staging\"、\"<feature>\")",
-        "upOption": "fork后挂载并启动服务（fork + mount + up 一条命令完成）",
-        "detachOption": "与 --up 搭配：容器启动后立即返回；健康检查在后台继续（适合一次性分叉）",
-        "detachedHint": "服务正在后台启动 — 查看状态：rdc machine query --containers --name {{machine}}"
+        "upOption": "fork后挂载并启动服务（fork + mount + up 一条命令完成）"
       },
       "fsck": {
         "clean": "{{machine}} 上无偏差：所有引用均可解析，且未发现孤立提交",
@@ -1705,13 +1705,13 @@
         "completed": "服务已启动",
         "description": "部署或更新仓库（挂载、启动服务）",
         "descriptionShort": "在机器上部署或更新仓库",
+        "detachOption": "容器启动后立即返回；健康检查在后台继续",
         "failed": "服务启动失败",
         "grandOption": "主仓库名称 (自动解析为 GUID)",
         "mountOption": "先挂载仓库",
         "skipCheckpointOption": "即使存在 checkpoint 数据也跳过 CRIU checkpoint 恢复（强制全新启动）",
         "starting": "正在 \"{{machine}}\" 上启动 \"{{repository}}\" 的服务...",
-        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)",
-        "detachOption": "容器启动后立即返回；健康检查在后台继续"
+        "tlsOption": "为此仓库请求专用 TLS 证书 (分支默认使用共享机器证书)"
       },
       "upAll": {
         "completed": "所有仓库已启动",
