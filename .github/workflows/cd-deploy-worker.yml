@@ -54,6 +54,10 @@ on:
       TURNSTILE_SECRET_KEY:
         required: true
 
+# Nothing here runs Electron; skip the flaky binary download in install:natives.
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
 jobs:
   deploy:
     name: Deploy ${{ inputs.target }} Worker

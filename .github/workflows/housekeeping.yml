@@ -30,6 +30,11 @@ concurrency:
   group: housekeeping
   cancel-in-progress: false
 
+# Nothing here runs Electron; the binary download was the recurring 504
+# failure source in the stripe-cleanup install step.
+env:
+  ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+
 jobs:
   cleanup:
     name: Cleanup versions
