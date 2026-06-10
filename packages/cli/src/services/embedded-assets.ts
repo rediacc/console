@@ -153,6 +153,21 @@ export function computeSha256(data: Buffer): string {
 /** Cached local path for extracted renet binary (per-process) */
 let cachedLocalPath: string | null = null;
 
+/**
+ * Per-user extraction directory name. os.tmpdir() is world-writable and
+ * shared between users on Unix, so a static directory name invites squatting
+ * and symlink games from other local users; suffixing with the UID (username
+ * on Windows, where uid is -1 but the tmpdir is per-user anyway) isolates it.
+ */
+function rdcLocalDirName(): string {
+  try {
+    const { uid, username } = os.userInfo();
+    return `.rdc-local-${uid >= 0 ? uid : username}`;
+  } catch {
+    return '.rdc-local';
+  }
+}
+
 /** Host platform/arch and the extraction target for the local renet binary. */
 function hostRenetTarget(): {
   platform: RenetPlatform;
@@ -167,7 +182,7 @@ function hostRenetTarget(): {
   };
   const platform: RenetPlatform = platformMap[process.platform] ?? PLATFORM_DEFAULTS.DEFAULT_RENET;
   const arch: RenetArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
-  const dir = path.join(os.tmpdir(), '.rdc-local');
+  const dir = path.join(os.tmpdir(), rdcLocalDirName());
   const ext = platform === 'windows' ? '.exe' : '';
   return {
     platform,

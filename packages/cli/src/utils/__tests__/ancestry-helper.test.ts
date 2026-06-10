@@ -67,8 +67,9 @@ describe('resolveRenetSyncPath', () => {
   it('falls back to PATH lookup in dev mode', () => {
     mockSpawnSync.mockReturnValue(spawnResult({ stdout: '/usr/local/bin/renet\n' }));
     expect(resolveRenetSyncPath()).toBe('/usr/local/bin/renet');
+    const expectedLookup = process.platform === 'win32' ? 'where' : 'which';
     expect(mockSpawnSync).toHaveBeenCalledWith(
-      'which',
+      expectedLookup,
       ['renet'],
       expect.objectContaining({ encoding: 'utf-8' })
     );
