@@ -13,6 +13,7 @@ for rid in $RUNS; do
   gh api repos/rediacc/console/actions/runs/$rid/force-cancel -X POST 2>/dev/null && COUNT=$((COUNT+1))
 done
 if [[ $COUNT -gt 0 ]]; then
-  echo "⚡ Auto-cancelled $COUNT old CI run(s) on $BRANCH. The new push triggers a fresh CI run. Watch it with: gh run watch <new-run-id> --repo rediacc/console --exit-status (run_in_background: true). Remember: watch the Console CI run, not Rerun Failed Jobs auto-retries."
+  echo "⚡ Auto-cancelled $COUNT old CI run(s) on $BRANCH. The new push triggers a fresh CI run. Watch it with: gh run watch <new-run-id> --repo rediacc/console --exit-status --interval 100 (run_in_background: true). Remember: watch the Console CI run, not Rerun Failed Jobs auto-retries."
 fi
+echo "📝 If a PR is open for $BRANCH: refresh its description NOW (gh pr edit <N> --body-file ...) — the PR-Description gate fails when the body is older than the newest commit. Stale-only failure? Refresh + 'gh run rerun <id> --failed' (no commit needed)."
 exit 0
