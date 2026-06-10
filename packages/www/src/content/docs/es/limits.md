@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: es
-sourceHash: "1d0e48ed1094dda6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "8bd2b499c6b8eff6"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Límites y cuotas
@@ -126,7 +126,7 @@ La migración en vivo a través de CRIU tiene las siguientes restricciones:
 - **Modo de red**: CRIU requiere el modo de red del host. Los contenedores que usan configuraciones de red personalizadas no pueden ser incluidos en el checkpoint.
 - **Memoria**: El tamaño de los datos del checkpoint equivale a la memoria residente del proceso. Los grandes conjuntos de datos en memoria (por ejemplo, una aplicación Node.js que almacena en caché 4 GB de datos) producen archivos de checkpoint de 4 GB.
 - **Conexiones TCP**: Las aplicaciones deben tolerar la pérdida de conexiones durante la restauración. Las conexiones TCP activas **no** se preservan, el proceso restaurado ve los sockets como cerrados y debe reconectarse. Esto se aplica tanto a restauraciones en la misma máquina como entre máquinas.
-- **La bifurcación en vivo en la misma máquina no está soportada**: `rdc repo fork --parent X --tag Y --checkpoint` captura el checkpoint con éxito, pero el siguiente `rdc repo up` en la misma máquina falla con `criu failed: type RESTORE errno 0` mientras el padre sigue en ejecución. Esto es causado por bugs upstream de CRIU [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) y [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) que interactúan con `network_mode: host`. Para preservar in situ el estado del proceso en la misma máquina, use `rdc repo down --checkpoint` + `rdc repo up`. Para migración en vivo, use `rdc repo push --checkpoint` a una máquina diferente.
+- **El fork en vivo en la misma máquina redirige las direcciones del padre**: `rdc repo fork --parent X --tag Y --checkpoint` seguido de `rdc repo up` funciona mientras el repositorio padre sigue en ejecución. Los procesos restaurados conservan las direcciones loopback del padre del momento del checkpoint, así que el sistema las redirige de forma transparente a las direcciones propias del fork (mismo servicio, copia de datos del fork). El primer uso de una conexión TCP restaurada sigue fallando y la aplicación debe reconectarse, según el punto de TCP de arriba.
 
 ---
 

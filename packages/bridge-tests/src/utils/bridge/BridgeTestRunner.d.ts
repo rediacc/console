@@ -245,7 +245,6 @@ export declare class BridgeTestRunner {
     repositoryMount: (name: string, password?: string, datastorePath?: string) => Promise<ExecResult>;
     repositoryUnmount: (name: string, datastorePath?: string) => Promise<ExecResult>;
     repositoryUp: (name: string, datastorePath?: string, networkId?: string) => Promise<ExecResult>;
-    repositoryUpPrepOnly: (name: string, datastorePath?: string, networkId?: string) => any;
     repositoryDown: (name: string, datastorePath?: string, networkId?: string) => Promise<ExecResult>;
     repositoryList: (datastorePath?: string) => Promise<ExecResult>;
     repositoryResize: (name: string, newSize: string, password?: string, datastorePath?: string) => Promise<ExecResult>;

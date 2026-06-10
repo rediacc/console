@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "1d0e48ed1094dda6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "8bd2b499c6b8eff6"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Limits & Kontingente
@@ -126,7 +126,7 @@ Live-Migration über CRIU hat folgende Einschränkungen:
 - **Netzwerkmodus**: CRIU erfordert den Host-Netzwerkmodus. Container mit benutzerdefinierten Netzwerkkonfigurationen können nicht gesichert werden.
 - **Arbeitsspeicher**: Die Größe der Checkpoint-Daten entspricht dem residenten Speicher des gesicherten Prozesses. Große In-Memory-Datensätze (z. B. eine Node.js-App, die 4 GB Daten zwischenspeichert) erzeugen 4 GB Checkpoint-Dateien.
 - **TCP-Verbindungen**: Anwendungen müssen Verbindungsverluste bei der Wiederherstellung tolerieren. Aktive TCP-Verbindungen bleiben **nicht** erhalten, der wiederhergestellte Prozess sieht Sockets als geschlossen und muss die Verbindung neu aufbauen. Dies gilt sowohl für Wiederherstellungen auf derselben Maschine als auch für maschinenübergreifende Wiederherstellungen.
-- **Live-Fork auf derselben Maschine wird nicht unterstützt**: `rdc repo fork --parent X --tag Y --checkpoint` erfasst den Checkpoint erfolgreich, aber das anschließende `rdc repo up` auf derselben Maschine schlägt mit `criu failed: type RESTORE errno 0` fehl, solange das Eltern-Repository noch läuft. Dies wird durch Upstream-CRIU-Bugs [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) und [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) verursacht, die mit `network_mode: host` interagieren. Für die In-Place-Prozesszustandserhaltung auf derselben Maschine verwenden Sie stattdessen `rdc repo down --checkpoint` + `rdc repo up`. Für Live-Migration verwenden Sie `rdc repo push --checkpoint` auf eine andere Maschine.
+- **Live-Fork auf derselben Maschine leitet Eltern-Adressen um**: `rdc repo fork --parent X --tag Y --checkpoint` gefolgt von `rdc repo up` funktioniert, während das Eltern-Repository weiterläuft. Die wiederhergestellten Prozesse tragen die Loopback-Adressen des Eltern-Repositories vom Zeitpunkt des Checkpoints, daher leitet das System sie transparent auf die eigenen Adressen des Forks um (gleicher Dienst, Fork-Kopie der Daten). Die erste Nutzung einer wiederhergestellten TCP-Verbindung schlägt weiterhin fehl und die App muss sich neu verbinden, siehe den TCP-Punkt oben.
 
 ---
 

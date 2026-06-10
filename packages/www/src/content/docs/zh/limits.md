@@ -5,8 +5,8 @@ description: >-
 category: "Reference"
 order: 99
 language: zh
-sourceHash: "1d0e48ed1094dda6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "8bd2b499c6b8eff6"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # 限制与配额
@@ -125,7 +125,7 @@ rdc config infra push -m server-1
 - **网络模式**：CRIU 要求主机网络模式。使用自定义网络配置的容器无法创建检查点。
 - **内存**：检查点数据大小等于被检查点进程的驻留内存。大型内存数据集（例如，缓存 4 GB 数据的 Node.js 应用程序）会产生 4 GB 的检查点文件。
 - **TCP 连接**：应用程序必须能够容忍恢复过程中的连接丢失。活跃的 TCP 连接**不会**被保留，恢复后的进程会看到套接字处于关闭状态，必须重新连接。这同时适用于同机恢复和跨机恢复两种路径。
-- **不支持同机实时派生**：`rdc repo fork --parent X --tag Y --checkpoint` 可以成功捕获检查点，但若父仓库仍在运行，随后在同一机器上执行的 `rdc repo up` 会以 `criu failed: type RESTORE errno 0` 失败。这是由于 CRIU 上游 bug [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) 和 [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) 与 `network_mode: host` 交互造成的。若要在同一机器上原地保存进程状态，请改用 `rdc repo down --checkpoint` + `rdc repo up`。若要进行实时迁移，请使用 `rdc repo push --checkpoint` 到另一台机器。
+- **同机热 fork 会重定向父仓库地址**：在父仓库持续运行时，先执行 `rdc repo fork --parent X --tag Y --checkpoint` 再执行 `rdc repo up` 即可正常工作。恢复出的进程仍带着 checkpoint 时刻父仓库的 loopback 地址，系统会将其透明地重定向到 fork 自己的地址（同一服务，fork 的数据副本）。恢复的 TCP 连接首次使用时仍会失败，应用需要重连，见上文 TCP 条目。
 
 ---
 
