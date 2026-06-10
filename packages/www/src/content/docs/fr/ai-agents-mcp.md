@@ -4,7 +4,7 @@ description: Connectez des agents IA à l'infrastructure Rediacc en utilisant le
 category: Guides
 order: 33
 language: fr
-sourceHash: "ce5f1392ebaa380b"
+sourceHash: "4483eb3da34a6c03"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,6 @@ L'agent appelle `machine_health` → `machine_containers` → `term_exec` pour l
 |--------|--------|-------------|
 | `--config <name>` | (configuration par défaut) | Configuration nommée à utiliser pour toutes les commandes |
 | `--timeout <ms>` | `120000` | Délai d'expiration par défaut des commandes en millisecondes |
-| `--allow-grand` | off | Autoriser les opérations destructives sur les dépôts grand (non-fork) |
 
 ## Sécurité
 
@@ -121,20 +120,15 @@ Par défaut, le serveur fonctionne en **mode fork uniquement** : les outils d'é
 
 > **Les secrets par dépôt sont réservés à la CLI, par conception.** `repo_secret_set` et `repo_secret_unset` ne sont intentionnellement **pas** exposés comme outils MCP. Les écritures requièrent une précondition `--current <valeur-précédente>` (ou `--rotate-secret` pour reconnaître une rotation non vérifiée), et cette cérémonie nécessite une supervision humaine. Les agents souhaitant suggérer une rotation de secret doivent appeler `repo_secret_get` pour confirmer l'empreinte, puis relayer la commande CLI destinée à l'opérateur via le champ structuré `next.options[].run` dans l'enveloppe d'erreur JSON. Voir [Sécurité des agents IA](/en/docs/ai-agents-safety#structured-next-action-hints) pour le schéma complet, et [Dépôts § Secrets](/en/docs/repositories#secrets) pour le guide utilisateur.
 
-Pour autoriser un agent à modifier des dépôts grand, démarrer avec `--allow-grand` :
+Pour autoriser un agent à modifier des dépôts grand, exportez `REDIACC_ALLOW_GRAND_REPO` dans votre terminal **avant de démarrer l'agent qui héberge le serveur MCP** :
 
-```json
-{
-  "mcpServers": {
-    "rdc": {
-      "command": "rdc",
-      "args": ["mcp", "serve", "--allow-grand"]
-    }
-  }
-}
+```bash
+export REDIACC_ALLOW_GRAND_REPO='gitlab'   # un seul dépôt
+# ou 'repo1,repo2,repo3' (les espaces autour des entrées sont ignorés), ou '*' pour tous les dépôts
+claude   # ou cursor, gemini, etc.
 ```
 
-Vous pouvez aussi définir la variable d'environnement `REDIACC_ALLOW_GRAND_REPO` sur un nom de dépôt unique, sur une liste de noms séparés par des virgules (par exemple `repo1,repo2,repo3`) ou sur `*` pour tous les dépôts. Les espaces autour des entrées sont ignorés, donc `repo1, repo2` fonctionne également. L'accès au niveau de la machine (comme `term connect -m <machine>` sans dépôt) nécessite toujours `*` ; une liste de noms de dépôts ne le débloque pas.
+La substitution est vérifiée contre l'ascendance du processus : elle ne compte que lorsqu'elle était déjà présente dans l'environnement du processus agent lui-même, ce qui signifie que vous l'avez exportée avant que l'agent (et le serveur MCP qu'il a engendré) ne démarre. Un agent ne peut pas se conférer accès en définissant la variable en cours de session. Il n'existe pas intentionnellement de flag serveur pour cela : un flag dans les arguments du serveur MCP n'apporte aucune preuve de qui l'a mis là, tandis que la vérification d'ascendance en apporte. L'accès au niveau machine (comme `term connect -m <machine>` sans dépôt) nécessite toujours `*` ; une liste de noms de dépôts ne le débloque pas.
 
 ### Clés SSH par dépôt et sandbox côté serveur
 

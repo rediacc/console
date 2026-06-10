@@ -4,7 +4,7 @@ description: Ligue agentes de IA à infraestrutura Rediacc usando o servidor Mod
 category: Guides
 order: 33
 language: pt
-sourceHash: "ce5f1392ebaa380b"
+sourceHash: "4483eb3da34a6c03"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,6 @@ O agente chama `machine_health` -> `machine_containers` -> `term_exec` para ler 
 |-------|--------------|-----------|
 | `--config <name>` | (configuração predefinida) | Configuração com nome a usar para todos os comandos |
 | `--timeout <ms>` | `120000` | Tempo limite predefinido do comando em milissegundos |
-| `--allow-grand` | desligado | Permitir operações destrutivas em repositórios grand (não-fork) |
 
 ## Segurança
 
@@ -121,20 +120,15 @@ Por omissão, o servidor corre em **modo apenas-fork**: as ferramentas de escrit
 
 > **Os segredos por repositório são exclusivos da CLI por design.** `repo_secret_set` e `repo_secret_unset` são intencionalmente **não** expostos como ferramentas MCP. As escritas requerem uma pré-condição `--current <previous-value>` (ou `--rotate-secret` para reconhecer uma rotação não verificada), e essa cerimónia precisa de ser acompanhada por um humano. Os agentes que precisem de sugerir uma rotação de segredo devem chamar `repo_secret_get` para confirmar o digest e depois transmitir o comando CLI orientado ao operador ao utilizador através do campo estruturado `next.options[].run` no envelope de erro JSON. Consulte [Segurança de Agentes de IA](/en/docs/ai-agents-safety#structured-next-action-hints) para o padrão completo, e [Repositórios § Segredos](/en/docs/repositories#secrets) para o procedimento orientado ao utilizador.
 
-Para permitir que um agente modifique repositórios grand, inicie com `--allow-grand`:
+Para permitir que um agente modifique repositórios grand, exporte `REDIACC_ALLOW_GRAND_REPO` em seu terminal **antes de iniciar o agente que hospeda o servidor MCP**:
 
-```json
-{
-  "mcpServers": {
-    "rdc": {
-      "command": "rdc",
-      "args": ["mcp", "serve", "--allow-grand"]
-    }
-  }
-}
+```bash
+export REDIACC_ALLOW_GRAND_REPO='gitlab'   # um repositório
+# ou 'repo1,repo2,repo3' (espaços em branco em torno das entradas são ignorados), ou '*' para todos os repositórios
+claude   # ou cursor, gemini, etc.
 ```
 
-Também pode definir a variável de ambiente `REDIACC_ALLOW_GRAND_REPO` com o nome de um único repositório, uma lista separada por vírgulas de nomes de repositórios (por exemplo `repo1,repo2,repo3`), ou `*` para todos os repositórios. Os espaços em branco em torno das entradas são ignorados, pelo que `repo1, repo2` também funciona. O acesso ao nível da máquina (como `term connect -m <machine>` sem repositório) ainda requer `*`; uma lista de nomes de repositórios não o desbloqueia.
+A anulação é verificada contra a ancestralidade do processo: ela apenas conta quando já estava presente no ambiente do próprio processo agente, o que significa que você a exportou antes do agente (e do servidor MCP que ele criou) iniciar. Um agente não pode se conceder acesso definindo a variável no meio da sessão. Não há intencionalmente nenhum sinalizador de servidor para isso: um sinalizador nos argumentos do servidor MCP não carrega prova de quem o colocou lá, enquanto a verificação de ancestralidade faz. O acesso ao nível da máquina (como `term connect -m <machine>` sem um repositório) ainda requer `*`; uma lista de nomes de repositórios não o desbloqueia.
 
 ### Chaves SSH por repositório e sandbox do lado do servidor
 

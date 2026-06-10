@@ -6,7 +6,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "233baf26d48ca547"
+sourceHash: "adf2b6c33282649c"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1383,7 +1383,6 @@ rdc mcp serve [options]
 |------|-------------|----------|---------|
 | `--config <name>` | {{t:cli.commands.mcp.serve.configOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--timeout <ms>` | {{t:cli.commands.mcp.serve.timeoutOption}} | {{t:cli.docs.optionLabels.no}} | `120000` |
-| `--allow-grand` | {{t:cli.commands.mcp.serve.allowGrandOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
@@ -1451,6 +1450,7 @@ rdc repo up [options]
 | `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
 | `--skip-checkpoint` | {{t:cli.commands.repo.up.skipCheckpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--tls` | {{t:cli.commands.repo.up.tlsOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--detach` | {{t:cli.commands.repo.up.detachOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--include-forks` | {{t:cli.commands.repo.upAll.includeForksOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--mount-only` | {{t:cli.commands.repo.upAll.mountOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--parallel` | {{t:cli.commands.repo.upAll.parallelOption}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -1736,6 +1736,7 @@ rdc repo fork [options]
 | `--checkpoint` | {{t:cli.commands.repo.fork.checkpointOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--immutable` | {{t:cli.commands.repo.fork.immutableOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--up` | {{t:cli.commands.repo.fork.upOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--detach` | {{t:cli.commands.repo.fork.detachOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 

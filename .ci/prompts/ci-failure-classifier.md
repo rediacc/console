@@ -20,6 +20,8 @@ Infrastructure or flaky failures that pass on retry:
 - Individual test timeout in an otherwise passing suite
 - APT/dpkg/yum/dnf "Hash Sum mismatch", "File has unexpected size", "Packages.gz" / "Release" mismatch — these are CDN / mirror / R2 staleness where the index was updated mid-fetch. A fresh retry after cache settles almost always passes. Not a code problem.
 - VM cloud-image wget / curl failures (Fedora, Ubuntu, Oracle, openSUSE, Debian cloud images) — upstream distro mirror hiccup, not our code.
+- A job whose last log line is a `git fetch` / checkout step followed by "The operation was canceled." at roughly its timeout-minutes mark — the runner's network hung mid-checkout and the job timed out before any project code ran. Seen repeatedly on macos-latest runners. Not a code problem; also not a manual cancellation, even though GitHub reports the conclusion as "cancelled".
+- "Encountered an error while trying to determine feature enablement: HttpError: Requires authentication" (or other GitHub API 401s inside first-party actions like CodeQL) — GitHub-side token-service blip, never caused by repository code.
 - "Failed to pull $image $platform" messages followed by manual retry wrapping — the retry script failed but image is correct.
 - Intermittent download verification failures ("checksum mismatch", "digest mismatch", "ERR_NETWORK_CHANGED") when the download URL is the same one that worked in previous runs.
 

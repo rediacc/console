@@ -1625,7 +1625,6 @@ Start MCP server (stdio transport)
 
 - `--config <name>` — Config name to use for all commands
 - `--timeout <ms>` — Default command timeout in milliseconds (default: 120000)
-- `--allow-grand` — Allow destructive operations on grand (non-fork) repositories. Default: fork-only mode
 
 ## Execution
 
