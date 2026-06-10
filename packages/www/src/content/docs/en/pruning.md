@@ -18,6 +18,8 @@ Pruning sweeps state that no longer corresponds to a live resource. Three comman
 
 The three are independent. You can run any one without the others. They share a common safety model described under [Safety](#safety-model) below.
 
+Pruning removes state left behind by deleted resources. To reclaim space occupied by *live* repositories (blocks their filesystems have freed but the pool still holds), use [`rdc repo trim`](/en/docs/repositories#reclaim-space-trim) instead; the two are complementary.
+
 ## Mount-safety preflight
 
 `storage prune` and `machine prune --prune-unknown` both run a **mount-safety preflight** before deleting anything: they query the executor machine for currently-mounted or running repositories, intersect with the deletion candidates, and **refuse to delete a candidate that's still live on the machine**. Deleting the off-machine backup of a mounted repo, or deleting a live repo image, is a real data-loss footgun. The preflight makes it impossible to do by accident.

@@ -4,7 +4,7 @@ description: "在远程机器上创建、管理和操作 LUKS 加密仓库。"
 category: Guides
 order: 4
 language: zh
-sourceHash: "ffb07e5870accfd8"
+sourceHash: "a74e56f7c047115a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -82,7 +82,56 @@ rdc repo resize --name my-app -m server-1 --size 20G  # 设置为精确大小
 rdc repo expand --name my-app -m server-1 --size 5G  # 在当前大小基础上增加 5G
 ```
 
-> 调整大小前，仓库必须处于卸载状态。
+> 调整大小前，仓库必须处于卸载状态。`repo expand` 支持在线执行。调整大小会改变仓库的最大容量上限；若只想将已释放的块归还给存储池而不改变上限，请改用 [`repo trim`](#reclaim-space-trim)。
+
+## 回收空间（trim）
+
+删除仓库内的文件会为该仓库释放空间，而 `repo trim` 会将这些已释放的块归还给共享数据存储池。此操作在线执行，不产生任何停机：
+
+```bash
+rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
+rdc repo trim -m server-1 --name my-app          # Trim one repository
+rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
+```
+
+工作原理：仓库镜像是稀疏文件，加密卷会透传 discard 请求。trim 命令通知仓库内的文件系统释放所有未使用的块，在底层镜像中打孔，并立即缩减存储池占用量。
+
+注意事项：
+
+- 正在进行备份的仓库会被跳过并报告。在备份进行期间执行 trim 不会释放空间，因为备份快照仍持有对这些块的引用。
+- 连续执行两次 trim 时，第二次报告回收量为 0 字节。文件系统会记住哪些块组已被 trim；这是正常行为，并非故障。
+- `--docker` 不会删除已打标签的镜像，仅删除悬空镜像、已停止的容器和构建缓存。加上 `--docker-volumes` 还可删除未使用的卷（此操作会删除数据，仅限 CLI）。
+
+## 自动容量策略
+
+无需手动调整大小，可以让机器自行管理仓库容量。策略启用在线自动扩容（当仓库占满时自动增大其最大容量上限）以及定时 trim。机器通过 `rediacc-storage-maintain` systemd 定时器每隔几分钟应用一次策略。
+
+```bash
+# Machine-wide default: trim every repository daily
+rdc repo policy set -m server-1 --auto-trim true
+
+# Per-repository: grow my-app automatically, up to a hard ceiling
+rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+
+# Inspect the stored and effective policy
+rdc repo policy get -m server-1 --name my-app
+```
+
+策略字段：
+
+| 字段 | 含义 | 默认值 |
+|---|---|---|
+| `--auto-grow` | 当仓库文件系统使用率超过阈值时自动在线扩容 | 关闭 |
+| `--max-quota` | 自动扩容的容量上限。必填：设置此项是您明确同意超量分配存储池的承诺 | 无 |
+| `--grow-threshold` | 触发扩容的文件系统使用百分比 | 85 |
+| `--grow-step` | 每次扩容的增量：绝对值（`10G`）或当前大小的百分比（`20%`） | 20% |
+| `--auto-trim` | 执行定时 trim | 关闭 |
+| `--trim-interval` | 两次自动 trim 之间的最小间隔小时数 | 24 |
+
+安全护栏：当存储池剩余空间低于保留量（10 GB 或存储池的 5%，取较大者）时，自动扩容拒绝执行；同一仓库两次扩容之间至少等待 30 分钟；扩容量永不超过 `--max-quota`。不支持自动缩减：减小仓库最大容量上限仍需手动执行离线的 [`repo resize`](#调整大小)。
+
+每仓库设置会覆盖机器全局默认值。多次调用 `policy set` 仅更改您传入的字段。
 
 ## 分支
 
@@ -97,6 +146,27 @@ rdc repo fork --parent my-app --tag staging -m server-1
 > 分支通过 BTRFS reflink 与父级共享数据，包括磁盘上存储的任何凭证。关于当这些凭证授权 Stripe、AWS 或 Railway 等外部服务时的含义，请参阅 [Rediacc 不隔离的内容](/zh/docs/ai-agents-safety#what-rediacc-does-not-isolate)。要使部署时凭证不被分支访问，使用[每仓库密钥](#secrets)而不是将值硬编码到仓库内的 `.env` 文件。
 
 在分支创建时，`repo fork` 立即在 `<datastore>/.interim/state/<fork-guid>/.rediacc.json` 处写入[状态镜像伴侣文件](#type-column-and-the-state-mirror)。无需解锁卷。因此新分支从创建时刻正确标识为 `is_fork: true`。这使计划备份可以跳过它（分支默认从上传管道中排除），即使它从未挂载过。分支一个分支时，`grand_guid` 正确链接：新分支的镜像指向原始祖先的 GUID，而不是中间分支。
+
+### 一步完成分支并启动
+
+`--up` 以一次远程操作完成分支、挂载和服务启动。加上 `--detach` 可在容器启动后立即归还终端——健康检查在后台继续，代理会持续重试直到各服务就绪：
+
+```bash
+rdc repo fork --parent my-app --tag staging -m server-1 --up
+rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+```
+
+实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 `--detach` 约需 31 秒。后台模式下命令会打印进度查询提示：`rdc machine query --containers --name <machine>`。
+
+### 耗时分布
+
+运行时间超过几秒时，命令结束会输出一份时序摘要：逐步耗时、并行步骤瀑布图，以及将 Rediacc 流水线耗时与服务自身启动耗时分开统计的归因行：
+
+```
+  Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
+```
+
+服务启动耗时取决于容器镜像拉取、初始化脚本和健康检查等，由仓库的 Rediaccfile 定义，因应用而异。图表仅在交互式终端下渲染；如需在管道输出中强制显示，请设置 `RDC_TIMING_CHART=1`。
 
 ## 类 Git 版本控制
 

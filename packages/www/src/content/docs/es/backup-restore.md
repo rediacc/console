@@ -4,7 +4,7 @@ description: "Respalde repositorios cifrados en almacenamiento compatible con rc
 category: Guides
 order: 7
 language: es
-sourceHash: "6ed9a5b950de8ddb"
+sourceHash: "e241aa122868e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -231,6 +231,12 @@ Este comportamiento predeterminado es deliberado. Ejecutar dos respaldos en frí
 **Implicación de monitoreo.** Un respaldo colgado (por ejemplo, rclone atascado en un agujero negro de red) descarta silenciosamente cada disparo posterior del temporizador. El planificador no emite alarma. Observe `systemctl show <unit> -p ActiveEnterTimestamp`: si el servicio ha estado `activating` por más tiempo del esperado (por ejemplo, más de 48 h en un temporizador nocturno), investigue.
 
 **Si necesita que cada disparo programado se ejecute**, cambie el temporizador de `OnCalendar=<cron>` a `OnUnitInactiveSec=<intervalo>`. Eso dispara N horas después de la finalización de la ejecución previa en lugar de en un cronograma de reloj de pared fijo, así las ejecuciones largas no causan descartes. Solo empujan la siguiente ejecución más tarde. La contrapartida es la deriva del cronograma: su nocturno de 03:00 se convierte en "24 h después de que la última terminó."
+
+### Snapshots, Interrupciones y Espacio en el Pool
+
+Cada push trabaja a partir de un snapshot momentáneo del datastore, por lo que los datos cargados son consistentes incluso mientras los repositorios siguen escribiendo. Mientras el respaldo se ejecuta, ese snapshot sigue referenciando todos los bloques que comparte con los repositorios activos: las eliminaciones y los [trims](/es/docs/repositories#recuperar-espacio-trim) liberan menos espacio en el pool hasta que el ciclo termina y el snapshot se elimina. El [informe de salud del almacenamiento](/es/docs/monitoring#salud-del-almacenamiento) muestra cuánto espacio están anclando actualmente los snapshots de respaldo.
+
+Las interrupciones son seguras. Detener el servicio (o reiniciar la máquina) hace que el respaldo cancele su transferencia y elimine su snapshot antes de salir; la siguiente ejecución programada continúa donde se quedó, ya que los archivos sin cambios se omiten por checksum. Si el proceso se termina de forma tan abrupta que no puede limpiar (corte de energía), el snapshot huérfano es detectado y eliminado automáticamente por el mantenedor de almacenamiento en pocos minutos.
 
 ### Definir una Estrategia
 

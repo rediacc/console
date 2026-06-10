@@ -81,7 +81,56 @@ rdc repo resize --name my-app -m server-1 --size 20G  # Set to exact size
 rdc repo expand --name my-app -m server-1 --size 5G  # Add 5G to current size
 ```
 
-> The repository must be unmounted before resizing.
+> The repository must be unmounted before resizing. `repo expand` works online. Resizing changes the repository's maximum size; to give freed blocks back to the pool without changing the maximum, use [`repo trim`](#reclaim-space-trim) instead.
+
+## Reclaim Space (trim)
+
+Deleting files inside a repository frees space for that repository, and `repo trim` returns those freed blocks to the shared datastore pool. It runs online with zero downtime:
+
+```bash
+rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
+rdc repo trim -m server-1 --name my-app          # Trim one repository
+rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
+```
+
+How it works: repository images are sparse files, and the encrypted volume passes discards through. A trim tells the filesystem inside the repository to release every unused block, which punches holes in the backing image and shrinks the pool usage immediately.
+
+Notes:
+
+- Repositories under an active backup are skipped and reported. Trimming during a backup would not free space, because the backup snapshot still references the blocks.
+- Running trim twice in a row reports 0 bytes the second time. The filesystem remembers which block groups were already trimmed; this is expected, not a failure.
+- `--docker` never removes tagged images, only dangling ones, stopped containers, and the build cache. Add `--docker-volumes` to also remove unused volumes (this deletes data; CLI only).
+
+## Automatic Size Policy
+
+Instead of resizing by hand, let the machine manage repository sizes. A policy enables online auto-grow (the repository's maximum size increases when it fills up) and scheduled trims. The machine applies policies every few minutes via the `rediacc-storage-maintain` systemd timer.
+
+```bash
+# Machine-wide default: trim every repository daily
+rdc repo policy set -m server-1 --auto-trim true
+
+# Per-repository: grow my-app automatically, up to a hard ceiling
+rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+
+# Inspect the stored and effective policy
+rdc repo policy get -m server-1 --name my-app
+```
+
+Policy fields:
+
+| Field | Meaning | Default |
+|---|---|---|
+| `--auto-grow` | Grow the repository online when its filesystem crosses the threshold | off |
+| `--max-quota` | Hard ceiling for auto-grow. Required: setting it is your explicit consent to over-provision the pool | none |
+| `--grow-threshold` | Filesystem used % that triggers a grow | 85 |
+| `--grow-step` | How much to add per grow: absolute (`10G`) or percent of the current size (`20%`) | 20% |
+| `--auto-trim` | Run scheduled trims | off |
+| `--trim-interval` | Minimum hours between automatic trims | 24 |
+
+Guardrails: auto-grow refuses when the pool's free space is below a reserve (10 GB or 5% of the pool, whichever is larger), waits at least 30 minutes between grows of the same repository, and never exceeds `--max-quota`. There is no automatic shrink: reducing a repository's maximum size stays a manual, offline [`repo resize`](#resize).
+
+Per-repository settings override the machine-wide default. Repeated `policy set` calls change only the flags you pass.
 
 ## Fork
 
@@ -96,6 +145,27 @@ Forks use the name:tag model: the resulting fork is named `my-app:staging`. This
 > Forks share the parent's data via BTRFS reflink, including any credentials stored on disk. See [What Rediacc does not isolate](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate) for the implications when those credentials authorize external services like Stripe, AWS, or Railway. To keep deploy-time credentials out of the fork's reach, use [per-repo secrets](#secrets) instead of baking values into `.env` files inside the repo.
 
 At fork creation, `repo fork` writes the [state mirror sidecar](#type-column-and-the-state-mirror) at `<datastore>/.interim/state/<fork-guid>/.rediacc.json` immediately. Without unlocking the volume. So the new fork is correctly identified as `is_fork: true` from the moment of creation. This lets scheduled backups skip it (forks are excluded from the upload pipeline by default) even if it's never mounted. When forking a fork, `grand_guid` chains correctly: the new fork's mirror points at the original grand parent's GUID, not at the intermediate fork.
+
+### Fork and start in one step
+
+`--up` forks, mounts, and starts services in a single remote operation. Add `--detach` to get your terminal back as soon as the containers are started — health checks finish in the background, and the proxy retries until each service binds:
+
+```bash
+rdc repo fork --parent my-app --tag staging -m server-1 --up
+rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+```
+
+In our tests, a 128 GB repository forked and reached running services in about 57 seconds, and about 31 seconds with `--detach`. Detached runs print a hint for checking progress: `rdc machine query --containers --name <machine>`.
+
+### Where the time goes
+
+Runs longer than a few seconds end with a timing summary: a per-step breakdown, a waterfall showing what ran in parallel, and an attribution line separating the Rediacc pipeline from your services' own startup:
+
+```
+  Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
+```
+
+Service startup is your containers booting — images, init, health checks, as defined by the repository's Rediaccfile — so it varies per app. The charts render on interactive terminals; set `RDC_TIMING_CHART=1` to force them in piped output.
 
 ## Git-like versioning
 

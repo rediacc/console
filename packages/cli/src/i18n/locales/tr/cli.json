@@ -959,6 +959,8 @@
         "infrastructure": "Altyapı",
         "noData": "Durum verisi mevcut değil",
         "storageHealthFragmentationNote": "Parçalanma, her deponun kopyala-yazarken (copy-on-write) imajındaki extent sayısını sayar, içindeki dosyaları değil. Yüksek değerler rastgele yazma iş yüklerinde (veritabanları, konteyner katmanları) beklenir ve yalnızca bilgilendirme amaçlıdır. Birleştirme (defrag) burada bilerek desteklenmez: reflink ile paylaşılan fork'ların ve yedek anlık görüntülerin paylaşımını bozar ve veri deposu kullanımını şişirir.",
+        "storageHealthPoolSummary": "Havuz: {{used}} dolu, {{free}} boş (%{{percent}} dolu)",
+        "storageHealthPoolSnapshots": "Yedekleme anlık görüntüleri {{pinned}} tutuyor ({{active}} etkin, {{stale}} bayat; bayat olanlar 'rdc machine prune' ile kaldırılır)",
         "storageHealthHint": "İpucu: BTRFS parçalanmasını ve repo başına reflink tasarrufunu görmek için --storage-health ile çalıştırın",
         "storageHealthSummary": "Depolama verimliliği: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} konteyner sapma eşiğini aştı; sıfır olmayan koduyla çıkılıyor",
@@ -1428,6 +1430,41 @@
         "failed": "Genişletme başarısız",
         "sizeOption": "Yeni depo boyutu (ör. 10G, 100G, 1T)",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" {{size}} olarak genişletiliyor..."
+      },
+      "trim": {
+        "description": "Bağlı depolardan datastore havuzuna alan geri kazandırır (çevrimiçi, kesintisiz). Depo içinde silinen bloklar fstrim ile havuza geri döner. --name verilmezse bağlı tüm depolar ve datastore'un kendisi trimlenir. Aktif yedeklemesi olan depolar atlanır",
+        "descriptionShort": "Depolardaki boş alanı havuza geri kazandır",
+        "nameOption": "Trimlenecek depo (varsayılan: bağlı tüm depolar)",
+        "dockerOption": "Önce Docker alanını geri kazan (durmuş konteynerler, sahipsiz imajlar, derleme önbelleği)",
+        "dockerVolumesOption": "Ayrıca kullanılmayan Docker birimlerini temizle",
+        "reportOnlyOption": "Trim yapmadan discard durumunu ve geri kazanılabilir tahmini göster",
+        "repoNotFound": "Depo bulunamadı: {{name}}",
+        "noMountedRepos": "Bağlı depo bulunamadı",
+        "starting": "\"{{machine}}\" üzerindeki depolar trimleniyor...",
+        "completed": "Trim tamamlandı: {{total}} geri kazanıldı",
+        "failed": "Trim başarısız"
+      },
+      "policy": {
+        "description": "Makinenin depolama bakımcısının uyguladığı otomatik boyut politikasını yönetir: depo dolduğunda kotayı çevrimiçi büyütür (asla max-quota üzerine çıkmaz, havuz azaldığında büyütmez) ve planlı trimler çalıştırır. Otomatik küçültme yoktur; bunun için 'repo resize' kullanın. --name verilmezse makine genelindeki varsayılan politika hedeflenir",
+        "descriptionShort": "Otomatik boyut politikasını yönet (otomatik büyüme, planlı trim)",
+        "nameOption": "Depo (varsayılan: makine geneli politika)",
+        "repoNotFound": "Depo bulunamadı: {{name}}",
+        "invalidBool": "{{flag}} 'true' veya 'false' olmalı, alınan: {{value}}",
+        "failed": "Politika işlemi başarısız",
+        "set": {
+          "description": "Boyut politikası alanlarını ayarlar. Yalnızca geçirdiğiniz bayraklar değişir; diğer kayıtlı alanlar değerlerini korur. Otomatik büyütmeyi etkinleştirmek --max-quota gerektirir: tavan, havuzun aşırı tahsisine verdiğiniz açık onaydır",
+          "descriptionShort": "Politika alanlarını ayarla (makine varsayılanı veya --name ile tek depo)",
+          "autoGrowOption": "Otomatik çevrimiçi kota büyütmeyi etkinleştir (true/false)",
+          "maxQuotaOption": "Otomatik büyütme tavanı (örn. 200G); otomatik büyütme için zorunlu",
+          "growThresholdOption": "Büyümeyi tetikleyen dosya sistemi doluluk yüzdesi (varsayılan 85)",
+          "growStepOption": "Adım başına büyüme: mutlak (10G) veya kota yüzdesi (20%)",
+          "autoTrimOption": "Planlı trimi etkinleştir (true/false)",
+          "trimIntervalOption": "Otomatik trimler arasındaki en az saat (varsayılan 24)"
+        },
+        "get": {
+          "description": "Kayıtlı makine varsayılanını, depo geçersiz kılmasını (--name ile) ve bakımcının uyguladığı birleşik etkin politikayı gösterir",
+          "descriptionShort": "Boyut politikasını göster (makine varsayılanı, depo geçersiz kılması, etkin)"
+        }
       },
       "fork": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",

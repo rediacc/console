@@ -4,7 +4,7 @@ description: "Como funciona o autostart, o reconciliador periódico que recupera
 category: "Guides"
 order: 5
 language: pt
-sourceHash: "00a1796a0b0d20da"
+sourceHash: "05d8d5234e0901f6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -23,6 +23,8 @@ Quando activa o autostart para um repositório, o Rediacc gera um keyfile LUKS a
 ```
 
 Isto permite à máquina montar o repositório sem pedir a frase-passe. O slot 0 LUKS (a sua frase-passe) não é alterado.
+
+O slot do keyfile utiliza o KDF rápido PBKDF2: um keyfile aleatório de 256 bytes é a sua própria margem de segurança, pelo que um KDF resistente a memória apenas acrescentaria latência na montagem sem acrescentar protecção. As montagens concluem em bem menos de um segundo. Repositórios criados antes desta optimização ainda pagam uma derivação Argon2id de vários segundos por montagem; converta-os no local (repositório desmontado) com o comando de operador `renet repository kdf-migrate --name <guid>` na máquina. O slot 0 mantém Argon2id — a escolha certa para uma frase-passe humana.
 
 No arranque, um serviço systemd one-shot chamado `rediacc-autostart.service` lê a lista de repositórios com autostart activado, monta cada um usando o respectivo keyfile, inicia o daemon Docker por repositório e executa o hook `up()` do Rediaccfile. No encerramento, o serviço executa `down()`, pára o Docker e fecha os volumes LUKS.
 

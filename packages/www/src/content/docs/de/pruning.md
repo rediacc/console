@@ -4,7 +4,7 @@ description: "Verwaiste Backups, überholte Snapshots, Repo-Images und lokale Ko
 category: "Guides"
 order: 12
 language: de
-sourceHash: "9b74e1ea24b9735f"
+sourceHash: "d2700c2ac4473962"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,6 +19,8 @@ Die Bereinigung entfernt Zustand, der keiner aktiven Ressource mehr entspricht. 
 | `rdc config prune` | Reste in der lokalen Konfiguration (Cert-Cache, abgelaufene Archive, hängende Querverweise) | Nur die lokale CLI-Konfiguration |
 
 Die drei sind unabhängig. Sie können jeden einzeln ohne die anderen ausführen. Sie teilen sich ein gemeinsames Sicherheitsmodell, beschrieben unter [Sicherheit](#safety-model) weiter unten.
+
+Die Bereinigung entfernt Zustand, der von gelöschten Ressourcen hinterlassen wurde. Um Speicherplatz zurückzugewinnen, der von *aktiven* Repositories belegt wird (Blöcke, die ihre Dateisysteme freigegeben haben, die der Pool aber noch hält), verwenden Sie stattdessen [`rdc repo trim`](/de/docs/repositories#speicherplatz-zuruckgewinnen-trim); die beiden Ansätze ergänzen einander.
 
 ## Mount-Safety-Preflight
 

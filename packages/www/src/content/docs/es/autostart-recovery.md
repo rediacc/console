@@ -4,7 +4,7 @@ description: "Cómo funciona el inicio automático, el reconciliador periódico 
 category: "Guides"
 order: 5
 language: es
-sourceHash: "00a1796a0b0d20da"
+sourceHash: "05d8d5234e0901f6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -23,6 +23,8 @@ Cuando habilita el inicio automático para un repositorio, Rediacc genera un arc
 ```
 
 Esto permite que la máquina monte el repositorio sin solicitar la frase de contraseña. El slot LUKS 0 (su frase de contraseña) no se modifica.
+
+El slot del archivo de clave usa el KDF rápido PBKDF2: un archivo de clave aleatorio de 256 bytes es su propio margen de seguridad, por lo que un KDF resistente a memoria añadiría latencia de desbloqueo sin incrementar la protección. Los montajes se abren en bien menos de un segundo. Los repositorios creados antes de esta optimización siguen pagando una derivación Argon2id de varios segundos por montaje; conviértalos en sitio (con el repositorio desmontado) mediante el comando de operador `renet repository kdf-migrate --name <guid>` en la máquina. El slot 0 conserva Argon2id, la elección correcta para una frase de contraseña humana.
 
 Al arrancar, un servicio systemd de un solo disparo llamado `rediacc-autostart.service` lee la lista de repositorios con inicio automático habilitado, monta cada uno usando su archivo de clave, inicia el Docker daemon por repositorio, y ejecuta el hook `up()` del Rediaccfile. Al apagar, el servicio ejecuta `down()`, detiene Docker y cierra los volúmenes LUKS.
 

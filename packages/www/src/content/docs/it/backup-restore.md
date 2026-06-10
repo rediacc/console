@@ -4,7 +4,7 @@ description: "Esegui il backup dei repository cifrati su qualsiasi storage compa
 category: "Guides"
 order: 7
 language: it
-sourceHash: "6ed9a5b950de8ddb"
+sourceHash: "e241aa122868e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -231,6 +231,12 @@ Questo comportamento predefinito è deliberato. Eseguire due backup cold in para
 **Implicazione per il monitoraggio.** Un backup bloccato (ad esempio, rclone inceppato su un blackhole di rete) scarta silenziosamente ogni attivazione successiva del timer. Lo scheduler non emette alcun allarme. Controllare `systemctl show <unit> -p ActiveEnterTimestamp`: se il servizio è in `activating` da più tempo del previsto (ad esempio, più di 48 ore su un timer notturno), investigare.
 
 **Se si ha bisogno che ogni attivazione pianificata venga eseguita**, cambiare il timer da `OnCalendar=<cron>` a `OnUnitInactiveSec=<interval>`. Questo si attiva N ore dopo il completamento dell'esecuzione precedente anziché su uno schedule fisso, quindi le esecuzioni lunghe non causano scartamenti. Spostano semplicemente la prossima esecuzione più avanti. Il compromesso è lo slittamento dello schedule: il tuo notturno alle 03:00 diventa "24 ore dopo la fine dell'ultimo".
+
+### Snapshot, Interruzioni e Spazio nel Pool
+
+Ogni push opera da uno snapshot momentaneo del datastore, quindi i dati caricati sono coerenti anche mentre i repository continuano a scrivere. Mentre il backup è in esecuzione, quello snapshot continua a fare riferimento a ogni blocco che condivide con i repository attivi: eliminazioni e [trim](/it/docs/repositories#recupera-spazio-trim) liberano meno spazio nel pool finché il ciclo non termina e lo snapshot viene eliminato. Il [report sulla salute dello storage](/it/docs/monitoring#salute-dellarchiviazione) mostra quanto spazio gli snapshot di backup stanno attualmente bloccando.
+
+Le interruzioni sono sicure. Fermare il servizio (o riavviare la macchina) fa sì che il backup interrompa il trasferimento ed elimini il suo snapshot prima di uscire; la prossima esecuzione pianificata riprende da dove si era fermata, poiché i file non modificati vengono saltati tramite checksum. Se il processo viene terminato in modo troppo brusco per poter fare pulizia (perdita di alimentazione), lo snapshot orfano viene rilevato e rimosso automaticamente dal gestore dello storage entro pochi minuti.
 
 ### Definire una Strategia
 

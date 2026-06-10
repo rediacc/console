@@ -959,6 +959,8 @@
         "infrastructure": "Infrastruttura",
         "noData": "Nessun dato di stato disponibile",
         "storageHealthFragmentationNote": "La frammentazione conta gli extent nell'immagine copy-on-write di ogni repository, non i file al suo interno. Valori elevati sono attesi nei carichi con scritture casuali (database, livelli dei container) e sono solo informativi. La deframmentazione qui non è supportata intenzionalmente: annullerebbe la condivisione dei fork e degli snapshot di backup collegati tramite reflink e gonfierebbe l'uso del datastore.",
+        "storageHealthPoolSummary": "Pool: {{used}} usati, {{free}} liberi ({{percent}}% pieno)",
+        "storageHealthPoolSnapshots": "Gli snapshot di backup trattengono {{pinned}} ({{active}} attivi, {{stale}} obsoleti; quelli obsoleti vengono rimossi da 'rdc machine prune')",
         "storageHealthHint": "Suggerimento: usa --storage-health per vedere la frammentazione BTRFS e i risparmi di reflink per repo",
         "storageHealthSummary": "Efficienza di archiviazione: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} container oltre la soglia di deriva; uscita con codice non zero",
@@ -1428,6 +1430,41 @@
         "failed": "Espansione non riuscita",
         "sizeOption": "Nuova dimensione del repository (es. 10G, 100G, 1T)",
         "starting": "Espansione di \"{{repository}}\" a {{size}} su \"{{machine}}\"..."
+      },
+      "trim": {
+        "description": "Recupera spazio del pool del datastore dai repository montati (online, senza interruzioni). I blocchi eliminati nei repository tornano al pool tramite fstrim. Senza --name vengono trimmati tutti i repository montati e il datastore stesso. I repository con un backup attivo vengono saltati",
+        "descriptionShort": "Restituire al pool lo spazio libero dei repository",
+        "nameOption": "Repository da trimmare (predefinito: tutti i repository montati)",
+        "dockerOption": "Liberare prima lo spazio Docker (container fermi, immagini dangling, cache di build)",
+        "dockerVolumesOption": "Eliminare anche i volumi Docker inutilizzati",
+        "reportOnlyOption": "Mostrare lo stato dei discard e la stima recuperabile senza trimmare",
+        "repoNotFound": "Repository non trovato: {{name}}",
+        "noMountedRepos": "Nessun repository montato trovato",
+        "starting": "Trim dei repository su \"{{machine}}\" in corso...",
+        "completed": "Trim completato: {{total}} recuperati",
+        "failed": "Trim non riuscito"
+      },
+      "policy": {
+        "description": "Gestisce la politica di dimensione automatica applicata dal manutentore dello storage della macchina: amplia online la quota di un repository quando si riempie (mai oltre max-quota, mai con il pool scarso) ed esegue trim pianificati. Non esiste riduzione automatica; per quella usare 'repo resize'. Senza --name si agisce sulla politica predefinita della macchina",
+        "descriptionShort": "Gestire la politica di dimensione automatica (auto-crescita, trim pianificato)",
+        "nameOption": "Repository (predefinito: politica dell'intera macchina)",
+        "repoNotFound": "Repository non trovato: {{name}}",
+        "invalidBool": "{{flag}} deve essere 'true' o 'false', ricevuto: {{value}}",
+        "failed": "Operazione sulla politica non riuscita",
+        "set": {
+          "description": "Imposta i campi della politica di dimensione. Cambiano solo i flag passati; gli altri campi salvati mantengono i valori. Abilitare l'auto-crescita richiede --max-quota: il tetto è il consenso esplicito al sovra-provisioning del pool",
+          "descriptionShort": "Impostare i campi della politica (predefinito macchina, o un repository con --name)",
+          "autoGrowOption": "Abilitare la crescita automatica online della quota (true/false)",
+          "maxQuotaOption": "Tetto dell'auto-crescita (es. 200G); obbligatorio per l'auto-crescita",
+          "growThresholdOption": "% di uso del filesystem che attiva una crescita (predefinito 85)",
+          "growStepOption": "Crescita per passo: assoluta (10G) o percentuale della quota (20%)",
+          "autoTrimOption": "Abilitare il trim pianificato (true/false)",
+          "trimIntervalOption": "Ore minime tra trim automatici (predefinito 24)"
+        },
+        "get": {
+          "description": "Mostra il predefinito macchina salvato, l'override del repository (con --name) e la politica effettiva unita su cui agisce il manutentore",
+          "descriptionShort": "Mostrare la politica di dimensione (predefinito macchina, override repository, effettiva)"
+        }
       },
       "fork": {
         "alreadyExists": "Il repository \"{{name}}\" esiste già nella configurazione",

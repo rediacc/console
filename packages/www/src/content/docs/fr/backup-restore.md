@@ -4,7 +4,7 @@ description: "Sauvegardez des dépôts chiffrés vers n'importe quel stockage co
 category: Guides
 order: 7
 language: fr
-sourceHash: "6ed9a5b950de8ddb"
+sourceHash: "e241aa122868e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -231,6 +231,12 @@ Ce comportement par défaut est délibéré. Exécuter deux sauvegardes froides 
 **Implication pour la surveillance.** Une sauvegarde bloquée (par exemple, rclone coincé sur un trou noir réseau) abandonne silencieusement chaque déclenchement de minuteur suivant. Le planificateur n'émet aucune alarme. Surveillez `systemctl show <unit> -p ActiveEnterTimestamp` : si le service est `activating` depuis plus longtemps que votre durée d'exécution attendue (par exemple, plus de 48 h sur un minuteur nocturne), investiguez.
 
 **Si vous avez besoin que chaque déclenchement planifié s'exécute**, passez le minuteur de `OnCalendar=<cron>` à `OnUnitInactiveSec=<intervalle>`. Cela déclenche N heures après la fin de l'exécution précédente plutôt que sur un calendrier mural fixe, donc les exécutions longues ne causent pas d'abandons. Elles repoussent simplement l'exécution suivante. Le compromis est la dérive de calendrier : votre nocturne à 03:00 devient « 24 h après la fin du dernier ».
+
+### Snapshots, interruptions et espace dans le pool
+
+Chaque push fonctionne à partir d'un snapshot momentané du datastore, de sorte que les données chargées sont cohérentes même pendant que les dépôts continuent d'écrire. Pendant l'exécution de la sauvegarde, ce snapshot continue de référencer chaque bloc qu'il partage avec les dépôts actifs : les suppressions et les [trims](/fr/docs/repositories#récupérer-de-lespace-trim) libèrent moins d'espace dans le pool jusqu'à la fin du cycle et la suppression du snapshot. Le [rapport de santé du stockage](/fr/docs/monitoring#santé-du-stockage) indique l'espace que les snapshots de sauvegarde immobilisent actuellement.
+
+Les interruptions sont sans danger. Arrêter le service (ou redémarrer la machine) provoque l'abandon du transfert et la suppression du snapshot avant la sortie ; l'exécution planifiée suivante reprend là où elle s'était arrêtée, car les fichiers inchangés sont ignorés par somme de contrôle. Si le processus est tué trop brutalement pour nettoyer (coupure de courant), le snapshot orphelin est détecté et supprimé automatiquement par le mainteneur de stockage en quelques minutes.
 
 ### Définir une stratégie
 

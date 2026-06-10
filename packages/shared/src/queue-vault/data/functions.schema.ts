@@ -451,6 +451,22 @@ export const RepositoryOwnershipParamsSchema = z.object({
   force: z.string().optional().describe('Skip Docker volume detection (true/false)'),
 });
 
+/** Show automatic size policy (machine default, repo override, effective) */
+export const RepositoryPolicyGetParamsSchema = z.object({
+  name: z.string().optional().describe('Repository GUID (empty = machine-wide default only)'),
+});
+
+/** Set automatic size policy (auto-grow, scheduled trim) */
+export const RepositoryPolicySetParamsSchema = z.object({
+  name: z.string().optional().describe('Repository GUID (empty = machine-wide default)'),
+  autoGrow: z.string().optional().describe('Enable automatic online quota growth (true/false)'),
+  maxQuota: z.string().optional().describe('Auto-grow ceiling (e.g. 200G); required for auto-grow'),
+  growThreshold: z.string().optional().describe('Filesystem used % that triggers a grow (1-99)'),
+  growStep: z.string().optional().describe('Growth per step: absolute (10G) or percent of quota (20%)'),
+  autoTrim: z.string().optional().describe('Enable scheduled fstrim (true/false)'),
+  trimInterval: z.string().optional().describe('Minimum hours between automatic trims'),
+});
+
 /** Remove orphaned datastore resources (empty mounts, stale locks) */
 export const RepositoryPruneParamsSchema = z.object({
   dryRun: z.boolean().optional().describe('Preview only, no changes'),
@@ -474,6 +490,14 @@ export const RepositoryTakeoverParamsSchema = z.object({
 export const RepositoryTemplateApplyParamsSchema = z.object({
   tmpl: z.string().min(1).describe('Base64 encoded template JSON'),
   grand: z.string().min(1).describe('Grand repository GUID'),
+});
+
+/** Reclaim datastore pool space from mounted repositories (fstrim) */
+export const RepositoryTrimParamsSchema = z.object({
+  name: z.string().optional().describe('Repository GUID (empty = all mounted repositories)'),
+  docker: z.boolean().optional().describe('Reclaim Docker space first (stopped containers, dangling images, build cache)'),
+  dockerVolumes: z.boolean().optional().describe('Additionally prune unused Docker volumes'),
+  reportOnly: z.boolean().optional().describe('Detect discard state and estimate reclaimable space without trimming'),
 });
 
 /** Unmount a repository */
@@ -604,11 +628,14 @@ export const FUNCTION_SCHEMAS = {
   repository_merge: RepositoryMergeParamsSchema,
   repository_mount: RepositoryMountParamsSchema,
   repository_ownership: RepositoryOwnershipParamsSchema,
+  repository_policy_get: RepositoryPolicyGetParamsSchema,
+  repository_policy_set: RepositoryPolicySetParamsSchema,
   repository_prune: RepositoryPruneParamsSchema,
   repository_resize: RepositoryResizeParamsSchema,
   repository_status: RepositoryStatusParamsSchema,
   repository_takeover: RepositoryTakeoverParamsSchema,
   repository_template_apply: RepositoryTemplateApplyParamsSchema,
+  repository_trim: RepositoryTrimParamsSchema,
   repository_unmount: RepositoryUnmountParamsSchema,
   repository_up: RepositoryUpParamsSchema,
   repository_up_all: RepositoryUpAllParamsSchema,

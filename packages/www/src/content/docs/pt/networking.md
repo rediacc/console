@@ -4,8 +4,8 @@ description: "Exponha serviços com o proxy reverso, etiquetas Docker, certifica
 category: "Guides"
 order: 6
 language: pt
-sourceHash: "d60a43cd573517a1"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2bb63d224370c266"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 # Redes
@@ -19,7 +19,7 @@ Para saber como os serviços obtêm os seus IPs de loopback e o sistema de slots
 Cada repositório é automaticamente isolado ao nível do kernel usando hooks de rede. Isto requer o kernel Linux 6.1 ou posterior. Não é necessária qualquer configuração.
 
 - **Reescrita automática de bind**: Os serviços podem fazer bind a `0.0.0.0` ou `127.0.0.1` como habitualmente. O kernel reescreve transparentemente o endereço para o IP de loopback atribuído ao serviço. Não é necessário fazer bind explicitamente a `${SERVICE_IP}`.
-- **Bloqueio de conexões entre repositórios**: Se um serviço tentar conectar a um IP de loopback fora da sub-rede `/26` do seu repositório, o kernel bloqueia-o. Um processo no repositório A não consegue alcançar serviços no repositório B.
+- **Bloqueio de conexões entre repositórios**: Se um serviço tentar conectar a um IP de loopback fora da sub-rede `/26` do seu repositório, o kernel bloqueia-o. Um processo no repositório A não consegue alcançar serviços no repositório B. Os forks são a única exceção: as suas conexões para a sub-rede do pai são redirecionadas para os serviços do próprio fork (consulte [Limites](/pt/docs/limits)); o pai em si permanece inacessível.
 - **Sem alterações à aplicação necessárias**: Os serviços usam `0.0.0.0` ou `localhost` para bind, e o kernel garante que apenas ouvem no seu IP de loopback correto. O isolamento é totalmente transparente.
 
 ## Como Funciona

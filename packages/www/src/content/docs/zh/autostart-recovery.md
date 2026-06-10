@@ -4,7 +4,7 @@ description: "自动启动的工作原理、在启动后发生故障的仓库的
 category: "Guides"
 order: 5
 language: zh
-sourceHash: "00a1796a0b0d20da"
+sourceHash: "05d8d5234e0901f6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -23,6 +23,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ```
 
 这使得机器无需输入密码短语即可挂载仓库。LUKS 槽位 0（您的密码短语）不会被更改。
+
+密钥文件槽位采用较快的 PBKDF2 KDF：256 字节的随机密钥文件本身已提供足够的安全余量，内存困难型 KDF 只会增加解锁延迟而不会带来额外保护。实际挂载时间远不到一秒。在此优化发布前创建的仓库仍会在每次挂载时经历数秒的 Argon2id 派生开销；可在仓库处于卸载状态时通过机器上的运维命令 `renet repository kdf-migrate --name <guid>` 原地转换。槽位 0 保留 Argon2id——这对人工输入的密码短语来说是正确的选择。
 
 启动时，名为 `rediacc-autostart.service` 的一次性 systemd 服务会读取已启用自动启动的仓库列表，使用各自的密钥文件逐一挂载，启动每个仓库的 Docker 守护进程，并运行 Rediaccfile 的 `up()` 钩子。关机时，该服务会运行 `down()`，停止 Docker，并关闭 LUKS 卷。
 

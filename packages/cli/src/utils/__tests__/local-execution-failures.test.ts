@@ -134,4 +134,58 @@ describe('renderLocalExecutionFailure', () => {
     expect(process.exitCode).toBe(10);
     mockExit.mockRestore();
   });
+
+  it('prints a stderr tail under text failures when it adds information', () => {
+    mockGetOutputFormat.mockReturnValue('table');
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+
+    renderLocalExecutionFailure(
+      {
+        error: 'renet exited with code 1',
+        exitCode: 1,
+        stderr: 'time=... level=info msg="starting"\nError: repository abc is not mounted\n',
+      },
+      'fallback'
+    );
+
+    expect(mockOutputError).toHaveBeenCalledWith('renet exited with code 1');
+    const written = stderrWrite.mock.calls.map((c) => String(c[0])).join('');
+    expect(written).toContain('repository abc is not mounted');
+    stderrWrite.mockRestore();
+  });
+
+  it('does not repeat a single-line tail already contained in the error', () => {
+    mockGetOutputFormat.mockReturnValue('table');
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+
+    renderLocalExecutionFailure(
+      {
+        error: 'renet exited with code 1: repository abc is not mounted',
+        exitCode: 1,
+        stderr: 'Error: repository abc is not mounted',
+      },
+      'fallback'
+    );
+
+    expect(stderrWrite).not.toHaveBeenCalled();
+    stderrWrite.mockRestore();
+  });
+
+  it('skips the tail entirely when the executor already echoed the output', () => {
+    mockGetOutputFormat.mockReturnValue('table');
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+
+    renderLocalExecutionFailure(
+      {
+        error: 'renet exited with code 1',
+        exitCode: 1,
+        stderr: 'line one\nline two\nError: something broke',
+        outputEchoed: true,
+      },
+      'fallback'
+    );
+
+    expect(stderrWrite).not.toHaveBeenCalled();
+    stderrWrite.mockRestore();
+  });
 });

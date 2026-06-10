@@ -4,7 +4,7 @@ description: リモートマシン上のLUKS暗号化リポジトリの作成、
 category: Guides
 order: 4
 language: ja
-sourceHash: "ffb07e5870accfd8"
+sourceHash: "a74e56f7c047115a"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -82,7 +82,56 @@ rdc repo resize --name my-app -m server-1 --size 20G  # 正確なサイズに設
 rdc repo expand --name my-app -m server-1 --size 5G  # 現在のサイズに5G追加
 ```
 
-> サイズ変更の前にリポジトリをアンマウントする必要があります。
+> サイズ変更の前にリポジトリをアンマウントする必要があります。`repo expand` はオンラインで動作します。サイズ変更はリポジトリの最大サイズを変更します。最大サイズを変えずに解放済みブロックをプールに返すには、代わりに [`repo trim`](#領域の回収-trim) を使用してください。
+
+## 領域の回収 (trim)
+
+リポジトリ内のファイルを削除するとそのリポジトリの空き容量が増えますが、`repo trim` はその解放されたブロックを共有データストアプールに返却します。ゼロダウンタイムでオンライン実行できます。
+
+```bash
+rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
+rdc repo trim -m server-1 --name my-app          # Trim one repository
+rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
+```
+
+仕組み: リポジトリイメージはスパースファイルであり、暗号化ボリュームはディスカードを透過的に通過させます。trim はリポジトリ内部のファイルシステムに未使用ブロックをすべて解放するよう指示し、これにより裏付けイメージにホールが穿たれてプール使用量が即座に削減されます。
+
+注意事項:
+
+- アクティブなバックアップ中のリポジトリはスキップされて報告されます。バックアップ中のトリムは空き容量を解放しません。バックアップスナップショットがまだそのブロックを参照しているためです。
+- trim を連続して2回実行すると、2回目は0バイトと報告されます。ファイルシステムはすでにトリム済みのブロックグループを記憶しており、これは想定された動作であり失敗ではありません。
+- `--docker` はタグ付きイメージを削除せず、ダングリングイメージ、停止済みコンテナ、ビルドキャッシュのみを対象とします。未使用ボリュームも削除するには `--docker-volumes` を追加してください（データが削除されます。CLIのみ）。
+
+## 自動サイズポリシー
+
+手動でサイズ変更する代わりに、マシンがリポジトリのサイズを管理できます。ポリシーはオンラインでの自動拡張（リポジトリが満杯になると最大サイズが増加）とスケジュールされたトリムを有効にします。マシンは `rediacc-storage-maintain` systemd タイマーを通じて数分ごとにポリシーを適用します。
+
+```bash
+# Machine-wide default: trim every repository daily
+rdc repo policy set -m server-1 --auto-trim true
+
+# Per-repository: grow my-app automatically, up to a hard ceiling
+rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+
+# Inspect the stored and effective policy
+rdc repo policy get -m server-1 --name my-app
+```
+
+ポリシーフィールド:
+
+| フィールド | 意味 | デフォルト |
+|---|---|---|
+| `--auto-grow` | ファイルシステムがしきい値を超えたときにリポジトリをオンラインで拡張する | オフ |
+| `--max-quota` | 自動拡張のハード上限。必須: 設定することはプールをオーバープロビジョニングする明示的な同意を意味する | なし |
+| `--grow-threshold` | 拡張をトリガーするファイルシステム使用率 % | 85 |
+| `--grow-step` | 1回の拡張で追加する容量: 絶対値（`10G`）または現在サイズのパーセント（`20%`） | 20% |
+| `--auto-trim` | スケジュールされたトリムを実行する | オフ |
+| `--trim-interval` | 自動トリム間の最小時間（時間） | 24 |
+
+ガードレール: プールの空き容量が予約容量（10 GB またはプールの5%のいずれか大きい方）を下回る場合、自動拡張は拒否されます。同じリポジトリの拡張間は少なくとも30分待機し、`--max-quota` を超えることはありません。自動縮小はありません。リポジトリの最大サイズの削減は手動かつオフラインの [`repo resize`](#サイズ変更) のままです。
+
+リポジトリごとの設定はマシン全体のデフォルトを上書きします。`policy set` の繰り返し呼び出しでは、渡したフラグのみが変更されます。
 
 ## フォーク
 
@@ -97,6 +146,27 @@ rdc repo fork --parent my-app --tag staging -m server-1
 > フォークはBTRFS reflinkを通じて親のデータを共有します。ディスク上に保存されたクレデンシャルも含まれます。それらのクレデンシャルがStripe、AWS、Railwayなどの外部サービスを認証する場合の影響については、[Rediaccが隔離しないもの](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate)を参照してください。デプロイ時のクレデンシャルをフォークからアクセスできないようにするには、リポジトリ内の `.env` ファイルに値を埋め込む代わりに[リポジトリシークレット](#secrets)を使用してください。
 
 フォーク作成時に、`repo fork` はボリュームをアンロックせずに即座に `<datastore>/.interim/state/<fork-guid>/.rediacc.json` に[ステートミラーサイドカー](#typeカラムとステートミラー)を書き込みます。これにより、新しいフォークは作成された瞬間から `is_fork: true` として正しく識別されます。一度もマウントされていなくても、スケジュールされたバックアップはフォークをスキップできます（フォークはデフォルトでアップロードパイプラインから除外されます）。フォークのフォークを作成する場合、`grand_guid` は正しくチェーンされます。新しいフォークのミラーは、中間フォークのGUIDではなく、元のグランド親のGUIDを指します。
+
+### 1ステップでフォークして起動
+
+`--up` はフォーク、マウント、サービス起動をリモートで一括実行します。`--detach` を追加すると、コンテナが起動した時点でターミナルに制御が戻ります。ヘルスチェックはバックグラウンドで完了し、プロキシは各サービスがバインドするまで再試行を続けます。
+
+```bash
+rdc repo fork --parent my-app --tag staging -m server-1 --up
+rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+```
+
+実測値として、128 GB のリポジトリをフォークしてサービスが稼働状態に達するまで約 57 秒、`--detach` では約 31 秒でした。デタッチ実行は進捗確認のヒントを出力します：`rdc machine query --containers --name <machine>`。
+
+### 時間の内訳
+
+数秒を超える実行が完了すると、タイミングサマリーが表示されます。ステップごとの所要時間、並列実行の様子を示すウォーターフォール、そして Rediacc パイプライン部分とサービス自体の起動時間を分けた帰属行です。
+
+```
+  Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
+```
+
+サービス起動はコンテナのブート、イメージ取得、init、ヘルスチェックを含み、Rediaccfile の定義に従ってアプリごとに変わります。チャートはインタラクティブなターミナルで描画されます。パイプ出力でも強制表示するには `RDC_TIMING_CHART=1` を設定してください。
 
 ## Gitのようなバージョニング
 

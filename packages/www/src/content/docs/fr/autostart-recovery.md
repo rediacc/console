@@ -4,7 +4,7 @@ description: "Comment fonctionne le démarrage automatique, le réconciliateur p
 category: "Guides"
 order: 5
 language: fr
-sourceHash: "00a1796a0b0d20da"
+sourceHash: "05d8d5234e0901f6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -23,6 +23,8 @@ Lorsque vous activez le démarrage automatique pour un dépôt, Rediacc génère
 ```
 
 Cela permet à la machine de monter le dépôt sans demander la phrase secrète. Le slot LUKS 0 (votre phrase secrète) n'est pas modifié.
+
+Le slot du fichier de clé utilise la KDF rapide PBKDF2 : un fichier de clé aléatoire de 256 octets constitue en lui-même sa propre marge de sécurité, de sorte qu'une KDF à mémoire élevée n'ajouterait que de la latence au déverrouillage sans renforcer la protection. Les montages s'ouvrent en bien moins d'une seconde. Les dépôts créés avant cette optimisation paient encore une dérivation Argon2id de plusieurs secondes à chaque montage ; convertissez-les sur place (dépôt démonté) avec la commande opérateur `renet repository kdf-migrate --name <guid>` sur la machine. Le slot 0 conserve Argon2id — le bon choix pour une phrase secrète humaine.
 
 Au démarrage, un service systemd one-shot nommé `rediacc-autostart.service` lit la liste des dépôts avec le démarrage automatique activé, monte chacun d'eux avec son fichier de clé, démarre le Docker daemon par dépôt, et exécute le hook `up()` du Rediaccfile. À l'arrêt, le service exécute `down()`, arrête Docker et ferme les volumes LUKS.
 

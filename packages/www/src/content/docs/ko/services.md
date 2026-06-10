@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: ko
-sourceHash: "88734af48d9648d5"
+sourceHash: "aa77a4f937206e58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -211,6 +211,7 @@ rdc repo up --name my-app -m server-1
 
 | 옵션 | 설명 |
 |------|------|
+| `--detach` | 컨테이너가 시작되면 즉시 반환. 헬스체크는 백그라운드에서 계속 진행 |
 | `--skip-router-restart` | 작업 후 라우트 서버 재시작 건너뜀 |
 
 실행 순서:
@@ -230,6 +231,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 사용자 정의 Traefik 레이블이 없는 서비스는 자동 생성된 경로만 표시합니다. 브라우저 접근, API 호출, 서비스 간 설정에 이 URL(CLI가 출력하는 일반 패턴이 아님)을 사용하십시오.
+
+### 분리 시작
+
+`--detach`를 사용하면 헬스체크 완료를 기다리지 않고 컨테이너가 시작되는 즉시 명령이 반환됩니다. 나머지 시작 과정은 백그라운드에서 진행됩니다. 프록시는 각 서비스가 바인딩될 때까지 업스트림 연결을 재시도하므로 경로는 자동으로 복구됩니다. 진행 상황은 `rdc machine query --containers --name <machine>`으로 확인할 수 있습니다. 임시 포크나 다음 단계 전에 서비스가 준비될 필요가 없는 스크립트 루프에 적합합니다.
+
+### 준비 상태 프로브
+
+`up()` 실행 후, renet은 각 HTTP 서비스가 TCP 연결을 수락할 때까지 프로브를 수행합니다. 덕분에 첫 번째 브라우저 요청이 프록시 502를 만나지 않습니다. Docker 헬스체크가 정의된 컨테이너는 직접 신뢰됩니다. 정상(healthy) 상태의 컨테이너는 프로브를 건너뛰고, `start_period` 중인 컨테이너는 경고가 아닌 정보성 메시지만 기록됩니다. 프로브는 15초 후 포기합니다(머신의 `REDIACC_READINESS_TIMEOUT` 환경 변수로 초 단위로 재정의 가능). 분리 시작에서는 프로브를 완전히 건너뜁니다.
 
 ## 서비스 중지
 

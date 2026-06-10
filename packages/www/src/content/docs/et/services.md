@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: et
-sourceHash: "88734af48d9648d5"
+sourceHash: "aa77a4f937206e58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -212,6 +212,7 @@ rdc repo up --name my-app -m server-1
 
 | Valik | Kirjeldus |
 |--------|-------------|
+| `--detach` | Tagasta kohe, kui konteinerid on käivitatud; tervisekontrollid jätkavad taustal |
 | `--skip-router-restart` | Jätke teeserveri taaskäivitamine pärast toimingut vahele |
 
 Täitmise järjekord on:
@@ -231,6 +232,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 Teenused ilma kohandatud Traefiku siltideta näitavad ainult automaatselt genereeritud teeserveri marsruuti. Kasutage neid URL-e (mitte CLI-le prinditud üldist mustrit) brauseri juurdepääsuks, API kutsete jaoks ja teenuste vaheliseks konfiguratsiooniks.
+
+### Eraldusrežiimis käivitamine
+
+`--detach`-iga naaseb käsk kohe, kui konteinerid on käivitatud, ootamata tervisekontrollide lõppemist. Käivitamine jätkub taustal: puhverserver kordab ühendustkatseid ülesvoolu, kuni iga teenus end seob, nii et marsruudid taastuvad omal käel. Edenemist saab jälgida käsuga `rdc machine query --containers --name <machine>`. Sobib suurepäraselt ühekordsetele kahvlitele ja skriptitud silmustele, kus järgmine samm ei nõua teenuste valmidust.
+
+### Valmisolekuproov
+
+Pärast `up()` käivitamist testib renet iga HTTP-teenust, kuni see aktsepteerib TCP-ühendusi — see väldib puhverserveri 502-viga esimesel brauseripäringul. Teenused, mille konteinerid sisaldavad Dockeri tervisekontrolli, on otse usaldusväärsed: terve konteiner jätab proovi vahele ja `start_period`-is viibiv konteiner logib informatiivse teate, mitte hoiatuse. Proov annab 15 sekundi pärast alla (muutke käitusajal masinale seades `REDIACC_READINESS_TIMEOUT` sekunditeks); eraldusrežiimis käivitamine jätab selle täielikult vahele.
 
 ## Teenuste peatamine
 

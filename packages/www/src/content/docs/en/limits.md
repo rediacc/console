@@ -98,10 +98,12 @@ The datastore is a fixed-size pool created when a machine is first set up. Its s
 
 - **Minimum recommended size**: 50 GB
 - **Maximum size**: Limited by your disk. A single pool can span a full disk.
-- **Resize**: Use `rdc datastore resize` to expand an existing pool. Shrinking is not supported.
+- **Resize**: Use `rdc datastore resize` to change the pool size (all repositories must be unmounted first).
 - **Filesystem**: Rediacc uses BTRFS internally for copy-on-write snapshots and efficient forking. Requires a machine running **Linux kernel 6.1 or later** for full production stability.
 
-Each repository image has a fixed maximum size set at creation time (default: 10 GB). Use `rdc repo resize` to expand an individual repository. The sum of all repository maximum sizes cannot exceed the datastore pool size.
+Each repository has a maximum size set at creation time (default: 10 GB). Use `rdc repo resize` to change it by hand, or set an [automatic size policy](/en/docs/repositories#automatic-size-policy) so the machine grows it online when it fills up (bounded by an explicit per-repository ceiling and a pool free-space reserve). Auto-grow applies to individual repositories only; the pool itself is never grown automatically.
+
+Repository images are sparse: a repository only occupies the pool with what it has actually written, and space freed by deletions returns to the pool via [`repo trim`](/en/docs/repositories#reclaim-space-trim) or a scheduled auto-trim. Quotas can therefore add up to more than the pool size, with the [storage health report](/en/docs/monitoring#storage-health) showing the real fill level.
 
 ---
 

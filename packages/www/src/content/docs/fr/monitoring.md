@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "d3b8ff142fe2df34"
+sourceHash: "436c1c20b0ce8e35"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -111,12 +111,25 @@ rdc machine query --name server-1 --storage-health
 
 | Colonne | Description |
 |---------|-------------|
-| Size | Taille du fichier image LUKS (ce à quoi ressemble le dépôt) |
+| Quota | La taille maximale du dépôt (son plafond de croissance, défini à la création ou via resize/auto-grow) |
+| Allocated | Ce que l'image éparse occupe réellement dans le pool en ce moment |
 | Unique | Données uniques réelles appartenant uniquement à ce dépôt |
 | Shared | Blocs de données réutilisés entre dépôts via les reflinks BTRFS (copies gratuites) |
+| Reclaimable | L'écart entre la quantité allouée et la quantité utilisée que [`repo trim`](/fr/docs/repositories#récupérer-de-lespace-trim) peut restituer au pool. Affiche `-` pour les dépôts non montés |
+| Discards | Si le volume chiffré propage les discards (`on` pour tout dépôt monté par une version actuelle) |
 | Divergence | Pourcentage de l'image propre à ce dépôt plutôt que partagé (plus élevé = davantage récupérable en cas de suppression) |
-| Extents | Nombre d'extents de fichiers dans l'image copy-on-write (plus élevé = plus fragmenté) |
-| Frag | Niveau de fragmentation : faible, modéré ou élevé (informatif uniquement) |
+| Frag | Nombre d'extents par Go dans l'image copy-on-write (informatif uniquement) |
+
+Le quota et l'allocation sont intentionnellement deux chiffres distincts : un dépôt avec un quota de 20 Go qui stocke 6 Go de données ne coûte au pool que ce qu'il a alloué. Le pool peut donc promettre plus de quota total qu'il n'en a physiquement, et la colonne Reclaimable indique combien de l'allocation de chaque dépôt n'est plus utilisée et peut être restituée par trim.
+
+En dessous du tableau, un résumé du pool indique le niveau de remplissage du datastore et l'espace que les snapshots de sauvegarde immobilisent en ce moment :
+
+```
+Pool: 265.4 GB used, 95.2 GB free (73.6% full)
+Backup snapshots pin 2.1 GB (1 active, 0 stale; stale ones are removed by 'rdc machine prune')
+```
+
+Pendant l'exécution d'une sauvegarde, son snapshot continue de référencer chaque bloc qu'il partage avec les dépôts actifs : les suppressions et les trims libèrent moins d'espace dans le pool jusqu'à la fin de ce cycle de sauvegarde et la suppression du snapshot. Les snapshots orphelins issus de sauvegardes interrompues sont détectés et supprimés automatiquement par le mainteneur de stockage en quelques minutes.
 
 Le résumé affiche les économies totales réalisées grâce aux reflinks BTRFS :
 
@@ -231,3 +244,14 @@ rdc doctor
 Chaque vérification indique **OK**, **Avertissement** ou **Erreur**. Utilisez cette commande comme première étape lors du dépannage de tout problème.
 
 Codes de sortie : `0` = tout réussi, `1` = avertissements, `2` = erreurs.
+
+## Vérifications de disponibilité des services
+
+Lors d'un `repo up`, renet attend que les services HTTP acceptent les connexions avant de les déclarer prêts. Cette attente tient compte des vérifications de santé Docker :
+
+- Les conteneurs que Docker signale comme **sains** sont considérés comme immédiatement disponibles — aucune sonde TCP.
+- Les conteneurs encore dans la `start_period` de leur vérification de santé génèrent une note informative, non un avertissement ; le proxy continue de réessayer jusqu'à ce qu'ils soient liés.
+- Les services Compose sans conteneur en cours d'exécution (par exemple, derrière un profil inactif) sont ignorés.
+- Tout le reste est sondé en TCP pendant 15 secondes au maximum (définissez `REDIACC_READINESS_TIMEOUT`, en secondes, pour modifier cette valeur).
+
+Définir un [health check Docker](https://docs.docker.com/reference/dockerfile/#healthcheck) sur les services à démarrage lent donne à renet un signal de disponibilité fiable et supprime le bruit des sondes dans la sortie de déploiement.

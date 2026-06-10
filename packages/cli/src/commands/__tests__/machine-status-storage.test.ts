@@ -97,6 +97,11 @@ function makeStorageHealth(): StorageHealthResult {
         divergence_percent: 6.42,
         extents: 300, // 300 / 2GiB = 150/GB
         fragmentation: 'moderate',
+        quota_bytes: 16 * 1024 ** 3,
+        allocated_bytes: 13.7 * 1024 ** 3,
+        mounted: true,
+        discards_enabled: true,
+        reclaimable_human: '7.7 GB',
       },
       {
         name: 'demo-stackoverflow:kopya1',
@@ -128,12 +133,23 @@ describe('buildStorageHealthRows', () => {
     const rows = buildStorageHealthRows(makeStorageHealth(), resolve);
     expect(rows[0]).toEqual({
       name: 'gitlab',
-      size: '13.7 GB',
+      quota: '16.0 GB',
+      allocated: '13.7 GB',
       exclusive: '910.3 MB',
       shared: '12.8 GB',
+      reclaimable: '7.7 GB',
+      discards: 'on',
       divergence: '6.4%',
       fragmentation: '150/GB',
     });
+  });
+
+  it('shows dashes for the mounted-only columns when a repo is unmounted', () => {
+    const resolve = createRepoNameResolver({ [GUID_A]: 'gitlab:latest' });
+    const rows = buildStorageHealthRows(makeStorageHealth(), resolve);
+    // GUID_B has no mounted flag in the fixture (sealed volume).
+    expect(rows[1].reclaimable).toBe('-');
+    expect(rows[1].discards).toBe('-');
   });
 
   it("marks server-sourced names (resolved from renet, not local config) with ' *'", () => {
