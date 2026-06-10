@@ -590,7 +590,7 @@ Freeze the current state of a mounted working fork into a new immutable commit (
 - `-m, --machine <name>` — Target machine name
 - `--debug` — Enable debug output
 
-> MCP tool
+> MCP tool | agent: fork-only
 
 ### rdc repo branch
 
@@ -601,7 +601,7 @@ Create a named branch ref pointing at the working fork's current commit (its tip
 - `--branch <branch>` — Name of the new branch
 - `--name <name>` — Working fork whose current commit the branch points at
 
-> MCP excluded: Config-only ref operation — use CLI directly
+> agent: fork-only | MCP excluded: Config-only ref operation — use CLI directly
 
 ### rdc repo checkout
 
@@ -616,7 +616,7 @@ Reflink-clone an immutable commit (or a branch tip) into a fresh writable workin
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
-> MCP tool
+> MCP tool | agent: fork-only
 
 ### rdc repo log
 

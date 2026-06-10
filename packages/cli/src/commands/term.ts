@@ -11,7 +11,11 @@ import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
 import { type ConnectionDetails, getSSHConnectionDetails } from '../services/ssh-connection.js';
-import { assertAgentMachineAccess, isAgentEnvironment } from '../utils/agent-guard.js';
+import {
+  assertAgentMachineAccess,
+  isAgentEnvironment,
+  isLegitimateWildcardOverride,
+} from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { auditService } from '../services/audit.js';
@@ -168,7 +172,7 @@ async function validateAndGetConnectionDetails(opts: {
 function enforceDirectRenetGuard(command: string): void {
   const match = detectDirectRenetCommand(command);
   if (!match) return;
-  if (isAgentEnvironment()) {
+  if (isAgentEnvironment() && !isLegitimateWildcardOverride()) {
     throw new ValidationError(
       `Direct "${match.renetCommand}" is not allowed in agent mode.\n\nRun "${match.cliHelpCommand}" to see available CLI commands.`
     );

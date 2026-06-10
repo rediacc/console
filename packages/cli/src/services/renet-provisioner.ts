@@ -13,12 +13,11 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { SFTPClient, type SFTPClientConfig } from '@rediacc/shared-desktop/sftp';
-import { createTempSSHKeyFile, removeTempSSHKeyFile } from '@rediacc/shared-desktop/ssh';
-import { executeRsync, getRsyncCommand } from '@rediacc/shared-desktop/sync';
 import { VERSION } from '../version.js';
 import { computeSha256, getEmbeddedRenetBinary, isSEA, type RenetArch } from './embedded-assets.js';
 import { acquireLocalLock, releaseLocalLock } from './file-lock.js';
 import { outputService } from './output.js';
+import { shellEscape, stageRenetBinary } from './renet-binary-transfer.js';
 import { compareVersions } from './updater.js';
 
 /** Root directory for versioned renet installs on remote machines */
@@ -69,17 +68,20 @@ export interface ProvisionResult {
 /** Cache entry for a provisioned host */
 interface CacheEntry {
   hash: string;
+  arch: RenetArch;
   provisionedAt: number;
+}
+
+/** Memoized SHA256 of a local binary, keyed by file identity */
+interface LocalHashMemo {
+  mtimeMs: number;
+  size: number;
+  hash: string;
 }
 
 interface InstallResult {
   binaryUpdated: boolean;
   currentUpdated: boolean;
-}
-
-interface RemoteSeedCandidate {
-  path: string;
-  source: 'current' | 'slot';
 }
 
 interface ProvisionContext {
@@ -107,6 +109,12 @@ interface ProvisionContext {
 class RenetProvisionerService {
   private readonly cache = new Map<string, CacheEntry>();
   private readonly inflight = new Map<string, Promise<ProvisionResult>>();
+  /** Per-host arch memo so partial cache misses skip the remote `uname -m` exec */
+  private readonly archByHost = new Map<string, RenetArch>();
+  /** Local binary hash memo keyed by source path, validated by (mtime, size) */
+  private readonly localHashMemo = new Map<string, LocalHashMemo>();
+  /** Embedded (SEA) binary hash memo keyed by arch; embedded assets are immutable per process */
+  private readonly embeddedHashMemo = new Map<RenetArch, string>();
 
   /**
    * Provision renet to a remote Linux machine.
@@ -126,7 +134,14 @@ class RenetProvisionerService {
     },
     sharedSftp?: SFTPClient
   ): Promise<ProvisionResult> {
-    const cacheKey = `${config.host}:${config.port ?? DEFAULTS.SSH.PORT}`;
+    const cacheKey = this.buildCacheKey(config);
+    // Cache-first: a fresh entry means this process already provisioned the
+    // host. Return immediately with zero remote execs and zero local file reads.
+    const cached = this.getFreshCacheEntry(cacheKey);
+    if (cached) {
+      return this.buildVerifiedResult(cached.arch, REMOTE_INSTALL_PATH);
+    }
+
     const inflight = this.inflight.get(cacheKey);
     if (inflight) {
       return inflight;
@@ -181,17 +196,16 @@ class RenetProvisionerService {
     options?: { localBinaryPath?: string; restartServices?: boolean; debug?: boolean }
   ): Promise<ProvisionResult> {
     const context = await this.buildProvisionContext(sftp, config, options?.localBinaryPath);
-    if (this.isCachedProvision(context.cacheKey, context.localHash)) {
-      return this.buildVerifiedResult(context.arch, context.remoteInstallPath);
-    }
-
     const remote = await this.getRemoteHashAndVersion(sftp, context.remoteInstallPath);
     const versionRejected = this.buildVersionRejectedResult(remote.version, context);
     if (versionRejected) return versionRejected;
 
     const stagingPath = this.buildStagingPath();
     if (remote.hash !== context.localHash) {
-      await this.stageBinary(sftp, config, stagingPath, context.binary, context.localHash);
+      await stageRenetBinary(sftp, config, stagingPath, context.binary, context.localHash, {
+        installRoot: REMOTE_INSTALL_ROOT,
+        currentPath: REMOTE_CURRENT_PATH,
+      });
     }
     if (options?.debug) {
       outputService.info(`Activating remote renet slot ${context.remoteInstallPath}...`);
@@ -210,7 +224,11 @@ class RenetProvisionerService {
       servicesRestarted = await this.restartRunningServices(sftp);
     }
 
-    this.cache.set(context.cacheKey, { hash: context.localHash, provisionedAt: Date.now() });
+    this.cache.set(context.cacheKey, {
+      hash: context.localHash,
+      arch: context.arch,
+      provisionedAt: Date.now(),
+    });
     return {
       success: true,
       action: installResult.binaryUpdated ? 'uploaded' : 'verified',
@@ -226,20 +244,69 @@ class RenetProvisionerService {
     localBinaryPath?: string
   ): Promise<ProvisionContext> {
     const remoteInstallPath = REMOTE_INSTALL_PATH;
-    const arch = await this.detectArch(sftp);
-    const binary = await this.getBinary(arch, localBinaryPath);
+    const cacheKey = this.buildCacheKey(config);
+    const arch = await this.resolveArch(sftp, cacheKey);
+    const { binary, sourcePath } = await this.resolveBinary(arch, localBinaryPath);
     return {
       arch,
       binary,
-      localHash: computeSha256(binary),
-      cacheKey: `${config.host}:${config.port ?? DEFAULTS.SSH.PORT}`,
+      localHash: await this.computeLocalHash(arch, binary, sourcePath),
+      cacheKey,
       remoteInstallPath,
     };
   }
 
-  private isCachedProvision(cacheKey: string, localHash: string): boolean {
+  private buildCacheKey(config: SFTPClientConfig): string {
+    return `${config.host}:${config.port ?? DEFAULTS.SSH.PORT}`;
+  }
+
+  private getFreshCacheEntry(cacheKey: string): CacheEntry | null {
     const cached = this.cache.get(cacheKey);
-    return cached?.hash === localHash && Date.now() - cached.provisionedAt < CACHE_TTL_MS;
+    if (cached && Date.now() - cached.provisionedAt < CACHE_TTL_MS) {
+      return cached;
+    }
+    return null;
+  }
+
+  /** Resolve the remote arch, preferring the per-host memo over a remote exec. */
+  private async resolveArch(sftp: SFTPClient, cacheKey: string): Promise<RenetArch> {
+    const memoized = this.archByHost.get(cacheKey);
+    if (memoized) {
+      return memoized;
+    }
+    const arch = await this.detectArch(sftp);
+    this.archByHost.set(cacheKey, arch);
+    return arch;
+  }
+
+  /**
+   * Compute the local binary's SHA256, memoized so repeat misses don't re-hash.
+   * File-based binaries are keyed by source path and validated by (mtime, size);
+   * embedded SEA binaries are keyed by arch (immutable within a process).
+   */
+  private async computeLocalHash(
+    arch: RenetArch,
+    binary: Buffer,
+    sourcePath: string | null
+  ): Promise<string> {
+    if (sourcePath === null) {
+      const memoized = this.embeddedHashMemo.get(arch);
+      if (memoized) {
+        return memoized;
+      }
+      const hash = computeSha256(binary);
+      this.embeddedHashMemo.set(arch, hash);
+      return hash;
+    }
+
+    const stat = await fs.stat(sourcePath);
+    const memoized = this.localHashMemo.get(sourcePath);
+    if (memoized?.mtimeMs === stat.mtimeMs && memoized.size === stat.size) {
+      return memoized.hash;
+    }
+    const hash = computeSha256(binary);
+    this.localHashMemo.set(sourcePath, { mtimeMs: stat.mtimeMs, size: stat.size, hash });
+    return hash;
   }
 
   private buildVerifiedResult(arch: RenetArch, remoteInstallPath: string): ProvisionResult {
@@ -283,10 +350,15 @@ class RenetProvisionerService {
    * Get the binary data from either embedded assets or a local file.
    * On non-Linux platforms, resolves the cross-compiled Linux binary
    * (e.g. renet-linux-amd64) instead of the local platform binary.
+   * Returns the resolved source path (null for embedded SEA assets) so
+   * the hash memo can be keyed by file identity.
    */
-  private async getBinary(arch: RenetArch, localBinaryPath?: string): Promise<Buffer> {
+  private async resolveBinary(
+    arch: RenetArch,
+    localBinaryPath?: string
+  ): Promise<{ binary: Buffer; sourcePath: string | null }> {
     if (isSEA()) {
-      return getEmbeddedRenetBinary('linux', arch);
+      return { binary: getEmbeddedRenetBinary('linux', arch), sourcePath: null };
     }
 
     if (localBinaryPath) {
@@ -296,7 +368,7 @@ class RenetProvisionerService {
         const dir = path.dirname(localBinaryPath);
         const linuxBinaryPath = path.join(dir, `renet-linux-${arch}`);
         try {
-          return await fs.readFile(linuxBinaryPath);
+          return { binary: await fs.readFile(linuxBinaryPath), sourcePath: linuxBinaryPath };
         } catch {
           throw new Error(
             `Cross-compiled Linux binary not found at ${linuxBinaryPath}. ` +
@@ -304,94 +376,10 @@ class RenetProvisionerService {
           );
         }
       }
-      return fs.readFile(localBinaryPath);
+      return { binary: await fs.readFile(localBinaryPath), sourcePath: localBinaryPath };
     }
 
     throw new Error('Cannot provision renet: not running as SEA and no localBinaryPath provided');
-  }
-
-  private async stageBinary(
-    sftp: SFTPClient,
-    config: SFTPClientConfig,
-    stagingPath: string,
-    binary: Buffer,
-    localHash: string
-  ): Promise<void> {
-    const seedCandidate = await this.findRemoteSeedCandidate(sftp, REMOTE_INSTALL_PATH);
-    const remoteRsyncPath = await this.getRemoteRsyncPath(sftp);
-    if (
-      await this.tryDeltaSyncStage(
-        sftp,
-        config,
-        stagingPath,
-        binary,
-        localHash,
-        seedCandidate,
-        remoteRsyncPath
-      )
-    ) {
-      return;
-    }
-
-    // Stage and install: SFTP upload to /tmp, then atomic mv to a versioned remote path.
-    // Uses mv (not cp) so the replacement works even when the binary is running
-    // (e.g., during a backup sync). mv replaces the directory entry atomically;
-    // the old inode stays alive until the running process exits.
-    outputService.info(`Uploading renet to ${config.host}...`);
-    const uploadStart = Date.now();
-    await sftp.writeFile(stagingPath, binary);
-    outputService.info(
-      `Uploaded renet to ${config.host} in ${((Date.now() - uploadStart) / 1000).toFixed(1)}s`
-    );
-  }
-
-  private async tryDeltaSyncStage(
-    sftp: SFTPClient,
-    config: SFTPClientConfig,
-    stagingPath: string,
-    binary: Buffer,
-    localHash: string,
-    seedCandidate: RemoteSeedCandidate | null,
-    remoteRsyncPath: string | null
-  ): Promise<boolean> {
-    if (seedCandidate === null || remoteRsyncPath === null || !(await this.hasLocalRsync())) {
-      return false;
-    }
-
-    try {
-      outputService.info(
-        `Seeding remote renet from ${seedCandidate.source === 'current' ? 'current slot' : 'existing slot'}...`
-      );
-      await sftp.exec(
-        `cp -f ${this.shellEscape(seedCandidate.path)} ${this.shellEscape(stagingPath)} && chmod 600 ${this.shellEscape(stagingPath)}`
-      );
-      outputService.info(`Syncing renet delta to ${config.host}...`);
-      await this.deltaSyncBinary(config, binary, stagingPath, remoteRsyncPath);
-      const stagedHash = await this.getRemoteFileHash(sftp, stagingPath);
-      if (stagedHash !== localHash) {
-        throw new Error(
-          `Staged renet hash mismatch after rsync: expected ${localHash}, got ${stagedHash ?? 'none'}`
-        );
-      }
-      return true;
-    } catch (error) {
-      outputService.info(`Falling back to full upload to ${config.host}...`);
-      await this.cleanupStagingPath(sftp, stagingPath);
-      if (process.env.RDC_DEBUG_RENET_PROVISION === '1') {
-        outputService.info(
-          `Delta sync fallback reason: ${error instanceof Error ? error.message : String(error)}`
-        );
-      }
-      return false;
-    }
-  }
-
-  private async cleanupStagingPath(sftp: SFTPClient, stagingPath: string): Promise<void> {
-    try {
-      await sftp.exec(`rm -f ${this.shellEscape(stagingPath)}`);
-    } catch {
-      // Best-effort cleanup only.
-    }
   }
 
   /**
@@ -427,89 +415,6 @@ class RenetProvisionerService {
     }
   }
 
-  private async findRemoteSeedCandidate(
-    sftp: SFTPClient,
-    _remoteInstallPath: string
-  ): Promise<RemoteSeedCandidate | null> {
-    const currentTarget = (
-      await sftp.exec(`readlink ${this.shellEscape(REMOTE_CURRENT_PATH)} 2>/dev/null || true`)
-    ).trim();
-    if (currentTarget) {
-      return { path: currentTarget, source: 'current' };
-    }
-
-    const firstSlot = (
-      await sftp.exec(
-        `find ${this.shellEscape(REMOTE_INSTALL_ROOT)} -mindepth 2 -maxdepth 2 -type f -name renet 2>/dev/null | head -n 1`
-      )
-    ).trim();
-    if (firstSlot) {
-      return { path: firstSlot, source: 'slot' };
-    }
-
-    return null;
-  }
-
-  private async getRemoteRsyncPath(sftp: SFTPClient): Promise<string | null> {
-    const output = await sftp.exec(
-      'if command -v rsync >/dev/null 2>&1; then command -v rsync; elif [ -x /usr/local/bin/rsync-renet ]; then echo /usr/local/bin/rsync-renet; fi'
-    );
-    const rsyncPath = output.trim();
-    return rsyncPath || null;
-  }
-
-  private async hasLocalRsync(): Promise<boolean> {
-    try {
-      await getRsyncCommand();
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  private async deltaSyncBinary(
-    config: SFTPClientConfig,
-    binary: Buffer,
-    stagingPath: string,
-    remoteRsyncPath: string
-  ): Promise<void> {
-    const keyFilePath = await createTempSSHKeyFile(config.privateKey);
-    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'rdc-renet-'));
-    const localBinaryPath = path.join(tempDir, 'renet');
-
-    try {
-      await fs.writeFile(localBinaryPath, binary, { mode: 0o700 });
-      const sshOptions = [
-        '-o StrictHostKeyChecking=no',
-        '-o UserKnownHostsFile=/dev/null',
-        '-o IdentitiesOnly=yes',
-        `-p ${config.port ?? DEFAULTS.SSH.PORT}`,
-        `-i "${keyFilePath}"`,
-      ].join(' ');
-      const destination = `${config.username}@${config.host}:${stagingPath}`;
-      const result = await executeRsync({
-        sshOptions,
-        source: localBinaryPath,
-        destination,
-        remoteRsyncPath,
-      });
-      if (!result.success) {
-        throw new Error(result.errors.join('\n') || 'rsync transfer failed');
-      }
-    } finally {
-      await fs.rm(tempDir, { recursive: true, force: true });
-      await removeTempSSHKeyFile(keyFilePath);
-    }
-  }
-
-  private async getRemoteFileHash(sftp: SFTPClient, remotePath: string): Promise<string | null> {
-    const output = await sftp.exec(
-      `sha256sum ${this.shellEscape(remotePath)} 2>/dev/null | cut -d' ' -f1 || true`
-    );
-    const hash = output.trim();
-    return hash || null;
-  }
-
   /**
    * Get the remote binary's hash and version in a single SSH call.
    * Returns hash (for content comparison) and version (for downgrade guard).
@@ -520,7 +425,7 @@ class RenetProvisionerService {
     remoteInstallPath: string
   ): Promise<{ hash: string | null; version: string | null }> {
     try {
-      const escapedInstallPath = this.shellEscape(remoteInstallPath);
+      const escapedInstallPath = shellEscape(remoteInstallPath);
       // Single SSH exec: get both hash and version. Two lines of output.
       // Falls back to sha256sum if `renet hash` isn't available (pre-0.6.0).
       const output = await sftp.exec(
@@ -554,11 +459,14 @@ class RenetProvisionerService {
   }
 
   /**
-   * Clear the in-memory cache.
+   * Clear the in-memory caches (provision results, arch memos, hash memos).
    * Useful for testing or forcing re-verification.
    */
   clearCache(): void {
     this.cache.clear();
+    this.archByHost.clear();
+    this.localHashMemo.clear();
+    this.embeddedHashMemo.clear();
   }
 
   private async withLocalProvisionLock<T>(cacheKey: string, fn: () => Promise<T>): Promise<T> {
@@ -619,14 +527,14 @@ class RenetProvisionerService {
     localHash: string,
     remoteInstallPath: string
   ): string {
-    const escapedHash = this.shellEscape(localHash);
-    const escapedStagingPath = this.shellEscape(stagingPath);
-    const escapedInstallPath = this.shellEscape(remoteInstallPath);
-    const escapedLockPath = this.shellEscape(REMOTE_LOCK_PATH);
-    const escapedInstallDir = this.shellEscape(path.dirname(remoteInstallPath));
-    const escapedCurrentDir = this.shellEscape(REMOTE_CURRENT_DIR);
-    const escapedCurrentPath = this.shellEscape(REMOTE_CURRENT_PATH);
-    const escapedCurrentTmpPath = this.shellEscape(`${REMOTE_CURRENT_PATH}.tmp`);
+    const escapedHash = shellEscape(localHash);
+    const escapedStagingPath = shellEscape(stagingPath);
+    const escapedInstallPath = shellEscape(remoteInstallPath);
+    const escapedLockPath = shellEscape(REMOTE_LOCK_PATH);
+    const escapedInstallDir = shellEscape(path.dirname(remoteInstallPath));
+    const escapedCurrentDir = shellEscape(REMOTE_CURRENT_DIR);
+    const escapedCurrentPath = shellEscape(REMOTE_CURRENT_PATH);
+    const escapedCurrentTmpPath = shellEscape(`${REMOTE_CURRENT_PATH}.tmp`);
 
     const body = [
       // Execute under POSIX sh on remote hosts; do not rely on bash-only options.
@@ -643,11 +551,8 @@ class RenetProvisionerService {
       'if [ -z "$result" ]; then result=VERIFIED; fi',
       'echo "$result"',
     ].join('; ');
-    const quotedBody = this.shellEscape(body);
+    const quotedBody = shellEscape(body);
     return `command -v flock >/dev/null 2>&1 || { echo FLOCK_MISSING >&2; exit 127; }; flock -w 120 ${escapedLockPath} sh -c ${quotedBody}`;
-  }
-  private shellEscape(v: string): string {
-    return `'${v.replaceAll("'", `'\\''`)}'`;
   }
 }
 

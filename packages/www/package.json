@@ -42,7 +42,7 @@
     "@astrojs/sitemap": "^3.7.3",
     "@aws-sdk/client-s3": "^3.982.0",
     "@marp-team/marp-core": "^4.3.0",
-    "@marsidev/react-turnstile": "^1.5.2",
+    "@marsidev/react-turnstile": "^1.5.3",
     "@opentelemetry/context-zone": "^2.7.0",
     "@opentelemetry/core": "^2.7.0",
     "@opentelemetry/instrumentation": "^0.211.0",
@@ -72,7 +72,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.3.167",
+    "@anthropic-ai/claude-agent-sdk": "^0.3.170",
     "@resvg/resvg-js": "^2.6.2",
     "astro-seo": "^1.1.0",
     "playwright": "^1.60.0"

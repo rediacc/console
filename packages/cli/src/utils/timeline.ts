@@ -6,6 +6,16 @@
 
 /** Labels shown while step is in progress (spinner). */
 const activeLabels: Record<string, string> = {
+  config: 'Loading config',
+  ssh_connect: 'Connecting',
+  renet_provision: 'Provisioning renet',
+  machine_verify: 'Verifying machine',
+  license: 'Activating license',
+  key_deploy: 'Deploying repo key',
+  identity_refresh: 'Refreshing license identity',
+  dns: 'Ensuring DNS records',
+  cert_sync: 'Syncing cert cache',
+  service_urls: 'Resolving service URLs',
   checkpoint: 'Creating checkpoint',
   repo_create: 'Creating repository',
   cow_clone: 'Cloning (CoW)',
@@ -31,6 +41,16 @@ const activeLabels: Record<string, string> = {
 
 /** Labels shown when step completes (checkmark). */
 const doneLabels: Record<string, string> = {
+  config: 'Config loaded',
+  ssh_connect: 'Connected',
+  renet_provision: 'Renet provisioned',
+  machine_verify: 'Machine verified',
+  license: 'License activated',
+  key_deploy: 'Repo key deployed',
+  identity_refresh: 'License identity refreshed',
+  dns: 'DNS records ensured',
+  cert_sync: 'Cert cache synced',
+  service_urls: 'Service URLs resolved',
   checkpoint: 'Checkpoint created',
   repo_create: 'Repository created',
   cow_clone: 'CoW clone complete',
@@ -53,6 +73,43 @@ const doneLabels: Record<string, string> = {
   filesystem_resize: 'Filesystem resized',
   filesystem_expand: 'Filesystem expanded',
 };
+
+/** A single rendered timeline step (CLI-side, renet-side, or orchestrated). */
+export interface TimelineStep {
+  name: string;
+  duration_ms: number;
+  detail?: string;
+}
+
+/**
+ * Detail marker rendered for steps that ran concurrently with other phases
+ * (e.g. DNS ∥ cert sync ∥ identity refresh during fork --up).
+ */
+export const PARALLEL_STEP_DETAIL = '∥';
+
+/**
+ * Time an orchestrated phase and record it into `steps` (when provided).
+ * Steps are recorded in completion order; parallel phases carry the '∥'
+ * detail marker. The step is recorded even when `fn` rejects, so failed
+ * phases still show up in the timeline with their real duration.
+ */
+export async function recordTimelineStep<T>(
+  steps: TimelineStep[] | undefined,
+  name: string,
+  fn: () => Promise<T>,
+  options?: { parallel?: boolean }
+): Promise<T> {
+  const start = Date.now();
+  try {
+    return await fn();
+  } finally {
+    steps?.push({
+      name,
+      duration_ms: Date.now() - start,
+      ...(options?.parallel ? { detail: PARALLEL_STEP_DETAIL } : {}),
+    });
+  }
+}
 
 /** Format milliseconds as human-readable duration. */
 export function formatStepDuration(ms: number): string {

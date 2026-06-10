@@ -114,17 +114,23 @@ class AuditService {
     }
 
     const events = this.queue.splice(0);
+    let timer: NodeJS.Timeout | undefined;
     try {
       const request = accountServerFetch(AUDIT_ENDPOINT, {
         method: 'POST',
         body: { events: events.map((e) => ({ type: e.type, data: e.data })) },
       });
-      const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('audit flush timeout')), FLUSH_TIMEOUT_MS)
-      );
+      const timeout = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error('audit flush timeout')), FLUSH_TIMEOUT_MS);
+        // unref: a pending flush timeout must never hold the event loop open
+        // after the command has finished (it added ~5s to every wall time).
+        timer.unref();
+      });
       await Promise.race([request, timeout]);
     } catch {
       // Fire-and-forget: audit failures must never block CLI operations
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
     }
   }
 }
