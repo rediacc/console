@@ -14,20 +14,18 @@ const MAX_OUTPUT_TAIL_CHARS = 500;
  * undefined when there is nothing new to show (empty, or already contained
  * in the message).
  */
-function failureOutputTail(message: string, stderr?: string, stdout?: string): string | undefined {
-  // Prefer the stream that carries an explicit error line: the bridge puts
-  // its own logrus noise in stderr while relaying the inner command's
-  // "Error: ..." into stdout, so a non-empty stderr alone proves nothing.
+/** Prefer the stream that carries an explicit error line: the bridge puts
+ * its own logrus noise in stderr while relaying the inner command's
+ * "Error: ..." into stdout, so a non-empty stderr alone proves nothing. */
+function pickFailureStream(stderr?: string, stdout?: string): string | undefined {
   const errorLineRe = /(^|\n)\s*(\[[^\]]+\]\s*)?Error: /;
-  let output: string | undefined;
-  if (stderr && errorLineRe.test(stderr)) {
-    output = stderr;
-  } else if (stdout && errorLineRe.test(stdout)) {
-    output = stdout;
-  } else {
-    output = stderr?.trim() ? stderr : stdout;
-  }
-  output = output?.trim();
+  if (stderr && errorLineRe.test(stderr)) return stderr;
+  if (stdout && errorLineRe.test(stdout)) return stdout;
+  return stderr?.trim() ? stderr : stdout;
+}
+
+function failureOutputTail(message: string, stderr?: string, stdout?: string): string | undefined {
+  const output = pickFailureStream(stderr, stdout)?.trim();
   if (!output) return undefined;
 
   const tail =

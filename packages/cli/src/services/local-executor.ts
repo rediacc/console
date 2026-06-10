@@ -420,6 +420,10 @@ function extractStepsFromOutput(output: string): StepEntry[] | undefined {
 
 const MAX_FAILURE_REASON_CHARS = 300;
 
+// Parser patterns for renet output lines — not user-facing strings.
+const COBRA_ERROR_PREFIX = 'Error: ';
+const LOGRUS_LINE_PREFIX = 'time="';
+
 /**
  * Build the non-zero-exit error message, including renet's actual failure
  * reason when one is available. Without this the operator only sees
@@ -452,15 +456,16 @@ function cleanOutputLines(output: string): string[] {
 /** The last cobra-style "Error: ..." line, without the prefix. */
 function extractErrorLine(output: string): string | undefined {
   return cleanOutputLines(output)
-    .filter((line) => /^Error: /.test(line))
+    .filter((line) => line.startsWith(COBRA_ERROR_PREFIX))
     .at(-1)
-    ?.replace(/^Error:\s*/, '');
+    ?.slice(COBRA_ERROR_PREFIX.length)
+    .trim();
 }
 
 /** The last line that isn't structured-log noise (`time="..." level=...`). */
 function lastInformativeLine(output: string): string | undefined {
   return cleanOutputLines(output)
-    .filter((line) => !/^time="/.test(line))
+    .filter((line) => !line.startsWith(LOGRUS_LINE_PREFIX))
     .at(-1);
 }
 
