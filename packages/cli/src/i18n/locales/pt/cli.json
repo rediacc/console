@@ -1446,7 +1446,9 @@
         "tagOption": "Etiqueta para o fork (cria nome:etiqueta)",
         "tagRequired": "A etiqueta é obrigatória para fork. Utilização: rdc repo fork --parent <pai> --tag <etiqueta> -m <máquina>",
         "tagReservedLatest": "repo fork: a tag \"latest\" é reservada para o repositório principal (produção) — escolha um --tag diferente (ex.: \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Montar e iniciar os serviços após copiar (fork + mount + up num único comando)"
+        "upOption": "Montar e iniciar os serviços após copiar (fork + mount + up num único comando)",
+        "detachOption": "Com --up: retorna assim que os contêineres iniciam; os healthchecks continuam em segundo plano (ideal para forks descartáveis)",
+        "detachedHint": "Os serviços continuam iniciando em segundo plano — verifique o status com: rdc machine query --containers --name {{machine}}"
       },
       "fsck": {
         "clean": "Nenhuma divergência em {{machine}}: todas as referências resolvem e nenhum commit órfão encontrado",
@@ -1708,7 +1710,8 @@
         "mountOption": "Montar o repositório primeiro (necessário para repositórios copiados na primeira implementação)",
         "skipCheckpointOption": "Ignorar o restauro de ponto de verificação CRIU mesmo que existam dados de verificação (forçar arranque limpo)",
         "starting": "A iniciar os serviços de \"{{repository}}\" em \"{{machine}}\"...",
-        "tlsOption": "Solicitar certificado TLS dedicado para este repositório (os forks utilizam o certificado partilhado da máquina por omissão)"
+        "tlsOption": "Solicitar certificado TLS dedicado para este repositório (os forks utilizam o certificado partilhado da máquina por omissão)",
+        "detachOption": "Retorna assim que os contêineres iniciam; os healthchecks continuam em segundo plano"
       },
       "upAll": {
         "completed": "Todos os repositórios iniciados",

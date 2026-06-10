@@ -148,3 +148,12 @@ describe('buildAttribution', () => {
     expect(platformMs).toBe(4_000);
   });
 });
+
+describe('zero/negative wall guards', () => {
+  it('builders degrade gracefully when wallMs is zero or negative', () => {
+    const s = [step('compose_up', 1_000, 0)];
+    expect(buildTimingBars(s, 0)).toBe('');
+    expect(buildTimingWaterfall(s, -5, T0)).toBeNull();
+    expect(buildTimingSummary(s, 0, { minWallMs: 0 })).toBeNull();
+  });
+});

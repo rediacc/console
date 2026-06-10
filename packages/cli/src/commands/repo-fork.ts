@@ -42,6 +42,7 @@ interface ForkActionOptions {
   checkpoint?: boolean;
   immutable?: boolean;
   up?: boolean;
+  detach?: boolean;
   debug?: boolean;
   skipRouterRestart?: boolean;
 }
@@ -205,6 +206,7 @@ function buildForkParams(plan: ForkPlan, compound: boolean): Record<string, unkn
     ...(plan.options.checkpoint ? { checkpoint: true } : {}),
     ...(plan.options.immutable ? { immutable: true } : {}),
     ...(compound ? { up: true, grand: plan.grandGuid, repo_name: plan.forkKey } : {}),
+    ...(compound && plan.options.detach ? { detach: true } : {}),
   };
 }
 
@@ -269,7 +271,12 @@ async function executeUpLeg(
   const upResult = await localExecutorService.execute({
     functionName: 'repository_up',
     machineName: plan.options.machine,
-    params: { repository: plan.forkKey, mount: true, grand: plan.grandGuid },
+    params: {
+      repository: plan.forkKey,
+      mount: true,
+      grand: plan.grandGuid,
+      ...(plan.options.detach ? { detach: true } : {}),
+    },
     debug: plan.options.debug,
     skipRouterRestart: plan.options.skipRouterRestart,
     eventsMode: true,
@@ -281,6 +288,19 @@ async function executeUpLeg(
     renderLocalExecutionFailure(upResult, t('commands.repo.up.failed'));
   }
   return upResult;
+}
+
+/**
+ * Render the end-of-run timing charts (bars + waterfall + attribution).
+ * TTY-gated; RDC_TIMING_CHART=1 forces rendering for piped output.
+ */
+function printTimingSummary(plan: ForkPlan, steps: TimelineStep[], wallMs: number): void {
+  if (!process.stdout.isTTY && process.env.RDC_TIMING_CHART !== '1') return;
+  const summary = buildTimingSummary(steps, wallMs, {
+    epochMs: plan.startedAt,
+    suggestDetach: Boolean(plan.options.up && !plan.options.detach),
+  });
+  if (summary) process.stdout.write(`\n${summary}\n`);
 }
 
 /**
@@ -304,13 +324,10 @@ function finishTimeline(
   if (cliSteps.length + orchestrated.length + renetSteps.length > 0) {
     const wallMs = Date.now() - plan.startedAt;
     renderTimelineTotal(wallMs);
-    // RDC_TIMING_CHART=1 forces the chart for piped output (tests, logs).
-    if (process.stdout.isTTY || process.env.RDC_TIMING_CHART === '1') {
-      const summary = buildTimingSummary([...cliSteps, ...orchestrated, ...renetSteps], wallMs, {
-        epochMs: plan.startedAt,
-      });
-      if (summary) process.stdout.write(`\n${summary}\n`);
+    if (plan.options.detach && plan.options.up) {
+      outputService.info(t('commands.repo.fork.detachedHint', { machine: plan.options.machine }));
     }
+    printTimingSummary(plan, [...cliSteps, ...orchestrated, ...renetSteps], wallMs);
   } else {
     outputService.success(
       t('commands.repo.fork.completed', {

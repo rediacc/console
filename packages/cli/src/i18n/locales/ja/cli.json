@@ -1446,7 +1446,9 @@
         "tagOption": "フォークのタグ（名前:タグを作成）",
         "tagRequired": "フォークにはタグが必要です。使用法: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: タグ \"latest\" はグランド (本番) リポジトリ用に予約されています — 別の --tag を選んでください (例: \"test\"、\"staging\"、\"<feature>\")",
-        "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）"
+        "upOption": "fork後にマウントしてサービスを開始（fork + mount + upを1コマンドで）",
+        "detachOption": "--up と併用: コンテナ起動後すぐに戻ります。ヘルスチェックはバックグラウンドで継続します（使い捨てフォークに最適）",
+        "detachedHint": "サービスはバックグラウンドで起動中です — 状態確認: rdc machine query --containers --name {{machine}}"
       },
       "fsck": {
         "clean": "{{machine}} に乖離はありません: すべての ref が解決し、孤立コミットも見つかりませんでした",
@@ -1708,7 +1710,8 @@
         "mountOption": "最初にリポジトリをマウントする",
         "skipCheckpointOption": "checkpoint データが存在しても CRIU checkpoint の復元をスキップする（強制的に新規起動）",
         "starting": "\"{{repository}}\" のサービスを \"{{machine}}\" で開始中...",
-        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)"
+        "tlsOption": "このリポジトリ用の専用 TLS 証明書をリクエスト (フォークはデフォルトで共有マシン証明書を使用)",
+        "detachOption": "コンテナ起動後すぐに戻ります。ヘルスチェックはバックグラウンドで継続します"
       },
       "upAll": {
         "completed": "すべてのリポジトリが開始されました",

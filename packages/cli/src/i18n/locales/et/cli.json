@@ -1446,7 +1446,9 @@
         "tagOption": "Forki silt (loob nime:silt)",
         "tagRequired": "Silt on forki jaoks kohustuslik. Kasutus: rdc repo fork --parent <vanem> --tag <silt> -m <masin>",
         "tagReservedLatest": "repo fork: silt \"latest\" on reserveeritud peamise (toodangu) hoidla jaoks — vali teine --tag (nt \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Haagi külge ja käivita teenused pärast forkimist (fork + mount + up ühes käsus)"
+        "upOption": "Haagi külge ja käivita teenused pärast forkimist (fork + mount + up ühes käsus)",
+        "detachOption": "Koos --up: naaseb kohe, kui konteinerid on käivitatud; tervisekontrollid jätkuvad taustal (ideaalne ühekordsete forkide jaoks)",
+        "detachedHint": "Teenused käivituvad taustal — kontrolli olekut: rdc machine query --containers --name {{machine}}"
       },
       "fsck": {
         "clean": "Masinal {{machine}} pole hälbeid: kõik viidad lahenevad ja orvuks jäänud commit'e ei leitud",
@@ -1708,7 +1710,8 @@
         "mountOption": "Haagi hoidla kõigepealt külge (nõutav forkitud hoidlate esmakordsel juurutamisel)",
         "skipCheckpointOption": "Jäta CRIU kontrollpunkti taastamine vahele isegi kui kontrollpunkti andmed on olemas (sundi värske käivitus)",
         "starting": "Teenuste käivitamine hoidlale \"{{repository}}\" masinal \"{{machine}}\"...",
-        "tlsOption": "Taotle sellele hoidlale eraldi TLS-sertifikaati (forkid kasutavad vaikimisi masina ühist sertifikaati)"
+        "tlsOption": "Taotle sellele hoidlale eraldi TLS-sertifikaati (forkid kasutavad vaikimisi masina ühist sertifikaati)",
+        "detachOption": "Naaseb kohe, kui konteinerid on käivitatud; tervisekontrollid jätkuvad taustal"
       },
       "upAll": {
         "completed": "Kõik hoidlad käivitatud",

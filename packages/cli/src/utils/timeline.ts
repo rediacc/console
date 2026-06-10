@@ -159,6 +159,8 @@ export interface TimingSummaryOptions {
   epochMs?: number;
   /** Skip rendering entirely below this wall time (default 5000ms). */
   minWallMs?: number;
+  /** Suggest --detach in the attribution note (set when it wasn't used). */
+  suggestDetach?: boolean;
 }
 
 function padLabel(label: string, width: number): string {
@@ -239,6 +241,7 @@ function buildBarRows(steps: TimelineStep[], wallMs: number): BarRow[] {
 
 /** Section A: per-step proportional bars, largest first. */
 export function buildTimingBars(steps: TimelineStep[], wallMs: number): string {
+  if (wallMs <= 0) return '';
   const rows = buildBarRows(steps, wallMs);
   const maxMs = Math.max(...rows.map((r) => r.durationMs), 1);
   const lines = rows.map((row) => {
@@ -275,6 +278,7 @@ export function buildTimingWaterfall(
   wallMs: number,
   epochMs?: number
 ): string | null {
+  if (wallMs <= 0) return null;
   const timed = steps
     .filter((s) => s.startedAtMs !== undefined)
     .sort((a, b) => (a.startedAtMs as number) - (b.startedAtMs as number));
@@ -308,7 +312,11 @@ export function workloadSplit(
  * and neutral — when service startup dominates, an informational note makes
  * clear which part the pipeline controls (and finished quickly).
  */
-export function buildAttribution(steps: TimelineStep[], wallMs: number): string | null {
+export function buildAttribution(
+  steps: TimelineStep[],
+  wallMs: number,
+  suggestDetach = false
+): string | null {
   const { platformMs, workloadMs } = workloadSplit(steps, wallMs);
   if (workloadMs === 0) return null;
   const line =
@@ -319,7 +327,11 @@ export function buildAttribution(steps: TimelineStep[], wallMs: number): string 
     `  ℹ Service startup is this repository's container boot (images, init,\n` +
     `    healthchecks — defined by its Rediaccfile), so it varies per app.\n` +
     `    The fork pipeline itself completed in ${formatStepDuration(platformMs)}.`;
-  return `${line}\n${note}`;
+  const tip = suggestDetach
+    ? `\n  Tip: add --detach to return ~${formatStepDuration(workloadMs)} sooner and let services\n` +
+      `    finish starting in the background (ideal for throwaway forks).`
+    : '';
+  return `${line}\n${note}${tip}`;
 }
 
 /**
@@ -331,9 +343,11 @@ export function buildTimingSummary(
   wallMs: number,
   options?: TimingSummaryOptions
 ): string | null {
-  if (steps.length === 0 || wallMs < (options?.minWallMs ?? DEFAULT_MIN_WALL_MS)) return null;
+  if (wallMs <= 0 || steps.length === 0 || wallMs < (options?.minWallMs ?? DEFAULT_MIN_WALL_MS)) {
+    return null;
+  }
   const sections = [buildTimingBars(steps, wallMs)];
-  const attribution = buildAttribution(steps, wallMs);
+  const attribution = buildAttribution(steps, wallMs, options?.suggestDetach ?? false);
   if (attribution) sections.push('', attribution);
   const waterfall = buildTimingWaterfall(steps, wallMs, options?.epochMs);
   if (waterfall) sections.push('', waterfall);

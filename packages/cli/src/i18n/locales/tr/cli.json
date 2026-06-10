@@ -1446,7 +1446,9 @@
         "tagOption": "Çatal için etiket (isim:etiket oluşturur)",
         "tagRequired": "Çatal için etiket gereklidir. Kullanım: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: \"latest\" etiketi ana (üretim) depo için ayrılmıştır — farklı bir --tag seçin (örn. \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Fork sonrası bağlayıp servisleri başlat (fork + mount + up tek komutta)"
+        "upOption": "Fork sonrası bağlayıp servisleri başlat (fork + mount + up tek komutta)",
+        "detachOption": "--up ile: konteynerler başlar başlamaz döner; sağlık kontrolleri arka planda devam eder (kullan-at çatallar için ideal)",
+        "detachedHint": "Servisler arka planda başlamaya devam ediyor — durumu kontrol edin: rdc machine query --containers --name {{machine}}"
       },
       "fsck": {
         "clean": "{{machine}} üzerinde sapma yok: her ref çözümleniyor ve yetim commit bulunamadı",
@@ -1708,7 +1710,8 @@
         "mountOption": "Önce depoyu bağla",
         "skipCheckpointOption": "Checkpoint verileri mevcut olsa bile CRIU checkpoint geri yüklemesini atla (temiz başlatmayı zorla)",
         "starting": "\"{{repository}}\" için servisler \"{{machine}}\" üzerinde başlatılıyor...",
-        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)"
+        "tlsOption": "Bu depo için özel TLS sertifikası talep et (fork'lar varsayılan olarak paylaşılan makine sertifikasını kullanır)",
+        "detachOption": "Konteynerler başlar başlamaz döner; sağlık kontrolleri arka planda devam eder"
       },
       "upAll": {
         "completed": "Tüm depolar başlatıldı",

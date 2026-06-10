@@ -1446,7 +1446,9 @@
         "tagOption": "Tag für den Fork (erstellt Name:Tag)",
         "tagRequired": "Tag ist für Fork erforderlich. Verwendung: rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork: Tag \"latest\" ist für das Grand-Repository (Produktion) reserviert — wählen Sie ein anderes --tag (z. B. \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Nach dem Fork mounten und Dienste starten (Fork + Mount + Up in einem Befehl)"
+        "upOption": "Nach dem Fork mounten und Dienste starten (Fork + Mount + Up in einem Befehl)",
+        "detachOption": "Mit --up: Rückkehr, sobald Container gestartet sind; Healthchecks laufen im Hintergrund weiter (ideal für Wegwerf-Forks)",
+        "detachedHint": "Dienste starten im Hintergrund — Status prüfen mit: rdc machine query --containers --name {{machine}}"
       },
       "fsck": {
         "clean": "Keine Abweichung auf {{machine}}: jede Referenz löst auf und keine verwaisten Commits gefunden",
@@ -1708,7 +1710,8 @@
         "mountOption": "Repository vorher mounten",
         "skipCheckpointOption": "CRIU checkpoint-Wiederherstellung überspringen, auch wenn checkpoint-Daten vorhanden sind (Neustart erzwingen)",
         "starting": "Dienste für \"{{repository}}\" auf \"{{machine}}\" werden gestartet...",
-        "tlsOption": "Dediziertes TLS-Zertifikat für dieses Repository anfordern (Forks verwenden standardmäßig das gemeinsame Maschinenzertifikat)"
+        "tlsOption": "Dediziertes TLS-Zertifikat für dieses Repository anfordern (Forks verwenden standardmäßig das gemeinsame Maschinenzertifikat)",
+        "detachOption": "Rückkehr, sobald Container gestartet sind; Healthchecks laufen im Hintergrund weiter"
       },
       "upAll": {
         "completed": "Alle Repositories gestartet",

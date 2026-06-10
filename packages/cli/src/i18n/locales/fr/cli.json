@@ -1446,7 +1446,9 @@
         "tagOption": "Tag pour le fork (crée nom:tag)",
         "tagRequired": "Le tag est requis pour le fork. Utilisation : rdc repo fork --parent <parent> --tag <tag> -m <machine>",
         "tagReservedLatest": "repo fork : le tag \"latest\" est réservé au dépôt principal (production) — choisissez un autre --tag (par exemple \"test\", \"staging\", \"<feature>\")",
-        "upOption": "Monter et démarrer les services après le fork (fork + mount + up en une seule commande)"
+        "upOption": "Monter et démarrer les services après le fork (fork + mount + up en une seule commande)",
+        "detachOption": "Avec --up : rend la main dès que les conteneurs sont démarrés ; les healthchecks continuent en arrière-plan (idéal pour les forks jetables)",
+        "detachedHint": "Les services continuent de démarrer en arrière-plan — vérifiez l'état avec : rdc machine query --containers --name {{machine}}"
       },
       "fsck": {
         "clean": "Aucun écart sur {{machine}} : chaque référence se résout et aucun commit orphelin trouvé",
@@ -1708,7 +1710,8 @@
         "mountOption": "Monter le dépôt d'abord",
         "skipCheckpointOption": "Ignorer la restauration du checkpoint CRIU même si des données de checkpoint existent (forcer un démarrage propre)",
         "starting": "Démarrage des services pour \"{{repository}}\" sur \"{{machine}}\"...",
-        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)"
+        "tlsOption": "Demander un certificat TLS dédié pour ce dépôt (les forks utilisent le certificat partagé de la machine par défaut)",
+        "detachOption": "Rend la main dès que les conteneurs sont démarrés ; les healthchecks continuent en arrière-plan"
       },
       "upAll": {
         "completed": "Tous les dépôts démarrés",
