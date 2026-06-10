@@ -145,6 +145,14 @@ const FOLD_THRESHOLD = 0.01;
 const UNATTRIBUTED_WARN = 0.05;
 /** Runs shorter than this render no chart (nothing worth analyzing). */
 const DEFAULT_MIN_WALL_MS = 5000;
+/**
+ * Steps whose duration is driven by the repository's own containers
+ * (Rediaccfile up: image pulls, app init, healthchecks) rather than the
+ * Rediacc pipeline. Used for the platform-vs-workload attribution line.
+ */
+const WORKLOAD_STEP_NAMES = new Set(['compose_up', 'service_ready']);
+/** Show the attribution note when service startup exceeds this share. */
+const WORKLOAD_NOTE_THRESHOLD = 0.5;
 
 export interface TimingSummaryOptions {
   /** Command start (epoch ms); anchors the waterfall axis. */
@@ -283,6 +291,37 @@ export function buildTimingWaterfall(
   return `${waterfallAxis(wallMs)}\n${lines.join('\n')}`;
 }
 
+/** Platform-vs-workload split: everything that is not service startup is ours. */
+export function workloadSplit(
+  steps: TimelineStep[],
+  wallMs: number
+): { platformMs: number; workloadMs: number } {
+  const workloadMs = steps
+    .filter((s) => WORKLOAD_STEP_NAMES.has(s.name))
+    .reduce((sum, s) => sum + s.duration_ms, 0);
+  return { platformMs: Math.max(0, wallMs - workloadMs), workloadMs };
+}
+
+/**
+ * Attribution footer: separates the Rediacc pipeline from service startup,
+ * which is defined by the repository's own Rediaccfile/containers. Factual
+ * and neutral — when service startup dominates, an informational note makes
+ * clear which part the pipeline controls (and finished quickly).
+ */
+export function buildAttribution(steps: TimelineStep[], wallMs: number): string | null {
+  const { platformMs, workloadMs } = workloadSplit(steps, wallMs);
+  if (workloadMs === 0) return null;
+  const line =
+    `  Rediacc pipeline ${formatStepDuration(platformMs)} (${Math.round((platformMs / wallMs) * 100)}%)` +
+    ` · service startup ${formatStepDuration(workloadMs)} (${Math.round((workloadMs / wallMs) * 100)}%)`;
+  if (workloadMs / wallMs < WORKLOAD_NOTE_THRESHOLD) return line;
+  const note =
+    `  ℹ Service startup is this repository's container boot (images, init,\n` +
+    `    healthchecks — defined by its Rediaccfile), so it varies per app.\n` +
+    `    The fork pipeline itself completed in ${formatStepDuration(platformMs)}.`;
+  return `${line}\n${note}`;
+}
+
 /**
  * Combined end-of-run timing summary (bars + waterfall). Returns null when
  * the run was too short to be worth charting or there is nothing to show.
@@ -294,6 +333,8 @@ export function buildTimingSummary(
 ): string | null {
   if (steps.length === 0 || wallMs < (options?.minWallMs ?? DEFAULT_MIN_WALL_MS)) return null;
   const sections = [buildTimingBars(steps, wallMs)];
+  const attribution = buildAttribution(steps, wallMs);
+  if (attribution) sections.push('', attribution);
   const waterfall = buildTimingWaterfall(steps, wallMs, options?.epochMs);
   if (waterfall) sections.push('', waterfall);
   return sections.join('\n');

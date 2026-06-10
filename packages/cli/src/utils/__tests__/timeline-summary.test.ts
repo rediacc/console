@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildAttribution,
   buildTimingBars,
   buildTimingSummary,
   buildTimingWaterfall,
   PARALLEL_STEP_DETAIL,
   type TimelineStep,
   unattributedMs,
+  workloadSplit,
 } from '../timeline.js';
 
 const T0 = 1_000_000;
@@ -109,5 +111,40 @@ describe('buildTimingSummary', () => {
     );
     expect(out).toContain('█');
     expect(out).toContain('▓');
+  });
+});
+
+describe('buildAttribution', () => {
+  it('returns null when no workload steps ran (plain fork)', () => {
+    expect(buildAttribution([step('cow_reflink', 4_000, 0)], 10_000)).toBeNull();
+  });
+
+  it('splits platform vs service startup without a note when platform dominates', () => {
+    const out = buildAttribution(
+      [step('cow_reflink', 5_000, 0), step('compose_up', 3_000, 5_000)],
+      10_000
+    );
+    expect(out).toContain('Rediacc pipeline 7.0s (70%)');
+    expect(out).toContain('service startup 3.0s (30%)');
+    expect(out).not.toContain('ℹ');
+  });
+
+  it('adds the neutral note when service startup exceeds half the wall time', () => {
+    const out = buildAttribution(
+      [step('cow_reflink', 2_000, 0), step('compose_up', 7_000, 2_000)],
+      10_000
+    );
+    expect(out).toContain('service startup 7.0s (70%)');
+    expect(out).toContain('ℹ Service startup is this repository');
+    expect(out).toContain('completed in 3.0s');
+  });
+
+  it('counts service_ready as workload alongside compose_up', () => {
+    const { workloadMs, platformMs } = workloadSplit(
+      [step('compose_up', 4_000, 0), step('service_ready', 2_000, 4_000)],
+      10_000
+    );
+    expect(workloadMs).toBe(6_000);
+    expect(platformMs).toBe(4_000);
   });
 });
