@@ -4,7 +4,7 @@ description: "Monitorize o estado da máquina, contentores, serviços, repositó
 category: "Guides"
 order: 9
 language: pt
-sourceHash: "436c1c20b0ce8e35"
+sourceHash: "f56ab0bacb657043"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -247,7 +247,7 @@ Códigos de saída: `0` = todos passados, `1` = avisos, `2` = erros.
 
 Durante `repo up`, o renet aguarda que os serviços HTTP aceitem conexões antes de os declarar prontos. A espera é compatível com health checks:
 
-- Contentores que o Docker reporta como **healthy** são considerados prontos imediatamente — sem sonda TCP.
+- Contentores que o Docker reporta como **healthy** são considerados prontos imediatamente, sem sonda TCP.
 - Contentores ainda dentro do `start_period` do health check registam uma nota informativa, não um aviso; o proxy continua a tentar até que se vinculem.
 - Serviços Compose sem contentor em execução (por exemplo, atrás de um perfil inactivo) são ignorados.
 - Todos os outros são sondados via TCP durante até 15 segundos (defina `REDIACC_READINESS_TIMEOUT`, em segundos, para alterar este valor).

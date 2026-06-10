@@ -22,7 +22,7 @@ When you enable autostart for a repository, Rediacc generates a 256-byte random 
 
 This lets the machine mount the repository without prompting for the passphrase. LUKS slot 0 (your passphrase) is not changed.
 
-The keyfile slot uses the fast PBKDF2 KDF: a 256-byte random keyfile is its own security margin, so a memory-hard KDF would add unlock latency without adding protection. Mounts open in well under a second. Repositories created before this optimization still pay a multi-second Argon2id derivation per mount; convert them in place (repository unmounted) with the operator command `renet repository kdf-migrate --name <guid>` on the machine. Slot 0 keeps Argon2id — the right choice for a human passphrase.
+The keyfile slot uses the fast PBKDF2 KDF: a 256-byte random keyfile is its own security margin, so a memory-hard KDF would add unlock latency without adding protection. Mounts open in well under a second. Repositories created before this optimization still pay a multi-second Argon2id derivation per mount; convert them in place (repository unmounted) with the operator command `renet repository kdf-migrate --name <guid>` on the machine. Slot 0 keeps Argon2id, the right choice for a human passphrase.
 
 At boot, a one-shot systemd service named `rediacc-autostart.service` reads the list of autostart-enabled repositories, mounts each one using its keyfile, starts the per-repo Docker daemon, and runs the Rediaccfile `up()` hook. On shutdown, the service runs `down()`, stops Docker, and closes the LUKS volumes.
 

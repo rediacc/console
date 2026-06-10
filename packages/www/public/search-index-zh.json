@@ -2554,7 +2554,7 @@
   {
     "id": "search-17077",
     "content": "自动启动的工作原理",
-    "body": "为仓库启用自动启动时，Rediacc 会生成一个 256 字节的随机 LUKS 密钥文件，并将其添加到加密卷的 LUKS 槽位 1 中。密钥文件存储在： {datastore}/.credentials/keys/{guid}.key 这使得机器无需输入密码短语即可挂载仓库。LUKS 槽位 0（您的密码短语）不会被更改。 密钥文件槽位采用较快的 PBKDF2 KDF：256 字节的随机密钥文件本身已提供足够的安全余量，内存困难型 KDF 只会增加解锁延迟而不会带来额外保护。实际挂载时间远不到一秒。在此优化发布前创建的仓库仍会在每次挂载时经历数秒的 Argon2id 派生开销；可在仓库处于卸载状态时通过机器上的运维命令 renet repository kdf-migrate --name <guid> 原地转换。槽位 0 保留 Argon2id——这对人工输入的密码短语来说是正确的选择。 启动时，名为 rediacc-autostart.service 的一次性 systemd 服务会读取已启用自动启动的仓库列表，使用各自的密钥文件逐一挂载，启动每个仓库的 Docker 守护进程，并运行 Rediaccfile 的 up() 钩子。关机时，该服务会运行 down()，停止 Docker，并关闭 LUKS 卷。 安全说明： 密钥文件允许在不输入密码短语的情况下获得仓库的 root 级访问权限。任何拥有服务器 root 访问权限的人都可以挂载已启用自动启动的仓库。在对敏感仓库启用自动启动之前，请根据您的威胁模型进行评估。",
+    "body": "为仓库启用自动启动时，Rediacc 会生成一个 256 字节的随机 LUKS 密钥文件，并将其添加到加密卷的 LUKS 槽位 1 中。密钥文件存储在： {datastore}/.credentials/keys/{guid}.key 这使得机器无需输入密码短语即可挂载仓库。LUKS 槽位 0（您的密码短语）不会被更改。 密钥文件槽位采用较快的 PBKDF2 KDF：256 字节的随机密钥文件本身已提供足够的安全余量，内存困难型 KDF 只会增加解锁延迟而不会带来额外保护。实际挂载时间远不到一秒。在此优化发布前创建的仓库仍会在每次挂载时经历数秒的 Argon2id 派生开销；可在仓库处于卸载状态时通过机器上的运维命令 renet repository kdf-migrate --name <guid> 原地转换。槽位 0 保留 Argon2id，这对人工输入的密码短语来说是正确的选择。 启动时，名为 rediacc-autostart.service 的一次性 systemd 服务会读取已启用自动启动的仓库列表，使用各自的密钥文件逐一挂载，启动每个仓库的 Docker 守护进程，并运行 Rediaccfile 的 up() 钩子。关机时，该服务会运行 down()，停止 Docker，并关闭 LUKS 卷。 安全说明： 密钥文件允许在不输入密码短语的情况下获得仓库的 root 级访问权限。任何拥有服务器 root 访问权限的人都可以挂载已启用自动启动的仓库。在对敏感仓库启用自动启动之前，请根据您的威胁模型进行评估。",
     "excerpt": "为仓库启用自动启动时，Rediacc 会生成一个 256 字节的随机 LUKS 密钥文件，并将其添加到加密卷的 LUKS 槽位 1 中。密钥文件存储在： {datastore}/.credentials/keys/{guid}.key 这使得机器无需输入密码短语即可挂载仓库。LUKS 槽位 0（您的...",
     "category": "Documentation",
     "page": "/zh/docs/autostart-recovery",
@@ -8781,7 +8781,7 @@
   {
     "id": "search-17648",
     "content": "网络隔离",
-    "body": "每个仓库通过网络钩子在内核级别自动隔离。需要 Linux kernel 6.1 或更高版本。无需任何配置。 自动绑定地址重写: 服务可以像往常一样绑定到 0.0.0.0 或 127.0.0.1。内核会透明地将地址重写为服务分配的回环 IP。无需显式绑定到 ${SERVICE_IP}。 跨仓库连接阻断: 如果服务尝试连接到其仓库 /26 子网之外的回环 IP，内核会阻止该连接。仓库 A 中的进程无法访问仓库 B 中的服务。fork 是唯一的例外：它们指向父仓库子网的连接会被重定向到 fork 自己的服务（参见限制）——父仓库本身仍然不可达。 无需应用程序变更: 服务使用 0.0.0.0 或 localhost 进行绑定，内核确保它们只在正确的回环 IP 上监听。隔离完全透明。",
+    "body": "每个仓库通过网络钩子在内核级别自动隔离。需要 Linux kernel 6.1 或更高版本。无需任何配置。 自动绑定地址重写: 服务可以像往常一样绑定到 0.0.0.0 或 127.0.0.1。内核会透明地将地址重写为服务分配的回环 IP。无需显式绑定到 ${SERVICE_IP}。 跨仓库连接阻断: 如果服务尝试连接到其仓库 /26 子网之外的回环 IP，内核会阻止该连接。仓库 A 中的进程无法访问仓库 B 中的服务。fork 是唯一的例外：它们指向父仓库子网的连接会被重定向到 fork 自己的服务（参见限制），父仓库本身仍然不可达。 无需应用程序变更: 服务使用 0.0.0.0 或 localhost 进行绑定，内核确保它们只在正确的回环 IP 上监听。隔离完全透明。",
     "excerpt": "每个仓库通过网络钩子在内核级别自动隔离。需要 Linux kernel 6.1 或更高版本。无需任何配置。 自动绑定地址重写: 服务可以像往常一样绑定到 0.0.0.0 或 127.0.0.1。内核会透明地将地址重写为服务分配的回环 IP。无需显式绑定到 ${SERVICE_IP}。 跨仓库连接阻断...",
     "category": "Documentation",
     "page": "/zh/docs/networking",
@@ -10985,8 +10985,8 @@
   {
     "id": "search-17850",
     "content": "一步完成分支并启动",
-    "body": "--up 以一次远程操作完成分支、挂载和服务启动。加上 --detach 可在容器启动后立即归还终端——健康检查在后台继续，代理会持续重试直到各服务就绪： rdc repo fork --parent my-app --tag staging -m server-1 --up rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach 实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 --detach 约需 31 秒。后台模式下命令会打印进度查询提示：rdc machine query --containers --name <machine>。",
-    "excerpt": "--up 以一次远程操作完成分支、挂载和服务启动。加上 --detach 可在容器启动后立即归还终端——健康检查在后台继续，代理会持续重试直到各服务就绪： rdc repo fork --parent my-app --tag staging -m server-1 --up rdc repo fo...",
+    "body": "--up 以一次远程操作完成分支、挂载和服务启动。加上 --detach 可在容器启动后立即归还终端，健康检查在后台继续，代理会持续重试直到各服务就绪： rdc repo fork --parent my-app --tag staging -m server-1 --up rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach 实测数据：一个 128 GB 的仓库从分支到服务运行约需 57 秒，使用 --detach 约需 31 秒。后台模式下命令会打印进度查询提示：rdc machine query --containers --name <machine>。",
+    "excerpt": "--up 以一次远程操作完成分支、挂载和服务启动。加上 --detach 可在容器启动后立即归还终端，健康检查在后台继续，代理会持续重试直到各服务就绪： rdc repo fork --parent my-app --tag staging -m server-1 --up rdc repo for...",
     "category": "Documentation",
     "page": "/zh/docs/repositories",
     "path": "docs.repositories.content",
@@ -11408,7 +11408,7 @@
   {
     "id": "search-17889",
     "content": "网络",
-    "body": "每个仓库获得自己的 Docker 守护进程，位于 /var/run/rediacc/docker-<networkId>.sock。 每个服务在 /26 子网内获得唯一的回环 IP（例如 127.0.24.192/26）。 绑定是自动的：服务可以绑定到 0.0.0.0 或 localhost，内核会透明地将地址重写为分配给服务的回环 IP。显式绑定到 ${SERVICE_IP} 仍然有效，但不再是必需的。 健康检查可以使用 localhost 或 ${SERVICE_IP}。示例：healthcheck: test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"] 跨仓库连接被内核阻止：内核会自动阻止对仓库 /26 子网之外的回环 IP 的连接。一个仓库中的服务无法访问另一个仓库中的服务。唯一的例外：fork 指向其父仓库子网的连接会被透明地重定向到 fork 自己的服务（同一服务、fork 的数据副本），绝不会到达父仓库。无关联的仓库之间仍然会被阻止。 服务间通信：请使用服务名（如 db、redis）——renet 会自动将每个服务名注入为解析到正确 IP 的主机名。Docker DNS 名称在 host 模式下不可用，但通过 /etc/hosts 注入的服务名可用。避免把 ${DB_IP} 之类的值写进持久化配置文件（例如存储在数据库中的连接字符串）：fork 会把从直接父仓库继承的 IP 重定向到自己的服务，但这种重定向只覆盖一代——fork 的 fork 仍然带着指向祖父仓库、最终无处可达的 IP。而服务名在每个仓库中始终能正确解析。 仓库之间不可能发生端口冲突，每个仓库都有自己的 Docker 守护进程和 IP 范围。 TCP/UDP 端口转发：添加标签以公开非 HTTP 端口： ``yaml labels: \"rediacc.tcp_ports=5432,3306\" \"rediacc.udp_ports=53\" ``",
+    "body": "每个仓库获得自己的 Docker 守护进程，位于 /var/run/rediacc/docker-<networkId>.sock。 每个服务在 /26 子网内获得唯一的回环 IP（例如 127.0.24.192/26）。 绑定是自动的：服务可以绑定到 0.0.0.0 或 localhost，内核会透明地将地址重写为分配给服务的回环 IP。显式绑定到 ${SERVICE_IP} 仍然有效，但不再是必需的。 健康检查可以使用 localhost 或 ${SERVICE_IP}。示例：healthcheck: test: [\"CMD\", \"curl\", \"-f\", \"http://localhost:8080/health\"] 跨仓库连接被内核阻止：内核会自动阻止对仓库 /26 子网之外的回环 IP 的连接。一个仓库中的服务无法访问另一个仓库中的服务。唯一的例外：fork 指向其父仓库子网的连接会被透明地重定向到 fork 自己的服务（同一服务、fork 的数据副本），绝不会到达父仓库。无关联的仓库之间仍然会被阻止。 服务间通信：请使用服务名（如 db、redis）：renet 会自动将每个服务名注入为解析到正确 IP 的主机名。Docker DNS 名称在 host 模式下不可用，但通过 /etc/hosts 注入的服务名可用。避免把 ${DB_IP} 之类的值写进持久化配置文件（例如存储在数据库中的连接字符串）：fork 会把从直接父仓库继承的 IP 重定向到自己的服务，但这种重定向只覆盖一代，fork 的 fork 仍然带着指向祖父仓库、最终无处可达的 IP。而服务名在每个仓库中始终能正确解析。 仓库之间不可能发生端口冲突，每个仓库都有自己的 Docker 守护进程和 IP 范围。 TCP/UDP 端口转发：添加标签以公开非 HTTP 端口： ``yaml labels: \"rediacc.tcp_ports=5432,3306\" \"rediacc.udp_ports=53\" ``",
     "excerpt": "每个仓库获得自己的 Docker 守护进程，位于 /var/run/rediacc/docker-<networkId>.sock。 每个服务在 /26 子网内获得唯一的回环 IP（例如 127.0.24.192/26）。 绑定是自动的：服务可以绑定到 0.0.0.0 或 localhost，内核会...",
     "category": "Documentation",
     "page": "/zh/docs/rules-of-rediacc",

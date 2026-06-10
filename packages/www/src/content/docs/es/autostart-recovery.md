@@ -4,7 +4,7 @@ description: "Cómo funciona el inicio automático, el reconciliador periódico 
 category: "Guides"
 order: 5
 language: es
-sourceHash: "05d8d5234e0901f6"
+sourceHash: "7fa4f919475b304e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -148,7 +148,7 @@ At fork creation, `repo fork` writes the [state mirror sidecar](#type-column-and
 
 ### Fork and start in one step
 
-`--up` forks, mounts, and starts services in a single remote operation. Add `--detach` to get your terminal back as soon as the containers are started — health checks finish in the background, and the proxy retries until each service binds:
+`--up` forks, mounts, and starts services in a single remote operation. Add `--detach` to get your terminal back as soon as the containers are started; health checks finish in the background, and the proxy retries until each service binds:
 
 ```bash
 rdc repo fork --parent my-app --tag staging -m server-1 --up
@@ -165,7 +165,7 @@ Runs longer than a few seconds end with a timing summary: a per-step breakdown, 
   Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
 ```
 
-Service startup is your containers booting — images, init, health checks, as defined by the repository's Rediaccfile — so it varies per app. The charts render on interactive terminals; set `RDC_TIMING_CHART=1` to force them in piped output.
+Service startup is your containers booting (images, init, health checks, as defined by the repository's Rediaccfile), so it varies per app. The charts render on interactive terminals; set `RDC_TIMING_CHART=1` to force them in piped output.
 
 ## Git-like versioning
 

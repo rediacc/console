@@ -4,7 +4,7 @@ description: "在远程机器上创建、管理和操作 LUKS 加密仓库。"
 category: Guides
 order: 4
 language: zh
-sourceHash: "a74e56f7c047115a"
+sourceHash: "65fd6e7f9e6a83c1"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -149,7 +149,7 @@ rdc repo fork --parent my-app --tag staging -m server-1
 
 ### 一步完成分支并启动
 
-`--up` 以一次远程操作完成分支、挂载和服务启动。加上 `--detach` 可在容器启动后立即归还终端——健康检查在后台继续，代理会持续重试直到各服务就绪：
+`--up` 以一次远程操作完成分支、挂载和服务启动。加上 `--detach` 可在容器启动后立即归还终端，健康检查在后台继续，代理会持续重试直到各服务就绪：
 
 ```bash
 rdc repo fork --parent my-app --tag staging -m server-1 --up

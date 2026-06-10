@@ -4,7 +4,7 @@ description: "Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: "Guides"
 order: 4
 language: fr
-sourceHash: "a74e56f7c047115a"
+sourceHash: "65fd6e7f9e6a83c1"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -149,7 +149,7 @@ Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:
 
 ### Forker et démarrer en une seule opération
 
-`--up` enchaîne le fork, le montage et le démarrage des services en une unique opération distante. Ajoutez `--detach` pour récupérer la main dès que les conteneurs sont lancés — les vérifications de santé se terminent en arrière-plan, et le proxy réessaie jusqu'à ce que chaque service soit prêt à répondre :
+`--up` enchaîne le fork, le montage et le démarrage des services en une unique opération distante. Ajoutez `--detach` pour récupérer la main dès que les conteneurs sont lancés ; les vérifications de santé se terminent en arrière-plan, et le proxy réessaie jusqu'à ce que chaque service soit prêt à répondre :
 
 ```bash
 rdc repo fork --parent my-app --tag staging -m server-1 --up
@@ -166,7 +166,7 @@ Les opérations de plus de quelques secondes se terminent par un récapitulatif 
   Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
 ```
 
-Le démarrage des services correspond à la phase de boot de vos conteneurs — images, init, vérifications de santé, tels que définis par le Rediaccfile du dépôt — et varie donc selon l'application. Les graphiques s'affichent sur les terminaux interactifs ; définissez `RDC_TIMING_CHART=1` pour les forcer dans une sortie redirigée.
+Le démarrage des services correspond à la phase de boot de vos conteneurs (images, init, vérifications de santé, tels que définis par le Rediaccfile du dépôt ) et varie donc selon l'application. Les graphiques s'affichent sur les terminaux interactifs ; définissez `RDC_TIMING_CHART=1` pour les forcer dans une sortie redirigée.
 
 ## Gestion de versions à la manière de git
 

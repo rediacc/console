@@ -239,7 +239,7 @@ Teenused ilma kohandatud Traefiku siltideta näitavad ainult automaatselt genere
 
 ### Valmisolekuproov
 
-Pärast `up()` käivitamist testib renet iga HTTP-teenust, kuni see aktsepteerib TCP-ühendusi — see väldib puhverserveri 502-viga esimesel brauseripäringul. Teenused, mille konteinerid sisaldavad Dockeri tervisekontrolli, on otse usaldusväärsed: terve konteiner jätab proovi vahele ja `start_period`-is viibiv konteiner logib informatiivse teate, mitte hoiatuse. Proov annab 15 sekundi pärast alla (muutke käitusajal masinale seades `REDIACC_READINESS_TIMEOUT` sekunditeks); eraldusrežiimis käivitamine jätab selle täielikult vahele.
+Pärast `up()` käivitamist testib renet iga HTTP-teenust, kuni see aktsepteerib TCP-ühendusi; see väldib puhverserveri 502-viga esimesel brauseripäringul. Teenused, mille konteinerid sisaldavad Dockeri tervisekontrolli, on otse usaldusväärsed: terve konteiner jätab proovi vahele ja `start_period`-is viibiv konteiner logib informatiivse teate, mitte hoiatuse. Proov annab 15 sekundi pärast alla (muutke käitusajal masinale seades `REDIACC_READINESS_TIMEOUT` sekunditeks); eraldusrežiimis käivitamine jätab selle täielikult vahele.
 
 ## Teenuste peatamine
 

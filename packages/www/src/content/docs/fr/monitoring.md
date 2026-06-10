@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: fr
-sourceHash: "436c1c20b0ce8e35"
+sourceHash: "f56ab0bacb657043"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -249,7 +249,7 @@ Codes de sortie : `0` = tout réussi, `1` = avertissements, `2` = erreurs.
 
 Lors d'un `repo up`, renet attend que les services HTTP acceptent les connexions avant de les déclarer prêts. Cette attente tient compte des vérifications de santé Docker :
 
-- Les conteneurs que Docker signale comme **sains** sont considérés comme immédiatement disponibles — aucune sonde TCP.
+- Les conteneurs que Docker signale comme **sains** sont considérés comme immédiatement disponibles, sans sonde TCP.
 - Les conteneurs encore dans la `start_period` de leur vérification de santé génèrent une note informative, non un avertissement ; le proxy continue de réessayer jusqu'à ce qu'ils soient liés.
 - Les services Compose sans conteneur en cours d'exécution (par exemple, derrière un profil inactif) sont ignorés.
 - Tout le reste est sondé en TCP pendant 15 secondes au maximum (définissez `REDIACC_READINESS_TIMEOUT`, en secondes, pour modifier cette valeur).

@@ -245,7 +245,7 @@ Exit codes: `0` = all passed, `1` = warnings, `2` = errors.
 
 During `repo up`, renet waits for HTTP services to accept connections before declaring them ready. The wait is health-check aware:
 
-- Containers that Docker reports **healthy** are trusted immediately — no TCP probe.
+- Containers that Docker reports **healthy** are trusted immediately, with no TCP probe.
 - Containers still inside their health check's `start_period` log an informational note, not a warning; the proxy keeps retrying until they bind.
 - Compose services with no running container (for example, behind an inactive profile) are skipped.
 - Everything else is probed over TCP for up to 15 seconds (set `REDIACC_READINESS_TIMEOUT`, in seconds, to change this).

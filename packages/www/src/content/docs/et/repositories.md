@@ -4,7 +4,7 @@ description: "Looge, hallake ja kasutage LUKS-krüpteeritud repositooriume kaugm
 category: "Guides"
 order: 4
 language: et
-sourceHash: "a74e56f7c047115a"
+sourceHash: "65fd6e7f9e6a83c1"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -149,7 +149,7 @@ Kahvli loomisel kirjutab `repo fork` kohe [oleku peegli külgfaili](#tüübi-vee
 
 ### Kahveldamine ja käivitamine ühe sammuga
 
-`--up` kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage `--detach`, et saada terminal tagasi niipea, kui konteinerid on käivitatud — tervisekontrollid lõpetavad taustal ja puhverserver kordab katseid, kuni iga teenus seob end:
+`--up` kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage `--detach`, et saada terminal tagasi niipea, kui konteinerid on käivitatud; tervisekontrollid lõpetavad taustal ja puhverserver kordab katseid, kuni iga teenus seob end:
 
 ```bash
 rdc repo fork --parent my-app --tag staging -m server-1 --up
@@ -166,7 +166,7 @@ Mõne sekundi pikkusemad käivitused lõppevad ajastuskokkuvõttega: samm-sammul
   Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
 ```
 
-Teenuse käivitusaeg näitab teie konteinerite käivitumist — pildid, init, tervisekontrollid, nagu repositooriumi Rediaccfile määratleb — ning see varieerub rakenduse kaupa. Graafikud renderdatakse interaktiivsetel terminalidel; sundige neid torustatud väljundis nähtavaks seades `RDC_TIMING_CHART=1`.
+Teenuse käivitusaeg näitab teie konteinerite käivitumist (pildid, init, tervisekontrollid, nagu repositooriumi Rediaccfile määratleb) ning see varieerub rakenduse kaupa. Graafikud renderdatakse interaktiivsetel terminalidel; sundige neid torustatud väljundis nähtavaks seades `RDC_TIMING_CHART=1`.
 
 ## Git-laadne versioonihaldus
 

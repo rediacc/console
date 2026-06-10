@@ -4,7 +4,7 @@ description: "Crea, gestisci e opera repository cifrati con LUKS su macchine rem
 category: "Guides"
 order: 4
 language: it
-sourceHash: "a74e56f7c047115a"
+sourceHash: "65fd6e7f9e6a83c1"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

@@ -4,7 +4,7 @@ description: "Monitora la salute della macchina, i container, i servizi, i repos
 category: "Guides"
 order: 9
 language: it
-sourceHash: "436c1c20b0ce8e35"
+sourceHash: "f56ab0bacb657043"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 

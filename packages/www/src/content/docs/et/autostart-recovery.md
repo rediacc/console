@@ -4,7 +4,7 @@ description: "Kuidas automaatkäivitus toimib, perioodiline leppija, mis taastab
 category: "Guides"
 order: 5
 language: et
-sourceHash: "05d8d5234e0901f6"
+sourceHash: "7fa4f919475b304e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,7 +24,7 @@ Kui lubate repositooriumil automaatkäivituse, genereerib Rediacc 256-baidise ju
 
 See võimaldab masinal repositooriumit parooli küsimata ühendada. LUKS-pesa 0 (teie parool) ei muutu.
 
-Võtmefaili pesa kasutab kiiret PBKDF2 KDF-i: 256-baidine juhuslik võtmefail on ise oma turvavaru, seega lisaks mälu-intensiivne KDF ainult avamisviivitust ilma kaitset suurendamata. Ühendamine avaneb alla sekundi. Enne seda optimeerimist loodud repositooriumid maksavad endiselt mitmesekundi pikkuse Argon2id tuletamise ühendamise kohta; teisendage need kohapeal (repositoorium lahtiühendatuna) operaatorkäsuga `renet repository kdf-migrate --name <guid>` masinal. Pesa 0 säilitab Argon2id — õige valik inimparoolilause jaoks.
+Võtmefaili pesa kasutab kiiret PBKDF2 KDF-i: 256-baidine juhuslik võtmefail on ise oma turvavaru, seega lisaks mälu-intensiivne KDF ainult avamisviivitust ilma kaitset suurendamata. Ühendamine avaneb alla sekundi. Enne seda optimeerimist loodud repositooriumid maksavad endiselt mitmesekundi pikkuse Argon2id tuletamise ühendamise kohta; teisendage need kohapeal (repositoorium lahtiühendatuna) operaatorkäsuga `renet repository kdf-migrate --name <guid>` masinal. Pesa 0 säilitab Argon2id, õige valik inimparoolilause jaoks.
 
 Käivitamisel loeb ühekorraline systemd-teenus `rediacc-autostart.service` automaatkäivitusega repositooriumite loendi, ühendab igaühe oma võtmefaili abil, käivitab repositooriumi kohase Dockeri deemoni ja käivitab Rediaccfile'i `up()` konktsu. Seiskamisel käivitab teenus `down()`, peatab Dockeri ja sulgeb LUKS-köited.
 

@@ -4,7 +4,7 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 order: 9
 language: de
-sourceHash: "436c1c20b0ce8e35"
+sourceHash: "f56ab0bacb657043"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -247,7 +247,7 @@ Exit-Codes: `0` = alles bestanden, `1` = Warnungen, `2` = Fehler.
 
 Während `repo up` wartet renet darauf, dass HTTP-Dienste Verbindungen akzeptieren, bevor sie als bereit deklariert werden. Die Wartelogik berücksichtigt dabei Docker-Healthchecks:
 
-- Container, die Docker als **healthy** meldet, werden sofort als bereit akzeptiert — kein TCP-Probe.
+- Container, die Docker als **healthy** meldet, werden sofort als bereit akzeptiert, ohne TCP-Probe.
 - Container, die sich noch innerhalb des `start_period` ihres Healthchecks befinden, lösen eine informative Meldung aus, keine Warnung; der Proxy versucht weiterhin, die Verbindung herzustellen.
 - Compose-Dienste ohne laufenden Container (etwa hinter einem inaktiven Profil) werden übersprungen.
 - Alle anderen Dienste werden per TCP für bis zu 15 Sekunden geprüft (änderbar mit `REDIACC_READINESS_TIMEOUT` in Sekunden).

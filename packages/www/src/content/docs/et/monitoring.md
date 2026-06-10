@@ -4,7 +4,7 @@ description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning k�
 category: "Guides"
 order: 9
 language: et
-sourceHash: "436c1c20b0ce8e35"
+sourceHash: "f56ab0bacb657043"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -247,7 +247,7 @@ Väljumiskoodid: `0` = kõik läbisid, `1` = hoiatused, `2` = tõrked.
 
 `repo up` käivitamisel ootab renet, kuni HTTP-teenused aktsepteerivad ühendusi, enne kui kuulutab need käivitunuteks. Ooteaeg arvestab tervisekontrolle:
 
-- Konteinerid, mille Docker raporteerib **terveks**, usaldatakse otsekohe — TCP-proovi ei teostata.
+- Konteinerid, mille Docker raporteerib **terveks**, usaldatakse otsekohe, TCP-proovi ei teostata.
 - Konteinerid, mis viibivad veel tervisekontrolli `start_period`-is, logivad informatiivse teate, mitte hoiatuse; puhverserver jätkab ühenduskatseid, kuni need seovad end.
 - Compose'i teenused, millel pole töötavat konteinerit (näiteks mitteaktiivse profiili taga), jäetakse vahele.
 - Kõiki ülejäänuid testitakse TCP kaudu kuni 15 sekundit (muutmiseks seadke `REDIACC_READINESS_TIMEOUT` sekunditeks).

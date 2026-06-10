@@ -4,7 +4,7 @@ description: "Crie, gerencie e opere repositórios criptografados com LUKS em m�
 category: "Guides"
 order: 4
 language: pt
-sourceHash: "a74e56f7c047115a"
+sourceHash: "65fd6e7f9e6a83c1"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -149,7 +149,7 @@ Na criação do fork, `repo fork` escreve o [arquivo sidecar do espelho de estad
 
 ### Fork e inicialização em uma etapa
 
-`--up` executa fork, montagem e inicialização dos serviços em uma única operação remota. Adicione `--detach` para recuperar o terminal assim que os contêineres estiverem em execução — as verificações de saúde terminam em segundo plano e o proxy tenta novamente até que cada serviço esteja vinculado:
+`--up` executa fork, montagem e inicialização dos serviços em uma única operação remota. Adicione `--detach` para recuperar o terminal assim que os contêineres estiverem em execução; as verificações de saúde terminam em segundo plano e o proxy tenta novamente até que cada serviço esteja vinculado:
 
 ```bash
 rdc repo fork --parent my-app --tag staging -m server-1 --up
@@ -166,7 +166,7 @@ Execuções com duração acima de alguns segundos encerram com um resumo de tem
   Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
 ```
 
-A inicialização dos serviços corresponde à subida dos seus contêineres — imagens, init, verificações de saúde, conforme definido pelo Rediaccfile do repositório — e varia de aplicação para aplicação. Os gráficos são renderizados em terminais interativos; defina `RDC_TIMING_CHART=1` para forçá-los em saída redirecionada.
+A inicialização dos serviços corresponde à subida dos seus contêineres (imagens, init, verificações de saúde, conforme definido pelo Rediaccfile do repositório; e varia de aplicação para aplicação. Os gráficos são renderizados em terminais interativos; defina `RDC_TIMING_CHART=1` para forçá-los em saída redirecionada.
 
 ## Versionamento tipo Git
 

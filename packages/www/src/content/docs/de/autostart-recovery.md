@@ -4,7 +4,7 @@ description: "Wie Autostart funktioniert, der periodische Reconciler, der Reposi
 category: "Guides"
 order: 5
 language: de
-sourceHash: "05d8d5234e0901f6"
+sourceHash: "7fa4f919475b304e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -24,7 +24,7 @@ Wenn Sie Autostart für ein Repository aktivieren, generiert Rediacc eine 256-By
 
 Dadurch kann die Maschine das Repository einbinden, ohne nach der Passphrase zu fragen. LUKS-Slot 0 (Ihre Passphrase) wird nicht verändert.
 
-Der Schlüsseldatei-Slot verwendet den schnellen PBKDF2-KDF: Eine 256-Byte-Zufallsschlüsseldatei bringt ihre eigene Sicherheitsmarge mit, sodass ein speicherintensiver KDF nur Einbindungslatenz hinzufügen würde, ohne den Schutz zu erhöhen. Das Einbinden dauert deutlich unter einer Sekunde. Repositories, die vor dieser Optimierung erstellt wurden, zahlen noch die mehrere Sekunden lange Argon2id-Ableitung pro Einbindung; sie lassen sich an Ort und Stelle konvertieren (Repository ausgehängt) mit dem Operator-Befehl `renet repository kdf-migrate --name <guid>` auf der Maschine. Slot 0 behält Argon2id — die richtige Wahl für eine menschliche Passphrase.
+Der Schlüsseldatei-Slot verwendet den schnellen PBKDF2-KDF: Eine 256-Byte-Zufallsschlüsseldatei bringt ihre eigene Sicherheitsmarge mit, sodass ein speicherintensiver KDF nur Einbindungslatenz hinzufügen würde, ohne den Schutz zu erhöhen. Das Einbinden dauert deutlich unter einer Sekunde. Repositories, die vor dieser Optimierung erstellt wurden, zahlen noch die mehrere Sekunden lange Argon2id-Ableitung pro Einbindung; sie lassen sich an Ort und Stelle konvertieren (Repository ausgehängt) mit dem Operator-Befehl `renet repository kdf-migrate --name <guid>` auf der Maschine. Slot 0 behält Argon2id, die richtige Wahl für eine menschliche Passphrase.
 
 Beim Start liest ein einmaliger systemd-Dienst namens `rediacc-autostart.service` die Liste der Autostart-aktivierten Repositories, bindet jedes mit seiner Schlüsseldatei ein, startet den repository-eigenen Docker-Daemon und führt den `up()`-Hook der Rediaccfile aus. Beim Herunterfahren führt der Dienst `down()` aus, stoppt Docker und schließt die LUKS-Volumes.
 

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: "a74e56f7c047115a"
+sourceHash: "65fd6e7f9e6a83c1"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -151,7 +151,7 @@ Beim Fork-Erstellen schreibt `repo fork` das [State-Mirror-Sidecar](#type-spalte
 
 ### Fork und Start in einem Schritt
 
-Mit `--up` werden Fork, Einbinden und Dienststart in einem einzigen Remote-Vorgang zusammengefasst. Wer das Terminal sofort zurückbekommen möchte, sobald die Container gestartet sind, hängt zusätzlich `--detach` an — Gesundheitsprüfungen laufen dann im Hintergrund weiter, und der Proxy versucht so lange, die Verbindung aufzubauen, bis jeder Dienst erreichbar ist:
+Mit `--up` werden Fork, Einbinden und Dienststart in einem einzigen Remote-Vorgang zusammengefasst. Wer das Terminal sofort zurückbekommen möchte, sobald die Container gestartet sind, hängt zusätzlich `--detach` an; Gesundheitsprüfungen laufen dann im Hintergrund weiter, und der Proxy versucht so lange, die Verbindung aufzubauen, bis jeder Dienst erreichbar ist:
 
 ```bash
 rdc repo fork --parent my-app --tag staging -m server-1 --up
@@ -168,7 +168,7 @@ Läufe, die mehr als ein paar Sekunden dauern, schließen mit einer Zeitübersic
   Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
 ```
 
-Das Dienststartup entspricht dem Hochfahren Ihrer Container — Images laden, Init-Prozesse, Gesundheitsprüfungen, wie im Rediaccfile des Repositories definiert — und variiert daher je nach Anwendung. Die Diagramme werden auf interaktiven Terminals gerendert; mit `RDC_TIMING_CHART=1` lassen sie sich auch in weitergeleiteter Ausgabe erzwingen.
+Das Dienststartup entspricht dem Hochfahren Ihrer Container (Images laden, Init-Prozesse, Gesundheitsprüfungen, wie im Rediaccfile des Repositories definiert) und variiert daher je nach Anwendung. Die Diagramme werden auf interaktiven Terminals gerendert; mit `RDC_TIMING_CHART=1` lassen sie sich auch in weitergeleiteter Ausgabe erzwingen.
 
 ## Git-ähnliche Versionierung
 
