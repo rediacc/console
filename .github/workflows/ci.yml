@@ -1159,15 +1159,26 @@ jobs:
           [[ -n "$AWS_ACCESS_KEY_ID" ]] || { echo "::error::R2_ACCESS_KEY_ID not set"; exit 1; }
           [[ -n "$R2_ENDPOINT" ]] || { echo "::error::R2_ENDPOINT not set"; exit 1; }
 
-          # Wrap `aws s3 cp` in a retry loop. R2 over the public network has
-          # been observed to drop multi-MB downloads with
-          # IncompleteRead(N bytes read, M more expected). AWS_MAX_ATTEMPTS=10
-          # + AWS_RETRY_MODE=adaptive layers retries inside the SDK, and the
-          # outer loop covers the case where the SDK exhausts its budget.
+          # R2's S3 API drops multi-MB streams under the CLI's default 10-way
+          # parallelism (IncompleteRead mid-transfer; 3 consecutive job
+          # failures on 2026-06-10 with zero Cloudflare incidents). Tame the
+          # transfer profile: few concurrent requests, big multipart
+          # threshold so ~8MB debs are single GETs, no read timeout.
+          aws configure set default.s3.max_concurrent_requests 3
+          aws configure set default.s3.multipart_threshold 64MB
+          aws configure set default.s3.multipart_chunksize 32MB
+
+          # Wrap transfers in a retry loop. AWS_MAX_ATTEMPTS=10 +
+          # AWS_RETRY_MODE=adaptive layers retries inside the SDK; the outer
+          # loop covers SDK budget exhaustion. Recursive transfers use
+          # `aws s3 sync`, so every outer retry RESUMES (already-complete
+          # files are skipped) instead of restarting the whole tree — with
+          # `cp --recursive`, one broken stream anywhere restarted hundreds
+          # of MB from scratch and the 5 attempts never converged.
           aws_s3_cp_retry() {
             local attempt
             for attempt in 1 2 3 4 5; do
-              if aws s3 cp "$@"; then
+              if aws s3 cp --cli-read-timeout 0 "$@"; then
                 return 0
               fi
               if [[ $attempt -eq 5 ]]; then
@@ -1175,6 +1186,21 @@ jobs:
                 return 1
               fi
               echo "aws s3 cp attempt $attempt failed, retrying in $((attempt * 15))s..." >&2
+              sleep $((attempt * 15))
+            done
+          }
+
+          aws_s3_sync_retry() {
+            local attempt
+            for attempt in 1 2 3 4 5; do
+              if aws s3 sync --cli-read-timeout 0 "$@"; then
+                return 0
+              fi
+              if [[ $attempt -eq 5 ]]; then
+                echo "::error::aws s3 sync $* failed after 5 attempts" >&2
+                return 1
+              fi
+              echo "aws s3 sync attempt $attempt failed, retrying in $((attempt * 15))s... (resumes incomplete files)" >&2
               sleep $((attempt * 15))
             done
           }
@@ -1191,8 +1217,8 @@ jobs:
           for dir in apt rpm apk archlinux; do
             echo "Copying ${dir}/${CHANNEL}/ -> ${dir}/${PROMOTED}/"
             TMP="/tmp/promote-${dir}"
-            aws_s3_cp_retry "s3://${BUCKET}/${dir}/${CHANNEL}/" "$TMP/" $EP --recursive
-            aws_s3_cp_retry "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP --recursive \
+            aws_s3_sync_retry "s3://${BUCKET}/${dir}/${CHANNEL}/" "$TMP/" $EP
+            aws_s3_sync_retry "$TMP/" "s3://${BUCKET}/${dir}/${PROMOTED}/" $EP \
               --cache-control "$CC_MUTABLE"
             # Purge every uploaded URL to flush any previously-cached body
             # under the same filename.
