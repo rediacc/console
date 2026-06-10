@@ -27,6 +27,7 @@ import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import {
+  buildTimingSummary,
   formatStepDuration,
   getActiveLabel,
   getDoneLabel,
@@ -76,27 +77,42 @@ function handleLogEvent(event: RenetEvent): void {
 }
 
 /** Handle a step_done event: render and record the step. */
-function handleStepDoneEvent(event: RenetEvent, allSteps: TimelineStep[]): void {
+function handleStepDoneEvent(
+  event: RenetEvent,
+  allSteps: TimelineStep[],
+  startedAtMs?: number
+): void {
   if (!event.name || event.duration_ms === undefined) return;
   const label = getDoneLabel(event.name);
   const detail = event.detail ? ` (${event.detail})` : '';
   process.stdout.write(`\r✔ ${label}${detail} (${formatStepDuration(event.duration_ms)})\n`);
-  allSteps.push({ name: event.name, duration_ms: event.duration_ms, detail: event.detail });
+  allSteps.push({
+    name: event.name,
+    duration_ms: event.duration_ms,
+    detail: event.detail,
+    ...(startedAtMs === undefined ? {} : { startedAtMs }),
+  });
 }
 
 /** Create an event handler for streaming renet events during fork/up legs. */
 function createForkEventHandler(allSteps: TimelineStep[]): (event: RenetEvent) => void {
+  // step_start arrival times anchor the end-of-run waterfall chart.
+  const stepStarts = new Map<string, number>();
   return (event: RenetEvent) => {
     switch (event.type) {
       case 'log':
         handleLogEvent(event);
         break;
       case 'step_start':
+        if (event.name) stepStarts.set(event.name, Date.now());
         process.stdout.write(`⠋ ${getActiveLabel(event.name ?? '')}...`);
         break;
-      case 'step_done':
-        handleStepDoneEvent(event, allSteps);
+      case 'step_done': {
+        const startedAtMs = event.name ? stepStarts.get(event.name) : undefined;
+        if (event.name) stepStarts.delete(event.name);
+        handleStepDoneEvent(event, allSteps, startedAtMs);
         break;
+      }
       case 'output':
         if (
           event.msg &&
@@ -286,7 +302,15 @@ function finishTimeline(
     printStepLine(step);
   }
   if (cliSteps.length + orchestrated.length + renetSteps.length > 0) {
-    renderTimelineTotal(Date.now() - plan.startedAt);
+    const wallMs = Date.now() - plan.startedAt;
+    renderTimelineTotal(wallMs);
+    // RDC_TIMING_CHART=1 forces the chart for piped output (tests, logs).
+    if (process.stdout.isTTY || process.env.RDC_TIMING_CHART === '1') {
+      const summary = buildTimingSummary([...cliSteps, ...orchestrated, ...renetSteps], wallMs, {
+        epochMs: plan.startedAt,
+      });
+      if (summary) process.stdout.write(`\n${summary}\n`);
+    }
   } else {
     outputService.success(
       t('commands.repo.fork.completed', {
