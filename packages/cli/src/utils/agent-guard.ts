@@ -1,13 +1,20 @@
 import { t } from '../i18n/index.js';
 import { ValidationError } from './errors.js';
 import { isGrandEnvWildcard } from './grand-env.js';
-import { isAgentByAncestry, isOverrideLegitimate } from './process-ancestry.js';
+import {
+  _resetAncestryCache,
+  isAgentByAncestry,
+  isAncestryVerificationAvailable,
+  isOverrideLegitimate,
+  OVERRIDE_VAR_CONFIG_EDIT,
+  OVERRIDE_VAR_GRAND,
+} from './process-ancestry.js';
 
 const AGENT_ENV_VARS = ['REDIACC_AGENT', 'CLAUDECODE', 'GEMINI_CLI', 'COPILOT_CLI'] as const;
 
 // Cache results — ancestry walk is expensive, only need to do once per process.
 let _isAgent: boolean | undefined;
-let _isOverrideLegit: boolean | undefined;
+const _overrideLegit = new Map<string, boolean>();
 
 /** Check process.env for agent env vars (fast path). */
 function checkProcessEnvForAgent(): boolean {
@@ -38,14 +45,17 @@ export function isAgentEnvironment(): boolean {
 }
 
 /**
- * Check if the REDIACC_ALLOW_GRAND_REPO override is legitimate.
- * On Linux, verifies the override was set by the user (before the agent started)
- * by checking /proc ancestor environments. On other platforms, trusts process.env.
+ * Check if an override env var is legitimate: set by the user before the
+ * agent started, proven via the exec-time environment of the agent-boundary
+ * process (/proc on Linux, the renet ancestry helper on macOS/Windows).
+ * When ancestry verification is unavailable, the override is rejected.
  */
-function isOverrideAllowed(): boolean {
-  if (_isOverrideLegit !== undefined) return _isOverrideLegit;
-  _isOverrideLegit = isOverrideLegitimate();
-  return _isOverrideLegit;
+function isOverrideAllowed(overrideVar: string = OVERRIDE_VAR_GRAND): boolean {
+  const cached = _overrideLegit.get(overrideVar);
+  if (cached !== undefined) return cached;
+  const legit = isOverrideLegitimate(overrideVar);
+  _overrideLegit.set(overrideVar, legit);
+  return legit;
 }
 
 /**
@@ -66,10 +76,9 @@ export function assertAgentMachineAccess(machineName: string): void {
   if (!isAgentEnvironment()) return;
   if (isGrandEnvWildcard()) {
     if (isOverrideAllowed()) return;
-    const errorKey =
-      process.platform === 'linux'
-        ? 'errors.agent.machineGuardOverride'
-        : 'errors.agent.machineGuardOverrideNonLinux';
+    const errorKey = isAncestryVerificationAvailable()
+      ? 'errors.agent.machineGuardOverride'
+      : 'errors.agent.machineGuardOverrideNonLinux';
     throw new ValidationError(t(errorKey, { machine: machineName, platform: process.platform }));
   }
   throw new ValidationError(t('errors.agent.machineGuard', { machine: machineName }));
@@ -85,10 +94,9 @@ export function assertAgentRepoCreate(repoName: string): void {
   if (!isAgentEnvironment()) return;
   if (isGrandEnvWildcard()) {
     if (isOverrideAllowed()) return;
-    const errorKey =
-      process.platform === 'linux'
-        ? 'errors.agent.createGuardOverride'
-        : 'errors.agent.createGuardOverrideNonLinux';
+    const errorKey = isAncestryVerificationAvailable()
+      ? 'errors.agent.createGuardOverride'
+      : 'errors.agent.createGuardOverrideNonLinux';
     throw new ValidationError(t(errorKey, { name: repoName, platform: process.platform }));
   }
   throw new ValidationError(t('errors.agent.createGuard', { name: repoName }));
@@ -105,9 +113,9 @@ export function assertAgentRepoCreate(repoName: string): void {
  * legitimate if it was set by the human before the agent started (ancestry check).
  */
 export function configEditOverrideScope(): string | null {
-  const raw = process.env.REDIACC_ALLOW_CONFIG_EDIT;
+  const raw = process.env[OVERRIDE_VAR_CONFIG_EDIT];
   if (!raw) return null;
-  if (isAgentEnvironment() && !isOverrideAllowed()) {
+  if (isAgentEnvironment() && !isOverrideAllowed(OVERRIDE_VAR_CONFIG_EDIT)) {
     // Agent set its own override — reject.
     return null;
   }
@@ -143,5 +151,6 @@ function templateMatches(template: string, concrete: string): boolean {
 /** Reset cached state (for testing only). */
 export function _resetCache(): void {
   _isAgent = undefined;
-  _isOverrideLegit = undefined;
+  _overrideLegit.clear();
+  _resetAncestryCache();
 }

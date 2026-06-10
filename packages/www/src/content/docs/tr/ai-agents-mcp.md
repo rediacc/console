@@ -4,7 +4,7 @@ description: Model Context Protocol (MCP) sunucusunu kullanarak yapay zeka ajanl
 category: Guides
 order: 33
 language: tr
-sourceHash: "ce5f1392ebaa380b"
+sourceHash: "4483eb3da34a6c03"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,6 @@ Ajan `machine_health` → `machine_containers` → günlükleri okumak için `te
 |---------|------------|----------|
 | `--config <name>` | (varsayılan yapılandırma) | Tüm komutlar için kullanılacak adlandırılmış yapılandırma |
 | `--timeout <ms>` | `120000` | Varsayılan komut zaman aşımı (milisaniye) |
-| `--allow-grand` | off | Grand (fork olmayan) depolarda yıkıcı işlemlere izin ver |
 
 ## Güvenlik
 
@@ -121,20 +120,15 @@ Varsayılan olarak, sunucu **yalnızca fork modunda** çalışır: yazma araçla
 
 > **Depo başına gizli diziler tasarım gereği yalnızca CLI ile yönetilir.** `repo_secret_set` ve `repo_secret_unset` kasıtlı olarak MCP aracı olarak **sunulmamaktadır**. Yazma işlemleri bir `--current <önceki-değer>` ön koşulu (veya doğrulanmamış bir yenilemeyi kabul etmek için `--rotate-secret`) gerektirir; bu adım insan gözetimi gerektirir. Gizli dizi yenilenmesini önermesi gereken ajanlar, özeti doğrulamak için `repo_secret_get` çağırmalı, ardından operatöre yönelik CLI komutunu JSON hata zarfının `next.options[].run` alanı üzerinden kullanıcıya iletmelidir. Tam örüntü için [Yapay Zeka Ajanı Güvenliği](/en/docs/ai-agents-safety#structured-next-action-hints) sayfasına, kullanıcıya yönelik nasıl yapılır kılavuzu için [Depolar § Gizli Diziler](/en/docs/repositories#secrets) sayfasına bakın.
 
-Grand depoları değiştirebilmesi için ajanı `--allow-grand` ile başlatın:
+Grand depoları değiştirebilmesi için ajanı başlatmadan önce terminalinizde `REDIACC_ALLOW_GRAND_REPO` ortam değişkenini dışa aktarın:
 
-```json
-{
-  "mcpServers": {
-    "rdc": {
-      "command": "rdc",
-      "args": ["mcp", "serve", "--allow-grand"]
-    }
-  }
-}
+```bash
+export REDIACC_ALLOW_GRAND_REPO='gitlab'   # bir depo
+# ya da 'repo1,repo2,repo3' (girişlerin etrafındaki boşluklar yoksayılır), ya da tüm depolar için '*'
+claude   # ya da cursor, gemini, vb.
 ```
 
-`REDIACC_ALLOW_GRAND_REPO` ortam değişkenini tek bir repo adına, virgülle ayrılmış bir repo adı listesine (örneğin `repo1,repo2,repo3`) ya da tüm repolar için `*` değerine de ayarlayabilirsiniz. Girişlerin etrafındaki boşluklar yoksayıldığı için `repo1, repo2` de çalışır. Makine düzeyinde erişim (örneğin repo belirtmeden `term connect -m <machine>`) hâlâ `*` gerektirir; repo adlarından oluşan bir liste bu erişimi açmaz.
+Geçersiz kılma, işlem soy ağacına karşı doğrulanır: ajanın kendisinin ortamında zaten bulunması gereken zamanında sayılır, yani ajanı (ve ajanın başlattığı MCP sunucusunu) başlatmadan önce dışa aktarıldığı anlamına gelir. Ajan oturum ortasında değişkeni ayarlayarak kendisine erişim veremez. Bu amaçla kasıtlı olarak sunucu bayrağı yoktur: MCP sunucusu argümanlarındaki bayrak, onu oraya koyanı kanıtlamaz, oysa soy ağacı kontrolü kanıtlar. Makine düzeyinde erişim (örneğin `term connect -m <machine>` depo belirtmeden) hâlâ `*` gerektirir; repo adlarından oluşan bir liste bu erişimi açmaz.
 
 ### Depo başına SSH anahtarları ve sunucu tarafı sandbox
 

@@ -3,7 +3,10 @@ import type { Command } from 'commander';
 import { COMMAND_METADATA, type CommandMeta } from '../../config/command-metadata.js';
 import { t } from '../../i18n/index.js';
 import { isGrandEnvWildcard, isRepoAllowedByGrandEnv } from '../../utils/grand-env.js';
-import { isOverrideLegitimate } from '../../utils/process-ancestry.js';
+import {
+  isAncestryVerificationAvailable,
+  isOverrideLegitimate,
+} from '../../utils/process-ancestry.js';
 import { CUSTOM_TOOLS } from './custom-tools.js';
 import { executeRdcCommand } from './executor.js';
 import type { McpServerOptions } from './server.js';
@@ -88,7 +91,7 @@ function checkOverrideLegitimacy(
 ): ToolResult | null {
   if (isOverrideLegitimate()) return null;
 
-  const errorKey = process.platform === 'linux' ? guardErrorKey : guardErrorKeyNonLinux;
+  const errorKey = isAncestryVerificationAvailable() ? guardErrorKey : guardErrorKeyNonLinux;
   return guardError(t(errorKey, { ...templateVars, platform: process.platform }));
 }
 
@@ -139,7 +142,7 @@ async function applyGrandRepoGuard(
   args: Record<string, unknown>,
   options: McpServerOptions
 ): Promise<ToolResult | null> {
-  if (!tool.repoArgField || options.allowGrand) return null;
+  if (!tool.repoArgField) return null;
 
   const repoName = args[tool.repoArgField] as string | undefined;
   if (repoName) return guardNamedRepo(tool, repoName, options);

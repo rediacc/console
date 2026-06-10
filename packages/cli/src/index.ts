@@ -27,12 +27,11 @@ if (process.argv.includes('mcp') && process.argv.includes('serve')) {
   const timeoutIdx = process.argv.indexOf('--timeout');
   const defaultTimeoutMs =
     timeoutIdx >= 0 ? Number.parseInt(process.argv[timeoutIdx + 1], 10) : 120_000;
-  const allowGrand = process.argv.includes('--allow-grand');
 
   // Import cli to get the fully-configured Commander program for MCP tool derivation
   Promise.all([import('./commands/mcp/server.js'), import('./cli.js')])
     .then(([{ startMcpServer }, { cli: program }]) =>
-      startMcpServer({ configName, defaultTimeoutMs, allowGrand, program })
+      startMcpServer({ configName, defaultTimeoutMs, program })
     )
     .catch((err: unknown) => {
       process.stderr.write(

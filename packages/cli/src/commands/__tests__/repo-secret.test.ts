@@ -54,6 +54,10 @@ const mockIsOverrideLegitimate = vi.hoisted(() => vi.fn(() => true));
 vi.mock('../../utils/process-ancestry.js', () => ({
   isAgentByAncestry: mockIsAgentByAncestry,
   isOverrideLegitimate: mockIsOverrideLegitimate,
+  isAncestryVerificationAvailable: vi.fn(() => true),
+  _resetAncestryCache: vi.fn(),
+  OVERRIDE_VAR_GRAND: 'REDIACC_ALLOW_GRAND_REPO',
+  OVERRIDE_VAR_CONFIG_EDIT: 'REDIACC_ALLOW_CONFIG_EDIT',
 }));
 
 // handleError rethrows so we can assert

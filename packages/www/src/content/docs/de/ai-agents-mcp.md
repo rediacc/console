@@ -4,7 +4,7 @@ description: Verknüpfen Sie KI-Agenten über den Model Context Protocol (MCP) S
 category: Guides
 order: 33
 language: de
-sourceHash: "ce5f1392ebaa380b"
+sourceHash: "4483eb3da34a6c03"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,6 @@ Der Agent ruft `machine_health` → `machine_containers` → `term_exec` auf, um
 |--------|---------|-------------|
 | `--config <name>` | (Standardkonfiguration) | Benannte Konfiguration für alle Befehle |
 | `--timeout <ms>` | `120000` | Standard-Befehls-Timeout in Millisekunden |
-| `--allow-grand` | off | Destruktive Operationen auf Grand-Repositories (keine Forks) erlauben |
 
 ## Sicherheit
 
@@ -121,20 +120,15 @@ Standardmäßig läuft der Server im **Fork-only-Modus**: Schreib-Tools (`repo_u
 
 > **Per-Repo-Secrets sind by design ausschließlich über die CLI zugänglich.** `repo_secret_set` und `repo_secret_unset` werden absichtlich **nicht** als MCP-Tools bereitgestellt. Schreibvorgänge erfordern eine `--current <previous-value>`-Vorbedingung (oder `--rotate-secret`, um eine ungeprüfte Rotation zu bestätigen), und dieser Vorgang erfordert menschliche Aufsicht. Agenten, die eine Secret-Rotation vorschlagen möchten, sollten `repo_secret_get` aufrufen, um den Digest zu bestätigen, und dann den operatorseitigen CLI-Befehl über das strukturierte Feld `next.options[].run` im JSON-Fehler-Envelope an den Benutzer weitergeben. Weitere Informationen finden Sie unter [AI Agent Safety](/en/docs/ai-agents-safety#structured-next-action-hints) sowie unter [Repositories § Secrets](/en/docs/repositories#secrets).
 
-Um einem Agenten zu erlauben, Grand-Repos zu ändern, starten Sie den Server mit `--allow-grand`:
+Um einem Agenten zu erlauben, Grand-Repos zu ändern, exportieren Sie `REDIACC_ALLOW_GRAND_REPO` in Ihrem Terminal **vor dem Start des Agenten, der den MCP-Server hostet**:
 
-```json
-{
-  "mcpServers": {
-    "rdc": {
-      "command": "rdc",
-      "args": ["mcp", "serve", "--allow-grand"]
-    }
-  }
-}
+```bash
+export REDIACC_ALLOW_GRAND_REPO='gitlab'   # ein Repo
+# oder 'repo1,repo2,repo3' (Leerzeichen um Einträge werden ignoriert), oder '*' für alle Repos
+claude   # oder cursor, gemini, usw.
 ```
 
-Sie können die Umgebungsvariable `REDIACC_ALLOW_GRAND_REPO` auch auf einen einzelnen Repo-Namen, auf eine durch Kommas getrennte Liste von Repo-Namen (zum Beispiel `repo1,repo2,repo3`) oder auf `*` für alle Repos setzen. Leerzeichen um die Einträge werden ignoriert, `repo1, repo2` funktioniert also ebenfalls. Maschinenweiter Zugriff (etwa `term connect -m <machine>` ohne Repo) erfordert weiterhin `*`; eine Liste von Repo-Namen schaltet ihn nicht frei.
+Die Überschreibung wird gegen die Prozessabstammung verifiziert: Sie zählt nur, wenn sie bereits in der Umgebung des Agent-Prozesses selbst vorhanden war, was bedeutet, dass Sie sie exportiert haben, bevor der Agent (und der MCP-Server, den er startete) gestartet wurde. Ein Agent kann sich selbst Zugriff gewähren, indem er die Variable mitten in einer Sitzung setzt. Es gibt bewusst keine Server-Flag dafür: Eine Flag in den MCP-Server-Argumenten trägt keinen Beweis dafür, wer sie dort eingefügt hat, während die Abstammungsverifizierung das tut. Maschinenstufe-Zugriff (etwa `term connect -m <machine>` ohne Repo) erfordert weiterhin `*`; eine Liste von Repo-Namen schaltet ihn nicht frei.
 
 ### Per-Repo-SSH-Schlüssel und serverseitige Sandbox
 

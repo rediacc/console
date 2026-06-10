@@ -4,7 +4,7 @@ description: 'Cómo la CLI de Rediacc evita que los asistentes de codificación 
 category: Concepts
 order: 35
 language: es
-sourceHash: "ae23c9bc851ecfcd"
+sourceHash: "eb4c8dd0389a45a6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -132,15 +132,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 El efecto: un agente no puede eludir una salvaguarda ejecutando `export REDIACC_ALLOW_CONFIG_EDIT='*'` a mitad de sesión. Solo un proceso padre (tú, en tu terminal, antes de lanzar el agente) puede abrir esa puerta.
 
-## Soporte de plataforma: las anulaciones solo en Linux
+## Soporte de plataforma: cómo se verifica la anulación en cada sistema operativo
 
-`REDIACC_ALLOW_CONFIG_EDIT` y `REDIACC_ALLOW_GRAND_REPO` se basan en la verificación de ascendencia para demostrar que la anulación la estableciste tú y no la inyectó el agente. La verificación lee `/proc/<pid>/environ` para cada proceso a lo largo de la cadena. Ese archivo lo establece el kernel en el momento de la ejecución y el propio proceso no puede modificarlo, por lo que el entorno del shell padre es un testigo a prueba de manipulaciones.
+`REDIACC_ALLOW_CONFIG_EDIT` y `REDIACC_ALLOW_GRAND_REPO` ambas se basan en la verificación de ascendencia para demostrar que la anulación la estableciste tú y no la inyectó el agente. La verificación funciona en Linux, macOS y Windows, pero el testigo que lee es diferente por plataforma, y también lo es la solidez de la garantía:
 
-Ese archivo no existe en macOS ni en Windows. Sin forma de verificar la legitimidad, la CLI falla cerrada. Incluso cuando estableces la anulación correctamente en tu shell antes de lanzar el agente, la anulación se rechaza. El mensaje de error te dice exactamente qué hacer:
+| Plataforma | Testigo | Solidez |
+|---|---|---|
+| Linux | `/proc/<pid>/environ` para cada proceso en la cadena | Instantánea en el tiempo de ejecución, servida por el kernel. Un proceso no puede editar retroactivamente con qué se inició. |
+| macOS | Sysctl `kern.procargs2`, leído por un pequeño ayudante que se incluye dentro de `rdc` | La misma propiedad de instantánea en el tiempo de ejecución que Linux. Legible para tus propios procesos sin root. |
+| Windows | El bloque de entorno en vivo de cada proceso ancestro (PEB), leído por el mismo ayudante, con guardias contra reutilización de PID | Más débil: Windows no mantiene una instantánea en el tiempo de ejecución, así que la verificación lee la memoria actual. Los ancestros todavía no pueden ser reescritos por nada que un agente normalmente ejecute, pero el testigo no está congelado por el kernel como lo está en Linux y macOS. |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+En macOS y Windows, la CLI ejecuta su binario `renet` incluido para hacer la lectura; el ayudante informa qué variables vigiladas lleva cada ancestro, y toda la lógica de decisión permanece en la CLI. Si el ayudante desaparece, está desactualizado o falla por cualquier motivo, la CLI no puede verificar la anulación y **falla cerrada**: la anulación se rechaza y el error dice que la verificación no estaba disponible, no que hicieras algo mal. Una instalación que funciona nunca muestra ese mensaje; reinstalar `rdc` restaura el ayudante.
 
-Los usuarios que no son de Linux no tienen vía de escape del flujo de trabajo fork-first. Eso es intencional. No hay forma de que un agente eluda el sandbox, independientemente de cómo se le haya indicado. Si necesitas la anulación, ejecuta tu agente dentro de WSL, un contenedor Linux o una VM Linux. Si no, trabaja sobre un fork.
+Lo que sigue siendo cierto en cada plataforma: la anulación debe estar ya presente en el entorno del proceso del agente cuando inicia. Expiértala en tu terminal, luego lanza el agente. Un agente que establece la variable a mitad de sesión es rechazado.
 
 ## Registro de auditoría
 

@@ -6,7 +6,7 @@ description: >-
 category: Concepts
 order: 35
 language: ko
-sourceHash: "ae23c9bc851ecfcd"
+sourceHash: "eb4c8dd0389a45a6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -134,15 +134,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 효과: 에이전트는 세션 중간에 `export REDIACC_ALLOW_CONFIG_EDIT='*'`를 실행하여 가드레일을 우회할 수 없습니다. 부모 프로세스(에이전트를 실행하기 전 터미널의 사용자)만 그 문을 열 수 있습니다.
 
-## 플랫폼 지원: 재정의는 Linux 전용
+## 플랫폼 지원: 재정의가 각 OS에서 검증되는 방식
 
-`REDIACC_ALLOW_CONFIG_EDIT`와 `REDIACC_ALLOW_GRAND_REPO` 모두 재정의가 에이전트가 아닌 사용자에 의해 설정되었음을 증명하기 위해 조상 검증에 의존합니다. 검증은 체인의 모든 프로세스에 대해 `/proc/<pid>/environ`을 읽습니다. 해당 파일은 exec 시점에 커널에 의해 설정되며 프로세스 자체가 수정할 수 없으므로, 부모 셸의 환경이 변조 방지 증인이 됩니다.
+`REDIACC_ALLOW_CONFIG_EDIT`와 `REDIACC_ALLOW_GRAND_REPO`는 모두 재정의가 에이전트가 아닌 사용자에 의해 설정되었음을 증명하기 위해 조상 검증에 의존합니다. 검증은 Linux, macOS, Windows에서 작동하지만, 각 플랫폼에서 참조하는 증거가 다르며 보장의 강도도 다릅니다:
 
-macOS나 Windows에는 해당 파일이 존재하지 않습니다. 정당성을 검증할 방법이 없으므로 CLI는 닫힌 상태로 실패합니다. 에이전트를 실행하기 전 셸에서 올바르게 재정의를 설정하더라도 거부됩니다. 오류 메시지는 정확히 무엇을 해야 하는지 알려줍니다.
+| 플랫폼 | 증거 | 강도 |
+|---|---|---|
+| Linux | 체인의 모든 프로세스에 대한 `/proc/<pid>/environ` | Exec 시점의 스냅샷, 커널이 제공. 프로세스는 시작 당시의 상태를 소급하여 수정할 수 없습니다. |
+| macOS | `kern.procargs2` sysctl, `rdc` 내부에 포함된 작은 헬퍼가 읽음 | Linux와 동일한 exec 시점 스냅샷 속성. 루트 없이 자신의 프로세스에 대해 읽을 수 있습니다. |
+| Windows | 각 조상 프로세스의 현재 환경 블록(PEB), 동일한 헬퍼가 읽음, PID 재사용 보호 포함 | 더 약함: Windows는 exec 시점 스냅샷을 유지하지 않으므로 체크가 현재 메모리를 읽습니다. 조상은 여전히 에이전트가 일반적으로 실행하는 어떤 것도 다시 쓸 수 없지만, 증거가 Linux와 macOS처럼 커널에서 동결되어 있지 않습니다. |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+macOS와 Windows에서 CLI는 번들로 포함된 `renet` 바이너리를 생성하여 읽기를 수행합니다. 헬퍼는 각 조상이 어떤 감시 변수를 포함하는지 보고하고, 모든 의사결정 로직은 CLI에 유지됩니다. 헬퍼가 누락되거나 구식이거나 어떤 이유로든 실패하면 CLI는 재정의를 검증할 수 없고 **닫힌 상태로 실패합니다**: 재정의가 거부되고 오류는 검증을 사용할 수 없다고 말하며, 뭔가 잘못했다고 하지 않습니다. 정상 설치는 해당 메시지를 절대 표시하지 않습니다. `rdc`를 다시 설치하면 헬퍼가 복구됩니다.
 
-비 Linux 사용자는 포크 우선 워크플로우에서 벗어날 방법이 없습니다. 이는 의도적입니다. 에이전트는 어떻게 프롬프트를 받았든 샌드박스를 우회할 방법이 없습니다. 재정의가 필요하다면 WSL, Linux 컨테이너, 또는 Linux VM 내에서 에이전트를 실행하세요. 그렇지 않으면 포크에서 작업하세요.
+모든 플랫폼에서 참인 것: 재정의는 에이전트 프로세스가 시작할 때 이미 환경에 있어야 합니다. 터미널에서 내보낸 후 에이전트를 실행하세요. 세션 중간에 변수를 설정하는 에이전트는 거부됩니다.
 
 ## 감사 로그
 

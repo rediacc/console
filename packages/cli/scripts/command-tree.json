@@ -1686,6 +1686,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--detach",
+              "descriptionKey": "commands.repo.up.detachOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--include-forks",
               "descriptionKey": "commands.repo.upAll.includeForksOption",
               "mandatory": false,
@@ -2254,6 +2260,12 @@
             {
               "flags": "--up",
               "descriptionKey": "commands.repo.fork.upOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--detach",
+              "descriptionKey": "commands.repo.fork.detachOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -7508,12 +7520,6 @@
               "descriptionKey": "commands.mcp.serve.timeoutOption",
               "mandatory": false,
               "defaultValue": "120000"
-            },
-            {
-              "flags": "--allow-grand",
-              "descriptionKey": "commands.mcp.serve.allowGrandOption",
-              "mandatory": false,
-              "defaultValue": null
             }
           ],
           "arguments": [],

@@ -5,7 +5,7 @@ description: >-
 category: Concepts
 order: 35
 language: zh
-sourceHash: "ae23c9bc851ecfcd"
+sourceHash: "eb4c8dd0389a45a6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -133,15 +133,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 效果：智能体不能通过在会话中途运行 `export REDIACC_ALLOW_CONFIG_EDIT='*'` 来绕过防护机制。只有父进程（在启动智能体之前，你在终端中的操作）才能打开那扇门。
 
-## 平台支持：覆盖仅限 Linux
+## 平台支持：覆盖如何在各操作系统上验证
 
-`REDIACC_ALLOW_CONFIG_EDIT` 和 `REDIACC_ALLOW_GRAND_REPO` 都依赖祖先验证来证明覆盖是由你设置的，而不是由智能体注入的。验证会读取祖先链中每个进程的 `/proc/<pid>/environ`。该文件由内核在 exec 时设置，进程自身无法修改，因此父 shell 的环境变量是一个防篡改的证据。
+`REDIACC_ALLOW_CONFIG_EDIT` 和 `REDIACC_ALLOW_GRAND_REPO` 都依赖祖先验证来证明覆盖是由你设置的，而不是由智能体注入的。验证在 Linux、macOS 和 Windows 上都有效，但它读取的证人因平台而异，强度级别也不同：
 
-该文件在 macOS 或 Windows 上不存在。由于无法验证合法性，CLI 会安全地拒绝执行。即使你在启动智能体之前在 shell 中正确设置了覆盖，覆盖仍会被拒绝。错误信息会明确告知你应当如何处理：
+| 平台 | 证人 | 强度 |
+|---|---|---|
+| Linux | 祖先链中每个进程的 `/proc/<pid>/environ` | exec 时快照，由内核提供。进程无法逆向修改其启动时的环境。 |
+| macOS | `kern.procargs2` sysctl，由随 `rdc` 内附的小型助手读取 | 与 Linux 相同的 exec 时快照属性。对自己的进程不需要 root 权限即可读取。 |
+| Windows | 每个祖先进程的实时环境块（PEB），由同一助手读取，并带有 PID 重用保护 | 较弱：Windows 没有保存 exec 时快照，因此检查读取当前内存。祖先进程仍无法被智能体通常运行的任何东西改写，但证人不像 Linux 和 macOS 那样由内核冻结。 |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+在 macOS 和 Windows 上，CLI 会生成其内附的 `renet` 二进制文件来进行读取；助手报告每个祖先携带的被监视变量，所有决策逻辑保留在 CLI 中。如果助手缺失、过期或出于任何原因失败，CLI 无法验证覆盖并**以安全失败模式关闭**：覆盖被拒绝，错误表明验证不可用，而不是说你做错了什么。正常安装永远不会显示该消息；重新安装 `rdc` 会恢复助手。
 
-非 Linux 用户没有从 fork 优先工作流中逃脱的途径。这是有意为之的。无论智能体收到怎样的提示，它都无法绕过沙箱。如果你需要使用覆盖，请在 WSL、Linux 容器或 Linux 虚拟机中运行智能体；否则，请在 fork 上工作。
+在每个平台上都真实的是：覆盖必须在智能体启动时已经存在于其环境中。在你的终端中导出它，然后启动智能体。在会话中途设置该变量的智能体会被拒绝。
 
 ## 审计日志
 

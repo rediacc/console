@@ -4,7 +4,7 @@ description: Ühendage AI-agendid Rediacc infrastruktuuriga Model Context Protoc
 category: Guides
 order: 33
 language: et
-sourceHash: "ce5f1392ebaa380b"
+sourceHash: "4483eb3da34a6c03"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,6 @@ Agent kutsub `machine_health` → `machine_containers` → `term_exec` logide lu
 |-------|-----------|-----------|
 | `--config <nimi>` | (vaikimisi konfiguratsioon) | Nimega konfiguratsioon, mida kõigi käskude jaoks kasutada |
 | `--timeout <ms>` | `120000` | Käsu vaikeaegumine millisekundites |
-| `--allow-grand` | väljas | Lubage hävitavad toimingud grand-repositooriumidel (mitte-fork) |
 
 ## Turvalisus
 
@@ -121,20 +120,15 @@ Vaikimisi töötab server **ainult-fork-režiimis**: kirjutamistööriistad (`re
 
 > **Repo-saladused on disaini järgi ainult CLI kaudu.** `repo_secret_set` ja `repo_secret_unset` ei ole tahtlikult MCP tööriistadena paljastatud. Kirjutamised nõuavad eeltingimust `--current <eelmine-väärtus>` (või `--rotate-secret`, et kinnitada kontrollimata pööramine), ja see toiming vajab inimese järelevalvet. Agendid, kes peavad saladuse pööramist soovitama, peaksid kutsuma `repo_secret_get` räsi kinnitamiseks, seejärel edastama operaatori CLI-käsu kasutajale JSON-vea ümbriku välja `next.options[].run` kaudu. Täieliku mustri jaoks vaadake [AI-agendi turvalisus](/et/docs/ai-agents-safety#structured-next-action-hints) ja kasutajapoolse juhendi jaoks [Repositooriumid § Saladused](/et/docs/repositories#secrets).
 
-Grand-repositooriumide agendi muutmise lubamiseks käivitage koos `--allow-grand`:
+Grand-repositooriumide agendi muutmise lubamiseks ekspordi `REDIACC_ALLOW_GRAND_REPO` oma terminalis **enne agendi käivitamist, mis majutab MCP serveri**:
 
-```json
-{
-  "mcpServers": {
-    "rdc": {
-      "command": "rdc",
-      "args": ["mcp", "serve", "--allow-grand"]
-    }
-  }
-}
+```bash
+export REDIACC_ALLOW_GRAND_REPO='gitlab'   # üks repo
+# või 'repo1,repo2,repo3' (kirjete ümbritsev tühik ignoreeritakse) või '*' kõigi repode jaoks
+claude   # või cursor, gemini jne.
 ```
 
-Samuti saate seada keskkonnamuutuja `REDIACC_ALLOW_GRAND_REPO` ühe repo nimele, komaga eraldatud repo nimede loendile (näiteks `repo1,repo2,repo3`) või `*` kõigi repode jaoks. Kirjeid ümbritsev tühik ignoreeritakse, seega `repo1, repo2` töötab samuti. Masinataseme juurdepääs (näiteks `term connect -m <machine>` ilma repota) nõuab siiski `*`; repo nimede loend seda ei ava.
+Ülekate kontrollitakse protsessi päritolu suhtes: see arvestatakse ainult siis, kui see oli juba agendi protsessi keskkonnas, mis tähendab, et sa eksportisid selle enne agendi (ja MCP serveri, mille see käivitas) käivitamist. Agent ei saa end juurdepääsu anda, seades muutuja seansi keskel. Tahtlikult pole serveriflagi: lipp MCP serveri argumentides ei näita, kes selle sinna pani, samal ajal kui päritolu kontroll näitab. Masinataseme juurdepääs (näiteks `term connect -m <machine>` ilma repota) nõuab siiski `*`; repo nimede loend seda ei ava.
 
 ### Repo-põhised SSH-võtmed ja serveripoolne liivakast
 

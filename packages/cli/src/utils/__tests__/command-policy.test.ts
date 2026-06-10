@@ -12,6 +12,7 @@ vi.mock('../agent-guard.js', () => ({
 
 vi.mock('../process-ancestry.js', () => ({
   isOverrideLegitimate: vi.fn(() => true),
+  isAncestryVerificationAvailable: vi.fn(() => true),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -30,13 +31,18 @@ import {
   COMMAND_POLICIES,
   validateRemotePath,
 } from '../command-policy.js';
+import { isAncestryVerificationAvailable, isOverrideLegitimate } from '../process-ancestry.js';
 
 const mockIsAgent = vi.mocked(isAgentEnvironment);
 const mockGetRepo = vi.mocked(configService.getRepository);
+const mockIsOverrideLegitimate = vi.mocked(isOverrideLegitimate);
+const mockIsAncestryAvailable = vi.mocked(isAncestryVerificationAvailable);
 
 describe('command-policy', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockIsOverrideLegitimate.mockReturnValue(true);
+    mockIsAncestryAvailable.mockReturnValue(true);
     delete process.env.REDIACC_ALLOW_GRAND_REPO;
   });
 
@@ -153,6 +159,30 @@ describe('command-policy', () => {
       mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
 
       await expect(assertCommandPolicy(CMD.REPO_UP, 'anything')).resolves.not.toThrow();
+    });
+
+    it('reports agent-injected override when ancestry verification is available', async () => {
+      mockIsAgent.mockReturnValue(true);
+      mockIsOverrideLegitimate.mockReturnValue(false);
+      mockIsAncestryAvailable.mockReturnValue(true);
+      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
+      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
+
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
+        'errors.agent.grandGuardOverride:'
+      );
+    });
+
+    it('reports unverifiable override when ancestry verification is unavailable', async () => {
+      mockIsAgent.mockReturnValue(true);
+      mockIsOverrideLegitimate.mockReturnValue(false);
+      mockIsAncestryAvailable.mockReturnValue(false);
+      process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
+      mockGetRepo.mockResolvedValue({ repositoryGuid: 'abc-123' } satisfies RepositoryConfig);
+
+      await expect(assertCommandPolicy(CMD.REPO_UP, 'mail')).rejects.toThrow(
+        'errors.agent.grandGuardOverrideNonLinux'
+      );
     });
 
     it('agentBlocked ignores comma-list override', async () => {

@@ -4,7 +4,7 @@ description: Model Context Protocol (MCP) 서버를 사용하여 AI 에이전트
 category: Guides
 order: 33
 language: ko
-sourceHash: "ce5f1392ebaa380b"
+sourceHash: "4483eb3da34a6c03"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,6 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 |------|--------|------|
 | `--config <name>` | (기본 설정) | 모든 명령에 사용할 명명된 설정 |
 | `--timeout <ms>` | `120000` | 기본 명령 타임아웃 (밀리초) |
-| `--allow-grand` | 꺼짐 | grand (포크가 아닌) 리포지토리에 대한 파괴적 작업 허용 |
 
 ## 보안
 
@@ -121,20 +120,15 @@ MCP 서버는 두 가지 보호 레이어를 적용합니다:
 
 > **리포별 시크릿은 설계상 CLI 전용입니다.** `repo_secret_set`과 `repo_secret_unset`은 의도적으로 MCP 도구로 노출되지 않습니다. 쓰기에는 `--current <previous-value>` 전제조건(또는 검증되지 않은 교체를 승인하는 `--rotate-secret`)이 필요하며, 이 절차는 사람이 직접 확인해야 합니다. 시크릿 교체를 제안해야 하는 에이전트는 `repo_secret_get`을 호출하여 다이제스트를 확인한 다음, JSON 오류 엔벨로프의 `next.options[].run` 필드를 통해 운영자 대상 CLI 명령을 사용자에게 전달해야 합니다. 전체 패턴은 [AI 에이전트 안전](/en/docs/ai-agents-safety#structured-next-action-hints)을 참조하고, 사용자 대상 방법은 [리포지토리 § 시크릿](/en/docs/repositories#secrets)을 참조하세요.
 
-에이전트가 grand 리포지토리를 수정할 수 있게 하려면 `--allow-grand`로 시작하세요:
+에이전트가 grand 리포지토리를 수정할 수 있게 하려면 MCP 서버를 호스팅하는 에이전트를 시작하기 **전**에 터미널에서 `REDIACC_ALLOW_GRAND_REPO`를 내보내세요:
 
-```json
-{
-  "mcpServers": {
-    "rdc": {
-      "command": "rdc",
-      "args": ["mcp", "serve", "--allow-grand"]
-    }
-  }
-}
+```bash
+export REDIACC_ALLOW_GRAND_REPO='gitlab'   # 단일 리포
+# 또는 'repo1,repo2,repo3' (항목 주위의 공백은 무시됨), 또는 모든 리포에 대해 '*'
+claude   # 또는 cursor, gemini 등
 ```
 
-`REDIACC_ALLOW_GRAND_REPO` 환경 변수를 단일 리포 이름, 쉼표로 구분된 리포 이름 목록(예: `repo1,repo2,repo3`) 또는 모든 리포에 대해 `*`로 설정할 수도 있습니다. 항목 주위의 공백은 무시되므로 `repo1, repo2`도 작동합니다. 머신 수준 접근(리포 없이 `term connect -m <machine>`)은 여전히 `*`를 요구하며 리포 이름 목록으로는 잠금을 해제할 수 없습니다.
+재정의는 프로세스 조상에 대해 검증됩니다. 에이전트 프로세스 자체의 환경에 이미 존재했을 때만 계산됩니다. 즉, 에이전트(그리고 그것이 생성한 MCP 서버)가 시작하기 전에 내보냈다는 뜻입니다. 에이전트는 세션 중간에 변수를 설정하여 자신에게 접근 권한을 부여할 수 없습니다. 이를 위한 서버 플래그는 의도적으로 없습니다. MCP 서버 인수의 플래그는 누가 입력했는지 증명하지 못하지만, 조상 검사는 증명합니다. 머신 수준 접근(리포 없이 `term connect -m <machine>`)은 여전히 `*`를 필요로 합니다. 리포 이름 목록은 이를 잠금 해제하지 않습니다.
 
 ### 리포별 SSH 키 및 서버 측 샌드박스
 

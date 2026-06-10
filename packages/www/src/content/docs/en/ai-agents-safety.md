@@ -133,15 +133,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 The effect: an agent can't talk its way past a guardrail by running `export REDIACC_ALLOW_CONFIG_EDIT='*'` mid-session. Only a parent process (you, in your terminal, before launching the agent) can open that door.
 
-## Platform support: Linux only for the overrides
+## Platform support: how the override is verified on each OS
 
-`REDIACC_ALLOW_CONFIG_EDIT` and `REDIACC_ALLOW_GRAND_REPO` both rely on ancestry verification to prove the override was set by you and not injected by the agent. The verification reads `/proc/<pid>/environ` for every process up the chain. That file is set by the kernel at exec time and cannot be modified by the process itself, so the parent shell's environment is a tamperproof witness.
+`REDIACC_ALLOW_CONFIG_EDIT` and `REDIACC_ALLOW_GRAND_REPO` both rely on ancestry verification to prove the override was set by you and not injected by the agent. The verification works on Linux, macOS, and Windows, but the witness it reads differs per platform, and so does the strength of the guarantee:
 
-That file does not exist on macOS or Windows. With no way to verify legitimacy, the CLI fails closed. Even when you set the override correctly in your shell before launching the agent, the override is rejected. The error message tells you exactly what to do:
+| Platform | Witness | Strength |
+|---|---|---|
+| Linux | `/proc/<pid>/environ` for every process up the chain | Exec-time snapshot, kernel-served. A process cannot retroactively edit what it was started with. |
+| macOS | `kern.procargs2` sysctl, read by a small helper that ships inside `rdc` | Same exec-time snapshot property as Linux. Readable for your own processes without root. |
+| Windows | The live environment block of each ancestor process (PEB), read by the same helper, with PID-reuse guards | Weaker: Windows keeps no exec-time snapshot, so the check reads current memory. Ancestors still can't be rewritten by anything an agent normally runs, but the witness is not kernel-frozen the way it is on Linux and macOS. |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+On macOS and Windows the CLI spawns its bundled `renet` binary to do the reading; the helper reports which of the watched variables each ancestor carries, and all decision logic stays in the CLI. If the helper is missing, outdated, or fails for any reason, the CLI cannot verify the override and **fails closed**: the override is rejected and the error says verification was unavailable, not that you did something wrong. A working installation never shows that message; reinstalling `rdc` restores the helper.
 
-Non-Linux users have no escape hatch from the fork-first workflow. That's intentional. There's no way for an agent to bypass the sandbox, regardless of how it was prompted. If you need the override, run your agent inside WSL, a Linux container, or a Linux VM. Otherwise, work on a fork.
+What stays true on every platform: the override must already be present in the environment of the agent process when it starts. Export it in your terminal, then launch the agent. An agent that sets the variable mid-session is refused.
 
 ## Audit log
 

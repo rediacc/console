@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: et
-sourceHash: "ae23c9bc851ecfcd"
+sourceHash: "eb4c8dd0389a45a6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -135,15 +135,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 Mõju: agent ei saa seansi keskel `export REDIACC_ALLOW_CONFIG_EDIT='*'` käivitades turvamehhanismist mööda rääkida. Ainult vanemprotsess (sina, oma terminalis, enne agendi käivitamist) saab selle ukse avada.
 
-## Platvormi tugi: ainult Linux ülekannete jaoks
+## Platvormi tugi: kuidas ülekade on iga OS-i peal kontrollitud
 
-`REDIACC_ALLOW_CONFIG_EDIT` ja `REDIACC_ALLOW_GRAND_REPO` mõlemad sõltuvad pärilusahela kontrollimisest, et tõendada, et ülekate seati sinu poolt, mitte agendi poolt. Kontroll loeb `/proc/<pid>/environ` iga protsessi jaoks ahelas ülespoole. See fail seatakse kerneli poolt exec-ajal ja protsess ise ei saa seda muuta, seega on vanema shelli keskkond võltsimiskindel tunnistaja.
+`REDIACC_ALLOW_CONFIG_EDIT` ja `REDIACC_ALLOW_GRAND_REPO` mõlemad sõltuvad pärilusahela kontrollimisest, et tõendada, et ülekate seati sinu poolt, mitte agendi poolt. Kontroll toimib Linuxis, macOS-is ja Windowsil, kuid tunnistaja, mida see loeb, erineb platvormide lõikes, ja samuti erineb garantii tugevus:
 
-See fail pole macOS-il ega Windowsil olemas. Kuna legitiimsust pole võimalik kontrollida, sulgeb CLI vaikimisi turvalise oleku. Isegi kui seadistad ülekatte oma shellis õigesti enne agendi käivitamist, lükatakse ülekate tagasi. Veateade ütleb täpselt, mida teha:
+| Platvorm | Tunnistaja | Tugevus |
+|---|---|---|
+| Linux | `/proc/<pid>/environ` iga protsessi jaoks ahelas ülespoole | Exec-ajahetkese hetktõmmis, kerneli poolt serveeritud. Protsess ei saa tagantjärele muuta, millega see käivitati. |
+| macOS | `kern.procargs2` sysctl, loetakse väikese abiprogrammi poolt, mis on sisse ehitatud `rdc`-sse | Sama exec-ajahetkese hetktõmmise omadus nagu Linuxis. Loetav oma protsesside jaoks ilma root-õigusteta. |
+| Windows | Iga esivanema protsessi live-keskkonna plokk (PEB), loetud sama abiprogrammiga, PID-taaskasutuse kaitsega | Nõrgem: Windows ei säilita exec-ajahetkese hetktõmmist, nii et kontroll loeb praegust mälu. Esivanemate all korrupteerimine on endiselt muutumatu normaal agendi käskude poolt, kuid tunnistaja pole kerneli-külmutatud nagu Linuxis ja macOS-is. |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+macOS-il ja Windowsil käivitab CLI oma komplektis oleva `renet` binaarfaili lugemiseks; abiline teatab, milliseid jälgitavaid muutujaid iga esivanem kannab, ja kõik otsustuslogika jääb CLI-sse. Kui abiline puudub, on vananenud või ebaõnnestub mingil põhjusel, ei saa CLI ülekatet kontrollida ja **nurjub turvaliselt**: ülekate lükatakse tagasi ja veateade ütleb, et kontrollimine pole saadaval, mitte et oled midagi valesti teinud. Toimiv installatsioon ei näita kunagi seda sõnumit; `rdc` uuesti paigaldamine taastab abiprogrammi.
 
-Mitte-Linuxi kasutajatele pole ümbersõitu fork-esmase töövoo alt. See on tahtlik. Agendil pole võimalust liivakastist mööda pääseda, olenemata sellest, kuidas teda käsutati. Kui vajad ülekannet, käivita oma agent WSL-is, Linuxi konteineris või Linuxi VM-is; vastasel juhul tööta fork'il.
+Mis jääb tõeseks kõigil platvormidel: ülekate peab juba olema agendi protsessi keskkonnas selle käivitamisel. Ekspordi see oma terminalis, seejärel käivita agent. Agent, kes seab muutuja seansi keskel, lükatakse tagasi.
 
 ## Auditi logi
 

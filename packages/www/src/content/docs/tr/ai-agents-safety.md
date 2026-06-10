@@ -4,7 +4,7 @@ description: 'Rediacc CLI''ı, AI kodlama asistanlarının sırları sızdırmas
 category: Concepts
 order: 35
 language: tr
-sourceHash: "ae23c9bc851ecfcd"
+sourceHash: "eb4c8dd0389a45a6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -132,15 +132,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 Efekt: bir ajan oturum ortasında `export REDIACC_ALLOW_CONFIG_EDIT='*'` çalıştırarak bir koruma önlemini aşamaz. Yalnızca bir üst işlem (ajanı başlatmadan önce terminalinizdeki siz) o kapıyı açabilir.
 
-## Platform desteği: geçersiz kılmalar yalnızca Linux
+## Platform desteği: geçersiz kılmanın her işletim sistemde nasıl doğrulandığı
 
-`REDIACC_ALLOW_CONFIG_EDIT` ve `REDIACC_ALLOW_GRAND_REPO`, geçersiz kılmanın ajan tarafından enjekte edilmediğini, sizin tarafınızdan ayarlandığını kanıtlamak için soy ağacı doğrulamasına dayanır. Doğrulama, zincir boyunca her işlem için `/proc/<pid>/environ` dosyasını okur. Bu dosya çekirdek tarafından exec sırasında ayarlanır ve işlemin kendisi tarafından değiştirilemez; bu nedenle üst kabuğun ortamı kurcalanamaz bir tanıktır.
+`REDIACC_ALLOW_CONFIG_EDIT` ve `REDIACC_ALLOW_GRAND_REPO` her ikisi de soy ağacı doğrulamasına dayanarak geçersiz kılmanın sizin tarafınızdan ayarlandığını ve ajan tarafından enjekte edilmediğini kanıtlar. Doğrulama Linux, macOS ve Windows'ta çalışır, ancak okuduğu tanık platform başına farklıdır ve garantinin gücü de öyledir:
 
-Bu dosya macOS veya Windows'ta yoktur. Meşruiyeti doğrulamanın bir yolu olmadığında CLI kapalı şekilde başarısız olur. Ajanı başlatmadan önce kabuğunuzda geçersiz kılmayı doğru bir şekilde ayarlamış olsanız bile, geçersiz kılma reddedilir. Hata mesajı tam olarak ne yapmanız gerektiğini söyler:
+| Platform | Tanık | Güç |
+|---|---|---|
+| Linux | Zincir boyunca her işlem için `/proc/<pid>/environ` | Exec-time anlık görüntüsü, çekirdek tarafından sunulan. Bir işlem başlatıldığı şeyi geriye doğru düzenleyemez. |
+| macOS | `kern.procargs2` sysctl, `rdc` içine gömülü bir küçük yardımcı tarafından okunur | Linux'ta olduğu gibi aynı exec-time anlık görüntü özelliği. Kök olmadan kendi işlemleriniz için okunabilir. |
+| Windows | Her üst işlemin canlı ortam bloğu (PEB), aynı yardımcı tarafından okunur, PID-yeniden kullanım korumasıyla | Daha zayıf: Windows exec-time anlık görüntüsü tutmadığından, kontrol mevcut belleği okur. Üst süreçler yine de bir ajanın normalde çalıştırabileceği herhangi bir şey tarafından yeniden yazılamaz, ancak tanık Linux ve macOS'ta çekirdek tarafından dondurulmuş şekilde değildir. |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+macOS ve Windows'ta CLI, okumasını yapmak için gömülü `renet` ikili dosyasını başlatır; yardımcı izlenen değişkenlerin her üst öğede taşıdığını rapor eder ve tüm karar mantığı CLI'de kalır. Yardımcı eksikse, güncel değilse veya herhangi bir nedenle başarısız olursa, CLI geçersiz kılmayı doğrulayamaz ve **kapalı şekilde başarısız olur**: geçersiz kılma reddedilir ve hata, sizin hata yaptığınızı değil, doğrulamanın kullanılamadığını söyler. Çalışan bir kurulum asla bu mesajı göstermez; `rdc` yeniden kurulması yardımcıyı geri yükler.
 
-Linux dışı kullanıcıların ön-fork iş akışından kaçış yolu yoktur. Bu kasıtlıdır. Ajanlar, nasıl yönlendirilmiş olurlarsa olsunlar, arkasından geçip geçemeyen bir sandbox üzerinde çalıştırılır. Geçersiz kılmaya ihtiyacınız varsa ajanınızı WSL, bir Linux konteyneri veya bir Linux VM içinde çalıştırın; aksi takdirde bir fork üzerinde çalışın.
+Her platformda doğru olan şey: geçersiz kılmanın ajan işlemi başladığında ortamında zaten bulunması gerekir. Terminalinizde dışa aktarın, ardından ajanı başlatın. Değişkeni oturum ortasında ayarlayan bir ajan reddedilir.
 
 ## Denetim kaydı
 

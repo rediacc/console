@@ -11,7 +11,7 @@ import { configService } from '../services/config-resources.js';
 import { isAgentEnvironment } from './agent-guard.js';
 import { ValidationError } from './errors.js';
 import { isRepoAllowedByGrandEnv } from './grand-env.js';
-import { isOverrideLegitimate } from './process-ancestry.js';
+import { isAncestryVerificationAvailable, isOverrideLegitimate } from './process-ancestry.js';
 
 export interface CommandPolicy {
   /** Block grand (non-fork) repos in agent mode. Override: REDIACC_ALLOW_GRAND_REPO */
@@ -113,10 +113,9 @@ function checkGrandOverride(repoName: string): OverrideResult {
 function enforceGrandGuard(repoName: string): void {
   const override = checkGrandOverride(repoName);
   if (override === 'agent-injected') {
-    const errorKey =
-      process.platform === 'linux'
-        ? 'errors.agent.grandGuardOverride'
-        : 'errors.agent.grandGuardOverrideNonLinux';
+    const errorKey = isAncestryVerificationAvailable()
+      ? 'errors.agent.grandGuardOverride'
+      : 'errors.agent.grandGuardOverrideNonLinux';
     throw new ValidationError(t(errorKey, { name: repoName, platform: process.platform }));
   }
   if (override !== 'allowed') {

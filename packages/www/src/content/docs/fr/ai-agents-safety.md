@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: fr
-sourceHash: "ae23c9bc851ecfcd"
+sourceHash: "eb4c8dd0389a45a6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -135,15 +135,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 L'effet : un agent ne peut pas se frayer un chemin au-delà d'un garde-fou en exécutant `export REDIACC_ALLOW_CONFIG_EDIT='*'` en cours de session. Seul un processus parent (vous, dans votre terminal, avant de lancer l'agent) peut ouvrir cette porte.
 
-## Prise en charge des plateformes : Linux uniquement pour les substitutions
+## Prise en charge des plateformes : comment la substitution est vérifiée sur chaque OS
 
-`REDIACC_ALLOW_CONFIG_EDIT` et `REDIACC_ALLOW_GRAND_REPO` reposent tous deux sur la vérification d'ascendance pour prouver que la substitution a été définie par vous et non injectée par l'agent. La vérification lit `/proc/<pid>/environ` pour chaque processus de la chaîne. Ce fichier est défini par le noyau au moment de l'exec et ne peut pas être modifié par le processus lui-même, de sorte que l'environnement du shell parent est un témoin inviolable.
+`REDIACC_ALLOW_CONFIG_EDIT` et `REDIACC_ALLOW_GRAND_REPO` reposent tous deux sur la vérification d'ascendance pour prouver que la substitution a été définie par vous et non injectée par l'agent. La vérification fonctionne sur Linux, macOS et Windows, mais le témoin qu'elle lit diffère selon la plateforme, de même que la force de la garantie :
 
-Ce fichier n'existe pas sur macOS ou Windows. Sans moyen de vérifier la légitimité, la CLI échoue en sécurité. Même si vous définissez correctement la substitution dans votre shell avant de lancer l'agent, la substitution est rejetée. Le message d'erreur vous indique exactement quoi faire :
+| Plateforme | Témoin | Force |
+|---|---|---|
+| Linux | `/proc/<pid>/environ` pour chaque processus de la chaîne | Snapshot au moment de l'exec, servi par le noyau. Un processus ne peut pas modifier rétroactivement ce avec quoi il a été démarré. |
+| macOS | `kern.procargs2` sysctl, lu par un petit assistant intégré dans `rdc` | Même propriété de snapshot au moment de l'exec que Linux. Lisible pour vos propres processus sans avoir besoin de root. |
+| Windows | Le bloc d'environnement live de chaque processus ancêtre (PEB), lu par le même assistant, avec des garde-fous contre la réutilisation de PID | Plus faible : Windows ne conserve pas de snapshot au moment de l'exec, la vérification lit donc la mémoire courante. Les ancêtres ne peuvent toujours pas être réécrits par rien qu'un agent ne lance normalement, mais le témoin n'est pas gelé au niveau du noyau comme sur Linux et macOS. |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+Sur macOS et Windows, la CLI lance son binaire `renet` intégré pour effectuer la lecture ; l'assistant rapporte lesquelles des variables surveillées chaque ancêtre porte, et toute la logique de décision reste dans la CLI. Si l'assistant est manquant, obsolète ou échoue pour une raison quelconque, la CLI ne peut pas vérifier la substitution et **échoue en sécurité** : la substitution est rejetée et l'erreur indique que la vérification était indisponible, pas que vous avez fait quelque chose de mal. Une installation correcte ne montre jamais ce message ; réinstaller `rdc` restaure l'assistant.
 
-Les utilisateurs non-Linux n'ont aucune issue de secours hors du flux fork-first. C'est intentionnel. Il n'existe aucun moyen pour un agent de contourner le bac à sable, quelle que soit la façon dont il a été instruit. Si vous avez besoin de la substitution, exécutez votre agent dans WSL, un conteneur Linux ou une VM Linux. Sinon, travaillez sur un fork.
+Ce qui reste vrai sur chaque plateforme : la substitution doit déjà être présente dans l'environnement du processus agent lorsqu'il démarre. Exportez-la dans votre terminal, puis lancez l'agent. Un agent qui définit la variable en cours de session est refusé.
 
 ## Journal d'audit
 

@@ -1,26 +1,61 @@
 /**
  * Process ancestry verification for agent security hardening.
  *
- * On Linux, reads /proc/<pid>/environ (immutable, kernel-controlled) to verify
- * that agent env vars and overrides were set by the user, not injected by the agent.
- * On macOS/Windows, falls back to process.env (can't read ancestor environments).
+ * The guards must prove that an override env var (REDIACC_ALLOW_GRAND_REPO /
+ * REDIACC_ALLOW_CONFIG_EDIT) was set by the human BEFORE the agent started,
+ * not injected by the agent itself. The proof is the exec-time environment of
+ * the "agent boundary" process (the highest ancestor carrying an agent var).
+ *
+ * Platform witnesses:
+ *   - linux:   /proc/<pid>/environ read in-process (exec-time, kernel-served)
+ *   - darwin:  renet `process-ancestry` helper → kern.procargs2 (exec-time)
+ *   - win32:   renet `process-ancestry` helper → PEB env block (live memory,
+ *     weaker tier — a process can rewrite its own block, ancestors cannot be
+ *     rewritten through any normal channel)
+ *   - others:  verification unavailable; overrides fail closed
  */
 
 import { readFileSync } from 'node:fs';
+import { runAncestryHelper } from './ancestry-helper.js';
 
 const AGENT_ENV_VARS = ['REDIACC_AGENT', 'CLAUDECODE', 'GEMINI_CLI', 'COPILOT_CLI'] as const;
 const AGENT_TRACE_VAR = 'CURSOR_TRACE_ID';
-const OVERRIDE_VAR = 'REDIACC_ALLOW_GRAND_REPO';
+
+/** Override verified by default (grand-repo guards). */
+export const OVERRIDE_VAR_GRAND = 'REDIACC_ALLOW_GRAND_REPO';
+/** Override for the config-edit guards (rdc config edit / --apply / rotate). */
+export const OVERRIDE_VAR_CONFIG_EDIT = 'REDIACC_ALLOW_CONFIG_EDIT';
+
+/**
+ * Every key the ancestry walk witnesses — one walk (one helper spawn on
+ * macOS/Windows) covers every guard in the process.
+ */
+const WITNESS_KEYS: readonly string[] = [
+  ...AGENT_ENV_VARS,
+  AGENT_TRACE_VAR,
+  OVERRIDE_VAR_GRAND,
+  OVERRIDE_VAR_CONFIG_EDIT,
+];
 
 // Maximum ancestors to walk (prevent infinite loops on circular references)
 const MAX_WALK_DEPTH = 64;
 
-interface AncestorEnv {
+export interface AncestorEnv {
   pid: number;
-  hasAgentVar: boolean;
-  hasGrandOverride: boolean;
-  grandOverrideValue?: string;
+  /** The witnessed variables present in this process (filtered to WITNESS_KEYS). */
+  env: Map<string, string>;
 }
+
+interface AncestryResult {
+  /**
+   * False when this platform/installation cannot verify ancestry at all
+   * (unsupported platform, helper missing or failed). Overrides fail closed.
+   */
+  available: boolean;
+  ancestors: AncestorEnv[];
+}
+
+// ─── Linux /proc primitives ──────────────────────────────────────────────
 
 /**
  * Read a process's initial environment from /proc/<pid>/environ.
@@ -95,13 +130,10 @@ export function hasAgentEnvVar(env: Map<string, string>): boolean {
 }
 
 /**
- * Walk the process ancestor chain and collect environment info.
- * Linux only — reads /proc/<pid>/environ at each level.
- * Returns empty array on non-Linux or if /proc is unavailable.
+ * Linux walk: read /proc/<pid>/environ at each level, filtered to the
+ * witness keys for shape parity with the helper-based platforms.
  */
-export function walkAncestors(): AncestorEnv[] {
-  if (process.platform !== 'linux') return [];
-
+function walkAncestorsLinux(): AncestorEnv[] {
   const ancestors: AncestorEnv[] = [];
   let pid: number | null = process.pid;
   let depth = 0;
@@ -110,13 +142,12 @@ export function walkAncestors(): AncestorEnv[] {
     const env = readProcEnviron(pid);
     if (!env) break; // Can't read — stop walk (permission denied, etc.)
 
-    const overrideValue = env.get(OVERRIDE_VAR);
-    ancestors.push({
-      pid,
-      hasAgentVar: hasAgentEnvVar(env),
-      hasGrandOverride: overrideValue !== undefined,
-      grandOverrideValue: overrideValue,
-    });
+    const filtered = new Map<string, string>();
+    for (const key of WITNESS_KEYS) {
+      const value = env.get(key);
+      if (value !== undefined) filtered.set(key, value);
+    }
+    ancestors.push({ pid, env: filtered });
 
     pid = getParentPid(pid);
     depth++;
@@ -125,40 +156,95 @@ export function walkAncestors(): AncestorEnv[] {
   return ancestors;
 }
 
+// ─── Platform dispatch + cache ───────────────────────────────────────────
+
+let _ancestry: AncestryResult | undefined;
+
 /**
- * Hardened agent detection — checks ancestor chain for agent env vars.
- * Even if the current process unset CLAUDECODE, an ancestor's /proc/environ
- * still has it (immutable). Returns false on non-Linux (falls back to process.env).
+ * Collect the ancestry chain once per process.
+ * Linux walks /proc in-process; macOS/Windows spawn the renet helper
+ * (synchronously, ~once per process, only when a guard actually asks).
  */
-export function isAgentByAncestry(): boolean {
-  const ancestors = walkAncestors();
-  return ancestors.some((a) => a.hasAgentVar);
+function collectAncestry(): AncestryResult {
+  if (_ancestry) return _ancestry;
+
+  if (process.platform === 'linux') {
+    _ancestry = { available: true, ancestors: walkAncestorsLinux() };
+  } else if (process.platform === 'darwin' || process.platform === 'win32') {
+    const raw = runAncestryHelper(WITNESS_KEYS);
+    _ancestry = raw
+      ? {
+          available: true,
+          ancestors: raw.map((a) => ({ pid: a.pid, env: new Map(Object.entries(a.env)) })),
+        }
+      : { available: false, ancestors: [] };
+  } else {
+    _ancestry = { available: false, ancestors: [] };
+  }
+  return _ancestry;
 }
 
 /**
- * Verify that REDIACC_ALLOW_GRAND_REPO was set by the user (before the agent
+ * Walk the process ancestor chain and collect environment info.
+ * Returns empty array when ancestry data is unavailable.
+ */
+export function walkAncestors(): AncestorEnv[] {
+  return collectAncestry().ancestors;
+}
+
+/**
+ * True when this platform/installation can verify override ancestry.
+ * Drives the guard error message: a verification-capable system reports
+ * "agent-injected override"; an incapable one reports "cannot verify".
+ */
+export function isAncestryVerificationAvailable(): boolean {
+  return collectAncestry().available;
+}
+
+/**
+ * Hardened agent detection — checks ancestor chain for agent env vars.
+ * Even if the current process unset CLAUDECODE, an ancestor's /proc/environ
+ * still has it (immutable).
+ *
+ * Linux only by design: this runs at CLI startup (isAgentEnvironment slow
+ * path), and spawning the ancestry helper there would cost every
+ * macOS/Windows invocation a process spawn. Override *legitimacy* — the
+ * actual security gate — does use the helper on all platforms.
+ */
+export function isAgentByAncestry(): boolean {
+  if (process.platform !== 'linux') return false;
+  return collectAncestry().ancestors.some((a) => hasAgentEnvVar(a.env));
+}
+
+/**
+ * Verify that an override env var was set by the user (before the agent
  * started), not injected by the agent itself.
  *
- * Algorithm (Linux):
+ * Algorithm:
  * 1. Walk ancestors to find the agent boundary (highest ancestor with agent env var)
- * 2. Check if the override existed in the agent boundary's parent
+ * 2. Check if the override existed in the boundary's exec-time environment
  * 3. If yes → user set it before the agent, legitimate
  * 4. If no → injected at or below agent boundary, illegitimate
  *
- * On non-Linux: returns false (fail closed — can't verify, don't trust).
+ * When ancestry verification is unavailable (unsupported platform, helper
+ * missing/failed): fail closed — can't verify, don't trust.
  */
-export function isOverrideLegitimate(): boolean {
-  if (process.platform !== 'linux') return false;
+export function isOverrideLegitimate(overrideVar: string = OVERRIDE_VAR_GRAND): boolean {
+  const { available, ancestors } = collectAncestry();
+  if (!available) return false;
 
-  const ancestors = walkAncestors();
-  if (ancestors.length === 0) return true; // Can't read /proc, fail open
+  if (ancestors.length === 0) {
+    // Linux: /proc itself unreadable (exotic containers) — historical fail
+    // open. A helper that ran but reported nothing is not trusted.
+    return process.platform === 'linux';
+  }
 
   // Find the agent boundary: the HIGHEST ancestor (last in array, closest to init)
   // that has an agent env var. We walk from current process upward, so the last
   // match in the array is the highest in the tree.
   let agentBoundaryIdx = -1;
   for (let i = ancestors.length - 1; i >= 0; i--) {
-    if (ancestors[i].hasAgentVar) {
+    if (hasAgentEnvVar(ancestors[i].env)) {
       agentBoundaryIdx = i;
       break;
     }
@@ -167,14 +253,15 @@ export function isOverrideLegitimate(): boolean {
   // No agent boundary found — not in agent mode, override is always legitimate
   if (agentBoundaryIdx === -1) return true;
 
-  // Check: does the agent boundary process's /proc/environ have the override?
-  // If the override is in the same process that introduced the agent env var,
-  // it was set in the same shell session — that means the user set both.
+  // Check: does the agent boundary process's exec-time environment have the
+  // override? If the override is in the same process that introduced the
+  // agent env var, it was present when the agent started → set by user.
   // If the override is NOT in the agent boundary but IS in a descendant,
   // it was injected below the boundary.
-  //
-  // We check the agent boundary itself: if the override exists there,
-  // it was present when the agent process started → set by user.
-  const boundary = ancestors[agentBoundaryIdx];
-  return boundary.hasGrandOverride;
+  return ancestors[agentBoundaryIdx].env.has(overrideVar);
+}
+
+/** Reset the cached walk (for testing only). */
+export function _resetAncestryCache(): void {
+  _ancestry = undefined;
 }

@@ -4,7 +4,7 @@ description: Collega gli agenti AI all'infrastruttura Rediacc usando il server M
 category: Guides
 order: 33
 language: it
-sourceHash: "ce5f1392ebaa380b"
+sourceHash: "4483eb3da34a6c03"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,6 @@ L'agente chiama `machine_health` → `machine_containers` → `term_exec` per le
 |---------|-------------|-------------|
 | `--config <name>` | (config predefinita) | Configurazione con nome da usare per tutti i comandi |
 | `--timeout <ms>` | `120000` | Timeout predefinito dei comandi in millisecondi |
-| `--allow-grand` | off | Consente operazioni distruttive sui repository grand (non fork) |
 
 ## Sicurezza
 
@@ -121,20 +120,15 @@ Per impostazione predefinita, il server opera in **modalità fork-only**: gli st
 
 > **I segreti per repository sono accessibili solo tramite CLI per design.** `repo_secret_set` e `repo_secret_unset` sono intenzionalmente **non** esposti come strumenti MCP. Le scritture richiedono una precondizione `--current <previous-value>` (oppure `--rotate-secret` per riconoscere una rotazione non verificata), e quella procedura richiede la supervisione umana. Gli agenti che devono suggerire la rotazione di un segreto dovranno chiamare `repo_secret_get` per confermare il digest, quindi trasmettere il comando CLI destinato all'operatore all'utente tramite il campo `next.options[].run` strutturato nell'envelope di errore JSON. Consulta [Sicurezza agenti AI](/en/docs/ai-agents-safety#structured-next-action-hints) per il pattern completo e [Repository - Segreti](/en/docs/repositories#secrets) per le istruzioni rivolte all'utente.
 
-Per consentire a un agente di modificare i repository grand, avvia con `--allow-grand`:
+Per consentire a un agente di modificare i repository grand, esporta `REDIACC_ALLOW_GRAND_REPO` nel tuo terminale **prima di avviare l'agente che ospita il server MCP**:
 
-```json
-{
-  "mcpServers": {
-    "rdc": {
-      "command": "rdc",
-      "args": ["mcp", "serve", "--allow-grand"]
-    }
-  }
-}
+```bash
+export REDIACC_ALLOW_GRAND_REPO='gitlab'   # un repo
+# oppure 'repo1,repo2,repo3' (gli spazi bianchi attorno alle voci vengono ignorati), oppure '*' per tutti i repo
+claude   # oppure cursor, gemini, ecc.
 ```
 
-Puoi anche impostare la variabile d'ambiente `REDIACC_ALLOW_GRAND_REPO` con il nome di un singolo repo, un elenco separato da virgole di nomi di repo (ad esempio `repo1,repo2,repo3`) oppure `*` per tutti i repo. Gli spazi bianchi attorno alle voci vengono ignorati, quindi `repo1, repo2` funziona. L'accesso a livello di macchina (come `term connect -m <machine>` senza un repo) richiede ancora `*`; un elenco di nomi di repo non lo sblocca.
+L'override è verificato rispetto all'ascendenza del processo: conta solo se era già presente nell'ambiente del processo agent stesso, il che significa che l'hai esportato prima che l'agent (e il server MCP che ha generato) si avviasse. Un agent non può concedersi accesso impostando la variabile a metà sessione. Non c'è intenzionalmente nessun flag del server per questo: un flag negli argomenti del server MCP non porta alcuna prova di chi l'ha messo lì, mentre il controllo dell'ascendenza sì. L'accesso a livello di macchina (come `term connect -m <machine>` senza un repo) richiede ancora `*`; un elenco di nomi di repo non lo sblocca.
 
 ### Chiavi SSH per repository e sandbox lato server
 

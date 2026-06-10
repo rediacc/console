@@ -15,17 +15,24 @@ vi.mock('../../i18n/index.js', () => ({
 
 // Mock process-ancestry module
 const mockIsAgentByAncestry = vi.hoisted(() => vi.fn(() => false));
-const mockIsOverrideLegitimate = vi.hoisted(() => vi.fn(() => true));
+const mockIsOverrideLegitimate = vi.hoisted(() => vi.fn((_overrideVar?: string) => true));
+const mockIsAncestryAvailable = vi.hoisted(() => vi.fn(() => true));
+const mockResetAncestryCache = vi.hoisted(() => vi.fn());
 
 vi.mock('../process-ancestry.js', () => ({
   isAgentByAncestry: mockIsAgentByAncestry,
   isOverrideLegitimate: mockIsOverrideLegitimate,
+  isAncestryVerificationAvailable: mockIsAncestryAvailable,
+  _resetAncestryCache: mockResetAncestryCache,
+  OVERRIDE_VAR_GRAND: 'REDIACC_ALLOW_GRAND_REPO',
+  OVERRIDE_VAR_CONFIG_EDIT: 'REDIACC_ALLOW_CONFIG_EDIT',
 }));
 
 import {
   _resetCache,
   assertAgentMachineAccess,
   assertAgentRepoCreate,
+  configEditOverrideScope,
   isAgentEnvironment,
 } from '../agent-guard.js';
 
@@ -37,6 +44,7 @@ const ALL_AGENT_KEYS = [
   'COPILOT_CLI',
   'CURSOR_TRACE_ID',
   'REDIACC_ALLOW_GRAND_REPO',
+  'REDIACC_ALLOW_CONFIG_EDIT',
 ] as const;
 
 function backupAndClearEnv(backup: Record<string, string | undefined>) {
@@ -124,6 +132,7 @@ describe('assertAgentMachineAccess', () => {
     vi.clearAllMocks();
     mockIsAgentByAncestry.mockReturnValue(false);
     mockIsOverrideLegitimate.mockReturnValue(true);
+    mockIsAncestryAvailable.mockReturnValue(true);
     backupAndClearEnv(envBackup);
   });
 
@@ -154,6 +163,26 @@ describe('assertAgentMachineAccess', () => {
     expect(() => assertAgentMachineAccess('prod-1')).toThrow();
   });
 
+  it('uses the agent-injected error when ancestry verification is available', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = '*';
+    mockIsOverrideLegitimate.mockReturnValue(false);
+    mockIsAncestryAvailable.mockReturnValue(true);
+    expect(() => assertAgentMachineAccess('prod-1')).toThrow(
+      /errors\.agent\.machineGuardOverride$/
+    );
+  });
+
+  it('uses the cannot-verify error when ancestry verification is unavailable', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_GRAND_REPO = '*';
+    mockIsOverrideLegitimate.mockReturnValue(false);
+    mockIsAncestryAvailable.mockReturnValue(false);
+    expect(() => assertAgentMachineAccess('prod-1')).toThrow(
+      'errors.agent.machineGuardOverrideNonLinux'
+    );
+  });
+
   it('does not allow specific repo name as machine access consent', () => {
     process.env.REDIACC_AGENT = '1';
     process.env.REDIACC_ALLOW_GRAND_REPO = 'mail';
@@ -182,6 +211,7 @@ describe('assertAgentRepoCreate', () => {
     vi.clearAllMocks();
     mockIsAgentByAncestry.mockReturnValue(false);
     mockIsOverrideLegitimate.mockReturnValue(true);
+    mockIsAncestryAvailable.mockReturnValue(true);
     backupAndClearEnv(envBackup);
   });
 
@@ -223,5 +253,47 @@ describe('assertAgentRepoCreate', () => {
     process.env.REDIACC_ALLOW_GRAND_REPO = 'my-app,*';
     mockIsOverrideLegitimate.mockReturnValue(true);
     expect(() => assertAgentRepoCreate('my-app')).not.toThrow();
+  });
+});
+
+describe('configEditOverrideScope', () => {
+  const envBackup: Record<string, string | undefined> = {};
+
+  beforeEach(() => {
+    _resetCache();
+    vi.clearAllMocks();
+    mockIsAgentByAncestry.mockReturnValue(false);
+    mockIsOverrideLegitimate.mockReturnValue(true);
+    mockIsAncestryAvailable.mockReturnValue(true);
+    backupAndClearEnv(envBackup);
+  });
+
+  afterEach(() => {
+    restoreEnv(envBackup);
+  });
+
+  it('returns null when the env var is not set', () => {
+    expect(configEditOverrideScope()).toBeNull();
+  });
+
+  it('returns the scope outside agent environments without ancestry checks', () => {
+    process.env.REDIACC_ALLOW_CONFIG_EDIT = '/credentials/*';
+    expect(configEditOverrideScope()).toBe('/credentials/*');
+    expect(mockIsOverrideLegitimate).not.toHaveBeenCalled();
+  });
+
+  it('verifies REDIACC_ALLOW_CONFIG_EDIT itself, not the grand-repo override', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_CONFIG_EDIT = '*';
+    mockIsOverrideLegitimate.mockReturnValue(true);
+    expect(configEditOverrideScope()).toBe('*');
+    expect(mockIsOverrideLegitimate).toHaveBeenCalledWith('REDIACC_ALLOW_CONFIG_EDIT');
+  });
+
+  it('rejects an agent-injected config-edit override', () => {
+    process.env.REDIACC_AGENT = '1';
+    process.env.REDIACC_ALLOW_CONFIG_EDIT = '*';
+    mockIsOverrideLegitimate.mockReturnValue(false);
+    expect(configEditOverrideScope()).toBeNull();
   });
 });
