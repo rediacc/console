@@ -40,8 +40,10 @@ interface TrimOptions {
 
 function formatTrimBytes(bytes: number | undefined): string {
   const b = bytes ?? 0;
+  const tb = 1024 ** 4;
   const gb = 1024 ** 3;
   const mb = 1024 ** 2;
+  if (b >= tb) return `${(b / tb).toFixed(1)} TB`;
   if (b >= gb) return `${(b / gb).toFixed(1)} GB`;
   if (b >= mb) return `${(b / mb).toFixed(1)} MB`;
   if (b >= 1024) return `${(b / 1024).toFixed(1)} KB`;
@@ -91,7 +93,11 @@ async function handleTrimAction(options: TrimOptions): Promise<void> {
   renderTrimResult(parsed);
 }
 
-function renderTrimResult(parsed: TrimResult): void {
+function renderTrimResult(parsed: TrimResult | null | undefined): void {
+  if (!parsed) {
+    outputService.error(t('commands.repo.trim.failed'));
+    return;
+  }
   const format = getOutputFormat();
   if (format !== 'table') {
     outputService.print(parsed, format);

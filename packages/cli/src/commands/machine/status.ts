@@ -134,8 +134,10 @@ function discardsDisplay(sh: { mounted: boolean; discards_enabled: boolean }): s
  * pre-formatted from renet; quota/allocated are raw numbers). */
 function formatBytesShort(bytes: number | undefined): string {
   const b = bytes ?? 0;
+  const tb = 1024 ** 4;
   const gb = 1024 ** 3;
   const mb = 1024 ** 2;
+  if (b >= tb) return `${(b / tb).toFixed(1)} TB`;
   if (b >= gb) return `${(b / gb).toFixed(1)} GB`;
   if (b >= mb) return `${(b / mb).toFixed(1)} MB`;
   if (b >= 1024) return `${(b / 1024).toFixed(1)} KB`;

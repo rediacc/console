@@ -436,7 +436,8 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // changes machine behavior (quota growth consent) — CLI-only; reading is
   // harmless but the JSON blob shape is CLI-oriented too.
   'repo policy': {
-    mcpExcludeReason: 'Size-policy management changes machine auto-grow behavior — use CLI directly',
+    mcpExcludeReason:
+      'Size-policy management changes machine auto-grow behavior — use CLI directly',
   },
   'term repo': { grandGuard: true },
   'vscode repo': { grandGuard: true },

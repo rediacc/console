@@ -15,7 +15,19 @@ const MAX_OUTPUT_TAIL_CHARS = 500;
  * in the message).
  */
 function failureOutputTail(message: string, stderr?: string, stdout?: string): string | undefined {
-  const output = (stderr?.trim() ? stderr : stdout)?.trim();
+  // Prefer the stream that carries an explicit error line: the bridge puts
+  // its own logrus noise in stderr while relaying the inner command's
+  // "Error: ..." into stdout, so a non-empty stderr alone proves nothing.
+  const errorLineRe = /(^|\n)\s*(\[[^\]]+\]\s*)?Error: /;
+  let output: string | undefined;
+  if (stderr && errorLineRe.test(stderr)) {
+    output = stderr;
+  } else if (stdout && errorLineRe.test(stdout)) {
+    output = stdout;
+  } else {
+    output = stderr?.trim() ? stderr : stdout;
+  }
+  output = output?.trim();
   if (!output) return undefined;
 
   const tail =

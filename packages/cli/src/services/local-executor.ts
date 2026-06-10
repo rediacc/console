@@ -439,12 +439,14 @@ function buildRenetExitError(exitCode: number, stderr: string, stdout: string): 
   return reason ? `${base}: ${capReason(reason)}` : base;
 }
 
-/** Strip bridge `[function] ` prefixes and drop empty/JSON lines. */
+/** Strip bridge `[function] ` prefixes and drop empty lines and JSON
+ * fragments (multi-line JSON yields lines starting with braces, brackets, or
+ * quoted keys). */
 function cleanOutputLines(output: string): string[] {
   return output
     .split('\n')
     .map((line) => line.replace(/^\s*\[[^\]]+\]\s?/, '').trim())
-    .filter((line) => line.length > 0 && !line.startsWith('{') && !line.startsWith('}'));
+    .filter((line) => line.length > 0 && !/^[{}\][",]/.test(line));
 }
 
 /** The last cobra-style "Error: ..." line, without the prefix. */
