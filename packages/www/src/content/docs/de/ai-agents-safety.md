@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: de
-sourceHash: "ae23c9bc851ecfcd"
+sourceHash: "eb4c8dd0389a45a6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -135,15 +135,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 Der Effekt: Ein Agent kann eine Schutzmaßnahme nicht umgehen, indem er mitten in einer Sitzung `export REDIACC_ALLOW_CONFIG_EDIT='*'` ausführt. Nur ein übergeordneter Prozess (Sie, in Ihrem Terminal, vor dem Start des Agents) kann diese Tür öffnen.
 
-## Plattformunterstützung: Linux-only für die Überschreibungen
+## Plattformunterstützung: so wird die Überschreibung auf jedem Betriebssystem verifiziert
 
-`REDIACC_ALLOW_CONFIG_EDIT` und `REDIACC_ALLOW_GRAND_REPO` stützen sich beide auf die Abstammungsverifizierung, um zu beweisen, dass die Überschreibung von Ihnen gesetzt wurde und nicht vom Agent injiziert wurde. Die Verifizierung liest `/proc/<pid>/environ` für jeden Prozess in der Kette. Diese Datei wird vom Kernel zur Exec-Zeit gesetzt und kann vom Prozess selbst nicht modifiziert werden, sodass die Umgebung der übergeordneten Shell ein manipulationssicherer Zeuge ist.
+`REDIACC_ALLOW_CONFIG_EDIT` und `REDIACC_ALLOW_GRAND_REPO` verlassen sich beide auf die Abstammungsverifizierung, um zu beweisen, dass die Überschreibung von Ihnen und nicht vom Agent injiziert wurde. Die Verifizierung funktioniert auf Linux, macOS und Windows, aber der Zeuge, den sie ausliest, unterscheidet sich pro Plattform, und ebenso die Stärke der Garantie:
 
-Diese Datei existiert auf macOS oder Windows nicht. Ohne Möglichkeit, die Legitimität zu verifizieren, schlägt die CLI sicher fehl. Selbst wenn Sie die Überschreibung in Ihrer Shell vor dem Start des Agents korrekt setzen, wird die Überschreibung abgelehnt. Die Fehlermeldung sagt Ihnen genau, was zu tun ist:
+| Plattform | Zeuge | Stärke |
+|---|---|---|
+| Linux | `/proc/<pid>/environ` für jeden Prozess in der Kette | Exec-Zeit-Snapshot, vom Kernel bereitgestellt. Ein Prozess kann nicht nachträglich bearbeiten, womit er gestartet wurde. |
+| macOS | `kern.procargs2` sysctl, gelesen von einem kleinen Helper, der in `rdc` enthalten ist | Gleiche Exec-Zeit-Snapshot-Eigenschaft wie Linux. Lesbar für Ihre eigenen Prozesse ohne Root. |
+| Windows | Der Live-Umgebungsblock jedes Ancestor-Prozesses (PEB), gelesen vom gleichen Helper mit PID-Reuse-Schutz | Schwächer: Windows führt keinen Exec-Zeit-Snapshot durch, daher liest der Check den aktuellen Memory. Ancestors können immer noch nicht von etwas, das ein Agent normalerweise ausführt, umgeschrieben werden, aber der Zeuge ist nicht kernel-gefroren wie auf Linux und macOS. |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+Auf macOS und Windows startet die CLI ihre gebündelte `renet`-Binary, um das Lesen durchzuführen; der Helper meldet, welche der überwachten Variablen jeder Ancestor trägt, und die gesamte Entscheidungslogik verbleibt in der CLI. Wenn der Helper fehlt, veraltet ist oder aus irgendeinem Grund fehlschlägt, kann die CLI die Überschreibung nicht verifizieren und **schlägt sicher fehl**: Die Überschreibung wird abgelehnt und der Fehler sagt, dass die Verifizierung nicht verfügbar war, nicht dass Sie etwas falsch gemacht haben. Eine funktionierende Installation zeigt diese Meldung nie; die Neuinstallation von `rdc` stellt den Helper wieder her.
 
-Nicht-Linux-Benutzer haben keinen Notausstieg aus dem Fork-First-Workflow. Das ist beabsichtigt. Es gibt keine Möglichkeit für einen Agent, die Sandbox zu umgehen, unabhängig davon, wie er aufgefordert wurde. Führen Sie Ihren Agent in WSL, einem Linux-Container oder einer Linux-VM aus, wenn Sie die Überschreibung benötigen; andernfalls arbeiten Sie auf einem Fork.
+Was auf jeder Plattform wahr bleibt: Die Überschreibung muss bereits in der Umgebung des Agent-Prozesses vorhanden sein, wenn er startet. Exportieren Sie sie in Ihrem Terminal, dann starten Sie den Agent. Ein Agent, der die Variable mitten in einer Sitzung setzt, wird abgelehnt.
 
 ## Audit-Log
 

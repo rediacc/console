@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: it
-sourceHash: "ae23c9bc851ecfcd"
+sourceHash: "eb4c8dd0389a45a6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -135,15 +135,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 L'effetto: un agent non può convincerti a superare un guardrail eseguendo `export REDIACC_ALLOW_CONFIG_EDIT='*'` a metà sessione. Solo un processo parent (tu, nel tuo terminale, prima di lanciare l'agent) può aprire quella porta.
 
-## Supporto della piattaforma: solo Linux per gli override
+## Supporto della piattaforma: come l'override è verificato su ogni OS
 
-Sia `REDIACC_ALLOW_CONFIG_EDIT` che `REDIACC_ALLOW_GRAND_REPO` si basano sulla verifica dell'ascendenza per provare che l'override è stato impostato da te e non iniettato dall'agent. La verifica legge `/proc/<pid>/environ` per ogni processo nella catena. Quel file è impostato dal kernel al momento dell'exec e non può essere modificato dal processo stesso, quindi l'ambiente della shell parent è una testimone a prova di manomissione.
+Sia `REDIACC_ALLOW_CONFIG_EDIT` che `REDIACC_ALLOW_GRAND_REPO` si basano sulla verifica dell'ascendenza per provare che l'override è stato impostato da te e non iniettato dall'agent. La verifica funziona su Linux, macOS e Windows, ma la testimone che legge è diversa per ogni piattaforma, e così è il livello di certezza della garanzia:
 
-Quel file non esiste su macOS o Windows. Senza alcun modo di verificare la legittimità, la CLI fallisce in chiusura. Anche se imposti correttamente l'override nella tua shell prima di lanciare l'agent, viene comunque rifiutato. Il messaggio di errore ti dice esattamente cosa fare:
+| Piattaforma | Testimone | Livello di certezza |
+|---|---|---|
+| Linux | `/proc/<pid>/environ` per ogni processo della catena | Snapshot al momento dell'exec, servito dal kernel. Un processo non può modificare retroattivamente cosa è stato avviato con. |
+| macOS | `kern.procargs2` sysctl, letto da un piccolo helper che si trova dentro `rdc` | Stessa proprietà dello snapshot al momento dell'exec come Linux. Leggibile per i tuoi stessi processi senza root. |
+| Windows | Il blocco di ambiente dal vivo di ogni processo antenato (PEB), letto dallo stesso helper, con guardie di riuso dei PID | Più debole: Windows non conserva uno snapshot al momento dell'exec, quindi il controllo legge la memoria corrente. Gli antenati comunque non possono essere riscritti da nulla che un agent normalmente esegue, ma la testimone non è congelata dal kernel come su Linux e macOS. |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+Su macOS e Windows la CLI avvia il suo binario `renet` integrato per fare la lettura; l'helper riferisce quale di queste variabili monitorate ciascun antenato contiene, e tutta la logica decisionale rimane nella CLI. Se l'helper manca, è obsoleto o fallisce per qualsiasi motivo, la CLI non può verificare l'override e **fallisce in chiusura**: l'override viene rifiutato e l'errore dice che la verifica non era disponibile, non che hai fatto qualcosa di sbagliato. Un'installazione funzionante non mostra mai quel messaggio; reinstallare `rdc` ripristina l'helper.
 
-Gli utenti non Linux non hanno escape hatch dal flusso di lavoro fork-first. Questo è intenzionale. Non c'è modo per un agent di aggirare la sandbox, indipendentemente da come è stato sollecitato. Se hai bisogno dell'override, esegui il tuo agent dentro WSL, un container Linux o una VM Linux. Altrimenti, lavora su un fork.
+Quello che rimane vero su ogni piattaforma: l'override deve già essere presente nell'ambiente del processo agent quando si avvia. Esportalo nel tuo terminale, poi lancia l'agent. Un agent che imposta la variabile a metà sessione viene rifiutato.
 
 ## Log di audit
 

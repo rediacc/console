@@ -7,7 +7,6 @@ import { registerAllTools } from './tools.js';
 export interface McpServerOptions {
   configName?: string;
   defaultTimeoutMs: number;
-  allowGrand?: boolean;
   /** Commander program instance for auto-deriving MCP tools from the command tree. */
   program: Command;
 }

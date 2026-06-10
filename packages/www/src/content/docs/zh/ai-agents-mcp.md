@@ -4,7 +4,7 @@ description: 使用模型上下文协议 (MCP) 服务器将 AI 代理连接到 R
 category: Guides
 order: 33
 language: zh
-sourceHash: "ce5f1392ebaa380b"
+sourceHash: "4483eb3da34a6c03"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,7 +109,6 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 |------|--------|------|
 | `--config <name>` | （默认配置） | 用于所有命令的命名配置 |
 | `--timeout <ms>` | `120000` | 默认命令超时时间（毫秒） |
-| `--allow-grand` | off | 允许对 grand（非分叉）仓库执行破坏性操作 |
 
 ## 安全
 
@@ -121,20 +120,15 @@ MCP 服务器通过两层保护机制来保障安全：
 
 > **每个仓库的密钥管理仅限 CLI 操作，此为设计决策。** `repo_secret_set` 和 `repo_secret_unset` 有意**不**作为 MCP 工具暴露。写入操作需要 `--current <previous-value>` 前置条件（或使用 `--rotate-secret` 确认未经验证的轮换），该操作需要人工审核。如果代理需要建议密钥轮换，应先调用 `repo_secret_get` 确认摘要，然后通过 JSON 错误信封中 `next.options[].run` 字段的结构化输出，将面向操作人员的 CLI 命令传递给用户。完整模式请参阅 [AI 代理安全](/en/docs/ai-agents-safety#structured-next-action-hints)，用户操作指南请参阅[仓库 § 密钥](/en/docs/repositories#secrets)。
 
-要允许代理修改 grand 仓库，请使用 `--allow-grand` 启动：
+要允许代理修改 grand 仓库，请在启动托管 MCP 服务器的代理**之前**在终端中导出 `REDIACC_ALLOW_GRAND_REPO`：
 
-```json
-{
-  "mcpServers": {
-    "rdc": {
-      "command": "rdc",
-      "args": ["mcp", "serve", "--allow-grand"]
-    }
-  }
-}
+```bash
+export REDIACC_ALLOW_GRAND_REPO='gitlab'   # 一个仓库
+# 或 'repo1,repo2,repo3'（条目周围的空白会被忽略），或 '*' 用于所有仓库
+claude   # 或 cursor、gemini 等
 ```
 
-你也可以将环境变量 `REDIACC_ALLOW_GRAND_REPO` 设置为单个仓库名称、以逗号分隔的仓库名称列表（例如 `repo1,repo2,repo3`），或者设置为适用于所有仓库的 `*`。各条目周围的空白会被忽略，因此 `repo1, repo2` 也可以使用。机器级访问（例如不指定仓库的 `term connect -m <machine>`）仍然需要 `*`；仓库名称列表无法解锁该权限。
+覆盖是根据进程祖先验证的：仅当覆盖已存在于代理进程本身的环境中时才算数，这意味着你在代理（以及它启动的 MCP 服务器）启动之前导出了它。代理无法通过在会话中途设置该变量来自我授予访问权限。故意没有服务器标志用于此目的：MCP 服务器参数中的标志不能证明是谁设置的，而祖先检查可以。机器级访问（例如 `term connect -m <machine>` 不指定仓库）仍需要 `*`；仓库名称列表无法解锁该权限。
 
 ### 每仓库 SSH 密钥与服务端沙箱
 

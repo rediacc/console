@@ -7,7 +7,7 @@ description: >-
 category: Concepts
 order: 35
 language: pt
-sourceHash: "ae23c9bc851ecfcd"
+sourceHash: "eb4c8dd0389a45a6"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -135,15 +135,19 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 O efeito: um agente não pode convencer seu caminho além de uma proteção executando `export REDIACC_ALLOW_CONFIG_EDIT='*'` no meio da sessão. Apenas um processo pai (você, em seu terminal, antes de iniciar o agente) pode abrir essa porta.
 
-## Suporte de plataforma: apenas Linux para as anulações
+## Suporte de plataforma: como a anulação é verificada em cada SO
 
-`REDIACC_ALLOW_CONFIG_EDIT` e `REDIACC_ALLOW_GRAND_REPO` ambas contam com verificação de ancestralidade para provar que a anulação foi definida por você e não injetada pelo agente. A verificação lê `/proc/<pid>/environ` para cada processo acima da cadeia. Esse arquivo é definido pelo kernel no tempo de execução e não pode ser modificado pelo próprio processo, então o ambiente do shell pai é uma testemunha à prova de manipulação.
+`REDIACC_ALLOW_CONFIG_EDIT` e `REDIACC_ALLOW_GRAND_REPO` ambas contam com verificação de ancestralidade para provar que a anulação foi definida por você e não injetada pelo agente. A verificação funciona em Linux, macOS e Windows, mas a testemunha que lê difere por plataforma, assim como a força da garantia:
 
-Esse arquivo não existe no macOS ou Windows. Sem forma de verificar legitimidade, o CLI falha fechado. Mesmo quando você define a anulação corretamente em seu shell antes de iniciar o agente, a anulação é rejeitada. A mensagem de erro diz exatamente o que fazer:
+| Plataforma | Testemunha | Força |
+|---|---|---|
+| Linux | `/proc/<pid>/environ` para cada processo acima da cadeia | Snapshot no tempo de exec, servido pelo kernel. Um processo não pode editar retroativamente o que foi iniciado. |
+| macOS | Sysctl `kern.procargs2`, lido por um pequeno helper que vem dentro de `rdc` | Mesma propriedade de snapshot no tempo de exec que Linux. Legível para seus próprios processos sem root. |
+| Windows | O bloco de ambiente vivo de cada processo ancestral (PEB), lido pelo mesmo helper, com proteções de reutilização de PID | Mais fraco: Windows não mantém snapshot no tempo de exec, então a verificação lê memória atual. Ancestrais ainda não podem ser reescritos por nada que um agente normalmente execute, mas a testemunha não é congelada pelo kernel da forma que é em Linux e macOS. |
 
-> The REDIACC_ALLOW_GRAND_REPO override is not supported on darwin. This override only works on Linux. On Windows and macOS, agents must use the fork-first workflow. … To use the override, run your agent on Linux (directly, WSL, Docker, or a VM).
+Em macOS e Windows, o CLI lança seu binário bundled `renet` para fazer a leitura; o helper relata qual das variáveis monitoradas cada ancestral carrega, e toda a lógica de decisão permanece no CLI. Se o helper estiver faltando, desatualizado ou falhar por qualquer motivo, o CLI não pode verificar a anulação e **falha fechado**: a anulação é rejeitada e o erro diz que a verificação não estava disponível, não que você fez algo errado. Uma instalação funcionando nunca mostra essa mensagem; reinstalar `rdc` restaura o helper.
 
-Usuários não Linux não têm escape hatch do fluxo fork-first. Isso é intencional. Não há forma para um agente contornar a sandbox, independentemente de como foi solicitado. Se você precisar da anulação, execute seu agente dentro do WSL, um contêiner Linux ou uma VM Linux. Caso contrário, trabalhe em um fork.
+O que permanece verdadeiro em cada plataforma: a anulação deve já estar presente no ambiente do processo agente quando ele inicia. Exporte em seu terminal, depois inicie o agente. Um agente que define a variável no meio da sessão é recusado.
 
 ## Registro de auditoria
 

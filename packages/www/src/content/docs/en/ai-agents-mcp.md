@@ -107,7 +107,6 @@ The agent calls `machine_health` → `machine_containers` → `term_exec` to rea
 |--------|---------|-------------|
 | `--config <name>` | (default config) | Named config to use for all commands |
 | `--timeout <ms>` | `120000` | Default command timeout in milliseconds |
-| `--allow-grand` | off | Allow destructive operations on grand (non-fork) repositories |
 
 ## Security
 
@@ -119,20 +118,15 @@ By default, the server runs in **fork-only mode**: write tools (`repo_up`, `repo
 
 > **Per-repo secrets are CLI-only by design.** `repo_secret_set` and `repo_secret_unset` are intentionally **not** exposed as MCP tools. Writes require a `--current <previous-value>` precondition (or `--rotate-secret` to acknowledge an unverified rotation), and that ceremony needs human eyes-on. Agents that need to suggest a secret rotation should call `repo_secret_get` to confirm the digest, then relay the operator-facing CLI command to the user via the structured `next.options[].run` field in the JSON error envelope. See [AI Agent Safety](/en/docs/ai-agents-safety#structured-next-action-hints) for the full pattern, and [Repositories § Secrets](/en/docs/repositories#secrets) for the user-facing how-to.
 
-To allow an agent to modify grand repos, start with `--allow-grand`:
+To allow an agent to modify grand repos, export `REDIACC_ALLOW_GRAND_REPO` in your terminal **before starting the agent that hosts the MCP server**:
 
-```json
-{
-  "mcpServers": {
-    "rdc": {
-      "command": "rdc",
-      "args": ["mcp", "serve", "--allow-grand"]
-    }
-  }
-}
+```bash
+export REDIACC_ALLOW_GRAND_REPO='gitlab'   # one repo
+# or 'repo1,repo2,repo3' (whitespace around entries is ignored), or '*' for all repos
+claude   # or cursor, gemini, etc.
 ```
 
-You can also set the `REDIACC_ALLOW_GRAND_REPO` environment variable to a single repo name, a comma-separated list of repo names (for example `repo1,repo2,repo3`), or `*` for all repos. Whitespace around entries is ignored, so `repo1, repo2` works too. Machine-level access (such as `term connect -m <machine>` without a repo) still requires `*`; a list of repo names does not unlock it.
+The override is verified against the process ancestry: it only counts when it was already present in the environment of the agent process itself, which means you exported it before the agent (and the MCP server it spawned) started. An agent cannot grant itself access by setting the variable mid-session. There is deliberately no server flag for this: a flag in the MCP server arguments carries no proof of who put it there, while the ancestry check does. Machine-level access (such as `term connect -m <machine>` without a repo) still requires `*`; a list of repo names does not unlock it.
 
 ### Per-repo SSH keys and server-side sandbox
 
