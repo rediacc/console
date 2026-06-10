@@ -488,6 +488,7 @@ Deploy or update a repository (mount, run Rediaccfile up which calls renet compo
 - `-m, --machine <name>` — Target machine name
 - `--skip-checkpoint` — Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)
 - `--tls` — Request dedicated TLS cert for this repo (forks use shared machine cert by default)
+- `--detach` — Return once containers are started; health checks continue in the background
 - `--include-forks` — Also mount/start forked repositories
 - `--mount-only` — Only mount, don't start services
 - `--parallel` — Start repositories concurrently
@@ -681,6 +682,7 @@ Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONS
 - `--checkpoint` — Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)
 - `--immutable` — Mark the fork read-only: it refuses to mount, keeping its image byte-stable forever (a frozen commit/base for cross-machine delta push)
 - `--up` — Mount and start services after forking (fork + mount + up in one command)
+- `--detach` — With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
