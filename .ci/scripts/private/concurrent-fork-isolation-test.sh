@@ -98,7 +98,7 @@ services:
     network_mode: host
     labels:
       - "rediacc.checkpoint=true"
-    command: sh -c 'i=0; while true; do i=$((i+1)); echo "count=$i"; sleep 1; done'
+    command: sh -c 'i=0; while true; do i=$$((i+1)); echo "count=$$i"; sleep 1; done'
 COMPOSE
 cat >"$COUNTER_DIR/Rediaccfile" <<'REDIACCFILE'
 up() {
@@ -287,6 +287,12 @@ for _ in $(seq 1 30); do
 done
 if [[ "${parent_count:-0}" -lt 15 ]]; then
     log_error "parent counter stuck at '${parent_count:-0}' — counter container unhealthy"
+    log_step "[diag] raw counter container state + logs"
+    _ssh "sudo bash -c '
+      name=\$(docker -H unix://$parent_sock ps -a --filter name=counter --format \"{{.Names}}\" | head -1)
+      docker -H unix://$parent_sock ps -a --filter name=counter
+      [ -n \"\$name\" ] && docker -H unix://$parent_sock logs --tail 5 \"\$name\" 2>&1
+    '" || true
     exit 1
 fi
 log_info "parent counter at $parent_count before checkpoint"
