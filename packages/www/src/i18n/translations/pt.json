@@ -605,9 +605,7 @@
           "title": "7. Alterações a Esta Política"
         },
         "cookiesWeUse": {
-          "content": [
-            "Utilizamos um número mínimo de cookies. Na prática, utilizamos apenas um:"
-          ],
+          "content": ["Utilizamos um número mínimo de cookies. Na prática, utilizamos apenas um:"],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -1194,10 +1192,7 @@
       },
       "trust": {
         "heading": "Segurança e Fiabilidade",
-        "items": [
-          "Encriptação AES-256",
-          "SLA de 99,99% de disponibilidade"
-        ]
+        "items": ["Encriptação AES-256", "SLA de 99,99% de disponibilidade"]
       },
       "ui": {
         "anchor": "Âncora estratégica",
@@ -1647,11 +1642,7 @@
           ],
           "timeline": {
             "newLabel": "Com Rediacc",
-            "newSteps": [
-              "rdc repo up",
-              "JSON",
-              "Pronto"
-            ],
+            "newSteps": ["rdc repo up", "JSON", "Pronto"],
             "oldLabel": "Infraestrutura tradicional",
             "oldSteps": [
               {
@@ -1873,11 +1864,7 @@
           ],
           "timeline": {
             "newLabel": "Com Rediacc",
-            "newSteps": [
-              "$204/mês",
-              "Fixo",
-              "Teu"
-            ],
+            "newSteps": ["$204/mês", "Fixo", "Teu"],
             "oldLabel": "Infraestrutura na nuvem",
             "oldSteps": [
               {
@@ -2067,73 +2054,31 @@
           "features": [
             {
               "name": "Auto-hospedado / on-premises",
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Imutabilidade ao nível do sistema de ficheiros",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Recuperação instantânea (<5 min)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Snapshots sem cópia (CoW)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Preço por máquina (sem preço por lugar)",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Verificação automática de restauro",
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Sem dependência de fornecedor",
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "PANORAMA COMPETITIVO",
@@ -2176,11 +2121,7 @@
           ],
           "timeline": {
             "newLabel": "Com Rediacc",
-            "newSteps": [
-              "Detetar",
-              "Rollback",
-              "<5 min"
-            ],
+            "newSteps": ["Detetar", "Rollback", "<5 min"],
             "oldLabel": "Recuperação de desastres tradicional",
             "oldSteps": [
               {
@@ -2474,11 +2415,7 @@
           ],
           "timeline": {
             "newLabel": "Com Rediacc",
-            "newSteps": [
-              "rdc ceph snapshot create",
-              "52s",
-              "Pronto"
-            ],
+            "newSteps": ["rdc ceph snapshot create", "52s", "Pronto"],
             "oldLabel": "A forma antiga",
             "oldSteps": [
               {
@@ -3236,10 +3173,7 @@
       },
       "trust": {
         "heading": "Segurança e Fiabilidade",
-        "items": [
-          "Encriptação AES-256",
-          "SLA de uptime de 99,99%"
-        ]
+        "items": ["Encriptação AES-256", "SLA de uptime de 99,99%"]
       },
       "trustSection": {
         "heading": "Sua infraestrutura. Suas regras.",
@@ -3402,9 +3336,7 @@
           "title": "4. Partilha de Dados e Terceiros"
         },
         "howWeUseInformation": {
-          "content": [
-            "Utilizamos as informações recolhidas para os seguintes fins:"
-          ],
+          "content": ["Utilizamos as informações recolhidas para os seguintes fins:"],
           "id": "how-we-use-information",
           "items": [
             "Para responder às suas solicitações submetidas através do formulário de contacto",
@@ -3569,9 +3501,7 @@
           "title": "4. Como Solicitar um Reembolso"
         },
         "nonRefundable": {
-          "content": [
-            "Os seguintes itens não são elegíveis para reembolso:"
-          ],
+          "content": ["Os seguintes itens não são elegíveis para reembolso:"],
           "id": "non-refundable",
           "items": [
             "Subscrições canceladas após o prazo de 14 dias para novos subscritores",
@@ -4475,11 +4405,7 @@
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": [
-              "Executar pentest",
-              "47s",
-              "7 vulns encontradas"
-            ],
+            "newSteps": ["Executar pentest", "47s", "7 vulns encontradas"],
             "oldLabel": "PENTEST TRADICIONAL",
             "oldSteps": [
               {
@@ -4729,122 +4655,38 @@
           "features": [
             {
               "name": "Registos de auditoria invioláveis",
-              "refs": [
-                0,
-                2,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 2, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Assinatura criptográfica (SHA-256)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Geração instantânea de relatórios (CLI)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Registo básico de operações",
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [3, 4, 5, 6, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Atribuição de utilizador por ação",
-              "refs": [
-                7,
-                8,
-                9,
-                10,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [7, 8, 9, 10, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Rastreamento de rotação de chaves",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Auto-hospedado / na sua infraestrutura",
-              "refs": [
-                11,
-                12,
-                13,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [11, 12, 13, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -5026,11 +4868,7 @@
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": [
-              "Executar auditoria",
-              "Instantâneo",
-              "Relatório completo"
-            ],
+            "newSteps": ["Executar auditoria", "Instantâneo", "Relatório completo"],
             "oldLabel": "O MÉTODO ANTIGO",
             "oldSteps": [
               {
@@ -5288,122 +5126,38 @@
           "features": [
             {
               "name": "Verificação automática de restauro",
-              "refs": [
-                4,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Verificação completa de saúde do serviço",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Testes automatizados diários",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Clone de armazenamento zero para testes",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Checksum / integridade de ficheiro",
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [5, 6, 7, 8, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Integração de alertas",
-              "refs": [
-                9,
-                10,
-                11,
-                12,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [9, 10, 11, 12, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Auto-hospedado / na sua infraestrutura",
-              "refs": [
-                13,
-                14,
-                15,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [13, 14, 15, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -5586,11 +5340,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Backup",
-              "47s",
-              "Verificado"
-            ],
+            "newSteps": ["Backup", "47s", "Verificado"],
             "oldLabel": "O método antigo",
             "oldSteps": [
               {
@@ -5888,122 +5638,38 @@
           "features": [
             {
               "name": "Replicação entre clouds",
-              "refs": [
-                0,
-                4,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 4, 5, 6, 0],
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Failover em menos de 30 segundos",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Transferência apenas incremental (98% de poupança)",
-              "refs": [
-                0,
-                7,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 7, 8, 9, 0],
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Failover entre qualquer fornecedor",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Auto-hospedado, sem agente cloud",
-              "refs": [
-                0,
-                10,
-                11,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 10, 11, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Failover DNS automático",
-              "refs": [
-                0,
-                0,
-                12,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 12, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Replicação da stack completa (aplicação + BD)",
-              "refs": [
-                0,
-                13,
-                14,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 13, 14, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -6187,11 +5853,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Detetar",
-              "<30s",
-              "Online"
-            ],
+            "newSteps": ["Detetar", "<30s", "Online"],
             "oldLabel": "O método antigo",
             "oldSteps": [
               {
@@ -6586,12 +6248,7 @@
               },
               {
                 "footer": "Melhoria contínua · automatizada",
-                "items": [
-                  "S1: ████████ 23",
-                  "S2: ████ 12",
-                  "S3: ██ 7",
-                  "S4: █ 3"
-                ],
+                "items": ["S1: ████████ 23", "S2: ████ 12", "S3: ██ 7", "S4: █ 3"],
                 "status": "-87%",
                 "title": "Tendência de 4 Semanas"
               }
@@ -6646,11 +6303,7 @@
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": [
-              "Scans diários",
-              "0 dias",
-              "Zero pontos cegos"
-            ],
+            "newSteps": ["Scans diários", "0 dias", "Zero pontos cegos"],
             "oldLabel": "PENTEST ANUAL",
             "oldSteps": [
               {
@@ -6881,136 +6534,38 @@
           "features": [
             {
               "name": "Imunidade ao CLOUD Act (sem empresa-mãe sujeita à jurisdição dos EUA)",
-              "refs": [
-                4,
-                4,
-                4,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [4, 4, 4, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Cliente detém as chaves (ininteligibilidade técnica)",
-              "refs": [
-                0,
-                5,
-                5,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 5, 5, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Operador exclusivamente da UE (sem empresa-mãe nos EUA)",
-              "refs": [
-                4,
-                4,
-                4,
-                0,
-                6,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [4, 4, 4, 0, 6, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Caminho de atestação SecNumCloud / C5:2026",
-              "refs": [
-                0,
-                0,
-                7,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 7, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Formato de saída aberto (Data Act Art. 30)",
-              "refs": [
-                8,
-                8,
-                8,
-                0,
-                8,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [8, 8, 8, 0, 8, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Auto-hospedado na infraestrutura do cliente",
-              "refs": [
-                9,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [9, 0, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Residência de dados na UE por predefinição",
-              "refs": [
-                0,
-                0,
-                10,
-                0,
-                13,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 10, 0, 13, 0],
+              "values": ["cross", "cross", "check", "check", "check", "rediacc"]
             }
           ],
           "overline": "A LACUNA",
@@ -7468,122 +7023,38 @@
           "features": [
             {
               "name": "Chaves de encriptação na posse do cliente",
-              "refs": [
-                3,
-                4,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "rediacc"
-              ]
+              "refs": [3, 4, 5, 6, 0],
+              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"]
             },
             {
               "name": "Arquitetura zero-knowledge",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Rotação de chaves em self-service",
-              "refs": [
-                7,
-                8,
-                9,
-                10,
-                0
-              ],
-              "values": [
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "Via KMS",
-                "rediacc"
-              ]
+              "refs": [7, 8, 9, 10, 0],
+              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"]
             },
             {
               "name": "Encriptação AES-256 em repouso",
-              "refs": [
-                11,
-                12,
-                13,
-                14,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [11, 12, 13, 14, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Isolamento de chaves por repositório",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Encriptação em trânsito",
-              "refs": [
-                15,
-                16,
-                17,
-                18,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [15, 16, 17, 18, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Self-hosted / na sua infraestrutura",
-              "refs": [
-                19,
-                20,
-                21,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [19, 20, 21, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -7765,11 +7236,7 @@
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": [
-              "A sua chave",
-              "AES-256",
-              "Zero-knowledge"
-            ],
+            "newSteps": ["A sua chave", "AES-256", "Zero-knowledge"],
             "oldLabel": "A FORMA ANTIGA",
             "oldSteps": [
               {
@@ -8065,117 +7532,33 @@
           "features": [
             {
               "name": "Clonagem de aplicação",
-              "refs": [
-                3,
-                4,
-                5,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [3, 4, 5, 0, 0, 0],
+              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Clonagem de base de dados",
-              "refs": [
-                0,
-                0,
-                0,
-                6,
-                7,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 6, 7, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Clone combinado app + BD",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Qualquer motor de base de dados",
-              "refs": [
-                0,
-                0,
-                0,
-                8,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 8, 0, 0],
+              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Tempo de aprovisionamento",
-              "refs": [
-                9,
-                10,
-                11,
-                12,
-                13,
-                0
-              ],
-              "values": [
-                "Minutos",
-                "Minutos",
-                "Minutos",
-                "Minutos",
-                "Segundos",
-                "<60s"
-              ]
+              "refs": [9, 10, 11, 12, 13, 0],
+              "values": ["Minutos", "Minutos", "Minutos", "Minutos", "Segundos", "<60s"]
             },
             {
               "name": "Dados idênticos à produção",
-              "refs": [
-                0,
-                0,
-                0,
-                14,
-                15,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 14, 15, 0],
+              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -8362,11 +7745,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Executar",
-              "60s",
-              "Pronto"
-            ],
+            "newSteps": ["Executar", "60s", "Pronto"],
             "oldLabel": "A forma antiga",
             "oldSteps": [
               {
@@ -8651,122 +8030,38 @@
           "features": [
             {
               "name": "Teste de failover full-stack",
-              "refs": [
-                0,
-                0,
-                2,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 2, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Zero impacto na produção",
-              "refs": [
-                0,
-                3,
-                4,
-                5,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 3, 4, 5, 0],
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Em menos de 5 minutos",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Relatório automatizado de aprovação/reprovação",
-              "refs": [
-                0,
-                6,
-                7,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 6, 7, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Integração CI/CD",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Testes multi-cloud",
-              "refs": [
-                0,
-                8,
-                9,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 8, 9, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Self-hosted / na sua infraestrutura",
-              "refs": [
-                0,
-                10,
-                11,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 10, 11, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -8949,11 +8244,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Executar teste",
-              "4 min",
-              "Relatório"
-            ],
+            "newSteps": ["Executar teste", "4 min", "Relatório"],
             "oldLabel": "A forma antiga",
             "oldSteps": [
               {
@@ -9231,136 +8522,38 @@
           "features": [
             {
               "name": "Backups imutáveis",
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 5, 6, 7, 0, 0],
+              "values": ["check", "check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Aplicação ao nível do sistema de ficheiros",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Verificação de restauro diária automatizada",
-              "refs": [
-                8,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [8, 0, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Armazenamento zero-copy (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Clone instantâneo para testes",
-              "refs": [
-                9,
-                10,
-                11,
-                12,
-                13,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [9, 10, 11, 12, 13, 0],
+              "values": ["check", "check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Tempo de recuperação",
-              "refs": [
-                14,
-                15,
-                16,
-                17,
-                18,
-                0
-              ],
-              "values": [
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Minutes",
-                "Seconds",
-                "<5 min"
-              ]
+              "refs": [14, 15, 16, 17, 18, 0],
+              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<5 min"]
             },
             {
               "name": "Self-hosted / sem dependência da nuvem",
-              "refs": [
-                19,
-                20,
-                21,
-                0,
-                22,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [19, 20, 21, 0, 22, 0],
+              "values": ["check", "check", "check", "cross", "check", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -9543,11 +8736,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Backup",
-              "Selado",
-              "Verificado"
-            ],
+            "newSteps": ["Backup", "Selado", "Verificado"],
             "oldLabel": "A forma antiga",
             "oldSteps": [
               {
@@ -9866,105 +9055,33 @@
           "features": [
             {
               "name": "Armazenamento de clone zero-copy (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Destruição automática com TTL configurável",
-              "refs": [
-                4,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [4, 0, 0, 0, 0],
+              "values": ["check", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Dados completos de produção no clone",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Ambientes multi-serviço",
-              "refs": [
-                0,
-                5,
-                0,
-                6,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 5, 0, 6, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Self-hosted / sem preços por utilizador",
-              "refs": [
-                0,
-                7,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 7, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Aprovisionamento em menos de 60 segundos",
-              "refs": [
-                0,
-                0,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 8, 9, 0],
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -10137,11 +9254,7 @@
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": [
-              "Criar",
-              "$0 inativo",
-              "Limpeza automática"
-            ],
+            "newSteps": ["Criar", "$0 inativo", "Limpeza automática"],
             "oldLabel": "AMBIENTES ALWAYS-ON",
             "oldSteps": [
               {
@@ -10401,122 +9514,38 @@
           "features": [
             {
               "name": "Restauro completo do ambiente (não apenas ficheiros)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Tempo de recuperação inferior a 5 minutos",
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [4, 5, 6, 7, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Verificações de saúde automáticas pós-restauro",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Granularidade de snapshot em ponto no tempo",
-              "refs": [
-                8,
-                9,
-                10,
-                11,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [8, 9, 10, 11, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Clone sem overhead (sem armazenamento extra)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Recuperação com um único comando",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Alojamento próprio / a sua infraestrutura",
-              "refs": [
-                12,
-                13,
-                14,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [12, 13, 14, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -10699,11 +9728,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Executar restauro",
-              "3m 47s",
-              "Em funcionamento"
-            ],
+            "newSteps": ["Executar restauro", "3m 47s", "Em funcionamento"],
             "oldLabel": "O método antigo",
             "oldSteps": [
               {
@@ -10995,105 +10020,33 @@
           "features": [
             {
               "name": "Dados de produção em clones de CI",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Integração de webhook numa linha",
-              "refs": [
-                3,
-                0,
-                4,
-                5,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [3, 0, 4, 5, 0],
+              "values": ["check", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Ambiente CI com múltiplos serviços",
-              "refs": [
-                0,
-                6,
-                0,
-                7,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 6, 0, 7, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Destruição automática após o pipeline",
-              "refs": [
-                8,
-                0,
-                9,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [8, 0, 9, 0, 0],
+              "values": ["check", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Zero scripts de provisionamento personalizados",
-              "refs": [
-                0,
-                0,
-                10,
-                11,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 10, 11, 0],
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Auto-hospedado / sem dependência de fornecedor",
-              "refs": [
-                0,
-                12,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 12, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -11177,31 +10130,19 @@
             "cards": [
               {
                 "footer": "webhook → rdc",
-                "items": [
-                  "branch: feature/auth-v2",
-                  "commit: a3f7b2c",
-                  "autor: sarah"
-                ],
+                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "autor: sarah"],
                 "status": "Gatilho",
                 "title": "Git Push"
               },
               {
                 "footer": "ci-auth-v2",
-                "items": [
-                  "gitlab · nextcloud",
-                  "mariadb · mailcow",
-                  "380 GB → 2.1 GB"
-                ],
+                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
                 "status": "CoW",
                 "title": "Clone"
               },
               {
                 "footer": "285 aprovados",
-                "items": [
-                  "247 testes unitários ✓",
-                  "38 de integração ✓",
-                  "limpeza automática ✓"
-                ],
+                "items": ["247 testes unitários ✓", "38 de integração ✓", "limpeza automática ✓"],
                 "status": "Aprovados",
                 "title": "Testes"
               }
@@ -11256,11 +10197,7 @@
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": [
-              "git push",
-              "Automático",
-              "Dados reais"
-            ],
+            "newSteps": ["git push", "Automático", "Dados reais"],
             "oldLabel": "SCRIPTS CI PERSONALIZADOS",
             "oldSteps": [
               {
@@ -11560,122 +10497,38 @@
           "features": [
             {
               "name": "Migração sem desencriptação",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Chaves na posse do cliente durante a transferência",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Migração atómica de configuração e dados",
-              "refs": [
-                0,
-                0,
-                5,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 5, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             },
             {
               "name": "Verificação de integridade pós-transferência",
-              "refs": [
-                6,
-                7,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [6, 7, 8, 9, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Migração com um único comando",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Qualquer origem para qualquer destino",
-              "refs": [
-                10,
-                11,
-                12,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [10, 11, 12, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Reversão automática em caso de falha",
-              "refs": [
-                0,
-                0,
-                13,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 13, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -11858,11 +10711,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Executar migração",
-              "0 exposição",
-              "Verificado"
-            ],
+            "newSteps": ["Executar migração", "0 exposição", "Verificado"],
             "oldLabel": "Migração tradicional",
             "oldSteps": [
               {
@@ -12153,122 +11002,38 @@
           "features": [
             {
               "name": "Clone completo de dados de produção",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Verificação de paridade de SO e bibliotecas",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Qualquer motor de base de dados (MariaDB, Postgres, Mongo)",
-              "refs": [
-                0,
-                4,
-                0,
-                5,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 4, 0, 5, 0],
+              "values": ["cross", "check", "cross", "check", "rediacc"]
             },
             {
               "name": "Clone com múltiplos serviços (app + BD + correio + armazenamento)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Armazenamento zero-copy (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Auto-hospedado / sem dependência de fornecedor",
-              "refs": [
-                0,
-                6,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 6, 0, 0, 0],
+              "values": ["cross", "check", "cross", "cross", "rediacc"]
             },
             {
               "name": "Provisionamento em menos de 60 segundos",
-              "refs": [
-                0,
-                0,
-                7,
-                8,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 7, 8, 0],
+              "values": ["cross", "cross", "check", "check", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -12441,11 +11206,7 @@
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": [
-              "Executar clone",
-              "47s",
-              "100% correspondente"
-            ],
+            "newSteps": ["Executar clone", "47s", "100% correspondente"],
             "oldLabel": "AMBIENTES DE DESENVOLVIMENTO TRADICIONAIS",
             "oldSteps": [
               {
@@ -12713,117 +11474,33 @@
           "features": [
             {
               "name": "Recuperação de ambiente completo",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                4,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 4, 0],
+              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
             },
             {
               "name": "Recuperação em menos de 5 minutos",
-              "refs": [
-                5,
-                6,
-                7,
-                8,
-                9,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [5, 6, 7, 8, 9, 0],
+              "values": ["check", "check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Ponto no tempo (precisão ao minuto)",
-              "refs": [
-                10,
-                11,
-                12,
-                13,
-                14,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [10, 11, 12, 13, 14, 0],
+              "values": ["check", "check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Verificação automática de restauro",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Sem transferência de dados necessária",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Auto-hospedado / sem dependência da cloud",
-              "refs": [
-                15,
-                16,
-                17,
-                0,
-                18,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "check",
-                "rediacc"
-              ]
+              "refs": [15, 16, 17, 0, 18, 0],
+              "values": ["check", "check", "check", "cross", "check", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -13006,11 +11683,7 @@
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": [
-              "Detetar",
-              "<5 min",
-              "Online"
-            ],
+            "newSteps": ["Detetar", "<5 min", "Online"],
             "oldLabel": "O MÉTODO ANTIGO",
             "oldSteps": [
               {
@@ -13286,122 +11959,38 @@
           "features": [
             {
               "name": "Políticas de retenção configuráveis",
-              "refs": [
-                4,
-                5,
-                6,
-                7,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [4, 5, 6, 7, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Limpeza automática do ciclo de vida",
-              "refs": [
-                8,
-                9,
-                10,
-                11,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [8, 9, 10, 11, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Verificação de backups retidos",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Relatórios prontos para auditoria instantâneos",
-              "refs": [
-                12,
-                13,
-                14,
-                15,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [12, 13, 14, 15, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Suporte a múltiplos frameworks",
-              "refs": [
-                16,
-                17,
-                18,
-                19,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [16, 17, 18, 19, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Auto-hospedado / na sua infraestrutura",
-              "refs": [
-                20,
-                21,
-                22,
-                0,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [20, 21, 22, 0, 0],
+              "values": ["check", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "CLI / automação em primeiro lugar",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -13585,11 +12174,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Definir política",
-              "Automático",
-              "Pronto para auditoria"
-            ],
+            "newSteps": ["Definir política", "Automático", "Pronto para auditoria"],
             "oldLabel": "A forma antiga",
             "oldSteps": [
               {
@@ -13917,122 +12502,38 @@
           "features": [
             {
               "name": "Clone completo da pilha para testes",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Criação de clone em menos de 60s",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Rede isolada por clone",
-              "refs": [
-                4,
-                0,
-                5,
-                6,
-                0
-              ],
-              "values": [
-                "check",
-                "cross",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [4, 0, 5, 6, 0],
+              "values": ["check", "cross", "check", "check", "rediacc"]
             },
             {
               "name": "Armazenamento adicional nulo (CoW)",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Verificação de saúde automática após patch",
-              "refs": [
-                7,
-                8,
-                9,
-                10,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [7, 8, 9, 10, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Auto-hospedado, sem dependência da cloud",
-              "refs": [
-                11,
-                12,
-                13,
-                14,
-                0
-              ],
-              "values": [
-                "check",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [11, 12, 13, 14, 0],
+              "values": ["check", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Fluxo de trabalho com um único comando",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -14215,11 +12716,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Clonar",
-              "60s",
-              "Aplicar patch e verificar"
-            ],
+            "newSteps": ["Clonar", "60s", "Aplicar patch e verificar"],
             "oldLabel": "A forma antiga",
             "oldSteps": [
               {
@@ -14518,122 +13015,38 @@
           "features": [
             {
               "name": "Migração entre fornecedores",
-              "refs": [
-                0,
-                4,
-                5,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 4, 5, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Migração em menos de 1 hora",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Zero formatos proprietários",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Transferência apenas incremental",
-              "refs": [
-                0,
-                6,
-                7,
-                8,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "check",
-                "rediacc"
-              ]
+              "refs": [0, 6, 7, 8, 0],
+              "values": ["cross", "check", "check", "check", "rediacc"]
             },
             {
               "name": "Sem agente de fornecedor necessário",
-              "refs": [
-                0,
-                0,
-                0,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "cross",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 0, 0, 0],
+              "values": ["cross", "cross", "cross", "cross", "rediacc"]
             },
             {
               "name": "Migração de pilha completa (app + BD)",
-              "refs": [
-                0,
-                9,
-                10,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "check",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 9, 10, 0, 0],
+              "values": ["cross", "check", "check", "cross", "rediacc"]
             },
             {
               "name": "Migração sem tempo de inatividade",
-              "refs": [
-                0,
-                0,
-                11,
-                0,
-                0
-              ],
-              "values": [
-                "cross",
-                "cross",
-                "check",
-                "cross",
-                "rediacc"
-              ]
+              "refs": [0, 0, 11, 0, 0],
+              "values": ["cross", "cross", "check", "cross", "rediacc"]
             }
           ],
           "overline": "A DIFERENÇA",
@@ -14816,11 +13229,7 @@
           ],
           "timeline": {
             "newLabel": "COM A REDIACC",
-            "newSteps": [
-              "Snapshot",
-              "<1h",
-              "Em produção"
-            ],
+            "newSteps": ["Snapshot", "<1h", "Em produção"],
             "oldLabel": "A FORMA ANTIGA",
             "oldSteps": [
               {
@@ -15227,12 +13636,7 @@
           ],
           "timeline": {
             "newLabel": "Com a Rediacc",
-            "newSteps": [
-              "Clonar + patch",
-              "<4 min",
-              "Verificado",
-              "Implementar"
-            ],
+            "newSteps": ["Clonar + patch", "<4 min", "Verificado", "Implementar"],
             "oldLabel": "Aplicação de patches tradicional",
             "oldSteps": [
               {
@@ -15531,9 +13935,7 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": [
-                "A Bridge recolhe as seguintes categorias de dados:"
-              ],
+              "content": ["A Bridge recolhe as seguintes categorias de dados:"],
               "items": [
                 "<strong>Operações de fila:</strong> ID de tarefa, nível de prioridade, tipo de operação, duração de execução, estado de sucesso ou falha",
                 "<strong>Operações SSH:</strong> host de destino, nome de utilizador, número de porta, código de saída, duração de execução (sem conteúdo de comando nem saída)",
@@ -15580,9 +13982,7 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": [
-                "A CLI recolhe as seguintes categorias de dados:"
-              ],
+              "content": ["A CLI recolhe as seguintes categorias de dados:"],
               "items": [
                 "<strong>Utilização de comandos:</strong> nome do comando, versão da CLI, código de saída, estado de sucesso ou falha",
                 "<strong>Argumentos anonimizados:</strong> opções de comando com valores sensíveis omitidos -- palavras-passe, tokens, segredos, chaves de API e credenciais são substituídos por <code>[REDACTED]</code>",
@@ -15654,9 +14054,7 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": [
-                "O Middleware recolhe as seguintes categorias de dados:"
-              ],
+              "content": ["O Middleware recolhe as seguintes categorias de dados:"],
               "items": [
                 "<strong>Informação do sistema:</strong> hostname, versão do sistema operativo, versão do runtime .NET",
                 "<strong>Chamadas de API:</strong> método HTTP, caminho do endpoint, código de estado da resposta, duração do pedido",
@@ -15678,9 +14076,7 @@
           "title": "6. Telemetria do Middleware"
         },
         "principles": {
-          "content": [
-            "Toda a recolha de telemetria na Rediacc segue estes princípios:"
-          ],
+          "content": ["Toda a recolha de telemetria na Rediacc segue estes princípios:"],
           "id": "principles",
           "items": [
             "<strong>Privacidade por conceção:</strong> Os identificadores pessoais são anonimizados antes da transmissão. Os endereços de e-mail são reduzidos ao domínio apenas, os IDs de utilizador são cifrados com hash (SHA-256) e truncados, e as palavras-passe e segredos nunca são recolhidos.",
@@ -15698,9 +14094,7 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": [
-                "A Aplicação Web recolhe as seguintes categorias de dados:"
-              ],
+              "content": ["A Aplicação Web recolhe as seguintes categorias de dados:"],
               "items": [
                 "<strong>Informação do browser:</strong> nome e versão do browser, idioma preferido, plataforma (por exemplo, Windows, macOS, Linux), resolução de ecrã, profundidade de cor, string de user agent, memória do dispositivo (se disponível), tipo de ligação de rede",
                 "<strong>Contexto do utilizador:</strong> ID de sessão (gerado aleatoriamente por sessão), apenas o domínio do e-mail (a parte local é omitida, por exemplo, <code>***@example.com</code>), nome da organização, nome da equipa",
@@ -15714,9 +14108,7 @@
               "title": "4.1 Dados Recolhidos"
             },
             "webNotCollected": {
-              "content": [
-                "A Aplicação Web não recolhe:"
-              ],
+              "content": ["A Aplicação Web não recolhe:"],
               "items": [
                 "Endereços de e-mail completos (a parte local é sempre omitida)",
                 "Palavras-passe, tokens ou credenciais de autenticação",
@@ -15818,9 +14210,7 @@
           "title": "11. Os Seus Dados e a Encriptação"
         },
         "definitions": {
-          "content": [
-            "As seguintes definições aplicam-se ao longo destes Termos de Serviço:"
-          ],
+          "content": ["As seguintes definições aplicam-se ao longo destes Termos de Serviço:"],
           "id": "definitions",
           "items": [
             "<strong>\"Conta\"</strong> designa a conta de utilizador que cria para aceder à Plataforma e gerir a sua Subscrição.",
@@ -15912,9 +14302,7 @@
               "title": "6.1 Instalação e Acesso às Máquinas"
             },
             "restrictions": {
-              "content": [
-                "Não pode:"
-              ],
+              "content": ["Não pode:"],
               "items": [
                 "Fazer engenharia inversa, descompilar, desmontar ou de outro modo tentar derivar o código-fonte do binário Bridge ou de qualquer componente não open-source do Software Local",
                 "Redistribuir, sublicenciar, alugar, arrendar ou emprestar o Software Local a terceiros",
@@ -15953,9 +14341,7 @@
           "title": "3. Descrição dos Serviços"
         },
         "subscriptions": {
-          "content": [
-            "A Rediacc oferece vários níveis de Subscrição:"
-          ],
+          "content": ["A Rediacc oferece vários níveis de Subscrição:"],
           "id": "subscriptions",
           "items": [
             "<strong>Community</strong> (gratuito): Limitado a 2 ativações de Máquinas, funcionalidades essenciais, suporte da comunidade",
