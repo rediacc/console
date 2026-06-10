@@ -303,9 +303,10 @@ Auth: `SES_AK_ID`/`SES_AK_SECRET` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or 
 When fixing CI failures, follow this loop:
 
 1. **Run locally first**: Run `npm run ci` sub-commands locally before pushing to avoid costly CI round-trips. Use parallel sub-agents for independent checks.
-2. **Push and watch**: After pushing, watch CI with `gh run watch <id> --repo rediacc/console --exit-status` in the background.
-3. **Fix on notification**: When the background watch completes, check for failures with `gh run view <id> --json jobs --jq '.jobs[] | select(.conclusion == "failure") | {name}'`.
-4. **Fix, commit, push, repeat**: Fix the issue, commit, push, and watch again. Continue until green.
+2. **Push and watch**: After pushing, watch CI with `gh run watch <id> --repo rediacc/console --exit-status --interval 100` in the background (the long interval keeps context small).
+3. **Fix on notification**: When the background watch completes, check for failures with `gh run view <id> --json jobs --jq '.jobs[] | select(.conclusion == "failure") | {name}'`. A run that ends `cancelled` with a failed job means the watchdog killed it for that failure; `cancelled` with zero failed jobs means your own push superseded it. Cancelled NEVER means green — the run is only done when every job passes (deploy preview is among the last).
+4. **Submodule PRs get bot-reviewed within minutes**: after opening or updating one, fetch `gh api repos/<owner>/<repo>/pulls/<N>/comments`, fix what's real, reply substantively to every comment, and resolve the threads via GraphQL — the parent's `Quality / Submodule Branches` gate fails on unreplied comments.
+5. **Fix, commit, push, repeat**: Fix the issue, commit, push, and watch again. Batch pending fixes into one push — each push restarts the whole pipeline. Continue until green.
 
 ### CI watchdog and auto-retry
 
