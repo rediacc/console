@@ -88,6 +88,8 @@ test.describe
     });
 
     test.afterAll(async () => {
+      // beforeAll skipped all provisioning without CRIU — nothing to tear down.
+      if (!criuAvailable) return;
       for (const [name, netId] of [
         [`${parentRepoName}:${forkTag}`, forkNetworkId],
         [parentRepoName, parentNetworkId],

@@ -49,8 +49,14 @@ _ssh() {
         "${SSH_USER}@${VM_IP}" "$@"
 }
 
+# Temp artifacts removed by the cleanup trap even on premature exit.
+COUNTER_DIR=""
+cp_up_log=""
+
 cleanup() {
     log_step "Cleanup (best-effort)"
+    [[ -n "$COUNTER_DIR" ]] && rm -rf "$COUNTER_DIR"
+    [[ -n "$cp_up_log" ]] && rm -f "$cp_up_log"
     rdc repo down --name "$CP_FORK_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
     rdc repo down --name "$FORK_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
     rdc repo down --name "$PARENT_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
@@ -104,7 +110,7 @@ down() {
 }
 REDIACCFILE
 rdc repo sync upload -m "$MACHINE_NAME" -r "$PARENT_REPO" --local "$COUNTER_DIR" --remote Zcounter
-rm -rf "$COUNTER_DIR"
+rm -rf "$COUNTER_DIR"; COUNTER_DIR=""
 
 log_step "Bringing parent up (parent's postgres will bind first)"
 rdc repo up --name "$PARENT_REPO" -m "$MACHINE_NAME"
@@ -300,7 +306,7 @@ if ! grep -q "restored from checkpoint" "$cp_up_log"; then
     grep -iE "checkpoint|restor" "$cp_up_log" | tail -20 || true
     exit 1
 fi
-rm -f "$cp_up_log"
+rm -f "$cp_up_log"; cp_up_log=""
 
 # The restored counter must continue from >= the pre-checkpoint value. A
 # fresh container would have restarted at ~1 and cannot reach the parent's
