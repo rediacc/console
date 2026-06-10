@@ -52,6 +52,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .option('--checkpoint', t('commands.repo.fork.checkpointOption'))
     .option('--immutable', t('commands.repo.fork.immutableOption'))
     .option('--up', t('commands.repo.fork.upOption'))
+    .option('--detach', t('commands.repo.fork.detachOption'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(
@@ -62,6 +63,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
         checkpoint?: boolean;
         immutable?: boolean;
         up?: boolean;
+        detach?: boolean;
         debug?: boolean;
         skipRouterRestart?: boolean;
       }) => {

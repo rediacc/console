@@ -1381,7 +1381,8 @@
         "starting": "Starting services for \"{{repository}}\" on \"{{machine}}\"...",
         "completed": "Services started",
         "failed": "Service start failed",
-        "checkpointOption": "Restore CRIU checkpoint on start (resume processes from saved memory state)"
+        "checkpointOption": "Restore CRIU checkpoint on start (resume processes from saved memory state)",
+        "detachOption": "Return once containers are started; health checks continue in the background"
       },
       "upAll": {
         "includeForksOption": "Also mount/start forked repositories",
@@ -1552,7 +1553,9 @@
         "rollback": "Rolled back config for \"{{repository}}\"",
         "alreadyExists": "Repository \"{{name}}\" already exists in config",
         "tagReservedLatest": "repo fork: tag \"latest\" is reserved for the grand (production) repository — pick a different --tag (e.g. \"test\", \"staging\", \"<feature>\")",
-        "examples": "\nExamples:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n"
+        "examples": "\nExamples:\n  $ rdc repo fork --parent app --tag test -m server-1\n  $ rdc repo fork --parent app --tag staging -m server-1 --up\n",
+        "detachOption": "With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)",
+        "detachedHint": "Services are starting in the background — check status with: rdc machine query --containers --name {{machine}}"
       },
       "takeover": {
         "description": "Replace grand repo's data with a fork's data. The grand keeps its identity (GUID, networkId, domains, autostart, backup chain) but gets the fork's upgraded data. The old production data is preserved as a backup fork. Use for: test upgrade on fork → verify → takeover to production. Pass an explicit <name>:<tag> for the fork — a bare --name resolves to the grand and is rejected with \"not a fork\".",
