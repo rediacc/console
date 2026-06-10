@@ -110,7 +110,8 @@ down() {
 }
 REDIACCFILE
 rdc repo sync upload -m "$MACHINE_NAME" -r "$PARENT_REPO" --local "$COUNTER_DIR" --remote Zcounter
-rm -rf "$COUNTER_DIR"; COUNTER_DIR=""
+rm -rf "$COUNTER_DIR"
+COUNTER_DIR=""
 
 log_step "Bringing parent up (parent's postgres will bind first)"
 rdc repo up --name "$PARENT_REPO" -m "$MACHINE_NAME"
@@ -306,7 +307,8 @@ if ! grep -q "restored from checkpoint" "$cp_up_log"; then
     grep -iE "checkpoint|restor" "$cp_up_log" | tail -20 || true
     exit 1
 fi
-rm -f "$cp_up_log"; cp_up_log=""
+rm -f "$cp_up_log"
+cp_up_log=""
 
 # The restored counter must continue from >= the pre-checkpoint value. A
 # fresh container would have restarted at ~1 and cannot reach the parent's
