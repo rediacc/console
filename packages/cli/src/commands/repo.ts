@@ -248,6 +248,7 @@ async function handleSingleRepoUp(
     machine: string;
     skipCheckpoint?: boolean;
     tls?: boolean;
+    detach?: boolean;
     dryRun?: boolean;
     debug?: boolean;
     skipRouterRestart?: boolean;
@@ -258,6 +259,7 @@ async function handleSingleRepoUp(
   const params: Record<string, unknown> = {};
   if (options.skipCheckpoint) params.skip_checkpoint = true;
   if (options.tls) params.tls = true;
+  if (options.detach) params.detach = true;
 
   // Pass grandGuid so renet can mark forks after mount
   {
@@ -384,6 +386,7 @@ export function registerRepoCommands(program: Command): void {
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--skip-checkpoint', t('commands.repo.up.skipCheckpointOption'))
     .option('--tls', t('commands.repo.up.tlsOption'))
+    .option('--detach', t('commands.repo.up.detachOption'))
     .option('--include-forks', t('commands.repo.upAll.includeForksOption'))
     .option('--mount-only', t('commands.repo.upAll.mountOnlyOption'))
     .option('--parallel', t('commands.repo.upAll.parallelOption'))

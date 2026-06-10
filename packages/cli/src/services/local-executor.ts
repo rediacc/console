@@ -135,7 +135,7 @@ export interface LocalExecuteResult {
   /** Step timing from renet (parsed from JSON output) */
   steps?: { name: string; duration_ms: number; detail?: string }[];
   /** CLI-side step timing (config, SSH connect, provision, verify, license) */
-  cliSteps?: { name: string; duration_ms: number }[];
+  cliSteps?: { name: string; duration_ms: number; startedAtMs?: number }[];
   /** All steps combined (CLI overhead + renet execution) */
   allSteps?: { name: string; duration_ms: number; detail?: string }[];
 }
@@ -1146,7 +1146,7 @@ class LocalExecutorService {
     sshPrivateKey: string,
     options: LocalExecuteOptions,
     sftp: SFTPClient,
-    cliSteps: { name: string; duration_ms: number }[],
+    cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[],
     quiet: boolean
   ): Promise<{ remoteRenetPath: string; renetUploaded: boolean }> {
     const provStart = Date.now();
@@ -1154,7 +1154,11 @@ class LocalExecutorService {
     const { remotePath: remoteRenetPath, uploaded: renetUploaded } = quiet
       ? await provisionFn()
       : await timedStep(t('timing.step.provisioning'), 'timing.step.renetProvisioned', provisionFn);
-    cliSteps.push({ name: 'renet_provision', duration_ms: Date.now() - provStart });
+    cliSteps.push({
+      name: 'renet_provision',
+      duration_ms: Date.now() - provStart,
+      startedAtMs: provStart,
+    });
 
     const verifyFn = () =>
       verifyMachineSetup(
@@ -1170,7 +1174,11 @@ class LocalExecutorService {
       } else {
         await timedStep(t('timing.step.verifying'), 'timing.step.machineVerified', verifyFn);
       }
-      cliSteps.push({ name: 'machine_verify', duration_ms: Date.now() - verifyStart });
+      cliSteps.push({
+        name: 'machine_verify',
+        duration_ms: Date.now() - verifyStart,
+        startedAtMs: verifyStart,
+      });
     };
 
     if (
@@ -1190,7 +1198,11 @@ class LocalExecutorService {
             sftp
           )
         );
-        cliSteps.push({ name: 'license', duration_ms: Date.now() - licStart });
+        cliSteps.push({
+          name: 'license',
+          duration_ms: Date.now() - licStart,
+          startedAtMs: licStart,
+        });
       };
       await Promise.all([runVerify(), runLicense()]);
     } else {
@@ -1211,7 +1223,7 @@ class LocalExecutorService {
   private async loadConfigAndBuildVault(
     options: LocalExecuteOptions,
     startTime: number,
-    cliSteps: { name: string; duration_ms: number }[]
+    cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[]
   ) {
     const config = await configService.getLocalConfig();
     const machine = await configService.getLocalMachine(options.machineName);
@@ -1241,7 +1253,7 @@ class LocalExecutorService {
       repositoryCredentials,
       repositoryConfigs,
     });
-    cliSteps.push({ name: 'config', duration_ms: Date.now() - startTime });
+    cliSteps.push({ name: 'config', duration_ms: Date.now() - startTime, startedAtMs: startTime });
     return { config, machine, sshPrivateKey, vault };
   }
 
@@ -1252,7 +1264,7 @@ class LocalExecutorService {
     sshPrivateKey: string,
     vault: ReturnType<typeof buildLocalVault>,
     options: LocalExecuteOptions,
-    cliSteps: { name: string; duration_ms: number }[],
+    cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[],
     quiet: boolean,
     startTime: number
   ): Promise<LocalExecuteResult> {
@@ -1303,7 +1315,7 @@ class LocalExecutorService {
   async execute(options: LocalExecuteOptions): Promise<LocalExecuteResult> {
     const startTime = Date.now();
     const configSpinner = options.quietSpinners ? null : startSpinner(t('timing.step.loading'));
-    const cliSteps: { name: string; duration_ms: number }[] = [];
+    const cliSteps: { name: string; duration_ms: number; startedAtMs?: number }[] = [];
 
     try {
       const { config, machine, sshPrivateKey, vault } = await this.loadConfigAndBuildVault(
@@ -1323,7 +1335,11 @@ class LocalExecutorService {
       const lease = quiet
         ? await acquireFn()
         : await timedStep(t('timing.step.connecting'), 'timing.step.connected', acquireFn);
-      cliSteps.push({ name: 'ssh_connect', duration_ms: Date.now() - sshStart });
+      cliSteps.push({
+        name: 'ssh_connect',
+        duration_ms: Date.now() - sshStart,
+        startedAtMs: sshStart,
+      });
 
       try {
         const result = await this.executeSession(

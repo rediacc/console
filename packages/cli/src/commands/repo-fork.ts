@@ -27,6 +27,7 @@ import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import {
+  buildTimingSummary,
   formatStepDuration,
   getActiveLabel,
   getDoneLabel,
@@ -41,6 +42,7 @@ interface ForkActionOptions {
   checkpoint?: boolean;
   immutable?: boolean;
   up?: boolean;
+  detach?: boolean;
   debug?: boolean;
   skipRouterRestart?: boolean;
 }
@@ -76,27 +78,42 @@ function handleLogEvent(event: RenetEvent): void {
 }
 
 /** Handle a step_done event: render and record the step. */
-function handleStepDoneEvent(event: RenetEvent, allSteps: TimelineStep[]): void {
+function handleStepDoneEvent(
+  event: RenetEvent,
+  allSteps: TimelineStep[],
+  startedAtMs?: number
+): void {
   if (!event.name || event.duration_ms === undefined) return;
   const label = getDoneLabel(event.name);
   const detail = event.detail ? ` (${event.detail})` : '';
   process.stdout.write(`\r✔ ${label}${detail} (${formatStepDuration(event.duration_ms)})\n`);
-  allSteps.push({ name: event.name, duration_ms: event.duration_ms, detail: event.detail });
+  allSteps.push({
+    name: event.name,
+    duration_ms: event.duration_ms,
+    detail: event.detail,
+    ...(startedAtMs === undefined ? {} : { startedAtMs }),
+  });
 }
 
 /** Create an event handler for streaming renet events during fork/up legs. */
 function createForkEventHandler(allSteps: TimelineStep[]): (event: RenetEvent) => void {
+  // step_start arrival times anchor the end-of-run waterfall chart.
+  const stepStarts = new Map<string, number>();
   return (event: RenetEvent) => {
     switch (event.type) {
       case 'log':
         handleLogEvent(event);
         break;
       case 'step_start':
+        if (event.name) stepStarts.set(event.name, Date.now());
         process.stdout.write(`⠋ ${getActiveLabel(event.name ?? '')}...`);
         break;
-      case 'step_done':
-        handleStepDoneEvent(event, allSteps);
+      case 'step_done': {
+        const startedAtMs = event.name ? stepStarts.get(event.name) : undefined;
+        if (event.name) stepStarts.delete(event.name);
+        handleStepDoneEvent(event, allSteps, startedAtMs);
         break;
+      }
       case 'output':
         if (
           event.msg &&
@@ -189,6 +206,7 @@ function buildForkParams(plan: ForkPlan, compound: boolean): Record<string, unkn
     ...(plan.options.checkpoint ? { checkpoint: true } : {}),
     ...(plan.options.immutable ? { immutable: true } : {}),
     ...(compound ? { up: true, grand: plan.grandGuid, repo_name: plan.forkKey } : {}),
+    ...(compound && plan.options.detach ? { detach: true } : {}),
   };
 }
 
@@ -253,7 +271,12 @@ async function executeUpLeg(
   const upResult = await localExecutorService.execute({
     functionName: 'repository_up',
     machineName: plan.options.machine,
-    params: { repository: plan.forkKey, mount: true, grand: plan.grandGuid },
+    params: {
+      repository: plan.forkKey,
+      mount: true,
+      grand: plan.grandGuid,
+      ...(plan.options.detach ? { detach: true } : {}),
+    },
     debug: plan.options.debug,
     skipRouterRestart: plan.options.skipRouterRestart,
     eventsMode: true,
@@ -265,6 +288,19 @@ async function executeUpLeg(
     renderLocalExecutionFailure(upResult, t('commands.repo.up.failed'));
   }
   return upResult;
+}
+
+/**
+ * Render the end-of-run timing charts (bars + waterfall + attribution).
+ * TTY-gated; RDC_TIMING_CHART=1 forces rendering for piped output.
+ */
+function printTimingSummary(plan: ForkPlan, steps: TimelineStep[], wallMs: number): void {
+  if (!process.stdout.isTTY && process.env.RDC_TIMING_CHART !== '1') return;
+  const summary = buildTimingSummary(steps, wallMs, {
+    epochMs: plan.startedAt,
+    suggestDetach: Boolean(plan.options.up && !plan.options.detach),
+  });
+  if (summary) process.stdout.write(`\n${summary}\n`);
 }
 
 /**
@@ -286,7 +322,12 @@ function finishTimeline(
     printStepLine(step);
   }
   if (cliSteps.length + orchestrated.length + renetSteps.length > 0) {
-    renderTimelineTotal(Date.now() - plan.startedAt);
+    const wallMs = Date.now() - plan.startedAt;
+    renderTimelineTotal(wallMs);
+    if (plan.options.detach && plan.options.up) {
+      outputService.info(t('commands.repo.fork.detachedHint', { machine: plan.options.machine }));
+    }
+    printTimingSummary(plan, [...cliSteps, ...orchestrated, ...renetSteps], wallMs);
   } else {
     outputService.success(
       t('commands.repo.fork.completed', {
