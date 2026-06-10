@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: it
-sourceHash: "1d0e48ed1094dda6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "8bd2b499c6b8eff6"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Limiti e Quote
@@ -126,7 +126,7 @@ La migrazione live tramite CRIU ha i seguenti vincoli:
 - **Modalità di rete**: CRIU richiede la modalità di rete host. I container che utilizzano configurazioni di rete personalizzate non possono essere sottoposti a checkpoint.
 - **Memoria**: la dimensione dei dati del checkpoint è uguale alla memoria residente del processo sottoposto a checkpoint. Set di dati in memoria di grandi dimensioni (ad esempio, un'app Node.js che memorizza nella cache 4 GB di dati) producono file di checkpoint da 4 GB.
 - **Connessioni TCP**: le applicazioni devono tollerare la perdita di connessione al restore. Le connessioni TCP attive **non** vengono preservate. Il processo ripristinato vede i socket come chiusi e deve riconnettersi. Questo si applica sia ai percorsi di restore sulla stessa macchina che tra macchine diverse.
-- **Il fork live sulla stessa macchina non è supportato**: `rdc repo fork --parent X --tag Y --checkpoint` riesce ad acquisire il checkpoint, ma il successivo `rdc repo up` sulla stessa macchina fallisce con `criu failed: type RESTORE errno 0` quando il genitore è ancora in esecuzione. Questo è causato da bug upstream di CRIU [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) e [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) in interazione con `network_mode: host`. Per la preservazione dello stato del processo in-place sulla stessa macchina, usa `rdc repo down --checkpoint` + `rdc repo up`. Per la migrazione live, usa `rdc repo push --checkpoint` verso una macchina diversa.
+- **Il fork live sulla stessa macchina reindirizza gli indirizzi del padre**: `rdc repo fork --parent X --tag Y --checkpoint` seguito da `rdc repo up` funziona mentre il repository padre continua a girare. I processi ripristinati portano gli indirizzi loopback del padre al momento del checkpoint, quindi il sistema li reindirizza in modo trasparente verso gli indirizzi propri del fork (stesso servizio, copia dei dati del fork). Il primo uso di una connessione TCP ripristinata fallisce comunque e l'app deve riconnettersi, come da punto TCP sopra.
 
 ---
 

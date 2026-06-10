@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: et
-sourceHash: "1d0e48ed1094dda6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "8bd2b499c6b8eff6"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Piirangud ja kvoodid
@@ -126,7 +126,7 @@ Live-migratsiooni CRIU kaudu on järgmised piirangud:
 - **Võrgurežiim**: CRIU nõuab hosti võrgurežiimi. Kohandatud võrgukonfiguratsioonidega konteinereid ei saa kontrollpunktida.
 - **Mälu**: kontrollpunkti andmete suurus võrdub kontrollpunktitud protsessi residendimäluga. Suured mälus olevad andmekogumid (nt Node.js rakendus, mis vahemälustab 4 GB andmeid) toodavad 4 GB kontrollpunktifailid.
 - **TCP-ühendused**: rakendused peavad taluma ühenduse katkemist taastamisel. Aktiivseid TCP-ühendusi **ei** säilitata. Taastatud protsess näeb sokette suletuna ja peab uuesti ühenduma. See kehtib nii sama masina kui ka masinate vaheliste taastamisteede kohta.
-- **Sama masina live-hargnemine ei ole toetatud**: `rdc repo fork --parent X --tag Y --checkpoint` õnnestub kontrollpunkti jäädvustamisel, kuid sellele järgnev `rdc repo up` samal masinal nurjub `criu failed: type RESTORE errno 0` veaga, kui vanem on endiselt töötamas. Selle põhjustavad ülesvoolu CRIU vead [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) ja [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514), mis interakteeruvad `network_mode: host` valikuga. Sama masina protsessioleku kohapealseks säilitamiseks kasutage `rdc repo down --checkpoint` + `rdc repo up`. Live-migratsiooniks kasutage `rdc repo push --checkpoint` erinevale masinale.
+- **Sama masina live-fork suunab vanema aadressid ümber**: `rdc repo fork --parent X --tag Y --checkpoint` ja seejärel `rdc repo up` töötab, samal ajal kui vanem edasi töötab. Taastatud protsessid kannavad checkpoint'i hetke vanema loopback-aadresse, mistõttu süsteem suunab need läbipaistvalt fork'i enda aadressidele (sama teenus, fork'i andmekoopia). Taastatud TCP-ühenduse esimene kasutus ebaõnnestub endiselt ja rakendus peab uuesti ühenduma, vt TCP punkti eespool.
 
 ---
 

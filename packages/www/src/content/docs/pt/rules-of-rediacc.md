@@ -4,8 +4,8 @@ description: "Regras e convenções essenciais para construir aplicações na pl
 category: "Guides"
 order: 5
 language: pt
-sourceHash: "74803e91ef07b03c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4b6899adea7f0712"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Regras do Rediacc
@@ -106,7 +106,7 @@ O renet injeta-as automaticamente em cada contentor:
 - **Opt-in via label**: adicione `rediacc.checkpoint=true` aos contentores que pretende fazer checkpoint. Os contentores sem esta label (bases de dados, caches) iniciam de raiz e recuperam pelos seus proprios mecanismos (WAL, LDF, AOF).
 - **`repo down --checkpoint`** guarda o estado do processo antes de parar; o proximo `repo up` restaura automaticamente. **Este e o fluxo principal na mesma maquina**, verificado como funcional.
 - **`backup push --checkpoint`** captura a memoria do processo em execucao e o estado do disco para contentores com label, depois transfere o volume para outra maquina. Restaure na maquina de destino via `repo up`.
-- **`repo fork --checkpoint`** captura o estado do processo antes de fazer fork e clona o checkpoint por CoW juntamente com o fork. ⚠️ Na mesma maquina, o subsequente `repo up` no fork **falha actualmente** com `criu failed: type RESTORE errno 0` quando o pai ainda esta em execucao. Bugs upstream do CRIU [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Use `repo down --checkpoint` para guardar/restaurar no lugar, ou `backup push --checkpoint` para migracao entre maquinas.
+- **`repo fork --checkpoint`** captura o estado dos processos do pai em execução e clona o checkpoint junto com o fork via CoW. O `repo up` do fork restaura os processos enquanto o pai continua em execução, na mesma máquina. Processos restaurados que referenciam endereços loopback do pai (sockets vinculados, IPs de serviço em memória) são redirecionados de forma transparente para os endereços próprios do fork, então eles falam com a cópia de dados do fork, nunca com a do pai.
 - **`repo up`** detecta automaticamente dados de checkpoint e restaura se encontrados. Use `--skip-checkpoint` para forcar inicio limpo.
 - **Restauro com consciencia de dependencias**: usa `depends_on` do compose para iniciar primeiro as bases de dados (aguarda que fiquem saudaveis) e depois restaura os contentores da aplicacao com CRIU.
 - **As conexoes TCP ficam obsoletas apos o restauro**; as aplicacoes devem tratar `ECONNRESET` e reconectar. O CRIU nao preserva o estado de conexoes TCP activas apos o restauro em nenhum fluxo suportado.

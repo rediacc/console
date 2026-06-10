@@ -42,6 +42,8 @@ check 2 pre-edit/block-suppressions.sh      "$(multiedit_json "b // eslint-""dis
 # --- should PASS (exit 0) ---
 check 0 pre-bash/block-git-amend.sh         "$(bash_json 'git status')" "amend: benign"
 check 0 pre-bash/block-ssh-docker.sh        "$(bash_json 'ssh 192.168.111.1 docker ps')" "ssh-docker: bridge allowed"
+check 0 pre-bash/block-ssh-file-write.sh    "$(bash_json 'ssh host "cat /etc/criu/runc.conf 2>&1; ls"')" "ssh-file-write: stderr redirect is a read"
+check 0 pre-bash/block-ssh-file-write.sh    "$(bash_json 'ssh host "cat /var/log/x >/dev/null 2>&1"')" "ssh-file-write: dev-null read ok"
 check 0 pre-bash/block-long-sleep.sh        "$(bash_json 'sleep 10')" "long-sleep: 10s ok"
 check 0 pre-bash/block-git-force-push.sh    "$(bash_json 'git push')" "force-push: plain push ok"
 check 0 pre-edit/block-suppressions.sh      "$(edit_json 'const x = 1;')" "suppressions: clean"

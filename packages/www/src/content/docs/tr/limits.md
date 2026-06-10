@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: tr
-sourceHash: "1d0e48ed1094dda6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "8bd2b499c6b8eff6"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Limitler ve Kotalar
@@ -126,7 +126,7 @@ CRIU aracılığıyla canlı geçiş aşağıdaki kısıtlamalara sahiptir:
 - **Ağ modu**: CRIU, ana bilgisayar ağ modunu gerektirir. Özel ağ yapılandırmaları kullanan konteynerlerin kontrol noktası alınamaz.
 - **Bellek**: Kontrol noktası veri boyutu, kontrol noktasına alınan sürecin yerleşik belleğine eşittir. Bellekteki büyük veri kümeleri (örneğin, 4 GB veri önbelleğe alan bir Node.js uygulaması) 4 GB kontrol noktası dosyaları üretir.
 - **TCP bağlantıları**: Uygulamalar, geri yükleme sırasında bağlantı kaybını tolere etmelidir. Aktif TCP bağlantıları **korunmaz**, geri yüklenen süreç soketleri kapalı olarak görür ve yeniden bağlanmalıdır. Bu, hem aynı makine hem de makineler arası geri yükleme yollarına uygulanır.
-- **Aynı makinede canlı çatal desteklenmiyor**: `rdc repo fork --parent X --tag Y --checkpoint` komutu kontrol noktasını başarıyla yakalar, ancak ebeveyn hala çalışırken aynı makinede çalıştırılan sonraki `rdc repo up` komutu `criu failed: type RESTORE errno 0` hatasıyla başarısız olur. Bu, upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) ve [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) ile `network_mode: host` arasındaki etkileşimden kaynaklanır. Aynı makinede yerinde süreç durumunu korumak için bunun yerine `rdc repo down --checkpoint` + `rdc repo up` kullanın. Canlı geçiş için farklı bir makineye `rdc repo push --checkpoint` kullanın.
+- **Aynı makinede canlı fork, ebeveyn adreslerini yönlendirir**: Ebeveyn çalışmaya devam ederken `rdc repo fork --parent X --tag Y --checkpoint` ve ardından `rdc repo up` çalışır. Geri yüklenen süreçler, checkpoint anındaki ebeveynin loopback adreslerini taşır; sistem bunları şeffaf biçimde fork'un kendi adreslerine yönlendirir (aynı servis, verinin fork kopyası). Geri yüklenen bir TCP bağlantısının ilk kullanımı yine başarısız olur ve uygulamanın yeniden bağlanması gerekir; yukarıdaki TCP maddesine bakın.
 
 ---
 

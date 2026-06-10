@@ -5,8 +5,8 @@ description: >-
 category: Reference
 order: 99
 language: ko
-sourceHash: "1d0e48ed1094dda6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "8bd2b499c6b8eff6"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # 제한 및 할당량
@@ -125,7 +125,7 @@ CRIU를 통한 라이브 마이그레이션에는 다음과 같은 제약이 있
 - **네트워크 모드**: CRIU는 호스트 네트워킹 모드가 필요합니다. 사용자 정의 네트워크 구성을 사용하는 컨테이너는 체크포인트될 수 없습니다.
 - **메모리**: 체크포인트 데이터 크기는 체크포인트된 프로세스의 상주 메모리와 같습니다. 대용량 인메모리 데이터셋(예: 4GB 데이터를 캐시하는 Node.js 앱)은 4GB 체크포인트 파일을 생성합니다.
 - **TCP 연결**: 애플리케이션은 복원 후 연결 손실을 허용해야 합니다. 활성 TCP 연결은 **보존되지 않습니다**. 복원된 프로세스는 소켓을 닫힌 것으로 보고 다시 연결해야 합니다. 이는 동일한 머신과 교차 머신 복원 경로 모두에 적용됩니다.
-- **동일한 머신 라이브 포크는 지원되지 않습니다**: `rdc repo fork --parent X --tag Y --checkpoint`는 체크포인트를 캡처하는 데 성공하지만, 부모가 여전히 실행 중일 때 동일한 머신에서의 후속 `rdc repo up`은 `criu failed: type RESTORE errno 0`으로 실패합니다. 이는 업스트림 CRIU 버그 [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) 및 [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514)가 `network_mode: host`와 상호작용하는 것으로 인해 발생합니다. 동일한 머신에서의 인플레이스 프로세스 상태 보존을 위해서는 `rdc repo down --checkpoint` + `rdc repo up`을 대신 사용하십시오. 라이브 마이그레이션을 위해서는 `rdc repo push --checkpoint`를 사용하여 다른 머신으로 이동하십시오.
+- **같은 머신에서의 라이브 포크는 부모 주소를 리디렉션합니다**: 부모 리포지토리가 계속 실행 중인 상태에서 `rdc repo fork --parent X --tag Y --checkpoint` 후 `rdc repo up`이 정상 동작합니다. 복원된 프로세스는 체크포인트 시점의 부모 루프백 주소를 갖고 있으므로, 시스템이 이를 포크 자신의 주소(같은 서비스, 포크의 데이터 사본)로 투명하게 리디렉션합니다. 복원된 TCP 연결은 첫 사용 시 여전히 실패하며 앱이 재연결해야 합니다. 위의 TCP 항목을 참고하세요.
 
 ---
 

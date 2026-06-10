@@ -4,8 +4,8 @@ description: "Olulised reeglid ja kokkulepped rakenduste ehitamiseks Rediacci pl
 category: "Guides"
 order: 5
 language: et
-sourceHash: "74803e91ef07b03c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4b6899adea7f0712"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Rediacci reeglid
@@ -106,7 +106,7 @@ Renet süstib need automaatselt igasse konteinerisse:
 - **Kaasamine sildi kaudu**: Lisage `rediacc.checkpoint=true` konteineritele, mida soovite kontrollpunkti seada. Konteinerid ilma selleta (andmebaasid, vahemälud) käivituvad värsked ja taastuvad oma mehhanismide kaudu (WAL, LDF, AOF).
 - **`repo down --checkpoint`** salvestab protsessi oleku enne peatamist, järgmine `repo up` taastab automaatselt. **See on peamine sama-masina voog**, mis on kinnitatud töötavana.
 - **`backup push --checkpoint`** jäädvustab töötava protsessi mälu + kettaoleku märgistatud konteinerite jaoks, seejärel edastab mahu teisele masinale. Taastage sihtmasinal käsuga `repo up`.
-- **`repo fork --checkpoint`** jäädvustab protsessi oleku enne forkimist ja CoW-kloonib kontrollpunkti forkiga. ⚠️ Samal masinal ebaõnnestub järgnev `repo up` forkil **praegu** veateatega `criu failed: type RESTORE errno 0`, kui vanem on veel töötamas. Ülalvoolsed CRIU vead [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Kasutage `repo down --checkpoint` kohapealseks salvestamiseks/taastamiseks või `backup push --checkpoint` masina ülese migratsiooni jaoks.
+- **`repo fork --checkpoint`** jäädvustab töötava vanema protsesside oleku ja CoW-kloonib checkpoint'i koos fork'iga. Fork'i `repo up` taastab protsessid, samal ajal kui vanem samal masinal edasi töötab. Taastatud protsessid, mis viitavad vanema loopback-aadressidele (seotud soketid, mälus olevad teenuse IP-d), suunatakse läbipaistvalt fork'i enda aadressidele: nad suhtlevad alati fork'i andmekoopiaga, mitte kunagi vanema omaga.
 - **`repo up`** tuvastab kontrollpunkti andmed automaatselt ja taastab, kui need leitakse. Kasutage `--skip-checkpoint`, et sundida värsket käivitamist.
 - **Sõltuvusteadlik taastamine**: Kasutab compose'i `depends_on`, et käivitada andmebaasid esmalt (oodata tervena), seejärel CRIU-taastada rakenduse konteinerid.
 - **TCP-ühendused muutuvad taastamisel aegunuks**, rakendused peavad käsitlema `ECONNRESET`-i ja uuesti ühenduma. CRIU ei säilita aktiivse TCP-ühenduse olekut taastamise üleselt üheski toetatud voos.

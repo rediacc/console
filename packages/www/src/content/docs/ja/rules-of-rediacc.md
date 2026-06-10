@@ -5,8 +5,8 @@ description: >-
 category: Guides
 order: 5
 language: ja
-sourceHash: "74803e91ef07b03c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4b6899adea7f0712"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Rediaccのルール
@@ -107,7 +107,7 @@ Renetはすべてのコンテナに以下を自動注入します:
 - **ラベルによるオプトイン**: チェックポイントしたいコンテナに`rediacc.checkpoint=true`を追加します。このラベルのないコンテナ（データベース、キャッシュ）はフレッシュスタートし、独自のメカニズム（WAL、LDF、AOF）で回復します。
 - **`repo down --checkpoint`** は停止前にプロセス状態を保存し、次の `repo up` で自動復元します。**これが同一マシン上の主要なフローであり**、動作検証済みです。
 - **`backup push --checkpoint`** はラベル付きコンテナの実行中プロセスメモリ + ディスク状態をキャプチャし、ボリュームを別のマシンに転送します。ターゲットマシンでは `repo up` で復元します。
-- **`repo fork --checkpoint`** は fork 前にプロセス状態をキャプチャし、チェックポイントを fork と一緒に CoW クローンします。⚠️ 同一マシン上では、親がまだ実行中の場合、fork に対する後続の `repo up` は現在 `criu failed: type RESTORE errno 0` で**失敗します**。これは upstream CRIU のバグ [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514) によるものです。インプレースな保存/復元には `repo down --checkpoint` を、マシン間マイグレーションには `backup push --checkpoint` を使用してください。
+- **`repo fork --checkpoint`** は稼働中の親からプロセス状態をキャプチャし、チェックポイントをフォークと一緒に CoW クローンします。フォークの `repo up` は、親が同じマシンで稼働し続けたままプロセスを復元します。親のループバックアドレスを参照する復元済みプロセス（バインド済みソケット、メモリ上のサービス IP）はフォーク自身のアドレスへ透過的にリダイレクトされるため、常にフォーク側のデータコピーと通信し、親のデータに触れることはありません。
 - **`repo up`** はチェックポイントデータを自動検出し、見つかった場合は復元します。フレッシュスタートには`--skip-checkpoint`を使用してください。
 - **依存関係を考慮した復元**: composeの`depends_on`を使用してデータベースを先に起動（healthyを待機）し、その後アプリコンテナをCRIU復元します。
 - **TCP 接続は復元後に無効になります**。アプリケーションは `ECONNRESET` を処理して再接続する必要があります。CRIU は、サポートされているどのフローでも、復元時にアクティブな TCP 接続状態を保持しません。
