@@ -49,6 +49,15 @@ function isOverrideAllowed(): boolean {
 }
 
 /**
+ * True when the human set REDIACC_ALLOW_GRAND_REPO=* before the agent started.
+ * Used by guards that should yield to an explicit machine-level authorization
+ * (same trust level as assertAgentMachineAccess).
+ */
+export function isLegitimateWildcardOverride(): boolean {
+  return isGrandEnvWildcard() && isOverrideAllowed();
+}
+
+/**
  * Assert that the current agent is allowed to access a machine directly (no repository context).
  * Machine-level SSH is extremely powerful — agents should only connect to repository contexts.
  * Throws ValidationError unless REDIACC_ALLOW_GRAND_REPO=* is set by the user.

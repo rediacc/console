@@ -203,22 +203,26 @@ async function readRepoSizeGb(
 export async function readMachineActivationStatus(
   machine: MachineConfig,
   sshPrivateKey: string,
-  remoteRenetPath?: string
+  remoteRenetPath?: string,
+  sharedSftp?: SFTPClient
 ): Promise<MachineActivationStatus | null> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
     return null;
   }
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
+  const sftp =
+    sharedSftp ??
+    new SFTPClient({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+  const ownsConnection = !sharedSftp;
 
   try {
-    await sftp.connect();
+    if (ownsConnection) await sftp.connect();
     const machineId = await readRemoteMachineId(sftp, remoteRenetPath);
     const report = await fetchSubscriptionLicenseReport();
     if (!report) {
@@ -234,7 +238,7 @@ export async function readMachineActivationStatus(
       maxCount: report.machineSlots.max,
     };
   } finally {
-    sftp.close();
+    if (ownsConnection) sftp.close();
   }
 }
 
@@ -343,20 +347,24 @@ export async function refreshRepoLicenseIdentity(
     kind: 'grand' | 'fork';
     requestedSizeGb?: number;
   },
-  remoteRenetPath?: string
+  remoteRenetPath?: string,
+  sharedSftp?: SFTPClient
 ): Promise<boolean> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') return false;
 
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
+  const sftp =
+    sharedSftp ??
+    new SFTPClient({
+      host: machine.ip,
+      port: machine.port ?? DEFAULTS.SSH.PORT,
+      username: machine.user,
+      privateKey: sshPrivateKey,
+    });
+  const ownsConnection = !sharedSftp;
 
   try {
-    await sftp.connect();
+    if (ownsConnection) await sftp.connect();
     const datastore = machine.datastore ?? DEFAULT_DATASTORE;
     const [identity, requestedSizeGb] = await Promise.all([
       readRepoIdentity(sftp, datastore, params.repositoryGuid),
@@ -372,10 +380,11 @@ export async function refreshRepoLicenseIdentity(
         requestedSizeGb,
         ...identity,
       },
-      remoteRenetPath
+      remoteRenetPath,
+      sftp
     );
   } finally {
-    sftp.close();
+    if (ownsConnection) sftp.close();
   }
 }
 

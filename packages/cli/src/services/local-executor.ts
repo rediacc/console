@@ -17,7 +17,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { RepositoryConfig } from '../types/index.js';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
+import type { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { t } from '../i18n/index.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { ValidationError } from '../utils/errors.js';
@@ -25,6 +25,7 @@ import { formatDuration } from '../utils/format.js';
 import { startSpinner, stopSpinner } from '../utils/spinner.js';
 import { auditService } from './audit.js';
 import { configService } from './config-resources.js';
+import { machineConnections } from './machine-connection.js';
 import {
   issueRepoLicense,
   refreshRepoLicenseIdentity,
@@ -76,7 +77,7 @@ import { getSubscriptionTokenState } from './subscription-auth.js';
 import { authorizeSubscriptionViaDeviceCode } from './subscription-device-auth.js';
 
 /** Options for local execution */
-interface LocalExecuteOptions {
+export interface LocalExecuteOptions {
   /** Function name to execute */
   functionName: string;
   /** Target machine name (must exist in local context) */
@@ -101,6 +102,12 @@ interface LocalExecuteOptions {
   onEvent?: (event: RenetEvent) => void;
   /** Suppress CLI step spinners (steps still recorded for timeline) */
   quietSpinners?: boolean;
+  /**
+   * Skip the post-success repo-identity license refresh for create/fork.
+   * Callers that defer must invoke refreshIdentityFor() themselves once the
+   * repository is in its final state (e.g. compound fork --up flows).
+   */
+  deferIdentityRefresh?: boolean;
 }
 
 /** Result of local execution */
@@ -127,6 +134,8 @@ export interface LocalExecuteResult {
   stderr?: string;
   /** Step timing from renet (parsed from JSON output) */
   steps?: { name: string; duration_ms: number; detail?: string }[];
+  /** CLI-side step timing (config, SSH connect, provision, verify, license) */
+  cliSteps?: { name: string; duration_ms: number }[];
   /** All steps combined (CLI overhead + renet execution) */
   allSteps?: { name: string; duration_ms: number; detail?: string }[];
 }
@@ -678,7 +687,7 @@ class LocalExecutorService {
       }
     }
 
-    if (result.success) {
+    if (result.success && !options.deferIdentityRefresh) {
       await this.maybeRefreshRepoIdentity(options, machine, sshPrivateKey, remoteRenetPath, sftp);
     }
 
@@ -976,7 +985,41 @@ class LocalExecutorService {
       sftp
     );
     if (repoLicense) {
-      await refreshRepoLicenseIdentity(machine, sshPrivateKey, repoLicense, remoteRenetPath);
+      await refreshRepoLicenseIdentity(machine, sshPrivateKey, repoLicense, remoteRenetPath, sftp);
+    }
+  }
+
+  /**
+   * Re-issue a repo license with identity proofs, for callers that ran a
+   * create/fork with deferIdentityRefresh. Resolves the machine and SSH key
+   * from the active config, reuses a pooled connection, and shares the SFTP
+   * session with license issuance.
+   */
+  async refreshIdentityFor(
+    functionName: string,
+    machineName: string,
+    params: Record<string, unknown>
+  ): Promise<void> {
+    if (process.env.REDIACC_SKIP_MACHINE_ACTIVATION === '1') return;
+    const lease = await machineConnections.acquire(machineName);
+    try {
+      const repoLicense = await resolveRepoLicenseContext(
+        functionName,
+        machineName,
+        params,
+        lease.sftp
+      );
+      if (repoLicense) {
+        await refreshRepoLicenseIdentity(
+          lease.machine,
+          lease.sshPrivateKey,
+          repoLicense,
+          undefined,
+          lease.sftp
+        );
+      }
+    } finally {
+      lease.release();
     }
   }
 
@@ -1113,7 +1156,6 @@ class LocalExecutorService {
       : await timedStep(t('timing.step.provisioning'), 'timing.step.renetProvisioned', provisionFn);
     cliSteps.push({ name: 'renet_provision', duration_ms: Date.now() - provStart });
 
-    const verifyStart = Date.now();
     const verifyFn = () =>
       verifyMachineSetup(
         machine,
@@ -1121,32 +1163,42 @@ class LocalExecutorService {
         { ...options, functionName: options.functionName },
         sftp
       );
-    if (quiet) {
-      await verifyFn();
-    } else {
-      await timedStep(t('timing.step.verifying'), 'timing.step.machineVerified', verifyFn);
-    }
-    cliSteps.push({ name: 'machine_verify', duration_ms: Date.now() - verifyStart });
-
-    if (renetUploaded) {
-      await this.maybeRefreshInvalidSignatures(machine, sshPrivateKey, remoteRenetPath, sftp);
-    }
+    const runVerify = async () => {
+      const verifyStart = Date.now();
+      if (quiet) {
+        await verifyFn();
+      } else {
+        await timedStep(t('timing.step.verifying'), 'timing.step.machineVerified', verifyFn);
+      }
+      cliSteps.push({ name: 'machine_verify', duration_ms: Date.now() - verifyStart });
+    };
 
     if (
       options.functionName === 'repository_create' ||
       options.functionName === 'repository_fork'
     ) {
-      const licStart = Date.now();
-      await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
-        this.ensureRepoLicenseForProvisioning(
-          options,
-          machine,
-          sshPrivateKey,
-          remoteRenetPath,
-          sftp
-        )
-      );
-      cliSteps.push({ name: 'license', duration_ms: Date.now() - licStart });
+      // License issuance only needs the provisioned renet binary, not the
+      // verified machine setup — run it concurrently with verification.
+      const runLicense = async () => {
+        const licStart = Date.now();
+        await timedStep(t('timing.step.activating'), 'timing.step.licenseActivated', () =>
+          this.ensureRepoLicenseForProvisioning(
+            options,
+            machine,
+            sshPrivateKey,
+            remoteRenetPath,
+            sftp
+          )
+        );
+        cliSteps.push({ name: 'license', duration_ms: Date.now() - licStart });
+      };
+      await Promise.all([runVerify(), runLicense()]);
+    } else {
+      await runVerify();
+    }
+
+    if (renetUploaded) {
+      await this.maybeRefreshInvalidSignatures(machine, sshPrivateKey, remoteRenetPath, sftp);
     }
 
     return { remoteRenetPath, renetUploaded };
@@ -1223,6 +1275,7 @@ class LocalExecutorService {
       sshPrivateKey,
       startTime
     );
+    result.cliSteps = [...cliSteps];
     result.allSteps = [...cliSteps, ...(result.steps ?? [])];
 
     if (result.success) {
@@ -1266,16 +1319,15 @@ class LocalExecutorService {
 
       const quiet = options.quietSpinners ?? false;
       const sshStart = Date.now();
-      const sftp = quiet
-        ? await this.connectSftp(machine, sshPrivateKey)
-        : await timedStep(t('timing.step.connecting'), 'timing.step.connected', () =>
-            this.connectSftp(machine, sshPrivateKey)
-          );
+      const acquireFn = () => machineConnections.acquireFor(machine, sshPrivateKey);
+      const lease = quiet
+        ? await acquireFn()
+        : await timedStep(t('timing.step.connecting'), 'timing.step.connected', acquireFn);
       cliSteps.push({ name: 'ssh_connect', duration_ms: Date.now() - sshStart });
 
       try {
         const result = await this.executeSession(
-          sftp,
+          lease.sftp,
           config,
           machine,
           sshPrivateKey,
@@ -1288,7 +1340,7 @@ class LocalExecutorService {
         this.recordAudit(options, result);
         return result;
       } finally {
-        sftp.close();
+        lease.release();
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1296,20 +1348,6 @@ class LocalExecutorService {
       this.recordAudit(options, { success: false, exitCode: 1, durationMs, error: errorMessage });
       return { success: false, exitCode: 1, error: errorMessage, durationMs };
     }
-  }
-
-  private async connectSftp(
-    machine: { ip: string; port?: number; user: string },
-    sshPrivateKey: string
-  ): Promise<SFTPClient> {
-    const client = new SFTPClient({
-      host: machine.ip,
-      port: machine.port ?? DEFAULTS.SSH.PORT,
-      username: machine.user,
-      privateKey: sshPrivateKey,
-    });
-    await client.connect();
-    return client;
   }
 
   /**

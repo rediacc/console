@@ -207,3 +207,12 @@
 1120083
 1120084
 1120085
+
+# @opentelemetry/sdk-node + @opentelemetry/exporter-prometheus: Prometheus exporter
+# process crash via malformed HTTP request (GHSA-q7rr-3cgh-j5r3), fixed only in
+# sdk-node 0.218.0 which is outside the deliberate ^0.211.0 pin in .syncpackrc.json
+# (OTel upgrade chain breaks CLI instrumentation; see versionGroup "Pin OpenTelemetry
+# sdk-node for CLI").
+# BLOCKER: exporter-prometheus is transitive via pinned sdk-node; PrometheusExporter is never instantiated in any source (verified by grep — we export via OTLP only), so the vulnerable HTTP server never starts; DoS-only advisory. Drop when the sdk-node pin moves to >=0.218.0.
+1120252
+1120253

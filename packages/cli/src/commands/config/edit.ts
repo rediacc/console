@@ -391,7 +391,7 @@ async function reconcileAndApply(
     return { done: true, failed: false, nextAttempt: attempt };
   } catch (err) {
     const banner = `// ─── VALIDATION ERROR on attempt ${attempt + 1}/${MAX_RETRIES} ───\n`;
-    const errorBlock = `// ${(err as Error).message.split('\n').join('\n// ')}\n`;
+    const errorBlock = `// ${(err as Error).message.replaceAll('\n', '\n// ')}\n`;
     return writeErrorToTmp(
       tmpFile,
       banner,

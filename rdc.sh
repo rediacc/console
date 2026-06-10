@@ -1,6 +1,59 @@
 #!/bin/bash
 # Standalone CLI runner for rdc (development mode)
 # Auto-builds renet from Go source and makes it available to the CLI.
+#
+# ============================================================================
+# DEMO PREP CHEAT-SHEET  (read this before a live demo)
+# ============================================================================
+# Install a clean, license-free binary as the system `rdc` (renet built with
+# -tags nolicense, no account-server calls), then repoint the PATH symlink once:
+#
+#     ./rdc.sh --override-local
+#     ln -sf ../share/rediacc/bin/rdc ~/.local/bin/rdc
+#
+# After that, `rdc` from any terminal is the binary (no dev-wrapper output).
+#
+# ----------------------------------------------------------------------------
+# URL anatomy (demo-stackoverflow); forks add the -fork-<TAG> infix:
+#
+#            SERVICE NAME        PROJECT/WORKLOAD    SERVER      TOP.TLD
+#
+# https://pgadmin              .demo-stackoverflow .hostinger  .rediacc.io
+# https://pgadmin-fork-joseph  .demo-stackoverflow .hostinger  .rediacc.io
+# https://pgadmin-fork-abraham .demo-stackoverflow .hostinger  .rediacc.io
+#
+# ----------------------------------------------------------------------------
+# Repos on `hostinger` (forks are O(1) regardless of size). NOTE: gitlab uses
+# its OWN domain, not the .<repo>.<machine> shape above:
+#
+# demo-stackoverflow  128 GB  fork+up ~90s
+#   https://pgadmin.demo-stackoverflow.hostinger.rediacc.io
+#   https://pgadmin-fork-fabrikam.demo-stackoverflow.hostinger.rediacc.io
+#
+# gitlab               14 GB  fork+up ~5min (heavy)
+#   https://gitlab.rediacc.io/
+#   https://gitlab-fork-fabrikam.hostinger.rediacc.io/
+#
+# ----------------------------------------------------------------------------
+# Fork / connect / delete loop:
+#
+# rdc repo fork --parent demo-stackoverflow --machine hostinger --tag joseph  --up
+# rdc repo fork --parent demo-stackoverflow --machine hostinger --tag abraham --up
+#
+# rdc vscode connect --machine hostinger -r demo-stackoverflow
+#
+# rdc repo delete --name demo-stackoverflow:abc --machine hostinger   # destroys containers/volumes/image
+# rdc config repository remove --name demo-stackoverflow:abc          # delete keeps the config entry; this drops it
+#
+# ----------------------------------------------------------------------------
+# Agent-style demo prompts (paste to an assistant):
+#
+# "Use rdc (a locally installed CLI). On the hostinger machine, query the
+#  production demo-stackoverflow Postgres DB: top 10 tags by count."
+# "...how many rows are in the posts table of demo-stackoverflow on hostinger?"
+# "...connect to demo-stackoverflow on hostinger and drop the votes table
+#  (testing failure recovery)."
+# ============================================================================
 
 set -euo pipefail
 
@@ -92,11 +145,17 @@ fi
 check_node_version "$NODE_VERSION_MIN"
 
 if [[ "${REDIACC_SKIP_MACHINE_ACTIVATION:-0}" == "1" ]]; then
-    # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal
+    # Self-register as 'rdc' in ~/.local/bin so it's accessible from any terminal,
+    # but ONLY when nothing is already installed there. A real SEA binary (from
+    # `./rdc.sh --override-local`) installs to ~/.local/share/rediacc/bin/rdc and
+    # points this symlink at it; forcibly repointing it back to the wrapper would
+    # silently undo that install. So we never overwrite an existing rdc on PATH —
+    # we only bootstrap the link when it is entirely absent (no file, no symlink,
+    # not even a dangling one).
     _local_bin="$HOME/.local/bin"
     mkdir -p "$_local_bin"
-    if [[ "$(readlink "$_local_bin/rdc" 2>/dev/null)" != "$ROOT_DIR/rdc.sh" ]]; then
-        ln -sf "$ROOT_DIR/rdc.sh" "$_local_bin/rdc"
+    if [[ ! -e "$_local_bin/rdc" && ! -L "$_local_bin/rdc" ]]; then
+        ln -s "$ROOT_DIR/rdc.sh" "$_local_bin/rdc"
     fi
     unset _local_bin
 else

@@ -7,6 +7,7 @@ const writeFileMock = vi.fn();
 const mkdirMock = vi.fn();
 const mkdtempMock = vi.fn();
 const rmMock = vi.fn();
+const statMock = vi.fn();
 const computeSha256Mock = vi.fn();
 const mockInstances: MockSFTPClient[] = [];
 const connectDelegate = vi.fn(() => Promise.resolve());
@@ -45,12 +46,14 @@ vi.mock('node:fs/promises', () => ({
     mkdir: mkdirMock,
     mkdtemp: mkdtempMock,
     rm: rmMock,
+    stat: statMock,
   },
   readFile: readFileMock,
   writeFile: writeFileMock,
   mkdir: mkdirMock,
   mkdtemp: mkdtempMock,
   rm: rmMock,
+  stat: statMock,
 }));
 
 vi.mock('@rediacc/shared-desktop/sftp', () => ({
@@ -224,6 +227,7 @@ describe('RenetProvisionerService', () => {
     mkdirMock.mockResolvedValue(undefined);
     mkdtempMock.mockResolvedValue('/tmp/rdc-renet-local');
     rmMock.mockResolvedValue(undefined);
+    statMock.mockResolvedValue({ mtimeMs: 1_000, size: 12 });
     computeSha256Mock.mockReturnValue('local-hash');
     executeRsyncMock.mockResolvedValue({
       success: true,
@@ -551,5 +555,82 @@ describe('RenetProvisionerService', () => {
     const result = await provisionPromise;
     expect(result.action).toBe('verified');
     expect(result.servicesRestarted).toBe(true);
+  });
+
+  it('serves repeat provisions from cache with no connection, execs, or local reads', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const config = { host: 'hostinger', username: 'muhammed', privateKey: 'key' };
+
+    const first = await renetProvisioner.provision(config, { localBinaryPath: '/tmp/renet' });
+    expect(first.action).toBe('uploaded');
+    expect(mockInstances).toHaveLength(1);
+    const execCallsAfterFirst = getMockInstance(0).exec.mock.calls.length;
+    const readCallsAfterFirst = readFileMock.mock.calls.length;
+    const statCallsAfterFirst = statMock.mock.calls.length;
+
+    const second = await renetProvisioner.provision(config, { localBinaryPath: '/tmp/renet' });
+    expect(second.success).toBe(true);
+    expect(second.action).toBe('verified');
+    expect(second.arch).toBe('amd64');
+    expect(second.remotePath).toBe(remoteInstallPath);
+    // Cache hit: no new SFTP connection, no remote execs, no local file reads.
+    expect(mockInstances).toHaveLength(1);
+    expect(getMockInstance(0).connect).toHaveBeenCalledTimes(1);
+    expect(getMockInstance(0).exec.mock.calls.length).toBe(execCallsAfterFirst);
+    expect(readFileMock.mock.calls.length).toBe(readCallsAfterFirst);
+    expect(statMock.mock.calls.length).toBe(statCallsAfterFirst);
+  });
+
+  it('memoizes the local binary hash and invalidates the memo on mtime change', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+
+    await renetProvisioner.provision(
+      { host: 'host-1', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+    expect(computeSha256Mock).toHaveBeenCalledTimes(1);
+
+    // Different host (provision cache miss), same binary identity: hash served from memo.
+    await renetProvisioner.provision(
+      { host: 'host-2', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+    expect(computeSha256Mock).toHaveBeenCalledTimes(1);
+
+    // mtime change invalidates the memo, forcing a re-hash.
+    statMock.mockResolvedValue({ mtimeMs: 2_000, size: 12 });
+    await renetProvisioner.provision(
+      { host: 'host-3', username: 'muhammed', privateKey: 'key' },
+      { localBinaryPath: '/tmp/renet' }
+    );
+    expect(computeSha256Mock).toHaveBeenCalledTimes(2);
+  });
+
+  it('reuses the detected arch when the provision cache entry expires', async () => {
+    const { renetProvisioner } = await import('../renet-provisioner.js');
+    const config = { host: 'hostinger', username: 'muhammed', privateKey: 'key' };
+
+    const first = await renetProvisioner.provision(config, { localBinaryPath: '/tmp/renet' });
+    expect(first.arch).toBe('amd64');
+    expect(
+      getMockInstance(0).exec.mock.calls.some(([command]) => String(command) === 'uname -m')
+    ).toBe(true);
+
+    // Expire the provision cache entry so the next call takes the full path again.
+    const internals = renetProvisioner as unknown as {
+      cache: Map<string, { provisionedAt: number }>;
+    };
+    for (const entry of internals.cache.values()) {
+      entry.provisionedAt -= 2 * 60 * 60 * 1000;
+    }
+
+    const second = await renetProvisioner.provision(config, { localBinaryPath: '/tmp/renet' });
+    expect(second.success).toBe(true);
+    expect(second.arch).toBe('amd64');
+    expect(mockInstances).toHaveLength(2);
+    // Arch memo: the second connection never runs `uname -m`.
+    expect(
+      getMockInstance(1).exec.mock.calls.some(([command]) => String(command) === 'uname -m')
+    ).toBe(false);
   });
 });

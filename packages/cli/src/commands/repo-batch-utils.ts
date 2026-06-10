@@ -2,15 +2,16 @@ import readline from 'node:readline';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { getMachineContainers } from '@rediacc/shared/services/machine';
 import { t } from '../i18n/index.js';
-import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
+import type { MachineConnectionLease } from '../services/machine-connection.js';
 import { outputService } from '../services/output.js';
 import { deployAllRepoKeys } from '../services/repo-key-deployment.js';
 import { telemetryService } from '../services/telemetry.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 import { createRepoNameResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
 /** Prompt the user for batch confirmation. Returns true if confirmed. */
@@ -28,7 +29,16 @@ export async function confirmBatch(
   });
 }
 
-async function ensureDns(repoName: string, machineName: string): Promise<string | undefined> {
+/**
+ * Ensure DNS records exist for a repo's auto-route domain. Pure HTTP — needs
+ * only names, so callers may fire it before (or concurrent with) SSH work.
+ * Resolves to the machine's baseDomain (undefined when not configured or on
+ * failure; DNS issues never block repo up).
+ */
+export async function ensureDns(
+  repoName: string,
+  machineName: string
+): Promise<string | undefined> {
   try {
     const machineConfig = await configService.getLocalMachine(machineName);
     const baseDomain = machineConfig.infra?.baseDomain;
@@ -52,14 +62,18 @@ async function ensureDns(repoName: string, machineName: string): Promise<string 
 // only on renewal. When sync runs and actually changes something, we emit an
 // info-level log so the behavior is visible; silent failures are swallowed as
 // before because cert cache is advisory.
-async function maybeSyncCertCache(baseDomain: string, machineName: string): Promise<void> {
+async function maybeSyncCertCache(
+  baseDomain: string,
+  machineName: string,
+  lease?: MachineConnectionLease
+): Promise<void> {
   try {
     const { isCertCacheStale, downloadCertCache } = await import('../services/cert-cache.js');
     const current = await configService.getCurrent().catch(() => undefined);
     const entry = current?.infra?.acmeCertCache?.[baseDomain];
     if (!isCertCacheStale(entry?.updatedAt)) return;
     const before = entry?.certCount ?? 0;
-    const result = await downloadCertCache(machineName, { silent: true });
+    const result = await downloadCertCache(machineName, { silent: true }, lease?.sftp);
     if (result && result.certCount !== before) {
       outputService.info(
         t('commands.repo.certSync.updated', {
@@ -73,15 +87,63 @@ async function maybeSyncCertCache(baseDomain: string, machineName: string): Prom
   }
 }
 
-export async function postRepoUpTasks(repoName: string, machineName: string): Promise<void> {
-  const baseDomain = await ensureDns(repoName, machineName);
-
-  if (baseDomain) {
-    await maybeSyncCertCache(baseDomain, machineName);
+/** Read the machine's baseDomain from local config (cert sync does not need DNS to settle). */
+async function getBaseDomain(machineName: string): Promise<string | undefined> {
+  try {
+    const machineConfig = await configService.getLocalMachine(machineName);
+    return machineConfig.infra?.baseDomain;
+  } catch {
+    return undefined;
   }
+}
+
+export interface PostRepoUpTasksOptions {
+  /**
+   * Pre-started ensureDns promise (fired early by the caller, e.g. before
+   * SSH work). When provided, the caller owns its 'dns' step timing.
+   */
+  dnsPromise?: Promise<string | undefined>;
+  /**
+   * Shared machine connection held by the caller for the duration of this
+   * call. The pooled SSH paths underneath (cert sync, service-URL status
+   * fetch) reuse it via machineConnections refcounting.
+   */
+  lease?: MachineConnectionLease;
+  /** Collect orchestrated phase timings ('dns', 'cert_sync', 'service_urls') for timeline rendering. */
+  steps?: TimelineStep[];
+}
+
+export async function postRepoUpTasks(
+  repoName: string,
+  machineName: string,
+  options: PostRepoUpTasksOptions = {}
+): Promise<void> {
+  const { steps } = options;
+
+  // DNS-await ∥ cert sync: cert sync only needs the baseDomain from local
+  // config, so it does not wait for DNS record creation to settle.
+  const dnsPromise =
+    options.dnsPromise ??
+    recordTimelineStep(steps, 'dns', () => ensureDns(repoName, machineName), { parallel: true });
+  const certPromise = recordTimelineStep(
+    steps,
+    'cert_sync',
+    async () => {
+      const baseDomain = await getBaseDomain(machineName);
+      if (baseDomain) {
+        await maybeSyncCertCache(baseDomain, machineName, options.lease);
+      }
+    },
+    { parallel: true }
+  );
+
+  const [dnsSettled] = await Promise.allSettled([dnsPromise, certPromise]);
+  const baseDomain = dnsSettled.status === 'fulfilled' ? dnsSettled.value : undefined;
 
   if (baseDomain) {
-    await printResolvedServiceUrls(repoName, machineName, `${machineName}.${baseDomain}`);
+    await recordTimelineStep(steps, 'service_urls', () =>
+      printResolvedServiceUrls(repoName, machineName, `${machineName}.${baseDomain}`)
+    );
   }
 }
 
@@ -165,16 +227,12 @@ export async function printResolvedServiceUrls(
   try {
     const [parentName, tag] = repoName.includes(':') ? repoName.split(':') : [repoName, undefined];
 
-    const provider = await getStateProvider();
-    const machine = await provider.machines.getWithVaultStatus({
-      teamName: '',
-      machineName,
-    });
-
-    if (!machine) {
-      printServiceUrlPattern(repoName, machineDomain);
-      return;
-    }
+    // Lease-aware status fetch: machineConnections pools by host, so when the
+    // caller holds a lease on this machine the SSH session is reused. Only
+    // the containers section is needed to resolve service URLs.
+    const { fetchMachineStatus } = await import('../services/machine-status.js');
+    const listResult = await fetchMachineStatus(machineName, { sections: ['containers'] });
+    const machine = { machineName, vaultStatus: JSON.stringify(listResult) };
 
     // The rediacc.repo_name label holds the FULL repo name including any
     // :tag suffix for forks (e.g. "mautic:bugfix"), so a direct equality

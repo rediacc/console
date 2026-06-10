@@ -87,6 +87,9 @@ linux:
   target:
     - AppImage
     - deb
+  # electron-builder >=26.15 rejects the executable name derived from the
+  # scoped package name (@rediaccdesktop); name the binary explicitly.
+  executableName: rediacc-desktop
   artifactName: rediacc-desktop-${version}-linux-${arch}.${ext}
   icon: resources/icon.png
   category: Development

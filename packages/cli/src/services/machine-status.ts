@@ -5,21 +5,36 @@
  * Returns the parsed ListResult for display by the command layer.
  */
 
-import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/queue-vault/data/list-types.generated';
-import { SFTPClient } from '@rediacc/shared-desktop/sftp';
 import { configService } from './config-resources.js';
 import { buildRenetEnvPrefix } from './local-executor.js';
+import { machineConnections } from './machine-connection.js';
 import { fetchOtlpCredentials } from './otlp-credentials.js';
 import { outputService } from './output.js';
-import { provisionRenetToRemote, readSSHKey } from './renet-execution.js';
+import { provisionRenetToRemote } from './renet-execution.js';
 import { isTelemetryDisabled } from './telemetry.js';
 
 interface FetchStatusOptions {
   debug?: boolean;
   /** When provided, only gather these renet sections (system,repositories,containers,services,network,block). */
   sections?: string[];
+}
+
+/**
+ * Build the `renet list all` invocation. Exported for unit testing — the
+ * caller-provided sections filter must propagate into `--sections`.
+ */
+export function buildListCommand(params: {
+  envPrefix: string;
+  remoteRenetPath: string;
+  datastore: string;
+  sections?: string[];
+}): string {
+  const sectionsFlag =
+    params.sections && params.sections.length > 0 ? ` --sections ${params.sections.join(',')}` : '';
+  return `sudo ${params.envPrefix}${params.remoteRenetPath} list all --datastore ${params.datastore} --json${sectionsFlag}`;
 }
 
 /**
@@ -42,57 +57,50 @@ export async function fetchMachineStatus(
     throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
   }
 
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-
-  // Provision renet binary to remote
-  if (options.debug) {
-    outputService.info(`Provisioning renet to ${machine.ip}...`);
-  }
-  const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
-    { renetPath: localConfig.renetPath },
-    machine,
-    sshPrivateKey,
-    {
-      debug: options.debug,
-    }
-  );
-  // Build command. Fetch OTLP creds the same way `rdc run` / `repo up` do
-  // via local-executor, so the spawned renet sends its own telemetry to
-  // otlp.rediacc.io — keeping `machine query` consistent with other paths
-  // that shell out to renet. Failures fall through to default-deny; we
-  // never block on telemetry resolution.
-  const telemetryOff = isTelemetryDisabled();
-  const otlpCreds = telemetryOff ? null : await fetchOtlpCredentials();
-  const envPrefix = buildRenetEnvPrefix({
-    isDevelopment: process.env.NODE_ENV !== 'production',
-    telemetryDisabled: telemetryOff,
-    otlpCreds,
-  });
-  const datastore = machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH;
-  const sectionsFlag =
-    options.sections && options.sections.length > 0
-      ? ` --sections ${options.sections.join(',')}`
-      : '';
-  const cmd = `sudo ${envPrefix}${remoteRenetPath} list all --datastore ${datastore} --json${sectionsFlag}`;
-
-  if (options.debug) {
-    outputService.info(`[status] Running: ${cmd}`);
-  }
-
-  // Connect and execute
-  const sftp = new SFTPClient({
-    host: machine.ip,
-    port: machine.port ?? DEFAULTS.SSH.PORT,
-    username: machine.user,
-    privateKey: sshPrivateKey,
-  });
-  await sftp.connect();
-
-  let stdout = '';
-  let stderr = '';
+  const lease = await machineConnections.acquire(machineName);
 
   try {
+    // Provision renet binary to remote
+    if (options.debug) {
+      outputService.info(`Provisioning renet to ${machine.ip}...`);
+    }
+    const { remotePath: remoteRenetPath } = await provisionRenetToRemote(
+      { renetPath: localConfig.renetPath },
+      machine,
+      lease.sshPrivateKey,
+      {
+        debug: options.debug,
+      }
+    );
+    // Build command. Fetch OTLP creds the same way `rdc run` / `repo up` do
+    // via local-executor, so the spawned renet sends its own telemetry to
+    // otlp.rediacc.io — keeping `machine query` consistent with other paths
+    // that shell out to renet. Failures fall through to default-deny; we
+    // never block on telemetry resolution.
+    const telemetryOff = isTelemetryDisabled();
+    const otlpCreds = telemetryOff ? null : await fetchOtlpCredentials();
+    const envPrefix = buildRenetEnvPrefix({
+      isDevelopment: process.env.NODE_ENV !== 'production',
+      telemetryDisabled: telemetryOff,
+      otlpCreds,
+    });
+    const cmd = buildListCommand({
+      envPrefix,
+      remoteRenetPath,
+      datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
+      sections: options.sections,
+    });
+
+    if (options.debug) {
+      outputService.info(`[status] Running: ${cmd}`);
+    }
+
+    // Execute over the shared connection
+    const sftp = await lease.ensure();
+
+    let stdout = '';
+    let stderr = '';
+
     const exitCode = await sftp.execStreaming(cmd, {
       onStdout: (data) => {
         stdout += data.toString();
@@ -116,6 +124,6 @@ export async function fetchMachineStatus(
 
     return parsed;
   } finally {
-    sftp.close();
+    lease.release();
   }
 }

@@ -7,10 +7,12 @@ const {
   mockExecStreaming,
   mockGetLocalConfig,
   mockGetLocalMachine,
+  mockGetRepository,
   mockListStorages,
   mockListRepositories,
   mockIssueRepoLicense,
   mockRefreshRepoLicensesBatch,
+  mockRefreshRepoLicenseIdentity,
   mockAuthorizeSubscriptionViaDeviceCode,
   mockGetSubscriptionTokenState,
   mockBuildLocalVault,
@@ -25,10 +27,12 @@ const {
   mockExecStreaming: vi.fn(),
   mockGetLocalConfig: vi.fn(),
   mockGetLocalMachine: vi.fn(),
+  mockGetRepository: vi.fn(),
   mockListStorages: vi.fn(),
   mockListRepositories: vi.fn(),
   mockIssueRepoLicense: vi.fn(),
   mockRefreshRepoLicensesBatch: vi.fn(),
+  mockRefreshRepoLicenseIdentity: vi.fn(),
   mockAuthorizeSubscriptionViaDeviceCode: vi.fn(),
   mockGetSubscriptionTokenState: vi.fn(),
   mockBuildLocalVault: vi.fn(() => '{"vault":"ok"}'),
@@ -44,6 +48,7 @@ vi.mock('@rediacc/shared-desktop/sftp', () => ({
     close = mockClose;
     exec = mockExec;
     execStreaming = mockExecStreaming;
+    isConnected = () => true;
   },
 }));
 
@@ -51,6 +56,7 @@ vi.mock('../config-resources.js', () => ({
   configService: {
     getLocalConfig: mockGetLocalConfig,
     getLocalMachine: mockGetLocalMachine,
+    getRepository: mockGetRepository,
     listStorages: mockListStorages,
     listRepositories: mockListRepositories,
   },
@@ -59,7 +65,7 @@ vi.mock('../config-resources.js', () => ({
 vi.mock('../license.js', () => ({
   refreshRepoLicensesBatch: mockRefreshRepoLicensesBatch,
   issueRepoLicense: mockIssueRepoLicense,
-  refreshRepoLicenseIdentity: vi.fn(),
+  refreshRepoLicenseIdentity: mockRefreshRepoLicenseIdentity,
 }));
 
 vi.mock('../subscription-device-auth.js', () => ({
@@ -462,5 +468,130 @@ describe('localExecutorService first-use onboarding', () => {
     expect(result.success).toBe(false);
     expect(result.errorCode).toBe('REPO_LICENSE_ISSUANCE_REQUIRED');
     expect(result.error).toContain('tracked in your local config');
+  });
+});
+
+describe('localExecutorService create/fork licensing flow', () => {
+  const savedSkipActivation = process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.REDIACC_SKIP_MACHINE_ACTIVATION;
+    mockGetLocalConfig.mockResolvedValue({
+      sshPrivateKey: 'PRIVATE_KEY',
+      sshPublicKey: 'PUBLIC_KEY',
+      ssh: {
+        privateKeyPath: '/tmp/id',
+        publicKeyPath: '/tmp/id.pub',
+      },
+    });
+    mockGetLocalMachine.mockResolvedValue({
+      machineName: 'hostinger',
+      ip: '127.0.0.1',
+      user: 'root',
+      port: 22,
+    });
+    mockGetRepository.mockResolvedValue({ repositoryGuid: 'guid-1' });
+    mockListStorages.mockResolvedValue([]);
+    mockListRepositories.mockResolvedValue([]);
+    mockIssueRepoLicense.mockResolvedValue(true);
+    mockRefreshRepoLicenseIdentity.mockResolvedValue(true);
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'ready', token: { token: 'rdt_test' } });
+    mockExecStreaming.mockResolvedValue(0);
+  });
+
+  afterEach(() => {
+    if (savedSkipActivation !== undefined) {
+      process.env.REDIACC_SKIP_MACHINE_ACTIVATION = savedSkipActivation;
+    }
+  });
+
+  const createOptions = {
+    functionName: 'repository_create',
+    machineName: 'hostinger',
+    params: { repository: 'myrepo', size: '1G' },
+    captureOutput: true,
+  };
+
+  it('refreshes repo identity after a successful create by default', async () => {
+    const result = await localExecutorService.execute(createOptions);
+
+    expect(result.success).toBe(true);
+    expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
+    // The shared SFTP session is passed through to license issuance.
+    expect(mockRefreshRepoLicenseIdentity.mock.calls[0][4]).toBeDefined();
+  });
+
+  it('skips the identity refresh when deferIdentityRefresh is set', async () => {
+    const result = await localExecutorService.execute({
+      ...createOptions,
+      deferIdentityRefresh: true,
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
+  });
+
+  it('runs machine verification concurrently with license issuance', async () => {
+    const events: string[] = [];
+    mockVerifyMachineSetup.mockImplementation(async () => {
+      events.push('verify_start');
+      await new Promise((resolve) => setTimeout(resolve, 25));
+      events.push('verify_end');
+    });
+    mockIssueRepoLicense.mockImplementation(() => {
+      events.push('license_start');
+      return Promise.resolve(true);
+    });
+
+    const result = await localExecutorService.execute(createOptions);
+
+    expect(result.success).toBe(true);
+    // With sequential execution, license_start would come after verify_end.
+    expect(events.indexOf('license_start')).toBeGreaterThan(events.indexOf('verify_start'));
+    expect(events.indexOf('license_start')).toBeLessThan(events.indexOf('verify_end'));
+  });
+
+  it('populates cliSteps on the result alongside allSteps', async () => {
+    const result = await localExecutorService.execute(createOptions);
+
+    expect(result.success).toBe(true);
+    const names = (result.cliSteps ?? []).map((s) => s.name);
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'config',
+        'ssh_connect',
+        'renet_provision',
+        'machine_verify',
+        'license',
+      ])
+    );
+    for (const step of result.cliSteps ?? []) {
+      expect(result.allSteps).toContainEqual(step);
+    }
+  });
+
+  it('refreshIdentityFor acquires a pooled connection and shares it with licensing', async () => {
+    await localExecutorService.refreshIdentityFor('repository_create', 'hostinger', {
+      repository: 'myrepo',
+      size: '1G',
+    });
+
+    expect(mockRefreshRepoLicenseIdentity).toHaveBeenCalledTimes(1);
+    const call = mockRefreshRepoLicenseIdentity.mock.calls[0];
+    expect(call[1]).toBe('PRIVATE_KEY');
+    expect(call[2]).toMatchObject({ repositoryGuid: 'guid-1', kind: 'grand' });
+    expect(call[4]).toBeDefined();
+    // The lease was released, dropping the last reference and closing.
+    expect(mockClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('refreshIdentityFor is a no-op when machine activation is skipped', async () => {
+    process.env.REDIACC_SKIP_MACHINE_ACTIVATION = '1';
+    await localExecutorService.refreshIdentityFor('repository_create', 'hostinger', {
+      repository: 'myrepo',
+    });
+    expect(mockConnect).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
   });
 });
