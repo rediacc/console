@@ -1070,7 +1070,9 @@ jobs:
   test-fork-isolation:
     name: Concurrent Fork Isolation
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 30 min covered the bind-isolation phases; the console#440 checkpoint
+    # phase (counter warm-up + fork --checkpoint + restore) adds ~3 min.
+    timeout-minutes: 35
     env:
       CI: 'true'
       VM_NET_BASE: '192.168.111'

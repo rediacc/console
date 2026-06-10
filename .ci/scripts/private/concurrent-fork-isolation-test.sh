@@ -8,6 +8,9 @@
 #      0.0.0.0:5432. The bind-rewrite is the contract per services.md:101.
 #   3. The fork's per-network daemon contains no parent-project containers
 #      (renet#59 — name conflict that masked the bind race).
+#   4. `repo fork --checkpoint` of the RUNNING parent restores process state
+#      in the fork while the parent keeps running (console#440 regression
+#      guard: cow_sync parent-mount flush + eBPF alias-subnet remap).
 #
 # Without the fix, step (1) fails: parent's postgres holds 0.0.0.0:5432, and
 # child's postgres exits with "could not bind IPv4 address \"0.0.0.0\":
@@ -38,6 +41,8 @@ MACHINE_NAME="${MACHINE_NAME:-worker-1}"
 PARENT_REPO="bindrace-parent"
 FORK_TAG="child"
 FORK_REPO="${PARENT_REPO}:${FORK_TAG}"
+CP_FORK_TAG="cpchild"
+CP_FORK_REPO="${PARENT_REPO}:${CP_FORK_TAG}"
 
 _ssh() {
     ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no -o ConnectTimeout=15 \
@@ -46,8 +51,10 @@ _ssh() {
 
 cleanup() {
     log_step "Cleanup (best-effort)"
+    rdc repo down --name "$CP_FORK_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
     rdc repo down --name "$FORK_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
     rdc repo down --name "$PARENT_REPO" -m "$MACHINE_NAME" 2>/dev/null || true
+    rdc repo delete --name "$CP_FORK_REPO" -m "$MACHINE_NAME" --force 2>/dev/null || true
     rdc repo delete --name "$FORK_REPO" -m "$MACHINE_NAME" --force 2>/dev/null || true
     rdc repo delete --name "$PARENT_REPO" -m "$MACHINE_NAME" --force 2>/dev/null || true
 }
@@ -72,6 +79,33 @@ cleanup
 log_step "Creating parent repo + applying app-postgres template"
 rdc repo create --name "$PARENT_REPO" -m "$MACHINE_NAME" --size 2G
 rdc repo template apply --name app-postgres -m "$MACHINE_NAME" -r "$PARENT_REPO"
+
+# Counter sidecar for the console#440 checkpoint phase: a checkpoint-labeled
+# process whose monotonic in-memory counter proves CRIU restore vs fresh
+# start. Lives in a Z-prefixed subdir so it comes up after the template app.
+log_step "Uploading checkpoint counter sidecar (Zcounter/)"
+COUNTER_DIR=$(mktemp -d)
+cat >"$COUNTER_DIR/docker-compose.yml" <<'COMPOSE'
+services:
+  counter:
+    image: alpine:3.20
+    network_mode: host
+    labels:
+      - "rediacc.checkpoint=true"
+    command: sh -c 'i=0; while true; do i=$((i+1)); echo "count=$i"; sleep 1; done'
+COMPOSE
+cat >"$COUNTER_DIR/Rediaccfile" <<'REDIACCFILE'
+up() {
+    renet compose -- up -d
+}
+
+down() {
+    renet compose -- down
+}
+REDIACCFILE
+rdc repo sync upload -m "$MACHINE_NAME" -r "$PARENT_REPO" --local "$COUNTER_DIR" --remote Zcounter
+rm -rf "$COUNTER_DIR"
+
 log_step "Bringing parent up (parent's postgres will bind first)"
 rdc repo up --name "$PARENT_REPO" -m "$MACHINE_NAME"
 
@@ -198,4 +232,103 @@ if [[ "${foreign:-0}" -gt 1 ]]; then
 fi
 log_info "✓ each per-network daemon hosts at most one compose project"
 
-log_info "PASS: parent + fork running, distinct binds, no foreign containers"
+# -------------------------------------------------------------------------
+# Phase 5 — console#440 regression guard: live fork with CRIU checkpoint
+# -------------------------------------------------------------------------
+# Fork the RUNNING parent with --checkpoint, bring the fork up, and assert the
+# counter process resumed from the dump instead of starting fresh. Guards both
+# halves of the #440 fix: the cow_sync parent-mount flush (without it the
+# checkpoint data never reaches the fork and restore is silently skipped) and
+# the eBPF alias-subnet remap (without it CRIU's restore fails on the parent's
+# dump-time addresses).
+
+# counter_sockets prints every per-network docker socket that runs a counter
+# container. Before the checkpoint fork exists, that is exactly the parent's.
+counter_sockets() {
+    _ssh "sudo bash -c '
+      for sock in /var/run/rediacc/docker-*.sock; do
+        [ -S \"\$sock\" ] || continue
+        if docker -H unix://\$sock ps --filter name=counter --format \"{{.Names}}\" 2>/dev/null | grep -q counter; then
+          echo \"\$sock\"
+        fi
+      done
+    '"
+}
+
+# counter_value <socket> prints the counter container's last logged count.
+counter_value() {
+    _ssh "sudo bash -c '
+      name=\$(docker -H unix://$1 ps --filter name=counter --format \"{{.Names}}\" 2>/dev/null | head -1)
+      [ -n \"\$name\" ] || exit 0
+      docker -H unix://$1 logs --tail 5 \"\$name\" 2>/dev/null | grep -o \"count=[0-9]*\" | tail -1 | cut -d= -f2
+    '"
+}
+
+log_step "Locating parent's counter container"
+parent_sock=$(counter_sockets | head -1)
+if [[ -z "$parent_sock" ]]; then
+    log_error "parent has no running counter container — sidecar upload or up failed"
+    exit 1
+fi
+
+log_step "Waiting for parent counter to reach 15 (restore-vs-fresh margin)"
+parent_count=0
+for _ in $(seq 1 30); do
+    parent_count=$(counter_value "$parent_sock")
+    [[ "${parent_count:-0}" -ge 15 ]] && break
+    sleep 2
+done
+if [[ "${parent_count:-0}" -lt 15 ]]; then
+    log_error "parent counter stuck at '${parent_count:-0}' — counter container unhealthy"
+    exit 1
+fi
+log_info "parent counter at $parent_count before checkpoint"
+
+log_step "Forking running parent with --checkpoint into '$CP_FORK_TAG'"
+rdc repo fork --parent "$PARENT_REPO" --tag "$CP_FORK_TAG" -m "$MACHINE_NAME" --checkpoint
+
+log_step "Bringing checkpoint fork up — restore must fire (console#440)"
+cp_up_log=$(mktemp)
+if ! rdc repo up --name "$CP_FORK_REPO" -m "$MACHINE_NAME" --debug 2>&1 | tee "$cp_up_log"; then
+    log_error "rdc repo up '$CP_FORK_REPO' failed"
+    exit 1
+fi
+
+if ! grep -q "restored from checkpoint" "$cp_up_log"; then
+    log_error "fork up succeeded but no checkpoint restore happened (console#440 regressed:"
+    log_error "either the dump never reached the fork — cow_sync — or restore failed and fell back to fresh)"
+    grep -iE "checkpoint|restor" "$cp_up_log" | tail -20 || true
+    exit 1
+fi
+rm -f "$cp_up_log"
+
+# The restored counter must continue from >= the pre-checkpoint value. A
+# fresh container would have restarted at ~1 and cannot reach the parent's
+# pre-fork count within seconds of `up` returning.
+log_step "Reading fork's counter (restored process)"
+fork_sock=""
+for sock in $(counter_sockets); do
+    [[ "$sock" != "$parent_sock" ]] && fork_sock="$sock"
+done
+if [[ -z "$fork_sock" ]]; then
+    log_error "no counter container in the fork's daemon"
+    exit 1
+fi
+fork_count=$(counter_value "$fork_sock")
+if [[ "${fork_count:-0}" -lt "$parent_count" ]]; then
+    log_error "fork counter ${fork_count:-0} < pre-checkpoint $parent_count — process state NOT restored"
+    exit 1
+fi
+log_info "✓ fork counter continued at $fork_count (>= $parent_count) — CRIU state preserved"
+
+log_step "Asserting parent kept running through fork + restore"
+parent_after=$(counter_value "$parent_sock")
+sleep 3
+parent_after2=$(counter_value "$parent_sock")
+if [[ "${parent_after2:-0}" -le "${parent_after:-0}" ]]; then
+    log_error "parent counter stalled ($parent_after -> $parent_after2) — parent disturbed by fork restore"
+    exit 1
+fi
+log_info "✓ parent counter still advancing ($parent_after -> $parent_after2)"
+
+log_info "PASS: parent + fork running, distinct binds, no foreign containers, checkpoint fork restored"

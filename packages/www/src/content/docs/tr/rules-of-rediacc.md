@@ -4,8 +4,8 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: Guides
 order: 5
 language: tr
-sourceHash: "74803e91ef07b03c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4b6899adea7f0712"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Rediacc Kuralları
@@ -106,7 +106,7 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - **Etiketle etkinleştirme**: Checkpoint almak istediğiniz konteynerlere `rediacc.checkpoint=true` ekleyin. Bu etiketi olmayan konteynerler (veritabanları, önbellekler) temiz başlar ve kendi mekanizmalarıyla (WAL, LDF, AOF) kurtarılır.
 - **`repo down --checkpoint`** durdurmadan önce süreç durumunu kaydeder, sonraki `repo up` otomatik geri yükler. **Bu, aynı makinedeki birincil akıştır** ve çalıştığı doğrulanmıştır.
 - **`backup push --checkpoint`** etiketli konteynerler için çalışan süreçlerin bellek durumunu + disk durumunu yakalar, ardından birimi başka bir makineye aktarır. Hedef makinede `repo up` ile geri yüklenir.
-- **`repo fork --checkpoint`** fork öncesi süreç durumunu yakalar ve checkpoint'i fork ile birlikte CoW-klonlar. ⚠️ Aynı makinede, ebeveyn hala çalışırken fork üzerindeki sonraki `repo up` **şu anda** `criu failed: type RESTORE errno 0` ile **başarısız olur**. Upstream CRIU hataları [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Yerinde kayıt/geri yükleme için `repo down --checkpoint`, makineler arası geçiş için `backup push --checkpoint` kullanın.
+- **`repo fork --checkpoint`**, çalışan ebeveynden süreç durumunu yakalar ve checkpoint'i fork ile birlikte CoW olarak klonlar. Fork'un `repo up` komutu, ebeveyn aynı makinede çalışmaya devam ederken süreçleri geri yükler. Ebeveynin loopback adreslerine başvuran geri yüklenmiş süreçler (bağlanmış soketler, bellekteki servis IP'leri) şeffaf biçimde fork'un kendi adreslerine yönlendirilir; böylece her zaman fork'un veri kopyasıyla konuşurlar, asla ebeveyninkiyle değil.
 - **`repo up`** checkpoint verilerini otomatik algılar ve bulunursa geri yükler. Temiz başlatma için `--skip-checkpoint` kullanın.
 - **Bağımlılık farkındalıklı geri yükleme**: Compose `depends_on` kullanarak veritabanlarını önce başlatır (healthy bekler), ardından uygulama konteynerlerini CRIU ile geri yükler.
 - **TCP bağlantıları geri yüklemeden sonra eski olur**, uygulamalar `ECONNRESET` hatasını ele almalı ve yeniden bağlanmalıdır. CRIU, desteklenen hiçbir akışta geri yükleme boyunca aktif TCP bağlantı durumunu korumaz.

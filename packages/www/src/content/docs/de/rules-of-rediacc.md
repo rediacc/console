@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 5
 language: de
-sourceHash: "74803e91ef07b03c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "4b6899adea7f0712"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Regeln von Rediacc
@@ -109,7 +109,7 @@ Renet injiziert diese automatisch in jeden Container:
 - **Opt-in per Label**: Fügen Sie `rediacc.checkpoint=true` zu Containern hinzu, die Sie checkpointen möchten. Container ohne dieses Label (Datenbanken, Caches) starten frisch und erholen sich über eigene Mechanismen (WAL, LDF, AOF).
 - **`repo down --checkpoint`** speichert den Prozesszustand vor dem Stoppen, beim nächsten `repo up` wird automatisch wiederhergestellt. **Dies ist der primäre Flow auf derselben Maschine**, verifiziert funktionsfähig.
 - **`backup push --checkpoint`** erfasst den Arbeitsspeicher laufender Prozesse + Festplattenzustand für markierte Container und überträgt das Volume anschließend auf eine andere Maschine. Wiederherstellung auf der Zielmaschine über `repo up`.
-- **`repo fork --checkpoint`** erfasst den Prozesszustand vor dem Forken und CoW-klont den Checkpoint zusammen mit dem Fork. ⚠️ Auf derselben Maschine schlägt das darauf folgende `repo up` auf dem Fork **derzeit fehl** mit `criu failed: type RESTORE errno 0`, solange das Eltern-Repository noch läuft. Upstream-CRIU-Bugs [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) / [#514](https://github.com/checkpoint-restore/criu/issues/514). Verwenden Sie `repo down --checkpoint` für In-Place-Speichern/Wiederherstellen oder `backup push --checkpoint` für maschinenübergreifende Migration.
+- **`repo fork --checkpoint`** erfasst den Prozesszustand des laufenden Eltern-Repositories und CoW-klont den Checkpoint zusammen mit dem Fork. Das `repo up` des Forks stellt die Prozesse wieder her, während das Eltern-Repository auf derselben Maschine weiterläuft. Wiederhergestellte Prozesse, die auf Loopback-Adressen des Eltern-Repositories verweisen (gebundene Sockets, Service-IPs im Speicher), werden transparent auf die eigenen Adressen des Forks umgeleitet; sie sprechen also mit der Fork-Kopie der Daten, nie mit der des Eltern-Repositories.
 - **`repo up`** erkennt Checkpoint-Daten automatisch und stellt wieder her, wenn vorhanden. Verwenden Sie `--skip-checkpoint` für einen Neustart.
 - **Abhängigkeitsbewusste Wiederherstellung**: Nutzt compose `depends_on`, um Datenbanken zuerst zu starten (auf healthy warten), dann CRIU-Wiederherstellung der App-Container.
 - **TCP-Verbindungen werden nach der Wiederherstellung ungültig**, Anwendungen müssen `ECONNRESET` behandeln und sich neu verbinden. CRIU bewahrt aktive TCP-Verbindungszustände bei der Wiederherstellung in keinem unterstützten Flow.

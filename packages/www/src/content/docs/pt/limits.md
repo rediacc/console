@@ -6,8 +6,8 @@ description: >-
 category: Reference
 order: 99
 language: pt
-sourceHash: "1d0e48ed1094dda6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "8bd2b499c6b8eff6"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Limites e Quotas
@@ -126,7 +126,7 @@ A migração ao vivo via CRIU tem as seguintes restrições:
 - **Modo de rede**: O CRIU requer modo de rede host. Os contentores que usam configurações de rede personalizadas não podem ser submetidos a checkpoint.
 - **Memória**: O tamanho dos dados do checkpoint é igual à memória residente do processo submetido a checkpoint. Conjuntos de dados grandes em memória (por exemplo, uma aplicação Node.js com 4 GB de dados em cache) produzem ficheiros de checkpoint de 4 GB.
 - **Conexões TCP**: As aplicações devem tolerar perda de conexão no restore. As conexões TCP ativas **não** são preservadas. O processo restaurado vê os sockets como fechados e deve reconectar. Isto aplica-se tanto aos caminhos de restore na mesma máquina como entre máquinas.
-- **O fork ao vivo na mesma máquina não é suportado**: `rdc repo fork --parent X --tag Y --checkpoint` tem sucesso na captura do checkpoint, mas o `rdc repo up` subsequente na mesma máquina falha com `criu failed: type RESTORE errno 0` quando o pai ainda está a correr. Isto é causado pelos bugs upstream do CRIU [checkpoint-restore/criu#478](https://github.com/checkpoint-restore/criu/issues/478) e [checkpoint-restore/criu#514](https://github.com/checkpoint-restore/criu/issues/514) a interagir com `network_mode: host`. Para preservação do estado de processo no local na mesma máquina, use `rdc repo down --checkpoint` + `rdc repo up`. Para migração ao vivo, use `rdc repo push --checkpoint` para uma máquina diferente.
+- **O fork ao vivo na mesma máquina redireciona os endereços do repositório pai**: `rdc repo fork --parent X --tag Y --checkpoint` seguido de `rdc repo up` funciona enquanto o pai continua em execução. Os processos restaurados carregam os endereços loopback do pai do momento do checkpoint, então o sistema os redireciona de forma transparente para os endereços próprios do fork (mesmo serviço, cópia dos dados do fork). O primeiro uso de uma conexão TCP restaurada ainda falha e o aplicativo precisa reconectar, conforme o item de TCP acima.
 
 ---
 
