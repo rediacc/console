@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: "88734af48d9648d5"
+sourceHash: "aa77a4f937206e58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -212,6 +212,7 @@ rdc repo up --name my-app -m server-1
 
 | Opción | Descripción |
 |--------|-------------|
+| `--detach` | Devolver el control en cuanto los contenedores estén iniciados; las comprobaciones de estado continúan en segundo plano |
 | `--skip-router-restart` | Omitir el reinicio del servidor de rutas después de la operación |
 
 La secuencia de ejecución es:
@@ -231,6 +232,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 Los servicios sin etiquetas Traefik personalizadas muestran solo la ruta auto-generada. Use estas URLs (no el patrón genérico impreso por la CLI) para acceso desde el navegador, llamadas API y configuración entre servicios.
+
+### Inicio en modo desconectado
+
+Con `--detach`, el comando devuelve el control en cuanto los contenedores están iniciados, sin esperar a que finalicen las comprobaciones de estado. El arranque termina en segundo plano: el proxy reintenta las conexiones con cada servicio hasta que esté disponible, por lo que las rutas se recuperan solas. Compruebe el progreso con `rdc machine query --containers --name <machine>`. Ideal para forks desechables y bucles automatizados donde no necesita que los servicios estén listos antes del siguiente paso.
+
+### Sonda de disponibilidad
+
+Tras `up()`, renet comprueba cada servicio HTTP hasta que acepta conexiones TCP, de modo que la primera petición del navegador no encuentre un 502 del proxy. Los servicios cuyos contenedores definen una comprobación de estado de Docker se dan por válidos directamente: un contenedor sano omite la sonda, y uno aún dentro de `start_period` registra una nota informativa en lugar de una advertencia. La sonda desiste tras 15 segundos (anúlelo con la variable de entorno `REDIACC_READINESS_TIMEOUT`, en segundos, en la máquina); los inicios en modo desconectado la omiten por completo.
 
 ## Detener Servicios
 

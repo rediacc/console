@@ -4,7 +4,7 @@ description: "Monitorize o estado da máquina, contentores, serviços, repositó
 category: "Guides"
 order: 9
 language: pt
-sourceHash: "d3b8ff142fe2df34"
+sourceHash: "f56ab0bacb657043"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,12 +109,25 @@ rdc machine query --name server-1 --storage-health
 
 | Coluna | Descrição |
 |--------|-------------|
-| Size | Tamanho do ficheiro de imagem LUKS (como o repositório aparenta ser) |
+| Quota | O tamanho máximo do repositório (o seu teto de crescimento, definido na criação ou por resize/auto-grow) |
+| Allocated | O espaço que a imagem esparsa ocupa atualmente no pool |
 | Unique | Dados únicos reais pertencentes apenas a este repositório |
 | Shared | Blocos de dados reutilizados entre repositórios via reflinks BTRFS (cópias gratuitas) |
-| Divergence | Percentagem da imagem única deste repositório em vez de partilhada (maior = mais recuperável se eliminado) |
-| Extents | Número de extents de ficheiro na imagem copy-on-write (maior = mais fragmentado) |
-| Frag | Nível de fragmentação: baixo, moderado ou alto (apenas informativo) |
+| Reclaimable | A diferença entre alocado e usado que [`repo trim`](/pt/docs/repositories#reclamar-espaco-trim) pode devolver ao pool. Mostra `-` para repositórios desmontados |
+| Discards | Se o volume encriptado passa discards (`on` para qualquer repositório montado por uma versão atual) |
+| Divergence | Percentagem da imagem única deste repositório em vez de partilhada (maior significa mais recuperável se eliminado) |
+| Frag | Extents por GB na imagem copy-on-write (apenas informativo) |
+
+Quota e alocação são números diferentes propositadamente: um repositório com uma quota de 20 GB que armazena 6 GB de dados apenas custa ao pool o que efetivamente alocou. O pool pode assim prometer uma quota total superior à sua capacidade física, e a coluna Reclaimable mostra quanto da alocação de cada repositório já não está em uso e pode ser recuperada com trim.
+
+Abaixo da tabela, um resumo do pool reporta o nível de preenchimento do datastore e quanto espaço os snapshots de backup estão a reservar:
+
+```
+Pool: 265.4 GB used, 95.2 GB free (73.6% full)
+Backup snapshots pin 2.1 GB (1 active, 0 stale; stale ones are removed by 'rdc machine prune')
+```
+
+Enquanto um backup corre, o seu snapshot continua a referenciar todos os blocos que partilha com os repositórios ativos, pelo que eliminações e trims libertam menos espaço no pool até que esse ciclo de backup termine e o snapshot seja eliminado. Snapshots obsoletos de backups interrompidos são removidos automaticamente pelo mantenedor de armazenamento em poucos minutos.
 
 O resumo mostra a poupança total dos reflinks BTRFS:
 
@@ -229,3 +242,14 @@ rdc doctor
 Cada verificação reporta **OK**, **Aviso** ou **Erro**. Use isto como primeiro passo ao resolver qualquer problema.
 
 Códigos de saída: `0` = todos passados, `1` = avisos, `2` = erros.
+
+## Verificações de Prontidão de Serviços
+
+Durante `repo up`, o renet aguarda que os serviços HTTP aceitem conexões antes de os declarar prontos. A espera é compatível com health checks:
+
+- Contentores que o Docker reporta como **healthy** são considerados prontos imediatamente, sem sonda TCP.
+- Contentores ainda dentro do `start_period` do health check registam uma nota informativa, não um aviso; o proxy continua a tentar até que se vinculem.
+- Serviços Compose sem contentor em execução (por exemplo, atrás de um perfil inactivo) são ignorados.
+- Todos os outros são sondados via TCP durante até 15 segundos (defina `REDIACC_READINESS_TIMEOUT`, em segundos, para alterar este valor).
+
+Definir um [health check do Docker](https://docs.docker.com/reference/dockerfile/#healthcheck) em serviços de arranque lento fornece ao renet um sinal de prontidão autoritativo e elimina ruído de sondas na saída do deploy.

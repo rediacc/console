@@ -5,7 +5,7 @@ description: >-
 category: "Reference"
 order: 99
 language: zh
-sourceHash: "8bd2b499c6b8eff6"
+sourceHash: "ece2d423d416e7ec"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -99,10 +99,12 @@ rdc config infra push -m server-1
 
 - **最小推荐大小**：50 GB
 - **最大大小**：受限于您的磁盘。单个池可以跨越整个磁盘。
-- **调整大小**：使用 `rdc datastore resize` 扩展现有池。不支持缩小。
+- **调整大小**：使用 `rdc datastore resize` 更改存储池大小（所有仓库必须先卸载）。
 - **文件系统**：Rediacc 内部使用 BTRFS 实现写时复制快照和高效分支。需要运行 **Linux 6.1 或更高版本**内核的机器以获得完整的生产稳定性。
 
-每个仓库镜像在创建时有一个固定的最大大小（默认：10 GB）。使用 `rdc repo resize` 扩展单个仓库。所有仓库最大大小的总和不能超过数据存储池大小。
+每个仓库在创建时设有最大容量上限（默认：10 GB）。使用 `rdc repo resize` 手动更改，或设置[自动容量策略](/zh/docs/repositories#自动容量策略)，让机器在仓库占满时自动扩容（受每仓库显式上限和存储池剩余空间保留量约束）。自动扩容仅作用于单个仓库；存储池本身不会自动扩容。
+
+仓库镜像是稀疏的：仓库只占用其实际写入数据所需的存储池空间，删除操作释放的空间通过 [`repo trim`](/zh/docs/repositories#reclaim-space-trim) 或定时自动 trim 归还给存储池。因此各仓库配额之和可以超过存储池总大小，[存储健康报告](/zh/docs/monitoring#存储健康状况)会显示实际填充水位。
 
 ---
 

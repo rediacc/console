@@ -2400,6 +2400,146 @@
           "subcommands": []
         },
         {
+          "name": "trim",
+          "descriptionKey": "commands.repo.trim.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.repo.machineOption",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.repo.trim.nameOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--docker",
+              "descriptionKey": "commands.repo.trim.dockerOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--docker-volumes",
+              "descriptionKey": "commands.repo.trim.dockerVolumesOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--report-only",
+              "descriptionKey": "commands.repo.trim.reportOnlyOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "policy",
+          "descriptionKey": "commands.repo.policy.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "set",
+              "descriptionKey": "commands.repo.policy.set.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "commands.repo.policy.nameOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--auto-grow <bool>",
+                  "descriptionKey": "commands.repo.policy.set.autoGrowOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--max-quota <size>",
+                  "descriptionKey": "commands.repo.policy.set.maxQuotaOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--grow-threshold <percent>",
+                  "descriptionKey": "commands.repo.policy.set.growThresholdOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--grow-step <step>",
+                  "descriptionKey": "commands.repo.policy.set.growStepOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--auto-trim <bool>",
+                  "descriptionKey": "commands.repo.policy.set.autoTrimOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--trim-interval <hours>",
+                  "descriptionKey": "commands.repo.policy.set.trimIntervalOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "get",
+              "descriptionKey": "commands.repo.policy.get.description",
+              "options": [
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "commands.repo.machineOption",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--name <name>",
+                  "descriptionKey": "commands.repo.policy.nameOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
           "name": "validate",
           "descriptionKey": "commands.repo.validate.description",
           "options": [

@@ -609,6 +609,30 @@ export interface RepositoryOwnershipParams {
   force?: string;
 }
 
+/** Show automatic size policy (machine default, repo override, effective) */
+export interface RepositoryPolicyGetParams {
+  /** Repository GUID (empty = machine-wide default only) */
+  name?: string;
+}
+
+/** Set automatic size policy (auto-grow, scheduled trim) */
+export interface RepositoryPolicySetParams {
+  /** Repository GUID (empty = machine-wide default) */
+  name?: string;
+  /** Enable automatic online quota growth (true/false) */
+  autoGrow?: string;
+  /** Auto-grow ceiling (e.g. 200G); required for auto-grow */
+  maxQuota?: string;
+  /** Filesystem used % that triggers a grow (1-99) */
+  growThreshold?: string;
+  /** Growth per step: absolute (10G) or percent of quota (20%) */
+  growStep?: string;
+  /** Enable scheduled fstrim (true/false) */
+  autoTrim?: string;
+  /** Minimum hours between automatic trims */
+  trimInterval?: string;
+}
+
 /** Remove orphaned datastore resources (empty mounts, stale locks) */
 export interface RepositoryPruneParams {
   /** Preview only, no changes */
@@ -638,6 +662,18 @@ export interface RepositoryTemplateApplyParams {
   tmpl: string;
   /** Grand repository GUID */
   grand: string;
+}
+
+/** Reclaim datastore pool space from mounted repositories (fstrim) */
+export interface RepositoryTrimParams {
+  /** Repository GUID (empty = all mounted repositories) */
+  name?: string;
+  /** Reclaim Docker space first (stopped containers, dangling images, build cache) */
+  docker?: boolean;
+  /** Additionally prune unused Docker volumes */
+  dockerVolumes?: boolean;
+  /** Detect discard state and estimate reclaimable space without trimming */
+  reportOnly?: boolean;
 }
 
 /** Unmount a repository */
@@ -762,11 +798,14 @@ export const BRIDGE_FUNCTIONS = [
   'repository_merge',
   'repository_mount',
   'repository_ownership',
+  'repository_policy_get',
+  'repository_policy_set',
   'repository_prune',
   'repository_resize',
   'repository_status',
   'repository_takeover',
   'repository_template_apply',
+  'repository_trim',
   'repository_unmount',
   'repository_up',
   'repository_up_all',
@@ -842,11 +881,14 @@ export type FunctionParamsMap = {
   repository_merge: RepositoryMergeParams;
   repository_mount: RepositoryMountParams;
   repository_ownership: RepositoryOwnershipParams;
+  repository_policy_get: RepositoryPolicyGetParams;
+  repository_policy_set: RepositoryPolicySetParams;
   repository_prune: RepositoryPruneParams;
   repository_resize: RepositoryResizeParams;
   repository_status: RepositoryStatusParams;
   repository_takeover: RepositoryTakeoverParams;
   repository_template_apply: RepositoryTemplateApplyParams;
+  repository_trim: RepositoryTrimParams;
   repository_unmount: RepositoryUnmountParams;
   repository_up: RepositoryUpParams;
   repository_up_all: RepositoryUpAllParams;
@@ -1044,6 +1086,12 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   'repository_ownership': {
     requirements: { machine: true, team: true, repository: true },
   },
+  'repository_policy_get': {
+    requirements: { machine: true },
+  },
+  'repository_policy_set': {
+    requirements: { machine: true },
+  },
   'repository_prune': {
     requirements: { machine: true },
   },
@@ -1058,6 +1106,9 @@ export const FUNCTION_REQUIREMENTS: Record<BridgeFunctionName, { requirements: P
   },
   'repository_template_apply': {
     requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_trim': {
+    requirements: { machine: true },
   },
   'repository_unmount': {
     requirements: { machine: true, team: true, repository: true },
@@ -2540,6 +2591,54 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
       },
     },
   },
+  'repository_policy_get': {
+    name: 'repository_policy_get',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      name: {
+        type: 'string',
+        help: 'Repository GUID (empty = machine-wide default only)',
+      },
+    },
+  },
+  'repository_policy_set': {
+    name: 'repository_policy_set',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      name: {
+        type: 'string',
+        help: 'Repository GUID (empty = machine-wide default)',
+      },
+      autoGrow: {
+        type: 'string',
+        help: 'Enable automatic online quota growth (true/false)',
+      },
+      maxQuota: {
+        type: 'string',
+        help: 'Auto-grow ceiling (e.g. 200G); required for auto-grow',
+      },
+      growThreshold: {
+        type: 'string',
+        help: 'Filesystem used % that triggers a grow (1-99)',
+      },
+      growStep: {
+        type: 'string',
+        help: 'Growth per step: absolute (10G) or percent of quota (20%)',
+      },
+      autoTrim: {
+        type: 'string',
+        help: 'Enable scheduled fstrim (true/false)',
+      },
+      trimInterval: {
+        type: 'string',
+        help: 'Minimum hours between automatic trims',
+      },
+    },
+  },
   'repository_prune': {
     name: 'repository_prune',
     category: 'repository',
@@ -2610,6 +2709,33 @@ export const FUNCTION_DEFINITIONS: Record<BridgeFunctionName, FunctionDefinition
         type: 'string',
         required: true,
         help: 'Grand repository GUID',
+      },
+    },
+  },
+  'repository_trim': {
+    name: 'repository_trim',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      name: {
+        type: 'string',
+        help: 'Repository GUID (empty = all mounted repositories)',
+      },
+      docker: {
+        type: 'bool',
+        help: 'Reclaim Docker space first (stopped containers, dangling images, build cache)',
+        options: ['true', 'false'],
+      },
+      dockerVolumes: {
+        type: 'bool',
+        help: 'Additionally prune unused Docker volumes',
+        options: ['true', 'false'],
+      },
+      reportOnly: {
+        type: 'bool',
+        help: 'Detect discard state and estimate reclaimable space without trimming',
+        options: ['true', 'false'],
       },
     },
   },
@@ -2845,11 +2971,14 @@ export const queueFunctions: QueueFunctionsType = {
   repository_merge: (params) => ({ functionName: 'repository_merge', params }),
   repository_mount: (params) => ({ functionName: 'repository_mount', params }),
   repository_ownership: (params) => ({ functionName: 'repository_ownership', params }),
+  repository_policy_get: (params) => ({ functionName: 'repository_policy_get', params }),
+  repository_policy_set: (params) => ({ functionName: 'repository_policy_set', params }),
   repository_prune: (params) => ({ functionName: 'repository_prune', params }),
   repository_resize: (params) => ({ functionName: 'repository_resize', params }),
   repository_status: (params) => ({ functionName: 'repository_status', params }),
   repository_takeover: (params) => ({ functionName: 'repository_takeover', params }),
   repository_template_apply: (params) => ({ functionName: 'repository_template_apply', params }),
+  repository_trim: (params) => ({ functionName: 'repository_trim', params }),
   repository_unmount: (params) => ({ functionName: 'repository_unmount', params }),
   repository_up: (params) => ({ functionName: 'repository_up', params }),
   repository_up_all: (params) => ({ functionName: 'repository_up_all', params }),

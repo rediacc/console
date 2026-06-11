@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: tr
-sourceHash: "88734af48d9648d5"
+sourceHash: "aa77a4f937206e58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -212,6 +212,7 @@ rdc repo up --name my-app -m server-1
 
 | Seçenek | Açıklama |
 |---------|----------|
+| `--detach` | Konteynerler başlar başlamaz geri dön; sağlık kontrolleri arka planda sürer |
 | `--skip-router-restart` | İşlem sonrasında rota sunucusunun yeniden başlatılmasını atla |
 
 Çalıştırma sırası:
@@ -231,6 +232,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 Özel Traefik etiketleri olmayan servisler yalnızca otomatik oluşturulan rotayı gösterir. Tarayıcı erişimi, API çağrıları ve servisler arası yapılandırma için bu URL'leri kullanın (CLI tarafından yazdırılan genel desen değil).
+
+### Ayrılmış Başlatma
+
+`--detach` ile komut, sağlık kontrollerinin tamamlanmasını beklemek yerine konteynerler başlar başlamaz geri döner. Başlatma arka planda tamamlanır: proxy, her servis bağlanana kadar yukarı yönlü bağlantıları yeniden dener ve rotalar otomatik olarak açılır. İlerlemeyi `rdc machine query --containers --name <machine>` ile takip edin. Sıradaki adımdan önce servislerin hazır olmasına gerek duyulmayan tek kullanımlık fork'lar ve betikleştirilmiş döngüler için idealdir.
+
+### Hazırlık Sondası
+
+`up()` tamamlandıktan sonra renet, her HTTP servisinin TCP bağlantısını kabul edene kadar yoklar; böylece ilk tarayıcı isteği proxy 502 hatasıyla karşılaşmaz. Docker sağlık kontrolü tanımlı konteynerler doğrudan güvenilir kabul edilir: sağlıklı bir konteyner sonday atlıyor, `start_period` içindeyken hâlâ bekleyen biri ise uyarı yerine bilgilendirici bir not kaydeder. Sonda 15 saniye sonra vazgeçer (makinedeki `REDIACC_READINESS_TIMEOUT` ortam değişkeniyle saniye cinsinden değiştirilebilir); ayrılmış başlatmalar ise sondayı tamamen atlar.
 
 ## Servisleri Durdurma
 

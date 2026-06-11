@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: tr
-sourceHash: "8bd2b499c6b8eff6"
+sourceHash: "ece2d423d416e7ec"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -100,10 +100,12 @@ Veri deposu, makine ilk kurulduğunda oluşturulan sabit boyutlu bir havuzdur. B
 
 - **Minimum önerilen boyut**: 50 GB
 - **Maksimum boyut**: Diskinizle sınırlıdır. Tek bir havuz tam bir diski kaplayabilir.
-- **Yeniden boyutlandırma**: Mevcut bir havuzu genişletmek için `rdc datastore resize` kullanın. Küçültme desteklenmez.
+- **Yeniden boyutlandırma**: Havuz boyutunu değiştirmek için `rdc datastore resize` kullanın (tüm depolar önceden çıkarılmış olmalıdır).
 - **Dosya sistemi**: Rediacc, yazma üzerine kopyalama anlık görüntüleri ve verimli çatallama için dahili olarak BTRFS kullanır. Tam üretim kararlılığı için **Linux 6.1 veya üzeri** çekirdek çalıştıran bir makine gerektirir.
 
-Her depo görüntüsünün oluşturma sırasında belirlenen sabit bir maksimum boyutu vardır (varsayılan: 10 GB). Tek bir depoyu genişletmek için `rdc repo resize` kullanın. Tüm depo maksimum boyutlarının toplamı, veri deposu havuz boyutunu aşamaz.
+Her deponun oluşturma sırasında belirlenen bir maksimum boyutu vardır (varsayılan: 10 GB). Bunu elle değiştirmek için `rdc repo resize`, makine dolduğunda otomatik büyüme için ise [otomatik boyut politikası](/tr/docs/repositories#otomatik-boyut-politikasi) ayarlayın (depo başına açık bir tavan ve havuz serbest alan rezerviyle sınırlıdır). Otomatik büyüme yalnızca tekil depolara uygulanır; havuzun kendisi otomatik olarak büyümez.
+
+Depo görüntüleri seyrektir: bir depo havuzda yalnızca gerçekten yazdığı kadar yer kaplar; silmelerle serbest kalan alan [`repo trim`](/tr/docs/repositories#alan-kazanma-trim) veya zamanlanmış otomatik trim aracılığıyla havuza geri döner. Kotalar bu nedenle havuz boyutunun toplamını aşabilir; [depolama sağlığı raporu](/tr/docs/monitoring#depolama-sagligi) gerçek doluluk düzeyini gösterir.
 
 ---
 

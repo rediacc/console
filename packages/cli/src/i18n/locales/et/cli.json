@@ -959,6 +959,8 @@
         "infrastructure": "Infrastruktuur",
         "noData": "Olekuandmed pole saadaval",
         "storageHealthFragmentationNote": "Killustatus loendab iga repo copy-on-write-tõmmise ekstente, mitte selle sees olevaid faile. Kõrged väärtused on juhukirjutuse koormuste (andmebaasid, konteinerikihid) puhul oodatavad ja üksnes informatiivsed. Defragmenteerimine ei ole siin meelega toetatud: see katkestaks reflink-jagatud forkide ja varundushetktõmmiste jagamise ning paisutaks andmehoidla kasutust.",
+        "storageHealthPoolSummary": "Puul: {{used}} kasutusel, {{free}} vaba ({{percent}}% täis)",
+        "storageHealthPoolSnapshots": "Varukoopiate hetktõmmised hoiavad {{pinned}} ({{active}} aktiivset, {{stale}} aegunut; aegunud eemaldab 'rdc machine prune')",
         "storageHealthHint": "Näpunäide: Käivita koos --storage-health, et näha BTRFS-i killustatust ja reflink-i sääste repositooriumi kohta",
         "storageHealthSummary": "Salvestusruumi tõhusus: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} konteiner(it) on kaldumisläve ületanud; väljub mittenullilise koodiga",
@@ -1428,6 +1430,41 @@
         "failed": "Laiendamine ebaõnnestus",
         "sizeOption": "Hoidla uus suurus (nt 10G, 100G, 1T)",
         "starting": "Hoidla \"{{repository}}\" laiendamine suuruseni {{size}} masinal \"{{machine}}\"..."
+      },
+      "trim": {
+        "description": "Vabastab andmehoidla puuli ruumi haagitud hoidlatest (võrgus, ilma seisakuta). Hoidlates kustutatud plokid tagastatakse puuli fstrim-iga. Ilma --name võtmeta trimmitakse kõik haagitud hoidlad ja andmehoidla ise. Aktiivse varukoopiaga hoidlad jäetakse vahele",
+        "descriptionShort": "Tagasta hoidlate vaba ruum puuli",
+        "nameOption": "Trimmitav hoidla (vaikimisi: kõik haagitud hoidlad)",
+        "dockerOption": "Vabasta esmalt Dockeri ruum (seisatud konteinerid, ripakil pildid, ehitusvahemälu)",
+        "dockerVolumesOption": "Eemalda lisaks kasutamata Dockeri köited",
+        "reportOnlyOption": "Näita discard-olekut ja taastatava ruumi hinnangut ilma trimmimata",
+        "repoNotFound": "Hoidlat ei leitud: {{name}}",
+        "noMountedRepos": "Haagitud hoidlaid ei leitud",
+        "starting": "Trimmitakse hoidlaid masinas \"{{machine}}\"...",
+        "completed": "Trim valmis: {{total}} taastatud",
+        "failed": "Trim ebaõnnestus"
+      },
+      "policy": {
+        "description": "Haldab masina salvestushooldaja rakendatavat automaatset suurusepoliitikat: kasvatab hoidla kvooti võrgus, kui see täitub (mitte üle max-quota ega siis, kui puulis on ruumi vähe), ja käivitab plaanitud trimme. Automaatset vähendamist ei ole; selleks kasuta 'repo resize'. Ilma --name võtmeta hallatakse masinaülest vaikepoliitikat",
+        "descriptionShort": "Halda automaatset suurusepoliitikat (automaatkasv, plaanitud trim)",
+        "nameOption": "Hoidla (vaikimisi: masinaülene poliitika)",
+        "repoNotFound": "Hoidlat ei leitud: {{name}}",
+        "invalidBool": "{{flag}} peab olema 'true' või 'false', saadi: {{value}}",
+        "failed": "Poliitikatoiming ebaõnnestus",
+        "set": {
+          "description": "Määrab suurusepoliitika välju. Muudetakse ainult edastatud lippe; teised salvestatud väljad säilitavad väärtused. Automaatkasvu lubamine nõuab --max-quota: lagi on sinu selgesõnaline nõusolek puuli ülejaotuseks",
+          "descriptionShort": "Määra poliitika väljad (masina vaikimisi või üks hoidla --name abil)",
+          "autoGrowOption": "Luba kvoodi automaatne võrgus kasvatamine (true/false)",
+          "maxQuotaOption": "Automaatkasvu lagi (nt 200G); automaatkasvuks kohustuslik",
+          "growThresholdOption": "Failisüsteemi täituvus %, mis käivitab kasvu (vaikimisi 85)",
+          "growStepOption": "Kasv sammu kohta: absoluutne (10G) või protsent kvoodist (20%)",
+          "autoTrimOption": "Luba plaanitud trim (true/false)",
+          "trimIntervalOption": "Vähim tundide arv automaatsete trimmide vahel (vaikimisi 24)"
+        },
+        "get": {
+          "description": "Näitab salvestatud masina vaikeväärtust, hoidla ülekirjutust (--name korral) ja hooldaja rakendatavat ühendatud kehtivat poliitikat",
+          "descriptionShort": "Näita suurusepoliitikat (masina vaikimisi, hoidla ülekirjutus, kehtiv)"
+        }
       },
       "fork": {
         "alreadyExists": "Hoidla \"{{name}}\" on konfiguratsioonis juba olemas",

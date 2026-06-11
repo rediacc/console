@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: et
-sourceHash: "8bd2b499c6b8eff6"
+sourceHash: "ece2d423d416e7ec"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -100,10 +100,12 @@ Andmehoidla on fikseeritud suurusega bassein, mis luuakse masina esimesel seadis
 
 - **Minimaalne soovitatav suurus**: 50 GB
 - **Maksimaalne suurus**: piiratud teie kettaga. Üks bassein võib hõlmata täielikku ketast.
-- **Suuruse muutmine**: kasutage `rdc datastore resize` olemasoleva basseini laiendamiseks. Kokkutõmbamist ei toetata.
+- **Suuruse muutmine**: kasutage `rdc datastore resize` basseini suuruse muutmiseks (kõik repositooriumid peavad enne lahti ühendama).
 - **Failisüsteem**: Rediacc kasutab sisemiselt BTRFS-i kirjutamisel kopeerivate hetktõmmiste ja tõhusa hargnemise jaoks. Nõuab masinat, mis käitab **Linuxi tuumaga 6.1 või uuemaga** täieliku tootmisstabilisuse jaoks.
 
-Igal hoidla pildil on fikseeritud maksimaalne suurus, mis on seatud loomise ajal (vaikimisi: 10 GB). Kasutage `rdc repo resize` üksiku hoidla laiendamiseks. Kõikide hoidla maksimaalade summa ei tohi ületada andmehoidla basseini suurust.
+Igal repositooriumil on maksimaalne suurus, mis on seatud loomise ajal (vaikimisi: 10 GB). Kasuta `rdc repo resize` selle käsitsi muutmiseks või sea [automaatne suuruse poliitika](/et/docs/repositories#automaatne-suuruse-poliitika), et masin kasvataks seda veebis täitumisel (piiratud eksplitsiitse repositooriumipõhise ülempiiri ja basseini vaba ruumi reserviga). Automaatne kasv kehtib ainult üksikutele repositooriumidele; bassein ise ei kasva kunagi automaatselt.
+
+Repositooriumi kujutised on hõredad: repositoorium hõivab basseinis ainult selle, mida ta on tegelikult kirjutanud, ja kustutamistega vabastatud ruum naaseb basseinile [`repo trim`](/et/docs/repositories#ruumi-tagasinõudmine-trim) või ajastatud automaatse trimmimise kaudu. Kvoodid võivad seetõttu kokku olla suuremad kui basseini suurus, kusjuures [salvestuse tervise raport](/et/docs/monitoring#salvestuse-tervis) näitab tegelikku täitumist.
 
 ---
 

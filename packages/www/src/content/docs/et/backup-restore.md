@@ -4,7 +4,7 @@ description: "Varunda krüpteeritud repositooriumeid mis tahes rclone-ühilduvas
 category: "Guides"
 order: 7
 language: et
-sourceHash: "6ed9a5b950de8ddb"
+sourceHash: "e241aa122868e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -231,6 +231,12 @@ See vaikeväärtus on tahtlik. Kahe külma varukoopia paralleelne käivitamine s
 **Jälgimise tähendus.** Hangiv varukoopia (näiteks rclone, mis on kinni jäänud võrguaugu tõttu) langetab vaikselt kõik järgnevad taimeri käivitused. Ajastaja ei anna häiret. Jälgi `systemctl show <unit> -p ActiveEnterTimestamp`: kui teenus on olnud `activating` kauem kui oodatud käivituse pikkus (näiteks üle 48 h öösel taimeri puhul), uuri.
 
 **Kui vajad iga ajastatud käivitust**, vaheta taimer `OnCalendar=<cron>` asemel `OnUnitInactiveSec=<interval>` peale. See käivitub N tundi pärast eelmise käivituse lõppu, mitte fikseeritud seinakella ajakava alusel, nii et pikad käivitused ei põhjusta langusi. Need lükkavad lihtsalt järgmist käivitust edasi. Kompromiss on ajakava drift: sinu 03:00 öine muutub "24 h pärast eelmise lõppu".
+
+### Hetktõmmised, katkestused ja basseini ruum
+
+Iga push töötab ajutise andmehoidla hetktõmmise põhjal, nii et üleslaaditud andmed on järjepidevad isegi siis, kui repositooriumid jätkavad kirjutamist. Varundamise ajal hoiab see hetktõmmis kõiki plokke, mida ta jagab elavate repositooriumidega: kustutamised ja [trimmimised](/et/docs/repositories#ruumi-tagasinõudmine-trim) vabastavad vähem basseiniruumi kuni tsükkel lõpeb ja hetktõmmis kustutatakse. [Salvestuse tervise raport](/et/docs/monitoring#salvestuse-tervis) näitab, kui palju ruumi varukoopia hetktõmmised parajasti kinni hoiavad.
+
+Katkestused on ohutud. Teenuse peatamine (või masina taaskäivitamine) paneb varundamise oma ülekande katkestama ja hetktõmmise enne väljumist kustutama; järgmine ajastatud käivitus jätkab sealt, kus see pooleli jäi, kuna muutmata failid jäetakse kontrollsumma alusel vahele. Kui protsess tapetakse liiga kõvasti puhastamiseks (toitekatkestus), tuvastatakse ja eemaldatakse orvuks jäänud hetktõmmis automaatselt salvestuse hooldaja poolt minutite jooksul.
 
 ### Strateegia määratlemine
 

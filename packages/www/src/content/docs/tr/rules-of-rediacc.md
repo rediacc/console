@@ -4,8 +4,8 @@ description: "Rediacc platformunda uygulama geliştirmek için temel kurallar ve
 category: Guides
 order: 5
 language: tr
-sourceHash: "4b6899adea7f0712"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "7654d7b072ee3ccc"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 # Rediacc Kuralları
@@ -78,8 +78,8 @@ Renet bunları her konteynere otomatik olarak enjekte eder:
 - **Her servis bir /26 alt ağ içinde benzersiz bir loopback IP alır** (örn. `127.0.24.192/26`).
 - **Bağlama otomatiktir**: Servisler `0.0.0.0` veya `localhost`'a bağlanabilir, çekirdek adresi şeffaf olarak servisin atanmış loopback IP'sine yeniden yazar. `${SERVICE_IP}`'ye açık bağlama hala çalışır ancak artık gerekli değildir.
 - **Health check'ler `localhost`** veya `${SERVICE_IP}` kullanabilir. Örnek: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
-- **Depolar arası bağlantılar çekirdek tarafından engellenir**: Çekirdek, depo için `/26` alt ağının dışındaki loopback IP'lerine yapılan bağlantıları otomatik olarak engeller. Bir depodaki servis başka bir depodaki servislere erişemez.
-- **Servisler arası iletişim**: **Servis adlarını** kullanın (ör. `db`, `redis`), renet her servis adını otomatik olarak doğru IP'ye çözümlenen bir ana bilgisayar adı olarak enjekte eder. Docker DNS adları host modunda ÇALIŞMAZ, ancak `/etc/hosts` üzerinden servis adları çalışır. Kalıcı yapılandırma dosyalarına (ör. bir veritabanında saklanan bağlantı dizeleri) `${DB_IP}` veya benzerini gömmekten kaçının, fork yapıldığında ham IP taşınır ve yanlış depoya işaret eder. Servis adları her zaman depo başına doğru şekilde çözümlenir.
+- **Depolar arası bağlantılar çekirdek tarafından engellenir**: Çekirdek, depo için `/26` alt ağının dışındaki loopback IP'lerine yapılan bağlantıları otomatik olarak engeller. Bir depodaki servis başka bir depodaki servislere erişemez. Tek istisna: bir fork'un ebeveyninin alt ağına yaptığı bağlantılar, şeffaf biçimde fork'un kendi servislerine yönlendirilir (aynı servis, verinin fork kopyası); asla ebeveyne gitmez. İlgisiz depolar engellenmeye devam eder.
+- **Servisler arası iletişim**: **Servis adlarını** kullanın (örn. `db`, `redis`); renet her servis adını doğru IP'ye çözümlenen bir hostname olarak otomatik ekler. Docker DNS adları host modunda ÇALIŞMAZ, ancak `/etc/hosts` üzerinden servis adları çalışır. `${DB_IP}` ve benzerlerini kalıcı yapılandırma dosyalarına gömmekten kaçının (örn. veritabanında saklanan bağlantı dizeleri): bir fork, doğrudan ebeveyninden devraldığı IP'leri kendi servislerine yönlendirir, ancak bu yönlendirme yalnızca bir nesil için geçerlidir; fork'un fork'u hâlâ hiçbir yere çıkmayan büyük-ebeveyn IP'leri taşır. Servis adları ise her depoda her zaman doğru çözümlenir.
 - **Depolar arasında port çakışmaları imkansızdır**, her birinin kendi Docker daemon'ı ve IP aralığı vardır.
 - **TCP/UDP port yönlendirme**: HTTP dışı portları açmak için etiketler ekleyin:
   ```yaml

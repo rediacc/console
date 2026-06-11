@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: es
-sourceHash: "8bd2b499c6b8eff6"
+sourceHash: "ece2d423d416e7ec"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -100,10 +100,12 @@ El datastore es un pool de tamaño fijo creado cuando se configura una máquina 
 
 - **Tamaño mínimo recomendado**: 50 GB
 - **Tamaño máximo**: Limitado por su disco. Un solo pool puede abarcar un disco completo.
-- **Redimensionar**: Use `rdc datastore resize` para expandir un pool existente. La reducción no está soportada.
+- **Redimensionar**: Use `rdc datastore resize` para cambiar el tamaño del pool (todos los repositorios deben estar desmontados primero).
 - **Sistema de archivos**: Rediacc usa BTRFS internamente para snapshots de copia en escritura y forking eficiente. Requiere una máquina con **Linux kernel 6.1 o posterior** para estabilidad completa en producción.
 
-Cada imagen de repositorio tiene un tamaño máximo fijo establecido en el momento de la creación (por defecto: 10 GB). Use `rdc repo resize` para expandir un repositorio individual. La suma de todos los tamaños máximos de repositorios no puede exceder el tamaño del pool del datastore.
+Cada repositorio tiene un tamaño máximo establecido en el momento de la creación (por defecto: 10 GB). Use `rdc repo resize` para cambiarlo manualmente, o configure una [política de tamaño automático](/es/docs/repositories#politica-de-tamano-automatico) para que la máquina lo amplíe en línea cuando se llene (acotado por un techo explícito por repositorio y una reserva de espacio libre del pool). El crecimiento automático se aplica solo a repositorios individuales; el pool en sí nunca crece automáticamente.
+
+Las imágenes de repositorio son sparse: un repositorio solo ocupa en el pool lo que ha escrito realmente, y el espacio liberado por eliminaciones vuelve al pool mediante [`repo trim`](/es/docs/repositories#recuperar-espacio-trim) o un auto-trim programado. Las cuotas pueden por lo tanto sumar más que el tamaño del pool, y el [informe de salud del almacenamiento](/es/docs/monitoring#salud-del-almacenamiento) muestra el nivel de llenado real.
 
 ---
 

@@ -730,6 +730,47 @@ Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS co
 
 > agent: fork-only | fork-blocked | MCP excluded: Storage expansion — destructive infrastructure operation, use CLI directly
 
+### rdc repo trim
+
+Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without --name, trims every mounted repository plus the datastore itself. Repositories under an active backup are skipped
+
+**Options:**
+
+- `-m, --machine <name>` — Target machine name
+- `--name <name>` — Repository to trim (default: all mounted repositories)
+- `--docker` — Reclaim Docker space first (stopped containers, dangling images, build cache)
+- `--docker-volumes` — Additionally prune unused Docker volumes
+- `--report-only` — Show discard state and reclaimable estimate without trimming
+- `--debug` — Enable debug output
+
+> MCP tool
+
+### rdc repo policy set
+
+Set size policy fields. Only the flags you pass are changed; other stored fields keep their values. Enabling auto-grow requires --max-quota: the ceiling is your explicit consent to over-provision the pool
+
+**Options:**
+
+- `-m, --machine <name>` — Target machine name
+- `--name <name>` — Repository (default: machine-wide policy)
+- `--auto-grow <bool>` — Enable automatic online quota growth (true/false)
+- `--max-quota <size>` — Auto-grow ceiling (e.g. 200G); required for auto-grow
+- `--grow-threshold <percent>` — Filesystem used % that triggers a grow (default 85)
+- `--grow-step <step>` — Growth per step: absolute (10G) or percent of quota (20%)
+- `--auto-trim <bool>` — Enable scheduled trim (true/false)
+- `--trim-interval <hours>` — Minimum hours between automatic trims (default 24)
+- `--debug` — Enable debug output
+
+### rdc repo policy get
+
+Show the stored machine default, the repository override (with --name), and the effective merged policy the maintainer acts on
+
+**Options:**
+
+- `-m, --machine <name>` — Target machine name
+- `--name <name>` — Repository (default: machine-wide policy)
+- `--debug` — Enable debug output
+
 ### rdc repo validate
 
 Validate repository integrity (LUKS container, filesystem consistency, configuration). Use after unexpected shutdowns or to verify backup health

@@ -10,7 +10,9 @@ import { renderLocalExecutionFailure } from '../utils/local-execution-failures.j
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { assertMachineExists } from './_validate.js';
 import { handleForkAction } from './repo-fork.js';
+import { registerRepoPolicyCommand } from './repo-policy.js';
 import { registerRepoTakeoverCommand } from './repo-takeover.js';
+import { registerRepoTrimCommand } from './repo-trim.js';
 
 /** Execute a machine-level function (no repository context needed). */
 async function executeMachineFunction(
@@ -161,6 +163,12 @@ export function registerExtendedRepoCommands(repo: Command): void {
         }
       }
     );
+
+  // repo trim [--name <name>] -m <machine>
+  registerRepoTrimCommand(repo);
+
+  // repo policy set|get
+  registerRepoPolicyCommand(repo);
 
   // repo validate --name <name>
   repo

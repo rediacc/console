@@ -4,7 +4,7 @@ description: "Faça backup de repositórios encriptados para qualquer armazename
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "6ed9a5b950de8ddb"
+sourceHash: "e241aa122868e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -231,6 +231,12 @@ Esta predefinição é deliberada. Executar dois backups cold em paralelo contra
 **Implicação para monitorização.** Um backup bloqueado (por exemplo, rclone preso num buraco negro de rede) ignora silenciosamente todos os disparos do temporizador subsequentes. O agendador não emite nenhum alarme. Observe `systemctl show <unit> -p ActiveEnterTimestamp`: se o serviço estiver em `activating` por mais tempo do que a duração esperada de execução (por exemplo, mais de 48 h num temporizador noturno), investigue.
 
 **Se precisar que cada disparo agendado corra**, mude o temporizador de `OnCalendar=<cron>` para `OnUnitInactiveSec=<interval>`. Isso dispara N horas após a conclusão da execução anterior em vez de num agendamento de relógio fixo, pelo que as execuções longas não causam perdas. Apenas empurram a próxima execução para mais tarde. O trade-off é a deriva do agendamento: o seu noturno às 03:00 torna-se "24 h após o fim do último."
+
+### Snapshots, Interrupções e Espaço no Pool
+
+Cada push é feito a partir de um snapshot momentâneo do datastore, pelo que os dados enviados são consistentes mesmo enquanto os repositórios continuam a escrever. Enquanto o backup corre, esse snapshot continua a referenciar todos os blocos que partilha com os repositórios ativos: eliminações e [trims](/pt/docs/repositories#reclamar-espaco-trim) libertam menos espaço no pool até que o ciclo termine e o snapshot seja eliminado. O [relatório de estado do armazenamento](/pt/docs/monitoring#estado-do-armazenamento) mostra quanto espaço os snapshots de backup estão atualmente a reservar.
+
+As interrupções são seguras. Parar o serviço (ou reiniciar a máquina) faz com que o backup cancele a transferência e elimine o seu snapshot antes de sair; a próxima execução agendada retoma onde parou, uma vez que os ficheiros não alterados são ignorados por checksum. Se o processo for terminado de forma abrupta sem hipótese de limpeza (corte de energia), o snapshot órfão é detetado e removido automaticamente pelo mantenedor de armazenamento em poucos minutos.
 
 ### Definir uma Estratégia
 

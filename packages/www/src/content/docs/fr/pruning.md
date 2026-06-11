@@ -4,7 +4,7 @@ description: "Supprimer les sauvegardes orphelines, les snapshots obsolètes, le
 category: "Guides"
 order: 12
 language: fr
-sourceHash: "9b74e1ea24b9735f"
+sourceHash: "d2700c2ac4473962"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,6 +19,8 @@ Le nettoyage balaie les états qui ne correspondent plus à une ressource vivant
 | `rdc config prune` | Résidus de la configuration locale (cache de certificats, archives expirées, références croisées orphelines) | Configuration CLI locale uniquement |
 
 Les trois sont indépendantes. Vous pouvez exécuter n'importe laquelle sans les autres. Elles partagent un modèle de sécurité commun décrit sous [Sécurité](#modèle-de-sécurité) ci-dessous.
+
+Le nettoyage supprime l'état laissé par des ressources supprimées. Pour récupérer l'espace occupé par les dépôts *actifs* (des blocs que leurs systèmes de fichiers ont libérés mais que le pool retient encore), utilisez [`rdc repo trim`](/fr/docs/repositories#récupérer-de-lespace-trim) à la place ; les deux sont complémentaires.
 
 ## Préflight de sécurité de montage
 

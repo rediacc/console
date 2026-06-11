@@ -959,6 +959,8 @@
         "infrastructure": "基础设施",
         "noData": "无可用状态数据",
         "storageHealthFragmentationNote": "碎片化统计的是每个仓库的写时复制（copy-on-write）镜像中的区段（extent）数量，而非其中的文件。在随机写入的工作负载（数据库、容器分层）下出现较高值属正常现象，仅供参考。此处有意不支持碎片整理：它会解除通过 reflink 共享的分支（fork）和备份快照的共享，并使数据存储用量膨胀。",
+        "storageHealthPoolSummary": "存储池：已用 {{used}}，可用 {{free}}（已满 {{percent}}%）",
+        "storageHealthPoolSnapshots": "备份快照占用 {{pinned}}（{{active}} 个活动，{{stale}} 个失效；失效快照可通过 'rdc machine prune' 删除）",
         "storageHealthHint": "提示：使用 --storage-health 运行可查看每个仓库的 BTRFS 碎片化情况和 reflink 节省量",
         "storageHealthSummary": "存储效率：{{summary}}",
         "strictDriftDetected": "--strict: {{count}} 个容器超过漂移阈值；以非零状态退出",
@@ -1428,6 +1430,41 @@
         "failed": "扩展失败",
         "sizeOption": "新的仓库大小（例如 10G、100G、1T）",
         "starting": "正在 \"{{machine}}\" 上将 \"{{repository}}\" 扩展为 {{size}}..."
+      },
+      "trim": {
+        "description": "从已挂载的仓库回收数据存储池空间（在线，零停机）。仓库内已删除的块通过 fstrim 归还给存储池。不带 --name 时，会修剪所有已挂载的仓库以及数据存储本身。正在备份的仓库会被跳过",
+        "descriptionShort": "将仓库中的可用空间归还给存储池",
+        "nameOption": "要修剪的仓库（默认：所有已挂载的仓库）",
+        "dockerOption": "先回收 Docker 空间（已停止的容器、悬空镜像、构建缓存）",
+        "dockerVolumesOption": "同时清理未使用的 Docker 卷",
+        "reportOnlyOption": "仅显示 discard 状态和可回收空间估算，不执行修剪",
+        "repoNotFound": "未找到仓库：{{name}}",
+        "noMountedRepos": "未找到已挂载的仓库",
+        "starting": "正在修剪 \"{{machine}}\" 上的仓库...",
+        "completed": "修剪完成：已回收 {{total}}",
+        "failed": "修剪失败"
+      },
+      "policy": {
+        "description": "管理由机器的存储维护器执行的自动大小策略：当仓库快满时在线扩大其配额（绝不超过 max-quota，存储池空间不足时不扩大），并按计划执行修剪。不存在自动缩小；如需缩小请使用 'repo resize'。不带 --name 时操作机器级默认策略",
+        "descriptionShort": "管理自动大小策略（自动扩容、计划修剪）",
+        "nameOption": "仓库（默认：机器级策略）",
+        "repoNotFound": "未找到仓库：{{name}}",
+        "invalidBool": "{{flag}} 必须为 'true' 或 'false'，收到：{{value}}",
+        "failed": "策略操作失败",
+        "set": {
+          "description": "设置大小策略字段。只更改你传入的标志；其他已保存字段保持原值。启用自动扩容必须提供 --max-quota：该上限是你对存储池超额配置的明确同意",
+          "descriptionShort": "设置策略字段（机器默认值，或用 --name 指定单个仓库）",
+          "autoGrowOption": "启用在线自动扩大配额（true/false）",
+          "maxQuotaOption": "自动扩容上限（例如 200G）；启用自动扩容时必填",
+          "growThresholdOption": "触发扩容的文件系统使用率百分比（默认 85）",
+          "growStepOption": "每次扩容量：绝对值（10G）或配额百分比（20%）",
+          "autoTrimOption": "启用计划修剪（true/false）",
+          "trimIntervalOption": "自动修剪之间的最少小时数（默认 24）"
+        },
+        "get": {
+          "description": "显示已保存的机器默认值、仓库覆盖值（使用 --name 时）以及维护器实际执行的合并后有效策略",
+          "descriptionShort": "显示大小策略（机器默认、仓库覆盖、有效值）"
+        }
       },
       "fork": {
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",

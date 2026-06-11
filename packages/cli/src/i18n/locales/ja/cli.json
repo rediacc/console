@@ -959,6 +959,8 @@
         "infrastructure": "インフラストラクチャ",
         "noData": "ステータスデータがありません",
         "storageHealthFragmentationNote": "断片化は各リポジトリのコピーオンライト・イメージのエクステント数を数えるものであり、その中のファイルではありません。高い値はランダム書き込みのワークロード（データベース、コンテナレイヤー）では想定内であり、参考情報にすぎません。デフラグはここでは意図的に未対応です。reflink で共有されたフォークやバックアップスナップショットの共有を解除し、データストアの使用量を膨張させてしまうためです。",
+        "storageHealthPoolSummary": "プール: 使用 {{used}}、空き {{free}}（{{percent}}% 使用中）",
+        "storageHealthPoolSnapshots": "バックアップスナップショットが {{pinned}} を保持しています（アクティブ {{active}}、失効 {{stale}}。失効分は 'rdc machine prune' で削除されます）",
         "storageHealthHint": "ヒント: --storage-health を付けて実行すると、リポジトリごとの BTRFS フラグメンテーションと reflink の節約量を確認できます",
         "storageHealthSummary": "ストレージ効率: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} 個のコンテナがドリフトしきい値を超えました。ゼロ以外で終了します",
@@ -1428,6 +1430,41 @@
         "failed": "拡張に失敗しました",
         "sizeOption": "新しいリポジトリサイズ（例: 10G、100G、1T）",
         "starting": "\"{{machine}}\" で \"{{repository}}\" を {{size}} に拡張中..."
+      },
+      "trim": {
+        "description": "マウント済みリポジトリからデータストアプールの空き領域を回収します（オンライン、停止なし）。リポジトリ内で削除されたブロックは fstrim でプールに返されます。--name を省略すると、マウント済みのすべてのリポジトリとデータストア自体をトリムします。バックアップ実行中のリポジトリはスキップされます",
+        "descriptionShort": "リポジトリの空き領域をプールへ返却する",
+        "nameOption": "トリムするリポジトリ（デフォルト: マウント済みのすべて）",
+        "dockerOption": "先に Docker の領域を回収（停止中コンテナ、宙吊りイメージ、ビルドキャッシュ）",
+        "dockerVolumesOption": "未使用の Docker ボリュームも削除する",
+        "reportOnlyOption": "トリムせずに discard 状態と回収可能量の見積もりを表示する",
+        "repoNotFound": "リポジトリが見つかりません: {{name}}",
+        "noMountedRepos": "マウント済みのリポジトリが見つかりません",
+        "starting": "\"{{machine}}\" のリポジトリをトリムしています...",
+        "completed": "トリム完了: {{total}} を回収しました",
+        "failed": "トリムに失敗しました"
+      },
+      "policy": {
+        "description": "マシンのストレージメンテナが適用する自動サイズポリシーを管理します。リポジトリが満杯に近づくとクォータをオンラインで拡大し（max-quota を超えず、プール残量が少ないときは拡大しません）、スケジュールされたトリムを実行します。自動縮小はありません。縮小には 'repo resize' を使ってください。--name を省略するとマシン全体のデフォルトポリシーを対象にします",
+        "descriptionShort": "自動サイズポリシーを管理（自動拡大、スケジュールトリム）",
+        "nameOption": "リポジトリ（デフォルト: マシン全体のポリシー）",
+        "repoNotFound": "リポジトリが見つかりません: {{name}}",
+        "invalidBool": "{{flag}} は 'true' または 'false' である必要があります。受け取った値: {{value}}",
+        "failed": "ポリシー操作に失敗しました",
+        "set": {
+          "description": "サイズポリシーのフィールドを設定します。渡したフラグだけが変更され、他の保存済みフィールドは値を保持します。自動拡大の有効化には --max-quota が必要です。上限はプールのオーバープロビジョニングへの明示的な同意です",
+          "descriptionShort": "ポリシーのフィールドを設定（マシンデフォルト、または --name で単一リポジトリ）",
+          "autoGrowOption": "クォータのオンライン自動拡大を有効化（true/false）",
+          "maxQuotaOption": "自動拡大の上限（例: 200G）。自動拡大には必須",
+          "growThresholdOption": "拡大を引き起こすファイルシステム使用率 %（デフォルト 85）",
+          "growStepOption": "1 ステップの拡大量: 絶対値（10G）またはクォータの割合（20%）",
+          "autoTrimOption": "スケジュールトリムを有効化（true/false）",
+          "trimIntervalOption": "自動トリムの最小間隔（時間、デフォルト 24）"
+        },
+        "get": {
+          "description": "保存されたマシンデフォルト、リポジトリの上書き（--name 指定時）、メンテナが実際に適用するマージ済みの有効ポリシーを表示します",
+          "descriptionShort": "サイズポリシーを表示（マシンデフォルト、リポジトリ上書き、有効値）"
+        }
       },
       "fork": {
         "alreadyExists": "リポジトリ \"{{name}}\" はコンテキスト内に既に存在します",

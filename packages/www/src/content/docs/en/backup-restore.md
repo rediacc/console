@@ -231,6 +231,12 @@ This default is deliberate. Running two cold backups in parallel against the sam
 
 **If you need every scheduled fire to run**, switch the timer from `OnCalendar=<cron>` to `OnUnitInactiveSec=<interval>`. That fires N hours after the previous run's completion rather than on a fixed wall-clock schedule, so long runs do not cause drops. They just push the next run later. The trade-off is schedule drift: your 03:00 nightly becomes "24 h after the last one ended."
 
+### Snapshots, Interruptions, and Pool Space
+
+Every push works from a momentary datastore snapshot, so the uploaded data is consistent even while repositories keep writing. While the backup runs, that snapshot keeps referencing every block it shares with live repositories: deletions and [trims](/en/docs/repositories#reclaim-space-trim) free less pool space until the cycle finishes and the snapshot is deleted. The [storage health report](/en/docs/monitoring#storage-health) shows how much space backup snapshots are currently pinning.
+
+Interruptions are safe. Stopping the service (or rebooting the machine) makes the backup abort its transfer and delete its snapshot before exiting; the next scheduled run picks up where it left off, since unchanged files are skipped by checksum. If the process is killed too hard to clean up (power loss), the orphaned snapshot is detected and removed automatically by the storage maintainer within minutes.
+
 ### Define a Strategy
 
 The default setup is a two-strategy split: a fast hourly hot stream that captures every repo, and a slower weekly cold stream for app-consistent snapshots. Both strategies write to separate storage subfolders (`hot/` and `cold/`), so the streams never mix.

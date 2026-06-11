@@ -959,6 +959,8 @@
         "infrastructure": "Infraestrutura",
         "noData": "Sem dados de estado disponíveis",
         "storageHealthFragmentationNote": "A fragmentação conta os extents na imagem copy-on-write de cada repositório, não os arquivos dentro dela. Valores altos são esperados em cargas de escrita aleatória (bancos de dados, camadas de contêineres) e são apenas informativos. A desfragmentação não é suportada aqui intencionalmente: ela desfaria o compartilhamento de forks e snapshots de backup vinculados por reflink e inflaria o uso do datastore.",
+        "storageHealthPoolSummary": "Pool: {{used}} usados, {{free}} livres ({{percent}}% cheio)",
+        "storageHealthPoolSnapshots": "Os snapshots de backup retêm {{pinned}} ({{active}} ativos, {{stale}} obsoletos; os obsoletos são removidos por 'rdc machine prune')",
         "storageHealthHint": "Sugestão: Execute com --storage-health para ver a fragmentação BTRFS e poupanças de reflink por repositório",
         "storageHealthSummary": "Eficiência de armazenamento: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} contentor(es) acima do limiar de desvio; a sair com código de erro",
@@ -1428,6 +1430,41 @@
         "failed": "Expansão falhou",
         "sizeOption": "Novo tamanho do repositório (por ex., 10G, 100G, 1T)",
         "starting": "A expandir \"{{repository}}\" para {{size}} em \"{{machine}}\"..."
+      },
+      "trim": {
+        "description": "Recupera espaço do pool do datastore a partir de repositórios montados (online, sem tempo de inatividade). Os blocos excluídos dentro dos repositórios voltam ao pool via fstrim. Sem --name, todos os repositórios montados e o próprio datastore são aparados. Repositórios com backup ativo são ignorados",
+        "descriptionShort": "Devolver ao pool o espaço livre dos repositórios",
+        "nameOption": "Repositório a aparar (padrão: todos os repositórios montados)",
+        "dockerOption": "Liberar primeiro espaço do Docker (contêineres parados, imagens órfãs, cache de build)",
+        "dockerVolumesOption": "Remover também volumes Docker não utilizados",
+        "reportOnlyOption": "Mostrar o estado de discard e a estimativa recuperável sem aparar",
+        "repoNotFound": "Repositório não encontrado: {{name}}",
+        "noMountedRepos": "Nenhum repositório montado encontrado",
+        "starting": "Aparando repositórios em \"{{machine}}\"...",
+        "completed": "Trim concluído: {{total}} recuperados",
+        "failed": "Falha no trim"
+      },
+      "policy": {
+        "description": "Gerencia a política de tamanho automática aplicada pelo mantenedor de armazenamento da máquina: amplia a cota de um repositório online quando ele enche (nunca além de max-quota, nunca com o pool baixo) e executa trims agendados. Não há redução automática; para isso use 'repo resize'. Sem --name, a política padrão da máquina é gerida",
+        "descriptionShort": "Gerenciar a política de tamanho automática (auto-crescimento, trim agendado)",
+        "nameOption": "Repositório (padrão: política de toda a máquina)",
+        "repoNotFound": "Repositório não encontrado: {{name}}",
+        "invalidBool": "{{flag}} deve ser 'true' ou 'false', recebido: {{value}}",
+        "failed": "Falha na operação de política",
+        "set": {
+          "description": "Define campos da política de tamanho. Apenas os flags passados são alterados; os demais campos guardados mantêm seus valores. Ativar o auto-crescimento exige --max-quota: o teto é seu consentimento explícito para superprovisionar o pool",
+          "descriptionShort": "Definir campos da política (padrão da máquina, ou um repositório com --name)",
+          "autoGrowOption": "Ativar o crescimento automático de cota online (true/false)",
+          "maxQuotaOption": "Teto do auto-crescimento (ex. 200G); obrigatório para o auto-crescimento",
+          "growThresholdOption": "% de uso do sistema de arquivos que dispara um crescimento (padrão 85)",
+          "growStepOption": "Crescimento por passo: absoluto (10G) ou percentual da cota (20%)",
+          "autoTrimOption": "Ativar o trim agendado (true/false)",
+          "trimIntervalOption": "Horas mínimas entre trims automáticos (padrão 24)"
+        },
+        "get": {
+          "description": "Mostra o padrão da máquina salvo, a substituição do repositório (com --name) e a política efetiva mesclada que o mantenedor aplica",
+          "descriptionShort": "Mostrar a política de tamanho (padrão da máquina, substituição do repositório, efetiva)"
+        }
       },
       "fork": {
         "alreadyExists": "O repositório \"{{name}}\" já existe na configuração",

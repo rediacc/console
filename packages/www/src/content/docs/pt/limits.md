@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: pt
-sourceHash: "8bd2b499c6b8eff6"
+sourceHash: "ece2d423d416e7ec"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -100,10 +100,12 @@ O datastore é um pool de tamanho fixo criado quando uma máquina é configurada
 
 - **Tamanho mínimo recomendado**: 50 GB
 - **Tamanho máximo**: Limitado pelo seu disco. Um único pool pode abranger um disco completo.
-- **Redimensionar**: Use `rdc datastore resize` para expandir um pool existente. A redução não é suportada.
+- **Redimensionar**: Use `rdc datastore resize` para alterar o tamanho do pool (todos os repositórios devem estar desmontados primeiro).
 - **Sistema de ficheiros**: O Rediacc usa BTRFS internamente para snapshots copy-on-write e forking eficiente. Requer uma máquina a correr **Linux kernel 6.1 ou posterior** para estabilidade total em produção.
 
-Cada imagem de repositório tem um tamanho máximo fixo definido no momento da criação (predefinição: 10 GB). Use `rdc repo resize` para expandir um repositório individual. A soma de todos os tamanhos máximos de repositório não pode exceder o tamanho do pool do datastore.
+Cada repositório tem um tamanho máximo definido no momento da criação (predefinição: 10 GB). Use `rdc repo resize` para alterá-lo manualmente, ou defina uma [política de tamanho automático](/pt/docs/repositories#politica-de-tamanho-automatico) para que a máquina o aumente online quando ficar cheio (limitado por um teto explícito por repositório e uma reserva de espaço livre no pool). O crescimento automático aplica-se apenas a repositórios individuais; o pool em si nunca é aumentado automaticamente.
+
+As imagens de repositório são esparsas: um repositório apenas ocupa o pool com o que efetivamente escreveu, e o espaço libertado por eliminações retorna ao pool via [`repo trim`](/pt/docs/repositories#reclamar-espaco-trim) ou um auto-trim agendado. As quotas podem portanto somar mais do que o tamanho do pool, sendo o [relatório de estado do armazenamento](/pt/docs/monitoring#estado-do-armazenamento) a mostrar o nível de preenchimento real.
 
 ---
 

@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: fr
-sourceHash: "88734af48d9648d5"
+sourceHash: "aa77a4f937206e58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -212,6 +212,7 @@ rdc repo up --name my-app -m server-1
 
 | Option | Description |
 |--------|-------------|
+| `--detach` | Revenir dès que les conteneurs sont démarrés ; les vérifications de santé se poursuivent en arrière-plan |
 | `--skip-router-restart` | Ne pas redémarrer le serveur de routes après l'opération |
 
 La séquence d'exécution est :
@@ -231,6 +232,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 Les services sans labels Traefik personnalisés affichent uniquement la route auto-générée. Utilisez ces URLs (et non le motif générique imprimé par la CLI) pour l'accès au navigateur, les appels API et la configuration inter-services.
+
+### Démarrage détaché
+
+Avec `--detach`, la commande rend la main dès que les conteneurs sont lancés, sans attendre la fin des vérifications de santé. Le démarrage se poursuit en arrière-plan : le proxy réessaie les connexions montantes jusqu'à ce que chaque service soit lié, les routes se rétablissent d'elles-mêmes. Suivez la progression avec `rdc machine query --containers --name <machine>`. Idéal pour les forks jetables et les boucles scriptées où la disponibilité immédiate des services n'est pas requise avant l'étape suivante.
+
+### Sonde de disponibilité
+
+Après `up()`, renet sonde chaque service HTTP jusqu'à ce qu'il accepte les connexions TCP, afin que la première requête du navigateur ne tombe pas sur une erreur 502 du proxy. Les services dont les conteneurs définissent un health check Docker sont considérés comme fiables directement : un conteneur sain saute la sonde, et celui encore dans sa `start_period` génère une note informative plutôt qu'un avertissement. La sonde abandonne après 15 secondes (modifiable via la variable d'environnement `REDIACC_READINESS_TIMEOUT`, en secondes, sur la machine) ; les démarrages détachés la sautent entièrement.
 
 ## Arrêter les services
 

@@ -4,7 +4,7 @@ description: "删除孤立备份、过期快照、仓库镜像和本地配置遗
 category: "Guides"
 order: 12
 language: zh
-sourceHash: "9b74e1ea24b9735f"
+sourceHash: "d2700c2ac4473962"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,6 +19,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc config prune` | 本地配置遗留物（证书缓存、过期归档、悬空交叉引用） | 仅本地 CLI 配置 |
 
 三者相互独立。您可以在不运行其他命令的情况下运行任何一个。它们共享下文 [安全模型](#safety-model) 中描述的通用安全模型。
+
+清理命令清除的是已删除资源遗留的状态。若要回收*存活*仓库占用的空间（即文件系统已释放但存储池仍持有的块），请改用 [`rdc repo trim`](/zh/docs/repositories#reclaim-space-trim)；两者互为补充。
 
 ## 挂载安全预检
 

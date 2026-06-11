@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: es
-sourceHash: "d60a43cd573517a1"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2bb63d224370c266"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 # Red
@@ -21,7 +21,7 @@ Para saber cómo los servicios obtienen sus IPs de loopback y el sistema de slot
 Cada repositorio se aísla automáticamente a nivel de kernel mediante ganchos de red. Esto requiere Linux kernel 6.1 o posterior. No se necesita configuración.
 
 - **Reescritura automática de bind**: Los servicios pueden vincularse a `0.0.0.0` o `127.0.0.1` como de costumbre. El kernel reescribe de forma transparente la dirección a la IP de loopback asignada al servicio. No es necesario vincularse explícitamente a `${SERVICE_IP}`.
-- **Bloqueo de conexiones entre repositorios**: Si un servicio intenta conectarse a una IP de loopback fuera del subred `/26` de su repositorio, el kernel lo bloquea. Un proceso en el repositorio A no puede alcanzar servicios del repositorio B.
+- **Bloqueo de conexiones entre repositorios**: Si un servicio intenta conectarse a una IP de loopback fuera del subred `/26` de su repositorio, el kernel lo bloquea. Un proceso en el repositorio A no puede alcanzar servicios del repositorio B. Los forks son la única excepción: sus conexiones hacia la subred del padre se redirigen a los servicios propios del fork (vea [Límites](/es/docs/limits)); el padre en sí permanece inaccesible.
 - **No se requieren cambios en la aplicación**: Los servicios usan `0.0.0.0` o `localhost` para vincularse, y el kernel garantiza que solo escuchen en su IP de loopback correcta. El aislamiento es completamente transparente.
 
 ## Cómo Funciona

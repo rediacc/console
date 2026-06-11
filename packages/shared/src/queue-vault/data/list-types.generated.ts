@@ -217,21 +217,44 @@ export interface SystemInfo {
 
 /** BTRFS storage health for one repository */
 export interface RepositoryStorageHealth {
+  allocated_bytes: number;
+  discards_enabled: boolean;
   divergence_percent: number;
   exclusive: number;
   exclusive_human: string;
   extents: number;
   fragmentation: string;
+  fs_free_bytes?: number;
+  fs_used_bytes?: number;
   guid: string;
+  mounted: boolean;
   name: string;
+  quota_bytes: number;
+  reclaimable_bytes?: number;
+  reclaimable_human?: string;
   shared: number;
   shared_human: string;
   size: number;
   size_human: string;
 }
 
+/** Datastore pool fill level and backup-snapshot pinning */
+export interface PoolStorageHealth {
+  active_backup_snapshots: number;
+  backup_snapshot_pinned_bytes: number;
+  backup_snapshot_pinned_human: string;
+  free_bytes: number;
+  free_human: string;
+  stale_backup_snapshots: number;
+  total_bytes: number;
+  used_bytes: number;
+  used_human: string;
+  used_percent: number;
+}
+
 /** BTRFS storage health summary across all repositories */
 export interface StorageHealthResult {
+  pool?: PoolStorageHealth;
   repositories: RepositoryStorageHealth[];
   savings_bytes: number;
   savings_human: string;

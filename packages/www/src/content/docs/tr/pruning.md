@@ -4,7 +4,7 @@ description: "Sahipsiz yedekleri, eski anlık görüntüleri, depo görüntüler
 category: "Guides"
 order: 12
 language: tr
-sourceHash: "9b74e1ea24b9735f"
+sourceHash: "d2700c2ac4473962"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,6 +19,8 @@ Temizleme, artık canlı bir kaynağa karşılık gelmeyen durumu tarar. Üç ko
 | `rdc config prune` | Yerel yapılandırma artıkları (sertifika önbelleği, süresi dolmuş arşivler, askıdaki çapraz referanslar) | Yalnızca yerel CLI yapılandırması |
 
 Üçü birbirinden bağımsızdır. Herhangi birini diğerleri olmadan çalıştırabilirsiniz. Aşağıdaki [Güvenlik Modeli](#guvenlik-modeli) altında açıklanan ortak bir güvenlik modelini paylaşırlar.
+
+Temizleme, silinen kaynakların geride bıraktığı durumu kaldırır. *Canlı* depoların kapladığı alanı geri kazanmak için (dosya sistemlerinin serbest bıraktığı ancak havuzun hâlâ tuttuğu bloklar) bunun yerine [`rdc repo trim`](/tr/docs/repositories#alan-kazanma-trim) kullanın; ikisi birbirini tamamlar.
 
 ## Bağlama güvenliği ön denetimi
 

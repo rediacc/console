@@ -4,7 +4,7 @@ description: "Eemalda orvuks jäänud varukoopiad, aegunud hetktõmmised, hoidla
 category: "Guides"
 order: 12
 language: et
-sourceHash: "9b74e1ea24b9735f"
+sourceHash: "d2700c2ac4473962"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,6 +19,8 @@ Kärpimine eemaldab olekud, mis ei vasta enam elusale ressursile. Kolm käsku ka
 | `rdc config prune` | Kohaliku konfiguratsiooni jäänukid (serdi vahemälu, aegunud arhiivid, rippuvad ristviited) | Ainult kohalik CLI konfiguratsioon |
 
 Need kolm on sõltumatud. Saad käivitada mis tahes ühe ilma teisteta. Need jagavad ühist ohutusmudelit, mida kirjeldatakse allpool jaotises [Ohutus](#ohutusmudel).
+
+Kärpimine eemaldab oleku, mille on jätnud maha kustutatud ressursid. *Elavate* repositooriumite hõivatud ruumi tagasinõudmiseks (plokid, mille nende failisüsteemid on vabastanud, kuid bassein endiselt hoiab), kasuta selle asemel [`rdc repo trim`](/et/docs/repositories#ruumi-tagasinõudmine-trim); need kaks täiendavad teineteist.
 
 ## Ühendamise ohutuse eelkontroll
 

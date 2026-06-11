@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: fr
-sourceHash: "d60a43cd573517a1"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2bb63d224370c266"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 # Réseau
@@ -21,7 +21,7 @@ Pour comprendre comment les services obtiennent leurs adresses IP de bouclage et
 Chaque dépôt est automatiquement isolé au niveau du noyau via des hooks réseau. Cela nécessite Linux kernel 6.1 ou ultérieur. Aucune configuration n'est nécessaire.
 
 - **Réécriture automatique des binds**: Les services peuvent se lier à `0.0.0.0` ou `127.0.0.1` comme d'habitude. Le noyau réécrit de manière transparente l'adresse vers l'IP de bouclage assignée au service. Pas besoin de se lier explicitement à `${SERVICE_IP}`.
-- **Blocage des connexions inter-dépôts**: Si un service tente de se connecter à une IP de bouclage hors du sous-réseau `/26` de son dépôt, le noyau le bloque. Un processus dans le dépôt A ne peut pas atteindre les services du dépôt B.
+- **Blocage des connexions inter-dépôts**: Si un service tente de se connecter à une IP de bouclage hors du sous-réseau `/26` de son dépôt, le noyau le bloque. Un processus dans le dépôt A ne peut pas atteindre les services du dépôt B. Les forks sont la seule exception : leurs connexions vers le sous-réseau du parent sont redirigées vers les services propres du fork (voir [Limites](/fr/docs/limits)) ; le parent lui-même reste inaccessible.
 - **Aucun changement d'application requis**: Les services utilisent `0.0.0.0` ou `localhost` pour le binding, et le noyau garantit qu'ils n'écoutent que sur leur IP de bouclage correcte. L'isolation est entièrement transparente.
 
 ## Fonctionnement

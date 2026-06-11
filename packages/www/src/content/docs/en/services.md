@@ -210,6 +210,7 @@ rdc repo up --name my-app -m server-1
 
 | Option | Description |
 |--------|-------------|
+| `--detach` | Return once containers are started; health checks continue in the background |
 | `--skip-router-restart` | Skip restarting the route server after the operation |
 
 The execution sequence is:
@@ -229,6 +230,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 Services without custom Traefik labels show only the auto-generated route. Use these URLs (not the generic pattern printed by the CLI) for browser access, API calls, and cross-service configuration.
+
+### Detached Start
+
+With `--detach`, the command returns as soon as the containers are started instead of waiting for health checks. Startup finishes in the background: the proxy retries upstream connections until each service binds, so routes recover on their own. Check progress with `rdc machine query --containers --name <machine>`. Ideal for throwaway forks and scripted loops where you don't need the services ready before the next step.
+
+### Readiness Probe
+
+After `up()`, renet probes each HTTP service until it accepts TCP connections, so the first browser request doesn't hit a proxy 502. Services whose containers define a Docker health check are trusted directly: a healthy container skips the probe, and one still in `start_period` logs an informational note instead of a warning. The probe gives up after 15 seconds (override with the `REDIACC_READINESS_TIMEOUT` environment variable, in seconds, on the machine); detached starts skip it entirely.
 
 ## Stopping Services
 

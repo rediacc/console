@@ -4,7 +4,7 @@ description: "Verschlüsselte Repositories auf rclone-kompatiblem Speicher siche
 category: "Guides"
 order: 7
 language: de
-sourceHash: "6ed9a5b950de8ddb"
+sourceHash: "e241aa122868e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -231,6 +231,12 @@ Dieses Verhalten ist bewusst gewählt. Zwei parallele Cold-Backups gegen denselb
 **Monitoring-Konsequenz.** Ein hängendes Backup (zum Beispiel rclone, das an einem Netzwerk-Blackhole hängenbleibt) verwirft still jedes nachfolgende Timer-Feuern. Der Scheduler gibt keinen Alarm aus. Beobachten Sie `systemctl show <unit> -p ActiveEnterTimestamp`: Wenn der Dienst länger als erwartet `activating` ist (zum Beispiel mehr als 48 h bei einem nächtlichen Timer), untersuchen Sie dies.
 
 **Wenn Sie möchten, dass jedes geplante Feuern läuft**, wechseln Sie den Timer von `OnCalendar=<cron>` zu `OnUnitInactiveSec=<Intervall>`. Das feuert N Stunden nach Abschluss des vorherigen Laufs statt nach einem festen Wall-Clock-Zeitplan, sodass lange Läufe keine Verluste verursachen. Sie schieben nur den nächsten Lauf nach hinten. Der Kompromiss ist Zeitplan-Drift: Ihr nächtliches 03:00 wird zu "24 h nach Abschluss des letzten Laufs."
+
+### Snapshots, Unterbrechungen und Pool-Speicher
+
+Jeder Push arbeitet von einem kurzlebigen Datastore-Snapshot, sodass die hochgeladenen Daten konsistent sind, auch während Repositories weiter schreiben. Während das Backup läuft, referenziert dieser Snapshot weiterhin jeden Block, den er mit aktiven Repositories teilt: Löschungen und [Trims](/de/docs/repositories#speicherplatz-zuruckgewinnen-trim) geben bis zum Abschluss des Zyklus und zum Löschen des Snapshots weniger Pool-Speicher frei. Der [Speichergesundheitsbericht](/de/docs/monitoring#speichergesundheit) zeigt, wie viel Speicher Backup-Snapshots aktuell belegen.
+
+Unterbrechungen sind sicher. Wird der Dienst gestoppt (oder die Maschine neu gestartet), bricht das Backup seine Übertragung ab und löscht seinen Snapshot vor dem Beenden; der nächste geplante Lauf setzt dort fort, wo er aufgehört hat, da unveränderte Dateien per Prüfsumme übersprungen werden. Wird der Prozess zu hart beendet, um aufzuräumen (Stromausfall), wird der verwaiste Snapshot vom Storage-Maintainer innerhalb von Minuten automatisch erkannt und entfernt.
 
 ### Strategie definieren
 

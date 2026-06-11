@@ -4,7 +4,7 @@ description: "孤立したバックアップ、古いスナップショット、
 category: "Guides"
 order: 12
 language: ja
-sourceHash: "9b74e1ea24b9735f"
+sourceHash: "d2700c2ac4473962"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,6 +19,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc config prune` | ローカル設定の残存物（証明書キャッシュ、期限切れアーカイブ、宙吊りの相互参照） | ローカル CLI 設定のみ |
 
 3 つは独立しています。任意の 1 つを他のものなしで実行できます。共通の安全モデルは下記の [安全モデル](#safety-model) で説明されています。
+
+プルーニングは削除済みリソースが残した状態を取り除きます。*ライブ*リポジトリが占有している容量（ファイルシステムが解放したがプールがまだ保持しているブロック）を回収するには、代わりに [`rdc repo trim`](/ja/docs/repositories#領域の回収-trim) を使用してください。2 つは補完的な関係にあります。
 
 ## マウント安全プリフライト
 

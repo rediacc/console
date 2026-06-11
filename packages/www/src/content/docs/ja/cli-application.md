@@ -6,7 +6,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "adf2b6c33282649c"
+sourceHash: "a855c6dad336345f"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1795,8 +1795,70 @@ rdc repo expand [options]
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-repo-trim"></a>
+### 6.22 trim
+
+{{t:cli.commands.repo.trim.description}}
+
+```bash
+rdc repo trim [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--name <name>` | {{t:cli.commands.repo.trim.nameOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--docker` | {{t:cli.commands.repo.trim.dockerOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--docker-volumes` | {{t:cli.commands.repo.trim.dockerVolumesOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--report-only` | {{t:cli.commands.repo.trim.reportOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-policy"></a>
+### 6.23 policy
+
+{{t:cli.commands.repo.policy.description}}
+
+<a id="cli-local-repo-policy-set"></a>
+#### set
+
+{{t:cli.commands.repo.policy.set.description}}
+
+```bash
+rdc repo policy set [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--name <name>` | {{t:cli.commands.repo.policy.nameOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--auto-grow <bool>` | {{t:cli.commands.repo.policy.set.autoGrowOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--max-quota <size>` | {{t:cli.commands.repo.policy.set.maxQuotaOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--grow-threshold <percent>` | {{t:cli.commands.repo.policy.set.growThresholdOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--grow-step <step>` | {{t:cli.commands.repo.policy.set.growStepOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--auto-trim <bool>` | {{t:cli.commands.repo.policy.set.autoTrimOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--trim-interval <hours>` | {{t:cli.commands.repo.policy.set.trimIntervalOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-repo-policy-get"></a>
+#### get
+
+{{t:cli.commands.repo.policy.get.description}}
+
+```bash
+rdc repo policy get [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.repo.machineOption}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--name <name>` | {{t:cli.commands.repo.policy.nameOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-repo-validate"></a>
-### 6.22 validate
+### 6.24 validate
 
 {{t:cli.commands.repo.validate.description}}
 
@@ -1813,7 +1875,7 @@ rdc repo validate [options]
 
 
 <a id="cli-local-repo-autostart"></a>
-### 6.23 autostart
+### 6.25 autostart
 
 {{t:cli.commands.repo.autostart.description}}
 
@@ -1868,7 +1930,7 @@ rdc repo autostart list [options]
 
 
 <a id="cli-local-repo-ownership"></a>
-### 6.24 ownership
+### 6.26 ownership
 
 {{t:cli.commands.repo.ownership.description}}
 
@@ -1886,7 +1948,7 @@ rdc repo ownership [options]
 
 
 <a id="cli-local-repo-template"></a>
-### 6.25 template
+### 6.27 template
 
 {{t:cli.commands.repo.template.description}}
 
@@ -1920,7 +1982,7 @@ rdc repo template apply [options]
 
 
 <a id="cli-local-repo-push"></a>
-### 6.26 push
+### 6.28 push
 
 {{t:cli.commands.repo.push.description}}
 
@@ -1951,7 +2013,7 @@ rdc repo push [options]
 
 
 <a id="cli-local-repo-pull"></a>
-### 6.27 pull
+### 6.29 pull
 
 {{t:cli.commands.repo.pull.description}}
 
@@ -1979,7 +2041,7 @@ rdc repo pull [options]
 
 
 <a id="cli-local-repo-migrate"></a>
-### 6.28 migrate
+### 6.30 migrate
 
 {{t:cli.commands.repo.migrate.description}}
 
@@ -2002,7 +2064,7 @@ rdc repo migrate [options]
 
 
 <a id="cli-local-repo-backup"></a>
-### 6.29 backup
+### 6.31 backup
 
 {{t:cli.commands.repo.backup.description}}
 
@@ -2027,7 +2089,7 @@ rdc repo backup list [options]
 
 
 <a id="cli-local-repo-sync"></a>
-### 6.30 sync
+### 6.32 sync
 
 {{t:cli.commands.repo.sync.description}}
 
@@ -2099,7 +2161,7 @@ rdc repo sync status [options]
 
 
 <a id="cli-local-repo-tunnel"></a>
-### 6.31 tunnel
+### 6.33 tunnel
 
 {{t:cli.commands.repo.tunnel.description}}
 
@@ -2117,7 +2179,7 @@ rdc repo tunnel [options]
 
 
 <a id="cli-local-repo-secret"></a>
-### 6.32 secret
+### 6.34 secret
 
 {{t:cli.commands.repo.secret.description}}
 

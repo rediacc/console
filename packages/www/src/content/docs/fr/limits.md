@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: fr
-sourceHash: "8bd2b499c6b8eff6"
+sourceHash: "ece2d423d416e7ec"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -100,10 +100,12 @@ Le datastore est un pool de taille fixe créé lors de la première configuratio
 
 - **Taille minimale recommandée** : 50 Go
 - **Taille maximale** : Limitée par votre disque. Un seul pool peut occuper un disque entier.
-- **Redimensionnement** : Utilisez `rdc datastore resize` pour agrandir un pool existant. La réduction n'est pas prise en charge.
+- **Redimensionnement** : Utilisez `rdc datastore resize` pour modifier la taille du pool (tous les repositories doivent être démontés au préalable).
 - **Système de fichiers** : Rediacc utilise BTRFS en interne pour les snapshots en copie sur écriture et le forking efficace. Nécessite une machine avec **Linux kernel 6.1 ou ultérieur** pour une stabilité complète en production.
 
-Chaque image de repository a une taille maximale fixe définie à la création (par défaut : 10 Go). Utilisez `rdc repo resize` pour agrandir un repository individuel. La somme de toutes les tailles maximales des repositories ne peut pas dépasser la taille du pool du datastore.
+Chaque repository a une taille maximale définie à la création (par défaut : 10 Go). Utilisez `rdc repo resize` pour la modifier manuellement, ou définissez une [politique de taille automatique](/fr/docs/repositories#politique-de-taille-automatique) pour que la machine le fasse en ligne quand il se remplit (borné par un plafond explicite par repository et une réserve d'espace libre dans le pool). La croissance automatique s'applique uniquement aux repositories individuels ; le pool lui-même n'est jamais agrandi automatiquement.
+
+Les images de repository sont éparses : un repository n'occupe dans le pool que ce qu'il a réellement écrit, et l'espace libéré par des suppressions revient au pool via [`repo trim`](/fr/docs/repositories#récupérer-de-lespace-trim) ou un trim automatique planifié. Les quotas peuvent donc dépasser la taille du pool, le [rapport de santé du stockage](/fr/docs/monitoring#santé-du-stockage) indiquant le niveau de remplissage réel.
 
 ---
 

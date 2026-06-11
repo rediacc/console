@@ -959,6 +959,8 @@
         "infrastructure": "Infrastructure",
         "noData": "Aucune donnée de statut disponible",
         "storageHealthFragmentationNote": "La fragmentation compte les extents de l'image copy-on-write de chaque dépôt, pas les fichiers qu'elle contient. Des valeurs élevées sont attendues pour les charges à écritures aléatoires (bases de données, couches de conteneurs) et sont purement informatives. La défragmentation n'est volontairement pas prise en charge ici : elle dissocierait les forks et instantanés de sauvegarde partagés par reflink et gonflerait l'utilisation du datastore.",
+        "storageHealthPoolSummary": "Pool : {{used}} utilisés, {{free}} libres ({{percent}} % plein)",
+        "storageHealthPoolSnapshots": "Les instantanés de sauvegarde retiennent {{pinned}} ({{active}} actifs, {{stale}} obsolètes ; les obsolètes sont supprimés par 'rdc machine prune')",
         "storageHealthHint": "Astuce : Exécutez avec --storage-health pour voir la fragmentation BTRFS et les économies reflink par repo",
         "storageHealthSummary": "Efficacité du stockage : {{summary}}",
         "strictDriftDetected": "--strict : {{count}} conteneur(s) au-delà du seuil de dérive ; sortie avec code non nul",
@@ -1428,6 +1430,41 @@
         "failed": "Échec de l'extension",
         "sizeOption": "Nouvelle taille du dépôt (ex. 10G, 100G, 1T)",
         "starting": "Extension de \"{{repository}}\" à {{size}} sur \"{{machine}}\"..."
+      },
+      "trim": {
+        "description": "Récupère l'espace du pool du datastore depuis les dépôts montés (en ligne, sans interruption). Les blocs supprimés dans les dépôts sont rendus au pool via fstrim. Sans --name, tous les dépôts montés et le datastore lui-même sont traités. Les dépôts en cours de sauvegarde sont ignorés",
+        "descriptionShort": "Rendre au pool l'espace libre des dépôts",
+        "nameOption": "Dépôt à traiter (par défaut : tous les dépôts montés)",
+        "dockerOption": "Libérer d'abord l'espace Docker (conteneurs arrêtés, images orphelines, cache de build)",
+        "dockerVolumesOption": "Supprimer également les volumes Docker inutilisés",
+        "reportOnlyOption": "Afficher l'état des discards et l'estimation récupérable sans rien modifier",
+        "repoNotFound": "Dépôt introuvable : {{name}}",
+        "noMountedRepos": "Aucun dépôt monté trouvé",
+        "starting": "Trim des dépôts sur \"{{machine}}\"...",
+        "completed": "Trim terminé : {{total}} récupérés",
+        "failed": "Échec du trim"
+      },
+      "policy": {
+        "description": "Gère la politique de taille automatique appliquée par le mainteneur de stockage de la machine : agrandit le quota d'un dépôt en ligne quand il se remplit (jamais au-delà de max-quota, jamais quand le pool est bas) et lance des trims planifiés. Il n'y a pas de réduction automatique ; utilisez 'repo resize'. Sans --name, la politique par défaut de la machine est visée",
+        "descriptionShort": "Gérer la politique de taille automatique (auto-agrandissement, trim planifié)",
+        "nameOption": "Dépôt (par défaut : politique de toute la machine)",
+        "repoNotFound": "Dépôt introuvable : {{name}}",
+        "invalidBool": "{{flag}} doit être 'true' ou 'false', reçu : {{value}}",
+        "failed": "Échec de l'opération de politique",
+        "set": {
+          "description": "Définit des champs de la politique de taille. Seuls les drapeaux passés sont modifiés ; les autres champs conservent leurs valeurs. Activer l'auto-agrandissement exige --max-quota : le plafond est votre consentement explicite au surprovisionnement du pool",
+          "descriptionShort": "Définir des champs de politique (défaut machine, ou un dépôt avec --name)",
+          "autoGrowOption": "Activer l'agrandissement automatique du quota en ligne (true/false)",
+          "maxQuotaOption": "Plafond de l'auto-agrandissement (ex. 200G) ; requis pour l'auto-agrandissement",
+          "growThresholdOption": "% d'occupation du système de fichiers déclenchant un agrandissement (défaut 85)",
+          "growStepOption": "Croissance par étape : absolue (10G) ou pourcentage du quota (20%)",
+          "autoTrimOption": "Activer le trim planifié (true/false)",
+          "trimIntervalOption": "Heures minimales entre trims automatiques (défaut 24)"
+        },
+        "get": {
+          "description": "Affiche le défaut machine enregistré, la surcharge du dépôt (avec --name) et la politique effective fusionnée appliquée par le mainteneur",
+          "descriptionShort": "Afficher la politique de taille (défaut machine, surcharge du dépôt, effective)"
+        }
       },
       "fork": {
         "alreadyExists": "Le dépôt \"{{name}}\" existe déjà dans le contexte",

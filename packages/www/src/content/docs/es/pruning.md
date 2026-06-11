@@ -4,7 +4,7 @@ description: "Eliminar copias de seguridad huérfanas, snapshots obsoletos, imá
 category: "Guides"
 order: 12
 language: es
-sourceHash: "9b74e1ea24b9735f"
+sourceHash: "d2700c2ac4473962"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,6 +19,8 @@ La limpieza barre el estado que ya no corresponde a un recurso vivo. Tres comand
 | `rdc config prune` | Restos en la configuración local (caché de certificados, archivos expirados, referencias cruzadas colgantes) | Solo la configuración local del CLI |
 
 Los tres son independientes. Puedes ejecutar cualquiera sin los otros. Comparten un modelo de seguridad común descrito en [Modelo de seguridad](#modelo-de-seguridad) más abajo.
+
+La limpieza elimina el estado que dejaron atrás los recursos eliminados. Para recuperar el espacio ocupado por repositorios *activos* (bloques que sus sistemas de archivos han liberado pero el pool sigue reteniendo), use [`rdc repo trim`](/es/docs/repositories#recuperar-espacio-trim) en su lugar; los dos son complementarios.
 
 ## Verificación previa de seguridad de montaje
 

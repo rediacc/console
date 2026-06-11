@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: de
-sourceHash: "8bd2b499c6b8eff6"
+sourceHash: "ece2d423d416e7ec"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -100,10 +100,12 @@ Der Datastore ist ein Pool fester Größe, der bei der Ersteinrichtung einer Mas
 
 - **Empfohlene Mindestgröße**: 50 GB
 - **Maximale Größe**: Begrenzt durch Ihre Festplatte. Ein einzelner Pool kann eine gesamte Festplatte umfassen.
-- **Größenanpassung**: Verwenden Sie `rdc datastore resize`, um einen bestehenden Pool zu erweitern. Verkleinern wird nicht unterstützt.
+- **Größenanpassung**: Verwenden Sie `rdc datastore resize`, um die Pool-Größe zu ändern (alle Repositories müssen vorher unmountet sein).
 - **Dateisystem**: Rediacc verwendet intern BTRFS für Copy-on-Write-Snapshots und effizientes Forking. Erfordert eine Maschine mit **Linux Kernel 6.1 oder neuer** für volle Produktionsstabilität.
 
-Jedes Repository-Image hat eine feste maximale Größe, die bei der Erstellung festgelegt wird (Standard: 10 GB). Verwenden Sie `rdc repo resize`, um ein einzelnes Repository zu erweitern. Die Summe aller maximalen Repository-Größen darf die Datastore-Pool-Größe nicht überschreiten.
+Jedes Repository hat eine maximale Größe, die bei der Erstellung festgelegt wird (Standard: 10 GB). Verwenden Sie `rdc repo resize`, um sie manuell zu ändern, oder richten Sie eine [automatische Größenrichtlinie](/de/docs/repositories#automatische-grossenrichtlinie) ein, damit die Maschine das Repository im laufenden Betrieb vergrößert, wenn es sich füllt (begrenzt durch eine explizite Repository-Obergrenze und eine Pool-Freispeicherreserve). Auto-Grow gilt nur für einzelne Repositories; der Pool selbst wird nie automatisch vergrößert.
+
+Repository-Images sind sparse: Ein Repository belegt im Pool nur den Speicher, den es tatsächlich geschrieben hat, und durch Löschungen freigegebener Speicher wird über [`repo trim`](/de/docs/repositories#speicherplatz-zuruckgewinnen-trim) oder ein geplantes Auto-Trim an den Pool zurückgegeben. Quotas können daher in der Summe die Pool-Größe übersteigen, wobei der [Speichergesundheitsbericht](/de/docs/monitoring#speichergesundheit) den tatsächlichen Füllstand anzeigt.
 
 ---
 

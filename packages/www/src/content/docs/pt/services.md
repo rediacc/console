@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: pt
-sourceHash: "88734af48d9648d5"
+sourceHash: "aa77a4f937206e58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -212,6 +212,7 @@ rdc repo up --name my-app -m server-1
 
 | Opção | Descrição |
 |-------|-----------|
+| `--detach` | Retorna assim que os contêineres estiverem iniciados; as verificações de saúde continuam em segundo plano |
 | `--skip-router-restart` | Ignorar o reinício do servidor de rotas após a operação |
 
 A sequência de execução é:
@@ -231,6 +232,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 Os serviços sem labels Traefik personalizadas mostram apenas a rota gerada automaticamente. Use estes URLs (não o padrão genérico mostrado pelo CLI) para acesso via browser, chamadas API e configuração entre serviços.
+
+### Inicialização em Modo Detached
+
+Com `--detach`, o comando retorna assim que os contêineres estiverem iniciados, sem aguardar a conclusão das verificações de saúde. A inicialização termina em segundo plano: o proxy tenta reconectar-se aos serviços de upstream até que cada um esteja vinculado, e as rotas se recuperam sozinhas. Acompanhe o progresso com `rdc machine query --containers --name <machine>`. Ideal para forks descartáveis e scripts em loop onde os serviços não precisam estar prontos antes da próxima etapa.
+
+### Verificação de Prontidão
+
+Após `up()`, o renet sonda cada serviço HTTP até que ele aceite conexões TCP, evitando que a primeira requisição do browser receba um erro 502 do proxy. Serviços cujos contêineres definem um health check do Docker são tratados diretamente: um contêiner saudável pula a sonda, e um ainda dentro do `start_period` registra uma nota informativa em vez de um aviso. A sonda desiste após 15 segundos (substitua com a variável de ambiente `REDIACC_READINESS_TIMEOUT`, em segundos, na máquina); inicializações em modo detached a ignoram completamente.
 
 ## Parando Serviços
 

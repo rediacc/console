@@ -173,6 +173,50 @@ test.describe
       assertSuccess(result);
     });
 
+    test('repository_policy_set and repository_policy_get round-trip machine policy', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      // Machine-wide default (no name param): enable auto-trim, then read it
+      // back. Composes with the maintain timer but requires no repo state.
+      const setResult = await runLocalFunction('repository_policy_set', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        params: { auto_trim: 'true', trim_interval: '48' },
+        timeout: E2E.TEST_TIMEOUT,
+        debug: true,
+      });
+      assertSuccess(setResult);
+
+      const getResult = await runLocalFunction('repository_policy_get', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        timeout: E2E.TEST_TIMEOUT,
+        debug: true,
+      });
+      assertSuccess(getResult);
+      const output = getResult.stdout + getResult.stderr;
+      expect(output).toContain('auto_trim');
+      expect(output).toContain('effective');
+    });
+
+    test('repository_trim - report-only surveys mounted repositories', async () => {
+      test.skip(!config.enabled, 'E2E not configured');
+      test.setTimeout(E2E.TEST_TIMEOUT);
+
+      // Machine-wide report-only pass: no mappings refreshed, nothing
+      // trimmed. In local mode repos are unencrypted directory mounts, so
+      // per-repo rows may be empty or carry discard-detection errors —
+      // the command itself must still succeed and emit the result JSON.
+      const result = await runLocalFunction('repository_trim', E2E.MACHINE_VM1, {
+        contextName: ctxName,
+        params: { report_only: true },
+        timeout: E2E.TEST_TIMEOUT,
+        debug: true,
+      });
+      assertSuccess(result);
+      const output = result.stdout + result.stderr;
+      expect(output).toContain('report_only');
+    });
+
     test('repository_ownership - should set repository ownership', async () => {
       test.skip(!config.enabled, 'E2E not configured');
       test.setTimeout(E2E.TEST_TIMEOUT);

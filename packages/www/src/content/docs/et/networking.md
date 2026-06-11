@@ -4,8 +4,8 @@ description: "Avalda teenuseid pöördproksi, Dockeri siltide, TLS-sertifikaatid
 category: "Guides"
 order: 6
 language: et
-sourceHash: "d60a43cd573517a1"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2bb63d224370c266"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 # Võrgundus
@@ -19,7 +19,7 @@ Kuidas teenused saavad oma loopback-IP-d ja `.rediacc.json` pesasüsteemi kohta 
 Iga hoidla on tuumatasandil automaatselt eraldatud võrgukonksude abil. See nõuab Linuxi tuuma versiooni 6.1 või uuemat. Konfiguratsiooni ei ole vaja.
 
 - **Automaatne bind-ümberkirjutus**: Teenused saavad siduda `0.0.0.0` või `127.0.0.1` nagu tavaliselt. Tuum kirjutab aadressi läbipaistvalt ümber teenusele määratud loopback-IP-ks. `${SERVICE_IP}` aadressi ei pea eksplitsiitselt siduma.
-- **Ristühenduste blokeerimine**: Kui teenus proovib ühenduda loopback-IP-ga, mis asub väljaspool hoidla `/26` alamvõrku, blokeerib tuum selle. Hoidla A protsess ei saa jõuda hoidla B teenusteni.
+- **Ristühenduste blokeerimine**: Kui teenus proovib ühenduda loopback-IP-ga, mis asub väljaspool hoidla `/26` alamvõrku, blokeerib tuum selle. Hoidla A protsess ei saa jõuda hoidla B teenusteni. Fork'id on ainus erand: nende ühendused vanema alamvõrku suunatakse fork'i enda teenustele (vt [Piirangud](/et/docs/limits)); vanem ise jääb kättesaamatuks.
 - **Rakendusi ei pea muutma**: Teenused kasutavad sidumiseks `0.0.0.0` või `localhost` ning tuum tagab, et nad kuulavad ainult õigel loopback-IP-l. Eraldumine on täielikult läbipaistev.
 
 ## Kuidas see toimib

@@ -959,6 +959,8 @@
         "infrastructure": "Infraestructura",
         "noData": "No hay datos de estado disponibles",
         "storageHealthFragmentationNote": "La fragmentación cuenta los extents de la imagen copy-on-write de cada repositorio, no los archivos que contiene. Los valores altos son esperables en cargas de escritura aleatoria (bases de datos, capas de contenedores) y son solo informativos. La desfragmentación no se admite aquí de forma intencionada: dejaría de compartir los forks e instantáneas de respaldo enlazados por reflink e inflaría el uso del datastore.",
+        "storageHealthPoolSummary": "Pool: {{used}} usados, {{free}} libres ({{percent}}% lleno)",
+        "storageHealthPoolSnapshots": "Las instantáneas de copia de seguridad retienen {{pinned}} ({{active}} activas, {{stale}} obsoletas; las obsoletas se eliminan con 'rdc machine prune')",
         "storageHealthHint": "Consejo: Ejecuta con --storage-health para ver la fragmentación de BTRFS y el ahorro de reflink por repo",
         "storageHealthSummary": "Eficiencia de almacenamiento: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} contenedor(es) ha(n) superado el umbral de desviación; saliendo con código distinto de cero",
@@ -1428,6 +1430,41 @@
         "failed": "Error en la expansión",
         "sizeOption": "Nuevo tamaño del repositorio (ej. 10G, 100G, 1T)",
         "starting": "Expandiendo \"{{repository}}\" a {{size}} en \"{{machine}}\"..."
+      },
+      "trim": {
+        "description": "Recupera espacio del pool del datastore desde repositorios montados (en línea, sin tiempo de inactividad). Los bloques eliminados dentro de los repositorios vuelven al pool mediante fstrim. Sin --name, se recortan todos los repositorios montados y el propio datastore. Los repositorios con una copia de seguridad activa se omiten",
+        "descriptionShort": "Devolver el espacio libre de los repositorios al pool",
+        "nameOption": "Repositorio a recortar (predeterminado: todos los repositorios montados)",
+        "dockerOption": "Liberar primero espacio de Docker (contenedores detenidos, imágenes colgantes, caché de build)",
+        "dockerVolumesOption": "Eliminar además los volúmenes de Docker sin usar",
+        "reportOnlyOption": "Mostrar el estado de descartes y la estimación recuperable sin recortar",
+        "repoNotFound": "Repositorio no encontrado: {{name}}",
+        "noMountedRepos": "No se encontraron repositorios montados",
+        "starting": "Recortando repositorios en \"{{machine}}\"...",
+        "completed": "Recorte completado: {{total}} recuperados",
+        "failed": "Error al recortar"
+      },
+      "policy": {
+        "description": "Gestiona la política de tamaño automática que aplica el mantenedor de almacenamiento de la máquina: amplía la cuota de un repositorio en línea cuando se llena (nunca más allá de max-quota, nunca con el pool escaso) y ejecuta recortes programados. No existe la reducción automática; para eso use 'repo resize'. Sin --name se gestiona la política predeterminada de la máquina",
+        "descriptionShort": "Gestionar la política de tamaño automática (auto-crecimiento, recorte programado)",
+        "nameOption": "Repositorio (predeterminado: política de toda la máquina)",
+        "repoNotFound": "Repositorio no encontrado: {{name}}",
+        "invalidBool": "{{flag}} debe ser 'true' o 'false', se recibió: {{value}}",
+        "failed": "La operación de política falló",
+        "set": {
+          "description": "Establece campos de la política de tamaño. Solo cambian los flags que pase; los demás campos guardados conservan sus valores. Activar el auto-crecimiento requiere --max-quota: el tope es su consentimiento explícito para sobreaprovisionar el pool",
+          "descriptionShort": "Establecer campos de la política (predeterminado de máquina, o un repositorio con --name)",
+          "autoGrowOption": "Activar el crecimiento automático de cuota en línea (true/false)",
+          "maxQuotaOption": "Tope del auto-crecimiento (p. ej. 200G); obligatorio para el auto-crecimiento",
+          "growThresholdOption": "% de uso del sistema de archivos que dispara un crecimiento (predeterminado 85)",
+          "growStepOption": "Crecimiento por paso: absoluto (10G) o porcentaje de la cuota (20%)",
+          "autoTrimOption": "Activar el recorte programado (true/false)",
+          "trimIntervalOption": "Horas mínimas entre recortes automáticos (predeterminado 24)"
+        },
+        "get": {
+          "description": "Muestra el valor predeterminado de la máquina, la anulación del repositorio (con --name) y la política efectiva combinada que aplica el mantenedor",
+          "descriptionShort": "Mostrar la política de tamaño (predeterminada, anulación del repositorio, efectiva)"
+        }
       },
       "fork": {
         "alreadyExists": "El repositorio \"{{name}}\" ya existe en el contexto",

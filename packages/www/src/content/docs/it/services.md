@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: it
-sourceHash: "88734af48d9648d5"
+sourceHash: "aa77a4f937206e58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -212,6 +212,7 @@ rdc repo up --name my-app -m server-1
 
 | Opzione | Descrizione |
 |---------|-------------|
+| `--detach` | Ritorna non appena i container sono avviati; i health check proseguono in background |
 | `--skip-router-restart` | Salta il riavvio del server delle route dopo l'operazione |
 
 La sequenza di esecuzione è:
@@ -231,6 +232,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 I servizi senza etichette Traefik personalizzate mostrano solo la route generata automaticamente. Usa questi URL (non il pattern generico stampato dalla CLI) per l'accesso tramite browser, le chiamate API e la configurazione cross-servizio.
+
+### Avvio distaccato
+
+Con `--detach`, il comando ritorna non appena i container sono avviati, senza attendere il completamento dei health check. L'avvio prosegue in background: il proxy riprova le connessioni upstream finché ogni servizio non si mette in ascolto, quindi le route si ripristinano da sole. Per controllare l'avanzamento, usa `rdc machine query --containers --name <machine>`. Questa modalità è ideale per fork usa e getta e cicli scriptati dove non è necessario che i servizi siano pronti prima del passo successivo.
+
+### Sonda di disponibilità
+
+Al termine di `up()`, renet verifica ogni servizio HTTP fino a quando accetta connessioni TCP, in modo che la prima richiesta del browser non incontri un errore 502 del proxy. I servizi i cui container definiscono un Docker health check vengono considerati affidabili direttamente: un container sano salta la sonda, mentre uno ancora nel `start_period` genera una nota informativa invece di un avviso. La sonda si arrende dopo 15 secondi (modificabile tramite la variabile d'ambiente `REDIACC_READINESS_TIMEOUT`, in secondi, sulla macchina); gli avvii distaccati la saltano del tutto.
 
 ## Arresto dei servizi
 

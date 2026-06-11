@@ -4,7 +4,7 @@ description: "Come funziona l'avvio automatico, il riconciliatore periodico che 
 category: "Guides"
 order: 5
 language: it
-sourceHash: "00a1796a0b0d20da"
+sourceHash: "7fa4f919475b304e"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -23,6 +23,8 @@ Quando abiliti l'autostart per un repository, Rediacc genera un keyfile LUKS cas
 ```
 
 Questo consente alla macchina di montare il repository senza richiedere la passphrase. Lo slot 0 LUKS (la tua passphrase) non viene modificato.
+
+Lo slot del keyfile usa il KDF veloce PBKDF2: un keyfile casuale di 256 byte costituisce già di per sé un margine di sicurezza sufficiente, quindi un KDF memory-hard aggiungerebbe latenza di sblocco senza offrire protezione aggiuntiva. I montaggi si aprono in molto meno di un secondo. I repository creati prima di questa ottimizzazione pagano ancora una derivazione Argon2id di più secondi per ogni montaggio; è possibile convertirli sul posto (con il repository smontato) tramite il comando operatore `renet repository kdf-migrate --name <guid>` sulla macchina. Lo slot 0 mantiene Argon2id: la scelta giusta per una passphrase umana.
 
 All'avvio, un servizio systemd one-shot chiamato `rediacc-autostart.service` legge l'elenco dei repository con autostart abilitato, monta ognuno usando il proprio keyfile, avvia il daemon Docker per repository ed esegue l'hook `up()` del Rediaccfile. All'arresto, il servizio esegue `down()`, ferma Docker e chiude i volumi LUKS.
 
