@@ -6,7 +6,7 @@ description: >-
 category: Reference
 order: 99
 language: it
-sourceHash: "8bd2b499c6b8eff6"
+sourceHash: "ece2d423d416e7ec"
 sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
@@ -100,10 +100,12 @@ Il datastore è un pool di dimensioni fisse creato quando una macchina viene con
 
 - **Dimensione minima consigliata**: 50 GB
 - **Dimensione massima**: limitata dal tuo disco. Un singolo pool può occupare un disco intero.
-- **Ridimensionamento**: usa `rdc datastore resize` per espandere un pool esistente. La riduzione non è supportata.
+- **Ridimensionamento**: usa `rdc datastore resize` per modificare la dimensione del pool (tutti i repository devono essere smontati prima).
 - **File system**: Rediacc usa BTRFS internamente per snapshot copy-on-write e forking efficiente. Richiede una macchina con **Linux kernel 6.1 o successivo** per la piena stabilità in produzione.
 
-Ogni immagine di repository ha una dimensione massima fissa impostata al momento della creazione (predefinita: 10 GB). Usa `rdc repo resize` per espandere un repository individuale. La somma di tutte le dimensioni massime dei repository non può superare la dimensione del pool del datastore.
+Ogni repository ha una dimensione massima impostata al momento della creazione (predefinita: 10 GB). Usa `rdc repo resize` per modificarla manualmente, oppure imposta una [policy di dimensione automatica](/it/docs/repositories#policy-di-dimensione-automatica) affinché la macchina la faccia crescere online quando si riempie (limitata da un tetto esplicito per-repository e da una riserva di spazio libero nel pool). L'auto-grow si applica solo ai singoli repository; il pool stesso non cresce mai automaticamente.
+
+Le immagini di repository sono sparse: un repository occupa nel pool solo quanto ha effettivamente scritto, e lo spazio liberato dalle eliminazioni torna al pool tramite [`repo trim`](/it/docs/repositories#recupera-spazio-trim) o un auto-trim pianificato. Le quote possono quindi sommarsi a più della dimensione del pool, con il [report sulla salute dello storage](/it/docs/monitoring#salute-dellarchiviazione) che mostra il livello di riempimento reale.
 
 ---
 

@@ -220,6 +220,9 @@ export function generateServiceUnit(
 
   // TimeoutStartSec=infinity: backups can legitimately take > 24 h for a
   // first full seed of a large repo. Any finite cap eventually bites.
+  // TimeoutStopSec=90: on stop/reboot renet aborts the transfer on SIGTERM
+  // and deletes its datastore snapshot (bounded at 60s renet-side); without
+  // a stop window systemd would SIGKILL mid-cleanup and orphan the snapshot.
   const serviceContent = `[Unit]
 Description=Rediacc Scheduled Backup (${strategyName})
 After=network-online.target
@@ -227,6 +230,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 TimeoutStartSec=infinity
+TimeoutStopSec=90
 ${envFileLine}${execLines.join('\n')}
 
 [Install]

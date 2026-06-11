@@ -132,6 +132,9 @@ export interface LocalExecuteResult {
   stdout?: string;
   /** Captured stderr, when requested */
   stderr?: string;
+  /** True when the full renet output was already echoed to the terminal
+   * (non-capture failure path), so failure renderers must not repeat it */
+  outputEchoed?: boolean;
   /** Step timing from renet (parsed from JSON output) */
   steps?: { name: string; duration_ms: number; detail?: string }[];
   /** CLI-side step timing (config, SSH connect, provision, verify, license) */
@@ -413,6 +416,63 @@ function extractStepsFromOutput(output: string): StepEntry[] | undefined {
   }
 
   return steps.length > 0 ? steps : undefined;
+}
+
+const MAX_FAILURE_REASON_CHARS = 300;
+
+// Parser patterns for renet output lines — not user-facing strings.
+const COBRA_ERROR_PREFIX = 'Error: ';
+const LOGRUS_LINE_PREFIX = 'time="';
+
+/**
+ * Build the non-zero-exit error message, including renet's actual failure
+ * reason when one is available. Without this the operator only sees
+ * "renet exited with code 1" while the real cause ("repository X is not
+ * mounted") sits unprinted in the captured output. The bridge relays the
+ * inner command's streams into stdout (with a `[function] ` prefix) while
+ * its own logrus noise lands in stderr, so the cobra "Error: ..." line is
+ * searched across BOTH streams before any last-line fallback.
+ */
+function buildRenetExitError(exitCode: number, stderr: string, stdout: string): string {
+  const base = `renet exited with code ${exitCode}`;
+  const reason =
+    extractErrorLine(stderr) ??
+    extractErrorLine(stdout) ??
+    lastInformativeLine(stderr) ??
+    lastInformativeLine(stdout);
+  return reason ? `${base}: ${capReason(reason)}` : base;
+}
+
+/** Strip bridge `[function] ` prefixes and drop empty lines and JSON
+ * fragments (multi-line JSON yields lines starting with braces, brackets, or
+ * quoted keys). */
+function cleanOutputLines(output: string): string[] {
+  return output
+    .split('\n')
+    .map((line) => line.replace(/^\s*\[[^\]]+\]\s?/, '').trim())
+    .filter((line) => line.length > 0 && !/^[{}\][",]/.test(line));
+}
+
+/** The last cobra-style "Error: ..." line, without the prefix. */
+function extractErrorLine(output: string): string | undefined {
+  return cleanOutputLines(output)
+    .filter((line) => line.startsWith(COBRA_ERROR_PREFIX))
+    .at(-1)
+    ?.slice(COBRA_ERROR_PREFIX.length)
+    .trim();
+}
+
+/** The last line that isn't structured-log noise (`time="..." level=...`). */
+function lastInformativeLine(output: string): string | undefined {
+  return cleanOutputLines(output)
+    .filter((line) => !line.startsWith(LOGRUS_LINE_PREFIX))
+    .at(-1);
+}
+
+function capReason(reason: string): string {
+  return reason.length > MAX_FAILURE_REASON_CHARS
+    ? `${reason.slice(0, MAX_FAILURE_REASON_CHARS)}…`
+    : reason;
 }
 
 type StdoutHandler = (data: Buffer) => void;
@@ -1116,22 +1176,25 @@ class LocalExecutorService {
 
     const steps = extractStepsFromOutput(combined);
 
+    let outputEchoed = false;
     if (exitCode !== 0 && !options.debug && !options.captureOutput) {
       const output = combined.trim();
       if (output) {
         process.stderr.write(`\n--- renet output (exit code ${exitCode}) ---\n`);
         process.stderr.write(`${output}\n`);
         process.stderr.write('---\n\n');
+        outputEchoed = true;
       }
     }
 
     return {
       success: exitCode === 0,
       exitCode,
-      error: exitCode === 0 ? undefined : `renet exited with code ${exitCode}`,
+      error: exitCode === 0 ? undefined : buildRenetExitError(exitCode, stderr, stdout),
       durationMs: operationMs,
       stdout,
       stderr,
+      outputEchoed,
       steps,
     };
   }

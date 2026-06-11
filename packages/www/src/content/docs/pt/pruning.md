@@ -4,7 +4,7 @@ description: "Remover backups órfãos, snapshots obsoletos, imagens de reposit�
 category: "Guides"
 order: 12
 language: pt
-sourceHash: "9b74e1ea24b9735f"
+sourceHash: "d2700c2ac4473962"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,6 +19,8 @@ O pruning elimina estado que já não corresponde a um recurso ativo. Três coma
 | `rdc config prune` | Resíduos da config local (cache de certificados, arquivos expirados, referências cruzadas pendentes) | Apenas a config local do CLI |
 
 Os três são independentes. Pode executar qualquer um sem os outros. Partilham um modelo de segurança comum descrito em [Segurança](#safety-model) abaixo.
+
+O pruning remove o estado deixado para trás por recursos eliminados. Para recuperar espaço ocupado por repositórios *ativos* (blocos que os seus sistemas de ficheiros libertaram mas que o pool ainda retém), use [`rdc repo trim`](/pt/docs/repositories#reclamar-espaco-trim); os dois são complementares.
 
 ## Preflight de segurança de montagem
 

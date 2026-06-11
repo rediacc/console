@@ -4,7 +4,7 @@ description: "Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: "Guides"
 order: 4
 language: fr
-sourceHash: "ffb07e5870accfd8"
+sourceHash: "65fd6e7f9e6a83c1"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -82,7 +82,56 @@ rdc repo resize --name my-app -m server-1 --size 20G  # Définir à une taille e
 rdc repo expand --name my-app -m server-1 --size 5G  # Ajouter 5G à la taille actuelle
 ```
 
-> Le dépôt doit être démonté avant le redimensionnement.
+> Le dépôt doit être démonté avant le redimensionnement. `repo expand` fonctionne en ligne. Le redimensionnement modifie la taille maximale du dépôt ; pour restituer les blocs libérés au pool sans changer le maximum, utilisez [`repo trim`](#récupérer-de-lespace-trim) à la place.
+
+## Récupérer de l'espace (trim)
+
+Supprimer des fichiers dans un dépôt libère de l'espace pour ce dépôt, et `repo trim` restitue ces blocs libérés au pool du datastore partagé. Il s'exécute en ligne sans aucune interruption de service :
+
+```bash
+rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
+rdc repo trim -m server-1 --name my-app          # Trim one repository
+rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
+```
+
+Fonctionnement : les images de dépôt sont des fichiers épars, et le volume chiffré propage les discards. Un trim ordonne au système de fichiers à l'intérieur du dépôt de libérer chaque bloc inutilisé, ce qui perce des trous dans l'image de support et réduit immédiatement l'utilisation du pool.
+
+Remarques :
+
+- Les dépôts sous une sauvegarde active sont ignorés et signalés. Effectuer un trim pendant une sauvegarde ne libérerait pas d'espace, car le snapshot de sauvegarde référence encore les blocs.
+- Exécuter trim deux fois de suite renvoie 0 octet la deuxième fois. Le système de fichiers mémorise les groupes de blocs déjà trimés ; ce comportement est attendu, pas un échec.
+- `--docker` ne supprime jamais les images étiquetées, seulement les images sans référence, les conteneurs arrêtés et le cache de build. Ajoutez `--docker-volumes` pour supprimer aussi les volumes inutilisés (cela efface des données ; CLI uniquement).
+
+## Politique de taille automatique
+
+Plutôt que de redimensionner manuellement, laissez la machine gérer les tailles des dépôts. Une politique active la croissance automatique en ligne (la taille maximale du dépôt augmente quand il se remplit) et les trims planifiés. La machine applique les politiques toutes les quelques minutes via le timer systemd `rediacc-storage-maintain`.
+
+```bash
+# Machine-wide default: trim every repository daily
+rdc repo policy set -m server-1 --auto-trim true
+
+# Per-repository: grow my-app automatically, up to a hard ceiling
+rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+
+# Inspect the stored and effective policy
+rdc repo policy get -m server-1 --name my-app
+```
+
+Champs de la politique :
+
+| Champ | Signification | Défaut |
+|---|---|---|
+| `--auto-grow` | Agrandit le dépôt en ligne quand son système de fichiers dépasse le seuil | off |
+| `--max-quota` | Plafond dur pour la croissance automatique. Obligatoire : le définir est votre consentement explicite au sur-provisionnement du pool | none |
+| `--grow-threshold` | Pourcentage d'utilisation du système de fichiers qui déclenche une croissance | 85 |
+| `--grow-step` | Quantité ajoutée par croissance : absolue (`10G`) ou pourcentage de la taille actuelle (`20%`) | 20% |
+| `--auto-trim` | Exécuter des trims planifiés | off |
+| `--trim-interval` | Nombre minimal d'heures entre deux trims automatiques | 24 |
+
+Garde-fous : la croissance automatique est refusée quand l'espace libre du pool est inférieur à une réserve (10 Go ou 5 % du pool, selon le plus grand des deux), attend au moins 30 minutes entre deux croissances du même dépôt, et ne dépasse jamais `--max-quota`. Il n'existe pas de réduction automatique : diminuer la taille maximale d'un dépôt reste une opération manuelle, hors ligne via [`repo resize`](#redimensionner).
+
+Les paramètres par dépôt remplacent la valeur par défaut à l'échelle de la machine. Les appels successifs à `policy set` ne modifient que les flags que vous passez.
 
 ## Fork
 
@@ -97,6 +146,27 @@ Les forks utilisent le modèle name:tag : le fork résultant est nommé `my-app:
 > Les forks partagent les données du parent via reflink BTRFS, y compris tous les credentials stockés sur le disque. Voir [Ce que Rediacc n'isole pas](/fr/docs/ai-agents-safety#what-rediacc-does-not-isolate) pour les implications quand ces credentials autorisent des services externes comme Stripe, AWS ou Railway. Pour garder les credentials de déploiement hors de la portée du fork, utilisez [les secrets par dépôt](#secrets) plutôt que d'intégrer les valeurs dans les fichiers `.env` du dépôt.
 
 À la création du fork, `repo fork` écrit le [fichier annexe du miroir d'état](#colonne-type-et-miroir-détat) à `<datastore>/.interim/state/<fork-guid>/.rediacc.json` immédiatement. Sans déverrouiller le volume. De sorte que le nouveau fork est correctement identifié comme `is_fork: true` dès le moment de sa création. Cela permet aux sauvegardes planifiées de l'ignorer (les forks sont exclus du pipeline d'upload par défaut) même s'il n'est jamais monté. Lors du fork d'un fork, `grand_guid` s'enchaîne correctement : le miroir du nouveau fork pointe vers le GUID du grand-parent original, pas vers le fork intermédiaire.
+
+### Forker et démarrer en une seule opération
+
+`--up` enchaîne le fork, le montage et le démarrage des services en une unique opération distante. Ajoutez `--detach` pour récupérer la main dès que les conteneurs sont lancés ; les vérifications de santé se terminent en arrière-plan, et le proxy réessaie jusqu'à ce que chaque service soit prêt à répondre :
+
+```bash
+rdc repo fork --parent my-app --tag staging -m server-1 --up
+rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+```
+
+Lors de nos tests, un dépôt de 128 Go a forké et atteint des services en cours d'exécution en environ 57 secondes, et environ 31 secondes avec `--detach`. Le mode détaché affiche une indication pour suivre la progression : `rdc machine query --containers --name <machine>`.
+
+### Répartition du temps d'exécution
+
+Les opérations de plus de quelques secondes se terminent par un récapitulatif de chronométrage : un découpage étape par étape, un graphique en cascade montrant ce qui s'est exécuté en parallèle, et une ligne d'attribution séparant le pipeline Rediacc du démarrage propre à vos services :
+
+```
+  Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
+```
+
+Le démarrage des services correspond à la phase de boot de vos conteneurs (images, init, vérifications de santé, tels que définis par le Rediaccfile du dépôt ) et varie donc selon l'application. Les graphiques s'affichent sur les terminaux interactifs ; définissez `RDC_TIMING_CHART=1` pour les forcer dans une sortie redirigée.
 
 ## Gestion de versions à la manière de git
 

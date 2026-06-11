@@ -107,12 +107,25 @@ rdc machine query --name server-1 --storage-health
 
 | Column | Description |
 |--------|-------------|
-| Size | LUKS image file size (what the repo looks like) |
+| Quota | The repository's maximum size (its growth ceiling, set at creation or by resize/auto-grow) |
+| Allocated | What the sparse image actually occupies in the pool right now |
 | Unique | Actual unique data owned only by this repo |
 | Shared | Data blocks reused across repos via BTRFS reflinks (free copies) |
+| Reclaimable | The allocated-vs-used gap that [`repo trim`](/en/docs/repositories#reclaim-space-trim) can return to the pool. Shows `-` for unmounted repos |
+| Discards | Whether the encrypted volume passes discards through (`on` for any repository mounted by a current version) |
 | Divergence | Percent of the image unique to this repo rather than shared (higher means more reclaimable if deleted) |
-| Extents | Number of file extents in the copy-on-write image (higher = more fragmented) |
-| Frag | Fragmentation level: low, moderate, or high (informational only) |
+| Frag | Extents per GB in the copy-on-write image (informational only) |
+
+Quota and allocation are different numbers on purpose: a repository with a 20 GB quota that stores 6 GB of data only costs the pool what it has allocated. The pool can therefore promise more total quota than it physically has, and the Reclaimable column shows how much of each repository's allocation is no longer used and can be trimmed back.
+
+Below the table, a pool summary reports the datastore fill level and how much space backup snapshots are pinning:
+
+```
+Pool: 265.4 GB used, 95.2 GB free (73.6% full)
+Backup snapshots pin 2.1 GB (1 active, 0 stale; stale ones are removed by 'rdc machine prune')
+```
+
+While a backup runs, its snapshot keeps referencing every block it shares with live repositories, so deletions and trims free less pool space until that backup cycle finishes. Stale snapshots from interrupted backups are removed automatically by the storage maintainer within minutes.
 
 The summary shows total savings from BTRFS reflinks:
 
@@ -227,3 +240,14 @@ rdc doctor
 Each check reports **OK**, **Warning**, or **Error**. Use this as a first step when troubleshooting any issue.
 
 Exit codes: `0` = all passed, `1` = warnings, `2` = errors.
+
+## Service Readiness Checks
+
+During `repo up`, renet waits for HTTP services to accept connections before declaring them ready. The wait is health-check aware:
+
+- Containers that Docker reports **healthy** are trusted immediately, with no TCP probe.
+- Containers still inside their health check's `start_period` log an informational note, not a warning; the proxy keeps retrying until they bind.
+- Compose services with no running container (for example, behind an inactive profile) are skipped.
+- Everything else is probed over TCP for up to 15 seconds (set `REDIACC_READINESS_TIMEOUT`, in seconds, to change this).
+
+Defining a [Docker health check](https://docs.docker.com/reference/dockerfile/#healthcheck) on slow-booting services gives renet an authoritative ready signal and removes probe noise from deploy output.

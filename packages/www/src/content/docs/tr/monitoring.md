@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "d3b8ff142fe2df34"
+sourceHash: "f56ab0bacb657043"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -111,12 +111,25 @@ rdc machine query --name server-1 --storage-health
 
 | Sütun | Açıklama |
 |-------|----------|
-| Size | LUKS imaj dosyasının boyutu (deponun görünümü) |
+| Quota | Deponun maksimum boyutu (büyüme tavanı; oluşturma sırasında veya resize/auto-grow ile belirlenir) |
+| Allocated | Seyrek görüntünün havuzda şu anda gerçekte kapladığı alan |
 | Unique | Yalnızca bu depoya ait gerçek benzersiz veriler |
 | Shared | BTRFS reflinkleri aracılığıyla depolar arasında yeniden kullanılan veri blokları (ücretsiz kopyalar) |
+| Reclaimable | [`repo trim`](/tr/docs/repositories#alan-kazanma-trim) komutunun havuza geri döndürebileceği, ayrılmış-kullanılan alan farkı. Bağlı olmayan depolar için `-` gösterir |
+| Discards | Şifreli birimin discard'ları iletip iletmediği (güncel bir sürümle bağlanan her depo için `on`) |
 | Divergence | Görüntünün paylaşılan yerine bu depoya özgü yüzdesi (yüksekse silindiğinde daha fazla alan geri kazanılır) |
-| Extents | Copy-on-write görüntüsündeki dosya extent sayısı (yüksek = daha fazla parçalanma) |
-| Frag | Parçalanma düzeyi: düşük, orta veya yüksek (yalnızca bilgi amaçlı) |
+| Frag | Copy-on-write görüntüsünde GB başına extent sayısı (yalnızca bilgi amaçlı) |
+
+Quota ve allocation farklı sayılardır; bu kasıtlıdır: 20 GB kotayla 6 GB veri depolayan bir depo, havuza yalnızca ayırdığı kadar maliyet getirir. Havuz bu nedenle fiziksel kapasitesinden fazla toplam kota vaat edebilir; Reclaimable sütunu ise her deponun tahsisatından ne kadarının artık kullanılmadığını ve trim ile geri kazanılabileceğini gösterir.
+
+Tablonun altında bir havuz özeti, datastore doluluk düzeyini ve yedekleme anlık görüntülerinin ne kadar alan kilitlediğini raporlar:
+
+```
+Pool: 265.4 GB used, 95.2 GB free (73.6% full)
+Backup snapshots pin 2.1 GB (1 active, 0 stale; stale ones are removed by 'rdc machine prune')
+```
+
+Yedekleme çalışırken anlık görüntüsü, canlı depolarla paylaştığı her bloğu referans almaya devam eder; bu nedenle bu yedekleme döngüsü tamamlanıp anlık görüntü silinene kadar silme ve trim işlemleri daha az havuz alanı serbest bırakır. Kesintiye uğramış yedeklemelerden kalan eski anlık görüntüler, depolama bakıcısı tarafından dakikalar içinde otomatik olarak kaldırılır.
 
 Özet, BTRFS reflinklerinden elde edilen toplam tasarrufları gösterir:
 
@@ -231,3 +244,14 @@ rdc doctor
 Her kontrol **OK**, **Uyarı** veya **Hata** olarak raporlanır. Herhangi bir sorunu giderirken ilk adım olarak bunu kullanın.
 
 Çıkış kodları: `0` = tümü geçti, `1` = uyarılar, `2` = hatalar.
+
+## Servis Hazırlık Kontrolleri
+
+`repo up` sırasında renet, HTTP servislerini hazır ilan etmeden önce bağlantı kabul edene kadar bekler. Bu bekleme süreci, sağlık kontrollerinden haberdar olarak çalışır:
+
+- Docker'ın **sağlıklı** olarak raporladığı konteynerler anında güvenilir kabul edilir; TCP sondasına gerek kalmaz.
+- Sağlık kontrolünün `start_period` süresindeki konteynerler, uyarı yerine bilgilendirici bir not kaydeder; proxy, servis bağlanana kadar yeniden denemeyi sürdürür.
+- Çalışan konteyneri olmayan Compose servisleri (örneğin etkin olmayan bir profilin arkasındakiler) atlanır.
+- Geri kalan her şey TCP üzerinden en fazla 15 saniye boyunca yoklanır (bunu değiştirmek için `REDIACC_READINESS_TIMEOUT` değişkenini saniye cinsinden ayarlayın).
+
+Yavaş başlayan servislere [Docker sağlık kontrolü](https://docs.docker.com/reference/dockerfile/#healthcheck) tanımlamak, renet'e yetkili bir hazır sinyali verir ve dağıtım çıktısındaki sonda gürültüsünü ortadan kaldırır.

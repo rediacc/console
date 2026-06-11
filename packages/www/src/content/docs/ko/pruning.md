@@ -4,7 +4,7 @@ description: "고아 백업, 오래된 스냅샷, 리포지터리 이미지, 로
 category: "Guides"
 order: 12
 language: ko
-sourceHash: "9b74e1ea24b9735f"
+sourceHash: "d2700c2ac4473962"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -19,6 +19,8 @@ sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 | `rdc config prune` | 로컬 config 잔여물 (인증서 캐시, 만료된 아카이브, 끊어진 상호 참조) | 로컬 CLI config만 |
 
 세 가지는 독립적입니다. 다른 것 없이 어느 하나만 실행할 수 있습니다. 아래 [안전 모델](#안전-모델)에 설명된 공통 안전 모델을 공유합니다.
+
+정리는 삭제된 리소스가 남긴 상태를 제거합니다. *라이브* 리포지터리가 점유하는 공간(파일 시스템이 해제했지만 풀이 여전히 보유하는 블록)을 회수하려면 대신 [`rdc repo trim`](/ko/docs/repositories#공간-회수-trim)을 사용하세요. 두 명령은 서로 보완적입니다.
 
 ## 마운트 안전성 프리플라이트
 

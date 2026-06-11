@@ -17,7 +17,7 @@ For how services get their loopback IPs and the `.rediacc.json` slot system, see
 Each repository is automatically isolated at the kernel level using network hooks. This requires Linux kernel 6.1 or later. No configuration is needed.
 
 - **Automatic bind rewriting**: Services can bind to `0.0.0.0` or `127.0.0.1` as usual. The kernel transparently rewrites the address to the service's assigned loopback IP. No need to explicitly bind to `${SERVICE_IP}`.
-- **Cross-repo connection blocking**: If a service tries to connect to a loopback IP outside its repository's `/26` subnet, the kernel blocks it. A process in repo A cannot reach services in repo B.
+- **Cross-repo connection blocking**: If a service tries to connect to a loopback IP outside its repository's `/26` subnet, the kernel blocks it. A process in repo A cannot reach services in repo B. Forks are the one exception: their connections into the parent's subnet are redirected to the fork's own services (see [Limits](/en/docs/limits)); the parent itself stays unreachable.
 - **No application changes required**: Services use `0.0.0.0` or `localhost` for binding, and the kernel ensures they only listen on their correct loopback IP. Isolation is fully transparent.
 
 ## How It Works

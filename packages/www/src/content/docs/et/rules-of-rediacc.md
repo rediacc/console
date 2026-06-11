@@ -4,8 +4,8 @@ description: "Olulised reeglid ja kokkulepped rakenduste ehitamiseks Rediacci pl
 category: "Guides"
 order: 5
 language: et
-sourceHash: "4b6899adea7f0712"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "7654d7b072ee3ccc"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 # Rediacci reeglid
@@ -78,8 +78,8 @@ Renet süstib need automaatselt igasse konteinerisse:
 - **Igal teenusel on unikaalne loopback-IP** /26-alamvõrgus (nt `127.0.24.192/26`).
 - **Sidumine on automaatne**: Teenused saavad siduda `0.0.0.0` või `localhost` külge - kernel kirjutab aadressi läbipaistvalt teenuse määratud loopback-IP-ga üle. Selgesõnaline `${SERVICE_IP}` sidumine töötab endiselt, kuid pole enam nõutav.
 - **Tervisekontrollid võivad kasutada `localhost`-i** või `${SERVICE_IP}`-d. Näide: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
-- **Repositooriumivahelised ühendused on kerneli poolt blokeeritud**: Kernel blokeerib automaatselt ühendused loopback-IP-dega väljaspool repositooriumi `/26`-alamvõrku. Teenus ühes repositooriumis ei saa jõuda teenusteni teises repositooriumis.
-- **Teenustevaheline side**: Kasutage **teenuste nimesid** (nt `db`, `redis`) - renet süstib automaatselt iga teenuse nime hostinimena, mis lahendatakse õige IP-sse. Dockeri DNS-nimed EI tööta hosti režiimis, kuid teenuste nimed `/etc/hosts` kaudu töötavad. Vältige `${DB_IP}` või sarnase süsteemi manustamist püsivatesse konfiguratsioonifailidesse (nt andmebaasi salvestatud ühendusstringid) - forkimisel kandub toores IP üle ja osutab valele repositooriumile. Teenuste nimed lahendatakse alati õigesti repositooriumi kaupa.
+- **Repositooriumivahelised ühendused on kerneli poolt blokeeritud**: Kernel blokeerib automaatselt ühendused loopback-IP-dega väljaspool repositooriumi `/26`-alamvõrku. Teenus ühes repositooriumis ei saa jõuda teenusteni teises repositooriumis. Üks erand: fork'i ühendused vanema alamvõrku suunatakse läbipaistvalt fork'i enda teenustele (sama teenus, fork'i andmekoopia) ega jõua kunagi vanemani. Mitteseotud repositooriumid jäävad blokeerituks.
+- **Teenustevaheline suhtlus**: kasutage **teenusenimesid** (nt `db`, `redis`); renet lisab iga teenusenime automaatselt hostinimena, mis lahendub õigeks IP-ks. Dockeri DNS-nimed host-režiimis EI tööta, kuid teenusenimed `/etc/hosts` kaudu töötavad. Vältige `${DB_IP}` vms püsivatesse seadistusfailidesse kirjutamist (nt andmebaasi salvestatud ühendusstringid): fork suunab vahetult vanemalt päritud IP-d enda teenustele, kuid see ümbersuunamine katab vaid ühe põlvkonna; fork'i fork kannab endiselt vanavanema IP-sid, mis ei vii kuhugi. Teenusenimed lahenduvad igas repositooriumis alati õigesti.
 - **Pordikonfliktid on võimatud** repositooriumide vahel, igal on oma Dockeri deemon ja IP-vahemik.
 - **TCP/UDP pordi edasisuunamine**: Lisage sildid mitte-HTTP-portide paljastamiseks:
   ```yaml

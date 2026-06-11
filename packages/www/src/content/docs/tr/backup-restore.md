@@ -7,7 +7,7 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "6ed9a5b950de8ddb"
+sourceHash: "e241aa122868e629"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -234,6 +234,12 @@ Bu varsayılan davranış kasıtlıdır. Aynı datastore'a karşı iki soğuk ye
 **İzleme sonucu.** Takılı bir yedekleme (örneğin, bir ağ kara deliğine takılan rclone) sonraki her zamanlayıcı tetiklemesini sessizce bırakır. Zamanlayıcı hiçbir alarm vermez. `systemctl show <unit> -p ActiveEnterTimestamp` izleyin: servis beklenen çalışma süresinden daha uzun süre `activating` durumundaysa (örneğin, gecelik zamanlayıcıda 48 saatten fazla), araştırın.
 
 **Her zamanlanmış tetiklemenin çalışmasını istiyorsanız**, zamanlayıcıyı `OnCalendar=<cron>` yerine `OnUnitInactiveSec=<aralık>` olarak değiştirin. Bu, sabit bir duvar saati zamanlaması yerine önceki çalıştırmanın tamamlanmasından N saat sonra tetiklenir, böylece uzun süren çalıştırmalar düşüşlere neden olmaz. Yalnızca bir sonraki çalıştırmayı ileriye iter. Takas zamanlama sapmasıdır: 03:00 gecelik «sonuncusunun bittiği saatten 24 saat sonra» olur.
+
+### Anlık Görüntüler, Kesintiler ve Havuz Alanı
+
+Her push anlık bir datastore anlık görüntüsü üzerinden çalışır; bu sayede depolar yazmaya devam ederken yüklenen veri tutarlı kalır. Yedekleme çalışırken bu anlık görüntü, canlı depolarla paylaştığı her bloğu referans almaya devam eder: döngü tamamlanıp anlık görüntü silinene kadar silmeler ve [trim'ler](/tr/docs/repositories#alan-kazanma-trim) daha az havuz alanı serbest bırakır. [Depolama sağlığı raporu](/tr/docs/monitoring#depolama-sagligi), yedekleme anlık görüntülerinin şu anda ne kadar alan kilitlediğini gösterir.
+
+Kesintiler güvenlidir. Servisi durdurmak (veya makineyi yeniden başlatmak) yedeğin transferi iptal etmesine ve anlık görüntüyü çıkmadan önce silmesine neden olur; sonraki zamanlanmış çalıştırma kaldığı yerden devam eder; çünkü değişmeyen dosyalar sağlama toplamıyla atlanır. İşlem temizlik yapamayacak kadar sert biçimde sonlandırılırsa (güç kaybı), yetim kalan anlık görüntü depolama bakıcısı tarafından dakikalar içinde otomatik olarak tespit edilip kaldırılır.
 
 ### Strateji Tanımlama
 

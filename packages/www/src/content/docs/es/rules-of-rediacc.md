@@ -4,8 +4,8 @@ description: "Información esencial sobre reglas y convenciones para crear aplic
 category: "Guides"
 order: 5
 language: es
-sourceHash: "4b6899adea7f0712"
-sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
+sourceHash: "7654d7b072ee3ccc"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 # Reglas de Rediacc
@@ -78,8 +78,8 @@ Renet auto-inyecta estas en cada contenedor:
 - **Cada servicio recibe una IP de loopback única** dentro de una subred /26 (ej. `127.0.24.192/26`).
 - **El enlace es automático**: Los servicios pueden enlazarse a `0.0.0.0` o `localhost`, el kernel reescribe transparentemente la dirección a la IP de loopback asignada al servicio. El enlace explícito a `${SERVICE_IP}` sigue funcionando pero ya no es necesario.
 - **Los health checks pueden usar `localhost`** o `${SERVICE_IP}`. Ejemplo: `healthcheck: test: ["CMD", "curl", "-f", "http://localhost:8080/health"]`
-- **Las conexiones entre repos están bloqueadas por el kernel**: El kernel bloquea automáticamente las conexiones a IPs de loopback fuera de la subred `/26` del repositorio. Un servicio en un repo no puede alcanzar servicios en otro repo.
-- **Comunicación entre servicios**: Usa **nombres de servicio** (ej. `db`, `redis`), renet inyecta automáticamente cada nombre de servicio como un nombre de host que resuelve a la IP correcta. Los nombres DNS de Docker NO funcionan en modo host, pero los nombres de servicio vía `/etc/hosts` sí. Evita incrustar `${DB_IP}` o similares en archivos de configuración persistentes (ej. cadenas de conexión almacenadas en una base de datos), si se hace fork, la IP en bruto se arrastra y apunta al repo incorrecto. Los nombres de servicio siempre resuelven correctamente por repo.
+- **Las conexiones entre repos están bloqueadas por el kernel**: El kernel bloquea automáticamente las conexiones a IPs de loopback fuera de la subred `/26` del repositorio. Un servicio en un repo no puede alcanzar servicios en otro repo. Una excepción: las conexiones de un fork hacia la subred de su padre se redirigen de forma transparente a los servicios propios del fork (mismo servicio, copia de datos del fork), nunca al padre. Los repositorios no relacionados siguen bloqueados.
+- **Comunicación entre servicios**: Use **nombres de servicio** (p. ej. `db`, `redis`); renet inyecta automáticamente cada nombre de servicio como un hostname que resuelve a la IP correcta. Los nombres DNS de Docker NO funcionan en modo host, pero los nombres de servicio vía `/etc/hosts` sí. Evite incrustar `${DB_IP}` o similares en archivos de configuración persistentes (p. ej. cadenas de conexión guardadas en una base de datos): un fork redirige las IPs heredadas de su padre directo a sus propios servicios, pero la redirección cubre solo un nivel de linaje: un fork de un fork aún contiene IPs del abuelo que no llevan a ninguna parte. Los nombres de servicio siempre resuelven correctamente en cada repositorio.
 - **Los conflictos de puertos son imposibles** entre repositorios, cada uno tiene su propio daemon Docker y rango de IP.
 - **Reenvío de puertos TCP/UDP**: Agrega etiquetas para exponer puertos no HTTP:
   ```yaml

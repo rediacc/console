@@ -98,6 +98,8 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
       branch: { modes: SELF_HOSTED_MODES },
       resize: { modes: SELF_HOSTED_MODES },
       expand: { modes: SELF_HOSTED_MODES },
+      trim: { modes: SELF_HOSTED_MODES },
+      policy: { modes: SELF_HOSTED_MODES },
       validate: { modes: SELF_HOSTED_MODES },
       autostart: { modes: SELF_HOSTED_MODES },
       ownership: { modes: SELF_HOSTED_MODES },

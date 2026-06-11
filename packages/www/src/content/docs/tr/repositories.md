@@ -4,7 +4,7 @@ description: "Uzak makinelerde LUKS ile şifrelenmiş depoları oluşturma, yön
 category: "Guides"
 order: 4
 language: tr
-sourceHash: "ffb07e5870accfd8"
+sourceHash: "65fd6e7f9e6a83c1"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -82,7 +82,56 @@ rdc repo resize --name my-app -m server-1 --size 20G  # Set to exact size
 rdc repo expand --name my-app -m server-1 --size 5G  # Add 5G to current size
 ```
 
-> Yeniden boyutlandırmadan önce deponun çıkarılmış olması gerekir.
+> Yeniden boyutlandırmadan önce deponun çıkarılmış olması gerekir. `repo expand` çevrimiçi çalışır. Yeniden boyutlandırma deponun maksimum boyutunu değiştirir; maksimumu değiştirmeden serbest kalan blokları havuza geri vermek için bunun yerine [`repo trim`](#alan-kazanma-trim) kullanın.
+
+## Alan Kazanma (trim)
+
+Depo içindeki dosyaları silmek o depo için alan serbest bırakır; `repo trim` ise bu serbest kalan blokları paylaşılan datastore havuzuna geri döndürür. Sıfır kesinti süresiyle çevrimiçi çalışır:
+
+```bash
+rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
+rdc repo trim -m server-1 --name my-app          # Trim one repository
+rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
+```
+
+Nasıl çalışır: depo görüntüleri seyrek dosyalardır ve şifreli birim discard'ları iletir. Bir trim, depo içindeki dosya sistemine kullanılmayan her bloğu serbest bırakmasını bildirir; bu da taşıyıcı görüntüde delikler açar ve havuz kullanımını anında azaltır.
+
+Notlar:
+
+- Aktif bir yedekleme altındaki depolar atlanır ve raporlanır. Yedekleme sırasında trim yapmak alan serbest bırakmaz; çünkü yedekleme anlık görüntüsü blokları hâlâ referans alır.
+- Trim'i arka arkaya iki kez çalıştırmak ikinci seferde 0 bayt raporlar. Dosya sistemi hangi blok gruplarının zaten trimlendiğini hatırlar; bu beklenen bir durumdur, hata değildir.
+- `--docker`, yalnızca sarkan görüntüleri, durdurulmuş konteynerleri ve derleme önbelleğini kaldırır; etiketli görüntülere dokunmaz. Kullanılmayan birimleri de kaldırmak için `--docker-volumes` ekleyin (bu veri siler; yalnızca CLI).
+
+## Otomatik Boyut Politikası
+
+Boyutu elle değiştirmek yerine makine, depo boyutlarını kendisi yönetsin. Bir politika, çevrimiçi otomatik büyümeyi etkinleştirir (dolduğunda deponun maksimum boyutu artar) ve zamanlanmış trim'leri devreye sokar. Makine, `rediacc-storage-maintain` systemd zamanlayıcısı aracılığıyla politikaları her birkaç dakikada bir uygular.
+
+```bash
+# Machine-wide default: trim every repository daily
+rdc repo policy set -m server-1 --auto-trim true
+
+# Per-repository: grow my-app automatically, up to a hard ceiling
+rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+
+# Inspect the stored and effective policy
+rdc repo policy get -m server-1 --name my-app
+```
+
+Politika alanları:
+
+| Alan | Anlam | Varsayılan |
+|---|---|---|
+| `--auto-grow` | Dosya sistemi eşiği aştığında depoyu çevrimiçi olarak büyüt | kapalı |
+| `--max-quota` | Otomatik büyüme için sabit tavan. Zorunludur: ayarlamak, havuzu fazla sağlamanıza açık onayınızdır | yok |
+| `--grow-threshold` | Büyümeyi tetikleyen dosya sistemi kullanım yüzdesi | 85 |
+| `--grow-step` | Büyüme başına eklenecek miktar: mutlak (`10G`) veya mevcut boyutun yüzdesi (`20%`) | 20% |
+| `--auto-trim` | Zamanlanmış trim'leri çalıştır | kapalı |
+| `--trim-interval` | Otomatik trim'ler arasındaki minimum saat sayısı | 24 |
+
+Güvenceler: otomatik büyüme, havuzun boş alanı bir rezervin (havuzun 10 GB veya %5'i, hangisi daha büyükse) altına düştüğünde reddeder; aynı deponun ardışık büyümeleri arasında en az 30 dakika bekler ve `--max-quota` değerini asla aşmaz. Otomatik küçültme yoktur: deponun maksimum boyutunu azaltmak her zaman elle, çevrimdışı bir [`repo resize`](#yeniden-boyutlandirma) işlemidir.
+
+Depo başına ayarlar, makine genelindeki varsayılanı geçersiz kılar. Tekrarlanan `policy set` çağrıları yalnızca ilettiğiniz bayrakları değiştirir.
 
 ## Fork
 
@@ -97,6 +146,27 @@ Fork'lar isim:etiket modelini kullanır: elde edilen fork, `my-app:staging` olar
 > Fork'lar, diskte depolanan kimlik bilgileri de dahil olmak üzere üst öğenin verilerini BTRFS reflink aracılığıyla paylaşır. Bu kimlik bilgileri Stripe, AWS veya Railway gibi harici hizmetleri yetkilendirdiğinde bunun etkileri için bkz. [Rediacc'ın yalıtmadıkları](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate). Dağıtım zamanı kimlik bilgilerini fork'un erişim alanı dışında tutmak için, değerleri depo içindeki `.env` dosyalarına gömmek yerine [depo başına gizli diziler](#secrets) kullanın.
 
 Fork oluşturma sırasında `repo fork`, [durum aynası ek dosyasını](#type-column-and-the-state-mirror) `<datastore>/.interim/state/<fork-guid>/.rediacc.json` konumuna hemen yazar. Birimi açmadan. Böylece yeni fork, oluşturma anından itibaren `is_fork: true` olarak doğru şekilde tanımlanır. Bu, zamanlanmış yedeklemelerin fork'u atlamasına olanak tanır (fork'lar varsayılan olarak yükleme ardışık düzeninden dışlanır), hiç bağlı olmasa bile. Bir fork'u çatallayırken `grand_guid` doğru şekilde zincir oluşturur: yeni fork'un aynası, ara fork'un GUID'ini değil, orijinal büyük üst öğenin GUID'ini işaret eder.
+
+### Tek adımda fork ve başlatma
+
+`--up` seçeneği fork oluşturma, bağlama ve servisleri başlatma işlemlerini tek bir uzak operasyonda birleştirir. Konteynerler başlar başlamaz terminalinizi geri almak için `--detach` ekleyin; sağlık kontrolleri arka planda tamamlanır ve proxy her servis bağlanana kadar yeniden dener:
+
+```bash
+rdc repo fork --parent my-app --tag staging -m server-1 --up
+rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+```
+
+Testlerimizde 128 GB'lık bir depo fork'landı ve servisler yaklaşık 57 saniyede çalışır hale geldi; `--detach` ile bu süre yaklaşık 31 saniyeye indi. Ayrılmış çalıştırmalar, ilerlemeyi kontrol etmek için bir ipucu yazdırır: `rdc machine query --containers --name <machine>`.
+
+### Süre nereye gidiyor
+
+Birkaç saniyeden uzun süren çalıştırmalar, sonunda bir zamanlama özeti içerir: adım adım döküm, paralel çalışanları gösteren bir şelale ve Rediacc ardışık düzenini servislerinizin kendi başlatma süresinden ayıran bir atıf satırı:
+
+```
+  Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
+```
+
+Servis başlatma, kapsayıcıların önyüklenmesidir; görüntüler, başlatma, sağlık kontrolleri; bunlar Rediaccfile tarafından tanımlandığından uygulamaya göre değişir. Grafikler etkileşimli terminallerde oluşturulur; borulu çıktıda zorlamak için `RDC_TIMING_CHART=1` değişkenini ayarlayın.
 
 ## Git Benzeri Sürüm Yönetimi
 

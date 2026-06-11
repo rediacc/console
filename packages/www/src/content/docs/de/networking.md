@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: de
-sourceHash: "d60a43cd573517a1"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2bb63d224370c266"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 # Netzwerk
@@ -21,7 +21,7 @@ Wie Dienste ihre Loopback-IPs erhalten und das `.rediacc.json`-Slot-System funkt
 Jedes Repository wird automatisch auf Kernel-Ebene über Netzwerk-Hooks isoliert. Dies erfordert Linux-Kernel 6.1 oder neuer. Keine Konfiguration erforderlich.
 
 - **Automatisches Bind-Rewriting**: Dienste können sich wie gewohnt an `0.0.0.0` oder `127.0.0.1` binden. Der Kernel schreibt die Adresse transparent auf die zugewiesene Loopback-IP des Dienstes um. Kein explizites Binden an `${SERVICE_IP}` nötig.
-- **Verbindungsblockierung zwischen Repos**: Versucht ein Dienst, eine Loopback-IP außerhalb des `/26`-Subnetzes seines Repositories zu kontaktieren, blockiert der Kernel dies. Ein Prozess in Repo A kann Dienste in Repo B nicht erreichen.
+- **Verbindungsblockierung zwischen Repos**: Versucht ein Dienst, eine Loopback-IP außerhalb des `/26`-Subnetzes seines Repositories zu kontaktieren, blockiert der Kernel dies. Ein Prozess in Repo A kann Dienste in Repo B nicht erreichen. Forks sind die einzige Ausnahme: ihre Verbindungen in das Subnetz des Eltern-Repositories werden auf die eigenen Dienste des Forks umgeleitet (siehe [Limits](/de/docs/limits)); das Eltern-Repository selbst bleibt unerreichbar.
 - **Keine Anwendungsanpassungen nötig**: Dienste verwenden `0.0.0.0` oder `localhost` zum Binden, und der Kernel stellt sicher, dass sie nur auf ihrer korrekten Loopback-IP lauschen. Die Isolierung ist vollständig transparent.
 
 ## Funktionsweise

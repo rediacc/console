@@ -959,6 +959,8 @@
         "infrastructure": "인프라",
         "noData": "사용 가능한 상태 데이터가 없습니다",
         "storageHealthFragmentationNote": "단편화는 각 저장소의 copy-on-write 이미지의 익스텐트 수를 세는 것이며, 그 안의 파일이 아닙니다. 높은 값은 무작위 쓰기 워크로드(데이터베이스, 컨테이너 레이어)에서 예상되며 참고용 정보일 뿐입니다. 여기서는 조각 모음을 의도적으로 지원하지 않습니다. reflink로 공유된 포크와 백업 스냅샷의 공유를 해제하여 데이터스토어 사용량을 부풀리기 때문입니다.",
+        "storageHealthPoolSummary": "풀: {{used}} 사용, {{free}} 여유({{percent}}% 사용 중)",
+        "storageHealthPoolSnapshots": "백업 스냅샷이 {{pinned}}를 점유 중({{active}}개 활성, {{stale}}개 오래됨; 오래된 스냅샷은 'rdc machine prune'으로 제거)",
         "storageHealthHint": "팁: --storage-health 옵션으로 실행하면 저장소별 BTRFS 단편화 및 reflink 절약량을 확인할 수 있습니다",
         "storageHealthSummary": "스토리지 효율성: {{summary}}",
         "strictDriftDetected": "--strict: 드리프트 임계값을 초과한 컨테이너 {{count}}개; 비정상 종료",
@@ -1428,6 +1430,41 @@
         "failed": "확장 실패",
         "sizeOption": "새 저장소 크기 (예: 10G, 100G, 1T)",
         "starting": "\"{{machine}}\"에서 \"{{repository}}\"를 {{size}}로 확장하는 중..."
+      },
+      "trim": {
+        "description": "마운트된 저장소에서 데이터스토어 풀 공간을 회수합니다(온라인, 무중단). 저장소 안에서 삭제된 블록은 fstrim을 통해 풀로 반환됩니다. --name 없이 실행하면 마운트된 모든 저장소와 데이터스토어 자체를 트림합니다. 백업이 진행 중인 저장소는 건너뜁니다",
+        "descriptionShort": "저장소의 여유 공간을 풀로 반환",
+        "nameOption": "트림할 저장소(기본값: 마운트된 모든 저장소)",
+        "dockerOption": "먼저 Docker 공간 회수(중지된 컨테이너, 댕글링 이미지, 빌드 캐시)",
+        "dockerVolumesOption": "사용하지 않는 Docker 볼륨도 정리",
+        "reportOnlyOption": "트림하지 않고 discard 상태와 회수 가능 추정치만 표시",
+        "repoNotFound": "저장소를 찾을 수 없습니다: {{name}}",
+        "noMountedRepos": "마운트된 저장소가 없습니다",
+        "starting": "\"{{machine}}\"의 저장소를 트림하는 중...",
+        "completed": "트림 완료: {{total}} 회수됨",
+        "failed": "트림 실패"
+      },
+      "policy": {
+        "description": "머신의 스토리지 유지 관리자가 적용하는 자동 크기 정책을 관리합니다. 저장소가 가득 차면 쿼터를 온라인으로 확장하고(max-quota를 넘지 않으며 풀 공간이 부족하면 확장하지 않음) 예약된 트림을 실행합니다. 자동 축소는 없습니다. 축소는 'repo resize'를 사용하세요. --name 없이 실행하면 머신 전체 기본 정책을 다룹니다",
+        "descriptionShort": "자동 크기 정책 관리(자동 확장, 예약 트림)",
+        "nameOption": "저장소(기본값: 머신 전체 정책)",
+        "repoNotFound": "저장소를 찾을 수 없습니다: {{name}}",
+        "invalidBool": "{{flag}}은(는) 'true' 또는 'false'여야 합니다. 받은 값: {{value}}",
+        "failed": "정책 작업 실패",
+        "set": {
+          "description": "크기 정책 필드를 설정합니다. 전달한 플래그만 변경되며 다른 저장된 필드는 값을 유지합니다. 자동 확장을 켜려면 --max-quota가 필요합니다. 상한은 풀 초과 할당에 대한 명시적 동의입니다",
+          "descriptionShort": "정책 필드 설정(머신 기본값 또는 --name으로 단일 저장소)",
+          "autoGrowOption": "쿼터의 온라인 자동 확장 활성화(true/false)",
+          "maxQuotaOption": "자동 확장 상한(예: 200G); 자동 확장에 필수",
+          "growThresholdOption": "확장을 트리거하는 파일 시스템 사용률 %(기본 85)",
+          "growStepOption": "단계당 확장량: 절대값(10G) 또는 쿼터의 백분율(20%)",
+          "autoTrimOption": "예약 트림 활성화(true/false)",
+          "trimIntervalOption": "자동 트림 사이의 최소 시간(기본 24)"
+        },
+        "get": {
+          "description": "저장된 머신 기본값, 저장소 재정의(--name 사용 시), 유지 관리자가 실제로 적용하는 병합된 유효 정책을 표시합니다",
+          "descriptionShort": "크기 정책 표시(머신 기본값, 저장소 재정의, 유효값)"
+        }
       },
       "fork": {
         "alreadyExists": "저장소 \"{{name}}\"이 이미 설정에 존재합니다",

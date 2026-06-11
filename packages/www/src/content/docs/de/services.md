@@ -6,7 +6,7 @@ description: >-
 category: Guides
 order: 5
 language: de
-sourceHash: "88734af48d9648d5"
+sourceHash: "aa77a4f937206e58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -212,6 +212,7 @@ rdc repo up --name my-app -m server-1
 
 | Option | Beschreibung |
 |--------|-------------|
+| `--detach` | Kehrt zurück, sobald die Container gestartet sind; Gesundheitsprüfungen laufen im Hintergrund weiter |
 | `--skip-router-restart` | Route-Server-Neustart nach der Operation überspringen |
 
 Die Ausführungssequenz ist:
@@ -231,6 +232,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 Dienste ohne benutzerdefinierte Traefik-Labels zeigen nur die auto-generierte Route. Verwenden Sie diese URLs (nicht das generische Muster, das von der CLI gedruckt wird) für Browserzugriff, API-Aufrufe und Konfiguration zwischen Diensten.
+
+### Abgetrennter Start
+
+Mit `--detach` kehrt der Befehl zurück, sobald die Container gestartet sind, anstatt auf den Abschluss der Gesundheitsprüfungen zu warten. Das Hochfahren läuft im Hintergrund weiter: Der Proxy versucht wiederholt, die Verbindung zu den Upstreams herzustellen, bis jeder Dienst antwortet, sodass Routen sich von selbst erholen. Den Fortschritt können Sie mit `rdc machine query --containers --name <machine>` verfolgen. Ideal für kurzlebige Forks und geskriptete Abläufe, bei denen die Dienste nicht zwingend bereit sein müssen, bevor der nächste Schritt beginnt.
+
+### Bereitschaftsprüfung
+
+Nach `up()` prüft renet jeden HTTP-Dienst, bis er TCP-Verbindungen akzeptiert, damit die erste Browser-Anfrage nicht auf einen 502 des Proxys trifft. Container mit einem definierten Docker-Healthcheck werden direkt vertraut: Ein als gesund gemeldeter Container überspringt die Prüfung, und ein Container, der sich noch innerhalb seines `start_period` befindet, löst nur eine informative Meldung aus, keine Warnung. Die Prüfung gibt nach 15 Sekunden auf (überschreibbar mit der Umgebungsvariable `REDIACC_READINESS_TIMEOUT` in Sekunden auf der Maschine); abgetrennte Starts überspringen sie vollständig.
 
 ## Dienste stoppen
 

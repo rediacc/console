@@ -1,5 +1,9 @@
 import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
-import type { ListResult, SystemInfo } from '@rediacc/shared/queue-vault/data/list-types.generated';
+import type {
+  ListResult,
+  StorageHealthResult,
+  SystemInfo,
+} from '@rediacc/shared/queue-vault/data/list-types.generated';
 import {
   getBlockDevices,
   getContainers,
@@ -102,13 +106,42 @@ export function buildStorageHealthRows(
     const { name, source } = repoName(sh.guid, sh.name);
     return {
       name: source === 'server' ? `${name} *` : name,
-      size: sh.size_human,
+      quota: formatBytesShort(sh.quota_bytes),
+      allocated: formatBytesShort(sh.allocated_bytes),
       exclusive: sh.exclusive_human,
       shared: sh.shared_human,
+      reclaimable: reclaimableDisplay(sh),
+      discards: discardsDisplay(sh),
       divergence: `${sh.divergence_percent.toFixed(1)}%`,
       fragmentation: fragmentationPerGb(sh.extents, sh.size),
     };
   });
+}
+
+/** Reclaimable = allocated-vs-fs-used gap a `repo trim` could free; '-' when
+ * unmounted (the inner filesystem is sealed, so the gap is unknown). */
+function reclaimableDisplay(sh: { mounted: boolean; reclaimable_human?: string }): string {
+  if (!sh.mounted) return '-';
+  return sh.reclaimable_human ?? formatBytesShort(0);
+}
+
+function discardsDisplay(sh: { mounted: boolean; discards_enabled: boolean }): string {
+  if (!sh.mounted) return '-';
+  return sh.discards_enabled ? 'on' : 'off';
+}
+
+/** Format raw byte counts compactly (the `*_human` fields arrive
+ * pre-formatted from renet; quota/allocated are raw numbers). */
+function formatBytesShort(bytes: number | undefined): string {
+  const b = bytes ?? 0;
+  const tb = 1024 ** 4;
+  const gb = 1024 ** 3;
+  const mb = 1024 ** 2;
+  if (b >= tb) return `${(b / tb).toFixed(1)} TB`;
+  if (b >= gb) return `${(b / gb).toFixed(1)} GB`;
+  if (b >= mb) return `${(b / mb).toFixed(1)} MB`;
+  if (b >= 1024) return `${(b / 1024).toFixed(1)} KB`;
+  return `${b} B`;
 }
 
 function getSections(
@@ -345,6 +378,28 @@ function printStorageSummary(sys: SystemInfo | undefined): void {
   );
 }
 
+/** Pool fill level + backup-snapshot pinning, shown under the storage-health
+ * table (rediacc/renet#76). */
+function renderPoolSummary(pool: StorageHealthResult['pool']): void {
+  if (!pool) return;
+  outputService.info(
+    t('commands.machine.query.storageHealthPoolSummary', {
+      used: pool.used_human,
+      free: pool.free_human,
+      percent: pool.used_percent.toFixed(1),
+    })
+  );
+  if (pool.active_backup_snapshots > 0 || pool.stale_backup_snapshots > 0) {
+    outputService.info(
+      t('commands.machine.query.storageHealthPoolSnapshots', {
+        pinned: pool.backup_snapshot_pinned_human,
+        active: pool.active_backup_snapshots,
+        stale: pool.stale_backup_snapshots,
+      })
+    );
+  }
+}
+
 function renderTableMode(
   listResult: ListResult,
   machineConfig: MachineConfig | undefined,
@@ -388,6 +443,8 @@ function renderTableMode(
       })
     );
     outputService.info(t('commands.machine.query.storageHealthFragmentationNote'));
+
+    renderPoolSummary(listResult.storage_health.pool);
   }
 
   printStorageSummary(listResult.system);

@@ -6,8 +6,42 @@ import { getOutputFormat } from './errors.js';
 
 const LOCAL_EXECUTION_FAILED_CODE = 'LOCAL_EXECUTION_FAILED';
 
+const MAX_OUTPUT_TAIL_CHARS = 500;
+
+/**
+ * Tail of the captured renet output worth showing under the error: adds the
+ * raw context when the one-line `result.error` reason isn't enough. Returns
+ * undefined when there is nothing new to show (empty, or already contained
+ * in the message).
+ */
+/** Prefer the stream that carries an explicit error line: the bridge puts
+ * its own logrus noise in stderr while relaying the inner command's
+ * "Error: ..." into stdout, so a non-empty stderr alone proves nothing. */
+function pickFailureStream(stderr?: string, stdout?: string): string | undefined {
+  const errorLineRe = /(^|\n)\s*(\[[^\]]+\]\s*)?Error: /;
+  if (stderr && errorLineRe.test(stderr)) return stderr;
+  if (stdout && errorLineRe.test(stdout)) return stdout;
+  return stderr?.trim() ? stderr : stdout;
+}
+
+function failureOutputTail(message: string, stderr?: string, stdout?: string): string | undefined {
+  const output = pickFailureStream(stderr, stdout)?.trim();
+  if (!output) return undefined;
+
+  const tail =
+    output.length > MAX_OUTPUT_TAIL_CHARS ? `…${output.slice(-MAX_OUTPUT_TAIL_CHARS)}` : output;
+  // Single-line tails that the enriched error already carries add nothing.
+  if (!tail.includes('\n') && message.includes(tail.replace(/^Error:\s*/, ''))) {
+    return undefined;
+  }
+  return tail;
+}
+
 export function renderLocalExecutionFailure(
-  result: Pick<LocalExecuteResult, 'error' | 'errorCode' | 'errorGuidance'> & {
+  result: Pick<
+    LocalExecuteResult,
+    'error' | 'errorCode' | 'errorGuidance' | 'stderr' | 'stdout' | 'outputEchoed'
+  > & {
     exitCode?: number;
   },
   fallbackMessage: string
@@ -15,6 +49,11 @@ export function renderLocalExecutionFailure(
   const message = result.error ?? fallbackMessage;
   const code = result.errorCode ?? LOCAL_EXECUTION_FAILED_CODE;
   const exitCode = typeof result.exitCode === 'number' ? result.exitCode : 1;
+  // Skip the tail when the executor already echoed the full output
+  // (non-capture failure path).
+  const outputTail = result.outputEchoed
+    ? undefined
+    : failureOutputTail(message, result.stderr, result.stdout);
 
   if (getOutputFormat() === 'json') {
     const envelope = {
@@ -43,6 +82,9 @@ export function renderLocalExecutionFailure(
   }
 
   outputService.error(message);
+  if (outputTail) {
+    process.stderr.write(`--- renet output ---\n${outputTail}\n---\n`);
+  }
   if (isAgentEnvironment()) {
     process.exit(exitCode);
   }

@@ -4,7 +4,7 @@ description: "Looge, hallake ja kasutage LUKS-krüpteeritud repositooriume kaugm
 category: "Guides"
 order: 4
 language: et
-sourceHash: "ffb07e5870accfd8"
+sourceHash: "65fd6e7f9e6a83c1"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -82,7 +82,56 @@ rdc repo resize --name my-app -m server-1 --size 20G  # Seadista täpsele suurus
 rdc repo expand --name my-app -m server-1 --size 5G  # Lisa 5G praegusele suurusele
 ```
 
-> Repositoorium peab olema lahtiühendatud enne suuruse muutmist.
+> Repositoorium peab olema lahtiühendatud enne suuruse muutmist. `repo expand` töötab veebis. Suuruse muutmine muudab repositooriumi maksimaalset suurust; et tagastada vabastatud plokid basseinile maksimumit muutmata, kasuta selle asemel [`repo trim`](#ruumi-tagasinõudmine-trim).
+
+## Ruumi tagasinõudmine (trim)
+
+Failide kustutamine repositooriumis vabastab ruumi selles repositooriumis, ning `repo trim` tagastab need vabastatud plokid jagatud andmehoidla basseini. See töötab veebis ilma seisakuajata:
+
+```bash
+rdc repo trim -m server-1                       # Trim every mounted repository plus the datastore
+rdc repo trim -m server-1 --name my-app          # Trim one repository
+rdc repo trim -m server-1 --report-only          # Show reclaimable space without trimming
+rdc repo trim -m server-1 --docker               # Also clear stopped containers, dangling images, and build cache first
+```
+
+Kuidas see töötab: repositooriumi kujutised on hõredad failid ja krüpteeritud maht edastab discard-käsud läbi. Trim käsib repositooriumis oleval failisüsteemil vabastada kõik kasutamata plokid, mis lõikab tagasilahkuvasse kujutisesse augud ja kahandab basseini kasutust kohe.
+
+Märkused:
+
+- Repositooriumid, mille varundamine on aktiivne, jäetakse vahele ja neist teatatakse. Trimmimine varundamise ajal ei vabastaks ruumi, sest varukoopia hetktõmmis viitab endiselt nendele plokkidele.
+- Trimmimise kahe korra järjestikune käivitamine näitab teisel korral 0 baiti. Failisüsteem mäletab, millised plokigrupid on juba trimmitud; see on oodatav käitumine, mitte tõrge.
+- `--docker` ei eemalda kunagi märgistatud kujutisi, ainult rippuvaid, peatunud konteinereid ja vahemälu koostamist. Lisa `--docker-volumes`, et eemaldada ka kasutamata köited (see kustutab andmed; ainult CLI).
+
+## Automaatne suuruse poliitika
+
+Käsitsi suuruse muutmise asemel lase masinal hallata repositooriumide suurusi. Poliitika lubab veebis automaatset kasvu (repositooriumi maksimaalne suurus suureneb, kui see täitub) ja ajastatud trimmimised. Masin rakendab poliitikat iga paari minuti tagant `rediacc-storage-maintain` systemd-taimeri kaudu.
+
+```bash
+# Machine-wide default: trim every repository daily
+rdc repo policy set -m server-1 --auto-trim true
+
+# Per-repository: grow my-app automatically, up to a hard ceiling
+rdc repo policy set -m server-1 --name my-app --auto-grow true --max-quota 50G
+
+# Inspect the stored and effective policy
+rdc repo policy get -m server-1 --name my-app
+```
+
+Poliitika väljad:
+
+| Väli | Tähendus | Vaikimisi |
+|---|---|---|
+| `--auto-grow` | Kasvatab repositooriumi veebis, kui selle failisüsteem ületab läve | välja |
+| `--max-quota` | Automaatse kasvu kõva ülempiir. Nõutav: selle seadmine on sinu selgesõnaline nõusolek basseini ülepakkumiseks | puudub |
+| `--grow-threshold` | Failisüsteemi kasutuse protsent, mis käivitab kasvu | 85 |
+| `--grow-step` | Kui palju lisada kasvu kohta: absoluutne (`10G`) või protsent praegusest suurusest (`20%`) | 20% |
+| `--auto-trim` | Käivitab ajastatud trimmimised | välja |
+| `--trim-interval` | Minimaalne tundide arv automaatsete trimmimiste vahel | 24 |
+
+Kaitsemeetmed: automaatne kasv keeldub, kui basseini vabas ruumi on alla reservi (10 GB või 5% basseinist, kumb on suurem), ootab vähemalt 30 minutit sama repositooriumi kasvude vahel ja ei ületa kunagi `--max-quota`. Automaatset kahanemist pole: repositooriumi maksimaalse suuruse vähendamine jääb käsitsi, võrguühenduseta [`repo resize`](#suuruse-muutmine) operatsiooniks.
+
+Repositooriumipõhised sätted alistavad masina üldise vaikimisi. Korduvad `policy set` kutsed muudavad ainult neid lippe, mida edastad.
 
 ## Kahveldamine
 
@@ -97,6 +146,27 @@ Kahvlid kasutavad nimi:silt mudelit: saadud kahvel on nimega `my-app:staging`. S
 > Kahvlid jagavad vanema andmeid BTRFS-i reflinki kaudu, sealhulgas kõiki kettal salvestatud mandaate. Vaata [Mida Rediacc ei erista](/en/docs/ai-agents-safety#what-rediacc-does-not-isolate), et mõista tagajärgi, kui need mandaadid annavad loa välistele teenustele nagu Stripe, AWS või Railway. Et hoida juurutamise ajal mandaadid kahvli käeulatusest eemal, kasuta [repopõhiseid saladusi](#secrets) `.env` failidesse väärtuste põimimise asemel.
 
 Kahvli loomisel kirjutab `repo fork` kohe [oleku peegli külgfaili](#tüübi-veerg-ja-oleku-peegel) asukohta `<datastore>/.interim/state/<fork-guid>/.rediacc.json`. Mahtu avamata. Seega tuvastatakse uus kahvel korrektselt kui `is_fork: true` loomise hetkest alates. See võimaldab ajastatud varundusülesannetel selle vahele jätta (kahvlid on vaikimisi üleslaadimiskonveierist välistatud), isegi kui seda ei ühendatagi. Kahvli kahveldamisel ahelstatakse `grand_guid` õigesti: uue kahvli peegel osutab algse suurvanema GUIDile, mitte vahekahvlile.
+
+### Kahveldamine ja käivitamine ühe sammuga
+
+`--up` kahveldab, ühendab ja käivitab teenused ühe kaugoperatsiooniga. Lisage `--detach`, et saada terminal tagasi niipea, kui konteinerid on käivitatud; tervisekontrollid lõpetavad taustal ja puhverserver kordab katseid, kuni iga teenus seob end:
+
+```bash
+rdc repo fork --parent my-app --tag staging -m server-1 --up
+rdc repo fork --parent my-app --tag scratch -m server-1 --up --detach
+```
+
+Meie testides kahveldati 128 GB repositoorium ja jõuti töötavate teenusteni umbes 57 sekundiga, `--detach`-iga aga umbes 31 sekundiga. Eraldusrežiim trükib vihje edenemise jälgimiseks: `rdc machine query --containers --name <machine>`.
+
+### Kuhu aeg läheb
+
+Mõne sekundi pikkusemad käivitused lõppevad ajastuskokkuvõttega: samm-sammulise jaotusega, juga, mis näitab, mis paralleelselt toimus, ja omistusreaga, mis eraldab Rediacci konveieri teie teenuste oma käivitamisajast:
+
+```
+  Rediacc pipeline 19.2s (61%) · service startup 12.3s (39%)
+```
+
+Teenuse käivitusaeg näitab teie konteinerite käivitumist (pildid, init, tervisekontrollid, nagu repositooriumi Rediaccfile määratleb) ning see varieerub rakenduse kaupa. Graafikud renderdatakse interaktiivsetel terminalidel; sundige neid torustatud väljundis nähtavaks seades `RDC_TIMING_CHART=1`.
 
 ## Git-laadne versioonihaldus
 

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 6
 language: tr
-sourceHash: "d60a43cd573517a1"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "2bb63d224370c266"
+sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
 ---
 
 # Ağ
@@ -21,7 +21,7 @@ Servislerin geri döngü IP'lerini nasıl aldığı ve `.rediacc.json` slot sist
 Her depo, ağ kancaları kullanılarak çekirdek düzeyinde otomatik olarak yalıtılır. Bu, Linux kernel 6.1 veya üzerini gerektirir. Herhangi bir yapılandırma gerekmez.
 
 - **Otomatik bind yeniden yazma**: Servisler her zamanki gibi `0.0.0.0` veya `127.0.0.1`'e bağlanabilir. Çekirdek, adresi servisin atanmış geri döngü IP'sine şeffaf olarak yeniden yazar. `${SERVICE_IP}`'ye açıkça bağlanmaya gerek yoktur.
-- **Depolar arası bağlantı engelleme**: Bir servis, deposunun `/26` alt ağı dışındaki bir geri döngü IP'sine bağlanmaya çalışırsa, çekirdek bunu engeller. Depo A'daki bir işlem, Depo B'deki servislere erişemez.
+- **Depolar arası bağlantı engelleme**: Bir servis, deposunun `/26` alt ağı dışındaki bir geri döngü IP'sine bağlanmaya çalışırsa, çekirdek bunu engeller. Depo A'daki bir işlem, Depo B'deki servislere erişemez. Tek istisna fork'lardır: ebeveynin alt ağına yaptıkları bağlantılar fork'un kendi servislerine yönlendirilir (bkz. [Limitler](/tr/docs/limits)); ebeveynin kendisi erişilemez kalır.
 - **Uygulama değişikliği gerekmez**: Servisler bağlama için `0.0.0.0` veya `localhost` kullanır ve çekirdek, yalnızca doğru geri döngü IP'lerinde dinlemelerini sağlar. Yalıtım tamamen şeffaftır.
 
 ## Nasıl Çalışır

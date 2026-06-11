@@ -4,7 +4,7 @@ description: 'Maschinengesundheit, Container, Dienste, Repositories und Diagnose
 category: Guides
 order: 9
 language: de
-sourceHash: "d3b8ff142fe2df34"
+sourceHash: "f56ab0bacb657043"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,12 +109,25 @@ rdc machine query --name server-1 --storage-health
 
 | Spalte | Beschreibung |
 |--------|-------------|
-| Size | Größe der LUKS-Image-Datei (wie das Repository aussieht) |
+| Quota | Die maximale Größe des Repositories (seine Wachstumsobergrenze, gesetzt bei der Erstellung oder durch resize/auto-grow) |
+| Allocated | Was das Sparse-Image aktuell tatsächlich im Pool belegt |
 | Unique | Tatsächlich einzigartige Daten, die nur diesem Repository gehören |
 | Shared | Datenblöcke, die über Repositories via BTRFS-Reflinks wiederverwendet werden (kostenlose Kopien) |
-| Divergence | Prozentualer Anteil des Images, der einzigartig für dieses Repository ist und nicht geteilt wird (höher bedeutet mehr rückgewinnbarer Speicher bei Löschung) |
-| Extents | Anzahl der Dateiextents im copy-on-write-Image (höher = stärker fragmentiert) |
-| Frag | Fragmentierungsgrad: niedrig, mittel oder hoch (nur informativ) |
+| Reclaimable | Die Lücke zwischen belegtem und genutztem Speicher, die [`repo trim`](/de/docs/repositories#speicherplatz-zuruckgewinnen-trim) an den Pool zurückgeben kann. Zeigt `-` für unmountete Repositories |
+| Discards | Ob das verschlüsselte Volume Discards durchleitet (`on` für jedes Repository, das mit einer aktuellen Version gemountet wurde) |
+| Divergence | Prozentualer Anteil des Images, der einzigartig für dieses Repository ist und nicht geteilt wird (höher bedeutet mehr rückgewinnbaren Speicher bei Löschung) |
+| Frag | Extents pro GB im copy-on-write-Image (nur informativ) |
+
+Quota und Allocation sind bewusst unterschiedliche Werte: Ein Repository mit 20 GB Quota, das 6 GB Daten speichert, kostet den Pool nur das tatsächlich Belegte. Der Pool kann daher mehr Quota versprechen als er physisch besitzt, und die Reclaimable-Spalte zeigt, wie viel der Allocation jedes Repositories nicht mehr genutzt wird und zurückgetrimmt werden kann.
+
+Unterhalb der Tabelle liefert eine Pool-Zusammenfassung den Füllstand des Datastores und wie viel Speicher Backup-Snapshots derzeit belegen:
+
+```
+Pool: 265.4 GB used, 95.2 GB free (73.6% full)
+Backup snapshots pin 2.1 GB (1 active, 0 stale; stale ones are removed by 'rdc machine prune')
+```
+
+Während ein Backup läuft, referenziert sein Snapshot weiterhin jeden Block, den er mit aktiven Repositories teilt; Löschungen und Trims geben daher weniger Pool-Speicher frei, bis der Backup-Zyklus abgeschlossen und der Snapshot gelöscht ist. Veraltete Snapshots aus unterbrochenen Backups werden vom Storage-Maintainer innerhalb von Minuten automatisch entfernt.
 
 Die Zusammenfassung zeigt Gesamteinsparungen durch BTRFS-Reflinks:
 
@@ -229,3 +242,14 @@ rdc doctor
 Jede Prüfung meldet **OK**, **Warnung** oder **Fehler**. Verwenden Sie dies als ersten Schritt bei der Fehlerbehebung jeglicher Probleme.
 
 Exit-Codes: `0` = alles bestanden, `1` = Warnungen, `2` = Fehler.
+
+## Bereitschaftsprüfung der Dienste
+
+Während `repo up` wartet renet darauf, dass HTTP-Dienste Verbindungen akzeptieren, bevor sie als bereit deklariert werden. Die Wartelogik berücksichtigt dabei Docker-Healthchecks:
+
+- Container, die Docker als **healthy** meldet, werden sofort als bereit akzeptiert, ohne TCP-Probe.
+- Container, die sich noch innerhalb des `start_period` ihres Healthchecks befinden, lösen eine informative Meldung aus, keine Warnung; der Proxy versucht weiterhin, die Verbindung herzustellen.
+- Compose-Dienste ohne laufenden Container (etwa hinter einem inaktiven Profil) werden übersprungen.
+- Alle anderen Dienste werden per TCP für bis zu 15 Sekunden geprüft (änderbar mit `REDIACC_READINESS_TIMEOUT` in Sekunden).
+
+Wer auf langsam startenden Diensten einen [Docker-Healthcheck](https://docs.docker.com/reference/dockerfile/#healthcheck) definiert, gibt renet ein verlässliches Bereitschaftssignal und vermeidet überflüssige Probe-Meldungen in der Deploy-Ausgabe.

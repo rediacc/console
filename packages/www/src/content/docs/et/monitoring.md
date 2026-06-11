@@ -4,7 +4,7 @@ description: "Jälgige masina tervist, konteinereid, teenuseid, hoidlaid ning k�
 category: "Guides"
 order: 9
 language: et
-sourceHash: "d3b8ff142fe2df34"
+sourceHash: "f56ab0bacb657043"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -109,12 +109,25 @@ rdc machine query --name server-1 --storage-health
 
 | Veerg | Kirjeldus |
 |--------|-------------|
-| Size | LUKS-pildifaili suurus (kuidas hoidla välja näeb) |
-| Unique | Tegelik unikaalne andmemaht, mis kuulub ainult sellele hoidlale |
-| Shared | Andmeplokid, mida taaskasutatakse hoidlate vahel BTRFS-i reflink'ide kaudu (tasuta koopiad) |
-| Divergence | Protsent kujutisest, mis on selle hoidla jaoks unikaalne, mitte jagatud (kõrgem = rohkem tagasinõutavat ruumi kustutamisel) |
-| Extents | Faililaiendite arv copy-on-write kujutises (kõrgem = rohkem fragmenteeritud) |
-| Frag | Fragmentatsioonitase: madal, mõõdukas või kõrge (ainult informatiivne) |
+| Quota | Repositooriumi maksimaalne suurus (kasvulagi, mis on seatud loomise ajal või resize/auto-grow kaudu) |
+| Allocated | See, mida hõre kujutis basseinis hetkel tegelikult hõivab |
+| Unique | Tegelik unikaalne andmemaht, mis kuulub ainult sellele repositooriumile |
+| Shared | Andmeplokid, mida taaskasutatakse repositooriumite vahel BTRFS-i reflink'ide kaudu (tasuta koopiad) |
+| Reclaimable | Eraldatud ja kasutatud vahemaa, mille [`repo trim`](/et/docs/repositories#ruumi-tagasinõudmine-trim) saab basseinile tagastada. Näitab `-` lahtiühendatud repositooriumite puhul |
+| Discards | Kas krüpteeritud maht edastab discard-käsud läbi (`on` iga repositooriumi puhul, mis on ühendatud praeguse versiooniga) |
+| Divergence | Protsent kujutisest, mis on selle repositooriumi jaoks unikaalne, mitte jagatud (kõrgem tähendab rohkem tagasinõutavat ruumi kustutamisel) |
+| Frag | Laiendeid GB kohta copy-on-write kujutises (ainult informatiivne) |
+
+Kvoot ja eraldus on tahtlikult erinevad numbrid: repositoorium 20 GB kvoodiga, mis salvestab 6 GB andmeid, maksab basseinile ainult selle, mida ta on eraldanud. Bassein võib seetõttu lubada kokku rohkem kvooti kui tal füüsiliselt on, ja Reclaimable veerg näitab, kui palju iga repositooriumi eraldusest ei kasutata enam ja saab trimmida tagasi.
+
+Tabeli all kirjeldab basseini kokkuvõte andmehoidla täitumist ja seda, kui palju ruumi varukoopia hetktõmmised parajasti kinni hoiavad:
+
+```
+Pool: 265.4 GB used, 95.2 GB free (73.6% full)
+Backup snapshots pin 2.1 GB (1 active, 0 stale; stale ones are removed by 'rdc machine prune')
+```
+
+Varundamise ajal hoiab selle hetktõmmis kõiki plokke, mida see jagab elavate repositooriumidega, seega kustutamised ja trimmimised vabastavad vähem basseiniruumi kuni varundamise tsükkel lõpeb ja hetktõmmis kustutatakse. Katkestunud varunduste aegunud hetktõmmised eemaldatakse salvestuse hooldaja poolt automaatselt minutite jooksul.
 
 Kokkuvõte näitab BTRFS-i reflink'idest saadud säästu kokku:
 
@@ -229,3 +242,14 @@ rdc doctor
 Iga kontroll raporteerib **OK**, **Hoiatus** või **Tõrge**. Kasutage seda esimese sammuna igasuguse probleemi tõrkeotsinguks.
 
 Väljumiskoodid: `0` = kõik läbisid, `1` = hoiatused, `2` = tõrked.
+
+## Teenuse valmisolekukontrollid
+
+`repo up` käivitamisel ootab renet, kuni HTTP-teenused aktsepteerivad ühendusi, enne kui kuulutab need käivitunuteks. Ooteaeg arvestab tervisekontrolle:
+
+- Konteinerid, mille Docker raporteerib **terveks**, usaldatakse otsekohe, TCP-proovi ei teostata.
+- Konteinerid, mis viibivad veel tervisekontrolli `start_period`-is, logivad informatiivse teate, mitte hoiatuse; puhverserver jätkab ühenduskatseid, kuni need seovad end.
+- Compose'i teenused, millel pole töötavat konteinerit (näiteks mitteaktiivse profiili taga), jäetakse vahele.
+- Kõiki ülejäänuid testitakse TCP kaudu kuni 15 sekundit (muutmiseks seadke `REDIACC_READINESS_TIMEOUT` sekunditeks).
+
+[Dockeri tervisekontrolli](https://docs.docker.com/reference/dockerfile/#healthcheck) määratlemine aeglaselt käivituvatel teenustel annab renet'ile autoriteetse valmisolekusignaali ja eemaldab proovimüra juurutusväljundist.

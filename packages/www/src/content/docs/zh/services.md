@@ -5,7 +5,7 @@ description: >-
 category: Guides
 order: 5
 language: zh
-sourceHash: "88734af48d9648d5"
+sourceHash: "aa77a4f937206e58"
 sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
 ---
 
@@ -211,6 +211,7 @@ rdc repo up --name my-app -m server-1
 
 | 选项 | 描述 |
 |------|------|
+| `--detach` | 容器启动后立即返回；健康检查在后台继续运行 |
 | `--skip-router-restart` | 跳过操作后重启路由服务器 |
 
 执行顺序为：
@@ -230,6 +231,14 @@ HTTP services (accessible via proxy after ~3s):
 ```
 
 未具有自定义 Traefik 标签的服务仅显示自动生成的路由。使用这些 URL（而非 CLI 输出的通用模式）进行浏览器访问、API 调用和跨服务配置。
+
+### 后台启动
+
+加上 `--detach`，命令在容器启动后即返回，不等待健康检查完成。启动过程在后台继续：代理持续重试上游连接，直到各服务就绪，路由自动恢复。可通过 `rdc machine query --containers --name <machine>` 查看进度。适合一次性临时分支和无需等待服务就绪即可进行下一步的脚本化流程。
+
+### 就绪探测
+
+`up()` 执行完成后，renet 会对每个 HTTP 服务发起 TCP 探测，确认其接受连接，避免首次浏览器请求遭遇代理 502。容器已定义 Docker 健康检查的服务可直接信任：状态为 `healthy` 的容器跳过探测；仍处于 `start_period` 内的容器记录信息日志而非警告。探测最长等待 15 秒（可通过机器上的环境变量 `REDIACC_READINESS_TIMEOUT` 以秒为单位覆盖）；后台模式启动跳过探测。
 
 ## 停止服务
 

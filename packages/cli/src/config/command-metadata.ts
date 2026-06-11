@@ -420,6 +420,25 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     forkBlocked: true,
     mcpExcludeReason: 'Storage expansion — destructive infrastructure operation, use CLI directly',
   },
+  // No grandGuard: trim only releases blocks the filesystem already freed
+  // (fstrim + dangling-image prune); repo data is untouched, safe on grands.
+  // --docker-volumes IS data-destructive (deletes unused volumes), so it is
+  // excluded from the MCP surface — CLI only.
+  'repo trim': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'write',
+      excludeOptions: ['debug', 'docker-volumes'],
+    },
+  },
+  // Size policy (auto-grow/auto-trim, rediacc/renet#76). Setting policy
+  // changes machine behavior (quota growth consent) — CLI-only; reading is
+  // harmless but the JSON blob shape is CLI-oriented too.
+  'repo policy': {
+    mcpExcludeReason:
+      'Size-policy management changes machine auto-grow behavior — use CLI directly',
+  },
   'term repo': { grandGuard: true },
   'vscode repo': { grandGuard: true },
 
