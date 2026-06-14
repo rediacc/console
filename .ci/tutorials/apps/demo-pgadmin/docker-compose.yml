@@ -1,0 +1,110 @@
+services:
+  db:
+    image: postgres:18.4-alpine
+    container_name: db
+    # Bind only this service's loopback IP on a non-default port.
+    # Containers share the machine's network namespace, and the my-app
+    # repo's postgres holds a wildcard 0.0.0.0:5432 — a wildcard listen
+    # blocks ANY addr:5432 bind, so demo-pgadmin's db uses 5433. The
+    # entrypoint wrapper keeps the image's init logic ($1 must be
+    # "postgres") while letting the shell expand the renet-injected
+    # $SERVICE_IP.
+    entrypoint: ["sh", "-c", "exec docker-entrypoint.sh postgres -c listen_addresses=$$SERVICE_IP -p 5433"]
+    environment:
+      POSTGRES_DB: demo
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+    volumes:
+      - pgdata:/var/lib/postgresql
+    configs:
+      - source: seed-sql
+        target: /docker-entrypoint-initdb.d/01-seed.sql
+        mode: 0444
+    healthcheck:
+      # -h must target SERVICE_IP: localhost would hit whichever postgres
+      # owns 0.0.0.0:5432 in the shared netns and false-positive.
+      test: ["CMD-SHELL", "pg_isready -U demo -d demo -h $$SERVICE_IP -p 5433"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    labels:
+      - "rediacc.service_name=db"
+
+  pgadmin:
+    image: dpage/pgadmin4:9.13
+    container_name: pgadmin
+    # The listen address must be this service's loopback IP (wildcard :80
+    # collides with the renet router in the shared netns). Resolve it at
+    # RUNTIME from the renet-injected $SERVICE_IP — parse-time
+    # ${SERVICE_IP} interpolation in the environment block is not reliable.
+    entrypoint: ["sh", "-c", "export PGADMIN_LISTEN_ADDRESS=$$SERVICE_IP; exec /entrypoint.sh"]
+    environment:
+      PGADMIN_DEFAULT_EMAIL: "${PGADMIN_DEFAULT_EMAIL:-admin@demo.dev}"
+      PGADMIN_DEFAULT_PASSWORD: "${PGADMIN_DEFAULT_PASSWORD:-demo-password}"
+      PGADMIN_CONFIG_SERVER_MODE: "${PGADMIN_SERVER_MODE:-True}"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "${PGADMIN_MASTER_PASSWORD_REQUIRED:-True}"
+      PGADMIN_DISABLE_POSTFIX: "true"
+      PGADMIN_CONFIG_UPGRADE_CHECK_ENABLED: "False"
+    volumes:
+      - ./pgadmin-data:/var/lib/pgadmin
+    configs:
+      - source: pgadmin-servers
+        target: /pgadmin4/servers.json
+        mode: 0444
+      - source: pgadmin-prefs
+        target: /pgadmin4/preferences.json
+        mode: 0444
+      - source: pgadmin-pgpass
+        target: /pgpass
+        uid: "5050"
+        gid: "5050"
+        mode: 0400
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request,os; urllib.request.urlopen('http://%s:80/misc/ping' % os.environ['SERVICE_IP'])"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
+    depends_on:
+      db:
+        condition: service_healthy
+    labels:
+      - "rediacc.service_name=pgadmin"
+      - "rediacc.service_port=80"
+
+configs:
+  seed-sql:
+    content: |
+      CREATE TABLE tasks (
+        id serial PRIMARY KEY,
+        title text NOT NULL,
+        status text NOT NULL DEFAULT 'open'
+      );
+      INSERT INTO tasks (title, status) VALUES
+        ('Ship the new landing page', 'open'),
+        ('Rotate the API keys', 'done'),
+        ('Upgrade postgres to 18', 'open'),
+        ('Write the Q3 report', 'open');
+  pgadmin-servers:
+    content: |
+      {"Servers":{"1":{"Name":"demo","Group":"Servers","Host":"db","Port":5433,"MaintenanceDB":"demo","Username":"demo","PassFile":"/pgpass"}}}
+  # Tutorial recordings need a deterministic UI across sessions:
+  # - browser_tree_state_save_interval=-1: pgAdmin saves the expanded tree
+  #   per user and restores it after the server connects, which would make
+  #   scripted expansion clicks collapse already-open nodes on the next
+  #   render.
+  # - save_app_state=false: pgAdmin restores previously opened tools (Query
+  #   Tool tabs with unsaved SQL) on the next login, stacking ghost tabs.
+  # The entrypoint applies preferences.json only when the config DB is
+  # initialised, i.e. whenever _reset_pgadmin_data wiped pgadmin-data
+  # (every fork, and any grand whose auth-mode marker is missing).
+  pgadmin-prefs:
+    content: |
+      {"preferences":{"browser:display:browser_tree_state_save_interval":-1,"misc:user_interface:save_app_state":false}}
+  pgadmin-pgpass:
+    content: |
+      db:5433:*:demo:demo
+
+volumes:
+  pgdata:

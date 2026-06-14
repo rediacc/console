@@ -1,0 +1,62 @@
+---
+title: "라이브 마이그레이션"
+description: "명령 하나로 실행 중인 저장소(컨테이너, 데이터베이스, 프로세스 메모리 포함)를 다른 머신으로 최소한의 다운타임으로 이전합니다."
+category: "Tutorials"
+subcategory: advanced
+order: 16
+language: ko
+sourceHash: "0d0c4df847c6ba17"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 라이브 마이그레이션
+
+서버는 교체됩니다. 하드웨어가 노후화되고, 공급자가 바뀌고, 리전이 이동합니다. `rdc repo migrate`는 명령 하나로 실행 중인 저장소를 다른 머신으로 이전합니다. `--checkpoint`를 추가하면 프로세스 메모리까지 함께 이동합니다. 데모 앱 `pulse`는 카운터를 RAM에 유지하는데, 이전 후에도 처음부터 다시 시작하지 않고 계속 카운트합니다.
+
+## 튜토리얼 보기
+
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
+## 이전 방식
+
+![Two phases, minimal downtime](/img/tutorials/tutorial-live-migration/slide-1.svg)
+
+1단계에서는 앱이 계속 실행되는 동안 대용량 데이터를 복사합니다. 2단계에서는 실행 중인 프로세스를 체크포인트(`rediacc.checkpoint=true` 레이블이 붙은 컨테이너에 CRIU 사용)하고, 최종 델타와 프로세스 상태를 전송한 다음, 새 머신에서 모든 것을 재개합니다. 다운타임은 델타만큼이지, 전체 데이터만큼이 아닙니다.
+
+## 1단계: 증거 기록, RAM의 카운터
+
+<TutorialStep number={1} />
+
+`memory counter=6`이 5초마다 하나씩 올라가고 있습니다. 카운터는 프로세스 메모리에만 존재합니다. 프로세스가 재시작되면 1부터 다시 시작합니다.
+
+## 2단계: 라이브로 마이그레이션
+
+<TutorialStep number={2} />
+
+출력이 이전 과정을 설명합니다. 1단계는 소스가 온라인 상태를 유지하면서 2 GB 대용량 데이터를 전송합니다. 이후 실제 `DOWNTIME`이 출력됩니다. 2기가바이트 저장소 기준으로 수십 메가바이트, 약 20초 정도입니다.
+
+## 3단계: 새 집 확인
+
+<TutorialStep number={3} />
+
+대상 머신에서 `pulse`가 마운트되고, Docker가 실행 중이며, 컨테이너가 동작합니다.
+
+## 4단계: 소스가 중지됨
+
+<TutorialStep number={4} />
+
+소스에는 여전히 저장소가 목록에 표시되지만 실질적으로는: 마운트 해제 상태, Docker 없음, 컨테이너 0개. 더 이상 아무것도 실행되지 않습니다. 이미지는 다음 [델타 전송](/ko/docs/tutorial-delta-transfer)의 베이스로 사용하기 위해 의도적으로 유지됩니다. 이후 다시 푸시하는 비용이 저렴해집니다.
+
+## 5단계: 카운터가 계속 올라감
+
+<TutorialStep number={5} />
+
+`memory counter=17`, 그리고 18, 19, 20... 체크포인트에서 멈춘 정확한 시점부터 이어서 카운트합니다. 1로 초기화되지 않았습니다. 프로세스 메모리가 함께 이동한 것입니다. 앱은 머신이 바뀐 것을 전혀 알아채지 못했습니다.
+
+> `--checkpoint` 없이도 migrate는 디스크와 컨테이너를 이전합니다. 다만 대상 머신에서 이어서 재개되는 것이 아니라 새로 시작됩니다.
+
+---
+
+다음: [델타 전송](/ko/docs/tutorial-delta-transfer).

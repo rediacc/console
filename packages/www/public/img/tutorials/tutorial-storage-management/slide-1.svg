@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Repositories grow online when they fill up, trim gives deleted blocks back to the pool, and a policy automates both</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .pool { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 10; ry: 10; }
+    .repo { fill: #e8edf6; stroke: #2b5fb8; stroke-width: 2; rx: 6; ry: 6; }
+    .grown { fill: #e6f7ef; stroke: #1d7a4f; stroke-width: 2.5; stroke-dasharray: 6 5; rx: 6; ry: 6; }
+    .label { fill: #1a1a1a; font-weight: 700; font-size: 16px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .desc { fill: #5e5e5e; font-weight: 400; font-size: 14px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .arrow-grow { stroke: #1d7a4f; stroke-width: 2.5; fill: none; }
+    .arrow-trim { stroke: #2b5fb8; stroke-width: 2.5; fill: none; }
+    .closer { fill: #1a1a1a; font-weight: 600; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <rect class="pool" x="100" y="110" width="760" height="250"/>
+  <text class="label" x="480" y="142">datastore pool</text>
+
+  <rect class="repo" x="140" y="170" width="180" height="150"/>
+  <text class="label" x="230" y="245">data-app</text>
+  <rect class="grown" x="320" y="170" width="90" height="150"/>
+  <text class="desc" x="365" y="250">grow</text>
+
+  <rect class="repo" x="500" y="170" width="180" height="150"/>
+  <text class="label" x="590" y="245">other-app</text>
+
+  <path class="arrow-grow" d="M 230 330 L 230 390"/>
+  <text class="desc" x="230" y="412">expand — online, zero downtime</text>
+
+  <path class="arrow-trim" d="M 590 330 L 590 390"/>
+  <text class="desc" x="590" y="412">trim — deleted blocks return to the pool</text>
+
+  <text class="closer" x="480" y="480">Set a policy once. The machine never runs dry.</text>
+</svg>

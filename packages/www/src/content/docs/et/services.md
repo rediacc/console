@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: et
-sourceHash: "aa77a4f937206e58"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "011bc5d87114f105"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Teenused
@@ -77,6 +77,25 @@ down() {
 ```
 
 > **Tähtis:** Kasutage alati `renet compose --` `docker compose` asemel. `renet compose` ümbris jõustab host-võrgunduse, IP-eraldise ja teenuste avastamise silte, mida renet-proxy nõuab. CRIU kontrollpunkti/taastamise võimalused lisatakse konteineritele sildiga `rediacc.checkpoint=true`. Otsene `docker compose` kasutamine lükatakse tagasi Rediaccfile'i valideerimisega. Vaadake [Võrgundus](/en/docs/networking) üksikasjade saamiseks.
+
+### Võimekussildid
+
+Konteinerid käivituvad vaikimisi minimaalse Linux-võimekuste komplektiga. Teenus saab lisavõimekusi, lisades oma `docker-compose.yml`-i sildi:
+
+| Silt | Annab | Kasutus |
+|-------|--------|---------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` | CRIU kontrollpunkt/taastamine (elav migreerimine, salvestamine ja jätkamine) |
+| `rediacc.wireguard=true` | `NET_ADMIN` ja `/dev/net/tun` seade | WireGuard-kliendi käitamine konteineris |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard` võimaldab teenusel luua WireGuard-tunneli, näiteks ühe protsessi liikluse suunamiseks läbi kaugotspunkti. Kuna iga teenus töötab hosti võrgundusega, piira tunnel konteinerisisesel võrgunimeruumiga, et see ei muudaks hosti marsruutimist. Laiad privilegeeritud suvandid, nagu `privileged: true`, `pid: host` ja `ipc: host`, lükatakse valideerimisega siltidest hoolimata tagasi.
 
 ### Mitmeteenuseline paigutus
 

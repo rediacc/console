@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "9382c181f6358b4ab6b609b6cb74e349f01309d1ab0ddec4a384c45283f9507e",
+  "transcriptHash": "f9fbb88a48275b703d5c37f3cbce70e1636f66a18cc7ff8806fe307cff1d7bfd",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.626476,
-      "replayEndSec": 7.903516,
+      "replayStartSec": 1.614947,
+      "replayEndSec": 8.543153,
       "narrationText": "Prima di tutto, confermiamo che la CLI sia nel path. Eseguendo la CLI con il flag version si ottiene la versione installata e si verifica che l'installazione sia andata a buon fine.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-installation/tutorial-installation-01.46842a03.mp3",
       "textHash": "46842a039c4f9c032c916e6e9775c014f9c21d81ffa5d2382072143a407336e5",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 7.903516,
-      "replayEndSec": 10.095825,
+      "replayStartSec": 8.543153,
+      "replayEndSec": 10.766661,
       "narrationText": "Ora eseguiamo il controllo diagnostico. Controlla tutte le dipendenze necessarie alla CLI -- Node, SSH e le restanti -- e segnala eventuali mancanze. Un rapporto pulito significa che sei pronto ad aggiungere un server.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-installation/tutorial-installation-02.5221b154.mp3",
       "textHash": "5221b154e4d2f63211c174ae6563c99e728bdf8615247b07eb6eba69d620c853",

@@ -1,0 +1,107 @@
+{
+  "cast": "/assets/tutorials/tutorial-storage-management.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-storage-management-01",
+      "markerIndex": 0,
+      "at": 2.410441,
+      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "afterText": "Presque plein. Il est temps de s'agrandir.",
+      "cardLabel": "Remplissage",
+      "prose": "Remplissez le repository avec des données jusqu'à ce que le système de fichiers soit plein."
+    },
+    {
+      "id": "tutorial-storage-management-02",
+      "markerIndex": 1,
+      "at": 12.69586,
+      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "afterText": "Quatre gigaoctets maintenant. Rien n'a redémarré.",
+      "cardLabel": "Développer en ligne",
+      "prose": "Développez le repository en ligne : le conteneur LUKS et le système de fichiers s'agrandissent avec les containers en cours d'exécution."
+    },
+    {
+      "id": "tutorial-storage-management-03",
+      "markerIndex": 2,
+      "at": 19.886575,
+      "text": "Verify from inside: same volume, double the room.",
+      "afterText": "L'application n'a rien remarqué.",
+      "cardLabel": "Vérifier la taille",
+      "prose": "Vérifiez le système de fichiers depuis l'intérieur du repo. La nouvelle taille est active."
+    },
+    {
+      "id": "tutorial-storage-management-04",
+      "markerIndex": 3,
+      "at": 26.982758,
+      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "afterText": "Libéré dans le repo, toujours détenu par l'image.",
+      "cardLabel": "Supprimer les données",
+      "prose": "Supprimez les données à l'intérieur du repository. Notez que le pool ne se réduit pas encore."
+    },
+    {
+      "id": "tutorial-storage-management-05",
+      "markerIndex": 4,
+      "at": 33.464064,
+      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "afterText": "Récupéré. Le pool peut respirer à nouveau.",
+      "cardLabel": "Trim",
+      "prose": "Exécutez repo trim pour restituer les blocs libérés au pool partagé, en ligne, sans interruption de service."
+    },
+    {
+      "id": "tutorial-storage-management-06",
+      "markerIndex": 5,
+      "at": 40.097562,
+      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "afterText": "Politique enregistrée. La machine prend le relais.",
+      "cardLabel": "Définir la politique",
+      "prose": "Définissez une politique de taille : croissance automatique avec un plafond explicite, plus un trim planifié."
+    },
+    {
+      "id": "tutorial-storage-management-07",
+      "markerIndex": 6,
+      "at": 50.538253,
+      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "afterText": "Configuré une fois, oublié en toute sécurité.",
+      "cardLabel": "Vérifier la politique",
+      "prose": "Relisez la politique effective. La croissance et le trim sont maintenant automatiques."
+    },
+    {
+      "id": "tutorial-storage-management-08",
+      "markerIndex": 7,
+      "at": 57.423655,
+      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "afterText": "Une vue : utilisation, économies et marge de croissance.",
+      "cardLabel": "Vue santé",
+      "prose": "Vérifiez l'état de santé du stockage machine : utilisation par repo, état du pool et économies CoW reflink."
+    }
+  ],
+  "title": "Gestion du stockage",
+  "chapters": {
+    "intro": "Gestion du stockage",
+    "pool-model": "Un pool, des repos en croissance",
+    "cast-step-0": "Étape 1 : Le repo se remplit",
+    "cast-step-1": "Étape 2 : Agrandissez-le en ligne",
+    "cast-step-2": "Étape 3 : Vérifiez la nouvelle taille",
+    "cast-step-3": "Étape 4 : Supprimez les données",
+    "cast-step-4": "Étape 5 : Trim, restituez les blocs",
+    "cast-step-5": "Étape 6 : Définissez la politique",
+    "cast-step-6": "Étape 7 : Relisez la politique",
+    "cast-step-7": "Étape 8 : La vue de santé",
+    "outro": "La série se termine ici"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Bienvenue dans le tutoriel final ! Faisons en sorte que vous ne manquiez plus jamais d'espace disque. Nous allons agrandir un repository complet en ligne, restituer l'espace libéré au pool, puis apprendre à la machine à faire les deux automatiquement."
+    },
+    {
+      "id": "pool-model",
+      "text": "Voici le modèle. Chaque repository est un fichier dans un pool datastore partagé. Les repositories peuvent grandir en ligne pendant que les containers continuent de tourner. Mais supprimer des données dans un repo ne libère rien en soi. C'est le Trim qui restitue les blocs au pool. Et une policy automatise les deux."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Et voilà qui conclut la série ! Dix-huit tutoriels, de l'installation au stockage en pilote automatique. Vos serveurs vous appartiennent à nouveau. Merci d'avoir regardé !"
+    }
+  ]
+}

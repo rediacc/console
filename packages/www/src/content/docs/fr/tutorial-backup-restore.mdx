@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: fr
-sourceHash: "bfdacd91b2d3b93b"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c13a0f880039d7e7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,21 +53,28 @@ L'application continue de tourner pendant que la sauvegarde se téléverse. Comm
 
 Même logique qu'un [fork](/fr/docs/tutorial-forking). `rdc` forke d'abord, puis téléverse le fork. Le fork capture l'instant ; votre application en direct continue. Aucun temps d'arrêt, aucune incohérence.
 
-## Étape 3 : Restaurer sur un nouveau serveur
+## Étape 3 : Restaurer, pour de vrai
 
-Supposons que votre serveur tombe en panne. Configurez un nouveau serveur, ajoutez-le à `rdc` et récupérez :
+Une sauvegarde qu'on ne restaure jamais, c'est un espoir, pas une sauvegarde. Mettez d'abord le dépôt hors ligne :
+
+<TutorialStep number={5} />
+
+Récupérez directement la sauvegarde depuis le stockage :
+
+<TutorialStep number={6} />
+
+Et remontez-le, entièrement restauré :
+
+<TutorialStep number={7} />
+
+Le même pull fonctionne sur un tout nouveau serveur : configurez-le, ajoutez-le à `rdc`, et lancez le pull depuis là.
 
 ```bash
 rdc repo pull --name my-app -m new-server --from my-storage
-```
-
-Puis démarrez-le :
-
-```bash
 rdc repo up --name my-app -m new-server
 ```
 
-Votre application est de retour. Mêmes données, mêmes conteneurs, machine différente.
+Mêmes données, mêmes conteneurs, machine différente.
 
 ## Sauvegardes plus rapides : de machine à machine
 
@@ -77,8 +84,8 @@ Vous pouvez également pousser directement entre machines, sans stockage cloud i
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **Conseil.** Les téléversements vers le stockage envoient toujours tout. De machine à machine, seule la différence est envoyée. Le premier push de machine à machine prend le temps habituel, mais chaque push suivant est beaucoup plus rapide. Idéal pour les sauvegardes fréquentes.
+> **Conseil pro.** Les pushs de machine à machine n'envoient que les blocs modifiés après le premier. Le [tutoriel Transfert delta](/fr/docs/tutorial-delta-transfer) le montre en direct.
 
 ---
 
-Suivant : [Surveillance](/fr/docs/tutorial-monitoring).
+Suivant : [Réseau et domaines](/fr/docs/tutorial-networking).

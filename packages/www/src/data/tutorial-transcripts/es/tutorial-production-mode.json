@@ -6,7 +6,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.418632,
+      "at": 2.555418,
       "text": "Vamos a arrancar la app en modo producción desde la laptop. El comando repo up del CLI llama a la misma función up que usábamos durante el desarrollo, pero se ejecuta en segundo plano. Puedes cerrar tu laptop y la app sigue funcionando.",
       "afterText": "App corriendo en producción. Mismo comando, mismo resultado, en el servidor real.",
       "cardLabel": "Iniciar Prod",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 9.548589,
+      "at": 11.051619,
       "text": "Habilitamos el arranque automático para que la app sobreviva a un reinicio del servidor. A partir de ahora, si el servidor se reinicia, este repo vuelve automáticamente.",
       "afterText": "Arranque automático activado. La app sobrevive a los reinicios.",
       "cardLabel": "Activar Inicio Automático",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 17.034078,
+      "at": 18.718543,
       "text": "Listamos los repositorios que tienen el arranque automático habilitado. Confirmamos que nuestra app está ahora en la lista de inicio.",
       "afterText": "Ahí está, en la lista de arranque.",
       "cardLabel": "Listar Inicio Automático",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 22.929505,
+      "at": 25.169818,
       "text": "Y para detener la app, un comando desde la laptop. Un comando para arrancar, un comando para detener. Todo desde tu terminal, sin más sesiones interactivas.",
       "afterText": "Detenida. Un comando para arrancar, un comando para detener.",
       "cardLabel": "Detener Repo",
@@ -43,11 +43,11 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "¡Muy bien! Vamos a llevar tu app del desarrollo a producción. Tres pasos cortos, todos manejados desde tu laptop."
+      "text": "Tu aplicación corre mientras estás conectado. Producción significa que corre cuando te hayas ido. Tres pasos cortos, todo desde tu portátil."
     },
     {
       "id": "dev-vs-prod",
-      "text": "Durante el desarrollo ejecutas la app desde dentro del repo, así que se detiene cuando te desconectas. En producción la lanzas desde tu laptop con el CLI, y sigue ejecutándose de forma desacoplada."
+      "text": "Esta es la diferencia. En desarrollo arrancas la aplicación desde dentro del repo por SSH. Cierra la sesión y la aplicación muere con ella. En producción la lanzas desvinculada de tu portátil: el servidor es el dueño del proceso, tu conexión no."
     },
     {
       "id": "next-tutorial",
@@ -62,6 +62,6 @@
     "cast-step-1": "Paso 2: Activar inicio automático",
     "cast-step-2": "Paso 3: Listar repos con inicio automático",
     "cast-step-3": "Paso 4: Detener desde tu portátil",
-    "outro": "Siguiente: Copia de seguridad y restauración"
+    "outro": "Siguiente: Monitoreo"
   }
 }

@@ -4,8 +4,8 @@ description: "Sincronizzazione file, accesso al terminale, integrazione con VS C
 category: "Guides"
 order: 9
 language: it
-sourceHash: "4b3aebff5e82416f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "59abc2faa1157369"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Strumenti
@@ -173,6 +173,36 @@ rdc vscode check
 Verifica l'installazione di VS Code, l'estensione Remote SSH e le connessioni attive.
 
 > **Prerequisito:** Installa l'estensione [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) in VS Code.
+
+### VS Code nel Browser
+
+Nessun VS Code locale? Serve l'editor dall'interno della sandbox del repository e aprilo in qualsiasi browser:
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+Questo comando:
+1. Installa il server editor open-source sulla macchina una volta (percorso condiviso in sola lettura, verificato tramite checksum)
+2. Lo avvia all'interno della sandbox del repository, in modo che l'albero dei file, il terminale integrato e ogni processo figlio vedano esattamente quello che vede il repository
+3. Apre un tunnel SSH su una porta locale e lancia il browser con un URL token per sessione
+
+Il server continua a girare dopo che chiudi il tunnel; le riconnessioni lo riusano. Gestiscilo con:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| Opzione | Descrizione |
+|---------|-------------|
+| `--no-open` | Stampa l'URL invece di aprire il browser |
+| `--url-only` | Stampa esattamente una riga URL su stdout (per scripting) e mantiene il tunnel |
+| `--local <port>` | Scegli la porta locale del tunnel |
+| `--server-provider <id>` | Implementazione del server editor: `openvscode` (predefinito) o `code-server` |
+| `--server-archive <file>` | Installa da un archivio precaricato sulla macchina (senza connessione internet) |
+
+Funziona da Linux, macOS, Windows o tablet. L'unico requisito locale e un browser.
 
 ## Aggiornamenti della CLI (update)
 

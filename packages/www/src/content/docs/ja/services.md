@@ -5,8 +5,8 @@ description: >-
 category: Guides
 order: 5
 language: ja
-sourceHash: "aa77a4f937206e58"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "011bc5d87114f105"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # サービス
@@ -76,6 +76,25 @@ down() {
 ```
 
 > **重要：** `docker compose`の代わりに常に`renet compose --`を使用してください。`renet compose`ラッパーは、ホストネットワーキング、IPアロケーション、およびrenet-proxyに必要なサービスディスカバリラベルを強制適用します。CRIUチェックポイント/リストア機能は`rediacc.checkpoint=true`ラベル付きコンテナに追加されます。直接的な`docker compose`の使用はRediaccfileのバリデーションで拒否されます。詳細については[ネットワーキング](/ja/docs/networking)を参照してください。
+
+### ケーパビリティラベル
+
+コンテナはデフォルトで最小限のLinuxケーパビリティセットで動作します。サービスが追加のケーパビリティを必要とする場合は、`docker-compose.yml`にラベルを追加してオプトインします：
+
+| ラベル | 付与されるもの | 用途 |
+|-------|--------|---------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`、`SYS_PTRACE`、`NET_ADMIN` | CRIUチェックポイント/リストア（ライブマイグレーション、保存と再開） |
+| `rediacc.wireguard=true` | `NET_ADMIN` と `/dev/net/tun` デバイス | コンテナ内でWireGuardクライアントを実行 |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard` を使うと、サービスからWireGuardトンネルを確立できます。たとえば、特定のプロセスのトラフィックをリモートエンドポイント経由でルーティングする場合などに活用できます。すべてのサービスはホストネットワーキングで動作するため、ホストのルーティングに影響が出ないよう、トンネルはコンテナ内のネットワーク名前空間に閉じ込めてください。`privileged: true`、`pid: host`、`ipc: host` などの広範な特権オプションは、ラベルに関わらずバリデーションで拒否されます。
 
 ### マルチサービスレイアウト
 

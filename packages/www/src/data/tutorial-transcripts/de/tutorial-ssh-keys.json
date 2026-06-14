@@ -6,7 +6,7 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.626287,
+      "at": 1.617466,
       "text": "Schritt eins. Wir generieren einen neuen ed25519 SSH-Schlüssel. ed25519 ist der moderne Standard: klein, schnell und gut unterstützt. Das muss nur einmal für alle Server gemacht werden, die Sie je hinzufügen werden.",
       "afterText": "Schlüssel erzeugt. Die öffentliche Hälfte ist das, was wir auf den Server kopieren.",
       "cardLabel": "Schlüssel generieren",
@@ -16,7 +16,7 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 6.456735,
+      "at": 6.370674,
       "text": "Schritt zwei. Wir kopieren den öffentlichen Schlüssel mit ssh-copy-id auf den Server. Das Serverpasswort wird ein letztes Mal abgefragt. Danach ist für diesen Server keine Passwortauthentifizierung mehr erforderlich.",
       "afterText": "Führ das auf deinem Laptop aus. Sobald es durchgelaufen ist, sind Passwörter vom Tisch.",
       "cardLabel": "Server 1 autorisieren",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 13.33617,
+      "at": 13.176828,
       "text": "Schritt drei. Wir registrieren den Schlüssel bei der CLI. Von nun an authentifiziert sich jeder CLI-Befehl mit diesem Schlüssel. Keine Passwörter mehr, keine interaktiven Abfragen mehr.",
       "afterText": "Schlüssel bei der CLI registriert.",
       "cardLabel": "Server 2 autorisieren",

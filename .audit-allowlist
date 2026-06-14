@@ -45,5 +45,8 @@
 
 # tmp Path Traversal — electron-builder build chain
 # GHSA-ph9p-34f9-6g65 (app-builder-lib > @malept/flatpak-bundler > tmp-promise > tmp)
+# 1120654 is a sibling re-issue of the same advisory under a new source ID (GitHub
+# Advisory Database split); same chain, same root cause, same rationale.
 # BLOCKER: electron-builder transitive; patched tmp@0.2.6 published <24h ago and is blocked by .npmrc minimum-release-age=1440; prefix/postfix inputs come from trusted desktop build tooling, not untrusted data
 1119610
+1120654

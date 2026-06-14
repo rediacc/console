@@ -6,7 +6,7 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.626287,
+      "at": 1.617466,
       "text": "Paso uno. Vamos a generar una nueva clave SSH de tipo ed25519. El algoritmo ed25519 es el estándar moderno: pequeño, rápido y ampliamente compatible. Solo necesitas hacerlo una vez para todos los servidores que vayas a agregar.",
       "afterText": "Clave generada. La parte pública es la que se copia al servidor.",
       "cardLabel": "Generar Clave",
@@ -16,7 +16,7 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 6.456735,
+      "at": 6.370674,
       "text": "Paso dos. Copiamos la clave pública al servidor con ssh guion copy guion id. Se pide la contraseña del servidor por última vez. Después de esto, la autenticación por contraseña ya no es necesaria para ese servidor.",
       "afterText": "Ejecuta eso en tu laptop. Una vez que funcione, las contraseñas quedan fuera.",
       "cardLabel": "Autorizar Servidor 1",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 13.33617,
+      "at": 13.176828,
       "text": "Paso tres. Registramos la clave en el CLI. A partir de ahora, cada comando del CLI se autentica con esta clave. Sin contraseñas, sin prompts interactivos.",
       "afterText": "Clave registrada en el CLI.",
       "cardLabel": "Autorizar Servidor 2",

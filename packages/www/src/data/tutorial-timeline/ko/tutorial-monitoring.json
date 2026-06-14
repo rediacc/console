@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "0e19b266aa2d33e5451eddf4fce40bfefb9d7cc1b405d9eee4fc9b04f5185b19",
+  "transcriptHash": "18a34e111c1a850d7d5647a89af2ba2e6dc8b0823ee9d9dad0c88404d3f77915",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.411841,
-      "replayEndSec": 8.597185,
+      "replayStartSec": 2.416158,
+      "replayEndSec": 8.503611,
       "narrationText": "시스템 뷰부터 시작합니다. 머신 쿼리 명령에 --system 필터를 사용하면 가동 시간, 디스크 사용량, 스토리지 상태를 확인할 수 있습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-monitoring/tutorial-monitoring-01.234ec218.mp3",
       "textHash": "234ec21884482997854f9e81af9f16bac6ff9c84ec9226fce12f0f3a0f12ef8b",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.597185,
-      "replayEndSec": 15.126152,
+      "replayStartSec": 8.503611,
+      "replayEndSec": 14.799411,
       "narrationText": "이번에는 컨테이너 뷰입니다. 머신의 모든 저장소에서 실행 중인 컨테이너를 나열합니다. 이름, 상태, 헬스, CPU, 메모리, 그리고 각 컨테이너를 소유한 저장소 정보가 표시됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-monitoring/tutorial-monitoring-02.18b708af.mp3",
       "textHash": "18b708aff3fe4f421c83526e02f2aa0668159d79dd4d61cfa683b81b6f0d414a",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 15.126152,
-      "replayEndSec": 24.385141,
+      "replayStartSec": 14.799411,
+      "replayEndSec": 21.195367,
       "narrationText": "그리고 저장소 뷰입니다. 크기, 마운트 상태, Docker 데몬 상태, 디스크 사용량을 확인합니다. 각 격리된 환경에 대해 알아야 할 모든 정보가 여기에 있습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-monitoring/tutorial-monitoring-03.1bf314e8.mp3",
       "textHash": "1bf314e8a3dcd9341f977f10554d011b0f648ef5dbe003c20f26115aebe1dc8e",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 24.385141,
-      "replayEndSec": 32.334422,
+      "replayStartSec": 21.195367,
+      "replayEndSec": 26.969407,
       "narrationText": "필터 없이 머신 쿼리 명령을 실행하면 모든 정보를 한 번에 볼 수 있습니다. 시스템 정보, 컨테이너, 저장소가 모두 함께 표시됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-monitoring/tutorial-monitoring-04.939e4fa4.mp3",
       "textHash": "939e4fa47c3df4e0da3b90d7e73d39292992f3b128fa97bc4c4e3e9fc65503c7",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 32.334422,
-      "replayEndSec": 38.502093,
+      "replayStartSec": 26.969407,
+      "replayEndSec": 29.019779,
       "narrationText": "마지막으로 노트북에서 로컬 상태를 점검하는 진단 검사입니다. Node, SSH 키, renet, Docker 등 CLI가 의존하는 모든 항목을 확인합니다. 이것으로 전체 시리즈가 완료됩니다. 설치부터 모니터링까지, 모두 터미널에서 진행됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-monitoring/tutorial-monitoring-05.573d4d71.mp3",
       "textHash": "573d4d7174c14ccbfe1bc590cb50c631171ddc00dddb26dfd16579b29134be93",
@@ -92,10 +92,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "36cb96ffa956982c3b3a619a0e3c88cc3034f2dc117ae7d90a623ba82ab1dd46",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-monitoring/next-tutorial.36cb96ff.mp3",
-      "narrationText": "이걸로 시리즈가 마무리돼요. 이제 설치, 구성, 배포, fork, 라이브 전환, 자동 시작, 백업, 모니터링까지 모두 터미널에서 할 수 있어요!",
-      "audioDurationSec": 15.229388
+      "textHash": "022cfb4e89f0672e42cc403a92155f7711b42cb01b4d8eaf96f13d1c227c3b14",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-monitoring/next-tutorial.022cfb4e.mp3",
+      "narrationText": "이제 설치, 설정, 배포, fork, 라이브 전환, 자동 시작, 백업, 모니터링까지 모두 할 수 있게 됐습니다. 다음은 고급 과정입니다. commit과 rollback으로 코드처럼 repo를 버전 관리하는 방법을 알아봅니다.",
+      "audioDurationSec": 17.789388
     }
   ]
 }

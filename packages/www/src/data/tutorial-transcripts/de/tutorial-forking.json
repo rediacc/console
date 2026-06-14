@@ -6,7 +6,7 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 2.41277,
+      "at": 2.422355,
       "text": "Wir forken das Repository mit einem einzigen Befehl. Alles wurde geklont, die App, die Datenbank, die Konfigurationsdateien. Und es dauerte Sekunden, unabhängig davon, wie groß das Repo ist. Ein Gigabyte, hundert Gigabyte, ein Terabyte: immer die gleiche Zeit.",
       "afterText": "Fork erledigt. Der Klon läuft, egal wie groß das Repo ist.",
       "cardLabel": "Repo forken",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 13.421721,
+      "at": 12.478171,
       "text": "Beide Repos existieren jetzt nebeneinander. Gleiche Maschine, gleiche Festplatte, zwei vollständig unabhängige Umgebungen. Der Fork hat eigene Container, ein eigenes Dateisystem und einen eigenen Docker-Daemon.",
       "afterText": "Zwei Repos, eine Platte. Gleiche Daten, alles andere getrennt.",
       "cardLabel": "Repos auflisten",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 18.980206,
+      "at": 18.050071,
       "text": "Wir beweisen die Isolation. Im Original ist unsere Markierungsdatei genau dort, wo wir sie gelassen haben. Die Existenz des Forks hat nichts am Parent geändert.",
       "afterText": "Originaldatei ist immer noch da. Der Fork hat sie nicht angefasst.",
       "cardLabel": "Originaldatei",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 26.216902,
+      "at": 25.352583,
       "text": "Jetzt löschen wir die Datei, aber nur innerhalb des Forks. Im Fork ist sie weg. Wir haben eine destruktive Änderung vorgenommen, und sie blieb im Fork.",
       "afterText": "Im Fork weg. Das Original bleibt unberührt.",
       "cardLabel": "Im Fork löschen",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 34.456769,
+      "at": 33.706234,
       "text": "Zurück zum Original. Die Markierungsdatei ist noch hier, unberührt. Das Original hat nie etwas davon mitbekommen. Gleiches Image, getrennte Docker-Daemons, getrennte Dateisysteme.",
       "afterText": "Immer noch da. Forks sind sauber isoliert.",
       "cardLabel": "Original intakt",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 41.647526,
+      "at": 41.0794,
       "text": "Wenn Sie fertig sind, löschen Sie einfach den Fork. Das Original bleibt genau so, wie es war. Forken, experimentieren, Dinge kaputtmachen, löschen: kein Risiko.",
       "afterText": "Fork entfernt. Das Original ist genau so, wie wir es zurückgelassen haben.",
       "cardLabel": "Aufräumen",
@@ -89,7 +89,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "Forks lassen Secrets bewusst zurück, und genau das macht das Motto „Produktion klonen, nichts kaputt machen“ wirklich sicher. Das verdrahten wir im nächsten Tutorial richtig!"
+      "text": "Du hast gerade die Befehle gesehen. Als Nächstes machen wir es sichtbar: eine echte Datenbank-App, live geforkt, nebeneinander bearbeitet, und das Original zuckt nicht einmal."
     }
   ],
   "title": "Repository forken",
@@ -107,6 +107,6 @@
     "cast-step-5": "Schritt 6: Fork löschen",
     "river-photo": "Ein Foto des Flusses",
     "flat-disk": "Speicherverbrauch bleibt konstant",
-    "outro": "Weiter: Secrets verwalten"
+    "outro": "Als Nächstes: Fork-Isolation in Aktion"
   }
 }

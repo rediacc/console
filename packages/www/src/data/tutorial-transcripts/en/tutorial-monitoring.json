@@ -11,13 +11,13 @@
     "cast-step-2": "Repos",
     "cast-step-3": "Everything in one shot",
     "cast-step-4": "Local sanity check",
-    "outro": "End of the series"
+    "outro": "Next: Branching — Commit & Rollback"
   },
   "events": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.411841,
+      "at": 2.416158,
       "text": "Let us start with the system view. The machine query command with the system filter shows uptime, disk usage, and storage status.",
       "afterText": "Uptime, disk, storage. Everything you need at a glance.",
       "cardLabel": "System Health",
@@ -26,7 +26,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 8.597185,
+      "at": 8.503611,
       "text": "Now containers. This view lists every running container across every repository on the machine: name, status, health, CPU, memory, plus which repo owns each one.",
       "afterText": "Every container across every repo, in one view.",
       "cardLabel": "Containers",
@@ -35,7 +35,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 15.126152,
+      "at": 14.799411,
       "text": "And the repos themselves. Size, mount status, Docker daemon status, disk usage. Everything you need to know about each isolated environment.",
       "afterText": "All repos, all their daemons, all their disk usage.",
       "cardLabel": "Repositories",
@@ -44,7 +44,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 24.385141,
+      "at": 21.195367,
       "text": "The machine query command with no filters gives you everything in one shot. System info, containers, repositories, all together.",
       "afterText": "Everything together, no filter needed.",
       "cardLabel": "Full Query",
@@ -53,7 +53,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 32.334422,
+      "at": 26.969407,
       "text": "And finally the diagnostic check for a local sanity check on your laptop. Node, SSH key, renet, Docker. All the things the CLI itself depends on. That is the full series. From install to monitoring, all from your terminal.",
       "afterText": "All green means your local CLI is healthy.",
       "cardLabel": "Doctor",
@@ -71,7 +71,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "And that wraps the series. You can now install, configure, deploy, fork, go live, autostart, back up, and monitor, all from your terminal!"
+      "text": "You can now install, configure, deploy, fork, go live, autostart, back up, and monitor. The advanced track starts next: version your repos like code, with commits and rollbacks."
     }
   ]
 }

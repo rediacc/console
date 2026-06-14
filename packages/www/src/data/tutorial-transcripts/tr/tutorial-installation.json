@@ -6,7 +6,7 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.626476,
+      "at": 1.614947,
       "text": "Önce CLI'nin kurulu olduğunu doğrulayalım. Versiyon bayrağı kurulu versiyonu yazdırır; böylece kurulumun tamamlandığını anlayabiliriz.",
       "afterText": "Kurulum tamam. rdc ikili dosyası artık path'te.",
       "cardLabel": "CLI Kur",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 7.903516,
+      "at": 8.543153,
       "text": "Şimdi tanı denetimini çalıştıralım. CLI'nin ihtiyaç duyduğu her bağımlılığı (Node, SSH, Docker, renet ikili dosyası) tek tek kontrol eder ve eksikleri bildirir. Temiz bir rapor, hazır olduğumuz anlamına gelir.",
       "afterText": "Versiyon yazdırıldı. Hazırsınız.",
       "cardLabel": "Sürümü Doğrula",

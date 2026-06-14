@@ -6,7 +6,7 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 2.415513,
+      "at": 2.414306,
       "text": "Zuerst der tunnel-Befehl. Die App läuft auf dem Server, nicht auf Ihrem Laptop. Der Tunnel-Befehl leitet den Port eines Containers über SSH weiter, sodass Sie ihn unter localhost in Ihrem Browser öffnen können.",
       "afterText": "Port weitergeleitet. Die App ist jetzt unter localhost erreichbar.",
       "cardLabel": "Port tunneln",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 9.087333,
+      "at": 10.610488,
       "text": "Zweitens der term-Befehl. Der Terminal-Connect-Befehl bringt Sie in die Sandbox des Repos, dieselbe isolierte Ansicht wie in VS Code. Führen Sie beliebige Befehle gegen den Docker-Daemon dieses Repos aus, ohne das Terminal zu verlassen.",
       "afterText": "In der Repo-Sandbox. Führ alles aus, als wärst du per SSH eingeloggt.",
       "cardLabel": "Term im sandbox",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 15.893309,
+      "at": 17.555154,
       "text": "Bevor Dateien übertragen werden, zeigen wir eine Vorschau mit --dry-run. Das zeigt genau, was sich ändern würde, ohne irgendetwas zu kopieren. Immer Vorschau anzeigen, wenn Sie unsicher sind.",
       "afterText": "Nur eine Vorschau. Es wurden noch keine Dateien verschoben.",
       "cardLabel": "Sync-Vorschau",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 22.144638,
+      "at": 24.76977,
       "text": "Jetzt führen wir den Upload durch. Der Sync-Upload-Befehl verschiebt Dateien von Ihrem Laptop ins Repo über SSH mit rsync-Delta-Kompression. Tunnel, term, sync: drei Befehle decken den täglichen Ablauf ab.",
       "afterText": "Dateien hochgeladen. Die Delta-Kompression kommt auch mit großen Bäumen klar.",
       "cardLabel": "Sync-Upload",
@@ -67,6 +67,6 @@
     "cast-step-1": "Term: Befehle im sandbox ausführen",
     "cast-step-2": "Sync: Vorschau mit --dry-run",
     "cast-step-3": "Sync: echten Upload durchführen",
-    "outro": "Weiter: Repository forken"
+    "outro": "Weiter: VS Code im Browser"
   }
 }

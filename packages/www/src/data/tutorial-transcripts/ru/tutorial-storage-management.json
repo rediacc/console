@@ -1,0 +1,107 @@
+{
+  "cast": "/assets/tutorials/tutorial-storage-management.cast",
+  "language": "ru",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-storage-management-01",
+      "markerIndex": 0,
+      "at": 2.410441,
+      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "afterText": "Почти заполнено. Пора расширяться.",
+      "cardLabel": "Заполнение",
+      "prose": "Заполните repository данными, пока файловая система не заполнится до предела."
+    },
+    {
+      "id": "tutorial-storage-management-02",
+      "markerIndex": 1,
+      "at": 12.69586,
+      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "afterText": "Теперь четыре гигабайта. Ничего не перезапускалось.",
+      "cardLabel": "Расширить онлайн",
+      "prose": "Расширьте repository онлайн: LUKS container и файловая система растут при работающих containers."
+    },
+    {
+      "id": "tutorial-storage-management-03",
+      "markerIndex": 2,
+      "at": 19.886575,
+      "text": "Verify from inside: same volume, double the room.",
+      "afterText": "Приложение ничего не заметило.",
+      "cardLabel": "Проверить размер",
+      "prose": "Проверьте файловую систему изнутри repo, новый размер уже активен."
+    },
+    {
+      "id": "tutorial-storage-management-04",
+      "markerIndex": 3,
+      "at": 26.982758,
+      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "afterText": "Освобождено внутри repo, но всё ещё принадлежит образу.",
+      "cardLabel": "Удалить данные",
+      "prose": "Удалите данные внутри repository, обратите внимание, что pool пока не уменьшается."
+    },
+    {
+      "id": "tutorial-storage-management-05",
+      "markerIndex": 4,
+      "at": 33.464064,
+      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "afterText": "Возвращено. Пул снова может дышать.",
+      "cardLabel": "Trim",
+      "prose": "Запустите repo trim, чтобы вернуть освобождённые блоки в общий pool, онлайн, без простоя."
+    },
+    {
+      "id": "tutorial-storage-management-06",
+      "markerIndex": 5,
+      "at": 40.097562,
+      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "afterText": "Политика сохранена. Дальше машина берёт управление на себя.",
+      "cardLabel": "Задать политику",
+      "prose": "Задайте политику размера: автоматическое расширение с явным ограничением и плановый trim."
+    },
+    {
+      "id": "tutorial-storage-management-07",
+      "markerIndex": 6,
+      "at": 50.538253,
+      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "afterText": "Задано один раз, можно спокойно забыть.",
+      "cardLabel": "Проверка политики",
+      "prose": "Прочитайте действующую политику, рост и trim теперь выполняются автоматически."
+    },
+    {
+      "id": "tutorial-storage-management-08",
+      "markerIndex": 7,
+      "at": 57.423655,
+      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "afterText": "Один экран: использование, экономия и запас для роста.",
+      "cardLabel": "Состояние хранилища",
+      "prose": "Проверьте состояние хранилища машины: использование по repo, состояние pool и экономию CoW reflink."
+    }
+  ],
+  "title": "Управление хранилищем",
+  "chapters": {
+    "intro": "Управление хранилищем",
+    "pool-model": "Один pool, растущие repos",
+    "cast-step-0": "Шаг 1: repo заполняется",
+    "cast-step-1": "Шаг 2: расширение онлайн",
+    "cast-step-2": "Шаг 3: проверка нового размера",
+    "cast-step-3": "Шаг 4: удаление данных",
+    "cast-step-4": "Шаг 5: Trim, возврат блоков",
+    "cast-step-5": "Шаг 6: установка политики",
+    "cast-step-6": "Шаг 7: чтение политики",
+    "cast-step-7": "Шаг 8: состояние хранилища",
+    "outro": "На этом серия заканчивается"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Добро пожаловать в последний туториал! Давайте сделаем так, чтобы место на диске у вас больше никогда не заканчивалось. Мы расширим заполненный repository онлайн, вернём удалённое пространство обратно в пул, а потом научим систему делать и то, и другое автоматически."
+    },
+    {
+      "id": "pool-model",
+      "text": "Вот как это устроено. Каждый repository является файлом в одном общем пуле datastore. Repository могут расти онлайн, пока containers продолжают работать. Но удаление данных внутри repo само по себе ничего не освобождает. Именно Trim возвращает блоки обратно в пул. А policy автоматизирует и то, и другое."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Вот и всё, серия завершена! Восемнадцать туториалов, от установки до хранилища на автопилоте. Ваши серверы снова ваши. Спасибо за просмотр!"
+    }
+  ]
+}

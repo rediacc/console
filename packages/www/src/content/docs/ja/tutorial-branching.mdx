@@ -1,0 +1,76 @@
+---
+title: "ブランチ: コミットとロールバック"
+description: "リポジトリの状態を不変のコミットとして固め、ブランチで名前をつけ、任意のコミットを書き込み可能なフォークとしてチェックアウトします。"
+category: "Tutorials"
+subcategory: advanced
+order: 15
+language: ja
+sourceHash: "53f4eacdd4630b19"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# ブランチ: コミットとロールバック
+
+コードのようにリポジトリをバージョン管理します。**コミット**はフォークを不変イメージに固めます。**ブランチ**は名前をつけます。**チェックアウト**は任意のコミットを新しい書き込み可能なフォークに戻します。このチュートリアルでは既知の良い状態をコミットし、実際に PostgreSQL のテーブルを削除して、数秒で全行を復元します。
+
+## チュートリアル動画
+
+![チュートリアル: ブランチ: コミットとロールバック](/assets/tutorials/tutorial-branching.cast)
+
+## モデル
+
+![コミット、ブランチ、チェックアウト](/img/tutorials/tutorial-branching/slide-1.svg)
+
+コミットは決して変わりません。マウントすら拒否します。フォークは待ちません。チェックアウトはほぼ瞬時のリフリンクによるクローンです。完全なメンタルモデルは[ブランチングガイド](/ja/docs/repo-branching)にあります。
+
+## チェックポイントを作る
+
+バージョンを目に見える形にするマーカーファイルと、ロールバックを意味のあるものにする実際のデータベースを用意します。`customers` テーブルには3行が入っています。
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+<TutorialStep number={4} />
+
+コミットはファイルと PostgreSQL のデータディレクトリの両方をキャプチャします。`stable` ブランチがその固定された状態を指します。
+
+## 作業を続ける
+
+<TutorialStep number={5} />
+
+## 災害
+
+危険な変更でテーブルが削除されます。クエリで被害が現実であることが確認されます。
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+`ERROR: relation "customers" does not exist`。3行が消えました。実際の現場ではお腹が沈む瞬間ですが、ここではその後の見せ場への前置きです。
+
+<TutorialStep number={8} />
+
+<TutorialStep number={9} />
+
+履歴には実際に起きたことが記録されます。壊れた状態も含めて：一番上に `v2 risky change`、その下に `v1 baseline`。
+
+## 数秒でロールバックする
+
+<TutorialStep number={10} />
+
+<TutorialStep number={11} />
+
+<TutorialStep number={12} />
+
+<TutorialStep number={13} />
+
+ロールバックフォークは `v1` を読み込み、`customers` テーブルが3行すべて揃って戻ります。ロールバックはファイルだけでなくデータベースを復元しました。何も上書きされていません。作業フォークにはバージョン2がそのまま残っており、動画では両方を VS Code で開いてそれを証明しています。
+
+---
+
+次: [ライブマイグレーション](/ja/docs/tutorial-live-migration)

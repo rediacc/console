@@ -15,7 +15,7 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.626287,
+      "at": 1.617466,
       "text": "First, generate a new SSH key on your laptop. Ed25519 is secure, small, and well supported. You do this once; the same key works for every server you add. This is plain SSH, independent of any tooling here.",
       "afterText": "Key generated. The public half is what we copy to each server.",
       "cardLabel": "Generate Key",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 6.456735,
+      "at": 6.370674,
       "text": "Now authorize the key on your first server with ssh-copy-id. It appends your public key to the server's authorized list, so future logins skip the password.",
       "afterText": "Authorized on the first server. No more password prompts there.",
       "cardLabel": "Authorize Server 1",
@@ -34,7 +34,7 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 13.33617,
+      "at": 13.176828,
       "text": "Do the same for every other server you manage. Here we authorize the second one. Just repeat ssh-copy-id for each machine.",
       "afterText": "Both servers now trust this key. SSH is fully set up.",
       "cardLabel": "Authorize Server 2",

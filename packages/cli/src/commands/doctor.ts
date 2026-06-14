@@ -233,18 +233,18 @@ async function checkMachineCount(checks: CheckResult[]): Promise<void> {
   }
 }
 
-function checkSshKey(checks: CheckResult[], sshKeyPath: string | undefined): void {
-  if (sshKeyPath && existsSync(sshKeyPath)) {
-    checks.push({ name: t('commands.doctor.checks.sshKey'), value: sshKeyPath, status: 'ok' });
+function checkSshKey(checks: CheckResult[], hasInlineKey: boolean): void {
+  // Keys live inline in the config (credentials.ssh.privateKey) — written by
+  // `config init --ssh-key` / `config ssh set`. There is no path to stat.
+  if (hasInlineKey) {
+    checks.push({ name: t('commands.doctor.checks.sshKey'), value: '(inline)', status: 'ok' });
     return;
   }
   checks.push({
     name: t('commands.doctor.checks.sshKey'),
-    value: sshKeyPath ?? t('commands.doctor.notConfigured'),
-    status: sshKeyPath ? 'fail' : 'warn',
-    hint: sshKeyPath
-      ? `SSH key not found at: ${sshKeyPath}`
-      : 'Set SSH key during config init: rdc config init --name <name> --ssh-key <path>',
+    value: t('commands.doctor.notConfigured'),
+    status: 'warn',
+    hint: 'Set SSH key during config init: rdc config init --name <name> --ssh-key <path>',
   });
 }
 
@@ -270,7 +270,7 @@ async function checkConfiguration(): Promise<CheckSection> {
   });
   if (!isCloud) {
     await checkMachineCount(checks);
-    checkSshKey(checks, context?.credentials?.ssh?.privateKey ? '(inline)' : undefined);
+    checkSshKey(checks, Boolean(context?.credentials?.ssh?.privateKey));
   }
   return { title: t('commands.doctor.sections.configuration'), checks };
 }

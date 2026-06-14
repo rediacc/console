@@ -1,7 +1,7 @@
 {
   "version": 1,
   "tutorial": "tutorial-forking",
-  "nextTutorialKey": "tutorial-managing-secrets",
+  "nextTutorialKey": "tutorial-fork-isolation",
   "scenes": [
     {
       "id": "intro",
@@ -60,7 +60,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc term connect -m my-server -r my-app -c 'ls -la index.html'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la index.html' 2>/dev/null"
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la index.html'"
       }
     },
     {
@@ -78,7 +78,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc term connect -m my-server -r my-app:experiment -c 'rm index.html && echo removed'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app:experiment --command 'rm index.html && echo removed' 2>/dev/null"
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app:experiment --command 'rm index.html && echo removed'"
       }
     },
     {
@@ -89,7 +89,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc term connect -m my-server -r my-app -c 'ls -la index.html'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la index.html' 2>/dev/null"
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la index.html'"
       }
     },
     {

@@ -5,8 +5,8 @@ description: >-
 category: Guides
 order: 5
 language: ko
-sourceHash: "aa77a4f937206e58"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "011bc5d87114f105"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # 서비스
@@ -76,6 +76,25 @@ down() {
 ```
 
 > **중요:** `docker compose` 대신 항상 `renet compose --`를 사용하십시오. `renet compose` 래퍼는 renet-proxy에서 필요한 호스트 네트워킹, IP 할당, 서비스 검색 레이블을 적용합니다. CRIU 체크포인트/복원 기능은 `rediacc.checkpoint=true` 레이블이 있는 컨테이너에 추가됩니다. 직접 `docker compose` 사용은 Rediaccfile 유효성 검사에서 거부됩니다. 자세한 내용은 [네트워킹](/en/docs/networking)을 참조하십시오.
+
+### 기능 레이블
+
+컨테이너는 기본적으로 최소한의 Linux 기능 세트로 실행됩니다. 서비스가 추가 기능을 사용하려면 `docker-compose.yml`에 레이블을 추가해 명시적으로 선택해야 합니다:
+
+| 레이블 | 부여하는 권한 | 용도 |
+|-------|--------|---------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` | CRIU 체크포인트/복원 (라이브 마이그레이션, 저장 및 재개) |
+| `rediacc.wireguard=true` | `NET_ADMIN`과 `/dev/net/tun` 장치 | 컨테이너 내부에서 WireGuard 클라이언트 실행 |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard`를 사용하면 서비스가 WireGuard 터널을 구성할 수 있습니다. 예를 들어 특정 프로세스의 트래픽을 원격 엔드포인트를 통해 라우팅할 때 유용합니다. 모든 서비스는 호스트 네트워킹으로 실행되므로, 호스트 라우팅에 영향을 주지 않도록 터널은 컨테이너 내부 네트워크 네임스페이스에 한정해야 합니다. `privileged: true`, `pid: host`, `ipc: host`와 같은 광범위한 특권 옵션은 레이블 여부와 관계없이 유효성 검사에서 계속 거부됩니다.
 
 ### 다중 서비스 레이아웃
 

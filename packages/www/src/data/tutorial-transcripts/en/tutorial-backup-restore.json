@@ -10,13 +10,16 @@
     "cast-step-1": "Step 2: List configured storages",
     "cast-step-2": "Step 3: Push a full backup",
     "cast-step-3": "Step 4: List backups on the storage",
-    "outro": "Next: Monitoring"
+    "outro": "Next: Networking & Domains",
+    "cast-step-4": "Step 5: Take the repo offline",
+    "cast-step-5": "Step 6: Pull the backup back",
+    "cast-step-6": "Step 7: Mount — restored"
   },
   "events": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.424169,
+      "at": 2.409089,
       "text": "Step one. We will import an existing rclone configuration. rclone supports S3, Backblaze, Google Drive, Dropbox, and many more. If you already use it, the same config imports directly.",
       "afterText": "Storage imported. Your CLI can now push backups to it.",
       "cardLabel": "Import Storage",
@@ -25,7 +28,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.651448,
+      "at": 6.555802,
       "text": "Let us list the storages the CLI now knows about. Each one is a destination we can push backups to.",
       "afterText": "There it is. Ready to receive backups.",
       "cardLabel": "List Storages",
@@ -34,7 +37,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.354487,
+      "at": 10.251839,
       "text": "Step two. Push a full backup. The entire repository, app, database, files, configuration, is uploaded. Because the repository is encrypted at rest, the backup is encrypted too. No extra key management.",
       "afterText": "Backup uploaded. Everything in this repo is now on the remote storage, encrypted.",
       "cardLabel": "Push Backup",
@@ -43,11 +46,38 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 18.28182,
+      "at": 24.484571,
       "text": "And the backups available on this storage. From here, restore on a brand new server is one command: the repo pull command.",
       "afterText": "All your snapshots in one place. Pull any of them back with a single command.",
       "cardLabel": "List Backups",
       "prose": "List the backups available on this storage. Restoring on a brand new server is one command: the repo pull command."
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "at": 31.133919,
+      "text": "Now the restore proof. First take the repository offline: stop the services and unmount the encrypted volume. The app is gone from this machine.",
+      "afterText": "Offline and unmounted — exactly the state of a fresh server.",
+      "cardLabel": "Take Offline",
+      "prose": "Take the repository offline first: stop the services and unmount the encrypted volume with the repo down command."
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "at": 39.135694,
+      "text": "And pull the backup straight back from the storage. The repo pull command fetches the image, checks its integrity, and puts it exactly where it was.",
+      "afterText": "Transfer complete, integrity verified. The repository is back.",
+      "cardLabel": "Pull Backup",
+      "prose": "Pull the backup back from the storage with the repo pull command. The image is fetched and integrity-checked."
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "at": 48.126162,
+      "text": "Mount it again, and the repository is restored. Push, list, pull — that is the whole backup story.",
+      "afterText": "Restored. The same flow works on a brand new machine too.",
+      "cardLabel": "Mount Restored",
+      "prose": "Mount the repository again — it is fully restored. The same pull works on a brand new machine."
     }
   ],
   "narrations": [

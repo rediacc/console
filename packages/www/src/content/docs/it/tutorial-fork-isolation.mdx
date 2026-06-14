@@ -1,0 +1,52 @@
+---
+title: "L'Isolamento del Fork in Azione"
+description: "Fai il fork di un'app live PostgreSQL + pgAdmin e modificala affiancata all'originale: la prova visiva che i fork sono indipendenti."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: it
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# L'Isolamento del Fork in Azione
+
+Il [tutorial sul fork](/it/docs/tutorial-forking) ha mostrato i comandi. Questo mostra cosa significano: un'app database live, copiata in pochi secondi, modificata liberamente nel browser, mentre l'originale non si accorge di nulla.
+
+## Guarda il tutorial
+
+![Tutorial: L'isolamento del fork in azione](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## La configurazione
+
+![Un database live e il suo gemello](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+Un PostgreSQL reale con un'interfaccia pgAdmin, live sul server. Un fork è una copia copy-on-write istantanea di tutto questo: stessi dati alla nascita, vite completamente separate dopo.
+
+## Passo 1: L'app live
+
+<TutorialStep number={1} />
+
+## Passo 2: Fai il fork
+
+<TutorialStep number={2} />
+
+Il video apre entrambi i pgAdmin nel browser. L'originale chiede il login, perche la produzione rimane protetta. Il fork si apre direttamente nel workbench: i fork sono sandbox usa e getta, quindi il controllo di accesso si fa da parte (il repo lo decide da solo, in base al fatto che sia un fork o no).
+
+## Passo 3: Due mondi, un server
+
+<TutorialStep number={3} />
+
+Modifica, elimina, rompi qualsiasi cosa nel fork. L'originale continua a servire. Stesse tabelle al momento del fork, indipendenti per sempre dopo.
+
+## Passo 4: Buttalo via
+
+<TutorialStep number={4} />
+
+Secondi per crearlo, secondi per eliminarlo. Questo è ciò che rende "clona la produzione, non rompere nulla" un'abitudine quotidiana invece di un evento speciale.
+
+---
+
+Successivo: [Gestione dei Segreti](/it/docs/tutorial-managing-secrets).

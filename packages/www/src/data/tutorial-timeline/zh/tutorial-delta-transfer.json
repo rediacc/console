@@ -1,0 +1,88 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e6e4bc78b0cc8fbecbe62c8aebe263a276f88acedb2ec73e188516d7d2d5eb29",
+  "steps": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413668,
+      "replayEndSec": 10.922135,
+      "narrationText": "第一次推送到另一台机器会传输完整镜像，输出结果写得很清楚：传输了两 GB，标记为 full。这就是基准线。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/tutorial-delta-transfer-01.f35efc07.mp3",
+      "textHash": "f35efc0767c3ac1d7674b8d889f26f0918ff759e115c4c3ba0d033697a8cab8c",
+      "audioDurationSec": 12.512653,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/tutorial-delta-transfer-01-after.b0e83715.mp3",
+      "afterAudioDurationSec": 8.986122,
+      "afterTextHash": "b0e8371529991f8695a15fbae401babfd4f50f61d0685dbadff2c9bf476fc36f"
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.922135,
+      "replayEndSec": 21.404869,
+      "narrationText": "修改少量数据：两 GB 中的 50 MB。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/tutorial-delta-transfer-02.f8ab622b.mp3",
+      "textHash": "f8ab622b9192ec57b7c315f66b541e1937dd3b11eab4320f0e331778aabe922b",
+      "audioDurationSec": 4.362449,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/tutorial-delta-transfer-02-after.add5dfaf.mp3",
+      "afterAudioDurationSec": 2.037551,
+      "afterTextHash": "add5dfafc5b62134fda063e27078c3776f833b7fd7ae4b80956127de6e172d79"
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "replayStartSec": 21.404869,
+      "replayEndSec": 29.764702,
+      "narrationText": "再次推送。命令一模一样，但这次看看输出：约 50 MB 已传输，标记为 delta，对比的是两 GB 的镜像。只有发生变化的块被传输了。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/tutorial-delta-transfer-03.970f9967.mp3",
+      "textHash": "970f9967d5c3db0f352a71f0549c8ca81eb261141d786c487d934118b2ff126c",
+      "audioDurationSec": 12.199184,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/tutorial-delta-transfer-03-after.ef77bf48.mp3",
+      "afterAudioDurationSec": 5.564082,
+      "afterTextHash": "ef77bf489ae349463ce325b24fc6d6d0626a7f37ab61cacc48cf7de933132cdf"
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.764702,
+      "replayEndSec": 34.159829,
+      "narrationText": "两台机器都保有相同的 repository，几秒内完成同步。如果你愿意，每小时运行一次也没问题，费用取决于变更量，而不是总大小。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/tutorial-delta-transfer-04.e569d518.mp3",
+      "textHash": "e569d518b624104b024ff4522c68e84c9ab2d5229c75bce75cb7e88270273891",
+      "audioDurationSec": 12.199184,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/tutorial-delta-transfer-04-after.d98433ee.mp3",
+      "afterAudioDurationSec": 2.037551,
+      "afterTextHash": "d98433ee436c998b8f0787e15472aeae2ca06569ba7c858aded7810f72934b03"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "047caec8119e100303896a8b4e81faf7073c1767c2577ee6ec3eb25135511792",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/intro.047caec8.mp3",
+      "narrationText": "来做一个有趣的实验。我们会把一个包含约 1 GB 数据的 repository 推送到另一台机器两次。第一次推送传输全部内容，第二次只传输变更的部分。注意看数字，push 命令会精确显示传输了多少数据。",
+      "audioDurationSec": 17.475918
+    },
+    {
+      "id": "blocks-not-bytes",
+      "textHash": "1c8b8d27859be60a7181bfe6eac27b93da3990c2d368a61c31b0eed308a1d53f",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/blocks-not-bytes.1c8b8d27.mp3",
+      "narrationText": "诀窍在于初始设置。第一次推送之后，CLI 会在两台机器上各保留一份相同的不可变基础镜像。下一次推送时，系统将块与该基础镜像进行比较，只发送差异部分。不需要任何标志，不需要任何记录，用的就是同一个 push 命令。",
+      "audioDurationSec": 23.405714
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "d166f338902044d11bf282cd61e25c4eeee536519c30c1ff8914ed0b8a253c2a",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-delta-transfer/next-tutorial.d166f338.mp3",
+      "narrationText": "第一次之后，每次小改动都意味着小传输。现在只剩最后一个教程了：确保你永远不会耗尽磁盘空间。最后一期见！",
+      "audioDurationSec": 10.109388
+    }
+  ]
+}

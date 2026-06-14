@@ -7,17 +7,17 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "253242f083e3fb4bedad89d1e2a7411afe2f0fe1f1e18f0fc207220f915fc158",
+  "transcriptHash": "4cb6753f62fc214996004f354304b2d19ae1eae92abc5c4b255f4458afcb6191",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 2.40432,
-      "replayEndSec": 6.041569,
-      "narrationText": "Шаг первый. Выводим список доступных шаблонов. Rediacc поставляется с готовыми конфигурациями для популярных приложений: Postgres, Redis, веб-серверы — чтобы не писать docker compose точка yml с нуля.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-01.3d1487f1.mp3",
-      "textHash": "3d1487f1667ab436cd5860f133de9d08957c8365eb041a3be2f9fafce400ea1b",
-      "audioDurationSec": 13.244082,
+      "replayStartSec": 2.408078,
+      "replayEndSec": 6.077084,
+      "narrationText": "Шаг первый: посмотрим список доступных шаблонов. Rediacc поставляется с готовыми настройками для популярных приложений, так что писать docker-compose с нуля не нужно.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-01.aab482f4.mp3",
+      "textHash": "aab482f4dd76b5536071a1398cca39609772b2930fbc490463a4892a4ad28980",
+      "audioDurationSec": 11.546122,
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-01-after.9e95be3b.mp3",
       "afterAudioDurationSec": 5.146122,
       "afterTextHash": "9e95be3b02fa84f843e96678039c79d188809652d1ad0c55a5f5a90debcea73b"
@@ -25,12 +25,12 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 6.041569,
-      "replayEndSec": 13.566247,
-      "narrationText": "Шаг второй. Применяем шаблон app-postgres к репозиторию. Появляются два файла: docker compose точка yml с описанием контейнеров и Rediaccfile с хуками запуска и остановки.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-02.c1368d91.mp3",
-      "textHash": "c1368d9106318edd74c7475496e0f7601976e448cd7167e132d42263ad234fd8",
-      "audioDurationSec": 12.59102,
+      "replayStartSec": 6.077084,
+      "replayEndSec": 14.72542,
+      "narrationText": "Шаг второй: добавляем шаблон app-postgres в репозиторий. Проверенный набор файлов, скопированный прямо внутрь.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-02.6a11011e.mp3",
+      "textHash": "6a11011eae46bbf27eaab9aaf2a30f4e396cdf64db74c4e1a816d3b41fce925e",
+      "audioDurationSec": 7.627755,
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-02-after.76d9dd74.mp3",
       "afterAudioDurationSec": 6.844082,
       "afterTextHash": "76d9dd7487d7595f94e830f66a6dd977ca886aff6a5616ab82001084fe8cf5c2"
@@ -38,12 +38,12 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 13.566247,
-      "replayEndSec": 23.282435,
-      "narrationText": "Шаг третий. Запускаем репозиторий. CLI стартует контейнеры, монтирует зашифрованный том и подключает изолированный Docker-демон. Приложение уже работает.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-03.fa8993cf.mp3",
-      "textHash": "fa8993cf4b82c880933cc4543bd751dbc2e2060805b4d7d5414515a114124104",
-      "audioDurationSec": 11.075918,
+      "replayStartSec": 14.72542,
+      "replayEndSec": 21.699752,
+      "narrationText": "Заглянем внутрь репозитория и посмотрим, что там появилось: Rediaccfile с хуками запуска и остановки, и файл docker-compose, описывающий контейнеры.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-03.58618e8f.mp3",
+      "textHash": "58618e8f51a235c0484b16ab1fd741ea70ac18972678a5d99f10598c8883f4e0",
+      "audioDurationSec": 11.154286,
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-03-after.b9f6273d.mp3",
       "afterAudioDurationSec": 5.250612,
       "afterTextHash": "b9f6273d0288cec5d57552e6bb2038669b96c927a7137711bd4b8adecb6bd7e2"
@@ -51,12 +51,12 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 23.282435,
-      "replayEndSec": 30.345778,
-      "narrationText": "Проверяем с помощью docker ps. Обратите внимание: этот вид показывает только контейнеры нашего репозитория. У других репозиториев на том же сервере собственные Docker-демоны, отсюда они полностью невидимы.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-04.ab20eefb.mp3",
-      "textHash": "ab20eefbe32770c6882a511318e29cc49634557156928a75e83da3f02da50dc6",
-      "audioDurationSec": 14.210612,
+      "replayStartSec": 21.699752,
+      "replayEndSec": 28.8781,
+      "narrationText": "Шаг третий: запускаем репозиторий. Одна команда, и CLI монтирует зашифрованный том, запускает изолированный Docker daemon и поднимает контейнеры.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-04.6ea0ebd9.mp3",
+      "textHash": "6ea0ebd930b69b76139835fceba1d3574f2660a26e6efb831230c8b3cfb67cdb",
+      "audioDurationSec": 9.639184,
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-04-after.581a218a.mp3",
       "afterAudioDurationSec": 6.269388,
       "afterTextHash": "581a218a7651eb03d85c6073ddff5d8e5bce0c753563b5e5e079a66bd06d3c9a"
@@ -64,12 +64,12 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "replayStartSec": 30.345778,
-      "replayEndSec": 38.921409,
-      "narrationText": "Давайте проверим, что запущено. docker ps здесь показывает только контейнеры этого repo. Другие repos на том же сервере имеют собственные daemons и полностью невидимы из этого представления.",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-05.49380350.mp3",
-      "textHash": "49380350a39ac981a94d36eb500a5851dab363c027ec31340c0a4a150f149e6c",
-      "audioDurationSec": 11.467755,
+      "replayStartSec": 28.8781,
+      "replayEndSec": 34.846304,
+      "narrationText": "Проверяем, что работает. Docker ps здесь показывает только контейнеры этого репозитория. У каждого другого репозитория на этом сервере свой daemon, полностью невидимый отсюда.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-05.be6597db.mp3",
+      "textHash": "be6597dbe116886c7e26bdb46cc29e707592a24f03df162bca70f344b72d40df",
+      "audioDurationSec": 10.109388,
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/tutorial-deploy-app-05-after.c73a4c9a.mp3",
       "afterAudioDurationSec": 6.922449,
       "afterTextHash": "c73a4c9a6607cfb83bd9bd649d44eeee1f0b20d266a83df05a282a458ec18ca5"
@@ -78,10 +78,10 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "185070d50105a0f82f5d509adebcaf97cc04dc977c7c303ecc1e2484cc496e85",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/intro.185070d5.mp3",
-      "narrationText": "Пора развернуть настоящее приложение! Пройдём путь от пустого репозитория до запущенных контейнеров за три коротких шага.",
-      "audioDurationSec": 10.370612
+      "textHash": "daaa90112f6c0b9e5308db272fca2bf8dc20cd88a2c248b9d8783233e9b6a9cf",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/intro.daaa9011.mp3",
+      "narrationText": "Время развернуть настоящее приложение! От пустого репозитория до работающих контейнеров за три шага: выбрать, применить, запустить.",
+      "audioDurationSec": 10.03102
     },
     {
       "id": "pick-apply-run",
@@ -89,6 +89,13 @@
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/pick-apply-run.4d6f807e.mp3",
       "narrationText": "Схема проста: выбрать шаблон, применить его к репозиторию и запустить. В CLI встроены шаблоны, поэтому docker-compose писать с нуля не нужно.",
       "audioDurationSec": 11.885714
+    },
+    {
+      "id": "vscode-file-tour",
+      "textHash": "dcf43984da95f292d23bfd0b26769417f36d04c8f7089260218581efb03545cf",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-deploy-app/vscode-file-tour.dcf43984.mp3",
+      "narrationText": "Предпочитаете редактор вместо cat? Те же файлы открываются в VS Code прямо из браузера. Вот Rediaccfile, а рядом compose-файл. Мы подробно разберём эту настройку в следующем уроке.",
+      "audioDurationSec": 13.87102
     },
     {
       "id": "next-tutorial",

@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "en",
+  "version": 1,
+  "title": "Fork Isolation in Action",
+  "chapters": {
+    "intro": "Fork Isolation in Action",
+    "what-is-a-fork": "A live database and its twin",
+    "cast-step-0": "Step 1: The live app",
+    "grand-pgadmin": "The original, guarded",
+    "cast-step-1": "Step 2: Fork it",
+    "fork-pgadmin": "The fork, wide open",
+    "side-by-side": "Side by side",
+    "cast-step-2": "Step 3: Two repos, one server",
+    "cast-step-3": "Step 4: Throw the fork away",
+    "outro": "Next: Managing Secrets"
+  },
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "One live repo. Let's clone it.",
+      "cardLabel": "Live App",
+      "prose": "Start from a live repository: a PostgreSQL database with pgAdmin running on the machine."
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "Forked and starting. The data did not get copied — it got shared, until one side changes it.",
+      "cardLabel": "Fork + Up",
+      "prose": "Fork the repository with --up --detach: the CoW clone is near-instant and the fork's services start immediately."
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "Same machine, two isolated worlds.",
+      "cardLabel": "Side by Side",
+      "prose": "List the repositories: the original and the fork run side by side, fully isolated."
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "Gone. The original kept serving the whole time.",
+      "cardLabel": "Delete Fork",
+      "prose": "Delete the fork when you are done. The original repository is untouched."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Welcome back! Last time you saw the fork commands. Now let's watch what they actually mean: a live database app, copied in seconds, edited freely, while the original never notices a thing."
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "Here's the setup: a real PostgreSQL with a pgAdmin interface on top, live on the server. A fork is an instant copy-on-write twin of all of it. Same data at birth, completely separate lives after."
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "This is the original, in the browser. pgAdmin asks for a login, because it's the production copy, and production stays guarded. Once we're in, let's open the query tool and look at the data: a tasks table with four real rows."
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "And here's the fork's pgAdmin. No login this time: forks are disposable sandboxes, so the gate steps aside. Run the same query, and there they are, the same four tasks. The fork inherited every row."
+    },
+    {
+      "id": "side-by-side",
+      "text": "Now side by side: the fork on the left, the original on the right. Watch this. On the fork, we drop the entire tasks table. Gone, the query now errors. Then we re-run the query on the original: all four rows, untouched. That's isolation you can see."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "So fork freely, production can't get hurt. Next up, we look at secrets, the one thing your forks deliberately don't inherit. See you there!"
+    }
+  ]
+}

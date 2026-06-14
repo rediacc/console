@@ -338,6 +338,11 @@ export function compileCastFreeze(scene: CastFreezeScene, ctx: SceneContext): st
   const prevAnimSeg = ctx.chunks[ctx.chunks.length - 1];
   if (!prevAnimSeg)
     throw new Error(`cast-freeze ${scene.id}: no preceding scene to extract last frame from`);
+  if (prevAnimSeg.startsWith('__deferred__')) {
+    throw new Error(
+      `cast-freeze ${scene.id}: cannot directly follow a browser scene — its frame is not available until sessions close`
+    );
+  }
   const png = path.join(ctx.tmp, `${scene.id}.png`);
   const mp4 = path.join(ctx.tmp, `${scene.id}.mp4`);
   extractLastFrame(prevAnimSeg, png);

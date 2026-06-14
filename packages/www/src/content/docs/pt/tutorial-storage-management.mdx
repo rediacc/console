@@ -1,0 +1,58 @@
+---
+title: "Gestão de Armazenamento"
+description: "Expanda repositórios online sem tempo de inatividade, recupere espaço eliminado com trim, e delegue ambas as tarefas a uma política automática."
+category: "Tutorials"
+subcategory: advanced
+order: 18
+language: pt
+sourceHash: "cab2a40cd120e352"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Gestão de Armazenamento
+
+Nunca mais fique sem disco. Expanda um repositório cheio enquanto os seus contentores continuam a correr, devolva blocos eliminados ao pool e ensine a máquina a fazer os dois automaticamente.
+
+## Ver o tutorial
+
+![Tutorial: Storage management](/assets/tutorials/tutorial-storage-management.cast)
+
+## Um pool, repositórios em crescimento
+
+![One pool, growing repos](/img/tutorials/tutorial-storage-management/slide-1.svg)
+
+Cada repositório é um ficheiro num pool de armazenamento partilhado. Os repositórios crescem online; eliminar dados dentro de um repositório não liberta nada por si só. O **trim** é o que devolve blocos ao pool.
+
+## Expandir online, sem tempo de inatividade
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## Recuperar com trim
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+## Colocar no piloto automático
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+A máquina expande agora o repositório quando ultrapassa o limiar (até ao teto explícito definido) e aplica o trim de acordo com o calendário, gerido pelo temporizador storage-maintain, sem cron próprio.
+
+## A vista de saúde
+
+<TutorialStep number={8} />
+
+Uso por repositório, estado do pool e quanto a partilha copy-on-write poupa, num único comando.
+
+## Concluído
+
+Dezoito tutoriais: instalar, ligar, implementar, editar em qualquer lugar, criar forks sem receio, manter segredos em segurança, fazer backup a sério, passar para produção, monitorizar, versionar, migrar, sincronizar e nunca ficar sem disco. Os seus servidores voltaram a ser seus.

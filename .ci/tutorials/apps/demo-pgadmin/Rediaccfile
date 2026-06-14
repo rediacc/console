@@ -1,0 +1,82 @@
+#!/bin/bash
+# Demo app for the fork-isolation tutorial: PostgreSQL + pgAdmin.
+#
+# Auth follows the fork-aware pattern from the public demo-stackoverflow
+# repo: the grand runs pgAdmin in server mode (email+password login), forks
+# are disposable sandboxes and run desktop mode (auto-login, no prompt).
+#
+# Fork detection: prefer the tag embedded in REDIACC_REPO_NAME
+# ("demo-pgadmin:experiment" => fork) because every renet generation sets
+# it, then REDIACC_REPO_TAG, then the managed .envrc in the repo root.
+# Relying on REDIACC_REPO_TAG alone is fragile: older renet builds do not
+# set it, and the lab machine's renet can be re-seeded by concurrent
+# sessions, silently flipping forks back to server mode.
+_repo_tag() {
+    local name
+    name="${REDIACC_REPO_NAME:-}"
+    if [ -z "$name" ]; then
+        name="$(sed -n 's/^export REDIACC_REPO_NAME="\(.*\)"$/\1/p' "$(dirname "${BASH_SOURCE[0]}")/.envrc" 2>/dev/null | head -1)"
+    fi
+    case "$name" in
+    *:*)
+        printf '%s\n' "${name##*:}"
+        ;;
+    *)
+        printf '%s\n' "${REDIACC_REPO_TAG:-latest}"
+        ;;
+    esac
+}
+
+_apply_auth_mode() {
+    if [ "$(_repo_tag)" = "latest" ]; then
+        export PGADMIN_SERVER_MODE="True"
+        export PGADMIN_MASTER_PASSWORD_REQUIRED="True"
+    else
+        export PGADMIN_SERVER_MODE="False"
+        export PGADMIN_MASTER_PASSWORD_REQUIRED="False"
+    fi
+}
+
+# pgAdmin's config DB is auth-mode specific and forks flip the mode, so the
+# CoW-inherited data dir must be reset when the mode changes. The entrypoint
+# rebuilds it from servers.json (slow first boot — the compose healthcheck's
+# start_period covers it). A marker file records the mode the data dir was
+# built for, so repeated ups in the same mode skip the reset: it would
+# otherwise wipe the config DB underneath a running pgAdmin and cost ~100s
+# of rebuild on every idempotent staging run.
+#
+# servers.json points PassFile at /pgpass. In desktop mode (forks) pgAdmin
+# uses that literal path (a compose config mount). In SERVER mode (grand)
+# pgAdmin only honors passfiles inside the user's storage directory, so we
+# pre-seed storage/<user>/pgpass — without it, expanding the server node
+# pops a password prompt instead of connecting.
+_reset_pgadmin_data() {
+    local dir storage marker
+    dir="$(dirname "${BASH_SOURCE[0]}")"
+    marker="$dir/pgadmin-data/.rediacc-auth-mode"
+    if [ "$(cat "$marker" 2>/dev/null)" = "$PGADMIN_SERVER_MODE" ]; then
+        return 0
+    fi
+    rm -rf "$dir/pgadmin-data"
+    storage="$dir/pgadmin-data/storage/admin_demo.dev"
+    mkdir -p "$storage"
+    printf 'db:5433:*:demo:demo\n' >"$storage/pgpass"
+    chmod 600 "$storage/pgpass"
+    printf '%s\n' "$PGADMIN_SERVER_MODE" >"$marker"
+    chown -R 5050:5050 "$dir/pgadmin-data"
+    chmod 700 "$dir/pgadmin-data"
+}
+
+up() {
+    _apply_auth_mode
+    _reset_pgadmin_data
+    renet compose -- up -d
+}
+
+down() {
+    renet compose -- down
+}
+
+info() {
+    renet compose -- ps
+}

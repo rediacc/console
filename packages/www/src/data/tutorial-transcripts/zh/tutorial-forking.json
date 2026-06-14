@@ -6,7 +6,7 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 2.41277,
+      "at": 2.422355,
       "text": "让我们 fork 这个仓库。一条命令克隆了一切，应用、数据库、配置文件，只用了几秒，无论仓库有多大都一样。1 GB、100 GB、1 TB，每次时间相同。",
       "afterText": "fork 完成。克隆已启动并运行，无论大小如何。",
       "cardLabel": "Fork Repo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 13.421721,
+      "at": 12.478171,
       "text": "现在两个仓库并排运行。相同的机器，相同的磁盘，两个完全独立的环境。fork 有自己的容器、自己的文件系统和自己的 Docker 守护进程。",
       "afterText": "两个 repo，一个磁盘。相同的数据，其他一切都独立。",
       "cardLabel": "列出 Repo",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 18.980206,
+      "at": 18.050071,
       "text": "让我们来证明隔离性。在原始仓库中，我们的标记文件还在原来的位置。fork 的存在没有对父仓库造成任何影响。",
       "afterText": "原始文件还在。fork 没有触碰它。",
       "cardLabel": "原始文件",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 26.216902,
+      "at": 25.352583,
       "text": "现在让我们删除那个文件，但只在 fork 内部删除。在 fork 里它已经消失了，我们做了一个破坏性的操作，它留在了 fork 之内。",
       "afterText": "在 fork 中已消失。原始仓库保持不变。",
       "cardLabel": "在 Fork 中删除",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 34.456769,
+      "at": 33.706234,
       "text": "回到原始仓库。标记文件还在这里，完好无损。原始仓库从不知道发生了什么。相同的镜像，独立的 Docker 守护进程，独立的文件系统。",
       "afterText": "依然在。fork 的隔离是真实的。",
       "cardLabel": "原始完好",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 41.647526,
+      "at": 41.0794,
       "text": "完成后，直接删除 fork。原始仓库保持原样。Fork、实验、破坏、删除，零风险。",
       "afterText": "fork 已移除。原始仓库与我们离开时一模一样。",
       "cardLabel": "清理",
@@ -89,7 +89,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "fork 故意把密钥留在原地，这正是 “克隆生产环境而不破坏任何东西” 真正安全的原因。我们将在下个教程中正确配置它们！"
+      "text": "你刚刚看了那些命令。接下来我们让它直观起来：一个真实的数据库应用，实时 fork，并排编辑，而原始环境始终纹丝不动。"
     }
   ],
   "title": "Fork 一个 Repository",
@@ -107,6 +107,6 @@
     "cast-step-5": "第六步：删除 fork",
     "river-photo": "河流的一张照片",
     "flat-disk": "磁盘用量保持平稳",
-    "outro": "下一步：管理 Secrets"
+    "outro": "下一章：fork 隔离实战"
   }
 }

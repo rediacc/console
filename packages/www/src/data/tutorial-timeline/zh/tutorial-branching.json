@@ -1,0 +1,212 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d076fc7979d2884220013b7c5acebc1d58edb99648c1877851a44bb39006ea02",
+  "steps": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.418102,
+      "replayEndSec": 10.876025,
+      "narrationText": "我们的工作 fork 保存着应用状态的第一个版本，一个简单的标记文件让它清晰可见。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-01.cd14ba33.mp3",
+      "textHash": "cd14ba33c27e695bfb66da1c20236f8d818e12577c1ab0ca3e7a131a9ea817f2",
+      "audioDurationSec": 7.47102,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-01-after.537bae3c.mp3",
+      "afterAudioDurationSec": 2.429388,
+      "afterTextHash": "537bae3ce9d845e94a14ce9828d4751b4c9a192bbe11ec6df42ca4a87cadd5ec"
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.876025,
+      "replayEndSec": 20.708803,
+      "narrationText": "不只是文件。这个 fork 里还运行着一个真实的 PostgreSQL 数据库，customers 表中有三行数据。记住这个数字。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-02.297f9a30.mp3",
+      "textHash": "297f9a300eb42f53bff516a1515aec82a7d531860ced627a683ed6b808007a5b",
+      "audioDurationSec": 10.187755,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-02-after.d2956eb4.mp3",
+      "afterAudioDurationSec": 3.709388,
+      "afterTextHash": "d2956eb460bfb27a8ed3cc56bff0a46f28b22bd91f7c85f08527d1e9ee22612d"
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "replayStartSec": 20.708803,
+      "replayEndSec": 29.448478,
+      "narrationText": "冻结它。commit 将整个 repository 捕获为一个不可变的镜像，包含提交信息、作者和父提交。和 git 一模一样，但涵盖所有内容，包括数据库。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-03.8328cc67.mp3",
+      "textHash": "8328cc67fb6426a5e506051519af4a96abc9e228999c23cbf88a3bc85575efcd",
+      "audioDurationSec": 13.949388,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-03-after.a44faeff.mp3",
+      "afterAudioDurationSec": 4.91102,
+      "afterTextHash": "a44faefff8b6a511cbb4159bcb8c829a34212368f078d0b095289ab18f1ff35f"
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.448478,
+      "replayEndSec": 34.241982,
+      "narrationText": "给这次提交起个名字。stable 分支现在指向第一个版本。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-04.b9ad3f39.mp3",
+      "textHash": "b9ad3f3932204bbb177a8457c6eba2bdf7ec11a990837b20bd96a954dc600dd9",
+      "audioDurationSec": 4.597551,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-04-after.1233541d.mp3",
+      "afterAudioDurationSec": 2.507755,
+      "afterTextHash": "1233541db510108566186502e3c26522dd1a5db88a30e9bad2805b54eb777543"
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "replayStartSec": 34.241982,
+      "replayEndSec": 42.690283,
+      "narrationText": "继续工作。工作 fork 中第二个版本取代了第一个版本，已有的提交不受影响。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-05.b7ac3dc5.mp3",
+      "textHash": "b7ac3dc54326c0fde816126d68360e8c2f795017527541c78ca6084916106ab7",
+      "audioDurationSec": 6.112653,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-05-after.b36e0d43.mp3",
+      "afterAudioDurationSec": 2.925714,
+      "afterTextHash": "b36e0d4347607ba501748f3cf480e731a4699964b24abde2fdb3074234c92b37"
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "replayStartSec": 42.690283,
+      "replayEndSec": 51.047933,
+      "narrationText": "灾难来了。这个危险的操作删除了 customers 表。在现实中，这就是你心头一沉的那一刻。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-06.a007fd61.mp3",
+      "textHash": "a007fd61d878c0585f011fcb17818b7a5f6e4b4cf3ce78a7ddbba007c883afef",
+      "audioDurationSec": 7.47102,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-06-after.3d809bac.mp3",
+      "afterAudioDurationSec": 6.269388,
+      "afterTextHash": "3d809bacbd0cdaacd5d650e40e16900e5ccd63e70ac6062c775825612e2f9af6"
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "replayStartSec": 51.047933,
+      "replayEndSec": 59.69522,
+      "narrationText": "再次查询这些行，数据库直接告诉你：relation customers does not exist。灾难是真实的，每一行数据都消失了。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-07.44a3bce7.mp3",
+      "textHash": "44a3bce711e9aa3a9d4cb5598439d795b0a4c692b9c72651d6401580d9f3dc50",
+      "audioDurationSec": 8.594286,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-07-after.78eeece1.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "78eeece1b604014b21da62f5ef2395d31f4c3a5c4d573b26e3c4fdeba61c66f8"
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "replayStartSec": 59.69522,
+      "replayEndSec": 68.35661,
+      "narrationText": "也将这个危险的变更提交，包括损坏的表。历史记录了实际发生的事情。现在有两次提交，一个父提交和一个子提交。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-08.6badb0b5.mp3",
+      "textHash": "6badb0b5fcbafa8f0c32ef13a6374c655345cb914a39aa45049dbc15c24e099f",
+      "audioDurationSec": 12.120816,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-08-after.1f4af883.mp3",
+      "afterAudioDurationSec": 2.037551,
+      "afterTextHash": "1f4af883e5ae18235a074e4fc4de5382a73469b74b1884f7b1e38eef8df4f32e"
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "replayStartSec": 68.35661,
+      "replayEndSec": 75.614559,
+      "narrationText": "历史记录就在这里：第二个版本在上，第一个版本在下，包含提交信息和作者，无需解锁任何镜像。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-09.469636a6.mp3",
+      "textHash": "469636a6d111c21cc50cfebf9593972242675e93c0599f7d862c58f1f2e7f992",
+      "audioDurationSec": 8.829388,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-09-after.f52cf2ec.mp3",
+      "afterAudioDurationSec": 2.925714,
+      "afterTextHash": "f52cf2ec285be64083eb2a43933ee38829800f9e3614168a6a32fe986f7cc713"
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "replayStartSec": 75.614559,
+      "replayEndSec": 83.292425,
+      "narrationText": "现在到了关键时刻。将 stable 分支检出到一个全新的可写 fork 中。Reflink 克隆，几乎即时完成，不受大小限制。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-10.72b1ac73.mp3",
+      "textHash": "72b1ac73e6d1d7bcf7694925eeb5351e2608abe8d851caed26d57afb9269c50f",
+      "audioDurationSec": 11.075918,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-10-after.b7066c26.mp3",
+      "afterAudioDurationSec": 4.362449,
+      "afterTextHash": "b7066c264d21ca12d6061b687948883296c4be2be943cd4c3681522e659472f9"
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "replayStartSec": 83.292425,
+      "replayEndSec": 91.555233,
+      "narrationText": "像启动其他任何 repo 一样启动回滚 fork。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-11.97774ab9.mp3",
+      "textHash": "97774ab9e20af59b1f88a64e358bbdf88f76ea52337cc6ce6df3590e1de36eda",
+      "audioDurationSec": 3.709388,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-11-after.ae0c1c6d.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "ae0c1c6d9e6d5d51f89e693d364a559afb6ae0862395fcbd2ed6c2c90f0d7090"
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "replayStartSec": 91.555233,
+      "replayEndSec": 98.952411,
+      "narrationText": "这就是证明：回滚 fork 读到的是第一个版本，工作 fork 仍然是第二个版本。可以运行的历史。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-12.b958bc01.mp3",
+      "textHash": "b958bc011d02e0b5a6d51e965b9931a9378904eb4a200ccb495ab462a4989d47",
+      "audioDurationSec": 9.560816,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-12-after.812301de.mp3",
+      "afterAudioDurationSec": 3.082449,
+      "afterTextHash": "812301deedd46ee7e158c5e2b9074c24ef2a0ea2a826bc673dc4b1c5a88eb055"
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "replayStartSec": 98.952411,
+      "replayEndSec": 107.653008,
+      "narrationText": "最关键的部分：被删除的表回来了，三行数据全部恢复。回滚恢复的是整个数据库，而不仅仅是文件。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-13.cce11a7d.mp3",
+      "textHash": "cce11a7d317aa37062c9be0b7e951e9aa95e997508f6c5fefcc99dca52532b79",
+      "audioDurationSec": 8.829388,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-branching/tutorial-branching-13-after.7f6e158e.mp3",
+      "afterAudioDurationSec": 3.395918,
+      "afterTextHash": "7f6e158ee8bb5faebb224b5143db9670b58eccd62004ee4d5686849a9c1deaae"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "f6b4b2d45b962eab9d19a371e4d8d478af6c1f570f4cd0e0c750c19fd271477b",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/intro.f6b4b2d4.mp3",
+      "narrationText": "让我们像管理代码一样对 repository 进行版本管理吧！我们将冻结一个检查点，给它起个名字，然后删除一个真实的数据库表。回滚会在几秒内恢复精确的冻结状态，包括每一行数据。",
+      "audioDurationSec": 19.40898
+    },
+    {
+      "id": "commit-model",
+      "textHash": "194ff8fcd4120ab8637a2e8b9c75996b9d2fc382920c00abcabb2534f5eccb0a",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/commit-model.194ff8fc.mp3",
+      "narrationText": "这个模型就像 git，但针对的是整个 repository。commit 是一个冻结的、不可变的镜像，它甚至拒绝挂载，所以任何东西都无法改变它。branch 只是一个指向 commit 的名字。而 checkout 可以将任意 commit 变回一个全新的、可写的 fork。",
+      "audioDurationSec": 23.875918
+    },
+    {
+      "id": "vscode-versions",
+      "textHash": "4bda19b60fd7df7dde62f2d1aa7e3fe68de263fb272c305ebbe55b14b2e33381",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/vscode-versions.4bda19b6.mp3",
+      "narrationText": "眼见为实。左边的回滚 fork 保存着第一个版本，而右边的工作 fork 已经推进到第二个版本。两者都在运行，都可写，都来自同一段历史。",
+      "audioDurationSec": 13.557551
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "a34061b20a8d1055fe8ac500423e2d738b1bfd58f08f29e882dece4d49949bb7",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-branching/next-tutorial.a34061b2.mp3",
+      "narrationText": "commit 永不改变，fork 从不等待。下一篇，我们将把一个完整的运行中的 repository 实时迁移到另一台机器上。下次见！",
+      "audioDurationSec": 10.997551
+    }
+  ]
+}

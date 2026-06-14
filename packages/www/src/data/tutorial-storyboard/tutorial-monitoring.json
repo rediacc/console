@@ -1,6 +1,7 @@
 {
   "version": 1,
   "tutorial": "tutorial-monitoring",
+  "nextTutorialKey": "tutorial-branching",
   "scenes": [
     {
       "id": "intro",
@@ -65,7 +66,10 @@
       "markerIndex": 4,
       "holdSec": 0.8,
       "narrationRole": "step",
-      "card": { "command": "rdc doctor", "commandFull": "rdc doctor || true" }
+      "card": {
+        "command": "rdc doctor",
+        "commandFull": "rdc doctor"
+      }
     },
     {
       "id": "outro",

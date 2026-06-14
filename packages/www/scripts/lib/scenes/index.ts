@@ -1,9 +1,10 @@
 import type { Scene, Storyboard } from '../storyboard.ts';
 import type { ParsedCast } from '../cast-splitter.ts';
 import type { NarrationLookup } from '../narration-lookup.ts';
+import type { SessionManager } from './browser-session.ts';
 import { compileSlide, compileTitle, compileOutro } from './slide.ts';
 import { compileCast, compileCastFreeze, compileCastNarrated } from './cast.ts';
-import { compileBrowser } from './browser.ts';
+import { compileBrowser, compileBrowserSplit } from './browser.ts';
 
 export interface CastNarratedDebug {
   sceneId: string;
@@ -45,6 +46,13 @@ export interface SceneContext {
   castEnd: number;
   narrations: NarrationLookup;
   chunks: string[];
+  sessions: SessionManager;
+  /**
+   * Silent-segment cache for browser scenes (language-independent pixels).
+   * `reuse`: mux from a cached segment when present (skips the live session).
+   * `refresh`: force a live re-record and overwrite the cache.
+   */
+  browserCache: { dir: string; reuse: boolean; refresh: boolean };
   castMarkerToNarrationId: (markerIndex: number) => string;
   debug: DebugCollector | null;
   /** Per-language transcript for compileTitle/compileOutro localization. */
@@ -53,7 +61,12 @@ export interface SceneContext {
   transcriptEn: TranscriptDoc | null;
 }
 
-export async function compileScene(scene: Scene, ctx: SceneContext): Promise<string> {
+/** Materializes a deferred browser-scene chunk after its session has closed. */
+export type ChunkProducer = () => string;
+/** Eager scenes return a finished mp4 path; browser scenes defer until sessions close. */
+export type SceneOutput = string | { deferred: ChunkProducer };
+
+export async function compileScene(scene: Scene, ctx: SceneContext): Promise<SceneOutput> {
   switch (scene.type) {
     case 'title':
       return compileTitle(scene, ctx);
@@ -69,6 +82,8 @@ export async function compileScene(scene: Scene, ctx: SceneContext): Promise<str
       return compileCastNarrated(scene, ctx);
     case 'browser':
       return await compileBrowser(scene, ctx);
+    case 'browser-split':
+      return await compileBrowserSplit(scene, ctx);
     default: {
       const t: never = scene;
       throw new Error(`Unknown scene type: ${JSON.stringify(t)}`);

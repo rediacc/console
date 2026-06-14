@@ -1,0 +1,62 @@
+---
+title: "Live-Migration"
+description: "Verschieben Sie ein laufendes Repository - Container, Datenbank und Prozessspeicher eingeschlossen - mit einem einzigen Befehl auf eine andere Maschine mit minimaler Ausfallzeit."
+category: "Tutorials"
+subcategory: advanced
+order: 16
+language: de
+sourceHash: "0d0c4df847c6ba17"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Live-Migration
+
+Server werden ersetzt: Hardware altert, Anbieter wechseln, Regionen verschieben sich. `rdc repo migrate` verschiebt ein laufendes Repository mit einem einzigen Befehl auf eine andere Maschine, und mit `--checkpoint` macht sogar der Prozessspeicher den Trip mit. Die Demo-App `pulse` hält einen Zähler im RAM; nach dem Umzug zählt sie weiter, statt von vorn zu beginnen.
+
+## Tutorial ansehen
+
+![Tutorial: Live-Migration](/assets/tutorials/tutorial-live-migration.cast)
+
+## So läuft der Umzug ab
+
+![Zwei Phasen, minimale Ausfallzeit](/img/tutorials/tutorial-live-migration/slide-1.svg)
+
+Phase eins kopiert den Großteil der Daten, während die App weiterläuft. Phase zwei sichert die laufenden Prozesse per CRIU (für Container mit Label `rediacc.checkpoint=true`), überträgt das finale Delta samt Prozesszustand und setzt alles auf der neuen Maschine fort. Die Ausfallzeit ist das Delta, nicht die Datenmenge.
+
+## Schritt 1: Der Beweis - ein Zähler im RAM
+
+<TutorialStep number={1} />
+
+`memory counter=6` und steigt, einmal pro fünf Sekunden. Der Zähler lebt nur im Prozessspeicher. Würde der Prozess neu starten, begänne er bei eins.
+
+## Schritt 2: Live migrieren
+
+<TutorialStep number={2} />
+
+Die Ausgabe erzählt den Umzug: Phase eins überträgt die 2 GB Hauptdaten, während die Quelle online bleibt, dann gibt die Cutover-Zeile die tatsächliche `DOWNTIME` aus: einige Dutzend Megabyte und ungefähr zwanzig Sekunden - für ein zwei Gigabyte großes Repository.
+
+## Schritt 3: Das neue Zuhause prüfen
+
+<TutorialStep number={3} />
+
+Auf dem Ziel ist `pulse` eingehängt, Docker läuft, Container sind aktiv.
+
+## Schritt 4: Die Quelle ist gestoppt
+
+<TutorialStep number={4} />
+
+Die Quelle listet das Repository noch, aber ehrlich: nicht eingehängt, kein Docker, null Container. Dort läuft nichts mehr. Das Image wird absichtlich behalten als Basis für den nächsten [Delta Transfer](/de/docs/tutorial-delta-transfer), sodass ein zukünftiger Push zurück günstig ist.
+
+## Schritt 5: Der Zähler zählte weiter
+
+<TutorialStep number={5} />
+
+`memory counter=17`, dann 18, 19, 20... Er machte genau dort weiter, wo der Checkpoint ihn eingefroren hatte, statt bei eins neu anzufangen. Das ist Prozessspeicher, der den Trip macht; die App hat nie bemerkt, dass sie die Maschine gewechselt hat.
+
+> Ohne `--checkpoint` verschiebt migrate trotzdem Daten und Container; sie starten auf dem Ziel frisch neu, statt mittendrin weiterzumachen.
+
+---
+
+Weiter: [Delta Transfer](/de/docs/tutorial-delta-transfer).

@@ -39,7 +39,7 @@ Push a repository backup to external storage:
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
-Push always checks that the target repository is mounted before writing. If it is not mounted, the operation is aborted.
+The backup lands in the storage's `hot/` folder when the repository is mounted at push time, and in `cold/` when it is unmounted. This is the same layout the scheduled backups use, so `rdc repo backup list` shows every backup in one table.
 
 | Option | Description |
 |--------|-------------|

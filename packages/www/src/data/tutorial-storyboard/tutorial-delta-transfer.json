@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-delta-transfer",
+  "nextTutorialKey": "tutorial-storage-management",
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "blocks-not-bytes",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "blocks-not-bytes",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo push --name my-app --machine <machine-name> --to <target-machine>"
+      }
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'dd if=/dev/urandom of=delta-test.bin bs=1M count=50 status=none && ls -lh delta-test.bin'"
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo push --name my-app --machine <machine-name> --to <target-machine>"
+      }
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "markerIndex": 3,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo list --machine <target-machine>"
+      }
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

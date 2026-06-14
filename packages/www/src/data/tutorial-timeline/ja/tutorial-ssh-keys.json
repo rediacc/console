@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "c77b20c817587f69f8e56d778f882d183836f34321e030dbafd80467fe413152",
+  "transcriptHash": "6e0b9483b0304d139d0d501171b79760410595671354d58dd771b5598bad0bf8",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.626287,
-      "replayEndSec": 6.456735,
+      "replayStartSec": 1.617466,
+      "replayEndSec": 6.370674,
       "narrationText": "ステップ1です。新しい ed25519 の SSH キーを生成します。ed25519 は現代の標準形式で、小さく、高速で、広くサポートされています。追加するすべてのサーバーにわたって、この操作は一度だけ行います。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-ssh-keys/tutorial-ssh-keys-01.bf821cc8.mp3",
       "textHash": "bf821cc854054e653f2c480297456a2f64cc0bfa2ee493a0560e003a36f2b724",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.456735,
-      "replayEndSec": 13.33617,
+      "replayStartSec": 6.370674,
+      "replayEndSec": 13.176828,
       "narrationText": "ステップ2です。ssh-copy-id を使って公開キーをサーバーにコピーします。サーバーのパスワードを最後にもう一度だけ求められます。これ以降、そのサーバーへのパスワード認証は不要になります。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-ssh-keys/tutorial-ssh-keys-02.11a03335.mp3",
       "textHash": "11a033354b4f70be0c1e65b80a1fce7a60019d9db7872d04532d3291f4905512",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.33617,
-      "replayEndSec": 19.159643,
+      "replayStartSec": 13.176828,
+      "replayEndSec": 19.095233,
       "narrationText": "ステップ3です。CLI にキーを登録します。これ以降、すべての CLI コマンドはこのキーで認証します。パスワードも対話型プロンプトも不要です。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-ssh-keys/tutorial-ssh-keys-03.d884ab95.mp3",
       "textHash": "d884ab95721a62fd03a5f0eb915a408dfd5b0143b00b3c6f0c65698dbb05d7ff",

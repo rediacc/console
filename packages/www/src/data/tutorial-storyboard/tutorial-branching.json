@@ -1,0 +1,263 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-branching",
+  "nextTutorialKey": "tutorial-live-migration",
+  "setupCommand": "bash .ci/tutorials/lib/stage-branching.sh",
+  "teardownCommand": "rdc vscode serve stop --machine ${TUTORIAL_MACHINE_NAME} --repository app:work; rdc vscode serve stop --machine ${TUTORIAL_MACHINE_NAME} --repository app:rollback",
+  "sessions": {
+    "rollback-pane": {
+      "width": "half",
+      "recordScale": 1.5,
+      "urlFromCommand": "rdc vscode connect --machine ${TUTORIAL_MACHINE_NAME} --repository app:rollback --browser --url-only",
+      "prepActions": [
+        {
+          "waitForSelector": ".explorer-folders-view .monaco-list-row"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "click": {
+            "selector": ".monaco-dialog-box .monaco-button:has-text(\"Yes, I trust the authors\")",
+            "timeoutMs": 6000
+          }
+        },
+        {
+          "wait": 400
+        },
+        {
+          "press": "Control+w"
+        },
+        {
+          "wait": 300
+        },
+        {
+          "press": "Control+Alt+b"
+        },
+        {
+          "wait": 500
+        }
+      ]
+    },
+    "work-pane": {
+      "width": "half",
+      "recordScale": 1.5,
+      "urlFromCommand": "rdc vscode connect --machine ${TUTORIAL_MACHINE_NAME} --repository app:work --browser --url-only",
+      "prepActions": [
+        {
+          "waitForSelector": ".explorer-folders-view .monaco-list-row"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "click": {
+            "selector": ".monaco-dialog-box .monaco-button:has-text(\"Yes, I trust the authors\")",
+            "timeoutMs": 6000
+          }
+        },
+        {
+          "wait": 400
+        },
+        {
+          "press": "Control+w"
+        },
+        {
+          "wait": 300
+        },
+        {
+          "press": "Control+Alt+b"
+        },
+        {
+          "wait": 500
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "commit-model",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "commit-model",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'echo v1 > version.txt && cat version.txt'"
+      }
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo commit --name app:work --message 'v1 baseline' --machine <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "markerIndex": 3,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo branch --branch stable --name app:work"
+      }
+    },
+    {
+      "id": "cast-step-4",
+      "type": "cast-narrated",
+      "markerIndex": 4,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'echo v2 > version.txt && cat version.txt'"
+      }
+    },
+    {
+      "id": "cast-step-5",
+      "type": "cast-narrated",
+      "markerIndex": 5,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'docker exec db psql -U app -d app -c \"DROP TABLE customers\"'"
+      }
+    },
+    {
+      "id": "cast-step-6",
+      "type": "cast-narrated",
+      "markerIndex": 6,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository app:work --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+      }
+    },
+    {
+      "id": "cast-step-7",
+      "type": "cast-narrated",
+      "markerIndex": 7,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo commit --name app:work --message 'v2 risky change' --machine <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-8",
+      "type": "cast-narrated",
+      "markerIndex": 8,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo log --name app:work --machine <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-9",
+      "type": "cast-narrated",
+      "markerIndex": 9,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo checkout --ref stable --from app:work --tag rollback --machine <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-10",
+      "type": "cast-narrated",
+      "markerIndex": 10,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo up --name app:rollback --machine <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-11",
+      "type": "cast-narrated",
+      "markerIndex": 11,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository app:rollback --command 'cat version.txt'"
+      }
+    },
+    {
+      "id": "cast-step-12",
+      "type": "cast-narrated",
+      "markerIndex": 12,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository app:rollback --command 'docker exec db psql -U app -d app -c \"SELECT count(*) FROM customers\"'"
+      }
+    },
+    {
+      "id": "vscode-versions",
+      "type": "browser-split",
+      "durationSec": 14,
+      "narrationKey": "vscode-versions",
+      "holdSec": 2.5,
+      "left": {
+        "session": "rollback-pane",
+        "actions": [
+          {
+            "wait": 1000
+          },
+          {
+            "click": ".explorer-folders-view .monaco-list-row:has-text(\"version.txt\")"
+          },
+          {
+            "wait": 1500
+          }
+        ]
+      },
+      "right": {
+        "session": "work-pane",
+        "actions": [
+          {
+            "wait": 1000
+          },
+          {
+            "click": ".explorer-folders-view .monaco-list-row:has-text(\"version.txt\")"
+          },
+          {
+            "wait": 1500
+          }
+        ]
+      }
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

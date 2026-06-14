@@ -1,0 +1,162 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "at": 2.418102,
+      "text": "作業中のforkにはアプリの状態のバージョン1が入っています。シンプルなマーカーファイルでそれが確認できます。",
+      "afterText": "バージョン1、ディスクに保存されました。",
+      "cardLabel": "バージョン1",
+      "prose": "作業中のforkに状態のバージョン1を書き込みます。"
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "at": 10.876025,
+      "text": "ファイルだけではありません。このforkには本物のPostgreSQLデータベースも動いており、customersテーブルには3行のデータがあります。この数を覚えておいてください。",
+      "afterText": "3行。これから危険にさらすデータです。",
+      "cardLabel": "3行",
+      "prose": "このforkでは本物のPostgreSQLデータベースも動いています。customersテーブルには3行のデータがあります。"
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "at": 20.708803,
+      "text": "フリーズします。commitはrepository全体をメッセージ、作成者、親情報とともに不変のイメージとして記録します。gitとまったく同じ仕組みですが、データベースも含めたすべてが対象です。",
+      "afterText": "commitされました。このスナップショットは変更できません。マウントすら拒否します。",
+      "cardLabel": "Commit v1",
+      "prose": "作業中のforkをcommitします。データベースを含むrepositoryの完全な状態が、不変の名前付きスナップショットとして保存されます。"
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "at": 29.448478,
+      "text": "commitに名前をつけます。stableブランチがバージョン1を指すようになりました。",
+      "afterText": "ブランチとは、後で戻れる名前です。",
+      "cardLabel": "Stable ブランチ",
+      "prose": "commitを指すブランチを作成します。フリーズされた状態に付ける、わかりやすい名前です。"
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "at": 34.241982,
+      "text": "作業を続けます。作業中のforkでバージョン2がバージョン1に取って代わりました。commitは影響を受けません。",
+      "afterText": "作業中のforkは先に進みました。履歴は変わっていません。",
+      "cardLabel": "バージョン2",
+      "prose": "作業を続けます。forkは変化しても、commitされた履歴はフリーズされたままです。"
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "at": 42.690283,
+      "text": "次は災害の発生です。危険な変更でcustomersテーブルが削除されます。現実では、胃が沈むような瞬間です。",
+      "afterText": "テーブルの削除が実行されました。作業中のforkからデータが消えました。",
+      "cardLabel": "テーブルを削除",
+      "prose": "危険な変更が作業中のforkのcustomersテーブルを削除します。"
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "at": 51.047933,
+      "text": "再び行を照会すると、データベースははっきりと答えます。リレーション「customers」は存在しない、と。これは本物の災害です。すべての行が消えました。",
+      "afterText": "リレーションは存在しません。3行、消滅。",
+      "cardLabel": "テーブルが消えた",
+      "prose": "テーブルへのクエリが失敗します。リレーション「customers」は存在しません。データは作業中のforkから本当に消えています。"
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "at": 59.69522,
+      "text": "危険な変更もcommitします。テーブルが壊れた状態のまま。履歴には実際に起きたことが記録されます。今や2つのcommitがあります。親と子です。",
+      "afterText": "チェーンに2つのスナップショット。",
+      "cardLabel": "Commit v2",
+      "prose": "削除されたテーブルを含む新しい状態もcommitします。履歴はgit logのように積み重なります。"
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "at": 68.35661,
+      "text": "これが履歴です。上にバージョン2、その下にバージョン1、メッセージと作成者も含まれています。一つもイメージをアンロックせずに確認できます。",
+      "afterText": "git logとまったく同じ、repoのログです。",
+      "cardLabel": "Repo Log",
+      "prose": "repo logでcommitの履歴をたどります。メッセージ、作成者、親情報が確認できます。"
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "at": 75.614559,
+      "text": "いよいよ成果です。stableブランチを新しい書き込み可能なforkにcheckoutします。reflinkクローンなので、サイズを問わずほぼ瞬時に完了します。",
+      "afterText": "フリーズされたバージョン1の書き込み可能なコピーが、約1秒で完成します。",
+      "cardLabel": "Checkout",
+      "prose": "stableブランチを新しい書き込み可能なforkにcheckoutします。copy-on-writeのおかげでほぼ瞬時に完了します。"
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "at": 83.292425,
+      "text": "ロールバック用のforkを他のrepoと同様に起動します。",
+      "afterText": "2つのforkが動いています。今日のバージョンとチェックポイントです。",
+      "cardLabel": "ロールバック開始",
+      "prose": "ロールバック用のforkを起動します。作業中のforkと並行して動作します。"
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "at": 91.555233,
+      "text": "そして証明です。ロールバック用のforkはバージョン1を読み取ります。作業中のforkにはまだバージョン2があります。実行できる履歴です。",
+      "afterText": "ロールバック完了。ここに至るまで何も上書きされていません。",
+      "cardLabel": "証明: v1",
+      "prose": "ロールバック用のforkのマーカーファイルを読み取ります。commitされたとおり、バージョン1です。"
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "at": 98.952411,
+      "text": "そして最も重要な部分です。削除されたテーブルが戻ってきました。3行すべて揃っています。ロールバックはファイルだけでなく、データベースも復元しました。",
+      "afterText": "再び3行。災害は取り消されました。",
+      "cardLabel": "データ復元",
+      "prose": "ロールバック用のforkのcustomersテーブルにクエリを実行します。commitされたとおり3行あります。ロールバックはファイルだけでなく、データベースも復元しました。"
+    }
+  ],
+  "title": "ブランチング、Commit & Rollback",
+  "chapters": {
+    "intro": "ブランチ、コミット、ロールバック",
+    "commit-model": "コミット、ブランチ、チェックアウト",
+    "cast-step-0": "ステップ1: バージョン1",
+    "cast-step-1": "ステップ2: コミットする",
+    "cast-step-2": "ステップ3: ブランチで名前を付ける",
+    "cast-step-3": "ステップ4: 作業継続、バージョン2",
+    "cast-step-4": "ステップ5: 再度コミット",
+    "cast-step-5": "ステップ6: 履歴を確認",
+    "cast-step-6": "ステップ7: ブランチをチェックアウト",
+    "cast-step-7": "ステップ8: ロールバックを開始",
+    "cast-step-8": "ステップ9: 確認、バージョン1",
+    "cast-step-9": "ステップ10: ブランチをcheckoutする",
+    "cast-step-10": "ステップ11: ロールバックを開始する",
+    "cast-step-11": "ステップ12: 証明、バージョン1",
+    "cast-step-12": "ステップ13: データが戻った",
+    "vscode-versions": "2つのバージョンを並べて確認",
+    "outro": "次: Live Migration"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "repositoryをコードのようにバージョン管理してみましょう。チェックポイントをフリーズして名前をつけ、本物のデータベーステーブルを削除します。ロールバックを使えば、すべての行を含むフリーズされた状態が数秒で戻ってきます。"
+    },
+    {
+      "id": "commit-model",
+      "text": "仕組みはgitと同じですが、repository全体が対象です。commitはフリーズされた不変のイメージです。マウントすら拒否するので、何があっても変更できません。ブランチはcommitを指す名前にすぎません。そしてcheckoutで任意のcommitを新しい書き込み可能なforkに戻せます。"
+    },
+    {
+      "id": "vscode-versions",
+      "text": "百聞は一見に如かず。左側のロールバック用forkはバージョン1を保持し、右側の作業中のforkはバージョン2に進んでいます。どちらも動作中で書き込み可能、そして同じ履歴から生まれています。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "commitは変わらず、forkは待ちません。次は動作中のrepository全体を別のマシンにライブで移動させます。次の動画でお会いしましょう！"
+    }
+  ]
+}

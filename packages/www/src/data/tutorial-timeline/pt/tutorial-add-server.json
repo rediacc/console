@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "a355bd3e4fbbe64627cbfcd49a84654365b47a80fa57f58f84ca0d6c8ef0dc70",
+  "transcriptHash": "1c92afb5e60f34b5cf534fb85c390ef4d7b9311519c728c303b620ab91798346",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627146,
-      "replayEndSec": 7.928955,
+      "replayStartSec": 1.629299,
+      "replayEndSec": 8.575098,
       "narrationText": "Começamos por criar um perfil de configuração que vai guardar a chave SSH, a lista de máquinas e as definições de infraestrutura.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-add-server/tutorial-add-server-01.643ea399.mp3",
       "textHash": "643ea399826141cc1ab8455afe1ef066dca5f3da3721eb2bd79bb12566a7247f",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.928955,
-      "replayEndSec": 16.338306,
+      "replayStartSec": 8.575098,
+      "replayEndSec": 19.204906,
       "narrationText": "Agora vamos registar o servidor a partir da linha de comandos, fornecendo o nome, o endereço IP e o utilizador SSH. As chaves de anfitrião são verificadas automaticamente para acesso seguro.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-add-server/tutorial-add-server-02.ea6b7a80.mp3",
       "textHash": "ea6b7a80314da61a3f7a97e7472751d425ede98e3f3aecd7138fdccdb9f3b7b2",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 16.338306,
-      "replayEndSec": 18.998199,
+      "replayStartSec": 19.204906,
+      "replayEndSec": 21.464422,
       "narrationText": "De seguida, vamos provisionar o servidor. Este passo instala o renet e cria o repositório de dados encriptado.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-add-server/tutorial-add-server-03.45d85438.mp3",
       "textHash": "45d85438556f8d9dce63a4d84c3ac779eec518d1fb47bc033c191389074f8cc2",

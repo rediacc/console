@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "ja",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "ライブの repo が1つあります。クローンしましょう。",
+      "cardLabel": "ライブアプリ",
+      "prose": "ライブ repository から始めます。マシン上で pgAdmin が動作している PostgreSQL データベースです。"
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "fork 完了、起動中。データはコピーされたのではなく、どちらかが変更するまで共有されます。",
+      "cardLabel": "Fork + 起動",
+      "prose": "--up --detach を指定して repository を fork します。CoW クローンはほぼ瞬時に完了し、fork のサービスがすぐに起動します。"
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "同じマシン、2つの隔離された世界。",
+      "cardLabel": "並べて表示",
+      "prose": "repository の一覧を確認します。オリジナルと fork が完全に隔離された状態で並列に動作しています。"
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "削除されました。オリジナルはその間ずっとサービスを提供し続けていました。",
+      "cardLabel": "Fork を削除",
+      "prose": "作業が完了したら fork を削除します。元の repository はそのままです。"
+    }
+  ],
+  "title": "Fork 分離の実践",
+  "chapters": {
+    "intro": "Fork 分離の実践",
+    "what-is-a-fork": "ライブデータベースとそのツイン",
+    "cast-step-0": "ステップ 1: ライブアプリ",
+    "grand-pgadmin": "オリジナル、保護された状態",
+    "cast-step-1": "ステップ 2: Fork する",
+    "fork-pgadmin": "Fork、完全にオープン",
+    "side-by-side": "並べて表示",
+    "cast-step-2": "ステップ 3: 2つの repo、1つのサーバー",
+    "cast-step-3": "ステップ 4: Fork を破棄する",
+    "outro": "次へ: Secrets の管理"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "おかえりなさい！前回はforkコマンドを確認しましたね。今回はそれが実際に何を意味するのかを見ていきましょう。稼働中のデータベースアプリが数秒でコピーされ、自由に編集できる、そしてオリジナルはまったく気づかない、そういうことです。"
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "こちらがその構成です。実際のPostgreSQLの上にpgAdminインターフェースを載せたもので、サーバー上で稼働しています。forkとは、そのすべてのコピーオンライトの即時コピーです。生まれた瞬間は同じデータを持ちますが、その後は完全に別々の歩みを進めます。"
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "ブラウザで見ているこれがオリジナルです。pgAdminはログインを求めてきます。本番環境のコピーだからです。本番は常にガードされています。"
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "そしてこちらがforkのpgAdminです。今回はログイン不要です。forkは使い捨てのsandboxなので、ゲートが脇に退きます。同じテーブル、同じ行、でも独自の世界です。"
+    },
+    {
+      "id": "side-by-side",
+      "text": "では並べて見てみましょう。左がfork、右がオリジナルです。左側で何を編集しても、削除しても、壊しても、右側はまったくびくともしません。これが目で見えるアイソレーションです。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "自由にforkしてください。本番環境が傷つくことはありません。次は、forkが意図的に引き継がない唯一のもの、secretsについて見ていきます。またそこで！"
+    }
+  ]
+}

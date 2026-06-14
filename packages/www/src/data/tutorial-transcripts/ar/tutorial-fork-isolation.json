@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "مستودع واحد نشط. لنستنسخه.",
+      "cardLabel": "التطبيق المباشر",
+      "prose": "ابدأ من repository مباشر: قاعدة بيانات PostgreSQL مع pgAdmin تعمل على الجهاز."
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "تم التفرع وبدأ التشغيل. البيانات لم تُنسخ، بل أصبحت مشتركة، حتى يُعدّلها أحد الطرفين.",
+      "cardLabel": "Fork + تشغيل",
+      "prose": "انشئ fork للـ repository باستخدام --up --detach: النسخة CoW شبه فورية وخدمات الـ fork تبدأ على الفور."
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "نفس الجهاز، عالمان معزولان.",
+      "cardLabel": "جنباً إلى جنب",
+      "prose": "اعرض قائمة الـ repositories: الأصلي والـ fork يعملان جنباً إلى جنب، معزولان تماماً."
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "اختفى. والأصل ظل يعمل طوال الوقت.",
+      "cardLabel": "حذف Fork",
+      "prose": "احذف الـ fork عند الانتهاء. الـ repository الأصلي يبقى سليماً دون تغيير."
+    }
+  ],
+  "title": "عزل Fork في العمل",
+  "chapters": {
+    "intro": "عزل Fork في العمل",
+    "what-is-a-fork": "قاعدة بيانات مباشرة وتوأمها",
+    "cast-step-0": "الخطوة 1: التطبيق المباشر",
+    "grand-pgadmin": "الأصلي، محمي",
+    "cast-step-1": "الخطوة 2: قم بعمل fork",
+    "fork-pgadmin": "الـ fork، مفتوح تماماً",
+    "side-by-side": "جنباً إلى جنب",
+    "cast-step-2": "الخطوة 3: repo-ان، خادم واحد",
+    "cast-step-3": "الخطوة 4: احذف الـ fork",
+    "outro": "التالي: إدارة Secrets"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "مرحباً بعودتك! في المرة الماضية رأيت أوامر fork. الآن دعنا نشاهد ما تعنيه فعلاً: تطبيق قاعدة بيانات حي، يُنسخ في ثوانٍ، ويُعدَّل بحرية، بينما النسخة الأصلية لا تلاحظ شيئاً."
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "هذا هو الإعداد: قاعدة بيانات PostgreSQL حقيقية مع واجهة pgAdmin فوقها، تعمل على الخادم. الـ fork هو نسخة توأم فورية بتقنية copy-on-write من كل ذلك. نفس البيانات عند الإنشاء، وحياتان منفصلتان تماماً بعد ذلك."
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "هذه النسخة الأصلية، في المتصفح. يطلب pgAdmin تسجيل الدخول، لأنها نسخة الإنتاج، والإنتاج يبقى محمياً."
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "وهذا pgAdmin الخاص بالـ fork. لا تسجيل دخول هذه المرة: الـ forks هي sandboxes يمكن التخلص منها، فالبوابة تتنحى جانباً. نفس الجداول، نفس الصفوف، لكن عالمه الخاص."
+    },
+    {
+      "id": "side-by-side",
+      "text": "الآن جنباً إلى جنب: الـ fork على اليسار، والأصلي على اليمين. عدِّل أو احذف أو اكسر أي شيء على اليسار، واليمين لن يتأثر أبداً. هذا هو العزل الذي يمكنك رؤيته."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "إذن، قم بعمل fork بحرية، لا يمكن إلحاق الضرر بالإنتاج. في الخطوة التالية، نلقي نظرة على الـ secrets، الشيء الوحيد الذي لا ترثه الـ forks عمداً. أراك هناك!"
+    }
+  ]
+}

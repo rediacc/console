@@ -6,7 +6,7 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.411841,
+      "at": 2.416158,
       "text": "Vamos começar com a vista do sistema. O comando de consulta de máquina com o filtro --system mostra o tempo de funcionamento, o uso do disco e o estado do armazenamento.",
       "afterText": "Tempo de funcionamento, disco, armazenamento. Tudo o que precisa, num relance.",
       "cardLabel": "Saúde do Sistema",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 8.597185,
+      "at": 8.503611,
       "text": "Agora os contentores. Esta vista lista todos os contentores em execução em todos os repositórios da máquina: nome, estado, saúde, CPU, memória e qual o repositório a que cada um pertence.",
       "afterText": "Todos os contentores em todos os repos, numa só vista.",
       "cardLabel": "Containers",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 15.126152,
+      "at": 14.799411,
       "text": "E os próprios repositórios. Tamanho, estado de montagem, estado do daemon Docker, uso do disco. Tudo o que precisamos saber sobre cada ambiente isolado.",
       "afterText": "Todos os repos, todos os seus daemons, todo o seu uso de disco.",
       "cardLabel": "Repositories",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 24.385141,
+      "at": 21.195367,
       "text": "O comando de consulta de máquina sem filtros dá-nos tudo de uma vez. Informação do sistema, contentores, repositórios -- tudo junto.",
       "afterText": "Tudo junto, sem precisar de filtros.",
       "cardLabel": "Query Completa",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 32.334422,
+      "at": 26.969407,
       "text": "E por fim a verificação de diagnóstico para uma verificação local no portátil. Node, chave SSH, renet, Docker -- tudo aquilo de que a linha de comandos depende. Esta é a série completa. Da instalação à monitorização, tudo a partir do terminal.",
       "afterText": "Tudo a verde significa que a sua CLI local está saudável.",
       "cardLabel": "Doctor",
@@ -60,7 +60,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "E é assim que se fecha a série. Já consegue instalar, configurar, implementar, bifurcar, ir para produção, ativar arranque automático, fazer cópias e monitorizar, tudo a partir do terminal!"
+      "text": "Agora você pode instalar, configurar, fazer deploy, fazer fork, publicar, ativar o autostart, fazer backup e monitorar. A trilha avançada começa agora: versione seus repos como código, com commits e rollbacks."
     }
   ],
   "title": "Monitoramento",
@@ -72,6 +72,6 @@
     "cast-step-2": "Repos",
     "cast-step-3": "Tudo de uma vez",
     "cast-step-4": "Verificação local de sanidade",
-    "outro": "Fim da série"
+    "outro": "A Seguir: Branching, Commit e Rollback"
   }
 }

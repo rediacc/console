@@ -4,8 +4,8 @@ description: "Verschlüsselte Repositories auf rclone-kompatiblem Speicher siche
 category: "Guides"
 order: 7
 language: de
-sourceHash: "e241aa122868e629"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7ff112c2ec14c35f"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Backup & Wiederherstellung
@@ -40,7 +40,7 @@ Ein Repository-Backup auf externen Speicher übertragen:
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
-Push prüft immer, ob das Ziel-Repository eingehängt ist, bevor geschrieben wird. Ist es nicht eingehängt, wird die Operation abgebrochen.
+Das Backup landet im Ordner `hot/` des Speichers, wenn das Repository beim Push eingehängt ist, und in `cold/`, wenn es nicht eingehängt ist. Dieses Layout verwenden auch die geplanten Backups, sodass `rdc repo backup list` alle Backups in einer einzigen Tabelle anzeigt.
 
 | Option | Beschreibung |
 |--------|-------------|

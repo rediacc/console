@@ -6,7 +6,7 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.627146,
+      "at": 1.629299,
       "text": "Começamos por criar um perfil de configuração que vai guardar a chave SSH, a lista de máquinas e as definições de infraestrutura.",
       "afterText": "Perfil criado. Tudo o que configurarmos a seguir vive neste único ficheiro.",
       "cardLabel": "Adicionar Máquina",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 7.928955,
+      "at": 8.575098,
       "text": "Agora vamos registar o servidor a partir da linha de comandos, fornecendo o nome, o endereço IP e o utilizador SSH. As chaves de anfitrião são verificadas automaticamente para acesso seguro.",
       "afterText": "Servidor registado. As chaves de anfitrião foram verificadas automaticamente.",
       "cardLabel": "Configurar Máquina",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 16.338306,
+      "at": 19.204906,
       "text": "De seguida, vamos provisionar o servidor. Este passo instala o renet e cria o repositório de dados encriptado.",
       "afterText": "Pronto. O renet está instalado e o repositório de dados está preparado.",
       "cardLabel": "Inspecionar Config",

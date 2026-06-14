@@ -1,0 +1,77 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "at": 2.413171,
+      "text": "Tutvuge pulse'iga. See hoiab protsessimälus loendurit ja prindib löögi iga viie sekundi järel. Loendur on kuuel ja tõuseb ning see elab ainult RAM-is. Taaskäivitage protsess ja see alustab uuesti ühest.",
+      "afterText": "Elav loendur, mis lööb mälus. See on meie tõestus.",
+      "cardLabel": "Elav Loendur",
+      "prose": "Rakendus hoiab mälus loendurit ja logib löögi iga viie sekundi järel. Loendur elab ainult RAM-is: protsessi taaskäivitamine lähtestaks selle ühele."
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "at": 10.379022,
+      "text": "Üks käsk liigutab seda, reaalajas. Esimene faas edastab põhiosa, kaks gigabaiti umbes poole minutiga, samal ajal kui allikas jätkab töötamist. Seejärel üleminek: see salvestab töötavate protsesside kontrollpunkti, kannab viimased mõned megabaidid üle ja prindib seisakuaja kohe sealsamas. Umbes kakskümmend sekundit kahe gigabaidi liigutamiseks.",
+      "afterText": "Kaks gigabaiti liigutatud, samal ajal kui rakendus töötas. Seisakurida näitab, mida liigutamine tegelikult maksis.",
+      "cardLabel": "Elav Migratsioon",
+      "prose": "Migreerige kontrollpunktiga: esimene faas edastab 2 GB põhiosa, samal ajal kui allikas jääb võrgus, seejärel lühike üleminek salvestab töötavate protsesside kontrollpunkti ja kannab lõpliku delta üle. Väljund prindib iga faasi ja tegeliku seisakuaja."
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "at": 101.149024,
+      "text": "Kontrollige uut masinat: seal see on. Ühendatud, Docker töötab, kaks containerit üleval.",
+      "afterText": "Sama repo, uus kodu, juba töötab.",
+      "cardLabel": "Uus Kodu",
+      "prose": "Loetlege sihtmasinas repositoryd: pulse on ühendatud, Docker töötab ja selle containerid on üleval."
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "at": 106.859481,
+      "text": "Aga allikas? Repository on endiselt loetletud, kuid vaadake rida: pole ühendatud, Docker puudub, null containerit. Siin ei tööta enam midagi. Pilt jääb tahtlikult maha, järgmise delta-ülekande alusena.",
+      "afterText": "Peatatud ja lahti ühendatud. Järelejäänud pilt on delta alus, mitte töötav rakendus.",
+      "cardLabel": "Allikas Peatatud",
+      "prose": "Allikal on repository peatatud ja lahti ühendatud: Docker puudub, null containerit. Pilt säilitatakse tulevaste delta-ülekannete alusena."
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "at": 112.346008,
+      "text": "Nüüd lõpptulemus. Loendur näitab seitsetteist, kaheksateist, üheksateist, ikka tõuseb. See jätkas täpselt sealt, kust kontrollpunkt selle külmutas, selle asemel et uuesti ühest alustada. Protsess ei märganud kunagi, et see vahetas masinaid.",
+      "afterText": "Loendur jätkas lugemist. Protsessimälu tegi teekonna.",
+      "cardLabel": "Loendur Jätkas",
+      "prose": "Uue masina logid näitavad, et loendur jätkab sealt, kus kontrollpunkt selle külmutas, mitte ei lähtesta ühele. Protsessimälu tegi teekonna."
+    }
+  ],
+  "title": "Elav Migratsioon",
+  "chapters": {
+    "intro": "Reaalajas migratsioon",
+    "how-it-moves": "Kaks faasi, minimaalne seisakuaeg",
+    "cast-step-0": "1. samm: kirjuta pärisandmed",
+    "cast-step-1": "2. samm: migreeri reaalajas",
+    "cast-step-2": "3. samm: töötab uuel masinal",
+    "cast-step-3": "4. samm: andmed jõudsid kohale",
+    "cast-step-4": "Samm 5: Loendur jätkas lugemist",
+    "outro": "Järgmine: Delta ülekanne"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Aeg suureks asjaks: töötava rakenduse teisaldamine teisele masinale, samal ajal kui see töötab. Vaatame elavat loendurit, mis lööb rakenduse mälus, teisaldame kõik ühe käsuga ja näeme, kuidas loendur lihtsalt jätkab lugemist uuel masinal."
+    },
+    {
+      "id": "how-it-moves",
+      "text": "See töötab kahes faasis. Esimene faas kopeerib põhiosa, samal ajal kui rakendus töötab edasi. Teine faas salvestab elavate protsesside kontrollpunkti, kannab üle lõpliku delta koos protsessi olekuga ja jätkab kõike uuel masinal. Seega on seisak delta, mitte andmed. Ja rakendus ei tea kunagi, et see liikus."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Loendur ei lähtestunud kunagi. Mälu, andmebaas, failid, kõik see lihtsalt vahetas masinaid. Järgmisena vaatame, miks teine ülekanne on alati kiire."
+    }
+  ]
+}

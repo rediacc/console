@@ -6,7 +6,7 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 2.415513,
+      "at": 2.414306,
       "text": "Primero, el comando tunnel. La app se ejecuta en el servidor, no en tu laptop. El comando repo tunnel del CLI reenvía el puerto de un contenedor por SSH para que puedas abrirlo en localhost en tu navegador.",
       "afterText": "Puerto reenviado. La app ya es accesible en localhost.",
       "cardLabel": "Tunelizar un Puerto",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 9.087333,
+      "at": 10.610488,
       "text": "Segundo, el comando term. El comando term connect del CLI te lleva dentro del sandbox del repo, la misma vista aislada que te daría VS Code. Ejecuta cualquier comando contra el Docker daemon de este repo sin salir de tu terminal.",
       "afterText": "Dentro del sandbox del repo. Ejecuta lo que sea como si estuvieras conectado por SSH.",
       "cardLabel": "Terminal en Sandbox",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 15.893309,
+      "at": 17.555154,
       "text": "Antes de subir archivos, usamos la previsualización con guion guion dry guion run. Muestra exactamente qué cambiaría sin copiar nada. Siempre previsualiza cuando no estés seguro.",
       "afterText": "Solo previsualización. Ningún archivo se movió todavía.",
       "cardLabel": "Vista Previa Sync",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 22.144638,
+      "at": 24.76977,
       "text": "Ahora ejecutamos la subida real. El comando repo sync upload del CLI mueve archivos desde tu laptop al repo por SSH con compresión delta de rsync. Tunnel, term, sync: tres comandos cubren el ciclo diario.",
       "afterText": "Archivos subidos. La compresión delta se encarga de los árboles grandes.",
       "cardLabel": "Sync Subida",
@@ -67,6 +67,6 @@
     "cast-step-1": "Term: ejecuta comandos en el sandbox",
     "cast-step-2": "Sync: vista previa con --dry-run",
     "cast-step-3": "Sync: subida real",
-    "outro": "Siguiente: Fork de un Repositorio"
+    "outro": "Siguiente: VS Code en tu navegador"
   }
 }

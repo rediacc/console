@@ -36,7 +36,7 @@ server.listen(PORT, HOST, () => {
 `,
       'docker-compose.yml': `services:
   app:
-    image: node:20-alpine
+    image: node:20.20.2-alpine
     container_name: app
     working_dir: /app
     command: sh -c "npm install --production 2>/dev/null; node server.mjs"
@@ -56,7 +56,7 @@ server.listen(PORT, HOST, () => {
       - "rediacc.service_port=3000"
 
   db:
-    image: postgres:16-alpine
+    image: postgres:16.14-alpine
     container_name: db
     command: -c listen_addresses=*
     env_file: .env
@@ -141,7 +141,7 @@ server.listen(PORT, HOST, () => {
 `,
       'docker-compose.yml': `services:
   app:
-    image: node:20-alpine
+    image: node:20.20.2-alpine
     container_name: app
     working_dir: /app
     command: sh -c "npm install --production 2>/dev/null; node server.mjs"
@@ -164,7 +164,7 @@ server.listen(PORT, HOST, () => {
       - "rediacc.checkpoint=true"
 
   db:
-    image: postgres:16-alpine
+    image: postgres:16.14-alpine
     container_name: db
     command: -c listen_addresses=*
     env_file: .env
@@ -216,7 +216,7 @@ info() {
     files: {
       'project-a/docker-compose.yml': `services:
   project-a-app:
-    image: node:20-alpine
+    image: node:20.20.2-alpine
     container_name: project-a-app
     working_dir: /app
     command: sh -c "npm install --production 2>/dev/null; node server.mjs"
@@ -236,7 +236,7 @@ info() {
       - "rediacc.service_port=3000"
 
   project-a-db:
-    image: postgres:16-alpine
+    image: postgres:16.14-alpine
     container_name: project-a-db
     command: -c listen_addresses=*
     environment:
@@ -281,7 +281,7 @@ down() {
 `,
       'project-b/docker-compose.yml': `services:
   project-b-app:
-    image: redis:7-alpine
+    image: redis:7.4.9-alpine
     container_name: project-b-app
     command: redis-server --bind 0.0.0.0 --requirepass \${ADMIN_PASSWORD}
     volumes:
@@ -321,9 +321,33 @@ down() {
     name: 'single-service',
     description: `Single container with Traefik routing and secrets`,
     files: {
+      'config/default.conf': `server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+}
+`,
+      'data/index.html': `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>single-service</title>
+  </head>
+  <body>
+    <h1>It works</h1>
+    <p>Served by the Rediacc single-service template. Replace the contents of <code>data/</code> with your site.</p>
+  </body>
+</html>
+`,
       'docker-compose.yml': `services:
   app:
-    image: nginx:alpine
+    image: nginx:1.31.1-alpine
     container_name: app
     env_file:
       - secrets.env
@@ -398,6 +422,12 @@ cleanup() {
   renet compose -- restart
   renet compose -- exec app sh -c 'find /var/log -name "*.log" -exec truncate -s 0 {} \\; 2>/dev/null' || true
 }
+`,
+      'secrets.env': `# Secrets loaded into the app container via compose \`env_file\`.
+# Replace the placeholder values before exposing the service publicly.
+# For values that must never live on disk inside the repo image, prefer
+# \`rdc repo secret set\` (delivered via env or tmpfs file at deploy time).
+APP_SECRET=change-me
 `,
     },
   },

@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "2a8b3fe8751b0521da2155df2b37bcc07fa5d86e0dfca80cb80649703577de3a",
+  "transcriptHash": "8517d8571a9b1345849a1a093b8a685accdedbd1e351434dc90535971de883d4",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627146,
-      "replayEndSec": 7.928955,
+      "replayStartSec": 1.629299,
+      "replayEndSec": 8.575098,
       "narrationText": "먼저 SSH 키, 머신 목록, 인프라 설정을 보관할 구성 프로파일을 생성합니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-add-server/tutorial-add-server-01.435beca2.mp3",
       "textHash": "435beca2d00a3259e3a5e4fc0483c68afd1052f708f68bad8f91d44f9c1db6fd",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.928955,
-      "replayEndSec": 16.338306,
+      "replayStartSec": 8.575098,
+      "replayEndSec": 19.204906,
       "narrationText": "이제 서버 이름, IP 주소, SSH 사용자를 입력하여 명령줄에서 서버를 등록합니다. 호스트 키는 신뢰할 수 있는 접근을 위해 자동으로 스캔됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-add-server/tutorial-add-server-02.7b3e102b.mp3",
       "textHash": "7b3e102ba515eb0507d5516d83c8646f16c6b46a4080b993a3a46e54eb7b763a",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 16.338306,
-      "replayEndSec": 18.998199,
+      "replayStartSec": 19.204906,
+      "replayEndSec": 21.464422,
       "narrationText": "다음으로 서버를 프로비저닝합니다. renet을 설치하고 암호화된 데이터 저장소를 생성합니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-add-server/tutorial-add-server-03.f1162298.mp3",
       "textHash": "f1162298d87336e74286f0004a1f33f8e1c0b6c6cae407cc621cacc0afb48af1",

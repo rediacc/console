@@ -2,6 +2,42 @@
   "version": 1,
   "tutorial": "tutorial-deploy-app",
   "nextTutorialKey": "tutorial-work-with-repo",
+  "setupCommand": "bash .ci/tutorials/lib/stage-my-app.sh && rdc term connect --machine ${TUTORIAL_MACHINE_NAME} --repository my-app --command 'rm -rf notes'",
+  "teardownCommand": "rdc vscode serve stop --machine ${TUTORIAL_MACHINE_NAME} --repository my-app",
+  "sessions": {
+    "workbench": {
+      "urlFromCommand": "rdc vscode connect --machine ${TUTORIAL_MACHINE_NAME} --repository my-app --browser --url-only",
+      "prepActions": [
+        {
+          "waitForSelector": ".explorer-folders-view .monaco-list-row"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "click": {
+            "selector": ".monaco-dialog-box .monaco-button:has-text(\"Yes, I trust the authors\")",
+            "timeoutMs": 6000
+          }
+        },
+        {
+          "wait": 500
+        },
+        {
+          "press": "Control+w"
+        },
+        {
+          "wait": 400
+        },
+        {
+          "press": "Control+Alt+b"
+        },
+        {
+          "wait": 600
+        }
+      ]
+    }
+  },
   "scenes": [
     {
       "id": "intro",
@@ -46,8 +82,39 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc term connect -c 'ls -la'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la' 2>/dev/null"
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'ls -la'"
       }
+    },
+    {
+      "id": "vscode-file-tour",
+      "type": "browser",
+      "session": "workbench",
+      "durationSec": 14,
+      "narrationKey": "vscode-file-tour",
+      "actions": [
+        {
+          "wait": 1000
+        },
+        {
+          "click": ".explorer-folders-view .monaco-list-row:has-text(\"Rediaccfile\")"
+        },
+        {
+          "wait": 3500
+        },
+        {
+          "click": ".explorer-folders-view .monaco-list-row:has-text(\"docker-compose.yml\")"
+        },
+        {
+          "wait": 2000
+        },
+        {
+          "click": {
+            "selector": ".notification-toast .codicon-notifications-clear",
+            "timeoutMs": 4000
+          }
+        }
+      ],
+      "holdSec": 2
     },
     {
       "id": "cast-step-3",
@@ -68,7 +135,7 @@
       "narrationRole": "transition",
       "card": {
         "command": "rdc term connect -c 'docker ps'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'docker ps' 2>/dev/null"
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'docker ps'"
       }
     },
     {

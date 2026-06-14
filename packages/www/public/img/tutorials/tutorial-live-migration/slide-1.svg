@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Live migration copies the bulk while the app runs, then a brief stop carries the final delta and process state across</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .machine { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 10; ry: 10; }
+    .app { fill: #e6f7ef; stroke: #1d7a4f; stroke-width: 2; rx: 6; ry: 6; }
+    .ghost { fill: #f1f1f0; stroke: #9aa0a6; stroke-width: 2; stroke-dasharray: 6 5; rx: 6; ry: 6; }
+    .label { fill: #1a1a1a; font-weight: 700; font-size: 18px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .small { fill: #1a1a1a; font-weight: 600; font-size: 14px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .desc { fill: #5e5e5e; font-weight: 400; font-size: 14px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .arrow1 { stroke: #1d7a4f; stroke-width: 3; fill: none; }
+    .arrow2 { stroke: #b3722d; stroke-width: 3; fill: none; stroke-dasharray: 8 6; }
+    .phase { font-weight: 600; font-size: 15px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .closer { fill: #1a1a1a; font-weight: 600; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <rect class="machine" x="70" y="120" width="280" height="220"/>
+  <text class="label" x="210" y="152">machine A</text>
+  <rect class="app" x="100" y="180" width="220" height="120"/>
+  <text class="small" x="210" y="225">my-app · running</text>
+  <text class="small" x="210" y="250">postgres · writing</text>
+
+  <rect class="machine" x="610" y="120" width="280" height="220"/>
+  <text class="label" x="750" y="152">machine B</text>
+  <rect class="ghost" x="640" y="180" width="220" height="120"/>
+  <text class="small" x="750" y="225">my-app</text>
+  <text class="small" x="750" y="250">arrives live</text>
+
+  <path class="arrow1" d="M 360 210 L 600 210"/>
+  <path class="arrow1" d="M 590 203 L 600 210 L 590 217"/>
+  <text class="phase" fill="#1d7a4f" x="480" y="195">phase 1: bulk copy — app keeps running</text>
+
+  <path class="arrow2" d="M 360 280 L 600 280"/>
+  <path class="arrow2" d="M 590 273 L 600 280 L 590 287"/>
+  <text class="phase" fill="#b3722d" x="480" y="312">phase 2: brief stop — final delta + process state</text>
+
+  <text class="closer" x="480" y="450">The row you wrote before the move is waiting after it.</text>
+</svg>

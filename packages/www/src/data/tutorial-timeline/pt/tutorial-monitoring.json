@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "c2acb2faf81e1babd7be8764f47719c8ba199f98758150bb3b6e5a92e00d1ebc",
+  "transcriptHash": "b46d3aa6d0766bc5627153aa88c29e49d66f43a8300b1c17f4483054bd580915",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.411841,
-      "replayEndSec": 8.597185,
+      "replayStartSec": 2.416158,
+      "replayEndSec": 8.503611,
       "narrationText": "Vamos começar com a vista do sistema. O comando de consulta de máquina com o filtro --system mostra o tempo de funcionamento, o uso do disco e o estado do armazenamento.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-monitoring/tutorial-monitoring-01.848c8985.mp3",
       "textHash": "848c8985396b52262c65a744bf69f6866cfcd9d06ea2f5c69b498e722598bc7f",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.597185,
-      "replayEndSec": 15.126152,
+      "replayStartSec": 8.503611,
+      "replayEndSec": 14.799411,
       "narrationText": "Agora os contentores. Esta vista lista todos os contentores em execução em todos os repositórios da máquina: nome, estado, saúde, CPU, memória e qual o repositório a que cada um pertence.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-monitoring/tutorial-monitoring-02.572706d9.mp3",
       "textHash": "572706d9a23cf9f0e06635a6c2f830f3246585ab4343ea7ce8c48acaa1ff3beb",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 15.126152,
-      "replayEndSec": 24.385141,
+      "replayStartSec": 14.799411,
+      "replayEndSec": 21.195367,
       "narrationText": "E os próprios repositórios. Tamanho, estado de montagem, estado do daemon Docker, uso do disco. Tudo o que precisamos saber sobre cada ambiente isolado.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-monitoring/tutorial-monitoring-03.4dc28afd.mp3",
       "textHash": "4dc28afdccc858ce657f36a46139d5c816a9d93e69b642bb04814f8feb8b30e8",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 24.385141,
-      "replayEndSec": 32.334422,
+      "replayStartSec": 21.195367,
+      "replayEndSec": 26.969407,
       "narrationText": "O comando de consulta de máquina sem filtros dá-nos tudo de uma vez. Informação do sistema, contentores, repositórios -- tudo junto.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-monitoring/tutorial-monitoring-04.8f8f561c.mp3",
       "textHash": "8f8f561c46b9a2aaea6f38dd5c669e98cd6ba1d2988b0eb51b7b5af6300d97ff",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 32.334422,
-      "replayEndSec": 38.502093,
+      "replayStartSec": 26.969407,
+      "replayEndSec": 29.019779,
       "narrationText": "E por fim a verificação de diagnóstico para uma verificação local no portátil. Node, chave SSH, renet, Docker -- tudo aquilo de que a linha de comandos depende. Esta é a série completa. Da instalação à monitorização, tudo a partir do terminal.",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-monitoring/tutorial-monitoring-05.9835d95b.mp3",
       "textHash": "9835d95bae0c82130259e974c16ec21f7b1fb6f7266757f1b4b3c744cf2e1604",
@@ -92,10 +92,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "83edc9e8b0234c14671890995768d95861623a1c730faf1b76aaf1d121485a19",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-monitoring/next-tutorial.83edc9e8.mp3",
-      "narrationText": "E é assim que se fecha a série. Já consegue instalar, configurar, implementar, bifurcar, ir para produção, ativar arranque automático, fazer cópias e monitorizar, tudo a partir do terminal!",
-      "audioDurationSec": 14.445714
+      "textHash": "2ba036d241478c45a13750c35ab7798075b13f2cef1cbe0b1b4b520c2ddb671b",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-monitoring/next-tutorial.2ba036d2.mp3",
+      "narrationText": "Agora você pode instalar, configurar, fazer deploy, fazer fork, publicar, ativar o autostart, fazer backup e monitorar. A trilha avançada começa agora: versione seus repos como código, com commits e rollbacks.",
+      "audioDurationSec": 17.397551
     }
   ]
 }

@@ -1,0 +1,101 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "zh",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "e8e2b098e757eae52e4466d850327ebc6f7e8506c843bb5a92e9c9b66a1e9820",
+  "steps": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413171,
+      "replayEndSec": 10.379022,
+      "narrationText": "来认识一下 pulse。它在进程内存中维护一个计数器，每五秒打印一次心跳。计数器现在到六了，还在往上涨，而且只存在于 RAM 中。重启进程，它就从一重新开始。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-01.b3c5ccff.mp3",
+      "textHash": "b3c5ccff0c8fe4d2d883baed0e80b175f61fc696a3c59c6e4938bddef3aa4def",
+      "audioDurationSec": 14.759184,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-01-after.7f93e33c.mp3",
+      "afterAudioDurationSec": 4.362449,
+      "afterTextHash": "7f93e33c92850c004c5ae49592736f4310810d384efba0a07633aa0a24395725"
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.379022,
+      "replayEndSec": 101.149024,
+      "narrationText": "一条命令，实时迁移。第一阶段在源端保持运行的同时，传输主体数据，大约两 GB，半分钟左右。然后切换：对运行中的进程做检查点，传输最后几 MB，并在那里打印出停机时间。两 GB 的迁移，大约二十秒。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-02.60250fea.mp3",
+      "textHash": "60250feaaad278e9c92780b866be7938781f95336cfa9592e415c0886d886d65",
+      "audioDurationSec": 23.405714,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-02-after.dc1cfa61.mp3",
+      "afterAudioDurationSec": 7.392653,
+      "afterTextHash": "dc1cfa611ec9af9e8b24b5ad8c26a8204576831dc6ca4f65a646fef12dcad335"
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "replayStartSec": 101.149024,
+      "replayEndSec": 106.859481,
+      "narrationText": "检查新机器：就在这里。已挂载，Docker 正在运行，两个 container 已启动。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-03.54d2bd9c.mp3",
+      "textHash": "54d2bd9ca3895d82d9a7241bcd6752bb2638c832bcc23afb92fa43b1e8b1529b",
+      "audioDurationSec": 6.844082,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-03-after.dfccb18b.mp3",
+      "afterAudioDurationSec": 3.395918,
+      "afterTextHash": "dfccb18b67e37b26f2ce7d8cb198e3d69fd6c489fd87dd58e6eb4b661763e287"
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "replayStartSec": 106.859481,
+      "replayEndSec": 112.346008,
+      "narrationText": "那源端呢？repository 还在列表里，但看看这一行：未挂载，没有 Docker，零个 container。这里什么都不运行了。镜像特意保留在这里，作为下一次增量传输的基础。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-04.d09e78bb.mp3",
+      "textHash": "d09e78bbe61053511ac3cb38e57140c37653893897c4bb803b6e44627a6fd4e4",
+      "audioDurationSec": 17.319184,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-04-after.ffba0a9a.mp3",
+      "afterAudioDurationSec": 5.485714,
+      "afterTextHash": "ffba0a9add117e8e5a8fd455530536ab2cd75e068ca635802eb8eee720cc5603"
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "replayStartSec": 112.346008,
+      "replayEndSec": 119.168595,
+      "narrationText": "现在是重点。计数器显示十七、十八、十九，还在往上涨。它从检查点冻结的地方继续，而不是从一重新开始。进程根本没察觉它换了机器。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-05.1390ae97.mp3",
+      "textHash": "1390ae9755968a313efabbb967c7413014265ab9295ac344c3d42b385f4b833a",
+      "audioDurationSec": 14.915918,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/tutorial-live-migration-05-after.9891533b.mp3",
+      "afterAudioDurationSec": 4.04898,
+      "afterTextHash": "9891533b85edd8d0d89d157ed7cfdc18f7b092988fb3d2152b8fdb7f2dfe7191"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "ac0be5651079748028d9943c63fe3f2051e1a3dec340a1fdb0dd3a672a2b304d",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/intro.ac0be565.mp3",
+      "narrationText": "来点大的：把一个正在运行的应用迁移到另一台机器，同时它还在运行。我们会看到一个实时计数器在应用的内存中跳动，用一条命令迁移所有内容，然后看到计数器在新机器上继续计数。",
+      "audioDurationSec": 21.394286
+    },
+    {
+      "id": "how-it-moves",
+      "textHash": "7e0d1b41a4af6c385835a09c462932581d1e7afde8c7c8c819463e1f9ae25eee",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/how-it-moves.7e0d1b41.mp3",
+      "narrationText": "它分两个阶段运行。第一阶段在应用保持运行时复制主体数据。第二阶段对实时进程做检查点，传输最终增量和进程状态，然后在新机器上恢复一切。所以停机时间取决于增量，而不是全量数据。应用根本不知道自己换了机器。",
+      "audioDurationSec": 25.312653
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "91fac641aed34ee8bc42b8d07b3ce6b74acbc225cf7793f5dd6b064862b3e025",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-live-migration/next-tutorial.91fac641.mp3",
+      "narrationText": "计数器从未重置。内存、数据库、文件，所有的一切都只是换了台机器。接下来，我们会看看为什么第二次传输总是快的那次。",
+      "audioDurationSec": 13.792653
+    }
+  ]
+}

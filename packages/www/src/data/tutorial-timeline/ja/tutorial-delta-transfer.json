@@ -1,0 +1,88 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "0936b4ae526cb2f77ca74524ea368f420c55b96f751334610d049be5eaff8fea",
+  "steps": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413668,
+      "replayEndSec": 10.922135,
+      "narrationText": "別のマシンへの最初のプッシュはイメージ全体を転送します。出力にはっきり表示されます。2ギガバイト転送済み、fullとマーク。これがベースラインです。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-01.628283c0.mp3",
+      "textHash": "628283c0de279313c694d9f45e081a4fa536b5b85ac322148a35f151e78c71c9",
+      "audioDurationSec": 12.59102,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-01-after.bd6f1034.mp3",
+      "afterAudioDurationSec": 9.404082,
+      "afterTextHash": "bd6f10348509fa51e8f0d17db8d03e112bacad358100a8890f9adf2798827c94"
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.922135,
+      "replayEndSec": 21.404869,
+      "narrationText": "少しデータを変更します。2ギガバイトのうち50メガバイトです。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-02.e3e1d0d6.mp3",
+      "textHash": "e3e1d0d654d58cb1b7b50e0c87971cea73e332672e409037b30da6a230b08226",
+      "audioDurationSec": 5.067755,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-02-after.79858b8c.mp3",
+      "afterAudioDurationSec": 2.35102,
+      "afterTextHash": "79858b8cc37659972a05b4d37e968c289ac4258b7f1d434ebb825c293b1cfc18"
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "replayStartSec": 21.404869,
+      "replayEndSec": 29.764702,
+      "narrationText": "もう一度プッシュします。同じコマンドですが、今回は出力を確認してください。2ギガバイトのイメージに対して約50メガバイト転送済み、deltaとマーク。変更されたブロックだけが転送されました。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-03.94c10c5f.mp3",
+      "textHash": "94c10c5f3cb70896f52e9aec498158b5a19117546b80e7531b5bf1b3525d8c6f",
+      "audioDurationSec": 16.117551,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-03-after.8295bfaa.mp3",
+      "afterAudioDurationSec": 5.799184,
+      "afterTextHash": "8295bfaa80f8bddd468db4ed7dac25fc4f6de4932dcb7de84609192505668c96"
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.764702,
+      "replayEndSec": 34.159829,
+      "narrationText": "両方のマシンが同じrepositoryを保持し、数秒で更新されます。毎時間実行しても構いません。コストはサイズではなく変更量です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-04.b028952b.mp3",
+      "textHash": "b028952b3a1a95a4002b4cda12603b108a8d491d1d0a0b40329fe179417e225d",
+      "audioDurationSec": 10.266122,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/tutorial-delta-transfer-04-after.5ac1c9c4.mp3",
+      "afterAudioDurationSec": 2.690612,
+      "afterTextHash": "5ac1c9c42c27fc267ae74c0744e2c986b9b4f6fe17213940d890026debc25adb"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "872ddb882b0399cc97a15aef4b8e0ad107a24619b9658b8056a9a510dd894d20",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/intro.872ddb88.mp3",
+      "narrationText": "面白い実験をしてみましょう。1ギガバイトのデータが入ったrepositoryを別のマシンに2回プッシュします。最初のプッシュはすべてを転送し、2回目は変更された部分だけを転送します。数字に注目してください。pushコマンドは転送量を正確に表示します。",
+      "audioDurationSec": 19.147755
+    },
+    {
+      "id": "blocks-not-bytes",
+      "textHash": "e10539044204fb6077145c7f3dcd980b0662db409ee680cf508824e69d1ab7e4",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/blocks-not-bytes.e1053904.mp3",
+      "narrationText": "仕掛けはセットアップにあります。最初のプッシュの後、CLIは両方のマシンに同一の不変ベースイメージを保持します。次のプッシュはそのベースに対してブロックを比較し、差分だけを送信します。フラグも管理も不要で、同じpushコマンドです。",
+      "audioDurationSec": 20.192653
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "7244399ab41ae74066b7e8d55d0f97b49dfd5889e6fad82e1ab9d2043c5e9be3",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-delta-transfer/next-tutorial.7244399a.mp3",
+      "narrationText": "小さな変更は小さな転送を意味します。最初の後は毎回そうです。残るチュートリアルはあと1つ、ディスクが不足しないようにする方法です。最終回でお会いしましょう！",
+      "audioDurationSec": 11.650612
+    }
+  ]
+}

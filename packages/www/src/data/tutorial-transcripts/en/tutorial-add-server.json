@@ -15,7 +15,7 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.627146,
+      "at": 1.629299,
       "text": "Register the server from the command line. You give it a name, its IP address, and the SSH user. The name is just a local alias. We use machine-11 so it matches the IP, but it can be anything you like, such as prod-db or web-1. There is no separate init step; the config file is created automatically on first use.",
       "afterText": "Server registered. Host keys were scanned automatically.",
       "cardLabel": "Add Machine",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 7.928955,
+      "at": 8.575098,
       "text": "Next we provision the server. This installs renet and creates the encrypted datastore.",
       "afterText": "Done. Renet is installed and the datastore is ready.",
       "cardLabel": "Setup Machine",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 16.338306,
+      "at": 19.204906,
       "text": "Here is the file that holds everything: your machines, the SSH key, and infrastructure settings. It is plain JSON, created automatically. You can keep several configs, one per environment such as production or staging, and switch between them with the config flag.",
       "afterText": "One portable file. Copy it to another laptop to drive the same servers.",
       "cardLabel": "Inspect Config",

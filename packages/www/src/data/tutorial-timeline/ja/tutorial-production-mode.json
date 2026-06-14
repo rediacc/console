@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "957d70bf0b032510caed9c9659144ea8941074e12625c6693aa70db304ffe96f",
+  "transcriptHash": "d4bea1d93764a06cd55e78cefee665e8ebb3e4279a17b9372e3b5b4c3ceedf55",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418632,
-      "replayEndSec": 9.548589,
+      "replayStartSec": 2.555418,
+      "replayEndSec": 11.051619,
       "narrationText": "ラップトップから本番モードでアプリを起動します。デプロイコマンドは開発中に使った up 関数と同じものを呼び出しますが、切り離された状態で実行されます。ラップトップを閉じてもアプリは動き続けます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/tutorial-production-mode-01.40b7c773.mp3",
       "textHash": "40b7c77346c558076aec16fddce61d8d66bb45bdbcfd2d3faab53132b2089009",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 9.548589,
-      "replayEndSec": 17.034078,
+      "replayStartSec": 11.051619,
+      "replayEndSec": 18.718543,
       "narrationText": "オートスタートを有効にして、サーバー再起動後もアプリが自動的に復帰するようにします。これ以降、サーバーが再起動してもこのリポジトリは自動的に起動します。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/tutorial-production-mode-02.eac942c8.mp3",
       "textHash": "eac942c86b7a9bde8ed26e82d5aacbf1e423849652417b75ee0aff51f709bef1",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 17.034078,
-      "replayEndSec": 22.929505,
+      "replayStartSec": 18.718543,
+      "replayEndSec": 25.169818,
       "narrationText": "オートスタートが有効なリポジトリを確認します。私たちのアプリが起動リストに追加されていることが確認できます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/tutorial-production-mode-03.0b449cda.mp3",
       "textHash": "0b449cdaee8e73ba6947ee42b968100d9beff77e486b300512f3ce844fe86229",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 22.929505,
-      "replayEndSec": 30.37798,
+      "replayStartSec": 25.169818,
+      "replayEndSec": 31.824598,
       "narrationText": "アプリを停止するには、ラップトップからコマンド1つです。起動は1コマンド、停止も1コマンド。すべてターミナルから行えます。対話型セッションはもう不要です。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/tutorial-production-mode-04.5f62bd68.mp3",
       "textHash": "5f62bd689168f7966f606f77142461c7cf51296b2abc9e6e43dca234d63de535",
@@ -65,17 +65,17 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "e89792aad3a5b56fdb0b41787c8816e1a4e8b6305b85638c8a54f04b8e47acd4",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/intro.e89792aa.mp3",
-      "narrationText": "それでは！アプリを開発から本番へ移していきましょう。3つの短いステップで、すべてラップトップから操作できます。",
-      "audioDurationSec": 6.922449
+      "textHash": "331ca2f474e08fcd33809e69d2552ab4366118a59abc73b5c3a4d226f03ef409",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/intro.331ca2f4.mp3",
+      "narrationText": "アプリは接続している間だけ動きます。本番環境とは、あなたがいなくても動き続けることです。たった3ステップ、すべてラップトップから実行できます。",
+      "audioDurationSec": 11.885714
     },
     {
       "id": "dev-vs-prod",
-      "textHash": "1df4db6ead54b96bd45bd8ed1f0c1be9b27e5f99a10eec552bb28a55a791e6d2",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/dev-vs-prod.1df4db6e.mp3",
-      "narrationText": "開発中はリポジトリ内からアプリを実行するので、切断すると停止します。本番では CLI を使ってラップトップから起動するため、デタッチされた状態で動き続けます。",
-      "audioDurationSec": 14.680816
+      "textHash": "3fb36adb598e6447039f7a73b38a629ac74e2aa2a746af733648edc25e71a781",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-production-mode/dev-vs-prod.3fb36adb.mp3",
+      "narrationText": "違いはこうです。開発環境では、SSH経由でrepoの中からアプリを起動します。セッションを閉じると、アプリもそれと一緒に終了します。本番環境では、ラップトップから切り離した状態で起動します。サーバーがプロセスを管理するので、あなたの接続状態には左右されません。",
+      "audioDurationSec": 25.887347
     },
     {
       "id": "next-tutorial",

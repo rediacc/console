@@ -2,8 +2,15 @@
 /**
  * validate-tutorial-cast-output.js
  *
- * Scans .cast files for error patterns in command output.
- * Commands whose marker label contains "|| true" are skipped (intentional error tolerance).
+ * Gate on what the published tutorial videos actually show:
+ *  - no error output under any command (renet level=error/fatal included)
+ *  - no shell hacks typed on camera (`|| true`, `2>/dev/null`, `timeout N`)
+ *  - no raw CLI JSON envelopes where a table should render
+ *  - nothing after the "Tutorial complete!" banner (cleanup must be silenced)
+ *
+ * Commands recorded via run_cmd_expect_fail in the tutorial scripts are
+ * exempt from the error-output check — the failure IS the demo there, and
+ * the helper already asserts the command cannot accidentally succeed.
  */
 
 import fs from 'node:fs';
@@ -34,6 +41,15 @@ const ERROR_PATTERNS = [
   /missing required argument/i,
   /^fatal:/i,
   /panic:/,
+  /level=(error|fatal)/,
+];
+
+/** On-camera shell hacks that must never appear in a typed command. */
+const MARKER_HACK_PATTERNS = [
+  { pattern: /\|\|\s*true/, message: 'typed command carries "|| true"' },
+  { pattern: /2>\s*\/dev\/null/, message: 'typed command carries "2>/dev/null"' },
+  { pattern: />\s*\/dev\/null/, message: 'typed command suppresses output with >/dev/null' },
+  { pattern: /\btimeout\s+[\d.]+/, message: 'typed command is wrapped in "timeout"' },
 ];
 
 /** Strip ANSI escape sequences and OSC sequences from text. */
@@ -65,7 +81,7 @@ function findErrorInOutput(outputChunks) {
   return null;
 }
 
-function validateCastFile(castFile, errors) {
+function validateCastFile(castFile, errors, expectFailLabels) {
   const relPath = path.relative(ROOT, castFile);
   const raw = fs.readFileSync(castFile, 'utf-8');
   const lines = raw.split('\n').filter(Boolean);
@@ -78,6 +94,8 @@ function validateCastFile(castFile, errors) {
   // Line 1 is the JSON header -- skip it
   let currentMarker = null;
   let currentOutput = [];
+  let sawComplete = false;
+  let leakedAfterComplete = '';
 
   for (let i = 1; i < lines.length; i++) {
     let event;
@@ -93,24 +111,65 @@ function validateCastFile(castFile, errors) {
     if (type === 'm') {
       // Flush previous marker's output
       if (currentMarker !== null) {
-        checkMarkerOutput(currentMarker, currentOutput, relPath, errors);
+        checkMarkerOutput(currentMarker, currentOutput, relPath, errors, expectFailLabels);
       }
       currentMarker = data;
       currentOutput = [];
     } else if (type === 'o' && typeof data === 'string') {
       currentOutput.push(data);
+      const plain = stripAnsi(data);
+      if (sawComplete && plain.trim()) {
+        leakedAfterComplete += plain;
+      }
+      if (plain.includes('Tutorial complete!')) {
+        sawComplete = true;
+        // Anything in the same chunk after the banner counts as leakage.
+        const tail = plain.split('Tutorial complete!')[1] ?? '';
+        leakedAfterComplete += tail.trim() ? tail : '';
+      }
     }
   }
 
   // Flush last marker
   if (currentMarker !== null) {
-    checkMarkerOutput(currentMarker, currentOutput, relPath, errors);
+    checkMarkerOutput(currentMarker, currentOutput, relPath, errors, expectFailLabels);
+  }
+
+  const leaked = leakedAfterComplete.trim();
+  if (leaked) {
+    pushError(
+      errors,
+      relPath,
+      `Output after "Tutorial complete!" banner: "${leaked.slice(0, 100)}"`,
+      'Silence cleanup with end_recording (tutorial-helpers.sh) before cleanup commands'
+    );
   }
 }
 
-function checkMarkerOutput(markerLabel, outputChunks, file, errors) {
-  // Skip commands that intentionally tolerate errors
-  if (/\|\|\s*true/.test(markerLabel)) return;
+function checkMarkerOutput(markerLabel, outputChunks, file, errors, expectFailLabels) {
+  for (const { pattern, message } of MARKER_HACK_PATTERNS) {
+    if (pattern.test(markerLabel)) {
+      pushError(
+        errors,
+        file,
+        `Command "${markerLabel}": ${message}`,
+        'Fix the underlying product issue; tutorial commands must run clean'
+      );
+    }
+  }
+
+  const text = stripAnsi(outputChunks.join(''));
+  if (/"success":\s*(true|false)/.test(text)) {
+    pushError(
+      errors,
+      file,
+      `Command "${markerLabel}" printed a raw CLI JSON envelope`,
+      'The command should render a table in recordings (REDIACC_DEFAULT_OUTPUT=table)'
+    );
+  }
+
+  // Failure demos: the denial output is intentional.
+  if (expectFailLabels.some((re) => re.test(markerLabel))) return;
 
   const errorLine = findErrorInOutput(outputChunks);
   if (errorLine) {
@@ -118,12 +177,39 @@ function checkMarkerOutput(markerLabel, outputChunks, file, errors) {
       errors,
       file,
       `Command "${markerLabel}" produced error output: "${errorLine}"`,
-      'Fix the command in the tutorial script or add "|| true" if the error is intentional'
+      'Fix the command in the tutorial script (run_cmd_expect_fail for intentional failure demos)'
     );
   }
 }
 
-/** Patterns forbidden in tutorial script source files. */
+/**
+ * Collect the display labels of run_cmd_expect_fail invocations across all
+ * tutorial scripts — those markers are allowed (required, even) to show
+ * failure output. Script labels contain unexpanded shell variables while
+ * cast markers carry the expanded values, so each label becomes a regex
+ * with `$VAR` / `${VAR}` segments relaxed to wildcards.
+ */
+function collectExpectFailLabels() {
+  const labels = [];
+  if (!fs.existsSync(TUTORIAL_SCRIPTS_DIR)) return labels;
+  for (const script of fs.readdirSync(TUTORIAL_SCRIPTS_DIR)) {
+    if (!script.startsWith('tutorial-') || !script.endsWith('.sh')) continue;
+    const content = fs.readFileSync(path.join(TUTORIAL_SCRIPTS_DIR, script), 'utf-8');
+    for (const m of content.matchAll(/run_cmd_expect_fail\s+"((?:[^"\\]|\\.)*)"/g)) {
+      const placeholder = '\u0001';
+      // The script source carries shell escapes (\" \\ \$ \`) that bash
+      // resolves before the label reaches the cast marker — unescape them
+      // the same way so the derived regex matches the recorded marker.
+      const unescaped = m[1].replace(/\\(["\\$`])/g, '$1');
+      const templated = unescaped.replace(/\$\{[^}]+\}|\$\w+/g, placeholder);
+      const escaped = templated.replace(/[.*+?^()|[\]\\{}$]/g, '\\$&');
+      labels.push(new RegExp(`^${escaped.split(placeholder).join('.+?')}$`));
+    }
+  }
+  return labels;
+}
+
+/** Patterns forbidden in on-camera tutorial script commands. */
 const FORBIDDEN_SCRIPT_PATTERNS = [
   {
     pattern: />\s*\/dev\/null/,
@@ -135,6 +221,21 @@ const FORBIDDEN_SCRIPT_PATTERNS = [
     message: 'Stderr redirected to suppress output',
     suggestion: 'Tutorial commands should show their output',
   },
+  {
+    pattern: /\|\|\s*true/,
+    message: 'Failure masked with "|| true"',
+    suggestion: 'Fix the underlying product issue or use run_cmd_expect_fail',
+  },
+  {
+    pattern: /2>\s*\/dev\/null/,
+    message: 'Stderr hidden with 2>/dev/null',
+    suggestion: 'Fix the noisy output at the source instead of hiding it',
+  },
+  {
+    pattern: /\btimeout\s+[\d.]+/,
+    message: 'Command wrapped in "timeout"',
+    suggestion: 'Use run_cmd_interrupt for long-running commands',
+  },
 ];
 
 function validateTutorialScripts(errors) {
@@ -142,7 +243,7 @@ function validateTutorialScripts(errors) {
 
   const scripts = fs
     .readdirSync(TUTORIAL_SCRIPTS_DIR)
-    .filter((f) => f.endsWith('-tutorial.sh'))
+    .filter((f) => f.startsWith('tutorial-') && f.endsWith('.sh'))
     .sort();
 
   for (const script of scripts) {
@@ -177,10 +278,11 @@ function main() {
     .sort();
 
   const errors = [];
+  const expectFailLabels = collectExpectFailLabels();
 
   // Validate cast file output for error patterns
   for (const castFile of castFiles) {
-    validateCastFile(castFile, errors);
+    validateCastFile(castFile, errors, expectFailLabels);
   }
 
   // Validate tutorial script source for forbidden patterns

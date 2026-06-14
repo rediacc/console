@@ -1,0 +1,162 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "at": 2.418102,
+      "text": "Çalışma fork'umuz uygulamanın birinci sürümünü tutuyor; basit bir işaret dosyası bunu gözler önüne seriyor.",
+      "afterText": "Birinci sürüm, diskte.",
+      "cardLabel": "Birinci Sürüm",
+      "prose": "Durumunuzun birinci sürümünü çalışma fork'una yazın."
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "at": 10.876025,
+      "text": "Sadece dosyalar değil. Bu fork'ta gerçek bir PostgreSQL veritabanı da çalışıyor ve customers tablosu üç satır içeriyor. Bu sayıyı aklınızda tutun.",
+      "afterText": "Üç satır. Tehlikeye atmak üzere olduğumuz veri bu.",
+      "cardLabel": "Üç Satır",
+      "prose": "Fork aynı zamanda gerçek bir PostgreSQL veritabanı çalıştırıyor: customers tablosu üç satır içeriyor."
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "at": 20.708803,
+      "text": "Dondurun. Commit, tüm repository'yi bir mesaj, bir yazar ve bir üst öğeyle birlikte değişmez bir imaj olarak yakalar. Tıpkı git gibi, ama her şey için; veritabanı dahil.",
+      "afterText": "Commit atıldı. Bu anlık görüntü hiçbir zaman değişemez. Mount edilmeyi bile reddeder.",
+      "cardLabel": "Commit v1",
+      "prose": "Çalışma fork'unu commit edin: veritabanı dahil tüm repository durumu, değişmez ve isimli bir anlık görüntüye dondurulur."
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "at": 29.448478,
+      "text": "Commit'e bir isim verin. Stable branch artık birinci sürümü gösteriyor.",
+      "afterText": "Branch, geri dönebileceğiniz bir isimdir.",
+      "cardLabel": "Stable Branch",
+      "prose": "Commit'i gösteren bir branch oluşturun; dondurulmuş durum için insanın anlayabileceği bir isim."
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "at": 34.241982,
+      "text": "Çalışmaya devam edin. Çalışma fork'unda ikinci sürüm birincinin yerini alıyor. Commit'in umurunda değil.",
+      "afterText": "Çalışma fork'u ilerledi. Geçmiş ilerlemedi.",
+      "cardLabel": "İkinci Sürüm",
+      "prose": "Çalışmaya devam edin: fork değişir, commit'lenmiş geçmiş donuk kalır."
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "at": 42.690283,
+      "text": "Şimdi felaket. Riskli değişiklik customers tablosunu siliyor. Gerçek hayatta bu, midenizin bulandığı andır.",
+      "afterText": "Drop table çalıştı. Veri çalışma fork'undan silindi.",
+      "cardLabel": "Tabloyu Sil",
+      "prose": "Riskli değişiklik çalışma fork'undaki customers tablosunu siliyor."
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "at": 51.047933,
+      "text": "Satırları tekrar isteyin, veritabanı açıkça söylüyor: customers ilişkisi mevcut değil. Felaket gerçek. Her satır gitti.",
+      "afterText": "İlişki mevcut değil. Üç satır, gitti.",
+      "cardLabel": "Tablo Silindi",
+      "prose": "Tabloyu sorgulamak artık başarısız oluyor: \"customers\" ilişkisi mevcut değil. Veri gerçekten çalışma fork'undan gitti."
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "at": 59.69522,
+      "text": "Riskli değişikliği de commit edin; bozuk tablo ve her şeyiyle. Geçmiş gerçekte ne olduğunu kaydeder. Artık iki commit var, üst ve alt.",
+      "afterText": "Zincirde iki anlık görüntü.",
+      "cardLabel": "Commit v2",
+      "prose": "Yeni durumu da commit edin, silinen tablo dahil; geçmiş bir git log gibi büyür."
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "at": 68.35661,
+      "text": "İşte geçmiş: üstte ikinci sürüm, altında birinci sürüm, mesajlar ve yazarlar dahil; tek bir imajın kilidini açmadan.",
+      "afterText": "Bir repo log, tıpkı git log gibi.",
+      "cardLabel": "Repo Log",
+      "prose": "Repo log ile commit geçmişinde gezinin: mesajlar, yazarlar, üst öğeler."
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "at": 75.614559,
+      "text": "İşte ödül anı. Stable branch'i yeni bir yazılabilir fork'a checkout edin. Reflink klonu: neredeyse anında, her boyutta.",
+      "afterText": "Dondurulmuş birinci sürümün yazılabilir bir kopyası, yaklaşık bir saniyede.",
+      "cardLabel": "Checkout",
+      "prose": "Stable branch'i yeni bir yazılabilir fork'a checkout edin; copy-on-write sayesinde neredeyse anında."
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "at": 83.292425,
+      "text": "Rollback fork'unu diğer repo'lar gibi başlatın.",
+      "afterText": "İki fork çalışıyor: güncel sürüm ve kontrol noktası.",
+      "cardLabel": "Rollback Başlat",
+      "prose": "Rollback fork'unu başlatın; çalışma fork'uyla yan yana çalışır."
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "at": 91.555233,
+      "text": "İşte kanıt: rollback fork'u birinci sürümü okuyor. Çalışma fork'unda hâlâ ikinci sürüm var. Çalıştırabileceğiniz bir geçmiş.",
+      "afterText": "Rollback tamamlandı. Buraya gelmek için hiçbir şeyin üzerine yazılmadı.",
+      "cardLabel": "Kanıt: v1",
+      "prose": "Rollback fork'undaki işaret dosyasını okuyun: birinci sürüm, commit'lendiği gibi."
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "at": 98.952411,
+      "text": "Ve en önemli kısım: silinen tablo geri geldi, üç satırıyla birlikte. Rollback yalnızca dosyaları değil, veritabanını da geri yükledi.",
+      "afterText": "Yine üç satır. Felaket geri alındı.",
+      "cardLabel": "Veri Geri Yüklendi",
+      "prose": "Rollback fork'undaki customers tablosunu sorgulayın: üç satır, commit'lendiği gibi. Rollback yalnızca dosyaları değil, veritabanını da geri yükledi."
+    }
+  ],
+  "title": "Branching: Commit ve Rollback",
+  "chapters": {
+    "intro": "Branching: Commit ve Rollback",
+    "commit-model": "Commit'ler, branch'ler, checkout",
+    "cast-step-0": "Adım 1: Birinci sürüm",
+    "cast-step-1": "Adım 2: Commit edin",
+    "cast-step-2": "Adım 3: Branch ile adlandırın",
+    "cast-step-3": "Adım 4: Çalışmaya devam edin, ikinci sürüm",
+    "cast-step-4": "Adım 5: Tekrar commit edin",
+    "cast-step-5": "Adım 6: Geçmiş",
+    "cast-step-6": "Adım 7: Branch'i checkout edin",
+    "cast-step-7": "Adım 8: Rollback'i başlatın",
+    "cast-step-8": "Adım 9: Kanıt, birinci sürüm",
+    "cast-step-9": "Adım 10: Branch'i Checkout Et",
+    "cast-step-10": "Adım 11: Rollback'i Başlat",
+    "cast-step-11": "Adım 12: Kanıt: Birinci Sürüm",
+    "cast-step-12": "Adım 13: Veri Geri Döndü",
+    "vscode-versions": "Her iki sürüm, yan yana",
+    "outro": "Sıradaki: Canlı Taşıma"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Repository'lerinizi kod gibi sürümleyelim! Bir kontrol noktası donduracağız, ona bir isim vereceğiz, sonra gerçek bir veritabanı tablosunu sileceğiz. Rollback, dondurulmuş durumu saniyeler içinde geri getirir; her satırıyla birlikte."
+    },
+    {
+      "id": "commit-model",
+      "text": "Model git, ama tüm repository'ler için. Commit, dondurulmuş ve değişmez bir imajdır. Mount edilmeyi bile reddeder, yani hiçbir şey onu değiştiremez. Branch, yalnızca bir commit'i gösteren bir isimdir. Checkout ise herhangi bir commit'i yeni ve yazılabilir bir fork'a dönüştürür."
+    },
+    {
+      "id": "vscode-versions",
+      "text": "Görmek inanmaktır. Soldaki rollback fork'u birinci sürümü tutarken, sağdaki çalışma fork'u ikinci sürüme geçti. İkisi de canlı, ikisi de yazılabilir, ikisi de aynı geçmişten geliyor."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Commit'ler hiç değişmez, fork'lar hiç beklemez. Sıradaki derste, çalışan bir repository'nin tamamını canlı olarak başka bir makineye taşıyoruz. Bir sonrakinde görüşürüz!"
+    }
+  ]
+}

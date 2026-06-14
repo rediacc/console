@@ -31,6 +31,7 @@ export type SectionType =
   | 'hero'
   | 'stats'
   | 'problem'
+  | 'video'
   | 'costCalculator'
   | 'howItWorks'
   | 'techDiff'
@@ -101,6 +102,7 @@ const ALL_SECTIONS = [
   'hero',
   'stats',
   'problem',
+  'video',
   'costCalculator',
   'howItWorks',
   'techDiff',
