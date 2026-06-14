@@ -1,0 +1,360 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 6.268,
+      "text": "欢迎回来！上次你见识了",
+      "words": [{ "start": 1, "end": 6.268, "char": [0, 11] }]
+    },
+    {
+      "start": 6.268,
+      "end": 11.536,
+      "text": "fork",
+      "words": [{ "start": 6.268, "end": 11.536, "char": [0, 4] }]
+    },
+    {
+      "start": 11.536,
+      "end": 16.804,
+      "text": "命令。现在来看看它们究竟意味着什么：一个实时运行的数据库应用，几秒内完成复制，可以随意编辑，而原版完全感知不到任何变化。",
+      "words": [{ "start": 11.536, "end": 16.804, "char": [0, 60] }]
+    },
+    {
+      "start": 17.566,
+      "end": 21.479,
+      "text": "先说背景：一个真实的",
+      "words": [{ "start": 17.566, "end": 21.479, "char": [0, 10] }]
+    },
+    {
+      "start": 21.479,
+      "end": 25.392,
+      "text": "PostgreSQL，上面挂着",
+      "words": [{ "start": 21.479, "end": 25.392, "char": [0, 15] }]
+    },
+    {
+      "start": 25.392,
+      "end": 29.305,
+      "text": "pgAdmin",
+      "words": [{ "start": 25.392, "end": 29.305, "char": [0, 7] }]
+    },
+    {
+      "start": 29.305,
+      "end": 33.219,
+      "text": "界面，在服务器上实时运行。fork",
+      "words": [{ "start": 29.305, "end": 33.219, "char": [0, 17] }]
+    },
+    {
+      "start": 33.219,
+      "end": 37.132,
+      "text": "是对整个环境的即时写时复制副本。诞生时数据完全相同，之后各自独立运行。",
+      "words": [{ "start": 33.219, "end": 37.132, "char": [0, 35] }]
+    },
+    {
+      "start": 40.394,
+      "end": 41.992,
+      "text": "Meet the app:",
+      "words": [
+        { "start": 40.394, "end": 40.927, "char": [0, 4] },
+        { "start": 40.927, "end": 41.459, "char": [5, 8] },
+        { "start": 41.459, "end": 41.992, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 41.992,
+      "end": 42.524,
+      "text": "demo-pgadmin,",
+      "words": [{ "start": 41.992, "end": 42.524, "char": [0, 13] }]
+    },
+    {
+      "start": 42.524,
+      "end": 45.186,
+      "text": "a PostgreSQL with a pgAdmin",
+      "words": [
+        { "start": 42.524, "end": 43.056, "char": [0, 1] },
+        { "start": 43.056, "end": 43.589, "char": [2, 12] },
+        { "start": 43.589, "end": 44.121, "char": [13, 17] },
+        { "start": 44.121, "end": 44.654, "char": [18, 19] },
+        { "start": 44.654, "end": 45.186, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 45.186,
+      "end": 45.719,
+      "text": "interface,",
+      "words": [{ "start": 45.186, "end": 45.719, "char": [0, 10] }]
+    },
+    {
+      "start": 45.719,
+      "end": 47.316,
+      "text": "mounted and running.",
+      "words": [
+        { "start": 45.719, "end": 46.251, "char": [0, 7] },
+        { "start": 46.251, "end": 46.784, "char": [8, 11] },
+        { "start": 46.784, "end": 47.316, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 50.316,
+      "end": 53.085,
+      "text": "一个运行中的 repo。来克隆它吧。",
+      "words": [
+        { "start": 50.316, "end": 51.701, "char": [0, 6] },
+        { "start": 51.701, "end": 53.085, "char": [7, 18] }
+      ]
+    },
+    {
+      "start": 53.59,
+      "end": 57.848,
+      "text": "这是原版，在浏览器里打开。pgAdmin",
+      "words": [{ "start": 53.59, "end": 57.848, "char": [0, 20] }]
+    },
+    {
+      "start": 57.848,
+      "end": 62.106,
+      "text": "要求登录，因为这是生产环境的副本，生产环境始终受到保护。",
+      "words": [{ "start": 57.848, "end": 62.106, "char": [0, 28] }]
+    },
+    {
+      "start": 87.257,
+      "end": 88.034,
+      "text": "Fork it.",
+      "words": [
+        { "start": 87.257, "end": 87.645, "char": [0, 4] },
+        { "start": 87.645, "end": 88.034, "char": [5, 8] }
+      ]
+    },
+    {
+      "start": 88.034,
+      "end": 90.755,
+      "text": "The copy-on-write clone takes seconds regardless of",
+      "words": [
+        { "start": 88.034, "end": 88.423, "char": [0, 3] },
+        { "start": 88.423, "end": 88.811, "char": [4, 17] },
+        { "start": 88.811, "end": 89.2, "char": [18, 23] },
+        { "start": 89.2, "end": 89.589, "char": [24, 29] },
+        { "start": 89.589, "end": 89.978, "char": [30, 37] },
+        { "start": 89.978, "end": 90.366, "char": [38, 48] },
+        { "start": 90.366, "end": 90.755, "char": [49, 51] }
+      ]
+    },
+    {
+      "start": 90.755,
+      "end": 91.144,
+      "text": "size;",
+      "words": [{ "start": 90.755, "end": 91.144, "char": [0, 5] }]
+    },
+    {
+      "start": 91.144,
+      "end": 93.865,
+      "text": "detach returns as soon as the containers",
+      "words": [
+        { "start": 91.144, "end": 91.532, "char": [0, 6] },
+        { "start": 91.532, "end": 91.921, "char": [7, 14] },
+        { "start": 91.921, "end": 92.31, "char": [15, 17] },
+        { "start": 92.31, "end": 92.699, "char": [18, 22] },
+        { "start": 92.699, "end": 93.087, "char": [23, 25] },
+        { "start": 93.087, "end": 93.476, "char": [26, 29] },
+        { "start": 93.476, "end": 93.865, "char": [30, 40] }
+      ]
+    },
+    {
+      "start": 93.865,
+      "end": 94.253,
+      "text": "start,",
+      "words": [{ "start": 93.865, "end": 94.253, "char": [0, 6] }]
+    },
+    {
+      "start": 94.253,
+      "end": 96.974,
+      "text": "while health checks continue in the background.",
+      "words": [
+        { "start": 94.253, "end": 94.642, "char": [0, 5] },
+        { "start": 94.642, "end": 95.031, "char": [6, 12] },
+        { "start": 95.031, "end": 95.419, "char": [13, 19] },
+        { "start": 95.419, "end": 95.808, "char": [20, 28] },
+        { "start": 95.808, "end": 96.197, "char": [29, 31] },
+        { "start": 96.197, "end": 96.586, "char": [32, 35] },
+        { "start": 96.586, "end": 96.974, "char": [36, 47] }
+      ]
+    },
+    {
+      "start": 97.625,
+      "end": 101.164,
+      "text": "已",
+      "words": [{ "start": 97.625, "end": 101.164, "char": [0, 1] }]
+    },
+    {
+      "start": 101.164,
+      "end": 104.704,
+      "text": "fork，正在启动。数据没有被复制，而是被共享，直到某一方修改它为止。",
+      "words": [{ "start": 101.164, "end": 104.704, "char": [0, 35] }]
+    },
+    {
+      "start": 107.972,
+      "end": 112.282,
+      "text": "这是 fork",
+      "words": [
+        { "start": 107.972, "end": 110.127, "char": [0, 2] },
+        { "start": 110.127, "end": 112.282, "char": [3, 7] }
+      ]
+    },
+    {
+      "start": 112.282,
+      "end": 116.592,
+      "text": "的 pgAdmin。这次不需要登录，fork",
+      "words": [
+        { "start": 112.282, "end": 114.437, "char": [0, 1] },
+        { "start": 114.437, "end": 116.592, "char": [2, 22] }
+      ]
+    },
+    {
+      "start": 116.592,
+      "end": 120.902,
+      "text": "是一次性的 sandbox，所以门卫直接让路。表相同，数据行相同，但它有自己独立的世界。",
+      "words": [
+        { "start": 116.592, "end": 118.747, "char": [0, 5] },
+        { "start": 118.747, "end": 120.902, "char": [6, 44] }
+      ]
+    },
+    {
+      "start": 159.838,
+      "end": 161.171,
+      "text": "Two repositories now:",
+      "words": [
+        { "start": 159.838, "end": 160.282, "char": [0, 3] },
+        { "start": 160.282, "end": 160.727, "char": [4, 16] },
+        { "start": 160.727, "end": 161.171, "char": [17, 21] }
+      ]
+    },
+    {
+      "start": 161.171,
+      "end": 163.391,
+      "text": "the original and the experiment,",
+      "words": [
+        { "start": 161.171, "end": 161.615, "char": [0, 3] },
+        { "start": 161.615, "end": 162.059, "char": [4, 12] },
+        { "start": 162.059, "end": 162.503, "char": [13, 16] },
+        { "start": 162.503, "end": 162.947, "char": [17, 20] },
+        { "start": 162.947, "end": 163.391, "char": [21, 32] }
+      ]
+    },
+    {
+      "start": 163.391,
+      "end": 165.611,
+      "text": "each with its own containers,",
+      "words": [
+        { "start": 163.391, "end": 163.835, "char": [0, 4] },
+        { "start": 163.835, "end": 164.279, "char": [5, 9] },
+        { "start": 164.279, "end": 164.723, "char": [10, 13] },
+        { "start": 164.723, "end": 165.167, "char": [14, 17] },
+        { "start": 165.167, "end": 165.611, "char": [18, 29] }
+      ]
+    },
+    {
+      "start": 165.611,
+      "end": 166.056,
+      "text": "network,",
+      "words": [{ "start": 165.611, "end": 166.056, "char": [0, 8] }]
+    },
+    {
+      "start": 166.056,
+      "end": 167.388,
+      "text": "and disk view.",
+      "words": [
+        { "start": 166.056, "end": 166.5, "char": [0, 3] },
+        { "start": 166.5, "end": 166.944, "char": [4, 8] },
+        { "start": 166.944, "end": 167.388, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 170.388,
+      "end": 173.235,
+      "text": "同一台机器，两个隔离的世界。",
+      "words": [{ "start": 170.388, "end": 173.235, "char": [0, 14] }]
+    },
+    {
+      "start": 176.538,
+      "end": 177.443,
+      "text": "Done experimenting?",
+      "words": [
+        { "start": 176.538, "end": 176.991, "char": [0, 4] },
+        { "start": 176.991, "end": 177.443, "char": [5, 19] }
+      ]
+    },
+    {
+      "start": 177.443,
+      "end": 178.8,
+      "text": "Delete the fork.",
+      "words": [
+        { "start": 177.443, "end": 177.895, "char": [0, 6] },
+        { "start": 177.895, "end": 178.348, "char": [7, 10] },
+        { "start": 178.348, "end": 178.8, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 178.8,
+      "end": 180.157,
+      "text": "Seconds to create,",
+      "words": [
+        { "start": 178.8, "end": 179.252, "char": [0, 7] },
+        { "start": 179.252, "end": 179.705, "char": [8, 10] },
+        { "start": 179.705, "end": 180.157, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 180.157,
+      "end": 182.871,
+      "text": "seconds to throw away — the",
+      "words": [
+        { "start": 180.157, "end": 180.609, "char": [0, 7] },
+        { "start": 180.609, "end": 181.062, "char": [8, 10] },
+        { "start": 181.062, "end": 181.514, "char": [11, 16] },
+        { "start": 181.514, "end": 181.966, "char": [17, 21] },
+        { "start": 181.966, "end": 182.419, "char": [22, 23] },
+        { "start": 182.419, "end": 182.871, "char": [24, 27] }
+      ]
+    },
+    {
+      "start": 182.871,
+      "end": 185.133,
+      "text": "original never knew it existed.",
+      "words": [
+        { "start": 182.871, "end": 183.323, "char": [0, 8] },
+        { "start": 183.323, "end": 183.776, "char": [9, 14] },
+        { "start": 183.776, "end": 184.228, "char": [15, 19] },
+        { "start": 184.228, "end": 184.68, "char": [20, 22] },
+        { "start": 184.68, "end": 185.133, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 188.133,
+      "end": 192.495,
+      "text": "已删除。原始版本在整个过程中始终保持正常服务。",
+      "words": [{ "start": 188.133, "end": 192.495, "char": [0, 23] }]
+    },
+    {
+      "start": 193.303,
+      "end": 198.246,
+      "text": "所以尽管随意 fork，生产环境不会受到任何影响。下一期，我们来看",
+      "words": [
+        { "start": 193.303, "end": 195.775, "char": [0, 6] },
+        { "start": 195.775, "end": 198.246, "char": [7, 33] }
+      ]
+    },
+    {
+      "start": 198.246,
+      "end": 203.188,
+      "text": "secrets，也就是 fork",
+      "words": [
+        { "start": 198.246, "end": 200.717, "char": [0, 11] },
+        { "start": 200.717, "end": 203.188, "char": [12, 16] }
+      ]
+    },
+    {
+      "start": 203.188,
+      "end": 205.659,
+      "text": "刻意不继承的那一样东西。到时见！",
+      "words": [{ "start": 203.188, "end": 205.659, "char": [0, 16] }]
+    }
+  ]
+}

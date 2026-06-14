@@ -691,95 +691,99 @@
     },
     {
       "start": 134.439,
-      "end": 137.428,
-      "text": "E é assim que se fecha",
+      "end": 136.684,
+      "text": "Agora você pode instalar,",
       "words": [
-        { "start": 134.439, "end": 134.937, "char": [0, 1] },
-        { "start": 134.937, "end": 135.435, "char": [2, 3] },
-        { "start": 135.435, "end": 135.933, "char": [4, 9] },
-        { "start": 135.933, "end": 136.431, "char": [10, 13] },
-        { "start": 136.431, "end": 136.93, "char": [14, 16] },
-        { "start": 136.93, "end": 137.428, "char": [17, 22] }
+        { "start": 134.439, "end": 135, "char": [0, 5] },
+        { "start": 135, "end": 135.561, "char": [6, 10] },
+        { "start": 135.561, "end": 136.123, "char": [11, 15] },
+        { "start": 136.123, "end": 136.684, "char": [16, 25] }
       ]
     },
     {
-      "start": 137.428,
-      "end": 138.424,
-      "text": "a série.",
-      "words": [
-        { "start": 137.428, "end": 137.926, "char": [0, 1] },
-        { "start": 137.926, "end": 138.424, "char": [2, 8] }
-      ]
-    },
-    {
-      "start": 138.424,
-      "end": 139.918,
-      "text": "Já consegue instalar,",
-      "words": [
-        { "start": 138.424, "end": 138.922, "char": [0, 2] },
-        { "start": 138.922, "end": 139.42, "char": [3, 11] },
-        { "start": 139.42, "end": 139.918, "char": [12, 21] }
-      ]
-    },
-    {
-      "start": 139.918,
-      "end": 140.417,
+      "start": 136.684,
+      "end": 137.245,
       "text": "configurar,",
-      "words": [{ "start": 139.918, "end": 140.417, "char": [0, 11] }]
+      "words": [{ "start": 136.684, "end": 137.245, "char": [0, 11] }]
     },
     {
-      "start": 140.417,
-      "end": 140.915,
-      "text": "implementar,",
-      "words": [{ "start": 140.417, "end": 140.915, "char": [0, 12] }]
-    },
-    {
-      "start": 140.915,
-      "end": 141.413,
-      "text": "bifurcar,",
-      "words": [{ "start": 140.915, "end": 141.413, "char": [0, 9] }]
-    },
-    {
-      "start": 141.413,
-      "end": 142.907,
-      "text": "ir para produção,",
+      "start": 137.245,
+      "end": 138.367,
+      "text": "fazer deploy,",
       "words": [
-        { "start": 141.413, "end": 141.911, "char": [0, 2] },
-        { "start": 141.911, "end": 142.409, "char": [3, 7] },
-        { "start": 142.409, "end": 142.907, "char": [8, 17] }
+        { "start": 137.245, "end": 137.806, "char": [0, 5] },
+        { "start": 137.806, "end": 138.367, "char": [6, 13] }
       ]
     },
     {
-      "start": 142.907,
-      "end": 144.402,
-      "text": "ativar arranque automático,",
+      "start": 138.367,
+      "end": 139.49,
+      "text": "fazer fork,",
       "words": [
-        { "start": 142.907, "end": 143.405, "char": [0, 6] },
-        { "start": 143.405, "end": 143.903, "char": [7, 15] },
-        { "start": 143.903, "end": 144.402, "char": [16, 27] }
+        { "start": 138.367, "end": 138.929, "char": [0, 5] },
+        { "start": 138.929, "end": 139.49, "char": [6, 11] }
       ]
     },
     {
-      "start": 144.402,
-      "end": 146.394,
-      "text": "fazer cópias e monitorizar,",
+      "start": 139.49,
+      "end": 140.051,
+      "text": "publicar,",
+      "words": [{ "start": 139.49, "end": 140.051, "char": [0, 9] }]
+    },
+    {
+      "start": 140.051,
+      "end": 141.735,
+      "text": "ativar o autostart,",
       "words": [
-        { "start": 144.402, "end": 144.9, "char": [0, 5] },
-        { "start": 144.9, "end": 145.398, "char": [6, 12] },
-        { "start": 145.398, "end": 145.896, "char": [13, 14] },
-        { "start": 145.896, "end": 146.394, "char": [15, 27] }
+        { "start": 140.051, "end": 140.612, "char": [0, 6] },
+        { "start": 140.612, "end": 141.174, "char": [7, 8] },
+        { "start": 141.174, "end": 141.735, "char": [9, 19] }
       ]
     },
     {
-      "start": 146.394,
-      "end": 148.885,
-      "text": "tudo a partir do terminal!",
+      "start": 141.735,
+      "end": 143.98,
+      "text": "fazer backup e monitorar.",
       "words": [
-        { "start": 146.394, "end": 146.892, "char": [0, 4] },
-        { "start": 146.892, "end": 147.39, "char": [5, 6] },
-        { "start": 147.39, "end": 147.888, "char": [7, 13] },
-        { "start": 147.888, "end": 148.387, "char": [14, 16] },
-        { "start": 148.387, "end": 148.885, "char": [17, 26] }
+        { "start": 141.735, "end": 142.296, "char": [0, 5] },
+        { "start": 142.296, "end": 142.857, "char": [6, 12] },
+        { "start": 142.857, "end": 143.418, "char": [13, 14] },
+        { "start": 143.418, "end": 143.98, "char": [15, 25] }
+      ]
+    },
+    {
+      "start": 143.98,
+      "end": 146.786,
+      "text": "A trilha avançada começa agora:",
+      "words": [
+        { "start": 143.98, "end": 144.541, "char": [0, 1] },
+        { "start": 144.541, "end": 145.102, "char": [2, 8] },
+        { "start": 145.102, "end": 145.663, "char": [9, 17] },
+        { "start": 145.663, "end": 146.224, "char": [18, 24] },
+        { "start": 146.224, "end": 146.786, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 146.786,
+      "end": 149.592,
+      "text": "versione seus repos como código,",
+      "words": [
+        { "start": 146.786, "end": 147.347, "char": [0, 8] },
+        { "start": 147.347, "end": 147.908, "char": [9, 13] },
+        { "start": 147.908, "end": 148.469, "char": [14, 19] },
+        { "start": 148.469, "end": 149.03, "char": [20, 24] },
+        { "start": 149.03, "end": 149.592, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 149.592,
+      "end": 151.837,
+      "text": "com commits e rollbacks.",
+      "words": [
+        { "start": 149.592, "end": 150.153, "char": [0, 3] },
+        { "start": 150.153, "end": 150.714, "char": [4, 11] },
+        { "start": 150.714, "end": 151.275, "char": [12, 13] },
+        { "start": 151.275, "end": 151.837, "char": [14, 24] }
       ]
     }
   ]

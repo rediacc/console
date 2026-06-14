@@ -3,665 +3,685 @@
   "cues": [
     {
       "start": 1,
-      "end": 2.836,
+      "end": 3.541,
       "text": "Time to deploy a real app!",
       "words": [
-        { "start": 1, "end": 1.306, "char": [0, 4] },
-        { "start": 1.306, "end": 1.612, "char": [5, 7] },
-        { "start": 1.612, "end": 1.918, "char": [8, 14] },
-        { "start": 1.918, "end": 2.224, "char": [15, 16] },
-        { "start": 2.224, "end": 2.53, "char": [17, 21] },
-        { "start": 2.53, "end": 2.836, "char": [22, 26] }
+        { "start": 1, "end": 1.423, "char": [0, 4] },
+        { "start": 1.423, "end": 1.847, "char": [5, 7] },
+        { "start": 1.847, "end": 2.27, "char": [8, 14] },
+        { "start": 2.27, "end": 2.694, "char": [15, 16] },
+        { "start": 2.694, "end": 3.117, "char": [17, 21] },
+        { "start": 3.117, "end": 3.541, "char": [22, 26] }
       ]
     },
     {
-      "start": 2.836,
-      "end": 5.59,
-      "text": "We will go from an empty repo to running",
+      "start": 3.541,
+      "end": 6.082,
+      "text": "From an empty repo to running",
       "words": [
-        { "start": 2.836, "end": 3.142, "char": [0, 2] },
-        { "start": 3.142, "end": 3.448, "char": [3, 7] },
-        { "start": 3.448, "end": 3.754, "char": [8, 10] },
-        { "start": 3.754, "end": 4.06, "char": [11, 15] },
-        { "start": 4.06, "end": 4.366, "char": [16, 18] },
-        { "start": 4.366, "end": 4.672, "char": [19, 24] },
-        { "start": 4.672, "end": 4.978, "char": [25, 29] },
-        { "start": 4.978, "end": 5.284, "char": [30, 32] },
-        { "start": 5.284, "end": 5.59, "char": [33, 40] }
+        { "start": 3.541, "end": 3.964, "char": [0, 4] },
+        { "start": 3.964, "end": 4.388, "char": [5, 7] },
+        { "start": 4.388, "end": 4.811, "char": [8, 13] },
+        { "start": 4.811, "end": 5.235, "char": [14, 18] },
+        { "start": 5.235, "end": 5.658, "char": [19, 21] },
+        { "start": 5.658, "end": 6.082, "char": [22, 29] }
       ]
     },
     {
-      "start": 5.59,
-      "end": 7.426,
-      "text": "containers in a few short steps.",
+      "start": 6.082,
+      "end": 7.775,
+      "text": "containers in three moves:",
       "words": [
-        { "start": 5.59, "end": 5.896, "char": [0, 10] },
-        { "start": 5.896, "end": 6.202, "char": [11, 13] },
-        { "start": 6.202, "end": 6.508, "char": [14, 15] },
-        { "start": 6.508, "end": 6.814, "char": [16, 19] },
-        { "start": 6.814, "end": 7.12, "char": [20, 25] },
-        { "start": 7.12, "end": 7.426, "char": [26, 32] }
+        { "start": 6.082, "end": 6.505, "char": [0, 10] },
+        { "start": 6.505, "end": 6.928, "char": [11, 13] },
+        { "start": 6.928, "end": 7.352, "char": [14, 19] },
+        { "start": 7.352, "end": 7.775, "char": [20, 26] }
       ]
     },
     {
-      "start": 8.288,
-      "end": 10.928,
+      "start": 7.775,
+      "end": 8.199,
+      "text": "pick,",
+      "words": [{ "start": 7.775, "end": 8.199, "char": [0, 5] }]
+    },
+    {
+      "start": 8.199,
+      "end": 8.622,
+      "text": "apply,",
+      "words": [{ "start": 8.199, "end": 8.622, "char": [0, 6] }]
+    },
+    {
+      "start": 8.622,
+      "end": 9.046,
+      "text": "run.",
+      "words": [{ "start": 8.622, "end": 9.046, "char": [0, 4] }]
+    },
+    {
+      "start": 9.891,
+      "end": 12.531,
       "text": "The flow is simple: pick a template, apply",
       "words": [
-        { "start": 8.288, "end": 8.368, "char": [0, 3] },
-        { "start": 8.368, "end": 8.608, "char": [4, 8] },
-        { "start": 8.608, "end": 8.688, "char": [9, 11] },
-        { "start": 8.688, "end": 9.168, "char": [12, 18] },
-        { "start": 9.408, "end": 9.568, "char": [20, 24] },
-        { "start": 9.568, "end": 9.648, "char": [25, 26] },
-        { "start": 9.648, "end": 10.048, "char": [27, 35] },
-        { "start": 10.528, "end": 10.928, "char": [37, 42] }
+        { "start": 9.891, "end": 9.971, "char": [0, 3] },
+        { "start": 9.971, "end": 10.211, "char": [4, 8] },
+        { "start": 10.211, "end": 10.291, "char": [9, 11] },
+        { "start": 10.291, "end": 10.771, "char": [12, 18] },
+        { "start": 11.011, "end": 11.171, "char": [20, 24] },
+        { "start": 11.171, "end": 11.251, "char": [25, 26] },
+        { "start": 11.251, "end": 11.651, "char": [27, 35] },
+        { "start": 12.131, "end": 12.531, "char": [37, 42] }
       ]
     },
     {
-      "start": 10.928,
-      "end": 13.488,
+      "start": 12.531,
+      "end": 15.091,
       "text": "it to the repo, and run it. The CLI ships",
       "words": [
-        { "start": 10.928, "end": 11.008, "char": [3, 5] },
-        { "start": 11.008, "end": 11.088, "char": [6, 9] },
-        { "start": 11.088, "end": 11.648, "char": [10, 14] },
-        { "start": 11.728, "end": 11.888, "char": [16, 19] },
-        { "start": 11.888, "end": 12.048, "char": [20, 23] },
-        { "start": 12.048, "end": 12.208, "char": [24, 26] },
-        { "start": 12.608, "end": 12.688, "char": [28, 31] },
-        { "start": 12.688, "end": 13.168, "char": [32, 35] },
-        { "start": 13.168, "end": 13.488, "char": [36, 41] }
+        { "start": 12.531, "end": 12.611, "char": [3, 5] },
+        { "start": 12.611, "end": 12.691, "char": [6, 9] },
+        { "start": 12.691, "end": 13.251, "char": [10, 14] },
+        { "start": 13.331, "end": 13.491, "char": [16, 19] },
+        { "start": 13.491, "end": 13.651, "char": [20, 23] },
+        { "start": 13.651, "end": 13.811, "char": [24, 26] },
+        { "start": 14.211, "end": 14.291, "char": [28, 31] },
+        { "start": 14.291, "end": 14.771, "char": [32, 35] },
+        { "start": 14.771, "end": 15.091, "char": [36, 41] }
       ]
     },
     {
-      "start": 13.488,
-      "end": 16.288,
+      "start": 15.091,
+      "end": 17.891,
       "text": "built-in templates so we never have to write a docker",
       "words": [
-        { "start": 13.488, "end": 14.048, "char": [0, 8] },
-        { "start": 14.048, "end": 14.608, "char": [9, 18] },
-        { "start": 14.608, "end": 14.768, "char": [19, 21] },
-        { "start": 14.768, "end": 14.928, "char": [22, 24] },
-        { "start": 14.928, "end": 15.328, "char": [25, 30] },
-        { "start": 15.328, "end": 15.408, "char": [31, 35] },
-        { "start": 15.488, "end": 15.568, "char": [36, 38] },
-        { "start": 15.568, "end": 15.808, "char": [39, 44] },
-        { "start": 15.808, "end": 15.888, "char": [45, 46] },
-        { "start": 15.888, "end": 16.288, "char": [47, 53] }
+        { "start": 15.091, "end": 15.651, "char": [0, 8] },
+        { "start": 15.651, "end": 16.211, "char": [9, 18] },
+        { "start": 16.211, "end": 16.371, "char": [19, 21] },
+        { "start": 16.371, "end": 16.531, "char": [22, 24] },
+        { "start": 16.531, "end": 16.931, "char": [25, 30] },
+        { "start": 16.931, "end": 17.011, "char": [31, 35] },
+        { "start": 17.091, "end": 17.171, "char": [36, 38] },
+        { "start": 17.171, "end": 17.411, "char": [39, 44] },
+        { "start": 17.411, "end": 17.491, "char": [45, 46] },
+        { "start": 17.491, "end": 17.891, "char": [47, 53] }
       ]
     },
     {
-      "start": 16.288,
-      "end": 17.568,
+      "start": 17.891,
+      "end": 19.171,
       "text": "-compose from scratch.",
       "words": [
-        { "start": 16.288, "end": 16.848, "char": [1, 8] },
-        { "start": 16.848, "end": 17.088, "char": [9, 13] },
-        { "start": 17.088, "end": 17.568, "char": [14, 21] }
+        { "start": 17.891, "end": 18.451, "char": [1, 8] },
+        { "start": 18.451, "end": 18.691, "char": [9, 13] },
+        { "start": 18.691, "end": 19.171, "char": [14, 21] }
       ]
     },
     {
-      "start": 21.038,
-      "end": 23.678,
-      "text": "Step one. We will list the available templates",
+      "start": 22.561,
+      "end": 23.423,
+      "text": "Step one:",
       "words": [
-        { "start": 21.038, "end": 21.278, "char": [0, 4] },
-        { "start": 21.278, "end": 21.518, "char": [5, 8] },
-        { "start": 21.998, "end": 22.078, "char": [10, 12] },
-        { "start": 22.078, "end": 22.238, "char": [13, 17] },
-        { "start": 22.238, "end": 22.478, "char": [18, 22] },
-        { "start": 22.478, "end": 22.638, "char": [23, 26] },
-        { "start": 22.638, "end": 23.038, "char": [27, 36] },
-        { "start": 23.038, "end": 23.678, "char": [37, 46] }
+        { "start": 22.561, "end": 22.992, "char": [0, 4] },
+        { "start": 22.992, "end": 23.423, "char": [5, 9] }
       ]
     },
     {
-      "start": 24.558,
-      "end": 27.118,
-      "text": ". Rediacc ships ready-made setups for common apps",
+      "start": 23.423,
+      "end": 25.147,
+      "text": "list the available templates.",
       "words": [
-        { "start": 24.558, "end": 24.958, "char": [10, 15] },
-        { "start": 25.678, "end": 26.238, "char": [27, 33] },
-        { "start": 26.238, "end": 26.398, "char": [34, 37] },
-        { "start": 26.398, "end": 26.798, "char": [38, 44] },
-        { "start": 26.798, "end": 27.118, "char": [45, 49] }
+        { "start": 23.423, "end": 23.854, "char": [0, 4] },
+        { "start": 23.854, "end": 24.285, "char": [5, 8] },
+        { "start": 24.285, "end": 24.716, "char": [9, 18] },
+        { "start": 24.716, "end": 25.147, "char": [19, 29] }
       ]
     },
     {
-      "start": 27.118,
-      "end": 29.998,
-      "text": "so we do not have to write a docker-compose from scratch.",
+      "start": 25.147,
+      "end": 27.733,
+      "text": "Rediacc ships ready-made setups for common",
       "words": [
-        { "start": 27.118, "end": 27.278, "char": [0, 2] },
-        { "start": 27.278, "end": 27.358, "char": [3, 5] },
-        { "start": 27.358, "end": 27.518, "char": [6, 8] },
-        { "start": 27.518, "end": 27.758, "char": [9, 12] },
-        { "start": 27.758, "end": 27.918, "char": [13, 17] },
-        { "start": 27.998, "end": 28.318, "char": [21, 26] },
-        { "start": 28.318, "end": 28.718, "char": [29, 35] },
-        { "start": 28.718, "end": 29.278, "char": [36, 43] },
-        { "start": 29.278, "end": 29.438, "char": [44, 48] },
-        { "start": 29.438, "end": 29.998, "char": [49, 56] }
+        { "start": 25.147, "end": 25.578, "char": [0, 7] },
+        { "start": 25.578, "end": 26.009, "char": [8, 13] },
+        { "start": 26.009, "end": 26.44, "char": [14, 24] },
+        { "start": 26.44, "end": 26.871, "char": [25, 31] },
+        { "start": 26.871, "end": 27.302, "char": [32, 35] },
+        { "start": 27.302, "end": 27.733, "char": [36, 42] }
       ]
     },
     {
-      "start": 31.629,
-      "end": 34.509,
+      "start": 27.733,
+      "end": 28.164,
+      "text": "apps,",
+      "words": [{ "start": 27.733, "end": 28.164, "char": [0, 5] }]
+    },
+    {
+      "start": 28.164,
+      "end": 30.75,
+      "text": "so there is no docker-compose to",
+      "words": [
+        { "start": 28.164, "end": 28.595, "char": [0, 2] },
+        { "start": 28.595, "end": 29.026, "char": [3, 8] },
+        { "start": 29.026, "end": 29.457, "char": [9, 11] },
+        { "start": 29.457, "end": 29.888, "char": [12, 14] },
+        { "start": 29.888, "end": 30.319, "char": [15, 29] },
+        { "start": 30.319, "end": 30.75, "char": [30, 32] }
+      ]
+    },
+    {
+      "start": 30.75,
+      "end": 32.043,
+      "text": "write from scratch.",
+      "words": [
+        { "start": 30.75, "end": 31.181, "char": [0, 5] },
+        { "start": 31.181, "end": 31.612, "char": [6, 10] },
+        { "start": 31.612, "end": 32.043, "char": [11, 19] }
+      ]
+    },
+    {
+      "start": 33.373,
+      "end": 36.253,
       "text": "The full template catalog. Each one is a tested",
       "words": [
-        { "start": 31.629, "end": 31.709, "char": [0, 3] },
-        { "start": 31.709, "end": 32.029, "char": [4, 8] },
-        { "start": 32.029, "end": 32.509, "char": [9, 17] },
-        { "start": 32.509, "end": 33.069, "char": [18, 25] },
-        { "start": 33.389, "end": 33.629, "char": [27, 31] },
-        { "start": 33.629, "end": 33.869, "char": [32, 35] },
-        { "start": 33.869, "end": 34.029, "char": [36, 38] },
-        { "start": 34.029, "end": 34.109, "char": [39, 40] },
-        { "start": 34.109, "end": 34.509, "char": [41, 47] }
+        { "start": 33.373, "end": 33.453, "char": [0, 3] },
+        { "start": 33.453, "end": 33.773, "char": [4, 8] },
+        { "start": 33.773, "end": 34.253, "char": [9, 17] },
+        { "start": 34.253, "end": 34.813, "char": [18, 25] },
+        { "start": 35.133, "end": 35.373, "char": [27, 31] },
+        { "start": 35.373, "end": 35.613, "char": [32, 35] },
+        { "start": 35.613, "end": 35.773, "char": [36, 38] },
+        { "start": 35.773, "end": 35.853, "char": [39, 40] },
+        { "start": 35.853, "end": 36.253, "char": [41, 47] }
       ]
     },
     {
-      "start": 34.509,
-      "end": 36.909,
+      "start": 36.253,
+      "end": 38.653,
       "text": "compose plus Rediaccfile pairing.",
       "words": [
-        { "start": 34.509, "end": 35.149, "char": [0, 7] },
-        { "start": 35.149, "end": 35.629, "char": [8, 12] },
-        { "start": 35.629, "end": 36.429, "char": [13, 24] },
-        { "start": 36.429, "end": 36.909, "char": [25, 32] }
+        { "start": 36.253, "end": 36.893, "char": [0, 7] },
+        { "start": 36.893, "end": 37.373, "char": [8, 12] },
+        { "start": 37.373, "end": 38.173, "char": [13, 24] },
+        { "start": 38.173, "end": 38.653, "char": [25, 32] }
       ]
     },
     {
-      "start": 40.337,
-      "end": 41.011,
-      "text": "Step two.",
+      "start": 42.09,
+      "end": 42.8,
+      "text": "Step two:",
       "words": [
-        { "start": 40.337, "end": 40.674, "char": [0, 4] },
-        { "start": 40.674, "end": 41.011, "char": [5, 9] }
+        { "start": 42.09, "end": 42.445, "char": [0, 4] },
+        { "start": 42.445, "end": 42.8, "char": [5, 9] }
       ]
     },
     {
-      "start": 41.011,
-      "end": 43.371,
-      "text": "Drop the app-postgres template into the repo.",
+      "start": 42.8,
+      "end": 45.285,
+      "text": "drop the app-postgres template into the repo.",
       "words": [
-        { "start": 41.011, "end": 41.348, "char": [0, 4] },
-        { "start": 41.348, "end": 41.685, "char": [5, 8] },
-        { "start": 41.685, "end": 42.023, "char": [9, 21] },
-        { "start": 42.023, "end": 42.36, "char": [22, 30] },
-        { "start": 42.36, "end": 42.697, "char": [31, 35] },
-        { "start": 42.697, "end": 43.034, "char": [36, 39] },
-        { "start": 43.034, "end": 43.371, "char": [40, 45] }
+        { "start": 42.8, "end": 43.155, "char": [0, 4] },
+        { "start": 43.155, "end": 43.51, "char": [5, 8] },
+        { "start": 43.51, "end": 43.865, "char": [9, 21] },
+        { "start": 43.865, "end": 44.22, "char": [22, 30] },
+        { "start": 44.22, "end": 44.575, "char": [31, 35] },
+        { "start": 44.575, "end": 44.93, "char": [36, 39] },
+        { "start": 44.93, "end": 45.285, "char": [40, 45] }
       ]
     },
     {
-      "start": 43.371,
-      "end": 46.068,
-      "text": "This copies a tested set of files into",
+      "start": 45.285,
+      "end": 47.059,
+      "text": "A tested set of files,",
       "words": [
-        { "start": 43.371, "end": 43.708, "char": [0, 4] },
-        { "start": 43.708, "end": 44.045, "char": [5, 11] },
-        { "start": 44.045, "end": 44.382, "char": [12, 13] },
-        { "start": 44.382, "end": 44.719, "char": [14, 20] },
-        { "start": 44.719, "end": 45.056, "char": [21, 24] },
-        { "start": 45.056, "end": 45.394, "char": [25, 27] },
-        { "start": 45.394, "end": 45.731, "char": [28, 33] },
-        { "start": 45.731, "end": 46.068, "char": [34, 38] }
+        { "start": 45.285, "end": 45.64, "char": [0, 1] },
+        { "start": 45.64, "end": 45.995, "char": [2, 8] },
+        { "start": 45.995, "end": 46.349, "char": [9, 12] },
+        { "start": 46.349, "end": 46.704, "char": [13, 15] },
+        { "start": 46.704, "end": 47.059, "char": [16, 22] }
       ]
     },
     {
-      "start": 46.068,
-      "end": 47.416,
-      "text": "the repo for us.",
+      "start": 47.059,
+      "end": 48.124,
+      "text": "copied straight in.",
       "words": [
-        { "start": 46.068, "end": 46.405, "char": [0, 3] },
-        { "start": 46.405, "end": 46.742, "char": [4, 8] },
-        { "start": 46.742, "end": 47.079, "char": [9, 12] },
-        { "start": 47.079, "end": 47.416, "char": [13, 16] }
+        { "start": 47.059, "end": 47.414, "char": [0, 6] },
+        { "start": 47.414, "end": 47.769, "char": [7, 15] },
+        { "start": 47.769, "end": 48.124, "char": [16, 19] }
       ]
     },
     {
-      "start": 49.666,
-      "end": 50.341,
+      "start": 53.015,
+      "end": 53.689,
       "text": "Template applied.",
       "words": [
-        { "start": 49.666, "end": 50.003, "char": [0, 8] },
-        { "start": 50.003, "end": 50.341, "char": [9, 17] }
+        { "start": 53.015, "end": 53.352, "char": [0, 8] },
+        { "start": 53.352, "end": 53.689, "char": [9, 17] }
       ]
     },
     {
-      "start": 50.341,
-      "end": 53.038,
+      "start": 53.689,
+      "end": 56.387,
       "text": "Let us see what actually landed in the",
       "words": [
-        { "start": 50.341, "end": 50.678, "char": [0, 3] },
-        { "start": 50.678, "end": 51.015, "char": [4, 6] },
-        { "start": 51.015, "end": 51.352, "char": [7, 10] },
-        { "start": 51.352, "end": 51.689, "char": [11, 15] },
-        { "start": 51.689, "end": 52.027, "char": [16, 24] },
-        { "start": 52.027, "end": 52.364, "char": [25, 31] },
-        { "start": 52.364, "end": 52.701, "char": [32, 34] },
-        { "start": 52.701, "end": 53.038, "char": [35, 38] }
+        { "start": 53.689, "end": 54.026, "char": [0, 3] },
+        { "start": 54.026, "end": 54.363, "char": [4, 6] },
+        { "start": 54.363, "end": 54.701, "char": [7, 10] },
+        { "start": 54.701, "end": 55.038, "char": [11, 15] },
+        { "start": 55.038, "end": 55.375, "char": [16, 24] },
+        { "start": 55.375, "end": 55.712, "char": [25, 31] },
+        { "start": 55.712, "end": 56.05, "char": [32, 34] },
+        { "start": 56.05, "end": 56.387, "char": [35, 38] }
       ]
     },
     {
-      "start": 53.038,
-      "end": 53.376,
+      "start": 56.387,
+      "end": 56.724,
       "text": "repo.",
-      "words": [{ "start": 53.038, "end": 53.376, "char": [0, 5] }]
+      "words": [{ "start": 56.387, "end": 56.724, "char": [0, 5] }]
     },
     {
-      "start": 56.702,
-      "end": 59.331,
-      "text": "Let us look at what the template added.",
+      "start": 60.005,
+      "end": 62.716,
+      "text": "Peek inside the repo and list what",
       "words": [
-        { "start": 56.702, "end": 57.031, "char": [0, 3] },
-        { "start": 57.031, "end": 57.359, "char": [4, 6] },
-        { "start": 57.359, "end": 57.688, "char": [7, 11] },
-        { "start": 57.688, "end": 58.016, "char": [12, 14] },
-        { "start": 58.016, "end": 58.345, "char": [15, 19] },
-        { "start": 58.345, "end": 58.674, "char": [20, 23] },
-        { "start": 58.674, "end": 59.002, "char": [24, 32] },
-        { "start": 59.002, "end": 59.331, "char": [33, 39] }
+        { "start": 60.005, "end": 60.392, "char": [0, 4] },
+        { "start": 60.392, "end": 60.78, "char": [5, 11] },
+        { "start": 60.78, "end": 61.167, "char": [12, 15] },
+        { "start": 61.167, "end": 61.554, "char": [16, 20] },
+        { "start": 61.554, "end": 61.941, "char": [21, 24] },
+        { "start": 61.941, "end": 62.329, "char": [25, 29] },
+        { "start": 62.329, "end": 62.716, "char": [30, 34] }
       ]
     },
     {
-      "start": 59.331,
-      "end": 61.96,
-      "text": "We connect into the repo and list its",
+      "start": 62.716,
+      "end": 63.103,
+      "text": "landed:",
+      "words": [{ "start": 62.716, "end": 63.103, "char": [0, 7] }]
+    },
+    {
+      "start": 63.103,
+      "end": 65.814,
+      "text": "a Rediaccfile holding the start and stop",
       "words": [
-        { "start": 59.331, "end": 59.66, "char": [0, 2] },
-        { "start": 59.66, "end": 59.988, "char": [3, 10] },
-        { "start": 59.988, "end": 60.317, "char": [11, 15] },
-        { "start": 60.317, "end": 60.645, "char": [16, 19] },
-        { "start": 60.645, "end": 60.974, "char": [20, 24] },
-        { "start": 60.974, "end": 61.303, "char": [25, 28] },
-        { "start": 61.303, "end": 61.631, "char": [29, 33] },
-        { "start": 61.631, "end": 61.96, "char": [34, 37] }
+        { "start": 63.103, "end": 63.491, "char": [0, 1] },
+        { "start": 63.491, "end": 63.878, "char": [2, 13] },
+        { "start": 63.878, "end": 64.265, "char": [14, 21] },
+        { "start": 64.265, "end": 64.653, "char": [22, 25] },
+        { "start": 64.653, "end": 65.04, "char": [26, 31] },
+        { "start": 65.04, "end": 65.427, "char": [32, 35] },
+        { "start": 65.427, "end": 65.814, "char": [36, 40] }
       ]
     },
     {
-      "start": 61.96,
-      "end": 62.288,
-      "text": "files.",
-      "words": [{ "start": 61.96, "end": 62.288, "char": [0, 6] }]
+      "start": 65.814,
+      "end": 66.202,
+      "text": "hooks,",
+      "words": [{ "start": 65.814, "end": 66.202, "char": [0, 6] }]
     },
     {
-      "start": 62.288,
-      "end": 64.917,
-      "text": "There is a Rediaccfile holding the start and",
-      "words": [
-        { "start": 62.288, "end": 62.617, "char": [0, 5] },
-        { "start": 62.617, "end": 62.946, "char": [6, 8] },
-        { "start": 62.946, "end": 63.274, "char": [9, 10] },
-        { "start": 63.274, "end": 63.603, "char": [11, 22] },
-        { "start": 63.603, "end": 63.932, "char": [23, 30] },
-        { "start": 63.932, "end": 64.26, "char": [31, 34] },
-        { "start": 64.26, "end": 64.589, "char": [35, 40] },
-        { "start": 64.589, "end": 64.917, "char": [41, 44] }
-      ]
-    },
-    {
-      "start": 64.917,
-      "end": 65.575,
-      "text": "stop hooks,",
-      "words": [
-        { "start": 64.917, "end": 65.246, "char": [0, 4] },
-        { "start": 65.246, "end": 65.575, "char": [5, 11] }
-      ]
-    },
-    {
-      "start": 65.575,
-      "end": 67.875,
+      "start": 66.202,
+      "end": 68.913,
       "text": "and a docker-compose file describing the containers.",
       "words": [
-        { "start": 65.575, "end": 65.903, "char": [0, 3] },
-        { "start": 65.903, "end": 66.232, "char": [4, 5] },
-        { "start": 66.232, "end": 66.56, "char": [6, 20] },
-        { "start": 66.56, "end": 66.889, "char": [21, 25] },
-        { "start": 66.889, "end": 67.218, "char": [26, 36] },
-        { "start": 67.218, "end": 67.546, "char": [37, 40] },
-        { "start": 67.546, "end": 67.875, "char": [41, 52] }
+        { "start": 66.202, "end": 66.589, "char": [0, 3] },
+        { "start": 66.589, "end": 66.976, "char": [4, 5] },
+        { "start": 66.976, "end": 67.364, "char": [6, 20] },
+        { "start": 67.364, "end": 67.751, "char": [21, 25] },
+        { "start": 67.751, "end": 68.138, "char": [26, 36] },
+        { "start": 68.138, "end": 68.525, "char": [37, 40] },
+        { "start": 68.525, "end": 68.913, "char": [41, 52] }
       ]
     },
     {
-      "start": 67.875,
-      "end": 68.532,
-      "text": "One note:",
-      "words": [
-        { "start": 67.875, "end": 68.203, "char": [0, 3] },
-        { "start": 68.203, "end": 68.532, "char": [4, 9] }
-      ]
-    },
-    {
-      "start": 68.532,
-      "end": 71.161,
-      "text": "we add a redirect to dev null so",
-      "words": [
-        { "start": 68.532, "end": 68.861, "char": [0, 2] },
-        { "start": 68.861, "end": 69.189, "char": [3, 6] },
-        { "start": 69.189, "end": 69.518, "char": [7, 8] },
-        { "start": 69.518, "end": 69.847, "char": [9, 17] },
-        { "start": 69.847, "end": 70.175, "char": [18, 20] },
-        { "start": 70.175, "end": 70.504, "char": [21, 24] },
-        { "start": 70.504, "end": 70.832, "char": [25, 29] },
-        { "start": 70.832, "end": 71.161, "char": [30, 32] }
-      ]
-    },
-    {
-      "start": 71.161,
-      "end": 72.804,
-      "text": "only the real output shows.",
-      "words": [
-        { "start": 71.161, "end": 71.49, "char": [0, 4] },
-        { "start": 71.49, "end": 71.818, "char": [5, 8] },
-        { "start": 71.818, "end": 72.147, "char": [9, 13] },
-        { "start": 72.147, "end": 72.475, "char": [14, 20] },
-        { "start": 72.475, "end": 72.804, "char": [21, 27] }
-      ]
-    },
-    {
-      "start": 72.804,
-      "end": 73.461,
-      "text": "Without it,",
-      "words": [
-        { "start": 72.804, "end": 73.133, "char": [0, 7] },
-        { "start": 73.133, "end": 73.461, "char": [8, 11] }
-      ]
-    },
-    {
-      "start": 73.461,
-      "end": 75.762,
-      "text": "the connection logs would clutter the screen.",
-      "words": [
-        { "start": 73.461, "end": 73.79, "char": [0, 3] },
-        { "start": 73.79, "end": 74.118, "char": [4, 14] },
-        { "start": 74.118, "end": 74.447, "char": [15, 19] },
-        { "start": 74.447, "end": 74.776, "char": [20, 25] },
-        { "start": 74.776, "end": 75.104, "char": [26, 33] },
-        { "start": 75.104, "end": 75.433, "char": [34, 37] },
-        { "start": 75.433, "end": 75.762, "char": [38, 45] }
-      ]
-    },
-    {
-      "start": 75.762,
-      "end": 78.39,
-      "text": "We will keep doing that for the rest",
-      "words": [
-        { "start": 75.762, "end": 76.09, "char": [0, 2] },
-        { "start": 76.09, "end": 76.419, "char": [3, 7] },
-        { "start": 76.419, "end": 76.747, "char": [8, 12] },
-        { "start": 76.747, "end": 77.076, "char": [13, 18] },
-        { "start": 77.076, "end": 77.405, "char": [19, 23] },
-        { "start": 77.405, "end": 77.733, "char": [24, 27] },
-        { "start": 77.733, "end": 78.062, "char": [28, 31] },
-        { "start": 78.062, "end": 78.39, "char": [32, 36] }
-      ]
-    },
-    {
-      "start": 78.39,
-      "end": 79.376,
-      "text": "of the commands.",
-      "words": [
-        { "start": 78.39, "end": 78.719, "char": [0, 2] },
-        { "start": 78.719, "end": 79.048, "char": [3, 6] },
-        { "start": 79.048, "end": 79.376, "char": [7, 16] }
-      ]
-    },
-    {
-      "start": 82.126,
-      "end": 83.184,
+      "start": 71.913,
+      "end": 72.971,
       "text": "Two files:",
       "words": [
-        { "start": 82.126, "end": 82.655, "char": [0, 3] },
-        { "start": 82.655, "end": 83.184, "char": [4, 10] }
+        { "start": 71.913, "end": 72.442, "char": [0, 3] },
+        { "start": 72.442, "end": 72.971, "char": [4, 10] }
       ]
     },
     {
-      "start": 83.184,
-      "end": 85.829,
+      "start": 72.971,
+      "end": 75.616,
       "text": "Rediaccfile for the lifecycle hooks,",
       "words": [
-        { "start": 83.184, "end": 83.713, "char": [0, 11] },
-        { "start": 83.713, "end": 84.242, "char": [12, 15] },
-        { "start": 84.242, "end": 84.771, "char": [16, 19] },
-        { "start": 84.771, "end": 85.3, "char": [20, 29] },
-        { "start": 85.3, "end": 85.829, "char": [30, 36] }
+        { "start": 72.971, "end": 73.5, "char": [0, 11] },
+        { "start": 73.5, "end": 74.029, "char": [12, 15] },
+        { "start": 74.029, "end": 74.558, "char": [16, 19] },
+        { "start": 74.558, "end": 75.087, "char": [20, 29] },
+        { "start": 75.087, "end": 75.616, "char": [30, 36] }
       ]
     },
     {
-      "start": 85.829,
-      "end": 88.474,
+      "start": 75.616,
+      "end": 78.261,
       "text": "and docker-compose.yml for the containers.",
       "words": [
-        { "start": 85.829, "end": 86.358, "char": [0, 3] },
-        { "start": 86.358, "end": 86.887, "char": [4, 22] },
-        { "start": 86.887, "end": 87.416, "char": [23, 26] },
-        { "start": 87.416, "end": 87.945, "char": [27, 30] },
-        { "start": 87.945, "end": 88.474, "char": [31, 42] }
+        { "start": 75.616, "end": 76.145, "char": [0, 3] },
+        { "start": 76.145, "end": 76.674, "char": [4, 22] },
+        { "start": 76.674, "end": 77.203, "char": [23, 26] },
+        { "start": 77.203, "end": 77.732, "char": [27, 30] },
+        { "start": 77.732, "end": 78.261, "char": [31, 42] }
       ]
     },
     {
-      "start": 91.814,
-      "end": 93.879,
-      "text": "Now bring the repo up.",
+      "start": 78.767,
+      "end": 80.599,
+      "text": "Prefer an editor over cat?",
       "words": [
-        { "start": 91.814, "end": 92.227, "char": [0, 3] },
-        { "start": 92.227, "end": 92.64, "char": [4, 9] },
-        { "start": 92.64, "end": 93.053, "char": [10, 13] },
-        { "start": 93.053, "end": 93.466, "char": [14, 18] },
-        { "start": 93.466, "end": 93.879, "char": [19, 22] }
+        { "start": 78.767, "end": 79.133, "char": [0, 6] },
+        { "start": 79.133, "end": 79.5, "char": [7, 9] },
+        { "start": 79.5, "end": 79.866, "char": [10, 16] },
+        { "start": 79.866, "end": 80.233, "char": [17, 21] },
+        { "start": 80.233, "end": 80.599, "char": [22, 26] }
       ]
     },
     {
-      "start": 93.879,
-      "end": 95.944,
-      "text": "The CLI starts the containers,",
+      "start": 80.599,
+      "end": 83.165,
+      "text": "The same files open in VS Code,",
       "words": [
-        { "start": 93.879, "end": 94.292, "char": [0, 3] },
-        { "start": 94.292, "end": 94.705, "char": [4, 7] },
-        { "start": 94.705, "end": 95.118, "char": [8, 14] },
-        { "start": 95.118, "end": 95.531, "char": [15, 18] },
-        { "start": 95.531, "end": 95.944, "char": [19, 30] }
+        { "start": 80.599, "end": 80.966, "char": [0, 3] },
+        { "start": 80.966, "end": 81.332, "char": [4, 8] },
+        { "start": 81.332, "end": 81.699, "char": [9, 14] },
+        { "start": 81.699, "end": 82.065, "char": [15, 19] },
+        { "start": 82.065, "end": 82.432, "char": [20, 22] },
+        { "start": 82.432, "end": 82.798, "char": [23, 25] },
+        { "start": 82.798, "end": 83.165, "char": [26, 31] }
       ]
     },
     {
-      "start": 95.944,
-      "end": 97.596,
-      "text": "mounts the encrypted volume,",
+      "start": 83.165,
+      "end": 84.63,
+      "text": "straight from your browser.",
       "words": [
-        { "start": 95.944, "end": 96.357, "char": [0, 6] },
-        { "start": 96.357, "end": 96.77, "char": [7, 10] },
-        { "start": 96.77, "end": 97.183, "char": [11, 20] },
-        { "start": 97.183, "end": 97.596, "char": [21, 28] }
+        { "start": 83.165, "end": 83.531, "char": [0, 8] },
+        { "start": 83.531, "end": 83.897, "char": [9, 13] },
+        { "start": 83.897, "end": 84.264, "char": [14, 18] },
+        { "start": 84.264, "end": 84.63, "char": [19, 27] }
       ]
     },
     {
-      "start": 97.596,
-      "end": 100.487,
-      "text": "and wires up the isolated Docker daemon.",
+      "start": 84.63,
+      "end": 85.73,
+      "text": "Here's the Rediaccfile,",
       "words": [
-        { "start": 97.596, "end": 98.009, "char": [0, 3] },
-        { "start": 98.009, "end": 98.422, "char": [4, 9] },
-        { "start": 98.422, "end": 98.835, "char": [10, 12] },
-        { "start": 98.835, "end": 99.248, "char": [13, 16] },
-        { "start": 99.248, "end": 99.661, "char": [17, 25] },
-        { "start": 99.661, "end": 100.074, "char": [26, 32] },
-        { "start": 100.074, "end": 100.487, "char": [33, 40] }
+        { "start": 84.63, "end": 84.997, "char": [0, 6] },
+        { "start": 84.997, "end": 85.363, "char": [7, 10] },
+        { "start": 85.363, "end": 85.73, "char": [11, 23] }
       ]
     },
     {
-      "start": 103.237,
-      "end": 104.288,
+      "start": 85.73,
+      "end": 88.295,
+      "text": "and the compose file next to it.",
+      "words": [
+        { "start": 85.73, "end": 86.096, "char": [0, 3] },
+        { "start": 86.096, "end": 86.463, "char": [4, 7] },
+        { "start": 86.463, "end": 86.829, "char": [8, 15] },
+        { "start": 86.829, "end": 87.196, "char": [16, 20] },
+        { "start": 87.196, "end": 87.562, "char": [21, 25] },
+        { "start": 87.562, "end": 87.929, "char": [26, 28] },
+        { "start": 87.929, "end": 88.295, "char": [29, 32] }
+      ]
+    },
+    {
+      "start": 88.295,
+      "end": 90.86,
+      "text": "We tour this setup properly in a",
+      "words": [
+        { "start": 88.295, "end": 88.661, "char": [0, 2] },
+        { "start": 88.661, "end": 89.028, "char": [3, 7] },
+        { "start": 89.028, "end": 89.394, "char": [8, 12] },
+        { "start": 89.394, "end": 89.761, "char": [13, 18] },
+        { "start": 89.761, "end": 90.127, "char": [19, 27] },
+        { "start": 90.127, "end": 90.494, "char": [28, 30] },
+        { "start": 90.494, "end": 90.86, "char": [31, 32] }
+      ]
+    },
+    {
+      "start": 90.86,
+      "end": 91.593,
+      "text": "later tutorial.",
+      "words": [
+        { "start": 90.86, "end": 91.227, "char": [0, 5] },
+        { "start": 91.227, "end": 91.593, "char": [6, 15] }
+      ]
+    },
+    {
+      "start": 95.767,
+      "end": 96.57,
+      "text": "Step three:",
+      "words": [
+        { "start": 95.767, "end": 96.169, "char": [0, 4] },
+        { "start": 96.169, "end": 96.57, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 96.57,
+      "end": 98.177,
+      "text": "bring the repo up.",
+      "words": [
+        { "start": 96.57, "end": 96.972, "char": [0, 5] },
+        { "start": 96.972, "end": 97.374, "char": [6, 9] },
+        { "start": 97.374, "end": 97.775, "char": [10, 14] },
+        { "start": 97.775, "end": 98.177, "char": [15, 18] }
+      ]
+    },
+    {
+      "start": 98.177,
+      "end": 100.988,
+      "text": "One command — the CLI mounts the",
+      "words": [
+        { "start": 98.177, "end": 98.578, "char": [0, 3] },
+        { "start": 98.578, "end": 98.98, "char": [4, 11] },
+        { "start": 98.98, "end": 99.382, "char": [12, 13] },
+        { "start": 99.382, "end": 99.783, "char": [14, 17] },
+        { "start": 99.783, "end": 100.185, "char": [18, 21] },
+        { "start": 100.185, "end": 100.587, "char": [22, 28] },
+        { "start": 100.587, "end": 100.988, "char": [29, 32] }
+      ]
+    },
+    {
+      "start": 100.988,
+      "end": 101.791,
+      "text": "encrypted volume,",
+      "words": [
+        { "start": 100.988, "end": 101.39, "char": [0, 9] },
+        { "start": 101.39, "end": 101.791, "char": [10, 17] }
+      ]
+    },
+    {
+      "start": 101.791,
+      "end": 103.8,
+      "text": "starts the isolated Docker daemon,",
+      "words": [
+        { "start": 101.791, "end": 102.193, "char": [0, 6] },
+        { "start": 102.193, "end": 102.595, "char": [7, 10] },
+        { "start": 102.595, "end": 102.996, "char": [11, 19] },
+        { "start": 102.996, "end": 103.398, "char": [20, 26] },
+        { "start": 103.398, "end": 103.8, "char": [27, 34] }
+      ]
+    },
+    {
+      "start": 103.8,
+      "end": 105.406,
+      "text": "and launches the containers.",
+      "words": [
+        { "start": 103.8, "end": 104.201, "char": [0, 3] },
+        { "start": 104.201, "end": 104.603, "char": [4, 12] },
+        { "start": 104.603, "end": 105.005, "char": [13, 16] },
+        { "start": 105.005, "end": 105.406, "char": [17, 28] }
+      ]
+    },
+    {
+      "start": 108.156,
+      "end": 109.208,
       "text": "Containers running,",
       "words": [
-        { "start": 103.237, "end": 103.762, "char": [0, 10] },
-        { "start": 103.762, "end": 104.288, "char": [11, 19] }
+        { "start": 108.156, "end": 108.682, "char": [0, 10] },
+        { "start": 108.682, "end": 109.208, "char": [11, 19] }
       ]
     },
     {
-      "start": 104.288,
-      "end": 105.34,
+      "start": 109.208,
+      "end": 110.259,
       "text": "volume mounted,",
       "words": [
-        { "start": 104.288, "end": 104.814, "char": [0, 6] },
-        { "start": 104.814, "end": 105.34, "char": [7, 15] }
+        { "start": 109.208, "end": 109.733, "char": [0, 6] },
+        { "start": 109.733, "end": 110.259, "char": [7, 15] }
       ]
     },
     {
-      "start": 105.34,
-      "end": 107.442,
+      "start": 110.259,
+      "end": 112.362,
       "text": "isolated Docker daemon up.",
       "words": [
-        { "start": 105.34, "end": 105.865, "char": [0, 8] },
-        { "start": 105.865, "end": 106.391, "char": [9, 15] },
-        { "start": 106.391, "end": 106.917, "char": [16, 22] },
-        { "start": 106.917, "end": 107.442, "char": [23, 26] }
+        { "start": 110.259, "end": 110.785, "char": [0, 8] },
+        { "start": 110.785, "end": 111.31, "char": [9, 15] },
+        { "start": 111.31, "end": 111.836, "char": [16, 22] },
+        { "start": 111.836, "end": 112.362, "char": [23, 26] }
       ]
     },
     {
-      "start": 110.766,
-      "end": 112.955,
-      "text": "Let us verify what is running.",
+      "start": 115.686,
+      "end": 117.234,
+      "text": "Verify what is running.",
       "words": [
-        { "start": 110.766, "end": 111.131, "char": [0, 3] },
-        { "start": 111.131, "end": 111.496, "char": [4, 6] },
-        { "start": 111.496, "end": 111.861, "char": [7, 13] },
-        { "start": 111.861, "end": 112.225, "char": [14, 18] },
-        { "start": 112.225, "end": 112.59, "char": [19, 21] },
-        { "start": 112.59, "end": 112.955, "char": [22, 30] }
+        { "start": 115.686, "end": 116.073, "char": [0, 6] },
+        { "start": 116.073, "end": 116.46, "char": [7, 11] },
+        { "start": 116.46, "end": 116.847, "char": [12, 14] },
+        { "start": 116.847, "end": 117.234, "char": [15, 23] }
       ]
     },
     {
-      "start": 112.955,
-      "end": 115.509,
+      "start": 117.234,
+      "end": 119.943,
       "text": "Docker ps here lists only this repo's",
       "words": [
-        { "start": 112.955, "end": 113.32, "char": [0, 6] },
-        { "start": 113.32, "end": 113.685, "char": [7, 9] },
-        { "start": 113.685, "end": 114.05, "char": [10, 14] },
-        { "start": 114.05, "end": 114.415, "char": [15, 20] },
-        { "start": 114.415, "end": 114.78, "char": [21, 25] },
-        { "start": 114.78, "end": 115.144, "char": [26, 30] },
-        { "start": 115.144, "end": 115.509, "char": [31, 37] }
+        { "start": 117.234, "end": 117.621, "char": [0, 6] },
+        { "start": 117.621, "end": 118.008, "char": [7, 9] },
+        { "start": 118.008, "end": 118.395, "char": [10, 14] },
+        { "start": 118.395, "end": 118.782, "char": [15, 20] },
+        { "start": 118.782, "end": 119.169, "char": [21, 25] },
+        { "start": 119.169, "end": 119.556, "char": [26, 30] },
+        { "start": 119.556, "end": 119.943, "char": [31, 37] }
       ]
     },
     {
-      "start": 115.509,
-      "end": 115.874,
+      "start": 119.943,
+      "end": 120.33,
       "text": "containers.",
-      "words": [{ "start": 115.509, "end": 115.874, "char": [0, 11] }]
+      "words": [{ "start": 119.943, "end": 120.33, "char": [0, 11] }]
     },
     {
-      "start": 115.874,
-      "end": 118.428,
-      "text": "Other repos on the same server have",
+      "start": 120.33,
+      "end": 123.039,
+      "text": "Every other repo on this server has",
       "words": [
-        { "start": 115.874, "end": 116.239, "char": [0, 5] },
-        { "start": 116.239, "end": 116.604, "char": [6, 11] },
-        { "start": 116.604, "end": 116.969, "char": [12, 14] },
-        { "start": 116.969, "end": 117.334, "char": [15, 18] },
-        { "start": 117.334, "end": 117.699, "char": [19, 23] },
-        { "start": 117.699, "end": 118.063, "char": [24, 30] },
-        { "start": 118.063, "end": 118.428, "char": [31, 35] }
+        { "start": 120.33, "end": 120.717, "char": [0, 5] },
+        { "start": 120.717, "end": 121.104, "char": [6, 11] },
+        { "start": 121.104, "end": 121.491, "char": [12, 16] },
+        { "start": 121.491, "end": 121.878, "char": [17, 19] },
+        { "start": 121.878, "end": 122.265, "char": [20, 24] },
+        { "start": 122.265, "end": 122.652, "char": [25, 31] },
+        { "start": 122.652, "end": 123.039, "char": [32, 35] }
       ]
     },
     {
-      "start": 118.428,
-      "end": 120.982,
-      "text": "their own daemons and are completely invisible",
+      "start": 123.039,
+      "end": 124.2,
+      "text": "its own daemon,",
       "words": [
-        { "start": 118.428, "end": 118.793, "char": [0, 5] },
-        { "start": 118.793, "end": 119.158, "char": [6, 9] },
-        { "start": 119.158, "end": 119.523, "char": [10, 17] },
-        { "start": 119.523, "end": 119.888, "char": [18, 21] },
-        { "start": 119.888, "end": 120.253, "char": [22, 25] },
-        { "start": 120.253, "end": 120.618, "char": [26, 36] },
-        { "start": 120.618, "end": 120.982, "char": [37, 46] }
+        { "start": 123.039, "end": 123.426, "char": [0, 3] },
+        { "start": 123.426, "end": 123.813, "char": [4, 7] },
+        { "start": 123.813, "end": 124.2, "char": [8, 15] }
       ]
     },
     {
-      "start": 120.982,
-      "end": 122.077,
-      "text": "from this view.",
+      "start": 124.2,
+      "end": 126.135,
+      "text": "completely invisible from this view.",
       "words": [
-        { "start": 120.982, "end": 121.347, "char": [0, 4] },
-        { "start": 121.347, "end": 121.712, "char": [5, 9] },
-        { "start": 121.712, "end": 122.077, "char": [10, 15] }
+        { "start": 124.2, "end": 124.587, "char": [0, 10] },
+        { "start": 124.587, "end": 124.974, "char": [11, 20] },
+        { "start": 124.974, "end": 125.361, "char": [21, 25] },
+        { "start": 125.361, "end": 125.748, "char": [26, 30] },
+        { "start": 125.748, "end": 126.135, "char": [31, 36] }
       ]
     },
     {
-      "start": 123.327,
-      "end": 125.291,
+      "start": 127.885,
+      "end": 129.849,
       "text": "Only this repo's containers.",
       "words": [
-        { "start": 123.327, "end": 123.818, "char": [0, 4] },
-        { "start": 123.818, "end": 124.309, "char": [5, 9] },
-        { "start": 124.309, "end": 124.8, "char": [10, 16] },
-        { "start": 124.8, "end": 125.291, "char": [17, 28] }
+        { "start": 127.885, "end": 128.376, "char": [0, 4] },
+        { "start": 128.376, "end": 128.867, "char": [5, 9] },
+        { "start": 128.867, "end": 129.358, "char": [10, 16] },
+        { "start": 129.358, "end": 129.849, "char": [17, 28] }
       ]
     },
     {
-      "start": 125.291,
-      "end": 127.256,
+      "start": 129.849,
+      "end": 131.814,
       "text": "The isolation is real,",
       "words": [
-        { "start": 125.291, "end": 125.783, "char": [0, 3] },
-        { "start": 125.783, "end": 126.274, "char": [4, 13] },
-        { "start": 126.274, "end": 126.765, "char": [14, 16] },
-        { "start": 126.765, "end": 127.256, "char": [17, 22] }
+        { "start": 129.849, "end": 130.34, "char": [0, 3] },
+        { "start": 130.34, "end": 130.832, "char": [4, 13] },
+        { "start": 130.832, "end": 131.323, "char": [14, 16] },
+        { "start": 131.323, "end": 131.814, "char": [17, 22] }
       ]
     },
     {
-      "start": 127.256,
-      "end": 128.238,
+      "start": 131.814,
+      "end": 132.796,
       "text": "not configuration.",
       "words": [
-        { "start": 127.256, "end": 127.747, "char": [0, 3] },
-        { "start": 127.747, "end": 128.238, "char": [4, 18] }
+        { "start": 131.814, "end": 132.305, "char": [0, 3] },
+        { "start": 132.305, "end": 132.796, "char": [4, 18] }
       ]
     },
     {
-      "start": 129.151,
-      "end": 131.711,
+      "start": 133.705,
+      "end": 136.265,
       "text": "And that wraps up your first deploy",
       "words": [
-        { "start": 129.151, "end": 129.951, "char": [0, 3] },
-        { "start": 129.951, "end": 130.111, "char": [4, 8] },
-        { "start": 130.111, "end": 130.431, "char": [9, 14] },
-        { "start": 130.431, "end": 130.671, "char": [15, 17] },
-        { "start": 130.671, "end": 130.831, "char": [18, 22] },
-        { "start": 130.831, "end": 131.231, "char": [23, 28] },
-        { "start": 131.231, "end": 131.711, "char": [29, 35] }
+        { "start": 133.705, "end": 134.505, "char": [0, 3] },
+        { "start": 134.505, "end": 134.665, "char": [4, 8] },
+        { "start": 134.665, "end": 134.985, "char": [9, 14] },
+        { "start": 134.985, "end": 135.225, "char": [15, 17] },
+        { "start": 135.225, "end": 135.385, "char": [18, 22] },
+        { "start": 135.385, "end": 135.785, "char": [23, 28] },
+        { "start": 135.785, "end": 136.265, "char": [29, 35] }
       ]
     },
     {
-      "start": 132.191,
-      "end": 134.751,
+      "start": 136.745,
+      "end": 139.305,
       "text": ". See you in the next one, where we dig into",
       "words": [
-        { "start": 132.191, "end": 132.351, "char": [2, 5] },
-        { "start": 132.351, "end": 132.431, "char": [6, 9] },
-        { "start": 132.431, "end": 132.511, "char": [10, 12] },
-        { "start": 132.591, "end": 132.911, "char": [17, 21] },
-        { "start": 132.911, "end": 133.311, "char": [22, 25] },
-        { "start": 133.551, "end": 133.871, "char": [27, 32] },
-        { "start": 133.871, "end": 134.111, "char": [33, 35] },
-        { "start": 134.111, "end": 134.351, "char": [36, 39] },
-        { "start": 134.351, "end": 134.751, "char": [40, 44] }
+        { "start": 136.745, "end": 136.905, "char": [2, 5] },
+        { "start": 136.905, "end": 136.985, "char": [6, 9] },
+        { "start": 136.985, "end": 137.065, "char": [10, 12] },
+        { "start": 137.145, "end": 137.465, "char": [17, 21] },
+        { "start": 137.465, "end": 137.865, "char": [22, 25] },
+        { "start": 138.105, "end": 138.425, "char": [27, 32] },
+        { "start": 138.425, "end": 138.665, "char": [33, 35] },
+        { "start": 138.665, "end": 138.905, "char": [36, 39] },
+        { "start": 138.905, "end": 139.305, "char": [40, 44] }
       ]
     },
     {
-      "start": 134.751,
-      "end": 136.751,
+      "start": 139.305,
+      "end": 141.305,
       "text": "working with the repo itself.",
       "words": [
-        { "start": 134.751, "end": 135.391, "char": [0, 7] },
-        { "start": 135.391, "end": 135.631, "char": [8, 12] },
-        { "start": 135.631, "end": 135.711, "char": [13, 16] },
-        { "start": 135.711, "end": 136.271, "char": [17, 21] },
-        { "start": 136.271, "end": 136.751, "char": [22, 28] }
+        { "start": 139.305, "end": 139.945, "char": [0, 7] },
+        { "start": 139.945, "end": 140.185, "char": [8, 12] },
+        { "start": 140.185, "end": 140.265, "char": [13, 16] },
+        { "start": 140.265, "end": 140.825, "char": [17, 21] },
+        { "start": 140.825, "end": 141.305, "char": [22, 28] }
       ]
     }
   ]

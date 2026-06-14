@@ -12,11 +12,20 @@ Passaggio 1: importa la configurazione rclone
 00:00:44.995 --> 00:01:00.708
 Passaggio 2: elenca gli storage configurati
 
-00:01:00.708 --> 00:01:32.436
+00:01:00.708 --> 00:01:33.153
 Passaggio 3: invia un backup completo
 
-00:01:32.436 --> 00:02:00.269
+00:01:33.153 --> 00:02:00.986
 Passaggio 4: elenca i backup sullo storage
 
-00:02:00.269 --> 00:02:05.549
+00:02:00.986 --> 00:02:23.775
+Passo 5: Porta il repo offline
+
+00:02:23.775 --> 00:02:45.978
+Passo 6: Recupera il backup
+
+00:02:45.978 --> 00:03:05.307
+Passo 7: Monta, ripristinato
+
+00:03:05.307 --> 00:03:10.587
 Avanti: Monitoraggio

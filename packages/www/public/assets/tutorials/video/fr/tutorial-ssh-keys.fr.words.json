@@ -266,218 +266,218 @@
       ]
     },
     {
-      "start": 52.912,
-      "end": 53.674,
+      "start": 52.879,
+      "end": 53.641,
       "text": "Deuxième étape.",
       "words": [
-        { "start": 52.912, "end": 53.293, "char": [0, 8] },
-        { "start": 53.293, "end": 53.674, "char": [9, 15] }
+        { "start": 52.879, "end": 53.26, "char": [0, 8] },
+        { "start": 53.26, "end": 53.641, "char": [9, 15] }
       ]
     },
     {
-      "start": 53.674,
-      "end": 56.341,
+      "start": 53.641,
+      "end": 56.308,
       "text": "Nous copions la clé publique sur le",
       "words": [
-        { "start": 53.674, "end": 54.055, "char": [0, 4] },
-        { "start": 54.055, "end": 54.436, "char": [5, 12] },
-        { "start": 54.436, "end": 54.817, "char": [13, 15] },
-        { "start": 54.817, "end": 55.198, "char": [16, 19] },
-        { "start": 55.198, "end": 55.579, "char": [20, 28] },
-        { "start": 55.579, "end": 55.96, "char": [29, 32] },
-        { "start": 55.96, "end": 56.341, "char": [33, 35] }
+        { "start": 53.641, "end": 54.022, "char": [0, 4] },
+        { "start": 54.022, "end": 54.403, "char": [5, 12] },
+        { "start": 54.403, "end": 54.784, "char": [13, 15] },
+        { "start": 54.784, "end": 55.165, "char": [16, 19] },
+        { "start": 55.165, "end": 55.546, "char": [20, 28] },
+        { "start": 55.546, "end": 55.927, "char": [29, 32] },
+        { "start": 55.927, "end": 56.308, "char": [33, 35] }
       ]
     },
     {
-      "start": 56.341,
-      "end": 57.483,
+      "start": 56.308,
+      "end": 57.45,
       "text": "serveur avec ssh-copy-id.",
       "words": [
-        { "start": 56.341, "end": 56.722, "char": [0, 7] },
-        { "start": 56.722, "end": 57.102, "char": [8, 12] },
-        { "start": 57.102, "end": 57.483, "char": [13, 25] }
+        { "start": 56.308, "end": 56.689, "char": [0, 7] },
+        { "start": 56.689, "end": 57.069, "char": [8, 12] },
+        { "start": 57.069, "end": 57.45, "char": [13, 25] }
       ]
     },
     {
-      "start": 57.483,
-      "end": 60.15,
+      "start": 57.45,
+      "end": 60.117,
       "text": "Le mot de passe du serveur est",
       "words": [
-        { "start": 57.483, "end": 57.864, "char": [0, 2] },
-        { "start": 57.864, "end": 58.245, "char": [3, 6] },
-        { "start": 58.245, "end": 58.626, "char": [7, 9] },
-        { "start": 58.626, "end": 59.007, "char": [10, 15] },
-        { "start": 59.007, "end": 59.388, "char": [16, 18] },
-        { "start": 59.388, "end": 59.769, "char": [19, 26] },
-        { "start": 59.769, "end": 60.15, "char": [27, 30] }
+        { "start": 57.45, "end": 57.831, "char": [0, 2] },
+        { "start": 57.831, "end": 58.212, "char": [3, 6] },
+        { "start": 58.212, "end": 58.593, "char": [7, 9] },
+        { "start": 58.593, "end": 58.974, "char": [10, 15] },
+        { "start": 58.974, "end": 59.355, "char": [16, 18] },
+        { "start": 59.355, "end": 59.736, "char": [19, 26] },
+        { "start": 59.736, "end": 60.117, "char": [27, 30] }
       ]
     },
     {
-      "start": 60.15,
-      "end": 61.674,
+      "start": 60.117,
+      "end": 61.641,
       "text": "demandé une dernière fois.",
       "words": [
-        { "start": 60.15, "end": 60.531, "char": [0, 7] },
-        { "start": 60.531, "end": 60.912, "char": [8, 11] },
-        { "start": 60.912, "end": 61.293, "char": [12, 20] },
-        { "start": 61.293, "end": 61.674, "char": [21, 26] }
+        { "start": 60.117, "end": 60.498, "char": [0, 7] },
+        { "start": 60.498, "end": 60.879, "char": [8, 11] },
+        { "start": 60.879, "end": 61.26, "char": [12, 20] },
+        { "start": 61.26, "end": 61.641, "char": [21, 26] }
       ]
     },
     {
-      "start": 61.674,
-      "end": 62.436,
+      "start": 61.641,
+      "end": 62.403,
       "text": "Après cela,",
       "words": [
-        { "start": 61.674, "end": 62.055, "char": [0, 5] },
-        { "start": 62.055, "end": 62.436, "char": [6, 11] }
+        { "start": 61.641, "end": 62.022, "char": [0, 5] },
+        { "start": 62.022, "end": 62.403, "char": [6, 11] }
       ]
     },
     {
-      "start": 62.436,
-      "end": 65.102,
+      "start": 62.403,
+      "end": 65.069,
       "text": "l'authentification par mot de passe n'est plus",
       "words": [
-        { "start": 62.436, "end": 62.817, "char": [0, 18] },
-        { "start": 62.817, "end": 63.198, "char": [19, 22] },
-        { "start": 63.198, "end": 63.579, "char": [23, 26] },
-        { "start": 63.579, "end": 63.96, "char": [27, 29] },
-        { "start": 63.96, "end": 64.341, "char": [30, 35] },
-        { "start": 64.341, "end": 64.722, "char": [36, 41] },
-        { "start": 64.722, "end": 65.102, "char": [42, 46] }
+        { "start": 62.403, "end": 62.784, "char": [0, 18] },
+        { "start": 62.784, "end": 63.165, "char": [19, 22] },
+        { "start": 63.165, "end": 63.546, "char": [23, 26] },
+        { "start": 63.546, "end": 63.927, "char": [27, 29] },
+        { "start": 63.927, "end": 64.308, "char": [30, 35] },
+        { "start": 64.308, "end": 64.689, "char": [36, 41] },
+        { "start": 64.689, "end": 65.069, "char": [42, 46] }
       ]
     },
     {
-      "start": 65.102,
-      "end": 66.626,
+      "start": 65.069,
+      "end": 66.593,
       "text": "nécessaire pour ce serveur.",
       "words": [
-        { "start": 65.102, "end": 65.483, "char": [0, 10] },
-        { "start": 65.483, "end": 65.864, "char": [11, 15] },
-        { "start": 65.864, "end": 66.245, "char": [16, 18] },
-        { "start": 66.245, "end": 66.626, "char": [19, 27] }
+        { "start": 65.069, "end": 65.45, "char": [0, 10] },
+        { "start": 65.45, "end": 65.831, "char": [11, 15] },
+        { "start": 65.831, "end": 66.212, "char": [16, 18] },
+        { "start": 66.212, "end": 66.593, "char": [19, 27] }
       ]
     },
     {
-      "start": 68.626,
-      "end": 70.557,
+      "start": 68.593,
+      "end": 70.524,
       "text": "Lancez ceci sur votre ordinateur.",
       "words": [
-        { "start": 68.626, "end": 69.013, "char": [0, 6] },
-        { "start": 69.013, "end": 69.399, "char": [7, 11] },
-        { "start": 69.399, "end": 69.785, "char": [12, 15] },
-        { "start": 69.785, "end": 70.171, "char": [16, 21] },
-        { "start": 70.171, "end": 70.557, "char": [22, 33] }
+        { "start": 68.593, "end": 68.98, "char": [0, 6] },
+        { "start": 68.98, "end": 69.366, "char": [7, 11] },
+        { "start": 69.366, "end": 69.752, "char": [12, 15] },
+        { "start": 69.752, "end": 70.138, "char": [16, 21] },
+        { "start": 70.138, "end": 70.524, "char": [22, 33] }
       ]
     },
     {
-      "start": 70.557,
-      "end": 71.716,
+      "start": 70.524,
+      "end": 71.683,
       "text": "Une fois réussi,",
       "words": [
-        { "start": 70.557, "end": 70.944, "char": [0, 3] },
-        { "start": 70.944, "end": 71.33, "char": [4, 8] },
-        { "start": 71.33, "end": 71.716, "char": [9, 16] }
+        { "start": 70.524, "end": 70.911, "char": [0, 3] },
+        { "start": 70.911, "end": 71.297, "char": [4, 8] },
+        { "start": 71.297, "end": 71.683, "char": [9, 16] }
       ]
     },
     {
-      "start": 71.716,
-      "end": 74.034,
+      "start": 71.683,
+      "end": 74.001,
       "text": "les mots de passe sont écartés.",
       "words": [
-        { "start": 71.716, "end": 72.102, "char": [0, 3] },
-        { "start": 72.102, "end": 72.489, "char": [4, 8] },
-        { "start": 72.489, "end": 72.875, "char": [9, 11] },
-        { "start": 72.875, "end": 73.261, "char": [12, 17] },
-        { "start": 73.261, "end": 73.647, "char": [18, 22] },
-        { "start": 73.647, "end": 74.034, "char": [23, 31] }
+        { "start": 71.683, "end": 72.069, "char": [0, 3] },
+        { "start": 72.069, "end": 72.456, "char": [4, 8] },
+        { "start": 72.456, "end": 72.842, "char": [9, 11] },
+        { "start": 72.842, "end": 73.228, "char": [12, 17] },
+        { "start": 73.228, "end": 73.614, "char": [18, 22] },
+        { "start": 73.614, "end": 74.001, "char": [23, 31] }
       ]
     },
     {
-      "start": 77.332,
-      "end": 78.065,
+      "start": 77.299,
+      "end": 78.032,
       "text": "Troisième étape.",
       "words": [
-        { "start": 77.332, "end": 77.699, "char": [0, 9] },
-        { "start": 77.699, "end": 78.065, "char": [10, 16] }
+        { "start": 77.299, "end": 77.666, "char": [0, 9] },
+        { "start": 77.666, "end": 78.032, "char": [10, 16] }
       ]
     },
     {
-      "start": 78.065,
-      "end": 80.632,
+      "start": 78.032,
+      "end": 80.599,
       "text": "Nous enregistrons maintenant la clé auprès de",
       "words": [
-        { "start": 78.065, "end": 78.432, "char": [0, 4] },
-        { "start": 78.432, "end": 78.799, "char": [5, 17] },
-        { "start": 78.799, "end": 79.165, "char": [18, 28] },
-        { "start": 79.165, "end": 79.532, "char": [29, 31] },
-        { "start": 79.532, "end": 79.899, "char": [32, 35] },
-        { "start": 79.899, "end": 80.265, "char": [36, 42] },
-        { "start": 80.265, "end": 80.632, "char": [43, 45] }
+        { "start": 78.032, "end": 78.399, "char": [0, 4] },
+        { "start": 78.399, "end": 78.766, "char": [5, 17] },
+        { "start": 78.766, "end": 79.132, "char": [18, 28] },
+        { "start": 79.132, "end": 79.499, "char": [29, 31] },
+        { "start": 79.499, "end": 79.866, "char": [32, 35] },
+        { "start": 79.866, "end": 80.232, "char": [36, 42] },
+        { "start": 80.232, "end": 80.599, "char": [43, 45] }
       ]
     },
     {
-      "start": 80.632,
-      "end": 82.098,
+      "start": 80.599,
+      "end": 82.065,
       "text": "la ligne de commande.",
       "words": [
-        { "start": 80.632, "end": 80.998, "char": [0, 2] },
-        { "start": 80.998, "end": 81.365, "char": [3, 8] },
-        { "start": 81.365, "end": 81.732, "char": [9, 11] },
-        { "start": 81.732, "end": 82.098, "char": [12, 21] }
+        { "start": 80.599, "end": 80.965, "char": [0, 2] },
+        { "start": 80.965, "end": 81.332, "char": [3, 8] },
+        { "start": 81.332, "end": 81.699, "char": [9, 11] },
+        { "start": 81.699, "end": 82.065, "char": [12, 21] }
       ]
     },
     {
-      "start": 82.098,
-      "end": 82.465,
+      "start": 82.065,
+      "end": 82.432,
       "text": "Désormais,",
-      "words": [{ "start": 82.098, "end": 82.465, "char": [0, 10] }]
+      "words": [{ "start": 82.065, "end": 82.432, "char": [0, 10] }]
     },
     {
-      "start": 82.465,
-      "end": 84.665,
+      "start": 82.432,
+      "end": 84.632,
       "text": "chaque commande s'authentifie avec cette clé.",
       "words": [
-        { "start": 82.465, "end": 82.832, "char": [0, 6] },
-        { "start": 82.832, "end": 83.198, "char": [7, 15] },
-        { "start": 83.198, "end": 83.565, "char": [16, 29] },
-        { "start": 83.565, "end": 83.932, "char": [30, 34] },
-        { "start": 83.932, "end": 84.298, "char": [35, 40] },
-        { "start": 84.298, "end": 84.665, "char": [41, 45] }
+        { "start": 82.432, "end": 82.799, "char": [0, 6] },
+        { "start": 82.799, "end": 83.165, "char": [7, 15] },
+        { "start": 83.165, "end": 83.532, "char": [16, 29] },
+        { "start": 83.532, "end": 83.899, "char": [30, 34] },
+        { "start": 83.899, "end": 84.265, "char": [35, 40] },
+        { "start": 84.265, "end": 84.632, "char": [41, 45] }
       ]
     },
     {
-      "start": 84.665,
-      "end": 86.498,
+      "start": 84.632,
+      "end": 86.465,
       "text": "Plus de mots de passe,",
       "words": [
-        { "start": 84.665, "end": 85.032, "char": [0, 4] },
-        { "start": 85.032, "end": 85.398, "char": [5, 7] },
-        { "start": 85.398, "end": 85.765, "char": [8, 12] },
-        { "start": 85.765, "end": 86.132, "char": [13, 15] },
-        { "start": 86.132, "end": 86.498, "char": [16, 22] }
+        { "start": 84.632, "end": 84.999, "char": [0, 4] },
+        { "start": 84.999, "end": 85.365, "char": [5, 7] },
+        { "start": 85.365, "end": 85.732, "char": [8, 12] },
+        { "start": 85.732, "end": 86.099, "char": [13, 15] },
+        { "start": 86.099, "end": 86.465, "char": [16, 22] }
       ]
     },
     {
-      "start": 86.498,
-      "end": 87.598,
+      "start": 86.465,
+      "end": 87.565,
       "text": "plus d'invites interactives.",
       "words": [
-        { "start": 86.498, "end": 86.865, "char": [0, 4] },
-        { "start": 86.865, "end": 87.231, "char": [5, 14] },
-        { "start": 87.231, "end": 87.598, "char": [15, 28] }
+        { "start": 86.465, "end": 86.832, "char": [0, 4] },
+        { "start": 86.832, "end": 87.198, "char": [5, 14] },
+        { "start": 87.198, "end": 87.565, "char": [15, 28] }
       ]
     },
     {
-      "start": 89.598,
-      "end": 92.524,
+      "start": 89.565,
+      "end": 92.491,
       "text": "Clé enregistrée auprès de la CLI.",
       "words": [
-        { "start": 89.598, "end": 90.086, "char": [0, 3] },
-        { "start": 90.086, "end": 90.573, "char": [4, 15] },
-        { "start": 90.573, "end": 91.061, "char": [16, 22] },
-        { "start": 91.061, "end": 91.549, "char": [23, 25] },
-        { "start": 91.549, "end": 92.036, "char": [26, 28] },
-        { "start": 92.036, "end": 92.524, "char": [29, 33] }
+        { "start": 89.565, "end": 90.053, "char": [0, 3] },
+        { "start": 90.053, "end": 90.54, "char": [4, 15] },
+        { "start": 90.54, "end": 91.028, "char": [16, 22] },
+        { "start": 91.028, "end": 91.516, "char": [23, 25] },
+        { "start": 91.516, "end": 92.003, "char": [26, 28] },
+        { "start": 92.003, "end": 92.491, "char": [29, 33] }
       ]
     },
     {

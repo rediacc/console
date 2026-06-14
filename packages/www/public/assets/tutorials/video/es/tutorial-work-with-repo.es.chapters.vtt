@@ -6,20 +6,20 @@ Trabajando con Tu Repo
 00:00:08.859 --> 00:00:22.871
 Los tres diarios: tunnel, term, sync
 
-00:00:22.871 --> 00:00:46.751
+00:00:22.871 --> 00:00:48.951
 Tunnel: reenvía un puerto de container
 
-00:00:46.751 --> 00:01:00.151
+00:00:48.651 --> 00:01:04.284
 Abre la app en tu navegador
 
-00:01:00.151 --> 00:01:31.507
+00:01:03.984 --> 00:01:36.090
 Term: ejecuta comandos en el sandbox
 
-00:01:31.507 --> 00:01:54.976
+00:01:36.090 --> 00:02:00.559
 Sync: vista previa con --dry-run
 
-00:01:54.976 --> 00:02:24.329
+00:02:00.559 --> 00:02:30.662
 Sync: subida real
 
-00:02:24.329 --> 00:02:31.049
-Siguiente: Fork de un Repositorio
+00:02:30.662 --> 00:02:37.382
+Siguiente: VS Code en tu navegador

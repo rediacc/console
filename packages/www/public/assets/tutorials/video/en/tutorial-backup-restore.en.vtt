@@ -54,44 +54,116 @@ backups to.
 00:00:53.913 --> 00:00:56.873
 There it is. Ready to receive backups.
 
-00:00:59.718 --> 00:01:02.518
+00:00:59.751 --> 00:01:02.551
 Step two. Push a full backup. The
 
-00:01:02.518 --> 00:01:05.638
+00:01:02.551 --> 00:01:05.671
 entire repository, app, database, files
 
-00:01:05.718 --> 00:01:08.998
+00:01:05.751 --> 00:01:09.031
 , configuration, is uploaded. Because the repository
 
-00:01:08.998 --> 00:01:11.958
+00:01:09.031 --> 00:01:11.991
 is encrypted at rest, the backup is encrypted
 
-00:01:11.958 --> 00:01:14.278
+00:01:11.991 --> 00:01:14.311
 too. No extra key management.
 
-00:01:16.727 --> 00:01:19.367
+00:01:17.510 --> 00:01:20.150
 Backup uploaded. Everything in this repo is now
 
-00:01:19.367 --> 00:01:21.527
+00:01:20.150 --> 00:01:22.310
 on the remote storage, encrypted.
 
-00:01:25.026 --> 00:01:27.666
+00:01:25.809 --> 00:01:28.449
 And the backups available on this storage. From
 
-00:01:27.666 --> 00:01:30.306
+00:01:28.449 --> 00:01:31.089
 here, restore on a brand new server is
 
-00:01:30.306 --> 00:01:32.866
+00:01:31.089 --> 00:01:33.649
 one command: the repo pull command.
 
-00:01:36.072 --> 00:01:38.632
+00:01:36.855 --> 00:01:39.415
 All your snapshots in one place. Pull
 
-00:01:38.632 --> 00:01:40.472
+00:01:39.415 --> 00:01:41.255
 any of them back with a single command.
 
-00:01:41.490 --> 00:01:44.210
+00:01:44.693 --> 00:01:46.221
+Now the restore proof.
+
+00:01:46.221 --> 00:01:48.131
+First take the repository offline:
+
+00:01:48.131 --> 00:01:50.806
+stop the services and unmount the encrypted
+
+00:01:50.806 --> 00:01:51.188
+volume.
+
+00:01:51.188 --> 00:01:53.862
+The app is gone from this machine.
+
+00:01:56.862 --> 00:01:59.638
+Offline and unmounted — exactly the state
+
+00:01:59.638 --> 00:02:01.224
+of a fresh server.
+
+00:02:04.558 --> 00:02:07.178
+And pull the backup straight back from the
+
+00:02:07.178 --> 00:02:07.506
+storage.
+
+00:02:07.506 --> 00:02:09.799
+The repo pull command fetches the image,
+
+00:02:09.799 --> 00:02:10.781
+checks its integrity,
+
+00:02:10.781 --> 00:02:13.074
+and puts it exactly where it was.
+
+00:02:16.074 --> 00:02:17.223
+Transfer complete,
+
+00:02:17.223 --> 00:02:18.373
+integrity verified.
+
+00:02:18.373 --> 00:02:20.671
+The repository is back.
+
+00:02:23.988 --> 00:02:25.290
+Mount it again,
+
+00:02:25.290 --> 00:02:27.459
+and the repository is restored.
+
+00:02:27.459 --> 00:02:27.893
+Push,
+
+00:02:27.893 --> 00:02:28.327
+list,
+
+00:02:28.327 --> 00:02:30.931
+pull — that is the whole
+
+00:02:30.931 --> 00:02:31.799
+backup story.
+
+00:02:34.049 --> 00:02:34.424
+Restored.
+
+00:02:34.424 --> 00:02:37.050
+The same flow works on a brand
+
+00:02:37.050 --> 00:02:38.176
+new machine too.
+
+00:02:39.061 --> 00:02:41.781
 Your data is safe and portable across
 
-00:01:44.210 --> 00:01:46.450
+00:02:41.781 --> 00:02:44.021
 machines. See you in the next one!

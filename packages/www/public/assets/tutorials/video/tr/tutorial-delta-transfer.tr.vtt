@@ -1,0 +1,166 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.756
+İşte eğlenceli bir deney.
+
+00:00:02.756 --> 00:00:05.390
+Bir gigabayt veri içeren bir repository'yi
+
+00:00:05.390 --> 00:00:08.024
+başka bir makineye iki kez push
+
+00:00:08.024 --> 00:00:08.463
+edeceğiz.
+
+00:00:08.463 --> 00:00:10.658
+İlk push her şeyi taşır,
+
+00:00:10.658 --> 00:00:12.414
+ikincisi yalnızca değişenleri taşır.
+
+00:00:12.414 --> 00:00:13.292
+Sayılara bakın,
+
+00:00:13.292 --> 00:00:15.926
+push komutu tam olarak ne kadar
+
+00:00:15.926 --> 00:00:16.804
+taşındığını yazdırır.
+
+00:00:17.566 --> 00:00:19.168
+Püf nokta kurulumda.
+
+00:00:19.168 --> 00:00:21.304
+İlk push'tan sonra CLI,
+
+00:00:21.304 --> 00:00:23.975
+her iki makinede de özdeş
+
+00:00:23.975 --> 00:00:26.645
+değiştirilemez bir taban imajı tutar.
+
+00:00:26.645 --> 00:00:27.713
+Sonraki push,
+
+00:00:27.713 --> 00:00:30.383
+blokları bu tabana göre karşılaştırır
+
+00:00:30.383 --> 00:00:32.520
+ve yalnızca farkı gönderir.
+
+00:00:32.520 --> 00:00:33.588
+Bayrak yok,
+
+00:00:33.588 --> 00:00:35.190
+kayıt tutma yok,
+
+00:00:35.190 --> 00:00:36.792
+aynı push komutu.
+
+00:00:40.069 --> 00:00:42.570
+İlk push başka bir makineye tam
+
+00:00:42.570 --> 00:00:45.070
+imajı taşır ve çıktı bunu açıkça
+
+00:00:45.070 --> 00:00:45.487
+söyler:
+
+00:00:45.487 --> 00:00:46.737
+iki gigabayt aktarıldı,
+
+00:00:46.737 --> 00:00:47.988
+full olarak işaretlendi.
+
+00:00:47.988 --> 00:00:49.238
+Bu taban noktasıdır.
+
+00:00:52.238 --> 00:00:54.084
+Kırk dört saniyede iki gigabayt,
+
+00:00:54.084 --> 00:00:55.192
+full olarak işaretlendi.
+
+00:00:55.192 --> 00:00:57.777
+CLI ayrıca her iki tarafta da özdeş
+
+00:00:57.777 --> 00:00:58.885
+bir taban tuttu,
+
+00:00:58.885 --> 00:01:00.362
+bu da sihrin hazırlığıdır.
+
+00:01:03.639 --> 00:01:05.229
+Biraz veri değiştirin:
+
+00:01:05.229 --> 00:01:07.348
+iki gigabayttan elli megabayt.
+
+00:01:14.864 --> 00:01:17.058
+Büyük bir imajda küçük bir değişiklik.
+
+00:01:20.344 --> 00:01:21.706
+Tekrar push edin.
+
+00:01:21.706 --> 00:01:22.615
+Aynı komut,
+
+00:01:22.615 --> 00:01:24.885
+ama bu sefer çıktıyı okuyun:
+
+00:01:24.885 --> 00:01:27.610
+iki gigabaytlık bir imaja karşı yaklaşık
+
+00:01:27.610 --> 00:01:28.972
+elli megabayt aktarıldı,
+
+00:01:28.972 --> 00:01:30.335
+delta olarak işaretlendi.
+
+00:01:30.335 --> 00:01:32.151
+Yalnızca değişen bloklar iletildi.
+
+00:01:35.151 --> 00:01:37.698
+İki gigabaytlık bir imajdan altı
+
+00:01:37.698 --> 00:01:39.736
+saniyenin altında elli megabayt.
+
+00:01:39.736 --> 00:01:41.264
+Sayılar bunun kanıtıdır.
+
+00:01:44.550 --> 00:01:47.389
+Her iki makine de aynı repository'yi
+
+00:01:47.389 --> 00:01:47.862
+tutar,
+
+00:01:47.862 --> 00:01:49.281
+saniyeler içinde güncellenir.
+
+00:01:49.281 --> 00:01:50.700
+İsterseniz saatlik çalıştırın,
+
+00:01:50.700 --> 00:01:53.066
+maliyet boyut değil değişiklik kadardır.
+
+00:01:56.066 --> 00:01:58.495
+Sık yedeklemeler artık pahalı olmaktan çıkar.
+
+00:01:59.321 --> 00:02:00.305
+Küçük değişiklikler,
+
+00:02:00.305 --> 00:02:03.255
+ilkinden sonraki her seferinde küçük aktarımlar
+
+00:02:03.255 --> 00:02:03.747
+demektir.
+
+00:02:03.747 --> 00:02:06.206
+Şimdi sadece bir tutorial kaldı:
+
+00:02:06.206 --> 00:02:09.157
+hiçbir zaman disk alanınızın bitmemesini sağlamak.
+
+00:02:09.157 --> 00:02:10.632
+Son tutorial'da görüşürüz!

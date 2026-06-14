@@ -1,142 +1,151 @@
 WEBVTT
 
-00:00:01.000 --> 00:00:01.416
-Bene!
+00:00:01.000 --> 00:00:03.814
+La tua app funziona finché sei connesso.
 
-00:00:01.416 --> 00:00:04.331
-Portiamo la tua app dallo sviluppo alla
+00:00:03.814 --> 00:00:06.629
+Produzione significa che funziona anche quando non
 
-00:00:04.331 --> 00:00:04.748
-produzione.
+00:00:06.629 --> 00:00:07.433
+ci sei.
 
-00:00:04.748 --> 00:00:05.997
+00:00:07.433 --> 00:00:08.639
 Tre brevi passaggi,
 
-00:00:05.997 --> 00:00:08.079
-tutti pilotati dal tuo laptop.
+00:00:08.639 --> 00:00:10.247
+tutti dal tuo laptop.
 
-00:00:08.859 --> 00:00:11.702
-Durante lo sviluppo esegui l'app dall'interno del
+00:00:11.018 --> 00:00:12.321
+Ecco la differenza.
 
-00:00:11.702 --> 00:00:12.108
-repo,
+00:00:12.321 --> 00:00:14.928
+In sviluppo avvii l'app dall'interno del
 
-00:00:12.108 --> 00:00:14.545
-quindi si ferma quando ti disconnetti.
+00:00:14.928 --> 00:00:16.231
+repo tramite SSH.
 
-00:00:14.545 --> 00:00:17.388
-In produzione la lanci dal tuo laptop
+00:00:16.231 --> 00:00:18.838
+Chiudi la sessione e l'app si
 
-00:00:17.388 --> 00:00:20.232
-con la CLI e continua a girare
+00:00:18.838 --> 00:00:20.142
+spegne con essa.
 
-00:00:20.232 --> 00:00:21.450
-in modalita' distaccata.
+00:00:20.142 --> 00:00:22.748
+In produzione la avvii scollegata dal
 
-00:00:24.721 --> 00:00:27.265
+00:00:22.748 --> 00:00:23.617
+tuo laptop:
+
+00:00:23.617 --> 00:00:25.790
+il server gestisce il processo,
+
+00:00:25.790 --> 00:00:27.527
+la tua connessione no.
+
+00:00:30.804 --> 00:00:33.348
 Avviamo l'app in modalita' produzione dal
 
-00:00:27.265 --> 00:00:27.689
+00:00:33.348 --> 00:00:33.772
 laptop.
 
-00:00:27.689 --> 00:00:30.232
+00:00:33.772 --> 00:00:36.315
 Il comando di deploy chiama la
 
-00:00:30.232 --> 00:00:32.776
+00:00:36.315 --> 00:00:38.859
 stessa funzione up usata durante lo
 
-00:00:32.776 --> 00:00:33.200
+00:00:38.859 --> 00:00:39.283
 sviluppo,
 
-00:00:33.200 --> 00:00:35.743
+00:00:39.283 --> 00:00:41.826
 ma viene eseguita in modalita' distaccata.
 
-00:00:35.743 --> 00:00:38.287
+00:00:41.826 --> 00:00:44.370
 Puoi chiudere il laptop e l'app
 
-00:00:38.287 --> 00:00:39.559
+00:00:44.370 --> 00:00:45.642
 continua a girare.
 
-00:00:42.309 --> 00:00:44.888
+00:00:48.392 --> 00:00:50.971
 App in esecuzione in produzione.
 
-00:00:44.888 --> 00:00:45.920
+00:00:50.971 --> 00:00:52.003
 Stesso comando,
 
-00:00:45.920 --> 00:00:46.952
+00:00:52.003 --> 00:00:53.035
 stesso risultato,
 
-00:00:46.952 --> 00:00:48.500
+00:00:53.035 --> 00:00:54.583
 sul server reale.
 
-00:00:51.837 --> 00:00:54.583
+00:00:57.887 --> 00:01:00.633
 Abilitiamo l'avvio automatico cosi' l'app sopravvive
 
-00:00:54.583 --> 00:00:56.414
+00:01:00.633 --> 00:01:02.464
 al riavvio del server.
 
-00:00:56.414 --> 00:00:57.787
+00:01:02.464 --> 00:01:03.837
 Da questo momento,
 
-00:00:57.787 --> 00:01:00.076
+00:01:03.837 --> 00:01:06.126
 se il server si riavvia,
 
-00:01:00.076 --> 00:01:02.364
+00:01:06.126 --> 00:01:08.414
 questo repo torna su automaticamente.
 
-00:01:04.614 --> 00:01:06.350
+00:01:10.664 --> 00:01:12.400
 Avvio automatico attivo.
 
-00:01:06.350 --> 00:01:08.663
+00:01:12.400 --> 00:01:14.713
 L'app sopravvive ai riavvii.
 
-00:01:11.960 --> 00:01:14.835
+00:01:18.043 --> 00:01:20.918
 Elenchiamo i repository con l'avvio automatico abilitato.
 
-00:01:14.835 --> 00:01:17.710
+00:01:20.918 --> 00:01:23.793
 Conferma che la nostra app e' ora
 
-00:01:17.710 --> 00:01:19.353
+00:01:23.793 --> 00:01:25.436
 nella lista di avvio.
 
-00:01:21.353 --> 00:01:21.713
+00:01:28.436 --> 00:01:28.796
 Eccola,
 
-00:01:21.713 --> 00:01:23.155
+00:01:28.796 --> 00:01:30.238
 nella lista di avvio.
 
-00:01:26.481 --> 00:01:27.900
+00:01:33.530 --> 00:01:34.949
 E per fermare l'app,
 
-00:01:27.900 --> 00:01:29.674
+00:01:34.949 --> 00:01:36.723
 un solo comando dal laptop.
 
-00:01:29.674 --> 00:01:31.094
+00:01:36.723 --> 00:01:38.143
 Un comando per avviare,
 
-00:01:31.094 --> 00:01:32.158
+00:01:38.143 --> 00:01:39.207
 uno per fermare.
 
-00:01:32.158 --> 00:01:33.578
+00:01:39.207 --> 00:01:40.627
 Tutto dal tuo terminale,
 
-00:01:33.578 --> 00:01:34.997
+00:01:40.627 --> 00:01:42.046
 senza piu' sessioni interattive.
 
-00:01:37.497 --> 00:01:38.032
+00:01:44.546 --> 00:01:45.081
 Fermata.
 
-00:01:38.032 --> 00:01:40.174
+00:01:45.081 --> 00:01:47.223
 Un comando per avviare,
 
-00:01:40.174 --> 00:01:41.781
+00:01:47.223 --> 00:01:48.830
 uno per fermare.
 
-00:01:42.586 --> 00:01:45.293
+00:01:49.635 --> 00:01:52.342
 Ed ecco la modalita' produzione
 
-00:01:45.293 --> 00:01:46.376
+00:01:52.342 --> 00:01:53.425
 in sintesi.
 
-00:01:46.376 --> 00:01:48.542
+00:01:53.425 --> 00:01:55.591
 Ci vediamo nel prossimo!

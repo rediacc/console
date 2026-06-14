@@ -1,0 +1,1293 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.347,
+      "text": "Versioniere deine repositories wie Code!",
+      "words": [
+        { "start": 1, "end": 1.469, "char": [0, 11] },
+        { "start": 1.469, "end": 1.939, "char": [12, 17] },
+        { "start": 1.939, "end": 2.408, "char": [18, 30] },
+        { "start": 2.408, "end": 2.878, "char": [31, 34] },
+        { "start": 2.878, "end": 3.347, "char": [35, 40] }
+      ]
+    },
+    {
+      "start": 3.347,
+      "end": 5.694,
+      "text": "Wir frieren einen Checkpoint ein,",
+      "words": [
+        { "start": 3.347, "end": 3.817, "char": [0, 3] },
+        { "start": 3.817, "end": 4.286, "char": [4, 11] },
+        { "start": 4.286, "end": 4.755, "char": [12, 17] },
+        { "start": 4.755, "end": 5.225, "char": [18, 28] },
+        { "start": 5.225, "end": 5.694, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 5.694,
+      "end": 8.511,
+      "text": "geben ihm einen Namen und löschen",
+      "words": [
+        { "start": 5.694, "end": 6.164, "char": [0, 5] },
+        { "start": 6.164, "end": 6.633, "char": [6, 9] },
+        { "start": 6.633, "end": 7.103, "char": [10, 15] },
+        { "start": 7.103, "end": 7.572, "char": [16, 21] },
+        { "start": 7.572, "end": 8.042, "char": [22, 25] },
+        { "start": 8.042, "end": 8.511, "char": [26, 33] }
+      ]
+    },
+    {
+      "start": 8.511,
+      "end": 10.389,
+      "text": "dann eine echte Datenbanktabelle.",
+      "words": [
+        { "start": 8.511, "end": 8.98, "char": [0, 4] },
+        { "start": 8.98, "end": 9.45, "char": [5, 9] },
+        { "start": 9.45, "end": 9.919, "char": [10, 15] },
+        { "start": 9.919, "end": 10.389, "char": [16, 33] }
+      ]
+    },
+    {
+      "start": 10.389,
+      "end": 13.205,
+      "text": "Das Rollback stellt den exakt eingefrorenen",
+      "words": [
+        { "start": 10.389, "end": 10.858, "char": [0, 3] },
+        { "start": 10.858, "end": 11.328, "char": [4, 12] },
+        { "start": 11.328, "end": 11.797, "char": [13, 19] },
+        { "start": 11.797, "end": 12.266, "char": [20, 23] },
+        { "start": 12.266, "end": 12.736, "char": [24, 29] },
+        { "start": 12.736, "end": 13.205, "char": [30, 43] }
+      ]
+    },
+    {
+      "start": 13.205,
+      "end": 14.614,
+      "text": "Zustand wieder her,",
+      "words": [
+        { "start": 13.205, "end": 13.675, "char": [0, 7] },
+        { "start": 13.675, "end": 14.144, "char": [8, 14] },
+        { "start": 14.144, "end": 14.614, "char": [15, 19] }
+      ]
+    },
+    {
+      "start": 14.614,
+      "end": 16.022,
+      "text": "jede Zeile inklusive,",
+      "words": [
+        { "start": 14.614, "end": 15.083, "char": [0, 4] },
+        { "start": 15.083, "end": 15.553, "char": [5, 10] },
+        { "start": 15.553, "end": 16.022, "char": [11, 21] }
+      ]
+    },
+    {
+      "start": 16.022,
+      "end": 16.961,
+      "text": "in Sekunden.",
+      "words": [
+        { "start": 16.022, "end": 16.491, "char": [0, 2] },
+        { "start": 16.491, "end": 16.961, "char": [3, 12] }
+      ]
+    },
+    {
+      "start": 17.729,
+      "end": 19.645,
+      "text": "Das Modell ist git,",
+      "words": [
+        { "start": 17.729, "end": 18.208, "char": [0, 3] },
+        { "start": 18.208, "end": 18.687, "char": [4, 10] },
+        { "start": 18.687, "end": 19.166, "char": [11, 14] },
+        { "start": 19.166, "end": 19.645, "char": [15, 19] }
+      ]
+    },
+    {
+      "start": 19.645,
+      "end": 21.56,
+      "text": "aber für ganze repositories.",
+      "words": [
+        { "start": 19.645, "end": 20.124, "char": [0, 4] },
+        { "start": 20.124, "end": 20.602, "char": [5, 8] },
+        { "start": 20.602, "end": 21.081, "char": [9, 14] },
+        { "start": 21.081, "end": 21.56, "char": [15, 28] }
+      ]
+    },
+    {
+      "start": 21.56,
+      "end": 23.955,
+      "text": "Ein Commit ist ein eingefrorenes,",
+      "words": [
+        { "start": 21.56, "end": 22.039, "char": [0, 3] },
+        { "start": 22.039, "end": 22.518, "char": [4, 10] },
+        { "start": 22.518, "end": 22.997, "char": [11, 14] },
+        { "start": 22.997, "end": 23.476, "char": [15, 18] },
+        { "start": 23.476, "end": 23.955, "char": [19, 33] }
+      ]
+    },
+    {
+      "start": 23.955,
+      "end": 24.913,
+      "text": "unveränderliches Image.",
+      "words": [
+        { "start": 23.955, "end": 24.434, "char": [0, 16] },
+        { "start": 24.434, "end": 24.913, "char": [17, 23] }
+      ]
+    },
+    {
+      "start": 24.913,
+      "end": 27.786,
+      "text": "Es lässt sich nicht einmal mounten,",
+      "words": [
+        { "start": 24.913, "end": 25.392, "char": [0, 2] },
+        { "start": 25.392, "end": 25.87, "char": [3, 8] },
+        { "start": 25.87, "end": 26.349, "char": [9, 13] },
+        { "start": 26.349, "end": 26.828, "char": [14, 19] },
+        { "start": 26.828, "end": 27.307, "char": [20, 26] },
+        { "start": 27.307, "end": 27.786, "char": [27, 35] }
+      ]
+    },
+    {
+      "start": 27.786,
+      "end": 30.181,
+      "text": "also kann es niemand verändern.",
+      "words": [
+        { "start": 27.786, "end": 28.265, "char": [0, 4] },
+        { "start": 28.265, "end": 28.744, "char": [5, 9] },
+        { "start": 28.744, "end": 29.223, "char": [10, 12] },
+        { "start": 29.223, "end": 29.702, "char": [13, 20] },
+        { "start": 29.702, "end": 30.181, "char": [21, 31] }
+      ]
+    },
+    {
+      "start": 30.181,
+      "end": 33.054,
+      "text": "Ein Branch ist nur ein Name,",
+      "words": [
+        { "start": 30.181, "end": 30.66, "char": [0, 3] },
+        { "start": 30.66, "end": 31.139, "char": [4, 10] },
+        { "start": 31.139, "end": 31.617, "char": [11, 14] },
+        { "start": 31.617, "end": 32.096, "char": [15, 18] },
+        { "start": 32.096, "end": 32.575, "char": [19, 22] },
+        { "start": 32.575, "end": 33.054, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 33.054,
+      "end": 35.449,
+      "text": "der auf einen Commit zeigt.",
+      "words": [
+        { "start": 33.054, "end": 33.533, "char": [0, 3] },
+        { "start": 33.533, "end": 34.012, "char": [4, 7] },
+        { "start": 34.012, "end": 34.491, "char": [8, 13] },
+        { "start": 34.491, "end": 34.97, "char": [14, 20] },
+        { "start": 34.97, "end": 35.449, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 35.449,
+      "end": 38.322,
+      "text": "Und checkout verwandelt jeden Commit zurück",
+      "words": [
+        { "start": 35.449, "end": 35.928, "char": [0, 3] },
+        { "start": 35.928, "end": 36.407, "char": [4, 12] },
+        { "start": 36.407, "end": 36.885, "char": [13, 23] },
+        { "start": 36.885, "end": 37.364, "char": [24, 29] },
+        { "start": 37.364, "end": 37.843, "char": [30, 36] },
+        { "start": 37.843, "end": 38.322, "char": [37, 43] }
+      ]
+    },
+    {
+      "start": 38.322,
+      "end": 39.759,
+      "text": "in einen frischen,",
+      "words": [
+        { "start": 38.322, "end": 38.801, "char": [0, 2] },
+        { "start": 38.801, "end": 39.28, "char": [3, 8] },
+        { "start": 39.28, "end": 39.759, "char": [9, 18] }
+      ]
+    },
+    {
+      "start": 39.759,
+      "end": 40.717,
+      "text": "beschreibbaren Fork.",
+      "words": [
+        { "start": 39.759, "end": 40.238, "char": [0, 14] },
+        { "start": 40.238, "end": 40.717, "char": [15, 20] }
+      ]
+    },
+    {
+      "start": 43.993,
+      "end": 46.746,
+      "text": "Unser Working-Fork enthält Version eins",
+      "words": [
+        { "start": 43.993, "end": 44.544, "char": [0, 5] },
+        { "start": 44.544, "end": 45.094, "char": [6, 18] },
+        { "start": 45.094, "end": 45.645, "char": [19, 26] },
+        { "start": 45.645, "end": 46.195, "char": [27, 34] },
+        { "start": 46.195, "end": 46.746, "char": [35, 39] }
+      ]
+    },
+    {
+      "start": 46.746,
+      "end": 47.847,
+      "text": "des App-Zustands.",
+      "words": [
+        { "start": 46.746, "end": 47.296, "char": [0, 3] },
+        { "start": 47.296, "end": 47.847, "char": [4, 17] }
+      ]
+    },
+    {
+      "start": 47.847,
+      "end": 50.6,
+      "text": "Eine einfache Markierungsdatei macht ihn",
+      "words": [
+        { "start": 47.847, "end": 48.398, "char": [0, 4] },
+        { "start": 48.398, "end": 48.948, "char": [5, 13] },
+        { "start": 48.948, "end": 49.499, "char": [14, 30] },
+        { "start": 49.499, "end": 50.049, "char": [31, 36] },
+        { "start": 50.049, "end": 50.6, "char": [37, 40] }
+      ]
+    },
+    {
+      "start": 50.6,
+      "end": 51.151,
+      "text": "sichtbar.",
+      "words": [{ "start": 50.6, "end": 51.151, "char": [0, 9] }]
+    },
+    {
+      "start": 53.196,
+      "end": 54.042,
+      "text": "Version eins,",
+      "words": [
+        { "start": 53.196, "end": 53.619, "char": [0, 7] },
+        { "start": 53.619, "end": 54.042, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 54.042,
+      "end": 55.312,
+      "text": "auf der Festplatte.",
+      "words": [
+        { "start": 54.042, "end": 54.465, "char": [0, 3] },
+        { "start": 54.465, "end": 54.889, "char": [4, 7] },
+        { "start": 54.889, "end": 55.312, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 58.606,
+      "end": 60.881,
+      "text": "Es sind nicht nur Dateien.",
+      "words": [
+        { "start": 58.606, "end": 59.061, "char": [0, 2] },
+        { "start": 59.061, "end": 59.516, "char": [3, 7] },
+        { "start": 59.516, "end": 59.971, "char": [8, 13] },
+        { "start": 59.971, "end": 60.426, "char": [14, 17] },
+        { "start": 60.426, "end": 60.881, "char": [18, 26] }
+      ]
+    },
+    {
+      "start": 60.881,
+      "end": 63.611,
+      "text": "In diesem Fork läuft auch eine",
+      "words": [
+        { "start": 60.881, "end": 61.336, "char": [0, 2] },
+        { "start": 61.336, "end": 61.791, "char": [3, 9] },
+        { "start": 61.791, "end": 62.246, "char": [10, 14] },
+        { "start": 62.246, "end": 62.701, "char": [15, 20] },
+        { "start": 62.701, "end": 63.156, "char": [21, 25] },
+        { "start": 63.156, "end": 63.611, "char": [26, 30] }
+      ]
+    },
+    {
+      "start": 63.611,
+      "end": 64.521,
+      "text": "echte PostgreSQL-Datenbank,",
+      "words": [
+        { "start": 63.611, "end": 64.066, "char": [0, 5] },
+        { "start": 64.066, "end": 64.521, "char": [6, 27] }
+      ]
+    },
+    {
+      "start": 64.521,
+      "end": 67.25,
+      "text": "und die Tabelle customers enthält drei",
+      "words": [
+        { "start": 64.521, "end": 64.976, "char": [0, 3] },
+        { "start": 64.976, "end": 65.43, "char": [4, 7] },
+        { "start": 65.43, "end": 65.885, "char": [8, 15] },
+        { "start": 65.885, "end": 66.34, "char": [16, 25] },
+        { "start": 66.34, "end": 66.795, "char": [26, 33] },
+        { "start": 66.795, "end": 67.25, "char": [34, 38] }
+      ]
+    },
+    {
+      "start": 67.25,
+      "end": 67.705,
+      "text": "Zeilen.",
+      "words": [{ "start": 67.25, "end": 67.705, "char": [0, 7] }]
+    },
+    {
+      "start": 67.705,
+      "end": 69.525,
+      "text": "Merk dir diese Zahl.",
+      "words": [
+        { "start": 67.705, "end": 68.16, "char": [0, 4] },
+        { "start": 68.16, "end": 68.615, "char": [5, 8] },
+        { "start": 68.615, "end": 69.07, "char": [9, 14] },
+        { "start": 69.07, "end": 69.525, "char": [15, 20] }
+      ]
+    },
+    {
+      "start": 72.025,
+      "end": 72.63,
+      "text": "Drei Zeilen.",
+      "words": [
+        { "start": 72.025, "end": 72.328, "char": [0, 4] },
+        { "start": 72.328, "end": 72.63, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 72.63,
+      "end": 73.841,
+      "text": "Das sind die Daten,",
+      "words": [
+        { "start": 72.63, "end": 72.933, "char": [0, 3] },
+        { "start": 72.933, "end": 73.236, "char": [4, 8] },
+        { "start": 73.236, "end": 73.538, "char": [9, 12] },
+        { "start": 73.538, "end": 73.841, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 73.841,
+      "end": 75.656,
+      "text": "die wir gleich in Gefahr bringen.",
+      "words": [
+        { "start": 73.841, "end": 74.143, "char": [0, 3] },
+        { "start": 74.143, "end": 74.446, "char": [4, 7] },
+        { "start": 74.446, "end": 74.748, "char": [8, 14] },
+        { "start": 74.748, "end": 75.051, "char": [15, 17] },
+        { "start": 75.051, "end": 75.354, "char": [18, 24] },
+        { "start": 75.354, "end": 75.656, "char": [25, 33] }
+      ]
+    },
+    {
+      "start": 78.984,
+      "end": 79.48,
+      "text": "Einfrieren.",
+      "words": [{ "start": 78.984, "end": 79.48, "char": [0, 11] }]
+    },
+    {
+      "start": 79.48,
+      "end": 82.458,
+      "text": "Der Commit erfasst das gesamte repository",
+      "words": [
+        { "start": 79.48, "end": 79.977, "char": [0, 3] },
+        { "start": 79.977, "end": 80.473, "char": [4, 10] },
+        { "start": 80.473, "end": 80.969, "char": [11, 18] },
+        { "start": 80.969, "end": 81.466, "char": [19, 22] },
+        { "start": 81.466, "end": 81.962, "char": [23, 30] },
+        { "start": 81.962, "end": 82.458, "char": [31, 41] }
+      ]
+    },
+    {
+      "start": 82.458,
+      "end": 83.947,
+      "text": "als unveränderliches Image,",
+      "words": [
+        { "start": 82.458, "end": 82.955, "char": [0, 3] },
+        { "start": 82.955, "end": 83.451, "char": [4, 20] },
+        { "start": 83.451, "end": 83.947, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 83.947,
+      "end": 85.436,
+      "text": "mit einer Nachricht,",
+      "words": [
+        { "start": 83.947, "end": 84.444, "char": [0, 3] },
+        { "start": 84.444, "end": 84.94, "char": [4, 9] },
+        { "start": 84.94, "end": 85.436, "char": [10, 20] }
+      ]
+    },
+    {
+      "start": 85.436,
+      "end": 87.918,
+      "text": "einem Autor und einem Parent.",
+      "words": [
+        { "start": 85.436, "end": 85.933, "char": [0, 5] },
+        { "start": 85.933, "end": 86.429, "char": [6, 11] },
+        { "start": 86.429, "end": 86.925, "char": [12, 15] },
+        { "start": 86.925, "end": 87.422, "char": [16, 21] },
+        { "start": 87.422, "end": 87.918, "char": [22, 29] }
+      ]
+    },
+    {
+      "start": 87.918,
+      "end": 89.407,
+      "text": "Genau wie git,",
+      "words": [
+        { "start": 87.918, "end": 88.414, "char": [0, 5] },
+        { "start": 88.414, "end": 88.911, "char": [6, 9] },
+        { "start": 88.911, "end": 89.407, "char": [10, 14] }
+      ]
+    },
+    {
+      "start": 89.407,
+      "end": 90.896,
+      "text": "aber für alles,",
+      "words": [
+        { "start": 89.407, "end": 89.903, "char": [0, 4] },
+        { "start": 89.903, "end": 90.4, "char": [5, 8] },
+        { "start": 90.4, "end": 90.896, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 90.896,
+      "end": 92.385,
+      "text": "einschließlich der Datenbank.",
+      "words": [
+        { "start": 90.896, "end": 91.392, "char": [0, 14] },
+        { "start": 91.392, "end": 91.888, "char": [15, 18] },
+        { "start": 91.888, "end": 92.385, "char": [19, 29] }
+      ]
+    },
+    {
+      "start": 95.385,
+      "end": 95.789,
+      "text": "Committed.",
+      "words": [{ "start": 95.385, "end": 95.789, "char": [0, 10] }]
+    },
+    {
+      "start": 95.789,
+      "end": 98.212,
+      "text": "Dieser Snapshot kann sich niemals ändern.",
+      "words": [
+        { "start": 95.789, "end": 96.193, "char": [0, 6] },
+        { "start": 96.193, "end": 96.596, "char": [7, 15] },
+        { "start": 96.596, "end": 97, "char": [16, 20] },
+        { "start": 97, "end": 97.404, "char": [21, 25] },
+        { "start": 97.404, "end": 97.808, "char": [26, 33] },
+        { "start": 97.808, "end": 98.212, "char": [34, 41] }
+      ]
+    },
+    {
+      "start": 98.212,
+      "end": 100.635,
+      "text": "Er lässt sich nicht einmal mounten.",
+      "words": [
+        { "start": 98.212, "end": 98.616, "char": [0, 2] },
+        { "start": 98.616, "end": 99.02, "char": [3, 8] },
+        { "start": 99.02, "end": 99.424, "char": [9, 13] },
+        { "start": 99.424, "end": 99.828, "char": [14, 19] },
+        { "start": 99.828, "end": 100.232, "char": [20, 26] },
+        { "start": 100.232, "end": 100.635, "char": [27, 35] }
+      ]
+    },
+    {
+      "start": 103.917,
+      "end": 105.836,
+      "text": "Gib dem Commit einen Namen.",
+      "words": [
+        { "start": 103.917, "end": 104.301, "char": [0, 3] },
+        { "start": 104.301, "end": 104.685, "char": [4, 7] },
+        { "start": 104.685, "end": 105.069, "char": [8, 14] },
+        { "start": 105.069, "end": 105.453, "char": [15, 20] },
+        { "start": 105.453, "end": 105.836, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 105.836,
+      "end": 108.523,
+      "text": "Der stable Branch zeigt jetzt auf Version",
+      "words": [
+        { "start": 105.836, "end": 106.22, "char": [0, 3] },
+        { "start": 106.22, "end": 106.604, "char": [4, 10] },
+        { "start": 106.604, "end": 106.988, "char": [11, 17] },
+        { "start": 106.988, "end": 107.372, "char": [18, 23] },
+        { "start": 107.372, "end": 107.755, "char": [24, 29] },
+        { "start": 107.755, "end": 108.139, "char": [30, 33] },
+        { "start": 108.139, "end": 108.523, "char": [34, 41] }
+      ]
+    },
+    {
+      "start": 108.523,
+      "end": 108.907,
+      "text": "eins.",
+      "words": [{ "start": 108.523, "end": 108.907, "char": [0, 5] }]
+    },
+    {
+      "start": 109.707,
+      "end": 111.561,
+      "text": "Ein Branch ist ein Name,",
+      "words": [
+        { "start": 109.707, "end": 110.078, "char": [0, 3] },
+        { "start": 110.078, "end": 110.449, "char": [4, 10] },
+        { "start": 110.449, "end": 110.82, "char": [11, 14] },
+        { "start": 110.82, "end": 111.19, "char": [15, 18] },
+        { "start": 111.19, "end": 111.561, "char": [19, 24] }
+      ]
+    },
+    {
+      "start": 111.561,
+      "end": 113.416,
+      "text": "zu dem du zurückkehren kannst.",
+      "words": [
+        { "start": 111.561, "end": 111.932, "char": [0, 2] },
+        { "start": 111.932, "end": 112.303, "char": [3, 6] },
+        { "start": 112.303, "end": 112.674, "char": [7, 9] },
+        { "start": 112.674, "end": 113.045, "char": [10, 22] },
+        { "start": 113.045, "end": 113.416, "char": [23, 30] }
+      ]
+    },
+    {
+      "start": 116.732,
+      "end": 117.253,
+      "text": "Weiterarbeiten.",
+      "words": [{ "start": 116.732, "end": 117.253, "char": [0, 15] }]
+    },
+    {
+      "start": 117.253,
+      "end": 119.855,
+      "text": "Version zwei ersetzt Version eins",
+      "words": [
+        { "start": 117.253, "end": 117.773, "char": [0, 7] },
+        { "start": 117.773, "end": 118.294, "char": [8, 12] },
+        { "start": 118.294, "end": 118.814, "char": [13, 20] },
+        { "start": 118.814, "end": 119.335, "char": [21, 28] },
+        { "start": 119.335, "end": 119.855, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 119.855,
+      "end": 120.896,
+      "text": "im Working-Fork.",
+      "words": [
+        { "start": 119.855, "end": 120.375, "char": [0, 2] },
+        { "start": 120.375, "end": 120.896, "char": [3, 16] }
+      ]
+    },
+    {
+      "start": 120.896,
+      "end": 123.498,
+      "text": "Der Commit kümmert das nicht.",
+      "words": [
+        { "start": 120.896, "end": 121.416, "char": [0, 3] },
+        { "start": 121.416, "end": 121.937, "char": [4, 10] },
+        { "start": 121.937, "end": 122.457, "char": [11, 18] },
+        { "start": 122.457, "end": 122.978, "char": [19, 22] },
+        { "start": 122.978, "end": 123.498, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 125.951,
+      "end": 128.122,
+      "text": "Der Working-Fork hat sich weiterentwickelt.",
+      "words": [
+        { "start": 125.951, "end": 126.385, "char": [0, 3] },
+        { "start": 126.385, "end": 126.819, "char": [4, 16] },
+        { "start": 126.819, "end": 127.254, "char": [17, 20] },
+        { "start": 127.254, "end": 127.688, "char": [21, 25] },
+        { "start": 127.688, "end": 128.122, "char": [26, 43] }
+      ]
+    },
+    {
+      "start": 128.122,
+      "end": 129.425,
+      "text": "Die History nicht.",
+      "words": [
+        { "start": 128.122, "end": 128.557, "char": [0, 3] },
+        { "start": 128.557, "end": 128.991, "char": [4, 11] },
+        { "start": 128.991, "end": 129.425, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 132.714,
+      "end": 134.456,
+      "text": "Jetzt kommt die Katastrophe.",
+      "words": [
+        { "start": 132.714, "end": 133.15, "char": [0, 5] },
+        { "start": 133.15, "end": 133.585, "char": [6, 11] },
+        { "start": 133.585, "end": 134.02, "char": [12, 15] },
+        { "start": 134.02, "end": 134.456, "char": [16, 28] }
+      ]
+    },
+    {
+      "start": 134.456,
+      "end": 137.068,
+      "text": "Die riskante Änderung löscht die Tabelle",
+      "words": [
+        { "start": 134.456, "end": 134.891, "char": [0, 3] },
+        { "start": 134.891, "end": 135.327, "char": [4, 12] },
+        { "start": 135.327, "end": 135.762, "char": [13, 21] },
+        { "start": 135.762, "end": 136.197, "char": [22, 28] },
+        { "start": 136.197, "end": 136.633, "char": [29, 32] },
+        { "start": 136.633, "end": 137.068, "char": [33, 40] }
+      ]
+    },
+    {
+      "start": 137.068,
+      "end": 137.503,
+      "text": "customers.",
+      "words": [{ "start": 137.068, "end": 137.503, "char": [0, 10] }]
+    },
+    {
+      "start": 137.503,
+      "end": 140.116,
+      "text": "Im echten Leben ist das der",
+      "words": [
+        { "start": 137.503, "end": 137.939, "char": [0, 2] },
+        { "start": 137.939, "end": 138.374, "char": [3, 9] },
+        { "start": 138.374, "end": 138.81, "char": [10, 15] },
+        { "start": 138.81, "end": 139.245, "char": [16, 19] },
+        { "start": 139.245, "end": 139.68, "char": [20, 23] },
+        { "start": 139.68, "end": 140.116, "char": [24, 27] }
+      ]
+    },
+    {
+      "start": 140.116,
+      "end": 140.551,
+      "text": "Moment,",
+      "words": [{ "start": 140.116, "end": 140.551, "char": [0, 7] }]
+    },
+    {
+      "start": 140.551,
+      "end": 143.163,
+      "text": "in dem einem der Magen sinkt.",
+      "words": [
+        { "start": 140.551, "end": 140.986, "char": [0, 2] },
+        { "start": 140.986, "end": 141.422, "char": [3, 6] },
+        { "start": 141.422, "end": 141.857, "char": [7, 12] },
+        { "start": 141.857, "end": 142.293, "char": [13, 16] },
+        { "start": 142.293, "end": 142.728, "char": [17, 22] },
+        { "start": 142.728, "end": 143.163, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 144.663,
+      "end": 145.753,
+      "text": "Drop table ausgeführt.",
+      "words": [
+        { "start": 144.663, "end": 145.026, "char": [0, 4] },
+        { "start": 145.026, "end": 145.39, "char": [5, 10] },
+        { "start": 145.39, "end": 145.753, "char": [11, 22] }
+      ]
+    },
+    {
+      "start": 145.753,
+      "end": 148.294,
+      "text": "Die Daten sind aus dem Working-Fork verschwunden.",
+      "words": [
+        { "start": 145.753, "end": 146.116, "char": [0, 3] },
+        { "start": 146.116, "end": 146.479, "char": [4, 9] },
+        { "start": 146.479, "end": 146.842, "char": [10, 14] },
+        { "start": 146.842, "end": 147.205, "char": [15, 18] },
+        { "start": 147.205, "end": 147.568, "char": [19, 22] },
+        { "start": 147.568, "end": 147.931, "char": [23, 35] },
+        { "start": 147.931, "end": 148.294, "char": [36, 49] }
+      ]
+    },
+    {
+      "start": 151.626,
+      "end": 154.239,
+      "text": "Frag noch einmal nach den Zeilen,",
+      "words": [
+        { "start": 151.626, "end": 152.062, "char": [0, 4] },
+        { "start": 152.062, "end": 152.497, "char": [5, 9] },
+        { "start": 152.497, "end": 152.932, "char": [10, 16] },
+        { "start": 152.932, "end": 153.368, "char": [17, 21] },
+        { "start": 153.368, "end": 153.803, "char": [22, 25] },
+        { "start": 153.803, "end": 154.239, "char": [26, 33] }
+      ]
+    },
+    {
+      "start": 154.239,
+      "end": 156.851,
+      "text": "und die Datenbank sagt es klar:",
+      "words": [
+        { "start": 154.239, "end": 154.674, "char": [0, 3] },
+        { "start": 154.674, "end": 155.109, "char": [4, 7] },
+        { "start": 155.109, "end": 155.545, "char": [8, 17] },
+        { "start": 155.545, "end": 155.98, "char": [18, 22] },
+        { "start": 155.98, "end": 156.415, "char": [23, 25] },
+        { "start": 156.415, "end": 156.851, "char": [26, 31] }
+      ]
+    },
+    {
+      "start": 156.851,
+      "end": 158.592,
+      "text": "Relation customers existiert nicht.",
+      "words": [
+        { "start": 156.851, "end": 157.286, "char": [0, 8] },
+        { "start": 157.286, "end": 157.722, "char": [9, 18] },
+        { "start": 157.722, "end": 158.157, "char": [19, 28] },
+        { "start": 158.157, "end": 158.592, "char": [29, 35] }
+      ]
+    },
+    {
+      "start": 158.592,
+      "end": 160.334,
+      "text": "Die Katastrophe ist real.",
+      "words": [
+        { "start": 158.592, "end": 159.028, "char": [0, 3] },
+        { "start": 159.028, "end": 159.463, "char": [4, 15] },
+        { "start": 159.463, "end": 159.898, "char": [16, 19] },
+        { "start": 159.898, "end": 160.334, "char": [20, 25] }
+      ]
+    },
+    {
+      "start": 160.334,
+      "end": 162.075,
+      "text": "Jede Zeile ist weg.",
+      "words": [
+        { "start": 160.334, "end": 160.769, "char": [0, 4] },
+        { "start": 160.769, "end": 161.205, "char": [5, 10] },
+        { "start": 161.205, "end": 161.64, "char": [11, 14] },
+        { "start": 161.64, "end": 162.075, "char": [15, 19] }
+      ]
+    },
+    {
+      "start": 164.575,
+      "end": 166.273,
+      "text": "Relation existiert nicht.",
+      "words": [
+        { "start": 164.575, "end": 165.141, "char": [0, 8] },
+        { "start": 165.141, "end": 165.707, "char": [9, 18] },
+        { "start": 165.707, "end": 166.273, "char": [19, 25] }
+      ]
+    },
+    {
+      "start": 166.273,
+      "end": 167.405,
+      "text": "Drei Zeilen,",
+      "words": [
+        { "start": 166.273, "end": 166.839, "char": [0, 4] },
+        { "start": 166.839, "end": 167.405, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 167.405,
+      "end": 167.971,
+      "text": "weg.",
+      "words": [{ "start": 167.405, "end": 167.971, "char": [0, 4] }]
+    },
+    {
+      "start": 171.282,
+      "end": 173.644,
+      "text": "Committe auch die riskante Änderung,",
+      "words": [
+        { "start": 171.282, "end": 171.755, "char": [0, 8] },
+        { "start": 171.755, "end": 172.227, "char": [9, 13] },
+        { "start": 172.227, "end": 172.699, "char": [14, 17] },
+        { "start": 172.699, "end": 173.172, "char": [18, 26] },
+        { "start": 173.172, "end": 173.644, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 173.644,
+      "end": 175.533,
+      "text": "inklusive der kaputten Tabelle.",
+      "words": [
+        { "start": 173.644, "end": 174.116, "char": [0, 9] },
+        { "start": 174.116, "end": 174.588, "char": [10, 13] },
+        { "start": 174.588, "end": 175.061, "char": [14, 22] },
+        { "start": 175.061, "end": 175.533, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 175.533,
+      "end": 177.422,
+      "text": "Die History zeichnet auf,",
+      "words": [
+        { "start": 175.533, "end": 176.005, "char": [0, 3] },
+        { "start": 176.005, "end": 176.478, "char": [4, 11] },
+        { "start": 176.478, "end": 176.95, "char": [12, 20] },
+        { "start": 176.95, "end": 177.422, "char": [21, 25] }
+      ]
+    },
+    {
+      "start": 177.422,
+      "end": 179.311,
+      "text": "was wirklich passiert ist.",
+      "words": [
+        { "start": 177.422, "end": 177.894, "char": [0, 3] },
+        { "start": 177.894, "end": 178.367, "char": [4, 12] },
+        { "start": 178.367, "end": 178.839, "char": [13, 21] },
+        { "start": 178.839, "end": 179.311, "char": [22, 26] }
+      ]
+    },
+    {
+      "start": 179.311,
+      "end": 181.673,
+      "text": "Jetzt gibt es zwei Commits,",
+      "words": [
+        { "start": 179.311, "end": 179.784, "char": [0, 5] },
+        { "start": 179.784, "end": 180.256, "char": [6, 10] },
+        { "start": 180.256, "end": 180.728, "char": [11, 13] },
+        { "start": 180.728, "end": 181.201, "char": [14, 18] },
+        { "start": 181.201, "end": 181.673, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 181.673,
+      "end": 183.09,
+      "text": "Parent und Child.",
+      "words": [
+        { "start": 181.673, "end": 182.145, "char": [0, 6] },
+        { "start": 182.145, "end": 182.617, "char": [7, 10] },
+        { "start": 182.617, "end": 183.09, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 186.09,
+      "end": 188.049,
+      "text": "Zwei Snapshots in der Kette.",
+      "words": [
+        { "start": 186.09, "end": 186.482, "char": [0, 4] },
+        { "start": 186.482, "end": 186.873, "char": [5, 14] },
+        { "start": 186.873, "end": 187.265, "char": [15, 17] },
+        { "start": 187.265, "end": 187.657, "char": [18, 21] },
+        { "start": 187.657, "end": 188.049, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 191.332,
+      "end": 193.758,
+      "text": "Und da ist die History:",
+      "words": [
+        { "start": 191.332, "end": 191.817, "char": [0, 3] },
+        { "start": 191.817, "end": 192.303, "char": [4, 6] },
+        { "start": 192.303, "end": 192.788, "char": [7, 10] },
+        { "start": 192.788, "end": 193.273, "char": [11, 14] },
+        { "start": 193.273, "end": 193.758, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 193.758,
+      "end": 195.213,
+      "text": "Version zwei oben,",
+      "words": [
+        { "start": 193.758, "end": 194.243, "char": [0, 7] },
+        { "start": 194.243, "end": 194.728, "char": [8, 12] },
+        { "start": 194.728, "end": 195.213, "char": [13, 18] }
+      ]
+    },
+    {
+      "start": 195.213,
+      "end": 196.669,
+      "text": "Version eins darunter,",
+      "words": [
+        { "start": 195.213, "end": 195.699, "char": [0, 7] },
+        { "start": 195.699, "end": 196.184, "char": [8, 12] },
+        { "start": 196.184, "end": 196.669, "char": [13, 22] }
+      ]
+    },
+    {
+      "start": 196.669,
+      "end": 198.609,
+      "text": "mit Nachrichten und Autoren,",
+      "words": [
+        { "start": 196.669, "end": 197.154, "char": [0, 3] },
+        { "start": 197.154, "end": 197.639, "char": [4, 15] },
+        { "start": 197.639, "end": 198.124, "char": [16, 19] },
+        { "start": 198.124, "end": 198.609, "char": [20, 28] }
+      ]
+    },
+    {
+      "start": 198.609,
+      "end": 201.52,
+      "text": "ohne ein einziges Image zu entsperren.",
+      "words": [
+        { "start": 198.609, "end": 199.094, "char": [0, 4] },
+        { "start": 199.094, "end": 199.58, "char": [5, 8] },
+        { "start": 199.58, "end": 200.065, "char": [9, 17] },
+        { "start": 200.065, "end": 200.55, "char": [18, 23] },
+        { "start": 200.55, "end": 201.035, "char": [24, 26] },
+        { "start": 201.035, "end": 201.52, "char": [27, 38] }
+      ]
+    },
+    {
+      "start": 204.52,
+      "end": 205.794,
+      "text": "Ein repo log,",
+      "words": [
+        { "start": 204.52, "end": 204.945, "char": [0, 3] },
+        { "start": 204.945, "end": 205.369, "char": [4, 8] },
+        { "start": 205.369, "end": 205.794, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 205.794,
+      "end": 207.916,
+      "text": "genau wie ein git log.",
+      "words": [
+        { "start": 205.794, "end": 206.218, "char": [0, 5] },
+        { "start": 206.218, "end": 206.643, "char": [6, 9] },
+        { "start": 206.643, "end": 207.067, "char": [10, 13] },
+        { "start": 207.067, "end": 207.492, "char": [14, 17] },
+        { "start": 207.492, "end": 207.916, "char": [18, 22] }
+      ]
+    },
+    {
+      "start": 211.222,
+      "end": 213.536,
+      "text": "Jetzt zahlt es sich aus.",
+      "words": [
+        { "start": 211.222, "end": 211.685, "char": [0, 5] },
+        { "start": 211.685, "end": 212.148, "char": [6, 11] },
+        { "start": 212.148, "end": 212.611, "char": [12, 14] },
+        { "start": 212.611, "end": 213.073, "char": [15, 19] },
+        { "start": 213.073, "end": 213.536, "char": [20, 24] }
+      ]
+    },
+    {
+      "start": 213.536,
+      "end": 216.312,
+      "text": "Check den stable Branch in einen",
+      "words": [
+        { "start": 213.536, "end": 213.999, "char": [0, 5] },
+        { "start": 213.999, "end": 214.462, "char": [6, 9] },
+        { "start": 214.462, "end": 214.924, "char": [10, 16] },
+        { "start": 214.924, "end": 215.387, "char": [17, 23] },
+        { "start": 215.387, "end": 215.85, "char": [24, 26] },
+        { "start": 215.85, "end": 216.312, "char": [27, 32] }
+      ]
+    },
+    {
+      "start": 216.312,
+      "end": 216.775,
+      "text": "brandneuen,",
+      "words": [{ "start": 216.312, "end": 216.775, "char": [0, 11] }]
+    },
+    {
+      "start": 216.775,
+      "end": 218.163,
+      "text": "beschreibbaren Fork aus.",
+      "words": [
+        { "start": 216.775, "end": 217.238, "char": [0, 14] },
+        { "start": 217.238, "end": 217.701, "char": [15, 19] },
+        { "start": 217.701, "end": 218.163, "char": [20, 24] }
+      ]
+    },
+    {
+      "start": 218.163,
+      "end": 218.626,
+      "text": "Reflink-Clone:",
+      "words": [{ "start": 218.163, "end": 218.626, "char": [0, 14] }]
+    },
+    {
+      "start": 218.626,
+      "end": 219.552,
+      "text": "nahezu sofort,",
+      "words": [
+        { "start": 218.626, "end": 219.089, "char": [0, 6] },
+        { "start": 219.089, "end": 219.552, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 219.552,
+      "end": 220.94,
+      "text": "egal wie groß.",
+      "words": [
+        { "start": 219.552, "end": 220.014, "char": [0, 4] },
+        { "start": 220.014, "end": 220.477, "char": [5, 8] },
+        { "start": 220.477, "end": 220.94, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 223.94,
+      "end": 226.747,
+      "text": "Eine beschreibbare Kopie des eingefrorenen Version",
+      "words": [
+        { "start": 223.94, "end": 224.408, "char": [0, 4] },
+        { "start": 224.408, "end": 224.876, "char": [5, 18] },
+        { "start": 224.876, "end": 225.343, "char": [19, 24] },
+        { "start": 225.343, "end": 225.811, "char": [25, 28] },
+        { "start": 225.811, "end": 226.279, "char": [29, 42] },
+        { "start": 226.279, "end": 226.747, "char": [43, 50] }
+      ]
+    },
+    {
+      "start": 226.747,
+      "end": 227.215,
+      "text": "eins,",
+      "words": [{ "start": 226.747, "end": 227.215, "char": [0, 5] }]
+    },
+    {
+      "start": 227.215,
+      "end": 229.086,
+      "text": "in etwa einer Sekunde.",
+      "words": [
+        { "start": 227.215, "end": 227.683, "char": [0, 2] },
+        { "start": 227.683, "end": 228.15, "char": [3, 7] },
+        { "start": 228.15, "end": 228.618, "char": [8, 13] },
+        { "start": 228.618, "end": 229.086, "char": [14, 22] }
+      ]
+    },
+    {
+      "start": 232.41,
+      "end": 234.985,
+      "text": "Starte den Rollback-Fork wie jeden anderen",
+      "words": [
+        { "start": 232.41, "end": 232.839, "char": [0, 6] },
+        { "start": 232.839, "end": 233.269, "char": [7, 10] },
+        { "start": 233.269, "end": 233.698, "char": [11, 24] },
+        { "start": 233.698, "end": 234.127, "char": [25, 28] },
+        { "start": 234.127, "end": 234.556, "char": [29, 34] },
+        { "start": 234.556, "end": 234.985, "char": [35, 42] }
+      ]
+    },
+    {
+      "start": 234.985,
+      "end": 235.414,
+      "text": "repo.",
+      "words": [{ "start": 234.985, "end": 235.414, "char": [0, 5] }]
+    },
+    {
+      "start": 242.938,
+      "end": 244.418,
+      "text": "Zwei Forks laufen:",
+      "words": [
+        { "start": 242.938, "end": 243.431, "char": [0, 4] },
+        { "start": 243.431, "end": 243.925, "char": [5, 10] },
+        { "start": 243.925, "end": 244.418, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 244.418,
+      "end": 247.379,
+      "text": "die aktuelle Version und der Checkpoint.",
+      "words": [
+        { "start": 244.418, "end": 244.911, "char": [0, 3] },
+        { "start": 244.911, "end": 245.405, "char": [4, 12] },
+        { "start": 245.405, "end": 245.898, "char": [13, 20] },
+        { "start": 245.898, "end": 246.392, "char": [21, 24] },
+        { "start": 246.392, "end": 246.885, "char": [25, 28] },
+        { "start": 246.885, "end": 247.379, "char": [29, 40] }
+      ]
+    },
+    {
+      "start": 250.645,
+      "end": 252.126,
+      "text": "Und der Beweis:",
+      "words": [
+        { "start": 250.645, "end": 251.139, "char": [0, 3] },
+        { "start": 251.139, "end": 251.633, "char": [4, 7] },
+        { "start": 251.633, "end": 252.126, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 252.126,
+      "end": 254.595,
+      "text": "Der Rollback-Fork liest Version eins.",
+      "words": [
+        { "start": 252.126, "end": 252.62, "char": [0, 3] },
+        { "start": 252.62, "end": 253.114, "char": [4, 17] },
+        { "start": 253.114, "end": 253.608, "char": [18, 23] },
+        { "start": 253.608, "end": 254.101, "char": [24, 31] },
+        { "start": 254.101, "end": 254.595, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 254.595,
+      "end": 257.557,
+      "text": "Der Working-Fork hat noch Version zwei.",
+      "words": [
+        { "start": 254.595, "end": 255.089, "char": [0, 3] },
+        { "start": 255.089, "end": 255.582, "char": [4, 16] },
+        { "start": 255.582, "end": 256.076, "char": [17, 20] },
+        { "start": 256.076, "end": 256.57, "char": [21, 25] },
+        { "start": 256.57, "end": 257.064, "char": [26, 33] },
+        { "start": 257.064, "end": 257.557, "char": [34, 39] }
+      ]
+    },
+    {
+      "start": 257.557,
+      "end": 258.545,
+      "text": "Eine History,",
+      "words": [
+        { "start": 257.557, "end": 258.051, "char": [0, 4] },
+        { "start": 258.051, "end": 258.545, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 258.545,
+      "end": 260.52,
+      "text": "die du ausführen kannst.",
+      "words": [
+        { "start": 258.545, "end": 259.038, "char": [0, 3] },
+        { "start": 259.038, "end": 259.532, "char": [4, 6] },
+        { "start": 259.532, "end": 260.026, "char": [7, 16] },
+        { "start": 260.026, "end": 260.52, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 262.02,
+      "end": 263.128,
+      "text": "Rollback abgeschlossen.",
+      "words": [
+        { "start": 262.02, "end": 262.574, "char": [0, 8] },
+        { "start": 262.574, "end": 263.128, "char": [9, 23] }
+      ]
+    },
+    {
+      "start": 263.128,
+      "end": 264.792,
+      "text": "Nichts wurde überschrieben,",
+      "words": [
+        { "start": 263.128, "end": 263.683, "char": [0, 6] },
+        { "start": 263.683, "end": 264.237, "char": [7, 12] },
+        { "start": 264.237, "end": 264.792, "char": [13, 27] }
+      ]
+    },
+    {
+      "start": 264.792,
+      "end": 267.009,
+      "text": "um hierher zu gelangen.",
+      "words": [
+        { "start": 264.792, "end": 265.346, "char": [0, 2] },
+        { "start": 265.346, "end": 265.9, "char": [3, 10] },
+        { "start": 265.9, "end": 266.455, "char": [11, 13] },
+        { "start": 266.455, "end": 267.009, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 270.337,
+      "end": 271.773,
+      "text": "Und das Wichtigste:",
+      "words": [
+        { "start": 270.337, "end": 270.816, "char": [0, 3] },
+        { "start": 270.816, "end": 271.294, "char": [4, 7] },
+        { "start": 271.294, "end": 271.773, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 271.773,
+      "end": 274.165,
+      "text": "Die gelöschte Tabelle ist zurück,",
+      "words": [
+        { "start": 271.773, "end": 272.251, "char": [0, 3] },
+        { "start": 272.251, "end": 272.73, "char": [4, 13] },
+        { "start": 272.73, "end": 273.208, "char": [14, 21] },
+        { "start": 273.208, "end": 273.687, "char": [22, 25] },
+        { "start": 273.687, "end": 274.165, "char": [26, 33] }
+      ]
+    },
+    {
+      "start": 274.165,
+      "end": 276.08,
+      "text": "alle drei Zeilen davon.",
+      "words": [
+        { "start": 274.165, "end": 274.644, "char": [0, 4] },
+        { "start": 274.644, "end": 275.123, "char": [5, 9] },
+        { "start": 275.123, "end": 275.601, "char": [10, 16] },
+        { "start": 275.601, "end": 276.08, "char": [17, 23] }
+      ]
+    },
+    {
+      "start": 276.08,
+      "end": 278.951,
+      "text": "Das Rollback hat die Datenbank wiederhergestellt,",
+      "words": [
+        { "start": 276.08, "end": 276.558, "char": [0, 3] },
+        { "start": 276.558, "end": 277.037, "char": [4, 12] },
+        { "start": 277.037, "end": 277.515, "char": [13, 16] },
+        { "start": 277.515, "end": 277.994, "char": [17, 20] },
+        { "start": 277.994, "end": 278.472, "char": [21, 30] },
+        { "start": 278.472, "end": 278.951, "char": [31, 49] }
+      ]
+    },
+    {
+      "start": 278.951,
+      "end": 280.865,
+      "text": "nicht nur die Dateien.",
+      "words": [
+        { "start": 278.951, "end": 279.429, "char": [0, 5] },
+        { "start": 279.429, "end": 279.908, "char": [6, 9] },
+        { "start": 279.908, "end": 280.386, "char": [10, 13] },
+        { "start": 280.386, "end": 280.865, "char": [14, 22] }
+      ]
+    },
+    {
+      "start": 283.365,
+      "end": 284.726,
+      "text": "Wieder drei Zeilen.",
+      "words": [
+        { "start": 283.365, "end": 283.819, "char": [0, 6] },
+        { "start": 283.819, "end": 284.272, "char": [7, 11] },
+        { "start": 284.272, "end": 284.726, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 284.726,
+      "end": 286.996,
+      "text": "Die Katastrophe ist rückgängig gemacht.",
+      "words": [
+        { "start": 284.726, "end": 285.18, "char": [0, 3] },
+        { "start": 285.18, "end": 285.634, "char": [4, 15] },
+        { "start": 285.634, "end": 286.088, "char": [16, 19] },
+        { "start": 286.088, "end": 286.542, "char": [20, 30] },
+        { "start": 286.542, "end": 286.996, "char": [31, 39] }
+      ]
+    },
+    {
+      "start": 303.415,
+      "end": 305.074,
+      "text": "Commits ändern sich nie,",
+      "words": [
+        { "start": 303.415, "end": 303.83, "char": [0, 7] },
+        { "start": 303.83, "end": 304.245, "char": [8, 14] },
+        { "start": 304.245, "end": 304.659, "char": [15, 19] },
+        { "start": 304.659, "end": 305.074, "char": [20, 24] }
+      ]
+    },
+    {
+      "start": 305.074,
+      "end": 306.318,
+      "text": "Forks warten nicht.",
+      "words": [
+        { "start": 305.074, "end": 305.489, "char": [0, 5] },
+        { "start": 305.489, "end": 305.904, "char": [6, 12] },
+        { "start": 305.904, "end": 306.318, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 306.318,
+      "end": 309.221,
+      "text": "Als nächstes verschieben wir ein ganzes laufendes",
+      "words": [
+        { "start": 306.318, "end": 306.733, "char": [0, 3] },
+        { "start": 306.733, "end": 307.148, "char": [4, 12] },
+        { "start": 307.148, "end": 307.562, "char": [13, 24] },
+        { "start": 307.562, "end": 307.977, "char": [25, 28] },
+        { "start": 307.977, "end": 308.392, "char": [29, 32] },
+        { "start": 308.392, "end": 308.806, "char": [33, 39] },
+        { "start": 308.806, "end": 309.221, "char": [40, 49] }
+      ]
+    },
+    {
+      "start": 309.221,
+      "end": 311.709,
+      "text": "repository live auf eine andere Maschine.",
+      "words": [
+        { "start": 309.221, "end": 309.636, "char": [0, 10] },
+        { "start": 309.636, "end": 310.05, "char": [11, 15] },
+        { "start": 310.05, "end": 310.465, "char": [16, 19] },
+        { "start": 310.465, "end": 310.88, "char": [20, 24] },
+        { "start": 310.88, "end": 311.295, "char": [25, 31] },
+        { "start": 311.295, "end": 311.709, "char": [32, 41] }
+      ]
+    },
+    {
+      "start": 311.709,
+      "end": 313.368,
+      "text": "Bis zum nächsten Mal!",
+      "words": [
+        { "start": 311.709, "end": 312.124, "char": [0, 3] },
+        { "start": 312.124, "end": 312.539, "char": [4, 7] },
+        { "start": 312.539, "end": 312.953, "char": [8, 16] },
+        { "start": 312.953, "end": 313.368, "char": [17, 21] }
+      ]
+    }
+  ]
+}

@@ -3,552 +3,597 @@
   "cues": [
     {
       "start": 1,
-      "end": 2.015,
-      "text": "Très bien !",
+      "end": 3.853,
+      "text": "Votre application tourne tant que vous êtes",
       "words": [
-        { "start": 1, "end": 1.338, "char": [0, 4] },
-        { "start": 1.338, "end": 1.677, "char": [5, 9] },
-        { "start": 1.677, "end": 2.015, "char": [10, 11] }
+        { "start": 1, "end": 1.408, "char": [0, 5] },
+        { "start": 1.408, "end": 1.815, "char": [6, 17] },
+        { "start": 1.815, "end": 2.223, "char": [18, 24] },
+        { "start": 2.223, "end": 2.63, "char": [25, 29] },
+        { "start": 2.63, "end": 3.038, "char": [30, 33] },
+        { "start": 3.038, "end": 3.445, "char": [34, 38] },
+        { "start": 3.445, "end": 3.853, "char": [39, 43] }
       ]
     },
     {
-      "start": 2.015,
-      "end": 4.721,
-      "text": "Faisons passer votre application du développement à la",
-      "words": [
-        { "start": 2.015, "end": 2.353, "char": [0, 7] },
-        { "start": 2.353, "end": 2.691, "char": [8, 14] },
-        { "start": 2.691, "end": 3.03, "char": [15, 20] },
-        { "start": 3.03, "end": 3.368, "char": [21, 32] },
-        { "start": 3.368, "end": 3.706, "char": [33, 35] },
-        { "start": 3.706, "end": 4.045, "char": [36, 49] },
-        { "start": 4.045, "end": 4.383, "char": [50, 51] },
-        { "start": 4.383, "end": 4.721, "char": [52, 54] }
-      ]
+      "start": 3.853,
+      "end": 4.26,
+      "text": "connecté.",
+      "words": [{ "start": 3.853, "end": 4.26, "char": [0, 9] }]
     },
     {
-      "start": 4.721,
-      "end": 5.059,
-      "text": "production.",
-      "words": [{ "start": 4.721, "end": 5.059, "char": [0, 11] }]
-    },
-    {
-      "start": 5.059,
-      "end": 6.074,
-      "text": "Trois courtes étapes,",
-      "words": [
-        { "start": 5.059, "end": 5.398, "char": [0, 5] },
-        { "start": 5.398, "end": 5.736, "char": [6, 13] },
-        { "start": 5.736, "end": 6.074, "char": [14, 21] }
-      ]
-    },
-    {
-      "start": 6.074,
-      "end": 7.766,
-      "text": "toutes pilotées depuis votre ordinateur.",
-      "words": [
-        { "start": 6.074, "end": 6.413, "char": [0, 6] },
-        { "start": 6.413, "end": 6.751, "char": [7, 15] },
-        { "start": 6.751, "end": 7.089, "char": [16, 22] },
-        { "start": 7.089, "end": 7.427, "char": [23, 28] },
-        { "start": 7.427, "end": 7.766, "char": [29, 40] }
-      ]
-    },
-    {
-      "start": 8.534,
-      "end": 9.313,
-      "text": "En développement,",
-      "words": [
-        { "start": 8.534, "end": 8.924, "char": [0, 2] },
-        { "start": 8.924, "end": 9.313, "char": [3, 17] }
-      ]
-    },
-    {
-      "start": 9.313,
-      "end": 12.04,
-      "text": "vous lancez l'application depuis l'intérieur du repo,",
-      "words": [
-        { "start": 9.313, "end": 9.703, "char": [0, 4] },
-        { "start": 9.703, "end": 10.092, "char": [5, 11] },
-        { "start": 10.092, "end": 10.482, "char": [12, 25] },
-        { "start": 10.482, "end": 10.872, "char": [26, 32] },
-        { "start": 10.872, "end": 11.261, "char": [33, 44] },
-        { "start": 11.261, "end": 11.651, "char": [45, 47] },
-        { "start": 11.651, "end": 12.04, "char": [48, 53] }
-      ]
-    },
-    {
-      "start": 12.04,
-      "end": 14.768,
-      "text": "donc elle s'arrête quand vous vous déconnectez.",
-      "words": [
-        { "start": 12.04, "end": 12.43, "char": [0, 4] },
-        { "start": 12.43, "end": 12.82, "char": [5, 9] },
-        { "start": 12.82, "end": 13.209, "char": [10, 18] },
-        { "start": 13.209, "end": 13.599, "char": [19, 24] },
-        { "start": 13.599, "end": 13.988, "char": [25, 29] },
-        { "start": 13.988, "end": 14.378, "char": [30, 34] },
-        { "start": 14.378, "end": 14.768, "char": [35, 47] }
-      ]
-    },
-    {
-      "start": 14.768,
-      "end": 15.547,
+      "start": 4.26,
+      "end": 5.075,
       "text": "En production,",
       "words": [
-        { "start": 14.768, "end": 15.157, "char": [0, 2] },
-        { "start": 15.157, "end": 15.547, "char": [3, 14] }
+        { "start": 4.26, "end": 4.668, "char": [0, 2] },
+        { "start": 4.668, "end": 5.075, "char": [3, 14] }
       ]
     },
     {
-      "start": 15.547,
-      "end": 18.274,
-      "text": "vous la lancez depuis votre ordinateur avec",
+      "start": 5.075,
+      "end": 7.928,
+      "text": "elle tourne même quand vous n'êtes plus",
       "words": [
-        { "start": 15.547, "end": 15.936, "char": [0, 4] },
-        { "start": 15.936, "end": 16.326, "char": [5, 7] },
-        { "start": 16.326, "end": 16.716, "char": [8, 14] },
-        { "start": 16.716, "end": 17.105, "char": [15, 21] },
-        { "start": 17.105, "end": 17.495, "char": [22, 27] },
-        { "start": 17.495, "end": 17.884, "char": [28, 38] },
-        { "start": 17.884, "end": 18.274, "char": [39, 43] }
+        { "start": 5.075, "end": 5.483, "char": [0, 4] },
+        { "start": 5.483, "end": 5.89, "char": [5, 11] },
+        { "start": 5.89, "end": 6.298, "char": [12, 16] },
+        { "start": 6.298, "end": 6.705, "char": [17, 22] },
+        { "start": 6.705, "end": 7.113, "char": [23, 27] },
+        { "start": 7.113, "end": 7.52, "char": [28, 34] },
+        { "start": 7.52, "end": 7.928, "char": [35, 39] }
       ]
     },
     {
-      "start": 18.274,
-      "end": 19.053,
-      "text": "la CLI,",
+      "start": 7.928,
+      "end": 8.335,
+      "text": "là.",
+      "words": [{ "start": 7.928, "end": 8.335, "char": [0, 3] }]
+    },
+    {
+      "start": 8.335,
+      "end": 9.558,
+      "text": "Trois courtes étapes,",
       "words": [
-        { "start": 18.274, "end": 18.664, "char": [0, 2] },
-        { "start": 18.664, "end": 19.053, "char": [3, 7] }
+        { "start": 8.335, "end": 8.743, "char": [0, 5] },
+        { "start": 8.743, "end": 9.15, "char": [6, 13] },
+        { "start": 9.15, "end": 9.558, "char": [14, 21] }
       ]
     },
     {
-      "start": 19.053,
-      "end": 21.78,
-      "text": "et elle continue à tourner en mode",
+      "start": 9.558,
+      "end": 11.188,
+      "text": "tout depuis votre ordinateur.",
       "words": [
-        { "start": 19.053, "end": 19.443, "char": [0, 2] },
-        { "start": 19.443, "end": 19.832, "char": [3, 7] },
-        { "start": 19.832, "end": 20.222, "char": [8, 16] },
-        { "start": 20.222, "end": 20.612, "char": [17, 18] },
-        { "start": 20.612, "end": 21.001, "char": [19, 26] },
-        { "start": 21.001, "end": 21.391, "char": [27, 29] },
-        { "start": 21.391, "end": 21.78, "char": [30, 34] }
+        { "start": 9.558, "end": 9.965, "char": [0, 4] },
+        { "start": 9.965, "end": 10.373, "char": [5, 11] },
+        { "start": 10.373, "end": 10.78, "char": [12, 17] },
+        { "start": 10.78, "end": 11.188, "char": [18, 29] }
       ]
     },
     {
-      "start": 21.78,
-      "end": 22.17,
-      "text": "détaché.",
-      "words": [{ "start": 21.78, "end": 22.17, "char": [0, 8] }]
+      "start": 11.97,
+      "end": 13.33,
+      "text": "Voici la différence.",
+      "words": [
+        { "start": 11.97, "end": 12.423, "char": [0, 5] },
+        { "start": 12.423, "end": 12.876, "char": [6, 8] },
+        { "start": 12.876, "end": 13.33, "char": [9, 20] }
+      ]
     },
     {
-      "start": 25.441,
-      "end": 28.334,
+      "start": 13.33,
+      "end": 14.236,
+      "text": "En développement,",
+      "words": [
+        { "start": 13.33, "end": 13.783, "char": [0, 2] },
+        { "start": 13.783, "end": 14.236, "char": [3, 17] }
+      ]
+    },
+    {
+      "start": 14.236,
+      "end": 16.955,
+      "text": "vous démarrez l'application depuis l'intérieur du",
+      "words": [
+        { "start": 14.236, "end": 14.689, "char": [0, 4] },
+        { "start": 14.689, "end": 15.143, "char": [5, 13] },
+        { "start": 15.143, "end": 15.596, "char": [14, 27] },
+        { "start": 15.596, "end": 16.049, "char": [28, 34] },
+        { "start": 16.049, "end": 16.502, "char": [35, 46] },
+        { "start": 16.502, "end": 16.955, "char": [47, 49] }
+      ]
+    },
+    {
+      "start": 16.955,
+      "end": 18.315,
+      "text": "repo via SSH.",
+      "words": [
+        { "start": 16.955, "end": 17.409, "char": [0, 4] },
+        { "start": 17.409, "end": 17.862, "char": [5, 8] },
+        { "start": 17.862, "end": 18.315, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 18.315,
+      "end": 19.675,
+      "text": "Fermez la session,",
+      "words": [
+        { "start": 18.315, "end": 18.768, "char": [0, 6] },
+        { "start": 18.768, "end": 19.222, "char": [7, 9] },
+        { "start": 19.222, "end": 19.675, "char": [10, 18] }
+      ]
+    },
+    {
+      "start": 19.675,
+      "end": 21.941,
+      "text": "et l'application s'arrête avec elle.",
+      "words": [
+        { "start": 19.675, "end": 20.128, "char": [0, 2] },
+        { "start": 20.128, "end": 20.581, "char": [3, 16] },
+        { "start": 20.581, "end": 21.034, "char": [17, 25] },
+        { "start": 21.034, "end": 21.488, "char": [26, 30] },
+        { "start": 21.488, "end": 21.941, "char": [31, 36] }
+      ]
+    },
+    {
+      "start": 21.941,
+      "end": 22.847,
+      "text": "En production,",
+      "words": [
+        { "start": 21.941, "end": 22.394, "char": [0, 2] },
+        { "start": 22.394, "end": 22.847, "char": [3, 14] }
+      ]
+    },
+    {
+      "start": 22.847,
+      "end": 25.567,
+      "text": "vous la lancez détachée de votre",
+      "words": [
+        { "start": 22.847, "end": 23.301, "char": [0, 4] },
+        { "start": 23.301, "end": 23.754, "char": [5, 7] },
+        { "start": 23.754, "end": 24.207, "char": [8, 14] },
+        { "start": 24.207, "end": 24.66, "char": [15, 23] },
+        { "start": 24.66, "end": 25.114, "char": [24, 26] },
+        { "start": 25.114, "end": 25.567, "char": [27, 32] }
+      ]
+    },
+    {
+      "start": 25.567,
+      "end": 26.473,
+      "text": "ordinateur :",
+      "words": [
+        { "start": 25.567, "end": 26.02, "char": [0, 10] },
+        { "start": 26.02, "end": 26.473, "char": [11, 12] }
+      ]
+    },
+    {
+      "start": 26.473,
+      "end": 28.739,
+      "text": "le serveur possède le processus,",
+      "words": [
+        { "start": 26.473, "end": 26.926, "char": [0, 2] },
+        { "start": 26.926, "end": 27.38, "char": [3, 10] },
+        { "start": 27.38, "end": 27.833, "char": [11, 18] },
+        { "start": 27.833, "end": 28.286, "char": [19, 21] },
+        { "start": 28.286, "end": 28.739, "char": [22, 32] }
+      ]
+    },
+    {
+      "start": 28.739,
+      "end": 30.099,
+      "text": "pas votre connexion.",
+      "words": [
+        { "start": 28.739, "end": 29.193, "char": [0, 3] },
+        { "start": 29.193, "end": 29.646, "char": [4, 9] },
+        { "start": 29.646, "end": 30.099, "char": [10, 20] }
+      ]
+    },
+    {
+      "start": 33.358,
+      "end": 36.251,
       "text": "Démarrons maintenant l'application en mode production depuis",
       "words": [
-        { "start": 25.441, "end": 25.854, "char": [0, 9] },
-        { "start": 25.854, "end": 26.268, "char": [10, 20] },
-        { "start": 26.268, "end": 26.681, "char": [21, 34] },
-        { "start": 26.681, "end": 27.094, "char": [35, 37] },
-        { "start": 27.094, "end": 27.507, "char": [38, 42] },
-        { "start": 27.507, "end": 27.921, "char": [43, 53] },
-        { "start": 27.921, "end": 28.334, "char": [54, 60] }
+        { "start": 33.358, "end": 33.771, "char": [0, 9] },
+        { "start": 33.771, "end": 34.185, "char": [10, 20] },
+        { "start": 34.185, "end": 34.598, "char": [21, 34] },
+        { "start": 34.598, "end": 35.011, "char": [35, 37] },
+        { "start": 35.011, "end": 35.424, "char": [38, 42] },
+        { "start": 35.424, "end": 35.838, "char": [43, 53] },
+        { "start": 35.838, "end": 36.251, "char": [54, 60] }
       ]
     },
     {
-      "start": 28.334,
-      "end": 28.747,
+      "start": 36.251,
+      "end": 36.664,
       "text": "l'ordinateur.",
-      "words": [{ "start": 28.334, "end": 28.747, "char": [0, 13] }]
+      "words": [{ "start": 36.251, "end": 36.664, "char": [0, 13] }]
     },
     {
-      "start": 28.747,
-      "end": 31.64,
+      "start": 36.664,
+      "end": 39.557,
       "text": "La commande de déploiement appelle la même",
       "words": [
-        { "start": 28.747, "end": 29.16, "char": [0, 2] },
-        { "start": 29.16, "end": 29.574, "char": [3, 11] },
-        { "start": 29.574, "end": 29.987, "char": [12, 14] },
-        { "start": 29.987, "end": 30.4, "char": [15, 26] },
-        { "start": 30.4, "end": 30.814, "char": [27, 34] },
-        { "start": 30.814, "end": 31.227, "char": [35, 37] },
-        { "start": 31.227, "end": 31.64, "char": [38, 42] }
+        { "start": 36.664, "end": 37.077, "char": [0, 2] },
+        { "start": 37.077, "end": 37.491, "char": [3, 11] },
+        { "start": 37.491, "end": 37.904, "char": [12, 14] },
+        { "start": 37.904, "end": 38.317, "char": [15, 26] },
+        { "start": 38.317, "end": 38.731, "char": [27, 34] },
+        { "start": 38.731, "end": 39.144, "char": [35, 37] },
+        { "start": 39.144, "end": 39.557, "char": [38, 42] }
       ]
     },
     {
-      "start": 31.64,
-      "end": 34.533,
+      "start": 39.557,
+      "end": 42.45,
       "text": "fonction up que nous avons utilisée en",
       "words": [
-        { "start": 31.64, "end": 32.053, "char": [0, 8] },
-        { "start": 32.053, "end": 32.467, "char": [9, 11] },
-        { "start": 32.467, "end": 32.88, "char": [12, 15] },
-        { "start": 32.88, "end": 33.293, "char": [16, 20] },
-        { "start": 33.293, "end": 33.706, "char": [21, 26] },
-        { "start": 33.706, "end": 34.12, "char": [27, 35] },
-        { "start": 34.12, "end": 34.533, "char": [36, 38] }
+        { "start": 39.557, "end": 39.97, "char": [0, 8] },
+        { "start": 39.97, "end": 40.384, "char": [9, 11] },
+        { "start": 40.384, "end": 40.797, "char": [12, 15] },
+        { "start": 40.797, "end": 41.21, "char": [16, 20] },
+        { "start": 41.21, "end": 41.623, "char": [21, 26] },
+        { "start": 41.623, "end": 42.037, "char": [27, 35] },
+        { "start": 42.037, "end": 42.45, "char": [36, 38] }
       ]
     },
     {
-      "start": 34.533,
-      "end": 34.946,
+      "start": 42.45,
+      "end": 42.863,
       "text": "développement,",
-      "words": [{ "start": 34.533, "end": 34.946, "char": [0, 14] }]
+      "words": [{ "start": 42.45, "end": 42.863, "char": [0, 14] }]
     },
     {
-      "start": 34.946,
-      "end": 37.426,
+      "start": 42.863,
+      "end": 45.343,
       "text": "mais elle s'exécute en mode détaché.",
       "words": [
-        { "start": 34.946, "end": 35.359, "char": [0, 4] },
-        { "start": 35.359, "end": 35.773, "char": [5, 9] },
-        { "start": 35.773, "end": 36.186, "char": [10, 19] },
-        { "start": 36.186, "end": 36.599, "char": [20, 22] },
-        { "start": 36.599, "end": 37.013, "char": [23, 27] },
-        { "start": 37.013, "end": 37.426, "char": [28, 36] }
+        { "start": 42.863, "end": 43.276, "char": [0, 4] },
+        { "start": 43.276, "end": 43.69, "char": [5, 9] },
+        { "start": 43.69, "end": 44.103, "char": [10, 19] },
+        { "start": 44.103, "end": 44.516, "char": [20, 22] },
+        { "start": 44.516, "end": 44.93, "char": [23, 27] },
+        { "start": 44.93, "end": 45.343, "char": [28, 36] }
       ]
     },
     {
-      "start": 37.426,
-      "end": 40.319,
+      "start": 45.343,
+      "end": 48.236,
       "text": "Vous pouvez fermer votre ordinateur et l'application",
       "words": [
-        { "start": 37.426, "end": 37.839, "char": [0, 4] },
-        { "start": 37.839, "end": 38.252, "char": [5, 11] },
-        { "start": 38.252, "end": 38.666, "char": [12, 18] },
-        { "start": 38.666, "end": 39.079, "char": [19, 24] },
-        { "start": 39.079, "end": 39.492, "char": [25, 35] },
-        { "start": 39.492, "end": 39.905, "char": [36, 38] },
-        { "start": 39.905, "end": 40.319, "char": [39, 52] }
+        { "start": 45.343, "end": 45.756, "char": [0, 4] },
+        { "start": 45.756, "end": 46.169, "char": [5, 11] },
+        { "start": 46.169, "end": 46.583, "char": [12, 18] },
+        { "start": 46.583, "end": 46.996, "char": [19, 24] },
+        { "start": 46.996, "end": 47.409, "char": [25, 35] },
+        { "start": 47.409, "end": 47.822, "char": [36, 38] },
+        { "start": 47.822, "end": 48.236, "char": [39, 52] }
       ]
     },
     {
-      "start": 40.319,
-      "end": 41.559,
+      "start": 48.236,
+      "end": 49.476,
       "text": "continue de tourner.",
       "words": [
-        { "start": 40.319, "end": 40.732, "char": [0, 8] },
-        { "start": 40.732, "end": 41.145, "char": [9, 11] },
-        { "start": 41.145, "end": 41.559, "char": [12, 20] }
+        { "start": 48.236, "end": 48.649, "char": [0, 8] },
+        { "start": 48.649, "end": 49.062, "char": [9, 11] },
+        { "start": 49.062, "end": 49.476, "char": [12, 20] }
       ]
     },
     {
-      "start": 44.309,
-      "end": 45.933,
+      "start": 52.226,
+      "end": 53.85,
       "text": "Application en production.",
       "words": [
-        { "start": 44.309, "end": 44.85, "char": [0, 11] },
-        { "start": 44.85, "end": 45.391, "char": [12, 14] },
-        { "start": 45.391, "end": 45.933, "char": [15, 26] }
+        { "start": 52.226, "end": 52.767, "char": [0, 11] },
+        { "start": 52.767, "end": 53.308, "char": [12, 14] },
+        { "start": 53.308, "end": 53.85, "char": [15, 26] }
       ]
     },
     {
-      "start": 45.933,
-      "end": 47.016,
+      "start": 53.85,
+      "end": 54.933,
       "text": "Même commande,",
       "words": [
-        { "start": 45.933, "end": 46.474, "char": [0, 4] },
-        { "start": 46.474, "end": 47.016, "char": [5, 14] }
+        { "start": 53.85, "end": 54.391, "char": [0, 4] },
+        { "start": 54.391, "end": 54.933, "char": [5, 14] }
       ]
     },
     {
-      "start": 47.016,
-      "end": 48.099,
+      "start": 54.933,
+      "end": 56.016,
       "text": "même résultat,",
       "words": [
-        { "start": 47.016, "end": 47.557, "char": [0, 4] },
-        { "start": 47.557, "end": 48.099, "char": [5, 14] }
+        { "start": 54.933, "end": 55.474, "char": [0, 4] },
+        { "start": 55.474, "end": 56.016, "char": [5, 14] }
       ]
     },
     {
-      "start": 48.099,
-      "end": 50.264,
+      "start": 56.016,
+      "end": 58.181,
       "text": "sur le vrai serveur.",
       "words": [
-        { "start": 48.099, "end": 48.64, "char": [0, 3] },
-        { "start": 48.64, "end": 49.182, "char": [4, 6] },
-        { "start": 49.182, "end": 49.723, "char": [7, 11] },
-        { "start": 49.723, "end": 50.264, "char": [12, 20] }
+        { "start": 56.016, "end": 56.557, "char": [0, 3] },
+        { "start": 56.557, "end": 57.099, "char": [4, 6] },
+        { "start": 57.099, "end": 57.64, "char": [7, 11] },
+        { "start": 57.64, "end": 58.181, "char": [12, 20] }
       ]
     },
     {
-      "start": 53.568,
-      "end": 56.368,
+      "start": 61.485,
+      "end": 64.285,
       "text": "Activons le démarrage automatique pour que",
       "words": [
-        { "start": 53.568, "end": 54.035, "char": [0, 8] },
-        { "start": 54.035, "end": 54.501, "char": [9, 11] },
-        { "start": 54.501, "end": 54.968, "char": [12, 21] },
-        { "start": 54.968, "end": 55.435, "char": [22, 33] },
-        { "start": 55.435, "end": 55.901, "char": [34, 38] },
-        { "start": 55.901, "end": 56.368, "char": [39, 42] }
+        { "start": 61.485, "end": 61.952, "char": [0, 8] },
+        { "start": 61.952, "end": 62.418, "char": [9, 11] },
+        { "start": 62.418, "end": 62.885, "char": [12, 21] },
+        { "start": 62.885, "end": 63.352, "char": [22, 33] },
+        { "start": 63.352, "end": 63.818, "char": [34, 38] },
+        { "start": 63.818, "end": 64.285, "char": [39, 42] }
       ]
     },
     {
-      "start": 56.368,
-      "end": 59.168,
+      "start": 64.285,
+      "end": 67.085,
       "text": "l'application survive à un redémarrage du",
       "words": [
-        { "start": 56.368, "end": 56.834, "char": [0, 13] },
-        { "start": 56.834, "end": 57.301, "char": [14, 21] },
-        { "start": 57.301, "end": 57.768, "char": [22, 23] },
-        { "start": 57.768, "end": 58.234, "char": [24, 26] },
-        { "start": 58.234, "end": 58.701, "char": [27, 38] },
-        { "start": 58.701, "end": 59.168, "char": [39, 41] }
+        { "start": 64.285, "end": 64.752, "char": [0, 13] },
+        { "start": 64.752, "end": 65.218, "char": [14, 21] },
+        { "start": 65.218, "end": 65.685, "char": [22, 23] },
+        { "start": 65.685, "end": 66.151, "char": [24, 26] },
+        { "start": 66.151, "end": 66.618, "char": [27, 38] },
+        { "start": 66.618, "end": 67.085, "char": [39, 41] }
       ]
     },
     {
-      "start": 59.168,
-      "end": 59.634,
+      "start": 67.085,
+      "end": 67.551,
       "text": "serveur.",
-      "words": [{ "start": 59.168, "end": 59.634, "char": [0, 8] }]
+      "words": [{ "start": 67.085, "end": 67.551, "char": [0, 8] }]
     },
     {
-      "start": 59.634,
-      "end": 60.101,
+      "start": 67.551,
+      "end": 68.018,
       "text": "Désormais,",
-      "words": [{ "start": 59.634, "end": 60.101, "char": [0, 10] }]
+      "words": [{ "start": 67.551, "end": 68.018, "char": [0, 10] }]
     },
     {
-      "start": 60.101,
-      "end": 61.968,
+      "start": 68.018,
+      "end": 69.885,
       "text": "si le serveur redémarre,",
       "words": [
-        { "start": 60.101, "end": 60.568, "char": [0, 2] },
-        { "start": 60.568, "end": 61.034, "char": [3, 5] },
-        { "start": 61.034, "end": 61.501, "char": [6, 13] },
-        { "start": 61.501, "end": 61.968, "char": [14, 24] }
+        { "start": 68.018, "end": 68.485, "char": [0, 2] },
+        { "start": 68.485, "end": 68.951, "char": [3, 5] },
+        { "start": 68.951, "end": 69.418, "char": [6, 13] },
+        { "start": 69.418, "end": 69.885, "char": [14, 24] }
       ]
     },
     {
-      "start": 61.968,
-      "end": 63.834,
+      "start": 69.885,
+      "end": 71.751,
       "text": "ce dépôt revient automatiquement.",
       "words": [
-        { "start": 61.968, "end": 62.434, "char": [0, 2] },
-        { "start": 62.434, "end": 62.901, "char": [3, 8] },
-        { "start": 62.901, "end": 63.367, "char": [9, 16] },
-        { "start": 63.367, "end": 63.834, "char": [17, 33] }
+        { "start": 69.885, "end": 70.351, "char": [0, 2] },
+        { "start": 70.351, "end": 70.818, "char": [3, 8] },
+        { "start": 70.818, "end": 71.284, "char": [9, 16] },
+        { "start": 71.284, "end": 71.751, "char": [17, 33] }
       ]
     },
     {
-      "start": 66.084,
-      "end": 68.29,
+      "start": 74.001,
+      "end": 76.207,
       "text": "Démarrage automatique activé.",
       "words": [
-        { "start": 66.084, "end": 66.819, "char": [0, 9] },
-        { "start": 66.819, "end": 67.554, "char": [10, 21] },
-        { "start": 67.554, "end": 68.29, "char": [22, 29] }
+        { "start": 74.001, "end": 74.736, "char": [0, 9] },
+        { "start": 74.736, "end": 75.471, "char": [10, 21] },
+        { "start": 75.471, "end": 76.207, "char": [22, 29] }
       ]
     },
     {
-      "start": 68.29,
-      "end": 71.23,
+      "start": 76.207,
+      "end": 79.147,
       "text": "L'application survit aux redémarrages.",
       "words": [
-        { "start": 68.29, "end": 69.025, "char": [0, 13] },
-        { "start": 69.025, "end": 69.76, "char": [14, 20] },
-        { "start": 69.76, "end": 70.495, "char": [21, 24] },
-        { "start": 70.495, "end": 71.23, "char": [25, 38] }
+        { "start": 76.207, "end": 76.942, "char": [0, 13] },
+        { "start": 76.942, "end": 77.677, "char": [14, 20] },
+        { "start": 77.677, "end": 78.412, "char": [21, 24] },
+        { "start": 78.412, "end": 79.147, "char": [25, 38] }
       ]
     },
     {
-      "start": 74.539,
-      "end": 77.41,
+      "start": 82.489,
+      "end": 85.36,
       "text": "Listons quels dépôts ont le démarrage automatique",
       "words": [
-        { "start": 74.539, "end": 74.949, "char": [0, 7] },
-        { "start": 74.949, "end": 75.359, "char": [8, 13] },
-        { "start": 75.359, "end": 75.769, "char": [14, 20] },
-        { "start": 75.769, "end": 76.179, "char": [21, 24] },
-        { "start": 76.179, "end": 76.59, "char": [25, 27] },
-        { "start": 76.59, "end": 77, "char": [28, 37] },
-        { "start": 77, "end": 77.41, "char": [38, 49] }
+        { "start": 82.489, "end": 82.899, "char": [0, 7] },
+        { "start": 82.899, "end": 83.309, "char": [8, 13] },
+        { "start": 83.309, "end": 83.719, "char": [14, 20] },
+        { "start": 83.719, "end": 84.129, "char": [21, 24] },
+        { "start": 84.129, "end": 84.54, "char": [25, 27] },
+        { "start": 84.54, "end": 84.95, "char": [28, 37] },
+        { "start": 84.95, "end": 85.36, "char": [38, 49] }
       ]
     },
     {
-      "start": 77.41,
-      "end": 77.82,
+      "start": 85.36,
+      "end": 85.77,
       "text": "activé.",
-      "words": [{ "start": 77.41, "end": 77.82, "char": [0, 7] }]
+      "words": [{ "start": 85.36, "end": 85.77, "char": [0, 7] }]
     },
     {
-      "start": 77.82,
-      "end": 80.691,
+      "start": 85.77,
+      "end": 88.641,
       "text": "Cela confirme que notre application est bien",
       "words": [
-        { "start": 77.82, "end": 78.23, "char": [0, 4] },
-        { "start": 78.23, "end": 78.64, "char": [5, 13] },
-        { "start": 78.64, "end": 79.05, "char": [14, 17] },
-        { "start": 79.05, "end": 79.46, "char": [18, 23] },
-        { "start": 79.46, "end": 79.871, "char": [24, 35] },
-        { "start": 79.871, "end": 80.281, "char": [36, 39] },
-        { "start": 80.281, "end": 80.691, "char": [40, 44] }
+        { "start": 85.77, "end": 86.18, "char": [0, 4] },
+        { "start": 86.18, "end": 86.59, "char": [5, 13] },
+        { "start": 86.59, "end": 87, "char": [14, 17] },
+        { "start": 87, "end": 87.41, "char": [18, 23] },
+        { "start": 87.41, "end": 87.821, "char": [24, 35] },
+        { "start": 87.821, "end": 88.231, "char": [36, 39] },
+        { "start": 88.231, "end": 88.641, "char": [40, 44] }
       ]
     },
     {
-      "start": 80.691,
-      "end": 82.741,
+      "start": 88.641,
+      "end": 90.691,
       "text": "dans la liste de démarrage.",
       "words": [
-        { "start": 80.691, "end": 81.101, "char": [0, 4] },
-        { "start": 81.101, "end": 81.511, "char": [5, 7] },
-        { "start": 81.511, "end": 81.921, "char": [8, 13] },
-        { "start": 81.921, "end": 82.331, "char": [14, 16] },
-        { "start": 82.331, "end": 82.741, "char": [17, 27] }
+        { "start": 88.641, "end": 89.051, "char": [0, 4] },
+        { "start": 89.051, "end": 89.461, "char": [5, 7] },
+        { "start": 89.461, "end": 89.871, "char": [8, 13] },
+        { "start": 89.871, "end": 90.281, "char": [14, 16] },
+        { "start": 90.281, "end": 90.691, "char": [17, 27] }
       ]
     },
     {
-      "start": 84.741,
-      "end": 85.458,
+      "start": 93.691,
+      "end": 94.408,
       "text": "Le voilà,",
       "words": [
-        { "start": 84.741, "end": 85.1, "char": [0, 2] },
-        { "start": 85.1, "end": 85.458, "char": [3, 9] }
+        { "start": 93.691, "end": 94.05, "char": [0, 2] },
+        { "start": 94.05, "end": 94.408, "char": [3, 9] }
       ]
     },
     {
-      "start": 85.458,
-      "end": 87.249,
+      "start": 94.408,
+      "end": 96.199,
       "text": "dans la liste de démarrage.",
       "words": [
-        { "start": 85.458, "end": 85.816, "char": [0, 4] },
-        { "start": 85.816, "end": 86.174, "char": [5, 7] },
-        { "start": 86.174, "end": 86.533, "char": [8, 13] },
-        { "start": 86.533, "end": 86.891, "char": [14, 16] },
-        { "start": 86.891, "end": 87.249, "char": [17, 27] }
+        { "start": 94.408, "end": 94.766, "char": [0, 4] },
+        { "start": 94.766, "end": 95.124, "char": [5, 7] },
+        { "start": 95.124, "end": 95.483, "char": [8, 13] },
+        { "start": 95.483, "end": 95.841, "char": [14, 16] },
+        { "start": 95.841, "end": 96.199, "char": [17, 27] }
       ]
     },
     {
-      "start": 90.58,
-      "end": 92.457,
+      "start": 99.53,
+      "end": 101.407,
       "text": "Et pour arrêter l'application,",
       "words": [
-        { "start": 90.58, "end": 91.049, "char": [0, 2] },
-        { "start": 91.049, "end": 91.518, "char": [3, 7] },
-        { "start": 91.518, "end": 91.987, "char": [8, 15] },
-        { "start": 91.987, "end": 92.457, "char": [16, 30] }
+        { "start": 99.53, "end": 99.999, "char": [0, 2] },
+        { "start": 99.999, "end": 100.468, "char": [3, 7] },
+        { "start": 100.468, "end": 100.937, "char": [8, 15] },
+        { "start": 100.937, "end": 101.407, "char": [16, 30] }
       ]
     },
     {
-      "start": 92.457,
-      "end": 94.802,
+      "start": 101.407,
+      "end": 103.752,
       "text": "une seule commande depuis l'ordinateur.",
       "words": [
-        { "start": 92.457, "end": 92.926, "char": [0, 3] },
-        { "start": 92.926, "end": 93.395, "char": [4, 9] },
-        { "start": 93.395, "end": 93.864, "char": [10, 18] },
-        { "start": 93.864, "end": 94.333, "char": [19, 25] },
-        { "start": 94.333, "end": 94.802, "char": [26, 39] }
+        { "start": 101.407, "end": 101.876, "char": [0, 3] },
+        { "start": 101.876, "end": 102.345, "char": [4, 9] },
+        { "start": 102.345, "end": 102.814, "char": [10, 18] },
+        { "start": 102.814, "end": 103.283, "char": [19, 25] },
+        { "start": 103.283, "end": 103.752, "char": [26, 39] }
       ]
     },
     {
-      "start": 94.802,
-      "end": 96.679,
+      "start": 103.752,
+      "end": 105.629,
       "text": "Une commande pour démarrer,",
       "words": [
-        { "start": 94.802, "end": 95.272, "char": [0, 3] },
-        { "start": 95.272, "end": 95.741, "char": [4, 12] },
-        { "start": 95.741, "end": 96.21, "char": [13, 17] },
-        { "start": 96.21, "end": 96.679, "char": [18, 27] }
+        { "start": 103.752, "end": 104.222, "char": [0, 3] },
+        { "start": 104.222, "end": 104.691, "char": [4, 12] },
+        { "start": 104.691, "end": 105.16, "char": [13, 17] },
+        { "start": 105.16, "end": 105.629, "char": [18, 27] }
       ]
     },
     {
-      "start": 96.679,
-      "end": 98.556,
+      "start": 105.629,
+      "end": 107.506,
       "text": "une commande pour arrêter.",
       "words": [
-        { "start": 96.679, "end": 97.148, "char": [0, 3] },
-        { "start": 97.148, "end": 97.617, "char": [4, 12] },
-        { "start": 97.617, "end": 98.087, "char": [13, 17] },
-        { "start": 98.087, "end": 98.556, "char": [18, 26] }
+        { "start": 105.629, "end": 106.098, "char": [0, 3] },
+        { "start": 106.098, "end": 106.567, "char": [4, 12] },
+        { "start": 106.567, "end": 107.037, "char": [13, 17] },
+        { "start": 107.037, "end": 107.506, "char": [18, 26] }
       ]
     },
     {
-      "start": 98.556,
-      "end": 100.432,
+      "start": 107.506,
+      "end": 109.382,
       "text": "Tout depuis votre terminal,",
       "words": [
-        { "start": 98.556, "end": 99.025, "char": [0, 4] },
-        { "start": 99.025, "end": 99.494, "char": [5, 11] },
-        { "start": 99.494, "end": 99.963, "char": [12, 17] },
-        { "start": 99.963, "end": 100.432, "char": [18, 27] }
+        { "start": 107.506, "end": 107.975, "char": [0, 4] },
+        { "start": 107.975, "end": 108.444, "char": [5, 11] },
+        { "start": 108.444, "end": 108.913, "char": [12, 17] },
+        { "start": 108.913, "end": 109.382, "char": [18, 27] }
       ]
     },
     {
-      "start": 100.432,
-      "end": 102.309,
+      "start": 109.382,
+      "end": 111.259,
       "text": "plus de sessions interactives.",
       "words": [
-        { "start": 100.432, "end": 100.902, "char": [0, 4] },
-        { "start": 100.902, "end": 101.371, "char": [5, 7] },
-        { "start": 101.371, "end": 101.84, "char": [8, 16] },
-        { "start": 101.84, "end": 102.309, "char": [17, 30] }
+        { "start": 109.382, "end": 109.852, "char": [0, 4] },
+        { "start": 109.852, "end": 110.321, "char": [5, 7] },
+        { "start": 110.321, "end": 110.79, "char": [8, 16] },
+        { "start": 110.79, "end": 111.259, "char": [17, 30] }
       ]
     },
     {
-      "start": 104.809,
-      "end": 105.239,
+      "start": 113.759,
+      "end": 114.189,
       "text": "Arrêté.",
-      "words": [{ "start": 104.809, "end": 105.239, "char": [0, 7] }]
+      "words": [{ "start": 113.759, "end": 114.189, "char": [0, 7] }]
     },
     {
-      "start": 105.239,
-      "end": 106.957,
+      "start": 114.189,
+      "end": 115.907,
       "text": "Une commande pour démarrer,",
       "words": [
-        { "start": 105.239, "end": 105.668, "char": [0, 3] },
-        { "start": 105.668, "end": 106.098, "char": [4, 12] },
-        { "start": 106.098, "end": 106.527, "char": [13, 17] },
-        { "start": 106.527, "end": 106.957, "char": [18, 27] }
+        { "start": 114.189, "end": 114.618, "char": [0, 3] },
+        { "start": 114.618, "end": 115.048, "char": [4, 12] },
+        { "start": 115.048, "end": 115.477, "char": [13, 17] },
+        { "start": 115.477, "end": 115.907, "char": [18, 27] }
       ]
     },
     {
-      "start": 106.957,
-      "end": 108.675,
+      "start": 115.907,
+      "end": 117.625,
       "text": "une commande pour arrêter.",
       "words": [
-        { "start": 106.957, "end": 107.386, "char": [0, 3] },
-        { "start": 107.386, "end": 107.816, "char": [4, 12] },
-        { "start": 107.816, "end": 108.246, "char": [13, 17] },
-        { "start": 108.246, "end": 108.675, "char": [18, 26] }
+        { "start": 115.907, "end": 116.336, "char": [0, 3] },
+        { "start": 116.336, "end": 116.766, "char": [4, 12] },
+        { "start": 116.766, "end": 117.196, "char": [13, 17] },
+        { "start": 117.196, "end": 117.625, "char": [18, 26] }
       ]
     },
     {
-      "start": 109.491,
-      "end": 112.014,
+      "start": 118.441,
+      "end": 120.964,
       "text": "Et voilà le mode production en résumé.",
       "words": [
-        { "start": 109.491, "end": 109.851, "char": [0, 2] },
-        { "start": 109.851, "end": 110.212, "char": [3, 8] },
-        { "start": 110.212, "end": 110.572, "char": [9, 11] },
-        { "start": 110.572, "end": 110.933, "char": [12, 16] },
-        { "start": 110.933, "end": 111.293, "char": [17, 27] },
-        { "start": 111.293, "end": 111.654, "char": [28, 30] },
-        { "start": 111.654, "end": 112.014, "char": [31, 38] }
+        { "start": 118.441, "end": 118.801, "char": [0, 2] },
+        { "start": 118.801, "end": 119.162, "char": [3, 8] },
+        { "start": 119.162, "end": 119.522, "char": [9, 11] },
+        { "start": 119.522, "end": 119.883, "char": [12, 16] },
+        { "start": 119.883, "end": 120.243, "char": [17, 27] },
+        { "start": 120.243, "end": 120.604, "char": [28, 30] },
+        { "start": 120.604, "end": 120.964, "char": [31, 38] }
       ]
     },
     {
-      "start": 112.014,
-      "end": 114.538,
+      "start": 120.964,
+      "end": 123.488,
       "text": "On se retrouve dans la prochaine vidéo",
       "words": [
-        { "start": 112.014, "end": 112.375, "char": [0, 2] },
-        { "start": 112.375, "end": 112.735, "char": [3, 5] },
-        { "start": 112.735, "end": 113.096, "char": [6, 14] },
-        { "start": 113.096, "end": 113.456, "char": [15, 19] },
-        { "start": 113.456, "end": 113.817, "char": [20, 22] },
-        { "start": 113.817, "end": 114.177, "char": [23, 32] },
-        { "start": 114.177, "end": 114.538, "char": [33, 38] }
+        { "start": 120.964, "end": 121.325, "char": [0, 2] },
+        { "start": 121.325, "end": 121.685, "char": [3, 5] },
+        { "start": 121.685, "end": 122.046, "char": [6, 14] },
+        { "start": 122.046, "end": 122.406, "char": [15, 19] },
+        { "start": 122.406, "end": 122.767, "char": [20, 22] },
+        { "start": 122.767, "end": 123.127, "char": [23, 32] },
+        { "start": 123.127, "end": 123.488, "char": [33, 38] }
       ]
     },
     {
-      "start": 114.538,
-      "end": 114.898,
+      "start": 123.488,
+      "end": 123.848,
       "text": "!",
-      "words": [{ "start": 114.538, "end": 114.898, "char": [0, 1] }]
+      "words": [{ "start": 123.488, "end": 123.848, "char": [0, 1] }]
     }
   ]
 }

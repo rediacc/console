@@ -708,98 +708,115 @@
     },
     {
       "start": 126.532,
-      "end": 129.16,
-      "text": "Et voilà la série",
+      "end": 128.989,
+      "text": "Vous savez maintenant installer,",
       "words": [
-        { "start": 126.532, "end": 127.189, "char": [0, 2] },
-        { "start": 127.189, "end": 127.846, "char": [3, 8] },
-        { "start": 127.846, "end": 128.503, "char": [9, 11] },
-        { "start": 128.503, "end": 129.16, "char": [12, 17] }
+        { "start": 126.532, "end": 127.146, "char": [0, 4] },
+        { "start": 127.146, "end": 127.761, "char": [5, 10] },
+        { "start": 127.761, "end": 128.375, "char": [11, 21] },
+        { "start": 128.375, "end": 128.989, "char": [22, 32] }
       ]
     },
     {
-      "start": 129.16,
-      "end": 129.817,
-      "text": "bouclée.",
-      "words": [{ "start": 129.16, "end": 129.817, "char": [0, 8] }]
-    },
-    {
-      "start": 129.817,
-      "end": 132.446,
-      "text": "Vous pouvez désormais installer,",
-      "words": [
-        { "start": 129.817, "end": 130.474, "char": [0, 4] },
-        { "start": 130.474, "end": 131.132, "char": [5, 11] },
-        { "start": 131.132, "end": 131.789, "char": [12, 21] },
-        { "start": 131.789, "end": 132.446, "char": [22, 32] }
-      ]
-    },
-    {
-      "start": 132.446,
-      "end": 133.103,
+      "start": 128.989,
+      "end": 129.603,
       "text": "configurer,",
-      "words": [{ "start": 132.446, "end": 133.103, "char": [0, 11] }]
+      "words": [{ "start": 128.989, "end": 129.603, "char": [0, 11] }]
     },
     {
-      "start": 133.103,
-      "end": 133.76,
+      "start": 129.603,
+      "end": 130.218,
       "text": "déployer,",
-      "words": [{ "start": 133.103, "end": 133.76, "char": [0, 9] }]
+      "words": [{ "start": 129.603, "end": 130.218, "char": [0, 9] }]
     },
     {
-      "start": 133.76,
-      "end": 134.417,
+      "start": 130.218,
+      "end": 130.832,
       "text": "forker,",
-      "words": [{ "start": 133.76, "end": 134.417, "char": [0, 7] }]
+      "words": [{ "start": 130.218, "end": 130.832, "char": [0, 7] }]
     },
     {
-      "start": 134.417,
-      "end": 136.388,
-      "text": "mettre en ligne,",
+      "start": 130.832,
+      "end": 132.675,
+      "text": "passer en production,",
       "words": [
-        { "start": 134.417, "end": 135.074, "char": [0, 6] },
-        { "start": 135.074, "end": 135.731, "char": [7, 9] },
-        { "start": 135.731, "end": 136.388, "char": [10, 16] }
+        { "start": 130.832, "end": 131.446, "char": [0, 6] },
+        { "start": 131.446, "end": 132.06, "char": [7, 9] },
+        { "start": 132.06, "end": 132.675, "char": [10, 21] }
       ]
     },
     {
-      "start": 136.388,
-      "end": 137.702,
+      "start": 132.675,
+      "end": 133.903,
       "text": "démarrer automatiquement,",
       "words": [
-        { "start": 136.388, "end": 137.045, "char": [0, 8] },
-        { "start": 137.045, "end": 137.702, "char": [9, 25] }
+        { "start": 132.675, "end": 133.289, "char": [0, 8] },
+        { "start": 133.289, "end": 133.903, "char": [9, 25] }
       ]
     },
     {
-      "start": 137.702,
-      "end": 139.674,
-      "text": "sauvegarder et surveiller,",
+      "start": 133.903,
+      "end": 135.746,
+      "text": "sauvegarder et surveiller.",
       "words": [
-        { "start": 137.702, "end": 138.359, "char": [0, 11] },
-        { "start": 138.359, "end": 139.017, "char": [12, 14] },
-        { "start": 139.017, "end": 139.674, "char": [15, 26] }
+        { "start": 133.903, "end": 134.518, "char": [0, 11] },
+        { "start": 134.518, "end": 135.132, "char": [12, 14] },
+        { "start": 135.132, "end": 135.746, "char": [15, 26] }
       ]
     },
     {
-      "start": 139.674,
-      "end": 142.302,
-      "text": "le tout depuis votre",
+      "start": 135.746,
+      "end": 138.817,
+      "text": "La suite avancée commence maintenant",
       "words": [
-        { "start": 139.674, "end": 140.331, "char": [0, 2] },
-        { "start": 140.331, "end": 140.988, "char": [3, 7] },
-        { "start": 140.988, "end": 141.645, "char": [8, 14] },
-        { "start": 141.645, "end": 142.302, "char": [15, 20] }
+        { "start": 135.746, "end": 136.36, "char": [0, 2] },
+        { "start": 136.36, "end": 136.975, "char": [3, 8] },
+        { "start": 136.975, "end": 137.589, "char": [9, 16] },
+        { "start": 137.589, "end": 138.203, "char": [17, 25] },
+        { "start": 138.203, "end": 138.817, "char": [26, 36] }
       ]
     },
     {
-      "start": 142.302,
-      "end": 143.616,
-      "text": "terminal !",
+      "start": 138.817,
+      "end": 139.432,
+      "text": ":",
+      "words": [{ "start": 138.817, "end": 139.432, "char": [0, 1] }]
+    },
+    {
+      "start": 139.432,
+      "end": 142.503,
+      "text": "versionnez vos repos comme du",
       "words": [
-        { "start": 142.302, "end": 142.959, "char": [0, 8] },
-        { "start": 142.959, "end": 143.616, "char": [9, 10] }
+        { "start": 139.432, "end": 140.046, "char": [0, 10] },
+        { "start": 140.046, "end": 140.66, "char": [11, 14] },
+        { "start": 140.66, "end": 141.275, "char": [15, 20] },
+        { "start": 141.275, "end": 141.889, "char": [21, 26] },
+        { "start": 141.889, "end": 142.503, "char": [27, 29] }
       ]
+    },
+    {
+      "start": 142.503,
+      "end": 143.117,
+      "text": "code,",
+      "words": [{ "start": 142.503, "end": 143.117, "char": [0, 5] }]
+    },
+    {
+      "start": 143.117,
+      "end": 146.189,
+      "text": "avec des commits et des",
+      "words": [
+        { "start": 143.117, "end": 143.732, "char": [0, 4] },
+        { "start": 143.732, "end": 144.346, "char": [5, 8] },
+        { "start": 144.346, "end": 144.96, "char": [9, 16] },
+        { "start": 144.96, "end": 145.574, "char": [17, 19] },
+        { "start": 145.574, "end": 146.189, "char": [20, 23] }
+      ]
+    },
+    {
+      "start": 146.189,
+      "end": 146.803,
+      "text": "rollbacks.",
+      "words": [{ "start": 146.189, "end": 146.803, "char": [0, 10] }]
     }
   ]
 }

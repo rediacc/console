@@ -198,459 +198,459 @@
       ]
     },
     {
-      "start": 37.871,
-      "end": 39.059,
+      "start": 40.071,
+      "end": 41.259,
       "text": "Porta inoltrata.",
       "words": [
-        { "start": 37.871, "end": 38.465, "char": [0, 5] },
-        { "start": 38.465, "end": 39.059, "char": [6, 16] }
+        { "start": 40.071, "end": 40.665, "char": [0, 5] },
+        { "start": 40.665, "end": 41.259, "char": [6, 16] }
       ]
     },
     {
-      "start": 39.059,
-      "end": 42.031,
+      "start": 41.259,
+      "end": 44.231,
       "text": "L'app e' ora raggiungibile su",
       "words": [
-        { "start": 39.059, "end": 39.654, "char": [0, 5] },
-        { "start": 39.654, "end": 40.248, "char": [6, 8] },
-        { "start": 40.248, "end": 40.842, "char": [9, 12] },
-        { "start": 40.842, "end": 41.436, "char": [13, 26] },
-        { "start": 41.436, "end": 42.031, "char": [27, 29] }
+        { "start": 41.259, "end": 41.854, "char": [0, 5] },
+        { "start": 41.854, "end": 42.448, "char": [6, 8] },
+        { "start": 42.448, "end": 43.042, "char": [9, 12] },
+        { "start": 43.042, "end": 43.636, "char": [13, 26] },
+        { "start": 43.636, "end": 44.231, "char": [27, 29] }
       ]
     },
     {
-      "start": 42.031,
-      "end": 42.625,
+      "start": 44.231,
+      "end": 44.825,
       "text": "localhost.",
-      "words": [{ "start": 42.031, "end": 42.625, "char": [0, 10] }]
+      "words": [{ "start": 44.231, "end": 44.825, "char": [0, 10] }]
     },
     {
-      "start": 43.463,
-      "end": 45.352,
+      "start": 45.363,
+      "end": 47.252,
       "text": "Con il tunnel attivo,",
       "words": [
-        { "start": 43.463, "end": 43.935, "char": [0, 3] },
-        { "start": 43.935, "end": 44.407, "char": [4, 6] },
-        { "start": 44.407, "end": 44.88, "char": [7, 13] },
-        { "start": 44.88, "end": 45.352, "char": [14, 21] }
+        { "start": 45.363, "end": 45.835, "char": [0, 3] },
+        { "start": 45.835, "end": 46.307, "char": [4, 6] },
+        { "start": 46.307, "end": 46.78, "char": [7, 13] },
+        { "start": 46.78, "end": 47.252, "char": [14, 21] }
       ]
     },
     {
-      "start": 45.352,
-      "end": 48.185,
+      "start": 47.252,
+      "end": 50.085,
       "text": "l'app si apre direttamente nel tuo",
       "words": [
-        { "start": 45.352, "end": 45.824, "char": [0, 5] },
-        { "start": 45.824, "end": 46.296, "char": [6, 8] },
-        { "start": 46.296, "end": 46.769, "char": [9, 13] },
-        { "start": 46.769, "end": 47.241, "char": [14, 26] },
-        { "start": 47.241, "end": 47.713, "char": [27, 30] },
-        { "start": 47.713, "end": 48.185, "char": [31, 34] }
+        { "start": 47.252, "end": 47.724, "char": [0, 5] },
+        { "start": 47.724, "end": 48.196, "char": [6, 8] },
+        { "start": 48.196, "end": 48.669, "char": [9, 13] },
+        { "start": 48.669, "end": 49.141, "char": [14, 26] },
+        { "start": 49.141, "end": 49.613, "char": [27, 30] },
+        { "start": 49.613, "end": 50.085, "char": [31, 34] }
       ]
     },
     {
-      "start": 48.185,
-      "end": 48.657,
+      "start": 50.085,
+      "end": 50.557,
       "text": "browser.",
-      "words": [{ "start": 48.185, "end": 48.657, "char": [0, 8] }]
+      "words": [{ "start": 50.085, "end": 50.557, "char": [0, 8] }]
     },
     {
-      "start": 48.657,
-      "end": 51.018,
+      "start": 50.557,
+      "end": 52.918,
       "text": "In questa demo carichiamo rediacc.com,",
       "words": [
-        { "start": 48.657, "end": 49.13, "char": [0, 2] },
-        { "start": 49.13, "end": 49.602, "char": [3, 9] },
-        { "start": 49.602, "end": 50.074, "char": [10, 14] },
-        { "start": 50.074, "end": 50.546, "char": [15, 25] },
-        { "start": 50.546, "end": 51.018, "char": [26, 38] }
+        { "start": 50.557, "end": 51.03, "char": [0, 2] },
+        { "start": 51.03, "end": 51.502, "char": [3, 9] },
+        { "start": 51.502, "end": 51.974, "char": [10, 14] },
+        { "start": 51.974, "end": 52.446, "char": [15, 25] },
+        { "start": 52.446, "end": 52.918, "char": [26, 38] }
       ]
     },
     {
-      "start": 51.018,
-      "end": 53.852,
+      "start": 52.918,
+      "end": 55.752,
       "text": "esattamente come raggiungesti la tua app",
       "words": [
-        { "start": 51.018, "end": 51.491, "char": [0, 11] },
-        { "start": 51.491, "end": 51.963, "char": [12, 16] },
-        { "start": 51.963, "end": 52.435, "char": [17, 29] },
-        { "start": 52.435, "end": 52.907, "char": [30, 32] },
-        { "start": 52.907, "end": 53.379, "char": [33, 36] },
-        { "start": 53.379, "end": 53.852, "char": [37, 40] }
+        { "start": 52.918, "end": 53.391, "char": [0, 11] },
+        { "start": 53.391, "end": 53.863, "char": [12, 16] },
+        { "start": 53.863, "end": 54.335, "char": [17, 29] },
+        { "start": 54.335, "end": 54.807, "char": [30, 32] },
+        { "start": 54.807, "end": 55.279, "char": [33, 36] },
+        { "start": 55.279, "end": 55.752, "char": [37, 40] }
       ]
     },
     {
-      "start": 53.852,
-      "end": 55.741,
+      "start": 55.752,
+      "end": 57.641,
       "text": "servita direttamente dal container.",
       "words": [
-        { "start": 53.852, "end": 54.324, "char": [0, 7] },
-        { "start": 54.324, "end": 54.796, "char": [8, 20] },
-        { "start": 54.796, "end": 55.268, "char": [21, 24] },
-        { "start": 55.268, "end": 55.741, "char": [25, 35] }
+        { "start": 55.752, "end": 56.224, "char": [0, 7] },
+        { "start": 56.224, "end": 56.696, "char": [8, 20] },
+        { "start": 56.696, "end": 57.168, "char": [21, 24] },
+        { "start": 57.168, "end": 57.641, "char": [25, 35] }
       ]
     },
     {
-      "start": 59.023,
-      "end": 59.467,
+      "start": 60.63,
+      "end": 61.074,
       "text": "Secondo,",
-      "words": [{ "start": 59.023, "end": 59.467, "char": [0, 8] }]
+      "words": [{ "start": 60.63, "end": 61.074, "char": [0, 8] }]
     },
     {
-      "start": 59.467,
-      "end": 60.799,
+      "start": 61.074,
+      "end": 62.406,
       "text": "il comando term.",
       "words": [
-        { "start": 59.467, "end": 59.911, "char": [0, 2] },
-        { "start": 59.911, "end": 60.355, "char": [3, 10] },
-        { "start": 60.355, "end": 60.799, "char": [11, 16] }
+        { "start": 61.074, "end": 61.518, "char": [0, 2] },
+        { "start": 61.518, "end": 61.962, "char": [3, 10] },
+        { "start": 61.962, "end": 62.406, "char": [11, 16] }
       ]
     },
     {
-      "start": 60.799,
-      "end": 63.464,
+      "start": 62.406,
+      "end": 65.07,
       "text": "Il comando di connessione al terminale",
       "words": [
-        { "start": 60.799, "end": 61.243, "char": [0, 2] },
-        { "start": 61.243, "end": 61.688, "char": [3, 10] },
-        { "start": 61.688, "end": 62.132, "char": [11, 13] },
-        { "start": 62.132, "end": 62.576, "char": [14, 25] },
-        { "start": 62.576, "end": 63.02, "char": [26, 28] },
-        { "start": 63.02, "end": 63.464, "char": [29, 38] }
+        { "start": 62.406, "end": 62.85, "char": [0, 2] },
+        { "start": 62.85, "end": 63.294, "char": [3, 10] },
+        { "start": 63.294, "end": 63.738, "char": [11, 13] },
+        { "start": 63.738, "end": 64.182, "char": [14, 25] },
+        { "start": 64.182, "end": 64.626, "char": [26, 28] },
+        { "start": 64.626, "end": 65.07, "char": [29, 38] }
       ]
     },
     {
-      "start": 63.464,
-      "end": 66.128,
+      "start": 65.07,
+      "end": 67.735,
       "text": "ti porta all'interno della sandbox del",
       "words": [
-        { "start": 63.464, "end": 63.908, "char": [0, 2] },
-        { "start": 63.908, "end": 64.352, "char": [3, 8] },
-        { "start": 64.352, "end": 64.796, "char": [9, 20] },
-        { "start": 64.796, "end": 65.24, "char": [21, 26] },
-        { "start": 65.24, "end": 65.684, "char": [27, 34] },
-        { "start": 65.684, "end": 66.128, "char": [35, 38] }
+        { "start": 65.07, "end": 65.515, "char": [0, 2] },
+        { "start": 65.515, "end": 65.959, "char": [3, 8] },
+        { "start": 65.959, "end": 66.403, "char": [9, 20] },
+        { "start": 66.403, "end": 66.847, "char": [21, 26] },
+        { "start": 66.847, "end": 67.291, "char": [27, 34] },
+        { "start": 67.291, "end": 67.735, "char": [35, 38] }
       ]
     },
     {
-      "start": 66.128,
-      "end": 68.793,
+      "start": 67.735,
+      "end": 70.399,
       "text": "repo -- la stessa vista isolata",
       "words": [
-        { "start": 66.128, "end": 66.572, "char": [0, 4] },
-        { "start": 66.572, "end": 67.016, "char": [5, 7] },
-        { "start": 67.016, "end": 67.461, "char": [8, 10] },
-        { "start": 67.461, "end": 67.905, "char": [11, 17] },
-        { "start": 67.905, "end": 68.349, "char": [18, 23] },
-        { "start": 68.349, "end": 68.793, "char": [24, 31] }
+        { "start": 67.735, "end": 68.179, "char": [0, 4] },
+        { "start": 68.179, "end": 68.623, "char": [5, 7] },
+        { "start": 68.623, "end": 69.067, "char": [8, 10] },
+        { "start": 69.067, "end": 69.511, "char": [11, 17] },
+        { "start": 69.511, "end": 69.955, "char": [18, 23] },
+        { "start": 69.955, "end": 70.399, "char": [24, 31] }
       ]
     },
     {
-      "start": 68.793,
-      "end": 70.569,
+      "start": 70.399,
+      "end": 72.176,
       "text": "che offre VS Code.",
       "words": [
-        { "start": 68.793, "end": 69.237, "char": [0, 3] },
-        { "start": 69.237, "end": 69.681, "char": [4, 9] },
-        { "start": 69.681, "end": 70.125, "char": [10, 12] },
-        { "start": 70.125, "end": 70.569, "char": [13, 18] }
+        { "start": 70.399, "end": 70.844, "char": [0, 3] },
+        { "start": 70.844, "end": 71.288, "char": [4, 9] },
+        { "start": 71.288, "end": 71.732, "char": [10, 12] },
+        { "start": 71.732, "end": 72.176, "char": [13, 18] }
       ]
     },
     {
-      "start": 70.569,
-      "end": 73.234,
+      "start": 72.176,
+      "end": 74.84,
       "text": "Puoi eseguire qualsiasi comando sul Docker",
       "words": [
-        { "start": 70.569, "end": 71.013, "char": [0, 4] },
-        { "start": 71.013, "end": 71.457, "char": [5, 13] },
-        { "start": 71.457, "end": 71.901, "char": [14, 23] },
-        { "start": 71.901, "end": 72.345, "char": [24, 31] },
-        { "start": 72.345, "end": 72.79, "char": [32, 35] },
-        { "start": 72.79, "end": 73.234, "char": [36, 42] }
+        { "start": 72.176, "end": 72.62, "char": [0, 4] },
+        { "start": 72.62, "end": 73.064, "char": [5, 13] },
+        { "start": 73.064, "end": 73.508, "char": [14, 23] },
+        { "start": 73.508, "end": 73.952, "char": [24, 31] },
+        { "start": 73.952, "end": 74.396, "char": [32, 35] },
+        { "start": 74.396, "end": 74.84, "char": [36, 42] }
       ]
     },
     {
-      "start": 73.234,
-      "end": 75.898,
+      "start": 74.84,
+      "end": 77.505,
       "text": "daemon di questo repo senza mai",
       "words": [
-        { "start": 73.234, "end": 73.678, "char": [0, 6] },
-        { "start": 73.678, "end": 74.122, "char": [7, 9] },
-        { "start": 74.122, "end": 74.566, "char": [10, 16] },
-        { "start": 74.566, "end": 75.01, "char": [17, 21] },
-        { "start": 75.01, "end": 75.454, "char": [22, 27] },
-        { "start": 75.454, "end": 75.898, "char": [28, 31] }
+        { "start": 74.84, "end": 75.284, "char": [0, 6] },
+        { "start": 75.284, "end": 75.728, "char": [7, 9] },
+        { "start": 75.728, "end": 76.173, "char": [10, 16] },
+        { "start": 76.173, "end": 76.617, "char": [17, 21] },
+        { "start": 76.617, "end": 77.061, "char": [22, 27] },
+        { "start": 77.061, "end": 77.505, "char": [28, 31] }
       ]
     },
     {
-      "start": 75.898,
-      "end": 77.23,
+      "start": 77.505,
+      "end": 78.837,
       "text": "uscire dal terminale.",
       "words": [
-        { "start": 75.898, "end": 76.342, "char": [0, 6] },
-        { "start": 76.342, "end": 76.786, "char": [7, 10] },
-        { "start": 76.786, "end": 77.23, "char": [11, 21] }
+        { "start": 77.505, "end": 77.949, "char": [0, 6] },
+        { "start": 77.949, "end": 78.393, "char": [7, 10] },
+        { "start": 78.393, "end": 78.837, "char": [11, 21] }
       ]
     },
     {
-      "start": 78.48,
-      "end": 80.552,
+      "start": 80.837,
+      "end": 82.908,
       "text": "Sei nella sandbox del repo.",
       "words": [
-        { "start": 78.48, "end": 78.895, "char": [0, 3] },
-        { "start": 78.895, "end": 79.309, "char": [4, 9] },
-        { "start": 79.309, "end": 79.723, "char": [10, 17] },
-        { "start": 79.723, "end": 80.137, "char": [18, 21] },
-        { "start": 80.137, "end": 80.552, "char": [22, 27] }
+        { "start": 80.837, "end": 81.251, "char": [0, 3] },
+        { "start": 81.251, "end": 81.665, "char": [4, 9] },
+        { "start": 81.665, "end": 82.08, "char": [10, 17] },
+        { "start": 82.08, "end": 82.494, "char": [18, 21] },
+        { "start": 82.494, "end": 82.908, "char": [22, 27] }
       ]
     },
     {
-      "start": 80.552,
-      "end": 83.451,
+      "start": 82.908,
+      "end": 85.808,
       "text": "Esegui qualsiasi cosa come se fossi connesso",
       "words": [
-        { "start": 80.552, "end": 80.966, "char": [0, 6] },
-        { "start": 80.966, "end": 81.38, "char": [7, 16] },
-        { "start": 81.38, "end": 81.794, "char": [17, 21] },
-        { "start": 81.794, "end": 82.208, "char": [22, 26] },
-        { "start": 82.208, "end": 82.623, "char": [27, 29] },
-        { "start": 82.623, "end": 83.037, "char": [30, 35] },
-        { "start": 83.037, "end": 83.451, "char": [36, 44] }
+        { "start": 82.908, "end": 83.322, "char": [0, 6] },
+        { "start": 83.322, "end": 83.737, "char": [7, 16] },
+        { "start": 83.737, "end": 84.151, "char": [17, 21] },
+        { "start": 84.151, "end": 84.565, "char": [22, 26] },
+        { "start": 84.565, "end": 84.979, "char": [27, 29] },
+        { "start": 84.979, "end": 85.394, "char": [30, 35] },
+        { "start": 85.394, "end": 85.808, "char": [36, 44] }
       ]
     },
     {
-      "start": 83.451,
-      "end": 84.28,
+      "start": 85.808,
+      "end": 86.636,
       "text": "via SSH.",
       "words": [
-        { "start": 83.451, "end": 83.865, "char": [0, 3] },
-        { "start": 83.865, "end": 84.28, "char": [4, 8] }
+        { "start": 85.808, "end": 86.222, "char": [0, 3] },
+        { "start": 86.222, "end": 86.636, "char": [4, 8] }
       ]
     },
     {
-      "start": 87.611,
-      "end": 90.401,
+      "start": 89.934,
+      "end": 92.724,
       "text": "Prima di trasferire i file,",
       "words": [
-        { "start": 87.611, "end": 88.169, "char": [0, 5] },
-        { "start": 88.169, "end": 88.727, "char": [6, 8] },
-        { "start": 88.727, "end": 89.285, "char": [9, 19] },
-        { "start": 89.285, "end": 89.843, "char": [20, 21] },
-        { "start": 89.843, "end": 90.401, "char": [22, 27] }
+        { "start": 89.934, "end": 90.492, "char": [0, 5] },
+        { "start": 90.492, "end": 91.05, "char": [6, 8] },
+        { "start": 91.05, "end": 91.608, "char": [9, 19] },
+        { "start": 91.608, "end": 92.166, "char": [20, 21] },
+        { "start": 92.166, "end": 92.724, "char": [22, 27] }
       ]
     },
     {
-      "start": 90.401,
-      "end": 92.076,
+      "start": 92.724,
+      "end": 94.398,
       "text": "anteprima con --dry-run.",
       "words": [
-        { "start": 90.401, "end": 90.959, "char": [0, 9] },
-        { "start": 90.959, "end": 91.518, "char": [10, 13] },
-        { "start": 91.518, "end": 92.076, "char": [14, 24] }
+        { "start": 92.724, "end": 93.282, "char": [0, 9] },
+        { "start": 93.282, "end": 93.84, "char": [10, 13] },
+        { "start": 93.84, "end": 94.398, "char": [14, 24] }
       ]
     },
     {
-      "start": 92.076,
-      "end": 94.866,
+      "start": 94.398,
+      "end": 97.189,
       "text": "Mostra esattamente cosa cambierebbe senza",
       "words": [
-        { "start": 92.076, "end": 92.634, "char": [0, 6] },
-        { "start": 92.634, "end": 93.192, "char": [7, 18] },
-        { "start": 93.192, "end": 93.75, "char": [19, 23] },
-        { "start": 93.75, "end": 94.308, "char": [24, 35] },
-        { "start": 94.308, "end": 94.866, "char": [36, 41] }
+        { "start": 94.398, "end": 94.956, "char": [0, 6] },
+        { "start": 94.956, "end": 95.514, "char": [7, 18] },
+        { "start": 95.514, "end": 96.072, "char": [19, 23] },
+        { "start": 96.072, "end": 96.631, "char": [24, 35] },
+        { "start": 96.631, "end": 97.189, "char": [36, 41] }
       ]
     },
     {
-      "start": 94.866,
-      "end": 95.982,
+      "start": 97.189,
+      "end": 98.305,
       "text": "copiare nulla.",
       "words": [
-        { "start": 94.866, "end": 95.424, "char": [0, 7] },
-        { "start": 95.424, "end": 95.982, "char": [8, 14] }
+        { "start": 97.189, "end": 97.747, "char": [0, 7] },
+        { "start": 97.747, "end": 98.305, "char": [8, 14] }
       ]
     },
     {
-      "start": 95.982,
-      "end": 98.772,
+      "start": 98.305,
+      "end": 101.095,
       "text": "Usa sempre l'anteprima quando non",
       "words": [
-        { "start": 95.982, "end": 96.54, "char": [0, 3] },
-        { "start": 96.54, "end": 97.098, "char": [4, 10] },
-        { "start": 97.098, "end": 97.656, "char": [11, 22] },
-        { "start": 97.656, "end": 98.214, "char": [23, 29] },
-        { "start": 98.214, "end": 98.772, "char": [30, 33] }
+        { "start": 98.305, "end": 98.863, "char": [0, 3] },
+        { "start": 98.863, "end": 99.421, "char": [4, 10] },
+        { "start": 99.421, "end": 99.979, "char": [11, 22] },
+        { "start": 99.979, "end": 100.537, "char": [23, 29] },
+        { "start": 100.537, "end": 101.095, "char": [30, 33] }
       ]
     },
     {
-      "start": 98.772,
-      "end": 99.889,
+      "start": 101.095,
+      "end": 102.211,
       "text": "sei sicuro.",
       "words": [
-        { "start": 98.772, "end": 99.331, "char": [0, 3] },
-        { "start": 99.331, "end": 99.889, "char": [4, 11] }
+        { "start": 101.095, "end": 101.653, "char": [0, 3] },
+        { "start": 101.653, "end": 102.211, "char": [4, 11] }
       ]
     },
     {
-      "start": 101.889,
-      "end": 103.099,
+      "start": 105.211,
+      "end": 106.422,
       "text": "Solo anteprima.",
       "words": [
-        { "start": 101.889, "end": 102.494, "char": [0, 4] },
-        { "start": 102.494, "end": 103.099, "char": [5, 15] }
+        { "start": 105.211, "end": 105.816, "char": [0, 4] },
+        { "start": 105.816, "end": 106.422, "char": [5, 15] }
       ]
     },
     {
-      "start": 103.099,
-      "end": 105.52,
+      "start": 106.422,
+      "end": 108.842,
       "text": "Nessun file ancora spostato.",
       "words": [
-        { "start": 103.099, "end": 103.704, "char": [0, 6] },
-        { "start": 103.704, "end": 104.309, "char": [7, 11] },
-        { "start": 104.309, "end": 104.914, "char": [12, 18] },
-        { "start": 104.914, "end": 105.52, "char": [19, 28] }
+        { "start": 106.422, "end": 107.027, "char": [0, 6] },
+        { "start": 107.027, "end": 107.632, "char": [7, 11] },
+        { "start": 107.632, "end": 108.237, "char": [12, 18] },
+        { "start": 108.237, "end": 108.842, "char": [19, 28] }
       ]
     },
     {
-      "start": 108.856,
-      "end": 110.711,
+      "start": 112.146,
+      "end": 114,
       "text": "Ora eseguiamo l'upload reale.",
       "words": [
-        { "start": 108.856, "end": 109.32, "char": [0, 3] },
-        { "start": 109.32, "end": 109.783, "char": [4, 13] },
-        { "start": 109.783, "end": 110.247, "char": [14, 22] },
-        { "start": 110.247, "end": 110.711, "char": [23, 29] }
+        { "start": 112.146, "end": 112.609, "char": [0, 3] },
+        { "start": 112.609, "end": 113.073, "char": [4, 13] },
+        { "start": 113.073, "end": 113.537, "char": [14, 22] },
+        { "start": 113.537, "end": 114, "char": [23, 29] }
       ]
     },
     {
-      "start": 110.711,
-      "end": 113.493,
+      "start": 114,
+      "end": 116.782,
       "text": "Il comando di sincronizzazione sposta i",
       "words": [
-        { "start": 110.711, "end": 111.174, "char": [0, 2] },
-        { "start": 111.174, "end": 111.638, "char": [3, 10] },
-        { "start": 111.638, "end": 112.102, "char": [11, 13] },
-        { "start": 112.102, "end": 112.565, "char": [14, 30] },
-        { "start": 112.565, "end": 113.029, "char": [31, 37] },
-        { "start": 113.029, "end": 113.493, "char": [38, 39] }
+        { "start": 114, "end": 114.464, "char": [0, 2] },
+        { "start": 114.464, "end": 114.928, "char": [3, 10] },
+        { "start": 114.928, "end": 115.391, "char": [11, 13] },
+        { "start": 115.391, "end": 115.855, "char": [14, 30] },
+        { "start": 115.855, "end": 116.319, "char": [31, 37] },
+        { "start": 116.319, "end": 116.782, "char": [38, 39] }
       ]
     },
     {
-      "start": 113.493,
-      "end": 116.275,
+      "start": 116.782,
+      "end": 119.564,
       "text": "file dal tuo laptop nel repo",
       "words": [
-        { "start": 113.493, "end": 113.956, "char": [0, 4] },
-        { "start": 113.956, "end": 114.42, "char": [5, 8] },
-        { "start": 114.42, "end": 114.884, "char": [9, 12] },
-        { "start": 114.884, "end": 115.347, "char": [13, 19] },
-        { "start": 115.347, "end": 115.811, "char": [20, 23] },
-        { "start": 115.811, "end": 116.275, "char": [24, 28] }
+        { "start": 116.782, "end": 117.246, "char": [0, 4] },
+        { "start": 117.246, "end": 117.71, "char": [5, 8] },
+        { "start": 117.71, "end": 118.173, "char": [9, 12] },
+        { "start": 118.173, "end": 118.637, "char": [13, 19] },
+        { "start": 118.637, "end": 119.101, "char": [20, 23] },
+        { "start": 119.101, "end": 119.564, "char": [24, 28] }
       ]
     },
     {
-      "start": 116.275,
-      "end": 117.202,
+      "start": 119.564,
+      "end": 120.492,
       "text": "via SSH,",
       "words": [
-        { "start": 116.275, "end": 116.738, "char": [0, 3] },
-        { "start": 116.738, "end": 117.202, "char": [4, 8] }
+        { "start": 119.564, "end": 120.028, "char": [0, 3] },
+        { "start": 120.028, "end": 120.492, "char": [4, 8] }
       ]
     },
     {
-      "start": 117.202,
-      "end": 119.057,
+      "start": 120.492,
+      "end": 122.346,
       "text": "con compressione delta rsync.",
       "words": [
-        { "start": 117.202, "end": 117.666, "char": [0, 3] },
-        { "start": 117.666, "end": 118.13, "char": [4, 16] },
-        { "start": 118.13, "end": 118.593, "char": [17, 22] },
-        { "start": 118.593, "end": 119.057, "char": [23, 29] }
+        { "start": 120.492, "end": 120.955, "char": [0, 3] },
+        { "start": 120.955, "end": 121.419, "char": [4, 16] },
+        { "start": 121.419, "end": 121.883, "char": [17, 22] },
+        { "start": 121.883, "end": 122.346, "char": [23, 29] }
       ]
     },
     {
-      "start": 119.057,
-      "end": 119.521,
+      "start": 122.346,
+      "end": 122.81,
       "text": "Tunnel,",
-      "words": [{ "start": 119.057, "end": 119.521, "char": [0, 7] }]
+      "words": [{ "start": 122.346, "end": 122.81, "char": [0, 7] }]
     },
     {
-      "start": 119.521,
-      "end": 119.984,
+      "start": 122.81,
+      "end": 123.274,
       "text": "term,",
-      "words": [{ "start": 119.521, "end": 119.984, "char": [0, 5] }]
+      "words": [{ "start": 122.81, "end": 123.274, "char": [0, 5] }]
     },
     {
-      "start": 119.984,
-      "end": 122.766,
+      "start": 123.274,
+      "end": 126.056,
       "text": "sync -- tre comandi coprono il",
       "words": [
-        { "start": 119.984, "end": 120.448, "char": [0, 4] },
-        { "start": 120.448, "end": 120.912, "char": [5, 7] },
-        { "start": 120.912, "end": 121.375, "char": [8, 11] },
-        { "start": 121.375, "end": 121.839, "char": [12, 19] },
-        { "start": 121.839, "end": 122.303, "char": [20, 27] },
-        { "start": 122.303, "end": 122.766, "char": [28, 30] }
+        { "start": 123.274, "end": 123.738, "char": [0, 4] },
+        { "start": 123.738, "end": 124.201, "char": [5, 7] },
+        { "start": 124.201, "end": 124.665, "char": [8, 11] },
+        { "start": 124.665, "end": 125.129, "char": [12, 19] },
+        { "start": 125.129, "end": 125.592, "char": [20, 27] },
+        { "start": 125.592, "end": 126.056, "char": [28, 30] }
       ]
     },
     {
-      "start": 122.766,
-      "end": 123.694,
+      "start": 126.056,
+      "end": 126.983,
       "text": "ciclo quotidiano.",
       "words": [
-        { "start": 122.766, "end": 123.23, "char": [0, 5] },
-        { "start": 123.23, "end": 123.694, "char": [6, 17] }
+        { "start": 126.056, "end": 126.52, "char": [0, 5] },
+        { "start": 126.52, "end": 126.983, "char": [6, 17] }
       ]
     },
     {
-      "start": 125.194,
-      "end": 126.284,
+      "start": 129.233,
+      "end": 130.324,
       "text": "File caricati.",
       "words": [
-        { "start": 125.194, "end": 125.739, "char": [0, 4] },
-        { "start": 125.739, "end": 126.284, "char": [5, 14] }
+        { "start": 129.233, "end": 129.779, "char": [0, 4] },
+        { "start": 129.779, "end": 130.324, "char": [5, 14] }
       ]
     },
     {
-      "start": 126.284,
-      "end": 129.011,
+      "start": 130.324,
+      "end": 133.05,
       "text": "La compressione delta gestisce alberi",
       "words": [
-        { "start": 126.284, "end": 126.83, "char": [0, 2] },
-        { "start": 126.83, "end": 127.375, "char": [3, 15] },
-        { "start": 127.375, "end": 127.92, "char": [16, 21] },
-        { "start": 127.92, "end": 128.465, "char": [22, 30] },
-        { "start": 128.465, "end": 129.011, "char": [31, 37] }
+        { "start": 130.324, "end": 130.869, "char": [0, 2] },
+        { "start": 130.869, "end": 131.414, "char": [3, 15] },
+        { "start": 131.414, "end": 131.96, "char": [16, 21] },
+        { "start": 131.96, "end": 132.505, "char": [22, 30] },
+        { "start": 132.505, "end": 133.05, "char": [31, 37] }
       ]
     },
     {
-      "start": 129.011,
-      "end": 129.556,
+      "start": 133.05,
+      "end": 133.596,
       "text": "grandi.",
-      "words": [{ "start": 129.011, "end": 129.556, "char": [0, 7] }]
+      "words": [{ "start": 133.05, "end": 133.596, "char": [0, 7] }]
     },
     {
-      "start": 130.388,
-      "end": 133.194,
+      "start": 134.394,
+      "end": 137.199,
       "text": "Ed ecco i tre comandi quotidiani.",
       "words": [
-        { "start": 130.388, "end": 130.856, "char": [0, 2] },
-        { "start": 130.856, "end": 131.323, "char": [3, 7] },
-        { "start": 131.323, "end": 131.791, "char": [8, 9] },
-        { "start": 131.791, "end": 132.258, "char": [10, 13] },
-        { "start": 132.258, "end": 132.726, "char": [14, 21] },
-        { "start": 132.726, "end": 133.194, "char": [22, 33] }
+        { "start": 134.394, "end": 134.861, "char": [0, 2] },
+        { "start": 134.861, "end": 135.329, "char": [3, 7] },
+        { "start": 135.329, "end": 135.796, "char": [8, 9] },
+        { "start": 135.796, "end": 136.264, "char": [10, 13] },
+        { "start": 136.264, "end": 136.732, "char": [14, 21] },
+        { "start": 136.732, "end": 137.199, "char": [22, 33] }
       ]
     },
     {
-      "start": 133.194,
-      "end": 135.064,
+      "start": 137.199,
+      "end": 139.07,
       "text": "Ci vediamo nel prossimo!",
       "words": [
-        { "start": 133.194, "end": 133.661, "char": [0, 2] },
-        { "start": 133.661, "end": 134.129, "char": [3, 10] },
-        { "start": 134.129, "end": 134.596, "char": [11, 14] },
-        { "start": 134.596, "end": 135.064, "char": [15, 24] }
+        { "start": 137.199, "end": 137.667, "char": [0, 2] },
+        { "start": 137.667, "end": 138.134, "char": [3, 10] },
+        { "start": 138.134, "end": 138.602, "char": [11, 14] },
+        { "start": 138.602, "end": 139.07, "char": [15, 24] }
       ]
     }
   ]

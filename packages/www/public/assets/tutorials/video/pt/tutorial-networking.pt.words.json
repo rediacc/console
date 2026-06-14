@@ -3,803 +3,923 @@
   "cues": [
     {
       "start": 1,
-      "end": 1.734,
-      "text": "Tudo certo!",
+      "end": 2.616,
+      "text": "Seu aplicativo está rodando,",
       "words": [
-        { "start": 1, "end": 1.367, "char": [0, 4] },
-        { "start": 1.367, "end": 1.734, "char": [5, 11] }
+        { "start": 1, "end": 1.404, "char": [0, 3] },
+        { "start": 1.404, "end": 1.808, "char": [4, 14] },
+        { "start": 1.808, "end": 2.212, "char": [15, 19] },
+        { "start": 2.212, "end": 2.616, "char": [20, 28] }
       ]
     },
     {
-      "start": 1.734,
-      "end": 4.303,
-      "text": "Vamos dar à sua aplicação um domínio",
+      "start": 2.616,
+      "end": 5.04,
+      "text": "mas só o servidor consegue vê-lo.",
       "words": [
-        { "start": 1.734, "end": 2.101, "char": [0, 5] },
-        { "start": 2.101, "end": 2.468, "char": [6, 9] },
-        { "start": 2.468, "end": 2.835, "char": [10, 11] },
-        { "start": 2.835, "end": 3.202, "char": [12, 15] },
-        { "start": 3.202, "end": 3.569, "char": [16, 25] },
-        { "start": 3.569, "end": 3.936, "char": [26, 28] },
-        { "start": 3.936, "end": 4.303, "char": [29, 36] }
+        { "start": 2.616, "end": 3.02, "char": [0, 3] },
+        { "start": 3.02, "end": 3.424, "char": [4, 6] },
+        { "start": 3.424, "end": 3.828, "char": [7, 8] },
+        { "start": 3.828, "end": 4.232, "char": [9, 17] },
+        { "start": 4.232, "end": 4.636, "char": [18, 26] },
+        { "start": 4.636, "end": 5.04, "char": [27, 33] }
       ]
     },
     {
-      "start": 4.303,
-      "end": 6.137,
-      "text": "a sério com TLS automático.",
+      "start": 5.04,
+      "end": 7.867,
+      "text": "Vamos dar a ele um domínio real",
       "words": [
-        { "start": 4.303, "end": 4.67, "char": [0, 1] },
-        { "start": 4.67, "end": 5.037, "char": [2, 7] },
-        { "start": 5.037, "end": 5.403, "char": [8, 11] },
-        { "start": 5.403, "end": 5.77, "char": [12, 15] },
-        { "start": 5.77, "end": 6.137, "char": [16, 27] }
+        { "start": 5.04, "end": 5.444, "char": [0, 5] },
+        { "start": 5.444, "end": 5.848, "char": [6, 9] },
+        { "start": 5.848, "end": 6.252, "char": [10, 11] },
+        { "start": 6.252, "end": 6.656, "char": [12, 15] },
+        { "start": 6.656, "end": 7.059, "char": [16, 18] },
+        { "start": 7.059, "end": 7.463, "char": [19, 26] },
+        { "start": 7.463, "end": 7.867, "char": [27, 31] }
       ]
     },
     {
-      "start": 6.137,
-      "end": 8.706,
-      "text": "Quatro passos curtos e está na internet.",
+      "start": 7.867,
+      "end": 9.079,
+      "text": "com TLS automático.",
       "words": [
-        { "start": 6.137, "end": 6.504, "char": [0, 6] },
-        { "start": 6.504, "end": 6.871, "char": [7, 13] },
-        { "start": 6.871, "end": 7.238, "char": [14, 20] },
-        { "start": 7.238, "end": 7.605, "char": [21, 22] },
-        { "start": 7.605, "end": 7.972, "char": [23, 27] },
-        { "start": 7.972, "end": 8.339, "char": [28, 30] },
-        { "start": 8.339, "end": 8.706, "char": [31, 40] }
+        { "start": 7.867, "end": 8.271, "char": [0, 3] },
+        { "start": 8.271, "end": 8.675, "char": [4, 7] },
+        { "start": 8.675, "end": 9.079, "char": [8, 19] }
       ]
     },
     {
-      "start": 9.486,
-      "end": 11.184,
-      "text": "Eis o caminho.",
+      "start": 9.079,
+      "end": 11.907,
+      "text": "Quatro passos curtos e ele estará na",
       "words": [
-        { "start": 9.486, "end": 10.052, "char": [0, 3] },
-        { "start": 10.052, "end": 10.618, "char": [4, 5] },
-        { "start": 10.618, "end": 11.184, "char": [6, 14] }
+        { "start": 9.079, "end": 9.483, "char": [0, 6] },
+        { "start": 9.483, "end": 9.887, "char": [7, 13] },
+        { "start": 9.887, "end": 10.291, "char": [14, 20] },
+        { "start": 10.291, "end": 10.695, "char": [21, 22] },
+        { "start": 10.695, "end": 11.099, "char": [23, 26] },
+        { "start": 11.099, "end": 11.503, "char": [27, 33] },
+        { "start": 11.503, "end": 11.907, "char": [34, 36] }
       ]
     },
     {
-      "start": 11.184,
-      "end": 14.014,
-      "text": "Obter um token API do",
+      "start": 11.907,
+      "end": 12.311,
+      "text": "internet.",
+      "words": [{ "start": 11.907, "end": 12.311, "char": [0, 9] }]
+    },
+    {
+      "start": 13.085,
+      "end": 14.893,
+      "text": "O caminho é este:",
       "words": [
-        { "start": 11.184, "end": 11.75, "char": [0, 5] },
-        { "start": 11.75, "end": 12.316, "char": [6, 8] },
-        { "start": 12.316, "end": 12.882, "char": [9, 14] },
-        { "start": 12.882, "end": 13.448, "char": [15, 18] },
-        { "start": 13.448, "end": 14.014, "char": [19, 21] }
+        { "start": 13.085, "end": 13.537, "char": [0, 1] },
+        { "start": 13.537, "end": 13.989, "char": [2, 9] },
+        { "start": 13.989, "end": 14.441, "char": [10, 11] },
+        { "start": 14.441, "end": 14.893, "char": [12, 17] }
       ]
     },
     {
-      "start": 14.014,
-      "end": 14.58,
+      "start": 14.893,
+      "end": 17.606,
+      "text": "pegue um token de API do",
+      "words": [
+        { "start": 14.893, "end": 15.346, "char": [0, 5] },
+        { "start": 15.346, "end": 15.798, "char": [6, 8] },
+        { "start": 15.798, "end": 16.25, "char": [9, 14] },
+        { "start": 16.25, "end": 16.702, "char": [15, 17] },
+        { "start": 16.702, "end": 17.154, "char": [18, 21] },
+        { "start": 17.154, "end": 17.606, "char": [22, 24] }
+      ]
+    },
+    {
+      "start": 17.606,
+      "end": 18.058,
       "text": "Cloudflare,",
-      "words": [{ "start": 14.014, "end": 14.58, "char": [0, 11] }]
+      "words": [{ "start": 17.606, "end": 18.058, "char": [0, 11] }]
     },
     {
-      "start": 14.58,
-      "end": 17.41,
-      "text": "configurar a infraestrutura na CLI,",
+      "start": 18.058,
+      "end": 20.771,
+      "text": "configure a infraestrutura uma vez no",
       "words": [
-        { "start": 14.58, "end": 15.146, "char": [0, 10] },
-        { "start": 15.146, "end": 15.712, "char": [11, 12] },
-        { "start": 15.712, "end": 16.278, "char": [13, 27] },
-        { "start": 16.278, "end": 16.844, "char": [28, 30] },
-        { "start": 16.844, "end": 17.41, "char": [31, 35] }
+        { "start": 18.058, "end": 18.51, "char": [0, 9] },
+        { "start": 18.51, "end": 18.963, "char": [10, 11] },
+        { "start": 18.963, "end": 19.415, "char": [12, 26] },
+        { "start": 19.415, "end": 19.867, "char": [27, 30] },
+        { "start": 19.867, "end": 20.319, "char": [31, 34] },
+        { "start": 20.319, "end": 20.771, "char": [35, 37] }
       ]
     },
     {
-      "start": 17.41,
-      "end": 19.674,
-      "text": "enviá-la para o servidor,",
+      "start": 20.771,
+      "end": 21.223,
+      "text": "CLI,",
+      "words": [{ "start": 20.771, "end": 21.223, "char": [0, 4] }]
+    },
+    {
+      "start": 21.223,
+      "end": 23.936,
+      "text": "envie para o servidor e depois",
       "words": [
-        { "start": 17.41, "end": 17.976, "char": [0, 8] },
-        { "start": 17.976, "end": 18.542, "char": [9, 13] },
-        { "start": 18.542, "end": 19.108, "char": [14, 15] },
-        { "start": 19.108, "end": 19.674, "char": [16, 25] }
+        { "start": 21.223, "end": 21.675, "char": [0, 5] },
+        { "start": 21.675, "end": 22.127, "char": [6, 10] },
+        { "start": 22.127, "end": 22.58, "char": [11, 12] },
+        { "start": 22.58, "end": 23.032, "char": [13, 21] },
+        { "start": 23.032, "end": 23.484, "char": [22, 23] },
+        { "start": 23.484, "end": 23.936, "char": [24, 30] }
       ]
     },
     {
-      "start": 19.674,
-      "end": 22.504,
-      "text": "e depois implementar um proxy",
+      "start": 23.936,
+      "end": 26.649,
+      "text": "implante um repo de proxy pequeno",
       "words": [
-        { "start": 19.674, "end": 20.24, "char": [0, 1] },
-        { "start": 20.24, "end": 20.806, "char": [2, 8] },
-        { "start": 20.806, "end": 21.372, "char": [9, 20] },
-        { "start": 21.372, "end": 21.938, "char": [21, 23] },
-        { "start": 21.938, "end": 22.504, "char": [24, 29] }
+        { "start": 23.936, "end": 24.388, "char": [0, 8] },
+        { "start": 24.388, "end": 24.84, "char": [9, 11] },
+        { "start": 24.84, "end": 25.292, "char": [12, 16] },
+        { "start": 25.292, "end": 25.744, "char": [17, 19] },
+        { "start": 25.744, "end": 26.196, "char": [20, 25] },
+        { "start": 26.196, "end": 26.649, "char": [26, 33] }
       ]
     },
     {
-      "start": 22.504,
-      "end": 25.334,
-      "text": "Traefik que trata do DNS",
+      "start": 26.649,
+      "end": 29.361,
+      "text": "que cuida do DNS e dos",
       "words": [
-        { "start": 22.504, "end": 23.07, "char": [0, 7] },
-        { "start": 23.07, "end": 23.636, "char": [8, 11] },
-        { "start": 23.636, "end": 24.202, "char": [12, 17] },
-        { "start": 24.202, "end": 24.768, "char": [18, 20] },
-        { "start": 24.768, "end": 25.334, "char": [21, 24] }
+        { "start": 26.649, "end": 27.101, "char": [0, 3] },
+        { "start": 27.101, "end": 27.553, "char": [4, 9] },
+        { "start": 27.553, "end": 28.005, "char": [10, 12] },
+        { "start": 28.005, "end": 28.457, "char": [13, 16] },
+        { "start": 28.457, "end": 28.909, "char": [17, 18] },
+        { "start": 28.909, "end": 29.361, "char": [19, 22] }
       ]
     },
     {
-      "start": 25.334,
-      "end": 28.164,
-      "text": "e dos certificados por si.",
+      "start": 29.361,
+      "end": 30.718,
+      "text": "certificados por você.",
       "words": [
-        { "start": 25.334, "end": 25.9, "char": [0, 1] },
-        { "start": 25.9, "end": 26.466, "char": [2, 5] },
-        { "start": 26.466, "end": 27.032, "char": [6, 18] },
-        { "start": 27.032, "end": 27.598, "char": [19, 22] },
-        { "start": 27.598, "end": 28.164, "char": [23, 26] }
+        { "start": 29.361, "end": 29.813, "char": [0, 12] },
+        { "start": 29.813, "end": 30.266, "char": [13, 16] },
+        { "start": 30.266, "end": 30.718, "char": [17, 22] }
       ]
     },
     {
-      "start": 28.931,
-      "end": 29.314,
+      "start": 31.185,
+      "end": 31.645,
       "text": "Primeiro,",
-      "words": [{ "start": 28.931, "end": 29.314, "char": [0, 9] }]
+      "words": [{ "start": 31.185, "end": 31.645, "char": [0, 9] }]
     },
     {
-      "start": 29.314,
-      "end": 31.992,
-      "text": "abra o painel do Cloudflare no browser.",
+      "start": 31.645,
+      "end": 33.485,
+      "text": "o único passo manual.",
       "words": [
-        { "start": 29.314, "end": 29.696, "char": [0, 4] },
-        { "start": 29.696, "end": 30.079, "char": [5, 6] },
-        { "start": 30.079, "end": 30.461, "char": [7, 13] },
-        { "start": 30.461, "end": 30.844, "char": [14, 16] },
-        { "start": 30.844, "end": 31.227, "char": [17, 27] },
-        { "start": 31.227, "end": 31.609, "char": [28, 30] },
-        { "start": 31.609, "end": 31.992, "char": [31, 39] }
+        { "start": 31.645, "end": 32.105, "char": [0, 1] },
+        { "start": 32.105, "end": 32.565, "char": [2, 7] },
+        { "start": 32.565, "end": 33.025, "char": [8, 13] },
+        { "start": 33.025, "end": 33.485, "char": [14, 21] }
       ]
     },
     {
-      "start": 31.992,
-      "end": 33.522,
-      "text": "Vá a My Profile,",
+      "start": 33.485,
+      "end": 35.785,
+      "text": "Abra o painel do Cloudflare,",
       "words": [
-        { "start": 31.992, "end": 32.375, "char": [0, 2] },
-        { "start": 32.375, "end": 32.757, "char": [3, 4] },
-        { "start": 32.757, "end": 33.14, "char": [5, 7] },
-        { "start": 33.14, "end": 33.522, "char": [8, 16] }
+        { "start": 33.485, "end": 33.945, "char": [0, 4] },
+        { "start": 33.945, "end": 34.405, "char": [5, 6] },
+        { "start": 34.405, "end": 34.865, "char": [7, 13] },
+        { "start": 34.865, "end": 35.325, "char": [14, 16] },
+        { "start": 35.325, "end": 35.785, "char": [17, 28] }
       ]
     },
     {
-      "start": 33.522,
-      "end": 34.67,
-      "text": "depois API Tokens,",
+      "start": 35.785,
+      "end": 37.625,
+      "text": "vá em My Profile,",
       "words": [
-        { "start": 33.522, "end": 33.905, "char": [0, 6] },
-        { "start": 33.905, "end": 34.288, "char": [7, 10] },
-        { "start": 34.288, "end": 34.67, "char": [11, 18] }
+        { "start": 35.785, "end": 36.245, "char": [0, 2] },
+        { "start": 36.245, "end": 36.705, "char": [3, 5] },
+        { "start": 36.705, "end": 37.165, "char": [6, 8] },
+        { "start": 37.165, "end": 37.625, "char": [9, 17] }
       ]
     },
     {
-      "start": 34.67,
-      "end": 37.349,
-      "text": "e crie um token com a permissão",
+      "start": 37.625,
+      "end": 39.465,
+      "text": "depois em API Tokens,",
       "words": [
-        { "start": 34.67, "end": 35.053, "char": [0, 1] },
-        { "start": 35.053, "end": 35.436, "char": [2, 6] },
-        { "start": 35.436, "end": 35.818, "char": [7, 9] },
-        { "start": 35.818, "end": 36.201, "char": [10, 15] },
-        { "start": 36.201, "end": 36.583, "char": [16, 19] },
-        { "start": 36.583, "end": 36.966, "char": [20, 21] },
-        { "start": 36.966, "end": 37.349, "char": [22, 31] }
+        { "start": 37.625, "end": 38.085, "char": [0, 6] },
+        { "start": 38.085, "end": 38.545, "char": [7, 9] },
+        { "start": 38.545, "end": 39.005, "char": [10, 13] },
+        { "start": 39.005, "end": 39.465, "char": [14, 21] }
       ]
     },
     {
-      "start": 37.349,
-      "end": 40.027,
-      "text": "Zone DNS Edit para que a CLI",
+      "start": 39.465,
+      "end": 42.225,
+      "text": "e crie um token com permissão",
       "words": [
-        { "start": 37.349, "end": 37.731, "char": [0, 4] },
-        { "start": 37.731, "end": 38.114, "char": [5, 8] },
-        { "start": 38.114, "end": 38.496, "char": [9, 13] },
-        { "start": 38.496, "end": 38.879, "char": [14, 18] },
-        { "start": 38.879, "end": 39.262, "char": [19, 22] },
-        { "start": 39.262, "end": 39.644, "char": [23, 24] },
-        { "start": 39.644, "end": 40.027, "char": [25, 28] }
+        { "start": 39.465, "end": 39.925, "char": [0, 1] },
+        { "start": 39.925, "end": 40.385, "char": [2, 6] },
+        { "start": 40.385, "end": 40.845, "char": [7, 9] },
+        { "start": 40.845, "end": 41.305, "char": [10, 15] },
+        { "start": 41.305, "end": 41.765, "char": [16, 19] },
+        { "start": 41.765, "end": 42.225, "char": [20, 29] }
       ]
     },
     {
-      "start": 40.027,
-      "end": 41.94,
-      "text": "possa gerir os seus registos.",
+      "start": 42.225,
+      "end": 43.605,
+      "text": "Zone DNS Edit.",
       "words": [
-        { "start": 40.027, "end": 40.41, "char": [0, 5] },
-        { "start": 40.41, "end": 40.792, "char": [6, 11] },
-        { "start": 40.792, "end": 41.175, "char": [12, 14] },
-        { "start": 41.175, "end": 41.557, "char": [15, 19] },
-        { "start": 41.557, "end": 41.94, "char": [20, 29] }
+        { "start": 42.225, "end": 42.685, "char": [0, 4] },
+        { "start": 42.685, "end": 43.145, "char": [5, 8] },
+        { "start": 43.145, "end": 43.605, "char": [9, 14] }
       ]
     },
     {
-      "start": 45.211,
-      "end": 45.934,
+      "start": 43.605,
+      "end": 46.364,
+      "text": "Esse token único permite que o",
+      "words": [
+        { "start": 43.605, "end": 44.065, "char": [0, 4] },
+        { "start": 44.065, "end": 44.524, "char": [5, 10] },
+        { "start": 44.524, "end": 44.984, "char": [11, 16] },
+        { "start": 44.984, "end": 45.444, "char": [17, 24] },
+        { "start": 45.444, "end": 45.904, "char": [25, 28] },
+        { "start": 45.904, "end": 46.364, "char": [29, 30] }
+      ]
+    },
+    {
+      "start": 46.364,
+      "end": 48.664,
+      "text": "CLI gerencie seus registros DNS,",
+      "words": [
+        { "start": 46.364, "end": 46.824, "char": [0, 3] },
+        { "start": 46.824, "end": 47.284, "char": [4, 12] },
+        { "start": 47.284, "end": 47.744, "char": [13, 17] },
+        { "start": 47.744, "end": 48.204, "char": [18, 27] },
+        { "start": 48.204, "end": 48.664, "char": [28, 32] }
+      ]
+    },
+    {
+      "start": 48.664,
+      "end": 51.424,
+      "text": "então você nunca mais precisa navegar",
+      "words": [
+        { "start": 48.664, "end": 49.124, "char": [0, 5] },
+        { "start": 49.124, "end": 49.584, "char": [6, 10] },
+        { "start": 49.584, "end": 50.044, "char": [11, 16] },
+        { "start": 50.044, "end": 50.504, "char": [17, 21] },
+        { "start": 50.504, "end": 50.964, "char": [22, 29] },
+        { "start": 50.964, "end": 51.424, "char": [30, 37] }
+      ]
+    },
+    {
+      "start": 51.424,
+      "end": 52.344,
+      "text": "por painéis.",
+      "words": [
+        { "start": 51.424, "end": 51.884, "char": [0, 3] },
+        { "start": 51.884, "end": 52.344, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 55.285,
+      "end": 56.008,
       "text": "Passo dois.",
       "words": [
-        { "start": 45.211, "end": 45.572, "char": [0, 5] },
-        { "start": 45.572, "end": 45.934, "char": [6, 11] }
+        { "start": 55.285, "end": 55.646, "char": [0, 5] },
+        { "start": 55.646, "end": 56.008, "char": [6, 11] }
       ]
     },
     {
-      "start": 45.934,
-      "end": 47.741,
+      "start": 56.008,
+      "end": 57.815,
       "text": "Vamos definir o IP público,",
       "words": [
-        { "start": 45.934, "end": 46.295, "char": [0, 5] },
-        { "start": 46.295, "end": 46.657, "char": [6, 13] },
-        { "start": 46.657, "end": 47.018, "char": [14, 15] },
-        { "start": 47.018, "end": 47.38, "char": [16, 18] },
-        { "start": 47.38, "end": 47.741, "char": [19, 27] }
+        { "start": 56.008, "end": 56.369, "char": [0, 5] },
+        { "start": 56.369, "end": 56.731, "char": [6, 13] },
+        { "start": 56.731, "end": 57.092, "char": [14, 15] },
+        { "start": 57.092, "end": 57.454, "char": [16, 18] },
+        { "start": 57.454, "end": 57.815, "char": [19, 27] }
       ]
     },
     {
-      "start": 47.741,
-      "end": 48.826,
+      "start": 57.815,
+      "end": 58.9,
       "text": "o domínio base,",
       "words": [
-        { "start": 47.741, "end": 48.103, "char": [0, 1] },
-        { "start": 48.103, "end": 48.464, "char": [2, 9] },
-        { "start": 48.464, "end": 48.826, "char": [10, 15] }
+        { "start": 57.815, "end": 58.177, "char": [0, 1] },
+        { "start": 58.177, "end": 58.538, "char": [2, 9] },
+        { "start": 58.538, "end": 58.9, "char": [10, 15] }
       ]
     },
     {
-      "start": 48.826,
-      "end": 51.356,
+      "start": 58.9,
+      "end": 61.43,
       "text": "o endereço de e-mail para certificados e",
       "words": [
-        { "start": 48.826, "end": 49.187, "char": [0, 1] },
-        { "start": 49.187, "end": 49.548, "char": [2, 10] },
-        { "start": 49.548, "end": 49.91, "char": [11, 13] },
-        { "start": 49.91, "end": 50.271, "char": [14, 20] },
-        { "start": 50.271, "end": 50.633, "char": [21, 25] },
-        { "start": 50.633, "end": 50.994, "char": [26, 38] },
-        { "start": 50.994, "end": 51.356, "char": [39, 40] }
+        { "start": 58.9, "end": 59.261, "char": [0, 1] },
+        { "start": 59.261, "end": 59.622, "char": [2, 10] },
+        { "start": 59.622, "end": 59.984, "char": [11, 13] },
+        { "start": 59.984, "end": 60.345, "char": [14, 20] },
+        { "start": 60.345, "end": 60.707, "char": [21, 25] },
+        { "start": 60.707, "end": 61.068, "char": [26, 38] },
+        { "start": 61.068, "end": 61.43, "char": [39, 40] }
       ]
     },
     {
-      "start": 51.356,
-      "end": 53.886,
+      "start": 61.43,
+      "end": 63.96,
       "text": "o token API do Cloudflare a partir",
       "words": [
-        { "start": 51.356, "end": 51.717, "char": [0, 1] },
-        { "start": 51.717, "end": 52.079, "char": [2, 7] },
-        { "start": 52.079, "end": 52.44, "char": [8, 11] },
-        { "start": 52.44, "end": 52.801, "char": [12, 14] },
-        { "start": 52.801, "end": 53.163, "char": [15, 25] },
-        { "start": 53.163, "end": 53.524, "char": [26, 27] },
-        { "start": 53.524, "end": 53.886, "char": [28, 34] }
+        { "start": 61.43, "end": 61.791, "char": [0, 1] },
+        { "start": 61.791, "end": 62.153, "char": [2, 7] },
+        { "start": 62.153, "end": 62.514, "char": [8, 11] },
+        { "start": 62.514, "end": 62.875, "char": [12, 14] },
+        { "start": 62.875, "end": 63.237, "char": [15, 25] },
+        { "start": 63.237, "end": 63.598, "char": [26, 27] },
+        { "start": 63.598, "end": 63.96, "char": [28, 34] }
       ]
     },
     {
-      "start": 53.886,
-      "end": 55.332,
+      "start": 63.96,
+      "end": 65.406,
       "text": "da linha de comandos.",
       "words": [
-        { "start": 53.886, "end": 54.247, "char": [0, 2] },
-        { "start": 54.247, "end": 54.609, "char": [3, 8] },
-        { "start": 54.609, "end": 54.97, "char": [9, 11] },
-        { "start": 54.97, "end": 55.332, "char": [12, 21] }
+        { "start": 63.96, "end": 64.321, "char": [0, 2] },
+        { "start": 64.321, "end": 64.683, "char": [3, 8] },
+        { "start": 64.683, "end": 65.044, "char": [9, 11] },
+        { "start": 65.044, "end": 65.406, "char": [12, 21] }
       ]
     },
     {
-      "start": 55.332,
-      "end": 57.862,
+      "start": 65.406,
+      "end": 67.936,
       "text": "O endereço de e-mail e o token",
       "words": [
-        { "start": 55.332, "end": 55.693, "char": [0, 1] },
-        { "start": 55.693, "end": 56.055, "char": [2, 10] },
-        { "start": 56.055, "end": 56.416, "char": [11, 13] },
-        { "start": 56.416, "end": 56.777, "char": [14, 20] },
-        { "start": 56.777, "end": 57.139, "char": [21, 22] },
-        { "start": 57.139, "end": 57.5, "char": [23, 24] },
-        { "start": 57.5, "end": 57.862, "char": [25, 30] }
+        { "start": 65.406, "end": 65.767, "char": [0, 1] },
+        { "start": 65.767, "end": 66.128, "char": [2, 10] },
+        { "start": 66.128, "end": 66.49, "char": [11, 13] },
+        { "start": 66.49, "end": 66.851, "char": [14, 20] },
+        { "start": 66.851, "end": 67.213, "char": [21, 22] },
+        { "start": 67.213, "end": 67.574, "char": [23, 24] },
+        { "start": 67.574, "end": 67.936, "char": [25, 30] }
       ]
     },
     {
-      "start": 57.862,
-      "end": 60.03,
+      "start": 67.936,
+      "end": 70.104,
       "text": "são partilhados por todas as máquinas,",
       "words": [
-        { "start": 57.862, "end": 58.223, "char": [0, 3] },
-        { "start": 58.223, "end": 58.585, "char": [4, 15] },
-        { "start": 58.585, "end": 58.946, "char": [16, 19] },
-        { "start": 58.946, "end": 59.308, "char": [20, 25] },
-        { "start": 59.308, "end": 59.669, "char": [26, 28] },
-        { "start": 59.669, "end": 60.03, "char": [29, 38] }
+        { "start": 67.936, "end": 68.297, "char": [0, 3] },
+        { "start": 68.297, "end": 68.659, "char": [4, 15] },
+        { "start": 68.659, "end": 69.02, "char": [16, 19] },
+        { "start": 69.02, "end": 69.382, "char": [20, 25] },
+        { "start": 69.382, "end": 69.743, "char": [26, 28] },
+        { "start": 69.743, "end": 70.104, "char": [29, 38] }
       ]
     },
     {
-      "start": 60.03,
-      "end": 62.561,
+      "start": 70.104,
+      "end": 72.635,
       "text": "por isso só é necessário defini-los uma",
       "words": [
-        { "start": 60.03, "end": 60.392, "char": [0, 3] },
-        { "start": 60.392, "end": 60.753, "char": [4, 8] },
-        { "start": 60.753, "end": 61.115, "char": [9, 11] },
-        { "start": 61.115, "end": 61.476, "char": [12, 13] },
-        { "start": 61.476, "end": 61.838, "char": [14, 24] },
-        { "start": 61.838, "end": 62.199, "char": [25, 35] },
-        { "start": 62.199, "end": 62.561, "char": [36, 39] }
+        { "start": 70.104, "end": 70.466, "char": [0, 3] },
+        { "start": 70.466, "end": 70.827, "char": [4, 8] },
+        { "start": 70.827, "end": 71.189, "char": [9, 11] },
+        { "start": 71.189, "end": 71.55, "char": [12, 13] },
+        { "start": 71.55, "end": 71.912, "char": [14, 24] },
+        { "start": 71.912, "end": 72.273, "char": [25, 35] },
+        { "start": 72.273, "end": 72.635, "char": [36, 39] }
       ]
     },
     {
-      "start": 62.561,
-      "end": 62.922,
+      "start": 72.635,
+      "end": 72.996,
       "text": "vez.",
-      "words": [{ "start": 62.561, "end": 62.922, "char": [0, 4] }]
+      "words": [{ "start": 72.635, "end": 72.996, "char": [0, 4] }]
     },
     {
-      "start": 63.722,
-      "end": 66.376,
+      "start": 74.996,
+      "end": 77.65,
       "text": "Infraestrutura registada na sua",
       "words": [
-        { "start": 63.722, "end": 64.386, "char": [0, 14] },
-        { "start": 64.386, "end": 65.049, "char": [15, 24] },
-        { "start": 65.049, "end": 65.713, "char": [25, 27] },
-        { "start": 65.713, "end": 66.376, "char": [28, 31] }
+        { "start": 74.996, "end": 75.66, "char": [0, 14] },
+        { "start": 75.66, "end": 76.323, "char": [15, 24] },
+        { "start": 76.323, "end": 76.987, "char": [25, 27] },
+        { "start": 76.987, "end": 77.65, "char": [28, 31] }
       ]
     },
     {
-      "start": 66.376,
-      "end": 67.04,
+      "start": 77.65,
+      "end": 78.314,
       "text": "configuração.",
-      "words": [{ "start": 66.376, "end": 67.04, "char": [0, 13] }]
+      "words": [{ "start": 77.65, "end": 78.314, "char": [0, 13] }]
     },
     {
-      "start": 70.364,
-      "end": 73.175,
+      "start": 81.605,
+      "end": 84.416,
       "text": "Vamos confirmar que as definições",
       "words": [
-        { "start": 70.364, "end": 70.926, "char": [0, 5] },
-        { "start": 70.926, "end": 71.489, "char": [6, 15] },
-        { "start": 71.489, "end": 72.051, "char": [16, 19] },
-        { "start": 72.051, "end": 72.613, "char": [20, 22] },
-        { "start": 72.613, "end": 73.175, "char": [23, 33] }
+        { "start": 81.605, "end": 82.167, "char": [0, 5] },
+        { "start": 82.167, "end": 82.73, "char": [6, 15] },
+        { "start": 82.73, "end": 83.292, "char": [16, 19] },
+        { "start": 83.292, "end": 83.854, "char": [20, 22] },
+        { "start": 83.854, "end": 84.416, "char": [23, 33] }
       ]
     },
     {
-      "start": 73.175,
-      "end": 75.424,
+      "start": 84.416,
+      "end": 86.665,
       "text": "de infraestrutura foram guardadas.",
       "words": [
-        { "start": 73.175, "end": 73.738, "char": [0, 2] },
-        { "start": 73.738, "end": 74.3, "char": [3, 17] },
-        { "start": 74.3, "end": 74.862, "char": [18, 23] },
-        { "start": 74.862, "end": 75.424, "char": [24, 34] }
+        { "start": 84.416, "end": 84.979, "char": [0, 2] },
+        { "start": 84.979, "end": 85.541, "char": [3, 17] },
+        { "start": 85.541, "end": 86.103, "char": [18, 23] },
+        { "start": 86.103, "end": 86.665, "char": [24, 34] }
       ]
     },
     {
-      "start": 75.424,
-      "end": 76.549,
+      "start": 86.665,
+      "end": 87.79,
       "text": "IP público,",
       "words": [
-        { "start": 75.424, "end": 75.987, "char": [0, 2] },
-        { "start": 75.987, "end": 76.549, "char": [3, 11] }
+        { "start": 86.665, "end": 87.228, "char": [0, 2] },
+        { "start": 87.228, "end": 87.79, "char": [3, 11] }
       ]
     },
     {
-      "start": 76.549,
-      "end": 77.673,
+      "start": 87.79,
+      "end": 88.914,
       "text": "domínio base,",
       "words": [
-        { "start": 76.549, "end": 77.111, "char": [0, 7] },
-        { "start": 77.111, "end": 77.673, "char": [8, 13] }
+        { "start": 87.79, "end": 88.352, "char": [0, 7] },
+        { "start": 88.352, "end": 88.914, "char": [8, 13] }
       ]
     },
     {
-      "start": 77.673,
-      "end": 80.485,
+      "start": 88.914,
+      "end": 91.726,
       "text": "endereço de e-mail para certificados",
       "words": [
-        { "start": 77.673, "end": 78.236, "char": [0, 8] },
-        { "start": 78.236, "end": 78.798, "char": [9, 11] },
-        { "start": 78.798, "end": 79.36, "char": [12, 18] },
-        { "start": 79.36, "end": 79.922, "char": [19, 23] },
-        { "start": 79.922, "end": 80.485, "char": [24, 36] }
+        { "start": 88.914, "end": 89.477, "char": [0, 8] },
+        { "start": 89.477, "end": 90.039, "char": [9, 11] },
+        { "start": 90.039, "end": 90.601, "char": [12, 18] },
+        { "start": 90.601, "end": 91.163, "char": [19, 23] },
+        { "start": 91.163, "end": 91.726, "char": [24, 36] }
       ]
     },
     {
-      "start": 80.485,
-      "end": 82.171,
+      "start": 91.726,
+      "end": 93.412,
       "text": "-- tudo visível.",
       "words": [
-        { "start": 80.485, "end": 81.047, "char": [0, 2] },
-        { "start": 81.047, "end": 81.609, "char": [3, 7] },
-        { "start": 81.609, "end": 82.171, "char": [8, 16] }
+        { "start": 91.726, "end": 92.288, "char": [0, 2] },
+        { "start": 92.288, "end": 92.85, "char": [3, 7] },
+        { "start": 92.85, "end": 93.412, "char": [8, 16] }
       ]
     },
     {
-      "start": 83.921,
-      "end": 84.981,
+      "start": 95.162,
+      "end": 96.222,
       "text": "Definições guardadas.",
       "words": [
-        { "start": 83.921, "end": 84.451, "char": [0, 10] },
-        { "start": 84.451, "end": 84.981, "char": [11, 21] }
+        { "start": 95.162, "end": 95.692, "char": [0, 10] },
+        { "start": 95.692, "end": 96.222, "char": [11, 21] }
       ]
     },
     {
-      "start": 84.981,
-      "end": 87.631,
+      "start": 96.222,
+      "end": 98.872,
       "text": "Pronto para enviar ao servidor.",
       "words": [
-        { "start": 84.981, "end": 85.511, "char": [0, 6] },
-        { "start": 85.511, "end": 86.041, "char": [7, 11] },
-        { "start": 86.041, "end": 86.571, "char": [12, 18] },
-        { "start": 86.571, "end": 87.101, "char": [19, 21] },
-        { "start": 87.101, "end": 87.631, "char": [22, 31] }
+        { "start": 96.222, "end": 96.752, "char": [0, 6] },
+        { "start": 96.752, "end": 97.282, "char": [7, 11] },
+        { "start": 97.282, "end": 97.812, "char": [12, 18] },
+        { "start": 97.812, "end": 98.342, "char": [19, 21] },
+        { "start": 98.342, "end": 98.872, "char": [22, 31] }
       ]
     },
     {
-      "start": 90.962,
-      "end": 91.891,
-      "text": "Passo três.",
+      "start": 102.203,
+      "end": 103.296,
+      "text": "Passo três:",
       "words": [
-        { "start": 90.962, "end": 91.427, "char": [0, 5] },
-        { "start": 91.427, "end": 91.891, "char": [6, 11] }
+        { "start": 102.203, "end": 102.75, "char": [0, 5] },
+        { "start": 102.75, "end": 103.296, "char": [6, 11] }
       ]
     },
     {
-      "start": 91.891,
-      "end": 94.678,
-      "text": "Vamos enviar a configuração para o",
+      "start": 103.296,
+      "end": 106.029,
+      "text": "envie a configuração para o",
       "words": [
-        { "start": 91.891, "end": 92.356, "char": [0, 5] },
-        { "start": 92.356, "end": 92.82, "char": [6, 12] },
-        { "start": 92.82, "end": 93.285, "char": [13, 14] },
-        { "start": 93.285, "end": 93.749, "char": [15, 27] },
-        { "start": 93.749, "end": 94.214, "char": [28, 32] },
-        { "start": 94.214, "end": 94.678, "char": [33, 34] }
+        { "start": 103.296, "end": 103.843, "char": [0, 5] },
+        { "start": 103.843, "end": 104.389, "char": [6, 7] },
+        { "start": 104.389, "end": 104.936, "char": [8, 20] },
+        { "start": 104.936, "end": 105.482, "char": [21, 25] },
+        { "start": 105.482, "end": 106.029, "char": [26, 27] }
       ]
     },
     {
-      "start": 94.678,
-      "end": 95.143,
+      "start": 106.029,
+      "end": 106.576,
       "text": "servidor.",
-      "words": [{ "start": 94.678, "end": 95.143, "char": [0, 9] }]
+      "words": [{ "start": 106.029, "end": 106.576, "char": [0, 9] }]
     },
     {
-      "start": 95.143,
-      "end": 97.93,
-      "text": "Isto cria automaticamente os registos DNS",
+      "start": 106.576,
+      "end": 108.762,
+      "text": "Com um token real,",
       "words": [
-        { "start": 95.143, "end": 95.607, "char": [0, 4] },
-        { "start": 95.607, "end": 96.072, "char": [5, 9] },
-        { "start": 96.072, "end": 96.536, "char": [10, 25] },
-        { "start": 96.536, "end": 97.001, "char": [26, 28] },
-        { "start": 97.001, "end": 97.465, "char": [29, 37] },
-        { "start": 97.465, "end": 97.93, "char": [38, 41] }
+        { "start": 106.576, "end": 107.122, "char": [0, 3] },
+        { "start": 107.122, "end": 107.669, "char": [4, 6] },
+        { "start": 107.669, "end": 108.215, "char": [7, 12] },
+        { "start": 108.215, "end": 108.762, "char": [13, 18] }
       ]
     },
     {
-      "start": 97.93,
-      "end": 100.717,
-      "text": "no Cloudflare e prepara a configuração",
+      "start": 108.762,
+      "end": 111.495,
+      "text": "isso cria seus registros DNS",
       "words": [
-        { "start": 97.93, "end": 98.394, "char": [0, 2] },
-        { "start": 98.394, "end": 98.859, "char": [3, 13] },
-        { "start": 98.859, "end": 99.323, "char": [14, 15] },
-        { "start": 99.323, "end": 99.788, "char": [16, 23] },
-        { "start": 99.788, "end": 100.253, "char": [24, 25] },
-        { "start": 100.253, "end": 100.717, "char": [26, 38] }
+        { "start": 108.762, "end": 109.308, "char": [0, 4] },
+        { "start": 109.308, "end": 109.855, "char": [5, 9] },
+        { "start": 109.855, "end": 110.401, "char": [10, 14] },
+        { "start": 110.401, "end": 110.948, "char": [15, 24] },
+        { "start": 110.948, "end": 111.495, "char": [25, 28] }
       ]
     },
     {
-      "start": 100.717,
-      "end": 101.646,
-      "text": "do proxy.",
+      "start": 111.495,
+      "end": 114.227,
+      "text": "no Cloudflare automaticamente e prepara",
       "words": [
-        { "start": 100.717, "end": 101.182, "char": [0, 2] },
-        { "start": 101.182, "end": 101.646, "char": [3, 9] }
+        { "start": 111.495, "end": 112.041, "char": [0, 2] },
+        { "start": 112.041, "end": 112.588, "char": [3, 13] },
+        { "start": 112.588, "end": 113.134, "char": [14, 29] },
+        { "start": 113.134, "end": 113.681, "char": [30, 31] },
+        { "start": 113.681, "end": 114.227, "char": [32, 39] }
       ]
     },
     {
-      "start": 104.646,
-      "end": 105.153,
+      "start": 114.227,
+      "end": 116.414,
+      "text": "a configuração do proxy.",
+      "words": [
+        { "start": 114.227, "end": 114.774, "char": [0, 1] },
+        { "start": 114.774, "end": 115.321, "char": [2, 14] },
+        { "start": 115.321, "end": 115.867, "char": [15, 17] },
+        { "start": 115.867, "end": 116.414, "char": [18, 24] }
+      ]
+    },
+    {
+      "start": 117.214,
+      "end": 117.72,
       "text": "Enviada.",
-      "words": [{ "start": 104.646, "end": 105.153, "char": [0, 8] }]
+      "words": [{ "start": 117.214, "end": 117.72, "char": [0, 8] }]
     },
     {
-      "start": 105.153,
-      "end": 107.687,
+      "start": 117.72,
+      "end": 120.254,
       "text": "Os registos DNS estão a",
       "words": [
-        { "start": 105.153, "end": 105.66, "char": [0, 2] },
-        { "start": 105.66, "end": 106.166, "char": [3, 11] },
-        { "start": 106.166, "end": 106.673, "char": [12, 15] },
-        { "start": 106.673, "end": 107.18, "char": [16, 21] },
-        { "start": 107.18, "end": 107.687, "char": [22, 23] }
+        { "start": 117.72, "end": 118.227, "char": [0, 2] },
+        { "start": 118.227, "end": 118.734, "char": [3, 11] },
+        { "start": 118.734, "end": 119.241, "char": [12, 15] },
+        { "start": 119.241, "end": 119.748, "char": [16, 21] },
+        { "start": 119.748, "end": 120.254, "char": [22, 23] }
       ]
     },
     {
-      "start": 107.687,
-      "end": 109.714,
+      "start": 120.254,
+      "end": 122.281,
       "text": "ser criados no Cloudflare.",
       "words": [
-        { "start": 107.687, "end": 108.194, "char": [0, 3] },
-        { "start": 108.194, "end": 108.7, "char": [4, 11] },
-        { "start": 108.7, "end": 109.207, "char": [12, 14] },
-        { "start": 109.207, "end": 109.714, "char": [15, 26] }
+        { "start": 120.254, "end": 120.761, "char": [0, 3] },
+        { "start": 120.761, "end": 121.268, "char": [4, 11] },
+        { "start": 121.268, "end": 121.775, "char": [12, 14] },
+        { "start": 121.775, "end": 122.281, "char": [15, 26] }
       ]
     },
     {
-      "start": 113.047,
-      "end": 114.71,
-      "text": "Começa o passo quatro.",
+      "start": 125.621,
+      "end": 126.578,
+      "text": "Passo quatro:",
       "words": [
-        { "start": 113.047, "end": 113.463, "char": [0, 6] },
-        { "start": 113.463, "end": 113.878, "char": [7, 8] },
-        { "start": 113.878, "end": 114.294, "char": [9, 14] },
-        { "start": 114.294, "end": 114.71, "char": [15, 22] }
+        { "start": 125.621, "end": 126.1, "char": [0, 5] },
+        { "start": 126.1, "end": 126.578, "char": [6, 13] }
       ]
     },
     {
-      "start": 114.71,
-      "end": 117.62,
-      "text": "Vamos criar um pequeno repositório chamado infra.",
+      "start": 126.578,
+      "end": 129.45,
+      "text": "crie um repo pequeno chamado infra.",
       "words": [
-        { "start": 114.71, "end": 115.125, "char": [0, 5] },
-        { "start": 115.125, "end": 115.541, "char": [6, 11] },
-        { "start": 115.541, "end": 115.957, "char": [12, 14] },
-        { "start": 115.957, "end": 116.373, "char": [15, 22] },
-        { "start": 116.373, "end": 116.788, "char": [23, 34] },
-        { "start": 116.788, "end": 117.204, "char": [35, 42] },
-        { "start": 117.204, "end": 117.62, "char": [43, 49] }
+        { "start": 126.578, "end": 127.057, "char": [0, 4] },
+        { "start": 127.057, "end": 127.536, "char": [5, 7] },
+        { "start": 127.536, "end": 128.014, "char": [8, 12] },
+        { "start": 128.014, "end": 128.493, "char": [13, 20] },
+        { "start": 128.493, "end": 128.972, "char": [21, 28] },
+        { "start": 128.972, "end": 129.45, "char": [29, 35] }
       ]
     },
     {
-      "start": 117.62,
-      "end": 120.529,
-      "text": "É aqui que o proxy vai viver,",
+      "start": 129.45,
+      "end": 131.844,
+      "text": "Por que um repo próprio?",
       "words": [
-        { "start": 117.62, "end": 118.035, "char": [0, 1] },
-        { "start": 118.035, "end": 118.451, "char": [2, 6] },
-        { "start": 118.451, "end": 118.867, "char": [7, 10] },
-        { "start": 118.867, "end": 119.282, "char": [11, 12] },
-        { "start": 119.282, "end": 119.698, "char": [13, 18] },
-        { "start": 119.698, "end": 120.114, "char": [19, 22] },
-        { "start": 120.114, "end": 120.529, "char": [23, 29] }
+        { "start": 129.45, "end": 129.929, "char": [0, 3] },
+        { "start": 129.929, "end": 130.408, "char": [4, 7] },
+        { "start": 130.408, "end": 130.886, "char": [8, 10] },
+        { "start": 130.886, "end": 131.365, "char": [11, 15] },
+        { "start": 131.365, "end": 131.844, "char": [16, 24] }
       ]
     },
     {
-      "start": 120.529,
-      "end": 122.608,
-      "text": "isolado dos repositórios de aplicações.",
+      "start": 131.844,
+      "end": 134.716,
+      "text": "O proxy roteia o tráfego de",
       "words": [
-        { "start": 120.529, "end": 120.945, "char": [0, 7] },
-        { "start": 120.945, "end": 121.361, "char": [8, 11] },
-        { "start": 121.361, "end": 121.776, "char": [12, 24] },
-        { "start": 121.776, "end": 122.192, "char": [25, 27] },
-        { "start": 122.192, "end": 122.608, "char": [28, 39] }
+        { "start": 131.844, "end": 132.322, "char": [0, 1] },
+        { "start": 132.322, "end": 132.801, "char": [2, 7] },
+        { "start": 132.801, "end": 133.28, "char": [8, 14] },
+        { "start": 133.28, "end": 133.759, "char": [15, 16] },
+        { "start": 133.759, "end": 134.237, "char": [17, 24] },
+        { "start": 134.237, "end": 134.716, "char": [25, 27] }
       ]
     },
     {
-      "start": 125.608,
-      "end": 127.479,
+      "start": 134.716,
+      "end": 137.109,
+      "text": "todos os aplicativos neste servidor.",
+      "words": [
+        { "start": 134.716, "end": 135.195, "char": [0, 5] },
+        { "start": 135.195, "end": 135.673, "char": [6, 8] },
+        { "start": 135.673, "end": 136.152, "char": [9, 20] },
+        { "start": 136.152, "end": 136.631, "char": [21, 26] },
+        { "start": 136.631, "end": 137.109, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 137.109,
+      "end": 139.981,
+      "text": "A infraestrutura merece sua própria caixa",
+      "words": [
+        { "start": 137.109, "end": 137.588, "char": [0, 1] },
+        { "start": 137.588, "end": 138.067, "char": [2, 16] },
+        { "start": 138.067, "end": 138.545, "char": [17, 23] },
+        { "start": 138.545, "end": 139.024, "char": [24, 27] },
+        { "start": 139.024, "end": 139.503, "char": [28, 35] },
+        { "start": 139.503, "end": 139.981, "char": [36, 41] }
+      ]
+    },
+    {
+      "start": 139.981,
+      "end": 140.46,
+      "text": "isolada,",
+      "words": [{ "start": 139.981, "end": 140.46, "char": [0, 8] }]
+    },
+    {
+      "start": 140.46,
+      "end": 143.332,
+      "text": "separada do seu código de aplicação.",
+      "words": [
+        { "start": 140.46, "end": 140.939, "char": [0, 8] },
+        { "start": 140.939, "end": 141.417, "char": [9, 11] },
+        { "start": 141.417, "end": 141.896, "char": [12, 15] },
+        { "start": 141.896, "end": 142.375, "char": [16, 22] },
+        { "start": 142.375, "end": 142.853, "char": [23, 25] },
+        { "start": 142.853, "end": 143.332, "char": [26, 36] }
+      ]
+    },
+    {
+      "start": 146.332,
+      "end": 148.203,
       "text": "Repositório infra criado.",
       "words": [
-        { "start": 125.608, "end": 126.232, "char": [0, 11] },
-        { "start": 126.232, "end": 126.855, "char": [12, 17] },
-        { "start": 126.855, "end": 127.479, "char": [18, 25] }
+        { "start": 146.332, "end": 146.956, "char": [0, 11] },
+        { "start": 146.956, "end": 147.579, "char": [12, 17] },
+        { "start": 147.579, "end": 148.203, "char": [18, 25] }
       ]
     },
     {
-      "start": 127.479,
-      "end": 130.597,
+      "start": 148.203,
+      "end": 151.321,
       "text": "Isolado dos repos de aplicações.",
       "words": [
-        { "start": 127.479, "end": 128.103, "char": [0, 7] },
-        { "start": 128.103, "end": 128.726, "char": [8, 11] },
-        { "start": 128.726, "end": 129.35, "char": [12, 17] },
-        { "start": 129.35, "end": 129.974, "char": [18, 20] },
-        { "start": 129.974, "end": 130.597, "char": [21, 32] }
+        { "start": 148.203, "end": 148.827, "char": [0, 7] },
+        { "start": 148.827, "end": 149.45, "char": [8, 11] },
+        { "start": 149.45, "end": 150.074, "char": [12, 17] },
+        { "start": 150.074, "end": 150.698, "char": [18, 20] },
+        { "start": 150.698, "end": 151.321, "char": [21, 32] }
       ]
     },
     {
-      "start": 133.905,
-      "end": 136.488,
+      "start": 154.646,
+      "end": 157.229,
       "text": "Vamos aplicar o template de proxy.",
       "words": [
-        { "start": 133.905, "end": 134.336, "char": [0, 5] },
-        { "start": 134.336, "end": 134.766, "char": [6, 13] },
-        { "start": 134.766, "end": 135.197, "char": [14, 15] },
-        { "start": 135.197, "end": 135.627, "char": [16, 24] },
-        { "start": 135.627, "end": 136.058, "char": [25, 27] },
-        { "start": 136.058, "end": 136.488, "char": [28, 34] }
+        { "start": 154.646, "end": 155.077, "char": [0, 5] },
+        { "start": 155.077, "end": 155.507, "char": [6, 13] },
+        { "start": 155.507, "end": 155.938, "char": [14, 15] },
+        { "start": 155.938, "end": 156.368, "char": [16, 24] },
+        { "start": 156.368, "end": 156.799, "char": [25, 27] },
+        { "start": 156.799, "end": 157.229, "char": [28, 34] }
       ]
     },
     {
-      "start": 136.488,
-      "end": 139.071,
+      "start": 157.229,
+      "end": 159.812,
       "text": "Inclui o Traefik mais a configuração",
       "words": [
-        { "start": 136.488, "end": 136.919, "char": [0, 6] },
-        { "start": 136.919, "end": 137.349, "char": [7, 8] },
-        { "start": 137.349, "end": 137.78, "char": [9, 16] },
-        { "start": 137.78, "end": 138.21, "char": [17, 21] },
-        { "start": 138.21, "end": 138.641, "char": [22, 23] },
-        { "start": 138.641, "end": 139.071, "char": [24, 36] }
+        { "start": 157.229, "end": 157.66, "char": [0, 6] },
+        { "start": 157.66, "end": 158.09, "char": [7, 8] },
+        { "start": 158.09, "end": 158.521, "char": [9, 16] },
+        { "start": 158.521, "end": 158.951, "char": [17, 21] },
+        { "start": 158.951, "end": 159.382, "char": [22, 23] },
+        { "start": 159.382, "end": 159.812, "char": [24, 36] }
       ]
     },
     {
-      "start": 139.071,
-      "end": 141.654,
+      "start": 159.812,
+      "end": 162.395,
       "text": "para o Let's Encrypt e os",
       "words": [
-        { "start": 139.071, "end": 139.502, "char": [0, 4] },
-        { "start": 139.502, "end": 139.932, "char": [5, 6] },
-        { "start": 139.932, "end": 140.363, "char": [7, 12] },
-        { "start": 140.363, "end": 140.793, "char": [13, 20] },
-        { "start": 140.793, "end": 141.223, "char": [21, 22] },
-        { "start": 141.223, "end": 141.654, "char": [23, 25] }
+        { "start": 159.812, "end": 160.243, "char": [0, 4] },
+        { "start": 160.243, "end": 160.673, "char": [5, 6] },
+        { "start": 160.673, "end": 161.104, "char": [7, 12] },
+        { "start": 161.104, "end": 161.534, "char": [13, 20] },
+        { "start": 161.534, "end": 161.964, "char": [21, 22] },
+        { "start": 161.964, "end": 162.395, "char": [23, 25] }
       ]
     },
     {
-      "start": 141.654,
-      "end": 143.376,
+      "start": 162.395,
+      "end": 164.117,
       "text": "desafios DNS-01 do Cloudflare,",
       "words": [
-        { "start": 141.654, "end": 142.084, "char": [0, 8] },
-        { "start": 142.084, "end": 142.515, "char": [9, 15] },
-        { "start": 142.515, "end": 142.945, "char": [16, 18] },
-        { "start": 142.945, "end": 143.376, "char": [19, 30] }
+        { "start": 162.395, "end": 162.825, "char": [0, 8] },
+        { "start": 162.825, "end": 163.256, "char": [9, 15] },
+        { "start": 163.256, "end": 163.686, "char": [16, 18] },
+        { "start": 163.686, "end": 164.117, "char": [19, 30] }
       ]
     },
     {
-      "start": 143.376,
-      "end": 144.667,
+      "start": 164.117,
+      "end": 165.408,
       "text": "pronto a usar.",
       "words": [
-        { "start": 143.376, "end": 143.806, "char": [0, 6] },
-        { "start": 143.806, "end": 144.237, "char": [7, 8] },
-        { "start": 144.237, "end": 144.667, "char": [9, 14] }
+        { "start": 164.117, "end": 164.547, "char": [0, 6] },
+        { "start": 164.547, "end": 164.978, "char": [7, 8] },
+        { "start": 164.978, "end": 165.408, "char": [9, 14] }
       ]
     },
     {
-      "start": 146.917,
-      "end": 149.19,
+      "start": 168.408,
+      "end": 170.681,
       "text": "Configuração do Traefik instalada.",
       "words": [
-        { "start": 146.917, "end": 147.486, "char": [0, 12] },
-        { "start": 147.486, "end": 148.054, "char": [13, 15] },
-        { "start": 148.054, "end": 148.622, "char": [16, 23] },
-        { "start": 148.622, "end": 149.19, "char": [24, 34] }
+        { "start": 168.408, "end": 168.977, "char": [0, 12] },
+        { "start": 168.977, "end": 169.545, "char": [13, 15] },
+        { "start": 169.545, "end": 170.113, "char": [16, 23] },
+        { "start": 170.113, "end": 170.681, "char": [24, 34] }
       ]
     },
     {
-      "start": 152.497,
-      "end": 154.868,
+      "start": 173.988,
+      "end": 176.359,
       "text": "E vamos iniciar o proxy.",
       "words": [
-        { "start": 152.497, "end": 152.971, "char": [0, 1] },
-        { "start": 152.971, "end": 153.445, "char": [2, 7] },
-        { "start": 153.445, "end": 153.92, "char": [8, 15] },
-        { "start": 153.92, "end": 154.394, "char": [16, 17] },
-        { "start": 154.394, "end": 154.868, "char": [18, 24] }
+        { "start": 173.988, "end": 174.462, "char": [0, 1] },
+        { "start": 174.462, "end": 174.936, "char": [2, 7] },
+        { "start": 174.936, "end": 175.411, "char": [8, 15] },
+        { "start": 175.411, "end": 175.885, "char": [16, 17] },
+        { "start": 175.885, "end": 176.359, "char": [18, 24] }
       ]
     },
     {
-      "start": 154.868,
-      "end": 157.713,
+      "start": 176.359,
+      "end": 179.204,
       "text": "O Traefik descobre os seus contentores",
       "words": [
-        { "start": 154.868, "end": 155.342, "char": [0, 1] },
-        { "start": 155.342, "end": 155.816, "char": [2, 9] },
-        { "start": 155.816, "end": 156.29, "char": [10, 18] },
-        { "start": 156.29, "end": 156.764, "char": [19, 21] },
-        { "start": 156.764, "end": 157.239, "char": [22, 26] },
-        { "start": 157.239, "end": 157.713, "char": [27, 38] }
+        { "start": 176.359, "end": 176.833, "char": [0, 1] },
+        { "start": 176.833, "end": 177.307, "char": [2, 9] },
+        { "start": 177.307, "end": 177.781, "char": [10, 18] },
+        { "start": 177.781, "end": 178.255, "char": [19, 21] },
+        { "start": 178.255, "end": 178.73, "char": [22, 26] },
+        { "start": 178.73, "end": 179.204, "char": [27, 38] }
       ]
     },
     {
-      "start": 157.713,
-      "end": 159.609,
+      "start": 179.204,
+      "end": 181.1,
       "text": "a cada cinco segundos.",
       "words": [
-        { "start": 157.713, "end": 158.187, "char": [0, 1] },
-        { "start": 158.187, "end": 158.661, "char": [2, 6] },
-        { "start": 158.661, "end": 159.135, "char": [7, 12] },
-        { "start": 159.135, "end": 159.609, "char": [13, 22] }
+        { "start": 179.204, "end": 179.678, "char": [0, 1] },
+        { "start": 179.678, "end": 180.152, "char": [2, 6] },
+        { "start": 180.152, "end": 180.626, "char": [7, 12] },
+        { "start": 180.626, "end": 181.1, "char": [13, 22] }
       ]
     },
     {
-      "start": 159.609,
-      "end": 162.454,
+      "start": 181.1,
+      "end": 183.945,
       "text": "Os certificados TLS chegam automaticamente via",
       "words": [
-        { "start": 159.609, "end": 160.084, "char": [0, 2] },
-        { "start": 160.084, "end": 160.558, "char": [3, 15] },
-        { "start": 160.558, "end": 161.032, "char": [16, 19] },
-        { "start": 161.032, "end": 161.506, "char": [20, 26] },
-        { "start": 161.506, "end": 161.98, "char": [27, 42] },
-        { "start": 161.98, "end": 162.454, "char": [43, 46] }
+        { "start": 181.1, "end": 181.575, "char": [0, 2] },
+        { "start": 181.575, "end": 182.049, "char": [3, 15] },
+        { "start": 182.049, "end": 182.523, "char": [16, 19] },
+        { "start": 182.523, "end": 182.997, "char": [20, 26] },
+        { "start": 182.997, "end": 183.471, "char": [27, 42] },
+        { "start": 183.471, "end": 183.945, "char": [43, 46] }
       ]
     },
     {
-      "start": 162.454,
-      "end": 163.403,
+      "start": 183.945,
+      "end": 184.894,
       "text": "Let's Encrypt.",
       "words": [
-        { "start": 162.454, "end": 162.929, "char": [0, 5] },
-        { "start": 162.929, "end": 163.403, "char": [6, 14] }
+        { "start": 183.945, "end": 184.42, "char": [0, 5] },
+        { "start": 184.42, "end": 184.894, "char": [6, 14] }
       ]
     },
     {
-      "start": 163.403,
-      "end": 166.248,
+      "start": 184.894,
+      "end": 187.739,
       "text": "A sua aplicação está agora acessível",
       "words": [
-        { "start": 163.403, "end": 163.877, "char": [0, 1] },
-        { "start": 163.877, "end": 164.351, "char": [2, 5] },
-        { "start": 164.351, "end": 164.825, "char": [6, 15] },
-        { "start": 164.825, "end": 165.299, "char": [16, 20] },
-        { "start": 165.299, "end": 165.774, "char": [21, 26] },
-        { "start": 165.774, "end": 166.248, "char": [27, 36] }
+        { "start": 184.894, "end": 185.368, "char": [0, 1] },
+        { "start": 185.368, "end": 185.842, "char": [2, 5] },
+        { "start": 185.842, "end": 186.316, "char": [6, 15] },
+        { "start": 186.316, "end": 186.79, "char": [16, 20] },
+        { "start": 186.79, "end": 187.265, "char": [21, 26] },
+        { "start": 187.265, "end": 187.739, "char": [27, 36] }
       ]
     },
     {
-      "start": 166.248,
-      "end": 168.144,
+      "start": 187.739,
+      "end": 189.635,
       "text": "na internet por HTTPS.",
       "words": [
-        { "start": 166.248, "end": 166.722, "char": [0, 2] },
-        { "start": 166.722, "end": 167.196, "char": [3, 11] },
-        { "start": 167.196, "end": 167.67, "char": [12, 15] },
-        { "start": 167.67, "end": 168.144, "char": [16, 22] }
+        { "start": 187.739, "end": 188.213, "char": [0, 2] },
+        { "start": 188.213, "end": 188.687, "char": [3, 11] },
+        { "start": 188.687, "end": 189.161, "char": [12, 15] },
+        { "start": 189.161, "end": 189.635, "char": [16, 22] }
       ]
     },
     {
-      "start": 168.144,
-      "end": 169.592,
+      "start": 192.635,
+      "end": 194.083,
       "text": "Proxy ativo.",
       "words": [
-        { "start": 168.144, "end": 168.868, "char": [0, 5] },
-        { "start": 168.868, "end": 169.592, "char": [6, 12] }
+        { "start": 192.635, "end": 193.359, "char": [0, 5] },
+        { "start": 193.359, "end": 194.083, "char": [6, 12] }
       ]
     },
     {
-      "start": 169.592,
-      "end": 172.488,
+      "start": 194.083,
+      "end": 196.979,
       "text": "Os certificados TLS chegarão",
       "words": [
-        { "start": 169.592, "end": 170.316, "char": [0, 2] },
-        { "start": 170.316, "end": 171.04, "char": [3, 15] },
-        { "start": 171.04, "end": 171.764, "char": [16, 19] },
-        { "start": 171.764, "end": 172.488, "char": [20, 28] }
+        { "start": 194.083, "end": 194.807, "char": [0, 2] },
+        { "start": 194.807, "end": 195.531, "char": [3, 15] },
+        { "start": 195.531, "end": 196.255, "char": [16, 19] },
+        { "start": 196.255, "end": 196.979, "char": [20, 28] }
       ]
     },
     {
-      "start": 172.488,
-      "end": 173.212,
+      "start": 196.979,
+      "end": 197.703,
       "text": "automaticamente.",
-      "words": [{ "start": 172.488, "end": 173.212, "char": [0, 16] }]
+      "words": [{ "start": 196.979, "end": 197.703, "char": [0, 16] }]
     },
     {
-      "start": 173.982,
-      "end": 176.251,
+      "start": 198.539,
+      "end": 200.808,
       "text": "E está a rede tratada!",
       "words": [
-        { "start": 173.982, "end": 174.436, "char": [0, 1] },
-        { "start": 174.436, "end": 174.89, "char": [2, 6] },
-        { "start": 174.89, "end": 175.344, "char": [7, 8] },
-        { "start": 175.344, "end": 175.798, "char": [9, 13] },
-        { "start": 175.798, "end": 176.251, "char": [14, 22] }
+        { "start": 198.539, "end": 198.993, "char": [0, 1] },
+        { "start": 198.993, "end": 199.447, "char": [2, 6] },
+        { "start": 199.447, "end": 199.901, "char": [7, 8] },
+        { "start": 199.901, "end": 200.355, "char": [9, 13] },
+        { "start": 200.355, "end": 200.808, "char": [14, 22] }
       ]
     },
     {
-      "start": 176.251,
-      "end": 177.613,
+      "start": 200.808,
+      "end": 202.17,
       "text": "Até ao próximo.",
       "words": [
-        { "start": 176.251, "end": 176.705, "char": [0, 3] },
-        { "start": 176.705, "end": 177.159, "char": [4, 6] },
-        { "start": 177.159, "end": 177.613, "char": [7, 15] }
+        { "start": 200.808, "end": 201.262, "char": [0, 3] },
+        { "start": 201.262, "end": 201.716, "char": [4, 6] },
+        { "start": 201.716, "end": 202.17, "char": [7, 15] }
       ]
     }
   ]

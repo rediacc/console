@@ -277,276 +277,276 @@
       ]
     },
     {
-      "start": 54.047,
-      "end": 56.919,
+      "start": 54.081,
+      "end": 56.953,
       "text": "Listons les dépôts sur la machine pour",
       "words": [
-        { "start": 54.047, "end": 54.457, "char": [0, 7] },
-        { "start": 54.457, "end": 54.868, "char": [8, 11] },
-        { "start": 54.868, "end": 55.278, "char": [12, 18] },
-        { "start": 55.278, "end": 55.688, "char": [19, 22] },
-        { "start": 55.688, "end": 56.098, "char": [23, 25] },
-        { "start": 56.098, "end": 56.509, "char": [26, 33] },
-        { "start": 56.509, "end": 56.919, "char": [34, 38] }
+        { "start": 54.081, "end": 54.491, "char": [0, 7] },
+        { "start": 54.491, "end": 54.902, "char": [8, 11] },
+        { "start": 54.902, "end": 55.312, "char": [12, 18] },
+        { "start": 55.312, "end": 55.722, "char": [19, 22] },
+        { "start": 55.722, "end": 56.132, "char": [23, 25] },
+        { "start": 56.132, "end": 56.543, "char": [26, 33] },
+        { "start": 56.543, "end": 56.953, "char": [34, 38] }
       ]
     },
     {
-      "start": 56.919,
-      "end": 59.791,
+      "start": 56.953,
+      "end": 59.825,
       "text": "confirmer que le nouveau est bien enregistré.",
       "words": [
-        { "start": 56.919, "end": 57.329, "char": [0, 9] },
-        { "start": 57.329, "end": 57.739, "char": [10, 13] },
-        { "start": 57.739, "end": 58.15, "char": [14, 16] },
-        { "start": 58.15, "end": 58.56, "char": [17, 24] },
-        { "start": 58.56, "end": 58.97, "char": [25, 28] },
-        { "start": 58.97, "end": 59.381, "char": [29, 33] },
-        { "start": 59.381, "end": 59.791, "char": [34, 45] }
+        { "start": 56.953, "end": 57.363, "char": [0, 9] },
+        { "start": 57.363, "end": 57.773, "char": [10, 13] },
+        { "start": 57.773, "end": 58.184, "char": [14, 16] },
+        { "start": 58.184, "end": 58.594, "char": [17, 24] },
+        { "start": 58.594, "end": 59.004, "char": [25, 28] },
+        { "start": 59.004, "end": 59.415, "char": [29, 33] },
+        { "start": 59.415, "end": 59.825, "char": [34, 45] }
       ]
     },
     {
-      "start": 59.791,
-      "end": 61.432,
+      "start": 59.825,
+      "end": 61.466,
       "text": "À partir de là,",
       "words": [
-        { "start": 59.791, "end": 60.201, "char": [0, 1] },
-        { "start": 60.201, "end": 60.611, "char": [2, 8] },
-        { "start": 60.611, "end": 61.022, "char": [9, 11] },
-        { "start": 61.022, "end": 61.432, "char": [12, 15] }
+        { "start": 59.825, "end": 60.235, "char": [0, 1] },
+        { "start": 60.235, "end": 60.645, "char": [2, 8] },
+        { "start": 60.645, "end": 61.056, "char": [9, 11] },
+        { "start": 61.056, "end": 61.466, "char": [12, 15] }
       ]
     },
     {
-      "start": 61.432,
-      "end": 64.304,
+      "start": 61.466,
+      "end": 64.338,
       "text": "le dépôt peut être ouvert dans VS",
       "words": [
-        { "start": 61.432, "end": 61.842, "char": [0, 2] },
-        { "start": 61.842, "end": 62.253, "char": [3, 8] },
-        { "start": 62.253, "end": 62.663, "char": [9, 13] },
-        { "start": 62.663, "end": 63.073, "char": [14, 18] },
-        { "start": 63.073, "end": 63.483, "char": [19, 25] },
-        { "start": 63.483, "end": 63.894, "char": [26, 30] },
-        { "start": 63.894, "end": 64.304, "char": [31, 33] }
+        { "start": 61.466, "end": 61.876, "char": [0, 2] },
+        { "start": 61.876, "end": 62.287, "char": [3, 8] },
+        { "start": 62.287, "end": 62.697, "char": [9, 13] },
+        { "start": 62.697, "end": 63.107, "char": [14, 18] },
+        { "start": 63.107, "end": 63.517, "char": [19, 25] },
+        { "start": 63.517, "end": 63.928, "char": [26, 30] },
+        { "start": 63.928, "end": 64.338, "char": [31, 33] }
       ]
     },
     {
-      "start": 64.304,
-      "end": 64.714,
+      "start": 64.338,
+      "end": 64.748,
       "text": "Code,",
-      "words": [{ "start": 64.304, "end": 64.714, "char": [0, 5] }]
+      "words": [{ "start": 64.338, "end": 64.748, "char": [0, 5] }]
     },
     {
-      "start": 64.714,
-      "end": 65.124,
+      "start": 64.748,
+      "end": 65.158,
       "text": "déployé,",
-      "words": [{ "start": 64.714, "end": 65.124, "char": [0, 8] }]
+      "words": [{ "start": 64.748, "end": 65.158, "char": [0, 8] }]
     },
     {
-      "start": 65.124,
-      "end": 66.355,
+      "start": 65.158,
+      "end": 66.389,
       "text": "forké ou sauvegardé,",
       "words": [
-        { "start": 65.124, "end": 65.535, "char": [0, 5] },
-        { "start": 65.535, "end": 65.945, "char": [6, 8] },
-        { "start": 65.945, "end": 66.355, "char": [9, 20] }
+        { "start": 65.158, "end": 65.569, "char": [0, 5] },
+        { "start": 65.569, "end": 65.979, "char": [6, 8] },
+        { "start": 65.979, "end": 66.389, "char": [9, 20] }
       ]
     },
     {
-      "start": 66.355,
-      "end": 67.996,
+      "start": 66.389,
+      "end": 68.03,
       "text": "tout depuis votre ordinateur.",
       "words": [
-        { "start": 66.355, "end": 66.766, "char": [0, 4] },
-        { "start": 66.766, "end": 67.176, "char": [5, 11] },
-        { "start": 67.176, "end": 67.586, "char": [12, 17] },
-        { "start": 67.586, "end": 67.996, "char": [18, 29] }
+        { "start": 66.389, "end": 66.8, "char": [0, 4] },
+        { "start": 66.8, "end": 67.21, "char": [5, 11] },
+        { "start": 67.21, "end": 67.62, "char": [12, 17] },
+        { "start": 67.62, "end": 68.03, "char": [18, 29] }
       ]
     },
     {
-      "start": 70.996,
-      "end": 71.922,
+      "start": 71.03,
+      "end": 71.956,
       "text": "Le voilà,",
       "words": [
-        { "start": 70.996, "end": 71.459, "char": [0, 2] },
-        { "start": 71.459, "end": 71.922, "char": [3, 9] }
+        { "start": 71.03, "end": 71.493, "char": [0, 2] },
+        { "start": 71.493, "end": 71.956, "char": [3, 9] }
       ]
     },
     {
-      "start": 71.922,
-      "end": 74.236,
+      "start": 71.956,
+      "end": 74.27,
       "text": "enregistré et prêt à l'emploi.",
       "words": [
-        { "start": 71.922, "end": 72.385, "char": [0, 10] },
-        { "start": 72.385, "end": 72.847, "char": [11, 13] },
-        { "start": 72.847, "end": 73.31, "char": [14, 18] },
-        { "start": 73.31, "end": 73.773, "char": [19, 20] },
-        { "start": 73.773, "end": 74.236, "char": [21, 30] }
+        { "start": 71.956, "end": 72.419, "char": [0, 10] },
+        { "start": 72.419, "end": 72.881, "char": [11, 13] },
+        { "start": 72.881, "end": 73.344, "char": [14, 18] },
+        { "start": 73.344, "end": 73.807, "char": [19, 20] },
+        { "start": 73.807, "end": 74.27, "char": [21, 30] }
       ]
     },
     {
-      "start": 77.547,
-      "end": 79.205,
+      "start": 77.581,
+      "end": 79.239,
       "text": "Une option bien pratique :",
       "words": [
-        { "start": 77.547, "end": 77.879, "char": [0, 3] },
-        { "start": 77.879, "end": 78.21, "char": [4, 10] },
-        { "start": 78.21, "end": 78.542, "char": [11, 15] },
-        { "start": 78.542, "end": 78.873, "char": [16, 24] },
-        { "start": 78.873, "end": 79.205, "char": [25, 26] }
+        { "start": 77.581, "end": 77.913, "char": [0, 3] },
+        { "start": 77.913, "end": 78.244, "char": [4, 10] },
+        { "start": 78.244, "end": 78.576, "char": [11, 15] },
+        { "start": 78.576, "end": 78.907, "char": [16, 24] },
+        { "start": 78.907, "end": 79.239, "char": [25, 26] }
       ]
     },
     {
-      "start": 79.205,
-      "end": 81.857,
+      "start": 79.239,
+      "end": 81.891,
       "text": "ouvrir le repo directement dans VS Code avec",
       "words": [
-        { "start": 79.205, "end": 79.536, "char": [0, 6] },
-        { "start": 79.536, "end": 79.868, "char": [7, 9] },
-        { "start": 79.868, "end": 80.199, "char": [10, 14] },
-        { "start": 80.199, "end": 80.531, "char": [15, 26] },
-        { "start": 80.531, "end": 80.863, "char": [27, 31] },
-        { "start": 80.863, "end": 81.194, "char": [32, 34] },
-        { "start": 81.194, "end": 81.526, "char": [35, 39] },
-        { "start": 81.526, "end": 81.857, "char": [40, 44] }
+        { "start": 79.239, "end": 79.57, "char": [0, 6] },
+        { "start": 79.57, "end": 79.902, "char": [7, 9] },
+        { "start": 79.902, "end": 80.233, "char": [10, 14] },
+        { "start": 80.233, "end": 80.565, "char": [15, 26] },
+        { "start": 80.565, "end": 80.897, "char": [27, 31] },
+        { "start": 80.897, "end": 81.228, "char": [32, 34] },
+        { "start": 81.228, "end": 81.56, "char": [35, 39] },
+        { "start": 81.56, "end": 81.891, "char": [40, 44] }
       ]
     },
     {
-      "start": 81.857,
-      "end": 82.52,
+      "start": 81.891,
+      "end": 82.554,
       "text": "cette commande.",
       "words": [
-        { "start": 81.857, "end": 82.189, "char": [0, 5] },
-        { "start": 82.189, "end": 82.52, "char": [6, 15] }
+        { "start": 81.891, "end": 82.223, "char": [0, 5] },
+        { "start": 82.223, "end": 82.554, "char": [6, 15] }
       ]
     },
     {
-      "start": 82.52,
-      "end": 84.51,
+      "start": 82.554,
+      "end": 84.544,
       "text": "Nous ne lancerons pas l'éditeur ici,",
       "words": [
-        { "start": 82.52, "end": 82.852, "char": [0, 4] },
-        { "start": 82.852, "end": 83.183, "char": [5, 7] },
-        { "start": 83.183, "end": 83.515, "char": [8, 17] },
-        { "start": 83.515, "end": 83.847, "char": [18, 21] },
-        { "start": 83.847, "end": 84.178, "char": [22, 31] },
-        { "start": 84.178, "end": 84.51, "char": [32, 36] }
+        { "start": 82.554, "end": 82.886, "char": [0, 4] },
+        { "start": 82.886, "end": 83.217, "char": [5, 7] },
+        { "start": 83.217, "end": 83.549, "char": [8, 17] },
+        { "start": 83.549, "end": 83.881, "char": [18, 21] },
+        { "start": 83.881, "end": 84.212, "char": [22, 31] },
+        { "start": 84.212, "end": 84.544, "char": [32, 36] }
       ]
     },
     {
-      "start": 84.51,
-      "end": 87.162,
+      "start": 84.544,
+      "end": 87.196,
       "text": "mais elle démarre une session distante dans le",
       "words": [
-        { "start": 84.51, "end": 84.841, "char": [0, 4] },
-        { "start": 84.841, "end": 85.173, "char": [5, 9] },
-        { "start": 85.173, "end": 85.504, "char": [10, 17] },
-        { "start": 85.504, "end": 85.836, "char": [18, 21] },
-        { "start": 85.836, "end": 86.167, "char": [22, 29] },
-        { "start": 86.167, "end": 86.499, "char": [30, 38] },
-        { "start": 86.499, "end": 86.831, "char": [39, 43] },
-        { "start": 86.831, "end": 87.162, "char": [44, 46] }
+        { "start": 84.544, "end": 84.875, "char": [0, 4] },
+        { "start": 84.875, "end": 85.207, "char": [5, 9] },
+        { "start": 85.207, "end": 85.538, "char": [10, 17] },
+        { "start": 85.538, "end": 85.87, "char": [18, 21] },
+        { "start": 85.87, "end": 86.201, "char": [22, 29] },
+        { "start": 86.201, "end": 86.533, "char": [30, 38] },
+        { "start": 86.533, "end": 86.865, "char": [39, 43] },
+        { "start": 86.865, "end": 87.196, "char": [44, 46] }
       ]
     },
     {
-      "start": 87.162,
-      "end": 89.815,
+      "start": 87.196,
+      "end": 89.849,
       "text": "repo via SSH pour que vous puissiez éditer",
       "words": [
-        { "start": 87.162, "end": 87.494, "char": [0, 4] },
-        { "start": 87.494, "end": 87.825, "char": [5, 8] },
-        { "start": 87.825, "end": 88.157, "char": [9, 12] },
-        { "start": 88.157, "end": 88.488, "char": [13, 17] },
-        { "start": 88.488, "end": 88.82, "char": [18, 21] },
-        { "start": 88.82, "end": 89.151, "char": [22, 26] },
-        { "start": 89.151, "end": 89.483, "char": [27, 35] },
-        { "start": 89.483, "end": 89.815, "char": [36, 42] }
+        { "start": 87.196, "end": 87.528, "char": [0, 4] },
+        { "start": 87.528, "end": 87.859, "char": [5, 8] },
+        { "start": 87.859, "end": 88.191, "char": [9, 12] },
+        { "start": 88.191, "end": 88.522, "char": [13, 17] },
+        { "start": 88.522, "end": 88.854, "char": [18, 21] },
+        { "start": 88.854, "end": 89.185, "char": [22, 26] },
+        { "start": 89.185, "end": 89.517, "char": [27, 35] },
+        { "start": 89.517, "end": 89.849, "char": [36, 42] }
       ]
     },
     {
-      "start": 89.815,
-      "end": 90.478,
+      "start": 89.849,
+      "end": 90.512,
       "text": "ses fichiers.",
       "words": [
-        { "start": 89.815, "end": 90.146, "char": [0, 3] },
-        { "start": 90.146, "end": 90.478, "char": [4, 13] }
+        { "start": 89.849, "end": 90.18, "char": [0, 3] },
+        { "start": 90.18, "end": 90.512, "char": [4, 13] }
       ]
     },
     {
-      "start": 91.278,
-      "end": 94.02,
+      "start": 91.312,
+      "end": 94.054,
       "text": "Lancez cela depuis votre ordinateur portable pour",
       "words": [
-        { "start": 91.278, "end": 91.669, "char": [0, 6] },
-        { "start": 91.669, "end": 92.061, "char": [7, 11] },
-        { "start": 92.061, "end": 92.453, "char": [12, 18] },
-        { "start": 92.453, "end": 92.845, "char": [19, 24] },
-        { "start": 92.845, "end": 93.237, "char": [25, 35] },
-        { "start": 93.237, "end": 93.629, "char": [36, 44] },
-        { "start": 93.629, "end": 94.02, "char": [45, 49] }
+        { "start": 91.312, "end": 91.703, "char": [0, 6] },
+        { "start": 91.703, "end": 92.095, "char": [7, 11] },
+        { "start": 92.095, "end": 92.487, "char": [12, 18] },
+        { "start": 92.487, "end": 92.879, "char": [19, 24] },
+        { "start": 92.879, "end": 93.271, "char": [25, 35] },
+        { "start": 93.271, "end": 93.663, "char": [36, 44] },
+        { "start": 93.663, "end": 94.054, "char": [45, 49] }
       ]
     },
     {
-      "start": 94.02,
-      "end": 96.763,
+      "start": 94.054,
+      "end": 96.797,
       "text": "éditer les fichiers du repo dans VS",
       "words": [
-        { "start": 94.02, "end": 94.412, "char": [0, 6] },
-        { "start": 94.412, "end": 94.804, "char": [7, 10] },
-        { "start": 94.804, "end": 95.196, "char": [11, 19] },
-        { "start": 95.196, "end": 95.588, "char": [20, 22] },
-        { "start": 95.588, "end": 95.98, "char": [23, 27] },
-        { "start": 95.98, "end": 96.371, "char": [28, 32] },
-        { "start": 96.371, "end": 96.763, "char": [33, 35] }
+        { "start": 94.054, "end": 94.446, "char": [0, 6] },
+        { "start": 94.446, "end": 94.838, "char": [7, 10] },
+        { "start": 94.838, "end": 95.23, "char": [11, 19] },
+        { "start": 95.23, "end": 95.622, "char": [20, 22] },
+        { "start": 95.622, "end": 96.014, "char": [23, 27] },
+        { "start": 96.014, "end": 96.405, "char": [28, 32] },
+        { "start": 96.405, "end": 96.797, "char": [33, 35] }
       ]
     },
     {
-      "start": 96.763,
-      "end": 97.155,
+      "start": 96.797,
+      "end": 97.189,
       "text": "Code.",
-      "words": [{ "start": 96.763, "end": 97.155, "char": [0, 5] }]
+      "words": [{ "start": 96.797, "end": 97.189, "char": [0, 5] }]
     },
     {
-      "start": 97.954,
-      "end": 99.201,
+      "start": 97.988,
+      "end": 99.235,
       "text": "Voilà votre premier dépôt,",
       "words": [
-        { "start": 97.954, "end": 98.266, "char": [0, 5] },
-        { "start": 98.266, "end": 98.578, "char": [6, 11] },
-        { "start": 98.578, "end": 98.89, "char": [12, 19] },
-        { "start": 98.89, "end": 99.201, "char": [20, 26] }
+        { "start": 97.988, "end": 98.3, "char": [0, 5] },
+        { "start": 98.3, "end": 98.612, "char": [6, 11] },
+        { "start": 98.612, "end": 98.924, "char": [12, 19] },
+        { "start": 98.924, "end": 99.235, "char": [20, 26] }
       ]
     },
     {
-      "start": 99.201,
-      "end": 100.137,
+      "start": 99.235,
+      "end": 100.171,
       "text": "prêt à servir.",
       "words": [
-        { "start": 99.201, "end": 99.513, "char": [0, 4] },
-        { "start": 99.513, "end": 99.825, "char": [5, 6] },
-        { "start": 99.825, "end": 100.137, "char": [7, 14] }
+        { "start": 99.235, "end": 99.547, "char": [0, 4] },
+        { "start": 99.547, "end": 99.859, "char": [5, 6] },
+        { "start": 99.859, "end": 100.171, "char": [7, 14] }
       ]
     },
     {
-      "start": 100.137,
-      "end": 101.072,
+      "start": 100.171,
+      "end": 101.106,
       "text": "Dans la suite,",
       "words": [
-        { "start": 100.137, "end": 100.449, "char": [0, 4] },
-        { "start": 100.449, "end": 100.761, "char": [5, 7] },
-        { "start": 100.761, "end": 101.072, "char": [8, 14] }
+        { "start": 100.171, "end": 100.483, "char": [0, 4] },
+        { "start": 100.483, "end": 100.795, "char": [5, 7] },
+        { "start": 100.795, "end": 101.106, "char": [8, 14] }
       ]
     },
     {
-      "start": 101.072,
-      "end": 102.943,
+      "start": 101.106,
+      "end": 102.977,
       "text": "nous y déploierons une application !",
       "words": [
-        { "start": 101.072, "end": 101.384, "char": [0, 4] },
-        { "start": 101.384, "end": 101.696, "char": [5, 6] },
-        { "start": 101.696, "end": 102.008, "char": [7, 18] },
-        { "start": 102.008, "end": 102.32, "char": [19, 22] },
-        { "start": 102.32, "end": 102.632, "char": [23, 34] },
-        { "start": 102.632, "end": 102.943, "char": [35, 36] }
+        { "start": 101.106, "end": 101.418, "char": [0, 4] },
+        { "start": 101.418, "end": 101.73, "char": [5, 6] },
+        { "start": 101.73, "end": 102.042, "char": [7, 18] },
+        { "start": 102.042, "end": 102.354, "char": [19, 22] },
+        { "start": 102.354, "end": 102.666, "char": [23, 34] },
+        { "start": 102.666, "end": 102.977, "char": [35, 36] }
       ]
     }
   ]

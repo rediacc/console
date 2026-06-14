@@ -1,0 +1,271 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.425
+Zeit für etwas Großes:
+
+00:00:02.425 --> 00:00:05.274
+eine LAUFENDE App auf eine andere Maschine verschieben,
+
+00:00:05.274 --> 00:00:06.342
+während sie läuft.
+
+00:00:06.342 --> 00:00:07.767
+Wir beobachten einen Live-Zähler,
+
+00:00:07.767 --> 00:00:09.904
+der im Speicher der App schlägt,
+
+00:00:09.904 --> 00:00:12.397
+verschieben alles mit einem Befehl und sehen,
+
+00:00:12.397 --> 00:00:15.246
+wie der Zähler auf der neuen Maschine einfach
+
+00:00:15.246 --> 00:00:15.602
+weiterzählt.
+
+00:00:16.382 --> 00:00:18.735
+Es funktioniert in zwei Phasen.
+
+00:00:18.735 --> 00:00:21.089
+Phase eins kopiert den Großteil,
+
+00:00:21.089 --> 00:00:22.971
+während die App weiterläuft.
+
+00:00:22.971 --> 00:00:25.795
+Phase zwei erstellt einen Checkpoint der
+
+00:00:25.795 --> 00:00:26.737
+laufenden Prozesse,
+
+00:00:26.737 --> 00:00:29.561
+überträgt das finale Delta zusammen mit
+
+00:00:29.561 --> 00:00:32.385
+dem Prozesszustand und setzt alles auf
+
+00:00:32.385 --> 00:00:34.267
+der neuen Maschine fort.
+
+00:00:34.267 --> 00:00:37.091
+Die Ausfallzeit entspricht also dem Delta,
+
+00:00:37.091 --> 00:00:38.504
+nicht den Daten.
+
+00:00:38.504 --> 00:00:40.857
+Und die App merkt nie,
+
+00:00:40.857 --> 00:00:42.740
+dass sie umgezogen ist.
+
+00:00:46.013 --> 00:00:47.181
+Das ist pulse.
+
+00:00:47.181 --> 00:00:49.905
+Es hält einen Zähler im Prozessspeicher und
+
+00:00:49.905 --> 00:00:52.630
+gibt alle fünf Sekunden einen Beat aus.
+
+00:00:52.630 --> 00:00:55.354
+Der Zähler steht bei sechs und steigt
+
+00:00:55.354 --> 00:00:55.744
+weiter,
+
+00:00:55.744 --> 00:00:57.690
+er lebt nur im RAM.
+
+00:00:57.690 --> 00:00:59.636
+Startet man den Prozess neu,
+
+00:00:59.636 --> 00:01:01.582
+beginnt er wieder bei eins.
+
+00:01:04.082 --> 00:01:04.970
+Ein Live-Zähler,
+
+00:01:04.970 --> 00:01:06.746
+der im Speicher schlägt.
+
+00:01:06.746 --> 00:01:08.523
+Das ist unser Beweis.
+
+00:01:11.848 --> 00:01:13.745
+Ein Befehl verschiebt alles,
+
+00:01:13.745 --> 00:01:14.220
+live.
+
+00:01:14.220 --> 00:01:16.591
+Phase eins überträgt den Großteil,
+
+00:01:16.591 --> 00:01:19.437
+zwei Gigabyte in etwa einer halben
+
+00:01:19.437 --> 00:01:19.911
+Minute,
+
+00:01:19.911 --> 00:01:21.808
+während die Quelle weiterläuft.
+
+00:01:21.808 --> 00:01:23.231
+Dann die Umschaltung:
+
+00:01:23.231 --> 00:01:26.077
+Es erstellt einen Checkpoint der laufenden
+
+00:01:26.077 --> 00:01:26.551
+Prozesse,
+
+00:01:26.551 --> 00:01:29.397
+überträgt die letzten paar Megabytes und
+
+00:01:29.397 --> 00:01:31.769
+gibt die Ausfallzeit direkt aus.
+
+00:01:31.769 --> 00:01:33.192
+Etwa zwanzig Sekunden,
+
+00:01:33.192 --> 00:01:36.037
+für einen Umzug von zwei Gigabyte.
+
+00:02:41.892 --> 00:02:43.308
+Zwei Gigabyte verschoben,
+
+00:02:43.308 --> 00:02:45.195
+während die App weiterlief.
+
+00:02:45.195 --> 00:02:46.611
+Die Ausfallzeile zeigt,
+
+00:02:46.611 --> 00:02:49.442
+was der Umzug tatsächlich gekostet hat.
+
+00:02:53.694 --> 00:02:56.076
+Ein Blick auf die neue Maschine:
+
+00:02:56.076 --> 00:02:57.268
+da ist es.
+
+00:02:57.268 --> 00:02:57.665
+Gemountet,
+
+00:02:57.665 --> 00:02:58.459
+Docker läuft,
+
+00:02:58.459 --> 00:02:59.650
+zwei Container aktiv.
+
+00:03:02.650 --> 00:03:03.1000
+Gleiches Repository,
+
+00:03:03.1000 --> 00:03:05.349
+neues Zuhause,
+
+00:03:05.349 --> 00:03:06.699
+läuft bereits.
+
+00:03:10.000 --> 00:03:11.335
+Und die Quelle?
+
+00:03:11.335 --> 00:03:13.559
+Das Repository ist noch aufgeführt,
+
+00:03:13.559 --> 00:03:16.228
+aber schaut man auf die Zeile:
+
+00:03:16.228 --> 00:03:17.117
+nicht gemountet,
+
+00:03:17.117 --> 00:03:18.007
+kein Docker,
+
+00:03:18.007 --> 00:03:18.897
+null Container.
+
+00:03:18.897 --> 00:03:20.676
+Hier läuft nichts mehr.
+
+00:03:20.676 --> 00:03:22.900
+Das Image bleibt bewusst zurück,
+
+00:03:22.900 --> 00:03:25.569
+als Basis für die nächste Delta-Übertragung.
+
+00:03:28.569 --> 00:03:30.280
+Gestoppt und ausgehängt.
+
+00:03:30.280 --> 00:03:33.132
+Das zurückgebliebene Image ist eine
+
+00:03:33.132 --> 00:03:33.702
+Delta-Basis,
+
+00:03:33.702 --> 00:03:35.413
+keine laufende App.
+
+00:03:38.700 --> 00:03:39.807
+Jetzt die Pointe.
+
+00:03:39.807 --> 00:03:41.284
+Der Zähler zeigt siebzehn,
+
+00:03:41.284 --> 00:03:41.653
+achtzehn,
+
+00:03:41.653 --> 00:03:42.022
+neunzehn,
+
+00:03:42.022 --> 00:03:42.761
+steigt weiter.
+
+00:03:42.761 --> 00:03:44.606
+Er hat genau dort weitergemacht,
+
+00:03:44.606 --> 00:03:46.821
+wo der Checkpoint ihn eingefroren hat,
+
+00:03:46.821 --> 00:03:48.667
+statt wieder bei eins anzufangen.
+
+00:03:48.667 --> 00:03:50.513
+Der Prozess hat nie bemerkt,
+
+00:03:50.513 --> 00:03:52.728
+dass er die Maschine gewechselt hat.
+
+00:03:55.228 --> 00:03:56.816
+Der Zähler zählte weiter.
+
+00:03:56.816 --> 00:03:59.198
+Der Prozessspeicher hat die Reise mitgemacht.
+
+00:03:59.980 --> 00:04:02.758
+Der Zähler hat nie zurückgesetzt.
+
+00:04:02.758 --> 00:04:03.314
+Speicher,
+
+00:04:03.314 --> 00:04:03.869
+Datenbank,
+
+00:04:03.869 --> 00:04:04.425
+Dateien,
+
+00:04:04.425 --> 00:04:07.203
+alles hat einfach die Maschine
+
+00:04:07.203 --> 00:04:07.758
+gewechselt.
+
+00:04:07.758 --> 00:04:09.981
+Als Nächstes sehen wir,
+
+00:04:09.981 --> 00:04:12.759
+warum die zweite Übertragung immer
+
+00:04:12.759 --> 00:04:14.426
+die schnelle ist.

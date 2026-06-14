@@ -1,0 +1,1126 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.799,
+      "text": "Repository'lerinizi kod gibi sürümleyelim!",
+      "words": [
+        { "start": 1, "end": 1.45, "char": [0, 19] },
+        { "start": 1.45, "end": 1.899, "char": [20, 23] },
+        { "start": 1.899, "end": 2.349, "char": [24, 28] },
+        { "start": 2.349, "end": 2.799, "char": [29, 42] }
+      ]
+    },
+    {
+      "start": 2.799,
+      "end": 4.597,
+      "text": "Bir kontrol noktası donduracağız,",
+      "words": [
+        { "start": 2.799, "end": 3.248, "char": [0, 3] },
+        { "start": 3.248, "end": 3.698, "char": [4, 11] },
+        { "start": 3.698, "end": 4.148, "char": [12, 19] },
+        { "start": 4.148, "end": 4.597, "char": [20, 33] }
+      ]
+    },
+    {
+      "start": 4.597,
+      "end": 6.396,
+      "text": "ona bir isim vereceğiz,",
+      "words": [
+        { "start": 4.597, "end": 5.047, "char": [0, 3] },
+        { "start": 5.047, "end": 5.497, "char": [4, 7] },
+        { "start": 5.497, "end": 5.946, "char": [8, 12] },
+        { "start": 5.946, "end": 6.396, "char": [13, 23] }
+      ]
+    },
+    {
+      "start": 6.396,
+      "end": 9.094,
+      "text": "sonra gerçek bir veritabanı tablosunu sileceğiz.",
+      "words": [
+        { "start": 6.396, "end": 6.846, "char": [0, 5] },
+        { "start": 6.846, "end": 7.296, "char": [6, 12] },
+        { "start": 7.296, "end": 7.745, "char": [13, 16] },
+        { "start": 7.745, "end": 8.195, "char": [17, 27] },
+        { "start": 8.195, "end": 8.645, "char": [28, 37] },
+        { "start": 8.645, "end": 9.094, "char": [38, 48] }
+      ]
+    },
+    {
+      "start": 9.094,
+      "end": 9.544,
+      "text": "Rollback,",
+      "words": [{ "start": 9.094, "end": 9.544, "char": [0, 9] }]
+    },
+    {
+      "start": 9.544,
+      "end": 12.242,
+      "text": "dondurulmuş durumu saniyeler içinde geri getirir;",
+      "words": [
+        { "start": 9.544, "end": 9.994, "char": [0, 11] },
+        { "start": 9.994, "end": 10.443, "char": [12, 18] },
+        { "start": 10.443, "end": 10.893, "char": [19, 28] },
+        { "start": 10.893, "end": 11.343, "char": [29, 35] },
+        { "start": 11.343, "end": 11.792, "char": [36, 40] },
+        { "start": 11.792, "end": 12.242, "char": [41, 49] }
+      ]
+    },
+    {
+      "start": 12.242,
+      "end": 13.591,
+      "text": "her satırıyla birlikte.",
+      "words": [
+        { "start": 12.242, "end": 12.692, "char": [0, 3] },
+        { "start": 12.692, "end": 13.141, "char": [4, 13] },
+        { "start": 13.141, "end": 13.591, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 14.362,
+      "end": 15.3,
+      "text": "Model git,",
+      "words": [
+        { "start": 14.362, "end": 14.831, "char": [0, 5] },
+        { "start": 14.831, "end": 15.3, "char": [6, 10] }
+      ]
+    },
+    {
+      "start": 15.3,
+      "end": 17.175,
+      "text": "ama tüm repository'ler için.",
+      "words": [
+        { "start": 15.3, "end": 15.769, "char": [0, 3] },
+        { "start": 15.769, "end": 16.237, "char": [4, 7] },
+        { "start": 16.237, "end": 16.706, "char": [8, 22] },
+        { "start": 16.706, "end": 17.175, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 17.175,
+      "end": 17.644,
+      "text": "Commit,",
+      "words": [{ "start": 17.175, "end": 17.644, "char": [0, 7] }]
+    },
+    {
+      "start": 17.644,
+      "end": 19.988,
+      "text": "dondurulmuş ve değişmez bir imajdır.",
+      "words": [
+        { "start": 17.644, "end": 18.113, "char": [0, 11] },
+        { "start": 18.113, "end": 18.582, "char": [12, 14] },
+        { "start": 18.582, "end": 19.051, "char": [15, 23] },
+        { "start": 19.051, "end": 19.52, "char": [24, 27] },
+        { "start": 19.52, "end": 19.988, "char": [28, 36] }
+      ]
+    },
+    {
+      "start": 19.988,
+      "end": 21.864,
+      "text": "Mount edilmeyi bile reddeder,",
+      "words": [
+        { "start": 19.988, "end": 20.457, "char": [0, 5] },
+        { "start": 20.457, "end": 20.926, "char": [6, 14] },
+        { "start": 20.926, "end": 21.395, "char": [15, 19] },
+        { "start": 21.395, "end": 21.864, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 21.864,
+      "end": 24.208,
+      "text": "yani hiçbir şey onu değiştiremez.",
+      "words": [
+        { "start": 21.864, "end": 22.333, "char": [0, 4] },
+        { "start": 22.333, "end": 22.802, "char": [5, 11] },
+        { "start": 22.802, "end": 23.27, "char": [12, 15] },
+        { "start": 23.27, "end": 23.739, "char": [16, 19] },
+        { "start": 23.739, "end": 24.208, "char": [20, 33] }
+      ]
+    },
+    {
+      "start": 24.208,
+      "end": 24.677,
+      "text": "Branch,",
+      "words": [{ "start": 24.208, "end": 24.677, "char": [0, 7] }]
+    },
+    {
+      "start": 24.677,
+      "end": 27.49,
+      "text": "yalnızca bir commit'i gösteren bir isimdir.",
+      "words": [
+        { "start": 24.677, "end": 25.146, "char": [0, 8] },
+        { "start": 25.146, "end": 25.615, "char": [9, 12] },
+        { "start": 25.615, "end": 26.084, "char": [13, 21] },
+        { "start": 26.084, "end": 26.552, "char": [22, 30] },
+        { "start": 26.552, "end": 27.021, "char": [31, 34] },
+        { "start": 27.021, "end": 27.49, "char": [35, 43] }
+      ]
+    },
+    {
+      "start": 27.49,
+      "end": 30.303,
+      "text": "Checkout ise herhangi bir commit'i yeni",
+      "words": [
+        { "start": 27.49, "end": 27.959, "char": [0, 8] },
+        { "start": 27.959, "end": 28.428, "char": [9, 12] },
+        { "start": 28.428, "end": 28.897, "char": [13, 21] },
+        { "start": 28.897, "end": 29.366, "char": [22, 25] },
+        { "start": 29.366, "end": 29.835, "char": [26, 34] },
+        { "start": 29.835, "end": 30.303, "char": [35, 39] }
+      ]
+    },
+    {
+      "start": 30.303,
+      "end": 32.648,
+      "text": "ve yazılabilir bir fork'a dönüştürür.",
+      "words": [
+        { "start": 30.303, "end": 30.772, "char": [0, 2] },
+        { "start": 30.772, "end": 31.241, "char": [3, 14] },
+        { "start": 31.241, "end": 31.71, "char": [15, 18] },
+        { "start": 31.71, "end": 32.179, "char": [19, 25] },
+        { "start": 32.179, "end": 32.648, "char": [26, 37] }
+      ]
+    },
+    {
+      "start": 35.913,
+      "end": 38.163,
+      "text": "Çalışma fork'umuz uygulamanın birinci sürümünü tutuyor;",
+      "words": [
+        { "start": 35.913, "end": 36.288, "char": [0, 7] },
+        { "start": 36.288, "end": 36.663, "char": [8, 17] },
+        { "start": 36.663, "end": 37.038, "char": [18, 29] },
+        { "start": 37.038, "end": 37.413, "char": [30, 37] },
+        { "start": 37.413, "end": 37.788, "char": [38, 46] },
+        { "start": 37.788, "end": 38.163, "char": [47, 55] }
+      ]
+    },
+    {
+      "start": 38.163,
+      "end": 40.789,
+      "text": "basit bir işaret dosyası bunu gözler önüne",
+      "words": [
+        { "start": 38.163, "end": 38.538, "char": [0, 5] },
+        { "start": 38.538, "end": 38.913, "char": [6, 9] },
+        { "start": 38.913, "end": 39.288, "char": [10, 16] },
+        { "start": 39.288, "end": 39.663, "char": [17, 24] },
+        { "start": 39.663, "end": 40.038, "char": [25, 29] },
+        { "start": 40.038, "end": 40.414, "char": [30, 36] },
+        { "start": 40.414, "end": 40.789, "char": [37, 42] }
+      ]
+    },
+    {
+      "start": 40.789,
+      "end": 41.164,
+      "text": "seriyor.",
+      "words": [{ "start": 40.789, "end": 41.164, "char": [0, 8] }]
+    },
+    {
+      "start": 45.116,
+      "end": 46.526,
+      "text": "Birinci sürüm,",
+      "words": [
+        { "start": 45.116, "end": 45.821, "char": [0, 7] },
+        { "start": 45.821, "end": 46.526, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 46.526,
+      "end": 47.232,
+      "text": "diskte.",
+      "words": [{ "start": 46.526, "end": 47.232, "char": [0, 7] }]
+    },
+    {
+      "start": 50.526,
+      "end": 51.858,
+      "text": "Sadece dosyalar değil.",
+      "words": [
+        { "start": 50.526, "end": 50.97, "char": [0, 6] },
+        { "start": 50.97, "end": 51.414, "char": [7, 15] },
+        { "start": 51.414, "end": 51.858, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 51.858,
+      "end": 54.523,
+      "text": "Bu fork'ta gerçek bir PostgreSQL veritabanı",
+      "words": [
+        { "start": 51.858, "end": 52.302, "char": [0, 2] },
+        { "start": 52.302, "end": 52.746, "char": [3, 10] },
+        { "start": 52.746, "end": 53.19, "char": [11, 17] },
+        { "start": 53.19, "end": 53.635, "char": [18, 21] },
+        { "start": 53.635, "end": 54.079, "char": [22, 32] },
+        { "start": 54.079, "end": 54.523, "char": [33, 43] }
+      ]
+    },
+    {
+      "start": 54.523,
+      "end": 57.187,
+      "text": "da çalışıyor ve customers tablosu üç",
+      "words": [
+        { "start": 54.523, "end": 54.967, "char": [0, 2] },
+        { "start": 54.967, "end": 55.411, "char": [3, 12] },
+        { "start": 55.411, "end": 55.855, "char": [13, 15] },
+        { "start": 55.855, "end": 56.299, "char": [16, 25] },
+        { "start": 56.299, "end": 56.743, "char": [26, 33] },
+        { "start": 56.743, "end": 57.187, "char": [34, 36] }
+      ]
+    },
+    {
+      "start": 57.187,
+      "end": 58.075,
+      "text": "satır içeriyor.",
+      "words": [
+        { "start": 57.187, "end": 57.631, "char": [0, 5] },
+        { "start": 57.631, "end": 58.075, "char": [6, 15] }
+      ]
+    },
+    {
+      "start": 58.075,
+      "end": 59.852,
+      "text": "Bu sayıyı aklınızda tutun.",
+      "words": [
+        { "start": 58.075, "end": 58.519, "char": [0, 2] },
+        { "start": 58.519, "end": 58.964, "char": [3, 9] },
+        { "start": 58.964, "end": 59.408, "char": [10, 19] },
+        { "start": 59.408, "end": 59.852, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 62.352,
+      "end": 63.259,
+      "text": "Üç satır.",
+      "words": [
+        { "start": 62.352, "end": 62.806, "char": [0, 2] },
+        { "start": 62.806, "end": 63.259, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 63.259,
+      "end": 65.983,
+      "text": "Tehlikeye atmak üzere olduğumuz veri bu.",
+      "words": [
+        { "start": 63.259, "end": 63.713, "char": [0, 9] },
+        { "start": 63.713, "end": 64.167, "char": [10, 15] },
+        { "start": 64.167, "end": 64.621, "char": [16, 21] },
+        { "start": 64.621, "end": 65.075, "char": [22, 31] },
+        { "start": 65.075, "end": 65.529, "char": [32, 36] },
+        { "start": 65.529, "end": 65.983, "char": [37, 40] }
+      ]
+    },
+    {
+      "start": 69.304,
+      "end": 69.717,
+      "text": "Dondurun.",
+      "words": [{ "start": 69.304, "end": 69.717, "char": [0, 9] }]
+    },
+    {
+      "start": 69.717,
+      "end": 70.13,
+      "text": "Commit,",
+      "words": [{ "start": 69.717, "end": 70.13, "char": [0, 7] }]
+    },
+    {
+      "start": 70.13,
+      "end": 71.783,
+      "text": "tüm repository'yi bir mesaj,",
+      "words": [
+        { "start": 70.13, "end": 70.543, "char": [0, 3] },
+        { "start": 70.543, "end": 70.956, "char": [4, 17] },
+        { "start": 70.956, "end": 71.37, "char": [18, 21] },
+        { "start": 71.37, "end": 71.783, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 71.783,
+      "end": 74.675,
+      "text": "bir yazar ve bir üst öğeyle birlikte",
+      "words": [
+        { "start": 71.783, "end": 72.196, "char": [0, 3] },
+        { "start": 72.196, "end": 72.609, "char": [4, 9] },
+        { "start": 72.609, "end": 73.022, "char": [10, 12] },
+        { "start": 73.022, "end": 73.435, "char": [13, 16] },
+        { "start": 73.435, "end": 73.848, "char": [17, 20] },
+        { "start": 73.848, "end": 74.261, "char": [21, 27] },
+        { "start": 74.261, "end": 74.675, "char": [28, 36] }
+      ]
+    },
+    {
+      "start": 74.675,
+      "end": 76.74,
+      "text": "değişmez bir imaj olarak yakalar.",
+      "words": [
+        { "start": 74.675, "end": 75.088, "char": [0, 8] },
+        { "start": 75.088, "end": 75.501, "char": [9, 12] },
+        { "start": 75.501, "end": 75.914, "char": [13, 17] },
+        { "start": 75.914, "end": 76.327, "char": [18, 24] },
+        { "start": 76.327, "end": 76.74, "char": [25, 33] }
+      ]
+    },
+    {
+      "start": 76.74,
+      "end": 77.98,
+      "text": "Tıpkı git gibi,",
+      "words": [
+        { "start": 76.74, "end": 77.153, "char": [0, 5] },
+        { "start": 77.153, "end": 77.566, "char": [6, 9] },
+        { "start": 77.566, "end": 77.98, "char": [10, 15] }
+      ]
+    },
+    {
+      "start": 77.98,
+      "end": 79.632,
+      "text": "ama her şey için;",
+      "words": [
+        { "start": 77.98, "end": 78.393, "char": [0, 3] },
+        { "start": 78.393, "end": 78.806, "char": [4, 7] },
+        { "start": 78.806, "end": 79.219, "char": [8, 11] },
+        { "start": 79.219, "end": 79.632, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 79.632,
+      "end": 80.458,
+      "text": "veritabanı dahil.",
+      "words": [
+        { "start": 79.632, "end": 80.045, "char": [0, 10] },
+        { "start": 80.045, "end": 80.458, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 83.458,
+      "end": 84.303,
+      "text": "Commit atıldı.",
+      "words": [
+        { "start": 83.458, "end": 83.881, "char": [0, 6] },
+        { "start": 83.881, "end": 84.303, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 84.303,
+      "end": 86.837,
+      "text": "Bu anlık görüntü hiçbir zaman değişemez.",
+      "words": [
+        { "start": 84.303, "end": 84.725, "char": [0, 2] },
+        { "start": 84.725, "end": 85.148, "char": [3, 8] },
+        { "start": 85.148, "end": 85.57, "char": [9, 16] },
+        { "start": 85.57, "end": 85.992, "char": [17, 23] },
+        { "start": 85.992, "end": 86.414, "char": [24, 29] },
+        { "start": 86.414, "end": 86.837, "char": [30, 40] }
+      ]
+    },
+    {
+      "start": 86.837,
+      "end": 88.526,
+      "text": "Mount edilmeyi bile reddeder.",
+      "words": [
+        { "start": 86.837, "end": 87.259, "char": [0, 5] },
+        { "start": 87.259, "end": 87.681, "char": [6, 14] },
+        { "start": 87.681, "end": 88.104, "char": [15, 19] },
+        { "start": 88.104, "end": 88.526, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 91.855,
+      "end": 93.37,
+      "text": "Commit'e bir isim verin.",
+      "words": [
+        { "start": 91.855, "end": 92.234, "char": [0, 8] },
+        { "start": 92.234, "end": 92.613, "char": [9, 12] },
+        { "start": 92.613, "end": 92.991, "char": [13, 17] },
+        { "start": 92.991, "end": 93.37, "char": [18, 24] }
+      ]
+    },
+    {
+      "start": 93.37,
+      "end": 95.643,
+      "text": "Stable branch artık birinci sürümü gösteriyor.",
+      "words": [
+        { "start": 93.37, "end": 93.749, "char": [0, 6] },
+        { "start": 93.749, "end": 94.128, "char": [7, 13] },
+        { "start": 94.128, "end": 94.506, "char": [14, 19] },
+        { "start": 94.506, "end": 94.885, "char": [20, 27] },
+        { "start": 94.885, "end": 95.264, "char": [28, 34] },
+        { "start": 95.264, "end": 95.643, "char": [35, 46] }
+      ]
+    },
+    {
+      "start": 96.718,
+      "end": 97.141,
+      "text": "Branch,",
+      "words": [{ "start": 96.718, "end": 97.141, "char": [0, 7] }]
+    },
+    {
+      "start": 97.141,
+      "end": 98.834,
+      "text": "geri dönebileceğiniz bir isimdir.",
+      "words": [
+        { "start": 97.141, "end": 97.564, "char": [0, 4] },
+        { "start": 97.564, "end": 97.987, "char": [5, 20] },
+        { "start": 97.987, "end": 98.41, "char": [21, 24] },
+        { "start": 98.41, "end": 98.834, "char": [25, 33] }
+      ]
+    },
+    {
+      "start": 102.101,
+      "end": 103.548,
+      "text": "Çalışmaya devam edin.",
+      "words": [
+        { "start": 102.101, "end": 102.583, "char": [0, 9] },
+        { "start": 102.583, "end": 103.066, "char": [10, 15] },
+        { "start": 103.066, "end": 103.548, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 103.548,
+      "end": 106.441,
+      "text": "Çalışma fork'unda ikinci sürüm birincinin yerini",
+      "words": [
+        { "start": 103.548, "end": 104.03, "char": [0, 7] },
+        { "start": 104.03, "end": 104.512, "char": [8, 17] },
+        { "start": 104.512, "end": 104.995, "char": [18, 24] },
+        { "start": 104.995, "end": 105.477, "char": [25, 30] },
+        { "start": 105.477, "end": 105.959, "char": [31, 41] },
+        { "start": 105.959, "end": 106.441, "char": [42, 48] }
+      ]
+    },
+    {
+      "start": 106.441,
+      "end": 106.924,
+      "text": "alıyor.",
+      "words": [{ "start": 106.441, "end": 106.924, "char": [0, 7] }]
+    },
+    {
+      "start": 106.924,
+      "end": 108.37,
+      "text": "Commit'in umurunda değil.",
+      "words": [
+        { "start": 106.924, "end": 107.406, "char": [0, 9] },
+        { "start": 107.406, "end": 107.888, "char": [10, 18] },
+        { "start": 107.888, "end": 108.37, "char": [19, 25] }
+      ]
+    },
+    {
+      "start": 111.319,
+      "end": 112.981,
+      "text": "Çalışma fork'u ilerledi.",
+      "words": [
+        { "start": 111.319, "end": 111.873, "char": [0, 7] },
+        { "start": 111.873, "end": 112.427, "char": [8, 14] },
+        { "start": 112.427, "end": 112.981, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 112.981,
+      "end": 114.088,
+      "text": "Geçmiş ilerlemedi.",
+      "words": [
+        { "start": 112.981, "end": 113.535, "char": [0, 6] },
+        { "start": 113.535, "end": 114.088, "char": [7, 18] }
+      ]
+    },
+    {
+      "start": 117.364,
+      "end": 118.614,
+      "text": "Şimdi felaket.",
+      "words": [
+        { "start": 117.364, "end": 117.989, "char": [0, 5] },
+        { "start": 117.989, "end": 118.614, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 118.614,
+      "end": 121.738,
+      "text": "Riskli değişiklik customers tablosunu siliyor.",
+      "words": [
+        { "start": 118.614, "end": 119.239, "char": [0, 6] },
+        { "start": 119.239, "end": 119.864, "char": [7, 17] },
+        { "start": 119.864, "end": 120.489, "char": [18, 27] },
+        { "start": 120.489, "end": 121.114, "char": [28, 37] },
+        { "start": 121.114, "end": 121.738, "char": [38, 46] }
+      ]
+    },
+    {
+      "start": 121.738,
+      "end": 123.613,
+      "text": "Gerçek hayatta bu,",
+      "words": [
+        { "start": 121.738, "end": 122.363, "char": [0, 6] },
+        { "start": 122.363, "end": 122.988, "char": [7, 14] },
+        { "start": 122.988, "end": 123.613, "char": [15, 18] }
+      ]
+    },
+    {
+      "start": 123.613,
+      "end": 125.488,
+      "text": "midenizin bulandığı andır.",
+      "words": [
+        { "start": 123.613, "end": 124.238, "char": [0, 9] },
+        { "start": 124.238, "end": 124.863, "char": [10, 19] },
+        { "start": 124.863, "end": 125.488, "char": [20, 26] }
+      ]
+    },
+    {
+      "start": 127.424,
+      "end": 128.812,
+      "text": "Drop table çalıştı.",
+      "words": [
+        { "start": 127.424, "end": 127.886, "char": [0, 4] },
+        { "start": 127.886, "end": 128.349, "char": [5, 10] },
+        { "start": 128.349, "end": 128.812, "char": [11, 19] }
+      ]
+    },
+    {
+      "start": 128.812,
+      "end": 130.663,
+      "text": "Veri çalışma fork'undan silindi.",
+      "words": [
+        { "start": 128.812, "end": 129.275, "char": [0, 4] },
+        { "start": 129.275, "end": 129.737, "char": [5, 12] },
+        { "start": 129.737, "end": 130.2, "char": [13, 23] },
+        { "start": 130.2, "end": 130.663, "char": [24, 32] }
+      ]
+    },
+    {
+      "start": 133.931,
+      "end": 135.65,
+      "text": "Satırları tekrar isteyin,",
+      "words": [
+        { "start": 133.931, "end": 134.504, "char": [0, 9] },
+        { "start": 134.504, "end": 135.077, "char": [10, 16] },
+        { "start": 135.077, "end": 135.65, "char": [17, 25] }
+      ]
+    },
+    {
+      "start": 135.65,
+      "end": 137.368,
+      "text": "veritabanı açıkça söylüyor:",
+      "words": [
+        { "start": 135.65, "end": 136.222, "char": [0, 10] },
+        { "start": 136.222, "end": 136.795, "char": [11, 17] },
+        { "start": 136.795, "end": 137.368, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 137.368,
+      "end": 139.66,
+      "text": "customers ilişkisi mevcut değil.",
+      "words": [
+        { "start": 137.368, "end": 137.941, "char": [0, 9] },
+        { "start": 137.941, "end": 138.514, "char": [10, 18] },
+        { "start": 138.514, "end": 139.087, "char": [19, 25] },
+        { "start": 139.087, "end": 139.66, "char": [26, 32] }
+      ]
+    },
+    {
+      "start": 139.66,
+      "end": 140.806,
+      "text": "Felaket gerçek.",
+      "words": [
+        { "start": 139.66, "end": 140.233, "char": [0, 7] },
+        { "start": 140.233, "end": 140.806, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 140.806,
+      "end": 142.525,
+      "text": "Her satır gitti.",
+      "words": [
+        { "start": 140.806, "end": 141.379, "char": [0, 3] },
+        { "start": 141.379, "end": 141.952, "char": [4, 9] },
+        { "start": 141.952, "end": 142.525, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 145.444,
+      "end": 147.665,
+      "text": "İlişki mevcut değil.",
+      "words": [
+        { "start": 145.444, "end": 146.184, "char": [0, 6] },
+        { "start": 146.184, "end": 146.924, "char": [7, 13] },
+        { "start": 146.924, "end": 147.665, "char": [14, 20] }
+      ]
+    },
+    {
+      "start": 147.665,
+      "end": 149.145,
+      "text": "Üç satır,",
+      "words": [
+        { "start": 147.665, "end": 148.405, "char": [0, 2] },
+        { "start": 148.405, "end": 149.145, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 149.145,
+      "end": 149.885,
+      "text": "gitti.",
+      "words": [{ "start": 149.145, "end": 149.885, "char": [0, 6] }]
+    },
+    {
+      "start": 153.166,
+      "end": 155.048,
+      "text": "Riskli değişikliği de commit edin;",
+      "words": [
+        { "start": 153.166, "end": 153.542, "char": [0, 6] },
+        { "start": 153.542, "end": 153.918, "char": [7, 18] },
+        { "start": 153.918, "end": 154.295, "char": [19, 21] },
+        { "start": 154.295, "end": 154.671, "char": [22, 28] },
+        { "start": 154.671, "end": 155.048, "char": [29, 34] }
+      ]
+    },
+    {
+      "start": 155.048,
+      "end": 156.93,
+      "text": "bozuk tablo ve her şeyiyle.",
+      "words": [
+        { "start": 155.048, "end": 155.424, "char": [0, 5] },
+        { "start": 155.424, "end": 155.8, "char": [6, 11] },
+        { "start": 155.8, "end": 156.177, "char": [12, 14] },
+        { "start": 156.177, "end": 156.553, "char": [15, 18] },
+        { "start": 156.553, "end": 156.93, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 156.93,
+      "end": 158.812,
+      "text": "Geçmiş gerçekte ne olduğunu kaydeder.",
+      "words": [
+        { "start": 156.93, "end": 157.306, "char": [0, 6] },
+        { "start": 157.306, "end": 157.682, "char": [7, 15] },
+        { "start": 157.682, "end": 158.059, "char": [16, 18] },
+        { "start": 158.059, "end": 158.435, "char": [19, 27] },
+        { "start": 158.435, "end": 158.812, "char": [28, 37] }
+      ]
+    },
+    {
+      "start": 158.812,
+      "end": 160.317,
+      "text": "Artık iki commit var,",
+      "words": [
+        { "start": 158.812, "end": 159.188, "char": [0, 5] },
+        { "start": 159.188, "end": 159.564, "char": [6, 9] },
+        { "start": 159.564, "end": 159.941, "char": [10, 16] },
+        { "start": 159.941, "end": 160.317, "char": [17, 21] }
+      ]
+    },
+    {
+      "start": 160.317,
+      "end": 161.446,
+      "text": "üst ve alt.",
+      "words": [
+        { "start": 160.317, "end": 160.694, "char": [0, 3] },
+        { "start": 160.694, "end": 161.07, "char": [4, 6] },
+        { "start": 161.07, "end": 161.446, "char": [7, 11] }
+      ]
+    },
+    {
+      "start": 164.446,
+      "end": 166.092,
+      "text": "Zincirde iki anlık görüntü.",
+      "words": [
+        { "start": 164.446, "end": 164.858, "char": [0, 8] },
+        { "start": 164.858, "end": 165.269, "char": [9, 12] },
+        { "start": 165.269, "end": 165.681, "char": [13, 18] },
+        { "start": 165.681, "end": 166.092, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 169.366,
+      "end": 170.423,
+      "text": "İşte geçmiş:",
+      "words": [
+        { "start": 169.366, "end": 169.894, "char": [0, 4] },
+        { "start": 169.894, "end": 170.423, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 170.423,
+      "end": 172.009,
+      "text": "üstte ikinci sürüm,",
+      "words": [
+        { "start": 170.423, "end": 170.951, "char": [0, 5] },
+        { "start": 170.951, "end": 171.48, "char": [6, 12] },
+        { "start": 171.48, "end": 172.009, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 172.009,
+      "end": 173.594,
+      "text": "altında birinci sürüm,",
+      "words": [
+        { "start": 172.009, "end": 172.537, "char": [0, 7] },
+        { "start": 172.537, "end": 173.066, "char": [8, 15] },
+        { "start": 173.066, "end": 173.594, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 173.594,
+      "end": 175.709,
+      "text": "mesajlar ve yazarlar dahil;",
+      "words": [
+        { "start": 173.594, "end": 174.123, "char": [0, 8] },
+        { "start": 174.123, "end": 174.652, "char": [9, 11] },
+        { "start": 174.652, "end": 175.18, "char": [12, 20] },
+        { "start": 175.18, "end": 175.709, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 175.709,
+      "end": 178.352,
+      "text": "tek bir imajın kilidini açmadan.",
+      "words": [
+        { "start": 175.709, "end": 176.237, "char": [0, 3] },
+        { "start": 176.237, "end": 176.766, "char": [4, 7] },
+        { "start": 176.766, "end": 177.295, "char": [8, 14] },
+        { "start": 177.295, "end": 177.823, "char": [15, 23] },
+        { "start": 177.823, "end": 178.352, "char": [24, 32] }
+      ]
+    },
+    {
+      "start": 181.352,
+      "end": 182.706,
+      "text": "Bir repo log,",
+      "words": [
+        { "start": 181.352, "end": 181.803, "char": [0, 3] },
+        { "start": 181.803, "end": 182.255, "char": [4, 8] },
+        { "start": 182.255, "end": 182.706, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 182.706,
+      "end": 184.513,
+      "text": "tıpkı git log gibi.",
+      "words": [
+        { "start": 182.706, "end": 183.158, "char": [0, 5] },
+        { "start": 183.158, "end": 183.61, "char": [6, 9] },
+        { "start": 183.61, "end": 184.061, "char": [10, 13] },
+        { "start": 184.061, "end": 184.513, "char": [14, 19] }
+      ]
+    },
+    {
+      "start": 187.823,
+      "end": 189.325,
+      "text": "İşte ödül anı.",
+      "words": [
+        { "start": 187.823, "end": 188.324, "char": [0, 4] },
+        { "start": 188.324, "end": 188.825, "char": [5, 9] },
+        { "start": 188.825, "end": 189.325, "char": [10, 14] }
+      ]
+    },
+    {
+      "start": 189.325,
+      "end": 191.83,
+      "text": "Stable branch'i yeni bir yazılabilir",
+      "words": [
+        { "start": 189.325, "end": 189.826, "char": [0, 6] },
+        { "start": 189.826, "end": 190.327, "char": [7, 15] },
+        { "start": 190.327, "end": 190.828, "char": [16, 20] },
+        { "start": 190.828, "end": 191.329, "char": [21, 24] },
+        { "start": 191.329, "end": 191.83, "char": [25, 36] }
+      ]
+    },
+    {
+      "start": 191.83,
+      "end": 193.333,
+      "text": "fork'a checkout edin.",
+      "words": [
+        { "start": 191.83, "end": 192.331, "char": [0, 6] },
+        { "start": 192.331, "end": 192.832, "char": [7, 15] },
+        { "start": 192.832, "end": 193.333, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 193.333,
+      "end": 194.335,
+      "text": "Reflink klonu:",
+      "words": [
+        { "start": 193.333, "end": 193.834, "char": [0, 7] },
+        { "start": 193.834, "end": 194.335, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 194.335,
+      "end": 195.337,
+      "text": "neredeyse anında,",
+      "words": [
+        { "start": 194.335, "end": 194.836, "char": [0, 9] },
+        { "start": 194.836, "end": 195.337, "char": [10, 17] }
+      ]
+    },
+    {
+      "start": 195.337,
+      "end": 196.339,
+      "text": "her boyutta.",
+      "words": [
+        { "start": 195.337, "end": 195.838, "char": [0, 3] },
+        { "start": 195.838, "end": 196.339, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 199.339,
+      "end": 201.759,
+      "text": "Dondurulmuş birinci sürümün yazılabilir bir kopyası,",
+      "words": [
+        { "start": 199.339, "end": 199.742, "char": [0, 11] },
+        { "start": 199.742, "end": 200.145, "char": [12, 19] },
+        { "start": 200.145, "end": 200.549, "char": [20, 27] },
+        { "start": 200.549, "end": 200.952, "char": [28, 39] },
+        { "start": 200.952, "end": 201.356, "char": [40, 43] },
+        { "start": 201.356, "end": 201.759, "char": [44, 52] }
+      ]
+    },
+    {
+      "start": 201.759,
+      "end": 202.97,
+      "text": "yaklaşık bir saniyede.",
+      "words": [
+        { "start": 201.759, "end": 202.163, "char": [0, 8] },
+        { "start": 202.163, "end": 202.566, "char": [9, 12] },
+        { "start": 202.566, "end": 202.97, "char": [13, 22] }
+      ]
+    },
+    {
+      "start": 206.301,
+      "end": 208.652,
+      "text": "Rollback fork'unu diğer repo'lar gibi başlatın.",
+      "words": [
+        { "start": 206.301, "end": 206.693, "char": [0, 8] },
+        { "start": 206.693, "end": 207.084, "char": [9, 17] },
+        { "start": 207.084, "end": 207.476, "char": [18, 23] },
+        { "start": 207.476, "end": 207.868, "char": [24, 32] },
+        { "start": 207.868, "end": 208.26, "char": [33, 37] },
+        { "start": 208.26, "end": 208.652, "char": [38, 47] }
+      ]
+    },
+    {
+      "start": 216.828,
+      "end": 217.925,
+      "text": "İki fork çalışıyor:",
+      "words": [
+        { "start": 216.828, "end": 217.194, "char": [0, 3] },
+        { "start": 217.194, "end": 217.56, "char": [4, 8] },
+        { "start": 217.56, "end": 217.925, "char": [9, 19] }
+      ]
+    },
+    {
+      "start": 217.925,
+      "end": 219.754,
+      "text": "güncel sürüm ve kontrol noktası.",
+      "words": [
+        { "start": 217.925, "end": 218.291, "char": [0, 6] },
+        { "start": 218.291, "end": 218.657, "char": [7, 12] },
+        { "start": 218.657, "end": 219.022, "char": [13, 15] },
+        { "start": 219.022, "end": 219.388, "char": [16, 23] },
+        { "start": 219.388, "end": 219.754, "char": [24, 32] }
+      ]
+    },
+    {
+      "start": 223.026,
+      "end": 224.041,
+      "text": "İşte kanıt:",
+      "words": [
+        { "start": 223.026, "end": 223.533, "char": [0, 4] },
+        { "start": 223.533, "end": 224.041, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 224.041,
+      "end": 226.58,
+      "text": "rollback fork'u birinci sürümü okuyor.",
+      "words": [
+        { "start": 224.041, "end": 224.549, "char": [0, 8] },
+        { "start": 224.549, "end": 225.057, "char": [9, 15] },
+        { "start": 225.057, "end": 225.564, "char": [16, 23] },
+        { "start": 225.564, "end": 226.072, "char": [24, 30] },
+        { "start": 226.072, "end": 226.58, "char": [31, 38] }
+      ]
+    },
+    {
+      "start": 226.58,
+      "end": 229.119,
+      "text": "Çalışma fork'unda hâlâ ikinci sürüm",
+      "words": [
+        { "start": 226.58, "end": 227.088, "char": [0, 7] },
+        { "start": 227.088, "end": 227.595, "char": [8, 17] },
+        { "start": 227.595, "end": 228.103, "char": [18, 22] },
+        { "start": 228.103, "end": 228.611, "char": [23, 29] },
+        { "start": 228.611, "end": 229.119, "char": [30, 35] }
+      ]
+    },
+    {
+      "start": 229.119,
+      "end": 229.627,
+      "text": "var.",
+      "words": [{ "start": 229.119, "end": 229.627, "char": [0, 4] }]
+    },
+    {
+      "start": 229.627,
+      "end": 231.15,
+      "text": "Çalıştırabileceğiniz bir geçmiş.",
+      "words": [
+        { "start": 229.627, "end": 230.134, "char": [0, 20] },
+        { "start": 230.134, "end": 230.642, "char": [21, 24] },
+        { "start": 230.642, "end": 231.15, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 232.65,
+      "end": 233.422,
+      "text": "Rollback tamamlandı.",
+      "words": [
+        { "start": 232.65, "end": 233.036, "char": [0, 8] },
+        { "start": 233.036, "end": 233.422, "char": [9, 20] }
+      ]
+    },
+    {
+      "start": 233.422,
+      "end": 236.124,
+      "text": "Buraya gelmek için hiçbir şeyin üzerine yazılmadı.",
+      "words": [
+        { "start": 233.422, "end": 233.808, "char": [0, 6] },
+        { "start": 233.808, "end": 234.194, "char": [7, 13] },
+        { "start": 234.194, "end": 234.58, "char": [14, 18] },
+        { "start": 234.58, "end": 234.966, "char": [19, 25] },
+        { "start": 234.966, "end": 235.352, "char": [26, 31] },
+        { "start": 235.352, "end": 235.738, "char": [32, 39] },
+        { "start": 235.738, "end": 236.124, "char": [40, 50] }
+      ]
+    },
+    {
+      "start": 239.475,
+      "end": 241.185,
+      "text": "Ve en önemli kısım:",
+      "words": [
+        { "start": 239.475, "end": 239.902, "char": [0, 2] },
+        { "start": 239.902, "end": 240.33, "char": [3, 5] },
+        { "start": 240.33, "end": 240.757, "char": [6, 12] },
+        { "start": 240.757, "end": 241.185, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 241.185,
+      "end": 242.895,
+      "text": "silinen tablo geri geldi,",
+      "words": [
+        { "start": 241.185, "end": 241.613, "char": [0, 7] },
+        { "start": 241.613, "end": 242.04, "char": [8, 13] },
+        { "start": 242.04, "end": 242.468, "char": [14, 18] },
+        { "start": 242.468, "end": 242.895, "char": [19, 25] }
+      ]
+    },
+    {
+      "start": 242.895,
+      "end": 244.178,
+      "text": "üç satırıyla birlikte.",
+      "words": [
+        { "start": 242.895, "end": 243.323, "char": [0, 2] },
+        { "start": 243.323, "end": 243.751, "char": [3, 12] },
+        { "start": 243.751, "end": 244.178, "char": [13, 22] }
+      ]
+    },
+    {
+      "start": 244.178,
+      "end": 245.888,
+      "text": "Rollback yalnızca dosyaları değil,",
+      "words": [
+        { "start": 244.178, "end": 244.606, "char": [0, 8] },
+        { "start": 244.606, "end": 245.033, "char": [9, 17] },
+        { "start": 245.033, "end": 245.461, "char": [18, 27] },
+        { "start": 245.461, "end": 245.888, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 245.888,
+      "end": 247.599,
+      "text": "veritabanını da geri yükledi.",
+      "words": [
+        { "start": 245.888, "end": 246.316, "char": [0, 12] },
+        { "start": 246.316, "end": 246.744, "char": [13, 15] },
+        { "start": 246.744, "end": 247.171, "char": [16, 20] },
+        { "start": 247.171, "end": 247.599, "char": [21, 29] }
+      ]
+    },
+    {
+      "start": 250.993,
+      "end": 252.495,
+      "text": "Yine üç satır.",
+      "words": [
+        { "start": 250.993, "end": 251.493, "char": [0, 4] },
+        { "start": 251.493, "end": 251.994, "char": [5, 7] },
+        { "start": 251.994, "end": 252.495, "char": [8, 14] }
+      ]
+    },
+    {
+      "start": 252.495,
+      "end": 253.997,
+      "text": "Felaket geri alındı.",
+      "words": [
+        { "start": 252.495, "end": 252.995, "char": [0, 7] },
+        { "start": 252.995, "end": 253.496, "char": [8, 12] },
+        { "start": 253.496, "end": 253.997, "char": [13, 20] }
+      ]
+    },
+    {
+      "start": 268.97,
+      "end": 270.392,
+      "text": "Commit'ler hiç değişmez,",
+      "words": [
+        { "start": 268.97, "end": 269.444, "char": [0, 10] },
+        { "start": 269.444, "end": 269.918, "char": [11, 14] },
+        { "start": 269.918, "end": 270.392, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 270.392,
+      "end": 271.813,
+      "text": "fork'lar hiç beklemez.",
+      "words": [
+        { "start": 270.392, "end": 270.865, "char": [0, 8] },
+        { "start": 270.865, "end": 271.339, "char": [9, 12] },
+        { "start": 271.339, "end": 271.813, "char": [13, 22] }
+      ]
+    },
+    {
+      "start": 271.813,
+      "end": 272.761,
+      "text": "Sıradaki derste,",
+      "words": [
+        { "start": 271.813, "end": 272.287, "char": [0, 8] },
+        { "start": 272.287, "end": 272.761, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 272.761,
+      "end": 275.605,
+      "text": "çalışan bir repository'nin tamamını canlı olarak",
+      "words": [
+        { "start": 272.761, "end": 273.235, "char": [0, 7] },
+        { "start": 273.235, "end": 273.709, "char": [8, 11] },
+        { "start": 273.709, "end": 274.183, "char": [12, 26] },
+        { "start": 274.183, "end": 274.657, "char": [27, 35] },
+        { "start": 274.657, "end": 275.131, "char": [36, 41] },
+        { "start": 275.131, "end": 275.605, "char": [42, 48] }
+      ]
+    },
+    {
+      "start": 275.605,
+      "end": 277.501,
+      "text": "başka bir makineye taşıyoruz.",
+      "words": [
+        { "start": 275.605, "end": 276.079, "char": [0, 5] },
+        { "start": 276.079, "end": 276.553, "char": [6, 9] },
+        { "start": 276.553, "end": 277.027, "char": [10, 18] },
+        { "start": 277.027, "end": 277.501, "char": [19, 29] }
+      ]
+    },
+    {
+      "start": 277.501,
+      "end": 278.922,
+      "text": "Bir sonrakinde görüşürüz!",
+      "words": [
+        { "start": 277.501, "end": 277.974, "char": [0, 3] },
+        { "start": 277.974, "end": 278.448, "char": [4, 14] },
+        { "start": 278.448, "end": 278.922, "char": [15, 25] }
+      ]
+    }
+  ]
+}

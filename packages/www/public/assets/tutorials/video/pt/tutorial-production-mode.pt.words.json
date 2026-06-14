@@ -3,566 +3,607 @@
   "cues": [
     {
       "start": 1,
-      "end": 1.917,
-      "text": "Tudo certo!",
+      "end": 3.789,
+      "text": "O seu app roda enquanto você está",
       "words": [
-        { "start": 1, "end": 1.458, "char": [0, 4] },
-        { "start": 1.458, "end": 1.917, "char": [5, 11] }
+        { "start": 1, "end": 1.398, "char": [0, 1] },
+        { "start": 1.398, "end": 1.797, "char": [2, 5] },
+        { "start": 1.797, "end": 2.195, "char": [6, 9] },
+        { "start": 2.195, "end": 2.593, "char": [10, 14] },
+        { "start": 2.593, "end": 2.992, "char": [15, 23] },
+        { "start": 2.992, "end": 3.39, "char": [24, 28] },
+        { "start": 3.39, "end": 3.789, "char": [29, 33] }
       ]
     },
     {
-      "start": 1.917,
-      "end": 4.668,
-      "text": "Vamos levar a sua aplicação do",
+      "start": 3.789,
+      "end": 4.187,
+      "text": "conectado.",
+      "words": [{ "start": 3.789, "end": 4.187, "char": [0, 10] }]
+    },
+    {
+      "start": 4.187,
+      "end": 6.976,
+      "text": "Produção significa que ele roda quando você",
       "words": [
-        { "start": 1.917, "end": 2.375, "char": [0, 5] },
-        { "start": 2.375, "end": 2.834, "char": [6, 11] },
-        { "start": 2.834, "end": 3.292, "char": [12, 13] },
-        { "start": 3.292, "end": 3.751, "char": [14, 17] },
-        { "start": 3.751, "end": 4.209, "char": [18, 27] },
-        { "start": 4.209, "end": 4.668, "char": [28, 30] }
+        { "start": 4.187, "end": 4.585, "char": [0, 8] },
+        { "start": 4.585, "end": 4.984, "char": [9, 18] },
+        { "start": 4.984, "end": 5.382, "char": [19, 22] },
+        { "start": 5.382, "end": 5.78, "char": [23, 26] },
+        { "start": 5.78, "end": 6.179, "char": [27, 31] },
+        { "start": 6.179, "end": 6.577, "char": [32, 38] },
+        { "start": 6.577, "end": 6.976, "char": [39, 43] }
       ]
     },
     {
-      "start": 4.668,
-      "end": 6.043,
-      "text": "desenvolvimento à produção.",
+      "start": 6.976,
+      "end": 7.772,
+      "text": "não está.",
       "words": [
-        { "start": 4.668, "end": 5.126, "char": [0, 15] },
-        { "start": 5.126, "end": 5.584, "char": [16, 17] },
-        { "start": 5.584, "end": 6.043, "char": [18, 27] }
+        { "start": 6.976, "end": 7.374, "char": [0, 3] },
+        { "start": 7.374, "end": 7.772, "char": [4, 9] }
       ]
     },
     {
-      "start": 6.043,
-      "end": 7.418,
+      "start": 7.772,
+      "end": 8.967,
       "text": "Três passos curtos,",
       "words": [
-        { "start": 6.043, "end": 6.501, "char": [0, 4] },
-        { "start": 6.501, "end": 6.96, "char": [5, 11] },
-        { "start": 6.96, "end": 7.418, "char": [12, 19] }
+        { "start": 7.772, "end": 8.171, "char": [0, 4] },
+        { "start": 8.171, "end": 8.569, "char": [5, 11] },
+        { "start": 8.569, "end": 8.967, "char": [12, 19] }
       ]
     },
     {
-      "start": 7.418,
-      "end": 10.169,
-      "text": "todos conduzidos a partir do portátil.",
+      "start": 8.967,
+      "end": 10.561,
+      "text": "tudo pelo seu laptop.",
       "words": [
-        { "start": 7.418, "end": 7.877, "char": [0, 5] },
-        { "start": 7.877, "end": 8.335, "char": [6, 16] },
-        { "start": 8.335, "end": 8.794, "char": [17, 18] },
-        { "start": 8.794, "end": 9.252, "char": [19, 25] },
-        { "start": 9.252, "end": 9.711, "char": [26, 28] },
-        { "start": 9.711, "end": 10.169, "char": [29, 38] }
+        { "start": 8.967, "end": 9.366, "char": [0, 4] },
+        { "start": 9.366, "end": 9.764, "char": [5, 9] },
+        { "start": 9.764, "end": 10.162, "char": [10, 13] },
+        { "start": 10.162, "end": 10.561, "char": [14, 21] }
       ]
     },
     {
-      "start": 10.925,
-      "end": 13.509,
-      "text": "Durante o desenvolvimento corre a aplicação",
+      "start": 11.32,
+      "end": 12.975,
+      "text": "Aqui está a diferença.",
       "words": [
-        { "start": 10.925, "end": 11.356, "char": [0, 7] },
-        { "start": 11.356, "end": 11.786, "char": [8, 9] },
-        { "start": 11.786, "end": 12.217, "char": [10, 25] },
-        { "start": 12.217, "end": 12.648, "char": [26, 31] },
-        { "start": 12.648, "end": 13.078, "char": [32, 33] },
-        { "start": 13.078, "end": 13.509, "char": [34, 43] }
+        { "start": 11.32, "end": 11.734, "char": [0, 4] },
+        { "start": 11.734, "end": 12.148, "char": [5, 9] },
+        { "start": 12.148, "end": 12.561, "char": [10, 11] },
+        { "start": 12.561, "end": 12.975, "char": [12, 22] }
       ]
     },
     {
-      "start": 13.509,
-      "end": 16.093,
-      "text": "a partir de dentro do repo,",
+      "start": 12.975,
+      "end": 13.803,
+      "text": "No desenvolvimento,",
       "words": [
-        { "start": 13.509, "end": 13.94, "char": [0, 1] },
-        { "start": 13.94, "end": 14.37, "char": [2, 8] },
-        { "start": 14.37, "end": 14.801, "char": [9, 11] },
-        { "start": 14.801, "end": 15.231, "char": [12, 18] },
-        { "start": 15.231, "end": 15.662, "char": [19, 21] },
-        { "start": 15.662, "end": 16.093, "char": [22, 27] }
+        { "start": 12.975, "end": 13.389, "char": [0, 2] },
+        { "start": 13.389, "end": 13.803, "char": [3, 19] }
       ]
     },
     {
-      "start": 16.093,
-      "end": 18.677,
-      "text": "por isso para quando se desliga.",
+      "start": 13.803,
+      "end": 16.699,
+      "text": "você inicia o app de dentro do",
       "words": [
-        { "start": 16.093, "end": 16.523, "char": [0, 3] },
-        { "start": 16.523, "end": 16.954, "char": [4, 8] },
-        { "start": 16.954, "end": 17.385, "char": [9, 13] },
-        { "start": 17.385, "end": 17.815, "char": [14, 20] },
-        { "start": 17.815, "end": 18.246, "char": [21, 23] },
-        { "start": 18.246, "end": 18.677, "char": [24, 32] }
+        { "start": 13.803, "end": 14.217, "char": [0, 4] },
+        { "start": 14.217, "end": 14.63, "char": [5, 11] },
+        { "start": 14.63, "end": 15.044, "char": [12, 13] },
+        { "start": 15.044, "end": 15.458, "char": [14, 17] },
+        { "start": 15.458, "end": 15.872, "char": [18, 20] },
+        { "start": 15.872, "end": 16.286, "char": [21, 27] },
+        { "start": 16.286, "end": 16.699, "char": [28, 30] }
       ]
     },
     {
-      "start": 18.677,
-      "end": 21.261,
-      "text": "Em produção lança-a a partir do",
+      "start": 16.699,
+      "end": 17.941,
+      "text": "repo via SSH.",
       "words": [
-        { "start": 18.677, "end": 19.107, "char": [0, 2] },
-        { "start": 19.107, "end": 19.538, "char": [3, 11] },
-        { "start": 19.538, "end": 19.969, "char": [12, 19] },
-        { "start": 19.969, "end": 20.399, "char": [20, 21] },
-        { "start": 20.399, "end": 20.83, "char": [22, 28] },
-        { "start": 20.83, "end": 21.261, "char": [29, 31] }
+        { "start": 16.699, "end": 17.113, "char": [0, 4] },
+        { "start": 17.113, "end": 17.527, "char": [5, 8] },
+        { "start": 17.527, "end": 17.941, "char": [9, 13] }
       ]
     },
     {
-      "start": 21.261,
-      "end": 22.983,
-      "text": "portátil com a CLI,",
+      "start": 17.941,
+      "end": 20.837,
+      "text": "Feche a sessão e o app morre",
       "words": [
-        { "start": 21.261, "end": 21.691, "char": [0, 8] },
-        { "start": 21.691, "end": 22.122, "char": [9, 12] },
-        { "start": 22.122, "end": 22.552, "char": [13, 14] },
-        { "start": 22.552, "end": 22.983, "char": [15, 19] }
+        { "start": 17.941, "end": 18.355, "char": [0, 5] },
+        { "start": 18.355, "end": 18.768, "char": [6, 7] },
+        { "start": 18.768, "end": 19.182, "char": [8, 14] },
+        { "start": 19.182, "end": 19.596, "char": [15, 16] },
+        { "start": 19.596, "end": 20.01, "char": [17, 18] },
+        { "start": 20.01, "end": 20.424, "char": [19, 22] },
+        { "start": 20.424, "end": 20.837, "char": [23, 28] }
       ]
     },
     {
-      "start": 22.983,
-      "end": 25.567,
-      "text": "e continua a correr em segundo",
+      "start": 20.837,
+      "end": 21.665,
+      "text": "com ela.",
       "words": [
-        { "start": 22.983, "end": 23.414, "char": [0, 1] },
-        { "start": 23.414, "end": 23.844, "char": [2, 10] },
-        { "start": 23.844, "end": 24.275, "char": [11, 12] },
-        { "start": 24.275, "end": 24.706, "char": [13, 19] },
-        { "start": 24.706, "end": 25.136, "char": [20, 22] },
-        { "start": 25.136, "end": 25.567, "char": [23, 30] }
+        { "start": 20.837, "end": 21.251, "char": [0, 3] },
+        { "start": 21.251, "end": 21.665, "char": [4, 8] }
       ]
     },
     {
-      "start": 25.567,
-      "end": 25.998,
-      "text": "plano.",
-      "words": [{ "start": 25.567, "end": 25.998, "char": [0, 6] }]
+      "start": 21.665,
+      "end": 22.493,
+      "text": "Em produção,",
+      "words": [
+        { "start": 21.665, "end": 22.079, "char": [0, 2] },
+        { "start": 22.079, "end": 22.493, "char": [3, 12] }
+      ]
     },
     {
-      "start": 29.271,
-      "end": 32.023,
+      "start": 22.493,
+      "end": 25.389,
+      "text": "você o inicia desconectado do seu laptop:",
+      "words": [
+        { "start": 22.493, "end": 22.906, "char": [0, 4] },
+        { "start": 22.906, "end": 23.32, "char": [5, 6] },
+        { "start": 23.32, "end": 23.734, "char": [7, 13] },
+        { "start": 23.734, "end": 24.148, "char": [14, 26] },
+        { "start": 24.148, "end": 24.562, "char": [27, 29] },
+        { "start": 24.562, "end": 24.976, "char": [30, 33] },
+        { "start": 24.976, "end": 25.389, "char": [34, 41] }
+      ]
+    },
+    {
+      "start": 25.389,
+      "end": 27.872,
+      "text": "o servidor é dono do processo,",
+      "words": [
+        { "start": 25.389, "end": 25.803, "char": [0, 1] },
+        { "start": 25.803, "end": 26.217, "char": [2, 10] },
+        { "start": 26.217, "end": 26.631, "char": [11, 12] },
+        { "start": 26.631, "end": 27.045, "char": [13, 17] },
+        { "start": 27.045, "end": 27.458, "char": [18, 20] },
+        { "start": 27.458, "end": 27.872, "char": [21, 30] }
+      ]
+    },
+    {
+      "start": 27.872,
+      "end": 29.527,
+      "text": "a sua conexão não.",
+      "words": [
+        { "start": 27.872, "end": 28.286, "char": [0, 1] },
+        { "start": 28.286, "end": 28.7, "char": [2, 5] },
+        { "start": 28.7, "end": 29.114, "char": [6, 13] },
+        { "start": 29.114, "end": 29.527, "char": [14, 18] }
+      ]
+    },
+    {
+      "start": 32.801,
+      "end": 35.553,
       "text": "Vamos iniciar a aplicação em modo de",
       "words": [
-        { "start": 29.271, "end": 29.664, "char": [0, 5] },
-        { "start": 29.664, "end": 30.057, "char": [6, 13] },
-        { "start": 30.057, "end": 30.45, "char": [14, 15] },
-        { "start": 30.45, "end": 30.843, "char": [16, 25] },
-        { "start": 30.843, "end": 31.237, "char": [26, 28] },
-        { "start": 31.237, "end": 31.63, "char": [29, 33] },
-        { "start": 31.63, "end": 32.023, "char": [34, 36] }
+        { "start": 32.801, "end": 33.194, "char": [0, 5] },
+        { "start": 33.194, "end": 33.587, "char": [6, 13] },
+        { "start": 33.587, "end": 33.98, "char": [14, 15] },
+        { "start": 33.98, "end": 34.373, "char": [16, 25] },
+        { "start": 34.373, "end": 34.767, "char": [26, 28] },
+        { "start": 34.767, "end": 35.16, "char": [29, 33] },
+        { "start": 35.16, "end": 35.553, "char": [34, 36] }
       ]
     },
     {
-      "start": 32.023,
-      "end": 33.988,
+      "start": 35.553,
+      "end": 37.518,
       "text": "produção a partir do portátil.",
       "words": [
-        { "start": 32.023, "end": 32.416, "char": [0, 8] },
-        { "start": 32.416, "end": 32.809, "char": [9, 10] },
-        { "start": 32.809, "end": 33.202, "char": [11, 17] },
-        { "start": 33.202, "end": 33.595, "char": [18, 20] },
-        { "start": 33.595, "end": 33.988, "char": [21, 30] }
+        { "start": 35.553, "end": 35.946, "char": [0, 8] },
+        { "start": 35.946, "end": 36.339, "char": [9, 10] },
+        { "start": 36.339, "end": 36.732, "char": [11, 17] },
+        { "start": 36.732, "end": 37.125, "char": [18, 20] },
+        { "start": 37.125, "end": 37.518, "char": [21, 30] }
       ]
     },
     {
-      "start": 33.988,
-      "end": 36.74,
+      "start": 37.518,
+      "end": 40.27,
       "text": "O comando de deploy chama a mesma",
       "words": [
-        { "start": 33.988, "end": 34.381, "char": [0, 1] },
-        { "start": 34.381, "end": 34.775, "char": [2, 9] },
-        { "start": 34.775, "end": 35.168, "char": [10, 12] },
-        { "start": 35.168, "end": 35.561, "char": [13, 19] },
-        { "start": 35.561, "end": 35.954, "char": [20, 25] },
-        { "start": 35.954, "end": 36.347, "char": [26, 27] },
-        { "start": 36.347, "end": 36.74, "char": [28, 33] }
+        { "start": 37.518, "end": 37.911, "char": [0, 1] },
+        { "start": 37.911, "end": 38.305, "char": [2, 9] },
+        { "start": 38.305, "end": 38.698, "char": [10, 12] },
+        { "start": 38.698, "end": 39.091, "char": [13, 19] },
+        { "start": 39.091, "end": 39.484, "char": [20, 25] },
+        { "start": 39.484, "end": 39.877, "char": [26, 27] },
+        { "start": 39.877, "end": 40.27, "char": [28, 33] }
       ]
     },
     {
-      "start": 36.74,
-      "end": 39.492,
+      "start": 40.27,
+      "end": 43.022,
       "text": "função up que usámos durante o desenvolvimento,",
       "words": [
-        { "start": 36.74, "end": 37.133, "char": [0, 6] },
-        { "start": 37.133, "end": 37.526, "char": [7, 9] },
-        { "start": 37.526, "end": 37.919, "char": [10, 13] },
-        { "start": 37.919, "end": 38.313, "char": [14, 20] },
-        { "start": 38.313, "end": 38.706, "char": [21, 28] },
-        { "start": 38.706, "end": 39.099, "char": [29, 30] },
-        { "start": 39.099, "end": 39.492, "char": [31, 47] }
+        { "start": 40.27, "end": 40.663, "char": [0, 6] },
+        { "start": 40.663, "end": 41.056, "char": [7, 9] },
+        { "start": 41.056, "end": 41.449, "char": [10, 13] },
+        { "start": 41.449, "end": 41.843, "char": [14, 20] },
+        { "start": 41.843, "end": 42.236, "char": [21, 28] },
+        { "start": 42.236, "end": 42.629, "char": [29, 30] },
+        { "start": 42.629, "end": 43.022, "char": [31, 47] }
       ]
     },
     {
-      "start": 39.492,
-      "end": 41.457,
+      "start": 43.022,
+      "end": 44.987,
       "text": "mas corre em segundo plano.",
       "words": [
-        { "start": 39.492, "end": 39.885, "char": [0, 3] },
-        { "start": 39.885, "end": 40.278, "char": [4, 9] },
-        { "start": 40.278, "end": 40.671, "char": [10, 12] },
-        { "start": 40.671, "end": 41.064, "char": [13, 20] },
-        { "start": 41.064, "end": 41.457, "char": [21, 27] }
+        { "start": 43.022, "end": 43.415, "char": [0, 3] },
+        { "start": 43.415, "end": 43.808, "char": [4, 9] },
+        { "start": 43.808, "end": 44.201, "char": [10, 12] },
+        { "start": 44.201, "end": 44.594, "char": [13, 20] },
+        { "start": 44.594, "end": 44.987, "char": [21, 27] }
       ]
     },
     {
-      "start": 41.457,
-      "end": 44.209,
+      "start": 44.987,
+      "end": 47.739,
       "text": "Pode fechar o portátil e a aplicação",
       "words": [
-        { "start": 41.457, "end": 41.851, "char": [0, 4] },
-        { "start": 41.851, "end": 42.244, "char": [5, 11] },
-        { "start": 42.244, "end": 42.637, "char": [12, 13] },
-        { "start": 42.637, "end": 43.03, "char": [14, 22] },
-        { "start": 43.03, "end": 43.423, "char": [23, 24] },
-        { "start": 43.423, "end": 43.816, "char": [25, 26] },
-        { "start": 43.816, "end": 44.209, "char": [27, 36] }
+        { "start": 44.987, "end": 45.381, "char": [0, 4] },
+        { "start": 45.381, "end": 45.774, "char": [5, 11] },
+        { "start": 45.774, "end": 46.167, "char": [12, 13] },
+        { "start": 46.167, "end": 46.56, "char": [14, 22] },
+        { "start": 46.56, "end": 46.953, "char": [23, 24] },
+        { "start": 46.953, "end": 47.346, "char": [25, 26] },
+        { "start": 47.346, "end": 47.739, "char": [27, 36] }
       ]
     },
     {
-      "start": 44.209,
-      "end": 45.389,
+      "start": 47.739,
+      "end": 48.919,
       "text": "continua a funcionar.",
       "words": [
-        { "start": 44.209, "end": 44.602, "char": [0, 8] },
-        { "start": 44.602, "end": 44.995, "char": [9, 10] },
-        { "start": 44.995, "end": 45.389, "char": [11, 21] }
+        { "start": 47.739, "end": 48.132, "char": [0, 8] },
+        { "start": 48.132, "end": 48.525, "char": [9, 10] },
+        { "start": 48.525, "end": 48.919, "char": [11, 21] }
       ]
     },
     {
-      "start": 48.139,
-      "end": 50.783,
+      "start": 51.669,
+      "end": 54.313,
       "text": "Aplicação a correr em produção.",
       "words": [
-        { "start": 48.139, "end": 48.668, "char": [0, 9] },
-        { "start": 48.668, "end": 49.197, "char": [10, 11] },
-        { "start": 49.197, "end": 49.726, "char": [12, 18] },
-        { "start": 49.726, "end": 50.254, "char": [19, 21] },
-        { "start": 50.254, "end": 50.783, "char": [22, 31] }
+        { "start": 51.669, "end": 52.198, "char": [0, 9] },
+        { "start": 52.198, "end": 52.727, "char": [10, 11] },
+        { "start": 52.727, "end": 53.255, "char": [12, 18] },
+        { "start": 53.255, "end": 53.784, "char": [19, 21] },
+        { "start": 53.784, "end": 54.313, "char": [22, 31] }
       ]
     },
     {
-      "start": 50.783,
-      "end": 51.841,
+      "start": 54.313,
+      "end": 55.371,
       "text": "Mesmo comando,",
       "words": [
-        { "start": 50.783, "end": 51.312, "char": [0, 5] },
-        { "start": 51.312, "end": 51.841, "char": [6, 14] }
+        { "start": 54.313, "end": 54.842, "char": [0, 5] },
+        { "start": 54.842, "end": 55.371, "char": [6, 14] }
       ]
     },
     {
-      "start": 51.841,
-      "end": 52.899,
+      "start": 55.371,
+      "end": 56.429,
       "text": "mesmo resultado,",
       "words": [
-        { "start": 51.841, "end": 52.37, "char": [0, 5] },
-        { "start": 52.37, "end": 52.899, "char": [6, 16] }
+        { "start": 55.371, "end": 55.9, "char": [0, 5] },
+        { "start": 55.9, "end": 56.429, "char": [6, 16] }
       ]
     },
     {
-      "start": 52.899,
-      "end": 54.486,
+      "start": 56.429,
+      "end": 58.016,
       "text": "no servidor real.",
       "words": [
-        { "start": 52.899, "end": 53.428, "char": [0, 2] },
-        { "start": 53.428, "end": 53.957, "char": [3, 11] },
-        { "start": 53.957, "end": 54.486, "char": [12, 17] }
+        { "start": 56.429, "end": 56.958, "char": [0, 2] },
+        { "start": 56.958, "end": 57.487, "char": [3, 11] },
+        { "start": 57.487, "end": 58.016, "char": [12, 17] }
       ]
     },
     {
-      "start": 57.816,
-      "end": 60.572,
+      "start": 61.346,
+      "end": 64.102,
       "text": "Agora vamos ativar o arranque automático",
       "words": [
-        { "start": 57.816, "end": 58.275, "char": [0, 5] },
-        { "start": 58.275, "end": 58.735, "char": [6, 11] },
-        { "start": 58.735, "end": 59.194, "char": [12, 18] },
-        { "start": 59.194, "end": 59.654, "char": [19, 20] },
-        { "start": 59.654, "end": 60.113, "char": [21, 29] },
-        { "start": 60.113, "end": 60.572, "char": [30, 40] }
+        { "start": 61.346, "end": 61.805, "char": [0, 5] },
+        { "start": 61.805, "end": 62.265, "char": [6, 11] },
+        { "start": 62.265, "end": 62.724, "char": [12, 18] },
+        { "start": 62.724, "end": 63.184, "char": [19, 20] },
+        { "start": 63.184, "end": 63.643, "char": [21, 29] },
+        { "start": 63.643, "end": 64.102, "char": [30, 40] }
       ]
     },
     {
-      "start": 60.572,
-      "end": 63.329,
+      "start": 64.102,
+      "end": 66.859,
       "text": "para que a aplicação sobreviva a",
       "words": [
-        { "start": 60.572, "end": 61.032, "char": [0, 4] },
-        { "start": 61.032, "end": 61.491, "char": [5, 8] },
-        { "start": 61.491, "end": 61.951, "char": [9, 10] },
-        { "start": 61.951, "end": 62.41, "char": [11, 20] },
-        { "start": 62.41, "end": 62.869, "char": [21, 30] },
-        { "start": 62.869, "end": 63.329, "char": [31, 32] }
+        { "start": 64.102, "end": 64.562, "char": [0, 4] },
+        { "start": 64.562, "end": 65.021, "char": [5, 8] },
+        { "start": 65.021, "end": 65.481, "char": [9, 10] },
+        { "start": 65.481, "end": 65.94, "char": [11, 20] },
+        { "start": 65.94, "end": 66.399, "char": [21, 30] },
+        { "start": 66.399, "end": 66.859, "char": [31, 32] }
       ]
     },
     {
-      "start": 63.329,
-      "end": 65.166,
+      "start": 66.859,
+      "end": 68.696,
       "text": "um reinício do servidor.",
       "words": [
-        { "start": 63.329, "end": 63.788, "char": [0, 2] },
-        { "start": 63.788, "end": 64.248, "char": [3, 11] },
-        { "start": 64.248, "end": 64.707, "char": [12, 14] },
-        { "start": 64.707, "end": 65.166, "char": [15, 24] }
+        { "start": 66.859, "end": 67.318, "char": [0, 2] },
+        { "start": 67.318, "end": 67.778, "char": [3, 11] },
+        { "start": 67.778, "end": 68.237, "char": [12, 14] },
+        { "start": 68.237, "end": 68.696, "char": [15, 24] }
       ]
     },
     {
-      "start": 65.166,
-      "end": 66.545,
+      "start": 68.696,
+      "end": 70.075,
       "text": "A partir daqui,",
       "words": [
-        { "start": 65.166, "end": 65.626, "char": [0, 1] },
-        { "start": 65.626, "end": 66.085, "char": [2, 8] },
-        { "start": 66.085, "end": 66.545, "char": [9, 15] }
+        { "start": 68.696, "end": 69.156, "char": [0, 1] },
+        { "start": 69.156, "end": 69.615, "char": [2, 8] },
+        { "start": 69.615, "end": 70.075, "char": [9, 15] }
       ]
     },
     {
-      "start": 66.545,
-      "end": 68.382,
+      "start": 70.075,
+      "end": 71.912,
       "text": "se o servidor reiniciar,",
       "words": [
-        { "start": 66.545, "end": 67.004, "char": [0, 2] },
-        { "start": 67.004, "end": 67.463, "char": [3, 4] },
-        { "start": 67.463, "end": 67.923, "char": [5, 13] },
-        { "start": 67.923, "end": 68.382, "char": [14, 24] }
+        { "start": 70.075, "end": 70.534, "char": [0, 2] },
+        { "start": 70.534, "end": 70.993, "char": [3, 4] },
+        { "start": 70.993, "end": 71.453, "char": [5, 13] },
+        { "start": 71.453, "end": 71.912, "char": [14, 24] }
       ]
     },
     {
-      "start": 68.382,
-      "end": 71.138,
+      "start": 71.912,
+      "end": 74.668,
       "text": "este repositório volta a arrancar automaticamente.",
       "words": [
-        { "start": 68.382, "end": 68.842, "char": [0, 4] },
-        { "start": 68.842, "end": 69.301, "char": [5, 16] },
-        { "start": 69.301, "end": 69.76, "char": [17, 22] },
-        { "start": 69.76, "end": 70.22, "char": [23, 24] },
-        { "start": 70.22, "end": 70.679, "char": [25, 33] },
-        { "start": 70.679, "end": 71.138, "char": [34, 50] }
+        { "start": 71.912, "end": 72.371, "char": [0, 4] },
+        { "start": 72.371, "end": 72.831, "char": [5, 16] },
+        { "start": 72.831, "end": 73.29, "char": [17, 22] },
+        { "start": 73.29, "end": 73.75, "char": [23, 24] },
+        { "start": 73.75, "end": 74.209, "char": [25, 33] },
+        { "start": 74.209, "end": 74.668, "char": [34, 50] }
       ]
     },
     {
-      "start": 73.388,
-      "end": 75.318,
+      "start": 76.918,
+      "end": 78.848,
       "text": "Arranque automático ativo.",
       "words": [
-        { "start": 73.388, "end": 74.032, "char": [0, 8] },
-        { "start": 74.032, "end": 74.675, "char": [9, 19] },
-        { "start": 74.675, "end": 75.318, "char": [20, 26] }
+        { "start": 76.918, "end": 77.562, "char": [0, 8] },
+        { "start": 77.562, "end": 78.205, "char": [9, 19] },
+        { "start": 78.205, "end": 78.848, "char": [20, 26] }
       ]
     },
     {
-      "start": 75.318,
-      "end": 77.891,
+      "start": 78.848,
+      "end": 81.421,
       "text": "A aplicação sobrevive a",
       "words": [
-        { "start": 75.318, "end": 75.962, "char": [0, 1] },
-        { "start": 75.962, "end": 76.605, "char": [2, 11] },
-        { "start": 76.605, "end": 77.248, "char": [12, 21] },
-        { "start": 77.248, "end": 77.891, "char": [22, 23] }
+        { "start": 78.848, "end": 79.492, "char": [0, 1] },
+        { "start": 79.492, "end": 80.135, "char": [2, 11] },
+        { "start": 80.135, "end": 80.778, "char": [12, 21] },
+        { "start": 80.778, "end": 81.421, "char": [22, 23] }
       ]
     },
     {
-      "start": 77.891,
-      "end": 78.535,
+      "start": 81.421,
+      "end": 82.065,
       "text": "reinícios.",
-      "words": [{ "start": 77.891, "end": 78.535, "char": [0, 10] }]
+      "words": [{ "start": 81.421, "end": 82.065, "char": [0, 10] }]
     },
     {
-      "start": 81.854,
-      "end": 84.423,
+      "start": 85.417,
+      "end": 87.986,
       "text": "Vamos listar os repositórios com arranque",
       "words": [
-        { "start": 81.854, "end": 82.282, "char": [0, 5] },
-        { "start": 82.282, "end": 82.71, "char": [6, 12] },
-        { "start": 82.71, "end": 83.138, "char": [13, 15] },
-        { "start": 83.138, "end": 83.567, "char": [16, 28] },
-        { "start": 83.567, "end": 83.995, "char": [29, 32] },
-        { "start": 83.995, "end": 84.423, "char": [33, 41] }
+        { "start": 85.417, "end": 85.845, "char": [0, 5] },
+        { "start": 85.845, "end": 86.273, "char": [6, 12] },
+        { "start": 86.273, "end": 86.701, "char": [13, 15] },
+        { "start": 86.701, "end": 87.129, "char": [16, 28] },
+        { "start": 87.129, "end": 87.558, "char": [29, 32] },
+        { "start": 87.558, "end": 87.986, "char": [33, 41] }
       ]
     },
     {
-      "start": 84.423,
-      "end": 85.279,
+      "start": 87.986,
+      "end": 88.842,
       "text": "automático ativado.",
       "words": [
-        { "start": 84.423, "end": 84.851, "char": [0, 10] },
-        { "start": 84.851, "end": 85.279, "char": [11, 19] }
+        { "start": 87.986, "end": 88.414, "char": [0, 10] },
+        { "start": 88.414, "end": 88.842, "char": [11, 19] }
       ]
     },
     {
-      "start": 85.279,
-      "end": 87.848,
+      "start": 88.842,
+      "end": 91.411,
       "text": "Confirma que a nossa aplicação está",
       "words": [
-        { "start": 85.279, "end": 85.707, "char": [0, 8] },
-        { "start": 85.707, "end": 86.135, "char": [9, 12] },
-        { "start": 86.135, "end": 86.563, "char": [13, 14] },
-        { "start": 86.563, "end": 86.991, "char": [15, 20] },
-        { "start": 86.991, "end": 87.42, "char": [21, 30] },
-        { "start": 87.42, "end": 87.848, "char": [31, 35] }
+        { "start": 88.842, "end": 89.27, "char": [0, 8] },
+        { "start": 89.27, "end": 89.698, "char": [9, 12] },
+        { "start": 89.698, "end": 90.126, "char": [13, 14] },
+        { "start": 90.126, "end": 90.554, "char": [15, 20] },
+        { "start": 90.554, "end": 90.983, "char": [21, 30] },
+        { "start": 90.983, "end": 91.411, "char": [31, 35] }
       ]
     },
     {
-      "start": 87.848,
-      "end": 89.56,
+      "start": 91.411,
+      "end": 93.123,
       "text": "na lista de arranque.",
       "words": [
-        { "start": 87.848, "end": 88.276, "char": [0, 2] },
-        { "start": 88.276, "end": 88.704, "char": [3, 8] },
-        { "start": 88.704, "end": 89.132, "char": [9, 11] },
-        { "start": 89.132, "end": 89.56, "char": [12, 21] }
+        { "start": 91.411, "end": 91.839, "char": [0, 2] },
+        { "start": 91.839, "end": 92.267, "char": [3, 8] },
+        { "start": 92.267, "end": 92.695, "char": [9, 11] },
+        { "start": 92.695, "end": 93.123, "char": [12, 21] }
       ]
     },
     {
-      "start": 91.56,
-      "end": 92.344,
+      "start": 96.123,
+      "end": 96.907,
       "text": "Aqui está,",
       "words": [
-        { "start": 91.56, "end": 91.952, "char": [0, 4] },
-        { "start": 91.952, "end": 92.344, "char": [5, 10] }
+        { "start": 96.123, "end": 96.515, "char": [0, 4] },
+        { "start": 96.515, "end": 96.907, "char": [5, 10] }
       ]
     },
     {
-      "start": 92.344,
-      "end": 93.911,
+      "start": 96.907,
+      "end": 98.474,
       "text": "na lista de arranque.",
       "words": [
-        { "start": 92.344, "end": 92.736, "char": [0, 2] },
-        { "start": 92.736, "end": 93.128, "char": [3, 8] },
-        { "start": 93.128, "end": 93.519, "char": [9, 11] },
-        { "start": 93.519, "end": 93.911, "char": [12, 21] }
+        { "start": 96.907, "end": 97.299, "char": [0, 2] },
+        { "start": 97.299, "end": 97.69, "char": [3, 8] },
+        { "start": 97.69, "end": 98.082, "char": [9, 11] },
+        { "start": 98.082, "end": 98.474, "char": [12, 21] }
       ]
     },
     {
-      "start": 97.232,
-      "end": 99.369,
+      "start": 101.795,
+      "end": 103.932,
       "text": "E para parar a aplicação,",
       "words": [
-        { "start": 97.232, "end": 97.659, "char": [0, 1] },
-        { "start": 97.659, "end": 98.087, "char": [2, 6] },
-        { "start": 98.087, "end": 98.514, "char": [7, 12] },
-        { "start": 98.514, "end": 98.941, "char": [13, 14] },
-        { "start": 98.941, "end": 99.369, "char": [15, 25] }
+        { "start": 101.795, "end": 102.222, "char": [0, 1] },
+        { "start": 102.222, "end": 102.65, "char": [2, 6] },
+        { "start": 102.65, "end": 103.077, "char": [7, 12] },
+        { "start": 103.077, "end": 103.504, "char": [13, 14] },
+        { "start": 103.504, "end": 103.932, "char": [15, 25] }
       ]
     },
     {
-      "start": 99.369,
-      "end": 101.933,
+      "start": 103.932,
+      "end": 106.496,
       "text": "um único comando a partir do",
       "words": [
-        { "start": 99.369, "end": 99.796, "char": [0, 2] },
-        { "start": 99.796, "end": 100.224, "char": [3, 8] },
-        { "start": 100.224, "end": 100.651, "char": [9, 16] },
-        { "start": 100.651, "end": 101.078, "char": [17, 18] },
-        { "start": 101.078, "end": 101.506, "char": [19, 25] },
-        { "start": 101.506, "end": 101.933, "char": [26, 28] }
+        { "start": 103.932, "end": 104.359, "char": [0, 2] },
+        { "start": 104.359, "end": 104.787, "char": [3, 8] },
+        { "start": 104.787, "end": 105.214, "char": [9, 16] },
+        { "start": 105.214, "end": 105.641, "char": [17, 18] },
+        { "start": 105.641, "end": 106.069, "char": [19, 25] },
+        { "start": 106.069, "end": 106.496, "char": [26, 28] }
       ]
     },
     {
-      "start": 101.933,
-      "end": 102.36,
+      "start": 106.496,
+      "end": 106.923,
       "text": "portátil.",
-      "words": [{ "start": 101.933, "end": 102.36, "char": [0, 9] }]
+      "words": [{ "start": 106.496, "end": 106.923, "char": [0, 9] }]
     },
     {
-      "start": 102.36,
-      "end": 104.07,
+      "start": 106.923,
+      "end": 108.633,
       "text": "Um comando para iniciar,",
       "words": [
-        { "start": 102.36, "end": 102.788, "char": [0, 2] },
-        { "start": 102.788, "end": 103.215, "char": [3, 10] },
-        { "start": 103.215, "end": 103.642, "char": [11, 15] },
-        { "start": 103.642, "end": 104.07, "char": [16, 24] }
+        { "start": 106.923, "end": 107.351, "char": [0, 2] },
+        { "start": 107.351, "end": 107.778, "char": [3, 10] },
+        { "start": 107.778, "end": 108.205, "char": [11, 15] },
+        { "start": 108.205, "end": 108.633, "char": [16, 24] }
       ]
     },
     {
-      "start": 104.07,
-      "end": 105.779,
+      "start": 108.633,
+      "end": 110.342,
       "text": "um comando para parar.",
       "words": [
-        { "start": 104.07, "end": 104.497, "char": [0, 2] },
-        { "start": 104.497, "end": 104.925, "char": [3, 10] },
-        { "start": 104.925, "end": 105.352, "char": [11, 15] },
-        { "start": 105.352, "end": 105.779, "char": [16, 22] }
+        { "start": 108.633, "end": 109.06, "char": [0, 2] },
+        { "start": 109.06, "end": 109.488, "char": [3, 10] },
+        { "start": 109.488, "end": 109.915, "char": [11, 15] },
+        { "start": 109.915, "end": 110.342, "char": [16, 22] }
       ]
     },
     {
-      "start": 105.779,
-      "end": 107.916,
+      "start": 110.342,
+      "end": 112.479,
       "text": "Tudo a partir do terminal.",
       "words": [
-        { "start": 105.779, "end": 106.207, "char": [0, 4] },
-        { "start": 106.207, "end": 106.634, "char": [5, 6] },
-        { "start": 106.634, "end": 107.061, "char": [7, 13] },
-        { "start": 107.061, "end": 107.489, "char": [14, 16] },
-        { "start": 107.489, "end": 107.916, "char": [17, 26] }
+        { "start": 110.342, "end": 110.77, "char": [0, 4] },
+        { "start": 110.77, "end": 111.197, "char": [5, 6] },
+        { "start": 111.197, "end": 111.624, "char": [7, 13] },
+        { "start": 111.624, "end": 112.052, "char": [14, 16] },
+        { "start": 112.052, "end": 112.479, "char": [17, 26] }
       ]
     },
     {
-      "start": 110.416,
-      "end": 110.97,
+      "start": 114.979,
+      "end": 115.533,
       "text": "Parada.",
-      "words": [{ "start": 110.416, "end": 110.97, "char": [0, 7] }]
+      "words": [{ "start": 114.979, "end": 115.533, "char": [0, 7] }]
     },
     {
-      "start": 110.97,
-      "end": 113.188,
+      "start": 115.533,
+      "end": 117.751,
       "text": "Um comando para arrancar,",
       "words": [
-        { "start": 110.97, "end": 111.525, "char": [0, 2] },
-        { "start": 111.525, "end": 112.079, "char": [3, 10] },
-        { "start": 112.079, "end": 112.634, "char": [11, 15] },
-        { "start": 112.634, "end": 113.188, "char": [16, 25] }
+        { "start": 115.533, "end": 116.088, "char": [0, 2] },
+        { "start": 116.088, "end": 116.642, "char": [3, 10] },
+        { "start": 116.642, "end": 117.197, "char": [11, 15] },
+        { "start": 117.197, "end": 117.751, "char": [16, 25] }
       ]
     },
     {
-      "start": 113.188,
-      "end": 115.406,
+      "start": 117.751,
+      "end": 119.968,
       "text": "um comando para parar.",
       "words": [
-        { "start": 113.188, "end": 113.742, "char": [0, 2] },
-        { "start": 113.742, "end": 114.297, "char": [3, 10] },
-        { "start": 114.297, "end": 114.851, "char": [11, 15] },
-        { "start": 114.851, "end": 115.406, "char": [16, 22] }
+        { "start": 117.751, "end": 118.305, "char": [0, 2] },
+        { "start": 118.305, "end": 118.86, "char": [3, 10] },
+        { "start": 118.86, "end": 119.414, "char": [11, 15] },
+        { "start": 119.414, "end": 119.968, "char": [16, 22] }
       ]
     },
     {
-      "start": 116.224,
-      "end": 119.141,
+      "start": 120.787,
+      "end": 123.704,
       "text": "E é assim o modo",
       "words": [
-        { "start": 116.224, "end": 116.807, "char": [0, 1] },
-        { "start": 116.807, "end": 117.391, "char": [2, 3] },
-        { "start": 117.391, "end": 117.974, "char": [4, 9] },
-        { "start": 117.974, "end": 118.558, "char": [10, 11] },
-        { "start": 118.558, "end": 119.141, "char": [12, 16] }
+        { "start": 120.787, "end": 121.37, "char": [0, 1] },
+        { "start": 121.37, "end": 121.954, "char": [2, 3] },
+        { "start": 121.954, "end": 122.537, "char": [4, 9] },
+        { "start": 122.537, "end": 123.121, "char": [10, 11] },
+        { "start": 123.121, "end": 123.704, "char": [12, 16] }
       ]
     },
     {
-      "start": 119.141,
-      "end": 120.308,
+      "start": 123.704,
+      "end": 124.871,
       "text": "de produção,",
       "words": [
-        { "start": 119.141, "end": 119.724, "char": [0, 2] },
-        { "start": 119.724, "end": 120.308, "char": [3, 12] }
+        { "start": 123.704, "end": 124.287, "char": [0, 2] },
+        { "start": 124.287, "end": 124.871, "char": [3, 12] }
       ]
     },
     {
-      "start": 120.308,
-      "end": 121.475,
+      "start": 124.871,
+      "end": 126.038,
       "text": "em resumo.",
       "words": [
-        { "start": 120.308, "end": 120.891, "char": [0, 2] },
-        { "start": 120.891, "end": 121.475, "char": [3, 10] }
+        { "start": 124.871, "end": 125.454, "char": [0, 2] },
+        { "start": 125.454, "end": 126.038, "char": [3, 10] }
       ]
     },
     {
-      "start": 121.475,
-      "end": 123.225,
+      "start": 126.038,
+      "end": 127.788,
       "text": "Até ao próximo!",
       "words": [
-        { "start": 121.475, "end": 122.058, "char": [0, 3] },
-        { "start": 122.058, "end": 122.641, "char": [4, 6] },
-        { "start": 122.641, "end": 123.225, "char": [7, 15] }
+        { "start": 126.038, "end": 126.621, "char": [0, 3] },
+        { "start": 126.621, "end": 127.204, "char": [4, 6] },
+        { "start": 127.204, "end": 127.788, "char": [7, 15] }
       ]
     }
   ]

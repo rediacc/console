@@ -439,314 +439,330 @@
       ]
     },
     {
-      "start": 85.74,
-      "end": 88.627,
+      "start": 85.64,
+      "end": 88.527,
       "text": "Il comando di query macchina ti da'",
       "words": [
-        { "start": 85.74, "end": 86.152, "char": [0, 2] },
-        { "start": 86.152, "end": 86.565, "char": [3, 10] },
-        { "start": 86.565, "end": 86.977, "char": [11, 13] },
-        { "start": 86.977, "end": 87.389, "char": [14, 19] },
-        { "start": 87.389, "end": 87.802, "char": [20, 28] },
-        { "start": 87.802, "end": 88.214, "char": [29, 31] },
-        { "start": 88.214, "end": 88.627, "char": [32, 35] }
+        { "start": 85.64, "end": 86.052, "char": [0, 2] },
+        { "start": 86.052, "end": 86.465, "char": [3, 10] },
+        { "start": 86.465, "end": 86.877, "char": [11, 13] },
+        { "start": 86.877, "end": 87.289, "char": [14, 19] },
+        { "start": 87.289, "end": 87.702, "char": [20, 28] },
+        { "start": 87.702, "end": 88.114, "char": [29, 31] },
+        { "start": 88.114, "end": 88.527, "char": [32, 35] }
       ]
     },
     {
-      "start": 88.627,
-      "end": 90.688,
+      "start": 88.527,
+      "end": 90.588,
       "text": "tutto in un colpo solo.",
       "words": [
-        { "start": 88.627, "end": 89.039, "char": [0, 5] },
-        { "start": 89.039, "end": 89.451, "char": [6, 8] },
-        { "start": 89.451, "end": 89.864, "char": [9, 11] },
-        { "start": 89.864, "end": 90.276, "char": [12, 17] },
-        { "start": 90.276, "end": 90.688, "char": [18, 23] }
+        { "start": 88.527, "end": 88.939, "char": [0, 5] },
+        { "start": 88.939, "end": 89.351, "char": [6, 8] },
+        { "start": 89.351, "end": 89.764, "char": [9, 11] },
+        { "start": 89.764, "end": 90.176, "char": [12, 17] },
+        { "start": 90.176, "end": 90.588, "char": [18, 23] }
       ]
     },
     {
-      "start": 90.688,
-      "end": 91.925,
+      "start": 90.588,
+      "end": 91.825,
       "text": "Informazioni di sistema,",
       "words": [
-        { "start": 90.688, "end": 91.101, "char": [0, 12] },
-        { "start": 91.101, "end": 91.513, "char": [13, 15] },
-        { "start": 91.513, "end": 91.925, "char": [16, 24] }
+        { "start": 90.588, "end": 91.001, "char": [0, 12] },
+        { "start": 91.001, "end": 91.413, "char": [13, 15] },
+        { "start": 91.413, "end": 91.825, "char": [16, 24] }
       ]
     },
     {
-      "start": 91.925,
-      "end": 92.338,
+      "start": 91.825,
+      "end": 92.238,
       "text": "container,",
-      "words": [{ "start": 91.925, "end": 92.338, "char": [0, 10] }]
+      "words": [{ "start": 91.825, "end": 92.238, "char": [0, 10] }]
     },
     {
-      "start": 92.338,
-      "end": 93.987,
+      "start": 92.238,
+      "end": 93.887,
       "text": "repository -- tutto insieme.",
       "words": [
-        { "start": 92.338, "end": 92.75, "char": [0, 10] },
-        { "start": 92.75, "end": 93.163, "char": [11, 13] },
-        { "start": 93.163, "end": 93.575, "char": [14, 19] },
-        { "start": 93.575, "end": 93.987, "char": [20, 28] }
+        { "start": 92.238, "end": 92.65, "char": [0, 10] },
+        { "start": 92.65, "end": 93.063, "char": [11, 13] },
+        { "start": 93.063, "end": 93.475, "char": [14, 19] },
+        { "start": 93.475, "end": 93.887, "char": [20, 28] }
       ]
     },
     {
-      "start": 93.987,
-      "end": 96.874,
+      "start": 93.887,
+      "end": 96.774,
       "text": "Eseguilo una volta e hai il quadro",
       "words": [
-        { "start": 93.987, "end": 94.4, "char": [0, 8] },
-        { "start": 94.4, "end": 94.812, "char": [9, 12] },
-        { "start": 94.812, "end": 95.224, "char": [13, 18] },
-        { "start": 95.224, "end": 95.637, "char": [19, 20] },
-        { "start": 95.637, "end": 96.049, "char": [21, 24] },
-        { "start": 96.049, "end": 96.461, "char": [25, 27] },
-        { "start": 96.461, "end": 96.874, "char": [28, 34] }
+        { "start": 93.887, "end": 94.3, "char": [0, 8] },
+        { "start": 94.3, "end": 94.712, "char": [9, 12] },
+        { "start": 94.712, "end": 95.124, "char": [13, 18] },
+        { "start": 95.124, "end": 95.537, "char": [19, 20] },
+        { "start": 95.537, "end": 95.949, "char": [21, 24] },
+        { "start": 95.949, "end": 96.361, "char": [25, 27] },
+        { "start": 96.361, "end": 96.774, "char": [28, 34] }
       ]
     },
     {
-      "start": 96.874,
-      "end": 97.286,
+      "start": 96.774,
+      "end": 97.186,
       "text": "completo.",
-      "words": [{ "start": 96.874, "end": 97.286, "char": [0, 9] }]
+      "words": [{ "start": 96.774, "end": 97.186, "char": [0, 9] }]
     },
     {
-      "start": 97.286,
-      "end": 98.34,
+      "start": 97.186,
+      "end": 98.24,
       "text": "Tutto insieme,",
       "words": [
-        { "start": 97.286, "end": 97.813, "char": [0, 5] },
-        { "start": 97.813, "end": 98.34, "char": [6, 14] }
+        { "start": 97.186, "end": 97.713, "char": [0, 5] },
+        { "start": 97.713, "end": 98.24, "char": [6, 14] }
       ]
     },
     {
-      "start": 98.34,
-      "end": 100.447,
+      "start": 98.24,
+      "end": 100.347,
       "text": "senza bisogno di filtri.",
       "words": [
-        { "start": 98.34, "end": 98.867, "char": [0, 5] },
-        { "start": 98.867, "end": 99.393, "char": [6, 13] },
-        { "start": 99.393, "end": 99.92, "char": [14, 16] },
-        { "start": 99.92, "end": 100.447, "char": [17, 24] }
+        { "start": 98.24, "end": 98.767, "char": [0, 5] },
+        { "start": 98.767, "end": 99.293, "char": [6, 13] },
+        { "start": 99.293, "end": 99.82, "char": [14, 16] },
+        { "start": 99.82, "end": 100.347, "char": [17, 24] }
       ]
     },
     {
-      "start": 103.697,
-      "end": 106.504,
+      "start": 103.597,
+      "end": 106.404,
       "text": "E infine il controllo diagnostico per un",
       "words": [
-        { "start": 103.697, "end": 104.098, "char": [0, 1] },
-        { "start": 104.098, "end": 104.499, "char": [2, 8] },
-        { "start": 104.499, "end": 104.9, "char": [9, 11] },
-        { "start": 104.9, "end": 105.301, "char": [12, 21] },
-        { "start": 105.301, "end": 105.702, "char": [22, 33] },
-        { "start": 105.702, "end": 106.103, "char": [34, 37] },
-        { "start": 106.103, "end": 106.504, "char": [38, 40] }
+        { "start": 103.597, "end": 103.998, "char": [0, 1] },
+        { "start": 103.998, "end": 104.399, "char": [2, 8] },
+        { "start": 104.399, "end": 104.8, "char": [9, 11] },
+        { "start": 104.8, "end": 105.201, "char": [12, 21] },
+        { "start": 105.201, "end": 105.602, "char": [22, 33] },
+        { "start": 105.602, "end": 106.003, "char": [34, 37] },
+        { "start": 106.003, "end": 106.404, "char": [38, 40] }
       ]
     },
     {
-      "start": 106.504,
-      "end": 108.509,
+      "start": 106.404,
+      "end": 108.409,
       "text": "controllo rapido sul tuo laptop.",
       "words": [
-        { "start": 106.504, "end": 106.905, "char": [0, 9] },
-        { "start": 106.905, "end": 107.306, "char": [10, 16] },
-        { "start": 107.306, "end": 107.707, "char": [17, 20] },
-        { "start": 107.707, "end": 108.108, "char": [21, 24] },
-        { "start": 108.108, "end": 108.509, "char": [25, 32] }
+        { "start": 106.404, "end": 106.805, "char": [0, 9] },
+        { "start": 106.805, "end": 107.206, "char": [10, 16] },
+        { "start": 107.206, "end": 107.607, "char": [17, 20] },
+        { "start": 107.607, "end": 108.008, "char": [21, 24] },
+        { "start": 108.008, "end": 108.409, "char": [25, 32] }
       ]
     },
     {
-      "start": 108.509,
-      "end": 108.91,
+      "start": 108.409,
+      "end": 108.81,
       "text": "Node,",
-      "words": [{ "start": 108.509, "end": 108.91, "char": [0, 5] }]
+      "words": [{ "start": 108.409, "end": 108.81, "char": [0, 5] }]
     },
     {
-      "start": 108.91,
-      "end": 109.712,
+      "start": 108.81,
+      "end": 109.612,
       "text": "chiave SSH,",
       "words": [
-        { "start": 108.91, "end": 109.311, "char": [0, 6] },
-        { "start": 109.311, "end": 109.712, "char": [7, 11] }
+        { "start": 108.81, "end": 109.211, "char": [0, 6] },
+        { "start": 109.211, "end": 109.612, "char": [7, 11] }
       ]
     },
     {
-      "start": 109.712,
-      "end": 110.113,
+      "start": 109.612,
+      "end": 110.013,
       "text": "renet,",
-      "words": [{ "start": 109.712, "end": 110.113, "char": [0, 6] }]
+      "words": [{ "start": 109.612, "end": 110.013, "char": [0, 6] }]
     },
     {
-      "start": 110.113,
-      "end": 112.92,
+      "start": 110.013,
+      "end": 112.82,
       "text": "Docker -- tutto cio' da cui dipende",
       "words": [
-        { "start": 110.113, "end": 110.514, "char": [0, 6] },
-        { "start": 110.514, "end": 110.915, "char": [7, 9] },
-        { "start": 110.915, "end": 111.316, "char": [10, 15] },
-        { "start": 111.316, "end": 111.717, "char": [16, 20] },
-        { "start": 111.717, "end": 112.118, "char": [21, 23] },
-        { "start": 112.118, "end": 112.519, "char": [24, 27] },
-        { "start": 112.519, "end": 112.92, "char": [28, 35] }
+        { "start": 110.013, "end": 110.414, "char": [0, 6] },
+        { "start": 110.414, "end": 110.815, "char": [7, 9] },
+        { "start": 110.815, "end": 111.216, "char": [10, 15] },
+        { "start": 111.216, "end": 111.617, "char": [16, 20] },
+        { "start": 111.617, "end": 112.018, "char": [21, 23] },
+        { "start": 112.018, "end": 112.419, "char": [24, 27] },
+        { "start": 112.419, "end": 112.82, "char": [28, 35] }
       ]
     },
     {
-      "start": 112.92,
-      "end": 113.722,
+      "start": 112.82,
+      "end": 113.622,
       "text": "la CLI.",
       "words": [
-        { "start": 112.92, "end": 113.321, "char": [0, 2] },
-        { "start": 113.321, "end": 113.722, "char": [3, 7] }
+        { "start": 112.82, "end": 113.221, "char": [0, 2] },
+        { "start": 113.221, "end": 113.622, "char": [3, 7] }
       ]
     },
     {
-      "start": 113.722,
-      "end": 115.727,
+      "start": 113.622,
+      "end": 115.627,
       "text": "Questa e' la serie completa.",
       "words": [
-        { "start": 113.722, "end": 114.123, "char": [0, 6] },
-        { "start": 114.123, "end": 114.524, "char": [7, 9] },
-        { "start": 114.524, "end": 114.925, "char": [10, 12] },
-        { "start": 114.925, "end": 115.326, "char": [13, 18] },
-        { "start": 115.326, "end": 115.727, "char": [19, 28] }
+        { "start": 113.622, "end": 114.023, "char": [0, 6] },
+        { "start": 114.023, "end": 114.424, "char": [7, 9] },
+        { "start": 114.424, "end": 114.825, "char": [10, 12] },
+        { "start": 114.825, "end": 115.226, "char": [13, 18] },
+        { "start": 115.226, "end": 115.627, "char": [19, 28] }
       ]
     },
     {
-      "start": 115.727,
-      "end": 116.93,
+      "start": 115.627,
+      "end": 116.83,
       "text": "Dall'installazione al monitoraggio,",
       "words": [
-        { "start": 115.727, "end": 116.128, "char": [0, 18] },
-        { "start": 116.128, "end": 116.529, "char": [19, 21] },
-        { "start": 116.529, "end": 116.93, "char": [22, 35] }
+        { "start": 115.627, "end": 116.028, "char": [0, 18] },
+        { "start": 116.028, "end": 116.429, "char": [19, 21] },
+        { "start": 116.429, "end": 116.83, "char": [22, 35] }
       ]
     },
     {
-      "start": 116.93,
-      "end": 118.535,
+      "start": 116.83,
+      "end": 118.435,
       "text": "tutto dal tuo terminale.",
       "words": [
-        { "start": 116.93, "end": 117.332, "char": [0, 5] },
-        { "start": 117.332, "end": 117.733, "char": [6, 9] },
-        { "start": 117.733, "end": 118.134, "char": [10, 13] },
-        { "start": 118.134, "end": 118.535, "char": [14, 24] }
+        { "start": 116.83, "end": 117.232, "char": [0, 5] },
+        { "start": 117.232, "end": 117.633, "char": [6, 9] },
+        { "start": 117.633, "end": 118.034, "char": [10, 13] },
+        { "start": 118.034, "end": 118.435, "char": [14, 24] }
       ]
     },
     {
-      "start": 118.535,
-      "end": 121.128,
+      "start": 118.435,
+      "end": 121.028,
       "text": "Tutto verde significa che la tua",
       "words": [
-        { "start": 118.535, "end": 118.967, "char": [0, 5] },
-        { "start": 118.967, "end": 119.399, "char": [6, 11] },
-        { "start": 119.399, "end": 119.831, "char": [12, 21] },
-        { "start": 119.831, "end": 120.263, "char": [22, 25] },
-        { "start": 120.263, "end": 120.696, "char": [26, 28] },
-        { "start": 120.696, "end": 121.128, "char": [29, 32] }
+        { "start": 118.435, "end": 118.867, "char": [0, 5] },
+        { "start": 118.867, "end": 119.299, "char": [6, 11] },
+        { "start": 119.299, "end": 119.731, "char": [12, 21] },
+        { "start": 119.731, "end": 120.163, "char": [22, 25] },
+        { "start": 120.163, "end": 120.596, "char": [26, 28] },
+        { "start": 120.596, "end": 121.028, "char": [29, 32] }
       ]
     },
     {
-      "start": 121.128,
-      "end": 123.289,
+      "start": 121.028,
+      "end": 123.189,
       "text": "CLI locale e' in salute.",
       "words": [
-        { "start": 121.128, "end": 121.56, "char": [0, 3] },
-        { "start": 121.56, "end": 121.992, "char": [4, 10] },
-        { "start": 121.992, "end": 122.424, "char": [11, 13] },
-        { "start": 122.424, "end": 122.857, "char": [14, 16] },
-        { "start": 122.857, "end": 123.289, "char": [17, 24] }
+        { "start": 121.028, "end": 121.46, "char": [0, 3] },
+        { "start": 121.46, "end": 121.892, "char": [4, 10] },
+        { "start": 121.892, "end": 122.324, "char": [11, 13] },
+        { "start": 122.324, "end": 122.757, "char": [14, 16] },
+        { "start": 122.757, "end": 123.189, "char": [17, 24] }
       ]
     },
     {
-      "start": 124.057,
-      "end": 126.879,
-      "text": "E con questo chiudiamo la",
-      "words": [
-        { "start": 124.057, "end": 124.621, "char": [0, 1] },
-        { "start": 124.621, "end": 125.186, "char": [2, 5] },
-        { "start": 125.186, "end": 125.75, "char": [6, 12] },
-        { "start": 125.75, "end": 126.315, "char": [13, 22] },
-        { "start": 126.315, "end": 126.879, "char": [23, 25] }
-      ]
-    },
-    {
-      "start": 126.879,
-      "end": 127.444,
-      "text": "serie.",
-      "words": [{ "start": 126.879, "end": 127.444, "char": [0, 6] }]
-    },
-    {
-      "start": 127.444,
-      "end": 129.137,
+      "start": 123.957,
+      "end": 125.683,
       "text": "Ora puoi installare,",
       "words": [
-        { "start": 127.444, "end": 128.008, "char": [0, 3] },
-        { "start": 128.008, "end": 128.572, "char": [4, 8] },
-        { "start": 128.572, "end": 129.137, "char": [9, 20] }
+        { "start": 123.957, "end": 124.532, "char": [0, 3] },
+        { "start": 124.532, "end": 125.108, "char": [4, 8] },
+        { "start": 125.108, "end": 125.683, "char": [9, 20] }
       ]
     },
     {
-      "start": 129.137,
-      "end": 129.701,
+      "start": 125.683,
+      "end": 126.259,
       "text": "configurare,",
-      "words": [{ "start": 129.137, "end": 129.701, "char": [0, 12] }]
+      "words": [{ "start": 125.683, "end": 126.259, "char": [0, 12] }]
     },
     {
-      "start": 129.701,
-      "end": 130.266,
+      "start": 126.259,
+      "end": 126.834,
       "text": "distribuire,",
-      "words": [{ "start": 129.701, "end": 130.266, "char": [0, 12] }]
+      "words": [{ "start": 126.259, "end": 126.834, "char": [0, 12] }]
     },
     {
-      "start": 130.266,
-      "end": 130.83,
-      "text": "forkare,",
-      "words": [{ "start": 130.266, "end": 130.83, "char": [0, 8] }]
-    },
-    {
-      "start": 130.83,
-      "end": 132.523,
-      "text": "andare in produzione,",
+      "start": 126.834,
+      "end": 128.561,
+      "text": "fare il fork,",
       "words": [
-        { "start": 130.83, "end": 131.395, "char": [0, 6] },
-        { "start": 131.395, "end": 131.959, "char": [7, 9] },
-        { "start": 131.959, "end": 132.523, "char": [10, 21] }
+        { "start": 126.834, "end": 127.41, "char": [0, 4] },
+        { "start": 127.41, "end": 127.985, "char": [5, 7] },
+        { "start": 127.985, "end": 128.561, "char": [8, 13] }
       ]
     },
     {
-      "start": 132.523,
-      "end": 134.217,
-      "text": "avviare in automatico,",
+      "start": 128.561,
+      "end": 129.712,
+      "text": "andare live,",
       "words": [
-        { "start": 132.523, "end": 133.088, "char": [0, 7] },
-        { "start": 133.088, "end": 133.652, "char": [8, 10] },
-        { "start": 133.652, "end": 134.217, "char": [11, 22] }
+        { "start": 128.561, "end": 129.136, "char": [0, 6] },
+        { "start": 129.136, "end": 129.712, "char": [7, 12] }
       ]
     },
     {
-      "start": 134.217,
-      "end": 137.039,
-      "text": "fare il backup e monitorare",
+      "start": 129.712,
+      "end": 130.863,
+      "text": "avviare automaticamente,",
       "words": [
-        { "start": 134.217, "end": 134.781, "char": [0, 4] },
-        { "start": 134.781, "end": 135.346, "char": [5, 7] },
-        { "start": 135.346, "end": 135.91, "char": [8, 14] },
-        { "start": 135.91, "end": 136.475, "char": [15, 16] },
-        { "start": 136.475, "end": 137.039, "char": [17, 27] }
+        { "start": 129.712, "end": 130.287, "char": [0, 7] },
+        { "start": 130.287, "end": 130.863, "char": [8, 24] }
       ]
     },
     {
-      "start": 137.039,
-      "end": 139.861,
-      "text": "-- tutto dal tuo terminale!",
+      "start": 130.863,
+      "end": 133.74,
+      "text": "eseguire il backup e monitorare.",
       "words": [
-        { "start": 137.039, "end": 137.603, "char": [0, 2] },
-        { "start": 137.603, "end": 138.168, "char": [3, 8] },
-        { "start": 138.168, "end": 138.732, "char": [9, 12] },
-        { "start": 138.732, "end": 139.297, "char": [13, 16] },
-        { "start": 139.297, "end": 139.861, "char": [17, 27] }
+        { "start": 130.863, "end": 131.438, "char": [0, 8] },
+        { "start": 131.438, "end": 132.014, "char": [9, 11] },
+        { "start": 132.014, "end": 132.589, "char": [12, 18] },
+        { "start": 132.589, "end": 133.165, "char": [19, 20] },
+        { "start": 133.165, "end": 133.74, "char": [21, 32] }
+      ]
+    },
+    {
+      "start": 133.74,
+      "end": 136.618,
+      "text": "Il percorso avanzato inizia adesso:",
+      "words": [
+        { "start": 133.74, "end": 134.316, "char": [0, 2] },
+        { "start": 134.316, "end": 134.891, "char": [3, 11] },
+        { "start": 134.891, "end": 135.467, "char": [12, 20] },
+        { "start": 135.467, "end": 136.042, "char": [21, 27] },
+        { "start": 136.042, "end": 136.618, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 136.618,
+      "end": 139.495,
+      "text": "versiona i tuoi repository come",
+      "words": [
+        { "start": 136.618, "end": 137.193, "char": [0, 8] },
+        { "start": 137.193, "end": 137.769, "char": [9, 10] },
+        { "start": 137.769, "end": 138.344, "char": [11, 15] },
+        { "start": 138.344, "end": 138.92, "char": [16, 26] },
+        { "start": 138.92, "end": 139.495, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 139.495,
+      "end": 140.646,
+      "text": "il codice,",
+      "words": [
+        { "start": 139.495, "end": 140.071, "char": [0, 2] },
+        { "start": 140.071, "end": 140.646, "char": [3, 10] }
+      ]
+    },
+    {
+      "start": 140.646,
+      "end": 142.948,
+      "text": "con commit e rollback.",
+      "words": [
+        { "start": 140.646, "end": 141.222, "char": [0, 3] },
+        { "start": 141.222, "end": 141.797, "char": [4, 10] },
+        { "start": 141.797, "end": 142.373, "char": [11, 12] },
+        { "start": 142.373, "end": 142.948, "char": [13, 22] }
       ]
     }
   ]

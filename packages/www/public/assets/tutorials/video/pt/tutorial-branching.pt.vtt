@@ -1,0 +1,367 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.616
+Vamos versionar seus repositórios como código!
+
+00:00:03.616 --> 00:00:05.360
+Vamos congelar um checkpoint,
+
+00:00:05.360 --> 00:00:07.977
+dar um nome a ele e
+
+00:00:07.977 --> 00:00:10.593
+depois remover uma tabela de banco
+
+00:00:10.593 --> 00:00:11.901
+de dados real.
+
+00:00:11.901 --> 00:00:14.517
+O rollback traz de volta o
+
+00:00:14.517 --> 00:00:15.825
+estado exato congelado,
+
+00:00:15.825 --> 00:00:17.134
+cada linha incluída,
+
+00:00:17.134 --> 00:00:18.006
+em segundos.
+
+00:00:18.774 --> 00:00:20.941
+O modelo é o git,
+
+00:00:20.941 --> 00:00:22.675
+mas para repositórios inteiros.
+
+00:00:22.675 --> 00:00:25.275
+Um commit é uma imagem congelada
+
+00:00:25.275 --> 00:00:26.142
+e imutável.
+
+00:00:26.142 --> 00:00:28.309
+Ele nem permite ser montado,
+
+00:00:28.309 --> 00:00:30.476
+então nada pode jamais mudá-lo.
+
+00:00:30.476 --> 00:00:33.077
+Uma branch é apenas um nome
+
+00:00:33.077 --> 00:00:34.811
+apontando para um commit.
+
+00:00:34.811 --> 00:00:37.411
+E o checkout transforma qualquer commit
+
+00:00:37.411 --> 00:00:40.012
+em uma fork nova e editável.
+
+00:00:43.297 --> 00:00:45.963
+Nossa fork de trabalho contém a versão
+
+00:00:45.963 --> 00:00:47.867
+um do estado do app,
+
+00:00:47.867 --> 00:00:50.533
+um simples arquivo marcador a torna visível.
+
+00:00:52.500 --> 00:00:53.636
+Versão um,
+
+00:00:53.636 --> 00:00:54.772
+no disco.
+
+00:00:58.072 --> 00:00:59.783
+Não são apenas arquivos.
+
+00:00:59.783 --> 00:01:02.350
+Um banco de dados PostgreSQL real
+
+00:01:02.350 --> 00:01:04.061
+vive nesta fork também,
+
+00:01:04.061 --> 00:01:06.627
+e a tabela customers tem três
+
+00:01:06.627 --> 00:01:07.055
+linhas.
+
+00:01:07.055 --> 00:01:08.338
+Guarde esse número.
+
+00:01:10.838 --> 00:01:11.604
+Três linhas.
+
+00:01:11.604 --> 00:01:14.286
+São os dados que estamos prestes a
+
+00:01:14.286 --> 00:01:15.436
+colocar em risco.
+
+00:01:18.769 --> 00:01:19.258
+Congele.
+
+00:01:19.258 --> 00:01:22.195
+O commit captura o repositório inteiro
+
+00:01:22.195 --> 00:01:24.152
+como uma imagem imutável,
+
+00:01:24.152 --> 00:01:25.620
+com uma mensagem,
+
+00:01:25.620 --> 00:01:28.067
+um autor e um pai.
+
+00:01:28.067 --> 00:01:30.024
+Exatamente como o git,
+
+00:01:30.024 --> 00:01:31.492
+mas para tudo,
+
+00:01:31.492 --> 00:01:33.450
+banco de dados incluído.
+
+00:01:36.450 --> 00:01:36.896
+Commitado.
+
+00:01:36.896 --> 00:01:39.129
+Este snapshot nunca pode mudar.
+
+00:01:39.129 --> 00:01:41.361
+Ele nem permite ser montado.
+
+00:01:44.691 --> 00:01:46.389
+Dê um nome ao commit.
+
+00:01:46.389 --> 00:01:49.106
+A branch stable agora aponta para a versão
+
+00:01:49.106 --> 00:01:49.445
+um.
+
+00:01:50.245 --> 00:01:53.098
+Uma branch é um nome ao
+
+00:01:53.098 --> 00:01:54.1000
+qual você pode voltar.
+
+00:01:58.317 --> 00:01:59.173
+Continue trabalhando.
+
+00:01:59.173 --> 00:02:01.742
+A versão dois substitui a versão
+
+00:02:01.742 --> 00:02:03.883
+um na fork de trabalho.
+
+00:02:03.883 --> 00:02:06.023
+O commit não se importa.
+
+00:02:07.535 --> 00:02:09.707
+A fork de trabalho avançou.
+
+00:02:09.707 --> 00:02:11.010
+O histórico não.
+
+00:02:14.299 --> 00:02:15.339
+Agora o desastre.
+
+00:02:15.339 --> 00:02:17.766
+A mudança arriscada remove a tabela customers.
+
+00:02:17.766 --> 00:02:18.806
+Na vida real,
+
+00:02:18.806 --> 00:02:21.580
+este é o momento em que o estômago
+
+00:02:21.580 --> 00:02:21.927
+afunda.
+
+00:02:24.359 --> 00:02:25.738
+Drop table executado.
+
+00:02:25.738 --> 00:02:28.496
+Os dados sumiram da fork de
+
+00:02:28.496 --> 00:02:28.956
+trabalho.
+
+00:02:32.229 --> 00:02:34.784
+Peça as linhas novamente e o
+
+00:02:34.784 --> 00:02:36.914
+banco de dados diz claramente:
+
+00:02:36.914 --> 00:02:39.044
+a relação customers não existe.
+
+00:02:39.044 --> 00:02:40.747
+O desastre é real.
+
+00:02:40.747 --> 00:02:42.025
+Cada linha sumiu.
+
+00:02:44.525 --> 00:02:46.380
+Relação não existe.
+
+00:02:46.380 --> 00:02:47.616
+Três linhas,
+
+00:02:47.616 --> 00:02:48.234
+desaparecidas.
+
+00:02:51.544 --> 00:02:54.069
+Faça o commit da mudança
+
+00:02:54.069 --> 00:02:55.079
+arriscada também,
+
+00:02:55.079 --> 00:02:57.099
+tabela quebrada e tudo.
+
+00:02:57.099 --> 00:02:59.625
+O histórico registra o que
+
+00:02:59.625 --> 00:03:00.635
+realmente aconteceu.
+
+00:03:00.635 --> 00:03:02.150
+Dois commits agora,
+
+00:03:02.150 --> 00:03:03.665
+pai e filho.
+
+00:03:06.665 --> 00:03:08.311
+Dois snapshots na cadeia.
+
+00:03:11.611 --> 00:03:14.266
+E aí está o histórico:
+
+00:03:14.266 --> 00:03:16.391
+versão dois no topo,
+
+00:03:16.391 --> 00:03:17.985
+versão um abaixo,
+
+00:03:17.985 --> 00:03:20.109
+mensagens e autores incluídos,
+
+00:03:20.109 --> 00:03:22.765
+sem desbloquear uma única imagem.
+
+00:03:25.765 --> 00:03:29.016
+Um log do repositório,
+
+00:03:29.016 --> 00:03:32.267
+exatamente como um git
+
+00:03:32.267 --> 00:03:33.079
+log.
+
+00:03:36.391 --> 00:03:37.759
+Agora a recompensa.
+
+00:03:37.759 --> 00:03:40.494
+Faça o checkout da branch stable
+
+00:03:40.494 --> 00:03:43.230
+em uma fork nova e editável.
+
+00:03:43.230 --> 00:03:44.598
+Clone por reflink:
+
+00:03:44.598 --> 00:03:45.510
+quase instantâneo,
+
+00:03:45.510 --> 00:03:46.422
+qualquer tamanho.
+
+00:03:49.422 --> 00:03:52.086
+Uma cópia editável da versão um
+
+00:03:52.086 --> 00:03:52.530
+congelada,
+
+00:03:52.530 --> 00:03:54.751
+em cerca de um segundo.
+
+00:03:58.041 --> 00:04:00.856
+Inicie a fork de rollback
+
+00:04:00.856 --> 00:04:03.108
+como qualquer outro repositório.
+
+00:04:08.568 --> 00:04:10.097
+Duas forks em execução:
+
+00:04:10.097 --> 00:04:12.774
+a versão de hoje e o checkpoint.
+
+00:04:16.043 --> 00:04:17.405
+E a prova:
+
+00:04:17.405 --> 00:04:20.130
+a fork de rollback lê a
+
+00:04:20.130 --> 00:04:21.038
+versão um.
+
+00:04:21.038 --> 00:04:23.763
+A fork de trabalho ainda tem
+
+00:04:23.763 --> 00:04:25.125
+a versão dois.
+
+00:04:25.125 --> 00:04:27.850
+Um histórico que você pode executar.
+
+00:04:29.350 --> 00:04:30.297
+Rollback completo.
+
+00:04:30.297 --> 00:04:33.138
+Nada foi sobrescrito para chegar aqui.
+
+00:04:36.461 --> 00:04:38.872
+E a parte que mais importa:
+
+00:04:38.872 --> 00:04:40.480
+a tabela removida voltou,
+
+00:04:40.480 --> 00:04:42.489
+com todas as três linhas.
+
+00:04:42.489 --> 00:04:45.302
+O rollback restaurou o banco de dados,
+
+00:04:45.302 --> 00:04:46.910
+não apenas os arquivos.
+
+00:04:49.410 --> 00:04:50.966
+Três linhas novamente.
+
+00:04:50.966 --> 00:04:53.041
+O desastre foi desfeito.
+
+00:05:08.073 --> 00:05:09.683
+Commits nunca mudam,
+
+00:05:09.683 --> 00:05:11.293
+forks nunca esperam.
+
+00:05:11.293 --> 00:05:12.366
+A seguir,
+
+00:05:12.366 --> 00:05:15.050
+movemos um repositório inteiro em
+
+00:05:15.050 --> 00:05:17.197
+execução para outra máquina,
+
+00:05:17.197 --> 00:05:18.270
+ao vivo.
+
+00:05:18.270 --> 00:05:19.880
+Até o próximo!

@@ -1,22 +1,22 @@
 WEBVTT
 
-00:00:01.000 --> 00:00:08.046
+00:00:01.000 --> 00:00:08.928
 Production Modu
 
-00:00:08.046 --> 00:00:20.618
+00:00:08.928 --> 00:00:24.937
 Dev ile prod arasındaki fark
 
-00:00:20.618 --> 00:00:43.307
+00:00:24.937 --> 00:00:47.626
 Adım 1: Production modunda başlat
 
-00:00:43.307 --> 00:01:01.484
+00:00:47.626 --> 00:01:05.836
 Adım 2: Otomatik başlatmayı etkinleştir
 
-00:01:01.484 --> 00:01:14.071
+00:01:05.836 --> 00:01:19.623
 Adım 3: Otomatik başlatması etkin repo'ları listele
 
-00:01:14.071 --> 00:01:28.776
+00:01:19.623 --> 00:01:34.628
 Adım 4: Dizüstü bilgisayardan durdur
 
-00:01:28.776 --> 00:01:32.776
-Sıradaki: Yedekleme ve Geri Yükleme
+00:01:34.628 --> 00:01:38.628
+Sonraki: İzleme

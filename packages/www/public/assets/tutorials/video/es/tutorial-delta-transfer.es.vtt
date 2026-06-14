@@ -1,0 +1,193 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.149
+Este es un experimento interesante.
+
+00:00:03.149 --> 00:00:05.728
+Haremos push de un repository con
+
+00:00:05.728 --> 00:00:08.307
+un gigabyte de datos a otra
+
+00:00:08.307 --> 00:00:09.597
+máquina dos veces.
+
+00:00:09.597 --> 00:00:11.746
+El primer push lleva todo,
+
+00:00:11.746 --> 00:00:14.325
+y el segundo lleva solo lo
+
+00:00:14.325 --> 00:00:15.184
+que cambió.
+
+00:00:15.184 --> 00:00:16.904
+Fíjate en los números,
+
+00:00:16.904 --> 00:00:19.483
+el comando push imprime exactamente cuánto
+
+00:00:19.483 --> 00:00:19.913
+movió.
+
+00:00:20.701 --> 00:00:23.380
+El truco está en la
+
+00:00:23.380 --> 00:00:24.452
+configuración inicial.
+
+00:00:24.452 --> 00:00:26.595
+Tras el primer push,
+
+00:00:26.595 --> 00:00:29.274
+el CLI mantiene una imagen
+
+00:00:29.274 --> 00:00:31.953
+base inmutable idéntica en ambas
+
+00:00:31.953 --> 00:00:32.489
+máquinas.
+
+00:00:32.489 --> 00:00:35.168
+El siguiente push compara bloques
+
+00:00:35.168 --> 00:00:37.847
+con esa base y envía
+
+00:00:37.847 --> 00:00:39.454
+solo la diferencia.
+
+00:00:39.454 --> 00:00:40.526
+Sin flags,
+
+00:00:40.526 --> 00:00:42.133
+sin registros adicionales,
+
+00:00:42.133 --> 00:00:44.812
+es el mismo comando push.
+
+00:00:48.103 --> 00:00:50.793
+El primer push a otra
+
+00:00:50.793 --> 00:00:53.482
+máquina transfiere la imagen completa,
+
+00:00:53.482 --> 00:00:56.172
+y la salida lo dice
+
+00:00:56.172 --> 00:00:56.710
+claramente:
+
+00:00:56.710 --> 00:00:58.324
+dos gigabytes transferidos,
+
+00:00:58.324 --> 00:00:59.937
+marcado como full.
+
+00:00:59.937 --> 00:01:02.627
+Esta es la línea base.
+
+00:01:05.627 --> 00:01:08.286
+Dos gigabytes en cuarenta y cuatro
+
+00:01:08.286 --> 00:01:08.729
+segundos,
+
+00:01:08.729 --> 00:01:10.058
+marcado como full.
+
+00:01:10.058 --> 00:01:12.717
+El CLI también mantuvo una base
+
+00:01:12.717 --> 00:01:14.489
+idéntica en ambos lados,
+
+00:01:14.489 --> 00:01:17.148
+esa es la preparación para la
+
+00:01:17.148 --> 00:01:17.591
+magia.
+
+00:01:20.894 --> 00:01:23.271
+Cambia un poco de datos:
+
+00:01:23.271 --> 00:01:25.648
+cincuenta megabytes de dos gigabytes.
+
+00:01:32.119 --> 00:01:34.627
+Un pequeño cambio en una imagen grande.
+
+00:01:37.901 --> 00:01:39.736
+Haz push de nuevo.
+
+00:01:39.736 --> 00:01:41.112
+El mismo comando,
+
+00:01:41.112 --> 00:01:43.865
+pero esta vez fíjate en la
+
+00:01:43.865 --> 00:01:44.324
+salida:
+
+00:01:44.324 --> 00:01:46.159
+unos cincuenta megabytes transferidos,
+
+00:01:46.159 --> 00:01:47.535
+marcado como delta,
+
+00:01:47.535 --> 00:01:50.288
+sobre una imagen de dos gigabytes.
+
+00:01:50.288 --> 00:01:52.582
+Solo viajaron los bloques modificados.
+
+00:01:55.582 --> 00:01:58.185
+Cincuenta megabytes en menos de seis
+
+00:01:58.185 --> 00:01:58.619
+segundos,
+
+00:01:58.619 --> 00:02:01.223
+de una imagen de dos gigabytes.
+
+00:02:01.223 --> 00:02:03.392
+Los números son la prueba.
+
+00:02:06.702 --> 00:02:09.352
+Ambas máquinas tienen el mismo repository,
+
+00:02:09.352 --> 00:02:10.677
+actualizado en segundos.
+
+00:02:10.677 --> 00:02:12.886
+Ejecútalo cada hora si quieres,
+
+00:02:12.886 --> 00:02:15.094
+el coste es el cambio,
+
+00:02:15.094 --> 00:02:16.420
+no el tamaño.
+
+00:02:19.420 --> 00:02:21.997
+Las copias de seguridad frecuentes dejan
+
+00:02:21.997 --> 00:02:23.286
+de ser costosas.
+
+00:02:24.113 --> 00:02:26.605
+Los cambios pequeños significan transferencias pequeñas,
+
+00:02:26.605 --> 00:02:29.096
+cada vez después de la primera.
+
+00:02:29.096 --> 00:02:30.757
+Solo queda un tutorial:
+
+00:02:30.757 --> 00:02:33.664
+asegurarse de que nunca te quedes sin
+
+00:02:33.664 --> 00:02:34.079
+disco.
+
+00:02:34.079 --> 00:02:36.155
+¡Nos vemos en el último!

@@ -12,32 +12,32 @@ Partager un lien, pas le dossier
 00:00:31.821 --> 00:00:48.875
 La même vitesse quelle que soit la taille
 
-00:00:48.875 --> 00:01:20.387
+00:00:48.875 --> 00:01:17.353
 Étape 1 : Forker le repo
 
-00:01:20.387 --> 00:01:47.280
+00:01:17.353 --> 00:01:44.246
 Étape 2 : Les deux repos côte à côte
 
-00:01:47.280 --> 00:02:06.599
+00:01:44.246 --> 00:02:04.265
 Étape 3 : L'original est intact
 
-00:02:06.599 --> 00:02:19.729
+00:02:04.265 --> 00:02:17.395
 Le soleil et le miroir
 
-00:02:19.729 --> 00:02:38.041
+00:02:17.395 --> 00:02:36.373
 Étape 4 : Modifier uniquement le fork
 
-00:02:38.041 --> 00:02:57.741
+00:02:36.373 --> 00:02:56.773
 Étape 5 : Vérifier que l'original survit
 
-00:02:57.741 --> 00:03:21.267
+00:02:56.773 --> 00:03:20.299
 Étape 6 : Supprimer le fork
 
-00:03:21.267 --> 00:03:34.071
+00:03:20.299 --> 00:03:33.103
 Une photo de la rivière
 
-00:03:34.071 --> 00:03:45.598
+00:03:33.103 --> 00:03:44.630
 L'utilisation du disque reste stable
 
-00:03:45.598 --> 00:03:58.798
-Suivant : Gérer les Secrets
+00:03:44.630 --> 00:03:55.750
+Suivant : Fork Isolation en action

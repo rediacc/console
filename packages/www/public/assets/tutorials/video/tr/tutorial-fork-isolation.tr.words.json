@@ -1,0 +1,652 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.294,
+      "text": "Tekrar hoş geldiniz!",
+      "words": [
+        { "start": 1, "end": 1.431, "char": [0, 6] },
+        { "start": 1.431, "end": 1.863, "char": [7, 10] },
+        { "start": 1.863, "end": 2.294, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 2.294,
+      "end": 4.452,
+      "text": "Geçen seferinde fork komutlarını gördünüz.",
+      "words": [
+        { "start": 2.294, "end": 2.726, "char": [0, 5] },
+        { "start": 2.726, "end": 3.157, "char": [6, 15] },
+        { "start": 3.157, "end": 3.589, "char": [16, 20] },
+        { "start": 3.589, "end": 4.02, "char": [21, 32] },
+        { "start": 4.02, "end": 4.452, "char": [33, 42] }
+      ]
+    },
+    {
+      "start": 4.452,
+      "end": 7.041,
+      "text": "Şimdi bunların gerçekte ne anlama geldiğini",
+      "words": [
+        { "start": 4.452, "end": 4.883, "char": [0, 5] },
+        { "start": 4.883, "end": 5.315, "char": [6, 14] },
+        { "start": 5.315, "end": 5.746, "char": [15, 23] },
+        { "start": 5.746, "end": 6.178, "char": [24, 26] },
+        { "start": 6.178, "end": 6.609, "char": [27, 33] },
+        { "start": 6.609, "end": 7.041, "char": [34, 43] }
+      ]
+    },
+    {
+      "start": 7.041,
+      "end": 7.472,
+      "text": "izleyelim:",
+      "words": [{ "start": 7.041, "end": 7.472, "char": [0, 10] }]
+    },
+    {
+      "start": 7.472,
+      "end": 9.198,
+      "text": "canlı bir veritabanı uygulaması,",
+      "words": [
+        { "start": 7.472, "end": 7.904, "char": [0, 5] },
+        { "start": 7.904, "end": 8.335, "char": [6, 9] },
+        { "start": 8.335, "end": 8.766, "char": [10, 20] },
+        { "start": 8.766, "end": 9.198, "char": [21, 32] }
+      ]
+    },
+    {
+      "start": 9.198,
+      "end": 10.492,
+      "text": "saniyeler içinde kopyalanıyor,",
+      "words": [
+        { "start": 9.198, "end": 9.629, "char": [0, 9] },
+        { "start": 9.629, "end": 10.061, "char": [10, 16] },
+        { "start": 10.061, "end": 10.492, "char": [17, 30] }
+      ]
+    },
+    {
+      "start": 10.492,
+      "end": 11.355,
+      "text": "özgürce düzenleniyor,",
+      "words": [
+        { "start": 10.492, "end": 10.924, "char": [0, 7] },
+        { "start": 10.924, "end": 11.355, "char": [8, 21] }
+      ]
+    },
+    {
+      "start": 11.355,
+      "end": 13.513,
+      "text": "orijinal ise hiçbir şeyden habersiz.",
+      "words": [
+        { "start": 11.355, "end": 11.787, "char": [0, 8] },
+        { "start": 11.787, "end": 12.218, "char": [9, 12] },
+        { "start": 12.218, "end": 12.65, "char": [13, 19] },
+        { "start": 12.65, "end": 13.081, "char": [20, 26] },
+        { "start": 13.081, "end": 13.513, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 14.292,
+      "end": 15.538,
+      "text": "İşte kurulum:",
+      "words": [
+        { "start": 14.292, "end": 14.915, "char": [0, 4] },
+        { "start": 14.915, "end": 15.538, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 15.538,
+      "end": 17.406,
+      "text": "sunucuda canlı çalışan,",
+      "words": [
+        { "start": 15.538, "end": 16.16, "char": [0, 8] },
+        { "start": 16.16, "end": 16.783, "char": [9, 14] },
+        { "start": 16.783, "end": 17.406, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 17.406,
+      "end": 20.52,
+      "text": "üzerinde pgAdmin arayüzü olan gerçek",
+      "words": [
+        { "start": 17.406, "end": 18.029, "char": [0, 8] },
+        { "start": 18.029, "end": 18.651, "char": [9, 16] },
+        { "start": 18.651, "end": 19.274, "char": [17, 24] },
+        { "start": 19.274, "end": 19.897, "char": [25, 29] },
+        { "start": 19.897, "end": 20.52, "char": [30, 36] }
+      ]
+    },
+    {
+      "start": 20.52,
+      "end": 21.765,
+      "text": "bir PostgreSQL.",
+      "words": [
+        { "start": 20.52, "end": 21.142, "char": [0, 3] },
+        { "start": 21.142, "end": 21.765, "char": [4, 15] }
+      ]
+    },
+    {
+      "start": 21.765,
+      "end": 22.388,
+      "text": "Fork,",
+      "words": [{ "start": 21.765, "end": 22.388, "char": [0, 5] }]
+    },
+    {
+      "start": 22.388,
+      "end": 25.502,
+      "text": "bunun tamamının anında copy-on-write ikizdir.",
+      "words": [
+        { "start": 22.388, "end": 23.011, "char": [0, 5] },
+        { "start": 23.011, "end": 23.633, "char": [6, 15] },
+        { "start": 23.633, "end": 24.256, "char": [16, 22] },
+        { "start": 24.256, "end": 24.879, "char": [23, 36] },
+        { "start": 24.879, "end": 25.502, "char": [37, 45] }
+      ]
+    },
+    {
+      "start": 25.502,
+      "end": 27.37,
+      "text": "Doğumda aynı veri,",
+      "words": [
+        { "start": 25.502, "end": 26.124, "char": [0, 7] },
+        { "start": 26.124, "end": 26.747, "char": [8, 12] },
+        { "start": 26.747, "end": 27.37, "char": [13, 18] }
+      ]
+    },
+    {
+      "start": 27.37,
+      "end": 29.861,
+      "text": "sonrasında tamamen ayrı yaşamlar.",
+      "words": [
+        { "start": 27.37, "end": 27.993, "char": [0, 10] },
+        { "start": 27.993, "end": 28.615, "char": [11, 18] },
+        { "start": 28.615, "end": 29.238, "char": [19, 23] },
+        { "start": 29.238, "end": 29.861, "char": [24, 33] }
+      ]
+    },
+    {
+      "start": 33.126,
+      "end": 34.778,
+      "text": "Meet the app:",
+      "words": [
+        { "start": 33.126, "end": 33.677, "char": [0, 4] },
+        { "start": 33.677, "end": 34.227, "char": [5, 8] },
+        { "start": 34.227, "end": 34.778, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 34.778,
+      "end": 35.328,
+      "text": "demo-pgadmin,",
+      "words": [{ "start": 34.778, "end": 35.328, "char": [0, 13] }]
+    },
+    {
+      "start": 35.328,
+      "end": 38.081,
+      "text": "a PostgreSQL with a pgAdmin",
+      "words": [
+        { "start": 35.328, "end": 35.879, "char": [0, 1] },
+        { "start": 35.879, "end": 36.429, "char": [2, 12] },
+        { "start": 36.429, "end": 36.98, "char": [13, 17] },
+        { "start": 36.98, "end": 37.531, "char": [18, 19] },
+        { "start": 37.531, "end": 38.081, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 38.081,
+      "end": 38.632,
+      "text": "interface,",
+      "words": [{ "start": 38.081, "end": 38.632, "char": [0, 10] }]
+    },
+    {
+      "start": 38.632,
+      "end": 40.284,
+      "text": "mounted and running.",
+      "words": [
+        { "start": 38.632, "end": 39.182, "char": [0, 7] },
+        { "start": 39.182, "end": 39.733, "char": [8, 11] },
+        { "start": 39.733, "end": 40.284, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 43.284,
+      "end": 44.412,
+      "text": "Bir canlı repo.",
+      "words": [
+        { "start": 43.284, "end": 43.66, "char": [0, 3] },
+        { "start": 43.66, "end": 44.036, "char": [4, 9] },
+        { "start": 44.036, "end": 44.412, "char": [10, 15] }
+      ]
+    },
+    {
+      "start": 44.412,
+      "end": 45.164,
+      "text": "Hadi klonlayalım.",
+      "words": [
+        { "start": 44.412, "end": 44.788, "char": [0, 4] },
+        { "start": 44.788, "end": 45.164, "char": [5, 17] }
+      ]
+    },
+    {
+      "start": 45.673,
+      "end": 48.672,
+      "text": "İşte tarayıcıdaki orijinal.",
+      "words": [
+        { "start": 45.673, "end": 46.673, "char": [0, 4] },
+        { "start": 46.673, "end": 47.672, "char": [5, 17] },
+        { "start": 47.672, "end": 48.672, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 48.672,
+      "end": 51.671,
+      "text": "pgAdmin bir giriş",
+      "words": [
+        { "start": 48.672, "end": 49.671, "char": [0, 7] },
+        { "start": 49.671, "end": 50.671, "char": [8, 11] },
+        { "start": 50.671, "end": 51.671, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 51.671,
+      "end": 52.67,
+      "text": "istiyor,",
+      "words": [{ "start": 51.671, "end": 52.67, "char": [0, 8] }]
+    },
+    {
+      "start": 52.67,
+      "end": 55.669,
+      "text": "çünkü bu üretim",
+      "words": [
+        { "start": 52.67, "end": 53.67, "char": [0, 5] },
+        { "start": 53.67, "end": 54.67, "char": [6, 8] },
+        { "start": 54.67, "end": 55.669, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 55.669,
+      "end": 58.668,
+      "text": "kopyası ve üretim",
+      "words": [
+        { "start": 55.669, "end": 56.669, "char": [0, 7] },
+        { "start": 56.669, "end": 57.668, "char": [8, 10] },
+        { "start": 57.668, "end": 58.668, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 58.668,
+      "end": 60.667,
+      "text": "korumalı kalıyor.",
+      "words": [
+        { "start": 58.668, "end": 59.668, "char": [0, 8] },
+        { "start": 59.668, "end": 60.667, "char": [9, 17] }
+      ]
+    },
+    {
+      "start": 79.34,
+      "end": 80.161,
+      "text": "Fork it.",
+      "words": [
+        { "start": 79.34, "end": 79.75, "char": [0, 4] },
+        { "start": 79.75, "end": 80.161, "char": [5, 8] }
+      ]
+    },
+    {
+      "start": 80.161,
+      "end": 83.035,
+      "text": "The copy-on-write clone takes seconds regardless of",
+      "words": [
+        { "start": 80.161, "end": 80.572, "char": [0, 3] },
+        { "start": 80.572, "end": 80.982, "char": [4, 17] },
+        { "start": 80.982, "end": 81.393, "char": [18, 23] },
+        { "start": 81.393, "end": 81.804, "char": [24, 29] },
+        { "start": 81.804, "end": 82.214, "char": [30, 37] },
+        { "start": 82.214, "end": 82.625, "char": [38, 48] },
+        { "start": 82.625, "end": 83.035, "char": [49, 51] }
+      ]
+    },
+    {
+      "start": 83.035,
+      "end": 83.446,
+      "text": "size;",
+      "words": [{ "start": 83.035, "end": 83.446, "char": [0, 5] }]
+    },
+    {
+      "start": 83.446,
+      "end": 86.321,
+      "text": "detach returns as soon as the containers",
+      "words": [
+        { "start": 83.446, "end": 83.857, "char": [0, 6] },
+        { "start": 83.857, "end": 84.267, "char": [7, 14] },
+        { "start": 84.267, "end": 84.678, "char": [15, 17] },
+        { "start": 84.678, "end": 85.089, "char": [18, 22] },
+        { "start": 85.089, "end": 85.499, "char": [23, 25] },
+        { "start": 85.499, "end": 85.91, "char": [26, 29] },
+        { "start": 85.91, "end": 86.321, "char": [30, 40] }
+      ]
+    },
+    {
+      "start": 86.321,
+      "end": 86.731,
+      "text": "start,",
+      "words": [{ "start": 86.321, "end": 86.731, "char": [0, 6] }]
+    },
+    {
+      "start": 86.731,
+      "end": 89.606,
+      "text": "while health checks continue in the background.",
+      "words": [
+        { "start": 86.731, "end": 87.142, "char": [0, 5] },
+        { "start": 87.142, "end": 87.553, "char": [6, 12] },
+        { "start": 87.553, "end": 87.963, "char": [13, 19] },
+        { "start": 87.963, "end": 88.374, "char": [20, 28] },
+        { "start": 88.374, "end": 88.784, "char": [29, 31] },
+        { "start": 88.784, "end": 89.195, "char": [32, 35] },
+        { "start": 89.195, "end": 89.606, "char": [36, 47] }
+      ]
+    },
+    {
+      "start": 89.708,
+      "end": 91.731,
+      "text": "Fork edildi ve başlatılıyor.",
+      "words": [
+        { "start": 89.708, "end": 90.214, "char": [0, 4] },
+        { "start": 90.214, "end": 90.719, "char": [5, 11] },
+        { "start": 90.719, "end": 91.225, "char": [12, 14] },
+        { "start": 91.225, "end": 91.731, "char": [15, 28] }
+      ]
+    },
+    {
+      "start": 91.731,
+      "end": 92.743,
+      "text": "Veri kopyalanmadı,",
+      "words": [
+        { "start": 91.731, "end": 92.237, "char": [0, 4] },
+        { "start": 92.237, "end": 92.743, "char": [5, 18] }
+      ]
+    },
+    {
+      "start": 92.743,
+      "end": 93.249,
+      "text": "paylaşıldı.",
+      "words": [{ "start": 92.743, "end": 93.249, "char": [0, 11] }]
+    },
+    {
+      "start": 93.249,
+      "end": 95.272,
+      "text": "Bir taraf değiştirinceye kadar.",
+      "words": [
+        { "start": 93.249, "end": 93.754, "char": [0, 3] },
+        { "start": 93.754, "end": 94.26, "char": [4, 9] },
+        { "start": 94.26, "end": 94.766, "char": [10, 24] },
+        { "start": 94.766, "end": 95.272, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 98.522,
+      "end": 100.873,
+      "text": "Ve işte fork'un pgAdmin'i.",
+      "words": [
+        { "start": 98.522, "end": 99.109, "char": [0, 2] },
+        { "start": 99.109, "end": 99.697, "char": [3, 7] },
+        { "start": 99.697, "end": 100.285, "char": [8, 15] },
+        { "start": 100.285, "end": 100.873, "char": [16, 26] }
+      ]
+    },
+    {
+      "start": 100.873,
+      "end": 103.224,
+      "text": "Bu sefer giriş yok:",
+      "words": [
+        { "start": 100.873, "end": 101.46, "char": [0, 2] },
+        { "start": 101.46, "end": 102.048, "char": [3, 8] },
+        { "start": 102.048, "end": 102.636, "char": [9, 14] },
+        { "start": 102.636, "end": 103.224, "char": [15, 19] }
+      ]
+    },
+    {
+      "start": 103.224,
+      "end": 105.575,
+      "text": "fork'lar tek kullanımlık sandbox'lardır,",
+      "words": [
+        { "start": 103.224, "end": 103.811, "char": [0, 8] },
+        { "start": 103.811, "end": 104.399, "char": [9, 12] },
+        { "start": 104.399, "end": 104.987, "char": [13, 24] },
+        { "start": 104.987, "end": 105.575, "char": [25, 40] }
+      ]
+    },
+    {
+      "start": 105.575,
+      "end": 108.513,
+      "text": "bu yüzden kapı kenara çekilir.",
+      "words": [
+        { "start": 105.575, "end": 106.162, "char": [0, 2] },
+        { "start": 106.162, "end": 106.75, "char": [3, 9] },
+        { "start": 106.75, "end": 107.338, "char": [10, 14] },
+        { "start": 107.338, "end": 107.926, "char": [15, 21] },
+        { "start": 107.926, "end": 108.513, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 108.513,
+      "end": 109.689,
+      "text": "Aynı tablolar,",
+      "words": [
+        { "start": 108.513, "end": 109.101, "char": [0, 4] },
+        { "start": 109.101, "end": 109.689, "char": [5, 14] }
+      ]
+    },
+    {
+      "start": 109.689,
+      "end": 112.628,
+      "text": "aynı satırlar ama kendi evreni.",
+      "words": [
+        { "start": 109.689, "end": 110.277, "char": [0, 4] },
+        { "start": 110.277, "end": 110.865, "char": [5, 13] },
+        { "start": 110.865, "end": 111.452, "char": [14, 17] },
+        { "start": 111.452, "end": 112.04, "char": [18, 23] },
+        { "start": 112.04, "end": 112.628, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 150.388,
+      "end": 151.509,
+      "text": "Two repositories now:",
+      "words": [
+        { "start": 150.388, "end": 150.762, "char": [0, 3] },
+        { "start": 150.762, "end": 151.135, "char": [4, 16] },
+        { "start": 151.135, "end": 151.509, "char": [17, 21] }
+      ]
+    },
+    {
+      "start": 151.509,
+      "end": 153.376,
+      "text": "the original and the experiment,",
+      "words": [
+        { "start": 151.509, "end": 151.882, "char": [0, 3] },
+        { "start": 151.882, "end": 152.255, "char": [4, 12] },
+        { "start": 152.255, "end": 152.629, "char": [13, 16] },
+        { "start": 152.629, "end": 153.002, "char": [17, 20] },
+        { "start": 153.002, "end": 153.376, "char": [21, 32] }
+      ]
+    },
+    {
+      "start": 153.376,
+      "end": 155.242,
+      "text": "each with its own containers,",
+      "words": [
+        { "start": 153.376, "end": 153.749, "char": [0, 4] },
+        { "start": 153.749, "end": 154.122, "char": [5, 9] },
+        { "start": 154.122, "end": 154.496, "char": [10, 13] },
+        { "start": 154.496, "end": 154.869, "char": [14, 17] },
+        { "start": 154.869, "end": 155.242, "char": [18, 29] }
+      ]
+    },
+    {
+      "start": 155.242,
+      "end": 155.616,
+      "text": "network,",
+      "words": [{ "start": 155.242, "end": 155.616, "char": [0, 8] }]
+    },
+    {
+      "start": 155.616,
+      "end": 156.736,
+      "text": "and disk view.",
+      "words": [
+        { "start": 155.616, "end": 155.989, "char": [0, 3] },
+        { "start": 155.989, "end": 156.363, "char": [4, 8] },
+        { "start": 156.363, "end": 156.736, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 159.736,
+      "end": 161.032,
+      "text": "Aynı makine,",
+      "words": [
+        { "start": 159.736, "end": 160.384, "char": [0, 4] },
+        { "start": 160.384, "end": 161.032, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 161.032,
+      "end": 162.975,
+      "text": "iki izole dünya.",
+      "words": [
+        { "start": 161.032, "end": 161.68, "char": [0, 3] },
+        { "start": 161.68, "end": 162.327, "char": [4, 9] },
+        { "start": 162.327, "end": 162.975, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 166.288,
+      "end": 167.245,
+      "text": "Done experimenting?",
+      "words": [
+        { "start": 166.288, "end": 166.767, "char": [0, 4] },
+        { "start": 166.767, "end": 167.245, "char": [5, 19] }
+      ]
+    },
+    {
+      "start": 167.245,
+      "end": 168.681,
+      "text": "Delete the fork.",
+      "words": [
+        { "start": 167.245, "end": 167.724, "char": [0, 6] },
+        { "start": 167.724, "end": 168.202, "char": [7, 10] },
+        { "start": 168.202, "end": 168.681, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 168.681,
+      "end": 170.116,
+      "text": "Seconds to create,",
+      "words": [
+        { "start": 168.681, "end": 169.159, "char": [0, 7] },
+        { "start": 169.159, "end": 169.637, "char": [8, 10] },
+        { "start": 169.637, "end": 170.116, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 170.116,
+      "end": 172.987,
+      "text": "seconds to throw away — the",
+      "words": [
+        { "start": 170.116, "end": 170.594, "char": [0, 7] },
+        { "start": 170.594, "end": 171.073, "char": [8, 10] },
+        { "start": 171.073, "end": 171.551, "char": [11, 16] },
+        { "start": 171.551, "end": 172.03, "char": [17, 21] },
+        { "start": 172.03, "end": 172.508, "char": [22, 23] },
+        { "start": 172.508, "end": 172.987, "char": [24, 27] }
+      ]
+    },
+    {
+      "start": 172.987,
+      "end": 175.379,
+      "text": "original never knew it existed.",
+      "words": [
+        { "start": 172.987, "end": 173.465, "char": [0, 8] },
+        { "start": 173.465, "end": 173.944, "char": [9, 14] },
+        { "start": 173.944, "end": 174.422, "char": [15, 19] },
+        { "start": 174.422, "end": 174.9, "char": [20, 22] },
+        { "start": 174.9, "end": 175.379, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 178.379,
+      "end": 178.687,
+      "text": "Silindi.",
+      "words": [{ "start": 178.379, "end": 178.687, "char": [0, 8] }]
+    },
+    {
+      "start": 178.687,
+      "end": 181.148,
+      "text": "Orijinal tüm bu süre boyunca çalışmaya devam etti.",
+      "words": [
+        { "start": 178.687, "end": 178.994, "char": [0, 8] },
+        { "start": 178.994, "end": 179.302, "char": [9, 12] },
+        { "start": 179.302, "end": 179.61, "char": [13, 15] },
+        { "start": 179.61, "end": 179.917, "char": [16, 20] },
+        { "start": 179.917, "end": 180.225, "char": [21, 28] },
+        { "start": 180.225, "end": 180.533, "char": [29, 38] },
+        { "start": 180.533, "end": 180.84, "char": [39, 44] },
+        { "start": 180.84, "end": 181.148, "char": [45, 50] }
+      ]
+    },
+    {
+      "start": 181.951,
+      "end": 183.666,
+      "text": "Yani özgürce fork'layın,",
+      "words": [
+        { "start": 181.951, "end": 182.523, "char": [0, 4] },
+        { "start": 182.523, "end": 183.095, "char": [5, 12] },
+        { "start": 183.095, "end": 183.666, "char": [13, 24] }
+      ]
+    },
+    {
+      "start": 183.666,
+      "end": 185.381,
+      "text": "üretim zarar göremez.",
+      "words": [
+        { "start": 183.666, "end": 184.238, "char": [0, 6] },
+        { "start": 184.238, "end": 184.809, "char": [7, 12] },
+        { "start": 184.809, "end": 185.381, "char": [13, 21] }
+      ]
+    },
+    {
+      "start": 185.381,
+      "end": 187.096,
+      "text": "Sırada secrets var,",
+      "words": [
+        { "start": 185.381, "end": 185.953, "char": [0, 6] },
+        { "start": 185.953, "end": 186.524, "char": [7, 14] },
+        { "start": 186.524, "end": 187.096, "char": [15, 19] }
+      ]
+    },
+    {
+      "start": 187.096,
+      "end": 189.954,
+      "text": "fork'larınızın kasıtlı olarak devralmadığı tek",
+      "words": [
+        { "start": 187.096, "end": 187.668, "char": [0, 14] },
+        { "start": 187.668, "end": 188.239, "char": [15, 22] },
+        { "start": 188.239, "end": 188.811, "char": [23, 29] },
+        { "start": 188.811, "end": 189.382, "char": [30, 42] },
+        { "start": 189.382, "end": 189.954, "char": [43, 46] }
+      ]
+    },
+    {
+      "start": 189.954,
+      "end": 190.526,
+      "text": "şey.",
+      "words": [{ "start": 189.954, "end": 190.526, "char": [0, 4] }]
+    },
+    {
+      "start": 190.526,
+      "end": 191.669,
+      "text": "Orada görüşürüz!",
+      "words": [
+        { "start": 190.526, "end": 191.097, "char": [0, 5] },
+        { "start": 191.097, "end": 191.669, "char": [6, 16] }
+      ]
+    }
+  ]
+}

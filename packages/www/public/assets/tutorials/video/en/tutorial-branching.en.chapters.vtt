@@ -1,0 +1,52 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:14.362
+Branching — Commit & Rollback
+
+00:00:14.362 --> 00:00:33.413
+Commits, branches, checkout
+
+00:00:33.413 --> 00:00:48.026
+Step 1: Version one
+
+00:00:48.026 --> 00:01:06.804
+Step 2: Real data, three rows
+
+00:01:06.804 --> 00:01:29.355
+Step 3: Commit it
+
+00:01:29.355 --> 00:01:39.601
+Step 4: Name it with a branch
+
+00:01:39.601 --> 00:01:54.864
+Step 5: Keep working, version two
+
+00:01:54.864 --> 00:02:11.431
+Step 6: Disaster strikes the table
+
+00:02:11.431 --> 00:02:30.666
+Step 7: The table is gone
+
+00:02:30.666 --> 00:02:46.866
+Step 8: Commit the broken state
+
+00:02:46.866 --> 00:03:05.323
+Step 9: The history
+
+00:03:05.323 --> 00:03:23.801
+Step 10: Check the branch out
+
+00:03:23.801 --> 00:03:40.526
+Step 11: Start the rollback
+
+00:03:40.526 --> 00:03:56.975
+Step 12: Proof: version one
+
+00:03:56.975 --> 00:04:14.770
+Step 13: The data is back
+
+00:04:14.470 --> 00:04:29.236
+Both versions, side by side
+
+00:04:28.936 --> 00:04:38.856
+Next: Live Migration

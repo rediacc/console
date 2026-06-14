@@ -85,394 +85,394 @@
       ]
     },
     {
-      "start": 15.997,
-      "end": 18.768,
+      "start": 15.697,
+      "end": 18.468,
       "text": "Rendez-vous sur la page d'installation et faites défiler",
       "words": [
-        { "start": 15.997, "end": 16.343, "char": [0, 11] },
-        { "start": 16.343, "end": 16.69, "char": [12, 15] },
-        { "start": 16.69, "end": 17.036, "char": [16, 18] },
-        { "start": 17.036, "end": 17.383, "char": [19, 23] },
-        { "start": 17.383, "end": 17.729, "char": [24, 38] },
-        { "start": 17.729, "end": 18.075, "char": [39, 41] },
-        { "start": 18.075, "end": 18.422, "char": [42, 48] },
-        { "start": 18.422, "end": 18.768, "char": [49, 56] }
+        { "start": 15.697, "end": 16.043, "char": [0, 11] },
+        { "start": 16.043, "end": 16.39, "char": [12, 15] },
+        { "start": 16.39, "end": 16.736, "char": [16, 18] },
+        { "start": 16.736, "end": 17.083, "char": [19, 23] },
+        { "start": 17.083, "end": 17.429, "char": [24, 38] },
+        { "start": 17.429, "end": 17.775, "char": [39, 41] },
+        { "start": 17.775, "end": 18.122, "char": [42, 48] },
+        { "start": 18.122, "end": 18.468, "char": [49, 56] }
       ]
     },
     {
-      "start": 18.768,
-      "end": 20.5,
+      "start": 18.468,
+      "end": 20.2,
       "text": "jusqu'à la section installation rapide.",
       "words": [
-        { "start": 18.768, "end": 19.115, "char": [0, 7] },
-        { "start": 19.115, "end": 19.461, "char": [8, 10] },
-        { "start": 19.461, "end": 19.807, "char": [11, 18] },
-        { "start": 19.807, "end": 20.154, "char": [19, 31] },
-        { "start": 20.154, "end": 20.5, "char": [32, 39] }
+        { "start": 18.468, "end": 18.815, "char": [0, 7] },
+        { "start": 18.815, "end": 19.161, "char": [8, 10] },
+        { "start": 19.161, "end": 19.507, "char": [11, 18] },
+        { "start": 19.507, "end": 19.854, "char": [19, 31] },
+        { "start": 19.854, "end": 20.2, "char": [32, 39] }
       ]
     },
     {
-      "start": 20.5,
-      "end": 23.272,
+      "start": 20.2,
+      "end": 22.972,
       "text": "Elle génère la bonne ligne de commande pour",
       "words": [
-        { "start": 20.5, "end": 20.847, "char": [0, 4] },
-        { "start": 20.847, "end": 21.193, "char": [5, 11] },
-        { "start": 21.193, "end": 21.54, "char": [12, 14] },
-        { "start": 21.54, "end": 21.886, "char": [15, 20] },
-        { "start": 21.886, "end": 22.232, "char": [21, 26] },
-        { "start": 22.232, "end": 22.579, "char": [27, 29] },
-        { "start": 22.579, "end": 22.925, "char": [30, 38] },
-        { "start": 22.925, "end": 23.272, "char": [39, 43] }
+        { "start": 20.2, "end": 20.547, "char": [0, 4] },
+        { "start": 20.547, "end": 20.893, "char": [5, 11] },
+        { "start": 20.893, "end": 21.24, "char": [12, 14] },
+        { "start": 21.24, "end": 21.586, "char": [15, 20] },
+        { "start": 21.586, "end": 21.932, "char": [21, 26] },
+        { "start": 21.932, "end": 22.279, "char": [27, 29] },
+        { "start": 22.279, "end": 22.625, "char": [30, 38] },
+        { "start": 22.625, "end": 22.972, "char": [39, 43] }
       ]
     },
     {
-      "start": 23.272,
-      "end": 23.964,
+      "start": 22.972,
+      "end": 23.664,
       "text": "votre plateforme.",
       "words": [
-        { "start": 23.272, "end": 23.618, "char": [0, 5] },
-        { "start": 23.618, "end": 23.964, "char": [6, 17] }
+        { "start": 22.972, "end": 23.318, "char": [0, 5] },
+        { "start": 23.318, "end": 23.664, "char": [6, 17] }
       ]
     },
     {
-      "start": 27.238,
-      "end": 29.997,
+      "start": 27.664,
+      "end": 30.423,
       "text": "Commençons par confirmer que l'outil est installé.",
       "words": [
-        { "start": 27.238, "end": 27.632, "char": [0, 10] },
-        { "start": 27.632, "end": 28.026, "char": [11, 14] },
-        { "start": 28.026, "end": 28.421, "char": [15, 24] },
-        { "start": 28.421, "end": 28.815, "char": [25, 28] },
-        { "start": 28.815, "end": 29.209, "char": [29, 36] },
-        { "start": 29.209, "end": 29.603, "char": [37, 40] },
-        { "start": 29.603, "end": 29.997, "char": [41, 50] }
+        { "start": 27.664, "end": 28.058, "char": [0, 10] },
+        { "start": 28.058, "end": 28.452, "char": [11, 14] },
+        { "start": 28.452, "end": 28.846, "char": [15, 24] },
+        { "start": 28.846, "end": 29.241, "char": [25, 28] },
+        { "start": 29.241, "end": 29.635, "char": [29, 36] },
+        { "start": 29.635, "end": 30.029, "char": [37, 40] },
+        { "start": 30.029, "end": 30.423, "char": [41, 50] }
       ]
     },
     {
-      "start": 29.997,
-      "end": 32.757,
+      "start": 30.423,
+      "end": 33.183,
       "text": "Le flag version affiche la version installée",
       "words": [
-        { "start": 29.997, "end": 30.392, "char": [0, 2] },
-        { "start": 30.392, "end": 30.786, "char": [3, 7] },
-        { "start": 30.786, "end": 31.18, "char": [8, 15] },
-        { "start": 31.18, "end": 31.574, "char": [16, 23] },
-        { "start": 31.574, "end": 31.969, "char": [24, 26] },
-        { "start": 31.969, "end": 32.363, "char": [27, 34] },
-        { "start": 32.363, "end": 32.757, "char": [35, 44] }
+        { "start": 30.423, "end": 30.817, "char": [0, 2] },
+        { "start": 30.817, "end": 31.212, "char": [3, 7] },
+        { "start": 31.212, "end": 31.606, "char": [8, 15] },
+        { "start": 31.606, "end": 32, "char": [16, 23] },
+        { "start": 32, "end": 32.394, "char": [24, 26] },
+        { "start": 32.394, "end": 32.788, "char": [27, 34] },
+        { "start": 32.788, "end": 33.183, "char": [35, 44] }
       ]
     },
     {
-      "start": 32.757,
-      "end": 35.516,
+      "start": 33.183,
+      "end": 35.942,
       "text": "et nous confirme que l'installation s'est bien",
       "words": [
-        { "start": 32.757, "end": 33.151, "char": [0, 2] },
-        { "start": 33.151, "end": 33.545, "char": [3, 7] },
-        { "start": 33.545, "end": 33.94, "char": [8, 16] },
-        { "start": 33.94, "end": 34.334, "char": [17, 20] },
-        { "start": 34.334, "end": 34.728, "char": [21, 35] },
-        { "start": 34.728, "end": 35.122, "char": [36, 41] },
-        { "start": 35.122, "end": 35.516, "char": [42, 46] }
+        { "start": 33.183, "end": 33.577, "char": [0, 2] },
+        { "start": 33.577, "end": 33.971, "char": [3, 7] },
+        { "start": 33.971, "end": 34.365, "char": [8, 16] },
+        { "start": 34.365, "end": 34.759, "char": [17, 20] },
+        { "start": 34.759, "end": 35.154, "char": [21, 35] },
+        { "start": 35.154, "end": 35.548, "char": [36, 41] },
+        { "start": 35.548, "end": 35.942, "char": [42, 46] }
       ]
     },
     {
-      "start": 35.516,
-      "end": 35.911,
+      "start": 35.942,
+      "end": 36.336,
       "text": "déroulée.",
-      "words": [{ "start": 35.516, "end": 35.911, "char": [0, 9] }]
+      "words": [{ "start": 35.942, "end": 36.336, "char": [0, 9] }]
     },
     {
-      "start": 38.911,
-      "end": 39.683,
+      "start": 39.336,
+      "end": 40.108,
       "text": "Installation terminée.",
       "words": [
-        { "start": 38.911, "end": 39.297, "char": [0, 12] },
-        { "start": 39.297, "end": 39.683, "char": [13, 22] }
+        { "start": 39.336, "end": 39.722, "char": [0, 12] },
+        { "start": 39.722, "end": 40.108, "char": [13, 22] }
       ]
     },
     {
-      "start": 39.683,
-      "end": 42.385,
+      "start": 40.108,
+      "end": 42.811,
       "text": "Le binaire rdc est sur votre PATH.",
       "words": [
-        { "start": 39.683, "end": 40.069, "char": [0, 2] },
-        { "start": 40.069, "end": 40.455, "char": [3, 10] },
-        { "start": 40.455, "end": 40.841, "char": [11, 14] },
-        { "start": 40.841, "end": 41.227, "char": [15, 18] },
-        { "start": 41.227, "end": 41.613, "char": [19, 22] },
-        { "start": 41.613, "end": 41.999, "char": [23, 28] },
-        { "start": 41.999, "end": 42.385, "char": [29, 34] }
+        { "start": 40.108, "end": 40.494, "char": [0, 2] },
+        { "start": 40.494, "end": 40.88, "char": [3, 10] },
+        { "start": 40.88, "end": 41.266, "char": [11, 14] },
+        { "start": 41.266, "end": 41.653, "char": [15, 18] },
+        { "start": 41.653, "end": 42.039, "char": [19, 22] },
+        { "start": 42.039, "end": 42.425, "char": [23, 28] },
+        { "start": 42.425, "end": 42.811, "char": [29, 34] }
       ]
     },
     {
-      "start": 45.687,
-      "end": 46.123,
+      "start": 46.146,
+      "end": 46.581,
       "text": "Maintenant,",
-      "words": [{ "start": 45.687, "end": 46.123, "char": [0, 11] }]
+      "words": [{ "start": 46.146, "end": 46.581, "char": [0, 11] }]
     },
     {
-      "start": 46.123,
-      "end": 48.301,
+      "start": 46.581,
+      "end": 48.759,
       "text": "lançons le contrôle de diagnostic.",
       "words": [
-        { "start": 46.123, "end": 46.558, "char": [0, 7] },
-        { "start": 46.558, "end": 46.994, "char": [8, 10] },
-        { "start": 46.994, "end": 47.429, "char": [11, 19] },
-        { "start": 47.429, "end": 47.865, "char": [20, 22] },
-        { "start": 47.865, "end": 48.301, "char": [23, 34] }
+        { "start": 46.581, "end": 47.017, "char": [0, 7] },
+        { "start": 47.017, "end": 47.452, "char": [8, 10] },
+        { "start": 47.452, "end": 47.888, "char": [11, 19] },
+        { "start": 47.888, "end": 48.324, "char": [20, 22] },
+        { "start": 48.324, "end": 48.759, "char": [23, 34] }
       ]
     },
     {
-      "start": 48.301,
-      "end": 50.914,
+      "start": 48.759,
+      "end": 51.373,
       "text": "Il parcourt toutes les dépendances dont",
       "words": [
-        { "start": 48.301, "end": 48.736, "char": [0, 2] },
-        { "start": 48.736, "end": 49.172, "char": [3, 11] },
-        { "start": 49.172, "end": 49.607, "char": [12, 18] },
-        { "start": 49.607, "end": 50.043, "char": [19, 22] },
-        { "start": 50.043, "end": 50.479, "char": [23, 34] },
-        { "start": 50.479, "end": 50.914, "char": [35, 39] }
+        { "start": 48.759, "end": 49.195, "char": [0, 2] },
+        { "start": 49.195, "end": 49.631, "char": [3, 11] },
+        { "start": 49.631, "end": 50.066, "char": [12, 18] },
+        { "start": 50.066, "end": 50.502, "char": [19, 22] },
+        { "start": 50.502, "end": 50.937, "char": [23, 34] },
+        { "start": 50.937, "end": 51.373, "char": [35, 39] }
       ]
     },
     {
-      "start": 50.914,
-      "end": 53.528,
+      "start": 51.373,
+      "end": 53.987,
       "text": "la ligne de commande a besoin,",
       "words": [
-        { "start": 50.914, "end": 51.35, "char": [0, 2] },
-        { "start": 51.35, "end": 51.786, "char": [3, 8] },
-        { "start": 51.786, "end": 52.221, "char": [9, 11] },
-        { "start": 52.221, "end": 52.657, "char": [12, 20] },
-        { "start": 52.657, "end": 53.092, "char": [21, 22] },
-        { "start": 53.092, "end": 53.528, "char": [23, 30] }
+        { "start": 51.373, "end": 51.809, "char": [0, 2] },
+        { "start": 51.809, "end": 52.244, "char": [3, 8] },
+        { "start": 52.244, "end": 52.68, "char": [9, 11] },
+        { "start": 52.68, "end": 53.115, "char": [12, 20] },
+        { "start": 53.115, "end": 53.551, "char": [21, 22] },
+        { "start": 53.551, "end": 53.987, "char": [23, 30] }
       ]
     },
     {
-      "start": 53.528,
-      "end": 53.964,
+      "start": 53.987,
+      "end": 54.422,
       "text": "Node,",
-      "words": [{ "start": 53.528, "end": 53.964, "char": [0, 5] }]
+      "words": [{ "start": 53.987, "end": 54.422, "char": [0, 5] }]
     },
     {
-      "start": 53.964,
-      "end": 54.399,
+      "start": 54.422,
+      "end": 54.858,
       "text": "SSH,",
-      "words": [{ "start": 53.964, "end": 54.399, "char": [0, 4] }]
+      "words": [{ "start": 54.422, "end": 54.858, "char": [0, 4] }]
     },
     {
-      "start": 54.399,
-      "end": 54.835,
+      "start": 54.858,
+      "end": 55.293,
       "text": "Docker,",
-      "words": [{ "start": 54.399, "end": 54.835, "char": [0, 7] }]
+      "words": [{ "start": 54.858, "end": 55.293, "char": [0, 7] }]
     },
     {
-      "start": 54.835,
-      "end": 56.142,
+      "start": 55.293,
+      "end": 56.6,
       "text": "le binaire renet,",
       "words": [
-        { "start": 54.835, "end": 55.27, "char": [0, 2] },
-        { "start": 55.27, "end": 55.706, "char": [3, 10] },
-        { "start": 55.706, "end": 56.142, "char": [11, 17] }
+        { "start": 55.293, "end": 55.729, "char": [0, 2] },
+        { "start": 55.729, "end": 56.165, "char": [3, 10] },
+        { "start": 56.165, "end": 56.6, "char": [11, 17] }
       ]
     },
     {
-      "start": 56.142,
-      "end": 58.32,
+      "start": 56.6,
+      "end": 58.778,
       "text": "et signale les éventuels manques.",
       "words": [
-        { "start": 56.142, "end": 56.577, "char": [0, 2] },
-        { "start": 56.577, "end": 57.013, "char": [3, 10] },
-        { "start": 57.013, "end": 57.448, "char": [11, 14] },
-        { "start": 57.448, "end": 57.884, "char": [15, 24] },
-        { "start": 57.884, "end": 58.32, "char": [25, 33] }
+        { "start": 56.6, "end": 57.036, "char": [0, 2] },
+        { "start": 57.036, "end": 57.472, "char": [3, 10] },
+        { "start": 57.472, "end": 57.907, "char": [11, 14] },
+        { "start": 57.907, "end": 58.343, "char": [15, 24] },
+        { "start": 58.343, "end": 58.778, "char": [25, 33] }
       ]
     },
     {
-      "start": 58.32,
-      "end": 60.933,
+      "start": 58.778,
+      "end": 61.392,
       "text": "Un rapport propre signifie que vous",
       "words": [
-        { "start": 58.32, "end": 58.755, "char": [0, 2] },
-        { "start": 58.755, "end": 59.191, "char": [3, 10] },
-        { "start": 59.191, "end": 59.627, "char": [11, 17] },
-        { "start": 59.627, "end": 60.062, "char": [18, 26] },
-        { "start": 60.062, "end": 60.498, "char": [27, 30] },
-        { "start": 60.498, "end": 60.933, "char": [31, 35] }
+        { "start": 58.778, "end": 59.214, "char": [0, 2] },
+        { "start": 59.214, "end": 59.65, "char": [3, 10] },
+        { "start": 59.65, "end": 60.085, "char": [11, 17] },
+        { "start": 60.085, "end": 60.521, "char": [18, 26] },
+        { "start": 60.521, "end": 60.956, "char": [27, 30] },
+        { "start": 60.956, "end": 61.392, "char": [31, 35] }
       ]
     },
     {
-      "start": 60.933,
-      "end": 61.805,
+      "start": 61.392,
+      "end": 62.263,
       "text": "êtes prêt.",
       "words": [
-        { "start": 60.933, "end": 61.369, "char": [0, 4] },
-        { "start": 61.369, "end": 61.805, "char": [5, 10] }
+        { "start": 61.392, "end": 61.828, "char": [0, 4] },
+        { "start": 61.828, "end": 62.263, "char": [5, 10] }
       ]
     },
     {
-      "start": 62.605,
-      "end": 63.396,
+      "start": 63.063,
+      "end": 63.854,
       "text": "Version affichée.",
       "words": [
-        { "start": 62.605, "end": 63, "char": [0, 7] },
-        { "start": 63, "end": 63.396, "char": [8, 17] }
+        { "start": 63.063, "end": 63.459, "char": [0, 7] },
+        { "start": 63.459, "end": 63.854, "char": [8, 17] }
       ]
     },
     {
-      "start": 63.396,
-      "end": 65.374,
+      "start": 63.854,
+      "end": 65.832,
       "text": "Vous êtes prêt à enchaîner.",
       "words": [
-        { "start": 63.396, "end": 63.791, "char": [0, 4] },
-        { "start": 63.791, "end": 64.187, "char": [5, 9] },
-        { "start": 64.187, "end": 64.582, "char": [10, 14] },
-        { "start": 64.582, "end": 64.978, "char": [15, 16] },
-        { "start": 64.978, "end": 65.374, "char": [17, 27] }
+        { "start": 63.854, "end": 64.25, "char": [0, 4] },
+        { "start": 64.25, "end": 64.645, "char": [5, 9] },
+        { "start": 64.645, "end": 65.041, "char": [10, 14] },
+        { "start": 65.041, "end": 65.437, "char": [15, 16] },
+        { "start": 65.437, "end": 65.832, "char": [17, 27] }
       ]
     },
     {
-      "start": 66.183,
-      "end": 69.142,
+      "start": 66.642,
+      "end": 69.601,
       "text": "L'outil en ligne de commande vit",
       "words": [
-        { "start": 66.183, "end": 66.676, "char": [0, 7] },
-        { "start": 66.676, "end": 67.169, "char": [8, 10] },
-        { "start": 67.169, "end": 67.662, "char": [11, 16] },
-        { "start": 67.662, "end": 68.156, "char": [17, 19] },
-        { "start": 68.156, "end": 68.649, "char": [20, 28] },
-        { "start": 68.649, "end": 69.142, "char": [29, 32] }
+        { "start": 66.642, "end": 67.135, "char": [0, 7] },
+        { "start": 67.135, "end": 67.628, "char": [8, 10] },
+        { "start": 67.628, "end": 68.121, "char": [11, 16] },
+        { "start": 68.121, "end": 68.614, "char": [17, 19] },
+        { "start": 68.614, "end": 69.107, "char": [20, 28] },
+        { "start": 69.107, "end": 69.601, "char": [29, 32] }
       ]
     },
     {
-      "start": 69.142,
-      "end": 70.621,
+      "start": 69.601,
+      "end": 71.08,
       "text": "sur votre ordinateur.",
       "words": [
-        { "start": 69.142, "end": 69.635, "char": [0, 3] },
-        { "start": 69.635, "end": 70.128, "char": [4, 9] },
-        { "start": 70.128, "end": 70.621, "char": [10, 21] }
+        { "start": 69.601, "end": 70.094, "char": [0, 3] },
+        { "start": 70.094, "end": 70.587, "char": [4, 9] },
+        { "start": 70.587, "end": 71.08, "char": [10, 21] }
       ]
     },
     {
-      "start": 70.621,
-      "end": 73.58,
+      "start": 71.08,
+      "end": 74.039,
       "text": "Le serveur exécute un composant séparé",
       "words": [
-        { "start": 70.621, "end": 71.115, "char": [0, 2] },
-        { "start": 71.115, "end": 71.608, "char": [3, 10] },
-        { "start": 71.608, "end": 72.101, "char": [11, 18] },
-        { "start": 72.101, "end": 72.594, "char": [19, 21] },
-        { "start": 72.594, "end": 73.087, "char": [22, 31] },
-        { "start": 73.087, "end": 73.58, "char": [32, 38] }
+        { "start": 71.08, "end": 71.573, "char": [0, 2] },
+        { "start": 71.573, "end": 72.066, "char": [3, 10] },
+        { "start": 72.066, "end": 72.56, "char": [11, 18] },
+        { "start": 72.56, "end": 73.053, "char": [19, 21] },
+        { "start": 73.053, "end": 73.546, "char": [22, 31] },
+        { "start": 73.546, "end": 74.039, "char": [32, 38] }
       ]
     },
     {
-      "start": 73.58,
-      "end": 74.567,
+      "start": 74.039,
+      "end": 75.025,
       "text": "appelé renet,",
       "words": [
-        { "start": 73.58, "end": 74.074, "char": [0, 6] },
-        { "start": 74.074, "end": 74.567, "char": [7, 13] }
+        { "start": 74.039, "end": 74.532, "char": [0, 6] },
+        { "start": 74.532, "end": 75.025, "char": [7, 13] }
       ]
     },
     {
-      "start": 74.567,
-      "end": 77.526,
+      "start": 75.025,
+      "end": 77.984,
       "text": "que la CLI provisionne et pilote",
       "words": [
-        { "start": 74.567, "end": 75.06, "char": [0, 3] },
-        { "start": 75.06, "end": 75.553, "char": [4, 6] },
-        { "start": 75.553, "end": 76.046, "char": [7, 10] },
-        { "start": 76.046, "end": 76.539, "char": [11, 22] },
-        { "start": 76.539, "end": 77.033, "char": [23, 25] },
-        { "start": 77.033, "end": 77.526, "char": [26, 32] }
+        { "start": 75.025, "end": 75.519, "char": [0, 3] },
+        { "start": 75.519, "end": 76.012, "char": [4, 6] },
+        { "start": 76.012, "end": 76.505, "char": [7, 10] },
+        { "start": 76.505, "end": 76.998, "char": [11, 22] },
+        { "start": 76.998, "end": 77.491, "char": [23, 25] },
+        { "start": 77.491, "end": 77.984, "char": [26, 32] }
       ]
     },
     {
-      "start": 77.526,
-      "end": 78.512,
+      "start": 77.984,
+      "end": 78.971,
       "text": "via SSH,",
       "words": [
-        { "start": 77.526, "end": 78.019, "char": [0, 3] },
-        { "start": 78.019, "end": 78.512, "char": [4, 8] }
+        { "start": 77.984, "end": 78.478, "char": [0, 3] },
+        { "start": 78.478, "end": 78.971, "char": [4, 8] }
       ]
     },
     {
-      "start": 78.512,
-      "end": 81.471,
+      "start": 78.971,
+      "end": 81.93,
       "text": "vous n'avez donc jamais à vous",
       "words": [
-        { "start": 78.512, "end": 79.005, "char": [0, 4] },
-        { "start": 79.005, "end": 79.498, "char": [5, 11] },
-        { "start": 79.498, "end": 79.992, "char": [12, 16] },
-        { "start": 79.992, "end": 80.485, "char": [17, 23] },
-        { "start": 80.485, "end": 80.978, "char": [24, 25] },
-        { "start": 80.978, "end": 81.471, "char": [26, 30] }
+        { "start": 78.971, "end": 79.464, "char": [0, 4] },
+        { "start": 79.464, "end": 79.957, "char": [5, 11] },
+        { "start": 79.957, "end": 80.45, "char": [12, 16] },
+        { "start": 80.45, "end": 80.943, "char": [17, 23] },
+        { "start": 80.943, "end": 81.436, "char": [24, 25] },
+        { "start": 81.436, "end": 81.93, "char": [26, 30] }
       ]
     },
     {
-      "start": 81.471,
-      "end": 82.457,
+      "start": 81.93,
+      "end": 82.916,
       "text": "connecter manuellement.",
       "words": [
-        { "start": 81.471, "end": 81.964, "char": [0, 9] },
-        { "start": 81.964, "end": 82.457, "char": [10, 23] }
+        { "start": 81.93, "end": 82.423, "char": [0, 9] },
+        { "start": 82.423, "end": 82.916, "char": [10, 23] }
       ]
     },
     {
-      "start": 83.237,
-      "end": 84.532,
+      "start": 83.696,
+      "end": 84.991,
       "text": "Voilà pour l'installation.",
       "words": [
-        { "start": 83.237, "end": 83.669, "char": [0, 5] },
-        { "start": 83.669, "end": 84.1, "char": [6, 10] },
-        { "start": 84.1, "end": 84.532, "char": [11, 26] }
+        { "start": 83.696, "end": 84.127, "char": [0, 5] },
+        { "start": 84.127, "end": 84.559, "char": [6, 10] },
+        { "start": 84.559, "end": 84.991, "char": [11, 26] }
       ]
     },
     {
-      "start": 84.532,
-      "end": 85.827,
+      "start": 84.991,
+      "end": 86.286,
       "text": "Dans la suite,",
       "words": [
-        { "start": 84.532, "end": 84.964, "char": [0, 4] },
-        { "start": 84.964, "end": 85.396, "char": [5, 7] },
-        { "start": 85.396, "end": 85.827, "char": [8, 14] }
+        { "start": 84.991, "end": 85.423, "char": [0, 4] },
+        { "start": 85.423, "end": 85.854, "char": [5, 7] },
+        { "start": 85.854, "end": 86.286, "char": [8, 14] }
       ]
     },
     {
-      "start": 85.827,
-      "end": 88.418,
+      "start": 86.286,
+      "end": 88.876,
       "text": "nous configurerons votre clé SSH pour",
       "words": [
-        { "start": 85.827, "end": 86.259, "char": [0, 4] },
-        { "start": 86.259, "end": 86.691, "char": [5, 18] },
-        { "start": 86.691, "end": 87.122, "char": [19, 24] },
-        { "start": 87.122, "end": 87.554, "char": [25, 28] },
-        { "start": 87.554, "end": 87.986, "char": [29, 32] },
-        { "start": 87.986, "end": 88.418, "char": [33, 37] }
+        { "start": 86.286, "end": 86.718, "char": [0, 4] },
+        { "start": 86.718, "end": 87.149, "char": [5, 18] },
+        { "start": 87.149, "end": 87.581, "char": [19, 24] },
+        { "start": 87.581, "end": 88.013, "char": [25, 28] },
+        { "start": 88.013, "end": 88.444, "char": [29, 32] },
+        { "start": 88.444, "end": 88.876, "char": [33, 37] }
       ]
     },
     {
-      "start": 88.418,
-      "end": 91.008,
+      "start": 88.876,
+      "end": 91.466,
       "text": "que la CLI puisse atteindre vos",
       "words": [
-        { "start": 88.418, "end": 88.849, "char": [0, 3] },
-        { "start": 88.849, "end": 89.281, "char": [4, 6] },
-        { "start": 89.281, "end": 89.713, "char": [7, 10] },
-        { "start": 89.713, "end": 90.144, "char": [11, 17] },
-        { "start": 90.144, "end": 90.576, "char": [18, 27] },
-        { "start": 90.576, "end": 91.008, "char": [28, 31] }
+        { "start": 88.876, "end": 89.308, "char": [0, 3] },
+        { "start": 89.308, "end": 89.74, "char": [4, 6] },
+        { "start": 89.74, "end": 90.171, "char": [7, 10] },
+        { "start": 90.171, "end": 90.603, "char": [11, 17] },
+        { "start": 90.603, "end": 91.035, "char": [18, 27] },
+        { "start": 91.035, "end": 91.466, "char": [28, 31] }
       ]
     },
     {
-      "start": 91.008,
-      "end": 91.439,
+      "start": 91.466,
+      "end": 91.898,
       "text": "serveurs.",
-      "words": [{ "start": 91.008, "end": 91.439, "char": [0, 9] }]
+      "words": [{ "start": 91.466, "end": 91.898, "char": [0, 9] }]
     }
   ]
 }

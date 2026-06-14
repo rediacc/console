@@ -12,11 +12,20 @@ Schritt 1: rclone-Konfiguration importieren
 00:00:50.930 --> 00:01:07.595
 Schritt 2: Konfigurierte Speicher auflisten
 
-00:01:07.595 --> 00:01:37.500
+00:01:07.595 --> 00:01:38.217
 Schritt 3: Vollständiges Backup pushen
 
-00:01:37.500 --> 00:02:05.004
+00:01:38.217 --> 00:02:05.721
 Schritt 4: Backups auf dem Speicher auflisten
 
-00:02:05.004 --> 00:02:10.764
+00:02:05.721 --> 00:02:28.492
+Schritt 5: repo offline nehmen
+
+00:02:28.492 --> 00:02:50.870
+Schritt 6: Backup zurückladen
+
+00:02:50.870 --> 00:03:09.644
+Schritt 7: Einbinden, wiederhergestellt
+
+00:03:09.644 --> 00:03:15.404
 Weiter: Monitoring

@@ -1,0 +1,667 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.014,
+      "text": "Hier ist ein unterhaltsames Experiment.",
+      "words": [
+        { "start": 1, "end": 1.403, "char": [0, 4] },
+        { "start": 1.403, "end": 1.806, "char": [5, 8] },
+        { "start": 1.806, "end": 2.209, "char": [9, 12] },
+        { "start": 2.209, "end": 2.611, "char": [13, 27] },
+        { "start": 2.611, "end": 3.014, "char": [28, 39] }
+      ]
+    },
+    {
+      "start": 3.014,
+      "end": 5.834,
+      "text": "Wir pushen ein repository mit einem Gigabyte",
+      "words": [
+        { "start": 3.014, "end": 3.417, "char": [0, 3] },
+        { "start": 3.417, "end": 3.82, "char": [4, 10] },
+        { "start": 3.82, "end": 4.223, "char": [11, 14] },
+        { "start": 4.223, "end": 4.626, "char": [15, 25] },
+        { "start": 4.626, "end": 5.029, "char": [26, 29] },
+        { "start": 5.029, "end": 5.432, "char": [30, 35] },
+        { "start": 5.432, "end": 5.834, "char": [36, 44] }
+      ]
+    },
+    {
+      "start": 5.834,
+      "end": 8.252,
+      "text": "Daten zweimal auf eine andere Maschine.",
+      "words": [
+        { "start": 5.834, "end": 6.237, "char": [0, 5] },
+        { "start": 6.237, "end": 6.64, "char": [6, 13] },
+        { "start": 6.64, "end": 7.043, "char": [14, 17] },
+        { "start": 7.043, "end": 7.446, "char": [18, 22] },
+        { "start": 7.446, "end": 7.849, "char": [23, 29] },
+        { "start": 7.849, "end": 8.252, "char": [30, 39] }
+      ]
+    },
+    {
+      "start": 8.252,
+      "end": 11.072,
+      "text": "Der erste Push überträgt alles und der",
+      "words": [
+        { "start": 8.252, "end": 8.654, "char": [0, 3] },
+        { "start": 8.654, "end": 9.057, "char": [4, 9] },
+        { "start": 9.057, "end": 9.46, "char": [10, 14] },
+        { "start": 9.46, "end": 9.863, "char": [15, 24] },
+        { "start": 9.863, "end": 10.266, "char": [25, 30] },
+        { "start": 10.266, "end": 10.669, "char": [31, 34] },
+        { "start": 10.669, "end": 11.072, "char": [35, 38] }
+      ]
+    },
+    {
+      "start": 11.072,
+      "end": 11.877,
+      "text": "zweite nur,",
+      "words": [
+        { "start": 11.072, "end": 11.475, "char": [0, 6] },
+        { "start": 11.475, "end": 11.877, "char": [7, 11] }
+      ]
+    },
+    {
+      "start": 11.877,
+      "end": 13.489,
+      "text": "was sich geändert hat.",
+      "words": [
+        { "start": 11.877, "end": 12.28, "char": [0, 3] },
+        { "start": 12.28, "end": 12.683, "char": [4, 8] },
+        { "start": 12.683, "end": 13.086, "char": [9, 17] },
+        { "start": 13.086, "end": 13.489, "char": [18, 22] }
+      ]
+    },
+    {
+      "start": 13.489,
+      "end": 15.1,
+      "text": "Schau auf die Zahlen,",
+      "words": [
+        { "start": 13.489, "end": 13.892, "char": [0, 5] },
+        { "start": 13.892, "end": 14.295, "char": [6, 9] },
+        { "start": 14.295, "end": 14.697, "char": [10, 13] },
+        { "start": 14.697, "end": 15.1, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 15.1,
+      "end": 17.115,
+      "text": "der Push-Befehl gibt genau aus,",
+      "words": [
+        { "start": 15.1, "end": 15.503, "char": [0, 3] },
+        { "start": 15.503, "end": 15.906, "char": [4, 15] },
+        { "start": 15.906, "end": 16.309, "char": [16, 20] },
+        { "start": 16.309, "end": 16.712, "char": [21, 26] },
+        { "start": 16.712, "end": 17.115, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 17.115,
+      "end": 19.129,
+      "text": "wie viel er übertragen hat.",
+      "words": [
+        { "start": 17.115, "end": 17.518, "char": [0, 3] },
+        { "start": 17.518, "end": 17.92, "char": [4, 8] },
+        { "start": 17.92, "end": 18.323, "char": [9, 11] },
+        { "start": 18.323, "end": 18.726, "char": [12, 22] },
+        { "start": 18.726, "end": 19.129, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 19.888,
+      "end": 22.728,
+      "text": "Der Trick steckt in der Vorbereitung.",
+      "words": [
+        { "start": 19.888, "end": 20.361, "char": [0, 3] },
+        { "start": 20.361, "end": 20.835, "char": [4, 9] },
+        { "start": 20.835, "end": 21.308, "char": [10, 16] },
+        { "start": 21.308, "end": 21.782, "char": [17, 19] },
+        { "start": 21.782, "end": 22.255, "char": [20, 23] },
+        { "start": 22.255, "end": 22.728, "char": [24, 37] }
+      ]
+    },
+    {
+      "start": 22.728,
+      "end": 25.569,
+      "text": "Nach dem ersten Push behält das",
+      "words": [
+        { "start": 22.728, "end": 23.202, "char": [0, 4] },
+        { "start": 23.202, "end": 23.675, "char": [5, 8] },
+        { "start": 23.675, "end": 24.149, "char": [9, 15] },
+        { "start": 24.149, "end": 24.622, "char": [16, 20] },
+        { "start": 24.622, "end": 25.095, "char": [21, 27] },
+        { "start": 25.095, "end": 25.569, "char": [28, 31] }
+      ]
+    },
+    {
+      "start": 25.569,
+      "end": 26.989,
+      "text": "CLI ein identisches,",
+      "words": [
+        { "start": 25.569, "end": 26.042, "char": [0, 3] },
+        { "start": 26.042, "end": 26.515, "char": [4, 7] },
+        { "start": 26.515, "end": 26.989, "char": [8, 20] }
+      ]
+    },
+    {
+      "start": 26.989,
+      "end": 29.356,
+      "text": "unveränderliches Base-Image auf beiden Maschinen.",
+      "words": [
+        { "start": 26.989, "end": 27.462, "char": [0, 16] },
+        { "start": 27.462, "end": 27.936, "char": [17, 27] },
+        { "start": 27.936, "end": 28.409, "char": [28, 31] },
+        { "start": 28.409, "end": 28.882, "char": [32, 38] },
+        { "start": 28.882, "end": 29.356, "char": [39, 49] }
+      ]
+    },
+    {
+      "start": 29.356,
+      "end": 32.196,
+      "text": "Der nächste Push vergleicht Blöcke mit",
+      "words": [
+        { "start": 29.356, "end": 29.829, "char": [0, 3] },
+        { "start": 29.829, "end": 30.303, "char": [4, 11] },
+        { "start": 30.303, "end": 30.776, "char": [12, 16] },
+        { "start": 30.776, "end": 31.249, "char": [17, 27] },
+        { "start": 31.249, "end": 31.723, "char": [28, 34] },
+        { "start": 31.723, "end": 32.196, "char": [35, 38] }
+      ]
+    },
+    {
+      "start": 32.196,
+      "end": 35.036,
+      "text": "dieser Basis und sendet nur die",
+      "words": [
+        { "start": 32.196, "end": 32.67, "char": [0, 6] },
+        { "start": 32.67, "end": 33.143, "char": [7, 12] },
+        { "start": 33.143, "end": 33.616, "char": [13, 16] },
+        { "start": 33.616, "end": 34.09, "char": [17, 23] },
+        { "start": 34.09, "end": 34.563, "char": [24, 27] },
+        { "start": 34.563, "end": 35.036, "char": [28, 31] }
+      ]
+    },
+    {
+      "start": 35.036,
+      "end": 35.51,
+      "text": "Unterschiede.",
+      "words": [{ "start": 35.036, "end": 35.51, "char": [0, 13] }]
+    },
+    {
+      "start": 35.51,
+      "end": 36.457,
+      "text": "Keine Flags,",
+      "words": [
+        { "start": 35.51, "end": 35.983, "char": [0, 5] },
+        { "start": 35.983, "end": 36.457, "char": [6, 12] }
+      ]
+    },
+    {
+      "start": 36.457,
+      "end": 37.403,
+      "text": "keine Buchhaltung,",
+      "words": [
+        { "start": 36.457, "end": 36.93, "char": [0, 5] },
+        { "start": 36.93, "end": 37.403, "char": [6, 18] }
+      ]
+    },
+    {
+      "start": 37.403,
+      "end": 39.297,
+      "text": "es ist derselbe Push-Befehl.",
+      "words": [
+        { "start": 37.403, "end": 37.877, "char": [0, 2] },
+        { "start": 37.877, "end": 38.35, "char": [3, 6] },
+        { "start": 38.35, "end": 38.824, "char": [7, 15] },
+        { "start": 38.824, "end": 39.297, "char": [16, 28] }
+      ]
+    },
+    {
+      "start": 42.553,
+      "end": 45.426,
+      "text": "Der erste Push auf eine andere",
+      "words": [
+        { "start": 42.553, "end": 43.032, "char": [0, 3] },
+        { "start": 43.032, "end": 43.511, "char": [4, 9] },
+        { "start": 43.511, "end": 43.99, "char": [10, 14] },
+        { "start": 43.99, "end": 44.469, "char": [15, 18] },
+        { "start": 44.469, "end": 44.948, "char": [19, 23] },
+        { "start": 44.948, "end": 45.426, "char": [24, 30] }
+      ]
+    },
+    {
+      "start": 45.426,
+      "end": 47.821,
+      "text": "Maschine überträgt das gesamte Image,",
+      "words": [
+        { "start": 45.426, "end": 45.905, "char": [0, 8] },
+        { "start": 45.905, "end": 46.384, "char": [9, 18] },
+        { "start": 46.384, "end": 46.863, "char": [19, 22] },
+        { "start": 46.863, "end": 47.342, "char": [23, 30] },
+        { "start": 47.342, "end": 47.821, "char": [31, 37] }
+      ]
+    },
+    {
+      "start": 47.821,
+      "end": 50.695,
+      "text": "und die Ausgabe sagt es klar:",
+      "words": [
+        { "start": 47.821, "end": 48.3, "char": [0, 3] },
+        { "start": 48.3, "end": 48.779, "char": [4, 7] },
+        { "start": 48.779, "end": 49.258, "char": [8, 15] },
+        { "start": 49.258, "end": 49.737, "char": [16, 20] },
+        { "start": 49.737, "end": 50.216, "char": [21, 23] },
+        { "start": 50.216, "end": 50.695, "char": [24, 29] }
+      ]
+    },
+    {
+      "start": 50.695,
+      "end": 52.131,
+      "text": "zwei Gigabyte übertragen,",
+      "words": [
+        { "start": 50.695, "end": 51.173, "char": [0, 4] },
+        { "start": 51.173, "end": 51.652, "char": [5, 13] },
+        { "start": 51.652, "end": 52.131, "char": [14, 25] }
+      ]
+    },
+    {
+      "start": 52.131,
+      "end": 53.568,
+      "text": "als full markiert.",
+      "words": [
+        { "start": 52.131, "end": 52.61, "char": [0, 3] },
+        { "start": 52.61, "end": 53.089, "char": [4, 8] },
+        { "start": 53.089, "end": 53.568, "char": [9, 18] }
+      ]
+    },
+    {
+      "start": 53.568,
+      "end": 55.484,
+      "text": "Das ist die Ausgangsbasis.",
+      "words": [
+        { "start": 53.568, "end": 54.047, "char": [0, 3] },
+        { "start": 54.047, "end": 54.526, "char": [4, 7] },
+        { "start": 54.526, "end": 55.005, "char": [8, 11] },
+        { "start": 55.005, "end": 55.484, "char": [12, 26] }
+      ]
+    },
+    {
+      "start": 58.484,
+      "end": 60.568,
+      "text": "Zwei Gigabyte in vierundvierzig Sekunden,",
+      "words": [
+        { "start": 58.484, "end": 58.901, "char": [0, 4] },
+        { "start": 58.901, "end": 59.318, "char": [5, 13] },
+        { "start": 59.318, "end": 59.734, "char": [14, 16] },
+        { "start": 59.734, "end": 60.151, "char": [17, 31] },
+        { "start": 60.151, "end": 60.568, "char": [32, 41] }
+      ]
+    },
+    {
+      "start": 60.568,
+      "end": 61.819,
+      "text": "als full markiert.",
+      "words": [
+        { "start": 60.568, "end": 60.985, "char": [0, 3] },
+        { "start": 60.985, "end": 61.402, "char": [4, 8] },
+        { "start": 61.402, "end": 61.819, "char": [9, 18] }
+      ]
+    },
+    {
+      "start": 61.819,
+      "end": 64.321,
+      "text": "Das CLI hat außerdem eine identische",
+      "words": [
+        { "start": 61.819, "end": 62.236, "char": [0, 3] },
+        { "start": 62.236, "end": 62.653, "char": [4, 7] },
+        { "start": 62.653, "end": 63.07, "char": [8, 11] },
+        { "start": 63.07, "end": 63.487, "char": [12, 20] },
+        { "start": 63.487, "end": 63.904, "char": [21, 25] },
+        { "start": 63.904, "end": 64.321, "char": [26, 36] }
+      ]
+    },
+    {
+      "start": 64.321,
+      "end": 66.406,
+      "text": "Basis auf beiden Seiten behalten,",
+      "words": [
+        { "start": 64.321, "end": 64.738, "char": [0, 5] },
+        { "start": 64.738, "end": 65.155, "char": [6, 9] },
+        { "start": 65.155, "end": 65.572, "char": [10, 16] },
+        { "start": 65.572, "end": 65.989, "char": [17, 23] },
+        { "start": 65.989, "end": 66.406, "char": [24, 33] }
+      ]
+    },
+    {
+      "start": 66.406,
+      "end": 68.907,
+      "text": "das ist die Vorbereitung für das",
+      "words": [
+        { "start": 66.406, "end": 66.823, "char": [0, 3] },
+        { "start": 66.823, "end": 67.24, "char": [4, 7] },
+        { "start": 67.24, "end": 67.657, "char": [8, 11] },
+        { "start": 67.657, "end": 68.074, "char": [12, 24] },
+        { "start": 68.074, "end": 68.491, "char": [25, 28] },
+        { "start": 68.491, "end": 68.907, "char": [29, 32] }
+      ]
+    },
+    {
+      "start": 68.907,
+      "end": 69.324,
+      "text": "Eigentliche.",
+      "words": [{ "start": 68.907, "end": 69.324, "char": [0, 12] }]
+    },
+    {
+      "start": 72.63,
+      "end": 74.464,
+      "text": "Ändere ein paar Daten:",
+      "words": [
+        { "start": 72.63, "end": 73.089, "char": [0, 6] },
+        { "start": 73.089, "end": 73.547, "char": [7, 10] },
+        { "start": 73.547, "end": 74.006, "char": [11, 15] },
+        { "start": 74.006, "end": 74.464, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 74.464,
+      "end": 76.757,
+      "text": "fünfzig Megabyte von zwei Gigabyte.",
+      "words": [
+        { "start": 74.464, "end": 74.923, "char": [0, 7] },
+        { "start": 74.923, "end": 75.382, "char": [8, 16] },
+        { "start": 75.382, "end": 75.84, "char": [17, 20] },
+        { "start": 75.84, "end": 76.299, "char": [21, 25] },
+        { "start": 76.299, "end": 76.757, "char": [26, 35] }
+      ]
+    },
+    {
+      "start": 83.855,
+      "end": 86.363,
+      "text": "Eine kleine Änderung in einem großen",
+      "words": [
+        { "start": 83.855, "end": 84.273, "char": [0, 4] },
+        { "start": 84.273, "end": 84.691, "char": [5, 11] },
+        { "start": 84.691, "end": 85.109, "char": [12, 20] },
+        { "start": 85.109, "end": 85.527, "char": [21, 23] },
+        { "start": 85.527, "end": 85.945, "char": [24, 29] },
+        { "start": 85.945, "end": 86.363, "char": [30, 36] }
+      ]
+    },
+    {
+      "start": 86.363,
+      "end": 86.781,
+      "text": "Image.",
+      "words": [{ "start": 86.363, "end": 86.781, "char": [0, 6] }]
+    },
+    {
+      "start": 90.055,
+      "end": 90.995,
+      "text": "Nochmal pushen.",
+      "words": [
+        { "start": 90.055, "end": 90.525, "char": [0, 7] },
+        { "start": 90.525, "end": 90.995, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 90.995,
+      "end": 91.936,
+      "text": "Derselbe Befehl,",
+      "words": [
+        { "start": 90.995, "end": 91.466, "char": [0, 8] },
+        { "start": 91.466, "end": 91.936, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 91.936,
+      "end": 94.757,
+      "text": "aber schau diesmal auf die Ausgabe:",
+      "words": [
+        { "start": 91.936, "end": 92.406, "char": [0, 4] },
+        { "start": 92.406, "end": 92.876, "char": [5, 10] },
+        { "start": 92.876, "end": 93.346, "char": [11, 18] },
+        { "start": 93.346, "end": 93.817, "char": [19, 22] },
+        { "start": 93.817, "end": 94.287, "char": [23, 26] },
+        { "start": 94.287, "end": 94.757, "char": [27, 35] }
+      ]
+    },
+    {
+      "start": 94.757,
+      "end": 96.638,
+      "text": "etwa fünfzig Megabyte übertragen,",
+      "words": [
+        { "start": 94.757, "end": 95.227, "char": [0, 4] },
+        { "start": 95.227, "end": 95.697, "char": [5, 12] },
+        { "start": 95.697, "end": 96.168, "char": [13, 21] },
+        { "start": 96.168, "end": 96.638, "char": [22, 33] }
+      ]
+    },
+    {
+      "start": 96.638,
+      "end": 98.049,
+      "text": "als delta markiert,",
+      "words": [
+        { "start": 96.638, "end": 97.108, "char": [0, 3] },
+        { "start": 97.108, "end": 97.578, "char": [4, 9] },
+        { "start": 97.578, "end": 98.049, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 98.049,
+      "end": 100.87,
+      "text": "bei einem zwei Gigabyte großen Image.",
+      "words": [
+        { "start": 98.049, "end": 98.519, "char": [0, 3] },
+        { "start": 98.519, "end": 98.989, "char": [4, 9] },
+        { "start": 98.989, "end": 99.459, "char": [10, 14] },
+        { "start": 99.459, "end": 99.929, "char": [15, 23] },
+        { "start": 99.929, "end": 100.4, "char": [24, 30] },
+        { "start": 100.4, "end": 100.87, "char": [31, 37] }
+      ]
+    },
+    {
+      "start": 100.87,
+      "end": 103.691,
+      "text": "Nur die geänderten Blöcke wurden übertragen.",
+      "words": [
+        { "start": 100.87, "end": 101.34, "char": [0, 3] },
+        { "start": 101.34, "end": 101.81, "char": [4, 7] },
+        { "start": 101.81, "end": 102.28, "char": [8, 18] },
+        { "start": 102.28, "end": 102.751, "char": [19, 25] },
+        { "start": 102.751, "end": 103.221, "char": [26, 32] },
+        { "start": 103.221, "end": 103.691, "char": [33, 44] }
+      ]
+    },
+    {
+      "start": 106.691,
+      "end": 109.079,
+      "text": "Fünfzig Megabyte in unter sechs Sekunden,",
+      "words": [
+        { "start": 106.691, "end": 107.089, "char": [0, 7] },
+        { "start": 107.089, "end": 107.487, "char": [8, 16] },
+        { "start": 107.487, "end": 107.885, "char": [17, 19] },
+        { "start": 107.885, "end": 108.283, "char": [20, 25] },
+        { "start": 108.283, "end": 108.681, "char": [26, 31] },
+        { "start": 108.681, "end": 109.079, "char": [32, 41] }
+      ]
+    },
+    {
+      "start": 109.079,
+      "end": 111.467,
+      "text": "aus einem zwei Gigabyte großen Image.",
+      "words": [
+        { "start": 109.079, "end": 109.477, "char": [0, 3] },
+        { "start": 109.477, "end": 109.875, "char": [4, 9] },
+        { "start": 109.875, "end": 110.273, "char": [10, 14] },
+        { "start": 110.273, "end": 110.671, "char": [15, 23] },
+        { "start": 110.671, "end": 111.069, "char": [24, 30] },
+        { "start": 111.069, "end": 111.467, "char": [31, 37] }
+      ]
+    },
+    {
+      "start": 111.467,
+      "end": 113.457,
+      "text": "Die Zahlen sprechen für sich.",
+      "words": [
+        { "start": 111.467, "end": 111.865, "char": [0, 3] },
+        { "start": 111.865, "end": 112.263, "char": [4, 10] },
+        { "start": 112.263, "end": 112.661, "char": [11, 19] },
+        { "start": 112.661, "end": 113.059, "char": [20, 23] },
+        { "start": 113.059, "end": 113.457, "char": [24, 29] }
+      ]
+    },
+    {
+      "start": 116.745,
+      "end": 119.031,
+      "text": "Beide Maschinen haben dasselbe repository,",
+      "words": [
+        { "start": 116.745, "end": 117.202, "char": [0, 5] },
+        { "start": 117.202, "end": 117.659, "char": [6, 15] },
+        { "start": 117.659, "end": 118.116, "char": [16, 21] },
+        { "start": 118.116, "end": 118.574, "char": [22, 30] },
+        { "start": 118.574, "end": 119.031, "char": [31, 42] }
+      ]
+    },
+    {
+      "start": 119.031,
+      "end": 120.402,
+      "text": "in Sekunden aktualisiert.",
+      "words": [
+        { "start": 119.031, "end": 119.488, "char": [0, 2] },
+        { "start": 119.488, "end": 119.945, "char": [3, 11] },
+        { "start": 119.945, "end": 120.402, "char": [12, 25] }
+      ]
+    },
+    {
+      "start": 120.402,
+      "end": 122.231,
+      "text": "Führe es stündlich aus,",
+      "words": [
+        { "start": 120.402, "end": 120.859, "char": [0, 5] },
+        { "start": 120.859, "end": 121.316, "char": [6, 8] },
+        { "start": 121.316, "end": 121.774, "char": [9, 18] },
+        { "start": 121.774, "end": 122.231, "char": [19, 23] }
+      ]
+    },
+    {
+      "start": 122.231,
+      "end": 123.602,
+      "text": "wenn du möchtest,",
+      "words": [
+        { "start": 122.231, "end": 122.688, "char": [0, 4] },
+        { "start": 122.688, "end": 123.145, "char": [5, 7] },
+        { "start": 123.145, "end": 123.602, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 123.602,
+      "end": 126.345,
+      "text": "die Kosten richten sich nach der",
+      "words": [
+        { "start": 123.602, "end": 124.059, "char": [0, 3] },
+        { "start": 124.059, "end": 124.516, "char": [4, 10] },
+        { "start": 124.516, "end": 124.974, "char": [11, 18] },
+        { "start": 124.974, "end": 125.431, "char": [19, 23] },
+        { "start": 125.431, "end": 125.888, "char": [24, 28] },
+        { "start": 125.888, "end": 126.345, "char": [29, 32] }
+      ]
+    },
+    {
+      "start": 126.345,
+      "end": 126.802,
+      "text": "Änderung,",
+      "words": [{ "start": 126.345, "end": 126.802, "char": [0, 9] }]
+    },
+    {
+      "start": 126.802,
+      "end": 128.631,
+      "text": "nicht nach der Größe.",
+      "words": [
+        { "start": 126.802, "end": 127.259, "char": [0, 5] },
+        { "start": 127.259, "end": 127.716, "char": [6, 10] },
+        { "start": 127.716, "end": 128.174, "char": [11, 14] },
+        { "start": 128.174, "end": 128.631, "char": [15, 21] }
+      ]
+    },
+    {
+      "start": 131.631,
+      "end": 133.982,
+      "text": "Häufige Backups sind nicht mehr teuer.",
+      "words": [
+        { "start": 131.631, "end": 132.023, "char": [0, 7] },
+        { "start": 132.023, "end": 132.414, "char": [8, 15] },
+        { "start": 132.414, "end": 132.806, "char": [16, 20] },
+        { "start": 132.806, "end": 133.198, "char": [21, 26] },
+        { "start": 133.198, "end": 133.59, "char": [27, 31] },
+        { "start": 133.59, "end": 133.982, "char": [32, 38] }
+      ]
+    },
+    {
+      "start": 134.79,
+      "end": 137.226,
+      "text": "Kleine Änderungen bedeuten kleine Übertragungen,",
+      "words": [
+        { "start": 134.79, "end": 135.277, "char": [0, 6] },
+        { "start": 135.277, "end": 135.765, "char": [7, 17] },
+        { "start": 135.765, "end": 136.252, "char": [18, 26] },
+        { "start": 136.252, "end": 136.739, "char": [27, 33] },
+        { "start": 136.739, "end": 137.226, "char": [34, 48] }
+      ]
+    },
+    {
+      "start": 137.226,
+      "end": 139.663,
+      "text": "jedes Mal nach dem ersten.",
+      "words": [
+        { "start": 137.226, "end": 137.714, "char": [0, 5] },
+        { "start": 137.714, "end": 138.201, "char": [6, 9] },
+        { "start": 138.201, "end": 138.688, "char": [10, 14] },
+        { "start": 138.688, "end": 139.176, "char": [15, 18] },
+        { "start": 139.176, "end": 139.663, "char": [19, 26] }
+      ]
+    },
+    {
+      "start": 139.663,
+      "end": 142.587,
+      "text": "Jetzt bleibt nur noch ein Tutorial:",
+      "words": [
+        { "start": 139.663, "end": 140.15, "char": [0, 5] },
+        { "start": 140.15, "end": 140.637, "char": [6, 12] },
+        { "start": 140.637, "end": 141.125, "char": [13, 16] },
+        { "start": 141.125, "end": 141.612, "char": [17, 21] },
+        { "start": 141.612, "end": 142.099, "char": [22, 25] },
+        { "start": 142.099, "end": 142.587, "char": [26, 35] }
+      ]
+    },
+    {
+      "start": 142.587,
+      "end": 143.074,
+      "text": "sicherstellen,",
+      "words": [{ "start": 142.587, "end": 143.074, "char": [0, 14] }]
+    },
+    {
+      "start": 143.074,
+      "end": 145.998,
+      "text": "dass dir nie der Speicherplatz ausgeht.",
+      "words": [
+        { "start": 143.074, "end": 143.561, "char": [0, 4] },
+        { "start": 143.561, "end": 144.048, "char": [5, 8] },
+        { "start": 144.048, "end": 144.536, "char": [9, 12] },
+        { "start": 144.536, "end": 145.023, "char": [13, 16] },
+        { "start": 145.023, "end": 145.51, "char": [17, 30] },
+        { "start": 145.51, "end": 145.998, "char": [31, 39] }
+      ]
+    },
+    {
+      "start": 145.998,
+      "end": 147.459,
+      "text": "Bis zum letzten!",
+      "words": [
+        { "start": 145.998, "end": 146.485, "char": [0, 3] },
+        { "start": 146.485, "end": 146.972, "char": [4, 7] },
+        { "start": 146.972, "end": 147.459, "char": [8, 16] }
+      ]
+    }
+  ]
+}

@@ -237,208 +237,208 @@
       ]
     },
     {
-      "start": 47.469,
-      "end": 48.471,
+      "start": 47.436,
+      "end": 48.438,
       "text": "Passo due.",
       "words": [
-        { "start": 47.469, "end": 47.97, "char": [0, 5] },
-        { "start": 47.97, "end": 48.471, "char": [6, 10] }
+        { "start": 47.436, "end": 47.937, "char": [0, 5] },
+        { "start": 47.937, "end": 48.438, "char": [6, 10] }
       ]
     },
     {
-      "start": 48.471,
-      "end": 50.978,
+      "start": 48.438,
+      "end": 50.945,
       "text": "Copiamo la chiave pubblica sul",
       "words": [
-        { "start": 48.471, "end": 48.973, "char": [0, 7] },
-        { "start": 48.973, "end": 49.474, "char": [8, 10] },
-        { "start": 49.474, "end": 49.975, "char": [11, 17] },
-        { "start": 49.975, "end": 50.476, "char": [18, 26] },
-        { "start": 50.476, "end": 50.978, "char": [27, 30] }
+        { "start": 48.438, "end": 48.94, "char": [0, 7] },
+        { "start": 48.94, "end": 49.441, "char": [8, 10] },
+        { "start": 49.441, "end": 49.942, "char": [11, 17] },
+        { "start": 49.942, "end": 50.443, "char": [18, 26] },
+        { "start": 50.443, "end": 50.945, "char": [27, 30] }
       ]
     },
     {
-      "start": 50.978,
-      "end": 52.481,
+      "start": 50.945,
+      "end": 52.448,
       "text": "server con ssh-copy-id.",
       "words": [
-        { "start": 50.978, "end": 51.479, "char": [0, 6] },
-        { "start": 51.479, "end": 51.98, "char": [7, 10] },
-        { "start": 51.98, "end": 52.481, "char": [11, 23] }
+        { "start": 50.945, "end": 51.446, "char": [0, 6] },
+        { "start": 51.446, "end": 51.947, "char": [7, 10] },
+        { "start": 51.947, "end": 52.448, "char": [11, 23] }
       ]
     },
     {
-      "start": 52.481,
-      "end": 54.987,
+      "start": 52.448,
+      "end": 54.954,
       "text": "La password del server viene",
       "words": [
-        { "start": 52.481, "end": 52.982, "char": [0, 2] },
-        { "start": 52.982, "end": 53.484, "char": [3, 11] },
-        { "start": 53.484, "end": 53.985, "char": [12, 15] },
-        { "start": 53.985, "end": 54.486, "char": [16, 22] },
-        { "start": 54.486, "end": 54.987, "char": [23, 28] }
+        { "start": 52.448, "end": 52.949, "char": [0, 2] },
+        { "start": 52.949, "end": 53.451, "char": [3, 11] },
+        { "start": 53.451, "end": 53.952, "char": [12, 15] },
+        { "start": 53.952, "end": 54.453, "char": [16, 22] },
+        { "start": 54.453, "end": 54.954, "char": [23, 28] }
       ]
     },
     {
-      "start": 54.987,
-      "end": 56.992,
+      "start": 54.954,
+      "end": 56.959,
       "text": "richiesta per l'ultima volta.",
       "words": [
-        { "start": 54.987, "end": 55.489, "char": [0, 9] },
-        { "start": 55.489, "end": 55.99, "char": [10, 13] },
-        { "start": 55.99, "end": 56.491, "char": [14, 22] },
-        { "start": 56.491, "end": 56.992, "char": [23, 29] }
+        { "start": 54.954, "end": 55.456, "char": [0, 9] },
+        { "start": 55.456, "end": 55.957, "char": [10, 13] },
+        { "start": 55.957, "end": 56.458, "char": [14, 22] },
+        { "start": 56.458, "end": 56.959, "char": [23, 29] }
       ]
     },
     {
-      "start": 56.992,
-      "end": 58.496,
+      "start": 56.959,
+      "end": 58.463,
       "text": "Da questo momento,",
       "words": [
-        { "start": 56.992, "end": 57.493, "char": [0, 2] },
-        { "start": 57.493, "end": 57.995, "char": [3, 9] },
-        { "start": 57.995, "end": 58.496, "char": [10, 18] }
+        { "start": 56.959, "end": 57.46, "char": [0, 2] },
+        { "start": 57.46, "end": 57.962, "char": [3, 9] },
+        { "start": 57.962, "end": 58.463, "char": [10, 18] }
       ]
     },
     {
-      "start": 58.496,
-      "end": 61.002,
+      "start": 58.463,
+      "end": 60.969,
       "text": "l'autenticazione con password non e'",
       "words": [
-        { "start": 58.496, "end": 58.997, "char": [0, 16] },
-        { "start": 58.997, "end": 59.498, "char": [17, 20] },
-        { "start": 59.498, "end": 60, "char": [21, 29] },
-        { "start": 60, "end": 60.501, "char": [30, 33] },
-        { "start": 60.501, "end": 61.002, "char": [34, 36] }
+        { "start": 58.463, "end": 58.964, "char": [0, 16] },
+        { "start": 58.964, "end": 59.465, "char": [17, 20] },
+        { "start": 59.465, "end": 59.967, "char": [21, 29] },
+        { "start": 59.967, "end": 60.468, "char": [30, 33] },
+        { "start": 60.468, "end": 60.969, "char": [34, 36] }
       ]
     },
     {
-      "start": 61.002,
-      "end": 63.508,
+      "start": 60.969,
+      "end": 63.475,
       "text": "piu' necessaria per quel server.",
       "words": [
-        { "start": 61.002, "end": 61.503, "char": [0, 4] },
-        { "start": 61.503, "end": 62.005, "char": [5, 15] },
-        { "start": 62.005, "end": 62.506, "char": [16, 19] },
-        { "start": 62.506, "end": 63.007, "char": [20, 24] },
-        { "start": 63.007, "end": 63.508, "char": [25, 32] }
+        { "start": 60.969, "end": 61.47, "char": [0, 4] },
+        { "start": 61.47, "end": 61.972, "char": [5, 15] },
+        { "start": 61.972, "end": 62.473, "char": [16, 19] },
+        { "start": 62.473, "end": 62.974, "char": [20, 24] },
+        { "start": 62.974, "end": 63.475, "char": [25, 32] }
       ]
     },
     {
-      "start": 65.508,
-      "end": 67.197,
+      "start": 65.475,
+      "end": 67.164,
       "text": "Eseguilo sul tuo laptop.",
       "words": [
-        { "start": 65.508, "end": 65.93, "char": [0, 8] },
-        { "start": 65.93, "end": 66.353, "char": [9, 12] },
-        { "start": 66.353, "end": 66.775, "char": [13, 16] },
-        { "start": 66.775, "end": 67.197, "char": [17, 24] }
+        { "start": 65.475, "end": 65.898, "char": [0, 8] },
+        { "start": 65.898, "end": 66.32, "char": [9, 12] },
+        { "start": 66.32, "end": 66.742, "char": [13, 16] },
+        { "start": 66.742, "end": 67.164, "char": [17, 24] }
       ]
     },
     {
-      "start": 67.197,
-      "end": 68.464,
+      "start": 67.164,
+      "end": 68.431,
       "text": "Una volta riuscito,",
       "words": [
-        { "start": 67.197, "end": 67.62, "char": [0, 3] },
-        { "start": 67.62, "end": 68.042, "char": [4, 9] },
-        { "start": 68.042, "end": 68.464, "char": [10, 19] }
+        { "start": 67.164, "end": 67.587, "char": [0, 3] },
+        { "start": 67.587, "end": 68.009, "char": [4, 9] },
+        { "start": 68.009, "end": 68.431, "char": [10, 19] }
       ]
     },
     {
-      "start": 68.464,
-      "end": 70.576,
+      "start": 68.431,
+      "end": 70.543,
       "text": "le password sono fuori discussione.",
       "words": [
-        { "start": 68.464, "end": 68.887, "char": [0, 2] },
-        { "start": 68.887, "end": 69.309, "char": [3, 11] },
-        { "start": 69.309, "end": 69.731, "char": [12, 16] },
-        { "start": 69.731, "end": 70.154, "char": [17, 22] },
-        { "start": 70.154, "end": 70.576, "char": [23, 35] }
+        { "start": 68.431, "end": 68.854, "char": [0, 2] },
+        { "start": 68.854, "end": 69.276, "char": [3, 11] },
+        { "start": 69.276, "end": 69.698, "char": [12, 16] },
+        { "start": 69.698, "end": 70.121, "char": [17, 22] },
+        { "start": 70.121, "end": 70.543, "char": [23, 35] }
       ]
     },
     {
-      "start": 73.92,
-      "end": 74.819,
+      "start": 73.887,
+      "end": 74.786,
       "text": "Passo tre.",
       "words": [
-        { "start": 73.92, "end": 74.369, "char": [0, 5] },
-        { "start": 74.369, "end": 74.819, "char": [6, 10] }
+        { "start": 73.887, "end": 74.336, "char": [0, 5] },
+        { "start": 74.336, "end": 74.786, "char": [6, 10] }
       ]
     },
     {
-      "start": 74.819,
-      "end": 77.514,
+      "start": 74.786,
+      "end": 77.481,
       "text": "Registriamo la chiave con la CLI.",
       "words": [
-        { "start": 74.819, "end": 75.268, "char": [0, 11] },
-        { "start": 75.268, "end": 75.717, "char": [12, 14] },
-        { "start": 75.717, "end": 76.167, "char": [15, 21] },
-        { "start": 76.167, "end": 76.616, "char": [22, 25] },
-        { "start": 76.616, "end": 77.065, "char": [26, 28] },
-        { "start": 77.065, "end": 77.514, "char": [29, 33] }
+        { "start": 74.786, "end": 75.235, "char": [0, 11] },
+        { "start": 75.235, "end": 75.684, "char": [12, 14] },
+        { "start": 75.684, "end": 76.134, "char": [15, 21] },
+        { "start": 76.134, "end": 76.583, "char": [22, 25] },
+        { "start": 76.583, "end": 77.032, "char": [26, 28] },
+        { "start": 77.032, "end": 77.481, "char": [29, 33] }
       ]
     },
     {
-      "start": 77.514,
-      "end": 78.862,
+      "start": 77.481,
+      "end": 78.829,
       "text": "Da questo momento,",
       "words": [
-        { "start": 77.514, "end": 77.964, "char": [0, 2] },
-        { "start": 77.964, "end": 78.413, "char": [3, 9] },
-        { "start": 78.413, "end": 78.862, "char": [10, 18] }
+        { "start": 77.481, "end": 77.931, "char": [0, 2] },
+        { "start": 77.931, "end": 78.38, "char": [3, 9] },
+        { "start": 78.38, "end": 78.829, "char": [10, 18] }
       ]
     },
     {
-      "start": 78.862,
-      "end": 81.558,
+      "start": 78.829,
+      "end": 81.525,
       "text": "ogni comando si autentica con questa",
       "words": [
-        { "start": 78.862, "end": 79.312, "char": [0, 4] },
-        { "start": 79.312, "end": 79.761, "char": [5, 12] },
-        { "start": 79.761, "end": 80.21, "char": [13, 15] },
-        { "start": 80.21, "end": 80.66, "char": [16, 25] },
-        { "start": 80.66, "end": 81.109, "char": [26, 29] },
-        { "start": 81.109, "end": 81.558, "char": [30, 36] }
+        { "start": 78.829, "end": 79.279, "char": [0, 4] },
+        { "start": 79.279, "end": 79.728, "char": [5, 12] },
+        { "start": 79.728, "end": 80.177, "char": [13, 15] },
+        { "start": 80.177, "end": 80.627, "char": [16, 25] },
+        { "start": 80.627, "end": 81.076, "char": [26, 29] },
+        { "start": 81.076, "end": 81.525, "char": [30, 36] }
       ]
     },
     {
-      "start": 81.558,
-      "end": 82.008,
+      "start": 81.525,
+      "end": 81.975,
       "text": "chiave.",
-      "words": [{ "start": 81.558, "end": 82.008, "char": [0, 7] }]
+      "words": [{ "start": 81.525, "end": 81.975, "char": [0, 7] }]
     },
     {
-      "start": 82.008,
-      "end": 83.355,
+      "start": 81.975,
+      "end": 83.322,
       "text": "Niente piu' password,",
       "words": [
-        { "start": 82.008, "end": 82.457, "char": [0, 6] },
-        { "start": 82.457, "end": 82.906, "char": [7, 11] },
-        { "start": 82.906, "end": 83.355, "char": [12, 21] }
+        { "start": 81.975, "end": 82.424, "char": [0, 6] },
+        { "start": 82.424, "end": 82.873, "char": [7, 11] },
+        { "start": 82.873, "end": 83.322, "char": [12, 21] }
       ]
     },
     {
-      "start": 83.355,
-      "end": 85.153,
+      "start": 83.322,
+      "end": 85.12,
       "text": "niente piu' prompt interattivi.",
       "words": [
-        { "start": 83.355, "end": 83.805, "char": [0, 6] },
-        { "start": 83.805, "end": 84.254, "char": [7, 11] },
-        { "start": 84.254, "end": 84.703, "char": [12, 18] },
-        { "start": 84.703, "end": 85.153, "char": [19, 31] }
+        { "start": 83.322, "end": 83.772, "char": [0, 6] },
+        { "start": 83.772, "end": 84.221, "char": [7, 11] },
+        { "start": 84.221, "end": 84.67, "char": [12, 18] },
+        { "start": 84.67, "end": 85.12, "char": [19, 31] }
       ]
     },
     {
-      "start": 87.153,
-      "end": 89.843,
+      "start": 87.12,
+      "end": 89.81,
       "text": "Chiave registrata con la CLI.",
       "words": [
-        { "start": 87.153, "end": 87.691, "char": [0, 6] },
-        { "start": 87.691, "end": 88.229, "char": [7, 17] },
-        { "start": 88.229, "end": 88.767, "char": [18, 21] },
-        { "start": 88.767, "end": 89.305, "char": [22, 24] },
-        { "start": 89.305, "end": 89.843, "char": [25, 29] }
+        { "start": 87.12, "end": 87.658, "char": [0, 6] },
+        { "start": 87.658, "end": 88.196, "char": [7, 17] },
+        { "start": 88.196, "end": 88.734, "char": [18, 21] },
+        { "start": 88.734, "end": 89.272, "char": [22, 24] },
+        { "start": 89.272, "end": 89.81, "char": [25, 29] }
       ]
     },
     {

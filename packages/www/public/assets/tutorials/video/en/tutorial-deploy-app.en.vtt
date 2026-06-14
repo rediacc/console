@@ -1,163 +1,184 @@
 WEBVTT
 
-00:00:01.000 --> 00:00:02.836
+00:00:01.000 --> 00:00:03.541
 Time to deploy a real app!
 
-00:00:02.836 --> 00:00:05.590
-We will go from an empty repo to running
+00:00:03.541 --> 00:00:06.082
+From an empty repo to running
 
-00:00:05.590 --> 00:00:07.426
-containers in a few short steps.
+00:00:06.082 --> 00:00:07.775
+containers in three moves:
 
-00:00:08.288 --> 00:00:10.928
+00:00:07.775 --> 00:00:08.199
+pick,
+
+00:00:08.199 --> 00:00:08.622
+apply,
+
+00:00:08.622 --> 00:00:09.046
+run.
+
+00:00:09.891 --> 00:00:12.531
 The flow is simple: pick a template, apply
 
-00:00:10.928 --> 00:00:13.488
+00:00:12.531 --> 00:00:15.091
 it to the repo, and run it. The CLI ships
 
-00:00:13.488 --> 00:00:16.288
+00:00:15.091 --> 00:00:17.891
 built-in templates so we never have to write a docker
 
-00:00:16.288 --> 00:00:17.568
+00:00:17.891 --> 00:00:19.171
 -compose from scratch.
 
-00:00:21.038 --> 00:00:23.678
-Step one. We will list the available templates
+00:00:22.561 --> 00:00:23.423
+Step one:
 
-00:00:24.558 --> 00:00:27.118
-. Rediacc ships ready-made setups for common apps
+00:00:23.423 --> 00:00:25.147
+list the available templates.
 
-00:00:27.118 --> 00:00:29.998
-so we do not have to write a docker-compose from scratch.
+00:00:25.147 --> 00:00:27.733
+Rediacc ships ready-made setups for common
 
-00:00:31.629 --> 00:00:34.509
+00:00:27.733 --> 00:00:28.164
+apps,
+
+00:00:28.164 --> 00:00:30.750
+so there is no docker-compose to
+
+00:00:30.750 --> 00:00:32.043
+write from scratch.
+
+00:00:33.373 --> 00:00:36.253
 The full template catalog. Each one is a tested
 
-00:00:34.509 --> 00:00:36.909
+00:00:36.253 --> 00:00:38.653
 compose plus Rediaccfile pairing.
 
-00:00:40.337 --> 00:00:41.011
-Step two.
+00:00:42.090 --> 00:00:42.800
+Step two:
 
-00:00:41.011 --> 00:00:43.371
-Drop the app-postgres template into the repo.
+00:00:42.800 --> 00:00:45.285
+drop the app-postgres template into the repo.
 
-00:00:43.371 --> 00:00:46.068
-This copies a tested set of files into
+00:00:45.285 --> 00:00:47.059
+A tested set of files,
 
-00:00:46.068 --> 00:00:47.416
-the repo for us.
+00:00:47.059 --> 00:00:48.124
+copied straight in.
 
-00:00:49.666 --> 00:00:50.341
+00:00:53.015 --> 00:00:53.689
 Template applied.
 
-00:00:50.341 --> 00:00:53.038
+00:00:53.689 --> 00:00:56.387
 Let us see what actually landed in the
 
-00:00:53.038 --> 00:00:53.376
+00:00:56.387 --> 00:00:56.724
 repo.
 
-00:00:56.702 --> 00:00:59.331
-Let us look at what the template added.
+00:01:00.005 --> 00:01:02.716
+Peek inside the repo and list what
 
-00:00:59.331 --> 00:01:01.960
-We connect into the repo and list its
+00:01:02.716 --> 00:01:03.103
+landed:
 
-00:01:01.960 --> 00:01:02.288
-files.
+00:01:03.103 --> 00:01:05.814
+a Rediaccfile holding the start and stop
 
-00:01:02.288 --> 00:01:04.917
-There is a Rediaccfile holding the start and
+00:01:05.814 --> 00:01:06.202
+hooks,
 
-00:01:04.917 --> 00:01:05.575
-stop hooks,
-
-00:01:05.575 --> 00:01:07.875
+00:01:06.202 --> 00:01:08.913
 and a docker-compose file describing the containers.
 
-00:01:07.875 --> 00:01:08.532
-One note:
-
-00:01:08.532 --> 00:01:11.161
-we add a redirect to dev null so
-
-00:01:11.161 --> 00:01:12.804
-only the real output shows.
-
-00:01:12.804 --> 00:01:13.461
-Without it,
-
-00:01:13.461 --> 00:01:15.762
-the connection logs would clutter the screen.
-
-00:01:15.762 --> 00:01:18.390
-We will keep doing that for the rest
-
-00:01:18.390 --> 00:01:19.376
-of the commands.
-
-00:01:22.126 --> 00:01:23.184
+00:01:11.913 --> 00:01:12.971
 Two files:
 
-00:01:23.184 --> 00:01:25.829
+00:01:12.971 --> 00:01:15.616
 Rediaccfile for the lifecycle hooks,
 
-00:01:25.829 --> 00:01:28.474
+00:01:15.616 --> 00:01:18.261
 and docker-compose.yml for the containers.
 
-00:01:31.814 --> 00:01:33.879
-Now bring the repo up.
+00:01:18.767 --> 00:01:20.599
+Prefer an editor over cat?
 
-00:01:33.879 --> 00:01:35.944
-The CLI starts the containers,
+00:01:20.599 --> 00:01:23.165
+The same files open in VS Code,
 
-00:01:35.944 --> 00:01:37.596
-mounts the encrypted volume,
+00:01:23.165 --> 00:01:24.630
+straight from your browser.
 
-00:01:37.596 --> 00:01:40.487
-and wires up the isolated Docker daemon.
+00:01:24.630 --> 00:01:25.730
+Here's the Rediaccfile,
 
-00:01:43.237 --> 00:01:44.288
+00:01:25.730 --> 00:01:28.295
+and the compose file next to it.
+
+00:01:28.295 --> 00:01:30.860
+We tour this setup properly in a
+
+00:01:30.860 --> 00:01:31.593
+later tutorial.
+
+00:01:35.767 --> 00:01:36.570
+Step three:
+
+00:01:36.570 --> 00:01:38.177
+bring the repo up.
+
+00:01:38.177 --> 00:01:40.988
+One command — the CLI mounts the
+
+00:01:40.988 --> 00:01:41.791
+encrypted volume,
+
+00:01:41.791 --> 00:01:43.800
+starts the isolated Docker daemon,
+
+00:01:43.800 --> 00:01:45.406
+and launches the containers.
+
+00:01:48.156 --> 00:01:49.208
 Containers running,
 
-00:01:44.288 --> 00:01:45.340
+00:01:49.208 --> 00:01:50.259
 volume mounted,
 
-00:01:45.340 --> 00:01:47.442
+00:01:50.259 --> 00:01:52.362
 isolated Docker daemon up.
 
-00:01:50.766 --> 00:01:52.955
-Let us verify what is running.
+00:01:55.686 --> 00:01:57.234
+Verify what is running.
 
-00:01:52.955 --> 00:01:55.509
+00:01:57.234 --> 00:01:59.943
 Docker ps here lists only this repo's
 
-00:01:55.509 --> 00:01:55.874
+00:01:59.943 --> 00:02:00.330
 containers.
 
-00:01:55.874 --> 00:01:58.428
-Other repos on the same server have
+00:02:00.330 --> 00:02:03.039
+Every other repo on this server has
 
-00:01:58.428 --> 00:02:00.982
-their own daemons and are completely invisible
+00:02:03.039 --> 00:02:04.200
+its own daemon,
 
-00:02:00.982 --> 00:02:02.077
-from this view.
+00:02:04.200 --> 00:02:06.135
+completely invisible from this view.
 
-00:02:03.327 --> 00:02:05.291
+00:02:07.885 --> 00:02:09.849
 Only this repo's containers.
 
-00:02:05.291 --> 00:02:07.256
+00:02:09.849 --> 00:02:11.814
 The isolation is real,
 
-00:02:07.256 --> 00:02:08.238
+00:02:11.814 --> 00:02:12.796
 not configuration.
 
-00:02:09.151 --> 00:02:11.711
+00:02:13.705 --> 00:02:16.265
 And that wraps up your first deploy
 
-00:02:12.191 --> 00:02:14.751
+00:02:16.745 --> 00:02:19.305
 . See you in the next one, where we dig into
 
-00:02:14.751 --> 00:02:16.751
+00:02:19.305 --> 00:02:21.305
 working with the repo itself.

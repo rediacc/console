@@ -1,0 +1,286 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.534
+Hora de algo grande:
+
+00:00:02.534 --> 00:00:05.219
+mover um app EM EXECUÇÃO para outra
+
+00:00:05.219 --> 00:00:05.603
+máquina,
+
+00:00:05.603 --> 00:00:06.753
+enquanto ele roda.
+
+00:00:06.753 --> 00:00:09.438
+Vamos observar um contador ao vivo batendo
+
+00:00:09.438 --> 00:00:10.972
+na memória do app,
+
+00:00:10.972 --> 00:00:13.657
+mover tudo com um comando e ver
+
+00:00:13.657 --> 00:00:16.342
+o contador simplesmente continuar contando na nova
+
+00:00:16.342 --> 00:00:16.726
+máquina.
+
+00:00:17.496 --> 00:00:19.191
+Funciona em duas fases.
+
+00:00:19.191 --> 00:00:21.733
+A fase um copia o grosso
+
+00:00:21.733 --> 00:00:23.852
+enquanto o app continua rodando.
+
+00:00:23.852 --> 00:00:26.394
+A fase dois faz o checkpoint
+
+00:00:26.394 --> 00:00:28.089
+dos processos em execução,
+
+00:00:28.089 --> 00:00:30.631
+carrega o delta final mais o
+
+00:00:30.631 --> 00:00:31.902
+estado do processo,
+
+00:00:31.902 --> 00:00:34.445
+e retoma tudo na nova máquina.
+
+00:00:34.445 --> 00:00:36.987
+Então o tempo de inatividade é
+
+00:00:36.987 --> 00:00:37.834
+o delta,
+
+00:00:37.834 --> 00:00:39.105
+não os dados.
+
+00:00:39.105 --> 00:00:41.648
+E o app nunca sabe que
+
+00:00:41.648 --> 00:00:42.495
+se moveu.
+
+00:00:45.757 --> 00:00:46.990
+Conheça o pulse.
+
+00:00:46.990 --> 00:00:49.867
+Ele mantém um contador na memória do
+
+00:00:49.867 --> 00:00:52.743
+processo e imprime uma batida a cada
+
+00:00:52.743 --> 00:00:53.565
+cinco segundos.
+
+00:00:53.565 --> 00:00:56.442
+O contador está em seis e subindo,
+
+00:00:56.442 --> 00:00:58.496
+e vive apenas na RAM.
+
+00:00:58.496 --> 00:01:01.373
+Reinicie o processo e ele começa de
+
+00:01:01.373 --> 00:01:02.606
+novo no um.
+
+00:01:05.106 --> 00:01:06.665
+Um contador ao vivo,
+
+00:01:06.665 --> 00:01:07.834
+batendo na memória.
+
+00:01:07.834 --> 00:01:09.782
+Essa é a nossa prova.
+
+00:01:13.090 --> 00:01:14.896
+Um comando move tudo,
+
+00:01:14.896 --> 00:01:15.799
+ao vivo.
+
+00:01:15.799 --> 00:01:18.507
+A fase um transfere o grosso,
+
+00:01:18.507 --> 00:01:21.216
+dois gigabytes em cerca de meio
+
+00:01:21.216 --> 00:01:21.667
+minuto,
+
+00:01:21.667 --> 00:01:23.924
+enquanto a origem continua rodando.
+
+00:01:23.924 --> 00:01:25.279
+Depois a virada:
+
+00:01:25.279 --> 00:01:27.987
+ele faz o checkpoint dos processos
+
+00:01:27.987 --> 00:01:28.890
+em execução,
+
+00:01:28.890 --> 00:01:31.598
+carrega os últimos megabytes e imprime
+
+00:01:31.598 --> 00:01:34.307
+o tempo de inatividade ali mesmo.
+
+00:01:34.307 --> 00:01:36.112
+Cerca de vinte segundos,
+
+00:01:36.112 --> 00:01:38.821
+para uma migração de dois gigabytes.
+
+00:02:43.135 --> 00:02:45.713
+Dois gigabytes movidos enquanto o
+
+00:02:45.713 --> 00:02:47.259
+app continuava rodando.
+
+00:02:47.259 --> 00:02:49.837
+A linha de inatividade mostra
+
+00:02:49.837 --> 00:02:52.415
+o que a migração realmente
+
+00:02:52.415 --> 00:02:52.931
+custou.
+
+00:02:57.188 --> 00:02:59.278
+Verifique a nova máquina:
+
+00:02:59.278 --> 00:03:00.323
+está lá.
+
+00:03:00.323 --> 00:03:00.845
+Montado,
+
+00:03:00.845 --> 00:03:01.890
+Docker rodando,
+
+00:03:01.890 --> 00:03:03.458
+dois containers ativos.
+
+00:03:06.458 --> 00:03:08.521
+Mesmo repositório,
+
+00:03:08.521 --> 00:03:10.585
+novo lar,
+
+00:03:10.585 --> 00:03:12.649
+já rodando.
+
+00:03:15.954 --> 00:03:17.424
+E a origem?
+
+00:03:17.424 --> 00:03:19.873
+O repositório ainda está listado,
+
+00:03:19.873 --> 00:03:21.832
+mas olhe a linha:
+
+00:03:21.832 --> 00:03:22.811
+não montado,
+
+00:03:22.811 --> 00:03:23.791
+sem Docker,
+
+00:03:23.791 --> 00:03:24.771
+zero containers.
+
+00:03:24.771 --> 00:03:26.730
+Nada roda aqui mais.
+
+00:03:26.730 --> 00:03:29.669
+A imagem fica para trás de
+
+00:03:29.669 --> 00:03:30.158
+propósito,
+
+00:03:30.158 --> 00:03:33.097
+como base para a próxima transferência
+
+00:03:33.097 --> 00:03:33.587
+delta.
+
+00:03:36.587 --> 00:03:37.763
+Parado e desmontado.
+
+00:03:37.763 --> 00:03:40.505
+A imagem restante é uma base delta,
+
+00:03:40.505 --> 00:03:42.465
+não um app em execução.
+
+00:03:45.761 --> 00:03:47.642
+Agora o ponto principal.
+
+00:03:47.642 --> 00:03:49.523
+O contador mostra dezessete,
+
+00:03:49.523 --> 00:03:49.993
+dezoito,
+
+00:03:49.993 --> 00:03:50.463
+dezenove,
+
+00:03:50.463 --> 00:03:51.404
+ainda subindo.
+
+00:03:51.404 --> 00:03:54.225
+Ele retomou exatamente de onde o
+
+00:03:54.225 --> 00:03:55.636
+checkpoint o congelou,
+
+00:03:55.636 --> 00:03:58.457
+em vez de começar de novo
+
+00:03:58.457 --> 00:03:59.397
+no um.
+
+00:03:59.397 --> 00:04:02.219
+O processo nunca percebeu que mudou
+
+00:04:02.219 --> 00:04:03.159
+de máquina.
+
+00:04:05.659 --> 00:04:07.331
+O contador continuou contando.
+
+00:04:07.331 --> 00:04:09.839
+A memória do processo fez a
+
+00:04:09.839 --> 00:04:10.256
+viagem.
+
+00:04:11.058 --> 00:04:12.823
+O contador nunca resetou.
+
+00:04:12.823 --> 00:04:13.265
+Memória,
+
+00:04:13.265 --> 00:04:14.589
+banco de dados,
+
+00:04:14.589 --> 00:04:15.030
+arquivos,
+
+00:04:15.030 --> 00:04:17.236
+tudo simplesmente mudou de máquina.
+
+00:04:17.236 --> 00:04:18.119
+A seguir,
+
+00:04:18.119 --> 00:04:20.767
+vamos ver por que a segunda
+
+00:04:20.767 --> 00:04:23.414
+transferência é sempre a mais rápida.

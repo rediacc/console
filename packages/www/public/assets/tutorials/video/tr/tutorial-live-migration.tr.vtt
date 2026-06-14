@@ -1,0 +1,253 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.835
+Büyük bir şey zamanı:
+
+00:00:02.835 --> 00:00:04.211
+ÇALIŞAN bir uygulamayı,
+
+00:00:04.211 --> 00:00:06.505
+çalışırken başka bir makineye taşımak.
+
+00:00:06.505 --> 00:00:09.258
+Uygulamanın belleğinde atan canlı bir sayacı
+
+00:00:09.258 --> 00:00:09.717
+izleyeceğiz,
+
+00:00:09.717 --> 00:00:12.469
+her şeyi tek komutla taşıyacağız ve
+
+00:00:12.469 --> 00:00:15.222
+sayacın yeni makinede saymaya devam ettiğini
+
+00:00:15.222 --> 00:00:15.681
+göreceğiz.
+
+00:00:16.452 --> 00:00:17.910
+İki aşamada çalışır.
+
+00:00:17.910 --> 00:00:18.883
+Birinci aşama,
+
+00:00:18.883 --> 00:00:21.799
+uygulama çalışmaya devam ederken yükün büyük
+
+00:00:21.799 --> 00:00:22.771
+kısmını kopyalar.
+
+00:00:22.771 --> 00:00:25.202
+İkinci aşama canlı süreçleri checkpoint'ler,
+
+00:00:25.202 --> 00:00:28.119
+son delta ve süreç durumunu karşıya
+
+00:00:28.119 --> 00:00:31.035
+taşır ve her şeyi yeni makinede
+
+00:00:31.035 --> 00:00:32.007
+devam ettirir.
+
+00:00:32.007 --> 00:00:34.438
+Yani kesinti süresi delta kadardır,
+
+00:00:34.438 --> 00:00:36.382
+verinin tamamı kadar değil.
+
+00:00:36.382 --> 00:00:38.813
+Ve uygulama taşındığını hiç bilmez.
+
+00:00:42.089 --> 00:00:43.620
+Pulse ile tanışın.
+
+00:00:43.620 --> 00:00:46.172
+Süreç belleğinde bir sayaç tutar
+
+00:00:46.172 --> 00:00:48.723
+ve her beş saniyede bir
+
+00:00:48.723 --> 00:00:49.744
+nabız basar.
+
+00:00:49.744 --> 00:00:51.785
+Sayaç altıda ve tırmanıyor;
+
+00:00:51.785 --> 00:00:53.316
+yalnızca RAM'de yaşıyor.
+
+00:00:53.316 --> 00:00:54.847
+Süreci yeniden başlatın,
+
+00:00:54.847 --> 00:00:56.378
+bir'den tekrar başlar.
+
+00:00:58.878 --> 00:01:01.147
+Bellekte atan canlı bir sayaç.
+
+00:01:01.147 --> 00:01:02.509
+İşte kanıtımız bu.
+
+00:01:05.834 --> 00:01:07.248
+Tek bir komut,
+
+00:01:07.248 --> 00:01:08.663
+canlı olarak taşır.
+
+00:01:08.663 --> 00:01:09.605
+Birinci aşama,
+
+00:01:09.605 --> 00:01:12.434
+kaynak çalışmaya devam ederken yaklaşık yarım
+
+00:01:12.434 --> 00:01:14.791
+dakikada iki gigabaytlık yükü aktarır.
+
+00:01:14.791 --> 00:01:15.734
+Sonra geçiş:
+
+00:01:15.734 --> 00:01:17.148
+çalışan süreçleri checkpoint'ler,
+
+00:01:17.148 --> 00:01:19.977
+son birkaç megabaytı karşıya taşır ve
+
+00:01:19.977 --> 00:01:22.334
+kesinti süresini tam orada basar.
+
+00:01:22.334 --> 00:01:25.162
+İki gigabaytlık bir taşıma için yaklaşık
+
+00:01:25.162 --> 00:01:26.105
+yirmi saniye.
+
+00:02:35.878 --> 00:02:38.381
+Uygulama çalışmaya devam ederken iki gigabayt taşındı.
+
+00:02:38.381 --> 00:02:39.096
+Kesinti satırı,
+
+00:02:39.096 --> 00:02:41.599
+taşımanın gerçekte ne kadara mal olduğunu gösteriyor.
+
+00:02:45.846 --> 00:02:47.309
+Yeni makineyi kontrol edin:
+
+00:02:47.309 --> 00:02:48.040
+işte orada.
+
+00:02:48.040 --> 00:02:48.772
+Mount edilmiş,
+
+00:02:48.772 --> 00:02:49.503
+Docker çalışıyor,
+
+00:02:49.503 --> 00:02:50.600
+iki container ayakta.
+
+00:02:53.835 --> 00:02:54.784
+Aynı repo,
+
+00:02:54.784 --> 00:02:55.733
+yeni ev,
+
+00:02:55.733 --> 00:02:56.682
+zaten çalışıyor.
+
+00:02:59.946 --> 00:03:00.942
+Peki kaynak?
+
+00:03:00.942 --> 00:03:03.931
+Repository hâlâ listede ama satıra bakın:
+
+00:03:03.931 --> 00:03:04.927
+mount edilmemiş,
+
+00:03:04.927 --> 00:03:05.924
+Docker yok,
+
+00:03:05.924 --> 00:03:06.920
+sıfır container.
+
+00:03:06.920 --> 00:03:09.410
+Artık burada hiçbir şey çalışmıyor.
+
+00:03:09.410 --> 00:03:09.909
+Image,
+
+00:03:09.909 --> 00:03:12.897
+bir sonraki delta transferi için temel
+
+00:03:12.897 --> 00:03:14.392
+olarak kasıtlı bırakılıyor.
+
+00:03:17.392 --> 00:03:18.840
+Durduruldu ve unmount edildi.
+
+00:03:18.840 --> 00:03:19.926
+Geride kalan image,
+
+00:03:19.926 --> 00:03:21.374
+çalışan bir uygulama değil,
+
+00:03:21.374 --> 00:03:22.459
+bir delta tabanı.
+
+00:03:25.797 --> 00:03:27.841
+Şimdi asıl kısma geldik.
+
+00:03:27.841 --> 00:03:29.374
+Sayaç on yedi,
+
+00:03:29.374 --> 00:03:30.396
+on sekiz,
+
+00:03:30.396 --> 00:03:32.951
+on dokuz okuyup hâlâ tırmanıyor.
+
+00:03:32.951 --> 00:03:35.506
+Bir'den başlamak yerine checkpoint'in onu
+
+00:03:35.506 --> 00:03:38.061
+dondurduğu yerden tam kaldığı yerden
+
+00:03:38.061 --> 00:03:39.084
+devam etti.
+
+00:03:39.084 --> 00:03:39.595
+Süreç,
+
+00:03:39.595 --> 00:03:42.150
+makine değiştirdiğini hiç fark etmedi.
+
+00:03:44.650 --> 00:03:46.230
+Sayaç saymaya devam etti.
+
+00:03:46.230 --> 00:03:47.810
+Süreç belleği yolculuğu tamamladı.
+
+00:03:48.621 --> 00:03:50.619
+Sayaç hiç sıfırlanmadı.
+
+00:03:50.619 --> 00:03:51.285
+Bellek,
+
+00:03:51.285 --> 00:03:51.952
+veritabanı,
+
+00:03:51.952 --> 00:03:52.618
+dosyalar,
+
+00:03:52.618 --> 00:03:55.282
+hepsi sadece makine değiştirdi.
+
+00:03:55.282 --> 00:03:55.948
+Sırada,
+
+00:03:55.948 --> 00:03:58.613
+ikinci transferin neden her
+
+00:03:58.613 --> 00:04:01.277
+zaman hızlı olanı olduğunu
+
+00:04:01.277 --> 00:04:01.943
+göreceğiz.

@@ -155,376 +155,376 @@
       ]
     },
     {
-      "start": 32.277,
-      "end": 33.27,
+      "start": 34.477,
+      "end": 35.47,
       "text": "Port yönlendirildi.",
       "words": [
-        { "start": 32.277, "end": 32.773, "char": [0, 4] },
-        { "start": 32.773, "end": 33.27, "char": [5, 19] }
+        { "start": 34.477, "end": 34.973, "char": [0, 4] },
+        { "start": 34.973, "end": 35.47, "char": [5, 19] }
       ]
     },
     {
-      "start": 33.27,
-      "end": 35.751,
+      "start": 35.47,
+      "end": 37.951,
       "text": "Uygulamaya artık localhost üzerinden erişilebiliyor.",
       "words": [
-        { "start": 33.27, "end": 33.766, "char": [0, 10] },
-        { "start": 33.766, "end": 34.262, "char": [11, 16] },
-        { "start": 34.262, "end": 34.759, "char": [17, 26] },
-        { "start": 34.759, "end": 35.255, "char": [27, 36] },
-        { "start": 35.255, "end": 35.751, "char": [37, 52] }
+        { "start": 35.47, "end": 35.966, "char": [0, 10] },
+        { "start": 35.966, "end": 36.462, "char": [11, 16] },
+        { "start": 36.462, "end": 36.959, "char": [17, 26] },
+        { "start": 36.959, "end": 37.455, "char": [27, 36] },
+        { "start": 37.455, "end": 37.951, "char": [37, 52] }
       ]
     },
     {
-      "start": 36.583,
-      "end": 39.173,
+      "start": 38.483,
+      "end": 41.073,
       "text": "Tünel çalışırken uygulama doğrudan tarayıcınızda",
       "words": [
-        { "start": 36.583, "end": 37.101, "char": [0, 5] },
-        { "start": 37.101, "end": 37.619, "char": [6, 16] },
-        { "start": 37.619, "end": 38.137, "char": [17, 25] },
-        { "start": 38.137, "end": 38.655, "char": [26, 34] },
-        { "start": 38.655, "end": 39.173, "char": [35, 48] }
+        { "start": 38.483, "end": 39.001, "char": [0, 5] },
+        { "start": 39.001, "end": 39.519, "char": [6, 16] },
+        { "start": 39.519, "end": 40.037, "char": [17, 25] },
+        { "start": 40.037, "end": 40.555, "char": [26, 34] },
+        { "start": 40.555, "end": 41.073, "char": [35, 48] }
       ]
     },
     {
-      "start": 39.173,
-      "end": 39.692,
+      "start": 41.073,
+      "end": 41.592,
       "text": "açılır.",
-      "words": [{ "start": 39.173, "end": 39.692, "char": [0, 7] }]
+      "words": [{ "start": 41.073, "end": 41.592, "char": [0, 7] }]
     },
     {
-      "start": 39.692,
-      "end": 41.764,
+      "start": 41.592,
+      "end": 43.664,
       "text": "Bu demoda rediacc.com'u yüklüyoruz;",
       "words": [
-        { "start": 39.692, "end": 40.21, "char": [0, 2] },
-        { "start": 40.21, "end": 40.728, "char": [3, 9] },
-        { "start": 40.728, "end": 41.246, "char": [10, 23] },
-        { "start": 41.246, "end": 41.764, "char": [24, 35] }
+        { "start": 41.592, "end": 42.11, "char": [0, 2] },
+        { "start": 42.11, "end": 42.628, "char": [3, 9] },
+        { "start": 42.628, "end": 43.146, "char": [10, 23] },
+        { "start": 43.146, "end": 43.664, "char": [24, 35] }
       ]
     },
     {
-      "start": 41.764,
-      "end": 44.354,
+      "start": 43.664,
+      "end": 46.254,
       "text": "tıpkı container'dan doğrudan sunulan kendi",
       "words": [
-        { "start": 41.764, "end": 42.282, "char": [0, 5] },
-        { "start": 42.282, "end": 42.8, "char": [6, 19] },
-        { "start": 42.8, "end": 43.318, "char": [20, 28] },
-        { "start": 43.318, "end": 43.836, "char": [29, 36] },
-        { "start": 43.836, "end": 44.354, "char": [37, 42] }
+        { "start": 43.664, "end": 44.182, "char": [0, 5] },
+        { "start": 44.182, "end": 44.7, "char": [6, 19] },
+        { "start": 44.7, "end": 45.218, "char": [20, 28] },
+        { "start": 45.218, "end": 45.736, "char": [29, 36] },
+        { "start": 45.736, "end": 46.254, "char": [37, 42] }
       ]
     },
     {
-      "start": 44.354,
-      "end": 45.909,
+      "start": 46.254,
+      "end": 47.809,
       "text": "uygulamanıza eriştiğiniz gibi.",
       "words": [
-        { "start": 44.354, "end": 44.873, "char": [0, 12] },
-        { "start": 44.873, "end": 45.391, "char": [13, 24] },
-        { "start": 45.391, "end": 45.909, "char": [25, 30] }
+        { "start": 46.254, "end": 46.773, "char": [0, 12] },
+        { "start": 46.773, "end": 47.291, "char": [13, 24] },
+        { "start": 47.291, "end": 47.809, "char": [25, 30] }
       ]
     },
     {
-      "start": 49.171,
-      "end": 50.9,
+      "start": 50.783,
+      "end": 52.512,
       "text": "İkinci olarak term komutu.",
       "words": [
-        { "start": 49.171, "end": 49.603, "char": [0, 6] },
-        { "start": 49.603, "end": 50.036, "char": [7, 13] },
-        { "start": 50.036, "end": 50.468, "char": [14, 18] },
-        { "start": 50.468, "end": 50.9, "char": [19, 26] }
+        { "start": 50.783, "end": 51.215, "char": [0, 6] },
+        { "start": 51.215, "end": 51.648, "char": [7, 13] },
+        { "start": 51.648, "end": 52.08, "char": [14, 18] },
+        { "start": 52.08, "end": 52.512, "char": [19, 26] }
       ]
     },
     {
-      "start": 50.9,
-      "end": 53.494,
+      "start": 52.512,
+      "end": 55.106,
       "text": "Terminal bağlantı komutu sizi doğrudan deponun",
       "words": [
-        { "start": 50.9, "end": 51.332, "char": [0, 8] },
-        { "start": 51.332, "end": 51.765, "char": [9, 17] },
-        { "start": 51.765, "end": 52.197, "char": [18, 24] },
-        { "start": 52.197, "end": 52.629, "char": [25, 29] },
-        { "start": 52.629, "end": 53.062, "char": [30, 38] },
-        { "start": 53.062, "end": 53.494, "char": [39, 46] }
+        { "start": 52.512, "end": 52.944, "char": [0, 8] },
+        { "start": 52.944, "end": 53.377, "char": [9, 17] },
+        { "start": 53.377, "end": 53.809, "char": [18, 24] },
+        { "start": 53.809, "end": 54.241, "char": [25, 29] },
+        { "start": 54.241, "end": 54.674, "char": [30, 38] },
+        { "start": 54.674, "end": 55.106, "char": [39, 46] }
       ]
     },
     {
-      "start": 53.494,
-      "end": 54.358,
+      "start": 55.106,
+      "end": 55.97,
       "text": "sandbox'ına bırakır;",
       "words": [
-        { "start": 53.494, "end": 53.926, "char": [0, 11] },
-        { "start": 53.926, "end": 54.358, "char": [12, 20] }
+        { "start": 55.106, "end": 55.538, "char": [0, 11] },
+        { "start": 55.538, "end": 55.97, "char": [12, 20] }
       ]
     },
     {
-      "start": 54.358,
-      "end": 56.952,
+      "start": 55.97,
+      "end": 58.564,
       "text": "VS Code'un sağlayacağı izole görünümün aynısı.",
       "words": [
-        { "start": 54.358, "end": 54.791, "char": [0, 2] },
-        { "start": 54.791, "end": 55.223, "char": [3, 10] },
-        { "start": 55.223, "end": 55.655, "char": [11, 22] },
-        { "start": 55.655, "end": 56.088, "char": [23, 28] },
-        { "start": 56.088, "end": 56.52, "char": [29, 38] },
-        { "start": 56.52, "end": 56.952, "char": [39, 46] }
+        { "start": 55.97, "end": 56.403, "char": [0, 2] },
+        { "start": 56.403, "end": 56.835, "char": [3, 10] },
+        { "start": 56.835, "end": 57.267, "char": [11, 22] },
+        { "start": 57.267, "end": 57.7, "char": [23, 28] },
+        { "start": 57.7, "end": 58.132, "char": [29, 38] },
+        { "start": 58.132, "end": 58.564, "char": [39, 46] }
       ]
     },
     {
-      "start": 56.952,
-      "end": 59.546,
+      "start": 58.564,
+      "end": 61.158,
       "text": "Terminalden hiç çıkmadan bu depoya ait",
       "words": [
-        { "start": 56.952, "end": 57.384, "char": [0, 11] },
-        { "start": 57.384, "end": 57.817, "char": [12, 15] },
-        { "start": 57.817, "end": 58.249, "char": [16, 24] },
-        { "start": 58.249, "end": 58.681, "char": [25, 27] },
-        { "start": 58.681, "end": 59.114, "char": [28, 34] },
-        { "start": 59.114, "end": 59.546, "char": [35, 38] }
+        { "start": 58.564, "end": 58.996, "char": [0, 11] },
+        { "start": 58.996, "end": 59.429, "char": [12, 15] },
+        { "start": 59.429, "end": 59.861, "char": [16, 24] },
+        { "start": 59.861, "end": 60.293, "char": [25, 27] },
+        { "start": 60.293, "end": 60.726, "char": [28, 34] },
+        { "start": 60.726, "end": 61.158, "char": [35, 38] }
       ]
     },
     {
-      "start": 59.546,
-      "end": 62.14,
+      "start": 61.158,
+      "end": 63.752,
       "text": "Docker daemon'a karşı herhangi bir komut",
       "words": [
-        { "start": 59.546, "end": 59.978, "char": [0, 6] },
-        { "start": 59.978, "end": 60.41, "char": [7, 15] },
-        { "start": 60.41, "end": 60.843, "char": [16, 21] },
-        { "start": 60.843, "end": 61.275, "char": [22, 30] },
-        { "start": 61.275, "end": 61.707, "char": [31, 34] },
-        { "start": 61.707, "end": 62.14, "char": [35, 40] }
+        { "start": 61.158, "end": 61.59, "char": [0, 6] },
+        { "start": 61.59, "end": 62.022, "char": [7, 15] },
+        { "start": 62.022, "end": 62.455, "char": [16, 21] },
+        { "start": 62.455, "end": 62.887, "char": [22, 30] },
+        { "start": 62.887, "end": 63.319, "char": [31, 34] },
+        { "start": 63.319, "end": 63.752, "char": [35, 40] }
       ]
     },
     {
-      "start": 62.14,
-      "end": 62.572,
+      "start": 63.752,
+      "end": 64.184,
       "text": "çalıştırabilirsiniz.",
-      "words": [{ "start": 62.14, "end": 62.572, "char": [0, 20] }]
+      "words": [{ "start": 63.752, "end": 64.184, "char": [0, 20] }]
     },
     {
-      "start": 63.822,
-      "end": 65.131,
+      "start": 66.184,
+      "end": 67.493,
       "text": "Depo sandbox'ının içindesiniz.",
       "words": [
-        { "start": 63.822, "end": 64.258, "char": [0, 4] },
-        { "start": 64.258, "end": 64.694, "char": [5, 17] },
-        { "start": 64.694, "end": 65.131, "char": [18, 30] }
+        { "start": 66.184, "end": 66.62, "char": [0, 4] },
+        { "start": 66.62, "end": 67.056, "char": [5, 17] },
+        { "start": 67.056, "end": 67.493, "char": [18, 30] }
       ]
     },
     {
-      "start": 65.131,
-      "end": 67.748,
+      "start": 67.493,
+      "end": 70.11,
       "text": "SSH ile bağlanmışsınız gibi her şeyi",
       "words": [
-        { "start": 65.131, "end": 65.567, "char": [0, 3] },
-        { "start": 65.567, "end": 66.003, "char": [4, 7] },
-        { "start": 66.003, "end": 66.439, "char": [8, 22] },
-        { "start": 66.439, "end": 66.876, "char": [23, 27] },
-        { "start": 66.876, "end": 67.312, "char": [28, 31] },
-        { "start": 67.312, "end": 67.748, "char": [32, 36] }
+        { "start": 67.493, "end": 67.929, "char": [0, 3] },
+        { "start": 67.929, "end": 68.365, "char": [4, 7] },
+        { "start": 68.365, "end": 68.801, "char": [8, 22] },
+        { "start": 68.801, "end": 69.238, "char": [23, 27] },
+        { "start": 69.238, "end": 69.674, "char": [28, 31] },
+        { "start": 69.674, "end": 70.11, "char": [32, 36] }
       ]
     },
     {
-      "start": 67.748,
-      "end": 68.184,
+      "start": 70.11,
+      "end": 70.546,
       "text": "çalıştırın.",
-      "words": [{ "start": 67.748, "end": 68.184, "char": [0, 11] }]
+      "words": [{ "start": 70.11, "end": 70.546, "char": [0, 11] }]
     },
     {
-      "start": 71.519,
-      "end": 74.161,
+      "start": 73.848,
+      "end": 76.49,
       "text": "Dosya göndermeden önce --dry-run ile önizleme",
       "words": [
-        { "start": 71.519, "end": 71.959, "char": [0, 5] },
-        { "start": 71.959, "end": 72.4, "char": [6, 17] },
-        { "start": 72.4, "end": 72.84, "char": [18, 22] },
-        { "start": 72.84, "end": 73.28, "char": [23, 32] },
-        { "start": 73.28, "end": 73.721, "char": [33, 36] },
-        { "start": 73.721, "end": 74.161, "char": [37, 45] }
+        { "start": 73.848, "end": 74.288, "char": [0, 5] },
+        { "start": 74.288, "end": 74.729, "char": [6, 17] },
+        { "start": 74.729, "end": 75.169, "char": [18, 22] },
+        { "start": 75.169, "end": 75.609, "char": [23, 32] },
+        { "start": 75.609, "end": 76.05, "char": [33, 36] },
+        { "start": 76.05, "end": 76.49, "char": [37, 45] }
       ]
     },
     {
-      "start": 74.161,
-      "end": 74.601,
+      "start": 76.49,
+      "end": 76.93,
       "text": "yapın.",
-      "words": [{ "start": 74.161, "end": 74.601, "char": [0, 6] }]
+      "words": [{ "start": 76.49, "end": 76.93, "char": [0, 6] }]
     },
     {
-      "start": 74.601,
-      "end": 77.244,
+      "start": 76.93,
+      "end": 79.573,
       "text": "Hiçbir şeyi kopyalamadan tam olarak neyin",
       "words": [
-        { "start": 74.601, "end": 75.042, "char": [0, 6] },
-        { "start": 75.042, "end": 75.482, "char": [7, 11] },
-        { "start": 75.482, "end": 75.923, "char": [12, 24] },
-        { "start": 75.923, "end": 76.363, "char": [25, 28] },
-        { "start": 76.363, "end": 76.803, "char": [29, 35] },
-        { "start": 76.803, "end": 77.244, "char": [36, 41] }
+        { "start": 76.93, "end": 77.371, "char": [0, 6] },
+        { "start": 77.371, "end": 77.811, "char": [7, 11] },
+        { "start": 77.811, "end": 78.252, "char": [12, 24] },
+        { "start": 78.252, "end": 78.692, "char": [25, 28] },
+        { "start": 78.692, "end": 79.132, "char": [29, 35] },
+        { "start": 79.132, "end": 79.573, "char": [36, 41] }
       ]
     },
     {
-      "start": 77.244,
-      "end": 78.124,
+      "start": 79.573,
+      "end": 80.453,
       "text": "değişeceğini gösterir.",
       "words": [
-        { "start": 77.244, "end": 77.684, "char": [0, 12] },
-        { "start": 77.684, "end": 78.124, "char": [13, 22] }
+        { "start": 79.573, "end": 80.013, "char": [0, 12] },
+        { "start": 80.013, "end": 80.453, "char": [13, 22] }
       ]
     },
     {
-      "start": 78.124,
-      "end": 80.766,
+      "start": 80.453,
+      "end": 83.095,
       "text": "Emin olmadığınızda her zaman önizleme yapın.",
       "words": [
-        { "start": 78.124, "end": 78.565, "char": [0, 4] },
-        { "start": 78.565, "end": 79.005, "char": [5, 18] },
-        { "start": 79.005, "end": 79.445, "char": [19, 22] },
-        { "start": 79.445, "end": 79.886, "char": [23, 28] },
-        { "start": 79.886, "end": 80.326, "char": [29, 37] },
-        { "start": 80.326, "end": 80.766, "char": [38, 44] }
+        { "start": 80.453, "end": 80.894, "char": [0, 4] },
+        { "start": 80.894, "end": 81.334, "char": [5, 18] },
+        { "start": 81.334, "end": 81.774, "char": [19, 22] },
+        { "start": 81.774, "end": 82.215, "char": [23, 28] },
+        { "start": 82.215, "end": 82.655, "char": [29, 37] },
+        { "start": 82.655, "end": 83.095, "char": [38, 44] }
       ]
     },
     {
-      "start": 82.766,
-      "end": 83.576,
+      "start": 86.095,
+      "end": 86.905,
       "text": "Yalnızca önizleme.",
       "words": [
-        { "start": 82.766, "end": 83.171, "char": [0, 8] },
-        { "start": 83.171, "end": 83.576, "char": [9, 18] }
+        { "start": 86.095, "end": 86.5, "char": [0, 8] },
+        { "start": 86.5, "end": 86.905, "char": [9, 18] }
       ]
     },
     {
-      "start": 83.576,
-      "end": 85.196,
+      "start": 86.905,
+      "end": 88.525,
       "text": "Henüz hiçbir dosya taşınmadı.",
       "words": [
-        { "start": 83.576, "end": 83.981, "char": [0, 5] },
-        { "start": 83.981, "end": 84.386, "char": [6, 12] },
-        { "start": 84.386, "end": 84.791, "char": [13, 18] },
-        { "start": 84.791, "end": 85.196, "char": [19, 29] }
+        { "start": 86.905, "end": 87.31, "char": [0, 5] },
+        { "start": 87.31, "end": 87.715, "char": [6, 12] },
+        { "start": 87.715, "end": 88.12, "char": [13, 18] },
+        { "start": 88.12, "end": 88.525, "char": [19, 29] }
       ]
     },
     {
-      "start": 88.523,
-      "end": 90.68,
+      "start": 91.852,
+      "end": 94.009,
       "text": "Şimdi gerçek yüklemeyi çalıştırıyoruz.",
       "words": [
-        { "start": 88.523, "end": 89.062, "char": [0, 5] },
-        { "start": 89.062, "end": 89.601, "char": [6, 12] },
-        { "start": 89.601, "end": 90.14, "char": [13, 22] },
-        { "start": 90.14, "end": 90.68, "char": [23, 38] }
+        { "start": 91.852, "end": 92.391, "char": [0, 5] },
+        { "start": 92.391, "end": 92.93, "char": [6, 12] },
+        { "start": 92.93, "end": 93.469, "char": [13, 22] },
+        { "start": 93.469, "end": 94.009, "char": [23, 38] }
       ]
     },
     {
-      "start": 90.68,
-      "end": 92.297,
+      "start": 94.009,
+      "end": 95.626,
       "text": "Eşitleme yükleme komutu,",
       "words": [
-        { "start": 90.68, "end": 91.219, "char": [0, 8] },
-        { "start": 91.219, "end": 91.758, "char": [9, 16] },
-        { "start": 91.758, "end": 92.297, "char": [17, 24] }
+        { "start": 94.009, "end": 94.548, "char": [0, 8] },
+        { "start": 94.548, "end": 95.087, "char": [9, 16] },
+        { "start": 95.087, "end": 95.626, "char": [17, 24] }
       ]
     },
     {
-      "start": 92.297,
-      "end": 94.993,
+      "start": 95.626,
+      "end": 98.322,
       "text": "rsync delta sıkıştırmasıyla dizüstü bilgisayarınızdan",
       "words": [
-        { "start": 92.297, "end": 92.836, "char": [0, 5] },
-        { "start": 92.836, "end": 93.375, "char": [6, 11] },
-        { "start": 93.375, "end": 93.915, "char": [12, 27] },
-        { "start": 93.915, "end": 94.454, "char": [28, 35] },
-        { "start": 94.454, "end": 94.993, "char": [36, 53] }
+        { "start": 95.626, "end": 96.165, "char": [0, 5] },
+        { "start": 96.165, "end": 96.705, "char": [6, 11] },
+        { "start": 96.705, "end": 97.244, "char": [12, 27] },
+        { "start": 97.244, "end": 97.783, "char": [28, 35] },
+        { "start": 97.783, "end": 98.322, "char": [36, 53] }
       ]
     },
     {
-      "start": 94.993,
-      "end": 97.689,
+      "start": 98.322,
+      "end": 101.018,
       "text": "depoya SSH üzerinden dosya taşır.",
       "words": [
-        { "start": 94.993, "end": 95.532, "char": [0, 6] },
-        { "start": 95.532, "end": 96.071, "char": [7, 10] },
-        { "start": 96.071, "end": 96.611, "char": [11, 20] },
-        { "start": 96.611, "end": 97.15, "char": [21, 26] },
-        { "start": 97.15, "end": 97.689, "char": [27, 33] }
+        { "start": 98.322, "end": 98.861, "char": [0, 6] },
+        { "start": 98.861, "end": 99.4, "char": [7, 10] },
+        { "start": 99.4, "end": 99.94, "char": [11, 20] },
+        { "start": 99.94, "end": 100.479, "char": [21, 26] },
+        { "start": 100.479, "end": 101.018, "char": [27, 33] }
       ]
     },
     {
-      "start": 97.689,
-      "end": 98.228,
+      "start": 101.018,
+      "end": 101.557,
       "text": "Tunnel,",
-      "words": [{ "start": 97.689, "end": 98.228, "char": [0, 7] }]
+      "words": [{ "start": 101.018, "end": 101.557, "char": [0, 7] }]
     },
     {
-      "start": 98.228,
-      "end": 98.767,
+      "start": 101.557,
+      "end": 102.096,
       "text": "term,",
-      "words": [{ "start": 98.228, "end": 98.767, "char": [0, 5] }]
+      "words": [{ "start": 101.557, "end": 102.096, "char": [0, 5] }]
     },
     {
-      "start": 98.767,
-      "end": 99.306,
+      "start": 102.096,
+      "end": 102.635,
       "text": "sync;",
-      "words": [{ "start": 98.767, "end": 99.306, "char": [0, 5] }]
+      "words": [{ "start": 102.096, "end": 102.635, "char": [0, 5] }]
     },
     {
-      "start": 99.306,
-      "end": 102.002,
+      "start": 102.635,
+      "end": 105.331,
       "text": "günlük döngüyü üç komut karşılar.",
       "words": [
-        { "start": 99.306, "end": 99.846, "char": [0, 6] },
-        { "start": 99.846, "end": 100.385, "char": [7, 14] },
-        { "start": 100.385, "end": 100.924, "char": [15, 17] },
-        { "start": 100.924, "end": 101.463, "char": [18, 23] },
-        { "start": 101.463, "end": 102.002, "char": [24, 33] }
+        { "start": 102.635, "end": 103.175, "char": [0, 6] },
+        { "start": 103.175, "end": 103.714, "char": [7, 14] },
+        { "start": 103.714, "end": 104.253, "char": [15, 17] },
+        { "start": 104.253, "end": 104.792, "char": [18, 23] },
+        { "start": 104.792, "end": 105.331, "char": [24, 33] }
       ]
     },
     {
-      "start": 103.502,
-      "end": 104.43,
+      "start": 107.581,
+      "end": 108.509,
       "text": "Dosyalar yüklendi.",
       "words": [
-        { "start": 103.502, "end": 103.966, "char": [0, 8] },
-        { "start": 103.966, "end": 104.43, "char": [9, 18] }
+        { "start": 107.581, "end": 108.045, "char": [0, 8] },
+        { "start": 108.045, "end": 108.509, "char": [9, 18] }
       ]
     },
     {
-      "start": 104.43,
-      "end": 107.212,
+      "start": 108.509,
+      "end": 111.291,
       "text": "Delta sıkıştırma büyük ağaçların üstesinden gelir.",
       "words": [
-        { "start": 104.43, "end": 104.893, "char": [0, 5] },
-        { "start": 104.893, "end": 105.357, "char": [6, 16] },
-        { "start": 105.357, "end": 105.821, "char": [17, 22] },
-        { "start": 105.821, "end": 106.284, "char": [23, 32] },
-        { "start": 106.284, "end": 106.748, "char": [33, 43] },
-        { "start": 106.748, "end": 107.212, "char": [44, 50] }
+        { "start": 108.509, "end": 108.972, "char": [0, 5] },
+        { "start": 108.972, "end": 109.436, "char": [6, 16] },
+        { "start": 109.436, "end": 109.9, "char": [17, 22] },
+        { "start": 109.9, "end": 110.363, "char": [23, 32] },
+        { "start": 110.363, "end": 110.827, "char": [33, 43] },
+        { "start": 110.827, "end": 111.291, "char": [44, 50] }
       ]
     },
     {
-      "start": 108.038,
-      "end": 109.687,
+      "start": 112.117,
+      "end": 113.766,
       "text": "Günlük üçlü bu kadar.",
       "words": [
-        { "start": 108.038, "end": 108.45, "char": [0, 6] },
-        { "start": 108.45, "end": 108.862, "char": [7, 11] },
-        { "start": 108.862, "end": 109.274, "char": [12, 14] },
-        { "start": 109.274, "end": 109.687, "char": [15, 21] }
+        { "start": 112.117, "end": 112.529, "char": [0, 6] },
+        { "start": 112.529, "end": 112.941, "char": [7, 11] },
+        { "start": 112.941, "end": 113.353, "char": [12, 14] },
+        { "start": 113.353, "end": 113.766, "char": [15, 21] }
       ]
     },
     {
-      "start": 109.687,
-      "end": 111.747,
+      "start": 113.766,
+      "end": 115.826,
       "text": "Bir sonraki bölümde görüşmek üzere!",
       "words": [
-        { "start": 109.687, "end": 110.099, "char": [0, 3] },
-        { "start": 110.099, "end": 110.511, "char": [4, 11] },
-        { "start": 110.511, "end": 110.923, "char": [12, 19] },
-        { "start": 110.923, "end": 111.335, "char": [20, 28] },
-        { "start": 111.335, "end": 111.747, "char": [29, 35] }
+        { "start": 113.766, "end": 114.178, "char": [0, 3] },
+        { "start": 114.178, "end": 114.59, "char": [4, 11] },
+        { "start": 114.59, "end": 115.002, "char": [12, 19] },
+        { "start": 115.002, "end": 115.414, "char": [20, 28] },
+        { "start": 115.414, "end": 115.826, "char": [29, 35] }
       ]
     }
   ]

@@ -1,0 +1,325 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.799
+Repository'lerinizi kod gibi sürümleyelim!
+
+00:00:02.799 --> 00:00:04.597
+Bir kontrol noktası donduracağız,
+
+00:00:04.597 --> 00:00:06.396
+ona bir isim vereceğiz,
+
+00:00:06.396 --> 00:00:09.094
+sonra gerçek bir veritabanı tablosunu sileceğiz.
+
+00:00:09.094 --> 00:00:09.544
+Rollback,
+
+00:00:09.544 --> 00:00:12.242
+dondurulmuş durumu saniyeler içinde geri getirir;
+
+00:00:12.242 --> 00:00:13.591
+her satırıyla birlikte.
+
+00:00:14.362 --> 00:00:15.300
+Model git,
+
+00:00:15.300 --> 00:00:17.175
+ama tüm repository'ler için.
+
+00:00:17.175 --> 00:00:17.644
+Commit,
+
+00:00:17.644 --> 00:00:19.988
+dondurulmuş ve değişmez bir imajdır.
+
+00:00:19.988 --> 00:00:21.864
+Mount edilmeyi bile reddeder,
+
+00:00:21.864 --> 00:00:24.208
+yani hiçbir şey onu değiştiremez.
+
+00:00:24.208 --> 00:00:24.677
+Branch,
+
+00:00:24.677 --> 00:00:27.490
+yalnızca bir commit'i gösteren bir isimdir.
+
+00:00:27.490 --> 00:00:30.303
+Checkout ise herhangi bir commit'i yeni
+
+00:00:30.303 --> 00:00:32.648
+ve yazılabilir bir fork'a dönüştürür.
+
+00:00:35.913 --> 00:00:38.163
+Çalışma fork'umuz uygulamanın birinci sürümünü tutuyor;
+
+00:00:38.163 --> 00:00:40.789
+basit bir işaret dosyası bunu gözler önüne
+
+00:00:40.789 --> 00:00:41.164
+seriyor.
+
+00:00:45.116 --> 00:00:46.526
+Birinci sürüm,
+
+00:00:46.526 --> 00:00:47.232
+diskte.
+
+00:00:50.526 --> 00:00:51.858
+Sadece dosyalar değil.
+
+00:00:51.858 --> 00:00:54.523
+Bu fork'ta gerçek bir PostgreSQL veritabanı
+
+00:00:54.523 --> 00:00:57.187
+da çalışıyor ve customers tablosu üç
+
+00:00:57.187 --> 00:00:58.075
+satır içeriyor.
+
+00:00:58.075 --> 00:00:59.852
+Bu sayıyı aklınızda tutun.
+
+00:01:02.352 --> 00:01:03.259
+Üç satır.
+
+00:01:03.259 --> 00:01:05.983
+Tehlikeye atmak üzere olduğumuz veri bu.
+
+00:01:09.304 --> 00:01:09.717
+Dondurun.
+
+00:01:09.717 --> 00:01:10.130
+Commit,
+
+00:01:10.130 --> 00:01:11.783
+tüm repository'yi bir mesaj,
+
+00:01:11.783 --> 00:01:14.675
+bir yazar ve bir üst öğeyle birlikte
+
+00:01:14.675 --> 00:01:16.740
+değişmez bir imaj olarak yakalar.
+
+00:01:16.740 --> 00:01:17.980
+Tıpkı git gibi,
+
+00:01:17.980 --> 00:01:19.632
+ama her şey için;
+
+00:01:19.632 --> 00:01:20.458
+veritabanı dahil.
+
+00:01:23.458 --> 00:01:24.303
+Commit atıldı.
+
+00:01:24.303 --> 00:01:26.837
+Bu anlık görüntü hiçbir zaman değişemez.
+
+00:01:26.837 --> 00:01:28.526
+Mount edilmeyi bile reddeder.
+
+00:01:31.855 --> 00:01:33.370
+Commit'e bir isim verin.
+
+00:01:33.370 --> 00:01:35.643
+Stable branch artık birinci sürümü gösteriyor.
+
+00:01:36.718 --> 00:01:37.141
+Branch,
+
+00:01:37.141 --> 00:01:38.834
+geri dönebileceğiniz bir isimdir.
+
+00:01:42.101 --> 00:01:43.548
+Çalışmaya devam edin.
+
+00:01:43.548 --> 00:01:46.441
+Çalışma fork'unda ikinci sürüm birincinin yerini
+
+00:01:46.441 --> 00:01:46.924
+alıyor.
+
+00:01:46.924 --> 00:01:48.370
+Commit'in umurunda değil.
+
+00:01:51.319 --> 00:01:52.981
+Çalışma fork'u ilerledi.
+
+00:01:52.981 --> 00:01:54.088
+Geçmiş ilerlemedi.
+
+00:01:57.364 --> 00:01:58.614
+Şimdi felaket.
+
+00:01:58.614 --> 00:02:01.738
+Riskli değişiklik customers tablosunu siliyor.
+
+00:02:01.738 --> 00:02:03.613
+Gerçek hayatta bu,
+
+00:02:03.613 --> 00:02:05.488
+midenizin bulandığı andır.
+
+00:02:07.424 --> 00:02:08.812
+Drop table çalıştı.
+
+00:02:08.812 --> 00:02:10.663
+Veri çalışma fork'undan silindi.
+
+00:02:13.931 --> 00:02:15.650
+Satırları tekrar isteyin,
+
+00:02:15.650 --> 00:02:17.368
+veritabanı açıkça söylüyor:
+
+00:02:17.368 --> 00:02:19.660
+customers ilişkisi mevcut değil.
+
+00:02:19.660 --> 00:02:20.806
+Felaket gerçek.
+
+00:02:20.806 --> 00:02:22.525
+Her satır gitti.
+
+00:02:25.444 --> 00:02:27.665
+İlişki mevcut değil.
+
+00:02:27.665 --> 00:02:29.145
+Üç satır,
+
+00:02:29.145 --> 00:02:29.885
+gitti.
+
+00:02:33.166 --> 00:02:35.048
+Riskli değişikliği de commit edin;
+
+00:02:35.048 --> 00:02:36.930
+bozuk tablo ve her şeyiyle.
+
+00:02:36.930 --> 00:02:38.812
+Geçmiş gerçekte ne olduğunu kaydeder.
+
+00:02:38.812 --> 00:02:40.317
+Artık iki commit var,
+
+00:02:40.317 --> 00:02:41.446
+üst ve alt.
+
+00:02:44.446 --> 00:02:46.092
+Zincirde iki anlık görüntü.
+
+00:02:49.366 --> 00:02:50.423
+İşte geçmiş:
+
+00:02:50.423 --> 00:02:52.009
+üstte ikinci sürüm,
+
+00:02:52.009 --> 00:02:53.594
+altında birinci sürüm,
+
+00:02:53.594 --> 00:02:55.709
+mesajlar ve yazarlar dahil;
+
+00:02:55.709 --> 00:02:58.352
+tek bir imajın kilidini açmadan.
+
+00:03:01.352 --> 00:03:02.706
+Bir repo log,
+
+00:03:02.706 --> 00:03:04.513
+tıpkı git log gibi.
+
+00:03:07.823 --> 00:03:09.325
+İşte ödül anı.
+
+00:03:09.325 --> 00:03:11.830
+Stable branch'i yeni bir yazılabilir
+
+00:03:11.830 --> 00:03:13.333
+fork'a checkout edin.
+
+00:03:13.333 --> 00:03:14.335
+Reflink klonu:
+
+00:03:14.335 --> 00:03:15.337
+neredeyse anında,
+
+00:03:15.337 --> 00:03:16.339
+her boyutta.
+
+00:03:19.339 --> 00:03:21.759
+Dondurulmuş birinci sürümün yazılabilir bir kopyası,
+
+00:03:21.759 --> 00:03:22.970
+yaklaşık bir saniyede.
+
+00:03:26.301 --> 00:03:28.652
+Rollback fork'unu diğer repo'lar gibi başlatın.
+
+00:03:36.828 --> 00:03:37.925
+İki fork çalışıyor:
+
+00:03:37.925 --> 00:03:39.754
+güncel sürüm ve kontrol noktası.
+
+00:03:43.026 --> 00:03:44.041
+İşte kanıt:
+
+00:03:44.041 --> 00:03:46.580
+rollback fork'u birinci sürümü okuyor.
+
+00:03:46.580 --> 00:03:49.119
+Çalışma fork'unda hâlâ ikinci sürüm
+
+00:03:49.119 --> 00:03:49.627
+var.
+
+00:03:49.627 --> 00:03:51.150
+Çalıştırabileceğiniz bir geçmiş.
+
+00:03:52.650 --> 00:03:53.422
+Rollback tamamlandı.
+
+00:03:53.422 --> 00:03:56.124
+Buraya gelmek için hiçbir şeyin üzerine yazılmadı.
+
+00:03:59.475 --> 00:04:01.185
+Ve en önemli kısım:
+
+00:04:01.185 --> 00:04:02.895
+silinen tablo geri geldi,
+
+00:04:02.895 --> 00:04:04.178
+üç satırıyla birlikte.
+
+00:04:04.178 --> 00:04:05.888
+Rollback yalnızca dosyaları değil,
+
+00:04:05.888 --> 00:04:07.599
+veritabanını da geri yükledi.
+
+00:04:10.993 --> 00:04:12.495
+Yine üç satır.
+
+00:04:12.495 --> 00:04:13.997
+Felaket geri alındı.
+
+00:04:28.970 --> 00:04:30.392
+Commit'ler hiç değişmez,
+
+00:04:30.392 --> 00:04:31.813
+fork'lar hiç beklemez.
+
+00:04:31.813 --> 00:04:32.761
+Sıradaki derste,
+
+00:04:32.761 --> 00:04:35.605
+çalışan bir repository'nin tamamını canlı olarak
+
+00:04:35.605 --> 00:04:37.501
+başka bir makineye taşıyoruz.
+
+00:04:37.501 --> 00:04:38.922
+Bir sonrakinde görüşürüz!

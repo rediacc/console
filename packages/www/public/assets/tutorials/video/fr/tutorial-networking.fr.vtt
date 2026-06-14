@@ -1,220 +1,244 @@
 WEBVTT
 
-00:00:01.000 --> 00:00:02.056
-Très bien !
+00:00:01.000 --> 00:00:02.213
+Votre application tourne,
 
-00:00:02.056 --> 00:00:04.872
-Donnons à votre application un vrai domaine avec
+00:00:02.213 --> 00:00:05.044
+mais seul le serveur peut la voir.
 
-00:00:04.872 --> 00:00:05.576
-TLS automatique.
+00:00:05.044 --> 00:00:07.874
+Donnons-lui un vrai domaine avec TLS automatique.
 
-00:00:05.576 --> 00:00:08.393
-Quatre courtes étapes et vous êtes sur internet.
+00:00:07.874 --> 00:00:09.088
+Quatre courtes étapes,
 
-00:00:09.160 --> 00:00:10.518
-Voici le chemin.
+00:00:09.088 --> 00:00:11.109
+et elle est sur internet.
 
-00:00:10.518 --> 00:00:12.780
-Récupérer un token API Cloudflare,
+00:00:11.900 --> 00:00:14.199
+Voici comment faire :
 
-00:00:12.780 --> 00:00:15.043
-configurer l'infrastructure dans la CLI,
+00:00:14.199 --> 00:00:17.072
+récupérez un token API Cloudflare,
 
-00:00:15.043 --> 00:00:17.305
-la pousser sur le serveur,
+00:00:17.072 --> 00:00:19.946
+configurez l'infrastructure une fois via
 
-00:00:17.305 --> 00:00:20.020
-puis déployer un proxy Traefik qui
+00:00:19.946 --> 00:00:21.095
+le CLI,
 
-00:00:20.020 --> 00:00:22.735
-gère DNS et certificats à votre
+00:00:21.095 --> 00:00:23.394
+poussez-la vers le serveur,
 
-00:00:22.735 --> 00:00:23.188
-place.
+00:00:23.394 --> 00:00:26.267
+puis déployez un petit repo
 
-00:00:23.961 --> 00:00:24.392
+00:00:26.267 --> 00:00:29.141
+proxy qui gère le DNS
+
+00:00:29.141 --> 00:00:32.014
+et les certificats pour vous.
+
+00:00:32.485 --> 00:00:32.874
 D'abord,
 
-00:00:24.392 --> 00:00:26.976
-ouvrez le tableau de bord Cloudflare
+00:00:32.874 --> 00:00:34.431
+la seule étape manuelle.
 
-00:00:26.976 --> 00:00:28.267
-dans votre navigateur.
+00:00:34.431 --> 00:00:36.766
+Ouvrez le tableau de bord Cloudflare,
 
-00:00:28.267 --> 00:00:29.990
-Allez dans Mon Profil,
+00:00:36.766 --> 00:00:38.323
+allez dans Mon profil,
 
-00:00:29.990 --> 00:00:31.282
-puis Tokens API,
+00:00:38.323 --> 00:00:39.490
+puis API Tokens,
 
-00:00:31.282 --> 00:00:33.866
-et créez un token avec la
+00:00:39.490 --> 00:00:42.214
+et créez un token avec la permission
 
-00:00:33.866 --> 00:00:36.450
-permission Zone DNS Edit pour que
+00:00:42.214 --> 00:00:43.382
+Zone DNS Edit.
 
-00:00:36.450 --> 00:00:39.034
-la CLI puisse gérer vos enregistrements.
+00:00:43.382 --> 00:00:46.106
+Ce token unique permet au CLI de
 
-00:00:41.528 --> 00:00:42.283
+00:00:46.106 --> 00:00:47.663
+gérer vos enregistrements DNS,
+
+00:00:47.663 --> 00:00:50.387
+pour ne plus jamais naviguer dans les
+
+00:00:50.387 --> 00:00:51.554
+tableaux de bord.
+
+00:00:54.552 --> 00:00:55.307
 Deuxième étape.
 
-00:00:42.283 --> 00:00:43.795
+00:00:55.307 --> 00:00:56.819
 Nous saisissons l'IP publique,
 
-00:00:43.795 --> 00:00:45.307
+00:00:56.819 --> 00:00:58.331
 le domaine de base,
 
-00:00:45.307 --> 00:00:47.952
+00:00:58.331 --> 00:01:00.976
 l'adresse email pour le certificat et le
 
-00:00:47.952 --> 00:00:50.597
+00:01:00.976 --> 00:01:03.621
 token API Cloudflare depuis la ligne de
 
-00:00:50.597 --> 00:00:50.975
+00:01:03.621 --> 00:01:03.999
 commande.
 
-00:00:50.975 --> 00:00:53.621
+00:01:03.999 --> 00:01:06.645
 L'email de certificat et le token sont
 
-00:00:53.621 --> 00:00:55.510
+00:01:06.645 --> 00:01:08.534
 partagés entre toutes vos machines,
 
-00:00:55.510 --> 00:00:58.155
+00:01:08.534 --> 00:01:11.179
 donc vous ne les définissez qu'une seule
 
-00:00:58.155 --> 00:00:58.533
+00:01:11.179 --> 00:01:11.557
 fois.
 
-00:00:59.333 --> 00:01:01.841
+00:01:13.557 --> 00:01:16.065
 Infrastructure enregistrée dans votre config.
 
-00:01:05.169 --> 00:01:07.695
+00:01:19.359 --> 00:01:21.885
 Confirmons que les paramètres d'infrastructure ont
 
-00:01:07.695 --> 00:01:08.959
+00:01:21.885 --> 00:01:23.149
 bien été enregistrés.
 
-00:01:08.959 --> 00:01:09.801
+00:01:23.149 --> 00:01:23.991
 IP publique,
 
-00:01:09.801 --> 00:01:11.064
+00:01:23.991 --> 00:01:25.254
 domaine de base,
 
-00:01:11.064 --> 00:01:13.169
+00:01:25.254 --> 00:01:27.359
 adresse email pour le certificat,
 
-00:01:13.169 --> 00:01:15.696
+00:01:27.359 --> 00:01:29.886
 tout est visible dans la configuration.
 
-00:01:17.446 --> 00:01:18.275
+00:01:31.636 --> 00:01:32.465
 Paramètres enregistrés.
 
-00:01:18.275 --> 00:01:20.764
+00:01:32.465 --> 00:01:34.954
 Prêt à pousser vers le serveur.
 
-00:01:24.106 --> 00:01:25.020
-Troisième étape.
+00:01:38.262 --> 00:01:39.536
+Étape trois :
 
-00:01:25.020 --> 00:01:27.763
-Nous poussons la configuration vers le
+00:01:39.536 --> 00:01:42.084
+poussez la configuration vers le serveur.
 
-00:01:27.763 --> 00:01:28.220
-serveur.
+00:01:42.084 --> 00:01:43.783
+Avec un vrai token,
 
-00:01:28.220 --> 00:01:30.963
-Cela crée automatiquement les enregistrements DNS
+00:01:43.783 --> 00:01:46.332
+cela crée vos enregistrements DNS sur
 
-00:01:30.963 --> 00:01:33.706
-sur Cloudflare et prépare la configuration
+00:01:46.332 --> 00:01:48.880
+Cloudflare automatiquement et prépare la configuration
 
-00:01:33.706 --> 00:01:35.991
-du proxy sur la machine.
+00:01:48.880 --> 00:01:49.729
+du proxy.
 
-00:01:38.991 --> 00:01:39.497
+00:01:50.529 --> 00:01:51.035
 Poussé.
 
-00:01:39.497 --> 00:01:42.026
+00:01:51.035 --> 00:01:53.564
 Les enregistrements DNS sont en
 
-00:01:42.026 --> 00:01:44.555
+00:01:53.564 --> 00:01:56.094
 train d'être créés sur Cloudflare.
 
-00:01:47.855 --> 00:01:49.460
-La quatrième étape commence.
+00:01:59.411 --> 00:02:00.521
+Étape quatre :
 
-00:01:49.460 --> 00:01:52.269
-Nous créons un petit dépôt nommé infra.
+00:02:00.521 --> 00:02:02.741
+créez un petit repo nommé infra.
 
-00:01:52.269 --> 00:01:55.079
-C'est là que le proxy va résider,
+00:02:02.741 --> 00:02:04.592
+Pourquoi son propre repo ?
 
-00:01:55.079 --> 00:01:56.684
-isolé des dépôts d'application.
+00:02:04.592 --> 00:02:07.182
+Le proxy achemine le trafic pour chaque
 
-00:01:59.684 --> 00:02:01.046
+00:02:07.182 --> 00:02:08.662
+application sur ce serveur.
+
+00:02:08.662 --> 00:02:10.883
+L'infrastructure mérite sa propre boîte isolée,
+
+00:02:10.883 --> 00:02:12.733
+loin de votre code applicatif.
+
+00:02:15.733 --> 00:02:17.095
 Repo infra créé.
 
-00:02:01.046 --> 00:02:03.315
+00:02:17.095 --> 00:02:19.364
 Isolé de vos repos d'application.
 
-00:02:06.633 --> 00:02:09.167
+00:02:22.689 --> 00:02:25.223
 Nous appliquons le modèle proxy
 
-00:02:09.167 --> 00:02:09.673
+00:02:25.223 --> 00:02:25.729
 intégré.
 
-00:02:09.673 --> 00:02:12.207
+00:02:25.729 --> 00:02:28.263
 Il contient Traefik ainsi que
 
-00:02:12.207 --> 00:02:14.741
+00:02:28.263 --> 00:02:30.797
 la configuration pour Let's Encrypt
 
-00:02:14.741 --> 00:02:17.275
+00:02:30.797 --> 00:02:33.331
 et les challenges DNS-01 de
 
-00:02:17.275 --> 00:02:17.782
+00:02:33.331 --> 00:02:33.838
 Cloudflare,
 
-00:02:17.782 --> 00:02:19.302
+00:02:33.838 --> 00:02:35.358
 prêt à l'emploi.
 
-00:02:21.552 --> 00:02:23.511
+00:02:38.358 --> 00:02:40.317
 Configuration Traefik en place.
 
-00:02:26.800 --> 00:02:29.538
+00:02:43.639 --> 00:02:46.377
 Et nous démarrons le proxy.
 
-00:02:29.538 --> 00:02:32.277
+00:02:46.377 --> 00:02:49.116
 Traefik découvre vos conteneurs toutes
 
-00:02:32.277 --> 00:02:33.920
+00:02:49.116 --> 00:02:50.759
 les cinq secondes.
 
-00:02:33.920 --> 00:02:36.658
+00:02:50.759 --> 00:02:53.497
 Les certificats TLS proviennent de
 
-00:02:36.658 --> 00:02:38.301
+00:02:53.497 --> 00:02:55.140
 Let's Encrypt automatiquement.
 
-00:02:38.301 --> 00:02:41.040
+00:02:55.140 --> 00:02:57.879
 Votre application est maintenant accessible
 
-00:02:41.040 --> 00:02:43.231
+00:02:57.879 --> 00:03:00.070
 sur internet via HTTPS.
 
-00:02:43.231 --> 00:02:45.582
+00:03:03.070 --> 00:03:05.421
 Proxy en ligne.
 
-00:02:45.582 --> 00:02:48.716
+00:03:05.421 --> 00:03:08.555
 Les certificats TLS arriveront
 
-00:02:48.716 --> 00:02:49.500
+00:03:08.555 --> 00:03:09.339
 automatiquement.
 
-00:02:50.269 --> 00:02:52.137
+00:03:10.141 --> 00:03:12.009
 Et voilà le réseau réglé !
 
-00:02:52.137 --> 00:02:54.318
+00:03:12.009 --> 00:03:14.190
 On se retrouve dans la prochaine vidéo.
