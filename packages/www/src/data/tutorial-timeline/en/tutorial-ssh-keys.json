@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "dc45f480f28dd62958d71649798f6d8408c5f26eac95c991f0872519ff8decd6",
+  "transcriptHash": "7c59d78cc7181b2b47de4a8d2c0ff9450a35ca08e2e8a9764fd8ef07f9811b73",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.626287,
-      "replayEndSec": 6.456735,
+      "replayStartSec": 1.617466,
+      "replayEndSec": 6.370674,
       "narrationText": "First, generate a new SSH key on your laptop. Ed25519 is secure, small, and well supported. You do this once; the same key works for every server you add. This is plain SSH, independent of any tooling here.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-01.d9e3eb30.mp3",
       "textHash": "d9e3eb3031398f29505093133a919c00fc82417b87626d1bc574efd86046a593",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.456735,
-      "replayEndSec": 13.33617,
+      "replayStartSec": 6.370674,
+      "replayEndSec": 13.176828,
       "narrationText": "Now authorize the key on your first server with ssh-copy-id. It appends your public key to the server's authorized list, so future logins skip the password.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-02.1290a416.mp3",
       "textHash": "1290a4169f720cf49ab3dbb01ad781337534ebf7be0f1bbf3afc3aa4873ce986",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.33617,
-      "replayEndSec": 19.159643,
+      "replayStartSec": 13.176828,
+      "replayEndSec": 19.095233,
       "narrationText": "Do the same for every other server you manage. Here we authorize the second one. Just repeat ssh-copy-id for each machine.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-ssh-keys/tutorial-ssh-keys-03.31167cec.mp3",
       "textHash": "31167cec061931d5a906821feda37668ab6bdccf63f10e0b9923b326670b8646",

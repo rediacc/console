@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: es
-sourceHash: "4b3aebff5e82416f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "59abc2faa1157369"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Herramientas
@@ -175,6 +175,36 @@ rdc vscode check
 Verifica la instalación de VS Code, la extensión Remote SSH y las conexiones activas.
 
 > **Prerrequisito:** Instale la extensión [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) en VS Code.
+
+### VS Code en el navegador
+
+¿No tiene VS Code instalado? Sirva el editor desde dentro del sandbox del repositorio y ábralo en cualquier navegador:
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+Este comando:
+1. Instala el servidor del editor open-source en la máquina una sola vez (ruta compartida de solo lectura, verificada por checksum)
+2. Lo arranca dentro del sandbox del repositorio, de modo que el árbol de archivos, la terminal integrada y todos los procesos hijo ven exactamente lo que ve el repositorio
+3. Abre un túnel SSH a un puerto local y lanza el navegador con una URL de token por sesión
+
+El servidor sigue ejecutándose después de cerrar el túnel; al reconectar lo reutiliza. Gestiónelo con:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| Opción | Descripción |
+|--------|-------------|
+| `--no-open` | Imprime la URL en lugar de abrir el navegador |
+| `--url-only` | Imprime exactamente una línea con la URL en stdout (para scripting) y mantiene el túnel |
+| `--local <port>` | Elige el puerto local del túnel |
+| `--server-provider <id>` | Implementación del servidor del editor: `openvscode` (predeterminado) o `code-server` |
+| `--server-archive <file>` | Instala desde un tarball prealmacenado en la máquina (sin acceso a internet) |
+
+Funciona desde Linux, macOS, Windows o una tablet. El único requisito local es un navegador.
 
 ## Actualizaciones de la CLI (update)
 

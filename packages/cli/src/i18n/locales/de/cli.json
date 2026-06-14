@@ -1305,7 +1305,9 @@
           "completed": "Autostart-Liste abgerufen",
           "description": "Repositories mit aktiviertem Autostart auflisten",
           "failed": "Abrufen der Autostart-Liste fehlgeschlagen",
-          "starting": "Autostart-Repositories auf \"{{machine}}\" werden aufgelistet..."
+          "starting": "Autostart-Repositories auf \"{{machine}}\" werden aufgelistet...",
+          "empty": "Keine Repositories mit aktiviertem Autostart auf \"{{machine}}\"",
+          "service": "Autostart-Dienst: installiert={{installed}}, aktiviert={{enabled}}"
         }
       },
       "backup": {
@@ -1432,10 +1434,10 @@
         "starting": "\"{{repository}}\" wird auf {{size}} auf \"{{machine}}\" erweitert..."
       },
       "trim": {
-        "description": "Gibt Datastore-Poolspeicher aus gemounteten Repositories zurück (online, ohne Ausfallzeit). In Repositories gelöschte Blöcke werden per fstrim an den Pool zurückgegeben. Ohne --name werden alle gemounteten Repositories und der Datastore selbst getrimmt. Repositories mit laufendem Backup werden übersprungen",
+        "description": "Gibt Datastore-Poolspeicher aus gemounteten Repositories zurück (online, ohne Ausfallzeit). In Repositories gelöschte Blöcke werden per fstrim an den Pool zurückgegeben. Ohne --name werden alle gemounteten Repositories und der Datastore selbst getrimmt. Für Repositories mit laufendem Backup wird fstrim übersprungen; die Bereinigung über --docker läuft trotzdem",
         "descriptionShort": "Freien Speicher aus Repositories an den Pool zurückgeben",
         "nameOption": "Zu trimmendes Repository (Standard: alle gemounteten Repositories)",
-        "dockerOption": "Zuerst Docker-Speicher freigeben (gestoppte Container, ungenutzte Images, Build-Cache)",
+        "dockerOption": "Docker-Speicher freigeben (gestoppte Container, ungenutzte Images, Build-Cache); läuft auch bei einem aktiven Backup-Snapshot",
         "dockerVolumesOption": "Zusätzlich ungenutzte Docker-Volumes entfernen",
         "reportOnlyOption": "Discard-Status und rückgewinnbaren Speicher anzeigen, ohne zu trimmen",
         "repoNotFound": "Repository nicht gefunden: {{name}}",
@@ -1535,6 +1537,7 @@
         "checkpointing": "CRIU-Checkpoint wird erstellt...",
         "complete": "Migration abgeschlossen: {{name}} von {{from}} nach {{to}} verschoben",
         "deltaDone": "Delta-Sync abgeschlossen",
+        "phase2Stats": "Umschaltung (AUSFALLZEIT): {{transferred}} in {{duration}}",
         "deltaFailed": "Delta-Sync fehlgeschlagen",
         "deltaSync": "Delta wird synchronisiert...",
         "description": "Live-Migration eines Repositorys von einer Maschine zur anderen mit minimaler Ausfallzeit. Zwei-Phasen-rsync: Massentransfer im Betrieb, dann kurzer Stopp für Delta-Sync. Unterstützt CRIU-Checkpoint für Prozessspeicher-Migration und automatische Bereitstellung von Zielmaschinen",
@@ -1551,6 +1554,7 @@
         "optionTo": "Name der Zielmaschine",
         "phase1": "Phase 1: Massendaten übertragen (Quelle läuft weiter)...",
         "phase1Done": "Massentransfer abgeschlossen",
+        "phase1Stats": "{{transferred}} in {{duration}} übertragen — Quelle blieb online",
         "phase1Failed": "Massentransfer fehlgeschlagen",
         "phase2": "Phase 2: Umschaltung (kurze Ausfallzeit)...",
         "phase3": "Phase 3: Start auf dem Ziel...",
@@ -1612,6 +1616,10 @@
         "optionForce": "Vorhandenes Backup überschreiben erzwingen",
         "optionProvision": "Zielrechner automatisch über Cloud-Anbieter bereitstellen, wenn nicht vorhanden",
         "optionStrategy": "Block-Delta-Strategie bei Verwendung einer Delta-Basis: auto, physical oder shared",
+        "optionJson": "Übertragungsstatistik als JSON ausgeben",
+        "statsDelta": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (Delta gegen Basis {{base}}, Image {{image}})",
+        "statsFull": "\"{{repo}}\" nach {{machine}} übertragen — {{transferred}} in {{duration}} (vollständig)",
+        "statsNoBytes": "\"{{repo}}\" nach {{machine}} übertragen — abgeschlossen in {{duration}}",
         "optionTag": "Deployment-Tag für Versionierung",
         "optionTo": "Name des Zielrechners oder Speichers (wird automatisch aus der Konfiguration erkannt)",
         "optionUp": "Nach dem Push das Repository auf dem Zielrechner mounten und bereitstellen",
@@ -1726,7 +1734,10 @@
         "noContainers": "Keine laufenden Container für Repository \"{{repository}}\" gefunden",
         "noPorts": "Keine exponierten Ports auf Container \"{{container}}\" gefunden. Verwenden Sie --port",
         "noServiceIP": "Container \"{{container}}\" hat keine zugewiesene Service-IP",
-        "portOption": "Remote-Container-Port zum Weiterleiten"
+        "portOption": "Remote-Container-Port zum Weiterleiten",
+        "notReady": "Tunnel wurde nicht innerhalb von 15 Sekunden unter localhost:{{localPort}} bereit",
+        "portInUse": "Lokaler Port {{port}} ist bereits belegt. Wählen Sie einen anderen mit --local",
+        "urlOnlyOption": "Gibt nur die lokale URL aus, sobald der Tunnel bereit ist (maschinenlesbar)"
       },
       "unmount": {
         "checkpointOption": "Checkpoint vor dem Unmounten erstellen",
@@ -2212,7 +2223,14 @@
         "settingsWarning": "Warnung: Konnte VS Code-Einstellungen nicht konfigurieren: {{error}}",
         "settingUpEnv": "Remote-Umgebung wird eingerichtet...",
         "success": "VS Code erfolgreich gestartet.",
-        "testingConnectivity": "Konnektivität zu {{host}}:{{port}} wird getestet..."
+        "testingConnectivity": "Konnektivität zu {{host}}:{{port}} wird getestet...",
+        "installingServer": "{{provider}} {{version}} wird auf der Maschine installiert...",
+        "startingServer": "{{provider}} wird innerhalb der Repository-Sandbox gestartet...",
+        "serverReused": "Bereits laufenden Server wird wiederverwendet",
+        "tunnelReady": "Tunnel bereit unter localhost:{{port}}",
+        "browserUrl": "VS Code im Browser öffnen: {{url}}",
+        "passwordNote": "Anmeldepasswort: {{password}}",
+        "openingBrowser": "Browser wird geöffnet..."
       },
       "description": "VS Code Remote SSH zu einer Maschine oder einem Repository öffnen",
       "descriptionShort": "VS Code Remote SSH zu einer Maschine oder einem Repository öffnen",
@@ -2223,6 +2241,19 @@
         "keyPersisted": " (Schlüssel beibehalten)",
         "noConnections": "Keine VS Code-SSH-Verbindungen konfiguriert.",
         "total": "\nGesamt: {{count}} Verbindung(en)"
+      },
+      "serve": {
+        "description": "Browser-VS-Code-Server innerhalb der Sandbox verwalten",
+        "status": {
+          "description": "Anzeigen, ob der Browser-VS-Code-Server läuft",
+          "running": "{{provider}} läuft (pid {{pid}}, Port {{port}})",
+          "stopped": "{{provider}} läuft nicht"
+        },
+        "stop": {
+          "description": "Browser-VS-Code-Server stoppen",
+          "stopped": "{{provider}} gestoppt",
+          "notRunning": "{{provider}} lief nicht"
+        }
       }
     }
   },
@@ -2555,7 +2586,11 @@
       "noHostKey": "Machine '{{machine}}' hat keinen Host-Schlüssel im Vault konfiguriert",
       "noIpAddress": "Machine '{{machine}}' hat keine IP-Adresse konfiguriert",
       "noPrivateKey": "Team '{{team}}' hat keinen SSH-Private-Key konfiguriert",
-      "notFound": "VS Code nicht gefunden.\n\nBitte installieren Sie von: https://code.visualstudio.com/\nOder setzen Sie die REDIACC_VSCODE_PATH-Umgebungsvariable."
+      "notFound": "VS Code nicht gefunden.\n\nBitte installieren Sie von: https://code.visualstudio.com/\nOder setzen Sie die REDIACC_VSCODE_PATH-Umgebungsvariable.",
+      "browserNeedsRepo": "vscode --browser bedient eine Repository-Sandbox — übergeben Sie --repository <name>",
+      "unsupportedArch": "Nicht unterstützte Maschinenarchitektur für Browser-VS Code: {{arch}}",
+      "serverInstallFailed": "Installation von {{provider}} fehlgeschlagen: {{error}}",
+      "serverStartFailed": "Start von {{provider}} fehlgeschlagen: {{error}}"
     }
   },
   "help": {
@@ -2752,7 +2787,11 @@
     "vmId": "ID der virtuellen Maschine",
     "watch": "Auf Änderungen achten",
     "watchUpdates": "Auf Updates achten",
-    "yes": "Bestätigungsaufforderung überspringen"
+    "yes": "Bestätigungsaufforderung überspringen",
+    "vscodeBrowser": "Browser-VS Code innerhalb der Repository-Sandbox bereitstellen (kein lokales VS Code erforderlich)",
+    "vscodeNoOpen": "URL ausgeben, ohne den lokalen Browser zu starten",
+    "vscodeServerProvider": "Browser-VS-Code-Server-Implementierung (openvscode, code-server)",
+    "vscodeServerArchive": "Vorinstallierter Server-Archivpfad auf der Maschine (für Offline-Installationen)"
   },
   "prompts": {
     "apiUrl": "API-URL:",

@@ -6,8 +6,8 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.409686,
-      "replayEndSec": 11.760396,
+      "replayStartSec": 2.412347,
+      "replayEndSec": 11.676359,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-01.2981de92.mp3",
       "audioDurationSec": 17.867755,
       "textHash": "2981de9249d22aa26ebf5f07c6e88e6307db9d1a52cf2c90055c648486847339",
@@ -19,8 +19,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 11.760396,
-      "replayEndSec": 17.238181,
+      "replayStartSec": 11.676359,
+      "replayEndSec": 17.041073,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-02.a21498fe.mp3",
       "audioDurationSec": 8.515918,
       "textHash": "a21498fe88baf469e5e87a5fdacc5421eca968119651732c7f497b3afbfeabd9",
@@ -32,8 +32,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 17.238181,
-      "replayEndSec": 21.33289,
+      "replayStartSec": 17.041073,
+      "replayEndSec": 20.377596,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-create-repo/tutorial-create-repo-03.3cd1fc9a.mp3",
       "audioDurationSec": 12.355918,
       "textHash": "3cd1fc9aa3cf2e6cb372327b5c4eaec86b990e38b349dca1b70aea04e2410f22",
@@ -71,5 +71,5 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "d42e03dc38b2ea8cd5d10d86f5b51d4664e232cf3868abde535fa9badf0b9a8d"
+  "transcriptHash": "d8f5a0975f36151d6c851bcedf98d273171f0170b8dee4e6047bbfa6c41d0a6b"
 }

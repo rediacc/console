@@ -1,0 +1,77 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "en",
+  "version": 1,
+  "title": "Live Migration",
+  "chapters": {
+    "intro": "Live Migration",
+    "how-it-moves": "Two phases, minimal downtime",
+    "cast-step-0": "Step 1: A counter beating in memory",
+    "cast-step-1": "Step 2: Migrate it, live",
+    "cast-step-2": "Step 3: Running on the new machine",
+    "cast-step-3": "Step 4: The source is stopped",
+    "cast-step-4": "Step 5: The counter kept counting",
+    "outro": "Next: Delta Transfer"
+  },
+  "events": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "at": 2.413171,
+      "text": "Meet pulse. It keeps a counter in process memory and prints a beat every five seconds. The counter is at six and climbing, and it lives in RAM only. Restart the process and it starts over at one.",
+      "afterText": "A live counter, beating in memory. That's our evidence.",
+      "cardLabel": "Live Counter",
+      "prose": "The app keeps an in-memory counter and logs a beat every five seconds. The counter lives in RAM only: a process restart would reset it to one."
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "at": 10.379022,
+      "text": "One command moves it, live. Phase one transfers the bulk, two gigabytes in about half a minute, while the source keeps running. Then the cutover: it checkpoints the running processes, carries the last few megabytes across, and prints the downtime right there. About twenty seconds, for a two gigabyte move.",
+      "afterText": "Two gigabytes moved while the app kept running. The downtime line shows what the move actually cost.",
+      "cardLabel": "Migrate Live",
+      "prose": "Migrate with checkpoint: phase one transfers the 2 GB bulk while the source stays online, then a brief cutover checkpoints the running processes and carries the final delta across. The output prints each phase and the actual downtime."
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "at": 101.149024,
+      "text": "Check the new machine: there it is. Mounted, Docker running, two containers up.",
+      "afterText": "Same repo, new home, already running.",
+      "cardLabel": "New Home",
+      "prose": "List repositories on the target machine: pulse is mounted, Docker is running, and its containers are up."
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "at": 106.859481,
+      "text": "And the source? The repository is still listed, but look at the row: not mounted, no Docker, zero containers. Nothing runs here anymore. The image stays behind on purpose, as the base for the next delta transfer.",
+      "afterText": "Stopped and unmounted. The leftover image is a delta base, not a running app.",
+      "cardLabel": "Source Stopped",
+      "prose": "On the source the repository is stopped and unmounted: no Docker, zero containers. The image is retained as the base for future delta transfers."
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "at": 112.346008,
+      "text": "Now the punchline. The counter reads seventeen, eighteen, nineteen, still climbing. It picked up exactly where the checkpoint froze it instead of starting over at one. The process never noticed it changed machines.",
+      "afterText": "The counter kept counting. Process memory made the trip.",
+      "cardLabel": "Counter Continued",
+      "prose": "The logs on the new machine show the counter continuing from where the checkpoint froze it, not resetting to one. Process memory made the trip."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Time for a big one: moving a RUNNING app to another machine, while it runs. We'll watch a live counter beating in the app's memory, move everything with one command, and see the counter just keep counting on the new machine."
+    },
+    {
+      "id": "how-it-moves",
+      "text": "It works in two phases. Phase one copies the bulk while the app keeps running. Phase two checkpoints the live processes, carries over the final delta plus the process state, and resumes everything on the new machine. So the downtime is the delta, not the data. And the app never knows it moved."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "The counter never reset. Memory, database, files, all of it just changed machines. Next up, we'll see why the second transfer is always the fast one."
+    }
+  ]
+}

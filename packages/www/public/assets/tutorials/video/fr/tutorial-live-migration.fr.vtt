@@ -1,0 +1,277 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.150
+Place à quelque chose d'important :
+
+00:00:03.150 --> 00:00:05.657
+déplacer une application EN COURS D'EXÉCUTION vers
+
+00:00:05.657 --> 00:00:06.732
+une autre machine,
+
+00:00:06.732 --> 00:00:07.807
+pendant qu'elle tourne.
+
+00:00:07.807 --> 00:00:10.315
+Nous allons observer un compteur en direct
+
+00:00:10.315 --> 00:00:12.464
+battant dans la mémoire de l'application,
+
+00:00:12.464 --> 00:00:14.614
+tout déplacer avec une seule commande,
+
+00:00:14.614 --> 00:00:17.121
+et voir le compteur continuer à compter
+
+00:00:17.121 --> 00:00:18.554
+sur la nouvelle machine.
+
+00:00:19.331 --> 00:00:21.401
+Cela fonctionne en deux phases.
+
+00:00:21.401 --> 00:00:24.299
+La première phase copie l'essentiel pendant que
+
+00:00:24.299 --> 00:00:25.956
+l'application continue de tourner.
+
+00:00:25.956 --> 00:00:28.854
+La deuxième phase crée un checkpoint des
+
+00:00:28.854 --> 00:00:30.096
+processus en direct,
+
+00:00:30.096 --> 00:00:32.994
+transfère le delta final ainsi que l'état
+
+00:00:32.994 --> 00:00:33.822
+des processus,
+
+00:00:33.822 --> 00:00:36.721
+et reprend tout sur la nouvelle machine.
+
+00:00:36.721 --> 00:00:39.619
+Le temps d'arrêt correspond donc au delta,
+
+00:00:39.619 --> 00:00:40.861
+pas aux données.
+
+00:00:40.861 --> 00:00:43.759
+Et l'application ne sait jamais qu'elle a
+
+00:00:43.759 --> 00:00:44.173
+bougé.
+
+00:00:47.453 --> 00:00:48.271
+Voici pulse.
+
+00:00:48.271 --> 00:00:51.136
+Il garde un compteur en mémoire de
+
+00:00:51.136 --> 00:00:54.001
+processus et affiche un battement toutes les
+
+00:00:54.001 --> 00:00:54.820
+cinq secondes.
+
+00:00:54.820 --> 00:00:57.684
+Le compteur est à six et monte,
+
+00:00:57.684 --> 00:01:00.140
+et il vit uniquement en RAM.
+
+00:01:00.140 --> 00:01:03.005
+Redémarrez le processus et il repart à
+
+00:01:03.005 --> 00:01:03.414
+un.
+
+00:01:05.914 --> 00:01:07.429
+Un compteur en direct,
+
+00:01:07.429 --> 00:01:08.565
+battant en mémoire.
+
+00:01:08.565 --> 00:01:09.702
+C'est notre preuve.
+
+00:01:13.037 --> 00:01:15.148
+Une seule commande le déplace,
+
+00:01:15.148 --> 00:01:15.992
+en direct.
+
+00:01:15.992 --> 00:01:18.103
+La première phase transfère l'essentiel,
+
+00:01:18.103 --> 00:01:20.636
+deux gigaoctets en environ une demi-minute,
+
+00:01:20.636 --> 00:01:23.169
+pendant que la source continue de
+
+00:01:23.169 --> 00:01:23.591
+tourner.
+
+00:01:23.591 --> 00:01:25.280
+Puis la bascule :
+
+00:01:25.280 --> 00:01:27.812
+elle crée un checkpoint des processus
+
+00:01:27.812 --> 00:01:28.657
+en cours,
+
+00:01:28.657 --> 00:01:30.345
+transfère les derniers mégaoctets,
+
+00:01:30.345 --> 00:01:32.878
+et affiche le temps d'arrêt directement.
+
+00:01:32.878 --> 00:01:34.145
+Environ vingt secondes,
+
+00:01:34.145 --> 00:01:36.678
+pour un déplacement de deux gigaoctets.
+
+00:02:43.081 --> 00:02:45.741
+Deux gigaoctets déplacés pendant que l'application continuait de
+
+00:02:45.741 --> 00:02:46.074
+tourner.
+
+00:02:46.074 --> 00:02:48.733
+La ligne de temps d'arrêt montre ce que
+
+00:02:48.733 --> 00:02:50.396
+le déplacement a réellement coûté.
+
+00:02:54.651 --> 00:02:57.411
+Vérifiez la nouvelle machine :
+
+00:02:57.411 --> 00:02:58.515
+la voilà.
+
+00:02:58.515 --> 00:02:59.067
+Montée,
+
+00:02:59.067 --> 00:03:01.276
+Docker en cours d'exécution,
+
+00:03:01.276 --> 00:03:02.932
+deux containers actifs.
+
+00:03:05.932 --> 00:03:07.062
+Même repo,
+
+00:03:07.062 --> 00:03:08.191
+nouvel emplacement,
+
+00:03:08.191 --> 00:03:10.451
+déjà en cours d'exécution.
+
+00:03:13.755 --> 00:03:15.278
+Et la source ?
+
+00:03:15.278 --> 00:03:17.181
+Le repository est toujours listé,
+
+00:03:17.181 --> 00:03:19.084
+mais regardez la ligne :
+
+00:03:19.084 --> 00:03:19.845
+non monté,
+
+00:03:19.845 --> 00:03:20.987
+pas de Docker,
+
+00:03:20.987 --> 00:03:21.748
+zéro container.
+
+00:03:21.748 --> 00:03:23.271
+Rien ne tourne ici.
+
+00:03:23.271 --> 00:03:24.413
+L'image reste intentionnellement,
+
+00:03:24.413 --> 00:03:27.077
+comme base pour le prochain transfert delta.
+
+00:03:30.077 --> 00:03:31.859
+Arrêtée et démontée.
+
+00:03:31.859 --> 00:03:34.828
+L'image restante est une base
+
+00:03:34.828 --> 00:03:35.422
+delta,
+
+00:03:35.422 --> 00:03:38.391
+pas une application en cours
+
+00:03:38.391 --> 00:03:38.985
+d'exécution.
+
+00:03:42.304 --> 00:03:43.997
+Voici le moment clé.
+
+00:03:43.997 --> 00:03:45.691
+Le compteur affiche dix-sept,
+
+00:03:45.691 --> 00:03:46.114
+dix-huit,
+
+00:03:46.114 --> 00:03:46.537
+dix-neuf,
+
+00:03:46.537 --> 00:03:47.807
+il monte toujours.
+
+00:03:47.807 --> 00:03:50.347
+Il a repris exactement là où
+
+00:03:50.347 --> 00:03:52.040
+le checkpoint l'avait figé,
+
+00:03:52.040 --> 00:03:54.580
+au lieu de repartir à un.
+
+00:03:54.580 --> 00:03:57.120
+Le processus n'a jamais remarqué qu'il
+
+00:03:57.120 --> 00:03:58.813
+avait changé de machine.
+
+00:04:01.313 --> 00:04:04.146
+Le compteur a continué de compter.
+
+00:04:04.146 --> 00:04:06.978
+La mémoire de processus a fait
+
+00:04:06.978 --> 00:04:07.922
+le voyage.
+
+00:04:08.731 --> 00:04:11.425
+Le compteur n'a jamais été réinitialisé.
+
+00:04:11.425 --> 00:04:12.323
+La mémoire,
+
+00:04:12.323 --> 00:04:14.119
+la base de données,
+
+00:04:14.119 --> 00:04:15.017
+les fichiers,
+
+00:04:15.017 --> 00:04:17.711
+tout a simplement changé de machine.
+
+00:04:17.711 --> 00:04:18.160
+Ensuite,
+
+00:04:18.160 --> 00:04:20.853
+nous verrons pourquoi le deuxième transfert
+
+00:04:20.853 --> 00:04:23.098
+est toujours le plus rapide.

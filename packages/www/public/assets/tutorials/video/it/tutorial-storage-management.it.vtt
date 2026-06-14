@@ -1,0 +1,220 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.343
+Benvenuto all'ultimo tutorial!
+
+00:00:02.343 --> 00:00:05.029
+Assicuriamoci che il disco non si
+
+00:00:05.029 --> 00:00:06.373
+esaurisca mai più.
+
+00:00:06.373 --> 00:00:09.059
+Faremo crescere un repository completo online,
+
+00:00:09.059 --> 00:00:11.745
+restituiremo al pool lo spazio eliminato
+
+00:00:11.745 --> 00:00:14.431
+e poi insegneremo alla macchina a
+
+00:00:14.431 --> 00:00:17.118
+fare entrambe le cose in automatico.
+
+00:00:17.891 --> 00:00:19.112
+Ecco il modello.
+
+00:00:19.112 --> 00:00:21.960
+Ogni repository è un file in un
+
+00:00:21.960 --> 00:00:23.995
+unico pool di datastore condiviso.
+
+00:00:23.995 --> 00:00:26.843
+I repository possono crescere online mentre i
+
+00:00:26.843 --> 00:00:28.471
+container continuano a girare.
+
+00:00:28.471 --> 00:00:31.319
+Ma eliminare dati all'interno di un repo
+
+00:00:31.319 --> 00:00:33.353
+non libera nulla da solo.
+
+00:00:33.353 --> 00:00:36.202
+Trim è ciò che restituisce i blocchi
+
+00:00:36.202 --> 00:00:37.016
+al pool.
+
+00:00:37.016 --> 00:00:39.050
+E una policy automatizza entrambi.
+
+00:00:42.321 --> 00:00:45.125
+Fill the repository most of the way and check:
+
+00:00:45.125 --> 00:00:46.683
+the filesystem is getting tight.
+
+00:00:53.095 --> 00:00:53.931
+Quasi pieno.
+
+00:00:53.931 --> 00:00:55.603
+È ora di crescere.
+
+00:00:58.878 --> 00:01:00.179
+Grow it online.
+
+00:01:00.179 --> 00:01:02.781
+The encrypted container and the filesystem
+
+00:01:02.781 --> 00:01:05.382
+expand while the containers keep running
+
+00:01:05.382 --> 00:01:06.683
+— zero downtime,
+
+00:01:06.683 --> 00:01:07.551
+zero unmount.
+
+00:01:10.551 --> 00:01:11.872
+Quattro gigabyte ora.
+
+00:01:11.872 --> 00:01:13.633
+Niente è stato riavviato.
+
+00:01:16.911 --> 00:01:18.273
+Verify from inside:
+
+00:01:18.273 --> 00:01:19.181
+same volume,
+
+00:01:19.181 --> 00:01:20.542
+double the room.
+
+00:01:24.841 --> 00:01:26.800
+L'app non se n'è mai accorta.
+
+00:01:30.078 --> 00:01:31.386
+Now the other direction.
+
+00:01:31.386 --> 00:01:33.676
+Delete the big file — but watch:
+
+00:01:33.676 --> 00:01:36.292
+the pool does not get the space back
+
+00:01:36.292 --> 00:01:36.619
+yet.
+
+00:01:36.619 --> 00:01:38.908
+Deleted blocks stay reserved inside the image.
+
+00:01:40.658 --> 00:01:42.957
+Liberato all'interno del repo,
+
+00:01:42.957 --> 00:01:45.255
+ancora di proprietà dell'immagine.
+
+00:01:48.558 --> 00:01:51.140
+Trim hands those blocks back to the datastore
+
+00:01:51.140 --> 00:01:51.463
+pool,
+
+00:01:51.463 --> 00:01:51.785
+online.
+
+00:01:51.785 --> 00:01:54.044
+This is the step most setups forget.
+
+00:01:57.443 --> 00:01:57.895
+Recuperato.
+
+00:01:57.895 --> 00:02:00.604
+Il pool può respirare di nuovo.
+
+00:02:03.882 --> 00:02:06.053
+Now stop doing this by hand.
+
+00:02:06.053 --> 00:02:08.586
+The policy enables automatic growth up to
+
+00:02:08.586 --> 00:02:10.033
+a ceiling you choose,
+
+00:02:10.033 --> 00:02:11.118
+plus scheduled trims.
+
+00:02:17.699 --> 00:02:18.506
+Policy salvata.
+
+00:02:18.506 --> 00:02:21.330
+La macchina prende il controllo da qui.
+
+00:02:24.627 --> 00:02:25.688
+Read it back:
+
+00:02:25.688 --> 00:02:26.396
+auto-grow on,
+
+00:02:26.396 --> 00:02:27.810
+ceiling at eight gigabytes,
+
+00:02:27.810 --> 00:02:29.225
+trim on a schedule.
+
+00:02:33.764 --> 00:02:35.345
+Impostato una volta,
+
+00:02:35.345 --> 00:02:36.925
+dimenticato in sicurezza.
+
+00:02:40.218 --> 00:02:43.067
+And the view that ties it
+
+00:02:43.067 --> 00:02:43.542
+together:
+
+00:02:43.542 --> 00:02:46.390
+storage health shows every repo's usage,
+
+00:02:46.390 --> 00:02:47.340
+the pool,
+
+00:02:47.340 --> 00:02:50.188
+and how much copy-on-write sharing is
+
+00:02:50.188 --> 00:02:51.138
+saving you.
+
+00:02:51.138 --> 00:02:52.670
+Una sola vista:
+
+00:02:52.670 --> 00:02:53.181
+utilizzo,
+
+00:02:53.181 --> 00:02:55.735
+risparmio e spazio per crescere.
+
+00:02:56.515 --> 00:02:59.192
+E con questo la serie è
+
+00:02:59.192 --> 00:02:59.639
+conclusa!
+
+00:02:59.639 --> 00:03:00.531
+Diciotto tutorial,
+
+00:03:00.531 --> 00:03:02.762
+dall'installazione allo storage in autopilota.
+
+00:03:02.762 --> 00:03:05.439
+I tuoi server sono di nuovo
+
+00:03:05.439 --> 00:03:05.885
+tuoi.
+
+00:03:05.885 --> 00:03:07.670
+Grazie per aver guardato!

@@ -222,32 +222,35 @@ Todo en verde significa que tu
 00:02:24.656 --> 00:02:26.558
 CLI local está saludable.
 
-00:02:27.339 --> 00:02:30.437
-¡Y con eso cerramos la
-
-00:02:30.437 --> 00:02:31.057
-serie!
-
-00:02:31.057 --> 00:02:32.916
+00:02:27.339 --> 00:02:29.171
 Ya puedes instalar,
 
-00:02:32.916 --> 00:02:33.535
+00:02:29.171 --> 00:02:29.782
 configurar,
 
-00:02:33.535 --> 00:02:34.155
+00:02:29.782 --> 00:02:30.393
 desplegar,
 
-00:02:34.155 --> 00:02:35.394
+00:02:30.393 --> 00:02:31.614
 hacer fork,
 
-00:02:35.394 --> 00:02:37.253
-salir a producción,
+00:02:31.614 --> 00:02:32.225
+publicar,
 
-00:02:37.253 --> 00:02:38.492
-arrancar automáticamente,
+00:02:32.225 --> 00:02:34.057
+activar el autostart,
 
-00:02:38.492 --> 00:02:40.351
-respaldar y monitorear,
+00:02:34.057 --> 00:02:35.889
+respaldar y monitorizar.
 
-00:02:40.351 --> 00:02:42.830
-todo desde tu terminal.
+00:02:35.889 --> 00:02:38.943
+A continuación empieza el nivel
+
+00:02:38.943 --> 00:02:39.554
+avanzado:
+
+00:02:39.554 --> 00:02:42.607
+versiona tus repos como código,
+
+00:02:42.607 --> 00:02:45.050
+con commits y rollbacks.

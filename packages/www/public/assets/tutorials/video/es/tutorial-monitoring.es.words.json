@@ -753,91 +753,100 @@
     },
     {
       "start": 147.339,
-      "end": 150.437,
-      "text": "¡Y con eso cerramos la",
-      "words": [
-        { "start": 147.339, "end": 147.959, "char": [0, 2] },
-        { "start": 147.959, "end": 148.578, "char": [3, 6] },
-        { "start": 148.578, "end": 149.198, "char": [7, 10] },
-        { "start": 149.198, "end": 149.818, "char": [11, 19] },
-        { "start": 149.818, "end": 150.437, "char": [20, 22] }
-      ]
-    },
-    {
-      "start": 150.437,
-      "end": 151.057,
-      "text": "serie!",
-      "words": [{ "start": 150.437, "end": 151.057, "char": [0, 6] }]
-    },
-    {
-      "start": 151.057,
-      "end": 152.916,
+      "end": 149.171,
       "text": "Ya puedes instalar,",
       "words": [
-        { "start": 151.057, "end": 151.676, "char": [0, 2] },
-        { "start": 151.676, "end": 152.296, "char": [3, 9] },
-        { "start": 152.296, "end": 152.916, "char": [10, 19] }
+        { "start": 147.339, "end": 147.95, "char": [0, 2] },
+        { "start": 147.95, "end": 148.56, "char": [3, 9] },
+        { "start": 148.56, "end": 149.171, "char": [10, 19] }
       ]
     },
     {
-      "start": 152.916,
-      "end": 153.535,
+      "start": 149.171,
+      "end": 149.782,
       "text": "configurar,",
-      "words": [{ "start": 152.916, "end": 153.535, "char": [0, 11] }]
+      "words": [{ "start": 149.171, "end": 149.782, "char": [0, 11] }]
     },
     {
-      "start": 153.535,
-      "end": 154.155,
+      "start": 149.782,
+      "end": 150.393,
       "text": "desplegar,",
-      "words": [{ "start": 153.535, "end": 154.155, "char": [0, 10] }]
+      "words": [{ "start": 149.782, "end": 150.393, "char": [0, 10] }]
     },
     {
-      "start": 154.155,
-      "end": 155.394,
+      "start": 150.393,
+      "end": 151.614,
       "text": "hacer fork,",
       "words": [
-        { "start": 154.155, "end": 154.775, "char": [0, 5] },
-        { "start": 154.775, "end": 155.394, "char": [6, 11] }
+        { "start": 150.393, "end": 151.003, "char": [0, 5] },
+        { "start": 151.003, "end": 151.614, "char": [6, 11] }
       ]
     },
     {
-      "start": 155.394,
-      "end": 157.253,
-      "text": "salir a producción,",
+      "start": 151.614,
+      "end": 152.225,
+      "text": "publicar,",
+      "words": [{ "start": 151.614, "end": 152.225, "char": [0, 9] }]
+    },
+    {
+      "start": 152.225,
+      "end": 154.057,
+      "text": "activar el autostart,",
       "words": [
-        { "start": 155.394, "end": 156.014, "char": [0, 5] },
-        { "start": 156.014, "end": 156.633, "char": [6, 7] },
-        { "start": 156.633, "end": 157.253, "char": [8, 19] }
+        { "start": 152.225, "end": 152.836, "char": [0, 7] },
+        { "start": 152.836, "end": 153.446, "char": [8, 10] },
+        { "start": 153.446, "end": 154.057, "char": [11, 21] }
       ]
     },
     {
-      "start": 157.253,
-      "end": 158.492,
-      "text": "arrancar automáticamente,",
+      "start": 154.057,
+      "end": 155.889,
+      "text": "respaldar y monitorizar.",
       "words": [
-        { "start": 157.253, "end": 157.873, "char": [0, 8] },
-        { "start": 157.873, "end": 158.492, "char": [9, 25] }
+        { "start": 154.057, "end": 154.668, "char": [0, 9] },
+        { "start": 154.668, "end": 155.278, "char": [10, 11] },
+        { "start": 155.278, "end": 155.889, "char": [12, 24] }
       ]
     },
     {
-      "start": 158.492,
-      "end": 160.351,
-      "text": "respaldar y monitorear,",
+      "start": 155.889,
+      "end": 158.943,
+      "text": "A continuación empieza el nivel",
       "words": [
-        { "start": 158.492, "end": 159.112, "char": [0, 9] },
-        { "start": 159.112, "end": 159.732, "char": [10, 11] },
-        { "start": 159.732, "end": 160.351, "char": [12, 23] }
+        { "start": 155.889, "end": 156.5, "char": [0, 1] },
+        { "start": 156.5, "end": 157.111, "char": [2, 14] },
+        { "start": 157.111, "end": 157.721, "char": [15, 22] },
+        { "start": 157.721, "end": 158.332, "char": [23, 25] },
+        { "start": 158.332, "end": 158.943, "char": [26, 31] }
       ]
     },
     {
-      "start": 160.351,
-      "end": 162.83,
-      "text": "todo desde tu terminal.",
+      "start": 158.943,
+      "end": 159.554,
+      "text": "avanzado:",
+      "words": [{ "start": 158.943, "end": 159.554, "char": [0, 9] }]
+    },
+    {
+      "start": 159.554,
+      "end": 162.607,
+      "text": "versiona tus repos como código,",
       "words": [
-        { "start": 160.351, "end": 160.971, "char": [0, 4] },
-        { "start": 160.971, "end": 161.59, "char": [5, 10] },
-        { "start": 161.59, "end": 162.21, "char": [11, 13] },
-        { "start": 162.21, "end": 162.83, "char": [14, 23] }
+        { "start": 159.554, "end": 160.164, "char": [0, 8] },
+        { "start": 160.164, "end": 160.775, "char": [9, 12] },
+        { "start": 160.775, "end": 161.386, "char": [13, 18] },
+        { "start": 161.386, "end": 161.996, "char": [19, 23] },
+        { "start": 161.996, "end": 162.607, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 162.607,
+      "end": 165.05,
+      "text": "con commits y rollbacks.",
+      "words": [
+        { "start": 162.607, "end": 163.218, "char": [0, 3] },
+        { "start": 163.218, "end": 163.829, "char": [4, 11] },
+        { "start": 163.829, "end": 164.439, "char": [12, 13] },
+        { "start": 164.439, "end": 165.05, "char": [14, 24] }
       ]
     }
   ]

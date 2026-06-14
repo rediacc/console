@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "3658e87143f044012a09fe02f708807d36841ddec71dd46f5f8c1e851ed812eb",
+  "transcriptHash": "9e61cd441cfa368211e41820590482bc0d73c38670d6d37be5c158cb9cc8c62d",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.411841,
-      "replayEndSec": 8.597185,
+      "replayStartSec": 2.416158,
+      "replayEndSec": 8.503611,
       "narrationText": "まずシステムビューから始めます。system フィルターを付けたマシンクエリコマンドは、稼働時間、ディスク使用量、ストレージの状態を表示します。問題があればレポートで教えてくれます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-01.2de47c9a.mp3",
       "textHash": "2de47c9ac47a7d1f59561168796d0c1531f12f93a22886b1c837a8fce1bedb62",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.597185,
-      "replayEndSec": 15.126152,
+      "replayStartSec": 8.503611,
+      "replayEndSec": 14.799411,
       "narrationText": "次にコンテナです。このビューにはマシン上のすべてのリポジトリで動いているすべてのコンテナが表示されます。名前、状態、ヘルス、CPU、メモリ、そしてどのリポジトリが所有しているかが確認できます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-02.5f35ca9d.mp3",
       "textHash": "5f35ca9dbd200e20d2ec35340018c8aae183ebb3c78ba25ec06a4804a78c3a76",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 15.126152,
-      "replayEndSec": 24.385141,
+      "replayStartSec": 14.799411,
+      "replayEndSec": 21.195367,
       "narrationText": "そしてリポジトリ自体です。サイズ、マウント状態、Docker デーモンの状態、ディスク使用量。マシン上の各分離環境について知りたいことがすべてわかります。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-03.78c9a326.mp3",
       "textHash": "78c9a32660ce5b0fc7a3fccde29a336a6f183e171f7ebb7261b078680c936ea5",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 24.385141,
-      "replayEndSec": 32.334422,
+      "replayStartSec": 21.195367,
+      "replayEndSec": 26.969407,
       "narrationText": "マシンクエリコマンドはすべてを一度に表示します。システム情報、コンテナ、リポジトリがすべてまとめて確認できます。一度実行するだけで全体像を把握できます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-04.5cf01510.mp3",
       "textHash": "5cf015105872903f80ac20dcc98d8edb1cd9b4a9f2ee0e53b5a34f2836d19e08",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 32.334422,
-      "replayEndSec": 38.502093,
+      "replayStartSec": 26.969407,
+      "replayEndSec": 29.019779,
       "narrationText": "最後に、ラップトップのローカル動作確認として診断チェックを実行します。Node、SSH キー、renet、Docker など、CLI 自体が依存するすべてを確認します。これでシリーズ全体が完了です。インストールからモニタリングまで、すべてターミナルから行えます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/tutorial-monitoring-05.1ca0994b.mp3",
       "textHash": "1ca0994b8b276f91944f5100a2ac2c62437abb2be52a37805202df0304a4853b",
@@ -92,10 +92,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "383ad674fd94a25655a19642b57579e20c05941728e8c6c214f6f6938da2c845",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/next-tutorial.383ad674.mp3",
-      "narrationText": "これでシリーズは完結です。インストール、設定、デプロイ、フォーク、本番投入、オートスタート、バックアップ、モニタリングまで、すべてターミナルから行えるようになりました！",
-      "audioDurationSec": 13.165714
+      "textHash": "dffbc6ac94012eb60379544bfb5c74af2a3c7cce43ad2825bce703ff15f107fd",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-monitoring/next-tutorial.dffbc6ac.mp3",
+      "narrationText": "インストール、設定、デプロイ、fork、公開、autostart、バックアップ、そしてモニタリングができるようになりました。次はいよいよ上級コースです。commits と rollbacks を使って、コードのように repos をバージョン管理していきます。",
+      "audioDurationSec": 18.520816
     }
   ]
 }

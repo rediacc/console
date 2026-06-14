@@ -1305,6 +1305,8 @@
           "completed": "自動開始リストを取得しました",
           "description": "自動開始が有効なリポジトリを一覧表示する",
           "failed": "自動開始リポジトリの一覧取得に失敗しました",
+          "empty": "\"{{machine}}\" に自動起動が有効なリポジトリはありません",
+          "service": "自動起動サービス: インストール済み={{installed}}、有効={{enabled}}",
           "starting": "\"{{machine}}\" 上の自動開始リポジトリを一覧取得中..."
         }
       },
@@ -1432,10 +1434,10 @@
         "starting": "\"{{machine}}\" で \"{{repository}}\" を {{size}} に拡張中..."
       },
       "trim": {
-        "description": "マウント済みリポジトリからデータストアプールの空き領域を回収します（オンライン、停止なし）。リポジトリ内で削除されたブロックは fstrim でプールに返されます。--name を省略すると、マウント済みのすべてのリポジトリとデータストア自体をトリムします。バックアップ実行中のリポジトリはスキップされます",
+        "description": "マウント済みリポジトリからデータストアプールの空き領域を回収します（オンライン、停止なし）。リポジトリ内で削除されたブロックは fstrim でプールに返されます。--name を省略すると、マウント済みのすべてのリポジトリとデータストア自体をトリムします。バックアップ実行中のリポジトリでは fstrim はスキップされますが、--docker の回収は引き続き実行されます",
         "descriptionShort": "リポジトリの空き領域をプールへ返却する",
         "nameOption": "トリムするリポジトリ（デフォルト: マウント済みのすべて）",
-        "dockerOption": "先に Docker の領域を回収（停止中コンテナ、宙吊りイメージ、ビルドキャッシュ）",
+        "dockerOption": "Docker の領域を回収（停止中コンテナ、宙吊りイメージ、ビルドキャッシュ）。バックアップのスナップショットが有効な間も実行されます",
         "dockerVolumesOption": "未使用の Docker ボリュームも削除する",
         "reportOnlyOption": "トリムせずに discard 状態と回収可能量の見積もりを表示する",
         "repoNotFound": "リポジトリが見つかりません: {{name}}",
@@ -1535,6 +1537,7 @@
         "checkpointing": "CRIUチェックポイントを作成中...",
         "complete": "移行完了: {{name}} を {{from}} から {{to}} に移動しました",
         "deltaDone": "差分同期完了",
+        "phase2Stats": "カットオーバー（ダウンタイム）: {{duration}} で {{transferred}}",
         "deltaFailed": "差分同期に失敗しました",
         "deltaSync": "差分を同期中...",
         "description": "最小限のダウンタイムでリポジトリを別のマシンにライブマイグレーション。2フェーズrsync: 実行中にバルク転送、その後短時間停止して差分同期。CRIUチェックポイントによるプロセスメモリ移行とターゲットマシンの自動プロビジョニングに対応",
@@ -1551,6 +1554,7 @@
         "optionTo": "移行先マシン名",
         "phase1": "フェーズ1: バルクデータを転送中（ソースは実行中）...",
         "phase1Done": "バルク転送完了",
+        "phase1Stats": "{{duration}} で {{transferred}} を転送（ソースは稼働したまま）",
         "phase1Failed": "バルク転送に失敗しました",
         "phase2": "フェーズ2: 切り替え（短時間のダウンタイム）...",
         "phase3": "フェーズ3: ターゲットで起動中...",
@@ -1612,6 +1616,10 @@
         "optionForce": "既存のバックアップを強制的に上書きする",
         "optionProvision": "ターゲットマシンが存在しない場合、クラウドプロバイダー経由で自動プロビジョニング",
         "optionStrategy": "差分ベース使用時のブロック差分戦略: auto、physical、または shared",
+        "optionJson": "転送統計を JSON で出力",
+        "statsDelta": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（ベース {{base}} とのデルタ、イメージ {{image}}）",
+        "statsFull": "\"{{repo}}\" を {{machine}} にプッシュしました: {{duration}} で {{transferred}} を転送（フル転送）",
+        "statsNoBytes": "\"{{repo}}\" を {{machine}} にプッシュしました: 所要時間 {{duration}}",
         "optionTag": "バージョニング用デプロイタグ",
         "optionTo": "宛先マシンまたはストレージ名（設定から自動検出）",
         "optionUp": "プッシュ後、ターゲットマシンにリポジトリをマウントしてデプロイする",
@@ -1726,7 +1734,10 @@
         "noContainers": "リポジトリ \"{{repository}}\" に実行中のコンテナが見つかりません",
         "noPorts": "コンテナ \"{{container}}\" に公開ポートが見つかりません。--port を指定してください",
         "noServiceIP": "コンテナ \"{{container}}\" にサービスIPが割り当てられていません",
-        "portOption": "転送するリモートコンテナポート"
+        "portOption": "転送するリモートコンテナポート",
+        "portInUse": "ローカルポート {{port}} はすでに使用中です。--local で別のポートを指定してください",
+        "notReady": "localhost:{{localPort}} でトンネルが 15 秒以内に準備できませんでした",
+        "urlOnlyOption": "トンネルが準備できたらローカル URL のみを表示する（スクリプト向け）"
       },
       "unmount": {
         "checkpointOption": "アンマウント前にチェックポイントを作成する",
@@ -2212,6 +2223,13 @@
         "settingsWarning": "警告: VS Code 設定を設定できませんでした: {{error}}",
         "settingUpEnv": "リモート環境をセットアップ中です...",
         "success": "VS Code が正常に起動されました。",
+        "installingServer": "{{provider}} {{version}} をマシンにインストールしています...",
+        "startingServer": "リポジトリサンドボックス内で {{provider}} を起動しています...",
+        "serverReused": "起動中のサーバーを再利用します",
+        "tunnelReady": "localhost:{{port}} でトンネルが準備できました",
+        "browserUrl": "ブラウザで VS Code を開く: {{url}}",
+        "passwordNote": "ログインパスワード: {{password}}",
+        "openingBrowser": "ブラウザを開いています...",
         "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です..."
       },
       "description": "マシンまたはリポジトリへの VS Code Remote SSH を開く",
@@ -2223,6 +2241,19 @@
         "keyPersisted": " (キー永続化済み)",
         "noConnections": "VS Code SSH 接続が設定されていません。",
         "total": "\n合計: {{count}} 個の接続"
+      },
+      "serve": {
+        "description": "サンドボックス内のブラウザ VS Code サーバーを管理する",
+        "status": {
+          "description": "ブラウザ VS Code サーバーが起動しているか確認する",
+          "running": "{{provider}} 起動中 (pid {{pid}}、ポート {{port}})",
+          "stopped": "{{provider}} は起動していません"
+        },
+        "stop": {
+          "description": "ブラウザ VS Code サーバーを停止する",
+          "stopped": "{{provider}} を停止しました",
+          "notRunning": "{{provider}} は起動していませんでした"
+        }
       }
     }
   },
@@ -2555,7 +2586,11 @@
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",
-      "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。"
+      "notFound": "VS Code が見つかりません。\n\nhttps://code.visualstudio.com/ からインストールしてください\nまたは REDIACC_VSCODE_PATH 環境変数を設定してください。",
+      "browserNeedsRepo": "vscode --browser はリポジトリサンドボックスを提供します — --repository <name> を指定してください",
+      "unsupportedArch": "ブラウザ VS Code はこのマシンアーキテクチャに対応していません: {{arch}}",
+      "serverInstallFailed": "{{provider}} のインストールに失敗しました: {{error}}",
+      "serverStartFailed": "{{provider}} の起動に失敗しました: {{error}}"
     }
   },
   "help": {
@@ -2676,6 +2711,10 @@
     "opsParallel": "VM を並列で作成",
     "opsSkipOrchestration": "クラスターオーケストレーションをスキップ",
     "opsSSHUser": "VM 接続用の SSH ユーザー名",
+    "vscodeBrowser": "リポジトリサンドボックスからブラウザ VS Code を提供する（ローカルの VS Code 不要）",
+    "vscodeNoOpen": "ローカルブラウザを起動せずに URL のみを表示する",
+    "vscodeServerProvider": "ブラウザ VS Code サーバー実装 (openvscode, code-server)",
+    "vscodeServerArchive": "マシン上に事前配置されたサーバー tarball のパス（エアギャップインストール用）",
     "organization": "組織名",
     "output": "出力形式 (table|json|yaml|csv)。REDIACC_DEFAULT_OUTPUT でデフォルトを上書きします。",
     "outputFormat": "出力形式 (json)",

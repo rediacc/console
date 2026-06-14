@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "97d763f5a51210ae7d4a379fd6e4d3b4b7412a43f335a19924ce0e6690300263",
+  "transcriptHash": "26ba8be08a800fec9f44261730e2496a331a9a82040094b2b31befb7d068af51",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.409686,
-      "replayEndSec": 11.760396,
+      "replayStartSec": 2.412347,
+      "replayEndSec": 11.676359,
       "narrationText": "서버에 2기가바이트 크기의 암호화된 저장소를 생성합니다. 저장소는 저장 시 단일 암호화 파일로 존재합니다. 마운트되면 전용 Docker 데몬과 애플리케이션 데이터를 갖춘 폴더가 되며, 서버의 다른 환경과 완전히 격리됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-create-repo/tutorial-create-repo-01.9783b867.mp3",
       "textHash": "9783b86720e7e57d91edb5aa0e470f8c263926f44a834fa0f0c22ba0e27aec7f",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 11.760396,
-      "replayEndSec": 17.238181,
+      "replayStartSec": 11.676359,
+      "replayEndSec": 17.041073,
       "narrationText": "새 저장소가 등록되었는지 확인합니다. 이제 이 저장소는 노트북에서 VS Code로 열거나, 배포하거나, 포크하거나, 백업할 수 있습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-create-repo/tutorial-create-repo-02.a5798625.mp3",
       "textHash": "a579862514b69d44501280789b135bd318eb828435e16688847708cc8c387dd3",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 17.238181,
-      "replayEndSec": 21.33289,
+      "replayStartSec": 17.041073,
+      "replayEndSec": 20.377596,
       "narrationText": "유용한 옵션 하나: 이 명령으로 repo를 VS Code에서 바로 열 수 있습니다. 여기서 편집기를 실행하지는 않겠지만, SSH를 통해 repo로의 원격 세션을 시작해 파일을 편집할 수 있습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-create-repo/tutorial-create-repo-03.e9e00448.mp3",
       "textHash": "e9e00448a06544446f94ac07567690e34fdcf00a8c76d4228669d3c680502abb",

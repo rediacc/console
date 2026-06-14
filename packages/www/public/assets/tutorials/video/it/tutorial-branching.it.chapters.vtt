@@ -1,0 +1,52 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:19.168
+Branching: Commit e Rollback
+
+00:00:19.168 --> 00:00:40.378
+Commit, branch, checkout
+
+00:00:40.378 --> 00:00:55.083
+Passo 1: Versione uno
+
+00:00:55.083 --> 00:01:15.050
+Passo 2: Fai il commit
+
+00:01:15.050 --> 00:01:39.292
+Passo 3: Assegnagli un nome con un branch
+
+00:01:39.292 --> 00:01:51.387
+Passo 4: Continua a lavorare, versione due
+
+00:01:51.387 --> 00:02:07.764
+Passo 5: Commit di nuovo
+
+00:02:07.764 --> 00:02:25.207
+Passo 6: La cronologia
+
+00:02:25.207 --> 00:02:47.661
+Passo 7: Fai il checkout del branch
+
+00:02:47.661 --> 00:03:08.279
+Passo 8: Avvia il rollback
+
+00:03:08.279 --> 00:03:26.645
+Passo 9: Prova, versione uno
+
+00:03:26.645 --> 00:03:48.312
+Passo 10: Fai il checkout del branch
+
+00:03:48.312 --> 00:04:06.709
+Passo 11: Avvia il rollback
+
+00:04:06.709 --> 00:04:24.341
+Passo 12: Prova: versione uno
+
+00:04:24.341 --> 00:04:43.753
+Passo 13: I dati sono tornati
+
+00:04:43.453 --> 00:04:59.420
+Entrambe le versioni, affiancate
+
+00:04:59.120 --> 00:05:13.600
+Prossimo: Live Migration

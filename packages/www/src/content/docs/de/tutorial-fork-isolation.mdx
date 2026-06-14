@@ -1,0 +1,52 @@
+---
+title: "Fork-Isolation in der Praxis"
+description: "Forken Sie eine live laufende PostgreSQL + pgAdmin-App und bearbeiten Sie sie parallel zum Original - der visuelle Beweis, dass Forks unabhängig sind."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: de
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Fork-Isolation in der Praxis
+
+Das [Forking-Tutorial](/de/docs/tutorial-forking) hat die Befehle gezeigt. Dieses hier zeigt, was sie bedeuten: eine live laufende Datenbank-App, in Sekunden kopiert, im Browser frei bearbeitbar - während das Original nichts davon bemerkt.
+
+## Tutorial ansehen
+
+![Tutorial: Fork-Isolation in der Praxis](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## Die Ausgangslage
+
+![Eine live Datenbank und ihr Zwilling](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+Ein echtes PostgreSQL mit pgAdmin-Oberfläche, live auf dem Server. Ein Fork ist ein sofortiger Copy-on-Write-Zwilling davon - gleiche Daten bei der Geburt, vollständig getrennte Leben danach.
+
+## Schritt 1: Die live App
+
+<TutorialStep number={1} />
+
+## Schritt 2: Forken
+
+<TutorialStep number={2} />
+
+Das Video öffnet beide pgAdmins im Browser. Das Original fordert einen Login - die Produktion bleibt geschützt. Der Fork öffnet direkt die Workbench: Forks sind wegwerfbare Sandboxen, daher tritt die Zugangskontrolle beiseite (das Repo entscheidet dies selbst, je nachdem ob es ein Fork ist).
+
+## Schritt 3: Zwei Welten, ein Server
+
+<TutorialStep number={3} />
+
+Im Fork beliebig bearbeiten, löschen, kaputt machen - das Original läuft weiter. Gleiche Tabellen im Moment des Forkens, dauerhaft unabhängig danach.
+
+## Schritt 4: Wegwerfen
+
+<TutorialStep number={4} />
+
+Sekunden zum Erstellen, Sekunden zum Verwerfen. Das ist es, was "Produktion klonen, nichts kaputt machen" zur täglichen Gewohnheit statt zu einem besonderen Ereignis macht.
+
+---
+
+Weiter: [Secrets verwalten](/de/docs/tutorial-managing-secrets).

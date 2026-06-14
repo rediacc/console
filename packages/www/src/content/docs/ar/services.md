@@ -5,8 +5,8 @@ description: >-
 category: Guides
 order: 5
 language: ar
-sourceHash: "aa77a4f937206e58"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "011bc5d87114f105"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # الخدمات
@@ -76,6 +76,25 @@ down() {
 ```
 
 > **مهم:** استخدم دائماً `renet compose --` بدلاً من `docker compose`. غلاف `renet compose` يفرض شبكة المضيف وتخصيص عناوين IP وتسميات اكتشاف الخدمات المطلوبة بواسطة renet-proxy. تُضاف قدرات CRIU checkpoint/restore للحاويات التي تحمل تسمية `rediacc.checkpoint=true`. يتم رفض الاستخدام المباشر لـ `docker compose` بواسطة التحقق من صحة Rediaccfile. راجع [الشبكات](/ar/docs/networking) للتفاصيل.
+
+### تسميات الصلاحيات
+
+تعمل الحاويات بحد أدنى من صلاحيات Linux افتراضياً. تنضم الخدمة إلى صلاحيات إضافية بإضافة تسمية في `docker-compose.yml` الخاص بها:
+
+| التسمية | تمنح | تُستخدم لـ |
+|---------|--------|---------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`، `SYS_PTRACE`، `NET_ADMIN` | نقطة تفتيش/استعادة CRIU (الترحيل المباشر، الحفظ والاستئناف) |
+| `rediacc.wireguard=true` | `NET_ADMIN` بالإضافة إلى جهاز `/dev/net/tun` | تشغيل عميل WireGuard داخل الحاوية |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+تتيح `rediacc.wireguard` للخدمة إنشاء نفق WireGuard، لتوجيه عملية واحدة مثلاً عبر نقطة نهاية بعيدة. بما أن كل خدمة تعمل بشبكة المضيف، احصر النفق في نطاق شبكة داخل الحاوية حتى لا يُغير توجيه المضيف. خيارات الامتياز الواسعة كـ `privileged: true` و`pid: host` و`ipc: host` تبقى مرفوضة بالتحقق بصرف النظر عن التسميات.
 
 ### تخطيط متعدد الخدمات
 

@@ -10,13 +10,13 @@
     "cast-step-1": "Step 2: Enable autostart",
     "cast-step-2": "Step 3: List autostart-enabled repos",
     "cast-step-3": "Step 4: Stop from your laptop",
-    "outro": "Next: Backup and Restore"
+    "outro": "Next: Monitoring"
   },
   "events": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.418632,
+      "at": 2.555418,
       "text": "Time to start the app in production mode from the laptop. The deploy command calls the same up function we used during development, but it runs detached. Close your laptop and the app keeps going.",
       "afterText": "App running in production. Same command, same result, on the real server.",
       "cardLabel": "Start Prod",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 9.548589,
+      "at": 11.051619,
       "text": "Now enable autostart so the app survives a server reboot. From here on, if the server restarts, this repo comes back automatically.",
       "afterText": "Autostart on. The app survives reboots.",
       "cardLabel": "Enable Autostart",
@@ -34,7 +34,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 17.034078,
+      "at": 18.718543,
       "text": "Let us list which repositories have autostart enabled. Confirms our app is in the boot list.",
       "afterText": "There it is, in the boot list.",
       "cardLabel": "List Autostart",
@@ -43,7 +43,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 22.929505,
+      "at": 25.169818,
       "text": "And to stop the app, one command from the laptop. One command up, one command down. All from your terminal.",
       "afterText": "Stopped. One command up, one command down.",
       "cardLabel": "Stop Repo",
@@ -53,11 +53,11 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Alright! Let's take your app from development to production. Three short steps, all driven from your laptop."
+      "text": "Your app runs while you're connected. Production means it runs when you're gone. Three short steps, all from your laptop."
     },
     {
       "id": "dev-vs-prod",
-      "text": "During development you run the app from inside the repo, so it stops when you disconnect. In production you launch it from your laptop with the CLI, and it keeps running detached."
+      "text": "Here's the difference. In development you start the app from inside the repo over SSH. Close the session, and the app dies with it. In production you launch it detached from your laptop: the server owns the process, your connection doesn't."
     },
     {
       "id": "next-tutorial",

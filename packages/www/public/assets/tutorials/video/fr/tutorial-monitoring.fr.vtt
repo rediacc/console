@@ -204,35 +204,41 @@ Tout au vert signifie que votre CLI locale
 00:02:04.362 --> 00:02:05.764
 est en bonne santé.
 
-00:02:06.532 --> 00:02:09.160
-Et voilà la série
+00:02:06.532 --> 00:02:08.989
+Vous savez maintenant installer,
 
-00:02:09.160 --> 00:02:09.817
-bouclée.
-
-00:02:09.817 --> 00:02:12.446
-Vous pouvez désormais installer,
-
-00:02:12.446 --> 00:02:13.103
+00:02:08.989 --> 00:02:09.603
 configurer,
 
-00:02:13.103 --> 00:02:13.760
+00:02:09.603 --> 00:02:10.218
 déployer,
 
-00:02:13.760 --> 00:02:14.417
+00:02:10.218 --> 00:02:10.832
 forker,
 
-00:02:14.417 --> 00:02:16.388
-mettre en ligne,
+00:02:10.832 --> 00:02:12.675
+passer en production,
 
-00:02:16.388 --> 00:02:17.702
+00:02:12.675 --> 00:02:13.903
 démarrer automatiquement,
 
-00:02:17.702 --> 00:02:19.674
-sauvegarder et surveiller,
+00:02:13.903 --> 00:02:15.746
+sauvegarder et surveiller.
 
-00:02:19.674 --> 00:02:22.302
-le tout depuis votre
+00:02:15.746 --> 00:02:18.817
+La suite avancée commence maintenant
 
-00:02:22.302 --> 00:02:23.616
-terminal !
+00:02:18.817 --> 00:02:19.432
+:
+
+00:02:19.432 --> 00:02:22.503
+versionnez vos repos comme du
+
+00:02:22.503 --> 00:02:23.117
+code,
+
+00:02:23.117 --> 00:02:26.189
+avec des commits et des
+
+00:02:26.189 --> 00:02:26.803
+rollbacks.

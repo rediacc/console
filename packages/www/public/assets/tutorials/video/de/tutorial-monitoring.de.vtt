@@ -219,29 +219,35 @@ Alles grün heißt,
 00:02:05.390 --> 00:02:07.872
 deine lokale CLI ist gesund.
 
-00:02:08.611 --> 00:02:11.609
-Damit schließt sich die Serie.
-
-00:02:11.609 --> 00:02:14.008
+00:02:08.611 --> 00:02:10.888
 Du kannst jetzt installieren,
 
-00:02:14.008 --> 00:02:14.608
+00:02:10.888 --> 00:02:11.457
 konfigurieren,
 
-00:02:14.608 --> 00:02:15.207
+00:02:11.457 --> 00:02:12.027
 deployen,
 
-00:02:15.207 --> 00:02:15.807
+00:02:12.027 --> 00:02:12.596
 forken,
 
-00:02:15.807 --> 00:02:17.007
+00:02:12.596 --> 00:02:13.735
 live gehen,
 
-00:02:17.007 --> 00:02:18.206
-Autostart einrichten,
+00:02:13.735 --> 00:02:14.873
+automatisch starten,
 
-00:02:18.206 --> 00:02:20.005
-sichern und überwachen,
+00:02:14.873 --> 00:02:16.581
+sichern und überwachen.
 
-00:02:20.005 --> 00:02:22.404
-alles aus deinem Terminal!
+00:02:16.581 --> 00:02:19.427
+Als Nächstes beginnt der fortgeschrittene
+
+00:02:19.427 --> 00:02:19.997
+Kurs:
+
+00:02:19.997 --> 00:02:22.843
+Versioniere deine Repos wie Code,
+
+00:02:22.843 --> 00:02:25.120
+mit Commits und Rollbacks.

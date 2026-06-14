@@ -6,7 +6,7 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 2.415513,
+      "at": 2.414306,
       "text": "第一个是 tunnel 命令。应用运行在服务器上，而不是你的笔记本上。隧道命令通过 SSH 转发容器端口，让你可以在浏览器中通过 localhost 访问它。",
       "afterText": "端口已转发。应用现在可通过 localhost 访问。",
       "cardLabel": "Tunnel 端口",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 9.087333,
+      "at": 10.610488,
       "text": "第二个是 term 命令。终端连接命令让你进入仓库的沙盒内，视图与 VS Code 中看到的完全一样。无需离开终端，就能针对这个仓库的 Docker 守护进程运行任意命令。",
       "afterText": "已进入 repo 沙盒。可以像 SSH 登录一样运行任何命令。",
       "cardLabel": "Sandbox 中的 Term",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 15.893309,
+      "at": 17.555154,
       "text": "推送文件之前，先用 --dry-run 预览。它会显示将要变更的内容，而不实际复制任何东西。不确定时总是先预览。",
       "afterText": "仅预览。尚未移动任何文件。",
       "cardLabel": "Sync 预览",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 22.144638,
+      "at": 24.76977,
       "text": "现在让我们正式执行上传。同步上传命令通过 SSH 将文件从笔记本移入仓库，使用 rsync 差量压缩。Tunnel、term、sync，三条命令覆盖日常循环。",
       "afterText": "文件已上传。差量压缩可以从容处理大目录。",
       "cardLabel": "Sync 上传",
@@ -67,6 +67,6 @@
     "cast-step-1": "Term：在 sandbox 内执行命令",
     "cast-step-2": "Sync：使用 --dry-run 预览",
     "cast-step-3": "Sync：正式上传",
-    "outro": "下一步：Fork 一个 Repository"
+    "outro": "下一章：浏览器中的 VS Code"
   }
 }

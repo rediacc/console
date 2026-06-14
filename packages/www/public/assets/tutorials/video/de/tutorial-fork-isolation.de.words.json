@@ -1,0 +1,726 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.983,
+      "text": "Willkommen zurück!",
+      "words": [
+        { "start": 1, "end": 1.491, "char": [0, 10] },
+        { "start": 1.491, "end": 1.983, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 1.983,
+      "end": 4.931,
+      "text": "Beim letzten Mal hast du die",
+      "words": [
+        { "start": 1.983, "end": 2.474, "char": [0, 4] },
+        { "start": 2.474, "end": 2.966, "char": [5, 12] },
+        { "start": 2.966, "end": 3.457, "char": [13, 16] },
+        { "start": 3.457, "end": 3.949, "char": [17, 21] },
+        { "start": 3.949, "end": 4.44, "char": [22, 24] },
+        { "start": 4.44, "end": 4.931, "char": [25, 28] }
+      ]
+    },
+    {
+      "start": 4.931,
+      "end": 5.914,
+      "text": "fork-Befehle gesehen.",
+      "words": [
+        { "start": 4.931, "end": 5.423, "char": [0, 12] },
+        { "start": 5.423, "end": 5.914, "char": [13, 21] }
+      ]
+    },
+    {
+      "start": 5.914,
+      "end": 8.371,
+      "text": "Jetzt schauen wir uns an,",
+      "words": [
+        { "start": 5.914, "end": 6.406, "char": [0, 5] },
+        { "start": 6.406, "end": 6.897, "char": [6, 13] },
+        { "start": 6.897, "end": 7.389, "char": [14, 17] },
+        { "start": 7.389, "end": 7.88, "char": [18, 21] },
+        { "start": 7.88, "end": 8.371, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 8.371,
+      "end": 10.337,
+      "text": "was sie wirklich bedeuten:",
+      "words": [
+        { "start": 8.371, "end": 8.863, "char": [0, 3] },
+        { "start": 8.863, "end": 9.354, "char": [4, 7] },
+        { "start": 9.354, "end": 9.846, "char": [8, 16] },
+        { "start": 9.846, "end": 10.337, "char": [17, 26] }
+      ]
+    },
+    {
+      "start": 10.337,
+      "end": 11.32,
+      "text": "eine Live-Datenbankapp,",
+      "words": [
+        { "start": 10.337, "end": 10.829, "char": [0, 4] },
+        { "start": 10.829, "end": 11.32, "char": [5, 23] }
+      ]
+    },
+    {
+      "start": 11.32,
+      "end": 12.794,
+      "text": "in Sekunden kopiert,",
+      "words": [
+        { "start": 11.32, "end": 11.811, "char": [0, 2] },
+        { "start": 11.811, "end": 12.303, "char": [3, 11] },
+        { "start": 12.303, "end": 12.794, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 12.794,
+      "end": 13.777,
+      "text": "frei bearbeitbar,",
+      "words": [
+        { "start": 12.794, "end": 13.286, "char": [0, 4] },
+        { "start": 13.286, "end": 13.777, "char": [5, 17] }
+      ]
+    },
+    {
+      "start": 13.777,
+      "end": 16.726,
+      "text": "während das Original nichts davon bemerkt.",
+      "words": [
+        { "start": 13.777, "end": 14.269, "char": [0, 7] },
+        { "start": 14.269, "end": 14.76, "char": [8, 11] },
+        { "start": 14.76, "end": 15.251, "char": [12, 20] },
+        { "start": 15.251, "end": 15.743, "char": [21, 27] },
+        { "start": 15.743, "end": 16.234, "char": [28, 33] },
+        { "start": 16.234, "end": 16.726, "char": [34, 42] }
+      ]
+    },
+    {
+      "start": 17.496,
+      "end": 19.592,
+      "text": "Das ist die Ausgangslage:",
+      "words": [
+        { "start": 17.496, "end": 18.02, "char": [0, 3] },
+        { "start": 18.02, "end": 18.544, "char": [4, 7] },
+        { "start": 18.544, "end": 19.068, "char": [8, 11] },
+        { "start": 19.068, "end": 19.592, "char": [12, 25] }
+      ]
+    },
+    {
+      "start": 19.592,
+      "end": 22.213,
+      "text": "ein echtes PostgreSQL mit einer",
+      "words": [
+        { "start": 19.592, "end": 20.116, "char": [0, 3] },
+        { "start": 20.116, "end": 20.64, "char": [4, 10] },
+        { "start": 20.64, "end": 21.165, "char": [11, 21] },
+        { "start": 21.165, "end": 21.689, "char": [22, 25] },
+        { "start": 21.689, "end": 22.213, "char": [26, 31] }
+      ]
+    },
+    {
+      "start": 22.213,
+      "end": 23.261,
+      "text": "pgAdmin-Oberfläche darüber,",
+      "words": [
+        { "start": 22.213, "end": 22.737, "char": [0, 18] },
+        { "start": 22.737, "end": 23.261, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 23.261,
+      "end": 25.357,
+      "text": "live auf dem Server.",
+      "words": [
+        { "start": 23.261, "end": 23.785, "char": [0, 4] },
+        { "start": 23.785, "end": 24.309, "char": [5, 8] },
+        { "start": 24.309, "end": 24.833, "char": [9, 12] },
+        { "start": 24.833, "end": 25.357, "char": [13, 20] }
+      ]
+    },
+    {
+      "start": 25.357,
+      "end": 27.978,
+      "text": "Ein fork ist ein sofortiger",
+      "words": [
+        { "start": 25.357, "end": 25.881, "char": [0, 3] },
+        { "start": 25.881, "end": 26.405, "char": [4, 8] },
+        { "start": 26.405, "end": 26.929, "char": [9, 12] },
+        { "start": 26.929, "end": 27.454, "char": [13, 16] },
+        { "start": 27.454, "end": 27.978, "char": [17, 27] }
+      ]
+    },
+    {
+      "start": 27.978,
+      "end": 29.55,
+      "text": "Copy-on-Write-Zwilling von allem.",
+      "words": [
+        { "start": 27.978, "end": 28.502, "char": [0, 22] },
+        { "start": 28.502, "end": 29.026, "char": [23, 26] },
+        { "start": 29.026, "end": 29.55, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 29.55,
+      "end": 32.17,
+      "text": "Gleiche Daten bei der Geburt,",
+      "words": [
+        { "start": 29.55, "end": 30.074, "char": [0, 7] },
+        { "start": 30.074, "end": 30.598, "char": [8, 13] },
+        { "start": 30.598, "end": 31.122, "char": [14, 17] },
+        { "start": 31.122, "end": 31.646, "char": [18, 21] },
+        { "start": 31.646, "end": 32.17, "char": [22, 29] }
+      ]
+    },
+    {
+      "start": 32.17,
+      "end": 34.267,
+      "text": "danach völlig getrennte Leben.",
+      "words": [
+        { "start": 32.17, "end": 32.694, "char": [0, 6] },
+        { "start": 32.694, "end": 33.218, "char": [7, 13] },
+        { "start": 33.218, "end": 33.743, "char": [14, 23] },
+        { "start": 33.743, "end": 34.267, "char": [24, 30] }
+      ]
+    },
+    {
+      "start": 37.537,
+      "end": 39.376,
+      "text": "Meet the app:",
+      "words": [
+        { "start": 37.537, "end": 38.15, "char": [0, 4] },
+        { "start": 38.15, "end": 38.763, "char": [5, 8] },
+        { "start": 38.763, "end": 39.376, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 39.376,
+      "end": 39.988,
+      "text": "demo-pgadmin,",
+      "words": [{ "start": 39.376, "end": 39.988, "char": [0, 13] }]
+    },
+    {
+      "start": 39.988,
+      "end": 43.053,
+      "text": "a PostgreSQL with a pgAdmin",
+      "words": [
+        { "start": 39.988, "end": 40.601, "char": [0, 1] },
+        { "start": 40.601, "end": 41.214, "char": [2, 12] },
+        { "start": 41.214, "end": 41.827, "char": [13, 17] },
+        { "start": 41.827, "end": 42.44, "char": [18, 19] },
+        { "start": 42.44, "end": 43.053, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 43.053,
+      "end": 43.666,
+      "text": "interface,",
+      "words": [{ "start": 43.053, "end": 43.666, "char": [0, 10] }]
+    },
+    {
+      "start": 43.666,
+      "end": 45.504,
+      "text": "mounted and running.",
+      "words": [
+        { "start": 43.666, "end": 44.279, "char": [0, 7] },
+        { "start": 44.279, "end": 44.891, "char": [8, 11] },
+        { "start": 44.891, "end": 45.504, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 48.504,
+      "end": 49.641,
+      "text": "Ein live repo.",
+      "words": [
+        { "start": 48.504, "end": 48.883, "char": [0, 3] },
+        { "start": 48.883, "end": 49.262, "char": [4, 8] },
+        { "start": 49.262, "end": 49.641, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 49.641,
+      "end": 50.777,
+      "text": "Klonen wir es.",
+      "words": [
+        { "start": 49.641, "end": 50.019, "char": [0, 6] },
+        { "start": 50.019, "end": 50.398, "char": [7, 10] },
+        { "start": 50.398, "end": 50.777, "char": [11, 14] }
+      ]
+    },
+    {
+      "start": 51.279,
+      "end": 53.029,
+      "text": "Das ist das Original,",
+      "words": [
+        { "start": 51.279, "end": 51.717, "char": [0, 3] },
+        { "start": 51.717, "end": 52.154, "char": [4, 7] },
+        { "start": 52.154, "end": 52.592, "char": [8, 11] },
+        { "start": 52.592, "end": 53.029, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 53.029,
+      "end": 53.904,
+      "text": "im Browser.",
+      "words": [
+        { "start": 53.029, "end": 53.467, "char": [0, 2] },
+        { "start": 53.467, "end": 53.904, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 53.904,
+      "end": 56.092,
+      "text": "pgAdmin fragt nach einem Login,",
+      "words": [
+        { "start": 53.904, "end": 54.342, "char": [0, 7] },
+        { "start": 54.342, "end": 54.779, "char": [8, 13] },
+        { "start": 54.779, "end": 55.217, "char": [14, 18] },
+        { "start": 55.217, "end": 55.655, "char": [19, 24] },
+        { "start": 55.655, "end": 56.092, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 56.092,
+      "end": 58.28,
+      "text": "weil es die Produktionskopie ist,",
+      "words": [
+        { "start": 56.092, "end": 56.53, "char": [0, 4] },
+        { "start": 56.53, "end": 56.967, "char": [5, 7] },
+        { "start": 56.967, "end": 57.405, "char": [8, 11] },
+        { "start": 57.405, "end": 57.842, "char": [12, 28] },
+        { "start": 57.842, "end": 58.28, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 58.28,
+      "end": 60.03,
+      "text": "und Produktion bleibt geschützt.",
+      "words": [
+        { "start": 58.28, "end": 58.717, "char": [0, 3] },
+        { "start": 58.717, "end": 59.155, "char": [4, 14] },
+        { "start": 59.155, "end": 59.592, "char": [15, 21] },
+        { "start": 59.592, "end": 60.03, "char": [22, 32] }
+      ]
+    },
+    {
+      "start": 84.946,
+      "end": 85.711,
+      "text": "Fork it.",
+      "words": [
+        { "start": 84.946, "end": 85.328, "char": [0, 4] },
+        { "start": 85.328, "end": 85.711, "char": [5, 8] }
+      ]
+    },
+    {
+      "start": 85.711,
+      "end": 88.388,
+      "text": "The copy-on-write clone takes seconds regardless of",
+      "words": [
+        { "start": 85.711, "end": 86.093, "char": [0, 3] },
+        { "start": 86.093, "end": 86.475, "char": [4, 17] },
+        { "start": 86.475, "end": 86.858, "char": [18, 23] },
+        { "start": 86.858, "end": 87.24, "char": [24, 29] },
+        { "start": 87.24, "end": 87.623, "char": [30, 37] },
+        { "start": 87.623, "end": 88.005, "char": [38, 48] },
+        { "start": 88.005, "end": 88.388, "char": [49, 51] }
+      ]
+    },
+    {
+      "start": 88.388,
+      "end": 88.77,
+      "text": "size;",
+      "words": [{ "start": 88.388, "end": 88.77, "char": [0, 5] }]
+    },
+    {
+      "start": 88.77,
+      "end": 91.447,
+      "text": "detach returns as soon as the containers",
+      "words": [
+        { "start": 88.77, "end": 89.152, "char": [0, 6] },
+        { "start": 89.152, "end": 89.535, "char": [7, 14] },
+        { "start": 89.535, "end": 89.917, "char": [15, 17] },
+        { "start": 89.917, "end": 90.3, "char": [18, 22] },
+        { "start": 90.3, "end": 90.682, "char": [23, 25] },
+        { "start": 90.682, "end": 91.065, "char": [26, 29] },
+        { "start": 91.065, "end": 91.447, "char": [30, 40] }
+      ]
+    },
+    {
+      "start": 91.447,
+      "end": 91.829,
+      "text": "start,",
+      "words": [{ "start": 91.447, "end": 91.829, "char": [0, 6] }]
+    },
+    {
+      "start": 91.829,
+      "end": 94.506,
+      "text": "while health checks continue in the background.",
+      "words": [
+        { "start": 91.829, "end": 92.212, "char": [0, 5] },
+        { "start": 92.212, "end": 92.594, "char": [6, 12] },
+        { "start": 92.594, "end": 92.977, "char": [13, 19] },
+        { "start": 92.977, "end": 93.359, "char": [20, 28] },
+        { "start": 93.359, "end": 93.742, "char": [29, 31] },
+        { "start": 93.742, "end": 94.124, "char": [32, 35] },
+        { "start": 94.124, "end": 94.506, "char": [36, 47] }
+      ]
+    },
+    {
+      "start": 95.314,
+      "end": 96.538,
+      "text": "Geforkt und startet.",
+      "words": [
+        { "start": 95.314, "end": 95.722, "char": [0, 7] },
+        { "start": 95.722, "end": 96.13, "char": [8, 11] },
+        { "start": 96.13, "end": 96.538, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 96.538,
+      "end": 98.579,
+      "text": "Die Daten wurden nicht kopiert,",
+      "words": [
+        { "start": 96.538, "end": 96.946, "char": [0, 3] },
+        { "start": 96.946, "end": 97.355, "char": [4, 9] },
+        { "start": 97.355, "end": 97.763, "char": [10, 16] },
+        { "start": 97.763, "end": 98.171, "char": [17, 22] },
+        { "start": 98.171, "end": 98.579, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 98.579,
+      "end": 99.804,
+      "text": "sie wurden geteilt,",
+      "words": [
+        { "start": 98.579, "end": 98.987, "char": [0, 3] },
+        { "start": 98.987, "end": 99.395, "char": [4, 10] },
+        { "start": 99.395, "end": 99.804, "char": [11, 19] }
+      ]
+    },
+    {
+      "start": 99.804,
+      "end": 101.844,
+      "text": "bis eine Seite sie ändert.",
+      "words": [
+        { "start": 99.804, "end": 100.212, "char": [0, 3] },
+        { "start": 100.212, "end": 100.62, "char": [4, 8] },
+        { "start": 100.62, "end": 101.028, "char": [9, 14] },
+        { "start": 101.028, "end": 101.436, "char": [15, 18] },
+        { "start": 101.436, "end": 101.844, "char": [19, 26] }
+      ]
+    },
+    {
+      "start": 105.104,
+      "end": 107.992,
+      "text": "Und hier ist das pgAdmin des",
+      "words": [
+        { "start": 105.104, "end": 105.585, "char": [0, 3] },
+        { "start": 105.585, "end": 106.066, "char": [4, 8] },
+        { "start": 106.066, "end": 106.548, "char": [9, 12] },
+        { "start": 106.548, "end": 107.029, "char": [13, 16] },
+        { "start": 107.029, "end": 107.511, "char": [17, 24] },
+        { "start": 107.511, "end": 107.992, "char": [25, 28] }
+      ]
+    },
+    {
+      "start": 107.992,
+      "end": 108.473,
+      "text": "forks.",
+      "words": [{ "start": 107.992, "end": 108.473, "char": [0, 6] }]
+    },
+    {
+      "start": 108.473,
+      "end": 109.918,
+      "text": "Diesmal kein Login:",
+      "words": [
+        { "start": 108.473, "end": 108.955, "char": [0, 7] },
+        { "start": 108.955, "end": 109.436, "char": [8, 12] },
+        { "start": 109.436, "end": 109.918, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 109.918,
+      "end": 111.843,
+      "text": "forks sind wegwerfbare sandboxes,",
+      "words": [
+        { "start": 109.918, "end": 110.399, "char": [0, 5] },
+        { "start": 110.399, "end": 110.88, "char": [6, 10] },
+        { "start": 110.88, "end": 111.362, "char": [11, 22] },
+        { "start": 111.362, "end": 111.843, "char": [23, 33] }
+      ]
+    },
+    {
+      "start": 111.843,
+      "end": 114.732,
+      "text": "also tritt die Schranke zur Seite.",
+      "words": [
+        { "start": 111.843, "end": 112.325, "char": [0, 4] },
+        { "start": 112.325, "end": 112.806, "char": [5, 10] },
+        { "start": 112.806, "end": 113.287, "char": [11, 14] },
+        { "start": 113.287, "end": 113.769, "char": [15, 23] },
+        { "start": 113.769, "end": 114.25, "char": [24, 27] },
+        { "start": 114.25, "end": 114.732, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 114.732,
+      "end": 115.694,
+      "text": "Gleiche Tabellen,",
+      "words": [
+        { "start": 114.732, "end": 115.213, "char": [0, 7] },
+        { "start": 115.213, "end": 115.694, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 115.694,
+      "end": 116.657,
+      "text": "gleiche Zeilen,",
+      "words": [
+        { "start": 115.694, "end": 116.176, "char": [0, 7] },
+        { "start": 116.176, "end": 116.657, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 116.657,
+      "end": 118.583,
+      "text": "aber ein eigenes Universum.",
+      "words": [
+        { "start": 116.657, "end": 117.139, "char": [0, 4] },
+        { "start": 117.139, "end": 117.62, "char": [5, 8] },
+        { "start": 117.62, "end": 118.101, "char": [9, 16] },
+        { "start": 118.101, "end": 118.583, "char": [17, 27] }
+      ]
+    },
+    {
+      "start": 156.97,
+      "end": 158.164,
+      "text": "Two repositories now:",
+      "words": [
+        { "start": 156.97, "end": 157.368, "char": [0, 3] },
+        { "start": 157.368, "end": 157.766, "char": [4, 16] },
+        { "start": 157.766, "end": 158.164, "char": [17, 21] }
+      ]
+    },
+    {
+      "start": 158.164,
+      "end": 160.154,
+      "text": "the original and the experiment,",
+      "words": [
+        { "start": 158.164, "end": 158.562, "char": [0, 3] },
+        { "start": 158.562, "end": 158.96, "char": [4, 12] },
+        { "start": 158.96, "end": 159.358, "char": [13, 16] },
+        { "start": 159.358, "end": 159.756, "char": [17, 20] },
+        { "start": 159.756, "end": 160.154, "char": [21, 32] }
+      ]
+    },
+    {
+      "start": 160.154,
+      "end": 162.144,
+      "text": "each with its own containers,",
+      "words": [
+        { "start": 160.154, "end": 160.552, "char": [0, 4] },
+        { "start": 160.552, "end": 160.95, "char": [5, 9] },
+        { "start": 160.95, "end": 161.348, "char": [10, 13] },
+        { "start": 161.348, "end": 161.746, "char": [14, 17] },
+        { "start": 161.746, "end": 162.144, "char": [18, 29] }
+      ]
+    },
+    {
+      "start": 162.144,
+      "end": 162.542,
+      "text": "network,",
+      "words": [{ "start": 162.144, "end": 162.542, "char": [0, 8] }]
+    },
+    {
+      "start": 162.542,
+      "end": 163.736,
+      "text": "and disk view.",
+      "words": [
+        { "start": 162.542, "end": 162.94, "char": [0, 3] },
+        { "start": 162.94, "end": 163.338, "char": [4, 8] },
+        { "start": 163.338, "end": 163.736, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 166.736,
+      "end": 168.032,
+      "text": "Gleiche Maschine,",
+      "words": [
+        { "start": 166.736, "end": 167.384, "char": [0, 7] },
+        { "start": 167.384, "end": 168.032, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 168.032,
+      "end": 169.975,
+      "text": "zwei isolierte Welten.",
+      "words": [
+        { "start": 168.032, "end": 168.68, "char": [0, 4] },
+        { "start": 168.68, "end": 169.327, "char": [5, 14] },
+        { "start": 169.327, "end": 169.975, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 173.304,
+      "end": 174.217,
+      "text": "Done experimenting?",
+      "words": [
+        { "start": 173.304, "end": 173.76, "char": [0, 4] },
+        { "start": 173.76, "end": 174.217, "char": [5, 19] }
+      ]
+    },
+    {
+      "start": 174.217,
+      "end": 175.586,
+      "text": "Delete the fork.",
+      "words": [
+        { "start": 174.217, "end": 174.673, "char": [0, 6] },
+        { "start": 174.673, "end": 175.129, "char": [7, 10] },
+        { "start": 175.129, "end": 175.586, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 175.586,
+      "end": 176.955,
+      "text": "Seconds to create,",
+      "words": [
+        { "start": 175.586, "end": 176.042, "char": [0, 7] },
+        { "start": 176.042, "end": 176.499, "char": [8, 10] },
+        { "start": 176.499, "end": 176.955, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 176.955,
+      "end": 179.694,
+      "text": "seconds to throw away — the",
+      "words": [
+        { "start": 176.955, "end": 177.412, "char": [0, 7] },
+        { "start": 177.412, "end": 177.868, "char": [8, 10] },
+        { "start": 177.868, "end": 178.325, "char": [11, 16] },
+        { "start": 178.325, "end": 178.781, "char": [17, 21] },
+        { "start": 178.781, "end": 179.238, "char": [22, 23] },
+        { "start": 179.238, "end": 179.694, "char": [24, 27] }
+      ]
+    },
+    {
+      "start": 179.694,
+      "end": 181.976,
+      "text": "original never knew it existed.",
+      "words": [
+        { "start": 179.694, "end": 180.151, "char": [0, 8] },
+        { "start": 180.151, "end": 180.607, "char": [9, 14] },
+        { "start": 180.607, "end": 181.063, "char": [15, 19] },
+        { "start": 181.063, "end": 181.52, "char": [20, 22] },
+        { "start": 181.52, "end": 181.976, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 184.976,
+      "end": 185.38,
+      "text": "Weg.",
+      "words": [{ "start": 184.976, "end": 185.38, "char": [0, 4] }]
+    },
+    {
+      "start": 185.38,
+      "end": 188.204,
+      "text": "Das Original hat die ganze Zeit weiter",
+      "words": [
+        { "start": 185.38, "end": 185.783, "char": [0, 3] },
+        { "start": 185.783, "end": 186.187, "char": [4, 12] },
+        { "start": 186.187, "end": 186.59, "char": [13, 16] },
+        { "start": 186.59, "end": 186.994, "char": [17, 20] },
+        { "start": 186.994, "end": 187.397, "char": [21, 26] },
+        { "start": 187.397, "end": 187.8, "char": [27, 31] },
+        { "start": 187.8, "end": 188.204, "char": [32, 38] }
+      ]
+    },
+    {
+      "start": 188.204,
+      "end": 188.607,
+      "text": "funktioniert.",
+      "words": [{ "start": 188.204, "end": 188.607, "char": [0, 13] }]
+    },
+    {
+      "start": 189.416,
+      "end": 192.178,
+      "text": "Also forke ruhig drauf los,",
+      "words": [
+        { "start": 189.416, "end": 189.968, "char": [0, 4] },
+        { "start": 189.968, "end": 190.521, "char": [5, 10] },
+        { "start": 190.521, "end": 191.073, "char": [11, 16] },
+        { "start": 191.073, "end": 191.625, "char": [17, 22] },
+        { "start": 191.625, "end": 192.178, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 192.178,
+      "end": 194.94,
+      "text": "Produktion kann nicht beschädigt werden.",
+      "words": [
+        { "start": 192.178, "end": 192.73, "char": [0, 10] },
+        { "start": 192.73, "end": 193.283, "char": [11, 15] },
+        { "start": 193.283, "end": 193.835, "char": [16, 21] },
+        { "start": 193.835, "end": 194.388, "char": [22, 32] },
+        { "start": 194.388, "end": 194.94, "char": [33, 40] }
+      ]
+    },
+    {
+      "start": 194.94,
+      "end": 197.702,
+      "text": "Als nächstes schauen wir uns",
+      "words": [
+        { "start": 194.94, "end": 195.493, "char": [0, 3] },
+        { "start": 195.493, "end": 196.045, "char": [4, 12] },
+        { "start": 196.045, "end": 196.597, "char": [13, 20] },
+        { "start": 196.597, "end": 197.15, "char": [21, 24] },
+        { "start": 197.15, "end": 197.702, "char": [25, 28] }
+      ]
+    },
+    {
+      "start": 197.702,
+      "end": 198.807,
+      "text": "secrets an,",
+      "words": [
+        { "start": 197.702, "end": 198.255, "char": [0, 7] },
+        { "start": 198.255, "end": 198.807, "char": [8, 11] }
+      ]
+    },
+    {
+      "start": 198.807,
+      "end": 199.912,
+      "text": "das Einzige,",
+      "words": [
+        { "start": 198.807, "end": 199.36, "char": [0, 3] },
+        { "start": 199.36, "end": 199.912, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 199.912,
+      "end": 202.674,
+      "text": "was deine forks absichtlich nicht",
+      "words": [
+        { "start": 199.912, "end": 200.464, "char": [0, 3] },
+        { "start": 200.464, "end": 201.017, "char": [4, 9] },
+        { "start": 201.017, "end": 201.569, "char": [10, 15] },
+        { "start": 201.569, "end": 202.122, "char": [16, 27] },
+        { "start": 202.122, "end": 202.674, "char": [28, 33] }
+      ]
+    },
+    {
+      "start": 202.674,
+      "end": 203.227,
+      "text": "erben.",
+      "words": [{ "start": 202.674, "end": 203.227, "char": [0, 6] }]
+    },
+    {
+      "start": 203.227,
+      "end": 204.332,
+      "text": "Bis dann!",
+      "words": [
+        { "start": 203.227, "end": 203.779, "char": [0, 3] },
+        { "start": 203.779, "end": 204.332, "char": [4, 9] }
+      ]
+    }
+  ]
+}

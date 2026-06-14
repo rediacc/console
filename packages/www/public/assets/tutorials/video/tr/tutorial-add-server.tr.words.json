@@ -192,206 +192,206 @@
       ]
     },
     {
-      "start": 48.015,
-      "end": 48.77,
+      "start": 48.765,
+      "end": 49.52,
       "text": "Profil oluşturuldu.",
       "words": [
-        { "start": 48.015, "end": 48.392, "char": [0, 6] },
-        { "start": 48.392, "end": 48.77, "char": [7, 19] }
+        { "start": 48.765, "end": 49.142, "char": [0, 6] },
+        { "start": 49.142, "end": 49.52, "char": [7, 19] }
       ]
     },
     {
-      "start": 48.77,
-      "end": 51.411,
+      "start": 49.52,
+      "end": 52.161,
       "text": "Yapılandıracağımız her şey bu tek dosyada yaşar.",
       "words": [
-        { "start": 48.77, "end": 49.147, "char": [0, 18] },
-        { "start": 49.147, "end": 49.524, "char": [19, 22] },
-        { "start": 49.524, "end": 49.902, "char": [23, 26] },
-        { "start": 49.902, "end": 50.279, "char": [27, 29] },
-        { "start": 50.279, "end": 50.656, "char": [30, 33] },
-        { "start": 50.656, "end": 51.034, "char": [34, 41] },
-        { "start": 51.034, "end": 51.411, "char": [42, 48] }
+        { "start": 49.52, "end": 49.897, "char": [0, 18] },
+        { "start": 49.897, "end": 50.274, "char": [19, 22] },
+        { "start": 50.274, "end": 50.652, "char": [23, 26] },
+        { "start": 50.652, "end": 51.029, "char": [27, 29] },
+        { "start": 51.029, "end": 51.406, "char": [30, 33] },
+        { "start": 51.406, "end": 51.784, "char": [34, 41] },
+        { "start": 51.784, "end": 52.161, "char": [42, 48] }
       ]
     },
     {
-      "start": 54.721,
-      "end": 55.968,
+      "start": 55.471,
+      "end": 56.718,
       "text": "Şimdi sunucuyu komut satırına kaydediyoruz:",
       "words": [
-        { "start": 54.721, "end": 54.97, "char": [0, 5] },
-        { "start": 54.97, "end": 55.22, "char": [6, 14] },
-        { "start": 55.22, "end": 55.469, "char": [15, 20] },
-        { "start": 55.469, "end": 55.719, "char": [21, 29] },
-        { "start": 55.719, "end": 55.968, "char": [30, 43] }
+        { "start": 55.471, "end": 55.72, "char": [0, 5] },
+        { "start": 55.72, "end": 55.97, "char": [6, 14] },
+        { "start": 55.97, "end": 56.219, "char": [15, 20] },
+        { "start": 56.219, "end": 56.469, "char": [21, 29] },
+        { "start": 56.469, "end": 56.718, "char": [30, 43] }
       ]
     },
     {
-      "start": 55.968,
-      "end": 56.218,
+      "start": 56.718,
+      "end": 56.968,
       "text": "adını,",
-      "words": [{ "start": 55.968, "end": 56.218, "char": [0, 6] }]
+      "words": [{ "start": 56.718, "end": 56.968, "char": [0, 6] }]
     },
     {
-      "start": 56.218,
-      "end": 57.715,
+      "start": 56.968,
+      "end": 58.465,
       "text": "IP adresini ve SSH kullanıcısını belirtiyoruz.",
       "words": [
-        { "start": 56.218, "end": 56.467, "char": [0, 2] },
-        { "start": 56.467, "end": 56.717, "char": [3, 11] },
-        { "start": 56.717, "end": 56.966, "char": [12, 14] },
-        { "start": 56.966, "end": 57.216, "char": [15, 18] },
-        { "start": 57.216, "end": 57.465, "char": [19, 32] },
-        { "start": 57.465, "end": 57.715, "char": [33, 46] }
+        { "start": 56.968, "end": 57.217, "char": [0, 2] },
+        { "start": 57.217, "end": 57.467, "char": [3, 11] },
+        { "start": 57.467, "end": 57.716, "char": [12, 14] },
+        { "start": 57.716, "end": 57.966, "char": [15, 18] },
+        { "start": 57.966, "end": 58.215, "char": [19, 32] },
+        { "start": 58.215, "end": 58.465, "char": [33, 46] }
       ]
     },
     {
-      "start": 57.715,
-      "end": 59.71,
+      "start": 58.465,
+      "end": 60.46,
       "text": "Host anahtarları güvenilir erişim için otomatik olarak taranıyor.",
       "words": [
-        { "start": 57.715, "end": 57.964, "char": [0, 4] },
-        { "start": 57.964, "end": 58.214, "char": [5, 16] },
-        { "start": 58.214, "end": 58.463, "char": [17, 26] },
-        { "start": 58.463, "end": 58.713, "char": [27, 33] },
-        { "start": 58.713, "end": 58.962, "char": [34, 38] },
-        { "start": 58.962, "end": 59.211, "char": [39, 47] },
-        { "start": 59.211, "end": 59.461, "char": [48, 54] },
-        { "start": 59.461, "end": 59.71, "char": [55, 65] }
+        { "start": 58.465, "end": 58.714, "char": [0, 4] },
+        { "start": 58.714, "end": 58.964, "char": [5, 16] },
+        { "start": 58.964, "end": 59.213, "char": [17, 26] },
+        { "start": 59.213, "end": 59.463, "char": [27, 33] },
+        { "start": 59.463, "end": 59.712, "char": [34, 38] },
+        { "start": 59.712, "end": 59.961, "char": [39, 47] },
+        { "start": 59.961, "end": 60.211, "char": [48, 54] },
+        { "start": 60.211, "end": 60.46, "char": [55, 65] }
       ]
     },
     {
-      "start": 62.397,
-      "end": 63.39,
+      "start": 65.359,
+      "end": 66.352,
       "text": "Sunucu kaydedildi.",
       "words": [
-        { "start": 62.397, "end": 62.893, "char": [0, 6] },
-        { "start": 62.893, "end": 63.39, "char": [7, 18] }
+        { "start": 65.359, "end": 65.855, "char": [0, 6] },
+        { "start": 65.855, "end": 66.352, "char": [7, 18] }
       ]
     },
     {
-      "start": 63.39,
-      "end": 65.871,
+      "start": 66.352,
+      "end": 68.833,
       "text": "Host anahtarları otomatik olarak tarandı.",
       "words": [
-        { "start": 63.39, "end": 63.886, "char": [0, 4] },
-        { "start": 63.886, "end": 64.382, "char": [5, 16] },
-        { "start": 64.382, "end": 64.879, "char": [17, 25] },
-        { "start": 64.879, "end": 65.375, "char": [26, 32] },
-        { "start": 65.375, "end": 65.871, "char": [33, 41] }
+        { "start": 66.352, "end": 66.848, "char": [0, 4] },
+        { "start": 66.848, "end": 67.344, "char": [5, 16] },
+        { "start": 67.344, "end": 67.841, "char": [17, 25] },
+        { "start": 67.841, "end": 68.337, "char": [26, 32] },
+        { "start": 68.337, "end": 68.833, "char": [33, 41] }
       ]
     },
     {
-      "start": 71.837,
-      "end": 75.098,
+      "start": 75.087,
+      "end": 78.348,
       "text": "Sırada sunucunun yapılandırılması",
       "words": [
-        { "start": 71.837, "end": 72.924, "char": [0, 6] },
-        { "start": 72.924, "end": 74.011, "char": [7, 16] },
-        { "start": 74.011, "end": 75.098, "char": [17, 33] }
+        { "start": 75.087, "end": 76.174, "char": [0, 6] },
+        { "start": 76.174, "end": 77.261, "char": [7, 16] },
+        { "start": 77.261, "end": 78.348, "char": [17, 33] }
       ]
     },
     {
-      "start": 75.098,
-      "end": 76.185,
+      "start": 78.348,
+      "end": 79.435,
       "text": "var.",
-      "words": [{ "start": 75.098, "end": 76.185, "char": [0, 4] }]
+      "words": [{ "start": 78.348, "end": 79.435, "char": [0, 4] }]
     },
     {
-      "start": 76.185,
-      "end": 79.446,
+      "start": 79.435,
+      "end": 82.696,
       "text": "Bu adım renet'i",
       "words": [
-        { "start": 76.185, "end": 77.272, "char": [0, 2] },
-        { "start": 77.272, "end": 78.359, "char": [3, 7] },
-        { "start": 78.359, "end": 79.446, "char": [8, 15] }
+        { "start": 79.435, "end": 80.522, "char": [0, 2] },
+        { "start": 80.522, "end": 81.609, "char": [3, 7] },
+        { "start": 81.609, "end": 82.696, "char": [8, 15] }
       ]
     },
     {
-      "start": 79.446,
-      "end": 82.707,
+      "start": 82.696,
+      "end": 85.957,
       "text": "yüklüyor ve şifreli",
       "words": [
-        { "start": 79.446, "end": 80.533, "char": [0, 8] },
-        { "start": 80.533, "end": 81.62, "char": [9, 11] },
-        { "start": 81.62, "end": 82.707, "char": [12, 19] }
+        { "start": 82.696, "end": 83.783, "char": [0, 8] },
+        { "start": 83.783, "end": 84.87, "char": [9, 11] },
+        { "start": 84.87, "end": 85.957, "char": [12, 19] }
       ]
     },
     {
-      "start": 82.707,
-      "end": 85.968,
+      "start": 85.957,
+      "end": 89.218,
       "text": "veri deposunu oluşturuyor.",
       "words": [
-        { "start": 82.707, "end": 83.794, "char": [0, 4] },
-        { "start": 83.794, "end": 84.881, "char": [5, 13] },
-        { "start": 84.881, "end": 85.968, "char": [14, 26] }
+        { "start": 85.957, "end": 87.044, "char": [0, 4] },
+        { "start": 87.044, "end": 88.131, "char": [5, 13] },
+        { "start": 88.131, "end": 89.218, "char": [14, 26] }
       ]
     },
     {
-      "start": 85.968,
-      "end": 89.229,
+      "start": 89.218,
+      "end": 92.479,
       "text": "Tamamlandığında sunucu depo",
       "words": [
-        { "start": 85.968, "end": 87.055, "char": [0, 15] },
-        { "start": 87.055, "end": 88.142, "char": [16, 22] },
-        { "start": 88.142, "end": 89.229, "char": [23, 27] }
+        { "start": 89.218, "end": 90.305, "char": [0, 15] },
+        { "start": 90.305, "end": 91.392, "char": [16, 22] },
+        { "start": 91.392, "end": 92.479, "char": [23, 27] }
       ]
     },
     {
-      "start": 89.229,
-      "end": 91.403,
+      "start": 92.479,
+      "end": 94.653,
       "text": "barındırmaya hazır.",
       "words": [
-        { "start": 89.229, "end": 90.316, "char": [0, 12] },
-        { "start": 90.316, "end": 91.403, "char": [13, 19] }
+        { "start": 92.479, "end": 93.566, "char": [0, 12] },
+        { "start": 93.566, "end": 94.653, "char": [13, 19] }
       ]
     },
     {
-      "start": 91.403,
-      "end": 92.026,
+      "start": 96.403,
+      "end": 97.026,
       "text": "Tamam.",
-      "words": [{ "start": 91.403, "end": 92.026, "char": [0, 6] }]
+      "words": [{ "start": 96.403, "end": 97.026, "char": [0, 6] }]
     },
     {
-      "start": 92.026,
-      "end": 95.142,
+      "start": 97.026,
+      "end": 100.142,
       "text": "Renet kuruldu ve veri deposu",
       "words": [
-        { "start": 92.026, "end": 92.649, "char": [0, 5] },
-        { "start": 92.649, "end": 93.272, "char": [6, 13] },
-        { "start": 93.272, "end": 93.896, "char": [14, 16] },
-        { "start": 93.896, "end": 94.519, "char": [17, 21] },
-        { "start": 94.519, "end": 95.142, "char": [22, 28] }
+        { "start": 97.026, "end": 97.649, "char": [0, 5] },
+        { "start": 97.649, "end": 98.272, "char": [6, 13] },
+        { "start": 98.272, "end": 98.896, "char": [14, 16] },
+        { "start": 98.896, "end": 99.519, "char": [17, 21] },
+        { "start": 99.519, "end": 100.142, "char": [22, 28] }
       ]
     },
     {
-      "start": 95.142,
-      "end": 95.765,
+      "start": 100.142,
+      "end": 100.765,
       "text": "hazır.",
-      "words": [{ "start": 95.142, "end": 95.765, "char": [0, 6] }]
+      "words": [{ "start": 100.142, "end": 100.765, "char": [0, 6] }]
     },
     {
-      "start": 96.535,
-      "end": 98.194,
+      "start": 101.602,
+      "end": 103.261,
       "text": "Sunucu ekleme işlemi böylece tamamlandı!",
       "words": [
-        { "start": 96.535, "end": 96.867, "char": [0, 6] },
-        { "start": 96.867, "end": 97.199, "char": [7, 13] },
-        { "start": 97.199, "end": 97.53, "char": [14, 20] },
-        { "start": 97.53, "end": 97.862, "char": [21, 28] },
-        { "start": 97.862, "end": 98.194, "char": [29, 40] }
+        { "start": 101.602, "end": 101.934, "char": [0, 6] },
+        { "start": 101.934, "end": 102.266, "char": [7, 13] },
+        { "start": 102.266, "end": 102.597, "char": [14, 20] },
+        { "start": 102.597, "end": 102.929, "char": [21, 28] },
+        { "start": 102.929, "end": 103.261, "char": [29, 40] }
       ]
     },
     {
-      "start": 98.194,
-      "end": 99.853,
+      "start": 103.261,
+      "end": 104.92,
       "text": "Bir sonraki bölümde görüşmek üzere.",
       "words": [
-        { "start": 98.194, "end": 98.526, "char": [0, 3] },
-        { "start": 98.526, "end": 98.857, "char": [4, 11] },
-        { "start": 98.857, "end": 99.189, "char": [12, 19] },
-        { "start": 99.189, "end": 99.521, "char": [20, 28] },
-        { "start": 99.521, "end": 99.853, "char": [29, 35] }
+        { "start": 103.261, "end": 103.593, "char": [0, 3] },
+        { "start": 103.593, "end": 103.924, "char": [4, 11] },
+        { "start": 103.924, "end": 104.256, "char": [12, 19] },
+        { "start": 104.256, "end": 104.588, "char": [20, 28] },
+        { "start": 104.588, "end": 104.92, "char": [29, 35] }
       ]
     }
   ]

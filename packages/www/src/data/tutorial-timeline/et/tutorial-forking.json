@@ -6,8 +6,8 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41277,
-      "replayEndSec": 13.421721,
+      "replayStartSec": 2.422355,
+      "replayEndSec": 12.478171,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-01.2f627b22.mp3",
       "audioDurationSec": 15.15102,
       "textHash": "2f627b22641ccde22e2d5e1dae446ff47645af491bf680782ac69cb5664c9769",
@@ -19,8 +19,8 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.421721,
-      "replayEndSec": 18.980206,
+      "replayStartSec": 12.478171,
+      "replayEndSec": 18.050071,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-02.f9334190.mp3",
       "audioDurationSec": 7.88898,
       "textHash": "f9334190b2f7c6803613df56763a9b4d48e742de07642c9936af00ce771f9402",
@@ -32,8 +32,8 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.980206,
-      "replayEndSec": 26.216902,
+      "replayStartSec": 18.050071,
+      "replayEndSec": 25.352583,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-03.7d9d0a3a.mp3",
       "audioDurationSec": 9.325714,
       "textHash": "7d9d0a3af2f797109c5c88630d5990c32e11faf8d070fdd5da58d2f252f40986",
@@ -45,8 +45,8 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 26.216902,
-      "replayEndSec": 34.456769,
+      "replayStartSec": 25.352583,
+      "replayEndSec": 33.706234,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-04.ce85c437.mp3",
       "audioDurationSec": 5.877551,
       "textHash": "ce85c4377c7c17a778906d10e858cfbaca6d2cbd7b798ef04774466821803c6a",
@@ -58,8 +58,8 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 34.456769,
-      "replayEndSec": 41.647526,
+      "replayStartSec": 33.706234,
+      "replayEndSec": 41.0794,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-05.a0d89b45.mp3",
       "audioDurationSec": 8.437551,
       "textHash": "a0d89b45c839af6f9f38d65d32b8422f026ae32f101c36440c68833f2d70c88e",
@@ -71,8 +71,8 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.647526,
-      "replayEndSec": 51.671921,
+      "replayStartSec": 41.0794,
+      "replayEndSec": 48.135359,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/tutorial-forking-06.3480d69d.mp3",
       "audioDurationSec": 10.03102,
       "textHash": "3480d69d3d1c4105f8d065f38bc5111dbb1751b005842a06eb0e63b3ffcc0fb0",
@@ -134,10 +134,10 @@
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/next-tutorial.54f42b40.mp3",
-      "textHash": "54f42b40fb5dbffe0401679445770753061d4189dda62112b20e562e10bb96ae",
-      "audioDurationSec": 9.325714,
-      "narrationText": "Forgid jätavad saladused tahtlikult maha, mis teebki kloonimise tootmisest -- ilma midagi rikkumata -- tegelikult turvaliseks. Järgmises õpetuses seadistame need korralikult!"
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-forking/next-tutorial.1c0080c0.mp3",
+      "textHash": "1c0080c0639e9ce66487d9c4cca3a7cd3b163654743706a9672a212652f4127d",
+      "audioDurationSec": 12.277551,
+      "narrationText": "Sa nägid just käske. Nüüd muudame selle nähtavaks: päris andmebaasirakendus, fork'itud reaalajas, kõrvuti muudetud, ja originaal ei võpata kordagi."
     }
   ],
   "provider": "qwen3-tts",
@@ -145,5 +145,5 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "6d91fe11567d73d12e0bc0ac65c555c69f838fa01bb00a9d9f374b661ace4456"
+  "transcriptHash": "c625a1247b298194120645240e199c2899a839c8164322889142b27574d85a26"
 }

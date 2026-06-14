@@ -4,8 +4,8 @@ description: "Cree, gestione y opere repositorios cifrados con LUKS en máquinas
 category: "Guides"
 order: 4
 language: es
-sourceHash: "65fd6e7f9e6a83c1"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "0f08c5b75c3588cc"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Repositorios
@@ -99,9 +99,9 @@ Cómo funciona: las imágenes de repositorio son archivos sparse, y el volumen c
 
 Notas:
 
-- Los repositorios bajo un respaldo activo se omiten y se reportan. Hacer trim durante un respaldo no liberaría espacio, porque el snapshot de respaldo sigue referenciando los bloques.
+- El trim del sistema de archivos se omite y se reporta para los repositorios con un respaldo activo, porque el snapshot de respaldo sigue referenciando los bloques y perforar huecos no liberaría espacio en el pool. La recuperación con `--docker` no se ve afectada y sigue ejecutándose (ver más abajo).
 - Ejecutar trim dos veces seguidas reporta 0 bytes la segunda vez. El sistema de archivos recuerda qué grupos de bloques ya se han recortado; esto es lo esperado, no un fallo.
-- `--docker` nunca elimina imágenes etiquetadas, solo las dangling, los contenedores detenidos y la caché de compilación. Añada `--docker-volumes` para eliminar también los volúmenes sin uso (esto borra datos; solo CLI).
+- `--docker` nunca elimina imágenes etiquetadas, solo las dangling, los contenedores detenidos y la caché de compilación. Añada `--docker-volumes` para eliminar también los volúmenes sin uso (esto borra datos; solo CLI). A diferencia del trim del sistema de archivos, la recuperación con `--docker` se ejecuta incluso mientras hay un respaldo en curso, por lo que puede limpiar una caché de compilación bloqueada sin esperar a que termine la ventana de respaldo.
 
 ## Política de Tamaño Automático
 

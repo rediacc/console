@@ -1,0 +1,22 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:19.400
+Transferência Delta
+
+00:00:19.400 --> 00:00:40.053
+Blocos, não bytes
+
+00:00:40.053 --> 00:01:08.525
+Etapa 1: Primeiro push, completo
+
+00:01:08.525 --> 00:01:26.507
+Etapa 2: Alterar alguns dados
+
+00:01:26.507 --> 00:01:57.293
+Etapa 3: Segundo push, delta
+
+00:01:57.293 --> 00:02:15.697
+Etapa 4: Sincronizado em segundos
+
+00:02:15.697 --> 00:02:28.657
+A série termina aqui

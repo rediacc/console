@@ -6,7 +6,7 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.411841,
+      "at": 2.416158,
       "text": "Empezamos con la vista del sistema. El comando machine query del CLI con el filtro de sistema muestra el tiempo de actividad, el uso del disco y el estado del almacenamiento. Si algo está mal, el reporte nos lo indica.",
       "afterText": "Tiempo de actividad, disco, almacenamiento. Todo lo que necesitas de un vistazo.",
       "cardLabel": "Estado del sistema",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 8.597185,
+      "at": 8.503611,
       "text": "Ahora los contenedores. Esta vista lista todos los contenedores en ejecución en cada repositorio de la máquina: nombre, estado, salud, CPU, memoria y qué repo pertenece a cada uno.",
       "afterText": "Cada contenedor en cada repo, en una sola vista.",
       "cardLabel": "Containers",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 15.126152,
+      "at": 14.799411,
       "text": "Y los repos en sí. Tamaño, estado de montaje, estado del Docker daemon, uso del disco. Todo lo que necesitas saber sobre cada entorno aislado en la máquina.",
       "afterText": "Todos los repos, todos sus daemons, todo su uso de disco.",
       "cardLabel": "Repositories",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 24.385141,
+      "at": 21.195367,
       "text": "El comando machine query del CLI te da todo de una sola vez. Información del sistema, contenedores, repositorios, todo junto. Ejecútalo una vez y tienes la imagen completa.",
       "afterText": "Todo junto, sin necesidad de filtros.",
       "cardLabel": "Consulta Completa",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 32.334422,
+      "at": 26.969407,
       "text": "Y por último el doctor del CLI para una verificación local en tu laptop. Node, clave SSH, renet, Docker: todo de lo que depende el CLI. Esa es la serie completa. Desde la instalación hasta el monitoreo, todo desde tu terminal.",
       "afterText": "Todo en verde significa que tu CLI local está saludable.",
       "cardLabel": "Doctor",
@@ -60,7 +60,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "¡Y con eso cerramos la serie! Ya puedes instalar, configurar, desplegar, hacer fork, salir a producción, arrancar automáticamente, respaldar y monitorear, todo desde tu terminal."
+      "text": "Ya puedes instalar, configurar, desplegar, hacer fork, publicar, activar el autostart, respaldar y monitorizar. A continuación empieza el nivel avanzado: versiona tus repos como código, con commits y rollbacks."
     }
   ],
   "title": "Monitoreo",
@@ -72,6 +72,6 @@
     "cast-step-2": "Repos",
     "cast-step-3": "Todo de una vez",
     "cast-step-4": "Verificación local",
-    "outro": "Fin de la serie"
+    "outro": "Siguiente: Branching, Commit y Rollback"
   }
 }

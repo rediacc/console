@@ -1,0 +1,109 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "ko",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d2e775ace5867c8812ae0b5e4ec23d0dddc4bc7e4da87418b96e4349832a64b3",
+  "steps": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.412666,
+      "replayEndSec": 8.155445,
+      "narrationText": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/tutorial-fork-isolation-01.a2636a4a.mp3",
+      "textHash": "a2636a4a646946bcb342235e1f3db6a628354cfa6fd108400ae9225cc7a0d078",
+      "audioDurationSec": 7.88898,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/tutorial-fork-isolation-01-after.a0219ea1.mp3",
+      "afterAudioDurationSec": 2.507755,
+      "afterTextHash": "a0219ea1b0e024c8728c44b0c855e4893e8fe1ce46de476ce4b201c2a47afd0b"
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.155445,
+      "replayEndSec": 19.24953,
+      "narrationText": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/tutorial-fork-isolation-02.4e3625a4.mp3",
+      "textHash": "4e3625a41e9ade01f2616bc98f77faac12642b1fd721e997c137429306b38700",
+      "audioDurationSec": 10.109388,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/tutorial-fork-isolation-02-after.c35fb107.mp3",
+      "afterAudioDurationSec": 8.280816,
+      "afterTextHash": "c35fb107bfed40a421e325ee1bace4cb7005a204d6f557148504b8a4a512cd2a"
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.24953,
+      "replayEndSec": 24.926391,
+      "narrationText": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/tutorial-fork-isolation-03.ef21da1c.mp3",
+      "textHash": "ef21da1c52e9db0870054d3b9ad5504d69be1e2bc5153b8226d37209954bb67e",
+      "audioDurationSec": 7.314286,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/tutorial-fork-isolation-03-after.95da57f0.mp3",
+      "afterAudioDurationSec": 3.160816,
+      "afterTextHash": "95da57f0d25497d02adb34f7ea89be3a6195d60ea7ec5e3fa893e68e78ef9d0c"
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "replayStartSec": 24.926391,
+      "replayEndSec": 32.437755,
+      "narrationText": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/tutorial-fork-isolation-04.5eee7a7f.mp3",
+      "textHash": "5eee7a7f529dcaea0c960477435b36d94974c2998b0af5db1f98442d6267b1e3",
+      "audioDurationSec": 7.706122,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/tutorial-fork-isolation-04-after.7b09b657.mp3",
+      "afterAudioDurationSec": 5.407347,
+      "afterTextHash": "7b09b65725606e1ed8040576efc97851765286fb9eed28fed9e6b9fda3c848b4"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "35055a4c34265c60f7a1b4273696f8837195f85666cd58ed15c19fa2dc7f2b83",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/intro.35055a4c.mp3",
+      "narrationText": "다시 오셨군요! 지난번에는 fork 명령어들을 보셨죠. 이제 그게 실제로 무엇을 의미하는지 살펴봅시다. 라이브 데이터베이스 앱이 몇 초 만에 복사되고, 자유롭게 편집되는 동안, 원본은 아무것도 눈치채지 못합니다.",
+      "audioDurationSec": 17.005714
+    },
+    {
+      "id": "what-is-a-fork",
+      "textHash": "8f4f9912423ad8cbba638280d2cf48b54068c9c7fe6c3c54f2043a5163b98ddb",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/what-is-a-fork.8f4f9912.mp3",
+      "narrationText": "설정을 설명드릴게요. 실제 PostgreSQL에 pgAdmin 인터페이스를 얹어 서버에서 실행 중입니다. fork는 이 모든 것의 즉각적인 copy-on-write 복제본입니다. 생성 시점에는 동일한 데이터를 가지지만, 그 이후로는 완전히 별개의 삶을 살아갑니다.",
+      "audioDurationSec": 23.405714
+    },
+    {
+      "id": "grand-pgadmin",
+      "textHash": "b5208db9281f33d8b367b90d37316f5b49774ed97524711d03df02dd343cc4ef",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/grand-pgadmin.b5208db9.mp3",
+      "narrationText": "이것이 브라우저에서 보는 원본입니다. pgAdmin이 로그인을 요청하는데, 이건 프로덕션 복사본이고, 프로덕션은 항상 보호되어야 하니까요.",
+      "audioDurationSec": 11.467755
+    },
+    {
+      "id": "fork-pgadmin",
+      "textHash": "6144ed12ed9c341f027eafb3b8cece6d75d2731eb3d7d0599b04266727d6fa89",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/fork-pgadmin.6144ed12.mp3",
+      "narrationText": "그리고 이것이 fork의 pgAdmin입니다. 이번에는 로그인이 없습니다. fork는 일회용 sandbox이기 때문에, 관문이 비켜섭니다. 같은 테이블, 같은 행이지만, 자신만의 세계를 가집니다.",
+      "audioDurationSec": 15.725714
+    },
+    {
+      "id": "side-by-side",
+      "textHash": "ae9fa34a8a10b8418cf8f35589c7302e0d64d21740b0feb8a3eb35d8d2b1e344",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/side-by-side.ae9fa34a.mp3",
+      "narrationText": "이제 나란히 비교해봅시다. 왼쪽이 fork, 오른쪽이 원본입니다. 왼쪽에서 편집하거나 삭제하거나 무엇이든 망가뜨려도, 오른쪽은 꿈쩍도 하지 않습니다. 눈으로 직접 확인할 수 있는 격리입니다.",
+      "audioDurationSec": 17.005714
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "135d18955606b9e168d1491fcd8e0c38be4fc705c68cacdbab9c765bdf2c480d",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-fork-isolation/next-tutorial.135d1895.mp3",
+      "narrationText": "그러니 마음껏 fork하세요, 프로덕션은 절대 다치지 않습니다. 다음에는 secrets를 살펴볼 텐데요, fork가 의도적으로 상속하지 않는 유일한 것입니다. 거기서 만나요!",
+      "audioDurationSec": 20.035918
+    }
+  ]
+}

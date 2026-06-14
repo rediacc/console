@@ -1,0 +1,34 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:17.404
+Gestión de Almacenamiento
+
+00:00:17.404 --> 00:00:44.303
+Un pool, repos en crecimiento
+
+00:00:44.303 --> 00:01:00.791
+Paso 1: El repo se llena
+
+00:01:00.791 --> 00:01:19.248
+Paso 2: Crecer online
+
+00:01:19.248 --> 00:01:32.577
+Paso 3: Verificar el nuevo tamaño
+
+00:01:32.577 --> 00:01:51.628
+Paso 4: Eliminar datos
+
+00:01:51.628 --> 00:02:07.395
+Paso 5: Trim, devolver bloques
+
+00:02:07.395 --> 00:02:28.604
+Paso 6: Definir la política
+
+00:02:28.604 --> 00:02:44.032
+Paso 7: Leer la política
+
+00:02:44.032 --> 00:03:00.883
+Paso 8: La vista de salud
+
+00:03:00.883 --> 00:03:11.923
+La serie termina aquí

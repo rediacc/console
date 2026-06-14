@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: et
-sourceHash: "bfdacd91b2d3b93b"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c13a0f880039d7e7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,32 +53,39 @@ Rakendus jätkab tööd varukoopia üleslaadimise ajal. Kuidas on see järjepide
 
 Sama loogika nagu [forkiga](/et/docs/tutorial-forking). `rdc` teeb esmalt forki, seejärel laadib forki üles. Fork talletab hetke; sinu elus rakendus jätkab tööd. Seisakuaeg puudub, vastuolud puuduvad.
 
-## 3. samm: taasta uuel serveril
+## 3. samm: taasta -- päriselt
 
-Oletame, et sinu server sureb. Seadista uus server, lisa see `rdc`-sse ja tõmba:
+Varukoopiad, mida sa kunagi ei taasta, on lootused, mitte varukoopiad. Võta repositoorium esmalt võrguühenduseta:
+
+<TutorialStep number={5} />
+
+Tõmba varukoopia otse salvestusest tagasi:
+
+<TutorialStep number={6} />
+
+Ja ühenda see uuesti -- täielikult taastatud:
+
+<TutorialStep number={7} />
+
+Sama tõmme töötab ka täiesti uuel serveril: seadista see, lisa `rdc`-sse ja käivita tõmme seal.
 
 ```bash
 rdc repo pull --name my-app -m new-server --from my-storage
-```
-
-Seejärel käivita see:
-
-```bash
 rdc repo up --name my-app -m new-server
 ```
 
-Sinu rakendus on tagasi. Samad andmed, samad konteinerid, erinev masin.
+Samad andmed, samad konteinerid, erinev masin.
 
-## Kiiremad varukoopiad: masinast masinasse
+## Kiiremad varukopiad: masina ja masina vahel
 
-Saad ka tõugata otse masinate vahel, ilma pilvsalvestuseta vahel:
+Varukoopia saab saata ka otse masinate vahel, ilma pilvesalvestuseta:
 
 ```bash
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **Nõuanne.** Salvestuse üleslaadimised saadavad alati kõik. Masinast masinasse saadab ainult erinevuse. Esimene masinast masinasse tõuge võtab tavapärase aja, kuid iga järgmine on palju kiirem. Suurepärane sagedaste varukoopiate jaoks.
+> **Nõuanne.** Masina ja masina vahelised tõuked saadavad pärast esimest korda ainult muutunud plokid. [Deltatransferi juhend](/et/docs/tutorial-delta-transfer) näitab seda otseülekandes.
 
 ---
 
-Edasi: [Monitoorimine](/et/docs/tutorial-monitoring).
+Edasi: [Võrgustik ja domeenid](/et/docs/tutorial-networking).

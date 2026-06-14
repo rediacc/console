@@ -1589,10 +1589,10 @@
         "failed": "Expansion failed"
       },
       "trim": {
-        "description": "Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without --name, trims every mounted repository plus the datastore itself. Repositories under an active backup are skipped",
+        "description": "Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without --name, trims every mounted repository plus the datastore itself. fstrim is skipped for repositories under an active backup; --docker reclaim still runs",
         "descriptionShort": "Reclaim free space from repositories back to the pool",
         "nameOption": "Repository to trim (default: all mounted repositories)",
-        "dockerOption": "Reclaim Docker space first (stopped containers, dangling images, build cache)",
+        "dockerOption": "Reclaim Docker space (stopped containers, dangling images, build cache); runs even while a backup snapshot is active",
         "dockerVolumesOption": "Additionally prune unused Docker volumes",
         "reportOnlyOption": "Show discard state and reclaimable estimate without trimming",
         "repoNotFound": "Repository not found: {{name}}",
@@ -1654,7 +1654,9 @@
           "description": "List repositories with autostart enabled",
           "starting": "Listing autostart repositories on \"{{machine}}\"...",
           "completed": "Autostart list retrieved",
-          "failed": "Failed to list autostart repositories"
+          "failed": "Failed to list autostart repositories",
+          "empty": "No autostart-enabled repositories on \"{{machine}}\"",
+          "service": "Autostart service: installed={{installed}}, enabled={{enabled}}"
         }
       },
       "ownership": {
@@ -1701,6 +1703,10 @@
         "optionBwlimit": "Bandwidth limit for rsync transfer (e.g., \"6M\", \"10M\")",
         "optionDeltaBase": "Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base",
         "optionStrategy": "Block-delta strategy when using a delta base: auto, physical, or shared",
+        "optionJson": "Output transfer statistics as JSON",
+        "statsDelta": "Pushed \"{{repo}}\" to {{machine}} — {{transferred}} transferred in {{duration}} (delta vs base {{base}}, image {{image}})",
+        "statsFull": "Pushed \"{{repo}}\" to {{machine}} — {{transferred}} transferred in {{duration}} (full)",
+        "statsNoBytes": "Pushed \"{{repo}}\" to {{machine}} — completed in {{duration}}",
         "deployFailed": "Failed to deploy \"{{repo}}\" after push"
       },
       "pull": {
@@ -1732,6 +1738,7 @@
         "provisioning": "Provisioning target machine {{machine}} via {{provider}}...",
         "phase1": "Phase 1: Transferring bulk data (source stays running)...",
         "phase1Done": "Bulk transfer complete",
+        "phase1Stats": "Transferred {{transferred}} in {{duration}} — source stayed online",
         "phase1Failed": "Bulk transfer failed",
         "phase2": "Phase 2: Cutover (brief downtime)...",
         "checkpointing": "Creating CRIU checkpoint...",
@@ -1740,6 +1747,7 @@
         "stopFailed": "Failed to stop source services",
         "deltaSync": "Syncing delta...",
         "deltaDone": "Delta sync complete",
+        "phase2Stats": "Cutover (DOWNTIME): {{transferred}} in {{duration}}",
         "deltaFailed": "Delta sync failed",
         "unmountingSource": "Unmounting source...",
         "sourceUnmounted": "Source unmounted",
@@ -1795,7 +1803,10 @@
         "containerNotFound": "Container \"{{name}}\" not found in repository \"{{repository}}\"",
         "noPorts": "No exposed ports found on container \"{{container}}\". Specify --port",
         "multiplePorts": "Multiple ports exposed on \"{{container}}\". Specify --port:\n{{list}}",
-        "noServiceIP": "Container \"{{container}}\" has no service IP assigned"
+        "noServiceIP": "Container \"{{container}}\" has no service IP assigned",
+        "portInUse": "Local port {{port}} is already in use. Pick another with --local",
+        "notReady": "Tunnel did not become ready on localhost:{{localPort}} within 15s",
+        "urlOnlyOption": "Print only the local URL once the tunnel is ready (machine-readable)"
       },
       "secret": {
         "description": "Manage per-repo secrets injected at deploy time. Write-only: get returns digest only (never plaintext), set/unset require --current digest match or --rotate-secret. Two delivery modes: env (REDIACC_SECRET_<KEY>) and file (tmpfs at /var/run/rediacc/secrets/<networkId>/<KEY> via compose `secrets:`). Secrets never enter the encrypted LUKS image; forks inherit none.",
@@ -2133,7 +2144,14 @@
         "provisioningRenet": "Provisioning renet to remote...",
         "settingUpEnv": "Setting up remote environment...",
         "opening": "Opening VS Code: {{connection}} → {{path}}",
-        "success": "VS Code launched successfully."
+        "success": "VS Code launched successfully.",
+        "installingServer": "Ensuring {{provider}} {{version}} is installed on the machine...",
+        "startingServer": "Starting {{provider}} inside the repo sandbox...",
+        "serverReused": "Reusing the already-running server",
+        "tunnelReady": "Tunnel ready on localhost:{{port}}",
+        "browserUrl": "Open VS Code in your browser: {{url}}",
+        "passwordNote": "Login password: {{password}}",
+        "openingBrowser": "Opening your browser..."
       },
       "list": {
         "description": "List configured VS Code SSH connections",
@@ -2168,6 +2186,19 @@
         "missingSettings": "  Missing Settings:",
         "sshConfig": "\nSSH Config: {{path}}",
         "activeConnections": "Active Connections: {{count}}"
+      },
+      "serve": {
+        "description": "Manage the in-sandbox browser VS Code server",
+        "status": {
+          "description": "Show whether the browser VS Code server is running",
+          "running": "{{provider}} running (pid {{pid}}, port {{port}})",
+          "stopped": "{{provider}} is not running"
+        },
+        "stop": {
+          "description": "Stop the browser VS Code server",
+          "stopped": "{{provider}} stopped",
+          "notRunning": "{{provider}} was not running"
+        }
       }
     },
     "user": {
@@ -2417,7 +2448,11 @@
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",
-      "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable."
+      "notFound": "VS Code not found.\n\nPlease install from: https://code.visualstudio.com/\nOr set REDIACC_VSCODE_PATH environment variable.",
+      "browserNeedsRepo": "vscode --browser serves a repository sandbox — pass --repository <name>",
+      "unsupportedArch": "Unsupported machine architecture for browser VS Code: {{arch}}",
+      "serverInstallFailed": "Failed to install {{provider}}: {{error}}",
+      "serverStartFailed": "Failed to start {{provider}}: {{error}}"
     },
     "tokenExpired": "Token expired. Please login again.",
     "unexpectedError": "Unexpected error: {{message}}",
@@ -2625,7 +2660,11 @@
     "opsLite": "Skip VM provisioning (status only)",
     "opsSkipOrchestration": "Skip cluster orchestration",
     "opsOS": "VM operating system (e.g., ubuntu-24.04, debian-13)",
-    "opsSSHUser": "SSH username for VM connection"
+    "opsSSHUser": "SSH username for VM connection",
+    "vscodeBrowser": "Serve browser VS Code from inside the repo sandbox (no local VS Code needed)",
+    "vscodeNoOpen": "Print the URL without launching the local browser",
+    "vscodeServerProvider": "Browser VS Code server implementation (openvscode, code-server)",
+    "vscodeServerArchive": "Pre-staged server tarball path on the machine (airgapped installs)"
   },
   "prompts": {
     "apiUrl": "API URL:",

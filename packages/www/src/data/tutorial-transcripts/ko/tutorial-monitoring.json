@@ -6,7 +6,7 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.411841,
+      "at": 2.416158,
       "text": "시스템 뷰부터 시작합니다. 머신 쿼리 명령에 --system 필터를 사용하면 가동 시간, 디스크 사용량, 스토리지 상태를 확인할 수 있습니다.",
       "afterText": "가동 시간, 디스크, 스토리지. 필요한 모든 정보가 한눈에 들어옵니다.",
       "cardLabel": "시스템 상태",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 8.597185,
+      "at": 8.503611,
       "text": "이번에는 컨테이너 뷰입니다. 머신의 모든 저장소에서 실행 중인 컨테이너를 나열합니다. 이름, 상태, 헬스, CPU, 메모리, 그리고 각 컨테이너를 소유한 저장소 정보가 표시됩니다.",
       "afterText": "모든 repo의 모든 컨테이너를 하나의 뷰에서 확인할 수 있습니다.",
       "cardLabel": "Containers",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 15.126152,
+      "at": 14.799411,
       "text": "그리고 저장소 뷰입니다. 크기, 마운트 상태, Docker 데몬 상태, 디스크 사용량을 확인합니다. 각 격리된 환경에 대해 알아야 할 모든 정보가 여기에 있습니다.",
       "afterText": "모든 repo와 그 데몬, 디스크 사용량을 한눈에 볼 수 있습니다.",
       "cardLabel": "Repositories",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 24.385141,
+      "at": 21.195367,
       "text": "필터 없이 머신 쿼리 명령을 실행하면 모든 정보를 한 번에 볼 수 있습니다. 시스템 정보, 컨테이너, 저장소가 모두 함께 표시됩니다.",
       "afterText": "필터 없이 모든 정보를 함께 확인할 수 있습니다.",
       "cardLabel": "전체 쿼리",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 32.334422,
+      "at": 26.969407,
       "text": "마지막으로 노트북에서 로컬 상태를 점검하는 진단 검사입니다. Node, SSH 키, renet, Docker 등 CLI가 의존하는 모든 항목을 확인합니다. 이것으로 전체 시리즈가 완료됩니다. 설치부터 모니터링까지, 모두 터미널에서 진행됩니다.",
       "afterText": "모두 녹색이면 로컬 CLI가 정상이라는 뜻입니다.",
       "cardLabel": "Doctor",
@@ -60,7 +60,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "이걸로 시리즈가 마무리돼요. 이제 설치, 구성, 배포, fork, 라이브 전환, 자동 시작, 백업, 모니터링까지 모두 터미널에서 할 수 있어요!"
+      "text": "이제 설치, 설정, 배포, fork, 라이브 전환, 자동 시작, 백업, 모니터링까지 모두 할 수 있게 됐습니다. 다음은 고급 과정입니다. commit과 rollback으로 코드처럼 repo를 버전 관리하는 방법을 알아봅니다."
     }
   ],
   "title": "모니터링",
@@ -72,6 +72,6 @@
     "cast-step-2": "Repos",
     "cast-step-3": "한 번에 모두 확인",
     "cast-step-4": "로컬 상태 점검",
-    "outro": "시리즈 마무리"
+    "outro": "다음: Branching, Commit과 Rollback"
   }
 }

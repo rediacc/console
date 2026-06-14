@@ -6,8 +6,8 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.40432,
-      "text": "Birinci adım. Mevcut şablonları listeliyoruz. Rediacc, yaygın uygulamalar için hazır kurulumlar sunar: Postgres, Redis, web sunucuları ve daha fazlası. Sıfırdan docker-compose yazmak zorunda kalmıyorsunuz.",
+      "at": 2.408078,
+      "text": "Birinci adım: mevcut şablonları listeleyin. Rediacc, yaygın uygulamalar için hazır kurulumlarla gelir, yani docker-compose'u sıfırdan yazmak zorunda kalmazsınız.",
       "afterText": "Tam şablon kataloğu. Her biri test edilmiş bir compose ile Rediaccfile ikilisi.",
       "cardLabel": "Şablonları Listele",
       "prose": "Birinci adım: mevcut şablonları listeleyin. Rediacc, yaygın uygulamalar için önceden hazırlanmış şablonlarla gelir, bu sayede docker-compose dosyasını sıfırdan yazmanıza gerek kalmaz."
@@ -15,8 +15,8 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.041569,
-      "text": "İkinci adım. app-postgres şablonunu depoya uyguluyoruz. İki dosya oluşuyor: container'ları tanımlayan docker-compose.yml ve başlatma ile durdurma yaşam döngüsü kancalarını tanımlayan Rediaccfile.",
+      "at": 6.077084,
+      "text": "İkinci adım: app-postgres şablonunu repo'ya ekleyin. Test edilmiş bir dosya seti, doğrudan kopyalanır.",
       "afterText": "Şablon uygulandı. Depoda artık compose dosyası ve Rediaccfile var.",
       "cardLabel": "Şablon Uygula",
       "prose": "İkinci adım: app-postgres şablonunu repo'ya uygulayın. Bu, test edilmiş bir dosya setini repo'ya kopyalar."
@@ -24,17 +24,17 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 13.566247,
-      "text": "Üçüncü adım. Depoyu ayağa kaldırıyoruz. Araç container'ları başlatır, şifreli birimi bağlar ve izole Docker daemon'ını yapılandırır. Uygulama artık çalışıyor.",
+      "at": 14.72542,
+      "text": "Repo'nun içine bir göz atın ve neler geldiğini listeleyin: başlatma ve durdurma hook'larını içeren bir Rediaccfile ve container'ları tanımlayan bir docker-compose dosyası.",
       "afterText": "Container'lar çalışıyor, birim bağlandı, izole Docker daemon ayakta.",
       "cardLabel": "Dosyaları Gör",
-      "prose": "repo'ya bağlanın ve şablonun eklediği öğeleri listeleyin: start ve stop hook'larını içeren bir Rediaccfile ve container'ları tanımlayan bir docker-compose.yml. 2>/dev/null bağlantı günlüklerini gizler, böylece yalnızca dosya listesi görünür."
+      "prose": "Repo'ya bağlanın ve şablonun eklediği dosyaları listeleyin: yaşam döngüsü hook'larını içeren bir Rediaccfile ve container'ları tanımlayan bir docker-compose.yml."
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 23.282435,
-      "text": "docker ps ile doğruluyoruz. Bu görünümün yalnızca kendi depomuzun container'larını gösterdiğine dikkat edin. Aynı sunucudaki diğer depolar kendi Docker daemon'larına sahip ve buradan tamamen görünmez.",
+      "at": 21.699752,
+      "text": "Üçüncü adım: repo'yu başlatın. Tek bir komutla CLI, şifreli birimi bağlar, izole Docker daemon'ını başlatır ve container'ları ayağa kaldırır.",
       "afterText": "Yalnızca bu deponun container'ları. İzolasyon yapılandırma değil, gerçek.",
       "cardLabel": "Repo'yu Başlat",
       "prose": "repo'yu başlatın. CLI, container'ları başlatır, şifreli birimi bağlar ve izole Docker daemon'ını devreye alır."
@@ -42,8 +42,8 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 30.345778,
-      "text": "Nelerin çalıştığını doğrulayalım. docker ps burada yalnızca bu repoya ait container'ları listeler. Aynı sunucudaki diğer repolar kendi daemon'larına sahiptir ve bu görünümden tamamen görünmezdir.",
+      "at": 28.8781,
+      "text": "Nelerin çalıştığını doğrulayın. Buradaki Docker ps yalnızca bu repo'nun container'larını listeler. Bu sunucudaki diğer tüm repo'ların kendi daemon'ı vardır ve bu görünümden tamamen gizlidirler.",
       "afterText": "Yalnızca bu reponun container'ları. İzolasyon gerçektir, yapılandırma değil.",
       "cardLabel": "İzolasyonu Doğrula",
       "prose": "Nelerin çalıştığını doğrulayın. docker ps yalnızca bu repo'nun container'larını listeler; aynı sunucudaki diğer repo'ların kendi Docker daemon'ları vardır ve bu görünümden görünmezler."
@@ -52,11 +52,15 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Gerçek bir uygulama dağıtma zamanı! Üç kısa adımda boş bir depodan çalışan container'lara geçeceğiz."
+      "text": "Gerçek bir uygulama dağıtma zamanı! Boş bir repo'dan çalışan container'lara üç adımda: seç, uygula, çalıştır."
     },
     {
       "id": "pick-apply-run",
       "text": "Akış basit: bir şablon seçin, depoya uygulayın ve çalıştırın. CLI yerleşik şablonlarla gelir; bu sayede sıfırdan docker-compose yazmak zorunda kalmazsınız."
+    },
+    {
+      "id": "vscode-file-tour",
+      "text": "cat yerine editör mü tercih edersiniz? Aynı dosyalar, tarayıcınızdan doğrudan VS Code'da açılıyor. İşte Rediaccfile ve yanındaki compose dosyası. Bu kurulumu ilerleyen bir eğitimde düzgünce geziyoruz."
     },
     {
       "id": "next-tutorial",
@@ -72,6 +76,7 @@
     "cast-step-2": "Adım 3: Şablonun eklediklerini gör",
     "cast-step-3": "Adım 4: repo'yu başlat",
     "cast-step-4": "Adım 5: İzolasyonu doğrula",
-    "outro": "Sonraki: Repo'nuzla Çalışma"
+    "outro": "Sonraki: Repo'nuzla Çalışma",
+    "vscode-file-tour": "Bonus: VS Code'da aynı dosyalar"
   }
 }

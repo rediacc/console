@@ -6,7 +6,7 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 2.409686,
+      "at": 2.412347,
       "text": "Loome serverile 2 gigabaidise krüpteeritud repositooriumi. Repositoorium on puhkeolekus üksik krüpteeritud fail. Ühendamisel muutub see kaustaks, millel on oma Dockeri deemon ja oma rakenduse andmed, täielikult isoleeritud kõigest muust serveris.",
       "afterText": "Repositoorium on loodud. Krüpteeritud fail on serveris, valmis ühendamiseks.",
       "cardLabel": "Loo repo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 11.760396,
+      "at": 11.676359,
       "text": "Loetleme masina repositooriumid, et kinnitada uue registreerimist. Edaspidi saab repositooriumi avada VS Code'is, juurutada, teha sellest forki või varundada -- kõik sülearvutist.",
       "afterText": "Seal see on, registreeritud ja kasutusvalmis.",
       "cardLabel": "Loetle repod",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "at": 17.238181,
+      "at": 17.041073,
       "text": "Üks kasulik võimalus: avada repo otse VS Code'is selle käsuga. Me ei käivita siin redaktorit, kuid see alustab SSH kaudu repo'sse kaugseanssi, et saaksite selle faile muuta.",
       "afterText": "Käivitage see oma sülearvutis, et muuta repo faile VS Code'is.",
       "cardLabel": "Ava VS Code'is",

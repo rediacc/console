@@ -1,0 +1,900 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.902,
+      "text": "Head uudised:",
+      "words": [
+        { "start": 1, "end": 1.451, "char": [0, 4] },
+        { "start": 1.451, "end": 1.902, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 1.902,
+      "end": 3.707,
+      "text": "selleks pole terminali vaja!",
+      "words": [
+        { "start": 1.902, "end": 2.353, "char": [0, 7] },
+        { "start": 2.353, "end": 2.804, "char": [8, 12] },
+        { "start": 2.804, "end": 3.256, "char": [13, 22] },
+        { "start": 3.256, "end": 3.707, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 3.707,
+      "end": 6.413,
+      "text": "Avame täieliku VS Code otse brauseris,",
+      "words": [
+        { "start": 3.707, "end": 4.158, "char": [0, 5] },
+        { "start": 4.158, "end": 4.609, "char": [6, 14] },
+        { "start": 4.609, "end": 5.06, "char": [15, 17] },
+        { "start": 5.06, "end": 5.511, "char": [18, 22] },
+        { "start": 5.511, "end": 5.962, "char": [23, 27] },
+        { "start": 5.962, "end": 6.413, "char": [28, 38] }
+      ]
+    },
+    {
+      "start": 6.413,
+      "end": 7.767,
+      "text": "loome mõned failid,",
+      "words": [
+        { "start": 6.413, "end": 6.864, "char": [0, 5] },
+        { "start": 6.864, "end": 7.316, "char": [6, 11] },
+        { "start": 7.316, "end": 7.767, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 7.767,
+      "end": 10.022,
+      "text": "käivitame mõned käsud ja vaatame,",
+      "words": [
+        { "start": 7.767, "end": 8.218, "char": [0, 9] },
+        { "start": 8.218, "end": 8.669, "char": [10, 15] },
+        { "start": 8.669, "end": 9.12, "char": [16, 21] },
+        { "start": 9.12, "end": 9.571, "char": [22, 24] },
+        { "start": 9.571, "end": 10.022, "char": [25, 33] }
+      ]
+    },
+    {
+      "start": 10.022,
+      "end": 12.729,
+      "text": "kuidas kernel kõik repo sees hoiab.",
+      "words": [
+        { "start": 10.022, "end": 10.473, "char": [0, 6] },
+        { "start": 10.473, "end": 10.925, "char": [7, 13] },
+        { "start": 10.925, "end": 11.376, "char": [14, 18] },
+        { "start": 11.376, "end": 11.827, "char": [19, 23] },
+        { "start": 11.827, "end": 12.278, "char": [24, 28] },
+        { "start": 12.278, "end": 12.729, "char": [29, 35] }
+      ]
+    },
+    {
+      "start": 13.503,
+      "end": 14.97,
+      "text": "Idee on selline.",
+      "words": [
+        { "start": 13.503, "end": 13.992, "char": [0, 4] },
+        { "start": 13.992, "end": 14.481, "char": [5, 7] },
+        { "start": 14.481, "end": 14.97, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 14.97,
+      "end": 17.415,
+      "text": "Editor ei tööta sinu sülearvutis.",
+      "words": [
+        { "start": 14.97, "end": 15.459, "char": [0, 6] },
+        { "start": 15.459, "end": 15.948, "char": [7, 9] },
+        { "start": 15.948, "end": 16.437, "char": [10, 15] },
+        { "start": 16.437, "end": 16.926, "char": [16, 20] },
+        { "start": 16.926, "end": 17.415, "char": [21, 33] }
+      ]
+    },
+    {
+      "start": 17.415,
+      "end": 20.348,
+      "text": "See töötab serveri repo sandbox'is ja",
+      "words": [
+        { "start": 17.415, "end": 17.904, "char": [0, 3] },
+        { "start": 17.904, "end": 18.393, "char": [4, 10] },
+        { "start": 18.393, "end": 18.882, "char": [11, 18] },
+        { "start": 18.882, "end": 19.37, "char": [19, 23] },
+        { "start": 19.37, "end": 19.859, "char": [24, 34] },
+        { "start": 19.859, "end": 20.348, "char": [35, 37] }
+      ]
+    },
+    {
+      "start": 20.348,
+      "end": 23.282,
+      "text": "sinu brauser jõuab selleni SSH-tunneli kaudu.",
+      "words": [
+        { "start": 20.348, "end": 20.837, "char": [0, 4] },
+        { "start": 20.837, "end": 21.326, "char": [5, 12] },
+        { "start": 21.326, "end": 21.815, "char": [13, 18] },
+        { "start": 21.815, "end": 22.304, "char": [19, 26] },
+        { "start": 22.304, "end": 22.793, "char": [27, 38] },
+        { "start": 22.793, "end": 23.282, "char": [39, 45] }
+      ]
+    },
+    {
+      "start": 23.282,
+      "end": 24.749,
+      "text": "Nii näevad failipuu,",
+      "words": [
+        { "start": 23.282, "end": 23.771, "char": [0, 3] },
+        { "start": 23.771, "end": 24.26, "char": [4, 10] },
+        { "start": 24.26, "end": 24.749, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 24.749,
+      "end": 26.705,
+      "text": "sisseehitatud terminal ja kõik,",
+      "words": [
+        { "start": 24.749, "end": 25.238, "char": [0, 13] },
+        { "start": 25.238, "end": 25.727, "char": [14, 22] },
+        { "start": 25.727, "end": 26.216, "char": [23, 25] },
+        { "start": 26.216, "end": 26.705, "char": [26, 31] }
+      ]
+    },
+    {
+      "start": 26.705,
+      "end": 28.172,
+      "text": "mida sealt käivitad,",
+      "words": [
+        { "start": 26.705, "end": 27.194, "char": [0, 4] },
+        { "start": 27.194, "end": 27.683, "char": [5, 10] },
+        { "start": 27.683, "end": 28.172, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 28.172,
+      "end": 29.15,
+      "text": "täpselt seda,",
+      "words": [
+        { "start": 28.172, "end": 28.661, "char": [0, 7] },
+        { "start": 28.661, "end": 29.15, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 29.15,
+      "end": 30.617,
+      "text": "mida repo näeb,",
+      "words": [
+        { "start": 29.15, "end": 29.639, "char": [0, 4] },
+        { "start": 29.639, "end": 30.128, "char": [5, 9] },
+        { "start": 30.128, "end": 30.617, "char": [10, 15] }
+      ]
+    },
+    {
+      "start": 30.617,
+      "end": 32.572,
+      "text": "ja mitte midagi muud.",
+      "words": [
+        { "start": 30.617, "end": 31.106, "char": [0, 2] },
+        { "start": 31.106, "end": 31.594, "char": [3, 8] },
+        { "start": 31.594, "end": 32.083, "char": [9, 15] },
+        { "start": 32.083, "end": 32.572, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 35.843,
+      "end": 36.613,
+      "text": "One command.",
+      "words": [
+        { "start": 35.843, "end": 36.228, "char": [0, 3] },
+        { "start": 36.228, "end": 36.613, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 36.613,
+      "end": 39.309,
+      "text": "The CLI installs the editor server on",
+      "words": [
+        { "start": 36.613, "end": 36.998, "char": [0, 3] },
+        { "start": 36.998, "end": 37.383, "char": [4, 7] },
+        { "start": 37.383, "end": 37.769, "char": [8, 16] },
+        { "start": 37.769, "end": 38.154, "char": [17, 20] },
+        { "start": 38.154, "end": 38.539, "char": [21, 27] },
+        { "start": 38.539, "end": 38.924, "char": [28, 34] },
+        { "start": 38.924, "end": 39.309, "char": [35, 37] }
+      ]
+    },
+    {
+      "start": 39.309,
+      "end": 40.464,
+      "text": "the machine once,",
+      "words": [
+        { "start": 39.309, "end": 39.694, "char": [0, 3] },
+        { "start": 39.694, "end": 40.079, "char": [4, 11] },
+        { "start": 40.079, "end": 40.464, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 40.464,
+      "end": 42.775,
+      "text": "starts it inside the repo sandbox,",
+      "words": [
+        { "start": 40.464, "end": 40.85, "char": [0, 6] },
+        { "start": 40.85, "end": 41.235, "char": [7, 9] },
+        { "start": 41.235, "end": 41.62, "char": [10, 16] },
+        { "start": 41.62, "end": 42.005, "char": [17, 20] },
+        { "start": 42.005, "end": 42.39, "char": [21, 25] },
+        { "start": 42.39, "end": 42.775, "char": [26, 34] }
+      ]
+    },
+    {
+      "start": 42.775,
+      "end": 43.931,
+      "text": "opens a tunnel,",
+      "words": [
+        { "start": 42.775, "end": 43.16, "char": [0, 5] },
+        { "start": 43.16, "end": 43.545, "char": [6, 7] },
+        { "start": 43.545, "end": 43.931, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 43.931,
+      "end": 45.856,
+      "text": "and hands you a link.",
+      "words": [
+        { "start": 43.931, "end": 44.316, "char": [0, 3] },
+        { "start": 44.316, "end": 44.701, "char": [4, 9] },
+        { "start": 44.701, "end": 45.086, "char": [10, 13] },
+        { "start": 45.086, "end": 45.471, "char": [14, 15] },
+        { "start": 45.471, "end": 45.856, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 45.856,
+      "end": 47.397,
+      "text": "No local VS Code,",
+      "words": [
+        { "start": 45.856, "end": 46.241, "char": [0, 2] },
+        { "start": 46.241, "end": 46.626, "char": [3, 8] },
+        { "start": 46.626, "end": 47.011, "char": [9, 11] },
+        { "start": 47.011, "end": 47.397, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 47.397,
+      "end": 49.322,
+      "text": "no extensions to set up.",
+      "words": [
+        { "start": 47.397, "end": 47.782, "char": [0, 2] },
+        { "start": 47.782, "end": 48.167, "char": [3, 13] },
+        { "start": 48.167, "end": 48.552, "char": [14, 16] },
+        { "start": 48.552, "end": 48.937, "char": [17, 20] },
+        { "start": 48.937, "end": 49.322, "char": [21, 24] }
+      ]
+    },
+    {
+      "start": 52.322,
+      "end": 54.739,
+      "text": "See URL on sinu redaktor.",
+      "words": [
+        { "start": 52.322, "end": 52.805, "char": [0, 3] },
+        { "start": 52.805, "end": 53.289, "char": [4, 7] },
+        { "start": 53.289, "end": 53.772, "char": [8, 10] },
+        { "start": 53.772, "end": 54.255, "char": [11, 15] },
+        { "start": 54.255, "end": 54.739, "char": [16, 25] }
+      ]
+    },
+    {
+      "start": 54.739,
+      "end": 56.188,
+      "text": "Töötab igal opsüsteemil,",
+      "words": [
+        { "start": 54.739, "end": 55.222, "char": [0, 6] },
+        { "start": 55.222, "end": 55.705, "char": [7, 11] },
+        { "start": 55.705, "end": 56.188, "char": [12, 24] }
+      ]
+    },
+    {
+      "start": 56.188,
+      "end": 58.121,
+      "text": "ainus nõue on brauser.",
+      "words": [
+        { "start": 56.188, "end": 56.672, "char": [0, 5] },
+        { "start": 56.672, "end": 57.155, "char": [6, 10] },
+        { "start": 57.155, "end": 57.638, "char": [11, 13] },
+        { "start": 57.638, "end": 58.121, "char": [14, 22] }
+      ]
+    },
+    {
+      "start": 58.647,
+      "end": 60.338,
+      "text": "Ja siin ta on:",
+      "words": [
+        { "start": 58.647, "end": 59.07, "char": [0, 2] },
+        { "start": 59.07, "end": 59.493, "char": [3, 7] },
+        { "start": 59.493, "end": 59.916, "char": [8, 10] },
+        { "start": 59.916, "end": 60.338, "char": [11, 14] }
+      ]
+    },
+    {
+      "start": 60.338,
+      "end": 61.184,
+      "text": "VS Code,",
+      "words": [
+        { "start": 60.338, "end": 60.761, "char": [0, 2] },
+        { "start": 60.761, "end": 61.184, "char": [3, 8] }
+      ]
+    },
+    {
+      "start": 61.184,
+      "end": 62.03,
+      "text": "brauseri vahekaardil.",
+      "words": [
+        { "start": 61.184, "end": 61.607, "char": [0, 8] },
+        { "start": 61.607, "end": 62.03, "char": [9, 21] }
+      ]
+    },
+    {
+      "start": 62.03,
+      "end": 64.567,
+      "text": "Vasakul olev failipuu näitab repot ja",
+      "words": [
+        { "start": 62.03, "end": 62.453, "char": [0, 7] },
+        { "start": 62.453, "end": 62.876, "char": [8, 12] },
+        { "start": 62.876, "end": 63.298, "char": [13, 21] },
+        { "start": 63.298, "end": 63.721, "char": [22, 28] },
+        { "start": 63.721, "end": 64.144, "char": [29, 34] },
+        { "start": 64.144, "end": 64.567, "char": [35, 37] }
+      ]
+    },
+    {
+      "start": 64.567,
+      "end": 65.413,
+      "text": "ainult repot.",
+      "words": [
+        { "start": 64.567, "end": 64.99, "char": [0, 6] },
+        { "start": 64.99, "end": 65.413, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 71.147,
+      "end": 72.779,
+      "text": "Loome päris faili,",
+      "words": [
+        { "start": 71.147, "end": 71.691, "char": [0, 5] },
+        { "start": 71.691, "end": 72.235, "char": [6, 11] },
+        { "start": 72.235, "end": 72.779, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 72.779,
+      "end": 74.411,
+      "text": "terminali pole vaja.",
+      "words": [
+        { "start": 72.779, "end": 73.323, "char": [0, 9] },
+        { "start": 73.323, "end": 73.867, "char": [10, 14] },
+        { "start": 73.867, "end": 74.411, "char": [15, 20] }
+      ]
+    },
+    {
+      "start": 74.411,
+      "end": 75.499,
+      "text": "Uus redaktor,",
+      "words": [
+        { "start": 74.411, "end": 74.955, "char": [0, 3] },
+        { "start": 74.955, "end": 75.499, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 75.499,
+      "end": 78.219,
+      "text": "paar rida ja salvestame selle",
+      "words": [
+        { "start": 75.499, "end": 76.043, "char": [0, 4] },
+        { "start": 76.043, "end": 76.587, "char": [5, 9] },
+        { "start": 76.587, "end": 77.131, "char": [10, 12] },
+        { "start": 77.131, "end": 77.675, "char": [13, 23] },
+        { "start": 77.675, "end": 78.219, "char": [24, 29] }
+      ]
+    },
+    {
+      "start": 78.219,
+      "end": 79.851,
+      "text": "notes/todo.md nime alla.",
+      "words": [
+        { "start": 78.219, "end": 78.763, "char": [0, 13] },
+        { "start": 78.763, "end": 79.307, "char": [14, 18] },
+        { "start": 79.307, "end": 79.851, "char": [19, 24] }
+      ]
+    },
+    {
+      "start": 79.851,
+      "end": 81.484,
+      "text": "Kaust ilmub vasakule,",
+      "words": [
+        { "start": 79.851, "end": 80.395, "char": [0, 5] },
+        { "start": 80.395, "end": 80.939, "char": [6, 11] },
+        { "start": 80.939, "end": 81.484, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 81.484,
+      "end": 83.66,
+      "text": "kui fail repo'sse jõuab.",
+      "words": [
+        { "start": 81.484, "end": 82.028, "char": [0, 3] },
+        { "start": 82.028, "end": 82.572, "char": [4, 8] },
+        { "start": 82.572, "end": 83.116, "char": [9, 17] },
+        { "start": 83.116, "end": 83.66, "char": [18, 24] }
+      ]
+    },
+    {
+      "start": 89.647,
+      "end": 92.604,
+      "text": "Sisseehitatud terminal töötab samuti ja siin",
+      "words": [
+        { "start": 89.647, "end": 90.14, "char": [0, 13] },
+        { "start": 90.14, "end": 90.633, "char": [14, 22] },
+        { "start": 90.633, "end": 91.125, "char": [23, 29] },
+        { "start": 91.125, "end": 91.618, "char": [30, 36] },
+        { "start": 91.618, "end": 92.111, "char": [37, 39] },
+        { "start": 92.111, "end": 92.604, "char": [40, 44] }
+      ]
+    },
+    {
+      "start": 92.604,
+      "end": 94.082,
+      "text": "on meie fail.",
+      "words": [
+        { "start": 92.604, "end": 93.096, "char": [0, 2] },
+        { "start": 93.096, "end": 93.589, "char": [3, 7] },
+        { "start": 93.589, "end": 94.082, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 94.082,
+      "end": 96.546,
+      "text": "Nüüd proovime repost välja vaadata:",
+      "words": [
+        { "start": 94.082, "end": 94.575, "char": [0, 4] },
+        { "start": 94.575, "end": 95.067, "char": [5, 13] },
+        { "start": 95.067, "end": 95.56, "char": [14, 20] },
+        { "start": 95.56, "end": 96.053, "char": [21, 26] },
+        { "start": 96.053, "end": 96.546, "char": [27, 35] }
+      ]
+    },
+    {
+      "start": 96.546,
+      "end": 97.531,
+      "text": "juurdepääs keelatud.",
+      "words": [
+        { "start": 96.546, "end": 97.038, "char": [0, 10] },
+        { "start": 97.038, "end": 97.531, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 97.531,
+      "end": 99.01,
+      "text": "See pole seadistus,",
+      "words": [
+        { "start": 97.531, "end": 98.024, "char": [0, 3] },
+        { "start": 98.024, "end": 98.517, "char": [4, 8] },
+        { "start": 98.517, "end": 99.01, "char": [9, 19] }
+      ]
+    },
+    {
+      "start": 99.01,
+      "end": 100.488,
+      "text": "see on kernel.",
+      "words": [
+        { "start": 99.01, "end": 99.502, "char": [0, 3] },
+        { "start": 99.502, "end": 99.995, "char": [4, 6] },
+        { "start": 99.995, "end": 100.488, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 108.647,
+      "end": 110.685,
+      "text": "Same repo from the plain terminal:",
+      "words": [
+        { "start": 108.647, "end": 108.987, "char": [0, 4] },
+        { "start": 108.987, "end": 109.326, "char": [5, 9] },
+        { "start": 109.326, "end": 109.666, "char": [10, 14] },
+        { "start": 109.666, "end": 110.005, "char": [15, 18] },
+        { "start": 110.005, "end": 110.345, "char": [19, 24] },
+        { "start": 110.345, "end": 110.685, "char": [25, 34] }
+      ]
+    },
+    {
+      "start": 110.685,
+      "end": 112.722,
+      "text": "the working directory is the repo,",
+      "words": [
+        { "start": 110.685, "end": 111.024, "char": [0, 3] },
+        { "start": 111.024, "end": 111.364, "char": [4, 11] },
+        { "start": 111.364, "end": 111.703, "char": [12, 21] },
+        { "start": 111.703, "end": 112.043, "char": [22, 24] },
+        { "start": 112.043, "end": 112.382, "char": [25, 28] },
+        { "start": 112.382, "end": 112.722, "char": [29, 34] }
+      ]
+    },
+    {
+      "start": 112.722,
+      "end": 114.76,
+      "text": "the files are the repo's files.",
+      "words": [
+        { "start": 112.722, "end": 113.062, "char": [0, 3] },
+        { "start": 113.062, "end": 113.401, "char": [4, 9] },
+        { "start": 113.401, "end": 113.741, "char": [10, 13] },
+        { "start": 113.741, "end": 114.08, "char": [14, 17] },
+        { "start": 114.08, "end": 114.42, "char": [18, 24] },
+        { "start": 114.42, "end": 114.76, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 117.563,
+      "end": 120.087,
+      "text": "Terminal ja redaktor on ühel meelel,",
+      "words": [
+        { "start": 117.563, "end": 117.984, "char": [0, 8] },
+        { "start": 117.984, "end": 118.405, "char": [9, 11] },
+        { "start": 118.405, "end": 118.825, "char": [12, 20] },
+        { "start": 118.825, "end": 119.246, "char": [21, 23] },
+        { "start": 119.246, "end": 119.666, "char": [24, 28] },
+        { "start": 119.666, "end": 120.087, "char": [29, 36] }
+      ]
+    },
+    {
+      "start": 120.087,
+      "end": 121.769,
+      "text": "see on sama sandbox.",
+      "words": [
+        { "start": 120.087, "end": 120.507, "char": [0, 3] },
+        { "start": 120.507, "end": 120.928, "char": [4, 6] },
+        { "start": 120.928, "end": 121.349, "char": [7, 11] },
+        { "start": 121.349, "end": 121.769, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 125.033,
+      "end": 127.602,
+      "text": "And the file we created in the",
+      "words": [
+        { "start": 125.033, "end": 125.4, "char": [0, 3] },
+        { "start": 125.4, "end": 125.767, "char": [4, 7] },
+        { "start": 125.767, "end": 126.134, "char": [8, 12] },
+        { "start": 126.134, "end": 126.501, "char": [13, 15] },
+        { "start": 126.501, "end": 126.868, "char": [16, 23] },
+        { "start": 126.868, "end": 127.235, "char": [24, 26] },
+        { "start": 127.235, "end": 127.602, "char": [27, 30] }
+      ]
+    },
+    {
+      "start": 127.602,
+      "end": 128.336,
+      "text": "browser editor?",
+      "words": [
+        { "start": 127.602, "end": 127.969, "char": [0, 7] },
+        { "start": 127.969, "end": 128.336, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 128.336,
+      "end": 129.07,
+      "text": "Right here.",
+      "words": [
+        { "start": 128.336, "end": 128.703, "char": [0, 5] },
+        { "start": 128.703, "end": 129.07, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 129.07,
+      "end": 131.638,
+      "text": "Files made in VS Code are real",
+      "words": [
+        { "start": 129.07, "end": 129.436, "char": [0, 5] },
+        { "start": 129.436, "end": 129.803, "char": [6, 10] },
+        { "start": 129.803, "end": 130.17, "char": [11, 13] },
+        { "start": 130.17, "end": 130.537, "char": [14, 16] },
+        { "start": 130.537, "end": 130.904, "char": [17, 21] },
+        { "start": 130.904, "end": 131.271, "char": [22, 25] },
+        { "start": 131.271, "end": 131.638, "char": [26, 30] }
+      ]
+    },
+    {
+      "start": 131.638,
+      "end": 132.372,
+      "text": "repo files,",
+      "words": [
+        { "start": 131.638, "end": 132.005, "char": [0, 4] },
+        { "start": 132.005, "end": 132.372, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 132.372,
+      "end": 132.739,
+      "text": "instantly.",
+      "words": [{ "start": 132.372, "end": 132.739, "char": [0, 10] }]
+    },
+    {
+      "start": 134.489,
+      "end": 135.678,
+      "text": "Loodud brauseris,",
+      "words": [
+        { "start": 134.489, "end": 135.083, "char": [0, 6] },
+        { "start": 135.083, "end": 135.678, "char": [7, 17] }
+      ]
+    },
+    {
+      "start": 135.678,
+      "end": 136.866,
+      "text": "loetav terminalist.",
+      "words": [
+        { "start": 135.678, "end": 136.272, "char": [0, 6] },
+        { "start": 136.272, "end": 136.866, "char": [7, 19] }
+      ]
+    },
+    {
+      "start": 136.866,
+      "end": 138.055,
+      "text": "Üks repo,",
+      "words": [
+        { "start": 136.866, "end": 137.461, "char": [0, 3] },
+        { "start": 137.461, "end": 138.055, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 138.055,
+      "end": 139.243,
+      "text": "kaks ust.",
+      "words": [
+        { "start": 138.055, "end": 138.649, "char": [0, 4] },
+        { "start": 138.649, "end": 139.243, "char": [5, 9] }
+      ]
+    },
+    {
+      "start": 142.576,
+      "end": 144.184,
+      "text": "Now try to leave.",
+      "words": [
+        { "start": 142.576, "end": 142.978, "char": [0, 3] },
+        { "start": 142.978, "end": 143.38, "char": [4, 7] },
+        { "start": 143.38, "end": 143.782, "char": [8, 10] },
+        { "start": 143.782, "end": 144.184, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 144.184,
+      "end": 146.595,
+      "text": "Listing the root of the server:",
+      "words": [
+        { "start": 144.184, "end": 144.585, "char": [0, 7] },
+        { "start": 144.585, "end": 144.987, "char": [8, 11] },
+        { "start": 144.987, "end": 145.389, "char": [12, 16] },
+        { "start": 145.389, "end": 145.791, "char": [17, 19] },
+        { "start": 145.791, "end": 146.193, "char": [20, 23] },
+        { "start": 146.193, "end": 146.595, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 146.595,
+      "end": 147.399,
+      "text": "permission denied.",
+      "words": [
+        { "start": 146.595, "end": 146.997, "char": [0, 10] },
+        { "start": 146.997, "end": 147.399, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 147.399,
+      "end": 149.408,
+      "text": "The kernel scopes the editor,",
+      "words": [
+        { "start": 147.399, "end": 147.8, "char": [0, 3] },
+        { "start": 147.8, "end": 148.202, "char": [4, 10] },
+        { "start": 148.202, "end": 148.604, "char": [11, 17] },
+        { "start": 148.604, "end": 149.006, "char": [18, 21] },
+        { "start": 149.006, "end": 149.408, "char": [22, 29] }
+      ]
+    },
+    {
+      "start": 149.408,
+      "end": 150.212,
+      "text": "its terminal,",
+      "words": [
+        { "start": 149.408, "end": 149.81, "char": [0, 3] },
+        { "start": 149.81, "end": 150.212, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 150.212,
+      "end": 153.025,
+      "text": "and every child process to this repo.",
+      "words": [
+        { "start": 150.212, "end": 150.614, "char": [0, 3] },
+        { "start": 150.614, "end": 151.016, "char": [4, 9] },
+        { "start": 151.016, "end": 151.417, "char": [10, 15] },
+        { "start": 151.417, "end": 151.819, "char": [16, 23] },
+        { "start": 151.819, "end": 152.221, "char": [24, 26] },
+        { "start": 152.221, "end": 152.623, "char": [27, 31] },
+        { "start": 152.623, "end": 153.025, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 154.775,
+      "end": 156.473,
+      "text": "Keelatud kerneli poolt,",
+      "words": [
+        { "start": 154.775, "end": 155.341, "char": [0, 8] },
+        { "start": 155.341, "end": 155.907, "char": [9, 16] },
+        { "start": 155.907, "end": 156.473, "char": [17, 23] }
+      ]
+    },
+    {
+      "start": 156.473,
+      "end": 158.171,
+      "text": "mitte konfiguratsiooni poolt.",
+      "words": [
+        { "start": 156.473, "end": 157.039, "char": [0, 5] },
+        { "start": 157.039, "end": 157.605, "char": [6, 22] },
+        { "start": 157.605, "end": 158.171, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 161.482,
+      "end": 162.949,
+      "text": "Other users' homes?",
+      "words": [
+        { "start": 161.482, "end": 161.971, "char": [0, 5] },
+        { "start": 161.971, "end": 162.46, "char": [6, 12] },
+        { "start": 162.46, "end": 162.949, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 162.949,
+      "end": 163.926,
+      "text": "Also denied.",
+      "words": [
+        { "start": 162.949, "end": 163.437, "char": [0, 4] },
+        { "start": 163.437, "end": 163.926, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 163.926,
+      "end": 166.859,
+      "text": "Whatever runs inside this sandbox —",
+      "words": [
+        { "start": 163.926, "end": 164.415, "char": [0, 8] },
+        { "start": 164.415, "end": 164.904, "char": [9, 13] },
+        { "start": 164.904, "end": 165.393, "char": [14, 20] },
+        { "start": 165.393, "end": 165.882, "char": [21, 25] },
+        { "start": 165.882, "end": 166.371, "char": [26, 33] },
+        { "start": 166.371, "end": 166.859, "char": [34, 35] }
+      ]
+    },
+    {
+      "start": 166.859,
+      "end": 167.348,
+      "text": "editors,",
+      "words": [{ "start": 166.859, "end": 167.348, "char": [0, 8] }]
+    },
+    {
+      "start": 167.348,
+      "end": 167.837,
+      "text": "terminals,",
+      "words": [{ "start": 167.348, "end": 167.837, "char": [0, 10] }]
+    },
+    {
+      "start": 167.837,
+      "end": 170.77,
+      "text": "build tools — ends at the",
+      "words": [
+        { "start": 167.837, "end": 168.326, "char": [0, 5] },
+        { "start": 168.326, "end": 168.815, "char": [6, 11] },
+        { "start": 168.815, "end": 169.304, "char": [12, 13] },
+        { "start": 169.304, "end": 169.793, "char": [14, 18] },
+        { "start": 169.793, "end": 170.282, "char": [19, 21] },
+        { "start": 170.282, "end": 170.77, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 170.77,
+      "end": 171.748,
+      "text": "repo's walls.",
+      "words": [
+        { "start": 170.77, "end": 171.259, "char": [0, 6] },
+        { "start": 171.259, "end": 171.748, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 173.498,
+      "end": 175.196,
+      "text": "Sandboxil pole erandeid.",
+      "words": [
+        { "start": 173.498, "end": 174.064, "char": [0, 9] },
+        { "start": 174.064, "end": 174.63, "char": [10, 14] },
+        { "start": 174.63, "end": 175.196, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 175.196,
+      "end": 176.894,
+      "text": "See ongi mõte.",
+      "words": [
+        { "start": 175.196, "end": 175.762, "char": [0, 3] },
+        { "start": 175.762, "end": 176.328, "char": [4, 8] },
+        { "start": 176.328, "end": 176.894, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 177.688,
+      "end": 178.273,
+      "text": "Brauser,",
+      "words": [{ "start": 177.688, "end": 178.273, "char": [0, 8] }]
+    },
+    {
+      "start": 178.273,
+      "end": 178.858,
+      "text": "editor,",
+      "words": [{ "start": 178.273, "end": 178.858, "char": [0, 7] }]
+    },
+    {
+      "start": 178.858,
+      "end": 179.443,
+      "text": "terminal:",
+      "words": [{ "start": 178.858, "end": 179.443, "char": [0, 9] }]
+    },
+    {
+      "start": 179.443,
+      "end": 180.612,
+      "text": "sama sandbox,",
+      "words": [
+        { "start": 179.443, "end": 180.027, "char": [0, 4] },
+        { "start": 180.027, "end": 180.612, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 180.612,
+      "end": 181.782,
+      "text": "samad reeglid.",
+      "words": [
+        { "start": 180.612, "end": 181.197, "char": [0, 5] },
+        { "start": 181.197, "end": 181.782, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 181.782,
+      "end": 183.537,
+      "text": "Järgmisena tuleb funktsioon,",
+      "words": [
+        { "start": 181.782, "end": 182.367, "char": [0, 10] },
+        { "start": 182.367, "end": 182.952, "char": [11, 16] },
+        { "start": 182.952, "end": 183.537, "char": [17, 28] }
+      ]
+    },
+    {
+      "start": 183.537,
+      "end": 185.876,
+      "text": "millele kõik siin põhineb,",
+      "words": [
+        { "start": 183.537, "end": 184.121, "char": [0, 7] },
+        { "start": 184.121, "end": 184.706, "char": [8, 12] },
+        { "start": 184.706, "end": 185.291, "char": [13, 17] },
+        { "start": 185.291, "end": 185.876, "char": [18, 26] }
+      ]
+    },
+    {
+      "start": 185.876,
+      "end": 186.461,
+      "text": "forking.",
+      "words": [{ "start": 185.876, "end": 186.461, "char": [0, 8] }]
+    },
+    {
+      "start": 186.461,
+      "end": 188.215,
+      "text": "Sulle meeldib see.",
+      "words": [
+        { "start": 186.461, "end": 187.046, "char": [0, 5] },
+        { "start": 187.046, "end": 187.63, "char": [6, 13] },
+        { "start": 187.63, "end": 188.215, "char": [14, 18] }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,212 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "36361550921e106696159e6fdf4f0ab9017b3d8bf85dcfd159b0abf60962cdbb",
+  "steps": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.418102,
+      "replayEndSec": 10.876025,
+      "narrationText": "Наш рабочий fork хранит первую версию состояния приложения. Простой файл-маркер делает её видимой.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-01.94390264.mp3",
+      "textHash": "9439026465628bd74ebbaba3b984a3d2ed038e89476bdd97871895656be0d99e",
+      "audioDurationSec": 6.687347,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-01-after.995a7ab5.mp3",
+      "afterAudioDurationSec": 1.880816,
+      "afterTextHash": "995a7ab583d1129e39fd9d87b22682640a6f2ff6430866b6c89c9feb8c14e7d9"
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.876025,
+      "replayEndSec": 20.708803,
+      "narrationText": "Это не просто файлы. В этом fork живёт настоящая база данных PostgreSQL, а таблица customers содержит три строки. Запомните это число.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-02.a6772e9a.mp3",
+      "textHash": "a6772e9ada4eaa31e88d51b48e68f3e1fc6543f4db38612aa27118c3ba1f7ee9",
+      "audioDurationSec": 10.187755,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-02-after.98a68755.mp3",
+      "afterAudioDurationSec": 4.127347,
+      "afterTextHash": "98a68755d22c822fe34d8eeba324c60e70ab7248122d432fe2b8404d3c7af892"
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "replayStartSec": 20.708803,
+      "replayEndSec": 29.448478,
+      "narrationText": "Заморозьте его. Commit фиксирует весь repository как неизменяемый образ, с сообщением, автором и родителем. Точно как git, но для всего, включая базу данных.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-03.8a033f7a.mp3",
+      "textHash": "8a033f7af70a4824353006e0da2fb5ba6b0c2c1f91f1d7659c79c5091cdf241e",
+      "audioDurationSec": 14.027755,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-03-after.201913ed.mp3",
+      "afterAudioDurationSec": 5.799184,
+      "afterTextHash": "201913edbf8dc1ff37b92aa37440545f1a1a82c0c91bfb6544bccc3fa649e488"
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.448478,
+      "replayEndSec": 34.241982,
+      "narrationText": "Дайте commit имя. Ветка stable теперь указывает на первую версию.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-04.45c2f65f.mp3",
+      "textHash": "45c2f65faa148f3ca58080216a5a8aa79ea503e3bc3054f3bf7a206452f0fc4a",
+      "audioDurationSec": 4.205714,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-04-after.b42eb4b1.mp3",
+      "afterAudioDurationSec": 2.925714,
+      "afterTextHash": "b42eb4b137dea55d361fe15e30e0e9fa3707d58f7db873d2b9f8ca560b63ff3b"
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "replayStartSec": 34.241982,
+      "replayEndSec": 42.690283,
+      "narrationText": "Продолжайте работать. Вторая версия заменяет первую в рабочем fork. Commit это не касается.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-05.b1c2a076.mp3",
+      "textHash": "b1c2a0761b3466d7eb71f068215840bbd1a99567a39728d010cd8af4543ec908",
+      "audioDurationSec": 6.922449,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-05-after.a14103a6.mp3",
+      "afterAudioDurationSec": 4.127347,
+      "afterTextHash": "a14103a65ee1076d9a11f7b586eb0ecbd0f5630128d7a7b2596493fcbff1ef64"
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "replayStartSec": 42.690283,
+      "replayEndSec": 51.047933,
+      "narrationText": "А теперь катастрофа. Опасное изменение удаляет таблицу customers. В реальной жизни это тот момент, когда душа уходит в пятки.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-06.27bbc347.mp3",
+      "textHash": "27bbc3479246d37a5a11d6cf751748c8edc267a9b6f4b5ada2543952754ee8ef",
+      "audioDurationSec": 10.997551,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-06-after.4d03c1da.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "4d03c1da5cf316fa5bd725165ac0453718a7e0301034010cc1a97a1057c2b639"
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "replayStartSec": 51.047933,
+      "replayEndSec": 59.69522,
+      "narrationText": "Запросите строки снова, и база данных ответит прямо: relation customers does not exist. Катастрофа реальна. Каждая строка исчезла.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-07.4d21caef.mp3",
+      "textHash": "4d21caef5bcd90c5d802b1f718fd15518971cf0e493488a5c66b0db7ce977ac0",
+      "audioDurationSec": 10.370612,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-07-after.fbefc572.mp3",
+      "afterAudioDurationSec": 3.474286,
+      "afterTextHash": "fbefc572bfe18c7d4736110e6383af1402b5b8850068569ee2fe815eaa3adea0"
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "replayStartSec": 59.69522,
+      "replayEndSec": 68.35661,
+      "narrationText": "Зафиксируйте и опасное изменение, с удалённой таблицей и всем прочим. История записывает то, что произошло на самом деле. Теперь два commit: родитель и дочерний.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-08.7443c9dc.mp3",
+      "textHash": "7443c9dc3e428924a9940d1847faf3a41b7d36a7a8fe9cf04f45c17642e2907d",
+      "audioDurationSec": 11.885714,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-08-after.6b2d7388.mp3",
+      "afterAudioDurationSec": 1.567347,
+      "afterTextHash": "6b2d7388d4bb862889fea0e0901f77461efc2b2968577527d3d8158beed0bbf5"
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "replayStartSec": 68.35661,
+      "replayEndSec": 75.614559,
+      "narrationText": "И вот история: вторая версия сверху, первая под ней, с сообщениями и авторами, и ни один образ не разблокирован.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-09.50b62663.mp3",
+      "textHash": "50b626630b2a8a0047c5a28e332cf0f03992dec1b03d127815d508b2c12ba529",
+      "audioDurationSec": 9.717551,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-09-after.50244cf8.mp3",
+      "afterAudioDurationSec": 2.586122,
+      "afterTextHash": "50244cf8e51c6d8eb2985fcec96f4fcac03a44c3d8c5db07853dca983aca8afd"
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "replayStartSec": 75.614559,
+      "replayEndSec": 83.292425,
+      "narrationText": "А теперь награда. Переключитесь на ветку stable в совершенно новый записываемый fork. Reflink-клон: почти мгновенно, любого размера.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-10.beb16456.mp3",
+      "textHash": "beb164569e8506c3cd5eeb8f36e4b4be38b1c070f59199467d0325206710d09a",
+      "audioDurationSec": 9.090612,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-10-after.4d299d2a.mp3",
+      "afterAudioDurationSec": 5.067755,
+      "afterTextHash": "4d299d2a73525ee55896c4c6095163a0c42028c7865299588a0f54aa193cb222"
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "replayStartSec": 83.292425,
+      "replayEndSec": 91.555233,
+      "narrationText": "Запустите rollback fork как любой другой repo.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-11.4b87c3bb.mp3",
+      "textHash": "4b87c3bbe5642b07c3d9c30ddf4835cf1bc155e62508a3edf5432c6b6320fb91",
+      "audioDurationSec": 3.004082,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-11-after.3ec06e5e.mp3",
+      "afterAudioDurationSec": 4.04898,
+      "afterTextHash": "3ec06e5ed0433e20b4bf057b77f122fcf28faadf08332fa97a5f13748bf5fe5f"
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "replayStartSec": 91.555233,
+      "replayEndSec": 98.952411,
+      "narrationText": "И вот доказательство: rollback fork читает первую версию. Рабочий fork по-прежнему содержит вторую. История, которую можно запустить.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-12.cf0708b4.mp3",
+      "textHash": "cf0708b4e2d9aa154c21ec4bd3baa9f2ff67455e71bfff68aee61ea41ea6ffb8",
+      "audioDurationSec": 9.717551,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-12-after.9a360586.mp3",
+      "afterAudioDurationSec": 3.160816,
+      "afterTextHash": "9a3605863ee3144d4a334d1157076d591383605386d9903b5c7ead8ec16ff2d3"
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "replayStartSec": 98.952411,
+      "replayEndSec": 107.653008,
+      "narrationText": "И самое главное: удалённая таблица вернулась со всеми тремя строками. Rollback восстановил базу данных, а не только файлы.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-13.7199b2f5.mp3",
+      "textHash": "7199b2f58b8f80417b7cf3997ac726cd65a9a6a8bea94570bfbcfaa01b0b0f7b",
+      "audioDurationSec": 8.359184,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-branching/tutorial-branching-13-after.1c1ecf28.mp3",
+      "afterAudioDurationSec": 3.866122,
+      "afterTextHash": "1c1ecf2852b249872f7b64a727454ab395807f121f63521219ba859844fd0665"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "57b8561929ead94cc5105275f9d6b732e8a95c0377c815b19c681b959caf6542",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/intro.57b85619.mp3",
+      "narrationText": "Давайте версионируем ваши repository как код! Мы заморозим контрольную точку, дадим ей имя, а потом удалим настоящую таблицу базы данных. Rollback возвращает точное замороженное состояние, со всеми строками, за секунды.",
+      "audioDurationSec": 15.15102
+    },
+    {
+      "id": "commit-model",
+      "textHash": "175ec2cf70ed1a2cebc4193134be8d840fc83e67375e149a7308c88353d799d7",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/commit-model.175ec2cf.mp3",
+      "narrationText": "Модель такая же, как в git, но для целых repository. Commit это замороженный неизменяемый образ. Он даже не монтируется, поэтому ничто не может его изменить. Branch это просто имя, указывающее на commit. А checkout превращает любой commit в свежий записываемый fork.",
+      "audioDurationSec": 21.080816
+    },
+    {
+      "id": "vscode-versions",
+      "textHash": "4ac37ae06b53f6506627b91bfce5067b44dbd346d76fde714161a2f00002bae0",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/vscode-versions.4ac37ae0.mp3",
+      "narrationText": "Лучше один раз увидеть. Rollback fork слева содержит первую версию, а рабочий fork справа перешёл ко второй. Оба живые, оба записываемые, оба из одной истории.",
+      "audioDurationSec": 10.840816
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "de76f5e96ac5cc02f017b3e5f9cbd3b212672952c8245691af997c7fc86ccdea",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-branching/next-tutorial.de76f5e9.mp3",
+      "narrationText": "Commit-ы никогда не меняются, fork-и никогда не ждут. Следующий шаг: мы перемещаем весь работающий repository на другую машину, в реальном времени. Увидимся в следующем уроке!",
+      "audioDurationSec": 15.229388
+    }
+  ]
+}

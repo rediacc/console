@@ -6,7 +6,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.418632,
+      "at": 2.555418,
       "text": "Käivitame rakenduse tootmisrežiimis sülearvutist. CLI repo up kutsub sama up funktsiooni, mida kasutasime arenduse ajal, kuid käivitab selle eraldatult. Saad sülearvuti sulgeda ja rakendus jätkab tööd.",
       "afterText": "Rakendus töötab tootmises. Sama käsk, sama tulemus, päris serveris.",
       "cardLabel": "Käivita Prod",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 9.548589,
+      "at": 11.051619,
       "text": "Lubame autostarti, et rakendus jääks ellu serveri taaskäivituse korral. Edaspidi, kui server taaskäivitub, tuleb see repositoorium automaatselt tagasi.",
       "afterText": "Autostart sees. Rakendus elab taaskäivituse üle.",
       "cardLabel": "Luba Autostart",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 17.034078,
+      "at": 18.718543,
       "text": "Loetleme, millel repositooriumidel on autostart lubatud. Kinnitab, et meie rakendus on nüüd käivitusnimekirjas.",
       "afterText": "Seal see on, käivitusnimekirjas.",
       "cardLabel": "Autostart Loend",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 22.929505,
+      "at": 25.169818,
       "text": "Rakenduse peatamiseks üks käsk sülearvutist. Üks käsk üles, üks käsk alla. Kõik sinu terminalist, ilma interaktiivsete seanssideta.",
       "afterText": "Peatatud. Üks käsk üles, üks käsk alla.",
       "cardLabel": "Peata Repo",
@@ -43,11 +43,11 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Olgu! Viime su rakenduse arendusest tootmisse. Kolm lühikest sammu, kõik juhitud sülearvutist."
+      "text": "Sinu rakendus töötab, kuni oled ühendatud. Tootmine tähendab, et see töötab siis, kui sind pole. Kolm lühikest sammu, kõik oma sülearvutist."
     },
     {
       "id": "dev-vs-prod",
-      "text": "Arenduse ajal käivitad rakenduse repositooriumi seest, nii et see peatub, kui sa lahti ühendud. Tootmises käivitad selle sülearvutist CLI-ga ja see jätkab tööd eraldatult."
+      "text": "Siin on erinevus. Arenduses käivitad rakenduse repo seest üle SSH. Sulge seanss ja rakendus sureb koos sellega. Tootmises käivitad selle oma sülearvutist lahtiühendatuna: server omab protsessi, sinu ühendus mitte."
     },
     {
       "id": "next-tutorial",
@@ -62,6 +62,6 @@
     "cast-step-1": "Samm 2: Luba autostart",
     "cast-step-2": "Samm 3: Loetlege autostart-lubatud repod",
     "cast-step-3": "Samm 4: Peata sülearvutist",
-    "outro": "Järgmine: Varundamine ja Taastamine"
+    "outro": "Järgmine: Monitooring"
   }
 }

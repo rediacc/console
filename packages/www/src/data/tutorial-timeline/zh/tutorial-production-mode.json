@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "cca63f6c653507a48e96089b58501014ee63196e6342750ccf65a3f43827794a",
+  "transcriptHash": "28594ede0139a26343dbae599428ef6a149dc494003350f03c41876571b331e9",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418632,
-      "replayEndSec": 9.548589,
+      "replayStartSec": 2.555418,
+      "replayEndSec": 11.051619,
       "narrationText": "让我们从笔记本以生产模式启动应用。部署命令调用了我们开发时使用的同一个 up 函数，但以脱离方式运行。你可以关上笔记本，应用依然持续运行。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-production-mode/tutorial-production-mode-01.3567ea89.mp3",
       "textHash": "3567ea89a095afdebdf73da735759ad83005f44fe06fe04461fc6fbf3991bf0f",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 9.548589,
-      "replayEndSec": 17.034078,
+      "replayStartSec": 11.051619,
+      "replayEndSec": 18.718543,
       "narrationText": "让我们启用自动启动，确保应用在服务器重启后能自动恢复。从现在起，只要服务器重启，这个仓库就会自动启动。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-production-mode/tutorial-production-mode-02.04b0be7c.mp3",
       "textHash": "04b0be7c3f3d37984a99f9085fa899b725c2bfd009114adf2ad1301bf377f91c",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 17.034078,
-      "replayEndSec": 22.929505,
+      "replayStartSec": 18.718543,
+      "replayEndSec": 25.169818,
       "narrationText": "让我们列出哪些仓库已启用自动启动，确认我们的应用已加入启动列表。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-production-mode/tutorial-production-mode-03.bb0f19a3.mp3",
       "textHash": "bb0f19a3dfe19424ece93f2e88da8130ad4e2045aeb5ce8eb506fb19ee22e73e",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 22.929505,
-      "replayEndSec": 30.37798,
+      "replayStartSec": 25.169818,
+      "replayEndSec": 31.824598,
       "narrationText": "停止应用时，从笔记本发出一条命令即可。一条命令启动，一条命令停止，全从终端完成，不再需要交互式连接。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-production-mode/tutorial-production-mode-04.8707a2d0.mp3",
       "textHash": "8707a2d08c6429854053b1a3c5c716058b28919651f97aa619fa1e03e9010493",
@@ -65,17 +65,17 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "ee7489b0eb483e75cba36faed61dbd07ebeaae21903a4613d54eb37e306a1027",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-production-mode/intro.ee7489b0.mp3",
-      "narrationText": "好！让我们把你的应用从开发推到生产。三个简短步骤，全部从笔记本驱动。",
-      "audioDurationSec": 7.706122
+      "textHash": "6ec166226629af86b9b0e8c9c0d9b74cd36a72b64981222c56c0cfc9b942e408",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-production-mode/intro.6ec16622.mp3",
+      "narrationText": "你连着的时候，应用就在跑。生产环境的意思是，你断开之后它也继续跑。三个简单步骤，全在你的笔记本上完成。",
+      "audioDurationSec": 10.684082
     },
     {
       "id": "dev-vs-prod",
-      "textHash": "60557392e0c43dfd7a06397c6f14ab0c2faf265f05d6d464dcd5e53f3fa0a06e",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-production-mode/dev-vs-prod.60557392.mp3",
-      "narrationText": "在开发期间，你在 repo 内部运行应用，断开连接后它就会停止。在生产环境中，你用 CLI 从笔记本启动它，它会以脱离方式持续运行。",
-      "audioDurationSec": 14.210612
+      "textHash": "554edc726ce0c4440970473f64534caf71c41375139db316a452db7037cc5c80",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-production-mode/dev-vs-prod.554edc72.mp3",
+      "narrationText": "区别就在这里。开发环境下，你通过 SSH 在 repo 内部启动应用。会话一关，应用也跟着停掉。生产环境下，启动时与你的笔记本分离，服务器持有进程，跟你的连接无关。",
+      "audioDurationSec": 25.547755
     },
     {
       "id": "next-tutorial",

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "tutorial": "tutorial-backup-restore",
-  "nextTutorialKey": "tutorial-monitoring",
+  "nextTutorialKey": "tutorial-networking",
   "scenes": [
     {
       "id": "intro",
@@ -33,7 +33,10 @@
       "markerIndex": 1,
       "holdSec": 0.8,
       "narrationRole": "step",
-      "card": { "command": "rdc config storage list", "commandFull": "rdc config storage list" }
+      "card": {
+        "command": "rdc config storage list",
+        "commandFull": "rdc config storage list"
+      }
     },
     {
       "id": "cast-step-2",
@@ -55,6 +58,36 @@
       "card": {
         "command": "rdc repo backup list --from my-storage -m my-server",
         "commandFull": "rdc repo backup list --from my-storage -m <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-4",
+      "type": "cast-narrated",
+      "markerIndex": 4,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo down --name my-app --machine <machine-name> --unmount"
+      }
+    },
+    {
+      "id": "cast-step-5",
+      "type": "cast-narrated",
+      "markerIndex": 5,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo pull --name my-app --machine <machine-name> --from my-storage --force --yes"
+      }
+    },
+    {
+      "id": "cast-step-6",
+      "type": "cast-narrated",
+      "markerIndex": 6,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo mount --name my-app --machine <machine-name>"
       }
     },
     {

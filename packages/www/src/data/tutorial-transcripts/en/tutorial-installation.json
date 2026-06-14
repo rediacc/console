@@ -16,7 +16,7 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.626476,
+      "at": 1.614947,
       "text": "Here we go. Paste the install command into your terminal and let it run. The script verifies your platform, downloads the latest stable binary, and drops it into your home directory. No system-wide install, no sudo. Watch it work. The binary is on disk and you can call it from any shell.",
       "afterText": "Install done. The rdc binary is on your path.",
       "cardLabel": "Install CLI",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 7.903516,
+      "at": 8.543153,
       "text": "Install done. Let's confirm it. The version flag prints what just got installed, so we know it's on your path.",
       "afterText": "Version printed. You're good to go.",
       "cardLabel": "Verify Version",

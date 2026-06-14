@@ -1,0 +1,58 @@
+---
+title: "存储管理"
+description: "零停机在线扩容仓库，用 trim 回收已删除空间，将两项工作交给自动策略处理。"
+category: "Tutorials"
+subcategory: advanced
+order: 18
+language: zh
+sourceHash: "cab2a40cd120e352"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 存储管理
+
+告别磁盘耗尽。在容器持续运行的同时扩容仓库，将已删除的数据块归还给存储池，然后让机器自动完成这两项工作。
+
+## 观看教程
+
+![Tutorial: Storage management](/assets/tutorials/tutorial-storage-management.cast)
+
+## 一个共享池，仓库按需增长
+
+![一个共享池，仓库按需增长](/img/tutorials/tutorial-storage-management/slide-1.svg)
+
+每个仓库都是共享数据存储池中的一个文件。仓库可以在线扩容；在仓库内部删除数据本身并不会释放空间，**trim** 才是将数据块归还给存储池的操作。
+
+## 在线扩容，零停机
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## 用 trim 回收空间
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+## 开启自动驾驶
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+机器现在会在仓库超过阈值时自动扩容（上限为你设定的最大值），并按计划执行 trim，由存储维护定时器驱动，无需自己配置 cron。
+
+## 健康视图
+
+<TutorialStep number={8} />
+
+每个仓库的使用量、存储池状态，以及写时复制共享为你节省了多少空间，一条命令全部呈现。
+
+## 大功告成
+
+十八个教程：安装、连接、部署、随处编辑、放心 fork、妥善保管密钥、真正备份、上线运营、持续监控、版本控制、在线迁移、增量同步，永不耗尽磁盘。你的服务器，重归你手。

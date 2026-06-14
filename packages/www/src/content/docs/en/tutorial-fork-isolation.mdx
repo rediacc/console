@@ -1,0 +1,50 @@
+---
+title: "Fork Isolation in Action"
+description: "Fork a live PostgreSQL + pgAdmin app and edit it side by side with the original: the visual proof that forks are independent."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Fork Isolation in Action
+
+The [forking tutorial](/en/docs/tutorial-forking) showed the commands. This one shows what they mean: a live database app, copied in seconds, edited freely in the browser, while the original never notices.
+
+## Watch the tutorial
+
+![Tutorial: Fork isolation in action](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## The setup
+
+![A live database and its twin](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+A real PostgreSQL with a pgAdmin interface, live on the server. A fork is an instant copy-on-write twin of all of it: same data at birth, completely separate lives after.
+
+## Step 1: The live app
+
+<TutorialStep number={1} />
+
+## Step 2: Fork it
+
+<TutorialStep number={2} />
+
+The video opens both pgAdmins in the browser. The original asks for a login, because production stays guarded. The fork opens straight into the workbench: forks are disposable sandboxes, so the gate steps aside (the repo decides this itself, based on whether it is a fork).
+
+## Step 3: Two worlds, one server
+
+<TutorialStep number={3} />
+
+Edit, delete, break anything in the fork. The original keeps serving. Same tables at the moment of forking, independent ever after.
+
+## Step 4: Throw it away
+
+<TutorialStep number={4} />
+
+Seconds to create, seconds to discard. That is what makes "clone production, break nothing" a daily habit instead of a special event.
+
+---
+
+Next: [Managing Secrets](/en/docs/tutorial-managing-secrets).

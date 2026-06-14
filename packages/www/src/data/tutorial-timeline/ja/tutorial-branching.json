@@ -1,0 +1,212 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "f71434cf3beb0ca8d9d5dad04041003fde8a9261627ae63d8199d1846cd2f03a",
+  "steps": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.418102,
+      "replayEndSec": 10.876025,
+      "narrationText": "作業中のforkにはアプリの状態のバージョン1が入っています。シンプルなマーカーファイルでそれが確認できます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-01.4c652e69.mp3",
+      "textHash": "4c652e69972f84c257a71c3a3c084bf3c06d224c947ccfd4541aa5d20988bb27",
+      "audioDurationSec": 7.967347,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-01-after.c0a41b9b.mp3",
+      "afterAudioDurationSec": 2.429388,
+      "afterTextHash": "c0a41b9b3a2830649543e7919915b763facd6d0352e36d78c66d55f7f15a230c"
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.876025,
+      "replayEndSec": 20.708803,
+      "narrationText": "ファイルだけではありません。このforkには本物のPostgreSQLデータベースも動いており、customersテーブルには3行のデータがあります。この数を覚えておいてください。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-02.cdb9e043.mp3",
+      "textHash": "cdb9e0434a892b50ae0e4e81266d3b37810ff23dc3285281eaad8b147de4c619",
+      "audioDurationSec": 13.244082,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-02-after.becd3295.mp3",
+      "afterAudioDurationSec": 3.082449,
+      "afterTextHash": "becd329514e3f39666b95d1adc99979b14008231a7d61feda7f7ed4ce76fbfb5"
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "replayStartSec": 20.708803,
+      "replayEndSec": 29.448478,
+      "narrationText": "フリーズします。commitはrepository全体をメッセージ、作成者、親情報とともに不変のイメージとして記録します。gitとまったく同じ仕組みですが、データベースも含めたすべてが対象です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-03.02ef122a.mp3",
+      "textHash": "02ef122aabca34ec07f3541e703f5335bc0b07d7280b5501b6cf74839fd7e74f",
+      "audioDurationSec": 15.229388,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-03-after.5c537276.mp3",
+      "afterAudioDurationSec": 5.250612,
+      "afterTextHash": "5c537276cfc92ff358cc9b3ed164ec58de06e0cbad88d52d7fa055efa77f8f2d"
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.448478,
+      "replayEndSec": 34.241982,
+      "narrationText": "commitに名前をつけます。stableブランチがバージョン1を指すようになりました。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-04.3cc9d338.mp3",
+      "textHash": "3cc9d338dcc7dd8331f1a3022d7e8aaa343a8b4f95193fcf2a006a0f70c0cc9c",
+      "audioDurationSec": 5.955918,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-04-after.2cb4ad79.mp3",
+      "afterAudioDurationSec": 2.690612,
+      "afterTextHash": "2cb4ad798ca9415b5ded54301c81d80722241e9534a15647acd1f08c66eb49a1"
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "replayStartSec": 34.241982,
+      "replayEndSec": 42.690283,
+      "narrationText": "作業を続けます。作業中のforkでバージョン2がバージョン1に取って代わりました。commitは影響を受けません。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-05.336a7e78.mp3",
+      "textHash": "336a7e7852abbdbf8d156e6377acdbd576d1832d1dc72615918852c185b51b3b",
+      "audioDurationSec": 9.482449,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-05-after.5fccf1c4.mp3",
+      "afterAudioDurationSec": 4.205714,
+      "afterTextHash": "5fccf1c45cdb9cb4e78d3bb44db8e0788e9ae68fdbb1d3d3644711322ce51caf"
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "replayStartSec": 42.690283,
+      "replayEndSec": 51.047933,
+      "narrationText": "次は災害の発生です。危険な変更でcustomersテーブルが削除されます。現実では、胃が沈むような瞬間です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-06.5a554191.mp3",
+      "textHash": "5a5541914936318e96b35ad1f74120dbb2306c7ff2ad3fd0957e1bdd312eab4b",
+      "audioDurationSec": 8.75102,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-06-after.f13ef215.mp3",
+      "afterAudioDurationSec": 5.146122,
+      "afterTextHash": "f13ef215e01e82f386fda14812dbe2c7f18031e2166921e8afddc73e35e3833d"
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "replayStartSec": 51.047933,
+      "replayEndSec": 59.69522,
+      "narrationText": "再び行を照会すると、データベースははっきりと答えます。リレーション「customers」は存在しない、と。これは本物の災害です。すべての行が消えました。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-07.52f7285d.mp3",
+      "textHash": "52f7285d1b48f3a2d096ab06b22cd1758f0960ae0f8b2bc5cf1541b77817b2ec",
+      "audioDurationSec": 11.546122,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-07-after.469db012.mp3",
+      "afterAudioDurationSec": 4.205714,
+      "afterTextHash": "469db012f86959382a4fb863e7412c0e96c1fdb8cb4a4aaa9c7a26ad3944ac8e"
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "replayStartSec": 59.69522,
+      "replayEndSec": 68.35661,
+      "narrationText": "危険な変更もcommitします。テーブルが壊れた状態のまま。履歴には実際に起きたことが記録されます。今や2つのcommitがあります。親と子です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-08.4b45c750.mp3",
+      "textHash": "4b45c750ab0f72bda703ad66a71f294c2f74da1b2c6c2222f9a6b0441d96b033",
+      "audioDurationSec": 12.199184,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-08-after.84966ac4.mp3",
+      "afterAudioDurationSec": 2.115918,
+      "afterTextHash": "84966ac431573138712f8e6189c4f4f1dd83cb96b2e68e347bd107f87b714839"
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "replayStartSec": 68.35661,
+      "replayEndSec": 75.614559,
+      "narrationText": "これが履歴です。上にバージョン2、その下にバージョン1、メッセージと作成者も含まれています。一つもイメージをアンロックせずに確認できます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-09.6f3264c0.mp3",
+      "textHash": "6f3264c08de52e7805cab524f8193a09bcf846a152d74d16551889d23cb848ed",
+      "audioDurationSec": 9.874286,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-09-after.74b965b1.mp3",
+      "afterAudioDurationSec": 3.082449,
+      "afterTextHash": "74b965b1445fada82e41b8e3c52eff963642fb4b64efaac11c4b7705a1b0865a"
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "replayStartSec": 75.614559,
+      "replayEndSec": 83.292425,
+      "narrationText": "いよいよ成果です。stableブランチを新しい書き込み可能なforkにcheckoutします。reflinkクローンなので、サイズを問わずほぼ瞬時に完了します。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-10.9ba55acf.mp3",
+      "textHash": "9ba55acf8789867b9c2fc97b2444e96402de50fd1d794d8709442f9cb73f6ef9",
+      "audioDurationSec": 10.527347,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-10-after.047f2d23.mp3",
+      "afterAudioDurationSec": 5.250612,
+      "afterTextHash": "047f2d23dd0bf8b7b55d18d3240017cef378653fe230b3c73d6220d2e17a880e"
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "replayStartSec": 83.292425,
+      "replayEndSec": 91.555233,
+      "narrationText": "ロールバック用のforkを他のrepoと同様に起動します。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-11.28005f9c.mp3",
+      "textHash": "28005f9c7b6d9a2348333085683d9baacaec6ee6df5d40ec48e26700afd10484",
+      "audioDurationSec": 3.866122,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-11-after.d8dade34.mp3",
+      "afterAudioDurationSec": 4.205714,
+      "afterTextHash": "d8dade34f80fbfd6de87995c0a47a7b4b5d9d9a13864b23ee2c321819997fd91"
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "replayStartSec": 91.555233,
+      "replayEndSec": 98.952411,
+      "narrationText": "そして証明です。ロールバック用のforkはバージョン1を読み取ります。作業中のforkにはまだバージョン2があります。実行できる履歴です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-12.5b395857.mp3",
+      "textHash": "5b395857ecd3d154edba61640d8905a9c0cab13644f0c3267073f4b751b70f07",
+      "audioDurationSec": 10.527347,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-12-after.48e5a7db.mp3",
+      "afterAudioDurationSec": 4.04898,
+      "afterTextHash": "48e5a7db6288ec0b9813284daf4eb20639e8332330934f4bac9a254063d0e8b3"
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "replayStartSec": 98.952411,
+      "replayEndSec": 107.653008,
+      "narrationText": "そして最も重要な部分です。削除されたテーブルが戻ってきました。3行すべて揃っています。ロールバックはファイルだけでなく、データベースも復元しました。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-13.f0aa11c7.mp3",
+      "textHash": "f0aa11c73485454ae7d8ed2526ec6fc9174978860829bbcf7bd55d8240b74a08",
+      "audioDurationSec": 11.154286,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-branching/tutorial-branching-13-after.aaec2dac.mp3",
+      "afterAudioDurationSec": 2.847347,
+      "afterTextHash": "aaec2dac1fd3a6ff3cf18635baf084091295b9b08d6726db18eb3d4e4027dfbf"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "f2a9c22fb6b1f85e76b1bb10b6a4c02646b189778221e55ed51b1e08c330448b",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/intro.f2a9c22f.mp3",
+      "narrationText": "repositoryをコードのようにバージョン管理してみましょう。チェックポイントをフリーズして名前をつけ、本物のデータベーステーブルを削除します。ロールバックを使えば、すべての行を含むフリーズされた状態が数秒で戻ってきます。",
+      "audioDurationSec": 16.43102
+    },
+    {
+      "id": "commit-model",
+      "textHash": "fff8b9264b696326bef4c84e371c2827bb5b8a2570d5d37a800ed153d3314200",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/commit-model.fff8b926.mp3",
+      "narrationText": "仕組みはgitと同じですが、repository全体が対象です。commitはフリーズされた不変のイメージです。マウントすら拒否するので、何があっても変更できません。ブランチはcommitを指す名前にすぎません。そしてcheckoutで任意のcommitを新しい書き込み可能なforkに戻せます。",
+      "audioDurationSec": 21.159184
+    },
+    {
+      "id": "vscode-versions",
+      "textHash": "0c8a3bc41f167ef961d4ffc41ee8b81e1e81bbb78a562897f9019fc7a93e2a41",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/vscode-versions.0c8a3bc4.mp3",
+      "narrationText": "百聞は一見に如かず。左側のロールバック用forkはバージョン1を保持し、右側の作業中のforkはバージョン2に進んでいます。どちらも動作中で書き込み可能、そして同じ履歴から生まれています。",
+      "audioDurationSec": 16.84898
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "2e1c33c18fc62ffb89a60a0f2f94a3b970144d9034511706114dbab2f875356b",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-branching/next-tutorial.2e1c33c1.mp3",
+      "narrationText": "commitは変わらず、forkは待ちません。次は動作中のrepository全体を別のマシンにライブで移動させます。次の動画でお会いしましょう！",
+      "audioDurationSec": 10.605714
+    }
+  ]
+}

@@ -4,8 +4,8 @@ description: "Faça backup de repositórios encriptados para qualquer armazename
 category: "Guides"
 order: 7
 language: pt
-sourceHash: "e241aa122868e629"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7ff112c2ec14c35f"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Backup e Restauro
@@ -40,7 +40,7 @@ Envie um backup de repositório para armazenamento externo:
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
-O envio verifica sempre que o repositório de destino está montado antes de escrever. Se não estiver montado, a operação é cancelada.
+O backup fica na pasta `hot/` do armazenamento quando o repositório está montado no momento do envio, e em `cold/` quando está desmontado. É o mesmo layout usado pelos backups agendados, por isso `rdc repo backup list` mostra todos os backups numa única tabela.
 
 | Opção | Descrição |
 |--------|-------------|

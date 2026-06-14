@@ -1,0 +1,274 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.968
+Boa notícia:
+
+00:00:01.968 --> 00:00:04.873
+não precisa de terminal para este!
+
+00:00:04.873 --> 00:00:07.777
+Vamos abrir um VS Code completo
+
+00:00:07.777 --> 00:00:09.229
+direto no navegador,
+
+00:00:09.229 --> 00:00:10.682
+criar alguns arquivos,
+
+00:00:10.682 --> 00:00:13.586
+rodar alguns comandos e ver o
+
+00:00:13.586 --> 00:00:16.491
+kernel manter tudo dentro do repo.
+
+00:00:17.241 --> 00:00:19.448
+A ideia é a seguinte.
+
+00:00:19.448 --> 00:00:22.096
+O editor não roda no seu
+
+00:00:22.096 --> 00:00:22.537
+computador.
+
+00:00:22.537 --> 00:00:25.185
+Ele roda dentro do sandbox do
+
+00:00:25.185 --> 00:00:26.509
+repo no servidor,
+
+00:00:26.509 --> 00:00:29.157
+e o seu navegador acessa através
+
+00:00:29.157 --> 00:00:30.922
+de um túnel SSH.
+
+00:00:30.922 --> 00:00:33.129
+Então a árvore de arquivos,
+
+00:00:33.129 --> 00:00:35.777
+o terminal integrado e tudo que
+
+00:00:35.777 --> 00:00:38.425
+você iniciar a partir dele veem
+
+00:00:38.425 --> 00:00:41.073
+exatamente o que o repo vê,
+
+00:00:41.073 --> 00:00:42.397
+e nada mais.
+
+00:00:45.665 --> 00:00:46.398
+One command.
+
+00:00:46.398 --> 00:00:48.963
+The CLI installs the editor server on
+
+00:00:48.963 --> 00:00:50.063
+the machine once,
+
+00:00:50.063 --> 00:00:52.261
+starts it inside the repo sandbox,
+
+00:00:52.261 --> 00:00:53.361
+opens a tunnel,
+
+00:00:53.361 --> 00:00:55.193
+and hands you a link.
+
+00:00:55.193 --> 00:00:56.659
+No local VS Code,
+
+00:00:56.659 --> 00:00:58.491
+no extensions to set up.
+
+00:01:01.491 --> 00:01:04.211
+Esse URL é o seu editor.
+
+00:01:04.211 --> 00:01:06.477
+Funciona em qualquer sistema operacional,
+
+00:01:06.477 --> 00:01:09.197
+o único requisito é um navegador.
+
+00:01:09.707 --> 00:01:10.495
+E pronto:
+
+00:01:10.495 --> 00:01:11.284
+VS Code,
+
+00:01:11.284 --> 00:01:13.255
+em uma aba do navegador.
+
+00:01:13.255 --> 00:01:16.014
+A árvore de arquivos à esquerda mostra
+
+00:01:16.014 --> 00:01:16.803
+o repo,
+
+00:01:16.803 --> 00:01:18.380
+e apenas o repo.
+
+00:01:22.207 --> 00:01:24.530
+Vamos criar um arquivo de verdade,
+
+00:01:24.530 --> 00:01:26.079
+sem usar o terminal.
+
+00:01:26.079 --> 00:01:27.241
+Um novo editor,
+
+00:01:27.241 --> 00:01:29.952
+algumas linhas e salvar como notes barra
+
+00:01:29.952 --> 00:01:31.113
+todo ponto md.
+
+00:01:31.113 --> 00:01:33.824
+A pasta aparece à esquerda quando o
+
+00:01:33.824 --> 00:01:35.373
+arquivo chega ao repo.
+
+00:01:40.707 --> 00:01:42.997
+O terminal integrado também funciona,
+
+00:01:42.997 --> 00:01:45.746
+e lá está o nosso arquivo.
+
+00:01:45.746 --> 00:01:48.494
+Agora vamos tentar olhar fora do
+
+00:01:48.494 --> 00:01:48.952
+repo:
+
+00:01:48.952 --> 00:01:49.868
+permissão negada.
+
+00:01:49.868 --> 00:01:52.159
+Isso não é uma configuração,
+
+00:01:52.159 --> 00:01:53.533
+é o kernel.
+
+00:01:59.707 --> 00:02:01.718
+Same repo from the plain terminal:
+
+00:02:01.718 --> 00:02:03.730
+the working directory is the repo,
+
+00:02:03.730 --> 00:02:05.741
+the files are the repo's files.
+
+00:02:08.623 --> 00:02:10.439
+Terminal e editor confirmam,
+
+00:02:10.439 --> 00:02:12.254
+é o mesmo sandbox.
+
+00:02:15.535 --> 00:02:18.165
+And the file we created in the
+
+00:02:18.165 --> 00:02:18.916
+browser editor?
+
+00:02:18.916 --> 00:02:19.667
+Right here.
+
+00:02:19.667 --> 00:02:22.297
+Files made in VS Code are real
+
+00:02:22.297 --> 00:02:23.048
+repo files,
+
+00:02:23.048 --> 00:02:23.424
+instantly.
+
+00:02:25.174 --> 00:02:27.102
+Criado no navegador,
+
+00:02:27.102 --> 00:02:29.030
+legível pelo terminal.
+
+00:02:29.030 --> 00:02:30.315
+Um repo,
+
+00:02:30.315 --> 00:02:31.600
+duas portas.
+
+00:02:34.916 --> 00:02:36.387
+Now try to leave.
+
+00:02:36.387 --> 00:02:38.593
+Listing the root of the server:
+
+00:02:38.593 --> 00:02:39.329
+permission denied.
+
+00:02:39.329 --> 00:02:41.167
+The kernel scopes the editor,
+
+00:02:41.167 --> 00:02:41.903
+its terminal,
+
+00:02:41.903 --> 00:02:44.477
+and every child process to this repo.
+
+00:02:46.227 --> 00:02:48.526
+Negado pelo kernel,
+
+00:02:48.526 --> 00:02:50.824
+não pela configuração.
+
+00:02:54.130 --> 00:02:55.701
+Other users' homes?
+
+00:02:55.701 --> 00:02:56.748
+Also denied.
+
+00:02:56.748 --> 00:02:59.367
+Whatever runs inside this sandbox
+
+00:02:59.367 --> 00:03:00.414
+— editors,
+
+00:03:00.414 --> 00:03:00.938
+terminals,
+
+00:03:00.938 --> 00:03:03.556
+build tools — ends at
+
+00:03:03.556 --> 00:03:05.128
+the repo's walls.
+
+00:03:06.878 --> 00:03:08.808
+O sandbox não tem exceções.
+
+00:03:08.808 --> 00:03:10.352
+Esse é o ponto.
+
+00:03:11.162 --> 00:03:11.660
+Navegador,
+
+00:03:11.660 --> 00:03:12.159
+editor,
+
+00:03:12.159 --> 00:03:12.657
+terminal:
+
+00:03:12.657 --> 00:03:13.654
+mesmo sandbox,
+
+00:03:13.654 --> 00:03:14.651
+mesmas regras.
+
+00:03:14.651 --> 00:03:17.643
+A seguir vem o recurso em
+
+00:03:17.643 --> 00:03:20.135
+que tudo aqui se baseia,
+
+00:03:20.135 --> 00:03:21.132
+o fork.
+
+00:03:21.132 --> 00:03:23.126
+Você vai gostar deste.

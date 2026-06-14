@@ -213,193 +213,193 @@
       ]
     },
     {
-      "start": 48.688,
-      "end": 49.585,
+      "start": 48.655,
+      "end": 49.552,
       "text": "Teine samm.",
       "words": [
-        { "start": 48.688, "end": 49.136, "char": [0, 5] },
-        { "start": 49.136, "end": 49.585, "char": [6, 11] }
+        { "start": 48.655, "end": 49.103, "char": [0, 5] },
+        { "start": 49.103, "end": 49.552, "char": [6, 11] }
       ]
     },
     {
-      "start": 49.585,
-      "end": 52.275,
+      "start": 49.552,
+      "end": 52.242,
       "text": "Kopeerime avaliku võtme serverisse ssh-copy-id abil.",
       "words": [
-        { "start": 49.585, "end": 50.033, "char": [0, 9] },
-        { "start": 50.033, "end": 50.482, "char": [10, 17] },
-        { "start": 50.482, "end": 50.93, "char": [18, 23] },
-        { "start": 50.93, "end": 51.379, "char": [24, 34] },
-        { "start": 51.379, "end": 51.827, "char": [35, 46] },
-        { "start": 51.827, "end": 52.275, "char": [47, 52] }
+        { "start": 49.552, "end": 50, "char": [0, 9] },
+        { "start": 50, "end": 50.449, "char": [10, 17] },
+        { "start": 50.449, "end": 50.897, "char": [18, 23] },
+        { "start": 50.897, "end": 51.346, "char": [24, 34] },
+        { "start": 51.346, "end": 51.794, "char": [35, 46] },
+        { "start": 51.794, "end": 52.242, "char": [47, 52] }
       ]
     },
     {
-      "start": 52.275,
-      "end": 54.518,
+      "start": 52.242,
+      "end": 54.485,
       "text": "Serveri parooli küsitakse viimast korda.",
       "words": [
-        { "start": 52.275, "end": 52.724, "char": [0, 7] },
-        { "start": 52.724, "end": 53.172, "char": [8, 15] },
-        { "start": 53.172, "end": 53.621, "char": [16, 25] },
-        { "start": 53.621, "end": 54.069, "char": [26, 33] },
-        { "start": 54.069, "end": 54.518, "char": [34, 40] }
+        { "start": 52.242, "end": 52.691, "char": [0, 7] },
+        { "start": 52.691, "end": 53.139, "char": [8, 15] },
+        { "start": 53.139, "end": 53.588, "char": [16, 25] },
+        { "start": 53.588, "end": 54.036, "char": [26, 33] },
+        { "start": 54.036, "end": 54.485, "char": [34, 40] }
       ]
     },
     {
-      "start": 54.518,
-      "end": 57.208,
+      "start": 54.485,
+      "end": 57.175,
       "text": "Pärast seda ei ole selle serveri",
       "words": [
-        { "start": 54.518, "end": 54.966, "char": [0, 6] },
-        { "start": 54.966, "end": 55.415, "char": [7, 11] },
-        { "start": 55.415, "end": 55.863, "char": [12, 14] },
-        { "start": 55.863, "end": 56.311, "char": [15, 18] },
-        { "start": 56.311, "end": 56.76, "char": [19, 24] },
-        { "start": 56.76, "end": 57.208, "char": [25, 32] }
+        { "start": 54.485, "end": 54.933, "char": [0, 6] },
+        { "start": 54.933, "end": 55.382, "char": [7, 11] },
+        { "start": 55.382, "end": 55.83, "char": [12, 14] },
+        { "start": 55.83, "end": 56.278, "char": [15, 18] },
+        { "start": 56.278, "end": 56.727, "char": [19, 24] },
+        { "start": 56.727, "end": 57.175, "char": [25, 32] }
       ]
     },
     {
-      "start": 57.208,
-      "end": 59.45,
+      "start": 57.175,
+      "end": 59.417,
       "text": "jaoks parooliga autentimine enam vajalik.",
       "words": [
-        { "start": 57.208, "end": 57.657, "char": [0, 5] },
-        { "start": 57.657, "end": 58.105, "char": [6, 15] },
-        { "start": 58.105, "end": 58.554, "char": [16, 27] },
-        { "start": 58.554, "end": 59.002, "char": [28, 32] },
-        { "start": 59.002, "end": 59.45, "char": [33, 41] }
+        { "start": 57.175, "end": 57.624, "char": [0, 5] },
+        { "start": 57.624, "end": 58.072, "char": [6, 15] },
+        { "start": 58.072, "end": 58.521, "char": [16, 27] },
+        { "start": 58.521, "end": 58.969, "char": [28, 32] },
+        { "start": 58.969, "end": 59.417, "char": [33, 41] }
       ]
     },
     {
-      "start": 61.45,
-      "end": 62.872,
+      "start": 61.417,
+      "end": 62.839,
       "text": "Käivita see oma sülearvutis.",
       "words": [
-        { "start": 61.45, "end": 61.806, "char": [0, 7] },
-        { "start": 61.806, "end": 62.161, "char": [8, 11] },
-        { "start": 62.161, "end": 62.516, "char": [12, 15] },
-        { "start": 62.516, "end": 62.872, "char": [16, 28] }
+        { "start": 61.417, "end": 61.773, "char": [0, 7] },
+        { "start": 61.773, "end": 62.128, "char": [8, 11] },
+        { "start": 62.128, "end": 62.483, "char": [12, 15] },
+        { "start": 62.483, "end": 62.839, "char": [16, 28] }
       ]
     },
     {
-      "start": 62.872,
-      "end": 63.937,
+      "start": 62.839,
+      "end": 63.904,
       "text": "Kui see õnnestub,",
       "words": [
-        { "start": 62.872, "end": 63.227, "char": [0, 3] },
-        { "start": 63.227, "end": 63.582, "char": [4, 7] },
-        { "start": 63.582, "end": 63.937, "char": [8, 17] }
+        { "start": 62.839, "end": 63.194, "char": [0, 3] },
+        { "start": 63.194, "end": 63.549, "char": [4, 7] },
+        { "start": 63.549, "end": 63.904, "char": [8, 17] }
       ]
     },
     {
-      "start": 63.937,
-      "end": 65.003,
+      "start": 63.904,
+      "end": 64.97,
       "text": "on paroolid välistatud.",
       "words": [
-        { "start": 63.937, "end": 64.293, "char": [0, 2] },
-        { "start": 64.293, "end": 64.648, "char": [3, 11] },
-        { "start": 64.648, "end": 65.003, "char": [12, 23] }
+        { "start": 63.904, "end": 64.26, "char": [0, 2] },
+        { "start": 64.26, "end": 64.615, "char": [3, 11] },
+        { "start": 64.615, "end": 64.97, "char": [12, 23] }
       ]
     },
     {
-      "start": 68.34,
-      "end": 69.36,
+      "start": 68.307,
+      "end": 69.327,
       "text": "Kolmas samm.",
       "words": [
-        { "start": 68.34, "end": 68.85, "char": [0, 6] },
-        { "start": 68.85, "end": 69.36, "char": [7, 12] }
+        { "start": 68.307, "end": 68.817, "char": [0, 6] },
+        { "start": 68.817, "end": 69.327, "char": [7, 12] }
       ]
     },
     {
-      "start": 69.36,
-      "end": 70.891,
+      "start": 69.327,
+      "end": 70.858,
       "text": "Registreerime võtme CLI-s.",
       "words": [
-        { "start": 69.36, "end": 69.87, "char": [0, 13] },
-        { "start": 69.87, "end": 70.381, "char": [14, 19] },
-        { "start": 70.381, "end": 70.891, "char": [20, 26] }
+        { "start": 69.327, "end": 69.837, "char": [0, 13] },
+        { "start": 69.837, "end": 70.348, "char": [14, 19] },
+        { "start": 70.348, "end": 70.858, "char": [20, 26] }
       ]
     },
     {
-      "start": 70.891,
-      "end": 73.442,
+      "start": 70.858,
+      "end": 73.409,
       "text": "Edaspidi autentib iga CLI käsk",
       "words": [
-        { "start": 70.891, "end": 71.401, "char": [0, 8] },
-        { "start": 71.401, "end": 71.911, "char": [9, 17] },
-        { "start": 71.911, "end": 72.421, "char": [18, 21] },
-        { "start": 72.421, "end": 72.931, "char": [22, 25] },
-        { "start": 72.931, "end": 73.442, "char": [26, 30] }
+        { "start": 70.858, "end": 71.368, "char": [0, 8] },
+        { "start": 71.368, "end": 71.878, "char": [9, 17] },
+        { "start": 71.878, "end": 72.388, "char": [18, 21] },
+        { "start": 72.388, "end": 72.898, "char": [22, 25] },
+        { "start": 72.898, "end": 73.409, "char": [26, 30] }
       ]
     },
     {
-      "start": 73.442,
-      "end": 74.462,
+      "start": 73.409,
+      "end": 74.429,
       "text": "selle võtmega.",
       "words": [
-        { "start": 73.442, "end": 73.952, "char": [0, 5] },
-        { "start": 73.952, "end": 74.462, "char": [6, 14] }
+        { "start": 73.409, "end": 73.919, "char": [0, 5] },
+        { "start": 73.919, "end": 74.429, "char": [6, 14] }
       ]
     },
     {
-      "start": 74.462,
-      "end": 77.013,
+      "start": 74.429,
+      "end": 76.98,
       "text": "Rohkem paroole ega interaktiivseid päringuid.",
       "words": [
-        { "start": 74.462, "end": 74.972, "char": [0, 6] },
-        { "start": 74.972, "end": 75.482, "char": [7, 14] },
-        { "start": 75.482, "end": 75.992, "char": [15, 18] },
-        { "start": 75.992, "end": 76.502, "char": [19, 34] },
-        { "start": 76.502, "end": 77.013, "char": [35, 45] }
+        { "start": 74.429, "end": 74.939, "char": [0, 6] },
+        { "start": 74.939, "end": 75.449, "char": [7, 14] },
+        { "start": 75.449, "end": 75.959, "char": [15, 18] },
+        { "start": 75.959, "end": 76.47, "char": [19, 34] },
+        { "start": 76.47, "end": 76.98, "char": [35, 45] }
       ]
     },
     {
-      "start": 79.013,
-      "end": 81.59,
+      "start": 78.98,
+      "end": 81.557,
       "text": "Võti registreeritud",
       "words": [
-        { "start": 79.013, "end": 80.301, "char": [0, 4] },
-        { "start": 80.301, "end": 81.59, "char": [5, 19] }
+        { "start": 78.98, "end": 80.268, "char": [0, 4] },
+        { "start": 80.268, "end": 81.557, "char": [5, 19] }
       ]
     },
     {
-      "start": 81.59,
-      "end": 82.879,
+      "start": 81.557,
+      "end": 82.846,
       "text": "CLI-s.",
-      "words": [{ "start": 81.59, "end": 82.879, "char": [0, 6] }]
+      "words": [{ "start": 81.557, "end": 82.846, "char": [0, 6] }]
     },
     {
-      "start": 83.717,
-      "end": 86.536,
+      "start": 83.684,
+      "end": 86.503,
       "text": "Võti on registreeritud ja CLI",
       "words": [
-        { "start": 83.717, "end": 84.281, "char": [0, 4] },
-        { "start": 84.281, "end": 84.845, "char": [5, 7] },
-        { "start": 84.845, "end": 85.408, "char": [8, 22] },
-        { "start": 85.408, "end": 85.972, "char": [23, 25] },
-        { "start": 85.972, "end": 86.536, "char": [26, 29] }
+        { "start": 83.684, "end": 84.248, "char": [0, 4] },
+        { "start": 84.248, "end": 84.812, "char": [5, 7] },
+        { "start": 84.812, "end": 85.375, "char": [8, 22] },
+        { "start": 85.375, "end": 85.939, "char": [23, 25] },
+        { "start": 85.939, "end": 86.503, "char": [26, 29] }
       ]
     },
     {
-      "start": 86.536,
-      "end": 87.664,
+      "start": 86.503,
+      "end": 87.631,
       "text": "on töövalmis.",
       "words": [
-        { "start": 86.536, "end": 87.1, "char": [0, 2] },
-        { "start": 87.1, "end": 87.664, "char": [3, 13] }
+        { "start": 86.503, "end": 87.067, "char": [0, 2] },
+        { "start": 87.067, "end": 87.631, "char": [3, 13] }
       ]
     },
     {
-      "start": 87.664,
-      "end": 90.483,
+      "start": 87.631,
+      "end": 90.45,
       "text": "Järgmisena lisame su esimese serveri.",
       "words": [
-        { "start": 87.664, "end": 88.227, "char": [0, 10] },
-        { "start": 88.227, "end": 88.791, "char": [11, 17] },
-        { "start": 88.791, "end": 89.355, "char": [18, 20] },
-        { "start": 89.355, "end": 89.919, "char": [21, 28] },
-        { "start": 89.919, "end": 90.483, "char": [29, 37] }
+        { "start": 87.631, "end": 88.194, "char": [0, 10] },
+        { "start": 88.194, "end": 88.758, "char": [11, 17] },
+        { "start": 88.758, "end": 89.322, "char": [18, 20] },
+        { "start": 89.322, "end": 89.886, "char": [21, 28] },
+        { "start": 89.886, "end": 90.45, "char": [29, 37] }
       ]
     }
   ]

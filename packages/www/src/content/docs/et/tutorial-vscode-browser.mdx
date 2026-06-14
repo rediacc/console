@@ -1,0 +1,61 @@
+---
+title: "VS Code brauseris"
+description: "Ava täisväärtuslik VS Code mistahes repositooriumis mistahes brauserist, ilma kohaliku paigalduseta, ja vaata, kuidas kerneli liivakast hoiab selle repositooriumi piirides."
+category: "Tutorials"
+subcategory: essentials
+order: 7
+language: et
+sourceHash: "71303e01f3d9c4b7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# VS Code brauseris
+
+Eelistad redaktorit terminali asemel? Üks käsk käivitab täisväärtuliku VS Code'i otse repositooriumi liivakastist, mis on kättesaadav mistahes brauserist: Linux, macOS, Windows, isegi tahvelarvuti. Kohalikku paigaldust pole vaja.
+
+## Vaata juhendvideot
+
+![Tutorial: VS Code in your browser](/assets/tutorials/tutorial-vscode-browser.cast)
+
+## Kuidas see töötab
+
+![Redaktor elab liivakastis](/img/tutorials/tutorial-vscode-browser/slide-1.svg)
+
+Redaktor ei tööta sinu sülearvutis. See töötab **repositooriumi liivakastis** serveris ja sinu brauser pääseb sellele ligi SSH-tunneli kaudu. Failipuu, integreeritud terminal ja kõik, mida sealt käivitad, näevad täpselt seda, mida repositoorium näeb. Mitte midagi muud.
+
+## 1. samm: Ühenda
+
+<TutorialStep number={1} />
+
+Esimene ühendus paigaldab avatud lähtekoodiga redaktoriserveri masinale (kontrollsummaga kinnitatud, jagatud kirjutuskaitstult). Pärast seda kasutavad uued ühendused töötavat serverit uuesti.
+
+Halda seda igal ajal:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+## 2. samm: Tööta brauseris
+
+Loo kaustu ja faile, redigeeri, salvesta. Kõik jõuab otse repositooriumisse. Integreeritud terminal töötab samuti ja järgib sama liivakasti nagu `rdc term`.
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## 3. samm: Seinad on päris
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+Keelud tulevad kernelist, mitte konfiguratsioonist. Kõik, mis liivakastis töötab (redaktorid, terminalid, ehitustööriistad, AI-agendid), lõpeb repositooriumi seinte ees.
+
+> **Kohalik VS Code?** `rdc vscode connect -r my-app -m server-1` (ilma `--browser`-ita) avab sama repositooriumi sinu paigaldatud VS Code'is Remote-SSH kaudu.
+
+---
+
+Edasi: [Hoidla hargitamine](/et/docs/tutorial-forking).

@@ -1,0 +1,76 @@
+---
+title: "分支：提交与回滚"
+description: "将仓库状态冻结为不可变的提交，用分支命名，将任意提交检出为可写 fork。"
+category: "Tutorials"
+subcategory: advanced
+order: 15
+language: zh
+sourceHash: "53f4eacdd4630b19"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 分支：提交与回滚
+
+像管理代码一样管理仓库版本。**commit** 将 fork 冻结为不可变镜像；**branch** 为其命名；**checkout** 将任意提交还原为全新可写 fork。本教程中，我们提交一个已知良好的状态，然后误删一张真实的 PostgreSQL 表，再用秒级回滚找回每一行数据。
+
+## 观看教程
+
+![Tutorial: Branching, commit and rollback](/assets/tutorials/tutorial-branching.cast)
+
+## 模型说明
+
+![提交、分支、检出](/img/tutorials/tutorial-branching/slide-1.svg)
+
+提交永不改变：它们甚至拒绝挂载。Fork 从不等待：checkout 是近乎即时的 reflink 克隆。完整的心智模型详见[分支指南](/zh/docs/repo-branching)。
+
+## 创建检查点
+
+标记文件让版本一目了然，真实数据库让回滚更有说服力：`customers` 表里有三行数据。
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+<TutorialStep number={4} />
+
+提交捕获了一切：文件**和** PostgreSQL 数据目录。`stable` 分支现在指向这个冻结状态。
+
+## 继续工作
+
+<TutorialStep number={5} />
+
+## 灾难
+
+一次危险的操作删掉了这张表。随后的查询证实损坏是真实的。
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+`ERROR: relation "customers" does not exist`。三行数据，消失了。现实中这是让人心跳骤停的时刻；在这里，它是反转剧情的铺垫。
+
+<TutorialStep number={8} />
+
+<TutorialStep number={9} />
+
+历史记录了真实发生的一切，包括损坏状态：`v2 risky change` 在上，`v1 baseline` 在下。
+
+## 秒级回滚
+
+<TutorialStep number={10} />
+
+<TutorialStep number={11} />
+
+<TutorialStep number={12} />
+
+<TutorialStep number={13} />
+
+回滚 fork 读取的是 `v1`，`customers` 表连同三行数据全部归位。回滚恢复的是数据库，不只是文件。没有任何内容被覆盖：工作 fork 仍保留版本二，视频在 VS Code 中同时打开两者以作证明。
+
+---
+
+下一篇：[在线迁移](/zh/docs/tutorial-live-migration)。

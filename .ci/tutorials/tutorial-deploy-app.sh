@@ -49,9 +49,7 @@ run_cmd "rdc repo template apply --name app-postgres --machine $M --repository m
 pause 2
 
 section "See what the template added"
-# List the files the template wrote into the repo. We add 2>/dev/null to hide
-# the connection logs so only the real output shows.
-run_cmd "rdc term connect --machine $M --repository my-app --command 'ls -la' 2>/dev/null"
+run_cmd "rdc term connect --machine $M --repository my-app --command 'ls -la'"
 
 pause 2
 
@@ -61,14 +59,13 @@ run_cmd "rdc repo up --name my-app --machine $M"
 pause 2
 
 section "Verify what's running"
-run_cmd "rdc term connect --machine $M --repository my-app --command 'docker ps' 2>/dev/null"
+run_cmd "rdc term connect --machine $M --repository my-app --command 'docker ps'"
 
 pause 2
 
+# End the on-camera portion; cleanup below is not recorded.
+end_recording
 # Clean up
 rdc repo down --name my-app --machine "$M" 2>/dev/null || true
 rdc repo down --name my-app --machine "$M" --unmount 2>/dev/null || true
 rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
-
-printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
-sleep 2

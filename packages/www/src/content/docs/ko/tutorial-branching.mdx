@@ -1,0 +1,76 @@
+---
+title: "브랜칭: 커밋 & 롤백"
+description: "저장소 상태를 불변 커밋으로 고정하고, 브랜치로 이름을 붙이고, 어느 커밋이든 쓰기 가능한 포크로 체크아웃합니다."
+category: "Tutorials"
+subcategory: advanced
+order: 15
+language: ko
+sourceHash: "53f4eacdd4630b19"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 브랜칭: 커밋 & 롤백
+
+코드처럼 저장소를 버전 관리합니다. **커밋**은 포크를 불변 이미지로 고정하고, **브랜치**는 그것에 이름을 붙이며, **체크아웃**은 어느 커밋이든 새로운 쓰기 가능한 포크로 되돌립니다. 이 튜토리얼에서는 안정적인 상태를 커밋하고, 실제 PostgreSQL 테이블을 DROP하고, 몇 초 만에 모든 행을 복구합니다.
+
+## 튜토리얼 보기
+
+![Tutorial: Branching, commit and rollback](/assets/tutorials/tutorial-branching.cast)
+
+## 모델
+
+![Commits, branches, checkout](/img/tutorials/tutorial-branching/slide-1.svg)
+
+커밋은 절대 변하지 않습니다. 마운트조차 거부합니다. 포크는 절대 기다리지 않습니다. 체크아웃은 거의 즉각적인 reflink 복제입니다. 전체 개념 모델은 [브랜칭 가이드](/ko/docs/repo-branching)에 있습니다.
+
+## 체크포인트 만들기
+
+버전을 눈으로 확인할 수 있도록 마커 파일을 작성하고, 롤백을 의미 있게 만들기 위해 실제 데이터베이스를 사용합니다. `customers` 테이블에 세 행이 있습니다.
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+<TutorialStep number={4} />
+
+커밋은 파일과 PostgreSQL 데이터 디렉터리 모두를 캡처합니다. `stable` 브랜치가 이제 그 고정된 상태에 이름을 붙입니다.
+
+## 계속 작업하기
+
+<TutorialStep number={5} />
+
+## 재난
+
+위험한 변경으로 테이블이 DROP됩니다. 이후 쿼리가 피해가 실재함을 확인합니다.
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+`ERROR: relation "customers" does not exist`. 세 행이 사라졌습니다. 실제라면 등골이 오싹해지는 순간이지만, 여기서는 반전을 위한 준비 단계입니다.
+
+<TutorialStep number={8} />
+
+<TutorialStep number={9} />
+
+히스토리는 실제로 일어난 일을 기록합니다. 망가진 상태도 포함해서: 위에 `v2 risky change`, 아래에 `v1 baseline`.
+
+## 몇 초 만에 롤백
+
+<TutorialStep number={10} />
+
+<TutorialStep number={11} />
+
+<TutorialStep number={12} />
+
+<TutorialStep number={13} />
+
+롤백 포크는 `v1`을 읽으며 `customers` 테이블이 세 행 모두 함께 복구됩니다. 롤백은 파일뿐 아니라 데이터베이스까지 복원했습니다. 아무것도 덮어쓰지 않았습니다. 작업 포크에는 여전히 버전 2가 남아 있으며, 영상에서 두 버전 모두 VS Code에서 열어 이를 증명합니다.
+
+---
+
+다음: [라이브 마이그레이션](/ko/docs/tutorial-live-migration).

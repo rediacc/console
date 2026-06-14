@@ -1,91 +1,103 @@
 WEBVTT
 
-00:00:01.000 --> 00:00:01.369
-Alright!
+00:00:01.000 --> 00:00:03.147
+Your app runs while you're connected.
 
-00:00:01.369 --> 00:00:03.950
-Let's take your app from development to
+00:00:03.147 --> 00:00:05.652
+Production means it runs when you're gone.
 
-00:00:03.950 --> 00:00:04.319
-production.
-
-00:00:04.319 --> 00:00:05.425
+00:00:05.652 --> 00:00:06.726
 Three short steps,
 
-00:00:05.425 --> 00:00:07.269
-all driven from your laptop.
+00:00:06.726 --> 00:00:08.158
+all from your laptop.
 
-00:00:08.126 --> 00:00:10.686
-During development you run the app from inside
+00:00:08.928 --> 00:00:10.042
+Here's the difference.
 
-00:00:10.686 --> 00:00:13.326
-the repo, so it stops when you disconnect
+00:00:10.042 --> 00:00:12.642
+In development you start the app from
 
-00:00:14.046 --> 00:00:16.686
-. In production you launch it from your laptop with
+00:00:12.642 --> 00:00:14.500
+inside the repo over SSH.
 
-00:00:16.766 --> 00:00:19.726
-the CLI, and it keeps running detached.
+00:00:14.500 --> 00:00:15.614
+Close the session,
 
-00:00:23.198 --> 00:00:25.358
+00:00:15.614 --> 00:00:17.843
+and the app dies with it.
+
+00:00:17.843 --> 00:00:20.443
+In production you launch it detached from
+
+00:00:20.443 --> 00:00:21.186
+your laptop:
+
+00:00:21.186 --> 00:00:23.043
+the server owns the process,
+
+00:00:23.043 --> 00:00:24.157
+your connection doesn't.
+
+00:00:27.517 --> 00:00:29.677
 Time to start the app in production mode from the
 
-00:00:25.358 --> 00:00:27.998
+00:00:29.677 --> 00:00:32.317
 laptop. The deploy command calls
 
-00:00:27.998 --> 00:00:31.118
+00:00:32.317 --> 00:00:35.437
 the same up function we used during development, but
 
-00:00:31.118 --> 00:00:33.918
+00:00:35.437 --> 00:00:38.237
 it runs detached. Close your laptop
 
-00:00:33.998 --> 00:00:35.358
+00:00:38.317 --> 00:00:39.677
 and the app keeps going.
 
-00:00:38.304 --> 00:00:40.864
+00:00:42.623 --> 00:00:45.183
 App running in production. Same command, same
 
-00:00:40.864 --> 00:00:42.464
+00:00:45.183 --> 00:00:46.783
 result, on the real server.
 
-00:00:45.887 --> 00:00:48.927
+00:00:50.206 --> 00:00:53.246
 Now enable autostart so the app survives
 
-00:00:48.927 --> 00:00:51.567
+00:00:53.246 --> 00:00:55.886
 a server reboot. From here on, if the
 
-00:00:51.567 --> 00:00:54.287
+00:00:55.886 --> 00:00:58.606
 server restarts, this repo comes back
 
-00:00:54.367 --> 00:00:55.087
+00:00:58.686 --> 00:00:59.406
 automatically.
 
-00:00:57.541 --> 00:01:00.581
+00:01:01.860 --> 00:01:04.900
 Autostart on. The app survives reboots.
 
-00:01:04.064 --> 00:01:06.704
+00:01:08.416 --> 00:01:11.056
 Let us list which repositories have autostart
 
-00:01:06.704 --> 00:01:09.344
+00:01:11.056 --> 00:01:13.696
 enabled. Confirms our app is in the boot list.
 
-00:01:11.550 --> 00:01:13.230
+00:01:17.132 --> 00:01:18.812
 There it is, in the boot list.
 
-00:01:16.651 --> 00:01:19.371
+00:01:22.203 --> 00:01:24.923
 And to stop the app, one command from the laptop
 
-00:01:19.611 --> 00:01:22.251
+00:01:25.163 --> 00:01:27.803
 . One command up, one command down. All
 
-00:01:22.251 --> 00:01:23.131
+00:01:27.803 --> 00:01:28.683
 from your terminal.
 
-00:01:25.838 --> 00:01:27.838
+00:01:31.730 --> 00:01:33.730
 Stopped. One command up, one command down.
 
-00:01:28.856 --> 00:01:31.896
+00:01:34.708 --> 00:01:37.748
 And that's production mode in a nutshell. See
 
-00:01:31.896 --> 00:01:32.776
+00:01:37.748 --> 00:01:38.628
 you in the next one!

@@ -6,13 +6,13 @@ Configurazione Chiave SSH
 00:00:08.603 --> 00:00:19.968
 Genera una volta, autorizza per server
 
-00:00:19.968 --> 00:00:44.969
+00:00:19.968 --> 00:00:44.936
 Passaggio 1: Genera una chiave
 
-00:00:44.969 --> 00:01:11.420
+00:00:44.936 --> 00:01:11.387
 Passaggio 2: Autorizza il primo server
 
-00:01:11.420 --> 00:01:30.623
+00:01:11.387 --> 00:01:30.623
 Passaggio 3: Autorizza un altro server
 
 00:01:30.623 --> 00:01:38.383

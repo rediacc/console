@@ -1,0 +1,52 @@
+---
+title: "Fork İzolasyonu Uygulamada"
+description: "Canlı bir PostgreSQL + pgAdmin uygulamasını fork'layın ve orijinaliyle yan yana düzenleyin; fork'ların bağımsız olduğunun görsel kanıtı."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: tr
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Fork İzolasyonu Uygulamada
+
+[Fork'lama öğreticisi](/tr/docs/tutorial-forking) komutları gösterdi. Bu öğretici ne anlama geldiklerini gösteriyor: saniyeler içinde kopyalanan, tarayıcıda serbestçe düzenlenen canlı bir veritabanı uygulaması; orijinal hiçbir şeyin farkında değilken.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Fork isolation in action](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## Kurulum
+
+![A live database and its twin](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+Sunucuda canlı çalışan, pgAdmin arayüzü olan gerçek bir PostgreSQL. Fork, bunların tamamının anlık yazma sırasında kopyalayan ikizi; doğuştan aynı veri, doğumdan sonra tamamen bağımsız yaşamlar.
+
+## Adım 1: Canlı uygulama
+
+<TutorialStep number={1} />
+
+## Adım 2: Fork alın
+
+<TutorialStep number={2} />
+
+Video, tarayıcıda her iki pgAdmin'i de açar. Orijinal giriş ister; üretim korumalı kalır. Fork doğrudan çalışma masasına açılır: fork'lar tek kullanımlık sandbox'lardır, bu yüzden giriş adımı kenara çekilir (depo, fork olup olmadığına göre bunu bizzat karar verir).
+
+## Adım 3: Tek sunucuda iki dünya
+
+<TutorialStep number={3} />
+
+Fork'ta düzenleyin, silin, her şeyi bozun. Orijinal sunmaya devam eder. Fork anında aynı tablolar, sonrasında tamamen bağımsız.
+
+## Adım 4: Çöpe atın
+
+<TutorialStep number={4} />
+
+Saniyeler içinde oluşturun, saniyeler içinde imha edin. "Üretimi klonlayın, hiçbir şeyi bozmayın"ı günlük bir alışkanlık yerine özel bir etkinlik yapan şey tam olarak budur.
+
+---
+
+Sonraki: [Gizli Bilgileri Yönetin](/tr/docs/tutorial-managing-secrets).

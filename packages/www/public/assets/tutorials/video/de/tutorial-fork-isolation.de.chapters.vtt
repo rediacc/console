@@ -1,0 +1,31 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:17.496
+Fork-Isolierung in der Praxis
+
+00:00:17.496 --> 00:00:35.037
+Eine Live-Datenbank und ihr Zwilling
+
+00:00:35.037 --> 00:00:51.579
+Schritt 1: Die Live-App
+
+00:00:51.279 --> 00:01:22.746
+Das Original, geschützt
+
+00:01:22.446 --> 00:01:45.404
+Schritt 2: Fork erstellen
+
+00:01:45.104 --> 00:02:02.270
+Der Fork, weit offen
+
+00:02:01.970 --> 00:02:34.770
+Nebeneinander
+
+00:02:34.470 --> 00:02:50.804
+Schritt 3: Zwei Repos, ein Server
+
+00:02:50.804 --> 00:03:09.416
+Schritt 4: Fork entfernen
+
+00:03:09.416 --> 00:03:24.296
+Weiter: Secrets verwalten

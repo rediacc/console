@@ -4,8 +4,8 @@ description: "Sincronização de ficheiros, acesso por terminal, integração co
 category: "Guides"
 order: 9
 language: pt
-sourceHash: "4b3aebff5e82416f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "59abc2faa1157369"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Ferramentas
@@ -173,6 +173,36 @@ rdc vscode check
 Verifica a instalação do VS Code, a extensão Remote SSH e as ligações ativas.
 
 > **Pré-requisito:** Instale a extensão [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) no VS Code.
+
+### VS Code no Browser
+
+Sem VS Code local? Sirva o editor a partir do sandbox do repositório e abra-o em qualquer browser:
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+Este comando:
+1. Instala o servidor de editor open-source na máquina uma vez (caminho partilhado de só leitura, verificado por checksum)
+2. Arranca-o dentro do sandbox do repositório, para que a árvore de ficheiros, o terminal integrado e todos os processos filho vejam exatamente o que o repositório vê
+3. Abre um túnel SSH para uma porta local e lança o browser com um URL de token por sessão
+
+O servidor continua a correr após fechar o túnel; reconectar reutiliza-o. Gira-o com:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| Opção | Descrição |
+|-------|-----------|
+| `--no-open` | Imprime o URL em vez de abrir o browser |
+| `--url-only` | Imprime exatamente uma linha de URL em stdout (para scripting) e mantém o túnel |
+| `--local <port>` | Escolhe a porta local do túnel |
+| `--server-provider <id>` | Implementação do servidor de editor: `openvscode` (predefinição) ou `code-server` |
+| `--server-archive <file>` | Instala a partir de um arquivo pré-disponibilizado na máquina (sem internet necessária) |
+
+Funciona em Linux, macOS, Windows ou tablet. O único requisito local é um browser.
 
 ## Atualizações do CLI (update)
 

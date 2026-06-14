@@ -132,65 +132,146 @@ la sauvegarde l'est aussi.
 00:01:20.842 --> 00:01:22.943
 Aucune gestion de clé supplémentaire.
 
-00:01:25.193 --> 00:01:26.158
+00:01:25.943 --> 00:01:26.908
 Sauvegarde téléversée.
 
-00:01:26.158 --> 00:01:29.053
+00:01:26.908 --> 00:01:29.803
 Tout ce qui se trouve dans
 
-00:01:29.053 --> 00:01:31.948
+00:01:29.803 --> 00:01:32.698
 ce repo est désormais sur le
 
-00:01:31.948 --> 00:01:32.913
+00:01:32.698 --> 00:01:33.663
 stockage distant,
 
-00:01:32.913 --> 00:01:33.395
+00:01:33.663 --> 00:01:34.145
 chiffré.
 
-00:01:36.700 --> 00:01:39.463
+00:01:37.450 --> 00:01:40.213
 Listons les sauvegardes disponibles sur ce stockage.
 
-00:01:39.463 --> 00:01:41.041
+00:01:40.213 --> 00:01:41.791
 À partir de là,
 
-00:01:41.041 --> 00:01:43.804
+00:01:41.791 --> 00:01:44.554
 la restauration sur un tout nouveau serveur
 
-00:01:43.804 --> 00:01:46.567
+00:01:44.554 --> 00:01:47.317
 se fait en une seule commande :
 
-00:01:46.567 --> 00:01:48.934
+00:01:47.317 --> 00:01:49.684
 la commande de restauration de dépôt.
 
-00:01:48.934 --> 00:01:49.724
+00:01:49.684 --> 00:01:50.474
 Mêmes données,
 
-00:01:49.724 --> 00:01:50.513
+00:01:50.474 --> 00:01:51.263
 mêmes conteneurs,
 
-00:01:50.513 --> 00:01:51.302
+00:01:51.263 --> 00:01:52.052
 machine différente.
 
-00:01:54.302 --> 00:01:56.915
+00:01:55.052 --> 00:01:57.665
 Tous vos instantanés au même
 
-00:01:56.915 --> 00:01:57.437
+00:01:57.665 --> 00:01:58.187
 endroit.
 
-00:01:57.437 --> 00:02:00.049
+00:01:58.187 --> 00:02:00.799
 Restaurez n'importe lequel d'une seule
 
-00:02:00.049 --> 00:02:00.572
+00:02:00.799 --> 00:02:01.322
 commande.
 
-00:02:01.402 --> 00:02:04.280
+00:02:04.619 --> 00:02:07.183
+Passons maintenant à la preuve de
+
+00:02:07.183 --> 00:02:07.610
+restauration.
+
+00:02:07.610 --> 00:02:08.037
+D'abord,
+
+00:02:08.037 --> 00:02:10.601
+mettez le repository hors ligne :
+
+00:02:10.601 --> 00:02:13.165
+arrêtez les services et démontez le
+
+00:02:13.165 --> 00:02:14.019
+volume chiffré.
+
+00:02:14.019 --> 00:02:16.583
+L'application a disparu de cette machine.
+
+00:02:19.583 --> 00:02:21.626
+Hors ligne et démonté,
+
+00:02:21.626 --> 00:02:24.181
+exactement l'état d'un serveur vierge.
+
+00:02:27.483 --> 00:02:30.316
+Et reprenez la sauvegarde directement depuis
+
+00:02:30.316 --> 00:02:31.261
+le stockage.
+
+00:02:31.261 --> 00:02:34.094
+La commande repo pull récupère l'image,
+
+00:02:34.094 --> 00:02:36.927
+vérifie son intégrité et la replace
+
+00:02:36.927 --> 00:02:39.761
+exactement là où elle se trouvait.
+
+00:02:42.761 --> 00:02:44.189
+Transfert terminé,
+
+00:02:44.189 --> 00:02:45.617
+intégrité vérifiée.
+
+00:02:45.617 --> 00:02:48.473
+Le repository est de
+
+00:02:48.473 --> 00:02:49.187
+retour.
+
+00:02:52.483 --> 00:02:53.732
+Montez-le à nouveau,
+
+00:02:53.732 --> 00:02:55.814
+et le repository est restauré.
+
+00:02:55.814 --> 00:02:56.231
+Push,
+
+00:02:56.231 --> 00:02:56.647
+list,
+
+00:02:56.647 --> 00:02:57.064
+pull,
+
+00:02:57.064 --> 00:02:59.562
+c'est toute l'histoire de la sauvegarde.
+
+00:03:01.812 --> 00:03:02.180
+Restauré.
+
+00:03:02.180 --> 00:03:04.757
+Ce même flux fonctionne aussi sur une
+
+00:03:04.757 --> 00:03:05.861
+toute nouvelle machine.
+
+00:03:06.673 --> 00:03:09.551
 Vos données sont en sécurité et portables
 
-00:02:04.280 --> 00:02:05.924
+00:03:09.551 --> 00:03:11.195
 d'une machine à l'autre.
 
-00:02:05.924 --> 00:02:08.802
+00:03:11.195 --> 00:03:14.073
 On se retrouve dans la prochaine vidéo
 
-00:02:08.802 --> 00:02:09.213
+00:03:14.073 --> 00:03:14.484
 !

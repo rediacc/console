@@ -6,7 +6,7 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 2.415513,
+      "at": 2.414306,
       "text": "Primeiro, o comando tunnel. A aplicação corre no servidor, não no portátil. O comando tunnel reencaminha uma porta de um contentor por SSH para que possa aceder a partir do localhost no browser.",
       "afterText": "Porta reencaminhada. A aplicação está agora acessível em localhost.",
       "cardLabel": "Tunelizar uma Porta",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 9.087333,
+      "at": 10.610488,
       "text": "Segundo, o comando term. O comando de ligação ao terminal coloca-nos dentro da sandbox do repositório, a mesma vista isolada que o VS Code oferece. Podemos executar qualquer comando contra o daemon Docker deste repositório sem sair do terminal.",
       "afterText": "Dentro da sandbox do repo. Execute qualquer coisa como se estivesse ligado por SSH.",
       "cardLabel": "Terminal no Sandbox",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 15.893309,
+      "at": 17.555154,
       "text": "Agora vamos mover ficheiros. Primeiro uma pré-visualização com --dry-run. Mostra exatamente o que seria alterado sem copiar nada. Convém sempre pré-visualizar quando não temos a certeza.",
       "afterText": "Apenas pré-visualização. Nenhum ficheiro foi movido.",
       "cardLabel": "Prévia do Sync",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 22.144638,
+      "at": 24.76977,
       "text": "E agora o envio real. O comando de sincronização transfere ficheiros do portátil para o repositório por SSH, com compressão delta rsync. Tunnel, term, sync -- três comandos que cobrem o ciclo diário.",
       "afterText": "Ficheiros enviados. A compressão delta trata de árvores grandes.",
       "cardLabel": "Upload do Sync",
@@ -67,6 +67,6 @@
     "cast-step-1": "Term: executar comandos dentro do sandbox",
     "cast-step-2": "Sync: prévia com --dry-run",
     "cast-step-3": "Sync: upload de verdade",
-    "outro": "Próximo: Fazer Fork de um Repositório"
+    "outro": "Próximo: VS Code no Seu Navegador"
   }
 }

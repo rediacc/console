@@ -1,0 +1,1147 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.518,
+      "text": "Versioneerime teie repositooriume nagu koodi!",
+      "words": [
+        { "start": 1, "end": 1.504, "char": [0, 13] },
+        { "start": 1.504, "end": 2.007, "char": [14, 18] },
+        { "start": 2.007, "end": 2.511, "char": [19, 33] },
+        { "start": 2.511, "end": 3.015, "char": [34, 38] },
+        { "start": 3.015, "end": 3.518, "char": [39, 45] }
+      ]
+    },
+    {
+      "start": 3.518,
+      "end": 4.525,
+      "text": "Külmutame kontrollpunkti,",
+      "words": [
+        { "start": 3.518, "end": 4.022, "char": [0, 9] },
+        { "start": 4.022, "end": 4.525, "char": [10, 25] }
+      ]
+    },
+    {
+      "start": 4.525,
+      "end": 6.036,
+      "text": "anname sellele nime,",
+      "words": [
+        { "start": 4.525, "end": 5.029, "char": [0, 6] },
+        { "start": 5.029, "end": 5.533, "char": [7, 14] },
+        { "start": 5.533, "end": 6.036, "char": [15, 20] }
+      ]
+    },
+    {
+      "start": 6.036,
+      "end": 8.555,
+      "text": "seejärel eemaldame päris andmebaasi tabeli.",
+      "words": [
+        { "start": 6.036, "end": 6.54, "char": [0, 8] },
+        { "start": 6.54, "end": 7.044, "char": [9, 18] },
+        { "start": 7.044, "end": 7.547, "char": [19, 24] },
+        { "start": 7.547, "end": 8.051, "char": [25, 35] },
+        { "start": 8.051, "end": 8.555, "char": [36, 43] }
+      ]
+    },
+    {
+      "start": 8.555,
+      "end": 11.073,
+      "text": "Rollback toob tagasi täpse külmutatud",
+      "words": [
+        { "start": 8.555, "end": 9.058, "char": [0, 8] },
+        { "start": 9.058, "end": 9.562, "char": [9, 13] },
+        { "start": 9.562, "end": 10.066, "char": [14, 20] },
+        { "start": 10.066, "end": 10.569, "char": [21, 26] },
+        { "start": 10.569, "end": 11.073, "char": [27, 37] }
+      ]
+    },
+    {
+      "start": 11.073,
+      "end": 11.576,
+      "text": "oleku,",
+      "words": [{ "start": 11.073, "end": 11.576, "char": [0, 6] }]
+    },
+    {
+      "start": 11.576,
+      "end": 13.087,
+      "text": "iga rida kaasas,",
+      "words": [
+        { "start": 11.576, "end": 12.08, "char": [0, 3] },
+        { "start": 12.08, "end": 12.584, "char": [4, 8] },
+        { "start": 12.584, "end": 13.087, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 13.087,
+      "end": 13.591,
+      "text": "sekunditega.",
+      "words": [{ "start": 13.087, "end": 13.591, "char": [0, 12] }]
+    },
+    {
+      "start": 14.362,
+      "end": 15.7,
+      "text": "Mudel on git,",
+      "words": [
+        { "start": 14.362, "end": 14.808, "char": [0, 5] },
+        { "start": 14.808, "end": 15.254, "char": [6, 8] },
+        { "start": 15.254, "end": 15.7, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 15.7,
+      "end": 17.484,
+      "text": "aga tervete repositooriumide jaoks.",
+      "words": [
+        { "start": 15.7, "end": 16.146, "char": [0, 3] },
+        { "start": 16.146, "end": 16.592, "char": [4, 11] },
+        { "start": 16.592, "end": 17.038, "char": [12, 28] },
+        { "start": 17.038, "end": 17.484, "char": [29, 35] }
+      ]
+    },
+    {
+      "start": 17.484,
+      "end": 18.822,
+      "text": "Commit on külmutatud,",
+      "words": [
+        { "start": 17.484, "end": 17.93, "char": [0, 6] },
+        { "start": 17.93, "end": 18.376, "char": [7, 9] },
+        { "start": 18.376, "end": 18.822, "char": [10, 21] }
+      ]
+    },
+    {
+      "start": 18.822,
+      "end": 19.714,
+      "text": "muutumatu pilt.",
+      "words": [
+        { "start": 18.822, "end": 19.268, "char": [0, 9] },
+        { "start": 19.268, "end": 19.714, "char": [10, 15] }
+      ]
+    },
+    {
+      "start": 19.714,
+      "end": 21.498,
+      "text": "See keeldub isegi mountimisest,",
+      "words": [
+        { "start": 19.714, "end": 20.16, "char": [0, 3] },
+        { "start": 20.16, "end": 20.606, "char": [4, 11] },
+        { "start": 20.606, "end": 21.052, "char": [12, 17] },
+        { "start": 21.052, "end": 21.498, "char": [18, 31] }
+      ]
+    },
+    {
+      "start": 21.498,
+      "end": 24.174,
+      "text": "nii et miski ei saa seda",
+      "words": [
+        { "start": 21.498, "end": 21.944, "char": [0, 3] },
+        { "start": 21.944, "end": 22.39, "char": [4, 6] },
+        { "start": 22.39, "end": 22.836, "char": [7, 12] },
+        { "start": 22.836, "end": 23.282, "char": [13, 15] },
+        { "start": 23.282, "end": 23.728, "char": [16, 19] },
+        { "start": 23.728, "end": 24.174, "char": [20, 24] }
+      ]
+    },
+    {
+      "start": 24.174,
+      "end": 25.066,
+      "text": "kunagi muuta.",
+      "words": [
+        { "start": 24.174, "end": 24.62, "char": [0, 6] },
+        { "start": 24.62, "end": 25.066, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 25.066,
+      "end": 26.85,
+      "text": "Haru on lihtsalt nimi,",
+      "words": [
+        { "start": 25.066, "end": 25.512, "char": [0, 4] },
+        { "start": 25.512, "end": 25.958, "char": [5, 7] },
+        { "start": 25.958, "end": 26.404, "char": [8, 16] },
+        { "start": 26.404, "end": 26.85, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 26.85,
+      "end": 28.188,
+      "text": "mis osutab commitile.",
+      "words": [
+        { "start": 26.85, "end": 27.296, "char": [0, 3] },
+        { "start": 27.296, "end": 27.742, "char": [4, 10] },
+        { "start": 27.742, "end": 28.188, "char": [11, 21] }
+      ]
+    },
+    {
+      "start": 28.188,
+      "end": 30.864,
+      "text": "Ja checkout muudab mis tahes commiti",
+      "words": [
+        { "start": 28.188, "end": 28.634, "char": [0, 2] },
+        { "start": 28.634, "end": 29.08, "char": [3, 11] },
+        { "start": 29.08, "end": 29.526, "char": [12, 18] },
+        { "start": 29.526, "end": 29.972, "char": [19, 22] },
+        { "start": 29.972, "end": 30.418, "char": [23, 28] },
+        { "start": 30.418, "end": 30.864, "char": [29, 36] }
+      ]
+    },
+    {
+      "start": 30.864,
+      "end": 32.648,
+      "text": "tagasi värskeks kirjutatavaks forkiks.",
+      "words": [
+        { "start": 30.864, "end": 31.31, "char": [0, 6] },
+        { "start": 31.31, "end": 31.756, "char": [7, 15] },
+        { "start": 31.756, "end": 32.202, "char": [16, 29] },
+        { "start": 32.202, "end": 32.648, "char": [30, 38] }
+      ]
+    },
+    {
+      "start": 35.913,
+      "end": 38.74,
+      "text": "Meie töötav fork hoiab rakenduse oleku esimest",
+      "words": [
+        { "start": 35.913, "end": 36.317, "char": [0, 4] },
+        { "start": 36.317, "end": 36.721, "char": [5, 11] },
+        { "start": 36.721, "end": 37.125, "char": [12, 16] },
+        { "start": 37.125, "end": 37.529, "char": [17, 22] },
+        { "start": 37.529, "end": 37.932, "char": [23, 32] },
+        { "start": 37.932, "end": 38.336, "char": [33, 38] },
+        { "start": 38.336, "end": 38.74, "char": [39, 46] }
+      ]
+    },
+    {
+      "start": 38.74,
+      "end": 39.144,
+      "text": "versiooni,",
+      "words": [{ "start": 38.74, "end": 39.144, "char": [0, 10] }]
+    },
+    {
+      "start": 39.144,
+      "end": 41.164,
+      "text": "lihtne märgisfail teeb selle nähtavaks.",
+      "words": [
+        { "start": 39.144, "end": 39.548, "char": [0, 6] },
+        { "start": 39.548, "end": 39.952, "char": [7, 17] },
+        { "start": 39.952, "end": 40.356, "char": [18, 22] },
+        { "start": 40.356, "end": 40.76, "char": [23, 28] },
+        { "start": 40.76, "end": 41.164, "char": [29, 39] }
+      ]
+    },
+    {
+      "start": 45.116,
+      "end": 46.526,
+      "text": "Esimene versioon,",
+      "words": [
+        { "start": 45.116, "end": 45.821, "char": [0, 7] },
+        { "start": 45.821, "end": 46.526, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 46.526,
+      "end": 47.232,
+      "text": "kettal.",
+      "words": [{ "start": 46.526, "end": 47.232, "char": [0, 7] }]
+    },
+    {
+      "start": 50.526,
+      "end": 52.746,
+      "text": "See ei ole ainult failid.",
+      "words": [
+        { "start": 50.526, "end": 50.97, "char": [0, 3] },
+        { "start": 50.97, "end": 51.414, "char": [4, 6] },
+        { "start": 51.414, "end": 51.858, "char": [7, 10] },
+        { "start": 51.858, "end": 52.302, "char": [11, 17] },
+        { "start": 52.302, "end": 52.746, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 52.746,
+      "end": 55.411,
+      "text": "Selles forkis töötab ka päris PostgreSQL",
+      "words": [
+        { "start": 52.746, "end": 53.19, "char": [0, 6] },
+        { "start": 53.19, "end": 53.635, "char": [7, 13] },
+        { "start": 53.635, "end": 54.079, "char": [14, 20] },
+        { "start": 54.079, "end": 54.523, "char": [21, 23] },
+        { "start": 54.523, "end": 54.967, "char": [24, 29] },
+        { "start": 54.967, "end": 55.411, "char": [30, 40] }
+      ]
+    },
+    {
+      "start": 55.411,
+      "end": 58.075,
+      "text": "andmebaas ja customers-tabel sisaldab kolme rida.",
+      "words": [
+        { "start": 55.411, "end": 55.855, "char": [0, 9] },
+        { "start": 55.855, "end": 56.299, "char": [10, 12] },
+        { "start": 56.299, "end": 56.743, "char": [13, 28] },
+        { "start": 56.743, "end": 57.187, "char": [29, 37] },
+        { "start": 57.187, "end": 57.631, "char": [38, 43] },
+        { "start": 57.631, "end": 58.075, "char": [44, 49] }
+      ]
+    },
+    {
+      "start": 58.075,
+      "end": 59.852,
+      "text": "Pidage see number meeles.",
+      "words": [
+        { "start": 58.075, "end": 58.519, "char": [0, 6] },
+        { "start": 58.519, "end": 58.964, "char": [7, 10] },
+        { "start": 58.964, "end": 59.408, "char": [11, 17] },
+        { "start": 59.408, "end": 59.852, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 62.352,
+      "end": 63.159,
+      "text": "Kolm rida.",
+      "words": [
+        { "start": 62.352, "end": 62.755, "char": [0, 4] },
+        { "start": 62.755, "end": 63.159, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 63.159,
+      "end": 64.369,
+      "text": "See on andmestik,",
+      "words": [
+        { "start": 63.159, "end": 63.562, "char": [0, 3] },
+        { "start": 63.562, "end": 63.965, "char": [4, 6] },
+        { "start": 63.965, "end": 64.369, "char": [7, 17] }
+      ]
+    },
+    {
+      "start": 64.369,
+      "end": 65.983,
+      "text": "mida kohe ohtu paneme.",
+      "words": [
+        { "start": 64.369, "end": 64.772, "char": [0, 4] },
+        { "start": 64.772, "end": 65.176, "char": [5, 9] },
+        { "start": 65.176, "end": 65.579, "char": [10, 14] },
+        { "start": 65.579, "end": 65.983, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 69.304,
+      "end": 70.419,
+      "text": "Külmutage see.",
+      "words": [
+        { "start": 69.304, "end": 69.862, "char": [0, 9] },
+        { "start": 69.862, "end": 70.419, "char": [10, 14] }
+      ]
+    },
+    {
+      "start": 70.419,
+      "end": 73.208,
+      "text": "Commit jäädvustab kogu repository muutumatu",
+      "words": [
+        { "start": 70.419, "end": 70.977, "char": [0, 6] },
+        { "start": 70.977, "end": 71.535, "char": [7, 17] },
+        { "start": 71.535, "end": 72.093, "char": [18, 22] },
+        { "start": 72.093, "end": 72.65, "char": [23, 33] },
+        { "start": 72.65, "end": 73.208, "char": [34, 43] }
+      ]
+    },
+    {
+      "start": 73.208,
+      "end": 73.766,
+      "text": "pildina,",
+      "words": [{ "start": 73.208, "end": 73.766, "char": [0, 8] }]
+    },
+    {
+      "start": 73.766,
+      "end": 74.323,
+      "text": "sõnumi,",
+      "words": [{ "start": 73.766, "end": 74.323, "char": [0, 7] }]
+    },
+    {
+      "start": 74.323,
+      "end": 75.997,
+      "text": "autori ja vanemaga.",
+      "words": [
+        { "start": 74.323, "end": 74.881, "char": [0, 6] },
+        { "start": 74.881, "end": 75.439, "char": [7, 9] },
+        { "start": 75.439, "end": 75.997, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 75.997,
+      "end": 77.67,
+      "text": "Täpselt nagu git,",
+      "words": [
+        { "start": 75.997, "end": 76.554, "char": [0, 7] },
+        { "start": 76.554, "end": 77.112, "char": [8, 12] },
+        { "start": 77.112, "end": 77.67, "char": [13, 17] }
+      ]
+    },
+    {
+      "start": 77.67,
+      "end": 79.343,
+      "text": "aga kõige jaoks,",
+      "words": [
+        { "start": 77.67, "end": 78.227, "char": [0, 3] },
+        { "start": 78.227, "end": 78.785, "char": [4, 9] },
+        { "start": 78.785, "end": 79.343, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 79.343,
+      "end": 80.458,
+      "text": "andmebaas kaasatud.",
+      "words": [
+        { "start": 79.343, "end": 79.901, "char": [0, 9] },
+        { "start": 79.901, "end": 80.458, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 83.458,
+      "end": 84.303,
+      "text": "Commit tehtud.",
+      "words": [
+        { "start": 83.458, "end": 83.881, "char": [0, 6] },
+        { "start": 83.881, "end": 84.303, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 84.303,
+      "end": 86.837,
+      "text": "See hetktõmmis ei saa kunagi muutuda.",
+      "words": [
+        { "start": 84.303, "end": 84.725, "char": [0, 3] },
+        { "start": 84.725, "end": 85.148, "char": [4, 14] },
+        { "start": 85.148, "end": 85.57, "char": [15, 17] },
+        { "start": 85.57, "end": 85.992, "char": [18, 21] },
+        { "start": 85.992, "end": 86.414, "char": [22, 28] },
+        { "start": 86.414, "end": 86.837, "char": [29, 37] }
+      ]
+    },
+    {
+      "start": 86.837,
+      "end": 88.526,
+      "text": "See keeldub isegi mountimisest.",
+      "words": [
+        { "start": 86.837, "end": 87.259, "char": [0, 3] },
+        { "start": 87.259, "end": 87.681, "char": [4, 11] },
+        { "start": 87.681, "end": 88.104, "char": [12, 17] },
+        { "start": 88.104, "end": 88.526, "char": [18, 31] }
+      ]
+    },
+    {
+      "start": 91.855,
+      "end": 93.275,
+      "text": "Andke commitile nimi.",
+      "words": [
+        { "start": 91.855, "end": 92.328, "char": [0, 5] },
+        { "start": 92.328, "end": 92.802, "char": [6, 15] },
+        { "start": 92.802, "end": 93.275, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 93.275,
+      "end": 95.643,
+      "text": "Stable-haru osutab nüüd esimesele versioonile.",
+      "words": [
+        { "start": 93.275, "end": 93.749, "char": [0, 11] },
+        { "start": 93.749, "end": 94.222, "char": [12, 18] },
+        { "start": 94.222, "end": 94.696, "char": [19, 23] },
+        { "start": 94.696, "end": 95.169, "char": [24, 33] },
+        { "start": 95.169, "end": 95.643, "char": [34, 46] }
+      ]
+    },
+    {
+      "start": 96.718,
+      "end": 97.511,
+      "text": "Haru on nimi,",
+      "words": [
+        { "start": 96.718, "end": 96.982, "char": [0, 4] },
+        { "start": 96.982, "end": 97.247, "char": [5, 7] },
+        { "start": 97.247, "end": 97.511, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 97.511,
+      "end": 98.834,
+      "text": "mille juurde saab tagasi tulla.",
+      "words": [
+        { "start": 97.511, "end": 97.776, "char": [0, 5] },
+        { "start": 97.776, "end": 98.04, "char": [6, 12] },
+        { "start": 98.04, "end": 98.305, "char": [13, 17] },
+        { "start": 98.305, "end": 98.569, "char": [18, 24] },
+        { "start": 98.569, "end": 98.834, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 102.101,
+      "end": 103.066,
+      "text": "Jätkake tööd.",
+      "words": [
+        { "start": 102.101, "end": 102.583, "char": [0, 7] },
+        { "start": 102.583, "end": 103.066, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 103.066,
+      "end": 105.959,
+      "text": "Teine versioon asendab töötavas forkis esimese",
+      "words": [
+        { "start": 103.066, "end": 103.548, "char": [0, 5] },
+        { "start": 103.548, "end": 104.03, "char": [6, 14] },
+        { "start": 104.03, "end": 104.512, "char": [15, 22] },
+        { "start": 104.512, "end": 104.995, "char": [23, 31] },
+        { "start": 104.995, "end": 105.477, "char": [32, 38] },
+        { "start": 105.477, "end": 105.959, "char": [39, 46] }
+      ]
+    },
+    {
+      "start": 105.959,
+      "end": 106.441,
+      "text": "versiooni.",
+      "words": [{ "start": 105.959, "end": 106.441, "char": [0, 10] }]
+    },
+    {
+      "start": 106.441,
+      "end": 108.37,
+      "text": "Commit ei hooli sellest.",
+      "words": [
+        { "start": 106.441, "end": 106.924, "char": [0, 6] },
+        { "start": 106.924, "end": 107.406, "char": [7, 9] },
+        { "start": 107.406, "end": 107.888, "char": [10, 15] },
+        { "start": 107.888, "end": 108.37, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 111.319,
+      "end": 112.902,
+      "text": "Töötav fork liikus edasi.",
+      "words": [
+        { "start": 111.319, "end": 111.715, "char": [0, 6] },
+        { "start": 111.715, "end": 112.111, "char": [7, 11] },
+        { "start": 112.111, "end": 112.506, "char": [12, 18] },
+        { "start": 112.506, "end": 112.902, "char": [19, 25] }
+      ]
+    },
+    {
+      "start": 112.902,
+      "end": 114.088,
+      "text": "Ajalugu ei liikunud.",
+      "words": [
+        { "start": 112.902, "end": 113.297, "char": [0, 7] },
+        { "start": 113.297, "end": 113.693, "char": [8, 10] },
+        { "start": 113.693, "end": 114.088, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 117.364,
+      "end": 118.614,
+      "text": "Nüüd katastroof.",
+      "words": [
+        { "start": 117.364, "end": 117.989, "char": [0, 4] },
+        { "start": 117.989, "end": 118.614, "char": [5, 16] }
+      ]
+    },
+    {
+      "start": 118.614,
+      "end": 121.114,
+      "text": "Riskantne muudatus eemaldab customers-tabeli.",
+      "words": [
+        { "start": 118.614, "end": 119.239, "char": [0, 9] },
+        { "start": 119.239, "end": 119.864, "char": [10, 18] },
+        { "start": 119.864, "end": 120.489, "char": [19, 27] },
+        { "start": 120.489, "end": 121.114, "char": [28, 45] }
+      ]
+    },
+    {
+      "start": 121.114,
+      "end": 123.613,
+      "text": "Päriselus on see hetk,",
+      "words": [
+        { "start": 121.114, "end": 121.738, "char": [0, 9] },
+        { "start": 121.738, "end": 122.363, "char": [10, 12] },
+        { "start": 122.363, "end": 122.988, "char": [13, 16] },
+        { "start": 122.988, "end": 123.613, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 123.613,
+      "end": 125.488,
+      "text": "mil kõhus vajub.",
+      "words": [
+        { "start": 123.613, "end": 124.238, "char": [0, 3] },
+        { "start": 124.238, "end": 124.863, "char": [4, 9] },
+        { "start": 124.863, "end": 125.488, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 127.424,
+      "end": 128.638,
+      "text": "Drop table käivitati.",
+      "words": [
+        { "start": 127.424, "end": 127.829, "char": [0, 4] },
+        { "start": 127.829, "end": 128.233, "char": [5, 10] },
+        { "start": 128.233, "end": 128.638, "char": [11, 21] }
+      ]
+    },
+    {
+      "start": 128.638,
+      "end": 130.663,
+      "text": "Andmed on töötavast forkist kadunud.",
+      "words": [
+        { "start": 128.638, "end": 129.043, "char": [0, 6] },
+        { "start": 129.043, "end": 129.448, "char": [7, 9] },
+        { "start": 129.448, "end": 129.853, "char": [10, 19] },
+        { "start": 129.853, "end": 130.258, "char": [20, 27] },
+        { "start": 130.258, "end": 130.663, "char": [28, 36] }
+      ]
+    },
+    {
+      "start": 133.931,
+      "end": 136.645,
+      "text": "Küsige ridu uuesti ja andmebaas ütleb",
+      "words": [
+        { "start": 133.931, "end": 134.383, "char": [0, 6] },
+        { "start": 134.383, "end": 134.835, "char": [7, 11] },
+        { "start": 134.835, "end": 135.288, "char": [12, 18] },
+        { "start": 135.288, "end": 135.74, "char": [19, 21] },
+        { "start": 135.74, "end": 136.192, "char": [22, 31] },
+        { "start": 136.192, "end": 136.645, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 136.645,
+      "end": 137.097,
+      "text": "otse:",
+      "words": [{ "start": 136.645, "end": 137.097, "char": [0, 5] }]
+    },
+    {
+      "start": 137.097,
+      "end": 139.359,
+      "text": "relatsioon customers ei ole olemas.",
+      "words": [
+        { "start": 137.097, "end": 137.549, "char": [0, 10] },
+        { "start": 137.549, "end": 138.002, "char": [11, 20] },
+        { "start": 138.002, "end": 138.454, "char": [21, 23] },
+        { "start": 138.454, "end": 138.906, "char": [24, 27] },
+        { "start": 138.906, "end": 139.359, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 139.359,
+      "end": 140.716,
+      "text": "Katastroof on reaalne.",
+      "words": [
+        { "start": 139.359, "end": 139.811, "char": [0, 10] },
+        { "start": 139.811, "end": 140.263, "char": [11, 13] },
+        { "start": 140.263, "end": 140.716, "char": [14, 22] }
+      ]
+    },
+    {
+      "start": 140.716,
+      "end": 142.525,
+      "text": "Iga rida on kadunud.",
+      "words": [
+        { "start": 140.716, "end": 141.168, "char": [0, 3] },
+        { "start": 141.168, "end": 141.62, "char": [4, 8] },
+        { "start": 141.62, "end": 142.073, "char": [9, 11] },
+        { "start": 142.073, "end": 142.525, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 145.444,
+      "end": 147.982,
+      "text": "Relatsioon ei ole olemas.",
+      "words": [
+        { "start": 145.444, "end": 146.078, "char": [0, 10] },
+        { "start": 146.078, "end": 146.713, "char": [11, 13] },
+        { "start": 146.713, "end": 147.347, "char": [14, 17] },
+        { "start": 147.347, "end": 147.982, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 147.982,
+      "end": 149.251,
+      "text": "Kolm rida,",
+      "words": [
+        { "start": 147.982, "end": 148.616, "char": [0, 4] },
+        { "start": 148.616, "end": 149.251, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 149.251,
+      "end": 149.885,
+      "text": "kadunud.",
+      "words": [{ "start": 149.251, "end": 149.885, "char": [0, 8] }]
+    },
+    {
+      "start": 153.166,
+      "end": 155.137,
+      "text": "Tehke ka riskantse muudatuse commit,",
+      "words": [
+        { "start": 153.166, "end": 153.56, "char": [0, 5] },
+        { "start": 153.56, "end": 153.954, "char": [6, 8] },
+        { "start": 153.954, "end": 154.349, "char": [9, 18] },
+        { "start": 154.349, "end": 154.743, "char": [19, 28] },
+        { "start": 154.743, "end": 155.137, "char": [29, 36] }
+      ]
+    },
+    {
+      "start": 155.137,
+      "end": 156.715,
+      "text": "purunenud tabeliga ja kõigega.",
+      "words": [
+        { "start": 155.137, "end": 155.532, "char": [0, 9] },
+        { "start": 155.532, "end": 155.926, "char": [10, 18] },
+        { "start": 155.926, "end": 156.32, "char": [19, 21] },
+        { "start": 156.32, "end": 156.715, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 156.715,
+      "end": 157.503,
+      "text": "Ajalugu jäädvustab,",
+      "words": [
+        { "start": 156.715, "end": 157.109, "char": [0, 7] },
+        { "start": 157.109, "end": 157.503, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 157.503,
+      "end": 158.686,
+      "text": "mis tegelikult juhtus.",
+      "words": [
+        { "start": 157.503, "end": 157.898, "char": [0, 3] },
+        { "start": 157.898, "end": 158.292, "char": [4, 14] },
+        { "start": 158.292, "end": 158.686, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 158.686,
+      "end": 160.264,
+      "text": "Nüüd on kaks commiti,",
+      "words": [
+        { "start": 158.686, "end": 159.081, "char": [0, 4] },
+        { "start": 159.081, "end": 159.475, "char": [5, 7] },
+        { "start": 159.475, "end": 159.869, "char": [8, 12] },
+        { "start": 159.869, "end": 160.264, "char": [13, 21] }
+      ]
+    },
+    {
+      "start": 160.264,
+      "end": 161.446,
+      "text": "vanem ja laps.",
+      "words": [
+        { "start": 160.264, "end": 160.658, "char": [0, 5] },
+        { "start": 160.658, "end": 161.052, "char": [6, 8] },
+        { "start": 161.052, "end": 161.446, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 164.446,
+      "end": 166.092,
+      "text": "Kaks hetktõmmist ahelas.",
+      "words": [
+        { "start": 164.446, "end": 164.995, "char": [0, 4] },
+        { "start": 164.995, "end": 165.544, "char": [5, 16] },
+        { "start": 165.544, "end": 166.092, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 169.366,
+      "end": 171.363,
+      "text": "Ja siin on ajalugu:",
+      "words": [
+        { "start": 169.366, "end": 169.865, "char": [0, 2] },
+        { "start": 169.865, "end": 170.364, "char": [3, 7] },
+        { "start": 170.364, "end": 170.863, "char": [8, 10] },
+        { "start": 170.863, "end": 171.363, "char": [11, 19] }
+      ]
+    },
+    {
+      "start": 171.363,
+      "end": 172.86,
+      "text": "teine versioon üleval,",
+      "words": [
+        { "start": 171.363, "end": 171.862, "char": [0, 5] },
+        { "start": 171.862, "end": 172.361, "char": [6, 14] },
+        { "start": 172.361, "end": 172.86, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 172.86,
+      "end": 173.859,
+      "text": "esimene allpool,",
+      "words": [
+        { "start": 172.86, "end": 173.36, "char": [0, 7] },
+        { "start": 173.36, "end": 173.859, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 173.859,
+      "end": 175.856,
+      "text": "sõnumid ja autorid kaasas,",
+      "words": [
+        { "start": 173.859, "end": 174.358, "char": [0, 7] },
+        { "start": 174.358, "end": 174.857, "char": [8, 10] },
+        { "start": 174.857, "end": 175.356, "char": [11, 18] },
+        { "start": 175.356, "end": 175.856, "char": [19, 26] }
+      ]
+    },
+    {
+      "start": 175.856,
+      "end": 178.352,
+      "text": "ilma et ühtegi pilti avada.",
+      "words": [
+        { "start": 175.856, "end": 176.355, "char": [0, 4] },
+        { "start": 176.355, "end": 176.854, "char": [5, 7] },
+        { "start": 176.854, "end": 177.353, "char": [8, 14] },
+        { "start": 177.353, "end": 177.853, "char": [15, 20] },
+        { "start": 177.853, "end": 178.352, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 181.352,
+      "end": 182.405,
+      "text": "Repository logi,",
+      "words": [
+        { "start": 181.352, "end": 181.879, "char": [0, 10] },
+        { "start": 181.879, "end": 182.405, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 182.405,
+      "end": 184.513,
+      "text": "täpselt nagu git log.",
+      "words": [
+        { "start": 182.405, "end": 182.932, "char": [0, 7] },
+        { "start": 182.932, "end": 183.459, "char": [8, 12] },
+        { "start": 183.459, "end": 183.986, "char": [13, 16] },
+        { "start": 183.986, "end": 184.513, "char": [17, 21] }
+      ]
+    },
+    {
+      "start": 187.823,
+      "end": 189.133,
+      "text": "Nüüd tasu.",
+      "words": [
+        { "start": 187.823, "end": 188.478, "char": [0, 4] },
+        { "start": 188.478, "end": 189.133, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 189.133,
+      "end": 191.753,
+      "text": "Checkoutige stable-haru uude kirjutatavasse",
+      "words": [
+        { "start": 189.133, "end": 189.788, "char": [0, 11] },
+        { "start": 189.788, "end": 190.443, "char": [12, 23] },
+        { "start": 190.443, "end": 191.098, "char": [24, 28] },
+        { "start": 191.098, "end": 191.753, "char": [29, 43] }
+      ]
+    },
+    {
+      "start": 191.753,
+      "end": 192.408,
+      "text": "forki.",
+      "words": [{ "start": 191.753, "end": 192.408, "char": [0, 6] }]
+    },
+    {
+      "start": 192.408,
+      "end": 193.063,
+      "text": "Reflink-kloon:",
+      "words": [{ "start": 192.408, "end": 193.063, "char": [0, 14] }]
+    },
+    {
+      "start": 193.063,
+      "end": 194.373,
+      "text": "peaaegu kohene,",
+      "words": [
+        { "start": 193.063, "end": 193.718, "char": [0, 7] },
+        { "start": 193.718, "end": 194.373, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 194.373,
+      "end": 196.339,
+      "text": "mis tahes suurus.",
+      "words": [
+        { "start": 194.373, "end": 195.028, "char": [0, 3] },
+        { "start": 195.028, "end": 195.684, "char": [4, 9] },
+        { "start": 195.684, "end": 196.339, "char": [10, 17] }
+      ]
+    },
+    {
+      "start": 199.339,
+      "end": 201.932,
+      "text": "Külmutatud esimese versiooni kirjutatav koopia,",
+      "words": [
+        { "start": 199.339, "end": 199.857, "char": [0, 10] },
+        { "start": 199.857, "end": 200.376, "char": [11, 18] },
+        { "start": 200.376, "end": 200.895, "char": [19, 28] },
+        { "start": 200.895, "end": 201.413, "char": [29, 39] },
+        { "start": 201.413, "end": 201.932, "char": [40, 47] }
+      ]
+    },
+    {
+      "start": 201.932,
+      "end": 202.97,
+      "text": "umbes sekundiga.",
+      "words": [
+        { "start": 201.932, "end": 202.451, "char": [0, 5] },
+        { "start": 202.451, "end": 202.97, "char": [6, 16] }
+      ]
+    },
+    {
+      "start": 206.301,
+      "end": 208.652,
+      "text": "Käivitage rollback-fork nagu iga teine repository.",
+      "words": [
+        { "start": 206.301, "end": 206.693, "char": [0, 9] },
+        { "start": 206.693, "end": 207.084, "char": [10, 23] },
+        { "start": 207.084, "end": 207.476, "char": [24, 28] },
+        { "start": 207.476, "end": 207.868, "char": [29, 32] },
+        { "start": 207.868, "end": 208.26, "char": [33, 38] },
+        { "start": 208.26, "end": 208.652, "char": [39, 50] }
+      ]
+    },
+    {
+      "start": 216.828,
+      "end": 218.082,
+      "text": "Kaks forki töötab:",
+      "words": [
+        { "start": 216.828, "end": 217.246, "char": [0, 4] },
+        { "start": 217.246, "end": 217.664, "char": [5, 10] },
+        { "start": 217.664, "end": 218.082, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 218.082,
+      "end": 219.754,
+      "text": "tänane versioon ja kontrollpunkt.",
+      "words": [
+        { "start": 218.082, "end": 218.5, "char": [0, 6] },
+        { "start": 218.5, "end": 218.918, "char": [7, 15] },
+        { "start": 218.918, "end": 219.336, "char": [16, 18] },
+        { "start": 219.336, "end": 219.754, "char": [19, 33] }
+      ]
+    },
+    {
+      "start": 223.026,
+      "end": 223.981,
+      "text": "Ja tõestus:",
+      "words": [
+        { "start": 223.026, "end": 223.504, "char": [0, 2] },
+        { "start": 223.504, "end": 223.981, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 223.981,
+      "end": 225.893,
+      "text": "rollback-fork loeb esimest versiooni.",
+      "words": [
+        { "start": 223.981, "end": 224.459, "char": [0, 13] },
+        { "start": 224.459, "end": 224.937, "char": [14, 18] },
+        { "start": 224.937, "end": 225.415, "char": [19, 26] },
+        { "start": 225.415, "end": 225.893, "char": [27, 37] }
+      ]
+    },
+    {
+      "start": 225.893,
+      "end": 228.76,
+      "text": "Töötavas forkis on ikka veel teine",
+      "words": [
+        { "start": 225.893, "end": 226.371, "char": [0, 8] },
+        { "start": 226.371, "end": 226.849, "char": [9, 15] },
+        { "start": 226.849, "end": 227.327, "char": [16, 18] },
+        { "start": 227.327, "end": 227.805, "char": [19, 23] },
+        { "start": 227.805, "end": 228.282, "char": [24, 28] },
+        { "start": 228.282, "end": 228.76, "char": [29, 34] }
+      ]
+    },
+    {
+      "start": 228.76,
+      "end": 229.238,
+      "text": "versioon.",
+      "words": [{ "start": 228.76, "end": 229.238, "char": [0, 9] }]
+    },
+    {
+      "start": 229.238,
+      "end": 229.716,
+      "text": "Ajalugu,",
+      "words": [{ "start": 229.238, "end": 229.716, "char": [0, 8] }]
+    },
+    {
+      "start": 229.716,
+      "end": 231.15,
+      "text": "mida saab käivitada.",
+      "words": [
+        { "start": 229.716, "end": 230.194, "char": [0, 4] },
+        { "start": 230.194, "end": 230.672, "char": [5, 9] },
+        { "start": 230.672, "end": 231.15, "char": [10, 20] }
+      ]
+    },
+    {
+      "start": 232.65,
+      "end": 233.518,
+      "text": "Rollback lõpetatud.",
+      "words": [
+        { "start": 232.65, "end": 233.084, "char": [0, 8] },
+        { "start": 233.084, "end": 233.518, "char": [9, 19] }
+      ]
+    },
+    {
+      "start": 233.518,
+      "end": 236.124,
+      "text": "Selleni jõudmiseks ei kirjutatud midagi üle.",
+      "words": [
+        { "start": 233.518, "end": 233.953, "char": [0, 7] },
+        { "start": 233.953, "end": 234.387, "char": [8, 18] },
+        { "start": 234.387, "end": 234.821, "char": [19, 21] },
+        { "start": 234.821, "end": 235.255, "char": [22, 32] },
+        { "start": 235.255, "end": 235.69, "char": [33, 39] },
+        { "start": 235.69, "end": 236.124, "char": [40, 44] }
+      ]
+    },
+    {
+      "start": 239.475,
+      "end": 240.33,
+      "text": "Ja see,",
+      "words": [
+        { "start": 239.475, "end": 239.902, "char": [0, 2] },
+        { "start": 239.902, "end": 240.33, "char": [3, 7] }
+      ]
+    },
+    {
+      "start": 240.33,
+      "end": 242.04,
+      "text": "mis kõige rohkem loeb:",
+      "words": [
+        { "start": 240.33, "end": 240.757, "char": [0, 3] },
+        { "start": 240.757, "end": 241.185, "char": [4, 9] },
+        { "start": 241.185, "end": 241.613, "char": [10, 16] },
+        { "start": 241.613, "end": 242.04, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 242.04,
+      "end": 243.751,
+      "text": "eemaldatud tabel on tagasi,",
+      "words": [
+        { "start": 242.04, "end": 242.468, "char": [0, 10] },
+        { "start": 242.468, "end": 242.895, "char": [11, 16] },
+        { "start": 242.895, "end": 243.323, "char": [17, 19] },
+        { "start": 243.323, "end": 243.751, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 243.751,
+      "end": 245.033,
+      "text": "kõik kolm rida.",
+      "words": [
+        { "start": 243.751, "end": 244.178, "char": [0, 4] },
+        { "start": 244.178, "end": 244.606, "char": [5, 9] },
+        { "start": 244.606, "end": 245.033, "char": [10, 15] }
+      ]
+    },
+    {
+      "start": 245.033,
+      "end": 246.316,
+      "text": "Rollback taastas andmebaasi,",
+      "words": [
+        { "start": 245.033, "end": 245.461, "char": [0, 8] },
+        { "start": 245.461, "end": 245.888, "char": [9, 16] },
+        { "start": 245.888, "end": 246.316, "char": [17, 28] }
+      ]
+    },
+    {
+      "start": 246.316,
+      "end": 247.599,
+      "text": "mitte ainult failid.",
+      "words": [
+        { "start": 246.316, "end": 246.744, "char": [0, 5] },
+        { "start": 246.744, "end": 247.171, "char": [6, 12] },
+        { "start": 247.171, "end": 247.599, "char": [13, 20] }
+      ]
+    },
+    {
+      "start": 250.993,
+      "end": 252.495,
+      "text": "Kolm rida jälle.",
+      "words": [
+        { "start": 250.993, "end": 251.493, "char": [0, 4] },
+        { "start": 251.493, "end": 251.994, "char": [5, 9] },
+        { "start": 251.994, "end": 252.495, "char": [10, 16] }
+      ]
+    },
+    {
+      "start": 252.495,
+      "end": 253.997,
+      "text": "Katastroof on kõrvaldatud.",
+      "words": [
+        { "start": 252.495, "end": 252.995, "char": [0, 10] },
+        { "start": 252.995, "end": 253.496, "char": [11, 13] },
+        { "start": 253.496, "end": 253.997, "char": [14, 26] }
+      ]
+    },
+    {
+      "start": 268.97,
+      "end": 271.065,
+      "text": "Commitid ei muutu kunagi,",
+      "words": [
+        { "start": 268.97, "end": 269.494, "char": [0, 8] },
+        { "start": 269.494, "end": 270.017, "char": [9, 11] },
+        { "start": 270.017, "end": 270.541, "char": [12, 17] },
+        { "start": 270.541, "end": 271.065, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 271.065,
+      "end": 273.16,
+      "text": "forkid ei oota kunagi.",
+      "words": [
+        { "start": 271.065, "end": 271.589, "char": [0, 6] },
+        { "start": 271.589, "end": 272.113, "char": [7, 9] },
+        { "start": 272.113, "end": 272.636, "char": [10, 14] },
+        { "start": 272.636, "end": 273.16, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 273.16,
+      "end": 275.779,
+      "text": "Järgmisena viime terve töötava repositooriumi",
+      "words": [
+        { "start": 273.16, "end": 273.684, "char": [0, 10] },
+        { "start": 273.684, "end": 274.208, "char": [11, 16] },
+        { "start": 274.208, "end": 274.732, "char": [17, 22] },
+        { "start": 274.732, "end": 275.256, "char": [23, 30] },
+        { "start": 275.256, "end": 275.779, "char": [31, 45] }
+      ]
+    },
+    {
+      "start": 275.779,
+      "end": 276.827,
+      "text": "teisele masinale,",
+      "words": [
+        { "start": 275.779, "end": 276.303, "char": [0, 7] },
+        { "start": 276.303, "end": 276.827, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 276.827,
+      "end": 277.875,
+      "text": "ilma seiskamiseta.",
+      "words": [
+        { "start": 276.827, "end": 277.351, "char": [0, 4] },
+        { "start": 277.351, "end": 277.875, "char": [5, 18] }
+      ]
+    },
+    {
+      "start": 277.875,
+      "end": 278.922,
+      "text": "Näeme järgmises!",
+      "words": [
+        { "start": 277.875, "end": 278.399, "char": [0, 5] },
+        { "start": 278.399, "end": 278.922, "char": [6, 16] }
+      ]
+    }
+  ]
+}

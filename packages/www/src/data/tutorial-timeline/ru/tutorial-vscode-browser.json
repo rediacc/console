@@ -1,0 +1,122 @@
+{
+  "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d165b595b35b0190693936fc1359ae828b4f538d68710e6a51e5477fe40ac5d3",
+  "steps": [
+    {
+      "id": "tutorial-vscode-browser-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.414862,
+      "replayEndSec": 12.531234,
+      "narrationText": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-01.30a85238.mp3",
+      "textHash": "30a8523807c0a167969d98c95512dbc39af738b7d0126ea8eb9593631b6215ff",
+      "audioDurationSec": 13.087347,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-01-after.16720b29.mp3",
+      "afterAudioDurationSec": 6.844082,
+      "afterTextHash": "16720b29db1515d355f8d1a1c2b55e6dce68a329f61e27f88b608957abfd8345"
+    },
+    {
+      "id": "tutorial-vscode-browser-02",
+      "markerIndex": 1,
+      "replayStartSec": 12.531234,
+      "replayEndSec": 19.464899,
+      "narrationText": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-02.e9155f31.mp3",
+      "textHash": "e9155f3135fe90777abdd5a65911d6a40c88cc75aa6c52095a4ccb4ceabf2be8",
+      "audioDurationSec": 6.844082,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-02-after.77f615e7.mp3",
+      "afterAudioDurationSec": 4.675918,
+      "afterTextHash": "77f615e77b64f5d31882f1327786448c84500c34742604d729b3d0d28b20ff66"
+    },
+    {
+      "id": "tutorial-vscode-browser-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.464899,
+      "replayEndSec": 26.768996,
+      "narrationText": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-03.f77b3485.mp3",
+      "textHash": "f77b348591307181ff5f7483ae8cf4d107d96bdddabdec602bcef6bf4dbe33b1",
+      "audioDurationSec": 9.16898,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-03-after.2c4d18da.mp3",
+      "afterAudioDurationSec": 6.034286,
+      "afterTextHash": "2c4d18da37fca1a44c14a75175bd92bccc260546051f31c674958cf143e97213"
+    },
+    {
+      "id": "tutorial-vscode-browser-04",
+      "markerIndex": 3,
+      "replayStartSec": 26.768996,
+      "replayEndSec": 32.439211,
+      "narrationText": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-04.30bd53cd.mp3",
+      "textHash": "30bd53cdd9480fa2310c4a1157b0ca770f1c128fe9d91b615853a7e975dfda9c",
+      "audioDurationSec": 10.370612,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-04-after.3d3cf000.mp3",
+      "afterAudioDurationSec": 2.586122,
+      "afterTextHash": "3d3cf00035ebbd73f25b807c91bf6de0a2e8278f95518fd252175f7772ef057c"
+    },
+    {
+      "id": "tutorial-vscode-browser-05",
+      "markerIndex": 4,
+      "replayStartSec": 32.439211,
+      "replayEndSec": 38.211313,
+      "narrationText": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-05.998877d9.mp3",
+      "textHash": "998877d91c830457f33a36e9585263b22b806eff6fac4087e2543fb3e93d1ddb",
+      "audioDurationSec": 10.997551,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/tutorial-vscode-browser-05-after.3c883ef9.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "3c883ef93dea8e1faf811a3d3d52d9cf62903fdad84eb9c3ef3072e16db7d05f"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "6c60c955ffbf2021223ec257fdfaae7da6c64849ec4a7c73e072459caf759459",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/intro.6c60c955.mp3",
+      "narrationText": "Хорошая новость: терминал для этого не понадобится! Мы откроем полноценный VS Code прямо в браузере, создадим несколько файлов, выполним пару команд и посмотрим, как ядро удерживает всё внутри repo.",
+      "audioDurationSec": 14.106122
+    },
+    {
+      "id": "sandbox-concept",
+      "textHash": "2166b4da12c0c0a448882e8ca4f3ee48852fdc85add9d3694375134b60eb21c0",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/sandbox-concept.2166b4da.mp3",
+      "narrationText": "Вот в чём идея. Редактор работает не на вашем ноутбуке. Он запускается внутри sandbox репозитория на сервере, а браузер подключается к нему через SSH tunnel. Поэтому дерево файлов, встроенный терминал и всё, что вы оттуда запускаете, видят ровно то, что видит repo, и ничего больше.",
+      "audioDurationSec": 24.189388
+    },
+    {
+      "id": "workbench-tour",
+      "textHash": "f1457e4d82cd620b864a452b05bcd90ef081453b603f42e89d755d081f188803",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/workbench-tour.f1457e4d.mp3",
+      "narrationText": "Вот он: VS Code во вкладке браузера. Дерево файлов слева показывает repo, и только repo.",
+      "audioDurationSec": 6.19102
+    },
+    {
+      "id": "create-file",
+      "textHash": "b9c5ef62b102a326d4b8a66c2466a1513f5c8389d2f33591dfb29d96b39715c4",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/create-file.b9c5ef62.mp3",
+      "narrationText": "Создадим настоящий файл, без терминала. Новый редактор, пара строк, и сохраним как notes/todo.md. Папка появляется слева, как только файл попадает в repo.",
+      "audioDurationSec": 11.72898
+    },
+    {
+      "id": "editor-terminal",
+      "textHash": "b40097246730ad9cd774da71e7b425ce2b211cff5eab964130de1a9a7c6d3fa7",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/editor-terminal.b4009724.mp3",
+      "narrationText": "Встроенный терминал тоже работает, и вот наш файл. Теперь попробуем заглянуть за пределы repo: permission denied. Это не настройка, это ядро.",
+      "audioDurationSec": 9.717551
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "7ee6e7d25bbfc7db77ae5200c58d1779c1adcd44c448985d3e43add60396bca1",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-vscode-browser/next-tutorial.7ee6e7d2.mp3",
+      "narrationText": "Браузер, редактор, терминал: один sandbox, одни правила. Следующая тема, это функция, на которой всё здесь построено, forking. Вам она понравится.",
+      "audioDurationSec": 14.524082
+    }
+  ]
+}

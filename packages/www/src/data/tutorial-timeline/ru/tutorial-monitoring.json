@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "380fd3d34e311ae7c1f0d12334da4d4bec4a65c3f4f9678c13e6b39e32fa662f",
+  "transcriptHash": "fc96f8579f3aea0f3a44797c2acd3c71ca1e87e8d9c4698060d4d9af6d76e9ba",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.411841,
-      "replayEndSec": 8.597185,
+      "replayStartSec": 2.416158,
+      "replayEndSec": 8.503611,
       "narrationText": "Начнём с системного вида. Команда запроса машины с фильтром --system показывает время работы, использование диска и статус хранилища. Если что-то не так, отчёт сообщит об этом.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-monitoring/tutorial-monitoring-01.9c1ba28e.mp3",
       "textHash": "9c1ba28e72d5b7cf6a4e027f5bbaf304a80aefbc4f3b7b391e476ee547eb6c6c",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.597185,
-      "replayEndSec": 15.126152,
+      "replayStartSec": 8.503611,
+      "replayEndSec": 14.799411,
       "narrationText": "Теперь контейнеры. Этот вид перечисляет все запущенные контейнеры во всех репозиториях машины: имя, статус, здоровье, CPU, память, а также какому репозиторию принадлежит каждый.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-monitoring/tutorial-monitoring-02.ba285df6.mp3",
       "textHash": "ba285df6eac47ff85b855592e4a8f1a1865160e8d8e209ffd2b5adb770629e9d",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 15.126152,
-      "replayEndSec": 24.385141,
+      "replayStartSec": 14.799411,
+      "replayEndSec": 21.195367,
       "narrationText": "И сами репозитории. Размер, статус монтирования, статус Docker-демона, использование диска. Всё необходимое о каждой изолированной среде на машине.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-monitoring/tutorial-monitoring-03.e417512f.mp3",
       "textHash": "e417512fa35c09d4702334f0294a2224b00d6a34c257885a58e613b0e348191d",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 24.385141,
-      "replayEndSec": 32.334422,
+      "replayStartSec": 21.195367,
+      "replayEndSec": 26.969407,
       "narrationText": "Команда запроса машины выдаёт всё одним запросом. Системная информация, контейнеры, репозитории — вместе. Запустите один раз и получите полную картину.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-monitoring/tutorial-monitoring-04.8bba86e4.mp3",
       "textHash": "8bba86e44c81d37df5c6ba65473ac8910181cd2511d833d4713618162992c560",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 32.334422,
-      "replayEndSec": 38.502093,
+      "replayStartSec": 26.969407,
+      "replayEndSec": 29.019779,
       "narrationText": "И наконец диагностическая проверка ноутбука. Node, SSH-ключ, renet, Docker — всё, от чего зависит CLI. Это завершение всей серии. От установки до мониторинга — всё из терминала.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-monitoring/tutorial-monitoring-05.e91193d3.mp3",
       "textHash": "e91193d30c4ea41d9666460004d3171caa9465a152ccb25de9a4eef23ce047b4",
@@ -92,10 +92,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "d91be8fce2ca8315471371e0cca630a79136c11621e59811151c8c67b693f22a",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-monitoring/next-tutorial.d91be8fc.mp3",
-      "narrationText": "На этом серия завершена. Теперь вы умеете устанавливать, настраивать, развёртывать, форкать, выводить в продакшен, настраивать автозапуск, делать резервные копии и мониторить — всё из терминала!",
-      "audioDurationSec": 13.165714
+      "textHash": "e18dd90c7ccb88871a4658af6a14d43efa457a96792747a7452b781e8b58501f",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-monitoring/next-tutorial.e18dd90c.mp3",
+      "narrationText": "Теперь вы умеете устанавливать, настраивать, деплоить, делать fork, запускать в продакшн, включать autostart, делать резервные копии и мониторить. Дальше начинается продвинутый трек: версионируйте свои repo как код, с commits и rollbacks.",
+      "audioDurationSec": 19.147755
     }
   ]
 }

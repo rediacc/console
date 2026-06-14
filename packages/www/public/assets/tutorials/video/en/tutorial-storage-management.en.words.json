@@ -1,0 +1,799 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.67,
+      "text": "Welcome to the final tutorial!",
+      "words": [
+        { "start": 1, "end": 1.334, "char": [0, 7] },
+        { "start": 1.334, "end": 1.668, "char": [8, 10] },
+        { "start": 1.668, "end": 2.002, "char": [11, 14] },
+        { "start": 2.002, "end": 2.336, "char": [15, 20] },
+        { "start": 2.336, "end": 2.67, "char": [21, 30] }
+      ]
+    },
+    {
+      "start": 2.67,
+      "end": 5.341,
+      "text": "Let's make sure you never run out of",
+      "words": [
+        { "start": 2.67, "end": 3.004, "char": [0, 5] },
+        { "start": 3.004, "end": 3.338, "char": [6, 10] },
+        { "start": 3.338, "end": 3.672, "char": [11, 15] },
+        { "start": 3.672, "end": 4.005, "char": [16, 19] },
+        { "start": 4.005, "end": 4.339, "char": [20, 25] },
+        { "start": 4.339, "end": 4.673, "char": [26, 29] },
+        { "start": 4.673, "end": 5.007, "char": [30, 33] },
+        { "start": 5.007, "end": 5.341, "char": [34, 36] }
+      ]
+    },
+    {
+      "start": 5.341,
+      "end": 6.009,
+      "text": "disk again.",
+      "words": [
+        { "start": 5.341, "end": 5.675, "char": [0, 4] },
+        { "start": 5.675, "end": 6.009, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 6.009,
+      "end": 8.013,
+      "text": "We'll grow a full repository online,",
+      "words": [
+        { "start": 6.009, "end": 6.343, "char": [0, 5] },
+        { "start": 6.343, "end": 6.677, "char": [6, 10] },
+        { "start": 6.677, "end": 7.011, "char": [11, 12] },
+        { "start": 7.011, "end": 7.345, "char": [13, 17] },
+        { "start": 7.345, "end": 7.679, "char": [18, 28] },
+        { "start": 7.679, "end": 8.013, "char": [29, 36] }
+      ]
+    },
+    {
+      "start": 8.013,
+      "end": 10.35,
+      "text": "hand deleted space back to the pool,",
+      "words": [
+        { "start": 8.013, "end": 8.347, "char": [0, 4] },
+        { "start": 8.347, "end": 8.681, "char": [5, 12] },
+        { "start": 8.681, "end": 9.015, "char": [13, 18] },
+        { "start": 9.015, "end": 9.349, "char": [19, 23] },
+        { "start": 9.349, "end": 9.683, "char": [24, 26] },
+        { "start": 9.683, "end": 10.016, "char": [27, 30] },
+        { "start": 10.016, "end": 10.35, "char": [31, 36] }
+      ]
+    },
+    {
+      "start": 10.35,
+      "end": 13.022,
+      "text": "and then teach the machine to do both",
+      "words": [
+        { "start": 10.35, "end": 10.684, "char": [0, 3] },
+        { "start": 10.684, "end": 11.018, "char": [4, 8] },
+        { "start": 11.018, "end": 11.352, "char": [9, 14] },
+        { "start": 11.352, "end": 11.686, "char": [15, 18] },
+        { "start": 11.686, "end": 12.02, "char": [19, 26] },
+        { "start": 12.02, "end": 12.354, "char": [27, 29] },
+        { "start": 12.354, "end": 12.688, "char": [30, 32] },
+        { "start": 12.688, "end": 13.022, "char": [33, 37] }
+      ]
+    },
+    {
+      "start": 13.022,
+      "end": 13.356,
+      "text": "automatically.",
+      "words": [{ "start": 13.022, "end": 13.356, "char": [0, 14] }]
+    },
+    {
+      "start": 14.13,
+      "end": 15.404,
+      "text": "Here's the model.",
+      "words": [
+        { "start": 14.13, "end": 14.555, "char": [0, 6] },
+        { "start": 14.555, "end": 14.979, "char": [7, 10] },
+        { "start": 14.979, "end": 15.404, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 15.404,
+      "end": 17.952,
+      "text": "Every repository is a file in",
+      "words": [
+        { "start": 15.404, "end": 15.829, "char": [0, 5] },
+        { "start": 15.829, "end": 16.253, "char": [6, 16] },
+        { "start": 16.253, "end": 16.678, "char": [17, 19] },
+        { "start": 16.678, "end": 17.102, "char": [20, 21] },
+        { "start": 17.102, "end": 17.527, "char": [22, 26] },
+        { "start": 17.527, "end": 17.952, "char": [27, 29] }
+      ]
+    },
+    {
+      "start": 17.952,
+      "end": 19.65,
+      "text": "one shared datastore pool.",
+      "words": [
+        { "start": 17.952, "end": 18.376, "char": [0, 3] },
+        { "start": 18.376, "end": 18.801, "char": [4, 10] },
+        { "start": 18.801, "end": 19.226, "char": [11, 20] },
+        { "start": 19.226, "end": 19.65, "char": [21, 26] }
+      ]
+    },
+    {
+      "start": 19.65,
+      "end": 22.198,
+      "text": "Repositories can grow online while the",
+      "words": [
+        { "start": 19.65, "end": 20.075, "char": [0, 12] },
+        { "start": 20.075, "end": 20.499, "char": [13, 16] },
+        { "start": 20.499, "end": 20.924, "char": [17, 21] },
+        { "start": 20.924, "end": 21.349, "char": [22, 28] },
+        { "start": 21.349, "end": 21.773, "char": [29, 34] },
+        { "start": 21.773, "end": 22.198, "char": [35, 38] }
+      ]
+    },
+    {
+      "start": 22.198,
+      "end": 23.472,
+      "text": "containers keep running.",
+      "words": [
+        { "start": 22.198, "end": 22.623, "char": [0, 10] },
+        { "start": 22.623, "end": 23.047, "char": [11, 15] },
+        { "start": 23.047, "end": 23.472, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 23.472,
+      "end": 26.02,
+      "text": "But deleting data inside a repo",
+      "words": [
+        { "start": 23.472, "end": 23.896, "char": [0, 3] },
+        { "start": 23.896, "end": 24.321, "char": [4, 12] },
+        { "start": 24.321, "end": 24.746, "char": [13, 17] },
+        { "start": 24.746, "end": 25.17, "char": [18, 24] },
+        { "start": 25.17, "end": 25.595, "char": [25, 26] },
+        { "start": 25.595, "end": 26.02, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 26.02,
+      "end": 27.718,
+      "text": "frees nothing by itself.",
+      "words": [
+        { "start": 26.02, "end": 26.444, "char": [0, 5] },
+        { "start": 26.444, "end": 26.869, "char": [6, 13] },
+        { "start": 26.869, "end": 27.293, "char": [14, 16] },
+        { "start": 27.293, "end": 27.718, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 27.718,
+      "end": 30.266,
+      "text": "Trim is what hands the blocks",
+      "words": [
+        { "start": 27.718, "end": 28.143, "char": [0, 4] },
+        { "start": 28.143, "end": 28.567, "char": [5, 7] },
+        { "start": 28.567, "end": 28.992, "char": [8, 12] },
+        { "start": 28.992, "end": 29.417, "char": [13, 18] },
+        { "start": 29.417, "end": 29.841, "char": [19, 22] },
+        { "start": 29.841, "end": 30.266, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 30.266,
+      "end": 31.964,
+      "text": "back to the pool.",
+      "words": [
+        { "start": 30.266, "end": 30.691, "char": [0, 4] },
+        { "start": 30.691, "end": 31.115, "char": [5, 7] },
+        { "start": 31.115, "end": 31.54, "char": [8, 11] },
+        { "start": 31.54, "end": 31.964, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 31.964,
+      "end": 34.088,
+      "text": "And a policy automates both.",
+      "words": [
+        { "start": 31.964, "end": 32.389, "char": [0, 3] },
+        { "start": 32.389, "end": 32.814, "char": [4, 5] },
+        { "start": 32.814, "end": 33.238, "char": [6, 12] },
+        { "start": 33.238, "end": 33.663, "char": [13, 22] },
+        { "start": 33.663, "end": 34.088, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 37.352,
+      "end": 39.925,
+      "text": "Fill the repository most of the way",
+      "words": [
+        { "start": 37.352, "end": 37.72, "char": [0, 4] },
+        { "start": 37.72, "end": 38.087, "char": [5, 8] },
+        { "start": 38.087, "end": 38.455, "char": [9, 19] },
+        { "start": 38.455, "end": 38.822, "char": [20, 24] },
+        { "start": 38.822, "end": 39.19, "char": [25, 27] },
+        { "start": 39.19, "end": 39.557, "char": [28, 31] },
+        { "start": 39.557, "end": 39.925, "char": [32, 35] }
+      ]
+    },
+    {
+      "start": 39.925,
+      "end": 40.66,
+      "text": "and check:",
+      "words": [
+        { "start": 39.925, "end": 40.293, "char": [0, 3] },
+        { "start": 40.293, "end": 40.66, "char": [4, 10] }
+      ]
+    },
+    {
+      "start": 40.66,
+      "end": 42.498,
+      "text": "the filesystem is getting tight.",
+      "words": [
+        { "start": 40.66, "end": 41.028, "char": [0, 3] },
+        { "start": 41.028, "end": 41.395, "char": [4, 14] },
+        { "start": 41.395, "end": 41.763, "char": [15, 17] },
+        { "start": 41.763, "end": 42.131, "char": [18, 25] },
+        { "start": 42.131, "end": 42.498, "char": [26, 32] }
+      ]
+    },
+    {
+      "start": 48.126,
+      "end": 49.035,
+      "text": "Nearly full.",
+      "words": [
+        { "start": 48.126, "end": 48.581, "char": [0, 6] },
+        { "start": 48.581, "end": 49.035, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 49.035,
+      "end": 50.399,
+      "text": "Time to grow.",
+      "words": [
+        { "start": 49.035, "end": 49.49, "char": [0, 4] },
+        { "start": 49.49, "end": 49.944, "char": [5, 7] },
+        { "start": 49.944, "end": 50.399, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 53.677,
+      "end": 54.943,
+      "text": "Grow it online.",
+      "words": [
+        { "start": 53.677, "end": 54.099, "char": [0, 4] },
+        { "start": 54.099, "end": 54.521, "char": [5, 7] },
+        { "start": 54.521, "end": 54.943, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 54.943,
+      "end": 57.474,
+      "text": "The encrypted container and the filesystem",
+      "words": [
+        { "start": 54.943, "end": 55.365, "char": [0, 3] },
+        { "start": 55.365, "end": 55.786, "char": [4, 13] },
+        { "start": 55.786, "end": 56.208, "char": [14, 23] },
+        { "start": 56.208, "end": 56.63, "char": [24, 27] },
+        { "start": 56.63, "end": 57.052, "char": [28, 31] },
+        { "start": 57.052, "end": 57.474, "char": [32, 42] }
+      ]
+    },
+    {
+      "start": 57.474,
+      "end": 60.005,
+      "text": "expand while the containers keep running",
+      "words": [
+        { "start": 57.474, "end": 57.896, "char": [0, 6] },
+        { "start": 57.896, "end": 58.318, "char": [7, 12] },
+        { "start": 58.318, "end": 58.74, "char": [13, 16] },
+        { "start": 58.74, "end": 59.161, "char": [17, 27] },
+        { "start": 59.161, "end": 59.583, "char": [28, 32] },
+        { "start": 59.583, "end": 60.005, "char": [33, 40] }
+      ]
+    },
+    {
+      "start": 60.005,
+      "end": 61.271,
+      "text": "— zero downtime,",
+      "words": [
+        { "start": 60.005, "end": 60.427, "char": [0, 1] },
+        { "start": 60.427, "end": 60.849, "char": [2, 6] },
+        { "start": 60.849, "end": 61.271, "char": [7, 16] }
+      ]
+    },
+    {
+      "start": 61.271,
+      "end": 62.115,
+      "text": "zero unmount.",
+      "words": [
+        { "start": 61.271, "end": 61.693, "char": [0, 4] },
+        { "start": 61.693, "end": 62.115, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 65.115,
+      "end": 66.619,
+      "text": "Four gigabytes now.",
+      "words": [
+        { "start": 65.115, "end": 65.616, "char": [0, 4] },
+        { "start": 65.616, "end": 66.118, "char": [5, 14] },
+        { "start": 66.118, "end": 66.619, "char": [15, 19] }
+      ]
+    },
+    {
+      "start": 66.619,
+      "end": 67.622,
+      "text": "Nothing restarted.",
+      "words": [
+        { "start": 66.619, "end": 67.121, "char": [0, 7] },
+        { "start": 67.121, "end": 67.622, "char": [8, 18] }
+      ]
+    },
+    {
+      "start": 70.918,
+      "end": 72.162,
+      "text": "Verify from inside:",
+      "words": [
+        { "start": 70.918, "end": 71.333, "char": [0, 6] },
+        { "start": 71.333, "end": 71.747, "char": [7, 11] },
+        { "start": 71.747, "end": 72.162, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 72.162,
+      "end": 72.991,
+      "text": "same volume,",
+      "words": [
+        { "start": 72.162, "end": 72.577, "char": [0, 4] },
+        { "start": 72.577, "end": 72.991, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 72.991,
+      "end": 74.236,
+      "text": "double the room.",
+      "words": [
+        { "start": 72.991, "end": 73.406, "char": [0, 6] },
+        { "start": 73.406, "end": 73.821, "char": [7, 10] },
+        { "start": 73.821, "end": 74.236, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 78.848,
+      "end": 80.075,
+      "text": "The app never noticed.",
+      "words": [
+        { "start": 78.848, "end": 79.154, "char": [0, 3] },
+        { "start": 79.154, "end": 79.461, "char": [4, 7] },
+        { "start": 79.461, "end": 79.768, "char": [8, 13] },
+        { "start": 79.768, "end": 80.075, "char": [14, 22] }
+      ]
+    },
+    {
+      "start": 83.365,
+      "end": 84.851,
+      "text": "Now the other direction.",
+      "words": [
+        { "start": 83.365, "end": 83.737, "char": [0, 3] },
+        { "start": 83.737, "end": 84.108, "char": [4, 7] },
+        { "start": 84.108, "end": 84.48, "char": [8, 13] },
+        { "start": 84.48, "end": 84.851, "char": [14, 24] }
+      ]
+    },
+    {
+      "start": 84.851,
+      "end": 87.452,
+      "text": "Delete the big file — but watch:",
+      "words": [
+        { "start": 84.851, "end": 85.223, "char": [0, 6] },
+        { "start": 85.223, "end": 85.594, "char": [7, 10] },
+        { "start": 85.594, "end": 85.966, "char": [11, 14] },
+        { "start": 85.966, "end": 86.337, "char": [15, 19] },
+        { "start": 86.337, "end": 86.709, "char": [20, 21] },
+        { "start": 86.709, "end": 87.08, "char": [22, 25] },
+        { "start": 87.08, "end": 87.452, "char": [26, 32] }
+      ]
+    },
+    {
+      "start": 87.452,
+      "end": 90.052,
+      "text": "the pool does not get the space",
+      "words": [
+        { "start": 87.452, "end": 87.823, "char": [0, 3] },
+        { "start": 87.823, "end": 88.195, "char": [4, 8] },
+        { "start": 88.195, "end": 88.566, "char": [9, 13] },
+        { "start": 88.566, "end": 88.938, "char": [14, 17] },
+        { "start": 88.938, "end": 89.309, "char": [18, 21] },
+        { "start": 89.309, "end": 89.681, "char": [22, 25] },
+        { "start": 89.681, "end": 90.052, "char": [26, 31] }
+      ]
+    },
+    {
+      "start": 90.052,
+      "end": 90.795,
+      "text": "back yet.",
+      "words": [
+        { "start": 90.052, "end": 90.424, "char": [0, 4] },
+        { "start": 90.424, "end": 90.795, "char": [5, 9] }
+      ]
+    },
+    {
+      "start": 90.795,
+      "end": 93.396,
+      "text": "Deleted blocks stay reserved inside the image.",
+      "words": [
+        { "start": 90.795, "end": 91.167, "char": [0, 7] },
+        { "start": 91.167, "end": 91.538, "char": [8, 14] },
+        { "start": 91.538, "end": 91.91, "char": [15, 19] },
+        { "start": 91.91, "end": 92.281, "char": [20, 28] },
+        { "start": 92.281, "end": 92.653, "char": [29, 35] },
+        { "start": 92.653, "end": 93.025, "char": [36, 39] },
+        { "start": 93.025, "end": 93.396, "char": [40, 46] }
+      ]
+    },
+    {
+      "start": 95.146,
+      "end": 96.261,
+      "text": "Freed inside the repo,",
+      "words": [
+        { "start": 95.146, "end": 95.425, "char": [0, 5] },
+        { "start": 95.425, "end": 95.703, "char": [6, 12] },
+        { "start": 95.703, "end": 95.982, "char": [13, 16] },
+        { "start": 95.982, "end": 96.261, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 96.261,
+      "end": 97.654,
+      "text": "still owned by the image.",
+      "words": [
+        { "start": 96.261, "end": 96.539, "char": [0, 5] },
+        { "start": 96.539, "end": 96.818, "char": [6, 11] },
+        { "start": 96.818, "end": 97.097, "char": [12, 14] },
+        { "start": 97.097, "end": 97.375, "char": [15, 18] },
+        { "start": 97.375, "end": 97.654, "char": [19, 25] }
+      ]
+    },
+    {
+      "start": 100.989,
+      "end": 103.538,
+      "text": "Trim hands those blocks back to the",
+      "words": [
+        { "start": 100.989, "end": 101.353, "char": [0, 4] },
+        { "start": 101.353, "end": 101.717, "char": [5, 10] },
+        { "start": 101.717, "end": 102.082, "char": [11, 16] },
+        { "start": 102.082, "end": 102.446, "char": [17, 23] },
+        { "start": 102.446, "end": 102.81, "char": [24, 28] },
+        { "start": 102.81, "end": 103.174, "char": [29, 31] },
+        { "start": 103.174, "end": 103.538, "char": [32, 35] }
+      ]
+    },
+    {
+      "start": 103.538,
+      "end": 104.267,
+      "text": "datastore pool,",
+      "words": [
+        { "start": 103.538, "end": 103.902, "char": [0, 9] },
+        { "start": 103.902, "end": 104.267, "char": [10, 15] }
+      ]
+    },
+    {
+      "start": 104.267,
+      "end": 104.631,
+      "text": "online.",
+      "words": [{ "start": 104.267, "end": 104.631, "char": [0, 7] }]
+    },
+    {
+      "start": 104.631,
+      "end": 107.18,
+      "text": "This is the step most setups forget.",
+      "words": [
+        { "start": 104.631, "end": 104.995, "char": [0, 4] },
+        { "start": 104.995, "end": 105.359, "char": [5, 7] },
+        { "start": 105.359, "end": 105.723, "char": [8, 11] },
+        { "start": 105.723, "end": 106.087, "char": [12, 16] },
+        { "start": 106.087, "end": 106.452, "char": [17, 21] },
+        { "start": 106.452, "end": 106.816, "char": [22, 28] },
+        { "start": 106.816, "end": 107.18, "char": [29, 36] }
+      ]
+    },
+    {
+      "start": 110.18,
+      "end": 110.585,
+      "text": "Reclaimed.",
+      "words": [{ "start": 110.18, "end": 110.585, "char": [0, 10] }]
+    },
+    {
+      "start": 110.585,
+      "end": 112.609,
+      "text": "The pool can breathe again.",
+      "words": [
+        { "start": 110.585, "end": 110.99, "char": [0, 3] },
+        { "start": 110.99, "end": 111.395, "char": [4, 8] },
+        { "start": 111.395, "end": 111.8, "char": [9, 12] },
+        { "start": 111.8, "end": 112.205, "char": [13, 20] },
+        { "start": 112.205, "end": 112.609, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 115.927,
+      "end": 118.552,
+      "text": "Now stop doing this by hand.",
+      "words": [
+        { "start": 115.927, "end": 116.365, "char": [0, 3] },
+        { "start": 116.365, "end": 116.802, "char": [4, 8] },
+        { "start": 116.802, "end": 117.24, "char": [9, 14] },
+        { "start": 117.24, "end": 117.677, "char": [15, 19] },
+        { "start": 117.677, "end": 118.115, "char": [20, 22] },
+        { "start": 118.115, "end": 118.552, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 118.552,
+      "end": 121.178,
+      "text": "The policy enables automatic growth up",
+      "words": [
+        { "start": 118.552, "end": 118.99, "char": [0, 3] },
+        { "start": 118.99, "end": 119.427, "char": [4, 10] },
+        { "start": 119.427, "end": 119.865, "char": [11, 18] },
+        { "start": 119.865, "end": 120.303, "char": [19, 28] },
+        { "start": 120.303, "end": 120.74, "char": [29, 35] },
+        { "start": 120.74, "end": 121.178, "char": [36, 38] }
+      ]
+    },
+    {
+      "start": 121.178,
+      "end": 123.365,
+      "text": "to a ceiling you choose,",
+      "words": [
+        { "start": 121.178, "end": 121.615, "char": [0, 2] },
+        { "start": 121.615, "end": 122.053, "char": [3, 4] },
+        { "start": 122.053, "end": 122.49, "char": [5, 12] },
+        { "start": 122.49, "end": 122.928, "char": [13, 16] },
+        { "start": 122.928, "end": 123.365, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 123.365,
+      "end": 124.678,
+      "text": "plus scheduled trims.",
+      "words": [
+        { "start": 123.365, "end": 123.803, "char": [0, 4] },
+        { "start": 123.803, "end": 124.24, "char": [5, 14] },
+        { "start": 124.24, "end": 124.678, "char": [15, 21] }
+      ]
+    },
+    {
+      "start": 129.744,
+      "end": 130.416,
+      "text": "Policy stored.",
+      "words": [
+        { "start": 129.744, "end": 130.08, "char": [0, 6] },
+        { "start": 130.08, "end": 130.416, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 130.416,
+      "end": 132.434,
+      "text": "The machine takes over from here.",
+      "words": [
+        { "start": 130.416, "end": 130.753, "char": [0, 3] },
+        { "start": 130.753, "end": 131.089, "char": [4, 11] },
+        { "start": 131.089, "end": 131.425, "char": [12, 17] },
+        { "start": 131.425, "end": 131.762, "char": [18, 22] },
+        { "start": 131.762, "end": 132.098, "char": [23, 27] },
+        { "start": 132.098, "end": 132.434, "char": [28, 33] }
+      ]
+    },
+    {
+      "start": 135.697,
+      "end": 136.74,
+      "text": "Read it back:",
+      "words": [
+        { "start": 135.697, "end": 136.045, "char": [0, 4] },
+        { "start": 136.045, "end": 136.392, "char": [5, 7] },
+        { "start": 136.392, "end": 136.74, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 136.74,
+      "end": 137.435,
+      "text": "auto-grow on,",
+      "words": [
+        { "start": 136.74, "end": 137.088, "char": [0, 9] },
+        { "start": 137.088, "end": 137.435, "char": [10, 13] }
+      ]
+    },
+    {
+      "start": 137.435,
+      "end": 138.826,
+      "text": "ceiling at eight gigabytes,",
+      "words": [
+        { "start": 137.435, "end": 137.783, "char": [0, 7] },
+        { "start": 137.783, "end": 138.13, "char": [8, 10] },
+        { "start": 138.13, "end": 138.478, "char": [11, 16] },
+        { "start": 138.478, "end": 138.826, "char": [17, 27] }
+      ]
+    },
+    {
+      "start": 138.826,
+      "end": 140.216,
+      "text": "trim on a schedule.",
+      "words": [
+        { "start": 138.826, "end": 139.173, "char": [0, 4] },
+        { "start": 139.173, "end": 139.521, "char": [5, 7] },
+        { "start": 139.521, "end": 139.869, "char": [8, 9] },
+        { "start": 139.869, "end": 140.216, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 144.834,
+      "end": 145.774,
+      "text": "Set once,",
+      "words": [
+        { "start": 144.834, "end": 145.304, "char": [0, 3] },
+        { "start": 145.304, "end": 145.774, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 145.774,
+      "end": 146.715,
+      "text": "forgotten safely.",
+      "words": [
+        { "start": 145.774, "end": 146.245, "char": [0, 9] },
+        { "start": 146.245, "end": 146.715, "char": [10, 17] }
+      ]
+    },
+    {
+      "start": 150.011,
+      "end": 152.802,
+      "text": "And the view that ties it together:",
+      "words": [
+        { "start": 150.011, "end": 150.41, "char": [0, 3] },
+        { "start": 150.41, "end": 150.808, "char": [4, 7] },
+        { "start": 150.808, "end": 151.207, "char": [8, 12] },
+        { "start": 151.207, "end": 151.606, "char": [13, 17] },
+        { "start": 151.606, "end": 152.004, "char": [18, 22] },
+        { "start": 152.004, "end": 152.403, "char": [23, 25] },
+        { "start": 152.403, "end": 152.802, "char": [26, 35] }
+      ]
+    },
+    {
+      "start": 152.802,
+      "end": 155.193,
+      "text": "storage health shows every repo's usage,",
+      "words": [
+        { "start": 152.802, "end": 153.2, "char": [0, 7] },
+        { "start": 153.2, "end": 153.599, "char": [8, 14] },
+        { "start": 153.599, "end": 153.998, "char": [15, 20] },
+        { "start": 153.998, "end": 154.396, "char": [21, 26] },
+        { "start": 154.396, "end": 154.795, "char": [27, 33] },
+        { "start": 154.795, "end": 155.193, "char": [34, 40] }
+      ]
+    },
+    {
+      "start": 155.193,
+      "end": 155.991,
+      "text": "the pool,",
+      "words": [
+        { "start": 155.193, "end": 155.592, "char": [0, 3] },
+        { "start": 155.592, "end": 155.991, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 155.991,
+      "end": 158.781,
+      "text": "and how much copy-on-write sharing is saving",
+      "words": [
+        { "start": 155.991, "end": 156.389, "char": [0, 3] },
+        { "start": 156.389, "end": 156.788, "char": [4, 7] },
+        { "start": 156.788, "end": 157.187, "char": [8, 12] },
+        { "start": 157.187, "end": 157.585, "char": [13, 26] },
+        { "start": 157.585, "end": 157.984, "char": [27, 34] },
+        { "start": 157.984, "end": 158.383, "char": [35, 37] },
+        { "start": 158.383, "end": 158.781, "char": [38, 44] }
+      ]
+    },
+    {
+      "start": 158.781,
+      "end": 159.18,
+      "text": "you.",
+      "words": [{ "start": 158.781, "end": 159.18, "char": [0, 4] }]
+    },
+    {
+      "start": 159.18,
+      "end": 160.088,
+      "text": "One view:",
+      "words": [
+        { "start": 159.18, "end": 159.634, "char": [0, 3] },
+        { "start": 159.634, "end": 160.088, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 160.088,
+      "end": 160.542,
+      "text": "usage,",
+      "words": [{ "start": 160.088, "end": 160.542, "char": [0, 6] }]
+    },
+    {
+      "start": 160.542,
+      "end": 160.995,
+      "text": "savings,",
+      "words": [{ "start": 160.542, "end": 160.995, "char": [0, 8] }]
+    },
+    {
+      "start": 160.995,
+      "end": 162.811,
+      "text": "and room to grow.",
+      "words": [
+        { "start": 160.995, "end": 161.449, "char": [0, 3] },
+        { "start": 161.449, "end": 161.903, "char": [4, 8] },
+        { "start": 161.903, "end": 162.357, "char": [9, 11] },
+        { "start": 162.357, "end": 162.811, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 163.589,
+      "end": 166.196,
+      "text": "And that's a wrap on the",
+      "words": [
+        { "start": 163.589, "end": 164.024, "char": [0, 3] },
+        { "start": 164.024, "end": 164.458, "char": [4, 10] },
+        { "start": 164.458, "end": 164.893, "char": [11, 12] },
+        { "start": 164.893, "end": 165.327, "char": [13, 17] },
+        { "start": 165.327, "end": 165.762, "char": [18, 20] },
+        { "start": 165.762, "end": 166.196, "char": [21, 24] }
+      ]
+    },
+    {
+      "start": 166.196,
+      "end": 166.631,
+      "text": "series!",
+      "words": [{ "start": 166.196, "end": 166.631, "char": [0, 7] }]
+    },
+    {
+      "start": 166.631,
+      "end": 167.5,
+      "text": "Eighteen tutorials,",
+      "words": [
+        { "start": 166.631, "end": 167.066, "char": [0, 8] },
+        { "start": 167.066, "end": 167.5, "char": [9, 19] }
+      ]
+    },
+    {
+      "start": 167.5,
+      "end": 169.673,
+      "text": "from install to autopilot storage.",
+      "words": [
+        { "start": 167.5, "end": 167.935, "char": [0, 4] },
+        { "start": 167.935, "end": 168.369, "char": [5, 12] },
+        { "start": 168.369, "end": 168.804, "char": [13, 15] },
+        { "start": 168.804, "end": 169.239, "char": [16, 25] },
+        { "start": 169.239, "end": 169.673, "char": [26, 34] }
+      ]
+    },
+    {
+      "start": 169.673,
+      "end": 171.846,
+      "text": "Your servers are yours again.",
+      "words": [
+        { "start": 169.673, "end": 170.108, "char": [0, 4] },
+        { "start": 170.108, "end": 170.542, "char": [5, 12] },
+        { "start": 170.542, "end": 170.977, "char": [13, 16] },
+        { "start": 170.977, "end": 171.411, "char": [17, 22] },
+        { "start": 171.411, "end": 171.846, "char": [23, 29] }
+      ]
+    },
+    {
+      "start": 171.846,
+      "end": 173.15,
+      "text": "Thanks for watching!",
+      "words": [
+        { "start": 171.846, "end": 172.281, "char": [0, 6] },
+        { "start": 172.281, "end": 172.715, "char": [7, 10] },
+        { "start": 172.715, "end": 173.15, "char": [11, 20] }
+      ]
+    }
+  ]
+}

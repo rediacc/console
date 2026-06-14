@@ -149,310 +149,356 @@
       ]
     },
     {
-      "start": 35.175,
-      "end": 38.055,
+      "start": 35.108,
+      "end": 37.988,
       "text": "Now containers. This view lists every running",
       "words": [
-        { "start": 35.175, "end": 35.415, "char": [0, 3] },
-        { "start": 35.415, "end": 36.135, "char": [4, 14] },
-        { "start": 36.295, "end": 36.535, "char": [16, 20] },
-        { "start": 36.535, "end": 36.855, "char": [21, 25] },
-        { "start": 36.855, "end": 37.255, "char": [26, 31] },
-        { "start": 37.335, "end": 37.655, "char": [32, 37] },
-        { "start": 37.655, "end": 38.055, "char": [38, 45] }
+        { "start": 35.108, "end": 35.348, "char": [0, 3] },
+        { "start": 35.348, "end": 36.068, "char": [4, 14] },
+        { "start": 36.228, "end": 36.468, "char": [16, 20] },
+        { "start": 36.468, "end": 36.788, "char": [21, 25] },
+        { "start": 36.788, "end": 37.188, "char": [26, 31] },
+        { "start": 37.268, "end": 37.588, "char": [32, 37] },
+        { "start": 37.588, "end": 37.988, "char": [38, 45] }
       ]
     },
     {
-      "start": 38.055,
-      "end": 40.775,
+      "start": 37.988,
+      "end": 40.708,
       "text": "container across every repository on the machine",
       "words": [
-        { "start": 38.055, "end": 38.615, "char": [0, 9] },
-        { "start": 38.615, "end": 38.935, "char": [10, 16] },
-        { "start": 39.015, "end": 39.335, "char": [17, 22] },
-        { "start": 39.335, "end": 40.135, "char": [23, 33] },
-        { "start": 40.135, "end": 40.295, "char": [34, 36] },
-        { "start": 40.295, "end": 40.775, "char": [41, 48] }
+        { "start": 37.988, "end": 38.548, "char": [0, 9] },
+        { "start": 38.548, "end": 38.868, "char": [10, 16] },
+        { "start": 38.948, "end": 39.268, "char": [17, 22] },
+        { "start": 39.268, "end": 40.068, "char": [23, 33] },
+        { "start": 40.068, "end": 40.228, "char": [34, 36] },
+        { "start": 40.228, "end": 40.708, "char": [41, 48] }
       ]
     },
     {
-      "start": 41.015,
-      "end": 43.975,
+      "start": 40.948,
+      "end": 43.908,
       "text": ": name, status, health, CPU",
       "words": [
-        { "start": 41.015, "end": 41.495, "char": [2, 6] },
-        { "start": 41.655, "end": 42.375, "char": [8, 14] },
-        { "start": 42.615, "end": 42.935, "char": [16, 22] },
-        { "start": 43.175, "end": 43.975, "char": [24, 27] }
+        { "start": 40.948, "end": 41.428, "char": [2, 6] },
+        { "start": 41.588, "end": 42.308, "char": [8, 14] },
+        { "start": 42.548, "end": 42.868, "char": [16, 22] },
+        { "start": 43.108, "end": 43.908, "char": [24, 27] }
       ]
     },
     {
-      "start": 44.135,
-      "end": 46.695,
+      "start": 44.068,
+      "end": 46.628,
       "text": ", memory, plus which repo owns each",
       "words": [
-        { "start": 44.135, "end": 44.695, "char": [2, 8] },
-        { "start": 44.855, "end": 45.255, "char": [10, 14] },
-        { "start": 45.335, "end": 45.575, "char": [15, 20] },
-        { "start": 45.575, "end": 46.055, "char": [21, 25] },
-        { "start": 46.055, "end": 46.455, "char": [26, 30] },
-        { "start": 46.455, "end": 46.695, "char": [31, 35] }
+        { "start": 44.068, "end": 44.628, "char": [2, 8] },
+        { "start": 44.788, "end": 45.188, "char": [10, 14] },
+        { "start": 45.268, "end": 45.508, "char": [15, 20] },
+        { "start": 45.508, "end": 45.988, "char": [21, 25] },
+        { "start": 45.988, "end": 46.388, "char": [26, 30] },
+        { "start": 46.388, "end": 46.628, "char": [31, 35] }
       ]
     },
     {
-      "start": 46.695,
-      "end": 47.015,
+      "start": 46.628,
+      "end": 46.948,
       "text": "one.",
-      "words": [{ "start": 46.695, "end": 47.015, "char": [0, 3] }]
+      "words": [{ "start": 46.628, "end": 46.948, "char": [0, 3] }]
     },
     {
-      "start": 47.217,
-      "end": 49.777,
+      "start": 47.15,
+      "end": 49.71,
       "text": "Every container across every repo",
       "words": [
-        { "start": 47.217, "end": 47.457, "char": [0, 5] },
-        { "start": 47.457, "end": 48.257, "char": [6, 15] },
-        { "start": 48.257, "end": 48.657, "char": [16, 22] },
-        { "start": 48.897, "end": 49.297, "char": [23, 28] },
-        { "start": 49.297, "end": 49.777, "char": [29, 33] }
+        { "start": 47.15, "end": 47.39, "char": [0, 5] },
+        { "start": 47.39, "end": 48.19, "char": [6, 15] },
+        { "start": 48.19, "end": 48.59, "char": [16, 22] },
+        { "start": 48.83, "end": 49.23, "char": [23, 28] },
+        { "start": 49.23, "end": 49.71, "char": [29, 33] }
       ]
     },
     {
-      "start": 49.937,
-      "end": 50.897,
+      "start": 49.87,
+      "end": 50.83,
       "text": ", in one view.",
       "words": [
-        { "start": 49.937, "end": 50.177, "char": [2, 4] },
-        { "start": 50.177, "end": 50.497, "char": [5, 8] },
-        { "start": 50.497, "end": 50.897, "char": [9, 13] }
+        { "start": 49.87, "end": 50.11, "char": [2, 4] },
+        { "start": 50.11, "end": 50.43, "char": [5, 8] },
+        { "start": 50.43, "end": 50.83, "char": [9, 13] }
       ]
     },
     {
-      "start": 54.326,
-      "end": 57.126,
+      "start": 54.193,
+      "end": 56.993,
       "text": "And the repos themselves. Size, mount",
       "words": [
-        { "start": 54.326, "end": 54.486, "char": [0, 3] },
-        { "start": 54.486, "end": 54.566, "char": [4, 7] },
-        { "start": 54.566, "end": 55.046, "char": [8, 13] },
-        { "start": 55.046, "end": 55.846, "char": [14, 24] },
-        { "start": 56.726, "end": 57.126, "char": [32, 37] }
+        { "start": 54.193, "end": 54.353, "char": [0, 3] },
+        { "start": 54.353, "end": 54.433, "char": [4, 7] },
+        { "start": 54.433, "end": 54.913, "char": [8, 13] },
+        { "start": 54.913, "end": 55.713, "char": [14, 24] },
+        { "start": 56.593, "end": 56.993, "char": [32, 37] }
       ]
     },
     {
-      "start": 57.126,
-      "end": 59.926,
+      "start": 56.993,
+      "end": 59.793,
       "text": "status, Docker daemon status, disk",
       "words": [
-        { "start": 57.126, "end": 57.686, "char": [0, 6] },
-        { "start": 58.006, "end": 58.326, "char": [8, 14] },
-        { "start": 58.326, "end": 58.726, "char": [15, 21] },
-        { "start": 58.726, "end": 59.286, "char": [22, 28] },
-        { "start": 59.606, "end": 59.926, "char": [30, 34] }
+        { "start": 56.993, "end": 57.553, "char": [0, 6] },
+        { "start": 57.873, "end": 58.193, "char": [8, 14] },
+        { "start": 58.193, "end": 58.593, "char": [15, 21] },
+        { "start": 58.593, "end": 59.153, "char": [22, 28] },
+        { "start": 59.473, "end": 59.793, "char": [30, 34] }
       ]
     },
     {
-      "start": 61.366,
-      "end": 63.926,
+      "start": 61.233,
+      "end": 63.793,
       "text": "usage. Everything you need to know about each isolated environment.",
       "words": [
-        { "start": 61.366, "end": 61.446, "char": [18, 21] },
-        { "start": 61.446, "end": 61.766, "char": [22, 26] },
-        { "start": 61.766, "end": 62.006, "char": [30, 34] },
-        { "start": 62.006, "end": 62.326, "char": [35, 40] },
-        { "start": 62.326, "end": 62.566, "char": [41, 45] },
-        { "start": 62.646, "end": 63.286, "char": [46, 54] },
-        { "start": 63.286, "end": 63.926, "char": [55, 66] }
+        { "start": 61.233, "end": 61.313, "char": [18, 21] },
+        { "start": 61.313, "end": 61.633, "char": [22, 26] },
+        { "start": 61.633, "end": 61.873, "char": [30, 34] },
+        { "start": 61.873, "end": 62.193, "char": [35, 40] },
+        { "start": 62.193, "end": 62.433, "char": [41, 45] },
+        { "start": 62.513, "end": 63.153, "char": [46, 54] },
+        { "start": 63.153, "end": 63.793, "char": [55, 66] }
       ]
     },
     {
-      "start": 64.044,
-      "end": 66.684,
+      "start": 63.911,
+      "end": 66.551,
       "text": "All repos, all their daemons, all their",
       "words": [
-        { "start": 64.044, "end": 64.284, "char": [0, 3] },
-        { "start": 64.284, "end": 65.084, "char": [4, 9] },
-        { "start": 65.084, "end": 65.244, "char": [11, 14] },
-        { "start": 65.244, "end": 65.484, "char": [15, 20] },
-        { "start": 65.484, "end": 66.204, "char": [21, 28] },
-        { "start": 66.204, "end": 66.444, "char": [30, 33] },
-        { "start": 66.444, "end": 66.684, "char": [34, 39] }
+        { "start": 63.911, "end": 64.151, "char": [0, 3] },
+        { "start": 64.151, "end": 64.951, "char": [4, 9] },
+        { "start": 64.951, "end": 65.111, "char": [11, 14] },
+        { "start": 65.111, "end": 65.351, "char": [15, 20] },
+        { "start": 65.351, "end": 66.071, "char": [21, 28] },
+        { "start": 66.071, "end": 66.311, "char": [30, 33] },
+        { "start": 66.311, "end": 66.551, "char": [34, 39] }
       ]
     },
     {
-      "start": 66.684,
-      "end": 67.804,
+      "start": 66.551,
+      "end": 67.671,
       "text": "disk usage.",
       "words": [
-        { "start": 66.684, "end": 67.164, "char": [0, 4] },
-        { "start": 67.164, "end": 67.804, "char": [5, 10] }
+        { "start": 66.551, "end": 67.031, "char": [0, 4] },
+        { "start": 67.031, "end": 67.671, "char": [5, 10] }
       ]
     },
     {
-      "start": 71.237,
-      "end": 73.877,
+      "start": 71.07,
+      "end": 73.71,
       "text": "The machine query command with no filters gives you",
       "words": [
-        { "start": 71.237, "end": 71.317, "char": [0, 3] },
-        { "start": 71.317, "end": 71.637, "char": [4, 11] },
-        { "start": 71.637, "end": 71.957, "char": [12, 17] },
-        { "start": 71.957, "end": 72.437, "char": [18, 25] },
-        { "start": 72.437, "end": 72.597, "char": [26, 30] },
-        { "start": 72.597, "end": 72.837, "char": [31, 33] },
-        { "start": 72.837, "end": 73.477, "char": [34, 41] },
-        { "start": 73.477, "end": 73.717, "char": [42, 47] },
-        { "start": 73.717, "end": 73.877, "char": [48, 51] }
+        { "start": 71.07, "end": 71.15, "char": [0, 3] },
+        { "start": 71.15, "end": 71.47, "char": [4, 11] },
+        { "start": 71.47, "end": 71.79, "char": [12, 17] },
+        { "start": 71.79, "end": 72.27, "char": [18, 25] },
+        { "start": 72.27, "end": 72.43, "char": [26, 30] },
+        { "start": 72.43, "end": 72.67, "char": [31, 33] },
+        { "start": 72.67, "end": 73.31, "char": [34, 41] },
+        { "start": 73.31, "end": 73.55, "char": [42, 47] },
+        { "start": 73.55, "end": 73.71, "char": [48, 51] }
       ]
     },
     {
-      "start": 73.957,
-      "end": 76.597,
+      "start": 73.79,
+      "end": 76.43,
       "text": "everything in one shot. System info",
       "words": [
-        { "start": 73.957, "end": 74.517, "char": [0, 10] },
-        { "start": 74.517, "end": 74.677, "char": [11, 13] },
-        { "start": 74.677, "end": 74.837, "char": [14, 17] },
-        { "start": 74.837, "end": 75.237, "char": [18, 22] },
-        { "start": 75.637, "end": 76.037, "char": [24, 30] },
-        { "start": 76.037, "end": 76.597, "char": [31, 35] }
+        { "start": 73.79, "end": 74.35, "char": [0, 10] },
+        { "start": 74.35, "end": 74.51, "char": [11, 13] },
+        { "start": 74.51, "end": 74.67, "char": [14, 17] },
+        { "start": 74.67, "end": 75.07, "char": [18, 22] },
+        { "start": 75.47, "end": 75.87, "char": [24, 30] },
+        { "start": 75.87, "end": 76.43, "char": [31, 35] }
       ]
     },
     {
-      "start": 76.917,
-      "end": 79.797,
+      "start": 76.75,
+      "end": 79.63,
       "text": ", containers, repositories, all together.",
       "words": [
-        { "start": 76.917, "end": 77.957, "char": [2, 12] },
-        { "start": 77.957, "end": 79.077, "char": [14, 26] },
-        { "start": 79.077, "end": 79.317, "char": [28, 31] },
-        { "start": 79.317, "end": 79.797, "char": [32, 40] }
+        { "start": 76.75, "end": 77.79, "char": [2, 12] },
+        { "start": 77.79, "end": 78.91, "char": [14, 26] },
+        { "start": 78.91, "end": 79.15, "char": [28, 31] },
+        { "start": 79.15, "end": 79.63, "char": [32, 40] }
       ]
     },
     {
-      "start": 79.91,
-      "end": 82.39,
+      "start": 79.743,
+      "end": 82.223,
       "text": "Everything together, no filter needed.",
       "words": [
-        { "start": 79.91, "end": 80.39, "char": [0, 10] },
-        { "start": 80.39, "end": 80.95, "char": [11, 19] },
-        { "start": 81.35, "end": 81.67, "char": [21, 23] },
-        { "start": 81.67, "end": 82.07, "char": [24, 30] },
-        { "start": 82.07, "end": 82.39, "char": [31, 37] }
+        { "start": 79.743, "end": 80.223, "char": [0, 10] },
+        { "start": 80.223, "end": 80.783, "char": [11, 19] },
+        { "start": 81.183, "end": 81.503, "char": [21, 23] },
+        { "start": 81.503, "end": 81.903, "char": [24, 30] },
+        { "start": 81.903, "end": 82.223, "char": [31, 37] }
       ]
     },
     {
-      "start": 85.907,
-      "end": 88.787,
+      "start": 85.673,
+      "end": 88.553,
       "text": "And finally the diagnostic check for a local sanity",
       "words": [
-        { "start": 85.907, "end": 85.987, "char": [0, 3] },
-        { "start": 85.987, "end": 86.627, "char": [4, 11] },
-        { "start": 86.707, "end": 86.787, "char": [12, 15] },
-        { "start": 86.787, "end": 87.427, "char": [16, 26] },
-        { "start": 87.427, "end": 87.747, "char": [27, 32] },
-        { "start": 87.747, "end": 87.907, "char": [33, 36] },
-        { "start": 87.907, "end": 87.987, "char": [37, 38] },
-        { "start": 87.987, "end": 88.307, "char": [39, 44] },
-        { "start": 88.307, "end": 88.787, "char": [45, 51] }
+        { "start": 85.673, "end": 85.753, "char": [0, 3] },
+        { "start": 85.753, "end": 86.393, "char": [4, 11] },
+        { "start": 86.473, "end": 86.553, "char": [12, 15] },
+        { "start": 86.553, "end": 87.193, "char": [16, 26] },
+        { "start": 87.193, "end": 87.513, "char": [27, 32] },
+        { "start": 87.513, "end": 87.673, "char": [33, 36] },
+        { "start": 87.673, "end": 87.753, "char": [37, 38] },
+        { "start": 87.753, "end": 88.073, "char": [39, 44] },
+        { "start": 88.073, "end": 88.553, "char": [45, 51] }
       ]
     },
     {
-      "start": 88.787,
-      "end": 91.987,
+      "start": 88.553,
+      "end": 91.753,
       "text": "check on your laptop. Node, SSH",
       "words": [
-        { "start": 88.787, "end": 89.107, "char": [0, 5] },
-        { "start": 89.107, "end": 89.267, "char": [6, 8] },
-        { "start": 89.267, "end": 89.347, "char": [9, 13] },
-        { "start": 89.347, "end": 89.827, "char": [14, 20] },
-        { "start": 90.227, "end": 90.627, "char": [22, 26] },
-        { "start": 91.107, "end": 91.987, "char": [28, 31] }
+        { "start": 88.553, "end": 88.873, "char": [0, 5] },
+        { "start": 88.873, "end": 89.033, "char": [6, 8] },
+        { "start": 89.033, "end": 89.113, "char": [9, 13] },
+        { "start": 89.113, "end": 89.593, "char": [14, 20] },
+        { "start": 89.993, "end": 90.393, "char": [22, 26] },
+        { "start": 90.873, "end": 91.753, "char": [28, 31] }
       ]
     },
     {
-      "start": 92.707,
-      "end": 96.147,
+      "start": 92.473,
+      "end": 95.913,
       "text": "key, renet, Docker. All the things the CLI itself depends on. That is the full series. From install to mon",
       "words": [
-        { "start": 92.707, "end": 93.187, "char": [12, 18] },
-        { "start": 93.587, "end": 93.827, "char": [96, 99] },
-        { "start": 95.827, "end": 96.147, "char": [104, 106] }
+        { "start": 92.473, "end": 92.953, "char": [12, 18] },
+        { "start": 93.353, "end": 93.593, "char": [96, 99] },
+        { "start": 95.593, "end": 95.913, "char": [104, 106] }
       ]
     },
     {
-      "start": 98.387,
-      "end": 100.947,
+      "start": 98.153,
+      "end": 100.713,
       "text": "itoring, all from your terminal.",
       "words": [
-        { "start": 98.387, "end": 98.547, "char": [13, 17] },
-        { "start": 100.387, "end": 100.467, "char": [18, 22] },
-        { "start": 100.467, "end": 100.947, "char": [23, 31] }
+        { "start": 98.153, "end": 98.313, "char": [13, 17] },
+        { "start": 100.153, "end": 100.233, "char": [18, 22] },
+        { "start": 100.233, "end": 100.713, "char": [23, 31] }
       ]
     },
     {
-      "start": 101.136,
-      "end": 103.856,
+      "start": 100.902,
+      "end": 103.622,
       "text": "All green means your local CLI is healthy.",
       "words": [
-        { "start": 101.136, "end": 101.296, "char": [0, 3] },
-        { "start": 101.296, "end": 101.696, "char": [4, 9] },
-        { "start": 101.696, "end": 101.936, "char": [10, 15] },
-        { "start": 101.936, "end": 102.096, "char": [16, 20] },
-        { "start": 102.096, "end": 102.416, "char": [21, 26] },
-        { "start": 102.416, "end": 103.216, "char": [27, 30] },
-        { "start": 103.216, "end": 103.376, "char": [31, 33] },
-        { "start": 103.376, "end": 103.856, "char": [34, 41] }
+        { "start": 100.902, "end": 101.062, "char": [0, 3] },
+        { "start": 101.062, "end": 101.462, "char": [4, 9] },
+        { "start": 101.462, "end": 101.702, "char": [10, 15] },
+        { "start": 101.702, "end": 101.862, "char": [16, 20] },
+        { "start": 101.862, "end": 102.182, "char": [21, 26] },
+        { "start": 102.182, "end": 102.982, "char": [27, 30] },
+        { "start": 102.982, "end": 103.142, "char": [31, 33] },
+        { "start": 103.142, "end": 103.622, "char": [34, 41] }
       ]
     },
     {
-      "start": 104.774,
-      "end": 107.334,
-      "text": "And that wraps the series. You can now",
+      "start": 104.426,
+      "end": 106.259,
+      "text": "You can now install,",
       "words": [
-        { "start": 104.774, "end": 105.014, "char": [0, 3] },
-        { "start": 105.014, "end": 105.174, "char": [4, 8] },
-        { "start": 105.174, "end": 105.574, "char": [9, 14] },
-        { "start": 105.574, "end": 105.654, "char": [15, 18] },
-        { "start": 105.654, "end": 106.374, "char": [19, 25] },
-        { "start": 106.934, "end": 107.014, "char": [27, 30] },
-        { "start": 107.014, "end": 107.094, "char": [31, 34] },
-        { "start": 107.094, "end": 107.334, "char": [35, 38] }
+        { "start": 104.426, "end": 104.884, "char": [0, 3] },
+        { "start": 104.884, "end": 105.343, "char": [4, 7] },
+        { "start": 105.343, "end": 105.801, "char": [8, 11] },
+        { "start": 105.801, "end": 106.259, "char": [12, 20] }
       ]
     },
     {
-      "start": 107.334,
-      "end": 110.134,
-      "text": "install, configure, deploy, fork, go",
+      "start": 106.259,
+      "end": 106.717,
+      "text": "configure,",
+      "words": [{ "start": 106.259, "end": 106.717, "char": [0, 10] }]
+    },
+    {
+      "start": 106.717,
+      "end": 107.175,
+      "text": "deploy,",
+      "words": [{ "start": 106.717, "end": 107.175, "char": [0, 7] }]
+    },
+    {
+      "start": 107.175,
+      "end": 107.633,
+      "text": "fork,",
+      "words": [{ "start": 107.175, "end": 107.633, "char": [0, 5] }]
+    },
+    {
+      "start": 107.633,
+      "end": 108.549,
+      "text": "go live,",
       "words": [
-        { "start": 107.334, "end": 107.974, "char": [0, 7] },
-        { "start": 107.974, "end": 108.614, "char": [9, 18] },
-        { "start": 108.614, "end": 109.174, "char": [20, 26] },
-        { "start": 109.174, "end": 109.734, "char": [28, 32] },
-        { "start": 109.814, "end": 110.134, "char": [34, 36] }
+        { "start": 107.633, "end": 108.091, "char": [0, 2] },
+        { "start": 108.091, "end": 108.549, "char": [3, 8] }
       ]
     },
     {
-      "start": 110.134,
-      "end": 112.774,
-      "text": "live, autostart, back up, and monitor",
+      "start": 108.549,
+      "end": 109.007,
+      "text": "autostart,",
+      "words": [{ "start": 108.549, "end": 109.007, "char": [0, 10] }]
+    },
+    {
+      "start": 109.007,
+      "end": 109.923,
+      "text": "back up,",
       "words": [
-        { "start": 110.134, "end": 110.534, "char": [0, 4] },
-        { "start": 110.614, "end": 110.854, "char": [6, 10] },
-        { "start": 110.854, "end": 111.254, "char": [10, 15] },
-        { "start": 111.414, "end": 111.894, "char": [17, 24] },
-        { "start": 111.894, "end": 112.214, "char": [26, 29] },
-        { "start": 112.214, "end": 112.774, "char": [30, 37] }
+        { "start": 109.007, "end": 109.465, "char": [0, 4] },
+        { "start": 109.465, "end": 109.923, "char": [5, 8] }
       ]
     },
     {
-      "start": 113.094,
-      "end": 114.294,
-      "text": ", all from your terminal!",
+      "start": 109.923,
+      "end": 110.839,
+      "text": "and monitor.",
       "words": [
-        { "start": 113.094, "end": 113.334, "char": [2, 5] },
-        { "start": 113.334, "end": 113.574, "char": [6, 10] },
-        { "start": 113.574, "end": 113.734, "char": [11, 15] },
-        { "start": 113.734, "end": 114.294, "char": [16, 24] }
+        { "start": 109.923, "end": 110.381, "char": [0, 3] },
+        { "start": 110.381, "end": 110.839, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 110.839,
+      "end": 113.13,
+      "text": "The advanced track starts next:",
+      "words": [
+        { "start": 110.839, "end": 111.297, "char": [0, 3] },
+        { "start": 111.297, "end": 111.756, "char": [4, 12] },
+        { "start": 111.756, "end": 112.214, "char": [13, 18] },
+        { "start": 112.214, "end": 112.672, "char": [19, 25] },
+        { "start": 112.672, "end": 113.13, "char": [26, 31] }
+      ]
+    },
+    {
+      "start": 113.13,
+      "end": 115.42,
+      "text": "version your repos like code,",
+      "words": [
+        { "start": 113.13, "end": 113.588, "char": [0, 7] },
+        { "start": 113.588, "end": 114.046, "char": [8, 12] },
+        { "start": 114.046, "end": 114.504, "char": [13, 18] },
+        { "start": 114.504, "end": 114.962, "char": [19, 23] },
+        { "start": 114.962, "end": 115.42, "char": [24, 29] }
+      ]
+    },
+    {
+      "start": 115.42,
+      "end": 117.252,
+      "text": "with commits and rollbacks.",
+      "words": [
+        { "start": 115.42, "end": 115.878, "char": [0, 4] },
+        { "start": 115.878, "end": 116.336, "char": [5, 12] },
+        { "start": 116.336, "end": 116.794, "char": [13, 16] },
+        { "start": 116.794, "end": 117.252, "char": [17, 27] }
       ]
     }
   ]

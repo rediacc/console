@@ -732,13 +732,13 @@ Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS co
 
 ### rdc repo trim
 
-Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without --name, trims every mounted repository plus the datastore itself. Repositories under an active backup are skipped
+Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without --name, trims every mounted repository plus the datastore itself. fstrim is skipped for repositories under an active backup; --docker reclaim still runs
 
 **Options:**
 
 - `-m, --machine <name>` — Target machine name
 - `--name <name>` — Repository to trim (default: all mounted repositories)
-- `--docker` — Reclaim Docker space first (stopped containers, dangling images, build cache)
+- `--docker` — Reclaim Docker space (stopped containers, dangling images, build cache); runs even while a backup snapshot is active
 - `--docker-volumes` — Additionally prune unused Docker volumes
 - `--report-only` — Show discard state and reclaimable estimate without trimming
 - `--debug` — Enable debug output
@@ -874,6 +874,7 @@ Push repository to a remote (machine or storage). Omit name to push all repos. T
 - `--bwlimit <limit>` — Bandwidth limit for rsync transfer (e.g., "6M", "10M")
 - `--delta-base <guid>` — Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base
 - `--strategy <strategy>` — Block-delta strategy when using a delta base: auto, physical, or shared
+- `--json` — Output transfer statistics as JSON
 - `--debug` — Enable debug output
 - `--skip-router-restart` — Skip restarting the route server after binary update
 
@@ -1010,6 +1011,7 @@ Create an SSH port-forward tunnel to a container's port on a remote machine. Aut
 - `-c, --container <name>` — Container name (auto-detected if only one running)
 - `--port <port>` — Remote container port to forward
 - `--local <port>` — Local port (defaults to same as remote port)
+- `--url-only` — Print only the local URL once the tunnel is ready (machine-readable)
 
 > agent: fork-only | MCP excluded: Interactive SSH tunnel — blocks until Ctrl+C
 
@@ -1538,6 +1540,33 @@ Connect to a machine or repository in VS Code
 - `-n, --new-window` — Open in new VS Code window
 - `--skip-env-setup` — Skip remote environment setup
 - `--insiders` — Use VS Code Insiders settings
+- `--browser` — Serve browser VS Code from inside the repo sandbox (no local VS Code needed)
+- `--no-open` — Print the URL without launching the local browser
+- `--local <port>` — Local port (defaults to same as remote port)
+- `--server-provider <id>` — Browser VS Code server implementation (openvscode, code-server)
+- `--server-archive <file>` — Pre-staged server tarball path on the machine (airgapped installs)
+
+### rdc vscode serve status
+
+Show whether the browser VS Code server is running
+
+**Options:**
+
+- `-t, --team <name>` — Team name
+- `-m, --machine <name>` — Machine name
+- `-r, --repository <name>` — Repository name (connects to repository environment)
+- `--server-provider <id>` — Browser VS Code server implementation (openvscode, code-server)
+
+### rdc vscode serve stop
+
+Stop the browser VS Code server
+
+**Options:**
+
+- `-t, --team <name>` — Team name
+- `-m, --machine <name>` — Machine name
+- `-r, --repository <name>` — Repository name (connects to repository environment)
+- `--server-provider <id>` — Browser VS Code server implementation (openvscode, code-server)
 
 ### rdc vscode list
 

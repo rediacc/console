@@ -1,7 +1,7 @@
 {
   "version": 1,
   "tutorial": "tutorial-work-with-repo",
-  "nextTutorialKey": "tutorial-forking",
+  "nextTutorialKey": "tutorial-vscode-browser",
   "scenes": [
     {
       "id": "intro",
@@ -24,7 +24,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc repo tunnel -m my-server -r my-app -c app",
-        "commandFull": "timeout 2s rdc repo tunnel -m <machine-name> --repository my-app --container app || true"
+        "commandFull": "rdc repo tunnel --machine <machine-name> --repository my-app --container app"
       }
     },
     {
@@ -49,7 +49,7 @@
       "narrationRole": "step",
       "card": {
         "command": "rdc term connect -m my-server -r my-app -c 'docker ps'",
-        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'docker ps' 2>/dev/null"
+        "commandFull": "rdc term connect -m <machine-name> --repository my-app --command 'docker ps'"
       }
     },
     {

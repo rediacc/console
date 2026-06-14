@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "9e02065f3ffa441a6b25eb83ead190ae27dcf3ed60ce23a3469c75bdc1f579bf",
+  "transcriptHash": "27e34164f12f3771b8be3a9f767373753fcdf372f64b85d107db4347897eda8e",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41277,
-      "replayEndSec": 13.421721,
+      "replayStartSec": 2.422355,
+      "replayEndSec": 12.478171,
       "narrationText": "Maintenant le fork. Une seule commande va cloner le dépôt entier, l'application, la base de données, les fichiers de configuration, en quelques secondes, quelle que soit la taille. 1 gigaoctet, 100 gigaoctets, 1 téraoctet : même temps, à chaque fois.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-01.4807284a.mp3",
       "textHash": "4807284a3007a7ddcffba9bbaa3467d0b4df762cefe360e5dc27976765849687",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.421721,
-      "replayEndSec": 18.980206,
+      "replayStartSec": 12.478171,
+      "replayEndSec": 18.050071,
       "narrationText": "Les deux dépôts existent maintenant côte à côte. Même machine, même disque, deux environnements complètement indépendants. Le fork a ses propres conteneurs, son propre système de fichiers et son propre daemon Docker.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-02.7308f334.mp3",
       "textHash": "7308f3347ba05982f4efcc6295f934091fcbccfe83e2d4638ae49b854b27f952",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.980206,
-      "replayEndSec": 26.216902,
+      "replayStartSec": 18.050071,
+      "replayEndSec": 25.352583,
       "narrationText": "Prouvons l'isolation. Dans l'original, notre fichier marqueur est exactement là où nous l'avons laissé. L'existence du fork n'a rien changé dans le parent.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-03.6281287b.mp3",
       "textHash": "6281287ba6dad45c51ee375569175ba99753383692c38b90d45d3b5fb95e8d1a",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 26.216902,
-      "replayEndSec": 34.456769,
+      "replayStartSec": 25.352583,
+      "replayEndSec": 33.706234,
       "narrationText": "Voyons maintenant ce qui se passe si nous supprimons ce fichier, mais uniquement dans le fork. Dans le fork, il a disparu. Nous avons fait un changement destructif, et il est resté dans le fork.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-04.c093d9c8.mp3",
       "textHash": "c093d9c81b191c317a8b460d86549638352104e994ee4986336d8e4a28ba1c11",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 34.456769,
-      "replayEndSec": 41.647526,
+      "replayStartSec": 33.706234,
+      "replayEndSec": 41.0794,
       "narrationText": "Retournons à l'original. Le fichier marqueur est toujours là, intact. L'original n'a rien su de ce qui s'est passé. Même image, daemons Docker séparés, systèmes de fichiers séparés.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-05.976cbc88.mp3",
       "textHash": "976cbc88df9651169bba3f2d68ad64b87264fcad6b4022b23bb9f71bab90a2ef",
@@ -77,8 +77,8 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.647526,
-      "replayEndSec": 51.671921,
+      "replayStartSec": 41.0794,
+      "replayEndSec": 48.135359,
       "narrationText": "Quand vous avez terminé, supprimez simplement le fork. L'original reste exactement comme il était. Forkez, expérimentez, cassez des choses, supprimez. Aucun risque.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/tutorial-forking-06.56440f6c.mp3",
       "textHash": "56440f6cec049f6c99c5dabdd73d08aec9051fc559a6f6ca84c98c74336dce67",
@@ -140,10 +140,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "79f5cfdbfe2ac19b6a0beae7ce31c000e6a70c608a994e9d37c34f7f5dbba118",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/next-tutorial.79f5cfdb.mp3",
-      "narrationText": "Les forks laissent volontairement les secrets derrière eux, ce qui rend réellement sûr le « cloner la production sans rien casser ». Nous les câblons proprement dans le prochain tutoriel !",
-      "audioDurationSec": 13.244082
+      "textHash": "db39c3b0c232edf89947ccf4f5303b2c15071de83b865e752ca427f663603ec7",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-forking/next-tutorial.db39c3b0.mp3",
+      "narrationText": "Vous venez de voir les commandes. Maintenant on rend ça visuel : une vraie appli de base de données, forkée en direct, modifiée côte à côte, et l'original ne bronche pas.",
+      "audioDurationSec": 11.154286
     }
   ]
 }

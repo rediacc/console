@@ -29,6 +29,32 @@ import { SSHValidator } from '../../src/utils/SSHValidator';
  */
 const ctxName = `e2e-phase7-${Date.now()}`;
 
+interface PushResultStats {
+  size: number;
+  transferMode: string;
+  transferredBytes: number;
+  transferMs: number;
+}
+
+/** Extract renet's `push_result` stats line from captured CLI output (lines
+ * carry bridge `[backup_push] `-style prefixes; mirrors the CLI's extractor). */
+function extractPushResult(output: string): PushResultStats | undefined {
+  for (const rawLine of output.split('\n')) {
+    const line = rawLine.trim();
+    const jsonStart = line.indexOf('{');
+    if (jsonStart < 0) continue;
+    try {
+      const parsed = JSON.parse(line.slice(jsonStart)) as { push_result?: PushResultStats };
+      if (parsed.push_result && typeof parsed.push_result.transferredBytes === 'number') {
+        return parsed.push_result;
+      }
+    } catch {
+      // not JSON — keep scanning
+    }
+  }
+  return undefined;
+}
+
 test.describe
   .serial('Phase 7: Backup Operations @e2e', () => {
     const config = getE2EConfig();
@@ -117,8 +143,21 @@ test.describe
         },
         extraMachines: [extraMachineEntry],
         timeout: E2E.SETUP_TIMEOUT,
+        // push_result rides renet stdout; without --debug the CLI swallows
+        // non-step JSON lines from the captured output
+        debug: true,
       });
       assertSuccess(result);
+
+      // Transfer stats: renet emits a push_result line with what actually
+      // crossed the wire. The incremental push is seeded from the existing
+      // image, so the shipped payload must be far below the image size.
+      const stats = extractPushResult((result.stdout ?? '') + (result.stderr ?? ''));
+      expect(stats).toBeDefined();
+      expect(['full', 'delta']).toContain(stats?.transferMode);
+      expect(typeof stats?.transferredBytes).toBe('number');
+      expect(stats?.transferredBytes).toBeGreaterThan(0);
+      expect(stats?.transferredBytes).toBeLessThan(stats!.size / 2);
 
       // SSH validation: both files should exist on vm2 with matching checksums
       const vm2Checksum1 = await ssh2.fileChecksum(`${repoMountPath}/testfile.bin`);

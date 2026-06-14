@@ -1,0 +1,107 @@
+{
+  "cast": "/assets/tutorials/tutorial-storage-management.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-storage-management-01",
+      "markerIndex": 0,
+      "at": 2.410441,
+      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "afterText": "على وشك الامتلاء. حان وقت التوسع.",
+      "cardLabel": "ملء المستودع",
+      "prose": "املأ المستودع بالبيانات حتى يضيق نظام الملفات."
+    },
+    {
+      "id": "tutorial-storage-management-02",
+      "markerIndex": 1,
+      "at": 12.69586,
+      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "afterText": "أربعة غيغابايت الآن. لم يُعَد تشغيل أي شيء.",
+      "cardLabel": "توسيع متصل",
+      "prose": "وسّع المستودع وهو متصل: يكبر حاوي LUKS ونظام الملفات مع استمرار تشغيل الحاويات."
+    },
+    {
+      "id": "tutorial-storage-management-03",
+      "markerIndex": 2,
+      "at": 19.886575,
+      "text": "Verify from inside: same volume, double the room.",
+      "afterText": "التطبيق لم يلاحظ شيئاً.",
+      "cardLabel": "فحص الحجم",
+      "prose": "تحقق من نظام الملفات من داخل المستودع، الحجم الجديد نشط الآن."
+    },
+    {
+      "id": "tutorial-storage-management-04",
+      "markerIndex": 3,
+      "at": 26.982758,
+      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "afterText": "محرَّر داخل الـ repo، لا يزال مملوكاً للـ image.",
+      "cardLabel": "حذف البيانات",
+      "prose": "احذف البيانات داخل المستودع، لاحظ أن المجمع لا ينكمش بعد."
+    },
+    {
+      "id": "tutorial-storage-management-05",
+      "markerIndex": 4,
+      "at": 33.464064,
+      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "afterText": "استُرجع. يمكن للـ pool أن يتنفس من جديد.",
+      "cardLabel": "Trim",
+      "prose": "شغّل أمر repo trim لإعادة الكتل المحررة إلى المجمع المشترك، متصل وبدون توقف."
+    },
+    {
+      "id": "tutorial-storage-management-06",
+      "markerIndex": 5,
+      "at": 40.097562,
+      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "afterText": "تم حفظ الـ policy. تتولى الآلة المهمة من هنا.",
+      "cardLabel": "ضبط السياسة",
+      "prose": "اضبط سياسة الحجم: نمو تلقائي مع حد أقصى محدد، مع Trim مجدول."
+    },
+    {
+      "id": "tutorial-storage-management-07",
+      "markerIndex": 6,
+      "at": 50.538253,
+      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "afterText": "يُضبط مرة واحدة، وينسى بأمان.",
+      "cardLabel": "فحص السياسة",
+      "prose": "اقرأ السياسة الفعلية، النمو وعملية Trim أصبحا تلقائيين الآن."
+    },
+    {
+      "id": "tutorial-storage-management-08",
+      "markerIndex": 7,
+      "at": 57.423655,
+      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "afterText": "عرض واحد: الاستخدام، والوفورات، والمساحة للتوسع.",
+      "cardLabel": "عرض الصحة",
+      "prose": "تحقق من صحة التخزين على الجهاز: الاستخدام لكل مستودع، وحالة المجمع، ووفورات CoW reflink."
+    }
+  ],
+  "title": "إدارة التخزين",
+  "chapters": {
+    "intro": "إدارة التخزين",
+    "pool-model": "مجمع واحد، مستودعات متنامية",
+    "cast-step-0": "الخطوة 1: المستودع يمتلئ",
+    "cast-step-1": "الخطوة 2: توسيعه متصلاً",
+    "cast-step-2": "الخطوة 3: التحقق من الحجم الجديد",
+    "cast-step-3": "الخطوة 4: حذف البيانات",
+    "cast-step-4": "الخطوة 5: Trim، إعادة الكتل",
+    "cast-step-5": "الخطوة 6: ضبط السياسة",
+    "cast-step-6": "الخطوة 7: قراءة السياسة",
+    "cast-step-7": "الخطوة 8: عرض الصحة",
+    "outro": "السلسلة تنتهي هنا"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "مرحباً بك في الدرس التعليمي الأخير! دعنا نتأكد من أنك لن تعاني من نقص في مساحة القرص مرة أخرى. سنوسّع repository كاملاً وهو يعمل، ونعيد المساحة المحذوفة إلى الـ pool، ثم نعلّم الجهاز كيف يقوم بالأمرين تلقائياً."
+    },
+    {
+      "id": "pool-model",
+      "text": "إليك النموذج. كل repository هو ملف في datastore pool مشترك واحد. يمكن للـ repositories أن تنمو وهي تعمل بينما تستمر الـ containers في التشغيل. لكن حذف البيانات داخل الـ repo لا يحرر أي شيء بمفرده. الـ Trim هو ما يعيد الكتل إلى الـ pool. والـ policy تُؤتمت الأمرين معاً."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "وهكذا نختتم السلسلة! ثمانية عشر درساً تعليمياً، من التثبيت إلى التخزين التلقائي. خوادمك أصبحت في يدك من جديد. شكراً على المشاهدة!"
+    }
+  ]
+}

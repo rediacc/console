@@ -1,0 +1,220 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.660
+Bentornato!
+
+00:00:01.660 --> 00:00:04.301
+L'ultima volta hai visto
+
+00:00:04.301 --> 00:00:06.282
+i comandi fork.
+
+00:00:06.282 --> 00:00:08.923
+Ora vediamo cosa significano
+
+00:00:08.923 --> 00:00:09.583
+davvero:
+
+00:00:09.583 --> 00:00:11.564
+un'app database live,
+
+00:00:11.564 --> 00:00:14.205
+copiata in pochi secondi,
+
+00:00:14.205 --> 00:00:15.526
+modificata liberamente,
+
+00:00:15.526 --> 00:00:18.167
+mentre l'originale non se
+
+00:00:18.167 --> 00:00:20.148
+ne accorge minimamente.
+
+00:00:20.933 --> 00:00:22.725
+Ecco la situazione:
+
+00:00:22.725 --> 00:00:25.713
+un PostgreSQL reale con un'interfaccia
+
+00:00:25.713 --> 00:00:26.907
+pgAdmin sopra,
+
+00:00:26.907 --> 00:00:28.700
+attivo sul server.
+
+00:00:28.700 --> 00:00:31.687
+Un fork è un gemello
+
+00:00:31.687 --> 00:00:34.674
+copy-on-write istantaneo di tutto questo.
+
+00:00:34.674 --> 00:00:37.064
+Stessi dati alla nascita,
+
+00:00:37.064 --> 00:00:39.454
+vite completamente separate dopo.
+
+00:00:42.716 --> 00:00:44.350
+Meet the app:
+
+00:00:44.350 --> 00:00:44.894
+demo-pgadmin,
+
+00:00:44.894 --> 00:00:47.617
+a PostgreSQL with a pgAdmin
+
+00:00:47.617 --> 00:00:48.162
+interface,
+
+00:00:48.162 --> 00:00:49.795
+mounted and running.
+
+00:00:52.795 --> 00:00:54.265
+Un repo live.
+
+00:00:54.265 --> 00:00:54.754
+Cloniamolo.
+
+00:00:55.266 --> 00:00:56.485
+Questo è l'originale,
+
+00:00:56.485 --> 00:00:57.297
+nel browser.
+
+00:00:57.297 --> 00:00:58.922
+pgAdmin chiede un login,
+
+00:00:58.922 --> 00:01:01.359
+perché è la copia di produzione,
+
+00:01:01.359 --> 00:01:03.390
+e la produzione rimane protetta.
+
+00:01:28.933 --> 00:01:29.741
+Fork it.
+
+00:01:29.741 --> 00:01:32.572
+The copy-on-write clone takes seconds regardless of
+
+00:01:32.572 --> 00:01:32.976
+size;
+
+00:01:32.976 --> 00:01:35.807
+detach returns as soon as the containers
+
+00:01:35.807 --> 00:01:36.211
+start,
+
+00:01:36.211 --> 00:01:39.042
+while health checks continue in the background.
+
+00:01:39.301 --> 00:01:40.079
+Fork avviato.
+
+00:01:40.079 --> 00:01:42.413
+I dati non sono stati copiati,
+
+00:01:42.413 --> 00:01:43.581
+sono stati condivisi,
+
+00:01:43.581 --> 00:01:46.304
+finché uno dei due lati non li
+
+00:01:46.304 --> 00:01:46.693
+modifica.
+
+00:01:49.950 --> 00:01:52.485
+E qui c'è il pgAdmin del
+
+00:01:52.485 --> 00:01:52.908
+fork.
+
+00:01:52.908 --> 00:01:54.598
+Nessun login questa volta:
+
+00:01:54.598 --> 00:01:57.133
+i fork sono sandbox usa e
+
+00:01:57.133 --> 00:01:57.556
+getta,
+
+00:01:57.556 --> 00:02:00.091
+quindi il cancello si fa da
+
+00:02:00.091 --> 00:02:00.514
+parte.
+
+00:02:00.514 --> 00:02:01.359
+Stesse tabelle,
+
+00:02:01.359 --> 00:02:02.204
+stesse righe,
+
+00:02:02.204 --> 00:02:04.317
+ma il suo universo separato.
+
+00:02:41.816 --> 00:02:43.024
+Two repositories now:
+
+00:02:43.024 --> 00:02:45.037
+the original and the experiment,
+
+00:02:45.037 --> 00:02:47.050
+each with its own containers,
+
+00:02:47.050 --> 00:02:47.453
+network,
+
+00:02:47.453 --> 00:02:48.660
+and disk view.
+
+00:02:51.660 --> 00:02:52.737
+Stessa macchina,
+
+00:02:52.737 --> 00:02:54.351
+due mondi isolati.
+
+00:02:57.652 --> 00:02:58.573
+Done experimenting?
+
+00:02:58.573 --> 00:02:59.955
+Delete the fork.
+
+00:02:59.955 --> 00:03:01.337
+Seconds to create,
+
+00:03:01.337 --> 00:03:04.100
+seconds to throw away — the
+
+00:03:04.100 --> 00:03:06.403
+original never knew it existed.
+
+00:03:09.403 --> 00:03:09.855
+Eliminato.
+
+00:03:09.855 --> 00:03:12.567
+L'originale ha continuato a rispondere per
+
+00:03:12.567 --> 00:03:13.923
+tutto il tempo.
+
+00:03:14.723 --> 00:03:16.930
+Quindi fai fork liberamente,
+
+00:03:16.930 --> 00:03:19.689
+la produzione non può essere
+
+00:03:19.689 --> 00:03:20.240
+danneggiata.
+
+00:03:20.240 --> 00:03:22.447
+Prossimamente esaminiamo i secrets,
+
+00:03:22.447 --> 00:03:25.206
+l'unica cosa che i tuoi
+
+00:03:25.206 --> 00:03:27.413
+fork deliberatamente non ereditano.
+
+00:03:27.413 --> 00:03:28.516
+A presto!

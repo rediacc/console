@@ -661,82 +661,100 @@
     },
     {
       "start": 128.611,
-      "end": 131.609,
-      "text": "Damit schließt sich die Serie.",
-      "words": [
-        { "start": 128.611, "end": 129.211, "char": [0, 5] },
-        { "start": 129.211, "end": 129.81, "char": [6, 14] },
-        { "start": 129.81, "end": 130.41, "char": [15, 19] },
-        { "start": 130.41, "end": 131.01, "char": [20, 23] },
-        { "start": 131.01, "end": 131.609, "char": [24, 30] }
-      ]
-    },
-    {
-      "start": 131.609,
-      "end": 134.008,
+      "end": 130.888,
       "text": "Du kannst jetzt installieren,",
       "words": [
-        { "start": 131.609, "end": 132.209, "char": [0, 2] },
-        { "start": 132.209, "end": 132.809, "char": [3, 9] },
-        { "start": 132.809, "end": 133.408, "char": [10, 15] },
-        { "start": 133.408, "end": 134.008, "char": [16, 29] }
+        { "start": 128.611, "end": 129.18, "char": [0, 2] },
+        { "start": 129.18, "end": 129.75, "char": [3, 9] },
+        { "start": 129.75, "end": 130.319, "char": [10, 15] },
+        { "start": 130.319, "end": 130.888, "char": [16, 29] }
       ]
     },
     {
-      "start": 134.008,
-      "end": 134.608,
+      "start": 130.888,
+      "end": 131.457,
       "text": "konfigurieren,",
-      "words": [{ "start": 134.008, "end": 134.608, "char": [0, 14] }]
+      "words": [{ "start": 130.888, "end": 131.457, "char": [0, 14] }]
     },
     {
-      "start": 134.608,
-      "end": 135.207,
+      "start": 131.457,
+      "end": 132.027,
       "text": "deployen,",
-      "words": [{ "start": 134.608, "end": 135.207, "char": [0, 9] }]
+      "words": [{ "start": 131.457, "end": 132.027, "char": [0, 9] }]
     },
     {
-      "start": 135.207,
-      "end": 135.807,
+      "start": 132.027,
+      "end": 132.596,
       "text": "forken,",
-      "words": [{ "start": 135.207, "end": 135.807, "char": [0, 7] }]
+      "words": [{ "start": 132.027, "end": 132.596, "char": [0, 7] }]
     },
     {
-      "start": 135.807,
-      "end": 137.007,
+      "start": 132.596,
+      "end": 133.735,
       "text": "live gehen,",
       "words": [
-        { "start": 135.807, "end": 136.407, "char": [0, 4] },
-        { "start": 136.407, "end": 137.007, "char": [5, 11] }
+        { "start": 132.596, "end": 133.165, "char": [0, 4] },
+        { "start": 133.165, "end": 133.735, "char": [5, 11] }
       ]
     },
     {
-      "start": 137.007,
-      "end": 138.206,
-      "text": "Autostart einrichten,",
+      "start": 133.735,
+      "end": 134.873,
+      "text": "automatisch starten,",
       "words": [
-        { "start": 137.007, "end": 137.606, "char": [0, 9] },
-        { "start": 137.606, "end": 138.206, "char": [10, 21] }
+        { "start": 133.735, "end": 134.304, "char": [0, 11] },
+        { "start": 134.304, "end": 134.873, "char": [12, 20] }
       ]
     },
     {
-      "start": 138.206,
-      "end": 140.005,
-      "text": "sichern und überwachen,",
+      "start": 134.873,
+      "end": 136.581,
+      "text": "sichern und überwachen.",
       "words": [
-        { "start": 138.206, "end": 138.806, "char": [0, 7] },
-        { "start": 138.806, "end": 139.405, "char": [8, 11] },
-        { "start": 139.405, "end": 140.005, "char": [12, 23] }
+        { "start": 134.873, "end": 135.442, "char": [0, 7] },
+        { "start": 135.442, "end": 136.012, "char": [8, 11] },
+        { "start": 136.012, "end": 136.581, "char": [12, 23] }
       ]
     },
     {
-      "start": 140.005,
-      "end": 142.404,
-      "text": "alles aus deinem Terminal!",
+      "start": 136.581,
+      "end": 139.427,
+      "text": "Als Nächstes beginnt der fortgeschrittene",
       "words": [
-        { "start": 140.005, "end": 140.605, "char": [0, 5] },
-        { "start": 140.605, "end": 141.204, "char": [6, 9] },
-        { "start": 141.204, "end": 141.804, "char": [10, 16] },
-        { "start": 141.804, "end": 142.404, "char": [17, 26] }
+        { "start": 136.581, "end": 137.15, "char": [0, 3] },
+        { "start": 137.15, "end": 137.72, "char": [4, 12] },
+        { "start": 137.72, "end": 138.289, "char": [13, 20] },
+        { "start": 138.289, "end": 138.858, "char": [21, 24] },
+        { "start": 138.858, "end": 139.427, "char": [25, 41] }
+      ]
+    },
+    {
+      "start": 139.427,
+      "end": 139.997,
+      "text": "Kurs:",
+      "words": [{ "start": 139.427, "end": 139.997, "char": [0, 5] }]
+    },
+    {
+      "start": 139.997,
+      "end": 142.843,
+      "text": "Versioniere deine Repos wie Code,",
+      "words": [
+        { "start": 139.997, "end": 140.566, "char": [0, 11] },
+        { "start": 140.566, "end": 141.135, "char": [12, 17] },
+        { "start": 141.135, "end": 141.705, "char": [18, 23] },
+        { "start": 141.705, "end": 142.274, "char": [24, 27] },
+        { "start": 142.274, "end": 142.843, "char": [28, 33] }
+      ]
+    },
+    {
+      "start": 142.843,
+      "end": 145.12,
+      "text": "mit Commits und Rollbacks.",
+      "words": [
+        { "start": 142.843, "end": 143.412, "char": [0, 3] },
+        { "start": 143.412, "end": 143.982, "char": [4, 11] },
+        { "start": 143.982, "end": 144.551, "char": [12, 15] },
+        { "start": 144.551, "end": 145.12, "char": [16, 26] }
       ]
     }
   ]

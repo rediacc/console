@@ -1,0 +1,101 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "en",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "3d86bc4c6235443d6a09b9956ab2b07164d0b1bf2192e2aa5200ae8c5bffae6c",
+  "steps": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413171,
+      "replayEndSec": 10.379022,
+      "narrationText": "Meet pulse. It keeps a counter in process memory and prints a beat every five seconds. The counter is at six and climbing, and it lives in RAM only. Restart the process and it starts over at one.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-01.1e0684e6.mp3",
+      "textHash": "1e0684e69558f2c3f0b05d7ea787a94b26a23d3da36a58ccd7c784d8e59a36a7",
+      "audioDurationSec": 14.28898,
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-01-after.85cbad9a.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "85cbad9a1765de38ce71d7164b0f052252716b22e1123faaf21645e95194324d"
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.379022,
+      "replayEndSec": 101.149024,
+      "narrationText": "One command moves it, live. Phase one transfers the bulk, two gigabytes in about half a minute, while the source keeps running. Then the cutover: it checkpoints the running processes, carries the last few megabytes across, and prints the downtime right there. About twenty seconds, for a two gigabyte move.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-02.52a7ef5c.mp3",
+      "textHash": "52a7ef5c01174e40fb0bf0cd9ff54f752e146909d044200ce5a028c70154ccd4",
+      "audioDurationSec": 20.27102,
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-02-after.88c8d60a.mp3",
+      "afterAudioDurationSec": 5.720816,
+      "afterTextHash": "88c8d60a7541e868e220cc7ef514a241b9fd702cd8822e69a35212cae4314614"
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "replayStartSec": 101.149024,
+      "replayEndSec": 106.859481,
+      "narrationText": "Check the new machine: there it is. Mounted, Docker running, two containers up.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-03.1243e660.mp3",
+      "textHash": "1243e66069579be027591f6367718723d6fb398d6cdbad9f83f09de6a31e48be",
+      "audioDurationSec": 4.754286,
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-03-after.64b6817e.mp3",
+      "afterAudioDurationSec": 2.847347,
+      "afterTextHash": "64b6817e1788e13779c18b378706d799396f78eef32e19dae613ef2ba1a4a036"
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "replayStartSec": 106.859481,
+      "replayEndSec": 112.346008,
+      "narrationText": "And the source? The repository is still listed, but look at the row: not mounted, no Docker, zero containers. Nothing runs here anymore. The image stays behind on purpose, as the base for the next delta transfer.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-04.700fa830.mp3",
+      "textHash": "700fa830e50e27895a3a3e703ade48cd9862c1d9cf5a200cf3cb16f116838e47",
+      "audioDurationSec": 14.445714,
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-04-after.7ac1a7ee.mp3",
+      "afterAudioDurationSec": 5.067755,
+      "afterTextHash": "7ac1a7eeb63fc166befb1ba392b983f97ceca307040a5da50549a62c1ec384c1"
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "replayStartSec": 112.346008,
+      "replayEndSec": 119.168595,
+      "narrationText": "Now the punchline. The counter reads seventeen, eighteen, nineteen, still climbing. It picked up exactly where the checkpoint froze it instead of starting over at one. The process never noticed it changed machines.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-05.731e7efe.mp3",
+      "textHash": "731e7efe288bc9e66fa9c452dff2e130fd2283ff2e19c0b5cc5b7acc21b43146",
+      "audioDurationSec": 16.352653,
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/tutorial-live-migration-05-after.9c477c22.mp3",
+      "afterAudioDurationSec": 3.160816,
+      "afterTextHash": "9c477c220929a3c34000abc17bf2551d5967aca4c97d6d19c5c82160b4bd7007"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "c3219e34c18bba123a7f171be3eea73a21cbe583f14565929fd0b6c9c681e32a",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/intro.c3219e34.mp3",
+      "narrationText": "Time for a big one: moving a RUNNING app to another machine, while it runs. We'll watch a live counter beating in the app's memory, move everything with one command, and see the counter just keep counting on the new machine.",
+      "audioDurationSec": 14.680816
+    },
+    {
+      "id": "how-it-moves",
+      "textHash": "5edb6d24ba5530a753f3f4c028f7e4988a2ec5f01086712dc5116e2677088d28",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/how-it-moves.5edb6d24.mp3",
+      "narrationText": "It works in two phases. Phase one copies the bulk while the app keeps running. Phase two checkpoints the live processes, carries over the final delta plus the process state, and resumes everything on the new machine. So the downtime is the delta, not the data. And the app never knows it moved.",
+      "audioDurationSec": 22.360816
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "f40a25d9b5e0da36566e530f6d6f9f3068295e2e786855fe1efbc5d9c855313b",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-live-migration/next-tutorial.f40a25d9.mp3",
+      "narrationText": "The counter never reset. Memory, database, files, all of it just changed machines. Next up, we'll see why the second transfer is always the fast one.",
+      "audioDurationSec": 13.322449
+    }
+  ]
+}

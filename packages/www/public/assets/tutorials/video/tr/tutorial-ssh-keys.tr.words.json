@@ -208,195 +208,195 @@
       ]
     },
     {
-      "start": 48.688,
-      "end": 49.624,
+      "start": 48.655,
+      "end": 49.591,
       "text": "İkinci adım.",
       "words": [
-        { "start": 48.688, "end": 49.156, "char": [0, 6] },
-        { "start": 49.156, "end": 49.624, "char": [7, 12] }
+        { "start": 48.655, "end": 49.123, "char": [0, 6] },
+        { "start": 49.123, "end": 49.591, "char": [7, 12] }
       ]
     },
     {
-      "start": 49.624,
-      "end": 52.431,
+      "start": 49.591,
+      "end": 52.398,
       "text": "Genel anahtarı ssh-copy-id ile sunucuya kopyalıyoruz.",
       "words": [
-        { "start": 49.624, "end": 50.092, "char": [0, 5] },
-        { "start": 50.092, "end": 50.56, "char": [6, 14] },
-        { "start": 50.56, "end": 51.028, "char": [15, 26] },
-        { "start": 51.028, "end": 51.496, "char": [27, 30] },
-        { "start": 51.496, "end": 51.964, "char": [31, 39] },
-        { "start": 51.964, "end": 52.431, "char": [40, 53] }
+        { "start": 49.591, "end": 50.059, "char": [0, 5] },
+        { "start": 50.059, "end": 50.527, "char": [6, 14] },
+        { "start": 50.527, "end": 50.995, "char": [15, 26] },
+        { "start": 50.995, "end": 51.463, "char": [27, 30] },
+        { "start": 51.463, "end": 51.931, "char": [31, 39] },
+        { "start": 51.931, "end": 52.398, "char": [40, 53] }
       ]
     },
     {
-      "start": 52.431,
-      "end": 54.771,
+      "start": 52.398,
+      "end": 54.738,
       "text": "Sunucu parolası son kez isteniyor.",
       "words": [
-        { "start": 52.431, "end": 52.899, "char": [0, 6] },
-        { "start": 52.899, "end": 53.367, "char": [7, 15] },
-        { "start": 53.367, "end": 53.835, "char": [16, 19] },
-        { "start": 53.835, "end": 54.303, "char": [20, 23] },
-        { "start": 54.303, "end": 54.771, "char": [24, 34] }
+        { "start": 52.398, "end": 52.866, "char": [0, 6] },
+        { "start": 52.866, "end": 53.334, "char": [7, 15] },
+        { "start": 53.334, "end": 53.802, "char": [16, 19] },
+        { "start": 53.802, "end": 54.27, "char": [20, 23] },
+        { "start": 54.27, "end": 54.738, "char": [24, 34] }
       ]
     },
     {
-      "start": 54.771,
-      "end": 57.579,
+      "start": 54.738,
+      "end": 57.546,
       "text": "Bundan sonra o sunucu için parola",
       "words": [
-        { "start": 54.771, "end": 55.239, "char": [0, 6] },
-        { "start": 55.239, "end": 55.707, "char": [7, 12] },
-        { "start": 55.707, "end": 56.175, "char": [13, 14] },
-        { "start": 56.175, "end": 56.643, "char": [15, 21] },
-        { "start": 56.643, "end": 57.111, "char": [22, 26] },
-        { "start": 57.111, "end": 57.579, "char": [27, 33] }
+        { "start": 54.738, "end": 55.206, "char": [0, 6] },
+        { "start": 55.206, "end": 55.674, "char": [7, 12] },
+        { "start": 55.674, "end": 56.142, "char": [13, 14] },
+        { "start": 56.142, "end": 56.61, "char": [15, 21] },
+        { "start": 56.61, "end": 57.078, "char": [22, 26] },
+        { "start": 57.078, "end": 57.546, "char": [27, 33] }
       ]
     },
     {
-      "start": 57.579,
-      "end": 59.45,
+      "start": 57.546,
+      "end": 59.417,
       "text": "ile kimlik doğrulama gerekmez.",
       "words": [
-        { "start": 57.579, "end": 58.047, "char": [0, 3] },
-        { "start": 58.047, "end": 58.515, "char": [4, 10] },
-        { "start": 58.515, "end": 58.983, "char": [11, 20] },
-        { "start": 58.983, "end": 59.45, "char": [21, 30] }
+        { "start": 57.546, "end": 58.014, "char": [0, 3] },
+        { "start": 58.014, "end": 58.482, "char": [4, 10] },
+        { "start": 58.482, "end": 58.95, "char": [11, 20] },
+        { "start": 58.95, "end": 59.417, "char": [21, 30] }
       ]
     },
     {
-      "start": 61.45,
-      "end": 62.635,
+      "start": 61.417,
+      "end": 62.602,
       "text": "Komutu dizüstünüzde çalıştırın.",
       "words": [
-        { "start": 61.45, "end": 61.845, "char": [0, 6] },
-        { "start": 61.845, "end": 62.24, "char": [7, 19] },
-        { "start": 62.24, "end": 62.635, "char": [20, 31] }
+        { "start": 61.417, "end": 61.812, "char": [0, 6] },
+        { "start": 61.812, "end": 62.207, "char": [7, 19] },
+        { "start": 62.207, "end": 62.602, "char": [20, 31] }
       ]
     },
     {
-      "start": 62.635,
-      "end": 65.003,
+      "start": 62.602,
+      "end": 64.97,
       "text": "Başarılı olduğunda parolalar devre dışı kalır.",
       "words": [
-        { "start": 62.635, "end": 63.029, "char": [0, 8] },
-        { "start": 63.029, "end": 63.424, "char": [9, 18] },
-        { "start": 63.424, "end": 63.819, "char": [19, 28] },
-        { "start": 63.819, "end": 64.214, "char": [29, 34] },
-        { "start": 64.214, "end": 64.608, "char": [35, 39] },
-        { "start": 64.608, "end": 65.003, "char": [40, 46] }
+        { "start": 62.602, "end": 62.996, "char": [0, 8] },
+        { "start": 62.996, "end": 63.391, "char": [9, 18] },
+        { "start": 63.391, "end": 63.786, "char": [19, 28] },
+        { "start": 63.786, "end": 64.181, "char": [29, 34] },
+        { "start": 64.181, "end": 64.575, "char": [35, 39] },
+        { "start": 64.575, "end": 64.97, "char": [40, 46] }
       ]
     },
     {
-      "start": 68.34,
-      "end": 69.166,
+      "start": 68.307,
+      "end": 69.133,
       "text": "Üçüncü adım.",
       "words": [
-        { "start": 68.34, "end": 68.753, "char": [0, 6] },
-        { "start": 68.753, "end": 69.166, "char": [7, 12] }
+        { "start": 68.307, "end": 68.72, "char": [0, 6] },
+        { "start": 68.72, "end": 69.133, "char": [7, 12] }
       ]
     },
     {
-      "start": 69.166,
-      "end": 70.405,
+      "start": 69.133,
+      "end": 70.372,
       "text": "Anahtarı CLI'ye kaydediyoruz.",
       "words": [
-        { "start": 69.166, "end": 69.579, "char": [0, 8] },
-        { "start": 69.579, "end": 69.992, "char": [9, 15] },
-        { "start": 69.992, "end": 70.405, "char": [16, 29] }
+        { "start": 69.133, "end": 69.546, "char": [0, 8] },
+        { "start": 69.546, "end": 69.959, "char": [9, 15] },
+        { "start": 69.959, "end": 70.372, "char": [16, 29] }
       ]
     },
     {
-      "start": 70.405,
-      "end": 73.296,
+      "start": 70.372,
+      "end": 73.263,
       "text": "Bundan itibaren her komut bu anahtarla kimlik",
       "words": [
-        { "start": 70.405, "end": 70.818, "char": [0, 6] },
-        { "start": 70.818, "end": 71.231, "char": [7, 15] },
-        { "start": 71.231, "end": 71.644, "char": [16, 19] },
-        { "start": 71.644, "end": 72.057, "char": [20, 25] },
-        { "start": 72.057, "end": 72.47, "char": [26, 28] },
-        { "start": 72.47, "end": 72.883, "char": [29, 38] },
-        { "start": 72.883, "end": 73.296, "char": [39, 45] }
+        { "start": 70.372, "end": 70.785, "char": [0, 6] },
+        { "start": 70.785, "end": 71.198, "char": [7, 15] },
+        { "start": 71.198, "end": 71.611, "char": [16, 19] },
+        { "start": 71.611, "end": 72.024, "char": [20, 25] },
+        { "start": 72.024, "end": 72.437, "char": [26, 28] },
+        { "start": 72.437, "end": 72.85, "char": [29, 38] },
+        { "start": 72.85, "end": 73.263, "char": [39, 45] }
       ]
     },
     {
-      "start": 73.296,
-      "end": 74.122,
+      "start": 73.263,
+      "end": 74.089,
       "text": "doğrulaması yapar.",
       "words": [
-        { "start": 73.296, "end": 73.709, "char": [0, 11] },
-        { "start": 73.709, "end": 74.122, "char": [12, 18] }
+        { "start": 73.263, "end": 73.676, "char": [0, 11] },
+        { "start": 73.676, "end": 74.089, "char": [12, 18] }
       ]
     },
     {
-      "start": 74.122,
-      "end": 75.361,
+      "start": 74.089,
+      "end": 75.328,
       "text": "Artık parola gerekmez,",
       "words": [
-        { "start": 74.122, "end": 74.535, "char": [0, 5] },
-        { "start": 74.535, "end": 74.948, "char": [6, 12] },
-        { "start": 74.948, "end": 75.361, "char": [13, 22] }
+        { "start": 74.089, "end": 74.502, "char": [0, 5] },
+        { "start": 74.502, "end": 74.915, "char": [6, 12] },
+        { "start": 74.915, "end": 75.328, "char": [13, 22] }
       ]
     },
     {
-      "start": 75.361,
-      "end": 77.013,
+      "start": 75.328,
+      "end": 76.98,
       "text": "etkileşimli istemler de olmaz.",
       "words": [
-        { "start": 75.361, "end": 75.774, "char": [0, 11] },
-        { "start": 75.774, "end": 76.187, "char": [12, 20] },
-        { "start": 76.187, "end": 76.6, "char": [21, 23] },
-        { "start": 76.6, "end": 77.013, "char": [24, 30] }
+        { "start": 75.328, "end": 75.741, "char": [0, 11] },
+        { "start": 75.741, "end": 76.154, "char": [12, 20] },
+        { "start": 76.154, "end": 76.567, "char": [21, 23] },
+        { "start": 76.567, "end": 76.98, "char": [24, 30] }
       ]
     },
     {
-      "start": 79.013,
-      "end": 81.59,
+      "start": 78.98,
+      "end": 81.557,
       "text": "Anahtar CLI'ye",
       "words": [
-        { "start": 79.013, "end": 80.301, "char": [0, 7] },
-        { "start": 80.301, "end": 81.59, "char": [8, 14] }
+        { "start": 78.98, "end": 80.268, "char": [0, 7] },
+        { "start": 80.268, "end": 81.557, "char": [8, 14] }
       ]
     },
     {
-      "start": 81.59,
-      "end": 82.879,
+      "start": 81.557,
+      "end": 82.846,
       "text": "kaydedildi.",
-      "words": [{ "start": 81.59, "end": 82.879, "char": [0, 11] }]
+      "words": [{ "start": 81.557, "end": 82.846, "char": [0, 11] }]
     },
     {
-      "start": 83.717,
-      "end": 86.724,
+      "start": 83.684,
+      "end": 86.691,
       "text": "Anahtar kaydedildi ve CLI",
       "words": [
-        { "start": 83.717, "end": 84.469, "char": [0, 7] },
-        { "start": 84.469, "end": 85.22, "char": [8, 18] },
-        { "start": 85.22, "end": 85.972, "char": [19, 21] },
-        { "start": 85.972, "end": 86.724, "char": [22, 25] }
+        { "start": 83.684, "end": 84.436, "char": [0, 7] },
+        { "start": 84.436, "end": 85.188, "char": [8, 18] },
+        { "start": 85.188, "end": 85.939, "char": [19, 21] },
+        { "start": 85.939, "end": 86.691, "char": [22, 25] }
       ]
     },
     {
-      "start": 86.724,
-      "end": 87.476,
+      "start": 86.691,
+      "end": 87.443,
       "text": "hazır.",
-      "words": [{ "start": 86.724, "end": 87.476, "char": [0, 6] }]
+      "words": [{ "start": 86.691, "end": 87.443, "char": [0, 6] }]
     },
     {
-      "start": 87.476,
-      "end": 88.227,
+      "start": 87.443,
+      "end": 88.194,
       "text": "Sırada,",
-      "words": [{ "start": 87.476, "end": 88.227, "char": [0, 7] }]
+      "words": [{ "start": 87.443, "end": 88.194, "char": [0, 7] }]
     },
     {
-      "start": 88.227,
-      "end": 90.483,
+      "start": 88.194,
+      "end": 90.45,
       "text": "ilk sunucunuzu ekleyeceğiz.",
       "words": [
-        { "start": 88.227, "end": 88.979, "char": [0, 3] },
-        { "start": 88.979, "end": 89.731, "char": [4, 14] },
-        { "start": 89.731, "end": 90.483, "char": [15, 27] }
+        { "start": 88.194, "end": 88.946, "char": [0, 3] },
+        { "start": 88.946, "end": 89.698, "char": [4, 14] },
+        { "start": 89.698, "end": 90.45, "char": [15, 27] }
       ]
     }
   ]

@@ -1,0 +1,77 @@
+---
+import { createTranslator } from '../../i18n/utils';
+import type { Language } from '../../i18n/types';
+import { resolveSolutionVideo } from '../../utils/solution-video';
+
+interface Props {
+  lang: Language;
+  slug: string;
+}
+
+const { lang, slug } = Astro.props;
+const { t } = createTranslator(lang);
+const v = resolveSolutionVideo(slug, lang);
+const label = t('video.playVideo');
+
+// Both variants are emitted with preload="none" + poster, so only the visible one
+// (toggled by viewport via CSS) fetches its media when the viewer hits play.
+// Captions are burned into the localized video, so no <track> is needed.
+// Source language resolved via v.lang (ar/et/tr fall back to en).
+---
+
+<section class="sp-video" id="video">
+  <div class="sp-video-inner">
+    <video
+      class="sp-video-player sp-video-landscape"
+      controls
+      preload="none"
+      playsinline
+      poster={v.poster}
+      aria-label={label}
+    >
+      <source src={v.landscape} type="video/mp4" />
+    </video>
+    <video
+      class="sp-video-player sp-video-vertical"
+      controls
+      preload="none"
+      playsinline
+      poster={v.poster}
+      aria-label={label}
+    >
+      <source src={v.vertical} type="video/mp4" />
+    </video>
+  </div>
+</section>
+
+<style>
+  .sp-video {
+    padding: 2rem 1rem 1rem;
+  }
+  .sp-video-inner {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  .sp-video-player {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    background: #0b0e14;
+    display: block;
+  }
+  /* Desktop: landscape only. */
+  .sp-video-vertical {
+    display: none;
+  }
+  /* Mobile: swap to the native portrait cut. */
+  @media (max-width: 768px) {
+    .sp-video-landscape {
+      display: none;
+    }
+    .sp-video-vertical {
+      display: block;
+      max-width: 420px;
+      margin-inline: auto;
+    }
+  }
+</style>

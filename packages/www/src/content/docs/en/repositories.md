@@ -98,9 +98,9 @@ How it works: repository images are sparse files, and the encrypted volume passe
 
 Notes:
 
-- Repositories under an active backup are skipped and reported. Trimming during a backup would not free space, because the backup snapshot still references the blocks.
+- The filesystem trim is skipped and reported for repositories under an active backup, because the backup snapshot still references the blocks, so punching holes would not free pool space. The `--docker` reclaim is not affected and still runs (see below).
 - Running trim twice in a row reports 0 bytes the second time. The filesystem remembers which block groups were already trimmed; this is expected, not a failure.
-- `--docker` never removes tagged images, only dangling ones, stopped containers, and the build cache. Add `--docker-volumes` to also remove unused volumes (this deletes data; CLI only).
+- `--docker` never removes tagged images, only dangling ones, stopped containers, and the build cache. Add `--docker-volumes` to also remove unused volumes (this deletes data; CLI only). Unlike the filesystem trim, `--docker` reclaim runs even while a backup is in progress, so you can clear a wedged build cache without waiting for the backup window.
 
 ## Automatic Size Policy
 

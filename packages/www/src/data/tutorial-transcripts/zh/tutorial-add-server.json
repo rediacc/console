@@ -6,7 +6,7 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.627146,
+      "at": 1.629299,
       "text": "首先，让我们创建一个配置文件。该文件将保存 SSH 密钥、机器列表以及后续所有操作的基础设施配置。",
       "afterText": "配置已创建。后续所有设置都保存在这一个文件里。",
       "cardLabel": "添加机器",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 7.928955,
+      "at": 8.575098,
       "text": "现在让我们从命令行注册服务器，提供其名称、IP 地址和 SSH 用户名。主机密钥会自动扫描以建立信任连接。",
       "afterText": "服务器已注册。主机密钥已自动扫描。",
       "cardLabel": "配置机器",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 16.338306,
+      "at": 19.204906,
       "text": "接下来让我们配置服务器。这一步会安装 renet 并创建加密数据存储。完成后，服务器就可以托管仓库了。",
       "afterText": "完成。renet 已安装，数据存储已就绪。",
       "cardLabel": "查看配置",

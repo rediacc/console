@@ -1,0 +1,31 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:14.292
+Fork İzolasyonu Uygulamada
+
+00:00:14.292 --> 00:00:30.626
+Canlı bir veritabanı ve ikizi
+
+00:00:30.626 --> 00:00:45.973
+Adım 1: Canlı uygulama
+
+00:00:45.673 --> 00:01:17.140
+Orijinal, korumalı
+
+00:01:16.840 --> 00:01:38.822
+Adım 2: Fork'la
+
+00:01:38.522 --> 00:01:55.688
+Fork, tamamen açık
+
+00:01:55.388 --> 00:02:28.188
+Yan yana
+
+00:02:27.888 --> 00:02:43.788
+Adım 3: İki repo, bir sunucu
+
+00:02:43.788 --> 00:03:01.951
+Adım 4: Fork'u at
+
+00:03:01.951 --> 00:03:11.631
+Sonraki: Secrets Yönetimi

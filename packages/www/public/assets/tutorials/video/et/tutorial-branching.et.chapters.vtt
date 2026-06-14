@@ -1,0 +1,52 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:14.362
+Harud, Commit ja Rollback
+
+00:00:14.362 --> 00:00:33.413
+Commit'id, harud, checkout
+
+00:00:33.413 --> 00:00:48.026
+Samm 1: Esimene versioon
+
+00:00:48.026 --> 00:01:06.804
+Samm 2: Tee commit
+
+00:01:06.804 --> 00:01:29.355
+Samm 3: Nimeta haruga
+
+00:01:29.355 --> 00:01:39.601
+Samm 4: Jätka, teine versioon
+
+00:01:39.601 --> 00:01:54.864
+Samm 5: Tee uus commit
+
+00:01:54.864 --> 00:02:11.431
+Samm 6: Ajalugu
+
+00:02:11.431 --> 00:02:30.666
+Samm 7: Tee harust checkout
+
+00:02:30.666 --> 00:02:46.866
+Samm 8: Käivita rollback
+
+00:02:46.866 --> 00:03:05.323
+Samm 9: Tõestus, esimene versioon
+
+00:03:05.323 --> 00:03:23.801
+Samm 10: Checkoutige haru
+
+00:03:23.801 --> 00:03:40.526
+Samm 11: Alustage rollback'i
+
+00:03:40.526 --> 00:03:56.975
+Samm 12: Tõestus: esimene versioon
+
+00:03:56.975 --> 00:04:14.770
+Samm 13: Andmed on tagasi
+
+00:04:14.470 --> 00:04:29.270
+Mõlemad versioonid kõrvuti
+
+00:04:28.970 --> 00:04:38.890
+Järgmiseks: Live Migration

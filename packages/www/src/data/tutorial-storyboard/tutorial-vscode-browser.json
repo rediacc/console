@@ -1,0 +1,235 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-vscode-browser",
+  "nextTutorialKey": "tutorial-forking",
+  "setupCommand": "bash .ci/tutorials/lib/stage-my-app.sh && rdc term connect --machine ${TUTORIAL_MACHINE_NAME} --repository my-app --command 'rm -rf notes'",
+  "teardownCommand": "rdc vscode serve stop --machine ${TUTORIAL_MACHINE_NAME} --repository my-app",
+  "sessions": {
+    "workbench": {
+      "urlFromCommand": "rdc vscode connect --machine ${TUTORIAL_MACHINE_NAME} --repository my-app --browser --url-only",
+      "prepActions": [
+        {
+          "waitForSelector": ".explorer-folders-view .monaco-list-row"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "click": {
+            "selector": ".monaco-dialog-box .monaco-button:has-text(\"Yes, I trust the authors\")",
+            "timeoutMs": 6000
+          }
+        },
+        {
+          "wait": 500
+        },
+        {
+          "press": "Control+w"
+        },
+        {
+          "wait": 400
+        },
+        {
+          "press": "Control+Alt+b"
+        },
+        {
+          "wait": 600
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "sandbox-concept",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "sandbox-concept",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc vscode connect --machine <machine-name> --repository my-app --browser"
+      }
+    },
+    {
+      "id": "workbench-tour",
+      "type": "browser",
+      "session": "workbench",
+      "durationSec": 12,
+      "narrationKey": "workbench-tour",
+      "actions": [
+        {
+          "wait": 1500
+        },
+        {
+          "click": ".explorer-folders-view .monaco-list-row:has-text(\"Rediaccfile\")"
+        },
+        {
+          "wait": 1500
+        }
+      ],
+      "holdSec": 2
+    },
+    {
+      "id": "create-file",
+      "type": "browser",
+      "session": "workbench",
+      "durationSec": 18,
+      "narrationKey": "create-file",
+      "actions": [
+        {
+          "press": "Control+Shift+P"
+        },
+        {
+          "wait": 700
+        },
+        {
+          "type": {
+            "text": "new untitled text file",
+            "delayMs": 45
+          }
+        },
+        {
+          "wait": 600
+        },
+        {
+          "click": ".quick-input-list .monaco-list-row[aria-label^=\"File: New Untitled Text File\"]"
+        },
+        {
+          "wait": 1000
+        },
+        {
+          "type": {
+            "text": "- ship the demo\n- write the report\n",
+            "delayMs": 60
+          }
+        },
+        {
+          "wait": 700
+        },
+        {
+          "press": "Control+s"
+        },
+        {
+          "wait": 1400
+        },
+        {
+          "type": {
+            "text": "notes/todo.md",
+            "delayMs": 60
+          }
+        },
+        {
+          "wait": 600
+        },
+        {
+          "press": "Enter"
+        },
+        {
+          "wait": 1000
+        },
+        {
+          "press": "Enter"
+        }
+      ],
+      "holdSec": 1.8
+    },
+    {
+      "id": "editor-terminal",
+      "type": "browser",
+      "session": "workbench",
+      "durationSec": 16,
+      "narrationKey": "editor-terminal",
+      "actions": [
+        {
+          "press": "Control+`"
+        },
+        {
+          "wait": 3000
+        },
+        {
+          "type": {
+            "text": "cat notes/todo.md",
+            "delayMs": 80
+          }
+        },
+        {
+          "press": "Enter"
+        },
+        {
+          "wait": 2200
+        },
+        {
+          "type": {
+            "text": "ls /",
+            "delayMs": 80
+          }
+        },
+        {
+          "press": "Enter"
+        },
+        {
+          "wait": 2200
+        }
+      ],
+      "holdSec": 1.5
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'pwd && ls'"
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'cat notes/todo.md'"
+      }
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "markerIndex": 3,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'ls /'"
+      }
+    },
+    {
+      "id": "cast-step-4",
+      "type": "cast-narrated",
+      "markerIndex": 4,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository my-app --command 'ls /home'"
+      }
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

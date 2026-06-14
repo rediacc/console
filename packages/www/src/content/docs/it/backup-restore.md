@@ -4,8 +4,8 @@ description: "Esegui il backup dei repository cifrati su qualsiasi storage compa
 category: "Guides"
 order: 7
 language: it
-sourceHash: "e241aa122868e629"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7ff112c2ec14c35f"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Backup e Ripristino
@@ -40,7 +40,7 @@ Invia il backup di un repository allo storage esterno:
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
-L'invio verifica sempre che il repository di destinazione sia montato prima di scrivere. Se non è montato, l'operazione viene interrotta.
+Il backup finisce nella cartella `hot/` dello storage quando il repository è montato al momento dell'invio, e in `cold/` quando non è montato. Questo è lo stesso layout dei backup pianificati, quindi `rdc repo backup list` mostra tutti i backup in un'unica tabella.
 
 | Opzione | Descrizione |
 |--------|-------------|

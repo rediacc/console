@@ -1,0 +1,101 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "558ea8288b2df2d72fa1b20071e15423b777625f64d4c8442484f2456411f190",
+  "steps": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413171,
+      "replayEndSec": 10.379022,
+      "narrationText": "「pulse」を紹介します。プロセスメモリにカウンターを持ち、5秒ごとにビートを出力します。カウンターは現在6で、まだ増え続けています。RAMにしか存在しません。プロセスを再起動すると、1から始まります。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-01.51fd8e2a.mp3",
+      "textHash": "51fd8e2a1413993bd3108cd232b0d78f1c07e20f3ebe481117f4a97d91c893be",
+      "audioDurationSec": 15.647347,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-01-after.65cfd107.mp3",
+      "afterAudioDurationSec": 4.362449,
+      "afterTextHash": "65cfd1079b13e68d0b7326ccd6622d40904438843e983b811d9dfc266891fd96"
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.379022,
+      "replayEndSec": 101.149024,
+      "narrationText": "たった1つのコマンドで、稼働中のまま移動できます。フェーズ1では、ソースが動き続けながら、約30秒で2ギガバイトの大部分を転送します。次にカットオーバーです。実行中のプロセスをチェックポイントし、残り数メガバイトを転送して、ダウンタイムをその場に表示します。2ギガバイトの移動で、約20秒です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-02.3c34f979.mp3",
+      "textHash": "3c34f97922eb696cbfcf9d1dbcdbd5679e250b9be94267c9479e0dc41677718c",
+      "audioDurationSec": 23.066122,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-02-after.229cf9c3.mp3",
+      "afterAudioDurationSec": 8.202449,
+      "afterTextHash": "229cf9c302fc9ac70dbf56456065f4d1344de8e0f0b2c52d6987cf83dabb2ede"
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "replayStartSec": 101.149024,
+      "replayEndSec": 106.859481,
+      "narrationText": "新しいマシンを確認します。ありました。マウント済み、Docker稼働中、containerが2つ起動しています。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-03.d70c4765.mp3",
+      "textHash": "d70c47653792c819b650546b7854c32297fb8d8a7c23571381ccfd2cb58499b0",
+      "audioDurationSec": 8.202449,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-03-after.10432924.mp3",
+      "afterAudioDurationSec": 6.112653,
+      "afterTextHash": "10432924d560ef0646fa1d7d9adf30b0678887c72be992e01effd72408e6ca30"
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "replayStartSec": 106.859481,
+      "replayEndSec": 112.346008,
+      "narrationText": "ではソースはどうでしょう？repositoryはまだ一覧に表示されていますが、行を見てください。マウントされておらず、Dockerもなく、containerもゼロです。ここではもう何も動いていません。イメージは次のデルタ転送のベースとして意図的に残されています。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-04.22e1a262.mp3",
+      "textHash": "22e1a2621d578834421120cb92e33a182e60bbe023b3a1070075ee198ef89e02",
+      "audioDurationSec": 18.520816,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-04-after.8818f198.mp3",
+      "afterAudioDurationSec": 6.765714,
+      "afterTextHash": "8818f19866ff6ea607738cd4897b6ef63db462911f872dcf119981653d5a1ee1"
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "replayStartSec": 112.346008,
+      "replayEndSec": 119.168595,
+      "narrationText": "そしてオチです。カウンターは17、18、19と、まだ増え続けています。1からやり直すのではなく、チェックポイントで凍結した場所から正確に再開しています。プロセスはマシンが変わったことに気づいていません。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-05.e23d741e.mp3",
+      "textHash": "e23d741e8a4c33ed4130ffbaa5979816d6f3597b779c7f1b89dd4f183ccff14b",
+      "audioDurationSec": 17.084082,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/tutorial-live-migration-05-after.1784fe9a.mp3",
+      "afterAudioDurationSec": 4.597551,
+      "afterTextHash": "1784fe9aa3b18692c82527774b12ce37d6f6f32b8e6426be770a25538bb3d2f0"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "8f4a3edcb9dc59601da59d30afb37a6dbd90494a797e3786b7ccb40a4994c99a",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/intro.8f4a3edc.mp3",
+      "narrationText": "今回は大物です。稼働中のアプリを、動かしたまま別のマシンに移します。アプリのメモリで刻み続けるライブカウンターを見て、1つのコマンドですべてを移動し、新しいマシンでカウンターがそのまま数え続けるのを確認します。",
+      "audioDurationSec": 17.475918
+    },
+    {
+      "id": "how-it-moves",
+      "textHash": "81bf6cca2d937ad3fbe4cefc3af698eb2162bdc7e8cec6914f2f6e7fa1c00293",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/how-it-moves.81bf6cca.mp3",
+      "narrationText": "2つのフェーズで動作します。フェーズ1では、アプリが稼働し続けながら大部分をコピーします。フェーズ2では、ライブプロセスをチェックポイントし、最終デルタとプロセス状態を転送して、新しいマシンですべてを再開します。つまり、ダウンタイムはデータではなくデルタの分だけです。そしてアプリは移動したことに気づきません。",
+      "audioDurationSec": 23.719184
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "a5d7832bddf2a0670717a90894063a65c5f07861ace7041c6d1290c2a7046f05",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-live-migration/next-tutorial.a5d7832b.mp3",
+      "narrationText": "カウンターはリセットされませんでした。メモリ、データベース、ファイル、すべてがマシンを移動しました。次は、2回目の転送が常に速い理由を見ていきます。",
+      "audioDurationSec": 13.244082
+    }
+  ]
+}

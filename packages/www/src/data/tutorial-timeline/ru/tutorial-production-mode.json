@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "aa9813246c56edd4a7efb86bcb4492bca88a06bf30fb1c0424c5e830cd77ee4f",
+  "transcriptHash": "1b74c09bbfb62a98450ae524dadbf57db83ca37e84a6c690112bef3970bf15eb",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418632,
-      "replayEndSec": 9.548589,
+      "replayStartSec": 2.555418,
+      "replayEndSec": 11.051619,
       "narrationText": "Запускаем приложение в продакшен-режиме с ноутбука. Команда деплоя вызывает ту же функцию up, что использовалась при разработке, но запускает её в фоне. Можно закрыть ноутбук — приложение продолжит работать.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-01.060fe13d.mp3",
       "textHash": "060fe13d154b47c6495c8004c98abd1c02918c1019c14a7f4fad599cbc130bbb",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 9.548589,
-      "replayEndSec": 17.034078,
+      "replayStartSec": 11.051619,
+      "replayEndSec": 18.718543,
       "narrationText": "Включаем автозапуск, чтобы приложение пережило перезагрузку сервера. Теперь, если сервер перезапустится, этот репозиторий поднимется автоматически.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-02.5b0fcf0a.mp3",
       "textHash": "5b0fcf0ac08f1296c62ab05bbe95936cfca348d4831fc76c9523b694a4413caa",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 17.034078,
-      "replayEndSec": 22.929505,
+      "replayStartSec": 18.718543,
+      "replayEndSec": 25.169818,
       "narrationText": "Смотрим, у каких репозиториев включён автозапуск. Подтверждается, что наше приложение теперь в списке загрузки.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-03.98b6afd5.mp3",
       "textHash": "98b6afd5de38d63a7bf8735ae963ac6a1978aefa6b37f85058d6a4bbff5efc76",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 22.929505,
-      "replayEndSec": 30.37798,
+      "replayStartSec": 25.169818,
+      "replayEndSec": 31.824598,
       "narrationText": "Для остановки приложения — одна команда с ноутбука. Одна команда вверх, одна вниз. Всё из терминала, без интерактивных сессий.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/tutorial-production-mode-04.27c49105.mp3",
       "textHash": "27c49105adf44e25d52d0a8f19b25800bf2ef0c423796e793362bd2936772046",
@@ -65,17 +65,17 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "88a2765148d5eb9d2118b53adb4ea3805a5a00b7752d0456fcf5f6aeed5a691e",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/intro.88a27651.mp3",
-      "narrationText": "Итак! Переводим ваше приложение из разработки в продакшен. Три коротких шага, всё с ноутбука.",
-      "audioDurationSec": 6.60898
+      "textHash": "0144ef8982dd475838049e24d5f083491d4c46ff989d8d61bf723f993ad9f745",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/intro.0144ef89.mp3",
+      "narrationText": "Ваше приложение работает, пока вы подключены. Продакшн означает, что оно работает, когда вас нет. Три коротких шага, всё с вашего ноутбука.",
+      "audioDurationSec": 10.03102
     },
     {
       "id": "dev-vs-prod",
-      "textHash": "e30890fdaa2986e923ac78669d6552b5466facc03b2082960998ff0abe31ba6a",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/dev-vs-prod.e30890fd.mp3",
-      "narrationText": "При разработке вы запускаете приложение изнутри репозитория, и оно останавливается при отключении. В продакшене вы запускаете его с ноутбука через CLI, и оно продолжает работать в фоне.",
-      "audioDurationSec": 15.647347
+      "textHash": "1ae543281c57b89b7dbbd8457282f6445c1c6608d738aaf07e422021465fad12",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-production-mode/dev-vs-prod.1ae54328.mp3",
+      "narrationText": "Вот в чём разница. В разработке вы запускаете приложение изнутри repo по SSH. Закрываете сессию, и приложение умирает вместе с ней. В продакшне вы запускаете его независимо от ноутбука: процесс принадлежит серверу, а не вашему соединению.",
+      "audioDurationSec": 20.192653
     },
     {
       "id": "next-tutorial",

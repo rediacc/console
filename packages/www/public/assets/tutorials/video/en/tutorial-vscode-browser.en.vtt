@@ -1,0 +1,274 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.670
+Good news:
+
+00:00:01.670 --> 00:00:03.681
+no terminal needed for this one!
+
+00:00:03.681 --> 00:00:06.362
+We'll open a full VS Code right in
+
+00:00:06.362 --> 00:00:07.032
+the browser,
+
+00:00:07.032 --> 00:00:08.037
+create some files,
+
+00:00:08.037 --> 00:00:09.378
+run a few commands,
+
+00:00:09.378 --> 00:00:12.059
+and watch the kernel keep it all inside
+
+00:00:12.059 --> 00:00:12.729
+the repo.
+
+00:00:13.503 --> 00:00:14.647
+Here's the idea.
+
+00:00:14.647 --> 00:00:17.317
+The editor doesn't run on your laptop.
+
+00:00:17.317 --> 00:00:19.987
+It runs inside the repo's sandbox on
+
+00:00:19.987 --> 00:00:20.749
+the server,
+
+00:00:20.749 --> 00:00:23.419
+and your browser reaches it through an
+
+00:00:23.419 --> 00:00:24.182
+SSH tunnel.
+
+00:00:24.182 --> 00:00:25.707
+So the file tree,
+
+00:00:25.707 --> 00:00:26.852
+the built-in terminal,
+
+00:00:26.852 --> 00:00:29.521
+and anything you launch from it see
+
+00:00:29.521 --> 00:00:31.428
+exactly what the repo sees,
+
+00:00:31.428 --> 00:00:32.572
+and nothing else.
+
+00:00:35.843 --> 00:00:36.613
+One command.
+
+00:00:36.613 --> 00:00:39.309
+The CLI installs the editor server on
+
+00:00:39.309 --> 00:00:40.464
+the machine once,
+
+00:00:40.464 --> 00:00:42.775
+starts it inside the repo sandbox,
+
+00:00:42.775 --> 00:00:43.931
+opens a tunnel,
+
+00:00:43.931 --> 00:00:45.856
+and hands you a link.
+
+00:00:45.856 --> 00:00:47.397
+No local VS Code,
+
+00:00:47.397 --> 00:00:49.322
+no extensions to set up.
+
+00:00:52.322 --> 00:00:54.134
+That URL is your editor.
+
+00:00:54.134 --> 00:00:56.672
+Works from any OS — the only
+
+00:00:56.672 --> 00:00:58.121
+requirement is a browser.
+
+00:00:58.647 --> 00:00:59.824
+And there it is:
+
+00:00:59.824 --> 00:01:00.412
+VS Code,
+
+00:01:00.412 --> 00:01:01.589
+in a browser tab.
+
+00:01:01.589 --> 00:01:04.236
+The file tree on the left shows the repo,
+
+00:01:04.236 --> 00:01:05.413
+and only the repo.
+
+00:01:11.147 --> 00:01:12.885
+Let's create a real file,
+
+00:01:12.885 --> 00:01:13.928
+no terminal involved.
+
+00:01:13.928 --> 00:01:14.970
+A new editor,
+
+00:01:14.970 --> 00:01:16.361
+a couple of lines,
+
+00:01:16.361 --> 00:01:19.141
+and save it as notes slash todo dot
+
+00:01:19.141 --> 00:01:19.489
+md.
+
+00:01:19.489 --> 00:01:22.269
+The folder appears on the left as it
+
+00:01:22.269 --> 00:01:23.660
+lands in the repo.
+
+00:01:29.647 --> 00:01:31.732
+The built-in terminal works too,
+
+00:01:31.732 --> 00:01:33.400
+and there's our file.
+
+00:01:33.400 --> 00:01:35.901
+Now let's try to look outside
+
+00:01:35.901 --> 00:01:36.735
+the repo:
+
+00:01:36.735 --> 00:01:37.569
+permission denied.
+
+00:01:37.569 --> 00:01:39.237
+That's not a setting,
+
+00:01:39.237 --> 00:01:40.488
+that's the kernel.
+
+00:01:48.647 --> 00:01:50.685
+Same repo from the plain terminal:
+
+00:01:50.685 --> 00:01:52.722
+the working directory is the repo,
+
+00:01:52.722 --> 00:01:54.760
+the files are the repo's files.
+
+00:01:57.563 --> 00:02:00.087
+Terminal and editor agree — it
+
+00:02:00.087 --> 00:02:01.769
+is the same sandbox.
+
+00:02:05.033 --> 00:02:07.602
+And the file we created in the
+
+00:02:07.602 --> 00:02:08.336
+browser editor?
+
+00:02:08.336 --> 00:02:09.070
+Right here.
+
+00:02:09.070 --> 00:02:11.638
+Files made in VS Code are real
+
+00:02:11.638 --> 00:02:12.372
+repo files,
+
+00:02:12.372 --> 00:02:12.739
+instantly.
+
+00:02:14.489 --> 00:02:16.074
+Created in the browser,
+
+00:02:16.074 --> 00:02:17.659
+readable from the terminal.
+
+00:02:17.659 --> 00:02:18.451
+One repo,
+
+00:02:18.451 --> 00:02:19.243
+two doors.
+
+00:02:22.576 --> 00:02:24.184
+Now try to leave.
+
+00:02:24.184 --> 00:02:26.595
+Listing the root of the server:
+
+00:02:26.595 --> 00:02:27.399
+permission denied.
+
+00:02:27.399 --> 00:02:29.408
+The kernel scopes the editor,
+
+00:02:29.408 --> 00:02:30.212
+its terminal,
+
+00:02:30.212 --> 00:02:33.025
+and every child process to this repo.
+
+00:02:34.775 --> 00:02:36.715
+Denied by the kernel,
+
+00:02:36.715 --> 00:02:38.171
+not by configuration.
+
+00:02:41.482 --> 00:02:42.949
+Other users' homes?
+
+00:02:42.949 --> 00:02:43.926
+Also denied.
+
+00:02:43.926 --> 00:02:46.859
+Whatever runs inside this sandbox —
+
+00:02:46.859 --> 00:02:47.348
+editors,
+
+00:02:47.348 --> 00:02:47.837
+terminals,
+
+00:02:47.837 --> 00:02:50.770
+build tools — ends at the
+
+00:02:50.770 --> 00:02:51.748
+repo's walls.
+
+00:02:53.498 --> 00:02:55.385
+The sandbox has no exceptions.
+
+00:02:55.385 --> 00:02:56.894
+That is the point.
+
+00:02:57.688 --> 00:02:58.146
+Browser,
+
+00:02:58.146 --> 00:02:58.603
+editor,
+
+00:02:58.603 --> 00:02:59.061
+terminal:
+
+00:02:59.061 --> 00:02:59.977
+same sandbox,
+
+00:02:59.977 --> 00:03:00.892
+same rules.
+
+00:03:00.892 --> 00:03:03.638
+Next up is the feature everything
+
+00:03:03.638 --> 00:03:05.011
+here builds on,
+
+00:03:05.011 --> 00:03:05.469
+forking.
+
+00:03:05.469 --> 00:03:08.215
+You're going to like this one.

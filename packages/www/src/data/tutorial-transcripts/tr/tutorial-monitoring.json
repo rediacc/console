@@ -6,7 +6,7 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.411841,
+      "at": 2.416158,
       "text": "Sistem görünümüyle başlıyoruz. --system filtresiyle makine sorgu komutu, sistem çalışma süresi, disk kullanımı ve depolama durumunu gösterir. Bir sorun varsa rapor bizi bilgilendirir.",
       "afterText": "Çalışma süresi, disk, depolama. Tek bakışta ihtiyacınız olan her şey.",
       "cardLabel": "Sistem Sağlığı",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 8.597185,
+      "at": 8.503611,
       "text": "Şimdi container'lar. Bu görünüm, makinedeki her depodaki tüm çalışan container'ları listeler: ad, durum, sağlık, CPU, bellek ve her birinin hangi depoya ait olduğu.",
       "afterText": "Tüm depolardaki tüm container'lar, tek bir görünümde.",
       "cardLabel": "Container'lar",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 15.126152,
+      "at": 14.799411,
       "text": "Şimdi depoların kendisi. Boyut, bağlama durumu, Docker daemon durumu, disk kullanımı. Makinedeki her izole ortam hakkında bilmeniz gereken her şey.",
       "afterText": "Tüm depolar, tüm daemon'ları, tüm disk kullanımları.",
       "cardLabel": "Repository'ler",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 24.385141,
+      "at": 21.195367,
       "text": "Makine sorgu komutu her şeyi tek seferde verir. Sistem bilgisi, container'lar, depolar; hepsi bir arada. Bir kez çalıştırın; tam görünümü elde edin.",
       "afterText": "Her şey bir arada, filtre gerekmez.",
       "cardLabel": "Tam Sorgu",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 32.334422,
+      "at": 26.969407,
       "text": "Son olarak dizüstü bilgisayarınızda yerel doğruluk kontrolü için tanı denetimi. Node, SSH anahtarı, renet, Docker; CLI'nin bağımlı olduğu her şey. Seri tamamlandı. Kurulumdan izlemeye kadar, hepsi terminalinizden.",
       "afterText": "Hepsi yeşilse yerel CLI'nız sağlıklı demektir.",
       "cardLabel": "Doctor",
@@ -60,7 +60,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "Seri böylece tamamlandı. Artık kurulum yapabilir, yapılandırabilir, dağıtabilir, fork'layabilir, yayına alabilir, otomatik başlatabilir, yedekleyebilir ve izleyebilirsiniz; hepsi terminalinizden!"
+      "text": "Artık kurulum yapabilir, yapılandırabilir, deploy edebilir, fork alabilir, yayına geçebilir, autostart ayarlayabilir, yedekleyebilir ve izleyebilirsiniz. Sırada gelişmiş bölüm var: repo'larınızı kod gibi versiyonlayın, commit'ler ve rollback'lerle."
     }
   ],
   "title": "İzleme",
@@ -72,6 +72,6 @@
     "cast-step-2": "Repo'lar",
     "cast-step-3": "Her Şey Tek Seferde",
     "cast-step-4": "Yerel Kontrol",
-    "outro": "Serinin Sonu"
+    "outro": "Sıradaki: Branching, Commit ve Rollback"
   }
 }

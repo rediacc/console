@@ -6,7 +6,7 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 2.409686,
+      "at": 2.412347,
       "text": "Wir erstellen ein 2 Gigabyte großes verschlüsseltes Repository auf dem Server. Ein Repository ist im Ruhezustand eine einzelne verschlüsselte Datei. Wenn es eingehängt wird, wird es zu einem Ordner mit einem eigenen Docker-Daemon und eigenen Anwendungsdaten, vollständig isoliert von allem anderen auf dem Server.",
       "afterText": "Repository erstellt. Die verschlüsselte Datei liegt auf dem Server und ist bereit zum Mounten.",
       "cardLabel": "Repo erstellen",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 11.760396,
+      "at": 11.676359,
       "text": "Wir listen die Repositories auf der Maschine auf, um zu bestätigen, dass das neue registriert ist. Von hier aus kann das Repo in VS Code geöffnet, deployed, geforkt oder gesichert werden, alles von Ihrem Laptop aus.",
       "afterText": "Da ist es, registriert und einsatzbereit.",
       "cardLabel": "Repos auflisten",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "at": 17.238181,
+      "at": 17.041073,
       "text": "Eine praktische Option: Das Repo lässt sich mit diesem Befehl direkt in VS Code öffnen. Wir starten den Editor hier nicht, aber er beginnt eine Remote-Sitzung in das Repo über SSH, sodass Sie die Dateien bearbeiten können.",
       "afterText": "Führen Sie das auf Ihrem Laptop aus, um die Dateien des Repos in VS Code zu bearbeiten.",
       "cardLabel": "In VS Code öffnen",

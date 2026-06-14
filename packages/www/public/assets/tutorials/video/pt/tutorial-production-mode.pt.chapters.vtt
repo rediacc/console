@@ -1,22 +1,22 @@
 WEBVTT
 
-00:00:01.000 --> 00:00:10.925
+00:00:01.000 --> 00:00:11.320
 Modo de Produção
 
-00:00:10.925 --> 00:00:26.771
+00:00:11.320 --> 00:00:30.301
 Dev vs prod, a diferença
 
-00:00:26.771 --> 00:00:55.316
+00:00:30.301 --> 00:00:58.846
 Etapa 1: Iniciar em modo de produção
 
-00:00:55.316 --> 00:01:19.354
+00:00:58.846 --> 00:01:22.917
 Etapa 2: Ativar autostart
 
-00:01:19.354 --> 00:01:34.732
+00:01:22.917 --> 00:01:39.295
 Etapa 3: Listar repos com autostart ativado
 
-00:01:34.732 --> 00:01:56.224
+00:01:39.295 --> 00:02:00.787
 Etapa 4: Parar a partir do seu laptop
 
-00:01:56.224 --> 00:02:03.184
-A seguir: Backup e Restauração
+00:02:00.787 --> 00:02:07.747
+A Seguir: Monitoramento

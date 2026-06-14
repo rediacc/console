@@ -1305,7 +1305,9 @@
           "completed": "Otomatik başlatma listesi alındı",
           "description": "Otomatik başlatma etkin olan depoları listele",
           "failed": "Otomatik başlatma depolarını listeleme başarısız",
-          "starting": "\"{{machine}}\" üzerindeki otomatik başlatma depoları listeleniyor..."
+          "starting": "\"{{machine}}\" üzerindeki otomatik başlatma depoları listeleniyor...",
+          "empty": "\"{{machine}}\" üzerinde otomatik başlatma etkin depo yok",
+          "service": "Otomatik başlatma servisi: kurulu={{installed}}, etkin={{enabled}}"
         }
       },
       "backup": {
@@ -1432,10 +1434,10 @@
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" {{size}} olarak genişletiliyor..."
       },
       "trim": {
-        "description": "Bağlı depolardan datastore havuzuna alan geri kazandırır (çevrimiçi, kesintisiz). Depo içinde silinen bloklar fstrim ile havuza geri döner. --name verilmezse bağlı tüm depolar ve datastore'un kendisi trimlenir. Aktif yedeklemesi olan depolar atlanır",
+        "description": "Bağlı depolardan datastore havuzuna alan geri kazandırır (çevrimiçi, kesintisiz). Depo içinde silinen bloklar fstrim ile havuza geri döner. --name verilmezse bağlı tüm depolar ve datastore'un kendisi trimlenir. Aktif yedeklemesi olan depolarda fstrim atlanır; --docker geri kazanımı yine de çalışır",
         "descriptionShort": "Depolardaki boş alanı havuza geri kazandır",
         "nameOption": "Trimlenecek depo (varsayılan: bağlı tüm depolar)",
-        "dockerOption": "Önce Docker alanını geri kazan (durmuş konteynerler, sahipsiz imajlar, derleme önbelleği)",
+        "dockerOption": "Docker alanını geri kazan (durmuş konteynerler, sahipsiz imajlar, derleme önbelleği); etkin bir yedek anlık görüntüsü sırasında bile çalışır",
         "dockerVolumesOption": "Ayrıca kullanılmayan Docker birimlerini temizle",
         "reportOnlyOption": "Trim yapmadan discard durumunu ve geri kazanılabilir tahmini göster",
         "repoNotFound": "Depo bulunamadı: {{name}}",
@@ -1535,6 +1537,7 @@
         "checkpointing": "CRIU kontrol noktası oluşturuluyor...",
         "complete": "Taşıma tamamlandı: {{name}}, {{from}} konumundan {{to}} konumuna taşındı",
         "deltaDone": "Delta senkronizasyonu tamamlandı",
+        "phase2Stats": "Geçiş (KESİNTİ): {{duration}} içinde {{transferred}}",
         "deltaFailed": "Delta senkronizasyonu başarısız",
         "deltaSync": "Delta senkronize ediliyor...",
         "description": "Bir depoyu minimum kesinti ile başka bir makineye canlı taşıma. İki aşamalı rsync: çalışırken toplu aktarım, ardından delta senkronizasyonu için kısa duraklama. CRIU kontrol noktası ile süreç belleği taşıma ve hedef makinelerin otomatik oluşturulmasını destekler",
@@ -1551,6 +1554,7 @@
         "optionTo": "Hedef makine adı",
         "phase1": "Aşama 1: Toplu veri aktarılıyor (kaynak çalışmaya devam ediyor)...",
         "phase1Done": "Toplu aktarım tamamlandı",
+        "phase1Stats": "{{duration}} içinde {{transferred}} aktarıldı — kaynak çevrimiçi kaldı",
         "phase1Failed": "Toplu aktarım başarısız",
         "phase2": "Aşama 2: Geçiş (kısa kesinti)...",
         "phase3": "Aşama 3: Hedefte başlatılıyor...",
@@ -1612,6 +1616,10 @@
         "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",
         "optionProvision": "Hedef makine yoksa bulut sağlayıcısı üzerinden otomatik olarak oluştur",
         "optionStrategy": "Delta temeli kullanırken blok-delta stratejisi: auto, physical veya shared",
+        "optionJson": "Aktarım istatistiklerini JSON olarak yazdır",
+        "statsDelta": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde {{transferred}} aktarıldı (taban {{base}} ile delta, imaj {{image}})",
+        "statsFull": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde {{transferred}} aktarıldı (tam aktarım)",
+        "statsNoBytes": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde tamamlandı",
         "optionTag": "Sürüm belirleme için dağıtım etiketi",
         "optionTo": "Hedef makine veya depolama adı (yapılandırmadan otomatik algılanır)",
         "optionUp": "Gönderdikten sonra hedef makinede depoyu bağla ve dağıt",
@@ -1726,7 +1734,10 @@
         "noContainers": "\"{{repository}}\" deposu için çalışan konteyner bulunamadı",
         "noPorts": "\"{{container}}\" konteynerinde açık port bulunamadı. --port belirtin",
         "noServiceIP": "\"{{container}}\" konteynerinin atanmış servis IP'si yok",
-        "portOption": "Yönlendirilecek uzak konteyner portu"
+        "portOption": "Yönlendirilecek uzak konteyner portu",
+        "portInUse": "Yerel port {{port}} zaten kullanımda. --local ile başka bir port seçin",
+        "notReady": "Tünel, localhost:{{localPort}} üzerinde 15 saniye içinde hazır olmadı",
+        "urlOnlyOption": "Tünel hazır olduğunda yalnızca yerel URL'yi yazdır (makine tarafından okunabilir)"
       },
       "unmount": {
         "checkpointOption": "Ayırmadan önce kontrol noktası oluştur",
@@ -2212,7 +2223,14 @@
         "settingsWarning": "Uyarı: VS Code ayarları yapılandırılamadı: {{error}}",
         "settingUpEnv": "Uzak ortam ayarlanıyor...",
         "success": "VS Code başarıyla başlatıldı.",
-        "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor..."
+        "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor...",
+        "installingServer": "Makinede {{provider}} {{version}} kurulumunun hazır olması sağlanıyor...",
+        "startingServer": "Depo sandbox'ı içinde {{provider}} başlatılıyor...",
+        "serverReused": "Hâlihazırda çalışan sunucu yeniden kullanılıyor",
+        "tunnelReady": "Tünel localhost:{{port}} üzerinde hazır",
+        "browserUrl": "VS Code'u tarayıcınızda açın: {{url}}",
+        "passwordNote": "Giriş parolası: {{password}}",
+        "openingBrowser": "Tarayıcınız açılıyor..."
       },
       "description": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
       "descriptionShort": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
@@ -2223,6 +2241,19 @@
         "keyPersisted": " (anahtar kalıcı kılındı)",
         "noConnections": "Yapılandırılmış VS Code SSH bağlantısı yok.",
         "total": "\nToplam: {{count}} bağlantı(lar)"
+      },
+      "serve": {
+        "description": "Sandbox içindeki tarayıcı VS Code sunucusunu yönet",
+        "status": {
+          "description": "Tarayıcı VS Code sunucusunun çalışıp çalışmadığını göster",
+          "running": "{{provider}} çalışıyor (pid {{pid}}, port {{port}})",
+          "stopped": "{{provider}} çalışmıyor"
+        },
+        "stop": {
+          "description": "Tarayıcı VS Code sunucusunu durdur",
+          "stopped": "{{provider}} durduruldu",
+          "notRunning": "{{provider}} zaten çalışmıyordu"
+        }
       }
     }
   },
@@ -2555,7 +2586,11 @@
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
-      "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın."
+      "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın.",
+      "browserNeedsRepo": "vscode --browser bir depo sandbox'ı sunar — --repository <name> ile depo belirtin",
+      "unsupportedArch": "Tarayıcı VS Code için desteklenmeyen makine mimarisi: {{arch}}",
+      "serverInstallFailed": "{{provider}} kurulumu başarısız: {{error}}",
+      "serverStartFailed": "{{provider}} başlatılamadı: {{error}}"
     }
   },
   "help": {
@@ -2752,7 +2787,11 @@
     "vmId": "Sanal makine kimliği",
     "watch": "Değişiklikleri izleyin",
     "watchUpdates": "Güncellemeleri izleyin",
-    "yes": "Onay istemini atla"
+    "yes": "Onay istemini atla",
+    "vscodeBrowser": "Depo sandbox'ı içinden tarayıcı VS Code sun (yerel VS Code gerekmez)",
+    "vscodeNoOpen": "Yerel tarayıcıyı açmadan URL'yi yazdır",
+    "vscodeServerProvider": "Tarayıcı VS Code sunucu uygulaması (openvscode, code-server)",
+    "vscodeServerArchive": "Makinede önceden konumlandırılmış sunucu tarball yolu (ağ dışı kurulumlar için)"
   },
   "prompts": {
     "apiUrl": "API URL'si:",

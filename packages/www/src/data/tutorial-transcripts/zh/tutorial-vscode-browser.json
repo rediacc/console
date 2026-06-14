@@ -1,0 +1,92 @@
+{
+  "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-vscode-browser-01",
+      "markerIndex": 0,
+      "at": 2.414862,
+      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "afterText": "那个 URL 就是你的编辑器。支持任何操作系统，唯一的要求是一个浏览器。",
+      "cardLabel": "连接浏览器",
+      "prose": "使用 --browser 标志连接。CLI 会在机器上安装开源编辑器服务器（仅一次），在 repo sandbox 内启动，打开 SSH 隧道，并为你的浏览器打印一个链接。"
+    },
+    {
+      "id": "tutorial-vscode-browser-02",
+      "markerIndex": 1,
+      "at": 12.531234,
+      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "afterText": "终端和编辑器结果一致，这是同一个 sandbox。",
+      "cardLabel": "相同视图",
+      "prose": "在同一 repo 中打开终端会话：工作目录和文件与编辑器显示的内容一致。"
+    },
+    {
+      "id": "tutorial-vscode-browser-03",
+      "markerIndex": 2,
+      "at": 19.464899,
+      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "afterText": "在浏览器中创建，在终端中可读。同一个 repo，两个入口。",
+      "cardLabel": "双向互通",
+      "prose": "在浏览器编辑器中创建的文件是真实的 repo 文件，可从任意会话读取。"
+    },
+    {
+      "id": "tutorial-vscode-browser-04",
+      "markerIndex": 3,
+      "at": 26.768996,
+      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "afterText": "被 kernel 拒绝，而非配置所限。",
+      "cardLabel": "根目录拒绝",
+      "prose": "尝试列出服务器的根目录：权限被拒绝。内核将会话限制在 repo 内。"
+    },
+    {
+      "id": "tutorial-vscode-browser-05",
+      "markerIndex": 4,
+      "at": 32.439211,
+      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "afterText": "sandbox 没有例外，这正是关键所在。",
+      "cardLabel": "主目录拒绝",
+      "prose": "其他目录（如 /home）同样被拒绝，sandbox 对其内部启动的所有内容均有效。"
+    }
+  ],
+  "title": "浏览器中的 VS Code",
+  "chapters": {
+    "intro": "浏览器中的 VS Code",
+    "sandbox-concept": "编辑器运行在 sandbox 内",
+    "cast-step-0": "步骤 1：使用 --browser 连接",
+    "workbench-tour": "工作台，在标签页中",
+    "create-file": "在编辑器中创建文件",
+    "editor-terminal": "内置终端",
+    "cast-step-1": "步骤 2：终端中的相同视图",
+    "cast-step-2": "步骤 3：浏览器文件即 repo 文件",
+    "cast-step-3": "步骤 4：ls /，已拒绝",
+    "cast-step-4": "步骤 5：ls /home，已拒绝",
+    "outro": "下一步：Fork 一个 repository"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "好消息：这次完全不需要 terminal！我们会直接在浏览器里打开完整的 VS Code，创建一些文件，运行几条命令，然后看看内核怎么把一切都锁在 repo 里面。"
+    },
+    {
+      "id": "sandbox-concept",
+      "text": "原理是这样的。编辑器不在你的笔记本上运行，它运行在服务器上 repo 的 sandbox 里，你的浏览器通过 SSH tunnel 连接到它。所以文件树、内置 terminal，以及你从里面启动的任何东西，看到的都和 repo 看到的完全一样，不多也不少。"
+    },
+    {
+      "id": "workbench-tour",
+      "text": "就是这样：VS Code，就在浏览器标签页里。左边的文件树显示的是 repo，只有 repo。"
+    },
+    {
+      "id": "create-file",
+      "text": "我们来创建一个真实的文件，不需要终端。新建一个编辑器，写几行内容，然后保存为 notes/todo.md。文件落入 repo 的同时，文件夹也出现在左侧。"
+    },
+    {
+      "id": "editor-terminal",
+      "text": "内置 terminal 也完全可用，文件就在这里。现在试着访问 repo 外面的内容：permission denied。这不是某个设置的结果，这是内核在起作用。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "浏览器、编辑器、terminal：同一个 sandbox，同一套规则。接下来要介绍的是这一切所依赖的核心功能，forking。你一定会喜欢这个的。"
+    }
+  ]
+}

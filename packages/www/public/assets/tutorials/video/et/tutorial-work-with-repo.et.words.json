@@ -167,391 +167,391 @@
       ]
     },
     {
-      "start": 32.277,
-      "end": 33.27,
+      "start": 34.477,
+      "end": 35.47,
       "text": "Port edastatud.",
       "words": [
-        { "start": 32.277, "end": 32.773, "char": [0, 4] },
-        { "start": 32.773, "end": 33.27, "char": [5, 15] }
+        { "start": 34.477, "end": 34.973, "char": [0, 4] },
+        { "start": 34.973, "end": 35.47, "char": [5, 15] }
       ]
     },
     {
-      "start": 33.27,
-      "end": 35.751,
+      "start": 35.47,
+      "end": 37.951,
       "text": "Rakendus on nüüd localhost'is kättesaadav.",
       "words": [
-        { "start": 33.27, "end": 33.766, "char": [0, 8] },
-        { "start": 33.766, "end": 34.262, "char": [9, 11] },
-        { "start": 34.262, "end": 34.759, "char": [12, 16] },
-        { "start": 34.759, "end": 35.255, "char": [17, 29] },
-        { "start": 35.255, "end": 35.751, "char": [30, 42] }
+        { "start": 35.47, "end": 35.966, "char": [0, 8] },
+        { "start": 35.966, "end": 36.462, "char": [9, 11] },
+        { "start": 36.462, "end": 36.959, "char": [12, 16] },
+        { "start": 36.959, "end": 37.455, "char": [17, 29] },
+        { "start": 37.455, "end": 37.951, "char": [30, 42] }
       ]
     },
     {
-      "start": 36.583,
-      "end": 39.126,
+      "start": 38.483,
+      "end": 41.026,
       "text": "Koos töötava tunnelliga avaneb rakendus otse",
       "words": [
-        { "start": 36.583, "end": 37.007, "char": [0, 4] },
-        { "start": 37.007, "end": 37.431, "char": [5, 12] },
-        { "start": 37.431, "end": 37.855, "char": [13, 23] },
-        { "start": 37.855, "end": 38.279, "char": [24, 30] },
-        { "start": 38.279, "end": 38.702, "char": [31, 39] },
-        { "start": 38.702, "end": 39.126, "char": [40, 44] }
+        { "start": 38.483, "end": 38.907, "char": [0, 4] },
+        { "start": 38.907, "end": 39.331, "char": [5, 12] },
+        { "start": 39.331, "end": 39.755, "char": [13, 23] },
+        { "start": 39.755, "end": 40.179, "char": [24, 30] },
+        { "start": 40.179, "end": 40.602, "char": [31, 39] },
+        { "start": 40.602, "end": 41.026, "char": [40, 44] }
       ]
     },
     {
-      "start": 39.126,
-      "end": 39.974,
+      "start": 41.026,
+      "end": 41.874,
       "text": "sinu brauseris.",
       "words": [
-        { "start": 39.126, "end": 39.55, "char": [0, 4] },
-        { "start": 39.55, "end": 39.974, "char": [5, 15] }
+        { "start": 41.026, "end": 41.45, "char": [0, 4] },
+        { "start": 41.45, "end": 41.874, "char": [5, 15] }
       ]
     },
     {
-      "start": 39.974,
-      "end": 41.67,
+      "start": 41.874,
+      "end": 43.57,
       "text": "Selles demos laadime rediacc.com,",
       "words": [
-        { "start": 39.974, "end": 40.398, "char": [0, 6] },
-        { "start": 40.398, "end": 40.822, "char": [7, 12] },
-        { "start": 40.822, "end": 41.246, "char": [13, 20] },
-        { "start": 41.246, "end": 41.67, "char": [21, 33] }
+        { "start": 41.874, "end": 42.298, "char": [0, 6] },
+        { "start": 42.298, "end": 42.722, "char": [7, 12] },
+        { "start": 42.722, "end": 43.146, "char": [13, 20] },
+        { "start": 43.146, "end": 43.57, "char": [21, 33] }
       ]
     },
     {
-      "start": 41.67,
-      "end": 44.213,
+      "start": 43.57,
+      "end": 46.113,
       "text": "täpselt nii nagu avaksid oma rakenduse,",
       "words": [
-        { "start": 41.67, "end": 42.094, "char": [0, 7] },
-        { "start": 42.094, "end": 42.518, "char": [8, 11] },
-        { "start": 42.518, "end": 42.941, "char": [12, 16] },
-        { "start": 42.941, "end": 43.365, "char": [17, 24] },
-        { "start": 43.365, "end": 43.789, "char": [25, 28] },
-        { "start": 43.789, "end": 44.213, "char": [29, 39] }
+        { "start": 43.57, "end": 43.994, "char": [0, 7] },
+        { "start": 43.994, "end": 44.418, "char": [8, 11] },
+        { "start": 44.418, "end": 44.841, "char": [12, 16] },
+        { "start": 44.841, "end": 45.265, "char": [17, 24] },
+        { "start": 45.265, "end": 45.689, "char": [25, 28] },
+        { "start": 45.689, "end": 46.113, "char": [29, 39] }
       ]
     },
     {
-      "start": 44.213,
-      "end": 45.909,
+      "start": 46.113,
+      "end": 47.809,
       "text": "mida pakutakse otse konteinerist.",
       "words": [
-        { "start": 44.213, "end": 44.637, "char": [0, 4] },
-        { "start": 44.637, "end": 45.061, "char": [5, 14] },
-        { "start": 45.061, "end": 45.485, "char": [15, 19] },
-        { "start": 45.485, "end": 45.909, "char": [20, 33] }
+        { "start": 46.113, "end": 46.537, "char": [0, 4] },
+        { "start": 46.537, "end": 46.961, "char": [5, 14] },
+        { "start": 46.961, "end": 47.385, "char": [15, 19] },
+        { "start": 47.385, "end": 47.809, "char": [20, 33] }
       ]
     },
     {
-      "start": 49.171,
-      "end": 50.557,
+      "start": 50.783,
+      "end": 52.169,
       "text": "Teiseks term käsk.",
       "words": [
-        { "start": 49.171, "end": 49.633, "char": [0, 7] },
-        { "start": 49.633, "end": 50.095, "char": [8, 12] },
-        { "start": 50.095, "end": 50.557, "char": [13, 18] }
+        { "start": 50.783, "end": 51.245, "char": [0, 7] },
+        { "start": 51.245, "end": 51.707, "char": [8, 12] },
+        { "start": 51.707, "end": 52.169, "char": [13, 18] }
       ]
     },
     {
-      "start": 50.557,
-      "end": 53.33,
+      "start": 52.169,
+      "end": 54.942,
       "text": "CLI term connect viib sind repositooriumi",
       "words": [
-        { "start": 50.557, "end": 51.019, "char": [0, 3] },
-        { "start": 51.019, "end": 51.481, "char": [4, 8] },
-        { "start": 51.481, "end": 51.944, "char": [9, 16] },
-        { "start": 51.944, "end": 52.406, "char": [17, 21] },
-        { "start": 52.406, "end": 52.868, "char": [22, 26] },
-        { "start": 52.868, "end": 53.33, "char": [27, 41] }
+        { "start": 52.169, "end": 52.631, "char": [0, 3] },
+        { "start": 52.631, "end": 53.093, "char": [4, 8] },
+        { "start": 53.093, "end": 53.556, "char": [9, 16] },
+        { "start": 53.556, "end": 54.018, "char": [17, 21] },
+        { "start": 54.018, "end": 54.48, "char": [22, 26] },
+        { "start": 54.48, "end": 54.942, "char": [27, 41] }
       ]
     },
     {
-      "start": 53.33,
-      "end": 55.64,
+      "start": 54.942,
+      "end": 57.252,
       "text": "liivakasti -- sama isoleeritud vaate,",
       "words": [
-        { "start": 53.33, "end": 53.792, "char": [0, 10] },
-        { "start": 53.792, "end": 54.254, "char": [11, 13] },
-        { "start": 54.254, "end": 54.716, "char": [14, 18] },
-        { "start": 54.716, "end": 55.178, "char": [19, 30] },
-        { "start": 55.178, "end": 55.64, "char": [31, 37] }
+        { "start": 54.942, "end": 55.404, "char": [0, 10] },
+        { "start": 55.404, "end": 55.866, "char": [11, 13] },
+        { "start": 55.866, "end": 56.328, "char": [14, 18] },
+        { "start": 56.328, "end": 56.79, "char": [19, 30] },
+        { "start": 56.79, "end": 57.252, "char": [31, 37] }
       ]
     },
     {
-      "start": 55.64,
-      "end": 57.489,
+      "start": 57.252,
+      "end": 59.101,
       "text": "mida VS Code annaks.",
       "words": [
-        { "start": 55.64, "end": 56.102, "char": [0, 4] },
-        { "start": 56.102, "end": 56.565, "char": [5, 7] },
-        { "start": 56.565, "end": 57.027, "char": [8, 12] },
-        { "start": 57.027, "end": 57.489, "char": [13, 20] }
+        { "start": 57.252, "end": 57.714, "char": [0, 4] },
+        { "start": 57.714, "end": 58.177, "char": [5, 7] },
+        { "start": 58.177, "end": 58.639, "char": [8, 12] },
+        { "start": 58.639, "end": 59.101, "char": [13, 20] }
       ]
     },
     {
-      "start": 57.489,
-      "end": 60.261,
+      "start": 59.101,
+      "end": 61.873,
       "text": "Käivita suvaline käsk selle repositooriumi Dockeri",
       "words": [
-        { "start": 57.489, "end": 57.951, "char": [0, 7] },
-        { "start": 57.951, "end": 58.413, "char": [8, 16] },
-        { "start": 58.413, "end": 58.875, "char": [17, 21] },
-        { "start": 58.875, "end": 59.337, "char": [22, 27] },
-        { "start": 59.337, "end": 59.799, "char": [28, 42] },
-        { "start": 59.799, "end": 60.261, "char": [43, 50] }
+        { "start": 59.101, "end": 59.563, "char": [0, 7] },
+        { "start": 59.563, "end": 60.025, "char": [8, 16] },
+        { "start": 60.025, "end": 60.487, "char": [17, 21] },
+        { "start": 60.487, "end": 60.949, "char": [22, 27] },
+        { "start": 60.949, "end": 61.411, "char": [28, 42] },
+        { "start": 61.411, "end": 61.873, "char": [43, 50] }
       ]
     },
     {
-      "start": 60.261,
-      "end": 62.572,
+      "start": 61.873,
+      "end": 64.184,
       "text": "deemoni vastu ilma terminalist lahkumata.",
       "words": [
-        { "start": 60.261, "end": 60.723, "char": [0, 7] },
-        { "start": 60.723, "end": 61.186, "char": [8, 13] },
-        { "start": 61.186, "end": 61.648, "char": [14, 18] },
-        { "start": 61.648, "end": 62.11, "char": [19, 30] },
-        { "start": 62.11, "end": 62.572, "char": [31, 41] }
+        { "start": 61.873, "end": 62.335, "char": [0, 7] },
+        { "start": 62.335, "end": 62.798, "char": [8, 13] },
+        { "start": 62.798, "end": 63.26, "char": [14, 18] },
+        { "start": 63.26, "end": 63.722, "char": [19, 30] },
+        { "start": 63.722, "end": 64.184, "char": [31, 41] }
       ]
     },
     {
-      "start": 63.822,
-      "end": 65.276,
+      "start": 66.184,
+      "end": 67.638,
       "text": "Repo liivakasti sees.",
       "words": [
-        { "start": 63.822, "end": 64.307, "char": [0, 4] },
-        { "start": 64.307, "end": 64.791, "char": [5, 15] },
-        { "start": 64.791, "end": 65.276, "char": [16, 21] }
+        { "start": 66.184, "end": 66.669, "char": [0, 4] },
+        { "start": 66.669, "end": 67.153, "char": [5, 15] },
+        { "start": 67.153, "end": 67.638, "char": [16, 21] }
       ]
     },
     {
-      "start": 65.276,
-      "end": 66.245,
+      "start": 67.638,
+      "end": 68.607,
       "text": "Käivita kõike,",
       "words": [
-        { "start": 65.276, "end": 65.761, "char": [0, 7] },
-        { "start": 65.761, "end": 66.245, "char": [8, 14] }
+        { "start": 67.638, "end": 68.123, "char": [0, 7] },
+        { "start": 68.123, "end": 68.607, "char": [8, 14] }
       ]
     },
     {
-      "start": 66.245,
-      "end": 68.184,
+      "start": 68.607,
+      "end": 70.546,
       "text": "justkui oleksid SSH-ga sees.",
       "words": [
-        { "start": 66.245, "end": 66.73, "char": [0, 7] },
-        { "start": 66.73, "end": 67.215, "char": [8, 15] },
-        { "start": 67.215, "end": 67.7, "char": [16, 22] },
-        { "start": 67.7, "end": 68.184, "char": [23, 28] }
+        { "start": 68.607, "end": 69.092, "char": [0, 7] },
+        { "start": 69.092, "end": 69.577, "char": [8, 15] },
+        { "start": 69.577, "end": 70.062, "char": [16, 22] },
+        { "start": 70.062, "end": 70.546, "char": [23, 28] }
       ]
     },
     {
-      "start": 71.519,
-      "end": 74.161,
+      "start": 73.848,
+      "end": 76.49,
       "text": "Enne failide tõugramist vaata eelvaadet --dry-run",
       "words": [
-        { "start": 71.519, "end": 71.959, "char": [0, 4] },
-        { "start": 71.959, "end": 72.4, "char": [5, 12] },
-        { "start": 72.4, "end": 72.84, "char": [13, 23] },
-        { "start": 72.84, "end": 73.28, "char": [24, 29] },
-        { "start": 73.28, "end": 73.721, "char": [30, 39] },
-        { "start": 73.721, "end": 74.161, "char": [40, 49] }
+        { "start": 73.848, "end": 74.288, "char": [0, 4] },
+        { "start": 74.288, "end": 74.729, "char": [5, 12] },
+        { "start": 74.729, "end": 75.169, "char": [13, 23] },
+        { "start": 75.169, "end": 75.609, "char": [24, 29] },
+        { "start": 75.609, "end": 76.05, "char": [30, 39] },
+        { "start": 76.05, "end": 76.49, "char": [40, 49] }
       ]
     },
     {
-      "start": 74.161,
-      "end": 74.601,
+      "start": 76.49,
+      "end": 76.93,
       "text": "abil.",
-      "words": [{ "start": 74.161, "end": 74.601, "char": [0, 5] }]
+      "words": [{ "start": 76.49, "end": 76.93, "char": [0, 5] }]
     },
     {
-      "start": 74.601,
-      "end": 75.923,
+      "start": 76.93,
+      "end": 78.252,
       "text": "See näitab täpselt,",
       "words": [
-        { "start": 74.601, "end": 75.042, "char": [0, 3] },
-        { "start": 75.042, "end": 75.482, "char": [4, 10] },
-        { "start": 75.482, "end": 75.923, "char": [11, 19] }
+        { "start": 76.93, "end": 77.371, "char": [0, 3] },
+        { "start": 77.371, "end": 77.811, "char": [4, 10] },
+        { "start": 77.811, "end": 78.252, "char": [11, 19] }
       ]
     },
     {
-      "start": 75.923,
-      "end": 76.803,
+      "start": 78.252,
+      "end": 79.132,
       "text": "mis muutuks,",
       "words": [
-        { "start": 75.923, "end": 76.363, "char": [0, 3] },
-        { "start": 76.363, "end": 76.803, "char": [4, 12] }
+        { "start": 78.252, "end": 78.692, "char": [0, 3] },
+        { "start": 78.692, "end": 79.132, "char": [4, 12] }
       ]
     },
     {
-      "start": 76.803,
-      "end": 78.124,
+      "start": 79.132,
+      "end": 80.453,
       "text": "ilma midagi kopeerimata.",
       "words": [
-        { "start": 76.803, "end": 77.244, "char": [0, 4] },
-        { "start": 77.244, "end": 77.684, "char": [5, 11] },
-        { "start": 77.684, "end": 78.124, "char": [12, 24] }
+        { "start": 79.132, "end": 79.573, "char": [0, 4] },
+        { "start": 79.573, "end": 80.013, "char": [5, 11] },
+        { "start": 80.013, "end": 80.453, "char": [12, 24] }
       ]
     },
     {
-      "start": 78.124,
-      "end": 79.445,
+      "start": 80.453,
+      "end": 81.774,
       "text": "Kasuta alati eelvaadet,",
       "words": [
-        { "start": 78.124, "end": 78.565, "char": [0, 6] },
-        { "start": 78.565, "end": 79.005, "char": [7, 12] },
-        { "start": 79.005, "end": 79.445, "char": [13, 23] }
+        { "start": 80.453, "end": 80.894, "char": [0, 6] },
+        { "start": 80.894, "end": 81.334, "char": [7, 12] },
+        { "start": 81.334, "end": 81.774, "char": [13, 23] }
       ]
     },
     {
-      "start": 79.445,
-      "end": 80.766,
+      "start": 81.774,
+      "end": 83.095,
       "text": "kui oled ebakindel.",
       "words": [
-        { "start": 79.445, "end": 79.886, "char": [0, 3] },
-        { "start": 79.886, "end": 80.326, "char": [4, 8] },
-        { "start": 80.326, "end": 80.766, "char": [9, 19] }
+        { "start": 81.774, "end": 82.215, "char": [0, 3] },
+        { "start": 82.215, "end": 82.655, "char": [4, 8] },
+        { "start": 82.655, "end": 83.095, "char": [9, 19] }
       ]
     },
     {
-      "start": 82.766,
-      "end": 83.576,
+      "start": 86.095,
+      "end": 86.905,
       "text": "Ainult eelvaade.",
       "words": [
-        { "start": 82.766, "end": 83.171, "char": [0, 6] },
-        { "start": 83.171, "end": 83.576, "char": [7, 16] }
+        { "start": 86.095, "end": 86.5, "char": [0, 6] },
+        { "start": 86.5, "end": 86.905, "char": [7, 16] }
       ]
     },
     {
-      "start": 83.576,
-      "end": 85.196,
+      "start": 86.905,
+      "end": 88.525,
       "text": "Faile pole veel liigutatud.",
       "words": [
-        { "start": 83.576, "end": 83.981, "char": [0, 5] },
-        { "start": 83.981, "end": 84.386, "char": [6, 10] },
-        { "start": 84.386, "end": 84.791, "char": [11, 15] },
-        { "start": 84.791, "end": 85.196, "char": [16, 27] }
+        { "start": 86.905, "end": 87.31, "char": [0, 5] },
+        { "start": 87.31, "end": 87.715, "char": [6, 10] },
+        { "start": 87.715, "end": 88.12, "char": [11, 15] },
+        { "start": 88.12, "end": 88.525, "char": [16, 27] }
       ]
     },
     {
-      "start": 88.523,
-      "end": 90.52,
+      "start": 91.852,
+      "end": 93.849,
       "text": "Nüüd teeme päris üleslaadimise.",
       "words": [
-        { "start": 88.523, "end": 89.022, "char": [0, 4] },
-        { "start": 89.022, "end": 89.521, "char": [5, 10] },
-        { "start": 89.521, "end": 90.021, "char": [11, 16] },
-        { "start": 90.021, "end": 90.52, "char": [17, 31] }
+        { "start": 91.852, "end": 92.351, "char": [0, 4] },
+        { "start": 92.351, "end": 92.85, "char": [5, 10] },
+        { "start": 92.85, "end": 93.35, "char": [11, 16] },
+        { "start": 93.35, "end": 93.849, "char": [17, 31] }
       ]
     },
     {
-      "start": 90.52,
-      "end": 93.515,
+      "start": 93.849,
+      "end": 96.844,
       "text": "CLI repo sync upload liigutab failid",
       "words": [
-        { "start": 90.52, "end": 91.019, "char": [0, 3] },
-        { "start": 91.019, "end": 91.518, "char": [4, 8] },
-        { "start": 91.518, "end": 92.018, "char": [9, 13] },
-        { "start": 92.018, "end": 92.517, "char": [14, 20] },
-        { "start": 92.517, "end": 93.016, "char": [21, 29] },
-        { "start": 93.016, "end": 93.515, "char": [30, 36] }
+        { "start": 93.849, "end": 94.348, "char": [0, 3] },
+        { "start": 94.348, "end": 94.847, "char": [4, 8] },
+        { "start": 94.847, "end": 95.347, "char": [9, 13] },
+        { "start": 95.347, "end": 95.846, "char": [14, 20] },
+        { "start": 95.846, "end": 96.345, "char": [21, 29] },
+        { "start": 96.345, "end": 96.844, "char": [30, 36] }
       ]
     },
     {
-      "start": 93.515,
-      "end": 96.511,
+      "start": 96.844,
+      "end": 99.84,
       "text": "sinu sülearvutist repositooriumisse üle SSH rsync",
       "words": [
-        { "start": 93.515, "end": 94.015, "char": [0, 4] },
-        { "start": 94.015, "end": 94.514, "char": [5, 17] },
-        { "start": 94.514, "end": 95.013, "char": [18, 35] },
-        { "start": 95.013, "end": 95.512, "char": [36, 39] },
-        { "start": 95.512, "end": 96.011, "char": [40, 43] },
-        { "start": 96.011, "end": 96.511, "char": [44, 49] }
+        { "start": 96.844, "end": 97.344, "char": [0, 4] },
+        { "start": 97.344, "end": 97.843, "char": [5, 17] },
+        { "start": 97.843, "end": 98.342, "char": [18, 35] },
+        { "start": 98.342, "end": 98.841, "char": [36, 39] },
+        { "start": 98.841, "end": 99.34, "char": [40, 43] },
+        { "start": 99.34, "end": 99.84, "char": [44, 49] }
       ]
     },
     {
-      "start": 96.511,
-      "end": 97.509,
+      "start": 99.84,
+      "end": 100.838,
       "text": "delta tihendusega.",
       "words": [
-        { "start": 96.511, "end": 97.01, "char": [0, 5] },
-        { "start": 97.01, "end": 97.509, "char": [6, 18] }
+        { "start": 99.84, "end": 100.339, "char": [0, 5] },
+        { "start": 100.339, "end": 100.838, "char": [6, 18] }
       ]
     },
     {
-      "start": 97.509,
-      "end": 98.008,
+      "start": 100.838,
+      "end": 101.337,
       "text": "Tunnel,",
-      "words": [{ "start": 97.509, "end": 98.008, "char": [0, 7] }]
+      "words": [{ "start": 100.838, "end": 101.337, "char": [0, 7] }]
     },
     {
-      "start": 98.008,
-      "end": 98.508,
+      "start": 101.337,
+      "end": 101.837,
       "text": "term,",
-      "words": [{ "start": 98.008, "end": 98.508, "char": [0, 5] }]
+      "words": [{ "start": 101.337, "end": 101.837, "char": [0, 5] }]
     },
     {
-      "start": 98.508,
-      "end": 101.503,
+      "start": 101.837,
+      "end": 104.832,
       "text": "sync -- kolm käsku katavad igapäevase",
       "words": [
-        { "start": 98.508, "end": 99.007, "char": [0, 4] },
-        { "start": 99.007, "end": 99.506, "char": [5, 7] },
-        { "start": 99.506, "end": 100.005, "char": [8, 12] },
-        { "start": 100.005, "end": 100.504, "char": [13, 18] },
-        { "start": 100.504, "end": 101.004, "char": [19, 26] },
-        { "start": 101.004, "end": 101.503, "char": [27, 37] }
+        { "start": 101.837, "end": 102.336, "char": [0, 4] },
+        { "start": 102.336, "end": 102.835, "char": [5, 7] },
+        { "start": 102.835, "end": 103.334, "char": [8, 12] },
+        { "start": 103.334, "end": 103.833, "char": [13, 18] },
+        { "start": 103.833, "end": 104.333, "char": [19, 26] },
+        { "start": 104.333, "end": 104.832, "char": [27, 37] }
       ]
     },
     {
-      "start": 101.503,
-      "end": 102.002,
+      "start": 104.832,
+      "end": 105.331,
       "text": "tsükli.",
-      "words": [{ "start": 101.503, "end": 102.002, "char": [0, 7] }]
+      "words": [{ "start": 104.832, "end": 105.331, "char": [0, 7] }]
     },
     {
-      "start": 103.502,
-      "end": 104.739,
+      "start": 107.581,
+      "end": 108.818,
       "text": "Failid üles laaditud.",
       "words": [
-        { "start": 103.502, "end": 103.914, "char": [0, 6] },
-        { "start": 103.914, "end": 104.326, "char": [7, 11] },
-        { "start": 104.326, "end": 104.739, "char": [12, 21] }
+        { "start": 107.581, "end": 107.993, "char": [0, 6] },
+        { "start": 107.993, "end": 108.405, "char": [7, 11] },
+        { "start": 108.405, "end": 108.818, "char": [12, 21] }
       ]
     },
     {
-      "start": 104.739,
-      "end": 107.212,
+      "start": 108.818,
+      "end": 111.291,
       "text": "Delta tihendus tuleb suurte puudega toime.",
       "words": [
-        { "start": 104.739, "end": 105.151, "char": [0, 5] },
-        { "start": 105.151, "end": 105.563, "char": [6, 14] },
-        { "start": 105.563, "end": 105.975, "char": [15, 20] },
-        { "start": 105.975, "end": 106.387, "char": [21, 27] },
-        { "start": 106.387, "end": 106.799, "char": [28, 35] },
-        { "start": 106.799, "end": 107.212, "char": [36, 42] }
+        { "start": 108.818, "end": 109.23, "char": [0, 5] },
+        { "start": 109.23, "end": 109.642, "char": [6, 14] },
+        { "start": 109.642, "end": 110.054, "char": [15, 20] },
+        { "start": 110.054, "end": 110.466, "char": [21, 27] },
+        { "start": 110.466, "end": 110.878, "char": [28, 35] },
+        { "start": 110.878, "end": 111.291, "char": [36, 42] }
       ]
     },
     {
-      "start": 108.038,
-      "end": 110.688,
+      "start": 112.117,
+      "end": 114.767,
       "text": "Ja see on igapäevane kolmik.",
       "words": [
-        { "start": 108.038, "end": 108.568, "char": [0, 2] },
-        { "start": 108.568, "end": 109.098, "char": [3, 6] },
-        { "start": 109.098, "end": 109.628, "char": [7, 9] },
-        { "start": 109.628, "end": 110.158, "char": [10, 20] },
-        { "start": 110.158, "end": 110.688, "char": [21, 28] }
+        { "start": 112.117, "end": 112.647, "char": [0, 2] },
+        { "start": 112.647, "end": 113.177, "char": [3, 6] },
+        { "start": 113.177, "end": 113.707, "char": [7, 9] },
+        { "start": 113.707, "end": 114.237, "char": [10, 20] },
+        { "start": 114.237, "end": 114.767, "char": [21, 28] }
       ]
     },
     {
-      "start": 110.688,
-      "end": 111.747,
+      "start": 114.767,
+      "end": 115.826,
       "text": "Kohtumiseni järgmises!",
       "words": [
-        { "start": 110.688, "end": 111.217, "char": [0, 11] },
-        { "start": 111.217, "end": 111.747, "char": [12, 22] }
+        { "start": 114.767, "end": 115.296, "char": [0, 11] },
+        { "start": 115.296, "end": 115.826, "char": [12, 22] }
       ]
     }
   ]

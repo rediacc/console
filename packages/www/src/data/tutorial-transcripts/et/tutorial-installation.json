@@ -6,7 +6,7 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.626476,
+      "at": 1.614947,
       "text": "Esmalt kinnitame, et CLI on teel. CLI käivitamine versioonilipuga prindib paigaldatud versiooni ja näitab, et paigaldamine lõpetati edukalt.",
       "afterText": "Paigaldus tehtud. rdc binaarfail on sinu teel.",
       "cardLabel": "Installi CLI",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 7.903516,
+      "at": 8.543153,
       "text": "Järgmisena käivitame CLI doctor. See kontrollib sõltuvusi, mida CLI vajab -- Node, SSH ja ülejäänud -- ning teatab puuduvatest komponentidest. Puhas aruanne tähendab, et oled valmis serverit lisama.",
       "afterText": "Versioon prinditud. Oled valmis alustama.",
       "cardLabel": "Kontrolli Versiooni",

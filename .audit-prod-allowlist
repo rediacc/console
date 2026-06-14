@@ -216,3 +216,11 @@
 # BLOCKER: exporter-prometheus is transitive via pinned sdk-node; PrometheusExporter is never instantiated in any source (verified by grep — we export via OTLP only), so the vulnerable HTTP server never starts; DoS-only advisory. Drop when the sdk-node pin moves to >=0.218.0.
 1120252
 1120253
+
+# esbuild 0.27.7 (GHSA-gv7w-rqvm-qjhr high + GHSA-g7r4-m6w7-qqqr low), fixed in 0.28.1.
+# Pulled transitively by astro@5.18.1 (esbuild ^0.27.3) and vite@7.3.3 (esbuild ^0.27.0);
+# 0.28.1 is outside both ^0.27.x carets, so reaching the fix needs a forced override that
+# overrides astro's pinned peer range and risks an esbuild 0.28 www-build regression.
+# BLOCKER: neither advisory is reachable in our build — the high one is the esbuild Deno module (lib/deno/mod.ts), which we never import (Node-only toolchain), and the low one is the esbuild dev server's Windows path traversal; the dev server is never shipped to prod and CI/prod builds do not run on Windows. Drop once astro/vite widen the esbuild range to admit 0.28.1.
+1120679
+1120680

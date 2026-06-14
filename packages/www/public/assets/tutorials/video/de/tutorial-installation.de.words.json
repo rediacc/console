@@ -78,411 +78,411 @@
       ]
     },
     {
-      "start": 15.58,
-      "end": 18.279,
+      "start": 15.28,
+      "end": 17.979,
       "text": "Geh auf die Installationsseite und",
       "words": [
-        { "start": 15.58, "end": 16.12, "char": [0, 3] },
-        { "start": 16.12, "end": 16.66, "char": [4, 7] },
-        { "start": 16.66, "end": 17.2, "char": [8, 11] },
-        { "start": 17.2, "end": 17.739, "char": [12, 30] },
-        { "start": 17.739, "end": 18.279, "char": [31, 34] }
+        { "start": 15.28, "end": 15.82, "char": [0, 3] },
+        { "start": 15.82, "end": 16.36, "char": [4, 7] },
+        { "start": 16.36, "end": 16.9, "char": [8, 11] },
+        { "start": 16.9, "end": 17.439, "char": [12, 30] },
+        { "start": 17.439, "end": 17.979, "char": [31, 34] }
       ]
     },
     {
-      "start": 18.279,
-      "end": 20.439,
+      "start": 17.979,
+      "end": 20.139,
       "text": "scroll runter zum Schnellinstallations-Bereich.",
       "words": [
-        { "start": 18.279, "end": 18.819, "char": [0, 6] },
-        { "start": 18.819, "end": 19.359, "char": [7, 13] },
-        { "start": 19.359, "end": 19.899, "char": [14, 17] },
-        { "start": 19.899, "end": 20.439, "char": [18, 47] }
+        { "start": 17.979, "end": 18.519, "char": [0, 6] },
+        { "start": 18.519, "end": 19.059, "char": [7, 13] },
+        { "start": 19.059, "end": 19.599, "char": [14, 17] },
+        { "start": 19.599, "end": 20.139, "char": [18, 47] }
       ]
     },
     {
-      "start": 20.439,
-      "end": 23.138,
+      "start": 20.139,
+      "end": 22.838,
       "text": "Dort wird der passende Einzeiler",
       "words": [
-        { "start": 20.439, "end": 20.979, "char": [0, 4] },
-        { "start": 20.979, "end": 21.519, "char": [5, 9] },
-        { "start": 21.519, "end": 22.058, "char": [10, 13] },
-        { "start": 22.058, "end": 22.598, "char": [14, 22] },
-        { "start": 22.598, "end": 23.138, "char": [23, 32] }
+        { "start": 20.139, "end": 20.679, "char": [0, 4] },
+        { "start": 20.679, "end": 21.219, "char": [5, 9] },
+        { "start": 21.219, "end": 21.758, "char": [10, 13] },
+        { "start": 21.758, "end": 22.298, "char": [14, 22] },
+        { "start": 22.298, "end": 22.838, "char": [23, 32] }
       ]
     },
     {
-      "start": 23.138,
-      "end": 25.298,
+      "start": 22.838,
+      "end": 24.998,
       "text": "für jede Plattform erzeugt.",
       "words": [
-        { "start": 23.138, "end": 23.678, "char": [0, 3] },
-        { "start": 23.678, "end": 24.218, "char": [4, 8] },
-        { "start": 24.218, "end": 24.758, "char": [9, 18] },
-        { "start": 24.758, "end": 25.298, "char": [19, 27] }
+        { "start": 22.838, "end": 23.378, "char": [0, 3] },
+        { "start": 23.378, "end": 23.918, "char": [4, 8] },
+        { "start": 23.918, "end": 24.458, "char": [9, 18] },
+        { "start": 24.458, "end": 24.998, "char": [19, 27] }
       ]
     },
     {
-      "start": 28.562,
-      "end": 30.182,
+      "start": 27.947,
+      "end": 29.566,
       "text": "Zuerst bestätigen wir,",
       "words": [
-        { "start": 28.562, "end": 29.102, "char": [0, 6] },
-        { "start": 29.102, "end": 29.642, "char": [7, 17] },
-        { "start": 29.642, "end": 30.182, "char": [18, 22] }
+        { "start": 27.947, "end": 28.487, "char": [0, 6] },
+        { "start": 28.487, "end": 29.026, "char": [7, 17] },
+        { "start": 29.026, "end": 29.566, "char": [18, 22] }
       ]
     },
     {
-      "start": 30.182,
-      "end": 32.881,
+      "start": 29.566,
+      "end": 32.266,
       "text": "dass die CLI im Pfad",
       "words": [
-        { "start": 30.182, "end": 30.721, "char": [0, 4] },
-        { "start": 30.721, "end": 31.261, "char": [5, 8] },
-        { "start": 31.261, "end": 31.801, "char": [9, 12] },
-        { "start": 31.801, "end": 32.341, "char": [13, 15] },
-        { "start": 32.341, "end": 32.881, "char": [16, 20] }
+        { "start": 29.566, "end": 30.106, "char": [0, 4] },
+        { "start": 30.106, "end": 30.646, "char": [5, 8] },
+        { "start": 30.646, "end": 31.186, "char": [9, 12] },
+        { "start": 31.186, "end": 31.726, "char": [13, 15] },
+        { "start": 31.726, "end": 32.266, "char": [16, 20] }
       ]
     },
     {
-      "start": 32.881,
-      "end": 33.961,
+      "start": 32.266,
+      "end": 33.345,
       "text": "verfügbar ist.",
       "words": [
-        { "start": 32.881, "end": 33.421, "char": [0, 9] },
-        { "start": 33.421, "end": 33.961, "char": [10, 14] }
+        { "start": 32.266, "end": 32.805, "char": [0, 9] },
+        { "start": 32.805, "end": 33.345, "char": [10, 14] }
       ]
     },
     {
-      "start": 33.961,
-      "end": 36.66,
+      "start": 33.345,
+      "end": 36.045,
       "text": "Das Ausführen der CLI mit",
       "words": [
-        { "start": 33.961, "end": 34.5, "char": [0, 3] },
-        { "start": 34.5, "end": 35.04, "char": [4, 13] },
-        { "start": 35.04, "end": 35.58, "char": [14, 17] },
-        { "start": 35.58, "end": 36.12, "char": [18, 21] },
-        { "start": 36.12, "end": 36.66, "char": [22, 25] }
+        { "start": 33.345, "end": 33.885, "char": [0, 3] },
+        { "start": 33.885, "end": 34.425, "char": [4, 13] },
+        { "start": 34.425, "end": 34.965, "char": [14, 17] },
+        { "start": 34.965, "end": 35.505, "char": [18, 21] },
+        { "start": 35.505, "end": 36.045, "char": [22, 25] }
       ]
     },
     {
-      "start": 36.66,
-      "end": 39.359,
+      "start": 36.045,
+      "end": 38.744,
       "text": "dem Versions-Flag gibt die installierte",
       "words": [
-        { "start": 36.66, "end": 37.2, "char": [0, 3] },
-        { "start": 37.2, "end": 37.74, "char": [4, 17] },
-        { "start": 37.74, "end": 38.28, "char": [18, 22] },
-        { "start": 38.28, "end": 38.819, "char": [23, 26] },
-        { "start": 38.819, "end": 39.359, "char": [27, 39] }
+        { "start": 36.045, "end": 36.584, "char": [0, 3] },
+        { "start": 36.584, "end": 37.124, "char": [4, 17] },
+        { "start": 37.124, "end": 37.664, "char": [18, 22] },
+        { "start": 37.664, "end": 38.204, "char": [23, 26] },
+        { "start": 38.204, "end": 38.744, "char": [27, 39] }
       ]
     },
     {
-      "start": 39.359,
-      "end": 41.519,
+      "start": 38.744,
+      "end": 40.903,
       "text": "Version aus und zeigt,",
       "words": [
-        { "start": 39.359, "end": 39.899, "char": [0, 7] },
-        { "start": 39.899, "end": 40.439, "char": [8, 11] },
-        { "start": 40.439, "end": 40.979, "char": [12, 15] },
-        { "start": 40.979, "end": 41.519, "char": [16, 22] }
+        { "start": 38.744, "end": 39.284, "char": [0, 7] },
+        { "start": 39.284, "end": 39.824, "char": [8, 11] },
+        { "start": 39.824, "end": 40.364, "char": [12, 15] },
+        { "start": 40.364, "end": 40.903, "char": [16, 22] }
       ]
     },
     {
-      "start": 41.519,
-      "end": 44.218,
+      "start": 40.903,
+      "end": 43.603,
       "text": "dass die Installation erfolgreich abgeschlossen",
       "words": [
-        { "start": 41.519, "end": 42.059, "char": [0, 4] },
-        { "start": 42.059, "end": 42.598, "char": [5, 8] },
-        { "start": 42.598, "end": 43.138, "char": [9, 21] },
-        { "start": 43.138, "end": 43.678, "char": [22, 33] },
-        { "start": 43.678, "end": 44.218, "char": [34, 47] }
+        { "start": 40.903, "end": 41.443, "char": [0, 4] },
+        { "start": 41.443, "end": 41.983, "char": [5, 8] },
+        { "start": 41.983, "end": 42.523, "char": [9, 21] },
+        { "start": 42.523, "end": 43.063, "char": [22, 33] },
+        { "start": 43.063, "end": 43.603, "char": [34, 47] }
       ]
     },
     {
-      "start": 44.218,
-      "end": 44.758,
+      "start": 43.603,
+      "end": 44.143,
       "text": "wurde.",
-      "words": [{ "start": 44.218, "end": 44.758, "char": [0, 6] }]
+      "words": [{ "start": 43.603, "end": 44.143, "char": [0, 6] }]
     },
     {
-      "start": 47.758,
-      "end": 48.818,
+      "start": 47.143,
+      "end": 48.202,
       "text": "Installation fertig.",
       "words": [
-        { "start": 47.758, "end": 48.288, "char": [0, 12] },
-        { "start": 48.288, "end": 48.818, "char": [13, 20] }
+        { "start": 47.143, "end": 47.672, "char": [0, 12] },
+        { "start": 47.672, "end": 48.202, "char": [13, 20] }
       ]
     },
     {
-      "start": 48.818,
-      "end": 51.467,
+      "start": 48.202,
+      "end": 50.852,
       "text": "Die rdc-Binary liegt im Pfad.",
       "words": [
-        { "start": 48.818, "end": 49.348, "char": [0, 3] },
-        { "start": 49.348, "end": 49.878, "char": [4, 14] },
-        { "start": 49.878, "end": 50.407, "char": [15, 20] },
-        { "start": 50.407, "end": 50.937, "char": [21, 23] },
-        { "start": 50.937, "end": 51.467, "char": [24, 29] }
+        { "start": 48.202, "end": 48.732, "char": [0, 3] },
+        { "start": 48.732, "end": 49.262, "char": [4, 14] },
+        { "start": 49.262, "end": 49.792, "char": [15, 20] },
+        { "start": 49.792, "end": 50.322, "char": [21, 23] },
+        { "start": 50.322, "end": 50.852, "char": [24, 29] }
       ]
     },
     {
-      "start": 54.777,
-      "end": 57.69,
+      "start": 54.195,
+      "end": 57.107,
       "text": "Jetzt führen wir die CLI doctor",
       "words": [
-        { "start": 54.777, "end": 55.262, "char": [0, 5] },
-        { "start": 55.262, "end": 55.748, "char": [6, 12] },
-        { "start": 55.748, "end": 56.233, "char": [13, 16] },
-        { "start": 56.233, "end": 56.719, "char": [17, 20] },
-        { "start": 56.719, "end": 57.204, "char": [21, 24] },
-        { "start": 57.204, "end": 57.69, "char": [25, 31] }
+        { "start": 54.195, "end": 54.68, "char": [0, 5] },
+        { "start": 54.68, "end": 55.166, "char": [6, 12] },
+        { "start": 55.166, "end": 55.651, "char": [13, 16] },
+        { "start": 55.651, "end": 56.136, "char": [17, 20] },
+        { "start": 56.136, "end": 56.622, "char": [21, 24] },
+        { "start": 56.622, "end": 57.107, "char": [25, 31] }
       ]
     },
     {
-      "start": 57.69,
-      "end": 58.175,
+      "start": 57.107,
+      "end": 57.593,
       "text": "aus.",
-      "words": [{ "start": 57.69, "end": 58.175, "char": [0, 4] }]
+      "words": [{ "start": 57.107, "end": 57.593, "char": [0, 4] }]
     },
     {
-      "start": 58.175,
-      "end": 60.117,
+      "start": 57.593,
+      "end": 59.535,
       "text": "Sie prüft alle Abhängigkeiten,",
       "words": [
-        { "start": 58.175, "end": 58.661, "char": [0, 3] },
-        { "start": 58.661, "end": 59.146, "char": [4, 9] },
-        { "start": 59.146, "end": 59.631, "char": [10, 14] },
-        { "start": 59.631, "end": 60.117, "char": [15, 30] }
+        { "start": 57.593, "end": 58.078, "char": [0, 3] },
+        { "start": 58.078, "end": 58.564, "char": [4, 9] },
+        { "start": 58.564, "end": 59.049, "char": [10, 14] },
+        { "start": 59.049, "end": 59.535, "char": [15, 30] }
       ]
     },
     {
-      "start": 60.117,
-      "end": 62.059,
+      "start": 59.535,
+      "end": 61.476,
       "text": "die die CLI benötigt,",
       "words": [
-        { "start": 60.117, "end": 60.602, "char": [0, 3] },
-        { "start": 60.602, "end": 61.088, "char": [4, 7] },
-        { "start": 61.088, "end": 61.573, "char": [8, 11] },
-        { "start": 61.573, "end": 62.059, "char": [12, 21] }
+        { "start": 59.535, "end": 60.02, "char": [0, 3] },
+        { "start": 60.02, "end": 60.505, "char": [4, 7] },
+        { "start": 60.505, "end": 60.991, "char": [8, 11] },
+        { "start": 60.991, "end": 61.476, "char": [12, 21] }
       ]
     },
     {
-      "start": 62.059,
-      "end": 63.03,
+      "start": 61.476,
+      "end": 62.447,
       "text": "also Node,",
       "words": [
-        { "start": 62.059, "end": 62.544, "char": [0, 4] },
-        { "start": 62.544, "end": 63.03, "char": [5, 10] }
+        { "start": 61.476, "end": 61.962, "char": [0, 4] },
+        { "start": 61.962, "end": 62.447, "char": [5, 10] }
       ]
     },
     {
-      "start": 63.03,
-      "end": 64.971,
+      "start": 62.447,
+      "end": 64.389,
       "text": "SSH und den Rest,",
       "words": [
-        { "start": 63.03, "end": 63.515, "char": [0, 3] },
-        { "start": 63.515, "end": 64, "char": [4, 7] },
-        { "start": 64, "end": 64.486, "char": [8, 11] },
-        { "start": 64.486, "end": 64.971, "char": [12, 17] }
+        { "start": 62.447, "end": 62.933, "char": [0, 3] },
+        { "start": 62.933, "end": 63.418, "char": [4, 7] },
+        { "start": 63.418, "end": 63.904, "char": [8, 11] },
+        { "start": 63.904, "end": 64.389, "char": [12, 17] }
       ]
     },
     {
-      "start": 64.971,
-      "end": 66.913,
+      "start": 64.389,
+      "end": 66.331,
       "text": "und meldet eventuelle Lücken.",
       "words": [
-        { "start": 64.971, "end": 65.457, "char": [0, 3] },
-        { "start": 65.457, "end": 65.942, "char": [4, 10] },
-        { "start": 65.942, "end": 66.428, "char": [11, 21] },
-        { "start": 66.428, "end": 66.913, "char": [22, 29] }
+        { "start": 64.389, "end": 64.874, "char": [0, 3] },
+        { "start": 64.874, "end": 65.36, "char": [4, 10] },
+        { "start": 65.36, "end": 65.845, "char": [11, 21] },
+        { "start": 65.845, "end": 66.331, "char": [22, 29] }
       ]
     },
     {
-      "start": 66.913,
-      "end": 68.855,
+      "start": 66.331,
+      "end": 68.272,
       "text": "Ein sauberer Bericht bedeutet,",
       "words": [
-        { "start": 66.913, "end": 67.399, "char": [0, 3] },
-        { "start": 67.399, "end": 67.884, "char": [4, 12] },
-        { "start": 67.884, "end": 68.369, "char": [13, 20] },
-        { "start": 68.369, "end": 68.855, "char": [21, 30] }
+        { "start": 66.331, "end": 66.816, "char": [0, 3] },
+        { "start": 66.816, "end": 67.302, "char": [4, 12] },
+        { "start": 67.302, "end": 67.787, "char": [13, 20] },
+        { "start": 67.787, "end": 68.272, "char": [21, 30] }
       ]
     },
     {
-      "start": 68.855,
-      "end": 70.797,
+      "start": 68.272,
+      "end": 70.214,
       "text": "dass wir bereit sind,",
       "words": [
-        { "start": 68.855, "end": 69.34, "char": [0, 4] },
-        { "start": 69.34, "end": 69.826, "char": [5, 8] },
-        { "start": 69.826, "end": 70.311, "char": [9, 15] },
-        { "start": 70.311, "end": 70.797, "char": [16, 21] }
+        { "start": 68.272, "end": 68.758, "char": [0, 4] },
+        { "start": 68.758, "end": 69.243, "char": [5, 8] },
+        { "start": 69.243, "end": 69.729, "char": [9, 15] },
+        { "start": 69.729, "end": 70.214, "char": [16, 21] }
       ]
     },
     {
-      "start": 70.797,
-      "end": 72.253,
+      "start": 70.214,
+      "end": 71.671,
       "text": "einen Server hinzuzufügen.",
       "words": [
-        { "start": 70.797, "end": 71.282, "char": [0, 5] },
-        { "start": 71.282, "end": 71.767, "char": [6, 12] },
-        { "start": 71.767, "end": 72.253, "char": [13, 26] }
+        { "start": 70.214, "end": 70.7, "char": [0, 5] },
+        { "start": 70.7, "end": 71.185, "char": [6, 12] },
+        { "start": 71.185, "end": 71.671, "char": [13, 26] }
       ]
     },
     {
-      "start": 73.053,
-      "end": 74.38,
+      "start": 72.471,
+      "end": 73.798,
       "text": "Version ausgegeben.",
       "words": [
-        { "start": 73.053, "end": 73.716, "char": [0, 7] },
-        { "start": 73.716, "end": 74.38, "char": [8, 19] }
+        { "start": 72.471, "end": 73.134, "char": [0, 7] },
+        { "start": 73.134, "end": 73.798, "char": [8, 19] }
       ]
     },
     {
-      "start": 74.38,
-      "end": 76.37,
+      "start": 73.798,
+      "end": 75.788,
       "text": "Du bist startklar.",
       "words": [
-        { "start": 74.38, "end": 75.043, "char": [0, 2] },
-        { "start": 75.043, "end": 75.707, "char": [3, 7] },
-        { "start": 75.707, "end": 76.37, "char": [8, 18] }
+        { "start": 73.798, "end": 74.461, "char": [0, 2] },
+        { "start": 74.461, "end": 75.125, "char": [3, 7] },
+        { "start": 75.125, "end": 75.788, "char": [8, 18] }
       ]
     },
     {
-      "start": 77.197,
-      "end": 79.831,
+      "start": 76.615,
+      "end": 79.249,
       "text": "Das Kommandozeilen-Tool lebt auf deinem",
       "words": [
-        { "start": 77.197, "end": 77.724, "char": [0, 3] },
-        { "start": 77.724, "end": 78.251, "char": [4, 23] },
-        { "start": 78.251, "end": 78.777, "char": [24, 28] },
-        { "start": 78.777, "end": 79.304, "char": [29, 32] },
-        { "start": 79.304, "end": 79.831, "char": [33, 39] }
+        { "start": 76.615, "end": 77.141, "char": [0, 3] },
+        { "start": 77.141, "end": 77.668, "char": [4, 23] },
+        { "start": 77.668, "end": 78.195, "char": [24, 28] },
+        { "start": 78.195, "end": 78.722, "char": [29, 32] },
+        { "start": 78.722, "end": 79.249, "char": [33, 39] }
       ]
     },
     {
-      "start": 79.831,
-      "end": 80.358,
+      "start": 79.249,
+      "end": 79.775,
       "text": "Laptop.",
-      "words": [{ "start": 79.831, "end": 80.358, "char": [0, 7] }]
+      "words": [{ "start": 79.249, "end": 79.775, "char": [0, 7] }]
     },
     {
-      "start": 80.358,
-      "end": 82.992,
+      "start": 79.775,
+      "end": 82.41,
       "text": "Auf dem Server läuft eine",
       "words": [
-        { "start": 80.358, "end": 80.885, "char": [0, 3] },
-        { "start": 80.885, "end": 81.411, "char": [4, 7] },
-        { "start": 81.411, "end": 81.938, "char": [8, 14] },
-        { "start": 81.938, "end": 82.465, "char": [15, 20] },
-        { "start": 82.465, "end": 82.992, "char": [21, 25] }
+        { "start": 79.775, "end": 80.302, "char": [0, 3] },
+        { "start": 80.302, "end": 80.829, "char": [4, 7] },
+        { "start": 80.829, "end": 81.356, "char": [8, 14] },
+        { "start": 81.356, "end": 81.883, "char": [15, 20] },
+        { "start": 81.883, "end": 82.41, "char": [21, 25] }
       ]
     },
     {
-      "start": 82.992,
-      "end": 85.099,
+      "start": 82.41,
+      "end": 84.517,
       "text": "eigene Komponente namens renet,",
       "words": [
-        { "start": 82.992, "end": 83.519, "char": [0, 6] },
-        { "start": 83.519, "end": 84.045, "char": [7, 17] },
-        { "start": 84.045, "end": 84.572, "char": [18, 24] },
-        { "start": 84.572, "end": 85.099, "char": [25, 31] }
+        { "start": 82.41, "end": 82.936, "char": [0, 6] },
+        { "start": 82.936, "end": 83.463, "char": [7, 17] },
+        { "start": 83.463, "end": 83.99, "char": [18, 24] },
+        { "start": 83.99, "end": 84.517, "char": [25, 31] }
       ]
     },
     {
-      "start": 85.099,
-      "end": 87.733,
+      "start": 84.517,
+      "end": 87.151,
       "text": "die die CLI über SSH",
       "words": [
-        { "start": 85.099, "end": 85.626, "char": [0, 3] },
-        { "start": 85.626, "end": 86.153, "char": [4, 7] },
-        { "start": 86.153, "end": 86.679, "char": [8, 11] },
-        { "start": 86.679, "end": 87.206, "char": [12, 16] },
-        { "start": 87.206, "end": 87.733, "char": [17, 20] }
+        { "start": 84.517, "end": 85.044, "char": [0, 3] },
+        { "start": 85.044, "end": 85.57, "char": [4, 7] },
+        { "start": 85.57, "end": 86.097, "char": [8, 11] },
+        { "start": 86.097, "end": 86.624, "char": [12, 16] },
+        { "start": 86.624, "end": 87.151, "char": [17, 20] }
       ]
     },
     {
-      "start": 87.733,
-      "end": 89.313,
+      "start": 87.151,
+      "end": 88.731,
       "text": "einrichtet und steuert,",
       "words": [
-        { "start": 87.733, "end": 88.26, "char": [0, 10] },
-        { "start": 88.26, "end": 88.787, "char": [11, 14] },
-        { "start": 88.787, "end": 89.313, "char": [15, 23] }
+        { "start": 87.151, "end": 87.678, "char": [0, 10] },
+        { "start": 87.678, "end": 88.204, "char": [11, 14] },
+        { "start": 88.204, "end": 88.731, "char": [15, 23] }
       ]
     },
     {
-      "start": 89.313,
-      "end": 91.947,
+      "start": 88.731,
+      "end": 91.365,
       "text": "sodass du dich nie manuell",
       "words": [
-        { "start": 89.313, "end": 89.84, "char": [0, 6] },
-        { "start": 89.84, "end": 90.367, "char": [7, 9] },
-        { "start": 90.367, "end": 90.894, "char": [10, 14] },
-        { "start": 90.894, "end": 91.421, "char": [15, 18] },
-        { "start": 91.421, "end": 91.947, "char": [19, 26] }
+        { "start": 88.731, "end": 89.258, "char": [0, 6] },
+        { "start": 89.258, "end": 89.785, "char": [7, 9] },
+        { "start": 89.785, "end": 90.312, "char": [10, 14] },
+        { "start": 90.312, "end": 90.838, "char": [15, 18] },
+        { "start": 90.838, "end": 91.365, "char": [19, 26] }
       ]
     },
     {
-      "start": 91.947,
-      "end": 93.001,
+      "start": 91.365,
+      "end": 92.419,
       "text": "anmelden musst.",
       "words": [
-        { "start": 91.947, "end": 92.474, "char": [0, 8] },
-        { "start": 92.474, "end": 93.001, "char": [9, 15] }
+        { "start": 91.365, "end": 91.892, "char": [0, 8] },
+        { "start": 91.892, "end": 92.419, "char": [9, 15] }
       ]
     },
     {
-      "start": 93.763,
-      "end": 95.725,
+      "start": 93.181,
+      "end": 95.143,
       "text": "Das war die Installation.",
       "words": [
-        { "start": 93.763, "end": 94.254, "char": [0, 3] },
-        { "start": 94.254, "end": 94.744, "char": [4, 7] },
-        { "start": 94.744, "end": 95.235, "char": [8, 11] },
-        { "start": 95.235, "end": 95.725, "char": [12, 25] }
+        { "start": 93.181, "end": 93.671, "char": [0, 3] },
+        { "start": 93.671, "end": 94.162, "char": [4, 7] },
+        { "start": 94.162, "end": 94.652, "char": [8, 11] },
+        { "start": 94.652, "end": 95.143, "char": [12, 25] }
       ]
     },
     {
-      "start": 95.725,
-      "end": 98.668,
+      "start": 95.143,
+      "end": 98.086,
       "text": "Als Nächstes richten wir deinen SSH-Schlüssel",
       "words": [
-        { "start": 95.725, "end": 96.216, "char": [0, 3] },
-        { "start": 96.216, "end": 96.706, "char": [4, 12] },
-        { "start": 96.706, "end": 97.197, "char": [13, 20] },
-        { "start": 97.197, "end": 97.687, "char": [21, 24] },
-        { "start": 97.687, "end": 98.178, "char": [25, 31] },
-        { "start": 98.178, "end": 98.668, "char": [32, 45] }
+        { "start": 95.143, "end": 95.633, "char": [0, 3] },
+        { "start": 95.633, "end": 96.124, "char": [4, 12] },
+        { "start": 96.124, "end": 96.614, "char": [13, 20] },
+        { "start": 96.614, "end": 97.105, "char": [21, 24] },
+        { "start": 97.105, "end": 97.595, "char": [25, 31] },
+        { "start": 97.595, "end": 98.086, "char": [32, 45] }
       ]
     },
     {
-      "start": 98.668,
-      "end": 99.159,
+      "start": 98.086,
+      "end": 98.576,
       "text": "ein,",
-      "words": [{ "start": 98.668, "end": 99.159, "char": [0, 4] }]
+      "words": [{ "start": 98.086, "end": 98.576, "char": [0, 4] }]
     },
     {
-      "start": 99.159,
-      "end": 102.102,
+      "start": 98.576,
+      "end": 101.52,
       "text": "damit die CLI deine Server erreichen",
       "words": [
-        { "start": 99.159, "end": 99.649, "char": [0, 5] },
-        { "start": 99.649, "end": 100.14, "char": [6, 9] },
-        { "start": 100.14, "end": 100.63, "char": [10, 13] },
-        { "start": 100.63, "end": 101.121, "char": [14, 19] },
-        { "start": 101.121, "end": 101.611, "char": [20, 26] },
-        { "start": 101.611, "end": 102.102, "char": [27, 36] }
+        { "start": 98.576, "end": 99.067, "char": [0, 5] },
+        { "start": 99.067, "end": 99.557, "char": [6, 9] },
+        { "start": 99.557, "end": 100.048, "char": [10, 13] },
+        { "start": 100.048, "end": 100.539, "char": [14, 19] },
+        { "start": 100.539, "end": 101.029, "char": [20, 26] },
+        { "start": 101.029, "end": 101.52, "char": [27, 36] }
       ]
     },
     {
-      "start": 102.102,
-      "end": 102.592,
+      "start": 101.52,
+      "end": 102.01,
       "text": "kann.",
-      "words": [{ "start": 102.102, "end": 102.592, "char": [0, 5] }]
+      "words": [{ "start": 101.52, "end": 102.01, "char": [0, 5] }]
     }
   ]
 }

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.411841,
+      "at": 2.416158,
       "text": "Commençons par la vue système. La commande de requête machine avec le filtre system affiche le temps de fonctionnement, l'utilisation du disque et l'état du stockage. Si quelque chose ne va pas, le rapport nous le dit.",
       "afterText": "Uptime, disque, stockage. Tout ce qu'il vous faut d'un coup d'œil.",
       "cardLabel": "Santé Système",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 8.597185,
+      "at": 8.503611,
       "text": "Voyons maintenant les conteneurs. Cette vue liste tous les conteneurs en cours d'exécution sur tous les dépôts de la machine : nom, statut, état de santé, CPU, mémoire, plus quel dépôt possède chacun.",
       "afterText": "Tous les conteneurs de tous les repos, dans une seule vue.",
       "cardLabel": "Containers",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 15.126152,
+      "at": 14.799411,
       "text": "Et les dépôts eux-mêmes. Taille, état de montage, état du daemon Docker, utilisation du disque. Tout ce que vous devez savoir sur chaque environnement isolé de la machine.",
       "afterText": "Tous les repos, tous leurs daemons, toute leur utilisation disque.",
       "cardLabel": "Repositories",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 24.385141,
+      "at": 21.195367,
       "text": "La commande de requête machine vous donne tout en une seule fois. Informations système, conteneurs, dépôts, tout ensemble. Lancez-la une fois et vous avez le tableau complet.",
       "afterText": "Tout ensemble, sans filtre.",
       "cardLabel": "Requête Complète",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 32.334422,
+      "at": 26.969407,
       "text": "Et enfin le contrôle de diagnostic pour une vérification locale sur votre ordinateur. Node, clé SSH, renet, Docker, tout ce dont la ligne de commande elle-même dépend. C'est la série complète. De l'installation à la surveillance, tout depuis votre terminal.",
       "afterText": "Tout au vert signifie que votre CLI locale est en bonne santé.",
       "cardLabel": "Doctor",
@@ -60,7 +60,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "Et voilà la série bouclée. Vous pouvez désormais installer, configurer, déployer, forker, mettre en ligne, démarrer automatiquement, sauvegarder et surveiller, le tout depuis votre terminal !"
+      "text": "Vous savez maintenant installer, configurer, déployer, forker, passer en production, démarrer automatiquement, sauvegarder et surveiller. La suite avancée commence maintenant : versionnez vos repos comme du code, avec des commits et des rollbacks."
     }
   ],
   "title": "Supervision",
@@ -72,6 +72,6 @@
     "cast-step-2": "Repos",
     "cast-step-3": "Tout en une seule commande",
     "cast-step-4": "Vérification locale",
-    "outro": "Fin de la série"
+    "outro": "Suivant : Branching, Commit et Rollback"
   }
 }

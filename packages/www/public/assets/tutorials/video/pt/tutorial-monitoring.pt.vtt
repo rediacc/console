@@ -201,32 +201,32 @@ a sua CLI local está
 00:02:13.114 --> 00:02:13.670
 saudável.
 
-00:02:14.439 --> 00:02:17.428
-E é assim que se fecha
+00:02:14.439 --> 00:02:16.684
+Agora você pode instalar,
 
-00:02:17.428 --> 00:02:18.424
-a série.
-
-00:02:18.424 --> 00:02:19.918
-Já consegue instalar,
-
-00:02:19.918 --> 00:02:20.417
+00:02:16.684 --> 00:02:17.245
 configurar,
 
-00:02:20.417 --> 00:02:20.915
-implementar,
+00:02:17.245 --> 00:02:18.367
+fazer deploy,
 
-00:02:20.915 --> 00:02:21.413
-bifurcar,
+00:02:18.367 --> 00:02:19.490
+fazer fork,
 
-00:02:21.413 --> 00:02:22.907
-ir para produção,
+00:02:19.490 --> 00:02:20.051
+publicar,
 
-00:02:22.907 --> 00:02:24.402
-ativar arranque automático,
+00:02:20.051 --> 00:02:21.735
+ativar o autostart,
 
-00:02:24.402 --> 00:02:26.394
-fazer cópias e monitorizar,
+00:02:21.735 --> 00:02:23.980
+fazer backup e monitorar.
 
-00:02:26.394 --> 00:02:28.885
-tudo a partir do terminal!
+00:02:23.980 --> 00:02:26.786
+A trilha avançada começa agora:
+
+00:02:26.786 --> 00:02:29.592
+versione seus repos como código,
+
+00:02:29.592 --> 00:02:31.837
+com commits e rollbacks.

@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "3a673cd8be5f7966eaa708d48e1f77a8758b851e405d0a6f117dddb3809322d3",
+  "transcriptHash": "ccb4f9d12853629087b65a19feefd83ddec855495730c268f19b1f7f3ca4ab0d",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627146,
-      "replayEndSec": 7.928955,
+      "replayStartSec": 1.629299,
+      "replayEndSec": 8.575098,
       "narrationText": "Register the server from the command line. You give it a name, its IP address, and the SSH user. The name is just a local alias. We use machine-11 so it matches the IP, but it can be anything you like, such as prod-db or web-1. There is no separate init step; the config file is created automatically on first use.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-01.bc84d482.mp3",
       "textHash": "bc84d4826f274bc7d58637ed51ef779b508bbafde734bd3dab6c5df041b6291a",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.928955,
-      "replayEndSec": 16.338306,
+      "replayStartSec": 8.575098,
+      "replayEndSec": 19.204906,
       "narrationText": "Next we provision the server. This installs renet and creates the encrypted datastore.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-02.f46381ee.mp3",
       "textHash": "f46381ee93a41c0af307819769a24cec82dd4658c8a87ac16ca60e113dc9fcb3",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 16.338306,
-      "replayEndSec": 18.998199,
+      "replayStartSec": 19.204906,
+      "replayEndSec": 21.464422,
       "narrationText": "Here is the file that holds everything: your machines, the SSH key, and infrastructure settings. It is plain JSON, created automatically. You can keep several configs, one per environment such as production or staging, and switch between them with the config flag.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-add-server/tutorial-add-server-03.5b592319.mp3",
       "textHash": "5b592319a41bb6a3cf71ace99fcef1d5dcbb0cb1ee11ecac6d7782ed0e27ffb8",

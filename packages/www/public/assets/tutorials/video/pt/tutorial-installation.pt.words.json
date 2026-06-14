@@ -81,422 +81,422 @@
       ]
     },
     {
-      "start": 15.51,
-      "end": 18.197,
+      "start": 15.21,
+      "end": 17.897,
       "text": "Vá à página de instalação e desça",
       "words": [
-        { "start": 15.51, "end": 15.894, "char": [0, 2] },
-        { "start": 15.894, "end": 16.278, "char": [3, 4] },
-        { "start": 16.278, "end": 16.662, "char": [5, 11] },
-        { "start": 16.662, "end": 17.046, "char": [12, 14] },
-        { "start": 17.046, "end": 17.429, "char": [15, 25] },
-        { "start": 17.429, "end": 17.813, "char": [26, 27] },
-        { "start": 17.813, "end": 18.197, "char": [28, 33] }
+        { "start": 15.21, "end": 15.594, "char": [0, 2] },
+        { "start": 15.594, "end": 15.978, "char": [3, 4] },
+        { "start": 15.978, "end": 16.362, "char": [5, 11] },
+        { "start": 16.362, "end": 16.746, "char": [12, 14] },
+        { "start": 16.746, "end": 17.129, "char": [15, 25] },
+        { "start": 17.129, "end": 17.513, "char": [26, 27] },
+        { "start": 17.513, "end": 17.897, "char": [28, 33] }
       ]
     },
     {
-      "start": 18.197,
-      "end": 20.501,
+      "start": 17.897,
+      "end": 20.201,
       "text": "até à secção de instalação rápida.",
       "words": [
-        { "start": 18.197, "end": 18.581, "char": [0, 3] },
-        { "start": 18.581, "end": 18.965, "char": [4, 5] },
-        { "start": 18.965, "end": 19.349, "char": [6, 12] },
-        { "start": 19.349, "end": 19.733, "char": [13, 15] },
-        { "start": 19.733, "end": 20.117, "char": [16, 26] },
-        { "start": 20.117, "end": 20.501, "char": [27, 34] }
+        { "start": 17.897, "end": 18.281, "char": [0, 3] },
+        { "start": 18.281, "end": 18.665, "char": [4, 5] },
+        { "start": 18.665, "end": 19.049, "char": [6, 12] },
+        { "start": 19.049, "end": 19.433, "char": [13, 15] },
+        { "start": 19.433, "end": 19.817, "char": [16, 26] },
+        { "start": 19.817, "end": 20.201, "char": [27, 34] }
       ]
     },
     {
-      "start": 20.501,
-      "end": 23.188,
+      "start": 20.201,
+      "end": 22.888,
       "text": "Gera o comando correto para a plataforma",
       "words": [
-        { "start": 20.501, "end": 20.884, "char": [0, 4] },
-        { "start": 20.884, "end": 21.268, "char": [5, 6] },
-        { "start": 21.268, "end": 21.652, "char": [7, 14] },
-        { "start": 21.652, "end": 22.036, "char": [15, 22] },
-        { "start": 22.036, "end": 22.42, "char": [23, 27] },
-        { "start": 22.42, "end": 22.804, "char": [28, 29] },
-        { "start": 22.804, "end": 23.188, "char": [30, 40] }
+        { "start": 20.201, "end": 20.584, "char": [0, 4] },
+        { "start": 20.584, "end": 20.968, "char": [5, 6] },
+        { "start": 20.968, "end": 21.352, "char": [7, 14] },
+        { "start": 21.352, "end": 21.736, "char": [15, 22] },
+        { "start": 21.736, "end": 22.12, "char": [23, 27] },
+        { "start": 22.12, "end": 22.504, "char": [28, 29] },
+        { "start": 22.504, "end": 22.888, "char": [30, 40] }
       ]
     },
     {
-      "start": 23.188,
-      "end": 24.339,
+      "start": 22.888,
+      "end": 24.039,
       "text": "em que está.",
       "words": [
-        { "start": 23.188, "end": 23.572, "char": [0, 2] },
-        { "start": 23.572, "end": 23.956, "char": [3, 6] },
-        { "start": 23.956, "end": 24.339, "char": [7, 12] }
+        { "start": 22.888, "end": 23.272, "char": [0, 2] },
+        { "start": 23.272, "end": 23.656, "char": [3, 6] },
+        { "start": 23.656, "end": 24.039, "char": [7, 12] }
       ]
     },
     {
-      "start": 27.61,
-      "end": 28.029,
+      "start": 27.21,
+      "end": 27.629,
       "text": "Primeiro,",
-      "words": [{ "start": 27.61, "end": 28.029, "char": [0, 9] }]
+      "words": [{ "start": 27.21, "end": 27.629, "char": [0, 9] }]
     },
     {
-      "start": 28.029,
-      "end": 30.544,
+      "start": 27.629,
+      "end": 30.144,
       "text": "vamos confirmar que a ferramenta está",
       "words": [
-        { "start": 28.029, "end": 28.448, "char": [0, 5] },
-        { "start": 28.448, "end": 28.867, "char": [6, 15] },
-        { "start": 28.867, "end": 29.286, "char": [16, 19] },
-        { "start": 29.286, "end": 29.705, "char": [20, 21] },
-        { "start": 29.705, "end": 30.125, "char": [22, 32] },
-        { "start": 30.125, "end": 30.544, "char": [33, 37] }
+        { "start": 27.629, "end": 28.048, "char": [0, 5] },
+        { "start": 28.048, "end": 28.467, "char": [6, 15] },
+        { "start": 28.467, "end": 28.886, "char": [16, 19] },
+        { "start": 28.886, "end": 29.305, "char": [20, 21] },
+        { "start": 29.305, "end": 29.725, "char": [22, 32] },
+        { "start": 29.725, "end": 30.144, "char": [33, 37] }
       ]
     },
     {
-      "start": 30.544,
-      "end": 30.963,
+      "start": 30.144,
+      "end": 30.563,
       "text": "instalada.",
-      "words": [{ "start": 30.544, "end": 30.963, "char": [0, 10] }]
+      "words": [{ "start": 30.144, "end": 30.563, "char": [0, 10] }]
     },
     {
-      "start": 30.963,
-      "end": 33.477,
+      "start": 30.563,
+      "end": 33.077,
       "text": "A opção de versão imprime a",
       "words": [
-        { "start": 30.963, "end": 31.382, "char": [0, 1] },
-        { "start": 31.382, "end": 31.801, "char": [2, 7] },
-        { "start": 31.801, "end": 32.22, "char": [8, 10] },
-        { "start": 32.22, "end": 32.639, "char": [11, 17] },
-        { "start": 32.639, "end": 33.058, "char": [18, 25] },
-        { "start": 33.058, "end": 33.477, "char": [26, 27] }
+        { "start": 30.563, "end": 30.982, "char": [0, 1] },
+        { "start": 30.982, "end": 31.401, "char": [2, 7] },
+        { "start": 31.401, "end": 31.82, "char": [8, 10] },
+        { "start": 31.82, "end": 32.239, "char": [11, 17] },
+        { "start": 32.239, "end": 32.658, "char": [18, 25] },
+        { "start": 32.658, "end": 33.077, "char": [26, 27] }
       ]
     },
     {
-      "start": 33.477,
-      "end": 34.316,
+      "start": 33.077,
+      "end": 33.916,
       "text": "versão instalada,",
       "words": [
-        { "start": 33.477, "end": 33.896, "char": [0, 6] },
-        { "start": 33.896, "end": 34.316, "char": [7, 17] }
+        { "start": 33.077, "end": 33.496, "char": [0, 6] },
+        { "start": 33.496, "end": 33.916, "char": [7, 17] }
       ]
     },
     {
-      "start": 34.316,
-      "end": 36.83,
+      "start": 33.916,
+      "end": 36.43,
       "text": "para sabermos que a instalação ficou",
       "words": [
-        { "start": 34.316, "end": 34.735, "char": [0, 4] },
-        { "start": 34.735, "end": 35.154, "char": [5, 13] },
-        { "start": 35.154, "end": 35.573, "char": [14, 17] },
-        { "start": 35.573, "end": 35.992, "char": [18, 19] },
-        { "start": 35.992, "end": 36.411, "char": [20, 30] },
-        { "start": 36.411, "end": 36.83, "char": [31, 36] }
+        { "start": 33.916, "end": 34.335, "char": [0, 4] },
+        { "start": 34.335, "end": 34.754, "char": [5, 13] },
+        { "start": 34.754, "end": 35.173, "char": [14, 17] },
+        { "start": 35.173, "end": 35.592, "char": [18, 19] },
+        { "start": 35.592, "end": 36.011, "char": [20, 30] },
+        { "start": 36.011, "end": 36.43, "char": [31, 36] }
       ]
     },
     {
-      "start": 36.83,
-      "end": 37.249,
+      "start": 36.43,
+      "end": 36.849,
       "text": "completa.",
-      "words": [{ "start": 36.83, "end": 37.249, "char": [0, 9] }]
+      "words": [{ "start": 36.43, "end": 36.849, "char": [0, 9] }]
     },
     {
-      "start": 40.249,
-      "end": 41.375,
+      "start": 39.849,
+      "end": 40.975,
       "text": "Instalação concluída.",
       "words": [
-        { "start": 40.249, "end": 40.812, "char": [0, 10] },
-        { "start": 40.812, "end": 41.375, "char": [11, 21] }
+        { "start": 39.849, "end": 40.412, "char": [0, 10] },
+        { "start": 40.412, "end": 40.975, "char": [11, 21] }
       ]
     },
     {
-      "start": 41.375,
-      "end": 44.191,
+      "start": 40.975,
+      "end": 43.791,
       "text": "O binário rdc está no",
       "words": [
-        { "start": 41.375, "end": 41.938, "char": [0, 1] },
-        { "start": 41.938, "end": 42.502, "char": [2, 9] },
-        { "start": 42.502, "end": 43.065, "char": [10, 13] },
-        { "start": 43.065, "end": 43.628, "char": [14, 18] },
-        { "start": 43.628, "end": 44.191, "char": [19, 21] }
+        { "start": 40.975, "end": 41.538, "char": [0, 1] },
+        { "start": 41.538, "end": 42.102, "char": [2, 9] },
+        { "start": 42.102, "end": 42.665, "char": [10, 13] },
+        { "start": 42.665, "end": 43.228, "char": [14, 18] },
+        { "start": 43.228, "end": 43.791, "char": [19, 21] }
       ]
     },
     {
-      "start": 44.191,
-      "end": 45.317,
+      "start": 43.791,
+      "end": 44.917,
       "text": "seu PATH.",
       "words": [
-        { "start": 44.191, "end": 44.754, "char": [0, 3] },
-        { "start": 44.754, "end": 45.317, "char": [4, 9] }
+        { "start": 43.791, "end": 44.354, "char": [0, 3] },
+        { "start": 44.354, "end": 44.917, "char": [4, 9] }
       ]
     },
     {
-      "start": 48.628,
-      "end": 51.539,
+      "start": 48.261,
+      "end": 51.172,
       "text": "Agora vamos executar a verificação de",
       "words": [
-        { "start": 48.628, "end": 49.113, "char": [0, 5] },
-        { "start": 49.113, "end": 49.598, "char": [6, 11] },
-        { "start": 49.598, "end": 50.084, "char": [12, 20] },
-        { "start": 50.084, "end": 50.569, "char": [21, 22] },
-        { "start": 50.569, "end": 51.054, "char": [23, 34] },
-        { "start": 51.054, "end": 51.539, "char": [35, 37] }
+        { "start": 48.261, "end": 48.746, "char": [0, 5] },
+        { "start": 48.746, "end": 49.231, "char": [6, 11] },
+        { "start": 49.231, "end": 49.717, "char": [12, 20] },
+        { "start": 49.717, "end": 50.202, "char": [21, 22] },
+        { "start": 50.202, "end": 50.687, "char": [23, 34] },
+        { "start": 50.687, "end": 51.172, "char": [35, 37] }
       ]
     },
     {
-      "start": 51.539,
-      "end": 52.025,
+      "start": 51.172,
+      "end": 51.658,
       "text": "diagnóstico.",
-      "words": [{ "start": 51.539, "end": 52.025, "char": [0, 12] }]
+      "words": [{ "start": 51.172, "end": 51.658, "char": [0, 12] }]
     },
     {
-      "start": 52.025,
-      "end": 54.936,
+      "start": 51.658,
+      "end": 54.569,
       "text": "Este comando verifica todas as dependências",
       "words": [
-        { "start": 52.025, "end": 52.51, "char": [0, 4] },
-        { "start": 52.51, "end": 52.995, "char": [5, 12] },
-        { "start": 52.995, "end": 53.48, "char": [13, 21] },
-        { "start": 53.48, "end": 53.965, "char": [22, 27] },
-        { "start": 53.965, "end": 54.451, "char": [28, 30] },
-        { "start": 54.451, "end": 54.936, "char": [31, 43] }
+        { "start": 51.658, "end": 52.143, "char": [0, 4] },
+        { "start": 52.143, "end": 52.628, "char": [5, 12] },
+        { "start": 52.628, "end": 53.113, "char": [13, 21] },
+        { "start": 53.113, "end": 53.598, "char": [22, 27] },
+        { "start": 53.598, "end": 54.084, "char": [28, 30] },
+        { "start": 54.084, "end": 54.569, "char": [31, 43] }
       ]
     },
     {
-      "start": 54.936,
-      "end": 57.847,
+      "start": 54.569,
+      "end": 57.48,
       "text": "de que a ferramenta necessita --",
       "words": [
-        { "start": 54.936, "end": 55.421, "char": [0, 2] },
-        { "start": 55.421, "end": 55.906, "char": [3, 6] },
-        { "start": 55.906, "end": 56.392, "char": [7, 8] },
-        { "start": 56.392, "end": 56.877, "char": [9, 19] },
-        { "start": 56.877, "end": 57.362, "char": [20, 29] },
-        { "start": 57.362, "end": 57.847, "char": [30, 32] }
+        { "start": 54.569, "end": 55.054, "char": [0, 2] },
+        { "start": 55.054, "end": 55.539, "char": [3, 6] },
+        { "start": 55.539, "end": 56.025, "char": [7, 8] },
+        { "start": 56.025, "end": 56.51, "char": [9, 19] },
+        { "start": 56.51, "end": 56.995, "char": [20, 29] },
+        { "start": 56.995, "end": 57.48, "char": [30, 32] }
       ]
     },
     {
-      "start": 57.847,
-      "end": 58.332,
+      "start": 57.48,
+      "end": 57.965,
       "text": "Node,",
-      "words": [{ "start": 57.847, "end": 58.332, "char": [0, 5] }]
+      "words": [{ "start": 57.48, "end": 57.965, "char": [0, 5] }]
     },
     {
-      "start": 58.332,
-      "end": 58.818,
+      "start": 57.965,
+      "end": 58.451,
       "text": "SSH,",
-      "words": [{ "start": 58.332, "end": 58.818, "char": [0, 4] }]
+      "words": [{ "start": 57.965, "end": 58.451, "char": [0, 4] }]
     },
     {
-      "start": 58.818,
-      "end": 59.303,
+      "start": 58.451,
+      "end": 58.936,
       "text": "Docker,",
-      "words": [{ "start": 58.818, "end": 59.303, "char": [0, 7] }]
+      "words": [{ "start": 58.451, "end": 58.936, "char": [0, 7] }]
     },
     {
-      "start": 59.303,
-      "end": 62.214,
+      "start": 58.936,
+      "end": 61.847,
       "text": "o binário renet -- e reporta",
       "words": [
-        { "start": 59.303, "end": 59.788, "char": [0, 1] },
-        { "start": 59.788, "end": 60.273, "char": [2, 9] },
-        { "start": 60.273, "end": 60.759, "char": [10, 15] },
-        { "start": 60.759, "end": 61.244, "char": [16, 18] },
-        { "start": 61.244, "end": 61.729, "char": [19, 20] },
-        { "start": 61.729, "end": 62.214, "char": [21, 28] }
+        { "start": 58.936, "end": 59.421, "char": [0, 1] },
+        { "start": 59.421, "end": 59.906, "char": [2, 9] },
+        { "start": 59.906, "end": 60.392, "char": [10, 15] },
+        { "start": 60.392, "end": 60.877, "char": [16, 18] },
+        { "start": 60.877, "end": 61.362, "char": [19, 20] },
+        { "start": 61.362, "end": 61.847, "char": [21, 28] }
       ]
     },
     {
-      "start": 62.214,
-      "end": 63.67,
+      "start": 61.847,
+      "end": 63.303,
       "text": "o que faltar.",
       "words": [
-        { "start": 62.214, "end": 62.7, "char": [0, 1] },
-        { "start": 62.7, "end": 63.185, "char": [2, 5] },
-        { "start": 63.185, "end": 63.67, "char": [6, 13] }
+        { "start": 61.847, "end": 62.333, "char": [0, 1] },
+        { "start": 62.333, "end": 62.818, "char": [2, 5] },
+        { "start": 62.818, "end": 63.303, "char": [6, 13] }
       ]
     },
     {
-      "start": 63.67,
-      "end": 66.581,
+      "start": 63.303,
+      "end": 66.214,
       "text": "Um relatório limpo significa que estamos",
       "words": [
-        { "start": 63.67, "end": 64.155, "char": [0, 2] },
-        { "start": 64.155, "end": 64.64, "char": [3, 12] },
-        { "start": 64.64, "end": 65.126, "char": [13, 18] },
-        { "start": 65.126, "end": 65.611, "char": [19, 28] },
-        { "start": 65.611, "end": 66.096, "char": [29, 32] },
-        { "start": 66.096, "end": 66.581, "char": [33, 40] }
+        { "start": 63.303, "end": 63.788, "char": [0, 2] },
+        { "start": 63.788, "end": 64.273, "char": [3, 12] },
+        { "start": 64.273, "end": 64.759, "char": [13, 18] },
+        { "start": 64.759, "end": 65.244, "char": [19, 28] },
+        { "start": 65.244, "end": 65.729, "char": [29, 32] },
+        { "start": 65.729, "end": 66.214, "char": [33, 40] }
       ]
     },
     {
-      "start": 66.581,
-      "end": 68.037,
+      "start": 66.214,
+      "end": 67.67,
       "text": "prontos para avançar.",
       "words": [
-        { "start": 66.581, "end": 67.067, "char": [0, 7] },
-        { "start": 67.067, "end": 67.552, "char": [8, 12] },
-        { "start": 67.552, "end": 68.037, "char": [13, 21] }
+        { "start": 66.214, "end": 66.7, "char": [0, 7] },
+        { "start": 66.7, "end": 67.185, "char": [8, 12] },
+        { "start": 67.185, "end": 67.67, "char": [13, 21] }
       ]
     },
     {
-      "start": 68.837,
-      "end": 70.039,
+      "start": 68.47,
+      "end": 69.672,
       "text": "Versão impressa.",
       "words": [
-        { "start": 68.837, "end": 69.438, "char": [0, 6] },
-        { "start": 69.438, "end": 70.039, "char": [7, 16] }
+        { "start": 68.47, "end": 69.071, "char": [0, 6] },
+        { "start": 69.071, "end": 69.672, "char": [7, 16] }
       ]
     },
     {
-      "start": 70.039,
-      "end": 71.841,
+      "start": 69.672,
+      "end": 71.474,
       "text": "Está tudo pronto.",
       "words": [
-        { "start": 70.039, "end": 70.639, "char": [0, 4] },
-        { "start": 70.639, "end": 71.24, "char": [5, 9] },
-        { "start": 71.24, "end": 71.841, "char": [10, 17] }
+        { "start": 69.672, "end": 70.272, "char": [0, 4] },
+        { "start": 70.272, "end": 70.873, "char": [5, 9] },
+        { "start": 70.873, "end": 71.474, "char": [10, 17] }
       ]
     },
     {
-      "start": 72.656,
-      "end": 75.597,
+      "start": 72.289,
+      "end": 75.23,
       "text": "A ferramenta de linha de comandos",
       "words": [
-        { "start": 72.656, "end": 73.146, "char": [0, 1] },
-        { "start": 73.146, "end": 73.636, "char": [2, 12] },
-        { "start": 73.636, "end": 74.127, "char": [13, 15] },
-        { "start": 74.127, "end": 74.617, "char": [16, 21] },
-        { "start": 74.617, "end": 75.107, "char": [22, 24] },
-        { "start": 75.107, "end": 75.597, "char": [25, 33] }
+        { "start": 72.289, "end": 72.779, "char": [0, 1] },
+        { "start": 72.779, "end": 73.269, "char": [2, 12] },
+        { "start": 73.269, "end": 73.76, "char": [13, 15] },
+        { "start": 73.76, "end": 74.25, "char": [16, 21] },
+        { "start": 74.25, "end": 74.74, "char": [22, 24] },
+        { "start": 74.74, "end": 75.23, "char": [25, 33] }
       ]
     },
     {
-      "start": 75.597,
-      "end": 77.558,
+      "start": 75.23,
+      "end": 77.191,
       "text": "vive no seu portátil.",
       "words": [
-        { "start": 75.597, "end": 76.087, "char": [0, 4] },
-        { "start": 76.087, "end": 76.577, "char": [5, 7] },
-        { "start": 76.577, "end": 77.068, "char": [8, 11] },
-        { "start": 77.068, "end": 77.558, "char": [12, 21] }
+        { "start": 75.23, "end": 75.72, "char": [0, 4] },
+        { "start": 75.72, "end": 76.21, "char": [5, 7] },
+        { "start": 76.21, "end": 76.701, "char": [8, 11] },
+        { "start": 76.701, "end": 77.191, "char": [12, 21] }
       ]
     },
     {
-      "start": 77.558,
-      "end": 80.499,
+      "start": 77.191,
+      "end": 80.132,
       "text": "O servidor corre um componente separado",
       "words": [
-        { "start": 77.558, "end": 78.048, "char": [0, 1] },
-        { "start": 78.048, "end": 78.538, "char": [2, 10] },
-        { "start": 78.538, "end": 79.028, "char": [11, 16] },
-        { "start": 79.028, "end": 79.519, "char": [17, 19] },
-        { "start": 79.519, "end": 80.009, "char": [20, 30] },
-        { "start": 80.009, "end": 80.499, "char": [31, 39] }
+        { "start": 77.191, "end": 77.681, "char": [0, 1] },
+        { "start": 77.681, "end": 78.171, "char": [2, 10] },
+        { "start": 78.171, "end": 78.661, "char": [11, 16] },
+        { "start": 78.661, "end": 79.152, "char": [17, 19] },
+        { "start": 79.152, "end": 79.642, "char": [20, 30] },
+        { "start": 79.642, "end": 80.132, "char": [31, 39] }
       ]
     },
     {
-      "start": 80.499,
-      "end": 81.479,
+      "start": 80.132,
+      "end": 81.112,
       "text": "chamado renet,",
       "words": [
-        { "start": 80.499, "end": 80.989, "char": [0, 7] },
-        { "start": 80.989, "end": 81.479, "char": [8, 14] }
+        { "start": 80.132, "end": 80.622, "char": [0, 7] },
+        { "start": 80.622, "end": 81.112, "char": [8, 14] }
       ]
     },
     {
-      "start": 81.479,
-      "end": 84.42,
+      "start": 81.112,
+      "end": 84.053,
       "text": "que a CLI provisiona e controla",
       "words": [
-        { "start": 81.479, "end": 81.969, "char": [0, 3] },
-        { "start": 81.969, "end": 82.46, "char": [4, 5] },
-        { "start": 82.46, "end": 82.95, "char": [6, 9] },
-        { "start": 82.95, "end": 83.44, "char": [10, 20] },
-        { "start": 83.44, "end": 83.93, "char": [21, 22] },
-        { "start": 83.93, "end": 84.42, "char": [23, 31] }
+        { "start": 81.112, "end": 81.602, "char": [0, 3] },
+        { "start": 81.602, "end": 82.093, "char": [4, 5] },
+        { "start": 82.093, "end": 82.583, "char": [6, 9] },
+        { "start": 82.583, "end": 83.073, "char": [10, 20] },
+        { "start": 83.073, "end": 83.563, "char": [21, 22] },
+        { "start": 83.563, "end": 84.053, "char": [23, 31] }
       ]
     },
     {
-      "start": 84.42,
-      "end": 85.401,
+      "start": 84.053,
+      "end": 85.034,
       "text": "por SSH,",
       "words": [
-        { "start": 84.42, "end": 84.911, "char": [0, 3] },
-        { "start": 84.911, "end": 85.401, "char": [4, 8] }
+        { "start": 84.053, "end": 84.544, "char": [0, 3] },
+        { "start": 84.544, "end": 85.034, "char": [4, 8] }
       ]
     },
     {
-      "start": 85.401,
-      "end": 88.342,
+      "start": 85.034,
+      "end": 87.975,
       "text": "para que nunca tenha de iniciar",
       "words": [
-        { "start": 85.401, "end": 85.891, "char": [0, 4] },
-        { "start": 85.891, "end": 86.381, "char": [5, 8] },
-        { "start": 86.381, "end": 86.871, "char": [9, 14] },
-        { "start": 86.871, "end": 87.361, "char": [15, 20] },
-        { "start": 87.361, "end": 87.852, "char": [21, 23] },
-        { "start": 87.852, "end": 88.342, "char": [24, 31] }
+        { "start": 85.034, "end": 85.524, "char": [0, 4] },
+        { "start": 85.524, "end": 86.014, "char": [5, 8] },
+        { "start": 86.014, "end": 86.504, "char": [9, 14] },
+        { "start": 86.504, "end": 86.994, "char": [15, 20] },
+        { "start": 86.994, "end": 87.485, "char": [21, 23] },
+        { "start": 87.485, "end": 87.975, "char": [24, 31] }
       ]
     },
     {
-      "start": 88.342,
-      "end": 89.322,
+      "start": 87.975,
+      "end": 88.955,
       "text": "sessão manualmente.",
       "words": [
-        { "start": 88.342, "end": 88.832, "char": [0, 6] },
-        { "start": 88.832, "end": 89.322, "char": [7, 19] }
+        { "start": 87.975, "end": 88.465, "char": [0, 6] },
+        { "start": 88.465, "end": 88.955, "char": [7, 19] }
       ]
     },
     {
-      "start": 90.104,
-      "end": 91.061,
+      "start": 89.737,
+      "end": 90.694,
       "text": "Instalação feita.",
       "words": [
-        { "start": 90.104, "end": 90.582, "char": [0, 10] },
-        { "start": 90.582, "end": 91.061, "char": [11, 17] }
+        { "start": 89.737, "end": 90.215, "char": [0, 10] },
+        { "start": 90.215, "end": 90.694, "char": [11, 17] }
       ]
     },
     {
-      "start": 91.061,
-      "end": 92.018,
+      "start": 90.694,
+      "end": 91.651,
       "text": "A seguir,",
       "words": [
-        { "start": 91.061, "end": 91.539, "char": [0, 1] },
-        { "start": 91.539, "end": 92.018, "char": [2, 9] }
+        { "start": 90.694, "end": 91.172, "char": [0, 1] },
+        { "start": 91.172, "end": 91.651, "char": [2, 9] }
       ]
     },
     {
-      "start": 92.018,
-      "end": 94.889,
+      "start": 91.651,
+      "end": 94.522,
       "text": "vamos configurar a sua chave SSH",
       "words": [
-        { "start": 92.018, "end": 92.496, "char": [0, 5] },
-        { "start": 92.496, "end": 92.975, "char": [6, 16] },
-        { "start": 92.975, "end": 93.453, "char": [17, 18] },
-        { "start": 93.453, "end": 93.932, "char": [19, 22] },
-        { "start": 93.932, "end": 94.41, "char": [23, 28] },
-        { "start": 94.41, "end": 94.889, "char": [29, 32] }
+        { "start": 91.651, "end": 92.129, "char": [0, 5] },
+        { "start": 92.129, "end": 92.608, "char": [6, 16] },
+        { "start": 92.608, "end": 93.086, "char": [17, 18] },
+        { "start": 93.086, "end": 93.565, "char": [19, 22] },
+        { "start": 93.565, "end": 94.043, "char": [23, 28] },
+        { "start": 94.043, "end": 94.522, "char": [29, 32] }
       ]
     },
     {
-      "start": 94.889,
-      "end": 97.759,
+      "start": 94.522,
+      "end": 97.392,
       "text": "para que a CLI consiga aceder",
       "words": [
-        { "start": 94.889, "end": 95.367, "char": [0, 4] },
-        { "start": 95.367, "end": 95.845, "char": [5, 8] },
-        { "start": 95.845, "end": 96.324, "char": [9, 10] },
-        { "start": 96.324, "end": 96.802, "char": [11, 14] },
-        { "start": 96.802, "end": 97.281, "char": [15, 22] },
-        { "start": 97.281, "end": 97.759, "char": [23, 29] }
+        { "start": 94.522, "end": 95, "char": [0, 4] },
+        { "start": 95, "end": 95.478, "char": [5, 8] },
+        { "start": 95.478, "end": 95.957, "char": [9, 10] },
+        { "start": 95.957, "end": 96.435, "char": [11, 14] },
+        { "start": 96.435, "end": 96.914, "char": [15, 22] },
+        { "start": 96.914, "end": 97.392, "char": [23, 29] }
       ]
     },
     {
-      "start": 97.759,
-      "end": 99.195,
+      "start": 97.392,
+      "end": 98.828,
       "text": "aos seus servidores.",
       "words": [
-        { "start": 97.759, "end": 98.238, "char": [0, 3] },
-        { "start": 98.238, "end": 98.716, "char": [4, 8] },
-        { "start": 98.716, "end": 99.195, "char": [9, 20] }
+        { "start": 97.392, "end": 97.871, "char": [0, 3] },
+        { "start": 97.871, "end": 98.349, "char": [4, 8] },
+        { "start": 98.349, "end": 98.828, "char": [9, 20] }
       ]
     }
   ]

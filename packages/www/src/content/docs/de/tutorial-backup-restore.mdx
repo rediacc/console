@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: de
-sourceHash: "bfdacd91b2d3b93b"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c13a0f880039d7e7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,21 +53,28 @@ Die App läuft weiter, während das Backup hochlädt. Wie ist das konsistent?
 
 Gleiche Logik wie bei einem [Fork](/de/docs/tutorial-forking). `rdc` forkt zuerst, dann lädt es den Fork hoch. Der Fork hält den Moment fest; Ihre Live-App läuft weiter. Kein Ausfall, keine Inkonsistenz.
 
-## Schritt 3: Auf einem neuen Server wiederherstellen
+## Schritt 3: Wirklich wiederherstellen
 
-Angenommen, Ihr Server fällt aus. Richten Sie einen neuen Server ein, fügen Sie ihn zu `rdc` hinzu und ziehen Sie:
+Backups, die Sie nie wiederherstellen, sind Hoffnungen, keine Backups. Nehmen Sie das Repository zuerst offline:
+
+<TutorialStep number={5} />
+
+Ziehen Sie das Backup direkt vom Speicher zurück:
+
+<TutorialStep number={6} />
+
+Und hängen Sie es wieder ein - vollständig wiederhergestellt:
+
+<TutorialStep number={7} />
+
+Dasselbe Pull-Kommando funktioniert auf einem brandneuen Server: einrichten, zu `rdc` hinzufügen und dort das Pull ausführen.
 
 ```bash
 rdc repo pull --name my-app -m new-server --from my-storage
-```
-
-Dann starten:
-
-```bash
 rdc repo up --name my-app -m new-server
 ```
 
-Ihre App ist zurück. Gleiche Daten, gleiche Container, andere Maschine.
+Gleiche Daten, gleiche Container, andere Maschine.
 
 ## Schnellere Backups: Maschine zu Maschine
 
@@ -77,8 +84,8 @@ Sie können auch direkt zwischen Maschinen übertragen, ohne Cloud-Speicher dazw
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **Profi-Tipp.** Speicher-Uploads senden immer alles. Maschine-zu-Maschine sendet nur den Unterschied. Der erste Maschine-zu-Maschine-Push dauert die übliche Zeit, aber jeder folgende Push ist deutlich schneller. Ideal für häufige Backups.
+> **Profi-Tipp.** Maschine-zu-Maschine-Pushes senden nach dem ersten Mal nur noch die geänderten Blöcke. Das [Delta Transfer-Tutorial](/de/docs/tutorial-delta-transfer) zeigt es live.
 
 ---
 
-Weiter: [Monitoring](/de/docs/tutorial-monitoring).
+Weiter: [Netzwerk und Domänen](/de/docs/tutorial-networking).

@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "Üks reaalajas repo. Kloonime selle.",
+      "cardLabel": "Reaalajaline rakendus",
+      "prose": "Alusta reaalajalise repositooriumiga: PostgreSQL andmebaas koos pgAdminiga töötab masinal."
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "Forkitud ja käivitub. Andmeid ei kopeeritud, need jagati, kuni üks pool neid muudab.",
+      "cardLabel": "Fork + Up",
+      "prose": "Tee repositooriumist fork kasutades --up --detach: CoW kloon on peaaegu kohene ja forki teenused käivituvad kohe."
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "Sama masin, kaks isoleeritud maailma.",
+      "cardLabel": "Kõrvuti",
+      "prose": "Kuva repositooriumid: originaal ja fork töötavad kõrvuti, täielikult isoleeritult."
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "Kadunud. Originaal teenis kogu selle aja.",
+      "cardLabel": "Kustuta Fork",
+      "prose": "Kustuta fork, kui oled lõpetanud. Originaalrepositoorium jääb puutumata."
+    }
+  ],
+  "title": "Fork isolatsioon praktikas",
+  "chapters": {
+    "intro": "Fork isolatsioon praktikas",
+    "what-is-a-fork": "Reaalajaline andmebaas ja selle kaksik",
+    "cast-step-0": "1. samm: reaalajaline rakendus",
+    "grand-pgadmin": "Originaal, kaitstud",
+    "cast-step-1": "2. samm: tee fork",
+    "fork-pgadmin": "Fork, täiesti avatud",
+    "side-by-side": "Kõrvuti",
+    "cast-step-2": "3. samm: kaks repot, üks server",
+    "cast-step-3": "4. samm: viska fork ära",
+    "outro": "Järgmine: saladuste haldamine"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Tere tulemast tagasi! Eelmine kord nägid sa fork-käsklusi. Nüüd vaatame, mida need tegelikult tähendavad: reaalajas töötav andmebaasirakendus, kopeeritud sekunditega, muudetav vabalt, samal ajal kui originaal ei märka midagi."
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "Siin on olukord: päris PostgreSQL koos pgAdmin liidesega peal, otseülekandes serveris. Fork on hetkeliselt loodud copy-on-write kaksik kõigest sellest. Sünnihetkel samad andmed, pärast täiesti eraldi elud."
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "See on originaal, brauseris. pgAdmin küsib sisselogimist, sest see on tootmiskoopia ja tootmine jääb kaitstuks."
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "Ja siin on fork'i pgAdmin. Seekord sisselogimist pole: fork'id on ühekordsed sandbox'id, nii et värav astub kõrvale. Samad tabelid, samad read, aga oma universum."
+    },
+    {
+      "id": "side-by-side",
+      "text": "Nüüd kõrvuti: fork vasakul, originaal paremal. Muuda, kustuta, lõhu vasakul mida tahes, ja parem ei värise kordagi. See on eraldatus, mida saab näha."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Nii et tee fork'e vabalt, tootmine ei saa viga. Järgmisena vaatame saladusi, seda üht asja, mida sinu fork'id tahtlikult ei päri. Kohtumiseni!"
+    }
+  ]
+}
