@@ -12,3 +12,6 @@
 # Docker SDK — v26+ has major API and package path changes
 github.com/docker/docker  # BLOCKER: v26+ breaks client.NewClientWithOpts signature and renames several packages; requires rewrite of renet docker client
 github.com/docker/go-connections  # BLOCKER: v0.7.0 removed sockets.DialPipe which docker/docker v25 still uses; pinned to v0.6.0 until docker SDK upgrade
+
+# go-landlock — sandbox isolation primitive (security-critical)
+github.com/landlock-lsm/go-landlock  # BLOCKER: v0.9.0 is a 0.x minor that can change the Landlock config API; this gates repo-sandbox isolation, so adoption needs sandbox-behavior validation on a live cluster before bumping
