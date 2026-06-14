@@ -67,7 +67,8 @@ async function execSSH(
       stderr += d.toString();
     });
     const code = await new Promise<number | null>((resolve, reject) => {
-      child.on('exit', resolve);
+      // 'close' (not 'exit') guarantees stdout/stderr are fully flushed first.
+      child.on('close', resolve);
       child.on('error', reject);
     });
     return { code, stdout, stderr };
@@ -264,7 +265,14 @@ echo $! > "$STATE/server.pid"
 echo "VSCODE_SERVER reused=0 port=$PORT secret=${secret}"
 `;
 
-  const result = await execSSH(connectionDetails, connectionDetails.privateKey, script);
+  // Run under bash explicitly: the launch script uses bash-only features
+  // (parameter-expansion replacement ${ARGS//__PORT__/$PORT}); if the remote
+  // login shell is dash/sh it would fail. Single-quote-escape the script body.
+  const result = await execSSH(
+    connectionDetails,
+    connectionDetails.privateKey,
+    `bash -c 'eval "$1"' -- '${script.replaceAll("'", "'\\''")}'`
+  );
   const line = result.stdout.split('\n').find((l) => l.startsWith('VSCODE_SERVER '));
   if (result.code !== 0 || !line) {
     debugLog(`vscode server launch stderr: ${result.stderr}`);

@@ -51,9 +51,14 @@ export async function waitForLocalPort(port: number, timeoutMs: number): Promise
   while (Date.now() < deadline) {
     const connected = await new Promise<boolean>((resolve) => {
       const sock = net.connect({ port, host: '127.0.0.1' });
+      sock.setTimeout(1000);
       sock.once('connect', () => {
         sock.destroy();
         resolve(true);
+      });
+      sock.once('timeout', () => {
+        sock.destroy();
+        resolve(false);
       });
       sock.once('error', () => resolve(false));
     });

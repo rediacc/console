@@ -176,7 +176,15 @@ export async function connectVSCodeBrowser(
   }
 
   // Tunnel localhost -> in-sandbox server port over the repo gateway key.
-  const localPort = options.local ? Number.parseInt(options.local, 10) : await findFreeLocalPort();
+  let localPort: number;
+  if (options.local) {
+    localPort = Number.parseInt(options.local, 10);
+    if (Number.isNaN(localPort) || localPort <= 0 || localPort > 65535) {
+      throw new ValidationError(`Invalid --local port: ${options.local}`);
+    }
+  } else {
+    localPort = await findFreeLocalPort();
+  }
   const tunnel = await openRepoTunnel({
     connectionDetails,
     localPort,
