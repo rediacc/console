@@ -344,7 +344,10 @@ async function main(): Promise<void> {
 
     if (debug) {
       for (const entry of debugCollector.castNarrated) {
-        const dstPng = path.join(debugFramesDir, `${entry.sceneId}.lastframe.png`);
+        const dstPng = path.join(
+          debugFramesDir,
+          `${entry.sceneId.replace(/[:<>"|?*]/g, '-')}.lastframe.png`
+        );
         try {
           copyFileSync(entry.lastFramePngSrc, dstPng);
         } catch {
@@ -365,7 +368,10 @@ async function main(): Promise<void> {
         castNarrated: debugCollector.castNarrated.map((d) => ({
           ...d,
           lastFramePngSrc: undefined,
-          lastFramePng: path.join(debugFramesDir, `${d.sceneId}.lastframe.png`),
+          lastFramePng: path.join(
+            debugFramesDir,
+            `${d.sceneId.replace(/[:<>"|?*]/g, '-')}.lastframe.png`
+          ),
           mp4StartSec: sceneTimingAbs[d.sceneId].start,
           mp4EndSec: sceneTimingAbs[d.sceneId].end,
         })),

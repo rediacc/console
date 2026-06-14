@@ -299,15 +299,18 @@ export function createSessionManager(opts: {
       const durSec = end - start;
       cutSegmentMp4(session.result.webm, start, durSec, outMp4, padFilter);
       if (opts.debugFramesDir) {
+        // Sanitize ':' (and other Windows-illegal chars) from scene IDs like
+        // 'vscode-versions:left' so debug frame filenames never break checkout.
+        const safeId = sceneId.replace(/[:<>"|?*]/g, '-');
         extractPosterJpg(
           session.result.webm,
           start,
-          path.join(opts.debugFramesDir, `${sceneId}.segstart.jpg`)
+          path.join(opts.debugFramesDir, `${safeId}.segstart.jpg`)
         );
         extractPosterJpg(
           session.result.webm,
           Math.max(start, end - 0.05),
-          path.join(opts.debugFramesDir, `${sceneId}.segend.jpg`)
+          path.join(opts.debugFramesDir, `${safeId}.segend.jpg`)
         );
       }
       return { durSec };
