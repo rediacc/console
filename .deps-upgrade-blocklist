@@ -1,5 +1,11 @@
 # Packages blocked from auto-upgrade (require manual migration).
 #
+# NOTE: do NOT add entries for versions that are merely too fresh. check-deps.ts
+# reads .npmrc `minimum-release-age` and automatically defers (does not fail on)
+# any `latest` published inside that window — npm cannot install it yet anyway,
+# and it clears itself once the version ages out. Only blocklist packages held
+# back for a real reason (breaking major, native rebuild, pin conflict, etc.).
+#
 # Format: package-name  # BLOCKER: <substantive reason>
 #
 # The BLOCKER convention is enforced by scripts/lib/blocker-validator.ts
@@ -53,17 +59,12 @@ date-fns  # BLOCKER: 4.2.0 dropped top-level types field; e2e tsconfig.json modu
 react-router-dom  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 7.17.0 in this environment, leaving the lockfile on 7.16.0; routine minor bump deferred to a dedicated dependency-bump PR once the guard admits the version
 fuse.js  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 7.4.1 in this environment, leaving the lockfile on 7.4.0; routine patch deferred to a dedicated dependency-bump PR once the guard admits the version
 electron-builder  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 26.15.3 in this environment, leaving the lockfile on 26.15.2; routine patch deferred to a dedicated dependency-bump PR once the guard admits the version
-@hono/node-server  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 2.0.5 (published 2026-06-15, <24h old) in this environment, leaving the lockfile on 2.0.4; routine patch deferred to a dedicated dependency-bump PR once the guard admits the version
 
 # eslint-plugin-unicorn v66 — major release with new/renamed lint rules
 eslint-plugin-unicorn  # BLOCKER: v66 is a major release that adds and renames lint rules which would surface new violations across the whole monorepo; adoption deferred to a dedicated lint-tooling PR that audits and fixes the rule-set changes
 
 # nodemailer v9 — major release with breaking transport/API changes in the account worker
 nodemailer  # BLOCKER: v9 is a major release with breaking API and transport changes affecting the account worker email send paths; adoption deferred to a dedicated PR that exercises the email flows before bumping
-
-# fast-xml-parser / vitest — freshly-released minor/patch the supply-chain guard hasn't admitted
-fast-xml-parser  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 5.9.0 in this environment, leaving the lockfile on 5.8.0; routine minor deferred to a dedicated dependency-bump PR once the guard admits the version
-vitest  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 4.1.9 in this environment, leaving the lockfile on 4.1.8; routine patch deferred to a dedicated dependency-bump PR once the guard admits the version
 
 # playwright — E2E/test runner; a minor bump also re-pins browser binaries
 playwright  # BLOCKER: playwright is the E2E/bridge test runner; the 1.61.0 minor bump also requires re-installing the pinned browser binaries (npx playwright install) and is deferred to a dedicated dependency-bump PR to keep this change focused

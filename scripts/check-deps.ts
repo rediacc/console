@@ -345,6 +345,146 @@ async function fetchChangelogUrls(packages: PackageInfo[]): Promise<Map<string, 
   return results;
 }
 
+const NPMRC_FILE = path.join(CONSOLE_ROOT, '.npmrc');
+
+/**
+ * Read the `minimum-release-age` setting (in minutes) from .npmrc and return it
+ * in milliseconds. The repo pins this to 1440 (24h) as a supply-chain defence:
+ * npm refuses to install any version published more recently than this window.
+ * Returns 0 when the setting is absent (feature disabled — no deferral).
+ */
+function getMinReleaseAgeMs(): number {
+  try {
+    const content = fs.readFileSync(NPMRC_FILE, 'utf-8');
+    const m = content.match(/^\s*minimum-release-age\s*=\s*(\d+)/m);
+    if (m) return Number(m[1]) * 60 * 1000;
+  } catch {
+    // No .npmrc — feature disabled.
+  }
+  return 0;
+}
+
+// Cache for version publish timestamps to avoid duplicate registry fetches.
+const publishTimeCache = new Map<string, number | null>();
+
+/**
+ * Fetch the publish timestamp (epoch ms) of a specific package version from the
+ * npm registry's `time` map. Returns null on any failure (treated as installable
+ * so a registry hiccup never silently suppresses a real upgrade).
+ */
+async function fetchVersionPublishTime(packageName: string, version: string): Promise<number | null> {
+  const cacheKey = `${packageName}@${version}`;
+  if (publishTimeCache.has(cacheKey)) {
+    return publishTimeCache.get(cacheKey) ?? null;
+  }
+
+  return new Promise((resolve) => {
+    const url = `https://registry.npmjs.org/${encodeURIComponent(packageName)}`;
+    const req = https.get(url, { timeout: 5000 }, (res) => {
+      let data = '';
+      res.on('data', (chunk: Buffer) => {
+        data += chunk.toString();
+      });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data) as { time?: Record<string, string> };
+          const stamp = json.time?.[version];
+          const ms = stamp ? Date.parse(stamp) : Number.NaN;
+          const val = Number.isNaN(ms) ? null : ms;
+          publishTimeCache.set(cacheKey, val);
+          resolve(val);
+        } catch {
+          publishTimeCache.set(cacheKey, null);
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', () => {
+      publishTimeCache.set(cacheKey, null);
+      resolve(null);
+    });
+    req.on('timeout', () => {
+      req.destroy();
+      publishTimeCache.set(cacheKey, null);
+      resolve(null);
+    });
+  });
+}
+
+/**
+ * Split must-upgrade packages into those installable now vs those whose `latest`
+ * was published within the .npmrc minimum-release-age window. npm's supply-chain
+ * guard refuses to install a version younger than that window, so flagging it as
+ * "must upgrade" is a false positive that no amount of `--upgrade` can clear — it
+ * resolves itself once the version ages past the threshold. We defer those (no
+ * failure) instead of forcing a manual blocklist entry for every fresh release.
+ */
+async function partitionByReleaseAge(
+  packages: PackageInfo[],
+  minReleaseAgeMs: number,
+  nowMs: number,
+): Promise<{ installable: PackageInfo[]; tooNew: PackageInfo[] }> {
+  if (minReleaseAgeMs <= 0 || packages.length === 0) {
+    return { installable: packages, tooNew: [] };
+  }
+  const installable: PackageInfo[] = [];
+  const tooNew: PackageInfo[] = [];
+  await Promise.all(
+    packages.map(async (pkg) => {
+      const published = await fetchVersionPublishTime(pkg.name, pkg.latest);
+      if (published !== null && nowMs - published < minReleaseAgeMs) {
+        tooNew.push(pkg);
+      } else {
+        installable.push(pkg);
+      }
+    }),
+  );
+  return { installable, tooNew };
+}
+
+/** Format the `name: current -> latest (major)` summary for one package. */
+function formatPackage(pkg: PackageInfo): string {
+  const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
+  return `${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`;
+}
+
+/**
+ * Print one package line plus its optional reason/changelog. `suffix` annotates
+ * the line (e.g. " (blocked)" or " (account)"); `changelogUrls` is omitted in
+ * upgrade mode where changelogs aren't fetched.
+ */
+function printPackage(
+  pkg: PackageInfo,
+  opts: { suffix?: string; changelogUrls?: Map<string, string | null> } = {},
+): void {
+  console.log(`  ${formatPackage(pkg)}${opts.suffix ?? ''}`);
+  if (pkg.reason) {
+    console.log(`    Reason: ${pkg.reason}`);
+  }
+  const changelog = opts.changelogUrls?.get(pkg.name);
+  if (changelog) {
+    console.log(`    Changelog: ${changelog}`);
+  }
+}
+
+/**
+ * Print a labeled group of packages (header + each line). Returns early when the
+ * group is empty so callers don't need their own length guards.
+ */
+function printPackageGroup(
+  header: string,
+  packages: PackageInfo[],
+  opts: { suffix?: string; changelogUrls?: Map<string, string | null> } = {},
+): void {
+  if (packages.length === 0) return;
+  console.log(header);
+  console.log();
+  for (const pkg of packages) {
+    printPackage(pkg, opts);
+  }
+  console.log();
+}
+
 /**
  * Upgrade packages using npm install
  *
@@ -497,40 +637,64 @@ async function checkDependencies(): Promise<void> {
   const outdated = getOutdatedPackages();
   const blocklist = loadBlocklist();
 
-  const { mustUpgrade, blocked } = categorizePackages(outdated, blocklist);
+  const { mustUpgrade: mustUpgradeAll, blocked } = categorizePackages(outdated, blocklist);
 
   // Also check private (non-workspace) packages
   const privateOutdated = getPrivateOutdatedPackages();
-  const privateMustUpgrade: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
+  const privateMustUpgradeAll: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
   const privateBlocked: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
 
   for (const { dir, name, packages } of privateOutdated) {
     const { mustUpgrade: dirMustUpgrade, blocked: dirBlocked } = categorizePackages(packages, blocklist);
-    if (dirMustUpgrade.length > 0) privateMustUpgrade.push({ dir, name, packages: dirMustUpgrade });
+    if (dirMustUpgrade.length > 0) privateMustUpgradeAll.push({ dir, name, packages: dirMustUpgrade });
     if (dirBlocked.length > 0) privateBlocked.push({ dir, name, packages: dirBlocked });
   }
 
-  const totalBlocked = blocked.length + privateBlocked.reduce((s, p) => s + p.packages.length, 0);
+  // Defer packages whose `latest` is still inside the .npmrc minimum-release-age
+  // window: npm cannot install them yet, so they are not a real "must upgrade".
+  // This auto-resolves once the version ages past the threshold — no manual
+  // blocklist churn for every freshly-published patch.
+  const minReleaseAgeMs = getMinReleaseAgeMs();
+  const nowMs = Date.now();
 
-  // In upgrade mode, upgrade all non-blocked packages
+  const { installable: mustUpgrade, tooNew } = await partitionByReleaseAge(mustUpgradeAll, minReleaseAgeMs, nowMs);
+
+  const privateMustUpgrade: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
+  const privateTooNew: Array<{ dir: string; name: string; packages: PackageInfo[] }> = [];
+  for (const { dir, name, packages } of privateMustUpgradeAll) {
+    const { installable, tooNew: dirTooNew } = await partitionByReleaseAge(packages, minReleaseAgeMs, nowMs);
+    if (installable.length > 0) privateMustUpgrade.push({ dir, name, packages: installable });
+    if (dirTooNew.length > 0) privateTooNew.push({ dir, name, packages: dirTooNew });
+  }
+
+  const totalBlocked = blocked.length + privateBlocked.reduce((s, p) => s + p.packages.length, 0);
+  const totalTooNew = tooNew.length + privateTooNew.reduce((s, p) => s + p.packages.length, 0);
+
+  // Helper: one-line summary of the non-failing categories (blocked + too-new).
+  const deferredSummary = (): string => {
+    const parts: string[] = [];
+    if (totalBlocked > 0) parts.push(`${totalBlocked} blocked`);
+    if (totalTooNew > 0) parts.push(`${totalTooNew} too new`);
+    return parts.length > 0 ? ` (${parts.join(', ')})` : '';
+  };
+
+  // In upgrade mode, upgrade all non-blocked, installable packages.
   if (upgradeMode) {
     const allEmpty = mustUpgrade.length === 0 && privateMustUpgrade.length === 0;
 
     if (allEmpty) {
-      if (totalBlocked > 0) {
-        console.log(`${GREEN}All dependencies are up-to-date${NC} (${totalBlocked} blocked)\n`);
-        for (const pkg of blocked) {
-          const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
-          console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag} (blocked)`);
-        }
-        for (const { name: dirName, packages: pkgs } of privateBlocked) {
-          for (const pkg of pkgs) {
-            const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
-            console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag} (blocked, ${dirName})`);
-          }
-        }
-      } else {
-        console.log(`${GREEN}All dependencies are up-to-date${NC}`);
+      console.log(`${GREEN}All dependencies are up-to-date${NC}${deferredSummary()}`);
+      for (const pkg of blocked) {
+        printPackage(pkg, { suffix: ' (blocked)' });
+      }
+      for (const { name: dirName, packages: pkgs } of privateBlocked) {
+        for (const pkg of pkgs) printPackage(pkg, { suffix: ` (blocked, ${dirName})` });
+      }
+      for (const pkg of tooNew) {
+        printPackage(pkg, { suffix: ' (too new — within minimum-release-age)' });
+      }
+      for (const { name: dirName, packages: pkgs } of privateTooNew) {
+        for (const pkg of pkgs) printPackage(pkg, { suffix: ` (too new, ${dirName})` });
       }
       process.exit(0);
     }
@@ -545,42 +709,19 @@ async function checkDependencies(): Promise<void> {
     process.exit(success ? 0 : 1);
   }
 
-  // Check mode - fetch changelog URLs for all packages that will be displayed
-  const allPrivatePackages = privateMustUpgrade.flatMap((p) => p.packages).concat(privateBlocked.flatMap((p) => p.packages));
-  const allPackages = [...mustUpgrade, ...blocked, ...allPrivatePackages];
+  // Check mode - fetch changelog URLs for all packages that will be displayed.
+  const allPrivatePackages = [privateMustUpgrade, privateBlocked, privateTooNew].flatMap((g) =>
+    g.flatMap((p) => p.packages),
+  );
+  const allPackages = [...mustUpgrade, ...blocked, ...tooNew, ...allPrivatePackages];
   const changelogUrls = await fetchChangelogUrls(allPackages);
 
-  // Check mode - output results
-  let hasFailure = false;
+  // Check mode - output results. Only must-upgrade (installable) packages fail.
+  const hasFailure = mustUpgrade.length > 0 || privateMustUpgrade.length > 0;
 
-  if (mustUpgrade.length > 0) {
-    hasFailure = true;
-    console.log(`${RED}Outdated packages (must upgrade):${NC}\n`);
-    for (const pkg of mustUpgrade) {
-      const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
-      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
-      const changelog = changelogUrls.get(pkg.name);
-      if (changelog) {
-        console.log(`    Changelog: ${changelog}`);
-      }
-    }
-    console.log();
-  }
-
-  if (privateMustUpgrade.length > 0) {
-    hasFailure = true;
-    for (const { name: dirName, packages: pkgs } of privateMustUpgrade) {
-      console.log(`${RED}Outdated packages in ${dirName} (must upgrade):${NC}\n`);
-      for (const pkg of pkgs) {
-        const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
-        console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
-        const changelog = changelogUrls.get(pkg.name);
-        if (changelog) {
-          console.log(`    Changelog: ${changelog}`);
-        }
-      }
-      console.log();
-    }
+  printPackageGroup(`${RED}Outdated packages (must upgrade):${NC}`, mustUpgrade, { changelogUrls });
+  for (const { name: dirName, packages: pkgs } of privateMustUpgrade) {
+    printPackageGroup(`${RED}Outdated packages in ${dirName} (must upgrade):${NC}`, pkgs, { changelogUrls });
   }
 
   if (hasFailure) {
@@ -589,30 +730,31 @@ async function checkDependencies(): Promise<void> {
     console.log();
   }
 
-  if (blocked.length > 0 || privateBlocked.length > 0) {
-    console.log(`${YELLOW}Blocked packages (${totalBlocked}):${NC}\n`);
+  // Too-new packages are informational, never a failure: npm's minimum-release-age
+  // guard cannot install them yet, and they clear themselves once they age out.
+  if (totalTooNew > 0) {
+    console.log(`${YELLOW}Too new — within npm minimum-release-age, deferred (${totalTooNew}):${NC}`);
+    console.log();
+    for (const pkg of tooNew) {
+      printPackage(pkg, { changelogUrls });
+    }
+    for (const { name: dirName, packages: pkgs } of privateTooNew) {
+      for (const pkg of pkgs) {
+        printPackage(pkg, { suffix: ` (${dirName})`, changelogUrls });
+      }
+    }
+    console.log();
+  }
+
+  if (totalBlocked > 0) {
+    console.log(`${YELLOW}Blocked packages (${totalBlocked}):${NC}`);
+    console.log();
     for (const pkg of blocked) {
-      const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
-      console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag}`);
-      if (pkg.reason) {
-        console.log(`    Reason: ${pkg.reason}`);
-      }
-      const changelog = changelogUrls.get(pkg.name);
-      if (changelog) {
-        console.log(`    Changelog: ${changelog}`);
-      }
+      printPackage(pkg, { changelogUrls });
     }
     for (const { name: dirName, packages: pkgs } of privateBlocked) {
       for (const pkg of pkgs) {
-        const majorTag = isMajorUpgrade(pkg.current, pkg.latest) ? ' (major)' : '';
-        console.log(`  ${pkg.name}: ${pkg.current} -> ${pkg.latest}${majorTag} (${dirName})`);
-        if (pkg.reason) {
-          console.log(`    Reason: ${pkg.reason}`);
-        }
-        const changelog = changelogUrls.get(pkg.name);
-        if (changelog) {
-          console.log(`    Changelog: ${changelog}`);
-        }
+        printPackage(pkg, { suffix: ` (${dirName})`, changelogUrls });
       }
     }
     console.log();
@@ -623,11 +765,7 @@ async function checkDependencies(): Promise<void> {
     process.exit(1);
   }
 
-  if (totalBlocked > 0) {
-    console.log(`${GREEN}All dependencies are up-to-date${NC} (${totalBlocked} blocked)`);
-  } else {
-    console.log(`${GREEN}All dependencies are up-to-date${NC}`);
-  }
+  console.log(`${GREEN}All dependencies are up-to-date${NC}${deferredSummary()}`);
   process.exit(0);
 }
 
