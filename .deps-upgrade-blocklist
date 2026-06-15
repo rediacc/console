@@ -59,3 +59,7 @@ eslint-plugin-unicorn  # BLOCKER: v66 is a major release that adds and renames l
 
 # nodemailer v9 — major release with breaking transport/API changes in the account worker
 nodemailer  # BLOCKER: v9 is a major release with breaking API and transport changes affecting the account worker email send paths; adoption deferred to a dedicated PR that exercises the email flows before bumping
+
+# fast-xml-parser / vitest — freshly-released minor/patch the supply-chain guard hasn't admitted
+fast-xml-parser  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 5.9.0 in this environment, leaving the lockfile on 5.8.0; routine minor deferred to a dedicated dependency-bump PR once the guard admits the version
+vitest  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 4.1.9 in this environment, leaving the lockfile on 4.1.8; routine patch deferred to a dedicated dependency-bump PR once the guard admits the version
