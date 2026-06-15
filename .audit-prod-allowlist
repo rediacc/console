@@ -247,3 +247,15 @@
 # Transitive via electron-vite and eslint-plugin-react-hooks (build/lint toolchain), never in the deployed runtime.
 # BLOCKER: babel compiles our own first-party source and never runs in production; the arbitrary-file-read requires compiling attacker-controlled source carrying a malicious sourceMappingURL comment, which our build never does (all inputs are version-controlled). Low severity, build-time only. Take the in-range 7.29.x fix via overrides in a dedicated dependency-bump PR.
 1120793
+
+# markdown-it 14.1.1 (GHSA-6v5v-wf23-fmfq moderate quadratic-DoS in the smartquotes rule).
+# Transitive via @marp-team/marp-core -> @marp-team/marpit (Marp slide/PDF rendering of growth content);
+# no fixed version is published yet (14.1.1 is the latest and still in the vulnerable <=14.1.1 range).
+# BLOCKER: marp uses markdown-it only at build time to render our own version-controlled markdown into slides/PDFs, never runtime user input, so the quadratic smartquotes DoS has no attacker-controlled markdown to trigger. Build-time only, never in the deployed output. Drop once markdown-it ships a fixed release.
+1120820
+
+# @opentelemetry/core 2.7.1 (GHSA-8988-4f7v-96qf moderate unbounded memory allocation in W3C Baggage propagation).
+# Same pinned chain as the exporter-prometheus entry above: the only fix is @opentelemetry/sdk-node 0.219.0, a
+# major outside the deliberate ^0.211.0 pin in .syncpackrc.json (the OTel upgrade chain breaks CLI instrumentation).
+# BLOCKER: the unbounded allocation requires attacker-controlled inbound W3C Baggage headers, but our SDK only propagates baggage we set ourselves and exports via OTLP — it never parses untrusted inbound baggage from external callers, so the allocation path is unreachable. Drop when the sdk-node pin moves to >=0.219.0.
+1120821
