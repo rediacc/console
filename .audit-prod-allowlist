@@ -224,3 +224,26 @@
 # BLOCKER: neither advisory is reachable in our build — the high one is the esbuild Deno module (lib/deno/mod.ts), which we never import (Node-only toolchain), and the low one is the esbuild dev server's Windows path traversal; the dev server is never shipped to prod and CI/prod builds do not run on Windows. Drop once astro/vite widen the esbuild range to admit 0.28.1.
 1120679
 1120680
+
+# protobufjs 7.5.9 (GHSA-f38q-mgvj-vph7 moderate name-shadowing + GHSA-wcpc-wj8m-hjx6 high Any-expansion DoS).
+# Transitive via @grpc/grpc-js -> @grpc/proto-loader (the OTLP telemetry exporter chain), already pinned by an
+# overrides entry to ^7.5.6; the in-range 7.x fix needs a focused overrides bump + careful lockfile regen.
+# BLOCKER: both advisories require an attacker-controlled .proto schema / Any message, but every protobuf definition we load is our own OpenTelemetry export schema (compiled from version-controlled .proto, never user input), so neither the runtime-property shadowing nor the unbounded-Any JSON DoS is reachable. Take the 7.x fix in a dedicated dependency-bump PR where the lockfile can be regenerated without dropping platform-specific optional deps.
+1120742
+1120799
+
+# form-data 4.0.5 (GHSA-hmw2-7cc7-3qxx high CRLF injection), fixed in 4.0.6.
+# Transitive via axios (HTTP client) and electron-publish (build); 4.0.6 satisfies axios's ^4.0.5 caret but
+# reaching it needs an overrides bump + lockfile regen, deferred to a focused dependency PR.
+# BLOCKER: the CRLF injection requires an attacker-controlled multipart FIELD NAME or filename, but every FormData append call in our code passes static, code-defined field names (never user input), so the header-injection vector is unreachable. Take the 4.0.6 fix via overrides in a dedicated dependency-bump PR.
+1120743
+
+# js-yaml 4.1.1 (GHSA-h67p-54hq-rp68 moderate quadratic-DoS via merge keys), fixed in 4.2.0.
+# Transitive via astro 5.x static rendering; reaching 4.2.0 needs an overrides bump, deferred to a dependency PR.
+# BLOCKER: astro uses js-yaml only at build time to parse our own .md/.mdx frontmatter (trusted, version-controlled input), never runtime user input, and it does not run in the deployed static output, so the merge-key DoS has no attacker-controlled YAML to trigger. Take 4.2.0 via overrides in a dedicated dependency-bump PR.
+1120792
+
+# @babel/core 7.29.0 (GHSA-4x5r-pxfx-6jf8 low arbitrary file read via sourceMappingURL), fixed in-range at 7.29.1+.
+# Transitive via electron-vite and eslint-plugin-react-hooks (build/lint toolchain), never in the deployed runtime.
+# BLOCKER: babel compiles our own first-party source and never runs in production; the arbitrary-file-read requires compiling attacker-controlled source carrying a malicious sourceMappingURL comment, which our build never does (all inputs are version-controlled). Low severity, build-time only. Take the in-range 7.29.x fix via overrides in a dedicated dependency-bump PR.
+1120793

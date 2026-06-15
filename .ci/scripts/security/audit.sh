@@ -172,9 +172,95 @@ get_advisory_fix_info() {
                       else null end),
             fixVersion: (if (.value.fixAvailable | type) == "object"
                          then .value.fixAvailable.version
-                         else null end)
+                         else null end),
+            fixName: (if (.value.fixAvailable | type) == "object"
+                      then .value.fixAvailable.name
+                      else null end)
         }
     ' "$audit_json" 2>/dev/null | head -1
+}
+
+# ── Time-drift / blocklist deferral ─────────────────────────────────
+# Mirrors scripts/check-deps.ts: an advisory whose ONLY fix is a version npm
+# cannot install yet (younger than .npmrc minimum-release-age) or a package we
+# deliberately hold back in .deps-upgrade-blocklist is NOT actionable — failing
+# on it is a false positive that no `npm audit fix` can clear today. We defer
+# (warn) those; they fail for real once the fix ages in / the hold is lifted.
+DEFER_REASON=""
+
+# minimum-release-age (minutes) from .npmrc; 0 disables the time-based check.
+get_min_release_age_minutes() {
+    local v
+    v=$(grep -E '^[[:space:]]*minimum-release-age[[:space:]]*=[[:space:]]*[0-9]+' .npmrc 2>/dev/null |
+        head -1 | grep -oE '[0-9]+' | head -1)
+    echo "${v:-0}"
+}
+
+# Exact-name match against .deps-upgrade-blocklist (entries: "name  # BLOCKER: …").
+deps_blocklist_has() {
+    local pkg="$1"
+    [[ -n "$pkg" && -f .deps-upgrade-blocklist ]] || return 1
+    grep -qE "^${pkg//./\\.}([[:space:]]|\$)" .deps-upgrade-blocklist
+}
+
+# Epoch seconds (UTC) of a package version's publish time, or empty on failure.
+# An empty version uses the package's most-recent publish (a proxy for an
+# in-range "fixAvailable: true" patch that just shipped).
+version_publish_epoch() {
+    local pkg="$1" version="$2" times t
+    times=$(npm view "$pkg" time --json 2>/dev/null) || return 1
+    if [[ -n "$version" ]]; then
+        t=$(echo "$times" | jq -r --arg v "$version" '.[$v] // empty')
+    else
+        t=$(echo "$times" | jq -r '.modified // empty')
+    fi
+    [[ -z "$t" ]] && return 1
+    date -u -d "$t" +%s 2>/dev/null
+}
+
+# Decide whether an advisory should be deferred (return 0) vs failed (1).
+# Sets DEFER_REASON when deferring.
+should_defer_advisory() {
+    local advisory="$1" audit_json="$2"
+    DEFER_REASON=""
+    local info fix_type fix_version fix_name fix_value pkg fix_pkg
+    info=$(get_advisory_fix_info "$advisory" "$audit_json")
+    [[ -z "$info" || "$info" == "null" ]] && return 1
+    fix_type=$(echo "$info" | jq -r '.fixType')
+    fix_version=$(echo "$info" | jq -r '.fixVersion // empty')
+    fix_name=$(echo "$info" | jq -r '.fixName // empty')
+    fix_value=$(echo "$info" | jq -r '.fixValue // "null"')
+    pkg=$(echo "$info" | jq -r '.pkg // empty')
+    fix_pkg="${fix_name:-$pkg}"
+
+    # Condition B: the only fix moves a package we deliberately hold back.
+    if deps_blocklist_has "$fix_pkg"; then
+        DEFER_REASON="fix requires ${fix_pkg}${fix_version:+@$fix_version}, held in .deps-upgrade-blocklist"
+        return 0
+    fi
+
+    # Condition A: the fix version is younger than the minimum-release-age window
+    # (npm refuses to install it yet, so it is not remediable today).
+    local min_min
+    min_min=$(get_min_release_age_minutes)
+    if [[ "$min_min" -gt 0 ]]; then
+        local epoch=""
+        if [[ "$fix_type" == "object" && -n "$fix_version" ]]; then
+            epoch=$(version_publish_epoch "$fix_pkg" "$fix_version") || epoch=""
+        elif [[ "$fix_type" == "boolean" && "$fix_value" == "true" ]]; then
+            epoch=$(version_publish_epoch "$pkg" "") || epoch=""
+        fi
+        if [[ -n "$epoch" ]]; then
+            local now age_min
+            now=$(date -u +%s)
+            age_min=$(((now - epoch) / 60))
+            if ((age_min < min_min)); then
+                DEFER_REASON="fix published ${age_min}m ago, within npm minimum-release-age (${min_min}m) — not installable yet"
+                return 0
+            fi
+        fi
+    fi
+    return 1
 }
 
 # Check every allowlisted ID against the audit JSON and emit advisory-level
@@ -274,20 +360,34 @@ main() {
         done
 
         if ((${#prod_unallowed[@]} > 0)); then
-            ci_error "Production vulnerabilities: $prod_critical critical, $prod_high high, $prod_total total"
-            local info pkg fix_type is_major fix_version fix_value hint
+            # Partition: defer advisories whose only fix is not installable yet
+            # (minimum-release-age) or held in .deps-upgrade-blocklist; fail the rest.
+            local prod_failing=() info pkg fix_type is_major fix_version fix_value hint
             for advisory in "${prod_unallowed[@]}"; do
-                info=$(get_advisory_fix_info "$advisory" audit-prod.json)
-                pkg=$(echo "$info" | jq -r '.pkg // "unknown"')
-                fix_type=$(echo "$info" | jq -r '.fixType')
-                is_major=$(echo "$info" | jq -r '.isMajor // "null"')
-                fix_version=$(echo "$info" | jq -r '.fixVersion // empty')
-                fix_value=$(echo "$info" | jq -r '.fixValue // "null"')
-                hint=$(describe_fix "$fix_type" "$is_major" "$fix_version" "$fix_value")
-                emit_advisory error "$advisory" "$pkg" "$hint" \
-                    "fix by upgrading/overriding the affected package, OR add '# BLOCKER: <reason>' above $advisory in .audit-prod-allowlist"
+                if should_defer_advisory "$advisory" audit-prod.json; then
+                    pkg=$(get_advisory_fix_info "$advisory" audit-prod.json | jq -r '.pkg // "unknown"')
+                    emit_advisory warn "$advisory" "$pkg" "deferred — $DEFER_REASON"
+                else
+                    prod_failing+=("$advisory")
+                fi
             done
-            exit 1
+
+            if ((${#prod_failing[@]} > 0)); then
+                ci_error "Production vulnerabilities: $prod_critical critical, $prod_high high, $prod_total total"
+                for advisory in "${prod_failing[@]}"; do
+                    info=$(get_advisory_fix_info "$advisory" audit-prod.json)
+                    pkg=$(echo "$info" | jq -r '.pkg // "unknown"')
+                    fix_type=$(echo "$info" | jq -r '.fixType')
+                    is_major=$(echo "$info" | jq -r '.isMajor // "null"')
+                    fix_version=$(echo "$info" | jq -r '.fixVersion // empty')
+                    fix_value=$(echo "$info" | jq -r '.fixValue // "null"')
+                    hint=$(describe_fix "$fix_type" "$is_major" "$fix_version" "$fix_value")
+                    emit_advisory error "$advisory" "$pkg" "$hint" \
+                        "fix by upgrading/overriding the affected package, OR add '# BLOCKER: <reason>' above $advisory in .audit-prod-allowlist"
+                done
+                exit 1
+            fi
+            ci_warn "Deferred ${#prod_unallowed[@]} production advisory(ies): fix not yet installable (minimum-release-age) or held in .deps-upgrade-blocklist"
         fi
         ci_warn "Allowed production vulnerabilities: $prod_total (see .audit-prod-allowlist)"
     fi
@@ -321,20 +421,33 @@ main() {
     done
 
     if ((${#unallowed[@]} > 0)); then
-        ci_error "New dev vulnerabilities: $all_critical critical, $all_high high"
-        local info pkg fix_type is_major fix_version fix_value hint
+        # Same time-drift / blocklist deferral as the production pass.
+        local dev_failing=() info pkg fix_type is_major fix_version fix_value hint
         for advisory in "${unallowed[@]}"; do
-            info=$(get_advisory_fix_info "$advisory" audit-report.json)
-            pkg=$(echo "$info" | jq -r '.pkg // "unknown"')
-            fix_type=$(echo "$info" | jq -r '.fixType')
-            is_major=$(echo "$info" | jq -r '.isMajor // "null"')
-            fix_version=$(echo "$info" | jq -r '.fixVersion // empty')
-            fix_value=$(echo "$info" | jq -r '.fixValue // "null"')
-            hint=$(describe_fix "$fix_type" "$is_major" "$fix_version" "$fix_value")
-            emit_advisory error "$advisory" "$pkg" "$hint" \
-                "fix by upgrading/overriding the affected package, OR add '# BLOCKER: <reason>' above $advisory in .audit-allowlist"
+            if should_defer_advisory "$advisory" audit-report.json; then
+                pkg=$(get_advisory_fix_info "$advisory" audit-report.json | jq -r '.pkg // "unknown"')
+                emit_advisory warn "$advisory" "$pkg" "deferred — $DEFER_REASON"
+            else
+                dev_failing+=("$advisory")
+            fi
         done
-        exit 1
+
+        if ((${#dev_failing[@]} > 0)); then
+            ci_error "New dev vulnerabilities: $all_critical critical, $all_high high"
+            for advisory in "${dev_failing[@]}"; do
+                info=$(get_advisory_fix_info "$advisory" audit-report.json)
+                pkg=$(echo "$info" | jq -r '.pkg // "unknown"')
+                fix_type=$(echo "$info" | jq -r '.fixType')
+                is_major=$(echo "$info" | jq -r '.isMajor // "null"')
+                fix_version=$(echo "$info" | jq -r '.fixVersion // empty')
+                fix_value=$(echo "$info" | jq -r '.fixValue // "null"')
+                hint=$(describe_fix "$fix_type" "$is_major" "$fix_version" "$fix_value")
+                emit_advisory error "$advisory" "$pkg" "$hint" \
+                    "fix by upgrading/overriding the affected package, OR add '# BLOCKER: <reason>' above $advisory in .audit-allowlist"
+            done
+            exit 1
+        fi
+        ci_warn "Deferred ${#unallowed[@]} dev advisory(ies): fix not yet installable (minimum-release-age) or held in .deps-upgrade-blocklist"
     fi
 
     local dev_only_count="${#dev_only_advisories[@]}"
