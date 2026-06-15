@@ -63,3 +63,6 @@ nodemailer  # BLOCKER: v9 is a major release with breaking API and transport cha
 # fast-xml-parser / vitest — freshly-released minor/patch the supply-chain guard hasn't admitted
 fast-xml-parser  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 5.9.0 in this environment, leaving the lockfile on 5.8.0; routine minor deferred to a dedicated dependency-bump PR once the guard admits the version
 vitest  # BLOCKER: npm under the repo .npmrc supply-chain guard (minimum-release-age) refuses to install 4.1.9 in this environment, leaving the lockfile on 4.1.8; routine patch deferred to a dedicated dependency-bump PR once the guard admits the version
+
+# playwright — E2E/test runner; a minor bump also re-pins browser binaries
+playwright  # BLOCKER: playwright is the E2E/bridge test runner; the 1.61.0 minor bump also requires re-installing the pinned browser binaries (npx playwright install) and is deferred to a dedicated dependency-bump PR to keep this change focused
