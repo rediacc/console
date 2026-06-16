@@ -68,3 +68,14 @@ nodemailer  # BLOCKER: v9 is a major release with breaking API and transport cha
 
 # playwright — E2E/test runner; a minor bump also re-pins browser binaries
 playwright  # BLOCKER: playwright is the E2E/bridge test runner; the 1.61.0 minor bump also requires re-installing the pinned browser binaries (npx playwright install) and is deferred to a dedicated dependency-bump PR to keep this change focused
+
+# Routine patch/minor bumps that aged past the .npmrc minimum-release-age window during this
+# long-running PR; installable now but deferred to a dedicated dependency-bump PR to keep this
+# merge focused and non-functional. The two account-workspace deps additionally live in the
+# now-merged private/account submodule, so bumping them here would force an unnecessary
+# account submodule re-cycle.
+fast-xml-parser  # BLOCKER: routine 5.9.0 minor bump, not security-relevant and not needed by this change; deferred to a dedicated dependency-bump PR to keep this merge focused
+typescript-eslint  # BLOCKER: routine 8.61.1 patch to the lint toolchain (not shipped to the production runtime); deferred to a dedicated dependency-bump PR to keep this merge focused
+@anthropic-ai/claude-agent-sdk  # BLOCKER: routine 0.3.178 patch, not security-relevant and not needed by this change; deferred to a dedicated dependency-bump PR to keep this merge focused
+@hono/node-server  # BLOCKER: routine 2.0.5 patch living in the now-merged private/account submodule; bumping here forces an unnecessary account submodule re-cycle, so deferred to a dedicated dependency-bump PR
+@aws-sdk/client-s3  # BLOCKER: routine 3.1069.0 patch living in the now-merged private/account submodule; bumping here forces an unnecessary account submodule re-cycle, so deferred to a dedicated dependency-bump PR
