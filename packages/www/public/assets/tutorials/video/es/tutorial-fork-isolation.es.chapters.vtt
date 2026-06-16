@@ -1,0 +1,31 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:17.404
+Aislamiento de Fork en Acción
+
+00:00:17.404 --> 00:00:37.964
+Una base de datos en vivo y su copia
+
+00:00:37.964 --> 00:00:56.990
+Paso 1: La app en vivo
+
+00:00:56.690 --> 00:01:28.157
+El original, protegido
+
+00:01:27.857 --> 00:01:54.646
+Paso 2: Hazle un fork
+
+00:01:54.346 --> 00:02:11.512
+El fork, completamente abierto
+
+00:02:11.212 --> 00:02:44.012
+Lado a lado
+
+00:02:43.712 --> 00:03:00.104
+Paso 3: Dos repos, un servidor
+
+00:03:00.104 --> 00:03:18.643
+Paso 4: Descarta el fork
+
+00:03:18.643 --> 00:03:33.683
+Siguiente: Gestión de Secrets

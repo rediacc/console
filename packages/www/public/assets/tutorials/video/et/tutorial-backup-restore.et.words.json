@@ -277,250 +277,485 @@
       ]
     },
     {
-      "start": 59.638,
-      "end": 60.692,
+      "start": 59.671,
+      "end": 60.725,
       "text": "Teine samm.",
       "words": [
-        { "start": 59.638, "end": 60.165, "char": [0, 5] },
-        { "start": 60.165, "end": 60.692, "char": [6, 11] }
+        { "start": 59.671, "end": 60.198, "char": [0, 5] },
+        { "start": 60.198, "end": 60.725, "char": [6, 11] }
       ]
     },
     {
-      "start": 60.692,
-      "end": 62.274,
+      "start": 60.725,
+      "end": 62.307,
       "text": "Tõukame täieliku varukoopia.",
       "words": [
-        { "start": 60.692, "end": 61.219, "char": [0, 7] },
-        { "start": 61.219, "end": 61.746, "char": [8, 16] },
-        { "start": 61.746, "end": 62.274, "char": [17, 28] }
+        { "start": 60.725, "end": 61.252, "char": [0, 7] },
+        { "start": 61.252, "end": 61.779, "char": [8, 16] },
+        { "start": 61.779, "end": 62.307, "char": [17, 28] }
       ]
     },
     {
-      "start": 62.274,
-      "end": 64.382,
+      "start": 62.307,
+      "end": 64.415,
       "text": "Terve repositoorium -- rakendus,",
       "words": [
-        { "start": 62.274, "end": 62.801, "char": [0, 5] },
-        { "start": 62.801, "end": 63.328, "char": [6, 19] },
-        { "start": 63.328, "end": 63.855, "char": [20, 22] },
-        { "start": 63.855, "end": 64.382, "char": [23, 32] }
+        { "start": 62.307, "end": 62.834, "char": [0, 5] },
+        { "start": 62.834, "end": 63.361, "char": [6, 19] },
+        { "start": 63.361, "end": 63.888, "char": [20, 22] },
+        { "start": 63.888, "end": 64.415, "char": [23, 32] }
       ]
     },
     {
-      "start": 64.382,
-      "end": 64.909,
+      "start": 64.415,
+      "end": 64.942,
       "text": "andmebaas,",
-      "words": [{ "start": 64.382, "end": 64.909, "char": [0, 10] }]
+      "words": [{ "start": 64.415, "end": 64.942, "char": [0, 10] }]
     },
     {
-      "start": 64.909,
-      "end": 65.436,
+      "start": 64.942,
+      "end": 65.469,
       "text": "failid,",
-      "words": [{ "start": 64.909, "end": 65.436, "char": [0, 7] }]
+      "words": [{ "start": 64.942, "end": 65.469, "char": [0, 7] }]
     },
     {
-      "start": 65.436,
-      "end": 67.545,
+      "start": 65.469,
+      "end": 67.578,
       "text": "konfiguratsioon -- laaditakse üles.",
       "words": [
-        { "start": 65.436, "end": 65.963, "char": [0, 15] },
-        { "start": 65.963, "end": 66.49, "char": [16, 18] },
-        { "start": 66.49, "end": 67.018, "char": [19, 29] },
-        { "start": 67.018, "end": 67.545, "char": [30, 35] }
+        { "start": 65.469, "end": 65.996, "char": [0, 15] },
+        { "start": 65.996, "end": 66.523, "char": [16, 18] },
+        { "start": 66.523, "end": 67.051, "char": [19, 29] },
+        { "start": 67.051, "end": 67.578, "char": [30, 35] }
       ]
     },
     {
-      "start": 67.545,
-      "end": 70.18,
+      "start": 67.578,
+      "end": 70.213,
       "text": "Kuna repositoorium on puhkeolekus krüpteeritud,",
       "words": [
-        { "start": 67.545, "end": 68.072, "char": [0, 4] },
-        { "start": 68.072, "end": 68.599, "char": [5, 18] },
-        { "start": 68.599, "end": 69.126, "char": [19, 21] },
-        { "start": 69.126, "end": 69.653, "char": [22, 33] },
-        { "start": 69.653, "end": 70.18, "char": [34, 47] }
+        { "start": 67.578, "end": 68.105, "char": [0, 4] },
+        { "start": 68.105, "end": 68.632, "char": [5, 18] },
+        { "start": 68.632, "end": 69.159, "char": [19, 21] },
+        { "start": 69.159, "end": 69.686, "char": [22, 33] },
+        { "start": 69.686, "end": 70.213, "char": [34, 47] }
       ]
     },
     {
-      "start": 70.18,
-      "end": 72.289,
+      "start": 70.213,
+      "end": 72.322,
       "text": "on ka varukoopia krüpteeritud.",
       "words": [
-        { "start": 70.18, "end": 70.707, "char": [0, 2] },
-        { "start": 70.707, "end": 71.235, "char": [3, 5] },
-        { "start": 71.235, "end": 71.762, "char": [6, 16] },
-        { "start": 71.762, "end": 72.289, "char": [17, 30] }
+        { "start": 70.213, "end": 70.74, "char": [0, 2] },
+        { "start": 70.74, "end": 71.268, "char": [3, 5] },
+        { "start": 71.268, "end": 71.795, "char": [6, 16] },
+        { "start": 71.795, "end": 72.322, "char": [17, 30] }
       ]
     },
     {
-      "start": 72.289,
-      "end": 74.397,
+      "start": 72.322,
+      "end": 74.43,
       "text": "Lisavõtme haldamine pole vajalik.",
       "words": [
-        { "start": 72.289, "end": 72.816, "char": [0, 9] },
-        { "start": 72.816, "end": 73.343, "char": [10, 19] },
-        { "start": 73.343, "end": 73.87, "char": [20, 24] },
-        { "start": 73.87, "end": 74.397, "char": [25, 33] }
+        { "start": 72.322, "end": 72.849, "char": [0, 9] },
+        { "start": 72.849, "end": 73.376, "char": [10, 19] },
+        { "start": 73.376, "end": 73.903, "char": [20, 24] },
+        { "start": 73.903, "end": 74.43, "char": [25, 33] }
       ]
     },
     {
-      "start": 76.647,
-      "end": 78.008,
+      "start": 77.43,
+      "end": 78.791,
       "text": "Varukoopia üles laaditud.",
       "words": [
-        { "start": 76.647, "end": 77.101, "char": [0, 10] },
-        { "start": 77.101, "end": 77.554, "char": [11, 15] },
-        { "start": 77.554, "end": 78.008, "char": [16, 25] }
+        { "start": 77.43, "end": 77.884, "char": [0, 10] },
+        { "start": 77.884, "end": 78.337, "char": [11, 15] },
+        { "start": 78.337, "end": 78.791, "char": [16, 25] }
       ]
     },
     {
-      "start": 78.008,
-      "end": 80.729,
+      "start": 78.791,
+      "end": 81.512,
       "text": "Kõik selle repo sisu on nüüd",
       "words": [
-        { "start": 78.008, "end": 78.462, "char": [0, 4] },
-        { "start": 78.462, "end": 78.915, "char": [5, 10] },
-        { "start": 78.915, "end": 79.369, "char": [11, 15] },
-        { "start": 79.369, "end": 79.822, "char": [16, 20] },
-        { "start": 79.822, "end": 80.276, "char": [21, 23] },
-        { "start": 80.276, "end": 80.729, "char": [24, 28] }
+        { "start": 78.791, "end": 79.245, "char": [0, 4] },
+        { "start": 79.245, "end": 79.698, "char": [5, 10] },
+        { "start": 79.698, "end": 80.152, "char": [11, 15] },
+        { "start": 80.152, "end": 80.605, "char": [16, 20] },
+        { "start": 80.605, "end": 81.059, "char": [21, 23] },
+        { "start": 81.059, "end": 81.512, "char": [24, 28] }
       ]
     },
     {
-      "start": 80.729,
-      "end": 81.183,
+      "start": 81.512,
+      "end": 81.966,
       "text": "kaugsalvestusel,",
-      "words": [{ "start": 80.729, "end": 81.183, "char": [0, 16] }]
+      "words": [{ "start": 81.512, "end": 81.966, "char": [0, 16] }]
     },
     {
-      "start": 81.183,
-      "end": 81.637,
+      "start": 81.966,
+      "end": 82.42,
       "text": "krüpteeritud.",
-      "words": [{ "start": 81.183, "end": 81.637, "char": [0, 13] }]
+      "words": [{ "start": 81.966, "end": 82.42, "char": [0, 13] }]
     },
     {
-      "start": 84.946,
-      "end": 86.775,
+      "start": 85.729,
+      "end": 87.558,
       "text": "Loetleme sellel salvestusel saadaolevad varukoopiad.",
       "words": [
-        { "start": 84.946, "end": 85.312, "char": [0, 8] },
-        { "start": 85.312, "end": 85.677, "char": [9, 15] },
-        { "start": 85.677, "end": 86.043, "char": [16, 27] },
-        { "start": 86.043, "end": 86.409, "char": [28, 39] },
-        { "start": 86.409, "end": 86.775, "char": [40, 52] }
+        { "start": 85.729, "end": 86.095, "char": [0, 8] },
+        { "start": 86.095, "end": 86.46, "char": [9, 15] },
+        { "start": 86.46, "end": 86.826, "char": [16, 27] },
+        { "start": 86.826, "end": 87.192, "char": [28, 39] },
+        { "start": 87.192, "end": 87.558, "char": [40, 52] }
       ]
     },
     {
-      "start": 86.775,
-      "end": 89.335,
+      "start": 87.558,
+      "end": 90.118,
       "text": "Edaspidi on taastamine uuel serveril üks käsk",
       "words": [
-        { "start": 86.775, "end": 87.14, "char": [0, 8] },
-        { "start": 87.14, "end": 87.506, "char": [9, 11] },
-        { "start": 87.506, "end": 87.872, "char": [12, 22] },
-        { "start": 87.872, "end": 88.237, "char": [23, 27] },
-        { "start": 88.237, "end": 88.603, "char": [28, 36] },
-        { "start": 88.603, "end": 88.969, "char": [37, 40] },
-        { "start": 88.969, "end": 89.335, "char": [41, 45] }
+        { "start": 87.558, "end": 87.923, "char": [0, 8] },
+        { "start": 87.923, "end": 88.289, "char": [9, 11] },
+        { "start": 88.289, "end": 88.655, "char": [12, 22] },
+        { "start": 88.655, "end": 89.02, "char": [23, 27] },
+        { "start": 89.02, "end": 89.386, "char": [28, 36] },
+        { "start": 89.386, "end": 89.752, "char": [37, 40] },
+        { "start": 89.752, "end": 90.118, "char": [41, 45] }
       ]
     },
     {
-      "start": 89.335,
-      "end": 90.797,
+      "start": 90.118,
+      "end": 91.58,
       "text": "-- CLI repo pull.",
       "words": [
-        { "start": 89.335, "end": 89.7, "char": [0, 2] },
-        { "start": 89.7, "end": 90.066, "char": [3, 6] },
-        { "start": 90.066, "end": 90.432, "char": [7, 11] },
-        { "start": 90.432, "end": 90.797, "char": [12, 17] }
+        { "start": 90.118, "end": 90.483, "char": [0, 2] },
+        { "start": 90.483, "end": 90.849, "char": [3, 6] },
+        { "start": 90.849, "end": 91.215, "char": [7, 11] },
+        { "start": 91.215, "end": 91.58, "char": [12, 17] }
       ]
     },
     {
-      "start": 90.797,
-      "end": 91.529,
+      "start": 91.58,
+      "end": 92.312,
       "text": "Samad andmed,",
       "words": [
-        { "start": 90.797, "end": 91.163, "char": [0, 5] },
-        { "start": 91.163, "end": 91.529, "char": [6, 13] }
+        { "start": 91.58, "end": 91.946, "char": [0, 5] },
+        { "start": 91.946, "end": 92.312, "char": [6, 13] }
       ]
     },
     {
-      "start": 91.529,
-      "end": 92.26,
+      "start": 92.312,
+      "end": 93.043,
       "text": "samad konteinerid,",
       "words": [
-        { "start": 91.529, "end": 91.895, "char": [0, 5] },
-        { "start": 91.895, "end": 92.26, "char": [6, 18] }
+        { "start": 92.312, "end": 92.678, "char": [0, 5] },
+        { "start": 92.678, "end": 93.043, "char": [6, 18] }
       ]
     },
     {
-      "start": 92.26,
-      "end": 92.992,
+      "start": 93.043,
+      "end": 93.775,
       "text": "erinev masin.",
       "words": [
-        { "start": 92.26, "end": 92.626, "char": [0, 6] },
-        { "start": 92.626, "end": 92.992, "char": [7, 13] }
+        { "start": 93.043, "end": 93.409, "char": [0, 6] },
+        { "start": 93.409, "end": 93.775, "char": [7, 13] }
       ]
     },
     {
-      "start": 95.992,
-      "end": 97.664,
+      "start": 96.775,
+      "end": 98.447,
       "text": "Kõik tõmmised ühes kohas.",
       "words": [
-        { "start": 95.992, "end": 96.41, "char": [0, 4] },
-        { "start": 96.41, "end": 96.828, "char": [5, 13] },
-        { "start": 96.828, "end": 97.246, "char": [14, 18] },
-        { "start": 97.246, "end": 97.664, "char": [19, 25] }
+        { "start": 96.775, "end": 97.193, "char": [0, 4] },
+        { "start": 97.193, "end": 97.611, "char": [5, 13] },
+        { "start": 97.611, "end": 98.029, "char": [14, 18] },
+        { "start": 98.029, "end": 98.447, "char": [19, 25] }
       ]
     },
     {
-      "start": 97.664,
-      "end": 100.171,
+      "start": 98.447,
+      "end": 100.954,
       "text": "Tõmba ükskõik milline neist ühe käsuga",
       "words": [
-        { "start": 97.664, "end": 98.082, "char": [0, 5] },
-        { "start": 98.082, "end": 98.499, "char": [6, 13] },
-        { "start": 98.499, "end": 98.917, "char": [14, 21] },
-        { "start": 98.917, "end": 99.335, "char": [22, 27] },
-        { "start": 99.335, "end": 99.753, "char": [28, 31] },
-        { "start": 99.753, "end": 100.171, "char": [32, 38] }
+        { "start": 98.447, "end": 98.865, "char": [0, 5] },
+        { "start": 98.865, "end": 99.282, "char": [6, 13] },
+        { "start": 99.282, "end": 99.7, "char": [14, 21] },
+        { "start": 99.7, "end": 100.118, "char": [22, 27] },
+        { "start": 100.118, "end": 100.536, "char": [28, 31] },
+        { "start": 100.536, "end": 100.954, "char": [32, 38] }
       ]
     },
     {
-      "start": 100.171,
-      "end": 100.589,
+      "start": 100.954,
+      "end": 101.372,
       "text": "tagasi.",
-      "words": [{ "start": 100.171, "end": 100.589, "char": [0, 7] }]
+      "words": [{ "start": 100.954, "end": 101.372, "char": [0, 7] }]
     },
     {
-      "start": 101.41,
-      "end": 103.983,
+      "start": 104.693,
+      "end": 106.141,
+      "text": "Nüüd taastamise tõestus.",
+      "words": [
+        { "start": 104.693, "end": 105.176, "char": [0, 4] },
+        { "start": 105.176, "end": 105.658, "char": [5, 15] },
+        { "start": 105.658, "end": 106.141, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 106.141,
+      "end": 108.071,
+      "text": "Võta kõigepealt repository võrguühenduseta:",
+      "words": [
+        { "start": 106.141, "end": 106.623, "char": [0, 4] },
+        { "start": 106.623, "end": 107.106, "char": [5, 15] },
+        { "start": 107.106, "end": 107.588, "char": [16, 26] },
+        { "start": 107.588, "end": 108.071, "char": [27, 43] }
+      ]
+    },
+    {
+      "start": 108.071,
+      "end": 110.967,
+      "text": "peata teenused ja ühenda krüptitud maht",
+      "words": [
+        { "start": 108.071, "end": 108.554, "char": [0, 5] },
+        { "start": 108.554, "end": 109.036, "char": [6, 14] },
+        { "start": 109.036, "end": 109.519, "char": [15, 17] },
+        { "start": 109.519, "end": 110.001, "char": [18, 24] },
+        { "start": 110.001, "end": 110.484, "char": [25, 34] },
+        { "start": 110.484, "end": 110.967, "char": [35, 39] }
+      ]
+    },
+    {
+      "start": 110.967,
+      "end": 111.449,
+      "text": "lahti.",
+      "words": [{ "start": 110.967, "end": 111.449, "char": [0, 6] }]
+    },
+    {
+      "start": 111.449,
+      "end": 113.862,
+      "text": "Rakendus on sellelt masinalt kadunud.",
+      "words": [
+        { "start": 111.449, "end": 111.932, "char": [0, 8] },
+        { "start": 111.932, "end": 112.414, "char": [9, 11] },
+        { "start": 112.414, "end": 112.897, "char": [12, 19] },
+        { "start": 112.897, "end": 113.379, "char": [20, 28] },
+        { "start": 113.379, "end": 113.862, "char": [29, 37] }
+      ]
+    },
+    {
+      "start": 116.862,
+      "end": 119.043,
+      "text": "Võrguühenduseta ja lahti ühendatud,",
+      "words": [
+        { "start": 116.862, "end": 117.407, "char": [0, 15] },
+        { "start": 117.407, "end": 117.953, "char": [16, 18] },
+        { "start": 117.953, "end": 118.498, "char": [19, 24] },
+        { "start": 118.498, "end": 119.043, "char": [25, 35] }
+      ]
+    },
+    {
+      "start": 119.043,
+      "end": 121.224,
+      "text": "täpselt nagu värske server.",
+      "words": [
+        { "start": 119.043, "end": 119.589, "char": [0, 7] },
+        { "start": 119.589, "end": 120.134, "char": [8, 12] },
+        { "start": 120.134, "end": 120.679, "char": [13, 19] },
+        { "start": 120.679, "end": 121.224, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 124.558,
+      "end": 126.881,
+      "text": "Ja tõmba varukoopia otse salvestusruumist tagasi.",
+      "words": [
+        { "start": 124.558, "end": 124.945, "char": [0, 2] },
+        { "start": 124.945, "end": 125.332, "char": [3, 8] },
+        { "start": 125.332, "end": 125.719, "char": [9, 19] },
+        { "start": 125.719, "end": 126.106, "char": [20, 24] },
+        { "start": 126.106, "end": 126.493, "char": [25, 41] },
+        { "start": 126.493, "end": 126.881, "char": [42, 49] }
+      ]
+    },
+    {
+      "start": 126.881,
+      "end": 128.816,
+      "text": "Repo pull käsk tõmbab image'i,",
+      "words": [
+        { "start": 126.881, "end": 127.268, "char": [0, 4] },
+        { "start": 127.268, "end": 127.655, "char": [5, 9] },
+        { "start": 127.655, "end": 128.042, "char": [10, 14] },
+        { "start": 128.042, "end": 128.429, "char": [15, 21] },
+        { "start": 128.429, "end": 128.816, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 128.816,
+      "end": 131.526,
+      "text": "kontrollib selle terviklikkust ja paigutab selle täpselt",
+      "words": [
+        { "start": 128.816, "end": 129.203, "char": [0, 10] },
+        { "start": 129.203, "end": 129.59, "char": [11, 16] },
+        { "start": 129.59, "end": 129.977, "char": [17, 30] },
+        { "start": 129.977, "end": 130.364, "char": [31, 33] },
+        { "start": 130.364, "end": 130.751, "char": [34, 42] },
+        { "start": 130.751, "end": 131.139, "char": [43, 48] },
+        { "start": 131.139, "end": 131.526, "char": [49, 56] }
+      ]
+    },
+    {
+      "start": 131.526,
+      "end": 131.913,
+      "text": "sinna,",
+      "words": [{ "start": 131.526, "end": 131.913, "char": [0, 6] }]
+    },
+    {
+      "start": 131.913,
+      "end": 133.074,
+      "text": "kus see oli.",
+      "words": [
+        { "start": 131.913, "end": 132.3, "char": [0, 3] },
+        { "start": 132.3, "end": 132.687, "char": [4, 7] },
+        { "start": 132.687, "end": 133.074, "char": [8, 12] }
+      ]
+    },
+    {
+      "start": 136.074,
+      "end": 137.388,
+      "text": "Ülekanne lõpetatud,",
+      "words": [
+        { "start": 136.074, "end": 136.731, "char": [0, 8] },
+        { "start": 136.731, "end": 137.388, "char": [9, 19] }
+      ]
+    },
+    {
+      "start": 137.388,
+      "end": 138.701,
+      "text": "terviklikkus kinnitatud.",
+      "words": [
+        { "start": 137.388, "end": 138.044, "char": [0, 12] },
+        { "start": 138.044, "end": 138.701, "char": [13, 24] }
+      ]
+    },
+    {
+      "start": 138.701,
+      "end": 140.671,
+      "text": "Repository on tagasi.",
+      "words": [
+        { "start": 138.701, "end": 139.358, "char": [0, 10] },
+        { "start": 139.358, "end": 140.015, "char": [11, 13] },
+        { "start": 140.015, "end": 140.671, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 143.988,
+      "end": 146.592,
+      "text": "Ühenda see uuesti ja repository",
+      "words": [
+        { "start": 143.988, "end": 144.509, "char": [0, 6] },
+        { "start": 144.509, "end": 145.029, "char": [7, 10] },
+        { "start": 145.029, "end": 145.55, "char": [11, 17] },
+        { "start": 145.55, "end": 146.071, "char": [18, 20] },
+        { "start": 146.071, "end": 146.592, "char": [21, 31] }
+      ]
+    },
+    {
+      "start": 146.592,
+      "end": 147.633,
+      "text": "on taastatud.",
+      "words": [
+        { "start": 146.592, "end": 147.112, "char": [0, 2] },
+        { "start": 147.112, "end": 147.633, "char": [3, 13] }
+      ]
+    },
+    {
+      "start": 147.633,
+      "end": 148.154,
+      "text": "Push,",
+      "words": [{ "start": 147.633, "end": 148.154, "char": [0, 5] }]
+    },
+    {
+      "start": 148.154,
+      "end": 148.674,
+      "text": "list,",
+      "words": [{ "start": 148.154, "end": 148.674, "char": [0, 5] }]
+    },
+    {
+      "start": 148.674,
+      "end": 149.195,
+      "text": "pull,",
+      "words": [{ "start": 148.674, "end": 149.195, "char": [0, 5] }]
+    },
+    {
+      "start": 149.195,
+      "end": 151.799,
+      "text": "see on kogu varukoopia lugu.",
+      "words": [
+        { "start": 149.195, "end": 149.716, "char": [0, 3] },
+        { "start": 149.716, "end": 150.237, "char": [4, 6] },
+        { "start": 150.237, "end": 150.757, "char": [7, 11] },
+        { "start": 150.757, "end": 151.278, "char": [12, 22] },
+        { "start": 151.278, "end": 151.799, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 154.049,
+      "end": 154.565,
+      "text": "Taastatud.",
+      "words": [{ "start": 154.049, "end": 154.565, "char": [0, 10] }]
+    },
+    {
+      "start": 154.565,
+      "end": 157.144,
+      "text": "Sama protsess toimib ka täiesti",
+      "words": [
+        { "start": 154.565, "end": 155.08, "char": [0, 4] },
+        { "start": 155.08, "end": 155.596, "char": [5, 13] },
+        { "start": 155.596, "end": 156.112, "char": [14, 20] },
+        { "start": 156.112, "end": 156.628, "char": [21, 23] },
+        { "start": 156.628, "end": 157.144, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 157.144,
+      "end": 158.176,
+      "text": "uuel masinal.",
+      "words": [
+        { "start": 157.144, "end": 157.66, "char": [0, 4] },
+        { "start": 157.66, "end": 158.176, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 158.981,
+      "end": 161.554,
       "text": "Sinu andmed on turvalised ja",
       "words": [
-        { "start": 101.41, "end": 101.925, "char": [0, 4] },
-        { "start": 101.925, "end": 102.439, "char": [5, 11] },
-        { "start": 102.439, "end": 102.954, "char": [12, 14] },
-        { "start": 102.954, "end": 103.468, "char": [15, 25] },
-        { "start": 103.468, "end": 103.983, "char": [26, 28] }
+        { "start": 158.981, "end": 159.496, "char": [0, 4] },
+        { "start": 159.496, "end": 160.01, "char": [5, 11] },
+        { "start": 160.01, "end": 160.525, "char": [12, 14] },
+        { "start": 160.525, "end": 161.039, "char": [15, 25] },
+        { "start": 161.039, "end": 161.554, "char": [26, 28] }
       ]
     },
     {
-      "start": 103.983,
-      "end": 105.527,
+      "start": 161.554,
+      "end": 163.098,
       "text": "masinate vahel kaasaskantavad.",
       "words": [
-        { "start": 103.983, "end": 104.498, "char": [0, 8] },
-        { "start": 104.498, "end": 105.012, "char": [9, 14] },
-        { "start": 105.012, "end": 105.527, "char": [15, 30] }
+        { "start": 161.554, "end": 162.069, "char": [0, 8] },
+        { "start": 162.069, "end": 162.583, "char": [9, 14] },
+        { "start": 162.583, "end": 163.098, "char": [15, 30] }
       ]
     },
     {
-      "start": 105.527,
-      "end": 106.556,
+      "start": 163.098,
+      "end": 164.127,
       "text": "Kohtumiseni järgmises!",
       "words": [
-        { "start": 105.527, "end": 106.042, "char": [0, 11] },
-        { "start": 106.042, "end": 106.556, "char": [12, 22] }
+        { "start": 163.098, "end": 163.613, "char": [0, 11] },
+        { "start": 163.613, "end": 164.127, "char": [12, 22] }
       ]
     }
   ]

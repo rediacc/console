@@ -4,8 +4,8 @@ description: مزامنة الملفات والوصول عبر SSH وتكامل 
 category: Guides
 order: 9
 language: ar
-sourceHash: "4b3aebff5e82416f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "59abc2faa1157369"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # الأدوات
@@ -46,7 +46,7 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 # Directory
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 
-# Single file — --local must be an existing directory
+# Single file: --local must be an existing directory
 rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
@@ -173,6 +173,36 @@ rdc vscode check
 التحقق من تثبيت VS Code، وإضافة Remote SSH، والاتصالات النشطة.
 
 > **متطلب مسبق:** قم بتثبيت إضافة [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) في VS Code.
+
+### VS Code في المتصفح
+
+لا تريد تثبيت VS Code محليًا؟ شغّل المحرر من داخل صندوق رمل المستودع وافتحه في أي متصفح:
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+يقوم هذا الأمر بما يلي:
+1. تثبيت خادم المحرر مفتوح المصدر على الجهاز مرة واحدة (مسار مشترك للقراءة فقط، مُتحقَّق من بصمته)
+2. تشغيله داخل صندوق رمل المستودع، بحيث ترى شجرة الملفات والطرفية المدمجة وكل عملية فرعية بالضبط ما يراه المستودع
+3. فتح نفق SSH إلى منفذ محلي وتشغيل متصفحك برابط يحتوي على رمز جلسة خاص
+
+يستمر الخادم في العمل بعد إغلاق النفق؛ إعادة الاتصال تُعيد استخدامه. أدِره بالأوامر:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| الخيار | الوصف |
+|--------|-------------|
+| `--no-open` | طباعة الرابط بدلًا من فتح المتصفح |
+| `--url-only` | طباعة سطر رابط واحد على stdout (للنصوص البرمجية) مع الإبقاء على النفق |
+| `--local <port>` | اختيار منفذ النفق المحلي |
+| `--server-provider <id>` | تطبيق خادم المحرر: `openvscode` (الافتراضي) أو `code-server` |
+| `--server-archive <file>` | التثبيت من أرشيف مُعد مسبقًا على الجهاز (بدون إنترنت) |
+
+يعمل من Linux وmacOS وWindows أو من جهاز لوحي. المتطلب المحلي الوحيد هو متصفح.
 
 ## تحديثات واجهة سطر الأوامر (update)
 

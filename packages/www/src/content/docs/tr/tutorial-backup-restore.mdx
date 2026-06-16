@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: tr
-sourceHash: "bfdacd91b2d3b93b"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c13a0f880039d7e7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,21 +53,28 @@ Yedek yüklenirken uygulama çalışmaya devam eder. Bu nasıl tutarlı olur?
 
 [Fork](/tr/docs/tutorial-forking) mantığının aynısı. `rdc` önce fork alır, sonra fork'u yükler. Fork o anı yakalar; canlı uygulamanız devam eder. Kesinti yok, tutarsızlık yok.
 
-## Adım 3: Yeni sunucuda geri yükleyin
+## Adım 3: Geri yükleyin, gerçekten
 
-Diyelim ki sunucunuz çöktü. Yeni bir sunucu kurun, `rdc`'ye ekleyin ve çekin:
+Hiç geri yüklenmemiş yedekler umut, yedek değil. Önce depoyu çevrimdışı alın:
+
+<TutorialStep number={5} />
+
+Yedeği doğrudan depolamadan geri çekin:
+
+<TutorialStep number={6} />
+
+Ve yeniden bağlayın, tamamen geri yüklenmiş:
+
+<TutorialStep number={7} />
+
+Aynı çekme işlemi sıfırdan kurulmuş yeni bir sunucuda da çalışır: kurun, `rdc`'ye ekleyin ve çekme komutunu orada çalıştırın.
 
 ```bash
 rdc repo pull --name my-app -m new-server --from my-storage
-```
-
-Ardından başlatın:
-
-```bash
 rdc repo up --name my-app -m new-server
 ```
 
-Uygulamanız geri döndü. Aynı veri, aynı container'lar, farklı makine.
+Aynı veri, aynı container'lar, farklı makine.
 
 ## Daha hızlı yedekler: makineden makineye
 
@@ -77,8 +84,8 @@ Ayrıca doğrudan makineler arasında da gönderebilirsiniz; arada bulut depolam
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **İpucu.** Depolama yüklemeleri her zaman her şeyi gönderir. Makineden makineye yalnızca farkı gönderir. İlk makineden makineye gönderim olağan süreyi alır, ancak sonraki her gönderim çok daha hızlıdır. Sık yedeklemeler için idealdir.
+> **İpucu.** Makineden makineye gönderimler, birincisinin ardından yalnızca değişen blokları iletir. [Delta Aktarımı öğreticisi](/tr/docs/tutorial-delta-transfer) bunu canlı olarak gösteriyor.
 
 ---
 
-Sonraki: [İzleme](/tr/docs/tutorial-monitoring).
+Sonraki: [Ağ ve Alan Adları](/tr/docs/tutorial-networking).

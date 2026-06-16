@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: es
-sourceHash: "bfdacd91b2d3b93b"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c13a0f880039d7e7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,21 +53,28 @@ La app sigue ejecutándose mientras se sube el backup. ¿Cómo es eso consistent
 
 La misma lógica que un [fork](/es/docs/tutorial-forking). `rdc` primero hace un fork y luego sube el fork. El fork captura el momento; tu app en vivo sigue funcionando. Sin tiempo de inactividad, sin inconsistencias.
 
-## Paso 3: Restaurar en un nuevo servidor
+## Paso 3: Restaurar, de verdad
 
-Supongamos que tu servidor falla. Configura un nuevo servidor, agrégalo a `rdc` y descarga:
+Un backup que nunca restauras es una esperanza, no un backup. Primero detén el repositorio:
+
+<TutorialStep number={5} />
+
+Descarga el backup directamente desde el almacenamiento:
+
+<TutorialStep number={6} />
+
+Y móntalo de nuevo, ya restaurado por completo:
+
+<TutorialStep number={7} />
+
+El mismo pull funciona en un servidor nuevo: configúralo, agrégalo a `rdc` y ejecuta el pull ahí:
 
 ```bash
 rdc repo pull --name my-app -m new-server --from my-storage
-```
-
-Luego inícialo:
-
-```bash
 rdc repo up --name my-app -m new-server
 ```
 
-Tu app está de vuelta. Los mismos datos, los mismos contenedores, una máquina diferente.
+Mismos datos, los mismos contenedores, una máquina diferente.
 
 ## Backups más rápidos: de máquina a máquina
 
@@ -77,8 +84,8 @@ También puedes enviar directamente entre máquinas, sin almacenamiento en la nu
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **Consejo profesional.** Las subidas a almacenamiento siempre envían todo. De máquina a máquina se envía solo la diferencia. El primer envío de máquina a máquina toma el tiempo habitual, pero cada envío posterior es mucho más rápido. Ideal para backups frecuentes.
+> **Consejo profesional.** Los envíos de máquina a máquina solo transfieren los bloques que cambiaron después del primero. El [tutorial de Transferencia delta](/es/docs/tutorial-delta-transfer) lo muestra en directo.
 
 ---
 
-Siguiente: [Monitoreo](/es/docs/tutorial-monitoring).
+Siguiente: [Redes y dominios](/es/docs/tutorial-networking).

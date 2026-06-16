@@ -62,7 +62,9 @@
     "check:ci-subscription-schema": ".ci/scripts/quality/check-subscription-schema.sh",
     "check:cli-examples": "tsx scripts/validate-cli-examples.ts",
     "check:ci-tutorial-parity": "tsx packages/www/scripts/check-tutorial-parity.ts",
+    "check:ci-tutorial-casts": "node packages/www/scripts/validate-tutorial-cast-output.js",
     "check:ci-locale-tutorial-assets": "tsx packages/www/scripts/check-locale-tutorial-assets.ts",
+    "check:ci-solution-videos": "tsx packages/www/scripts/check-solution-videos.ts",
     "check:format": "biome format packages/ private/account/",
     "check:i18n": "tsx scripts/check-translation-hashes.ts && tsx scripts/check-translation-completeness.ts && tsx scripts/check-translation-key-usage.ts && tsx scripts/check-docs-inline-translations.ts && tsx scripts/check-www-only-translations.ts && tsx scripts/check-docs-untranslated-text.ts && tsx scripts/check-account-email-templates.ts && npm run validate:cli-docs -w @rediacc/www && npm run validate:docs-cli-usage -w @rediacc/www && npm run validate:landing-cli-usage -w @rediacc/www && npm run validate:translation-freshness -w @rediacc/www && npm run validate:content -w @rediacc/www && npm run validate:content-accuracy -w @rediacc/www && npm run validate:comparison-refs -w @rediacc/www && tsx scripts/check-component-hardcoded-strings.ts --strict && npm run check:cli-docs && tsx scripts/check-i18n-naturalization.ts",
     "check:cli-docs": "tsx scripts/check-cli-docs.ts",
@@ -107,7 +109,7 @@
     "lint": "NODE_OPTIONS=--max-old-space-size=8192 eslint packages scripts private/account",
     "lint:unused": "knip --treat-config-hints-as-errors",
     "lint:unused:fix": "knip --fix",
-    "ci": "npm run check:version && npm run check:deps && npm run lint && npm run check:lint && npm run lint:unused && npm run check:format && npm run check:i18n && npm run check:types && npm run check:test && npm run check:test-cli && npm run check:test-workers && npm run check:ci-install-sh-config && npm run check:ci-npmrc && npm run check:ci-lockfile && npm run check:ci-peer-deps && npm run check:ci-security-audit && npm run check:ci-shell-lint && npm run check:ci-shell-format && npm run check:ci-shell-commands && npm run check:ci-workflows && npm run check:ci-compose-env && npm run check:ci-e2e-coverage && npm run check:ci-audit-coverage && npm run check:ci-config-migrations && npm run check:ci-editorconfig && npm run check:ci-account-portal && npm run check:ci-account-server && npm run check:ci-account-layer-isolation && npm run check:ci-account-config-auth && npm run check:ci-account-no-admin-role && npm run check:ci-account-scope-audit && npm run check:ci-renet && npm run check:ci-no-otlp-creds && npm run check:ci-subscription-schema && npm run check:ci-seo && npm run check:ci-external-links && npm run check:ci-dkim-notify && npm run check:ci-redirects && npm run check:ci-search-index && npm run check:ci-cta-bolt && npm run check:ci-content-quality && npm run check:ci-nis2-quotes && npm run check:cli-examples && npm run check:ci-tutorial-parity && npm run check:ci-locale-tutorial-assets",
+    "ci": "npm run check:version && npm run check:deps && npm run lint && npm run check:lint && npm run lint:unused && npm run check:format && npm run check:i18n && npm run check:types && npm run check:test && npm run check:test-cli && npm run check:test-workers && npm run check:ci-install-sh-config && npm run check:ci-npmrc && npm run check:ci-lockfile && npm run check:ci-peer-deps && npm run check:ci-security-audit && npm run check:ci-shell-lint && npm run check:ci-shell-format && npm run check:ci-shell-commands && npm run check:ci-workflows && npm run check:ci-compose-env && npm run check:ci-e2e-coverage && npm run check:ci-audit-coverage && npm run check:ci-config-migrations && npm run check:ci-editorconfig && npm run check:ci-account-portal && npm run check:ci-account-server && npm run check:ci-account-layer-isolation && npm run check:ci-account-config-auth && npm run check:ci-account-no-admin-role && npm run check:ci-account-scope-audit && npm run check:ci-renet && npm run check:ci-no-otlp-creds && npm run check:ci-subscription-schema && npm run check:ci-seo && npm run check:ci-external-links && npm run check:ci-dkim-notify && npm run check:ci-redirects && npm run check:ci-search-index && npm run check:ci-cta-bolt && npm run check:ci-content-quality && npm run check:ci-nis2-quotes && npm run check:cli-examples && npm run check:ci-tutorial-parity && npm run check:ci-tutorial-casts && npm run check:ci-locale-tutorial-assets && npm run check:ci-solution-videos",
     "quality": "npm run ci",
     "test": "npm run test -w @rediacc/web",
     "test:quality-gates": ".ci/scripts/test/run-all.sh",
@@ -125,7 +127,7 @@
     "proper-lockfile": "^4.1.2"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.16",
+    "@biomejs/biome": "^2.5.0",
     "@eslint/js": "^9.39.2",
     "@eslint/json": "^2.0.0",
     "@types/node": "^22.10.2",

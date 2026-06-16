@@ -1,0 +1,101 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "ko",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "28f898fe32707412fe15846424171f9b358b68cb0d02945221a89723cee0b753",
+  "steps": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413171,
+      "replayEndSec": 10.379022,
+      "narrationText": "pulse를 소개합니다. 프로세스 메모리에 카운터를 유지하며 5초마다 박동을 출력합니다. 카운터는 현재 6이고 계속 올라가고 있으며, RAM에만 존재합니다. 프로세스를 재시작하면 1부터 다시 시작합니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-01.e2f5f0ad.mp3",
+      "textHash": "e2f5f0ad9d41fa429c181c620b68d214e7b918fdd8951f8ddf19a5e4d2cfadfc",
+      "audioDurationSec": 16.587755,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-01-after.8925e904.mp3",
+      "afterAudioDurationSec": 4.440816,
+      "afterTextHash": "8925e904f86fda9d27adab51cfed3466ad0c48f160a92e06e073fb0ba1ee0d1e"
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.379022,
+      "replayEndSec": 101.149024,
+      "narrationText": "명령 하나로 라이브 상태에서 이동합니다. 1단계에서는 소스가 계속 실행되는 동안 약 30초 만에 2기가바이트의 대용량 데이터를 전송합니다. 그다음 전환이 이루어집니다. 실행 중인 프로세스를 체크포인트하고, 마지막 몇 메가바이트를 전달한 뒤, 다운타임을 바로 출력합니다. 2기가바이트 이동에 약 20초입니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-02.505796f6.mp3",
+      "textHash": "505796f67bce3db5afdc993215ff3e0ba48e5f1647f961f0432652caf702b6fa",
+      "audioDurationSec": 28.525714,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-02-after.46b19af1.mp3",
+      "afterAudioDurationSec": 7.627755,
+      "afterTextHash": "46b19af10bd4ea71c190978601b0d2aa5d116b79a8cbccfbc821875a6e46b429"
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "replayStartSec": 101.149024,
+      "replayEndSec": 106.859481,
+      "narrationText": "새 머신을 확인합니다. 있네요. 마운트되어 있고, Docker가 실행 중이며, container 두 개가 올라와 있습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-03.52d97c0c.mp3",
+      "textHash": "52d97c0cb0ed4e4e2dfc199ef653f77d1c5100bf8887fd9bdc5785860eee4026",
+      "audioDurationSec": 9.717551,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-03-after.294df9ca.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "294df9ca7e5372636c711e51c5302aacc16d6db92e37c85bc0511c23757244de"
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "replayStartSec": 106.859481,
+      "replayEndSec": 112.346008,
+      "narrationText": "소스는 어떨까요? repository는 여전히 목록에 있지만, 행을 보세요. 마운트되지 않았고, Docker도 없고, container도 0개입니다. 더 이상 여기서는 아무것도 실행되지 않습니다. 이미지는 의도적으로 남아 있으며, 다음 delta 전송의 기반이 됩니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-04.412384a6.mp3",
+      "textHash": "412384a6e11297444195e706c75fa01c96c6d0154949b6e222910dcf72b36e1e",
+      "audioDurationSec": 19.565714,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-04-after.f536392d.mp3",
+      "afterAudioDurationSec": 6.687347,
+      "afterTextHash": "f536392d6d3f20a93237b90510afeafa2326805cdf583ba2c4bf1792be0896d2"
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "replayStartSec": 112.346008,
+      "replayEndSec": 119.168595,
+      "narrationText": "이제 핵심입니다. 카운터가 17, 18, 19를 표시하며 계속 올라가고 있습니다. 1부터 다시 시작하는 대신 체크포인트가 멈춘 바로 그 지점에서 이어서 시작했습니다. 프로세스는 머신이 바뀐 것을 전혀 알아채지 못했습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-05.1f919cc7.mp3",
+      "textHash": "1f919cc74189ccfdeed0550b232212ef1949cb55dd32485ab60cafa98d81985f",
+      "audioDurationSec": 19.644082,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/tutorial-live-migration-05-after.0ce64e99.mp3",
+      "afterAudioDurationSec": 5.067755,
+      "afterTextHash": "0ce64e99ba48fcacf4a6cc7519a063d7e273a4071928deff944891986e7db712"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "083a2518136f29b70527009551eb7f73a35d36e05f0ac66f29dfea1de5c8cdbb",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/intro.083a2518.mp3",
+      "narrationText": "이번엔 큰 것을 해볼 시간입니다. 실행 중인 앱을 실행하면서 다른 머신으로 옮기는 것입니다. 앱 메모리에서 라이브 카운터가 박동하는 것을 지켜보고, 명령 하나로 모든 것을 이동한 뒤, 새 머신에서 카운터가 그대로 계속 세는 것을 확인해 보겠습니다.",
+      "audioDurationSec": 19.487347
+    },
+    {
+      "id": "how-it-moves",
+      "textHash": "fb43d8e21257d6ca7450673a42f311f5f32c0def0ff54a80f92ad4fff5a0a2eb",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/how-it-moves.fb43d8e2.mp3",
+      "narrationText": "두 단계로 작동합니다. 1단계에서는 앱이 계속 실행되는 동안 대용량 데이터를 복사합니다. 2단계에서는 라이브 프로세스를 체크포인트하고, 최종 delta와 프로세스 상태를 전달한 뒤, 새 머신에서 모든 것을 재개합니다. 따라서 다운타임은 전체 데이터가 아니라 delta에 해당하는 시간입니다. 앱은 자신이 이동했다는 것을 전혀 알지 못합니다.",
+      "audioDurationSec": 29.570612
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "ca40776983c899a4e1e0d6ebb786c720a59548c70c375122119ff68114d99102",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-live-migration/next-tutorial.ca407769.mp3",
+      "narrationText": "카운터는 한 번도 초기화되지 않았습니다. 메모리, 데이터베이스, 파일, 모든 것이 그대로 머신을 바꿨습니다. 다음에는 두 번째 전송이 항상 빠른 이유를 알아보겠습니다.",
+      "audioDurationSec": 15.072653
+    }
+  ]
+}

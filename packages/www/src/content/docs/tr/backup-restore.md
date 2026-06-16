@@ -7,8 +7,8 @@ description: >-
 category: Guides
 order: 7
 language: tr
-sourceHash: "e241aa122868e629"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7ff112c2ec14c35f"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Yedekleme ve Geri Yükleme
@@ -43,7 +43,7 @@ Bir depo yedeğini harici depolamaya gönderin:
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
-Push, yazmadan önce her zaman hedef deponun bağlı olup olmadığını kontrol eder. Bağlı değilse işlem iptal edilir.
+Yedek, gönderim sırasında depo bağlıysa `hot/` klasörüne, bağlı değilse `cold/` klasörüne yerleşir. Bu, zamanlanmış yedeklemelerin kullandığı düzenle aynıdır; dolayısıyla `rdc repo backup list` her yedeği tek bir tabloda gösterir.
 
 | Seçenek | Açıklama |
 |---------|----------|

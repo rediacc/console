@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">The first push copies the image in full; every later push transfers only the blocks that changed</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .bar { stroke: #cdcdcd; stroke-width: 2; rx: 6; ry: 6; }
+    .full { fill: #2b5fb8; }
+    .tiny { fill: #1d7a4f; }
+    .rest { fill: #e8edf6; }
+    .label { fill: #1a1a1a; font-weight: 700; font-size: 18px; font-family: JetBrainsMono, "JetBrains Mono", monospace; }
+    .desc { fill: #5e5e5e; font-weight: 400; font-size: 14px; font-family: Inter, system-ui, sans-serif; }
+    .closer { fill: #1a1a1a; font-weight: 600; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <text class="label" x="120" y="160">push #1</text>
+  <rect class="bar full" x="120" y="180" width="700" height="44"/>
+  <text class="desc" x="120" y="252">the whole image travels — 2 GB</text>
+
+  <text class="label" x="120" y="320">push #2</text>
+  <rect class="bar rest" x="120" y="340" width="700" height="44"/>
+  <rect class="bar tiny" x="120" y="340" width="40" height="44"/>
+  <text class="desc" x="120" y="412">only the changed blocks travel — the CLI keeps an immutable base on both machines</text>
+
+  <text class="closer" x="480" y="480">Same command. The CLI figures out the difference.</text>
+</svg>

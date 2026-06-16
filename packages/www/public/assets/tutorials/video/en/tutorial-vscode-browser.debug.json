@@ -1,0 +1,181 @@
+{
+  "tutorial": "tutorial-vscode-browser",
+  "lang": "en",
+  "finalDurationSec": 186.427007,
+  "edgeLeadSec": 1,
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "mp4StartSec": 1,
+      "mp4EndSec": 13.502993
+    },
+    {
+      "id": "sandbox-concept",
+      "type": "slide",
+      "mp4StartSec": 13.502993,
+      "mp4EndSec": 33.342993
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "mp4StartSec": 33.342993,
+      "mp4EndSec": 58.946984
+    },
+    {
+      "id": "workbench-tour",
+      "type": "browser",
+      "mp4StartSec": 58.646984,
+      "mp4EndSec": 71.446984
+    },
+    {
+      "id": "create-file",
+      "type": "browser",
+      "mp4StartSec": 71.146984,
+      "mp4EndSec": 89.946984
+    },
+    {
+      "id": "editor-terminal",
+      "type": "browser",
+      "mp4StartSec": 89.646984,
+      "mp4EndSec": 106.446984
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "mp4StartSec": 106.146984,
+      "mp4EndSec": 121.782993
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "mp4StartSec": 121.782993,
+      "mp4EndSec": 138.575986
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "mp4StartSec": 138.575986,
+      "mp4EndSec": 156.731995
+    },
+    {
+      "id": "cast-step-4",
+      "type": "cast-narrated",
+      "mp4StartSec": 156.731995,
+      "mp4EndSec": 174.688004
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "mp4StartSec": 174.688004,
+      "mp4EndSec": 185.168004
+    }
+  ],
+  "castNarrated": [
+    {
+      "sceneId": "cast-step-0",
+      "markerIndex": 0,
+      "startSec": 2.421297,
+      "rawEndSec": 11.615415,
+      "promptTime": 9.703623,
+      "mainEndSec": 10.083898,
+      "frameEndSec": 10.203623,
+      "mainAnimDur": 7.6626009999999996,
+      "readPauseSec": 3,
+      "mainAudioDurSec": 13.479184,
+      "afterAudioDurSec": 5.799184,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-vscode-browser.debug-frames/cast-step-0.lastframe.png",
+      "mp4StartSec": 33.342993,
+      "mp4EndSec": 58.946984
+    },
+    {
+      "sceneId": "cast-step-1",
+      "markerIndex": 1,
+      "startSec": 11.615415,
+      "rawEndSec": 17.986434,
+      "promptTime": 16.076915,
+      "mainEndSec": 16.419732999999997,
+      "frameEndSec": 16.576915,
+      "mainAnimDur": 4.804317999999997,
+      "readPauseSec": 2,
+      "mainAudioDurSec": 6.112653,
+      "afterAudioDurSec": 4.205714,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-vscode-browser.debug-frames/cast-step-1.lastframe.png",
+      "mp4StartSec": 106.146984,
+      "mp4EndSec": 121.782993
+    },
+    {
+      "sceneId": "cast-step-2",
+      "markerIndex": 2,
+      "startSec": 17.986434,
+      "rawEndSec": 24.671306,
+      "promptTime": 22.76461,
+      "mainEndSec": 23.102083999999998,
+      "frameEndSec": 23.26461,
+      "mainAnimDur": 5.115649999999999,
+      "readPauseSec": 1,
+      "mainAudioDurSec": 7.706122,
+      "afterAudioDurSec": 4.754286,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-vscode-browser.debug-frames/cast-step-2.lastframe.png",
+      "mp4StartSec": 121.782993,
+      "mp4EndSec": 138.575986
+    },
+    {
+      "sceneId": "cast-step-3",
+      "markerIndex": 3,
+      "startSec": 24.671306,
+      "rawEndSec": 29.762894,
+      "promptTime": 28.962894,
+      "mainEndSec": 29.345945999999998,
+      "frameEndSec": 29.462894,
+      "mainAnimDur": 4.674639999999997,
+      "readPauseSec": 1,
+      "mainAudioDurSec": 10.44898,
+      "afterAudioDurSec": 3.395918,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-vscode-browser.debug-frames/cast-step-3.lastframe.png",
+      "mp4StartSec": 138.575986,
+      "mp4EndSec": 156.731995
+    },
+    {
+      "sceneId": "cast-step-4",
+      "markerIndex": 4,
+      "startSec": 29.762894,
+      "rawEndSec": 34.972818,
+      "promptTime": 34.172818,
+      "mainEndSec": 34.558613,
+      "frameEndSec": 34.672818,
+      "mainAnimDur": 4.795719000000002,
+      "readPauseSec": 1,
+      "mainAudioDurSec": 10.266122,
+      "afterAudioDurSec": 3.395918,
+      "lastFramePng": "/home/muhammed/monorepo/console/packages/www/public/assets/tutorials/video/en/tutorial-vscode-browser.debug-frames/cast-step-4.lastframe.png",
+      "mp4StartSec": 156.731995,
+      "mp4EndSec": 174.688004
+    }
+  ],
+  "sessions": [
+    {
+      "name": "workbench",
+      "webmDurSec": 38.72,
+      "wallSpanSec": 38.92,
+      "headGapSec": 0.20000000000000284,
+      "scenes": [
+        {
+          "id": "workbench-tour",
+          "videoStartSec": 7.193999999999997,
+          "videoEndSec": 13.286999999999997
+        },
+        {
+          "id": "create-file",
+          "videoStartSec": 13.688999999999997,
+          "videoEndSec": 27.192999999999998
+        },
+        {
+          "id": "editor-terminal",
+          "videoStartSec": 27.592999999999996,
+          "videoEndSec": 38.718999999999994
+        }
+      ]
+    }
+  ]
+}

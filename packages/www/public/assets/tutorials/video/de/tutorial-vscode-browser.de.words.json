@@ -1,0 +1,1011 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 1.797,
+      "text": "Gute Nachrichten:",
+      "words": [
+        { "start": 1, "end": 1.399, "char": [0, 4] },
+        { "start": 1.399, "end": 1.797, "char": [5, 17] }
+      ]
+    },
+    {
+      "start": 1.797,
+      "end": 3.79,
+      "text": "Diesmal wird kein Terminal gebraucht!",
+      "words": [
+        { "start": 1.797, "end": 2.196, "char": [0, 7] },
+        { "start": 2.196, "end": 2.594, "char": [8, 12] },
+        { "start": 2.594, "end": 2.993, "char": [13, 17] },
+        { "start": 2.993, "end": 3.391, "char": [18, 26] },
+        { "start": 3.391, "end": 3.79, "char": [27, 37] }
+      ]
+    },
+    {
+      "start": 3.79,
+      "end": 6.58,
+      "text": "Wir öffnen ein vollständiges VS Code direkt",
+      "words": [
+        { "start": 3.79, "end": 4.188, "char": [0, 3] },
+        { "start": 4.188, "end": 4.587, "char": [4, 10] },
+        { "start": 4.587, "end": 4.986, "char": [11, 14] },
+        { "start": 4.986, "end": 5.384, "char": [15, 28] },
+        { "start": 5.384, "end": 5.783, "char": [29, 31] },
+        { "start": 5.783, "end": 6.181, "char": [32, 36] },
+        { "start": 6.181, "end": 6.58, "char": [37, 43] }
+      ]
+    },
+    {
+      "start": 6.58,
+      "end": 7.377,
+      "text": "im Browser,",
+      "words": [
+        { "start": 6.58, "end": 6.978, "char": [0, 2] },
+        { "start": 6.978, "end": 7.377, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 7.377,
+      "end": 8.971,
+      "text": "erstellen ein paar Dateien,",
+      "words": [
+        { "start": 7.377, "end": 7.775, "char": [0, 9] },
+        { "start": 7.775, "end": 8.174, "char": [10, 13] },
+        { "start": 8.174, "end": 8.573, "char": [14, 18] },
+        { "start": 8.573, "end": 8.971, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 8.971,
+      "end": 11.761,
+      "text": "führen ein paar Befehle aus und schauen",
+      "words": [
+        { "start": 8.971, "end": 9.37, "char": [0, 6] },
+        { "start": 9.37, "end": 9.768, "char": [7, 10] },
+        { "start": 9.768, "end": 10.167, "char": [11, 15] },
+        { "start": 10.167, "end": 10.565, "char": [16, 23] },
+        { "start": 10.565, "end": 10.964, "char": [24, 27] },
+        { "start": 10.964, "end": 11.362, "char": [28, 31] },
+        { "start": 11.362, "end": 11.761, "char": [32, 39] }
+      ]
+    },
+    {
+      "start": 11.761,
+      "end": 12.16,
+      "text": "zu,",
+      "words": [{ "start": 11.761, "end": 12.16, "char": [0, 3] }]
+    },
+    {
+      "start": 12.16,
+      "end": 14.949,
+      "text": "wie der Kernel alles im repo behält.",
+      "words": [
+        { "start": 12.16, "end": 12.558, "char": [0, 3] },
+        { "start": 12.558, "end": 12.957, "char": [4, 7] },
+        { "start": 12.957, "end": 13.355, "char": [8, 14] },
+        { "start": 13.355, "end": 13.754, "char": [15, 20] },
+        { "start": 13.754, "end": 14.152, "char": [21, 23] },
+        { "start": 14.152, "end": 14.551, "char": [24, 28] },
+        { "start": 14.551, "end": 14.949, "char": [29, 36] }
+      ]
+    },
+    {
+      "start": 15.732,
+      "end": 17.204,
+      "text": "So funktioniert das.",
+      "words": [
+        { "start": 15.732, "end": 16.223, "char": [0, 2] },
+        { "start": 16.223, "end": 16.713, "char": [3, 15] },
+        { "start": 16.713, "end": 17.204, "char": [16, 20] }
+      ]
+    },
+    {
+      "start": 17.204,
+      "end": 20.147,
+      "text": "Der Editor läuft nicht auf deinem",
+      "words": [
+        { "start": 17.204, "end": 17.694, "char": [0, 3] },
+        { "start": 17.694, "end": 18.185, "char": [4, 10] },
+        { "start": 18.185, "end": 18.675, "char": [11, 16] },
+        { "start": 18.675, "end": 19.166, "char": [17, 22] },
+        { "start": 19.166, "end": 19.657, "char": [23, 26] },
+        { "start": 19.657, "end": 20.147, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 20.147,
+      "end": 20.638,
+      "text": "Laptop.",
+      "words": [{ "start": 20.147, "end": 20.638, "char": [0, 7] }]
+    },
+    {
+      "start": 20.638,
+      "end": 23.581,
+      "text": "Er läuft im sandbox des repos",
+      "words": [
+        { "start": 20.638, "end": 21.128, "char": [0, 2] },
+        { "start": 21.128, "end": 21.619, "char": [3, 8] },
+        { "start": 21.619, "end": 22.11, "char": [9, 11] },
+        { "start": 22.11, "end": 22.6, "char": [12, 19] },
+        { "start": 22.6, "end": 23.091, "char": [20, 23] },
+        { "start": 23.091, "end": 23.581, "char": [24, 29] }
+      ]
+    },
+    {
+      "start": 23.581,
+      "end": 25.053,
+      "text": "auf dem Server,",
+      "words": [
+        { "start": 23.581, "end": 24.072, "char": [0, 3] },
+        { "start": 24.072, "end": 24.562, "char": [4, 7] },
+        { "start": 24.562, "end": 25.053, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 25.053,
+      "end": 27.996,
+      "text": "und dein Browser erreicht ihn über",
+      "words": [
+        { "start": 25.053, "end": 25.544, "char": [0, 3] },
+        { "start": 25.544, "end": 26.034, "char": [4, 8] },
+        { "start": 26.034, "end": 26.525, "char": [9, 16] },
+        { "start": 26.525, "end": 27.015, "char": [17, 25] },
+        { "start": 27.015, "end": 27.506, "char": [26, 29] },
+        { "start": 27.506, "end": 27.996, "char": [30, 34] }
+      ]
+    },
+    {
+      "start": 27.996,
+      "end": 28.978,
+      "text": "einen SSH-Tunnel.",
+      "words": [
+        { "start": 27.996, "end": 28.487, "char": [0, 5] },
+        { "start": 28.487, "end": 28.978, "char": [6, 17] }
+      ]
+    },
+    {
+      "start": 28.978,
+      "end": 29.959,
+      "text": "Der Dateibaum,",
+      "words": [
+        { "start": 28.978, "end": 29.468, "char": [0, 3] },
+        { "start": 29.468, "end": 29.959, "char": [4, 14] }
+      ]
+    },
+    {
+      "start": 29.959,
+      "end": 32.412,
+      "text": "das eingebaute Terminal und alles,",
+      "words": [
+        { "start": 29.959, "end": 30.449, "char": [0, 3] },
+        { "start": 30.449, "end": 30.94, "char": [4, 14] },
+        { "start": 30.94, "end": 31.431, "char": [15, 23] },
+        { "start": 31.431, "end": 31.921, "char": [24, 27] },
+        { "start": 31.921, "end": 32.412, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 32.412,
+      "end": 34.374,
+      "text": "was du darüber startest,",
+      "words": [
+        { "start": 32.412, "end": 32.902, "char": [0, 3] },
+        { "start": 32.902, "end": 33.393, "char": [4, 6] },
+        { "start": 33.393, "end": 33.883, "char": [7, 14] },
+        { "start": 33.883, "end": 34.374, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 34.374,
+      "end": 36.336,
+      "text": "sehen also genau das,",
+      "words": [
+        { "start": 34.374, "end": 34.865, "char": [0, 5] },
+        { "start": 34.865, "end": 35.355, "char": [6, 10] },
+        { "start": 35.355, "end": 35.846, "char": [11, 16] },
+        { "start": 35.846, "end": 36.336, "char": [17, 21] }
+      ]
+    },
+    {
+      "start": 36.336,
+      "end": 38.299,
+      "text": "was das repo sieht,",
+      "words": [
+        { "start": 36.336, "end": 36.827, "char": [0, 3] },
+        { "start": 36.827, "end": 37.317, "char": [4, 7] },
+        { "start": 37.317, "end": 37.808, "char": [8, 12] },
+        { "start": 37.808, "end": 38.299, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 38.299,
+      "end": 40.261,
+      "text": "und nichts darüber hinaus.",
+      "words": [
+        { "start": 38.299, "end": 38.789, "char": [0, 3] },
+        { "start": 38.789, "end": 39.28, "char": [4, 10] },
+        { "start": 39.28, "end": 39.77, "char": [11, 18] },
+        { "start": 39.77, "end": 40.261, "char": [19, 26] }
+      ]
+    },
+    {
+      "start": 43.529,
+      "end": 44.231,
+      "text": "One command.",
+      "words": [
+        { "start": 43.529, "end": 43.88, "char": [0, 3] },
+        { "start": 43.88, "end": 44.231, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 44.231,
+      "end": 47.037,
+      "text": "The CLI installs the editor server on the",
+      "words": [
+        { "start": 44.231, "end": 44.581, "char": [0, 3] },
+        { "start": 44.581, "end": 44.932, "char": [4, 7] },
+        { "start": 44.932, "end": 45.283, "char": [8, 16] },
+        { "start": 45.283, "end": 45.634, "char": [17, 20] },
+        { "start": 45.634, "end": 45.985, "char": [21, 27] },
+        { "start": 45.985, "end": 46.335, "char": [28, 34] },
+        { "start": 46.335, "end": 46.686, "char": [35, 37] },
+        { "start": 46.686, "end": 47.037, "char": [38, 41] }
+      ]
+    },
+    {
+      "start": 47.037,
+      "end": 47.738,
+      "text": "machine once,",
+      "words": [
+        { "start": 47.037, "end": 47.388, "char": [0, 7] },
+        { "start": 47.388, "end": 47.738, "char": [8, 13] }
+      ]
+    },
+    {
+      "start": 47.738,
+      "end": 49.843,
+      "text": "starts it inside the repo sandbox,",
+      "words": [
+        { "start": 47.738, "end": 48.089, "char": [0, 6] },
+        { "start": 48.089, "end": 48.44, "char": [7, 9] },
+        { "start": 48.44, "end": 48.791, "char": [10, 16] },
+        { "start": 48.791, "end": 49.142, "char": [17, 20] },
+        { "start": 49.142, "end": 49.492, "char": [21, 25] },
+        { "start": 49.492, "end": 49.843, "char": [26, 34] }
+      ]
+    },
+    {
+      "start": 49.843,
+      "end": 50.896,
+      "text": "opens a tunnel,",
+      "words": [
+        { "start": 49.843, "end": 50.194, "char": [0, 5] },
+        { "start": 50.194, "end": 50.545, "char": [6, 7] },
+        { "start": 50.545, "end": 50.896, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 50.896,
+      "end": 52.649,
+      "text": "and hands you a link.",
+      "words": [
+        { "start": 50.896, "end": 51.246, "char": [0, 3] },
+        { "start": 51.246, "end": 51.597, "char": [4, 9] },
+        { "start": 51.597, "end": 51.948, "char": [10, 13] },
+        { "start": 51.948, "end": 52.299, "char": [14, 15] },
+        { "start": 52.299, "end": 52.649, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 52.649,
+      "end": 54.053,
+      "text": "No local VS Code,",
+      "words": [
+        { "start": 52.649, "end": 53, "char": [0, 2] },
+        { "start": 53, "end": 53.351, "char": [3, 8] },
+        { "start": 53.351, "end": 53.702, "char": [9, 11] },
+        { "start": 53.702, "end": 54.053, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 54.053,
+      "end": 55.807,
+      "text": "no extensions to set up.",
+      "words": [
+        { "start": 54.053, "end": 54.403, "char": [0, 2] },
+        { "start": 54.403, "end": 54.754, "char": [3, 13] },
+        { "start": 54.754, "end": 55.105, "char": [14, 16] },
+        { "start": 55.105, "end": 55.456, "char": [17, 20] },
+        { "start": 55.456, "end": 55.807, "char": [21, 24] }
+      ]
+    },
+    {
+      "start": 58.807,
+      "end": 61.279,
+      "text": "Diese URL ist dein Editor.",
+      "words": [
+        { "start": 58.807, "end": 59.301, "char": [0, 5] },
+        { "start": 59.301, "end": 59.795, "char": [6, 9] },
+        { "start": 59.795, "end": 60.29, "char": [10, 13] },
+        { "start": 60.29, "end": 60.784, "char": [14, 18] },
+        { "start": 60.784, "end": 61.279, "char": [19, 26] }
+      ]
+    },
+    {
+      "start": 61.279,
+      "end": 63.257,
+      "text": "Funktioniert auf jedem Betriebssystem,",
+      "words": [
+        { "start": 61.279, "end": 61.773, "char": [0, 12] },
+        { "start": 61.773, "end": 62.268, "char": [13, 16] },
+        { "start": 62.268, "end": 62.762, "char": [17, 22] },
+        { "start": 62.762, "end": 63.257, "char": [23, 38] }
+      ]
+    },
+    {
+      "start": 63.257,
+      "end": 65.729,
+      "text": "du brauchst nur einen Browser.",
+      "words": [
+        { "start": 63.257, "end": 63.751, "char": [0, 2] },
+        { "start": 63.751, "end": 64.246, "char": [3, 11] },
+        { "start": 64.246, "end": 64.74, "char": [12, 15] },
+        { "start": 64.74, "end": 65.235, "char": [16, 21] },
+        { "start": 65.235, "end": 65.729, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 66.215,
+      "end": 67.664,
+      "text": "Und da ist es:",
+      "words": [
+        { "start": 66.215, "end": 66.577, "char": [0, 3] },
+        { "start": 66.577, "end": 66.939, "char": [4, 6] },
+        { "start": 66.939, "end": 67.301, "char": [7, 10] },
+        { "start": 67.301, "end": 67.664, "char": [11, 14] }
+      ]
+    },
+    {
+      "start": 67.664,
+      "end": 68.388,
+      "text": "VS Code,",
+      "words": [
+        { "start": 67.664, "end": 68.026, "char": [0, 2] },
+        { "start": 68.026, "end": 68.388, "char": [3, 8] }
+      ]
+    },
+    {
+      "start": 68.388,
+      "end": 69.474,
+      "text": "in einem Browser-Tab.",
+      "words": [
+        { "start": 68.388, "end": 68.75, "char": [0, 2] },
+        { "start": 68.75, "end": 69.112, "char": [3, 8] },
+        { "start": 69.112, "end": 69.474, "char": [9, 21] }
+      ]
+    },
+    {
+      "start": 69.474,
+      "end": 72.009,
+      "text": "Der Dateibaum auf der linken Seite zeigt",
+      "words": [
+        { "start": 69.474, "end": 69.837, "char": [0, 3] },
+        { "start": 69.837, "end": 70.199, "char": [4, 13] },
+        { "start": 70.199, "end": 70.561, "char": [14, 17] },
+        { "start": 70.561, "end": 70.923, "char": [18, 21] },
+        { "start": 70.923, "end": 71.285, "char": [22, 28] },
+        { "start": 71.285, "end": 71.647, "char": [29, 34] },
+        { "start": 71.647, "end": 72.009, "char": [35, 40] }
+      ]
+    },
+    {
+      "start": 72.009,
+      "end": 72.734,
+      "text": "das repo,",
+      "words": [
+        { "start": 72.009, "end": 72.372, "char": [0, 3] },
+        { "start": 72.372, "end": 72.734, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 72.734,
+      "end": 74.182,
+      "text": "und nur das repo.",
+      "words": [
+        { "start": 72.734, "end": 73.096, "char": [0, 3] },
+        { "start": 73.096, "end": 73.458, "char": [4, 7] },
+        { "start": 73.458, "end": 73.82, "char": [8, 11] },
+        { "start": 73.82, "end": 74.182, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 78.715,
+      "end": 81.046,
+      "text": "Erstellen wir eine echte Datei,",
+      "words": [
+        { "start": 78.715, "end": 79.181, "char": [0, 9] },
+        { "start": 79.181, "end": 79.648, "char": [10, 13] },
+        { "start": 79.648, "end": 80.114, "char": [14, 18] },
+        { "start": 80.114, "end": 80.58, "char": [19, 24] },
+        { "start": 80.58, "end": 81.046, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 81.046,
+      "end": 82.445,
+      "text": "ganz ohne Terminal.",
+      "words": [
+        { "start": 81.046, "end": 81.512, "char": [0, 4] },
+        { "start": 81.512, "end": 81.979, "char": [5, 9] },
+        { "start": 81.979, "end": 82.445, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 82.445,
+      "end": 83.844,
+      "text": "Ein neuer Editor,",
+      "words": [
+        { "start": 82.445, "end": 82.911, "char": [0, 3] },
+        { "start": 82.911, "end": 83.377, "char": [4, 9] },
+        { "start": 83.377, "end": 83.844, "char": [10, 17] }
+      ]
+    },
+    {
+      "start": 83.844,
+      "end": 85.242,
+      "text": "ein paar Zeilen,",
+      "words": [
+        { "start": 83.844, "end": 84.31, "char": [0, 3] },
+        { "start": 84.31, "end": 84.776, "char": [4, 8] },
+        { "start": 84.776, "end": 85.242, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 85.242,
+      "end": 88.04,
+      "text": "und speichern wir es als notes",
+      "words": [
+        { "start": 85.242, "end": 85.709, "char": [0, 3] },
+        { "start": 85.709, "end": 86.175, "char": [4, 13] },
+        { "start": 86.175, "end": 86.641, "char": [14, 17] },
+        { "start": 86.641, "end": 87.107, "char": [18, 20] },
+        { "start": 87.107, "end": 87.574, "char": [21, 24] },
+        { "start": 87.574, "end": 88.04, "char": [25, 30] }
+      ]
+    },
+    {
+      "start": 88.04,
+      "end": 89.905,
+      "text": "Schrägstrich todo Punkt md.",
+      "words": [
+        { "start": 88.04, "end": 88.506, "char": [0, 12] },
+        { "start": 88.506, "end": 88.972, "char": [13, 17] },
+        { "start": 88.972, "end": 89.439, "char": [18, 23] },
+        { "start": 89.439, "end": 89.905, "char": [24, 27] }
+      ]
+    },
+    {
+      "start": 89.905,
+      "end": 91.77,
+      "text": "Der Ordner erscheint links,",
+      "words": [
+        { "start": 89.905, "end": 90.371, "char": [0, 3] },
+        { "start": 90.371, "end": 90.837, "char": [4, 10] },
+        { "start": 90.837, "end": 91.304, "char": [11, 20] },
+        { "start": 91.304, "end": 91.77, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 91.77,
+      "end": 94.101,
+      "text": "sobald er im repo landet.",
+      "words": [
+        { "start": 91.77, "end": 92.236, "char": [0, 6] },
+        { "start": 92.236, "end": 92.702, "char": [7, 9] },
+        { "start": 92.702, "end": 93.169, "char": [10, 12] },
+        { "start": 93.169, "end": 93.635, "char": [13, 17] },
+        { "start": 93.635, "end": 94.101, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 97.215,
+      "end": 99.491,
+      "text": "Das eingebaute Terminal funktioniert ebenfalls,",
+      "words": [
+        { "start": 97.215, "end": 97.67, "char": [0, 3] },
+        { "start": 97.67, "end": 98.126, "char": [4, 14] },
+        { "start": 98.126, "end": 98.581, "char": [15, 23] },
+        { "start": 98.581, "end": 99.036, "char": [24, 36] },
+        { "start": 99.036, "end": 99.491, "char": [37, 47] }
+      ]
+    },
+    {
+      "start": 99.491,
+      "end": 101.768,
+      "text": "und da ist unsere Datei.",
+      "words": [
+        { "start": 99.491, "end": 99.947, "char": [0, 3] },
+        { "start": 99.947, "end": 100.402, "char": [4, 6] },
+        { "start": 100.402, "end": 100.857, "char": [7, 10] },
+        { "start": 100.857, "end": 101.313, "char": [11, 17] },
+        { "start": 101.313, "end": 101.768, "char": [18, 24] }
+      ]
+    },
+    {
+      "start": 101.768,
+      "end": 103.134,
+      "text": "Jetzt versuchen wir,",
+      "words": [
+        { "start": 101.768, "end": 102.223, "char": [0, 5] },
+        { "start": 102.223, "end": 102.678, "char": [6, 15] },
+        { "start": 102.678, "end": 103.134, "char": [16, 20] }
+      ]
+    },
+    {
+      "start": 103.134,
+      "end": 105.41,
+      "text": "außerhalb des repos zu schauen:",
+      "words": [
+        { "start": 103.134, "end": 103.589, "char": [0, 9] },
+        { "start": 103.589, "end": 104.044, "char": [10, 13] },
+        { "start": 104.044, "end": 104.499, "char": [14, 19] },
+        { "start": 104.499, "end": 104.955, "char": [20, 22] },
+        { "start": 104.955, "end": 105.41, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 105.41,
+      "end": 106.321,
+      "text": "Zugriff verweigert.",
+      "words": [
+        { "start": 105.41, "end": 105.865, "char": [0, 7] },
+        { "start": 105.865, "end": 106.321, "char": [8, 19] }
+      ]
+    },
+    {
+      "start": 106.321,
+      "end": 108.142,
+      "text": "Das ist keine Einstellung,",
+      "words": [
+        { "start": 106.321, "end": 106.776, "char": [0, 3] },
+        { "start": 106.776, "end": 107.231, "char": [4, 7] },
+        { "start": 107.231, "end": 107.686, "char": [8, 13] },
+        { "start": 107.686, "end": 108.142, "char": [14, 26] }
+      ]
+    },
+    {
+      "start": 108.142,
+      "end": 109.963,
+      "text": "das ist der Kernel.",
+      "words": [
+        { "start": 108.142, "end": 108.597, "char": [0, 3] },
+        { "start": 108.597, "end": 109.052, "char": [4, 7] },
+        { "start": 109.052, "end": 109.507, "char": [8, 11] },
+        { "start": 109.507, "end": 109.963, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 116.215,
+      "end": 118.549,
+      "text": "Same repo from the plain terminal:",
+      "words": [
+        { "start": 116.215, "end": 116.604, "char": [0, 4] },
+        { "start": 116.604, "end": 116.993, "char": [5, 9] },
+        { "start": 116.993, "end": 117.382, "char": [10, 14] },
+        { "start": 117.382, "end": 117.771, "char": [15, 18] },
+        { "start": 117.771, "end": 118.16, "char": [19, 24] },
+        { "start": 118.16, "end": 118.549, "char": [25, 34] }
+      ]
+    },
+    {
+      "start": 118.549,
+      "end": 120.882,
+      "text": "the working directory is the repo,",
+      "words": [
+        { "start": 118.549, "end": 118.938, "char": [0, 3] },
+        { "start": 118.938, "end": 119.326, "char": [4, 11] },
+        { "start": 119.326, "end": 119.715, "char": [12, 21] },
+        { "start": 119.715, "end": 120.104, "char": [22, 24] },
+        { "start": 120.104, "end": 120.493, "char": [25, 28] },
+        { "start": 120.493, "end": 120.882, "char": [29, 34] }
+      ]
+    },
+    {
+      "start": 120.882,
+      "end": 123.216,
+      "text": "the files are the repo's files.",
+      "words": [
+        { "start": 120.882, "end": 121.271, "char": [0, 3] },
+        { "start": 121.271, "end": 121.66, "char": [4, 9] },
+        { "start": 121.66, "end": 122.049, "char": [10, 13] },
+        { "start": 122.049, "end": 122.438, "char": [14, 17] },
+        { "start": 122.438, "end": 122.827, "char": [18, 24] },
+        { "start": 122.827, "end": 123.216, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 125.966,
+      "end": 128.433,
+      "text": "Terminal und Editor stimmen überein,",
+      "words": [
+        { "start": 125.966, "end": 126.459, "char": [0, 8] },
+        { "start": 126.459, "end": 126.953, "char": [9, 12] },
+        { "start": 126.953, "end": 127.446, "char": [13, 19] },
+        { "start": 127.446, "end": 127.94, "char": [20, 27] },
+        { "start": 127.94, "end": 128.433, "char": [28, 36] }
+      ]
+    },
+    {
+      "start": 128.433,
+      "end": 130.407,
+      "text": "es ist dieselbe sandbox.",
+      "words": [
+        { "start": 128.433, "end": 128.926, "char": [0, 2] },
+        { "start": 128.926, "end": 129.42, "char": [3, 6] },
+        { "start": 129.42, "end": 129.913, "char": [7, 15] },
+        { "start": 129.913, "end": 130.407, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 133.7,
+      "end": 136.382,
+      "text": "And the file we created in the",
+      "words": [
+        { "start": 133.7, "end": 134.083, "char": [0, 3] },
+        { "start": 134.083, "end": 134.466, "char": [4, 7] },
+        { "start": 134.466, "end": 134.849, "char": [8, 12] },
+        { "start": 134.849, "end": 135.233, "char": [13, 15] },
+        { "start": 135.233, "end": 135.616, "char": [16, 23] },
+        { "start": 135.616, "end": 135.999, "char": [24, 26] },
+        { "start": 135.999, "end": 136.382, "char": [27, 30] }
+      ]
+    },
+    {
+      "start": 136.382,
+      "end": 137.148,
+      "text": "browser editor?",
+      "words": [
+        { "start": 136.382, "end": 136.765, "char": [0, 7] },
+        { "start": 136.765, "end": 137.148, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 137.148,
+      "end": 137.914,
+      "text": "Right here.",
+      "words": [
+        { "start": 137.148, "end": 137.531, "char": [0, 5] },
+        { "start": 137.531, "end": 137.914, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 137.914,
+      "end": 140.596,
+      "text": "Files made in VS Code are real",
+      "words": [
+        { "start": 137.914, "end": 138.298, "char": [0, 5] },
+        { "start": 138.298, "end": 138.681, "char": [6, 10] },
+        { "start": 138.681, "end": 139.064, "char": [11, 13] },
+        { "start": 139.064, "end": 139.447, "char": [14, 16] },
+        { "start": 139.447, "end": 139.83, "char": [17, 21] },
+        { "start": 139.83, "end": 140.213, "char": [22, 25] },
+        { "start": 140.213, "end": 140.596, "char": [26, 30] }
+      ]
+    },
+    {
+      "start": 140.596,
+      "end": 141.363,
+      "text": "repo files,",
+      "words": [
+        { "start": 140.596, "end": 140.979, "char": [0, 4] },
+        { "start": 140.979, "end": 141.363, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 141.363,
+      "end": 141.746,
+      "text": "instantly.",
+      "words": [{ "start": 141.363, "end": 141.746, "char": [0, 10] }]
+    },
+    {
+      "start": 143.496,
+      "end": 144.922,
+      "text": "Im Browser erstellt,",
+      "words": [
+        { "start": 143.496, "end": 143.971, "char": [0, 2] },
+        { "start": 143.971, "end": 144.447, "char": [3, 10] },
+        { "start": 144.447, "end": 144.922, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 144.922,
+      "end": 146.348,
+      "text": "vom Terminal lesbar.",
+      "words": [
+        { "start": 144.922, "end": 145.397, "char": [0, 3] },
+        { "start": 145.397, "end": 145.873, "char": [4, 12] },
+        { "start": 145.873, "end": 146.348, "char": [13, 20] }
+      ]
+    },
+    {
+      "start": 146.348,
+      "end": 147.299,
+      "text": "Ein repo,",
+      "words": [
+        { "start": 146.348, "end": 146.824, "char": [0, 3] },
+        { "start": 146.824, "end": 147.299, "char": [4, 9] }
+      ]
+    },
+    {
+      "start": 147.299,
+      "end": 148.25,
+      "text": "zwei Zugänge.",
+      "words": [
+        { "start": 147.299, "end": 147.775, "char": [0, 4] },
+        { "start": 147.775, "end": 148.25, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 151.576,
+      "end": 153.292,
+      "text": "Now try to leave.",
+      "words": [
+        { "start": 151.576, "end": 152.005, "char": [0, 3] },
+        { "start": 152.005, "end": 152.434, "char": [4, 7] },
+        { "start": 152.434, "end": 152.863, "char": [8, 10] },
+        { "start": 152.863, "end": 153.292, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 153.292,
+      "end": 155.866,
+      "text": "Listing the root of the server:",
+      "words": [
+        { "start": 153.292, "end": 153.721, "char": [0, 7] },
+        { "start": 153.721, "end": 154.15, "char": [8, 11] },
+        { "start": 154.15, "end": 154.579, "char": [12, 16] },
+        { "start": 154.579, "end": 155.008, "char": [17, 19] },
+        { "start": 155.008, "end": 155.437, "char": [20, 23] },
+        { "start": 155.437, "end": 155.866, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 155.866,
+      "end": 156.724,
+      "text": "permission denied.",
+      "words": [
+        { "start": 155.866, "end": 156.295, "char": [0, 10] },
+        { "start": 156.295, "end": 156.724, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 156.724,
+      "end": 158.869,
+      "text": "The kernel scopes the editor,",
+      "words": [
+        { "start": 156.724, "end": 157.153, "char": [0, 3] },
+        { "start": 157.153, "end": 157.582, "char": [4, 10] },
+        { "start": 157.582, "end": 158.011, "char": [11, 17] },
+        { "start": 158.011, "end": 158.44, "char": [18, 21] },
+        { "start": 158.44, "end": 158.869, "char": [22, 29] }
+      ]
+    },
+    {
+      "start": 158.869,
+      "end": 159.727,
+      "text": "its terminal,",
+      "words": [
+        { "start": 158.869, "end": 159.298, "char": [0, 3] },
+        { "start": 159.298, "end": 159.727, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 159.727,
+      "end": 162.301,
+      "text": "and every child process to this",
+      "words": [
+        { "start": 159.727, "end": 160.156, "char": [0, 3] },
+        { "start": 160.156, "end": 160.585, "char": [4, 9] },
+        { "start": 160.585, "end": 161.014, "char": [10, 15] },
+        { "start": 161.014, "end": 161.443, "char": [16, 23] },
+        { "start": 161.443, "end": 161.872, "char": [24, 26] },
+        { "start": 161.872, "end": 162.301, "char": [27, 31] }
+      ]
+    },
+    {
+      "start": 162.301,
+      "end": 162.73,
+      "text": "repo.",
+      "words": [{ "start": 162.301, "end": 162.73, "char": [0, 5] }]
+    },
+    {
+      "start": 164.48,
+      "end": 165.865,
+      "text": "Vom Kernel verweigert,",
+      "words": [
+        { "start": 164.48, "end": 164.942, "char": [0, 3] },
+        { "start": 164.942, "end": 165.403, "char": [4, 10] },
+        { "start": 165.403, "end": 165.865, "char": [11, 22] }
+      ]
+    },
+    {
+      "start": 165.865,
+      "end": 167.249,
+      "text": "nicht durch Konfiguration.",
+      "words": [
+        { "start": 165.865, "end": 166.326, "char": [0, 5] },
+        { "start": 166.326, "end": 166.788, "char": [6, 11] },
+        { "start": 166.788, "end": 167.249, "char": [12, 26] }
+      ]
+    },
+    {
+      "start": 170.555,
+      "end": 171.943,
+      "text": "Other users' homes?",
+      "words": [
+        { "start": 170.555, "end": 171.018, "char": [0, 5] },
+        { "start": 171.018, "end": 171.481, "char": [6, 12] },
+        { "start": 171.481, "end": 171.943, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 171.943,
+      "end": 172.869,
+      "text": "Also denied.",
+      "words": [
+        { "start": 171.943, "end": 172.406, "char": [0, 4] },
+        { "start": 172.406, "end": 172.869, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 172.869,
+      "end": 175.645,
+      "text": "Whatever runs inside this sandbox —",
+      "words": [
+        { "start": 172.869, "end": 173.331, "char": [0, 8] },
+        { "start": 173.331, "end": 173.794, "char": [9, 13] },
+        { "start": 173.794, "end": 174.257, "char": [14, 20] },
+        { "start": 174.257, "end": 174.72, "char": [21, 25] },
+        { "start": 174.72, "end": 175.182, "char": [26, 33] },
+        { "start": 175.182, "end": 175.645, "char": [34, 35] }
+      ]
+    },
+    {
+      "start": 175.645,
+      "end": 176.108,
+      "text": "editors,",
+      "words": [{ "start": 175.645, "end": 176.108, "char": [0, 8] }]
+    },
+    {
+      "start": 176.108,
+      "end": 176.571,
+      "text": "terminals,",
+      "words": [{ "start": 176.108, "end": 176.571, "char": [0, 10] }]
+    },
+    {
+      "start": 176.571,
+      "end": 179.347,
+      "text": "build tools — ends at the",
+      "words": [
+        { "start": 176.571, "end": 177.033, "char": [0, 5] },
+        { "start": 177.033, "end": 177.496, "char": [6, 11] },
+        { "start": 177.496, "end": 177.959, "char": [12, 13] },
+        { "start": 177.959, "end": 178.422, "char": [14, 18] },
+        { "start": 178.422, "end": 178.884, "char": [19, 21] },
+        { "start": 178.884, "end": 179.347, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 179.347,
+      "end": 180.273,
+      "text": "repo's walls.",
+      "words": [
+        { "start": 179.347, "end": 179.81, "char": [0, 6] },
+        { "start": 179.81, "end": 180.273, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 182.023,
+      "end": 184.006,
+      "text": "Die sandbox kennt keine Ausnahmen.",
+      "words": [
+        { "start": 182.023, "end": 182.419, "char": [0, 3] },
+        { "start": 182.419, "end": 182.816, "char": [4, 11] },
+        { "start": 182.816, "end": 183.212, "char": [12, 17] },
+        { "start": 183.212, "end": 183.609, "char": [18, 23] },
+        { "start": 183.609, "end": 184.006, "char": [24, 34] }
+      ]
+    },
+    {
+      "start": 184.006,
+      "end": 186.385,
+      "text": "Das ist der Sinn der Sache.",
+      "words": [
+        { "start": 184.006, "end": 184.402, "char": [0, 3] },
+        { "start": 184.402, "end": 184.799, "char": [4, 7] },
+        { "start": 184.799, "end": 185.195, "char": [8, 11] },
+        { "start": 185.195, "end": 185.592, "char": [12, 16] },
+        { "start": 185.592, "end": 185.988, "char": [17, 20] },
+        { "start": 185.988, "end": 186.385, "char": [21, 27] }
+      ]
+    },
+    {
+      "start": 187.203,
+      "end": 187.786,
+      "text": "Browser,",
+      "words": [{ "start": 187.203, "end": 187.786, "char": [0, 8] }]
+    },
+    {
+      "start": 187.786,
+      "end": 188.369,
+      "text": "Editor,",
+      "words": [{ "start": 187.786, "end": 188.369, "char": [0, 7] }]
+    },
+    {
+      "start": 188.369,
+      "end": 188.952,
+      "text": "Terminal:",
+      "words": [{ "start": 188.369, "end": 188.952, "char": [0, 9] }]
+    },
+    {
+      "start": 188.952,
+      "end": 190.118,
+      "text": "derselbe sandbox,",
+      "words": [
+        { "start": 188.952, "end": 189.535, "char": [0, 8] },
+        { "start": 189.535, "end": 190.118, "char": [9, 17] }
+      ]
+    },
+    {
+      "start": 190.118,
+      "end": 191.284,
+      "text": "dieselben Regeln.",
+      "words": [
+        { "start": 190.118, "end": 190.701, "char": [0, 9] },
+        { "start": 190.701, "end": 191.284, "char": [10, 17] }
+      ]
+    },
+    {
+      "start": 191.284,
+      "end": 194.199,
+      "text": "Als Nächstes kommt das Feature,",
+      "words": [
+        { "start": 191.284, "end": 191.867, "char": [0, 3] },
+        { "start": 191.867, "end": 192.45, "char": [4, 12] },
+        { "start": 192.45, "end": 193.033, "char": [13, 18] },
+        { "start": 193.033, "end": 193.616, "char": [19, 22] },
+        { "start": 193.616, "end": 194.199, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 194.199,
+      "end": 197.114,
+      "text": "auf dem hier alles aufbaut:",
+      "words": [
+        { "start": 194.199, "end": 194.782, "char": [0, 3] },
+        { "start": 194.782, "end": 195.365, "char": [4, 7] },
+        { "start": 195.365, "end": 195.948, "char": [8, 12] },
+        { "start": 195.948, "end": 196.531, "char": [13, 18] },
+        { "start": 196.531, "end": 197.114, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 197.114,
+      "end": 197.697,
+      "text": "forking.",
+      "words": [{ "start": 197.114, "end": 197.697, "char": [0, 8] }]
+    },
+    {
+      "start": 197.697,
+      "end": 200.029,
+      "text": "Das wird dir gefallen.",
+      "words": [
+        { "start": 197.697, "end": 198.28, "char": [0, 3] },
+        { "start": 198.28, "end": 198.863, "char": [4, 8] },
+        { "start": 198.863, "end": 199.446, "char": [9, 12] },
+        { "start": 199.446, "end": 200.029, "char": [13, 22] }
+      ]
+    }
+  ]
+}

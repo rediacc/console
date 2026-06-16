@@ -1305,6 +1305,8 @@
           "completed": "自动启动列表已获取",
           "description": "列出已启用自动启动的仓库",
           "failed": "获取自动启动仓库列表失败",
+          "empty": "\"{{machine}}\" 上没有已启用自动启动的仓库",
+          "service": "自动启动服务：installed={{installed}}, enabled={{enabled}}",
           "starting": "正在列出 \"{{machine}}\" 上的自动启动仓库..."
         }
       },
@@ -1432,10 +1434,10 @@
         "starting": "正在 \"{{machine}}\" 上将 \"{{repository}}\" 扩展为 {{size}}..."
       },
       "trim": {
-        "description": "从已挂载的仓库回收数据存储池空间（在线，零停机）。仓库内已删除的块通过 fstrim 归还给存储池。不带 --name 时，会修剪所有已挂载的仓库以及数据存储本身。正在备份的仓库会被跳过",
+        "description": "从已挂载的仓库回收数据存储池空间（在线，零停机）。仓库内已删除的块通过 fstrim 归还给存储池。不带 --name 时，会修剪所有已挂载的仓库以及数据存储本身。正在备份的仓库会跳过 fstrim，但 --docker 回收仍会执行",
         "descriptionShort": "将仓库中的可用空间归还给存储池",
         "nameOption": "要修剪的仓库（默认：所有已挂载的仓库）",
-        "dockerOption": "先回收 Docker 空间（已停止的容器、悬空镜像、构建缓存）",
+        "dockerOption": "回收 Docker 空间（已停止的容器、悬空镜像、构建缓存）；即使在备份快照处于活动状态时也会执行",
         "dockerVolumesOption": "同时清理未使用的 Docker 卷",
         "reportOnlyOption": "仅显示 discard 状态和可回收空间估算，不执行修剪",
         "repoNotFound": "未找到仓库：{{name}}",
@@ -1535,6 +1537,7 @@
         "checkpointing": "正在创建 CRIU 检查点...",
         "complete": "迁移完成：{{name}} 已从 {{from}} 移动到 {{to}}",
         "deltaDone": "差异同步完成",
+        "phase2Stats": "切换（停机）：{{duration}} 内传输 {{transferred}}",
         "deltaFailed": "差异同步失败",
         "deltaSync": "正在同步差异数据...",
         "description": "以最小停机时间将仓库从一台机器实时迁移到另一台。两阶段 rsync：运行时批量传输，然后短暂停止进行差异同步。支持 CRIU 检查点用于进程内存迁移和目标机器自动配置",
@@ -1551,6 +1554,7 @@
         "optionTo": "目标机器名称",
         "phase1": "阶段 1：批量传输数据（源继续运行）...",
         "phase1Done": "批量传输完成",
+        "phase1Stats": "{{duration}} 内传输 {{transferred}}（源端保持在线）",
         "phase1Failed": "批量传输失败",
         "phase2": "阶段 2：切换（短暂停机）...",
         "phase3": "阶段 3：在目标上启动...",
@@ -1612,6 +1616,10 @@
         "optionForce": "强制覆盖现有备份",
         "optionProvision": "如果目标机器不存在，通过云提供商自动配置",
         "optionStrategy": "使用增量基准时的块增量策略：auto、physical 或 shared",
+        "optionJson": "以 JSON 格式输出传输统计",
+        "statsDelta": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（相对基准 {{base}} 的增量，镜像 {{image}}）",
+        "statsFull": "已将 \"{{repo}}\" 推送到 {{machine}}：{{duration}} 内传输 {{transferred}}（完整传输）",
+        "statsNoBytes": "已将 \"{{repo}}\" 推送到 {{machine}}：在 {{duration}} 内完成",
         "optionTag": "用于版本控制的部署标签",
         "optionTo": "目标机器或存储名称（从配置中自动检测）",
         "optionUp": "推送后，在目标机器上挂载并部署仓库",
@@ -1726,6 +1734,9 @@
         "noContainers": "未找到仓库 \"{{repository}}\" 的运行中容器",
         "noPorts": "容器 \"{{container}}\" 没有暴露的端口。请指定 --port",
         "noServiceIP": "容器 \"{{container}}\" 没有分配服务 IP",
+        "portInUse": "本地端口 {{port}} 已被占用，请通过 --local 指定其他端口",
+        "notReady": "隧道在 15 秒内未能在 localhost:{{localPort}} 上就绪",
+        "urlOnlyOption": "隧道就绪后只输出本地 URL（机器可读）",
         "portOption": "要转发的远程容器端口"
       },
       "unmount": {
@@ -2212,6 +2223,13 @@
         "settingsWarning": "警告：无法配置 VS Code 设置：{{error}}",
         "settingUpEnv": "正在设置远程环境...",
         "success": "VS Code 已成功启动。",
+        "installingServer": "正在确认 {{provider}} {{version}} 已安装到机器上...",
+        "startingServer": "正在沙盒内启动 {{provider}}...",
+        "serverReused": "复用已运行的服务器",
+        "tunnelReady": "隧道已就绪：localhost:{{port}}",
+        "browserUrl": "在浏览器中打开 VS Code：{{url}}",
+        "passwordNote": "登录密码：{{password}}",
+        "openingBrowser": "正在打开浏览器...",
         "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
       },
       "description": "打开 VS Code Remote SSH 连接到机器或仓库",
@@ -2223,6 +2241,19 @@
         "keyPersisted": "（密钥已保存）",
         "noConnections": "未配置任何 VS Code SSH 连接。",
         "total": "\n总计：{{count}} 个连接"
+      },
+      "serve": {
+        "description": "管理沙盒内的浏览器 VS Code 服务器",
+        "status": {
+          "description": "显示浏览器 VS Code 服务器是否正在运行",
+          "running": "{{provider}} 正在运行（pid {{pid}}，端口 {{port}}）",
+          "stopped": "{{provider}} 未在运行"
+        },
+        "stop": {
+          "description": "停止浏览器 VS Code 服务器",
+          "stopped": "{{provider}} 已停止",
+          "notRunning": "{{provider}} 本来就未在运行"
+        }
       }
     }
   },
@@ -2555,7 +2586,11 @@
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
-      "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。"
+      "notFound": "未找到 VS Code。\n\n请从以下地址安装：https://code.visualstudio.com/\n或设置 REDIACC_VSCODE_PATH 环境变量。",
+      "browserNeedsRepo": "vscode --browser 用于仓库沙盒 — 请传入 --repository <name>",
+      "unsupportedArch": "不支持的机器架构，无法运行浏览器 VS Code：{{arch}}",
+      "serverInstallFailed": "安装 {{provider}} 失败：{{error}}",
+      "serverStartFailed": "启动 {{provider}} 失败：{{error}}"
     }
   },
   "help": {
@@ -2743,6 +2778,10 @@
     "tfaCode": "用于验证的当前双因素认证代码",
     "tokenName": "令牌名称",
     "urlOnly": "打印 VS Code URI 而不是启动",
+    "vscodeBrowser": "从仓库沙盒内提供浏览器 VS Code（无需在本地安装 VS Code）",
+    "vscodeNoOpen": "输出 URL 而不启动本地浏览器",
+    "vscodeServerProvider": "浏览器 VS Code 服务器实现（openvscode、code-server）",
+    "vscodeServerArchive": "机器上预先暂存的服务器压缩包路径（离线安装）",
     "userPassword": "新用户的密码",
     "vaultContent": "保险箱内容为 JSON 字符串",
     "vaultJson": "保险箱内容为 JSON 字符串",

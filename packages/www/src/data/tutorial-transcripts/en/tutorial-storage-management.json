@@ -1,0 +1,107 @@
+{
+  "cast": "/assets/tutorials/tutorial-storage-management.cast",
+  "language": "en",
+  "version": 1,
+  "title": "Storage Management",
+  "chapters": {
+    "intro": "Storage Management",
+    "pool-model": "One pool, growing repos",
+    "cast-step-0": "Step 1: The repo fills up",
+    "cast-step-1": "Step 2: Grow it online",
+    "cast-step-2": "Step 3: Verify the new size",
+    "cast-step-3": "Step 4: Delete data",
+    "cast-step-4": "Step 5: Trim — give blocks back",
+    "cast-step-5": "Step 6: Set the policy",
+    "cast-step-6": "Step 7: Read the policy back",
+    "cast-step-7": "Step 8: The health view",
+    "outro": "The series ends here"
+  },
+  "events": [
+    {
+      "id": "tutorial-storage-management-01",
+      "markerIndex": 0,
+      "at": 2.410441,
+      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "afterText": "Nearly full. Time to grow.",
+      "cardLabel": "Filling Up",
+      "prose": "Fill the repository with data until the filesystem runs tight."
+    },
+    {
+      "id": "tutorial-storage-management-02",
+      "markerIndex": 1,
+      "at": 12.69586,
+      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "afterText": "Four gigabytes now. Nothing restarted.",
+      "cardLabel": "Expand Online",
+      "prose": "Expand the repository online: the LUKS container and filesystem grow with containers running."
+    },
+    {
+      "id": "tutorial-storage-management-03",
+      "markerIndex": 2,
+      "at": 19.886575,
+      "text": "Verify from inside: same volume, double the room.",
+      "afterText": "The app never noticed.",
+      "cardLabel": "Verify Size",
+      "prose": "Check the filesystem from inside the repo — the new size is live."
+    },
+    {
+      "id": "tutorial-storage-management-04",
+      "markerIndex": 3,
+      "at": 26.982758,
+      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "afterText": "Freed inside the repo, still owned by the image.",
+      "cardLabel": "Delete Data",
+      "prose": "Delete the data inside the repository — note the pool does not shrink yet."
+    },
+    {
+      "id": "tutorial-storage-management-05",
+      "markerIndex": 4,
+      "at": 33.464064,
+      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "afterText": "Reclaimed. The pool can breathe again.",
+      "cardLabel": "Trim",
+      "prose": "Run repo trim to return the freed blocks to the shared pool — online, zero downtime."
+    },
+    {
+      "id": "tutorial-storage-management-06",
+      "markerIndex": 5,
+      "at": 40.097562,
+      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "afterText": "Policy stored. The machine takes over from here.",
+      "cardLabel": "Set Policy",
+      "prose": "Set a size policy: auto-grow with an explicit ceiling, plus scheduled trim."
+    },
+    {
+      "id": "tutorial-storage-management-07",
+      "markerIndex": 6,
+      "at": 50.538253,
+      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "afterText": "Set once, forgotten safely.",
+      "cardLabel": "Policy Check",
+      "prose": "Read the effective policy back — growth and trim are now automatic."
+    },
+    {
+      "id": "tutorial-storage-management-08",
+      "markerIndex": 7,
+      "at": 57.423655,
+      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "afterText": "One view: usage, savings, and room to grow.",
+      "cardLabel": "Health View",
+      "prose": "Check machine storage health: per-repo usage, pool state, and CoW reflink savings."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Welcome to the final tutorial! Let's make sure you never run out of disk again. We'll grow a full repository online, hand deleted space back to the pool, and then teach the machine to do both automatically."
+    },
+    {
+      "id": "pool-model",
+      "text": "Here's the model. Every repository is a file in one shared datastore pool. Repositories can grow online while the containers keep running. But deleting data inside a repo frees nothing by itself. Trim is what hands the blocks back to the pool. And a policy automates both."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "And that's a wrap on the series! Eighteen tutorials, from install to autopilot storage. Your servers are yours again. Thanks for watching!"
+    }
+  ]
+}

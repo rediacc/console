@@ -1,0 +1,62 @@
+---
+title: "Canlı Taşıma"
+description: "Çalışan bir depoyu, container'lar ve süreç belleği dahil, tek komutla başka bir makineye minimal kesinti süresiyle taşıyın."
+category: "Tutorials"
+subcategory: advanced
+order: 16
+language: tr
+sourceHash: "0d0c4df847c6ba17"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Canlı Taşıma
+
+Sunucular değiştirilir: donanım eskir, sağlayıcılar değişir, bölgeler taşınır. `rdc repo migrate`, çalışan bir depoyu tek komutla başka bir makineye taşır; `--checkpoint` ile süreç belleği de yolculuğa katılır. Demo uygulama `pulse`, RAM'de bir sayaç tutar; taşımadan sonra sıfırdan başlamak yerine saymaya devam eder.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
+## Nasıl taşınır?
+
+![Two phases, minimal downtime](/img/tutorials/tutorial-live-migration/slide-1.svg)
+
+Birinci aşama, uygulama çalışmaya devam ederken büyük bölümü kopyalar. İkinci aşama, canlı süreçleri checkpoint'ler (CRIU, `rediacc.checkpoint=true` etiketli container'lar için), son deltayı ve süreç durumunu karşıya taşır, ardından yeni makinede her şeyi devam ettirir. Kesinti deltaya eşittir, veriye değil.
+
+## Adım 1: Kanıt, RAM'de bir sayaç
+
+<TutorialStep number={1} />
+
+`memory counter=6` ve artıyor, her beş saniyede bir atış. Sayaç yalnızca süreç belleğinde yaşar. Süreç yeniden başlasaydı, birden başlardı.
+
+## Adım 2: Taşıyın, canlı
+
+<TutorialStep number={2} />
+
+Çıktı taşımayı anlatır: birinci aşama kaynak çevrimiçiyken 2 GB'lık büyük bölümü aktarır, ardından geçiş satırı gerçek `DOWNTIME`'ı yazdırır: iki gigabaytlık bir depo için birkaç on megabayt ve yaklaşık yirmi saniye.
+
+## Adım 3: Yeni yuvayı doğrulayın
+
+<TutorialStep number={3} />
+
+Hedefte `pulse` bağlı, Docker çalışıyor, container'lar ayakta.
+
+## Adım 4: Kaynak durdu
+
+<TutorialStep number={4} />
+
+Kaynak depoyu hâlâ listeliyor, ama açıkça: bağlı değil, Docker yok, sıfır container. Orada artık hiçbir şey çalışmıyor. Görüntü kasıtlı olarak bir sonraki [delta aktarımı](/tr/docs/tutorial-delta-transfer) için temel olarak saklanır; bu sayede gelecekteki bir geri gönderim ucuz olur.
+
+## Adım 5: Sayaç saymaya devam etti
+
+<TutorialStep number={5} />
+
+`memory counter=17`, sonra 18, 19, 20... Checkpoint'in dondurduğu yerden tam olarak devam etti, bire sıfırlanmadı. Süreç belleği de yolculuğa katıldı; uygulama makine değiştirdiğinin farkına bile varmadı.
+
+> `--checkpoint` olmadan `migrate` hâlâ diski ve container'ları taşır; hedefte uçuşta devam etmek yerine sıfırdan başlarlar.
+
+---
+
+Sonraki: [Delta Aktarımı](/tr/docs/tutorial-delta-transfer).

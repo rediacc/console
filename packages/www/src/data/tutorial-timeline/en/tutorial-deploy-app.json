@@ -7,157 +7,17 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "1263882e236de1befdb729dddc23c6b830ea44bb08c5d9e53daa1c8ebf36aa3d",
+  "transcriptHash": "d9f28413fe082b20fad75a663539122a85aae6b9823668e35d76fc1afd369c56",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 2.40432,
-      "replayEndSec": 6.041569,
-      "narrationText": "Step one. We will list the available templates. Rediacc ships ready-made setups for common apps so we do not have to write a docker-compose from scratch.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01.a03f6661.mp3",
-      "textHash": "a03f6661f064088db609ba0bab02833bd3fd8d257453cbb27e7155535889c450",
-      "audioDurationSec": 9.090612,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.56,
-          "startChar": 5,
-          "endChar": 8
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.12,
-          "startChar": 10,
-          "endChar": 12
-        },
-        {
-          "startSec": 1.12,
-          "endSec": 1.28,
-          "startChar": 13,
-          "endChar": 17
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 1.52,
-          "startChar": 18,
-          "endChar": 22
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 1.68,
-          "startChar": 23,
-          "endChar": 26
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 2.08,
-          "startChar": 27,
-          "endChar": 36
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.72,
-          "startChar": 37,
-          "endChar": 46
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 4.0,
-          "startChar": 56,
-          "endChar": 61
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 5.28,
-          "startChar": 73,
-          "endChar": 79
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.44,
-          "startChar": 80,
-          "endChar": 83
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.84,
-          "startChar": 84,
-          "endChar": 90
-        },
-        {
-          "startSec": 5.84,
-          "endSec": 6.16,
-          "startChar": 91,
-          "endChar": 95
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.32,
-          "startChar": 96,
-          "endChar": 98
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.4,
-          "startChar": 99,
-          "endChar": 101
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.56,
-          "startChar": 102,
-          "endChar": 104
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 6.8,
-          "startChar": 105,
-          "endChar": 108
-        },
-        {
-          "startSec": 6.8,
-          "endSec": 6.96,
-          "startChar": 109,
-          "endChar": 113
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.36,
-          "startChar": 117,
-          "endChar": 122
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.76,
-          "startChar": 125,
-          "endChar": 131
-        },
-        {
-          "startSec": 7.76,
-          "endSec": 8.32,
-          "startChar": 132,
-          "endChar": 139
-        },
-        {
-          "startSec": 8.32,
-          "endSec": 8.48,
-          "startChar": 140,
-          "endChar": 144
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 9.04,
-          "startChar": 145,
-          "endChar": 152
-        }
-      ],
+      "replayStartSec": 2.408078,
+      "replayEndSec": 6.077084,
+      "narrationText": "Step one: list the available templates. Rediacc ships ready-made setups for common apps, so there is no docker-compose to write from scratch.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01.66b97f87.mp3",
+      "textHash": "66b97f87da3c7c93ead12faf1319d5373779bc86d718110d5a5c23b2e8ce36fa",
+      "audioDurationSec": 9.482449,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-01-after.49ea345b.mp3",
       "afterAudioDurationSec": 5.485714,
       "afterTextHash": "49ea345b8e03b37388004425f3a7c9ea0229105747e82d5ac8a82ac20e390d9b",
@@ -245,12 +105,12 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 6.041569,
-      "replayEndSec": 13.566247,
-      "narrationText": "Step two. Drop the app-postgres template into the repo. This copies a tested set of files into the repo for us.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02.f7f3586c.mp3",
-      "textHash": "f7f3586cd23ffa7c4a85f6f8e7192c81cf82f3f5dc8cdd17f3100989ba359eee",
-      "audioDurationSec": 7.079184,
+      "replayStartSec": 6.077084,
+      "replayEndSec": 14.72542,
+      "narrationText": "Step two: drop the app-postgres template into the repo. A tested set of files, copied straight in.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02.b7d635e9.mp3",
+      "textHash": "b7d635e95a8c70aae647882690bdf56a21edf1c8a82e027ea42548c6ac6abbcc",
+      "audioDurationSec": 6.034286,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-02-after.ee176ab2.mp3",
       "afterAudioDurationSec": 3.709388,
       "afterTextHash": "ee176ab26afd1159c5713df5d731121af0ae089bb5e56996a9e14a8296c856cc"
@@ -258,12 +118,12 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 13.566247,
-      "replayEndSec": 23.282435,
-      "narrationText": "Let us look at what the template added. We connect into the repo and list its files. There is a Rediaccfile holding the start and stop hooks, and a docker-compose file describing the containers. One note: we add a redirect to dev null so only the real output shows. Without it, the connection logs would clutter the screen. We will keep doing that for the rest of the commands.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03.2a5b2d6f.mp3",
-      "textHash": "2a5b2d6f51b0eb6bdd39976857088310aa36e9404f0fca207095d412a1c926e9",
-      "audioDurationSec": 22.674286,
+      "replayStartSec": 14.72542,
+      "replayEndSec": 21.699752,
+      "narrationText": "Peek inside the repo and list what landed: a Rediaccfile holding the start and stop hooks, and a docker-compose file describing the containers.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03.2070cfb2.mp3",
+      "textHash": "2070cfb258dc6be53e30313208666ccbdaac862e1dcfff7ece94122f9f5072a0",
+      "audioDurationSec": 8.907755,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-03-after.e6b5d919.mp3",
       "afterAudioDurationSec": 6.347755,
       "afterTextHash": "e6b5d91909508ef9f51ef81c94e32547c9e9073a3d19915a85990e92eadeee30"
@@ -271,12 +131,12 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 23.282435,
-      "replayEndSec": 30.345778,
-      "narrationText": "Now bring the repo up. The CLI starts the containers, mounts the encrypted volume, and wires up the isolated Docker daemon.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04.371e863c.mp3",
-      "textHash": "371e863cba1930c335e68285aa79fe5d64384caf6e645eb45cd197e908218977",
-      "audioDurationSec": 8.672653,
+      "replayStartSec": 21.699752,
+      "replayEndSec": 28.8781,
+      "narrationText": "Step three: bring the repo up. One command — the CLI mounts the encrypted volume, starts the isolated Docker daemon, and launches the containers.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04.ad01c833.mp3",
+      "textHash": "ad01c833362aa47f97af66a62fa554af1d90a978dc3915d48ce2a3b947f26859",
+      "audioDurationSec": 9.639184,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-04-after.cbbedc43.mp3",
       "afterAudioDurationSec": 4.205714,
       "afterTextHash": "cbbedc43643cab1c8d18b0cea121223b61b885b9396f39e22b369aca3927480d"
@@ -284,12 +144,12 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "replayStartSec": 30.345778,
-      "replayEndSec": 38.921409,
-      "narrationText": "Let us verify what is running. Docker ps here lists only this repo's containers. Other repos on the same server have their own daemons and are completely invisible from this view.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05.17957cbc.mp3",
-      "textHash": "17957cbcb9ba52f2a9065df70a52de250a6c973d1db9747b7a68115f74833e9d",
-      "audioDurationSec": 11.31102,
+      "replayStartSec": 28.8781,
+      "replayEndSec": 34.846304,
+      "narrationText": "Verify what is running. Docker ps here lists only this repo's containers. Every other repo on this server has its own daemon, completely invisible from this view.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05.f7dbd278.mp3",
+      "textHash": "f7dbd27820f5874f0b4d6ec0801f67048936a89f51353035df5d6608f590d5f6",
+      "audioDurationSec": 10.44898,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/tutorial-deploy-app-05-after.df57dc44.mp3",
       "afterAudioDurationSec": 4.91102,
       "afterTextHash": "df57dc44ec60d28407863429c60f98fe46de072311613c3abf23c4c6fa853a96"
@@ -298,10 +158,10 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "2adcedb11e6ea1b832b13cb27e9ddee2af0160625a92b685a5916320f2991117",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/intro.2adcedb1.mp3",
-      "narrationText": "Time to deploy a real app! We will go from an empty repo to running containers in a few short steps.",
-      "audioDurationSec": 6.426122
+      "textHash": "394f775e2cbc0b0dfc55fca530acc978bdde5c70ab1ae4789fb53380ba017525",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/intro.394f775e.mp3",
+      "narrationText": "Time to deploy a real app! From an empty repo to running containers in three moves: pick, apply, run.",
+      "audioDurationSec": 8.045714
     },
     {
       "id": "pick-apply-run",
@@ -491,6 +351,13 @@
           "endChar": 159
         }
       ]
+    },
+    {
+      "id": "vscode-file-tour",
+      "textHash": "55f3f8e623917c1bb236fa9b56fdb39eeb6fa8287b93af231c00aed81aa18331",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-deploy-app/vscode-file-tour.55f3f8e6.mp3",
+      "narrationText": "Prefer an editor over cat? The same files open in VS Code, straight from your browser. Here's the Rediaccfile, and the compose file next to it. We tour this setup properly in a later tutorial.",
+      "audioDurationSec": 12.826122
     },
     {
       "id": "next-tutorial",

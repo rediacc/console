@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "329f75eb6459b6eda7695b72fe26098dd1356fb6ed8a37f5a5410edd123a2bd3",
+  "transcriptHash": "5892886762a2b9cc0b52202f4638a57d6ccecf8e9ceddb62bfecc45e9a00fa63",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424169,
-      "replayEndSec": 6.651448,
+      "replayStartSec": 2.409089,
+      "replayEndSec": 6.555802,
       "narrationText": "1단계입니다. 기존 rclone 구성을 가져옵니다. rclone은 S3, Backblaze, Google Drive, Dropbox 등 다양한 서비스를 지원합니다. 이미 rclone을 사용하고 있다면 동일한 구성을 바로 가져올 수 있습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-01.7809dbce.mp3",
       "textHash": "7809dbce50cca6189ded80d3b8c15f7aa003e0d22735b9f25268f3c7f460ecd0",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 6.651448,
-      "replayEndSec": 10.354487,
+      "replayStartSec": 6.555802,
+      "replayEndSec": 10.251839,
       "narrationText": "CLI가 인식하는 스토리지 목록을 확인합니다. 각각은 백업을 푸시할 수 있는 대상입니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-02.f1679de5.mp3",
       "textHash": "f1679de59df84d1d15933a18112c8923f289b07ce2ab12af189df28f2d7a5320",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 10.354487,
-      "replayEndSec": 18.28182,
+      "replayStartSec": 10.251839,
+      "replayEndSec": 24.484571,
       "narrationText": "2단계입니다. 전체 백업을 푸시합니다. 저장소 전체, 앱, 데이터베이스, 파일, 구성이 업로드됩니다. 저장소가 저장 시 암호화되어 있으므로 백업도 암호화됩니다. 별도의 키 관리가 필요하지 않습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-03.08ffbc66.mp3",
       "textHash": "08ffbc66ecde9b68e6409f41a8ce5f05975e0b6b67ae67f3b923aedc42b5a2a7",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 18.28182,
-      "replayEndSec": 26.532142,
+      "replayStartSec": 24.484571,
+      "replayEndSec": 31.133919,
       "narrationText": "이 스토리지에서 사용 가능한 백업 목록을 확인합니다. 이제 새 서버에서 복원하려면 명령 하나면 됩니다. 저장소 풀 명령을 실행하면 됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-04.f0e2190e.mp3",
       "textHash": "f0e2190e85840075ee92b89c225b15afd1436573c4af03da9be30b679d06c351",
@@ -60,6 +60,45 @@
       "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-04-after.6bffac9b.mp3",
       "afterAudioDurationSec": 5.642449,
       "afterTextHash": "6bffac9b24d3532d6699add6381b7d194b46dd5af49a656a6120e2a3b194216e"
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.133919,
+      "replayEndSec": 39.135694,
+      "narrationText": "이제 복원을 증명해 보겠습니다. 먼저 repository를 오프라인으로 전환합니다. 서비스를 중지하고 암호화된 볼륨을 언마운트하세요. 이 머신에서 앱이 사라졌습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-05.89c3d945.mp3",
+      "textHash": "89c3d945a24e3aa6261f6af14ffca5bd6682c05254c9684ee18a6528cd0618c5",
+      "audioDurationSec": 12.434286,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-05-after.39484f22.mp3",
+      "afterAudioDurationSec": 4.04898,
+      "afterTextHash": "39484f2239272466db3e50eb7daf4f68341aa7678604dac07496542f04bb6718"
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.135694,
+      "replayEndSec": 48.126162,
+      "narrationText": "이제 스토리지에서 백업을 바로 가져옵니다. repo pull 명령어가 이미지를 페치하고, 무결성을 확인한 뒤, 정확히 원래 위치에 복원합니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-06.a5c8acf4.mp3",
+      "textHash": "a5c8acf4b76b44757396e087a2975b688b486dbd1abda3c2b7a38f9fa9846430",
+      "audioDurationSec": 10.527347,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-06-after.6b3ebded.mp3",
+      "afterAudioDurationSec": 4.362449,
+      "afterTextHash": "6b3ebded66c45893d21024f73e47797f718de07e1bf2abe9d689b9e6eab41ff3"
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "replayStartSec": 48.126162,
+      "replayEndSec": 54.070366,
+      "narrationText": "다시 마운트하면 repository가 복원됩니다. push, list, pull, 이게 백업의 전부입니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-07.0c54832f.mp3",
+      "textHash": "0c54832f28ee00b5947e95352bff2870145850dc048d9d844062e51732329069",
+      "audioDurationSec": 7.235918,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-backup-restore/tutorial-backup-restore-07-after.a56b083a.mp3",
+      "afterAudioDurationSec": 3.970612,
+      "afterTextHash": "a56b083a87bc30660833b3ecb514803ef9dfb7614347cfae1e4a68199b814fb7"
     }
   ],
   "narrationAudio": [

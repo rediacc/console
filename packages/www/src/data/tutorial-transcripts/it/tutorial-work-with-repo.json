@@ -6,7 +6,7 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 2.415513,
+      "at": 2.414306,
       "text": "Prima di tutto, il comando tunnel. L'app gira sul server, non sul tuo laptop. Il comando tunnel inoltra la porta di un container via SSH cosi' puoi aprirla su localhost nel browser.",
       "afterText": "Porta inoltrata. L'app e' ora raggiungibile su localhost.",
       "cardLabel": "Tunnel di Porta",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 9.087333,
+      "at": 10.610488,
       "text": "Secondo, il comando term. Il comando di connessione al terminale ti porta all'interno della sandbox del repo -- la stessa vista isolata che offre VS Code. Puoi eseguire qualsiasi comando sul Docker daemon di questo repo senza mai uscire dal terminale.",
       "afterText": "Sei nella sandbox del repo. Esegui qualsiasi cosa come se fossi connesso via SSH.",
       "cardLabel": "Term nel Sandbox",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 15.893309,
+      "at": 17.555154,
       "text": "Prima di trasferire i file, anteprima con --dry-run. Mostra esattamente cosa cambierebbe senza copiare nulla. Usa sempre l'anteprima quando non sei sicuro.",
       "afterText": "Solo anteprima. Nessun file ancora spostato.",
       "cardLabel": "Anteprima Sync",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 22.144638,
+      "at": 24.76977,
       "text": "Ora eseguiamo l'upload reale. Il comando di sincronizzazione sposta i file dal tuo laptop nel repo via SSH, con compressione delta rsync. Tunnel, term, sync -- tre comandi coprono il ciclo quotidiano.",
       "afterText": "File caricati. La compressione delta gestisce alberi grandi.",
       "cardLabel": "Sync Upload",
@@ -67,6 +67,6 @@
     "cast-step-1": "Term: esegui comandi nel sandbox",
     "cast-step-2": "Sync: anteprima con --dry-run",
     "cast-step-3": "Sync: upload effettivo",
-    "outro": "Avanti: Fork di un Repository"
+    "outro": "Prossimo: VS Code nel Browser"
   }
 }

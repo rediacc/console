@@ -9,14 +9,23 @@ Yedekleme ve Geri Yükleme
 00:00:21.269 --> 00:00:43.314
 Adım 1: rclone yapılandırmasını içe aktar
 
-00:00:43.314 --> 00:00:57.138
+00:00:43.314 --> 00:00:57.171
 Adım 2: Yapılandırılmış depolamaları listele
 
-00:00:57.138 --> 00:01:22.446
+00:00:57.171 --> 00:01:23.229
 Adım 3: Tam yedek gönder
 
-00:01:22.446 --> 00:01:41.410
+00:01:23.229 --> 00:01:42.193
 Adım 4: Depolamadaki yedekleri listele
 
-00:01:41.410 --> 00:01:46.530
+00:01:42.193 --> 00:02:02.058
+Adım 5: Repo'yu çevrimdışına al
+
+00:02:02.058 --> 00:02:21.488
+Adım 6: Yedeği geri çek
+
+00:02:21.488 --> 00:02:38.981
+Adım 7: Bağla, geri yüklendi
+
+00:02:38.981 --> 00:02:44.101
 Sıradaki: İzleme

@@ -3,428 +3,475 @@
   "cues": [
     {
       "start": 1,
-      "end": 1.57,
-      "text": "Pekâlâ!",
-      "words": [{ "start": 1, "end": 1.57, "char": [0, 7] }]
-    },
-    {
-      "start": 1.57,
-      "end": 3.85,
-      "text": "Uygulamanızı geliştirmeden üretime taşıyalım.",
+      "end": 2.342,
+      "text": "Uygulamanız bağlıyken çalışır.",
       "words": [
-        { "start": 1.57, "end": 2.14, "char": [0, 12] },
-        { "start": 2.14, "end": 2.71, "char": [13, 26] },
-        { "start": 2.71, "end": 3.28, "char": [27, 34] },
-        { "start": 3.28, "end": 3.85, "char": [35, 45] }
+        { "start": 1, "end": 1.447, "char": [0, 11] },
+        { "start": 1.447, "end": 1.895, "char": [12, 21] },
+        { "start": 1.895, "end": 2.342, "char": [22, 30] }
       ]
     },
     {
-      "start": 3.85,
-      "end": 5.56,
+      "start": 2.342,
+      "end": 2.789,
+      "text": "Production,",
+      "words": [{ "start": 2.342, "end": 2.789, "char": [0, 11] }]
+    },
+    {
+      "start": 2.789,
+      "end": 5.473,
+      "text": "siz gittikten sonra da çalışması demek.",
+      "words": [
+        { "start": 2.789, "end": 3.237, "char": [0, 3] },
+        { "start": 3.237, "end": 3.684, "char": [4, 13] },
+        { "start": 3.684, "end": 4.131, "char": [14, 19] },
+        { "start": 4.131, "end": 4.579, "char": [20, 22] },
+        { "start": 4.579, "end": 5.026, "char": [23, 32] },
+        { "start": 5.026, "end": 5.473, "char": [33, 39] }
+      ]
+    },
+    {
+      "start": 5.473,
+      "end": 6.816,
       "text": "Üç kısa adım,",
       "words": [
-        { "start": 3.85, "end": 4.42, "char": [0, 2] },
-        { "start": 4.42, "end": 4.99, "char": [3, 7] },
-        { "start": 4.99, "end": 5.56, "char": [8, 13] }
+        { "start": 5.473, "end": 5.921, "char": [0, 2] },
+        { "start": 5.921, "end": 6.368, "char": [3, 7] },
+        { "start": 6.368, "end": 6.816, "char": [8, 13] }
       ]
     },
     {
-      "start": 5.56,
-      "end": 7.269,
+      "start": 6.816,
+      "end": 8.158,
       "text": "hepsi dizüstü bilgisayarınızdan.",
       "words": [
-        { "start": 5.56, "end": 6.129, "char": [0, 5] },
-        { "start": 6.129, "end": 6.699, "char": [6, 13] },
-        { "start": 6.699, "end": 7.269, "char": [14, 32] }
+        { "start": 6.816, "end": 7.263, "char": [0, 5] },
+        { "start": 7.263, "end": 7.71, "char": [6, 13] },
+        { "start": 7.71, "end": 8.158, "char": [14, 32] }
       ]
     },
     {
-      "start": 8.046,
-      "end": 10.998,
-      "text": "Geliştirme sırasında uygulamayı deponun içinden çalıştırırsınız;",
+      "start": 8.928,
+      "end": 10.402,
+      "text": "İşte fark bu.",
       "words": [
-        { "start": 8.046, "end": 8.538, "char": [0, 10] },
-        { "start": 8.538, "end": 9.03, "char": [11, 20] },
-        { "start": 9.03, "end": 9.522, "char": [21, 31] },
-        { "start": 9.522, "end": 10.014, "char": [32, 39] },
-        { "start": 10.014, "end": 10.506, "char": [40, 47] },
-        { "start": 10.506, "end": 10.998, "char": [48, 64] }
+        { "start": 8.928, "end": 9.419, "char": [0, 4] },
+        { "start": 9.419, "end": 9.911, "char": [5, 9] },
+        { "start": 9.911, "end": 10.402, "char": [10, 13] }
       ]
     },
     {
-      "start": 10.998,
-      "end": 13.458,
-      "text": "bu yüzden bağlantınız kesildiğinde durur.",
+      "start": 10.402,
+      "end": 13.349,
+      "text": "Development ortamında uygulamayı SSH üzerinden repo",
       "words": [
-        { "start": 10.998, "end": 11.49, "char": [0, 2] },
-        { "start": 11.49, "end": 11.982, "char": [3, 9] },
-        { "start": 11.982, "end": 12.474, "char": [10, 21] },
-        { "start": 12.474, "end": 12.966, "char": [22, 34] },
-        { "start": 12.966, "end": 13.458, "char": [35, 41] }
+        { "start": 10.402, "end": 10.893, "char": [0, 11] },
+        { "start": 10.893, "end": 11.384, "char": [12, 21] },
+        { "start": 11.384, "end": 11.876, "char": [22, 32] },
+        { "start": 11.876, "end": 12.367, "char": [33, 36] },
+        { "start": 12.367, "end": 12.858, "char": [37, 46] },
+        { "start": 12.858, "end": 13.349, "char": [47, 51] }
       ]
     },
     {
-      "start": 13.458,
-      "end": 16.41,
-      "text": "Üretimde uygulamayı dizüstü bilgisayarınızdan CLI ile",
+      "start": 13.349,
+      "end": 14.332,
+      "text": "içinden başlatırsınız.",
       "words": [
-        { "start": 13.458, "end": 13.95, "char": [0, 8] },
-        { "start": 13.95, "end": 14.442, "char": [9, 19] },
-        { "start": 14.442, "end": 14.934, "char": [20, 27] },
-        { "start": 14.934, "end": 15.426, "char": [28, 45] },
-        { "start": 15.426, "end": 15.918, "char": [46, 49] },
-        { "start": 15.918, "end": 16.41, "char": [50, 53] }
+        { "start": 13.349, "end": 13.841, "char": [0, 7] },
+        { "start": 13.841, "end": 14.332, "char": [8, 22] }
       ]
     },
     {
-      "start": 16.41,
-      "end": 19.361,
-      "text": "başlatırsınız ve bağımsız olarak çalışmaya devam",
+      "start": 14.332,
+      "end": 15.315,
+      "text": "Oturumu kapatın,",
       "words": [
-        { "start": 16.41, "end": 16.902, "char": [0, 13] },
-        { "start": 16.902, "end": 17.393, "char": [14, 16] },
-        { "start": 17.393, "end": 17.885, "char": [17, 25] },
-        { "start": 17.885, "end": 18.377, "char": [26, 32] },
-        { "start": 18.377, "end": 18.869, "char": [33, 42] },
-        { "start": 18.869, "end": 19.361, "char": [43, 48] }
+        { "start": 14.332, "end": 14.823, "char": [0, 7] },
+        { "start": 14.823, "end": 15.315, "char": [8, 16] }
       ]
     },
     {
-      "start": 19.361,
-      "end": 19.853,
-      "text": "eder.",
-      "words": [{ "start": 19.361, "end": 19.853, "char": [0, 5] }]
+      "start": 15.315,
+      "end": 17.771,
+      "text": "uygulama da onunla birlikte kapanır.",
+      "words": [
+        { "start": 15.315, "end": 15.806, "char": [0, 8] },
+        { "start": 15.806, "end": 16.297, "char": [9, 11] },
+        { "start": 16.297, "end": 16.788, "char": [12, 18] },
+        { "start": 16.788, "end": 17.28, "char": [19, 27] },
+        { "start": 17.28, "end": 17.771, "char": [28, 36] }
+      ]
     },
     {
-      "start": 23.118,
-      "end": 26.083,
+      "start": 17.771,
+      "end": 20.718,
+      "text": "Production'da ise uygulamayı dizüstü bilgisayarınızdan bağımsız",
+      "words": [
+        { "start": 17.771, "end": 18.262, "char": [0, 13] },
+        { "start": 18.262, "end": 18.753, "char": [14, 17] },
+        { "start": 18.753, "end": 19.245, "char": [18, 28] },
+        { "start": 19.245, "end": 19.736, "char": [29, 36] },
+        { "start": 19.736, "end": 20.227, "char": [37, 54] },
+        { "start": 20.227, "end": 20.718, "char": [55, 63] }
+      ]
+    },
+    {
+      "start": 20.718,
+      "end": 21.21,
+      "text": "başlatırsınız:",
+      "words": [{ "start": 20.718, "end": 21.21, "char": [0, 14] }]
+    },
+    {
+      "start": 21.21,
+      "end": 23.175,
+      "text": "sunucu süreci kendisi yönetir,",
+      "words": [
+        { "start": 21.21, "end": 21.701, "char": [0, 6] },
+        { "start": 21.701, "end": 22.192, "char": [7, 13] },
+        { "start": 22.192, "end": 22.684, "char": [14, 21] },
+        { "start": 22.684, "end": 23.175, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 23.175,
+      "end": 24.157,
+      "text": "bağlantınız değil.",
+      "words": [
+        { "start": 23.175, "end": 23.666, "char": [0, 11] },
+        { "start": 23.666, "end": 24.157, "char": [12, 18] }
+      ]
+    },
+    {
+      "start": 27.437,
+      "end": 30.402,
       "text": "Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz.",
       "words": [
-        { "start": 23.118, "end": 23.612, "char": [0, 10] },
-        { "start": 23.612, "end": 24.106, "char": [11, 18] },
-        { "start": 24.106, "end": 24.601, "char": [19, 32] },
-        { "start": 24.601, "end": 25.095, "char": [33, 39] },
-        { "start": 25.095, "end": 25.589, "char": [40, 47] },
-        { "start": 25.589, "end": 26.083, "char": [48, 61] }
+        { "start": 27.437, "end": 27.931, "char": [0, 10] },
+        { "start": 27.931, "end": 28.425, "char": [11, 18] },
+        { "start": 28.425, "end": 28.92, "char": [19, 32] },
+        { "start": 28.92, "end": 29.414, "char": [33, 39] },
+        { "start": 29.414, "end": 29.908, "char": [40, 47] },
+        { "start": 29.908, "end": 30.402, "char": [48, 61] }
       ]
     },
     {
-      "start": 26.083,
-      "end": 27.072,
+      "start": 30.402,
+      "end": 31.391,
       "text": "Deploy komutu,",
       "words": [
-        { "start": 26.083, "end": 26.578, "char": [0, 6] },
-        { "start": 26.578, "end": 27.072, "char": [7, 14] }
+        { "start": 30.402, "end": 30.897, "char": [0, 6] },
+        { "start": 30.897, "end": 31.391, "char": [7, 14] }
       ]
     },
     {
-      "start": 27.072,
-      "end": 30.037,
+      "start": 31.391,
+      "end": 34.356,
       "text": "geliştirme sırasında kullandığımız aynı up fonksiyonunu",
       "words": [
-        { "start": 27.072, "end": 27.566, "char": [0, 10] },
-        { "start": 27.566, "end": 28.06, "char": [11, 20] },
-        { "start": 28.06, "end": 28.555, "char": [21, 34] },
-        { "start": 28.555, "end": 29.049, "char": [35, 39] },
-        { "start": 29.049, "end": 29.543, "char": [40, 42] },
-        { "start": 29.543, "end": 30.037, "char": [43, 55] }
+        { "start": 31.391, "end": 31.885, "char": [0, 10] },
+        { "start": 31.885, "end": 32.379, "char": [11, 20] },
+        { "start": 32.379, "end": 32.874, "char": [21, 34] },
+        { "start": 32.874, "end": 33.368, "char": [35, 39] },
+        { "start": 33.368, "end": 33.862, "char": [40, 42] },
+        { "start": 33.862, "end": 34.356, "char": [43, 55] }
       ]
     },
     {
-      "start": 30.037,
-      "end": 30.532,
+      "start": 34.356,
+      "end": 34.851,
       "text": "çağırır;",
-      "words": [{ "start": 30.037, "end": 30.532, "char": [0, 8] }]
+      "words": [{ "start": 34.356, "end": 34.851, "char": [0, 8] }]
     },
     {
-      "start": 30.532,
-      "end": 32.014,
+      "start": 34.851,
+      "end": 36.333,
       "text": "ancak bağımsız çalışır.",
       "words": [
-        { "start": 30.532, "end": 31.026, "char": [0, 5] },
-        { "start": 31.026, "end": 31.52, "char": [6, 14] },
-        { "start": 31.52, "end": 32.014, "char": [15, 23] }
+        { "start": 34.851, "end": 35.345, "char": [0, 5] },
+        { "start": 35.345, "end": 35.839, "char": [6, 14] },
+        { "start": 35.839, "end": 36.333, "char": [15, 23] }
       ]
     },
     {
-      "start": 32.014,
-      "end": 33.497,
+      "start": 36.333,
+      "end": 37.816,
       "text": "Dizüstü bilgisayarınızı kapatabilirsiniz;",
       "words": [
-        { "start": 32.014, "end": 32.509, "char": [0, 7] },
-        { "start": 32.509, "end": 33.003, "char": [8, 23] },
-        { "start": 33.003, "end": 33.497, "char": [24, 41] }
+        { "start": 36.333, "end": 36.828, "char": [0, 7] },
+        { "start": 36.828, "end": 37.322, "char": [8, 23] },
+        { "start": 37.322, "end": 37.816, "char": [24, 41] }
       ]
     },
     {
-      "start": 33.497,
-      "end": 35.474,
+      "start": 37.816,
+      "end": 39.793,
       "text": "uygulama çalışmaya devam eder.",
       "words": [
-        { "start": 33.497, "end": 33.991, "char": [0, 8] },
-        { "start": 33.991, "end": 34.485, "char": [9, 18] },
-        { "start": 34.485, "end": 34.98, "char": [19, 24] },
-        { "start": 34.98, "end": 35.474, "char": [25, 30] }
+        { "start": 37.816, "end": 38.31, "char": [0, 8] },
+        { "start": 38.31, "end": 38.804, "char": [9, 18] },
+        { "start": 38.804, "end": 39.299, "char": [19, 24] },
+        { "start": 39.299, "end": 39.793, "char": [25, 30] }
       ]
     },
     {
-      "start": 38.224,
-      "end": 39.652,
+      "start": 42.543,
+      "end": 43.971,
       "text": "Uygulama üretimde çalışıyor.",
       "words": [
-        { "start": 38.224, "end": 38.7, "char": [0, 8] },
-        { "start": 38.7, "end": 39.176, "char": [9, 17] },
-        { "start": 39.176, "end": 39.652, "char": [18, 28] }
+        { "start": 42.543, "end": 43.019, "char": [0, 8] },
+        { "start": 43.019, "end": 43.495, "char": [9, 17] },
+        { "start": 43.495, "end": 43.971, "char": [18, 28] }
       ]
     },
     {
-      "start": 39.652,
-      "end": 40.604,
+      "start": 43.971,
+      "end": 44.923,
       "text": "Aynı komut,",
       "words": [
-        { "start": 39.652, "end": 40.128, "char": [0, 4] },
-        { "start": 40.128, "end": 40.604, "char": [5, 11] }
+        { "start": 43.971, "end": 44.447, "char": [0, 4] },
+        { "start": 44.447, "end": 44.923, "char": [5, 11] }
       ]
     },
     {
-      "start": 40.604,
-      "end": 41.556,
+      "start": 44.923,
+      "end": 45.875,
       "text": "aynı sonuç,",
       "words": [
-        { "start": 40.604, "end": 41.08, "char": [0, 4] },
-        { "start": 41.08, "end": 41.556, "char": [5, 11] }
+        { "start": 44.923, "end": 45.399, "char": [0, 4] },
+        { "start": 45.399, "end": 45.875, "char": [5, 11] }
       ]
     },
     {
-      "start": 41.556,
-      "end": 42.508,
+      "start": 45.875,
+      "end": 46.827,
       "text": "gerçek sunucuda.",
       "words": [
-        { "start": 41.556, "end": 42.032, "char": [0, 6] },
-        { "start": 42.032, "end": 42.508, "char": [7, 16] }
+        { "start": 45.875, "end": 46.351, "char": [0, 6] },
+        { "start": 46.351, "end": 46.827, "char": [7, 16] }
       ]
     },
     {
-      "start": 45.807,
-      "end": 48.777,
+      "start": 50.126,
+      "end": 53.096,
       "text": "Uygulamanın sunucu yeniden başlamalarından kurtulması için",
       "words": [
-        { "start": 45.807, "end": 46.302, "char": [0, 11] },
-        { "start": 46.302, "end": 46.797, "char": [12, 18] },
-        { "start": 46.797, "end": 47.292, "char": [19, 26] },
-        { "start": 47.292, "end": 47.787, "char": [27, 42] },
-        { "start": 47.787, "end": 48.282, "char": [43, 53] },
-        { "start": 48.282, "end": 48.777, "char": [54, 58] }
+        { "start": 50.126, "end": 50.621, "char": [0, 11] },
+        { "start": 50.621, "end": 51.116, "char": [12, 18] },
+        { "start": 51.116, "end": 51.611, "char": [19, 26] },
+        { "start": 51.611, "end": 52.106, "char": [27, 42] },
+        { "start": 52.106, "end": 52.601, "char": [43, 53] },
+        { "start": 52.601, "end": 53.096, "char": [54, 58] }
       ]
     },
     {
-      "start": 48.777,
-      "end": 50.262,
+      "start": 53.096,
+      "end": 54.581,
       "text": "otomatik başlatmayı etkinleştiriyoruz.",
       "words": [
-        { "start": 48.777, "end": 49.272, "char": [0, 8] },
-        { "start": 49.272, "end": 49.767, "char": [9, 19] },
-        { "start": 49.767, "end": 50.262, "char": [20, 38] }
+        { "start": 53.096, "end": 53.591, "char": [0, 8] },
+        { "start": 53.591, "end": 54.086, "char": [9, 19] },
+        { "start": 54.086, "end": 54.581, "char": [20, 38] }
       ]
     },
     {
-      "start": 50.262,
-      "end": 53.231,
+      "start": 54.581,
+      "end": 57.55,
       "text": "Artık sunucu yeniden başlarsa bu depo",
       "words": [
-        { "start": 50.262, "end": 50.757, "char": [0, 5] },
-        { "start": 50.757, "end": 51.251, "char": [6, 12] },
-        { "start": 51.251, "end": 51.746, "char": [13, 20] },
-        { "start": 51.746, "end": 52.241, "char": [21, 29] },
-        { "start": 52.241, "end": 52.736, "char": [30, 32] },
-        { "start": 52.736, "end": 53.231, "char": [33, 37] }
+        { "start": 54.581, "end": 55.076, "char": [0, 5] },
+        { "start": 55.076, "end": 55.57, "char": [6, 12] },
+        { "start": 55.57, "end": 56.065, "char": [13, 20] },
+        { "start": 56.065, "end": 56.56, "char": [21, 29] },
+        { "start": 56.56, "end": 57.055, "char": [30, 32] },
+        { "start": 57.055, "end": 57.55, "char": [33, 37] }
       ]
     },
     {
-      "start": 53.231,
-      "end": 55.211,
+      "start": 57.55,
+      "end": 59.53,
       "text": "otomatik olarak geri gelir.",
       "words": [
-        { "start": 53.231, "end": 53.726, "char": [0, 8] },
-        { "start": 53.726, "end": 54.221, "char": [9, 15] },
-        { "start": 54.221, "end": 54.716, "char": [16, 20] },
-        { "start": 54.716, "end": 55.211, "char": [21, 27] }
+        { "start": 57.55, "end": 58.045, "char": [0, 8] },
+        { "start": 58.045, "end": 58.54, "char": [9, 15] },
+        { "start": 58.54, "end": 59.035, "char": [16, 20] },
+        { "start": 59.035, "end": 59.53, "char": [21, 27] }
       ]
     },
     {
-      "start": 57.461,
-      "end": 58.676,
+      "start": 61.78,
+      "end": 62.995,
       "text": "Otomatik başlatma açık.",
       "words": [
-        { "start": 57.461, "end": 57.866, "char": [0, 8] },
-        { "start": 57.866, "end": 58.271, "char": [9, 17] },
-        { "start": 58.271, "end": 58.676, "char": [18, 23] }
+        { "start": 61.78, "end": 62.185, "char": [0, 8] },
+        { "start": 62.185, "end": 62.59, "char": [9, 17] },
+        { "start": 62.59, "end": 62.995, "char": [18, 23] }
       ]
     },
     {
-      "start": 58.676,
-      "end": 60.7,
+      "start": 62.995,
+      "end": 65.019,
       "text": "Uygulama yeniden başlatmalardan sağ çıkar.",
       "words": [
-        { "start": 58.676, "end": 59.081, "char": [0, 8] },
-        { "start": 59.081, "end": 59.486, "char": [9, 16] },
-        { "start": 59.486, "end": 59.89, "char": [17, 31] },
-        { "start": 59.89, "end": 60.295, "char": [32, 35] },
-        { "start": 60.295, "end": 60.7, "char": [36, 42] }
+        { "start": 62.995, "end": 63.4, "char": [0, 8] },
+        { "start": 63.4, "end": 63.805, "char": [9, 16] },
+        { "start": 63.805, "end": 64.209, "char": [17, 31] },
+        { "start": 64.209, "end": 64.614, "char": [32, 35] },
+        { "start": 64.614, "end": 65.019, "char": [36, 42] }
       ]
     },
     {
-      "start": 63.984,
-      "end": 66.516,
+      "start": 68.336,
+      "end": 70.868,
       "text": "Hangi depolarda otomatik başlatmanın etkin olduğunu",
       "words": [
-        { "start": 63.984, "end": 64.406, "char": [0, 5] },
-        { "start": 64.406, "end": 64.828, "char": [6, 15] },
-        { "start": 64.828, "end": 65.25, "char": [16, 24] },
-        { "start": 65.25, "end": 65.672, "char": [25, 36] },
-        { "start": 65.672, "end": 66.094, "char": [37, 42] },
-        { "start": 66.094, "end": 66.516, "char": [43, 51] }
+        { "start": 68.336, "end": 68.758, "char": [0, 5] },
+        { "start": 68.758, "end": 69.18, "char": [6, 15] },
+        { "start": 69.18, "end": 69.602, "char": [16, 24] },
+        { "start": 69.602, "end": 70.024, "char": [25, 36] },
+        { "start": 70.024, "end": 70.446, "char": [37, 42] },
+        { "start": 70.446, "end": 70.868, "char": [43, 51] }
       ]
     },
     {
-      "start": 66.516,
-      "end": 66.938,
+      "start": 70.868,
+      "end": 71.29,
       "text": "listeliyoruz.",
-      "words": [{ "start": 66.516, "end": 66.938, "char": [0, 13] }]
+      "words": [{ "start": 70.868, "end": 71.29, "char": [0, 13] }]
     },
     {
-      "start": 66.938,
-      "end": 69.47,
+      "start": 71.29,
+      "end": 73.822,
       "text": "Uygulamamızın artık başlatma listesinde olduğunu doğruluyor.",
       "words": [
-        { "start": 66.938, "end": 67.36, "char": [0, 13] },
-        { "start": 67.36, "end": 67.782, "char": [14, 19] },
-        { "start": 67.782, "end": 68.204, "char": [20, 28] },
-        { "start": 68.204, "end": 68.626, "char": [29, 39] },
-        { "start": 68.626, "end": 69.048, "char": [40, 48] },
-        { "start": 69.048, "end": 69.47, "char": [49, 60] }
+        { "start": 71.29, "end": 71.712, "char": [0, 13] },
+        { "start": 71.712, "end": 72.134, "char": [14, 19] },
+        { "start": 72.134, "end": 72.556, "char": [20, 28] },
+        { "start": 72.556, "end": 72.978, "char": [29, 39] },
+        { "start": 72.978, "end": 73.4, "char": [40, 48] },
+        { "start": 73.4, "end": 73.822, "char": [49, 60] }
       ]
     },
     {
-      "start": 71.47,
-      "end": 72.371,
+      "start": 77.052,
+      "end": 77.953,
       "text": "İşte burada,",
       "words": [
-        { "start": 71.47, "end": 71.92, "char": [0, 4] },
-        { "start": 71.92, "end": 72.371, "char": [5, 12] }
+        { "start": 77.052, "end": 77.503, "char": [0, 4] },
+        { "start": 77.503, "end": 77.953, "char": [5, 12] }
       ]
     },
     {
-      "start": 72.371,
-      "end": 73.272,
+      "start": 77.953,
+      "end": 78.854,
       "text": "başlatma listesinde.",
       "words": [
-        { "start": 72.371, "end": 72.822, "char": [0, 8] },
-        { "start": 72.822, "end": 73.272, "char": [9, 20] }
+        { "start": 77.953, "end": 78.404, "char": [0, 8] },
+        { "start": 78.404, "end": 78.854, "char": [9, 20] }
       ]
     },
     {
-      "start": 76.571,
-      "end": 79.035,
+      "start": 82.123,
+      "end": 84.587,
       "text": "Uygulamayı durdurmak için dizüstü bilgisayardan tek komut.",
       "words": [
-        { "start": 76.571, "end": 76.923, "char": [0, 10] },
-        { "start": 76.923, "end": 77.275, "char": [11, 20] },
-        { "start": 77.275, "end": 77.627, "char": [21, 25] },
-        { "start": 77.627, "end": 77.979, "char": [26, 33] },
-        { "start": 77.979, "end": 78.331, "char": [34, 47] },
-        { "start": 78.331, "end": 78.683, "char": [48, 51] },
-        { "start": 78.683, "end": 79.035, "char": [52, 58] }
+        { "start": 82.123, "end": 82.475, "char": [0, 10] },
+        { "start": 82.475, "end": 82.827, "char": [11, 20] },
+        { "start": 82.827, "end": 83.179, "char": [21, 25] },
+        { "start": 83.179, "end": 83.531, "char": [26, 33] },
+        { "start": 83.531, "end": 83.883, "char": [34, 47] },
+        { "start": 83.883, "end": 84.235, "char": [48, 51] },
+        { "start": 84.235, "end": 84.587, "char": [52, 58] }
       ]
     },
     {
-      "start": 79.035,
-      "end": 80.091,
+      "start": 84.587,
+      "end": 85.643,
       "text": "Bir komutla açın,",
       "words": [
-        { "start": 79.035, "end": 79.387, "char": [0, 3] },
-        { "start": 79.387, "end": 79.739, "char": [4, 11] },
-        { "start": 79.739, "end": 80.091, "char": [12, 17] }
+        { "start": 84.587, "end": 84.939, "char": [0, 3] },
+        { "start": 84.939, "end": 85.291, "char": [4, 11] },
+        { "start": 85.291, "end": 85.643, "char": [12, 17] }
       ]
     },
     {
-      "start": 80.091,
-      "end": 81.147,
+      "start": 85.643,
+      "end": 86.699,
       "text": "bir komutla kapatın.",
       "words": [
-        { "start": 80.091, "end": 80.443, "char": [0, 3] },
-        { "start": 80.443, "end": 80.795, "char": [4, 11] },
-        { "start": 80.795, "end": 81.147, "char": [12, 20] }
+        { "start": 85.643, "end": 85.995, "char": [0, 3] },
+        { "start": 85.995, "end": 86.347, "char": [4, 11] },
+        { "start": 86.347, "end": 86.699, "char": [12, 20] }
       ]
     },
     {
-      "start": 81.147,
-      "end": 81.851,
+      "start": 86.699,
+      "end": 87.403,
       "text": "Hepsi terminalinizden;",
       "words": [
-        { "start": 81.147, "end": 81.499, "char": [0, 5] },
-        { "start": 81.499, "end": 81.851, "char": [6, 22] }
+        { "start": 86.699, "end": 87.051, "char": [0, 5] },
+        { "start": 87.051, "end": 87.403, "char": [6, 22] }
       ]
     },
     {
-      "start": 81.851,
-      "end": 83.258,
+      "start": 87.403,
+      "end": 88.81,
       "text": "artık etkileşimli oturum gerekmez.",
       "words": [
-        { "start": 81.851, "end": 82.202, "char": [0, 5] },
-        { "start": 82.202, "end": 82.554, "char": [6, 17] },
-        { "start": 82.554, "end": 82.906, "char": [18, 24] },
-        { "start": 82.906, "end": 83.258, "char": [25, 34] }
+        { "start": 87.403, "end": 87.754, "char": [0, 5] },
+        { "start": 87.754, "end": 88.106, "char": [6, 17] },
+        { "start": 88.106, "end": 88.458, "char": [18, 24] },
+        { "start": 88.458, "end": 88.81, "char": [25, 34] }
       ]
     },
     {
-      "start": 85.758,
-      "end": 86.072,
+      "start": 91.65,
+      "end": 91.964,
       "text": "Durduruldu.",
-      "words": [{ "start": 85.758, "end": 86.072, "char": [0, 11] }]
+      "words": [{ "start": 91.65, "end": 91.964, "char": [0, 11] }]
     },
     {
-      "start": 86.072,
-      "end": 87.012,
+      "start": 91.964,
+      "end": 92.904,
       "text": "Tek komutla aç,",
       "words": [
-        { "start": 86.072, "end": 86.385, "char": [0, 3] },
-        { "start": 86.385, "end": 86.699, "char": [4, 11] },
-        { "start": 86.699, "end": 87.012, "char": [12, 15] }
+        { "start": 91.964, "end": 92.277, "char": [0, 3] },
+        { "start": 92.277, "end": 92.591, "char": [4, 11] },
+        { "start": 92.591, "end": 92.904, "char": [12, 15] }
       ]
     },
     {
-      "start": 87.012,
-      "end": 87.953,
+      "start": 92.904,
+      "end": 93.845,
       "text": "tek komutla kapat.",
       "words": [
-        { "start": 87.012, "end": 87.326, "char": [0, 3] },
-        { "start": 87.326, "end": 87.639, "char": [4, 11] },
-        { "start": 87.639, "end": 87.953, "char": [12, 18] }
+        { "start": 92.904, "end": 93.218, "char": [0, 3] },
+        { "start": 93.218, "end": 93.531, "char": [4, 11] },
+        { "start": 93.531, "end": 93.845, "char": [12, 18] }
       ]
     },
     {
-      "start": 88.776,
-      "end": 90.801,
+      "start": 94.628,
+      "end": 96.653,
       "text": "Özetle üretim modu bu kadar.",
       "words": [
-        { "start": 88.776, "end": 89.181, "char": [0, 6] },
-        { "start": 89.181, "end": 89.586, "char": [7, 13] },
-        { "start": 89.586, "end": 89.991, "char": [14, 18] },
-        { "start": 89.991, "end": 90.396, "char": [19, 21] },
-        { "start": 90.396, "end": 90.801, "char": [22, 28] }
+        { "start": 94.628, "end": 95.033, "char": [0, 6] },
+        { "start": 95.033, "end": 95.438, "char": [7, 13] },
+        { "start": 95.438, "end": 95.843, "char": [14, 18] },
+        { "start": 95.843, "end": 96.248, "char": [19, 21] },
+        { "start": 96.248, "end": 96.653, "char": [22, 28] }
       ]
     },
     {
-      "start": 90.801,
-      "end": 92.825,
+      "start": 96.653,
+      "end": 98.677,
       "text": "Bir sonraki bölümde görüşmek üzere!",
       "words": [
-        { "start": 90.801, "end": 91.205, "char": [0, 3] },
-        { "start": 91.205, "end": 91.61, "char": [4, 11] },
-        { "start": 91.61, "end": 92.015, "char": [12, 19] },
-        { "start": 92.015, "end": 92.42, "char": [20, 28] },
-        { "start": 92.42, "end": 92.825, "char": [29, 35] }
+        { "start": 96.653, "end": 97.057, "char": [0, 3] },
+        { "start": 97.057, "end": 97.462, "char": [4, 11] },
+        { "start": 97.462, "end": 97.867, "char": [12, 19] },
+        { "start": 97.867, "end": 98.272, "char": [20, 28] },
+        { "start": 98.272, "end": 98.677, "char": [29, 35] }
       ]
     }
   ]

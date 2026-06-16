@@ -3,623 +3,712 @@
   "cues": [
     {
       "start": 1,
-      "end": 1.483,
-      "text": "Olgu!",
-      "words": [{ "start": 1, "end": 1.483, "char": [0, 5] }]
-    },
-    {
-      "start": 1.483,
-      "end": 4.383,
-      "text": "Anname su rakendusele päris domeeni automaatse",
+      "end": 2.239,
+      "text": "Sinu rakendus töötab,",
       "words": [
-        { "start": 1.483, "end": 1.967, "char": [0, 6] },
-        { "start": 1.967, "end": 2.45, "char": [7, 9] },
-        { "start": 2.45, "end": 2.933, "char": [10, 21] },
-        { "start": 2.933, "end": 3.416, "char": [22, 27] },
-        { "start": 3.416, "end": 3.9, "char": [28, 35] },
-        { "start": 3.9, "end": 4.383, "char": [36, 46] }
+        { "start": 1, "end": 1.413, "char": [0, 4] },
+        { "start": 1.413, "end": 1.826, "char": [5, 13] },
+        { "start": 1.826, "end": 2.239, "char": [14, 21] }
       ]
     },
     {
-      "start": 4.383,
-      "end": 4.866,
-      "text": "TLS-iga.",
-      "words": [{ "start": 4.383, "end": 4.866, "char": [0, 8] }]
-    },
-    {
-      "start": 4.866,
-      "end": 7.766,
-      "text": "Neli lühikest sammu ja oled internetis.",
+      "start": 2.239,
+      "end": 4.304,
+      "text": "kuid ainult server näeb seda.",
       "words": [
-        { "start": 4.866, "end": 5.349, "char": [0, 4] },
-        { "start": 5.349, "end": 5.833, "char": [5, 13] },
-        { "start": 5.833, "end": 6.316, "char": [14, 19] },
-        { "start": 6.316, "end": 6.799, "char": [20, 22] },
-        { "start": 6.799, "end": 7.282, "char": [23, 27] },
-        { "start": 7.282, "end": 7.766, "char": [28, 39] }
+        { "start": 2.239, "end": 2.652, "char": [0, 4] },
+        { "start": 2.652, "end": 3.065, "char": [5, 11] },
+        { "start": 3.065, "end": 3.478, "char": [12, 18] },
+        { "start": 3.478, "end": 3.891, "char": [19, 23] },
+        { "start": 3.891, "end": 4.304, "char": [24, 29] }
       ]
     },
     {
-      "start": 8.534,
-      "end": 10.03,
-      "text": "Siin on tee.",
+      "start": 4.304,
+      "end": 6.782,
+      "text": "Anname sellele päris domeeni automaatse TLS-iga.",
       "words": [
-        { "start": 8.534, "end": 9.032, "char": [0, 4] },
-        { "start": 9.032, "end": 9.531, "char": [5, 7] },
-        { "start": 9.531, "end": 10.03, "char": [8, 12] }
+        { "start": 4.304, "end": 4.717, "char": [0, 6] },
+        { "start": 4.717, "end": 5.13, "char": [7, 14] },
+        { "start": 5.13, "end": 5.543, "char": [15, 20] },
+        { "start": 5.543, "end": 5.956, "char": [21, 28] },
+        { "start": 5.956, "end": 6.369, "char": [29, 39] },
+        { "start": 6.369, "end": 6.782, "char": [40, 48] }
       ]
     },
     {
-      "start": 10.03,
-      "end": 12.024,
-      "text": "Hangi Cloudflare API token,",
+      "start": 6.782,
+      "end": 9.673,
+      "text": "Neli lühikest sammu ja see on internetis.",
       "words": [
-        { "start": 10.03, "end": 10.528, "char": [0, 5] },
-        { "start": 10.528, "end": 11.027, "char": [6, 16] },
-        { "start": 11.027, "end": 11.525, "char": [17, 20] },
-        { "start": 11.525, "end": 12.024, "char": [21, 27] }
+        { "start": 6.782, "end": 7.195, "char": [0, 4] },
+        { "start": 7.195, "end": 7.608, "char": [5, 13] },
+        { "start": 7.608, "end": 8.021, "char": [14, 19] },
+        { "start": 8.021, "end": 8.434, "char": [20, 22] },
+        { "start": 8.434, "end": 8.847, "char": [23, 26] },
+        { "start": 8.847, "end": 9.26, "char": [27, 29] },
+        { "start": 9.26, "end": 9.673, "char": [30, 41] }
       ]
     },
     {
-      "start": 12.024,
-      "end": 13.519,
-      "text": "seadista infrastruktuur CLI-s,",
+      "start": 10.461,
+      "end": 12.057,
+      "text": "Siin on tee:",
       "words": [
-        { "start": 12.024, "end": 12.522, "char": [0, 8] },
-        { "start": 12.522, "end": 13.021, "char": [9, 23] },
-        { "start": 13.021, "end": 13.519, "char": [24, 30] }
+        { "start": 10.461, "end": 10.993, "char": [0, 4] },
+        { "start": 10.993, "end": 11.525, "char": [5, 7] },
+        { "start": 11.525, "end": 12.057, "char": [8, 12] }
       ]
     },
     {
-      "start": 13.519,
-      "end": 16.51,
-      "text": "tõuka see serverisse ja juuruta Traefik",
+      "start": 12.057,
+      "end": 14.186,
+      "text": "hangi Cloudflare API token,",
       "words": [
-        { "start": 13.519, "end": 14.018, "char": [0, 5] },
-        { "start": 14.018, "end": 14.516, "char": [6, 9] },
-        { "start": 14.516, "end": 15.015, "char": [10, 20] },
-        { "start": 15.015, "end": 15.513, "char": [21, 23] },
-        { "start": 15.513, "end": 16.012, "char": [24, 31] },
-        { "start": 16.012, "end": 16.51, "char": [32, 39] }
+        { "start": 12.057, "end": 12.589, "char": [0, 5] },
+        { "start": 12.589, "end": 13.122, "char": [6, 16] },
+        { "start": 13.122, "end": 13.654, "char": [17, 20] },
+        { "start": 13.654, "end": 14.186, "char": [21, 27] }
       ]
     },
     {
-      "start": 16.51,
-      "end": 17.009,
-      "text": "proksi,",
-      "words": [{ "start": 16.51, "end": 17.009, "char": [0, 7] }]
-    },
-    {
-      "start": 17.009,
-      "end": 20,
-      "text": "mis tegeleb DNS-i ja sertifikaatidega sinu",
+      "start": 14.186,
+      "end": 16.846,
+      "text": "konfigureeri infrastruktuur üks kord CLI-s,",
       "words": [
-        { "start": 17.009, "end": 17.507, "char": [0, 3] },
-        { "start": 17.507, "end": 18.006, "char": [4, 11] },
-        { "start": 18.006, "end": 18.504, "char": [12, 17] },
-        { "start": 18.504, "end": 19.003, "char": [18, 20] },
-        { "start": 19.003, "end": 19.501, "char": [21, 37] },
-        { "start": 19.501, "end": 20, "char": [38, 42] }
+        { "start": 14.186, "end": 14.718, "char": [0, 12] },
+        { "start": 14.718, "end": 15.25, "char": [13, 27] },
+        { "start": 15.25, "end": 15.782, "char": [28, 31] },
+        { "start": 15.782, "end": 16.314, "char": [32, 36] },
+        { "start": 16.314, "end": 16.846, "char": [37, 43] }
       ]
     },
     {
-      "start": 20,
-      "end": 20.498,
-      "text": "eest.",
-      "words": [{ "start": 20, "end": 20.498, "char": [0, 5] }]
-    },
-    {
-      "start": 21.269,
-      "end": 24.04,
-      "text": "Esmalt ava Cloudflare'i juhtpaneel oma brauseris.",
+      "start": 16.846,
+      "end": 18.443,
+      "text": "lükka see serverisse,",
       "words": [
-        { "start": 21.269, "end": 21.731, "char": [0, 6] },
-        { "start": 21.731, "end": 22.193, "char": [7, 10] },
-        { "start": 22.193, "end": 22.655, "char": [11, 23] },
-        { "start": 22.655, "end": 23.116, "char": [24, 34] },
-        { "start": 23.116, "end": 23.578, "char": [35, 38] },
-        { "start": 23.578, "end": 24.04, "char": [39, 49] }
+        { "start": 16.846, "end": 17.379, "char": [0, 5] },
+        { "start": 17.379, "end": 17.911, "char": [6, 9] },
+        { "start": 17.911, "end": 18.443, "char": [10, 21] }
       ]
     },
     {
-      "start": 24.04,
-      "end": 25.426,
-      "text": "Mine My Profile,",
+      "start": 18.443,
+      "end": 21.103,
+      "text": "seejärel juuruta väike proxy repo,",
       "words": [
-        { "start": 24.04, "end": 24.502, "char": [0, 4] },
-        { "start": 24.502, "end": 24.964, "char": [5, 7] },
-        { "start": 24.964, "end": 25.426, "char": [8, 16] }
+        { "start": 18.443, "end": 18.975, "char": [0, 8] },
+        { "start": 18.975, "end": 19.507, "char": [9, 16] },
+        { "start": 19.507, "end": 20.039, "char": [17, 22] },
+        { "start": 20.039, "end": 20.571, "char": [23, 28] },
+        { "start": 20.571, "end": 21.103, "char": [29, 34] }
       ]
     },
     {
-      "start": 25.426,
-      "end": 26.811,
-      "text": "siis API Tokens,",
+      "start": 21.103,
+      "end": 23.764,
+      "text": "mis haldab sinu eest DNS-i",
       "words": [
-        { "start": 25.426, "end": 25.887, "char": [0, 4] },
-        { "start": 25.887, "end": 26.349, "char": [5, 8] },
-        { "start": 26.349, "end": 26.811, "char": [9, 16] }
+        { "start": 21.103, "end": 21.636, "char": [0, 3] },
+        { "start": 21.636, "end": 22.168, "char": [4, 10] },
+        { "start": 22.168, "end": 22.7, "char": [11, 15] },
+        { "start": 22.7, "end": 23.232, "char": [16, 20] },
+        { "start": 23.232, "end": 23.764, "char": [21, 26] }
       ]
     },
     {
-      "start": 26.811,
-      "end": 29.582,
-      "text": "ja loo token Zone DNS Edit",
+      "start": 23.764,
+      "end": 24.828,
+      "text": "ja sertifikaate.",
       "words": [
-        { "start": 26.811, "end": 27.273, "char": [0, 2] },
-        { "start": 27.273, "end": 27.735, "char": [3, 6] },
-        { "start": 27.735, "end": 28.197, "char": [7, 12] },
-        { "start": 28.197, "end": 28.659, "char": [13, 17] },
-        { "start": 28.659, "end": 29.12, "char": [18, 21] },
-        { "start": 29.12, "end": 29.582, "char": [22, 26] }
+        { "start": 23.764, "end": 24.296, "char": [0, 2] },
+        { "start": 24.296, "end": 24.828, "char": [3, 16] }
       ]
     },
     {
-      "start": 29.582,
-      "end": 30.044,
-      "text": "õigusega,",
-      "words": [{ "start": 29.582, "end": 30.044, "char": [0, 9] }]
-    },
-    {
-      "start": 30.044,
-      "end": 32.815,
-      "text": "et CLI saaks su kirjeid hallata.",
+      "start": 25.287,
+      "end": 27.272,
+      "text": "Kõigepealt ainus käsitsi samm.",
       "words": [
-        { "start": 30.044, "end": 30.506, "char": [0, 2] },
-        { "start": 30.506, "end": 30.968, "char": [3, 6] },
-        { "start": 30.968, "end": 31.43, "char": [7, 12] },
-        { "start": 31.43, "end": 31.891, "char": [13, 15] },
-        { "start": 31.891, "end": 32.353, "char": [16, 23] },
-        { "start": 32.353, "end": 32.815, "char": [24, 32] }
+        { "start": 25.287, "end": 25.783, "char": [0, 10] },
+        { "start": 25.783, "end": 26.28, "char": [11, 16] },
+        { "start": 26.28, "end": 26.776, "char": [17, 24] },
+        { "start": 26.776, "end": 27.272, "char": [25, 30] }
       ]
     },
     {
-      "start": 36.109,
-      "end": 37.105,
+      "start": 27.272,
+      "end": 28.761,
+      "text": "Ava Cloudflare'i armatuurlaud,",
+      "words": [
+        { "start": 27.272, "end": 27.769, "char": [0, 3] },
+        { "start": 27.769, "end": 28.265, "char": [4, 16] },
+        { "start": 28.265, "end": 28.761, "char": [17, 30] }
+      ]
+    },
+    {
+      "start": 28.761,
+      "end": 30.25,
+      "text": "mine My Profile,",
+      "words": [
+        { "start": 28.761, "end": 29.258, "char": [0, 4] },
+        { "start": 29.258, "end": 29.754, "char": [5, 7] },
+        { "start": 29.754, "end": 30.25, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 30.25,
+      "end": 33.228,
+      "text": "siis API Tokens ja loo token",
+      "words": [
+        { "start": 30.25, "end": 30.747, "char": [0, 4] },
+        { "start": 30.747, "end": 31.243, "char": [5, 8] },
+        { "start": 31.243, "end": 31.739, "char": [9, 15] },
+        { "start": 31.739, "end": 32.236, "char": [16, 18] },
+        { "start": 32.236, "end": 32.732, "char": [19, 22] },
+        { "start": 32.732, "end": 33.228, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 33.228,
+      "end": 35.214,
+      "text": "Zone DNS Edit õigusega.",
+      "words": [
+        { "start": 33.228, "end": 33.725, "char": [0, 4] },
+        { "start": 33.725, "end": 34.221, "char": [5, 8] },
+        { "start": 34.221, "end": 34.717, "char": [9, 13] },
+        { "start": 34.717, "end": 35.214, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 35.214,
+      "end": 38.191,
+      "text": "See üks token laseb CLI-l hallata",
+      "words": [
+        { "start": 35.214, "end": 35.71, "char": [0, 3] },
+        { "start": 35.71, "end": 36.206, "char": [4, 7] },
+        { "start": 36.206, "end": 36.703, "char": [8, 13] },
+        { "start": 36.703, "end": 37.199, "char": [14, 19] },
+        { "start": 37.199, "end": 37.695, "char": [20, 25] },
+        { "start": 37.695, "end": 38.191, "char": [26, 33] }
+      ]
+    },
+    {
+      "start": 38.191,
+      "end": 39.184,
+      "text": "sinu DNS-kirjeid,",
+      "words": [
+        { "start": 38.191, "end": 38.688, "char": [0, 4] },
+        { "start": 38.688, "end": 39.184, "char": [5, 17] }
+      ]
+    },
+    {
+      "start": 39.184,
+      "end": 42.162,
+      "text": "nii et sa ei pea kunagi",
+      "words": [
+        { "start": 39.184, "end": 39.68, "char": [0, 3] },
+        { "start": 39.68, "end": 40.177, "char": [4, 6] },
+        { "start": 40.177, "end": 40.673, "char": [7, 9] },
+        { "start": 40.673, "end": 41.169, "char": [10, 12] },
+        { "start": 41.169, "end": 41.666, "char": [13, 16] },
+        { "start": 41.666, "end": 42.162, "char": [17, 23] }
+      ]
+    },
+    {
+      "start": 42.162,
+      "end": 43.651,
+      "text": "enam armatuurlaudadel klõpsima.",
+      "words": [
+        { "start": 42.162, "end": 42.658, "char": [0, 4] },
+        { "start": 42.658, "end": 43.155, "char": [5, 21] },
+        { "start": 43.155, "end": 43.651, "char": [22, 31] }
+      ]
+    },
+    {
+      "start": 46.654,
+      "end": 47.65,
       "text": "Teine samm.",
       "words": [
-        { "start": 36.109, "end": 36.607, "char": [0, 5] },
-        { "start": 36.607, "end": 37.105, "char": [6, 11] }
+        { "start": 46.654, "end": 47.152, "char": [0, 5] },
+        { "start": 47.152, "end": 47.65, "char": [6, 11] }
       ]
     },
     {
-      "start": 37.105,
-      "end": 39.098,
+      "start": 47.65,
+      "end": 49.642,
       "text": "Ütleme CLI-le avaliku IP,",
       "words": [
-        { "start": 37.105, "end": 37.603, "char": [0, 6] },
-        { "start": 37.603, "end": 38.102, "char": [7, 13] },
-        { "start": 38.102, "end": 38.6, "char": [14, 21] },
-        { "start": 38.6, "end": 39.098, "char": [22, 25] }
+        { "start": 47.65, "end": 48.148, "char": [0, 6] },
+        { "start": 48.148, "end": 48.646, "char": [7, 13] },
+        { "start": 48.646, "end": 49.144, "char": [14, 21] },
+        { "start": 49.144, "end": 49.642, "char": [22, 25] }
       ]
     },
     {
-      "start": 39.098,
-      "end": 39.596,
+      "start": 49.642,
+      "end": 50.141,
       "text": "baasdomäni,",
-      "words": [{ "start": 39.098, "end": 39.596, "char": [0, 11] }]
+      "words": [{ "start": 49.642, "end": 50.141, "char": [0, 11] }]
     },
     {
-      "start": 39.596,
-      "end": 42.585,
+      "start": 50.141,
+      "end": 53.129,
       "text": "sertifikaadi e-posti ja Cloudflare API tokeni.",
       "words": [
-        { "start": 39.596, "end": 40.094, "char": [0, 12] },
-        { "start": 40.094, "end": 40.592, "char": [13, 20] },
-        { "start": 40.592, "end": 41.09, "char": [21, 23] },
-        { "start": 41.09, "end": 41.588, "char": [24, 34] },
-        { "start": 41.588, "end": 42.087, "char": [35, 38] },
-        { "start": 42.087, "end": 42.585, "char": [39, 46] }
+        { "start": 50.141, "end": 50.639, "char": [0, 12] },
+        { "start": 50.639, "end": 51.137, "char": [13, 20] },
+        { "start": 51.137, "end": 51.635, "char": [21, 23] },
+        { "start": 51.635, "end": 52.133, "char": [24, 34] },
+        { "start": 52.133, "end": 52.631, "char": [35, 38] },
+        { "start": 52.631, "end": 53.129, "char": [39, 46] }
       ]
     },
     {
-      "start": 42.585,
-      "end": 45.573,
+      "start": 53.129,
+      "end": 56.118,
       "text": "Sertifikaadi e-post ja token on jagatud",
       "words": [
-        { "start": 42.585, "end": 43.083, "char": [0, 12] },
-        { "start": 43.083, "end": 43.581, "char": [13, 19] },
-        { "start": 43.581, "end": 44.079, "char": [20, 22] },
-        { "start": 44.079, "end": 44.577, "char": [23, 28] },
-        { "start": 44.577, "end": 45.075, "char": [29, 31] },
-        { "start": 45.075, "end": 45.573, "char": [32, 39] }
+        { "start": 53.129, "end": 53.627, "char": [0, 12] },
+        { "start": 53.627, "end": 54.126, "char": [13, 19] },
+        { "start": 54.126, "end": 54.624, "char": [20, 22] },
+        { "start": 54.624, "end": 55.122, "char": [23, 28] },
+        { "start": 55.122, "end": 55.62, "char": [29, 31] },
+        { "start": 55.62, "end": 56.118, "char": [32, 39] }
       ]
     },
     {
-      "start": 45.573,
-      "end": 47.566,
+      "start": 56.118,
+      "end": 58.111,
       "text": "kõigi sinu masinate vahel,",
       "words": [
-        { "start": 45.573, "end": 46.072, "char": [0, 5] },
-        { "start": 46.072, "end": 46.57, "char": [6, 10] },
-        { "start": 46.57, "end": 47.068, "char": [11, 19] },
-        { "start": 47.068, "end": 47.566, "char": [20, 26] }
+        { "start": 56.118, "end": 56.616, "char": [0, 5] },
+        { "start": 56.616, "end": 57.114, "char": [6, 10] },
+        { "start": 57.114, "end": 57.612, "char": [11, 19] },
+        { "start": 57.612, "end": 58.111, "char": [20, 26] }
       ]
     },
     {
-      "start": 47.566,
-      "end": 50.555,
+      "start": 58.111,
+      "end": 61.099,
       "text": "seega seadistad need ainult üks kord.",
       "words": [
-        { "start": 47.566, "end": 48.064, "char": [0, 5] },
-        { "start": 48.064, "end": 48.562, "char": [6, 15] },
-        { "start": 48.562, "end": 49.06, "char": [16, 20] },
-        { "start": 49.06, "end": 49.558, "char": [21, 27] },
-        { "start": 49.558, "end": 50.057, "char": [28, 31] },
-        { "start": 50.057, "end": 50.555, "char": [32, 37] }
+        { "start": 58.111, "end": 58.609, "char": [0, 5] },
+        { "start": 58.609, "end": 59.107, "char": [6, 15] },
+        { "start": 59.107, "end": 59.605, "char": [16, 20] },
+        { "start": 59.605, "end": 60.103, "char": [21, 27] },
+        { "start": 60.103, "end": 60.601, "char": [28, 31] },
+        { "start": 60.601, "end": 61.099, "char": [32, 37] }
       ]
     },
     {
-      "start": 51.355,
-      "end": 53.706,
+      "start": 63.099,
+      "end": 65.45,
       "text": "Infrastruktuur salvestatud sinu konfiguratsiooni.",
       "words": [
-        { "start": 51.355, "end": 51.942, "char": [0, 14] },
-        { "start": 51.942, "end": 52.53, "char": [15, 26] },
-        { "start": 52.53, "end": 53.118, "char": [27, 31] },
-        { "start": 53.118, "end": 53.706, "char": [32, 49] }
+        { "start": 63.099, "end": 63.687, "char": [0, 14] },
+        { "start": 63.687, "end": 64.275, "char": [15, 26] },
+        { "start": 64.275, "end": 64.863, "char": [27, 31] },
+        { "start": 64.863, "end": 65.45, "char": [32, 49] }
       ]
     },
     {
-      "start": 57.02,
-      "end": 57.513,
+      "start": 68.732,
+      "end": 69.225,
       "text": "Kinnitame,",
-      "words": [{ "start": 57.02, "end": 57.513, "char": [0, 10] }]
+      "words": [{ "start": 68.732, "end": 69.225, "char": [0, 10] }]
     },
     {
-      "start": 57.513,
-      "end": 59.978,
+      "start": 69.225,
+      "end": 71.69,
       "text": "et infrastruktuuri seaded on salvestatud.",
       "words": [
-        { "start": 57.513, "end": 58.006, "char": [0, 2] },
-        { "start": 58.006, "end": 58.499, "char": [3, 18] },
-        { "start": 58.499, "end": 58.992, "char": [19, 25] },
-        { "start": 58.992, "end": 59.485, "char": [26, 28] },
-        { "start": 59.485, "end": 59.978, "char": [29, 41] }
+        { "start": 69.225, "end": 69.718, "char": [0, 2] },
+        { "start": 69.718, "end": 70.211, "char": [3, 18] },
+        { "start": 70.211, "end": 70.704, "char": [19, 25] },
+        { "start": 70.704, "end": 71.197, "char": [26, 28] },
+        { "start": 71.197, "end": 71.69, "char": [29, 41] }
       ]
     },
     {
-      "start": 59.978,
-      "end": 60.964,
+      "start": 71.69,
+      "end": 72.676,
       "text": "Avalik IP,",
       "words": [
-        { "start": 59.978, "end": 60.471, "char": [0, 6] },
-        { "start": 60.471, "end": 60.964, "char": [7, 10] }
+        { "start": 71.69, "end": 72.183, "char": [0, 6] },
+        { "start": 72.183, "end": 72.676, "char": [7, 10] }
       ]
     },
     {
-      "start": 60.964,
-      "end": 61.458,
+      "start": 72.676,
+      "end": 73.169,
       "text": "baasdomeen,",
-      "words": [{ "start": 60.964, "end": 61.458, "char": [0, 11] }]
+      "words": [{ "start": 72.676, "end": 73.169, "char": [0, 11] }]
     },
     {
-      "start": 61.458,
-      "end": 64.416,
+      "start": 73.169,
+      "end": 76.128,
       "text": "sertifikaadi e-post -- kõik on konfiguratsioonis",
       "words": [
-        { "start": 61.458, "end": 61.951, "char": [0, 12] },
-        { "start": 61.951, "end": 62.444, "char": [13, 19] },
-        { "start": 62.444, "end": 62.937, "char": [20, 22] },
-        { "start": 62.937, "end": 63.43, "char": [23, 27] },
-        { "start": 63.43, "end": 63.923, "char": [28, 30] },
-        { "start": 63.923, "end": 64.416, "char": [31, 48] }
+        { "start": 73.169, "end": 73.662, "char": [0, 12] },
+        { "start": 73.662, "end": 74.155, "char": [13, 19] },
+        { "start": 74.155, "end": 74.648, "char": [20, 22] },
+        { "start": 74.648, "end": 75.141, "char": [23, 27] },
+        { "start": 75.141, "end": 75.635, "char": [28, 30] },
+        { "start": 75.635, "end": 76.128, "char": [31, 48] }
       ]
     },
     {
-      "start": 64.416,
-      "end": 64.909,
+      "start": 76.128,
+      "end": 76.621,
       "text": "nähtav.",
-      "words": [{ "start": 64.416, "end": 64.909, "char": [0, 7] }]
+      "words": [{ "start": 76.128, "end": 76.621, "char": [0, 7] }]
     },
     {
-      "start": 66.659,
-      "end": 67.631,
+      "start": 78.371,
+      "end": 79.342,
       "text": "Seaded salvestatud.",
       "words": [
-        { "start": 66.659, "end": 67.145, "char": [0, 6] },
-        { "start": 67.145, "end": 67.631, "char": [7, 19] }
+        { "start": 78.371, "end": 78.857, "char": [0, 6] },
+        { "start": 78.857, "end": 79.342, "char": [7, 19] }
       ]
     },
     {
-      "start": 67.631,
-      "end": 69.088,
+      "start": 79.342,
+      "end": 80.8,
       "text": "Valmis serverisse tõugatamiseks.",
       "words": [
-        { "start": 67.631, "end": 68.117, "char": [0, 6] },
-        { "start": 68.117, "end": 68.602, "char": [7, 17] },
-        { "start": 68.602, "end": 69.088, "char": [18, 32] }
+        { "start": 79.342, "end": 79.828, "char": [0, 6] },
+        { "start": 79.828, "end": 80.314, "char": [7, 17] },
+        { "start": 80.314, "end": 80.8, "char": [18, 32] }
       ]
     },
     {
-      "start": 72.441,
-      "end": 73.636,
-      "text": "Kolmas samm.",
+      "start": 84.12,
+      "end": 85.316,
+      "text": "Kolmas samm:",
       "words": [
-        { "start": 72.441, "end": 73.039, "char": [0, 6] },
-        { "start": 73.039, "end": 73.636, "char": [7, 12] }
+        { "start": 84.12, "end": 84.718, "char": [0, 6] },
+        { "start": 84.718, "end": 85.316, "char": [7, 12] }
       ]
     },
     {
-      "start": 73.636,
-      "end": 75.429,
-      "text": "Tõukame konfiguratsiooni serverisse.",
+      "start": 85.316,
+      "end": 87.109,
+      "text": "lükka konfiguratsioon serverisse.",
       "words": [
-        { "start": 73.636, "end": 74.234, "char": [0, 7] },
-        { "start": 74.234, "end": 74.831, "char": [8, 24] },
-        { "start": 74.831, "end": 75.429, "char": [25, 36] }
+        { "start": 85.316, "end": 85.913, "char": [0, 5] },
+        { "start": 85.913, "end": 86.511, "char": [6, 21] },
+        { "start": 86.511, "end": 87.109, "char": [22, 33] }
       ]
     },
     {
-      "start": 75.429,
-      "end": 78.417,
-      "text": "See loob DNS-kirjed Cloudflare'is automaatselt",
+      "start": 87.109,
+      "end": 90.099,
+      "text": "Päris tokeniga loob see sinu",
       "words": [
-        { "start": 75.429, "end": 76.026, "char": [0, 3] },
-        { "start": 76.026, "end": 76.624, "char": [4, 8] },
-        { "start": 76.624, "end": 77.221, "char": [9, 19] },
-        { "start": 77.221, "end": 77.819, "char": [20, 33] },
-        { "start": 77.819, "end": 78.417, "char": [34, 46] }
+        { "start": 87.109, "end": 87.707, "char": [0, 5] },
+        { "start": 87.707, "end": 88.305, "char": [6, 14] },
+        { "start": 88.305, "end": 88.903, "char": [15, 19] },
+        { "start": 88.903, "end": 89.501, "char": [20, 23] },
+        { "start": 89.501, "end": 90.099, "char": [24, 28] }
       ]
     },
     {
-      "start": 78.417,
-      "end": 81.404,
-      "text": "ja valmistab proksi konfiguratsiooni masinas",
+      "start": 90.099,
+      "end": 93.088,
+      "text": "DNS-kirjed Cloudflare'is automaatselt ja valmistab",
       "words": [
-        { "start": 78.417, "end": 79.014, "char": [0, 2] },
-        { "start": 79.014, "end": 79.612, "char": [3, 12] },
-        { "start": 79.612, "end": 80.209, "char": [13, 19] },
-        { "start": 80.209, "end": 80.807, "char": [20, 36] },
-        { "start": 80.807, "end": 81.404, "char": [37, 44] }
+        { "start": 90.099, "end": 90.697, "char": [0, 10] },
+        { "start": 90.697, "end": 91.295, "char": [11, 24] },
+        { "start": 91.295, "end": 91.893, "char": [25, 37] },
+        { "start": 91.893, "end": 92.49, "char": [38, 40] },
+        { "start": 92.49, "end": 93.088, "char": [41, 50] }
       ]
     },
     {
-      "start": 81.404,
-      "end": 82.002,
-      "text": "ette.",
-      "words": [{ "start": 81.404, "end": 82.002, "char": [0, 5] }]
+      "start": 93.088,
+      "end": 94.882,
+      "text": "proxy konfiguratsiooni ette.",
+      "words": [
+        { "start": 93.088, "end": 93.686, "char": [0, 5] },
+        { "start": 93.686, "end": 94.284, "char": [6, 22] },
+        { "start": 94.284, "end": 94.882, "char": [23, 28] }
+      ]
     },
     {
-      "start": 85.002,
-      "end": 85.91,
+      "start": 95.682,
+      "end": 96.59,
       "text": "Tõugatud.",
-      "words": [{ "start": 85.002, "end": 85.91, "char": [0, 9] }]
+      "words": [{ "start": 95.682, "end": 96.59, "char": [0, 9] }]
     },
     {
-      "start": 85.91,
-      "end": 88.633,
+      "start": 96.59,
+      "end": 99.313,
       "text": "DNS-kirjeid luuakse Cloudflare'is.",
       "words": [
-        { "start": 85.91, "end": 86.817, "char": [0, 11] },
-        { "start": 86.817, "end": 87.725, "char": [12, 19] },
-        { "start": 87.725, "end": 88.633, "char": [20, 34] }
+        { "start": 96.59, "end": 97.498, "char": [0, 11] },
+        { "start": 97.498, "end": 98.405, "char": [12, 19] },
+        { "start": 98.405, "end": 99.313, "char": [20, 34] }
       ]
     },
     {
-      "start": 91.986,
-      "end": 93.612,
-      "text": "Algab neljas samm.",
+      "start": 102.665,
+      "end": 103.646,
+      "text": "Neljas samm:",
       "words": [
-        { "start": 91.986, "end": 92.528, "char": [0, 5] },
-        { "start": 92.528, "end": 93.07, "char": [6, 12] },
-        { "start": 93.07, "end": 93.612, "char": [13, 18] }
+        { "start": 102.665, "end": 103.155, "char": [0, 6] },
+        { "start": 103.155, "end": 103.646, "char": [7, 12] }
       ]
     },
     {
-      "start": 93.612,
-      "end": 96.322,
-      "text": "Loome väikese repositooriumi nimega infra.",
+      "start": 103.646,
+      "end": 106.098,
+      "text": "loo väike repo nimega infra.",
       "words": [
-        { "start": 93.612, "end": 94.154, "char": [0, 5] },
-        { "start": 94.154, "end": 94.696, "char": [6, 13] },
-        { "start": 94.696, "end": 95.238, "char": [14, 28] },
-        { "start": 95.238, "end": 95.78, "char": [29, 35] },
-        { "start": 95.78, "end": 96.322, "char": [36, 42] }
+        { "start": 103.646, "end": 104.136, "char": [0, 3] },
+        { "start": 104.136, "end": 104.627, "char": [4, 9] },
+        { "start": 104.627, "end": 105.117, "char": [10, 14] },
+        { "start": 105.117, "end": 105.608, "char": [15, 21] },
+        { "start": 105.608, "end": 106.098, "char": [22, 28] }
       ]
     },
     {
-      "start": 96.322,
-      "end": 99.033,
-      "text": "Siin hakkab proksi elama --",
+      "start": 106.098,
+      "end": 107.57,
+      "text": "Miks oma repo?",
       "words": [
-        { "start": 96.322, "end": 96.864, "char": [0, 4] },
-        { "start": 96.864, "end": 97.406, "char": [5, 11] },
-        { "start": 97.406, "end": 97.948, "char": [12, 18] },
-        { "start": 97.948, "end": 98.49, "char": [19, 24] },
-        { "start": 98.49, "end": 99.033, "char": [25, 27] }
+        { "start": 106.098, "end": 106.589, "char": [0, 4] },
+        { "start": 106.589, "end": 107.079, "char": [5, 8] },
+        { "start": 107.079, "end": 107.57, "char": [9, 14] }
       ]
     },
     {
-      "start": 99.033,
-      "end": 100.659,
-      "text": "isoleeritud rakenduse repositooriumidest.",
+      "start": 107.57,
+      "end": 110.513,
+      "text": "Proxy suunab liiklust kõigi selle serveri",
       "words": [
-        { "start": 99.033, "end": 99.575, "char": [0, 11] },
-        { "start": 99.575, "end": 100.117, "char": [12, 21] },
-        { "start": 100.117, "end": 100.659, "char": [22, 41] }
+        { "start": 107.57, "end": 108.06, "char": [0, 5] },
+        { "start": 108.06, "end": 108.551, "char": [6, 12] },
+        { "start": 108.551, "end": 109.041, "char": [13, 21] },
+        { "start": 109.041, "end": 109.532, "char": [22, 27] },
+        { "start": 109.532, "end": 110.023, "char": [28, 33] },
+        { "start": 110.023, "end": 110.513, "char": [34, 41] }
       ]
     },
     {
-      "start": 103.659,
-      "end": 105.148,
+      "start": 110.513,
+      "end": 111.494,
+      "text": "rakenduste vahel.",
+      "words": [
+        { "start": 110.513, "end": 111.004, "char": [0, 10] },
+        { "start": 111.004, "end": 111.494, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 111.494,
+      "end": 113.947,
+      "text": "Infrastruktuur väärib oma eraldatud kasti,",
+      "words": [
+        { "start": 111.494, "end": 111.985, "char": [0, 14] },
+        { "start": 111.985, "end": 112.475, "char": [15, 21] },
+        { "start": 112.475, "end": 112.966, "char": [22, 25] },
+        { "start": 112.966, "end": 113.456, "char": [26, 35] },
+        { "start": 113.456, "end": 113.947, "char": [36, 42] }
+      ]
+    },
+    {
+      "start": 113.947,
+      "end": 115.909,
+      "text": "eemal sinu rakenduse koodist.",
+      "words": [
+        { "start": 113.947, "end": 114.437, "char": [0, 5] },
+        { "start": 114.437, "end": 114.928, "char": [6, 10] },
+        { "start": 114.928, "end": 115.418, "char": [11, 20] },
+        { "start": 115.418, "end": 115.909, "char": [21, 29] }
+      ]
+    },
+    {
+      "start": 118.909,
+      "end": 120.398,
       "text": "Infra repo loodud.",
       "words": [
-        { "start": 103.659, "end": 104.155, "char": [0, 5] },
-        { "start": 104.155, "end": 104.651, "char": [6, 10] },
-        { "start": 104.651, "end": 105.148, "char": [11, 18] }
+        { "start": 118.909, "end": 119.405, "char": [0, 5] },
+        { "start": 119.405, "end": 119.901, "char": [6, 10] },
+        { "start": 119.901, "end": 120.398, "char": [11, 18] }
       ]
     },
     {
-      "start": 105.148,
-      "end": 107.133,
+      "start": 120.398,
+      "end": 122.383,
       "text": "Isoleeritud su rakenduse repodest.",
       "words": [
-        { "start": 105.148, "end": 105.644, "char": [0, 11] },
-        { "start": 105.644, "end": 106.14, "char": [12, 14] },
-        { "start": 106.14, "end": 106.637, "char": [15, 24] },
-        { "start": 106.637, "end": 107.133, "char": [25, 34] }
+        { "start": 120.398, "end": 120.894, "char": [0, 11] },
+        { "start": 120.894, "end": 121.39, "char": [12, 14] },
+        { "start": 121.39, "end": 121.887, "char": [15, 24] },
+        { "start": 121.887, "end": 122.383, "char": [25, 34] }
       ]
     },
     {
-      "start": 110.468,
-      "end": 112.421,
+      "start": 125.714,
+      "end": 127.666,
       "text": "Rakendame sisseehitatud proksi malli.",
       "words": [
-        { "start": 110.468, "end": 110.956, "char": [0, 9] },
-        { "start": 110.956, "end": 111.444, "char": [10, 23] },
-        { "start": 111.444, "end": 111.932, "char": [24, 30] },
-        { "start": 111.932, "end": 112.421, "char": [31, 37] }
+        { "start": 125.714, "end": 126.202, "char": [0, 9] },
+        { "start": 126.202, "end": 126.69, "char": [10, 23] },
+        { "start": 126.69, "end": 127.178, "char": [24, 30] },
+        { "start": 127.178, "end": 127.666, "char": [31, 37] }
       ]
     },
     {
-      "start": 112.421,
-      "end": 115.35,
+      "start": 127.666,
+      "end": 130.595,
       "text": "See sisaldab Traefikut koos Let's Encrypt",
       "words": [
-        { "start": 112.421, "end": 112.909, "char": [0, 3] },
-        { "start": 112.909, "end": 113.397, "char": [4, 12] },
-        { "start": 113.397, "end": 113.885, "char": [13, 22] },
-        { "start": 113.885, "end": 114.373, "char": [23, 27] },
-        { "start": 114.373, "end": 114.861, "char": [28, 33] },
-        { "start": 114.861, "end": 115.35, "char": [34, 41] }
+        { "start": 127.666, "end": 128.155, "char": [0, 3] },
+        { "start": 128.155, "end": 128.643, "char": [4, 12] },
+        { "start": 128.643, "end": 129.131, "char": [13, 22] },
+        { "start": 129.131, "end": 129.619, "char": [23, 27] },
+        { "start": 129.619, "end": 130.107, "char": [28, 33] },
+        { "start": 130.107, "end": 130.595, "char": [34, 41] }
       ]
     },
     {
-      "start": 115.35,
-      "end": 117.79,
+      "start": 130.595,
+      "end": 133.036,
       "text": "ja Cloudflare DNS-01 väljakutsete konfiguratsiooniga,",
       "words": [
-        { "start": 115.35, "end": 115.838, "char": [0, 2] },
-        { "start": 115.838, "end": 116.326, "char": [3, 13] },
-        { "start": 116.326, "end": 116.814, "char": [14, 20] },
-        { "start": 116.814, "end": 117.302, "char": [21, 33] },
-        { "start": 117.302, "end": 117.79, "char": [34, 53] }
+        { "start": 130.595, "end": 131.083, "char": [0, 2] },
+        { "start": 131.083, "end": 131.572, "char": [3, 13] },
+        { "start": 131.572, "end": 132.06, "char": [14, 20] },
+        { "start": 132.06, "end": 132.548, "char": [21, 33] },
+        { "start": 132.548, "end": 133.036, "char": [34, 53] }
       ]
     },
     {
-      "start": 117.79,
-      "end": 118.279,
+      "start": 133.036,
+      "end": 133.524,
       "text": "töövalmis.",
-      "words": [{ "start": 117.79, "end": 118.279, "char": [0, 10] }]
+      "words": [{ "start": 133.036, "end": 133.524, "char": [0, 10] }]
     },
     {
-      "start": 120.529,
-      "end": 122.331,
+      "start": 136.597,
+      "end": 138.4,
       "text": "Traefiku konfiguratsioon paigas.",
       "words": [
-        { "start": 120.529, "end": 121.129, "char": [0, 8] },
-        { "start": 121.129, "end": 121.73, "char": [9, 24] },
-        { "start": 121.73, "end": 122.331, "char": [25, 32] }
+        { "start": 136.597, "end": 137.198, "char": [0, 8] },
+        { "start": 137.198, "end": 137.799, "char": [9, 24] },
+        { "start": 137.799, "end": 138.4, "char": [25, 32] }
       ]
     },
     {
-      "start": 125.605,
-      "end": 127.05,
+      "start": 141.668,
+      "end": 143.113,
       "text": "Ja käivitame proksi.",
       "words": [
-        { "start": 125.605, "end": 126.087, "char": [0, 2] },
-        { "start": 126.087, "end": 126.568, "char": [3, 12] },
-        { "start": 126.568, "end": 127.05, "char": [13, 20] }
+        { "start": 141.668, "end": 142.149, "char": [0, 2] },
+        { "start": 142.149, "end": 142.631, "char": [3, 12] },
+        { "start": 142.631, "end": 143.113, "char": [13, 20] }
       ]
     },
     {
-      "start": 127.05,
-      "end": 129.94,
+      "start": 143.113,
+      "end": 146.003,
       "text": "Traefik avastab sinu konteinerid iga viie",
       "words": [
-        { "start": 127.05, "end": 127.532, "char": [0, 7] },
-        { "start": 127.532, "end": 128.014, "char": [8, 15] },
-        { "start": 128.014, "end": 128.495, "char": [16, 20] },
-        { "start": 128.495, "end": 128.977, "char": [21, 32] },
-        { "start": 128.977, "end": 129.459, "char": [33, 36] },
-        { "start": 129.459, "end": 129.94, "char": [37, 41] }
+        { "start": 143.113, "end": 143.594, "char": [0, 7] },
+        { "start": 143.594, "end": 144.076, "char": [8, 15] },
+        { "start": 144.076, "end": 144.558, "char": [16, 20] },
+        { "start": 144.558, "end": 145.04, "char": [21, 32] },
+        { "start": 145.04, "end": 145.521, "char": [33, 36] },
+        { "start": 145.521, "end": 146.003, "char": [37, 41] }
       ]
     },
     {
-      "start": 129.94,
-      "end": 130.904,
+      "start": 146.003,
+      "end": 146.966,
       "text": "sekundi järel.",
       "words": [
-        { "start": 129.94, "end": 130.422, "char": [0, 7] },
-        { "start": 130.422, "end": 130.904, "char": [8, 14] }
+        { "start": 146.003, "end": 146.485, "char": [0, 7] },
+        { "start": 146.485, "end": 146.966, "char": [8, 14] }
       ]
     },
     {
-      "start": 130.904,
-      "end": 133.794,
+      "start": 146.966,
+      "end": 149.857,
       "text": "TLS sertifikaadid tulevad Let's Encryptist automaatselt.",
       "words": [
-        { "start": 130.904, "end": 131.385, "char": [0, 3] },
-        { "start": 131.385, "end": 131.867, "char": [4, 17] },
-        { "start": 131.867, "end": 132.349, "char": [18, 25] },
-        { "start": 132.349, "end": 132.83, "char": [26, 31] },
-        { "start": 132.83, "end": 133.312, "char": [32, 42] },
-        { "start": 133.312, "end": 133.794, "char": [43, 56] }
+        { "start": 146.966, "end": 147.448, "char": [0, 3] },
+        { "start": 147.448, "end": 147.93, "char": [4, 17] },
+        { "start": 147.93, "end": 148.411, "char": [18, 25] },
+        { "start": 148.411, "end": 148.893, "char": [26, 31] },
+        { "start": 148.893, "end": 149.375, "char": [32, 42] },
+        { "start": 149.375, "end": 149.857, "char": [43, 56] }
       ]
     },
     {
-      "start": 133.794,
-      "end": 136.684,
+      "start": 149.857,
+      "end": 152.747,
       "text": "Sinu rakendus on nüüd internetis HTTPS",
       "words": [
-        { "start": 133.794, "end": 134.276, "char": [0, 4] },
-        { "start": 134.276, "end": 134.757, "char": [5, 13] },
-        { "start": 134.757, "end": 135.239, "char": [14, 16] },
-        { "start": 135.239, "end": 135.721, "char": [17, 21] },
-        { "start": 135.721, "end": 136.202, "char": [22, 32] },
-        { "start": 136.202, "end": 136.684, "char": [33, 38] }
+        { "start": 149.857, "end": 150.338, "char": [0, 4] },
+        { "start": 150.338, "end": 150.82, "char": [5, 13] },
+        { "start": 150.82, "end": 151.302, "char": [14, 16] },
+        { "start": 151.302, "end": 151.783, "char": [17, 21] },
+        { "start": 151.783, "end": 152.265, "char": [22, 32] },
+        { "start": 152.265, "end": 152.747, "char": [33, 38] }
       ]
     },
     {
-      "start": 136.684,
-      "end": 137.647,
+      "start": 152.747,
+      "end": 153.71,
       "text": "kaudu kättesaadav.",
       "words": [
-        { "start": 136.684, "end": 137.166, "char": [0, 5] },
-        { "start": 137.166, "end": 137.647, "char": [6, 18] }
+        { "start": 152.747, "end": 153.228, "char": [0, 5] },
+        { "start": 153.228, "end": 153.71, "char": [6, 18] }
       ]
     },
     {
-      "start": 137.647,
-      "end": 139.383,
+      "start": 156.71,
+      "end": 158.445,
       "text": "Proksi on töös.",
       "words": [
-        { "start": 137.647, "end": 138.226, "char": [0, 6] },
-        { "start": 138.226, "end": 138.804, "char": [7, 9] },
-        { "start": 138.804, "end": 139.383, "char": [10, 15] }
+        { "start": 156.71, "end": 157.289, "char": [0, 6] },
+        { "start": 157.289, "end": 157.867, "char": [7, 9] },
+        { "start": 157.867, "end": 158.445, "char": [10, 15] }
       ]
     },
     {
-      "start": 139.383,
-      "end": 141.696,
+      "start": 158.445,
+      "end": 160.759,
       "text": "TLS sertifikaadid saabuvad automaatselt.",
       "words": [
-        { "start": 139.383, "end": 139.961, "char": [0, 3] },
-        { "start": 139.961, "end": 140.54, "char": [4, 17] },
-        { "start": 140.54, "end": 141.118, "char": [18, 26] },
-        { "start": 141.118, "end": 141.696, "char": [27, 40] }
+        { "start": 158.445, "end": 159.024, "char": [0, 3] },
+        { "start": 159.024, "end": 159.602, "char": [4, 17] },
+        { "start": 159.602, "end": 160.181, "char": [18, 26] },
+        { "start": 160.181, "end": 160.759, "char": [27, 40] }
       ]
     },
     {
-      "start": 142.445,
-      "end": 145.207,
+      "start": 161.541,
+      "end": 164.302,
       "text": "Ja sellega on võrgustamine korras!",
       "words": [
-        { "start": 142.445, "end": 142.997, "char": [0, 2] },
-        { "start": 142.997, "end": 143.55, "char": [3, 10] },
-        { "start": 143.55, "end": 144.102, "char": [11, 13] },
-        { "start": 144.102, "end": 144.654, "char": [14, 26] },
-        { "start": 144.654, "end": 145.207, "char": [27, 34] }
+        { "start": 161.541, "end": 162.093, "char": [0, 2] },
+        { "start": 162.093, "end": 162.645, "char": [3, 10] },
+        { "start": 162.645, "end": 163.198, "char": [11, 13] },
+        { "start": 163.198, "end": 163.75, "char": [14, 26] },
+        { "start": 163.75, "end": 164.302, "char": [27, 34] }
       ]
     },
     {
-      "start": 145.207,
-      "end": 146.311,
+      "start": 164.302,
+      "end": 165.407,
       "text": "Kohtumiseni järgmises.",
       "words": [
-        { "start": 145.207, "end": 145.759, "char": [0, 11] },
-        { "start": 145.759, "end": 146.311, "char": [12, 22] }
+        { "start": 164.302, "end": 164.854, "char": [0, 11] },
+        { "start": 164.854, "end": 165.407, "char": [12, 22] }
       ]
     }
   ]

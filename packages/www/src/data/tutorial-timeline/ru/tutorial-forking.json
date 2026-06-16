@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "c37d653b7fc471a2340fb937931fcdad128cd01d3aa2532b9b42e811c2c68c8a",
+  "transcriptHash": "f385990b6b50ddd5f978f12a38d03d2cb1af626d28f35575d3c948b054d603fc",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41277,
-      "replayEndSec": 13.421721,
+      "replayStartSec": 2.422355,
+      "replayEndSec": 12.478171,
       "narrationText": "Давайте сделаем форк одной командой. Клонируется всё: приложение, база данных, конфигурационные файлы. И происходит это за секунды, независимо от размера репозитория. Один гигабайт, сто гигабайт, один терабайт — одно время, каждый раз.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-01.3404a0f2.mp3",
       "textHash": "3404a0f214364164e7e2cccb17bfdc78c43716361c64cf35c6208dfcd407f1fc",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.421721,
-      "replayEndSec": 18.980206,
+      "replayStartSec": 12.478171,
+      "replayEndSec": 18.050071,
       "narrationText": "Теперь оба репозитория существуют рядом. Одна машина, один диск, две полностью независимые среды. У форка собственные контейнеры, собственная файловая система и собственный Docker-демон.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-02.9671b17a.mp3",
       "textHash": "9671b17a92be7a7da0e8e5db4e6966de17808dcdb0f2f9b4c6cbedc9c638cc0e",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.980206,
-      "replayEndSec": 26.216902,
+      "replayStartSec": 18.050071,
+      "replayEndSec": 25.352583,
       "narrationText": "Докажем изоляцию. В оригинале наш файл-маркер на месте. Существование форка ничего не изменило в родителе.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-03.c168c995.mp3",
       "textHash": "c168c9959e419a2723bc5947da8aea26da884e1b729b8d92d8709ed7445b373f",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 26.216902,
-      "replayEndSec": 34.456769,
+      "replayStartSec": 25.352583,
+      "replayEndSec": 33.706234,
       "narrationText": "Теперь удалим этот файл — но только внутри форка. Внутри форка его больше нет. Мы сделали деструктивное изменение, и оно осталось внутри форка.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-04.6cca431c.mp3",
       "textHash": "6cca431c2a3cce4c699a2363ef1b4ab4c1d46f99268dab8002f0223eb2756d2e",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 34.456769,
-      "replayEndSec": 41.647526,
+      "replayStartSec": 33.706234,
+      "replayEndSec": 41.0794,
       "narrationText": "Возвращаемся в оригинал. Файл-маркер здесь, нетронутый. Оригинал ничего не знал о происходившем. Один образ, отдельные Docker-демоны, отдельные файловые системы.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-05.0a44642b.mp3",
       "textHash": "0a44642b69a551ce8d243d831613e4a6d8ba42cc61093ae31df2f508ca8fc4e7",
@@ -77,8 +77,8 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.647526,
-      "replayEndSec": 51.671921,
+      "replayStartSec": 41.0794,
+      "replayEndSec": 48.135359,
       "narrationText": "Когда закончите, просто удалите форк. Оригинал остаётся в точности таким, каким был. Форк, эксперимент, сломал, удалил — никакого риска.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/tutorial-forking-06.33c9e6b7.mp3",
       "textHash": "33c9e6b7137e03d4d1ab6f547b01548468658ad4cf10e6a793dda348517accbb",
@@ -140,10 +140,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "fe36b940244e116e4d58052fca68ab4325582203740805626b5b1099d8fcdd33",
-      "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/next-tutorial.fe36b940.mp3",
-      "narrationText": "Форки намеренно не получают секретов — именно поэтому принцип «клонируй продакшен, ничего не сломай» действительно работает. В следующем уроке настроим секреты как полагается!",
-      "audioDurationSec": 13.479184
+      "textHash": "30cd746e648848eeccd9bc8ff06d9a3697129d5a30e9d62f66e4dfe5afd8f4c1",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-forking/next-tutorial.30cd746e.mp3",
+      "narrationText": "Вы только что видели команды. Теперь сделаем это наглядно: настоящее приложение с базой данных, форкнутое вживую, редактируется бок о бок, а оригинал даже не дрогнет.",
+      "audioDurationSec": 13.400816
     }
   ]
 }

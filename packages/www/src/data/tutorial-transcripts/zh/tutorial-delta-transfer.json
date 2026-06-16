@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "at": 2.413668,
+      "text": "第一次推送到另一台机器会传输完整镜像，输出结果写得很清楚：传输了两 GB，标记为 full。这就是基准线。",
+      "afterText": "四十四秒传输两 GB，标记为 full。CLI 同时在两端保留了相同的基础镜像，这就是后续魔法的前提。",
+      "cardLabel": "完整推送",
+      "prose": "将 repository 推送到第二台机器。第一次推送会传输完整镜像，输出结果显示：传输了 2 GB，标记为 (full)。两端均保留了一份 delta 基础镜像。"
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "at": 10.922135,
+      "text": "修改少量数据：两 GB 中的 50 MB。",
+      "afterText": "大镜像中的一点小改动。",
+      "cardLabel": "修改数据",
+      "prose": "向 repository 中写入少量新数据。"
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "at": 21.404869,
+      "text": "再次推送。命令一模一样，但这次看看输出：约 50 MB 已传输，标记为 delta，对比的是两 GB 的镜像。只有发生变化的块被传输了。",
+      "afterText": "两 GB 的镜像，50 MB 在不到六秒内传输完毕。数字就是证明。",
+      "cardLabel": "增量推送",
+      "prose": "用相同命令再次推送：输出显示，相对于共享基础镜像，在 2 GB 的镜像中约传输了 50 MB 的 delta 内容。只有发生变化的块被传输了。"
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "at": 29.764702,
+      "text": "两台机器都保有相同的 repository，几秒内完成同步。如果你愿意，每小时运行一次也没问题，费用取决于变更量，而不是总大小。",
+      "afterText": "频繁备份不再昂贵。",
+      "cardLabel": "已同步",
+      "prose": "目标机器现已保有更新后的 repository，同步成本仅为 delta 的大小。"
+    }
+  ],
+  "title": "增量传输",
+  "chapters": {
+    "intro": "Delta 传输",
+    "blocks-not-bytes": "块，而非字节",
+    "cast-step-0": "步骤 1：首次推送，完整传输",
+    "cast-step-1": "步骤 2：修改部分数据",
+    "cast-step-2": "步骤 3：二次推送，delta 传输",
+    "cast-step-3": "步骤 4：秒级完成同步",
+    "outro": "系列教程到此结束"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "来做一个有趣的实验。我们会把一个包含约 1 GB 数据的 repository 推送到另一台机器两次。第一次推送传输全部内容，第二次只传输变更的部分。注意看数字，push 命令会精确显示传输了多少数据。"
+    },
+    {
+      "id": "blocks-not-bytes",
+      "text": "诀窍在于初始设置。第一次推送之后，CLI 会在两台机器上各保留一份相同的不可变基础镜像。下一次推送时，系统将块与该基础镜像进行比较，只发送差异部分。不需要任何标志，不需要任何记录，用的就是同一个 push 命令。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "第一次之后，每次小改动都意味着小传输。现在只剩最后一个教程了：确保你永远不会耗尽磁盘空间。最后一期见！"
+    }
+  ]
+}

@@ -219,508 +219,508 @@
       ]
     },
     {
-      "start": 44.45,
-      "end": 45.619,
+      "start": 46.65,
+      "end": 47.819,
       "text": "Port transféré.",
       "words": [
-        { "start": 44.45, "end": 45.034, "char": [0, 4] },
-        { "start": 45.034, "end": 45.619, "char": [5, 15] }
+        { "start": 46.65, "end": 47.234, "char": [0, 4] },
+        { "start": 47.234, "end": 47.819, "char": [5, 15] }
       ]
     },
     {
-      "start": 45.619,
-      "end": 48.541,
+      "start": 47.819,
+      "end": 50.741,
       "text": "L'application est maintenant accessible à",
       "words": [
-        { "start": 45.619, "end": 46.203, "char": [0, 13] },
-        { "start": 46.203, "end": 46.788, "char": [14, 17] },
-        { "start": 46.788, "end": 47.372, "char": [18, 28] },
-        { "start": 47.372, "end": 47.957, "char": [29, 39] },
-        { "start": 47.957, "end": 48.541, "char": [40, 41] }
+        { "start": 47.819, "end": 48.403, "char": [0, 13] },
+        { "start": 48.403, "end": 48.988, "char": [14, 17] },
+        { "start": 48.988, "end": 49.572, "char": [18, 28] },
+        { "start": 49.572, "end": 50.157, "char": [29, 39] },
+        { "start": 50.157, "end": 50.741, "char": [40, 41] }
       ]
     },
     {
-      "start": 48.541,
-      "end": 49.126,
+      "start": 50.741,
+      "end": 51.326,
       "text": "localhost.",
-      "words": [{ "start": 48.541, "end": 49.126, "char": [0, 10] }]
+      "words": [{ "start": 50.741, "end": 51.326, "char": [0, 10] }]
     },
     {
-      "start": 49.936,
-      "end": 52.083,
+      "start": 51.836,
+      "end": 53.983,
       "text": "Le tunnel étant actif,",
       "words": [
-        { "start": 49.936, "end": 50.473, "char": [0, 2] },
-        { "start": 50.473, "end": 51.01, "char": [3, 9] },
-        { "start": 51.01, "end": 51.547, "char": [10, 15] },
-        { "start": 51.547, "end": 52.083, "char": [16, 22] }
+        { "start": 51.836, "end": 52.373, "char": [0, 2] },
+        { "start": 52.373, "end": 52.91, "char": [3, 9] },
+        { "start": 52.91, "end": 53.447, "char": [10, 15] },
+        { "start": 53.447, "end": 53.983, "char": [16, 22] }
       ]
     },
     {
-      "start": 52.083,
-      "end": 54.768,
+      "start": 53.983,
+      "end": 56.668,
       "text": "l'application s'ouvre directement dans votre",
       "words": [
-        { "start": 52.083, "end": 52.62, "char": [0, 13] },
-        { "start": 52.62, "end": 53.157, "char": [14, 21] },
-        { "start": 53.157, "end": 53.694, "char": [22, 33] },
-        { "start": 53.694, "end": 54.231, "char": [34, 38] },
-        { "start": 54.231, "end": 54.768, "char": [39, 44] }
+        { "start": 53.983, "end": 54.52, "char": [0, 13] },
+        { "start": 54.52, "end": 55.057, "char": [14, 21] },
+        { "start": 55.057, "end": 55.594, "char": [22, 33] },
+        { "start": 55.594, "end": 56.131, "char": [34, 38] },
+        { "start": 56.131, "end": 56.668, "char": [39, 44] }
       ]
     },
     {
-      "start": 54.768,
-      "end": 55.305,
+      "start": 56.668,
+      "end": 57.205,
       "text": "navigateur.",
-      "words": [{ "start": 54.768, "end": 55.305, "char": [0, 11] }]
+      "words": [{ "start": 56.668, "end": 57.205, "char": [0, 11] }]
     },
     {
-      "start": 55.305,
-      "end": 56.915,
+      "start": 57.205,
+      "end": 58.815,
       "text": "Dans cette démo,",
       "words": [
-        { "start": 55.305, "end": 55.841, "char": [0, 4] },
-        { "start": 55.841, "end": 56.378, "char": [5, 10] },
-        { "start": 56.378, "end": 56.915, "char": [11, 16] }
+        { "start": 57.205, "end": 57.741, "char": [0, 4] },
+        { "start": 57.741, "end": 58.278, "char": [5, 10] },
+        { "start": 58.278, "end": 58.815, "char": [11, 16] }
       ]
     },
     {
-      "start": 56.915,
-      "end": 58.526,
+      "start": 58.815,
+      "end": 60.426,
       "text": "nous chargeons rediacc.com,",
       "words": [
-        { "start": 56.915, "end": 57.452, "char": [0, 4] },
-        { "start": 57.452, "end": 57.989, "char": [5, 14] },
-        { "start": 57.989, "end": 58.526, "char": [15, 27] }
+        { "start": 58.815, "end": 59.352, "char": [0, 4] },
+        { "start": 59.352, "end": 59.889, "char": [5, 14] },
+        { "start": 59.889, "end": 60.426, "char": [15, 27] }
       ]
     },
     {
-      "start": 58.526,
-      "end": 61.21,
+      "start": 60.426,
+      "end": 63.11,
       "text": "exactement comme vous accéderiez à",
       "words": [
-        { "start": 58.526, "end": 59.063, "char": [0, 10] },
-        { "start": 59.063, "end": 59.6, "char": [11, 16] },
-        { "start": 59.6, "end": 60.136, "char": [17, 21] },
-        { "start": 60.136, "end": 60.673, "char": [22, 32] },
-        { "start": 60.673, "end": 61.21, "char": [33, 34] }
+        { "start": 60.426, "end": 60.963, "char": [0, 10] },
+        { "start": 60.963, "end": 61.5, "char": [11, 16] },
+        { "start": 61.5, "end": 62.036, "char": [17, 21] },
+        { "start": 62.036, "end": 62.573, "char": [22, 32] },
+        { "start": 62.573, "end": 63.11, "char": [33, 34] }
       ]
     },
     {
-      "start": 61.21,
-      "end": 63.894,
+      "start": 63.11,
+      "end": 65.794,
       "text": "votre propre application servie directement",
       "words": [
-        { "start": 61.21, "end": 61.747, "char": [0, 5] },
-        { "start": 61.747, "end": 62.284, "char": [6, 12] },
-        { "start": 62.284, "end": 62.821, "char": [13, 24] },
-        { "start": 62.821, "end": 63.358, "char": [25, 31] },
-        { "start": 63.358, "end": 63.894, "char": [32, 43] }
+        { "start": 63.11, "end": 63.647, "char": [0, 5] },
+        { "start": 63.647, "end": 64.184, "char": [6, 12] },
+        { "start": 64.184, "end": 64.721, "char": [13, 24] },
+        { "start": 64.721, "end": 65.258, "char": [25, 31] },
+        { "start": 65.258, "end": 65.794, "char": [32, 43] }
       ]
     },
     {
-      "start": 63.894,
-      "end": 65.505,
+      "start": 65.794,
+      "end": 67.405,
       "text": "depuis le conteneur.",
       "words": [
-        { "start": 63.894, "end": 64.431, "char": [0, 6] },
-        { "start": 64.431, "end": 64.968, "char": [7, 9] },
-        { "start": 64.968, "end": 65.505, "char": [10, 20] }
+        { "start": 65.794, "end": 66.331, "char": [0, 6] },
+        { "start": 66.331, "end": 66.868, "char": [7, 9] },
+        { "start": 66.868, "end": 67.405, "char": [10, 20] }
       ]
     },
     {
-      "start": 65.969,
-      "end": 66.366,
+      "start": 70.369,
+      "end": 70.766,
       "text": "Ensuite,",
-      "words": [{ "start": 65.969, "end": 66.366, "char": [0, 8] }]
+      "words": [{ "start": 70.369, "end": 70.766, "char": [0, 8] }]
     },
     {
-      "start": 66.366,
-      "end": 67.556,
+      "start": 70.766,
+      "end": 71.956,
       "text": "la commande term.",
       "words": [
-        { "start": 66.366, "end": 66.763, "char": [0, 2] },
-        { "start": 66.763, "end": 67.159, "char": [3, 11] },
-        { "start": 67.159, "end": 67.556, "char": [12, 17] }
+        { "start": 70.766, "end": 71.163, "char": [0, 2] },
+        { "start": 71.163, "end": 71.559, "char": [3, 11] },
+        { "start": 71.559, "end": 71.956, "char": [12, 17] }
       ]
     },
     {
-      "start": 67.556,
-      "end": 70.332,
+      "start": 71.956,
+      "end": 74.732,
       "text": "La commande de connexion terminal vous plonge",
       "words": [
-        { "start": 67.556, "end": 67.953, "char": [0, 2] },
-        { "start": 67.953, "end": 68.349, "char": [3, 11] },
-        { "start": 68.349, "end": 68.746, "char": [12, 14] },
-        { "start": 68.746, "end": 69.143, "char": [15, 24] },
-        { "start": 69.143, "end": 69.539, "char": [25, 33] },
-        { "start": 69.539, "end": 69.936, "char": [34, 38] },
-        { "start": 69.936, "end": 70.332, "char": [39, 45] }
+        { "start": 71.956, "end": 72.353, "char": [0, 2] },
+        { "start": 72.353, "end": 72.749, "char": [3, 11] },
+        { "start": 72.749, "end": 73.146, "char": [12, 14] },
+        { "start": 73.146, "end": 73.543, "char": [15, 24] },
+        { "start": 73.543, "end": 73.939, "char": [25, 33] },
+        { "start": 73.939, "end": 74.336, "char": [34, 38] },
+        { "start": 74.336, "end": 74.732, "char": [39, 45] }
       ]
     },
     {
-      "start": 70.332,
-      "end": 72.316,
+      "start": 74.732,
+      "end": 76.716,
       "text": "dans le sandbox du dépôt,",
       "words": [
-        { "start": 70.332, "end": 70.729, "char": [0, 4] },
-        { "start": 70.729, "end": 71.126, "char": [5, 7] },
-        { "start": 71.126, "end": 71.522, "char": [8, 15] },
-        { "start": 71.522, "end": 71.919, "char": [16, 18] },
-        { "start": 71.919, "end": 72.316, "char": [19, 25] }
+        { "start": 74.732, "end": 75.129, "char": [0, 4] },
+        { "start": 75.129, "end": 75.526, "char": [5, 7] },
+        { "start": 75.526, "end": 75.922, "char": [8, 15] },
+        { "start": 75.922, "end": 76.319, "char": [16, 18] },
+        { "start": 76.319, "end": 76.716, "char": [19, 25] }
       ]
     },
     {
-      "start": 72.316,
-      "end": 75.092,
+      "start": 76.716,
+      "end": 79.492,
       "text": "la même vue isolée que VS Code.",
       "words": [
-        { "start": 72.316, "end": 72.712, "char": [0, 2] },
-        { "start": 72.712, "end": 73.109, "char": [3, 7] },
-        { "start": 73.109, "end": 73.506, "char": [8, 11] },
-        { "start": 73.506, "end": 73.902, "char": [12, 18] },
-        { "start": 73.902, "end": 74.299, "char": [19, 22] },
-        { "start": 74.299, "end": 74.696, "char": [23, 25] },
-        { "start": 74.696, "end": 75.092, "char": [26, 31] }
+        { "start": 76.716, "end": 77.112, "char": [0, 2] },
+        { "start": 77.112, "end": 77.509, "char": [3, 7] },
+        { "start": 77.509, "end": 77.906, "char": [8, 11] },
+        { "start": 77.906, "end": 78.302, "char": [12, 18] },
+        { "start": 78.302, "end": 78.699, "char": [19, 22] },
+        { "start": 78.699, "end": 79.096, "char": [23, 25] },
+        { "start": 79.096, "end": 79.492, "char": [26, 31] }
       ]
     },
     {
-      "start": 75.092,
-      "end": 77.869,
+      "start": 79.492,
+      "end": 82.269,
       "text": "Exécutez n'importe quelle commande contre le daemon",
       "words": [
-        { "start": 75.092, "end": 75.489, "char": [0, 8] },
-        { "start": 75.489, "end": 75.886, "char": [9, 18] },
-        { "start": 75.886, "end": 76.282, "char": [19, 25] },
-        { "start": 76.282, "end": 76.679, "char": [26, 34] },
-        { "start": 76.679, "end": 77.076, "char": [35, 41] },
-        { "start": 77.076, "end": 77.472, "char": [42, 44] },
-        { "start": 77.472, "end": 77.869, "char": [45, 51] }
+        { "start": 79.492, "end": 79.889, "char": [0, 8] },
+        { "start": 79.889, "end": 80.286, "char": [9, 18] },
+        { "start": 80.286, "end": 80.682, "char": [19, 25] },
+        { "start": 80.682, "end": 81.079, "char": [26, 34] },
+        { "start": 81.079, "end": 81.476, "char": [35, 41] },
+        { "start": 81.476, "end": 81.872, "char": [42, 44] },
+        { "start": 81.872, "end": 82.269, "char": [45, 51] }
       ]
     },
     {
-      "start": 77.869,
-      "end": 80.645,
+      "start": 82.269,
+      "end": 85.045,
       "text": "Docker de ce dépôt sans quitter votre",
       "words": [
-        { "start": 77.869, "end": 78.265, "char": [0, 6] },
-        { "start": 78.265, "end": 78.662, "char": [7, 9] },
-        { "start": 78.662, "end": 79.059, "char": [10, 12] },
-        { "start": 79.059, "end": 79.455, "char": [13, 18] },
-        { "start": 79.455, "end": 79.852, "char": [19, 23] },
-        { "start": 79.852, "end": 80.249, "char": [24, 31] },
-        { "start": 80.249, "end": 80.645, "char": [32, 37] }
+        { "start": 82.269, "end": 82.665, "char": [0, 6] },
+        { "start": 82.665, "end": 83.062, "char": [7, 9] },
+        { "start": 83.062, "end": 83.459, "char": [10, 12] },
+        { "start": 83.459, "end": 83.855, "char": [13, 18] },
+        { "start": 83.855, "end": 84.252, "char": [19, 23] },
+        { "start": 84.252, "end": 84.649, "char": [24, 31] },
+        { "start": 84.649, "end": 85.045, "char": [32, 37] }
       ]
     },
     {
-      "start": 80.645,
-      "end": 81.042,
+      "start": 85.045,
+      "end": 85.442,
       "text": "terminal.",
-      "words": [{ "start": 80.645, "end": 81.042, "char": [0, 9] }]
+      "words": [{ "start": 85.045, "end": 85.442, "char": [0, 9] }]
     },
     {
-      "start": 82.292,
-      "end": 84.768,
+      "start": 87.442,
+      "end": 89.918,
       "text": "À l'intérieur du sandbox du repo.",
       "words": [
-        { "start": 82.292, "end": 82.705, "char": [0, 1] },
-        { "start": 82.705, "end": 83.117, "char": [2, 13] },
-        { "start": 83.117, "end": 83.53, "char": [14, 16] },
-        { "start": 83.53, "end": 83.943, "char": [17, 24] },
-        { "start": 83.943, "end": 84.356, "char": [25, 27] },
-        { "start": 84.356, "end": 84.768, "char": [28, 33] }
+        { "start": 87.442, "end": 87.855, "char": [0, 1] },
+        { "start": 87.855, "end": 88.267, "char": [2, 13] },
+        { "start": 88.267, "end": 88.68, "char": [14, 16] },
+        { "start": 88.68, "end": 89.093, "char": [17, 24] },
+        { "start": 89.093, "end": 89.506, "char": [25, 27] },
+        { "start": 89.506, "end": 89.918, "char": [28, 33] }
       ]
     },
     {
-      "start": 84.768,
-      "end": 87.658,
+      "start": 89.918,
+      "end": 92.808,
       "text": "Lancez n'importe quoi comme si vous étiez",
       "words": [
-        { "start": 84.768, "end": 85.181, "char": [0, 6] },
-        { "start": 85.181, "end": 85.594, "char": [7, 16] },
-        { "start": 85.594, "end": 86.007, "char": [17, 21] },
-        { "start": 86.007, "end": 86.419, "char": [22, 27] },
-        { "start": 86.419, "end": 86.832, "char": [28, 30] },
-        { "start": 86.832, "end": 87.245, "char": [31, 35] },
-        { "start": 87.245, "end": 87.658, "char": [36, 41] }
+        { "start": 89.918, "end": 90.331, "char": [0, 6] },
+        { "start": 90.331, "end": 90.744, "char": [7, 16] },
+        { "start": 90.744, "end": 91.157, "char": [17, 21] },
+        { "start": 91.157, "end": 91.569, "char": [22, 27] },
+        { "start": 91.569, "end": 91.982, "char": [28, 30] },
+        { "start": 91.982, "end": 92.395, "char": [31, 35] },
+        { "start": 92.395, "end": 92.808, "char": [36, 41] }
       ]
     },
     {
-      "start": 87.658,
-      "end": 88.483,
+      "start": 92.808,
+      "end": 93.633,
       "text": "en SSH.",
       "words": [
-        { "start": 87.658, "end": 88.07, "char": [0, 2] },
-        { "start": 88.07, "end": 88.483, "char": [3, 7] }
+        { "start": 92.808, "end": 93.22, "char": [0, 2] },
+        { "start": 93.22, "end": 93.633, "char": [3, 7] }
       ]
     },
     {
-      "start": 91.818,
-      "end": 94.336,
+      "start": 96.935,
+      "end": 99.453,
       "text": "Avant de pousser des fichiers,",
       "words": [
-        { "start": 91.818, "end": 92.322, "char": [0, 5] },
-        { "start": 92.322, "end": 92.825, "char": [6, 8] },
-        { "start": 92.825, "end": 93.329, "char": [9, 16] },
-        { "start": 93.329, "end": 93.832, "char": [17, 20] },
-        { "start": 93.832, "end": 94.336, "char": [21, 30] }
+        { "start": 96.935, "end": 97.439, "char": [0, 5] },
+        { "start": 97.439, "end": 97.942, "char": [6, 8] },
+        { "start": 97.942, "end": 98.446, "char": [9, 16] },
+        { "start": 98.446, "end": 98.949, "char": [17, 20] },
+        { "start": 98.949, "end": 99.453, "char": [21, 30] }
       ]
     },
     {
-      "start": 94.336,
-      "end": 96.854,
+      "start": 99.453,
+      "end": 101.971,
       "text": "voyons d'abord la prévisualisation avec",
       "words": [
-        { "start": 94.336, "end": 94.84, "char": [0, 6] },
-        { "start": 94.84, "end": 95.343, "char": [7, 14] },
-        { "start": 95.343, "end": 95.847, "char": [15, 17] },
-        { "start": 95.847, "end": 96.35, "char": [18, 34] },
-        { "start": 96.35, "end": 96.854, "char": [35, 39] }
+        { "start": 99.453, "end": 99.957, "char": [0, 6] },
+        { "start": 99.957, "end": 100.46, "char": [7, 14] },
+        { "start": 100.46, "end": 100.964, "char": [15, 17] },
+        { "start": 100.964, "end": 101.467, "char": [18, 34] },
+        { "start": 101.467, "end": 101.971, "char": [35, 39] }
       ]
     },
     {
-      "start": 96.854,
-      "end": 98.364,
+      "start": 101.971,
+      "end": 103.481,
       "text": "le flag dry-run.",
       "words": [
-        { "start": 96.854, "end": 97.357, "char": [0, 2] },
-        { "start": 97.357, "end": 97.861, "char": [3, 7] },
-        { "start": 97.861, "end": 98.364, "char": [8, 16] }
+        { "start": 101.971, "end": 102.474, "char": [0, 2] },
+        { "start": 102.474, "end": 102.978, "char": [3, 7] },
+        { "start": 102.978, "end": 103.481, "char": [8, 16] }
       ]
     },
     {
-      "start": 98.364,
-      "end": 100.882,
+      "start": 103.481,
+      "end": 105.999,
       "text": "Elle montre exactement ce qui",
       "words": [
-        { "start": 98.364, "end": 98.868, "char": [0, 4] },
-        { "start": 98.868, "end": 99.371, "char": [5, 11] },
-        { "start": 99.371, "end": 99.875, "char": [12, 22] },
-        { "start": 99.875, "end": 100.378, "char": [23, 25] },
-        { "start": 100.378, "end": 100.882, "char": [26, 29] }
+        { "start": 103.481, "end": 103.985, "char": [0, 4] },
+        { "start": 103.985, "end": 104.488, "char": [5, 11] },
+        { "start": 104.488, "end": 104.992, "char": [12, 22] },
+        { "start": 104.992, "end": 105.495, "char": [23, 25] },
+        { "start": 105.495, "end": 105.999, "char": [26, 29] }
       ]
     },
     {
-      "start": 100.882,
-      "end": 102.896,
+      "start": 105.999,
+      "end": 108.013,
       "text": "changerait sans rien copier.",
       "words": [
-        { "start": 100.882, "end": 101.385, "char": [0, 10] },
-        { "start": 101.385, "end": 101.889, "char": [11, 15] },
-        { "start": 101.889, "end": 102.393, "char": [16, 20] },
-        { "start": 102.393, "end": 102.896, "char": [21, 28] }
+        { "start": 105.999, "end": 106.502, "char": [0, 10] },
+        { "start": 106.502, "end": 107.006, "char": [11, 15] },
+        { "start": 107.006, "end": 107.51, "char": [16, 20] },
+        { "start": 107.51, "end": 108.013, "char": [21, 28] }
       ]
     },
     {
-      "start": 102.896,
-      "end": 105.414,
+      "start": 108.013,
+      "end": 110.531,
       "text": "Prévisualisez toujours quand vous n'êtes",
       "words": [
-        { "start": 102.896, "end": 103.4, "char": [0, 13] },
-        { "start": 103.4, "end": 103.903, "char": [14, 22] },
-        { "start": 103.903, "end": 104.407, "char": [23, 28] },
-        { "start": 104.407, "end": 104.91, "char": [29, 33] },
-        { "start": 104.91, "end": 105.414, "char": [34, 40] }
+        { "start": 108.013, "end": 108.517, "char": [0, 13] },
+        { "start": 108.517, "end": 109.02, "char": [14, 22] },
+        { "start": 109.02, "end": 109.524, "char": [23, 28] },
+        { "start": 109.524, "end": 110.027, "char": [29, 33] },
+        { "start": 110.027, "end": 110.531, "char": [34, 40] }
       ]
     },
     {
-      "start": 105.414,
-      "end": 106.421,
+      "start": 110.531,
+      "end": 111.538,
       "text": "pas sûr.",
       "words": [
-        { "start": 105.414, "end": 105.917, "char": [0, 3] },
-        { "start": 105.917, "end": 106.421, "char": [4, 8] }
+        { "start": 110.531, "end": 111.034, "char": [0, 3] },
+        { "start": 111.034, "end": 111.538, "char": [4, 8] }
       ]
     },
     {
-      "start": 108.421,
-      "end": 109.453,
+      "start": 114.538,
+      "end": 115.57,
       "text": "Prévisualisation uniquement.",
       "words": [
-        { "start": 108.421, "end": 108.937, "char": [0, 16] },
-        { "start": 108.937, "end": 109.453, "char": [17, 28] }
+        { "start": 114.538, "end": 115.054, "char": [0, 16] },
+        { "start": 115.054, "end": 115.57, "char": [17, 28] }
       ]
     },
     {
-      "start": 109.453,
-      "end": 112.032,
+      "start": 115.57,
+      "end": 118.149,
       "text": "Aucun fichier n'a encore été",
       "words": [
-        { "start": 109.453, "end": 109.969, "char": [0, 5] },
-        { "start": 109.969, "end": 110.484, "char": [6, 13] },
-        { "start": 110.484, "end": 111, "char": [14, 17] },
-        { "start": 111, "end": 111.516, "char": [18, 24] },
-        { "start": 111.516, "end": 112.032, "char": [25, 28] }
+        { "start": 115.57, "end": 116.086, "char": [0, 5] },
+        { "start": 116.086, "end": 116.601, "char": [6, 13] },
+        { "start": 116.601, "end": 117.117, "char": [14, 17] },
+        { "start": 117.117, "end": 117.633, "char": [18, 24] },
+        { "start": 117.633, "end": 118.149, "char": [25, 28] }
       ]
     },
     {
-      "start": 112.032,
-      "end": 112.548,
+      "start": 118.149,
+      "end": 118.665,
       "text": "déplacé.",
-      "words": [{ "start": 112.032, "end": 112.548, "char": [0, 8] }]
+      "words": [{ "start": 118.149, "end": 118.665, "char": [0, 8] }]
     },
     {
-      "start": 115.861,
-      "end": 118.639,
+      "start": 121.944,
+      "end": 124.722,
       "text": "Maintenant nous lançons le vrai téléversement.",
       "words": [
-        { "start": 115.861, "end": 116.324, "char": [0, 10] },
-        { "start": 116.324, "end": 116.787, "char": [11, 15] },
-        { "start": 116.787, "end": 117.25, "char": [16, 23] },
-        { "start": 117.25, "end": 117.713, "char": [24, 26] },
-        { "start": 117.713, "end": 118.176, "char": [27, 31] },
-        { "start": 118.176, "end": 118.639, "char": [32, 46] }
+        { "start": 121.944, "end": 122.407, "char": [0, 10] },
+        { "start": 122.407, "end": 122.87, "char": [11, 15] },
+        { "start": 122.87, "end": 123.333, "char": [16, 23] },
+        { "start": 123.333, "end": 123.796, "char": [24, 26] },
+        { "start": 123.796, "end": 124.259, "char": [27, 31] },
+        { "start": 124.259, "end": 124.722, "char": [32, 46] }
       ]
     },
     {
-      "start": 118.639,
-      "end": 121.417,
+      "start": 124.722,
+      "end": 127.5,
       "text": "La commande de synchronisation déplace les",
       "words": [
-        { "start": 118.639, "end": 119.102, "char": [0, 2] },
-        { "start": 119.102, "end": 119.565, "char": [3, 11] },
-        { "start": 119.565, "end": 120.028, "char": [12, 14] },
-        { "start": 120.028, "end": 120.491, "char": [15, 30] },
-        { "start": 120.491, "end": 120.954, "char": [31, 38] },
-        { "start": 120.954, "end": 121.417, "char": [39, 42] }
+        { "start": 124.722, "end": 125.185, "char": [0, 2] },
+        { "start": 125.185, "end": 125.648, "char": [3, 11] },
+        { "start": 125.648, "end": 126.111, "char": [12, 14] },
+        { "start": 126.111, "end": 126.574, "char": [15, 30] },
+        { "start": 126.574, "end": 127.037, "char": [31, 38] },
+        { "start": 127.037, "end": 127.5, "char": [39, 42] }
       ]
     },
     {
-      "start": 121.417,
-      "end": 124.194,
+      "start": 127.5,
+      "end": 130.277,
       "text": "fichiers de votre ordinateur vers le",
       "words": [
-        { "start": 121.417, "end": 121.88, "char": [0, 8] },
-        { "start": 121.88, "end": 122.343, "char": [9, 11] },
-        { "start": 122.343, "end": 122.806, "char": [12, 17] },
-        { "start": 122.806, "end": 123.269, "char": [18, 28] },
-        { "start": 123.269, "end": 123.731, "char": [29, 33] },
-        { "start": 123.731, "end": 124.194, "char": [34, 36] }
+        { "start": 127.5, "end": 127.963, "char": [0, 8] },
+        { "start": 127.963, "end": 128.426, "char": [9, 11] },
+        { "start": 128.426, "end": 128.889, "char": [12, 17] },
+        { "start": 128.889, "end": 129.352, "char": [18, 28] },
+        { "start": 129.352, "end": 129.814, "char": [29, 33] },
+        { "start": 129.814, "end": 130.277, "char": [34, 36] }
       ]
     },
     {
-      "start": 124.194,
-      "end": 125.583,
+      "start": 130.277,
+      "end": 131.666,
       "text": "dépôt via SSH,",
       "words": [
-        { "start": 124.194, "end": 124.657, "char": [0, 5] },
-        { "start": 124.657, "end": 125.12, "char": [6, 9] },
-        { "start": 125.12, "end": 125.583, "char": [10, 14] }
+        { "start": 130.277, "end": 130.74, "char": [0, 5] },
+        { "start": 130.74, "end": 131.203, "char": [6, 9] },
+        { "start": 131.203, "end": 131.666, "char": [10, 14] }
       ]
     },
     {
-      "start": 125.583,
-      "end": 128.361,
+      "start": 131.666,
+      "end": 134.444,
       "text": "avec la compression delta de rsync.",
       "words": [
-        { "start": 125.583, "end": 126.046, "char": [0, 4] },
-        { "start": 126.046, "end": 126.509, "char": [5, 7] },
-        { "start": 126.509, "end": 126.972, "char": [8, 19] },
-        { "start": 126.972, "end": 127.435, "char": [20, 25] },
-        { "start": 127.435, "end": 127.898, "char": [26, 28] },
-        { "start": 127.898, "end": 128.361, "char": [29, 35] }
+        { "start": 131.666, "end": 132.129, "char": [0, 4] },
+        { "start": 132.129, "end": 132.592, "char": [5, 7] },
+        { "start": 132.592, "end": 133.055, "char": [8, 19] },
+        { "start": 133.055, "end": 133.518, "char": [20, 25] },
+        { "start": 133.518, "end": 133.981, "char": [26, 28] },
+        { "start": 133.981, "end": 134.444, "char": [29, 35] }
       ]
     },
     {
-      "start": 128.361,
-      "end": 128.824,
+      "start": 134.444,
+      "end": 134.907,
       "text": "Tunnel,",
-      "words": [{ "start": 128.361, "end": 128.824, "char": [0, 7] }]
+      "words": [{ "start": 134.444, "end": 134.907, "char": [0, 7] }]
     },
     {
-      "start": 128.824,
-      "end": 129.287,
+      "start": 134.907,
+      "end": 135.37,
       "text": "term,",
-      "words": [{ "start": 128.824, "end": 129.287, "char": [0, 5] }]
+      "words": [{ "start": 134.907, "end": 135.37, "char": [0, 5] }]
     },
     {
-      "start": 129.287,
-      "end": 129.75,
+      "start": 135.37,
+      "end": 135.833,
       "text": "sync,",
-      "words": [{ "start": 129.287, "end": 129.75, "char": [0, 5] }]
+      "words": [{ "start": 135.37, "end": 135.833, "char": [0, 5] }]
     },
     {
-      "start": 129.75,
-      "end": 132.527,
+      "start": 135.833,
+      "end": 138.61,
       "text": "trois commandes couvrent la boucle quotidienne.",
       "words": [
-        { "start": 129.75, "end": 130.213, "char": [0, 5] },
-        { "start": 130.213, "end": 130.676, "char": [6, 15] },
-        { "start": 130.676, "end": 131.139, "char": [16, 24] },
-        { "start": 131.139, "end": 131.602, "char": [25, 27] },
-        { "start": 131.602, "end": 132.065, "char": [28, 34] },
-        { "start": 132.065, "end": 132.527, "char": [35, 47] }
+        { "start": 135.833, "end": 136.296, "char": [0, 5] },
+        { "start": 136.296, "end": 136.759, "char": [6, 15] },
+        { "start": 136.759, "end": 137.222, "char": [16, 24] },
+        { "start": 137.222, "end": 137.685, "char": [25, 27] },
+        { "start": 137.685, "end": 138.148, "char": [28, 34] },
+        { "start": 138.148, "end": 138.61, "char": [35, 47] }
       ]
     },
     {
-      "start": 134.027,
-      "end": 134.927,
+      "start": 140.86,
+      "end": 141.76,
       "text": "Fichiers téléversés.",
       "words": [
-        { "start": 134.027, "end": 134.477, "char": [0, 8] },
-        { "start": 134.477, "end": 134.927, "char": [9, 20] }
+        { "start": 140.86, "end": 141.31, "char": [0, 8] },
+        { "start": 141.31, "end": 141.76, "char": [9, 20] }
       ]
     },
     {
-      "start": 134.927,
-      "end": 137.627,
+      "start": 141.76,
+      "end": 144.46,
       "text": "La compression delta gère les gros",
       "words": [
-        { "start": 134.927, "end": 135.377, "char": [0, 2] },
-        { "start": 135.377, "end": 135.827, "char": [3, 14] },
-        { "start": 135.827, "end": 136.277, "char": [15, 20] },
-        { "start": 136.277, "end": 136.727, "char": [21, 25] },
-        { "start": 136.727, "end": 137.177, "char": [26, 29] },
-        { "start": 137.177, "end": 137.627, "char": [30, 34] }
+        { "start": 141.76, "end": 142.21, "char": [0, 2] },
+        { "start": 142.21, "end": 142.66, "char": [3, 14] },
+        { "start": 142.66, "end": 143.11, "char": [15, 20] },
+        { "start": 143.11, "end": 143.56, "char": [21, 25] },
+        { "start": 143.56, "end": 144.01, "char": [26, 29] },
+        { "start": 144.01, "end": 144.46, "char": [30, 34] }
       ]
     },
     {
-      "start": 137.627,
-      "end": 138.076,
+      "start": 144.46,
+      "end": 144.909,
       "text": "arbres.",
-      "words": [{ "start": 137.627, "end": 138.076, "char": [0, 7] }]
+      "words": [{ "start": 144.46, "end": 144.909, "char": [0, 7] }]
     },
     {
-      "start": 138.867,
-      "end": 141.575,
+      "start": 145.7,
+      "end": 148.408,
       "text": "Et voilà les trois commandes",
       "words": [
-        { "start": 138.867, "end": 139.409, "char": [0, 2] },
-        { "start": 139.409, "end": 139.951, "char": [3, 8] },
-        { "start": 139.951, "end": 140.492, "char": [9, 12] },
-        { "start": 140.492, "end": 141.034, "char": [13, 18] },
-        { "start": 141.034, "end": 141.575, "char": [19, 28] }
+        { "start": 145.7, "end": 146.242, "char": [0, 2] },
+        { "start": 146.242, "end": 146.784, "char": [3, 8] },
+        { "start": 146.784, "end": 147.325, "char": [9, 12] },
+        { "start": 147.325, "end": 147.867, "char": [13, 18] },
+        { "start": 147.867, "end": 148.408, "char": [19, 28] }
       ]
     },
     {
-      "start": 141.575,
-      "end": 142.659,
+      "start": 148.408,
+      "end": 149.492,
       "text": "du quotidien.",
       "words": [
-        { "start": 141.575, "end": 142.117, "char": [0, 2] },
-        { "start": 142.117, "end": 142.659, "char": [3, 13] }
+        { "start": 148.408, "end": 148.95, "char": [0, 2] },
+        { "start": 148.95, "end": 149.492, "char": [3, 13] }
       ]
     },
     {
-      "start": 142.659,
-      "end": 145.367,
+      "start": 149.492,
+      "end": 152.2,
       "text": "On se retrouve dans la",
       "words": [
-        { "start": 142.659, "end": 143.2, "char": [0, 2] },
-        { "start": 143.2, "end": 143.742, "char": [3, 5] },
-        { "start": 143.742, "end": 144.283, "char": [6, 14] },
-        { "start": 144.283, "end": 144.825, "char": [15, 19] },
-        { "start": 144.825, "end": 145.367, "char": [20, 22] }
+        { "start": 149.492, "end": 150.033, "char": [0, 2] },
+        { "start": 150.033, "end": 150.575, "char": [3, 5] },
+        { "start": 150.575, "end": 151.116, "char": [6, 14] },
+        { "start": 151.116, "end": 151.658, "char": [15, 19] },
+        { "start": 151.658, "end": 152.2, "char": [20, 22] }
       ]
     },
     {
-      "start": 145.367,
-      "end": 146.991,
+      "start": 152.2,
+      "end": 153.824,
       "text": "prochaine vidéo !",
       "words": [
-        { "start": 145.367, "end": 145.908, "char": [0, 9] },
-        { "start": 145.908, "end": 146.45, "char": [10, 15] },
-        { "start": 146.45, "end": 146.991, "char": [16, 17] }
+        { "start": 152.2, "end": 152.741, "char": [0, 9] },
+        { "start": 152.741, "end": 153.283, "char": [10, 15] },
+        { "start": 153.283, "end": 153.824, "char": [16, 17] }
       ]
     }
   ]

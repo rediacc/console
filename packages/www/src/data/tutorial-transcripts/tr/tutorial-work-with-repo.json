@@ -6,7 +6,7 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 2.415513,
+      "at": 2.414306,
       "text": "Önce tunnel komutu. Uygulama sunucuda çalışıyor, dizüstü bilgisayarınızda değil. Tünel komutu, bir container'ın portunu SSH üzerinden yönlendirir; tarayıcınızda localhost adresinde açabilirsiniz.",
       "afterText": "Port yönlendirildi. Uygulamaya artık localhost üzerinden erişilebiliyor.",
       "cardLabel": "Port Tünelle",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 9.087333,
+      "at": 10.610488,
       "text": "İkinci olarak term komutu. Terminal bağlantı komutu sizi doğrudan deponun sandbox'ına bırakır; VS Code'un sağlayacağı izole görünümün aynısı. Terminalden hiç çıkmadan bu depoya ait Docker daemon'a karşı herhangi bir komut çalıştırabilirsiniz.",
       "afterText": "Depo sandbox'ının içindesiniz. SSH ile bağlanmışsınız gibi her şeyi çalıştırın.",
       "cardLabel": "Sandbox'ta Term",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 15.893309,
+      "at": 17.555154,
       "text": "Dosya göndermeden önce --dry-run ile önizleme yapın. Hiçbir şeyi kopyalamadan tam olarak neyin değişeceğini gösterir. Emin olmadığınızda her zaman önizleme yapın.",
       "afterText": "Yalnızca önizleme. Henüz hiçbir dosya taşınmadı.",
       "cardLabel": "Sync Önizle",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 22.144638,
+      "at": 24.76977,
       "text": "Şimdi gerçek yüklemeyi çalıştırıyoruz. Eşitleme yükleme komutu, rsync delta sıkıştırmasıyla dizüstü bilgisayarınızdan depoya SSH üzerinden dosya taşır. Tunnel, term, sync; günlük döngüyü üç komut karşılar.",
       "afterText": "Dosyalar yüklendi. Delta sıkıştırma büyük ağaçların üstesinden gelir.",
       "cardLabel": "Sync Yükle",
@@ -67,6 +67,6 @@
     "cast-step-1": "Term: sandbox içinde komut çalıştır",
     "cast-step-2": "Sync: --dry-run ile önizle",
     "cast-step-3": "Sync: gerçekten yükle",
-    "outro": "Sıradaki: Repository Fork'lama"
+    "outro": "Sıradaki: Tarayıcınızda VS Code"
   }
 }

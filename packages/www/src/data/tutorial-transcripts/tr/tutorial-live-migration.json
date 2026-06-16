@@ -1,0 +1,77 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "at": 2.413171,
+      "text": "Pulse ile tanışın. Süreç belleğinde bir sayaç tutar ve her beş saniyede bir nabız basar. Sayaç altıda ve tırmanıyor; yalnızca RAM'de yaşıyor. Süreci yeniden başlatın, bir'den tekrar başlar.",
+      "afterText": "Bellekte atan canlı bir sayaç. İşte kanıtımız bu.",
+      "cardLabel": "Canlı Sayaç",
+      "prose": "Uygulama, bellekte bir sayaç tutar ve her beş saniyede bir nabız kaydeder. Sayaç yalnızca RAM'de yaşar: bir süreç yeniden başlatması onu bir'e sıfırlar."
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "at": 10.379022,
+      "text": "Tek bir komut, canlı olarak taşır. Birinci aşama, kaynak çalışmaya devam ederken yaklaşık yarım dakikada iki gigabaytlık yükü aktarır. Sonra geçiş: çalışan süreçleri checkpoint'ler, son birkaç megabaytı karşıya taşır ve kesinti süresini tam orada basar. İki gigabaytlık bir taşıma için yaklaşık yirmi saniye.",
+      "afterText": "Uygulama çalışmaya devam ederken iki gigabayt taşındı. Kesinti satırı, taşımanın gerçekte ne kadara mal olduğunu gösteriyor.",
+      "cardLabel": "Canlı Taşıma",
+      "prose": "Checkpoint ile taşıma: birinci aşama, kaynak çevrimiçi kalırken 2 GB'lık yükü aktarır, ardından kısa bir geçiş çalışan süreçleri checkpoint'ler ve son delta'yı karşıya taşır. Çıktı, her aşamayı ve gerçek kesinti süresini basar."
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "at": 101.149024,
+      "text": "Yeni makineyi kontrol edin: işte orada. Mount edilmiş, Docker çalışıyor, iki container ayakta.",
+      "afterText": "Aynı repo, yeni ev, zaten çalışıyor.",
+      "cardLabel": "Yeni Ev",
+      "prose": "Hedef makinedeki repository'leri listeleyin: pulse mount edilmiş, Docker çalışıyor ve container'ları ayakta."
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "at": 106.859481,
+      "text": "Peki kaynak? Repository hâlâ listede ama satıra bakın: mount edilmemiş, Docker yok, sıfır container. Artık burada hiçbir şey çalışmıyor. Image, bir sonraki delta transferi için temel olarak kasıtlı bırakılıyor.",
+      "afterText": "Durduruldu ve unmount edildi. Geride kalan image, çalışan bir uygulama değil, bir delta tabanı.",
+      "cardLabel": "Kaynak Durdu",
+      "prose": "Kaynakta repository durdurulmuş ve unmount edilmiş: Docker yok, sıfır container. Image, gelecekteki delta transferleri için temel olarak tutulur."
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "at": 112.346008,
+      "text": "Şimdi asıl kısma geldik. Sayaç on yedi, on sekiz, on dokuz okuyup hâlâ tırmanıyor. Bir'den başlamak yerine checkpoint'in onu dondurduğu yerden tam kaldığı yerden devam etti. Süreç, makine değiştirdiğini hiç fark etmedi.",
+      "afterText": "Sayaç saymaya devam etti. Süreç belleği yolculuğu tamamladı.",
+      "cardLabel": "Sayaç Devam Etti",
+      "prose": "Yeni makinedeki loglar, sayacın checkpoint'in onu dondurduğu yerden devam ettiğini, bir'e sıfırlanmadığını gösteriyor. Süreç belleği yolculuğu tamamladı."
+    }
+  ],
+  "title": "Canlı Taşıma",
+  "chapters": {
+    "intro": "Canlı Migration",
+    "how-it-moves": "İki aşama, minimum kesinti",
+    "cast-step-0": "Adım 1: Gerçek veri yaz",
+    "cast-step-1": "Adım 2: Canlı Migrate",
+    "cast-step-2": "Adım 3: Yeni makinede çalışıyor",
+    "cast-step-3": "Adım 4: Veri yolculuğunu tamamladı",
+    "cast-step-4": "Adım 5: Sayaç Saymaya Devam Etti",
+    "outro": "Sonraki: Delta Transfer"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Büyük bir şey zamanı: ÇALIŞAN bir uygulamayı, çalışırken başka bir makineye taşımak. Uygulamanın belleğinde atan canlı bir sayacı izleyeceğiz, her şeyi tek komutla taşıyacağız ve sayacın yeni makinede saymaya devam ettiğini göreceğiz."
+    },
+    {
+      "id": "how-it-moves",
+      "text": "İki aşamada çalışır. Birinci aşama, uygulama çalışmaya devam ederken yükün büyük kısmını kopyalar. İkinci aşama canlı süreçleri checkpoint'ler, son delta ve süreç durumunu karşıya taşır ve her şeyi yeni makinede devam ettirir. Yani kesinti süresi delta kadardır, verinin tamamı kadar değil. Ve uygulama taşındığını hiç bilmez."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Sayaç hiç sıfırlanmadı. Bellek, veritabanı, dosyalar, hepsi sadece makine değiştirdi. Sırada, ikinci transferin neden her zaman hızlı olanı olduğunu göreceğiz."
+    }
+  ]
+}

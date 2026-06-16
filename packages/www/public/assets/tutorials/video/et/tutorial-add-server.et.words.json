@@ -183,217 +183,217 @@
       "words": [{ "start": 45.297, "end": 46.765, "char": [0, 6] }]
     },
     {
-      "start": 48.015,
-      "end": 48.941,
+      "start": 48.765,
+      "end": 49.691,
       "text": "Profiil on loodud.",
       "words": [
-        { "start": 48.015, "end": 48.324, "char": [0, 7] },
-        { "start": 48.324, "end": 48.633, "char": [8, 10] },
-        { "start": 48.633, "end": 48.941, "char": [11, 18] }
+        { "start": 48.765, "end": 49.074, "char": [0, 7] },
+        { "start": 49.074, "end": 49.383, "char": [8, 10] },
+        { "start": 49.383, "end": 49.691, "char": [11, 18] }
       ]
     },
     {
-      "start": 48.941,
-      "end": 49.25,
+      "start": 49.691,
+      "end": 50,
       "text": "Kõik,",
-      "words": [{ "start": 48.941, "end": 49.25, "char": [0, 5] }]
+      "words": [{ "start": 49.691, "end": 50, "char": [0, 5] }]
     },
     {
-      "start": 49.25,
-      "end": 50.176,
+      "start": 50,
+      "end": 50.926,
       "text": "mida edasi seadistame,",
       "words": [
-        { "start": 49.25, "end": 49.559, "char": [0, 4] },
-        { "start": 49.559, "end": 49.867, "char": [5, 10] },
-        { "start": 49.867, "end": 50.176, "char": [11, 22] }
+        { "start": 50, "end": 50.309, "char": [0, 4] },
+        { "start": 50.309, "end": 50.617, "char": [5, 10] },
+        { "start": 50.617, "end": 50.926, "char": [11, 22] }
       ]
     },
     {
-      "start": 50.176,
-      "end": 51.411,
+      "start": 50.926,
+      "end": 52.161,
       "text": "elab selles ühes failis.",
       "words": [
-        { "start": 50.176, "end": 50.485, "char": [0, 4] },
-        { "start": 50.485, "end": 50.794, "char": [5, 11] },
-        { "start": 50.794, "end": 51.102, "char": [12, 16] },
-        { "start": 51.102, "end": 51.411, "char": [17, 24] }
+        { "start": 50.926, "end": 51.235, "char": [0, 4] },
+        { "start": 51.235, "end": 51.544, "char": [5, 11] },
+        { "start": 51.544, "end": 51.852, "char": [12, 16] },
+        { "start": 51.852, "end": 52.161, "char": [17, 24] }
       ]
     },
     {
-      "start": 54.721,
-      "end": 56.822,
+      "start": 55.471,
+      "end": 57.572,
       "text": "Nüüd registreerime serveri CLI-s -- esitades selle nime,",
       "words": [
-        { "start": 54.721, "end": 54.984, "char": [0, 4] },
-        { "start": 54.984, "end": 55.246, "char": [5, 18] },
-        { "start": 55.246, "end": 55.509, "char": [19, 26] },
-        { "start": 55.509, "end": 55.771, "char": [27, 32] },
-        { "start": 55.771, "end": 56.034, "char": [33, 35] },
-        { "start": 56.034, "end": 56.297, "char": [36, 44] },
-        { "start": 56.297, "end": 56.559, "char": [45, 50] },
-        { "start": 56.559, "end": 56.822, "char": [51, 56] }
+        { "start": 55.471, "end": 55.734, "char": [0, 4] },
+        { "start": 55.734, "end": 55.996, "char": [5, 18] },
+        { "start": 55.996, "end": 56.259, "char": [19, 26] },
+        { "start": 56.259, "end": 56.521, "char": [27, 32] },
+        { "start": 56.521, "end": 56.784, "char": [33, 35] },
+        { "start": 56.784, "end": 57.047, "char": [36, 44] },
+        { "start": 57.047, "end": 57.309, "char": [45, 50] },
+        { "start": 57.309, "end": 57.572, "char": [51, 56] }
       ]
     },
     {
-      "start": 56.822,
-      "end": 57.872,
+      "start": 57.572,
+      "end": 58.622,
       "text": "IP-aadressi ja SSH kasutajanime.",
       "words": [
-        { "start": 56.822, "end": 57.084, "char": [0, 11] },
-        { "start": 57.084, "end": 57.347, "char": [12, 14] },
-        { "start": 57.347, "end": 57.61, "char": [15, 18] },
-        { "start": 57.61, "end": 57.872, "char": [19, 32] }
+        { "start": 57.572, "end": 57.834, "char": [0, 11] },
+        { "start": 57.834, "end": 58.097, "char": [12, 14] },
+        { "start": 58.097, "end": 58.36, "char": [15, 18] },
+        { "start": 58.36, "end": 58.622, "char": [19, 32] }
       ]
     },
     {
-      "start": 57.872,
-      "end": 59.71,
+      "start": 58.622,
+      "end": 60.46,
       "text": "Hosti võtmeid skanneeritakse automaatselt usaldusväärse juurdepääsu jaoks.",
       "words": [
-        { "start": 57.872, "end": 58.135, "char": [0, 5] },
-        { "start": 58.135, "end": 58.397, "char": [6, 13] },
-        { "start": 58.397, "end": 58.66, "char": [14, 28] },
-        { "start": 58.66, "end": 58.923, "char": [29, 41] },
-        { "start": 58.923, "end": 59.185, "char": [42, 55] },
-        { "start": 59.185, "end": 59.448, "char": [56, 67] },
-        { "start": 59.448, "end": 59.71, "char": [68, 74] }
+        { "start": 58.622, "end": 58.885, "char": [0, 5] },
+        { "start": 58.885, "end": 59.147, "char": [6, 13] },
+        { "start": 59.147, "end": 59.41, "char": [14, 28] },
+        { "start": 59.41, "end": 59.673, "char": [29, 41] },
+        { "start": 59.673, "end": 59.935, "char": [42, 55] },
+        { "start": 59.935, "end": 60.198, "char": [56, 67] },
+        { "start": 60.198, "end": 60.46, "char": [68, 74] }
       ]
     },
     {
-      "start": 62.397,
-      "end": 63.555,
+      "start": 65.359,
+      "end": 66.517,
       "text": "Server registreeritud.",
       "words": [
-        { "start": 62.397, "end": 62.976, "char": [0, 6] },
-        { "start": 62.976, "end": 63.555, "char": [7, 22] }
+        { "start": 65.359, "end": 65.938, "char": [0, 6] },
+        { "start": 65.938, "end": 66.517, "char": [7, 22] }
       ]
     },
     {
-      "start": 63.555,
-      "end": 65.871,
+      "start": 66.517,
+      "end": 68.833,
       "text": "Hosti võtmed skanneeriti automaatselt.",
       "words": [
-        { "start": 63.555, "end": 64.134, "char": [0, 5] },
-        { "start": 64.134, "end": 64.713, "char": [6, 12] },
-        { "start": 64.713, "end": 65.292, "char": [13, 24] },
-        { "start": 65.292, "end": 65.871, "char": [25, 38] }
+        { "start": 66.517, "end": 67.096, "char": [0, 5] },
+        { "start": 67.096, "end": 67.675, "char": [6, 12] },
+        { "start": 67.675, "end": 68.254, "char": [13, 24] },
+        { "start": 68.254, "end": 68.833, "char": [25, 38] }
       ]
     },
     {
-      "start": 71.837,
-      "end": 75.098,
+      "start": 75.087,
+      "end": 78.348,
       "text": "Järgmisena valmistame serveri",
       "words": [
-        { "start": 71.837, "end": 72.924, "char": [0, 10] },
-        { "start": 72.924, "end": 74.011, "char": [11, 21] },
-        { "start": 74.011, "end": 75.098, "char": [22, 29] }
+        { "start": 75.087, "end": 76.174, "char": [0, 10] },
+        { "start": 76.174, "end": 77.261, "char": [11, 21] },
+        { "start": 77.261, "end": 78.348, "char": [22, 29] }
       ]
     },
     {
-      "start": 75.098,
-      "end": 76.185,
+      "start": 78.348,
+      "end": 79.435,
       "text": "ette.",
-      "words": [{ "start": 75.098, "end": 76.185, "char": [0, 5] }]
+      "words": [{ "start": 78.348, "end": 79.435, "char": [0, 5] }]
     },
     {
-      "start": 76.185,
-      "end": 79.446,
+      "start": 79.435,
+      "end": 82.696,
       "text": "See paigaldab renet-i",
       "words": [
-        { "start": 76.185, "end": 77.272, "char": [0, 3] },
-        { "start": 77.272, "end": 78.359, "char": [4, 13] },
-        { "start": 78.359, "end": 79.446, "char": [14, 21] }
+        { "start": 79.435, "end": 80.522, "char": [0, 3] },
+        { "start": 80.522, "end": 81.609, "char": [4, 13] },
+        { "start": 81.609, "end": 82.696, "char": [14, 21] }
       ]
     },
     {
-      "start": 79.446,
-      "end": 82.707,
+      "start": 82.696,
+      "end": 85.957,
       "text": "ja loob krüpteeritud",
       "words": [
-        { "start": 79.446, "end": 80.533, "char": [0, 2] },
-        { "start": 80.533, "end": 81.62, "char": [3, 7] },
-        { "start": 81.62, "end": 82.707, "char": [8, 20] }
+        { "start": 82.696, "end": 83.783, "char": [0, 2] },
+        { "start": 83.783, "end": 84.87, "char": [3, 7] },
+        { "start": 84.87, "end": 85.957, "char": [8, 20] }
       ]
     },
     {
-      "start": 82.707,
-      "end": 83.794,
+      "start": 85.957,
+      "end": 87.044,
       "text": "andmehoidla.",
-      "words": [{ "start": 82.707, "end": 83.794, "char": [0, 12] }]
+      "words": [{ "start": 85.957, "end": 87.044, "char": [0, 12] }]
     },
     {
-      "start": 83.794,
-      "end": 87.055,
+      "start": 87.044,
+      "end": 90.305,
       "text": "Pärast seda on",
       "words": [
-        { "start": 83.794, "end": 84.881, "char": [0, 6] },
-        { "start": 84.881, "end": 85.968, "char": [7, 11] },
-        { "start": 85.968, "end": 87.055, "char": [12, 14] }
+        { "start": 87.044, "end": 88.131, "char": [0, 6] },
+        { "start": 88.131, "end": 89.218, "char": [7, 11] },
+        { "start": 89.218, "end": 90.305, "char": [12, 14] }
       ]
     },
     {
-      "start": 87.055,
-      "end": 90.316,
+      "start": 90.305,
+      "end": 93.566,
       "text": "server repositooriumite majutamiseks",
       "words": [
-        { "start": 87.055, "end": 88.142, "char": [0, 6] },
-        { "start": 88.142, "end": 89.229, "char": [7, 23] },
-        { "start": 89.229, "end": 90.316, "char": [24, 36] }
+        { "start": 90.305, "end": 91.392, "char": [0, 6] },
+        { "start": 91.392, "end": 92.479, "char": [7, 23] },
+        { "start": 92.479, "end": 93.566, "char": [24, 36] }
       ]
     },
     {
-      "start": 90.316,
-      "end": 91.403,
+      "start": 93.566,
+      "end": 94.653,
       "text": "valmis.",
-      "words": [{ "start": 90.316, "end": 91.403, "char": [0, 7] }]
+      "words": [{ "start": 93.566, "end": 94.653, "char": [0, 7] }]
     },
     {
-      "start": 91.403,
-      "end": 91.948,
+      "start": 96.403,
+      "end": 96.948,
       "text": "Valmis.",
-      "words": [{ "start": 91.403, "end": 91.948, "char": [0, 7] }]
+      "words": [{ "start": 96.403, "end": 96.948, "char": [0, 7] }]
     },
     {
-      "start": 91.948,
-      "end": 94.675,
+      "start": 96.948,
+      "end": 99.675,
       "text": "Renet on paigaldatud ja andmehoidla",
       "words": [
-        { "start": 91.948, "end": 92.493, "char": [0, 5] },
-        { "start": 92.493, "end": 93.039, "char": [6, 8] },
-        { "start": 93.039, "end": 93.584, "char": [9, 20] },
-        { "start": 93.584, "end": 94.129, "char": [21, 23] },
-        { "start": 94.129, "end": 94.675, "char": [24, 35] }
+        { "start": 96.948, "end": 97.493, "char": [0, 5] },
+        { "start": 97.493, "end": 98.039, "char": [6, 8] },
+        { "start": 98.039, "end": 98.584, "char": [9, 20] },
+        { "start": 98.584, "end": 99.129, "char": [21, 23] },
+        { "start": 99.129, "end": 99.675, "char": [24, 35] }
       ]
     },
     {
-      "start": 94.675,
-      "end": 95.765,
+      "start": 99.675,
+      "end": 100.765,
       "text": "on töövalmis.",
       "words": [
-        { "start": 94.675, "end": 95.22, "char": [0, 2] },
-        { "start": 95.22, "end": 95.765, "char": [3, 13] }
+        { "start": 99.675, "end": 100.22, "char": [0, 2] },
+        { "start": 100.22, "end": 100.765, "char": [3, 13] }
       ]
     },
     {
-      "start": 96.535,
-      "end": 99.023,
+      "start": 101.602,
+      "end": 104.09,
       "text": "Ja sellega on serveri lisamine pakitud!",
       "words": [
-        { "start": 96.535, "end": 96.95, "char": [0, 2] },
-        { "start": 96.95, "end": 97.364, "char": [3, 10] },
-        { "start": 97.364, "end": 97.779, "char": [11, 13] },
-        { "start": 97.779, "end": 98.194, "char": [14, 21] },
-        { "start": 98.194, "end": 98.608, "char": [22, 30] },
-        { "start": 98.608, "end": 99.023, "char": [31, 39] }
+        { "start": 101.602, "end": 102.017, "char": [0, 2] },
+        { "start": 102.017, "end": 102.431, "char": [3, 10] },
+        { "start": 102.431, "end": 102.846, "char": [11, 13] },
+        { "start": 102.846, "end": 103.261, "char": [14, 21] },
+        { "start": 103.261, "end": 103.675, "char": [22, 30] },
+        { "start": 103.675, "end": 104.09, "char": [31, 39] }
       ]
     },
     {
-      "start": 99.023,
-      "end": 99.853,
+      "start": 104.09,
+      "end": 104.92,
       "text": "Kohtumiseni järgmises.",
       "words": [
-        { "start": 99.023, "end": 99.438, "char": [0, 11] },
-        { "start": 99.438, "end": 99.853, "char": [12, 22] }
+        { "start": 104.09, "end": 104.505, "char": [0, 11] },
+        { "start": 104.505, "end": 104.92, "char": [12, 22] }
       ]
     }
   ]

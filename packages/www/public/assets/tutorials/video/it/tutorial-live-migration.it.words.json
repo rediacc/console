@@ -1,0 +1,981 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.749,
+      "text": "È ora di qualcosa di grande:",
+      "words": [
+        { "start": 1, "end": 1.458, "char": [0, 1] },
+        { "start": 1.458, "end": 1.916, "char": [2, 5] },
+        { "start": 1.916, "end": 2.374, "char": [6, 8] },
+        { "start": 2.374, "end": 2.833, "char": [9, 17] },
+        { "start": 2.833, "end": 3.291, "char": [18, 20] },
+        { "start": 3.291, "end": 3.749, "char": [21, 28] }
+      ]
+    },
+    {
+      "start": 3.749,
+      "end": 6.498,
+      "text": "spostare un'app IN ESECUZIONE su un'altra",
+      "words": [
+        { "start": 3.749, "end": 4.207, "char": [0, 8] },
+        { "start": 4.207, "end": 4.665, "char": [9, 15] },
+        { "start": 4.665, "end": 5.123, "char": [16, 18] },
+        { "start": 5.123, "end": 5.581, "char": [19, 29] },
+        { "start": 5.581, "end": 6.04, "char": [30, 32] },
+        { "start": 6.04, "end": 6.498, "char": [33, 41] }
+      ]
+    },
+    {
+      "start": 6.498,
+      "end": 6.956,
+      "text": "macchina,",
+      "words": [{ "start": 6.498, "end": 6.956, "char": [0, 9] }]
+    },
+    {
+      "start": 6.956,
+      "end": 7.872,
+      "text": "mentre gira.",
+      "words": [
+        { "start": 6.956, "end": 7.414, "char": [0, 6] },
+        { "start": 7.414, "end": 7.872, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 7.872,
+      "end": 10.621,
+      "text": "Vedremo un contatore live battere nella",
+      "words": [
+        { "start": 7.872, "end": 8.33, "char": [0, 7] },
+        { "start": 8.33, "end": 8.789, "char": [8, 10] },
+        { "start": 8.789, "end": 9.247, "char": [11, 20] },
+        { "start": 9.247, "end": 9.705, "char": [21, 25] },
+        { "start": 9.705, "end": 10.163, "char": [26, 33] },
+        { "start": 10.163, "end": 10.621, "char": [34, 39] }
+      ]
+    },
+    {
+      "start": 10.621,
+      "end": 11.537,
+      "text": "memoria dell'app,",
+      "words": [
+        { "start": 10.621, "end": 11.079, "char": [0, 7] },
+        { "start": 11.079, "end": 11.537, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 11.537,
+      "end": 14.286,
+      "text": "sposteremo tutto con un solo comando",
+      "words": [
+        { "start": 11.537, "end": 11.996, "char": [0, 10] },
+        { "start": 11.996, "end": 12.454, "char": [11, 16] },
+        { "start": 12.454, "end": 12.912, "char": [17, 20] },
+        { "start": 12.912, "end": 13.37, "char": [21, 23] },
+        { "start": 13.37, "end": 13.828, "char": [24, 28] },
+        { "start": 13.828, "end": 14.286, "char": [29, 36] }
+      ]
+    },
+    {
+      "start": 14.286,
+      "end": 17.035,
+      "text": "e vedremo il contatore continuare a",
+      "words": [
+        { "start": 14.286, "end": 14.744, "char": [0, 1] },
+        { "start": 14.744, "end": 15.203, "char": [2, 9] },
+        { "start": 15.203, "end": 15.661, "char": [10, 12] },
+        { "start": 15.661, "end": 16.119, "char": [13, 22] },
+        { "start": 16.119, "end": 16.577, "char": [23, 33] },
+        { "start": 16.577, "end": 17.035, "char": [34, 35] }
+      ]
+    },
+    {
+      "start": 17.035,
+      "end": 18.868,
+      "text": "contare sulla nuova macchina.",
+      "words": [
+        { "start": 17.035, "end": 17.493, "char": [0, 7] },
+        { "start": 17.493, "end": 17.951, "char": [8, 13] },
+        { "start": 17.951, "end": 18.41, "char": [14, 19] },
+        { "start": 18.41, "end": 18.868, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 19.656,
+      "end": 21.511,
+      "text": "Funziona in due fasi.",
+      "words": [
+        { "start": 19.656, "end": 20.12, "char": [0, 8] },
+        { "start": 20.12, "end": 20.584, "char": [9, 11] },
+        { "start": 20.584, "end": 21.047, "char": [12, 15] },
+        { "start": 21.047, "end": 21.511, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 21.511,
+      "end": 24.294,
+      "text": "La fase uno copia la parte",
+      "words": [
+        { "start": 21.511, "end": 21.975, "char": [0, 2] },
+        { "start": 21.975, "end": 22.439, "char": [3, 7] },
+        { "start": 22.439, "end": 22.903, "char": [8, 11] },
+        { "start": 22.903, "end": 23.366, "char": [12, 17] },
+        { "start": 23.366, "end": 23.83, "char": [18, 20] },
+        { "start": 23.83, "end": 24.294, "char": [21, 26] }
+      ]
+    },
+    {
+      "start": 24.294,
+      "end": 27.077,
+      "text": "principale mentre l'app continua a girare.",
+      "words": [
+        { "start": 24.294, "end": 24.758, "char": [0, 10] },
+        { "start": 24.758, "end": 25.221, "char": [11, 17] },
+        { "start": 25.221, "end": 25.685, "char": [18, 23] },
+        { "start": 25.685, "end": 26.149, "char": [24, 32] },
+        { "start": 26.149, "end": 26.613, "char": [33, 34] },
+        { "start": 26.613, "end": 27.077, "char": [35, 42] }
+      ]
+    },
+    {
+      "start": 27.077,
+      "end": 29.859,
+      "text": "La fase due crea un checkpoint",
+      "words": [
+        { "start": 27.077, "end": 27.54, "char": [0, 2] },
+        { "start": 27.54, "end": 28.004, "char": [3, 7] },
+        { "start": 28.004, "end": 28.468, "char": [8, 11] },
+        { "start": 28.468, "end": 28.932, "char": [12, 16] },
+        { "start": 28.932, "end": 29.396, "char": [17, 19] },
+        { "start": 29.396, "end": 29.859, "char": [20, 30] }
+      ]
+    },
+    {
+      "start": 29.859,
+      "end": 31.251,
+      "text": "dei processi live,",
+      "words": [
+        { "start": 29.859, "end": 30.323, "char": [0, 3] },
+        { "start": 30.323, "end": 30.787, "char": [4, 12] },
+        { "start": 30.787, "end": 31.251, "char": [13, 18] }
+      ]
+    },
+    {
+      "start": 31.251,
+      "end": 34.033,
+      "text": "trasporta il delta finale insieme allo",
+      "words": [
+        { "start": 31.251, "end": 31.714, "char": [0, 9] },
+        { "start": 31.714, "end": 32.178, "char": [10, 12] },
+        { "start": 32.178, "end": 32.642, "char": [13, 18] },
+        { "start": 32.642, "end": 33.106, "char": [19, 25] },
+        { "start": 33.106, "end": 33.57, "char": [26, 33] },
+        { "start": 33.57, "end": 34.033, "char": [34, 38] }
+      ]
+    },
+    {
+      "start": 34.033,
+      "end": 36.816,
+      "text": "stato dei processi e riprende tutto",
+      "words": [
+        { "start": 34.033, "end": 34.497, "char": [0, 5] },
+        { "start": 34.497, "end": 34.961, "char": [6, 9] },
+        { "start": 34.961, "end": 35.425, "char": [10, 18] },
+        { "start": 35.425, "end": 35.889, "char": [19, 20] },
+        { "start": 35.889, "end": 36.352, "char": [21, 29] },
+        { "start": 36.352, "end": 36.816, "char": [30, 35] }
+      ]
+    },
+    {
+      "start": 36.816,
+      "end": 38.208,
+      "text": "sulla nuova macchina.",
+      "words": [
+        { "start": 36.816, "end": 37.28, "char": [0, 5] },
+        { "start": 37.28, "end": 37.744, "char": [6, 11] },
+        { "start": 37.744, "end": 38.208, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 38.208,
+      "end": 40.99,
+      "text": "Quindi il downtime è il delta,",
+      "words": [
+        { "start": 38.208, "end": 38.671, "char": [0, 6] },
+        { "start": 38.671, "end": 39.135, "char": [7, 9] },
+        { "start": 39.135, "end": 39.599, "char": [10, 18] },
+        { "start": 39.599, "end": 40.063, "char": [19, 20] },
+        { "start": 40.063, "end": 40.526, "char": [21, 23] },
+        { "start": 40.526, "end": 40.99, "char": [24, 30] }
+      ]
+    },
+    {
+      "start": 40.99,
+      "end": 42.382,
+      "text": "non i dati.",
+      "words": [
+        { "start": 40.99, "end": 41.454, "char": [0, 3] },
+        { "start": 41.454, "end": 41.918, "char": [4, 5] },
+        { "start": 41.918, "end": 42.382, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 42.382,
+      "end": 45.164,
+      "text": "E l'app non sa mai di",
+      "words": [
+        { "start": 42.382, "end": 42.845, "char": [0, 1] },
+        { "start": 42.845, "end": 43.309, "char": [2, 7] },
+        { "start": 43.309, "end": 43.773, "char": [8, 11] },
+        { "start": 43.773, "end": 44.237, "char": [12, 14] },
+        { "start": 44.237, "end": 44.701, "char": [15, 18] },
+        { "start": 44.701, "end": 45.164, "char": [19, 21] }
+      ]
+    },
+    {
+      "start": 45.164,
+      "end": 46.092,
+      "text": "essersi spostata.",
+      "words": [
+        { "start": 45.164, "end": 45.628, "char": [0, 7] },
+        { "start": 45.628, "end": 46.092, "char": [8, 17] }
+      ]
+    },
+    {
+      "start": 49.357,
+      "end": 50.05,
+      "text": "Ecco pulse.",
+      "words": [
+        { "start": 49.357, "end": 49.703, "char": [0, 4] },
+        { "start": 49.703, "end": 50.05, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 50.05,
+      "end": 52.82,
+      "text": "Mantiene un contatore nella memoria del processo e",
+      "words": [
+        { "start": 50.05, "end": 50.396, "char": [0, 8] },
+        { "start": 50.396, "end": 50.742, "char": [9, 11] },
+        { "start": 50.742, "end": 51.089, "char": [12, 21] },
+        { "start": 51.089, "end": 51.435, "char": [22, 27] },
+        { "start": 51.435, "end": 51.781, "char": [28, 35] },
+        { "start": 51.781, "end": 52.127, "char": [36, 39] },
+        { "start": 52.127, "end": 52.474, "char": [40, 48] },
+        { "start": 52.474, "end": 52.82, "char": [49, 50] }
+      ]
+    },
+    {
+      "start": 52.82,
+      "end": 54.898,
+      "text": "stampa un battito ogni cinque secondi.",
+      "words": [
+        { "start": 52.82, "end": 53.166, "char": [0, 6] },
+        { "start": 53.166, "end": 53.513, "char": [7, 9] },
+        { "start": 53.513, "end": 53.859, "char": [10, 17] },
+        { "start": 53.859, "end": 54.205, "char": [18, 22] },
+        { "start": 54.205, "end": 54.552, "char": [23, 29] },
+        { "start": 54.552, "end": 54.898, "char": [30, 38] }
+      ]
+    },
+    {
+      "start": 54.898,
+      "end": 57.322,
+      "text": "Il contatore è a sei e sale,",
+      "words": [
+        { "start": 54.898, "end": 55.244, "char": [0, 2] },
+        { "start": 55.244, "end": 55.591, "char": [3, 12] },
+        { "start": 55.591, "end": 55.937, "char": [13, 14] },
+        { "start": 55.937, "end": 56.283, "char": [15, 16] },
+        { "start": 56.283, "end": 56.629, "char": [17, 20] },
+        { "start": 56.629, "end": 56.976, "char": [21, 22] },
+        { "start": 56.976, "end": 57.322, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 57.322,
+      "end": 59.054,
+      "text": "e vive solo nella RAM.",
+      "words": [
+        { "start": 57.322, "end": 57.668, "char": [0, 1] },
+        { "start": 57.668, "end": 58.015, "char": [2, 6] },
+        { "start": 58.015, "end": 58.361, "char": [7, 11] },
+        { "start": 58.361, "end": 58.707, "char": [12, 17] },
+        { "start": 58.707, "end": 59.054, "char": [18, 22] }
+      ]
+    },
+    {
+      "start": 59.054,
+      "end": 61.478,
+      "text": "Riavvia il processo e riparte da uno.",
+      "words": [
+        { "start": 59.054, "end": 59.4, "char": [0, 7] },
+        { "start": 59.4, "end": 59.746, "char": [8, 10] },
+        { "start": 59.746, "end": 60.093, "char": [11, 19] },
+        { "start": 60.093, "end": 60.439, "char": [20, 21] },
+        { "start": 60.439, "end": 60.785, "char": [22, 29] },
+        { "start": 60.785, "end": 61.132, "char": [30, 32] },
+        { "start": 61.132, "end": 61.478, "char": [33, 37] }
+      ]
+    },
+    {
+      "start": 63.978,
+      "end": 65.881,
+      "text": "Un contatore in tempo reale,",
+      "words": [
+        { "start": 63.978, "end": 64.358, "char": [0, 2] },
+        { "start": 64.358, "end": 64.739, "char": [3, 12] },
+        { "start": 64.739, "end": 65.12, "char": [13, 15] },
+        { "start": 65.12, "end": 65.5, "char": [16, 21] },
+        { "start": 65.5, "end": 65.881, "char": [22, 28] }
+      ]
+    },
+    {
+      "start": 65.881,
+      "end": 67.404,
+      "text": "che batte in memoria.",
+      "words": [
+        { "start": 65.881, "end": 66.262, "char": [0, 3] },
+        { "start": 66.262, "end": 66.642, "char": [4, 9] },
+        { "start": 66.642, "end": 67.023, "char": [10, 12] },
+        { "start": 67.023, "end": 67.404, "char": [13, 21] }
+      ]
+    },
+    {
+      "start": 67.404,
+      "end": 69.307,
+      "text": "Questa è la nostra prova.",
+      "words": [
+        { "start": 67.404, "end": 67.784, "char": [0, 6] },
+        { "start": 67.784, "end": 68.165, "char": [7, 8] },
+        { "start": 68.165, "end": 68.546, "char": [9, 11] },
+        { "start": 68.546, "end": 68.926, "char": [12, 18] },
+        { "start": 68.926, "end": 69.307, "char": [19, 25] }
+      ]
+    },
+    {
+      "start": 72.607,
+      "end": 74.797,
+      "text": "Un solo comando lo sposta,",
+      "words": [
+        { "start": 72.607, "end": 73.045, "char": [0, 2] },
+        { "start": 73.045, "end": 73.483, "char": [3, 7] },
+        { "start": 73.483, "end": 73.921, "char": [8, 15] },
+        { "start": 73.921, "end": 74.359, "char": [16, 18] },
+        { "start": 74.359, "end": 74.797, "char": [19, 26] }
+      ]
+    },
+    {
+      "start": 74.797,
+      "end": 75.673,
+      "text": "a caldo.",
+      "words": [
+        { "start": 74.797, "end": 75.235, "char": [0, 1] },
+        { "start": 75.235, "end": 75.673, "char": [2, 8] }
+      ]
+    },
+    {
+      "start": 75.673,
+      "end": 78.301,
+      "text": "La fase uno trasferisce la parte",
+      "words": [
+        { "start": 75.673, "end": 76.111, "char": [0, 2] },
+        { "start": 76.111, "end": 76.549, "char": [3, 7] },
+        { "start": 76.549, "end": 76.987, "char": [8, 11] },
+        { "start": 76.987, "end": 77.425, "char": [12, 23] },
+        { "start": 77.425, "end": 77.863, "char": [24, 26] },
+        { "start": 77.863, "end": 78.301, "char": [27, 32] }
+      ]
+    },
+    {
+      "start": 78.301,
+      "end": 78.739,
+      "text": "principale,",
+      "words": [{ "start": 78.301, "end": 78.739, "char": [0, 11] }]
+    },
+    {
+      "start": 78.739,
+      "end": 81.367,
+      "text": "due gigabyte in circa mezzo minuto,",
+      "words": [
+        { "start": 78.739, "end": 79.177, "char": [0, 3] },
+        { "start": 79.177, "end": 79.615, "char": [4, 12] },
+        { "start": 79.615, "end": 80.053, "char": [13, 15] },
+        { "start": 80.053, "end": 80.491, "char": [16, 21] },
+        { "start": 80.491, "end": 80.929, "char": [22, 27] },
+        { "start": 80.929, "end": 81.367, "char": [28, 35] }
+      ]
+    },
+    {
+      "start": 81.367,
+      "end": 83.995,
+      "text": "mentre il sorgente continua a girare.",
+      "words": [
+        { "start": 81.367, "end": 81.805, "char": [0, 6] },
+        { "start": 81.805, "end": 82.243, "char": [7, 9] },
+        { "start": 82.243, "end": 82.681, "char": [10, 18] },
+        { "start": 82.681, "end": 83.119, "char": [19, 27] },
+        { "start": 83.119, "end": 83.557, "char": [28, 29] },
+        { "start": 83.557, "end": 83.995, "char": [30, 37] }
+      ]
+    },
+    {
+      "start": 83.995,
+      "end": 85.31,
+      "text": "Poi il cutover:",
+      "words": [
+        { "start": 83.995, "end": 84.433, "char": [0, 3] },
+        { "start": 84.433, "end": 84.871, "char": [4, 6] },
+        { "start": 84.871, "end": 85.31, "char": [7, 15] }
+      ]
+    },
+    {
+      "start": 85.31,
+      "end": 87.938,
+      "text": "crea un checkpoint dei processi in",
+      "words": [
+        { "start": 85.31, "end": 85.748, "char": [0, 4] },
+        { "start": 85.748, "end": 86.186, "char": [5, 7] },
+        { "start": 86.186, "end": 86.624, "char": [8, 18] },
+        { "start": 86.624, "end": 87.062, "char": [19, 22] },
+        { "start": 87.062, "end": 87.5, "char": [23, 31] },
+        { "start": 87.5, "end": 87.938, "char": [32, 34] }
+      ]
+    },
+    {
+      "start": 87.938,
+      "end": 88.376,
+      "text": "esecuzione,",
+      "words": [{ "start": 87.938, "end": 88.376, "char": [0, 11] }]
+    },
+    {
+      "start": 88.376,
+      "end": 91.004,
+      "text": "trasporta gli ultimi megabyte e stampa",
+      "words": [
+        { "start": 88.376, "end": 88.814, "char": [0, 9] },
+        { "start": 88.814, "end": 89.252, "char": [10, 13] },
+        { "start": 89.252, "end": 89.69, "char": [14, 20] },
+        { "start": 89.69, "end": 90.128, "char": [21, 29] },
+        { "start": 90.128, "end": 90.566, "char": [30, 31] },
+        { "start": 90.566, "end": 91.004, "char": [32, 38] }
+      ]
+    },
+    {
+      "start": 91.004,
+      "end": 92.318,
+      "text": "il downtime lì,",
+      "words": [
+        { "start": 91.004, "end": 91.442, "char": [0, 2] },
+        { "start": 91.442, "end": 91.88, "char": [3, 11] },
+        { "start": 91.88, "end": 92.318, "char": [12, 15] }
+      ]
+    },
+    {
+      "start": 92.318,
+      "end": 93.194,
+      "text": "sul momento.",
+      "words": [
+        { "start": 92.318, "end": 92.756, "char": [0, 3] },
+        { "start": 92.756, "end": 93.194, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 93.194,
+      "end": 94.508,
+      "text": "Circa venti secondi,",
+      "words": [
+        { "start": 93.194, "end": 93.632, "char": [0, 5] },
+        { "start": 93.632, "end": 94.07, "char": [6, 11] },
+        { "start": 94.07, "end": 94.508, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 94.508,
+      "end": 97.136,
+      "text": "per uno spostamento da due gigabyte.",
+      "words": [
+        { "start": 94.508, "end": 94.946, "char": [0, 3] },
+        { "start": 94.946, "end": 95.384, "char": [4, 7] },
+        { "start": 95.384, "end": 95.822, "char": [8, 19] },
+        { "start": 95.822, "end": 96.26, "char": [20, 22] },
+        { "start": 96.26, "end": 96.698, "char": [23, 26] },
+        { "start": 96.698, "end": 97.136, "char": [27, 36] }
+      ]
+    },
+    {
+      "start": 162.651,
+      "end": 165.464,
+      "text": "Due gigabyte spostati mentre l'app continuava",
+      "words": [
+        { "start": 162.651, "end": 163.12, "char": [0, 3] },
+        { "start": 163.12, "end": 163.589, "char": [4, 12] },
+        { "start": 163.589, "end": 164.058, "char": [13, 21] },
+        { "start": 164.058, "end": 164.527, "char": [22, 28] },
+        { "start": 164.527, "end": 164.996, "char": [29, 34] },
+        { "start": 164.996, "end": 165.464, "char": [35, 45] }
+      ]
+    },
+    {
+      "start": 165.464,
+      "end": 166.402,
+      "text": "a girare.",
+      "words": [
+        { "start": 165.464, "end": 165.933, "char": [0, 1] },
+        { "start": 165.933, "end": 166.402, "char": [2, 9] }
+      ]
+    },
+    {
+      "start": 166.402,
+      "end": 169.215,
+      "text": "La riga del downtime mostra quanto",
+      "words": [
+        { "start": 166.402, "end": 166.871, "char": [0, 2] },
+        { "start": 166.871, "end": 167.34, "char": [3, 7] },
+        { "start": 167.34, "end": 167.809, "char": [8, 11] },
+        { "start": 167.809, "end": 168.277, "char": [12, 20] },
+        { "start": 168.277, "end": 168.746, "char": [21, 27] },
+        { "start": 168.746, "end": 169.215, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 169.215,
+      "end": 171.559,
+      "text": "è costato davvero lo spostamento.",
+      "words": [
+        { "start": 169.215, "end": 169.684, "char": [0, 1] },
+        { "start": 169.684, "end": 170.153, "char": [2, 9] },
+        { "start": 170.153, "end": 170.621, "char": [10, 17] },
+        { "start": 170.621, "end": 171.09, "char": [18, 20] },
+        { "start": 171.09, "end": 171.559, "char": [21, 33] }
+      ]
+    },
+    {
+      "start": 175.823,
+      "end": 177.939,
+      "text": "Controlla la nuova macchina:",
+      "words": [
+        { "start": 175.823, "end": 176.352, "char": [0, 9] },
+        { "start": 176.352, "end": 176.881, "char": [10, 12] },
+        { "start": 176.881, "end": 177.41, "char": [13, 18] },
+        { "start": 177.41, "end": 177.939, "char": [19, 28] }
+      ]
+    },
+    {
+      "start": 177.939,
+      "end": 178.468,
+      "text": "eccolo.",
+      "words": [{ "start": 177.939, "end": 178.468, "char": [0, 7] }]
+    },
+    {
+      "start": 178.468,
+      "end": 178.997,
+      "text": "Montato,",
+      "words": [{ "start": 178.468, "end": 178.997, "char": [0, 8] }]
+    },
+    {
+      "start": 178.997,
+      "end": 180.584,
+      "text": "Docker in esecuzione,",
+      "words": [
+        { "start": 178.997, "end": 179.526, "char": [0, 6] },
+        { "start": 179.526, "end": 180.055, "char": [7, 9] },
+        { "start": 180.055, "end": 180.584, "char": [10, 21] }
+      ]
+    },
+    {
+      "start": 180.584,
+      "end": 182.171,
+      "text": "due container attivi.",
+      "words": [
+        { "start": 180.584, "end": 181.113, "char": [0, 3] },
+        { "start": 181.113, "end": 181.642, "char": [4, 13] },
+        { "start": 181.642, "end": 182.171, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 185.171,
+      "end": 186.163,
+      "text": "Stesso repo,",
+      "words": [
+        { "start": 185.171, "end": 185.667, "char": [0, 6] },
+        { "start": 185.667, "end": 186.163, "char": [7, 12] }
+      ]
+    },
+    {
+      "start": 186.163,
+      "end": 187.156,
+      "text": "nuova casa,",
+      "words": [
+        { "start": 186.163, "end": 186.66, "char": [0, 5] },
+        { "start": 186.66, "end": 187.156, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 187.156,
+      "end": 188.645,
+      "text": "già in esecuzione.",
+      "words": [
+        { "start": 187.156, "end": 187.652, "char": [0, 3] },
+        { "start": 187.652, "end": 188.149, "char": [4, 6] },
+        { "start": 188.149, "end": 188.645, "char": [7, 18] }
+      ]
+    },
+    {
+      "start": 191.972,
+      "end": 193.48,
+      "text": "E il sorgente?",
+      "words": [
+        { "start": 191.972, "end": 192.475, "char": [0, 1] },
+        { "start": 192.475, "end": 192.977, "char": [2, 4] },
+        { "start": 192.977, "end": 193.48, "char": [5, 14] }
+      ]
+    },
+    {
+      "start": 193.48,
+      "end": 195.993,
+      "text": "Il repository è ancora elencato,",
+      "words": [
+        { "start": 193.48, "end": 193.983, "char": [0, 2] },
+        { "start": 193.983, "end": 194.485, "char": [3, 13] },
+        { "start": 194.485, "end": 194.988, "char": [14, 15] },
+        { "start": 194.988, "end": 195.491, "char": [16, 22] },
+        { "start": 195.491, "end": 195.993, "char": [23, 32] }
+      ]
+    },
+    {
+      "start": 195.993,
+      "end": 198.004,
+      "text": "ma guarda la riga:",
+      "words": [
+        { "start": 195.993, "end": 196.496, "char": [0, 2] },
+        { "start": 196.496, "end": 196.999, "char": [3, 9] },
+        { "start": 196.999, "end": 197.501, "char": [10, 12] },
+        { "start": 197.501, "end": 198.004, "char": [13, 18] }
+      ]
+    },
+    {
+      "start": 198.004,
+      "end": 199.009,
+      "text": "non montato,",
+      "words": [
+        { "start": 198.004, "end": 198.507, "char": [0, 3] },
+        { "start": 198.507, "end": 199.009, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 199.009,
+      "end": 200.015,
+      "text": "nessun Docker,",
+      "words": [
+        { "start": 199.009, "end": 199.512, "char": [0, 6] },
+        { "start": 199.512, "end": 200.015, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 200.015,
+      "end": 201.02,
+      "text": "zero container.",
+      "words": [
+        { "start": 200.015, "end": 200.517, "char": [0, 4] },
+        { "start": 200.517, "end": 201.02, "char": [5, 15] }
+      ]
+    },
+    {
+      "start": 201.02,
+      "end": 203.533,
+      "text": "Qui non gira più niente.",
+      "words": [
+        { "start": 201.02, "end": 201.523, "char": [0, 3] },
+        { "start": 201.523, "end": 202.025, "char": [4, 7] },
+        { "start": 202.025, "end": 202.528, "char": [8, 12] },
+        { "start": 202.528, "end": 203.031, "char": [13, 16] },
+        { "start": 203.031, "end": 203.533, "char": [17, 24] }
+      ]
+    },
+    {
+      "start": 203.533,
+      "end": 205.041,
+      "text": "L'immagine rimane intenzionalmente,",
+      "words": [
+        { "start": 203.533, "end": 204.036, "char": [0, 10] },
+        { "start": 204.036, "end": 204.538, "char": [11, 17] },
+        { "start": 204.538, "end": 205.041, "char": [18, 35] }
+      ]
+    },
+    {
+      "start": 205.041,
+      "end": 207.554,
+      "text": "come base per il prossimo",
+      "words": [
+        { "start": 205.041, "end": 205.544, "char": [0, 4] },
+        { "start": 205.544, "end": 206.046, "char": [5, 9] },
+        { "start": 206.046, "end": 206.549, "char": [10, 13] },
+        { "start": 206.549, "end": 207.052, "char": [14, 16] },
+        { "start": 207.052, "end": 207.554, "char": [17, 25] }
+      ]
+    },
+    {
+      "start": 207.554,
+      "end": 208.56,
+      "text": "trasferimento delta.",
+      "words": [
+        { "start": 207.554, "end": 208.057, "char": [0, 13] },
+        { "start": 208.057, "end": 208.56, "char": [14, 20] }
+      ]
+    },
+    {
+      "start": 211.56,
+      "end": 212.862,
+      "text": "Fermato e smontato.",
+      "words": [
+        { "start": 211.56, "end": 211.994, "char": [0, 7] },
+        { "start": 211.994, "end": 212.428, "char": [8, 9] },
+        { "start": 212.428, "end": 212.862, "char": [10, 19] }
+      ]
+    },
+    {
+      "start": 212.862,
+      "end": 215.466,
+      "text": "L'immagine residua è una base delta,",
+      "words": [
+        { "start": 212.862, "end": 213.296, "char": [0, 10] },
+        { "start": 213.296, "end": 213.73, "char": [11, 18] },
+        { "start": 213.73, "end": 214.164, "char": [19, 20] },
+        { "start": 214.164, "end": 214.598, "char": [21, 24] },
+        { "start": 214.598, "end": 215.032, "char": [25, 29] },
+        { "start": 215.032, "end": 215.466, "char": [30, 36] }
+      ]
+    },
+    {
+      "start": 215.466,
+      "end": 217.202,
+      "text": "non un'app in esecuzione.",
+      "words": [
+        { "start": 215.466, "end": 215.9, "char": [0, 3] },
+        { "start": 215.9, "end": 216.334, "char": [4, 10] },
+        { "start": 216.334, "end": 216.768, "char": [11, 13] },
+        { "start": 216.768, "end": 217.202, "char": [14, 25] }
+      ]
+    },
+    {
+      "start": 220.514,
+      "end": 222.358,
+      "text": "Ora il colpo di scena.",
+      "words": [
+        { "start": 220.514, "end": 220.883, "char": [0, 3] },
+        { "start": 220.883, "end": 221.252, "char": [4, 6] },
+        { "start": 221.252, "end": 221.62, "char": [7, 12] },
+        { "start": 221.62, "end": 221.989, "char": [13, 15] },
+        { "start": 221.989, "end": 222.358, "char": [16, 22] }
+      ]
+    },
+    {
+      "start": 222.358,
+      "end": 223.833,
+      "text": "Il contatore segna diciassette,",
+      "words": [
+        { "start": 222.358, "end": 222.727, "char": [0, 2] },
+        { "start": 222.727, "end": 223.096, "char": [3, 12] },
+        { "start": 223.096, "end": 223.465, "char": [13, 18] },
+        { "start": 223.465, "end": 223.833, "char": [19, 31] }
+      ]
+    },
+    {
+      "start": 223.833,
+      "end": 224.202,
+      "text": "diciotto,",
+      "words": [{ "start": 223.833, "end": 224.202, "char": [0, 9] }]
+    },
+    {
+      "start": 224.202,
+      "end": 224.571,
+      "text": "diciannove,",
+      "words": [{ "start": 224.202, "end": 224.571, "char": [0, 11] }]
+    },
+    {
+      "start": 224.571,
+      "end": 225.678,
+      "text": "ancora in salita.",
+      "words": [
+        { "start": 224.571, "end": 224.94, "char": [0, 6] },
+        { "start": 224.94, "end": 225.309, "char": [7, 9] },
+        { "start": 225.309, "end": 225.678, "char": [10, 17] }
+      ]
+    },
+    {
+      "start": 225.678,
+      "end": 228.259,
+      "text": "Ha ripreso esattamente dal punto in cui",
+      "words": [
+        { "start": 225.678, "end": 226.046, "char": [0, 2] },
+        { "start": 226.046, "end": 226.415, "char": [3, 10] },
+        { "start": 226.415, "end": 226.784, "char": [11, 22] },
+        { "start": 226.784, "end": 227.153, "char": [23, 26] },
+        { "start": 227.153, "end": 227.522, "char": [27, 32] },
+        { "start": 227.522, "end": 227.89, "char": [33, 35] },
+        { "start": 227.89, "end": 228.259, "char": [36, 39] }
+      ]
+    },
+    {
+      "start": 228.259,
+      "end": 230.103,
+      "text": "il checkpoint lo aveva congelato,",
+      "words": [
+        { "start": 228.259, "end": 228.628, "char": [0, 2] },
+        { "start": 228.628, "end": 228.997, "char": [3, 13] },
+        { "start": 228.997, "end": 229.366, "char": [14, 16] },
+        { "start": 229.366, "end": 229.735, "char": [17, 22] },
+        { "start": 229.735, "end": 230.103, "char": [23, 33] }
+      ]
+    },
+    {
+      "start": 230.103,
+      "end": 231.948,
+      "text": "invece di ripartire da uno.",
+      "words": [
+        { "start": 230.103, "end": 230.472, "char": [0, 6] },
+        { "start": 230.472, "end": 230.841, "char": [7, 9] },
+        { "start": 230.841, "end": 231.21, "char": [10, 19] },
+        { "start": 231.21, "end": 231.579, "char": [20, 22] },
+        { "start": 231.579, "end": 231.948, "char": [23, 27] }
+      ]
+    },
+    {
+      "start": 231.948,
+      "end": 234.529,
+      "text": "Il processo non si è mai accorto",
+      "words": [
+        { "start": 231.948, "end": 232.316, "char": [0, 2] },
+        { "start": 232.316, "end": 232.685, "char": [3, 11] },
+        { "start": 232.685, "end": 233.054, "char": [12, 15] },
+        { "start": 233.054, "end": 233.423, "char": [16, 18] },
+        { "start": 233.423, "end": 233.792, "char": [19, 20] },
+        { "start": 233.792, "end": 234.161, "char": [21, 24] },
+        { "start": 234.161, "end": 234.529, "char": [25, 32] }
+      ]
+    },
+    {
+      "start": 234.529,
+      "end": 236.005,
+      "text": "di aver cambiato macchina.",
+      "words": [
+        { "start": 234.529, "end": 234.898, "char": [0, 2] },
+        { "start": 234.898, "end": 235.267, "char": [3, 7] },
+        { "start": 235.267, "end": 235.636, "char": [8, 16] },
+        { "start": 235.636, "end": 236.005, "char": [17, 26] }
+      ]
+    },
+    {
+      "start": 238.505,
+      "end": 241.024,
+      "text": "Il contatore ha continuato a contare.",
+      "words": [
+        { "start": 238.505, "end": 238.924, "char": [0, 2] },
+        { "start": 238.924, "end": 239.344, "char": [3, 12] },
+        { "start": 239.344, "end": 239.764, "char": [13, 15] },
+        { "start": 239.764, "end": 240.184, "char": [16, 26] },
+        { "start": 240.184, "end": 240.604, "char": [27, 28] },
+        { "start": 240.604, "end": 241.024, "char": [29, 37] }
+      ]
+    },
+    {
+      "start": 241.024,
+      "end": 243.543,
+      "text": "La memoria del processo ha fatto",
+      "words": [
+        { "start": 241.024, "end": 241.443, "char": [0, 2] },
+        { "start": 241.443, "end": 241.863, "char": [3, 10] },
+        { "start": 241.863, "end": 242.283, "char": [11, 14] },
+        { "start": 242.283, "end": 242.703, "char": [15, 23] },
+        { "start": 242.703, "end": 243.123, "char": [24, 26] },
+        { "start": 243.123, "end": 243.543, "char": [27, 32] }
+      ]
+    },
+    {
+      "start": 243.543,
+      "end": 244.382,
+      "text": "il viaggio.",
+      "words": [
+        { "start": 243.543, "end": 243.962, "char": [0, 2] },
+        { "start": 243.962, "end": 244.382, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 245.188,
+      "end": 248.203,
+      "text": "Il contatore non si è",
+      "words": [
+        { "start": 245.188, "end": 245.791, "char": [0, 2] },
+        { "start": 245.791, "end": 246.394, "char": [3, 12] },
+        { "start": 246.394, "end": 246.997, "char": [13, 16] },
+        { "start": 246.997, "end": 247.6, "char": [17, 19] },
+        { "start": 247.6, "end": 248.203, "char": [20, 21] }
+      ]
+    },
+    {
+      "start": 248.203,
+      "end": 249.408,
+      "text": "mai azzerato.",
+      "words": [
+        { "start": 248.203, "end": 248.805, "char": [0, 3] },
+        { "start": 248.805, "end": 249.408, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 249.408,
+      "end": 250.011,
+      "text": "Memoria,",
+      "words": [{ "start": 249.408, "end": 250.011, "char": [0, 8] }]
+    },
+    {
+      "start": 250.011,
+      "end": 250.614,
+      "text": "database,",
+      "words": [{ "start": 250.011, "end": 250.614, "char": [0, 9] }]
+    },
+    {
+      "start": 250.614,
+      "end": 251.217,
+      "text": "file,",
+      "words": [{ "start": 250.614, "end": 251.217, "char": [0, 5] }]
+    },
+    {
+      "start": 251.217,
+      "end": 254.232,
+      "text": "tutto ha semplicemente cambiato macchina.",
+      "words": [
+        { "start": 251.217, "end": 251.82, "char": [0, 5] },
+        { "start": 251.82, "end": 252.423, "char": [6, 8] },
+        { "start": 252.423, "end": 253.026, "char": [9, 22] },
+        { "start": 253.026, "end": 253.629, "char": [23, 31] },
+        { "start": 253.629, "end": 254.232, "char": [32, 41] }
+      ]
+    },
+    {
+      "start": 254.232,
+      "end": 257.246,
+      "text": "Prossimamente vedremo perché il secondo",
+      "words": [
+        { "start": 254.232, "end": 254.835, "char": [0, 13] },
+        { "start": 254.835, "end": 255.437, "char": [14, 21] },
+        { "start": 255.437, "end": 256.04, "char": [22, 28] },
+        { "start": 256.04, "end": 256.643, "char": [29, 31] },
+        { "start": 256.643, "end": 257.246, "char": [32, 39] }
+      ]
+    },
+    {
+      "start": 257.246,
+      "end": 260.261,
+      "text": "trasferimento è sempre quello veloce.",
+      "words": [
+        { "start": 257.246, "end": 257.849, "char": [0, 13] },
+        { "start": 257.849, "end": 258.452, "char": [14, 15] },
+        { "start": 258.452, "end": 259.055, "char": [16, 22] },
+        { "start": 259.055, "end": 259.658, "char": [23, 29] },
+        { "start": 259.658, "end": 260.261, "char": [30, 37] }
+      ]
+    }
+  ]
+}

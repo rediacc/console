@@ -1,0 +1,92 @@
+{
+  "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-vscode-browser-01",
+      "markerIndex": 0,
+      "at": 2.414862,
+      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "afterText": "Esa URL es tu editor. Funciona desde cualquier sistema operativo, el único requisito es un navegador.",
+      "cardLabel": "Conectar Navegador",
+      "prose": "Conecta con el flag --browser. El CLI instala el servidor del editor de código abierto en la máquina (una vez), lo inicia dentro del sandbox del repo, abre un túnel SSH e imprime un enlace para tu navegador."
+    },
+    {
+      "id": "tutorial-vscode-browser-02",
+      "markerIndex": 1,
+      "at": 12.531234,
+      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "afterText": "La terminal y el editor coinciden, es el mismo sandbox.",
+      "cardLabel": "Misma Vista",
+      "prose": "Abre una sesión de terminal en el mismo repo: el directorio de trabajo y los archivos coinciden con lo que muestra el editor."
+    },
+    {
+      "id": "tutorial-vscode-browser-03",
+      "markerIndex": 2,
+      "at": 19.464899,
+      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "afterText": "Creado en el navegador, legible desde la terminal. Un repo, dos puertas.",
+      "cardLabel": "Ida y Vuelta",
+      "prose": "El archivo creado en el editor del navegador es un archivo real del repo, accesible desde cualquier sesión."
+    },
+    {
+      "id": "tutorial-vscode-browser-04",
+      "markerIndex": 3,
+      "at": 26.768996,
+      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "afterText": "Denegado por el kernel, no por la configuración.",
+      "cardLabel": "Raíz Denegada",
+      "prose": "Intenta listar el directorio raíz del servidor: permiso denegado. El kernel confina la sesión al repo."
+    },
+    {
+      "id": "tutorial-vscode-browser-05",
+      "markerIndex": 4,
+      "at": 32.439211,
+      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "afterText": "El sandbox no tiene excepciones. Ese es el punto.",
+      "cardLabel": "Home Denegado",
+      "prose": "Otros directorios como /home también son denegados. El sandbox se aplica a todo lo que se inicia dentro de él."
+    }
+  ],
+  "title": "VS Code en Tu Navegador",
+  "chapters": {
+    "intro": "VS Code en Tu Navegador",
+    "sandbox-concept": "El editor vive en el sandbox",
+    "cast-step-0": "Paso 1: Conectar con --browser",
+    "workbench-tour": "El workbench, en una pestaña",
+    "create-file": "Crear un archivo en el editor",
+    "editor-terminal": "La terminal integrada",
+    "cast-step-1": "Paso 2: La misma vista desde la terminal",
+    "cast-step-2": "Paso 3: Los archivos del navegador son del repo",
+    "cast-step-3": "Paso 4: ls /, denegado",
+    "cast-step-4": "Paso 5: ls /home, denegado",
+    "outro": "Siguiente: Fork de Repositorio"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Buenas noticias: para este no hace falta ningún terminal. Vamos a abrir VS Code completo directo en el navegador, crear algunos archivos, ejecutar un par de comandos y ver cómo el kernel lo mantiene todo dentro del repo."
+    },
+    {
+      "id": "sandbox-concept",
+      "text": "Esta es la idea. El editor no corre en tu portátil. Corre dentro del sandbox del repo en el servidor, y tu navegador llega a él a través de un túnel SSH. Así que el árbol de archivos, el terminal integrado y cualquier cosa que lances desde ahí ven exactamente lo que ve el repo, y nada más."
+    },
+    {
+      "id": "workbench-tour",
+      "text": "Y ahí está: VS Code, en una pestaña del navegador. El árbol de archivos de la izquierda muestra el repo, y solo el repo."
+    },
+    {
+      "id": "create-file",
+      "text": "Vamos a crear un archivo real, sin terminal de por medio. Un nuevo editor, un par de líneas, y lo guardamos como notes barra todo punto md. La carpeta aparece a la izquierda cuando llega al repo."
+    },
+    {
+      "id": "editor-terminal",
+      "text": "El terminal integrado también funciona, y ahí está nuestro archivo. Ahora intentemos mirar fuera del repo: permiso denegado. Eso no es una configuración, es el kernel."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Navegador, editor, terminal: el mismo sandbox, las mismas reglas. Lo siguiente es la función sobre la que se construye todo esto, el forking. Este te va a gustar."
+    }
+  ]
+}

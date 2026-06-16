@@ -1,0 +1,17 @@
+#!/bin/bash
+# Minimal app for the managing-secrets tutorial: one long-running container
+# that consumes an env-mode secret (DB_HOST) and a file-mode secret
+# (STRIPE_KEY) so the cast can prove both arrive — and that a fork,
+# which inherits no secrets, cannot even start the same compose.
+
+up() {
+    renet compose -- up -d
+}
+
+down() {
+    renet compose -- down
+}
+
+info() {
+    renet compose -- ps
+}

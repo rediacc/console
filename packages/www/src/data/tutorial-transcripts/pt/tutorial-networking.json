@@ -6,7 +6,7 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 2.424705,
+      "at": 2.410714,
       "text": "Passo dois. Vamos definir o IP público, o domínio base, o endereço de e-mail para certificados e o token API do Cloudflare a partir da linha de comandos. O endereço de e-mail e o token são partilhados por todas as máquinas, por isso só é necessário defini-los uma vez.",
       "afterText": "Infraestrutura registada na sua configuração.",
       "cardLabel": "Definir Infra",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 13.591473,
+      "at": 12.419888,
       "text": "Vamos confirmar que as definições de infraestrutura foram guardadas. IP público, domínio base, endereço de e-mail para certificados -- tudo visível.",
       "afterText": "Definições guardadas. Pronto para enviar ao servidor.",
       "cardLabel": "Ver Infra",
@@ -24,8 +24,8 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 18.479059,
-      "text": "Passo três. Vamos enviar a configuração para o servidor. Isto cria automaticamente os registos DNS no Cloudflare e prepara a configuração do proxy.",
+      "at": 16.924002,
+      "text": "Passo três: envie a configuração para o servidor. Com um token real, isso cria seus registros DNS no Cloudflare automaticamente e prepara a configuração do proxy.",
       "afterText": "Enviada. Os registos DNS estão a ser criados no Cloudflare.",
       "cardLabel": "Enviar Infra",
       "prose": "Envie a configuração para o servidor. Isso cria os registros DNS no Cloudflare automaticamente e prepara a configuração do proxy."
@@ -33,8 +33,8 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 25.757057,
-      "text": "Começa o passo quatro. Vamos criar um pequeno repositório chamado infra. É aqui que o proxy vai viver, isolado dos repositórios de aplicações.",
+      "at": 20.590881,
+      "text": "Passo quatro: crie um repo pequeno chamado infra. Por que um repo próprio? O proxy roteia o tráfego de todos os aplicativos neste servidor. A infraestrutura merece sua própria caixa isolada, separada do seu código de aplicação.",
       "afterText": "Repositório infra criado. Isolado dos repos de aplicações.",
       "cardLabel": "Criar Repo",
       "prose": "Crie um repo pequeno chamado infra. É onde o proxy vai residir, isolado dos repos de aplicação."
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 33.957312,
+      "at": 28.48077,
       "text": "Vamos aplicar o template de proxy. Inclui o Traefik mais a configuração para o Let's Encrypt e os desafios DNS-01 do Cloudflare, pronto a usar.",
       "afterText": "Configuração do Traefik instalada.",
       "cardLabel": "Aplicar Template"
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 41.036573,
+      "at": 35.97937,
       "text": "E vamos iniciar o proxy. O Traefik descobre os seus contentores a cada cinco segundos. Os certificados TLS chegam automaticamente via Let's Encrypt. A sua aplicação está agora acessível na internet por HTTPS.",
       "afterText": "Proxy ativo. Os certificados TLS chegarão automaticamente.",
       "cardLabel": "Implantar Proxy",
@@ -60,15 +60,15 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Tudo certo! Vamos dar à sua aplicação um domínio a sério com TLS automático. Quatro passos curtos e está na internet."
+      "text": "Seu aplicativo está rodando, mas só o servidor consegue vê-lo. Vamos dar a ele um domínio real com TLS automático. Quatro passos curtos e ele estará na internet."
     },
     {
       "id": "four-steps",
-      "text": "Eis o caminho. Obter um token API do Cloudflare, configurar a infraestrutura na CLI, enviá-la para o servidor, e depois implementar um proxy Traefik que trata do DNS e dos certificados por si."
+      "text": "O caminho é este: pegue um token de API do Cloudflare, configure a infraestrutura uma vez no CLI, envie para o servidor e depois implante um repo de proxy pequeno que cuida do DNS e dos certificados por você."
     },
     {
       "id": "open-cloudflare",
-      "text": "Primeiro, abra o painel do Cloudflare no browser. Vá a My Profile, depois API Tokens, e crie um token com a permissão Zone DNS Edit para que a CLI possa gerir os seus registos."
+      "text": "Primeiro, o único passo manual. Abra o painel do Cloudflare, vá em My Profile, depois em API Tokens, e crie um token com permissão Zone DNS Edit. Esse token único permite que o CLI gerencie seus registros DNS, então você nunca mais precisa navegar por painéis."
     },
     {
       "id": "next-tutorial",

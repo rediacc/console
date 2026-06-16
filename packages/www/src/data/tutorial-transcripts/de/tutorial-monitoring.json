@@ -6,7 +6,7 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.411841,
+      "at": 2.416158,
       "text": "Wir beginnen mit der Systemansicht. Der Machine-Query-Befehl mit dem system-Filter zeigt Uptime, Festplattennutzung und Speicherstatus. Wenn etwas nicht stimmt, meldet der Bericht es.",
       "afterText": "Laufzeit, Platte, Storage. Alles, was du brauchst, auf einen Blick.",
       "cardLabel": "Systemstatus",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 8.597185,
+      "at": 8.503611,
       "text": "Jetzt Container. Diese Ansicht listet alle laufenden Container über alle Repositories auf der Maschine auf: Name, Status, Zustand, CPU, Speicher, plus welches Repo jeden Container besitzt.",
       "afterText": "Jeder Container in jedem Repo, in einer Ansicht.",
       "cardLabel": "Container",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 15.126152,
+      "at": 14.799411,
       "text": "Und die Repos selbst. Größe, Einhängestatus, Docker-Daemon-Status, Festplattennutzung. Alles, was Sie über jede isolierte Umgebung auf der Maschine wissen müssen.",
       "afterText": "Alle Repos, alle ihre Daemons, ihre gesamte Plattennutzung.",
       "cardLabel": "Repositories",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 24.385141,
+      "at": 21.195367,
       "text": "Der Machine-Query-Befehl gibt Ihnen alles auf einmal. Systeminformationen, Container, Repositories, alles zusammen. Einmal ausführen und Sie haben das vollständige Bild.",
       "afterText": "Alles zusammen, kein Filter nötig.",
       "cardLabel": "Vollständige Abfrage",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 32.334422,
+      "at": 26.969407,
       "text": "Und schließlich die Diagnoseprüfung für eine lokale Plausibilitätsprüfung auf Ihrem Laptop. Node, SSH-Schlüssel, renet, Docker, alles, wovon die CLI selbst abhängt. Das ist die vollständige Serie. Von der Installation bis zum Monitoring, alles aus Ihrem Terminal.",
       "afterText": "Alles grün heißt, deine lokale CLI ist gesund.",
       "cardLabel": "Doctor",
@@ -60,7 +60,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "Damit schließt sich die Serie. Du kannst jetzt installieren, konfigurieren, deployen, forken, live gehen, Autostart einrichten, sichern und überwachen, alles aus deinem Terminal!"
+      "text": "Du kannst jetzt installieren, konfigurieren, deployen, forken, live gehen, automatisch starten, sichern und überwachen. Als Nächstes beginnt der fortgeschrittene Kurs: Versioniere deine Repos wie Code, mit Commits und Rollbacks."
     }
   ],
   "title": "Monitoring",
@@ -72,6 +72,6 @@
     "cast-step-2": "Repos",
     "cast-step-3": "Alles auf einmal",
     "cast-step-4": "Lokale Überprüfung",
-    "outro": "Ende der Serie"
+    "outro": "Weiter: Branching, Commit & Rollback"
   }
 }

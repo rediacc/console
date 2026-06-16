@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "ec1bbb25c2b6efabcf61259d83ab6ec13b46f0f30c71b7a2ede5d8034557d54a",
+  "transcriptHash": "4ecbf3644dba211713ea40f31c075b62bff6445d72bb11c3ab4e2b996d1e511c",
   "steps": [
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424705,
-      "replayEndSec": 13.591473,
+      "replayStartSec": 2.410714,
+      "replayEndSec": 12.419888,
       "narrationText": "Passo due. Dalla riga di comando inseriamo l'IP pubblico, il dominio base, l'email per i certificati e il token API di Cloudflare. L'email e il token sono condivisi tra tutte le tue macchine, quindi li imposti una sola volta.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-01.40965412.mp3",
       "textHash": "40965412274cd96a83c2bf0120316edd5859a1fbd6d9d44a2502e28ca710cb1f",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.591473,
-      "replayEndSec": 18.479059,
+      "replayStartSec": 12.419888,
+      "replayEndSec": 16.924002,
       "narrationText": "Confermiamo che le impostazioni dell'infrastruttura siano state salvate. IP pubblico, dominio base, email per i certificati -- tutto visibile nella configurazione.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-02.09ca71d4.mp3",
       "textHash": "09ca71d40309d4f37def8acbb3faadc6b643b2e0293e9f50319144bd8c79aa8a",
@@ -38,12 +38,12 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.479059,
-      "replayEndSec": 25.757057,
-      "narrationText": "Passo tre. Carichiamo la configurazione sul server. Questo crea i record DNS su Cloudflare automaticamente e prepara la configurazione del proxy sulla macchina.",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-03.91a7f26c.mp3",
-      "textHash": "91a7f26c50fda23144cbe7d71937668cbb2930ab5906d729e7beb2f964e22a89",
-      "audioDurationSec": 10.762449,
+      "replayStartSec": 16.924002,
+      "replayEndSec": 20.590881,
+      "narrationText": "Passo tre: invia la configurazione al server. Con un token reale, questo crea automaticamente i tuoi record DNS su Cloudflare e prepara la configurazione del proxy.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-03.243d7c0f.mp3",
+      "textHash": "243d7c0fedbf49ad76e5a0ee8be04336533e7f93bae4565554d028903e60f102",
+      "audioDurationSec": 10.684082,
       "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-03-after.9edee4b4.mp3",
       "afterAudioDurationSec": 4.440816,
       "afterTextHash": "9edee4b4b19b75f5494c2660695fd7b05e30d1f81c76b62dda345a3c8f9bbd63"
@@ -51,12 +51,12 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "replayStartSec": 25.757057,
-      "replayEndSec": 33.957312,
-      "narrationText": "Inizia il passo quattro. Creiamo un piccolo repo chiamato infra. Qui vivra' il proxy, isolato dai repo applicativi.",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-04.2f575688.mp3",
-      "textHash": "2f5756881f954c91139bd150fd025e88ec69e3fec020454612099ff98f03c334",
-      "audioDurationSec": 7.392653,
+      "replayStartSec": 20.590881,
+      "replayEndSec": 28.48077,
+      "narrationText": "Passo quattro: crea un piccolo repo chiamato infra. Perché un repo tutto suo? Il proxy instrada il traffico per ogni app su questo server. L'infrastruttura merita il suo spazio isolato, lontano dal codice della tua applicazione.",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-04.36cfcfab.mp3",
+      "textHash": "36cfcfaba2054598498b10fd1b1410ca5ac06eb9062cdc7e19536872c047f7fa",
+      "audioDurationSec": 17.005714,
       "afterAudioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-04-after.e552effa.mp3",
       "afterAudioDurationSec": 5.250612,
       "afterTextHash": "e552effae57bc0e956ac037ef0a857f170e8e0f7731f3c67d896ab27c1c3b018"
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "replayStartSec": 33.957312,
-      "replayEndSec": 41.036573,
+      "replayStartSec": 28.48077,
+      "replayEndSec": 35.97937,
       "narrationText": "Applichiamo il template proxy integrato. Include Traefik con la configurazione per Let's Encrypt e le challenge DNS-01 di Cloudflare, pronto all'uso.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-05.67da4116.mp3",
       "textHash": "67da411651c0a798d29d77c9555268008b1f6bed6343bea0ebb910d21700be83",
@@ -77,8 +77,8 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.036573,
-      "replayEndSec": 49.697921,
+      "replayStartSec": 35.97937,
+      "replayEndSec": 42.626799,
       "narrationText": "Avviamo il proxy. Traefik scopre i tuoi container ogni cinque secondi. I certificati TLS arrivano da Let's Encrypt automaticamente. La tua app e' ora raggiungibile su internet via HTTPS.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/tutorial-networking-06.71f3a662.mp3",
       "textHash": "71f3a662e92903d3731142cd1fd1d0717655368e95de0605cdeefa8b4c8f56e8",
@@ -91,24 +91,24 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "a162a552053ec7750249e239aa10541390f24b066f07819c8488cca33d133ae0",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/intro.a162a552.mp3",
-      "narrationText": "Bene! Diamo alla tua app un dominio vero con TLS automatico. Quattro brevi passaggi e sei su internet.",
-      "audioDurationSec": 7.000816
+      "textHash": "ebbdb6b2f4a9328a772c5492dae5b9992017cb3d0e18592495fb42b8a93bc36a",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/intro.ebbdb6b2.mp3",
+      "narrationText": "La tua app funziona, ma solo il server riesce a vederla. Diamole un dominio reale con TLS automatico. Quattro brevi passaggi e sarà su internet.",
+      "audioDurationSec": 9.560816
     },
     {
       "id": "four-steps",
-      "textHash": "0e1b9a3494db20896864c9c832e83d0466d07b2605237bfb15973741fa0916ea",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/four-steps.0e1b9a34.mp3",
-      "narrationText": "Ecco il percorso. Procurati un token API di Cloudflare, configura l'infrastruttura sulla CLI, inviala al server, poi distribuisci un proxy Traefik che gestisce DNS e certificati per te.",
-      "audioDurationSec": 13.635918
+      "textHash": "64a11090aad1d796ab8763f4216ea2435dc3d52ad19204d5636780d625bb76df",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/four-steps.64a11090.mp3",
+      "narrationText": "Ecco il percorso: ottieni un token API di Cloudflare, configura l'infrastruttura una volta sola tramite CLI, inviala al server, poi distribuisci un piccolo repo proxy che gestisce DNS e certificati al posto tuo.",
+      "audioDurationSec": 15.229388
     },
     {
       "id": "open-cloudflare",
-      "textHash": "bc7028978c18a6ae91c8722d52a3ddf093abcb51ffbea6d0c85f9e218d2288ca",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/open-cloudflare.bc702897.mp3",
-      "narrationText": "Prima di tutto, apri la dashboard di Cloudflare nel browser. Vai su My Profile, poi API Tokens, e crea un token con il permesso Zone DNS Edit cosi' la CLI potra' gestire i tuoi record.",
-      "audioDurationSec": 13.400816
+      "textHash": "77d00622d0b992356fb88385163b2a4899b34e058c1b14a88ff3d17211e3fc35",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-networking/open-cloudflare.77d00622.mp3",
+      "narrationText": "Prima, l'unico passaggio manuale. Apri la dashboard di Cloudflare, vai su Il mio profilo, poi su API Tokens, e crea un token con il permesso Zone DNS Edit. Quel singolo token consente alla CLI di gestire i tuoi record DNS, così non dovrai più navigare tra le dashboard.",
+      "audioDurationSec": 21.159184
     },
     {
       "id": "next-tutorial",

@@ -114,6 +114,9 @@ function renderTrimResult(parsed: TrimResult | null | undefined): void {
   const rows = repos.map((repo) => ({
     repository: repo.name ?? repo.guid,
     status: trimRepoStatus(repo, reportOnly),
+    // Docker reclaim runs independently of the fstrim snapshot guard, so a repo
+    // can show reclaimed build-cache bytes here even when its status is "skipped".
+    docker: reportOnly ? '-' : formatTrimBytes(repo.docker_reclaimed_bytes),
     trimmed: reportOnly ? '-' : formatTrimBytes(repo.trimmed_bytes),
     reclaimable: formatTrimBytes(repo.estimated_reclaimable_bytes),
   }));

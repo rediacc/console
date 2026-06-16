@@ -1,0 +1,52 @@
+---
+title: "포크 격리 직접 확인하기"
+description: "라이브 PostgreSQL + pgAdmin 앱을 포크하여 원본과 나란히 편집해보세요. 포크가 독립적임을 눈으로 확인하는 증거입니다."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: ko
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 포크 격리 직접 확인하기
+
+[포크 튜토리얼](/ko/docs/tutorial-forking)에서 명령을 살펴봤습니다. 이번 튜토리얼은 그 의미를 직접 보여줍니다: 라이브 데이터베이스 앱을 몇 초 만에 복사하고, 브라우저에서 자유롭게 편집하는 동안 원본은 전혀 영향을 받지 않습니다.
+
+## 튜토리얼 보기
+
+![Tutorial: Fork isolation in action](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## 준비 상황
+
+![A live database and its twin](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+pgAdmin 인터페이스를 갖춘 실제 PostgreSQL이 서버에서 실행 중입니다. 포크는 이 전체의 즉각적인 copy-on-write 복사본입니다. 생성 시점에는 동일한 데이터를 공유하지만, 이후의 삶은 완전히 분리됩니다.
+
+## 1단계: 라이브 앱
+
+<TutorialStep number={1} />
+
+## 2단계: 포크하기
+
+<TutorialStep number={2} />
+
+영상에서 두 pgAdmin을 브라우저에서 나란히 엽니다. 원본은 로그인을 요구합니다. 프로덕션은 보호된 상태를 유지합니다. 포크는 바로 워크벤치로 들어갑니다. 포크는 일회용 샌드박스이므로 게이트가 비켜섭니다(저장소 자체가 포크 여부에 따라 이를 결정합니다).
+
+## 3단계: 두 세계, 하나의 서버
+
+<TutorialStep number={3} />
+
+포크에서 무엇이든 편집하고, 삭제하고, 망가뜨려도 원본은 계속 서비스됩니다. 포크 시점에는 동일한 테이블을 공유했지만, 그 이후로는 완전히 독립적입니다.
+
+## 4단계: 버리기
+
+<TutorialStep number={4} />
+
+만드는 데 몇 초, 버리는 데 몇 초. 그래서 "프로덕션을 복제하되 아무것도 망가뜨리지 않는다"가 특별한 이벤트가 아닌 일상이 됩니다.
+
+---
+
+다음: [시크릿 관리](/ko/docs/tutorial-managing-secrets).

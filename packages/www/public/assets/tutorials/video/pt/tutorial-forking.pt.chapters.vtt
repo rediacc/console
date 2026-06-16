@@ -12,32 +12,32 @@ Compartilhando um link, não a pasta
 00:00:39.739 --> 00:00:53.681
 Mesma velocidade em qualquer tamanho
 
-00:00:53.681 --> 00:01:23.901
+00:00:53.681 --> 00:01:20.868
 Passo 1: Fork do repo
 
-00:01:23.901 --> 00:01:43.665
+00:01:20.868 --> 00:01:40.598
 Passo 2: Os dois repos lado a lado
 
-00:01:43.665 --> 00:02:05.265
+00:01:40.598 --> 00:02:02.931
 Passo 3: Original sem alterações
 
-00:02:05.265 --> 00:02:20.717
+00:02:02.931 --> 00:02:18.383
 O sol e o espelho
 
-00:02:20.717 --> 00:02:37.581
+00:02:18.383 --> 00:02:35.913
 Passo 4: Alterar apenas o fork
 
-00:02:37.581 --> 00:02:56.873
+00:02:35.913 --> 00:02:55.905
 Passo 5: Verificar que o original sobrevive
 
-00:02:56.873 --> 00:03:20.473
+00:02:55.905 --> 00:03:19.505
 Passo 6: Excluir o fork
 
-00:03:20.473 --> 00:03:33.765
+00:03:19.505 --> 00:03:32.797
 Uma foto do rio
 
-00:03:33.765 --> 00:03:48.009
+00:03:32.797 --> 00:03:47.041
 Uso de disco permanece constante
 
-00:03:48.009 --> 00:04:00.409
-Próximo: Gerenciando Secrets
+00:03:47.041 --> 00:04:00.321
+A Seguir: Isolamento de Fork em Ação

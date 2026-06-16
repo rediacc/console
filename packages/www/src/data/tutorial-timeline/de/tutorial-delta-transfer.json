@@ -1,0 +1,88 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "de",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "13202b77a14c2ddfa5a2ed615bfd4d165a0b843841d95717eb1d50b096d80d32",
+  "steps": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413668,
+      "replayEndSec": 10.922135,
+      "narrationText": "Der erste Push auf eine andere Maschine überträgt das gesamte Image, und die Ausgabe sagt es klar: zwei Gigabyte übertragen, als full markiert. Das ist die Ausgangsbasis.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/tutorial-delta-transfer-01.38207221.mp3",
+      "textHash": "382072210f7e95c7d0b2af46998072433d2fcf5cdf8a2e2c36768b671fa23f33",
+      "audioDurationSec": 12.930612,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/tutorial-delta-transfer-01-after.78e886b7.mp3",
+      "afterAudioDurationSec": 10.840816,
+      "afterTextHash": "78e886b7aa2751f4d07891d535d885fe0edd5fa575b23346fff82ddd328a5855"
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.922135,
+      "replayEndSec": 21.404869,
+      "narrationText": "Ändere ein paar Daten: fünfzig Megabyte von zwei Gigabyte.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/tutorial-delta-transfer-02.ac9a7d70.mp3",
+      "textHash": "ac9a7d7084663c793a25f5b8565fd6e582fb08167bbb54f32c10c499ba5af040",
+      "audioDurationSec": 4.127347,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/tutorial-delta-transfer-02-after.1a6af037.mp3",
+      "afterAudioDurationSec": 2.925714,
+      "afterTextHash": "1a6af037c03d02acbe5ffc628b40134cb9f5a932c3d8ae5dfdc7bcf35496c4fc"
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "replayStartSec": 21.404869,
+      "replayEndSec": 29.764702,
+      "narrationText": "Nochmal pushen. Derselbe Befehl, aber schau diesmal auf die Ausgabe: etwa fünfzig Megabyte übertragen, als delta markiert, bei einem zwei Gigabyte großen Image. Nur die geänderten Blöcke wurden übertragen.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/tutorial-delta-transfer-03.686bc30e.mp3",
+      "textHash": "686bc30e4275a983dbde4e7ac4d5a540eb765e346c84b790664609105ef2b66e",
+      "audioDurationSec": 13.635918,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/tutorial-delta-transfer-03-after.548d0284.mp3",
+      "afterAudioDurationSec": 6.765714,
+      "afterTextHash": "548d02844381085c68f971b33b1dcef6ee453464d42d65aa3f4b2fa46b6c76f7"
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.764702,
+      "replayEndSec": 34.159829,
+      "narrationText": "Beide Maschinen haben dasselbe repository, in Sekunden aktualisiert. Führe es stündlich aus, wenn du möchtest, die Kosten richten sich nach der Änderung, nicht nach der Größe.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/tutorial-delta-transfer-04.cef0056c.mp3",
+      "textHash": "cef0056c8c75cf8d6bf505d675d80fd4d4b409d8b49b7f520cf731c7b30e6b20",
+      "audioDurationSec": 11.885714,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/tutorial-delta-transfer-04-after.30a77042.mp3",
+      "afterAudioDurationSec": 2.35102,
+      "afterTextHash": "30a77042f47673429c4eba22aa75850ca0ad3845d28eada7037a466de5d3716d"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "7bd83d741db73650d46e4e254ec2f5edd90676e51952d81ff02528adfd6710c1",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/intro.7bd83d74.mp3",
+      "narrationText": "Hier ist ein unterhaltsames Experiment. Wir pushen ein repository mit einem Gigabyte Daten zweimal auf eine andere Maschine. Der erste Push überträgt alles und der zweite nur, was sich geändert hat. Schau auf die Zahlen, der Push-Befehl gibt genau aus, wie viel er übertragen hat.",
+      "audioDurationSec": 18.12898
+    },
+    {
+      "id": "blocks-not-bytes",
+      "textHash": "2717f753a79b68305c93ab8b20b648a0c459f2d6337ec24628f2f7e8ada1c8e2",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/blocks-not-bytes.2717f753.mp3",
+      "narrationText": "Der Trick steckt in der Vorbereitung. Nach dem ersten Push behält das CLI ein identisches, unveränderliches Base-Image auf beiden Maschinen. Der nächste Push vergleicht Blöcke mit dieser Basis und sendet nur die Unterschiede. Keine Flags, keine Buchhaltung, es ist derselbe Push-Befehl.",
+      "audioDurationSec": 19.40898
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "a3f29c9aa5f355a9eb18dff5e9900da567d133c34663dd6f86957a236c6b69d3",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-delta-transfer/next-tutorial.a3f29c9a.mp3",
+      "narrationText": "Kleine Änderungen bedeuten kleine Übertragungen, jedes Mal nach dem ersten. Jetzt bleibt nur noch ein Tutorial: sicherstellen, dass dir nie der Speicherplatz ausgeht. Bis zum letzten!",
+      "audioDurationSec": 12.669388
+    }
+  ]
+}

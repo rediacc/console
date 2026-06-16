@@ -1,0 +1,109 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "de",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d2e775ace5867c8812ae0b5e4ec23d0dddc4bc7e4da87418b96e4349832a64b3",
+  "steps": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.412666,
+      "replayEndSec": 8.155445,
+      "narrationText": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-01.a2636a4a.mp3",
+      "textHash": "a2636a4a646946bcb342235e1f3db6a628354cfa6fd108400ae9225cc7a0d078",
+      "audioDurationSec": 7.967347,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-01-after.d5ae0177.mp3",
+      "afterAudioDurationSec": 2.272653,
+      "afterTextHash": "d5ae017794cbb7d7e455a45d0a51b694cd8f3e8ed4546c82145cf36d7855ce2a"
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.155445,
+      "replayEndSec": 19.24953,
+      "narrationText": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-02.4e3625a4.mp3",
+      "textHash": "4e3625a41e9ade01f2616bc98f77faac12642b1fd721e997c137429306b38700",
+      "audioDurationSec": 9.560816,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-02-after.c2c2354b.mp3",
+      "afterAudioDurationSec": 6.530612,
+      "afterTextHash": "c2c2354b4472b0270a866f21c88f69dd9e5be32943b3738c41b74427ce150670"
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.24953,
+      "replayEndSec": 24.926391,
+      "narrationText": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-03.ef21da1c.mp3",
+      "textHash": "ef21da1c52e9db0870054d3b9ad5504d69be1e2bc5153b8226d37209954bb67e",
+      "audioDurationSec": 6.765714,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-03-after.adad9af5.mp3",
+      "afterAudioDurationSec": 3.239184,
+      "afterTextHash": "adad9af5ab851bf08674085caea54324def8aca4788ea312c1a4e0c6f7c762f4"
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "replayStartSec": 24.926391,
+      "replayEndSec": 32.437755,
+      "narrationText": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-04.5eee7a7f.mp3",
+      "textHash": "5eee7a7f529dcaea0c960477435b36d94974c2998b0af5db1f98442d6267b1e3",
+      "audioDurationSec": 8.672653,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-04-after.6fda6dbc.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "6fda6dbc9b5315fd239f4087ed9da0be90a8669fb1120c0b6b8742d574804847"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "cb0ac1b390893708a8def4416ccf85ba102dd855c2fd711f717a14b21da62734",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/intro.cb0ac1b3.mp3",
+      "narrationText": "Willkommen zurück! Beim letzten Mal hast du die fork-Befehle gesehen. Jetzt schauen wir uns an, was sie wirklich bedeuten: eine Live-Datenbankapp, in Sekunden kopiert, frei bearbeitbar, während das Original nichts davon bemerkt.",
+      "audioDurationSec": 15.725714
+    },
+    {
+      "id": "what-is-a-fork",
+      "textHash": "efeedba91bb27601bffa5a4af6191a0e011962937cc24268241096775ad075de",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/what-is-a-fork.efeedba9.mp3",
+      "narrationText": "Das ist die Ausgangslage: ein echtes PostgreSQL mit einer pgAdmin-Oberfläche darüber, live auf dem Server. Ein fork ist ein sofortiger Copy-on-Write-Zwilling von allem. Gleiche Daten bei der Geburt, danach völlig getrennte Leben.",
+      "audioDurationSec": 16.770612
+    },
+    {
+      "id": "grand-pgadmin",
+      "textHash": "056e64cf391c08bf380d6ba5e87326d3279b49f4a1bff43949a698b8bc7d9cc5",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/grand-pgadmin.056e64cf.mp3",
+      "narrationText": "Das ist das Original, im Browser. pgAdmin fragt nach einem Login, weil es die Produktionskopie ist, und Produktion bleibt geschützt.",
+      "audioDurationSec": 8.75102
+    },
+    {
+      "id": "fork-pgadmin",
+      "textHash": "8c274440041efdc9392e033751772a1f6fafea609d991f88289aaae5522b2f17",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/fork-pgadmin.8c274440.mp3",
+      "narrationText": "Und hier ist das pgAdmin des forks. Diesmal kein Login: forks sind wegwerfbare sandboxes, also tritt die Schranke zur Seite. Gleiche Tabellen, gleiche Zeilen, aber ein eigenes Universum.",
+      "audioDurationSec": 13.479184
+    },
+    {
+      "id": "side-by-side",
+      "textHash": "b2cda624c6c0fcec991281e78621d5ee64d21bcd663df8c029c94fc129f13ffe",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/side-by-side.b2cda624.mp3",
+      "narrationText": "Jetzt nebeneinander: der fork links, das Original rechts. Bearbeite, lösche oder zerstöre alles auf der linken Seite, und rechts zuckt nichts. Das ist Isolation, die man sehen kann.",
+      "audioDurationSec": 14.027755
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "109de59f94c3e2db81e70d711133c207be03bc00dec8358affff7d89d1860b41",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/next-tutorial.109de59f.mp3",
+      "narrationText": "Also forke ruhig drauf los, Produktion kann nicht beschädigt werden. Als nächstes schauen wir uns secrets an, das Einzige, was deine forks absichtlich nicht erben. Bis dann!",
+      "audioDurationSec": 14.915918
+    }
+  ]
+}

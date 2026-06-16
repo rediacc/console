@@ -1,0 +1,54 @@
+---
+title: "델타 전송"
+description: "다른 머신으로의 첫 번째 푸시는 모든 것을 복사하고, 이후 모든 푸시는 변경된 블록만 전송합니다. 자동으로."
+category: "Tutorials"
+subcategory: advanced
+order: 17
+language: ko
+sourceHash: "6dabbcbb0670ac60"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 델타 전송
+
+저장소를 다른 머신으로 두 번 푸시해 보세요. 첫 번째 푸시는 모든 것을 전송합니다. 두 번째 푸시는 변경된 것만 전송합니다. 동일한 명령, 별도의 플래그 없음, 별도의 관리 없음. 그리고 직접 확인할 수 있습니다. 푸시 출력이 정확히 얼마나 전송됐는지 출력하기 때문입니다.
+
+## 튜토리얼 보기
+
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
+## 바이트가 아닌 블록
+
+![Blocks, not bytes](/img/tutorials/tutorial-delta-transfer/slide-1.svg)
+
+첫 번째 푸시 이후, CLI는 두 머신 모두에 동일한 불변 베이스 이미지를 유지합니다. 다음 푸시는 그 베이스와 블록을 비교하여 차이점만 전송합니다.
+
+## 1단계: 기준 푸시
+
+<TutorialStep number={1} />
+
+출력이 명확히 말해줍니다: `2.0 GB transferred in 44.4s (full)`. 전체 이미지가 전송됐고, 동일한 델타 베이스가 양쪽에 유지됩니다.
+
+## 2단계: 조금 변경하기
+
+<TutorialStep number={2} />
+
+## 3단계: 차이점 푸시
+
+<TutorialStep number={3} />
+
+동일한 명령, 전혀 다른 결과: `50.8 MB transferred in 5.7s (delta vs base ..., image 2.0 GB)`. 50메가바이트가 변경됐으니 약 50메가바이트만 전송됩니다. 2기가바이트 이미지 중에서.
+
+## 4단계: 몇 초 만에 동기화
+
+<TutorialStep number={4} />
+
+두 머신 모두 동일한 저장소를 가지며, 전체 크기가 아닌 변경분의 비용으로 갱신됩니다. 시간 단위 머신 간 백업이 더 이상 부담스럽지 않습니다.
+
+> 명시적 제어가 필요하다면? `--delta-base <guid>`로 비교 베이스를 고정하고, `--strategy`로 블록 델타 알고리즘을 선택할 수 있습니다. 기본값이 둘 다 자동으로 처리합니다.
+
+---
+
+다음: [스토리지 관리](/ko/docs/tutorial-storage-management).

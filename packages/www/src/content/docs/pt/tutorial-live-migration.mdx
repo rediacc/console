@@ -1,0 +1,62 @@
+---
+title: "Migração em Direto"
+description: "Mova um repositório em execução, contentores, base de dados e memória de processo incluídos, para outra máquina com um único comando e tempo de inatividade mínimo."
+category: "Tutorials"
+subcategory: advanced
+order: 16
+language: pt
+sourceHash: "0d0c4df847c6ba17"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Migração em Direto
+
+Os servidores são substituídos: o hardware envelhece, os fornecedores mudam, as regiões movem-se. O `rdc repo migrate` move um repositório em execução para outra máquina com um único comando, e com `--checkpoint` até a memória de processo faz a viagem. A aplicação de demonstração, `pulse`, mantém um contador em RAM; após a migração continua a contar em vez de recomeçar do zero.
+
+## Ver o tutorial
+
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
+## Como se move
+
+![Two phases, minimal downtime](/img/tutorials/tutorial-live-migration/slide-1.svg)
+
+A fase um copia a maior parte enquanto a aplicação continua a correr. A fase dois faz checkpoint dos processos ativos (CRIU, para contentores com a etiqueta `rediacc.checkpoint=true`), transporta o delta final mais o estado dos processos, e retoma tudo na nova máquina. O tempo de inatividade é o delta, não os dados.
+
+## Passo 1: A prova -- um contador em RAM
+
+<TutorialStep number={1} />
+
+`memory counter=6` e a subir, um batimento a cada cinco segundos. O contador vive apenas na memória do processo. Se o processo reiniciasse, recomeçaria em um.
+
+## Passo 2: Migrar -- em direto
+
+<TutorialStep number={2} />
+
+O resultado narra a migração: a fase um transfere os 2 GB principais enquanto a origem fica online, depois a linha de transição imprime o `DOWNTIME` real: algumas dezenas de megabytes e cerca de vinte segundos, para um repositório de dois gigabytes.
+
+## Passo 3: Verificar a nova casa
+
+<TutorialStep number={3} />
+
+No destino, o `pulse` está montado, o Docker está ativo, os contentores a correr.
+
+## Passo 4: A origem está parada
+
+<TutorialStep number={4} />
+
+A origem ainda lista o repositório, mas honestamente: não montado, sem Docker, zero contentores. Nada corre lá. A imagem é mantida propositadamente como base para a próxima [transferência delta](/pt/docs/tutorial-delta-transfer), para que um futuro envio de volta seja barato.
+
+## Passo 5: O contador continuou a contar
+
+<TutorialStep number={5} />
+
+`memory counter=17`, depois 18, 19, 20... Retomou exatamente onde o checkpoint o congelou, em vez de repor em um. É a memória de processo a fazer a viagem; a aplicação nunca deu conta de ter mudado de máquina.
+
+> Sem `--checkpoint`, o migrate ainda move o disco e os contentores; eles reiniciam a fresco no destino em vez de retomarem a meio.
+
+---
+
+Próximo: [Transferência Delta](/pt/docs/tutorial-delta-transfer).

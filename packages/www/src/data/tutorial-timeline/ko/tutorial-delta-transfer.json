@@ -1,0 +1,88 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "ko",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "3cbb055a6a47f9ea1bc16c4d510e34954fc3a9db72b74690b3074e5e20481c5b",
+  "steps": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413668,
+      "replayEndSec": 10.922135,
+      "narrationText": "다른 머신으로의 첫 번째 push는 전체 이미지를 전송하며, 출력에 명확히 나타납니다. 2기가바이트 전송, full로 표시됩니다. 이것이 기준입니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/tutorial-delta-transfer-01.a2421cef.mp3",
+      "textHash": "a2421cef02da3c9f54db1908fe27c064aacb536ce2f4fbade1a9c9b8ae937949",
+      "audioDurationSec": 10.527347,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/tutorial-delta-transfer-01-after.bebb5a03.mp3",
+      "afterAudioDurationSec": 11.232653,
+      "afterTextHash": "bebb5a03d267b1fa9d8badc27483d125aa1d90a36342023d5953baddb6eec728"
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.922135,
+      "replayEndSec": 21.404869,
+      "narrationText": "데이터를 약간 변경합니다. 2기가바이트 중 50메가바이트입니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/tutorial-delta-transfer-02.2fbe26f2.mp3",
+      "textHash": "2fbe26f2d9a28aaa82a59aea00bb028167c8bb4eb6b7ca08a6c4a9b73e26a552",
+      "audioDurationSec": 4.440816,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/tutorial-delta-transfer-02-after.36f98b6d.mp3",
+      "afterAudioDurationSec": 2.507755,
+      "afterTextHash": "36f98b6d0e2725e5caaf4d743243562ec5335862cabee3da55b511bbfe6a7556"
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "replayStartSec": 21.404869,
+      "replayEndSec": 29.764702,
+      "narrationText": "다시 push합니다. 같은 명령어이지만, 이번에는 출력을 확인하세요. 2기가바이트 이미지에서 약 50메가바이트가 전송되었고, delta로 표시됩니다. 변경된 블록만 이동했습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/tutorial-delta-transfer-03.028de6a0.mp3",
+      "textHash": "028de6a00ef63028ebd00ae25d3ef34ee7038e8df4abe89f3c75ac2327672c4e",
+      "audioDurationSec": 15.647347,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/tutorial-delta-transfer-03-after.4035f0ae.mp3",
+      "afterAudioDurationSec": 6.530612,
+      "afterTextHash": "4035f0aee9d6938355f4ac7e5ddd18d88403d431dccd342b3e989b8841e369af"
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.764702,
+      "replayEndSec": 34.159829,
+      "narrationText": "두 머신 모두 같은 repository를 보유하며, 몇 초 만에 갱신됩니다. 원한다면 매시간 실행해도 됩니다. 비용은 변경된 양에 따라 결정되며, 전체 크기와는 무관합니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/tutorial-delta-transfer-04.404fcdf8.mp3",
+      "textHash": "404fcdf8afdb210f5da976341789bde2fdc0fe3e80da3f921fbd3af3167c7d03",
+      "audioDurationSec": 13.165714,
+      "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/tutorial-delta-transfer-04-after.e037335f.mp3",
+      "afterAudioDurationSec": 3.317551,
+      "afterTextHash": "e037335f8f2fb94368b2595820fa16187f15878df80623d743b1bb425c35636b"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "6dbc2425667cd897967b401f281808662af8a8bef81b51b6c310409b51bea455",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/intro.6dbc2425.mp3",
+      "narrationText": "재미있는 실험을 해보겠습니다. 1기가바이트 데이터가 있는 repository를 다른 머신으로 두 번 push할 겁니다. 첫 번째 push는 모든 것을 전송하고, 두 번째는 변경된 것만 전송합니다. 숫자를 잘 보세요. push 명령어가 정확히 얼마나 이동했는지 출력합니다.",
+      "audioDurationSec": 21.315918
+    },
+    {
+      "id": "blocks-not-bytes",
+      "textHash": "3cdc259c12d51b4f23e38235fb29edb362e6b97e0012b08c58ce881315218886",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/blocks-not-bytes.3cdc259c.mp3",
+      "narrationText": "비결은 준비 방식에 있습니다. 첫 번째 push 후, CLI는 양쪽 머신에 동일한 불변 베이스 이미지를 유지합니다. 다음 push는 그 베이스와 블록을 비교하여 차이점만 전송합니다. 플래그도, 별도 작업도 없습니다. 동일한 push 명령어입니다.",
+      "audioDurationSec": 19.565714
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "c7c0a69c8c64026cab73fe7b6e5cf0672fda0d7fc54176159eda64686d77e396",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-delta-transfer/next-tutorial.c7c0a69c.mp3",
+      "narrationText": "작은 변경은 첫 번째 이후로 매번 작은 전송을 의미합니다. 이제 튜토리얼이 하나 남았습니다. 디스크가 부족하지 않도록 하는 방법입니다. 마지막 튜토리얼에서 만나요!",
+      "audioDurationSec": 15.15102
+    }
+  ]
+}

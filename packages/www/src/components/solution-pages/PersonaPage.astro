@@ -73,7 +73,7 @@ const breadcrumbItems = [
     )}
 
     {has('problem') && (
-      <SPProblem problem={(content as any).problem} illustration={config.illustration} referenceItems={(content as any).references?.items} />
+      <SPProblem problem={(content as any).problem} illustration={config.illustration} referenceItems={(content as any).references?.items} slug={config.illustrationSlug} />
     )}
 
     {has('costCalculator') && config.calculatorPreset && (

@@ -6,20 +6,20 @@ Töötamine oma repo-ga
 00:00:07.419 --> 00:00:17.901
 Igapäevane kolmik: tunnel, term, sync
 
-00:00:17.901 --> 00:00:36.583
+00:00:17.901 --> 00:00:38.783
 Tunnel: edasta konteineri port
 
-00:00:36.583 --> 00:00:46.671
+00:00:38.483 --> 00:00:48.583
 Ava rakendus brauseris
 
-00:00:46.671 --> 00:01:09.019
+00:00:48.283 --> 00:01:11.348
 Term: käivita käske sandbox-is
 
-00:01:09.019 --> 00:01:26.023
+00:01:11.348 --> 00:01:29.352
 Sync: eelvaade --dry-run-iga
 
-00:01:26.023 --> 00:01:48.038
+00:01:29.352 --> 00:01:52.117
 Sync: lae päriselt üles
 
-00:01:48.038 --> 00:01:51.718
-Järgmine: repository fork-imine
+00:01:52.117 --> 00:01:55.797
+Järgmine: VS Code brauseris

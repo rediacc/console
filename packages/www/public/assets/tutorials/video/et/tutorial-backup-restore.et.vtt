@@ -78,77 +78,149 @@ Seal see on.
 00:00:54.908 --> 00:00:56.341
 Valmis varukoopiaid vastu võtma.
 
-00:00:59.638 --> 00:01:00.692
+00:00:59.671 --> 00:01:00.725
 Teine samm.
 
-00:01:00.692 --> 00:01:02.274
+00:01:00.725 --> 00:01:02.307
 Tõukame täieliku varukoopia.
 
-00:01:02.274 --> 00:01:04.382
+00:01:02.307 --> 00:01:04.415
 Terve repositoorium -- rakendus,
 
-00:01:04.382 --> 00:01:04.909
+00:01:04.415 --> 00:01:04.942
 andmebaas,
 
-00:01:04.909 --> 00:01:05.436
+00:01:04.942 --> 00:01:05.469
 failid,
 
-00:01:05.436 --> 00:01:07.545
+00:01:05.469 --> 00:01:07.578
 konfiguratsioon -- laaditakse üles.
 
-00:01:07.545 --> 00:01:10.180
+00:01:07.578 --> 00:01:10.213
 Kuna repositoorium on puhkeolekus krüpteeritud,
 
-00:01:10.180 --> 00:01:12.289
+00:01:10.213 --> 00:01:12.322
 on ka varukoopia krüpteeritud.
 
-00:01:12.289 --> 00:01:14.397
+00:01:12.322 --> 00:01:14.430
 Lisavõtme haldamine pole vajalik.
 
-00:01:16.647 --> 00:01:18.008
+00:01:17.430 --> 00:01:18.791
 Varukoopia üles laaditud.
 
-00:01:18.008 --> 00:01:20.729
+00:01:18.791 --> 00:01:21.512
 Kõik selle repo sisu on nüüd
 
-00:01:20.729 --> 00:01:21.183
+00:01:21.512 --> 00:01:21.966
 kaugsalvestusel,
 
-00:01:21.183 --> 00:01:21.637
+00:01:21.966 --> 00:01:22.420
 krüpteeritud.
 
-00:01:24.946 --> 00:01:26.775
+00:01:25.729 --> 00:01:27.558
 Loetleme sellel salvestusel saadaolevad varukoopiad.
 
-00:01:26.775 --> 00:01:29.335
+00:01:27.558 --> 00:01:30.118
 Edaspidi on taastamine uuel serveril üks käsk
 
-00:01:29.335 --> 00:01:30.797
+00:01:30.118 --> 00:01:31.580
 -- CLI repo pull.
 
-00:01:30.797 --> 00:01:31.529
+00:01:31.580 --> 00:01:32.312
 Samad andmed,
 
-00:01:31.529 --> 00:01:32.260
+00:01:32.312 --> 00:01:33.043
 samad konteinerid,
 
-00:01:32.260 --> 00:01:32.992
+00:01:33.043 --> 00:01:33.775
 erinev masin.
 
-00:01:35.992 --> 00:01:37.664
+00:01:36.775 --> 00:01:38.447
 Kõik tõmmised ühes kohas.
 
-00:01:37.664 --> 00:01:40.171
+00:01:38.447 --> 00:01:40.954
 Tõmba ükskõik milline neist ühe käsuga
 
-00:01:40.171 --> 00:01:40.589
+00:01:40.954 --> 00:01:41.372
 tagasi.
 
-00:01:41.410 --> 00:01:43.983
+00:01:44.693 --> 00:01:46.141
+Nüüd taastamise tõestus.
+
+00:01:46.141 --> 00:01:48.071
+Võta kõigepealt repository võrguühenduseta:
+
+00:01:48.071 --> 00:01:50.967
+peata teenused ja ühenda krüptitud maht
+
+00:01:50.967 --> 00:01:51.449
+lahti.
+
+00:01:51.449 --> 00:01:53.862
+Rakendus on sellelt masinalt kadunud.
+
+00:01:56.862 --> 00:01:59.043
+Võrguühenduseta ja lahti ühendatud,
+
+00:01:59.043 --> 00:02:01.224
+täpselt nagu värske server.
+
+00:02:04.558 --> 00:02:06.881
+Ja tõmba varukoopia otse salvestusruumist tagasi.
+
+00:02:06.881 --> 00:02:08.816
+Repo pull käsk tõmbab image'i,
+
+00:02:08.816 --> 00:02:11.526
+kontrollib selle terviklikkust ja paigutab selle täpselt
+
+00:02:11.526 --> 00:02:11.913
+sinna,
+
+00:02:11.913 --> 00:02:13.074
+kus see oli.
+
+00:02:16.074 --> 00:02:17.388
+Ülekanne lõpetatud,
+
+00:02:17.388 --> 00:02:18.701
+terviklikkus kinnitatud.
+
+00:02:18.701 --> 00:02:20.671
+Repository on tagasi.
+
+00:02:23.988 --> 00:02:26.592
+Ühenda see uuesti ja repository
+
+00:02:26.592 --> 00:02:27.633
+on taastatud.
+
+00:02:27.633 --> 00:02:28.154
+Push,
+
+00:02:28.154 --> 00:02:28.674
+list,
+
+00:02:28.674 --> 00:02:29.195
+pull,
+
+00:02:29.195 --> 00:02:31.799
+see on kogu varukoopia lugu.
+
+00:02:34.049 --> 00:02:34.565
+Taastatud.
+
+00:02:34.565 --> 00:02:37.144
+Sama protsess toimib ka täiesti
+
+00:02:37.144 --> 00:02:38.176
+uuel masinal.
+
+00:02:38.981 --> 00:02:41.554
 Sinu andmed on turvalised ja
 
-00:01:43.983 --> 00:01:45.527
+00:02:41.554 --> 00:02:43.098
 masinate vahel kaasaskantavad.
 
-00:01:45.527 --> 00:01:46.556
+00:02:43.098 --> 00:02:44.127
 Kohtumiseni järgmises!

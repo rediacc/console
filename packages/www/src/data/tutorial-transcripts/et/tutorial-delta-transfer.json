@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "at": 2.413668,
+      "text": "Esimene push teisele masinale kannab kogu image'i üle ja väljund ütleb seda selgelt: kaks gigabaiti edastatud, märgitud täis. See on lähtepunkt.",
+      "afterText": "Kaks gigabaiti neljakümne nelja sekundiga, märgitud täis. CLI säilitas mõlemal poolel ka identse aluse, see on võlu eeldus.",
+      "cardLabel": "Täispush",
+      "prose": "Tee repository push teisele masinale. Esimene push edastab täieliku image'i ja väljund raporteerib seda: 2 GB edastatud, märgitud (täis). Delta alus säilitatakse mõlemal poolel."
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "at": 10.922135,
+      "text": "Muuda veidi andmeid: viiskümmend megabaiti kahest gigabaidist.",
+      "afterText": "Väike muutus suures image'is.",
+      "cardLabel": "Muuda Andmeid",
+      "prose": "Kirjuta repository'sse väike kogus uusi andmeid."
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "at": 21.404869,
+      "text": "Tee uuesti push. Sama käsk, aga loe seekord väljundit: umbes viiskümmend megabaiti edastatud, märgitud delta, kahe gigabaidise image'i suhtes. Ainult muutunud blokid liikusid.",
+      "afterText": "Viiskümmend megabaiti alla kuue sekundi, kahe gigabaidisest image'ist. Numbrid on tõend.",
+      "cardLabel": "Delta Push",
+      "prose": "Tee sama käsuga uuesti push: väljund raporteerib umbes 50 MB edastamist deltana jagatud aluse suhtes, 2 GB image'ist. Ainult muutunud blokid liikusid."
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "at": 29.764702,
+      "text": "Mõlemad masinad hoiavad sama repository't, sekunditega uuendatuna. Käivita seda iga tund, kui soovid, kulu on muutus, mitte suurus.",
+      "afterText": "Sagedased varukoopiad ei ole enam kallid.",
+      "cardLabel": "Sünkroonis",
+      "prose": "Sihmasin hoiab nüüd uuendatud repository't, sünkroniseerituna delta hinnaga."
+    }
+  ],
+  "title": "Delta Edastus",
+  "chapters": {
+    "intro": "Delta Edastus",
+    "blocks-not-bytes": "Plokid, mitte baidid",
+    "cast-step-0": "1. samm: Esimene push, täielik",
+    "cast-step-1": "2. samm: Muuda andmeid",
+    "cast-step-2": "3. samm: Teine push, delta",
+    "cast-step-3": "4. samm: Sünkroonis sekunditega",
+    "outro": "Sari lõpeb siin"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Siin on üks lõbus katse. Me teeme kaks push'i teisele masinale, repository'ga, kus on gigabait andmeid. Esimene push kannab kõik üle ja teine kannab ainult muutunud osa. Jälgi numbreid, push käsk prindib täpselt, kui palju ta liigutas."
+    },
+    {
+      "id": "blocks-not-bytes",
+      "text": "Nipp peitub seadistuses. Pärast esimest push'i hoiab CLI mõlemal masinal identset muutumatut base image'i. Järgmine push võrdleb blokke selle alusega ja saadab ainult erinevuse. Ei mingeid lippe, ei mingit raamatupidamist, see on sama push käsk."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Väikesed muutused tähendavad väikseid edastusi, iga kord pärast esimest. Alles üks tutorial on järel: veendu, et sul pole kunagi ketas täis. Näeme viimases!"
+    }
+  ]
+}

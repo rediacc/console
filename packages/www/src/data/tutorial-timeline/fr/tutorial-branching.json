@@ -1,0 +1,212 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "fr",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "177826c2553b7ff19faa0003e1db5afaae719915fad027c33bbdacd2146d349c",
+  "steps": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.418102,
+      "replayEndSec": 10.876025,
+      "narrationText": "Notre fork de travail contient la version un de l'état de l'application, un simple fichier marqueur le rend visible.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-01.0750c792.mp3",
+      "textHash": "0750c792c48475b7bed5654d72bb467769427353bb42e3db87e3b91db700abe6",
+      "audioDurationSec": 6.844082,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-01-after.e05c923b.mp3",
+      "afterAudioDurationSec": 1.959184,
+      "afterTextHash": "e05c923b8870b7c53966fdbb53bd5da8f6837b2893114eaa2510dcf28c698d6d"
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.876025,
+      "replayEndSec": 20.708803,
+      "narrationText": "Ce ne sont pas seulement des fichiers. Une vraie base de données PostgreSQL vit aussi dans ce fork, et la table customers contient trois lignes. Retenez ce chiffre.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-02.5efbdc6e.mp3",
+      "textHash": "5efbdc6e44304d2dfe80dd708816507d722c64e3adf747a4fca3c5f1ef831e12",
+      "audioDurationSec": 10.109388,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-02-after.be482d80.mp3",
+      "afterAudioDurationSec": 3.317551,
+      "afterTextHash": "be482d80b1bf326ac21333c442d2e36abbcaab8363460c2db70d98e595d2fb73"
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "replayStartSec": 20.708803,
+      "replayEndSec": 29.448478,
+      "narrationText": "Figez-le. Le commit capture l'intégralité du repository sous forme d'image immuable, avec un message, un auteur et un parent. Exactement comme git, mais pour tout, base de données comprise.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-03.26792a3b.mp3",
+      "textHash": "26792a3bed10b897ad5983b153ad4c418f6cd8d2d6a7fe7dbe5c007d0c170cfe",
+      "audioDurationSec": 12.747755,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-03-after.03f454ef.mp3",
+      "afterAudioDurationSec": 4.989388,
+      "afterTextHash": "03f454ef9161fde5ed599f0be73131c849dc7b76b7212a83af0b172c6ec435bf"
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "replayStartSec": 29.448478,
+      "replayEndSec": 34.241982,
+      "narrationText": "Donnez un nom au commit. La branche stable pointe maintenant vers la version un.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-04.3b7e3e52.mp3",
+      "textHash": "3b7e3e52e7f85b6bce184773d59d8f91ebf572ef7e23abd70744406f362794a0",
+      "audioDurationSec": 4.205714,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-04-after.18ff3a0f.mp3",
+      "afterAudioDurationSec": 2.76898,
+      "afterTextHash": "18ff3a0f67ebdbc2083541bcef731c8f9598465f1d9294a64240fec198b40c92"
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "replayStartSec": 34.241982,
+      "replayEndSec": 42.690283,
+      "narrationText": "Continuez à travailler. La version deux remplace la version un dans le fork de travail. Le commit s'en moque.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-05.8f068bce.mp3",
+      "textHash": "8f068bce7236880b582c81ae460379a3d00700d2db959e30ade5f0f914d69890",
+      "audioDurationSec": 5.877551,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-05-after.d7366440.mp3",
+      "afterAudioDurationSec": 4.91102,
+      "afterTextHash": "d7366440790d7288812cdf6fc37e97926a8f4c22681420163f272a84bbba4534"
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "replayStartSec": 42.690283,
+      "replayEndSec": 51.047933,
+      "narrationText": "Maintenant, le désastre. La modification risquée supprime la table customers. Dans la vraie vie, c'est le moment où l'estomac se noue.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-06.3366fa01.mp3",
+      "textHash": "3366fa010a0fe0ed44a23b7209eec8c1738ef041b566ecb5aa74e7ece5f577c6",
+      "audioDurationSec": 9.16898,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-06-after.9cbb6fd1.mp3",
+      "afterAudioDurationSec": 4.284082,
+      "afterTextHash": "9cbb6fd1eff0917c30e167da767fabafca0d855bf8c507c751e4e900879f0904"
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "replayStartSec": 51.047933,
+      "replayEndSec": 59.69522,
+      "narrationText": "Demandez à nouveau les lignes et la base de données le dit clairement : la relation customers n'existe pas. Le désastre est réel. Chaque ligne a disparu.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-07.8f78ee67.mp3",
+      "textHash": "8f78ee672faeb7abd4fb347ef375e398b3ba2ca01368987420f71744b88140ee",
+      "audioDurationSec": 10.44898,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-07-after.66d0f049.mp3",
+      "afterAudioDurationSec": 4.440816,
+      "afterTextHash": "66d0f049dd13315dc861b67def0058893938f8124079a84346adf442dd4aaa67"
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "replayStartSec": 59.69522,
+      "replayEndSec": 68.35661,
+      "narrationText": "Commitez aussi la modification risquée, table cassée comprise. L'historique enregistre ce qui s'est réellement passé. Deux commits maintenant, parent et enfant.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-08.ee6f2143.mp3",
+      "textHash": "ee6f21434224c0061bf8ac4caa3fae32ce49db543d47741fc914d1f3ada26adc",
+      "audioDurationSec": 10.605714,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-08-after.f6d42f68.mp3",
+      "afterAudioDurationSec": 1.645714,
+      "afterTextHash": "f6d42f6897bb3f6d3062aa22c3ee70429f2064bac915bf89a47e95936ad3e7da"
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "replayStartSec": 68.35661,
+      "replayEndSec": 75.614559,
+      "narrationText": "Et voilà l'historique : la version deux en haut, la version un en dessous, messages et auteurs inclus, sans déverrouiller une seule image.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-09.cb0e7511.mp3",
+      "textHash": "cb0e75116eb9d0319ab203712a7ce736614f97a8fa4e83a6955220d1097081be",
+      "audioDurationSec": 10.187755,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-09-after.a78b4e4e.mp3",
+      "afterAudioDurationSec": 3.160816,
+      "afterTextHash": "a78b4e4ede9b45ef8fa4831a8681da7a9c1d50ededff789f0458834610f9a24c"
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "replayStartSec": 75.614559,
+      "replayEndSec": 83.292425,
+      "narrationText": "Maintenant, la récompense. Extrayez la branche stable dans un tout nouveau fork inscriptible. Clone par reflink : quasi-instantané, quelle que soit la taille.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-10.7d69c05b.mp3",
+      "textHash": "7d69c05b39dd9192a0ae17b2a01aa8f5c96ddc6be28728d2b3779c5d89200610",
+      "audioDurationSec": 10.840816,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-10-after.d256bdf4.mp3",
+      "afterAudioDurationSec": 4.284082,
+      "afterTextHash": "d256bdf4a687968d8e7fec6dcfb57744126137ef20464a00070a4f824b63d3a5"
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "replayStartSec": 83.292425,
+      "replayEndSec": 91.555233,
+      "narrationText": "Démarrez le fork de rollback comme n'importe quel autre repo.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-11.9a1ca22a.mp3",
+      "textHash": "9a1ca22afdaa6c153b0c84b45ece11c2079fff62e525fd89902ab2e1e19e2dfb",
+      "audioDurationSec": 3.552653,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-11-after.caf748a0.mp3",
+      "afterAudioDurationSec": 5.799184,
+      "afterTextHash": "caf748a0ae96c031a5af60cfe58308c0cd4b2067e75d6426024d84ad5e136d21"
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "replayStartSec": 91.555233,
+      "replayEndSec": 98.952411,
+      "narrationText": "Et la preuve : le fork de rollback lit la version un. Le fork de travail a toujours la version deux. Un historique que vous pouvez exécuter.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-12.47b21095.mp3",
+      "textHash": "47b21095b57421712110bcf72f12009b347c2db48dd42ddad48789489b660838",
+      "audioDurationSec": 9.717551,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-12-after.c33ea22e.mp3",
+      "afterAudioDurationSec": 3.709388,
+      "afterTextHash": "c33ea22e25708e9fb218d0bd11075cabd1d5ed0e0c648844063c455284cabfea"
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "replayStartSec": 98.952411,
+      "replayEndSec": 107.653008,
+      "narrationText": "Et la partie qui compte le plus : la table supprimée est de retour, avec ses trois lignes. Le rollback a restauré la base de données, pas seulement les fichiers.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-13.bd538d04.mp3",
+      "textHash": "bd538d04ba5bcd7b0f934055c069d804b181c61c1ef9f50b41e359fab934196f",
+      "audioDurationSec": 9.874286,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-branching/tutorial-branching-13-after.2612ec3f.mp3",
+      "afterAudioDurationSec": 3.239184,
+      "afterTextHash": "2612ec3f26b9a5cdb74b4ec78eba75269e6ce57cfc3d19752e5b36eeb1a2efb3"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "f6930029ed5b9ad17a4ec37b5dfb6419222621794e120b116d2dbe4060693854",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/intro.f6930029.mp3",
+      "narrationText": "Versionnez vos repositories comme du code ! Nous allons figer un checkpoint, lui donner un nom, puis supprimer une vraie table de base de données. Le rollback ramène l'état figé exact, chaque ligne incluse, en quelques secondes.",
+      "audioDurationSec": 14.28898
+    },
+    {
+      "id": "commit-model",
+      "textHash": "2461f24013d902c632cea055a175edf37067429b49a17d89984b9112f53f04cd",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/commit-model.2461f240.mp3",
+      "narrationText": "Le modèle est git, mais pour des repositories entiers. Un commit est une image figée et immuable. Il refuse même de se monter, donc rien ne peut jamais le modifier. Une branche est juste un nom pointant vers un commit. Et checkout transforme n'importe quel commit en un nouveau fork inscriptible.",
+      "audioDurationSec": 26.827755
+    },
+    {
+      "id": "vscode-versions",
+      "textHash": "68685f4406f30871a55c1435904e16f3b0b9b174802eb23776abd3f9486ccf06",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/vscode-versions.68685f44.mp3",
+      "narrationText": "Voir c'est croire. Le fork de rollback à gauche contient la version un, tandis que le fork de travail à droite est passé à la version deux. Les deux actifs, les deux inscriptibles, les deux issus du même historique.",
+      "audioDurationSec": 13.714286
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "72e1a909b8ade46a5d3bec6cb19c353aa2b52ea6820489558e9eb658e509d09f",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-branching/next-tutorial.72e1a909.mp3",
+      "narrationText": "Les commits ne changent jamais, les forks n'attendent pas. Ensuite, nous déplaçons un repository entier en cours d'exécution vers une autre machine, en direct. À bientôt dans le prochain !",
+      "audioDurationSec": 14.994286
+    }
+  ]
+}

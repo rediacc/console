@@ -1,0 +1,54 @@
+---
+title: "增量传输"
+description: "首次推送到另一台机器时传输全量数据；此后每次推送只传输变更的数据块，自动完成，无需任何配置。"
+category: "Tutorials"
+subcategory: advanced
+order: 17
+language: zh
+sourceHash: "6dabbcbb0670ac60"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 增量传输
+
+把仓库推送到另一台机器两次。第一次传输全部内容，第二次只传输变更部分。同一条命令，无需额外参数，无需手动记录。而且你不必凭信念接受这一点，因为推送输出会精确打印传输了多少数据。
+
+## 观看教程
+
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
+## 数据块，而非字节流
+
+![数据块，而非字节流](/img/tutorials/tutorial-delta-transfer/slide-1.svg)
+
+首次推送后，CLI 在两台机器上各保留一份相同的不可变基础镜像。下次推送时，只需与该基础镜像比对数据块差异，只发送不同的部分。
+
+## 第一步：基线推送
+
+<TutorialStep number={1} />
+
+输出说得很清楚：`2.0 GB transferred in 44.4s (full)`。整个镜像完成传输，两端各保留了一份相同的增量基础。
+
+## 第二步：修改少量数据
+
+<TutorialStep number={2} />
+
+## 第三步：推送差异
+
+<TutorialStep number={3} />
+
+同一条命令，输出截然不同：`50.8 MB transferred in 5.7s (delta vs base ..., image 2.0 GB)`。变更了约五十兆字节，传输的也大约是五十兆字节，而整个镜像有两 GB。
+
+## 第四步：同步完成，仅需数秒
+
+<TutorialStep number={4} />
+
+两台机器持有相同的仓库，刷新代价只是变更量，而非数据总量。按小时频率进行机器间备份，不再昂贵。
+
+> 需要精确控制？`--delta-base <guid>` 可指定比对基础，`--strategy` 可选择数据块差异算法。默认情况下两者都会自动确定。
+
+---
+
+下一篇：[存储管理](/zh/docs/tutorial-storage-management)。

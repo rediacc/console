@@ -197,259 +197,259 @@
       ]
     },
     {
-      "start": 41.206,
-      "end": 42.195,
+      "start": 41.956,
+      "end": 42.945,
       "text": "Profil erstellt.",
       "words": [
-        { "start": 41.206, "end": 41.7, "char": [0, 6] },
-        { "start": 41.7, "end": 42.195, "char": [7, 16] }
+        { "start": 41.956, "end": 42.45, "char": [0, 6] },
+        { "start": 42.45, "end": 42.945, "char": [7, 16] }
       ]
     },
     {
-      "start": 42.195,
-      "end": 42.689,
+      "start": 42.945,
+      "end": 43.439,
       "text": "Alles,",
-      "words": [{ "start": 42.195, "end": 42.689, "char": [0, 6] }]
+      "words": [{ "start": 42.945, "end": 43.439, "char": [0, 6] }]
     },
     {
-      "start": 42.689,
-      "end": 45.16,
+      "start": 43.439,
+      "end": 45.91,
       "text": "was wir sonst noch konfigurieren,",
       "words": [
-        { "start": 42.689, "end": 43.183, "char": [0, 3] },
-        { "start": 43.183, "end": 43.678, "char": [4, 7] },
-        { "start": 43.678, "end": 44.172, "char": [8, 13] },
-        { "start": 44.172, "end": 44.666, "char": [14, 18] },
-        { "start": 44.666, "end": 45.16, "char": [19, 33] }
+        { "start": 43.439, "end": 43.933, "char": [0, 3] },
+        { "start": 43.933, "end": 44.428, "char": [4, 7] },
+        { "start": 44.428, "end": 44.922, "char": [8, 13] },
+        { "start": 44.922, "end": 45.416, "char": [14, 18] },
+        { "start": 45.416, "end": 45.91, "char": [19, 33] }
       ]
     },
     {
-      "start": 45.16,
-      "end": 47.632,
+      "start": 45.91,
+      "end": 48.382,
       "text": "lebt in dieser einen Datei.",
       "words": [
-        { "start": 45.16, "end": 45.655, "char": [0, 4] },
-        { "start": 45.655, "end": 46.149, "char": [5, 7] },
-        { "start": 46.149, "end": 46.643, "char": [8, 14] },
-        { "start": 46.643, "end": 47.138, "char": [15, 20] },
-        { "start": 47.138, "end": 47.632, "char": [21, 27] }
+        { "start": 45.91, "end": 46.405, "char": [0, 4] },
+        { "start": 46.405, "end": 46.899, "char": [5, 7] },
+        { "start": 46.899, "end": 47.393, "char": [8, 14] },
+        { "start": 47.393, "end": 47.888, "char": [15, 20] },
+        { "start": 47.888, "end": 48.382, "char": [21, 27] }
       ]
     },
     {
-      "start": 50.948,
-      "end": 53.649,
+      "start": 51.7,
+      "end": 54.401,
       "text": "Jetzt registrieren wir den Server",
       "words": [
-        { "start": 50.948, "end": 51.488, "char": [0, 5] },
-        { "start": 51.488, "end": 52.029, "char": [6, 18] },
-        { "start": 52.029, "end": 52.569, "char": [19, 22] },
-        { "start": 52.569, "end": 53.109, "char": [23, 26] },
-        { "start": 53.109, "end": 53.649, "char": [27, 33] }
+        { "start": 51.7, "end": 52.24, "char": [0, 5] },
+        { "start": 52.24, "end": 52.781, "char": [6, 18] },
+        { "start": 52.781, "end": 53.321, "char": [19, 22] },
+        { "start": 53.321, "end": 53.861, "char": [23, 26] },
+        { "start": 53.861, "end": 54.401, "char": [27, 33] }
       ]
     },
     {
-      "start": 53.649,
-      "end": 55.27,
+      "start": 54.401,
+      "end": 56.022,
       "text": "bei der CLI,",
       "words": [
-        { "start": 53.649, "end": 54.19, "char": [0, 3] },
-        { "start": 54.19, "end": 54.73, "char": [4, 7] },
-        { "start": 54.73, "end": 55.27, "char": [8, 12] }
+        { "start": 54.401, "end": 54.942, "char": [0, 3] },
+        { "start": 54.942, "end": 55.482, "char": [4, 7] },
+        { "start": 55.482, "end": 56.022, "char": [8, 12] }
       ]
     },
     {
-      "start": 55.27,
-      "end": 56.891,
+      "start": 56.022,
+      "end": 57.643,
       "text": "indem wir Namen,",
       "words": [
-        { "start": 55.27, "end": 55.81, "char": [0, 5] },
-        { "start": 55.81, "end": 56.351, "char": [6, 9] },
-        { "start": 56.351, "end": 56.891, "char": [10, 16] }
+        { "start": 56.022, "end": 56.562, "char": [0, 5] },
+        { "start": 56.562, "end": 57.103, "char": [6, 9] },
+        { "start": 57.103, "end": 57.643, "char": [10, 16] }
       ]
     },
     {
-      "start": 56.891,
-      "end": 59.052,
+      "start": 57.643,
+      "end": 59.804,
       "text": "IP-Adresse und SSH-Benutzer angeben.",
       "words": [
-        { "start": 56.891, "end": 57.431, "char": [0, 10] },
-        { "start": 57.431, "end": 57.971, "char": [11, 14] },
-        { "start": 57.971, "end": 58.512, "char": [15, 27] },
-        { "start": 58.512, "end": 59.052, "char": [28, 36] }
+        { "start": 57.643, "end": 58.183, "char": [0, 10] },
+        { "start": 58.183, "end": 58.723, "char": [11, 14] },
+        { "start": 58.723, "end": 59.264, "char": [15, 27] },
+        { "start": 59.264, "end": 59.804, "char": [28, 36] }
       ]
     },
     {
-      "start": 59.052,
-      "end": 61.753,
+      "start": 59.804,
+      "end": 62.505,
       "text": "Host-Schlüssel werden automatisch für vertrauenswürdigen",
       "words": [
-        { "start": 59.052, "end": 59.592, "char": [0, 14] },
-        { "start": 59.592, "end": 60.132, "char": [15, 21] },
-        { "start": 60.132, "end": 60.673, "char": [22, 33] },
-        { "start": 60.673, "end": 61.213, "char": [34, 37] },
-        { "start": 61.213, "end": 61.753, "char": [38, 56] }
+        { "start": 59.804, "end": 60.344, "char": [0, 14] },
+        { "start": 60.344, "end": 60.884, "char": [15, 21] },
+        { "start": 60.884, "end": 61.425, "char": [22, 33] },
+        { "start": 61.425, "end": 61.965, "char": [34, 37] },
+        { "start": 61.965, "end": 62.505, "char": [38, 56] }
       ]
     },
     {
-      "start": 61.753,
-      "end": 62.834,
+      "start": 62.505,
+      "end": 63.586,
       "text": "Zugang gescannt.",
       "words": [
-        { "start": 61.753, "end": 62.293, "char": [0, 6] },
-        { "start": 62.293, "end": 62.834, "char": [7, 16] }
+        { "start": 62.505, "end": 63.045, "char": [0, 6] },
+        { "start": 63.045, "end": 63.586, "char": [7, 16] }
       ]
     },
     {
-      "start": 62.834,
-      "end": 64.125,
+      "start": 63.586,
+      "end": 64.877,
       "text": "Server registriert.",
       "words": [
-        { "start": 62.834, "end": 63.479, "char": [0, 6] },
-        { "start": 63.479, "end": 64.125, "char": [7, 19] }
+        { "start": 63.586, "end": 64.231, "char": [0, 6] },
+        { "start": 64.231, "end": 64.877, "char": [7, 19] }
       ]
     },
     {
-      "start": 64.125,
-      "end": 66.707,
+      "start": 64.877,
+      "end": 67.459,
       "text": "Die Host-Keys wurden automatisch",
       "words": [
-        { "start": 64.125, "end": 64.771, "char": [0, 3] },
-        { "start": 64.771, "end": 65.416, "char": [4, 13] },
-        { "start": 65.416, "end": 66.062, "char": [14, 20] },
-        { "start": 66.062, "end": 66.707, "char": [21, 32] }
+        { "start": 64.877, "end": 65.523, "char": [0, 3] },
+        { "start": 65.523, "end": 66.168, "char": [4, 13] },
+        { "start": 66.168, "end": 66.814, "char": [14, 20] },
+        { "start": 66.814, "end": 67.459, "char": [21, 32] }
       ]
     },
     {
-      "start": 66.707,
-      "end": 67.353,
+      "start": 67.459,
+      "end": 68.105,
       "text": "eingelesen.",
-      "words": [{ "start": 66.707, "end": 67.353, "char": [0, 11] }]
+      "words": [{ "start": 67.459, "end": 68.105, "char": [0, 11] }]
     },
     {
-      "start": 70.619,
-      "end": 73.27,
+      "start": 72.337,
+      "end": 74.988,
       "text": "Als Nächstes stellen wir den Server",
       "words": [
-        { "start": 70.619, "end": 71.061, "char": [0, 3] },
-        { "start": 71.061, "end": 71.503, "char": [4, 12] },
-        { "start": 71.503, "end": 71.945, "char": [13, 20] },
-        { "start": 71.945, "end": 72.387, "char": [21, 24] },
-        { "start": 72.387, "end": 72.829, "char": [25, 28] },
-        { "start": 72.829, "end": 73.27, "char": [29, 35] }
+        { "start": 72.337, "end": 72.779, "char": [0, 3] },
+        { "start": 72.779, "end": 73.221, "char": [4, 12] },
+        { "start": 73.221, "end": 73.663, "char": [13, 20] },
+        { "start": 73.663, "end": 74.105, "char": [21, 24] },
+        { "start": 74.105, "end": 74.547, "char": [25, 28] },
+        { "start": 74.547, "end": 74.988, "char": [29, 35] }
       ]
     },
     {
-      "start": 73.27,
-      "end": 73.712,
+      "start": 74.988,
+      "end": 75.43,
       "text": "bereit.",
-      "words": [{ "start": 73.27, "end": 73.712, "char": [0, 7] }]
+      "words": [{ "start": 74.988, "end": 75.43, "char": [0, 7] }]
     },
     {
-      "start": 73.712,
-      "end": 76.364,
+      "start": 75.43,
+      "end": 78.082,
       "text": "Dabei wird renet installiert und der",
       "words": [
-        { "start": 73.712, "end": 74.154, "char": [0, 5] },
-        { "start": 74.154, "end": 74.596, "char": [6, 10] },
-        { "start": 74.596, "end": 75.038, "char": [11, 16] },
-        { "start": 75.038, "end": 75.48, "char": [17, 28] },
-        { "start": 75.48, "end": 75.922, "char": [29, 32] },
-        { "start": 75.922, "end": 76.364, "char": [33, 36] }
+        { "start": 75.43, "end": 75.872, "char": [0, 5] },
+        { "start": 75.872, "end": 76.314, "char": [6, 10] },
+        { "start": 76.314, "end": 76.756, "char": [11, 16] },
+        { "start": 76.756, "end": 77.198, "char": [17, 28] },
+        { "start": 77.198, "end": 77.64, "char": [29, 32] },
+        { "start": 77.64, "end": 78.082, "char": [33, 36] }
       ]
     },
     {
-      "start": 76.364,
-      "end": 77.689,
+      "start": 78.082,
+      "end": 79.407,
       "text": "verschlüsselte Datenspeicher erstellt.",
       "words": [
-        { "start": 76.364, "end": 76.806, "char": [0, 14] },
-        { "start": 76.806, "end": 77.248, "char": [15, 28] },
-        { "start": 77.248, "end": 77.689, "char": [29, 38] }
+        { "start": 78.082, "end": 78.524, "char": [0, 14] },
+        { "start": 78.524, "end": 78.966, "char": [15, 28] },
+        { "start": 78.966, "end": 79.407, "char": [29, 38] }
       ]
     },
     {
-      "start": 77.689,
-      "end": 79.899,
+      "start": 79.407,
+      "end": 81.617,
       "text": "Danach ist der Server bereit,",
       "words": [
-        { "start": 77.689, "end": 78.131, "char": [0, 6] },
-        { "start": 78.131, "end": 78.573, "char": [7, 10] },
-        { "start": 78.573, "end": 79.015, "char": [11, 14] },
-        { "start": 79.015, "end": 79.457, "char": [15, 21] },
-        { "start": 79.457, "end": 79.899, "char": [22, 29] }
+        { "start": 79.407, "end": 79.849, "char": [0, 6] },
+        { "start": 79.849, "end": 80.291, "char": [7, 10] },
+        { "start": 80.291, "end": 80.733, "char": [11, 14] },
+        { "start": 80.733, "end": 81.175, "char": [15, 21] },
+        { "start": 81.175, "end": 81.617, "char": [22, 29] }
       ]
     },
     {
-      "start": 79.899,
-      "end": 81.225,
+      "start": 81.617,
+      "end": 82.943,
       "text": "Repositories zu hosten.",
       "words": [
-        { "start": 79.899, "end": 80.341, "char": [0, 12] },
-        { "start": 80.341, "end": 80.783, "char": [13, 15] },
-        { "start": 80.783, "end": 81.225, "char": [16, 23] }
+        { "start": 81.617, "end": 82.059, "char": [0, 12] },
+        { "start": 82.059, "end": 82.501, "char": [13, 15] },
+        { "start": 82.501, "end": 82.943, "char": [16, 23] }
       ]
     },
     {
-      "start": 81.225,
-      "end": 81.692,
+      "start": 84.693,
+      "end": 85.16,
       "text": "Fertig.",
-      "words": [{ "start": 81.225, "end": 81.692, "char": [0, 7] }]
+      "words": [{ "start": 84.693, "end": 85.16, "char": [0, 7] }]
     },
     {
-      "start": 81.692,
-      "end": 84.496,
+      "start": 85.16,
+      "end": 87.964,
       "text": "renet ist installiert und der Datastore",
       "words": [
-        { "start": 81.692, "end": 82.159, "char": [0, 5] },
-        { "start": 82.159, "end": 82.627, "char": [6, 9] },
-        { "start": 82.627, "end": 83.094, "char": [10, 21] },
-        { "start": 83.094, "end": 83.561, "char": [22, 25] },
-        { "start": 83.561, "end": 84.029, "char": [26, 29] },
-        { "start": 84.029, "end": 84.496, "char": [30, 39] }
+        { "start": 85.16, "end": 85.627, "char": [0, 5] },
+        { "start": 85.627, "end": 86.095, "char": [6, 9] },
+        { "start": 86.095, "end": 86.562, "char": [10, 21] },
+        { "start": 86.562, "end": 87.029, "char": [22, 25] },
+        { "start": 87.029, "end": 87.497, "char": [26, 29] },
+        { "start": 87.497, "end": 87.964, "char": [30, 39] }
       ]
     },
     {
-      "start": 84.496,
-      "end": 85.43,
+      "start": 87.964,
+      "end": 88.898,
       "text": "ist bereit.",
       "words": [
-        { "start": 84.496, "end": 84.963, "char": [0, 3] },
-        { "start": 84.963, "end": 85.43, "char": [4, 11] }
+        { "start": 87.964, "end": 88.431, "char": [0, 3] },
+        { "start": 88.431, "end": 88.898, "char": [4, 11] }
       ]
     },
     {
-      "start": 86.188,
-      "end": 88.741,
+      "start": 89.723,
+      "end": 92.276,
       "text": "Und das war's mit dem Hinzufügen",
       "words": [
-        { "start": 86.188, "end": 86.613, "char": [0, 3] },
-        { "start": 86.613, "end": 87.039, "char": [4, 7] },
-        { "start": 87.039, "end": 87.464, "char": [8, 13] },
-        { "start": 87.464, "end": 87.89, "char": [14, 17] },
-        { "start": 87.89, "end": 88.315, "char": [18, 21] },
-        { "start": 88.315, "end": 88.741, "char": [22, 32] }
+        { "start": 89.723, "end": 90.148, "char": [0, 3] },
+        { "start": 90.148, "end": 90.574, "char": [4, 7] },
+        { "start": 90.574, "end": 90.999, "char": [8, 13] },
+        { "start": 90.999, "end": 91.425, "char": [14, 17] },
+        { "start": 91.425, "end": 91.85, "char": [18, 21] },
+        { "start": 91.85, "end": 92.276, "char": [22, 32] }
       ]
     },
     {
-      "start": 88.741,
-      "end": 89.591,
+      "start": 92.276,
+      "end": 93.126,
       "text": "eines Servers!",
       "words": [
-        { "start": 88.741, "end": 89.166, "char": [0, 5] },
-        { "start": 89.166, "end": 89.591, "char": [6, 14] }
+        { "start": 92.276, "end": 92.701, "char": [0, 5] },
+        { "start": 92.701, "end": 93.126, "char": [6, 14] }
       ]
     },
     {
-      "start": 89.591,
-      "end": 92.144,
+      "start": 93.126,
+      "end": 95.679,
       "text": "Wir sehen uns im nächsten Tutorial.",
       "words": [
-        { "start": 89.591, "end": 90.017, "char": [0, 3] },
-        { "start": 90.017, "end": 90.442, "char": [4, 9] },
-        { "start": 90.442, "end": 90.868, "char": [10, 13] },
-        { "start": 90.868, "end": 91.293, "char": [14, 16] },
-        { "start": 91.293, "end": 91.719, "char": [17, 25] },
-        { "start": 91.719, "end": 92.144, "char": [26, 35] }
+        { "start": 93.126, "end": 93.552, "char": [0, 3] },
+        { "start": 93.552, "end": 93.977, "char": [4, 9] },
+        { "start": 93.977, "end": 94.403, "char": [10, 13] },
+        { "start": 94.403, "end": 94.828, "char": [14, 16] },
+        { "start": 94.828, "end": 95.254, "char": [17, 25] },
+        { "start": 95.254, "end": 95.679, "char": [26, 35] }
       ]
     }
   ]

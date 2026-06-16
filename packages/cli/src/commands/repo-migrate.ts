@@ -25,6 +25,8 @@ import { withSpinner } from '../utils/spinner.js';
 import { formatStepDuration } from '../utils/timeline.js';
 import { autoProvisionTarget, buildPushParams, resolveExtraMachines } from './repo-backup.js';
 import { postRepoUpTasks } from './repo-batch-utils.js';
+import { extractPushResult, type PushResultStats } from './repo-push-stats.js';
+import { formatBytes } from '../utils/format.js';
 
 export function registerRepoMigrateCommand(repoCommand: Command): void {
   repoCommand
@@ -63,13 +65,14 @@ interface MigrateOptions {
   debug?: boolean;
 }
 
-/** Execute backup_push with extraMachines resolution (needed for cross-machine rsync). */
+/** Execute backup_push with extraMachines resolution (needed for cross-machine rsync).
+ * Returns the parsed transfer stats from renet's push_result stdout line, when present. */
 async function executePush(
   repoName: string,
   machineName: string,
   params: Record<string, unknown>,
   debug?: boolean
-): Promise<void> {
+): Promise<PushResultStats | undefined> {
   await configService.ensureRepositoryNetworkId(repoName);
   const extraMachines = await resolveExtraMachines(params);
   const result = await localExecutorService.execute({
@@ -83,6 +86,7 @@ async function executePush(
   if (!result.success) {
     throw new Error(`backup_push failed: ${result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`);
   }
+  return extractPushResult(result.stdout);
 }
 
 /** Execute a repo bridge function quietly (spinner managed by caller). */
@@ -165,10 +169,22 @@ async function executePhase1(
   pushParams.params.retainBase = retainBase;
 
   await deployRepoKeyIfNeeded(name, to);
-  await withSpinner(
+  const stats = await withSpinner(
     t('commands.repo.migrate.phase1'),
     () => executePush(name, from, pushParams.params, debug),
     t('commands.repo.migrate.phase1Done')
+  );
+  renderPhaseStats('commands.repo.migrate.phase1Stats', stats);
+}
+
+/** Print real transfer numbers for a migration phase, when renet reported them. */
+function renderPhaseStats(key: string, stats: PushResultStats | undefined): void {
+  if (!stats || stats.transferredBytes < 0) return;
+  outputService.info(
+    `  ${t(key, {
+      transferred: formatBytes(stats.transferredBytes),
+      duration: formatStepDuration(stats.transferMs),
+    })}`
   );
 }
 
@@ -196,8 +212,9 @@ async function executePhase2(
     if (delta.strategy) params.strategy = delta.strategy;
   };
 
+  let cutoverStats: PushResultStats | undefined;
   if (checkpoint) {
-    await withSpinner(
+    cutoverStats = await withSpinner(
       t('commands.repo.migrate.checkpointing'),
       async () => {
         const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
@@ -205,7 +222,7 @@ async function executePhase2(
           checkpoint: true,
         });
         applyDelta(deltaParams.params);
-        await executePush(name, from, deltaParams.params, debug);
+        return executePush(name, from, deltaParams.params, debug);
       },
       t('commands.repo.migrate.deltaDone')
     );
@@ -216,18 +233,19 @@ async function executePhase2(
       t('commands.repo.migrate.sourceStopped')
     );
 
-    await withSpinner(
+    cutoverStats = await withSpinner(
       t('commands.repo.migrate.deltaSync'),
       async () => {
         const deltaParams = buildPushParams(name, repoConfig.repositoryGuid, 'machine', to, {
           force: true,
         });
         applyDelta(deltaParams.params);
-        await executePush(name, from, deltaParams.params, debug);
+        return executePush(name, from, deltaParams.params, debug);
       },
       t('commands.repo.migrate.deltaDone')
     );
   }
+  renderPhaseStats('commands.repo.migrate.phase2Stats', cutoverStats);
 
   await withSpinner(
     t('commands.repo.migrate.unmountingSource'),

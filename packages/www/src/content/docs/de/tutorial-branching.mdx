@@ -1,0 +1,76 @@
+---
+title: "Branching - Commit & Rollback"
+description: "Frieren Sie Repository-Zustände in unveränderliche Commits ein, benennen Sie sie mit Branches und checken Sie jeden Commit als beschreibbaren Fork wieder aus."
+category: "Tutorials"
+subcategory: advanced
+order: 15
+language: de
+sourceHash: "53f4eacdd4630b19"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Branching: Commit & Rollback
+
+Versionieren Sie Ihre Repositories wie Code. Ein **Commit** friert einen Fork in ein unveränderliches Image ein; ein **Branch** benennt es; **Checkout** verwandelt jeden Commit zurück in einen frischen, beschreibbaren Fork. In diesem Tutorial speichern wir einen bekannt guten Zustand, löschen eine echte PostgreSQL-Tabelle und haben alle Zeilen in Sekunden zurück.
+
+## Tutorial ansehen
+
+![Tutorial: Branching, Commit und Rollback](/assets/tutorials/tutorial-branching.cast)
+
+## Das Modell
+
+![Commits, Branches, Checkout](/img/tutorials/tutorial-branching/slide-1.svg)
+
+Commits ändern sich nie - sie verweigern sogar das Einhängen. Forks warten nie - Checkout ist ein nahezu sofortiger Reflink-Klon. Das vollständige Konzept finden Sie im [Branching-Leitfaden](/de/docs/repo-branching).
+
+## Einen Checkpoint setzen
+
+Eine Markierungsdatei macht die Version sichtbar, und eine echte Datenbank macht den Rollback bedeutsam: Die Tabelle `customers` enthält drei Zeilen.
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+<TutorialStep number={4} />
+
+Der Commit erfasst alles: Dateien *und* das PostgreSQL-Datenverzeichnis. Der Branch `stable` benennt jetzt diesen eingefrorenen Zustand.
+
+## Weiterarbeiten
+
+<TutorialStep number={5} />
+
+## Katastrophe
+
+Eine riskante Änderung löscht die Tabelle. Dann bestätigt die Abfrage, dass der Schaden real ist.
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+`ERROR: relation "customers" does not exist`. Drei Zeilen, weg. Im echten Leben ist das der Moment, in dem einem der Magen sinkt; hier ist es die Vorbereitung für die Auflösung.
+
+<TutorialStep number={8} />
+
+<TutorialStep number={9} />
+
+Die Historie zeichnet auf, was wirklich passiert ist, kaputten Zustand eingeschlossen: `v2 risky change` oben, `v1 baseline` darunter.
+
+## In Sekunden zurückrollen
+
+<TutorialStep number={10} />
+
+<TutorialStep number={11} />
+
+<TutorialStep number={12} />
+
+<TutorialStep number={13} />
+
+Der Rollback-Fork liest `v1`, und die Tabelle `customers` ist mit allen drei Zeilen wieder da. Der Rollback hat die Datenbank wiederhergestellt, nicht nur Dateien. Nichts wurde überschrieben: Der Arbeits-Fork enthält weiterhin Version zwei, und das Video öffnet beide in VS Code zum Beweis.
+
+---
+
+Weiter: [Live-Migration](/de/docs/tutorial-live-migration).

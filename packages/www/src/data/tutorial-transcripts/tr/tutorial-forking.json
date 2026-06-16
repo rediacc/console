@@ -6,7 +6,7 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 2.41277,
+      "at": 2.422355,
       "text": "Depoyu tek bir komutla fork'lıyoruz. Her şeyi klonladı: uygulama, veritabanı, yapılandırma dosyaları. Ve bu saniyeler içinde oldu; deponun boyutundan bağımsız olarak. 1 gigabayt, 100 gigabayt, 1 terabayt: her seferinde aynı süre.",
       "afterText": "Fork tamam. Klon ayakta ve çalışıyor; boyuttan bağımsız olarak.",
       "cardLabel": "Repo Forkla",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 13.421721,
+      "at": 12.478171,
       "text": "Her iki depo yan yana var. Aynı makine, aynı disk, iki tamamen bağımsız ortam. Fork'un kendi container'ları, kendi dosya sistemi ve kendi Docker daemon'ı var.",
       "afterText": "İki depo, tek disk. Aynı veri, geri kalan her şey ayrı.",
       "cardLabel": "Repo'ları Listele",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 18.980206,
+      "at": 18.050071,
       "text": "İzolasyonu kanıtlayalım. Orijinalde işaret dosyamız bıraktığımız yerde duruyor. Fork'un varlığı üst depoda hiçbir şeyi değiştirmedi.",
       "afterText": "Orijinal dosya hâlâ orada. Fork ona dokunmadı.",
       "cardLabel": "Orijinal Dosya",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 26.216902,
+      "at": 25.352583,
       "text": "Şimdi o dosyayı siliyoruz; ama yalnızca fork içinde. Fork içinde silindi. Yıkıcı bir değişiklik yaptık ve bu değişiklik fork içinde kaldı.",
       "afterText": "Fork'ta gitti. Orijinale dokunulmadı.",
       "cardLabel": "Fork'ta Sil",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 34.456769,
+      "at": 33.706234,
       "text": "Orijinale geri döndük. İşaret dosyası hâlâ burada, dokunulmamış. Orijinal, hiçbir şeyin olduğunu fark etmedi. Aynı görüntüler, ayrı Docker daemon'ları, ayrı dosya sistemleri.",
       "afterText": "Hâlâ burada. Fork'lar doğru biçimde izole.",
       "cardLabel": "Orijinal Sağlam",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 41.647526,
+      "at": 41.0794,
       "text": "İşiniz bittiğinde fork'u silin. Orijinal tam olarak olduğu gibi kalır. Fork alın, deneyin, bir şeyleri bozun, silin; hiçbir risk yok.",
       "afterText": "Fork kaldırıldı. Orijinal tam bıraktığımız gibi.",
       "cardLabel": "Temizle",
@@ -89,7 +89,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "Fork'lar gizli bilgileri bilinçli olarak arkalarında bırakır; 'üretimi klonla, hiçbir şeyi bozma' yaklaşımını gerçekten güvenli kılan da budur. Bir sonraki bölümde bunları doğru biçimde bağlayacağız!"
+      "text": "Komutları az önce gördünüz. Şimdi görsel hale getirelim: gerçek bir veritabanı uygulaması, canlı olarak fork'lanıyor, yan yana düzenleniyor, orijinal ise hiç kıpırdamıyor."
     }
   ],
   "title": "Repository Forklama",
@@ -107,6 +107,6 @@
     "cast-step-5": "Adım 6: Fork'u sil",
     "river-photo": "Nehrin fotoğrafı",
     "flat-disk": "Disk kullanımı sabit kalır",
-    "outro": "Sonraki: Secrets Yönetimi"
+    "outro": "Sıradaki: Fork İzolasyonu Uygulamada"
   }
 }

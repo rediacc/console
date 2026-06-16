@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "at": 2.413668,
+      "text": "다른 머신으로의 첫 번째 push는 전체 이미지를 전송하며, 출력에 명확히 나타납니다. 2기가바이트 전송, full로 표시됩니다. 이것이 기준입니다.",
+      "afterText": "44초 만에 2기가바이트, full로 표시됩니다. CLI는 양쪽에 동일한 베이스도 보관했으며, 이것이 마법의 준비 단계입니다.",
+      "cardLabel": "전체 Push",
+      "prose": "repository를 두 번째 머신으로 push하세요. 첫 번째 push는 전체 이미지를 전송하며, 출력에 다음과 같이 나타납니다. 2 GB 전송, (full)로 표시됩니다. delta 베이스는 양쪽에 유지됩니다."
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "at": 10.922135,
+      "text": "데이터를 약간 변경합니다. 2기가바이트 중 50메가바이트입니다.",
+      "afterText": "큰 이미지에서의 작은 변경입니다.",
+      "cardLabel": "데이터 변경",
+      "prose": "repository에 소량의 새 데이터를 작성하세요."
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "at": 21.404869,
+      "text": "다시 push합니다. 같은 명령어이지만, 이번에는 출력을 확인하세요. 2기가바이트 이미지에서 약 50메가바이트가 전송되었고, delta로 표시됩니다. 변경된 블록만 이동했습니다.",
+      "afterText": "2기가바이트 이미지에서 6초 만에 50메가바이트. 숫자가 증거입니다.",
+      "cardLabel": "Delta Push",
+      "prose": "같은 명령어로 다시 push하세요. 출력에 공유 베이스 대비 delta로 약 50 MB가 전송되었다고 나타납니다. 2 GB 이미지에서 변경된 블록만 이동했습니다."
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "at": 29.764702,
+      "text": "두 머신 모두 같은 repository를 보유하며, 몇 초 만에 갱신됩니다. 원한다면 매시간 실행해도 됩니다. 비용은 변경된 양에 따라 결정되며, 전체 크기와는 무관합니다.",
+      "afterText": "자주 백업해도 비용이 부담스럽지 않습니다.",
+      "cardLabel": "동기화됨",
+      "prose": "대상 머신은 이제 업데이트된 repository를 보유합니다. delta 비용으로 동기화됩니다."
+    }
+  ],
+  "title": "Delta 전송",
+  "chapters": {
+    "intro": "Delta 전송",
+    "blocks-not-bytes": "바이트가 아닌 블록",
+    "cast-step-0": "1단계: 첫 번째 푸시, 전체",
+    "cast-step-1": "2단계: 일부 데이터 변경",
+    "cast-step-2": "3단계: 두 번째 푸시, delta",
+    "cast-step-3": "4단계: 몇 초 만에 동기화",
+    "outro": "시리즈가 여기서 끝납니다"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "재미있는 실험을 해보겠습니다. 1기가바이트 데이터가 있는 repository를 다른 머신으로 두 번 push할 겁니다. 첫 번째 push는 모든 것을 전송하고, 두 번째는 변경된 것만 전송합니다. 숫자를 잘 보세요. push 명령어가 정확히 얼마나 이동했는지 출력합니다."
+    },
+    {
+      "id": "blocks-not-bytes",
+      "text": "비결은 준비 방식에 있습니다. 첫 번째 push 후, CLI는 양쪽 머신에 동일한 불변 베이스 이미지를 유지합니다. 다음 push는 그 베이스와 블록을 비교하여 차이점만 전송합니다. 플래그도, 별도 작업도 없습니다. 동일한 push 명령어입니다."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "작은 변경은 첫 번째 이후로 매번 작은 전송을 의미합니다. 이제 튜토리얼이 하나 남았습니다. 디스크가 부족하지 않도록 하는 방법입니다. 마지막 튜토리얼에서 만나요!"
+    }
+  ]
+}

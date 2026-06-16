@@ -44,7 +44,7 @@ Use `--remote` for a directory (the default) or `--remote-file` for a single fil
 # Directory
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 
-# Single file — --local must be an existing directory
+# Single file: --local must be an existing directory
 rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
@@ -171,6 +171,36 @@ rdc vscode check
 Verifies VS Code installation, Remote SSH extension, and active connections.
 
 > **Prerequisite:** Install the [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) extension in VS Code.
+
+### VS Code in the Browser
+
+No local VS Code? Serve the editor from inside the repository sandbox and open it in any browser:
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+This command:
+1. Installs the open-source editor server on the machine once (read-only shared path, checksum-verified)
+2. Starts it inside the repository sandbox, so the file tree, the integrated terminal, and every child process see exactly what the repository sees
+3. Opens an SSH tunnel to a local port and launches your browser with a per-session token URL
+
+The server keeps running after you close the tunnel; reconnecting reuses it. Manage it with:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| Option | Description |
+|--------|-------------|
+| `--no-open` | Print the URL instead of launching the browser |
+| `--url-only` | Print exactly one URL line on stdout (for scripting) and hold the tunnel |
+| `--local <port>` | Pick the local tunnel port |
+| `--server-provider <id>` | Editor server implementation: `openvscode` (default) or `code-server` |
+| `--server-archive <file>` | Install from a pre-staged tarball on the machine (no internet needed) |
+
+Works from Linux, macOS, Windows, or a tablet. The only local requirement is a browser.
 
 ## CLI Updates (update)
 

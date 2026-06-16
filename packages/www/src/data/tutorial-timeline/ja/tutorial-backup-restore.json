@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "027d73e405bf0ac463bf8fd4bbeac0720708c201905ad40dd7ba5d47828ae864",
+  "transcriptHash": "9297c324ff752a0d2fdf3f4e4b85f156426e79cd1ab43e3cb4041ad817579a12",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424169,
-      "replayEndSec": 6.651448,
+      "replayStartSec": 2.409089,
+      "replayEndSec": 6.555802,
       "narrationText": "ステップ1です。既存の rclone 設定をインポートします。rclone は S3、Backblaze、Google Drive、Dropbox など多くのサービスに対応しています。すでに rclone を使っている場合は、同じ設定ファイルをそのままインポートできます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-01.32582b1a.mp3",
       "textHash": "32582b1a11b5f5c81ca01bb7215c99f48d5f1ef321bd28f802b4f3519cdc70a4",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 6.651448,
-      "replayEndSec": 10.354487,
+      "replayStartSec": 6.555802,
+      "replayEndSec": 10.251839,
       "narrationText": "CLI が把握しているストレージ一覧を確認します。各ストレージがバックアップのプッシュ先として使えます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-02.4b3f9574.mp3",
       "textHash": "4b3f9574ae4402f715e383fc244e21c115d408e123429535a8e19be80b78901d",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 10.354487,
-      "replayEndSec": 18.28182,
+      "replayStartSec": 10.251839,
+      "replayEndSec": 24.484571,
       "narrationText": "ステップ2です。フルバックアップをプッシュします。リポジトリ全体、つまりアプリ、データベース、ファイル、設定がすべてアップロードされます。リポジトリは静止時に暗号化されているため、バックアップも暗号化されます。追加の鍵管理は不要です。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-03.8faaeff3.mp3",
       "textHash": "8faaeff3d3e7e9ce064308687283d7db3482a24061b3878e44ac0e96e4369e0d",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 18.28182,
-      "replayEndSec": 26.532142,
+      "replayStartSec": 24.484571,
+      "replayEndSec": 31.133919,
       "narrationText": "このストレージで利用可能なバックアップを確認します。これで新しいサーバーへのリストアはコマンド1つで行えます。リポジトリプルコマンドを使います。同じデータ、同じコンテナ、別のマシンです。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-04.1801ca9f.mp3",
       "textHash": "1801ca9fa3b86707664d9109c5ae134b855c18e97750ab4fbe9888f722f12ff6",
@@ -60,6 +60,45 @@
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-04-after.ab45d937.mp3",
       "afterAudioDurationSec": 5.485714,
       "afterTextHash": "ab45d937d9c41e212359309e6e0d22530093d4d325359c7053dc9d28cc0b8425"
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.133919,
+      "replayEndSec": 39.135694,
+      "narrationText": "では、リストアの確認です。まず repository をオフラインにします。サービスを停止して、暗号化されたボリュームをアンマウントしてください。このマシンからアプリが消えました。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-05.67a0a993.mp3",
+      "textHash": "67a0a9934b07315bf804f3cde9a8e5edf1b0d16de1c95f750702bb9791d0aa9f",
+      "audioDurationSec": 11.72898,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-05-after.4fbc1e98.mp3",
+      "afterAudioDurationSec": 4.754286,
+      "afterTextHash": "4fbc1e985c158a503f2db74033293e2a57f67cdcf330d9b210737801caf23e89"
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.135694,
+      "replayEndSec": 48.126162,
+      "narrationText": "では、ストレージから直接バックアップを取り戻しましょう。repo pull コマンドがイメージを取得して整合性を確認し、元の場所に戻してくれます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-06.e2699375.mp3",
+      "textHash": "e2699375863bb517b40058237e5dfcbfb9bdd867465b600a78e7f936e5b6d5d4",
+      "audioDurationSec": 10.03102,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-06-after.5ca5fa21.mp3",
+      "afterAudioDurationSec": 4.284082,
+      "afterTextHash": "5ca5fa2117d178ffd29916b84257bc1142e61e15009c9ae7933797d0260dca9c"
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "replayStartSec": 48.126162,
+      "replayEndSec": 54.070366,
+      "narrationText": "再度マウントすれば、repository は復元されます。push、list、pull。これがバックアップの全体像です。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-07.1c57cd13.mp3",
+      "textHash": "1c57cd137c70b6bef4dbd3a8991fb7698ca2985333147eb2f00ad1c1084299da",
+      "audioDurationSec": 7.549388,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-backup-restore/tutorial-backup-restore-07-after.55b69453.mp3",
+      "afterAudioDurationSec": 6.269388,
+      "afterTextHash": "55b6945316a4512925d5a68e58d6eeca38cd555a4298059f2a5b55239eae4682"
     }
   ],
   "narrationAudio": [

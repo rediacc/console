@@ -396,6 +396,9 @@ export const TIMEOUT_DEFAULTS = {
 
   /** Default MCP command timeout (2 minutes) */
   MCP_COMMAND: 120_000,
+
+  /** SSH tunnel local-forward ready timeout */
+  TUNNEL_READY: 15000,
 } as const;
 
 /**

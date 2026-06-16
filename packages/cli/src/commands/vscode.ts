@@ -3,7 +3,7 @@
  * Opens VS Code with Remote SSH connection to machines and repositories
  */
 
-import { SSHConnection, spawnSSH, testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
+import { SSHConnection, spawnSSH } from '@rediacc/shared-desktop/ssh';
 import {
   addSSHConfigEntry,
   buildVSCodeSSHConfigEntry,
@@ -28,6 +28,8 @@ import {
 } from '@rediacc/shared-desktop/vscode';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
+import { connectVSCodeBrowser, verifySSHConnectivity } from './vscode-browser.js';
+import { registerVSCodeServeCommands } from './vscode-serve.js';
 import { getStateProvider } from '../providers/index.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
@@ -55,6 +57,11 @@ interface VSCodeConnectOptions {
   newWindow?: boolean;
   skipEnvSetup?: boolean;
   insiders?: boolean;
+  browser?: boolean;
+  open?: boolean;
+  local?: string;
+  serverProvider?: string;
+  serverArchive?: string;
 }
 
 interface VSCodeCleanupOptions {
@@ -70,26 +77,6 @@ async function detectVSCode() {
     }
     return info;
   });
-}
-
-async function verifySSHConnectivity(connectionDetails: ConnectionDetails): Promise<void> {
-  const connectivityResult = await withSpinner(
-    t('commands.vscode.connect.testingConnectivity', {
-      host: connectionDetails.host,
-      port: connectionDetails.port,
-    }),
-    () => testSSHConnectivity(connectionDetails.host, connectionDetails.port, 10000)
-  );
-
-  if (!connectivityResult.success) {
-    throw new Error(
-      t('errors.vscode.connectivityFailed', {
-        host: connectionDetails.host,
-        port: connectionDetails.port,
-        error: connectivityResult.error,
-      })
-    );
-  }
 }
 
 async function setupSSHConfig(
@@ -309,6 +296,11 @@ async function validateVSCodeOptions(options: VSCodeConnectOptions) {
 async function connectVSCode(options: VSCodeConnectOptions): Promise<void> {
   const { teamName, machineName, repositoryName } = await validateVSCodeOptions(options);
 
+  if (options.browser) {
+    await connectVSCodeBrowser(options, { teamName, machineName, repositoryName });
+    return;
+  }
+
   const vscodeInfo = await detectVSCode();
   debugLog(`Found VS Code: ${vscodeInfo.path}${vscodeInfo.isInsiders ? ' (Insiders)' : ''}`);
 
@@ -509,6 +501,11 @@ ${t('help.examples')}
     .option('-n, --new-window', t('options.newWindow'))
     .option('--skip-env-setup', t('options.skipEnvSetup'))
     .option('--insiders', t('options.insiders'))
+    .option('--browser', t('options.vscodeBrowser'))
+    .option('--no-open', t('options.vscodeNoOpen'))
+    .option('--local <port>', t('commands.repo.tunnel.localOption'))
+    .option('--server-provider <id>', t('options.vscodeServerProvider'))
+    .option('--server-archive <file>', t('options.vscodeServerArchive'))
     .action(async (options: VSCodeConnectOptions) => {
       try {
         const provider = await getStateProvider();
@@ -520,6 +517,8 @@ ${t('help.examples')}
         handleError(error);
       }
     });
+
+  registerVSCodeServeCommands(vscode);
 
   // List subcommand
   vscode

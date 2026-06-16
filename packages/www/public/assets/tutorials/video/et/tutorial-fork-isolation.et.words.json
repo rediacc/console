@@ -1,0 +1,672 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.341,
+      "text": "Tere tulemast tagasi!",
+      "words": [
+        { "start": 1, "end": 1.447, "char": [0, 4] },
+        { "start": 1.447, "end": 1.894, "char": [5, 13] },
+        { "start": 1.894, "end": 2.341, "char": [14, 21] }
+      ]
+    },
+    {
+      "start": 2.341,
+      "end": 4.575,
+      "text": "Eelmine kord nägid sa fork-käsklusi.",
+      "words": [
+        { "start": 2.341, "end": 2.788, "char": [0, 7] },
+        { "start": 2.788, "end": 3.234, "char": [8, 12] },
+        { "start": 3.234, "end": 3.681, "char": [13, 18] },
+        { "start": 3.681, "end": 4.128, "char": [19, 21] },
+        { "start": 4.128, "end": 4.575, "char": [22, 36] }
+      ]
+    },
+    {
+      "start": 4.575,
+      "end": 5.469,
+      "text": "Nüüd vaatame,",
+      "words": [
+        { "start": 4.575, "end": 5.022, "char": [0, 4] },
+        { "start": 5.022, "end": 5.469, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 5.469,
+      "end": 7.256,
+      "text": "mida need tegelikult tähendavad:",
+      "words": [
+        { "start": 5.469, "end": 5.916, "char": [0, 4] },
+        { "start": 5.916, "end": 6.363, "char": [5, 9] },
+        { "start": 6.363, "end": 6.809, "char": [10, 20] },
+        { "start": 6.809, "end": 7.256, "char": [21, 32] }
+      ]
+    },
+    {
+      "start": 7.256,
+      "end": 8.597,
+      "text": "reaalajas töötav andmebaasirakendus,",
+      "words": [
+        { "start": 7.256, "end": 7.703, "char": [0, 9] },
+        { "start": 7.703, "end": 8.15, "char": [10, 16] },
+        { "start": 8.15, "end": 8.597, "char": [17, 36] }
+      ]
+    },
+    {
+      "start": 8.597,
+      "end": 9.491,
+      "text": "kopeeritud sekunditega,",
+      "words": [
+        { "start": 8.597, "end": 9.044, "char": [0, 10] },
+        { "start": 9.044, "end": 9.491, "char": [11, 23] }
+      ]
+    },
+    {
+      "start": 9.491,
+      "end": 10.384,
+      "text": "muudetav vabalt,",
+      "words": [
+        { "start": 9.491, "end": 9.938, "char": [0, 8] },
+        { "start": 9.938, "end": 10.384, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 10.384,
+      "end": 13.066,
+      "text": "samal ajal kui originaal ei märka",
+      "words": [
+        { "start": 10.384, "end": 10.831, "char": [0, 5] },
+        { "start": 10.831, "end": 11.278, "char": [6, 10] },
+        { "start": 11.278, "end": 11.725, "char": [11, 14] },
+        { "start": 11.725, "end": 12.172, "char": [15, 24] },
+        { "start": 12.172, "end": 12.619, "char": [25, 27] },
+        { "start": 12.619, "end": 13.066, "char": [28, 33] }
+      ]
+    },
+    {
+      "start": 13.066,
+      "end": 13.513,
+      "text": "midagi.",
+      "words": [{ "start": 13.066, "end": 13.513, "char": [0, 7] }]
+    },
+    {
+      "start": 14.292,
+      "end": 16.088,
+      "text": "Siin on olukord:",
+      "words": [
+        { "start": 14.292, "end": 14.891, "char": [0, 4] },
+        { "start": 14.891, "end": 15.49, "char": [5, 7] },
+        { "start": 15.49, "end": 16.088, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 16.088,
+      "end": 19.082,
+      "text": "päris PostgreSQL koos pgAdmin liidesega",
+      "words": [
+        { "start": 16.088, "end": 16.687, "char": [0, 5] },
+        { "start": 16.687, "end": 17.286, "char": [6, 16] },
+        { "start": 17.286, "end": 17.885, "char": [17, 21] },
+        { "start": 17.885, "end": 18.484, "char": [22, 29] },
+        { "start": 18.484, "end": 19.082, "char": [30, 39] }
+      ]
+    },
+    {
+      "start": 19.082,
+      "end": 19.681,
+      "text": "peal,",
+      "words": [{ "start": 19.082, "end": 19.681, "char": [0, 5] }]
+    },
+    {
+      "start": 19.681,
+      "end": 20.879,
+      "text": "otseülekandes serveris.",
+      "words": [
+        { "start": 19.681, "end": 20.28, "char": [0, 13] },
+        { "start": 20.28, "end": 20.879, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 20.879,
+      "end": 23.873,
+      "text": "Fork on hetkeliselt loodud copy-on-write",
+      "words": [
+        { "start": 20.879, "end": 21.478, "char": [0, 4] },
+        { "start": 21.478, "end": 22.076, "char": [5, 7] },
+        { "start": 22.076, "end": 22.675, "char": [8, 19] },
+        { "start": 22.675, "end": 23.274, "char": [20, 26] },
+        { "start": 23.274, "end": 23.873, "char": [27, 40] }
+      ]
+    },
+    {
+      "start": 23.873,
+      "end": 25.669,
+      "text": "kaksik kõigest sellest.",
+      "words": [
+        { "start": 23.873, "end": 24.472, "char": [0, 6] },
+        { "start": 24.472, "end": 25.071, "char": [7, 14] },
+        { "start": 25.071, "end": 25.669, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 25.669,
+      "end": 27.466,
+      "text": "Sünnihetkel samad andmed,",
+      "words": [
+        { "start": 25.669, "end": 26.268, "char": [0, 11] },
+        { "start": 26.268, "end": 26.867, "char": [12, 17] },
+        { "start": 26.867, "end": 27.466, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 27.466,
+      "end": 29.861,
+      "text": "pärast täiesti eraldi elud.",
+      "words": [
+        { "start": 27.466, "end": 28.065, "char": [0, 6] },
+        { "start": 28.065, "end": 28.663, "char": [7, 14] },
+        { "start": 28.663, "end": 29.262, "char": [15, 21] },
+        { "start": 29.262, "end": 29.861, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 33.126,
+      "end": 34.778,
+      "text": "Meet the app:",
+      "words": [
+        { "start": 33.126, "end": 33.677, "char": [0, 4] },
+        { "start": 33.677, "end": 34.227, "char": [5, 8] },
+        { "start": 34.227, "end": 34.778, "char": [9, 13] }
+      ]
+    },
+    {
+      "start": 34.778,
+      "end": 35.328,
+      "text": "demo-pgadmin,",
+      "words": [{ "start": 34.778, "end": 35.328, "char": [0, 13] }]
+    },
+    {
+      "start": 35.328,
+      "end": 38.081,
+      "text": "a PostgreSQL with a pgAdmin",
+      "words": [
+        { "start": 35.328, "end": 35.879, "char": [0, 1] },
+        { "start": 35.879, "end": 36.429, "char": [2, 12] },
+        { "start": 36.429, "end": 36.98, "char": [13, 17] },
+        { "start": 36.98, "end": 37.531, "char": [18, 19] },
+        { "start": 37.531, "end": 38.081, "char": [20, 27] }
+      ]
+    },
+    {
+      "start": 38.081,
+      "end": 38.632,
+      "text": "interface,",
+      "words": [{ "start": 38.081, "end": 38.632, "char": [0, 10] }]
+    },
+    {
+      "start": 38.632,
+      "end": 40.284,
+      "text": "mounted and running.",
+      "words": [
+        { "start": 38.632, "end": 39.182, "char": [0, 7] },
+        { "start": 39.182, "end": 39.733, "char": [8, 11] },
+        { "start": 39.733, "end": 40.284, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 43.284,
+      "end": 44.412,
+      "text": "Üks reaalajas repo.",
+      "words": [
+        { "start": 43.284, "end": 43.66, "char": [0, 3] },
+        { "start": 43.66, "end": 44.036, "char": [4, 13] },
+        { "start": 44.036, "end": 44.412, "char": [14, 19] }
+      ]
+    },
+    {
+      "start": 44.412,
+      "end": 45.164,
+      "text": "Kloonime selle.",
+      "words": [
+        { "start": 44.412, "end": 44.788, "char": [0, 8] },
+        { "start": 44.788, "end": 45.164, "char": [9, 15] }
+      ]
+    },
+    {
+      "start": 45.673,
+      "end": 48.672,
+      "text": "See on originaal,",
+      "words": [
+        { "start": 45.673, "end": 46.673, "char": [0, 3] },
+        { "start": 46.673, "end": 47.672, "char": [4, 6] },
+        { "start": 47.672, "end": 48.672, "char": [7, 17] }
+      ]
+    },
+    {
+      "start": 48.672,
+      "end": 49.671,
+      "text": "brauseris.",
+      "words": [{ "start": 48.672, "end": 49.671, "char": [0, 10] }]
+    },
+    {
+      "start": 49.671,
+      "end": 52.67,
+      "text": "pgAdmin küsib sisselogimist,",
+      "words": [
+        { "start": 49.671, "end": 50.671, "char": [0, 7] },
+        { "start": 50.671, "end": 51.671, "char": [8, 13] },
+        { "start": 51.671, "end": 52.67, "char": [14, 28] }
+      ]
+    },
+    {
+      "start": 52.67,
+      "end": 55.669,
+      "text": "sest see on",
+      "words": [
+        { "start": 52.67, "end": 53.67, "char": [0, 4] },
+        { "start": 53.67, "end": 54.67, "char": [5, 8] },
+        { "start": 54.67, "end": 55.669, "char": [9, 11] }
+      ]
+    },
+    {
+      "start": 55.669,
+      "end": 58.668,
+      "text": "tootmiskoopia ja tootmine",
+      "words": [
+        { "start": 55.669, "end": 56.669, "char": [0, 13] },
+        { "start": 56.669, "end": 57.668, "char": [14, 16] },
+        { "start": 57.668, "end": 58.668, "char": [17, 25] }
+      ]
+    },
+    {
+      "start": 58.668,
+      "end": 60.667,
+      "text": "jääb kaitstuks.",
+      "words": [
+        { "start": 58.668, "end": 59.668, "char": [0, 4] },
+        { "start": 59.668, "end": 60.667, "char": [5, 15] }
+      ]
+    },
+    {
+      "start": 79.34,
+      "end": 80.161,
+      "text": "Fork it.",
+      "words": [
+        { "start": 79.34, "end": 79.75, "char": [0, 4] },
+        { "start": 79.75, "end": 80.161, "char": [5, 8] }
+      ]
+    },
+    {
+      "start": 80.161,
+      "end": 83.035,
+      "text": "The copy-on-write clone takes seconds regardless of",
+      "words": [
+        { "start": 80.161, "end": 80.572, "char": [0, 3] },
+        { "start": 80.572, "end": 80.982, "char": [4, 17] },
+        { "start": 80.982, "end": 81.393, "char": [18, 23] },
+        { "start": 81.393, "end": 81.804, "char": [24, 29] },
+        { "start": 81.804, "end": 82.214, "char": [30, 37] },
+        { "start": 82.214, "end": 82.625, "char": [38, 48] },
+        { "start": 82.625, "end": 83.035, "char": [49, 51] }
+      ]
+    },
+    {
+      "start": 83.035,
+      "end": 83.446,
+      "text": "size;",
+      "words": [{ "start": 83.035, "end": 83.446, "char": [0, 5] }]
+    },
+    {
+      "start": 83.446,
+      "end": 86.321,
+      "text": "detach returns as soon as the containers",
+      "words": [
+        { "start": 83.446, "end": 83.857, "char": [0, 6] },
+        { "start": 83.857, "end": 84.267, "char": [7, 14] },
+        { "start": 84.267, "end": 84.678, "char": [15, 17] },
+        { "start": 84.678, "end": 85.089, "char": [18, 22] },
+        { "start": 85.089, "end": 85.499, "char": [23, 25] },
+        { "start": 85.499, "end": 85.91, "char": [26, 29] },
+        { "start": 85.91, "end": 86.321, "char": [30, 40] }
+      ]
+    },
+    {
+      "start": 86.321,
+      "end": 86.731,
+      "text": "start,",
+      "words": [{ "start": 86.321, "end": 86.731, "char": [0, 6] }]
+    },
+    {
+      "start": 86.731,
+      "end": 89.606,
+      "text": "while health checks continue in the background.",
+      "words": [
+        { "start": 86.731, "end": 87.142, "char": [0, 5] },
+        { "start": 87.142, "end": 87.553, "char": [6, 12] },
+        { "start": 87.553, "end": 87.963, "char": [13, 19] },
+        { "start": 87.963, "end": 88.374, "char": [20, 28] },
+        { "start": 88.374, "end": 88.784, "char": [29, 31] },
+        { "start": 88.784, "end": 89.195, "char": [32, 35] },
+        { "start": 89.195, "end": 89.606, "char": [36, 47] }
+      ]
+    },
+    {
+      "start": 89.708,
+      "end": 90.992,
+      "text": "Forkitud ja käivitub.",
+      "words": [
+        { "start": 89.708, "end": 90.136, "char": [0, 8] },
+        { "start": 90.136, "end": 90.564, "char": [9, 11] },
+        { "start": 90.564, "end": 90.992, "char": [12, 21] }
+      ]
+    },
+    {
+      "start": 90.992,
+      "end": 92.276,
+      "text": "Andmeid ei kopeeritud,",
+      "words": [
+        { "start": 90.992, "end": 91.42, "char": [0, 7] },
+        { "start": 91.42, "end": 91.848, "char": [8, 10] },
+        { "start": 91.848, "end": 92.276, "char": [11, 22] }
+      ]
+    },
+    {
+      "start": 92.276,
+      "end": 93.132,
+      "text": "need jagati,",
+      "words": [
+        { "start": 92.276, "end": 92.704, "char": [0, 4] },
+        { "start": 92.704, "end": 93.132, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 93.132,
+      "end": 95.272,
+      "text": "kuni üks pool neid muudab.",
+      "words": [
+        { "start": 93.132, "end": 93.56, "char": [0, 4] },
+        { "start": 93.56, "end": 93.988, "char": [5, 8] },
+        { "start": 93.988, "end": 94.416, "char": [9, 13] },
+        { "start": 94.416, "end": 94.844, "char": [14, 18] },
+        { "start": 94.844, "end": 95.272, "char": [19, 26] }
+      ]
+    },
+    {
+      "start": 98.522,
+      "end": 101.46,
+      "text": "Ja siin on fork'i pgAdmin.",
+      "words": [
+        { "start": 98.522, "end": 99.109, "char": [0, 2] },
+        { "start": 99.109, "end": 99.697, "char": [3, 7] },
+        { "start": 99.697, "end": 100.285, "char": [8, 10] },
+        { "start": 100.285, "end": 100.873, "char": [11, 17] },
+        { "start": 100.873, "end": 101.46, "char": [18, 26] }
+      ]
+    },
+    {
+      "start": 101.46,
+      "end": 103.224,
+      "text": "Seekord sisselogimist pole:",
+      "words": [
+        { "start": 101.46, "end": 102.048, "char": [0, 7] },
+        { "start": 102.048, "end": 102.636, "char": [8, 21] },
+        { "start": 102.636, "end": 103.224, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 103.224,
+      "end": 105.575,
+      "text": "fork'id on ühekordsed sandbox'id,",
+      "words": [
+        { "start": 103.224, "end": 103.811, "char": [0, 7] },
+        { "start": 103.811, "end": 104.399, "char": [8, 10] },
+        { "start": 104.399, "end": 104.987, "char": [11, 21] },
+        { "start": 104.987, "end": 105.575, "char": [22, 33] }
+      ]
+    },
+    {
+      "start": 105.575,
+      "end": 108.513,
+      "text": "nii et värav astub kõrvale.",
+      "words": [
+        { "start": 105.575, "end": 106.162, "char": [0, 3] },
+        { "start": 106.162, "end": 106.75, "char": [4, 6] },
+        { "start": 106.75, "end": 107.338, "char": [7, 12] },
+        { "start": 107.338, "end": 107.926, "char": [13, 18] },
+        { "start": 107.926, "end": 108.513, "char": [19, 27] }
+      ]
+    },
+    {
+      "start": 108.513,
+      "end": 109.689,
+      "text": "Samad tabelid,",
+      "words": [
+        { "start": 108.513, "end": 109.101, "char": [0, 5] },
+        { "start": 109.101, "end": 109.689, "char": [6, 14] }
+      ]
+    },
+    {
+      "start": 109.689,
+      "end": 110.865,
+      "text": "samad read,",
+      "words": [
+        { "start": 109.689, "end": 110.277, "char": [0, 5] },
+        { "start": 110.277, "end": 110.865, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 110.865,
+      "end": 112.628,
+      "text": "aga oma universum.",
+      "words": [
+        { "start": 110.865, "end": 111.452, "char": [0, 3] },
+        { "start": 111.452, "end": 112.04, "char": [4, 7] },
+        { "start": 112.04, "end": 112.628, "char": [8, 18] }
+      ]
+    },
+    {
+      "start": 150.388,
+      "end": 151.509,
+      "text": "Two repositories now:",
+      "words": [
+        { "start": 150.388, "end": 150.762, "char": [0, 3] },
+        { "start": 150.762, "end": 151.135, "char": [4, 16] },
+        { "start": 151.135, "end": 151.509, "char": [17, 21] }
+      ]
+    },
+    {
+      "start": 151.509,
+      "end": 153.376,
+      "text": "the original and the experiment,",
+      "words": [
+        { "start": 151.509, "end": 151.882, "char": [0, 3] },
+        { "start": 151.882, "end": 152.255, "char": [4, 12] },
+        { "start": 152.255, "end": 152.629, "char": [13, 16] },
+        { "start": 152.629, "end": 153.002, "char": [17, 20] },
+        { "start": 153.002, "end": 153.376, "char": [21, 32] }
+      ]
+    },
+    {
+      "start": 153.376,
+      "end": 155.242,
+      "text": "each with its own containers,",
+      "words": [
+        { "start": 153.376, "end": 153.749, "char": [0, 4] },
+        { "start": 153.749, "end": 154.122, "char": [5, 9] },
+        { "start": 154.122, "end": 154.496, "char": [10, 13] },
+        { "start": 154.496, "end": 154.869, "char": [14, 17] },
+        { "start": 154.869, "end": 155.242, "char": [18, 29] }
+      ]
+    },
+    {
+      "start": 155.242,
+      "end": 155.616,
+      "text": "network,",
+      "words": [{ "start": 155.242, "end": 155.616, "char": [0, 8] }]
+    },
+    {
+      "start": 155.616,
+      "end": 156.736,
+      "text": "and disk view.",
+      "words": [
+        { "start": 155.616, "end": 155.989, "char": [0, 3] },
+        { "start": 155.989, "end": 156.363, "char": [4, 8] },
+        { "start": 156.363, "end": 156.736, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 159.736,
+      "end": 161.032,
+      "text": "Sama masin,",
+      "words": [
+        { "start": 159.736, "end": 160.384, "char": [0, 4] },
+        { "start": 160.384, "end": 161.032, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 161.032,
+      "end": 162.975,
+      "text": "kaks isoleeritud maailma.",
+      "words": [
+        { "start": 161.032, "end": 161.68, "char": [0, 4] },
+        { "start": 161.68, "end": 162.327, "char": [5, 16] },
+        { "start": 162.327, "end": 162.975, "char": [17, 25] }
+      ]
+    },
+    {
+      "start": 166.288,
+      "end": 167.245,
+      "text": "Done experimenting?",
+      "words": [
+        { "start": 166.288, "end": 166.767, "char": [0, 4] },
+        { "start": 166.767, "end": 167.245, "char": [5, 19] }
+      ]
+    },
+    {
+      "start": 167.245,
+      "end": 168.681,
+      "text": "Delete the fork.",
+      "words": [
+        { "start": 167.245, "end": 167.724, "char": [0, 6] },
+        { "start": 167.724, "end": 168.202, "char": [7, 10] },
+        { "start": 168.202, "end": 168.681, "char": [11, 16] }
+      ]
+    },
+    {
+      "start": 168.681,
+      "end": 170.116,
+      "text": "Seconds to create,",
+      "words": [
+        { "start": 168.681, "end": 169.159, "char": [0, 7] },
+        { "start": 169.159, "end": 169.637, "char": [8, 10] },
+        { "start": 169.637, "end": 170.116, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 170.116,
+      "end": 172.987,
+      "text": "seconds to throw away — the",
+      "words": [
+        { "start": 170.116, "end": 170.594, "char": [0, 7] },
+        { "start": 170.594, "end": 171.073, "char": [8, 10] },
+        { "start": 171.073, "end": 171.551, "char": [11, 16] },
+        { "start": 171.551, "end": 172.03, "char": [17, 21] },
+        { "start": 172.03, "end": 172.508, "char": [22, 23] },
+        { "start": 172.508, "end": 172.987, "char": [24, 27] }
+      ]
+    },
+    {
+      "start": 172.987,
+      "end": 175.379,
+      "text": "original never knew it existed.",
+      "words": [
+        { "start": 172.987, "end": 173.465, "char": [0, 8] },
+        { "start": 173.465, "end": 173.944, "char": [9, 14] },
+        { "start": 173.944, "end": 174.422, "char": [15, 19] },
+        { "start": 174.422, "end": 174.9, "char": [20, 22] },
+        { "start": 174.9, "end": 175.379, "char": [23, 31] }
+      ]
+    },
+    {
+      "start": 178.379,
+      "end": 178.84,
+      "text": "Kadunud.",
+      "words": [{ "start": 178.379, "end": 178.84, "char": [0, 8] }]
+    },
+    {
+      "start": 178.84,
+      "end": 181.148,
+      "text": "Originaal teenis kogu selle aja.",
+      "words": [
+        { "start": 178.84, "end": 179.302, "char": [0, 9] },
+        { "start": 179.302, "end": 179.763, "char": [10, 16] },
+        { "start": 179.763, "end": 180.225, "char": [17, 21] },
+        { "start": 180.225, "end": 180.686, "char": [22, 27] },
+        { "start": 180.686, "end": 181.148, "char": [28, 32] }
+      ]
+    },
+    {
+      "start": 181.951,
+      "end": 184.16,
+      "text": "Nii et tee fork'e vabalt,",
+      "words": [
+        { "start": 181.951, "end": 182.393, "char": [0, 3] },
+        { "start": 182.393, "end": 182.835, "char": [4, 6] },
+        { "start": 182.835, "end": 183.276, "char": [7, 10] },
+        { "start": 183.276, "end": 183.718, "char": [11, 17] },
+        { "start": 183.718, "end": 184.16, "char": [18, 25] }
+      ]
+    },
+    {
+      "start": 184.16,
+      "end": 185.927,
+      "text": "tootmine ei saa viga.",
+      "words": [
+        { "start": 184.16, "end": 184.602, "char": [0, 8] },
+        { "start": 184.602, "end": 185.043, "char": [9, 11] },
+        { "start": 185.043, "end": 185.485, "char": [12, 15] },
+        { "start": 185.485, "end": 185.927, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 185.927,
+      "end": 187.252,
+      "text": "Järgmisena vaatame saladusi,",
+      "words": [
+        { "start": 185.927, "end": 186.368, "char": [0, 10] },
+        { "start": 186.368, "end": 186.81, "char": [11, 18] },
+        { "start": 186.81, "end": 187.252, "char": [19, 28] }
+      ]
+    },
+    {
+      "start": 187.252,
+      "end": 188.577,
+      "text": "seda üht asja,",
+      "words": [
+        { "start": 187.252, "end": 187.694, "char": [0, 4] },
+        { "start": 187.694, "end": 188.135, "char": [5, 8] },
+        { "start": 188.135, "end": 188.577, "char": [9, 14] }
+      ]
+    },
+    {
+      "start": 188.577,
+      "end": 191.227,
+      "text": "mida sinu fork'id tahtlikult ei päri.",
+      "words": [
+        { "start": 188.577, "end": 189.019, "char": [0, 4] },
+        { "start": 189.019, "end": 189.46, "char": [5, 9] },
+        { "start": 189.46, "end": 189.902, "char": [10, 17] },
+        { "start": 189.902, "end": 190.344, "char": [18, 28] },
+        { "start": 190.344, "end": 190.785, "char": [29, 31] },
+        { "start": 190.785, "end": 191.227, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 191.227,
+      "end": 191.669,
+      "text": "Kohtumiseni!",
+      "words": [{ "start": 191.227, "end": 191.669, "char": [0, 12] }]
+    }
+  ]
+}

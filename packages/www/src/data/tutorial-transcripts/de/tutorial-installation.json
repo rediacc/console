@@ -6,7 +6,7 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.626476,
+      "at": 1.614947,
       "text": "Zuerst bestätigen wir, dass die CLI im Pfad verfügbar ist. Das Ausführen der CLI mit dem Versions-Flag gibt die installierte Version aus und zeigt, dass die Installation erfolgreich abgeschlossen wurde.",
       "afterText": "Installation fertig. Die rdc-Binary liegt im Pfad.",
       "cardLabel": "CLI installieren",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 7.903516,
+      "at": 8.543153,
       "text": "Jetzt führen wir die CLI doctor aus. Sie prüft alle Abhängigkeiten, die die CLI benötigt, also Node, SSH und den Rest, und meldet eventuelle Lücken. Ein sauberer Bericht bedeutet, dass wir bereit sind, einen Server hinzuzufügen.",
       "afterText": "Version ausgegeben. Du bist startklar.",
       "cardLabel": "Version prüfen",

@@ -1,0 +1,34 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:15.569
+VS Code en Tu Navegador
+
+00:00:15.569 --> 00:00:39.333
+El editor vive en el sandbox
+
+00:00:39.333 --> 00:01:06.975
+Paso 1: Conectar con --browser
+
+00:01:06.675 --> 00:01:19.475
+El workbench, en una pestaña
+
+00:01:19.175 --> 00:01:37.975
+Crear un archivo en el editor
+
+00:01:37.675 --> 00:01:54.475
+La terminal integrada
+
+00:01:54.175 --> 00:02:11.260
+Paso 2: La misma vista desde la terminal
+
+00:02:11.260 --> 00:02:30.181
+Paso 3: Los archivos del navegador son del repo
+
+00:02:30.181 --> 00:02:49.084
+Paso 4: ls /, denegado
+
+00:02:49.084 --> 00:03:08.370
+Paso 5: ls /home, denegado
+
+00:03:08.370 --> 00:03:21.650
+Siguiente: Fork de Repositorio

@@ -1,6 +1,6 @@
 services:
   app:
-    image: node:20-alpine
+    image: node:20.20.2-alpine
     container_name: app
     working_dir: /app
     command: sh -c "npm install --production 2>/dev/null; node server.mjs"
@@ -20,7 +20,7 @@ services:
       - "rediacc.service_port=3000"
 
   db:
-    image: postgres:16-alpine
+    image: postgres:16.14-alpine
     container_name: db
     command: -c listen_addresses=*
     env_file: .env

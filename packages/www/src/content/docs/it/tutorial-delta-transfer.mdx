@@ -1,0 +1,54 @@
+---
+title: "Delta Transfer"
+description: "Il primo push su un'altra macchina copia tutto; ogni push successivo trasferisce solo i blocchi cambiati, automaticamente."
+category: "Tutorials"
+subcategory: advanced
+order: 17
+language: it
+sourceHash: "6dabbcbb0670ac60"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Delta Transfer
+
+Invia un repository su un'altra macchina due volte. Il primo push porta tutto. Il secondo porta solo ciò che e cambiato: stesso comando, nessun flag, nessuna contabilita. E non devi crederci sulla fiducia, perche l'output del push stampa esattamente quanto ha spostato.
+
+## Guarda il tutorial
+
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
+## Blocchi, non byte
+
+![Blocchi, non byte](/img/tutorials/tutorial-delta-transfer/slide-1.svg)
+
+Dopo il primo push, la CLI mantiene un'immagine di base immutabile identica su entrambe le macchine. Il push successivo confronta i blocchi rispetto a quella base e invia solo la differenza.
+
+## Passo 1: Il push di riferimento
+
+<TutorialStep number={1} />
+
+L'output e chiaro: `2.0 GB transferred in 44.4s (full)`. L'intera immagine ha viaggiato, e una base delta identica e stata conservata su entrambi i lati.
+
+## Passo 2: Cambia un po'
+
+<TutorialStep number={2} />
+
+## Passo 3: Invia la differenza
+
+<TutorialStep number={3} />
+
+Stesso comando, riga molto diversa: `50.8 MB transferred in 5.7s (delta vs base ..., image 2.0 GB)`. Cinquanta megabyte sono cambiati, quindi circa cinquanta megabyte hanno viaggiato, su un'immagine da due gigabyte.
+
+## Passo 4: In sincronia, in pochi secondi
+
+<TutorialStep number={4} />
+
+Entrambe le macchine hanno lo stesso repository, aggiornato al costo della modifica, non della dimensione. I backup orari da macchina a macchina smettono di essere costosi.
+
+> Hai bisogno di controllo esplicito? `--delta-base <guid>` fissa la base di confronto, e `--strategy` sceglie l'algoritmo di block-delta. Il default li calcola entrambi per te.
+
+---
+
+Successivo: [Gestione dello Storage](/it/docs/tutorial-storage-management).

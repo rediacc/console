@@ -87,74 +87,143 @@ yedek gönderebileceğimiz bir hedef.
 00:00:54.837 --> 00:00:56.341
 Yedek almaya hazır.
 
-00:00:59.638 --> 00:01:00.868
+00:00:59.671 --> 00:01:00.901
 İkinci adım.
 
-00:01:00.868 --> 00:01:02.713
+00:01:00.901 --> 00:01:02.746
 Tam yedek gönderiyoruz.
 
-00:01:02.713 --> 00:01:04.558
+00:01:02.746 --> 00:01:04.591
 Tüm depo yükleniyor:
 
-00:01:04.558 --> 00:01:05.173
+00:01:04.591 --> 00:01:05.206
 uygulama,
 
-00:01:05.173 --> 00:01:05.788
+00:01:05.206 --> 00:01:05.821
 veritabanı,
 
-00:01:05.788 --> 00:01:06.403
+00:01:05.821 --> 00:01:06.436
 dosyalar,
 
-00:01:06.403 --> 00:01:07.018
+00:01:06.436 --> 00:01:07.051
 yapılandırma.
 
-00:01:07.018 --> 00:01:10.092
+00:01:07.051 --> 00:01:10.125
 Depo depolandığında şifreli olduğundan yedek
 
-00:01:10.092 --> 00:01:11.937
+00:01:10.125 --> 00:01:11.970
 de şifreli olur.
 
-00:01:11.937 --> 00:01:14.397
+00:01:11.970 --> 00:01:14.430
 Ek anahtar yönetimi gerekmez.
 
-00:01:16.647 --> 00:01:17.479
+00:01:17.430 --> 00:01:18.262
 Yedek yüklendi.
 
-00:01:17.479 --> 00:01:20.389
+00:01:18.262 --> 00:01:21.172
 Bu depodaki her şey artık uzak depolamada,
 
-00:01:20.389 --> 00:01:21.637
+00:01:21.172 --> 00:01:22.420
 şifreli olarak duruyor.
 
-00:01:24.946 --> 00:01:26.803
+00:01:25.729 --> 00:01:27.586
 Bu depolama alanında bulunan yedekleri listeliyoruz.
 
-00:01:26.803 --> 00:01:27.422
+00:01:27.586 --> 00:01:28.205
 Buradan itibaren,
 
-00:01:27.422 --> 00:01:29.897
+00:01:28.205 --> 00:01:30.680
 yeni bir sunucuda geri yükleme tek komutla yapılır:
 
-00:01:29.897 --> 00:01:31.135
+00:01:30.680 --> 00:01:31.918
 depo geri yükleme komutu.
 
-00:01:31.135 --> 00:01:31.754
+00:01:31.918 --> 00:01:32.537
 Aynı veri,
 
-00:01:31.754 --> 00:01:32.373
+00:01:32.537 --> 00:01:33.156
 aynı container'lar,
 
-00:01:32.373 --> 00:01:32.992
+00:01:33.156 --> 00:01:33.775
 farklı makine.
 
-00:01:35.992 --> 00:01:38.114
+00:01:36.775 --> 00:01:38.897
 Tüm anlık görüntüleriniz tek bir yerde.
 
-00:01:38.114 --> 00:01:40.589
+00:01:38.897 --> 00:01:41.372
 Tek bir komutla herhangi birini geri çekebilirsiniz.
 
-00:01:41.410 --> 00:01:44.217
+00:01:44.693 --> 00:01:46.623
+Şimdi geri yükleme kanıtı.
+
+00:01:46.623 --> 00:01:48.554
+Önce repository'yi çevrimdışı alın:
+
+00:01:48.554 --> 00:01:51.449
+servisleri durdurun ve şifreli birimi unmount
+
+00:01:51.449 --> 00:01:51.932
+edin.
+
+00:01:51.932 --> 00:01:53.862
+Uygulama bu makineden gitti.
+
+00:01:56.862 --> 00:01:58.607
+Çevrimdışı ve unmount edildi,
+
+00:01:58.607 --> 00:02:01.224
+tam olarak yeni bir sunucunun durumu.
+
+00:02:04.558 --> 00:02:07.113
+Ve yedeği doğrudan depolamadan geri çekin.
+
+00:02:07.113 --> 00:02:09.242
+Repo pull komutu imajı getirir,
+
+00:02:09.242 --> 00:02:11.797
+bütünlüğünü kontrol eder ve tam olarak
+
+00:02:11.797 --> 00:02:13.074
+olduğu yere koyar.
+
+00:02:16.074 --> 00:02:17.388
+Transfer tamamlandı,
+
+00:02:17.388 --> 00:02:18.701
+bütünlük doğrulandı.
+
+00:02:18.701 --> 00:02:20.671
+Repository geri döndü.
+
+00:02:23.988 --> 00:02:26.778
+Tekrar mount edin ve repository
+
+00:02:26.778 --> 00:02:27.893
+geri yüklendi.
+
+00:02:27.893 --> 00:02:28.451
+Push,
+
+00:02:28.451 --> 00:02:29.009
+list,
+
+00:02:29.009 --> 00:02:29.567
+pull,
+
+00:02:29.567 --> 00:02:31.799
+yedeklemenin tüm hikayesi bu.
+
+00:02:34.049 --> 00:02:34.966
+Geri yüklendi.
+
+00:02:34.966 --> 00:02:37.717
+Aynı akış yepyeni bir makinede de
+
+00:02:37.717 --> 00:02:38.176
+çalışır.
+
+00:02:38.981 --> 00:02:41.788
 Verileriniz güvende ve makineler arasında taşınabilir.
 
-00:01:44.217 --> 00:01:46.556
+00:02:41.788 --> 00:02:44.127
 Bir sonraki bölümde görüşmek üzere!

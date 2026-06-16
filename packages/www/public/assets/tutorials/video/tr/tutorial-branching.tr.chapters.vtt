@@ -1,0 +1,52 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:14.362
+Branching: Commit ve Rollback
+
+00:00:14.362 --> 00:00:33.413
+Commit'ler, branch'ler, checkout
+
+00:00:33.413 --> 00:00:48.026
+Adım 1: Birinci sürüm
+
+00:00:48.026 --> 00:01:06.804
+Adım 2: Commit edin
+
+00:01:06.804 --> 00:01:29.355
+Adım 3: Branch ile adlandırın
+
+00:01:29.355 --> 00:01:39.601
+Adım 4: Çalışmaya devam edin, ikinci sürüm
+
+00:01:39.601 --> 00:01:54.864
+Adım 5: Tekrar commit edin
+
+00:01:54.864 --> 00:02:11.431
+Adım 6: Geçmiş
+
+00:02:11.431 --> 00:02:30.666
+Adım 7: Branch'i checkout edin
+
+00:02:30.666 --> 00:02:46.866
+Adım 8: Rollback'i başlatın
+
+00:02:46.866 --> 00:03:05.323
+Adım 9: Kanıt, birinci sürüm
+
+00:03:05.323 --> 00:03:23.801
+Adım 10: Branch'i Checkout Et
+
+00:03:23.801 --> 00:03:40.526
+Adım 11: Rollback'i Başlat
+
+00:03:40.526 --> 00:03:56.975
+Adım 12: Kanıt: Birinci Sürüm
+
+00:03:56.975 --> 00:04:14.770
+Adım 13: Veri Geri Döndü
+
+00:04:14.470 --> 00:04:29.270
+Her iki sürüm, yan yana
+
+00:04:28.970 --> 00:04:38.890
+Sıradaki: Canlı Taşıma

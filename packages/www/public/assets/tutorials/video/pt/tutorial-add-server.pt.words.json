@@ -185,255 +185,255 @@
       ]
     },
     {
-      "start": 36.561,
-      "end": 37.419,
+      "start": 37.311,
+      "end": 38.169,
       "text": "Perfil criado.",
       "words": [
-        { "start": 36.561, "end": 36.99, "char": [0, 6] },
-        { "start": 36.99, "end": 37.419, "char": [7, 14] }
+        { "start": 37.311, "end": 37.74, "char": [0, 6] },
+        { "start": 37.74, "end": 38.169, "char": [7, 14] }
       ]
     },
     {
-      "start": 37.419,
-      "end": 39.992,
+      "start": 38.169,
+      "end": 40.742,
       "text": "Tudo o que configurarmos a seguir",
       "words": [
-        { "start": 37.419, "end": 37.848, "char": [0, 4] },
-        { "start": 37.848, "end": 38.277, "char": [5, 6] },
-        { "start": 38.277, "end": 38.706, "char": [7, 10] },
-        { "start": 38.706, "end": 39.134, "char": [11, 24] },
-        { "start": 39.134, "end": 39.563, "char": [25, 26] },
-        { "start": 39.563, "end": 39.992, "char": [27, 33] }
+        { "start": 38.169, "end": 38.598, "char": [0, 4] },
+        { "start": 38.598, "end": 39.027, "char": [5, 6] },
+        { "start": 39.027, "end": 39.456, "char": [7, 10] },
+        { "start": 39.456, "end": 39.884, "char": [11, 24] },
+        { "start": 39.884, "end": 40.313, "char": [25, 26] },
+        { "start": 40.313, "end": 40.742, "char": [27, 33] }
       ]
     },
     {
-      "start": 39.992,
-      "end": 41.707,
+      "start": 40.742,
+      "end": 42.457,
       "text": "vive neste único ficheiro.",
       "words": [
-        { "start": 39.992, "end": 40.421, "char": [0, 4] },
-        { "start": 40.421, "end": 40.85, "char": [5, 10] },
-        { "start": 40.85, "end": 41.279, "char": [11, 16] },
-        { "start": 41.279, "end": 41.707, "char": [17, 26] }
+        { "start": 40.742, "end": 41.171, "char": [0, 4] },
+        { "start": 41.171, "end": 41.6, "char": [5, 10] },
+        { "start": 41.6, "end": 42.029, "char": [11, 16] },
+        { "start": 42.029, "end": 42.457, "char": [17, 26] }
       ]
     },
     {
-      "start": 45.048,
-      "end": 47.874,
+      "start": 45.765,
+      "end": 48.591,
       "text": "Agora vamos registar o servidor a",
       "words": [
-        { "start": 45.048, "end": 45.519, "char": [0, 5] },
-        { "start": 45.519, "end": 45.99, "char": [6, 11] },
-        { "start": 45.99, "end": 46.461, "char": [12, 20] },
-        { "start": 46.461, "end": 46.932, "char": [21, 22] },
-        { "start": 46.932, "end": 47.403, "char": [23, 31] },
-        { "start": 47.403, "end": 47.874, "char": [32, 33] }
+        { "start": 45.765, "end": 46.236, "char": [0, 5] },
+        { "start": 46.236, "end": 46.707, "char": [6, 11] },
+        { "start": 46.707, "end": 47.178, "char": [12, 20] },
+        { "start": 47.178, "end": 47.649, "char": [21, 22] },
+        { "start": 47.649, "end": 48.12, "char": [23, 31] },
+        { "start": 48.12, "end": 48.591, "char": [32, 33] }
       ]
     },
     {
-      "start": 47.874,
-      "end": 50.229,
+      "start": 48.591,
+      "end": 50.947,
       "text": "partir da linha de comandos,",
       "words": [
-        { "start": 47.874, "end": 48.345, "char": [0, 6] },
-        { "start": 48.345, "end": 48.816, "char": [7, 9] },
-        { "start": 48.816, "end": 49.287, "char": [10, 15] },
-        { "start": 49.287, "end": 49.758, "char": [16, 18] },
-        { "start": 49.758, "end": 50.229, "char": [19, 28] }
+        { "start": 48.591, "end": 49.062, "char": [0, 6] },
+        { "start": 49.062, "end": 49.533, "char": [7, 9] },
+        { "start": 49.533, "end": 50.004, "char": [10, 15] },
+        { "start": 50.004, "end": 50.475, "char": [16, 18] },
+        { "start": 50.475, "end": 50.947, "char": [19, 28] }
       ]
     },
     {
-      "start": 50.229,
-      "end": 51.643,
+      "start": 50.947,
+      "end": 52.36,
       "text": "fornecendo o nome,",
       "words": [
-        { "start": 50.229, "end": 50.701, "char": [0, 10] },
-        { "start": 50.701, "end": 51.172, "char": [11, 12] },
-        { "start": 51.172, "end": 51.643, "char": [13, 18] }
+        { "start": 50.947, "end": 51.418, "char": [0, 10] },
+        { "start": 51.418, "end": 51.889, "char": [11, 12] },
+        { "start": 51.889, "end": 52.36, "char": [13, 18] }
       ]
     },
     {
-      "start": 51.643,
-      "end": 54.469,
+      "start": 52.36,
+      "end": 55.186,
       "text": "o endereço IP e o utilizador",
       "words": [
-        { "start": 51.643, "end": 52.114, "char": [0, 1] },
-        { "start": 52.114, "end": 52.585, "char": [2, 10] },
-        { "start": 52.585, "end": 53.056, "char": [11, 13] },
-        { "start": 53.056, "end": 53.527, "char": [14, 15] },
-        { "start": 53.527, "end": 53.998, "char": [16, 17] },
-        { "start": 53.998, "end": 54.469, "char": [18, 28] }
+        { "start": 52.36, "end": 52.831, "char": [0, 1] },
+        { "start": 52.831, "end": 53.302, "char": [2, 10] },
+        { "start": 53.302, "end": 53.773, "char": [11, 13] },
+        { "start": 53.773, "end": 54.244, "char": [14, 15] },
+        { "start": 54.244, "end": 54.715, "char": [16, 17] },
+        { "start": 54.715, "end": 55.186, "char": [18, 28] }
       ]
     },
     {
-      "start": 54.469,
-      "end": 54.94,
+      "start": 55.186,
+      "end": 55.657,
       "text": "SSH.",
-      "words": [{ "start": 54.469, "end": 54.94, "char": [0, 4] }]
+      "words": [{ "start": 55.186, "end": 55.657, "char": [0, 4] }]
     },
     {
-      "start": 54.94,
-      "end": 57.766,
+      "start": 55.657,
+      "end": 58.483,
       "text": "As chaves de anfitrião são verificadas",
       "words": [
-        { "start": 54.94, "end": 55.411, "char": [0, 2] },
-        { "start": 55.411, "end": 55.882, "char": [3, 9] },
-        { "start": 55.882, "end": 56.353, "char": [10, 12] },
-        { "start": 56.353, "end": 56.824, "char": [13, 22] },
-        { "start": 56.824, "end": 57.295, "char": [23, 26] },
-        { "start": 57.295, "end": 57.766, "char": [27, 38] }
+        { "start": 55.657, "end": 56.128, "char": [0, 2] },
+        { "start": 56.128, "end": 56.599, "char": [3, 9] },
+        { "start": 56.599, "end": 57.07, "char": [10, 12] },
+        { "start": 57.07, "end": 57.541, "char": [13, 22] },
+        { "start": 57.541, "end": 58.012, "char": [23, 26] },
+        { "start": 58.012, "end": 58.483, "char": [27, 38] }
       ]
     },
     {
-      "start": 57.766,
-      "end": 59.65,
+      "start": 58.483,
+      "end": 60.367,
       "text": "automaticamente para acesso seguro.",
       "words": [
-        { "start": 57.766, "end": 58.237, "char": [0, 15] },
-        { "start": 58.237, "end": 58.708, "char": [16, 20] },
-        { "start": 58.708, "end": 59.179, "char": [21, 27] },
-        { "start": 59.179, "end": 59.65, "char": [28, 35] }
+        { "start": 58.483, "end": 58.954, "char": [0, 15] },
+        { "start": 58.954, "end": 59.425, "char": [16, 20] },
+        { "start": 59.425, "end": 59.896, "char": [21, 27] },
+        { "start": 59.896, "end": 60.367, "char": [28, 35] }
       ]
     },
     {
-      "start": 59.65,
-      "end": 60.991,
+      "start": 60.367,
+      "end": 61.708,
       "text": "Servidor registado.",
       "words": [
-        { "start": 59.65, "end": 60.321, "char": [0, 8] },
-        { "start": 60.321, "end": 60.991, "char": [9, 19] }
+        { "start": 60.367, "end": 61.038, "char": [0, 8] },
+        { "start": 61.038, "end": 61.708, "char": [9, 19] }
       ]
     },
     {
-      "start": 60.991,
-      "end": 63.673,
+      "start": 61.708,
+      "end": 64.39,
       "text": "As chaves de anfitrião",
       "words": [
-        { "start": 60.991, "end": 61.662, "char": [0, 2] },
-        { "start": 61.662, "end": 62.332, "char": [3, 9] },
-        { "start": 62.332, "end": 63.003, "char": [10, 12] },
-        { "start": 63.003, "end": 63.673, "char": [13, 22] }
+        { "start": 61.708, "end": 62.379, "char": [0, 2] },
+        { "start": 62.379, "end": 63.049, "char": [3, 9] },
+        { "start": 63.049, "end": 63.72, "char": [10, 12] },
+        { "start": 63.72, "end": 64.39, "char": [13, 22] }
       ]
     },
     {
-      "start": 63.673,
-      "end": 65.685,
+      "start": 64.39,
+      "end": 66.402,
       "text": "foram verificadas automaticamente.",
       "words": [
-        { "start": 63.673, "end": 64.344, "char": [0, 5] },
-        { "start": 64.344, "end": 65.014, "char": [6, 17] },
-        { "start": 65.014, "end": 65.685, "char": [18, 34] }
+        { "start": 64.39, "end": 65.061, "char": [0, 5] },
+        { "start": 65.061, "end": 65.731, "char": [6, 17] },
+        { "start": 65.731, "end": 66.402, "char": [18, 34] }
       ]
     },
     {
-      "start": 68.951,
-      "end": 69.854,
+      "start": 69.668,
+      "end": 70.571,
       "text": "De seguida,",
       "words": [
-        { "start": 68.951, "end": 69.402, "char": [0, 2] },
-        { "start": 69.402, "end": 69.854, "char": [3, 11] }
+        { "start": 69.668, "end": 70.119, "char": [0, 2] },
+        { "start": 70.119, "end": 70.571, "char": [3, 11] }
       ]
     },
     {
-      "start": 69.854,
-      "end": 71.659,
+      "start": 70.571,
+      "end": 72.376,
       "text": "vamos provisionar o servidor.",
       "words": [
-        { "start": 69.854, "end": 70.305, "char": [0, 5] },
-        { "start": 70.305, "end": 70.756, "char": [6, 17] },
-        { "start": 70.756, "end": 71.208, "char": [18, 19] },
-        { "start": 71.208, "end": 71.659, "char": [20, 29] }
+        { "start": 70.571, "end": 71.022, "char": [0, 5] },
+        { "start": 71.022, "end": 71.473, "char": [6, 17] },
+        { "start": 71.473, "end": 71.925, "char": [18, 19] },
+        { "start": 71.925, "end": 72.376, "char": [20, 29] }
       ]
     },
     {
-      "start": 71.659,
-      "end": 74.367,
+      "start": 72.376,
+      "end": 75.084,
       "text": "Este passo instala o renet e",
       "words": [
-        { "start": 71.659, "end": 72.11, "char": [0, 4] },
-        { "start": 72.11, "end": 72.562, "char": [5, 10] },
-        { "start": 72.562, "end": 73.013, "char": [11, 18] },
-        { "start": 73.013, "end": 73.464, "char": [19, 20] },
-        { "start": 73.464, "end": 73.916, "char": [21, 26] },
-        { "start": 73.916, "end": 74.367, "char": [27, 28] }
+        { "start": 72.376, "end": 72.827, "char": [0, 4] },
+        { "start": 72.827, "end": 73.279, "char": [5, 10] },
+        { "start": 73.279, "end": 73.73, "char": [11, 18] },
+        { "start": 73.73, "end": 74.181, "char": [19, 20] },
+        { "start": 74.181, "end": 74.633, "char": [21, 26] },
+        { "start": 74.633, "end": 75.084, "char": [27, 28] }
       ]
     },
     {
-      "start": 74.367,
-      "end": 77.075,
+      "start": 75.084,
+      "end": 77.792,
       "text": "cria o repositório de dados encriptado.",
       "words": [
-        { "start": 74.367, "end": 74.818, "char": [0, 4] },
-        { "start": 74.818, "end": 75.27, "char": [5, 6] },
-        { "start": 75.27, "end": 75.721, "char": [7, 18] },
-        { "start": 75.721, "end": 76.172, "char": [19, 21] },
-        { "start": 76.172, "end": 76.624, "char": [22, 27] },
-        { "start": 76.624, "end": 77.075, "char": [28, 39] }
+        { "start": 75.084, "end": 75.535, "char": [0, 4] },
+        { "start": 75.535, "end": 75.987, "char": [5, 6] },
+        { "start": 75.987, "end": 76.438, "char": [7, 18] },
+        { "start": 76.438, "end": 76.889, "char": [19, 21] },
+        { "start": 76.889, "end": 77.341, "char": [22, 27] },
+        { "start": 77.341, "end": 77.792, "char": [28, 39] }
       ]
     },
     {
-      "start": 77.075,
-      "end": 77.665,
+      "start": 79.542,
+      "end": 80.132,
       "text": "Pronto.",
-      "words": [{ "start": 77.075, "end": 77.665, "char": [0, 7] }]
+      "words": [{ "start": 79.542, "end": 80.132, "char": [0, 7] }]
     },
     {
-      "start": 77.665,
-      "end": 80.615,
+      "start": 80.132,
+      "end": 83.082,
       "text": "O renet está instalado e",
       "words": [
-        { "start": 77.665, "end": 78.255, "char": [0, 1] },
-        { "start": 78.255, "end": 78.845, "char": [2, 7] },
-        { "start": 78.845, "end": 79.435, "char": [8, 12] },
-        { "start": 79.435, "end": 80.025, "char": [13, 22] },
-        { "start": 80.025, "end": 80.615, "char": [23, 24] }
+        { "start": 80.132, "end": 80.722, "char": [0, 1] },
+        { "start": 80.722, "end": 81.312, "char": [2, 7] },
+        { "start": 81.312, "end": 81.902, "char": [8, 12] },
+        { "start": 81.902, "end": 82.492, "char": [13, 22] },
+        { "start": 82.492, "end": 83.082, "char": [23, 24] }
       ]
     },
     {
-      "start": 80.615,
-      "end": 83.564,
+      "start": 83.082,
+      "end": 86.031,
       "text": "o repositório de dados está",
       "words": [
-        { "start": 80.615, "end": 81.205, "char": [0, 1] },
-        { "start": 81.205, "end": 81.795, "char": [2, 13] },
-        { "start": 81.795, "end": 82.384, "char": [14, 16] },
-        { "start": 82.384, "end": 82.974, "char": [17, 22] },
-        { "start": 82.974, "end": 83.564, "char": [23, 27] }
+        { "start": 83.082, "end": 83.672, "char": [0, 1] },
+        { "start": 83.672, "end": 84.262, "char": [2, 13] },
+        { "start": 84.262, "end": 84.851, "char": [14, 16] },
+        { "start": 84.851, "end": 85.441, "char": [17, 22] },
+        { "start": 85.441, "end": 86.031, "char": [23, 27] }
       ]
     },
     {
-      "start": 83.564,
-      "end": 84.154,
+      "start": 86.031,
+      "end": 86.621,
       "text": "preparado.",
-      "words": [{ "start": 83.564, "end": 84.154, "char": [0, 10] }]
+      "words": [{ "start": 86.031, "end": 86.621, "char": [0, 10] }]
     },
     {
-      "start": 84.933,
-      "end": 87.503,
+      "start": 87.433,
+      "end": 90.003,
       "text": "E é isso para adicionar um",
       "words": [
-        { "start": 84.933, "end": 85.361, "char": [0, 1] },
-        { "start": 85.361, "end": 85.79, "char": [2, 3] },
-        { "start": 85.79, "end": 86.218, "char": [4, 8] },
-        { "start": 86.218, "end": 86.647, "char": [9, 13] },
-        { "start": 86.647, "end": 87.075, "char": [14, 23] },
-        { "start": 87.075, "end": 87.503, "char": [24, 26] }
+        { "start": 87.433, "end": 87.861, "char": [0, 1] },
+        { "start": 87.861, "end": 88.29, "char": [2, 3] },
+        { "start": 88.29, "end": 88.718, "char": [4, 8] },
+        { "start": 88.718, "end": 89.147, "char": [9, 13] },
+        { "start": 89.147, "end": 89.575, "char": [14, 23] },
+        { "start": 89.575, "end": 90.003, "char": [24, 26] }
       ]
     },
     {
-      "start": 87.503,
-      "end": 87.932,
+      "start": 90.003,
+      "end": 90.432,
       "text": "servidor!",
-      "words": [{ "start": 87.503, "end": 87.932, "char": [0, 9] }]
+      "words": [{ "start": 90.003, "end": 90.432, "char": [0, 9] }]
     },
     {
-      "start": 87.932,
-      "end": 89.217,
+      "start": 90.432,
+      "end": 91.717,
       "text": "Até o próximo.",
       "words": [
-        { "start": 87.932, "end": 88.36, "char": [0, 3] },
-        { "start": 88.36, "end": 88.789, "char": [4, 5] },
-        { "start": 88.789, "end": 89.217, "char": [6, 14] }
+        { "start": 90.432, "end": 90.86, "char": [0, 3] },
+        { "start": 90.86, "end": 91.289, "char": [4, 5] },
+        { "start": 91.289, "end": 91.717, "char": [6, 14] }
       ]
     }
   ]

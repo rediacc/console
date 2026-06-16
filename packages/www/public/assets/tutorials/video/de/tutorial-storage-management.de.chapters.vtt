@@ -1,0 +1,34 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:17.891
+Speicherverwaltung
+
+00:00:17.891 --> 00:00:41.261
+Ein Pool, wachsende repos
+
+00:00:41.261 --> 00:00:57.911
+Schritt 1: Das repo füllt sich
+
+00:00:57.911 --> 00:01:16.931
+Schritt 2: Online erweitern
+
+00:01:16.931 --> 00:01:30.028
+Schritt 3: Neue Größe prüfen
+
+00:01:30.028 --> 00:01:48.293
+Schritt 4: Daten löschen
+
+00:01:48.293 --> 00:02:03.001
+Schritt 5: Trim, Blöcke zurückgeben
+
+00:02:03.001 --> 00:02:23.258
+Schritt 6: Richtlinie setzen
+
+00:02:23.258 --> 00:02:38.199
+Schritt 7: Richtlinie auslesen
+
+00:02:38.199 --> 00:02:55.166
+Schritt 8: Der Systemzustand
+
+00:02:55.166 --> 00:03:06.686
+Die Serie endet hier

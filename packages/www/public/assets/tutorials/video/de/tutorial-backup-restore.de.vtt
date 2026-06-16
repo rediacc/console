@@ -135,56 +135,137 @@ verschlüsselt.
 00:01:27.626 --> 00:01:29.504
 Kein zusätzliches Schlüsselmanagement.
 
-00:01:31.754 --> 00:01:32.647
+00:01:32.504 --> 00:01:33.397
 Backup hochgeladen.
 
-00:01:32.647 --> 00:01:35.326
+00:01:33.397 --> 00:01:36.076
 Alles in diesem Repo liegt jetzt
 
-00:01:35.326 --> 00:01:36.665
+00:01:36.076 --> 00:01:37.415
 verschlüsselt im Remote-Storage.
 
-00:01:40.000 --> 00:01:42.564
+00:01:40.717 --> 00:01:43.281
 Wir listen die auf diesem
 
-00:01:42.564 --> 00:01:44.616
+00:01:43.281 --> 00:01:45.333
 Speicher verfügbaren Backups auf.
 
-00:01:44.616 --> 00:01:47.180
+00:01:45.333 --> 00:01:47.897
 Von hier aus ist die
 
-00:01:47.180 --> 00:01:49.745
+00:01:47.897 --> 00:01:50.462
 Wiederherstellung auf einem neuen Server
 
-00:01:49.745 --> 00:01:51.283
+00:01:50.462 --> 00:01:52.000
 ein einziger Befehl:
 
-00:01:51.283 --> 00:01:52.309
+00:01:52.000 --> 00:01:53.026
 der Repo-Pull-Befehl.
 
-00:01:52.309 --> 00:01:53.335
+00:01:53.026 --> 00:01:54.052
 Gleiche Daten,
 
-00:01:53.335 --> 00:01:54.360
+00:01:54.052 --> 00:01:55.077
 gleiche Container,
 
-00:01:54.360 --> 00:01:55.386
+00:01:55.077 --> 00:01:56.103
 andere Maschine.
 
-00:01:58.386 --> 00:02:00.706
+00:01:59.103 --> 00:02:01.423
 Alle deine Snapshots an einem Ort.
 
-00:02:00.706 --> 00:02:03.412
+00:02:01.423 --> 00:02:04.129
 Jeden davon holst du mit einem einzigen
 
-00:02:03.412 --> 00:02:04.185
+00:02:04.129 --> 00:02:04.902
 Befehl zurück.
 
-00:02:05.004 --> 00:02:07.640
+00:02:08.221 --> 00:02:09.782
+Jetzt der Wiederherstellungsbeweis.
+
+00:02:09.782 --> 00:02:12.382
+Erst das repository offline nehmen:
+
+00:02:12.382 --> 00:02:14.983
+die Dienste stoppen und das
+
+00:02:14.983 --> 00:02:16.544
+verschlüsselte Volume aushängen.
+
+00:02:16.544 --> 00:02:19.145
+Die App ist von dieser
+
+00:02:19.145 --> 00:02:20.185
+Maschine verschwunden.
+
+00:02:23.185 --> 00:02:24.691
+Offline und ausgehängt,
+
+00:02:24.691 --> 00:02:27.202
+genau der Zustand eines frischen
+
+00:02:27.202 --> 00:02:27.704
+Servers.
+
+00:02:30.992 --> 00:02:33.896
+Und das Backup direkt vom Speicher zurückziehen.
+
+00:02:33.896 --> 00:02:36.385
+Der repo pull-Befehl holt das Image,
+
+00:02:36.385 --> 00:02:39.288
+prüft seine Integrität und legt es genau
+
+00:02:39.288 --> 00:02:40.118
+dort ab,
+
+00:02:40.118 --> 00:02:41.363
+wo es war.
+
+00:02:44.363 --> 00:02:45.634
+Übertragung abgeschlossen,
+
+00:02:45.634 --> 00:02:46.905
+Integrität geprüft.
+
+00:02:46.905 --> 00:02:49.448
+Das repository ist wieder
+
+00:02:49.448 --> 00:02:50.083
+da.
+
+00:02:53.370 --> 00:02:54.864
+Noch einmal mounten,
+
+00:02:54.864 --> 00:02:57.354
+und das repository ist wiederhergestellt.
+
+00:02:57.354 --> 00:02:57.852
+Push,
+
+00:02:57.852 --> 00:02:58.350
+list,
+
+00:02:58.350 --> 00:02:58.848
+pull,
+
+00:02:58.848 --> 00:03:01.337
+das ist die ganze Backup-Geschichte.
+
+00:03:03.587 --> 00:03:04.171
+Wiederhergestellt.
+
+00:03:04.171 --> 00:03:07.088
+Derselbe Ablauf funktioniert auch auf
+
+00:03:07.088 --> 00:03:08.838
+einer brandneuen Maschine.
+
+00:03:09.644 --> 00:03:12.280
 Deine Daten sind sicher und
 
-00:02:07.640 --> 00:02:08.694
+00:03:12.280 --> 00:03:13.334
 maschinenübergreifend portabel.
 
-00:02:08.694 --> 00:02:10.803
+00:03:13.334 --> 00:03:15.443
 Bis zum nächsten Mal!

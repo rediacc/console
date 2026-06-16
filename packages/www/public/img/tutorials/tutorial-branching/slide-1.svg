@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">Commits are frozen snapshots of a fork; branches name them; checkout turns any commit back into a writable fork</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .node { fill: #ffffff; stroke: #2b5fb8; stroke-width: 2.5; }
+    .frozen { fill: #eef3fb; stroke: #2b5fb8; stroke-width: 2.5; }
+    .label { fill: #1a1a1a; font-weight: 700; font-size: 16px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .tag { fill: #1d7a4f; font-weight: 600; font-size: 14px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .desc { fill: #5e5e5e; font-weight: 400; font-size: 14px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .arrow { stroke: #2b5fb8; stroke-width: 2.5; fill: none; }
+    .closer { fill: #1a1a1a; font-weight: 600; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- commit chain -->
+  <circle class="frozen" cx="240" cy="200" r="46"/>
+  <text class="label" x="240" y="196">v1</text>
+  <text class="label" x="240" y="216">commit</text>
+  <text class="tag" x="240" y="130">branch: stable</text>
+
+  <path class="arrow" d="M 290 200 L 430 200"/>
+  <path class="arrow" d="M 420 193 L 430 200 L 420 207"/>
+
+  <circle class="frozen" cx="480" cy="200" r="46"/>
+  <text class="label" x="480" y="196">v2</text>
+  <text class="label" x="480" y="216">commit</text>
+
+  <path class="arrow" d="M 530 200 L 670 200"/>
+  <path class="arrow" d="M 660 193 L 670 200 L 660 207"/>
+
+  <circle class="node" cx="720" cy="200" r="46"/>
+  <text class="label" x="720" y="196">work</text>
+  <text class="label" x="720" y="216">fork ✎</text>
+
+  <!-- checkout arrow -->
+  <path class="arrow" d="M 240 250 L 240 360 L 430 360" stroke-dasharray="7 5"/>
+  <path class="arrow" d="M 420 353 L 430 360 L 420 367"/>
+  <circle class="node" cx="480" cy="360" r="46"/>
+  <text class="label" x="480" y="356">rollback</text>
+  <text class="label" x="480" y="376">fork ✎</text>
+  <text class="desc" x="320" y="345">checkout — instant, writable</text>
+
+  <text class="desc" x="240" y="290">frozen, refuses to mount</text>
+  <text class="desc" x="720" y="290">your live working copy</text>
+
+  <text class="closer" x="480" y="480">Commits never change. Forks never wait.</text>
+</svg>

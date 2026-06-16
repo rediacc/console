@@ -1,0 +1,217 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:02.119
+Bem-vindo de volta!
+
+00:00:02.119 --> 00:00:04.729
+Na última vez você viu os comandos
+
+00:00:04.729 --> 00:00:05.475
+de fork.
+
+00:00:05.475 --> 00:00:08.085
+Agora vamos ver o que eles significam
+
+00:00:08.085 --> 00:00:08.831
+na prática:
+
+00:00:08.831 --> 00:00:11.441
+um app de banco de dados ao
+
+00:00:11.441 --> 00:00:11.814
+vivo,
+
+00:00:11.814 --> 00:00:12.933
+copiado em segundos,
+
+00:00:12.933 --> 00:00:13.679
+editado livremente,
+
+00:00:13.679 --> 00:00:15.916
+enquanto o original nem percebe nada.
+
+00:00:16.684 --> 00:00:18.444
+Veja o cenário:
+
+00:00:18.444 --> 00:00:21.378
+um PostgreSQL de verdade com
+
+00:00:21.378 --> 00:00:24.311
+uma interface pgAdmin por cima,
+
+00:00:24.311 --> 00:00:26.658
+ao vivo no servidor.
+
+00:00:26.658 --> 00:00:29.591
+Um fork é uma cópia
+
+00:00:29.591 --> 00:00:32.525
+gêmea instantânea de tudo isso,
+
+00:00:32.525 --> 00:00:33.698
+com copy-on-write.
+
+00:00:33.698 --> 00:00:36.045
+Mesmos dados no início,
+
+00:00:36.045 --> 00:00:38.392
+vidas completamente separadas depois.
+
+00:00:41.671 --> 00:00:43.377
+Meet the app:
+
+00:00:43.377 --> 00:00:43.946
+demo-pgadmin,
+
+00:00:43.946 --> 00:00:46.789
+a PostgreSQL with a pgAdmin
+
+00:00:46.789 --> 00:00:47.358
+interface,
+
+00:00:47.358 --> 00:00:49.064
+mounted and running.
+
+00:00:52.064 --> 00:00:53.772
+Um repo ativo.
+
+00:00:53.772 --> 00:00:54.911
+Vamos cloná-lo.
+
+00:00:55.404 --> 00:00:57.395
+Aqui está o original,
+
+00:00:57.395 --> 00:00:58.390
+no navegador.
+
+00:00:58.390 --> 00:01:00.380
+O pgAdmin pede login,
+
+00:01:00.380 --> 00:01:03.365
+porque é a cópia de produção,
+
+00:01:03.365 --> 00:01:05.853
+e a produção fica protegida.
+
+00:01:29.071 --> 00:01:29.842
+Fork it.
+
+00:01:29.842 --> 00:01:32.541
+The copy-on-write clone takes seconds regardless of
+
+00:01:32.541 --> 00:01:32.927
+size;
+
+00:01:32.927 --> 00:01:35.626
+detach returns as soon as the containers
+
+00:01:35.626 --> 00:01:36.011
+start,
+
+00:01:36.011 --> 00:01:38.710
+while health checks continue in the background.
+
+00:01:39.439 --> 00:01:40.951
+Fork feito e iniciando.
+
+00:01:40.951 --> 00:01:42.841
+Os dados não foram copiados,
+
+00:01:42.841 --> 00:01:43.597
+foram compartilhados,
+
+00:01:43.597 --> 00:01:45.865
+até que um lado os altere.
+
+00:01:49.138 --> 00:01:52.137
+E aqui está o pgAdmin
+
+00:01:52.137 --> 00:01:53.337
+do fork.
+
+00:01:53.337 --> 00:01:55.737
+Sem login desta vez:
+
+00:01:55.737 --> 00:01:58.136
+forks são sandboxes descartáveis,
+
+00:01:58.136 --> 00:02:01.136
+então o bloqueio sai do
+
+00:02:01.136 --> 00:02:01.736
+caminho.
+
+00:02:01.736 --> 00:02:02.936
+Mesmas tabelas,
+
+00:02:02.936 --> 00:02:04.136
+mesmas linhas,
+
+00:02:04.136 --> 00:02:06.535
+mas um universo próprio.
+
+00:02:42.038 --> 00:02:43.356
+Two repositories now:
+
+00:02:43.356 --> 00:02:45.553
+the original and the experiment,
+
+00:02:45.553 --> 00:02:47.751
+each with its own containers,
+
+00:02:47.751 --> 00:02:48.190
+network,
+
+00:02:48.190 --> 00:02:49.509
+and disk view.
+
+00:02:52.509 --> 00:02:53.585
+Mesma máquina,
+
+00:02:53.585 --> 00:02:55.199
+dois mundos isolados.
+
+00:02:58.508 --> 00:02:59.396
+Done experimenting?
+
+00:02:59.396 --> 00:03:00.728
+Delete the fork.
+
+00:03:00.728 --> 00:03:02.060
+Seconds to create,
+
+00:03:02.060 --> 00:03:04.725
+seconds to throw away — the
+
+00:03:04.725 --> 00:03:06.945
+original never knew it existed.
+
+00:03:09.945 --> 00:03:10.491
+Removido.
+
+00:03:10.491 --> 00:03:13.217
+O original continuou servindo o
+
+00:03:13.217 --> 00:03:14.308
+tempo todo.
+
+00:03:15.106 --> 00:03:17.221
+Então faça fork à vontade,
+
+00:03:17.221 --> 00:03:19.335
+a produção não corre risco.
+
+00:03:19.335 --> 00:03:20.181
+A seguir,
+
+00:03:20.181 --> 00:03:21.450
+falamos sobre secrets,
+
+00:03:21.450 --> 00:03:23.988
+a única coisa que seus forks
+
+00:03:23.988 --> 00:03:25.257
+deliberadamente não herdam.
+
+00:03:25.257 --> 00:03:26.103
+Até lá!

@@ -111,62 +111,140 @@ anche il backup e' cifrato.
 00:01:20.541 --> 00:01:23.636
 Nessuna gestione aggiuntiva delle chiavi.
 
-00:01:25.886 --> 00:01:26.601
+00:01:26.636 --> 00:01:27.351
 Backup caricato.
 
-00:01:26.601 --> 00:01:29.104
+00:01:27.351 --> 00:01:29.854
 Tutto cio' che c'e' in questo repo
 
-00:01:29.104 --> 00:01:31.249
+00:01:29.854 --> 00:01:31.999
 si trova ora sullo storage remoto,
 
-00:01:31.249 --> 00:01:31.607
+00:01:31.999 --> 00:01:32.357
 cifrato.
 
-00:01:34.936 --> 00:01:37.808
+00:01:35.653 --> 00:01:38.525
 Elenchiamo i backup disponibili su questo
 
-00:01:37.808 --> 00:01:38.286
+00:01:38.525 --> 00:01:39.003
 storage.
 
-00:01:38.286 --> 00:01:39.244
+00:01:39.003 --> 00:01:39.961
 Da qui,
 
-00:01:39.244 --> 00:01:42.115
+00:01:39.961 --> 00:01:42.832
 il ripristino su un nuovo server
 
-00:01:42.115 --> 00:01:44.987
+00:01:42.832 --> 00:01:45.704
 richiede un solo comando -- il
 
-00:01:44.987 --> 00:01:46.902
+00:01:45.704 --> 00:01:47.619
 comando pull del repository.
 
-00:01:46.902 --> 00:01:47.859
+00:01:47.619 --> 00:01:48.576
 Stessi dati,
 
-00:01:47.859 --> 00:01:48.816
+00:01:48.576 --> 00:01:49.533
 stessi container,
 
-00:01:48.816 --> 00:01:49.774
+00:01:49.533 --> 00:01:50.491
 macchina diversa.
 
-00:01:52.774 --> 00:01:55.448
+00:01:53.491 --> 00:01:56.166
 Tutti i tuoi snapshot in un
 
-00:01:55.448 --> 00:01:56.340
+00:01:56.166 --> 00:01:57.057
 unico posto.
 
-00:01:56.340 --> 00:01:59.015
+00:01:57.057 --> 00:01:59.732
 Recuperane uno qualsiasi con un singolo
 
-00:01:59.015 --> 00:01:59.461
+00:01:59.732 --> 00:02:00.178
 comando.
 
-00:02:00.269 --> 00:02:03.111
+00:02:03.486 --> 00:02:05.625
+Ora la prova del ripristino.
+
+00:02:05.625 --> 00:02:08.190
+Prima si porta il repository offline:
+
+00:02:08.190 --> 00:02:10.756
+si fermano i servizi e si
+
+00:02:10.756 --> 00:02:12.467
+smonta il volume cifrato.
+
+00:02:12.467 --> 00:02:15.032
+L'app è sparita da questa macchina.
+
+00:02:18.032 --> 00:02:19.669
+Offline e smontato,
+
+00:02:19.669 --> 00:02:22.398
+esattamente come un server appena
+
+00:02:22.398 --> 00:02:22.943
+installato.
+
+00:02:26.275 --> 00:02:29.155
+E si riporta il backup direttamente dallo
+
+00:02:29.155 --> 00:02:29.567
+storage.
+
+00:02:29.567 --> 00:02:32.035
+Il comando repo pull recupera l'immagine,
+
+00:02:32.035 --> 00:02:34.915
+ne verifica l'integrità e la rimette esattamente
+
+00:02:34.915 --> 00:02:36.150
+dove si trovava.
+
+00:02:39.150 --> 00:02:40.658
+Trasferimento completato,
+
+00:02:40.658 --> 00:02:42.167
+integrità verificata.
+
+00:02:42.167 --> 00:02:45.184
+Il repository è tornato.
+
+00:02:48.478 --> 00:02:49.453
+Si rimonta,
+
+00:02:49.453 --> 00:02:51.888
+e il repository è ripristinato.
+
+00:02:51.888 --> 00:02:52.375
+Push,
+
+00:02:52.375 --> 00:02:52.862
+list,
+
+00:02:52.862 --> 00:02:53.349
+pull:
+
+00:02:53.349 --> 00:02:56.272
+questa è tutta la storia del
+
+00:02:56.272 --> 00:02:56.759
+backup.
+
+00:02:59.009 --> 00:02:59.466
+Ripristinato.
+
+00:02:59.466 --> 00:03:02.209
+Lo stesso flusso funziona anche su
+
+00:03:02.209 --> 00:03:04.495
+una macchina nuova di zecca.
+
+00:03:05.307 --> 00:03:08.149
 I tuoi dati sono al sicuro e portabili
 
-00:02:03.111 --> 00:02:04.177
+00:03:08.149 --> 00:03:09.215
 tra le macchine.
 
-00:02:04.177 --> 00:02:05.598
+00:03:09.215 --> 00:03:10.636
 Ci vediamo nel prossimo!

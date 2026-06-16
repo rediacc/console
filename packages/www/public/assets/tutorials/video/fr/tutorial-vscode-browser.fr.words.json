@@ -1,0 +1,1024 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 2.176,
+      "text": "Bonne nouvelle :",
+      "words": [
+        { "start": 1, "end": 1.392, "char": [0, 5] },
+        { "start": 1.392, "end": 1.784, "char": [6, 14] },
+        { "start": 1.784, "end": 2.176, "char": [15, 16] }
+      ]
+    },
+    {
+      "start": 2.176,
+      "end": 4.918,
+      "text": "pas besoin de terminal pour celui-là !",
+      "words": [
+        { "start": 2.176, "end": 2.567, "char": [0, 3] },
+        { "start": 2.567, "end": 2.959, "char": [4, 10] },
+        { "start": 2.959, "end": 3.351, "char": [11, 13] },
+        { "start": 3.351, "end": 3.743, "char": [14, 22] },
+        { "start": 3.743, "end": 4.135, "char": [23, 27] },
+        { "start": 4.135, "end": 4.527, "char": [28, 36] },
+        { "start": 4.527, "end": 4.918, "char": [37, 38] }
+      ]
+    },
+    {
+      "start": 4.918,
+      "end": 7.661,
+      "text": "On va ouvrir VS Code directement dans",
+      "words": [
+        { "start": 4.918, "end": 5.31, "char": [0, 2] },
+        { "start": 5.31, "end": 5.702, "char": [3, 5] },
+        { "start": 5.702, "end": 6.094, "char": [6, 12] },
+        { "start": 6.094, "end": 6.486, "char": [13, 15] },
+        { "start": 6.486, "end": 6.878, "char": [16, 20] },
+        { "start": 6.878, "end": 7.269, "char": [21, 32] },
+        { "start": 7.269, "end": 7.661, "char": [33, 37] }
+      ]
+    },
+    {
+      "start": 7.661,
+      "end": 8.445,
+      "text": "le navigateur,",
+      "words": [
+        { "start": 7.661, "end": 8.053, "char": [0, 2] },
+        { "start": 8.053, "end": 8.445, "char": [3, 14] }
+      ]
+    },
+    {
+      "start": 8.445,
+      "end": 9.62,
+      "text": "créer quelques fichiers,",
+      "words": [
+        { "start": 8.445, "end": 8.837, "char": [0, 5] },
+        { "start": 8.837, "end": 9.229, "char": [6, 14] },
+        { "start": 9.229, "end": 9.62, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 9.62,
+      "end": 10.796,
+      "text": "lancer quelques commandes,",
+      "words": [
+        { "start": 9.62, "end": 10.012, "char": [0, 6] },
+        { "start": 10.012, "end": 10.404, "char": [7, 15] },
+        { "start": 10.404, "end": 10.796, "char": [16, 26] }
+      ]
+    },
+    {
+      "start": 10.796,
+      "end": 13.539,
+      "text": "et regarder le kernel tout garder à",
+      "words": [
+        { "start": 10.796, "end": 11.188, "char": [0, 2] },
+        { "start": 11.188, "end": 11.58, "char": [3, 11] },
+        { "start": 11.58, "end": 11.971, "char": [12, 14] },
+        { "start": 11.971, "end": 12.363, "char": [15, 21] },
+        { "start": 12.363, "end": 12.755, "char": [22, 26] },
+        { "start": 12.755, "end": 13.147, "char": [27, 33] },
+        { "start": 13.147, "end": 13.539, "char": [34, 35] }
+      ]
+    },
+    {
+      "start": 13.539,
+      "end": 14.714,
+      "text": "l'intérieur du repo.",
+      "words": [
+        { "start": 13.539, "end": 13.931, "char": [0, 11] },
+        { "start": 13.931, "end": 14.322, "char": [12, 14] },
+        { "start": 14.322, "end": 14.714, "char": [15, 20] }
+      ]
+    },
+    {
+      "start": 15.499,
+      "end": 16.714,
+      "text": "Voilà le principe.",
+      "words": [
+        { "start": 15.499, "end": 15.904, "char": [0, 5] },
+        { "start": 15.904, "end": 16.309, "char": [6, 8] },
+        { "start": 16.309, "end": 16.714, "char": [9, 18] }
+      ]
+    },
+    {
+      "start": 16.714,
+      "end": 19.55,
+      "text": "L'éditeur ne tourne pas sur ton ordinateur.",
+      "words": [
+        { "start": 16.714, "end": 17.12, "char": [0, 9] },
+        { "start": 17.12, "end": 17.525, "char": [10, 12] },
+        { "start": 17.525, "end": 17.93, "char": [13, 19] },
+        { "start": 17.93, "end": 18.335, "char": [20, 23] },
+        { "start": 18.335, "end": 18.74, "char": [24, 27] },
+        { "start": 18.74, "end": 19.145, "char": [28, 31] },
+        { "start": 19.145, "end": 19.55, "char": [32, 43] }
+      ]
+    },
+    {
+      "start": 19.55,
+      "end": 22.386,
+      "text": "Il tourne dans le sandbox du repo",
+      "words": [
+        { "start": 19.55, "end": 19.956, "char": [0, 2] },
+        { "start": 19.956, "end": 20.361, "char": [3, 9] },
+        { "start": 20.361, "end": 20.766, "char": [10, 14] },
+        { "start": 20.766, "end": 21.171, "char": [15, 17] },
+        { "start": 21.171, "end": 21.576, "char": [18, 25] },
+        { "start": 21.576, "end": 21.981, "char": [26, 28] },
+        { "start": 21.981, "end": 22.386, "char": [29, 33] }
+      ]
+    },
+    {
+      "start": 22.386,
+      "end": 23.602,
+      "text": "sur le serveur,",
+      "words": [
+        { "start": 22.386, "end": 22.792, "char": [0, 3] },
+        { "start": 22.792, "end": 23.197, "char": [4, 6] },
+        { "start": 23.197, "end": 23.602, "char": [7, 15] }
+      ]
+    },
+    {
+      "start": 23.602,
+      "end": 26.438,
+      "text": "et ton navigateur y accède via un",
+      "words": [
+        { "start": 23.602, "end": 24.007, "char": [0, 2] },
+        { "start": 24.007, "end": 24.412, "char": [3, 6] },
+        { "start": 24.412, "end": 24.817, "char": [7, 17] },
+        { "start": 24.817, "end": 25.222, "char": [18, 19] },
+        { "start": 25.222, "end": 25.628, "char": [20, 26] },
+        { "start": 25.628, "end": 26.033, "char": [27, 30] },
+        { "start": 26.033, "end": 26.438, "char": [31, 33] }
+      ]
+    },
+    {
+      "start": 26.438,
+      "end": 27.248,
+      "text": "tunnel SSH.",
+      "words": [
+        { "start": 26.438, "end": 26.843, "char": [0, 6] },
+        { "start": 26.843, "end": 27.248, "char": [7, 11] }
+      ]
+    },
+    {
+      "start": 27.248,
+      "end": 28.869,
+      "text": "Donc l'arborescence de fichiers,",
+      "words": [
+        { "start": 27.248, "end": 27.653, "char": [0, 4] },
+        { "start": 27.653, "end": 28.058, "char": [5, 19] },
+        { "start": 28.058, "end": 28.464, "char": [20, 22] },
+        { "start": 28.464, "end": 28.869, "char": [23, 32] }
+      ]
+    },
+    {
+      "start": 28.869,
+      "end": 30.084,
+      "text": "le terminal intégré,",
+      "words": [
+        { "start": 28.869, "end": 29.274, "char": [0, 2] },
+        { "start": 29.274, "end": 29.679, "char": [3, 11] },
+        { "start": 29.679, "end": 30.084, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 30.084,
+      "end": 32.92,
+      "text": "et tout ce que tu lances depuis",
+      "words": [
+        { "start": 30.084, "end": 30.489, "char": [0, 2] },
+        { "start": 30.489, "end": 30.894, "char": [3, 7] },
+        { "start": 30.894, "end": 31.3, "char": [8, 10] },
+        { "start": 31.3, "end": 31.705, "char": [11, 14] },
+        { "start": 31.705, "end": 32.11, "char": [15, 17] },
+        { "start": 32.11, "end": 32.515, "char": [18, 24] },
+        { "start": 32.515, "end": 32.92, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 32.92,
+      "end": 35.756,
+      "text": "là voient exactement ce que voit le",
+      "words": [
+        { "start": 32.92, "end": 33.325, "char": [0, 2] },
+        { "start": 33.325, "end": 33.73, "char": [3, 9] },
+        { "start": 33.73, "end": 34.136, "char": [10, 20] },
+        { "start": 34.136, "end": 34.541, "char": [21, 23] },
+        { "start": 34.541, "end": 34.946, "char": [24, 27] },
+        { "start": 34.946, "end": 35.351, "char": [28, 32] },
+        { "start": 35.351, "end": 35.756, "char": [33, 35] }
+      ]
+    },
+    {
+      "start": 35.756,
+      "end": 36.161,
+      "text": "repo,",
+      "words": [{ "start": 35.756, "end": 36.161, "char": [0, 5] }]
+    },
+    {
+      "start": 36.161,
+      "end": 36.972,
+      "text": "rien d'autre.",
+      "words": [
+        { "start": 36.161, "end": 36.567, "char": [0, 4] },
+        { "start": 36.567, "end": 36.972, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 40.254,
+      "end": 41.015,
+      "text": "One command.",
+      "words": [
+        { "start": 40.254, "end": 40.635, "char": [0, 3] },
+        { "start": 40.635, "end": 41.015, "char": [4, 12] }
+      ]
+    },
+    {
+      "start": 41.015,
+      "end": 43.68,
+      "text": "The CLI installs the editor server on",
+      "words": [
+        { "start": 41.015, "end": 41.396, "char": [0, 3] },
+        { "start": 41.396, "end": 41.777, "char": [4, 7] },
+        { "start": 41.777, "end": 42.157, "char": [8, 16] },
+        { "start": 42.157, "end": 42.538, "char": [17, 20] },
+        { "start": 42.538, "end": 42.919, "char": [21, 27] },
+        { "start": 42.919, "end": 43.299, "char": [28, 34] },
+        { "start": 43.299, "end": 43.68, "char": [35, 37] }
+      ]
+    },
+    {
+      "start": 43.68,
+      "end": 44.822,
+      "text": "the machine once,",
+      "words": [
+        { "start": 43.68, "end": 44.06, "char": [0, 3] },
+        { "start": 44.06, "end": 44.441, "char": [4, 11] },
+        { "start": 44.441, "end": 44.822, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 44.822,
+      "end": 47.106,
+      "text": "starts it inside the repo sandbox,",
+      "words": [
+        { "start": 44.822, "end": 45.202, "char": [0, 6] },
+        { "start": 45.202, "end": 45.583, "char": [7, 9] },
+        { "start": 45.583, "end": 45.964, "char": [10, 16] },
+        { "start": 45.964, "end": 46.344, "char": [17, 20] },
+        { "start": 46.344, "end": 46.725, "char": [21, 25] },
+        { "start": 46.725, "end": 47.106, "char": [26, 34] }
+      ]
+    },
+    {
+      "start": 47.106,
+      "end": 48.247,
+      "text": "opens a tunnel,",
+      "words": [
+        { "start": 47.106, "end": 47.486, "char": [0, 5] },
+        { "start": 47.486, "end": 47.867, "char": [6, 7] },
+        { "start": 47.867, "end": 48.247, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 48.247,
+      "end": 50.151,
+      "text": "and hands you a link.",
+      "words": [
+        { "start": 48.247, "end": 48.628, "char": [0, 3] },
+        { "start": 48.628, "end": 49.009, "char": [4, 9] },
+        { "start": 49.009, "end": 49.389, "char": [10, 13] },
+        { "start": 49.389, "end": 49.77, "char": [14, 15] },
+        { "start": 49.77, "end": 50.151, "char": [16, 21] }
+      ]
+    },
+    {
+      "start": 50.151,
+      "end": 51.673,
+      "text": "No local VS Code,",
+      "words": [
+        { "start": 50.151, "end": 50.531, "char": [0, 2] },
+        { "start": 50.531, "end": 50.912, "char": [3, 8] },
+        { "start": 50.912, "end": 51.293, "char": [9, 11] },
+        { "start": 51.293, "end": 51.673, "char": [12, 17] }
+      ]
+    },
+    {
+      "start": 51.673,
+      "end": 53.576,
+      "text": "no extensions to set up.",
+      "words": [
+        { "start": 51.673, "end": 52.054, "char": [0, 2] },
+        { "start": 52.054, "end": 52.435, "char": [3, 13] },
+        { "start": 52.435, "end": 52.815, "char": [14, 16] },
+        { "start": 52.815, "end": 53.196, "char": [17, 20] },
+        { "start": 53.196, "end": 53.576, "char": [21, 24] }
+      ]
+    },
+    {
+      "start": 56.576,
+      "end": 57.321,
+      "text": "Cette URL,",
+      "words": [
+        { "start": 56.576, "end": 56.949, "char": [0, 5] },
+        { "start": 56.949, "end": 57.321, "char": [6, 10] }
+      ]
+    },
+    {
+      "start": 57.321,
+      "end": 58.438,
+      "text": "c'est votre éditeur.",
+      "words": [
+        { "start": 57.321, "end": 57.693, "char": [0, 5] },
+        { "start": 57.693, "end": 58.065, "char": [6, 11] },
+        { "start": 58.065, "end": 58.438, "char": [12, 20] }
+      ]
+    },
+    {
+      "start": 58.438,
+      "end": 60.299,
+      "text": "Fonctionne sur n'importe quel OS,",
+      "words": [
+        { "start": 58.438, "end": 58.81, "char": [0, 10] },
+        { "start": 58.81, "end": 59.182, "char": [11, 14] },
+        { "start": 59.182, "end": 59.554, "char": [15, 24] },
+        { "start": 59.554, "end": 59.927, "char": [25, 29] },
+        { "start": 59.927, "end": 60.299, "char": [30, 33] }
+      ]
+    },
+    {
+      "start": 60.299,
+      "end": 62.532,
+      "text": "la seule condition est un navigateur.",
+      "words": [
+        { "start": 60.299, "end": 60.671, "char": [0, 2] },
+        { "start": 60.671, "end": 61.043, "char": [3, 8] },
+        { "start": 61.043, "end": 61.416, "char": [9, 18] },
+        { "start": 61.416, "end": 61.788, "char": [19, 22] },
+        { "start": 61.788, "end": 62.16, "char": [23, 25] },
+        { "start": 62.16, "end": 62.532, "char": [26, 37] }
+      ]
+    },
+    {
+      "start": 63.031,
+      "end": 64.43,
+      "text": "Et voilà :",
+      "words": [
+        { "start": 63.031, "end": 63.497, "char": [0, 2] },
+        { "start": 63.497, "end": 63.964, "char": [3, 8] },
+        { "start": 63.964, "end": 64.43, "char": [9, 10] }
+      ]
+    },
+    {
+      "start": 64.43,
+      "end": 65.362,
+      "text": "VS Code,",
+      "words": [
+        { "start": 64.43, "end": 64.896, "char": [0, 2] },
+        { "start": 64.896, "end": 65.362, "char": [3, 8] }
+      ]
+    },
+    {
+      "start": 65.362,
+      "end": 67.694,
+      "text": "dans un onglet de navigateur.",
+      "words": [
+        { "start": 65.362, "end": 65.829, "char": [0, 4] },
+        { "start": 65.829, "end": 66.295, "char": [5, 7] },
+        { "start": 66.295, "end": 66.761, "char": [8, 14] },
+        { "start": 66.761, "end": 67.228, "char": [15, 17] },
+        { "start": 67.228, "end": 67.694, "char": [18, 29] }
+      ]
+    },
+    {
+      "start": 67.694,
+      "end": 70.492,
+      "text": "L'arborescence à gauche montre le repo,",
+      "words": [
+        { "start": 67.694, "end": 68.16, "char": [0, 14] },
+        { "start": 68.16, "end": 68.626, "char": [15, 16] },
+        { "start": 68.626, "end": 69.093, "char": [17, 23] },
+        { "start": 69.093, "end": 69.559, "char": [24, 30] },
+        { "start": 69.559, "end": 70.025, "char": [31, 33] },
+        { "start": 70.025, "end": 70.492, "char": [34, 39] }
+      ]
+    },
+    {
+      "start": 70.492,
+      "end": 72.357,
+      "text": "et uniquement le repo.",
+      "words": [
+        { "start": 70.492, "end": 70.958, "char": [0, 2] },
+        { "start": 70.958, "end": 71.424, "char": [3, 13] },
+        { "start": 71.424, "end": 71.89, "char": [14, 16] },
+        { "start": 71.89, "end": 72.357, "char": [17, 22] }
+      ]
+    },
+    {
+      "start": 75.531,
+      "end": 77.24,
+      "text": "Créons un vrai fichier,",
+      "words": [
+        { "start": 75.531, "end": 75.958, "char": [0, 6] },
+        { "start": 75.958, "end": 76.385, "char": [7, 9] },
+        { "start": 76.385, "end": 76.813, "char": [10, 14] },
+        { "start": 76.813, "end": 77.24, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 77.24,
+      "end": 78.094,
+      "text": "sans terminal.",
+      "words": [
+        { "start": 77.24, "end": 77.667, "char": [0, 4] },
+        { "start": 77.667, "end": 78.094, "char": [5, 14] }
+      ]
+    },
+    {
+      "start": 78.094,
+      "end": 79.376,
+      "text": "Un nouvel éditeur,",
+      "words": [
+        { "start": 78.094, "end": 78.522, "char": [0, 2] },
+        { "start": 78.522, "end": 78.949, "char": [3, 9] },
+        { "start": 78.949, "end": 79.376, "char": [10, 18] }
+      ]
+    },
+    {
+      "start": 79.376,
+      "end": 80.231,
+      "text": "quelques lignes,",
+      "words": [
+        { "start": 79.376, "end": 79.803, "char": [0, 8] },
+        { "start": 79.803, "end": 80.231, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 80.231,
+      "end": 82.794,
+      "text": "et on l'enregistre sous notes slash",
+      "words": [
+        { "start": 80.231, "end": 80.658, "char": [0, 2] },
+        { "start": 80.658, "end": 81.085, "char": [3, 5] },
+        { "start": 81.085, "end": 81.512, "char": [6, 18] },
+        { "start": 81.512, "end": 81.939, "char": [19, 23] },
+        { "start": 81.939, "end": 82.367, "char": [24, 29] },
+        { "start": 82.367, "end": 82.794, "char": [30, 35] }
+      ]
+    },
+    {
+      "start": 82.794,
+      "end": 84.076,
+      "text": "todo dot md.",
+      "words": [
+        { "start": 82.794, "end": 83.221, "char": [0, 4] },
+        { "start": 83.221, "end": 83.648, "char": [5, 8] },
+        { "start": 83.648, "end": 84.076, "char": [9, 12] }
+      ]
+    },
+    {
+      "start": 84.076,
+      "end": 86.639,
+      "text": "Le dossier apparaît à gauche dès",
+      "words": [
+        { "start": 84.076, "end": 84.503, "char": [0, 2] },
+        { "start": 84.503, "end": 84.93, "char": [3, 10] },
+        { "start": 84.93, "end": 85.357, "char": [11, 19] },
+        { "start": 85.357, "end": 85.785, "char": [20, 21] },
+        { "start": 85.785, "end": 86.212, "char": [22, 28] },
+        { "start": 86.212, "end": 86.639, "char": [29, 32] }
+      ]
+    },
+    {
+      "start": 86.639,
+      "end": 88.775,
+      "text": "qu'il atterrit dans le repo.",
+      "words": [
+        { "start": 86.639, "end": 87.066, "char": [0, 5] },
+        { "start": 87.066, "end": 87.493, "char": [6, 14] },
+        { "start": 87.493, "end": 87.921, "char": [15, 19] },
+        { "start": 87.921, "end": 88.348, "char": [20, 22] },
+        { "start": 88.348, "end": 88.775, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 94.031,
+      "end": 96.293,
+      "text": "Le terminal intégré fonctionne aussi,",
+      "words": [
+        { "start": 94.031, "end": 94.483, "char": [0, 2] },
+        { "start": 94.483, "end": 94.936, "char": [3, 11] },
+        { "start": 94.936, "end": 95.388, "char": [12, 19] },
+        { "start": 95.388, "end": 95.841, "char": [20, 30] },
+        { "start": 95.841, "end": 96.293, "char": [31, 37] }
+      ]
+    },
+    {
+      "start": 96.293,
+      "end": 98.103,
+      "text": "et voilà notre fichier.",
+      "words": [
+        { "start": 96.293, "end": 96.746, "char": [0, 2] },
+        { "start": 96.746, "end": 97.198, "char": [3, 8] },
+        { "start": 97.198, "end": 97.651, "char": [9, 14] },
+        { "start": 97.651, "end": 98.103, "char": [15, 23] }
+      ]
+    },
+    {
+      "start": 98.103,
+      "end": 100.818,
+      "text": "Essayons maintenant de regarder en dehors",
+      "words": [
+        { "start": 98.103, "end": 98.556, "char": [0, 8] },
+        { "start": 98.556, "end": 99.008, "char": [9, 19] },
+        { "start": 99.008, "end": 99.461, "char": [20, 22] },
+        { "start": 99.461, "end": 99.913, "char": [23, 31] },
+        { "start": 99.913, "end": 100.366, "char": [32, 34] },
+        { "start": 100.366, "end": 100.818, "char": [35, 41] }
+      ]
+    },
+    {
+      "start": 100.818,
+      "end": 102.176,
+      "text": "du repo :",
+      "words": [
+        { "start": 100.818, "end": 101.271, "char": [0, 2] },
+        { "start": 101.271, "end": 101.723, "char": [3, 7] },
+        { "start": 101.723, "end": 102.176, "char": [8, 9] }
+      ]
+    },
+    {
+      "start": 102.176,
+      "end": 103.081,
+      "text": "permission refusée.",
+      "words": [
+        { "start": 102.176, "end": 102.628, "char": [0, 10] },
+        { "start": 102.628, "end": 103.081, "char": [11, 19] }
+      ]
+    },
+    {
+      "start": 103.081,
+      "end": 105.343,
+      "text": "Ce n'est pas un paramètre,",
+      "words": [
+        { "start": 103.081, "end": 103.533, "char": [0, 2] },
+        { "start": 103.533, "end": 103.986, "char": [3, 8] },
+        { "start": 103.986, "end": 104.438, "char": [9, 12] },
+        { "start": 104.438, "end": 104.89, "char": [13, 15] },
+        { "start": 104.89, "end": 105.343, "char": [16, 26] }
+      ]
+    },
+    {
+      "start": 105.343,
+      "end": 106.7,
+      "text": "c'est le kernel.",
+      "words": [
+        { "start": 105.343, "end": 105.795, "char": [0, 5] },
+        { "start": 105.795, "end": 106.248, "char": [6, 8] },
+        { "start": 106.248, "end": 106.7, "char": [9, 16] }
+      ]
+    },
+    {
+      "start": 113.031,
+      "end": 115.121,
+      "text": "Same repo from the plain terminal:",
+      "words": [
+        { "start": 113.031, "end": 113.379, "char": [0, 4] },
+        { "start": 113.379, "end": 113.728, "char": [5, 9] },
+        { "start": 113.728, "end": 114.076, "char": [10, 14] },
+        { "start": 114.076, "end": 114.424, "char": [15, 18] },
+        { "start": 114.424, "end": 114.773, "char": [19, 24] },
+        { "start": 114.773, "end": 115.121, "char": [25, 34] }
+      ]
+    },
+    {
+      "start": 115.121,
+      "end": 117.211,
+      "text": "the working directory is the repo,",
+      "words": [
+        { "start": 115.121, "end": 115.469, "char": [0, 3] },
+        { "start": 115.469, "end": 115.817, "char": [4, 11] },
+        { "start": 115.817, "end": 116.166, "char": [12, 21] },
+        { "start": 116.166, "end": 116.514, "char": [22, 24] },
+        { "start": 116.514, "end": 116.862, "char": [25, 28] },
+        { "start": 116.862, "end": 117.211, "char": [29, 34] }
+      ]
+    },
+    {
+      "start": 117.211,
+      "end": 119.3,
+      "text": "the files are the repo's files.",
+      "words": [
+        { "start": 117.211, "end": 117.559, "char": [0, 3] },
+        { "start": 117.559, "end": 117.907, "char": [4, 9] },
+        { "start": 117.907, "end": 118.256, "char": [10, 13] },
+        { "start": 118.256, "end": 118.604, "char": [14, 17] },
+        { "start": 118.604, "end": 118.952, "char": [18, 24] },
+        { "start": 118.952, "end": 119.3, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 122.05,
+      "end": 124.568,
+      "text": "Le terminal et l'éditeur",
+      "words": [
+        { "start": 122.05, "end": 122.68, "char": [0, 2] },
+        { "start": 122.68, "end": 123.309, "char": [3, 11] },
+        { "start": 123.309, "end": 123.938, "char": [12, 14] },
+        { "start": 123.938, "end": 124.568, "char": [15, 24] }
+      ]
+    },
+    {
+      "start": 124.568,
+      "end": 126.456,
+      "text": "sont d'accord :",
+      "words": [
+        { "start": 124.568, "end": 125.197, "char": [0, 4] },
+        { "start": 125.197, "end": 125.826, "char": [5, 13] },
+        { "start": 125.826, "end": 126.456, "char": [14, 15] }
+      ]
+    },
+    {
+      "start": 126.456,
+      "end": 128.973,
+      "text": "c'est le même sandbox.",
+      "words": [
+        { "start": 126.456, "end": 127.085, "char": [0, 5] },
+        { "start": 127.085, "end": 127.714, "char": [6, 8] },
+        { "start": 127.714, "end": 128.344, "char": [9, 13] },
+        { "start": 128.344, "end": 128.973, "char": [14, 22] }
+      ]
+    },
+    {
+      "start": 132.267,
+      "end": 134.949,
+      "text": "And the file we created in the",
+      "words": [
+        { "start": 132.267, "end": 132.65, "char": [0, 3] },
+        { "start": 132.65, "end": 133.033, "char": [4, 7] },
+        { "start": 133.033, "end": 133.416, "char": [8, 12] },
+        { "start": 133.416, "end": 133.8, "char": [13, 15] },
+        { "start": 133.8, "end": 134.183, "char": [16, 23] },
+        { "start": 134.183, "end": 134.566, "char": [24, 26] },
+        { "start": 134.566, "end": 134.949, "char": [27, 30] }
+      ]
+    },
+    {
+      "start": 134.949,
+      "end": 135.715,
+      "text": "browser editor?",
+      "words": [
+        { "start": 134.949, "end": 135.332, "char": [0, 7] },
+        { "start": 135.332, "end": 135.715, "char": [8, 15] }
+      ]
+    },
+    {
+      "start": 135.715,
+      "end": 136.481,
+      "text": "Right here.",
+      "words": [
+        { "start": 135.715, "end": 136.098, "char": [0, 5] },
+        { "start": 136.098, "end": 136.481, "char": [6, 11] }
+      ]
+    },
+    {
+      "start": 136.481,
+      "end": 139.163,
+      "text": "Files made in VS Code are real",
+      "words": [
+        { "start": 136.481, "end": 136.865, "char": [0, 5] },
+        { "start": 136.865, "end": 137.248, "char": [6, 10] },
+        { "start": 137.248, "end": 137.631, "char": [11, 13] },
+        { "start": 137.631, "end": 138.014, "char": [14, 16] },
+        { "start": 138.014, "end": 138.397, "char": [17, 21] },
+        { "start": 138.397, "end": 138.78, "char": [22, 25] },
+        { "start": 138.78, "end": 139.163, "char": [26, 30] }
+      ]
+    },
+    {
+      "start": 139.163,
+      "end": 139.93,
+      "text": "repo files,",
+      "words": [
+        { "start": 139.163, "end": 139.546, "char": [0, 4] },
+        { "start": 139.546, "end": 139.93, "char": [5, 11] }
+      ]
+    },
+    {
+      "start": 139.93,
+      "end": 140.313,
+      "text": "instantly.",
+      "words": [{ "start": 139.93, "end": 140.313, "char": [0, 10] }]
+    },
+    {
+      "start": 142.063,
+      "end": 144.048,
+      "text": "Créé dans le navigateur,",
+      "words": [
+        { "start": 142.063, "end": 142.559, "char": [0, 4] },
+        { "start": 142.559, "end": 143.055, "char": [5, 9] },
+        { "start": 143.055, "end": 143.552, "char": [10, 12] },
+        { "start": 143.552, "end": 144.048, "char": [13, 24] }
+      ]
+    },
+    {
+      "start": 144.048,
+      "end": 146.033,
+      "text": "lisible depuis le terminal.",
+      "words": [
+        { "start": 144.048, "end": 144.544, "char": [0, 7] },
+        { "start": 144.544, "end": 145.041, "char": [8, 14] },
+        { "start": 145.041, "end": 145.537, "char": [15, 17] },
+        { "start": 145.537, "end": 146.033, "char": [18, 27] }
+      ]
+    },
+    {
+      "start": 146.033,
+      "end": 147.026,
+      "text": "Un repo,",
+      "words": [
+        { "start": 146.033, "end": 146.53, "char": [0, 2] },
+        { "start": 146.53, "end": 147.026, "char": [3, 8] }
+      ]
+    },
+    {
+      "start": 147.026,
+      "end": 148.019,
+      "text": "deux portes.",
+      "words": [
+        { "start": 147.026, "end": 147.522, "char": [0, 4] },
+        { "start": 147.522, "end": 148.019, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 151.327,
+      "end": 152.858,
+      "text": "Now try to leave.",
+      "words": [
+        { "start": 151.327, "end": 151.71, "char": [0, 3] },
+        { "start": 151.71, "end": 152.093, "char": [4, 7] },
+        { "start": 152.093, "end": 152.475, "char": [8, 10] },
+        { "start": 152.475, "end": 152.858, "char": [11, 17] }
+      ]
+    },
+    {
+      "start": 152.858,
+      "end": 155.155,
+      "text": "Listing the root of the server:",
+      "words": [
+        { "start": 152.858, "end": 153.241, "char": [0, 7] },
+        { "start": 153.241, "end": 153.624, "char": [8, 11] },
+        { "start": 153.624, "end": 154.007, "char": [12, 16] },
+        { "start": 154.007, "end": 154.389, "char": [17, 19] },
+        { "start": 154.389, "end": 154.772, "char": [20, 23] },
+        { "start": 154.772, "end": 155.155, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 155.155,
+      "end": 155.921,
+      "text": "permission denied.",
+      "words": [
+        { "start": 155.155, "end": 155.538, "char": [0, 10] },
+        { "start": 155.538, "end": 155.921, "char": [11, 18] }
+      ]
+    },
+    {
+      "start": 155.921,
+      "end": 157.835,
+      "text": "The kernel scopes the editor,",
+      "words": [
+        { "start": 155.921, "end": 156.303, "char": [0, 3] },
+        { "start": 156.303, "end": 156.686, "char": [4, 10] },
+        { "start": 156.686, "end": 157.069, "char": [11, 17] },
+        { "start": 157.069, "end": 157.452, "char": [18, 21] },
+        { "start": 157.452, "end": 157.835, "char": [22, 29] }
+      ]
+    },
+    {
+      "start": 157.835,
+      "end": 158.6,
+      "text": "its terminal,",
+      "words": [
+        { "start": 157.835, "end": 158.217, "char": [0, 3] },
+        { "start": 158.217, "end": 158.6, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 158.6,
+      "end": 161.28,
+      "text": "and every child process to this repo.",
+      "words": [
+        { "start": 158.6, "end": 158.983, "char": [0, 3] },
+        { "start": 158.983, "end": 159.366, "char": [4, 9] },
+        { "start": 159.366, "end": 159.749, "char": [10, 15] },
+        { "start": 159.749, "end": 160.131, "char": [16, 23] },
+        { "start": 160.131, "end": 160.514, "char": [24, 26] },
+        { "start": 160.514, "end": 160.897, "char": [27, 31] },
+        { "start": 160.897, "end": 161.28, "char": [32, 37] }
+      ]
+    },
+    {
+      "start": 163.03,
+      "end": 164.61,
+      "text": "Refusé par le noyau,",
+      "words": [
+        { "start": 163.03, "end": 163.425, "char": [0, 6] },
+        { "start": 163.425, "end": 163.82, "char": [7, 10] },
+        { "start": 163.82, "end": 164.215, "char": [11, 13] },
+        { "start": 164.215, "end": 164.61, "char": [14, 20] }
+      ]
+    },
+    {
+      "start": 164.61,
+      "end": 166.19,
+      "text": "pas par la configuration.",
+      "words": [
+        { "start": 164.61, "end": 165.005, "char": [0, 3] },
+        { "start": 165.005, "end": 165.4, "char": [4, 7] },
+        { "start": 165.4, "end": 165.795, "char": [8, 10] },
+        { "start": 165.795, "end": 166.19, "char": [11, 25] }
+      ]
+    },
+    {
+      "start": 169.501,
+      "end": 170.844,
+      "text": "Other users' homes?",
+      "words": [
+        { "start": 169.501, "end": 169.949, "char": [0, 5] },
+        { "start": 169.949, "end": 170.397, "char": [6, 12] },
+        { "start": 170.397, "end": 170.844, "char": [13, 19] }
+      ]
+    },
+    {
+      "start": 170.844,
+      "end": 171.74,
+      "text": "Also denied.",
+      "words": [
+        { "start": 170.844, "end": 171.292, "char": [0, 4] },
+        { "start": 171.292, "end": 171.74, "char": [5, 12] }
+      ]
+    },
+    {
+      "start": 171.74,
+      "end": 174.427,
+      "text": "Whatever runs inside this sandbox —",
+      "words": [
+        { "start": 171.74, "end": 172.188, "char": [0, 8] },
+        { "start": 172.188, "end": 172.636, "char": [9, 13] },
+        { "start": 172.636, "end": 173.084, "char": [14, 20] },
+        { "start": 173.084, "end": 173.531, "char": [21, 25] },
+        { "start": 173.531, "end": 173.979, "char": [26, 33] },
+        { "start": 173.979, "end": 174.427, "char": [34, 35] }
+      ]
+    },
+    {
+      "start": 174.427,
+      "end": 174.875,
+      "text": "editors,",
+      "words": [{ "start": 174.427, "end": 174.875, "char": [0, 8] }]
+    },
+    {
+      "start": 174.875,
+      "end": 175.323,
+      "text": "terminals,",
+      "words": [{ "start": 174.875, "end": 175.323, "char": [0, 10] }]
+    },
+    {
+      "start": 175.323,
+      "end": 178.009,
+      "text": "build tools — ends at the",
+      "words": [
+        { "start": 175.323, "end": 175.77, "char": [0, 5] },
+        { "start": 175.77, "end": 176.218, "char": [6, 11] },
+        { "start": 176.218, "end": 176.666, "char": [12, 13] },
+        { "start": 176.666, "end": 177.114, "char": [14, 18] },
+        { "start": 177.114, "end": 177.562, "char": [19, 21] },
+        { "start": 177.562, "end": 178.009, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 178.009,
+      "end": 178.905,
+      "text": "repo's walls.",
+      "words": [
+        { "start": 178.009, "end": 178.457, "char": [0, 6] },
+        { "start": 178.457, "end": 178.905, "char": [7, 13] }
+      ]
+    },
+    {
+      "start": 180.655,
+      "end": 183.022,
+      "text": "Le sandbox n'a pas d'exceptions.",
+      "words": [
+        { "start": 180.655, "end": 181.129, "char": [0, 2] },
+        { "start": 181.129, "end": 181.602, "char": [3, 10] },
+        { "start": 181.602, "end": 182.076, "char": [11, 14] },
+        { "start": 182.076, "end": 182.549, "char": [15, 18] },
+        { "start": 182.549, "end": 183.022, "char": [19, 32] }
+      ]
+    },
+    {
+      "start": 183.022,
+      "end": 184.443,
+      "text": "C'est tout l'intérêt.",
+      "words": [
+        { "start": 183.022, "end": 183.496, "char": [0, 5] },
+        { "start": 183.496, "end": 183.969, "char": [6, 10] },
+        { "start": 183.969, "end": 184.443, "char": [11, 21] }
+      ]
+    },
+    {
+      "start": 185.269,
+      "end": 185.754,
+      "text": "Navigateur,",
+      "words": [{ "start": 185.269, "end": 185.754, "char": [0, 11] }]
+    },
+    {
+      "start": 185.754,
+      "end": 186.239,
+      "text": "éditeur,",
+      "words": [{ "start": 185.754, "end": 186.239, "char": [0, 8] }]
+    },
+    {
+      "start": 186.239,
+      "end": 187.209,
+      "text": "terminal :",
+      "words": [
+        { "start": 186.239, "end": 186.724, "char": [0, 8] },
+        { "start": 186.724, "end": 187.209, "char": [9, 10] }
+      ]
+    },
+    {
+      "start": 187.209,
+      "end": 188.179,
+      "text": "même sandbox,",
+      "words": [
+        { "start": 187.209, "end": 187.694, "char": [0, 4] },
+        { "start": 187.694, "end": 188.179, "char": [5, 13] }
+      ]
+    },
+    {
+      "start": 188.179,
+      "end": 189.149,
+      "text": "mêmes règles.",
+      "words": [
+        { "start": 188.179, "end": 188.664, "char": [0, 5] },
+        { "start": 188.664, "end": 189.149, "char": [6, 13] }
+      ]
+    },
+    {
+      "start": 189.149,
+      "end": 190.119,
+      "text": "La suite,",
+      "words": [
+        { "start": 189.149, "end": 189.634, "char": [0, 2] },
+        { "start": 189.634, "end": 190.119, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 190.119,
+      "end": 193.029,
+      "text": "c'est la fonctionnalité sur laquelle tout",
+      "words": [
+        { "start": 190.119, "end": 190.604, "char": [0, 5] },
+        { "start": 190.604, "end": 191.089, "char": [6, 8] },
+        { "start": 191.089, "end": 191.574, "char": [9, 23] },
+        { "start": 191.574, "end": 192.059, "char": [24, 27] },
+        { "start": 192.059, "end": 192.544, "char": [28, 36] },
+        { "start": 192.544, "end": 193.029, "char": [37, 41] }
+      ]
+    },
+    {
+      "start": 193.029,
+      "end": 193.998,
+      "text": "ça repose,",
+      "words": [
+        { "start": 193.029, "end": 193.513, "char": [0, 2] },
+        { "start": 193.513, "end": 193.998, "char": [3, 10] }
+      ]
+    },
+    {
+      "start": 193.998,
+      "end": 194.968,
+      "text": "le forking.",
+      "words": [
+        { "start": 193.998, "end": 194.483, "char": [0, 2] },
+        { "start": 194.483, "end": 194.968, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 194.968,
+      "end": 196.423,
+      "text": "Tu vas adorer.",
+      "words": [
+        { "start": 194.968, "end": 195.453, "char": [0, 2] },
+        { "start": 195.453, "end": 195.938, "char": [3, 6] },
+        { "start": 195.938, "end": 196.423, "char": [7, 14] }
+      ]
+    }
+  ]
+}

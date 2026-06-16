@@ -30,6 +30,10 @@ export interface PersonaPageConfig {
   techStrip?: TechItem[];
   /** Problem section illustration */
   illustration?: ImageMetadata;
+  /** Base slug of the illustration asset, for per-language + mobile resolution
+   * (the asset is shared across personas, so this is the illustration's own
+   * name, not the persona slug). */
+  illustrationSlug?: string;
   /** Curated solution page slugs for the relatedSolutions section */
   relatedSolutions?: string[];
   /** Primary CTA destination (overrides persona default). Relative to /{lang}. Use 'CONSULTATION' for external booking link. */
@@ -64,6 +68,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'bottomCta',
     ],
     illustration: illustrationEnvironmentCloning,
+    illustrationSlug: 'environment-cloning',
     relatedSolutions: [
       'environment-cloning',
       'production-parity',
@@ -90,6 +95,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     calculatorPreset: 'infrastructure-costs',
     competitors: ['Veeam', 'Rubrik', 'Commvault', 'Zerto'],
     illustration: illustrationInfrastructureCosts,
+    illustrationSlug: 'infrastructure-costs',
     relatedSolutions: [
       'immutable-backups',
       'encryption',
@@ -114,6 +120,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
     ],
     calculatorPreset: 'rapid-recovery',
     illustration: illustrationRapidRecovery,
+    illustrationSlug: 'rapid-recovery',
     relatedSolutions: ['rapid-recovery', 'vendor-lock-in', 'cloud-outage-protection'],
   },
   'for-ai-agents': {
@@ -130,6 +137,7 @@ export const PERSONA_PAGES: Record<string, PersonaPageConfig> = {
       'bottomCta',
     ],
     illustration: illustrationEnvironmentCloning,
+    illustrationSlug: 'environment-cloning',
     relatedSolutions: ['environment-cloning', 'production-parity', 'integrations'],
   },
 };

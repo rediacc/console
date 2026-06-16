@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "bd587c869de1e93d44396cfed19f67a571efc98352c896228d435fc5202f6c84",
+  "transcriptHash": "229ba9d352ebde5c3278f3ae13a5f7e9f7b10adf2d07ebfa989d98f19cd21f95",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424169,
-      "replayEndSec": 6.651448,
+      "replayStartSec": 2.409089,
+      "replayEndSec": 6.555802,
       "narrationText": "Première étape. Nous allons importer une configuration rclone existante. rclone prend en charge S3, Backblaze, Google Drive, Dropbox et bien d'autres. Si vous l'utilisez déjà, vous pouvez importer la même configuration directement.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-01.e64a85ca.mp3",
       "textHash": "e64a85cadc9cb8e0cef85f26fb7889c88e6a4edb9fbe076b16a7c2ecabd1a09b",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 6.651448,
-      "replayEndSec": 10.354487,
+      "replayStartSec": 6.555802,
+      "replayEndSec": 10.251839,
       "narrationText": "Listons les stockages que l'outil connaît maintenant. Chaque stockage est une destination vers laquelle nous pouvons pousser des sauvegardes.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-02.c00f655d.mp3",
       "textHash": "c00f655d07f5f87b3bc9da5e5d8759437ac9eefbed41774d37aca7494c363032",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 10.354487,
-      "replayEndSec": 18.28182,
+      "replayStartSec": 10.251839,
+      "replayEndSec": 24.484571,
       "narrationText": "Deuxième étape. Nous poussons une sauvegarde complète. Le dépôt entier, application, base de données, fichiers, configuration, est téléversé. Comme le dépôt est chiffré au repos, la sauvegarde l'est aussi. Aucune gestion de clé supplémentaire.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-03.9367b442.mp3",
       "textHash": "9367b442061e30bd87fc291c8e4295ae8abd680af899f5ff092ada35069d5fc4",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 18.28182,
-      "replayEndSec": 26.532142,
+      "replayStartSec": 24.484571,
+      "replayEndSec": 31.133919,
       "narrationText": "Listons les sauvegardes disponibles sur ce stockage. À partir de là, la restauration sur un tout nouveau serveur se fait en une seule commande : la commande de restauration de dépôt. Mêmes données, mêmes conteneurs, machine différente.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-04.8c01115a.mp3",
       "textHash": "8c01115a97dc5780919a1de1a60cb90ae543b21af3a8f35ffbfa25639a2c767e",
@@ -60,6 +60,45 @@
       "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-04-after.b36ddc23.mp3",
       "afterAudioDurationSec": 6.269388,
       "afterTextHash": "b36ddc238fa9fe6c2a7d13a844685e9844a21ba7d3be5a4764fd4265e86f57e1"
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.133919,
+      "replayEndSec": 39.135694,
+      "narrationText": "Passons maintenant à la preuve de restauration. D'abord, mettez le repository hors ligne : arrêtez les services et démontez le volume chiffré. L'application a disparu de cette machine.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-05.6424b38a.mp3",
+      "textHash": "6424b38a168e1d8c4ae9c0561fa793899d95467f318fc2dd06381b302695efdd",
+      "audioDurationSec": 11.964082,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-05-after.069800c7.mp3",
+      "afterAudioDurationSec": 4.597551,
+      "afterTextHash": "069800c7563fc24f5250f17d8c03c2a70cd8f0c8da7019957749c9ff7acf6dd6"
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.135694,
+      "replayEndSec": 48.126162,
+      "narrationText": "Et reprenez la sauvegarde directement depuis le stockage. La commande repo pull récupère l'image, vérifie son intégrité et la replace exactement là où elle se trouvait.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-06.cc8af0e4.mp3",
+      "textHash": "cc8af0e4b6d7d6ea396471a69a13ecbe0ee3c280f537d848f21b794f39db7ce2",
+      "audioDurationSec": 12.277551,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-06-after.5137e12f.mp3",
+      "afterAudioDurationSec": 6.426122,
+      "afterTextHash": "5137e12fee6f2017f37b5cdb64e75b8fa39d9fe4658d70f32766561a825bbb8e"
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "replayStartSec": 48.126162,
+      "replayEndSec": 54.070366,
+      "narrationText": "Montez-le à nouveau, et le repository est restauré. Push, list, pull, c'est toute l'histoire de la sauvegarde.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-07.8469be53.mp3",
+      "textHash": "8469be53c9de1f4b1eb2a52c9d5834b762ae6810104afcf32afaff2af8f044ef",
+      "audioDurationSec": 7.079184,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-backup-restore/tutorial-backup-restore-07-after.11e34c9d.mp3",
+      "afterAudioDurationSec": 4.04898,
+      "afterTextHash": "11e34c9de29308a7d013a5a72cf5c865a03d384d2f10fcc12026216e06723b17"
     }
   ],
   "narrationAudio": [

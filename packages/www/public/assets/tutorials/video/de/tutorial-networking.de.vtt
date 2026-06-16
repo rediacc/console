@@ -1,232 +1,250 @@
 WEBVTT
 
-00:00:01.000 --> 00:00:01.734
-Alles klar!
+00:00:01.000 --> 00:00:02.187
+Deine App läuft,
 
-00:00:01.734 --> 00:00:04.303
-Lass uns deiner App eine echte Domain
+00:00:02.187 --> 00:00:04.957
+aber nur der Server kann sie sehen.
 
-00:00:04.303 --> 00:00:05.770
-mit automatischem TLS verpassen.
+00:00:04.957 --> 00:00:07.727
+Geben wir ihr eine echte Domain mit
 
-00:00:05.770 --> 00:00:08.339
-Vier kurze Schritte und du bist im
+00:00:07.727 --> 00:00:08.518
+automatischem TLS.
 
-00:00:08.339 --> 00:00:08.706
-Internet.
+00:00:08.518 --> 00:00:09.706
+Vier kurze Schritte,
 
-00:00:09.486 --> 00:00:11.919
-So sieht der Weg aus.
+00:00:09.706 --> 00:00:11.684
+und sie ist im Internet.
 
-00:00:11.919 --> 00:00:13.865
-Hol dir ein Cloudflare-API-Token,
+00:00:12.458 --> 00:00:13.602
+So geht's:
 
-00:00:13.865 --> 00:00:16.784
-konfiguriere die Infrastruktur in der CLI,
+00:00:13.602 --> 00:00:15.890
+einen Cloudflare API-Token holen,
 
-00:00:16.784 --> 00:00:19.703
-push sie auf den Server und
+00:00:15.890 --> 00:00:18.751
+die Infrastruktur einmal über die
 
-00:00:19.703 --> 00:00:21.649
-deploye dann einen Traefik-Proxy,
+00:00:18.751 --> 00:00:19.895
+CLI konfigurieren,
 
-00:00:21.649 --> 00:00:24.568
-der DNS und Zertifikate für dich
+00:00:19.895 --> 00:00:22.755
+auf den Server pushen und
 
-00:00:24.568 --> 00:00:25.055
-übernimmt.
+00:00:22.755 --> 00:00:25.616
+dann ein kleines Proxy-repo deployen,
 
-00:00:25.820 --> 00:00:28.631
-Zuerst öffnest du das Cloudflare-Dashboard im
+00:00:25.616 --> 00:00:28.476
+das DNS und Zertifikate für
 
-00:00:28.631 --> 00:00:29.100
-Browser.
+00:00:28.476 --> 00:00:29.620
+dich übernimmt.
 
-00:00:29.100 --> 00:00:30.974
-Geh zu „My Profile“,
+00:00:30.094 --> 00:00:32.498
+Zuerst der eine manuelle Schritt.
 
-00:00:30.974 --> 00:00:33.786
-dann zu „API Tokens“ und erstelle
+00:00:32.498 --> 00:00:33.941
+Öffne das Cloudflare-Dashboard,
 
-00:00:33.786 --> 00:00:36.597
-ein Token mit der Berechtigung Zone
+00:00:33.941 --> 00:00:35.865
+gehe zu My Profile,
 
-00:00:36.597 --> 00:00:37.534
-DNS Edit,
+00:00:35.865 --> 00:00:37.788
+dann zu API Tokens,
 
-00:00:37.534 --> 00:00:40.346
-damit die CLI deine Einträge verwalten
+00:00:37.788 --> 00:00:40.674
+und erstelle einen Token mit der
 
-00:00:40.346 --> 00:00:40.814
-kann.
+00:00:40.674 --> 00:00:42.597
+Berechtigung Zone DNS Edit.
 
-00:00:43.453 --> 00:00:44.543
+00:00:42.597 --> 00:00:45.483
+Dieser eine Token erlaubt der CLI,
+
+00:00:45.483 --> 00:00:47.406
+deine DNS-Einträge zu verwalten,
+
+00:00:47.406 --> 00:00:50.291
+sodass du nie wieder durch Dashboards
+
+00:00:50.291 --> 00:00:51.253
+klicken musst.
+
+00:00:54.261 --> 00:00:55.350
 Schritt zwei.
 
-00:00:44.543 --> 00:00:47.267
+00:00:55.350 --> 00:00:58.075
 Wir teilen der CLI die
 
-00:00:47.267 --> 00:00:48.357
+00:00:58.075 --> 00:00:59.164
 öffentliche IP,
 
-00:00:48.357 --> 00:00:49.447
+00:00:59.164 --> 00:01:00.254
 die Basisdomain,
 
-00:00:49.447 --> 00:00:52.171
+00:01:00.254 --> 00:01:02.978
 die Zertifikats-E-Mail und das Cloudflare-API-Token
 
-00:00:52.171 --> 00:00:52.716
+00:01:02.978 --> 00:01:03.523
 mit.
 
-00:00:52.716 --> 00:00:55.440
+00:01:03.523 --> 00:01:06.247
 Die Zertifikats-E-Mail und das Token
 
-00:00:55.440 --> 00:00:58.164
+00:01:06.247 --> 00:01:08.971
 werden über alle Ihre Maschinen
 
-00:00:58.164 --> 00:00:58.709
+00:01:08.971 --> 00:01:09.516
 geteilt,
 
-00:00:58.709 --> 00:01:01.433
+00:01:09.516 --> 00:01:12.240
 sodass Sie sie nur einmal
 
-00:01:01.433 --> 00:01:02.523
+00:01:12.240 --> 00:01:13.330
 setzen müssen.
 
-00:01:03.323 --> 00:01:05.830
+00:01:15.330 --> 00:01:17.838
 Infrastruktur in deiner Konfig hinterlegt.
 
-00:01:09.160 --> 00:01:10.835
+00:01:21.135 --> 00:01:22.810
 Wir bestätigen,
 
-00:01:10.835 --> 00:01:13.348
+00:01:22.810 --> 00:01:25.322
 dass die Infrastruktureinstellungen
 
-00:01:13.348 --> 00:01:15.023
+00:01:25.322 --> 00:01:26.998
 gespeichert wurden.
 
-00:01:15.023 --> 00:01:16.698
+00:01:26.998 --> 00:01:28.673
 Öffentliche IP,
 
-00:01:16.698 --> 00:01:17.536
+00:01:28.673 --> 00:01:29.510
 Basisdomain,
 
-00:01:17.536 --> 00:01:18.373
+00:01:29.510 --> 00:01:30.348
 Zertifikats-E-Mail,
 
-00:01:18.373 --> 00:01:20.886
+00:01:30.348 --> 00:01:32.860
 alles in der
 
-00:01:20.886 --> 00:01:22.561
+00:01:32.860 --> 00:01:34.535
 Konfiguration sichtbar.
 
-00:01:24.311 --> 00:01:25.281
+00:01:36.285 --> 00:01:37.255
 Einstellungen gespeichert.
 
-00:01:25.281 --> 00:01:25.765
+00:01:37.255 --> 00:01:37.740
 Bereit,
 
-00:01:25.765 --> 00:01:28.674
+00:01:37.740 --> 00:01:40.648
 sie auf den Server zu pushen.
 
-00:01:32.008 --> 00:01:32.999
-Schritt drei.
+00:01:43.950 --> 00:01:44.983
+Schritt drei:
 
-00:01:32.999 --> 00:01:35.970
-Wir übertragen die Konfiguration auf den
+00:01:44.983 --> 00:01:47.567
+die Konfiguration auf den Server
 
-00:01:35.970 --> 00:01:36.465
-Server.
+00:01:47.567 --> 00:01:48.084
+pushen.
 
-00:01:36.465 --> 00:01:39.437
-Dabei werden die DNS-Einträge bei Cloudflare
+00:01:48.084 --> 00:01:50.668
+Mit einem echten Token werden
 
-00:01:39.437 --> 00:01:42.408
-automatisch erstellt und die Proxy-Konfiguration auf
+00:01:50.668 --> 00:01:53.252
+deine DNS-Einträge auf Cloudflare automatisch
 
-00:01:42.408 --> 00:01:43.894
-der Maschine vorbereitet.
+00:01:53.252 --> 00:01:55.835
+angelegt und die Proxy-Konfiguration vorbereitet.
 
-00:01:46.894 --> 00:01:47.700
+00:01:56.635 --> 00:01:57.441
 Gepusht.
 
-00:01:47.700 --> 00:01:50.921
+00:01:57.441 --> 00:02:00.663
 DNS-Einträge werden auf Cloudflare
 
-00:01:50.921 --> 00:01:51.727
+00:02:00.663 --> 00:02:01.468
 angelegt.
 
-00:01:55.042 --> 00:01:56.386
-Schritt vier beginnt.
+00:02:04.816 --> 00:02:05.798
+Schritt vier:
 
-00:01:56.386 --> 00:01:59.076
-Wir erstellen ein kleines Repo namens
+00:02:05.798 --> 00:02:08.743
+ein kleines repo namens infra erstellen.
 
-00:01:59.076 --> 00:01:59.524
-infra.
+00:02:08.743 --> 00:02:10.706
+Warum ein eigenes repo?
 
-00:01:59.524 --> 00:02:01.765
-Dort wird der Proxy leben,
+00:02:10.706 --> 00:02:13.650
+Der Proxy leitet den Traffic für
 
-00:02:01.765 --> 00:02:03.558
-isoliert von den Anwendungsrepos.
+00:02:13.650 --> 00:02:16.104
+jede App auf diesem Server.
 
-00:02:06.628 --> 00:02:07.838
+00:02:16.104 --> 00:02:19.049
+Infrastruktur verdient eine eigene isolierte Box,
+
+00:02:19.049 --> 00:02:21.012
+getrennt von deinem Anwendungscode.
+
+00:02:24.012 --> 00:02:25.223
 Infra-Repo angelegt.
 
-00:02:07.838 --> 00:02:10.259
+00:02:25.223 --> 00:02:27.643
 Isoliert von deinen App-Repos.
 
-00:02:13.554 --> 00:02:16.323
+00:02:30.994 --> 00:02:33.763
 Wir wenden die integrierte proxy-Vorlage
 
-00:02:16.323 --> 00:02:16.876
+00:02:33.763 --> 00:02:34.317
 an.
 
-00:02:16.876 --> 00:02:19.645
+00:02:34.317 --> 00:02:37.086
 Sie enthält Traefik sowie die
 
-00:02:19.645 --> 00:02:22.414
+00:02:37.086 --> 00:02:39.855
 Konfiguration für Let's Encrypt und
 
-00:02:22.414 --> 00:02:23.522
+00:02:39.855 --> 00:02:40.963
 Cloudflare DNS-01-Challenges,
 
-00:02:23.522 --> 00:02:24.630
+00:02:40.963 --> 00:02:42.070
 direkt einsatzbereit.
 
-00:02:26.880 --> 00:02:29.570
+00:02:45.070 --> 00:02:47.761
 Traefik-Konfiguration steht.
 
-00:02:32.840 --> 00:02:35.452
+00:02:51.064 --> 00:02:53.677
 Und wir starten den Proxy.
 
-00:02:35.452 --> 00:02:38.064
+00:02:53.677 --> 00:02:56.289
 Traefik erkennt Ihre Container alle
 
-00:02:38.064 --> 00:02:39.109
+00:02:56.289 --> 00:02:57.334
 fünf Sekunden.
 
-00:02:39.109 --> 00:02:41.721
+00:02:57.334 --> 00:02:59.946
 TLS-Zertifikate kommen automatisch von Let's
 
-00:02:41.721 --> 00:02:42.244
+00:02:59.946 --> 00:03:00.468
 Encrypt.
 
-00:02:42.244 --> 00:02:44.856
+00:03:00.468 --> 00:03:03.081
 Ihre App ist jetzt über
 
-00:02:44.856 --> 00:02:46.946
+00:03:03.081 --> 00:03:05.170
 HTTPS im Internet erreichbar.
 
-00:02:46.946 --> 00:02:49.009
+00:03:08.170 --> 00:03:10.234
 Proxy ist live.
 
-00:02:49.009 --> 00:02:51.073
+00:03:10.234 --> 00:03:12.298
 TLS-Zertifikate kommen automatisch.
 
-00:02:51.816 --> 00:02:54.574
+00:03:13.073 --> 00:03:15.832
 Und damit ist das Netzwerk erledigt!
 
-00:02:54.574 --> 00:02:56.413
+00:03:15.832 --> 00:03:17.671
 Bis zum nächsten Mal.

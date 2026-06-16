@@ -21,98 +21,98 @@ scegli il tuo sistema operativo,
 00:00:10.792 --> 00:00:13.605
 poi incolla il comando nel terminale.
 
-00:00:14.372 --> 00:00:17.186
+00:00:14.072 --> 00:00:16.886
 Vai alla pagina di installazione e scorri
 
-00:00:17.186 --> 00:00:19.599
+00:00:16.886 --> 00:00:19.299
 fino alla sezione di installazione rapida.
 
-00:00:19.599 --> 00:00:22.413
+00:00:19.299 --> 00:00:22.113
 Genera il one-liner giusto per la piattaforma
 
-00:00:22.413 --> 00:00:23.619
+00:00:22.113 --> 00:00:23.319
 che stai usando.
 
-00:00:26.890 --> 00:00:27.943
+00:00:26.305 --> 00:00:27.358
 Prima di tutto,
 
-00:00:27.943 --> 00:00:30.400
+00:00:27.358 --> 00:00:29.816
 confermiamo che la CLI sia nel path.
 
-00:00:30.400 --> 00:00:33.208
+00:00:29.816 --> 00:00:32.624
 Eseguendo la CLI con il flag version si
 
-00:00:33.208 --> 00:00:36.017
+00:00:32.624 --> 00:00:35.432
 ottiene la versione installata e si verifica che
 
-00:00:36.017 --> 00:00:38.123
+00:00:35.432 --> 00:00:37.538
 l'installazione sia andata a buon fine.
 
-00:00:41.123 --> 00:00:42.197
+00:00:40.538 --> 00:00:41.612
 Installazione completata.
 
-00:00:42.197 --> 00:00:44.881
+00:00:41.612 --> 00:00:44.297
 Il binario rdc e' nel
 
-00:00:44.881 --> 00:00:45.955
+00:00:44.297 --> 00:00:45.371
 tuo path.
 
-00:00:49.257 --> 00:00:51.519
+00:00:48.705 --> 00:00:50.968
 Ora eseguiamo il controllo diagnostico.
 
-00:00:51.519 --> 00:00:54.235
+00:00:50.968 --> 00:00:53.683
 Controlla tutte le dipendenze necessarie alla
 
-00:00:54.235 --> 00:00:55.592
+00:00:53.683 --> 00:00:55.041
 CLI -- Node,
 
-00:00:55.592 --> 00:00:58.307
+00:00:55.041 --> 00:00:57.756
 SSH e le restanti -- e
 
-00:00:58.307 --> 00:00:59.665
+00:00:57.756 --> 00:00:59.114
 segnala eventuali mancanze.
 
-00:00:59.665 --> 00:01:02.380
+00:00:59.114 --> 00:01:01.829
 Un rapporto pulito significa che sei
 
-00:01:02.380 --> 00:01:04.643
+00:01:01.829 --> 00:01:04.091
 pronto ad aggiungere un server.
 
-00:01:05.443 --> 00:01:06.736
+00:01:04.891 --> 00:01:06.185
 Versione stampata.
 
-00:01:06.736 --> 00:01:08.029
+00:01:06.185 --> 00:01:07.478
 Sei pronto.
 
-00:01:08.857 --> 00:01:11.542
+00:01:08.305 --> 00:01:10.991
 Lo strumento da riga di comando vive
 
-00:01:11.542 --> 00:01:12.693
+00:01:10.991 --> 00:01:12.142
 sul tuo laptop.
 
-00:01:12.693 --> 00:01:15.379
+00:01:12.142 --> 00:01:14.828
 Il server esegue un componente separato chiamato
 
-00:01:15.379 --> 00:01:15.763
+00:01:14.828 --> 00:01:15.211
 renet,
 
-00:01:15.763 --> 00:01:18.449
+00:01:15.211 --> 00:01:17.897
 che la CLI provisiona e pilota via
 
-00:01:18.449 --> 00:01:18.832
+00:01:17.897 --> 00:01:18.281
 SSH,
 
-00:01:18.832 --> 00:01:21.134
+00:01:18.281 --> 00:01:20.583
 quindi non devi mai collegarti manualmente.
 
-00:01:21.917 --> 00:01:23.060
+00:01:21.365 --> 00:01:22.509
 Installazione completata.
 
-00:01:23.060 --> 00:01:25.918
+00:01:22.509 --> 00:01:25.367
 Nel prossimo configureremo la tua
 
-00:01:25.918 --> 00:01:28.776
+00:01:25.367 --> 00:01:28.225
 chiave SSH cosi' la CLI
 
-00:01:28.776 --> 00:01:31.634
+00:01:28.225 --> 00:01:31.083
 potra' raggiungere i tuoi server.

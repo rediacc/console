@@ -1,0 +1,62 @@
+---
+title: "在线迁移"
+description: "用一条命令将运行中的仓库（数据库、文件、容器）迁移到另一台机器，停机时间极短。"
+category: "Tutorials"
+subcategory: advanced
+order: 16
+language: zh
+sourceHash: "0d0c4df847c6ba17"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 在线迁移
+
+服务器总需要更换：硬件老化、供应商变更、区域迁移。`rdc repo migrate` 用一条命令将运行中的仓库迁移到另一台机器，加上 `--checkpoint` 连进程内存也能随行。演示应用 `pulse` 在内存中维护一个计数器；迁移完成后它继续计数，而不是从头开始。
+
+## 观看教程
+
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
+## 迁移方式
+
+![两个阶段，停机时间极短](/img/tutorials/tutorial-live-migration/slide-1.svg)
+
+第一阶段在应用持续运行时复制大量数据。第二阶段对运行中的进程做检查点（CRIU，针对标记了 `rediacc.checkpoint=true` 的容器），将最终增量加上进程状态一同传输过去，然后在新机器上恢复运行。停机时间只是增量的传输时长，与数据总量无关。
+
+## 第一步：证据，内存中的计数器
+
+<TutorialStep number={1} />
+
+`memory counter=6`，每五秒递增一次。计数器只存在于进程内存中。如果进程重启，它会从 1 重新开始。
+
+## 第二步：在线迁移
+
+<TutorialStep number={2} />
+
+输出描述了迁移过程：第一阶段在源端保持在线的同时传输 2 GB 的主要数据，然后打印切换行，显示实际的 `DOWNTIME`：对于一个两 GB 的仓库，仅约数十兆字节、大约二十秒。
+
+## 第三步：验证新家
+
+<TutorialStep number={3} />
+
+在目标机器上，`pulse` 已挂载，Docker 已启动，容器正在运行。
+
+## 第四步：源端已停止
+
+<TutorialStep number={4} />
+
+源端仍列出该仓库，但实情是：未挂载，无 Docker，零容器。那里什么都不再运行了。镜像被有意保留，作为下次[增量传输](/zh/docs/tutorial-delta-transfer)的基础，以便未来的推送代价极低。
+
+## 第五步：计数器一直在计
+
+<TutorialStep number={5} />
+
+`memory counter=17`，然后 18、19、20……它从检查点冻结的那一刻精确恢复，而不是重置为 1。这就是进程内存随行迁移的效果；应用全程未察觉自己换了台机器。
+
+> 不加 `--checkpoint` 时，migrate 同样会迁移磁盘和容器；只是容器会在目标端全新启动，而不是从中断处继续。
+
+---
+
+下一篇：[增量传输](/zh/docs/tutorial-delta-transfer)。

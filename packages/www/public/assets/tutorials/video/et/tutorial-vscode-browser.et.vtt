@@ -1,0 +1,259 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:01.902
+Head uudised:
+
+00:00:01.902 --> 00:00:03.707
+selleks pole terminali vaja!
+
+00:00:03.707 --> 00:00:06.413
+Avame täieliku VS Code otse brauseris,
+
+00:00:06.413 --> 00:00:07.767
+loome mõned failid,
+
+00:00:07.767 --> 00:00:10.022
+käivitame mõned käsud ja vaatame,
+
+00:00:10.022 --> 00:00:12.729
+kuidas kernel kõik repo sees hoiab.
+
+00:00:13.503 --> 00:00:14.970
+Idee on selline.
+
+00:00:14.970 --> 00:00:17.415
+Editor ei tööta sinu sülearvutis.
+
+00:00:17.415 --> 00:00:20.348
+See töötab serveri repo sandbox'is ja
+
+00:00:20.348 --> 00:00:23.282
+sinu brauser jõuab selleni SSH-tunneli kaudu.
+
+00:00:23.282 --> 00:00:24.749
+Nii näevad failipuu,
+
+00:00:24.749 --> 00:00:26.705
+sisseehitatud terminal ja kõik,
+
+00:00:26.705 --> 00:00:28.172
+mida sealt käivitad,
+
+00:00:28.172 --> 00:00:29.150
+täpselt seda,
+
+00:00:29.150 --> 00:00:30.617
+mida repo näeb,
+
+00:00:30.617 --> 00:00:32.572
+ja mitte midagi muud.
+
+00:00:35.843 --> 00:00:36.613
+One command.
+
+00:00:36.613 --> 00:00:39.309
+The CLI installs the editor server on
+
+00:00:39.309 --> 00:00:40.464
+the machine once,
+
+00:00:40.464 --> 00:00:42.775
+starts it inside the repo sandbox,
+
+00:00:42.775 --> 00:00:43.931
+opens a tunnel,
+
+00:00:43.931 --> 00:00:45.856
+and hands you a link.
+
+00:00:45.856 --> 00:00:47.397
+No local VS Code,
+
+00:00:47.397 --> 00:00:49.322
+no extensions to set up.
+
+00:00:52.322 --> 00:00:54.739
+See URL on sinu redaktor.
+
+00:00:54.739 --> 00:00:56.188
+Töötab igal opsüsteemil,
+
+00:00:56.188 --> 00:00:58.121
+ainus nõue on brauser.
+
+00:00:58.647 --> 00:01:00.338
+Ja siin ta on:
+
+00:01:00.338 --> 00:01:01.184
+VS Code,
+
+00:01:01.184 --> 00:01:02.030
+brauseri vahekaardil.
+
+00:01:02.030 --> 00:01:04.567
+Vasakul olev failipuu näitab repot ja
+
+00:01:04.567 --> 00:01:05.413
+ainult repot.
+
+00:01:11.147 --> 00:01:12.779
+Loome päris faili,
+
+00:01:12.779 --> 00:01:14.411
+terminali pole vaja.
+
+00:01:14.411 --> 00:01:15.499
+Uus redaktor,
+
+00:01:15.499 --> 00:01:18.219
+paar rida ja salvestame selle
+
+00:01:18.219 --> 00:01:19.851
+notes/todo.md nime alla.
+
+00:01:19.851 --> 00:01:21.484
+Kaust ilmub vasakule,
+
+00:01:21.484 --> 00:01:23.660
+kui fail repo'sse jõuab.
+
+00:01:29.647 --> 00:01:32.604
+Sisseehitatud terminal töötab samuti ja siin
+
+00:01:32.604 --> 00:01:34.082
+on meie fail.
+
+00:01:34.082 --> 00:01:36.546
+Nüüd proovime repost välja vaadata:
+
+00:01:36.546 --> 00:01:37.531
+juurdepääs keelatud.
+
+00:01:37.531 --> 00:01:39.010
+See pole seadistus,
+
+00:01:39.010 --> 00:01:40.488
+see on kernel.
+
+00:01:48.647 --> 00:01:50.685
+Same repo from the plain terminal:
+
+00:01:50.685 --> 00:01:52.722
+the working directory is the repo,
+
+00:01:52.722 --> 00:01:54.760
+the files are the repo's files.
+
+00:01:57.563 --> 00:02:00.087
+Terminal ja redaktor on ühel meelel,
+
+00:02:00.087 --> 00:02:01.769
+see on sama sandbox.
+
+00:02:05.033 --> 00:02:07.602
+And the file we created in the
+
+00:02:07.602 --> 00:02:08.336
+browser editor?
+
+00:02:08.336 --> 00:02:09.070
+Right here.
+
+00:02:09.070 --> 00:02:11.638
+Files made in VS Code are real
+
+00:02:11.638 --> 00:02:12.372
+repo files,
+
+00:02:12.372 --> 00:02:12.739
+instantly.
+
+00:02:14.489 --> 00:02:15.678
+Loodud brauseris,
+
+00:02:15.678 --> 00:02:16.866
+loetav terminalist.
+
+00:02:16.866 --> 00:02:18.055
+Üks repo,
+
+00:02:18.055 --> 00:02:19.243
+kaks ust.
+
+00:02:22.576 --> 00:02:24.184
+Now try to leave.
+
+00:02:24.184 --> 00:02:26.595
+Listing the root of the server:
+
+00:02:26.595 --> 00:02:27.399
+permission denied.
+
+00:02:27.399 --> 00:02:29.408
+The kernel scopes the editor,
+
+00:02:29.408 --> 00:02:30.212
+its terminal,
+
+00:02:30.212 --> 00:02:33.025
+and every child process to this repo.
+
+00:02:34.775 --> 00:02:36.473
+Keelatud kerneli poolt,
+
+00:02:36.473 --> 00:02:38.171
+mitte konfiguratsiooni poolt.
+
+00:02:41.482 --> 00:02:42.949
+Other users' homes?
+
+00:02:42.949 --> 00:02:43.926
+Also denied.
+
+00:02:43.926 --> 00:02:46.859
+Whatever runs inside this sandbox —
+
+00:02:46.859 --> 00:02:47.348
+editors,
+
+00:02:47.348 --> 00:02:47.837
+terminals,
+
+00:02:47.837 --> 00:02:50.770
+build tools — ends at the
+
+00:02:50.770 --> 00:02:51.748
+repo's walls.
+
+00:02:53.498 --> 00:02:55.196
+Sandboxil pole erandeid.
+
+00:02:55.196 --> 00:02:56.894
+See ongi mõte.
+
+00:02:57.688 --> 00:02:58.273
+Brauser,
+
+00:02:58.273 --> 00:02:58.858
+editor,
+
+00:02:58.858 --> 00:02:59.443
+terminal:
+
+00:02:59.443 --> 00:03:00.612
+sama sandbox,
+
+00:03:00.612 --> 00:03:01.782
+samad reeglid.
+
+00:03:01.782 --> 00:03:03.537
+Järgmisena tuleb funktsioon,
+
+00:03:03.537 --> 00:03:05.876
+millele kõik siin põhineb,
+
+00:03:05.876 --> 00:03:06.461
+forking.
+
+00:03:06.461 --> 00:03:08.215
+Sulle meeldib see.

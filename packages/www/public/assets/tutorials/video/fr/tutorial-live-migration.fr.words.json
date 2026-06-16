@@ -1,0 +1,1023 @@
+{
+  "version": 1,
+  "cues": [
+    {
+      "start": 1,
+      "end": 3.15,
+      "text": "Place à quelque chose d'important :",
+      "words": [
+        { "start": 1, "end": 1.358, "char": [0, 5] },
+        { "start": 1.358, "end": 1.717, "char": [6, 7] },
+        { "start": 1.717, "end": 2.075, "char": [8, 15] },
+        { "start": 2.075, "end": 2.433, "char": [16, 21] },
+        { "start": 2.433, "end": 2.791, "char": [22, 33] },
+        { "start": 2.791, "end": 3.15, "char": [34, 35] }
+      ]
+    },
+    {
+      "start": 3.15,
+      "end": 5.657,
+      "text": "déplacer une application EN COURS D'EXÉCUTION vers",
+      "words": [
+        { "start": 3.15, "end": 3.508, "char": [0, 8] },
+        { "start": 3.508, "end": 3.866, "char": [9, 12] },
+        { "start": 3.866, "end": 4.224, "char": [13, 24] },
+        { "start": 4.224, "end": 4.583, "char": [25, 27] },
+        { "start": 4.583, "end": 4.941, "char": [28, 33] },
+        { "start": 4.941, "end": 5.299, "char": [34, 45] },
+        { "start": 5.299, "end": 5.657, "char": [46, 50] }
+      ]
+    },
+    {
+      "start": 5.657,
+      "end": 6.732,
+      "text": "une autre machine,",
+      "words": [
+        { "start": 5.657, "end": 6.016, "char": [0, 3] },
+        { "start": 6.016, "end": 6.374, "char": [4, 9] },
+        { "start": 6.374, "end": 6.732, "char": [10, 18] }
+      ]
+    },
+    {
+      "start": 6.732,
+      "end": 7.807,
+      "text": "pendant qu'elle tourne.",
+      "words": [
+        { "start": 6.732, "end": 7.09, "char": [0, 7] },
+        { "start": 7.09, "end": 7.449, "char": [8, 15] },
+        { "start": 7.449, "end": 7.807, "char": [16, 23] }
+      ]
+    },
+    {
+      "start": 7.807,
+      "end": 10.315,
+      "text": "Nous allons observer un compteur en direct",
+      "words": [
+        { "start": 7.807, "end": 8.165, "char": [0, 4] },
+        { "start": 8.165, "end": 8.523, "char": [5, 11] },
+        { "start": 8.523, "end": 8.882, "char": [12, 20] },
+        { "start": 8.882, "end": 9.24, "char": [21, 23] },
+        { "start": 9.24, "end": 9.598, "char": [24, 32] },
+        { "start": 9.598, "end": 9.956, "char": [33, 35] },
+        { "start": 9.956, "end": 10.315, "char": [36, 42] }
+      ]
+    },
+    {
+      "start": 10.315,
+      "end": 12.464,
+      "text": "battant dans la mémoire de l'application,",
+      "words": [
+        { "start": 10.315, "end": 10.673, "char": [0, 7] },
+        { "start": 10.673, "end": 11.031, "char": [8, 12] },
+        { "start": 11.031, "end": 11.389, "char": [13, 15] },
+        { "start": 11.389, "end": 11.748, "char": [16, 23] },
+        { "start": 11.748, "end": 12.106, "char": [24, 26] },
+        { "start": 12.106, "end": 12.464, "char": [27, 41] }
+      ]
+    },
+    {
+      "start": 12.464,
+      "end": 14.614,
+      "text": "tout déplacer avec une seule commande,",
+      "words": [
+        { "start": 12.464, "end": 12.822, "char": [0, 4] },
+        { "start": 12.822, "end": 13.181, "char": [5, 13] },
+        { "start": 13.181, "end": 13.539, "char": [14, 18] },
+        { "start": 13.539, "end": 13.897, "char": [19, 22] },
+        { "start": 13.897, "end": 14.255, "char": [23, 28] },
+        { "start": 14.255, "end": 14.614, "char": [29, 38] }
+      ]
+    },
+    {
+      "start": 14.614,
+      "end": 17.121,
+      "text": "et voir le compteur continuer à compter",
+      "words": [
+        { "start": 14.614, "end": 14.972, "char": [0, 2] },
+        { "start": 14.972, "end": 15.33, "char": [3, 7] },
+        { "start": 15.33, "end": 15.688, "char": [8, 10] },
+        { "start": 15.688, "end": 16.047, "char": [11, 19] },
+        { "start": 16.047, "end": 16.405, "char": [20, 29] },
+        { "start": 16.405, "end": 16.763, "char": [30, 31] },
+        { "start": 16.763, "end": 17.121, "char": [32, 39] }
+      ]
+    },
+    {
+      "start": 17.121,
+      "end": 18.554,
+      "text": "sur la nouvelle machine.",
+      "words": [
+        { "start": 17.121, "end": 17.48, "char": [0, 3] },
+        { "start": 17.48, "end": 17.838, "char": [4, 6] },
+        { "start": 17.838, "end": 18.196, "char": [7, 15] },
+        { "start": 18.196, "end": 18.554, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 19.331,
+      "end": 21.401,
+      "text": "Cela fonctionne en deux phases.",
+      "words": [
+        { "start": 19.331, "end": 19.745, "char": [0, 4] },
+        { "start": 19.745, "end": 20.159, "char": [5, 15] },
+        { "start": 20.159, "end": 20.573, "char": [16, 18] },
+        { "start": 20.573, "end": 20.987, "char": [19, 23] },
+        { "start": 20.987, "end": 21.401, "char": [24, 31] }
+      ]
+    },
+    {
+      "start": 21.401,
+      "end": 24.299,
+      "text": "La première phase copie l'essentiel pendant que",
+      "words": [
+        { "start": 21.401, "end": 21.815, "char": [0, 2] },
+        { "start": 21.815, "end": 22.229, "char": [3, 11] },
+        { "start": 22.229, "end": 22.643, "char": [12, 17] },
+        { "start": 22.643, "end": 23.057, "char": [18, 23] },
+        { "start": 23.057, "end": 23.471, "char": [24, 35] },
+        { "start": 23.471, "end": 23.885, "char": [36, 43] },
+        { "start": 23.885, "end": 24.299, "char": [44, 47] }
+      ]
+    },
+    {
+      "start": 24.299,
+      "end": 25.956,
+      "text": "l'application continue de tourner.",
+      "words": [
+        { "start": 24.299, "end": 24.714, "char": [0, 13] },
+        { "start": 24.714, "end": 25.128, "char": [14, 22] },
+        { "start": 25.128, "end": 25.542, "char": [23, 25] },
+        { "start": 25.542, "end": 25.956, "char": [26, 34] }
+      ]
+    },
+    {
+      "start": 25.956,
+      "end": 28.854,
+      "text": "La deuxième phase crée un checkpoint des",
+      "words": [
+        { "start": 25.956, "end": 26.37, "char": [0, 2] },
+        { "start": 26.37, "end": 26.784, "char": [3, 11] },
+        { "start": 26.784, "end": 27.198, "char": [12, 17] },
+        { "start": 27.198, "end": 27.612, "char": [18, 22] },
+        { "start": 27.612, "end": 28.026, "char": [23, 25] },
+        { "start": 28.026, "end": 28.44, "char": [26, 36] },
+        { "start": 28.44, "end": 28.854, "char": [37, 40] }
+      ]
+    },
+    {
+      "start": 28.854,
+      "end": 30.096,
+      "text": "processus en direct,",
+      "words": [
+        { "start": 28.854, "end": 29.268, "char": [0, 9] },
+        { "start": 29.268, "end": 29.682, "char": [10, 12] },
+        { "start": 29.682, "end": 30.096, "char": [13, 20] }
+      ]
+    },
+    {
+      "start": 30.096,
+      "end": 32.994,
+      "text": "transfère le delta final ainsi que l'état",
+      "words": [
+        { "start": 30.096, "end": 30.51, "char": [0, 9] },
+        { "start": 30.51, "end": 30.924, "char": [10, 12] },
+        { "start": 30.924, "end": 31.338, "char": [13, 18] },
+        { "start": 31.338, "end": 31.752, "char": [19, 24] },
+        { "start": 31.752, "end": 32.166, "char": [25, 30] },
+        { "start": 32.166, "end": 32.58, "char": [31, 34] },
+        { "start": 32.58, "end": 32.994, "char": [35, 41] }
+      ]
+    },
+    {
+      "start": 32.994,
+      "end": 33.822,
+      "text": "des processus,",
+      "words": [
+        { "start": 32.994, "end": 33.408, "char": [0, 3] },
+        { "start": 33.408, "end": 33.822, "char": [4, 14] }
+      ]
+    },
+    {
+      "start": 33.822,
+      "end": 36.721,
+      "text": "et reprend tout sur la nouvelle machine.",
+      "words": [
+        { "start": 33.822, "end": 34.236, "char": [0, 2] },
+        { "start": 34.236, "end": 34.651, "char": [3, 10] },
+        { "start": 34.651, "end": 35.065, "char": [11, 15] },
+        { "start": 35.065, "end": 35.479, "char": [16, 19] },
+        { "start": 35.479, "end": 35.893, "char": [20, 22] },
+        { "start": 35.893, "end": 36.307, "char": [23, 31] },
+        { "start": 36.307, "end": 36.721, "char": [32, 40] }
+      ]
+    },
+    {
+      "start": 36.721,
+      "end": 39.619,
+      "text": "Le temps d'arrêt correspond donc au delta,",
+      "words": [
+        { "start": 36.721, "end": 37.135, "char": [0, 2] },
+        { "start": 37.135, "end": 37.549, "char": [3, 8] },
+        { "start": 37.549, "end": 37.963, "char": [9, 16] },
+        { "start": 37.963, "end": 38.377, "char": [17, 27] },
+        { "start": 38.377, "end": 38.791, "char": [28, 32] },
+        { "start": 38.791, "end": 39.205, "char": [33, 35] },
+        { "start": 39.205, "end": 39.619, "char": [36, 42] }
+      ]
+    },
+    {
+      "start": 39.619,
+      "end": 40.861,
+      "text": "pas aux données.",
+      "words": [
+        { "start": 39.619, "end": 40.033, "char": [0, 3] },
+        { "start": 40.033, "end": 40.447, "char": [4, 7] },
+        { "start": 40.447, "end": 40.861, "char": [8, 16] }
+      ]
+    },
+    {
+      "start": 40.861,
+      "end": 43.759,
+      "text": "Et l'application ne sait jamais qu'elle a",
+      "words": [
+        { "start": 40.861, "end": 41.275, "char": [0, 2] },
+        { "start": 41.275, "end": 41.689, "char": [3, 16] },
+        { "start": 41.689, "end": 42.103, "char": [17, 19] },
+        { "start": 42.103, "end": 42.517, "char": [20, 24] },
+        { "start": 42.517, "end": 42.931, "char": [25, 31] },
+        { "start": 42.931, "end": 43.345, "char": [32, 39] },
+        { "start": 43.345, "end": 43.759, "char": [40, 41] }
+      ]
+    },
+    {
+      "start": 43.759,
+      "end": 44.173,
+      "text": "bougé.",
+      "words": [{ "start": 43.759, "end": 44.173, "char": [0, 6] }]
+    },
+    {
+      "start": 47.453,
+      "end": 48.271,
+      "text": "Voici pulse.",
+      "words": [
+        { "start": 47.453, "end": 47.862, "char": [0, 5] },
+        { "start": 47.862, "end": 48.271, "char": [6, 12] }
+      ]
+    },
+    {
+      "start": 48.271,
+      "end": 51.136,
+      "text": "Il garde un compteur en mémoire de",
+      "words": [
+        { "start": 48.271, "end": 48.681, "char": [0, 2] },
+        { "start": 48.681, "end": 49.09, "char": [3, 8] },
+        { "start": 49.09, "end": 49.499, "char": [9, 11] },
+        { "start": 49.499, "end": 49.909, "char": [12, 20] },
+        { "start": 49.909, "end": 50.318, "char": [21, 23] },
+        { "start": 50.318, "end": 50.727, "char": [24, 31] },
+        { "start": 50.727, "end": 51.136, "char": [32, 34] }
+      ]
+    },
+    {
+      "start": 51.136,
+      "end": 54.001,
+      "text": "processus et affiche un battement toutes les",
+      "words": [
+        { "start": 51.136, "end": 51.546, "char": [0, 9] },
+        { "start": 51.546, "end": 51.955, "char": [10, 12] },
+        { "start": 51.955, "end": 52.364, "char": [13, 20] },
+        { "start": 52.364, "end": 52.773, "char": [21, 23] },
+        { "start": 52.773, "end": 53.183, "char": [24, 33] },
+        { "start": 53.183, "end": 53.592, "char": [34, 40] },
+        { "start": 53.592, "end": 54.001, "char": [41, 44] }
+      ]
+    },
+    {
+      "start": 54.001,
+      "end": 54.82,
+      "text": "cinq secondes.",
+      "words": [
+        { "start": 54.001, "end": 54.41, "char": [0, 4] },
+        { "start": 54.41, "end": 54.82, "char": [5, 14] }
+      ]
+    },
+    {
+      "start": 54.82,
+      "end": 57.684,
+      "text": "Le compteur est à six et monte,",
+      "words": [
+        { "start": 54.82, "end": 55.229, "char": [0, 2] },
+        { "start": 55.229, "end": 55.638, "char": [3, 11] },
+        { "start": 55.638, "end": 56.047, "char": [12, 15] },
+        { "start": 56.047, "end": 56.457, "char": [16, 17] },
+        { "start": 56.457, "end": 56.866, "char": [18, 21] },
+        { "start": 56.866, "end": 57.275, "char": [22, 24] },
+        { "start": 57.275, "end": 57.684, "char": [25, 31] }
+      ]
+    },
+    {
+      "start": 57.684,
+      "end": 60.14,
+      "text": "et il vit uniquement en RAM.",
+      "words": [
+        { "start": 57.684, "end": 58.094, "char": [0, 2] },
+        { "start": 58.094, "end": 58.503, "char": [3, 5] },
+        { "start": 58.503, "end": 58.912, "char": [6, 9] },
+        { "start": 58.912, "end": 59.321, "char": [10, 20] },
+        { "start": 59.321, "end": 59.731, "char": [21, 23] },
+        { "start": 59.731, "end": 60.14, "char": [24, 28] }
+      ]
+    },
+    {
+      "start": 60.14,
+      "end": 63.005,
+      "text": "Redémarrez le processus et il repart à",
+      "words": [
+        { "start": 60.14, "end": 60.549, "char": [0, 10] },
+        { "start": 60.549, "end": 60.958, "char": [11, 13] },
+        { "start": 60.958, "end": 61.368, "char": [14, 23] },
+        { "start": 61.368, "end": 61.777, "char": [24, 26] },
+        { "start": 61.777, "end": 62.186, "char": [27, 29] },
+        { "start": 62.186, "end": 62.595, "char": [30, 36] },
+        { "start": 62.595, "end": 63.005, "char": [37, 38] }
+      ]
+    },
+    {
+      "start": 63.005,
+      "end": 63.414,
+      "text": "un.",
+      "words": [{ "start": 63.005, "end": 63.414, "char": [0, 3] }]
+    },
+    {
+      "start": 65.914,
+      "end": 67.429,
+      "text": "Un compteur en direct,",
+      "words": [
+        { "start": 65.914, "end": 66.293, "char": [0, 2] },
+        { "start": 66.293, "end": 66.671, "char": [3, 11] },
+        { "start": 66.671, "end": 67.05, "char": [12, 14] },
+        { "start": 67.05, "end": 67.429, "char": [15, 22] }
+      ]
+    },
+    {
+      "start": 67.429,
+      "end": 68.565,
+      "text": "battant en mémoire.",
+      "words": [
+        { "start": 67.429, "end": 67.808, "char": [0, 7] },
+        { "start": 67.808, "end": 68.186, "char": [8, 10] },
+        { "start": 68.186, "end": 68.565, "char": [11, 19] }
+      ]
+    },
+    {
+      "start": 68.565,
+      "end": 69.702,
+      "text": "C'est notre preuve.",
+      "words": [
+        { "start": 68.565, "end": 68.944, "char": [0, 5] },
+        { "start": 68.944, "end": 69.323, "char": [6, 11] },
+        { "start": 69.323, "end": 69.702, "char": [12, 19] }
+      ]
+    },
+    {
+      "start": 73.037,
+      "end": 75.148,
+      "text": "Une seule commande le déplace,",
+      "words": [
+        { "start": 73.037, "end": 73.459, "char": [0, 3] },
+        { "start": 73.459, "end": 73.881, "char": [4, 9] },
+        { "start": 73.881, "end": 74.303, "char": [10, 18] },
+        { "start": 74.303, "end": 74.726, "char": [19, 21] },
+        { "start": 74.726, "end": 75.148, "char": [22, 30] }
+      ]
+    },
+    {
+      "start": 75.148,
+      "end": 75.992,
+      "text": "en direct.",
+      "words": [
+        { "start": 75.148, "end": 75.57, "char": [0, 2] },
+        { "start": 75.57, "end": 75.992, "char": [3, 10] }
+      ]
+    },
+    {
+      "start": 75.992,
+      "end": 78.103,
+      "text": "La première phase transfère l'essentiel,",
+      "words": [
+        { "start": 75.992, "end": 76.414, "char": [0, 2] },
+        { "start": 76.414, "end": 76.836, "char": [3, 11] },
+        { "start": 76.836, "end": 77.259, "char": [12, 17] },
+        { "start": 77.259, "end": 77.681, "char": [18, 27] },
+        { "start": 77.681, "end": 78.103, "char": [28, 40] }
+      ]
+    },
+    {
+      "start": 78.103,
+      "end": 80.636,
+      "text": "deux gigaoctets en environ une demi-minute,",
+      "words": [
+        { "start": 78.103, "end": 78.525, "char": [0, 4] },
+        { "start": 78.525, "end": 78.947, "char": [5, 15] },
+        { "start": 78.947, "end": 79.369, "char": [16, 18] },
+        { "start": 79.369, "end": 79.792, "char": [19, 26] },
+        { "start": 79.792, "end": 80.214, "char": [27, 30] },
+        { "start": 80.214, "end": 80.636, "char": [31, 43] }
+      ]
+    },
+    {
+      "start": 80.636,
+      "end": 83.169,
+      "text": "pendant que la source continue de",
+      "words": [
+        { "start": 80.636, "end": 81.058, "char": [0, 7] },
+        { "start": 81.058, "end": 81.48, "char": [8, 11] },
+        { "start": 81.48, "end": 81.902, "char": [12, 14] },
+        { "start": 81.902, "end": 82.324, "char": [15, 21] },
+        { "start": 82.324, "end": 82.747, "char": [22, 30] },
+        { "start": 82.747, "end": 83.169, "char": [31, 33] }
+      ]
+    },
+    {
+      "start": 83.169,
+      "end": 83.591,
+      "text": "tourner.",
+      "words": [{ "start": 83.169, "end": 83.591, "char": [0, 8] }]
+    },
+    {
+      "start": 83.591,
+      "end": 85.28,
+      "text": "Puis la bascule :",
+      "words": [
+        { "start": 83.591, "end": 84.013, "char": [0, 4] },
+        { "start": 84.013, "end": 84.435, "char": [5, 7] },
+        { "start": 84.435, "end": 84.857, "char": [8, 15] },
+        { "start": 84.857, "end": 85.28, "char": [16, 17] }
+      ]
+    },
+    {
+      "start": 85.28,
+      "end": 87.812,
+      "text": "elle crée un checkpoint des processus",
+      "words": [
+        { "start": 85.28, "end": 85.702, "char": [0, 4] },
+        { "start": 85.702, "end": 86.124, "char": [5, 9] },
+        { "start": 86.124, "end": 86.546, "char": [10, 12] },
+        { "start": 86.546, "end": 86.968, "char": [13, 23] },
+        { "start": 86.968, "end": 87.39, "char": [24, 27] },
+        { "start": 87.39, "end": 87.812, "char": [28, 37] }
+      ]
+    },
+    {
+      "start": 87.812,
+      "end": 88.657,
+      "text": "en cours,",
+      "words": [
+        { "start": 87.812, "end": 88.235, "char": [0, 2] },
+        { "start": 88.235, "end": 88.657, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 88.657,
+      "end": 90.345,
+      "text": "transfère les derniers mégaoctets,",
+      "words": [
+        { "start": 88.657, "end": 89.079, "char": [0, 9] },
+        { "start": 89.079, "end": 89.501, "char": [10, 13] },
+        { "start": 89.501, "end": 89.923, "char": [14, 22] },
+        { "start": 89.923, "end": 90.345, "char": [23, 34] }
+      ]
+    },
+    {
+      "start": 90.345,
+      "end": 92.878,
+      "text": "et affiche le temps d'arrêt directement.",
+      "words": [
+        { "start": 90.345, "end": 90.768, "char": [0, 2] },
+        { "start": 90.768, "end": 91.19, "char": [3, 10] },
+        { "start": 91.19, "end": 91.612, "char": [11, 13] },
+        { "start": 91.612, "end": 92.034, "char": [14, 19] },
+        { "start": 92.034, "end": 92.456, "char": [20, 27] },
+        { "start": 92.456, "end": 92.878, "char": [28, 40] }
+      ]
+    },
+    {
+      "start": 92.878,
+      "end": 94.145,
+      "text": "Environ vingt secondes,",
+      "words": [
+        { "start": 92.878, "end": 93.301, "char": [0, 7] },
+        { "start": 93.301, "end": 93.723, "char": [8, 13] },
+        { "start": 93.723, "end": 94.145, "char": [14, 23] }
+      ]
+    },
+    {
+      "start": 94.145,
+      "end": 96.678,
+      "text": "pour un déplacement de deux gigaoctets.",
+      "words": [
+        { "start": 94.145, "end": 94.567, "char": [0, 4] },
+        { "start": 94.567, "end": 94.989, "char": [5, 7] },
+        { "start": 94.989, "end": 95.411, "char": [8, 19] },
+        { "start": 95.411, "end": 95.833, "char": [20, 22] },
+        { "start": 95.833, "end": 96.256, "char": [23, 27] },
+        { "start": 96.256, "end": 96.678, "char": [28, 39] }
+      ]
+    },
+    {
+      "start": 163.081,
+      "end": 165.741,
+      "text": "Deux gigaoctets déplacés pendant que l'application continuait de",
+      "words": [
+        { "start": 163.081, "end": 163.414, "char": [0, 4] },
+        { "start": 163.414, "end": 163.746, "char": [5, 15] },
+        { "start": 163.746, "end": 164.079, "char": [16, 24] },
+        { "start": 164.079, "end": 164.411, "char": [25, 32] },
+        { "start": 164.411, "end": 164.744, "char": [33, 36] },
+        { "start": 164.744, "end": 165.076, "char": [37, 50] },
+        { "start": 165.076, "end": 165.409, "char": [51, 61] },
+        { "start": 165.409, "end": 165.741, "char": [62, 64] }
+      ]
+    },
+    {
+      "start": 165.741,
+      "end": 166.074,
+      "text": "tourner.",
+      "words": [{ "start": 165.741, "end": 166.074, "char": [0, 8] }]
+    },
+    {
+      "start": 166.074,
+      "end": 168.733,
+      "text": "La ligne de temps d'arrêt montre ce que",
+      "words": [
+        { "start": 166.074, "end": 166.406, "char": [0, 2] },
+        { "start": 166.406, "end": 166.739, "char": [3, 8] },
+        { "start": 166.739, "end": 167.071, "char": [9, 11] },
+        { "start": 167.071, "end": 167.403, "char": [12, 17] },
+        { "start": 167.403, "end": 167.736, "char": [18, 25] },
+        { "start": 167.736, "end": 168.068, "char": [26, 32] },
+        { "start": 168.068, "end": 168.401, "char": [33, 35] },
+        { "start": 168.401, "end": 168.733, "char": [36, 39] }
+      ]
+    },
+    {
+      "start": 168.733,
+      "end": 170.396,
+      "text": "le déplacement a réellement coûté.",
+      "words": [
+        { "start": 168.733, "end": 169.066, "char": [0, 2] },
+        { "start": 169.066, "end": 169.398, "char": [3, 14] },
+        { "start": 169.398, "end": 169.731, "char": [15, 16] },
+        { "start": 169.731, "end": 170.063, "char": [17, 27] },
+        { "start": 170.063, "end": 170.396, "char": [28, 34] }
+      ]
+    },
+    {
+      "start": 174.651,
+      "end": 177.411,
+      "text": "Vérifiez la nouvelle machine :",
+      "words": [
+        { "start": 174.651, "end": 175.203, "char": [0, 8] },
+        { "start": 175.203, "end": 175.755, "char": [9, 11] },
+        { "start": 175.755, "end": 176.307, "char": [12, 20] },
+        { "start": 176.307, "end": 176.859, "char": [21, 28] },
+        { "start": 176.859, "end": 177.411, "char": [29, 30] }
+      ]
+    },
+    {
+      "start": 177.411,
+      "end": 178.515,
+      "text": "la voilà.",
+      "words": [
+        { "start": 177.411, "end": 177.963, "char": [0, 2] },
+        { "start": 177.963, "end": 178.515, "char": [3, 9] }
+      ]
+    },
+    {
+      "start": 178.515,
+      "end": 179.067,
+      "text": "Montée,",
+      "words": [{ "start": 178.515, "end": 179.067, "char": [0, 7] }]
+    },
+    {
+      "start": 179.067,
+      "end": 181.276,
+      "text": "Docker en cours d'exécution,",
+      "words": [
+        { "start": 179.067, "end": 179.619, "char": [0, 6] },
+        { "start": 179.619, "end": 180.172, "char": [7, 9] },
+        { "start": 180.172, "end": 180.724, "char": [10, 15] },
+        { "start": 180.724, "end": 181.276, "char": [16, 28] }
+      ]
+    },
+    {
+      "start": 181.276,
+      "end": 182.932,
+      "text": "deux containers actifs.",
+      "words": [
+        { "start": 181.276, "end": 181.828, "char": [0, 4] },
+        { "start": 181.828, "end": 182.38, "char": [5, 15] },
+        { "start": 182.38, "end": 182.932, "char": [16, 23] }
+      ]
+    },
+    {
+      "start": 185.932,
+      "end": 187.062,
+      "text": "Même repo,",
+      "words": [
+        { "start": 185.932, "end": 186.497, "char": [0, 4] },
+        { "start": 186.497, "end": 187.062, "char": [5, 10] }
+      ]
+    },
+    {
+      "start": 187.062,
+      "end": 188.191,
+      "text": "nouvel emplacement,",
+      "words": [
+        { "start": 187.062, "end": 187.626, "char": [0, 6] },
+        { "start": 187.626, "end": 188.191, "char": [7, 19] }
+      ]
+    },
+    {
+      "start": 188.191,
+      "end": 190.451,
+      "text": "déjà en cours d'exécution.",
+      "words": [
+        { "start": 188.191, "end": 188.756, "char": [0, 4] },
+        { "start": 188.756, "end": 189.321, "char": [5, 7] },
+        { "start": 189.321, "end": 189.886, "char": [8, 13] },
+        { "start": 189.886, "end": 190.451, "char": [14, 26] }
+      ]
+    },
+    {
+      "start": 193.755,
+      "end": 195.278,
+      "text": "Et la source ?",
+      "words": [
+        { "start": 193.755, "end": 194.136, "char": [0, 2] },
+        { "start": 194.136, "end": 194.516, "char": [3, 5] },
+        { "start": 194.516, "end": 194.897, "char": [6, 12] },
+        { "start": 194.897, "end": 195.278, "char": [13, 14] }
+      ]
+    },
+    {
+      "start": 195.278,
+      "end": 197.181,
+      "text": "Le repository est toujours listé,",
+      "words": [
+        { "start": 195.278, "end": 195.658, "char": [0, 2] },
+        { "start": 195.658, "end": 196.039, "char": [3, 13] },
+        { "start": 196.039, "end": 196.419, "char": [14, 17] },
+        { "start": 196.419, "end": 196.8, "char": [18, 26] },
+        { "start": 196.8, "end": 197.181, "char": [27, 33] }
+      ]
+    },
+    {
+      "start": 197.181,
+      "end": 199.084,
+      "text": "mais regardez la ligne :",
+      "words": [
+        { "start": 197.181, "end": 197.561, "char": [0, 4] },
+        { "start": 197.561, "end": 197.942, "char": [5, 13] },
+        { "start": 197.942, "end": 198.323, "char": [14, 16] },
+        { "start": 198.323, "end": 198.703, "char": [17, 22] },
+        { "start": 198.703, "end": 199.084, "char": [23, 24] }
+      ]
+    },
+    {
+      "start": 199.084,
+      "end": 199.845,
+      "text": "non monté,",
+      "words": [
+        { "start": 199.084, "end": 199.465, "char": [0, 3] },
+        { "start": 199.465, "end": 199.845, "char": [4, 10] }
+      ]
+    },
+    {
+      "start": 199.845,
+      "end": 200.987,
+      "text": "pas de Docker,",
+      "words": [
+        { "start": 199.845, "end": 200.226, "char": [0, 3] },
+        { "start": 200.226, "end": 200.607, "char": [4, 6] },
+        { "start": 200.607, "end": 200.987, "char": [7, 14] }
+      ]
+    },
+    {
+      "start": 200.987,
+      "end": 201.748,
+      "text": "zéro container.",
+      "words": [
+        { "start": 200.987, "end": 201.368, "char": [0, 4] },
+        { "start": 201.368, "end": 201.748, "char": [5, 15] }
+      ]
+    },
+    {
+      "start": 201.748,
+      "end": 203.271,
+      "text": "Rien ne tourne ici.",
+      "words": [
+        { "start": 201.748, "end": 202.129, "char": [0, 4] },
+        { "start": 202.129, "end": 202.51, "char": [5, 7] },
+        { "start": 202.51, "end": 202.89, "char": [8, 14] },
+        { "start": 202.89, "end": 203.271, "char": [15, 19] }
+      ]
+    },
+    {
+      "start": 203.271,
+      "end": 204.413,
+      "text": "L'image reste intentionnellement,",
+      "words": [
+        { "start": 203.271, "end": 203.652, "char": [0, 7] },
+        { "start": 203.652, "end": 204.032, "char": [8, 13] },
+        { "start": 204.032, "end": 204.413, "char": [14, 33] }
+      ]
+    },
+    {
+      "start": 204.413,
+      "end": 207.077,
+      "text": "comme base pour le prochain transfert delta.",
+      "words": [
+        { "start": 204.413, "end": 204.794, "char": [0, 5] },
+        { "start": 204.794, "end": 205.174, "char": [6, 10] },
+        { "start": 205.174, "end": 205.555, "char": [11, 15] },
+        { "start": 205.555, "end": 205.935, "char": [16, 18] },
+        { "start": 205.935, "end": 206.316, "char": [19, 27] },
+        { "start": 206.316, "end": 206.697, "char": [28, 37] },
+        { "start": 206.697, "end": 207.077, "char": [38, 44] }
+      ]
+    },
+    {
+      "start": 210.077,
+      "end": 211.859,
+      "text": "Arrêtée et démontée.",
+      "words": [
+        { "start": 210.077, "end": 210.671, "char": [0, 7] },
+        { "start": 210.671, "end": 211.265, "char": [8, 10] },
+        { "start": 211.265, "end": 211.859, "char": [11, 20] }
+      ]
+    },
+    {
+      "start": 211.859,
+      "end": 214.828,
+      "text": "L'image restante est une base",
+      "words": [
+        { "start": 211.859, "end": 212.453, "char": [0, 7] },
+        { "start": 212.453, "end": 213.047, "char": [8, 16] },
+        { "start": 213.047, "end": 213.641, "char": [17, 20] },
+        { "start": 213.641, "end": 214.234, "char": [21, 24] },
+        { "start": 214.234, "end": 214.828, "char": [25, 29] }
+      ]
+    },
+    {
+      "start": 214.828,
+      "end": 215.422,
+      "text": "delta,",
+      "words": [{ "start": 214.828, "end": 215.422, "char": [0, 6] }]
+    },
+    {
+      "start": 215.422,
+      "end": 218.391,
+      "text": "pas une application en cours",
+      "words": [
+        { "start": 215.422, "end": 216.016, "char": [0, 3] },
+        { "start": 216.016, "end": 216.61, "char": [4, 7] },
+        { "start": 216.61, "end": 217.204, "char": [8, 19] },
+        { "start": 217.204, "end": 217.797, "char": [20, 22] },
+        { "start": 217.797, "end": 218.391, "char": [23, 28] }
+      ]
+    },
+    {
+      "start": 218.391,
+      "end": 218.985,
+      "text": "d'exécution.",
+      "words": [{ "start": 218.391, "end": 218.985, "char": [0, 12] }]
+    },
+    {
+      "start": 222.304,
+      "end": 223.997,
+      "text": "Voici le moment clé.",
+      "words": [
+        { "start": 222.304, "end": 222.727, "char": [0, 5] },
+        { "start": 222.727, "end": 223.151, "char": [6, 8] },
+        { "start": 223.151, "end": 223.574, "char": [9, 15] },
+        { "start": 223.574, "end": 223.997, "char": [16, 20] }
+      ]
+    },
+    {
+      "start": 223.997,
+      "end": 225.691,
+      "text": "Le compteur affiche dix-sept,",
+      "words": [
+        { "start": 223.997, "end": 224.421, "char": [0, 2] },
+        { "start": 224.421, "end": 224.844, "char": [3, 11] },
+        { "start": 224.844, "end": 225.267, "char": [12, 19] },
+        { "start": 225.267, "end": 225.691, "char": [20, 29] }
+      ]
+    },
+    {
+      "start": 225.691,
+      "end": 226.114,
+      "text": "dix-huit,",
+      "words": [{ "start": 225.691, "end": 226.114, "char": [0, 9] }]
+    },
+    {
+      "start": 226.114,
+      "end": 226.537,
+      "text": "dix-neuf,",
+      "words": [{ "start": 226.114, "end": 226.537, "char": [0, 9] }]
+    },
+    {
+      "start": 226.537,
+      "end": 227.807,
+      "text": "il monte toujours.",
+      "words": [
+        { "start": 226.537, "end": 226.96, "char": [0, 2] },
+        { "start": 226.96, "end": 227.384, "char": [3, 8] },
+        { "start": 227.384, "end": 227.807, "char": [9, 18] }
+      ]
+    },
+    {
+      "start": 227.807,
+      "end": 230.347,
+      "text": "Il a repris exactement là où",
+      "words": [
+        { "start": 227.807, "end": 228.23, "char": [0, 2] },
+        { "start": 228.23, "end": 228.654, "char": [3, 4] },
+        { "start": 228.654, "end": 229.077, "char": [5, 11] },
+        { "start": 229.077, "end": 229.5, "char": [12, 22] },
+        { "start": 229.5, "end": 229.924, "char": [23, 25] },
+        { "start": 229.924, "end": 230.347, "char": [26, 28] }
+      ]
+    },
+    {
+      "start": 230.347,
+      "end": 232.04,
+      "text": "le checkpoint l'avait figé,",
+      "words": [
+        { "start": 230.347, "end": 230.77, "char": [0, 2] },
+        { "start": 230.77, "end": 231.194, "char": [3, 13] },
+        { "start": 231.194, "end": 231.617, "char": [14, 21] },
+        { "start": 231.617, "end": 232.04, "char": [22, 27] }
+      ]
+    },
+    {
+      "start": 232.04,
+      "end": 234.58,
+      "text": "au lieu de repartir à un.",
+      "words": [
+        { "start": 232.04, "end": 232.464, "char": [0, 2] },
+        { "start": 232.464, "end": 232.887, "char": [3, 7] },
+        { "start": 232.887, "end": 233.31, "char": [8, 10] },
+        { "start": 233.31, "end": 233.734, "char": [11, 19] },
+        { "start": 233.734, "end": 234.157, "char": [20, 21] },
+        { "start": 234.157, "end": 234.58, "char": [22, 25] }
+      ]
+    },
+    {
+      "start": 234.58,
+      "end": 237.12,
+      "text": "Le processus n'a jamais remarqué qu'il",
+      "words": [
+        { "start": 234.58, "end": 235.003, "char": [0, 2] },
+        { "start": 235.003, "end": 235.427, "char": [3, 12] },
+        { "start": 235.427, "end": 235.85, "char": [13, 16] },
+        { "start": 235.85, "end": 236.273, "char": [17, 23] },
+        { "start": 236.273, "end": 236.697, "char": [24, 32] },
+        { "start": 236.697, "end": 237.12, "char": [33, 38] }
+      ]
+    },
+    {
+      "start": 237.12,
+      "end": 238.813,
+      "text": "avait changé de machine.",
+      "words": [
+        { "start": 237.12, "end": 237.543, "char": [0, 5] },
+        { "start": 237.543, "end": 237.967, "char": [6, 12] },
+        { "start": 237.967, "end": 238.39, "char": [13, 15] },
+        { "start": 238.39, "end": 238.813, "char": [16, 24] }
+      ]
+    },
+    {
+      "start": 241.313,
+      "end": 244.146,
+      "text": "Le compteur a continué de compter.",
+      "words": [
+        { "start": 241.313, "end": 241.785, "char": [0, 2] },
+        { "start": 241.785, "end": 242.257, "char": [3, 11] },
+        { "start": 242.257, "end": 242.73, "char": [12, 13] },
+        { "start": 242.73, "end": 243.202, "char": [14, 22] },
+        { "start": 243.202, "end": 243.674, "char": [23, 25] },
+        { "start": 243.674, "end": 244.146, "char": [26, 34] }
+      ]
+    },
+    {
+      "start": 244.146,
+      "end": 246.978,
+      "text": "La mémoire de processus a fait",
+      "words": [
+        { "start": 244.146, "end": 244.618, "char": [0, 2] },
+        { "start": 244.618, "end": 245.09, "char": [3, 10] },
+        { "start": 245.09, "end": 245.562, "char": [11, 13] },
+        { "start": 245.562, "end": 246.034, "char": [14, 23] },
+        { "start": 246.034, "end": 246.506, "char": [24, 25] },
+        { "start": 246.506, "end": 246.978, "char": [26, 30] }
+      ]
+    },
+    {
+      "start": 246.978,
+      "end": 247.922,
+      "text": "le voyage.",
+      "words": [
+        { "start": 246.978, "end": 247.45, "char": [0, 2] },
+        { "start": 247.45, "end": 247.922, "char": [3, 10] }
+      ]
+    },
+    {
+      "start": 248.731,
+      "end": 251.425,
+      "text": "Le compteur n'a jamais été réinitialisé.",
+      "words": [
+        { "start": 248.731, "end": 249.18, "char": [0, 2] },
+        { "start": 249.18, "end": 249.629, "char": [3, 11] },
+        { "start": 249.629, "end": 250.078, "char": [12, 15] },
+        { "start": 250.078, "end": 250.527, "char": [16, 22] },
+        { "start": 250.527, "end": 250.976, "char": [23, 26] },
+        { "start": 250.976, "end": 251.425, "char": [27, 40] }
+      ]
+    },
+    {
+      "start": 251.425,
+      "end": 252.323,
+      "text": "La mémoire,",
+      "words": [
+        { "start": 251.425, "end": 251.874, "char": [0, 2] },
+        { "start": 251.874, "end": 252.323, "char": [3, 11] }
+      ]
+    },
+    {
+      "start": 252.323,
+      "end": 254.119,
+      "text": "la base de données,",
+      "words": [
+        { "start": 252.323, "end": 252.772, "char": [0, 2] },
+        { "start": 252.772, "end": 253.221, "char": [3, 7] },
+        { "start": 253.221, "end": 253.67, "char": [8, 10] },
+        { "start": 253.67, "end": 254.119, "char": [11, 19] }
+      ]
+    },
+    {
+      "start": 254.119,
+      "end": 255.017,
+      "text": "les fichiers,",
+      "words": [
+        { "start": 254.119, "end": 254.568, "char": [0, 3] },
+        { "start": 254.568, "end": 255.017, "char": [4, 13] }
+      ]
+    },
+    {
+      "start": 255.017,
+      "end": 257.711,
+      "text": "tout a simplement changé de machine.",
+      "words": [
+        { "start": 255.017, "end": 255.466, "char": [0, 4] },
+        { "start": 255.466, "end": 255.915, "char": [5, 6] },
+        { "start": 255.915, "end": 256.364, "char": [7, 17] },
+        { "start": 256.364, "end": 256.813, "char": [18, 24] },
+        { "start": 256.813, "end": 257.262, "char": [25, 27] },
+        { "start": 257.262, "end": 257.711, "char": [28, 36] }
+      ]
+    },
+    {
+      "start": 257.711,
+      "end": 258.16,
+      "text": "Ensuite,",
+      "words": [{ "start": 257.711, "end": 258.16, "char": [0, 8] }]
+    },
+    {
+      "start": 258.16,
+      "end": 260.853,
+      "text": "nous verrons pourquoi le deuxième transfert",
+      "words": [
+        { "start": 258.16, "end": 258.609, "char": [0, 4] },
+        { "start": 258.609, "end": 259.058, "char": [5, 12] },
+        { "start": 259.058, "end": 259.506, "char": [13, 21] },
+        { "start": 259.506, "end": 259.955, "char": [22, 24] },
+        { "start": 259.955, "end": 260.404, "char": [25, 33] },
+        { "start": 260.404, "end": 260.853, "char": [34, 43] }
+      ]
+    },
+    {
+      "start": 260.853,
+      "end": 263.098,
+      "text": "est toujours le plus rapide.",
+      "words": [
+        { "start": 260.853, "end": 261.302, "char": [0, 3] },
+        { "start": 261.302, "end": 261.751, "char": [4, 12] },
+        { "start": 261.751, "end": 262.2, "char": [13, 15] },
+        { "start": 262.2, "end": 262.649, "char": [16, 20] },
+        { "start": 262.649, "end": 263.098, "char": [21, 28] }
+      ]
+    }
+  ]
+}

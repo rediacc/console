@@ -1,0 +1,52 @@
+---
+title: "フォーク分離の実際"
+description: "稼働中の PostgreSQL + pgAdmin アプリをフォークして、元のアプリと並べて編集します。フォークが独立していることを目で確かめられます。"
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: ja
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# フォーク分離の実際
+
+[フォークのチュートリアル](/ja/docs/tutorial-forking)ではコマンドを紹介しました。このチュートリアルではその意味を示します。稼働中のデータベースアプリをブラウザ上で数秒でコピーし、自由に編集しても、元のアプリはまったく気づきません。
+
+## チュートリアル動画
+
+![チュートリアル: フォーク分離の実際](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## セットアップ
+
+![稼働中のデータベースとその双子](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+サーバー上で稼働している本物の PostgreSQL と pgAdmin インターフェース。フォークはその全体を瞬時にコピーオンライトで複製したものです。生まれた時点では同じデータ、その後は完全に独立した存在です。
+
+## ステップ1: 稼働中のアプリを確認する
+
+<TutorialStep number={1} />
+
+## ステップ2: フォークする
+
+<TutorialStep number={2} />
+
+動画では両方の pgAdmin をブラウザで開きます。元のアプリはログインを求めます。本番は守られています。フォークはワークベンチに直接入れます。フォークは使い捨てのサンドボックスなので、ゲートが横に退きます（リポジトリ自身がフォークかどうかを判断して決めます）。
+
+## ステップ3: 2つの世界、1つのサーバー
+
+<TutorialStep number={3} />
+
+フォーク内で何でも編集、削除、壊してみてください。元のアプリはサービスを続けます。フォーク時点では同じテーブル、それ以降はそれぞれ独立しています。
+
+## ステップ4: 捨てる
+
+<TutorialStep number={4} />
+
+作成に数秒、破棄も数秒。だからこそ「本番をクローンして、何も壊さない」が特別なイベントではなく日常の習慣になるのです。
+
+---
+
+次: [シークレットの管理](/ja/docs/tutorial-managing-secrets)

@@ -1,0 +1,166 @@
+WEBVTT
+
+00:00:01.000 --> 00:00:03.136
+Siin on üks lõbus katse.
+
+00:00:03.136 --> 00:00:05.699
+Me teeme kaks push'i teisele masinale,
+
+00:00:05.699 --> 00:00:06.126
+repository'ga,
+
+00:00:06.126 --> 00:00:07.834
+kus on gigabait andmeid.
+
+00:00:07.834 --> 00:00:10.397
+Esimene push kannab kõik üle ja
+
+00:00:10.397 --> 00:00:12.533
+teine kannab ainult muutunud osa.
+
+00:00:12.533 --> 00:00:13.387
+Jälgi numbreid,
+
+00:00:13.387 --> 00:00:15.096
+push käsk prindib täpselt,
+
+00:00:15.096 --> 00:00:16.804
+kui palju ta liigutas.
+
+00:00:17.566 --> 00:00:19.214
+Nipp peitub seadistuses.
+
+00:00:19.214 --> 00:00:21.961
+Pärast esimest push'i hoiab CLI
+
+00:00:21.961 --> 00:00:24.707
+mõlemal masinal identset muutumatut base
+
+00:00:24.707 --> 00:00:25.256
+image'i.
+
+00:00:25.256 --> 00:00:28.003
+Järgmine push võrdleb blokke selle
+
+00:00:28.003 --> 00:00:30.750
+alusega ja saadab ainult erinevuse.
+
+00:00:30.750 --> 00:00:32.398
+Ei mingeid lippe,
+
+00:00:32.398 --> 00:00:34.046
+ei mingit raamatupidamist,
+
+00:00:34.046 --> 00:00:36.792
+see on sama push käsk.
+
+00:00:40.069 --> 00:00:42.689
+Esimene push teisele masinale kannab kogu
+
+00:00:42.689 --> 00:00:45.308
+image'i üle ja väljund ütleb seda
+
+00:00:45.308 --> 00:00:45.745
+selgelt:
+
+00:00:45.745 --> 00:00:47.055
+kaks gigabaiti edastatud,
+
+00:00:47.055 --> 00:00:47.928
+märgitud täis.
+
+00:00:47.928 --> 00:00:49.238
+See on lähtepunkt.
+
+00:00:52.238 --> 00:00:54.495
+Kaks gigabaiti neljakümne nelja sekundiga,
+
+00:00:54.495 --> 00:00:55.397
+märgitud täis.
+
+00:00:55.397 --> 00:00:58.105
+CLI säilitas mõlemal poolel ka identse
+
+00:00:58.105 --> 00:00:58.557
+aluse,
+
+00:00:58.557 --> 00:01:00.362
+see on võlu eeldus.
+
+00:01:03.639 --> 00:01:05.229
+Muuda veidi andmeid:
+
+00:01:05.229 --> 00:01:07.348
+viiskümmend megabaiti kahest gigabaidist.
+
+00:01:14.864 --> 00:01:17.058
+Väike muutus suures image'is.
+
+00:01:20.344 --> 00:01:21.884
+Tee uuesti push.
+
+00:01:21.884 --> 00:01:22.911
+Sama käsk,
+
+00:01:22.911 --> 00:01:24.964
+aga loe seekord väljundit:
+
+00:01:24.964 --> 00:01:27.018
+umbes viiskümmend megabaiti edastatud,
+
+00:01:27.018 --> 00:01:28.044
+märgitud delta,
+
+00:01:28.044 --> 00:01:30.098
+kahe gigabaidise image'i suhtes.
+
+00:01:30.098 --> 00:01:32.151
+Ainult muutunud blokid liikusid.
+
+00:01:35.151 --> 00:01:37.930
+Viiskümmend megabaiti alla kuue sekundi,
+
+00:01:37.930 --> 00:01:39.597
+kahe gigabaidisest image'ist.
+
+00:01:39.597 --> 00:01:41.264
+Numbrid on tõend.
+
+00:01:44.550 --> 00:01:46.916
+Mõlemad masinad hoiavad sama repository't,
+
+00:01:46.916 --> 00:01:47.862
+sekunditega uuendatuna.
+
+00:01:47.862 --> 00:01:49.754
+Käivita seda iga tund,
+
+00:01:49.754 --> 00:01:50.700
+kui soovid,
+
+00:01:50.700 --> 00:01:52.120
+kulu on muutus,
+
+00:01:52.120 --> 00:01:53.066
+mitte suurus.
+
+00:01:56.066 --> 00:01:58.495
+Sagedased varukoopiad ei ole enam kallid.
+
+00:01:59.321 --> 00:02:01.780
+Väikesed muutused tähendavad väikseid edastusi,
+
+00:02:01.780 --> 00:02:03.747
+iga kord pärast esimest.
+
+00:02:03.747 --> 00:02:06.206
+Alles üks tutorial on järel:
+
+00:02:06.206 --> 00:02:06.698
+veendu,
+
+00:02:06.698 --> 00:02:09.648
+et sul pole kunagi ketas täis.
+
+00:02:09.648 --> 00:02:10.632
+Näeme viimases!

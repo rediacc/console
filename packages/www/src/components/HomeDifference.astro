@@ -1,9 +1,7 @@
 ---
-import { Image } from 'astro:assets';
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
-import illustrationInstantRecovery from '../assets/images/illustrations/instant-recovery.svg';
-import illustrationProductionParity from '../assets/images/illustrations/production-parity.svg';
+import { resolveSolutionIllustration } from '../utils/solution-illustration';
 
 interface Props {
   lang: Language;
@@ -15,12 +13,36 @@ const { t, ta } = createTranslator(lang);
 const before = (ta('beforeAfter.before.points') as string[]) ?? [];
 const after = (ta('beforeAfter.after.points') as string[]) ?? [];
 
-const visuals = [
-  { kind: 'url' as const, src: '/img/dev-environments.svg' },
-  { kind: 'url' as const, src: '/img/backup-optimization.svg' },
-  { kind: 'asset' as const, src: illustrationInstantRecovery },
-  { kind: 'asset' as const, src: illustrationProductionParity },
+// Two-up lead: the overall problem + solution illustrations. Assets live under
+// public/assets/images/ as problem[.<lang>][.mobile].svg (localized + portrait);
+// resolve the per-language URL inline.
+const sfx = lang === 'en' ? '' : `.${lang}`;
+const twoUp = [
+  {
+    landscape: `/assets/images/problem${sfx}.svg`,
+    mobile: `/assets/images/problem${sfx}.mobile.svg`,
+    alt: t('problem.reality.imageAlt'),
+    label: t('beforeAfter.before.label'),
+    variant: 'problem' as const,
+  },
+  {
+    landscape: `/assets/images/solution${sfx}.svg`,
+    mobile: `/assets/images/solution${sfx}.mobile.svg`,
+    alt: t('problem.solution.imageAlt'),
+    label: t('beforeAfter.after.label'),
+    variant: 'solution' as const,
+  },
 ];
+
+// Row visuals: one localized solution illustration per before/after row, resolved
+// per-language with mobile variants (replaces the old flat /img diagrams).
+const rowSlugs = [
+  'environment-cloning',
+  'backup-verification',
+  'instant-recovery',
+  'production-parity',
+];
+const visuals = rowSlugs.map((slug) => resolveSolutionIllustration(slug, lang));
 ---
 
 <section class="home-difference">
@@ -28,6 +50,24 @@ const visuals = [
     <header class="section-header">
       <h2 class="section-title">{t('beforeAfter.title')}</h2>
     </header>
+
+    <div class="difference-twoup">
+      {twoUp.map((item, i) => (
+        <>
+          {i === 1 && <div class="difference-twoup-arrow" aria-hidden="true">&rarr;</div>}
+          <div class:list={['difference-twoup-item', `difference-twoup-${item.variant}`]}>
+            <button type="button" class="difference-row-zoom" aria-label={item.label}>
+              <picture>
+                <source media="(max-width: 768px)" srcset={item.mobile} />
+                <img src={item.landscape} width="800" height="450" alt={item.alt} loading="lazy" />
+              </picture>
+            </button>
+            <span class="difference-twoup-label">{item.label}</span>
+          </div>
+        </>
+      ))}
+    </div>
+
     {after.map((solution, i) => {
       const visual = visuals[i];
       return (
@@ -38,11 +78,12 @@ const visuals = [
           </div>
           <div class="difference-row-visual">
             <button type="button" class="difference-row-zoom" aria-label={solution}>
-              {visual.kind === 'asset' ? (
-                <Image src={visual.src} alt="" loading="lazy" />
-              ) : (
-                <img src={visual.src} alt="" loading="lazy" />
-              )}
+              {visual?.landscape ? (
+                <picture>
+                  {visual.mobile && <source media="(max-width: 768px)" srcset={visual.mobile.src} />}
+                  <img src={visual.landscape.src} width="800" height="450" alt="" loading="lazy" />
+                </picture>
+              ) : null}
             </button>
           </div>
         </div>
@@ -55,6 +96,66 @@ const visuals = [
   <button type="button" class="difference-zoom-close" aria-label="Close">×</button>
   <img class="difference-zoom-dialog-img" alt="" />
 </dialog>
+
+<style>
+  /* Two-up problem|solution lead block. The row grid (.difference-row*) is styled
+     globally in main.css and left untouched. */
+  .difference-twoup {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 24px;
+    margin: 0 auto 48px;
+    max-width: 1100px;
+  }
+  .difference-twoup-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+  .difference-twoup-item .difference-row-zoom {
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: zoom-in;
+    width: 100%;
+  }
+  .difference-twoup-item picture,
+  .difference-twoup-item img {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* Let the portrait mobile <source> keep its own ratio instead of the 800x450
+       attribute ratio (same fix as .sp-problem-illustration img). */
+    aspect-ratio: auto;
+    border-radius: 12px;
+  }
+  .difference-twoup-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-secondary, #555);
+  }
+  .difference-twoup-arrow {
+    font-size: 2rem;
+    line-height: 1;
+    color: var(--accent, #556b2f);
+  }
+  /* Keep the upgraded row visuals from being squashed by the width/height attrs. */
+  .difference-row-visual img {
+    aspect-ratio: auto;
+  }
+  @media (max-width: 768px) {
+    .difference-twoup {
+      grid-template-columns: 1fr;
+      gap: 16px;
+    }
+    .difference-twoup-arrow {
+      transform: rotate(90deg);
+    }
+  }
+</style>
 
 <script>
   const dialog = document.getElementById('difference-zoom-dialog') as HTMLDialogElement | null;

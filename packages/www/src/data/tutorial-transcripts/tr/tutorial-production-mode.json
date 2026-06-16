@@ -6,7 +6,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.418632,
+      "at": 2.555418,
       "text": "Uygulamayı dizüstü bilgisayardan üretim modunda başlatıyoruz. Deploy komutu, geliştirme sırasında kullandığımız aynı up fonksiyonunu çağırır; ancak bağımsız çalışır. Dizüstü bilgisayarınızı kapatabilirsiniz; uygulama çalışmaya devam eder.",
       "afterText": "Uygulama üretimde çalışıyor. Aynı komut, aynı sonuç, gerçek sunucuda.",
       "cardLabel": "Prod'u Başlat",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 9.548589,
+      "at": 11.051619,
       "text": "Uygulamanın sunucu yeniden başlamalarından kurtulması için otomatik başlatmayı etkinleştiriyoruz. Artık sunucu yeniden başlarsa bu depo otomatik olarak geri gelir.",
       "afterText": "Otomatik başlatma açık. Uygulama yeniden başlatmalardan sağ çıkar.",
       "cardLabel": "Otomatik Başlatmayı Etkinleştir",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 17.034078,
+      "at": 18.718543,
       "text": "Hangi depolarda otomatik başlatmanın etkin olduğunu listeliyoruz. Uygulamamızın artık başlatma listesinde olduğunu doğruluyor.",
       "afterText": "İşte burada, başlatma listesinde.",
       "cardLabel": "Otomatik Başlatmayı Listele",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 22.929505,
+      "at": 25.169818,
       "text": "Uygulamayı durdurmak için dizüstü bilgisayardan tek komut. Bir komutla açın, bir komutla kapatın. Hepsi terminalinizden; artık etkileşimli oturum gerekmez.",
       "afterText": "Durduruldu. Tek komutla aç, tek komutla kapat.",
       "cardLabel": "Repo'yu Durdur",
@@ -43,11 +43,11 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Pekâlâ! Uygulamanızı geliştirmeden üretime taşıyalım. Üç kısa adım, hepsi dizüstü bilgisayarınızdan."
+      "text": "Uygulamanız bağlıyken çalışır. Production, siz gittikten sonra da çalışması demek. Üç kısa adım, hepsi dizüstü bilgisayarınızdan."
     },
     {
       "id": "dev-vs-prod",
-      "text": "Geliştirme sırasında uygulamayı deponun içinden çalıştırırsınız; bu yüzden bağlantınız kesildiğinde durur. Üretimde uygulamayı dizüstü bilgisayarınızdan CLI ile başlatırsınız ve bağımsız olarak çalışmaya devam eder."
+      "text": "İşte fark bu. Development ortamında uygulamayı SSH üzerinden repo içinden başlatırsınız. Oturumu kapatın, uygulama da onunla birlikte kapanır. Production'da ise uygulamayı dizüstü bilgisayarınızdan bağımsız başlatırsınız: sunucu süreci kendisi yönetir, bağlantınız değil."
     },
     {
       "id": "next-tutorial",
@@ -62,6 +62,6 @@
     "cast-step-1": "Adım 2: Otomatik başlatmayı etkinleştir",
     "cast-step-2": "Adım 3: Otomatik başlatması etkin repo'ları listele",
     "cast-step-3": "Adım 4: Dizüstü bilgisayardan durdur",
-    "outro": "Sıradaki: Yedekleme ve Geri Yükleme"
+    "outro": "Sonraki: İzleme"
   }
 }

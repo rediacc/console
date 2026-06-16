@@ -6,7 +6,7 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 2.409686,
+      "at": 2.412347,
       "text": "Nous allons créer un dépôt chiffré de 2 gigaoctets sur le serveur. Un dépôt est un fichier chiffré unique au repos. Une fois monté, il devient un dossier avec son propre daemon Docker et ses propres données d'application, complètement isolé de tout le reste sur le serveur.",
       "afterText": "Dépôt créé. Le fichier chiffré est sur le serveur, prêt à être monté.",
       "cardLabel": "Créer un repo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 11.760396,
+      "at": 11.676359,
       "text": "Listons les dépôts sur la machine pour confirmer que le nouveau est bien enregistré. À partir de là, le dépôt peut être ouvert dans VS Code, déployé, forké ou sauvegardé, tout depuis votre ordinateur.",
       "afterText": "Le voilà, enregistré et prêt à l'emploi.",
       "cardLabel": "Lister les repos",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "at": 17.238181,
+      "at": 17.041073,
       "text": "Une option bien pratique : ouvrir le repo directement dans VS Code avec cette commande. Nous ne lancerons pas l'éditeur ici, mais elle démarre une session distante dans le repo via SSH pour que vous puissiez éditer ses fichiers.",
       "afterText": "Lancez cela depuis votre ordinateur portable pour éditer les fichiers du repo dans VS Code.",
       "cardLabel": "Ouvrir dans VS Code",

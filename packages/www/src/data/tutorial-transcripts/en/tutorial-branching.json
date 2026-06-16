@@ -1,0 +1,162 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "en",
+  "version": 1,
+  "title": "Branching — Commit & Rollback",
+  "chapters": {
+    "intro": "Branching — Commit & Rollback",
+    "commit-model": "Commits, branches, checkout",
+    "cast-step-0": "Step 1: Version one",
+    "cast-step-1": "Step 2: Real data, three rows",
+    "cast-step-2": "Step 3: Commit it",
+    "cast-step-3": "Step 4: Name it with a branch",
+    "cast-step-4": "Step 5: Keep working, version two",
+    "cast-step-5": "Step 6: Disaster strikes the table",
+    "cast-step-6": "Step 7: The table is gone",
+    "cast-step-7": "Step 8: Commit the broken state",
+    "cast-step-8": "Step 9: The history",
+    "cast-step-9": "Step 10: Check the branch out",
+    "cast-step-10": "Step 11: Start the rollback",
+    "cast-step-11": "Step 12: Proof: version one",
+    "cast-step-12": "Step 13: The data is back",
+    "vscode-versions": "Both versions, side by side",
+    "outro": "Next: Live Migration"
+  },
+  "events": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "at": 2.418102,
+      "text": "Our working fork holds version one of the app state — a simple marker file makes it visible.",
+      "afterText": "Version one, on disk.",
+      "cardLabel": "Version One",
+      "prose": "Write version one of your state into the working fork."
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "at": 10.876025,
+      "text": "It is not just files. A real PostgreSQL database lives in this fork too, and the customers table holds three rows. Remember that number.",
+      "afterText": "Three rows. That's the data we're about to put in danger.",
+      "cardLabel": "Three Rows",
+      "prose": "The fork also runs a real PostgreSQL database: the customers table holds three rows."
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "at": 20.708803,
+      "text": "Freeze it. The commit captures the entire repository as an immutable image, with a message, an author, and a parent. Exactly like git, but for everything, database included.",
+      "afterText": "Committed. This snapshot can never change. It refuses to even mount.",
+      "cardLabel": "Commit v1",
+      "prose": "Commit the working fork: the full repository state, database included, is frozen into an immutable, named snapshot."
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "at": 29.448478,
+      "text": "Give the commit a name. The stable branch now points at version one.",
+      "afterText": "A branch is a name you can come back to.",
+      "cardLabel": "Branch Stable",
+      "prose": "Create a branch pointing at the commit — a human name for the frozen state."
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "at": 34.241982,
+      "text": "Keep working. Version two replaces version one in the working fork. The commit does not care.",
+      "afterText": "The working fork moved on. The history did not.",
+      "cardLabel": "Version Two",
+      "prose": "Continue working: the fork changes, the committed history stays frozen."
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "at": 42.690283,
+      "text": "Now the disaster. The risky change drops the customers table. In real life this is the moment your stomach sinks.",
+      "afterText": "Drop table ran. The data is gone from the working fork.",
+      "cardLabel": "Drop The Table",
+      "prose": "The risky change drops the customers table in the working fork."
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "at": 51.047933,
+      "text": "Ask for the rows again and the database says it straight: relation customers does not exist. The disaster is real. Every row is gone.",
+      "afterText": "Relation does not exist. Three rows, gone.",
+      "cardLabel": "Table Is Gone",
+      "prose": "Querying the table now fails: relation \"customers\" does not exist. The data is really gone from the working fork."
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "at": 59.69522,
+      "text": "Commit the risky change too, broken table and all. History records what actually happened. Two commits now, parent and child.",
+      "afterText": "Two snapshots in the chain.",
+      "cardLabel": "Commit v2",
+      "prose": "Commit the new state as well, dropped table included; the history grows like a git log."
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "at": 68.35661,
+      "text": "And there is the history: version two on top, version one below it, messages and authors included, without unlocking a single image.",
+      "afterText": "A repo log, exactly like a git log.",
+      "cardLabel": "Repo Log",
+      "prose": "Walk the commit history with repo log — messages, authors, parents."
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "at": 75.614559,
+      "text": "Now the payoff. Check the stable branch out into a brand new writable fork. Reflink clone: near-instant, any size.",
+      "afterText": "A writable copy of the frozen version one, in about a second.",
+      "cardLabel": "Checkout",
+      "prose": "Check the stable branch out into a fresh writable fork — near-instant thanks to copy-on-write."
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "at": 83.292425,
+      "text": "Start the rollback fork like any other repo.",
+      "afterText": "Two forks running: today's version and the checkpoint.",
+      "cardLabel": "Start Rollback",
+      "prose": "Bring the rollback fork up — it runs alongside the working fork."
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "at": 91.555233,
+      "text": "And the proof: the rollback fork reads version one. The working fork still has version two. History you can run.",
+      "afterText": "Rollback complete. Nothing was overwritten to get here.",
+      "cardLabel": "Proof: v1",
+      "prose": "Read the marker file in the rollback fork: version one, exactly as committed."
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "at": 98.952411,
+      "text": "And the part that matters most: the dropped table is back, all three rows of it. The rollback restored the database, not just the files.",
+      "afterText": "Three rows again. The disaster is undone.",
+      "cardLabel": "Data Restored",
+      "prose": "Query the customers table in the rollback fork: three rows, exactly as committed. The rollback restored the database, not just files."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Let's version your repositories like code! We'll freeze a checkpoint, give it a name, then drop a real database table. The rollback brings back the exact frozen state, every row included, in seconds."
+    },
+    {
+      "id": "commit-model",
+      "text": "The model is git, but for whole repositories. A commit is a frozen, immutable image. It refuses to even mount, so nothing can ever change it. A branch is just a name pointing at a commit. And checkout turns any commit back into a fresh, writable fork."
+    },
+    {
+      "id": "vscode-versions",
+      "text": "Seeing is believing. The rollback fork on the left holds version one, while the working fork on the right moved on to version two. Both live, both writable, both from the same history."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Commits never change, forks never wait. Next up, we move a whole running repository to another machine, live. See you in the next one!"
+    }
+  ]
+}

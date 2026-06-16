@@ -6,7 +6,7 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.626476,
+      "at": 1.614947,
       "text": "Commençons par confirmer que l'outil est installé. Le flag version affiche la version installée et nous confirme que l'installation s'est bien déroulée.",
       "afterText": "Installation terminée. Le binaire rdc est sur votre PATH.",
       "cardLabel": "Installer le CLI",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 7.903516,
+      "at": 8.543153,
       "text": "Maintenant, lançons le contrôle de diagnostic. Il parcourt toutes les dépendances dont la ligne de commande a besoin, Node, SSH, Docker, le binaire renet, et signale les éventuels manques. Un rapport propre signifie que vous êtes prêt.",
       "afterText": "Version affichée. Vous êtes prêt à enchaîner.",
       "cardLabel": "Vérifier la version",

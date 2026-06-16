@@ -1,0 +1,61 @@
+---
+title: "VS Code no seu Browser"
+description: "Abra um VS Code completo em qualquer repositório a partir de qualquer browser, sem instalação local, e veja o sandbox do kernel mantê-lo dentro do repositório."
+category: "Tutorials"
+subcategory: essentials
+order: 7
+language: pt
+sourceHash: "71303e01f3d9c4b7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# VS Code no seu Browser
+
+Prefere um editor a um terminal? Um único comando serve um VS Code completo a partir do interior do sandbox do seu repositório, acessível a partir de qualquer browser: Linux, macOS, Windows, até um tablet. Sem nada para instalar localmente.
+
+## Ver o tutorial
+
+![Tutorial: VS Code in your browser](/assets/tutorials/tutorial-vscode-browser.cast)
+
+## Como funciona
+
+![The editor lives in the sandbox](/img/tutorials/tutorial-vscode-browser/slide-1.svg)
+
+O editor não corre no seu computador portátil. Corre **dentro do sandbox do repositório** no servidor, e o seu browser acede-lhe através de um túnel SSH. A árvore de ficheiros, o terminal integrado e tudo o que lançar a partir dele veem exatamente o que o repositório vê, e nada mais.
+
+## Passo 1: Ligar
+
+<TutorialStep number={1} />
+
+A primeira ligação instala o servidor de editor open-source na máquina (verificado por checksum, partilhado como só de leitura). Depois disso, as reconexões reutilizam o servidor em execução.
+
+Gira-o a qualquer momento:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+## Passo 2: Trabalhar no browser
+
+Crie pastas e ficheiros, edite, guarde. Tudo aterra diretamente no repositório. O terminal integrado também funciona e obedece ao mesmo sandbox que o `rdc term`.
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## Passo 3: As paredes são reais
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+As recusas vêm do kernel, não da configuração. O que quer que corra dentro do sandbox (editores, terminais, ferramentas de build, agentes de IA) termina nas paredes do repositório.
+
+> **VS Code local?** `rdc vscode connect -r my-app -m server-1` (sem `--browser`) abre o mesmo repositório no seu VS Code instalado via Remote-SSH.
+
+---
+
+Próximo: [Criar um Fork de um Repositório](/pt/docs/tutorial-forking).

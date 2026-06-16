@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "31617e9c4bd84961f8d2e293149658bbd189a2e00d660e917bdf13f0a8360d0f",
+  "transcriptHash": "eb72a54634c351138a495c04e3008beedcee0cc4f162bbbbd7d409f8a729c1bb",
   "steps": [
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424705,
-      "replayEndSec": 13.591473,
+      "replayStartSec": 2.410714,
+      "replayEndSec": 12.419888,
       "narrationText": "ステップ2です。CLI にパブリック IP、ベースドメイン、証明書のメールアドレス、Cloudflare API トークンを設定します。証明書のメールアドレスとトークンはすべてのマシンで共有されるため、一度だけ設定すれば十分です。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-01.d4cc865e.mp3",
       "textHash": "d4cc865e14a545ea982847937c486dc34823f352e073b60d38eb409df2e86a36",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.591473,
-      "replayEndSec": 18.479059,
+      "replayStartSec": 12.419888,
+      "replayEndSec": 16.924002,
       "narrationText": "インフラ設定が保存されているか確認します。パブリック IP、ベースドメイン、証明書のメールアドレスが設定内容に表示されています。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-02.5f69e2f9.mp3",
       "textHash": "5f69e2f90d788c85497bbeda680f9233d20707afb8b32feea477dbd67abae8f0",
@@ -38,12 +38,12 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.479059,
-      "replayEndSec": 25.757057,
-      "narrationText": "ステップ3です。設定をサーバーにプッシュします。これにより Cloudflare に DNS レコードが自動的に作成され、マシン上のプロキシ設定が準備されます。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-03.c761b73f.mp3",
-      "textHash": "c761b73f68fcab883657901d010d986c5112d07174828999137557fe861fa58d",
-      "audioDurationSec": 11.964082,
+      "replayStartSec": 16.924002,
+      "replayEndSec": 20.590881,
+      "narrationText": "ステップ3: 設定をサーバーにプッシュします。本物のトークンがあれば、CloudflareにDNSレコードが自動で作成され、proxyの設定も準備されます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-03.f229c2b2.mp3",
+      "textHash": "f229c2b2b6576d5043afcafa506915e26753e847ede720c86ef189c52eeff09f",
+      "audioDurationSec": 10.919184,
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-03-after.2dd64914.mp3",
       "afterAudioDurationSec": 5.407347,
       "afterTextHash": "2dd6491420245d4b197e4f0d671c3f6bdcba0a5a6a809b05675ee3e8d9d86e41"
@@ -51,12 +51,12 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "replayStartSec": 25.757057,
-      "replayEndSec": 33.957312,
-      "narrationText": "ステップ4が始まります。infra という名前の小さなリポジトリを作成します。プロキシはここに配置され、アプリケーションリポジトリから分離されます。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-04.e3db2a5c.mp3",
-      "textHash": "e3db2a5c7bc273ea9dcff05956b722b8a4b7de5f245b34ce378f2467cf07356f",
-      "audioDurationSec": 11.075918,
+      "replayStartSec": 20.590881,
+      "replayEndSec": 28.48077,
+      "narrationText": "ステップ4: infraという名前の小さなrepoを作ります。なぜ専用のrepoなのか。proxyはこのサーバー上のすべてのアプリのトラフィックをルーティングしています。インフラはアプリケーションコードから切り離された、独自の場所を持つべきです。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-04.ddee8aff.mp3",
+      "textHash": "ddee8affe7eca1e69f577cc1324df276fcc9358e738724d5eb38cc897e6c94cb",
+      "audioDurationSec": 17.240816,
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-04-after.1f7b3dcc.mp3",
       "afterAudioDurationSec": 6.19102,
       "afterTextHash": "1f7b3dcc4e289ecae681d6f3728799f129aa28bbaa14945e68ca170c0f8f4681"
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "replayStartSec": 33.957312,
-      "replayEndSec": 41.036573,
+      "replayStartSec": 28.48077,
+      "replayEndSec": 35.97937,
       "narrationText": "組み込みの proxy テンプレートを適用します。Traefik に加えて、Let's Encrypt と Cloudflare の DNS-01 チャレンジの設定がすぐに使える状態で含まれています。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-05.67264b16.mp3",
       "textHash": "67264b16c2e1631369293d0e5c0c50d2584eafb1c32fd13ce76d24dc127d8150",
@@ -77,8 +77,8 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.036573,
-      "replayEndSec": 49.697921,
+      "replayStartSec": 35.97937,
+      "replayEndSec": 42.626799,
       "narrationText": "プロキシを起動します。Traefik は5秒ごとにコンテナを自動検出します。TLS 証明書は Let's Encrypt から自動的に取得されます。アプリが HTTPS でインターネットからアクセスできるようになりました。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/tutorial-networking-06.0e476bb8.mp3",
       "textHash": "0e476bb8e4fd020b00bebdd1cee10f7591df14cb40374355ae8cd24f78fe1af1",
@@ -91,24 +91,24 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "bd04d6aacac3080d0bb28e65402442baa7adc32f730963df2f85ddbfa79ef661",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/intro.bd04d6aa.mp3",
-      "narrationText": "それでは！自動 TLS 付きの本物のドメインをアプリに割り当てましょう。4つの短いステップで、インターネットに公開できます。",
-      "audioDurationSec": 8.202449
+      "textHash": "8c9d232ac1311508a206fa20a2d606362c00b7635ac55b8f6969351fa82d7c76",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/intro.8c9d232a.mp3",
+      "narrationText": "アプリは動いていますが、サーバーからしか見えていません。自動TLS付きの本物のドメインを設定しましょう。4つの短いステップで、インターネットに公開できます。",
+      "audioDurationSec": 12.199184
     },
     {
       "id": "four-steps",
-      "textHash": "56543589dcb2a44d72a408a2b3024ac81cd6d117b70e25d6c8f14fa961027b6e",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/four-steps.56543589.mp3",
-      "narrationText": "流れはこうです。Cloudflare の API トークンを取得し、CLI 側でインフラを設定し、サーバーにプッシュして、DNS と証明書を自動で扱う Traefik プロキシをデプロイします。",
-      "audioDurationSec": 13.87102
+      "textHash": "021aef12f70287dbf9f7334bd56e9e548f1147a2e11e6772bd24a0db0df1ebeb",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/four-steps.021aef12.mp3",
+      "narrationText": "手順はこうです。まずCloudflare APIトークンを取得し、CLIでインフラを一度設定してサーバーにプッシュします。そのあと、DNSと証明書を管理してくれる小さなproxy repoをデプロイします。",
+      "audioDurationSec": 16.43102
     },
     {
       "id": "open-cloudflare",
-      "textHash": "725d62b4e07d4ff266e4e41cc43e341d6d28f8d23f883859eb7b2f5e5b206c97",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/open-cloudflare.725d62b4.mp3",
-      "narrationText": "まず、ブラウザで Cloudflare ダッシュボードを開きます。My Profile から API Tokens に進み、CLI がレコードを管理できるよう、Zone DNS Edit 権限を持つトークンを作成します。",
-      "audioDurationSec": 14.602449
+      "textHash": "4b18892163dd0ef02ae73f0ecbf819c3f98e63c61675dca7a0c7a2eb05f6caed",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-networking/open-cloudflare.4b188921.mp3",
+      "narrationText": "まず、唯一の手動ステップです。Cloudflareのダッシュボードを開いて「My Profile」に進み、「API Tokens」からZone DNS Editの権限を持つトークンを作成してください。そのトークン1つで、CLIがDNSレコードを管理できるようになり、ダッシュボードを手動で操作する必要はなくなります。",
+      "audioDurationSec": 22.125714
     },
     {
       "id": "next-tutorial",

@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "31c23d1624eeea4aa08294febff970cbd349e7fecd0795e277797ba8493a6a96",
+  "transcriptHash": "ff5c5c83e4c9039a34bb309f89e168064e3b9a6fce21ff81c6056d1086eb1dff",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627146,
-      "replayEndSec": 7.928955,
+      "replayStartSec": 1.629299,
+      "replayEndSec": 8.575098,
       "narrationText": "Wir beginnen damit, ein Konfigurationsprofil zu erstellen. Das Profil enthält den SSH-Schlüssel, die Maschinenliste und die Infrastruktureinstellungen für alles, was wir von hier an tun.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-01.d2c21f3c.mp3",
       "textHash": "d2c21f3c1a88f56689ad471d7f1e8c1f93b9aaee4e0e96f233bf98dd74efa169",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.928955,
-      "replayEndSec": 16.338306,
+      "replayStartSec": 8.575098,
+      "replayEndSec": 19.204906,
       "narrationText": "Jetzt registrieren wir den Server bei der CLI, indem wir Namen, IP-Adresse und SSH-Benutzer angeben. Host-Schlüssel werden automatisch für vertrauenswürdigen Zugang gescannt.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-02.ab5d8884.mp3",
       "textHash": "ab5d8884352c1e464bd1b87e875a01ac5fb35aee57f94849cb065e8812898d26",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 16.338306,
-      "replayEndSec": 18.998199,
+      "replayStartSec": 19.204906,
+      "replayEndSec": 21.464422,
       "narrationText": "Als Nächstes stellen wir den Server bereit. Dabei wird renet installiert und der verschlüsselte Datenspeicher erstellt. Danach ist der Server bereit, Repositories zu hosten.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-add-server/tutorial-add-server-03.779779f5.mp3",
       "textHash": "779779f55aa5b5a0b602252f1a51818d6d58d0b04c3f66036b46a3d73c89789b",

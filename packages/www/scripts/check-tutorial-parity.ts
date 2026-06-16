@@ -74,9 +74,16 @@ function rdcShortFlagViolation(cmd: string): { flag: string; suggestion: string 
   }
   if (tokens[i] !== 'rdc') return null; // not an rdc invocation — exempt
   for (let j = i + 1; j < tokens.length; j++) {
+    // Everything after --command (or a -c payload) is the REMOTE command —
+    // shell idioms like `df -h .` are fine there. Stop scanning rdc flags,
+    // but still hold `-c` itself to the placeholder rule first.
+    if (tokens[j] === '--command') break;
     if (/^-[a-z]$/.test(tokens[j])) {
       const value = tokens[j + 1];
-      if (value && value.startsWith('<')) continue; // placeholder self-documents the flag
+      if (value && value.startsWith('<')) {
+        if (tokens[j] === '-c') break;
+        continue; // placeholder self-documents the flag
+      }
       return { flag: tokens[j], suggestion: SHORT_FLAG_LONG[tokens[j]] ?? 'the long form' };
     }
   }

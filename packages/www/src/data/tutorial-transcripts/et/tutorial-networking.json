@@ -6,7 +6,7 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 2.424705,
+      "at": 2.410714,
       "text": "Teine samm. Ütleme CLI-le avaliku IP, baasdomäni, sertifikaadi e-posti ja Cloudflare API tokeni. Sertifikaadi e-post ja token on jagatud kõigi sinu masinate vahel, seega seadistad need ainult üks kord.",
       "afterText": "Infrastruktuur salvestatud sinu konfiguratsiooni.",
       "cardLabel": "Seadista Infra",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 13.591473,
+      "at": 12.419888,
       "text": "Kinnitame, et infrastruktuuri seaded on salvestatud. Avalik IP, baasdomeen, sertifikaadi e-post -- kõik on konfiguratsioonis nähtav.",
       "afterText": "Seaded salvestatud. Valmis serverisse tõugatamiseks.",
       "cardLabel": "Kuva Infra",
@@ -24,8 +24,8 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 18.479059,
-      "text": "Kolmas samm. Tõukame konfiguratsiooni serverisse. See loob DNS-kirjed Cloudflare'is automaatselt ja valmistab proksi konfiguratsiooni masinas ette.",
+      "at": 16.924002,
+      "text": "Kolmas samm: lükka konfiguratsioon serverisse. Päris tokeniga loob see sinu DNS-kirjed Cloudflare'is automaatselt ja valmistab proxy konfiguratsiooni ette.",
       "afterText": "Tõugatud. DNS-kirjeid luuakse Cloudflare'is.",
       "cardLabel": "Lükka Infra",
       "prose": "Lükka konfiguratsioon serverisse. See loob Cloudflare'is automaatselt DNS-kirjed ja valmistab ette puhverserveri konfiguratsiooni."
@@ -33,8 +33,8 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 25.757057,
-      "text": "Algab neljas samm. Loome väikese repositooriumi nimega infra. Siin hakkab proksi elama -- isoleeritud rakenduse repositooriumidest.",
+      "at": 20.590881,
+      "text": "Neljas samm: loo väike repo nimega infra. Miks oma repo? Proxy suunab liiklust kõigi selle serveri rakenduste vahel. Infrastruktuur väärib oma eraldatud kasti, eemal sinu rakenduse koodist.",
       "afterText": "Infra repo loodud. Isoleeritud su rakenduse repodest.",
       "cardLabel": "Loo Repo",
       "prose": "Loo väike repo nimega infra. Seal hakkab asuma puhverserver, eraldatuna rakenduste repodest."
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 33.957312,
+      "at": 28.48077,
       "text": "Rakendame sisseehitatud proksi malli. See sisaldab Traefikut koos Let's Encrypt ja Cloudflare DNS-01 väljakutsete konfiguratsiooniga, töövalmis.",
       "afterText": "Traefiku konfiguratsioon paigas.",
       "cardLabel": "Rakenda Mall"
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 41.036573,
+      "at": 35.97937,
       "text": "Ja käivitame proksi. Traefik avastab sinu konteinerid iga viie sekundi järel. TLS sertifikaadid tulevad Let's Encryptist automaatselt. Sinu rakendus on nüüd internetis HTTPS kaudu kättesaadav.",
       "afterText": "Proksi on töös. TLS sertifikaadid saabuvad automaatselt.",
       "cardLabel": "Juuruta Puhverserver",
@@ -60,15 +60,15 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Olgu! Anname su rakendusele päris domeeni automaatse TLS-iga. Neli lühikest sammu ja oled internetis."
+      "text": "Sinu rakendus töötab, kuid ainult server näeb seda. Anname sellele päris domeeni automaatse TLS-iga. Neli lühikest sammu ja see on internetis."
     },
     {
       "id": "four-steps",
-      "text": "Siin on tee. Hangi Cloudflare API token, seadista infrastruktuur CLI-s, tõuka see serverisse ja juuruta Traefik proksi, mis tegeleb DNS-i ja sertifikaatidega sinu eest."
+      "text": "Siin on tee: hangi Cloudflare API token, konfigureeri infrastruktuur üks kord CLI-s, lükka see serverisse, seejärel juuruta väike proxy repo, mis haldab sinu eest DNS-i ja sertifikaate."
     },
     {
       "id": "open-cloudflare",
-      "text": "Esmalt ava Cloudflare'i juhtpaneel oma brauseris. Mine My Profile, siis API Tokens, ja loo token Zone DNS Edit õigusega, et CLI saaks su kirjeid hallata."
+      "text": "Kõigepealt ainus käsitsi samm. Ava Cloudflare'i armatuurlaud, mine My Profile, siis API Tokens ja loo token Zone DNS Edit õigusega. See üks token laseb CLI-l hallata sinu DNS-kirjeid, nii et sa ei pea kunagi enam armatuurlaudadel klõpsima."
     },
     {
       "id": "next-tutorial",

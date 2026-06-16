@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.424169,
+      "at": 2.409089,
       "text": "Esimene samm. Impordime olemasoleva rclone konfiguratsiooni. rclone toetab S3, Backblaze, Google Drive, Dropbox ja paljusid teisi -- kui kasutad seda juba, saad sama konfiguratsiooni otse importida.",
       "afterText": "Salvestus on imporditud. CLI saab nüüd sinna varukoopiaid tõugata.",
       "cardLabel": "Impordi Salvestusruum",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.651448,
+      "at": 6.555802,
       "text": "Loetleme salvestused, millest CLI nüüd teab. Iga salvestus on sihtkoht, kuhu saame varukoopiad tõugata.",
       "afterText": "Seal see on. Valmis varukoopiaid vastu võtma.",
       "cardLabel": "Kuva Salvestusruumid",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.354487,
+      "at": 10.251839,
       "text": "Teine samm. Tõukame täieliku varukoopia. Terve repositoorium -- rakendus, andmebaas, failid, konfiguratsioon -- laaditakse üles. Kuna repositoorium on puhkeolekus krüpteeritud, on ka varukoopia krüpteeritud. Lisavõtme haldamine pole vajalik.",
       "afterText": "Varukoopia üles laaditud. Kõik selle repo sisu on nüüd kaugsalvestusel, krüpteeritud.",
       "cardLabel": "Lae Varukoopia",
@@ -33,11 +33,38 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 18.28182,
+      "at": 24.484571,
       "text": "Loetleme sellel salvestusel saadaolevad varukoopiad. Edaspidi on taastamine uuel serveril üks käsk -- CLI repo pull. Samad andmed, samad konteinerid, erinev masin.",
       "afterText": "Kõik tõmmised ühes kohas. Tõmba ükskõik milline neist ühe käsuga tagasi.",
       "cardLabel": "Kuva Varukoopiad",
       "prose": "Kuva sellel salvestusruumil saadaolevad varukoopiad. Taastamine täiesti uuele serverile on üks käsk: repo pull käsk."
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "at": 31.133919,
+      "text": "Nüüd taastamise tõestus. Võta kõigepealt repository võrguühenduseta: peata teenused ja ühenda krüptitud maht lahti. Rakendus on sellelt masinalt kadunud.",
+      "afterText": "Võrguühenduseta ja lahti ühendatud, täpselt nagu värske server.",
+      "cardLabel": "Võta Ühenduseta",
+      "prose": "Võta repository esmalt võrguühenduseta: peata teenused ja ühenda krüpteeritud köide lahti käsuga repo down."
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "at": 39.135694,
+      "text": "Ja tõmba varukoopia otse salvestusruumist tagasi. Repo pull käsk tõmbab image'i, kontrollib selle terviklikkust ja paigutab selle täpselt sinna, kus see oli.",
+      "afterText": "Ülekanne lõpetatud, terviklikkus kinnitatud. Repository on tagasi.",
+      "cardLabel": "Tõmba Varukoopia",
+      "prose": "Tõmba varukoopia salvestusest tagasi käsuga repo pull. Pilt laaditakse alla ja kontrollitakse terviklust."
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "at": 48.126162,
+      "text": "Ühenda see uuesti ja repository on taastatud. Push, list, pull, see on kogu varukoopia lugu.",
+      "afterText": "Taastatud. Sama protsess toimib ka täiesti uuel masinal.",
+      "cardLabel": "Ühenda Taastatud",
+      "prose": "Ühenda repository uuesti, see on täielikult taastatud. Sama pull toimib ka täiesti uuel masinal."
     }
   ],
   "narrations": [
@@ -62,6 +89,9 @@
     "cast-step-1": "2. samm: kuva seadistatud salvestusruumid",
     "cast-step-2": "3. samm: laadi täielik varukoopia",
     "cast-step-3": "4. samm: kuva varukoopiad salvestusruumil",
-    "outro": "Järgmine: Monitooring"
+    "outro": "Järgmine: Monitooring",
+    "cast-step-4": "5. samm: Võta repo ühenduseta",
+    "cast-step-5": "6. samm: Tõmba varukoopia tagasi",
+    "cast-step-6": "7. samm: Ühenda, taastatud"
   }
 }

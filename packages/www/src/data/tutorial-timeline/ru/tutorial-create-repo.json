@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "cf3af5fd0f4440a23ac8e1e8877db8da5b498b8811974a1d0e42f18d6e649e3c",
+  "transcriptHash": "36511d39eaecc79ddb432fa3e3c915ffeac736ec12275cb0ad4a0aa8ceb672f1",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.409686,
-      "replayEndSec": 11.760396,
+      "replayStartSec": 2.412347,
+      "replayEndSec": 11.676359,
       "narrationText": "Создаём на сервере зашифрованный репозиторий объёмом 2 гигабайта. Репозиторий — это один зашифрованный файл в состоянии покоя. После монтирования он превращается в папку с собственным Docker-демоном и данными приложения, полностью изолированную от всего остального на сервере.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-01.7da714a4.mp3",
       "textHash": "7da714a4c3b4c6a62637b4c2f265194a05eac94787acc00d9668f8a34df8276e",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 11.760396,
-      "replayEndSec": 17.238181,
+      "replayStartSec": 11.676359,
+      "replayEndSec": 17.041073,
       "narrationText": "Выводим список репозиториев на машине, чтобы убедиться, что новый зарегистрирован. Отсюда репозиторий можно открыть в VS Code, развернуть, форкнуть или сделать резервную копию — всё с ноутбука.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-02.857bdada.mp3",
       "textHash": "857bdadaf3b523d25388e6c584c96b03d04810e884e7ca744fcb342ea4f8c8fc",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 17.238181,
-      "replayEndSec": 21.33289,
+      "replayStartSec": 17.041073,
+      "replayEndSec": 20.377596,
       "narrationText": "Удобная опция: открыть repo прямо в VS Code с помощью этой команды. Мы не будем запускать редактор здесь, но она начинает удалённый сеанс в repo через SSH, чтобы вы могли редактировать его файлы.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-create-repo/tutorial-create-repo-03.881ebfcd.mp3",
       "textHash": "881ebfcd5cff1acd1a86f3296d1a18cff87ce61b07c9a6e103862f1880e301e9",

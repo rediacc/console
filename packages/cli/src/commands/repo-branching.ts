@@ -158,17 +158,20 @@ async function handleCheckout(
     const commitCfg = await configService.getRepository(commitRef);
     if (!commitCfg) throw new ValidationError(`commit "${commitRef}" not found in context`);
 
-    // Checkout == reflink-clone the immutable commit into a fresh writable fork.
+    // Checkout == reflink-clone the immutable commit into a fresh writable
+    // fork. The fork's config key uses a HUMAN base name when one is known:
+    // the --from working fork's base. A direct commit-GUID checkout keeps
+    // the commit's key as base (the caller addressed it by GUID anyway).
+    const baseName = parseRepoRef(options.from ?? commitRef).name;
     await handleForkAction(commitRef, options.tag, {
       machine: options.machine,
       debug: options.debug,
       skipRouterRestart: options.skipRouterRestart,
+      forkBaseName: baseName,
     });
 
-    // Record the new working fork's tip = the checked-out commit. handleForkAction
-    // registers the fork under compositeKey(parent.name, tag) (here parent is the
-    // commit), so resolve that exact key — a bare-tag lookup misses.
-    const newKey = compositeKey(parseRepoRef(commitRef).name, options.tag);
+    // Record the new working fork's tip = the checked-out commit.
+    const newKey = compositeKey(baseName, options.tag);
     const newCfg = await configService.getRepository(newKey);
     if (newCfg) {
       await configService.addRepository(newKey, {
