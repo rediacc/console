@@ -1,0 +1,77 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "at": 2.413171,
+      "text": "Conoce pulse. Mantiene un contador en la memoria del proceso e imprime un latido cada cinco segundos. El contador está en seis y subiendo, y vive solo en RAM. Reinicia el proceso y empieza de nuevo en uno.",
+      "afterText": "Un contador en vivo, latiendo en memoria. Esa es nuestra prueba.",
+      "cardLabel": "Contador en Vivo",
+      "prose": "La aplicación mantiene un contador en memoria y registra un latido cada cinco segundos. El contador vive solo en RAM: reiniciar el proceso lo resetearía a uno."
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "at": 10.379022,
+      "text": "Un solo comando lo mueve, en vivo. La fase uno transfiere el grueso, dos gigabytes en aproximadamente medio minuto, mientras el origen sigue ejecutándose. Luego el corte: crea un checkpoint de los procesos en ejecución, transfiere los últimos megabytes y muestra el tiempo de inactividad ahí mismo. Unos veinte segundos para mover dos gigabytes.",
+      "afterText": "Dos gigabytes movidos mientras la aplicación seguía funcionando. La línea de tiempo de inactividad muestra lo que realmente costó el traslado.",
+      "cardLabel": "Migrar en Vivo",
+      "prose": "Migra con checkpoint: la fase uno transfiere los 2 GB del grueso mientras el origen permanece en línea, luego un breve corte crea un checkpoint de los procesos en ejecución y transfiere el delta final. La salida muestra cada fase y el tiempo de inactividad real."
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "at": 101.149024,
+      "text": "Revisa la nueva máquina: ahí está. Montado, Docker ejecutándose, dos containers activos.",
+      "afterText": "Mismo repo, nuevo hogar, ya en ejecución.",
+      "cardLabel": "Nuevo Hogar",
+      "prose": "Lista los repositorios en la máquina destino: pulse está montado, Docker está en ejecución y sus containers están activos."
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "at": 106.859481,
+      "text": "¿Y el origen? El repositorio sigue listado, pero mira la fila: no montado, sin Docker, cero containers. Ya nada se ejecuta aquí. La imagen se queda a propósito, como base para la próxima transferencia delta.",
+      "afterText": "Detenido y desmontado. La imagen restante es una base delta, no una aplicación en ejecución.",
+      "cardLabel": "Origen Detenido",
+      "prose": "En el origen, el repositorio está detenido y desmontado: sin Docker, cero containers. La imagen se conserva como base para futuras transferencias delta."
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "at": 112.346008,
+      "text": "Ahora lo mejor. El contador marca diecisiete, dieciocho, diecinueve, sigue subiendo. Retomó exactamente donde el checkpoint lo congeló, en lugar de empezar de nuevo en uno. El proceso nunca notó que cambió de máquina.",
+      "afterText": "El contador siguió contando. La memoria del proceso hizo el viaje.",
+      "cardLabel": "Contador Continuó",
+      "prose": "Los registros en la nueva máquina muestran el contador continuando desde donde el checkpoint lo congeló, sin resetear a uno. La memoria del proceso hizo el viaje."
+    }
+  ],
+  "title": "Migración en Vivo",
+  "chapters": {
+    "intro": "Migración en Vivo",
+    "how-it-moves": "Dos fases, tiempo de inactividad mínimo",
+    "cast-step-0": "Paso 1: Escribe datos reales",
+    "cast-step-1": "Paso 2: Migrar, en vivo",
+    "cast-step-2": "Paso 3: Ejecutando en la nueva máquina",
+    "cast-step-3": "Paso 4: Los datos completaron el viaje",
+    "cast-step-4": "Paso 5: El contador siguió contando",
+    "outro": "Siguiente: Transferencia Delta"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Es hora de algo grande: mover una aplicación EN EJECUCIÓN a otra máquina, mientras se ejecuta. Veremos un contador en vivo latiendo en la memoria de la aplicación, moveremos todo con un solo comando, y veremos cómo el contador sigue contando en la nueva máquina."
+    },
+    {
+      "id": "how-it-moves",
+      "text": "Funciona en dos fases. La fase uno copia el grueso mientras la aplicación sigue ejecutándose. La fase dos crea un checkpoint de los procesos en vivo, transfiere el delta final más el estado del proceso, y reanuda todo en la nueva máquina. Así que el tiempo de inactividad es el delta, no los datos. Y la aplicación nunca sabe que se movió."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "El contador nunca se reseteó. Memoria, base de datos, archivos, todo simplemente cambió de máquina. A continuación, veremos por qué la segunda transferencia siempre es la rápida."
+    }
+  ]
+}

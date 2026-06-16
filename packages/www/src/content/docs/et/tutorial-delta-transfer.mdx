@@ -1,0 +1,54 @@
+---
+title: "Deltatransfer"
+description: "Esimene tõuge teisele masinale kopeerib kõik; iga järgmine edastab ainult muutunud plokid -- automaatselt."
+category: "Tutorials"
+subcategory: advanced
+order: 17
+language: et
+sourceHash: "6dabbcbb0670ac60"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Deltatransfer
+
+Tõuka repositoorium teisele masinale kaks korda. Esimene tõuge kannab kõik. Teine kannab ainult muutunud osa -- sama käsk, ilma lippude või arvestuseta. Ja seda ei pea usaldama pimesi, sest tõuke väljund prindib täpselt, kui palju edastati.
+
+## Vaata juhendvideot
+
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
+## Plokid, mitte baidid
+
+![Plokid, mitte baidid](/img/tutorials/tutorial-delta-transfer/slide-1.svg)
+
+Pärast esimest tõuget säilitab CLI mõlemal masinal identse muutumatu aluskujutise. Järgmine tõuge võrdleb plokke selle alusega ja saadab ainult erinevuse.
+
+## 1. samm: Alustõuge
+
+<TutorialStep number={1} />
+
+Väljund räägib selgelt: `2.0 GB transferred in 44.4s (full)`. Terve kujutis reisis ja mõlemale poolele jäi identne deltaalus.
+
+## 2. samm: Muuda natuke
+
+<TutorialStep number={2} />
+
+## 3. samm: Tõuka erinevus
+
+<TutorialStep number={3} />
+
+Sama käsk, hoopis teistsugune rida: `50.8 MB transferred in 5.7s (delta vs base ..., image 2.0 GB)`. Viiskümmend megabaiti muutus, seega umbes viiskümmend megabaiti reisis kahe gigabaidisest kujutisest.
+
+## 4. samm: Sünkroonitud, sekunditega
+
+<TutorialStep number={4} />
+
+Mõlemad masinad hoiavad sama repositooriumi, uuendatuna muutuse, mitte suuruse hinnaga. Tunnisel masinate vahel varundamisel pole enam kõrget hinda.
+
+> Vajad täpsemat kontrolli? `--delta-base <guid>` kinnitab võrdlusaluse ja `--strategy` valib plokidelta algoritmi. Vaikimisi arvutab mõlemad sinu eest välja.
+
+---
+
+Edasi: [Salvestushaldus](/et/docs/tutorial-storage-management).

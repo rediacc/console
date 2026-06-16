@@ -1,0 +1,92 @@
+{
+  "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
+  "language": "ru",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-vscode-browser-01",
+      "markerIndex": 0,
+      "at": 2.414862,
+      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "afterText": "Этот URL и есть ваш редактор. Работает на любой ОС, единственное требование: браузер.",
+      "cardLabel": "Подключить Браузер",
+      "prose": "Подключитесь с флагом --browser. CLI устанавливает open-source сервер редактора на машину (один раз), запускает его внутри sandbox repo, открывает SSH-туннель и выводит ссылку для вашего браузера."
+    },
+    {
+      "id": "tutorial-vscode-browser-02",
+      "markerIndex": 1,
+      "at": 12.531234,
+      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "afterText": "Терминал и редактор показывают одно и то же. Это один sandbox.",
+      "cardLabel": "Тот же Вид",
+      "prose": "Откройте terminal-сессию в тот же repo: рабочий каталог и файлы совпадают с тем, что показывает редактор."
+    },
+    {
+      "id": "tutorial-vscode-browser-03",
+      "markerIndex": 2,
+      "at": 19.464899,
+      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "afterText": "Создано в браузере, читается из терминала. Один repo, два входа.",
+      "cardLabel": "Туда-Обратно",
+      "prose": "Файл, созданный в браузерном редакторе, является настоящим файлом repo и доступен для чтения из любой сессии."
+    },
+    {
+      "id": "tutorial-vscode-browser-04",
+      "markerIndex": 3,
+      "at": 26.768996,
+      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "afterText": "Запрет от ядра, а не от настроек.",
+      "cardLabel": "Корень Закрыт",
+      "prose": "Попробуйте просмотреть корневой каталог сервера: в доступе отказано. Ядро ограничивает сессию пределами repo."
+    },
+    {
+      "id": "tutorial-vscode-browser-05",
+      "markerIndex": 4,
+      "at": 32.439211,
+      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "afterText": "sandbox не знает исключений. В этом и суть.",
+      "cardLabel": "Home Закрыт",
+      "prose": "Другие каталоги, такие как /home, тоже закрыты: sandbox распространяется на всё, что запущено внутри него."
+    }
+  ],
+  "title": "VS Code в вашем браузере",
+  "chapters": {
+    "intro": "VS Code в вашем браузере",
+    "sandbox-concept": "Редактор работает в sandbox",
+    "cast-step-0": "Шаг 1: подключение с --browser",
+    "workbench-tour": "Рабочая среда во вкладке",
+    "create-file": "Создайте файл в редакторе",
+    "editor-terminal": "Встроенный terminal",
+    "cast-step-1": "Шаг 2: тот же вид из terminal",
+    "cast-step-2": "Шаг 3: файлы браузера это файлы repo",
+    "cast-step-3": "Шаг 4: ls /, доступ закрыт",
+    "cast-step-4": "Шаг 5: ls /home, доступ закрыт",
+    "outro": "Далее: fork repository"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Хорошая новость: терминал для этого не понадобится! Мы откроем полноценный VS Code прямо в браузере, создадим несколько файлов, выполним пару команд и посмотрим, как ядро удерживает всё внутри repo."
+    },
+    {
+      "id": "sandbox-concept",
+      "text": "Вот в чём идея. Редактор работает не на вашем ноутбуке. Он запускается внутри sandbox репозитория на сервере, а браузер подключается к нему через SSH tunnel. Поэтому дерево файлов, встроенный терминал и всё, что вы оттуда запускаете, видят ровно то, что видит repo, и ничего больше."
+    },
+    {
+      "id": "workbench-tour",
+      "text": "Вот он: VS Code во вкладке браузера. Дерево файлов слева показывает repo, и только repo."
+    },
+    {
+      "id": "create-file",
+      "text": "Создадим настоящий файл, без терминала. Новый редактор, пара строк, и сохраним как notes/todo.md. Папка появляется слева, как только файл попадает в repo."
+    },
+    {
+      "id": "editor-terminal",
+      "text": "Встроенный терминал тоже работает, и вот наш файл. Теперь попробуем заглянуть за пределы repo: permission denied. Это не настройка, это ядро."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Браузер, редактор, терминал: один sandbox, одни правила. Следующая тема, это функция, на которой всё здесь построено, forking. Вам она понравится."
+    }
+  ]
+}

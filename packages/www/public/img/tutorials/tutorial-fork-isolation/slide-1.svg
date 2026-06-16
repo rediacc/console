@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 540" role="img" aria-labelledby="title">
+  <title id="title">A fork is an instant, independent copy of a running app — changes in the fork never touch the original</title>
+  <style>
+    .bg { fill: #f7f7f6; }
+    .repo { fill: #ffffff; stroke: #cdcdcd; stroke-width: 2; rx: 10; ry: 10; }
+    .ok-fill { fill: #e6f7ef; stroke: #1d7a4f; stroke-width: 2; rx: 4; ry: 4; }
+    .label { fill: #1a1a1a; font-weight: 700; font-size: 18px; font-family: JetBrainsMono, "JetBrains Mono", monospace; text-anchor: middle; }
+    .row-text { fill: #1a1a1a; font-weight: 600; font-size: 13px; font-family: JetBrainsMono, "JetBrains Mono", monospace; }
+    .row-changed { fill: #1d7a4f; font-weight: 600; font-size: 13px; font-family: JetBrainsMono, "JetBrains Mono", monospace; }
+    .desc { fill: #5e5e5e; font-weight: 400; font-size: 14px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .arrow { stroke: #1d7a4f; stroke-width: 2.5; fill: none; }
+    .arrow-label { fill: #1d7a4f; font-weight: 600; font-size: 16px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+    .closer { fill: #1a1a1a; font-weight: 600; font-size: 22px; font-family: Inter, system-ui, sans-serif; text-anchor: middle; }
+  </style>
+  <rect class="bg" width="960" height="540"/>
+
+  <!-- Original: postgres + pgAdmin, live -->
+  <rect class="repo" x="80" y="120" width="260" height="210"/>
+  <text class="label" x="210" y="150">demo-pgadmin</text>
+  <rect class="ok-fill" x="100" y="172" width="220" height="118"/>
+  <text class="row-text" x="116" y="196">tasks</text>
+  <text class="row-text" x="116" y="218">1  Ship landing page</text>
+  <text class="row-text" x="116" y="240">2  Rotate API keys</text>
+  <text class="row-text" x="116" y="262">3  Upgrade postgres</text>
+  <text class="desc" x="210" y="350">original · keeps running</text>
+
+  <!-- Fork arrow -->
+  <path class="arrow" d="M 350 225 L 600 225"/>
+  <path class="arrow" d="M 590 218 L 600 225 L 590 232"/>
+  <text class="arrow-label" x="475" y="208">fork — seconds, any size</text>
+
+  <!-- Fork: same data, independent -->
+  <rect class="repo" x="620" y="120" width="260" height="210"/>
+  <text class="label" x="750" y="150">demo-pgadmin:experiment</text>
+  <rect class="ok-fill" x="640" y="172" width="220" height="118"/>
+  <text class="row-text" x="656" y="196">tasks</text>
+  <text class="row-changed" x="656" y="218">1  Ship landing page ✎</text>
+  <text class="row-changed" x="656" y="240">2  (deleted)</text>
+  <text class="row-text" x="656" y="262">3  Upgrade postgres</text>
+  <text class="desc" x="750" y="350">fork · edit and delete freely</text>
+
+  <text class="closer" x="480" y="450">Same data at birth. Separate lives after.</text>
+</svg>

@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "aa4af4c60b9197bfdb7d3297c22f076b1c6b3a939b21009b1c7e1271f3932d0b",
+  "transcriptHash": "2ea9ed529bc3c55331b0b2acdfddf73e06992ece19fa6a4ff1405d7a119086a7",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418632,
-      "replayEndSec": 9.548589,
+      "replayStartSec": 2.555418,
+      "replayEndSec": 11.051619,
       "narrationText": "Démarrons maintenant l'application en mode production depuis l'ordinateur. La commande de déploiement appelle la même fonction up que nous avons utilisée en développement, mais elle s'exécute en mode détaché. Vous pouvez fermer votre ordinateur et l'application continue de tourner.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-production-mode/tutorial-production-mode-01.fb2c4ab1.mp3",
       "textHash": "fb2c4ab1f8842a70025db00c3ea0bebc05dccb7f118ba5ae90e2a9d82e80dd6e",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 9.548589,
-      "replayEndSec": 17.034078,
+      "replayStartSec": 11.051619,
+      "replayEndSec": 18.718543,
       "narrationText": "Activons le démarrage automatique pour que l'application survive à un redémarrage du serveur. Désormais, si le serveur redémarre, ce dépôt revient automatiquement.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-production-mode/tutorial-production-mode-02.c9020bd4.mp3",
       "textHash": "c9020bd4babfaaa045336dee8a5c4e9e41eb17d75d815a17801a6034010d21b1",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 17.034078,
-      "replayEndSec": 22.929505,
+      "replayStartSec": 18.718543,
+      "replayEndSec": 25.169818,
       "narrationText": "Listons quels dépôts ont le démarrage automatique activé. Cela confirme que notre application est bien dans la liste de démarrage.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-production-mode/tutorial-production-mode-03.71197eba.mp3",
       "textHash": "71197ebac3002b11676d3e1743f2bc13d2489b0fe5232978f71d77350b992585",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 22.929505,
-      "replayEndSec": 30.37798,
+      "replayStartSec": 25.169818,
+      "replayEndSec": 31.824598,
       "narrationText": "Et pour arrêter l'application, une seule commande depuis l'ordinateur. Une commande pour démarrer, une commande pour arrêter. Tout depuis votre terminal, plus de sessions interactives.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-production-mode/tutorial-production-mode-04.19d18ce7.mp3",
       "textHash": "19d18ce7402ed64b19003fc87b900be79b5c06573ebd5267d4a76da8b9698be0",
@@ -65,17 +65,17 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "970527b01e2d0fb277586f2c0bcd80c9c3a2b5331351718c5e7c389b6ed33fbc",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-production-mode/intro.970527b0.mp3",
-      "narrationText": "Très bien ! Faisons passer votre application du développement à la production. Trois courtes étapes, toutes pilotées depuis votre ordinateur.",
-      "audioDurationSec": 6.765714
+      "textHash": "f5801ecded5a9fac927bbdea11522111200f307d3ab2f46a03b17ad87af90ba3",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-production-mode/intro.f5801ecd.mp3",
+      "narrationText": "Votre application tourne tant que vous êtes connecté. En production, elle tourne même quand vous n'êtes plus là. Trois courtes étapes, tout depuis votre ordinateur.",
+      "audioDurationSec": 10.187755
     },
     {
       "id": "dev-vs-prod",
-      "textHash": "b16fd1d37fb1fbde588afe741cb28efd6c3c33197b9633db83fe8ca3e1698b63",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-production-mode/dev-vs-prod.b16fd1d3.mp3",
-      "narrationText": "En développement, vous lancez l'application depuis l'intérieur du repo, donc elle s'arrête quand vous vous déconnectez. En production, vous la lancez depuis votre ordinateur avec la CLI, et elle continue à tourner en mode détaché.",
-      "audioDurationSec": 13.635918
+      "textHash": "fa1ac6c9d5962d4e8fa595c22dfb5e67527116b01c4ad78ff5c2a1e953e78db2",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-production-mode/dev-vs-prod.fa1ac6c9.mp3",
+      "narrationText": "Voici la différence. En développement, vous démarrez l'application depuis l'intérieur du repo via SSH. Fermez la session, et l'application s'arrête avec elle. En production, vous la lancez détachée de votre ordinateur : le serveur possède le processus, pas votre connexion.",
+      "audioDurationSec": 18.12898
     },
     {
       "id": "next-tutorial",

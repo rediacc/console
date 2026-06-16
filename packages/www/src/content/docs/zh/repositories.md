@@ -4,8 +4,8 @@ description: "在远程机器上创建、管理和操作 LUKS 加密仓库。"
 category: Guides
 order: 4
 language: zh
-sourceHash: "65fd6e7f9e6a83c1"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "0f08c5b75c3588cc"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # 仓库
@@ -99,9 +99,9 @@ rdc repo trim -m server-1 --docker               # Also clear stopped containers
 
 注意事项：
 
-- 正在进行备份的仓库会被跳过并报告。在备份进行期间执行 trim 不会释放空间，因为备份快照仍持有对这些块的引用。
+- 正在进行备份的仓库，其文件系统 trim 会被跳过并报告，原因是备份快照仍持有对这些块的引用，打孔操作无法释放存储池空间。`--docker` 回收不受此限制，仍会正常执行（见下文）。
 - 连续执行两次 trim 时，第二次报告回收量为 0 字节。文件系统会记住哪些块组已被 trim；这是正常行为，并非故障。
-- `--docker` 不会删除已打标签的镜像，仅删除悬空镜像、已停止的容器和构建缓存。加上 `--docker-volumes` 还可删除未使用的卷（此操作会删除数据，仅限 CLI）。
+- `--docker` 不会删除已打标签的镜像，仅删除悬空镜像、已停止的容器和构建缓存。加上 `--docker-volumes` 还可删除未使用的卷（此操作会删除数据，仅限 CLI）。与文件系统 trim 不同，`--docker` 回收在备份进行期间同样可以运行，无需等待备份窗口结束即可清理卡住的构建缓存。
 
 ## 自动容量策略
 
@@ -198,7 +198,7 @@ rdc repo checkout --ref staging --from my-app:work --tag staging-copy -m server-
 rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
 rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
 rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — 无值
+rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest }（无值）
 rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 

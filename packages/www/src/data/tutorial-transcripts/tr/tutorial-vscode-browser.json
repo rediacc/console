@@ -1,0 +1,92 @@
+{
+  "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-vscode-browser-01",
+      "markerIndex": 0,
+      "at": 2.414862,
+      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "afterText": "Bu URL sizin editörünüz. Her işletim sisteminde çalışır, tek gereksinim bir tarayıcı.",
+      "cardLabel": "Tarayıcıya Bağlan",
+      "prose": "--browser bayrağıyla bağlanın. CLI, makinenize açık kaynaklı editör sunucusunu (bir kez) kurar, repo sandbox içinde başlatır, bir SSH tüneli açar ve tarayıcınız için bir bağlantı yazdırır."
+    },
+    {
+      "id": "tutorial-vscode-browser-02",
+      "markerIndex": 1,
+      "at": 12.531234,
+      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "afterText": "Terminal ve editör aynı fikirde, bu aynı sandbox.",
+      "cardLabel": "Aynı Görünüm",
+      "prose": "Aynı repo içinde bir terminal oturumu açın: çalışma dizini ve dosyalar, editörün gösterdikleriyle eşleşir."
+    },
+    {
+      "id": "tutorial-vscode-browser-03",
+      "markerIndex": 2,
+      "at": 19.464899,
+      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "afterText": "Tarayıcıda oluşturuldu, terminalden okunabilir. Bir repo, iki kapı.",
+      "cardLabel": "Gidiş Dönüş",
+      "prose": "Tarayıcı editöründe oluşturulan dosya gerçek bir repo dosyasıdır; herhangi bir oturumdan okunabilir."
+    },
+    {
+      "id": "tutorial-vscode-browser-04",
+      "markerIndex": 3,
+      "at": 26.768996,
+      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "afterText": "Yapılandırmayla değil, kernel tarafından engellendi.",
+      "cardLabel": "Kök Reddedildi",
+      "prose": "Sunucunun kök dizinini listelemeyi deneyin: erişim reddedildi. Kernel, oturumu repo ile sınırlandırır."
+    },
+    {
+      "id": "tutorial-vscode-browser-05",
+      "markerIndex": 4,
+      "at": 32.439211,
+      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "afterText": "Sandbox'ın istisnası yoktur. Mesele de bu zaten.",
+      "cardLabel": "Home Reddedildi",
+      "prose": "/home gibi diğer dizinler de reddedilir; sandbox, içinde başlatılan her şeye uygulanır."
+    }
+  ],
+  "title": "Tarayıcıda VS Code",
+  "chapters": {
+    "intro": "Tarayıcıda VS Code",
+    "sandbox-concept": "Editör sandbox içinde yaşar",
+    "cast-step-0": "Adım 1: --browser ile Bağlan",
+    "workbench-tour": "Workbench, bir sekmede",
+    "create-file": "Editörde Dosya Oluştur",
+    "editor-terminal": "Yerleşik terminal",
+    "cast-step-1": "Adım 2: Terminalden aynı görünüm",
+    "cast-step-2": "Adım 3: Tarayıcı dosyaları repo dosyaları",
+    "cast-step-3": "Adım 4: ls / reddedildi",
+    "cast-step-4": "Adım 5: ls /home reddedildi",
+    "outro": "Sonraki: Repository Fork'lama"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "İyi haber: bu sefer terminal gerekmiyor! Tarayıcıda doğrudan VS Code açacağız, birkaç dosya oluşturacağız, birkaç komut çalıştıracağız ve kernel'in her şeyi repo içinde nasıl tuttuğunu izleyeceğiz."
+    },
+    {
+      "id": "sandbox-concept",
+      "text": "İşte fikir şu. Editör dizüstü bilgisayarınızda çalışmıyor. Sunucudaki repo'nun sandbox'ı içinde çalışıyor ve tarayıcınız ona SSH tüneli üzerinden erişiyor. Yani dosya ağacı, yerleşik terminal ve oradan başlattığınız her şey tam olarak repo'nun gördüğünü görüyor, başka hiçbir şeyi değil."
+    },
+    {
+      "id": "workbench-tour",
+      "text": "Ve işte karşınızda: bir tarayıcı sekmesinde VS Code. Soldaki dosya ağacı repo'yu gösteriyor, yalnızca repo'yu."
+    },
+    {
+      "id": "create-file",
+      "text": "Gerçek bir dosya oluşturalım, terminal olmadan. Yeni bir editör, birkaç satır ve notes eğik çizgi todo nokta md olarak kaydedelim. Klasör, repo'ya düştüğü anda solda görünüyor."
+    },
+    {
+      "id": "editor-terminal",
+      "text": "Yerleşik terminal de çalışıyor ve dosyamız işte orada. Şimdi repo'nun dışına bakmaya çalışalım: izin reddedildi. Bu bir ayar değil, bu kernel."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Tarayıcı, editör, terminal: aynı sandbox, aynı kurallar. Sırada buradaki her şeyin üzerine kurulu özellik var, fork. Bunu beğeneceksiniz."
+    }
+  ]
+}

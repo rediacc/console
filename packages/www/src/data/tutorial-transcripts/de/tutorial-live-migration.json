@@ -1,0 +1,77 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "at": 2.413171,
+      "text": "Das ist pulse. Es hält einen Zähler im Prozessspeicher und gibt alle fünf Sekunden einen Beat aus. Der Zähler steht bei sechs und steigt weiter, er lebt nur im RAM. Startet man den Prozess neu, beginnt er wieder bei eins.",
+      "afterText": "Ein Live-Zähler, der im Speicher schlägt. Das ist unser Beweis.",
+      "cardLabel": "Live-Zähler",
+      "prose": "Die App führt einen In-Memory-Zähler und protokolliert alle fünf Sekunden einen Beat. Der Zähler lebt nur im RAM: Ein Neustart des Prozesses würde ihn auf eins zurücksetzen."
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "at": 10.379022,
+      "text": "Ein Befehl verschiebt alles, live. Phase eins überträgt den Großteil, zwei Gigabyte in etwa einer halben Minute, während die Quelle weiterläuft. Dann die Umschaltung: Es erstellt einen Checkpoint der laufenden Prozesse, überträgt die letzten paar Megabytes und gibt die Ausfallzeit direkt aus. Etwa zwanzig Sekunden, für einen Umzug von zwei Gigabyte.",
+      "afterText": "Zwei Gigabyte verschoben, während die App weiterlief. Die Ausfallzeile zeigt, was der Umzug tatsächlich gekostet hat.",
+      "cardLabel": "Live migrieren",
+      "prose": "Migration mit Checkpoint: Phase eins überträgt die 2 GB Masse, während die Quelle online bleibt. Dann erstellt eine kurze Umschaltung einen Checkpoint der laufenden Prozesse und überträgt das finale Delta. Die Ausgabe zeigt jede Phase und die tatsächliche Ausfallzeit."
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "at": 101.149024,
+      "text": "Ein Blick auf die neue Maschine: da ist es. Gemountet, Docker läuft, zwei Container aktiv.",
+      "afterText": "Gleiches Repository, neues Zuhause, läuft bereits.",
+      "cardLabel": "Neues Zuhause",
+      "prose": "Repositories auf der Zielmaschine auflisten: pulse ist gemountet, Docker läuft und die Container sind aktiv."
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "at": 106.859481,
+      "text": "Und die Quelle? Das Repository ist noch aufgeführt, aber schaut man auf die Zeile: nicht gemountet, kein Docker, null Container. Hier läuft nichts mehr. Das Image bleibt bewusst zurück, als Basis für die nächste Delta-Übertragung.",
+      "afterText": "Gestoppt und ausgehängt. Das zurückgebliebene Image ist eine Delta-Basis, keine laufende App.",
+      "cardLabel": "Quelle gestoppt",
+      "prose": "Auf der Quelle ist das Repository gestoppt und ausgehängt: kein Docker, null Container. Das Image wird als Basis für künftige Delta-Übertragungen behalten."
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "at": 112.346008,
+      "text": "Jetzt die Pointe. Der Zähler zeigt siebzehn, achtzehn, neunzehn, steigt weiter. Er hat genau dort weitergemacht, wo der Checkpoint ihn eingefroren hat, statt wieder bei eins anzufangen. Der Prozess hat nie bemerkt, dass er die Maschine gewechselt hat.",
+      "afterText": "Der Zähler zählte weiter. Der Prozessspeicher hat die Reise mitgemacht.",
+      "cardLabel": "Zähler fortgesetzt",
+      "prose": "Die Logs auf der neuen Maschine zeigen, wie der Zähler dort weiterzählt, wo der Checkpoint ihn eingefroren hat, ohne auf eins zurückzusetzen. Der Prozessspeicher hat die Reise mitgemacht."
+    }
+  ],
+  "title": "Live-Migration",
+  "chapters": {
+    "intro": "Live-Migration",
+    "how-it-moves": "Zwei Phasen, minimale Ausfallzeit",
+    "cast-step-0": "Schritt 1: Echte Daten schreiben",
+    "cast-step-1": "Schritt 2: Live migrieren",
+    "cast-step-2": "Schritt 3: Läuft auf der neuen Maschine",
+    "cast-step-3": "Schritt 4: Die Daten haben den Weg geschafft",
+    "cast-step-4": "Schritt 5: Der Zähler zählte weiter",
+    "outro": "Weiter: Delta-Transfer"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Zeit für etwas Großes: eine LAUFENDE App auf eine andere Maschine verschieben, während sie läuft. Wir beobachten einen Live-Zähler, der im Speicher der App schlägt, verschieben alles mit einem Befehl und sehen, wie der Zähler auf der neuen Maschine einfach weiterzählt."
+    },
+    {
+      "id": "how-it-moves",
+      "text": "Es funktioniert in zwei Phasen. Phase eins kopiert den Großteil, während die App weiterläuft. Phase zwei erstellt einen Checkpoint der laufenden Prozesse, überträgt das finale Delta zusammen mit dem Prozesszustand und setzt alles auf der neuen Maschine fort. Die Ausfallzeit entspricht also dem Delta, nicht den Daten. Und die App merkt nie, dass sie umgezogen ist."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Der Zähler hat nie zurückgesetzt. Speicher, Datenbank, Dateien, alles hat einfach die Maschine gewechselt. Als Nächstes sehen wir, warum die zweite Übertragung immer die schnelle ist."
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "it",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "at": 2.413171,
+      "text": "Ecco pulse. Mantiene un contatore nella memoria del processo e stampa un battito ogni cinque secondi. Il contatore è a sei e sale, e vive solo nella RAM. Riavvia il processo e riparte da uno.",
+      "afterText": "Un contatore in tempo reale, che batte in memoria. Questa è la nostra prova.",
+      "cardLabel": "Contatore Live",
+      "prose": "L'app mantiene un contatore in memoria e registra un battito ogni cinque secondi. Il contatore vive solo nella RAM: un riavvio del processo lo azzererebbe a uno."
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "at": 10.379022,
+      "text": "Un solo comando lo sposta, a caldo. La fase uno trasferisce la parte principale, due gigabyte in circa mezzo minuto, mentre il sorgente continua a girare. Poi il cutover: crea un checkpoint dei processi in esecuzione, trasporta gli ultimi megabyte e stampa il downtime lì, sul momento. Circa venti secondi, per uno spostamento da due gigabyte.",
+      "afterText": "Due gigabyte spostati mentre l'app continuava a girare. La riga del downtime mostra quanto è costato davvero lo spostamento.",
+      "cardLabel": "Migrazione Live",
+      "prose": "Migrazione con checkpoint: la fase uno trasferisce i 2 GB principali mentre il sorgente rimane online, poi un breve cutover crea un checkpoint dei processi in esecuzione e trasporta il delta finale. L'output stampa ogni fase e il downtime effettivo."
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "at": 101.149024,
+      "text": "Controlla la nuova macchina: eccolo. Montato, Docker in esecuzione, due container attivi.",
+      "afterText": "Stesso repo, nuova casa, già in esecuzione.",
+      "cardLabel": "Nuova Casa",
+      "prose": "Elenca i repository sulla macchina di destinazione: pulse è montato, Docker è in esecuzione e i suoi container sono attivi."
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "at": 106.859481,
+      "text": "E il sorgente? Il repository è ancora elencato, ma guarda la riga: non montato, nessun Docker, zero container. Qui non gira più niente. L'immagine rimane intenzionalmente, come base per il prossimo trasferimento delta.",
+      "afterText": "Fermato e smontato. L'immagine residua è una base delta, non un'app in esecuzione.",
+      "cardLabel": "Sorgente Fermata",
+      "prose": "Sul sorgente il repository è fermo e smontato: nessun Docker, zero container. L'immagine viene conservata come base per i futuri trasferimenti delta."
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "at": 112.346008,
+      "text": "Ora il colpo di scena. Il contatore segna diciassette, diciotto, diciannove, ancora in salita. Ha ripreso esattamente dal punto in cui il checkpoint lo aveva congelato, invece di ripartire da uno. Il processo non si è mai accorto di aver cambiato macchina.",
+      "afterText": "Il contatore ha continuato a contare. La memoria del processo ha fatto il viaggio.",
+      "cardLabel": "Contatore Continuato",
+      "prose": "I log sulla nuova macchina mostrano il contatore che continua dal punto in cui il checkpoint lo ha congelato, senza azzerarsi a uno. La memoria del processo ha fatto il viaggio."
+    }
+  ],
+  "title": "Migrazione Live",
+  "chapters": {
+    "intro": "Migrazione Live",
+    "how-it-moves": "Due fasi, downtime minimo",
+    "cast-step-0": "Passo 1: Scrivi dati reali",
+    "cast-step-1": "Passo 2: Migra, in tempo reale",
+    "cast-step-2": "Passo 3: In esecuzione sulla nuova macchina",
+    "cast-step-3": "Passo 4: I dati hanno fatto il viaggio",
+    "cast-step-4": "Passo 5: il contatore ha continuato",
+    "outro": "Prossimo: Delta Transfer"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "È ora di qualcosa di grande: spostare un'app IN ESECUZIONE su un'altra macchina, mentre gira. Vedremo un contatore live battere nella memoria dell'app, sposteremo tutto con un solo comando e vedremo il contatore continuare a contare sulla nuova macchina."
+    },
+    {
+      "id": "how-it-moves",
+      "text": "Funziona in due fasi. La fase uno copia la parte principale mentre l'app continua a girare. La fase due crea un checkpoint dei processi live, trasporta il delta finale insieme allo stato dei processi e riprende tutto sulla nuova macchina. Quindi il downtime è il delta, non i dati. E l'app non sa mai di essersi spostata."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Il contatore non si è mai azzerato. Memoria, database, file, tutto ha semplicemente cambiato macchina. Prossimamente vedremo perché il secondo trasferimento è sempre quello veloce."
+    }
+  ]
+}

@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: it
-sourceHash: "bfdacd91b2d3b93b"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c13a0f880039d7e7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,21 +53,28 @@ L'app continua a funzionare mentre il backup viene caricato. Come può essere co
 
 Stessa logica di un [fork](/it/docs/tutorial-forking). `rdc` fa prima il fork, poi carica il fork. Il fork cattura il momento; la tua app live continua a funzionare. Nessun downtime, nessuna incoerenza.
 
-## Passo 3: Ripristina su un nuovo server
+## Passo 3: Ripristina, sul serio
 
-Supponiamo che il tuo server si guasti. Configura un nuovo server, aggiungilo a `rdc` e scarica:
+I backup che non ripristini mai sono speranze, non backup. Prima porta il repository offline:
+
+<TutorialStep number={5} />
+
+Scarica il backup direttamente dallo storage:
+
+<TutorialStep number={6} />
+
+E rimontalo, completamente ripristinato:
+
+<TutorialStep number={7} />
+
+Lo stesso pull funziona su un server nuovo di zecca: configuralo, aggiungilo a `rdc` e lancia il pull lì invece.
 
 ```bash
 rdc repo pull --name my-app -m new-server --from my-storage
-```
-
-Poi avvialo:
-
-```bash
 rdc repo up --name my-app -m new-server
 ```
 
-La tua app è tornata. Stessi dati, stessi container, macchina diversa.
+Stessi dati, stessi container, macchina diversa.
 
 ## Backup più veloci: da macchina a macchina
 
@@ -77,8 +84,8 @@ Puoi anche inviare direttamente tra macchine, senza storage cloud nel mezzo:
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **Consiglio professionale.** I caricamenti su storage inviano sempre tutto. Da macchina a macchina viene inviata solo la differenza. Il primo invio da macchina a macchina richiede il tempo normale, ma ogni invio successivo è molto più veloce. Ottimo per i backup frequenti.
+> **Consiglio professionale.** I push da macchina a macchina inviano solo i blocchi cambiati dopo il primo. Il [tutorial Delta Transfer](/it/docs/tutorial-delta-transfer) lo mostra dal vivo.
 
 ---
 
-Successivo: [Monitoraggio](/it/docs/tutorial-monitoring).
+Successivo: [Rete e Domini](/it/docs/tutorial-networking).

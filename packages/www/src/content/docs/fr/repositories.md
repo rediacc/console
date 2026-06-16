@@ -4,8 +4,8 @@ description: "Créez, gérez et opérez des dépôts chiffrés LUKS sur des mach
 category: "Guides"
 order: 4
 language: fr
-sourceHash: "65fd6e7f9e6a83c1"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "0f08c5b75c3588cc"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Dépôts
@@ -99,9 +99,9 @@ Fonctionnement : les images de dépôt sont des fichiers épars, et le volume ch
 
 Remarques :
 
-- Les dépôts sous une sauvegarde active sont ignorés et signalés. Effectuer un trim pendant une sauvegarde ne libérerait pas d'espace, car le snapshot de sauvegarde référence encore les blocs.
+- Le trim du système de fichiers est ignoré et signalé pour les dépôts sous une sauvegarde active, car le snapshot de sauvegarde référence encore les blocs et percer des trous ne libérerait pas d'espace dans le pool. La récupération `--docker` n'est pas concernée et s'exécute quand même (voir ci-dessous).
 - Exécuter trim deux fois de suite renvoie 0 octet la deuxième fois. Le système de fichiers mémorise les groupes de blocs déjà trimés ; ce comportement est attendu, pas un échec.
-- `--docker` ne supprime jamais les images étiquetées, seulement les images sans référence, les conteneurs arrêtés et le cache de build. Ajoutez `--docker-volumes` pour supprimer aussi les volumes inutilisés (cela efface des données ; CLI uniquement).
+- `--docker` ne supprime jamais les images étiquetées, seulement les images sans référence, les conteneurs arrêtés et le cache de build. Ajoutez `--docker-volumes` pour supprimer aussi les volumes inutilisés (cela efface des données ; CLI uniquement). Contrairement au trim du système de fichiers, la récupération `--docker` s'exécute même pendant une sauvegarde en cours, ce qui permet de vider un cache de build bloqué sans attendre la fin de la fenêtre de sauvegarde.
 
 ## Politique de taille automatique
 
@@ -198,7 +198,7 @@ Deux modes de livraison :
 rdc repo secret set --name my-app --key STRIPE_LIVE_KEY --value sk_live_xxx --mode file --current ""
 rdc repo secret set --name my-app --key DB_HOST         --value postgres.internal --mode env --current ""
 rdc repo secret list --name my-app
-rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } — pas de valeur
+rdc repo secret get  --name my-app --key DB_HOST    # → { key, mode, digest } (pas de valeur)
 rdc repo secret unset --name my-app --key STRIPE_LIVE_KEY --current sk_live_xxx
 ```
 

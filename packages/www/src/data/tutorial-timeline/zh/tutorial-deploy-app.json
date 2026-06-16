@@ -7,17 +7,17 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "f83fbc3cbf977aa42d178fbe94fb88a3ee377840e5c2068e186c3386f64e17dc",
+  "transcriptHash": "b0f047b933a524563e5a2fdb842b0c05991617499da10f5a2c513c8f19c7817b",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 2.40432,
-      "replayEndSec": 6.041569,
-      "narrationText": "第一步。让我们列出可用模板。Rediacc 内置了常见应用的现成配置，比如 Postgres、Redis、Web 服务器，无需从头编写 docker compose 点 yml。",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-01.63c25037.mp3",
-      "textHash": "63c25037ac11fd95e4499a873942adf139902a789a9af4965e8e0e3a8ce52ce0",
-      "audioDurationSec": 15.490612,
+      "replayStartSec": 2.408078,
+      "replayEndSec": 6.077084,
+      "narrationText": "第一步：列出可用的模板。Rediacc 内置了常见应用的现成配置，无需从头编写 docker-compose。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-01.d8a31b72.mp3",
+      "textHash": "d8a31b7206515ba9d0967977aaf39b7c3f56914db18dccfeffea094a92bc530c",
+      "audioDurationSec": 9.404082,
       "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-01-after.1bd3292d.mp3",
       "afterAudioDurationSec": 5.564082,
       "afterTextHash": "1bd3292d3f5e3aa8811dff6b83610ea0115ef20adff7dfbc9d7322bcdbfe9210"
@@ -25,12 +25,12 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 6.041569,
-      "replayEndSec": 13.566247,
-      "narrationText": "第二步。让我们将 app-postgres 模板应用到仓库中。两个新文件出现了：描述容器的 docker compose 点 yml，以及定义启动和停止生命周期钩子的 Rediaccfile。",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-02.c404ee10.mp3",
-      "textHash": "c404ee10733a2743f304944ead0d15d2b52ec4afb858e8a30bbab4536f0a7663",
-      "audioDurationSec": 16.039184,
+      "replayStartSec": 6.077084,
+      "replayEndSec": 14.72542,
+      "narrationText": "第二步：将 app-postgres 模板导入 repo。一套经过测试的文件，直接复制进来。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-02.be218ea0.mp3",
+      "textHash": "be218ea0fd976130baa55a9d92f7a54acba8cfe010c190bd2e6669f41dbfb3c7",
+      "audioDurationSec": 7.549388,
       "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-02-after.c325ab2f.mp3",
       "afterAudioDurationSec": 5.146122,
       "afterTextHash": "c325ab2f8aed91d871f20712f39b05f1be3874af59afacaec2e9b0b60c0cad0e"
@@ -38,12 +38,12 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 13.566247,
-      "replayEndSec": 23.282435,
-      "narrationText": "第三步。让我们启动仓库。命令行工具启动容器、挂载加密卷，并连接独立的 Docker 守护进程。应用现在正在运行了。",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-03.ce6487f1.mp3",
-      "textHash": "ce6487f17d72539cad541575370743e6829bf913450abcecfba2de8e0dc55d01",
-      "audioDurationSec": 10.997551,
+      "replayStartSec": 14.72542,
+      "replayEndSec": 21.699752,
+      "narrationText": "看看 repo 里多了什么：一个包含启动和停止 hooks 的 Rediaccfile，以及一个描述 container 的 docker-compose 文件。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-03.28f038ab.mp3",
+      "textHash": "28f038abf1dc99c9200290b50d4743db699ce9411ad160566cbb2f8b2fef5246",
+      "audioDurationSec": 9.717551,
       "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-03-after.a7b72fca.mp3",
       "afterAudioDurationSec": 5.250612,
       "afterTextHash": "a7b72fcaf3f077af54d82231c633faa03e7c27d21c0cbdbeb5e172b8a6267da6"
@@ -51,12 +51,12 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 23.282435,
-      "replayEndSec": 30.345778,
-      "narrationText": "让我们用 docker ps 验证一下。注意这里只显示本仓库的容器。同一服务器上的其他仓库拥有各自的 Docker 守护进程，在这里完全不可见。",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-04.cccc0e23.mp3",
-      "textHash": "cccc0e23e43cfbddca8044edf45422427cdb9a0db496253d172410411b818606",
-      "audioDurationSec": 12.434286,
+      "replayStartSec": 21.699752,
+      "replayEndSec": 28.8781,
+      "narrationText": "第三步：启动 repo。只需一条命令，CLI 会挂载加密卷、启动隔离的 Docker daemon，并运行 container。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-04.e2e9e7b5.mp3",
+      "textHash": "e2e9e7b577072eabb9df27f616bd861a85af4e4a030a5210a5b57cd3de0de9f9",
+      "audioDurationSec": 9.247347,
       "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-04-after.fd282e71.mp3",
       "afterAudioDurationSec": 4.440816,
       "afterTextHash": "fd282e712cb741a1c4f973a6a0739b857d1c99d19289afac8699cfc738cddf83"
@@ -64,12 +64,12 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "replayStartSec": 30.345778,
-      "replayEndSec": 38.921409,
-      "narrationText": "让我们验证正在运行的内容。这里的 docker ps 只列出本 repo 的 container。同一服务器上的其他 repo 各自拥有独立的 daemon，从这个视图中完全不可见。",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-05.ad62f2d3.mp3",
-      "textHash": "ad62f2d3c02f1f7e6569e415f9daab6fe69ccd7be512cb78f97e7d91b248bb29",
-      "audioDurationSec": 18.442449,
+      "replayStartSec": 28.8781,
+      "replayEndSec": 34.846304,
+      "narrationText": "查看正在运行的内容。这里的 Docker ps 只列出当前 repo 的 container。服务器上的每个其他 repo 都有自己的 daemon，在这个视图中完全看不见。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-05.86991019.mp3",
+      "textHash": "86991019f4cce16b9d95ababa8db39984e1ebdc8f7f94f3352ecb0f57aaa04fc",
+      "audioDurationSec": 12.120816,
       "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/tutorial-deploy-app-05-after.60cc9561.mp3",
       "afterAudioDurationSec": 5.250612,
       "afterTextHash": "60cc9561d05bbacf5b81e6a949d2a66cd0e09bdee933243b0a56562b6bba6035"
@@ -78,10 +78,10 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "bb4cf860eccb6213b7108a9b1982c6b025e8334113ae652fe32474cc34763cc6",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/intro.bb4cf860.mp3",
-      "narrationText": "是时候部署一个真实应用了！我们将从一个空仓库出发，三个简短步骤就让容器跑起来。",
-      "audioDurationSec": 7.314286
+      "textHash": "8888178db86be295986d6e14ee62815c6c23278216ff4bd99136fd8837a318e5",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/intro.8888178d.mp3",
+      "narrationText": "是时候部署真实应用了！从空 repo 到运行中的 container，三步搞定：选择、应用、运行。",
+      "audioDurationSec": 8.829388
     },
     {
       "id": "pick-apply-run",
@@ -89,6 +89,13 @@
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/pick-apply-run.59e7c43d.mp3",
       "narrationText": "流程很简单：选一个模板、应用到 repo，然后运行。CLI 自带内置模板，所以我们永远不必从头写 docker-compose。",
       "audioDurationSec": 14.28898
+    },
+    {
+      "id": "vscode-file-tour",
+      "textHash": "bcb64aa3f9382cc119cb7a2ce9330fa2d55f2b67ad140c88f30487ff0a01db36",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-deploy-app/vscode-file-tour.bcb64aa3.mp3",
+      "narrationText": "更喜欢用编辑器而不是 cat？同样的文件可以直接在浏览器中用 VS Code 打开。这是 Rediaccfile，旁边是 compose 文件。我们会在后面的教程中好好介绍这个设置。",
+      "audioDurationSec": 15.56898
     },
     {
       "id": "next-tutorial",

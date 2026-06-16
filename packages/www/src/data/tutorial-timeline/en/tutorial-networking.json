@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "787de4cace0e6c209e9a430baf53481a960cb4b8e55020b02e0baba8a571b19b",
+  "transcriptHash": "bee98d9fa84b4ea8b328ba04d4dea44bce8d2fa4f19b4d0d63344ed7a20481cf",
   "steps": [
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424705,
-      "replayEndSec": 13.591473,
+      "replayStartSec": 2.410714,
+      "replayEndSec": 12.419888,
       "narrationText": "Step two. We set the public IP, the base domain, the certificate email, and the Cloudflare API token from the command line. The cert email and the token are shared across all your machines, so you only set them once.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-01.f87bf913.mp3",
       "textHash": "f87bf913f6e6ad781ac79d21062605b4840407b127b835f7c49165175d4be20d",
@@ -293,8 +293,8 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.591473,
-      "replayEndSec": 18.479059,
+      "replayStartSec": 12.419888,
+      "replayEndSec": 16.924002,
       "narrationText": "Let us confirm the infrastructure settings were stored. Public IP, base domain, certificate email, all visible.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-02.56cdbdad.mp3",
       "textHash": "56cdbdad057e31d7a4e0e37842415e6e99064c80f11b18570b9ce06a891b3bb4",
@@ -454,134 +454,12 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.479059,
-      "replayEndSec": 25.757057,
-      "narrationText": "Step three. Push the configuration to the server. This creates the DNS records on Cloudflare automatically and prepares the proxy configuration.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03.9f7823d7.mp3",
-      "textHash": "9f7823d79069ea85b9c89cdc16c8b28e757c2efbc40ff155030843a70c1a1a66",
-      "audioDurationSec": 9.560816,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 1.6,
-          "startChar": 12,
-          "endChar": 16
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 1.68,
-          "startChar": 17,
-          "endChar": 20
-        },
-        {
-          "startSec": 1.68,
-          "endSec": 2.48,
-          "startChar": 21,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.56,
-          "startChar": 35,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.64,
-          "startChar": 38,
-          "endChar": 41
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 3.12,
-          "startChar": 42,
-          "endChar": 48
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.76,
-          "startChar": 50,
-          "endChar": 54
-        },
-        {
-          "startSec": 3.76,
-          "endSec": 4.24,
-          "startChar": 55,
-          "endChar": 62
-        },
-        {
-          "startSec": 4.24,
-          "endSec": 4.32,
-          "startChar": 63,
-          "endChar": 66
-        },
-        {
-          "startSec": 4.32,
-          "endSec": 4.88,
-          "startChar": 67,
-          "endChar": 70
-        },
-        {
-          "startSec": 4.88,
-          "endSec": 5.28,
-          "startChar": 71,
-          "endChar": 78
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.44,
-          "startChar": 79,
-          "endChar": 81
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 6.24,
-          "startChar": 82,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.96,
-          "startChar": 93,
-          "endChar": 106
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.52,
-          "startChar": 107,
-          "endChar": 110
-        },
-        {
-          "startSec": 7.52,
-          "endSec": 8.0,
-          "startChar": 111,
-          "endChar": 119
-        },
-        {
-          "startSec": 8.0,
-          "endSec": 8.08,
-          "startChar": 120,
-          "endChar": 123
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.56,
-          "startChar": 124,
-          "endChar": 129
-        },
-        {
-          "startSec": 8.56,
-          "endSec": 9.44,
-          "startChar": 130,
-          "endChar": 143
-        }
-      ],
+      "replayStartSec": 16.924002,
+      "replayEndSec": 20.590881,
+      "narrationText": "Step three: push the configuration to the server. With a real token this creates your DNS records on Cloudflare automatically and prepares the proxy configuration.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03.0d57bc64.mp3",
+      "textHash": "0d57bc64e126ad1817fad34f4de3432f3c53957728c451faa8cd28840e3d7c91",
+      "audioDurationSec": 10.762449,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03-after.4bd17331.mp3",
       "afterAudioDurationSec": 3.63102,
       "afterTextHash": "4bd17331d0dd4dfe5271ee834e343fd6ce823a8c3bb72fa58f62f1bf728c06ef",
@@ -639,140 +517,12 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "replayStartSec": 25.757057,
-      "replayEndSec": 33.957312,
-      "narrationText": "Step four begins. Create a small repo named infra. This is where the proxy will live, isolated from the application repos.",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04.1579cb13.mp3",
-      "textHash": "1579cb139bab2f5eec5f720abd70f23c88954d2405f66050838775c112c534ba",
-      "audioDurationSec": 8.672653,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.4,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.4,
-          "endSec": 0.64,
-          "startChar": 5,
-          "endChar": 9
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 1.28,
-          "startChar": 10,
-          "endChar": 16
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 2.0,
-          "startChar": 18,
-          "endChar": 24
-        },
-        {
-          "startSec": 2.0,
-          "endSec": 2.08,
-          "startChar": 25,
-          "endChar": 26
-        },
-        {
-          "startSec": 2.08,
-          "endSec": 2.56,
-          "startChar": 27,
-          "endChar": 32
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.96,
-          "startChar": 33,
-          "endChar": 37
-        },
-        {
-          "startSec": 2.96,
-          "endSec": 3.44,
-          "startChar": 38,
-          "endChar": 43
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 4.08,
-          "startChar": 44,
-          "endChar": 49
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.8,
-          "startChar": 51,
-          "endChar": 55
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 4.96,
-          "startChar": 56,
-          "endChar": 58
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.12,
-          "startChar": 59,
-          "endChar": 64
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.2,
-          "startChar": 65,
-          "endChar": 68
-        },
-        {
-          "startSec": 5.2,
-          "endSec": 5.68,
-          "startChar": 69,
-          "endChar": 74
-        },
-        {
-          "startSec": 5.68,
-          "endSec": 5.84,
-          "startChar": 75,
-          "endChar": 79
-        },
-        {
-          "startSec": 5.84,
-          "endSec": 6.08,
-          "startChar": 80,
-          "endChar": 84
-        },
-        {
-          "startSec": 6.48,
-          "endSec": 7.12,
-          "startChar": 86,
-          "endChar": 94
-        },
-        {
-          "startSec": 7.12,
-          "endSec": 7.36,
-          "startChar": 95,
-          "endChar": 99
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.52,
-          "startChar": 100,
-          "endChar": 103
-        },
-        {
-          "startSec": 7.52,
-          "endSec": 8.08,
-          "startChar": 104,
-          "endChar": 115
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.64,
-          "startChar": 116,
-          "endChar": 121
-        }
-      ],
+      "replayStartSec": 20.590881,
+      "replayEndSec": 28.48077,
+      "narrationText": "Step four: create a small repo named infra. Why its own repo? The proxy routes traffic for every app on this server. Infrastructure deserves its own isolated box, away from your application code.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04.ca25ddd2.mp3",
+      "textHash": "ca25ddd2f8e4ff5cb725879926e909d3cb711ea9265b4bf3eaa07034546cdfd5",
+      "audioDurationSec": 13.244082,
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04-after.05d1b8b5.mp3",
       "afterAudioDurationSec": 3.474286,
       "afterTextHash": "05d1b8b5fb4f3ccb7012e340634370ecd6c03d1c3adf7f4fbfdb95ce88cade5a",
@@ -824,8 +574,8 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "replayStartSec": 33.957312,
-      "replayEndSec": 41.036573,
+      "replayStartSec": 28.48077,
+      "replayEndSec": 35.97937,
       "narrationText": "Apply the proxy template. It carries Traefik plus the configuration for Let's Encrypt and Cloudflare DNS-01 challenges, ready to go.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-05.240c2356.mp3",
       "textHash": "240c2356a9245938aef978a4cb807a21d8f4d7cd4f61fb84e592e6b5e7e01172",
@@ -985,8 +735,8 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.036573,
-      "replayEndSec": 49.697921,
+      "replayStartSec": 35.97937,
+      "replayEndSec": 42.626799,
       "narrationText": "And bring the proxy up. Traefik discovers your containers automatically. TLS certificates come from Let's Encrypt automatically. Your app is now reachable on the internet over HTTPS.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-06.58fd4f50.mp3",
       "textHash": "58fd4f501fb8cbc53896281c60777e0d68cd9b761d555b9d3b790ca73313ba9e",
@@ -1213,498 +963,24 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "590dc00422af1fed8bb897f29c6b8eb5cd70227d1f76f7a60455179412323adf",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/intro.590dc004.mp3",
-      "narrationText": "Alright! Let's give your app a real domain with automatic TLS. Four short steps and you're on the internet.",
-      "audioDurationSec": 6.765714,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 1.04,
-          "startChar": 9,
-          "endChar": 14
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.2,
-          "startChar": 15,
-          "endChar": 19
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.36,
-          "startChar": 20,
-          "endChar": 24
-        },
-        {
-          "startSec": 1.36,
-          "endSec": 1.52,
-          "startChar": 25,
-          "endChar": 28
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 1.6,
-          "startChar": 29,
-          "endChar": 30
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 2.0,
-          "startChar": 31,
-          "endChar": 35
-        },
-        {
-          "startSec": 2.0,
-          "endSec": 2.56,
-          "startChar": 36,
-          "endChar": 42
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 2.72,
-          "startChar": 43,
-          "endChar": 47
-        },
-        {
-          "startSec": 2.8,
-          "endSec": 3.36,
-          "startChar": 48,
-          "endChar": 57
-        },
-        {
-          "startSec": 3.36,
-          "endSec": 4.16,
-          "startChar": 58,
-          "endChar": 61
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 4.72,
-          "startChar": 63,
-          "endChar": 67
-        },
-        {
-          "startSec": 4.72,
-          "endSec": 4.96,
-          "startChar": 68,
-          "endChar": 73
-        },
-        {
-          "startSec": 4.96,
-          "endSec": 5.6,
-          "startChar": 74,
-          "endChar": 79
-        },
-        {
-          "startSec": 5.76,
-          "endSec": 5.92,
-          "startChar": 80,
-          "endChar": 83
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.16,
-          "startChar": 84,
-          "endChar": 90
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.24,
-          "startChar": 91,
-          "endChar": 93
-        },
-        {
-          "startSec": 6.24,
-          "endSec": 6.4,
-          "startChar": 94,
-          "endChar": 97
-        },
-        {
-          "startSec": 6.4,
-          "endSec": 6.72,
-          "startChar": 98,
-          "endChar": 106
-        }
-      ]
+      "textHash": "ad517ac93ee84fe2c8d2a49f5c85b69e5c961f7e1e26b2d92b7b3c22834a774e",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/intro.ad517ac9.mp3",
+      "narrationText": "Your app runs, but only the server can see it. Let's give it a real domain with automatic TLS. Four short steps, and it's on the internet.",
+      "audioDurationSec": 8.672653
     },
     {
       "id": "four-steps",
-      "textHash": "a63bbfba9d1164aa10210d026690335787011624345c3dc30614942b629e594d",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/four-steps.a63bbfba.mp3",
-      "narrationText": "Here is the path. Grab a Cloudflare API token, configure the infrastructure on the CLI, push it to the server, then deploy a Traefik proxy that handles DNS and certificates for you.",
-      "audioDurationSec": 11.964082,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 4
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.48,
-          "startChar": 5,
-          "endChar": 7
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 0.56,
-          "startChar": 8,
-          "endChar": 11
-        },
-        {
-          "startSec": 0.56,
-          "endSec": 0.96,
-          "startChar": 12,
-          "endChar": 16
-        },
-        {
-          "startSec": 1.52,
-          "endSec": 1.76,
-          "startChar": 18,
-          "endChar": 22
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 1.84,
-          "startChar": 23,
-          "endChar": 24
-        },
-        {
-          "startSec": 1.84,
-          "endSec": 2.56,
-          "startChar": 25,
-          "endChar": 35
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.04,
-          "startChar": 36,
-          "endChar": 39
-        },
-        {
-          "startSec": 3.04,
-          "endSec": 3.52,
-          "startChar": 40,
-          "endChar": 45
-        },
-        {
-          "startSec": 4.0,
-          "endSec": 4.4,
-          "startChar": 47,
-          "endChar": 56
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.56,
-          "startChar": 57,
-          "endChar": 60
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 5.28,
-          "startChar": 61,
-          "endChar": 75
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.44,
-          "startChar": 76,
-          "endChar": 78
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 6.16,
-          "startChar": 83,
-          "endChar": 86
-        },
-        {
-          "startSec": 6.56,
-          "endSec": 6.8,
-          "startChar": 88,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.8,
-          "endSec": 6.96,
-          "startChar": 93,
-          "endChar": 95
-        },
-        {
-          "startSec": 6.96,
-          "endSec": 7.04,
-          "startChar": 99,
-          "endChar": 102
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.6,
-          "startChar": 103,
-          "endChar": 109
-        },
-        {
-          "startSec": 7.92,
-          "endSec": 8.08,
-          "startChar": 111,
-          "endChar": 115
-        },
-        {
-          "startSec": 8.08,
-          "endSec": 8.56,
-          "startChar": 116,
-          "endChar": 122
-        },
-        {
-          "startSec": 9.12,
-          "endSec": 9.6,
-          "startChar": 133,
-          "endChar": 138
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 9.68,
-          "startChar": 139,
-          "endChar": 143
-        },
-        {
-          "startSec": 9.68,
-          "endSec": 10.08,
-          "startChar": 144,
-          "endChar": 151
-        },
-        {
-          "startSec": 10.08,
-          "endSec": 10.56,
-          "startChar": 152,
-          "endChar": 155
-        },
-        {
-          "startSec": 10.64,
-          "endSec": 10.8,
-          "startChar": 156,
-          "endChar": 159
-        },
-        {
-          "startSec": 10.8,
-          "endSec": 11.44,
-          "startChar": 160,
-          "endChar": 172
-        },
-        {
-          "startSec": 11.44,
-          "endSec": 11.6,
-          "startChar": 173,
-          "endChar": 176
-        },
-        {
-          "startSec": 11.6,
-          "endSec": 11.84,
-          "startChar": 177,
-          "endChar": 180
-        }
-      ]
+      "textHash": "428734acbdb09f19b6fdf3a249459b30c4bebf491c394800d74e83fa42282510",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/four-steps.428734ac.mp3",
+      "narrationText": "Here is the path: grab a Cloudflare API token, configure the infrastructure once on the CLI, push it to the server, then deploy a small proxy repo that handles DNS and certificates for you.",
+      "audioDurationSec": 14.367347
     },
     {
       "id": "open-cloudflare",
-      "textHash": "7c20bef044c2185291f1a1a5937bf9e0caee6a142d4908dc711ee79ff4e9309f",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/open-cloudflare.7c20bef0.mp3",
-      "narrationText": "First, open the Cloudflare dashboard in your browser. Go to My Profile, then API Tokens, and create a token with Zone DNS Edit permission so the CLI can manage your records.",
-      "audioDurationSec": 11.546122,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.48,
-          "startChar": 0,
-          "endChar": 5
-        },
-        {
-          "startSec": 0.64,
-          "endSec": 0.96,
-          "startChar": 7,
-          "endChar": 11
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.04,
-          "startChar": 12,
-          "endChar": 15
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.76,
-          "startChar": 16,
-          "endChar": 26
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.32,
-          "startChar": 27,
-          "endChar": 36
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.48,
-          "startChar": 37,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.48,
-          "endSec": 2.56,
-          "startChar": 40,
-          "endChar": 44
-        },
-        {
-          "startSec": 2.56,
-          "endSec": 3.04,
-          "startChar": 45,
-          "endChar": 52
-        },
-        {
-          "startSec": 3.44,
-          "endSec": 3.52,
-          "startChar": 54,
-          "endChar": 56
-        },
-        {
-          "startSec": 3.52,
-          "endSec": 3.6,
-          "startChar": 57,
-          "endChar": 59
-        },
-        {
-          "startSec": 3.6,
-          "endSec": 3.84,
-          "startChar": 60,
-          "endChar": 62
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 4.4,
-          "startChar": 63,
-          "endChar": 70
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.8,
-          "startChar": 72,
-          "endChar": 76
-        },
-        {
-          "startSec": 4.8,
-          "endSec": 5.28,
-          "startChar": 77,
-          "endChar": 80
-        },
-        {
-          "startSec": 5.28,
-          "endSec": 5.84,
-          "startChar": 81,
-          "endChar": 87
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.32,
-          "startChar": 89,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.32,
-          "endSec": 6.64,
-          "startChar": 93,
-          "endChar": 99
-        },
-        {
-          "startSec": 6.64,
-          "endSec": 6.72,
-          "startChar": 100,
-          "endChar": 101
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.2,
-          "startChar": 102,
-          "endChar": 107
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.28,
-          "startChar": 108,
-          "endChar": 112
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 7.76,
-          "startChar": 113,
-          "endChar": 117
-        },
-        {
-          "startSec": 7.76,
-          "endSec": 8.08,
-          "startChar": 118,
-          "endChar": 121
-        },
-        {
-          "startSec": 8.24,
-          "endSec": 8.48,
-          "startChar": 122,
-          "endChar": 126
-        },
-        {
-          "startSec": 8.48,
-          "endSec": 9.04,
-          "startChar": 127,
-          "endChar": 137
-        },
-        {
-          "startSec": 9.28,
-          "endSec": 9.6,
-          "startChar": 138,
-          "endChar": 140
-        },
-        {
-          "startSec": 9.6,
-          "endSec": 9.68,
-          "startChar": 141,
-          "endChar": 144
-        },
-        {
-          "startSec": 9.68,
-          "endSec": 10.24,
-          "startChar": 145,
-          "endChar": 148
-        },
-        {
-          "startSec": 10.24,
-          "endSec": 10.48,
-          "startChar": 149,
-          "endChar": 152
-        },
-        {
-          "startSec": 10.48,
-          "endSec": 10.88,
-          "startChar": 153,
-          "endChar": 159
-        },
-        {
-          "startSec": 10.88,
-          "endSec": 11.04,
-          "startChar": 160,
-          "endChar": 164
-        },
-        {
-          "startSec": 11.04,
-          "endSec": 11.52,
-          "startChar": 165,
-          "endChar": 172
-        }
-      ]
+      "textHash": "ce50a187e2f2a660b04c9d9f5b5924207557bb94127474e4c7b42b6d104903e2",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/open-cloudflare.ce50a187.mp3",
+      "narrationText": "First, the one manual step. Open the Cloudflare dashboard, go to My Profile, then API Tokens, and create a token with Zone DNS Edit permission. That single token lets the CLI manage your DNS records, so you never click through dashboards again.",
+      "audioDurationSec": 18.364082
     },
     {
       "id": "next-tutorial",

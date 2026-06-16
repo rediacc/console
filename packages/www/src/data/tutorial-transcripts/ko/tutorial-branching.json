@@ -1,0 +1,162 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "at": 2.418102,
+      "text": "작업 포크에는 앱 상태의 버전 1이 담겨 있습니다. 단순한 마커 파일로 확인할 수 있죠.",
+      "afterText": "버전 1, 디스크에 저장되었습니다.",
+      "cardLabel": "버전 1",
+      "prose": "작업 포크에 상태의 버전 1을 작성하세요."
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "at": 10.876025,
+      "text": "파일만이 아닙니다. 이 포크에는 실제 PostgreSQL 데이터베이스도 함께 있고, customers 테이블에는 세 개의 행이 있습니다. 그 숫자를 기억하세요.",
+      "afterText": "세 개의 행. 이제 위험에 빠뜨릴 데이터입니다.",
+      "cardLabel": "세 행",
+      "prose": "포크에는 실제 PostgreSQL 데이터베이스도 실행 중입니다. customers 테이블에는 세 개의 행이 있습니다."
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "at": 20.708803,
+      "text": "고정합니다. 커밋은 전체 repository를 변경 불가능한 이미지로 캡처하며, 메시지, 작성자, 부모를 포함합니다. git과 똑같지만 데이터베이스를 포함한 모든 것에 적용됩니다.",
+      "afterText": "커밋되었습니다. 이 스냅샷은 절대 변경될 수 없습니다. 마운트조차 거부합니다.",
+      "cardLabel": "커밋 v1",
+      "prose": "작업 포크를 커밋하세요. 데이터베이스를 포함한 전체 repository 상태가 변경 불가능한 이름 있는 스냅샷으로 고정됩니다."
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "at": 29.448478,
+      "text": "커밋에 이름을 붙입니다. stable 브랜치가 이제 버전 1을 가리킵니다.",
+      "afterText": "브랜치는 언제든 돌아올 수 있는 이름입니다.",
+      "cardLabel": "Stable 브랜치",
+      "prose": "커밋을 가리키는 브랜치를 만드세요. 고정된 상태에 붙이는 알기 쉬운 이름입니다."
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "at": 34.241982,
+      "text": "계속 작업합니다. 버전 2가 작업 포크의 버전 1을 대체합니다. 커밋은 신경 쓰지 않습니다.",
+      "afterText": "작업 포크는 앞으로 나아갔습니다. 히스토리는 그대로입니다.",
+      "cardLabel": "버전 2",
+      "prose": "계속 작업하세요. 포크는 변경되지만 커밋된 히스토리는 고정 상태를 유지합니다."
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "at": 42.690283,
+      "text": "이제 재앙이 닥칩니다. 위험한 변경으로 customers 테이블이 삭제됩니다. 실제라면 속이 철렁 내려앉는 순간이죠.",
+      "afterText": "Drop table이 실행되었습니다. 작업 포크에서 데이터가 사라졌습니다.",
+      "cardLabel": "테이블 삭제",
+      "prose": "위험한 변경으로 작업 포크의 customers 테이블이 삭제됩니다."
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "at": 51.047933,
+      "text": "다시 행을 조회하면 데이터베이스가 단호하게 답합니다. relation customers does not exist. 재앙은 현실입니다. 모든 행이 사라졌습니다.",
+      "afterText": "Relation이 존재하지 않습니다. 세 개의 행, 모두 사라졌습니다.",
+      "cardLabel": "테이블 소실",
+      "prose": "이제 테이블 조회가 실패합니다. relation \"customers\" does not exist. 작업 포크에서 데이터가 정말로 사라졌습니다."
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "at": 59.69522,
+      "text": "위험한 변경도 커밋합니다, 손상된 테이블째로. 히스토리는 실제로 일어난 일을 기록합니다. 이제 부모와 자식, 두 개의 커밋이 생겼습니다.",
+      "afterText": "체인에 두 개의 스냅샷이 생겼습니다.",
+      "cardLabel": "커밋 v2",
+      "prose": "삭제된 테이블을 포함한 새 상태도 커밋하세요. 히스토리가 git log처럼 늘어납니다."
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "at": 68.35661,
+      "text": "그리고 히스토리가 보입니다. 버전 2가 위에, 버전 1이 그 아래에, 메시지와 작성자까지 포함되어 있습니다. 이미지 하나도 잠금 해제하지 않고서요.",
+      "afterText": "git log와 똑같은 repo 로그입니다.",
+      "cardLabel": "Repo 로그",
+      "prose": "repo log로 커밋 히스토리를 탐색하세요. 메시지, 작성자, 부모를 확인할 수 있습니다."
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "at": 75.614559,
+      "text": "이제 성과를 확인할 시간입니다. stable 브랜치를 새로운 쓰기 가능 포크로 체크아웃합니다. Reflink 클론으로 거의 즉시, 어떤 크기든 가능합니다.",
+      "afterText": "고정된 버전 1의 쓰기 가능한 복사본이 약 1초 안에 생성됩니다.",
+      "cardLabel": "체크아웃",
+      "prose": "stable 브랜치를 새로운 쓰기 가능 포크로 체크아웃하세요. copy-on-write 덕분에 거의 즉시 완료됩니다."
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "at": 83.292425,
+      "text": "롤백 포크를 다른 repo처럼 시작합니다.",
+      "afterText": "두 개의 포크가 실행 중입니다. 오늘의 버전과 체크포인트입니다.",
+      "cardLabel": "롤백 시작",
+      "prose": "롤백 포크를 시작하세요. 작업 포크와 나란히 실행됩니다."
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "at": 91.555233,
+      "text": "그리고 증거입니다. 롤백 포크는 버전 1을 읽습니다. 작업 포크에는 여전히 버전 2가 있습니다. 실행할 수 있는 히스토리입니다.",
+      "afterText": "롤백 완료. 이 과정에서 아무것도 덮어쓰지 않았습니다.",
+      "cardLabel": "증거: v1",
+      "prose": "롤백 포크의 마커 파일을 읽으세요. 커밋된 그대로의 버전 1입니다."
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "at": 98.952411,
+      "text": "그리고 가장 중요한 부분입니다. 삭제된 테이블이 돌아왔습니다, 세 개의 행 모두. 롤백은 파일뿐 아니라 데이터베이스도 복원했습니다.",
+      "afterText": "다시 세 개의 행. 재앙이 되돌아갔습니다.",
+      "cardLabel": "데이터 복원",
+      "prose": "롤백 포크에서 customers 테이블을 조회하세요. 커밋된 그대로 세 개의 행이 있습니다. 롤백은 파일뿐 아니라 데이터베이스도 복원했습니다."
+    }
+  ],
+  "title": "브랜칭, 커밋 & 롤백",
+  "chapters": {
+    "intro": "브랜칭: 커밋 및 롤백",
+    "commit-model": "커밋, 브랜치, 체크아웃",
+    "cast-step-0": "1단계: 버전 1",
+    "cast-step-1": "2단계: 커밋하기",
+    "cast-step-2": "3단계: 브랜치로 이름 붙이기",
+    "cast-step-3": "4단계: 계속 작업하기, 버전 2",
+    "cast-step-4": "5단계: 다시 커밋하기",
+    "cast-step-5": "6단계: 히스토리",
+    "cast-step-6": "7단계: 브랜치 체크아웃",
+    "cast-step-7": "8단계: 롤백 시작",
+    "cast-step-8": "9단계: 확인, 버전 1",
+    "cast-step-9": "10단계: 브랜치 체크아웃",
+    "cast-step-10": "11단계: 롤백 시작",
+    "cast-step-11": "12단계: 증거, 버전 1",
+    "cast-step-12": "13단계: 데이터가 돌아왔습니다",
+    "vscode-versions": "두 버전을 나란히",
+    "outro": "다음: 라이브 마이그레이션"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "repository를 코드처럼 버전 관리해 봅시다! 체크포인트를 고정하고 이름을 붙인 다음, 실제 데이터베이스 테이블을 삭제할 겁니다. 롤백은 고정된 정확한 상태를, 모든 행을 포함해서, 몇 초 만에 되돌려 줍니다."
+    },
+    {
+      "id": "commit-model",
+      "text": "모델은 git이지만 전체 repository를 대상으로 합니다. 커밋은 고정된 변경 불가능한 이미지입니다. 마운트조차 거부하기 때문에 아무것도 변경할 수 없습니다. 브랜치는 커밋을 가리키는 이름에 불과합니다. 그리고 체크아웃은 어떤 커밋이든 새롭고 쓰기 가능한 포크로 되돌려 줍니다."
+    },
+    {
+      "id": "vscode-versions",
+      "text": "백문이 불여일견이죠. 왼쪽의 롤백 포크는 버전 1을 유지하고, 오른쪽의 작업 포크는 버전 2로 넘어갔습니다. 둘 다 살아 있고, 둘 다 쓰기 가능하며, 모두 같은 히스토리에서 나왔습니다."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "커밋은 절대 변하지 않고, 포크는 기다리지 않습니다. 다음에는 실행 중인 전체 repository를 다른 머신으로 실시간으로 이동합니다. 다음 편에서 만나요!"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "en",
+  "version": 1,
+  "title": "Delta Transfer",
+  "chapters": {
+    "intro": "Delta Transfer",
+    "blocks-not-bytes": "Blocks, not bytes",
+    "cast-step-0": "Step 1: First push — full",
+    "cast-step-1": "Step 2: Change some data",
+    "cast-step-2": "Step 3: Second push — delta",
+    "cast-step-3": "Step 4: In sync, in seconds",
+    "outro": "The series ends here"
+  },
+  "events": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "at": 2.413668,
+      "text": "The first push to another machine carries the whole image, and the output says it plainly: two gigabytes transferred, marked full. This is the baseline.",
+      "afterText": "Two gigabytes in forty-four seconds, marked full. The CLI also kept an identical base on both sides; that's the setup for the magic.",
+      "cardLabel": "Full Push",
+      "prose": "Push the repository to a second machine. The first push transfers the full image, and the output reports it: 2 GB transferred, marked (full). A delta base is retained on both sides."
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "at": 10.922135,
+      "text": "Change a little data: fifty megabytes out of two gigabytes.",
+      "afterText": "A small change in a big image.",
+      "cardLabel": "Change Data",
+      "prose": "Write a small amount of new data into the repository."
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "at": 21.404869,
+      "text": "Push again. Same command, but read the output this time: about fifty megabytes transferred, marked delta, against a two gigabyte image. Only the changed blocks travelled.",
+      "afterText": "Fifty megabytes in under six seconds, out of a two gigabyte image. The numbers are the proof.",
+      "cardLabel": "Delta Push",
+      "prose": "Push again with the same command: the output reports about 50 MB transferred as a delta against the shared base, out of a 2 GB image. Only the changed blocks travelled."
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "at": 29.764702,
+      "text": "Both machines hold the same repository, refreshed in seconds. Run it hourly if you like — the cost is the change, not the size.",
+      "afterText": "Frequent backups stop being expensive.",
+      "cardLabel": "In Sync",
+      "prose": "The target machine now holds the updated repository — synchronized at the cost of the delta."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Here's a fun experiment. We'll push a repository with a gigabyte of data to another machine twice. The first push carries everything, and the second carries only what changed. Watch the numbers, the push command prints exactly how much it moved."
+    },
+    {
+      "id": "blocks-not-bytes",
+      "text": "The trick is in the setup. After the first push, the CLI keeps an identical immutable base image on both machines. The next push compares blocks against that base and sends only the difference. No flags, no bookkeeping, it's the same push command."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Small changes mean small transfers, every time after the first. Just one tutorial left now: making sure you never run out of disk. See you in the final one!"
+    }
+  ]
+}

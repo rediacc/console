@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "2dde605031a01f6d98b8c7e3cb7d85ce5d2f32932a9d34e0b770588ff3438651",
+  "transcriptHash": "aa037fd071e08d2b7ac2ed951efafc12ee057a81acefc99b1777833091e74db6",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41277,
-      "replayEndSec": 13.421721,
+      "replayStartSec": 2.422355,
+      "replayEndSec": 12.478171,
       "narrationText": "コマンド1つでリポジトリをフォークします。アプリ、データベース、設定ファイルすべてがクローンされました。しかも数秒で完了します。リポジトリのサイズに関係なく同じです。1ギガバイトでも、100ギガバイトでも、1テラバイトでも、常に同じ時間がかかります。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-01.3bcae840.mp3",
       "textHash": "3bcae84018f8128e367368b11bb7201afb89bade7b787ffb4bf90848cae8a6e0",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.421721,
-      "replayEndSec": 18.980206,
+      "replayStartSec": 12.478171,
+      "replayEndSec": 18.050071,
       "narrationText": "両方のリポジトリが並存しています。同じマシン、同じディスク、完全に独立した2つの環境です。フォークは独自のコンテナ、独自のファイルシステム、独自の Docker デーモンを持っています。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-02.fb34c010.mp3",
       "textHash": "fb34c010c48e9a88b163abc37ccd98a6ceefc8ed65abb1d9f16e346a8392acb2",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.980206,
-      "replayEndSec": 26.216902,
+      "replayStartSec": 18.050071,
+      "replayEndSec": 25.352583,
       "narrationText": "分離を証明しましょう。元のリポジトリでは、マーカーファイルがそのままあります。フォークの存在は親に何も変化をもたらしていません。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-03.8518f45b.mp3",
       "textHash": "8518f45bf597c40f0e6bde6785d5628a07612de63f1fd951325e23ad8444667c",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 26.216902,
-      "replayEndSec": 34.456769,
+      "replayStartSec": 25.352583,
+      "replayEndSec": 33.706234,
       "narrationText": "では、フォーク内だけでそのファイルを削除します。フォーク内では消えました。破壊的な変更を行いましたが、フォーク内に留まりました。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-04.548a1707.mp3",
       "textHash": "548a1707f5d3de40e6322f666deedf80e70f889d9965ca70e8d426fd36e7ee5a",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 34.456769,
-      "replayEndSec": 41.647526,
+      "replayStartSec": 33.706234,
+      "replayEndSec": 41.0794,
       "narrationText": "元のリポジトリに戻ります。マーカーファイルはここにあり、手つかずのままです。元のリポジトリは何も起きたことを知りません。同じイメージ、別の Docker デーモン、別のファイルシステムです。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-05.d58e2fb5.mp3",
       "textHash": "d58e2fb5831a0312a7b20490f0b955ac3fcd88d63a11758ea9a4cbcc63e10958",
@@ -77,8 +77,8 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.647526,
-      "replayEndSec": 51.671921,
+      "replayStartSec": 41.0794,
+      "replayEndSec": 48.135359,
       "narrationText": "作業が終わったら、フォークを削除するだけです。元のリポジトリはまったく変わりません。フォークして、実験して、壊して、削除する。リスクゼロです。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/tutorial-forking-06.6c49ab96.mp3",
       "textHash": "6c49ab96c0ac4eb897428c426e48a0f96d757b5cd02c812414c5bae4ce24d5c4",
@@ -140,10 +140,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "ef452f4532135691cbc7550ed82c5a6c0322bfd81b5606ddbe1d734fdc1bedb6",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/next-tutorial.ef452f45.mp3",
-      "narrationText": "フォークは意図的にシークレットを引き継ぎません。だからこそ「本番をクローンしても何も壊さない」が本当に安全に成立します。次のチュートリアルで、その配線を正しく整えていきましょう！",
-      "audioDurationSec": 13.400816
+      "textHash": "98c83f60ed8ccbbbd22ee01ac3fcae2ac8a916e3447968f8e4f8b76b394e43a4",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-forking/next-tutorial.98c83f60.mp3",
+      "narrationText": "コマンドを見てもらいました。次は視覚的に確認しましょう。実際のデータベースアプリをライブでforkして、並べて編集する、そしてオリジナルはまったく揺らぎません。",
+      "audioDurationSec": 12.512653
     }
   ]
 }

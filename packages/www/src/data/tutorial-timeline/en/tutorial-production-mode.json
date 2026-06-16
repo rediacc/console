@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "1ccc55779eff4396f74477cdab90a632dc9acfd7d480119a33715ec6c3c5a7bf",
+  "transcriptHash": "5a1734dd7bc4bcd97e07c2c1bcbca0b242dc8f55e62aaab437dbe38637c1c49c",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418632,
-      "replayEndSec": 9.548589,
+      "replayStartSec": 2.555418,
+      "replayEndSec": 11.051619,
       "narrationText": "Time to start the app in production mode from the laptop. The deploy command calls the same up function we used during development, but it runs detached. Close your laptop and the app keeps going.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-01.7c123a2a.mp3",
       "textHash": "7c123a2aaa9bfa3399e27102c897526fcd82a077adf1fde6d5d7ea31dd38e351",
@@ -311,8 +311,8 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 9.548589,
-      "replayEndSec": 17.034078,
+      "replayStartSec": 11.051619,
+      "replayEndSec": 18.718543,
       "narrationText": "Now enable autostart so the app survives a server reboot. From here on, if the server restarts, this repo comes back automatically.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-02.b91bb5d9.mp3",
       "textHash": "b91bb5d92ab1a9d80e28d43e1abab5559a354cab77c6d9c82a7ece138c55bc96",
@@ -508,8 +508,8 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 17.034078,
-      "replayEndSec": 22.929505,
+      "replayStartSec": 18.718543,
+      "replayEndSec": 25.169818,
       "narrationText": "Let us list which repositories have autostart enabled. Confirms our app is in the boot list.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-03.196e7a8a.mp3",
       "textHash": "196e7a8af9032b08662a8b48fd6600966fed76d1438cd8328c1b53a5a7d8b508",
@@ -669,8 +669,8 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 22.929505,
-      "replayEndSec": 30.37798,
+      "replayStartSec": 25.169818,
+      "replayEndSec": 31.824598,
       "narrationText": "And to stop the app, one command from the laptop. One command up, one command down. All from your terminal.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-04.23ad7c29.mp3",
       "textHash": "23ad7c296c5f53b2a183a8146c43da69f0e17da8ee87fbb525753689bb854808",
@@ -831,225 +831,17 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "15cf403931ae662bf9d54f63a81705d00749d0e4eb0f62cd2d3d081b79647a48",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/intro.15cf4039.mp3",
-      "narrationText": "Alright! Let's take your app from development to production. Three short steps, all driven from your laptop.",
-      "audioDurationSec": 6.269388,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.16,
-          "startChar": 80,
-          "endChar": 83
-        },
-        {
-          "startSec": 1.28,
-          "endSec": 1.44,
-          "startChar": 96,
-          "endChar": 100
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.48,
-          "startChar": 104,
-          "endChar": 106
-        }
-      ]
+      "textHash": "b302b4385b1b822fd1740f50375169d0b4d1029dccb541349ad1883ce600cb9c",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/intro.b302b438.mp3",
+      "narrationText": "Your app runs while you're connected. Production means it runs when you're gone. Three short steps, all from your laptop.",
+      "audioDurationSec": 7.157551
     },
     {
       "id": "dev-vs-prod",
-      "textHash": "a5562ae08a77c5e0a4d3567f7009427539d21ec8c57831994fcc4344f4739c2c",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/dev-vs-prod.a5562ae0.mp3",
-      "narrationText": "During development you run the app from inside the repo, so it stops when you disconnect. In production you launch it from your laptop with the CLI, and it keeps running detached.",
-      "audioDurationSec": 11.807347,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 6
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.96,
-          "startChar": 7,
-          "endChar": 18
-        },
-        {
-          "startSec": 1.04,
-          "endSec": 1.2,
-          "startChar": 19,
-          "endChar": 22
-        },
-        {
-          "startSec": 1.2,
-          "endSec": 1.44,
-          "startChar": 23,
-          "endChar": 26
-        },
-        {
-          "startSec": 1.44,
-          "endSec": 1.6,
-          "startChar": 27,
-          "endChar": 30
-        },
-        {
-          "startSec": 1.6,
-          "endSec": 1.76,
-          "startChar": 31,
-          "endChar": 34
-        },
-        {
-          "startSec": 1.76,
-          "endSec": 2.08,
-          "startChar": 35,
-          "endChar": 39
-        },
-        {
-          "startSec": 2.16,
-          "endSec": 2.64,
-          "startChar": 40,
-          "endChar": 46
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 2.72,
-          "startChar": 47,
-          "endChar": 50
-        },
-        {
-          "startSec": 2.72,
-          "endSec": 3.2,
-          "startChar": 51,
-          "endChar": 55
-        },
-        {
-          "startSec": 3.68,
-          "endSec": 3.84,
-          "startChar": 57,
-          "endChar": 59
-        },
-        {
-          "startSec": 3.84,
-          "endSec": 3.92,
-          "startChar": 60,
-          "endChar": 62
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.4,
-          "startChar": 63,
-          "endChar": 68
-        },
-        {
-          "startSec": 4.4,
-          "endSec": 4.56,
-          "startChar": 69,
-          "endChar": 73
-        },
-        {
-          "startSec": 4.56,
-          "endSec": 4.64,
-          "startChar": 74,
-          "endChar": 77
-        },
-        {
-          "startSec": 4.64,
-          "endSec": 5.28,
-          "startChar": 78,
-          "endChar": 88
-        },
-        {
-          "startSec": 6.0,
-          "endSec": 6.16,
-          "startChar": 90,
-          "endChar": 92
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.8,
-          "startChar": 93,
-          "endChar": 103
-        },
-        {
-          "startSec": 6.8,
-          "endSec": 7.04,
-          "startChar": 104,
-          "endChar": 107
-        },
-        {
-          "startSec": 7.04,
-          "endSec": 7.28,
-          "startChar": 108,
-          "endChar": 114
-        },
-        {
-          "startSec": 7.28,
-          "endSec": 7.36,
-          "startChar": 115,
-          "endChar": 117
-        },
-        {
-          "startSec": 7.36,
-          "endSec": 7.6,
-          "startChar": 118,
-          "endChar": 122
-        },
-        {
-          "startSec": 7.6,
-          "endSec": 7.76,
-          "startChar": 123,
-          "endChar": 127
-        },
-        {
-          "startSec": 7.76,
-          "endSec": 8.4,
-          "startChar": 128,
-          "endChar": 134
-        },
-        {
-          "startSec": 8.4,
-          "endSec": 8.64,
-          "startChar": 135,
-          "endChar": 139
-        },
-        {
-          "startSec": 8.72,
-          "endSec": 8.88,
-          "startChar": 140,
-          "endChar": 143
-        },
-        {
-          "startSec": 8.88,
-          "endSec": 9.68,
-          "startChar": 144,
-          "endChar": 147
-        },
-        {
-          "startSec": 10.24,
-          "endSec": 10.4,
-          "startChar": 153,
-          "endChar": 155
-        },
-        {
-          "startSec": 10.4,
-          "endSec": 10.72,
-          "startChar": 156,
-          "endChar": 161
-        },
-        {
-          "startSec": 10.72,
-          "endSec": 11.12,
-          "startChar": 162,
-          "endChar": 169
-        },
-        {
-          "startSec": 11.12,
-          "endSec": 11.68,
-          "startChar": 170,
-          "endChar": 178
-        }
-      ]
+      "textHash": "994ecc278d9603a208ba7d01b18627ed711f58daccd0e4a1a536f074db18f9c0",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/dev-vs-prod.994ecc27.mp3",
+      "narrationText": "Here's the difference. In development you start the app from inside the repo over SSH. Close the session, and the app dies with it. In production you launch it detached from your laptop: the server owns the process, your connection doesn't.",
+      "audioDurationSec": 15.229388
     },
     {
       "id": "next-tutorial",

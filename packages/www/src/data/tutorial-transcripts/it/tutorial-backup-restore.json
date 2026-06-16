@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.424169,
+      "at": 2.409089,
       "text": "Passo uno. Importiamo una configurazione rclone esistente. rclone supporta S3, Backblaze, Google Drive, Dropbox e molti altri -- se lo usi gia', puoi importare la stessa configurazione direttamente.",
       "afterText": "Storage importato. La CLI puo' ora inviarci i backup.",
       "cardLabel": "Importa Storage",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.651448,
+      "at": 6.555802,
       "text": "Elenchiamo gli storage che lo strumento conosce ora. Ogni storage e' una destinazione verso cui possiamo inviare i backup.",
       "afterText": "Eccolo. Pronto a ricevere backup.",
       "cardLabel": "Elenca Storage",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.354487,
+      "at": 10.251839,
       "text": "Passo due. Eseguiamo un backup completo. L'intero repository -- app, database, file, configurazione -- viene caricato. Poiche' il repository e' cifrato a riposo, anche il backup e' cifrato. Nessuna gestione aggiuntiva delle chiavi.",
       "afterText": "Backup caricato. Tutto cio' che c'e' in questo repo si trova ora sullo storage remoto, cifrato.",
       "cardLabel": "Invia Backup",
@@ -33,11 +33,38 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 18.28182,
+      "at": 24.484571,
       "text": "Elenchiamo i backup disponibili su questo storage. Da qui, il ripristino su un nuovo server richiede un solo comando -- il comando pull del repository. Stessi dati, stessi container, macchina diversa.",
       "afterText": "Tutti i tuoi snapshot in un unico posto. Recuperane uno qualsiasi con un singolo comando.",
       "cardLabel": "Elenca Backup",
       "prose": "Elenca i backup disponibili su questo storage. Il ripristino su un server completamente nuovo avviene con un solo comando: il comando repo pull."
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "at": 31.133919,
+      "text": "Ora la prova del ripristino. Prima si porta il repository offline: si fermano i servizi e si smonta il volume cifrato. L'app è sparita da questa macchina.",
+      "afterText": "Offline e smontato, esattamente come un server appena installato.",
+      "cardLabel": "Porta Offline",
+      "prose": "Per prima cosa porta il repository offline: ferma i servizi e smonta il volume cifrato con il comando repo down."
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "at": 39.135694,
+      "text": "E si riporta il backup direttamente dallo storage. Il comando repo pull recupera l'immagine, ne verifica l'integrità e la rimette esattamente dove si trovava.",
+      "afterText": "Trasferimento completato, integrità verificata. Il repository è tornato.",
+      "cardLabel": "Recupera Backup",
+      "prose": "Recupera il backup dallo storage con il comando repo pull. L'immagine viene scaricata e ne viene verificata l'integrità."
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "at": 48.126162,
+      "text": "Si rimonta, e il repository è ripristinato. Push, list, pull: questa è tutta la storia del backup.",
+      "afterText": "Ripristinato. Lo stesso flusso funziona anche su una macchina nuova di zecca.",
+      "cardLabel": "Monta Ripristinato",
+      "prose": "Monta di nuovo il repository, ora completamente ripristinato. Lo stesso pull funziona anche su una macchina nuova di zecca."
     }
   ],
   "narrations": [
@@ -62,6 +89,9 @@
     "cast-step-1": "Passaggio 2: elenca gli storage configurati",
     "cast-step-2": "Passaggio 3: invia un backup completo",
     "cast-step-3": "Passaggio 4: elenca i backup sullo storage",
-    "outro": "Avanti: Monitoraggio"
+    "outro": "Avanti: Monitoraggio",
+    "cast-step-4": "Passo 5: Porta il repo offline",
+    "cast-step-5": "Passo 6: Recupera il backup",
+    "cast-step-6": "Passo 7: Monta, ripristinato"
   }
 }

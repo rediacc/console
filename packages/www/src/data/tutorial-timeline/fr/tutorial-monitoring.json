@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "e7549d957c2e8601d61fe5c011c77227b8812ddb98ab0d715352d1ed830cbbca",
+  "transcriptHash": "bb3f5f27d10dc20b1defed576e3a21716567de45b5e122dd1506fa2fc0cd39cb",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.411841,
-      "replayEndSec": 8.597185,
+      "replayStartSec": 2.416158,
+      "replayEndSec": 8.503611,
       "narrationText": "Commençons par la vue système. La commande de requête machine avec le filtre system affiche le temps de fonctionnement, l'utilisation du disque et l'état du stockage. Si quelque chose ne va pas, le rapport nous le dit.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-monitoring/tutorial-monitoring-01.48a96378.mp3",
       "textHash": "48a9637832a447994f20d91b7cbfcc182dad2d6c20db7aef47617a944b1de370",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.597185,
-      "replayEndSec": 15.126152,
+      "replayStartSec": 8.503611,
+      "replayEndSec": 14.799411,
       "narrationText": "Voyons maintenant les conteneurs. Cette vue liste tous les conteneurs en cours d'exécution sur tous les dépôts de la machine : nom, statut, état de santé, CPU, mémoire, plus quel dépôt possède chacun.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-monitoring/tutorial-monitoring-02.16a6fdf0.mp3",
       "textHash": "16a6fdf06068d48823259473f222a54f91673ddefe4bef6dc8acfabcf52ea6f9",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 15.126152,
-      "replayEndSec": 24.385141,
+      "replayStartSec": 14.799411,
+      "replayEndSec": 21.195367,
       "narrationText": "Et les dépôts eux-mêmes. Taille, état de montage, état du daemon Docker, utilisation du disque. Tout ce que vous devez savoir sur chaque environnement isolé de la machine.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-monitoring/tutorial-monitoring-03.3d8e5245.mp3",
       "textHash": "3d8e5245ae9fd5179f4e98bc1b81bb14a8ba2ebd1d5aa33baed89611bdd4d437",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 24.385141,
-      "replayEndSec": 32.334422,
+      "replayStartSec": 21.195367,
+      "replayEndSec": 26.969407,
       "narrationText": "La commande de requête machine vous donne tout en une seule fois. Informations système, conteneurs, dépôts, tout ensemble. Lancez-la une fois et vous avez le tableau complet.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-monitoring/tutorial-monitoring-04.a465a8e8.mp3",
       "textHash": "a465a8e8bf6fded833282197bc914c8813fa45ff1bb729708c550871c79a9822",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 32.334422,
-      "replayEndSec": 38.502093,
+      "replayStartSec": 26.969407,
+      "replayEndSec": 29.019779,
       "narrationText": "Et enfin le contrôle de diagnostic pour une vérification locale sur votre ordinateur. Node, clé SSH, renet, Docker, tout ce dont la ligne de commande elle-même dépend. C'est la série complète. De l'installation à la surveillance, tout depuis votre terminal.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-monitoring/tutorial-monitoring-05.098de907.mp3",
       "textHash": "098de90702a5086118a8c42b76bef35f630f4eebbf03e7a9b615bed957aa8f4a",
@@ -92,10 +92,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "13e593fe1a39c5894cee4374df31bb4073b19601899e69d2664d7e091fe1e066",
-      "audioSrc": "/assets/tutorials/audio/fr/tutorial-monitoring/next-tutorial.13e593fe.mp3",
-      "narrationText": "Et voilà la série bouclée. Vous pouvez désormais installer, configurer, déployer, forker, mettre en ligne, démarrer automatiquement, sauvegarder et surveiller, le tout depuis votre terminal !",
-      "audioDurationSec": 17.084082
+      "textHash": "30674dbc9465aea6c520810dc00952501055519d1eeb5cc428eb4c7c7dd02395",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-monitoring/next-tutorial.30674dbc.mp3",
+      "narrationText": "Vous savez maintenant installer, configurer, déployer, forker, passer en production, démarrer automatiquement, sauvegarder et surveiller. La suite avancée commence maintenant : versionnez vos repos comme du code, avec des commits et des rollbacks.",
+      "audioDurationSec": 20.27102
     }
   ]
 }

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.627146,
+      "at": 1.629299,
       "text": "Alustame konfiguratsiooniprofiiliga. Profiil sisaldab SSH võtit, masinate loendit ja infrastruktuuri seadeid kõige jaoks, mida edaspidi teeme.",
       "afterText": "Profiil on loodud. Kõik, mida edasi seadistame, elab selles ühes failis.",
       "cardLabel": "Lisa masin",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 7.928955,
+      "at": 8.575098,
       "text": "Nüüd registreerime serveri CLI-s -- esitades selle nime, IP-aadressi ja SSH kasutajanime. Hosti võtmeid skanneeritakse automaatselt usaldusväärse juurdepääsu jaoks.",
       "afterText": "Server registreeritud. Hosti võtmed skanneeriti automaatselt.",
       "cardLabel": "Seadista masin",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 16.338306,
+      "at": 19.204906,
       "text": "Järgmisena valmistame serveri ette. See paigaldab renet-i ja loob krüpteeritud andmehoidla. Pärast seda on server repositooriumite majutamiseks valmis.",
       "afterText": "Valmis. Renet on paigaldatud ja andmehoidla on töövalmis.",
       "cardLabel": "Vaata konfiguratsiooni",

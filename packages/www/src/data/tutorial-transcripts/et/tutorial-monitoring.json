@@ -6,7 +6,7 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.411841,
+      "at": 2.416158,
       "text": "Alustame süsteemivaatega. CLI machine query süsteemifiltriga näitab tööaega, kettakasutust ja salvestuse olekut. Kui midagi on valesti, ütleb aruanne meile seda.",
       "afterText": "Tööaeg, ketas, salvestus. Kõik, mida vajad, ühe pilguga.",
       "cardLabel": "Süsteemi tervis",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 8.597185,
+      "at": 8.503611,
       "text": "Nüüd konteinerid. See vaade loetleb kõik töötavad konteinerid kõigis masina repositooriumides -- nimi, olek, tervis, CPU, mälu, lisaks sellele, millisele repositooriumile igaüks kuulub.",
       "afterText": "Iga konteiner igas repos, ühes vaates.",
       "cardLabel": "Containers",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 15.126152,
+      "at": 14.799411,
       "text": "Ja repositooriumid ise. Suurus, ühendamise olek, Dockeri deemoni olek, kettakasutus. Kõik, mida pead teadma iga isoleeritud keskkonna kohta masinas.",
       "afterText": "Kõik repod, kõik nende deemonid, kogu nende kettakasutus.",
       "cardLabel": "Repositories",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 24.385141,
+      "at": 21.195367,
       "text": "CLI machine query annab sulle kõik korraga. Süsteemiteave, konteinerid, repositooriumid, kõik koos. Käivita korra ja sul on täielik pilt.",
       "afterText": "Kõik koos, filtrit pole vaja.",
       "cardLabel": "Täielik Päring",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 32.334422,
+      "at": 26.969407,
       "text": "Ja lõpuks CLI doctor kohaliku tervise kontrolliks sülearvutis. Node, SSH võti, renet, Docker -- kõik asjad, millest CLI ise sõltub. See on terve sari. Paigaldamisest monitoorimiseni, kõik sinu terminalist.",
       "afterText": "Kõik roheline tähendab, et su kohalik CLI on terve.",
       "cardLabel": "Doctor",
@@ -60,7 +60,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "Ja sellega on sari pakitud. Sa oskad nüüd paigaldada, seadistada, juurutada, forkida, minna live'i, autostartida, varundada ja monitoorida -- kõik oma terminalist!"
+      "text": "Nüüd saad installida, seadistada, juurutada, fork'ida, live'sse lasta, autostart'ida, varundada ja jälgida. Edasijõudnute osa algab järgmisena: versiooni oma repo'd nagu koodi, commit'ide ja rollback'idega."
     }
   ],
   "title": "Monitooring",
@@ -72,6 +72,6 @@
     "cast-step-2": "Repos",
     "cast-step-3": "Kõik korraga",
     "cast-step-4": "Kohalik tervisekontroll",
-    "outro": "Sarja lõpp"
+    "outro": "Järgmine: Branching, commit ja rollback"
   }
 }

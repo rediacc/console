@@ -1305,7 +1305,9 @@
           "completed": "Lista de inicio automático obtenida",
           "description": "Listar repositorios con inicio automático habilitado",
           "failed": "Fallo al listar repositorios con inicio automático",
-          "starting": "Listando repositorios con inicio automático en \"{{machine}}\"..."
+          "starting": "Listando repositorios con inicio automático en \"{{machine}}\"...",
+          "empty": "No hay repositorios con inicio automático en \"{{machine}}\"",
+          "service": "Servicio de inicio automático: instalado={{installed}}, habilitado={{enabled}}"
         }
       },
       "backup": {
@@ -1432,10 +1434,10 @@
         "starting": "Expandiendo \"{{repository}}\" a {{size}} en \"{{machine}}\"..."
       },
       "trim": {
-        "description": "Recupera espacio del pool del datastore desde repositorios montados (en línea, sin tiempo de inactividad). Los bloques eliminados dentro de los repositorios vuelven al pool mediante fstrim. Sin --name, se recortan todos los repositorios montados y el propio datastore. Los repositorios con una copia de seguridad activa se omiten",
+        "description": "Recupera espacio del pool del datastore desde repositorios montados (en línea, sin tiempo de inactividad). Los bloques eliminados dentro de los repositorios vuelven al pool mediante fstrim. Sin --name, se recortan todos los repositorios montados y el propio datastore. fstrim se omite en los repositorios con una copia de seguridad activa; la recuperación de --docker se ejecuta igualmente",
         "descriptionShort": "Devolver el espacio libre de los repositorios al pool",
         "nameOption": "Repositorio a recortar (predeterminado: todos los repositorios montados)",
-        "dockerOption": "Liberar primero espacio de Docker (contenedores detenidos, imágenes colgantes, caché de build)",
+        "dockerOption": "Liberar espacio de Docker (contenedores detenidos, imágenes colgantes, caché de build); se ejecuta incluso con una instantánea de copia de seguridad activa",
         "dockerVolumesOption": "Eliminar además los volúmenes de Docker sin usar",
         "reportOnlyOption": "Mostrar el estado de descartes y la estimación recuperable sin recortar",
         "repoNotFound": "Repositorio no encontrado: {{name}}",
@@ -1535,6 +1537,7 @@
         "checkpointing": "Creando checkpoint CRIU...",
         "complete": "Migración completada: {{name}} movido de {{from}} a {{to}}",
         "deltaDone": "Sincronización delta completada",
+        "phase2Stats": "Conmutación (TIEMPO DE INACTIVIDAD): {{transferred}} en {{duration}}",
         "deltaFailed": "Sincronización delta fallida",
         "deltaSync": "Sincronizando delta...",
         "description": "Migración en vivo de un repositorio de una máquina a otra con tiempo de inactividad mínimo. rsync en dos fases: transferencia masiva en ejecución, luego parada breve para sincronización delta. Soporta checkpoint CRIU para migración de memoria de procesos y aprovisionamiento automático de máquinas destino",
@@ -1551,6 +1554,7 @@
         "optionTo": "Nombre de la máquina destino",
         "phase1": "Fase 1: Transfiriendo datos masivos (el origen sigue en ejecución)...",
         "phase1Done": "Transferencia masiva completada",
+        "phase1Stats": "{{transferred}} transferidos en {{duration}} — el origen siguió en línea",
         "phase1Failed": "Transferencia masiva fallida",
         "phase2": "Fase 2: Corte (breve inactividad)...",
         "phase3": "Fase 3: Iniciando en el destino...",
@@ -1612,6 +1616,10 @@
         "optionForce": "Forzar sobrescritura del respaldo existente",
         "optionProvision": "Aprovisionar automáticamente la máquina destino a través del proveedor de nube si no existe",
         "optionStrategy": "Estrategia de delta por bloques al usar una base delta: auto, physical o shared",
+        "optionJson": "Mostrar estadísticas de transferencia en JSON",
+        "statsDelta": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (delta sobre la base {{base}}, imagen {{image}})",
+        "statsFull": "\"{{repo}}\" enviado a {{machine}} — {{transferred}} transferidos en {{duration}} (completo)",
+        "statsNoBytes": "\"{{repo}}\" enviado a {{machine}} — completado en {{duration}}",
         "optionTag": "Etiqueta de despliegue para versionamiento",
         "optionTo": "Nombre de la máquina o almacenamiento de destino (detectado automáticamente desde la configuración)",
         "optionUp": "Después del envío, montar y desplegar el repositorio en la máquina de destino",
@@ -1726,7 +1734,10 @@
         "noContainers": "No se encontraron contenedores en ejecución para el repositorio \"{{repository}}\"",
         "noPorts": "No se encontraron puertos expuestos en el contenedor \"{{container}}\". Especifique --port",
         "noServiceIP": "El contenedor \"{{container}}\" no tiene IP de servicio asignada",
-        "portOption": "Puerto del contenedor remoto a reenviar"
+        "portOption": "Puerto del contenedor remoto a reenviar",
+        "portInUse": "El puerto local {{port}} ya está en uso. Elija otro con --local",
+        "notReady": "El túnel no estuvo listo en localhost:{{localPort}} en 15 s",
+        "urlOnlyOption": "Imprimir solo la URL local cuando el túnel esté listo (legible por máquinas)"
       },
       "unmount": {
         "checkpointOption": "Crear checkpoint antes de desmontar",
@@ -2212,7 +2223,14 @@
         "settingsWarning": "Advertencia: No se pudieron configurar los ajustes de VS Code: {{error}}",
         "settingUpEnv": "Configurando entorno remoto...",
         "success": "VS Code lanzado exitosamente.",
-        "testingConnectivity": "Probando conectividad a {{host}}:{{port}}..."
+        "testingConnectivity": "Probando conectividad a {{host}}:{{port}}...",
+        "installingServer": "Asegurando que {{provider}} {{version}} esté instalado en la máquina...",
+        "startingServer": "Iniciando {{provider}} dentro del sandbox del repositorio...",
+        "serverReused": "Reutilizando el servidor ya en ejecución",
+        "tunnelReady": "Túnel listo en localhost:{{port}}",
+        "browserUrl": "Abra VS Code en su navegador: {{url}}",
+        "passwordNote": "Contraseña de acceso: {{password}}",
+        "openingBrowser": "Abriendo su navegador..."
       },
       "description": "Abrir VS Code Remote SSH en una máquina o repositorio",
       "descriptionShort": "Abrir VS Code Remote SSH en una máquina o repositorio",
@@ -2223,6 +2241,19 @@
         "keyPersisted": " (clave persistida)",
         "noConnections": "No hay conexiones SSH de VS Code configuradas.",
         "total": "\nTotal: {{count}} conexión(es)"
+      },
+      "serve": {
+        "description": "Gestionar el servidor VS Code en el navegador dentro del sandbox",
+        "status": {
+          "description": "Mostrar si el servidor VS Code del navegador está en ejecución",
+          "running": "{{provider}} en ejecución (pid {{pid}}, puerto {{port}})",
+          "stopped": "{{provider}} no está en ejecución"
+        },
+        "stop": {
+          "description": "Detener el servidor VS Code del navegador",
+          "stopped": "{{provider}} detenido",
+          "notRunning": "{{provider}} no estaba en ejecución"
+        }
       }
     }
   },
@@ -2555,7 +2586,11 @@
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",
-      "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH."
+      "notFound": "VS Code no encontrado.\n\nInstale desde: https://code.visualstudio.com/\nO establezca la variable de entorno REDIACC_VSCODE_PATH.",
+      "browserNeedsRepo": "vscode --browser sirve un sandbox de repositorio — pase --repository <name>",
+      "unsupportedArch": "Arquitectura de máquina no compatible con VS Code en el navegador: {{arch}}",
+      "serverInstallFailed": "No se pudo instalar {{provider}}: {{error}}",
+      "serverStartFailed": "No se pudo iniciar {{provider}}: {{error}}"
     }
   },
   "help": {
@@ -2743,6 +2778,10 @@
     "tfaCode": "Código 2FA actual para verificación",
     "tokenName": "Nombre de token",
     "urlOnly": "Imprimir URI de VS Code en lugar de lanzar",
+    "vscodeBrowser": "Servir VS Code en el navegador desde el sandbox del repositorio (no se necesita VS Code local)",
+    "vscodeNoOpen": "Imprimir la URL sin abrir el navegador local",
+    "vscodeServerProvider": "Implementación del servidor VS Code para el navegador (openvscode, code-server)",
+    "vscodeServerArchive": "Ruta al tarball del servidor preinstalado en la máquina (instalaciones sin conexión)",
     "userPassword": "Contraseña para el nuevo usuario",
     "vaultContent": "Contenido de bóveda como cadena JSON",
     "vaultJson": "Contenido de bóveda como cadena JSON",

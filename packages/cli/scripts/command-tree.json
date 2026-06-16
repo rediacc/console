@@ -2873,6 +2873,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--json",
+              "descriptionKey": "commands.repo.push.optionJson",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -3381,6 +3387,12 @@
             {
               "flags": "--local <port>",
               "descriptionKey": "commands.repo.tunnel.localOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--url-only",
+              "descriptionKey": "commands.repo.tunnel.urlOnlyOption",
               "mandatory": false,
               "defaultValue": null
             }
@@ -7005,10 +7017,112 @@
               "descriptionKey": "options.insiders",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--browser",
+              "descriptionKey": "options.vscodeBrowser",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--no-open",
+              "descriptionKey": "options.vscodeNoOpen",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--local <port>",
+              "descriptionKey": "commands.repo.tunnel.localOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--server-provider <id>",
+              "descriptionKey": "options.vscodeServerProvider",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--server-archive <file>",
+              "descriptionKey": "options.vscodeServerArchive",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],
           "subcommands": []
+        },
+        {
+          "name": "serve",
+          "descriptionKey": "commands.vscode.serve.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "status",
+              "descriptionKey": "commands.vscode.serve.status.description",
+              "options": [
+                {
+                  "flags": "-t, --team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-r, --repository <name>",
+                  "descriptionKey": "options.repository",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--server-provider <id>",
+                  "descriptionKey": "options.vscodeServerProvider",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            },
+            {
+              "name": "stop",
+              "descriptionKey": "commands.vscode.serve.stop.description",
+              "options": [
+                {
+                  "flags": "-t, --team <name>",
+                  "descriptionKey": "options.team",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-m, --machine <name>",
+                  "descriptionKey": "options.machine",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "-r, --repository <name>",
+                  "descriptionKey": "options.repository",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--server-provider <id>",
+                  "descriptionKey": "options.vscodeServerProvider",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
         },
         {
           "name": "list",

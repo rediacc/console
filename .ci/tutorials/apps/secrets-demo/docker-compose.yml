@@ -1,0 +1,19 @@
+services:
+  app:
+    image: node:20.20.2-alpine
+    container_name: app
+    command: sleep infinity
+    environment:
+      # env-mode secret: renet's compose wrapper expands this from the
+      # secret store at deploy time. The plaintext never lands on disk.
+      DB_HOST: ${REDIACC_SECRET_DB_HOST}
+    secrets:
+      - stripe_key
+
+secrets:
+  # file-mode secret: renet materializes the value in a per-network tmpfs
+  # and Docker mounts it at /run/secrets/stripe_key inside the container.
+  # ${REDIACC_NETWORK_ID} keeps the same compose valid for parents and
+  # forks — each fork has its own network ID (and its own empty secrets).
+  stripe_key:
+    file: /var/run/rediacc/secrets/${REDIACC_NETWORK_ID}/STRIPE_KEY

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.627146,
+      "at": 1.629299,
       "text": "Wir beginnen damit, ein Konfigurationsprofil zu erstellen. Das Profil enthält den SSH-Schlüssel, die Maschinenliste und die Infrastruktureinstellungen für alles, was wir von hier an tun.",
       "afterText": "Profil erstellt. Alles, was wir sonst noch konfigurieren, lebt in dieser einen Datei.",
       "cardLabel": "Maschine Hinzufügen",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 7.928955,
+      "at": 8.575098,
       "text": "Jetzt registrieren wir den Server bei der CLI, indem wir Namen, IP-Adresse und SSH-Benutzer angeben. Host-Schlüssel werden automatisch für vertrauenswürdigen Zugang gescannt.",
       "afterText": "Server registriert. Die Host-Keys wurden automatisch eingelesen.",
       "cardLabel": "Maschine Einrichten",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 16.338306,
+      "at": 19.204906,
       "text": "Als Nächstes stellen wir den Server bereit. Dabei wird renet installiert und der verschlüsselte Datenspeicher erstellt. Danach ist der Server bereit, Repositories zu hosten.",
       "afterText": "Fertig. renet ist installiert und der Datastore ist bereit.",
       "cardLabel": "Konfiguration Prüfen",

@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "489b3591134924249eefe5b2d790f09bfc1d1f0e69cb5c5cc2ce17da9fe3b5db",
+  "transcriptHash": "16eb097a451a73ce96eef585c084128c970e1fdce97f8efc0c5eabec7930ba38",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424169,
-      "replayEndSec": 6.651448,
+      "replayStartSec": 2.409089,
+      "replayEndSec": 6.555802,
       "narrationText": "Шаг первый. Импортируем существующую конфигурацию rclone. rclone поддерживает S3, Backblaze, Google Drive, Dropbox и многое другое. Если вы уже используете его, ту же конфигурацию можно импортировать напрямую.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-01.bd9059a6.mp3",
       "textHash": "bd9059a6324355b5933b595a9df024451781a36d39f89e7597194d495d2f602e",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 6.651448,
-      "replayEndSec": 10.354487,
+      "replayStartSec": 6.555802,
+      "replayEndSec": 10.251839,
       "narrationText": "Выводим список хранилищ, о которых теперь знает CLI. Каждое хранилище — это место назначения для резервных копий.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-02.58498bf9.mp3",
       "textHash": "58498bf91cc3de3b3d76aa493b60ed026c884a59054dc30e562ad2c19e527f38",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 10.354487,
-      "replayEndSec": 18.28182,
+      "replayStartSec": 10.251839,
+      "replayEndSec": 24.484571,
       "narrationText": "Шаг второй. Отправляем полную резервную копию. Весь репозиторий — приложение, база данных, файлы, конфигурация — загружается. Поскольку репозиторий зашифрован, резервная копия тоже зашифрована. Никакого дополнительного управления ключами.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-03.08db43cb.mp3",
       "textHash": "08db43cbe0a718418947b0c95a44c69efa5bf9ca4a06a9bb7e0c33f8c8df4fe7",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 18.28182,
-      "replayEndSec": 26.532142,
+      "replayStartSec": 24.484571,
+      "replayEndSec": 31.133919,
       "narrationText": "Выводим список резервных копий в этом хранилище. Отсюда восстановление на новом сервере — одна команда: команда pull для репозитория. Те же данные, те же контейнеры, другая машина.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-04.1525e77b.mp3",
       "textHash": "1525e77b353166def746ea77a0fdbbd3c7ba265c87742c46532ce9325b1d5bfb",
@@ -60,6 +60,45 @@
       "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-04-after.701d1f78.mp3",
       "afterAudioDurationSec": 5.485714,
       "afterTextHash": "701d1f78303906fd3875511105aa13d0cce9bcf43052f331875000448fb3c603"
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.133919,
+      "replayEndSec": 39.135694,
+      "narrationText": "Теперь проверим восстановление. Сначала переведём repository в офлайн: остановим сервисы и отмонтируем зашифрованный том. Приложение на этой машине больше недоступно.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-05.e1e6f28f.mp3",
+      "textHash": "e1e6f28f07d8ef2e6fb40fae2b3c0537df8d5fcaf86e341bfb6739134e26c8c6",
+      "audioDurationSec": 12.434286,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-05-after.c6fb4f71.mp3",
+      "afterAudioDurationSec": 4.754286,
+      "afterTextHash": "c6fb4f7120f5e7fbfada954dabc16700956b5906b4e21e65e283f03a2c2b94b0"
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.135694,
+      "replayEndSec": 48.126162,
+      "narrationText": "Теперь вытянем бэкап прямо из хранилища. Команда repo pull забирает образ, проверяет его целостность и кладёт именно туда, где он был.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-06.8f81e7e0.mp3",
+      "textHash": "8f81e7e0235785a6f09d4efe21277ddd673ba880ab6526fbc36d66665c47dd30",
+      "audioDurationSec": 9.404082,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-06-after.268d3404.mp3",
+      "afterAudioDurationSec": 5.250612,
+      "afterTextHash": "268d340440ce1243e4f67ba7313c05cedb6a30acd9832e2e8007c4a451fcf3b3"
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "replayStartSec": 48.126162,
+      "replayEndSec": 54.070366,
+      "narrationText": "Монтируем снова, и repository восстановлен. Push, list, pull. Вот и весь процесс резервного копирования.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-07.40481ec3.mp3",
+      "textHash": "40481ec3a6264c2824bd8707b65b9a03a9cde05d0acde13be5dd4d7664576289",
+      "audioDurationSec": 8.594286,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-backup-restore/tutorial-backup-restore-07-after.a01b859a.mp3",
+      "afterAudioDurationSec": 4.519184,
+      "afterTextHash": "a01b859a622a52caa0735f1f6e9f0e523a8d0d1aea79e32b911f62d2274be04f"
     }
   ],
   "narrationAudio": [

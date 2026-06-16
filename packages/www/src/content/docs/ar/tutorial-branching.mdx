@@ -1,0 +1,76 @@
+---
+title: "التفريع: الحفظ والتراجع"
+description: "جمّد حالات المستودع في التزامات ثابتة، وسمِّها بالفروع، وأعد أي التزام كنسخة قابلة للكتابة."
+category: "Tutorials"
+subcategory: advanced
+order: 15
+language: ar
+sourceHash: "53f4eacdd4630b19"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# التفريع: الحفظ والتراجع
+
+نسخ إصدارات مستودعاتك كما تُصدِر الكود. **commit** يُجمّد نسخة في صورة ثابتة؛ **branch** يُسمّيها؛ **checkout** يُحوّل أي التزام إلى نسخة قابلة للكتابة من جديد. في هذا الدرس نحفظ حالة معروفة الجودة، نحذف جدول PostgreSQL حقيقيًا، ونُعيد كل صف في ثوانٍ.
+
+## شاهد الدرس التعليمي
+
+![Tutorial: Branching, commit and rollback](/assets/tutorials/tutorial-branching.cast)
+
+## النموذج
+
+![Commits, branches, checkout](/img/tutorials/tutorial-branching/slide-1.svg)
+
+الالتزامات لا تتغير أبدًا: ترفض حتى التحميل. النسخ لا تنتظر: checkout هو استنساخ رابط فوري تقريبًا. النموذج الذهني الكامل موجود في [دليل التفريع](/ar/docs/repo-branching).
+
+## إنشاء نقطة تفتيش
+
+ملف علامة يجعل الإصدار مرئيًا، وقاعدة بيانات حقيقية تجعل التراجع ذا معنى: جدول `customers` يحتوي على ثلاثة صفوف.
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+<TutorialStep number={4} />
+
+يلتقط الالتزام كل شيء: الملفات *وبيانات* PostgreSQL. الفرع `stable` يُسمّي تلك الحالة المجمّدة الآن.
+
+## مواصلة العمل
+
+<TutorialStep number={5} />
+
+## الكارثة
+
+تغيير محفوف بالمخاطر يحذف الجدول. ثم يُؤكد الاستعلام أن الضرر حقيقي.
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+`ERROR: relation "customers" does not exist`. ثلاثة صفوف، اختفت. في الحياة الفعلية هذه اللحظة التي يغوص فيها قلبك؛ هنا هي الإعداد للحل المُنتظر.
+
+<TutorialStep number={8} />
+
+<TutorialStep number={9} />
+
+السجل يُثبت ما حدث فعلًا، بما في ذلك الحالة المكسورة: `v2 risky change` في الأعلى، `v1 baseline` تحتها.
+
+## التراجع في ثوانٍ
+
+<TutorialStep number={10} />
+
+<TutorialStep number={11} />
+
+<TutorialStep number={12} />
+
+<TutorialStep number={13} />
+
+نسخة التراجع تقرأ `v1`، وجدول `customers` عاد بثلاثة صفوفه كاملةً. استُعيدت قاعدة البيانات، لا الملفات وحدها. لم يُكتَب على شيء: النسخة الجارية ما زالت تحمل الإصدار الثاني، ويفتح الفيديو كليهما في VS Code ليُثبت ذلك.
+
+---
+
+التالي: [الهجرة المباشرة](/ar/docs/tutorial-live-migration).

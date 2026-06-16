@@ -50,8 +50,9 @@ run_cmd "rdc config infra show --machine $M"
 pause 2
 
 section "Step 3: Push it to the server"
-# Push will fail against dummy DNS token; allow that in the recording.
-run_cmd "rdc config infra push --machine $M || true"
+# The recording uses a dummy Cloudflare token (no real DNS), so the push is
+# typed but not executed — operators with real credentials run it verbatim.
+type_only_cmd "rdc config infra push --machine $M"
 
 pause 2
 
@@ -63,18 +64,17 @@ pause 1
 # `single-service` is the closest in-tree template to what users would author
 # as their own `proxy` template (Traefik + secrets). The recording stands in
 # for the user-supplied proxy template described in the docs.
-run_cmd "rdc repo template apply --name single-service --machine $M --repository infra || true"
+run_cmd "rdc repo template apply --name single-service --machine $M --repository infra"
 
 pause 1
 
-run_cmd "rdc repo up --name infra --machine $M || true"
+run_cmd "rdc repo up --name infra --machine $M"
 
 pause 2
 
+# End the on-camera portion; cleanup below is not recorded.
+end_recording
 # Cleanup
 rdc repo down --name infra --machine "$M" 2>/dev/null || true
 rdc repo down --name infra --machine "$M" --unmount 2>/dev/null || true
 rdc repo delete --name infra --machine "$M" 2>/dev/null || true
-
-printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
-sleep 2

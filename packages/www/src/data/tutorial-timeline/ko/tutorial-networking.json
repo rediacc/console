@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "cc07f1b156b26bad963d9f02640b9e2b6b28cedd2c53ca64023518a452458c6f",
+  "transcriptHash": "71e683fd7ac15fd8e670205e55763b20e8dc348e63d9f4e7eef6c4f7aa146e27",
   "steps": [
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424705,
-      "replayEndSec": 13.591473,
+      "replayStartSec": 2.410714,
+      "replayEndSec": 12.419888,
       "narrationText": "2단계입니다. 명령줄에서 공개 IP, 기본 도메인, 인증서 이메일, Cloudflare API 토큰을 입력합니다. 인증서 이메일과 토큰은 모든 머신에서 공유되므로 한 번만 설정하면 됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-01.d6dabc67.mp3",
       "textHash": "d6dabc676ec29c852e7096132cf1d064fd1bed04b23ccddcc5d0f1afebf761fb",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.591473,
-      "replayEndSec": 18.479059,
+      "replayStartSec": 12.419888,
+      "replayEndSec": 16.924002,
       "narrationText": "인프라 설정이 저장되었는지 확인합니다. 공개 IP, 기본 도메인, 인증서 이메일이 모두 표시됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-02.a89d6e95.mp3",
       "textHash": "a89d6e95d04649db474870064bf88d8e993aad2533511283e866ffa66f044220",
@@ -38,12 +38,12 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.479059,
-      "replayEndSec": 25.757057,
-      "narrationText": "3단계입니다. 서버에 구성을 푸시합니다. Cloudflare에 DNS 레코드를 자동으로 생성하고 프록시 구성을 준비합니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-03.ed6542ae.mp3",
-      "textHash": "ed6542ae4fe4741378a19a95ff9ce37fcc0dcbd404979ede55372b2158c64c09",
-      "audioDurationSec": 10.44898,
+      "replayStartSec": 16.924002,
+      "replayEndSec": 20.590881,
+      "narrationText": "3단계: 설정을 서버에 푸시합니다. 실제 토큰이 있으면 Cloudflare에 DNS 레코드가 자동으로 생성되고 프록시 설정이 준비됩니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-03.0ebd7dd4.mp3",
+      "textHash": "0ebd7dd4d68a35ac5ee818484f254236431d1ab2628868f82aa6b0be0e038f77",
+      "audioDurationSec": 9.795918,
       "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-03-after.4c393a08.mp3",
       "afterAudioDurationSec": 5.067755,
       "afterTextHash": "4c393a08cc5b787b423ec627aab8cab174a5e34751dbd558a0130ebba33f606b"
@@ -51,12 +51,12 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "replayStartSec": 25.757057,
-      "replayEndSec": 33.957312,
-      "narrationText": "4단계를 시작합니다. infra라는 작은 저장소를 생성합니다. 프록시는 애플리케이션 저장소와 격리된 이곳에 위치하게 됩니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-04.761f4e17.mp3",
-      "textHash": "761f4e1748b04cf3349300b79deb57c562f0c36446624242b95dabaf4db6d9dc",
-      "audioDurationSec": 10.762449,
+      "replayStartSec": 20.590881,
+      "replayEndSec": 28.48077,
+      "narrationText": "4단계: infra라는 작은 repo를 만듭니다. 왜 별도의 repo일까요? 프록시는 이 서버에 있는 모든 앱의 트래픽을 라우팅합니다. 인프라는 애플리케이션 코드와 분리된 독자적인 공간이 필요합니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-04.418cd028.mp3",
+      "textHash": "418cd028efc9ec8624d460ae983b243d059d069378bbbd4133f2bcaab5c22f12",
+      "audioDurationSec": 16.195918,
       "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-04-after.f28de614.mp3",
       "afterAudioDurationSec": 4.91102,
       "afterTextHash": "f28de6146529638efbaa579fbfdd0974541418551818b8a5c8a29c50e7096442"
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "replayStartSec": 33.957312,
-      "replayEndSec": 41.036573,
+      "replayStartSec": 28.48077,
+      "replayEndSec": 35.97937,
       "narrationText": "프록시 템플릿을 적용합니다. Traefik과 Let's Encrypt, Cloudflare DNS-01 챌린지를 위한 구성이 바로 사용할 수 있는 상태로 포함되어 있습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-05.4199e414.mp3",
       "textHash": "4199e4144436a914445f49e996b68f68d1aa533cc2dafcf6993ede7ec86878f5",
@@ -77,8 +77,8 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.036573,
-      "replayEndSec": 49.697921,
+      "replayStartSec": 35.97937,
+      "replayEndSec": 42.626799,
       "narrationText": "프록시를 시작합니다. Traefik은 5초마다 컨테이너를 탐지합니다. TLS 인증서는 Let's Encrypt에서 자동으로 발급됩니다. 이제 앱이 HTTPS로 인터넷에 접근 가능합니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/tutorial-networking-06.f7c9ef0b.mp3",
       "textHash": "f7c9ef0b3445fade970a3b88c519545d9ae6e62f5333a782ddaaa225b4e148a9",
@@ -91,24 +91,24 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "645a59fc3d9c07cc6db205ae500cc26a7fddb99bdb340d9b01f0fbd8e98a47db",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/intro.645a59fc.mp3",
-      "narrationText": "자, 앱에 진짜 도메인과 자동 TLS를 붙여볼게요. 짧은 네 단계만 거치면 인터넷에 공개돼요.",
-      "audioDurationSec": 8.594286
+      "textHash": "cc156995bcdc9a4a29ea395a57318a74131163c2ad2f8382f7635036c601e116",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/intro.cc156995.mp3",
+      "narrationText": "앱은 실행 중이지만 서버에서만 볼 수 있습니다. 자동 TLS로 실제 도메인을 연결해 봅시다. 네 가지 짧은 단계를 거치면 인터넷에 올라갑니다.",
+      "audioDurationSec": 10.605714
     },
     {
       "id": "four-steps",
-      "textHash": "a2b4b6e18d5f4e4eb493aabbaf019759ee0f1aa24cae1751f5da72b1de4b9acb",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/four-steps.a2b4b6e1.mp3",
-      "narrationText": "경로는 이래요. Cloudflare API 토큰을 발급받고, CLI에서 인프라를 구성하고, 서버에 푸시한 다음, DNS와 인증서를 자동 처리해주는 Traefik 프록시를 배포하면 끝이에요.",
-      "audioDurationSec": 15.725714
+      "textHash": "6881c0d3816433de2d9f28a6eb2b210d5fa09213a322c8aec31a600d37cbb5e8",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/four-steps.6881c0d3.mp3",
+      "narrationText": "경로는 이렇습니다: Cloudflare API 토큰을 받고, CLI에서 인프라를 한 번 설정하고, 서버에 푸시한 다음, DNS와 인증서를 자동으로 처리해 주는 작은 proxy repo를 배포합니다.",
+      "audioDurationSec": 15.15102
     },
     {
       "id": "open-cloudflare",
-      "textHash": "dc0810445e7a765ed8d747b752687878939392d1bf07b50a19cb05134ec454f6",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/open-cloudflare.dc081044.mp3",
-      "narrationText": "먼저 브라우저에서 Cloudflare 대시보드를 여세요. My Profile, API Tokens로 이동해서 Zone DNS Edit 권한을 가진 토큰을 만드세요. 그래야 CLI가 레코드를 관리할 수 있어요.",
-      "audioDurationSec": 15.072653
+      "textHash": "b48b7b70c4227f2714b044f2574c51f552347d28aef0de8d60ffc214153029c0",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-networking/open-cloudflare.b48b7b70.mp3",
+      "narrationText": "먼저 수동 단계가 하나 있습니다. Cloudflare 대시보드를 열고 My Profile로 이동한 다음 API Tokens에서 Zone DNS Edit 권한이 있는 토큰을 만드세요. 그 토큰 하나로 CLI가 DNS 레코드를 관리하니, 더 이상 대시보드를 클릭해 다닐 필요가 없습니다.",
+      "audioDurationSec": 20.349388
     },
     {
       "id": "next-tutorial",

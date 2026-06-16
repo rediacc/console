@@ -66,6 +66,23 @@ async function rollbackCreateRepo(name: string): Promise<void> {
   }
 }
 
+/** Render the create result: timeline/success on success, rollback + failure otherwise. */
+async function renderCreateResult(
+  name: string,
+  result: import('../services/local-executor.js').LocalExecuteResult
+): Promise<void> {
+  if (result.success) {
+    if (result.allSteps && result.allSteps.length > 0) {
+      renderTimelineTotal(result.allSteps);
+    } else {
+      outputService.success(t('commands.repo.create.completed'));
+    }
+  } else {
+    await rollbackCreateRepo(name);
+    renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
+  }
+}
+
 /** Handle the repo create action body. */
 async function handleRepoCreate(
   name: string,
@@ -77,6 +94,10 @@ async function handleRepoCreate(
     skipRouterRestart?: boolean;
   }
 ): Promise<void> {
+  // Rollback must only ever remove the row THIS invocation registered —
+  // a catch-all rollback would delete a pre-existing repo's config row
+  // (credential included) when create fails with "already exists".
+  let registered = false;
   try {
     assertAgentRepoCreate(name);
 
@@ -102,6 +123,7 @@ async function handleRepoCreate(
       sshPrivateKey,
       sshPublicKey,
     });
+    registered = true;
 
     outputService.info(
       t('commands.repo.create.registered', {
@@ -132,18 +154,11 @@ async function handleRepoCreate(
       skipRouterRestart: options.skipRouterRestart,
     });
 
-    if (result.success) {
-      if (result.allSteps && result.allSteps.length > 0) {
-        renderTimelineTotal(result.allSteps);
-      } else {
-        outputService.success(t('commands.repo.create.completed'));
-      }
-    } else {
-      await rollbackCreateRepo(name);
-      renderLocalExecutionFailure(result, t('commands.repo.create.failed'));
-    }
+    await renderCreateResult(name, result);
   } catch (error) {
-    await rollbackCreateRepo(name);
+    if (registered) {
+      await rollbackCreateRepo(name);
+    }
     handleError(error);
   }
 }

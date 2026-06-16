@@ -25,6 +25,76 @@ function run(bin: string, args: string[]): void {
   }
 }
 
+/**
+ * GPU (NVENC) H.264 encode is OPT-IN and DEFAULT-OFF. It only activates when
+ * `RDC_TUTORIAL_HWENC=1` AND the running ffmpeg actually advertises the
+ * `h264_nvenc` encoder. Anything else (flag unset, no NVENC build, no GPU)
+ * silently uses the existing software `libx264` path, so the default render is
+ * byte-for-byte identical to before.
+ *
+ * Scope is deliberately conservative: only the OUTPUT video codec moves to the
+ * GPU. Every filter graph (scale/pad/tpad/crop/xfade/hstack) stays on the CPU
+ * — frames are filtered on CPU, then handed to NVENC for the final encode.
+ * Adding hwupload+scale_cuda/overlay_cuda would be faster still but is fragile
+ * for these mixed screen-content graphs, so we leave it out.
+ *
+ * NVENC ignores `-crf`; the visual-quality knob is `-cq` under VBR rate
+ * control. `-cq 20` with `-preset p5 -tune hq` matches the perceptual quality
+ * of the software `-preset medium -crf 20` for flat screen-content video at a
+ * comparable size, while `-pix_fmt yuv420p` keeps player/web compatibility.
+ */
+let nvencAvailable: boolean | undefined;
+function hasNvenc(): boolean {
+  if (nvencAvailable !== undefined) return nvencAvailable;
+  const res = spawnSync(FFMPEG_BIN, ['-hide_banner', '-encoders'], { encoding: 'utf8' });
+  nvencAvailable = res.status === 0 && /\bh264_nvenc\b/.test(res.stdout ?? '');
+  return nvencAvailable;
+}
+
+let hwencWarned = false;
+function useHwEnc(): boolean {
+  if (process.env.RDC_TUTORIAL_HWENC !== '1') return false;
+  if (hasNvenc()) return true;
+  if (!hwencWarned) {
+    hwencWarned = true;
+    process.stderr.write(
+      '[ffmpeg-video] RDC_TUTORIAL_HWENC=1 but h264_nvenc is unavailable; ' +
+        'falling back to software libx264.\n'
+    );
+  }
+  return false;
+}
+
+/**
+ * Returns the video-codec argument list for an encode. GPU path when HWENC is
+ * enabled+available, otherwise the original software path. The exact
+ * `-pix_fmt yuv420p`, frame size, and downstream audio args are unchanged by
+ * the caller; this only swaps the `-c:v ...` quality block.
+ */
+export function videoCodecArgs(): string[] {
+  if (useHwEnc()) {
+    // `-b:v 0` puts NVENC in pure constant-quality VBR (target = -cq), the
+    // closest analogue to x264's CRF.
+    return [
+      '-c:v',
+      'h264_nvenc',
+      '-preset',
+      'p5',
+      '-tune',
+      'hq',
+      '-rc',
+      'vbr',
+      '-cq',
+      '20',
+      '-b:v',
+      '0',
+      '-pix_fmt',
+      'yuv420p',
+    ];
+  }
+  return ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-preset', 'medium', '-crf', '20'];
+}
+
 export function renderCastToGif(
   castPath: string,
   gifPath: string,
@@ -61,23 +131,7 @@ export function renderCastToGif(
 }
 
 export function encodeAnimMp4(gifPath: string, mp4Path: string): void {
-  run(FFMPEG_BIN, [
-    '-y',
-    '-i',
-    gifPath,
-    '-vf',
-    PAD_FILTER,
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
-    '-an',
-    mp4Path,
-  ]);
+  run(FFMPEG_BIN, ['-y', '-i', gifPath, '-vf', PAD_FILTER, ...videoCodecArgs(), '-an', mp4Path]);
 }
 
 /**
@@ -92,14 +146,7 @@ export function encodeAnimMp4Raw(gifPath: string, mp4Path: string): void {
     gifPath,
     '-vf',
     'pad=ceil(iw/2)*2:ceil(ih/2)*2,setsar=1',
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
+    ...videoCodecArgs(),
     '-an',
     mp4Path,
   ]);
@@ -161,14 +208,7 @@ export function makeScrollPanSilent(
     '-vf',
     `tpad=stop_mode=clone:stop_duration=${totalDurSec.toFixed(3)},crop=${winW}:${winH}:0:${y},${padFilter}`,
     '-an',
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
+    ...videoCodecArgs(),
     mp4Path,
   ]);
 }
@@ -233,14 +273,7 @@ export function makeFreezeMp4(
     durationSec.toFixed(3),
     '-vf',
     padFilter,
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
+    ...videoCodecArgs(),
     '-c:a',
     'aac',
     '-b:a',
@@ -305,6 +338,10 @@ export function muxVideoWithAudio(
   mp4Path: string,
   padFilter: string = PAD_FILTER_CENTER
 ): void {
+  // `apad` extends a shorter narration with trailing silence so `-t` (the
+  // scene duration) governs the output length. Without it, `-shortest`
+  // truncates the video to the narration length and cuts scripted browser
+  // actions mid-flight.
   run(FFMPEG_BIN, [
     '-y',
     '-i',
@@ -313,16 +350,11 @@ export function muxVideoWithAudio(
     audioPath,
     '-t',
     durationSec.toFixed(3),
+    '-af',
+    'apad',
     '-vf',
     padFilter,
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
+    ...videoCodecArgs(),
     '-c:a',
     'aac',
     '-b:a',
@@ -371,14 +403,7 @@ export function muxNarratedSegment(
     vf.join(','),
     '-af',
     'apad',
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
+    ...videoCodecArgs(),
     '-c:a',
     'aac',
     '-b:a',
@@ -405,14 +430,7 @@ export function addEdgePad(inMp4: string, outMp4: string, leadSec: number, trail
     `tpad=start_mode=clone:start_duration=${leadSec.toFixed(3)}:stop_mode=clone:stop_duration=${trailSec.toFixed(3)}`,
     '-af',
     `adelay=${Math.round(leadSec * 1000)}|${Math.round(leadSec * 1000)},apad=pad_dur=${trailSec.toFixed(3)}`,
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
+    ...videoCodecArgs(),
     '-c:a',
     'aac',
     '-b:a',
@@ -438,14 +456,7 @@ export function addTailPad(inMp4: string, outMp4: string, padSec: number): void 
     `tpad=stop_mode=clone:stop_duration=${padSec.toFixed(3)}`,
     '-af',
     `apad=pad_dur=${padSec.toFixed(3)}`,
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
+    ...videoCodecArgs(),
     '-c:a',
     'aac',
     '-b:a',
@@ -484,14 +495,7 @@ export function makeSilentFreezeMp4(
     durationSec.toFixed(3),
     '-vf',
     padFilter,
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
+    ...videoCodecArgs(),
     '-c:a',
     'aac',
     '-b:a',
@@ -516,17 +520,133 @@ export function trimMp4Duration(inMp4: string, outMp4: string, durationSec: numb
     inMp4,
     '-t',
     durationSec.toFixed(3),
-    '-c:v',
-    'libx264',
-    '-pix_fmt',
-    'yuv420p',
-    '-preset',
-    'medium',
-    '-crf',
-    '20',
+    ...videoCodecArgs(),
     '-an',
     outMp4,
   ]);
+}
+
+/**
+ * Cut [startSec, startSec+durSec] out of a session recording into a silent
+ * mp4. `-ss` before `-i` with re-encode is frame-accurate (ffmpeg decodes
+ * from the prior keyframe and discards) without decoding the whole session.
+ * Encoding settings match every other segment producer so `concatMp4`'s
+ * stream-copy keeps working.
+ */
+export function cutSegmentMp4(
+  srcVideo: string,
+  startSec: number,
+  durSec: number,
+  outMp4: string,
+  padFilter: string = PAD_FILTER_CENTER
+): void {
+  run(FFMPEG_BIN, [
+    '-y',
+    '-ss',
+    startSec.toFixed(3),
+    '-i',
+    srcVideo,
+    '-t',
+    durSec.toFixed(3),
+    '-vf',
+    padFilter,
+    '-an',
+    ...videoCodecArgs(),
+    outMp4,
+  ]);
+}
+
+/**
+ * Concatenate chunks with optional crossfades at flagged boundaries.
+ * `fadeAfter[i]` = crossfade between chunks[i] and chunks[i+1] (browser scene
+ * meeting a different surface); unflagged boundaries stay hard cuts. Chunks
+ * connected by fades form groups rendered with one xfade/acrossfade chain;
+ * groups are then stream-copy concatenated, so the extra encode cost is
+ * limited to the faded neighborhoods.
+ *
+ * The fade consumes the tail of the earlier chunk (which is held-last-frame
+ * padding from addTailPad), so pacing is unchanged.
+ */
+export function assembleWithTransitions(
+  chunks: string[],
+  fadeAfter: boolean[],
+  outPath: string,
+  tmpDir: string,
+  fadeSec: number = 0.3
+): void {
+  // Partition into runs of chunks connected by flagged boundaries.
+  const groups: number[][] = [];
+  let current: number[] = [0];
+  for (let i = 0; i < chunks.length - 1; i++) {
+    if (fadeAfter[i]) {
+      current.push(i + 1);
+    } else {
+      groups.push(current);
+      current = [i + 1];
+    }
+  }
+  groups.push(current);
+
+  const groupFiles: string[] = [];
+  for (let g = 0; g < groups.length; g++) {
+    const idxs = groups[g];
+    if (idxs.length === 1) {
+      groupFiles.push(chunks[idxs[0]]);
+      continue;
+    }
+    // Build one filter_complex chain: v/a xfade pairs across the group.
+    const inputs: string[] = [];
+    for (const i of idxs) inputs.push('-i', chunks[i]);
+    const durs = idxs.map((i) => probeDurationSec(chunks[i]));
+    const parts: string[] = [];
+    let vPrev = '0:v';
+    let aPrev = '0:a';
+    let cumulative = durs[0];
+    for (let k = 1; k < idxs.length; k++) {
+      const offset = Math.max(0, cumulative - fadeSec);
+      const vOut = k === idxs.length - 1 ? 'vout' : `v${k}`;
+      const aOut = k === idxs.length - 1 ? 'aout' : `a${k}`;
+      parts.push(
+        `[${vPrev}][${k}:v]xfade=transition=fade:duration=${fadeSec.toFixed(3)}:offset=${offset.toFixed(3)}[${vOut}]`
+      );
+      // c2=nofade: the outgoing tail is held-frame silence, so only fade IT
+      // out and let the incoming chunk's audio (often narration starting at
+      // t=0) pass through at full level.
+      parts.push(`[${aPrev}][${k}:a]acrossfade=d=${fadeSec.toFixed(3)}:c1=tri:c2=nofade[${aOut}]`);
+      vPrev = vOut;
+      aPrev = aOut;
+      cumulative = offset + durs[k];
+    }
+    const groupOut = `${tmpDir}/xfade-group-${g}.mp4`;
+    run(FFMPEG_BIN, [
+      '-y',
+      ...inputs,
+      '-filter_complex',
+      parts.join(';'),
+      '-map',
+      '[vout]',
+      '-map',
+      '[aout]',
+      ...videoCodecArgs(),
+      '-c:a',
+      'aac',
+      '-b:a',
+      '128k',
+      '-ar',
+      '44100',
+      '-ac',
+      '2',
+      groupOut,
+    ]);
+    groupFiles.push(groupOut);
+  }
+
+  if (groupFiles.length === 1) {
+    // Single group — already encoded; remux for faststart.
+    run(FFMPEG_BIN, ['-y', '-i', groupFiles[0], '-c', 'copy', '-movflags', '+faststart', outPath]);
+    return;
+  }
+  concatMp4(groupFiles, outPath, `${tmpDir}/concat-groups.txt`);
 }
 
 export function extractPosterJpg(mp4Path: string, atSec: number, jpgPath: string): void {

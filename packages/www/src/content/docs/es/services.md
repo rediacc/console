@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: es
-sourceHash: "aa77a4f937206e58"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "011bc5d87114f105"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Servicios
@@ -77,6 +77,25 @@ down() {
 ```
 
 > **Importante:** Siempre use `renet compose --` en lugar de `docker compose`. El envoltorio `renet compose` impone redes host, asignación de IP y etiquetas de descubrimiento de servicios requeridas por renet-proxy. Se añaden capacidades de punto de control/restauración CRIU a contenedores con la etiqueta `rediacc.checkpoint=true`. La prueba de Rediaccfile rechaza el uso directo de `docker compose`. Véase [Redes](/es/docs/networking) para detalles.
+
+### Etiquetas de capacidad
+
+Los contenedores se ejecutan con un conjunto mínimo de capacidades de Linux por defecto. Un servicio puede activar capacidades adicionales añadiendo una etiqueta a su `docker-compose.yml`:
+
+| Etiqueta | Otorga | Para usar con |
+|-------|--------|---------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` | Punto de control/restauración CRIU (migración en vivo, guardar y reanudar) |
+| `rediacc.wireguard=true` | `NET_ADMIN` más el dispositivo `/dev/net/tun` | Ejecutar un cliente WireGuard dentro del contenedor |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard` permite que un servicio establezca un túnel WireGuard, por ejemplo para enrutar un proceso concreto a través de un endpoint remoto. Como todos los servicios usan red de host, confine el túnel a un namespace de red dentro del contenedor para no modificar el enrutamiento del host. Las opciones de privilegio amplio como `privileged: true`, `pid: host` e `ipc: host` siguen siendo rechazadas por la validación independientemente de las etiquetas.
 
 ### Diseño Multi-Servicio
 

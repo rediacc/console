@@ -6,8 +6,8 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424705,
-      "replayEndSec": 13.591473,
+      "replayStartSec": 2.410714,
+      "replayEndSec": 12.419888,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-01.f87bf913.mp3",
       "audioDurationSec": 14.445714,
       "textHash": "f87bf913f6e6ad781ac79d21062605b4840407b127b835f7c49165175d4be20d",
@@ -19,8 +19,8 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.591473,
-      "replayEndSec": 18.479059,
+      "replayStartSec": 12.419888,
+      "replayEndSec": 16.924002,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-02.56cdbdad.mp3",
       "audioDurationSec": 7.88898,
       "textHash": "56cdbdad057e31d7a4e0e37842415e6e99064c80f11b18570b9ce06a891b3bb4",
@@ -32,12 +32,12 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.479059,
-      "replayEndSec": 25.757057,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03.9f7823d7.mp3",
-      "audioDurationSec": 9.560816,
-      "textHash": "9f7823d79069ea85b9c89cdc16c8b28e757c2efbc40ff155030843a70c1a1a66",
-      "narrationText": "Kolmas samm. Tõukame konfiguratsiooni serverisse. See loob DNS-kirjed Cloudflare'is automaatselt ja valmistab proksi konfiguratsiooni masinas ette.",
+      "replayStartSec": 16.924002,
+      "replayEndSec": 20.590881,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03.0d57bc64.mp3",
+      "audioDurationSec": 10.762449,
+      "textHash": "0d57bc64e126ad1817fad34f4de3432f3c53957728c451faa8cd28840e3d7c91",
+      "narrationText": "Kolmas samm: lükka konfiguratsioon serverisse. Päris tokeniga loob see sinu DNS-kirjed Cloudflare'is automaatselt ja valmistab proxy konfiguratsiooni ette.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-03-after.4bd17331.mp3",
       "afterAudioDurationSec": 3.63102,
       "afterTextHash": "4bd17331d0dd4dfe5271ee834e343fd6ce823a8c3bb72fa58f62f1bf728c06ef"
@@ -45,12 +45,12 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "replayStartSec": 25.757057,
-      "replayEndSec": 33.957312,
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04.1579cb13.mp3",
-      "audioDurationSec": 8.672653,
-      "textHash": "1579cb139bab2f5eec5f720abd70f23c88954d2405f66050838775c112c534ba",
-      "narrationText": "Algab neljas samm. Loome väikese repositooriumi nimega infra. Siin hakkab proksi elama -- isoleeritud rakenduse repositooriumidest.",
+      "replayStartSec": 20.590881,
+      "replayEndSec": 28.48077,
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04.ca25ddd2.mp3",
+      "audioDurationSec": 13.244082,
+      "textHash": "ca25ddd2f8e4ff5cb725879926e909d3cb711ea9265b4bf3eaa07034546cdfd5",
+      "narrationText": "Neljas samm: loo väike repo nimega infra. Miks oma repo? Proxy suunab liiklust kõigi selle serveri rakenduste vahel. Infrastruktuur väärib oma eraldatud kasti, eemal sinu rakenduse koodist.",
       "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-04-after.05d1b8b5.mp3",
       "afterAudioDurationSec": 3.474286,
       "afterTextHash": "05d1b8b5fb4f3ccb7012e340634370ecd6c03d1c3adf7f4fbfdb95ce88cade5a"
@@ -58,8 +58,8 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "replayStartSec": 33.957312,
-      "replayEndSec": 41.036573,
+      "replayStartSec": 28.48077,
+      "replayEndSec": 35.97937,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-05.240c2356.mp3",
       "audioDurationSec": 7.810612,
       "textHash": "240c2356a9245938aef978a4cb807a21d8f4d7cd4f61fb84e592e6b5e7e01172",
@@ -71,8 +71,8 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.036573,
-      "replayEndSec": 49.697921,
+      "replayStartSec": 35.97937,
+      "replayEndSec": 42.626799,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/tutorial-networking-06.58fd4f50.mp3",
       "audioDurationSec": 12.042449,
       "textHash": "58fd4f501fb8cbc53896281c60777e0d68cd9b761d555b9d3b790ca73313ba9e",
@@ -85,24 +85,24 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/intro.590dc004.mp3",
-      "textHash": "590dc00422af1fed8bb897f29c6b8eb5cd70227d1f76f7a60455179412323adf",
-      "audioDurationSec": 6.765714,
-      "narrationText": "Olgu! Anname su rakendusele päris domeeni automaatse TLS-iga. Neli lühikest sammu ja oled internetis."
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/intro.ad517ac9.mp3",
+      "textHash": "ad517ac93ee84fe2c8d2a49f5c85b69e5c961f7e1e26b2d92b7b3c22834a774e",
+      "audioDurationSec": 8.672653,
+      "narrationText": "Sinu rakendus töötab, kuid ainult server näeb seda. Anname sellele päris domeeni automaatse TLS-iga. Neli lühikest sammu ja see on internetis."
     },
     {
       "id": "four-steps",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/four-steps.a63bbfba.mp3",
-      "textHash": "a63bbfba9d1164aa10210d026690335787011624345c3dc30614942b629e594d",
-      "audioDurationSec": 11.964082,
-      "narrationText": "Siin on tee. Hangi Cloudflare API token, seadista infrastruktuur CLI-s, tõuka see serverisse ja juuruta Traefik proksi, mis tegeleb DNS-i ja sertifikaatidega sinu eest."
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/four-steps.428734ac.mp3",
+      "textHash": "428734acbdb09f19b6fdf3a249459b30c4bebf491c394800d74e83fa42282510",
+      "audioDurationSec": 14.367347,
+      "narrationText": "Siin on tee: hangi Cloudflare API token, konfigureeri infrastruktuur üks kord CLI-s, lükka see serverisse, seejärel juuruta väike proxy repo, mis haldab sinu eest DNS-i ja sertifikaate."
     },
     {
       "id": "open-cloudflare",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/open-cloudflare.7c20bef0.mp3",
-      "textHash": "7c20bef044c2185291f1a1a5937bf9e0caee6a142d4908dc711ee79ff4e9309f",
-      "audioDurationSec": 11.546122,
-      "narrationText": "Esmalt ava Cloudflare'i juhtpaneel oma brauseris. Mine My Profile, siis API Tokens, ja loo token Zone DNS Edit õigusega, et CLI saaks su kirjeid hallata."
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-networking/open-cloudflare.ce50a187.mp3",
+      "textHash": "ce50a187e2f2a660b04c9d9f5b5924207557bb94127474e4c7b42b6d104903e2",
+      "audioDurationSec": 18.364082,
+      "narrationText": "Kõigepealt ainus käsitsi samm. Ava Cloudflare'i armatuurlaud, mine My Profile, siis API Tokens ja loo token Zone DNS Edit õigusega. See üks token laseb CLI-l hallata sinu DNS-kirjeid, nii et sa ei pea kunagi enam armatuurlaudadel klõpsima."
     },
     {
       "id": "next-tutorial",
@@ -117,5 +117,5 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "787de4cace0e6c209e9a430baf53481a960cb4b8e55020b02e0baba8a571b19b"
+  "transcriptHash": "bee98d9fa84b4ea8b328ba04d4dea44bce8d2fa4f19b4d0d63344ed7a20481cf"
 }

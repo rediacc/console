@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "34fc595825b52740ee98b93c5ed73ef352397876f103fa5f76daf928e48f7df9",
+  "transcriptHash": "fecd13e678ecda99a050c54fb7a93e19db3ae05db3667c2e41556029445213b7",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.626476,
-      "replayEndSec": 7.903516,
+      "replayStartSec": 1.614947,
+      "replayEndSec": 8.543153,
       "narrationText": "Here we go. Paste the install command into your terminal and let it run. The script verifies your platform, downloads the latest stable binary, and drops it into your home directory. No system-wide install, no sudo. Watch it work. The binary is on disk and you can call it from any shell.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-01.259d62a6.mp3",
       "textHash": "259d62a6337ffd068912f1851d4b7f2c830494dfc8093acaab5f7b4e0613a8a3",
@@ -389,8 +389,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 7.903516,
-      "replayEndSec": 10.095825,
+      "replayStartSec": 8.543153,
+      "replayEndSec": 10.766661,
       "narrationText": "Install done. Let's confirm it. The version flag prints what just got installed, so we know it's on your path.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-installation/tutorial-installation-02.b3ec043b.mp3",
       "textHash": "b3ec043bddee40e09a9c7ae8ba7b8ee800901d4a9cc795a9922c8ad1fb5b68db",

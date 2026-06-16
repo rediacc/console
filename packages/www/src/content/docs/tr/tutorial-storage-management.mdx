@@ -1,0 +1,58 @@
+---
+title: "Depolama Yönetimi"
+description: "Depoları sıfır kesinti süresiyle çevrimiçi büyütün, silinen alanı trim ile geri kazanın ve her iki görevi de otomatik bir politikaya bırakın."
+category: "Tutorials"
+subcategory: advanced
+order: 18
+language: tr
+sourceHash: "cab2a40cd120e352"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Depolama Yönetimi
+
+Bir daha disk bitmeyecek. Container'lar çalışırken dolu bir depoyu büyütün, silinen blokları havuza geri verin, ardından makinenin her ikisini otomatik yapmasını öğretin.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Storage management](/assets/tutorials/tutorial-storage-management.cast)
+
+## Tek havuz, büyüyen depolar
+
+![One pool, growing repos](/img/tutorials/tutorial-storage-management/slide-1.svg)
+
+Her depo, tek bir paylaşımlı datastore havuzundaki bir dosyadır. Depolar çevrimiçi büyür; bir depodaki veriyi silmek başlı başına hiçbir şey serbest bırakmaz. Blokları havuza iade eden şey **trim**'dir.
+
+## Çevrimiçi büyütün, sıfır kesinti süresiyle
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## Trim ile geri kazanın
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+## Otomatik pilota alın
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+Makine artık depo eşiği geçtiğinde büyütür (açık tavanınıza kadar) ve zamanlamaya göre trim yapar; storage-maintain timer tarafından uygulanır, sizin cron'unuza gerek yok.
+
+## Sağlık görünümü
+
+<TutorialStep number={8} />
+
+Depo başına kullanım, havuz durumu ve yazma sırasında kopyalamanın ne kadar tasarruf sağladığı; tek komut.
+
+## Tamamlandınız
+
+On sekiz öğretici: kurulum, bağlanma, dağıtım, her yerden düzenleme, çekinmeden fork alma, gizli bilgileri koruma, gerçek anlamda yedekleme, yayına alma, izleme, versiyonlama, taşıma, senkronize etme ve hiç kurumama. Sunucularınız yeniden sizin.

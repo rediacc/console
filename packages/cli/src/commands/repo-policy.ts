@@ -61,7 +61,53 @@ async function runPolicyFunction(
   }
 
   const parsed = parseDatastorePruneOutput(result.stdout ?? '');
-  outputService.print(parsed, getOutputFormat() === 'table' ? 'json' : getOutputFormat());
+  await renderPolicyResult(parsed);
+}
+
+interface PolicyFields {
+  auto_grow?: boolean | null;
+  max_quota_bytes?: number | null;
+  grow_when_used_percent?: number | null;
+  grow_step?: string | null;
+  auto_trim?: boolean | null;
+  trim_interval_hours?: number | null;
+}
+
+/** Render the policy payload as a settings table (effective/override/default). */
+async function renderPolicyResult(parsed: Record<string, unknown>): Promise<void> {
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(parsed, format);
+    return;
+  }
+
+  const { formatSizeBytes } = await import('@rediacc/shared/queue-vault');
+  const effective = (parsed.effective ?? {}) as PolicyFields;
+  const override = parsed.repo_override as PolicyFields | null | undefined;
+  const machineDefault = parsed.machine_default as PolicyFields | null | undefined;
+
+  const fields: { key: keyof PolicyFields; label: string; fmt?: (v: unknown) => string }[] = [
+    { key: 'auto_grow', label: 'Auto-grow' },
+    { key: 'max_quota_bytes', label: 'Max quota', fmt: (v) => formatSizeBytes(v as number) },
+    { key: 'grow_when_used_percent', label: 'Grow threshold', fmt: (v) => `${v}%` },
+    { key: 'grow_step', label: 'Grow step' },
+    { key: 'auto_trim', label: 'Auto-trim' },
+    { key: 'trim_interval_hours', label: 'Trim interval', fmt: (v) => `${v}h` },
+  ];
+  const cell = (src: PolicyFields | null | undefined, f: (typeof fields)[number]): string => {
+    const v = src?.[f.key];
+    if (v === undefined || v === null) return '-';
+    if (typeof v === 'boolean') return v ? 'yes' : 'no';
+    return f.fmt ? f.fmt(v) : String(v);
+  };
+
+  const rows = fields.map((f) => ({
+    setting: f.label,
+    effective: cell(effective, f),
+    override: cell(override, f),
+    machineDefault: cell(machineDefault, f),
+  }));
+  outputService.print(rows, 'table');
 }
 
 async function handlePolicySet(options: PolicySetOptions): Promise<void> {

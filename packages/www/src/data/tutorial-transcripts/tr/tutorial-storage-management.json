@@ -1,0 +1,107 @@
+{
+  "cast": "/assets/tutorials/tutorial-storage-management.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-storage-management-01",
+      "markerIndex": 0,
+      "at": 2.410441,
+      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "afterText": "Neredeyse dolu. Büyüme zamanı.",
+      "cardLabel": "Dolduruluyor",
+      "prose": "Dosya sistemi dolana kadar repository'yi veriyle doldurun."
+    },
+    {
+      "id": "tutorial-storage-management-02",
+      "markerIndex": 1,
+      "at": 12.69586,
+      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "afterText": "Artık dört gigabayt. Hiçbir şey yeniden başlatılmadı.",
+      "cardLabel": "Çevrimiçi Genişlet",
+      "prose": "Repository'yi çevrimiçi genişletin: container'lar çalışırken LUKS container ve dosya sistemi büyür."
+    },
+    {
+      "id": "tutorial-storage-management-03",
+      "markerIndex": 2,
+      "at": 19.886575,
+      "text": "Verify from inside: same volume, double the room.",
+      "afterText": "Uygulama hiç fark etmedi.",
+      "cardLabel": "Boyutu Doğrula",
+      "prose": "Dosya sistemini repo içinden kontrol edin, yeni boyut artık aktif."
+    },
+    {
+      "id": "tutorial-storage-management-04",
+      "markerIndex": 3,
+      "at": 26.982758,
+      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "afterText": "repo içinde serbest bırakıldı, hâlâ image'a ait.",
+      "cardLabel": "Veriyi Sil",
+      "prose": "Repository içindeki veriyi silin, pool'un henüz küçülmediğine dikkat edin."
+    },
+    {
+      "id": "tutorial-storage-management-05",
+      "markerIndex": 4,
+      "at": 33.464064,
+      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "afterText": "Geri alındı. Havuz tekrar nefes alabilir.",
+      "cardLabel": "Trim",
+      "prose": "Serbest kalan blokları paylaşılan pool'a geri vermek için repo trim çalıştırın, çevrimiçi, sıfır kesinti."
+    },
+    {
+      "id": "tutorial-storage-management-06",
+      "markerIndex": 5,
+      "at": 40.097562,
+      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "afterText": "Politika kaydedildi. Makine buradan devralıyor.",
+      "cardLabel": "Politika Ayarla",
+      "prose": "Bir boyut politikası ayarlayın: açık bir üst sınırla otomatik büyüme ve zamanlanmış trim."
+    },
+    {
+      "id": "tutorial-storage-management-07",
+      "markerIndex": 6,
+      "at": 50.538253,
+      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "afterText": "Bir kez ayarlandı, güvenle unutuldu.",
+      "cardLabel": "Politika Kontrolü",
+      "prose": "Etkin politikayı geri okuyun, büyüme ve trim artık otomatik."
+    },
+    {
+      "id": "tutorial-storage-management-08",
+      "markerIndex": 7,
+      "at": 57.423655,
+      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "afterText": "Tek görünüm: kullanım, tasarruf ve büyüme alanı.",
+      "cardLabel": "Sağlık Görünümü",
+      "prose": "Makine depolama sağlığını kontrol edin: repo başına kullanım, pool durumu ve CoW reflink tasarrufu."
+    }
+  ],
+  "title": "Depolama Yönetimi",
+  "chapters": {
+    "intro": "Depolama Yönetimi",
+    "pool-model": "Tek pool, büyüyen repo'lar",
+    "cast-step-0": "Adım 1: Repo dolup taşıyor",
+    "cast-step-1": "Adım 2: Çevrimiçi büyüt",
+    "cast-step-2": "Adım 3: Yeni boyutu doğrula",
+    "cast-step-3": "Adım 4: Veriyi sil",
+    "cast-step-4": "Adım 5: Trim, blokları geri ver",
+    "cast-step-5": "Adım 6: Politikayı belirle",
+    "cast-step-6": "Adım 7: Politikayı geri oku",
+    "cast-step-7": "Adım 8: Sağlık görünümü",
+    "outro": "Seri burada bitiyor"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Son tutorial'a hoş geldiniz! Artık bir daha disk bitmeyeceğinden emin olalım. Container'lar çalışmaya devam ederken tam bir repository'yi büyüteceğiz, silinen alanı pool'a geri vereceğiz ve ardından makineye her ikisini otomatik yapmasını öğreteceğiz."
+    },
+    {
+      "id": "pool-model",
+      "text": "İşte model bu. Her repository, ortak bir datastore pool içindeki tek bir dosyadır. Container'lar çalışmaya devam ederken repository'ler çevrimiçi olarak büyüyebilir. Ama bir repo içindeki veriyi silmek tek başına hiçbir şeyi serbest bırakmaz. Blokları pool'a geri veren şey Trim'dir. Ve bir policy her ikisini de otomatikleştirir."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ve seri burada tamamlandı! Kurulumdan otomatik depolama yönetimine kadar on sekiz tutorial. Sunucularınız artık gerçekten sizin. İzlediğiniz için teşekkürler!"
+    }
+  ]
+}

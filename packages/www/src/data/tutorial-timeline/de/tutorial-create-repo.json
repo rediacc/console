@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "71fb58d4d69475b545b5aad870a966e096bd4ad9e07b24e3b008f031dc4a16a9",
+  "transcriptHash": "26bc14f449d7e7b7e57c214fac87ef50deb1bb2613850ce2e809330dcc3206a0",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.409686,
-      "replayEndSec": 11.760396,
+      "replayStartSec": 2.412347,
+      "replayEndSec": 11.676359,
       "narrationText": "Wir erstellen ein 2 Gigabyte großes verschlüsseltes Repository auf dem Server. Ein Repository ist im Ruhezustand eine einzelne verschlüsselte Datei. Wenn es eingehängt wird, wird es zu einem Ordner mit einem eigenen Docker-Daemon und eigenen Anwendungsdaten, vollständig isoliert von allem anderen auf dem Server.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-create-repo/tutorial-create-repo-01.45cf7984.mp3",
       "textHash": "45cf79847621c898a19a13fbb2d2ef96af6244dc97f663d5f7d58bdd3c749ccf",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 11.760396,
-      "replayEndSec": 17.238181,
+      "replayStartSec": 11.676359,
+      "replayEndSec": 17.041073,
       "narrationText": "Wir listen die Repositories auf der Maschine auf, um zu bestätigen, dass das neue registriert ist. Von hier aus kann das Repo in VS Code geöffnet, deployed, geforkt oder gesichert werden, alles von Ihrem Laptop aus.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-create-repo/tutorial-create-repo-02.307e8afd.mp3",
       "textHash": "307e8afd09e92ceba0b5d8fb5e865507799f5863c979775f118142a4af997ceb",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 17.238181,
-      "replayEndSec": 21.33289,
+      "replayStartSec": 17.041073,
+      "replayEndSec": 20.377596,
       "narrationText": "Eine praktische Option: Das Repo lässt sich mit diesem Befehl direkt in VS Code öffnen. Wir starten den Editor hier nicht, aber er beginnt eine Remote-Sitzung in das Repo über SSH, sodass Sie die Dateien bearbeiten können.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-create-repo/tutorial-create-repo-03.6a471986.mp3",
       "textHash": "6a4719865287719772427b6413de0a4795d7544430131d7c6d20ce81c8442ab1",

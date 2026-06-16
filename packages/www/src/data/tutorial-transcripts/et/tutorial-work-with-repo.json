@@ -6,7 +6,7 @@
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 2.415513,
+      "at": 2.414306,
       "text": "Esiteks tunnel käsk. Rakendus töötab serveris, mitte sinu sülearvutis. CLI repo tunnel suunab konteineri pordi üle SSH, nii et saad selle brauseris localhost aadressil avada.",
       "afterText": "Port edastatud. Rakendus on nüüd localhost'is kättesaadav.",
       "cardLabel": "Tunnelda Port",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 9.087333,
+      "at": 10.610488,
       "text": "Teiseks term käsk. CLI term connect viib sind repositooriumi liivakasti -- sama isoleeritud vaate, mida VS Code annaks. Käivita suvaline käsk selle repositooriumi Dockeri deemoni vastu ilma terminalist lahkumata.",
       "afterText": "Repo liivakasti sees. Käivita kõike, justkui oleksid SSH-ga sees.",
       "cardLabel": "Term sandbox-is",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 15.893309,
+      "at": 17.555154,
       "text": "Enne failide tõugramist vaata eelvaadet --dry-run abil. See näitab täpselt, mis muutuks, ilma midagi kopeerimata. Kasuta alati eelvaadet, kui oled ebakindel.",
       "afterText": "Ainult eelvaade. Faile pole veel liigutatud.",
       "cardLabel": "Sync Eelvaade",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 22.144638,
+      "at": 24.76977,
       "text": "Nüüd teeme päris üleslaadimise. CLI repo sync upload liigutab failid sinu sülearvutist repositooriumisse üle SSH rsync delta tihendusega. Tunnel, term, sync -- kolm käsku katavad igapäevase tsükli.",
       "afterText": "Failid üles laaditud. Delta tihendus tuleb suurte puudega toime.",
       "cardLabel": "Sync Üleslaadimine",
@@ -67,6 +67,6 @@
     "cast-step-1": "Term: käivita käske sandbox-is",
     "cast-step-2": "Sync: eelvaade --dry-run-iga",
     "cast-step-3": "Sync: lae päriselt üles",
-    "outro": "Järgmine: repository fork-imine"
+    "outro": "Järgmine: VS Code brauseris"
   }
 }

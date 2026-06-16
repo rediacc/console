@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "30c930b9ea7a46cf69279be661533a26021392244f3f03b3bcec2f9ab9849857",
+  "transcriptHash": "8399d9b6e9108c71267529a45e6edaa1f94b0ac7d9eafc128584e49b5a314f8d",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.411841,
-      "replayEndSec": 8.597185,
+      "replayStartSec": 2.416158,
+      "replayEndSec": 8.503611,
       "narrationText": "Iniziamo con la vista di sistema. Il comando di query macchina con il filtro system mostra uptime, utilizzo del disco e stato dello storage. Se qualcosa non va, il rapporto ce lo dice.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-monitoring/tutorial-monitoring-01.4cf649f5.mp3",
       "textHash": "4cf649f5cc98cf7b50e20f93c6bbb3c50f99f64c5e109ec3129438f46fd383d2",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.597185,
-      "replayEndSec": 15.126152,
+      "replayStartSec": 8.503611,
+      "replayEndSec": 14.799411,
       "narrationText": "Ora i container. Questa vista elenca ogni container in esecuzione su tutti i repository della macchina -- nome, stato, salute, CPU, memoria e quale repo li gestisce.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-monitoring/tutorial-monitoring-02.0b2eb73b.mp3",
       "textHash": "0b2eb73b647b3076c463328e649a3592e295e220b0df92c12f53988a25d522e3",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 15.126152,
-      "replayEndSec": 24.385141,
+      "replayStartSec": 14.799411,
+      "replayEndSec": 21.195367,
       "narrationText": "E i repo stessi. Dimensione, stato di montaggio, stato del Docker daemon, utilizzo del disco. Tutto quello che devi sapere su ogni ambiente isolato sulla macchina.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-monitoring/tutorial-monitoring-03.f497ff3c.mp3",
       "textHash": "f497ff3c74404e65c6fc37d93a016ca48898cd1daae543be42522a6fac9605ef",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 24.385141,
-      "replayEndSec": 32.334422,
+      "replayStartSec": 21.195367,
+      "replayEndSec": 26.969407,
       "narrationText": "Il comando di query macchina ti da' tutto in un colpo solo. Informazioni di sistema, container, repository -- tutto insieme. Eseguilo una volta e hai il quadro completo.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-monitoring/tutorial-monitoring-04.fd06ae97.mp3",
       "textHash": "fd06ae978777874009d6beea92eaa3daf0a4d79ea26fea25d0846a8244967701",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 32.334422,
-      "replayEndSec": 38.502093,
+      "replayStartSec": 26.969407,
+      "replayEndSec": 29.019779,
       "narrationText": "E infine il controllo diagnostico per un controllo rapido sul tuo laptop. Node, chiave SSH, renet, Docker -- tutto cio' da cui dipende la CLI. Questa e' la serie completa. Dall'installazione al monitoraggio, tutto dal tuo terminale.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-monitoring/tutorial-monitoring-05.2ea33a40.mp3",
       "textHash": "2ea33a40958aef98d37418e16e334f642ac41bb9d5f59c35e6ebe5488f5ff1e8",
@@ -92,10 +92,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "4961535d820d4d3f71a68fceb74fe43d167e8aac210692fd90b917d1a8ccaf2e",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-monitoring/next-tutorial.4961535d.mp3",
-      "narrationText": "E con questo chiudiamo la serie. Ora puoi installare, configurare, distribuire, forkare, andare in produzione, avviare in automatico, fare il backup e monitorare -- tutto dal tuo terminale!",
-      "audioDurationSec": 15.804082
+      "textHash": "c006216abd3ca0537b59cc61e5e995995712b20fef6873a0eba21d00e670d026",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-monitoring/next-tutorial.c006216a.mp3",
+      "narrationText": "Ora puoi installare, configurare, distribuire, fare il fork, andare live, avviare automaticamente, eseguire il backup e monitorare. Il percorso avanzato inizia adesso: versiona i tuoi repository come il codice, con commit e rollback.",
+      "audioDurationSec": 18.99102
     }
   ]
 }

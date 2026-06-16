@@ -1,0 +1,92 @@
+{
+  "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
+  "language": "ar",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-vscode-browser-01",
+      "markerIndex": 0,
+      "at": 2.414862,
+      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "afterText": "هذا الرابط هو محررك. يعمل من أي نظام تشغيل، المتطلب الوحيد هو متصفح.",
+      "cardLabel": "ربط المتصفح",
+      "prose": "اتصل باستخدام خيار --browser. يقوم الـ CLI بتثبيت خادم المحرر مفتوح المصدر على الجهاز (مرة واحدة)، ثم يشغّله داخل الـ sandbox الخاص بالـ repo، ويفتح نفقاً عبر SSH، ويطبع رابطاً لمتصفحك."
+    },
+    {
+      "id": "tutorial-vscode-browser-02",
+      "markerIndex": 1,
+      "at": 12.531234,
+      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "afterText": "الـ terminal والمحرر متفقان، إنه نفس الـ sandbox.",
+      "cardLabel": "نفس العرض",
+      "prose": "افتح جلسة terminal في نفس الـ repo: دليل العمل والملفات تطابق ما يعرضه المحرر."
+    },
+    {
+      "id": "tutorial-vscode-browser-03",
+      "markerIndex": 2,
+      "at": 19.464899,
+      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "afterText": "أُنشئ في المتصفح، قابل للقراءة من الـ terminal. repo واحد، بابان.",
+      "cardLabel": "ذهاباً وإياباً",
+      "prose": "الملف الذي يُنشأ في محرر المتصفح هو ملف repo حقيقي، يمكن قراءته من أي جلسة."
+    },
+    {
+      "id": "tutorial-vscode-browser-04",
+      "markerIndex": 3,
+      "at": 26.768996,
+      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "afterText": "مرفوض من النواة، لا من الإعدادات.",
+      "cardLabel": "الجذر مرفوض",
+      "prose": "حاول عرض دليل الجذر للخادم: الإذن مرفوض. تقيّد النواة الجلسة داخل الـ repo."
+    },
+    {
+      "id": "tutorial-vscode-browser-05",
+      "markerIndex": 4,
+      "at": 32.439211,
+      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "afterText": "الـ sandbox لا استثناءات فيه. هذه هي النقطة.",
+      "cardLabel": "المجلد الرئيسي مرفوض",
+      "prose": "المجلدات الأخرى مثل /home مرفوضة أيضاً، إذ يسري الـ sandbox على كل شيء يُشغَّل بداخله."
+    }
+  ],
+  "title": "VS Code في متصفحك",
+  "chapters": {
+    "intro": "VS Code في متصفحك",
+    "sandbox-concept": "المحرر يعمل داخل الـ sandbox",
+    "cast-step-0": "الخطوة 1: الاتصال بـ --browser",
+    "workbench-tour": "بيئة العمل في تبويب",
+    "create-file": "أنشئ ملفاً في المحرر",
+    "editor-terminal": "الـ terminal المدمج",
+    "cast-step-1": "الخطوة 2: نفس العرض من الـ terminal",
+    "cast-step-2": "الخطوة 3: ملفات المتصفح هي ملفات الـ repo",
+    "cast-step-3": "الخطوة 4: ls / مرفوض",
+    "cast-step-4": "الخطوة 5: ls /home مرفوض",
+    "outro": "التالي: عمل fork لـ repository"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "أخبار سارة: لا تحتاج إلى terminal في هذا الدرس! سنفتح VS Code كاملاً مباشرة في المتصفح، وننشئ بعض الملفات، ونشغّل بعض الأوامر، ونراقب الـ kernel وهو يحتفظ بكل شيء داخل الـ repo."
+    },
+    {
+      "id": "sandbox-concept",
+      "text": "إليك الفكرة. المحرر لا يعمل على جهازك المحمول، بل يعمل داخل الـ sandbox الخاص بالـ repo على الخادم، ويصل إليه متصفحك عبر نفق SSH. لذا فإن شجرة الملفات والـ terminal المدمج وأي شيء تشغّله منه يرى تماماً ما يراه الـ repo، ولا شيء غير ذلك."
+    },
+    {
+      "id": "workbench-tour",
+      "text": "وها هو ذا: VS Code في تبويب المتصفح. شجرة الملفات على اليسار تعرض الـ repo، والـ repo فقط."
+    },
+    {
+      "id": "create-file",
+      "text": "لننشئ ملفاً حقيقياً دون استخدام الـ terminal. محرر جديد، وسطران، ثم نحفظه باسم notes/todo.md. يظهر المجلد على اليسار فور وصوله إلى الـ repo."
+    },
+    {
+      "id": "editor-terminal",
+      "text": "الـ terminal المدمج يعمل أيضاً، وهذا هو ملفنا. الآن لنحاول النظر خارج الـ repo: permission denied. هذا ليس إعداداً، هذا هو الـ kernel."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "المتصفح والمحرر والـ terminal: نفس الـ sandbox، نفس القواعد. التالي هو الميزة التي يبني عليها كل شيء هنا، وهي الـ forking. ستعجبك هذه."
+    }
+  ]
+}

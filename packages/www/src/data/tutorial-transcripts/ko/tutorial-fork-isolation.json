@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "라이브 repo 하나. 클론해 봅시다.",
+      "cardLabel": "라이브 앱",
+      "prose": "실행 중인 repository에서 시작합니다. 머신에서 pgAdmin과 함께 PostgreSQL 데이터베이스가 동작 중입니다."
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "Fork 완료, 시작 중입니다. 데이터는 복사된 것이 아니라 공유된 것입니다. 한쪽이 변경하기 전까지는요.",
+      "cardLabel": "Fork + 실행",
+      "prose": "--up --detach 옵션으로 repository를 fork합니다. CoW 클론은 거의 즉시 완료되며 fork의 서비스가 즉시 시작됩니다."
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "같은 머신, 두 개의 격리된 세계.",
+      "cardLabel": "나란히 보기",
+      "prose": "repository 목록을 확인합니다. 원본과 fork가 완전히 격리된 채로 나란히 실행됩니다."
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "사라졌습니다. 원본은 그동안 계속 서비스 중이었습니다.",
+      "cardLabel": "Fork 삭제",
+      "prose": "작업이 끝나면 fork를 삭제합니다. 원본 repository는 그대로 유지됩니다."
+    }
+  ],
+  "title": "Fork 격리 실습",
+  "chapters": {
+    "intro": "Fork 격리 실습",
+    "what-is-a-fork": "라이브 데이터베이스와 복제본",
+    "cast-step-0": "1단계: 라이브 앱",
+    "grand-pgadmin": "보호된 원본",
+    "cast-step-1": "2단계: Fork 생성",
+    "fork-pgadmin": "완전히 열린 fork",
+    "side-by-side": "나란히 실행",
+    "cast-step-2": "3단계: 두 repo, 하나의 서버",
+    "cast-step-3": "4단계: fork 삭제",
+    "outro": "다음: Secrets 관리"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "다시 오셨군요! 지난번에는 fork 명령어들을 보셨죠. 이제 그게 실제로 무엇을 의미하는지 살펴봅시다. 라이브 데이터베이스 앱이 몇 초 만에 복사되고, 자유롭게 편집되는 동안, 원본은 아무것도 눈치채지 못합니다."
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "설정을 설명드릴게요. 실제 PostgreSQL에 pgAdmin 인터페이스를 얹어 서버에서 실행 중입니다. fork는 이 모든 것의 즉각적인 copy-on-write 복제본입니다. 생성 시점에는 동일한 데이터를 가지지만, 그 이후로는 완전히 별개의 삶을 살아갑니다."
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "이것이 브라우저에서 보는 원본입니다. pgAdmin이 로그인을 요청하는데, 이건 프로덕션 복사본이고, 프로덕션은 항상 보호되어야 하니까요."
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "그리고 이것이 fork의 pgAdmin입니다. 이번에는 로그인이 없습니다. fork는 일회용 sandbox이기 때문에, 관문이 비켜섭니다. 같은 테이블, 같은 행이지만, 자신만의 세계를 가집니다."
+    },
+    {
+      "id": "side-by-side",
+      "text": "이제 나란히 비교해봅시다. 왼쪽이 fork, 오른쪽이 원본입니다. 왼쪽에서 편집하거나 삭제하거나 무엇이든 망가뜨려도, 오른쪽은 꿈쩍도 하지 않습니다. 눈으로 직접 확인할 수 있는 격리입니다."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "그러니 마음껏 fork하세요, 프로덕션은 절대 다치지 않습니다. 다음에는 secrets를 살펴볼 텐데요, fork가 의도적으로 상속하지 않는 유일한 것입니다. 거기서 만나요!"
+    }
+  ]
+}

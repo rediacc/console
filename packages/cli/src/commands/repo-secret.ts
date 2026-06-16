@@ -33,7 +33,12 @@ import {
   writeRepositorySecret,
 } from '../services/repo-secrets-store.js';
 import { canonicalJson, shortFingerprint } from '../schema/walker.js';
-import { handleError, PreconditionValidationError, ValidationError } from '../utils/errors.js';
+import {
+  getOutputFormat,
+  handleError,
+  PreconditionValidationError,
+  ValidationError,
+} from '../utils/errors.js';
 import { outputService } from '../services/output.js';
 import { t } from '../i18n/index.js';
 import type { NextAction } from '../types/errors.js';
@@ -137,7 +142,12 @@ async function handleSecretGet(options: SecretGetOptions): Promise<void> {
   // the --current ceremony on a subsequent `set`.
   const pointer = buildSecretPointer(repoKey, options.key);
   const digest = shortFingerprint(entry.value);
-  outputService.print({ key: options.key, mode: entry.mode, digest }, 'json');
+  const format = getOutputFormat();
+  if (format === 'table') {
+    outputService.print([{ key: options.key, mode: entry.mode, digest }], 'table');
+  } else {
+    outputService.print({ key: options.key, mode: entry.mode, digest }, format);
+  }
   emit({ command: 'repo secret get', paths: [pointer], outcome: 'ok' });
 }
 
@@ -150,11 +160,16 @@ async function handleSecretList(options: SecretListOptions): Promise<void> {
   }
 
   const entries = listRepositorySecretKeyModes(await configService.getRepository(repoKey));
-  if (entries.length === 0) {
-    outputService.print({ repository: repoKey, secrets: [] }, 'json');
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print({ repository: repoKey, secrets: entries }, format);
     return;
   }
-  outputService.print({ repository: repoKey, secrets: entries }, 'json');
+  if (entries.length === 0) {
+    outputService.info(t('commands.repo.secret.list.empty', { repository: repoKey }));
+    return;
+  }
+  outputService.print(entries, 'table');
 }
 
 async function resolveRepoKeyOrThrow(name: string): Promise<string> {

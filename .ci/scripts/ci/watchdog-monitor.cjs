@@ -382,8 +382,13 @@ module.exports = async ({ github, context, core }) => {
         return;
       }
 
-      // 1. No-retry jobs (Quality, Review Gate) -- fast fail, no AI
-      if (noRetryPatterns.some(p => job.name.includes(p))) {
+      // 1. No-retry jobs (Quality, Review Gate) -- fast fail, no AI.
+      // Only for real FAILURES: a Quality failure (lint/type error) is deterministic,
+      // so retrying is pointless and we force-cancel fast. A non-stuck CANCELLATION of
+      // a Quality job, by contrast, is a runner/infra flake (not a code error) -- nuking
+      // a 0-failure run for it is wrong. Let cancellations fall through to the label /
+      // retry handling below so a flaky-cancelled job can be re-run instead.
+      if (failed.includes(job) && noRetryPatterns.some(p => job.name.includes(p))) {
         console.log(`"${job.name}" matches no-retry pattern`);
         await forceCancel(failureMsg);
         return;

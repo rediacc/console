@@ -4,8 +4,8 @@ description: "Crie, gerencie e opere repositórios criptografados com LUKS em m�
 category: "Guides"
 order: 4
 language: pt
-sourceHash: "65fd6e7f9e6a83c1"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "0f08c5b75c3588cc"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Repositórios
@@ -99,9 +99,9 @@ Como funciona: as imagens de repositório são ficheiros esparsos, e o volume en
 
 Notas:
 
-- Repositórios com um backup ativo são ignorados e reportados. Fazer trim durante um backup não libertaria espaço, pois o snapshot do backup ainda referencia os blocos.
+- O trim do sistema de ficheiros é ignorado e reportado para repositórios com um backup ativo, porque o snapshot do backup ainda referencia os blocos, portanto criar lacunas não libertaria espaço no pool. A reclamação com `--docker` não é afetada e continua a executar (ver abaixo).
 - Executar trim duas vezes seguidas reporta 0 bytes na segunda vez. O sistema de ficheiros recorda quais os grupos de blocos que já foram processados; isto é esperado, não é uma falha.
-- `--docker` nunca remove imagens com tag, apenas as dangling, contentores parados e a cache de compilação. Adicione `--docker-volumes` para também remover volumes não utilizados (isto elimina dados; apenas na CLI).
+- `--docker` nunca remove imagens com tag, apenas as dangling, contentores parados e a cache de compilação. Adicione `--docker-volumes` para também remover volumes não utilizados (isto elimina dados; apenas na CLI). Ao contrário do trim do sistema de ficheiros, a reclamação com `--docker` executa mesmo enquanto um backup está em curso, para que possa limpar uma cache de compilação travada sem ter de aguardar a janela de backup.
 
 ## Política de Tamanho Automático
 

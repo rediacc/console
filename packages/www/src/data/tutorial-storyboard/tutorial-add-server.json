@@ -46,7 +46,7 @@
       "narrationRole": "transition",
       "card": {
         "command": "cat ~/.config/rediacc.json",
-        "commandFull": "cat ~/.config/rediacc/rediacc.json"
+        "commandFull": "rdc config show"
       }
     },
     {

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.626287,
+      "at": 1.617466,
       "text": "Première étape. Nous allons générer une nouvelle clé SSH ed25519. ed25519 est le standard moderne : compact, rapide et bien supporté. Vous n'avez besoin de faire cela qu'une seule fois pour tous les serveurs que vous ajouterez.",
       "afterText": "Clé générée. C'est la partie publique que nous copierons sur le serveur.",
       "cardLabel": "Générer la clé",
@@ -16,7 +16,7 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 6.456735,
+      "at": 6.370674,
       "text": "Deuxième étape. Nous copions la clé publique sur le serveur avec ssh-copy-id. Le mot de passe du serveur est demandé une dernière fois. Après cela, l'authentification par mot de passe n'est plus nécessaire pour ce serveur.",
       "afterText": "Lancez ceci sur votre ordinateur. Une fois réussi, les mots de passe sont écartés.",
       "cardLabel": "Autoriser le serveur 1",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 13.33617,
+      "at": 13.176828,
       "text": "Troisième étape. Nous enregistrons maintenant la clé auprès de la ligne de commande. Désormais, chaque commande s'authentifie avec cette clé. Plus de mots de passe, plus d'invites interactives.",
       "afterText": "Clé enregistrée auprès de la CLI.",
       "cardLabel": "Autoriser le serveur 2",

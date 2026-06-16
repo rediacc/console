@@ -1,0 +1,54 @@
+---
+title: "Transfert delta"
+description: "Le premier push vers une autre machine copie tout ; chaque push suivant ne transfère que les blocs modifiés, automatiquement."
+category: "Tutorials"
+subcategory: advanced
+order: 17
+language: fr
+sourceHash: "6dabbcbb0670ac60"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Transfert delta
+
+Poussez un dépôt vers une autre machine deux fois. Le premier push transfère tout. Le deuxième ne transfère que ce qui a changé : même commande, aucun flag, aucun suivi manuel. Et vous n'avez pas à le croire sur parole, car la sortie du push affiche exactement la quantité déplacée.
+
+## Regarder le tutoriel
+
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
+## Des blocs, pas des octets
+
+![Des blocs, pas des octets](/img/tutorials/tutorial-delta-transfer/slide-1.svg)
+
+Après le premier push, le CLI conserve une image de base immuable identique sur les deux machines. Le push suivant compare les blocs par rapport à cette base et n'envoie que la différence.
+
+## Étape 1 : Le push de référence
+
+<TutorialStep number={1} />
+
+La sortie est explicite : `2.0 GB transferred in 44.4s (full)`. L'image entière a voyagé, et une base delta identique a été conservée des deux côtés.
+
+## Étape 2 : Modifier un peu
+
+<TutorialStep number={2} />
+
+## Étape 3 : Pousser la différence
+
+<TutorialStep number={3} />
+
+Même commande, ligne très différente : `50.8 MB transferred in 5.7s (delta vs base ..., image 2.0 GB)`. Cinquante mégaoctets ont changé, donc environ cinquante mégaoctets ont voyagé, sur une image de deux gigaoctets.
+
+## Étape 4 : Synchronisés, en quelques secondes
+
+<TutorialStep number={4} />
+
+Les deux machines ont le même dépôt, mis à jour au coût du changement, pas de la taille. Les sauvegardes horaires de machine à machine cessent d'être coûteuses.
+
+> Besoin d'un contrôle explicite ? `--delta-base <guid>` fixe la base de comparaison, et `--strategy` choisit l'algorithme de delta de blocs. Le comportement par défaut détermine les deux pour vous.
+
+---
+
+Suivant : [Gestion du stockage](/fr/docs/tutorial-storage-management).

@@ -1,0 +1,52 @@
+---
+title: "Isolamento de Fork em Ação"
+description: "Crie um fork de uma aplicação PostgreSQL + pgAdmin em direto e edite-a lado a lado com o original: a prova visual de que os forks são independentes."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: pt
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Isolamento de Fork em Ação
+
+O [tutorial de criação de forks](/pt/docs/tutorial-forking) mostrou os comandos. Este mostra o que eles significam: uma aplicação de base de dados em direto, copiada em segundos, editada livremente no browser, enquanto o original nunca dá conta.
+
+## Ver o tutorial
+
+![Tutorial: Fork isolation in action](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## A configuração
+
+![A live database and its twin](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+Um PostgreSQL real com uma interface pgAdmin, em direto no servidor. Um fork é uma cópia twin copy-on-write instantânea de tudo isso: os mesmos dados no nascimento, vidas completamente separadas depois.
+
+## Passo 1: A aplicação em direto
+
+<TutorialStep number={1} />
+
+## Passo 2: Fazer o fork
+
+<TutorialStep number={2} />
+
+O vídeo abre os dois pgAdmins no browser. O original pede um login, porque a produção mantém-se protegida. O fork abre diretamente no workbench: os forks são sandboxes descartáveis, por isso o passo de entrada é removido (o próprio repositório decide isto, com base em se é um fork ou não).
+
+## Passo 3: Dois mundos, um servidor
+
+<TutorialStep number={3} />
+
+Edite, apague, destrua o que quiser no fork. O original continua a servir. As mesmas tabelas no momento do fork, independentes para sempre a partir daí.
+
+## Passo 4: Descartar
+
+<TutorialStep number={4} />
+
+Segundos para criar, segundos para descartar. É isso que torna "clone production, break nothing" um hábito diário em vez de um evento especial.
+
+---
+
+Próximo: [Gerir Segredos](/pt/docs/tutorial-managing-secrets).

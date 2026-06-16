@@ -40,8 +40,7 @@ run_cmd "ssh-copy-id -i $DEMO_KEY.pub -o StrictHostKeyChecking=no $TUTORIAL_MACH
 
 pause 2
 
+# End the on-camera portion; cleanup below is not recorded.
+end_recording
 # Cleanup
 rm -f "$DEMO_KEY" "$DEMO_KEY.pub" 2>/dev/null || true
-
-printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
-sleep 2

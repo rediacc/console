@@ -7,17 +7,17 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "96ba5498bebd8c9a6bf44025debd57c8412f6ae49a4d4ca326098558e355e66a",
+  "transcriptHash": "4fcc58d4aeec00bfda91da173677bc0f5b88abd6c803018bacdc0c9f82658983",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 2.40432,
-      "replayEndSec": 6.041569,
-      "narrationText": "1단계입니다. 사용 가능한 템플릿을 확인합니다. Rediacc는 일반 앱을 위한 미리 만들어진 설정을 제공하므로 docker-compose를 처음부터 작성할 필요가 없습니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-01.7958fb29.mp3",
-      "textHash": "7958fb29a66a0b59be792f299e614172ca622a477069e86fb7676535d432f1d3",
-      "audioDurationSec": 12.199184,
+      "replayStartSec": 2.408078,
+      "replayEndSec": 6.077084,
+      "narrationText": "1단계: 사용 가능한 템플릿을 나열해 봅니다. Rediacc는 일반적인 앱을 위한 준비된 설정을 제공하므로, docker-compose를 처음부터 작성할 필요가 없습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-01.0f1ffbbc.mp3",
+      "textHash": "0f1ffbbc4624ebbc63fca9f71d2855dd9735372361fa970d0d9b84c13255a492",
+      "audioDurationSec": 12.59102,
       "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-01-after.37767a2b.mp3",
       "afterAudioDurationSec": 7.079184,
       "afterTextHash": "37767a2ba3a00321bff2a73eea88dbdcdfe54260902b36321ddc6bd085a2c55f"
@@ -25,12 +25,12 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 6.041569,
-      "replayEndSec": 13.566247,
-      "narrationText": "2단계입니다. app-postgres 템플릿을 저장소에 적용합니다. 두 개의 파일이 생성됩니다. 컨테이너를 정의하는 docker-compose.yml과 시작 및 종료 훅을 정의하는 Rediaccfile입니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-02.26cad144.mp3",
-      "textHash": "26cad144a6c86831276e9607f8fa5568325cbbec1ef8c6e7af6ca15cafbf201a",
-      "audioDurationSec": 15.386122,
+      "replayStartSec": 6.077084,
+      "replayEndSec": 14.72542,
+      "narrationText": "2단계: app-postgres 템플릿을 repo에 추가합니다. 테스트된 파일 세트가 그대로 복사됩니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-02.b7e4eafb.mp3",
+      "textHash": "b7e4eafb14466513602474936b04f0a35b74f5689453afa17f426e4eb2bd62e6",
+      "audioDurationSec": 7.157551,
       "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-02-after.6fd7374e.mp3",
       "afterAudioDurationSec": 6.922449,
       "afterTextHash": "6fd7374e2a68bd18d59d7e0a45d61bc926c2c9e02f76421310d0e068dab9f68a"
@@ -38,12 +38,12 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 13.566247,
-      "replayEndSec": 23.282435,
-      "narrationText": "3단계입니다. 저장소를 시작합니다. CLI가 컨테이너를 기동하고 암호화된 볼륨을 마운트하며 격리된 Docker 데몬을 연결합니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-03.d623baad.mp3",
-      "textHash": "d623baad8a568d2bc6325cd51908b22dfbb8caef63c4bf145685c68ee832e471",
-      "audioDurationSec": 10.527347,
+      "replayStartSec": 14.72542,
+      "replayEndSec": 21.699752,
+      "narrationText": "repo 내부를 살펴보고 어떤 파일이 들어왔는지 확인합니다. 시작 및 중지 훅을 담은 Rediaccfile과 container를 설명하는 docker-compose 파일이 있습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-03.b1dde1b3.mp3",
+      "textHash": "b1dde1b3920809d211ba7d218a0ccbe6bfd715f74c8c5f216b5c9be44efcd631",
+      "audioDurationSec": 13.557551,
       "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-03-after.1246a463.mp3",
       "afterAudioDurationSec": 6.922449,
       "afterTextHash": "1246a463720c8ac6856b526a24396cb641c6cf80c1af8454a9c2b65b3b722356"
@@ -51,12 +51,12 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 23.282435,
-      "replayEndSec": 30.345778,
-      "narrationText": "실행 중인 컨테이너를 확인합니다. 이 뷰에는 이 저장소의 컨테이너만 표시됩니다. 같은 서버의 다른 저장소는 각자의 Docker 데몬을 가지고 있어 이 뷰에서 전혀 보이지 않습니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-04.e8ac7d9f.mp3",
-      "textHash": "e8ac7d9f22e3dfa8a49911d798a76c466837f8204371787ae0ee868083025011",
-      "audioDurationSec": 14.027755,
+      "replayStartSec": 21.699752,
+      "replayEndSec": 28.8781,
+      "narrationText": "3단계: repo를 실행합니다. 명령 하나로 CLI가 암호화된 볼륨을 마운트하고, 격리된 Docker daemon을 시작하고, container를 실행합니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-04.4c45da3f.mp3",
+      "textHash": "4c45da3f041bae5964d23261c3ed353c1a4de7d5bd51fe737a667f4fc4667482",
+      "audioDurationSec": 13.479184,
       "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-04-after.c4f60e2c.mp3",
       "afterAudioDurationSec": 5.642449,
       "afterTextHash": "c4f60e2cb678809354fbd627edb7187fb161dd1dd77338b47d56e1cde3b02ece"
@@ -64,12 +64,12 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "replayStartSec": 30.345778,
-      "replayEndSec": 38.921409,
-      "narrationText": "무엇이 실행 중인지 확인해 봅시다. docker ps는 이 repo의 컨테이너만 나열합니다. 같은 서버의 다른 repo들은 각자 고유한 daemon을 가지며, 이 화면에서는 완전히 보이지 않습니다.",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-05.76a849ed.mp3",
-      "textHash": "76a849ed7c376fb1e866b67f4b52c105c255f0c18864985c1b40b63a3f2a65a2",
-      "audioDurationSec": 15.804082,
+      "replayStartSec": 28.8781,
+      "replayEndSec": 34.846304,
+      "narrationText": "실행 중인 항목을 확인합니다. 여기서 Docker ps는 이 repo의 container만 나열합니다. 이 서버의 다른 모든 repo는 자체 daemon을 가지며, 이 화면에서는 전혀 보이지 않습니다.",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-05.832eefdc.mp3",
+      "textHash": "832eefdca45d6c25476854ca2a5d4d80760068611f122b9e12e82128b1da5ba5",
+      "audioDurationSec": 14.680816,
       "afterAudioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/tutorial-deploy-app-05-after.e0bc83b6.mp3",
       "afterAudioDurationSec": 5.564082,
       "afterTextHash": "e0bc83b64c7bcd76d6e54b9e5c743a619bf1e33e1976880d9f3cc054f533fd20"
@@ -78,10 +78,10 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "a582e834ff34c65a02e8619e4a3051e92f8cc2c0d394e57d0e585bd1989f0428",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/intro.a582e834.mp3",
-      "narrationText": "실제 앱을 배포할 시간이에요! 빈 repo에서 시작해 세 단계만 거치면 컨테이너가 실행돼요.",
-      "audioDurationSec": 7.627755
+      "textHash": "fef96b13713ba547cbd108be28599bfe30d426160dfb8aa7d6069525f861cfa8",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/intro.fef96b13.mp3",
+      "narrationText": "이제 실제 앱을 배포할 시간입니다! 빈 repo에서 세 단계만으로 container가 실행됩니다. 선택, 적용, 실행.",
+      "audioDurationSec": 10.187755
     },
     {
       "id": "pick-apply-run",
@@ -89,6 +89,13 @@
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/pick-apply-run.5148e222.mp3",
       "narrationText": "흐름은 단순해요. 템플릿을 고르고, repo에 적용하고, 실행하면 끝. CLI에 내장된 템플릿이 있어서 docker-compose를 처음부터 작성할 필요가 없어요.",
       "audioDurationSec": 13.87102
+    },
+    {
+      "id": "vscode-file-tour",
+      "textHash": "581658b0a5898df0f714fe8a3abc3d72874f52d80039908cb1afaabb27ad6bd6",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-deploy-app/vscode-file-tour.581658b0.mp3",
+      "narrationText": "에디터가 더 편하신가요? 같은 파일들을 브라우저에서 바로 VS Code로 열 수 있습니다. 여기 Rediaccfile이 있고, 옆에 compose 파일도 있습니다. 이 설정은 이후 튜토리얼에서 제대로 살펴볼 예정입니다.",
+      "audioDurationSec": 14.915918
     },
     {
       "id": "next-tutorial",

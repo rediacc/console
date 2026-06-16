@@ -158,14 +158,15 @@ describe('rdc repo secret get/list', () => {
     it('list works without REDIACC_ALLOW_GRAND_REPO (no grandGuard in V2)', async () => {
       mockListRepositorySecretKeyModes.mockReturnValue([{ key: 'X', mode: 'env' }]);
       await run(['repo', 'secret', 'list', '--name', 'app']);
-      expect(mockPrint.mock.calls[0]?.[0].secrets).toEqual([{ key: 'X', mode: 'env' }]);
+      // Table format prints the entry rows directly.
+      expect(mockPrint.mock.calls[0]?.[0]).toEqual([{ key: 'X', mode: 'env' }]);
     });
 
     it('get returns digest only — never the value', async () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'sk_live_XYZ' });
       await run(['repo', 'secret', 'get', '--name', 'app', '--key', 'STRIPE']);
 
-      const call = mockPrint.mock.calls[0]?.[0];
+      const call = mockPrint.mock.calls[0]?.[0][0];
       expect(call).toMatchObject({ key: 'STRIPE', mode: 'env' });
       expect(call.digest).toMatch(/^[0-9a-f]{8}$/);
       // Critical write-only invariant: value never reaches output, ever.
@@ -184,7 +185,7 @@ describe('rdc repo secret get/list', () => {
     it('get returns digest only on a fork too', async () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'file', value: 'pem-content' });
       await run(['repo', 'secret', 'get', '--name', 'app:dev', '--key', 'KEY']);
-      const call = mockPrint.mock.calls[0]?.[0];
+      const call = mockPrint.mock.calls[0]?.[0][0];
       expect(call).toMatchObject({ key: 'KEY', mode: 'file' });
       expect(call.digest).toMatch(/^[0-9a-f]{8}$/);
       expect(call).not.toHaveProperty('value');
@@ -198,7 +199,7 @@ describe('rdc repo secret get/list', () => {
       ]);
       await run(['repo', 'secret', 'list', '--name', 'app:dev']);
       const call = mockPrint.mock.calls[0]?.[0];
-      expect(call.secrets).toEqual([
+      expect(call).toEqual([
         { key: 'A', mode: 'env' },
         { key: 'B', mode: 'file' },
       ]);
@@ -217,7 +218,7 @@ describe('rdc repo secret get/list', () => {
     it('get returns digest only — humans no longer see plaintext (write-only)', async () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'plaintext-secret' });
       await run(['repo', 'secret', 'get', '--name', 'app', '--key', 'X']);
-      const call = mockPrint.mock.calls[0]?.[0];
+      const call = mockPrint.mock.calls[0]?.[0][0];
       expect(call).toMatchObject({ key: 'X', mode: 'env' });
       expect(call.digest).toMatch(/^[0-9a-f]{8}$/);
       expect(call).not.toHaveProperty('value');
@@ -245,16 +246,16 @@ describe('rdc repo secret get/list', () => {
       ]);
       await run(['repo', 'secret', 'list', '--name', 'app']);
       const call = mockPrint.mock.calls[0]?.[0];
-      expect(call.secrets).toEqual([
+      expect(call).toEqual([
         { key: 'AAA', mode: 'env' },
         { key: 'BBB', mode: 'file' },
       ]);
     });
 
-    it('list returns empty array when no secrets', async () => {
+    it('list prints nothing tabular when no secrets (info line instead)', async () => {
       mockListRepositorySecretKeyModes.mockReturnValue([]);
       await run(['repo', 'secret', 'list', '--name', 'app']);
-      expect(mockPrint.mock.calls[0]?.[0]).toEqual({ repository: 'app:latest', secrets: [] });
+      expect(mockPrint).not.toHaveBeenCalled();
     });
   });
 

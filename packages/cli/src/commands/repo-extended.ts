@@ -5,10 +5,12 @@ import { configService } from '../services/config-resources.js';
 import { localExecutorService } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { handleError } from '../utils/errors.js';
+import { getOutputFormat, handleError } from '../utils/errors.js';
+import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { assertMachineExists } from './_validate.js';
+import { parseDatastorePruneOutput } from './datastore-prune-parser.js';
 import { handleForkAction } from './repo-fork.js';
 import { registerRepoPolicyCommand } from './repo-policy.js';
 import { registerRepoTakeoverCommand } from './repo-takeover.js';
@@ -36,6 +38,65 @@ async function executeMachineFunction(
   } else {
     renderLocalExecutionFailure(result, result.error ?? messages.failed);
   }
+}
+
+interface AutostartListPayload {
+  service_installed?: boolean;
+  service_enabled?: boolean;
+  repositories?: { name: string; enabled: boolean; on_disk: boolean }[] | null;
+}
+
+/** `repo autostart list` — fetch the renet payload and render it. */
+async function handleAutostartList(options: {
+  machine: string;
+  debug?: boolean;
+  skipRouterRestart?: boolean;
+}): Promise<void> {
+  await assertMachineExists(options.machine);
+  outputService.info(t('commands.repo.autostart.list.starting', { machine: options.machine }));
+
+  const result = await localExecutorService.execute({
+    functionName: 'repository_autostart_list',
+    machineName: options.machine,
+    params: {},
+    debug: options.debug,
+    skipRouterRestart: options.skipRouterRestart,
+    captureOutput: true,
+  });
+
+  if (!result.success) {
+    renderLocalExecutionFailure(result, result.error ?? t('commands.repo.autostart.list.failed'));
+    return;
+  }
+
+  // renet relays a single JSON object with `[repository_autostart_list]`
+  // line prefixes — same shape the prune parser extracts.
+  const payload = parseDatastorePruneOutput(result.stdout ?? '') as AutostartListPayload;
+  const format = getOutputFormat();
+  if (format !== 'table') {
+    outputService.print(payload, format);
+    return;
+  }
+
+  const resolve = createGuidResolver(await loadGuidMap());
+  const rows = (payload.repositories ?? []).map((r) => ({
+    repository: resolve(r.name),
+    guid: r.name,
+    enabled: r.enabled ? 'yes' : 'no',
+    onDisk: r.on_disk ? 'yes' : 'no',
+  }));
+
+  if (rows.length === 0) {
+    outputService.info(t('commands.repo.autostart.list.empty', { machine: options.machine }));
+  } else {
+    outputService.print(rows, 'table');
+  }
+  outputService.info(
+    t('commands.repo.autostart.list.service', {
+      installed: payload.service_installed ? 'yes' : 'no',
+      enabled: payload.service_enabled ? 'yes' : 'no',
+    })
+  );
 }
 
 /**
@@ -312,11 +373,7 @@ export function registerExtendedRepoCommands(repo: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options: { machine: string; debug?: boolean; skipRouterRestart?: boolean }) => {
       try {
-        await executeMachineFunction('repository_autostart_list', options, {
-          starting: t('commands.repo.autostart.list.starting', { machine: options.machine }),
-          completed: t('commands.repo.autostart.list.completed'),
-          failed: t('commands.repo.autostart.list.failed'),
-        });
+        await handleAutostartList(options);
       } catch (error) {
         handleError(error);
       }

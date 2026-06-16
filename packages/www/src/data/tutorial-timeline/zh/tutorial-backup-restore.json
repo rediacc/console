@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "effa43303cc55c6b44b8b75987a85a18ef7ed98206d37b7c31404c8d0549a36b",
+  "transcriptHash": "03c446cdb44ec02794680e94f4ce9b1137f1180c699555612485e06cd9eb2591",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424169,
-      "replayEndSec": 6.651448,
+      "replayStartSec": 2.409089,
+      "replayEndSec": 6.555802,
       "narrationText": "第一步。让我们导入现有的 rclone 配置。rclone 支持 S3、Backblaze、Google Drive、Dropbox 等众多服务，如果你已经在使用，可以直接导入同一份配置。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-01.a20da912.mp3",
       "textHash": "a20da912d12ad42d9ec57c6c136b3ab197fd4e53aad643d7f18cec06d39cb61c",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 6.651448,
-      "replayEndSec": 10.354487,
+      "replayStartSec": 6.555802,
+      "replayEndSec": 10.251839,
       "narrationText": "让我们列出命令行工具现在已知的存储。每个存储都是我们可以推送备份的目标。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-02.af2bf87c.mp3",
       "textHash": "af2bf87c7956eaf2971615ffd5b909dc38761285824e2807c725bd6689480ba1",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 10.354487,
-      "replayEndSec": 18.28182,
+      "replayStartSec": 10.251839,
+      "replayEndSec": 24.484571,
       "narrationText": "第二步。让我们推送一个完整备份。整个仓库，包括应用、数据库、文件和配置，全部上传。由于仓库本身是静态加密的，备份也是加密的，无需额外的密钥管理。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-03.70dbeca1.mp3",
       "textHash": "70dbeca190def8f2e7c987c49c3adeed82131ab0e47aebc516869f465644955e",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 18.28182,
-      "replayEndSec": 26.532142,
+      "replayStartSec": 24.484571,
+      "replayEndSec": 31.133919,
       "narrationText": "让我们列出该存储上的可用备份。从这里开始，在全新服务器上恢复只需一条命令，即仓库拉取命令。相同的数据，相同的容器，不同的机器。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-04.c62a3ed7.mp3",
       "textHash": "c62a3ed770b84d6b5ee55a11245cb55f0d5e4f9bdb23edc96af1cdb16777fb94",
@@ -60,6 +60,45 @@
       "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-04-after.c0575810.mp3",
       "afterAudioDurationSec": 4.362449,
       "afterTextHash": "c05758109ce281877a9ede44696ac65597742b0d33acad73c35a802288488290"
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.133919,
+      "replayEndSec": 39.135694,
+      "narrationText": "现在来验证恢复过程。首先将 repository 下线：停止服务并卸载加密卷。这台机器上的应用已经消失了。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-05.77930f35.mp3",
+      "textHash": "77930f356d9e2f0b4cf37d5e83b9d8d44375cdcab9d7dc83c89fc3802e8510f6",
+      "audioDurationSec": 8.437551,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-05-after.e59c8f9f.mp3",
+      "afterAudioDurationSec": 4.519184,
+      "afterTextHash": "e59c8f9fcc0014124639f425f676a9d34727d1e5695c3223629f84d58eb03d92"
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.135694,
+      "replayEndSec": 48.126162,
+      "narrationText": "然后直接从存储中拉取备份。repo pull 命令会获取镜像、检查完整性，并将其放回原位。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-06.af021282.mp3",
+      "textHash": "af021282eae59b981bad65ac637f8ce4cf254bf4974550c56e3ea877d7f82344",
+      "audioDurationSec": 9.090612,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-06-after.ee397f29.mp3",
+      "afterAudioDurationSec": 4.597551,
+      "afterTextHash": "ee397f29ab2dac58bf6c833829b50808a02f9847c20cb447a4138682610205e0"
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "replayStartSec": 48.126162,
+      "replayEndSec": 54.070366,
+      "narrationText": "再次挂载，repository 就恢复了。Push、list、pull，这就是备份的完整流程。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-07.68d3e074.mp3",
+      "textHash": "68d3e074d7e5e6497873ab2987ac6b1b934fa6b5ea099d82a17d9eae07c525a7",
+      "audioDurationSec": 6.687347,
+      "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-backup-restore/tutorial-backup-restore-07-after.b3d27e96.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "b3d27e96a6b8c10c041dda8dfce1ee4a46bc4ebe60cde015145f044d6aa4679a"
     }
   ],
   "narrationAudio": [

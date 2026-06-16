@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: ar
-sourceHash: "bfdacd91b2d3b93b"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c13a0f880039d7e7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,21 +53,28 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 نفس منطق [النسخ](/ar/docs/tutorial-forking). تنسخ `rdc` أولًا، ثم ترفع النسخة. تلتقط النسخة اللحظة؛ تطبيقك المباشر يواصل العمل. لا توقف، لا تناقض.
 
-## الخطوة 3: الاستعادة على خادم جديد
+## الخطوة 3: الاستعادة، على أرض الواقع
 
-لنفترض أن خادمك تعطّل. جهّز خادمًا جديدًا، أضفه إلى `rdc`، واسحب:
+النسخ الاحتياطية التي لا تستعيدها أحلام، ليست نسخًا. أوقف المستودع أولًا:
+
+<TutorialStep number={5} />
+
+اسحب النسخة الاحتياطية مباشرةً من التخزين:
+
+<TutorialStep number={6} />
+
+وحمّله من جديد، مُستعادًا بالكامل:
+
+<TutorialStep number={7} />
+
+ينجح نفس الأمر على خادم جديد تمامًا: أعِد إعداده، أضفه إلى `rdc`، ونفّذ السحب هناك بدلًا من ذلك.
 
 ```bash
 rdc repo pull --name my-app -m new-server --from my-storage
-```
-
-ثم شغّله:
-
-```bash
 rdc repo up --name my-app -m new-server
 ```
 
-تطبيقك عاد. نفس البيانات، نفس الحاويات، جهاز مختلف.
+نفس البيانات، نفس الحاويات، جهاز مختلف.
 
 ## نسخ احتياطي أسرع: من جهاز إلى جهاز
 
@@ -77,8 +84,8 @@ rdc repo up --name my-app -m new-server
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **نصيحة احترافية.** تُرسل رفعات التخزين دائمًا كل شيء. الجهاز إلى الجهاز يُرسل الفرق فقط. تستغرق أول عملية رفع من جهاز إلى جهاز الوقت المعتاد، لكن كل رفع بعدها أسرع بكثير. رائع للنسخ الاحتياطية المتكررة.
+> **نصيحة احترافية.** تُرسل رفعات الجهاز إلى الجهاز الكتل المتغيرة فقط بعد المرة الأولى. يعرض [درس نقل الفروق](/ar/docs/tutorial-delta-transfer) ذلك مباشرة.
 
 ---
 
-التالي: [المراقبة](/ar/docs/tutorial-monitoring).
+التالي: [الشبكات والنطاقات](/ar/docs/tutorial-networking).

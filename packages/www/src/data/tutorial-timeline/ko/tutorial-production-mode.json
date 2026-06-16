@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "e9dd73237128934b8ebd844f9d8470a8081e1aa698fd6a3a83bfe1dc06d78ccb",
+  "transcriptHash": "9f75afee9202a3b8514b78efc1b2ead429f469a008e2f0b7068d03c4098af3a2",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418632,
-      "replayEndSec": 9.548589,
+      "replayStartSec": 2.555418,
+      "replayEndSec": 11.051619,
       "narrationText": "노트북에서 프로덕션 모드로 앱을 시작합니다. 배포 명령은 개발 중에 사용한 것과 동일한 up 함수를 호출하지만 분리된 상태로 실행됩니다. 노트북을 닫아도 앱은 계속 실행됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-01.57242729.mp3",
       "textHash": "57242729a7ed109fc1cdc2db7b950002372b06ba2eeb92997c3b43b6f9037bad",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 9.548589,
-      "replayEndSec": 17.034078,
+      "replayStartSec": 11.051619,
+      "replayEndSec": 18.718543,
       "narrationText": "이제 자동 시작을 활성화하여 서버 재부팅 후에도 앱이 유지되도록 합니다. 이제부터 서버가 재시작되면 이 저장소가 자동으로 복구됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-02.0f75638d.mp3",
       "textHash": "0f75638d8ba43746dc47f3b8883f3ba2e23dba9202b72da6fcf100a2a7e37077",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 17.034078,
-      "replayEndSec": 22.929505,
+      "replayStartSec": 18.718543,
+      "replayEndSec": 25.169818,
       "narrationText": "자동 시작이 활성화된 저장소 목록을 확인합니다. 앱이 부팅 목록에 포함되어 있음을 확인할 수 있습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-03.ba8113e4.mp3",
       "textHash": "ba8113e465f34c58fd0b7ddddbcfc01431f5ecca37917ee23773540c1b8cbadb",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 22.929505,
-      "replayEndSec": 30.37798,
+      "replayStartSec": 25.169818,
+      "replayEndSec": 31.824598,
       "narrationText": "앱을 중지할 때도 노트북에서 명령 하나면 됩니다. 시작도 명령 하나, 중지도 명령 하나입니다. 모두 터미널에서 실행됩니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/tutorial-production-mode-04.9182b0a5.mp3",
       "textHash": "9182b0a50ce3218d0ac903dff470cf712aa1fe0056f836899b8e3909e39c2f50",
@@ -65,17 +65,17 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "168c56e3bf7dd83cbcbc215909bdb175c6f981a09bf58c108a6f8c0537345c83",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/intro.168c56e3.mp3",
-      "narrationText": "자, 앱을 개발에서 프로덕션으로 가져가볼게요. 노트북에서 모두 처리하는 짧은 세 단계예요.",
-      "audioDurationSec": 6.60898
+      "textHash": "6f66e241910b514f9a4f878ce5b9369caae8833111bab2189aac9f23ebe59ffe",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/intro.6f66e241.mp3",
+      "narrationText": "앱은 연결되어 있는 동안만 실행됩니다. 프로덕션이란 자리를 비워도 실행된다는 뜻입니다. 짧은 세 단계, 모두 노트북에서 진행합니다.",
+      "audioDurationSec": 10.840816
     },
     {
       "id": "dev-vs-prod",
-      "textHash": "0031d7c0cd119d989075d6c2f465502bcdc53b50a85e73cdc94a57edae2aa933",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/dev-vs-prod.0031d7c0.mp3",
-      "narrationText": "개발 중에는 repo 안에서 앱을 실행하기 때문에 연결을 끊으면 멈춰요. 프로덕션에서는 노트북의 CLI에서 기동하면 분리된 상태로 계속 실행돼요.",
-      "audioDurationSec": 12.669388
+      "textHash": "3a35b9d18d725f9976a018f68e717e15bba820f0a80e388fece3c2eb2da7b7c9",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-production-mode/dev-vs-prod.3a35b9d1.mp3",
+      "narrationText": "차이점은 이렇습니다. 개발 환경에서는 SSH를 통해 repo 안에서 앱을 시작합니다. 세션을 닫으면 앱도 함께 종료됩니다. 프로덕션에서는 노트북과 분리된 상태로 앱을 실행합니다. 서버가 프로세스를 소유하고, 여러분의 연결은 상관이 없습니다.",
+      "audioDurationSec": 21.890612
     },
     {
       "id": "next-tutorial",

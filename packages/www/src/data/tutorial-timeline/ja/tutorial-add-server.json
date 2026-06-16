@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "1c646aa227542eb8a44aef3f3343b25be35ef11a178c17f94674354910649f9f",
+  "transcriptHash": "6c010da24e6cdd1d1a55a280178fd3f5fdb7b03a640105f24fe779e6cd01a3f8",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627146,
-      "replayEndSec": 7.928955,
+      "replayStartSec": 1.629299,
+      "replayEndSec": 8.575098,
       "narrationText": "まず、設定プロファイルを作成します。このプロファイルには、SSH キー、マシンリスト、およびこれ以降のすべての操作に使うインフラ設定が格納されます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-add-server/tutorial-add-server-01.c50db1b3.mp3",
       "textHash": "c50db1b3beb5f66d97e2b88c8dda47bf6b868894387dc3a8ec17276538aef1e0",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.928955,
-      "replayEndSec": 16.338306,
+      "replayStartSec": 8.575098,
+      "replayEndSec": 19.204906,
       "narrationText": "次に、名前、IP アドレス、SSH ユーザーを指定してサーバーを CLI に登録します。信頼されたアクセスのためにホストキーが自動的にスキャンされます。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-add-server/tutorial-add-server-02.bf1e549b.mp3",
       "textHash": "bf1e549b829faa071218ab9bc66d4fef0df662ce90b11f9788e45cd15f0515ea",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 16.338306,
-      "replayEndSec": 18.998199,
+      "replayStartSec": 19.204906,
+      "replayEndSec": 21.464422,
       "narrationText": "続いてサーバーをプロビジョニングします。renet がインストールされ、暗号化データストアが作成されます。この後、サーバーはリポジトリをホストする準備が整います。",
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-add-server/tutorial-add-server-03.a348714f.mp3",
       "textHash": "a348714f184f016212d6933c42ba19b0f8351a178e2d62c61f9925f0491c7450",

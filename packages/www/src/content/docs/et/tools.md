@@ -4,8 +4,8 @@ description: "Failide sünkroonimine, terminali ligipääs, VS Code integratsioo
 category: "Guides"
 order: 9
 language: et
-sourceHash: "4b3aebff5e82416f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "59abc2faa1157369"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Tööriistad
@@ -173,6 +173,36 @@ rdc vscode check
 Kontrollib VS Code'i paigaldust, Remote SSH laiendust ja aktiivseid ühendusi.
 
 > **Eeltingimus:** Paigalda VS Code'is laiendus [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh).
+
+### VS Code brauseris
+
+Kohalikku VS Code'i pole? Käivita redaktor repositooriumi liivakastist ja ava see mistahes brauseris:
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+See käsk:
+1. Paigaldab avatud lähtekoodiga redaktoriserveri masinale ühe korra (kirjutuskaitstud jagatud tee, kontrollsummaga kinnitatud)
+2. Käivitab selle repositooriumi liivakastis, nii et failipuu, integreeritud terminal ja kõik alamprotsessid näevad täpselt seda, mida repositoorium näeb
+3. Avab SSH-tunneli kohalikule pordile ja käivitab sinu brauseri seanssipõhise tokeniga URL-iga
+
+Server jätkab tööd pärast tunneli sulgemist; uuesti ühendades kasutatakse seda uuesti. Halda seda käskudega:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| Valik | Kirjeldus |
+|--------|-------------|
+| `--no-open` | Prindi URL brauseri avamise asemel |
+| `--url-only` | Prindi täpselt üks URL-rida stdout-i (skriptimiseks) ja hoia tunnel avatuna |
+| `--local <port>` | Vali kohaliku tunneli port |
+| `--server-provider <id>` | Redaktoriserveri teostus: `openvscode` (vaikimisi) või `code-server` |
+| `--server-archive <file>` | Paigalda eellaaditud tarballi kaudu masinalt (internetiühendust pole vaja) |
+
+Töötab Linux, macOS, Windows või tahvelarvutist. Ainus kohalik nõue on brauser.
 
 ## CLI uuendused (update)
 

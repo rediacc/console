@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "4158f9a0bc813207e578e4446f908152d9bf93be69c1d1e180d70269c326f48c",
+  "transcriptHash": "8467419dfe73ae16482d400685099f033f9bdf998f3fc007dbcfd166219fa4d0",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.626476,
-      "replayEndSec": 7.903516,
+      "replayStartSec": 1.614947,
+      "replayEndSec": 8.543153,
       "narrationText": "Zuerst bestätigen wir, dass die CLI im Pfad verfügbar ist. Das Ausführen der CLI mit dem Versions-Flag gibt die installierte Version aus und zeigt, dass die Installation erfolgreich abgeschlossen wurde.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-installation/tutorial-installation-01.113f8571.mp3",
       "textHash": "113f8571f19e112dc7e998b1a01106fb792e7ac516a3085cfbbdb487f1da7903",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 7.903516,
-      "replayEndSec": 10.095825,
+      "replayStartSec": 8.543153,
+      "replayEndSec": 10.766661,
       "narrationText": "Jetzt führen wir die CLI doctor aus. Sie prüft alle Abhängigkeiten, die die CLI benötigt, also Node, SSH und den Rest, und meldet eventuelle Lücken. Ein sauberer Bericht bedeutet, dass wir bereit sind, einen Server hinzuzufügen.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-installation/tutorial-installation-02.f10b8ee6.mp3",
       "textHash": "f10b8ee67b6fabfe18bb4fa81e188595fd692af167e12178e93516f43c3f4789",

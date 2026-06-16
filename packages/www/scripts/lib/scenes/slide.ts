@@ -3,12 +3,16 @@ import { existsSync, readFileSync } from 'node:fs';
 import type { SlideScene, TitleScene, OutroScene, CastNarratedScene } from '../storyboard.ts';
 import { makeFreezeMp4, makeSilentFreezeMp4, PAD_FILTER_CENTER } from '../ffmpeg-video.ts';
 import type { ParsedCast } from '../cast-splitter.ts';
-import { rasterizeSvgTo1080p } from './svg-render.ts';
+import { escapeXmlText, rasterizeSvgTo1080p } from './svg-render.ts';
 import type { SceneContext, TranscriptDoc } from './index.ts';
 
 const SUB_ITEM_SLOTS = 8;
-const COMMAND_AUTO_MAX_TOKENS = 3;
-const COMMAND_AUTO_MAX_CHARS = 36;
+// JetBrains Mono at 28px in the 1120px command column (x=640..1760).
+const COMMAND_WRAP_COLS = 64;
+const COMMAND_MAX_LINES = 2;
+// Must match the command column x offset in title-card.svg.
+const COMMAND_COLUMN_X = 640;
+const COMMAND_LINE_DY = 30;
 
 /**
  * Step-card visual constants. The step card is a per-cast-narrated-scene
@@ -26,7 +30,8 @@ export function compileSlide(scene: SlideScene, ctx: SceneContext): string {
 export function compileTitle(scene: TitleScene, ctx: SceneContext): string {
   const svgPath = resolveCardSvg(scene.src ?? 'title-card.svg', 'title-card.svg', ctx);
   // Intro card: activeIndex=null => all rows at full opacity.
-  return renderSvgSlide(svgPath, scene.id, scene.narrationKey, ctx, buildTitleCardSubs(ctx, null));
+  const { subs, raw } = buildTitleCardSubs(ctx, null);
+  return renderSvgSlide(svgPath, scene.id, scene.narrationKey, ctx, subs, raw);
 }
 
 /**
@@ -47,7 +52,8 @@ export function renderStepCard(
   const svgPath = resolveCardSvg('title-card.svg', 'title-card.svg', ctx);
   const png = path.join(ctx.tmp, `${sceneId}.png`);
   const mp4 = path.join(ctx.tmp, `${sceneId}.mp4`);
-  rasterizeSvgTo1080p(svgPath, png, buildTitleCardSubs(ctx, activeIndex));
+  const { subs, raw } = buildTitleCardSubs(ctx, activeIndex);
+  rasterizeSvgTo1080p(svgPath, png, subs, raw);
   makeSilentFreezeMp4(png, durationSec, mp4, PAD_FILTER_CENTER);
   return mp4;
 }
@@ -57,7 +63,10 @@ export function renderStepCard(
  * the intro card (activeIndex = null → all rows at full opacity) and the
  * per-step card (activeIndex 1..N → only the active row at full opacity).
  */
-function buildTitleCardSubs(ctx: SceneContext, activeIndex: number | null): Record<string, string> {
+function buildTitleCardSubs(
+  ctx: SceneContext,
+  activeIndex: number | null
+): { subs: Record<string, string>; raw: Record<string, string> } {
   // Intro card (activeIndex === null) keeps full brightness everywhere.
   // Step cards spotlight one row by dimming the header AND all other rows to
   // the same low opacity, so the active row is the only fully bright element.
@@ -67,17 +76,57 @@ function buildTitleCardSubs(ctx: SceneContext, activeIndex: number | null): Reco
     SUBTITLE: '',
     HEADER_OPACITY: isStepCard ? STEP_CARD_INACTIVE_OPACITY : STEP_CARD_ACTIVE_OPACITY,
   };
+  // Commands are injected as raw SVG fragments so long commands can wrap
+  // onto a second <tspan> line instead of being truncated with an ellipsis.
+  const raw: Record<string, string> = {};
   const subItems = buildSubItems(ctx);
   for (let i = 0; i < SUB_ITEM_SLOTS; i++) {
     const oneBased = i + 1;
     subs[`ITEM_${oneBased}_LABEL`] = subItems[i]?.label ?? '';
-    subs[`ITEM_${oneBased}_COMMAND`] = subItems[i]?.command ?? '';
+    raw[`ITEM_${oneBased}_COMMAND`] = buildCommandMarkup(subItems[i]?.command ?? '');
     subs[`ITEM_${oneBased}_OPACITY`] =
       !isStepCard || oneBased === activeIndex
         ? STEP_CARD_ACTIVE_OPACITY
         : STEP_CARD_INACTIVE_OPACITY;
   }
-  return subs;
+  return { subs, raw };
+}
+
+/**
+ * Word-wrap a command into at most COMMAND_MAX_LINES lines of
+ * COMMAND_WRAP_COLS columns and emit it as SVG text content. Line two is a
+ * relative <tspan>; only a command overflowing BOTH lines gets an ellipsis.
+ */
+function buildCommandMarkup(command: string): string {
+  const words = command.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length <= COMMAND_WRAP_COLS || !current) {
+      current = candidate;
+      continue;
+    }
+    lines.push(current);
+    current = word;
+    if (lines.length === COMMAND_MAX_LINES) break;
+  }
+  if (lines.length < COMMAND_MAX_LINES && current) {
+    lines.push(current);
+    current = '';
+  }
+  if (current || lines.length > COMMAND_MAX_LINES) {
+    const last = lines[COMMAND_MAX_LINES - 1] ?? '';
+    lines[COMMAND_MAX_LINES - 1] = `${last.slice(0, COMMAND_WRAP_COLS - 1)}…`;
+    lines.length = COMMAND_MAX_LINES;
+  }
+  return lines
+    .map((line, idx) =>
+      idx === 0
+        ? escapeXmlText(line)
+        : `<tspan x="${COMMAND_COLUMN_X}" dy="${COMMAND_LINE_DY}">${escapeXmlText(line)}</tspan>`
+    )
+    .join('');
 }
 
 export function compileOutro(scene: OutroScene, ctx: SceneContext): string {
@@ -102,11 +151,12 @@ function renderSvgSlide(
   sceneId: string,
   narrationKey: string,
   ctx: SceneContext,
-  substitutions: Record<string, string> = {}
+  substitutions: Record<string, string> = {},
+  rawSubstitutions: Record<string, string> = {}
 ): string {
   const png = path.join(ctx.tmp, `${sceneId}.png`);
   const mp4 = path.join(ctx.tmp, `${sceneId}.mp4`);
-  rasterizeSvgTo1080p(svgPath, png, substitutions);
+  rasterizeSvgTo1080p(svgPath, png, substitutions, rawSubstitutions);
   const narration = ctx.narrations.get(narrationKey);
   const audioPath = ctx.narrations.resolvePath(narration.audioSrc);
   const duration = narration.audioDurationSec ?? 0;
@@ -190,8 +240,9 @@ function buildSubItems(ctx: SceneContext): Array<{ label: string; command: strin
     if (scene.type !== 'cast-narrated') continue;
     const castNarrated = scene as CastNarratedScene;
     const label = lookupCardLabel(events, eventsEn, castNarrated.markerIndex);
-    const command =
-      castNarrated.card?.command ?? autoTrimCommand(ctx.cast, castNarrated.markerIndex);
+    // Cards show the FULL command (wrapped onto two lines when long) — the
+    // recorded marker text, with `card.command` as an authored override.
+    const command = castNarrated.card?.command ?? markerCommand(ctx.cast, castNarrated.markerIndex);
     items.push({ label, command });
     if (items.length >= SUB_ITEM_SLOTS) break;
   }
@@ -210,24 +261,8 @@ function lookupCardLabel(
   return '';
 }
 
-/**
- * Derive a short command snippet from a cast marker's recorded text:
- * keep the first N whitespace-delimited tokens, append an ellipsis if more
- * tokens follow, hard-cap total chars at maxChars.
- */
-function autoTrimCommand(
-  cast: ParsedCast,
-  markerIndex: number,
-  maxTokens = COMMAND_AUTO_MAX_TOKENS,
-  maxChars = COMMAND_AUTO_MAX_CHARS
-): string {
+/** The full recorded command text of a cast marker. */
+function markerCommand(cast: ParsedCast, markerIndex: number): string {
   const markers = cast.events.filter(([, k]) => k === 'm');
-  const marker = markers[markerIndex];
-  const text = (marker?.[2] ?? '').toString().trim();
-  if (!text) return '';
-  const tokens = text.split(/\s+/);
-  const head = tokens.slice(0, maxTokens).join(' ');
-  const withEllipsis = tokens.length > maxTokens ? `${head} …` : head;
-  if (withEllipsis.length > maxChars) return `${withEllipsis.slice(0, maxChars - 1)}…`;
-  return withEllipsis;
+  return (markers[markerIndex]?.[2] ?? '').toString().trim();
 }

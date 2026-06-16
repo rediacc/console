@@ -1,0 +1,54 @@
+---
+title: "Transferência Delta"
+description: "O primeiro envio para outra máquina copia tudo; todos os envios seguintes transferem apenas os blocos alterados -- automaticamente."
+category: "Tutorials"
+subcategory: advanced
+order: 17
+language: pt
+sourceHash: "6dabbcbb0670ac60"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Transferência Delta
+
+Envie um repositório para outra máquina duas vezes. O primeiro envio transporta tudo. O segundo transporta apenas o que mudou: mesmo comando, sem sinalizadores, sem gestão manual. E não tem de acreditar à fé, porque o resultado do envio imprime exatamente quanto foi transferido.
+
+## Ver o tutorial
+
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
+## Blocos, não bytes
+
+![Blocks, not bytes](/img/tutorials/tutorial-delta-transfer/slide-1.svg)
+
+Após o primeiro envio, o CLI mantém uma imagem base imutável idêntica nas duas máquinas. O envio seguinte compara os blocos com essa base e envia apenas a diferença.
+
+## Passo 1: O envio de base
+
+<TutorialStep number={1} />
+
+O resultado fala por si: `2.0 GB transferred in 44.4s (full)`. A imagem inteira viajou, e uma base delta idêntica ficou retida nos dois lados.
+
+## Passo 2: Alterar um pouco
+
+<TutorialStep number={2} />
+
+## Passo 3: Enviar a diferença
+
+<TutorialStep number={3} />
+
+Mesmo comando, linha bem diferente: `50.8 MB transferred in 5.7s (delta vs base ..., image 2.0 GB)`. Cinquenta megabytes mudaram, por isso cerca de cinquenta megabytes viajaram, de uma imagem de dois gigabytes.
+
+## Passo 4: Sincronizados, em segundos
+
+<TutorialStep number={4} />
+
+Ambas as máquinas têm o mesmo repositório, atualizado ao custo da alteração, não do tamanho. Os backups máquina-a-máquina de hora a hora deixam de ser caros.
+
+> Precisa de controlo explícito? `--delta-base <guid>` fixa a base de comparação, e `--strategy` escolhe o algoritmo de delta por blocos. Por defeito, ambos são calculados automaticamente.
+
+---
+
+Próximo: [Gestão de Armazenamento](/pt/docs/tutorial-storage-management).

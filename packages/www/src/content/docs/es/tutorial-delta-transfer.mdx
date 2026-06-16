@@ -1,0 +1,54 @@
+---
+title: "Transferencia delta"
+description: "El primer push a otra máquina copia todo; cada push posterior transfiere solo los bloques que cambiaron, de forma automática."
+category: "Tutorials"
+subcategory: advanced
+order: 17
+language: es
+sourceHash: "6dabbcbb0670ac60"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Transferencia delta
+
+Haz push de un repositorio a otra máquina dos veces. El primero lleva todo. El segundo lleva solo lo que cambió: mismo comando, sin flags, sin bookkeeping. Y no tienes que confiar en eso sin verlo, porque la salida del push imprime exactamente cuánto se transfirió.
+
+## Ver el tutorial
+
+![Tutorial: Delta transfer](/assets/tutorials/tutorial-delta-transfer.cast)
+
+## Bloques, no bytes
+
+![Bloques, no bytes](/img/tutorials/tutorial-delta-transfer/slide-1.svg)
+
+Después del primer push, el CLI mantiene una imagen base inmutable idéntica en ambas máquinas. El siguiente push compara bloques contra esa base y envía solo la diferencia.
+
+## Paso 1: El push de referencia
+
+<TutorialStep number={1} />
+
+La salida lo dice claramente: `2.0 GB transferred in 44.4s (full)`. Viajó toda la imagen, y se conservó una base delta idéntica en ambos lados.
+
+## Paso 2: Cambia algo pequeño
+
+<TutorialStep number={2} />
+
+## Paso 3: Push de la diferencia
+
+<TutorialStep number={3} />
+
+Mismo comando, línea muy distinta: `50.8 MB transferred in 5.7s (delta vs base ..., image 2.0 GB)`. Cambiaron cincuenta megabytes, así que viajaron unos cincuenta megabytes, de una imagen de dos gigabytes.
+
+## Paso 4: Sincronizados en segundos
+
+<TutorialStep number={4} />
+
+Las dos máquinas tienen el mismo repositorio, actualizado al coste del cambio, no del tamaño. Los backups automáticos de máquina a máquina dejan de ser costosos.
+
+> ¿Necesitas control explícito? `--delta-base <guid>` fija la base de comparación, y `--strategy` elige el algoritmo de delta de bloques. Por defecto lo calcula todo por ti.
+
+---
+
+Siguiente: [Gestión del almacenamiento](/es/docs/tutorial-storage-management).

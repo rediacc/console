@@ -6,7 +6,7 @@
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "at": 1.626287,
+      "at": 1.617466,
       "text": "Birinci adım. Yeni bir ed25519 SSH anahtarı oluşturacağız. ed25519 modern standarttır: küçük, hızlı ve geniş destekli. Bunu ekleyeceğiniz her sunucu için yalnızca bir kez yapmanız yeterlidir.",
       "afterText": "Anahtar oluşturuldu. Sunucuya kopyalayacağımız kısım, genel anahtar.",
       "cardLabel": "Anahtar Oluştur",
@@ -16,7 +16,7 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "at": 6.456735,
+      "at": 6.370674,
       "text": "İkinci adım. Genel anahtarı ssh-copy-id ile sunucuya kopyalıyoruz. Sunucu parolası son kez isteniyor. Bundan sonra o sunucu için parola ile kimlik doğrulama gerekmez.",
       "afterText": "Komutu dizüstünüzde çalıştırın. Başarılı olduğunda parolalar devre dışı kalır.",
       "cardLabel": "Sunucu 1'i Yetkilendir",
@@ -25,7 +25,7 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "at": 13.33617,
+      "at": 13.176828,
       "text": "Üçüncü adım. Anahtarı CLI'ye kaydediyoruz. Bundan itibaren her komut bu anahtarla kimlik doğrulaması yapar. Artık parola gerekmez, etkileşimli istemler de olmaz.",
       "afterText": "Anahtar CLI'ye kaydedildi.",
       "cardLabel": "Sunucu 2'yi Yetkilendir",

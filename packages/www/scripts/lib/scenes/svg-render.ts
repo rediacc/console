@@ -5,11 +5,17 @@ import { VIDEO_W, VIDEO_H } from '../ffmpeg-video.ts';
 export function rasterizeSvgTo1080p(
   svgPath: string,
   pngPath: string,
-  substitutions: Record<string, string> = {}
+  substitutions: Record<string, string> = {},
+  rawSubstitutions: Record<string, string> = {}
 ): void {
   let svg = readFileSync(svgPath, 'utf8');
   for (const [k, v] of Object.entries(substitutions)) {
     svg = svg.replaceAll(`{{${k}}}`, escapeXmlText(v));
+  }
+  // Raw values are pre-escaped SVG fragments (e.g. multi-line command
+  // markup with <tspan> line breaks) — substituted verbatim.
+  for (const [k, v] of Object.entries(rawSubstitutions)) {
+    svg = svg.replaceAll(`{{${k}}}`, v);
   }
   const resvg = new Resvg(svg, {
     fitTo: { mode: 'width', value: VIDEO_W },
@@ -21,6 +27,6 @@ export function rasterizeSvgTo1080p(
   void VIDEO_H;
 }
 
-function escapeXmlText(s: string): string {
+export function escapeXmlText(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }

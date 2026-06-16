@@ -5,8 +5,8 @@ description: >-
 category: Guides
 order: 5
 language: zh
-sourceHash: "aa77a4f937206e58"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "011bc5d87114f105"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # 服务
@@ -76,6 +76,25 @@ down() {
 ```
 
 > **重要：** 请始终使用 `renet compose --` 而非 `docker compose`。`renet compose` 封装器强制实施主机网络、IP 分配和 renet-proxy 所需的服务发现标签。CRIU 检查点/恢复功能会添加到带有 `rediacc.checkpoint=true` 标签的容器。直接使用 `docker compose` 会被 Rediaccfile 验证拒绝。详情请参阅[网络](/zh/docs/networking)。
+
+### 能力标签
+
+容器默认以最小 Linux 能力集运行。服务可通过在 `docker-compose.yml` 中添加标签来申请额外能力：
+
+| 标签 | 授权内容 | 适用场景 |
+|-------|--------|---------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`、`SYS_PTRACE`、`NET_ADMIN` | CRIU 检查点/恢复（热迁移、保存与恢复） |
+| `rediacc.wireguard=true` | `NET_ADMIN` 及 `/dev/net/tun` 设备 | 在容器内运行 WireGuard 客户端 |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard` 允许服务建立 WireGuard 隧道，例如将某个进程的流量通过远端节点转发出去。由于所有服务均使用主机网络，应将隧道限制在容器内的网络命名空间中，避免影响宿主机的路由表。`privileged: true`、`pid: host`、`ipc: host` 等宽泛特权选项无论是否添加标签，均会被验证器拒绝。
 
 ### 多服务布局
 

@@ -1,0 +1,101 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "84f620fffeeb2eafa60d0222c6c09c348a9ce71234a5ed23bca4dfcf7736b470",
+  "steps": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413171,
+      "replayEndSec": 10.379022,
+      "narrationText": "Знакомьтесь: pulse. Он хранит счётчик в памяти процесса и выводит удар каждые пять секунд. Счётчик на шести и продолжает расти, и существует он только в RAM. Перезапустите процесс, и он начнёт заново с единицы.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-01.74dbbf9d.mp3",
+      "textHash": "74dbbf9d40a174a93d4fa27ed2b8672f5de34b4deab9a776b3540ee6ca790c0a",
+      "audioDurationSec": 14.915918,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-01-after.86047e45.mp3",
+      "afterAudioDurationSec": 4.832653,
+      "afterTextHash": "86047e45497da3705b61af89a9dbb81a5ec7a9d89cf73707bfb32e664c46d6e9"
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.379022,
+      "replayEndSec": 101.149024,
+      "narrationText": "Одна команда перемещает его, прямо на ходу. Первая фаза передаёт основной объём, два гигабайта примерно за полминуты, пока источник продолжает работать. Затем переключение: checkpoint фиксирует работающие процессы, передаёт последние несколько мегабайт и выводит время простоя прямо здесь. Около двадцати секунд для перемещения двух гигабайт.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-02.96afe0c8.mp3",
+      "textHash": "96afe0c855e1fbf75774722afad39b62e7ccdd950f4e232fe54a41b4243e448c",
+      "audioDurationSec": 24.032653,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-02-after.19a25b82.mp3",
+      "afterAudioDurationSec": 9.090612,
+      "afterTextHash": "19a25b8255a81c826fb266f59c23e48206aeb322c3f4c889551f1aab0d2b33de"
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "replayStartSec": 101.149024,
+      "replayEndSec": 106.859481,
+      "narrationText": "Проверяем новую машину: вот он. Смонтирован, Docker запущен, два container активны.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-03.c3fc24fa.mp3",
+      "textHash": "c3fc24fa0a9befc0dae2e415c876f8f7fed13c035bff7c2151e0c5a481bbd26f",
+      "audioDurationSec": 7.000816,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-03-after.311cf836.mp3",
+      "afterAudioDurationSec": 3.004082,
+      "afterTextHash": "311cf836f409f83f8b0e2f0721ec5abb6cf6cc6a41d35dc259168cbfe7d4eda7"
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "replayStartSec": 106.859481,
+      "replayEndSec": 112.346008,
+      "narrationText": "А что на источнике? Repository всё ещё в списке, но посмотрите на строку: не смонтирован, нет Docker, ноль container. Здесь больше ничего не работает. Image намеренно остаётся как база для следующей передачи дельты.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-04.8757e7f7.mp3",
+      "textHash": "8757e7f78b93120443ca9669451a0653f5d7d06cc8b5c450b76b4842c0021896",
+      "audioDurationSec": 16.587755,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-04-after.31d86104.mp3",
+      "afterAudioDurationSec": 8.202449,
+      "afterTextHash": "31d86104f1a881f364a60b3552b5416e8b5a463a19a541a50783a3f1b5f3afc5"
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "replayStartSec": 112.346008,
+      "replayEndSec": 119.168595,
+      "narrationText": "Теперь главное. Счётчик показывает семнадцать, восемнадцать, девятнадцать, продолжает расти. Он продолжил ровно с того места, где его зафиксировал checkpoint, а не начал заново с единицы. Процесс так и не заметил, что сменил машину.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-05.2f32f8a9.mp3",
+      "textHash": "2f32f8a936e2381016111d6ef41f65a6685c86d1e2e1cca2c8a80eaacf8b48a9",
+      "audioDurationSec": 18.834286,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/tutorial-live-migration-05-after.bd376a97.mp3",
+      "afterAudioDurationSec": 3.970612,
+      "afterTextHash": "bd376a97dda82f1f630b8857402b71fe59cbdf7be3a6824992526f27b93bd4c0"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "2b5b857a629645ff5f99ddf075e0610afb8bb2b06ee7a6ab5f41648ab146add2",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/intro.2b5b857a.mp3",
+      "narrationText": "Время для чего-то масштабного: переносим РАБОТАЮЩЕЕ приложение на другую машину, прямо во время работы. Наблюдаем за живым счётчиком, бьющимся в памяти приложения, перемещаем всё одной командой и видим, как счётчик просто продолжает считать на новой машине.",
+      "audioDurationSec": 18.207347
+    },
+    {
+      "id": "how-it-moves",
+      "textHash": "041eb794273636826da21aca398b33a4e70853c0dae0eeddd0760290f6804aae",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/how-it-moves.041eb794.mp3",
+      "narrationText": "Это работает в две фазы. Первая фаза копирует основной объём, пока приложение продолжает работать. Вторая фаза фиксирует живые процессы через checkpoint, передаёт финальную дельту вместе с состоянием процессов и возобновляет всё на новой машине. Так что время простоя определяется дельтой, а не объёмом данных. И приложение никогда не узнает, что переехало.",
+      "audioDurationSec": 30.040816
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "dbfb3533afd9f6057ef7b28dcdc0e84aad0860105b969a7718a8bfe99257a58a",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-live-migration/next-tutorial.dbfb3533.mp3",
+      "narrationText": "Счётчик так и не сбросился. Память, база данных, файлы, всё просто сменило машину. Дальше посмотрим, почему вторая передача всегда быстрее.",
+      "audioDurationSec": 12.669388
+    }
+  ]
+}

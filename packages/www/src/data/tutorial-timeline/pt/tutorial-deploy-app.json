@@ -7,17 +7,17 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "0b21a25889c5b06e57d86fb37232bb1fdedf05e1850d6f4544a4d11549ee4178",
+  "transcriptHash": "af493b8ed560de8f76fa7c09cef876733b8b7d2379d02d279bd3cbaa3f0ad023",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 2.40432,
-      "replayEndSec": 6.041569,
-      "narrationText": "Passo um. Vamos listar os templates disponíveis. O Rediacc inclui configurações prontas para as aplicações mais comuns, para não termos de escrever um docker-compose de raiz.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-01.cc591e6f.mp3",
-      "textHash": "cc591e6f9f1cda6873254fab8187089c3f210aac4e74b305e3cb0368370a82e0",
-      "audioDurationSec": 13.00898,
+      "replayStartSec": 2.408078,
+      "replayEndSec": 6.077084,
+      "narrationText": "Passo um: listar os templates disponíveis. O Rediacc já vem com configurações prontas para apps comuns, então não é preciso escrever um docker-compose do zero.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-01.4d06959f.mp3",
+      "textHash": "4d06959fcfb1078ec4a1b0a8a18b3f8698c0c7b41a2267beb12fd0c118fcca03",
+      "audioDurationSec": 10.370612,
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-01-after.46255f71.mp3",
       "afterAudioDurationSec": 7.706122,
       "afterTextHash": "46255f716ca1f9ec1018140c584ae0ab6addc791b1ebecd8d1383d6a4f258b85"
@@ -25,12 +25,12 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 6.041569,
-      "replayEndSec": 13.566247,
-      "narrationText": "Passo dois. Vamos aplicar o template app-postgres ao repositório. Surgem dois ficheiros: o docker-compose.yml que descreve os contentores, e o Rediaccfile que define os hooks de arranque e paragem.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-02.06cb5bf7.mp3",
-      "textHash": "06cb5bf745fb4a93b78e3fbb0b342269de14dd0972e5f581be5a7ad48aff7c36",
-      "audioDurationSec": 12.59102,
+      "replayStartSec": 6.077084,
+      "replayEndSec": 14.72542,
+      "narrationText": "Passo dois: adicionar o template app-postgres ao repo. Um conjunto de arquivos testados, copiados diretamente.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-02.7cec301e.mp3",
+      "textHash": "7cec301e5cf98d473c3bd47a840a580b1790cec903f35ec83b00aeab62390893",
+      "audioDurationSec": 8.594286,
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-02-after.55dfb3c9.mp3",
       "afterAudioDurationSec": 5.720816,
       "afterTextHash": "55dfb3c92e598fd05b138b1ce081c11c2174d4c0b920bb95cbdca0803aa6efb1"
@@ -38,12 +38,12 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 13.566247,
-      "replayEndSec": 23.282435,
-      "narrationText": "Passo três. Vamos iniciar o repositório. A ferramenta arranca os contentores, monta o volume encriptado e liga o daemon Docker isolado.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-03.5cb4b2ae.mp3",
-      "textHash": "5cb4b2aecbd155b3815deed37e047042285017962a9580ea0065b6487077cdc6",
-      "audioDurationSec": 10.527347,
+      "replayStartSec": 14.72542,
+      "replayEndSec": 21.699752,
+      "narrationText": "Vamos espiar dentro do repo e listar o que chegou: um Rediaccfile com os hooks de start e stop, e um arquivo docker-compose descrevendo os containers.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-03.b0c4c894.mp3",
+      "textHash": "b0c4c8947664555bb218b36ce9045ca5f686ed3f9ac5ea1b75db43585ec4cedd",
+      "audioDurationSec": 12.120816,
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-03-after.8edc2cc7.mp3",
       "afterAudioDurationSec": 5.32898,
       "afterTextHash": "8edc2cc76c298949f60dc44560c8b198f9b0ea2293ac7aff9a4240b5fc87c5cb"
@@ -51,12 +51,12 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 23.282435,
-      "replayEndSec": 30.345778,
-      "narrationText": "Vamos verificar o que está a correr. O docker ps mostra apenas os contentores deste repositório. Os outros repositórios no mesmo servidor têm os seus próprios daemons e são completamente invisíveis a partir desta vista.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-04.3661fe4f.mp3",
-      "textHash": "3661fe4fab858d99b4d06266adc70766b452a500b0fa51d5cda8d3b4a23f7bab",
-      "audioDurationSec": 15.725714,
+      "replayStartSec": 21.699752,
+      "replayEndSec": 28.8781,
+      "narrationText": "Passo três: iniciar o repo. Um comando, e o CLI monta o volume criptografado, inicia o Docker daemon isolado e sobe os containers.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-04.85ded2e7.mp3",
+      "textHash": "85ded2e7f57ec796b54f99ce5eb556f5d45069bc91b28df391f6ba9231f93287",
+      "audioDurationSec": 10.266122,
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-04-after.04a7536f.mp3",
       "afterAudioDurationSec": 6.530612,
       "afterTextHash": "04a7536f4021667c9cecc7527089c809f1b56960f4cd3f93c879eda0855fc01d"
@@ -64,12 +64,12 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "replayStartSec": 30.345778,
-      "replayEndSec": 38.921409,
-      "narrationText": "Vamos verificar o que está em execução. docker ps aqui lista apenas os containers deste repo. Os outros repos no mesmo servidor têm seus próprios daemons e são completamente invisíveis nesta visão.",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-05.f2149890.mp3",
-      "textHash": "f214989021bea338c340d9bf2e7de1ff4b825db8add0a3e95a27218ec1062fb8",
-      "audioDurationSec": 14.994286,
+      "replayStartSec": 28.8781,
+      "replayEndSec": 34.846304,
+      "narrationText": "Verifique o que está rodando. O docker ps aqui lista apenas os containers deste repo. Todo outro repo neste servidor tem seu próprio daemon, completamente invisível a partir desta visualização.",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-05.38221e3e.mp3",
+      "textHash": "38221e3e2e3467871dbc2767674f283f30113903318e35a6bc68145fc16d1439",
+      "audioDurationSec": 18.755918,
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/tutorial-deploy-app-05-after.af94f3b9.mp3",
       "afterAudioDurationSec": 6.765714,
       "afterTextHash": "af94f3b92d25acadc79eefd6404fc3b3577f0ce0410fcf9c2016a57136825462"
@@ -78,10 +78,10 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "b9acd33a3ff0c7dee6e1c2bd3d290eacbfb31ae882cd0ac250ef2f902ef313df",
-      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/intro.b9acd33a.mp3",
-      "narrationText": "Vamos implementar uma aplicação a sério! Passamos de um repositório vazio para contentores em execução em três passos curtos.",
-      "audioDurationSec": 7.810612
+      "textHash": "8b92a74b5c848fd1bfc7ce61cbc38c765bbd14d9ff19a045de4242f920ccb724",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/intro.8b92a74b.mp3",
+      "narrationText": "Hora de fazer o deploy de um app de verdade! De um repo vazio a containers rodando em três passos: escolher, aplicar, executar.",
+      "audioDurationSec": 10.266122
     },
     {
       "id": "pick-apply-run",
@@ -89,6 +89,13 @@
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/pick-apply-run.f32d8fb3.mp3",
       "narrationText": "O fluxo é simples: escolher um template, aplicá-lo ao repositório e executá-lo. A CLI traz templates incorporados, por isso nunca temos de escrever um docker-compose de raiz.",
       "audioDurationSec": 12.930612
+    },
+    {
+      "id": "vscode-file-tour",
+      "textHash": "f6ba80ca5849f601391cbde84ef766b3c50672fa4278ed58f1e5202605ee87f7",
+      "audioSrc": "/assets/tutorials/audio/pt/tutorial-deploy-app/vscode-file-tour.f6ba80ca.mp3",
+      "narrationText": "Prefere um editor em vez do cat? Os mesmos ficheiros abrem no VS Code, diretamente do seu browser. Aqui está o Rediaccfile e o ficheiro compose ao lado. Vemos esta configuração em detalhe num tutorial mais adiante.",
+      "audioDurationSec": 19.330612
     },
     {
       "id": "next-tutorial",

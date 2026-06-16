@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "4f19c8d6618263460aac63a3420fc80cc5e9eaadb0cc59528e75c9618b38015c",
+  "transcriptHash": "6a67fe76e4cc73d731e55825cdd39dea8e924f92c53224431893f4b9953dd77c",
   "steps": [
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "replayStartSec": 1.627146,
-      "replayEndSec": 7.928955,
+      "replayStartSec": 1.629299,
+      "replayEndSec": 8.575098,
       "narrationText": "Начнём с создания профиля конфигурации. Профиль хранит SSH-ключ, список машин и настройки инфраструктуры для всего, что мы будем делать дальше.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-add-server/tutorial-add-server-01.c7bad94c.mp3",
       "textHash": "c7bad94c4146fef704a052020dbdf2580ff1f8a021a5e4abc6e90ed152cd4189",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "replayStartSec": 7.928955,
-      "replayEndSec": 16.338306,
+      "replayStartSec": 8.575098,
+      "replayEndSec": 19.204906,
       "narrationText": "Теперь регистрируем сервер в CLI: указываем имя, IP-адрес и SSH-пользователя. Ключи хоста сканируются автоматически для доверенного доступа.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-add-server/tutorial-add-server-02.a547f4ee.mp3",
       "textHash": "a547f4eec8e83b8f6a9da0916988327cf80d274474333d26aa63de2f414a3bc5",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "replayStartSec": 16.338306,
-      "replayEndSec": 18.998199,
+      "replayStartSec": 19.204906,
+      "replayEndSec": 21.464422,
       "narrationText": "Далее выполняем подготовку сервера. Устанавливается renet и создаётся зашифрованное хранилище данных. После этого сервер готов к размещению репозиториев.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-add-server/tutorial-add-server-03.1cdc5624.mp3",
       "textHash": "1cdc56242c0d5cdb3fa94e31f63c7089c4c11f0d78a285f88cbf637bebbc131a",

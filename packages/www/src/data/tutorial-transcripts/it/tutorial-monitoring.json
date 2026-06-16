@@ -6,7 +6,7 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "at": 2.411841,
+      "at": 2.416158,
       "text": "Iniziamo con la vista di sistema. Il comando di query macchina con il filtro system mostra uptime, utilizzo del disco e stato dello storage. Se qualcosa non va, il rapporto ce lo dice.",
       "afterText": "Uptime, disco, storage. Tutto cio' che serve a colpo d'occhio.",
       "cardLabel": "Stato del Sistema",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "at": 8.597185,
+      "at": 8.503611,
       "text": "Ora i container. Questa vista elenca ogni container in esecuzione su tutti i repository della macchina -- nome, stato, salute, CPU, memoria e quale repo li gestisce.",
       "afterText": "Ogni container su ogni repo, in un'unica vista.",
       "cardLabel": "Container",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "at": 15.126152,
+      "at": 14.799411,
       "text": "E i repo stessi. Dimensione, stato di montaggio, stato del Docker daemon, utilizzo del disco. Tutto quello che devi sapere su ogni ambiente isolato sulla macchina.",
       "afterText": "Tutti i repo, tutti i loro daemon, tutto il loro utilizzo del disco.",
       "cardLabel": "Repository",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "at": 24.385141,
+      "at": 21.195367,
       "text": "Il comando di query macchina ti da' tutto in un colpo solo. Informazioni di sistema, container, repository -- tutto insieme. Eseguilo una volta e hai il quadro completo.",
       "afterText": "Tutto insieme, senza bisogno di filtri.",
       "cardLabel": "Query Completa",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "at": 32.334422,
+      "at": 26.969407,
       "text": "E infine il controllo diagnostico per un controllo rapido sul tuo laptop. Node, chiave SSH, renet, Docker -- tutto cio' da cui dipende la CLI. Questa e' la serie completa. Dall'installazione al monitoraggio, tutto dal tuo terminale.",
       "afterText": "Tutto verde significa che la tua CLI locale e' in salute.",
       "cardLabel": "Doctor",
@@ -60,7 +60,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "E con questo chiudiamo la serie. Ora puoi installare, configurare, distribuire, forkare, andare in produzione, avviare in automatico, fare il backup e monitorare -- tutto dal tuo terminale!"
+      "text": "Ora puoi installare, configurare, distribuire, fare il fork, andare live, avviare automaticamente, eseguire il backup e monitorare. Il percorso avanzato inizia adesso: versiona i tuoi repository come il codice, con commit e rollback."
     }
   ],
   "title": "Monitoraggio",
@@ -72,6 +72,6 @@
     "cast-step-2": "Repo",
     "cast-step-3": "Tutto in un colpo solo",
     "cast-step-4": "Controllo locale",
-    "outro": "Fine della serie"
+    "outro": "Avanti: Branching, Commit e Rollback"
   }
 }

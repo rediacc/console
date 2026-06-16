@@ -52,17 +52,17 @@ run_cmd "rdc repo list --machine $M"
 pause 2
 
 section "Original — index.html is here"
-run_cmd "rdc term connect --machine $M --repository my-app --command 'ls -la index.html' 2>/dev/null"
+run_cmd "rdc term connect --machine $M --repository my-app --command 'ls -la index.html'"
 
 pause 2
 
 section "Fork — change something only in the fork"
-run_cmd "rdc term connect --machine $M --repository my-app:experiment --command 'rm index.html && echo removed' 2>/dev/null"
+run_cmd "rdc term connect --machine $M --repository my-app:experiment --command 'rm index.html && echo removed'"
 
 pause 2
 
 section "Original is untouched"
-run_cmd "rdc term connect --machine $M --repository my-app --command 'ls -la index.html' 2>/dev/null"
+run_cmd "rdc term connect --machine $M --repository my-app --command 'ls -la index.html'"
 
 pause 2
 
@@ -71,10 +71,9 @@ run_cmd "rdc repo delete --name my-app:experiment --machine $M"
 
 pause 2
 
+# End the on-camera portion; cleanup below is not recorded.
+end_recording
 # Final cleanup
 rdc repo down --name my-app --machine "$M" 2>/dev/null || true
 rdc repo down --name my-app --machine "$M" --unmount 2>/dev/null || true
 rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
-
-printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
-sleep 2

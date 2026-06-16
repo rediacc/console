@@ -52,8 +52,7 @@ type_only_cmd "rdc vscode connect --machine $M --repository my-app"
 
 pause 2
 
+# End the on-camera portion; cleanup below is not recorded.
+end_recording
 # Clean up
 rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
-
-printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
-sleep 2

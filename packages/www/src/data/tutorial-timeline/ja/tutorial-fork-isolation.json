@@ -1,0 +1,109 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "ja",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "d2e775ace5867c8812ae0b5e4ec23d0dddc4bc7e4da87418b96e4349832a64b3",
+  "steps": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.412666,
+      "replayEndSec": 8.155445,
+      "narrationText": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/tutorial-fork-isolation-01.a2636a4a.mp3",
+      "textHash": "a2636a4a646946bcb342235e1f3db6a628354cfa6fd108400ae9225cc7a0d078",
+      "audioDurationSec": 6.426122,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/tutorial-fork-isolation-01-after.5e18d9e4.mp3",
+      "afterAudioDurationSec": 3.395918,
+      "afterTextHash": "5e18d9e42851501b9749c4cc0e67e8c9914974d691b9596a7676d68e28336e04"
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "replayStartSec": 8.155445,
+      "replayEndSec": 19.24953,
+      "narrationText": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/tutorial-fork-isolation-02.4e3625a4.mp3",
+      "textHash": "4e3625a41e9ade01f2616bc98f77faac12642b1fd721e997c137429306b38700",
+      "audioDurationSec": 10.370612,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/tutorial-fork-isolation-02-after.f522f220.mp3",
+      "afterAudioDurationSec": 5.720816,
+      "afterTextHash": "f522f220d8af9755cf3043522ac240127c519e7c0525b6f421798bf121f2ed72"
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.24953,
+      "replayEndSec": 24.926391,
+      "narrationText": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/tutorial-fork-isolation-03.ef21da1c.mp3",
+      "textHash": "ef21da1c52e9db0870054d3b9ad5504d69be1e2bc5153b8226d37209954bb67e",
+      "audioDurationSec": 7.967347,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/tutorial-fork-isolation-03-after.545581ee.mp3",
+      "afterAudioDurationSec": 4.362449,
+      "afterTextHash": "545581eef8af1b8bcfce55c09a23abfb22aa163325d5870a9bdcfdfec56518ff"
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "replayStartSec": 24.926391,
+      "replayEndSec": 32.437755,
+      "narrationText": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/tutorial-fork-isolation-04.5eee7a7f.mp3",
+      "textHash": "5eee7a7f529dcaea0c960477435b36d94974c2998b0af5db1f98442d6267b1e3",
+      "audioDurationSec": 7.706122,
+      "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/tutorial-fork-isolation-04-after.ce8745af.mp3",
+      "afterAudioDurationSec": 5.32898,
+      "afterTextHash": "ce8745af0e097cbae101b7cc067909004626f4302d7b5a4461148c66410bdf20"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "09a560a929d18220b1be36d3fcd6617bcacffa74c37ec3cae4f8e5939a6e77fe",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/intro.09a560a9.mp3",
+      "narrationText": "おかえりなさい！前回はforkコマンドを確認しましたね。今回はそれが実際に何を意味するのかを見ていきましょう。稼働中のデータベースアプリが数秒でコピーされ、自由に編集できる、そしてオリジナルはまったく気づかない、そういうことです。",
+      "audioDurationSec": 16.927347
+    },
+    {
+      "id": "what-is-a-fork",
+      "textHash": "e401e641f14f1240697d67ac667f55705ac7c9903f2203fbc4f3ed593edcee8c",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/what-is-a-fork.e401e641.mp3",
+      "narrationText": "こちらがその構成です。実際のPostgreSQLの上にpgAdminインターフェースを載せたもので、サーバー上で稼働しています。forkとは、そのすべてのコピーオンライトの即時コピーです。生まれた瞬間は同じデータを持ちますが、その後は完全に別々の歩みを進めます。",
+      "audioDurationSec": 22.204082
+    },
+    {
+      "id": "grand-pgadmin",
+      "textHash": "5a73ed933e5f47882f14a3b8f0985228b3c176e68e80ccf7a3639e24398e0854",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/grand-pgadmin.5a73ed93.mp3",
+      "narrationText": "ブラウザで見ているこれがオリジナルです。pgAdminはログインを求めてきます。本番環境のコピーだからです。本番は常にガードされています。",
+      "audioDurationSec": 10.840816
+    },
+    {
+      "id": "fork-pgadmin",
+      "textHash": "c6468ce9d1be7e6a58e38d9dcb02100af3afd279a8036f86d74302f83500a282",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/fork-pgadmin.c6468ce9.mp3",
+      "narrationText": "そしてこちらがforkのpgAdminです。今回はログイン不要です。forkは使い捨てのsandboxなので、ゲートが脇に退きます。同じテーブル、同じ行、でも独自の世界です。",
+      "audioDurationSec": 14.106122
+    },
+    {
+      "id": "side-by-side",
+      "textHash": "a869b9bbe3ac8109f75f5da75f70e23a7e00b726962ff7946458beed60e6c323",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/side-by-side.a869b9bb.mp3",
+      "narrationText": "では並べて見てみましょう。左がfork、右がオリジナルです。左側で何を編集しても、削除しても、壊しても、右側はまったくびくともしません。これが目で見えるアイソレーションです。",
+      "audioDurationSec": 15.15102
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "2969ce8a852058baee2128484f91b4e88d6e4ef19c22c7c485bf8efe3ca5d535",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-fork-isolation/next-tutorial.2969ce8a.mp3",
+      "narrationText": "自由にforkしてください。本番環境が傷つくことはありません。次は、forkが意図的に引き継がない唯一のもの、secretsについて見ていきます。またそこで！",
+      "audioDurationSec": 12.59102
+    }
+  ]
+}

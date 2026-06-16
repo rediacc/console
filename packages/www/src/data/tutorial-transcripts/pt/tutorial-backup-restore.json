@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.424169,
+      "at": 2.409089,
       "text": "Passo um. Vamos importar uma configuração rclone existente. O rclone suporta S3, Backblaze, Google Drive, Dropbox e muitos outros. Se já o utiliza, a mesma configuração pode ser importada diretamente.",
       "afterText": "Armazenamento importado. A sua CLI já pode enviar cópias de segurança para ele.",
       "cardLabel": "Importar Armazenamento",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.651448,
+      "at": 6.555802,
       "text": "Vamos listar os armazenamentos que a ferramenta conhece agora. Cada um é um destino para onde podemos enviar cópias de segurança.",
       "afterText": "Aqui está. Pronto a receber cópias de segurança.",
       "cardLabel": "Listar Armazenamentos",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.354487,
+      "at": 10.251839,
       "text": "Passo dois. Vamos enviar uma cópia de segurança completa. O repositório inteiro -- aplicação, base de dados, ficheiros, configuração -- é carregado. Como o repositório está encriptado em repouso, a cópia de segurança também fica encriptada. Sem gestão adicional de chaves.",
       "afterText": "Cópia de segurança enviada. Tudo neste repositório está agora no armazenamento remoto, encriptado.",
       "cardLabel": "Enviar Backup",
@@ -33,11 +33,38 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 18.28182,
+      "at": 24.484571,
       "text": "E aqui estão as cópias de segurança disponíveis neste armazenamento. A partir daqui, restaurar num servidor novo é um único comando: o comando de restauração do repositório.",
       "afterText": "Todos os seus snapshots num só sítio. Recupere qualquer um com um único comando.",
       "cardLabel": "Listar Backups",
       "prose": "Liste os backups disponíveis neste armazenamento. Restaurar em um servidor totalmente novo é apenas um comando: o comando repo pull."
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "at": 31.133919,
+      "text": "Agora a prova de restauração. Primeiro coloque o repository offline: pare os serviços e desmonte o volume criptografado. O app sumiu desta máquina.",
+      "afterText": "Offline e desmontado, exatamente o estado de um servidor novo.",
+      "cardLabel": "Colocar Offline",
+      "prose": "Coloque o repositório offline primeiro: pare os serviços e desmonte o volume criptografado com o comando repo down."
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "at": 39.135694,
+      "text": "E faça o pull do backup direto do storage. O comando repo pull busca a imagem, verifica a integridade e a coloca exatamente onde estava.",
+      "afterText": "Transferência completa, integridade verificada. O repository está de volta.",
+      "cardLabel": "Baixar Backup",
+      "prose": "Recupere o backup do armazenamento com o comando repo pull. A imagem é baixada e verificada quanto à integridade."
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "at": 48.126162,
+      "text": "Monte novamente e o repository está restaurado. Push, list, pull, essa é toda a história do backup.",
+      "afterText": "Restaurado. O mesmo fluxo funciona em uma máquina nova também.",
+      "cardLabel": "Montar Restaurado",
+      "prose": "Monte o repositório novamente, ele está completamente restaurado. O mesmo pull funciona em uma máquina nova."
     }
   ],
   "narrations": [
@@ -62,6 +89,9 @@
     "cast-step-1": "Etapa 2: Listar armazenamentos configurados",
     "cast-step-2": "Etapa 3: Enviar um backup completo",
     "cast-step-3": "Etapa 4: Listar backups no armazenamento",
-    "outro": "Próximo: Monitoramento"
+    "outro": "Próximo: Monitoramento",
+    "cast-step-4": "Etapa 5: Colocar o repo offline",
+    "cast-step-5": "Etapa 6: Recuperar o backup",
+    "cast-step-6": "Etapa 7: Montar, restaurado"
   }
 }

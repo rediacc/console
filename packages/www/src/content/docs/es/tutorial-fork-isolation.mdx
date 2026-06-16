@@ -1,0 +1,52 @@
+---
+title: "Aislamiento de forks en acción"
+description: "Haz fork de una app con PostgreSQL + pgAdmin en vivo y edítala en paralelo con el original: la prueba visual de que los forks son independientes."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: es
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Aislamiento de forks en acción
+
+El [tutorial de forking](/es/docs/tutorial-forking) mostró los comandos. Este muestra lo que significan: una app de base de datos en vivo, copiada en segundos, modificada libremente en el navegador, mientras el original no se entera de nada.
+
+## Ver el tutorial
+
+![Tutorial: Aislamiento de forks en acción](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## El escenario
+
+![Una base de datos en vivo y su clon](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+Un PostgreSQL real con interfaz pgAdmin, funcionando en el servidor. Un fork es una copia instantánea por copy-on-write de todo eso: mismos datos al nacer, vidas completamente separadas después.
+
+## Paso 1: La app en vivo
+
+<TutorialStep number={1} />
+
+## Paso 2: Hacer el fork
+
+<TutorialStep number={2} />
+
+El vídeo abre los dos pgAdmins en el navegador. El original pide login porque producción sigue protegida. El fork entra directo al workbench: los forks son sandboxes desechables, así que el paso de autenticación se aparta (el propio repo decide esto, en función de si es un fork o no).
+
+## Paso 3: Dos mundos, un servidor
+
+<TutorialStep number={3} />
+
+Edita, borra, rompe lo que quieras en el fork. El original sigue sirviendo. Mismas tablas en el momento del fork, independientes para siempre después.
+
+## Paso 4: Desecharlo
+
+<TutorialStep number={4} />
+
+Segundos para crearlo, segundos para eliminarlo. Eso es lo que convierte "clona producción, no rompas nada" en una costumbre diaria y no en un evento especial.
+
+---
+
+Siguiente: [Gestión de Secrets](/es/docs/tutorial-managing-secrets).

@@ -1,0 +1,162 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "at": 2.418102,
+      "text": "我们的工作 fork 保存着应用状态的第一个版本，一个简单的标记文件让它清晰可见。",
+      "afterText": "第一版，已写入磁盘。",
+      "cardLabel": "第一版",
+      "prose": "将状态的第一个版本写入工作 fork。"
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "at": 10.876025,
+      "text": "不只是文件。这个 fork 里还运行着一个真实的 PostgreSQL 数据库，customers 表中有三行数据。记住这个数字。",
+      "afterText": "三行数据。这就是我们即将置于危险中的数据。",
+      "cardLabel": "三行数据",
+      "prose": "该 fork 还运行着一个真实的 PostgreSQL 数据库，customers 表中有三行数据。"
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "at": 20.708803,
+      "text": "冻结它。commit 将整个 repository 捕获为一个不可变的镜像，包含提交信息、作者和父提交。和 git 一模一样，但涵盖所有内容，包括数据库。",
+      "afterText": "已提交。这个快照永远不会改变，它甚至拒绝挂载。",
+      "cardLabel": "提交 v1",
+      "prose": "提交工作 fork，包括数据库在内的完整 repository 状态被冻结为一个不可变的命名快照。"
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "at": 29.448478,
+      "text": "给这次提交起个名字。stable 分支现在指向第一个版本。",
+      "afterText": "分支是一个你可以随时回到的名字。",
+      "cardLabel": "Stable 分支",
+      "prose": "创建一个指向该提交的分支，为冻结状态起一个易读的名字。"
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "at": 34.241982,
+      "text": "继续工作。工作 fork 中第二个版本取代了第一个版本，已有的提交不受影响。",
+      "afterText": "工作 fork 向前推进了，历史记录没有改变。",
+      "cardLabel": "第二版",
+      "prose": "继续工作，fork 发生变化，已提交的历史记录保持冻结。"
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "at": 42.690283,
+      "text": "灾难来了。这个危险的操作删除了 customers 表。在现实中，这就是你心头一沉的那一刻。",
+      "afterText": "DROP TABLE 已执行，数据从工作 fork 中消失了。",
+      "cardLabel": "删除表",
+      "prose": "危险操作在工作 fork 中删除了 customers 表。"
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "at": 51.047933,
+      "text": "再次查询这些行，数据库直接告诉你：relation customers does not exist。灾难是真实的，每一行数据都消失了。",
+      "afterText": "关系不存在。三行数据，全没了。",
+      "cardLabel": "表已消失",
+      "prose": "现在查询该表会失败：relation \"customers\" does not exist。数据确实从工作 fork 中消失了。"
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "at": 59.69522,
+      "text": "也将这个危险的变更提交，包括损坏的表。历史记录了实际发生的事情。现在有两次提交，一个父提交和一个子提交。",
+      "afterText": "链中有两个快照。",
+      "cardLabel": "提交 v2",
+      "prose": "同样提交新状态，包括已删除的表，历史记录像 git log 一样增长。"
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "at": 68.35661,
+      "text": "历史记录就在这里：第二个版本在上，第一个版本在下，包含提交信息和作者，无需解锁任何镜像。",
+      "afterText": "一份 repo 日志，和 git log 一模一样。",
+      "cardLabel": "Repo 日志",
+      "prose": "使用 repo log 查看提交历史，包括提交信息、作者和父提交。"
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "at": 75.614559,
+      "text": "现在到了关键时刻。将 stable 分支检出到一个全新的可写 fork 中。Reflink 克隆，几乎即时完成，不受大小限制。",
+      "afterText": "冻结的第一个版本的可写副本，大约一秒即可完成。",
+      "cardLabel": "检出",
+      "prose": "将 stable 分支检出到一个全新的可写 fork，得益于写时复制技术，几乎即时完成。"
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "at": 83.292425,
+      "text": "像启动其他任何 repo 一样启动回滚 fork。",
+      "afterText": "两个 fork 同时运行：今天的版本和检查点。",
+      "cardLabel": "启动回滚",
+      "prose": "启动回滚 fork，它与工作 fork 并行运行。"
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "at": 91.555233,
+      "text": "这就是证明：回滚 fork 读到的是第一个版本，工作 fork 仍然是第二个版本。可以运行的历史。",
+      "afterText": "回滚完成，没有覆盖任何内容。",
+      "cardLabel": "验证：v1",
+      "prose": "读取回滚 fork 中的标记文件：第一个版本，与提交时完全一致。"
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "at": 98.952411,
+      "text": "最关键的部分：被删除的表回来了，三行数据全部恢复。回滚恢复的是整个数据库，而不仅仅是文件。",
+      "afterText": "三行数据重新出现，灾难已被撤销。",
+      "cardLabel": "数据已恢复",
+      "prose": "在回滚 fork 中查询 customers 表：三行数据，与提交时完全一致。回滚恢复的是整个数据库，而不仅仅是文件。"
+    }
+  ],
+  "title": "分支：提交与回滚",
+  "chapters": {
+    "intro": "分支、提交与回滚",
+    "commit-model": "提交、分支与检出",
+    "cast-step-0": "第一步：版本一",
+    "cast-step-1": "第二步：提交",
+    "cast-step-2": "第三步：用分支命名",
+    "cast-step-3": "第四步：继续工作，版本二",
+    "cast-step-4": "第五步：再次提交",
+    "cast-step-5": "第六步：查看历史",
+    "cast-step-6": "第七步：检出分支",
+    "cast-step-7": "第八步：启动回滚",
+    "cast-step-8": "第九步：验证，版本一",
+    "cast-step-9": "第十步：检出分支",
+    "cast-step-10": "第十一步：启动回滚",
+    "cast-step-11": "第十二步：验证第一版",
+    "cast-step-12": "第十三步：数据已恢复",
+    "vscode-versions": "两个版本并排对比",
+    "outro": "下一步：实时迁移"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "让我们像管理代码一样对 repository 进行版本管理吧！我们将冻结一个检查点，给它起个名字，然后删除一个真实的数据库表。回滚会在几秒内恢复精确的冻结状态，包括每一行数据。"
+    },
+    {
+      "id": "commit-model",
+      "text": "这个模型就像 git，但针对的是整个 repository。commit 是一个冻结的、不可变的镜像，它甚至拒绝挂载，所以任何东西都无法改变它。branch 只是一个指向 commit 的名字。而 checkout 可以将任意 commit 变回一个全新的、可写的 fork。"
+    },
+    {
+      "id": "vscode-versions",
+      "text": "眼见为实。左边的回滚 fork 保存着第一个版本，而右边的工作 fork 已经推进到第二个版本。两者都在运行，都可写，都来自同一段历史。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "commit 永不改变，fork 从不等待。下一篇，我们将把一个完整的运行中的 repository 实时迁移到另一台机器上。下次见！"
+    }
+  ]
+}

@@ -1,0 +1,101 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "de",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "1152bf5e59dfa083aa882e432b219b54634c6842f6118e11fcb5b522fe11c395",
+  "steps": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413171,
+      "replayEndSec": 10.379022,
+      "narrationText": "Das ist pulse. Es hält einen Zähler im Prozessspeicher und gibt alle fünf Sekunden einen Beat aus. Der Zähler steht bei sechs und steigt weiter, er lebt nur im RAM. Startet man den Prozess neu, beginnt er wieder bei eins.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-01.42a6c1d0.mp3",
+      "textHash": "42a6c1d03e1b87787fa4852e7ebebdf1a803f33fc8537c4d327bff6e3234b83c",
+      "audioDurationSec": 15.56898,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-01-after.9594d376.mp3",
+      "afterAudioDurationSec": 4.440816,
+      "afterTextHash": "9594d376793fbd83fb572212674287ade31f1b53ee3ad22121fb260b5477670f"
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.379022,
+      "replayEndSec": 101.149024,
+      "narrationText": "Ein Befehl verschiebt alles, live. Phase eins überträgt den Großteil, zwei Gigabyte in etwa einer halben Minute, während die Quelle weiterläuft. Dann die Umschaltung: Es erstellt einen Checkpoint der laufenden Prozesse, überträgt die letzten paar Megabytes und gibt die Ausfallzeit direkt aus. Etwa zwanzig Sekunden, für einen Umzug von zwei Gigabyte.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-02.7a79315d.mp3",
+      "textHash": "7a79315d8ad2264d8f955afc8e20d4edc85ddd619b01fb2f0ebcb07da09bb5a3",
+      "audioDurationSec": 24.189388,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-02-after.47b74d70.mp3",
+      "afterAudioDurationSec": 7.549388,
+      "afterTextHash": "47b74d70e8d89c72afda5e66c296edbe1ce550ca0db7396ffd79d20a43c1158d"
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "replayStartSec": 101.149024,
+      "replayEndSec": 106.859481,
+      "narrationText": "Ein Blick auf die neue Maschine: da ist es. Gemountet, Docker läuft, zwei Container aktiv.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-03.97bf6d4d.mp3",
+      "textHash": "97bf6d4dd245cd322be0102f7ea24a8ed94d11241bbf455393a11b936009452f",
+      "audioDurationSec": 5.955918,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-03-after.75966d05.mp3",
+      "afterAudioDurationSec": 4.04898,
+      "afterTextHash": "75966d05d95d050ff0850792208d50e77f88d75f1e59fec4d4338bbec86f859d"
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "replayStartSec": 106.859481,
+      "replayEndSec": 112.346008,
+      "narrationText": "Und die Quelle? Das Repository ist noch aufgeführt, aber schaut man auf die Zeile: nicht gemountet, kein Docker, null Container. Hier läuft nichts mehr. Das Image bleibt bewusst zurück, als Basis für die nächste Delta-Übertragung.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-04.d04af51a.mp3",
+      "textHash": "d04af51a1b8ce289791a7faabaf566a9e150cb6437f64560597eb44779ccd061",
+      "audioDurationSec": 15.56898,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-04-after.e4d6eb0e.mp3",
+      "afterAudioDurationSec": 6.844082,
+      "afterTextHash": "e4d6eb0e80e2d02cd95ba6da8ffce5713f65f1a666bcef215bdc05434efc02f7"
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "replayStartSec": 112.346008,
+      "replayEndSec": 119.168595,
+      "narrationText": "Jetzt die Pointe. Der Zähler zeigt siebzehn, achtzehn, neunzehn, steigt weiter. Er hat genau dort weitergemacht, wo der Checkpoint ihn eingefroren hat, statt wieder bei eins anzufangen. Der Prozess hat nie bemerkt, dass er die Maschine gewechselt hat.",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-05.52adc991.mp3",
+      "textHash": "52adc991d5b9f6199268bec8cc8fc59eae0006d066aff340cb09555c49312314",
+      "audioDurationSec": 14.027755,
+      "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/tutorial-live-migration-05-after.f9cde8b0.mp3",
+      "afterAudioDurationSec": 3.970612,
+      "afterTextHash": "f9cde8b07204509109884b457950d44d47445470f2c9a202147f5c86403e51da"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "b458d275adee39207a4712dbab7d874478879a96f7c91ddf9315673161adc058",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/intro.b458d275.mp3",
+      "narrationText": "Zeit für etwas Großes: eine LAUFENDE App auf eine andere Maschine verschieben, während sie läuft. Wir beobachten einen Live-Zähler, der im Speicher der App schlägt, verschieben alles mit einem Befehl und sehen, wie der Zähler auf der neuen Maschine einfach weiterzählt.",
+      "audioDurationSec": 14.602449
+    },
+    {
+      "id": "how-it-moves",
+      "textHash": "0f12a7229db1d239b196171f09370ef1fee3bc6e08907129d88d12b2f7bf22e2",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/how-it-moves.0f12a722.mp3",
+      "narrationText": "Es funktioniert in zwei Phasen. Phase eins kopiert den Großteil, während die App weiterläuft. Phase zwei erstellt einen Checkpoint der laufenden Prozesse, überträgt das finale Delta zusammen mit dem Prozesszustand und setzt alles auf der neuen Maschine fort. Die Ausfallzeit entspricht also dem Delta, nicht den Daten. Und die App merkt nie, dass sie umgezogen ist.",
+      "audioDurationSec": 26.357551
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "9c0d1478e6e55cbfd460b73cf0db75b6b2ce9ab19d29b20bcffbe60d308b0405",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-live-migration/next-tutorial.9c0d1478.mp3",
+      "narrationText": "Der Zähler hat nie zurückgesetzt. Speicher, Datenbank, Dateien, alles hat einfach die Maschine gewechselt. Als Nächstes sehen wir, warum die zweite Übertragung immer die schnelle ist.",
+      "audioDurationSec": 14.445714
+    }
+  ]
+}

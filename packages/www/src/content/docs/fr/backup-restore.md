@@ -4,8 +4,8 @@ description: "Sauvegardez des dépôts chiffrés vers n'importe quel stockage co
 category: Guides
 order: 7
 language: fr
-sourceHash: "e241aa122868e629"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7ff112c2ec14c35f"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Sauvegarde et restauration
@@ -40,7 +40,7 @@ Envoyez une sauvegarde de dépôt vers un stockage externe :
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
-Push vérifie toujours que le dépôt cible est monté avant d'écrire. S'il ne l'est pas, l'opération est annulée.
+La sauvegarde atterrit dans le dossier `hot/` du stockage quand le dépôt est monté au moment du push, et dans `cold/` quand il est démonté. C'est la même disposition qu'utilisent les sauvegardes planifiées, de sorte que `rdc repo backup list` affiche toutes les sauvegardes dans un seul tableau.
 
 | Option | Description |
 |--------|-------------|
@@ -158,7 +158,7 @@ Utilisez `hot` pour les services qui tolèrent les snapshots cohérents en cas d
 
 ### Sémantique de la sauvegarde froide
 
-Une sauvegarde froide s'exécute en trois phases par dépôt inclus : **arrêt -- snapshot -- démarrage**. Comprendre les limites des garanties aide les opérateurs à détecter les défaillances partielles rapidement.
+Une sauvegarde froide s'exécute en trois phases par dépôt inclus : **arrêt, snapshot, démarrage**. Comprendre les limites des garanties aide les opérateurs à détecter les défaillances partielles rapidement.
 
 **Ce que la sauvegarde froide garantit :**
 

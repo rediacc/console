@@ -4,8 +4,8 @@ description: "Looge, hallake ja kasutage LUKS-krüpteeritud repositooriume kaugm
 category: "Guides"
 order: 4
 language: et
-sourceHash: "65fd6e7f9e6a83c1"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "0f08c5b75c3588cc"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Repositooriumid
@@ -99,9 +99,9 @@ Kuidas see töötab: repositooriumi kujutised on hõredad failid ja krüpteeritu
 
 Märkused:
 
-- Repositooriumid, mille varundamine on aktiivne, jäetakse vahele ja neist teatatakse. Trimmimine varundamise ajal ei vabastaks ruumi, sest varukoopia hetktõmmis viitab endiselt nendele plokkidele.
+- Failisüsteemi trimmimine jäetakse aktiivse varundusega repositooriumide puhul vahele ja sellest teatatakse, kuna varukoopia hetktõmmis viitab endiselt nendele plokkidele ning aukude lõikamine ei vabastaks basseinimahtu. `--docker` tagasinõudmine ei ole mõjutatud ja käivitub ikkagi (vt allpool).
 - Trimmimise kahe korra järjestikune käivitamine näitab teisel korral 0 baiti. Failisüsteem mäletab, millised plokigrupid on juba trimmitud; see on oodatav käitumine, mitte tõrge.
-- `--docker` ei eemalda kunagi märgistatud kujutisi, ainult rippuvaid, peatunud konteinereid ja vahemälu koostamist. Lisa `--docker-volumes`, et eemaldada ka kasutamata köited (see kustutab andmed; ainult CLI).
+- `--docker` ei eemalda kunagi märgistatud kujutisi, ainult rippuvaid, peatunud konteinereid ja vahemälu koostamist. Lisa `--docker-volumes`, et eemaldada ka kasutamata köited (see kustutab andmed; ainult CLI). Erinevalt failisüsteemi trimmimisest käivitub `--docker` tagasinõudmine ka varundamise ajal, seega saad ummistunud vahemälu koostamise tühjendada ilma varundusaken ootamata.
 
 ## Automaatne suuruse poliitika
 

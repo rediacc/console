@@ -1,0 +1,52 @@
+---
+title: "Fork 隔离实战"
+description: "Fork 一个运行中的 PostgreSQL + pgAdmin 应用，与原始版本并排编辑，直观验证 fork 的独立性。"
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: zh
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Fork 隔离实战
+
+[Fork 教程](/zh/docs/tutorial-forking)展示了命令。这篇展示的是命令背后的含义：一个运行中的数据库应用，在几秒内完成复制，在浏览器里随意修改，而原始仓库毫无察觉。
+
+## 观看教程
+
+![Tutorial: Fork isolation in action](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## 场景设置
+
+![运行中的数据库与它的孪生体](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+一个真实的 PostgreSQL 配上 pgAdmin 界面，在服务器上实时运行。Fork 是它的即时写时复制孪生体：诞生时数据相同，此后各自独立。
+
+## 第一步：查看线上应用
+
+<TutorialStep number={1} />
+
+## 第二步：Fork 它
+
+<TutorialStep number={2} />
+
+视频在浏览器中同时打开了两个 pgAdmin。原始仓库需要登录，生产环境保持守护。Fork 直接进入工作台：fork 是一次性沙盒，所以门禁让路（仓库本身根据是否为 fork 来决定这一行为）。
+
+## 第三步：两个世界，一台服务器
+
+<TutorialStep number={3} />
+
+在 fork 里随意编辑、删除、破坏。原始仓库继续提供服务。Fork 那一刻数据相同，此后完全独立。
+
+## 第四步：用完即弃
+
+<TutorialStep number={4} />
+
+几秒创建，几秒销毁。这就是"克隆生产环境，万无一失"成为日常习惯而非特殊操作的原因。
+
+---
+
+下一篇：[管理密钥](/zh/docs/tutorial-managing-secrets)。

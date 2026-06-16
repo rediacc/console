@@ -1,0 +1,107 @@
+{
+  "cast": "/assets/tutorials/tutorial-storage-management.cast",
+  "language": "et",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-storage-management-01",
+      "markerIndex": 0,
+      "at": 2.410441,
+      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "afterText": "Peaaegu täis. Aeg kasvada.",
+      "cardLabel": "Täitumine",
+      "prose": "Täida repository andmetega, kuni failisüsteem täitub."
+    },
+    {
+      "id": "tutorial-storage-management-02",
+      "markerIndex": 1,
+      "at": 12.69586,
+      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "afterText": "Neli gigabaiti nüüd. Midagi ei taaskäivitunud.",
+      "cardLabel": "Laienda Online",
+      "prose": "Laienda repository võrgus: LUKS konteiner ja failisüsteem kasvavad konteinerite töötamise ajal."
+    },
+    {
+      "id": "tutorial-storage-management-03",
+      "markerIndex": 2,
+      "at": 19.886575,
+      "text": "Verify from inside: same volume, double the room.",
+      "afterText": "Rakendus ei märganud midagi.",
+      "cardLabel": "Kontrolli Suurust",
+      "prose": "Kontrolli failisüsteemi repo seest, uus suurus on aktiivne."
+    },
+    {
+      "id": "tutorial-storage-management-04",
+      "markerIndex": 3,
+      "at": 26.982758,
+      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "afterText": "Vabastatud repo sees, kuid ikka pildi omanduses.",
+      "cardLabel": "Kustuta Andmed",
+      "prose": "Kustuta andmed repository seest, pane tähele, et pool ei kahane veel."
+    },
+    {
+      "id": "tutorial-storage-management-05",
+      "markerIndex": 4,
+      "at": 33.464064,
+      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "afterText": "Tagasi saadud. Pool saab jälle hingata.",
+      "cardLabel": "Trim",
+      "prose": "Käivita repo trim, et tagastada vabastatud plokid ühiskasutatavasse pooli, võrgus, nullseisakuga."
+    },
+    {
+      "id": "tutorial-storage-management-06",
+      "markerIndex": 5,
+      "at": 40.097562,
+      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "afterText": "Poliitika salvestatud. Masin võtab siit üle.",
+      "cardLabel": "Seadista Poliitika",
+      "prose": "Seadista suuruspoliitika: automaatne kasv selge ülempiiri ja ajastatud trim-iga."
+    },
+    {
+      "id": "tutorial-storage-management-07",
+      "markerIndex": 6,
+      "at": 50.538253,
+      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "afterText": "Seadistatud korra, unustatud turvaliselt.",
+      "cardLabel": "Poliitika Kontroll",
+      "prose": "Loe kehtiv poliitika välja, kasv ja trim on nüüd automaatsed."
+    },
+    {
+      "id": "tutorial-storage-management-08",
+      "markerIndex": 7,
+      "at": 57.423655,
+      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "afterText": "Üks vaade: kasutus, kokkuhoid ja ruumi kasvuks.",
+      "cardLabel": "Tervise Vaade",
+      "prose": "Kontrolli masina salvestuse tervist: repository-põhine kasutus, pooli olek ja CoW reflink-säästud."
+    }
+  ],
+  "title": "Salvestuse Haldamine",
+  "chapters": {
+    "intro": "Salvestuse Haldamine",
+    "pool-model": "Üks pool, kasvavad repod",
+    "cast-step-0": "1. samm: repo täitub",
+    "cast-step-1": "2. samm: Laienda võrgus",
+    "cast-step-2": "3. samm: Kinnita uus suurus",
+    "cast-step-3": "4. samm: Kustuta andmed",
+    "cast-step-4": "5. samm: Trim, anna plokid tagasi",
+    "cast-step-5": "6. samm: Seadista poliitika",
+    "cast-step-6": "7. samm: Loe poliitika tagasi",
+    "cast-step-7": "8. samm: Tervise vaade",
+    "outro": "Sari lõpeb siin"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Tere tulemast viimasesse õpetusse! Veendume, et kettaruum enam kunagi otsa ei saaks. Kasvatame täis repository't online, anname kustutatud ruumi tagasi poolile ja õpetame masinal mõlemat automaatselt tegema."
+    },
+    {
+      "id": "pool-model",
+      "text": "Nii see toimib. Iga repository on fail ühises datastore poolis. Repository'd saavad kasvada online, kuni containers töötavad. Kuid andmete kustutamine repository sees ei vabasta iseenesest midagi. Trim on see, mis annab plokid tagasi poolile. Ja poliitika automatiseerib mõlemat."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Ja sellega on sari läbi! Kaheksateist õpetust, installimisest kuni automaatse salvestushalduseni. Sinu serverid on jälle sinu omad. Aitäh vaatamise eest!"
+    }
+  ]
+}

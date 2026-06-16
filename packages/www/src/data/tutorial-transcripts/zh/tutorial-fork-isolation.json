@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "zh",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "一个运行中的 repo。来克隆它吧。",
+      "cardLabel": "实时应用",
+      "prose": "从一个实时 repository 开始：机器上运行着 PostgreSQL 数据库和 pgAdmin。"
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "已 fork，正在启动。数据没有被复制，而是被共享，直到某一方修改它为止。",
+      "cardLabel": "Fork + 启动",
+      "prose": "使用 --up --detach fork 该 repository：CoW 克隆几乎瞬间完成，fork 的服务立即启动。"
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "同一台机器，两个隔离的世界。",
+      "cardLabel": "并排运行",
+      "prose": "列出 repository：原始 repository 与 fork 并排运行，完全隔离。"
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "已删除。原始版本在整个过程中始终保持正常服务。",
+      "cardLabel": "删除 Fork",
+      "prose": "完成后删除 fork，原始 repository 保持不变。"
+    }
+  ],
+  "title": "Fork 隔离实战",
+  "chapters": {
+    "intro": "Fork 隔离实战",
+    "what-is-a-fork": "实时数据库及其副本",
+    "cast-step-0": "第一步：实时应用",
+    "grand-pgadmin": "原始 repository，受保护",
+    "cast-step-1": "第二步：Fork 它",
+    "fork-pgadmin": "Fork，完全开放",
+    "side-by-side": "并排运行",
+    "cast-step-2": "第三步：两个 repo，一台服务器",
+    "cast-step-3": "第四步：丢弃 fork",
+    "outro": "下一步：管理 Secrets"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "欢迎回来！上次你见识了 fork 命令。现在来看看它们究竟意味着什么：一个实时运行的数据库应用，几秒内完成复制，可以随意编辑，而原版完全感知不到任何变化。"
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "先说背景：一个真实的 PostgreSQL，上面挂着 pgAdmin 界面，在服务器上实时运行。fork 是对整个环境的即时写时复制副本。诞生时数据完全相同，之后各自独立运行。"
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "这是原版，在浏览器里打开。pgAdmin 要求登录，因为这是生产环境的副本，生产环境始终受到保护。"
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "这是 fork 的 pgAdmin。这次不需要登录，fork 是一次性的 sandbox，所以门卫直接让路。表相同，数据行相同，但它有自己独立的世界。"
+    },
+    {
+      "id": "side-by-side",
+      "text": "现在并排对比：左边是 fork，右边是原版。在左边随意编辑、删除、搞破坏，右边纹丝不动。这就是看得见的隔离效果。"
+    },
+    {
+      "id": "next-tutorial",
+      "text": "所以尽管随意 fork，生产环境不会受到任何影响。下一期，我们来看 secrets，也就是 fork 刻意不继承的那一样东西。到时见！"
+    }
+  ]
+}

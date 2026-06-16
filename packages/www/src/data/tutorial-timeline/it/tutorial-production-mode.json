@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "810d0fe6cee0661bdd1124d7432b136693f2786c3820eeabb025d5bbc8fde0c3",
+  "transcriptHash": "355627214ea5df7cbd71f32447017251496eefdff86caafd00b855993bf00b2f",
   "steps": [
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418632,
-      "replayEndSec": 9.548589,
+      "replayStartSec": 2.555418,
+      "replayEndSec": 11.051619,
       "narrationText": "Avviamo l'app in modalita' produzione dal laptop. Il comando di deploy chiama la stessa funzione up usata durante lo sviluppo, ma viene eseguita in modalita' distaccata. Puoi chiudere il laptop e l'app continua a girare.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-01.563772bf.mp3",
       "textHash": "563772bf528be052d9d98da04c95aaaae46cb1b9ccdff3793c64f07d31a39fc6",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 9.548589,
-      "replayEndSec": 17.034078,
+      "replayStartSec": 11.051619,
+      "replayEndSec": 18.718543,
       "narrationText": "Abilitiamo l'avvio automatico cosi' l'app sopravvive al riavvio del server. Da questo momento, se il server si riavvia, questo repo torna su automaticamente.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-02.a6aa9623.mp3",
       "textHash": "a6aa96231bb645afcda15bee30bc2baf93a6cb096b01ebdaa5f571158fc623df",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 17.034078,
-      "replayEndSec": 22.929505,
+      "replayStartSec": 18.718543,
+      "replayEndSec": 25.169818,
       "narrationText": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app e' ora nella lista di avvio.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-03.13803a94.mp3",
       "textHash": "13803a94eb4c823ff7526dc4c50494e2c882787a9e10ef556808e1a99e31ec76",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 22.929505,
-      "replayEndSec": 30.37798,
+      "replayStartSec": 25.169818,
+      "replayEndSec": 31.824598,
       "narrationText": "E per fermare l'app, un solo comando dal laptop. Un comando per avviare, uno per fermare. Tutto dal tuo terminale, senza piu' sessioni interattive.",
       "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/tutorial-production-mode-04.e6a386a6.mp3",
       "textHash": "e6a386a69a6f1ef1e67609bfabea20f8d67405b971b846385c1bad5089c2a37c",
@@ -65,17 +65,17 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "0708b14f0869908d378ebed026635e4cd68736e2cdb04d8f89fb23db64795032",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/intro.0708b14f.mp3",
-      "narrationText": "Bene! Portiamo la tua app dallo sviluppo alla produzione. Tre brevi passaggi, tutti pilotati dal tuo laptop.",
-      "audioDurationSec": 7.079184
+      "textHash": "ae4056419ec46469f1c949bed380c773c20bd3bc84a515d3580542cccc5981dc",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/intro.ae405641.mp3",
+      "narrationText": "La tua app funziona finché sei connesso. Produzione significa che funziona anche quando non ci sei. Tre brevi passaggi, tutti dal tuo laptop.",
+      "audioDurationSec": 9.247347
     },
     {
       "id": "dev-vs-prod",
-      "textHash": "77b869a07f7a24177051f67b0eb3350c6e54513674f47f28b7a09250ec0f35fb",
-      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/dev-vs-prod.77b869a0.mp3",
-      "narrationText": "Durante lo sviluppo esegui l'app dall'interno del repo, quindi si ferma quando ti disconnetti. In produzione la lanci dal tuo laptop con la CLI e continua a girare in modalita' distaccata.",
-      "audioDurationSec": 12.59102
+      "textHash": "d16308259696813548a16afd829da92ccf9ee54105e47315092853cf09048246",
+      "audioSrc": "/assets/tutorials/audio/it/tutorial-production-mode/dev-vs-prod.d1630825.mp3",
+      "narrationText": "Ecco la differenza. In sviluppo avvii l'app dall'interno del repo tramite SSH. Chiudi la sessione e l'app si spegne con essa. In produzione la avvii scollegata dal tuo laptop: il server gestisce il processo, la tua connessione no.",
+      "audioDurationSec": 16.509388
     },
     {
       "id": "next-tutorial",

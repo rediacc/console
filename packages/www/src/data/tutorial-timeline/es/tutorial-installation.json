@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "0ebdc7d0c1c405ebc4f7913a538570b96235495eabc0af4a611bc56106a8f40b",
+  "transcriptHash": "7f7cb9df533163d73628008d90cb29aa765959c53086b9955ae7237347c850f3",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.626476,
-      "replayEndSec": 7.903516,
+      "replayStartSec": 1.614947,
+      "replayEndSec": 8.543153,
       "narrationText": "Primero, confirmamos que el CLI está disponible. Ejecutar el CLI con el flag de versión imprime la versión instalada y nos indica que la instalación se completó correctamente.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-installation/tutorial-installation-01.f418b801.mp3",
       "textHash": "f418b801d091d4d04b69b583595ff77cb72bbc343355f42c6329519a54645b81",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 7.903516,
-      "replayEndSec": 10.095825,
+      "replayStartSec": 8.543153,
+      "replayEndSec": 10.766661,
       "narrationText": "Ahora vamos a ejecutar el doctor del CLI. Revisa las dependencias que necesita el CLI, como Node, SSH y el resto, e informa sobre cualquier problema. Un reporte limpio significa que estás listo para agregar un servidor.",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-installation/tutorial-installation-02.60874304.mp3",
       "textHash": "608743041df8ecb3f81410ed23c5fbdb23b7c2c50b4f77585be36a5586c01e3f",

@@ -1,0 +1,77 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "at": 2.413171,
+      "text": "Voici pulse. Il garde un compteur en mémoire de processus et affiche un battement toutes les cinq secondes. Le compteur est à six et monte, et il vit uniquement en RAM. Redémarrez le processus et il repart à un.",
+      "afterText": "Un compteur en direct, battant en mémoire. C'est notre preuve.",
+      "cardLabel": "Compteur en direct",
+      "prose": "L'application garde un compteur en mémoire et enregistre un battement toutes les cinq secondes. Le compteur vit uniquement en RAM : un redémarrage du processus le réinitialiserait à un."
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "at": 10.379022,
+      "text": "Une seule commande le déplace, en direct. La première phase transfère l'essentiel, deux gigaoctets en environ une demi-minute, pendant que la source continue de tourner. Puis la bascule : elle crée un checkpoint des processus en cours, transfère les derniers mégaoctets, et affiche le temps d'arrêt directement. Environ vingt secondes, pour un déplacement de deux gigaoctets.",
+      "afterText": "Deux gigaoctets déplacés pendant que l'application continuait de tourner. La ligne de temps d'arrêt montre ce que le déplacement a réellement coûté.",
+      "cardLabel": "Migrer en direct",
+      "prose": "Migrez avec checkpoint : la première phase transfère les 2 Go en masse pendant que la source reste en ligne, puis une courte bascule crée un checkpoint des processus en cours et transfère le delta final. La sortie affiche chaque phase et le temps d'arrêt réel."
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "at": 101.149024,
+      "text": "Vérifiez la nouvelle machine : la voilà. Montée, Docker en cours d'exécution, deux containers actifs.",
+      "afterText": "Même repo, nouvel emplacement, déjà en cours d'exécution.",
+      "cardLabel": "Nouvel emplacement",
+      "prose": "Listez les repositories sur la machine cible : pulse est monté, Docker est en cours d'exécution et ses containers sont actifs."
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "at": 106.859481,
+      "text": "Et la source ? Le repository est toujours listé, mais regardez la ligne : non monté, pas de Docker, zéro container. Rien ne tourne ici. L'image reste intentionnellement, comme base pour le prochain transfert delta.",
+      "afterText": "Arrêtée et démontée. L'image restante est une base delta, pas une application en cours d'exécution.",
+      "cardLabel": "Source arrêtée",
+      "prose": "Sur la source, le repository est arrêté et démonté : pas de Docker, zéro container. L'image est conservée comme base pour les futurs transferts delta."
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "at": 112.346008,
+      "text": "Voici le moment clé. Le compteur affiche dix-sept, dix-huit, dix-neuf, il monte toujours. Il a repris exactement là où le checkpoint l'avait figé, au lieu de repartir à un. Le processus n'a jamais remarqué qu'il avait changé de machine.",
+      "afterText": "Le compteur a continué de compter. La mémoire de processus a fait le voyage.",
+      "cardLabel": "Compteur continu",
+      "prose": "Les logs sur la nouvelle machine montrent le compteur qui continue depuis l'endroit où le checkpoint l'a figé, sans se réinitialiser à un. La mémoire de processus a fait le voyage."
+    }
+  ],
+  "title": "Migration en direct",
+  "chapters": {
+    "intro": "Migration en Direct",
+    "how-it-moves": "Deux phases, interruption minimale",
+    "cast-step-0": "Étape 1 : Écrire des données réelles",
+    "cast-step-1": "Étape 2 : Migrer en direct",
+    "cast-step-2": "Étape 3 : Sur la nouvelle machine",
+    "cast-step-3": "Étape 4 : Les données ont survécu",
+    "cast-step-4": "Étape 5 : le compteur a continué",
+    "outro": "Suivant : Transfert Delta"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Place à quelque chose d'important : déplacer une application EN COURS D'EXÉCUTION vers une autre machine, pendant qu'elle tourne. Nous allons observer un compteur en direct battant dans la mémoire de l'application, tout déplacer avec une seule commande, et voir le compteur continuer à compter sur la nouvelle machine."
+    },
+    {
+      "id": "how-it-moves",
+      "text": "Cela fonctionne en deux phases. La première phase copie l'essentiel pendant que l'application continue de tourner. La deuxième phase crée un checkpoint des processus en direct, transfère le delta final ainsi que l'état des processus, et reprend tout sur la nouvelle machine. Le temps d'arrêt correspond donc au delta, pas aux données. Et l'application ne sait jamais qu'elle a bougé."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Le compteur n'a jamais été réinitialisé. La mémoire, la base de données, les fichiers, tout a simplement changé de machine. Ensuite, nous verrons pourquoi le deuxième transfert est toujours le plus rapide."
+    }
+  ]
+}

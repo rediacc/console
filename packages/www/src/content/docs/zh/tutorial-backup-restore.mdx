@@ -5,8 +5,8 @@ category: "Tutorials"
 subcategory: advanced
 order: 11
 language: zh
-sourceHash: "bfdacd91b2d3b93b"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "c13a0f880039d7e7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
@@ -53,21 +53,28 @@ import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
 
 原理与 [fork](/zh/docs/tutorial-forking) 相同。`rdc` 先 fork，然后上传 fork。fork 捕获了那一刻的状态，你的线上应用继续运行。无停机，无不一致。
 
-## 第三步：在新服务器上恢复
+## 第三步：恢复（真正的演练）
 
-假设你的服务器宕机了。设置新服务器，将其添加到 `rdc`，然后拉取：
+从未实际恢复过的备份只是一种期望，不算真正的备份。先将仓库下线：
+
+<TutorialStep number={5} />
+
+直接从存储拉取备份：
+
+<TutorialStep number={6} />
+
+然后重新挂载，完全恢复：
+
+<TutorialStep number={7} />
+
+同样的 pull 命令在全新服务器上同样有效：设置好服务器，将其添加到 `rdc`，然后在那台机器上执行 pull：
 
 ```bash
 rdc repo pull --name my-app -m new-server --from my-storage
-```
-
-然后启动：
-
-```bash
 rdc repo up --name my-app -m new-server
 ```
 
-应用回来了。相同的数据，相同的容器，不同的机器。
+相同的数据，相同的容器，不同的机器。
 
 ## 更快的备份：机器到机器
 
@@ -77,8 +84,8 @@ rdc repo up --name my-app -m new-server
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **进阶提示。** 存储上传每次都会发送全量数据。机器到机器只发送差异部分。第一次机器到机器推送需要正常时间，但此后每次推送都会快得多。非常适合频繁备份。
+> **进阶提示。** 机器到机器推送在首次之后只发送变更的数据块。[增量传输教程](/zh/docs/tutorial-delta-transfer)有现场演示。
 
 ---
 
-下一篇：[监控](/zh/docs/tutorial-monitoring)。
+下一篇：[网络与域名](/zh/docs/tutorial-networking)。

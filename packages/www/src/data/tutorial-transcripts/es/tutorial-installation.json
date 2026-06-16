@@ -6,7 +6,7 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.626476,
+      "at": 1.614947,
       "text": "Primero, confirmamos que el CLI está disponible. Ejecutar el CLI con el flag de versión imprime la versión instalada y nos indica que la instalación se completó correctamente.",
       "afterText": "Instalación lista. El binario rdc está en tu PATH.",
       "cardLabel": "Instalar CLI",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 7.903516,
+      "at": 8.543153,
       "text": "Ahora vamos a ejecutar el doctor del CLI. Revisa las dependencias que necesita el CLI, como Node, SSH y el resto, e informa sobre cualquier problema. Un reporte limpio significa que estás listo para agregar un servidor.",
       "afterText": "Versión impresa. Todo listo para continuar.",
       "cardLabel": "Verificar Versión",

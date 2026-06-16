@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "at": 2.413668,
+      "text": "İlk push başka bir makineye tam imajı taşır ve çıktı bunu açıkça söyler: iki gigabayt aktarıldı, full olarak işaretlendi. Bu taban noktasıdır.",
+      "afterText": "Kırk dört saniyede iki gigabayt, full olarak işaretlendi. CLI ayrıca her iki tarafta da özdeş bir taban tuttu, bu da sihrin hazırlığıdır.",
+      "cardLabel": "Tam Push",
+      "prose": "Repository'yi ikinci bir makineye push edin. İlk push tam imajı aktarır ve çıktı bunu bildirir: 2 GB aktarıldı, (full) olarak işaretlendi. Her iki tarafta da bir delta tabanı tutulur."
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "at": 10.922135,
+      "text": "Biraz veri değiştirin: iki gigabayttan elli megabayt.",
+      "afterText": "Büyük bir imajda küçük bir değişiklik.",
+      "cardLabel": "Veri Değiştir",
+      "prose": "Repository'ye küçük miktarda yeni veri yazın."
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "at": 21.404869,
+      "text": "Tekrar push edin. Aynı komut, ama bu sefer çıktıyı okuyun: iki gigabaytlık bir imaja karşı yaklaşık elli megabayt aktarıldı, delta olarak işaretlendi. Yalnızca değişen bloklar iletildi.",
+      "afterText": "İki gigabaytlık bir imajdan altı saniyenin altında elli megabayt. Sayılar bunun kanıtıdır.",
+      "cardLabel": "Delta Push",
+      "prose": "Aynı komutla tekrar push edin: çıktı, 2 GB'lık bir imajdan paylaşılan tabana karşı delta olarak yaklaşık 50 MB aktarıldığını bildirir. Yalnızca değişen bloklar iletildi."
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "at": 29.764702,
+      "text": "Her iki makine de aynı repository'yi tutar, saniyeler içinde güncellenir. İsterseniz saatlik çalıştırın, maliyet boyut değil değişiklik kadardır.",
+      "afterText": "Sık yedeklemeler artık pahalı olmaktan çıkar.",
+      "cardLabel": "Senkronize",
+      "prose": "Hedef makine artık güncellenmiş repository'yi tutar, delta maliyetiyle senkronize edilmiştir."
+    }
+  ],
+  "title": "Delta Aktarımı",
+  "chapters": {
+    "intro": "Delta Transferi",
+    "blocks-not-bytes": "Bayt değil, blok",
+    "cast-step-0": "Adım 1: İlk push, tam",
+    "cast-step-1": "Adım 2: Veriyi değiştir",
+    "cast-step-2": "Adım 3: İkinci push, delta",
+    "cast-step-3": "Adım 4: Saniyelerde senkron",
+    "outro": "Seri burada sona eriyor"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "İşte eğlenceli bir deney. Bir gigabayt veri içeren bir repository'yi başka bir makineye iki kez push edeceğiz. İlk push her şeyi taşır, ikincisi yalnızca değişenleri taşır. Sayılara bakın, push komutu tam olarak ne kadar taşındığını yazdırır."
+    },
+    {
+      "id": "blocks-not-bytes",
+      "text": "Püf nokta kurulumda. İlk push'tan sonra CLI, her iki makinede de özdeş değiştirilemez bir taban imajı tutar. Sonraki push, blokları bu tabana göre karşılaştırır ve yalnızca farkı gönderir. Bayrak yok, kayıt tutma yok, aynı push komutu."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Küçük değişiklikler, ilkinden sonraki her seferinde küçük aktarımlar demektir. Şimdi sadece bir tutorial kaldı: hiçbir zaman disk alanınızın bitmemesini sağlamak. Son tutorial'da görüşürüz!"
+    }
+  ]
+}

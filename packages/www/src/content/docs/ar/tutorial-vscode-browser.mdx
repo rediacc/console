@@ -1,0 +1,61 @@
+---
+title: "VS Code في متصفحك"
+description: "افتح VS Code كاملًا على أي مستودع من أي متصفح، دون تثبيت محلي، وشاهد صندوق رمل النواة يحصره داخل المستودع."
+category: "Tutorials"
+subcategory: essentials
+order: 7
+language: ar
+sourceHash: "71303e01f3d9c4b7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# VS Code في متصفحك
+
+تُفضّل المحرر على الطرفية؟ أمر واحد يُشغّل VS Code كاملًا من داخل صندوق رمل مستودعك، ويمكن الوصول إليه من أي متصفح: Linux وmacOS وWindows وحتى من الجهاز اللوحي. لا شيء تُثبّته محليًا.
+
+## شاهد الدرس التعليمي
+
+![Tutorial: VS Code in your browser](/assets/tutorials/tutorial-vscode-browser.cast)
+
+## كيف يعمل
+
+![The editor lives in the sandbox](/img/tutorials/tutorial-vscode-browser/slide-1.svg)
+
+المحرر لا يعمل على حاسوبك. يعمل **داخل صندوق رمل المستودع** على الخادم، ويصله متصفحك عبر نفق SSH. شجرة الملفات والطرفية المدمجة وكل ما تُشغّله منها ترى بالضبط ما يراه المستودع، لا شيء غير ذلك.
+
+## الخطوة 1: الاتصال
+
+<TutorialStep number={1} />
+
+أول اتصال يُثبّت خادم المحرر مفتوح المصدر على الجهاز (مُتحقَّق من بصمته، مشترك للقراءة فقط). بعد ذلك، تُعيد الاتصالات استخدام الخادم الجاري.
+
+أدِره في أي وقت:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+## الخطوة 2: العمل في المتصفح
+
+أنشئ مجلدات وملفات، وحرّر واحفظ. كل شيء يصل مباشرةً إلى المستودع. الطرفية المدمجة تعمل أيضًا، وتُطيع صندوق الرمل ذاته الذي تُطيعه `rdc term`.
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## الخطوة 3: الجدران حقيقية
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+الرفض يأتي من النواة، لا من الإعداد. كل ما يعمل داخل صندوق الرمل (المحررات والطرفيات وأدوات البناء ووكلاء الذكاء الاصطناعي) يقف عند جدران المستودع.
+
+> **VS Code محلي؟** `rdc vscode connect -r my-app -m server-1` (دون `--browser`) يفتح المستودع ذاته في VS Code المُثبَّت لديك عبر Remote-SSH.
+
+---
+
+التالي: [نسخ مستودع](/ar/docs/tutorial-forking).

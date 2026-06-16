@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 5
 language: ru
-sourceHash: "aa77a4f937206e58"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "011bc5d87114f105"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Сервисы
@@ -77,6 +77,25 @@ down() {
 ```
 
 > **Важно:** Всегда используйте `renet compose --` вместо `docker compose`. Обёртка `renet compose` обеспечивает host-сеть, распределение IP-адресов и метки обнаружения сервисов, необходимые для renet-proxy. Возможности CRIU checkpoint/restore добавляются к контейнерам с меткой `rediacc.checkpoint=true`. Прямое использование `docker compose` отклоняется валидацией Rediaccfile. Подробнее см. в разделе [Сетевое взаимодействие](/ru/docs/networking).
+
+### Метки возможностей
+
+По умолчанию контейнеры запускаются с минимальным набором Linux capabilities. Сервис подключает дополнительные capabilities, добавив метку в `docker-compose.yml`:
+
+| Метка | Предоставляет | Для чего |
+|-------|---------------|----------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` | CRIU checkpoint/restore (живая миграция, сохранение и возобновление) |
+| `rediacc.wireguard=true` | `NET_ADMIN` и устройство `/dev/net/tun` | Запуск WireGuard-клиента внутри контейнера |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard` позволяет сервису поднять WireGuard-туннель, например для маршрутизации отдельного процесса через удалённый endpoint. Поскольку все сервисы работают с host-сетью, изолируйте туннель в сетевом пространстве имён внутри контейнера, чтобы не затрагивать маршрутизацию хоста. Широкие привилегированные параметры, такие как `privileged: true`, `pid: host` и `ipc: host`, отклоняются валидацией вне зависимости от меток.
 
 ### Расположение нескольких сервисов
 

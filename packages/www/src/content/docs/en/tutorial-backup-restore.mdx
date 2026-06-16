@@ -51,21 +51,28 @@ The app keeps running while the backup uploads. How is that consistent?
 
 Same logic as a [fork](/en/docs/tutorial-forking). `rdc` forks first, then uploads the fork. The fork captures the moment; your live app keeps going. No downtime, no inconsistency.
 
-## Step 3: Restore on a new server
+## Step 3: Restore, for real
 
-Let's say your server dies. Set up a new server, add it to `rdc`, and pull:
+Backups you never restore are hopes, not backups. Take the repository offline first:
+
+<TutorialStep number={5} />
+
+Pull the backup straight back from the storage:
+
+<TutorialStep number={6} />
+
+And mount it again, fully restored:
+
+<TutorialStep number={7} />
+
+The same pull works on a brand new server: set it up, add it to `rdc`, and run the pull there instead.
 
 ```bash
 rdc repo pull --name my-app -m new-server --from my-storage
-```
-
-Then start it:
-
-```bash
 rdc repo up --name my-app -m new-server
 ```
 
-Your app is back. Same data, same containers, different machine.
+Same data, same containers, different machine.
 
 ## Faster backups: machine to machine
 
@@ -75,8 +82,8 @@ You can also push directly between machines, no cloud storage in between:
 rdc repo push --name my-app -m my-server --to-machine backup-server
 ```
 
-> **Pro tip.** Storage uploads always send everything. Machine-to-machine sends only the difference. The first machine-to-machine push takes the usual time, but every push after that is much faster. Great for frequent backups.
+> **Pro tip.** Machine-to-machine pushes send only the changed blocks after the first one. The [Delta Transfer tutorial](/en/docs/tutorial-delta-transfer) shows it live.
 
 ---
 
-Next: [Monitoring](/en/docs/tutorial-monitoring).
+Next: [Networking & Domains](/en/docs/tutorial-networking).

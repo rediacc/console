@@ -1,0 +1,61 @@
+---
+title: "在浏览器中使用 VS Code"
+description: "在任意浏览器中打开完整的 VS Code，操作任意仓库，无需本地安装，内核沙盒确保一切留在仓库内。"
+category: "Tutorials"
+subcategory: essentials
+order: 7
+language: zh
+sourceHash: "71303e01f3d9c4b7"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# 在浏览器中使用 VS Code
+
+更喜欢编辑器而不是终端？一条命令就能在仓库沙盒内启动完整的 VS Code，从任何浏览器都能访问：Linux、macOS、Windows，甚至平板。无需在本地安装任何东西。
+
+## 观看教程
+
+![Tutorial: VS Code in your browser](/assets/tutorials/tutorial-vscode-browser.cast)
+
+## 工作原理
+
+![编辑器运行在沙盒内](/img/tutorials/tutorial-vscode-browser/slide-1.svg)
+
+编辑器不运行在你的笔记本上，而是运行在服务器上**仓库的沙盒内**，你的浏览器通过 SSH 隧道访问它。文件树、集成终端，以及从中启动的任何进程，看到的都是仓库所能看到的，别无其他。
+
+## 第一步：连接
+
+<TutorialStep number={1} />
+
+首次连接时会在机器上安装开源编辑器服务端（校验和验证，只读共享）。之后的连接会直接复用已运行的服务端。
+
+随时管理：
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+## 第二步：在浏览器中工作
+
+创建文件夹和文件，编辑，保存。所有操作都直接落入仓库。集成终端也能用，并遵守与 `rdc term` 相同的沙盒规则。
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## 第三步：边界是真实存在的
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+这些拒绝来自内核，不是配置。无论沙盒内运行什么（编辑器、终端、构建工具、AI 智能体），都止步于仓库的边界。
+
+> **本地 VS Code？** `rdc vscode connect -r my-app -m server-1`（不加 `--browser`）会通过 Remote-SSH 在你已安装的 VS Code 中打开同一个仓库。
+
+---
+
+下一篇：[Fork 仓库](/zh/docs/tutorial-forking)。

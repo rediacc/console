@@ -1,0 +1,92 @@
+{
+  "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
+  "language": "en",
+  "version": 1,
+  "title": "VS Code in Your Browser",
+  "chapters": {
+    "intro": "VS Code in Your Browser",
+    "sandbox-concept": "The editor lives in the sandbox",
+    "cast-step-0": "Step 1: Connect with --browser",
+    "workbench-tour": "The workbench, in a tab",
+    "create-file": "Create a file in the editor",
+    "editor-terminal": "The built-in terminal",
+    "cast-step-1": "Step 2: The same view from term",
+    "cast-step-2": "Step 3: Browser files are repo files",
+    "cast-step-3": "Step 4: ls / — denied",
+    "cast-step-4": "Step 5: ls /home — denied",
+    "outro": "Next: Forking a Repository"
+  },
+  "events": [
+    {
+      "id": "tutorial-vscode-browser-01",
+      "markerIndex": 0,
+      "at": 2.414862,
+      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "afterText": "That URL is your editor. Works from any OS — the only requirement is a browser.",
+      "cardLabel": "Connect Browser",
+      "prose": "Connect with the --browser flag. The CLI installs the open-source editor server on the machine (once), starts it inside the repo sandbox, opens an SSH tunnel, and prints a link for your browser."
+    },
+    {
+      "id": "tutorial-vscode-browser-02",
+      "markerIndex": 1,
+      "at": 12.531234,
+      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "afterText": "Terminal and editor agree — it is the same sandbox.",
+      "cardLabel": "Same View",
+      "prose": "Open a terminal session into the same repo: the working directory and files match what the editor shows."
+    },
+    {
+      "id": "tutorial-vscode-browser-03",
+      "markerIndex": 2,
+      "at": 19.464899,
+      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "afterText": "Created in the browser, readable from the terminal. One repo, two doors.",
+      "cardLabel": "Round Trip",
+      "prose": "The file created in the browser editor is a real repo file — readable from any session."
+    },
+    {
+      "id": "tutorial-vscode-browser-04",
+      "markerIndex": 3,
+      "at": 26.768996,
+      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "afterText": "Denied by the kernel, not by configuration.",
+      "cardLabel": "Root Denied",
+      "prose": "Try listing the server's root directory: permission denied. The kernel confines the session to the repo."
+    },
+    {
+      "id": "tutorial-vscode-browser-05",
+      "markerIndex": 4,
+      "at": 32.439211,
+      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "afterText": "The sandbox has no exceptions. That is the point.",
+      "cardLabel": "Home Denied",
+      "prose": "Other directories like /home are denied too — the sandbox applies to everything launched inside it."
+    }
+  ],
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Good news: no terminal needed for this one! We'll open a full VS Code right in the browser, create some files, run a few commands, and watch the kernel keep it all inside the repo."
+    },
+    {
+      "id": "sandbox-concept",
+      "text": "Here's the idea. The editor doesn't run on your laptop. It runs inside the repo's sandbox on the server, and your browser reaches it through an SSH tunnel. So the file tree, the built-in terminal, and anything you launch from it see exactly what the repo sees, and nothing else."
+    },
+    {
+      "id": "workbench-tour",
+      "text": "And there it is: VS Code, in a browser tab. The file tree on the left shows the repo, and only the repo."
+    },
+    {
+      "id": "create-file",
+      "text": "Let's create a real file, no terminal involved. A new editor, a couple of lines, and save it as notes slash todo dot md. The folder appears on the left as it lands in the repo."
+    },
+    {
+      "id": "editor-terminal",
+      "text": "The built-in terminal works too, and there's our file. Now let's try to look outside the repo: permission denied. That's not a setting, that's the kernel."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Browser, editor, terminal: same sandbox, same rules. Next up is the feature everything here builds on, forking. You're going to like this one."
+    }
+  ]
+}

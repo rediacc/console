@@ -6,7 +6,7 @@
     {
       "id": "tutorial-add-server-01",
       "markerIndex": 0,
-      "at": 1.627146,
+      "at": 1.629299,
       "text": "Nous commençons par créer un profil de configuration. Ce profil contient la clé SSH, la liste des machines et les paramètres d'infrastructure pour tout ce que nous allons faire.",
       "afterText": "Profil créé. Tout ce que nous configurons ensuite vit dans ce seul fichier.",
       "cardLabel": "Ajouter Machine",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-add-server-02",
       "markerIndex": 1,
-      "at": 7.928955,
+      "at": 8.575098,
       "text": "Maintenant, nous enregistrons le serveur depuis la ligne de commande en fournissant son nom, son adresse IP et l'utilisateur SSH. Les clés hôtes sont scannées automatiquement pour un accès sécurisé.",
       "afterText": "Serveur enregistré. Les clés hôtes ont été scannées automatiquement.",
       "cardLabel": "Configurer Machine",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-add-server-03",
       "markerIndex": 2,
-      "at": 16.338306,
+      "at": 19.204906,
       "text": "Voyons ensuite le provisionnement du serveur. Cette étape installe renet et crée le datastore chiffré. Après cela, le serveur est prêt à héberger des dépôts.",
       "afterText": "Terminé. renet est installé et le datastore est prêt.",
       "cardLabel": "Inspecter Config",

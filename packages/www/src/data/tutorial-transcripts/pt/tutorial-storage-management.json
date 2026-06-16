@@ -1,0 +1,107 @@
+{
+  "cast": "/assets/tutorials/tutorial-storage-management.cast",
+  "language": "pt",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-storage-management-01",
+      "markerIndex": 0,
+      "at": 2.410441,
+      "text": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "afterText": "Quase cheio. Hora de expandir.",
+      "cardLabel": "Enchendo",
+      "prose": "Preencha o repository com dados até o filesystem ficar cheio."
+    },
+    {
+      "id": "tutorial-storage-management-02",
+      "markerIndex": 1,
+      "at": 12.69586,
+      "text": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "afterText": "Quatro gigabytes agora. Nada foi reiniciado.",
+      "cardLabel": "Expandir Online",
+      "prose": "Expanda o repository online: o container LUKS e o filesystem crescem com os containers em execução."
+    },
+    {
+      "id": "tutorial-storage-management-03",
+      "markerIndex": 2,
+      "at": 19.886575,
+      "text": "Verify from inside: same volume, double the room.",
+      "afterText": "A aplicação não percebeu nada.",
+      "cardLabel": "Verificar Tamanho",
+      "prose": "Verifique o filesystem de dentro do repo: o novo tamanho já está ativo."
+    },
+    {
+      "id": "tutorial-storage-management-04",
+      "markerIndex": 3,
+      "at": 26.982758,
+      "text": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "afterText": "Liberado dentro do repo, ainda de posse da imagem.",
+      "cardLabel": "Excluir Dados",
+      "prose": "Exclua os dados dentro do repository: note que o pool ainda não diminui."
+    },
+    {
+      "id": "tutorial-storage-management-05",
+      "markerIndex": 4,
+      "at": 33.464064,
+      "text": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "afterText": "Recuperado. O pool pode respirar novamente.",
+      "cardLabel": "Trim",
+      "prose": "Execute o repo trim para devolver os blocos liberados ao pool compartilhado: online, sem downtime."
+    },
+    {
+      "id": "tutorial-storage-management-06",
+      "markerIndex": 5,
+      "at": 40.097562,
+      "text": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "afterText": "Policy armazenada. A máquina assume daqui em diante.",
+      "cardLabel": "Definir Política",
+      "prose": "Defina uma política de tamanho: crescimento automático com um limite explícito, mais trim agendado."
+    },
+    {
+      "id": "tutorial-storage-management-07",
+      "markerIndex": 6,
+      "at": 50.538253,
+      "text": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "afterText": "Configurado uma vez, esquecido com segurança.",
+      "cardLabel": "Verificar Política",
+      "prose": "Leia a política efetiva de volta: crescimento e trim agora são automáticos."
+    },
+    {
+      "id": "tutorial-storage-management-08",
+      "markerIndex": 7,
+      "at": 57.423655,
+      "text": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "afterText": "Uma visão: uso, economia e espaço para crescer.",
+      "cardLabel": "Ver Saúde",
+      "prose": "Verifique a saúde do armazenamento da máquina: uso por repo, estado do pool e economia de reflinks CoW."
+    }
+  ],
+  "title": "Gerenciamento de Armazenamento",
+  "chapters": {
+    "intro": "Gerenciamento de Armazenamento",
+    "pool-model": "Um pool, repos crescendo",
+    "cast-step-0": "Passo 1: O repo fica cheio",
+    "cast-step-1": "Passo 2: Expanda online",
+    "cast-step-2": "Passo 3: Verifique o novo tamanho",
+    "cast-step-3": "Passo 4: Exclua os dados",
+    "cast-step-4": "Passo 5: Trim, devolva os blocos",
+    "cast-step-5": "Passo 6: Defina a política",
+    "cast-step-6": "Passo 7: Leia a política de volta",
+    "cast-step-7": "Passo 8: A visão de saúde",
+    "outro": "A série termina aqui"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Bem-vindo ao tutorial final! Vamos garantir que você nunca fique sem espaço em disco de novo. Vamos expandir um repository completo online, devolver o espaço excluído ao pool e depois ensinar a máquina a fazer os dois automaticamente."
+    },
+    {
+      "id": "pool-model",
+      "text": "Este é o modelo. Cada repository é um arquivo em um pool de datastore compartilhado. Os repositories podem crescer online enquanto os containers continuam rodando. Mas excluir dados dentro de um repo não libera nada por si só. O Trim é o que devolve os blocos ao pool. E uma policy automatiza os dois."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "E assim encerramos a série! Dezoito tutoriais, do install ao armazenamento em piloto automático. Seus servidores são seus de novo. Obrigado por assistir!"
+    }
+  ]
+}

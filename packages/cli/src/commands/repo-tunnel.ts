@@ -3,16 +3,18 @@ import type {
   ListResult,
 } from '@rediacc/shared/queue-vault/data/list-types.generated';
 import { getContainers } from '@rediacc/shared/queue-vault/data/list-types.generated';
-import { SSHConnection, spawnSSH, testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
+import { testSSHConnectivity } from '@rediacc/shared-desktop/ssh';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
+import { outputService } from '../services/output.js';
 import { authService } from '../services/auth.js';
 import { configService } from '../services/config-resources.js';
 import { fetchMachineStatus } from '../services/machine-status.js';
 import { provisionRenetToRemote, readSSHKey } from '../services/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo-mount-check.js';
+import { openRepoTunnel } from '../services/repo-ssh-tunnel.js';
 import { getSSHConnectionDetails } from '../services/ssh-connection.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
@@ -26,6 +28,7 @@ interface TunnelOptions {
   container?: string;
   port?: string;
   local?: string;
+  urlOnly?: boolean;
   [key: string]: unknown;
 }
 
@@ -228,71 +231,50 @@ async function tunnelConnect(options: TunnelOptions): Promise<void> {
   await provisionRenetToRemote(localConfig, machine, sshPrivateKey, {});
   await deployRepoKeyIfNeeded(repoName, machineName);
 
-  // Set up SSH connection
-  const sshConnection = new SSHConnection(
-    connectionDetails.privateKey,
-    connectionDetails.known_hosts,
-    {
-      port: connectionDetails.port,
-      forceTTY: false,
-    }
-  );
+  // Open the forward over the shared repo-tunnel primitive (port pre-check,
+  // ssh -N -L, readiness poll) and hold it until Ctrl+C.
+  const tunnel = await openRepoTunnel({
+    connectionDetails,
+    localPort: target.localPort,
+    remoteIP: target.remoteIP,
+    remotePort: target.remotePort,
+  });
 
   try {
-    await sshConnection.setup();
-
-    const destination = `${connectionDetails.user}@${connectionDetails.host}`;
-    const forwardSpec = `${target.localPort}:${target.remoteIP}:${target.remotePort}`;
-
-    // Spawn SSH with -N (no remote command) and -L (local forward)
-    const child = spawnSSH(
-      destination,
-      [...sshConnection.sshOptions, '-N', '-L', forwardSpec],
-      undefined,
-      {
-        env: { ...process.env, ...connectionDetails.environment },
-        stdio: 'inherit',
-        agentSocketPath: sshConnection.agentSocketPath,
-      }
-    );
-
-    // eslint-disable-next-line no-console
-    console.log(
-      t('commands.repo.tunnel.active', {
-        localPort: String(target.localPort),
-        container: target.containerName,
-        remoteIP: target.remoteIP,
-        remotePort: String(target.remotePort),
-      })
-    );
-    // eslint-disable-next-line no-console
-    console.log(t('commands.repo.tunnel.hint'));
+    if (options.urlOnly) {
+      // Machine-readable contract (e.g. browser-scene urlFromCommand):
+      // exactly one URL line on stdout, then hold the tunnel.
+      outputService.print(`http://localhost:${target.localPort}`);
+    } else {
+      outputService.print(
+        t('commands.repo.tunnel.active', {
+          localPort: String(target.localPort),
+          container: target.containerName,
+          remoteIP: target.remoteIP,
+          remotePort: String(target.remotePort),
+        })
+      );
+      outputService.print(t('commands.repo.tunnel.hint'));
+    }
 
     // Graceful shutdown on SIGINT/SIGTERM
     const cleanup = () => {
-      child.kill('SIGTERM');
+      tunnel.child.kill('SIGTERM');
     };
     process.on('SIGINT', cleanup);
     process.on('SIGTERM', cleanup);
+    try {
+      await tunnel.waitUntilExit();
+    } finally {
+      process.removeListener('SIGINT', cleanup);
+      process.removeListener('SIGTERM', cleanup);
+    }
 
-    await new Promise<void>((resolve, reject) => {
-      child.on('exit', (code: number | null) => {
-        process.removeListener('SIGINT', cleanup);
-        process.removeListener('SIGTERM', cleanup);
-        // Exit code 130 = SIGINT (128+2), treat as normal
-        if (code === 0 || code === null || code === 130) {
-          resolve();
-        } else {
-          reject(new Error(t('errors.term.sshExitCode', { code })));
-        }
-      });
-      child.on('error', reject);
-    });
-
-    // eslint-disable-next-line no-console
-    console.log(t('commands.repo.tunnel.closed'));
+    if (!options.urlOnly) {
+      outputService.print(t('commands.repo.tunnel.closed'));
+    }
   } finally {
-    await sshConnection.cleanup();
+    await tunnel.close();
   }
 }
 
@@ -319,6 +301,7 @@ ${t('help.examples')}
     .option('-c, --container <name>', t('commands.repo.tunnel.containerOption'))
     .option('--port <port>', t('commands.repo.tunnel.portOption'))
     .option('--local <port>', t('commands.repo.tunnel.localOption'))
+    .option('--url-only', t('commands.repo.tunnel.urlOnlyOption'))
     .action(async (options: TunnelOptions, cmd: Command) => {
       try {
         if (!options.machine) {

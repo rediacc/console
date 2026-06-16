@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "76eed6f4401476896507a9c85ab800ef741764184292238cbcbb2eab51658ba8",
+  "transcriptHash": "f23fcc363bc18e68fa341cdd360d50952a1692f6469d23fb448fb1aff408c121",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41277,
-      "replayEndSec": 13.421721,
+      "replayStartSec": 2.422355,
+      "replayEndSec": 12.478171,
       "narrationText": "让我们 fork 这个仓库。一条命令克隆了一切，应用、数据库、配置文件，只用了几秒，无论仓库有多大都一样。1 GB、100 GB、1 TB，每次时间相同。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-forking/tutorial-forking-01.9d0d9c9f.mp3",
       "textHash": "9d0d9c9f52aaa2a9d3c225f4ca158a6bb0eb6319572f531066fd6dd8927b73a5",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.421721,
-      "replayEndSec": 18.980206,
+      "replayStartSec": 12.478171,
+      "replayEndSec": 18.050071,
       "narrationText": "现在两个仓库并排运行。相同的机器，相同的磁盘，两个完全独立的环境。fork 有自己的容器、自己的文件系统和自己的 Docker 守护进程。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-forking/tutorial-forking-02.800f3518.mp3",
       "textHash": "800f3518aa993600ecb65c3e8441fd128881851d6296a65973021b458a8fb934",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.980206,
-      "replayEndSec": 26.216902,
+      "replayStartSec": 18.050071,
+      "replayEndSec": 25.352583,
       "narrationText": "让我们来证明隔离性。在原始仓库中，我们的标记文件还在原来的位置。fork 的存在没有对父仓库造成任何影响。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-forking/tutorial-forking-03.7d536765.mp3",
       "textHash": "7d53676523580588ee9ccc9b11cd7f26215799eb92b1e141f24c641b1e363126",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 26.216902,
-      "replayEndSec": 34.456769,
+      "replayStartSec": 25.352583,
+      "replayEndSec": 33.706234,
       "narrationText": "现在让我们删除那个文件，但只在 fork 内部删除。在 fork 里它已经消失了，我们做了一个破坏性的操作，它留在了 fork 之内。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-forking/tutorial-forking-04.b89d7b27.mp3",
       "textHash": "b89d7b2705a62590db6ae67099992a4c926dd026d072a0057e42e65053c005d2",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 34.456769,
-      "replayEndSec": 41.647526,
+      "replayStartSec": 33.706234,
+      "replayEndSec": 41.0794,
       "narrationText": "回到原始仓库。标记文件还在这里，完好无损。原始仓库从不知道发生了什么。相同的镜像，独立的 Docker 守护进程，独立的文件系统。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-forking/tutorial-forking-05.58837c72.mp3",
       "textHash": "58837c72f344392ce4a7182bf187b795d52f361671355608bc613235effafa19",
@@ -77,8 +77,8 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.647526,
-      "replayEndSec": 51.671921,
+      "replayStartSec": 41.0794,
+      "replayEndSec": 48.135359,
       "narrationText": "完成后，直接删除 fork。原始仓库保持原样。Fork、实验、破坏、删除，零风险。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-forking/tutorial-forking-06.9bfda771.mp3",
       "textHash": "9bfda7717af602b3487125306f21cb3ccfd017849cdea2171777118942f23147",
@@ -140,10 +140,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "b30cd2d8f1939aacbdc5ae88fa1b92cbbda5b77c4bead764add63c1fe6f64d2e",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-forking/next-tutorial.b30cd2d8.mp3",
-      "narrationText": "fork 故意把密钥留在原地，这正是 “克隆生产环境而不破坏任何东西” 真正安全的原因。我们将在下个教程中正确配置它们！",
-      "audioDurationSec": 12.826122
+      "textHash": "b41a68aefd2bfcaeb88eda9240a622c3eda4fe4dff1713c532f9a28cb665b8fb",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-forking/next-tutorial.b41a68ae.mp3",
+      "narrationText": "你刚刚看了那些命令。接下来我们让它直观起来：一个真实的数据库应用，实时 fork，并排编辑，而原始环境始终纹丝不动。",
+      "audioDurationSec": 15.072653
     }
   ]
 }

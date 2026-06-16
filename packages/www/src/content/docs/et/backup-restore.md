@@ -4,8 +4,8 @@ description: "Varunda krüpteeritud repositooriumeid mis tahes rclone-ühilduvas
 category: "Guides"
 order: 7
 language: et
-sourceHash: "e241aa122868e629"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7ff112c2ec14c35f"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Varundamine ja taastamine
@@ -40,7 +40,7 @@ Saada repositooriumi varukoopia välisesse salvestusse:
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
-Push kontrollib alati enne kirjutamist, kas siht-repositoorium on ühendatud. Kui see pole ühendatud, katkestatakse toiming.
+Varukoopia jõuab salvestuse `hot/` kausta, kui repositoorium on saatmise ajal ühendatud, ja `cold/` kausta, kui see on lahti ühendatud. See on sama paigutus, mida ajastatud varundamine kasutab, seega `rdc repo backup list` näitab kõiki varukoopiad ühes tabelis.
 
 | Valik | Kirjeldus |
 |--------|-------------|
@@ -345,7 +345,7 @@ rdc config backup-strategy set \
 
 ### Millal jätta repositoorium kõrgsagedusliku kuuma strateegia vahele
 
-Jätage repositoorium kõrgsageduslikust käivitamisest välja, kui:
+Jätke repositoorium kõrgsageduslikust käivitamisest välja, kui:
 
 - Repositoorium on suur ja **täielikult taasgenereeritav** köitel juba olevatest lähteandmetest, nii et iga tunnine varukoopia raiskab märkimisväärset ribalaiust ilma sisukaid taasteandmeid lisamata.
 - Varundamise käivitamine ületaks oma ajakavaintervallit teie saadaoleval üleslaadimiskiirusel.

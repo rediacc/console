@@ -15,7 +15,7 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 2.409686,
+      "at": 2.412347,
       "text": "Time to create a 2 gigabyte encrypted repository on the server. A repository is a single encrypted file at rest. Creating it also mounts it, so it immediately becomes a folder with its own Docker daemon and isolated application data, completely separate from everything else.",
       "afterText": "Repository created and already mounted on the server, ready to use.",
       "cardLabel": "Create Repo",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 11.760396,
+      "at": 11.676359,
       "text": "Let's confirm the new repo is registered. From here it can be deployed, forked, backed up, or opened in your editor, all from your laptop.",
       "afterText": "There it is, registered and ready to use.",
       "cardLabel": "List Repos",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "at": 17.238181,
+      "at": 17.041073,
       "text": "One handy option: open the repo directly in VS Code with this command. We won't launch the editor here, but it starts a remote session into the repo over SSH so you can edit its files.",
       "afterText": "Run that on your laptop to edit the repo's files in VS Code.",
       "cardLabel": "Open in VS Code",

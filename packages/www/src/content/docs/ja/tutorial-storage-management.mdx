@@ -1,0 +1,58 @@
+---
+title: "ストレージ管理"
+description: "ダウンタイムゼロでリポジトリをオンラインで拡張し、削除済みスペースをトリムで回収し、両方の作業を自動ポリシーに任せます。"
+category: "Tutorials"
+subcategory: advanced
+order: 18
+language: ja
+sourceHash: "cab2a40cd120e352"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# ストレージ管理
+
+ディスク不足に悩まされることはもうありません。コンテナが動き続けたまま満杯のリポジトリを拡張し、削除したブロックをプールに返却し、その両方を自動的にマシンに任せます。
+
+## チュートリアル動画
+
+![チュートリアル: ストレージ管理](/assets/tutorials/tutorial-storage-management.cast)
+
+## 1つのプール、成長するリポジトリ
+
+![1つのプール、成長するリポジトリ](/img/tutorials/tutorial-storage-management/slide-1.svg)
+
+各リポジトリは共有データストアプール内の1つのファイルです。リポジトリはオンラインで成長できます。リポジトリ内のデータを削除してもそれだけではブロックは解放されません。**トリム**がブロックをプールに返す役割を担います。
+
+## オンラインで拡張、ダウンタイムゼロ
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## トリムで回収する
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+## 自動化に任せる
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+マシンはしきい値を超えたときにリポジトリを拡張し（明示した上限まで）、スケジュールに従ってトリムします。ストレージメンテナンスタイマーが適用するため、独自の cron は不要です。
+
+## ヘルスビュー
+
+<TutorialStep number={8} />
+
+リポジトリごとの使用量、プールの状態、コピーオンライト共有による節約量が1つのコマンドで確認できます。
+
+## 完了です
+
+18本のチュートリアル: インストール、接続、デプロイ、どこからでも編集、自信を持ってフォーク、シークレットを安全に保管、本格的なバックアップ、本番公開、監視、バージョン管理、移行、同期、そしてディスク不足知らず。サーバーは再びあなたのものです。

@@ -1,0 +1,92 @@
+{
+  "cast": "/assets/tutorials/tutorial-vscode-browser.cast",
+  "language": "ko",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-vscode-browser-01",
+      "markerIndex": 0,
+      "at": 2.414862,
+      "text": "One command. The CLI installs the editor server on the machine once, starts it inside the repo sandbox, opens a tunnel, and hands you a link. No local VS Code, no extensions to set up.",
+      "afterText": "그 URL이 바로 에디터입니다. 어떤 OS에서도 작동하며, 브라우저만 있으면 됩니다.",
+      "cardLabel": "브라우저 연결",
+      "prose": "--browser 플래그로 연결하세요. CLI가 오픈소스 에디터 서버를 머신에 설치하고(한 번만), repo sandbox 내부에서 실행한 뒤, SSH 터널을 열고 브라우저 링크를 출력합니다."
+    },
+    {
+      "id": "tutorial-vscode-browser-02",
+      "markerIndex": 1,
+      "at": 12.531234,
+      "text": "Same repo from the plain terminal: the working directory is the repo, the files are the repo's files.",
+      "afterText": "terminal과 에디터가 일치합니다. 같은 sandbox입니다.",
+      "cardLabel": "동일한 화면",
+      "prose": "동일한 repo에 터미널 세션을 여세요. 작업 디렉토리와 파일이 에디터에 표시된 내용과 일치합니다."
+    },
+    {
+      "id": "tutorial-vscode-browser-03",
+      "markerIndex": 2,
+      "at": 19.464899,
+      "text": "And the file we created in the browser editor? Right here. Files made in VS Code are real repo files, instantly.",
+      "afterText": "브라우저에서 만들고, terminal에서 읽습니다. 하나의 repo, 두 개의 문.",
+      "cardLabel": "왕복 확인",
+      "prose": "브라우저 에디터에서 생성한 파일은 실제 repo 파일입니다. 어느 세션에서든 읽을 수 있습니다."
+    },
+    {
+      "id": "tutorial-vscode-browser-04",
+      "markerIndex": 3,
+      "at": 26.768996,
+      "text": "Now try to leave. Listing the root of the server: permission denied. The kernel scopes the editor, its terminal, and every child process to this repo.",
+      "afterText": "설정이 아닌 커널에 의해 거부되었습니다.",
+      "cardLabel": "루트 접근 거부",
+      "prose": "서버의 루트 디렉토리 목록을 조회해 보세요. 권한이 거부됩니다. 커널이 세션을 repo로 제한합니다."
+    },
+    {
+      "id": "tutorial-vscode-browser-05",
+      "markerIndex": 4,
+      "at": 32.439211,
+      "text": "Other users' homes? Also denied. Whatever runs inside this sandbox — editors, terminals, build tools — ends at the repo's walls.",
+      "afterText": "sandbox에는 예외가 없습니다. 그게 핵심입니다.",
+      "cardLabel": "홈 접근 거부",
+      "prose": "/home 같은 다른 디렉토리도 접근이 거부됩니다. sandbox는 내부에서 실행되는 모든 것에 적용됩니다."
+    }
+  ],
+  "title": "브라우저에서 VS Code 사용",
+  "chapters": {
+    "intro": "브라우저에서 VS Code 사용",
+    "sandbox-concept": "에디터는 sandbox 안에서 실행됩니다",
+    "cast-step-0": "1단계: --browser로 연결하기",
+    "workbench-tour": "탭에서 열리는 워크벤치",
+    "create-file": "에디터에서 파일 만들기",
+    "editor-terminal": "내장 터미널",
+    "cast-step-1": "2단계: 터미널에서 동일한 화면",
+    "cast-step-2": "3단계: 브라우저 파일은 repo 파일",
+    "cast-step-3": "4단계: ls / 접근 거부",
+    "cast-step-4": "5단계: ls /home 접근 거부",
+    "outro": "다음: Repository Fork하기"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "좋은 소식이 있어요. 이번엔 terminal이 필요 없습니다! 브라우저에서 바로 VS Code를 열고, 파일도 만들고, 명령어도 몇 개 실행하면서, kernel이 모든 걸 repo 안에 가두는 걸 직접 확인해 볼 거예요."
+    },
+    {
+      "id": "sandbox-concept",
+      "text": "개념은 이렇습니다. 에디터는 여러분의 노트북에서 실행되는 게 아니에요. 서버의 repo sandbox 안에서 실행되고, 브라우저는 SSH tunnel을 통해 그 에디터에 접속하는 거죠. 그래서 파일 트리, 내장 terminal, 그리고 거기서 실행하는 모든 것은 repo가 보는 것만 볼 수 있고, 그 외엔 아무것도 볼 수 없어요."
+    },
+    {
+      "id": "workbench-tour",
+      "text": "자, 여기 있습니다. 브라우저 탭 안의 VS Code예요. 왼쪽 파일 트리에는 repo가 보이고, repo만 보입니다."
+    },
+    {
+      "id": "create-file",
+      "text": "terminal 없이 실제 파일을 만들어 봅시다. 새 에디터를 열고, 몇 줄을 입력한 다음, notes/todo.md로 저장합니다. 파일이 repo에 들어오는 순간 왼쪽에 폴더가 나타납니다."
+    },
+    {
+      "id": "editor-terminal",
+      "text": "내장 terminal도 잘 작동하고, 파일도 있네요. 이제 repo 바깥을 들여다보려고 하면, 접근이 거부됩니다. 이건 설정이 아니라 kernel이 막는 거예요."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "브라우저, 에디터, terminal 모두 같은 sandbox, 같은 규칙이에요. 다음은 여기서 다룬 모든 것의 기반이 되는 기능, forking입니다. 꽤 마음에 드실 거예요."
+    }
+  ]
+}

@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "2d965bead2b510b7020f89b66549ceebe496ab6927b83ebbad92e09a6dd79504",
+  "transcriptHash": "1476b65dc5c1eda5941ab5cb4d3a472c78357bc7a72d8a194238cb50b527ca83",
   "steps": [
     {
       "id": "tutorial-ssh-keys-01",
       "markerIndex": 0,
-      "replayStartSec": 1.626287,
-      "replayEndSec": 6.456735,
+      "replayStartSec": 1.617466,
+      "replayEndSec": 6.370674,
       "narrationText": "Шаг первый. Сейчас мы генерируем новый SSH-ключ ed25519. Это современный стандарт: компактный, быстрый и хорошо поддерживаемый. Делается один раз для всех серверов, которые вы когда-либо добавите.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-01.9e29afb3.mp3",
       "textHash": "9e29afb334f970f940f13931a28c2a0a19684a141f4728cb4d123698b597fdea",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-ssh-keys-02",
       "markerIndex": 1,
-      "replayStartSec": 6.456735,
-      "replayEndSec": 13.33617,
+      "replayStartSec": 6.370674,
+      "replayEndSec": 13.176828,
       "narrationText": "Шаг второй. Копируем публичный ключ на сервер с помощью ssh-copy-id. Пароль сервера запросится в последний раз. После этого аутентификация по паролю для этого сервера больше не нужна.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-02.8cbbf35e.mp3",
       "textHash": "8cbbf35ee0b48569bcc9f1c2d3280953f580ac769b4b68050c9812fbbb918e2d",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-ssh-keys-03",
       "markerIndex": 2,
-      "replayStartSec": 13.33617,
-      "replayEndSec": 19.159643,
+      "replayStartSec": 13.176828,
+      "replayEndSec": 19.095233,
       "narrationText": "Шаг третий. Регистрируем ключ в CLI. Теперь каждая команда будет аутентифицироваться с этим ключом. Никаких паролей, никаких интерактивных запросов.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-ssh-keys/tutorial-ssh-keys-03.4e249ecc.mp3",
       "textHash": "4e249ecc0b3f0aa8c3f47266492bf4cd8b7f103541dbbc2dfb5d94bc554d70ef",

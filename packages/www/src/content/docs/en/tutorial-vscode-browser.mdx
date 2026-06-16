@@ -1,0 +1,59 @@
+---
+title: "VS Code in Your Browser"
+description: "Open a full VS Code on any repository from any browser, with no local install, and see the kernel sandbox keep it inside the repo."
+category: "Tutorials"
+subcategory: essentials
+order: 7
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# VS Code in Your Browser
+
+Prefer an editor over a terminal? One command serves a full VS Code from inside your repository's sandbox, reachable from any browser: Linux, macOS, Windows, even a tablet. Nothing to install locally.
+
+## Watch the tutorial
+
+![Tutorial: VS Code in your browser](/assets/tutorials/tutorial-vscode-browser.cast)
+
+## How it works
+
+![The editor lives in the sandbox](/img/tutorials/tutorial-vscode-browser/slide-1.svg)
+
+The editor does not run on your laptop. It runs **inside the repo's sandbox** on the server, and your browser reaches it through an SSH tunnel. The file tree, the integrated terminal, and anything you launch from it see exactly what the repo sees, and nothing else.
+
+## Step 1: Connect
+
+<TutorialStep number={1} />
+
+The first connect installs the open-source editor server on the machine (checksum-verified, shared read-only). After that, reconnects reuse the running server.
+
+Manage it any time:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+## Step 2: Work in the browser
+
+Create folders and files, edit, save. Everything lands directly in the repository. The integrated terminal works too, and it obeys the same sandbox as `rdc term`.
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## Step 3: The walls are real
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+The denials come from the kernel, not from configuration. Whatever runs inside the sandbox (editors, terminals, build tools, AI agents) ends at the repo's walls.
+
+> **Local VS Code?** `rdc vscode connect -r my-app -m server-1` (without `--browser`) opens the same repository in your installed VS Code via Remote-SSH.
+
+---
+
+Next: [Forking a Repository](/en/docs/tutorial-forking).

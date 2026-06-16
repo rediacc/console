@@ -1,0 +1,62 @@
+---
+title: "Elus migratsioon"
+description: "Tõsta töötav repositoorium, konteinerid, andmebaas ja protsessimälu kaasa arvatud, teisele masinale ühe käsuga ja minimaalse seisakuajaga."
+category: "Tutorials"
+subcategory: advanced
+order: 16
+language: et
+sourceHash: "0d0c4df847c6ba17"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Elus migratsioon
+
+Servereid vahetatakse: riistvara vananeb, teenusepakkujad muutuvad, regioonid liiguvad. `rdc repo migrate` tõstab töötava repositooriumi teisele masinale ühe käsuga -- ja `--checkpoint`-iga reisib isegi protsessimälu kaasa. Demokäivitus `pulse` hoiab loendajat RAM-is; pärast liikumist jätkab see loendamist otsast alustamise asemel.
+
+## Vaata juhendvideot
+
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
+## Kuidas see liigub
+
+![Kaks faasi, minimaalne seisakuaeg](/img/tutorials/tutorial-live-migration/slide-1.svg)
+
+Esimene faas kopeerib põhiosa, kuni rakendus jätkab tööd. Teine faas jäädvustab elavad protsessid (CRIU, `rediacc.checkpoint=true` sildiga konteineritele), kannab lõpliku delta koos protsessiolekuga üle ja jätkab kõike uuel masinal. Seisakuaeg on delta, mitte andmete suurus.
+
+## 1. samm: Tõestus -- loendaja RAM-is
+
+<TutorialStep number={1} />
+
+`memory counter=6` ja kasvab, üks löök iga viie sekundi tagant. Loendaja elab ainult protsessimälus. Kui protsess taaskäivitub, alustaks see ühe pealt uuesti.
+
+## 2. samm: Migreeeri -- elusalt
+
+<TutorialStep number={2} />
+
+Väljund jutustab liikumise: esimene faas kannab 2 GB põhiosa üle, samal ajal kui allikas jääb veebis, seejärel prindib ümberlülitusliin tegeliku `DOWNTIME`: mõned kümned megabaidid ja umbes kakskümmend sekundit kahe gigabaidise repositooriumi kohta.
+
+## 3. samm: Kinnita uus kodu
+
+<TutorialStep number={3} />
+
+Sihtmasinas on `pulse` ühendatud, Docker töötab, konteinerid jooksevad.
+
+## 4. samm: Allikas on peatatud
+
+<TutorialStep number={4} />
+
+Allikas loetleb repositooriumi endiselt, kuid ausalt: ei ole ühendatud, Dockerit pole, null konteinerit. Seal ei tööta enam midagi. Kujutis on meelega alles jäetud järgmise [deltatransferi](/et/docs/tutorial-delta-transfer) alusena, nii et tulevane tagasitõuge on odav.
+
+## 5. samm: Loendaja jätkas loendamist
+
+<TutorialStep number={5} />
+
+`memory counter=17`, siis 18, 19, 20... See jätkas täpselt sealt, kus kontrollpunkt selle külmutas, mitte ühe pealt uuesti. See on protsessimälu, mis reisis kaasa -- rakendus ei märganud, et masin vahetus.
+
+> Ilma `--checkpoint`-ita tõstab migrate endiselt kettaandmed ja konteinerid üle; need käivituvad sihtmasinal uuesti, mitte ei jätka pooleli olekust.
+
+---
+
+Edasi: [Deltatransfer](/et/docs/tutorial-delta-transfer).

@@ -27,5 +27,5 @@ run_cmd "rdc --version"
 
 pause 2
 
-printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
-sleep 2
+# End the on-camera portion.
+end_recording

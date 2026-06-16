@@ -6,7 +6,7 @@ order: 2
 language: es
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/es/cli.json
-sourceHash: "a855c6dad336345f"
+sourceHash: "1235daa773aa4f19"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2008,6 +2008,7 @@ rdc repo push [options]
 | `--bwlimit <limit>` | {{t:cli.commands.repo.push.optionBwlimit}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--delta-base <guid>` | {{t:cli.commands.repo.push.optionDeltaBase}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--strategy <strategy>` | {{t:cli.commands.repo.push.optionStrategy}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--json` | {{t:cli.commands.repo.push.optionJson}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-router-restart` | {{t:cli.options.skipRouterRestart}} | {{t:cli.docs.optionLabels.no}} | - |
 
@@ -2176,6 +2177,7 @@ rdc repo tunnel [options]
 | `-c, --container <name>` | {{t:cli.commands.repo.tunnel.containerOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--port <port>` | {{t:cli.commands.repo.tunnel.portOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local <port>` | {{t:cli.commands.repo.tunnel.localOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--url-only` | {{t:cli.commands.repo.tunnel.urlOnlyOption}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-repo-secret"></a>
@@ -2391,6 +2393,11 @@ rdc vscode connect [options]
 | `-n, --new-window` | {{t:cli.options.newWindow}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--skip-env-setup` | {{t:cli.options.skipEnvSetup}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--insiders` | {{t:cli.options.insiders}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--browser` | {{t:cli.options.vscodeBrowser}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-open` | {{t:cli.options.vscodeNoOpen}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--local <port>` | {{t:cli.commands.repo.tunnel.localOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--server-provider <id>` | {{t:cli.options.vscodeServerProvider}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--server-archive <file>` | {{t:cli.options.vscodeServerArchive}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-vscode-list"></a>
@@ -2429,6 +2436,45 @@ rdc vscode check [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--insiders` | {{t:cli.options.insiders}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-vscode-serve"></a>
+### 8.5 serve
+
+{{t:cli.commands.vscode.serve.description}}
+
+<a id="cli-local-vscode-serve-status"></a>
+#### status
+
+{{t:cli.commands.vscode.serve.status.description}}
+
+```bash
+rdc vscode serve status [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--server-provider <id>` | {{t:cli.options.vscodeServerProvider}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-vscode-serve-stop"></a>
+#### stop
+
+{{t:cli.commands.vscode.serve.stop.description}}
+
+```bash
+rdc vscode serve stop [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-t, --team <name>` | {{t:cli.options.team}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-r, --repository <name>` | {{t:cli.options.repository}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--server-provider <id>` | {{t:cli.options.vscodeServerProvider}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

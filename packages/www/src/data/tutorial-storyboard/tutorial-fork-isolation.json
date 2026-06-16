@@ -1,0 +1,412 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-fork-isolation",
+  "nextTutorialKey": "tutorial-managing-secrets",
+  "setupCommand": "bash .ci/tutorials/lib/stage-demo-pgadmin.sh",
+  "teardownCommand": "rdc repo delete --name demo-pgadmin:experiment --machine ${TUTORIAL_MACHINE_NAME}; rdc config repository remove --name demo-pgadmin:experiment",
+  "sessions": {
+    "grand": {
+      "urlFromCommand": "rdc repo tunnel --machine ${TUTORIAL_MACHINE_NAME} --repository demo-pgadmin --container pgadmin --port 80 --local 18090 --url-only",
+      "prepActions": [
+        {
+          "waitForSelector": "input[name='email']"
+        },
+        {
+          "wait": 1500
+        }
+      ]
+    },
+    "fork": {
+      "urlFromCommand": "rdc repo tunnel --machine ${TUTORIAL_MACHINE_NAME} --repository demo-pgadmin:experiment --container pgadmin --port 80 --local 18091 --url-only",
+      "prepActions": [
+        {
+          "waitForSelector": ".file-tree .file-entry"
+        },
+        {
+          "wait": 2500
+        },
+        {
+          "click": ".file-tree .file-entry.depth-1 > .directory-toggle"
+        },
+        {
+          "wait": 6000
+        },
+        {
+          "click": ".file-tree .file-entry.depth-3:has-text('Databases') > .directory-toggle"
+        },
+        {
+          "wait": 3000
+        }
+      ]
+    },
+    "fork-pane": {
+      "width": "half",
+      "urlFromCommand": "rdc repo tunnel --machine ${TUTORIAL_MACHINE_NAME} --repository demo-pgadmin:experiment --container pgadmin --port 80 --local 18092 --url-only",
+      "prepActions": [
+        {
+          "waitForSelector": ".file-tree .file-entry"
+        },
+        {
+          "wait": 2500
+        },
+        {
+          "click": ".file-tree .file-entry.depth-1 > .directory-toggle"
+        },
+        {
+          "wait": 6000
+        },
+        {
+          "click": ".file-tree .file-entry.depth-3:has-text('Databases') > .directory-toggle"
+        },
+        {
+          "wait": 3000
+        },
+        {
+          "click": ".file-tree .file-entry.depth-4:has-text('demo')"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "click": "button[aria-label='Query Tool']"
+        },
+        {
+          "frame": "iframe[id^='id-query-tool']",
+          "waitForSelector": ".cm-content"
+        },
+        {
+          "wait": 2500
+        }
+      ]
+    },
+    "grand-pane": {
+      "width": "half",
+      "urlFromCommand": "rdc repo tunnel --machine ${TUTORIAL_MACHINE_NAME} --repository demo-pgadmin --container pgadmin --port 80 --local 18093 --url-only",
+      "prepActions": [
+        {
+          "waitForSelector": "input[name='email']"
+        },
+        {
+          "wait": 1500
+        },
+        {
+          "fill": {
+            "selector": "input[name='email']",
+            "value": "admin@demo.dev"
+          }
+        },
+        {
+          "fill": {
+            "selector": "input[name='password']",
+            "value": "demo-password"
+          }
+        },
+        {
+          "click": "button[type='submit']"
+        },
+        {
+          "waitForSelector": ".file-tree .file-entry"
+        },
+        {
+          "wait": 2500
+        },
+        {
+          "click": ".file-tree .file-entry.depth-1 > .directory-toggle"
+        },
+        {
+          "wait": 6000
+        },
+        {
+          "click": ".file-tree .file-entry.depth-3:has-text('Databases') > .directory-toggle"
+        },
+        {
+          "wait": 3000
+        },
+        {
+          "click": ".file-tree .file-entry.depth-4:has-text('demo')"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "click": "button[aria-label='Query Tool']"
+        },
+        {
+          "frame": "iframe[id^='id-query-tool']",
+          "waitForSelector": ".cm-content"
+        },
+        {
+          "wait": 2500
+        }
+      ]
+    }
+  },
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "what-is-a-fork",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "what-is-a-fork",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo list --machine <machine-name>"
+      }
+    },
+    {
+      "id": "grand-pgadmin",
+      "type": "browser",
+      "session": "grand",
+      "durationSec": 24,
+      "narrationKey": "grand-pgadmin",
+      "actions": [
+        {
+          "wait": 1000
+        },
+        {
+          "fill": {
+            "selector": "input[name='email']",
+            "value": "admin@demo.dev"
+          }
+        },
+        {
+          "fill": {
+            "selector": "input[name='password']",
+            "value": "demo-password"
+          }
+        },
+        {
+          "wait": 800
+        },
+        {
+          "click": "button[type='submit']"
+        },
+        {
+          "waitForSelector": ".file-tree .file-entry"
+        },
+        {
+          "wait": 2500
+        },
+        {
+          "click": ".file-tree .file-entry.depth-1 > .directory-toggle"
+        },
+        {
+          "wait": 6000
+        },
+        {
+          "click": ".file-tree .file-entry.depth-3:has-text('Databases') > .directory-toggle"
+        },
+        {
+          "wait": 3000
+        },
+        {
+          "click": ".file-tree .file-entry.depth-4:has-text('demo')"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "click": "button[aria-label='Query Tool']"
+        },
+        {
+          "frame": "iframe[id^='id-query-tool']",
+          "waitForSelector": ".cm-content"
+        },
+        {
+          "wait": 2000
+        },
+        {
+          "frame": "iframe[id^='id-query-tool']",
+          "type": {
+            "selector": ".cm-content",
+            "text": "SELECT * FROM tasks;",
+            "delayMs": 45
+          }
+        },
+        {
+          "wait": 500
+        },
+        {
+          "press": "F5"
+        },
+        {
+          "wait": 3000
+        }
+      ],
+      "holdSec": 2
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo fork --parent demo-pgadmin --tag experiment --machine <machine-name> --up --detach"
+      }
+    },
+    {
+      "id": "fork-pgadmin",
+      "type": "browser",
+      "session": "fork",
+      "durationSec": 16,
+      "narrationKey": "fork-pgadmin",
+      "actions": [
+        {
+          "wait": 1000
+        },
+        {
+          "click": ".file-tree .file-entry.depth-4:has-text('demo')"
+        },
+        {
+          "wait": 1200
+        },
+        {
+          "click": "button[aria-label='Query Tool']"
+        },
+        {
+          "frame": "iframe[id^='id-query-tool']",
+          "waitForSelector": ".cm-content"
+        },
+        {
+          "wait": 2000
+        },
+        {
+          "frame": "iframe[id^='id-query-tool']",
+          "type": {
+            "selector": ".cm-content",
+            "text": "SELECT * FROM tasks;",
+            "delayMs": 45
+          }
+        },
+        {
+          "wait": 500
+        },
+        {
+          "press": "F5"
+        },
+        {
+          "wait": 3000
+        }
+      ],
+      "holdSec": 2
+    },
+    {
+      "id": "side-by-side",
+      "type": "browser-split",
+      "durationSec": 32,
+      "narrationKey": "side-by-side",
+      "holdSec": 2.5,
+      "left": {
+        "session": "fork-pane",
+        "actions": [
+          {
+            "wait": 1000
+          },
+          {
+            "frame": "iframe[id^='id-query-tool']",
+            "type": {
+              "selector": ".cm-content",
+              "text": "DROP TABLE tasks;",
+              "delayMs": 50
+            }
+          },
+          {
+            "wait": 500
+          },
+          {
+            "press": "F5"
+          },
+          {
+            "wait": 3000
+          },
+          {
+            "frame": "iframe[id^='id-query-tool']",
+            "click": ".cm-content"
+          },
+          {
+            "press": "Control+a"
+          },
+          {
+            "type": {
+              "text": "SELECT * FROM tasks;",
+              "delayMs": 50
+            }
+          },
+          {
+            "wait": 500
+          },
+          {
+            "press": "F5"
+          },
+          {
+            "wait": 3000
+          }
+        ]
+      },
+      "right": {
+        "session": "grand-pane",
+        "actions": [
+          {
+            "wait": 800
+          },
+          {
+            "frame": "iframe[id^='id-query-tool']",
+            "type": {
+              "selector": ".cm-content",
+              "text": "SELECT * FROM tasks;",
+              "delayMs": 50
+            }
+          },
+          {
+            "wait": 500
+          },
+          {
+            "press": "F5"
+          },
+          {
+            "wait": 3000
+          }
+        ]
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo list --machine <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "markerIndex": 3,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo delete --name demo-pgadmin:experiment --machine <machine-name>"
+      }
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

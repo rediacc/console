@@ -126,7 +126,10 @@ jobs:
 
   build-www:
     name: WWW
-    runs-on: ubuntu-slim
+    # Standard runner (not ubuntu-slim): the committed solution+tutorial videos make
+    # the dist/ artifact ~5.6GB, and the slim runner was cancelled mid-upload. A
+    # standard runner has the disk/network headroom to build and upload it reliably.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e  # v6.4.0
@@ -138,6 +141,11 @@ jobs:
       - run: .ci/scripts/build/build-www.sh
         env:
           APP_VERSION: ${{ inputs.next_version || 'dev' }}
+      - name: Free source video media (dist/ already holds the copy that is uploaded)
+        shell: bash
+        run: |
+          rm -rf packages/www/public/assets/videos packages/www/public/assets/tutorials || true
+          df -h . 2>/dev/null || true
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: build-www${{ inputs.test_images_only && '-fast' || '' }}-${{ github.sha }}

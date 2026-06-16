@@ -6,8 +6,8 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "replayStartSec": 2.418632,
-      "replayEndSec": 9.548589,
+      "replayStartSec": 2.555418,
+      "replayEndSec": 11.051619,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-01.7c123a2a.mp3",
       "audioDurationSec": 12.355918,
       "textHash": "7c123a2aaa9bfa3399e27102c897526fcd82a077adf1fde6d5d7ea31dd38e351",
@@ -19,8 +19,8 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "replayStartSec": 9.548589,
-      "replayEndSec": 17.034078,
+      "replayStartSec": 11.051619,
+      "replayEndSec": 18.718543,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-02.b91bb5d9.mp3",
       "audioDurationSec": 9.404082,
       "textHash": "b91bb5d92ab1a9d80e28d43e1abab5559a354cab77c6d9c82a7ece138c55bc96",
@@ -32,8 +32,8 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "replayStartSec": 17.034078,
-      "replayEndSec": 22.929505,
+      "replayStartSec": 18.718543,
+      "replayEndSec": 25.169818,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-03.196e7a8a.mp3",
       "audioDurationSec": 5.485714,
       "textHash": "196e7a8af9032b08662a8b48fd6600966fed76d1438cd8328c1b53a5a7d8b508",
@@ -45,8 +45,8 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "replayStartSec": 22.929505,
-      "replayEndSec": 30.37798,
+      "replayStartSec": 25.169818,
+      "replayEndSec": 31.824598,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/tutorial-production-mode-04.23ad7c29.mp3",
       "audioDurationSec": 6.687347,
       "textHash": "23ad7c296c5f53b2a183a8146c43da69f0e17da8ee87fbb525753689bb854808",
@@ -59,17 +59,17 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/intro.15cf4039.mp3",
-      "textHash": "15cf403931ae662bf9d54f63a81705d00749d0e4eb0f62cd2d3d081b79647a48",
-      "audioDurationSec": 6.269388,
-      "narrationText": "Olgu! Viime su rakenduse arendusest tootmisse. Kolm lühikest sammu, kõik juhitud sülearvutist."
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/intro.b302b438.mp3",
+      "textHash": "b302b4385b1b822fd1740f50375169d0b4d1029dccb541349ad1883ce600cb9c",
+      "audioDurationSec": 7.157551,
+      "narrationText": "Sinu rakendus töötab, kuni oled ühendatud. Tootmine tähendab, et see töötab siis, kui sind pole. Kolm lühikest sammu, kõik oma sülearvutist."
     },
     {
       "id": "dev-vs-prod",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/dev-vs-prod.a5562ae0.mp3",
-      "textHash": "a5562ae08a77c5e0a4d3567f7009427539d21ec8c57831994fcc4344f4739c2c",
-      "audioDurationSec": 11.807347,
-      "narrationText": "Arenduse ajal käivitad rakenduse repositooriumi seest, nii et see peatub, kui sa lahti ühendud. Tootmises käivitad selle sülearvutist CLI-ga ja see jätkab tööd eraldatult."
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-production-mode/dev-vs-prod.994ecc27.mp3",
+      "textHash": "994ecc278d9603a208ba7d01b18627ed711f58daccd0e4a1a536f074db18f9c0",
+      "audioDurationSec": 15.229388,
+      "narrationText": "Siin on erinevus. Arenduses käivitad rakenduse repo seest üle SSH. Sulge seanss ja rakendus sureb koos sellega. Tootmises käivitad selle oma sülearvutist lahtiühendatuna: server omab protsessi, sinu ühendus mitte."
     },
     {
       "id": "next-tutorial",
@@ -84,5 +84,5 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "1ccc55779eff4396f74477cdab90a632dc9acfd7d480119a33715ec6c3c5a7bf"
+  "transcriptHash": "5a1734dd7bc4bcd97e07c2c1bcbca0b242dc8f55e62aaab437dbe38637c1c49c"
 }

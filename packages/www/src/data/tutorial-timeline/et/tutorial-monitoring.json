@@ -6,8 +6,8 @@
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.411841,
-      "replayEndSec": 8.597185,
+      "replayStartSec": 2.416158,
+      "replayEndSec": 8.503611,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01.abea5009.mp3",
       "audioDurationSec": 8.124082,
       "textHash": "abea50098c72703c86e5da08b28b0ecb0e662c1ca294947c18a07686cb710065",
@@ -19,8 +19,8 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.597185,
-      "replayEndSec": 15.126152,
+      "replayStartSec": 8.503611,
+      "replayEndSec": 14.799411,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02.fc135b6e.mp3",
       "audioDurationSec": 12.042449,
       "textHash": "fc135b6ed9c522d336e24ffb3bc5606ce60e036792956bdab8858a726239d793",
@@ -32,8 +32,8 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 15.126152,
-      "replayEndSec": 24.385141,
+      "replayStartSec": 14.799411,
+      "replayEndSec": 21.195367,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03.def5e9f5.mp3",
       "audioDurationSec": 9.717551,
       "textHash": "def5e9f5b23e62344d7e69259899fd4fc407243da9de783e5f02fed9b3b63611",
@@ -45,8 +45,8 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 24.385141,
-      "replayEndSec": 32.334422,
+      "replayStartSec": 21.195367,
+      "replayEndSec": 26.969407,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04.952a05b4.mp3",
       "audioDurationSec": 8.672653,
       "textHash": "952a05b4536e2ed98fa434c4bc86a30d8f56990967826944609b708635adf8ba",
@@ -58,8 +58,8 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 32.334422,
-      "replayEndSec": 38.502093,
+      "replayStartSec": 26.969407,
+      "replayEndSec": 29.019779,
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05.ac6cfcac.mp3",
       "audioDurationSec": 15.229388,
       "textHash": "ac6cfcace593e6a47aa0c353d7a2f1c11883a8e2aa235c5e162eca03a7513af5",
@@ -86,10 +86,10 @@
     },
     {
       "id": "next-tutorial",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/next-tutorial.75bf3051.mp3",
-      "textHash": "75bf30519c543df34d862aea63b9adb497438ee3fc85565e1f4b77176de982ae",
-      "audioDurationSec": 9.639184,
-      "narrationText": "Ja sellega on sari pakitud. Sa oskad nüüd paigaldada, seadistada, juurutada, forkida, minna live'i, autostartida, varundada ja monitoorida -- kõik oma terminalist!"
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/next-tutorial.25da519a.mp3",
+      "textHash": "25da519a8f2beb86d6f7ed6a441b2310841503b003453e2a38335f03254137dd",
+      "audioDurationSec": 12.826122,
+      "narrationText": "Nüüd saad installida, seadistada, juurutada, fork'ida, live'sse lasta, autostart'ida, varundada ja jälgida. Edasijõudnute osa algab järgmisena: versiooni oma repo'd nagu koodi, commit'ide ja rollback'idega."
     }
   ],
   "provider": "qwen3-tts",
@@ -97,5 +97,5 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "550e6f239da99cc5c7caf0cb7bce877c454bca72aded5f34b32f8cfe8fe44110"
+  "transcriptHash": "74e6f261ab9f9b6b0dd55494a4ba7d13377d910492e44688b459f8f9b0cd4231"
 }

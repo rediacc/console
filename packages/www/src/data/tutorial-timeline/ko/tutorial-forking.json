@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "35a5bf8e8ee4021f447d500cf4652cc78f1fa42e0b2df913932402fd83aedcb9",
+  "transcriptHash": "65c6826d8c719f29366c4b23dc6a3309f0b8b6784eacf5f7de24b459eb0e7719",
   "steps": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.41277,
-      "replayEndSec": 13.421721,
+      "replayStartSec": 2.422355,
+      "replayEndSec": 12.478171,
       "narrationText": "이제 포크입니다. 명령 하나로 전체 저장소, 앱, 데이터베이스, 설정 파일을 크기에 상관없이 몇 초 만에 복제합니다. 1기가바이트든 100기가바이트든 1테라바이트든 항상 같은 시간이 걸립니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-01.623dfb68.mp3",
       "textHash": "623dfb68d24331fe53d372a92e408853301ed09919518d8c3a5154806cfa1968",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.421721,
-      "replayEndSec": 18.980206,
+      "replayStartSec": 12.478171,
+      "replayEndSec": 18.050071,
       "narrationText": "이제 두 저장소가 나란히 존재합니다. 같은 머신, 같은 디스크, 완전히 독립된 두 환경입니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-02.ed55b9c7.mp3",
       "textHash": "ed55b9c753028b58373f8b6435e5d0af71a12b5090f3ba61f15e3193249dbfa8",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.980206,
-      "replayEndSec": 26.216902,
+      "replayStartSec": 18.050071,
+      "replayEndSec": 25.352583,
       "narrationText": "격리를 증명해 보겠습니다. 원본 저장소에서 마커 파일이 그대로 있습니다. 포크의 존재가 부모 저장소에 아무런 변화를 주지 않았습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-03.777103ad.mp3",
       "textHash": "777103ad95b33d2027598ba459a77e5eb2dba8103db9499f01fb90cf22f591a8",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "replayStartSec": 26.216902,
-      "replayEndSec": 34.456769,
+      "replayStartSec": 25.352583,
+      "replayEndSec": 33.706234,
       "narrationText": "이제 그 파일을 삭제합니다. 하지만 포크 내부에서만 삭제합니다. 파괴적인 변경을 가하는 것입니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-04.5f792dea.mp3",
       "textHash": "5f792dea0e5a270242944a7b53a108d315f0c98910a2238a570e41ef34287dea",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "replayStartSec": 34.456769,
-      "replayEndSec": 41.647526,
+      "replayStartSec": 33.706234,
+      "replayEndSec": 41.0794,
       "narrationText": "원본으로 돌아왔습니다. 마커 파일이 아직 여기 그대로 있습니다. 같은 이미지, 별도의 Docker 데몬, 별도의 파일 시스템입니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-05.9b43aff3.mp3",
       "textHash": "9b43aff3b320a67c32a54008039d35b0f5f1e76b24d71807686241813d0f8ca0",
@@ -77,8 +77,8 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.647526,
-      "replayEndSec": 51.671921,
+      "replayStartSec": 41.0794,
+      "replayEndSec": 48.135359,
       "narrationText": "작업이 끝나면 포크를 삭제하면 됩니다. 원본은 그대로 유지됩니다. 포크하고, 실험하고, 망가뜨리고, 삭제하세요. 위험이 없습니다.",
       "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/tutorial-forking-06.086bdef3.mp3",
       "textHash": "086bdef3d991613b715afc0a9c2a1cd8cef79e87539c67d5d57afdbf0dddef68",
@@ -140,10 +140,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "58ad7a857428e67a29676b3e1c42549252f307c6825888170af6354c2ab426a0",
-      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/next-tutorial.58ad7a85.mp3",
-      "narrationText": "fork는 의도적으로 시크릿을 남겨두는데, 그게 바로 '프로덕션을 복제하고 아무것도 망가뜨리지 않는다'가 실제로 안전한 이유예요. 다음 튜토리얼에서 제대로 연결해볼게요!",
-      "audioDurationSec": 14.680816
+      "textHash": "c3f1501ee1c862bc4de5455eaf919fcf2ba42f321c4f336d022aa81630e4cc3f",
+      "audioSrc": "/assets/tutorials/audio/ko/tutorial-forking/next-tutorial.c3f1501e.mp3",
+      "narrationText": "방금 명령어들을 보셨죠. 이제 눈으로 보여드릴게요. 실제 데이터베이스 앱을 라이브로 fork해서 나란히 편집해도, 원본은 전혀 흔들리지 않습니다.",
+      "audioDurationSec": 12.930612
     }
   ]
 }

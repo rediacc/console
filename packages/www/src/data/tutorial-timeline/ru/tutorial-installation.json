@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "33ea685bdb3c167c55f3c7b3da78aca1f9fa67257cecf6226af802b2415bd96b",
+  "transcriptHash": "62119776a0c8e095c033f720f0f7ab2aa3c01a5c5baf4b5270bf7e37e2d52011",
   "steps": [
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "replayStartSec": 1.626476,
-      "replayEndSec": 7.903516,
+      "replayStartSec": 1.614947,
+      "replayEndSec": 8.543153,
       "narrationText": "Сначала убедимся, что CLI доступен в системе. Запустим CLI с флагом версии: он выведет установленную версию и подтвердит, что установка прошла успешно.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-01.d7a16f7e.mp3",
       "textHash": "d7a16f7e040b09f9e6d52863e145ff14699a21081d30d94050e54bc8334416b6",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "replayStartSec": 7.903516,
-      "replayEndSec": 10.095825,
+      "replayStartSec": 8.543153,
+      "replayEndSec": 10.766661,
       "narrationText": "Теперь запустим диагностическую проверку. Она проверяет все зависимости, которые нужны CLI: Node, SSH и остальное, и сообщает о пробелах. Чистый отчёт означает, что можно добавлять сервер.",
       "audioSrc": "/assets/tutorials/audio/ru/tutorial-installation/tutorial-installation-02.c34085cb.mp3",
       "textHash": "c34085cb3a677aaaa81b0e44b35db72439b8681afae688645cb74b027f0242be",

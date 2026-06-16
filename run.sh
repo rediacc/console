@@ -357,6 +357,7 @@ _ensure_bridge_recording_tooling() {
 
 www_tutorials_record() {
     local force=false
+    local keep_vms=false
     local name=""
     local tutorials_dir="$ROOT_DIR/.ci/tutorials"
     local output_dir="$ROOT_DIR/packages/www/public/assets/tutorials"
@@ -366,6 +367,10 @@ www_tutorials_record() {
         case "$1" in
             --force)
                 force=true
+                shift
+                ;;
+            --keep-vms)
+                keep_vms=true
                 shift
                 ;;
             --max-idle-ms)
@@ -455,6 +460,13 @@ www_tutorials_record() {
     provision_start
     provision_post_setup
 
+    # The backup-restore tutorial pushes to an S3-compatible storage. RustFS
+    # runs on the bridge VM (renet-managed container); bucket name must match
+    # the rclone config the tutorial script writes.
+    log_step "Starting RustFS S3 storage on the bridge..."
+    "$ROOT_DIR/private/renet/bin/renet" ops rustfs start
+    "$ROOT_DIR/private/renet/bin/renet" ops rustfs create-bucket rediacc-test || true
+
     # Recording runs INSIDE the bridge VM so the local host's ~/.config/rediacc is
     # never touched and the cast captures a pristine machine. Bootstrap the bridge
     # with node + asciinema + the dev rdc SEA + the tutorial scripts.
@@ -507,7 +519,7 @@ TEOF
             MAX_IDLE_MS='${MAX_IDLE_MS:-800}' \
             bash /tmp/rec/.ci/tutorials/record.sh \
                 /tmp/rec/.ci/tutorials/${base}.sh \
-                /tmp/rec/out/${base}.cast 100 30"
+                /tmp/rec/out/${base}.cast 107 32"
         _bridge_rsync "${bridge}:/tmp/rec/out/${base}.cast" "$output_dir/${base}.cast"
         log_info "Pulled cast → $output_dir/${base}.cast"
 
@@ -515,9 +527,14 @@ TEOF
         stored_hashes["$base"]="$(_tutorial_script_hash "$script")"
     done
 
-    # Teardown VMs
-    log_step "Tearing down VMs..."
-    provision_stop
+    # Teardown VMs (skip with --keep-vms when the video render stage needs
+    # the cluster + staged repos right after recording).
+    if [[ "$keep_vms" == "true" ]]; then
+        log_info "--keep-vms: leaving the cluster running"
+    else
+        log_step "Tearing down VMs..."
+        provision_stop
+    fi
 
     # Persist hashes
     : >"$hash_file"

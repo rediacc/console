@@ -1,0 +1,42 @@
+services:
+  db:
+    container_name: heartbeat_db
+    image: postgres:16.14-alpine
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_PASSWORD=${PGPASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER:-heartbeat}
+      - POSTGRES_DB=${POSTGRES_DB:-heartbeat}
+      - PGDATA=/pgdata
+    # Bind only this service's loopback IP on a non-default port. Containers
+    # share the machine's network namespace and another repo's postgres may
+    # hold a wildcard 0.0.0.0:5432 — a wildcard listen blocks ANY addr:5432
+    # bind, so this db uses 5433 (same pattern as demo-pgadmin).
+    command: ["sh", "-c", "exec docker-entrypoint.sh postgres -c listen_addresses=$${SERVICE_IP:-0.0.0.0} -p 5433"]
+    volumes:
+      - ./data:/pgdata
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-heartbeat} -h $${SERVICE_IP:-localhost} -p 5433"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  heartbeat:
+    container_name: heartbeat_app
+    image: node:20.20.2-alpine
+    working_dir: /app
+    command: ["sh", "-c", "npm install --production && node heartbeat.mjs"]
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=${DB_IP}
+      - DB_PORT=5433
+    volumes:
+      - ./app:/app
+    labels:
+      - "rediacc.checkpoint=true"
+    depends_on:
+      db:
+        condition: service_healthy

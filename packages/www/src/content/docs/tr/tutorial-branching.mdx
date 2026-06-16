@@ -1,0 +1,76 @@
+---
+title: "Dallanma: Commit ve Geri Alma"
+description: "Depo durumlarını değiştirilemez commit'lere dondurun, onlara branch ile isim verin ve herhangi bir commit'i yazılabilir fork olarak geri yükleyin."
+category: "Tutorials"
+subcategory: advanced
+order: 15
+language: tr
+sourceHash: "53f4eacdd4630b19"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Dallanma: Commit ve Geri Alma
+
+Depolarınızı kod gibi versiyonlayın. Bir **commit**, fork'u değiştirilemez bir imaja dondurur; **branch** ona isim verir; **checkout** herhangi bir commit'i yeni bir yazılabilir fork'a dönüştürür. Bu öğreticide bilinen iyi bir durumu commit'liyoruz, gerçek bir PostgreSQL tablosunu siliyoruz ve tüm satırları saniyeler içinde geri getiriyoruz.
+
+## Öğreticiyi izleyin
+
+![Tutorial: Branching, commit and rollback](/assets/tutorials/tutorial-branching.cast)
+
+## Model
+
+![Commits, branches, checkout](/img/tutorials/tutorial-branching/slide-1.svg)
+
+Commit'ler hiçbir zaman değişmez: bağlanmayı bile reddederler. Fork'lar hiç beklemez: checkout neredeyse anlık bir reflink klonudur. Tam zihinsel model [dallanma rehberinde](/tr/docs/repo-branching) bulunur.
+
+## Bir kontrol noktası oluşturun
+
+İşareti dosyası sürümü görünür kılar; gerçek bir veritabanı geri almayı anlamlı kılar: `customers` tablosu üç satır içeriyor.
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+<TutorialStep number={4} />
+
+Commit her şeyi yakalar: dosyalar ve PostgreSQL veri dizini. `stable` branch artık o dondurulmuş duruma isim verir.
+
+## Çalışmaya devam edin
+
+<TutorialStep number={5} />
+
+## Felaket
+
+Riskli bir değişiklik tabloyu siliyor. Ardından sorgu hasarın gerçek olduğunu doğruluyor.
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+`ERROR: relation "customers" does not exist`. Üç satır, gitti. Gerçek hayatta midenizin sıkıştığı an burasıdır; burada ise sonucu anlamlı kılan kurguyu oluşturuyor.
+
+<TutorialStep number={8} />
+
+<TutorialStep number={9} />
+
+Tarihçe gerçekte olanı kaydeder, bozuk durum dahil: üstte `v2 risky change`, altında `v1 baseline`.
+
+## Saniyeler içinde geri alın
+
+<TutorialStep number={10} />
+
+<TutorialStep number={11} />
+
+<TutorialStep number={12} />
+
+<TutorialStep number={13} />
+
+Geri alma fork'u `v1`'i okur ve `customers` tablosu üç satırıyla birlikte geri gelir. Geri alma yalnızca dosyaları değil, veritabanını da geri yükledi. Hiçbir şeyin üzerine yazılmadı: çalışma fork'unda ikinci sürüm hâlâ duruyor ve video bunu kanıtlamak için her ikisini de VS Code'da açıyor.
+
+---
+
+Sonraki: [Canlı Taşıma](/tr/docs/tutorial-live-migration).

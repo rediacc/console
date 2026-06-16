@@ -1,0 +1,60 @@
+---
+title: "Live Migration"
+description: "Move a running repository, containers, database, and process memory included, to another machine with one command and minimal downtime."
+category: "Tutorials"
+subcategory: advanced
+order: 16
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Live Migration
+
+Servers get replaced: hardware ages, providers change, regions move. `rdc repo migrate` moves a running repository to another machine with one command, and with `--checkpoint` even process memory makes the trip. The demo app, `pulse`, keeps a counter in RAM; after the move it keeps counting instead of starting over.
+
+## Watch the tutorial
+
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
+## How it moves
+
+![Two phases, minimal downtime](/img/tutorials/tutorial-live-migration/slide-1.svg)
+
+Phase one copies the bulk while the app keeps running. Phase two checkpoints the live processes (CRIU, for containers labeled `rediacc.checkpoint=true`), carries the final delta plus the process state across, and resumes everything on the new machine. The downtime is the delta, not the data.
+
+## Step 1: The evidence, a counter in RAM
+
+<TutorialStep number={1} />
+
+`memory counter=6` and climbing, one beat every five seconds. The counter lives in process memory only. If the process restarted, it would start over at one.
+
+## Step 2: Migrate it, live
+
+<TutorialStep number={2} />
+
+The output narrates the move: phase one transfers the 2 GB bulk while the source stays online, then the cutover line prints the actual `DOWNTIME`: a few tens of megabytes and roughly twenty seconds, for a two-gigabyte repository.
+
+## Step 3: Verify the new home
+
+<TutorialStep number={3} />
+
+On the target, `pulse` is mounted, Docker is up, containers running.
+
+## Step 4: The source is stopped
+
+<TutorialStep number={4} />
+
+The source still lists the repository, but honestly: not mounted, no Docker, zero containers. Nothing runs there anymore. The image is kept on purpose as the base for the next [delta transfer](/en/docs/tutorial-delta-transfer), so a future push back is cheap.
+
+## Step 5: The counter kept counting
+
+<TutorialStep number={5} />
+
+`memory counter=17`, then 18, 19, 20... It picked up exactly where the checkpoint froze it instead of resetting to one. That's process memory making the trip; the app never noticed it changed machines.
+
+> Without `--checkpoint`, migrate still moves disk and containers; they restart fresh on the target instead of resuming mid-flight.
+
+---
+
+Next: [Delta Transfer](/en/docs/tutorial-delta-transfer).

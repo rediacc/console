@@ -4,8 +4,8 @@ description: 文件同步、终端访问、VS Code 集成和 CLI 更新。
 category: Guides
 order: 9
 language: zh
-sourceHash: "4b3aebff5e82416f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "59abc2faa1157369"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # 工具
@@ -46,7 +46,7 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 # 目录
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 
-# 单个文件 — --local 必须是现有目录
+# 单个文件：--local 必须是现有目录
 rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
@@ -173,6 +173,36 @@ rdc vscode check
 验证 VS Code 安装、Remote SSH 扩展和活动连接。
 
 > **前提条件：** 在 VS Code 中安装 [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) 扩展。
+
+### 在浏览器中使用 VS Code
+
+没有本地 VS Code？从仓库沙盒内部启动编辑器服务端，在任意浏览器中打开：
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+此命令会：
+1. 在机器上一次性安装开源编辑器服务端（只读共享路径，校验和验证）
+2. 在仓库沙盒内启动，文件树、集成终端和每个子进程看到的都与仓库看到的完全一致
+3. 打开 SSH 隧道到本地端口，并使用每会话令牌 URL 启动浏览器
+
+关闭隧道后服务端继续运行；重新连接时直接复用。管理命令：
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| 选项 | 说明 |
+|--------|-------------|
+| `--no-open` | 打印 URL 而不是启动浏览器 |
+| `--url-only` | 在标准输出打印一行 URL（用于脚本）并保持隧道连接 |
+| `--local <port>` | 选择本地隧道端口 |
+| `--server-provider <id>` | 编辑器服务端实现：`openvscode`（默认）或 `code-server` |
+| `--server-archive <file>` | 从机器上预置的压缩包安装（无需联网） |
+
+支持 Linux、macOS、Windows 或平板。本地唯一的要求是一个浏览器。
 
 ## CLI 更新 (update)
 

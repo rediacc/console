@@ -7,17 +7,17 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "b287ef4c7981b71d428077037efe8d891370c56e8f4be19e83f6e304aaad7096",
+  "transcriptHash": "447cff4e84bbda055fb34cb77e8ec963ceaca45297c57a37d08b2469b6f0ff12",
   "steps": [
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "replayStartSec": 2.40432,
-      "replayEndSec": 6.041569,
-      "narrationText": "ステップ1です。利用可能なテンプレートを確認します。Rediacc には Postgres、Redis、Webサーバーなど、よく使われるアプリの既成セットアップが用意されているので、docker-compose をゼロから書く必要はありません。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-01.aca2e9ea.mp3",
-      "textHash": "aca2e9ea4be45bf12fb260e294dcf15a9a9b58e6ad3ac1702bf190f16d7395d4",
-      "audioDurationSec": 14.759184,
+      "replayStartSec": 2.408078,
+      "replayEndSec": 6.077084,
+      "narrationText": "ステップ1: 利用可能なテンプレートを一覧表示します。Rediaccはよく使うアプリ向けのセットアップをあらかじめ用意しているので、docker-composeをゼロから書く必要はありません。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-01.1445bb1a.mp3",
+      "textHash": "1445bb1acd63bf6a64c30a85f64b9189d4379740add44acc21658b7b18fa9139",
+      "audioDurationSec": 13.479184,
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-01-after.373e8248.mp3",
       "afterAudioDurationSec": 7.157551,
       "afterTextHash": "373e8248542d58f29ddf41d949a9ea4ceabf6af893604265d34797695d7a5072"
@@ -25,12 +25,12 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "replayStartSec": 6.041569,
-      "replayEndSec": 13.566247,
-      "narrationText": "ステップ2です。app-postgres テンプレートをリポジトリに適用します。コンテナを記述する docker-compose.yml と、起動・停止のライフサイクルフックを定義する Rediaccfile の2つのファイルが追加されます。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-02.780b12ef.mp3",
-      "textHash": "780b12ef6ae1a36711310bb4d7f4a7bc761f91eb55867e31384475056ca7670d",
-      "audioDurationSec": 16.927347,
+      "replayStartSec": 6.077084,
+      "replayEndSec": 14.72542,
+      "narrationText": "ステップ2: app-postgresテンプレートをリポジトリに追加します。テスト済みのファイル一式が、そのままコピーされます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-02.f363576c.mp3",
+      "textHash": "f363576c35e9262d3a5ecf3e5b06967cd5b296523e89a4d5607a010cee5d567a",
+      "audioDurationSec": 8.672653,
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-02-after.b1504297.mp3",
       "afterAudioDurationSec": 6.687347,
       "afterTextHash": "b1504297cb01e9fb8ef4ee4f565225b756cc45f313098436ce09b150cb45d751"
@@ -38,12 +38,12 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "replayStartSec": 13.566247,
-      "replayEndSec": 23.282435,
-      "narrationText": "ステップ3です。リポジトリを起動します。CLI がコンテナを起動し、暗号化ボリュームをマウントし、分離された Docker デーモンを接続します。アプリが動いています。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-03.b1acaa74.mp3",
-      "textHash": "b1acaa744e7cc9e18e7ed8f1ee32e99a7af6d7c6ea581cb84b60646c9d1a9427",
-      "audioDurationSec": 12.042449,
+      "replayStartSec": 14.72542,
+      "replayEndSec": 21.699752,
+      "narrationText": "リポジトリの中を覗いて、何が追加されたか見てみましょう。起動と停止のフックを持つRediaccfileと、コンテナを定義するdocker-composeファイルです。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-03.deb967ca.mp3",
+      "textHash": "deb967ca5cccecbec33b56d952760390936e3eaca548ff0dcd04f8da5a527c26",
+      "audioDurationSec": 11.31102,
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-03-after.bb4184f4.mp3",
       "afterAudioDurationSec": 5.407347,
       "afterTextHash": "bb4184f4966d59309089c5ad811e798f7d57600cbde481af79627df293a6839f"
@@ -51,12 +51,12 @@
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "replayStartSec": 23.282435,
-      "replayEndSec": 30.345778,
-      "narrationText": "docker ps で確認します。このビューには私たちのリポジトリのコンテナだけが表示されることに注目してください。同じサーバー上の他のリポジトリは専用の Docker デーモンを持っており、ここからは完全に見えません。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-04.ea6d7d7e.mp3",
-      "textHash": "ea6d7d7eaa851270095861213fa72693f24d81018f035b996bf9ccc35d5ede01",
-      "audioDurationSec": 16.509388,
+      "replayStartSec": 21.699752,
+      "replayEndSec": 28.8781,
+      "narrationText": "ステップ3: リポジトリを起動します。コマンド1つで、CLIが暗号化ボリュームをマウントし、独立したDocker daemonを起動して、コンテナを立ち上げます。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-04.269e9aba.mp3",
+      "textHash": "269e9aba81b213269238701e519f21430322dd333095189cc2d98f3d475763f5",
+      "audioDurationSec": 10.44898,
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-04-after.651b0439.mp3",
       "afterAudioDurationSec": 6.687347,
       "afterTextHash": "651b043907a7d06c663953ee02bc2ba35cdb2a3b59d7a66881c875f8f6462bd3"
@@ -64,12 +64,12 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "replayStartSec": 30.345778,
-      "replayEndSec": 38.921409,
-      "narrationText": "何が動いているか確認しましょう。ここでのdocker psはこのrepoのコンテナだけを表示します。同じサーバー上の他のrepoはそれぞれ独自のdaemonを持ち、この画面からは完全に見えません。",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-05.843bfbc5.mp3",
-      "textHash": "843bfbc51bb1debbc3a0fa433289ac22306f11ea06e9e99c3abed7a8fb5df054",
-      "audioDurationSec": 14.210612,
+      "replayStartSec": 28.8781,
+      "replayEndSec": 34.846304,
+      "narrationText": "何が動いているか確認しましょう。ここでdocker psを実行すると、このリポジトリのコンテナだけが表示されます。このサーバー上の他のリポジトリはそれぞれ独自のdaemonを持っていて、この画面からは完全に見えません。",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-05.37f0ba10.mp3",
+      "textHash": "37f0ba10efb113dd6429a4fc98adc48ceb9c2627c424fae8dabb607901b52acc",
+      "audioDurationSec": 16.927347,
       "afterAudioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/tutorial-deploy-app-05-after.006bbe79.mp3",
       "afterAudioDurationSec": 5.250612,
       "afterTextHash": "006bbe79509f6d27c2340b15f216deb55158301d04dd0518f962a4f6f4b9f2f2"
@@ -78,10 +78,10 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "6efabca1edd08232fa961381f2fa33e7f4aa2abbc508fe9f5acecb008467767e",
-      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/intro.6efabca1.mp3",
-      "narrationText": "実際のアプリをデプロイしていきましょう！空のリポジトリから動作するコンテナまで、3つの短いステップで進めます。",
-      "audioDurationSec": 7.967347
+      "textHash": "622854156b9c1cd185b3f1b2c13f28c345667570e31846e7211d6b74c18e0277",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/intro.62285415.mp3",
+      "narrationText": "いよいよ実際のアプリをデプロイしましょう！空のリポジトリから動作するコンテナまで、3ステップで完成です。選んで、適用して、実行する。",
+      "audioDurationSec": 9.795918
     },
     {
       "id": "pick-apply-run",
@@ -89,6 +89,13 @@
       "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/pick-apply-run.9fdb550a.mp3",
       "narrationText": "流れはシンプルです。テンプレートを選び、リポジトリに適用し、実行する。CLI には組み込みテンプレートがあるので、docker-compose をゼロから書く必要はありません。",
       "audioDurationSec": 12.747755
+    },
+    {
+      "id": "vscode-file-tour",
+      "textHash": "6191481dfa73c27e59f35fe7f07b9448ca1ea23c24ac267ddea5c1faa9a9bb0f",
+      "audioSrc": "/assets/tutorials/audio/ja/tutorial-deploy-app/vscode-file-tour.6191481d.mp3",
+      "narrationText": "cat よりエディタがお好みですか？同じファイルを、ブラウザから直接 VS Code で開けます。こちらが Rediaccfile、その隣に compose ファイルがあります。このセットアップは後のチュートリアルでしっかり紹介します。",
+      "audioDurationSec": 16.509388
     },
     {
       "id": "next-tutorial",

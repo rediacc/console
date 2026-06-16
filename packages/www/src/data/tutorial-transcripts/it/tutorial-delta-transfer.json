@@ -1,0 +1,67 @@
+{
+  "cast": "/assets/tutorials/tutorial-delta-transfer.cast",
+  "language": "it",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-delta-transfer-01",
+      "markerIndex": 0,
+      "at": 2.413668,
+      "text": "Il primo push verso un'altra macchina trasferisce l'intera immagine, e l'output lo dice chiaramente: due gigabyte trasferiti, marcato full. Questo è il punto di partenza.",
+      "afterText": "Due gigabyte in quarantaquattro secondi, marcato full. La CLI ha mantenuto una base identica su entrambi i lati; questo è il presupposto per la magia.",
+      "cardLabel": "Push Completo",
+      "prose": "Esegui il push del repository su una seconda macchina. Il primo push trasferisce l'intera immagine, e l'output lo riporta: 2 GB trasferiti, marcato (full). Una base delta viene mantenuta su entrambi i lati."
+    },
+    {
+      "id": "tutorial-delta-transfer-02",
+      "markerIndex": 1,
+      "at": 10.922135,
+      "text": "Modifica una piccola quantità di dati: cinquanta megabyte su due gigabyte.",
+      "afterText": "Una piccola modifica in un'immagine grande.",
+      "cardLabel": "Modifica Dati",
+      "prose": "Scrivi una piccola quantità di nuovi dati nel repository."
+    },
+    {
+      "id": "tutorial-delta-transfer-03",
+      "markerIndex": 2,
+      "at": 21.404869,
+      "text": "Esegui di nuovo il push. Stesso comando, ma questa volta leggi l'output: circa cinquanta megabyte trasferiti, marcato delta, su un'immagine da due gigabyte. Solo i blocchi modificati hanno viaggiato.",
+      "afterText": "Cinquanta megabyte in meno di sei secondi, su un'immagine da due gigabyte. I numeri sono la prova.",
+      "cardLabel": "Delta Push",
+      "prose": "Esegui di nuovo il push con lo stesso comando: l'output riporta circa 50 MB trasferiti come delta rispetto alla base condivisa, su un'immagine da 2 GB. Solo i blocchi modificati hanno viaggiato."
+    },
+    {
+      "id": "tutorial-delta-transfer-04",
+      "markerIndex": 3,
+      "at": 29.764702,
+      "text": "Entrambe le macchine contengono lo stesso repository, aggiornato in pochi secondi. Eseguilo ogni ora se vuoi, il costo è la modifica, non la dimensione.",
+      "afterText": "I backup frequenti smettono di essere costosi.",
+      "cardLabel": "Sincronizzati",
+      "prose": "La macchina di destinazione ora contiene il repository aggiornato, sincronizzato al costo del delta."
+    }
+  ],
+  "title": "Trasferimento Delta",
+  "chapters": {
+    "intro": "Trasferimento Delta",
+    "blocks-not-bytes": "Blocchi, non byte",
+    "cast-step-0": "Passo 1: primo push, completo",
+    "cast-step-1": "Passo 2: modifica alcuni dati",
+    "cast-step-2": "Passo 3: secondo push, delta",
+    "cast-step-3": "Passo 4: sincronizzati, in secondi",
+    "outro": "La serie finisce qui"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Ecco un esperimento divertente. Faremo il push di un repository con un gigabyte di dati su un'altra macchina due volte. Il primo push trasferisce tutto, il secondo solo ciò che è cambiato. Guarda i numeri, il comando push stampa esattamente quanto ha trasferito."
+    },
+    {
+      "id": "blocks-not-bytes",
+      "text": "Il trucco sta nella configurazione. Dopo il primo push, la CLI mantiene un'immagine base immutabile identica su entrambe le macchine. Il push successivo confronta i blocchi rispetto a quella base e invia solo la differenza. Nessun flag, nessuna gestione manuale, è lo stesso comando push."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Piccole modifiche significano trasferimenti piccoli, ogni volta dopo il primo. Resta solo un tutorial: assicurarsi di non esaurire mai lo spazio su disco. Ci vediamo nell'ultimo!"
+    }
+  ]
+}

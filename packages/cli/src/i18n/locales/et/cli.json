@@ -1305,7 +1305,9 @@
           "completed": "Autostarti loend hangitud",
           "description": "Loetle hoidlad, millel on autostart lubatud",
           "failed": "Autostarti hoidlate loetlemine ebaõnnestus",
-          "starting": "Autostarti hoidlate loetlemine masinal \"{{machine}}\"..."
+          "starting": "Autostarti hoidlate loetlemine masinal \"{{machine}}\"...",
+          "empty": "Hoidlal \"{{machine}}\" pole autostart-lubatud repositooriume",
+          "service": "Autostart-teenus: installitud={{installed}}, lubatud={{enabled}}"
         }
       },
       "backup": {
@@ -1432,10 +1434,10 @@
         "starting": "Hoidla \"{{repository}}\" laiendamine suuruseni {{size}} masinal \"{{machine}}\"..."
       },
       "trim": {
-        "description": "Vabastab andmehoidla puuli ruumi haagitud hoidlatest (võrgus, ilma seisakuta). Hoidlates kustutatud plokid tagastatakse puuli fstrim-iga. Ilma --name võtmeta trimmitakse kõik haagitud hoidlad ja andmehoidla ise. Aktiivse varukoopiaga hoidlad jäetakse vahele",
+        "description": "Vabastab andmehoidla puuli ruumi haagitud hoidlatest (võrgus, ilma seisakuta). Hoidlates kustutatud plokid tagastatakse puuli fstrim-iga. Ilma --name võtmeta trimmitakse kõik haagitud hoidlad ja andmehoidla ise. Aktiivse varukoopiaga hoidlate puhul jäetakse fstrim vahele; --docker puhastus töötab siiski",
         "descriptionShort": "Tagasta hoidlate vaba ruum puuli",
         "nameOption": "Trimmitav hoidla (vaikimisi: kõik haagitud hoidlad)",
-        "dockerOption": "Vabasta esmalt Dockeri ruum (seisatud konteinerid, ripakil pildid, ehitusvahemälu)",
+        "dockerOption": "Vabasta Dockeri ruum (seisatud konteinerid, ripakil pildid, ehitusvahemälu); töötab ka aktiivse varukoopia hetktõmmise ajal",
         "dockerVolumesOption": "Eemalda lisaks kasutamata Dockeri köited",
         "reportOnlyOption": "Näita discard-olekut ja taastatava ruumi hinnangut ilma trimmimata",
         "repoNotFound": "Hoidlat ei leitud: {{name}}",
@@ -1535,6 +1537,7 @@
         "checkpointing": "CRIU kontrollpunkti loomine...",
         "complete": "Migratsioon lõpetatud: {{name}} teisaldati {{from}} asukohast {{to}} asukohta",
         "deltaDone": "Delta sünkroonimine lõpetatud",
+        "phase2Stats": "Ümberlülitus (KATKESTUS): {{transferred}} {{duration}} jooksul",
         "deltaFailed": "Delta sünkroonimine ebaõnnestus",
         "deltaSync": "Delta sünkroonimine...",
         "description": "Migreerige hoidla ühelt masinalt teisele minimaalse katkestusajaga. Kahefaasiline rsync: mahtude ülekanne töötamise ajal, seejärel lühike peatamine delta-sünkroonimiseks. Toetab CRIU kontrollpunkti protsessimälu migratsiooniks ja sihtmasinate autoprovisionimist",
@@ -1551,6 +1554,7 @@
         "optionTo": "Sihtmasina nimi",
         "phase1": "1. faas: mahukate andmete ülekandmine (allikas jääb töötama)...",
         "phase1Done": "Mahukas ülekanne lõpetatud",
+        "phase1Stats": "{{transferred}} üle kantud {{duration}} jooksul — allikas jäi tööle",
         "phase1Failed": "Mahukas ülekanne ebaõnnestus",
         "phase2": "2. faas: üleminek (lühike katkestus)...",
         "phase3": "3. faas: sihtmäel käivitamine...",
@@ -1612,6 +1616,10 @@
         "optionForce": "Sundi olemasoleva varukoopia ülekirjutamine",
         "optionProvision": "Provisioni sihtmasina automaatselt pilveteenusepakkuja kaudu, kui seda ei eksisteeri",
         "optionStrategy": "Delta-baasi kasutamisel rakendatav plokidelta strateegia: auto, physical või shared",
+        "optionJson": "Väljasta ülekandestatistika JSON-vormingus",
+        "statsDelta": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (delta baasi {{base}} suhtes, tõmmis {{image}})",
+        "statsFull": "\"{{repo}}\" lükatud masinale {{machine}} — {{transferred}} üle kantud {{duration}} jooksul (täielik ülekanne)",
+        "statsNoBytes": "\"{{repo}}\" lükatud masinale {{machine}} — valmis {{duration}} jooksul",
         "optionTag": "Versioonimise juurutusmärgend",
         "optionTo": "Sihtkoha masina või salvestuse nimi (tuvastatakse automaatselt konfiguratsioonist)",
         "optionUp": "Pärast pushumist haagi külge ja juuruta hoidla sihtmasinal",
@@ -1726,6 +1734,9 @@
         "noContainers": "Hoidla \"{{repository}}\" jaoks ei leitud töötavaid konteinereid",
         "noPorts": "Konteineril \"{{container}}\" ei ole avatud porte. Määra --port",
         "noServiceIP": "Konteinerile \"{{container}}\" ei ole määratud teenuseIP-d",
+        "portInUse": "Kohalik port {{port}} on juba kasutusel. Vali teine lipuga --local",
+        "notReady": "Tunnel ei muutunud valmis aadressil localhost:{{localPort}} 15 sekundi jooksul",
+        "urlOnlyOption": "Prindi ainult kohalik URL, kui tunnel on valmis (masinloetav)",
         "portOption": "Edastatav kaugkonteineri port"
       },
       "unmount": {
@@ -2212,6 +2223,13 @@
         "settingsWarning": "Hoiatus: VS Code seadete konfigureerimine ebaõnnestus: {{error}}",
         "settingUpEnv": "Kaugkeskkonna seadistamine...",
         "success": "VS Code käivitati edukalt.",
+        "installingServer": "Kontrollitakse, et {{provider}} {{version}} on masinal installitud...",
+        "startingServer": "{{provider}} käivitamine repositooriumi liivakastis...",
+        "serverReused": "Taaskasutatakse juba töötavat serverit",
+        "tunnelReady": "Tunnel valmis aadressil localhost:{{port}}",
+        "browserUrl": "Ava VS Code brauseris: {{url}}",
+        "passwordNote": "Sisselogimise parool: {{password}}",
+        "openingBrowser": "Brauseri avamine...",
         "testingConnectivity": "Ühenduvuse testimine {{host}}:{{port}}..."
       },
       "description": "Avab VS Code koos Remote SSH-ga masina või repositooriumiga, koos iga repositooriumi isoleeritud keskkonnaga. Sama SSH-ühendus nagu `term`, kuid käivitab VS Code. Peamised alamkomandod: connect (või positsiooniline otsetee), list (näitab konfigureeritud ühendusi), cleanup (eemaldab SSH-konfiguratsiooni kirjed), check (kontrollib VS Code installimist).",
@@ -2223,6 +2241,19 @@
         "keyPersisted": " (võti salvestatud)",
         "noConnections": "VS Code SSH-ühendusi pole konfigureeritud.",
         "total": "\nKokku: {{count}} ühendust"
+      },
+      "serve": {
+        "description": "Halda repositooriumi liivakastis töötavat brauseri VS Code serverit",
+        "status": {
+          "description": "Kuva, kas brauseri VS Code server töötab",
+          "running": "{{provider}} töötab (pid {{pid}}, port {{port}})",
+          "stopped": "{{provider}} ei tööta"
+        },
+        "stop": {
+          "description": "Peata brauseri VS Code server",
+          "stopped": "{{provider}} peatatud",
+          "notRunning": "{{provider}} ei töötanud"
+        }
       }
     }
   },
@@ -2555,7 +2586,11 @@
       "noHostKey": "Masinal '{{machine}}' ei ole hosti võtit võlvis seadistatud",
       "noIpAddress": "Masinal '{{machine}}' ei ole IP-aadressi seadistatud",
       "noPrivateKey": "Meeskonnal '{{team}}' ei ole SSH privaatvõtit seadistatud",
-      "notFound": "VS Code ei leitud.\n\nPalun installi aadressilt: https://code.visualstudio.com/\nVõi seadista REDIACC_VSCODE_PATH keskkonna muutuja."
+      "notFound": "VS Code ei leitud.\n\nPalun installi aadressilt: https://code.visualstudio.com/\nVõi seadista REDIACC_VSCODE_PATH keskkonna muutuja.",
+      "browserNeedsRepo": "vscode --browser teenindab repositooriumi liivakasti — anna --repository <nimi>",
+      "unsupportedArch": "Brauseri VS Code jaoks pole masinarhitektuur toetatud: {{arch}}",
+      "serverInstallFailed": "{{provider}} installimine ebaõnnestus: {{error}}",
+      "serverStartFailed": "{{provider}} käivitamine ebaõnnestus: {{error}}"
     }
   },
   "help": {
@@ -2676,6 +2711,10 @@
     "opsParallel": "Loo virtuaalmasinad paralleelselt",
     "opsSkipOrchestration": "Jäta klastri orkestratsioon vahele",
     "opsSSHUser": "SSH-kasutajanimi VM-ühenduse jaoks",
+    "vscodeBrowser": "Serveeri brauseri VS Code-i repositooriumi liivakastist (kohalikku VS Code-i pole vaja)",
+    "vscodeNoOpen": "Prindi URL ilma kohalikku brauserit käivitamata",
+    "vscodeServerProvider": "Brauseri VS Code serveri implementatsioon (openvscode, code-server)",
+    "vscodeServerArchive": "Serveritarball-i eellavastatud tee masinal (õhust eraldatud paigaldused)",
     "organization": "Organisatsiooni nimi",
     "output": "Väljundvorming (table|json|yaml|csv). Vaikeväärtuse alistamiseks kasuta REDIACC_DEFAULT_OUTPUT.",
     "outputFormat": "Väljundvorming (json)",

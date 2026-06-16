@@ -1,0 +1,74 @@
+---
+title: "Branching — Commit & Rollback"
+description: "Freeze repository states into immutable commits, name them with branches, and check any commit back out as a writable fork."
+category: "Tutorials"
+subcategory: advanced
+order: 15
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Branching: Commit & Rollback
+
+Version your repositories like code. A **commit** freezes a fork into an immutable image; a **branch** names it; **checkout** turns any commit back into a fresh writable fork. In this tutorial we commit a known-good state, drop a real PostgreSQL table, and get every row back in seconds.
+
+## Watch the tutorial
+
+![Tutorial: Branching, commit and rollback](/assets/tutorials/tutorial-branching.cast)
+
+## The model
+
+![Commits, branches, checkout](/img/tutorials/tutorial-branching/slide-1.svg)
+
+Commits never change: they refuse to even mount. Forks never wait: checkout is a near-instant reflink clone. The full mental model lives in the [branching guide](/en/docs/repo-branching).
+
+## Make a checkpoint
+
+A marker file makes the version visible, and a real database makes the rollback meaningful: the `customers` table holds three rows.
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+<TutorialStep number={4} />
+
+The commit captures everything: files *and* the PostgreSQL data directory. The `stable` branch now names that frozen state.
+
+## Keep working
+
+<TutorialStep number={5} />
+
+## Disaster
+
+A risky change drops the table. Then the query confirms the damage is real.
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+`ERROR: relation "customers" does not exist`. Three rows, gone. In real life this is the moment your stomach sinks; here it's the setup for the payoff.
+
+<TutorialStep number={8} />
+
+<TutorialStep number={9} />
+
+History records what actually happened, broken state included: `v2 risky change` on top, `v1 baseline` below it.
+
+## Roll back in seconds
+
+<TutorialStep number={10} />
+
+<TutorialStep number={11} />
+
+<TutorialStep number={12} />
+
+<TutorialStep number={13} />
+
+The rollback fork reads `v1`, and the `customers` table is back with all three rows. The rollback restored the database, not just files. Nothing was overwritten: the working fork still has version two, and the video opens both in VS Code to prove it.
+
+---
+
+Next: [Live Migration](/en/docs/tutorial-live-migration).

@@ -6,7 +6,7 @@
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "at": 2.424705,
+      "at": 2.410714,
       "text": "İkinci adım. Komut satırından genel IP'yi, temel alan adını, sertifika e-postasını ve Cloudflare API token'ını giriyoruz. Sertifika e-postası ve token tüm makinelerinizde paylaşılır; yalnızca bir kez ayarlarsınız.",
       "afterText": "Altyapı bilgileri yapılandırmanıza kaydedildi.",
       "cardLabel": "Altyapı Ayarla",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "at": 13.591473,
+      "at": 12.419888,
       "text": "Altyapı ayarlarının kaydedildiğini doğruluyoruz. Genel IP, temel alan adı, sertifika e-postası; hepsi yapılandırmada görünüyor.",
       "afterText": "Ayarlar kaydedildi. Sunucuya gönderilmeye hazır.",
       "cardLabel": "Altyapıyı Göster",
@@ -24,8 +24,8 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "at": 18.479059,
-      "text": "Üçüncü adım. Yapılandırmayı sunucuya gönderiyoruz. Bu komut, Cloudflare'de DNS kayıtlarını otomatik olarak oluşturur ve makinede proxy yapılandırmasını hazırlar.",
+      "at": 16.924002,
+      "text": "Üçüncü adım: yapılandırmayı sunucuya gönderin. Gerçek bir token ile bu, Cloudflare'deki DNS kayıtlarınızı otomatik olarak oluşturur ve proxy yapılandırmasını hazırlar.",
       "afterText": "Gönderildi. Cloudflare'de DNS kayıtları oluşturuluyor.",
       "cardLabel": "Altyapıyı Gönder",
       "prose": "Yapılandırmayı sunucuya gönderin. Bu işlem Cloudflare'de DNS kayıtlarını otomatik olarak oluşturur ve proxy yapılandırmasını hazırlar."
@@ -33,8 +33,8 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "at": 25.757057,
-      "text": "Dördüncü adım başlıyor. infra adlı küçük bir depo oluşturuyoruz. Proxy burada yaşayacak; uygulama depolarından izole.",
+      "at": 20.590881,
+      "text": "Dördüncü adım: infra adında küçük bir repo oluşturun. Neden kendi repo'su? proxy, bu sunucudaki her uygulama için trafiği yönlendirir. Altyapı, uygulama kodunuzdan uzakta, kendi izole kutusunu hak ediyor.",
       "afterText": "Infra deposu oluşturuldu. Uygulama depolarınızdan izole.",
       "cardLabel": "Repo Oluştur",
       "prose": "infra adında küçük bir repo oluşturun. Proxy burada çalışacak, uygulama repolarından ayrı tutulacak."
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "at": 33.957312,
+      "at": 28.48077,
       "text": "Yerleşik proxy şablonunu uyguluyoruz. Traefik ile birlikte Let's Encrypt ve Cloudflare DNS-01 doğrulaması için yapılandırma hazır olarak geliyor.",
       "afterText": "Traefik yapılandırması yerinde.",
       "cardLabel": "Şablon Uygula"
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "at": 41.036573,
+      "at": 35.97937,
       "text": "Proxy'yi ayağa kaldırıyoruz. Traefik, container'larınızı her beş saniyede bir keşfeder. TLS sertifikaları Let's Encrypt'ten otomatik olarak gelir. Uygulamanız artık HTTPS üzerinden internetten erişilebilir.",
       "afterText": "Proxy yayında. TLS sertifikaları otomatik olarak gelecek.",
       "cardLabel": "Proxy Dağıt",
@@ -60,15 +60,15 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Pekâlâ! Uygulamanıza otomatik TLS ile gerçek bir alan adı verelim. Dört kısa adım ve internette yerinizi alıyorsunuz."
+      "text": "Uygulamanız çalışıyor ama yalnızca sunucu onu görebiliyor. Ona otomatik TLS ile gerçek bir domain verelim. Dört kısa adım ve internet üzerinde."
     },
     {
       "id": "four-steps",
-      "text": "İşte yol. Cloudflare API token'ı alın, altyapıyı CLI üzerinde yapılandırın, sunucuya gönderin ve DNS ile sertifikaları sizin için yöneten bir Traefik proxy'si dağıtın."
+      "text": "İşte yol: bir Cloudflare API token alın, altyapıyı CLI üzerinde bir kez yapılandırın, sunucuya gönderin, ardından DNS ve sertifikaları sizin için yöneten küçük bir proxy repo'su dağıtın."
     },
     {
       "id": "open-cloudflare",
-      "text": "Önce tarayıcınızda Cloudflare panelini açın. My Profile, ardından API Tokens'a gidin ve CLI'nin kayıtlarınızı yönetebilmesi için Zone DNS Edit yetkisine sahip bir token oluşturun."
+      "text": "İlk olarak, tek manuel adım. Cloudflare dashboard'unu açın, My Profile'a gidin, ardından API Tokens'a geçin ve Zone DNS Edit iznine sahip bir token oluşturun. Bu tek token, CLI'ın DNS kayıtlarınızı yönetmesini sağlar, böylece bir daha dashboard'larda tıklamak zorunda kalmazsınız."
     },
     {
       "id": "next-tutorial",

@@ -1,0 +1,52 @@
+---
+title: "Forgi isoleerimine praktikas"
+description: "Tee forkist elav PostgreSQL + pgAdmin rakendus ja redigeeri seda kõrvuti originaaliga: visuaalne tõestus, et forkid on sõltumatud."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: et
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Forgi isoleerimine praktikas
+
+[Hargitamise juhend](/et/docs/tutorial-forking) näitas käske. See juhend näitab, mida need tähendavad: elav andmebaasirakendus, kopeeritud sekunditega, brauseris vabalt muudetav, samal ajal kui originaal sellest midagi ei märka.
+
+## Vaata juhendvideot
+
+![Tutorial: Fork isolation in action](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## Seadistus
+
+![Elav andmebaas ja selle kaksik](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+Päris PostgreSQL koos pgAdmin-liidesega, elav serveris. Fork on sellest kõigest kohene copy-on-write kaksik: sünnimomendil samad andmed, pärast seda täiesti eraldi elud.
+
+## 1. samm: Elav rakendus
+
+<TutorialStep number={1} />
+
+## 2. samm: Tee fork
+
+<TutorialStep number={2} />
+
+Video avab mõlemad pgAdmin'id brauseris. Originaal küsib sisselogimist, sest tootmine jääb kaitstud. Fork avaneb otse töölauaks: forkid on ühekordsed liivakastid, nii et värav astub kõrvale (repositoorium otsustab seda ise, sõltuvalt sellest, kas tegemist on forkiga).
+
+## 3. samm: Kaks maailma, üks server
+
+<TutorialStep number={3} />
+
+Muuda, kustuta, purusta mida iganes forkis. Originaal jätkab teenindamist. Samad tabelid forkimise hetkel, sõltumatu igavesti pärast seda.
+
+## 4. samm: Viska ära
+
+<TutorialStep number={4} />
+
+Sekundid loomiseks, sekundid kustutamiseks. See ongi see, mis teeb "klooni tootmine, ära riku midagi" igapäevaseks harjumuseks, mitte erijuhtumiks.
+
+---
+
+Edasi: [Saladuste haldamine](/et/docs/tutorial-managing-secrets).

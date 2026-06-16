@@ -11,13 +11,13 @@
     "cast-step-1": "Term: run commands inside the sandbox",
     "cast-step-2": "Sync: preview with --dry-run",
     "cast-step-3": "Sync: upload for real",
-    "outro": "Next: Forking a Repository"
+    "outro": "Next: VS Code in Your Browser"
   },
   "events": [
     {
       "id": "tutorial-work-with-repo-01",
       "markerIndex": 0,
-      "at": 2.415513,
+      "at": 2.414306,
       "text": "First, the tunnel command. The app runs on the server, not your laptop. The tunnel command forwards a container port over SSH so you can open it at localhost in your browser.",
       "afterText": "Port forwarded. The app is now reachable at localhost.",
       "cardLabel": "Tunnel a Port",
@@ -26,7 +26,7 @@
     {
       "id": "tutorial-work-with-repo-02",
       "markerIndex": 1,
-      "at": 9.087333,
+      "at": 10.610488,
       "text": "Second, the term command. The terminal connect command drops you into the repo sandbox, the same isolated view as VS Code. Run any command against this repo Docker daemon without leaving your terminal.",
       "afterText": "Inside the repo sandbox. Run anything as if you were SSH'd in.",
       "cardLabel": "Term in Sandbox",
@@ -35,7 +35,7 @@
     {
       "id": "tutorial-work-with-repo-03",
       "markerIndex": 2,
-      "at": 15.893309,
+      "at": 17.555154,
       "text": "Now we will move files. First a dry-run preview. It shows exactly what would change without copying anything. Always preview when you are not sure.",
       "afterText": "Preview only. No files moved yet.",
       "cardLabel": "Sync Preview",
@@ -44,7 +44,7 @@
     {
       "id": "tutorial-work-with-repo-04",
       "markerIndex": 3,
-      "at": 22.144638,
+      "at": 24.76977,
       "text": "And the upload for real. The sync upload command moves files from your laptop into the repo over SSH, with rsync delta compression. Tunnel, term, sync. Three commands cover the daily loop.",
       "afterText": "Files uploaded. Delta compression handles big trees.",
       "cardLabel": "Sync Upload",

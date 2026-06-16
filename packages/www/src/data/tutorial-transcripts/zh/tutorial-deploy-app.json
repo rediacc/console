@@ -6,8 +6,8 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.40432,
-      "text": "第一步。让我们列出可用模板。Rediacc 内置了常见应用的现成配置，比如 Postgres、Redis、Web 服务器，无需从头编写 docker compose 点 yml。",
+      "at": 2.408078,
+      "text": "第一步：列出可用的模板。Rediacc 内置了常见应用的现成配置，无需从头编写 docker-compose。",
       "afterText": "完整的模板目录。每一个都是经过测试的 compose 与 Rediaccfile 组合。",
       "cardLabel": "列出模板",
       "prose": "第一步：列出可用模板。Rediacc 预置了常见应用的模板，无需从头编写 docker-compose。"
@@ -15,8 +15,8 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.041569,
-      "text": "第二步。让我们将 app-postgres 模板应用到仓库中。两个新文件出现了：描述容器的 docker compose 点 yml，以及定义启动和停止生命周期钩子的 Rediaccfile。",
+      "at": 6.077084,
+      "text": "第二步：将 app-postgres 模板导入 repo。一套经过测试的文件，直接复制进来。",
       "afterText": "模板已应用。repo 现在拥有它的 compose 文件和 Rediaccfile。",
       "cardLabel": "应用模板",
       "prose": "第二步：将 app-postgres 模板应用到 repo。此操作会将一组经过测试的文件复制到 repo 中。"
@@ -24,17 +24,17 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 13.566247,
-      "text": "第三步。让我们启动仓库。命令行工具启动容器、挂载加密卷，并连接独立的 Docker 守护进程。应用现在正在运行了。",
+      "at": 14.72542,
+      "text": "看看 repo 里多了什么：一个包含启动和停止 hooks 的 Rediaccfile，以及一个描述 container 的 docker-compose 文件。",
       "afterText": "容器运行中，卷已挂载，独立的 Docker 守护进程已启动。",
       "cardLabel": "查看文件",
-      "prose": "连接到 repo 并列出模板添加的内容：一个包含启动和停止钩子的 Rediaccfile，以及一个描述 container 的 docker-compose.yml。2>/dev/null 会隐藏连接日志，只显示文件列表。"
+      "prose": "连接到 repo，列出模板添加的文件：包含生命周期 hooks 的 Rediaccfile，以及描述 container 的 docker-compose.yml。"
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 23.282435,
-      "text": "让我们用 docker ps 验证一下。注意这里只显示本仓库的容器。同一服务器上的其他仓库拥有各自的 Docker 守护进程，在这里完全不可见。",
+      "at": 21.699752,
+      "text": "第三步：启动 repo。只需一条命令，CLI 会挂载加密卷、启动隔离的 Docker daemon，并运行 container。",
       "afterText": "只有这个 repo 的容器。隔离是真实的，不只是配置。",
       "cardLabel": "启动 Repo",
       "prose": "启动 repo。CLI 会启动 container，挂载加密卷，并连接隔离的 Docker daemon。"
@@ -42,8 +42,8 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 30.345778,
-      "text": "让我们验证正在运行的内容。这里的 docker ps 只列出本 repo 的 container。同一服务器上的其他 repo 各自拥有独立的 daemon，从这个视图中完全不可见。",
+      "at": 28.8781,
+      "text": "查看正在运行的内容。这里的 Docker ps 只列出当前 repo 的 container。服务器上的每个其他 repo 都有自己的 daemon，在这个视图中完全看不见。",
       "afterText": "只有本 repo 的 container。隔离是真实存在的，而非配置层面的。",
       "cardLabel": "验证隔离",
       "prose": "验证正在运行的内容。docker ps 仅列出此 repo 的 container；同一服务器上的其他 repo 拥有各自的 Docker daemon，在此视图中不可见。"
@@ -52,11 +52,15 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "是时候部署一个真实应用了！我们将从一个空仓库出发，三个简短步骤就让容器跑起来。"
+      "text": "是时候部署真实应用了！从空 repo 到运行中的 container，三步搞定：选择、应用、运行。"
     },
     {
       "id": "pick-apply-run",
       "text": "流程很简单：选一个模板、应用到 repo，然后运行。CLI 自带内置模板，所以我们永远不必从头写 docker-compose。"
+    },
+    {
+      "id": "vscode-file-tour",
+      "text": "更喜欢用编辑器而不是 cat？同样的文件可以直接在浏览器中用 VS Code 打开。这是 Rediaccfile，旁边是 compose 文件。我们会在后面的教程中好好介绍这个设置。"
     },
     {
       "id": "next-tutorial",
@@ -72,6 +76,7 @@
     "cast-step-2": "第三步：查看模板添加的内容",
     "cast-step-3": "第四步：启动 repo",
     "cast-step-4": "第五步：验证隔离",
-    "outro": "下一步：使用你的 Repo"
+    "outro": "下一步：使用你的 Repo",
+    "vscode-file-tour": "彩蛋：在 VS Code 中查看同样的文件"
   }
 }

@@ -17,13 +17,13 @@
     "cast-step-5": "Step 6: Delete the fork",
     "river-photo": "A photo of the river",
     "flat-disk": "Disk usage stays flat",
-    "outro": "Next: Managing Secrets"
+    "outro": "Next: Fork Isolation in Action"
   },
   "events": [
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 2.41277,
+      "at": 2.422355,
       "text": "Now the fork. One command will clone the entire repo, the app, the database, the config files, regardless of size. One gigabyte, one hundred gigabytes, one terabyte: the size simply does not matter.",
       "afterText": "Fork done. The clone is up and running, regardless of size.",
       "cardLabel": "Fork Repo",
@@ -32,7 +32,7 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 13.421721,
+      "at": 12.478171,
       "text": "Both repos exist side by side now. Same machine, same disk, two completely independent environments.",
       "afterText": "Two repos, one disk. Same data, separate everything else.",
       "cardLabel": "List Repos",
@@ -41,7 +41,7 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 18.980206,
+      "at": 18.050071,
       "text": "Let us prove the isolation. In the original, our marker file is right where we left it. The fork existence did not change anything in the parent.",
       "afterText": "Original file still there. The fork didn't touch it.",
       "cardLabel": "Original File",
@@ -50,7 +50,7 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 26.216902,
+      "at": 25.352583,
       "text": "Now let us delete that file, but only inside the fork. We are making a destructive change here.",
       "afterText": "Gone in the fork. The original stays untouched.",
       "cardLabel": "Delete In Fork",
@@ -59,7 +59,7 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 34.456769,
+      "at": 33.706234,
       "text": "Back to the original. The marker file is still here, untouched. Same image, separate Docker daemons, separate filesystems.",
       "afterText": "Still here. Forks are properly isolated.",
       "cardLabel": "Original Intact",
@@ -68,7 +68,7 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 41.647526,
+      "at": 41.0794,
       "text": "When you are done, just delete the fork. The original stays exactly as it was. Fork, experiment, break things, delete. No risk.",
       "afterText": "Fork removed. The original is exactly as we left it.",
       "cardLabel": "Clean Up",
@@ -106,7 +106,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "Forks deliberately leave secrets behind, which is what makes clone production, break nothing actually safe. We wire those up properly in the next tutorial!"
+      "text": "You just saw the commands. Next we make it visual: a real database app, forked live, edited side by side — and the original never flinches."
     }
   ]
 }

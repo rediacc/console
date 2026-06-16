@@ -45,6 +45,12 @@ interface ForkActionOptions {
   detach?: boolean;
   debug?: boolean;
   skipRouterRestart?: boolean;
+  /**
+   * Base name for the new fork's config key. Defaults to the parent's base
+   * name; `repo checkout` overrides it so a fork checked out from a
+   * GUID-keyed commit still gets a human name (app:rollback, not <guid>:rollback).
+   */
+  forkBaseName?: string;
 }
 
 /** Renet step names that only appear when the compound fork ran the up phase. */
@@ -454,10 +460,14 @@ export async function handleForkAction(
     '../utils/config-schema.js'
   );
   let forkKey = '';
+  // Rollback must only ever remove the row THIS invocation registered — a
+  // catch-all rollback would delete a pre-existing fork's config row
+  // (credential included) when registerFork fails with "already exists".
+  let registered = false;
   try {
     assertNonLatestForkTag(tagName, t('commands.repo.fork.tagReservedLatest'));
     assertForkOptions(options);
-    forkKey = compositeKey(parseRepoRef(parent).name, tagName);
+    forkKey = compositeKey(options.forkBaseName ?? parseRepoRef(parent).name, tagName);
     const parentConfig = await configService.getRepository(parent);
     if (!parentConfig) {
       throw new Error(`Repository "${parent}" not found in context`);
@@ -473,6 +483,7 @@ export async function handleForkAction(
       parentConfig,
       options.immutable
     );
+    registered = true;
 
     // Outer lease: every SSH consumer below (key deploy, fork/up legs,
     // identity refresh, cert sync, service URLs) shares this pooled
@@ -493,7 +504,9 @@ export async function handleForkAction(
       lease.release();
     }
   } catch (error) {
-    await rollbackFork(forkKey);
+    if (registered) {
+      await rollbackFork(forkKey);
+    }
     handleError(error);
   }
 }

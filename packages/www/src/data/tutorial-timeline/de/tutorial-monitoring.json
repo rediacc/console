@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "9a8d8b9761246bc6af98636c02e0871cff7799e6aa1cd8e11c84a8b206216d4a",
+  "transcriptHash": "9d9c2b19980e8478882b0186177b7ff4afc5b51ef18f677f8482b6a1e435a107",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.411841,
-      "replayEndSec": 8.597185,
+      "replayStartSec": 2.416158,
+      "replayEndSec": 8.503611,
       "narrationText": "Wir beginnen mit der Systemansicht. Der Machine-Query-Befehl mit dem system-Filter zeigt Uptime, Festplattennutzung und Speicherstatus. Wenn etwas nicht stimmt, meldet der Bericht es.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/tutorial-monitoring-01.ccce6304.mp3",
       "textHash": "ccce630410985f5626850b72a677d21e3eaae238ae59084d138f7aaf8e582aa8",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.597185,
-      "replayEndSec": 15.126152,
+      "replayStartSec": 8.503611,
+      "replayEndSec": 14.799411,
       "narrationText": "Jetzt Container. Diese Ansicht listet alle laufenden Container über alle Repositories auf der Maschine auf: Name, Status, Zustand, CPU, Speicher, plus welches Repo jeden Container besitzt.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/tutorial-monitoring-02.b015198e.mp3",
       "textHash": "b015198e0bcb606b7dbd6f99f7db7389ccd97d3df8b067c8577adf1dc1bd98bd",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 15.126152,
-      "replayEndSec": 24.385141,
+      "replayStartSec": 14.799411,
+      "replayEndSec": 21.195367,
       "narrationText": "Und die Repos selbst. Größe, Einhängestatus, Docker-Daemon-Status, Festplattennutzung. Alles, was Sie über jede isolierte Umgebung auf der Maschine wissen müssen.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/tutorial-monitoring-03.54e32c8f.mp3",
       "textHash": "54e32c8fbce49042521bd4fb0689bb6b7245cf902f856792fa95490928d847ab",
@@ -51,8 +51,8 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 24.385141,
-      "replayEndSec": 32.334422,
+      "replayStartSec": 21.195367,
+      "replayEndSec": 26.969407,
       "narrationText": "Der Machine-Query-Befehl gibt Ihnen alles auf einmal. Systeminformationen, Container, Repositories, alles zusammen. Einmal ausführen und Sie haben das vollständige Bild.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/tutorial-monitoring-04.39377284.mp3",
       "textHash": "3937728453226c0e754a3c478409de14b8200e5e4a7b3c37d2a6b7f9f0904efb",
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 32.334422,
-      "replayEndSec": 38.502093,
+      "replayStartSec": 26.969407,
+      "replayEndSec": 29.019779,
       "narrationText": "Und schließlich die Diagnoseprüfung für eine lokale Plausibilitätsprüfung auf Ihrem Laptop. Node, SSH-Schlüssel, renet, Docker, alles, wovon die CLI selbst abhängt. Das ist die vollständige Serie. Von der Installation bis zum Monitoring, alles aus Ihrem Terminal.",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/tutorial-monitoring-05.25006073.mp3",
       "textHash": "25006073dd99776131438e03371c18c50f4711999c5e54e9d5e107045e374b8a",
@@ -92,10 +92,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "11ab3722a445833fd95fb4ed15a56c81f065fb2ea72274096016215d6fb04315",
-      "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/next-tutorial.11ab3722.mp3",
-      "narrationText": "Damit schließt sich die Serie. Du kannst jetzt installieren, konfigurieren, deployen, forken, live gehen, Autostart einrichten, sichern und überwachen, alles aus deinem Terminal!",
-      "audioDurationSec": 13.792653
+      "textHash": "0569bc75fd03b55e0e13f723b713bfee77edaa5795c13e3456cff72fcb20c51a",
+      "audioSrc": "/assets/tutorials/audio/de/tutorial-monitoring/next-tutorial.0569bc75.mp3",
+      "narrationText": "Du kannst jetzt installieren, konfigurieren, deployen, forken, live gehen, automatisch starten, sichern und überwachen. Als Nächstes beginnt der fortgeschrittene Kurs: Versioniere deine Repos wie Code, mit Commits und Rollbacks.",
+      "audioDurationSec": 16.509388
     }
   ]
 }

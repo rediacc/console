@@ -131,6 +131,14 @@
     "./types/*": {
       "types": "./dist/types/*.d.ts",
       "default": "./dist/types/*.js"
+    },
+    "./vscode-server": {
+      "types": "./dist/vscode-server/index.d.ts",
+      "default": "./dist/vscode-server/index.js"
+    },
+    "./vscode-server/*": {
+      "types": "./dist/vscode-server/*.d.ts",
+      "default": "./dist/vscode-server/*.js"
     }
   },
   "files": [

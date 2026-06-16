@@ -76,6 +76,25 @@ down() {
 
 > **Important:** Always use `renet compose --` instead of `docker compose`. The `renet compose` wrapper enforces host networking, IP allocation, and service discovery labels required by renet-proxy. CRIU checkpoint/restore capabilities are added to containers with the `rediacc.checkpoint=true` label. Direct `docker compose` usage is rejected by Rediaccfile validation. See [Networking](/en/docs/networking) for details.
 
+### Capability Labels
+
+Containers run with a minimal set of Linux capabilities by default. A service opts into extra capabilities by adding a label to its `docker-compose.yml`:
+
+| Label | Grants | Use for |
+|-------|--------|---------|
+| `rediacc.checkpoint=true` | `CHECKPOINT_RESTORE`, `SYS_PTRACE`, `NET_ADMIN` | CRIU checkpoint/restore (live migration, save and resume) |
+| `rediacc.wireguard=true` | `NET_ADMIN` plus the `/dev/net/tun` device | Running a WireGuard client inside the container |
+
+```yaml
+services:
+  vpn:
+    image: alpine
+    labels:
+      - "rediacc.wireguard=true"
+```
+
+`rediacc.wireguard` lets a service bring up a WireGuard tunnel, for example to route a single process out through a remote endpoint. Because every service runs with host networking, confine the tunnel to an in-container network namespace so it does not change the host's routing. Broad privileged options such as `privileged: true`, `pid: host`, and `ipc: host` stay rejected by validation regardless of labels.
+
 ### Multi-Service Layout
 
 For projects with multiple independent service groups, use subdirectories:

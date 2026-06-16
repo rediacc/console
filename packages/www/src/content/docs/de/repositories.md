@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 4
 language: de
-sourceHash: "65fd6e7f9e6a83c1"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "0f08c5b75c3588cc"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Repositories
@@ -101,9 +101,9 @@ Funktionsweise: Repository-Images sind Sparse-Dateien, und das verschlüsselte V
 
 Hinweise:
 
-- Repositories, auf denen ein aktives Backup läuft, werden übersprungen und gemeldet. Ein Trim während eines Backups würde keinen Speicher freigeben, da der Backup-Snapshot die Blöcke weiterhin referenziert.
+- Der Dateisystem-Trim wird für Repositories mit einem aktiven Backup übersprungen und gemeldet, weil der Backup-Snapshot die Blöcke noch referenziert und Löcher stanzen daher keinen Pool-Speicher freigeben würde. Die `--docker`-Bereinigung ist davon nicht betroffen und läuft trotzdem durch (siehe unten).
 - Zweimaliges aufeinanderfolgendes Ausführen von Trim meldet beim zweiten Mal 0 Byte. Das Dateisystem merkt sich, welche Block-Gruppen bereits getrimmt wurden; das ist erwartet, kein Fehler.
-- `--docker` entfernt niemals getaggte Images, sondern nur dangling Images, gestoppte Container und den Build-Cache. Mit `--docker-volumes` werden zusätzlich unbenutzte Volumes entfernt (löscht Daten; nur CLI).
+- `--docker` entfernt niemals getaggte Images, sondern nur dangling Images, gestoppte Container und den Build-Cache. Mit `--docker-volumes` werden zusätzlich unbenutzte Volumes entfernt (löscht Daten; nur CLI). Anders als der Dateisystem-Trim läuft die `--docker`-Bereinigung auch während eines laufenden Backups, sodass du einen blockierten Build-Cache leeren kannst, ohne auf das Ende des Backup-Fensters zu warten.
 
 ## Automatische Größenrichtlinie
 

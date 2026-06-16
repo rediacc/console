@@ -4,8 +4,8 @@ description: "Crea, gestisci e opera repository cifrati con LUKS su macchine rem
 category: "Guides"
 order: 4
 language: it
-sourceHash: "65fd6e7f9e6a83c1"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "0f08c5b75c3588cc"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Repository
@@ -99,9 +99,9 @@ Come funziona: le immagini di repository sono file sparsi e il volume cifrato pr
 
 Note:
 
-- I repository con un backup attivo vengono saltati e segnalati. Il trim durante un backup non libererebbe spazio, perché lo snapshot del backup fa ancora riferimento ai blocchi.
+- Il trim del filesystem viene saltato e segnalato per i repository con un backup attivo, perché lo snapshot del backup fa ancora riferimento ai blocchi, quindi perforare i fori non libererebbe spazio nel pool. Il recupero `--docker` non è interessato e viene eseguito comunque (vedi sotto).
 - Eseguire il trim due volte di seguito riporta 0 byte la seconda volta. Il filesystem ricorda quali gruppi di blocchi sono già stati elaborati; questo è il comportamento atteso, non un errore.
-- `--docker` non rimuove mai le immagini con tag, solo quelle dangling, i container fermi e la build cache. Aggiungi `--docker-volumes` per rimuovere anche i volumi inutilizzati (questo elimina dati; solo CLI).
+- `--docker` non rimuove mai le immagini con tag, solo quelle dangling, i container fermi e la build cache. Aggiungi `--docker-volumes` per rimuovere anche i volumi inutilizzati (questo elimina dati; solo CLI). A differenza del trim del filesystem, il recupero `--docker` viene eseguito anche mentre un backup è in corso, così puoi svuotare una build cache bloccata senza attendere la finestra di backup.
 
 ## Policy di Dimensione Automatica
 

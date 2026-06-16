@@ -4,8 +4,8 @@ description: Dateisynchronisation, Terminalzugriff, VS Code-Unterstützung und C
 category: Guides
 order: 9
 language: de
-sourceHash: "4b3aebff5e82416f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "59abc2faa1157369"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Werkzeuge
@@ -36,7 +36,7 @@ rdc repo sync upload -m server-1 -r my-app --local a.yml b.yml ./assets --remote
 
 `--remote` und `--remote-file` schließen sich gegenseitig aus. `--remote-file` erfordert genau einen `--local`-Pfad, der auf eine Datei zeigt.
 
-`--mirror` kann nicht mit einer Dateiquiselle kombiniert werden; es würde Nachbardateien im Fernverzeichnis löschen.
+`--mirror` kann nicht mit einer Dateiquelle kombiniert werden; es würde Nachbardateien im Fernverzeichnis löschen.
 
 ### Dateien herunterladen
 
@@ -64,7 +64,7 @@ rdc repo sync status -m server-1 -r my-app
 | `-r, --repository <name>` | Ziel-Repository |
 | `--local <paths...>` | Ein oder mehrere lokale Datei-/Verzeichnispfade (Upload) oder lokales Zielverzeichnis (Download) |
 | `--remote <path>` | Entferntes Verzeichnis (relativ zum Repository-Einbindungspunkt) |
-| `--remote-file <path>` | Entferner Dateipfad für einzelne Datei-Uploads oder Downloads (Alternative zu `--remote`) |
+| `--remote-file <path>` | Entfernter Dateipfad für einzelne Datei-Uploads oder Downloads (Alternative zu `--remote`) |
 | `--dry-run` | Änderungen anzeigen, ohne zu übertragen |
 | `--mirror` | Quelle auf Ziel spiegeln, zusätzliche Dateien löschen (nur Verzeichnisquellen) |
 | `--verify` | Prüfsummen nach der Übertragung verifizieren |
@@ -174,6 +174,36 @@ rdc vscode check
 
 > **Voraussetzung:** Installieren Sie die [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh)-Erweiterung in VS Code.
 
+### VS Code im Browser
+
+Kein lokales VS Code? Starten Sie den Editor direkt aus der Repository-Sandbox und öffnen Sie ihn in jedem Browser:
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+Dieser Befehl:
+1. Installiert den Open-Source-Editor-Server einmalig auf der Maschine (schreibgeschützter gemeinsamer Pfad, mit Prüfsummenverifikation)
+2. Startet ihn innerhalb der Repository-Sandbox, sodass der Dateibaum, das integrierte Terminal und alle untergeordneten Prozesse genau das sehen, was das Repository sieht
+3. Öffnet einen SSH-Tunnel zu einem lokalen Port und startet Ihren Browser mit einer sitzungsbezogenen Token-URL
+
+Der Server läuft weiter, nachdem Sie den Tunnel schließen; beim erneuten Verbinden wird er wiederverwendet. Verwalten Sie ihn mit:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| Option | Beschreibung |
+|--------|-------------|
+| `--no-open` | URL ausgeben statt Browser zu starten |
+| `--url-only` | Genau eine URL-Zeile auf stdout ausgeben (für Scripting) und den Tunnel halten |
+| `--local <port>` | Lokalen Tunnel-Port festlegen |
+| `--server-provider <id>` | Editor-Server-Implementierung: `openvscode` (Standard) oder `code-server` |
+| `--server-archive <file>` | Aus einem vorbereiteten Tarball auf der Maschine installieren (kein Internet erforderlich) |
+
+Funktioniert unter Linux, macOS, Windows oder auf einem Tablet. Lokal wird nur ein Browser benötigt.
+
 ## CLI-Updates (update)
 
 Halten Sie die `rdc`-CLI auf dem neuesten Stand.
@@ -208,7 +238,7 @@ rdc update --status
 
 Zeigt die aktuelle Version, den Update-Kanal und die Auto-Update-Konfiguration an.
 
-#### Release-Kanale
+#### Release-Kanäle
 
 ```bash
 rdc update --channel edge      # Kontinuierlich bereitgestellte Produktions-Updates

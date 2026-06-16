@@ -44,13 +44,14 @@ exec >&3 2>&4
 clear_screen
 
 section "Tunnel — open the app in your browser"
-# Tunnel is long-running. Show the command running for ~2s then stop it.
-run_cmd "timeout 2s rdc repo tunnel --machine $M --repository my-app --container app || true"
+# Tunnel is long-running: let it serve for a few seconds, then Ctrl+C it
+# exactly like a user would.
+run_cmd_interrupt "rdc repo tunnel --machine $M --repository my-app --container app" 4
 
 pause 2
 
 section "Term — run a command inside the repo"
-run_cmd "rdc term connect --machine $M --repository my-app --command 'docker ps' 2>/dev/null"
+run_cmd "rdc term connect --machine $M --repository my-app --command 'docker ps'"
 
 pause 2
 
@@ -63,11 +64,10 @@ run_cmd "rdc repo sync upload --machine $M --repository my-app --local /tmp/tuto
 
 pause 2
 
+# End the on-camera portion; cleanup below is not recorded.
+end_recording
 # Clean up
 rm -rf /tmp/tutorial-src /tmp/tutorial-backup
 rdc repo down --name my-app --machine "$M" 2>/dev/null || true
 rdc repo down --name my-app --machine "$M" --unmount 2>/dev/null || true
 rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
-
-printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
-sleep 2

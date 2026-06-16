@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "tutorial": "tutorial-storage-management",
+  "scenes": [
+    {
+      "id": "intro",
+      "type": "title",
+      "narrationKey": "intro",
+      "narrationRole": "intro"
+    },
+    {
+      "id": "pool-model",
+      "type": "slide",
+      "src": "slide-1.svg",
+      "narrationKey": "pool-model",
+      "narrationRole": "slide-explainer"
+    },
+    {
+      "id": "cast-step-0",
+      "type": "cast-narrated",
+      "markerIndex": 0,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository data-app --command 'dd if=/dev/zero of=big.bin bs=1M count=1200 status=none && df -h .'"
+      }
+    },
+    {
+      "id": "cast-step-1",
+      "type": "cast-narrated",
+      "markerIndex": 1,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo expand --name data-app --machine <machine-name> --size 4G"
+      }
+    },
+    {
+      "id": "cast-step-2",
+      "type": "cast-narrated",
+      "markerIndex": 2,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository data-app --command 'df -h .'"
+      }
+    },
+    {
+      "id": "cast-step-3",
+      "type": "cast-narrated",
+      "markerIndex": 3,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc term connect --machine <machine-name> --repository data-app --command 'rm big.bin && df -h .'"
+      }
+    },
+    {
+      "id": "cast-step-4",
+      "type": "cast-narrated",
+      "markerIndex": 4,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo trim --name data-app --machine <machine-name>"
+      }
+    },
+    {
+      "id": "cast-step-5",
+      "type": "cast-narrated",
+      "markerIndex": 5,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo policy set --machine <machine-name> --name data-app --auto-grow true --max-quota 8G --grow-step 25% --auto-trim true"
+      }
+    },
+    {
+      "id": "cast-step-6",
+      "type": "cast-narrated",
+      "markerIndex": 6,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc repo policy get --machine <machine-name> --name data-app"
+      }
+    },
+    {
+      "id": "cast-step-7",
+      "type": "cast-narrated",
+      "markerIndex": 7,
+      "holdSec": 0.8,
+      "narrationRole": "step",
+      "card": {
+        "commandFull": "rdc machine query --name <machine-name> --storage-health"
+      }
+    },
+    {
+      "id": "outro",
+      "type": "outro",
+      "narrationKey": "next-tutorial",
+      "narrationRole": "outro"
+    }
+  ]
+}

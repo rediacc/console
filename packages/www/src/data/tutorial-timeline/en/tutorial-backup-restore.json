@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "6550197ffa7af15233ff4726f3dfa259579e1f7392f855fe14303a084d60f929",
+  "transcriptHash": "8e4da959574e05a9d4a62c6ea837febeed7c3fb576f0882d8d240b1941f41754",
   "steps": [
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424169,
-      "replayEndSec": 6.651448,
+      "replayStartSec": 2.409089,
+      "replayEndSec": 6.555802,
       "narrationText": "Step one. We will import an existing rclone configuration. rclone supports S3, Backblaze, Google Drive, Dropbox, and many more. If you already use it, the same config imports directly.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-01.96283916.mp3",
       "textHash": "962839166a20ad3f71b480b720dad61320969416a772cf7364e7c7f2dc6a1374",
@@ -257,8 +257,8 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "replayStartSec": 6.651448,
-      "replayEndSec": 10.354487,
+      "replayStartSec": 6.555802,
+      "replayEndSec": 10.251839,
       "narrationText": "Let us list the storages the CLI now knows about. Each one is a destination we can push backups to.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-02.b535c5a9.mp3",
       "textHash": "b535c5a97755de8f98a6efc4974be3c38c0b4502c98c092dcf04edaef0b5a47e",
@@ -430,8 +430,8 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "replayStartSec": 10.354487,
-      "replayEndSec": 18.28182,
+      "replayStartSec": 10.251839,
+      "replayEndSec": 24.484571,
       "narrationText": "Step two. Push a full backup. The entire repository, app, database, files, configuration, is uploaded. Because the repository is encrypted at rest, the backup is encrypted too. No extra key management.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-03.22e5440c.mp3",
       "textHash": "22e5440c87a66cbaf7345cdcfaab93f9816108284ef8aafc445f88776c180c6a",
@@ -711,8 +711,8 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "replayStartSec": 18.28182,
-      "replayEndSec": 26.532142,
+      "replayStartSec": 24.484571,
+      "replayEndSec": 31.133919,
       "narrationText": "And the backups available on this storage. From here, restore on a brand new server is one command: the repo pull command.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-04.fa462f64.mp3",
       "textHash": "fa462f6411e41c5947ad664161ad83be00028bcba611bad1bf6edca098b0f893",
@@ -940,6 +940,45 @@
           "endChar": 76
         }
       ]
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "replayStartSec": 31.133919,
+      "replayEndSec": 39.135694,
+      "narrationText": "Now the restore proof. First take the repository offline: stop the services and unmount the encrypted volume. The app is gone from this machine.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-05.07efe4fe.mp3",
+      "textHash": "07efe4fe6e13027f63d4d9fcbb8ecb4c06aefc29373ecc853d4669a82099b65f",
+      "audioDurationSec": 9.16898,
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-05-after.39a09453.mp3",
+      "afterAudioDurationSec": 4.362449,
+      "afterTextHash": "39a09453e5d43a927cfaa5eea2841bb86a2c80222a861fc391a4cafdcc117d33"
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "replayStartSec": 39.135694,
+      "replayEndSec": 48.126162,
+      "narrationText": "And pull the backup straight back from the storage. The repo pull command fetches the image, checks its integrity, and puts it exactly where it was.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-06.a2eb07bf.mp3",
+      "textHash": "a2eb07bfdb282b5f323134db7f4e725e8b95fa10f327eab80489f634a03950b0",
+      "audioDurationSec": 8.515918,
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-06-after.568e143c.mp3",
+      "afterAudioDurationSec": 4.597551,
+      "afterTextHash": "568e143cd7c720ed15abf1dfa832209c0006c7e3ff46de9d81809a5d53fdefab"
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "replayStartSec": 48.126162,
+      "replayEndSec": 54.070366,
+      "narrationText": "Mount it again, and the repository is restored. Push, list, pull — that is the whole backup story.",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-07.66a28bad.mp3",
+      "textHash": "66a28bad256b1579461240f574d6850bf847c212f6b7be4774ab8e5056396e3a",
+      "audioDurationSec": 7.810612,
+      "afterAudioSrc": "/assets/tutorials/audio/en/tutorial-backup-restore/tutorial-backup-restore-07-after.91a561e6.mp3",
+      "afterAudioDurationSec": 4.127347,
+      "afterTextHash": "91a561e6f5145a8fad630d31563162356613c13fb928d0d2829c10d09064b32f"
     }
   ],
   "narrationAudio": [

@@ -1,0 +1,62 @@
+---
+title: "Migración en vivo"
+description: "Mueve un repositorio en ejecución, contenedores, base de datos y memoria de procesos incluidos, a otra máquina con un solo comando y un tiempo de inactividad mínimo."
+category: "Tutorials"
+subcategory: advanced
+order: 16
+language: es
+sourceHash: "0d0c4df847c6ba17"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Migración en vivo
+
+Los servidores se reemplazan: el hardware envejece, los proveedores cambian, las regiones se mueven. `rdc repo migrate` traslada un repositorio en ejecución a otra máquina con un solo comando, y con `--checkpoint` hasta la memoria de procesos viaja también. La app de demo, `pulse`, mantiene un contador en RAM; tras el traslado sigue contando en lugar de empezar desde cero.
+
+## Ver el tutorial
+
+![Tutorial: Live migration](/assets/tutorials/tutorial-live-migration.cast)
+
+## Cómo funciona el traslado
+
+![Dos fases, tiempo de inactividad mínimo](/img/tutorials/tutorial-live-migration/slide-1.svg)
+
+La primera fase copia el grueso de los datos mientras la app sigue corriendo. La segunda hace checkpoint de los procesos en ejecución (CRIU, para contenedores etiquetados con `rediacc.checkpoint=true`), transfiere el delta final más el estado de los procesos, y los reanuda en la nueva máquina. El tiempo de inactividad es el delta, no los datos.
+
+## Paso 1: La evidencia, un contador en RAM
+
+<TutorialStep number={1} />
+
+`memory counter=6` y subiendo, un latido cada cinco segundos. El contador vive solo en la memoria del proceso. Si el proceso se reiniciara, comenzaría de nuevo en uno.
+
+## Paso 2: Migrar en vivo
+
+<TutorialStep number={2} />
+
+La salida narra el traslado: la primera fase transfiere el grueso de 2 GB mientras la fuente sigue en línea; luego la línea de corte imprime el `DOWNTIME` real: unas pocas decenas de megabytes y aproximadamente veinte segundos, para un repositorio de dos gigabytes.
+
+## Paso 3: Verificar el nuevo hogar
+
+<TutorialStep number={3} />
+
+En el destino, `pulse` está montado, Docker activo, contenedores corriendo.
+
+## Paso 4: La fuente está detenida
+
+<TutorialStep number={4} />
+
+La fuente sigue listando el repositorio, pero con honestidad: no montado, sin Docker, cero contenedores. Ya no corre nada ahí. La imagen se conserva intencionalmente como base para la próxima [transferencia delta](/es/docs/tutorial-delta-transfer), de modo que un futuro push de vuelta sea barato.
+
+## Paso 5: El contador siguió contando
+
+<TutorialStep number={5} />
+
+`memory counter=17`, luego 18, 19, 20... Retomó exactamente donde el checkpoint lo congeló en lugar de reiniciarse en uno. Eso es la memoria de procesos haciendo el viaje; la app nunca notó que cambió de máquina.
+
+> Sin `--checkpoint`, migrate igual mueve disco y contenedores; se reinician desde cero en el destino en lugar de reanudar a mitad de vuelo.
+
+---
+
+Siguiente: [Transferencia delta](/es/docs/tutorial-delta-transfer).

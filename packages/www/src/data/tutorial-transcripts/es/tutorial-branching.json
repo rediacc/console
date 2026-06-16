@@ -1,0 +1,162 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "at": 2.418102,
+      "text": "Nuestro fork de trabajo contiene la versión uno del estado de la app, un simple archivo marcador lo hace visible.",
+      "afterText": "Versión uno, en disco.",
+      "cardLabel": "Versión Uno",
+      "prose": "Escribe la versión uno de tu estado en el fork de trabajo."
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "at": 10.876025,
+      "text": "No son solo archivos. En este fork también vive una base de datos PostgreSQL real, y la tabla customers tiene tres filas. Recuerda ese número.",
+      "afterText": "Tres filas. Esos son los datos que estamos a punto de poner en peligro.",
+      "cardLabel": "Tres Filas",
+      "prose": "El fork también ejecuta una base de datos PostgreSQL real: la tabla customers tiene tres filas."
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "at": 20.708803,
+      "text": "Congélalo. El commit captura el repositorio completo como una imagen inmutable, con un mensaje, un autor y un padre. Exactamente como git, pero para todo, base de datos incluida.",
+      "afterText": "Commit hecho. Esta instantánea nunca puede cambiar. No acepta ni siquiera montarse.",
+      "cardLabel": "Commit v1",
+      "prose": "Haz commit del fork de trabajo: el estado completo del repositorio, base de datos incluida, queda congelado en una instantánea inmutable con nombre."
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "at": 29.448478,
+      "text": "Dale un nombre al commit. La rama stable apunta ahora a la versión uno.",
+      "afterText": "Una rama es un nombre al que puedes volver.",
+      "cardLabel": "Rama Stable",
+      "prose": "Crea una rama que apunte al commit, un nombre legible para el estado congelado."
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "at": 34.241982,
+      "text": "Sigue trabajando. La versión dos reemplaza a la versión uno en el fork de trabajo. Al commit no le importa.",
+      "afterText": "El fork de trabajo avanzó. El historial no.",
+      "cardLabel": "Versión Dos",
+      "prose": "Continúa trabajando: el fork cambia, el historial de commits permanece congelado."
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "at": 42.690283,
+      "text": "Ahora el desastre. El cambio arriesgado elimina la tabla customers. En la vida real, este es el momento en que el estómago se hunde.",
+      "afterText": "Drop table ejecutado. Los datos desaparecieron del fork de trabajo.",
+      "cardLabel": "Eliminar La Tabla",
+      "prose": "El cambio arriesgado elimina la tabla customers en el fork de trabajo."
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "at": 51.047933,
+      "text": "Pide las filas de nuevo y la base de datos lo dice sin rodeos: la relación customers no existe. El desastre es real. Cada fila ha desaparecido.",
+      "afterText": "La relación no existe. Tres filas, desaparecidas.",
+      "cardLabel": "Tabla Eliminada",
+      "prose": "Consultar la tabla ahora falla: la relación \"customers\" no existe. Los datos realmente desaparecieron del fork de trabajo."
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "at": 59.69522,
+      "text": "Haz commit también del cambio arriesgado, tabla rota y todo. El historial registra lo que realmente ocurrió. Ahora hay dos commits, padre e hijo.",
+      "afterText": "Dos instantáneas en la cadena.",
+      "cardLabel": "Commit v2",
+      "prose": "Haz commit del nuevo estado también, tabla eliminada incluida; el historial crece como un git log."
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "at": 68.35661,
+      "text": "Y ahí está el historial: la versión dos arriba, la versión uno debajo, mensajes y autores incluidos, sin desbloquear ninguna imagen.",
+      "afterText": "Un log del repositorio, exactamente como un git log.",
+      "cardLabel": "Repo Log",
+      "prose": "Recorre el historial de commits con repo log, mensajes, autores y padres."
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "at": 75.614559,
+      "text": "Ahora el resultado. Haz checkout de la rama stable a un fork escribible completamente nuevo. Clone por reflink: casi instantáneo, sin importar el tamaño.",
+      "afterText": "Una copia escribible de la versión uno congelada, en aproximadamente un segundo.",
+      "cardLabel": "Checkout",
+      "prose": "Haz checkout de la rama stable a un fork escribible nuevo, casi instantáneo gracias a copy-on-write."
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "at": 83.292425,
+      "text": "Inicia el fork de rollback como cualquier otro repositorio.",
+      "afterText": "Dos forks en ejecución: la versión actual y el checkpoint.",
+      "cardLabel": "Iniciar Rollback",
+      "prose": "Levanta el fork de rollback, se ejecuta junto al fork de trabajo."
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "at": 91.555233,
+      "text": "Y la prueba: el fork de rollback lee la versión uno. El fork de trabajo aún tiene la versión dos. Un historial que puedes ejecutar.",
+      "afterText": "Rollback completo. Nada fue sobrescrito para llegar aquí.",
+      "cardLabel": "Prueba: v1",
+      "prose": "Lee el archivo marcador en el fork de rollback: versión uno, exactamente como se hizo el commit."
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "at": 98.952411,
+      "text": "Y la parte más importante: la tabla eliminada está de vuelta, con sus tres filas. El rollback restauró la base de datos, no solo los archivos.",
+      "afterText": "Tres filas de nuevo. El desastre está deshecho.",
+      "cardLabel": "Datos Restaurados",
+      "prose": "Consulta la tabla customers en el fork de rollback: tres filas, exactamente como se hizo el commit. El rollback restauró la base de datos, no solo los archivos."
+    }
+  ],
+  "title": "Branching: Commit y Rollback",
+  "chapters": {
+    "intro": "Branching: Commit y Rollback",
+    "commit-model": "Commits, branches, checkout",
+    "cast-step-0": "Paso 1: Versión uno",
+    "cast-step-1": "Paso 2: Haz el commit",
+    "cast-step-2": "Paso 3: Nómbralo con un branch",
+    "cast-step-3": "Paso 4: Sigue trabajando, versión dos",
+    "cast-step-4": "Paso 5: Commit de nuevo",
+    "cast-step-5": "Paso 6: El historial",
+    "cast-step-6": "Paso 7: Haz checkout del branch",
+    "cast-step-7": "Paso 8: Inicia el rollback",
+    "cast-step-8": "Paso 9: Prueba, versión uno",
+    "cast-step-9": "Paso 10: Haz checkout de la rama",
+    "cast-step-10": "Paso 11: Inicia el rollback",
+    "cast-step-11": "Paso 12: Prueba: versión uno",
+    "cast-step-12": "Paso 13: Los datos han vuelto",
+    "vscode-versions": "Ambas versiones, una al lado de la otra",
+    "outro": "Siguiente: Migración en Vivo"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "¡Vamos a versionar tus repositorios como código! Congelaremos un checkpoint, le daremos un nombre y luego eliminaremos una tabla de base de datos real. El rollback recupera el estado congelado exacto, cada fila incluida, en segundos."
+    },
+    {
+      "id": "commit-model",
+      "text": "El modelo es git, pero para repositorios completos. Un commit es una imagen congelada e inmutable. No acepta ni siquiera montarse, así que nada puede cambiarla jamás. Una rama es simplemente un nombre que apunta a un commit. Y checkout convierte cualquier commit en un fork nuevo y escribible."
+    },
+    {
+      "id": "vscode-versions",
+      "text": "Ver para creer. El fork de rollback a la izquierda contiene la versión uno, mientras que el fork de trabajo a la derecha avanzó a la versión dos. Ambos activos, ambos escribibles, ambos del mismo historial."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Los commits nunca cambian, los forks nunca esperan. A continuación, movemos un repositorio completo en ejecución a otra máquina, en vivo. ¡Nos vemos en el siguiente!"
+    }
+  ]
+}

@@ -3,9 +3,10 @@ import { Option, type Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getStateProvider } from '../providers/index.js';
 import { configService } from '../services/config-resources.js';
-import { localExecutorService } from '../services/local-executor.js';
+import { localExecutorService, type LocalExecuteResult } from '../services/local-executor.js';
 import { outputService } from '../services/output.js';
 import { deployRepoKeyIfNeeded } from '../services/repo-key-deployment.js';
+import { probeRepoMounted } from '../services/repo-mount-check.js';
 import { getSubscriptionTokenState } from '../services/subscription-auth.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -26,6 +27,7 @@ import {
 } from './repo-backup-list.js';
 import { runBatchOperation } from './repo-batch-utils.js';
 import { applyPullDeltaParams, applyPushDeltaParams, finalizePush } from './repo-delta.js';
+import { reportPushStats } from './repo-push-stats.js';
 
 interface BackupRunOptions {
   machine?: string;
@@ -70,14 +72,17 @@ export async function resolveExtraMachines(
 /**
  * Execute a bridge function in the appropriate mode (local/s3/cloud).
  * Returns whether the execution succeeded so callers can gate follow-up state
- * writes (e.g. recording an auto-delta base only after a successful push).
+ * writes (e.g. recording an auto-delta base only after a successful push),
+ * plus the local execution result so callers can parse machine-readable
+ * stdout lines (e.g. backup push transfer stats). `local` is undefined on
+ * the cloud provider path.
  */
 async function executeFunction(
   functionName: string,
   params: Record<string, unknown>,
   options: BackupRunOptions,
   program?: Command
-): Promise<boolean> {
+): Promise<{ ok: boolean; local?: LocalExecuteResult }> {
   const provider = await getStateProvider();
   const machineName = options.machine;
 
@@ -100,7 +105,7 @@ async function executeFunction(
       outputService.info(t('commands.shortcuts.run.watching'));
       await traceAction(result.taskId, { watch: true, interval: '2000' }, program);
     }
-    return true;
+    return { ok: true };
   }
 
   outputService.info(
@@ -119,13 +124,13 @@ async function executeFunction(
     outputService.success(
       t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })
     );
-    return true;
+    return { ok: true, local: result };
   }
   renderLocalExecutionFailure(
     result,
     t('commands.shortcuts.run.failedLocal', { error: result.error })
   );
-  return false;
+  return { ok: false, local: result };
 }
 
 /** Apply optional backup push flags (checkpoint, force, tag) to params. */
@@ -144,9 +149,14 @@ export function buildPushParams(
   repositoryGuid: string,
   resolvedType: 'machine' | 'storage',
   targetName: string,
-  options: { checkpoint?: boolean; force?: boolean; tag?: string }
+  options: { checkpoint?: boolean; force?: boolean; tag?: string },
+  storageMode?: 'hot' | 'cold'
 ): { params: Record<string, unknown>; dest: string } {
-  const dest = repositoryGuid;
+  // Storage backups live under the scheduler's hot/cold layout: hot/ for
+  // repos that were mounted at push time, cold/ for unmounted ones. The
+  // machine target keeps the bare GUID (rsync into the datastore).
+  const dest =
+    resolvedType === 'storage' && storageMode ? `${storageMode}/${repositoryGuid}` : repositoryGuid;
   const params: Record<string, unknown> = {
     repository: repo,
     dest,
@@ -258,12 +268,24 @@ async function preparePush(
     await deployRepoKeyIfNeeded(repo, targetName);
   }
 
+  // Storage layout is mode-scoped (hot = mounted at push time, cold =
+  // unmounted). Probe failure defaults to hot — pushes overwhelmingly
+  // target live repos.
+  let storageMode: 'hot' | 'cold' | undefined;
+  if (resolvedType === 'storage') {
+    const mounted = await probeRepoMounted(repoConfig.repositoryGuid, options.machine as string, {
+      debug: options.debug as boolean | undefined,
+    });
+    storageMode = mounted === false ? 'cold' : 'hot';
+  }
+
   const { params, dest } = buildPushParams(
     repo,
     repoConfig.repositoryGuid,
     resolvedType,
     targetName,
-    options
+    options,
+    storageMode
   );
   attachSeedLineage(params, repoConfig);
   if (options.bwlimit) params.bwlimit = options.bwlimit;
@@ -293,7 +315,7 @@ async function pushSingleRepo(
   }
 
   const { type: resolvedType, name: targetName } = await resolvePushTarget(options);
-  const { params, dest, retainBase } = await preparePush(
+  const { params, retainBase } = await preparePush(
     repo,
     options,
     repoConfig,
@@ -301,8 +323,12 @@ async function pushSingleRepo(
     targetName
   );
 
-  outputService.info(t('commands.repo.push.pushing', { repo, dest }));
-  const ok = await executeFunction('backup_push', params, options, repoCommand);
+  // Show the human-readable target name; the dest GUID/path is renet detail.
+  outputService.info(t('commands.repo.push.pushing', { repo, dest: targetName }));
+  const { ok, local } = await executeFunction('backup_push', params, options, repoCommand);
+  if (ok) {
+    reportPushStats(repo, targetName, resolvedType, local, !!options.json);
+  }
   // retainBase is set only for machine targets; finalizePush also syncs commit
   // metadata to the target when the pushed object is an immutable commit.
   if (ok && resolvedType === 'machine') {
@@ -420,6 +446,7 @@ export function registerRepoBackupCommands(repoCommand: Command): void {
     .option('--bwlimit <limit>', t('commands.repo.push.optionBwlimit'))
     .option('--delta-base <guid>', t('commands.repo.push.optionDeltaBase'))
     .option('--strategy <strategy>', t('commands.repo.push.optionStrategy'))
+    .option('--json', t('commands.repo.push.optionJson'))
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {

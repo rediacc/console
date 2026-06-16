@@ -1,0 +1,162 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "at": 2.418102,
+      "text": "Unser Working-Fork enthält Version eins des App-Zustands. Eine einfache Markierungsdatei macht ihn sichtbar.",
+      "afterText": "Version eins, auf der Festplatte.",
+      "cardLabel": "Version Eins",
+      "prose": "Schreib Version eins deines Zustands in den Working-Fork."
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "at": 10.876025,
+      "text": "Es sind nicht nur Dateien. In diesem Fork läuft auch eine echte PostgreSQL-Datenbank, und die Tabelle customers enthält drei Zeilen. Merk dir diese Zahl.",
+      "afterText": "Drei Zeilen. Das sind die Daten, die wir gleich in Gefahr bringen.",
+      "cardLabel": "Drei Zeilen",
+      "prose": "Der Fork betreibt außerdem eine echte PostgreSQL-Datenbank: Die Tabelle customers enthält drei Zeilen."
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "at": 20.708803,
+      "text": "Einfrieren. Der Commit erfasst das gesamte repository als unveränderliches Image, mit einer Nachricht, einem Autor und einem Parent. Genau wie git, aber für alles, einschließlich der Datenbank.",
+      "afterText": "Committed. Dieser Snapshot kann sich niemals ändern. Er lässt sich nicht einmal mounten.",
+      "cardLabel": "Commit v1",
+      "prose": "Committe den Working-Fork: Der vollständige repository-Zustand, einschließlich der Datenbank, wird in einem unveränderlichen, benannten Snapshot eingefroren."
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "at": 29.448478,
+      "text": "Gib dem Commit einen Namen. Der stable Branch zeigt jetzt auf Version eins.",
+      "afterText": "Ein Branch ist ein Name, zu dem du zurückkehren kannst.",
+      "cardLabel": "Branch Stable",
+      "prose": "Erstelle einen Branch, der auf den Commit zeigt, einen lesbaren Namen für den eingefrorenen Zustand."
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "at": 34.241982,
+      "text": "Weiterarbeiten. Version zwei ersetzt Version eins im Working-Fork. Der Commit kümmert das nicht.",
+      "afterText": "Der Working-Fork hat sich weiterentwickelt. Die History nicht.",
+      "cardLabel": "Version Zwei",
+      "prose": "Weiterarbeiten: Der Fork ändert sich, die committete History bleibt eingefroren."
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "at": 42.690283,
+      "text": "Jetzt kommt die Katastrophe. Die riskante Änderung löscht die Tabelle customers. Im echten Leben ist das der Moment, in dem einem der Magen sinkt.",
+      "afterText": "Drop table ausgeführt. Die Daten sind aus dem Working-Fork verschwunden.",
+      "cardLabel": "Tabelle Löschen",
+      "prose": "Die riskante Änderung löscht die Tabelle customers im Working-Fork."
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "at": 51.047933,
+      "text": "Frag noch einmal nach den Zeilen, und die Datenbank sagt es klar: Relation customers existiert nicht. Die Katastrophe ist real. Jede Zeile ist weg.",
+      "afterText": "Relation existiert nicht. Drei Zeilen, weg.",
+      "cardLabel": "Tabelle Weg",
+      "prose": "Die Abfrage der Tabelle schlägt jetzt fehl: Relation \"customers\" existiert nicht. Die Daten sind wirklich aus dem Working-Fork verschwunden."
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "at": 59.69522,
+      "text": "Committe auch die riskante Änderung, inklusive der kaputten Tabelle. Die History zeichnet auf, was wirklich passiert ist. Jetzt gibt es zwei Commits, Parent und Child.",
+      "afterText": "Zwei Snapshots in der Kette.",
+      "cardLabel": "Commit v2",
+      "prose": "Committe auch den neuen Zustand, gelöschte Tabelle inklusive. Die History wächst wie ein git log."
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "at": 68.35661,
+      "text": "Und da ist die History: Version zwei oben, Version eins darunter, mit Nachrichten und Autoren, ohne ein einziges Image zu entsperren.",
+      "afterText": "Ein repo log, genau wie ein git log.",
+      "cardLabel": "Repo Log",
+      "prose": "Durchsuche die Commit-History mit repo log: Nachrichten, Autoren, Parents."
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "at": 75.614559,
+      "text": "Jetzt zahlt es sich aus. Check den stable Branch in einen brandneuen, beschreibbaren Fork aus. Reflink-Clone: nahezu sofort, egal wie groß.",
+      "afterText": "Eine beschreibbare Kopie des eingefrorenen Version eins, in etwa einer Sekunde.",
+      "cardLabel": "Checkout",
+      "prose": "Check den stable Branch in einen frischen, beschreibbaren Fork aus, nahezu sofort dank copy-on-write."
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "at": 83.292425,
+      "text": "Starte den Rollback-Fork wie jeden anderen repo.",
+      "afterText": "Zwei Forks laufen: die aktuelle Version und der Checkpoint.",
+      "cardLabel": "Rollback Starten",
+      "prose": "Starte den Rollback-Fork. Er läuft parallel zum Working-Fork."
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "at": 91.555233,
+      "text": "Und der Beweis: Der Rollback-Fork liest Version eins. Der Working-Fork hat noch Version zwei. Eine History, die du ausführen kannst.",
+      "afterText": "Rollback abgeschlossen. Nichts wurde überschrieben, um hierher zu gelangen.",
+      "cardLabel": "Beweis: v1",
+      "prose": "Lies die Markierungsdatei im Rollback-Fork: Version eins, genau wie committed."
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "at": 98.952411,
+      "text": "Und das Wichtigste: Die gelöschte Tabelle ist zurück, alle drei Zeilen davon. Das Rollback hat die Datenbank wiederhergestellt, nicht nur die Dateien.",
+      "afterText": "Wieder drei Zeilen. Die Katastrophe ist rückgängig gemacht.",
+      "cardLabel": "Daten Wiederhergestellt",
+      "prose": "Frage die Tabelle customers im Rollback-Fork ab: drei Zeilen, genau wie committed. Das Rollback hat die Datenbank wiederhergestellt, nicht nur die Dateien."
+    }
+  ],
+  "title": "Branching: Commit & Rollback",
+  "chapters": {
+    "intro": "Branching: Commit & Rollback",
+    "commit-model": "Commits, Branches, Checkout",
+    "cast-step-0": "Schritt 1: Version eins",
+    "cast-step-1": "Schritt 2: Committen",
+    "cast-step-2": "Schritt 3: Mit Branch benennen",
+    "cast-step-3": "Schritt 4: Weiterarbeiten, Version zwei",
+    "cast-step-4": "Schritt 5: Erneut committen",
+    "cast-step-5": "Schritt 6: Die Historie",
+    "cast-step-6": "Schritt 7: Branch auschecken",
+    "cast-step-7": "Schritt 8: Rollback starten",
+    "cast-step-8": "Schritt 9: Beweis, Version eins",
+    "cast-step-9": "Schritt 10: Branch auschecken",
+    "cast-step-10": "Schritt 11: Rollback starten",
+    "cast-step-11": "Schritt 12: Beweis: Version eins",
+    "cast-step-12": "Schritt 13: Die Daten sind zurück",
+    "vscode-versions": "Beide Versionen nebeneinander",
+    "outro": "Weiter: Live-Migration"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Versioniere deine repositories wie Code! Wir frieren einen Checkpoint ein, geben ihm einen Namen und löschen dann eine echte Datenbanktabelle. Das Rollback stellt den exakt eingefrorenen Zustand wieder her, jede Zeile inklusive, in Sekunden."
+    },
+    {
+      "id": "commit-model",
+      "text": "Das Modell ist git, aber für ganze repositories. Ein Commit ist ein eingefrorenes, unveränderliches Image. Es lässt sich nicht einmal mounten, also kann es niemand verändern. Ein Branch ist nur ein Name, der auf einen Commit zeigt. Und checkout verwandelt jeden Commit zurück in einen frischen, beschreibbaren Fork."
+    },
+    {
+      "id": "vscode-versions",
+      "text": "Sehen heißt glauben. Der Rollback-Fork auf der linken Seite enthält Version eins, während der Working-Fork auf der rechten Seite zu Version zwei weitergezogen ist. Beide live, beide beschreibbar, beide aus derselben History."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Commits ändern sich nie, Forks warten nicht. Als nächstes verschieben wir ein ganzes laufendes repository live auf eine andere Maschine. Bis zum nächsten Mal!"
+    }
+  ]
+}

@@ -59,16 +59,13 @@ run_cmd "rdc machine query --name $M"
 pause 2
 
 section "Local sanity check"
-# `rdc doctor` may exit non-zero in dev mode (subscription / SSH-key checks).
-# Tolerate it; the cast captures the report.
-run_cmd "rdc doctor || true"
+run_cmd "rdc doctor"
 
 pause 2
 
+# End the on-camera portion; cleanup below is not recorded.
+end_recording
 # Cleanup
 rdc repo down --name my-app --machine "$M" 2>/dev/null || true
 rdc repo down --name my-app --machine "$M" --unmount 2>/dev/null || true
 rdc repo delete --name my-app --machine "$M" 2>/dev/null || true
-
-printf '\n\033[1;32m# Tutorial complete!\033[0m\n'
-sleep 2

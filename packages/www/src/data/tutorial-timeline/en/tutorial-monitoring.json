@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "550e6f239da99cc5c7caf0cb7bce877c454bca72aded5f34b32f8cfe8fe44110",
+  "transcriptHash": "74e6f261ab9f9b6b0dd55494a4ba7d13377d910492e44688b459f8f9b0cd4231",
   "steps": [
     {
       "id": "tutorial-monitoring-01",
       "markerIndex": 0,
-      "replayStartSec": 2.411841,
-      "replayEndSec": 8.597185,
+      "replayStartSec": 2.416158,
+      "replayEndSec": 8.503611,
       "narrationText": "Let us start with the system view. The machine query command with the system filter shows uptime, disk usage, and storage status.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-01.abea5009.mp3",
       "textHash": "abea50098c72703c86e5da08b28b0ecb0e662c1ca294947c18a07686cb710065",
@@ -197,8 +197,8 @@
     {
       "id": "tutorial-monitoring-02",
       "markerIndex": 1,
-      "replayStartSec": 8.597185,
-      "replayEndSec": 15.126152,
+      "replayStartSec": 8.503611,
+      "replayEndSec": 14.799411,
       "narrationText": "Now containers. This view lists every running container across every repository on the machine: name, status, health, CPU, memory, plus which repo owns each one.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-02.fc135b6e.mp3",
       "textHash": "fc135b6ed9c522d336e24ffb3bc5606ce60e036792956bdab8858a726239d793",
@@ -406,8 +406,8 @@
     {
       "id": "tutorial-monitoring-03",
       "markerIndex": 2,
-      "replayStartSec": 15.126152,
-      "replayEndSec": 24.385141,
+      "replayStartSec": 14.799411,
+      "replayEndSec": 21.195367,
       "narrationText": "And the repos themselves. Size, mount status, Docker daemon status, disk usage. Everything you need to know about each isolated environment.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-03.def5e9f5.mp3",
       "textHash": "def5e9f5b23e62344d7e69259899fd4fc407243da9de783e5f02fed9b3b63611",
@@ -579,8 +579,8 @@
     {
       "id": "tutorial-monitoring-04",
       "markerIndex": 3,
-      "replayStartSec": 24.385141,
-      "replayEndSec": 32.334422,
+      "replayStartSec": 21.195367,
+      "replayEndSec": 26.969407,
       "narrationText": "The machine query command with no filters gives you everything in one shot. System info, containers, repositories, all together.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-04.952a05b4.mp3",
       "textHash": "952a05b4536e2ed98fa434c4bc86a30d8f56990967826944609b708635adf8ba",
@@ -740,8 +740,8 @@
     {
       "id": "tutorial-monitoring-05",
       "markerIndex": 4,
-      "replayStartSec": 32.334422,
-      "replayEndSec": 38.502093,
+      "replayStartSec": 26.969407,
+      "replayEndSec": 29.019779,
       "narrationText": "And finally the diagnostic check for a local sanity check on your laptop. Node, SSH key, renet, Docker. All the things the CLI itself depends on. That is the full series. From install to monitoring, all from your terminal.",
       "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/tutorial-monitoring-05.ac6cfcac.mp3",
       "textHash": "ac6cfcace593e6a47aa0c353d7a2f1c11883a8e2aa235c5e162eca03a7513af5",
@@ -1172,150 +1172,10 @@
     },
     {
       "id": "next-tutorial",
-      "textHash": "75bf30519c543df34d862aea63b9adb497438ee3fc85565e1f4b77176de982ae",
-      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/next-tutorial.75bf3051.mp3",
-      "narrationText": "And that wraps the series. You can now install, configure, deploy, fork, go live, autostart, back up, and monitor, all from your terminal!",
-      "audioDurationSec": 9.639184,
-      "wordTimings": [
-        {
-          "startSec": 0.08,
-          "endSec": 0.32,
-          "startChar": 0,
-          "endChar": 3
-        },
-        {
-          "startSec": 0.32,
-          "endSec": 0.48,
-          "startChar": 4,
-          "endChar": 8
-        },
-        {
-          "startSec": 0.48,
-          "endSec": 0.88,
-          "startChar": 9,
-          "endChar": 14
-        },
-        {
-          "startSec": 0.88,
-          "endSec": 0.96,
-          "startChar": 15,
-          "endChar": 18
-        },
-        {
-          "startSec": 0.96,
-          "endSec": 1.68,
-          "startChar": 19,
-          "endChar": 25
-        },
-        {
-          "startSec": 2.24,
-          "endSec": 2.32,
-          "startChar": 27,
-          "endChar": 30
-        },
-        {
-          "startSec": 2.32,
-          "endSec": 2.4,
-          "startChar": 31,
-          "endChar": 34
-        },
-        {
-          "startSec": 2.4,
-          "endSec": 2.64,
-          "startChar": 35,
-          "endChar": 38
-        },
-        {
-          "startSec": 2.64,
-          "endSec": 3.28,
-          "startChar": 39,
-          "endChar": 46
-        },
-        {
-          "startSec": 3.28,
-          "endSec": 3.92,
-          "startChar": 48,
-          "endChar": 57
-        },
-        {
-          "startSec": 3.92,
-          "endSec": 4.48,
-          "startChar": 59,
-          "endChar": 65
-        },
-        {
-          "startSec": 4.48,
-          "endSec": 5.04,
-          "startChar": 67,
-          "endChar": 71
-        },
-        {
-          "startSec": 5.12,
-          "endSec": 5.44,
-          "startChar": 73,
-          "endChar": 75
-        },
-        {
-          "startSec": 5.44,
-          "endSec": 5.84,
-          "startChar": 76,
-          "endChar": 80
-        },
-        {
-          "startSec": 5.92,
-          "endSec": 6.16,
-          "startChar": 82,
-          "endChar": 86
-        },
-        {
-          "startSec": 6.16,
-          "endSec": 6.56,
-          "startChar": 86,
-          "endChar": 91
-        },
-        {
-          "startSec": 6.72,
-          "endSec": 7.2,
-          "startChar": 93,
-          "endChar": 100
-        },
-        {
-          "startSec": 7.2,
-          "endSec": 7.52,
-          "startChar": 102,
-          "endChar": 105
-        },
-        {
-          "startSec": 7.52,
-          "endSec": 8.08,
-          "startChar": 106,
-          "endChar": 113
-        },
-        {
-          "startSec": 8.4,
-          "endSec": 8.64,
-          "startChar": 115,
-          "endChar": 118
-        },
-        {
-          "startSec": 8.64,
-          "endSec": 8.88,
-          "startChar": 119,
-          "endChar": 123
-        },
-        {
-          "startSec": 8.88,
-          "endSec": 9.04,
-          "startChar": 124,
-          "endChar": 128
-        },
-        {
-          "startSec": 9.04,
-          "endSec": 9.6,
-          "startChar": 129,
-          "endChar": 137
-        }
-      ]
+      "textHash": "25da519a8f2beb86d6f7ed6a441b2310841503b003453e2a38335f03254137dd",
+      "audioSrc": "/assets/tutorials/audio/en/tutorial-monitoring/next-tutorial.25da519a.mp3",
+      "narrationText": "You can now install, configure, deploy, fork, go live, autostart, back up, and monitor. The advanced track starts next: version your repos like code, with commits and rollbacks.",
+      "audioDurationSec": 12.826122
     }
   ]
 }

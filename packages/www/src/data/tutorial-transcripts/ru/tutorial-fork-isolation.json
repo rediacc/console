@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "ru",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "Один живой repo. Давайте клонируем его.",
+      "cardLabel": "Живое приложение",
+      "prose": "Начните с живого repository: база данных PostgreSQL с pgAdmin, запущенная на машине."
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "Fork создан, запускается. Данные не скопировались, они стали общими, пока одна из сторон их не изменит.",
+      "cardLabel": "Fork + Up",
+      "prose": "Создайте fork repository с флагами --up --detach: клон CoW почти мгновенен, а сервисы fork запускаются сразу."
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "Одна машина, два изолированных мира.",
+      "cardLabel": "Рядом",
+      "prose": "Выведите список repository: оригинал и fork работают рядом, полностью изолированно."
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "Удалён. Оригинал работал всё это время.",
+      "cardLabel": "Удалить Fork",
+      "prose": "Удалите fork, когда закончите. Оригинальный repository не затронут."
+    }
+  ],
+  "title": "Fork-изоляция в действии",
+  "chapters": {
+    "intro": "Fork-изоляция в действии",
+    "what-is-a-fork": "Живая база данных и её двойник",
+    "cast-step-0": "Шаг 1: живое приложение",
+    "grand-pgadmin": "Оригинал под защитой",
+    "cast-step-1": "Шаг 2: создайте fork",
+    "fork-pgadmin": "Fork полностью открыт",
+    "side-by-side": "Рядом",
+    "cast-step-2": "Шаг 3: два repo, один сервер",
+    "cast-step-3": "Шаг 4: удалите fork",
+    "outro": "Далее: управление секретами"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "С возвращением! В прошлый раз вы видели команды fork. Теперь давайте посмотрим, что они на самом деле означают: живое приложение с базой данных, скопированное за секунды, которое можно свободно редактировать, пока оригинал ничего не замечает."
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "Вот как всё устроено: настоящий PostgreSQL с интерфейсом pgAdmin поверх него, работающий на сервере. Fork является мгновенным copy-on-write двойником всего этого. Одинаковые данные при рождении, совершенно отдельная жизнь после."
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "Это оригинал, в браузере. pgAdmin запрашивает логин, потому что это продакшн-копия, а продакшн всегда под защитой."
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "А вот pgAdmin этого fork. На этот раз без логина: fork-и это одноразовые sandbox-ы, и пропускной пункт уступает дорогу. Те же таблицы, те же строки, но своя вселенная."
+    },
+    {
+      "id": "side-by-side",
+      "text": "Теперь рядом: fork слева, оригинал справа. Редактируйте, удаляйте, ломайте что угодно слева, и правая сторона даже не дрогнет. Вот изоляция, которую можно увидеть."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Так что делайте fork-и свободно, продакшн не пострадает. Дальше мы рассмотрим secrets, единственное, что ваши fork-и намеренно не наследуют. Увидимся там!"
+    }
+  ]
+}

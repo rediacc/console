@@ -1,0 +1,76 @@
+---
+title: "Branching : Commit & Rollback"
+description: "Figez des états de dépôt en commits immuables, nommez-les avec des branches, et restituez n'importe quel commit comme un fork inscriptible."
+category: "Tutorials"
+subcategory: advanced
+order: 15
+language: fr
+sourceHash: "53f4eacdd4630b19"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Branching : Commit & Rollback
+
+Versionnez vos dépôts comme du code. Un **commit** fige un fork en une image immuable ; une **branche** le nomme ; **checkout** retransforme n'importe quel commit en un nouveau fork inscriptible. Dans ce tutoriel, nous committons un état connu comme stable, supprimons une vraie table PostgreSQL, et récupérons toutes les lignes en quelques secondes.
+
+## Regarder le tutoriel
+
+![Tutorial: Branching, commit and rollback](/assets/tutorials/tutorial-branching.cast)
+
+## Le modèle
+
+![Commits, branches, checkout](/img/tutorials/tutorial-branching/slide-1.svg)
+
+Les commits ne changent jamais : ils refusent même de se monter. Les forks n'attendent jamais : le checkout est un clone reflink quasi-instantané. Le modèle mental complet se trouve dans le [guide du branching](/fr/docs/repo-branching).
+
+## Créer un point de contrôle
+
+Un fichier marqueur rend la version visible, et une vraie base de données rend le rollback concret : la table `customers` contient trois lignes.
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+<TutorialStep number={4} />
+
+Le commit capture tout : les fichiers *et* le répertoire de données PostgreSQL. La branche `stable` nomme désormais cet état figé.
+
+## Continuer à travailler
+
+<TutorialStep number={5} />
+
+## Le désastre
+
+Un changement risqué supprime la table. Puis la requête confirme que les dégâts sont réels.
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+`ERROR: relation "customers" does not exist`. Trois lignes, disparues. En production, c'est le moment où le sol se dérobe ; ici, c'est la mise en place du dénouement.
+
+<TutorialStep number={8} />
+
+<TutorialStep number={9} />
+
+L'historique enregistre ce qui s'est vraiment passé, état cassé inclus : `v2 risky change` au-dessus, `v1 baseline` en dessous.
+
+## Revenir en arrière en quelques secondes
+
+<TutorialStep number={10} />
+
+<TutorialStep number={11} />
+
+<TutorialStep number={12} />
+
+<TutorialStep number={13} />
+
+Le fork de rollback lit `v1`, et la table `customers` est de retour avec ses trois lignes. Le rollback a restauré la base de données, pas seulement les fichiers. Rien n'a été écrasé : le fork de travail conserve toujours la version deux, et la vidéo ouvre les deux dans VS Code pour le prouver.
+
+---
+
+Suivant : [Migration en direct](/fr/docs/tutorial-live-migration).

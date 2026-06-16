@@ -1,0 +1,101 @@
+{
+  "cast": "/assets/tutorials/tutorial-live-migration.cast",
+  "language": "fr",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "624d0b8bc9fea0cd4767ac28b3a136a1e9787090d0706874e6493e7cec257b41",
+  "steps": [
+    {
+      "id": "tutorial-live-migration-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.413171,
+      "replayEndSec": 10.379022,
+      "narrationText": "Voici pulse. Il garde un compteur en mémoire de processus et affiche un battement toutes les cinq secondes. Le compteur est à six et monte, et il vit uniquement en RAM. Redémarrez le processus et il repart à un.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-01.acbcde40.mp3",
+      "textHash": "acbcde40cbdcdc3643db12e7afc7b97c9144d01acaa2f9b0a6b74b3fde92d6da",
+      "audioDurationSec": 15.960816,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-01-after.6614b7d4.mp3",
+      "afterAudioDurationSec": 3.787755,
+      "afterTextHash": "6614b7d4289f4f200738ef96e80ab11af6ec62624f83a28acd0f9f13087462e5"
+    },
+    {
+      "id": "tutorial-live-migration-02",
+      "markerIndex": 1,
+      "replayStartSec": 10.379022,
+      "replayEndSec": 101.149024,
+      "narrationText": "Une seule commande le déplace, en direct. La première phase transfère l'essentiel, deux gigaoctets en environ une demi-minute, pendant que la source continue de tourner. Puis la bascule : elle crée un checkpoint des processus en cours, transfère les derniers mégaoctets, et affiche le temps d'arrêt directement. Environ vingt secondes, pour un déplacement de deux gigaoctets.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-02.9ba25009.mp3",
+      "textHash": "9ba2500910354b918c129fd11b36a5de6025d21c1c8b349545c0e213c5035749",
+      "audioDurationSec": 23.640816,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-02-after.ee0fb5c2.mp3",
+      "afterAudioDurationSec": 7.314286,
+      "afterTextHash": "ee0fb5c2de056e3ce4977169d3da7b59f131d1383ee0e0f345724a65880ad306"
+    },
+    {
+      "id": "tutorial-live-migration-03",
+      "markerIndex": 2,
+      "replayStartSec": 101.149024,
+      "replayEndSec": 106.859481,
+      "narrationText": "Vérifiez la nouvelle machine : la voilà. Montée, Docker en cours d'exécution, deux containers actifs.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-03.e3c8ef02.mp3",
+      "textHash": "e3c8ef022db17406c96fe485c91be109e09e1106e297ee79cd0d22dce473a0c6",
+      "audioDurationSec": 8.280816,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-03-after.770d030f.mp3",
+      "afterAudioDurationSec": 4.519184,
+      "afterTextHash": "770d030f8ddffac4769f58710bf7b642cc8159cd2f6a17b35178b36a08cc0c87"
+    },
+    {
+      "id": "tutorial-live-migration-04",
+      "markerIndex": 3,
+      "replayStartSec": 106.859481,
+      "replayEndSec": 112.346008,
+      "narrationText": "Et la source ? Le repository est toujours listé, mais regardez la ligne : non monté, pas de Docker, zéro container. Rien ne tourne ici. L'image reste intentionnellement, comme base pour le prochain transfert delta.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-04.49acf5ae.mp3",
+      "textHash": "49acf5aea3d4a009f4c0000580c06457d4a68424a9b20c9f1f0949ae96ced1b6",
+      "audioDurationSec": 13.322449,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-04-after.eedb87be.mp3",
+      "afterAudioDurationSec": 8.907755,
+      "afterTextHash": "eedb87be3a028adddd7c748ad91c4a414aaae163f3bd0c47f61d7e40798b43db"
+    },
+    {
+      "id": "tutorial-live-migration-05",
+      "markerIndex": 4,
+      "replayStartSec": 112.346008,
+      "replayEndSec": 119.168595,
+      "narrationText": "Voici le moment clé. Le compteur affiche dix-sept, dix-huit, dix-neuf, il monte toujours. Il a repris exactement là où le checkpoint l'avait figé, au lieu de repartir à un. Le processus n'a jamais remarqué qu'il avait changé de machine.",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-05.bd6c5653.mp3",
+      "textHash": "bd6c5653029078c72c855d49ca64a7a7f543bb2ed07f2dca7c21533bfd7648e3",
+      "audioDurationSec": 16.509388,
+      "afterAudioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/tutorial-live-migration-05-after.470a7849.mp3",
+      "afterAudioDurationSec": 6.60898,
+      "afterTextHash": "470a7849973c88e768b10bd9075f658b351a994c92e24570c2d750ed62714c03"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "8f4331b7fde8dcd6d0ae61c08ad50195444e32472906be14f416a08f1af38c61",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/intro.8f4331b7.mp3",
+      "narrationText": "Place à quelque chose d'important : déplacer une application EN COURS D'EXÉCUTION vers une autre machine, pendant qu'elle tourne. Nous allons observer un compteur en direct battant dans la mémoire de l'application, tout déplacer avec une seule commande, et voir le compteur continuer à compter sur la nouvelle machine.",
+      "audioDurationSec": 17.554286
+    },
+    {
+      "id": "how-it-moves",
+      "textHash": "1bf6e3cbd43d04db297d0f2b707c2f51f917233c8463aca3a86a816c4d9acbba",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/how-it-moves.1bf6e3cb.mp3",
+      "narrationText": "Cela fonctionne en deux phases. La première phase copie l'essentiel pendant que l'application continue de tourner. La deuxième phase crée un checkpoint des processus en direct, transfère le delta final ainsi que l'état des processus, et reprend tout sur la nouvelle machine. Le temps d'arrêt correspond donc au delta, pas aux données. Et l'application ne sait jamais qu'elle a bougé.",
+      "audioDurationSec": 24.842449
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "b86319e283ba401803740d903f3bf615dee3f00d75c9a4c8451e17e00a127f08",
+      "audioSrc": "/assets/tutorials/audio/fr/tutorial-live-migration/next-tutorial.b86319e2.mp3",
+      "narrationText": "Le compteur n'a jamais été réinitialisé. La mémoire, la base de données, les fichiers, tout a simplement changé de machine. Ensuite, nous verrons pourquoi le deuxième transfert est toujours le plus rapide.",
+      "audioDurationSec": 14.367347
+    }
+  ]
+}

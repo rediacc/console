@@ -4,8 +4,8 @@ description: "Respalde repositorios cifrados en almacenamiento compatible con rc
 category: Guides
 order: 7
 language: es
-sourceHash: "e241aa122868e629"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7ff112c2ec14c35f"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Respaldo y Restauración
@@ -40,7 +40,7 @@ Envíe un respaldo del repositorio al almacenamiento externo:
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
-Push siempre verifica que el repositorio de destino esté montado antes de escribir. Si no está montado, la operación se cancela.
+El respaldo queda en la carpeta `hot/` del almacenamiento cuando el repositorio está montado al momento del push, y en `cold/` cuando está desmontado. Es el mismo esquema que usan los respaldos programados, por lo que `rdc repo backup list` muestra todos los respaldos en una sola tabla.
 
 | Opción | Descripción |
 |--------|-------------|

@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 7
 language: ar
-sourceHash: "e241aa122868e629"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "7ff112c2ec14c35f"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # النسخ الاحتياطي والاستعادة
@@ -42,7 +42,7 @@ rdc config storage list
 rdc repo push --name my-app -m server-1 --to my-storage
 ```
 
-يتحقق الإرسال دائماً من تثبيت المستودع الهدف قبل الكتابة. إذا لم يكن مثبتاً، تُلغى العملية.
+تُحفظ النسخة الاحتياطية في مجلد `hot/` داخل التخزين إذا كان المستودع مُحمَّلًا وقت الإرسال، وفي `cold/` إذا كان غير مُحمَّل. هذا التخطيط نفسه تستخدمه النسخ الاحتياطية المجدولة، لذا يعرض `rdc repo backup list` كل نسخة في جدول واحد.
 
 | الخيار | الوصف |
 |--------|-------|

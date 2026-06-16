@@ -6,7 +6,7 @@
     {
       "id": "tutorial-backup-restore-01",
       "markerIndex": 0,
-      "at": 2.424169,
+      "at": 2.409089,
       "text": "第一步。让我们导入现有的 rclone 配置。rclone 支持 S3、Backblaze、Google Drive、Dropbox 等众多服务，如果你已经在使用，可以直接导入同一份配置。",
       "afterText": "存储已导入。CLI 现在可以向它推送备份了。",
       "cardLabel": "导入存储",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-backup-restore-02",
       "markerIndex": 1,
-      "at": 6.651448,
+      "at": 6.555802,
       "text": "让我们列出命令行工具现在已知的存储。每个存储都是我们可以推送备份的目标。",
       "afterText": "就在这里。已准备好接收备份。",
       "cardLabel": "列出存储",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-backup-restore-03",
       "markerIndex": 2,
-      "at": 10.354487,
+      "at": 10.251839,
       "text": "第二步。让我们推送一个完整备份。整个仓库，包括应用、数据库、文件和配置，全部上传。由于仓库本身是静态加密的，备份也是加密的，无需额外的密钥管理。",
       "afterText": "备份已上传。这个 repo 里的一切现在都在远程存储上，并已加密。",
       "cardLabel": "推送备份",
@@ -33,11 +33,38 @@
     {
       "id": "tutorial-backup-restore-04",
       "markerIndex": 3,
-      "at": 18.28182,
+      "at": 24.484571,
       "text": "让我们列出该存储上的可用备份。从这里开始，在全新服务器上恢复只需一条命令，即仓库拉取命令。相同的数据，相同的容器，不同的机器。",
       "afterText": "所有快照集中在一处。任何一个都可以用一条命令拉回来。",
       "cardLabel": "列出备份",
       "prose": "列出此存储上可用的备份。在全新服务器上恢复只需一条命令：repo pull 命令。"
+    },
+    {
+      "id": "tutorial-backup-restore-05",
+      "markerIndex": 4,
+      "at": 31.133919,
+      "text": "现在来验证恢复过程。首先将 repository 下线：停止服务并卸载加密卷。这台机器上的应用已经消失了。",
+      "afterText": "已下线并卸载，正是全新服务器的状态。",
+      "cardLabel": "下线",
+      "prose": "首先将 repository 下线：使用 repo down 命令停止服务并卸载加密卷。"
+    },
+    {
+      "id": "tutorial-backup-restore-06",
+      "markerIndex": 5,
+      "at": 39.135694,
+      "text": "然后直接从存储中拉取备份。repo pull 命令会获取镜像、检查完整性，并将其放回原位。",
+      "afterText": "传输完成，完整性已验证。repository 已恢复。",
+      "cardLabel": "拉取备份",
+      "prose": "使用 repo pull 命令从存储中拉取备份。镜像将被获取并进行完整性校验。"
+    },
+    {
+      "id": "tutorial-backup-restore-07",
+      "markerIndex": 6,
+      "at": 48.126162,
+      "text": "再次挂载，repository 就恢复了。Push、list、pull，这就是备份的完整流程。",
+      "afterText": "已恢复。同样的流程在全新机器上也适用。",
+      "cardLabel": "挂载恢复",
+      "prose": "重新挂载 repository，它已完全恢复。同样的拉取操作在全新机器上也同样适用。"
     }
   ],
   "narrations": [
@@ -62,6 +89,9 @@
     "cast-step-1": "第二步：列出已配置的存储",
     "cast-step-2": "第三步：推送完整备份",
     "cast-step-3": "第四步：列出存储上的备份",
-    "outro": "下一步：监控"
+    "outro": "下一步：监控",
+    "cast-step-4": "第 5 步：将 repo 下线",
+    "cast-step-5": "第 6 步：拉取备份",
+    "cast-step-6": "第 7 步：挂载，恢复完成"
   }
 }

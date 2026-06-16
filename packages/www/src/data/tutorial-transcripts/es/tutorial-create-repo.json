@@ -6,7 +6,7 @@
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "at": 2.409686,
+      "at": 2.412347,
       "text": "Vamos a crear un repositorio cifrado de 2 gigabytes en el servidor. Un repositorio es un único archivo cifrado en reposo. Al montarse, se convierte en una carpeta con su propio Docker daemon y sus propios datos de aplicación, completamente aislado de todo lo demás en el servidor.",
       "afterText": "Repositorio creado. El archivo cifrado está en el servidor, listo para montarse.",
       "cardLabel": "Crear Repo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "at": 11.760396,
+      "at": 11.676359,
       "text": "Listamos los repositorios de la máquina para confirmar que el nuevo está registrado. Desde aquí, el repo puede abrirse en VS Code, desplegarse, recibir un fork o tener un backup, todo desde tu laptop.",
       "afterText": "Ahí está, registrado y listo para usarse.",
       "cardLabel": "Listar Repos",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "at": 17.238181,
+      "at": 17.041073,
       "text": "Una opción muy útil: abrir el repo directamente en VS Code con este comando. No lanzaremos el editor aquí, pero inicia una sesión remota en el repo a través de SSH para que puedas editar sus archivos.",
       "afterText": "Ejecuta eso en tu portátil para editar los archivos del repo en VS Code.",
       "cardLabel": "Abrir en VS Code",

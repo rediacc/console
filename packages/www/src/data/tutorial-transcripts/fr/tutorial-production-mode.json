@@ -6,7 +6,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.418632,
+      "at": 2.555418,
       "text": "Démarrons maintenant l'application en mode production depuis l'ordinateur. La commande de déploiement appelle la même fonction up que nous avons utilisée en développement, mais elle s'exécute en mode détaché. Vous pouvez fermer votre ordinateur et l'application continue de tourner.",
       "afterText": "Application en production. Même commande, même résultat, sur le vrai serveur.",
       "cardLabel": "Démarrer Prod",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 9.548589,
+      "at": 11.051619,
       "text": "Activons le démarrage automatique pour que l'application survive à un redémarrage du serveur. Désormais, si le serveur redémarre, ce dépôt revient automatiquement.",
       "afterText": "Démarrage automatique activé. L'application survit aux redémarrages.",
       "cardLabel": "Activer Autostart",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 17.034078,
+      "at": 18.718543,
       "text": "Listons quels dépôts ont le démarrage automatique activé. Cela confirme que notre application est bien dans la liste de démarrage.",
       "afterText": "Le voilà, dans la liste de démarrage.",
       "cardLabel": "Lister Autostart",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 22.929505,
+      "at": 25.169818,
       "text": "Et pour arrêter l'application, une seule commande depuis l'ordinateur. Une commande pour démarrer, une commande pour arrêter. Tout depuis votre terminal, plus de sessions interactives.",
       "afterText": "Arrêté. Une commande pour démarrer, une commande pour arrêter.",
       "cardLabel": "Arrêter le Repo",
@@ -43,11 +43,11 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Très bien ! Faisons passer votre application du développement à la production. Trois courtes étapes, toutes pilotées depuis votre ordinateur."
+      "text": "Votre application tourne tant que vous êtes connecté. En production, elle tourne même quand vous n'êtes plus là. Trois courtes étapes, tout depuis votre ordinateur."
     },
     {
       "id": "dev-vs-prod",
-      "text": "En développement, vous lancez l'application depuis l'intérieur du repo, donc elle s'arrête quand vous vous déconnectez. En production, vous la lancez depuis votre ordinateur avec la CLI, et elle continue à tourner en mode détaché."
+      "text": "Voici la différence. En développement, vous démarrez l'application depuis l'intérieur du repo via SSH. Fermez la session, et l'application s'arrête avec elle. En production, vous la lancez détachée de votre ordinateur : le serveur possède le processus, pas votre connexion."
     },
     {
       "id": "next-tutorial",
@@ -62,6 +62,6 @@
     "cast-step-1": "Étape 2 : Activer l'autostart",
     "cast-step-2": "Étape 3 : Lister les repos avec autostart",
     "cast-step-3": "Étape 4 : Arrêter depuis votre laptop",
-    "outro": "Suivant : Sauvegarde et Restauration"
+    "outro": "Suivant : Monitoring"
   }
 }

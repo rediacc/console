@@ -6,7 +6,7 @@
     {
       "id": "tutorial-production-mode-01",
       "markerIndex": 0,
-      "at": 2.418632,
+      "at": 2.555418,
       "text": "Avviamo l'app in modalita' produzione dal laptop. Il comando di deploy chiama la stessa funzione up usata durante lo sviluppo, ma viene eseguita in modalita' distaccata. Puoi chiudere il laptop e l'app continua a girare.",
       "afterText": "App in esecuzione in produzione. Stesso comando, stesso risultato, sul server reale.",
       "cardLabel": "Avvia Prod",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-production-mode-02",
       "markerIndex": 1,
-      "at": 9.548589,
+      "at": 11.051619,
       "text": "Abilitiamo l'avvio automatico cosi' l'app sopravvive al riavvio del server. Da questo momento, se il server si riavvia, questo repo torna su automaticamente.",
       "afterText": "Avvio automatico attivo. L'app sopravvive ai riavvii.",
       "cardLabel": "Abilita Avvio Automatico",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-production-mode-03",
       "markerIndex": 2,
-      "at": 17.034078,
+      "at": 18.718543,
       "text": "Elenchiamo i repository con l'avvio automatico abilitato. Conferma che la nostra app e' ora nella lista di avvio.",
       "afterText": "Eccola, nella lista di avvio.",
       "cardLabel": "Elenca Avvio Automatico",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-production-mode-04",
       "markerIndex": 3,
-      "at": 22.929505,
+      "at": 25.169818,
       "text": "E per fermare l'app, un solo comando dal laptop. Un comando per avviare, uno per fermare. Tutto dal tuo terminale, senza piu' sessioni interattive.",
       "afterText": "Fermata. Un comando per avviare, uno per fermare.",
       "cardLabel": "Ferma Repo",
@@ -43,11 +43,11 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Bene! Portiamo la tua app dallo sviluppo alla produzione. Tre brevi passaggi, tutti pilotati dal tuo laptop."
+      "text": "La tua app funziona finché sei connesso. Produzione significa che funziona anche quando non ci sei. Tre brevi passaggi, tutti dal tuo laptop."
     },
     {
       "id": "dev-vs-prod",
-      "text": "Durante lo sviluppo esegui l'app dall'interno del repo, quindi si ferma quando ti disconnetti. In produzione la lanci dal tuo laptop con la CLI e continua a girare in modalita' distaccata."
+      "text": "Ecco la differenza. In sviluppo avvii l'app dall'interno del repo tramite SSH. Chiudi la sessione e l'app si spegne con essa. In produzione la avvii scollegata dal tuo laptop: il server gestisce il processo, la tua connessione no."
     },
     {
       "id": "next-tutorial",
@@ -62,6 +62,6 @@
     "cast-step-1": "Passaggio 2: Abilita l'avvio automatico",
     "cast-step-2": "Passaggio 3: Elenca i repo con autostart",
     "cast-step-3": "Passaggio 4: Ferma dal tuo laptop",
-    "outro": "Avanti: Backup e Ripristino"
+    "outro": "Prossimo: Monitoraggio"
   }
 }

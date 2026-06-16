@@ -1,0 +1,4 @@
+# Tutorial video debug artifacts (written only under --debug). Never commit:
+# split-pane scene IDs contain ':' which is an illegal path char on Windows and
+# breaks `git checkout` (exit 128) on windows-latest CI runners.
+*.debug-frames/

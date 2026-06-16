@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "594d8befc5772d7093807870dd3d64619dfc36913a8aace3f7ae049df80f39bb",
+  "transcriptHash": "75255d9a3a03cb6cdebd06ce7da6b741c462d7cfa14b32e9e972bd8764092ed6",
   "steps": [
     {
       "id": "tutorial-create-repo-01",
       "markerIndex": 0,
-      "replayStartSec": 2.409686,
-      "replayEndSec": 11.760396,
+      "replayStartSec": 2.412347,
+      "replayEndSec": 11.676359,
       "narrationText": "Nous allons créer un dépôt chiffré de 2 gigaoctets sur le serveur. Un dépôt est un fichier chiffré unique au repos. Une fois monté, il devient un dossier avec son propre daemon Docker et ses propres données d'application, complètement isolé de tout le reste sur le serveur.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-create-repo/tutorial-create-repo-01.225c2389.mp3",
       "textHash": "225c2389b11a3d94c6ab70ea14f0ef84d15f0012ec89016a8c665c70e25ff0c9",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-create-repo-02",
       "markerIndex": 1,
-      "replayStartSec": 11.760396,
-      "replayEndSec": 17.238181,
+      "replayStartSec": 11.676359,
+      "replayEndSec": 17.041073,
       "narrationText": "Listons les dépôts sur la machine pour confirmer que le nouveau est bien enregistré. À partir de là, le dépôt peut être ouvert dans VS Code, déployé, forké ou sauvegardé, tout depuis votre ordinateur.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-create-repo/tutorial-create-repo-02.b13bc6b9.mp3",
       "textHash": "b13bc6b99b6eca7c1313928185fb1388e286b3a338c7017412a23bd12b07d70b",
@@ -38,8 +38,8 @@
     {
       "id": "tutorial-create-repo-03",
       "markerIndex": 2,
-      "replayStartSec": 17.238181,
-      "replayEndSec": 21.33289,
+      "replayStartSec": 17.041073,
+      "replayEndSec": 20.377596,
       "narrationText": "Une option bien pratique : ouvrir le repo directement dans VS Code avec cette commande. Nous ne lancerons pas l'éditeur ici, mais elle démarre une session distante dans le repo via SSH pour que vous puissiez éditer ses fichiers.",
       "audioSrc": "/assets/tutorials/audio/fr/tutorial-create-repo/tutorial-create-repo-03.f4fabc8a.mp3",
       "textHash": "f4fabc8ade304380764a798c2ad937dfa47c7fdc51bc5cc290c6e54cdc52dcc1",

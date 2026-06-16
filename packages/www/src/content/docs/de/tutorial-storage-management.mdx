@@ -1,0 +1,58 @@
+---
+title: "Speicherverwaltung"
+description: "Vergrößern Sie Repositories online ohne Ausfallzeit, geben Sie gelöschten Speicher mit Trim zurück und übergeben Sie beides an eine automatische Richtlinie."
+category: "Tutorials"
+subcategory: advanced
+order: 18
+language: de
+sourceHash: "cab2a40cd120e352"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Speicherverwaltung
+
+Nie wieder keinen Speicherplatz. Vergrößern Sie ein volles Repository, während seine Container weiterlaufen, geben Sie gelöschte Blöcke an den Pool zurück und bringen Sie der Maschine dann bei, beides automatisch zu erledigen.
+
+## Tutorial ansehen
+
+![Tutorial: Speicherverwaltung](/assets/tutorials/tutorial-storage-management.cast)
+
+## Ein Pool, wachsende Repos
+
+![Ein Pool, wachsende Repos](/img/tutorials/tutorial-storage-management/slide-1.svg)
+
+Jedes Repository ist eine Datei in einem gemeinsamen Datastore-Pool. Repos wachsen online; das Löschen von Daten innerhalb eines Repos gibt von selbst keinen Speicher frei - **Trim** ist das, was Blöcke an den Pool zurückgibt.
+
+## Online vergrößern - ohne Ausfallzeit
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## Mit Trim zurückgewinnen
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+## Auf Autopilot stellen
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+Die Maschine vergrößert das Repo nun, wenn es den Schwellenwert überschreitet (bis zu Ihrer expliziten Obergrenze), und trimmt nach Zeitplan - angewendet durch den storage-maintain-Timer, ganz ohne eigenen Cron-Job.
+
+## Die Health-Ansicht
+
+<TutorialStep number={8} />
+
+Nutzung pro Repo, Pool-Zustand und wie viel Copy-on-Write-Sharing Sie einspart - ein einziger Befehl.
+
+## Fertig
+
+Achtzehn Tutorials: installieren, verbinden, deployen, überall bearbeiten, bedenkenlos forken, Secrets sicher aufbewahren, wirklich sichern, in Betrieb nehmen, überwachen, versionieren, umziehen, synchronisieren und nie leer werden. Ihre Server gehören wieder Ihnen.

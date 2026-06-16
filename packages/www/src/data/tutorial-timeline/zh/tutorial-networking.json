@@ -7,13 +7,13 @@
   "audioFormat": "mp3",
   "sampleRateHz": 44100,
   "voiceDesignPreset": "global-avatar-v1",
-  "transcriptHash": "7654531d2b7fdcd0724e0106749d5980da026504ea2427ae11fffa888fb88a4f",
+  "transcriptHash": "67caeff2386fe5f8f371e90d62fe98bb6f760bb41fa133bf4b46616a5621b241",
   "steps": [
     {
       "id": "tutorial-networking-01",
       "markerIndex": 0,
-      "replayStartSec": 2.424705,
-      "replayEndSec": 13.591473,
+      "replayStartSec": 2.410714,
+      "replayEndSec": 12.419888,
       "narrationText": "第二步。让我们从命令行输入公网 IP、根域名、证书邮箱和 Cloudflare API 令牌。证书邮箱和令牌在你所有机器间共享，因此只需设置一次。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-01.63d8d7fa.mp3",
       "textHash": "63d8d7fa761cb80408691f8943963d4bbbfd1c87703770bfb07f7dc3fe91345a",
@@ -25,8 +25,8 @@
     {
       "id": "tutorial-networking-02",
       "markerIndex": 1,
-      "replayStartSec": 13.591473,
-      "replayEndSec": 18.479059,
+      "replayStartSec": 12.419888,
+      "replayEndSec": 16.924002,
       "narrationText": "让我们确认基础设施配置已正确存储。公网 IP、根域名、证书邮箱，全都显示在配置中。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-02.e44e2fd5.mp3",
       "textHash": "e44e2fd5b05ee8bb3f02a32e95d4c4b776b2387f5f84b1306f17a0871c2823ac",
@@ -38,12 +38,12 @@
     {
       "id": "tutorial-networking-03",
       "markerIndex": 2,
-      "replayStartSec": 18.479059,
-      "replayEndSec": 25.757057,
-      "narrationText": "第三步。让我们将配置推送到服务器。这会自动在 Cloudflare 上创建 DNS 记录，并在机器上准备代理配置。",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-03.c970aacf.mp3",
-      "textHash": "c970aacfdabe986b10ecd5b545a161ec5b39a9e5726da0330f337e8b199f6b01",
-      "audioDurationSec": 10.919184,
+      "replayStartSec": 16.924002,
+      "replayEndSec": 20.590881,
+      "narrationText": "第三步：将配置推送到服务器。使用真实的 token，系统会自动在 Cloudflare 上创建你的 DNS 记录，并准备好 proxy 配置。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-03.397e4c5f.mp3",
+      "textHash": "397e4c5f311bb96ce2dc02a3be52533b01e35f67b1c143dd9b7c4922b427dadf",
+      "audioDurationSec": 10.605714,
       "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-03-after.0ebb7b71.mp3",
       "afterAudioDurationSec": 4.205714,
       "afterTextHash": "0ebb7b7161526f1e97efcc60e6a63973d44c9c9dbbae940b341c027e71a8f582"
@@ -51,12 +51,12 @@
     {
       "id": "tutorial-networking-04",
       "markerIndex": 3,
-      "replayStartSec": 25.757057,
-      "replayEndSec": 33.957312,
-      "narrationText": "第四步开始。让我们创建一个名为 infra 的小仓库，代理将在这里运行，与应用仓库隔离。",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-04.6d5c9a0f.mp3",
-      "textHash": "6d5c9a0f1e2bb1f5ad75a777b9a36e2f8378ae2e4c6a768c2d82efdd27b920cf",
-      "audioDurationSec": 7.810612,
+      "replayStartSec": 20.590881,
+      "replayEndSec": 28.48077,
+      "narrationText": "第四步：创建一个名为 infra 的小 repo。为什么要单独建一个 repo？proxy 负责路由这台服务器上所有应用的流量。基础设施值得拥有自己独立的空间，和应用代码分开放。",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-04.187ea7bd.mp3",
+      "textHash": "187ea7bd6445c2caa94213658d1d0292f8f7988ae6e8a2238acd26dbac682a4c",
+      "audioDurationSec": 15.072653,
       "afterAudioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-04-after.54001b81.mp3",
       "afterAudioDurationSec": 3.970612,
       "afterTextHash": "54001b8124b8ed173ffed507109fe4727d4616dbf81a1aae087d5bec30f40657"
@@ -64,8 +64,8 @@
     {
       "id": "tutorial-networking-05",
       "markerIndex": 4,
-      "replayStartSec": 33.957312,
-      "replayEndSec": 41.036573,
+      "replayStartSec": 28.48077,
+      "replayEndSec": 35.97937,
       "narrationText": "让我们应用内置的 proxy 模板。它包含 Traefik 以及 Let's Encrypt 和 Cloudflare DNS-01 验证的完整配置，开箱即用。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-05.c79903c0.mp3",
       "textHash": "c79903c06e796e5e4637026c590e5d6886fca95a9421aef1d6e1bc40405d2baa",
@@ -77,8 +77,8 @@
     {
       "id": "tutorial-networking-06",
       "markerIndex": 5,
-      "replayStartSec": 41.036573,
-      "replayEndSec": 49.697921,
+      "replayStartSec": 35.97937,
+      "replayEndSec": 42.626799,
       "narrationText": "现在启动代理。Traefik 每五秒自动发现你的容器，TLS 证书由 Let's Encrypt 自动颁发。你的应用现在已经可以通过 HTTPS 在互联网上访问了。",
       "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/tutorial-networking-06.cba1c0b5.mp3",
       "textHash": "cba1c0b5d985a9e724c5377e4759eb1906a4134561249ab7d970487460ac3aef",
@@ -91,24 +91,24 @@
   "narrationAudio": [
     {
       "id": "intro",
-      "textHash": "150ec3948ecb93550d147d5d7789c7a58ff429499f5130ebb32624b68dcc6dc1",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/intro.150ec394.mp3",
-      "narrationText": "好！让我们为你的应用配置一个真实域名，并自动启用 TLS。四个简短步骤，你就能登上互联网。",
-      "audioDurationSec": 9.639184
+      "textHash": "a088452ff83054210f9ce205d534fb28b48c544dc7e4d307214bf31ca09f9831",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/intro.a088452f.mp3",
+      "narrationText": "你的应用已经在运行了，但只有服务器自己能看到它。我们来给它配一个真实的域名，加上自动 TLS。四个简单的步骤，它就能上网了。",
+      "audioDurationSec": 12.512653
     },
     {
       "id": "four-steps",
-      "textHash": "3f5d01480485bf05a0312aa603945d4ef3c2df40a11a5aee099de7a5d468305d",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/four-steps.3f5d0148.mp3",
-      "narrationText": "路径如下。拿到 Cloudflare API 令牌，在 CLI 上配置基础设施，推送到服务器，然后部署一个 Traefik 代理，由它替你处理 DNS 和证书。",
-      "audioDurationSec": 15.490612
+      "textHash": "0fe64f3a179da9b55b042a6e1f4216b8456b024adf9671e64f13f094642fd78f",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/four-steps.0fe64f3a.mp3",
+      "narrationText": "流程是这样的：先获取一个 Cloudflare API token，在 CLI 上配置一次基础设施，推送到服务器，然后部署一个小的 proxy repo，让它帮你处理 DNS 和证书。",
+      "audioDurationSec": 23.797551
     },
     {
       "id": "open-cloudflare",
-      "textHash": "435cb8c39c5d71310d5d8ccfbedf90a99a4f2a8fdaa18279286d1edd764b0c73",
-      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/open-cloudflare.435cb8c3.mp3",
-      "narrationText": "首先，在浏览器中打开 Cloudflare 控制台。前往 My Profile，再到 API Tokens，创建一个具备 Zone DNS Edit 权限的令牌，让 CLI 能够管理你的 DNS 记录。",
-      "audioDurationSec": 16.195918
+      "textHash": "45f57788c024057f88825c820bf4a160f55f8d20ebf6e8e2490a8fa924f99abd",
+      "audioSrc": "/assets/tutorials/audio/zh/tutorial-networking/open-cloudflare.45f57788.mp3",
+      "narrationText": "首先是唯一需要手动操作的一步。打开 Cloudflare 控制台，进入 My Profile，然后找到 API Tokens，创建一个具有 Zone DNS Edit 权限的 token。就这一个 token，就能让 CLI 管理你的 DNS 记录，从此再也不用到处点来点去了。",
+      "audioDurationSec": 20.924082
     },
     {
       "id": "next-tutorial",

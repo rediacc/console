@@ -1,0 +1,76 @@
+---
+title: "Hargnemine -- commit ja tagasipööramine"
+description: "Külmuta repositooriumi olekud muutumatuteks commit'ideks, nimeta need branch'idega ja vaata iga commit uuesti kirjutatava forkina."
+category: "Tutorials"
+subcategory: advanced
+order: 15
+language: et
+sourceHash: "53f4eacdd4630b19"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Hargnemine -- commit ja tagasipööramine
+
+Versiooni oma repositooriumid nagu koodi. **Commit** külmutab forki muutumatuks kujutiseks; **branch** annab sellele nime; **checkout** muudab iga commit'i uuesti värskeks kirjutatavaks forkiks. Selles juhendis teeme teadaolevalt töötavast olekust commit'i, langetame päris PostgreSQL tabeli ja saame kõik read tagasi sekunditega.
+
+## Vaata juhendvideot
+
+![Tutorial: Branching, commit and rollback](/assets/tutorials/tutorial-branching.cast)
+
+## Mudel
+
+![Commit'id, branch'id, checkout](/img/tutorials/tutorial-branching/slide-1.svg)
+
+Commit'id ei muutu kunagi -- need keelduvad isegi ühendamisest. Forkid ei oota kunagi -- checkout on peaaegu kohene reflink-kloon. Täielik mõttemudel on kirjas [hargnemise juhendis](/et/docs/repo-branching).
+
+## Tee kontrollpunkt
+
+Markerifail teeb versiooni nähtavaks ja päris andmebaas muudab tagasipöörамise sisukaks: `customers` tabel hoiab kolme rida.
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+<TutorialStep number={4} />
+
+Commit talletab kõik: failid *ja* PostgreSQL andmekataloogi. `stable` branch nimetab nüüd selle külmutatud oleku.
+
+## Jätka tööd
+
+<TutorialStep number={5} />
+
+## Katastroof
+
+Riskantne muutus langetab tabeli. Seejärel kinnitab päring, et kahju on päris.
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+`ERROR: relation "customers" does not exist`. Kolm rida, kadunud. Päriselus on see hetk, mil kõht vajub -- siin aga on see edasise lahenduse ettevalmistus.
+
+<TutorialStep number={8} />
+
+<TutorialStep number={9} />
+
+Ajalugu jäädvustab, mis tegelikult juhtus, katki olek kaasa arvatud: `v2 risky change` peal, `v1 baseline` all.
+
+## Pöördu tagasi sekunditega
+
+<TutorialStep number={10} />
+
+<TutorialStep number={11} />
+
+<TutorialStep number={12} />
+
+<TutorialStep number={13} />
+
+Tagasipööratud fork loeb `v1` ja `customers` tabel on tagasi kõigi kolme reaga. Tagasipööramine taastas andmebaasi, mitte ainult faile. Midagi pole üle kirjutatud: töötaval forkil on endiselt teine versioon ja video avab mõlemad VS Code'is selle tõestamiseks.
+
+---
+
+Edasi: [Elus migratsioon](/et/docs/tutorial-live-migration).

@@ -1,0 +1,56 @@
+---
+title: "Storage Management"
+description: "Grow repositories online with zero downtime, reclaim deleted space with trim, and hand both jobs to an automatic policy."
+category: "Tutorials"
+subcategory: advanced
+order: 18
+language: en
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# Storage Management
+
+Never run out of disk again. Grow a full repository while its containers keep running, give deleted blocks back to the pool, then teach the machine to do both automatically.
+
+## Watch the tutorial
+
+![Tutorial: Storage management](/assets/tutorials/tutorial-storage-management.cast)
+
+## One pool, growing repos
+
+![One pool, growing repos](/img/tutorials/tutorial-storage-management/slide-1.svg)
+
+Every repository is a file in one shared datastore pool. Repos grow online; deleting data inside a repo frees nothing by itself. **Trim** is what hands blocks back to the pool.
+
+## Grow online, zero downtime
+
+<TutorialStep number={1} />
+
+<TutorialStep number={2} />
+
+<TutorialStep number={3} />
+
+## Reclaim with trim
+
+<TutorialStep number={4} />
+
+<TutorialStep number={5} />
+
+## Put it on autopilot
+
+<TutorialStep number={6} />
+
+<TutorialStep number={7} />
+
+The machine now grows the repo when it passes the threshold (up to your explicit ceiling) and trims on schedule, applied by the storage-maintain timer. No cron of your own.
+
+## The health view
+
+<TutorialStep number={8} />
+
+Per-repo usage, pool state, and how much copy-on-write sharing saves you, in one command.
+
+## You're done
+
+Eighteen tutorials: install, connect, deploy, edit anywhere, fork fearlessly, keep secrets safe, back up for real, go live, watch it, version it, move it, sync it, and never run dry. Your servers are yours again.

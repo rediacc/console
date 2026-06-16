@@ -1,0 +1,162 @@
+{
+  "cast": "/assets/tutorials/tutorial-branching.cast",
+  "language": "pt",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-branching-01",
+      "markerIndex": 0,
+      "at": 2.418102,
+      "text": "Nossa fork de trabalho contém a versão um do estado do app, um simples arquivo marcador a torna visível.",
+      "afterText": "Versão um, no disco.",
+      "cardLabel": "Versão Um",
+      "prose": "Escreva a versão um do seu estado na fork de trabalho."
+    },
+    {
+      "id": "tutorial-branching-02",
+      "markerIndex": 1,
+      "at": 10.876025,
+      "text": "Não são apenas arquivos. Um banco de dados PostgreSQL real vive nesta fork também, e a tabela customers tem três linhas. Guarde esse número.",
+      "afterText": "Três linhas. São os dados que estamos prestes a colocar em risco.",
+      "cardLabel": "Três Linhas",
+      "prose": "A fork também executa um banco de dados PostgreSQL real: a tabela customers tem três linhas."
+    },
+    {
+      "id": "tutorial-branching-03",
+      "markerIndex": 2,
+      "at": 20.708803,
+      "text": "Congele. O commit captura o repositório inteiro como uma imagem imutável, com uma mensagem, um autor e um pai. Exatamente como o git, mas para tudo, banco de dados incluído.",
+      "afterText": "Commitado. Este snapshot nunca pode mudar. Ele nem permite ser montado.",
+      "cardLabel": "Commit v1",
+      "prose": "Faça o commit da fork de trabalho: o estado completo do repositório, banco de dados incluído, é congelado em um snapshot imutável e nomeado."
+    },
+    {
+      "id": "tutorial-branching-04",
+      "markerIndex": 3,
+      "at": 29.448478,
+      "text": "Dê um nome ao commit. A branch stable agora aponta para a versão um.",
+      "afterText": "Uma branch é um nome ao qual você pode voltar.",
+      "cardLabel": "Branch Stable",
+      "prose": "Crie uma branch apontando para o commit, um nome legível para o estado congelado."
+    },
+    {
+      "id": "tutorial-branching-05",
+      "markerIndex": 4,
+      "at": 34.241982,
+      "text": "Continue trabalhando. A versão dois substitui a versão um na fork de trabalho. O commit não se importa.",
+      "afterText": "A fork de trabalho avançou. O histórico não.",
+      "cardLabel": "Versão Dois",
+      "prose": "Continue trabalhando: a fork muda, o histórico commitado permanece congelado."
+    },
+    {
+      "id": "tutorial-branching-06",
+      "markerIndex": 5,
+      "at": 42.690283,
+      "text": "Agora o desastre. A mudança arriscada remove a tabela customers. Na vida real, este é o momento em que o estômago afunda.",
+      "afterText": "Drop table executado. Os dados sumiram da fork de trabalho.",
+      "cardLabel": "Remover A Tabela",
+      "prose": "A mudança arriscada remove a tabela customers na fork de trabalho."
+    },
+    {
+      "id": "tutorial-branching-07",
+      "markerIndex": 6,
+      "at": 51.047933,
+      "text": "Peça as linhas novamente e o banco de dados diz claramente: a relação customers não existe. O desastre é real. Cada linha sumiu.",
+      "afterText": "Relação não existe. Três linhas, desaparecidas.",
+      "cardLabel": "Tabela Sumiu",
+      "prose": "Consultar a tabela agora falha: a relação \"customers\" não existe. Os dados realmente sumiram da fork de trabalho."
+    },
+    {
+      "id": "tutorial-branching-08",
+      "markerIndex": 7,
+      "at": 59.69522,
+      "text": "Faça o commit da mudança arriscada também, tabela quebrada e tudo. O histórico registra o que realmente aconteceu. Dois commits agora, pai e filho.",
+      "afterText": "Dois snapshots na cadeia.",
+      "cardLabel": "Commit v2",
+      "prose": "Faça o commit do novo estado também, tabela removida incluída; o histórico cresce como um git log."
+    },
+    {
+      "id": "tutorial-branching-09",
+      "markerIndex": 8,
+      "at": 68.35661,
+      "text": "E aí está o histórico: versão dois no topo, versão um abaixo, mensagens e autores incluídos, sem desbloquear uma única imagem.",
+      "afterText": "Um log do repositório, exatamente como um git log.",
+      "cardLabel": "Repo Log",
+      "prose": "Percorra o histórico de commits com repo log, mensagens, autores, pais."
+    },
+    {
+      "id": "tutorial-branching-10",
+      "markerIndex": 9,
+      "at": 75.614559,
+      "text": "Agora a recompensa. Faça o checkout da branch stable em uma fork nova e editável. Clone por reflink: quase instantâneo, qualquer tamanho.",
+      "afterText": "Uma cópia editável da versão um congelada, em cerca de um segundo.",
+      "cardLabel": "Checkout",
+      "prose": "Faça o checkout da branch stable em uma fork nova e editável, quase instantâneo graças ao copy-on-write."
+    },
+    {
+      "id": "tutorial-branching-11",
+      "markerIndex": 10,
+      "at": 83.292425,
+      "text": "Inicie a fork de rollback como qualquer outro repositório.",
+      "afterText": "Duas forks em execução: a versão de hoje e o checkpoint.",
+      "cardLabel": "Iniciar Rollback",
+      "prose": "Suba a fork de rollback, ela roda junto com a fork de trabalho."
+    },
+    {
+      "id": "tutorial-branching-12",
+      "markerIndex": 11,
+      "at": 91.555233,
+      "text": "E a prova: a fork de rollback lê a versão um. A fork de trabalho ainda tem a versão dois. Um histórico que você pode executar.",
+      "afterText": "Rollback completo. Nada foi sobrescrito para chegar aqui.",
+      "cardLabel": "Prova: v1",
+      "prose": "Leia o arquivo marcador na fork de rollback: versão um, exatamente como foi commitado."
+    },
+    {
+      "id": "tutorial-branching-13",
+      "markerIndex": 12,
+      "at": 98.952411,
+      "text": "E a parte que mais importa: a tabela removida voltou, com todas as três linhas. O rollback restaurou o banco de dados, não apenas os arquivos.",
+      "afterText": "Três linhas novamente. O desastre foi desfeito.",
+      "cardLabel": "Dados Restaurados",
+      "prose": "Consulte a tabela customers na fork de rollback: três linhas, exatamente como foram commitadas. O rollback restaurou o banco de dados, não apenas os arquivos."
+    }
+  ],
+  "title": "Branching: Commit e Rollback",
+  "chapters": {
+    "intro": "Branching: Commit e Rollback",
+    "commit-model": "Commits, branches, checkout",
+    "cast-step-0": "Passo 1: Versão um",
+    "cast-step-1": "Passo 2: Faça o commit",
+    "cast-step-2": "Passo 3: Nomeie com um branch",
+    "cast-step-3": "Passo 4: Continue trabalhando, versão dois",
+    "cast-step-4": "Passo 5: Commit novamente",
+    "cast-step-5": "Passo 6: O histórico",
+    "cast-step-6": "Passo 7: Faça checkout do branch",
+    "cast-step-7": "Passo 8: Inicie o rollback",
+    "cast-step-8": "Passo 9: Prova, versão um",
+    "cast-step-9": "Passo 10: Faça o checkout da branch",
+    "cast-step-10": "Passo 11: Inicie o rollback",
+    "cast-step-11": "Passo 12: Prova: versão um",
+    "cast-step-12": "Passo 13: Os dados voltaram",
+    "vscode-versions": "Ambas as versões, lado a lado",
+    "outro": "Próximo: Live Migration"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Vamos versionar seus repositórios como código! Vamos congelar um checkpoint, dar um nome a ele e depois remover uma tabela de banco de dados real. O rollback traz de volta o estado exato congelado, cada linha incluída, em segundos."
+    },
+    {
+      "id": "commit-model",
+      "text": "O modelo é o git, mas para repositórios inteiros. Um commit é uma imagem congelada e imutável. Ele nem permite ser montado, então nada pode jamais mudá-lo. Uma branch é apenas um nome apontando para um commit. E o checkout transforma qualquer commit em uma fork nova e editável."
+    },
+    {
+      "id": "vscode-versions",
+      "text": "Ver para crer. A fork de rollback à esquerda contém a versão um, enquanto a fork de trabalho à direita avançou para a versão dois. Ambas ativas, ambas editáveis, ambas do mesmo histórico."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Commits nunca mudam, forks nunca esperam. A seguir, movemos um repositório inteiro em execução para outra máquina, ao vivo. Até o próximo!"
+    }
+  ]
+}

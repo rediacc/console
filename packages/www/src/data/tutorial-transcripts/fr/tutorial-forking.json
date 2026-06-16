@@ -6,7 +6,7 @@
     {
       "id": "tutorial-forking-01",
       "markerIndex": 0,
-      "at": 2.41277,
+      "at": 2.422355,
       "text": "Maintenant le fork. Une seule commande va cloner le dépôt entier, l'application, la base de données, les fichiers de configuration, en quelques secondes, quelle que soit la taille. 1 gigaoctet, 100 gigaoctets, 1 téraoctet : même temps, à chaque fois.",
       "afterText": "Fork terminé. Le clone est en place et opérationnel, quelle que soit sa taille.",
       "cardLabel": "Forker le Repo",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-forking-02",
       "markerIndex": 1,
-      "at": 13.421721,
+      "at": 12.478171,
       "text": "Les deux dépôts existent maintenant côte à côte. Même machine, même disque, deux environnements complètement indépendants. Le fork a ses propres conteneurs, son propre système de fichiers et son propre daemon Docker.",
       "afterText": "Deux repos, un seul disque. Mêmes données, tout le reste séparé.",
       "cardLabel": "Lister les Repos",
@@ -24,7 +24,7 @@
     {
       "id": "tutorial-forking-03",
       "markerIndex": 2,
-      "at": 18.980206,
+      "at": 18.050071,
       "text": "Prouvons l'isolation. Dans l'original, notre fichier marqueur est exactement là où nous l'avons laissé. L'existence du fork n'a rien changé dans le parent.",
       "afterText": "Fichier d'origine toujours là. Le fork n'y a pas touché.",
       "cardLabel": "Fichier Original",
@@ -33,7 +33,7 @@
     {
       "id": "tutorial-forking-04",
       "markerIndex": 3,
-      "at": 26.216902,
+      "at": 25.352583,
       "text": "Voyons maintenant ce qui se passe si nous supprimons ce fichier, mais uniquement dans le fork. Dans le fork, il a disparu. Nous avons fait un changement destructif, et il est resté dans le fork.",
       "afterText": "Disparu dans le fork. L'original reste intact.",
       "cardLabel": "Supprimer dans le Fork",
@@ -42,7 +42,7 @@
     {
       "id": "tutorial-forking-05",
       "markerIndex": 4,
-      "at": 34.456769,
+      "at": 33.706234,
       "text": "Retournons à l'original. Le fichier marqueur est toujours là, intact. L'original n'a rien su de ce qui s'est passé. Même image, daemons Docker séparés, systèmes de fichiers séparés.",
       "afterText": "Toujours là. Les forks sont correctement isolés.",
       "cardLabel": "Original Intact",
@@ -51,7 +51,7 @@
     {
       "id": "tutorial-forking-06",
       "markerIndex": 5,
-      "at": 41.647526,
+      "at": 41.0794,
       "text": "Quand vous avez terminé, supprimez simplement le fork. L'original reste exactement comme il était. Forkez, expérimentez, cassez des choses, supprimez. Aucun risque.",
       "afterText": "Fork supprimé. L'original est exactement tel que nous l'avions laissé.",
       "cardLabel": "Nettoyer",
@@ -89,7 +89,7 @@
     },
     {
       "id": "next-tutorial",
-      "text": "Les forks laissent volontairement les secrets derrière eux, ce qui rend réellement sûr le « cloner la production sans rien casser ». Nous les câblons proprement dans le prochain tutoriel !"
+      "text": "Vous venez de voir les commandes. Maintenant on rend ça visuel : une vraie appli de base de données, forkée en direct, modifiée côte à côte, et l'original ne bronche pas."
     }
   ],
   "title": "Forker un Repository",
@@ -107,6 +107,6 @@
     "cast-step-5": "Étape 6 : Supprimer le fork",
     "river-photo": "Une photo de la rivière",
     "flat-disk": "L'utilisation du disque reste stable",
-    "outro": "Suivant : Gérer les Secrets"
+    "outro": "Suivant : Fork Isolation en action"
   }
 }

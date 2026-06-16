@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "de",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "Ein live repo. Klonen wir es.",
+      "cardLabel": "Live App",
+      "prose": "Starte mit einem Live-Repository: eine PostgreSQL-Datenbank mit pgAdmin, die auf dem Rechner läuft."
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "Geforkt und startet. Die Daten wurden nicht kopiert, sie wurden geteilt, bis eine Seite sie ändert.",
+      "cardLabel": "Fork + Up",
+      "prose": "Forke das Repository mit --up --detach: Der CoW-Klon ist nahezu sofort bereit und die Dienste des Forks starten umgehend."
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "Gleiche Maschine, zwei isolierte Welten.",
+      "cardLabel": "Nebeneinander",
+      "prose": "Liste die Repositories auf: Das Original und der Fork laufen nebeneinander, vollständig isoliert."
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "Weg. Das Original hat die ganze Zeit weiter funktioniert.",
+      "cardLabel": "Fork löschen",
+      "prose": "Lösche den Fork, wenn du fertig bist. Das ursprüngliche Repository bleibt unberührt."
+    }
+  ],
+  "title": "Fork-Isolierung in der Praxis",
+  "chapters": {
+    "intro": "Fork-Isolierung in der Praxis",
+    "what-is-a-fork": "Eine Live-Datenbank und ihr Zwilling",
+    "cast-step-0": "Schritt 1: Die Live-App",
+    "grand-pgadmin": "Das Original, geschützt",
+    "cast-step-1": "Schritt 2: Fork erstellen",
+    "fork-pgadmin": "Der Fork, weit offen",
+    "side-by-side": "Nebeneinander",
+    "cast-step-2": "Schritt 3: Zwei Repos, ein Server",
+    "cast-step-3": "Schritt 4: Fork entfernen",
+    "outro": "Weiter: Secrets verwalten"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Willkommen zurück! Beim letzten Mal hast du die fork-Befehle gesehen. Jetzt schauen wir uns an, was sie wirklich bedeuten: eine Live-Datenbankapp, in Sekunden kopiert, frei bearbeitbar, während das Original nichts davon bemerkt."
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "Das ist die Ausgangslage: ein echtes PostgreSQL mit einer pgAdmin-Oberfläche darüber, live auf dem Server. Ein fork ist ein sofortiger Copy-on-Write-Zwilling von allem. Gleiche Daten bei der Geburt, danach völlig getrennte Leben."
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "Das ist das Original, im Browser. pgAdmin fragt nach einem Login, weil es die Produktionskopie ist, und Produktion bleibt geschützt."
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "Und hier ist das pgAdmin des forks. Diesmal kein Login: forks sind wegwerfbare sandboxes, also tritt die Schranke zur Seite. Gleiche Tabellen, gleiche Zeilen, aber ein eigenes Universum."
+    },
+    {
+      "id": "side-by-side",
+      "text": "Jetzt nebeneinander: der fork links, das Original rechts. Bearbeite, lösche oder zerstöre alles auf der linken Seite, und rechts zuckt nichts. Das ist Isolation, die man sehen kann."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Also forke ruhig drauf los, Produktion kann nicht beschädigt werden. Als nächstes schauen wir uns secrets an, das Einzige, was deine forks absichtlich nicht erben. Bis dann!"
+    }
+  ]
+}

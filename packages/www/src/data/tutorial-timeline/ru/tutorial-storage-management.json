@@ -1,0 +1,140 @@
+{
+  "cast": "/assets/tutorials/tutorial-storage-management.cast",
+  "language": "ru",
+  "version": 1,
+  "provider": "qwen3-tts",
+  "modelId": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
+  "audioFormat": "mp3",
+  "sampleRateHz": 44100,
+  "voiceDesignPreset": "global-avatar-v1",
+  "transcriptHash": "16277f55e9d7e0bea40be283028a634adb8c7dd3c0ab22e64cc2e6daf352eb12",
+  "steps": [
+    {
+      "id": "tutorial-storage-management-01",
+      "markerIndex": 0,
+      "replayStartSec": 2.410441,
+      "replayEndSec": 12.69586,
+      "narrationText": "Fill the repository most of the way and check: the filesystem is getting tight.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-01.05800be7.mp3",
+      "textHash": "05800be7474114c9af193cdb81a31695d21c4e4877fadcd63f3403455ba6491a",
+      "audioDurationSec": 4.440816,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-01-after.899dcde9.mp3",
+      "afterAudioDurationSec": 3.552653,
+      "afterTextHash": "899dcde9d72f024bc55b603771f5808ca67effaa9b1eb19f432d3d682235e955"
+    },
+    {
+      "id": "tutorial-storage-management-02",
+      "markerIndex": 1,
+      "replayStartSec": 12.69586,
+      "replayEndSec": 19.886575,
+      "narrationText": "Grow it online. The encrypted container and the filesystem expand while the containers keep running — zero downtime, zero unmount.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-02.869f86d4.mp3",
+      "textHash": "869f86d44259c23b6974bec0ce486de84f3cfa8dfdf913ac941c2dead3f70d42",
+      "audioDurationSec": 8.515918,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-02-after.981847a0.mp3",
+      "afterAudioDurationSec": 5.146122,
+      "afterTextHash": "981847a0721545acdd5ffa2b32aba42c5f5f4582547c3f10678f4e533034e731"
+    },
+    {
+      "id": "tutorial-storage-management-03",
+      "markerIndex": 2,
+      "replayStartSec": 19.886575,
+      "replayEndSec": 26.982758,
+      "narrationText": "Verify from inside: same volume, double the room.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-03.5f7bd3fe.mp3",
+      "textHash": "5f7bd3fe3d5768cdbae54dc1f9a4597876f88a3faa7abd195d9328fae0ba50ca",
+      "audioDurationSec": 3.866122,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-03-after.32818b2a.mp3",
+      "afterAudioDurationSec": 1.880816,
+      "afterTextHash": "32818b2a4abb450669778edda4baa73919fb39b875d4ad06a8f9ad1beb1dec5d"
+    },
+    {
+      "id": "tutorial-storage-management-04",
+      "markerIndex": 3,
+      "replayStartSec": 26.982758,
+      "replayEndSec": 33.464064,
+      "narrationText": "Now the other direction. Delete the big file — but watch: the pool does not get the space back yet. Deleted blocks stay reserved inside the image.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-04.00edc75b.mp3",
+      "textHash": "00edc75b87436fc77addf6e6c31b54feda8d9cdbb8f49a2655a9f5ff52b00f34",
+      "audioDurationSec": 9.717551,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-04-after.491af146.mp3",
+      "afterAudioDurationSec": 4.127347,
+      "afterTextHash": "491af146ff86b7f1783ee14307341068bb75ed76a96f04b31e719110b6185963"
+    },
+    {
+      "id": "tutorial-storage-management-05",
+      "markerIndex": 4,
+      "replayStartSec": 33.464064,
+      "replayEndSec": 40.097562,
+      "narrationText": "Trim hands those blocks back to the datastore pool, online. This is the step most setups forget.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-05.edd7a861.mp3",
+      "textHash": "edd7a861b929a9e1697753a9b7fd179132b1a78833912585a093bb864ac9577b",
+      "audioDurationSec": 5.250612,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-05-after.13984453.mp3",
+      "afterAudioDurationSec": 2.690612,
+      "afterTextHash": "13984453834426ff1347af6674e11bba15380b68a3a4ed1b62b1d88beb0eed4e"
+    },
+    {
+      "id": "tutorial-storage-management-06",
+      "markerIndex": 5,
+      "replayStartSec": 40.097562,
+      "replayEndSec": 50.538253,
+      "narrationText": "Now stop doing this by hand. The policy enables automatic growth up to a ceiling you choose, plus scheduled trims.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-06.14e859d4.mp3",
+      "textHash": "14e859d4960e0259636a044f2f616babe0c30c24cdbf099de49500af96081862",
+      "audioDurationSec": 8.202449,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-06-after.3ad1398f.mp3",
+      "afterAudioDurationSec": 3.474286,
+      "afterTextHash": "3ad1398f4d138299cb8e55d2d99dca085ddbd9fc2654baebc9ba0683fddd9dd1"
+    },
+    {
+      "id": "tutorial-storage-management-07",
+      "markerIndex": 6,
+      "replayStartSec": 50.538253,
+      "replayEndSec": 57.423655,
+      "narrationText": "Read it back: auto-grow on, ceiling at eight gigabytes, trim on a schedule.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-07.5dec45f1.mp3",
+      "textHash": "5dec45f16d1ee77f174481806b882dfd8e1b76aa453da54248f6096b02bafe92",
+      "audioDurationSec": 4.597551,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-07-after.fb9e4ac9.mp3",
+      "afterAudioDurationSec": 3.787755,
+      "afterTextHash": "fb9e4ac9b3c03ffc716db2fda1f36783c0f0e901fe046c10d5652b091fe588a8"
+    },
+    {
+      "id": "tutorial-storage-management-08",
+      "markerIndex": 7,
+      "replayStartSec": 57.423655,
+      "replayEndSec": 63.270016,
+      "narrationText": "And the view that ties it together: storage health shows every repo's usage, the pool, and how much copy-on-write sharing is saving you.",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-08.33978ee3.mp3",
+      "textHash": "33978ee327342625b608cdd9932749e47ab4a91218443ac10184bbef8819d073",
+      "audioDurationSec": 9.16898,
+      "afterAudioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/tutorial-storage-management-08-after.4215dfd3.mp3",
+      "afterAudioDurationSec": 3.63102,
+      "afterTextHash": "4215dfd314d3d0acde3a4baf0e1857c97ed32689ed9ecada36b009c6125e52e8"
+    }
+  ],
+  "narrationAudio": [
+    {
+      "id": "intro",
+      "textHash": "b6f558e9f73adf81275329a42bbaef6884abc52437a0189c4ef540afbf969773",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/intro.b6f558e9.mp3",
+      "narrationText": "Добро пожаловать в последний туториал! Давайте сделаем так, чтобы место на диске у вас больше никогда не заканчивалось. Мы расширим заполненный repository онлайн, вернём удалённое пространство обратно в пул, а потом научим систему делать и то, и другое автоматически.",
+      "audioDurationSec": 17.240816
+    },
+    {
+      "id": "pool-model",
+      "textHash": "5351dd70c6dcd5c11c4cb3ba7d5deec7f2422b03461447ae2dd57e7fc84fe1ee",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/pool-model.5351dd70.mp3",
+      "narrationText": "Вот как это устроено. Каждый repository является файлом в одном общем пуле datastore. Repository могут расти онлайн, пока containers продолжают работать. Но удаление данных внутри repo само по себе ничего не освобождает. Именно Trim возвращает блоки обратно в пул. А policy автоматизирует и то, и другое.",
+      "audioDurationSec": 29.074286
+    },
+    {
+      "id": "next-tutorial",
+      "textHash": "e28578577e30a955bc91a00041c55ceb3b3640697f2f85faf9c772f88d22d4c0",
+      "audioSrc": "/assets/tutorials/audio/ru/tutorial-storage-management/next-tutorial.e2857857.mp3",
+      "narrationText": "Вот и всё, серия завершена! Восемнадцать туториалов, от установки до хранилища на автопилоте. Ваши серверы снова ваши. Спасибо за просмотр!",
+      "audioDurationSec": 10.840816
+    }
+  ]
+}

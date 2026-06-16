@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "fr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "Un repo en direct. Clonons-le.",
+      "cardLabel": "App Live",
+      "prose": "Partez d'un repository en direct : une base de données PostgreSQL avec pgAdmin en cours d'exécution sur la machine."
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "Forké et en cours de démarrage. Les données n'ont pas été copiées, elles ont été partagées, jusqu'à ce qu'un côté les modifie.",
+      "cardLabel": "Fork + Up",
+      "prose": "Forkez le repository avec --up --detach : le clone CoW est quasi instantané et les services du fork démarrent immédiatement."
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "Même machine, deux mondes isolés.",
+      "cardLabel": "Côte à Côte",
+      "prose": "Listez les repositories : l'original et le fork tournent côte à côte, complètement isolés."
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "Supprimé. L'original a continué à fonctionner tout ce temps.",
+      "cardLabel": "Supprimer Fork",
+      "prose": "Supprimez le fork quand vous avez terminé. Le repository original n'est pas affecté."
+    }
+  ],
+  "title": "Fork Isolation en Action",
+  "chapters": {
+    "intro": "Fork Isolation en Action",
+    "what-is-a-fork": "Une base de données live et son jumeau",
+    "cast-step-0": "Étape 1 : L'app en direct",
+    "grand-pgadmin": "L'original, protégé",
+    "cast-step-1": "Étape 2 : Forker",
+    "fork-pgadmin": "Le fork, grand ouvert",
+    "side-by-side": "Côte à côte",
+    "cast-step-2": "Étape 3 : Deux repos, un serveur",
+    "cast-step-3": "Étape 4 : Supprimer le fork",
+    "outro": "Ensuite : Gérer les secrets"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Bienvenue ! La dernière fois, vous avez découvert les commandes fork. Maintenant, voyons ce qu'elles signifient vraiment : une application de base de données en direct, copiée en quelques secondes, modifiable librement, pendant que l'original ne s'aperçoit de rien."
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "Voici la situation : un vrai PostgreSQL avec une interface pgAdmin par-dessus, en direct sur le serveur. Un fork est une copie copy-on-write instantanée de tout ça. Les mêmes données à la naissance, des vies complètement séparées ensuite."
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "Voici l'original, dans le navigateur. pgAdmin demande une connexion, car c'est la copie de production, et la production reste protégée."
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "Et voici le pgAdmin du fork. Pas de connexion cette fois : les forks sont des sandbox jetables, donc la barrière s'efface. Les mêmes tables, les mêmes lignes, mais son propre univers."
+    },
+    {
+      "id": "side-by-side",
+      "text": "Maintenant côte à côte : le fork à gauche, l'original à droite. Modifiez, supprimez, cassez n'importe quoi à gauche, et la droite ne bronche jamais. C'est l'isolation que vous pouvez voir."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Alors forkez librement, la production ne risque rien. Ensuite, on s'intéresse aux secrets, la seule chose que vos forks n'héritent délibérément pas. À tout de suite !"
+    }
+  ]
+}

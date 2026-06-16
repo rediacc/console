@@ -6,8 +6,8 @@ description: >-
 category: Guides
 order: 9
 language: tr
-sourceHash: "4b3aebff5e82416f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "59abc2faa1157369"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Araçlar
@@ -48,7 +48,7 @@ Bir dizin için `--remote` (varsayılan) veya tek bir dosya için `--remote-file
 # Dizin
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 
-# Tek dosya — `--local` mevcut bir dizin olmalıdır
+# Tek dosya: `--local` mevcut bir dizin olmalıdır
 rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
@@ -175,6 +175,36 @@ rdc vscode check
 VS Code kurulumunu, Remote SSH eklentisini ve etkin bağlantıları doğrular.
 
 > **Ön koşul:** VS Code'da [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) eklentisini kurun.
+
+### Tarayıcıda VS Code
+
+Yerel VS Code yok mu? Editörü depo sandbox'ının içinden sunun ve herhangi bir tarayıcıda açın:
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+Bu komut:
+1. Makineye açık kaynak editör sunucusunu bir kez kurar (salt okunur paylaşımlı yol, sağlama toplamı doğrulanmış)
+2. Depo sandbox'ının içinde başlatır; dosya ağacı, entegre terminal ve tüm alt süreçler tam olarak deponun gördüğünü görür
+3. Yerel bir porta SSH tüneli açar ve oturum başına token URL'si ile tarayıcınızı başlatır
+
+Siz tüneli kapattıktan sonra sunucu çalışmaya devam eder; yeniden bağlanırken mevcut sunucu kullanılır. Yönetmek için:
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| Seçenek | Açıklama |
+|---------|----------|
+| `--no-open` | Tarayıcıyı açmak yerine URL'yi yazdır |
+| `--url-only` | stdout'a tam olarak bir URL satırı yaz (scripting için) ve tüneli tut |
+| `--local <port>` | Yerel tünel portunu seçin |
+| `--server-provider <id>` | Editör sunucu uygulaması: `openvscode` (varsayılan) veya `code-server` |
+| `--server-archive <file>` | Makinede önceden hazırlanmış bir tarball'dan kur (internet bağlantısı gerekmez) |
+
+Linux, macOS, Windows veya tabletten çalışır. Yerel tek gereksinim bir tarayıcıdır.
 
 ## CLI Güncellemeleri (update)
 

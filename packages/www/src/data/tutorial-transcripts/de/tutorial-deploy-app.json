@@ -6,8 +6,8 @@
     {
       "id": "tutorial-deploy-app-01",
       "markerIndex": 0,
-      "at": 2.40432,
-      "text": "Schritt eins. Wir listen die verfügbaren Vorlagen auf. Rediacc enthält fertige Setups für gängige Apps, also Postgres, Redis, Webserver, sodass kein docker compose von Grund auf geschrieben werden muss.",
+      "at": 2.408078,
+      "text": "Schritt eins: die verfügbaren Templates auflisten. Rediacc liefert fertige Setups für gängige Apps, sodass kein docker-compose von Grund auf neu geschrieben werden muss.",
       "afterText": "Der komplette Template-Katalog. Jedes ist eine getestete Kombination aus Compose und Rediaccfile.",
       "cardLabel": "Vorlagen Auflisten",
       "prose": "Schritt eins: Listen Sie die verfügbaren Vorlagen auf. Rediacc bietet vorgefertigte Vorlagen für gängige Apps, sodass Sie keine docker-compose von Grund auf erstellen müssen."
@@ -15,8 +15,8 @@
     {
       "id": "tutorial-deploy-app-02",
       "markerIndex": 1,
-      "at": 6.041569,
-      "text": "Schritt zwei. Wir wenden die app-postgres-Vorlage auf unser Repo an. Zwei Dateien erscheinen: die docker compose dot yml, die die Container beschreibt, und der Rediaccfile, der die Start- und Stopp-Lifecycle-Hooks definiert.",
+      "at": 6.077084,
+      "text": "Schritt zwei: das app-postgres-Template ins repo einfügen. Ein getesteter Satz an Dateien, direkt hineinkopiert.",
       "afterText": "Template angewendet. Das Repo hat jetzt seine Compose-Datei und das Rediaccfile.",
       "cardLabel": "Vorlage Anwenden",
       "prose": "Schritt zwei: Wenden Sie die app-postgres-Vorlage auf das repo an. Dabei wird ein getestetes Set von Dateien in das repo kopiert."
@@ -24,17 +24,17 @@
     {
       "id": "tutorial-deploy-app-03",
       "markerIndex": 2,
-      "at": 13.566247,
-      "text": "Schritt drei. Wir starten das Repo. Die CLI startet die Container, hängt das verschlüsselte Volume ein und verbindet den isolierten Docker-Daemon. Die App läuft jetzt.",
+      "at": 14.72542,
+      "text": "Schau ins repo rein und sieh, was gelandet ist: ein Rediaccfile mit den Start- und Stopp-Hooks und eine docker-compose-Datei, die die container beschreibt.",
       "afterText": "Container laufen, Volume gemountet, isolierter Docker-Daemon ist oben.",
       "cardLabel": "Dateien Anzeigen",
-      "prose": "Verbinden Sie sich mit dem repo und listen Sie auf, was die Vorlage hinzugefügt hat: ein Rediaccfile mit Start- und Stop-Hooks sowie eine docker-compose.yml, die die container beschreibt. Das 2>/dev/null blendet die Verbindungslogs aus, sodass nur die Dateiliste angezeigt wird."
+      "prose": "Verbinde dich mit dem repo und liste die Dateien auf, die das Template hinzugefügt hat: ein Rediaccfile mit den Lifecycle-Hooks und eine docker-compose.yml, die die container beschreibt."
     },
     {
       "id": "tutorial-deploy-app-04",
       "markerIndex": 3,
-      "at": 23.282435,
-      "text": "Wir überprüfen mit docker ps. Beachten Sie, dass diese Ansicht nur die Container unseres Repositories zeigt. Andere Repos auf demselben Server haben ihre eigenen Docker-Daemons und sind von hier aus vollständig unsichtbar.",
+      "at": 21.699752,
+      "text": "Schritt drei: das repo hochfahren. Ein einziger Befehl, die CLI hängt das verschlüsselte Volume ein, startet den isolierten Docker daemon und bringt die container zum Laufen.",
       "afterText": "Nur die Container dieses Repos. Die Isolation ist echt, nicht nur Konfiguration.",
       "cardLabel": "Repo Starten",
       "prose": "Starten Sie das repo. Die CLI startet die container, hängt das verschlüsselte Volume ein und verbindet den isolierten Docker daemon."
@@ -42,8 +42,8 @@
     {
       "id": "tutorial-deploy-app-05",
       "markerIndex": 4,
-      "at": 30.345778,
-      "text": "Überprüfen wir, was läuft. docker ps listet hier nur die Container dieses Repos auf. Andere Repos auf demselben Server haben ihre eigenen Daemons und sind in dieser Ansicht vollständig unsichtbar.",
+      "at": 28.8781,
+      "text": "Überprüfen, was läuft. Docker ps listet hier nur die container dieses repos. Jedes andere repo auf diesem Server hat seinen eigenen daemon, von hier aus völlig unsichtbar.",
       "afterText": "Nur die Container dieses Repos. Die Isolation ist real, keine bloße Konfiguration.",
       "cardLabel": "Isolation Prüfen",
       "prose": "Prüfen Sie, was läuft. docker ps listet nur die container dieses repo auf; andere repos auf demselben Server haben eigene Docker daemons und sind in dieser Ansicht nicht sichtbar."
@@ -52,11 +52,15 @@
   "narrations": [
     {
       "id": "intro",
-      "text": "Zeit, eine echte App zu deployen! Wir gehen in drei kurzen Schritten von einem leeren Repo zu laufenden Containern."
+      "text": "Zeit, eine echte App zu deployen! Von einem leeren repo zu laufenden container in drei Schritten: auswählen, anwenden, starten."
     },
     {
       "id": "pick-apply-run",
       "text": "Der Ablauf ist simpel: such ein Template aus, wende es auf das Repo an und starte es. Die CLI bringt eingebaute Templates mit, damit wir nie eine docker-compose von Hand schreiben müssen."
+    },
+    {
+      "id": "vscode-file-tour",
+      "text": "Lieber einen Editor statt cat? Dieselben Dateien öffnen sich in VS Code, direkt aus deinem Browser. Hier ist das Rediaccfile, und die Compose-Datei daneben. Dieses Setup schauen wir uns in einem späteren Tutorial richtig an."
     },
     {
       "id": "next-tutorial",
@@ -72,6 +76,7 @@
     "cast-step-2": "Schritt 3: Was die Vorlage hinzufügte",
     "cast-step-3": "Schritt 4: Repo starten",
     "cast-step-4": "Schritt 5: Isolation prüfen",
-    "outro": "Weiter: Mit dem Repo arbeiten"
+    "outro": "Weiter: Mit dem Repo arbeiten",
+    "vscode-file-tour": "Bonus: dieselben Dateien in VS Code"
   }
 }

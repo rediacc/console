@@ -1305,6 +1305,8 @@
           "completed": "Elenco avvio automatico recuperato",
           "description": "Elenca i repository con avvio automatico abilitato",
           "failed": "Impossibile elencare i repository con avvio automatico",
+          "empty": "Nessun repository con avvio automatico su \"{{machine}}\"",
+          "service": "Servizio di avvio automatico: installed={{installed}}, enabled={{enabled}}",
           "starting": "Elenco dei repository con avvio automatico su \"{{machine}}\"..."
         }
       },
@@ -1432,10 +1434,10 @@
         "starting": "Espansione di \"{{repository}}\" a {{size}} su \"{{machine}}\"..."
       },
       "trim": {
-        "description": "Recupera spazio del pool del datastore dai repository montati (online, senza interruzioni). I blocchi eliminati nei repository tornano al pool tramite fstrim. Senza --name vengono trimmati tutti i repository montati e il datastore stesso. I repository con un backup attivo vengono saltati",
+        "description": "Recupera spazio del pool del datastore dai repository montati (online, senza interruzioni). I blocchi eliminati nei repository tornano al pool tramite fstrim. Senza --name vengono trimmati tutti i repository montati e il datastore stesso. fstrim viene saltato per i repository con un backup attivo; la pulizia --docker viene comunque eseguita",
         "descriptionShort": "Restituire al pool lo spazio libero dei repository",
         "nameOption": "Repository da trimmare (predefinito: tutti i repository montati)",
-        "dockerOption": "Liberare prima lo spazio Docker (container fermi, immagini dangling, cache di build)",
+        "dockerOption": "Liberare lo spazio Docker (container fermi, immagini dangling, cache di build); viene eseguito anche durante uno snapshot di backup attivo",
         "dockerVolumesOption": "Eliminare anche i volumi Docker inutilizzati",
         "reportOnlyOption": "Mostrare lo stato dei discard e la stima recuperabile senza trimmare",
         "repoNotFound": "Repository non trovato: {{name}}",
@@ -1535,6 +1537,7 @@
         "checkpointing": "Creazione del checkpoint CRIU...",
         "complete": "Migrazione completata: {{name}} spostato da {{from}} a {{to}}",
         "deltaDone": "Sincronizzazione del delta completata",
+        "phase2Stats": "Cutover (DOWNTIME): {{transferred}} in {{duration}}",
         "deltaFailed": "Sincronizzazione del delta non riuscita",
         "deltaSync": "Sincronizzazione del delta...",
         "description": "Esegue la migrazione live di un repository da un macchinario a un altro con downtime minimo. Rsync in due fasi: trasferimento bulk durante l'esecuzione, poi breve arresto per la sincronizzazione del delta. Supporta il checkpoint CRIU per la migrazione dello stato in memoria dei processi e il provisioning automatico dei macchinari di destinazione.",
@@ -1551,6 +1554,7 @@
         "optionTo": "Nome del macchinario di destinazione",
         "phase1": "Fase 1: trasferimento dati bulk (la sorgente rimane in esecuzione)...",
         "phase1Done": "Trasferimento bulk completato",
+        "phase1Stats": "{{transferred}} trasferiti in {{duration}} — la sorgente è rimasta online",
         "phase1Failed": "Trasferimento bulk non riuscito",
         "phase2": "Fase 2: cutover (breve downtime)...",
         "phase3": "Fase 3: avvio sulla destinazione...",
@@ -1612,6 +1616,10 @@
         "optionForce": "Forza la sovrascrittura del backup esistente",
         "optionProvision": "Provisioning automatico del macchinario di destinazione tramite il provider cloud se non esiste",
         "optionStrategy": "Strategia di delta a blocchi quando si usa una base delta: auto, physical o shared",
+        "optionJson": "Mostra le statistiche di trasferimento in JSON",
+        "statsDelta": "\"{{repo}}\" inviato a {{machine}} — {{transferred}} trasferiti in {{duration}} (delta rispetto alla base {{base}}, immagine {{image}})",
+        "statsFull": "\"{{repo}}\" inviato a {{machine}} — {{transferred}} trasferiti in {{duration}} (trasferimento completo)",
+        "statsNoBytes": "\"{{repo}}\" inviato a {{machine}} — completato in {{duration}}",
         "optionTag": "Tag di distribuzione per il versioning",
         "optionTo": "Macchinario o storage di destinazione (rilevato automaticamente dalla configurazione)",
         "optionUp": "Dopo il push, monta e distribuisce il repository sul macchinario di destinazione",
@@ -1726,6 +1734,9 @@
         "noContainers": "Nessun contenitore in esecuzione trovato per il repository \"{{repository}}\"",
         "noPorts": "Nessuna porta esposta trovata sul contenitore \"{{container}}\". Specifica --port.",
         "noServiceIP": "Il contenitore \"{{container}}\" non ha un IP di servizio assegnato",
+        "portInUse": "La porta locale {{port}} è già in uso. Scegline un'altra con --local",
+        "notReady": "Il tunnel non è diventato attivo su localhost:{{localPort}} entro 15s",
+        "urlOnlyOption": "Stampa solo l'URL locale non appena il tunnel è pronto (leggibile da script)",
         "portOption": "Porta del contenitore remoto da inoltrare"
       },
       "unmount": {
@@ -2212,6 +2223,13 @@
         "settingsWarning": "Avviso: impossibile configurare le impostazioni VS Code: {{error}}",
         "settingUpEnv": "Configurazione ambiente remoto in corso...",
         "success": "VS Code avviato con successo.",
+        "installingServer": "Verifica che {{provider}} {{version}} sia installato sul macchinario...",
+        "startingServer": "Avvio di {{provider}} nella sandbox del repository...",
+        "serverReused": "Riutilizzo del server già in esecuzione",
+        "tunnelReady": "Tunnel pronto su localhost:{{port}}",
+        "browserUrl": "Apri VS Code nel browser: {{url}}",
+        "passwordNote": "Password di accesso: {{password}}",
+        "openingBrowser": "Apertura del browser in corso...",
         "testingConnectivity": "Test connettivita verso {{host}}:{{port}} in corso..."
       },
       "description": "Apri VS Code con Remote SSH su una macchina o un repository con ambiente per repository isolato. Stessa connessione SSH di `term` ma avvia VS Code invece. Sottocomandi principali: connect (o abbreviazione posizionale), list (mostra le connessioni configurate), cleanup (rimuove le voci di configurazione SSH), check (verifica l'installazione di VS Code).",
@@ -2223,6 +2241,19 @@
         "keyPersisted": " (chiave persistente)",
         "noConnections": "Nessuna connessione SSH VS Code configurata.",
         "total": "\nTotale: {{count}} connessione/i"
+      },
+      "serve": {
+        "description": "Gestisci il server VS Code nel browser all'interno della sandbox",
+        "status": {
+          "description": "Mostra se il server VS Code nel browser è in esecuzione",
+          "running": "{{provider}} in esecuzione (pid {{pid}}, porta {{port}})",
+          "stopped": "{{provider}} non è in esecuzione"
+        },
+        "stop": {
+          "description": "Ferma il server VS Code nel browser",
+          "stopped": "{{provider}} fermato",
+          "notRunning": "{{provider}} non era in esecuzione"
+        }
       }
     }
   },
@@ -2555,7 +2586,11 @@
       "noHostKey": "La macchina '{{machine}}' non ha una host key configurata nel vault",
       "noIpAddress": "La macchina '{{machine}}' non ha un indirizzo IP configurato",
       "noPrivateKey": "Il team '{{team}}' non ha una chiave privata SSH configurata",
-      "notFound": "VS Code non trovato.\n\nInstallalo da: https://code.visualstudio.com/\nOppure imposta la variabile d'ambiente REDIACC_VSCODE_PATH."
+      "notFound": "VS Code non trovato.\n\nInstallalo da: https://code.visualstudio.com/\nOppure imposta la variabile d'ambiente REDIACC_VSCODE_PATH.",
+      "browserNeedsRepo": "vscode --browser serve la sandbox di un repository — passa --repository <nome>",
+      "unsupportedArch": "Architettura della macchina non supportata per VS Code nel browser: {{arch}}",
+      "serverInstallFailed": "Installazione di {{provider}} non riuscita: {{error}}",
+      "serverStartFailed": "Avvio di {{provider}} non riuscito: {{error}}"
     }
   },
   "help": {
@@ -2676,6 +2711,10 @@
     "opsParallel": "Crea le VM in parallelo",
     "opsSkipOrchestration": "Salta l'orchestrazione del cluster",
     "opsSSHUser": "Nome utente SSH per la connessione alla VM",
+    "vscodeBrowser": "Serve VS Code nel browser dalla sandbox del repository (non serve VS Code locale)",
+    "vscodeNoOpen": "Stampa l'URL senza aprire il browser locale",
+    "vscodeServerProvider": "Implementazione del server VS Code nel browser (openvscode, code-server)",
+    "vscodeServerArchive": "Percorso del tarball del server pre-caricato sul macchinario (installazioni air-gap)",
     "organization": "Nome dell'organizzazione",
     "output": "Formato di output (table|json|yaml|csv)",
     "outputFormat": "Formato di output (json)",

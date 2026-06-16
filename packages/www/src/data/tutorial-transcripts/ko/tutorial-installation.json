@@ -6,7 +6,7 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.626476,
+      "at": 1.614947,
       "text": "먼저 CLI가 설치되어 있는지 확인합니다. version 플래그를 실행하면 설치된 버전이 출력되어 설치가 완료되었음을 알 수 있습니다.",
       "afterText": "설치가 완료되었습니다. rdc 바이너리가 경로에 등록되었습니다.",
       "cardLabel": "CLI 설치",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 7.903516,
+      "at": 8.543153,
       "text": "이제 진단 검사를 실행합니다. CLI에 필요한 모든 의존성(Node, SSH, Docker, renet 바이너리)을 확인하고 부족한 항목을 보고합니다. 보고서에 문제가 없으면 준비가 완료된 것입니다.",
       "afterText": "버전이 출력되었습니다. 사용할 준비가 되었습니다.",
       "cardLabel": "버전 확인",

@@ -4,6 +4,7 @@ import StructuredData from '../StructuredData.astro';
 import SPHero from './SPHero.astro';
 import SPStatsBar from './SPStatsBar.astro';
 import SPProblem from './SPProblem.astro';
+import SPSolutionVideo from './SPSolutionVideo.astro';
 import SPCostCalculator from './SPCostCalculator';
 import SPHowItWorks from './SPHowItWorks.astro';
 import SPTechDiff from './SPTechDiff.astro';
@@ -74,6 +75,10 @@ const breadcrumbItems = [
 
     {has('problem') && (
       <SPProblem problem={(content as any).problem} illustration={config.illustration} illustrationMobile={config.illustrationMobile} referenceItems={(content as any).references?.items} slug={slug} />
+    )}
+
+    {has('video') && (
+      <SPSolutionVideo lang={lang} slug={slug} />
     )}
 
     {has('costCalculator') && config.calculatorPreset && (

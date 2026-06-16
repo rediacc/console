@@ -1,0 +1,52 @@
+---
+title: "L'isolation des forks en pratique"
+description: "Forkez une application PostgreSQL + pgAdmin en direct et modifiez-la côte à côte avec l'original : la preuve visuelle que les forks sont indépendants."
+category: "Tutorials"
+subcategory: advanced
+order: 9
+language: fr
+sourceHash: "074ca3466a3af5f0"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+---
+
+import TutorialStep from '../../../components/tutorial/TutorialStep.astro';
+
+# L'isolation des forks en pratique
+
+Le [tutoriel sur le forking](/fr/docs/tutorial-forking) vous a montré les commandes. Celui-ci montre ce qu'elles signifient : une application de base de données en direct, copiée en quelques secondes, modifiée librement dans le navigateur, pendant que l'original ne s'aperçoit de rien.
+
+## Regarder le tutoriel
+
+![Tutorial: Fork isolation in action](/assets/tutorials/tutorial-fork-isolation.cast)
+
+## La mise en place
+
+![Une base de données en direct et son jumeau](/img/tutorials/tutorial-fork-isolation/slide-1.svg)
+
+Un vrai PostgreSQL avec une interface pgAdmin, en direct sur le serveur. Un fork est une copie instantanée copy-on-write de tout cela : mêmes données à la naissance, vies totalement séparées ensuite.
+
+## Étape 1 : L'application en direct
+
+<TutorialStep number={1} />
+
+## Étape 2 : La forker
+
+<TutorialStep number={2} />
+
+La vidéo ouvre les deux pgAdmin dans le navigateur. L'original demande une connexion, car la production reste protégée. Le fork s'ouvre directement dans le workbench : les forks sont des sandboxes jetables, donc la barrière s'efface (le dépôt décide lui-même, selon qu'il s'agit ou non d'un fork).
+
+## Étape 3 : Deux mondes, un seul serveur
+
+<TutorialStep number={3} />
+
+Modifiez, supprimez, cassez n'importe quoi dans le fork. L'original continue de servir. Mêmes tables au moment du fork, indépendants pour toujours ensuite.
+
+## Étape 4 : Le jeter
+
+<TutorialStep number={4} />
+
+Des secondes pour créer, des secondes pour supprimer. C'est ce qui fait de "clonez la production, ne cassez rien" une habitude quotidienne plutôt qu'un événement exceptionnel.
+
+---
+
+Suivant : [Gérer les secrets](/fr/docs/tutorial-managing-secrets).

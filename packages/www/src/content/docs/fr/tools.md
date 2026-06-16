@@ -4,8 +4,8 @@ description: "Synchronisation de fichiers, accès terminal, intégration VS Code
 category: Guides
 order: 9
 language: fr
-sourceHash: "4b3aebff5e82416f"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "59abc2faa1157369"
+sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
 ---
 
 # Outils
@@ -46,7 +46,7 @@ Utilisez `--remote` pour un répertoire (par défaut) ou `--remote-file` pour un
 # Répertoire
 rdc repo sync download -m server-1 -r my-app --remote /app/data --local ./data
 
-# Single file — --local must be an existing directory
+# Single file: --local must be an existing directory
 rdc repo sync download -m server-1 -r my-app --remote-file /app/conf/config.yml --local ./local-conf
 ```
 
@@ -173,6 +173,36 @@ rdc vscode check
 Vérifie l'installation de VS Code, l'extension Remote SSH et les connexions actives.
 
 > **Prérequis :** Installez l'extension [Remote - SSH](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh) dans VS Code.
+
+### VS Code dans le navigateur
+
+Pas de VS Code local ? Servez l'éditeur depuis l'intérieur du sandbox du dépôt et ouvrez-le dans n'importe quel navigateur :
+
+```bash
+rdc vscode connect -r my-app -m server-1 --browser
+```
+
+Cette commande :
+1. Installe le serveur d'éditeur open-source sur la machine une seule fois (chemin partagé en lecture seule, vérification de somme de contrôle)
+2. Le démarre à l'intérieur du sandbox du dépôt, de sorte que l'arborescence de fichiers, le terminal intégré et chaque processus enfant voient exactement ce que voit le dépôt
+3. Ouvre un tunnel SSH vers un port local et lance votre navigateur avec une URL à jeton de session
+
+Le serveur continue de tourner après que vous fermez le tunnel ; la reconnexion le réutilise. Gérez-le avec :
+
+```bash
+rdc vscode serve status -r my-app -m server-1
+rdc vscode serve stop -r my-app -m server-1
+```
+
+| Option | Description |
+|--------|-------------|
+| `--no-open` | Afficher l'URL au lieu de lancer le navigateur |
+| `--url-only` | Afficher exactement une ligne d'URL sur stdout (pour les scripts) et maintenir le tunnel |
+| `--local <port>` | Choisir le port local du tunnel |
+| `--server-provider <id>` | Implémentation du serveur d'éditeur : `openvscode` (par défaut) ou `code-server` |
+| `--server-archive <file>` | Installer depuis une archive pré-préparée sur la machine (pas d'internet nécessaire) |
+
+Fonctionne depuis Linux, macOS, Windows ou une tablette. La seule exigence locale est un navigateur.
 
 ## Mises à jour du CLI (update)
 

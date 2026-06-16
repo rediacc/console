@@ -101,7 +101,8 @@ function evaluateSensitiveMutation(
   entry: MutationEntry,
   meta: SensitivityMeta,
   overrideScope: string | null,
-  context: MutationContext
+  context: MutationContext,
+  agent: boolean
 ): SingleMutationResult {
   if (overrideScope && scopeAllows(overrideScope, entry.pointer)) {
     return {
@@ -120,6 +121,22 @@ function evaluateSensitiveMutation(
     };
   }
 
+  const stored = digestForPointer(context.previousConfig, entry.pointer);
+  if (stored === undefined && !agent) {
+    // New field added by a HUMAN — there is no previous value to verify, so
+    // the passwd-style ceremony does not apply (--current is documented as
+    // required for overwrite/unset). Agents keep the explicit ceremony even
+    // on first write (existing precedent). Permit, but audit.
+    return {
+      decision: {
+        pointer: entry.pointer,
+        meta,
+        action: 'allowed',
+        reason: 'new field',
+      },
+    };
+  }
+
   const claimed = context.knowledge?.[entry.pointer];
   if (!claimed) {
     return {
@@ -131,9 +148,8 @@ function evaluateSensitiveMutation(
     };
   }
 
-  const stored = digestForPointer(context.previousConfig, entry.pointer);
   if (stored === undefined) {
-    // New field being added — knowledge claim has nothing to verify against.
+    // Agent first-write with a knowledge claim — nothing to verify against.
     // Treat as rotation: permit, but audit.
     return {
       decision: {
@@ -191,7 +207,13 @@ export function evaluateMutations(
     // Symmetric path: humans and agents both go through the same evaluator.
     // Humans get a null overrideScope (REDIACC_ALLOW_CONFIG_EDIT only takes
     // effect under agent context), so they cannot bypass via that branch.
-    const { decision, failure } = evaluateSensitiveMutation(entry, meta, overrideScope, context);
+    const { decision, failure } = evaluateSensitiveMutation(
+      entry,
+      meta,
+      overrideScope,
+      context,
+      agent
+    );
     decisions.push(decision);
     if (failure) failures.push(failure);
   }

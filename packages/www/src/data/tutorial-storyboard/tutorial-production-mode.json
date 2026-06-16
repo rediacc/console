@@ -1,7 +1,7 @@
 {
   "version": 1,
   "tutorial": "tutorial-production-mode",
-  "nextTutorialKey": "tutorial-backup-restore",
+  "nextTutorialKey": "tutorial-monitoring",
   "scenes": [
     {
       "id": "intro",

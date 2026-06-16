@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "tr",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "Bir canlı repo. Hadi klonlayalım.",
+      "cardLabel": "Canlı Uygulama",
+      "prose": "Canlı bir repository ile başlayın: makinede pgAdmin ile birlikte çalışan bir PostgreSQL veritabanı."
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "Fork edildi ve başlatılıyor. Veri kopyalanmadı, paylaşıldı. Bir taraf değiştirinceye kadar.",
+      "cardLabel": "Fork + Başlat",
+      "prose": "Repository'yi --up --detach ile fork edin: CoW klonu neredeyse anlıktır ve fork'un servisleri hemen başlar."
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "Aynı makine, iki izole dünya.",
+      "cardLabel": "Yan Yana",
+      "prose": "Repository'leri listeleyin: orijinal ve fork, tam izole şekilde yan yana çalışır."
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "Silindi. Orijinal tüm bu süre boyunca çalışmaya devam etti.",
+      "cardLabel": "Fork'u Sil",
+      "prose": "İşiniz bittiğinde fork'u silin. Orijinal repository dokunulmadan kalır."
+    }
+  ],
+  "title": "Fork İzolasyonu Uygulamada",
+  "chapters": {
+    "intro": "Fork İzolasyonu Uygulamada",
+    "what-is-a-fork": "Canlı bir veritabanı ve ikizi",
+    "cast-step-0": "Adım 1: Canlı uygulama",
+    "grand-pgadmin": "Orijinal, korumalı",
+    "cast-step-1": "Adım 2: Fork'la",
+    "fork-pgadmin": "Fork, tamamen açık",
+    "side-by-side": "Yan yana",
+    "cast-step-2": "Adım 3: İki repo, bir sunucu",
+    "cast-step-3": "Adım 4: Fork'u at",
+    "outro": "Sonraki: Secrets Yönetimi"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "Tekrar hoş geldiniz! Geçen seferinde fork komutlarını gördünüz. Şimdi bunların gerçekte ne anlama geldiğini izleyelim: canlı bir veritabanı uygulaması, saniyeler içinde kopyalanıyor, özgürce düzenleniyor, orijinal ise hiçbir şeyden habersiz."
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "İşte kurulum: sunucuda canlı çalışan, üzerinde pgAdmin arayüzü olan gerçek bir PostgreSQL. Fork, bunun tamamının anında copy-on-write ikizdir. Doğumda aynı veri, sonrasında tamamen ayrı yaşamlar."
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "İşte tarayıcıdaki orijinal. pgAdmin bir giriş istiyor, çünkü bu üretim kopyası ve üretim korumalı kalıyor."
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "Ve işte fork'un pgAdmin'i. Bu sefer giriş yok: fork'lar tek kullanımlık sandbox'lardır, bu yüzden kapı kenara çekilir. Aynı tablolar, aynı satırlar ama kendi evreni."
+    },
+    {
+      "id": "side-by-side",
+      "text": "Şimdi yan yana: solda fork, sağda orijinal. Soldakini düzenleyin, silin, bozun, sağdaki hiç kıpırdamaz. Gözle görülür bir izolasyon bu."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Yani özgürce fork'layın, üretim zarar göremez. Sırada secrets var, fork'larınızın kasıtlı olarak devralmadığı tek şey. Orada görüşürüz!"
+    }
+  ]
+}

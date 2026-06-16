@@ -1,0 +1,82 @@
+{
+  "cast": "/assets/tutorials/tutorial-fork-isolation.cast",
+  "language": "es",
+  "version": 1,
+  "events": [
+    {
+      "id": "tutorial-fork-isolation-01",
+      "markerIndex": 0,
+      "at": 2.412666,
+      "text": "Meet the app: demo-pgadmin, a PostgreSQL with a pgAdmin interface, mounted and running.",
+      "afterText": "Un repositorio activo. Vamos a clonarlo.",
+      "cardLabel": "App en Vivo",
+      "prose": "Parte de un repositorio en vivo: una base de datos PostgreSQL con pgAdmin ejecutándose en la máquina."
+    },
+    {
+      "id": "tutorial-fork-isolation-02",
+      "markerIndex": 1,
+      "at": 8.155445,
+      "text": "Fork it. The copy-on-write clone takes seconds regardless of size; detach returns as soon as the containers start, while health checks continue in the background.",
+      "afterText": "Fork hecho, iniciando. Los datos no se copiaron, se compartieron, hasta que uno de los lados los modifique.",
+      "cardLabel": "Fork + Up",
+      "prose": "Haz un fork del repositorio con --up --detach: el clon CoW es casi instantáneo y los servicios del fork arrancan de inmediato."
+    },
+    {
+      "id": "tutorial-fork-isolation-03",
+      "markerIndex": 2,
+      "at": 19.24953,
+      "text": "Two repositories now: the original and the experiment, each with its own containers, network, and disk view.",
+      "afterText": "La misma máquina, dos mundos aislados.",
+      "cardLabel": "Lado a Lado",
+      "prose": "Lista los repositorios: el original y el fork corren en paralelo, completamente aislados."
+    },
+    {
+      "id": "tutorial-fork-isolation-04",
+      "markerIndex": 3,
+      "at": 24.926391,
+      "text": "Done experimenting? Delete the fork. Seconds to create, seconds to throw away — the original never knew it existed.",
+      "afterText": "Eliminado. El original siguió funcionando todo el tiempo.",
+      "cardLabel": "Eliminar Fork",
+      "prose": "Elimina el fork cuando hayas terminado. El repositorio original queda intacto."
+    }
+  ],
+  "title": "Aislamiento de Fork en Acción",
+  "chapters": {
+    "intro": "Aislamiento de Fork en Acción",
+    "what-is-a-fork": "Una base de datos en vivo y su copia",
+    "cast-step-0": "Paso 1: La app en vivo",
+    "grand-pgadmin": "El original, protegido",
+    "cast-step-1": "Paso 2: Hazle un fork",
+    "fork-pgadmin": "El fork, completamente abierto",
+    "side-by-side": "Lado a lado",
+    "cast-step-2": "Paso 3: Dos repos, un servidor",
+    "cast-step-3": "Paso 4: Descarta el fork",
+    "outro": "Siguiente: Gestión de Secrets"
+  },
+  "narrations": [
+    {
+      "id": "intro",
+      "text": "¡Bienvenido de nuevo! La última vez viste los comandos de fork. Ahora veamos qué significan en la práctica: una app de base de datos en vivo, copiada en segundos, editada libremente, mientras el original no se entera de nada."
+    },
+    {
+      "id": "what-is-a-fork",
+      "text": "Aquí está la configuración: un PostgreSQL real con una interfaz pgAdmin encima, en vivo en el servidor. Un fork es un gemelo copy-on-write instantáneo de todo eso. Los mismos datos al nacer, vidas completamente separadas después."
+    },
+    {
+      "id": "grand-pgadmin",
+      "text": "Este es el original, en el navegador. pgAdmin pide un inicio de sesión, porque es la copia de producción, y la producción se mantiene protegida."
+    },
+    {
+      "id": "fork-pgadmin",
+      "text": "Y aquí está el pgAdmin del fork. Sin inicio de sesión esta vez: los forks son sandbox desechables, así que la barrera se aparta. Las mismas tablas, las mismas filas, pero su propio universo."
+    },
+    {
+      "id": "side-by-side",
+      "text": "Ahora uno al lado del otro: el fork a la izquierda, el original a la derecha. Edita, borra, rompe lo que quieras a la izquierda, y el de la derecha no se inmuta. Eso es aislamiento que puedes ver."
+    },
+    {
+      "id": "next-tutorial",
+      "text": "Así que haz fork con libertad, la producción no puede salir perjudicada. A continuación, veremos los secrets, lo único que tus forks deliberadamente no heredan. ¡Nos vemos allí!"
+    }
+  ]
+}

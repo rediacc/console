@@ -6,7 +6,7 @@
     {
       "id": "tutorial-installation-01",
       "markerIndex": 0,
-      "at": 1.626476,
+      "at": 1.614947,
       "text": "Primeiro, vamos confirmar que a ferramenta está instalada. A opção de versão imprime a versão instalada, para sabermos que a instalação ficou completa.",
       "afterText": "Instalação concluída. O binário rdc está no seu PATH.",
       "cardLabel": "Instalar CLI",
@@ -15,7 +15,7 @@
     {
       "id": "tutorial-installation-02",
       "markerIndex": 1,
-      "at": 7.903516,
+      "at": 8.543153,
       "text": "Agora vamos executar a verificação de diagnóstico. Este comando verifica todas as dependências de que a ferramenta necessita -- Node, SSH, Docker, o binário renet -- e reporta o que faltar. Um relatório limpo significa que estamos prontos para avançar.",
       "afterText": "Versão impressa. Está tudo pronto.",
       "cardLabel": "Verificar Versão",

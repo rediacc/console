@@ -45,5 +45,15 @@
 
 # tmp Path Traversal — electron-builder build chain
 # GHSA-ph9p-34f9-6g65 (app-builder-lib > @malept/flatpak-bundler > tmp-promise > tmp)
+# 1120654 is a sibling re-issue of the same advisory under a new source ID (GitHub
+# Advisory Database split); same chain, same root cause, same rationale.
 # BLOCKER: electron-builder transitive; patched tmp@0.2.6 published <24h ago and is blocked by .npmrc minimum-release-age=1440; prefix/postfix inputs come from trusted desktop build tooling, not untrusted data
 1119610
+1120654
+
+# node-tar PAX/GNU long-name header interpretation differential — file smuggling
+# GHSA-vmf3-w455-68vh (tar <=7.5.15). Dev-only: tar@7.5.15 is pulled via
+# node-gyp -> @electron/rebuild for native-module rebuilds during the desktop
+# build; no fixed version is published yet (7.5.15 is the latest and still in range).
+# BLOCKER: dev/build-only via node-gyp/@electron/rebuild; the parser-differential file-smuggling requires extracting a maliciously-crafted tarball, but our build only unpacks our own first-party and signature-verified npm-registry tarballs, never attacker-supplied archives. Drop once node-tar ships a fixed release.
+1120782
