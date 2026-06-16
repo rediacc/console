@@ -259,3 +259,10 @@
 # major outside the deliberate ^0.211.0 pin in .syncpackrc.json (the OTel upgrade chain breaks CLI instrumentation).
 # BLOCKER: the unbounded allocation requires attacker-controlled inbound W3C Baggage headers, but our SDK only propagates baggage we set ourselves and exports via OTLP — it never parses untrusted inbound baggage from external callers, so the allocation path is unreachable. Drop when the sdk-node pin moves to >=0.219.0.
 1120821
+
+# vite 7.3.3 (GHSA-v6wh-96g9-6wx3 moderate launch-editor NTLMv2 disclosure + GHSA-fx2h-pf6j-xcff high server.fs.deny bypass).
+# vite is pinned by an overrides entry to >=6.4.2 <8 (astro@5.x peer range); the fix is vite 8.0.4, a major outside
+# both the override and astro's range, so reaching it needs an astro v6 migration (not scheduled — see @astrojs/mdx).
+# BLOCKER: both advisories are vite DEV-SERVER + Windows-only — the launch-editor NTLMv2 UNC disclosure and the server.fs.deny alternate-path bypass only affect `vite dev` on Windows. We use vite solely at build time for astro static generation; the dev server is never shipped to prod, and CI/prod builds do not run on Windows, so neither path is reachable. Same class as the esbuild dev-server entry above. Drop once astro/vite admit vite 8.
+1120785
+1120790
