@@ -92,6 +92,7 @@ const RegionPickerModal: React.FC = () => {
   const [targetPath, setTargetPath] = useState('/account/');
   const [selected, setSelected] = useState<string | null>(null);
   const [useStable, setUseStable] = useState(false);
+  const [showChannelHint, setShowChannelHint] = useState(false);
   const currentLang = useLanguage();
   const { t } = useTranslation(currentLang);
 
@@ -215,6 +216,9 @@ const RegionPickerModal: React.FC = () => {
           </button>
         </div>
 
+        <p className="region-picker-subtitle">{t('regionPicker.subtitle')}</p>
+        <p className="region-picker-reassurance">{t('regionPicker.reassurance')}</p>
+
         <div className="region-picker-cards">
           {REGIONS.map((region) => (
             <button
@@ -243,41 +247,67 @@ const RegionPickerModal: React.FC = () => {
           ))}
         </div>
 
-        <div className="region-picker-channel-switch">
+        <div className="region-picker-channel-row">
+          <div className="region-picker-channel-switch">
+            <button
+              type="button"
+              className={`region-picker-channel-option ${useStable ? '' : 'region-picker-channel-option--active'}`}
+              onClick={() => setUseStable(false)}
+              data-track="region_picker_channel"
+              data-track-label="edge"
+            >
+              {t('regionPicker.channelEdge')}
+            </button>
+            <button
+              type="button"
+              className={`region-picker-channel-option ${useStable ? 'region-picker-channel-option--active' : ''}`}
+              onClick={() => setUseStable(true)}
+              data-track="region_picker_channel"
+              data-track-label="stable"
+            >
+              {t('regionPicker.channelStable')}
+            </button>
+          </div>
           <button
             type="button"
-            className={`region-picker-channel-option ${useStable ? '' : 'region-picker-channel-option--active'}`}
-            onClick={() => setUseStable(false)}
-            data-track="region_picker_channel"
-            data-track-label="edge"
+            className="region-picker-channel-info"
+            aria-label={t('regionPicker.channelHintLabel')}
+            aria-expanded={showChannelHint}
+            aria-controls="region-picker-channel-tooltip"
+            onClick={() => setShowChannelHint((prev) => !prev)}
+            data-track="region_picker_channel_hint_toggle"
           >
-            {t('regionPicker.channelEdge', 'Edge')}
-          </button>
-          <button
-            type="button"
-            className={`region-picker-channel-option ${useStable ? 'region-picker-channel-option--active' : ''}`}
-            onClick={() => setUseStable(true)}
-            data-track="region_picker_channel"
-            data-track-label="stable"
-          >
-            {t('regionPicker.channelStable', 'Stable')}
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+            <span
+              id="region-picker-channel-tooltip"
+              className="region-picker-channel-tooltip"
+              role="tooltip"
+            >
+              {useStable ? t('regionPicker.stableHint') : t('regionPicker.edgeHint')}
+            </span>
           </button>
         </div>
-        <p className="region-picker-channel-hint">
-          {useStable
-            ? t(
-                'regionPicker.stableHint',
-                'Reliable releases, promoted from edge after 7-day soak.'
-              )
-            : t(
-                'regionPicker.edgeHint',
-                'Continuously deployed production. 2X free limits during soak period.'
-              )}
-          <br />
-          <span className="region-picker-channel-hint-note">
-            {t('regionPicker.regionNote', "Region can't be changed after sign-up.")}
-          </span>
+        <p
+          className={`region-picker-channel-hint-mobile ${
+            showChannelHint ? 'region-picker-channel-hint-mobile--visible' : ''
+          }`}
+        >
+          {useStable ? t('regionPicker.stableHint') : t('regionPicker.edgeHint')}
         </p>
+        <p className="region-picker-footer">{t('regionPicker.footer')}</p>
+        <p className="region-picker-footer-note">{t('regionPicker.footerNote')}</p>
       </div>
     </div>
   );

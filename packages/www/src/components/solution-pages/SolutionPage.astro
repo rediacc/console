@@ -46,7 +46,9 @@ const has = (section: string) => config.sections.includes(section as any);
 const rawCtaHref = config.ctaHref ?? CATEGORY_CTA_MAP[config.category];
 const ctaHref = rawCtaHref === 'CONSULTATION'
   ? EXTERNAL_LINKS.SCHEDULE_CONSULTATION
-  : `/${lang}${rawCtaHref}`;
+  : rawCtaHref.startsWith('/')
+    ? rawCtaHref
+    : `/${lang}${rawCtaHref}`;
 
 // Breadcrumb items
 const pageTitle = (content as any).hero?.title ?? slug;

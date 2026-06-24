@@ -4,8 +4,8 @@ description: Birkaç dakika içinde sunucunuzda konteynerize bir servis çalış
 category: Guides
 order: -1
 language: tr
-sourceHash: "2047fd1ce3a47944"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "afd4d22ddc8e02e1"
+sourceCommit: "ff9c470edf8760f63f12baf681c04db51a0c202f"
 ---
 
 # Hızlı Başlangıç
@@ -59,7 +59,7 @@ Artık her rdc komutu bu anahtarla kimlik doğrulaması yapar. Parola gerekmez.
 ### 3. Sunucunuzu Ekleyin
 
 ```bash
-rdc config machine add --name my-server --ip 192.168.1.100 --user muhammed
+rdc config machine add --name my-server --ip 192.168.1.100 --user admin
 rdc config machine setup --name my-server  # renet kurulumu + veri deposu oluşturma
 ```
 

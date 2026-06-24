@@ -1,7 +1,7 @@
 ---
 import { createTranslator } from '../i18n/utils';
 import type { Language } from '../i18n/types';
-import FounderGuarantee from './FounderGuarantee.astro';
+import CorporateGuarantee from './CorporateGuarantee.astro';
 import { isDesignPartnerProgramActive } from '../utils/design-partner-program';
 
 interface Props {
@@ -271,7 +271,7 @@ const rows = ta(ns + '.rows') as Array<{ title: string; description: string }>;
       </div>
     </div>
 
-    <!-- Founder Guarantee (swap to a personal Design Partner pitch when the program is active) -->
-    <FounderGuarantee lang={lang} quoteKey={isDesignPartnerProgramActive() ? 'designPartner' : 'guarantee'} />
+    <!-- Corporate guarantee -->
+    <CorporateGuarantee lang={lang} />
   </div>
 </section>

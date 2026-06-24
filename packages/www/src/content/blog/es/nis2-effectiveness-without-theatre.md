@@ -1,8 +1,13 @@
 ---
-title: "Tu pentesting anual es teatro de cumplimiento. El artículo 21(2)(f) de NIS2 acaba de convertirlo en un problema."
-description: "Evaluación continua de la efectividad, el fork de tiempo constante que la hace económica, y el calendario de notificación del artículo 23 que no podrás cumplir sin artefactos de calidad forense."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: >-
+  Tu pentesting anual es teatro de cumplimiento. El artículo 21(2)(f) de NIS2
+  acaba de convertirlo en un problema.
+description: >-
+  Evaluación continua de la efectividad, el fork de tiempo constante que la hace
+  económica, y el calendario de notificación del artículo 23 que no podrás
+  cumplir sin artefactos de calidad forense.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +17,8 @@ tags:
   - notificacion-incidentes
 featured: false
 language: es
-sourceHash: "4c2768e81f0ff03a"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 0e471ac41759e4cb
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

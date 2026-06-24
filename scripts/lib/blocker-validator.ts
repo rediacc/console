@@ -28,6 +28,25 @@ export const LOW_EFFORT_BLOCKER_PATTERNS: readonly string[] = [
   'upstream issue', 'transitive', 'dev dep', 'dev only',
 ];
 
+// Substring-matched (not exact-match) phrases that signal can-kicking a routine,
+// installable bump rather than a genuine technical hold. The upgrade blocklist is
+// only for bumps that genuinely cannot be taken now (breaking major, pin conflict,
+// native rebuild, known regression). check-deps already auto-defers versions too
+// fresh to install under .npmrc minimum-release-age, so "routine bump deferred to a
+// dedicated dependency-bump PR" / "not needed by this change" is deferral-for-
+// convenience — take the bump. Legitimate major-migration holds read differently
+// (e.g. "dedicated lint-tooling PR", "dedicated PR that exercises the email flows")
+// and are NOT matched here.
+export const LOW_EFFORT_BLOCKER_SUBSTRINGS: readonly string[] = [
+  'deferred to a dedicated dependency-bump pr',
+  'not needed by this change',
+  'not needed in this change',
+  'not needed for this change',
+  'to keep this merge focused',
+  'to keep this change focused',
+  'to keep this pr focused',
+];
+
 export const BLOCKER_MIN_LENGTH = 30;
 
 function normalize(reason: string): string {
@@ -38,7 +57,7 @@ function normalize(reason: string): string {
 }
 
 export interface BlockerValidationFailure {
-  kind: 'low-effort' | 'too-short';
+  kind: 'low-effort' | 'deferral' | 'too-short';
   normalized: string;
   message: string;
 }
@@ -66,6 +85,21 @@ export function validateBlockerQuality(
           `  Rejected because: "${normalized}" matches the banned-phrase list — this adds no information beyond 'we suppressed it'`,
           `  Action: write a specific reason. Good BLOCKERs cite the upstream pin, the package chain, OR why runtime isn't affected.`,
           `  Example: 'electron-builder 26.x pins plist > xmldom 0.8.x; build-time only, requires major electron migration'`,
+        ].join('\n'),
+      };
+    }
+  }
+
+  for (const pattern of LOW_EFFORT_BLOCKER_SUBSTRINGS) {
+    if (normalized.includes(pattern)) {
+      return {
+        kind: 'deferral',
+        normalized,
+        message: [
+          `Allowlist ${file}: BLOCKER for entry ${id} defers a routine bump instead of justifying a hold ("${reason}")`,
+          `  Rejected because: it contains "${pattern}" — the upgrade blocklist is for bumps that genuinely cannot be taken now (breaking major, pin conflict, native rebuild, known regression), not for deferring a routine installable bump.`,
+          `  Note: check-deps already auto-defers versions too fresh to install under .npmrc minimum-release-age, so there is no need to blocklist a fresh release.`,
+          `  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the concrete technical blocker (which package pins what, what breaks).`,
         ].join('\n'),
       };
     }

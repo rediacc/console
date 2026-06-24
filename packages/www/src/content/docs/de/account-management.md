@@ -4,8 +4,8 @@ description: "Organisationen, Teams, Mitglieder und Abonnements für Ihr Rediacc
 category: Guides
 order: 12
 language: de
-sourceHash: "974885635641ed70"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1a3458ba81b340d4"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 ### Organisationen
@@ -57,10 +57,10 @@ Rediacc bietet vier Pläne:
 
 | Plan | Maschinen | Repo-Lizenzen/Monat | Delegierungszert. Standard / Max | Funktionen |
 |------|-----------|----------------------|----------------------------------|------------|
-| COMMUNITY | 2 | 500 | 15d / 30d | Basis |
-| PROFESSIONAL | 5 | 5.000 | 60d / 120d | Berechtigungsgruppen, Audit-Log, individuelles Branding, vorrangiger Support |
-| BUSINESS | 20 | 20.000 | 90d / 180d | Ceph, erweiterte Analysen, Warteschlangen-Priorität, erweiterte Warteschlange |
-| ENTERPRISE | 50 | 100.000 | 120d / 365d | Dedizierter Account Manager |
+| COMMUNITY | 2 | 100 | 15d / 30d | Basis |
+| PROFESSIONAL | 3 | 1.000 | 60d / 120d | Berechtigungsgruppen, Audit-Log, individuelles Branding, vorrangiger Support |
+| BUSINESS | 10 | 10.000 | 90d / 180d | Ceph, erweiterte Analysen, Warteschlangen-Priorität, erweiterte Warteschlange |
+| ENTERPRISE | 25+ | 25.000+ | 120d / 365d | Dedizierter Account Manager |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 

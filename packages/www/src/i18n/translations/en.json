@@ -88,7 +88,7 @@
     "builtForYou": "Built for you",
     "forDevops": "For DevOps Engineers",
     "forCtos": "For CTOs",
-    "forCeos": "For CEOs & Founders",
+    "forCeos": "For CEOs",
     "personas": {
       "devops": {
         "tagline": "Ship faster. Recover instantly. Sleep better.",
@@ -132,7 +132,7 @@
     },
     "organizationLinks": {
       "aboutUs": "About Us",
-      "team": "Team",
+      "company": "Company",
       "contact": "Contact"
     },
     "supportLinks": {
@@ -199,7 +199,14 @@
   },
   "logoWall": {
     "title": "Works with your infrastructure",
-    "categories": ["Git", "CI/CD", "Containers", "Databases", "Monitoring", "Storage"]
+    "categories": [
+      "Git",
+      "CI/CD",
+      "Containers",
+      "Databases",
+      "Monitoring",
+      "Storage"
+    ]
   },
   "solutions": {
     "title": "How We Ensure Business Continuity",
@@ -327,16 +334,6 @@
     "compareAll": "Compare all plans and features"
   },
   "team": {
-    "founder": {
-      "story": {
-        "headline": "Why I Built Rediacc",
-        "description": "I spent over a decade managing servers. I watched backups fail during real incidents. Rediacc exists so yours won't."
-      },
-      "guarantee": "If Rediacc doesn't work for you, email me and I'll help you migrate back.",
-      "contact": "Questions? Email me directly",
-      "quote": "I built Rediacc because infrastructure shouldn't be this fragile.",
-      "designPartner": "I personally onboard every Design Partner. Sign up free, then book a 30-min call so we can talk about your stack."
-    },
     "video": {
       "playLabel": "Watch video",
       "ccLabel": "Captions",
@@ -344,14 +341,13 @@
     }
   },
   "announcement": {
-    "enabled": true,
+    "enabled": false,
     "text": "Limited time: Design Partner Program. BUSINESS plan free for life.",
     "link": "/account/"
   },
   "testimonials": {
     "title": "What Teams Say",
     "subtitle": "How different roles experience Rediacc",
-    "fromTheFounder": "From the founder",
     "items": [
       {
         "role": "Disaster Recovery Manager",
@@ -466,9 +462,11 @@
   },
   "captchaRequired": "Please complete the captcha verification.",
   "regionPicker": {
-    "title": "Where should we store your data?",
-    "subtitle": "Your account, billing, and configurations stay in the region you choose. They never leave.",
-    "footer": "Pick the region closest to you, or where your organization requires. This can't be changed after sign-up.",
+    "title": "Choose your account region",
+    "subtitle": "Your account, billing, and configurations stay in the region you choose.",
+    "reassurance": "Your server data and backups stay on your own infrastructure.",
+    "footer": "Pick the region closest to you, or where your organization requires.",
+    "footerNote": "This can't be changed after sign-up.",
     "locations": {
       "eu": "Frankfurt, Germany",
       "us": "Virginia, USA",
@@ -476,6 +474,7 @@
     },
     "channelEdge": "Edge",
     "channelStable": "Stable",
+    "channelHintLabel": "About release channels",
     "edgeHint": "Continuously deployed production. 2X free limits during soak period.",
     "stableHint": "Reliable releases, promoted from edge after 7-day soak.",
     "regionNote": "Region can't be changed after sign-up."
@@ -584,18 +583,19 @@
         "legend": "Contact information"
       }
     },
-    "team": {
+    "company": {
       "meta": {
-        "title": "Our Team | Rediacc - Backups That Survive Ransomware",
-        "description": "Meet the team behind Rediacc. We got tired of 3 AM data-loss pages, so we built backups ransomware can't touch.",
-        "keywords": "Rediacc team, infrastructure engineering, disaster recovery experts, system reliability, DevOps team"
+        "title": "Company | Rediacc - Backups That Survive Ransomware",
+        "description": "Rediacc builds self-hosted backup and disaster recovery software that lets you clone production, test safely, and recover in seconds.",
+        "keywords": "Rediacc company, self-hosted backup, disaster recovery software, infrastructure reliability"
       },
       "hero": {
-        "title": "The Team Behind Backups Ransomware Can't Touch",
-        "subtitle": "Engineers who got tired of 3 AM data-loss pages. So we built the fix."
+        "title": "Backup and Recovery Software You Control",
+        "subtitle": "Rediacc is built for teams that run production systems and cannot afford to lose them."
       },
-      "team": {
-        "title": "Meet Our Team"
+      "overview": {
+        "title": "What We Do",
+        "description": "Rediacc is self-hosted software for backup, cloning, and disaster recovery. It runs on your own servers, copies entire production systems in seconds, and gets you back online fast."
       },
       "mission": {
         "title": "Our Mission: Make Disasters Impossible",
@@ -629,27 +629,6 @@
             "title": "Transparency",
             "description": "Open communication, honest pricing, and clear documentation. No hidden fees, no surprises, no fine print."
           }
-        }
-      },
-      "story": {
-        "title": "Our Story",
-        "beginning": {
-          "title": "The Beginning",
-          "paragraph1": "In 2018, I quit my software engineer job to chase my own vision. The excitement kept me on 18-hour days, sleeping 4-5 hours. I poured everything in for 5-6 months.",
-          "paragraph2": "Then I lost access to all my dev infrastructure. Just like that, everything I'd built was out of reach. I had no backups. Even if I had, I couldn't afford new physical servers.",
-          "paragraph3": "To pay off debts and support my family, I went back to a salaried job. It took 20 months to get my work back. I drifted far from my dreams. I lived with uncertainty and mounting bills."
-        },
-        "turningPoint": {
-          "title": "The Turning Point",
-          "paragraph1": "Years later, I kept thinking about how to stop this from happening again. I needed a tool to move my systems anywhere. Turn them on whenever. Back them up easily. Keep them safe no matter where I moved them.",
-          "paragraph2": "In 2021, I found Docker through a NetworkChuck video. I was shocked at what was possible. I wished I had known about it earlier. It could have changed everything.",
-          "paragraph3": "But Docker alone didn't fix everything. Moving container files between systems was hard. File ownership broke. As data grew, transfers got slower. Worst of all, I had to keep services offline until the migration finished. Docker also gave me almost no security."
-        },
-        "birth": {
-          "title": "Birth of Rediacc",
-          "paragraph1": "It started with a portable storage layer. From there, I added a backup module. Then came the hardest part. Moving live systems with almost no downtime, no matter the data size. I added the features I actually needed.",
-          "paragraph2": "This is how Rediacc was born. A product forged through the hardest problems I had. Now it's open to everyone. Use it. Don't let outages hold your business back. Be ready to survive and grow.",
-          "quote": "When I lost access to my infrastructure, I knew what I had to build: a system that makes disasters impossible."
         }
       },
       "cta": {
@@ -695,11 +674,11 @@
         "title": "What you get",
         "lede": "You get the full BUSINESS plan. Free. For as long as Rediacc exists.",
         "items": [
-          "BUSINESS plan: 500 GB per repository, 20 user seats, 20,000 seat activations per month",
-          "On the early-access track: 2x limits (1 TB per repo, 40 user seats, 40,000 seat activations)",
+          "BUSINESS plan: 200 GB per repository, 10 user seats, 10,000 seat activations per month",
+          "On the early-access track: 2x limits (400 GB per repo, 20 user seats, 20,000 seat activations)",
           "Unlimited repositories, users, and teams",
           "Backup restores, dark mode, all 9 languages",
-          "Direct line to the founder for onboarding and support",
+          "Direct engineering support",
           "Locked in for life. No expiry, no downgrade, no card on file."
         ]
       },
@@ -801,7 +780,7 @@
           "features": [
             "Unlimited users & teams",
             "Unlimited repositories",
-            "500 server setups per month",
+            "100 server setups per month",
             "2 setup slots",
             "Backup restores",
             "Manual scheduling",
@@ -814,9 +793,9 @@
           "description": "Professional automation and scheduling for growing teams",
           "features": [
             "Everything in Community +",
-            "5 setup slots",
+            "3 setup slots",
             "Unlimited repositories",
-            "5,000 server setups per month",
+            "1,000 server setups per month",
             "Automated scheduling",
             "Restore from any point in the last 24 hours",
             "Email + chat support",
@@ -830,9 +809,9 @@
           "description": "Expert setup, backups across multiple regions, and a 4-hour restore promise.",
           "features": [
             "Everything in Professional +",
-            "20 setup slots",
+            "10 setup slots",
             "Unlimited repositories",
-            "20,000 server setups per month",
+            "10,000 server setups per month",
             "$9,999 implementation support included (Launch Offer)",
             "Geo-redundant storage (3 regions)",
             "Continuous data protection",
@@ -845,12 +824,11 @@
         "enterprise": {
           "name": "Enterprise",
           "description": "Dedicated support and custom terms for large, complex environments.",
-          "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
-            "50+ setup slots",
+            "25+ setup slots",
             "Unlimited repositories",
-            "100,000+ server setups per month",
+            "25,000+ server setups per month",
             "Custom SLA with guaranteed restore times",
             "Your own dedicated server space",
             "24/7/365 dedicated support",
@@ -1029,7 +1007,9 @@
           "tiers": [
             {
               "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "included": [
+                "Self-service documentation, video tutorials, and community forum"
+              ],
               "available": [
                 "Standard Implementation ($9,999) or tiered packages (Starter $7,499 · Growth $14,999 · Scale $29,999 · Enterprise custom)",
                 "Emergency Response engagement ($29,999 on-demand)"
@@ -1103,7 +1083,7 @@
         "items": [
           {
             "question": "Is there a free plan?",
-            "answer": "Yes. The Community plan is free. It covers up to 2 servers, 500 server setups per month, and backup restores. No credit card needed."
+            "answer": "Yes. The Community plan is free. It covers up to 2 servers, 100 server setups per month, and backup restores. No credit card needed."
           },
           {
             "question": "Can I upgrade or downgrade my plan?",
@@ -1162,7 +1142,10 @@
       },
       "trust": {
         "heading": "Security & Reliability",
-        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
+        "items": [
+          "AES-256 encryption standard",
+          "99.99% uptime SLA"
+        ]
       },
       "trustSection": {
         "heading": "Your Infrastructure. Your Rules.",
@@ -1202,7 +1185,8 @@
           "slotsCreateFork": "Setup slots used only for new and copied servers. Daily ops are always free.",
           "newMachineId": "New machine ID",
           "reposKeepRunning": "Your apps keep running throughout. No manual steps needed."
-        }
+        },
+        "corporateGuarantee": "If Rediacc doesn't work for you, we'll help you migrate back."
       },
       "ui": {
         "popular": "Most popular",
@@ -1260,7 +1244,9 @@
           "annual": "Annual",
           "annualSavings": "Save 17%, get 2 months free",
           "ariaLabel": "Billing period"
-        }
+        },
+        "contactUs": "Contact us",
+        "contactUsSub": "Custom limits & terms"
       },
       "technicalSummary": {
         "heading": "Plan comparison",
@@ -1292,31 +1278,31 @@
         ],
         "values": {
           "community": {
-            "jobsPerMonth": "1,000",
-            "repoSize": "20 GB",
+            "jobsPerMonth": "100",
+            "repoSize": "10 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "4",
+            "floatingLicenses": "2",
             "usersTeams": "Unlimited"
           },
           "professional": {
-            "jobsPerMonth": "5,000",
-            "repoSize": "100 GB",
+            "jobsPerMonth": "1,000",
+            "repoSize": "50 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "5",
+            "floatingLicenses": "3",
             "usersTeams": "Unlimited"
           },
           "business": {
-            "jobsPerMonth": "20,000",
-            "repoSize": "500 GB",
+            "jobsPerMonth": "10,000",
+            "repoSize": "200 GB",
             "repositories": "Unlimited",
-            "floatingLicenses": "20",
+            "floatingLicenses": "10",
             "usersTeams": "Unlimited"
           },
           "enterprise": {
-            "jobsPerMonth": "100,000+",
-            "repoSize": "2 TB+",
+            "jobsPerMonth": "25,000+",
+            "repoSize": "1 TB+",
             "repositories": "Unlimited",
-            "floatingLicenses": "50+",
+            "floatingLicenses": "25+",
             "usersTeams": "Unlimited"
           }
         }
@@ -1330,24 +1316,24 @@
             "rows": [
               {
                 "label": "Floating Licenses (Machines)",
-                "community": "4",
-                "professional": "5",
-                "business": "20",
-                "enterprise": "50+"
+                "community": "2",
+                "professional": "3",
+                "business": "10",
+                "enterprise": "25+"
               },
               {
                 "label": "Floating license requests",
-                "community": "1,000",
-                "professional": "5,000",
-                "business": "20,000",
-                "enterprise": "100,000+"
+                "community": "100",
+                "professional": "1,000",
+                "business": "10,000",
+                "enterprise": "25,000+"
               },
               {
                 "label": "Repository size",
-                "community": "20 GB",
-                "professional": "100 GB",
-                "business": "500 GB",
-                "enterprise": "2 TB+"
+                "community": "10 GB",
+                "professional": "50 GB",
+                "business": "200 GB",
+                "enterprise": "1 TB+"
               }
             ]
           },
@@ -1781,7 +1767,9 @@
         "howWeUseInformation": {
           "id": "how-we-use-information",
           "title": "3. How We Use Your Information",
-          "content": ["We use the information we collect for the following purposes:"],
+          "content": [
+            "We use the information we collect for the following purposes:"
+          ],
           "items": [
             "To respond to your inquiries submitted through the contact form",
             "To provide, operate, and maintain the Rediacc platform",
@@ -1887,7 +1875,9 @@
         "definitions": {
           "id": "definitions",
           "title": "1. Definitions",
-          "content": ["The following definitions apply throughout these Terms of Service:"],
+          "content": [
+            "The following definitions apply throughout these Terms of Service:"
+          ],
           "items": [
             "<strong>\"Account\"</strong> means the user account you create to access the Platform and manage your Subscription.",
             "<strong>\"Authorized User\"</strong> means any individual granted access to the Services under your Account, including team members, employees, and contractors acting on your behalf.",
@@ -1946,7 +1936,9 @@
         "subscriptions": {
           "id": "subscriptions",
           "title": "5. Subscriptions, Billing, and Payment",
-          "content": ["Rediacc offers multiple Subscription tiers:"],
+          "content": [
+            "Rediacc offers multiple Subscription tiers:"
+          ],
           "items": [
             "<strong>Community</strong> (free) — Limited to 2 Machine activations, core features, community support",
             "<strong>Professional</strong> — Up to 5 Machine activations, audit logging, priority support, custom branding",
@@ -1996,7 +1988,9 @@
             },
             "restrictions": {
               "title": "6.2 Restrictions",
-              "content": ["You shall not:"],
+              "content": [
+                "You shall not:"
+              ],
               "items": [
                 "Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Bridge binary or any non-open-source component of the On-Premise Software",
                 "Redistribute, sublicense, rent, lease, or lend the On-Premise Software to any third party",
@@ -2034,7 +2028,9 @@
         "useRestrictions": {
           "id": "use-restrictions",
           "title": "9. Use Restrictions",
-          "content": ["You agree that you and your Authorized Users will not use the Services to:"],
+          "content": [
+            "You agree that you and your Authorized Users will not use the Services to:"
+          ],
           "items": [
             "Deploy, host, or distribute malware, viruses, ransomware, or any other harmful code",
             "Operate cryptocurrency mining, peer-to-peer file sharing networks, or open proxy services",
@@ -2193,7 +2189,9 @@
         "cookiesWeUse": {
           "id": "cookies-we-use",
           "title": "3. Cookies We Use",
-          "content": ["We use a minimal number of cookies. In fact, we use only one:"],
+          "content": [
+            "We use a minimal number of cookies. In fact, we use only one:"
+          ],
           "subsections": {
             "languageCookie": {
               "title": "3.1 Language Preference Cookie",
@@ -2347,7 +2345,9 @@
             "The reason for your refund request",
             "Any relevant order or invoice numbers"
           ],
-          "content2": ["We aim to respond to all refund requests within 5 business days."]
+          "content2": [
+            "We aim to respond to all refund requests within 5 business days."
+          ]
         },
         "refundProcessing": {
           "id": "refund-processing",
@@ -2360,7 +2360,9 @@
         "nonRefundable": {
           "id": "non-refundable",
           "title": "6. Non-Refundable Items",
-          "content": ["The following are not eligible for refunds:"],
+          "content": [
+            "The following are not eligible for refunds:"
+          ],
           "items": [
             "Subscriptions cancelled after the 14-day new subscriber window",
             "Usage-based charges (e.g., overage fees) for resources already consumed",
@@ -2410,7 +2412,9 @@
         "principles": {
           "id": "principles",
           "title": "2. Our Telemetry Principles",
-          "content": ["All telemetry collection at Rediacc follows these principles:"],
+          "content": [
+            "All telemetry collection at Rediacc follows these principles:"
+          ],
           "items": [
             "<strong>Privacy by design:</strong> Personal identifiers are anonymized before transmission. Email addresses are reduced to domain only, user IDs are hashed (SHA-256) and truncated, passwords and secrets are never collected.",
             "<strong>Minimal collection:</strong> We collect only what is necessary to improve product quality and diagnose issues. We do not collect file contents, database contents, query results, or business data.",
@@ -2438,7 +2442,9 @@
           "subsections": {
             "webDataCollected": {
               "title": "4.1 Data Collected",
-              "content": ["The Web Application collects the following categories of data:"],
+              "content": [
+                "The Web Application collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Browser information:</strong> browser name and version, preferred language, platform (e.g., Windows, macOS, Linux), screen resolution, color depth, user agent string, device memory (if available), network connection type",
                 "<strong>User context:</strong> session ID (randomly generated per session), email domain only (local part is redacted, e.g., <code>***@example.com</code>), organization name, team name",
@@ -2452,7 +2458,9 @@
             },
             "webNotCollected": {
               "title": "4.2 Data NOT Collected",
-              "content": ["The Web Application does not collect:"],
+              "content": [
+                "The Web Application does not collect:"
+              ],
               "items": [
                 "Full email addresses (local part is always redacted)",
                 "Passwords, tokens, or authentication credentials",
@@ -2480,7 +2488,9 @@
           "subsections": {
             "cliDataCollected": {
               "title": "5.1 Data Collected",
-              "content": ["The CLI collects the following categories of data:"],
+              "content": [
+                "The CLI collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Command usage:</strong> command name, CLI version, exit code, success or failure status",
                 "<strong>Anonymized arguments:</strong> command options with sensitive values redacted — passwords, tokens, secrets, API keys, and credentials are replaced with <code>[REDACTED]</code>",
@@ -2513,7 +2523,9 @@
           "subsections": {
             "middlewareDataCollected": {
               "title": "6.1 Data Collected",
-              "content": ["The Middleware collects the following categories of data:"],
+              "content": [
+                "The Middleware collects the following categories of data:"
+              ],
               "items": [
                 "<strong>System information:</strong> hostname, operating system version, .NET runtime version",
                 "<strong>API calls:</strong> HTTP method, endpoint path, response status code, request duration",
@@ -2541,7 +2553,9 @@
           "subsections": {
             "bridgeDataCollected": {
               "title": "7.1 Data Collected",
-              "content": ["The Bridge collects the following categories of data:"],
+              "content": [
+                "The Bridge collects the following categories of data:"
+              ],
               "items": [
                 "<strong>Queue operations:</strong> task ID, priority level, operation type, execution duration, success or failure status",
                 "<strong>SSH operations:</strong> target host, username, port number, exit code, execution duration (no command content or output is collected)",
@@ -2658,8 +2672,8 @@
             "Everything in Community +",
             "Automated backup scheduling. Set it and forget it.",
             "Point-in-time recovery (24h)",
-            "Unlimited apps, 100 GB each",
-            "24-hour job timeout, 5 active/2 reserved jobs",
+            "Unlimited apps, 50 GB each",
+            "24-hour job timeout, 3 active/2 reserved jobs",
             "30-day audit log retention",
             "Email + chat support",
             "Slack & PagerDuty notifications",
@@ -2676,7 +2690,7 @@
             "Storage across 3 regions. One failure won't stop you.",
             "Continuous data protection. Near-zero data loss.",
             "4-hour recovery SLA (guaranteed)",
-            "Unlimited apps, 500 GB each",
+            "Unlimited apps, 200 GB each",
             "7 active/3 reserved jobs",
             "90-day audit log retention",
             "Role-based access control and full audit logs",
@@ -2688,13 +2702,12 @@
         "enterprise": {
           "name": "Enterprise",
           "description": "Done-for-you disaster recovery for large, complex operations.",
-          "priceNote": "*Starting at",
           "features": [
             "Everything in Business +",
             "Custom SLA (back online in 15-60 min). Your requirements, our commitment.",
             "Your own dedicated environment. Maximum security and performance.",
             "24/7/365 expert support, always on",
-            "Unlimited apps, 2 TB+ each",
+            "Unlimited apps, 1 TB+ each",
             "96+ hour job windows with 10+ active/5+ reserved jobs",
             "1 year+ audit log retention",
             "Quarterly disaster recovery drills. Know you're ready before you need to be.",
@@ -2903,7 +2916,9 @@
           "tiers": [
             {
               "planId": "community",
-              "included": ["Self-service documentation, video tutorials, and community forum"],
+              "included": [
+                "Self-service documentation, video tutorials, and community forum"
+              ],
               "available": [
                 "Standard Setup ($9,999) or tiered packages (Small $7,499 · Medium $14,999 · Large $29,999 · Enterprise custom)",
                 "Emergency Response service ($29,999 on-demand)"
@@ -3015,7 +3030,10 @@
       },
       "trust": {
         "heading": "Security & Reliability",
-        "items": ["AES-256 encryption standard", "99.99% uptime SLA"]
+        "items": [
+          "AES-256 encryption standard",
+          "99.99% uptime SLA"
+        ]
       },
       "ui": {
         "popular": "Most popular",
@@ -3301,7 +3319,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run", "60s", "Done"]
+            "newSteps": [
+              "Run",
+              "60s",
+              "Done"
+            ]
           }
         },
         "calculator": {
@@ -3469,33 +3491,117 @@
           "features": [
             {
               "name": "Application cloning",
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"],
-              "refs": [3, 4, 5, 0, 0, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Database cloning",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [0, 0, 0, 6, 7, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Combined app + DB clone",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Any database engine",
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"],
-              "refs": [0, 0, 0, 8, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                8,
+                0,
+                0
+              ]
             },
             {
               "name": "Setup time",
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"],
-              "refs": [9, 10, 11, 12, 13, 0]
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<60s"
+              ],
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ]
             },
             {
               "name": "Production-identical data",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [0, 0, 0, 14, 15, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                14,
+                15,
+                0
+              ]
             }
           ]
         },
@@ -3796,7 +3902,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Spin up", "$0 idle", "Auto-cleanup"]
+            "newSteps": [
+              "Spin up",
+              "$0 idle",
+              "Auto-cleanup"
+            ]
           }
         },
         "calculator": {
@@ -3958,33 +4068,105 @@
           "features": [
             {
               "name": "Copies that share storage (near-zero space)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-deleting copies on a timer",
-              "values": ["check", "cross", "cross", "cross", "rediacc"],
-              "refs": [4, 0, 0, 0, 0]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Full production data in the copy",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Multi-service environments",
-              "values": ["cross", "check", "cross", "check", "rediacc"],
-              "refs": [0, 5, 0, 6, 0]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                0,
+                6,
+                0
+              ]
             },
             {
               "name": "Self-hosted / no per-seat pricing",
-              "values": ["cross", "check", "cross", "cross", "rediacc"],
-              "refs": [0, 7, 0, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                7,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Setup in under 60 seconds",
-              "values": ["cross", "cross", "check", "check", "rediacc"],
-              "refs": [0, 0, 8, 9, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                8,
+                9,
+                0
+              ]
             }
           ]
         },
@@ -4270,7 +4452,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Run one command", "47s", "100% match"]
+            "newSteps": [
+              "Run one command",
+              "47s",
+              "100% match"
+            ]
           }
         },
         "calculator": {
@@ -4428,38 +4614,122 @@
           "features": [
             {
               "name": "Full copy of production data",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Checks OS and libraries match",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Any database engine (MariaDB, Postgres, Mongo)",
-              "values": ["cross", "check", "cross", "check", "rediacc"],
-              "refs": [0, 4, 0, 5, 0]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                4,
+                0,
+                5,
+                0
+              ]
             },
             {
               "name": "Copies many services at once (app, DB, mail, storage)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Copies that use almost no extra storage",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": ["cross", "check", "cross", "cross", "rediacc"],
-              "refs": [0, 6, 0, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                6,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Ready in under 60 seconds",
-              "values": ["cross", "cross", "check", "check", "rediacc"],
-              "refs": [0, 0, 7, 8, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                7,
+                8,
+                0
+              ]
             }
           ]
         },
@@ -4738,7 +5008,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["git push", "Auto", "Real data"]
+            "newSteps": [
+              "git push",
+              "Auto",
+              "Real data"
+            ]
           }
         },
         "calculator": {
@@ -4792,19 +5066,31 @@
               {
                 "title": "Git Push",
                 "status": "Trigger",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "footer": "webhook → rdc"
               },
               {
                 "title": "Clone",
                 "status": "CoW",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "footer": "ci-auth-v2"
               },
               {
                 "title": "Tests",
                 "status": "Passed",
-                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
+                "items": [
+                  "247 unit tests ✓",
+                  "38 integration ✓",
+                  "auto-cleanup ✓"
+                ],
                 "footer": "285 passed"
               }
             ],
@@ -4874,33 +5160,105 @@
           "features": [
             {
               "name": "Production data in CI copies",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "One-line webhook integration",
-              "values": ["check", "cross", "check", "check", "rediacc"],
-              "refs": [3, 0, 4, 5, 0]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                0,
+                4,
+                5,
+                0
+              ]
             },
             {
               "name": "Multi-service CI environment",
-              "values": ["cross", "check", "cross", "check", "rediacc"],
-              "refs": [0, 6, 0, 7, 0]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                6,
+                0,
+                7,
+                0
+              ]
             },
             {
               "name": "Auto-delete after pipeline",
-              "values": ["check", "cross", "check", "cross", "rediacc"],
-              "refs": [8, 0, 9, 0, 0]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                8,
+                0,
+                9,
+                0,
+                0
+              ]
             },
             {
               "name": "Zero custom setup scripts",
-              "values": ["cross", "cross", "check", "check", "rediacc"],
-              "refs": [0, 0, 10, 11, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                10,
+                11,
+                0
+              ]
             },
             {
               "name": "Self-hosted / no vendor lock-in",
-              "values": ["cross", "check", "cross", "cross", "rediacc"],
-              "refs": [0, 12, 0, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                12,
+                0,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -5186,7 +5544,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Backup", "Sealed", "Verified"]
+            "newSteps": [
+              "Backup",
+              "Sealed",
+              "Verified"
+            ]
           }
         },
         "calculator": {
@@ -5348,38 +5710,136 @@
           "features": [
             {
               "name": "Locked backups",
-              "values": ["check", "check", "check", "check", "cross", "rediacc"],
-              "refs": [4, 5, 6, 7, 0, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0,
+                0
+              ]
             },
             {
               "name": "Locked in the storage layer",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Automatic daily restore test",
-              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [8, 0, 0, 0, 0, 0]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                8,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Shortcut copies that save space",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Instant copy for testing",
-              "values": ["check", "check", "check", "check", "check", "rediacc"],
-              "refs": [9, 10, 11, 12, 13, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ]
             },
             {
               "name": "Recovery time",
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<5 min"],
-              "refs": [14, 15, 16, 17, 18, 0]
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<5 min"
+              ],
+              "refs": [
+                14,
+                15,
+                16,
+                17,
+                18,
+                0
+              ]
             },
             {
               "name": "Runs on your own servers, no cloud needed",
-              "values": ["check", "check", "check", "cross", "check", "rediacc"],
-              "refs": [19, 20, 21, 0, 22, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                22,
+                0
+              ]
             }
           ]
         },
@@ -5729,7 +6189,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run one command", "Nothing exposed", "Verified"]
+            "newSteps": [
+              "Run one command",
+              "Nothing exposed",
+              "Verified"
+            ]
           }
         },
         "calculator": {
@@ -5889,38 +6353,122 @@
           "features": [
             {
               "name": "Move data without unlocking it",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "You keep your keys during transfer",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Settings and data move together",
-              "values": ["cross", "cross", "check", "cross", "rediacc"],
-              "refs": [0, 0, 5, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                5,
+                0,
+                0
+              ]
             },
             {
               "name": "Checks data after transfer",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [6, 7, 8, 9, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                6,
+                7,
+                8,
+                9,
+                0
+              ]
             },
             {
               "name": "One-command migration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Move to any destination",
-              "values": ["check", "check", "check", "cross", "rediacc"],
-              "refs": [10, 11, 12, 0, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                10,
+                11,
+                12,
+                0,
+                0
+              ]
             },
             {
               "name": "Auto-undo if it fails",
-              "values": ["cross", "cross", "check", "cross", "rediacc"],
-              "refs": [0, 0, 13, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                13,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -6231,7 +6779,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run restore", "3m 47s", "Running"]
+            "newSteps": [
+              "Run restore",
+              "3m 47s",
+              "Running"
+            ]
           }
         },
         "calculator": {
@@ -6395,38 +6947,122 @@
           "features": [
             {
               "name": "Restores the whole setup (not just files)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Recovery in under 5 minutes",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [4, 5, 6, 7, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Automatic health checks after restore",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Restore to any saved moment",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [8, 9, 10, 11, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ]
             },
             {
               "name": "Instant copy with no extra storage",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Recovery in one command",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted on your own servers",
-              "values": ["check", "check", "check", "cross", "rediacc"],
-              "refs": [12, 13, 14, 0, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                12,
+                13,
+                14,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -6747,7 +7383,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Clone", "60s", "Patch & verify"]
+            "newSteps": [
+              "Clone",
+              "60s",
+              "Patch & verify"
+            ]
           }
         },
         "calculator": {
@@ -6909,38 +7549,122 @@
           "features": [
             {
               "name": "Full-stack copy for testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Copy ready in under 60s",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Separate network per copy",
-              "values": ["check", "cross", "check", "check", "rediacc"],
-              "refs": [4, 0, 5, 6, 0]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                0,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "No extra storage used",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Auto health check after patch",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [7, 8, 9, 10, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ]
             },
             {
               "name": "Self-hosted, no cloud needed",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [11, 12, 13, 14, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ]
             },
             {
               "name": "One-command workflow",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -7257,7 +7981,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Set policy", "Auto", "Audit-ready"]
+            "newSteps": [
+              "Set policy",
+              "Auto",
+              "Audit-ready"
+            ]
           }
         },
         "calculator": {
@@ -7420,38 +8148,122 @@
           "features": [
             {
               "name": "Choose how long to keep backups",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [4, 5, 6, 7, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ]
             },
             {
               "name": "Automatic cleanup of old backups",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [8, 9, 10, 11, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ]
             },
             {
               "name": "Checks that kept backups still work",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Instant audit-ready reports",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [12, 13, 14, 15, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                12,
+                13,
+                14,
+                15,
+                0
+              ]
             },
             {
               "name": "Covers HIPAA, SOC2, and GDPR",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [16, 17, 18, 19, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                16,
+                17,
+                18,
+                19,
+                0
+              ]
             },
             {
               "name": "Runs on your own servers",
-              "values": ["check", "check", "check", "cross", "rediacc"],
-              "refs": [20, 21, 22, 0, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                20,
+                21,
+                22,
+                0,
+                0
+              ]
             },
             {
               "name": "Built for the command line",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -7801,7 +8613,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Detect", "<30s", "Online"]
+            "newSteps": [
+              "Detect",
+              "<30s",
+              "Online"
+            ]
           }
         },
         "calculator": {
@@ -7964,38 +8780,122 @@
           "features": [
             {
               "name": "Copies across clouds",
-              "values": ["cross", "check", "check", "check", "rediacc"],
-              "refs": [0, 4, 5, 6, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                4,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "Failover under 30 seconds",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Sends only changes (98% savings)",
-              "values": ["cross", "check", "check", "check", "rediacc"],
-              "refs": [0, 7, 8, 9, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                7,
+                8,
+                9,
+                0
+              ]
             },
             {
               "name": "Fail over from any provider to any other",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted, no cloud agent",
-              "values": ["cross", "check", "check", "cross", "rediacc"],
-              "refs": [0, 10, 11, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ]
             },
             {
               "name": "Automatic DNS failover",
-              "values": ["cross", "cross", "check", "cross", "rediacc"],
-              "refs": [0, 0, 12, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                12,
+                0,
+                0
+              ]
             },
             {
               "name": "Copies the whole stack (app and database)",
-              "values": ["cross", "check", "check", "cross", "rediacc"],
-              "refs": [0, 13, 14, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                13,
+                14,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -8306,7 +9206,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Run test", "4 min", "Report"]
+            "newSteps": [
+              "Run test",
+              "4 min",
+              "Report"
+            ]
           }
         },
         "calculator": {
@@ -8468,38 +9372,122 @@
           "features": [
             {
               "name": "Full failover test",
-              "values": ["cross", "cross", "check", "cross", "rediacc"],
-              "refs": [0, 0, 2, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                2,
+                0,
+                0
+              ]
             },
             {
               "name": "Zero production impact",
-              "values": ["cross", "check", "check", "check", "rediacc"],
-              "refs": [0, 3, 4, 5, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                3,
+                4,
+                5,
+                0
+              ]
             },
             {
               "name": "Under 5 minutes",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Automated pass or fail report",
-              "values": ["cross", "check", "check", "cross", "rediacc"],
-              "refs": [0, 6, 7, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                6,
+                7,
+                0,
+                0
+              ]
             },
             {
               "name": "CI/CD integration",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Cross-cloud testing",
-              "values": ["cross", "check", "check", "cross", "rediacc"],
-              "refs": [0, 8, 9, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                8,
+                9,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted on your own servers",
-              "values": ["cross", "check", "check", "cross", "rediacc"],
-              "refs": [0, 10, 11, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -8802,7 +9790,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Backup", "47s", "Verified"]
+            "newSteps": [
+              "Backup",
+              "47s",
+              "Verified"
+            ]
           }
         },
         "calculator": {
@@ -8964,38 +9956,122 @@
           "features": [
             {
               "name": "Automatic restore testing",
-              "values": ["check", "cross", "cross", "cross", "rediacc"],
-              "refs": [4, 0, 0, 0, 0]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Full service health check",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Daily automatic testing",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Instant copy for testing, no extra storage",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "File fingerprint check",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [5, 6, 7, 8, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ]
             },
             {
               "name": "Alert integrations",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [9, 10, 11, 12, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                0
+              ]
             },
             {
               "name": "Self-hosted on your own servers",
-              "values": ["check", "check", "check", "cross", "rediacc"],
-              "refs": [13, 14, 15, 0, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                13,
+                14,
+                15,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -9323,7 +10399,12 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Copy + patch", "<4 min", "Verified", "Deploy"]
+            "newSteps": [
+              "Copy + patch",
+              "<4 min",
+              "Verified",
+              "Deploy"
+            ]
           }
         },
         "calculator": {
@@ -9727,7 +10808,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Run pentest", "47s", "7 weak spots found"]
+            "newSteps": [
+              "Run pentest",
+              "47s",
+              "7 weak spots found"
+            ]
           }
         },
         "calculator": {
@@ -10113,7 +11198,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Your key", "AES-256", "Zero-knowledge"]
+            "newSteps": [
+              "Your key",
+              "AES-256",
+              "Zero-knowledge"
+            ]
           }
         },
         "calculator": {
@@ -10273,38 +11362,122 @@
           "features": [
             {
               "name": "You hold the encryption keys",
-              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"],
-              "refs": [3, 4, 5, 6, 0]
+              "values": [
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "Zero-knowledge architecture",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Change your keys yourself",
-              "values": ["Via KMS", "Via KMS", "Via KMS", "Via KMS", "rediacc"],
-              "refs": [7, 8, 9, 10, 0]
+              "values": [
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "Via KMS",
+                "rediacc"
+              ],
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ]
             },
             {
               "name": "AES-256 encryption on disk",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [11, 12, 13, 14, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ]
             },
             {
               "name": "A separate key per app",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Encryption while data moves",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [15, 16, 17, 18, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                15,
+                16,
+                17,
+                18,
+                0
+              ]
             },
             {
               "name": "Self-hosted on your own servers",
-              "values": ["check", "check", "check", "cross", "rediacc"],
-              "refs": [19, 20, 21, 0, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -10627,7 +11800,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Daily scans", "0 days", "Zero blind spots"]
+            "newSteps": [
+              "Daily scans",
+              "0 days",
+              "Zero blind spots"
+            ]
           }
         },
         "calculator": {
@@ -10703,7 +11880,12 @@
               {
                 "title": "4-Week Trend",
                 "status": "-87%",
-                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
+                "items": [
+                  "W1: ████████ 23",
+                  "W2: ████ 12",
+                  "W3: ██ 7",
+                  "W4: █ 3"
+                ],
                 "footer": "Continuous improvement · automated"
               }
             ],
@@ -11002,7 +12184,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Run audit", "Instant", "Complete report"]
+            "newSteps": [
+              "Run audit",
+              "Instant",
+              "Complete report"
+            ]
           }
         },
         "calculator": {
@@ -11162,38 +12348,122 @@
           "features": [
             {
               "name": "Tamper-proof audit logs",
-              "values": ["cross", "check", "cross", "cross", "rediacc"],
-              "refs": [0, 2, 0, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                2,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Signed records (SHA-256)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Instant reports (one command)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Basic action logging",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [3, 4, 5, 6, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ]
             },
             {
               "name": "Who did each action",
-              "values": ["check", "check", "check", "check", "rediacc"],
-              "refs": [7, 8, 9, 10, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ]
             },
             {
               "name": "Tracks key changes",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted on your servers",
-              "values": ["check", "check", "check", "cross", "rediacc"],
-              "refs": [11, 12, 13, 0, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                11,
+                12,
+                13,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -11634,38 +12904,136 @@
           "features": [
             {
               "name": "CLOUD Act immunity (no US parent company)",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "You hold the keys (provider can't read your data)",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 5, 5, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                5,
+                5,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "EU-only operator (no US parent company)",
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"],
-              "refs": [4, 4, 4, 0, 6, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                6,
+                0
+              ]
             },
             {
               "name": "SecNumCloud / C5:2026 certification path",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 7, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                7,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Open exit format (Data Act Art. 30)",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [8, 8, 8, 0, 8, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                8,
+                8,
+                8,
+                0,
+                8,
+                0
+              ]
             },
             {
               "name": "Self-hosted on your own servers",
-              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [9, 0, 0, 0, 0, 0]
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                9,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "EU data residency by default",
-              "values": ["cross", "cross", "check", "check", "check", "rediacc"],
-              "refs": [0, 0, 10, 0, 13, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                10,
+                0,
+                13,
+                0
+              ]
             }
           ]
         },
@@ -11942,7 +13310,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Detect", "<5 min", "Online"]
+            "newSteps": [
+              "Detect",
+              "<5 min",
+              "Online"
+            ]
           }
         },
         "calculator": {
@@ -12103,33 +13475,117 @@
           "features": [
             {
               "name": "Recover your whole system",
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"],
-              "refs": [0, 0, 0, 0, 4, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                4,
+                0
+              ]
             },
             {
               "name": "Recovery under 5 minutes",
-              "values": ["check", "check", "check", "check", "check", "rediacc"],
-              "refs": [5, 6, 7, 8, 9, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                0
+              ]
             },
             {
               "name": "Roll back to any minute",
-              "values": ["check", "check", "check", "check", "check", "rediacc"],
-              "refs": [10, 11, 12, 13, 14, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                10,
+                11,
+                12,
+                13,
+                14,
+                0
+              ]
             },
             {
               "name": "Automatic restore testing",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "No data transfer needed",
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Self-hosted, no cloud needed",
-              "values": ["check", "check", "check", "cross", "check", "rediacc"],
-              "refs": [15, 16, 17, 0, 18, 0]
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                15,
+                16,
+                17,
+                0,
+                18,
+                0
+              ]
             }
           ]
         },
@@ -12430,7 +13886,11 @@
               }
             ],
             "newLabel": "WITH REDIACC",
-            "newSteps": ["Copy", "<1hr", "Live"]
+            "newSteps": [
+              "Copy",
+              "<1hr",
+              "Live"
+            ]
           }
         },
         "calculator": {
@@ -12591,38 +14051,122 @@
           "features": [
             {
               "name": "Move between providers",
-              "values": ["cross", "check", "check", "cross", "rediacc"],
-              "refs": [0, 4, 5, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                4,
+                5,
+                0,
+                0
+              ]
             },
             {
               "name": "Move in under 1 hour",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "No locked-in formats",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Sends only changes",
-              "values": ["cross", "check", "check", "check", "rediacc"],
-              "refs": [0, 6, 7, 8, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                6,
+                7,
+                8,
+                0
+              ]
             },
             {
               "name": "No vendor software needed",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"],
-              "refs": [0, 0, 0, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
             },
             {
               "name": "Moves the full stack (app + database)",
-              "values": ["cross", "check", "check", "cross", "rediacc"],
-              "refs": [0, 9, 10, 0, 0]
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                9,
+                10,
+                0,
+                0
+              ]
             },
             {
               "name": "Move with zero downtime",
-              "values": ["cross", "cross", "check", "cross", "rediacc"],
-              "refs": [0, 0, 11, 0, 0]
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ],
+              "refs": [
+                0,
+                0,
+                11,
+                0,
+                0
+              ]
             }
           ]
         },
@@ -12927,7 +14471,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["rdc ceph snapshot create", "52s", "Done"]
+            "newSteps": [
+              "rdc ceph snapshot create",
+              "52s",
+              "Done"
+            ]
           }
         },
         "howItWorks": {
@@ -13214,7 +14762,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["Detect", "Rollback", "<5 min"]
+            "newSteps": [
+              "Detect",
+              "Rollback",
+              "<5 min"
+            ]
           }
         },
         "calculator": {
@@ -13299,31 +14851,73 @@
           "features": [
             {
               "name": "Self-hosted / on-premises",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Filesystem-level immutability",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Instant recovery (<5 min)",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Zero-copy snapshots (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Per-machine pricing (no per-seat)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Automated restore verification",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "No vendor lock-in",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ]
         },
@@ -13362,7 +14956,7 @@
           "keywords": "CEO, infrastructure costs, self-hosted, data protection, vendor lock-in, predictable pricing, business continuity, SMB"
         },
         "hero": {
-          "badge": "FOR CEOs & FOUNDERS",
+          "badge": "FOR CEOs",
           "title": "One flat price per server. Your data stays yours.",
           "subtitle": "Protect your business data on hardware you own. One flat price per machine. No per-seat fees, no surprise cloud bills, no vendor holding your data hostage.",
           "primaryCta": "See Pricing",
@@ -13496,7 +15090,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["$204/mo", "Flat", "Yours"]
+            "newSteps": [
+              "$204/mo",
+              "Flat",
+              "Yours"
+            ]
           }
         },
         "calculator": {
@@ -13550,7 +15148,7 @@
         },
         "socialProof": {
           "quote": "We were spending $18,000 a month on cloud infrastructure for 47 workloads. After migrating to Rediacc on our own servers, our bill dropped to $6,800. Recovery time went from 4 hours to 3 minutes. The ROI was obvious in the first month.",
-          "author": "CEO & Founder",
+          "author": "CEO",
           "company": "SaaS startup, 45 employees",
           "impact": {
             "beforeLabel": "Monthly cost",
@@ -13712,7 +15310,11 @@
               }
             ],
             "newLabel": "With Rediacc",
-            "newSteps": ["rdc repo up", "JSON", "Done"]
+            "newSteps": [
+              "rdc repo up",
+              "JSON",
+              "Done"
+            ]
           }
         },
         "howItWorks": {

@@ -1,8 +1,11 @@
 ---
-title: "Votre fragmentation semble terrifiante. J'ai mesuré le coût."
-description: "Notre rapport de santé du stockage signale des dépôts à près de 20 000 extents/Go. J'ai mesuré les deux extrêmes : pénalité de lecture nulle. Pourquoi Rediacc n'a pas de commande defrag."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-25
+title: Votre fragmentation semble terrifiante. J'ai mesuré le coût.
+description: >-
+  Notre rapport de santé du stockage signale des dépôts à près de 20 000
+  extents/Go. J'ai mesuré les deux extrêmes : pénalité de lecture nulle.
+  Pourquoi Rediacc n'a pas de commande defrag.
+author: Rediacc
+publishedDate: 2026-05-25T00:00:00.000Z
 category: guide
 tags:
   - storage
@@ -11,8 +14,8 @@ tags:
   - benchmarks
 featured: false
 language: fr
-sourceHash: "5245c4e48a3a7074"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 36cb029ebe9b6edc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
 > **TL;DR.** `rdc machine query --storage-health` de Rediacc affiche un chiffre de fragmentation par dépôt. Sur une machine de production, il signale GitLab à environ 19 650 extents par gigaoctet. Le réflexe est de défragmenter. J'ai préféré mesurer.

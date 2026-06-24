@@ -1,8 +1,9 @@
 ---
-title: "断片化が怖く見える。実際のコストを計測してみた。"
-description: "ストレージヘルスレポートが1ギガバイトあたり約2万エクステントというリポジトリを報告します。両極端をベンチマークしたところ、読み取りペナルティはゼロでした。Rediaccにデフラグコマンドがない理由を報告します。"
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-25
+title: 断片化が怖く見える。実際のコストを計測してみた。
+description: >-
+  ストレージヘルスレポートが1ギガバイトあたり約2万エクステントというリポジトリを報告します。両極端をベンチマークしたところ、読み取りペナルティはゼロでした。Rediaccにデフラグコマンドがない理由を報告します。
+author: Rediacc
+publishedDate: 2026-05-25T00:00:00.000Z
 category: guide
 tags:
   - storage
@@ -11,8 +12,8 @@ tags:
   - benchmarks
 featured: false
 language: ja
-sourceHash: "5245c4e48a3a7074"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 36cb029ebe9b6edc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
 > **TL;DR.** Rediaccの `rdc machine query --storage-health` はリポジトリごとに断片化の数値を報告します。ある本番マシンではGitLabが約19,650エクステント/ギガバイトとフラグされています。反射的にデフラグしたくなります。私は代わりに計測しました。

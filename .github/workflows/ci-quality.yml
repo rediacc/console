@@ -381,6 +381,8 @@ jobs:
       - run: .ci/scripts/setup/install-deps.sh
       - name: Validate tutorial cast/storyboard/transcript/mdx parity
         run: npm run check:ci-tutorial-parity
+      - name: Validate account onboarding splash against canonical tutorials
+        run: npm run check:ci-account-onboarding
 
   quality-tutorial-casts:
     name: Tutorial Cast Hygiene

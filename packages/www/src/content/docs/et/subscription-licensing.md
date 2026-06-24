@@ -4,8 +4,8 @@ description: "Mõista, kuidas account, rdc ja renet haldavad masina kohti, repos
 category: "Guides"
 order: 7
 language: et
-sourceHash: "0e18efe91c91f74c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "ed0aef562aad7367"
+sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
 ---
 
 # Tellimus ja litsentsid
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Masina kohad (serveri pool)
 
-Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti (nt 2 masinat Community jaoks, 5 Professional jaoks). Koht hoitakse 1 tund alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. 5 kohaga plaan saab seega aja jooksul katta kümneid masinaid, kuna kohti hoitakse ainult aktiivse ettevalmistamise ajal.
+Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti (nt 2 masinat Community jaoks, 3 Professional jaoks). Koht hoitakse 5 tundi alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. 10-kohaga Business plaan saab seega aja jooksul katta kümneid masinaid, kuna kohti hoitakse ainult aktiivse ettevalmistamise ajal.
 
 Masinas ei salvestata ühtegi masina litsentsi faili. Koha jõustamine toimub väljastamise ajal serveris.
 
@@ -91,10 +91,10 @@ Vaikimisi tasuliste plaanide piirangud on:
 
 | Plaan | Hõljuvad litsentsid | Repositooriumi suurus | Igakuised repositooriumilitsentside väljastamised | Delegeerimissertifikaadi vaikimisi/max |
 |------|-------------------|-----------------|-------------------------------|---|
-| Community | 2 | 10 GB | 500 | 15d / 30d |
-| Professional | 5 | 100 GB | 5,000 | 60d / 120d |
-| Business | 20 | 500 GB | 20,000 | 90d / 180d |
-| Enterprise | 50 | 2048 GB | 100,000 | 120d / 365d |
+| Community | 2 | 10 GB | 100 | 15d / 30d |
+| Professional | 3 | 50 GB | 1,000 | 60d / 120d |
+| Business | 10 | 200 GB | 10,000 | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 25,000+ | 120d / 365d |
 
 Lepingupõhised piirangud võivad konkreetse kliendi puhul neid väärtusi tõsta või langetada. Delegeerimissertifikaadi kehtivus on ka kõvasti piiratud väärtusega `subscription.expiresAt + 3 day grace`, nii et igakuise arveldusega tellimused saavad sertifikaadid, mis on joondatud nende arveldustsükliga. Täielikke reegleid vaata jaotisest [Litsentsiahel ja delegeerimine - kehtivuspoliitika](/en/docs/license-chain).
 

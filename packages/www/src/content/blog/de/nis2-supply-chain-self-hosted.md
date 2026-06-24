@@ -1,7 +1,7 @@
 ---
 title: "Article 21(2)(d) ist eine Anbieterfrage. Self-Hosting ist die Antwort, die Sie nicht mehr schulden."
 description: "Warum das Drittanbieter-IKT-Register schrumpft, wenn die Datenebene Ihren Mandanten nie verlässt. Eine praxisnahe Lektüre von NIS2 Article 21(2)(d) für CISOs und Einkaufsverantwortliche, die 2026 DVAs neu verhandeln."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:
@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: de
-sourceHash: "98f0b752bc5dbd4d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffdb86da48dacc58"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
 
@@ -156,12 +156,12 @@ Ein Anbieter, der alle sechs Fragen sauber beantwortet, ist ungewöhnlich. Ein A
 
 ## Was das für den nächsten Verlängerungszyklus bedeutet
 
-Wer in den nächsten zwölf Monaten eine Backup- oder DR-Verlängerung vor sich hat und Article 21(2)(d) auf der Beschaffungs-Scorecard steht, drei konkrete Schritte:
+Wer in den nächsten zwölf Monaten eine Backup- oder DR-Verlängerung vor sich hat und Article 21(2)(d) auf der Beschaffungs-Scorecard steht, sollte drei konkrete Schritte gehen:
 
-1. Zeichnen Sie den Vier-Ebenen-Datenpfad Ihres aktuellen Anbieters auf einem Whiteboard. Wenn Sie den dritten Unterauftragsverarbeiter nicht benennen können, haben Sie ein Registervollständigkeitsproblem, das vor NIS2 bestand, und die Verlängerung ist der richtige Moment, es zu beheben.
-2. Wenden Sie die obige Sechs-Fragen-Checkliste auf Ihren bisherigen Anbieter an. Schicken Sie die Antworten an Ihren DSB und Ihren Prüfer und fragen Sie, ob die Lücken akzeptiert werden. Wenn die Lücken Ebene 3 (Schlüsselgewahrsam) oder Ebene 4 (nicht erfasste Unterauftragsverarbeiter) umfassen, ist das der Ansatzpunkt.
-3. Schauen Sie, wie ein alternatives Lieferantenregister mit einer Self-hosted-Kontrollebene aussehen würde. Vergleichen Sie die Registereinträge, nicht die Lizenzkosten. Die Lizenzkosten sind innerhalb eines Faktors von zwei ähnlich; die Registereinträge haben eine andere Form. (Der Begleitbeitrag zu den [strukturellen Kosten des NIS2-Stacks](/de/blog/nis2-the-real-bill) geht durch, was kollabiert und was bleibt.)
+1. Zeichnen Sie den Vier-Ebenen-Datenpfad Ihres aktuellen Anbieters auf einem Whiteboard. Wenn Sie den dritten Unterauftragsverarbeiter nicht benennen können, haben Sie ein Registervollständigkeitsproblem, das schon vor NIS2 bestand – und die Verlängerung ist der richtige Moment, es zu beheben.
+2. Wenden Sie die obige Sechs-Fragen-Checkliste auf Ihren bisherigen Anbieter an. Schicken Sie die Antworten an Ihren DSB und Ihren Prüfer und fragen Sie, ob die Lücken akzeptiert werden. Wenn die Lücken Ebene 3 (Schlüsselgewahrsam) oder Ebene 4 (nicht erfasste Unterauftragsverarbeiter) betreffen, ist das der Ansatzpunkt.
+3. Schauen Sie, wie ein alternatives Lieferantenregister mit einer Self-hosted-Kontrollebene aussehen würde. Vergleichen Sie die Registereinträge, nicht die Lizenzkosten. Die Lizenzkosten liegen meist innerhalb eines Faktors von zwei; die Registereinträge haben aber eine andere Form. (Der Begleitbeitrag zu den [strukturellen Kosten des NIS2-Stacks](/de/blog/nis2-the-real-bill) geht durch, was kollabiert und was bleibt.)
 
-Wenn wir die Alternative auf Ihrer Shortlist sind, ist das Angebot konkret. Schicken Sie uns Ihren Lieferantenfragebogen. Wir füllen ihn für eine deployed Instanz aus, mit unseren tatsächlichen Antworten auf Ihre Fragen, einschließlich der Lücken. Wenn Sie die Architektur vor dem Papierkram besprechen möchten, buchen wir eine 30-minütige Architekturüberprüfung mit dem Gründer. Der Weg zu einem vertretbaren Registereintrag ist keine glänzende Broschüre. Es sind die Antworten, einschließlich der unbequemen.
+Wenn wir die Alternative auf Ihrer Shortlist sind, ist das Angebot konkret. Schicken Sie uns Ihren Lieferantenfragebogen. Wir füllen ihn anhand einer deployed Instanz aus – mit unseren tatsächlichen Antworten auf Ihre Fragen, einschließlich der Lücken. Wenn Sie die Architektur vor dem Papierkram besprechen möchten, buchen wir einen 30-minütigen Architektur-Review mit unserem Engineering-Team. Der Weg zu einem vertretbaren Registereintrag ist keine glänzende Broschüre. Es sind die Antworten, auch die unbequemen.
 
 Die Zuordnung pro Artikel finden Sie unter [NIS2 und DORA](/de/docs/legal-nis2-dora). Den breiteren Rahmen finden Sie unter [Compliance-Übersicht](/de/docs/legal-overview). Für Datenresidenz, siehe [Datensouveränität](/de/docs/legal-data-sovereignty). Warum Self-Hosting wichtig ist, erklärt [On-Premise](/de/docs/on-premise).

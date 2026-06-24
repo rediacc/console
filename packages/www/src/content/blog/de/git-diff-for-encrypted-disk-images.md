@@ -1,8 +1,13 @@
 ---
-title: "git diff für verschlüsselte Disk-Images: Forks vergleichen, ohne sie zu entschlüsseln"
-description: "rdc repo diff vergleicht verschlüsselte Images auf Blockebene und meldet A/M/D/R. Kein Schlüssel wird angefasst. Die Kosten richten sich nach den geänderten Blöcken, nicht nach der Repository-Größe."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-28
+title: >-
+  git diff für verschlüsselte Disk-Images: Forks vergleichen, ohne sie zu
+  entschlüsseln
+description: >-
+  rdc repo diff vergleicht verschlüsselte Images auf Blockebene und meldet
+  A/M/D/R. Kein Schlüssel wird angefasst. Die Kosten richten sich nach den
+  geänderten Blöcken, nicht nach der Repository-Größe.
+author: Rediacc
+publishedDate: 2026-05-28T00:00:00.000Z
 category: guide
 tags:
   - luks
@@ -12,8 +17,8 @@ tags:
   - cli
 featured: false
 language: de
-sourceHash: "516ffb7de9941f15"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 1b08ca130594e2e4
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

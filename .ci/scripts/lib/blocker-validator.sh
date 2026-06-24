@@ -42,6 +42,25 @@ readonly LOW_EFFORT_BLOCKER_PATTERNS=(
     "upstream issue" "transitive" "dev dep" "dev only"
 )
 
+# Substring-matched (not exact-match) phrases that signal can-kicking a routine,
+# installable bump for convenience rather than a genuine technical hold. The
+# upgrade blocklist is only for bumps that genuinely cannot be taken now
+# (breaking major, pin conflict, native rebuild, known regression). check-deps
+# already auto-defers versions too fresh to install under .npmrc
+# minimum-release-age, so "routine bump deferred to a dedicated dependency-bump
+# PR" / "not needed by this change" is deferral-for-convenience — take the bump.
+# Legitimate major-migration holds read differently (e.g. "dedicated lint-tooling
+# PR", "dedicated PR that exercises the email flows") and are NOT matched here.
+readonly LOW_EFFORT_BLOCKER_SUBSTRINGS=(
+    "deferred to a dedicated dependency-bump pr"
+    "not needed by this change"
+    "not needed in this change"
+    "not needed for this change"
+    "to keep this merge focused"
+    "to keep this change focused"
+    "to keep this pr focused"
+)
+
 readonly BLOCKER_MIN_LENGTH=30
 
 # parse_blockered_list <file> <allowed_var> <blocker_var> [<comment_char>]
@@ -123,6 +142,16 @@ validate_blocker_quality() {
             echo "  Rejected because: \"$normalized\" matches the banned-phrase list — this adds no information beyond 'we suppressed it'"
             echo "  Action: write a specific reason. Good BLOCKERs cite the upstream pin, the package chain, OR why runtime isn't affected."
             echo "  Example: 'electron-builder 26.x pins plist > xmldom 0.8.x; build-time only, requires major electron migration'"
+            return 1
+        fi
+    done
+
+    for pattern in "${LOW_EFFORT_BLOCKER_SUBSTRINGS[@]}"; do
+        if [[ "$normalized" == *"$pattern"* ]]; then
+            ci_error "Allowlist $file: BLOCKER for entry $id defers a routine bump instead of justifying a hold (\"$reason\")"
+            echo "  Rejected because: it contains \"$pattern\" — the upgrade blocklist is for bumps that genuinely cannot be taken now (breaking major, pin conflict, native rebuild, known regression), not for deferring a routine installable bump."
+            echo "  Note: check-deps already auto-defers versions too fresh to install under .npmrc minimum-release-age, so there is no need to blocklist a fresh release."
+            echo "  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the concrete technical blocker (which package pins what, what breaks)."
             return 1
         fi
     done

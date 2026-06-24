@@ -184,8 +184,8 @@
     },
     "organizationLinks": {
       "aboutUs": "当社について",
-      "contact": "お問い合わせ",
-      "team": "チーム"
+      "company": "会社概要",
+      "contact": "お問い合わせ"
     },
     "productLinks": {
       "disasterRecovery": "災害復旧",
@@ -324,7 +324,14 @@
     }
   },
   "logoWall": {
-    "categories": ["Git", "CI/CD", "コンテナ", "データベース", "モニタリング", "ストレージ"],
+    "categories": [
+      "Git",
+      "CI/CD",
+      "コンテナ",
+      "データベース",
+      "モニタリング",
+      "ストレージ"
+    ],
     "title": "お使いのインフラと連携"
   },
   "metrics": {
@@ -487,6 +494,63 @@
         "title": "サブスクリプション確認済み"
       }
     },
+    "company": {
+      "cta": {
+        "buttons": {
+          "contact": "お問い合わせ",
+          "learnMore": "仕組みを見る"
+        },
+        "subtitle": "5分以内にRediaccをインストール。Communityプランは永久無料です。",
+        "title": "無料で試す"
+      },
+      "hero": {
+        "subtitle": "Rediaccは本番システムを運用し、それを失うわけにはいかないチームのために作られています。",
+        "title": "あなたが管理するバックアップ・復旧ソフトウェア"
+      },
+      "meta": {
+        "description": "Rediaccは、本番環境のクローン、安全なテスト、秒単位の復旧を可能にするセルフホスト型バックアップ・災害復旧ソフトウェアを開発しています。",
+        "keywords": "Rediacc, 会社概要, セルフホスト型バックアップ, 災害復旧ソフトウェア, インフラの信頼性",
+        "title": "会社概要 | Rediacc - ランサムウェアに強いバックアップ"
+      },
+      "mission": {
+        "belief": "Community プランは有料プランと同じ機能。btrfs クローニング。LUKS 暗号化。上書き不可バックアップ。制限は小さいだけ。機能制限なし。騙しもなし。",
+        "description": "47日ごとにAIがデータベースを削除する。毎年1.71%のドライブが故障。ランサムウェアの75%がバックアップを狙う。60秒で復旧。",
+        "title": "私たちの使命: 災害を不可能にする"
+      },
+      "overview": {
+        "description": "Rediaccは、バックアップ、クローニング、災害復旧のためのセルフホスト型ソフトウェアです。自社サーバー上で動作し、本番環境全体を数秒でコピーし、迅速に復旧します。",
+        "title": "私たちの事業"
+      },
+      "values": {
+        "items": {
+          "global": {
+            "description": "9言語対応。使用データはEUに留まる。GDPR対応のエストニア企業。",
+            "title": "グローバル思考"
+          },
+          "innovation": {
+            "description": "毎週リリース。ユーザーから報告された本当の課題を、一つひとつ解決する。",
+            "title": "継続的イノベーション"
+          },
+          "security": {
+            "description": "ディスク上のLUKS暗号化。ネットワークはTLS。アプリごとにDockerエンジン。すべてロック。",
+            "title": "設計から組み込むセキュリティ"
+          },
+          "simplicity": {
+            "description": "1つのコマンドで241GBのライブデータをコピー。それが複雑さの全予算。",
+            "title": "シンプルさを第一に"
+          },
+          "success": {
+            "description": "私たちが測るのは復旧時間。機能数ではありません。",
+            "title": "顧客の成功"
+          },
+          "transparency": {
+            "description": "オープンなコミュニケーション。正直な価格設定。明確なドキュメント。隠れた費用も、不意打ちも、小さな注意書きもない。",
+            "title": "透明性"
+          }
+        },
+        "title": "私たちの価値観"
+      }
+    },
     "contact": {
       "breadcrumb": {
         "contact": "お問い合わせ",
@@ -591,12 +655,16 @@
           "title": "5. 当社の分析アプローチ"
         },
         "changes": {
-          "content": ["追加のCookieを導入する場合、このポリシーを更新します。"],
+          "content": [
+            "追加のCookieを導入する場合、このポリシーを更新します。"
+          ],
           "id": "changes",
           "title": "7. ポリシーの変更"
         },
         "cookiesWeUse": {
-          "content": ["当社が使用するCookieは1つだけです："],
+          "content": [
+            "当社が使用するCookieは1つだけです："
+          ],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -638,7 +706,9 @@
           "title": "2. Cookieとは"
         },
         "whatWeDontUse": {
-          "content": ["以下の技術は当社ウェブサイトでは使用して<strong>いません</strong>："],
+          "content": [
+            "以下の技術は当社ウェブサイトでは使用して<strong>いません</strong>："
+          ],
           "content2": [
             "注：このCookieポリシーはRediaccマーケティングウェブサイトに適用されます。当社のソフトウェア製品（Webアプリケーション、CLI、ミドルウェア、Bridge）は、Cookieを使用しない個別の使用テレメトリを収集します。製品テレメトリの詳細については、<a href=\"telemetry-policy\">テレメトリポリシー</a>をご覧ください。"
           ],
@@ -737,11 +807,11 @@
       },
       "youGet": {
         "items": [
-          "BUSINESSプラン：リポジトリ当たり500 GB、ユーザーシート20、月間20,000アクティベーション",
-          "早期アクセス向けには2倍：リポジトリ当たり1 TB、ユーザーシート40、月間40,000アクティベーション",
+          "BUSINESSプラン：リポジトリあたり200 GB、ユーザーシート10、月間10,000アクティベーション",
+          "早期アクセス枠では2倍：リポジトリあたり400 GB、ユーザーシート20、月間20,000アクティベーション",
           "リポジトリ、ユーザー、チームは無制限",
           "バックアップ復元、ダークモード、全9言語対応",
-          "ファウンダー直通サポート（オンボーディング対応）",
+          "エンジニアリングチームからの直接サポート",
           "生涯にわたって確保。有効期限なし、ダウングレードなし、支払い情報の登録不要。"
         ],
         "lede": "BUSINESSプランの全機能を、Rediaccが存在する限りずっと無料で。",
@@ -813,7 +883,7 @@
             "3リージョンでストレージ。1つの障害では止まらない。",
             "継続的なデータ保護。データ損失ほぼゼロ。",
             "4時間のリカバリSLA（保証）",
-            "無制限のアプリ、各500 GB",
+            "無制限のアプリ、各200 GB",
             "アクティブ7/予約済み3",
             "監査ログ90日間保持",
             "ロールベースのアクセス制御と完全な監査ログ",
@@ -845,7 +915,7 @@
             "カスタムSLA（15～60分で復旧）。お客様要件が当社の約束。",
             "あなた専用の環境。最大限のセキュリティとパフォーマンス。",
             "24時間365日のエキスパートサポート。いつでも対応。",
-            "無制限のアプリ、各2 TB以上",
+            "無制限のアプリ、各1 TB以上",
             "96時間以上のジョブウィンドウ（アクティブ10+/予約済み5+）",
             "監査ログ1年以上保持",
             "四半期ごとの災害復旧訓練。本当に必要になる前に準備を確認。",
@@ -853,8 +923,7 @@
             "カスタム統合&ワークフロー",
             "監査文書サポート&セキュリティレビュー"
           ],
-          "name": "企業",
-          "priceNote": "*〜から"
+          "name": "企業"
         },
         "professional": {
           "description": "本格的な災害復旧。エンタープライズの煩雑さなし。",
@@ -862,8 +931,8 @@
             "Communityのすべて+",
             "自動バックアップスケジュール。設定して忘れるだけ。",
             "ポイントインタイムリカバリ（24時間）",
-            "無制限のアプリ、各100 GB",
-            "24時間のジョブタイムアウト、アクティブ5/予約済み2",
+            "無制限のアプリ、各50 GB",
+            "24時間のジョブタイムアウト、アクティブ3/予約済み2",
             "監査ログ30日間保持",
             "メール+チャットサポート",
             "SlackとPagerDuty通知",
@@ -1181,7 +1250,10 @@
       },
       "trust": {
         "heading": "セキュリティと信頼性",
-        "items": ["AES-256暗号化規格", "99.99% の稼働率を保証"]
+        "items": [
+          "AES-256暗号化規格",
+          "99.99% の稼働率を保証"
+        ]
       },
       "ui": {
         "anchor": "戦略的アンカー",
@@ -1631,7 +1703,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccの場合",
-            "newSteps": ["rdc repo up", "JSON", "Done"],
+            "newSteps": [
+              "rdc repo up",
+              "JSON",
+              "Done"
+            ],
             "oldLabel": "従来のインフラストラクチャ",
             "oldSteps": [
               {
@@ -1817,7 +1893,7 @@
           "withTag": "Rediaccの場合"
         },
         "hero": {
-          "badge": "CEO・創業者向け",
+          "badge": "CEO向け",
           "primaryCta": "料金を見る",
           "secondaryCta": "営業に相談",
           "subtitle": "自社サーバーであなたのビジネスを守ります。マシンあたりの一律料金で、シート単価も、予想外のクラウド請求も、ベンダーロックインもなし。",
@@ -1853,7 +1929,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccなら",
-            "newSteps": ["$204/月", "定額", "あなたのもの"],
+            "newSteps": [
+              "$204/月",
+              "定額",
+              "あなたのもの"
+            ],
             "oldLabel": "クラウドインフラ",
             "oldSteps": [
               {
@@ -1891,7 +1971,7 @@
           "title": "CTOと共有"
         },
         "socialProof": {
-          "author": "CEO兼創業者",
+          "author": "CEO",
           "company": "SaaSスタートアップ、従業員45名",
           "impact": {
             "afterLabel": "Rediaccの場合",
@@ -2043,31 +2123,73 @@
           "features": [
             {
               "name": "セルフホスト/オンプレミス",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ファイルシステムレベルの不変性",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "瞬時復旧（5分未満）",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "ゼロコピースナップショット（CoW）",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "マシン単価（シート単価なし）",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自動復元検証",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ベンダーロックインなし",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "競合比較",
@@ -2110,7 +2232,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccなら",
-            "newSteps": ["検知", "ロールバック", "<5 min"],
+            "newSteps": [
+              "検知",
+              "ロールバック",
+              "<5 min"
+            ],
             "oldLabel": "従来の災害復旧",
             "oldSteps": [
               {
@@ -2404,7 +2530,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccなら",
-            "newSteps": ["rdc ceph snapshot create", "52s", "完了"],
+            "newSteps": [
+              "rdc ceph snapshot create",
+              "52s",
+              "完了"
+            ],
             "oldLabel": "従来の方法",
             "oldSteps": [
               {
@@ -2619,25 +2749,25 @@
             "label": "インフラ",
             "rows": [
               {
-                "business": "20",
+                "business": "10",
                 "community": "2",
-                "enterprise": "50+",
-                "label": "フローティングライセンス（マシン）",
-                "professional": "5"
+                "enterprise": "25+",
+                "label": "Floating Licenses (Machines)",
+                "professional": "3"
               },
               {
-                "business": "20,000",
-                "community": "500",
-                "enterprise": "100,000+",
-                "label": "フローティングライセンスリクエスト",
-                "professional": "5,000"
+                "business": "10,000",
+                "community": "100",
+                "enterprise": "25,000+",
+                "label": "Floating license requests",
+                "professional": "1,000"
               },
               {
-                "business": "500 GB",
+                "business": "200 GB",
                 "community": "10 GB",
-                "enterprise": "2 TB+",
-                "label": "リポジトリあたりのストレージ",
-                "professional": "100 GB"
+                "enterprise": "1 TB+",
+                "label": "Repository size",
+                "professional": "50 GB"
               }
             ]
           },
@@ -2733,7 +2863,7 @@
         "heading": "よくある質問",
         "items": [
           {
-            "answer": "はい、Communityプランは無料です。最大2台のマシン、月500回のサーバーセットアップ、バックアップ復元をカバーしています。クレジットカード不要。",
+            "answer": "はい。Communityプランは無料です。最大2台のサーバー、月間100回のサーバーセットアップ、バックアップ復元に対応しています。クレジットカードは不要です。",
             "question": "無料プランはありますか？"
           },
           {
@@ -2796,9 +2926,9 @@
           "description": "エキスパートによるセットアップ、複数リージョン対応のバックアップ、4時間復元保証",
           "features": [
             "Professionalプランのすべてに加えて",
-            "20個のセットアップスロット",
+            "10個のセットアップスロット",
             "無制限のリポジトリ",
-            "毎月20,000台のサーバーセットアップ",
+            "月間10,000回のサーバーセットアップ",
             "$9,999分の実装サポートを含む（ローンチオファー）",
             "複数リージョン対応ストレージ（3リージョン）",
             "継続的なデータ保護",
@@ -2814,7 +2944,7 @@
           "features": [
             "無制限のユーザーとチーム",
             "無制限のリポジトリ",
-            "毎月500台のサーバーセットアップ",
+            "月間100回のサーバーセットアップ",
             "2つ同時にセットアップ可能",
             "バックアップからの復元機能",
             "手動スケジュール実行",
@@ -2827,9 +2957,9 @@
           "description": "大規模で複雑な環境向けの専任サポートと柔軟なカスタム対応",
           "features": [
             "Businessプランのすべてに加えて",
-            "50個以上のセットアップスロット",
+            "25個以上のセットアップスロット",
             "無制限のリポジトリ",
-            "毎月100,000台以上のサーバーセットアップ",
+            "月間25,000回以上のサーバーセットアップ",
             "復元時間保証付きカスタムSLA",
             "専用のサーバースペース",
             "24時間365日専任サポート",
@@ -2839,16 +2969,15 @@
             "カスタムインテグレーションとワークフロー",
             "監査ドキュメント作成支援とセキュリティレビュー"
           ],
-          "name": "企業",
-          "priceNote": "*〜から"
+          "name": "企業"
         },
         "professional": {
           "description": "チーム成長をサポートする自動化・スケジューリング機能",
           "features": [
             "Communityプランの全機能に加えて",
-            "5つ同時にセットアップ可能",
+            "3つのセットアップスロット",
             "無制限のリポジトリ",
-            "毎月5,000台のサーバーセットアップ",
+            "月間1,000回のサーバーセットアップ",
             "スケジューリングの自動化",
             "過去24時間内の任意のポイントから復元",
             "メールとチャットサポート",
@@ -2873,7 +3002,9 @@
                 "標準実装（$9,999）または階層別パッケージ（Starter $7,499・Growth $14,999・Scale $29,999・Enterpriseはカスタム）",
                 "緊急対応サービス（オンデマンド$29,999）"
               ],
-              "included": ["ドキュメント、動画チュートリアル、コミュニティフォーラム"],
+              "included": [
+                "ドキュメント、動画チュートリアル、コミュニティフォーラム"
+              ],
               "planId": "コミュニティ"
             },
             {
@@ -2962,7 +3093,11 @@
             "turnaround": "当日対応"
           },
           "priority": {
-            "benefits": ["専任プロジェクトマネージャー", "夜間・週末対応", "本番稼働サポート"],
+            "benefits": [
+              "専任プロジェクトマネージャー",
+              "夜間・週末対応",
+              "本番稼働サポート"
+            ],
             "description": "快速デリバリー。夜間・週末も対応。本番稼働まで伴走します。",
             "name": "優先度",
             "price": "19,999ドル",
@@ -3125,40 +3260,44 @@
         ],
         "values": {
           "business": {
-            "floatingLicenses": "20",
-            "jobsPerMonth": "20,000",
+            "floatingLicenses": "10",
+            "jobsPerMonth": "10,000",
             "repositories": "無制限",
-            "repoSize": "500 GB",
+            "repoSize": "200 GB",
             "usersTeams": "無制限"
           },
           "community": {
             "floatingLicenses": "2",
-            "jobsPerMonth": "500",
+            "jobsPerMonth": "100",
             "repositories": "無制限",
             "repoSize": "10 GB",
             "usersTeams": "無制限"
           },
           "enterprise": {
-            "floatingLicenses": "50+",
-            "jobsPerMonth": "100,000+",
+            "floatingLicenses": "25+",
+            "jobsPerMonth": "25,000+",
             "repositories": "無制限",
-            "repoSize": "2 TB+",
+            "repoSize": "1 TB+",
             "usersTeams": "無制限"
           },
           "professional": {
-            "floatingLicenses": "5",
-            "jobsPerMonth": "5,000",
+            "floatingLicenses": "3",
+            "jobsPerMonth": "1,000",
             "repositories": "無制限",
-            "repoSize": "100 GB",
+            "repoSize": "50 GB",
             "usersTeams": "無制限"
           }
         }
       },
       "trust": {
         "heading": "セキュリティと信頼性",
-        "items": ["AES-256 暗号化標準", "99.99% のアップタイム SLA"]
+        "items": [
+          "AES-256 暗号化標準",
+          "99.99% のアップタイム SLA"
+        ]
       },
       "trustSection": {
+        "corporateGuarantee": "Rediaccが合わない場合、移行をサポートします。",
         "heading": "あなたのインフラ、あなたのルール。",
         "rows": [
           {
@@ -3208,6 +3347,8 @@
           "monthly": "月額払い"
         },
         "contactSales": "営業にお問い合わせ",
+        "contactUs": "お問い合わせ",
+        "contactUsSub": "カスタム制限と条件",
         "cta": {
           "business": {
             "guarantee": "14日間の返金保証",
@@ -3283,7 +3424,9 @@
           "title": "10. ポリシーの変更"
         },
         "childrenPrivacy": {
-          "content": ["当社のサービスは16歳未満の方を対象としていません。"],
+          "content": [
+            "当社のサービスは16歳未満の方を対象としていません。"
+          ],
           "id": "children-privacy",
           "title": "9. 児童のプライバシー"
         },
@@ -3304,7 +3447,9 @@
           "title": "7. データセキュリティ"
         },
         "dataSharing": {
-          "content": ["当社はお客様の個人データを第三者に販売・貸与しません。"],
+          "content": [
+            "当社はお客様の個人データを第三者に販売・貸与しません。"
+          ],
           "id": "data-sharing",
           "items": [
             "プラットフォーム運営を支援する<strong>サービスプロバイダー</strong>",
@@ -3315,7 +3460,9 @@
           "title": "4. データ共有と第三者"
         },
         "howWeUseInformation": {
-          "content": ["収集した情報は以下の目的で使用します："],
+          "content": [
+            "収集した情報は以下の目的で使用します："
+          ],
           "id": "how-we-use-information",
           "items": [
             "お問い合わせへの対応",
@@ -3329,7 +3476,9 @@
           "title": "3. 情報の利用方法"
         },
         "informationWeCollect": {
-          "content": ["当社はサービス提供に必要な最小限の情報を収集します。"],
+          "content": [
+            "当社はサービス提供に必要な最小限の情報を収集します。"
+          ],
           "id": "information-we-collect",
           "subsections": {
             "accountData": {
@@ -3382,7 +3531,9 @@
           "title": "1. はじめに"
         },
         "yourRights": {
-          "content": ["管轄地域に応じて、以下の権利を有する場合があります："],
+          "content": [
+            "管轄地域に応じて、以下の権利を有する場合があります："
+          ],
           "content2": [
             "権利行使については<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までご連絡ください。"
           ],
@@ -3453,7 +3604,9 @@
       },
       "sections": {
         "changes": {
-          "content": ["この返金ポリシーは随時更新される場合があります。"],
+          "content": [
+            "この返金ポリシーは随時更新される場合があります。"
+          ],
           "id": "changes",
           "title": "7. ポリシーの変更"
         },
@@ -3461,7 +3614,9 @@
           "content": [
             "<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>に以下の情報をお送りください："
           ],
-          "content2": ["5営業日以内にご返答いたします。"],
+          "content2": [
+            "5営業日以内にご返答いたします。"
+          ],
           "id": "how-to-request",
           "items": [
             "アカウントのメールアドレス",
@@ -3472,7 +3627,9 @@
           "title": "4. 返金の申請方法"
         },
         "nonRefundable": {
-          "content": ["以下は返金の対象外です："],
+          "content": [
+            "以下は返金の対象外です："
+          ],
           "id": "non-refundable",
           "items": [
             "14日間の期間後にキャンセルされたサブスクリプション",
@@ -3491,7 +3648,9 @@
           "title": "1. 概要"
         },
         "platformSubscriptions": {
-          "content": ["Rediaccは複数のサブスクリプションティアを提供しています："],
+          "content": [
+            "Rediaccは複数のサブスクリプションティアを提供しています："
+          ],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
@@ -3501,7 +3660,9 @@
               "title": "2.3 年間サブスクリプション"
             },
             "freeTier": {
-              "content": ["Communityティアは永久無料です。"],
+              "content": [
+                "Communityティアは永久無料です。"
+              ],
               "title": "2.1 無料ティア"
             },
             "paidTiers": {
@@ -3520,7 +3681,9 @@
           "title": "2. プラットフォームサブスクリプション"
         },
         "professionalServices": {
-          "content": ["プロフェッショナルサービスは時間単位で請求されます（$400–$1,200/時間）："],
+          "content": [
+            "プロフェッショナルサービスは時間単位で請求されます（$400–$1,200/時間）："
+          ],
           "id": "professional-services",
           "items": [
             "<strong>作業開始前：</strong>全額返金",
@@ -4370,7 +4533,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": ["ペンテスト実行", "47s", "7件の脆弱性を検出"],
+            "newSteps": [
+              "ペンテスト実行",
+              "47s",
+              "7件の脆弱性を検出"
+            ],
             "oldLabel": "従来のペネトレーションテスト",
             "oldSteps": [
               {
@@ -4620,38 +4787,122 @@
           "features": [
             {
               "name": "改ざん防止監査ログ",
-              "refs": [0, 2, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                2,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "暗号署名 (SHA-256)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "即時レポート生成 (CLI)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "基本的な操作ログ",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "アクションごとのユーザー属性",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "鍵ローテーション追跡",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / 自社インフラ",
-              "refs": [11, 12, 13, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -4833,7 +5084,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": ["監査実行", "即時", "完全レポート"],
+            "newSteps": [
+              "監査実行",
+              "即時",
+              "完全レポート"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -5091,38 +5346,122 @@
           "features": [
             {
               "name": "自動リストア検証",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "フルサービスヘルスチェック",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "毎日の自動テスト",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "テスト用ゼロストレージクローン",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "チェックサム / ファイル整合性",
-              "refs": [5, 6, 7, 8, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "アラート統合",
-              "refs": [9, 10, 11, 12, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / 自社インフラ",
-              "refs": [13, 14, 15, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                13,
+                14,
+                15,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -5305,7 +5644,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["バックアップ", "47s", "検証済み"],
+            "newSteps": [
+              "バックアップ",
+              "47s",
+              "検証済み"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -5603,38 +5946,122 @@
           "features": [
             {
               "name": "クロスクラウドレプリケーション",
-              "refs": [0, 4, 5, 6, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "30秒以内のフェイルオーバー",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "増分のみの転送（98%の節約）",
-              "refs": [0, 7, 8, 9, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "任意のプロバイダー間フェイルオーバー",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング、クラウドエージェント不要",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自動DNSフェイルオーバー",
-              "refs": [0, 0, 12, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "フルスタックレプリケーション（アプリ + DB）",
-              "refs": [0, 13, 14, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -5818,7 +6245,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["検知", "<30s", "オンライン"],
+            "newSteps": [
+              "検知",
+              "<30s",
+              "オンライン"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -6213,7 +6644,12 @@
               },
               {
                 "footer": "Continuous improvement · automated",
-                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
+                "items": [
+                  "W1: ████████ 23",
+                  "W2: ████ 12",
+                  "W3: ██ 7",
+                  "W4: █ 3"
+                ],
                 "status": "-87%",
                 "title": "4週間トレンド"
               }
@@ -6268,7 +6704,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": ["毎日スキャン", "0日間", "盲点ゼロ"],
+            "newSteps": [
+              "毎日スキャン",
+              "0日間",
+              "盲点ゼロ"
+            ],
             "oldLabel": "年次ペンテスト",
             "oldSteps": [
               {
@@ -6499,38 +6939,136 @@
           "features": [
             {
               "name": "CLOUD Act免除（米国司法管轄の親会社なし）",
-              "refs": [4, 4, 4, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "顧客が鍵を保持（技術的判読不可能性）",
-              "refs": [0, 5, 5, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                5,
+                5,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "EUのみのオペレーター（米国の親会社なし）",
-              "refs": [4, 4, 4, 0, 6, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "SecNumCloud / C5:2026認証パス",
-              "refs": [0, 0, 7, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                7,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "オープン退出形式（Data Act第30条）",
-              "refs": [8, 8, 8, 0, 8, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                8,
+                8,
+                8,
+                0,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "顧客インフラでのセルフホスト",
-              "refs": [9, 0, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                9,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "デフォルトでEUデータ所在地",
-              "refs": [0, 0, 10, 0, 13, 0],
-              "values": ["cross", "cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                10,
+                0,
+                13,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差異",
@@ -6712,7 +7250,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACC では",
-            "newSteps": ["自社インフラでホスト", "自分で鍵を保持", "CLOUD Actはあなたに届かない"],
+            "newSteps": [
+              "自社インフラでホスト",
+              "自分で鍵を保持",
+              "CLOUD Actはあなたに届かない"
+            ],
             "oldLabel": "従来の方法",
             "oldSteps": [
               {
@@ -6984,38 +7526,122 @@
           "features": [
             {
               "name": "お客様保持の暗号化鍵",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ゼロ知識アーキテクチャ",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフサービス鍵ローテーション",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "保存時AES-256暗号化",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "リポジトリごとの鍵分離",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "転送時の暗号化",
-              "refs": [15, 16, 17, 18, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / 自社インフラ",
-              "refs": [19, 20, 21, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -7197,7 +7823,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": ["あなたの鍵", "AES-256", "Zero-knowledge"],
+            "newSteps": [
+              "あなたの鍵",
+              "AES-256",
+              "Zero-knowledge"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -7493,33 +8123,117 @@
           "features": [
             {
               "name": "アプリケーションクローン",
-              "refs": [3, 4, 5, 0, 0, 0],
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "データベースクローン",
-              "refs": [0, 0, 0, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "アプリ + DBの統合クローン",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "任意のデータベースエンジン",
-              "refs": [0, 0, 0, 8, 0, 0],
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                8,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "プロビジョニング時間",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<60s"
+              ]
             },
             {
               "name": "本番同一データ",
-              "refs": [0, 0, 0, 14, 15, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -7706,7 +8420,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": [
+              "Run",
+              "60s",
+              "Done"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -7991,38 +8709,122 @@
           "features": [
             {
               "name": "フルスタックフェイルオーバーテスト",
-              "refs": [0, 0, 2, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                2,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "本番への影響ゼロ",
-              "refs": [0, 3, 4, 5, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                3,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "5分以内",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "自動合格/不合格レポート",
-              "refs": [0, 6, 7, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CI/CD統合",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "クロスクラウドテスト",
-              "refs": [0, 8, 9, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                8,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / 自社インフラ",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -8205,7 +9007,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["テスト実行", "4 min", "レポート"],
+            "newSteps": [
+              "テスト実行",
+              "4 min",
+              "レポート"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -8483,38 +9289,136 @@
           "features": [
             {
               "name": "イミュータブルバックアップ",
-              "refs": [4, 5, 6, 7, 0, 0],
-              "values": ["check", "check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ファイルシステムレベルの強制",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "毎日の自動リストア検証",
-              "refs": [8, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ゼロコピーストレージ (CoW)",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "テスト用の即時クローン",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "復旧時間",
-              "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "refs": [
+                14,
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Hours",
+                "Hours",
+                "Seconds",
+                "<5 min"
+              ]
             },
             {
               "name": "セルフホスティング / クラウド依存なし",
-              "refs": [19, 20, 21, 0, 22, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                22,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -8697,7 +9601,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["バックアップ", "シール済み", "検証済み"],
+            "newSteps": [
+              "バックアップ",
+              "シール済み",
+              "検証済み"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -9016,33 +9924,105 @@
           "features": [
             {
               "name": "ゼロコピークローンストレージ (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "設定可能なTTL自動破棄",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "クローンに完全な本番データ",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "マルチサービス環境",
-              "refs": [0, 5, 0, 6, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                5,
+                0,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / シートごとの課金なし",
-              "refs": [0, 7, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60秒以内のプロビジョニング",
-              "refs": [0, 0, 8, 9, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -9215,7 +10195,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": ["起動", "$0 アイドル", "自動クリーンアップ"],
+            "newSteps": [
+              "起動",
+              "$0 アイドル",
+              "自動クリーンアップ"
+            ],
             "oldLabel": "常時稼働環境",
             "oldSteps": [
               {
@@ -9475,38 +10459,122 @@
           "features": [
             {
               "name": "環境全体のリストア（ファイルだけではない）",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "5分以内のリカバリ時間",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "リストア後の自動ヘルスチェック",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ポイントインタイムスナップショットの粒度",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "ゼロオーバーヘッドクローン（追加ストレージなし）",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "シングルコマンドリカバリ",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / 自社インフラ",
-              "refs": [12, 13, 14, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -9689,7 +10757,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["リストア実行", "3m 47s", "稼働中"],
+            "newSteps": [
+              "リストア実行",
+              "3m 47s",
+              "稼働中"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -9981,33 +11053,105 @@
           "features": [
             {
               "name": "CIクローンでの本番データ",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "1行のWebhook統合",
-              "refs": [3, 0, 4, 5, 0],
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                0,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "マルチサービスCI環境",
-              "refs": [0, 6, 0, 7, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "パイプライン後の自動破棄",
-              "refs": [8, 0, 9, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "カスタムプロビジョニングスクリプトゼロ",
-              "refs": [0, 0, 10, 11, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / ベンダーロックインなし",
-              "refs": [0, 12, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                12,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -10091,19 +11235,31 @@
             "cards": [
               {
                 "footer": "webhook → rdc",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "status": "トリガー",
                 "title": "Git Push"
               },
               {
                 "footer": "ci-auth-v2",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "status": "CoW",
                 "title": "Clone"
               },
               {
                 "footer": "285 passed",
-                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
+                "items": [
+                  "247 unit tests ✓",
+                  "38 integration ✓",
+                  "auto-cleanup ✓"
+                ],
                 "status": "合格",
                 "title": "テスト"
               }
@@ -10158,7 +11314,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": ["git push", "Auto", "実データ"],
+            "newSteps": [
+              "git push",
+              "Auto",
+              "実データ"
+            ],
             "oldLabel": "カスタムCIスクリプト",
             "oldSteps": [
               {
@@ -10458,38 +11618,122 @@
           "features": [
             {
               "name": "復号なしの移行",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "転送中のお客様保持鍵",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "設定 + データのアトミック移行",
-              "refs": [0, 0, 5, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "転送後の整合性検証",
-              "refs": [6, 7, 8, 9, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "シングルコマンド移行",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "任意の宛先間の移行",
-              "refs": [10, 11, 12, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "失敗時の自動ロールバック",
-              "refs": [0, 0, 13, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -10672,7 +11916,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["移行を実行", "0の露出", "検証済み"],
+            "newSteps": [
+              "移行を実行",
+              "0の露出",
+              "検証済み"
+            ],
             "oldLabel": "従来の移行",
             "oldSteps": [
               {
@@ -10963,38 +12211,122 @@
           "features": [
             {
               "name": "完全な本番データクローン",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "OS + ライブラリの同一性検証",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "任意のDBエンジン (MariaDB, Postgres, Mongo)",
-              "refs": [0, 4, 0, 5, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                4,
+                0,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "マルチサービスクローン (アプリ + DB + メール + ストレージ)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ゼロコピーストレージ (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / ベンダーロックインなし",
-              "refs": [0, 6, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60秒以内のプロビジョニング",
-              "refs": [0, 0, 7, 8, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -11167,7 +12499,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": ["クローン実行", "47s", "100% 一致"],
+            "newSteps": [
+              "クローン実行",
+              "47s",
+              "100% 一致"
+            ],
             "oldLabel": "従来の開発環境",
             "oldSteps": [
               {
@@ -11435,33 +12771,117 @@
           "features": [
             {
               "name": "環境全体のリカバリ",
-              "refs": [0, 0, 0, 0, 4, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                4,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "5分以内のリカバリ",
-              "refs": [5, 6, 7, 8, 9, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "ポイントインタイム（分単位）",
-              "refs": [10, 11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自動リストア検証",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "データ転送不要",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / クラウド依存なし",
-              "refs": [15, 16, 17, 0, 18, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                0,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -11644,7 +13064,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": ["検知", "<5 min", "オンライン"],
+            "newSteps": [
+              "検知",
+              "<5 min",
+              "オンライン"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -11920,38 +13344,122 @@
           "features": [
             {
               "name": "設定可能な保持ポリシー",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "自動ライフサイクルクリーンアップ",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "保持バックアップの検証",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "即時の監査対応レポート",
-              "refs": [12, 13, 14, 15, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "マルチフレームワーク対応",
-              "refs": [16, 17, 18, 19, 0],
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                16,
+                17,
+                18,
+                19,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング / 自社インフラ",
-              "refs": [20, 21, 22, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                20,
+                21,
+                22,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CLI / 自動化ファースト",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -12135,7 +13643,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["ポリシーを設定", "Auto", "監査対応済み"],
+            "newSteps": [
+              "ポリシーを設定",
+              "Auto",
+              "監査対応済み"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -12463,38 +13975,122 @@
           "features": [
             {
               "name": "テスト用フルスタッククローン",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60秒以内のクローン作成",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "クローンごとの分離ネットワーク",
-              "refs": [4, 0, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "追加ストレージゼロ (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "パッチ後の自動ヘルスチェック",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "セルフホスティング、クラウド依存なし",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ワンコマンドワークフロー",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -12677,7 +14273,11 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["Clone", "60s", "パッチ & 検証"],
+            "newSteps": [
+              "Clone",
+              "60s",
+              "パッチ & 検証"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -12976,38 +14576,122 @@
           "features": [
             {
               "name": "クロスプロバイダー移行",
-              "refs": [0, 4, 5, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "1時間以内の移行",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "プロプライエタリフォーマットゼロ",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "増分のみの転送",
-              "refs": [0, 6, 7, 8, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ベンダーエージェント不要",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "フルスタック移行（アプリ + DB）",
-              "refs": [0, 9, 10, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                9,
+                10,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "ゼロダウンタイム移行",
-              "refs": [0, 0, 11, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "差別化",
@@ -13190,7 +14874,11 @@
           ],
           "timeline": {
             "newLabel": "REDIACCを使えば",
-            "newSteps": ["Snapshot", "<1hr", "Live"],
+            "newSteps": [
+              "Snapshot",
+              "<1hr",
+              "Live"
+            ],
             "oldLabel": "従来のやり方",
             "oldSteps": [
               {
@@ -13597,7 +15285,12 @@
           ],
           "timeline": {
             "newLabel": "Rediaccを使えば",
-            "newSteps": ["クローン + パッチ", "<4 min", "検証済み", "デプロイ"],
+            "newSteps": [
+              "クローン + パッチ",
+              "<4 min",
+              "検証済み",
+              "デプロイ"
+            ],
             "oldLabel": "従来のパッチ適用",
             "oldSteps": [
               {
@@ -13794,83 +15487,6 @@
         }
       }
     },
-    "team": {
-      "cta": {
-        "buttons": {
-          "contact": "連絡する",
-          "learnMore": "仕組みを見る"
-        },
-        "subtitle": "5分以下でRediaccをインストール。Community tierは永遠に無料。",
-        "title": "無料で試す"
-      },
-      "hero": {
-        "subtitle": "3時の緊急呼び出しに疲れたエンジニア。だから解決策を作った。",
-        "title": "ランサムウェアが手出しできないバックアップを作ったチーム"
-      },
-      "meta": {
-        "description": "Rediaccのチーム紹介。3時のデータ喪失アラートに疲れ果てた私たちが、ランサムウェアが触れられないバックアップを構築しました。",
-        "keywords": "Rediacc チーム、インフラストラクチャ エンジニアリング、災害復旧専門家、システム信頼性、DevOps チーム",
-        "title": "私たちのチーム | Rediacc - ランサムウェアに強いバックアップ"
-      },
-      "mission": {
-        "belief": "Community プランは有料プランと同じ機能。btrfs クローニング。LUKS 暗号化。上書き不可バックアップ。制限は小さいだけ。機能制限なし。騙しもなし。",
-        "description": "47日ごとにAIがデータベースを削除する。毎年1.71%のドライブが故障。ランサムウェアの75%がバックアップを狙う。60秒で復旧。",
-        "title": "私たちの使命: 災害を不可能にする"
-      },
-      "story": {
-        "beginning": {
-          "paragraph1": "2018年、ソフトウェアエンジニアを辞めました。自分のビジョンを追い求めるためです。興奮で眠れず、毎日18時間働いて、寝るのは4〜5時間。5〜6ヶ月、すべてを注ぎ込みました。",
-          "paragraph2": "ある日、開発インフラ全体へのアクセスを失った。あっという間に、すべてが遠い世界に。バックアップなし。あったとしても、新しいサーバーを買う金もない。",
-          "paragraph3": "借金を返す。家族を養う。だからサラリーマンに戻った。仕事を取り戻すのに20ヶ月。その間、夢は遠ざかり、不安と請求書は増えるばかり。",
-          "title": "始まり"
-        },
-        "birth": {
-          "paragraph1": "ポータブルストレージレイヤーから始まった。バックアップモジュールを加えた。そして最難関。ダウンタイムなしにライブシステムを移す。データサイズなんて関係ない。必要な機能をひたすら追加した。",
-          "paragraph2": "こうしてRediaccが生まれた。最難関の課題を乗り越えた末の産物。今は誰でも使える。使ってほしい。障害でビジネスを止めるな。生き残り、成長する準備を。",
-          "quote": "インフラが使えなくなったとき、僕は知った。何が必要か。災害を不可能にするシステム。",
-          "title": "Rediaccの誕生"
-        },
-        "title": "私たちのストーリー",
-        "turningPoint": {
-          "paragraph1": "二度と同じ目にあいたくない。ずっとそう思い続けた。必要なのは、どこにでも持ち運べるシステム。いつでも起動できる。簡単にバックアップできる。どこに移しても安全。そんなツール。",
-          "paragraph2": "2021年、NetworkChuckの動画でDockerを知った。何ができるのかに衝撃を受けた。もっと早く知っていればよかった。すべてが変わっていたはず。",
-          "paragraph3": "でもDockerだけじゃ足りない。コンテナファイルの移動は大変。ファイルオーナーが壊れる。データが大きくなると遅い。最悪なのは、サービスをオフラインにしなきゃいけない。そしてセキュリティもほぼなし。",
-          "title": "転換点"
-        }
-      },
-      "team": {
-        "title": "私たちのチーム"
-      },
-      "values": {
-        "items": {
-          "global": {
-            "description": "9言語対応。使用データはEUに留まる。GDPR対応のエストニア企業。",
-            "title": "グローバル思考"
-          },
-          "innovation": {
-            "description": "毎週リリース。ユーザーから報告された本当の課題を、一つひとつ解決する。",
-            "title": "継続的イノベーション"
-          },
-          "security": {
-            "description": "ディスク上のLUKS暗号化。ネットワークはTLS。アプリごとにDockerエンジン。すべてロック。",
-            "title": "設計から組み込むセキュリティ"
-          },
-          "simplicity": {
-            "description": "1つのコマンドで241GBのライブデータをコピー。それが複雑さの全予算。",
-            "title": "シンプルさを第一に"
-          },
-          "success": {
-            "description": "私たちが測るのは復旧時間。機能数ではありません。",
-            "title": "顧客の成功"
-          },
-          "transparency": {
-            "description": "オープンなコミュニケーション。正直な価格設定。明確なドキュメント。隠れた費用も、不意打ちも、小さな注意書きもない。",
-            "title": "透明性"
-          }
-        },
-        "title": "私たちの価値観"
-      }
-    },
     "telemetryPolicy": {
       "contact": {
         "description": "テレメトリの取り扱いに関するご質問やオプトアウトに関するサポートが必要な場合は、<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>までお問い合わせください。",
@@ -13896,7 +15512,9 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Bridgeは以下のカテゴリのデータを収集します："],
+              "content": [
+                "Bridgeは以下のカテゴリのデータを収集します："
+              ],
               "items": [
                 "<strong>キュー操作：</strong>タスクID、優先度レベル、操作タイプ、実行所要時間、成功または失敗ステータス",
                 "<strong>SSH操作：</strong>ターゲットホスト、ユーザー名、ポート番号、終了コード、実行所要時間（コマンド内容や出力は収集されません）",
@@ -13943,7 +15561,9 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": ["CLIは以下のカテゴリのデータを収集します："],
+              "content": [
+                "CLIは以下のカテゴリのデータを収集します："
+              ],
               "items": [
                 "<strong>コマンド使用状況：</strong>コマンド名、CLIバージョン、終了コード、成功または失敗ステータス",
                 "<strong>匿名化された引数：</strong>機密値が除去されたコマンドオプション — パスワード、トークン、シークレット、APIキー、および資格情報は<code>[REDACTED]</code>に置換されます",
@@ -14015,7 +15635,9 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": ["ミドルウェアは以下のカテゴリのデータを収集します："],
+              "content": [
+                "ミドルウェアは以下のカテゴリのデータを収集します："
+              ],
               "items": [
                 "<strong>システム情報：</strong>ホスト名、オペレーティングシステムバージョン、.NETランタイムバージョン",
                 "<strong>API呼び出し：</strong>HTTPメソッド、エンドポイントパス、レスポンスステータスコード、リクエスト所要時間",
@@ -14037,7 +15659,9 @@
           "title": "6. ミドルウェア テレメトリ"
         },
         "principles": {
-          "content": ["Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："],
+          "content": [
+            "Rediaccにおけるすべてのテレメトリ収集は以下の原則に従います："
+          ],
           "id": "principles",
           "items": [
             "<strong>プライバシー・バイ・デザイン：</strong>個人識別子は送信前に匿名化されます。メールアドレスはドメインのみに短縮され、ユーザーIDはハッシュ化（SHA-256）および切り詰められ、パスワードやシークレットは一切収集されません。",
@@ -14055,7 +15679,9 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": ["Webアプリケーションは以下のカテゴリのデータを収集します："],
+              "content": [
+                "Webアプリケーションは以下のカテゴリのデータを収集します："
+              ],
               "items": [
                 "<strong>ブラウザ情報：</strong>ブラウザ名とバージョン、優先言語、プラットフォーム（例：Windows、macOS、Linux）、画面解像度、色深度、ユーザーエージェント文字列、デバイスメモリ（利用可能な場合）、ネットワーク接続タイプ",
                 "<strong>ユーザーコンテキスト：</strong>セッションID（セッションごとにランダム生成）、メールドメインのみ（ローカル部分は除去、例：<code>***@example.com</code>）、組織名、チーム名",
@@ -14069,7 +15695,9 @@
               "title": "4.1 収集データ"
             },
             "webNotCollected": {
-              "content": ["Webアプリケーションは以下を収集しません："],
+              "content": [
+                "Webアプリケーションは以下を収集しません："
+              ],
               "items": [
                 "完全なメールアドレス（ローカル部分は常に除去）",
                 "パスワード、トークン、または認証資格情報",
@@ -14171,7 +15799,9 @@
           "title": "8. お客様のデータ"
         },
         "definitions": {
-          "content": ["以下の定義は、本利用規約全体を通じて適用されます："],
+          "content": [
+            "以下の定義は、本利用規約全体を通じて適用されます："
+          ],
           "id": "definitions",
           "items": [
             "<strong>「アカウント」</strong>とは、プラットフォームにアクセスしサブスクリプションを管理するために作成するユーザーアカウントを意味します。",
@@ -14263,7 +15893,9 @@
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
-              "content": ["お客様は以下の行為を行ってはなりません："],
+              "content": [
+                "お客様は以下の行為を行ってはなりません："
+              ],
               "items": [
                 "Bridgeバイナリまたはオンプレミスソフトウェアの非オープンソースコンポーネントのソースコードをリバースエンジニアリング、逆コンパイル、逆アセンブル、またはその他の方法で導出しようとすること",
                 "オンプレミスソフトウェアを第三者に再配布、サブライセンス、賃貸、リース、または貸与すること",
@@ -14427,18 +16059,21 @@
   },
   "regionPicker": {
     "channelEdge": "Edge",
+    "channelHintLabel": "リリースチャンネルについて",
     "channelStable": "安定版",
     "edgeHint": "本番環境、継続的にデプロイ。ソーク期間中は無料枠2倍。",
-    "footer": "最寄りのリージョン、または組織が必要とするリージョンを選択してください。登録後は変更できません。",
+    "footer": "最寄りのリージョン、または組織が必要とするリージョンを選択してください。",
+    "footerNote": "登録後は変更できません。",
     "locations": {
       "asia": "東京、日本",
       "eu": "フランクフルト、ドイツ",
       "us": "バージニア、アメリカ"
     },
+    "reassurance": "サーバーデータとバックアップはお客様のインフラに残ります。",
     "regionNote": "リージョンは登録後に変更できません。",
     "stableHint": "信頼性の高いリリース。edgeから7日間の検証後に昇格。",
-    "subtitle": "アカウント、請求、設定は選択したリージョンに保存されます。そこから移動することはありません。",
-    "title": "データの保存先はどこにしますか？"
+    "subtitle": "アカウント、請求、設定は選択したリージョンに保存されます。",
+    "title": "アカウントリージョンを選択"
   },
   "solutions": {
     "categories": {
@@ -14453,16 +16088,6 @@
     "title": "事業継続をどう実現するか"
   },
   "team": {
-    "founder": {
-      "contact": "ご質問は？直接メールしてください",
-      "designPartner": "デザインパートナー様には私が直接オンボーディングをいたします。無料でサインアップ後、30分のオンラインミーティングをご予約ください。あなたのスタックについてお話ししましょう。",
-      "guarantee": "Rediaccがうまくいかない場合は、メールをいただければ移行のお手伝いをします。",
-      "quote": "インフラはこんなに脆弱であるべきではない、だからRediaccを作りました。",
-      "story": {
-        "description": "10年以上サーバーを管理してきました。実際のインシデント中にバックアップが失敗するのを見てきました。Rediaccは、あなたのバックアップが失敗しないように存在しています。",
-        "headline": "なぜ私はRediaccを作ったのか"
-      }
-    },
     "video": {
       "ccLabel": "字幕",
       "personaHeadline": "あなたへのメッセージ",
@@ -14470,7 +16095,6 @@
     }
   },
   "testimonials": {
-    "fromTheFounder": "創設者から",
     "items": [
       {
         "company": "金融サービス",

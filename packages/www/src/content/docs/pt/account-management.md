@@ -4,8 +4,8 @@ description: Organizações, equipas, membros e subscrições no Rediacc.
 category: Guides
 order: 12
 language: pt
-sourceHash: "974885635641ed70"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1a3458ba81b340d4"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 ### Organizações
@@ -57,10 +57,10 @@ O Rediacc oferece quatro planos:
 
 | Plano | Máquinas | Licenças de Repo/mês | Validade padrão / máxima do cert. de delegação | Funcionalidades |
 |-------|----------|----------------------|------------------------------------------------|-----------------|
-| COMMUNITY | 2 | 500 | 15d / 30d | Básico |
-| PROFESSIONAL | 5 | 5.000 | 60d / 120d | Grupos de permissões, registo de auditoria, marca personalizada, suporte prioritário |
-| BUSINESS | 20 | 20.000 | 90d / 180d | Ceph, análises avançadas, prioridade de fila, fila avançada |
-| ENTERPRISE | 50 | 100.000 | 120d / 365d | Gestor de conta dedicado |
+| COMMUNITY | 2 | 100 | 15d / 30d | Básico |
+| PROFESSIONAL | 3 | 1.000 | 60d / 120d | Grupos de permissões, registo de auditoria, marca personalizada, suporte prioritário |
+| BUSINESS | 10 | 10.000 | 90d / 180d | Ceph, análises avançadas, prioridade de fila, fila avançada |
+| ENTERPRISE | 25+ | 25.000+ | 120d / 365d | Gestor de conta dedicado |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 

@@ -4,8 +4,8 @@ description: "Organisations, équipes, membres et abonnements dans Rediacc."
 category: Guides
 order: 12
 language: fr
-sourceHash: "974885635641ed70"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1a3458ba81b340d4"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 ### Organisations
@@ -57,10 +57,10 @@ Rediacc propose quatre plans :
 
 | Plan | Machines | Licences repo/mois | Validité cert de délégation par défaut / max | Fonctionnalités |
 |------|----------|--------------------|----------------------------------------------|-----------------|
-| COMMUNITY | 2 | 500 | 15d / 30d | Basique |
-| PROFESSIONAL | 5 | 5 000 | 60d / 120d | Groupes de permissions, journal d'audit, marque personnalisée, support prioritaire |
-| BUSINESS | 20 | 20 000 | 90d / 180d | Ceph, analyses avancées, priorité de file d'attente, file d'attente avancée |
-| ENTERPRISE | 50 | 100 000 | 120d / 365d | Responsable de compte dédié |
+| COMMUNITY | 2 | 100 | 15d / 30d | Basique |
+| PROFESSIONAL | 3 | 1 000 | 60d / 120d | Groupes de permissions, journal d'audit, marque personnalisée, support prioritaire |
+| BUSINESS | 10 | 10 000 | 90d / 180d | Ceph, analyses avancées, priorité de file d'attente, file d'attente avancée |
+| ENTERPRISE | 25+ | 25 000+ | 120d / 365d | Responsable de compte dédié |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 

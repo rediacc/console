@@ -1,8 +1,8 @@
 ---
-title: "加密磁盘镜像的 git diff：无需解密即可对比 fork"
-description: "rdc repo diff 在块级别对比加密镜像，以 A/M/D/R 语法报告变更。不接触任何密钥。成本取决于变更的块数，而非仓库大小。"
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-28
+title: 加密磁盘镜像的 git diff：无需解密即可对比 fork
+description: rdc repo diff 在块级别对比加密镜像，以 A/M/D/R 语法报告变更。不接触任何密钥。成本取决于变更的块数，而非仓库大小。
+author: Rediacc
+publishedDate: 2026-05-28T00:00:00.000Z
 category: guide
 tags:
   - luks
@@ -12,8 +12,8 @@ tags:
   - cli
 featured: false
 language: zh
-sourceHash: "516ffb7de9941f15"
-sourceCommit: "0a3e9865997659698502ad551e078be854b4b2c4"
+sourceHash: 1b08ca130594e2e4
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 ---
 
 > **太长不看。** `rdc repo diff` 以 `git status --short` 语法（A/M/D/R）展示两个 fork 仓库之间的文件级差异，且不会解密任何一个。

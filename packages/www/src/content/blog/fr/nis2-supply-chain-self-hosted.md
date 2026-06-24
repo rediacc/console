@@ -1,7 +1,7 @@
 ---
 title: "Article 21(2)(d) est une question de fournisseur. L'auto-hébergement est la réponse que vous cessez de devoir."
 description: "Pourquoi le registre des tiers-TIC se réduit lorsque le plan de données ne quitte jamais votre périmètre. Lecture pratique de l'Article 21(2)(d) de NIS2 pour les RSSI et les responsables achats qui renégocient leurs DPA en 2026."
-author: Muhammed Fatih Bayraktar
+author: Rediacc
 publishedDate: 2026-05-09
 category: guide
 tags:
@@ -12,8 +12,8 @@ tags:
   - conformite
 featured: false
 language: fr
-sourceHash: "98f0b752bc5dbd4d"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "ffdb86da48dacc58"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 translatedFrom: en
 ---
 
@@ -162,6 +162,6 @@ Si vous vous apprêtez à renouveler un contrat de sauvegarde ou de reprise apr�
 2. Appliquez la liste de contrôle en six questions ci-dessus à votre fournisseur en place. Envoyez les réponses à votre DPO et à votre auditeur et demandez si les lacunes sont acceptées. Si les lacunes incluent la couche 3 (garde des clés) ou la couche 4 (sous-traitants que vous n'avez pas répertoriés), c'est le levier.
 3. Examinez à quoi ressemblerait un registre fournisseurs alternatif avec un plan de contrôle auto-hébergé. Comparez les entrées du registre, pas les coûts de licence. Les coûts de licence sont similaires à un facteur deux près ; les entrées du registre ont des formes différentes. (L'article complémentaire sur [le coût structurel de la pile NIS2](/fr/blog/nis2-the-real-bill) détaille ce qui se contracte et ce qui reste.)
 
-Si nous sommes l'alternative dans votre liste restreinte, l'offre est concrète. Envoyez-nous votre questionnaire fournisseur. Nous le remplirons sur la base d'une instance déployée, avec nos réponses réelles à vos questions, y compris les lacunes. Si vous souhaitez parcourir l'architecture avant d'envoyer des documents, nous réserverons une revue d'architecture de 30 minutes avec le fondateur. Le chemin vers une entrée défendable dans le registre n'est pas une brochure brillante. Ce sont les réponses, y compris les plus inconfortables.
+Si nous sommes l'alternative dans votre liste restreinte, l'offre est concrète. Envoyez-nous votre questionnaire fournisseur. Nous le remplirons sur la base d'une instance déployée, avec nos réponses réelles à vos questions, y compris les lacunes. Si vous souhaitez parcourir l'architecture avant d'envoyer des documents, nous organiserons une revue d'architecture de 30 minutes avec notre équipe d'ingénieurs. Le chemin vers une entrée défendable dans le registre n'est pas une brochure brillante. Ce sont les réponses, y compris les plus inconfortables.
 
 Vous voulez la carte Rediacc article par article ? Voir [NIS2 et DORA](/fr/docs/legal-nis2-dora). Vous avez besoin du cadre plus large ? Consultez [Vue d'ensemble de la conformité](/fr/docs/legal-overview). Pour la résidence des données, voir [Souveraineté des données](/fr/docs/legal-data-sovereignty). Pour comprendre pourquoi l'auto-hébergement importe, voir [Sur site](/fr/docs/on-premise).

@@ -1,8 +1,13 @@
 ---
-title: "Votre test d'intrusion annuel, c'est du théâtre de conformité. L'Article 21(2)(f) de NIS2 vient de le rendre problématique."
-description: "Évaluation continue de l'efficacité, le fork à temps constant qui la rend abordable, et le calendrier de notification de l'Article 23 que vous ne pouvez pas tenir sans artefacts de niveau forensique."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: >-
+  Votre test d'intrusion annuel, c'est du théâtre de conformité. L'Article
+  21(2)(f) de NIS2 vient de le rendre problématique.
+description: >-
+  Évaluation continue de l'efficacité, le fork à temps constant qui la rend
+  abordable, et le calendrier de notification de l'Article 23 que vous ne pouvez
+  pas tenir sans artefacts de niveau forensique.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +17,8 @@ tags:
   - notification-incident
 featured: false
 language: fr
-sourceHash: "4c2768e81f0ff03a"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 0e471ac41759e4cb
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

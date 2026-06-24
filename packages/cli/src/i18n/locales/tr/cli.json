@@ -959,9 +959,9 @@
         "infrastructure": "Altyapı",
         "noData": "Durum verisi mevcut değil",
         "storageHealthFragmentationNote": "Parçalanma, her deponun kopyala-yazarken (copy-on-write) imajındaki extent sayısını sayar, içindeki dosyaları değil. Yüksek değerler rastgele yazma iş yüklerinde (veritabanları, konteyner katmanları) beklenir ve yalnızca bilgilendirme amaçlıdır. Birleştirme (defrag) burada bilerek desteklenmez: reflink ile paylaşılan fork'ların ve yedek anlık görüntülerin paylaşımını bozar ve veri deposu kullanımını şişirir.",
-        "storageHealthPoolSummary": "Havuz: {{used}} dolu, {{free}} boş (%{{percent}} dolu)",
-        "storageHealthPoolSnapshots": "Yedekleme anlık görüntüleri {{pinned}} tutuyor ({{active}} etkin, {{stale}} bayat; bayat olanlar 'rdc machine prune' ile kaldırılır)",
         "storageHealthHint": "İpucu: BTRFS parçalanmasını ve repo başına reflink tasarrufunu görmek için --storage-health ile çalıştırın",
+        "storageHealthPoolSnapshots": "Yedekleme anlık görüntüleri {{pinned}} tutuyor ({{active}} etkin, {{stale}} bayat; bayat olanlar 'rdc machine prune' ile kaldırılır)",
+        "storageHealthPoolSummary": "Havuz: {{used}} dolu, {{free}} boş (%{{percent}} dolu)",
         "storageHealthSummary": "Depolama verimliliği: {{summary}}",
         "strictDriftDetected": "--strict: {{count}} konteyner sapma eşiğini aştı; sıfır olmayan koduyla çıkılıyor",
         "syncCertsFailed": "Sertifika önbelleği senkronizasyonu başarısız: {{error}}"
@@ -1304,10 +1304,10 @@
         "list": {
           "completed": "Otomatik başlatma listesi alındı",
           "description": "Otomatik başlatma etkin olan depoları listele",
-          "failed": "Otomatik başlatma depolarını listeleme başarısız",
-          "starting": "\"{{machine}}\" üzerindeki otomatik başlatma depoları listeleniyor...",
           "empty": "\"{{machine}}\" üzerinde otomatik başlatma etkin depo yok",
-          "service": "Otomatik başlatma servisi: kurulu={{installed}}, etkin={{enabled}}"
+          "failed": "Otomatik başlatma depolarını listeleme başarısız",
+          "service": "Otomatik başlatma servisi: kurulu={{installed}}, etkin={{enabled}}",
+          "starting": "\"{{machine}}\" üzerindeki otomatik başlatma depoları listeleniyor..."
         }
       },
       "backup": {
@@ -1433,41 +1433,6 @@
         "sizeOption": "Yeni depo boyutu (ör. 10G, 100G, 1T)",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" {{size}} olarak genişletiliyor..."
       },
-      "trim": {
-        "description": "Bağlı depolardan datastore havuzuna alan geri kazandırır (çevrimiçi, kesintisiz). Depo içinde silinen bloklar fstrim ile havuza geri döner. --name verilmezse bağlı tüm depolar ve datastore'un kendisi trimlenir. Aktif yedeklemesi olan depolarda fstrim atlanır; --docker geri kazanımı yine de çalışır",
-        "descriptionShort": "Depolardaki boş alanı havuza geri kazandır",
-        "nameOption": "Trimlenecek depo (varsayılan: bağlı tüm depolar)",
-        "dockerOption": "Docker alanını geri kazan (durmuş konteynerler, sahipsiz imajlar, derleme önbelleği); etkin bir yedek anlık görüntüsü sırasında bile çalışır",
-        "dockerVolumesOption": "Ayrıca kullanılmayan Docker birimlerini temizle",
-        "reportOnlyOption": "Trim yapmadan discard durumunu ve geri kazanılabilir tahmini göster",
-        "repoNotFound": "Depo bulunamadı: {{name}}",
-        "noMountedRepos": "Bağlı depo bulunamadı",
-        "starting": "\"{{machine}}\" üzerindeki depolar trimleniyor...",
-        "completed": "Trim tamamlandı: {{total}} geri kazanıldı",
-        "failed": "Trim başarısız"
-      },
-      "policy": {
-        "description": "Makinenin depolama bakımcısının uyguladığı otomatik boyut politikasını yönetir: depo dolduğunda kotayı çevrimiçi büyütür (asla max-quota üzerine çıkmaz, havuz azaldığında büyütmez) ve planlı trimler çalıştırır. Otomatik küçültme yoktur; bunun için 'repo resize' kullanın. --name verilmezse makine genelindeki varsayılan politika hedeflenir",
-        "descriptionShort": "Otomatik boyut politikasını yönet (otomatik büyüme, planlı trim)",
-        "nameOption": "Depo (varsayılan: makine geneli politika)",
-        "repoNotFound": "Depo bulunamadı: {{name}}",
-        "invalidBool": "{{flag}} 'true' veya 'false' olmalı, alınan: {{value}}",
-        "failed": "Politika işlemi başarısız",
-        "set": {
-          "description": "Boyut politikası alanlarını ayarlar. Yalnızca geçirdiğiniz bayraklar değişir; diğer kayıtlı alanlar değerlerini korur. Otomatik büyütmeyi etkinleştirmek --max-quota gerektirir: tavan, havuzun aşırı tahsisine verdiğiniz açık onaydır",
-          "descriptionShort": "Politika alanlarını ayarla (makine varsayılanı veya --name ile tek depo)",
-          "autoGrowOption": "Otomatik çevrimiçi kota büyütmeyi etkinleştir (true/false)",
-          "maxQuotaOption": "Otomatik büyütme tavanı (örn. 200G); otomatik büyütme için zorunlu",
-          "growThresholdOption": "Büyümeyi tetikleyen dosya sistemi doluluk yüzdesi (varsayılan 85)",
-          "growStepOption": "Adım başına büyüme: mutlak (10G) veya kota yüzdesi (20%)",
-          "autoTrimOption": "Planlı trimi etkinleştir (true/false)",
-          "trimIntervalOption": "Otomatik trimler arasındaki en az saat (varsayılan 24)"
-        },
-        "get": {
-          "description": "Kayıtlı makine varsayılanını, depo geçersiz kılmasını (--name ile) ve bakımcının uyguladığı birleşik etkin politikayı gösterir",
-          "descriptionShort": "Boyut politikasını göster (makine varsayılanı, depo geçersiz kılması, etkin)"
-        }
-      },
       "fork": {
         "alreadyExists": "\"{{name}}\" deposu bağlamda zaten mevcut",
         "checkpointOption": "fork öncesinde kaynakta CRIU checkpoint oluştur (fork üzerinde geri yükleme için işlem bellek durumunu yakala)",
@@ -1537,7 +1502,6 @@
         "checkpointing": "CRIU kontrol noktası oluşturuluyor...",
         "complete": "Taşıma tamamlandı: {{name}}, {{from}} konumundan {{to}} konumuna taşındı",
         "deltaDone": "Delta senkronizasyonu tamamlandı",
-        "phase2Stats": "Geçiş (KESİNTİ): {{duration}} içinde {{transferred}}",
         "deltaFailed": "Delta senkronizasyonu başarısız",
         "deltaSync": "Delta senkronize ediliyor...",
         "description": "Bir depoyu minimum kesinti ile başka bir makineye canlı taşıma. İki aşamalı rsync: çalışırken toplu aktarım, ardından delta senkronizasyonu için kısa duraklama. CRIU kontrol noktası ile süreç belleği taşıma ve hedef makinelerin otomatik oluşturulmasını destekler",
@@ -1554,9 +1518,10 @@
         "optionTo": "Hedef makine adı",
         "phase1": "Aşama 1: Toplu veri aktarılıyor (kaynak çalışmaya devam ediyor)...",
         "phase1Done": "Toplu aktarım tamamlandı",
-        "phase1Stats": "{{duration}} içinde {{transferred}} aktarıldı — kaynak çevrimiçi kaldı",
         "phase1Failed": "Toplu aktarım başarısız",
+        "phase1Stats": "{{duration}} içinde {{transferred}} aktarıldı — kaynak çevrimiçi kaldı",
         "phase2": "Aşama 2: Geçiş (kısa kesinti)...",
+        "phase2Stats": "Geçiş (KESİNTİ): {{duration}} içinde {{transferred}}",
         "phase3": "Aşama 3: Hedefte başlatılıyor...",
         "provisioning": "{{provider}} aracılığıyla hedef makine {{machine}} hazırlanıyor...",
         "sourceStopped": "Kaynak servisleri durduruldu",
@@ -1588,6 +1553,28 @@
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" sahipliği ayarlanıyor...",
         "uidOption": "Sahip UID'si (varsayılan: 7111)"
       },
+      "policy": {
+        "description": "Makinenin depolama bakımcısının uyguladığı otomatik boyut politikasını yönetir: depo dolduğunda kotayı çevrimiçi büyütür (asla max-quota üzerine çıkmaz, havuz azaldığında büyütmez) ve planlı trimler çalıştırır. Otomatik küçültme yoktur; bunun için 'repo resize' kullanın. --name verilmezse makine genelindeki varsayılan politika hedeflenir",
+        "descriptionShort": "Otomatik boyut politikasını yönet (otomatik büyüme, planlı trim)",
+        "failed": "Politika işlemi başarısız",
+        "get": {
+          "description": "Kayıtlı makine varsayılanını, depo geçersiz kılmasını (--name ile) ve bakımcının uyguladığı birleşik etkin politikayı gösterir",
+          "descriptionShort": "Boyut politikasını göster (makine varsayılanı, depo geçersiz kılması, etkin)"
+        },
+        "invalidBool": "{{flag}} 'true' veya 'false' olmalı, alınan: {{value}}",
+        "nameOption": "Depo (varsayılan: makine geneli politika)",
+        "repoNotFound": "Depo bulunamadı: {{name}}",
+        "set": {
+          "autoGrowOption": "Otomatik çevrimiçi kota büyütmeyi etkinleştir (true/false)",
+          "autoTrimOption": "Planlı trimi etkinleştir (true/false)",
+          "description": "Boyut politikası alanlarını ayarlar. Yalnızca geçirdiğiniz bayraklar değişir; diğer kayıtlı alanlar değerlerini korur. Otomatik büyütmeyi etkinleştirmek --max-quota gerektirir: tavan, havuzun aşırı tahsisine verdiğiniz açık onaydır",
+          "descriptionShort": "Politika alanlarını ayarla (makine varsayılanı veya --name ile tek depo)",
+          "growStepOption": "Adım başına büyüme: mutlak (10G) veya kota yüzdesi (20%)",
+          "growThresholdOption": "Büyümeyi tetikleyen dosya sistemi doluluk yüzdesi (varsayılan 85)",
+          "maxQuotaOption": "Otomatik büyütme tavanı (örn. 200G); otomatik büyütme için zorunlu",
+          "trimIntervalOption": "Otomatik trimler arasındaki en az saat (varsayılan 24)"
+        }
+      },
       "pull": {
         "deployed": "\"{{repo}}\" deposu {{machine}} üzerinde dağıtıldı",
         "deployFailed": "Pull sonrası \"{{repo}}\" dağıtımı başarısız oldu",
@@ -1614,16 +1601,16 @@
         "optionCheckpoint": "Yedekleme öncesi CRIU checkpoint oluştur (canlı taşıma için işlem bellek durumunu yakalar)",
         "optionDeltaBase": "Her iki makinede de bayt düzeyinde birebir bulunan değişmez temel GUID; yalnızca değişen blokları aktar (makine hedefi). Otomatik temel için boş bırakın",
         "optionForce": "Mevcut yedeğin üzerine yazmaya zorla",
+        "optionJson": "Aktarım istatistiklerini JSON olarak yazdır",
         "optionProvision": "Hedef makine yoksa bulut sağlayıcısı üzerinden otomatik olarak oluştur",
         "optionStrategy": "Delta temeli kullanırken blok-delta stratejisi: auto, physical veya shared",
-        "optionJson": "Aktarım istatistiklerini JSON olarak yazdır",
-        "statsDelta": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde {{transferred}} aktarıldı (taban {{base}} ile delta, imaj {{image}})",
-        "statsFull": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde {{transferred}} aktarıldı (tam aktarım)",
-        "statsNoBytes": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde tamamlandı",
         "optionTag": "Sürüm belirleme için dağıtım etiketi",
         "optionTo": "Hedef makine veya depolama adı (yapılandırmadan otomatik algılanır)",
         "optionUp": "Gönderdikten sonra hedef makinede depoyu bağla ve dağıt",
-        "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor..."
+        "pushing": "\"{{repo}}\" yedeği {{dest}} hedefine gönderiliyor...",
+        "statsDelta": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde {{transferred}} aktarıldı (taban {{base}} ile delta, imaj {{image}})",
+        "statsFull": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde {{transferred}} aktarıldı (tam aktarım)",
+        "statsNoBytes": "\"{{repo}}\" {{machine}} hedefine gönderildi — {{duration}} içinde tamamlandı"
       },
       "resize": {
         "completed": "Yeniden boyutlandırma tamamlandı",
@@ -1719,6 +1706,19 @@
         },
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" deposuna şablon uygulanıyor..."
       },
+      "trim": {
+        "completed": "Trim tamamlandı: {{total}} geri kazanıldı",
+        "description": "Bağlı depolardan datastore havuzuna alan geri kazandırır (çevrimiçi, kesintisiz). Depo içinde silinen bloklar fstrim ile havuza geri döner. --name verilmezse bağlı tüm depolar ve datastore'un kendisi trimlenir. Aktif yedeklemesi olan depolarda fstrim atlanır; --docker geri kazanımı yine de çalışır",
+        "descriptionShort": "Depolardaki boş alanı havuza geri kazandır",
+        "dockerOption": "Docker alanını geri kazan (durmuş konteynerler, sahipsiz imajlar, derleme önbelleği); etkin bir yedek anlık görüntüsü sırasında bile çalışır",
+        "dockerVolumesOption": "Ayrıca kullanılmayan Docker birimlerini temizle",
+        "failed": "Trim başarısız",
+        "nameOption": "Trimlenecek depo (varsayılan: bağlı tüm depolar)",
+        "noMountedRepos": "Bağlı depo bulunamadı",
+        "repoNotFound": "Depo bulunamadı: {{name}}",
+        "reportOnlyOption": "Trim yapmadan discard durumunu ve geri kazanılabilir tahmini göster",
+        "starting": "\"{{machine}}\" üzerindeki depolar trimleniyor..."
+      },
       "tunnel": {
         "active": "Tünel aktif: localhost:{{localPort}} → {{container}} ({{remoteIP}}:{{remotePort}})",
         "closed": "Tünel kapatıldı",
@@ -1734,9 +1734,9 @@
         "noContainers": "\"{{repository}}\" deposu için çalışan konteyner bulunamadı",
         "noPorts": "\"{{container}}\" konteynerinde açık port bulunamadı. --port belirtin",
         "noServiceIP": "\"{{container}}\" konteynerinin atanmış servis IP'si yok",
-        "portOption": "Yönlendirilecek uzak konteyner portu",
-        "portInUse": "Yerel port {{port}} zaten kullanımda. --local ile başka bir port seçin",
         "notReady": "Tünel, localhost:{{localPort}} üzerinde 15 saniye içinde hazır olmadı",
+        "portInUse": "Yerel port {{port}} zaten kullanımda. --local ile başka bir port seçin",
+        "portOption": "Yönlendirilecek uzak konteyner portu",
         "urlOnlyOption": "Tünel hazır olduğunda yalnızca yerel URL'yi yazdır (makine tarafından okunabilir)"
       },
       "unmount": {
@@ -2211,26 +2211,26 @@
         "removedKeys": "Tüm kalıcı SSH anahtarları kaldırıldı."
       },
       "connect": {
+        "browserUrl": "VS Code'u tarayıcınızda açın: {{url}}",
         "configuringSSH": "SSH yapılandırılıyor...",
         "configuringVSCode": "VS Code ayarları yapılandırılıyor...",
         "description": "VS Code'da bir makineye veya depoya bağlanın",
         "detecting": "VS Code algılanıyor...",
         "extensionWarning": "Uyarı: Uzaktan SSH uzantısı yüklü olmayabilir.\nYüklemek için: https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-ssh\n",
         "fetchingDetails": "Bağlantı ayrıntıları alınıyor...",
+        "installingServer": "Makinede {{provider}} {{version}} kurulumunun hazır olması sağlanıyor...",
         "opening": "VS Code açılıyor: {{connection}} → {{path}}",
+        "openingBrowser": "Tarayıcınız açılıyor...",
+        "passwordNote": "Giriş parolası: {{password}}",
         "persistingKey": "SSH anahtarı kalıcı kılınıyor...",
         "provisioningRenet": "Uzak sunucuya renet sağlanıyor...",
+        "serverReused": "Hâlihazırda çalışan sunucu yeniden kullanılıyor",
         "settingsWarning": "Uyarı: VS Code ayarları yapılandırılamadı: {{error}}",
         "settingUpEnv": "Uzak ortam ayarlanıyor...",
+        "startingServer": "Depo sandbox'ı içinde {{provider}} başlatılıyor...",
         "success": "VS Code başarıyla başlatıldı.",
         "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor...",
-        "installingServer": "Makinede {{provider}} {{version}} kurulumunun hazır olması sağlanıyor...",
-        "startingServer": "Depo sandbox'ı içinde {{provider}} başlatılıyor...",
-        "serverReused": "Hâlihazırda çalışan sunucu yeniden kullanılıyor",
-        "tunnelReady": "Tünel localhost:{{port}} üzerinde hazır",
-        "browserUrl": "VS Code'u tarayıcınızda açın: {{url}}",
-        "passwordNote": "Giriş parolası: {{password}}",
-        "openingBrowser": "Tarayıcınız açılıyor..."
+        "tunnelReady": "Tünel localhost:{{port}} üzerinde hazır"
       },
       "description": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
       "descriptionShort": "Bir makine veya depoya VS Code Remote SSH ile bağlanın",
@@ -2251,8 +2251,8 @@
         },
         "stop": {
           "description": "Tarayıcı VS Code sunucusunu durdur",
-          "stopped": "{{provider}} durduruldu",
-          "notRunning": "{{provider}} zaten çalışmıyordu"
+          "notRunning": "{{provider}} zaten çalışmıyordu",
+          "stopped": "{{provider}} durduruldu"
         }
       }
     }
@@ -2581,16 +2581,16 @@
     "vaultDataRequired": "Kasa verileri gerekli. --vault <json> kullanın veya JSON'u stdin aracılığıyla yönlendirin.",
     "vaultVersionRequired": "Kasa sürümü gerekli. --vault-version <n> kullanın.",
     "vscode": {
+      "browserNeedsRepo": "vscode --browser bir depo sandbox'ı sunar — --repository <name> ile depo belirtin",
       "cleanupRequired": "Tüm bağlantıları kaldırmak için --all veya belirli bir bağlantı için --connection <name> belirtin.",
       "connectivityFailed": "{{host}}:{{port}} adresine erişilemiyor. {{error}}\n\nSorun Giderme:\n  - Makineyi kontrol edin ve ağa bağlı olup olmadığını doğrulayın\n  - IP adresinin makine kasasında doğru olduğunu doğrulayın\n  - {{port}} bağlantı noktasının güvenlik duvarı tarafından engellenmediğini doğrulayın\n  - Makineye ping atmayı deneyin: ping {{host}}",
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",
       "notFound": "VS Code bulunamadı.\n\nLütfen buradan yükleyin: https://code.visualstudio.com/\nVeya REDIACC_VSCODE_PATH ortam değişkenini ayarlayın.",
-      "browserNeedsRepo": "vscode --browser bir depo sandbox'ı sunar — --repository <name> ile depo belirtin",
-      "unsupportedArch": "Tarayıcı VS Code için desteklenmeyen makine mimarisi: {{arch}}",
       "serverInstallFailed": "{{provider}} kurulumu başarısız: {{error}}",
-      "serverStartFailed": "{{provider}} başlatılamadı: {{error}}"
+      "serverStartFailed": "{{provider}} başlatılamadı: {{error}}",
+      "unsupportedArch": "Tarayıcı VS Code için desteklenmeyen makine mimarisi: {{arch}}"
     }
   },
   "help": {
@@ -2785,13 +2785,13 @@
     "vaultVersion": "İyimser kilitleme için güncel kasa sürümü",
     "verifyChecksum": "Senkronizasyondan sonra dosyaları sağlama toplamı kullanarak doğrulayın",
     "vmId": "Sanal makine kimliği",
-    "watch": "Değişiklikleri izleyin",
-    "watchUpdates": "Güncellemeleri izleyin",
-    "yes": "Onay istemini atla",
     "vscodeBrowser": "Depo sandbox'ı içinden tarayıcı VS Code sun (yerel VS Code gerekmez)",
     "vscodeNoOpen": "Yerel tarayıcıyı açmadan URL'yi yazdır",
+    "vscodeServerArchive": "Makinede önceden konumlandırılmış sunucu tarball yolu (ağ dışı kurulumlar için)",
     "vscodeServerProvider": "Tarayıcı VS Code sunucu uygulaması (openvscode, code-server)",
-    "vscodeServerArchive": "Makinede önceden konumlandırılmış sunucu tarball yolu (ağ dışı kurulumlar için)"
+    "watch": "Değişiklikleri izleyin",
+    "watchUpdates": "Güncellemeleri izleyin",
+    "yes": "Onay istemini atla"
   },
   "prompts": {
     "apiUrl": "API URL'si:",

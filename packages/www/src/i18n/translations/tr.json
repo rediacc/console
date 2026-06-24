@@ -184,8 +184,8 @@
     },
     "organizationLinks": {
       "aboutUs": "Hakkımızda",
-      "contact": "İletişim",
-      "team": "Ekip"
+      "company": "Şirket",
+      "contact": "İletişim"
     },
     "productLinks": {
       "disasterRecovery": "Afet Kurtarma",
@@ -324,7 +324,14 @@
     }
   },
   "logoWall": {
-    "categories": ["Git", "CI/CD", "Konteynerler", "Veritabanları", "İzleme", "Depolama"],
+    "categories": [
+      "Git",
+      "CI/CD",
+      "Konteynerler",
+      "Veritabanları",
+      "İzleme",
+      "Depolama"
+    ],
     "title": "Altyapınızla uyumlu"
   },
   "metrics": {
@@ -487,6 +494,63 @@
         "title": "Abonelik Onaylandı"
       }
     },
+    "company": {
+      "cta": {
+        "buttons": {
+          "contact": "İletişime Geçin",
+          "learnMore": "Nasıl Çalıştığını Görün"
+        },
+        "subtitle": "Rediacc'ı 5 dakikadan kısa sürede kurun. Community katmanı sonsuza kadar ücretsizdir.",
+        "title": "Ücretsiz Deneyin"
+      },
+      "hero": {
+        "subtitle": "Rediacc, üretim sistemleri çalıştıran ve onları kaybetmeyi göze alamayan ekipler için tasarlandı.",
+        "title": "Kontrol Ettiğiniz Yedekleme ve Kurtarma Yazılımı"
+      },
+      "meta": {
+        "description": "Rediacc, üretimi klonlamanıza, güvenle test etmenize ve saniyeler içinde kurtarmanıza olanak tanıyan kendi barındırılan yedekleme ve felaket kurtarma yazılımı geliştirir.",
+        "keywords": "Rediacc şirketi, kendi barındırılan yedekleme, felaket kurtarma yazılımı, altyapı güvenilirliği",
+        "title": "Şirket | Rediacc - Fidye Yazılımına Dayanan Yedekler"
+      },
+      "mission": {
+        "belief": "Community tier, ücretli paketlerin tüm özelliklerini sunuyor. Aynı btrfs klonlama, aynı LUKS şifreleme, aynı salt-okunur yedekler. Sadece daha düşük limitler. Gizli ücret yok, kandırma yok.",
+        "description": "Yapay zeka her 47 günde bir üretim veritabanını siliyor. Her yıl disklerin %1,71'i arızalanıyor. Fidye yazılımlarının %75'i yedeklemeleri hedef alıyor. 60 saniye içinde yeniden çalışır duruma dönersiniz.",
+        "title": "Misyonumuz: Felaketleri İmkansız Kıl"
+      },
+      "overview": {
+        "description": "Rediacc, yedekleme, klonlama ve felaket kurtarma için kendi barındırılan bir yazılımdır. Kendi sunucularınızda çalışır, tüm üretim sistemlerini saniyeler içinde kopyalar ve sizi hızla çevrimiçi duruma getirir.",
+        "title": "Ne Yapıyoruz"
+      },
+      "values": {
+        "items": {
+          "global": {
+            "description": "9 dilde. Veriler AB'de kalıyor. GDPR entegre Estonya şirketi.",
+            "title": "Küresel Düşünce"
+          },
+          "innovation": {
+            "description": "Haftada bir çıkarırız. Her sürüm müşterilerin bildirdiği gerçek bir sorunu çözer.",
+            "title": "Sürekli Yenilik"
+          },
+          "security": {
+            "description": "Diskte LUKS şifreleme, ağda TLS, her app için ayrı Docker motoru. Her katman kilitli.",
+            "title": "Tasarımda Güvenlik"
+          },
+          "simplicity": {
+            "description": "241 GB veriyi kopyalamak için tek komut. Budur karmaşıklığımızın tümü.",
+            "title": "Sadelik Her Şeyden Önce"
+          },
+          "success": {
+            "description": "Kendimizi özellik sayısı değil, sizin kurtarma süresiyle ölçeriz.",
+            "title": "Müşteri Başarısı"
+          },
+          "transparency": {
+            "description": "Açık iletişim, dürüst fiyatlandırma ve net belgeler. Gizli ücret yok, sürpriz yok, ince yazı yok.",
+            "title": "Şeffaflık"
+          }
+        },
+        "title": "Değerlerimiz"
+      }
+    },
     "contact": {
       "breadcrumb": {
         "contact": "İletişim",
@@ -591,12 +655,16 @@
           "title": "5. Analiz Yaklaşımımız"
         },
         "changes": {
-          "content": ["Ek çerezler kullanmaya başlarsak, bu politikayı güncelleyeceğiz."],
+          "content": [
+            "Ek çerezler kullanmaya başlarsak, bu politikayı güncelleyeceğiz."
+          ],
           "id": "changes",
           "title": "7. Bu Politikadaki Değişiklikler"
         },
         "cookiesWeUse": {
-          "content": ["Yalnızca bir çerez kullanıyoruz:"],
+          "content": [
+            "Yalnızca bir çerez kullanıyoruz:"
+          ],
           "id": "cookies-we-use",
           "subsections": {
             "languageCookie": {
@@ -638,7 +706,9 @@
           "title": "2. Çerezler Nedir?"
         },
         "whatWeDontUse": {
-          "content": ["Aşağıdaki teknolojiler web sitemizde <strong>kullanılmamaktadır</strong>:"],
+          "content": [
+            "Aşağıdaki teknolojiler web sitemizde <strong>kullanılmamaktadır</strong>:"
+          ],
           "content2": [
             "Not: Bu Çerez Politikası Rediacc pazarlama web sitesi için geçerlidir. Yazılım ürünlerimiz (Web Uygulaması, CLI, Middleware, Bridge) çerez kullanmayan ayrı kullanım telemetrisi toplar. Ürün telemetrisi hakkında ayrıntılar için <a href=\"telemetry-policy\">Telemetri Politikamıza</a> bakın."
           ],
@@ -737,11 +807,11 @@
       },
       "youGet": {
         "items": [
-          "BUSINESS planı: Depo başına 500 GB, 20 kullanıcı, ayda 20.000 aktivasyon",
-          "Edge kanalında: 2 kat limit (depo başına 1 TB, 40 kullanıcı, 40.000 aktivasyon)",
+          "BUSINESS planı: depo başına 200 GB, 10 kullanıcı, ayda 10.000 aktivasyon",
+          "Edge kanalında: 2 kat limit (depo başına 400 GB, 20 kullanıcı, 20.000 aktivasyon)",
           "Sınırsız depo, kullanıcı ve ekip",
           "Yedek Geri Yükleme, Karanlık Mod, 9 Dil Desteği",
-          "Kurulum ve destek için kurucuya doğrudan erişim",
+          "Doğrudan mühendislik desteği",
           "Ömür boyu kilitli: Süresi yok, indirgenmez, kart yok"
         ],
         "lede": "BUSINESS planının tüm özellikleri - ömür boyu, ücretsiz, Rediacc var olduğu müddetçe.",
@@ -813,7 +883,7 @@
             "3 bölge arasında depolama — tek bir arıza seni duraklatamaz.",
             "Sürekli veri koruması — neredeyse sıfır veri kaybı.",
             "4 saatlik kurtarma SLA'sı (garantili)",
-            "Sınırsız uygulama, her biri 500 GB",
+            "Sınırsız uygulama, her biri 200 GB",
             "7 etkin/3 rezerve iş",
             "90 günlük denetim günlüğü saklama",
             "Rol tabanlı erişim kontrolü ve tam denetim günlükleri",
@@ -845,7 +915,7 @@
             "Özel SLA (15–60 dakika içinde çevrim içi). Senin gereksinimler, bizim taahhütümüz.",
             "Senin özel ortamın — maksimum güvenlik ve performans.",
             "7/24/365 uzman desteği, daima açık",
-            "Sınırsız uygulama, her biri 2 TB+",
+            "Sınırsız uygulama, her biri 1 TB+",
             "96+ saatlik iş pencereleri, 10+ etkin/5+ rezerve iş",
             "1 yıldan fazla denetim günlüğü saklama",
             "Üç aylık felaket kurtarma tatbikatları — ihtiyaç duymadan hazır ol.",
@@ -853,8 +923,7 @@
             "Özel entegrasyonlar ve iş akışları",
             "Denetim belgeleri desteği ve güvenlik incelemeleri"
           ],
-          "name": "Girişim",
-          "priceNote": "*Şundan itibaren"
+          "name": "Girişim"
         },
         "professional": {
           "description": "Gerçek felaket kurtarma — kurumsal baş ağrısı olmadan.",
@@ -862,8 +931,8 @@
             "Community'deki her şey +",
             "Otomatik yedekleme zamanlaması — ayarla ve unut.",
             "Zaman içinde bir noktaya kurtarma (24 saat)",
-            "Sınırsız uygulama, her biri 100 GB",
-            "24 saatlik iş zaman aşımı, 5 etkin/2 rezerve iş",
+            "Sınırsız uygulama, her biri 50 GB",
+            "24 saatlik iş zaman aşımı, 3 etkin/2 rezerve iş",
             "30 günlük denetim günlüğü saklama",
             "E-posta ve sohbet desteği",
             "Slack ve PagerDuty bildirimleri",
@@ -887,7 +956,9 @@
                 "Standart Kurulum (9.999 $) veya katmanlı paketler (Başlangıç 7.499 $ · Büyüme 14.999 $ · Ölçek 29.999 $ · Kurumsal özel)",
                 "Acil Durum Müdahale Hizmeti (talep üzerine 29.999 $)"
               ],
-              "included": ["Self servis belgeler, video eğitimleri ve topluluk forumu"],
+              "included": [
+                "Self servis belgeler, video eğitimleri ve topluluk forumu"
+              ],
               "planId": "toplum"
             },
             {
@@ -1179,7 +1250,10 @@
       },
       "trust": {
         "heading": "Güvenlik ve Güvenilirlik",
-        "items": ["AES-256 şifreleme standardı", "99.99% hizmet kullanılabilirliği SLA"]
+        "items": [
+          "AES-256 şifreleme standardı",
+          "99.99% hizmet kullanılabilirliği SLA"
+        ]
       },
       "ui": {
         "anchor": "Stratejik çapa",
@@ -1629,7 +1703,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["rdc repo up", "JSON", "Bitti"],
+            "newSteps": [
+              "rdc repo up",
+              "JSON",
+              "Bitti"
+            ],
             "oldLabel": "Geleneksel altyapı",
             "oldSteps": [
               {
@@ -1815,7 +1893,7 @@
           "withTag": "Rediacc ile"
         },
         "hero": {
-          "badge": "KURUCULAR & CEO'LAR İÇİN",
+          "badge": "CEO'LAR İÇİN",
           "primaryCta": "Fiyatları Gör",
           "secondaryCta": "Satış Ekibiyle Konuş",
           "subtitle": "Kendi sunucularınızda işletme verilerinizi koruyun. Makine başına tek fiyat — koltuk başı ücreti yok, sürpriz bulut faturası yok, verilerinizi rehin tutacak satıcı yok.",
@@ -1851,7 +1929,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["$204/ay", "Sabit", "Sizin"],
+            "newSteps": [
+              "$204/ay",
+              "Sabit",
+              "Sizin"
+            ],
             "oldLabel": "Bulut altyapısı",
             "oldSteps": [
               {
@@ -1889,7 +1971,7 @@
           "title": "CTO'nuzla paylaşın"
         },
         "socialProof": {
-          "author": "CEO ve Kurucu",
+          "author": "CEO",
           "company": "SaaS girişimi, 45 çalışan",
           "impact": {
             "afterLabel": "Rediacc ile",
@@ -2041,31 +2123,73 @@
           "features": [
             {
               "name": "Kendi barındırma / yerinde",
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Dosya sistemi düzeyinde değiştirilemezlik",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Anında kurtarma (<5 dk)",
-              "values": ["cross", "cross", "cross", "check", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır kopyalama anlık görüntüleri (CoW)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Makine başı fiyatlandırma (koltuk başı yok)",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Otomatik geri yükleme doğrulaması",
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Satıcı bağımlılığı yok",
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "REKABET ORTAMI",
@@ -2108,7 +2232,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Tespit", "Geri al", "<5 dk"],
+            "newSteps": [
+              "Tespit",
+              "Geri al",
+              "<5 dk"
+            ],
             "oldLabel": "Geleneksel felaket kurtarma",
             "oldSteps": [
               {
@@ -2402,7 +2530,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["rdc ceph snapshot create", "52s", "Tamam!"],
+            "newSteps": [
+              "rdc ceph snapshot create",
+              "52s",
+              "Tamam!"
+            ],
             "oldLabel": "Eski yöntemi",
             "oldSteps": [
               {
@@ -2617,25 +2749,25 @@
             "label": "Altyapı",
             "rows": [
               {
-                "business": "20",
+                "business": "10",
                 "community": "2",
-                "enterprise": "50+",
-                "label": "Değişken Lisanslar (Makineler)",
-                "professional": "5"
+                "enterprise": "25+",
+                "label": "Floating Licenses (Machines)",
+                "professional": "3"
               },
               {
-                "business": "20,000",
-                "community": "500",
-                "enterprise": "100.000+",
-                "label": "Lisans İstek Sayısı",
-                "professional": "5,000"
+                "business": "10,000",
+                "community": "100",
+                "enterprise": "25,000+",
+                "label": "Floating license requests",
+                "professional": "1,000"
               },
               {
-                "business": "500 GB",
+                "business": "200 GB",
                 "community": "10 GB",
-                "enterprise": "2 TB+",
-                "label": "Depo Başına Depolama",
-                "professional": "100 GB"
+                "enterprise": "1 TB+",
+                "label": "Repository size",
+                "professional": "50 GB"
               }
             ]
           },
@@ -2731,7 +2863,7 @@
         "heading": "Sıkça Sorulan Sorular",
         "items": [
           {
-            "answer": "Evet. Community planı ücretsizdir. 2 makineye kadar, ayda 500 sunucu kurulumu ve yedekleme geri yükleme işlemleri içerir. Kredi kartı gerekmez.",
+            "answer": "Evet. Topluluk planı ücretsizdir. 2 sunucuya kadar, ayda 100 sunucu kurulumu ve yedek geri yüklemelerini kapsar. Kredi kartı gerekmez.",
             "question": "Ücretsiz bir plan var mı?"
           },
           {
@@ -2794,9 +2926,9 @@
           "description": "Uzman kurulumu, çok bölgeli yedeklemeler ve 4 saatlik geri yükleme garantisi.",
           "features": [
             "Professional'daki her şey +",
-            "20 kurulum slotu",
+            "10 kurulum yuvası",
             "Sınırsız depo",
-            "Ayda 20.000 sunucu kurulumu",
+            "Ayda 10.000 sunucu kurulumu",
             "$9,999 kurulum desteği dahil (Lansman Teklifi)",
             "Coğrafi olarak yedeklenmiş depolama (3 bölge)",
             "Sürekli veri koruması",
@@ -2812,7 +2944,7 @@
           "features": [
             "Sınırsız kullanıcı ve ekip",
             "Sınırsız depo",
-            "Ayda 500 sunucu kurulumu",
+            "Ayda 100 sunucu kurulumu",
             "2 kurulum slotu",
             "Yedek geri yüklemeler",
             "Manuel planlama",
@@ -2825,9 +2957,9 @@
           "description": "Büyük ve karmaşık altyapılar için özel destek ve koşullar.",
           "features": [
             "Business'taki her şey +",
-            "50+ kurulum slotu",
+            "25+ kurulum yuvası",
             "Sınırsız depo",
-            "Ayda 100.000+ sunucu kurulumu",
+            "Ayda 25.000+ sunucu kurulumu",
             "Özel SLA ve garantili geri yükleme süreleri",
             "Kendi özel sunucu alanınız",
             "7/24/365 özel destek",
@@ -2837,16 +2969,15 @@
             "Özel entegrasyonlar ve iş akışları",
             "Denetim dokümantasyon desteği ve güvenlik incelemeleri"
           ],
-          "name": "Girişim",
-          "priceNote": "*Başlangıç fiyatı"
+          "name": "Girişim"
         },
         "professional": {
           "description": "Büyüyen ekipler için profesyonel otomasyon ve planlama",
           "features": [
             "Community'daki her şey +",
-            "5 kurulum slotu",
+            "3 kurulum yuvası",
             "Sınırsız depo",
-            "Ayda 5.000 sunucu kurulumu",
+            "Ayda 1.000 sunucu kurulumu",
             "Otomatik planlama",
             "Son 24 saatten herhangi bir noktadan geri yükleme",
             "E-posta ve sohbet desteği",
@@ -2871,7 +3002,9 @@
                 "Standart Uygulama (9.999 USD) veya katmanlı paketler (Başlangıç 7.499 · Büyüme 14.999 · Ölçek 29.999 · Kurumsal özel)",
                 "Acil Durum Müdahale (talep üzerine 29.999 USD)"
               ],
-              "included": ["Self servis dokümantasyon, video eğitimleri ve topluluk forumu"],
+              "included": [
+                "Self servis dokümantasyon, video eğitimleri ve topluluk forumu"
+              ],
               "planId": "toplum"
             },
             {
@@ -3127,40 +3260,44 @@
         ],
         "values": {
           "business": {
-            "floatingLicenses": "20",
-            "jobsPerMonth": "20,000",
+            "floatingLicenses": "10",
+            "jobsPerMonth": "10.000",
             "repositories": "Sınırsız",
-            "repoSize": "500 GB",
+            "repoSize": "200 GB",
             "usersTeams": "Sınırsız"
           },
           "community": {
             "floatingLicenses": "2",
-            "jobsPerMonth": "500",
+            "jobsPerMonth": "100",
             "repositories": "Sınırsız",
             "repoSize": "10 GB",
             "usersTeams": "Sınırsız"
           },
           "enterprise": {
-            "floatingLicenses": "50+",
-            "jobsPerMonth": "100,000+",
+            "floatingLicenses": "25+",
+            "jobsPerMonth": "25.000+",
             "repositories": "Sınırsız",
-            "repoSize": "2 TB ve üzeri",
+            "repoSize": "1 TB+",
             "usersTeams": "Sınırsız"
           },
           "professional": {
-            "floatingLicenses": "5",
-            "jobsPerMonth": "5,000",
+            "floatingLicenses": "3",
+            "jobsPerMonth": "1.000",
             "repositories": "Sınırsız",
-            "repoSize": "100 GB",
+            "repoSize": "50 GB",
             "usersTeams": "Sınırsız"
           }
         }
       },
       "trust": {
         "heading": "Kurumsal Düzeyde Güvenlik ve Güvenilirlik",
-        "items": ["AES-256 şifreleme standardı", "%99,99 kesintisiz çalışma taahhüdü"]
+        "items": [
+          "AES-256 şifreleme standardı",
+          "%99,99 kesintisiz çalışma taahhüdü"
+        ]
       },
       "trustSection": {
+        "corporateGuarantee": "Rediacc sizin için çalışmazsa, geri taşınmanıza yardımcı oluruz.",
         "heading": "Altyapı Sende, Kurallar Sende",
         "rows": [
           {
@@ -3210,6 +3347,8 @@
           "monthly": "Aylık"
         },
         "contactSales": "Satış Ekibine Ulaş",
+        "contactUs": "Bize ulaşın",
+        "contactUsSub": "Özel limitler ve koşullar",
         "cta": {
           "business": {
             "guarantee": "14 Günlük Para İade Garantisi",
@@ -3285,7 +3424,9 @@
           "title": "10. Bu Politikadaki Değişiklikler"
         },
         "childrenPrivacy": {
-          "content": ["Hizmetlerimiz 16 yaşın altındaki bireylere yönelik değildir."],
+          "content": [
+            "Hizmetlerimiz 16 yaşın altındaki bireylere yönelik değildir."
+          ],
           "id": "children-privacy",
           "title": "9. Çocukların Gizliliği"
         },
@@ -3306,7 +3447,9 @@
           "title": "7. Veri Güvenliği"
         },
         "dataSharing": {
-          "content": ["Kişisel verilerinizi üçüncü taraflara satmıyoruz veya kiralamıyoruz."],
+          "content": [
+            "Kişisel verilerinizi üçüncü taraflara satmıyoruz veya kiralamıyoruz."
+          ],
           "id": "data-sharing",
           "items": [
             "Platformu işletmemize yardımcı olan <strong>hizmet sağlayıcılar</strong>",
@@ -3317,7 +3460,9 @@
           "title": "4. Veri Paylaşımı ve Üçüncü Taraflar"
         },
         "howWeUseInformation": {
-          "content": ["Topladığımız bilgileri şu amaçlarla kullanıyoruz:"],
+          "content": [
+            "Topladığımız bilgileri şu amaçlarla kullanıyoruz:"
+          ],
           "id": "how-we-use-information",
           "items": [
             "Sorularınıza yanıt vermek",
@@ -3331,7 +3476,9 @@
           "title": "3. Bilgilerinizi Nasıl Kullanıyoruz"
         },
         "informationWeCollect": {
-          "content": ["Hizmetlerimizi sunmak için gereken minimum bilgiyi topluyoruz."],
+          "content": [
+            "Hizmetlerimizi sunmak için gereken minimum bilgiyi topluyoruz."
+          ],
           "id": "information-we-collect",
           "subsections": {
             "accountData": {
@@ -3384,7 +3531,9 @@
           "title": "1. Giriş"
         },
         "yourRights": {
-          "content": ["Yargı yetki alanınıza bağlı olarak aşağıdaki haklara sahip olabilirsiniz:"],
+          "content": [
+            "Yargı yetki alanınıza bağlı olarak aşağıdaki haklara sahip olabilirsiniz:"
+          ],
           "content2": [
             "Haklarınızı kullanmak için <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın."
           ],
@@ -3455,7 +3604,9 @@
       },
       "sections": {
         "changes": {
-          "content": ["Bu İade Politikasını zaman zaman güncelleyebiliriz."],
+          "content": [
+            "Bu İade Politikasını zaman zaman güncelleyebiliriz."
+          ],
           "id": "changes",
           "title": "7. Bu Politikadaki Değişiklikler"
         },
@@ -3463,7 +3614,9 @@
           "content": [
             "<a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresine şu bilgilerle e-posta gönderin:"
           ],
-          "content2": ["5 iş günü içinde yanıt vereceğiz."],
+          "content2": [
+            "5 iş günü içinde yanıt vereceğiz."
+          ],
           "id": "how-to-request",
           "items": [
             "Hesap e-posta adresiniz",
@@ -3474,7 +3627,9 @@
           "title": "4. İade Nasıl Talep Edilir"
         },
         "nonRefundable": {
-          "content": ["Aşağıdakiler iade kapsamında değildir:"],
+          "content": [
+            "Aşağıdakiler iade kapsamında değildir:"
+          ],
           "id": "non-refundable",
           "items": [
             "14 günlük süreden sonra iptal edilen abonelikler",
@@ -3493,7 +3648,9 @@
           "title": "1. Genel Bakış"
         },
         "platformSubscriptions": {
-          "content": ["Rediacc birden fazla abonelik seviyesi sunar:"],
+          "content": [
+            "Rediacc birden fazla abonelik seviyesi sunar:"
+          ],
           "id": "platform-subscriptions",
           "subsections": {
             "annualSubscriptions": {
@@ -3503,7 +3660,9 @@
               "title": "2.3 Yıllık Abonelikler"
             },
             "freeTier": {
-              "content": ["Community seviyesi sonsuza kadar ücretsizdir."],
+              "content": [
+                "Community seviyesi sonsuza kadar ücretsizdir."
+              ],
               "title": "2.1 Ücretsiz Seviye"
             },
             "paidTiers": {
@@ -3522,7 +3681,9 @@
           "title": "2. Platform Abonelikleri"
         },
         "professionalServices": {
-          "content": ["Profesyonel hizmetler saatlik olarak faturalandırılır ($400–$1.200/saat):"],
+          "content": [
+            "Profesyonel hizmetler saatlik olarak faturalandırılır ($400–$1.200/saat):"
+          ],
           "id": "professional-services",
           "items": [
             "<strong>Çalışma başlamadan önce:</strong> Tam iade",
@@ -4372,7 +4533,11 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["Sızma testi çalıştır", "47s", "7 açık bulundu"],
+            "newSteps": [
+              "Sızma testi çalıştır",
+              "47s",
+              "7 açık bulundu"
+            ],
             "oldLabel": "GELENEKSEL SIZMA TESTİ",
             "oldSteps": [
               {
@@ -4622,38 +4787,122 @@
           "features": [
             {
               "name": "Kurcalamaya dayanıklı denetim günlükleri",
-              "refs": [0, 2, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                2,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Kriptografik imzalama (SHA-256)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Anında rapor oluşturma (CLI)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Temel işlem günlükleme",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Eylem başına kullanıcı atfetme",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Anahtar rotasyonu takibi",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / sizin altyapınız",
-              "refs": [11, 12, 13, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -4835,7 +5084,11 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["Denetimi çalıştır", "Anında", "Tam rapor"],
+            "newSteps": [
+              "Denetimi çalıştır",
+              "Anında",
+              "Tam rapor"
+            ],
             "oldLabel": "ESKİ YÖNTEM",
             "oldSteps": [
               {
@@ -5093,38 +5346,122 @@
           "features": [
             {
               "name": "Otomatik geri yükleme doğrulaması",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Tam hizmet sağlık kontrolü",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Günlük otomatik test",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Test için sıfır depolama klon",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sağlama toplamı / dosya bütünlüğü",
-              "refs": [5, 6, 7, 8, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Uyarı entegrasyonu",
-              "refs": [9, 10, 11, 12, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / sizin altyapınız",
-              "refs": [13, 14, 15, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                13,
+                14,
+                15,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -5307,7 +5644,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Yedekle", "47s", "Doğrulandı"],
+            "newSteps": [
+              "Yedekle",
+              "47s",
+              "Doğrulandı"
+            ],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -5605,38 +5946,122 @@
           "features": [
             {
               "name": "Bulutlar arası çoğaltma",
-              "refs": [0, 4, 5, 6, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "30 saniyenin altında yük devretme",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Yalnızca artımlı aktarım (%98 tasarruf)",
-              "refs": [0, 7, 8, 9, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Herhangi bir sağlayıcıya yük devretme",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma, bulut ajanı yok",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Otomatik DNS yük devretme",
-              "refs": [0, 0, 12, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Tam yığın çoğaltma (uygulama + VT)",
-              "refs": [0, 13, 14, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -5820,7 +6245,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Algıla", "<30s", "Çevrimiçi"],
+            "newSteps": [
+              "Algıla",
+              "<30s",
+              "Çevrimiçi"
+            ],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -6215,7 +6644,12 @@
               },
               {
                 "footer": "Continuous improvement · automated",
-                "items": ["W1: ████████ 23", "W2: ████ 12", "W3: ██ 7", "W4: █ 3"],
+                "items": [
+                  "W1: ████████ 23",
+                  "W2: ████ 12",
+                  "W3: ██ 7",
+                  "W4: █ 3"
+                ],
                 "status": "-87%",
                 "title": "4 Haftalık Trend"
               }
@@ -6270,7 +6704,11 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["Günlük taramalar", "0 gün", "Sıfır kör nokta"],
+            "newSteps": [
+              "Günlük taramalar",
+              "0 gün",
+              "Sıfır kör nokta"
+            ],
             "oldLabel": "YILLIK SIZMA TESTİ",
             "oldSteps": [
               {
@@ -6501,38 +6939,136 @@
           "features": [
             {
               "name": "CLOUD Act bağışıklığı (ABD yargı yetkisinde ana şirket yok)",
-              "refs": [4, 4, 4, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Müşteri anahtarları tutar (teknik anlaşılmazlık)",
-              "refs": [0, 5, 5, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                5,
+                5,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Yalnızca AB'li operatör (ABD ana şirketi yok)",
-              "refs": [4, 4, 4, 0, 6, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                4,
+                4,
+                0,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "SecNumCloud / C5:2026 onay yolu",
-              "refs": [0, 0, 7, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                7,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Açık çıkış formatı (Veri Yasası Madde 30)",
-              "refs": [8, 8, 8, 0, 8, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                8,
+                8,
+                8,
+                0,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Müşteri altyapısında kendi barındırma",
-              "refs": [9, 0, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                9,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Varsayılan olarak AB veri yerleşimi",
-              "refs": [0, 0, 10, 0, 13, 0],
-              "values": ["cross", "cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                10,
+                0,
+                13,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -6990,38 +7526,122 @@
           "features": [
             {
               "name": "Müşteride tutulan şifreleme anahtarları",
-              "refs": [3, 4, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır bilgi mimarisi",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Self-servis anahtar rotasyonu",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Durağan halde AES-256 şifreleme",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Depo başına anahtar izolasyonu",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Aktarım sırasında şifreleme",
-              "refs": [15, 16, 17, 18, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / sizin altyapınız",
-              "refs": [19, 20, 21, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -7203,7 +7823,11 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["Sizin anahtarınız", "AES-256", "Zero-knowledge"],
+            "newSteps": [
+              "Sizin anahtarınız",
+              "AES-256",
+              "Zero-knowledge"
+            ],
             "oldLabel": "ESKİ YÖNTEM",
             "oldSteps": [
               {
@@ -7499,33 +8123,117 @@
           "features": [
             {
               "name": "Uygulama klonlama",
-              "refs": [3, 4, 5, 0, 0, 0],
-              "values": ["check", "check", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                3,
+                4,
+                5,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Veritabanı klonlama",
-              "refs": [0, 0, 0, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Birleşik uygulama + VT klonu",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Herhangi bir veritabanı motoru",
-              "refs": [0, 0, 0, 8, 0, 0],
-              "values": ["cross", "cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                8,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Hazırlık süresi",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["Minutes", "Minutes", "Minutes", "Minutes", "Seconds", "<60s"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Minutes",
+                "Seconds",
+                "<60s"
+              ]
             },
             {
               "name": "Üretimle birebir aynı veriler",
-              "refs": [0, 0, 0, 14, 15, 0],
-              "values": ["cross", "cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -7712,7 +8420,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Run", "60s", "Done"],
+            "newSteps": [
+              "Run",
+              "60s",
+              "Done"
+            ],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -7997,38 +8709,122 @@
           "features": [
             {
               "name": "Tam yığın yük devretme testi",
-              "refs": [0, 0, 2, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                2,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır üretim etkisi",
-              "refs": [0, 3, 4, 5, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                3,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "5 dakikanın altında",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Otomatik geçti/kaldı raporu",
-              "refs": [0, 6, 7, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CI/CD entegrasyonu",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Bulutlar arası test",
-              "refs": [0, 8, 9, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                8,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / sizin altyapınız",
-              "refs": [0, 10, 11, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                10,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -8211,7 +9007,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Testi çalıştır", "4 min", "Rapor"],
+            "newSteps": [
+              "Testi çalıştır",
+              "4 min",
+              "Rapor"
+            ],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -8489,38 +9289,136 @@
           "features": [
             {
               "name": "Değiştirilemez yedekler",
-              "refs": [4, 5, 6, 7, 0, 0],
-              "values": ["check", "check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Dosya sistemi düzeyinde zorlama",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Otomatik günlük geri yükleme doğrulaması",
-              "refs": [8, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır kopyalama depolama (CoW)",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Test için anında klon",
-              "refs": [9, 10, 11, 12, 13, 0],
-              "values": ["cross", "check", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                9,
+                10,
+                11,
+                12,
+                13,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Kurtarma süresi",
-              "refs": [14, 15, 16, 17, 18, 0],
-              "values": ["Minutes", "Minutes", "Hours", "Hours", "Seconds", "<5 min"]
+              "refs": [
+                14,
+                15,
+                16,
+                17,
+                18,
+                0
+              ],
+              "values": [
+                "Minutes",
+                "Minutes",
+                "Hours",
+                "Hours",
+                "Seconds",
+                "<5 min"
+              ]
             },
             {
               "name": "Kendi barındırma / bulut bağımlılığı yok",
-              "refs": [19, 20, 21, 0, 22, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                19,
+                20,
+                21,
+                0,
+                22,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -8703,7 +9601,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Yedekle", "Mühürlendi", "Doğrulandı"],
+            "newSteps": [
+              "Yedekle",
+              "Mühürlendi",
+              "Doğrulandı"
+            ],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -9022,33 +9924,105 @@
           "features": [
             {
               "name": "Sıfır kopyalama klon depolama (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Yapılandırılabilir TTL otomatik yok etme",
-              "refs": [4, 0, 0, 0, 0],
-              "values": ["check", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Klonda tam üretim verileri",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Çoklu hizmet ortamları",
-              "refs": [0, 5, 0, 6, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                5,
+                0,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / koltuk başı fiyat yok",
-              "refs": [0, 7, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                7,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60 saniyenin altında hazırlık",
-              "refs": [0, 0, 8, 9, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -9221,7 +10195,11 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["Başlat", "$0 boşta", "Otomatik temizlik"],
+            "newSteps": [
+              "Başlat",
+              "$0 boşta",
+              "Otomatik temizlik"
+            ],
             "oldLabel": "HER ZAMAN AÇIK ORTAMLAR",
             "oldSteps": [
               {
@@ -9481,38 +10459,122 @@
           "features": [
             {
               "name": "Tam ortam geri yüklemesi (yalnızca dosyalar değil)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "5 dakikanın altında kurtarma süresi",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Geri yükleme sonrası otomatik sağlık kontrolleri",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Zaman noktası anlık görüntü hassasiyeti",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır ek yük klon (ek depolama yok)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Tek komutla kurtarma",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / sizin altyapınız",
-              "refs": [12, 13, 14, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -9695,7 +10757,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Geri yükle", "3m 47s", "Çalışıyor"],
+            "newSteps": [
+              "Geri yükle",
+              "3m 47s",
+              "Çalışıyor"
+            ],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -9987,33 +11053,105 @@
           "features": [
             {
               "name": "CI klonlarında üretim verileri",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Tek satır webhook entegrasyonu",
-              "refs": [3, 0, 4, 5, 0],
-              "values": ["check", "cross", "check", "check", "rediacc"]
+              "refs": [
+                3,
+                0,
+                4,
+                5,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Çoklu hizmet CI ortamı",
-              "refs": [0, 6, 0, 7, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                7,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Pipeline sonrası otomatik yok etme",
-              "refs": [8, 0, 9, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                8,
+                0,
+                9,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır özel hazırlık betiği",
-              "refs": [0, 0, 10, 11, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / tedarikçi bağımlılığı yok",
-              "refs": [0, 12, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                12,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -10097,19 +11235,31 @@
             "cards": [
               {
                 "footer": "webhook → rdc",
-                "items": ["branch: feature/auth-v2", "commit: a3f7b2c", "author: sarah"],
+                "items": [
+                  "branch: feature/auth-v2",
+                  "commit: a3f7b2c",
+                  "author: sarah"
+                ],
                 "status": "Tetikle",
                 "title": "Git Push"
               },
               {
                 "footer": "ci-auth-v2",
-                "items": ["gitlab · nextcloud", "mariadb · mailcow", "380 GB → 2.1 GB"],
+                "items": [
+                  "gitlab · nextcloud",
+                  "mariadb · mailcow",
+                  "380 GB → 2.1 GB"
+                ],
                 "status": "CoW",
                 "title": "Clone"
               },
               {
                 "footer": "285 passed",
-                "items": ["247 unit tests ✓", "38 integration ✓", "auto-cleanup ✓"],
+                "items": [
+                  "247 unit tests ✓",
+                  "38 integration ✓",
+                  "auto-cleanup ✓"
+                ],
                 "status": "Geçti",
                 "title": "Testler"
               }
@@ -10164,7 +11314,11 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["git push", "Auto", "Gerçek veri"],
+            "newSteps": [
+              "git push",
+              "Auto",
+              "Gerçek veri"
+            ],
             "oldLabel": "ÖZEL CI BETİKLERİ",
             "oldSteps": [
               {
@@ -10464,38 +11618,122 @@
           "features": [
             {
               "name": "Sıfır şifre çözme ile taşıma",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Transfer sırasında müşteride kalan anahtarlar",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Yapılandırma + veri atomik taşıma",
-              "refs": [0, 0, 5, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Transfer sonrası bütünlük doğrulaması",
-              "refs": [6, 7, 8, 9, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Tek komutla taşıma",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Herhangi bir hedefe taşıma",
-              "refs": [10, 11, 12, 0, 0],
-              "values": ["check", "check", "check", "cross", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Başarısızlıkta otomatik geri alma",
-              "refs": [0, 0, 13, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                13,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -10678,7 +11916,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Taşımayı çalıştır", "0 maruziyet", "Doğrulandı"],
+            "newSteps": [
+              "Taşımayı çalıştır",
+              "0 maruziyet",
+              "Doğrulandı"
+            ],
             "oldLabel": "Geleneksel göç",
             "oldSteps": [
               {
@@ -10969,38 +12211,122 @@
           "features": [
             {
               "name": "Tam üretim verisi klonu",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "İşletim sistemi + kütüphane eşitlik doğrulaması",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Herhangi bir veritabanı motoru (MariaDB, Postgres, Mongo)",
-              "refs": [0, 4, 0, 5, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                4,
+                0,
+                5,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Çoklu hizmet klonu (uygulama + VT + e-posta + depolama)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır kopyalama depolama (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / tedarikçi bağımlılığı yok",
-              "refs": [0, 6, 0, 0, 0],
-              "values": ["cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60 saniyenin altında hazırlık",
-              "refs": [0, 0, 7, 8, 0],
-              "values": ["cross", "cross", "check", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "check",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -11173,7 +12499,11 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["Klonu çalıştır", "47s", "%100 eşleşme"],
+            "newSteps": [
+              "Klonu çalıştır",
+              "47s",
+              "%100 eşleşme"
+            ],
             "oldLabel": "GELENEKSEL GELİŞTİRME ORTAMLARI",
             "oldSteps": [
               {
@@ -11441,33 +12771,117 @@
           "features": [
             {
               "name": "Tam ortam kurtarma",
-              "refs": [0, 0, 0, 0, 4, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                4,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "5 dakikanın altında kurtarma",
-              "refs": [5, 6, 7, 8, 9, 0],
-              "values": ["cross", "cross", "cross", "cross", "check", "rediacc"]
+              "refs": [
+                5,
+                6,
+                7,
+                8,
+                9,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Zaman noktası (dakika düzeyinde)",
-              "refs": [10, 11, 12, 13, 14, 0],
-              "values": ["check", "check", "check", "check", "check", "rediacc"]
+              "refs": [
+                10,
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Otomatik geri yükleme doğrulaması",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Veri aktarımı gerektirmez",
-              "refs": [0, 0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / bulut bağımlılığı yok",
-              "refs": [15, 16, 17, 0, 18, 0],
-              "values": ["check", "cross", "check", "cross", "cross", "rediacc"]
+              "refs": [
+                15,
+                16,
+                17,
+                0,
+                18,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -11650,7 +13064,11 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["Algıla", "<5 min", "Çevrimiçi"],
+            "newSteps": [
+              "Algıla",
+              "<5 min",
+              "Çevrimiçi"
+            ],
             "oldLabel": "ESKİ YÖNTEM",
             "oldSteps": [
               {
@@ -11926,38 +13344,122 @@
           "features": [
             {
               "name": "Yapılandırılabilir saklama politikaları",
-              "refs": [4, 5, 6, 7, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                4,
+                5,
+                6,
+                7,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Otomatik yaşam döngüsü temizliği",
-              "refs": [8, 9, 10, 11, 0],
-              "values": ["check", "check", "check", "check", "rediacc"]
+              "refs": [
+                8,
+                9,
+                10,
+                11,
+                0
+              ],
+              "values": [
+                "check",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Saklanan yedek doğrulaması",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Anında denetime hazır raporlar",
-              "refs": [12, 13, 14, 15, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                12,
+                13,
+                14,
+                15,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Çoklu çerçeve desteği",
-              "refs": [16, 17, 18, 19, 0],
-              "values": ["cross", "check", "check", "check", "rediacc"]
+              "refs": [
+                16,
+                17,
+                18,
+                19,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma / sizin altyapınız",
-              "refs": [20, 21, 22, 0, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                20,
+                21,
+                22,
+                0,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "CLI / otomasyon öncelikli",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -12141,7 +13643,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Politika belirle", "Auto", "Denetime hazır"],
+            "newSteps": [
+              "Politika belirle",
+              "Auto",
+              "Denetime hazır"
+            ],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -12469,38 +13975,122 @@
           "features": [
             {
               "name": "Test için tam yığın klon",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "60 saniyenin altında klon oluşturma",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Klon başına izole ağ",
-              "refs": [4, 0, 5, 6, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                4,
+                0,
+                5,
+                6,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır ek depolama (CoW)",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Yama sonrası otomatik sağlık kontrolü",
-              "refs": [7, 8, 9, 10, 0],
-              "values": ["cross", "check", "cross", "check", "rediacc"]
+              "refs": [
+                7,
+                8,
+                9,
+                10,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "cross",
+                "check",
+                "rediacc"
+              ]
             },
             {
               "name": "Kendi barındırma, bulut bağımlılığı yok",
-              "refs": [11, 12, 13, 14, 0],
-              "values": ["check", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                11,
+                12,
+                13,
+                14,
+                0
+              ],
+              "values": [
+                "check",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Tek komutla iş akışı",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -12683,7 +14273,11 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Clone", "60s", "Yamala ve doğrula"],
+            "newSteps": [
+              "Clone",
+              "60s",
+              "Yamala ve doğrula"
+            ],
             "oldLabel": "Eski yöntem",
             "oldSteps": [
               {
@@ -12982,38 +14576,122 @@
           "features": [
             {
               "name": "Sağlayıcılar arası taşıma",
-              "refs": [0, 4, 5, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                4,
+                5,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "1 saatin altında taşıma",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır tescilli format",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Yalnızca artımlı aktarım",
-              "refs": [0, 6, 7, 8, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                6,
+                7,
+                8,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Tedarikçi ajanı gerektirmez",
-              "refs": [0, 0, 0, 0, 0],
-              "values": ["cross", "cross", "cross", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "cross",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Tam yığın taşıma (uygulama + VT)",
-              "refs": [0, 9, 10, 0, 0],
-              "values": ["cross", "check", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                9,
+                10,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "check",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             },
             {
               "name": "Sıfır kesinti taşıma",
-              "refs": [0, 0, 11, 0, 0],
-              "values": ["cross", "cross", "check", "cross", "rediacc"]
+              "refs": [
+                0,
+                0,
+                11,
+                0,
+                0
+              ],
+              "values": [
+                "cross",
+                "cross",
+                "check",
+                "cross",
+                "rediacc"
+              ]
             }
           ],
           "overline": "FARK",
@@ -13196,7 +14874,11 @@
           ],
           "timeline": {
             "newLabel": "REDİACC İLE",
-            "newSteps": ["Snapshot", "<1hr", "Live"],
+            "newSteps": [
+              "Snapshot",
+              "<1hr",
+              "Live"
+            ],
             "oldLabel": "ESKİ YÖNTEM",
             "oldSteps": [
               {
@@ -13603,7 +15285,12 @@
           ],
           "timeline": {
             "newLabel": "Rediacc ile",
-            "newSteps": ["Klonla + yamala", "<4 min", "Doğrulandı", "Dağıt"],
+            "newSteps": [
+              "Klonla + yamala",
+              "<4 min",
+              "Doğrulandı",
+              "Dağıt"
+            ],
             "oldLabel": "Geleneksel yamalama",
             "oldSteps": [
               {
@@ -13800,83 +15487,6 @@
         }
       }
     },
-    "team": {
-      "cta": {
-        "buttons": {
-          "contact": "İletişime Geçin",
-          "learnMore": "Nasıl Çalışıyor"
-        },
-        "subtitle": "Rediacc'ı 5 dakikada kurun. Community tier sonsuza kadar ücretsiz.",
-        "title": "Bedava Deneyin"
-      },
-      "hero": {
-        "subtitle": "Saat 3'teki veri kayıplarından bıkmış mühendisler. Çözümü inşa ettik.",
-        "title": "Fidye Yazılımı Felatmayan Yedekleri Yapanlar"
-      },
-      "meta": {
-        "description": "Rediacc ekibini tanıyın. Saat 3'te veri kaybı alarmlarından bıktık, fidye yazılımına karşı dayanıklı yedekler inşa ettik.",
-        "keywords": "Rediacc ekibi, altyapı mühendisliği, felaket kurtarma uzmanları, sistem güvenilirliği, DevOps ekibi",
-        "title": "Ekibimiz | Rediacc - Fidyeye Dirençli Yedekler"
-      },
-      "mission": {
-        "belief": "Community tier, ücretli paketlerin tüm özelliklerini sunuyor. Aynı btrfs klonlama, aynı LUKS şifreleme, aynı salt-okunur yedekler. Sadece daha düşük limitler. Gizli ücret yok, kandırma yok.",
-        "description": "Yapay zeka her 47 günde bir üretim veritabanını siliyor. Her yıl disklerin %1,71'i arızalanıyor. Fidye yazılımlarının %75'i yedeklemeleri hedef alıyor. 60 saniye içinde yeniden çalışır duruma dönersiniz.",
-        "title": "Misyonumuz: Felaketleri İmkansız Kıl"
-      },
-      "story": {
-        "beginning": {
-          "paragraph1": "2018'de yazılım mühendis olarak çalışmaya son verdim ve kendi vizyonumu takip ettim. Heyecan beni günde 18 saat çalışmaya, sadece 4-5 saat uyumaya itiyordu. 5-6 ay boyunca her şeyimi projeye döktüm.",
-          "paragraph2": "Sonra tüm altyapıma erişimimi kaybettim. Yaptığım her şey bir anda erişilmez oldu. Yedek yoktu. Olsa bile yeni sunucu alamazdım.",
-          "paragraph3": "Borçları ödemek ve ailemi beslemek için maaşlı işe dönmek zorunda kaldım. İşlerime geri dönmem 20 ay aldı. Hayallerimden uzaklaştım, belirsizlik ve artan borçlarla yaşadım.",
-          "title": "Başlangıç"
-        },
-        "birth": {
-          "paragraph1": "Taşınabilir bir depolama katmanıyla başladı. Sonra yedekleme modülü ekledim. Ardından en zor kısım: veri boyutundan bağımsız, minimum kesinti ile canlı sistemler taşımak. İhtiyaç duyduğum özellikleri ekledim.",
-          "paragraph2": "Rediacc böyle doğdu. En zor sorunlar çözerek yapılan bir ürün. Şimdi herkes için açık. Kullanın. Arızaların işinizi durdurmayına izin vermeyin. Hayatta kalıp büyümeye hazır olun.",
-          "quote": "Altyapıma erişimi kaybettiğimde, ne inşa etmem gerektiğini anladım: felaketleri imkansız kılan bir sistem.",
-          "title": "Rediacc'ın Doğuşu"
-        },
-        "title": "Hikayemiz",
-        "turningPoint": {
-          "paragraph1": "Yıllar sonra bunun tekrar olmasını engellemek için ne yapabileceğimi düşündüm. Sistemlerimi taşıyabileceğim, ihtiyaç anında başlatabileceğim, kolaylıkla yedekleyebileceğim ve her yerde güvenli tutabileceğim bir araca ihtiyacım vardı.",
-          "paragraph2": "2021'de NetworkChuck'ın videosunda Docker'ı buldum. Neyin mümkün olduğu karşısında şok oldum. Keşke bunu daha önce bilseydim; hepsi farklı olabilirdi.",
-          "paragraph3": "Ama Docker tek başına yetmedi. Konteyner dosyalarını sistemler arasında taşımak zordu. Dosya sahipliği bozuluyordu. Veri büyüdükçe aktarımlar yavaşlıyordu. En kötüsü geçiş bitene kadar servisleri kapatmak zorundaydım. Ayrıca neredeyse hiç güvenlik yoktu.",
-          "title": "Dönüm Noktası"
-        }
-      },
-      "team": {
-        "title": "Ekibimizle Tanışın"
-      },
-      "values": {
-        "items": {
-          "global": {
-            "description": "9 dilde. Veriler AB'de kalıyor. GDPR entegre Estonya şirketi.",
-            "title": "Küresel Düşünce"
-          },
-          "innovation": {
-            "description": "Haftada bir çıkarırız. Her sürüm müşterilerin bildirdiği gerçek bir sorunu çözer.",
-            "title": "Sürekli Yenilik"
-          },
-          "security": {
-            "description": "Diskte LUKS şifreleme, ağda TLS, her app için ayrı Docker motoru. Her katman kilitli.",
-            "title": "Tasarımda Güvenlik"
-          },
-          "simplicity": {
-            "description": "241 GB veriyi kopyalamak için tek komut. Budur karmaşıklığımızın tümü.",
-            "title": "Sadelik Her Şeyden Önce"
-          },
-          "success": {
-            "description": "Kendimizi özellik sayısı değil, sizin kurtarma süresiyle ölçeriz.",
-            "title": "Müşteri Başarısı"
-          },
-          "transparency": {
-            "description": "Açık iletişim, dürüst fiyatlandırma ve net belgeler. Gizli ücret yok, sürpriz yok, ince yazı yok.",
-            "title": "Şeffaflık"
-          }
-        },
-        "title": "Değerlerimiz"
-      }
-    },
     "telemetryPolicy": {
       "contact": {
         "description": "Telemetri uygulamalarımız hakkında sorularınız varsa veya devre dışı bırakma konusunda yardıma ihtiyacınız varsa, <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> adresinden bize ulaşın.",
@@ -13902,7 +15512,9 @@
           "id": "bridge",
           "subsections": {
             "bridgeDataCollected": {
-              "content": ["Bridge aşağıdaki veri kategorilerini toplar:"],
+              "content": [
+                "Bridge aşağıdaki veri kategorilerini toplar:"
+              ],
               "items": [
                 "<strong>Kuyruk işlemleri:</strong> görev kimliği, öncelik düzeyi, işlem türü, yürütme süresi, başarı veya başarısızlık durumu",
                 "<strong>SSH işlemleri:</strong> hedef ana bilgisayar, kullanıcı adı, port numarası, çıkış kodu, yürütme süresi (komut içeriği veya çıktı toplanmaz)",
@@ -13949,7 +15561,9 @@
           "id": "cli",
           "subsections": {
             "cliDataCollected": {
-              "content": ["CLI aşağıdaki veri kategorilerini toplar:"],
+              "content": [
+                "CLI aşağıdaki veri kategorilerini toplar:"
+              ],
               "items": [
                 "<strong>Komut kullanımı:</strong> komut adı, CLI sürümü, çıkış kodu, başarı veya başarısızlık durumu",
                 "<strong>Anonimleştirilmiş argümanlar:</strong> hassas değerleri gizlenmiş komut seçenekleri — şifreler, tokenlar, gizli bilgiler, API anahtarları ve kimlik bilgileri <code>[REDACTED]</code> ile değiştirilir",
@@ -14021,7 +15635,9 @@
           "id": "middleware",
           "subsections": {
             "middlewareDataCollected": {
-              "content": ["Middleware aşağıdaki veri kategorilerini toplar:"],
+              "content": [
+                "Middleware aşağıdaki veri kategorilerini toplar:"
+              ],
               "items": [
                 "<strong>Sistem bilgileri:</strong> ana bilgisayar adı, işletim sistemi sürümü, .NET çalışma zamanı sürümü",
                 "<strong>API çağrıları:</strong> HTTP yöntemi, uç nokta yolu, yanıt durum kodu, istek süresi",
@@ -14043,7 +15659,9 @@
           "title": "6. Middleware Telemetrisi"
         },
         "principles": {
-          "content": ["Rediacc'taki tüm telemetri toplama işlemleri şu ilkeleri takip eder:"],
+          "content": [
+            "Rediacc'taki tüm telemetri toplama işlemleri şu ilkeleri takip eder:"
+          ],
           "id": "principles",
           "items": [
             "<strong>Tasarımdan gizlilik:</strong> Kişisel tanımlayıcılar iletim öncesinde anonimleştirilir. E-posta adresleri yalnızca alan adına indirgenir, kullanıcı kimlikleri hashlenir (SHA-256) ve kısaltılır, şifreler ve gizli bilgiler asla toplanmaz.",
@@ -14061,7 +15679,9 @@
           "id": "web-app",
           "subsections": {
             "webDataCollected": {
-              "content": ["Web Uygulaması aşağıdaki veri kategorilerini toplar:"],
+              "content": [
+                "Web Uygulaması aşağıdaki veri kategorilerini toplar:"
+              ],
               "items": [
                 "<strong>Tarayıcı bilgileri:</strong> tarayıcı adı ve sürümü, tercih edilen dil, platform (ör. Windows, macOS, Linux), ekran çözünürlüğü, renk derinliği, kullanıcı aracı dizesi, cihaz belleği (varsa), ağ bağlantı türü",
                 "<strong>Kullanıcı bağlamı:</strong> oturum kimliği (her oturum için rastgele oluşturulur), yalnızca e-posta alan adı (yerel kısım gizlenir, ör. <code>***@example.com</code>), kuruluş adı, ekip adı",
@@ -14075,7 +15695,9 @@
               "title": "4.1 Toplanan Veriler"
             },
             "webNotCollected": {
-              "content": ["Web Uygulaması şunları toplamaz:"],
+              "content": [
+                "Web Uygulaması şunları toplamaz:"
+              ],
               "items": [
                 "Tam e-posta adresleri (yerel kısım her zaman gizlenir)",
                 "Şifreler, tokenlar veya kimlik doğrulama bilgileri",
@@ -14177,7 +15799,9 @@
           "title": "8. Verileriniz"
         },
         "definitions": {
-          "content": ["Aşağıdaki tanımlar bu Hizmet Şartları boyunca geçerlidir:"],
+          "content": [
+            "Aşağıdaki tanımlar bu Hizmet Şartları boyunca geçerlidir:"
+          ],
           "id": "definitions",
           "items": [
             "<strong>\"Hesap\"</strong>, Platforma erişmek ve Aboneliğinizi yönetmek için oluşturduğunuz kullanıcı hesabı anlamına gelir.",
@@ -14269,7 +15893,9 @@
               "title": "6.1 Installation and Machine Access"
             },
             "restrictions": {
-              "content": ["Aşağıdakileri yapmamalısınız:"],
+              "content": [
+                "Aşağıdakileri yapmamalısınız:"
+              ],
               "items": [
                 "Bridge ikili dosyasının veya Şirket İçi Yazılımın açık kaynak olmayan herhangi bir bileşeninin kaynak kodunu tersine mühendislik, derlemeyi çözme, sökme veya başka bir şekilde elde etmeye çalışma",
                 "Şirket İçi Yazılımı herhangi bir üçüncü tarafa yeniden dağıtma, alt lisanslama, kiralama, lease veya ödünç verme",
@@ -14433,18 +16059,21 @@
   },
   "regionPicker": {
     "channelEdge": "Edge",
+    "channelHintLabel": "Sürüm kanalları hakkında",
     "channelStable": "Kararlı",
     "edgeHint": "Sürekli dağıtılan üretim ortamı. Soak süresince 2 kat ücretsiz limitler.",
-    "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin. Kayıt sonrası değiştirilemez.",
+    "footer": "Size en yakın bölgeyi veya kuruluşunuzun gerektirdiği bölgeyi seçin.",
+    "footerNote": "Kayıt sonrası değiştirilemez.",
     "locations": {
       "asia": "Tokyo, Japonya",
       "eu": "Frankfurt, Almanya",
       "us": "Virginia, Amerika Birlesik Devletleri"
     },
+    "reassurance": "Sunucu verileriniz ve yedekleriniz kendi altyapınızda kalır.",
     "regionNote": "Bölge kayıt sonrası değiştirilemez.",
     "stableHint": "Güvenilir sürümler, 7 günlük test sürecinden sonra edge'den yükseltilir.",
-    "subtitle": "Hesabınız, faturalandırmanız ve yapılandırmalarınız seçtiğiniz bölgede kalır. Asla oradan ayrılmazlar.",
-    "title": "Verilerinizi nerede saklayalım?"
+    "subtitle": "Hesabınız, faturalandırmanız ve yapılandırmalarınız seçtiğiniz bölgede kalır.",
+    "title": "Hesap bölgenizi seçin"
   },
   "solutions": {
     "categories": {
@@ -14459,16 +16088,6 @@
     "title": "İş Sürekliliğini Nasıl Sağlıyoruz"
   },
   "team": {
-    "founder": {
-      "contact": "Sorularınız mı var? Bana doğrudan yazın",
-      "designPartner": "Her Tasarım Ortağını bizzat karşılıyorum. Ücretsiz kayıt olun, ardından altyapınızı konuşmak için 30 dakikalık bir görüşme ayarlayalım.",
-      "guarantee": "Rediacc sizin için çalışmazsa, bana e-posta gönderin ve geri geçişinize yardımcı olayım.",
-      "quote": "Rediacc'ı kurdum çünkü altyapı bu kadar kırılgan olmamalı.",
-      "story": {
-        "description": "On yıldan fazla sunucu yönettim. Gerçek olaylarda yedeklerin başarısız olduğunu gördüm. Rediacc, sizinkinin başarısız olmaması için var.",
-        "headline": "Rediacc'ı Neden Kurdum"
-      }
-    },
     "video": {
       "ccLabel": "Altyazılar",
       "personaHeadline": "Size bir mesaj",
@@ -14476,7 +16095,6 @@
     }
   },
   "testimonials": {
-    "fromTheFounder": "Kurucunun Sözü",
     "items": [
       {
         "company": "Finansal Hizmetler",

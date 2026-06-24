@@ -4,8 +4,8 @@ description: "account, rdc ve renet'in makine slotlarını, depo lisanslarını 
 category: "Guides"
 order: 7
 language: tr
-sourceHash: "0e18efe91c91f74c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "ed0aef562aad7367"
+sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
 ---
 
 # Abonelik ve Lisanslama
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Makine slotları (sunucu tarafı)
 
-Makine slot takibi sunucu tarafında uygulanır. CLI bir depo lisansı düzenlediğinde, hesap sunucusu aboneliğin makine slot kotasını kontrol eder (örneğin, Community için 2 makine, Professional için 5). Bir slot, o makinedeki son depo lisansı düzenlemesinden itibaren 1 saat süresince tutulur ve inaktiviteden sonra otomatik olarak serbest bırakılır. Slotlar yalnızca aktif olarak sağlama yaparken tutulduğundan, 5 slotlu bir plan zaman içinde düzinelerce makineyi kapsayabilir.
+Makine slot takibi sunucu tarafında uygulanır. CLI bir depo lisansı düzenlediğinde, hesap sunucusu aboneliğin makine slot kotasını kontrol eder (örneğin, Community için 2 makine, Professional için 3). Bir slot, o makinedeki son depo lisansı düzenlemesinden itibaren 5 saat süresince tutulur ve inaktiviteden sonra otomatik olarak serbest bırakılır. Slotlar yalnızca aktif olarak sağlama yaparken tutulduğundan, 10 slotlu Business plan zaman içinde düzinelerce makineyi kapsayabilir.
 
 Makinede hiçbir makine lisans dosyası depolanmaz. Slot uygulaması, sunucuda düzenleme zamanında gerçekleşir.
 
@@ -91,10 +91,10 @@ Depo boyutu hak düzeyine bağlıdır:
 
 | Plan | Değişken Lisanslar | Depo Boyutu | Aylık depo lisansı düzenlemeleri | Delegasyon sertifikası varsayılan / maks |
 |------|---------------------|-------------|----------------------------------|----------------------------------------|
-| Community | 2 | 10 GB | 500 | 15g / 30g |
-| Professional | 5 | 100 GB | 5.000 | 60g / 120g |
-| Business | 20 | 500 GB | 20.000 | 90g / 180g |
-| Enterprise | 50 | 2048 GB | 100.000 | 120g / 365g |
+| Community | 2 | 10 GB | 100 | 15g / 30g |
+| Professional | 3 | 50 GB | 1.000 | 60g / 120g |
+| Business | 10 | 200 GB | 10.000 | 90g / 180g |
+| Enterprise | 25+ | 1 TB+ | 25.000+ | 120g / 365g |
 
 Sözleşmeye özgü limitler, belirli bir müşteri için bu değerleri artırabilir veya azaltabilir. Delegasyon sertifikası geçerliliği aynı zamanda `subscription.expiresAt + 3 günlük ek süre` ile kesin olarak sınırlandırılmıştır; dolayısıyla aylık faturalandırılan abonelikler doğal olarak faturalama döngüleriyle uyumlu sertifikalar alır. Tam kurallar için [Lisans Zinciri ve Delegasyon - Geçerlilik Politikası](/tr/docs/license-chain) sayfasına bakın.
 

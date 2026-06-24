@@ -33,30 +33,7 @@ export const ALL_CAPTION_LANGUAGES = [
   'tr',
 ] as const;
 
-export const TEAM_MEMBERS: Record<string, TeamMemberMedia> = {
-  founder: {
-    slug: 'founder',
-    name: 'Muhammed',
-    role: 'Founder',
-    email: 'muhammed@rediacc.com',
-    photos: {
-      headshot: '/media/founder/photos/headshot.jpg',
-      'headshot-sm': '/media/founder/photos/headshot-sm.jpg',
-      'headshot-xs': '/media/founder/photos/headshot-xs.jpg',
-      standing: '/media/founder/photos/standing.jpg',
-      casual: '/media/founder/photos/casual.jpg',
-      working: '/media/founder/photos/working.jpg',
-    },
-    videos: {
-      'our-story': {
-        src: '/media/founder/videos/our-story.mp4',
-        poster: '/media/founder/posters/our-story.jpg',
-        duration: 150,
-        durationLabel: '2:30',
-      },
-    },
-  },
-};
+export const TEAM_MEMBERS: Record<string, TeamMemberMedia> = {};
 
 export function getCaptionPath(member: string, videoKey: string, lang: string): string {
   return `/media/${member}/captions/${videoKey}.${lang}.vtt`;

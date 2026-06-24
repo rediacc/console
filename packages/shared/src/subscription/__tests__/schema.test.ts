@@ -56,8 +56,8 @@ describe('Subscription Schema Constants', () => {
     });
 
     it('should have ENTERPRISE with highest limits', () => {
-      expect(PLAN_LIMITS.ENTERPRISE.maxRepositorySizeGb).toBe(2048);
-      expect(PLAN_LIMITS.ENTERPRISE.maxRepoLicenseIssuancesPerMonth).toBe(100000);
+      expect(PLAN_LIMITS.ENTERPRISE.maxRepositorySizeGb).toBe(1024);
+      expect(PLAN_LIMITS.ENTERPRISE.maxRepoLicenseIssuancesPerMonth).toBe(25000);
     });
   });
 
@@ -168,12 +168,12 @@ describe('Subscription Schema Helper Functions', () => {
   describe('getPlanLimits', () => {
     it('should return correct limits for valid plan', () => {
       const limits = getPlanLimits('PROFESSIONAL');
-      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(5000);
+      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(1000);
     });
 
     it('should return COMMUNITY limits for invalid plan', () => {
       const limits = getPlanLimits('INVALID');
-      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(500);
+      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(100);
     });
   });
 
@@ -204,11 +204,11 @@ describe('Subscription Schema Helper Functions', () => {
 
   describe('getPlanLimit', () => {
     it('should return correct limit', () => {
-      expect(getPlanLimit('COMMUNITY', 'maxRepoLicenseIssuancesPerMonth')).toBe(500);
+      expect(getPlanLimit('COMMUNITY', 'maxRepoLicenseIssuancesPerMonth')).toBe(100);
     });
 
     it('should return 0 for invalid plan', () => {
-      expect(getPlanLimit('INVALID', 'maxRepoLicenseIssuancesPerMonth')).toBe(500);
+      expect(getPlanLimit('INVALID', 'maxRepoLicenseIssuancesPerMonth')).toBe(100);
     });
   });
 

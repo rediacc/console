@@ -4,8 +4,8 @@ description: Rediacc의 조직, 팀, 구성원 및 구독 관리.
 category: Guides
 order: 12
 language: ko
-sourceHash: "974885635641ed70"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1a3458ba81b340d4"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 ### 조직
@@ -57,10 +57,10 @@ Rediacc는 네 가지 플랜을 제공합니다:
 
 | 플랜 | 머신 수 | 월별 리포 라이선스 | 위임 인증서 기본 / 최대 | 기능 |
 |------|---------|-------------------|------------------------|------|
-| COMMUNITY | 2 | 500 | 15d / 30d | 기본 |
-| PROFESSIONAL | 5 | 5,000 | 60d / 120d | 권한 그룹, 감사 로그, 커스텀 브랜딩, 우선 지원 |
-| BUSINESS | 20 | 20,000 | 90d / 180d | Ceph, 고급 분석, 대기열 우선순위, 고급 대기열 |
-| ENTERPRISE | 50 | 100,000 | 120d / 365d | 전담 계정 매니저 |
+| COMMUNITY | 2 | 100 | 15d / 30d | 기본 |
+| PROFESSIONAL | 3 | 1,000 | 60d / 120d | 권한 그룹, 감사 로그, 커스텀 브랜딩, 우선 지원 |
+| BUSINESS | 10 | 10,000 | 90d / 180d | Ceph, 고급 분석, 대기열 우선순위, 고급 대기열 |
+| ENTERPRISE | 25+ | 25,000+ | 120d / 365d | 전담 계정 매니저 |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 

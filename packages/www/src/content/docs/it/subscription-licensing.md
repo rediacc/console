@@ -4,8 +4,8 @@ description: "Scopri come account, rdc e renet gestiscono gli slot macchina, le 
 category: "Guides"
 order: 7
 language: it
-sourceHash: "0e18efe91c91f74c"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "ed0aef562aad7367"
+sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
 ---
 
 # Abbonamento e licenze
@@ -60,7 +60,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slot macchina (lato server)
 
-Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota degli slot macchina dell'abbonamento (ad esempio, 2 macchine per Community, 5 per Professional). Uno slot viene occupato per 1 ora dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Un piano con 5 slot può quindi coprire dozzine di macchine nel tempo, poiché gli slot vengono occupati solo durante il provisioning attivo.
+Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota degli slot macchina dell'abbonamento (ad esempio, 2 macchine per Community, 3 per Professional). Uno slot viene occupato per 5 ore dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Un piano Business da 10 slot può quindi coprire dozzine di macchine nel tempo, poiché gli slot vengono occupati solo durante il provisioning attivo.
 
 Nessun file di licenza macchina viene memorizzato sulla macchina. L'applicazione degli slot avviene al momento dell'emissione sul server.
 
@@ -91,10 +91,10 @@ I limiti predefiniti dei piani a pagamento sono:
 
 | Piano | Licenze floating | Dimensione repository | Emissioni di licenze repo al mese | Validità certificato delega predefinita / massima |
 |-------|------------------|-----------------------|-------------------------------------|---------------------------------------------------|
-| Community | 2 | 10 GB | 500 | 15g / 30g |
-| Professional | 5 | 100 GB | 5.000 | 60g / 120g |
-| Business | 20 | 500 GB | 20.000 | 90g / 180g |
-| Enterprise | 50 | 2048 GB | 100.000 | 120g / 365g |
+| Community | 2 | 10 GB | 100 | 15g / 30g |
+| Professional | 3 | 50 GB | 1.000 | 60g / 120g |
+| Business | 10 | 200 GB | 10.000 | 90g / 180g |
+| Enterprise | 25+ | 1 TB+ | 25.000+ | 120g / 365g |
 
 I limiti specifici del contratto possono aumentare o ridurre questi valori per un cliente specifico. La validità del certificato di delega è anche limitata a `subscription.expiresAt + 3 giorno di grazia`, quindi gli abbonamenti con fatturazione mensile ottengono naturalmente certificati allineati al loro ciclo di fatturazione. Consulta [Catena di licenze e delega - Policy di validità](/it/docs/license-chain) per le regole complete.
 

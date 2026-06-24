@@ -1,8 +1,13 @@
 ---
-title: "اختبار الاختراق السنوي مجرد مسرحية امتثال. المادة 21(2)(f) من NIS2 جعلت ذلك مشكلة حقيقية."
-description: "تقييم الفعالية المستمر، والتفريع ثابت الزمن الذي يجعل التكلفة منخفضة، والجدول الزمني لإعداد التقارير وفق المادة 23 الذي لا يمكن الوفاء به بدون مخرجات ذات جودة جنائية."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: >-
+  اختبار الاختراق السنوي مجرد مسرحية امتثال. المادة 21(2)(f) من NIS2 جعلت ذلك
+  مشكلة حقيقية.
+description: >-
+  تقييم الفعالية المستمر، والتفريع ثابت الزمن الذي يجعل التكلفة منخفضة، والجدول
+  الزمني لإعداد التقارير وفق المادة 23 الذي لا يمكن الوفاء به بدون مخرجات ذات
+  جودة جنائية.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +17,8 @@ tags:
   - incident-reporting
 featured: false
 language: ar
-sourceHash: "4c2768e81f0ff03a"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 0e471ac41759e4cb
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

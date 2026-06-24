@@ -55,10 +55,10 @@ Rediacc offers four plans:
 
 | Plan | Machines | Repo Licenses/mo | Delegation cert default / max | Features |
 |------|----------|------------------|-------------------------------|----------|
-| COMMUNITY | 2 | 500 | 15d / 30d | Basic |
-| PROFESSIONAL | 5 | 5,000 | 60d / 120d | Permission groups, audit log, custom branding, priority support |
-| BUSINESS | 20 | 20,000 | 90d / 180d | Ceph, advanced analytics, queue priority, advanced queue |
-| ENTERPRISE | 50 | 100,000 | 120d / 365d | Dedicated account manager |
+| COMMUNITY | 2 | 100 | 15d / 30d | Basic |
+| PROFESSIONAL | 3 | 1,000 | 60d / 120d | Permission groups, audit log, custom branding, priority support |
+| BUSINESS | 10 | 10,000 | 90d / 180d | Ceph, advanced analytics, queue priority, advanced queue |
+| ENTERPRISE | 25+ | 25,000+ | 120d / 365d | Dedicated account manager |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 

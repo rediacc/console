@@ -1,8 +1,10 @@
 ---
-title: "첫 번째 NIS2 감사 주기에서 구매자들이 전해 준 이야기"
-description: "2026년 중견 필수 기업들이 조용히 구축하고 있는 5가지 도구 컴플라이언스 스택, 자체 호스팅 컨트롤 플레인이 통합하는 항목, 그리고 어떤 경우에도 귀사의 예산에 남는 항목들."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: 첫 번째 NIS2 감사 주기에서 구매자들이 전해 준 이야기
+description: >-
+  2026년 중견 필수 기업들이 조용히 구축하고 있는 5가지 도구 컴플라이언스 스택, 자체 호스팅 컨트롤 플레인이 통합하는 항목, 그리고 어떤
+  경우에도 귀사의 예산에 남는 항목들.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +14,8 @@ tags:
   - mid-market
 featured: false
 language: ko
-sourceHash: "3fbb581ec14e3f80"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 29fbcbffd8a304bc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

@@ -465,6 +465,10 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   // Timeline step labels (often identical across languages — short technical/UI labels)
   /\.timeline\.(oldSteps|newSteps)\.\d+\.day$/, // "Min 0", "Day 1", "Apr-Nov"
   /\.timeline\.(oldSteps|newSteps)\.\d+$/, // "Backup", "Online", "Spin up"
+  // Account portal onboarding splash — step headings and action labels are intentionally
+  // kept in English (they mirror the public tutorial headings); title/subtitle are translated.
+  /^stepLabels\./,
+  /^(goToDashboard|skipToDashboard|docsLink)$/,
 ];
 
 interface TranslationObject {

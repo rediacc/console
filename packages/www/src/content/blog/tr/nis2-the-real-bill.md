@@ -1,8 +1,11 @@
 ---
-title: "İlk NIS2 Denetim Döngüsünde Alıcıların Bize Söyledikleri"
-description: "Orta ölçekli temel kuruluşların 2026'da sessiz sedasız bir araya getirdiği beş araçlık uyum yığını, kendi altyapınızı barındırmanın hangi kalemleri ortadan kaldırdığı ve hangi kalemlerin her halükarda sizde kaldığı."
-author: Muhammed Fatih Bayraktar
-publishedDate: 2026-05-09
+title: İlk NIS2 Denetim Döngüsünde Alıcıların Bize Söyledikleri
+description: >-
+  Orta ölçekli temel kuruluşların 2026'da sessiz sedasız bir araya getirdiği beş
+  araçlık uyum yığını, kendi altyapınızı barındırmanın hangi kalemleri ortadan
+  kaldırdığı ve hangi kalemlerin her halükarda sizde kaldığı.
+author: Rediacc
+publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
 tags:
   - nis2
@@ -12,8 +15,8 @@ tags:
   - mid-market
 featured: false
 language: tr
-sourceHash: "3fbb581ec14e3f80"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: 29fbcbffd8a304bc
+sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
 translatedFrom: en
 ---
 

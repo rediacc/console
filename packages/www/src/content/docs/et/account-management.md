@@ -4,8 +4,8 @@ description: Organisatsioonid, meeskonnad, liikmed ja tellimused Rediaccis ühes
 category: Guides
 order: 12
 language: et
-sourceHash: "974885635641ed70"
-sourceCommit: "4e60a12e0664cdee5ad9079a7b75e2d05980d0f5"
+sourceHash: "1a3458ba81b340d4"
+sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
 ---
 
 ### Organisatsioonid
@@ -57,10 +57,10 @@ Rediacc pakub nelja plaani:
 
 | Plaan | Masinad | Repo-litsentsid/kuu | Delegeerimissert vaikimisi / max | Funktsioonid |
 |-------|---------|---------------------|----------------------------------|--------------|
-| COMMUNITY | 2 | 500 | 15p / 30p | Põhiline |
-| PROFESSIONAL | 5 | 5 000 | 60p / 120p | Loagrupid, auditilogi, kohandatud bränding, prioriteettugi |
-| BUSINESS | 20 | 20 000 | 90p / 180p | Ceph, täiustatud analüütika, järjekorra prioriteet, täiustatud järjekord |
-| ENTERPRISE | 50 | 100 000 | 120p / 365p | Pühendatud kontohaldur |
+| COMMUNITY | 2 | 100 | 15p / 30p | Põhiline |
+| PROFESSIONAL | 3 | 1 000 | 60p / 120p | Loagrupid, auditilogi, kohandatud bränding, prioriteettugi |
+| BUSINESS | 10 | 10 000 | 90p / 180p | Ceph, täiustatud analüütika, järjekorra prioriteet, täiustatud järjekord |
+| ENTERPRISE | 25+ | 25 000+ | 120p / 365p | Pühendatud kontohaldur |
 
 ![Tellimise voog](/img/account-subscription-flow.svg)
 
