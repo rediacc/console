@@ -1,12 +1,14 @@
 import { isMarketingHost } from './marketing-host';
 
 function hostnameFromOrigin(origin?: string): string {
-  if (!origin) return typeof window !== 'undefined' ? window.location.hostname : '';
-  try {
-    return new URL(origin).hostname;
-  } catch {
-    return origin;
+  if (origin) {
+    try {
+      return new URL(origin).hostname;
+    } catch {
+      return origin;
+    }
   }
+  return typeof window === 'undefined' ? '' : window.location.hostname;
 }
 
 /**

@@ -508,9 +508,9 @@
         "title": "Un logiciel de sauvegarde et de récupération que vous contrôlez"
       },
       "meta": {
-        "description": "Rediacc développe un logiciel auto-hébergé de sauvegarde et de reprise après sinistre qui permet de cloner la production, tester en toute sécurité et récupérer en quelques secondes.",
+        "description": "Rediacc développe un logiciel de sauvegarde et de reprise après sinistre pour cloner la production, tester en sécurité et récupérer en secondes.",
         "keywords": "entreprise Rediacc, sauvegarde auto-hébergée, logiciel de reprise après sinistre, fiabilité infrastructure",
-        "title": "Entreprise | Rediacc - Des sauvegardes qui survivent aux ransomwares"
+        "title": "Entreprise | Rediacc - Sauvegardes anti-ransomware"
       },
       "mission": {
         "belief": "Le tier Community fait exactement ce que les tiers payants font. Même clonage btrfs. Même chiffrement LUKS. Mêmes sauvegardes verrouillées et à écriture unique. Juste des limites plus petites. Pas de restrictions de fonctionnalités. Pas de piège.",

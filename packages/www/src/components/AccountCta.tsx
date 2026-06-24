@@ -34,7 +34,6 @@ export const AccountCta: React.FC<AccountCtaProps> = ({
   const accountUrl = getLocalAccountUrl(origin);
 
   const trackProps = {
-    'data-track': track?.event,
     'data-track-label': track?.label,
     'data-track-dest': track?.dest,
   };
@@ -52,6 +51,7 @@ export const AccountCta: React.FC<AccountCtaProps> = ({
         aria-label={ariaLabel ?? label}
         tabIndex={tabIndex}
         onClick={onClick}
+        data-track={track?.event}
         {...trackProps}
       >
         {label}
@@ -66,6 +66,7 @@ export const AccountCta: React.FC<AccountCtaProps> = ({
       aria-label={ariaLabel ?? label}
       tabIndex={tabIndex}
       onClick={handleClick}
+      data-track={track?.event}
       {...trackProps}
     >
       {label}

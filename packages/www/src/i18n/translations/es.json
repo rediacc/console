@@ -508,9 +508,9 @@
         "title": "Software de copias de seguridad y recuperación que tú controlas"
       },
       "meta": {
-        "description": "Rediacc crea software de copias de seguridad y recuperación ante desastres autoalojado que te permite clonar producción, probar con seguridad y recuperarte en segundos.",
+        "description": "Rediacc crea software de backup y recuperación autoalojado para clonar producción, probar con seguridad y recuperarte en segundos.",
         "keywords": "empresa Rediacc, copia de seguridad autoalojada, software de recuperación ante desastres, fiabilidad de infraestructura",
-        "title": "Empresa | Rediacc - Copias de seguridad que sobreviven al ransomware"
+        "title": "Empresa | Rediacc - Backup que sobrevive al ransomware"
       },
       "mission": {
         "belief": "El nivel Community hace todo lo que los niveles pagados. El mismo cloning de btrfs. El mismo cifrado LUKS. Las mismas copias bloqueadas y de una sola escritura. Solo límites menores. Sin restricciones. Sin engaños.",
