@@ -15,7 +15,22 @@
       "titleKey": "stepLabels.loginCli",
       "docsPath": "/en/docs/tutorial-installation",
       "shortProse": "Log in to your Rediacc subscription from the CLI so your license is recognized.",
-      "command": "rdc subscription login"
+      "command": "rdc subscription login",
+      "prose": {
+        "en": "Log in to your Rediacc subscription from the CLI so your license is recognized.",
+        "de": "Melden Sie sich über die CLI bei Ihrem Rediacc-Abonnement an, damit Ihre Lizenz erkannt wird.",
+        "es": "Inicia sesión en tu suscripción de Rediacc desde la CLI para que se reconozca tu licencia.",
+        "fr": "Connectez-vous à votre abonnement Rediacc depuis la CLI pour que votre licence soit reconnue.",
+        "ja": "CLI から Rediacc サブスクリプションにログインし、ライセンスが認識されるようにします。",
+        "ar": "سجّل الدخول إلى اشتراك Rediacc من CLI حتى يتم التعرّف على ترخيصك.",
+        "ru": "Войдите в свою подписку Rediacc через CLI, чтобы лицензия была распознана.",
+        "tr": "Lisansınızın tanınması için CLI'dan Rediacc aboneliğinize giriş yapın.",
+        "zh": "从 CLI 登录到你的 Rediacc 订阅，以便识别你的许可证。",
+        "et": "Logi oma Rediacc tellimisse CLI kaudu, et litsents ära tuntaks.",
+        "ko": "CLI에서 Rediacc 구독에 로그인하여 라이선스가 인식되도록 합니다.",
+        "pt": "Inicie sessão na sua subscrição Rediacc a partir da CLI para que a sua licença seja reconhecida.",
+        "it": "Accedi al tuo abbonamento Rediacc dalla CLI in modo che la tua licenza venga riconosciuta."
+      }
     },
     {
       "id": "generate-key",

@@ -47,6 +47,7 @@ interface ManifestStep {
   titleKey: string;
   docsPath: string;
   shortProse: string;
+  prose?: Record<string, string>;
   command?: string;
   optional?: boolean;
 }
@@ -193,7 +194,7 @@ function buildManualStep(step: ManifestStep) {
 
   const prose: Record<string, string> = {};
   for (const lang of SUPPORTED_LANGUAGES) {
-    prose[lang] = step.shortProse;
+    prose[lang] = step.prose?.[lang] ?? step.shortProse;
   }
 
   return {
