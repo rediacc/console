@@ -345,6 +345,17 @@ main() {
     # signing key, and provenance attestations where present. Failures are not
     # allowlistable — a bad signature means the lockfile points at a tampered
     # tarball.
+    #
+    # BLOCKER: npm 10.x ships a Sigstore client that cannot resolve the
+    # attestation signing key used by some freshly-published packages
+    # (e.g. electron-builder-squirrel-windows), producing EMISSINGSIGNATUREKEY
+    # on a clean TUF cache. npm 11.x resolves the key correctly, so upgrade
+    # globally before signature verification without changing the lockfile.
+    if [[ "$(npm --version)" != 11.* ]]; then
+        log_warn "Upgrading npm to 11.x for Sigstore attestation key compatibility"
+        npm install -g npm@11.17.0 --no-audit --no-fund
+    fi
+
     log_info "Verifying package signatures and provenance"
     local audit_sig_attempt=0
     local audit_sig_ok=false
