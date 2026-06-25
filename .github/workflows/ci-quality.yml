@@ -72,7 +72,8 @@ jobs:
 
   quality-deps:
     name: Deps
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no-external-quality')
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -428,7 +429,8 @@ jobs:
 
   quality-cli-examples:
     name: CLI Examples
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
