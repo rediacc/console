@@ -349,12 +349,12 @@ main() {
     local audit_sig_attempt=0
     local audit_sig_ok=false
     clean_tuf_cache
-    while (( audit_sig_attempt < 3 )) && [[ "$audit_sig_ok" != "true" ]]; do
+    while ((audit_sig_attempt < 3)) && [[ "$audit_sig_ok" != "true" ]]; do
         if npm audit signatures 2>&1; then
             audit_sig_ok=true
         else
             audit_sig_attempt=$((audit_sig_attempt + 1))
-            if (( audit_sig_attempt < 3 )); then
+            if ((audit_sig_attempt < 3)); then
                 log_warn "npm audit signatures failed (attempt $audit_sig_attempt); clearing TUF cache and retrying"
                 clean_tuf_cache
                 sleep 10
