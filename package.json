@@ -149,7 +149,7 @@
     "eslint-plugin-unicorn": "^65.0.1",
     "globals": "^17.7.0",
     "jsdom": "^29.0.0",
-    "knip": "^6.16.1",
+    "knip": "^6.20.0",
     "lockfile-lint": "^5.0.0",
     "syncpack": "^15.3.2",
     "tsx": "^4.21.0",
