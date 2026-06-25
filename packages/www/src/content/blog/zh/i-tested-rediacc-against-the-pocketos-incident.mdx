@@ -25,7 +25,7 @@ import YouTubeEmbed from '../../../components/YouTubeEmbed.astro';
 
 <YouTubeEmbed videoId="o-Bst9rO9Fk" title="我用 PocketOS 事故场景测试了 Rediacc" />
 
-> **更新。2026 年 5 月。** 自本文发布以来，Rediacc 已推出原生的**按仓库密钥**（`rdc repo secret`）。前文所说的那个“诚实的缺口”——烘焙在仓库里的外部 SaaS 凭证——现在有了内置答案：可以把凭证完全放在 LUKS 镜像之外，因此 fork 默认不会继承任何密钥。直接跳到新增的结尾章节 [更新：这个缺口现在可以补上了](#update-the-gap-is-now-closeable)，了解已交付的内容、改变了什么，以及还残留哪些风险。
+> **更新。2026 年 5 月。** 自本文发布以来，Rediacc 已推出原生的**按仓库密钥**（`rdc repo secret`）。前文所说的那个“诚实的缺口”（烘焙在仓库里的外部 SaaS 凭证）现在有了内置答案：可以把凭证完全放在 LUKS 镜像之外，因此 fork 默认不会继承任何密钥。直接跳到新增的结尾章节 [更新：这个缺口现在可以补上了](#update-the-gap-is-now-closeable)，了解已交付的内容、改变了什么，以及还残留哪些风险。
 
 上周末，Jer Crane 发布了一份耗时 30 小时的事后复盘。一个运行 Anthropic Claude Opus 4.6 的 Cursor 智能体删除了他在 Railway 上的生产数据库。删除操作只是一个 GraphQL 调用。耗时 9 秒。Railway 的卷备份也一并丢失，因为 Railway 把它们存在同一个卷里。
 
@@ -180,7 +180,7 @@ fork 是父仓库的逐字节 BTRFS reflink。父仓库 `data/`、`.env` 或 `se
 
 ## 更新：这个缺口现在可以补上了
 
-我保留了上面那节的原文。当时那份诚实是站得住脚的。自发布以来，我们交付了缺失的那一块，缺口现在可以补上了——不是靠改变 fork 的行为，而是靠新增一处放凭证的地方，让它住在加密的仓库镜像之外。
+我保留了上面那节的原文。当时那份诚实是站得住脚的。自发布以来，我们交付了缺失的那一块，缺口现在可以补上了：不是靠改变 fork 的行为，而是靠新增一处放凭证的地方，让它住在加密的仓库镜像之外。
 
 机制就是 `rdc repo secret`。它的设计参照了 GitHub Actions secrets。有两点很关键。
 
