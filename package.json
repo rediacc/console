@@ -177,6 +177,9 @@
     "hono": ">=4.12.25",
     "@hono/node-server": ">=1.19.13",
     "undici": ">=7.28.0",
+    "jsdom": {
+      "undici": "^7.28.0"
+    },
     "vite": ">=6.4.2 <8",
     "follow-redirects": "^1.16.0",
     "postcss": ">=8.5.10",
@@ -212,6 +215,7 @@
     "hono": "BLOCKER: force >=4.12.25 to carry the >=4.12.18 fixes plus serve-static path traversal (GHSA-wwfh-h76j-fc44), CORS wildcard reflection (GHSA-88fw-hqm2-52qc), Set-Cookie merge (GHSA-j6c9-x7qj-28xf), body-limit bypass (GHSA-rv63-4mwf-qqc2), and Lambda@Edge header drop (GHSA-wgpf-jwqj-8h8p); @modelcontextprotocol/sdk transitively pulls older hono",
     "@hono/node-server": "BLOCKER: force >=1.19.13 to pair with hono >=4.12.25 override; pre-1.19 cannot start against hono 4.12.x",
     "undici": "BLOCKER: force >=7.28.0 to resolve SOCKS5 proxy TLS bypass (GHSA-vmh5-mc38-953g), Set-Cookie injection (GHSA-p88m-4jfj-68fv), WebSocket DoS (GHSA-vxpw-j846-p89q), cross-origin pool reuse (GHSA-hm92-r4w5-c3mj), response queue poisoning (GHSA-35p6-xmwp-9g52), SameSite downgrade (GHSA-g8m3-5g58-fq7m), and cache whitespace bypass (GHSA-pr7r-676h-xcf6)",
+    "jsdom": "BLOCKER: jsdom@29 depends on undici ^7.x and imports the internal module 'undici/lib/handler/wrap-handler.js', which was removed in undici 8. Nest a ^7.28.0 override inside jsdom so the rest of the tree can still satisfy the global >=7.28.0 security override while jsdom's worker threads resolve a compatible undici copy.",
     "vite": "BLOCKER: bound >=6.4.2 <8 to capture dev-server path-traversal + fs.deny fixes while staying compatible with vitest/@vitest 3.x and the astro stack; vite 8 release is a breaking major we have not planned for",
     "follow-redirects": "BLOCKER: force ^1.16.0 to include GHSA-r4q5-vmmm-2653 fix; axios 1.15.0 range ^1.15.11 permits 1.16.0 but the lockfile would otherwise freeze at 1.15.11",
     "postcss": "BLOCKER: force >=8.5.10 to include GHSA-qx2v-qp2m-jg93 XSS-via-unescaped-style-tag fix; vite/marpit transitives otherwise hold tree at 8.5.8",
