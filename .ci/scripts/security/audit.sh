@@ -330,13 +330,38 @@ main() {
         exit 1
     fi
 
+    # Some CI images ship a stale Sigstore TUF cache that doesn't include newer
+    # npm registry signing keys. Force a fresh fetch before signature verification.
+    clean_tuf_cache() {
+        local npm_cache
+        npm_cache=$(npm config get cache 2>/dev/null) || npm_cache="$HOME/.npm"
+        if [[ -d "$npm_cache/_tuf" ]]; then
+            rm -rf "$npm_cache/_tuf"
+        fi
+    }
+
     # ── Pass 0: Package signature / provenance verification ────────
     # Verifies every installed package's registry signature against the public
     # signing key, and provenance attestations where present. Failures are not
     # allowlistable — a bad signature means the lockfile points at a tampered
     # tarball.
     log_info "Verifying package signatures and provenance"
-    if ! npm audit signatures 2>&1; then
+    local audit_sig_attempt=0
+    local audit_sig_ok=false
+    clean_tuf_cache
+    while (( audit_sig_attempt < 3 )) && [[ "$audit_sig_ok" != "true" ]]; do
+        if npm audit signatures 2>&1; then
+            audit_sig_ok=true
+        else
+            audit_sig_attempt=$((audit_sig_attempt + 1))
+            if (( audit_sig_attempt < 3 )); then
+                log_warn "npm audit signatures failed (attempt $audit_sig_attempt); clearing TUF cache and retrying"
+                clean_tuf_cache
+                sleep 10
+            fi
+        fi
+    done
+    if [[ "$audit_sig_ok" != "true" ]]; then
         log_error "npm audit signatures failed — at least one installed package has an invalid signature or missing provenance"
         log_error "This indicates registry tampering, a poisoned lockfile, or a downgrade attack — do NOT allowlist"
         exit 1
