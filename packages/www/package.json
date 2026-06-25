@@ -61,7 +61,7 @@
     "@vitest/utils": "^4.0.18",
     "astro": "^5.17.3",
     "fast-xml-parser": "^5.8.0",
-    "fuse.js": "^7.4.0",
+    "fuse.js": "^7.4.2",
     "gray-matter": "^4.0.3",
     "jszip": "^3.10.1",
     "plyr": "^3.8.4",

@@ -55,7 +55,7 @@
     "@types/ssh2": "^1.15.5",
     "@vitejs/plugin-react": "^5.1.2",
     "electron": "^39.8.6",
-    "electron-builder": "^26.15.2",
+    "electron-builder": "^26.15.3",
     "electron-log": "^5.4.4",
     "electron-vite": "^5.0.0",
     "typescript": "^5.9.3",
