@@ -9,7 +9,7 @@
  * The generated file is imported by private/account/web/src/pages/TutorialSplash.tsx.
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -233,6 +233,7 @@ function run(): void {
     steps,
   };
 
+  mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
   writeFileSync(OUTPUT_PATH, `${JSON.stringify(output, null, 2)}\n`, 'utf-8');
   console.log(`Generated ${path.relative(ROOT, OUTPUT_PATH)} with ${steps.length} steps`);
 }

@@ -45,7 +45,7 @@ const has = (section: string) => config.sections.includes(section as any);
 const rawCtaHref = config.ctaHref ?? PERSONA_CTA_MAP[config.personaType];
 const ctaHref = rawCtaHref === 'CONSULTATION'
   ? EXTERNAL_LINKS.SCHEDULE_CONSULTATION
-  : rawCtaHref.startsWith('/')
+  : rawCtaHref.startsWith('/') || /^https?:\/\//.test(rawCtaHref)
     ? rawCtaHref
     : `/${lang}${rawCtaHref}`;
 

@@ -272,8 +272,9 @@ const RegionPickerModal: React.FC = () => {
             type="button"
             className="region-picker-channel-info"
             aria-label={t('regionPicker.channelHintLabel')}
+            aria-describedby="region-picker-channel-tooltip"
             aria-expanded={showChannelHint}
-            aria-controls="region-picker-channel-tooltip"
+            aria-controls="region-picker-channel-hint-mobile"
             onClick={() => setShowChannelHint((prev) => !prev)}
             data-track="region_picker_channel_hint_toggle"
           >
@@ -300,6 +301,7 @@ const RegionPickerModal: React.FC = () => {
           </button>
         </div>
         <p
+          id="region-picker-channel-hint-mobile"
           className={`region-picker-channel-hint-mobile ${
             showChannelHint ? 'region-picker-channel-hint-mobile--visible' : ''
           }`}
