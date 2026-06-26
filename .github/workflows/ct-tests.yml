@@ -764,15 +764,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-      - name: Free Disk Space
-        run: |
-          echo "=== Disk usage before cleanup ==="
-          df -h / || true
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
-          docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
-          echo "=== Disk usage after cleanup ==="
-          df -h / || true
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/build/build-cli.sh
@@ -884,15 +875,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-      - name: Free Disk Space
-        run: |
-          echo "=== Disk usage before cleanup ==="
-          df -h / || true
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
-          docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
-          echo "=== Disk usage after cleanup ==="
-          df -h / || true
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/build/build-cli.sh
@@ -996,15 +978,6 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
 
       # Renet setup
-      - name: Free Disk Space
-        run: |
-          echo "=== Disk usage before cleanup ==="
-          df -h / || true
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
-          docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
-          echo "=== Disk usage after cleanup ==="
-          df -h / || true
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)
@@ -1141,15 +1114,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-      - name: Free Disk Space
-        run: |
-          echo "=== Disk usage before cleanup ==="
-          df -h / || true
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
-          docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
-          echo "=== Disk usage after cleanup ==="
-          df -h / || true
       - run: .ci/scripts/setup/install-deps.sh
       - run: .ci/scripts/setup/build-packages.sh
       - run: .ci/scripts/build/build-cli.sh
@@ -1291,15 +1255,6 @@ jobs:
       - run: .ci/scripts/setup/build-packages.sh
 
       # Renet setup
-      - name: Free Disk Space
-        run: |
-          echo "=== Disk usage before cleanup ==="
-          df -h / || true
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell /usr/share/swift 2>/dev/null || true
-          docker system prune -af 2>/dev/null || true
-          npm cache clean --force 2>/dev/null || true
-          echo "=== Disk usage after cleanup ==="
-          df -h / || true
       - name: Install clang for BPF compilation
         run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
       - name: Pre-pull Docker base images (avoid buildx auth issues)

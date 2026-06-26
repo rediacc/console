@@ -2,11 +2,9 @@
 # Download tunnel URL artifact with retry logic
 # Usage: download-url.sh --run-id <run_id> [--artifact-name <name>] [--max-wait <seconds>]
 #
-# Downloads the latest artifact (by creation time) matching the given name.
-# Stable artifact names are used across attempts; the script always picks the
-# most recently created artifact so stale artifacts are ignored. As a fallback,
-# legacy attempt-suffixed artifacts (e.g., tunnel-url-attempt-N) are also
-# considered so existing runs and transition scenarios still work.
+# Downloads the artifact matching the given stable name. Because the workflow
+# uploads with overwrite=true, only one artifact with that name exists per run;
+# we still sort by created_at as a minimal defense against duplicate artifacts.
 #
 # Outputs the tunnel URL to stdout on success.
 # Requires: GH_TOKEN environment variable (or gh auth login)
@@ -65,54 +63,10 @@ INTERVAL=10
 DOWNLOAD_DIR="$(mktemp -d)"
 trap 'rm -rf "$DOWNLOAD_DIR"' EXIT
 
-# Determine the start time of the latest workflow attempt. Artifacts created
-# before this time are considered stale (left over from a previous attempt).
-get_attempt_start() {
-    local attempt
-    attempt=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" \
-        --jq '.run_attempt' 2>/dev/null || echo "1")
-    gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/attempts/${attempt}" \
-        --jq '.run_started_at' 2>/dev/null || echo ""
-}
-
-ATTEMPT_START_ISO=$(get_attempt_start)
-if [[ -n "$ATTEMPT_START_ISO" ]]; then
-    log_info "Current attempt started at ${ATTEMPT_START_ISO}; ignoring older artifacts" >&2
-fi
-
-# Find the latest artifact matching the stable name or the legacy
-# attempt-suffixed pattern (e.g., tunnel-url-attempt-3). Returns the artifact
-# ID on stdout, or nothing if no match is found.
-find_latest_artifact() {
-    local name="$1"
-    local run_id="$2"
-    local attempt_start_iso="${3:-}"
-
-    local created_filter
-    if [[ -n "$attempt_start_iso" ]]; then
-        created_filter="select(.created_at >= \"$attempt_start_iso\")"
-    else
-        created_filter="true"
-    fi
-
-    # Prefer the exact stable name, then fall back to legacy attempt-suffixed names.
-    local exact_id
-    exact_id=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
-        --jq "[.artifacts[] | select(.name == \"$name\") | $created_filter] | sort_by(.created_at) | last | .id // empty" 2>/dev/null || echo "")
-    if [[ -n "$exact_id" ]]; then
-        echo "$exact_id"
-        return 0
-    fi
-
-    local legacy_pattern="^${name}-attempt-[0-9]+$"
-    gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${run_id}/artifacts?per_page=100" \
-        --jq "[.artifacts[] | select(.name | test(\"$legacy_pattern\")) | $created_filter] | sort_by(.created_at) | last | .id // empty" 2>/dev/null || echo ""
-}
-
 while [[ $ELAPSED -lt $MAX_WAIT ]]; do
-    # Use the GitHub API to find the latest artifact by creation time.
-    # This avoids downloading stale artifacts from previous retry attempts.
-    ARTIFACT_ID=$(find_latest_artifact "$ARTIFACT_NAME" "$RUN_ID" "$ATTEMPT_START_ISO")
+    # Find the latest artifact with the exact stable name.
+    ARTIFACT_ID=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}/artifacts?per_page=100" \
+        --jq "[.artifacts[] | select(.name == \"$ARTIFACT_NAME\")] | sort_by(.created_at) | last | .id // empty" 2>/dev/null || echo "")
 
     if [[ -n "$ARTIFACT_ID" ]]; then
         # Download the specific artifact by ID using the zip endpoint
