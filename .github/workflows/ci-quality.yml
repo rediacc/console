@@ -26,7 +26,6 @@ jobs:
   quality-branch:
     name: Branch
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -57,7 +56,6 @@ jobs:
   quality-versions:
     name: Versions
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -130,7 +128,6 @@ jobs:
   quality-format:
     name: Format
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -148,7 +145,6 @@ jobs:
   quality-i18n:
     name: i18n
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -204,7 +200,6 @@ jobs:
   quality-security:
     name: Security
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -235,7 +230,6 @@ jobs:
   quality-external-links:
     name: External Links
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true' && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'no-external-quality'))
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -251,7 +245,6 @@ jobs:
   quality-dkim-notify:
     name: DKIM Notify DNS
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     # Same opt-out label as external-links: both do live public-network
     # lookups, and both should respect `no-external-quality` on PRs that
     # intentionally bypass external checks (e.g., offline branch work).
@@ -279,7 +272,6 @@ jobs:
   quality-shell:
     name: Shell
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -297,7 +289,6 @@ jobs:
   quality-workflows:
     name: Workflows
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -309,7 +300,6 @@ jobs:
   quality-compose-env:
     name: Compose Env
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -318,7 +308,6 @@ jobs:
   quality-e2e-coverage:
     name: E2E Coverage
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -328,7 +317,6 @@ jobs:
   quality-audit-coverage:
     name: Audit Coverage
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -338,7 +326,6 @@ jobs:
   quality-config-migrations:
     name: Config Migrations
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -362,7 +349,6 @@ jobs:
   quality-editorconfig:
     name: EditorConfig
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -371,7 +357,6 @@ jobs:
   quality-content:
     name: Content Quality
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -388,7 +373,6 @@ jobs:
   quality-tutorial-parity:
     name: Tutorial Parity
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -416,7 +400,6 @@ jobs:
   quality-tutorial-casts:
     name: Tutorial Cast Hygiene
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -431,7 +414,6 @@ jobs:
   quality-locale-tutorial-assets:
     name: Locale Tutorial Assets
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -755,7 +737,6 @@ jobs:
   quality-submodule-branches:
     name: Submodule Branches
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -785,7 +766,6 @@ jobs:
   quality-attribution:
     name: Attribution
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
@@ -798,7 +778,6 @@ jobs:
   quality-pr-description:
     name: PR Description
     runs-on: ubuntu-slim
-    timeout-minutes: 30
     if: inputs.is_bot != 'true' && github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
