@@ -34,6 +34,9 @@ electron  # BLOCKER: v40.x breaks native module rebuild with nan library errors 
 # Cloudflare workers-types
 @cloudflare/workers-types  # BLOCKER: pinned to match wrangler peerOptional; npm latest tag trails behind wrangler's runtime expectation
 
+# Wrangler — bumping requires regenerating esbuild optional-peer platform entries across the account lockfile
+wrangler  # BLOCKER: minor bump pulls esbuild optional-peer changes that require cross-platform lockfile regeneration in the account submodule
+
 # react-syntax-highlighter
 react-syntax-highlighter  # BLOCKER: ^16.1.1 spec causes workspace-level install, losing transitive deps lowlight/highlight.js in hoisted tree
 
