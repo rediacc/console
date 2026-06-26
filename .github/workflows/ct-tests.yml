@@ -155,7 +155,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: .ci/scripts/tunnel/wait-for-artifact.sh --run-id ${{ github.run_id }} --artifact-name "tunnel-url-attempt-${{ github.run_attempt }},tunnel-url-pinggy-attempt-${{ github.run_attempt }}"
+        run: .ci/scripts/tunnel/wait-for-artifact.sh --run-id ${{ github.run_id }} --artifact-name "tunnel-url,tunnel-url-pinggy"
 
   infra-backend:
     name: Infra - Backend
@@ -292,7 +292,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: steps.tunnel.outputs.tunnel-url != ''
         with:
-          name: tunnel-url-attempt-${{ github.run_attempt }}
+          name: tunnel-url
           path: ${{ runner.temp }}/tunnel-url.txt
           retention-days: 3
           overwrite: true
@@ -305,7 +305,7 @@ jobs:
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         if: steps.pinggy-tunnel.outputs.tunnel-url != ''
         with:
-          name: tunnel-url-pinggy-attempt-${{ github.run_attempt }}
+          name: tunnel-url-pinggy
           path: ${{ runner.temp }}/pinggy-artifact/tunnel-url.txt
           retention-days: 3
           overwrite: true
@@ -494,7 +494,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }} --max-wait 300) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
@@ -502,7 +502,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }} --max-wait 300) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Select Working Tunnel
         id: tunnel
@@ -555,14 +555,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }} --max-wait 300) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }} --max-wait 300) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Select Working Tunnel
         id: tunnel
@@ -667,7 +667,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-attempt-${{ github.run_attempt }} --max-wait 300) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Download Pinggy Tunnel URL
         id: pinggy-tunnel
@@ -675,7 +675,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy-attempt-${{ github.run_attempt }} --max-wait 300) || true
+          TUNNEL_URL=$(.ci/scripts/tunnel/download-url.sh --run-id ${{ github.run_id }} --artifact-name tunnel-url-pinggy --max-wait 300) || true
           echo "tunnel-url=${TUNNEL_URL}" >> $GITHUB_OUTPUT
       - name: Select Working Tunnel
         id: tunnel
