@@ -144,17 +144,17 @@
     "eslint-plugin-playwright": "^2.10.4",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-regexp": "^3.1.0",
+    "eslint-plugin-regexp": "^3.1.1",
     "eslint-plugin-sonarjs": "^4.1.0",
     "eslint-plugin-unicorn": "^65.0.1",
     "globals": "^17.7.0",
     "jsdom": "^29.0.0",
-    "knip": "^6.20.0",
+    "knip": "^6.23.0",
     "lockfile-lint": "^5.0.0",
     "syncpack": "^15.3.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.62.0"
+    "typescript-eslint": "^8.62.1"
   },
   "engines": {
     "node": ">=22.12.0"
