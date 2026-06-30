@@ -195,7 +195,12 @@
     "astro": {
       "zod": "^3.25.76"
     },
-    "plist": "^3.1.1"
+    "plist": "^3.1.1",
+    "js-yaml": ">=4.2.0 <5.0.0",
+    "gray-matter": {
+      "js-yaml": "^3.15.0"
+    },
+    "linkify-it": ">=5.0.1"
   },
   "_overridesReasons": {
     "glob": "BLOCKER: force glob ^11 everywhere to avoid deprecated transitive glob <9 chain pulled in via old eslint/electron paths",
@@ -227,6 +232,9 @@
     "@grpc/proto-loader": "BLOCKER: nested override pins protobufjs ^7.5.6 inside the @grpc/proto-loader chain since proto-loader@0.8.x requires the 7.x major and cannot accept 8.x; pairs with the outer protobufjs >=7.5.6 override which handles the 8.x consumers",
     "zod": "BLOCKER: force ^4.4.3 across the whole tree so @modelcontextprotocol/sdk and the cli workspace share the same physical zod copy; without the override the SDK satisfies its 'zod: ^3.25 || ^4.0' range with the older zod@3.25.x that other transitives drag in, creating two zod installs whose v4/core $ZodType interfaces TS treats as distinct nominal types (build breaks at registerTool inputSchema)",
     "astro": "BLOCKER: astro's config validator (validateConfigRefined) was written against zod v3 and calls config.image.remotePatterns.length on the parsed shape; under the root zod ^4.4.3 override it gets undefined and the build crashes with 'Cannot read properties of undefined (reading length)'. Nest a zod ^3.25.76 override scoped to astro to match astro's own peer dep declaration. @astrojs/sitemap and @astrojs/rss already declare zod ^4 themselves so they stay on the root override.",
-    "plist": "BLOCKER: force ^3.1.1 across the whole tree because electron-builder ships an internal app-builder-lib/node_modules/plist@3.1.0 that calls DOMParser.parseFromString(xml) without a mimeType; @xmldom/xmldom >=0.9 requires the mimeType argument and throws 'the provided mimeType undefined is not valid' otherwise — observed on desktop mac-arm64 build. plist 3.1.1 passes 'text/xml' explicitly."
+    "plist": "BLOCKER: force ^3.1.1 across the whole tree because electron-builder ships an internal app-builder-lib/node_modules/plist@3.1.0 that calls DOMParser.parseFromString(xml) without a mimeType; @xmldom/xmldom >=0.9 requires the mimeType argument and throws 'the provided mimeType undefined is not valid' otherwise — observed on desktop mac-arm64 build. plist 3.1.1 passes 'text/xml' explicitly.",
+    "js-yaml": "BLOCKER: force >=4.2.0 <5.0.0 to include GHSA-h67p-54hq-rp68 (quadratic-complexity DoS via repeated merge-key aliases) fix while staying off the v5 major; electron-updater/@astrojs/markdown-remark/astro transitively pull js-yaml@4.1.1, and @astrojs/markdown-remark's `import yaml from \"js-yaml\"` default import breaks under js-yaml 5.x's ESM-only export shape (observed as a hard `astro build` SyntaxError)",
+    "gray-matter": "BLOCKER: nested override pins js-yaml ^3.15.0 inside the gray-matter chain since gray-matter's frontmatter parser is written against the js-yaml v3 API and cannot accept v4; GHSA-h67p-54hq-rp68 covers two disjoint ranges (>=4.0.0 <=4.1.1 AND <3.15.0), so the v3 line also needed bumping to its final 3.15.0 patch release",
+    "linkify-it": "BLOCKER: force >=5.0.1 to include GHSA-22p9-wv53-3rq4 (quadratic-complexity DoS in LinkifyIt#match) fix; markdown-it (via @marp-team/marpit) transitively pulls linkify-it@5.0.0"
   }
 }
