@@ -42,8 +42,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
 const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
 const TIMELINE_DIR = path.join(ROOT, 'src', 'data', 'tutorial-timeline');
+const AUDIO_DIR = path.join(ROOT, 'public', 'assets', 'tutorials', 'audio');
 const AUDIO_LANGUAGES = ['en', 'de', 'es', 'fr', 'ja', 'ru', 'zh', 'ko', 'pt', 'it'];
 const AUDIO_FALLBACK_LANGUAGES = ['ar', 'tr'];
+
+// The audio tree is synced to R2, not committed to git (see
+// .ci/docs/r2-media-setup.md #9) -- a clean checkout has none of it locally,
+// which is expected, not a bug. Only assert individual files exist when the
+// tree is present at all (e.g. after `./run.sh www tutorials generate` or
+// `.ci/scripts/deploy/sync-media-from-r2.sh --audio-only`); every other
+// check in this file (hash consistency, wordTimings structure, replay-range
+// sanity) still runs regardless, since none of that depends on the mp3
+// bytes actually being on disk.
+const AUDIO_TREE_PRESENT = fs.existsSync(AUDIO_DIR);
 
 const colors = {
   red: (s) => `\x1b[31m${s}\x1b[0m`,
@@ -208,7 +219,7 @@ function validatePair({ lang, transcriptPath, timelinePath, errors }) {
       !step.audioSrc.startsWith('/assets/tutorials/audio/')
     ) {
       pushError(errors, relativeTimeline, `steps[${i}].audioSrc invalid`, 'Regenerate timeline');
-    } else {
+    } else if (AUDIO_TREE_PRESENT) {
       const absAudio = path.join(ROOT, 'public', step.audioSrc.replace(/^\//, ''));
       if (!fs.existsSync(absAudio)) {
         pushError(
@@ -297,6 +308,17 @@ function main() {
     );
     console.log('='.repeat(60));
     process.exit(0);
+  }
+
+  if (!AUDIO_TREE_PRESENT) {
+    console.log(
+      colors.yellow(
+        'Audio tree not present locally (synced to R2, not committed to git -- see ' +
+          '.ci/docs/r2-media-setup.md #9). Skipping per-file existence checks; timeline ' +
+          'structure/hash/wordTimings checks still run. To check physical audio files too, run: ' +
+          '.ci/scripts/deploy/sync-media-from-r2.sh --audio-only'
+      )
+    );
   }
 
   for (const blockedLang of AUDIO_FALLBACK_LANGUAGES) {
