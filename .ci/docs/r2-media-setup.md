@@ -144,6 +144,27 @@ Also see `packages/www/public/_headers`: the CSP's `media-src` and
 `connect-src` directives must include `https://media.rediacc.com`, or the
 browser blocks the loads before CORS is even evaluated.
 
+**Gotcha — CDN cache doesn't retroactively apply new CORS rules.** Any file
+already fetched (even once, by a plain `curl` health-check with no `Origin`
+header) gets cached at the edge as a specific response — including the
+*absence* of `Access-Control-Allow-Origin` — for up to a year
+(`max-age=31536000`, no `vary: origin` on that stale entry). Applying the
+CORS policy in §5b only affects the R2 *origin* response for future cache
+misses; anything already `HIT`-cached keeps serving the pre-CORS response
+until it's purged or expires. After applying/changing the CORS policy,
+purge the CDN cache for the hostname:
+
+```bash
+curl -X POST "https://api.cloudflare.com/client/v4/zones/9e802649c143c9cefd811d8fd671d31c/purge_cache" \
+  -H "X-Auth-Key: $CF_GLOBAL_API_KEY" -H "X-Auth-Email: $CF_EMAIL" -H "Content-Type: application/json" \
+  --data '{"hosts": ["media.rediacc.com"]}'
+```
+
+Confirm with the same `curl -sI -H "Origin: ..."` check above — look for
+`cf-cache-status: MISS` (first hit after purge) or `HIT` *with*
+`access-control-allow-origin` present and `vary: origin` set (subsequent
+hits, correctly cached this time).
+
 ## 6. Syncing media
 
 Use `.ci/scripts/deploy/sync-media-to-r2.sh` — wraps `aws s3 sync`, which is
