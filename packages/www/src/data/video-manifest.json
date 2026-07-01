@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-01T13:41:51.622Z",
+  "generatedAt": "2026-07-01T15:34:32.003Z",
   "baseUrl": "https://media.rediacc.com",
   "tutorials": {
     "tutorial-add-server": {
@@ -1482,8 +1482,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-delta-transfer.en.vtt",
-          "size": 3143,
-          "sha256": "1d5dff8b0c741670a6ca480805a1b5d0e27964c2d05f42e07c71c47583ab4d82"
+          "size": 2621,
+          "sha256": "3953c644da3631eb2fc0ab8059df0e81660d362fbb9b51923b70567484bad692"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-delta-transfer.en.chapters.vtt",
@@ -1492,8 +1492,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-delta-transfer.en.words.json",
-          "size": 22079,
-          "sha256": "3e57eaccacdf5c4fd7bb5becf1e4e1d9fa42cb2ebee462398f1b2b3f3d99306b"
+          "size": 13839,
+          "sha256": "bb534b581f69fa256b0167c4cc9e0e4334e9a63452b68d3c9fdedcad0cc89c48"
         }
       },
       "es": {
