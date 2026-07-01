@@ -18,9 +18,139 @@
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-01.05800be7.mp3",
       "textHash": "05800be7474114c9af193cdb81a31695d21c4e4877fadcd63f3403455ba6491a",
       "audioDurationSec": 4.832653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.32,
+          "startChar": 5,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.12,
+          "startChar": 9,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 20,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.52,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 28,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.32,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 40,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.28,
+          "startChar": 47,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.6,
+          "startChar": 51,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.0,
+          "startChar": 55,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.08,
+          "startChar": 62,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.4,
+          "startChar": 65,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.72,
+          "startChar": 73,
+          "endChar": 78
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-01-after.c03bbb83.mp3",
       "afterAudioDurationSec": 2.429388,
-      "afterTextHash": "c03bbb836cf21f5981b23a5158b3151566b8a23c98466ea076cc086d2d0edfad"
+      "afterTextHash": "c03bbb836cf21f5981b23a5158b3151566b8a23c98466ea076cc086d2d0edfad",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.88,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.68,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.76,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.32,
+          "startChar": 23,
+          "endChar": 29
+        }
+      ]
     },
     {
       "id": "tutorial-storage-management-02",
@@ -31,9 +161,145 @@
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-02.869f86d4.mp3",
       "textHash": "869f86d44259c23b6974bec0ce486de84f3cfa8dfdf913ac941c2dead3f70d42",
       "audioDurationSec": 8.986122,
+      "wordTimings": [
+        {
+          "startSec": 0.32,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.52,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.08,
+          "startChar": 20,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.64,
+          "startChar": 30,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 40,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 48,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 52,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.48,
+          "startChar": 59,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.72,
+          "startChar": 66,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.8,
+          "startChar": 72,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.28,
+          "startChar": 76,
+          "endChar": 86
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.52,
+          "startChar": 87,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 5.92,
+          "startChar": 92,
+          "endChar": 99
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.8,
+          "startChar": 102,
+          "endChar": 106
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.52,
+          "startChar": 107,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.4,
+          "startChar": 117,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.96,
+          "startChar": 122,
+          "endChar": 129
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-02-after.dc47c4b2.mp3",
       "afterAudioDurationSec": 3.160816,
-      "afterTextHash": "dc47c4b2d3c9d2ffacb6e85746d7cde67c2439876b0c72b0f687ba3e125652fc"
+      "afterTextHash": "dc47c4b2d3c9d2ffacb6e85746d7cde67c2439876b0c72b0f687ba3e125652fc",
+      "afterWordTimings": [
+        {
+          "startSec": 0.4,
+          "endSec": 0.96,
+          "startChar": 7,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 17,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 29,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.12,
+          "startChar": 32,
+          "endChar": 40
+        }
+      ]
     },
     {
       "id": "tutorial-storage-management-03",
@@ -44,9 +310,79 @@
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-03.5f7bd3fe.mp3",
       "textHash": "5f7bd3fe3d5768cdbae54dc1f9a4597876f88a3faa7abd195d9328fae0ba50ca",
       "audioDurationSec": 4.04898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 2.24,
+          "startChar": 20,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.8,
+          "startChar": 25,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.52,
+          "startChar": 40,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.0,
+          "startChar": 44,
+          "endChar": 48
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-03-after.ecfc8134.mp3",
       "afterAudioDurationSec": 2.115918,
-      "afterTextHash": "ecfc8134419117af31657698e9b2e0b94aa1ffb82f66219d3940c7dea450e4e1"
+      "afterTextHash": "ecfc8134419117af31657698e9b2e0b94aa1ffb82f66219d3940c7dea450e4e1",
+      "afterWordTimings": [
+        {
+          "startSec": 0.16,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 1.12,
+          "startChar": 3,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.52,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.0,
+          "startChar": 23,
+          "endChar": 28
+        }
+      ]
     },
     {
       "id": "tutorial-storage-management-04",
@@ -57,9 +393,223 @@
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-04.00edc75b.mp3",
       "textHash": "00edc75b87436fc77addf6e6c31b54feda8d9cdbb8f49a2655a9f5ff52b00f34",
       "audioDurationSec": 9.560816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.76,
+          "startChar": 14,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.48,
+          "startChar": 25,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.56,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.8,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.28,
+          "startChar": 40,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.84,
+          "startChar": 47,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.32,
+          "startChar": 51,
+          "endChar": 56
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.64,
+          "startChar": 58,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 62,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.12,
+          "startChar": 67,
+          "endChar": 71
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.36,
+          "startChar": 72,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 76,
+          "endChar": 79
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.68,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.08,
+          "startChar": 84,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.4,
+          "startChar": 90,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.64,
+          "startChar": 95,
+          "endChar": 98
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.28,
+          "startChar": 100,
+          "endChar": 107
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.68,
+          "startChar": 108,
+          "endChar": 114
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.84,
+          "startChar": 115,
+          "endChar": 119
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.4,
+          "startChar": 120,
+          "endChar": 128
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.96,
+          "startChar": 129,
+          "endChar": 135
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.12,
+          "startChar": 136,
+          "endChar": 139
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.44,
+          "startChar": 140,
+          "endChar": 145
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-04-after.93a49280.mp3",
       "afterAudioDurationSec": 4.440816,
-      "afterTextHash": "93a49280a9ace966692f291bd5f9b6aa23df7788065be8a09b3085c8847af559"
+      "afterTextHash": "93a49280a9ace966692f291bd5f9b6aa23df7788065be8a09b3085c8847af559",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.72,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.2,
+          "startChar": 9,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.52,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.08,
+          "startChar": 20,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.96,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.6,
+          "startChar": 30,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 42,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.32,
+          "startChar": 45,
+          "endChar": 51
+        }
+      ]
     },
     {
       "id": "tutorial-storage-management-05",
@@ -70,9 +620,157 @@
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-05.edd7a861.mp3",
       "textHash": "edd7a861b929a9e1697753a9b7fd179132b1a78833912585a093bb864ac9577b",
       "audioDurationSec": 6.60898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.96,
+          "startChar": 11,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 17,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.68,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 29,
+          "endChar": 31
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 1.92,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.48,
+          "startChar": 36,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.88,
+          "startChar": 46,
+          "endChar": 50
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.52,
+          "startChar": 52,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.24,
+          "startChar": 60,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.32,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.4,
+          "startChar": 68,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.8,
+          "startChar": 72,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 77,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.16,
+          "startChar": 82,
+          "endChar": 88
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.56,
+          "startChar": 89,
+          "endChar": 95
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-05-after.7cd3e8ea.mp3",
       "afterAudioDurationSec": 2.847347,
-      "afterTextHash": "7cd3e8ea8c9087679e6aea8aefd97fc00721a74c17a6fe9b8041b4f8bd4ce505"
+      "afterTextHash": "7cd3e8ea8c9087679e6aea8aefd97fc00721a74c17a6fe9b8041b4f8bd4ce505",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.52,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.84,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.8,
+          "startChar": 38,
+          "endChar": 43
+        }
+      ]
     },
     {
       "id": "tutorial-storage-management-06",
@@ -83,9 +781,175 @@
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-06.14e859d4.mp3",
       "textHash": "14e859d4960e0259636a044f2f616babe0c30c24cdbf099de49500af96081862",
       "audioDurationSec": 7.314286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 9,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.2,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 23,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 29,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 40,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 48,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.08,
+          "startChar": 58,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.48,
+          "startChar": 68,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 73,
+          "endChar": 80
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.04,
+          "startChar": 81,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.6,
+          "startChar": 85,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.16,
+          "startChar": 93,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.72,
+          "startChar": 98,
+          "endChar": 107
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.28,
+          "startChar": 108,
+          "endChar": 113
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-06-after.ab98cba3.mp3",
       "afterAudioDurationSec": 4.127347,
-      "afterTextHash": "ab98cba39af8857e97683d7a03a16b3e04bbf580e784c5e1598d1147570e4b65"
+      "afterTextHash": "ab98cba39af8857e97683d7a03a16b3e04bbf580e784c5e1598d1147570e4b65",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.2,
+          "startChar": 9,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.08,
+          "startChar": 22,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.96,
+          "startChar": 33,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.52,
+          "startChar": 43,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.0,
+          "startChar": 50,
+          "endChar": 52
+        }
+      ]
     },
     {
       "id": "tutorial-storage-management-07",
@@ -96,9 +960,121 @@
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-07.5dec45f1.mp3",
       "textHash": "5dec45f16d1ee77f174481806b882dfd8e1b76aa453da54248f6096b02bafe92",
       "audioDurationSec": 4.754286,
+      "wordTimings": [
+        {
+          "startSec": 0.24,
+          "endSec": 0.32,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.04,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.68,
+          "startChar": 24,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.24,
+          "startChar": 28,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 36,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.8,
+          "startChar": 39,
+          "endChar": 44
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 45,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.0,
+          "startChar": 56,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 61,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.64,
+          "startChar": 66,
+          "endChar": 74
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-07-after.dc320e13.mp3",
       "afterAudioDurationSec": 3.004082,
-      "afterTextHash": "dc320e13978b260bc4da256a11a54d20208996d70ccc44d720fcba82dfd37547"
+      "afterTextHash": "dc320e13978b260bc4da256a11a54d20208996d70ccc44d720fcba82dfd37547",
+      "afterWordTimings": [
+        {
+          "startSec": 0.0,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.28,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.08,
+          "startChar": 21,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 30,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.88,
+          "startChar": 34,
+          "endChar": 41
+        }
+      ]
     },
     {
       "id": "tutorial-storage-management-08",
@@ -109,9 +1085,193 @@
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-08.33978ee3.mp3",
       "textHash": "33978ee327342625b608cdd9932749e47ab4a91218443ac10184bbef8819d073",
       "audioDurationSec": 9.795918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.88,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 13,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 18,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.44,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.92,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 36,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.2,
+          "startChar": 44,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 51,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.16,
+          "startChar": 57,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.64,
+          "startChar": 63,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.2,
+          "startChar": 70,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 77,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.24,
+          "startChar": 81,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.72,
+          "startChar": 87,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 91,
+          "endChar": 94
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.28,
+          "startChar": 95,
+          "endChar": 99
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 8.08,
+          "startChar": 100,
+          "endChar": 113
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.64,
+          "startChar": 114,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.04,
+          "startChar": 122,
+          "endChar": 124
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.52,
+          "startChar": 125,
+          "endChar": 131
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.76,
+          "startChar": 132,
+          "endChar": 135
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/tutorial-storage-management-08-after.baeb156e.mp3",
       "afterAudioDurationSec": 3.787755,
-      "afterTextHash": "baeb156e8776ab556d921b5b83e01e5d0138d00ab01b53283bc72b6932646a11"
+      "afterTextHash": "baeb156e8776ab556d921b5b83e01e5d0138d00ab01b53283bc72b6932646a11",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.6,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.32,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 23,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.04,
+          "startChar": 25,
+          "endChar": 32
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.28,
+          "startChar": 33,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.68,
+          "startChar": 38,
+          "endChar": 44
+        }
+      ]
     }
   ],
   "narrationAudio": [
@@ -120,21 +1280,729 @@
       "textHash": "75050372b7622079cb26790a298cd5b6b5f598f6c623b6aa26e640d4885d54f6",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/intro.75050372.mp3",
       "narrationText": "¡Bienvenido al tutorial final! Vamos a asegurarnos de que nunca te quedes sin disco. Vamos a expandir un repository completo en línea, devolver el espacio eliminado al pool, y luego enseñarle a la máquina a hacer ambas cosas automáticamente.",
-      "audioDurationSec": 15.647347
+      "audioDurationSec": 15.647347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.72,
+          "startChar": 1,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.88,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.44,
+          "startChar": 15,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.08,
+          "startChar": 24,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.8,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 37,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.6,
+          "startChar": 39,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.84,
+          "startChar": 51,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 58,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.56,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 67,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.04,
+          "startChar": 74,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
+          "startChar": 78,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.24,
+          "startChar": 85,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.8,
+          "startChar": 93,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 6.96,
+          "startChar": 102,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.6,
+          "startChar": 105,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.08,
+          "startChar": 116,
+          "endChar": 124
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.24,
+          "startChar": 125,
+          "endChar": 127
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.64,
+          "startChar": 128,
+          "endChar": 133
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.52,
+          "startChar": 135,
+          "endChar": 143
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.68,
+          "startChar": 144,
+          "endChar": 146
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 10.16,
+          "startChar": 147,
+          "endChar": 154
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.72,
+          "startChar": 155,
+          "endChar": 164
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 10.8,
+          "startChar": 165,
+          "endChar": 167
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.2,
+          "startChar": 168,
+          "endChar": 172
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.6,
+          "startChar": 174,
+          "endChar": 175
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.92,
+          "startChar": 176,
+          "endChar": 181
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.56,
+          "startChar": 182,
+          "endChar": 191
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 12.64,
+          "startChar": 192,
+          "endChar": 193
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 12.72,
+          "startChar": 194,
+          "endChar": 196
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.2,
+          "startChar": 197,
+          "endChar": 204
+        },
+        {
+          "startSec": 13.28,
+          "endSec": 13.44,
+          "startChar": 205,
+          "endChar": 206
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.76,
+          "startChar": 207,
+          "endChar": 212
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.08,
+          "startChar": 213,
+          "endChar": 218
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.56,
+          "startChar": 219,
+          "endChar": 224
+        },
+        {
+          "startSec": 14.56,
+          "endSec": 15.6,
+          "startChar": 225,
+          "endChar": 240
+        }
+      ]
     },
     {
       "id": "pool-model",
       "textHash": "b487ac8437acaf35c25e41b451e29f32798e9c3b531565fedc8d79ca952f484e",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/pool-model.b487ac84.mp3",
       "narrationText": "Este es el modelo. Cada repository es un archivo en un pool de datastore compartido. Los repositories pueden crecer en línea mientras los containers siguen ejecutándose. Pero eliminar datos dentro de un repo no libera nada por sí solo. Trim es lo que devuelve los bloques al pool. Y una política automatiza ambas cosas.",
-      "audioDurationSec": 26.122449
+      "audioDurationSec": 26.122449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.64,
+          "startChar": 8,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.12,
+          "startChar": 11,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.92,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.88,
+          "startChar": 24,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.12,
+          "startChar": 35,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.36,
+          "startChar": 38,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.92,
+          "startChar": 41,
+          "endChar": 48
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.08,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 4.08,
+          "endSec": 4.32,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 55,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.88,
+          "startChar": 60,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.52,
+          "startChar": 63,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.24,
+          "startChar": 73,
+          "endChar": 83
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.12,
+          "startChar": 85,
+          "endChar": 88
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 8.08,
+          "startChar": 89,
+          "endChar": 101
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.56,
+          "startChar": 102,
+          "endChar": 108
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.36,
+          "startChar": 116,
+          "endChar": 118
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.76,
+          "startChar": 119,
+          "endChar": 124
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.8,
+          "startChar": 125,
+          "endChar": 133
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.04,
+          "startChar": 134,
+          "endChar": 137
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.84,
+          "startChar": 138,
+          "endChar": 148
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.32,
+          "startChar": 149,
+          "endChar": 155
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 13.28,
+          "startChar": 156,
+          "endChar": 168
+        },
+        {
+          "startSec": 14.16,
+          "endSec": 14.4,
+          "startChar": 170,
+          "endChar": 174
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 15.04,
+          "startChar": 175,
+          "endChar": 183
+        },
+        {
+          "startSec": 15.04,
+          "endSec": 15.6,
+          "startChar": 184,
+          "endChar": 189
+        },
+        {
+          "startSec": 15.6,
+          "endSec": 16.08,
+          "startChar": 190,
+          "endChar": 196
+        },
+        {
+          "startSec": 16.08,
+          "endSec": 16.24,
+          "startChar": 197,
+          "endChar": 199
+        },
+        {
+          "startSec": 16.24,
+          "endSec": 16.4,
+          "startChar": 200,
+          "endChar": 202
+        },
+        {
+          "startSec": 16.4,
+          "endSec": 16.96,
+          "startChar": 203,
+          "endChar": 207
+        },
+        {
+          "startSec": 16.96,
+          "endSec": 17.2,
+          "startChar": 208,
+          "endChar": 210
+        },
+        {
+          "startSec": 17.2,
+          "endSec": 17.6,
+          "startChar": 211,
+          "endChar": 217
+        },
+        {
+          "startSec": 17.6,
+          "endSec": 18.0,
+          "startChar": 218,
+          "endChar": 222
+        },
+        {
+          "startSec": 18.0,
+          "endSec": 18.32,
+          "startChar": 223,
+          "endChar": 226
+        },
+        {
+          "startSec": 18.32,
+          "endSec": 18.56,
+          "startChar": 227,
+          "endChar": 229
+        },
+        {
+          "startSec": 18.56,
+          "endSec": 18.96,
+          "startChar": 230,
+          "endChar": 234
+        },
+        {
+          "startSec": 20.16,
+          "endSec": 20.48,
+          "startChar": 236,
+          "endChar": 240
+        },
+        {
+          "startSec": 20.48,
+          "endSec": 20.8,
+          "startChar": 241,
+          "endChar": 243
+        },
+        {
+          "startSec": 20.8,
+          "endSec": 20.96,
+          "startChar": 244,
+          "endChar": 246
+        },
+        {
+          "startSec": 20.96,
+          "endSec": 21.28,
+          "startChar": 247,
+          "endChar": 250
+        },
+        {
+          "startSec": 21.28,
+          "endSec": 21.76,
+          "startChar": 251,
+          "endChar": 259
+        },
+        {
+          "startSec": 21.76,
+          "endSec": 22.0,
+          "startChar": 260,
+          "endChar": 263
+        },
+        {
+          "startSec": 22.0,
+          "endSec": 22.48,
+          "startChar": 264,
+          "endChar": 271
+        },
+        {
+          "startSec": 22.48,
+          "endSec": 22.64,
+          "startChar": 272,
+          "endChar": 274
+        },
+        {
+          "startSec": 22.64,
+          "endSec": 23.04,
+          "startChar": 275,
+          "endChar": 279
+        },
+        {
+          "startSec": 23.44,
+          "endSec": 23.52,
+          "startChar": 281,
+          "endChar": 282
+        },
+        {
+          "startSec": 23.52,
+          "endSec": 23.76,
+          "startChar": 283,
+          "endChar": 286
+        },
+        {
+          "startSec": 23.76,
+          "endSec": 24.24,
+          "startChar": 287,
+          "endChar": 295
+        },
+        {
+          "startSec": 24.64,
+          "endSec": 25.28,
+          "startChar": 296,
+          "endChar": 306
+        },
+        {
+          "startSec": 25.28,
+          "endSec": 25.6,
+          "startChar": 307,
+          "endChar": 312
+        },
+        {
+          "startSec": 25.6,
+          "endSec": 26.0,
+          "startChar": 313,
+          "endChar": 318
+        }
+      ]
     },
     {
       "id": "next-tutorial",
       "textHash": "6020a711bda82f2e7a22a69fe19134a6ee999fea6d3e409969165961f0eef874",
       "audioSrc": "/assets/tutorials/audio/es/tutorial-storage-management/next-tutorial.6020a711.mp3",
       "narrationText": "¡Y eso es todo en la serie! Dieciocho tutoriales, desde la instalación hasta el almacenamiento en piloto automático. Tus servidores son tuyos de nuevo. ¡Gracias por ver!",
-      "audioDurationSec": 11.075918
+      "audioDurationSec": 11.075918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 1,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 3,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 7,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 10,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.04,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 18,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.6,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.2,
+          "startChar": 38,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.6,
+          "startChar": 50,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 56,
+          "endChar": 58
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.48,
+          "startChar": 59,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 4.8,
+          "startChar": 71,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 77,
+          "endChar": 79
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.68,
+          "startChar": 80,
+          "endChar": 94
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.92,
+          "startChar": 95,
+          "endChar": 97
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.16,
+          "startChar": 98,
+          "endChar": 104
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.88,
+          "startChar": 105,
+          "endChar": 115
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.52,
+          "startChar": 117,
+          "endChar": 120
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.32,
+          "startChar": 121,
+          "endChar": 131
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.8,
+          "startChar": 132,
+          "endChar": 135
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.2,
+          "startChar": 136,
+          "endChar": 141
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.28,
+          "startChar": 142,
+          "endChar": 144
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.68,
+          "startChar": 145,
+          "endChar": 150
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.56,
+          "startChar": 153,
+          "endChar": 160
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.8,
+          "startChar": 161,
+          "endChar": 164
+        },
+        {
+          "startSec": 10.8,
+          "endSec": 11.04,
+          "startChar": 165,
+          "endChar": 168
+        }
+      ]
     }
   ]
 }

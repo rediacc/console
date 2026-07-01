@@ -18,9 +18,139 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-01.a2636a4a.mp3",
       "textHash": "a2636a4a646946bcb342235e1f3db6a628354cfa6fd108400ae9225cc7a0d078",
       "audioDurationSec": 7.967347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 5,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.16,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.72,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.12,
+          "startChar": 28,
+          "endChar": 29
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 4.16,
+          "startChar": 30,
+          "endChar": 40
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.4,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.48,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.04,
+          "startChar": 48,
+          "endChar": 50
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.52,
+          "startChar": 50,
+          "endChar": 55
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.16,
+          "startChar": 56,
+          "endChar": 65
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.12,
+          "startChar": 67,
+          "endChar": 74
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.36,
+          "startChar": 75,
+          "endChar": 78
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.84,
+          "startChar": 79,
+          "endChar": 86
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-01-after.d5ae0177.mp3",
       "afterAudioDurationSec": 2.272653,
-      "afterTextHash": "d5ae017794cbb7d7e455a45d0a51b694cd8f3e8ed4546c82145cf36d7855ce2a"
+      "afterTextHash": "d5ae017794cbb7d7e455a45d0a51b694cd8f3e8ed4546c82145cf36d7855ce2a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.04,
+          "startChar": 9,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.68,
+          "startChar": 15,
+          "endChar": 21
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.24,
+          "startChar": 26,
+          "endChar": 28
+        }
+      ]
     },
     {
       "id": "tutorial-fork-isolation-02",
@@ -31,9 +161,235 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-02.4e3625a4.mp3",
       "textHash": "4e3625a41e9ade01f2616bc98f77faac12642b1fd721e997c137429306b38700",
       "audioDurationSec": 9.560816,
+      "wordTimings": [
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 33,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.8,
+          "startChar": 39,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.44,
+          "startChar": 47,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.52,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 4.0,
+          "startChar": 61,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 67,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 74,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.6,
+          "startChar": 82,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.84,
+          "startChar": 85,
+          "endChar": 89
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.0,
+          "startChar": 90,
+          "endChar": 92
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.08,
+          "startChar": 93,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.64,
+          "startChar": 97,
+          "endChar": 107
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.04,
+          "startChar": 108,
+          "endChar": 113
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.52,
+          "startChar": 115,
+          "endChar": 120
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.84,
+          "startChar": 121,
+          "endChar": 127
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.16,
+          "startChar": 128,
+          "endChar": 134
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.72,
+          "startChar": 135,
+          "endChar": 143
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 8.8,
+          "startChar": 144,
+          "endChar": 146
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.88,
+          "startChar": 147,
+          "endChar": 150
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.52,
+          "startChar": 151,
+          "endChar": 161
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-02-after.c2c2354b.mp3",
       "afterAudioDurationSec": 6.530612,
-      "afterTextHash": "c2c2354b4472b0270a866f21c88f69dd9e5be32943b3738c41b74427ce150670"
+      "afterTextHash": "c2c2354b4472b0270a866f21c88f69dd9e5be32943b3738c41b74427ce150670",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.36,
+          "startChar": 12,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 31,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.88,
+          "startChar": 38,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.44,
+          "startChar": 44,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 53,
+          "endChar": 56
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 57,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.88,
+          "startChar": 64,
+          "endChar": 71
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.36,
+          "startChar": 73,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.6,
+          "startChar": 77,
+          "endChar": 81
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.92,
+          "startChar": 82,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.16,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.4,
+          "startChar": 92,
+          "endChar": 98
+        }
+      ]
     },
     {
       "id": "tutorial-fork-isolation-03",
@@ -44,9 +400,133 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-03.ef21da1c.mp3",
       "textHash": "ef21da1c52e9db0870054d3b9ad5504d69be1e2bc5153b8226d37209954bb67e",
       "audioDurationSec": 6.765714,
+      "wordTimings": [
+        {
+          "startSec": 1.04,
+          "endSec": 1.36,
+          "startChar": 17,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.4,
+          "startChar": 26,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.64,
+          "startChar": 35,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.72,
+          "startChar": 39,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.36,
+          "startChar": 43,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 55,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 60,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 65,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.64,
+          "startChar": 69,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.28,
+          "startChar": 73,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.84,
+          "startChar": 85,
+          "endChar": 92
+        },
+        {
+          "startSec": 5.92,
+          "endSec": 6.08,
+          "startChar": 94,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 98,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.64,
+          "startChar": 103,
+          "endChar": 107
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-03-after.adad9af5.mp3",
       "afterAudioDurationSec": 3.239184,
-      "afterTextHash": "adad9af5ab851bf08674085caea54324def8aca4788ea312c1a4e0c6f7c762f4"
+      "afterTextHash": "adad9af5ab851bf08674085caea54324def8aca4788ea312c1a4e0c6f7c762f4",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.12,
+          "startChar": 8,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.68,
+          "startChar": 18,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.56,
+          "startChar": 23,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.2,
+          "startChar": 33,
+          "endChar": 39
+        }
+      ]
     },
     {
       "id": "tutorial-fork-isolation-04",
@@ -57,9 +537,169 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-04.5eee7a7f.mp3",
       "textHash": "5eee7a7f529dcaea0c960477435b36d94974c2998b0af5db1f98442d6267b1e3",
       "audioDurationSec": 8.672653,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 20,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.4,
+          "startChar": 27,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.96,
+          "startChar": 31,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.84,
+          "startChar": 37,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.32,
+          "startChar": 48,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.04,
+          "startChar": 56,
+          "endChar": 63
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.12,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 67,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.92,
+          "startChar": 73,
+          "endChar": 77
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.48,
+          "startChar": 80,
+          "endChar": 83
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 7.12,
+          "startChar": 84,
+          "endChar": 92
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.52,
+          "startChar": 93,
+          "endChar": 98
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.76,
+          "startChar": 99,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.84,
+          "startChar": 104,
+          "endChar": 106
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.64,
+          "startChar": 107,
+          "endChar": 114
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/tutorial-fork-isolation-04-after.6fda6dbc.mp3",
       "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "6fda6dbc9b5315fd239f4087ed9da0be90a8669fb1120c0b6b8742d574804847"
+      "afterTextHash": "6fda6dbc9b5315fd239f4087ed9da0be90a8669fb1120c0b6b8742d574804847",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 8
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.6,
+          "startChar": 9,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 26,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.56,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 37,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 44,
+          "endChar": 56
+        }
+      ]
     }
   ],
   "narrationAudio": [
@@ -68,42 +708,1068 @@
       "textHash": "cb0ac1b390893708a8def4416ccf85ba102dd855c2fd711f717a14b21da62734",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/intro.cb0ac1b3.mp3",
       "narrationText": "Willkommen zurück! Beim letzten Mal hast du die fork-Befehle gesehen. Jetzt schauen wir uns an, was sie wirklich bedeuten: eine Live-Datenbankapp, in Sekunden kopiert, frei bearbeitbar, während das Original nichts davon bemerkt.",
-      "audioDurationSec": 15.725714
+      "audioDurationSec": 15.725714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.12,
+          "startChar": 11,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.24,
+          "startChar": 24,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 32,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.8,
+          "startChar": 36,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.88,
+          "startChar": 41,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.92,
+          "startChar": 48,
+          "endChar": 60
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.48,
+          "startChar": 61,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 5.12,
+          "startChar": 70,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.44,
+          "startChar": 76,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.6,
+          "startChar": 84,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.84,
+          "startChar": 88,
+          "endChar": 91
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.08,
+          "startChar": 92,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.16,
+          "endSec": 6.32,
+          "startChar": 96,
+          "endChar": 99
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.56,
+          "startChar": 100,
+          "endChar": 103
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.04,
+          "startChar": 104,
+          "endChar": 112
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.76,
+          "startChar": 113,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.4,
+          "startChar": 123,
+          "endChar": 127
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 10.16,
+          "startChar": 128,
+          "endChar": 146
+        },
+        {
+          "startSec": 10.16,
+          "endSec": 10.72,
+          "startChar": 150,
+          "endChar": 158
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.28,
+          "startChar": 159,
+          "endChar": 166
+        },
+        {
+          "startSec": 11.52,
+          "endSec": 11.92,
+          "startChar": 168,
+          "endChar": 172
+        },
+        {
+          "startSec": 11.92,
+          "endSec": 12.88,
+          "startChar": 173,
+          "endChar": 184
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.44,
+          "startChar": 186,
+          "endChar": 193
+        },
+        {
+          "startSec": 13.44,
+          "endSec": 13.6,
+          "startChar": 194,
+          "endChar": 197
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 14.32,
+          "startChar": 198,
+          "endChar": 206
+        },
+        {
+          "startSec": 14.4,
+          "endSec": 14.72,
+          "startChar": 207,
+          "endChar": 213
+        },
+        {
+          "startSec": 14.8,
+          "endSec": 15.2,
+          "startChar": 214,
+          "endChar": 219
+        },
+        {
+          "startSec": 15.2,
+          "endSec": 15.68,
+          "startChar": 220,
+          "endChar": 227
+        }
+      ]
     },
     {
       "id": "what-is-a-fork",
       "textHash": "efeedba91bb27601bffa5a4af6191a0e011962937cc24268241096775ad075de",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/what-is-a-fork.efeedba9.mp3",
       "narrationText": "Das ist die Ausgangslage: ein echtes PostgreSQL mit einer pgAdmin-Oberfläche darüber, live auf dem Server. Ein fork ist ein sofortiger Copy-on-Write-Zwilling von allem. Gleiche Daten bei der Geburt, danach völlig getrennte Leben.",
-      "audioDurationSec": 16.770612
+      "audioDurationSec": 16.770612,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.48,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.52,
+          "startChar": 12,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 26,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 30,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.68,
+          "startChar": 37,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 48,
+          "endChar": 51
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 52,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.96,
+          "startChar": 58,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.36,
+          "startChar": 60,
+          "endChar": 65
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 6.0,
+          "startChar": 66,
+          "endChar": 76
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.48,
+          "startChar": 77,
+          "endChar": 84
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.28,
+          "startChar": 86,
+          "endChar": 90
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.44,
+          "startChar": 91,
+          "endChar": 94
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.6,
+          "startChar": 95,
+          "endChar": 98
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.16,
+          "startChar": 99,
+          "endChar": 105
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 8.88,
+          "startChar": 107,
+          "endChar": 110
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.28,
+          "startChar": 111,
+          "endChar": 115
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.44,
+          "startChar": 116,
+          "endChar": 119
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.6,
+          "startChar": 120,
+          "endChar": 123
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.4,
+          "startChar": 124,
+          "endChar": 134
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.88,
+          "startChar": 135,
+          "endChar": 139
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.24,
+          "startChar": 158,
+          "endChar": 161
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.04,
+          "startChar": 169,
+          "endChar": 176
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.52,
+          "startChar": 177,
+          "endChar": 182
+        },
+        {
+          "startSec": 13.52,
+          "endSec": 13.68,
+          "startChar": 183,
+          "endChar": 186
+        },
+        {
+          "startSec": 13.68,
+          "endSec": 13.76,
+          "startChar": 187,
+          "endChar": 190
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.24,
+          "startChar": 191,
+          "endChar": 197
+        },
+        {
+          "startSec": 14.64,
+          "endSec": 15.12,
+          "startChar": 199,
+          "endChar": 205
+        },
+        {
+          "startSec": 15.28,
+          "endSec": 15.68,
+          "startChar": 206,
+          "endChar": 212
+        },
+        {
+          "startSec": 15.68,
+          "endSec": 16.16,
+          "startChar": 213,
+          "endChar": 222
+        },
+        {
+          "startSec": 16.16,
+          "endSec": 16.64,
+          "startChar": 223,
+          "endChar": 228
+        }
+      ]
     },
     {
       "id": "grand-pgadmin",
       "textHash": "056e64cf391c08bf380d6ba5e87326d3279b49f4a1bff43949a698b8bc7d9cc5",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/grand-pgadmin.056e64cf.mp3",
       "narrationText": "Das ist das Original, im Browser. pgAdmin fragt nach einem Login, weil es die Produktionskopie ist, und Produktion bleibt geschützt.",
-      "audioDurationSec": 8.75102
+      "audioDurationSec": 8.75102,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.48,
+          "startChar": 8,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.2,
+          "startChar": 12,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.6,
+          "startChar": 22,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.16,
+          "startChar": 25,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.96,
+          "startChar": 34,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.52,
+          "startChar": 36,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 42,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 48,
+          "endChar": 52
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 53,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.8,
+          "startChar": 59,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.04,
+          "endSec": 5.2,
+          "startChar": 66,
+          "endChar": 70
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.36,
+          "startChar": 71,
+          "endChar": 73
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.44,
+          "startChar": 74,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 6.4,
+          "startChar": 78,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.72,
+          "startChar": 95,
+          "endChar": 98
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.12,
+          "startChar": 100,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.84,
+          "startChar": 104,
+          "endChar": 114
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.16,
+          "startChar": 115,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.64,
+          "startChar": 122,
+          "endChar": 131
+        }
+      ]
     },
     {
       "id": "fork-pgadmin",
       "textHash": "8c274440041efdc9392e033751772a1f6fafea609d991f88289aaae5522b2f17",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/fork-pgadmin.8c274440.mp3",
       "narrationText": "Und hier ist das pgAdmin des forks. Diesmal kein Login: forks sind wegwerfbare sandboxes, also tritt die Schranke zur Seite. Gleiche Tabellen, gleiche Zeilen, aber ein eigenes Universum.",
-      "audioDurationSec": 13.479184
+      "audioDurationSec": 13.479184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 4,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 9,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.72,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.28,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.92,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.16,
+          "startChar": 25,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.8,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 36,
+          "endChar": 43
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.84,
+          "startChar": 44,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.32,
+          "startChar": 49,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.2,
+          "startChar": 56,
+          "endChar": 61
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.36,
+          "startChar": 62,
+          "endChar": 66
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 6.32,
+          "startChar": 67,
+          "endChar": 78
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 7.28,
+          "startChar": 79,
+          "endChar": 88
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.6,
+          "startChar": 90,
+          "endChar": 94
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 7.84,
+          "startChar": 95,
+          "endChar": 100
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 7.92,
+          "startChar": 101,
+          "endChar": 104
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.4,
+          "startChar": 105,
+          "endChar": 113
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.56,
+          "startChar": 114,
+          "endChar": 117
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 9.04,
+          "startChar": 118,
+          "endChar": 123
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.76,
+          "startChar": 125,
+          "endChar": 132
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.4,
+          "startChar": 133,
+          "endChar": 141
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.88,
+          "startChar": 143,
+          "endChar": 150
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.44,
+          "startChar": 151,
+          "endChar": 157
+        },
+        {
+          "startSec": 11.76,
+          "endSec": 12.0,
+          "startChar": 159,
+          "endChar": 163
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.16,
+          "startChar": 164,
+          "endChar": 167
+        },
+        {
+          "startSec": 12.16,
+          "endSec": 12.64,
+          "startChar": 168,
+          "endChar": 175
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 13.36,
+          "startChar": 176,
+          "endChar": 185
+        }
+      ]
     },
     {
       "id": "side-by-side",
       "textHash": "b2cda624c6c0fcec991281e78621d5ee64d21bcd663df8c029c94fc129f13ffe",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/side-by-side.b2cda624.mp3",
       "narrationText": "Jetzt nebeneinander: der fork links, das Original rechts. Bearbeite, lösche oder zerstöre alles auf der linken Seite, und rechts zuckt nichts. Das ist Isolation, die man sehen kann.",
-      "audioDurationSec": 14.027755
+      "audioDurationSec": 14.027755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.44,
+          "startChar": 6,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 1.92,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 25,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.88,
+          "startChar": 30,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.2,
+          "startChar": 37,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.84,
+          "startChar": 41,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.48,
+          "startChar": 50,
+          "endChar": 56
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.76,
+          "startChar": 58,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.24,
+          "startChar": 69,
+          "endChar": 75
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.64,
+          "startChar": 76,
+          "endChar": 80
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 7.36,
+          "startChar": 81,
+          "endChar": 89
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.76,
+          "startChar": 90,
+          "endChar": 95
+        },
+        {
+          "startSec": 7.76,
+          "endSec": 7.92,
+          "startChar": 96,
+          "endChar": 99
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.08,
+          "startChar": 100,
+          "endChar": 103
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.48,
+          "startChar": 104,
+          "endChar": 110
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.88,
+          "startChar": 111,
+          "endChar": 116
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.44,
+          "startChar": 118,
+          "endChar": 121
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.0,
+          "startChar": 122,
+          "endChar": 128
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.4,
+          "startChar": 129,
+          "endChar": 134
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.96,
+          "startChar": 135,
+          "endChar": 141
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 11.76,
+          "startChar": 143,
+          "endChar": 146
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 147,
+          "endChar": 150
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.88,
+          "startChar": 151,
+          "endChar": 160
+        },
+        {
+          "startSec": 12.88,
+          "endSec": 13.04,
+          "startChar": 162,
+          "endChar": 165
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.2,
+          "startChar": 166,
+          "endChar": 169
+        },
+        {
+          "startSec": 13.2,
+          "endSec": 13.6,
+          "startChar": 170,
+          "endChar": 175
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 13.92,
+          "startChar": 176,
+          "endChar": 180
+        }
+      ]
     },
     {
       "id": "next-tutorial",
       "textHash": "109de59f94c3e2db81e70d711133c207be03bc00dec8358affff7d89d1860b41",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-fork-isolation/next-tutorial.109de59f.mp3",
       "narrationText": "Also forke ruhig drauf los, Produktion kann nicht beschädigt werden. Als nächstes schauen wir uns secrets an, das Einzige, was deine forks absichtlich nicht erben. Bis dann!",
-      "audioDurationSec": 14.915918
+      "audioDurationSec": 14.915918,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.12,
+          "startChar": 5,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.52,
+          "startChar": 12,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.92,
+          "startChar": 17,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.48,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.76,
+          "startChar": 28,
+          "endChar": 38
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.24,
+          "startChar": 39,
+          "endChar": 43
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.64,
+          "startChar": 44,
+          "endChar": 49
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.28,
+          "startChar": 50,
+          "endChar": 60
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.76,
+          "startChar": 61,
+          "endChar": 67
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.48,
+          "startChar": 69,
+          "endChar": 72
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 7.04,
+          "startChar": 73,
+          "endChar": 81
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.44,
+          "startChar": 82,
+          "endChar": 89
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.6,
+          "startChar": 90,
+          "endChar": 93
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.0,
+          "startChar": 94,
+          "endChar": 97
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.4,
+          "startChar": 98,
+          "endChar": 105
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.72,
+          "startChar": 106,
+          "endChar": 108
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.52,
+          "startChar": 110,
+          "endChar": 113
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.08,
+          "startChar": 114,
+          "endChar": 121
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 10.96,
+          "startChar": 123,
+          "endChar": 126
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.2,
+          "startChar": 127,
+          "endChar": 132
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.76,
+          "startChar": 133,
+          "endChar": 138
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.64,
+          "startChar": 139,
+          "endChar": 150
+        },
+        {
+          "startSec": 12.64,
+          "endSec": 13.04,
+          "startChar": 151,
+          "endChar": 156
+        },
+        {
+          "startSec": 13.04,
+          "endSec": 13.52,
+          "startChar": 157,
+          "endChar": 162
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.48,
+          "startChar": 164,
+          "endChar": 167
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 14.88,
+          "startChar": 168,
+          "endChar": 172
+        }
+      ]
     }
   ]
 }

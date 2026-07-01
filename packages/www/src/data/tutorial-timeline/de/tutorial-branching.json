@@ -18,9 +18,133 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-01.e3d52eb7.mp3",
       "textHash": "e3d52eb7f75f2a2f78d26a47b30f80ac0e94c20b2a0106e83137201db1bb1f21",
       "audioDurationSec": 7.157551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 6,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.12,
+          "startChar": 14,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.6,
+          "startChar": 19,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.16,
+          "startChar": 27,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 35,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.8,
+          "startChar": 40,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.04,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.84,
+          "startChar": 48,
+          "endChar": 56
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.4,
+          "startChar": 58,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.88,
+          "startChar": 63,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 6.0,
+          "startChar": 72,
+          "endChar": 88
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.32,
+          "startChar": 89,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.48,
+          "startChar": 95,
+          "endChar": 98
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 7.12,
+          "startChar": 99,
+          "endChar": 107
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-01-after.8f08a54f.mp3",
       "afterAudioDurationSec": 2.115918,
-      "afterTextHash": "8f08a54fc732dc403b6b9fb1225b281b44bc5bd4c69bd78c78aab9af6aca5c41"
+      "afterTextHash": "8f08a54fc732dc403b6b9fb1225b281b44bc5bd4c69bd78c78aab9af6aca5c41",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.04,
+          "startChar": 8,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.44,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.08,
+          "startChar": 22,
+          "endChar": 32
+        }
+      ]
     },
     {
       "id": "tutorial-branching-02",
@@ -31,9 +155,211 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-02.533807d9.mp3",
       "textHash": "533807d9757419f2340b2d51cd5b5f231dbaa5020c2e673352756eaccb1a6593",
       "audioDurationSec": 10.919184,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 2
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 3,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.8,
+          "startChar": 8,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.96,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.6,
+          "startChar": 18,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 27,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 30,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.96,
+          "startChar": 37,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.36,
+          "startChar": 42,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.76,
+          "startChar": 48,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.16,
+          "startChar": 53,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.56,
+          "startChar": 58,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.56,
+          "endSec": 6.16,
+          "startChar": 64,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.64,
+          "endSec": 6.72,
+          "startChar": 90,
+          "endChar": 93
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.2,
+          "startChar": 94,
+          "endChar": 101
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.84,
+          "startChar": 102,
+          "endChar": 111
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.48,
+          "startChar": 112,
+          "endChar": 119
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.8,
+          "startChar": 120,
+          "endChar": 124
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.36,
+          "startChar": 125,
+          "endChar": 131
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.4,
+          "startChar": 142,
+          "endChar": 147
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.8,
+          "startChar": 148,
+          "endChar": 152
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-02-after.c8a5c040.mp3",
       "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "c8a5c0401ba56656ae7b1aaf997cfa44213b52699a4bd6140b807ea9ebc11086"
+      "afterTextHash": "c8a5c0401ba56656ae7b1aaf997cfa44213b52699a4bd6140b807ea9ebc11086",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 5,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 13,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.84,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 26,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.32,
+          "startChar": 33,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 37,
+          "endChar": 40
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 41,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 2.8,
+          "startChar": 48,
+          "endChar": 50
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.12,
+          "startChar": 51,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.6,
+          "startChar": 58,
+          "endChar": 65
+        }
+      ]
     },
     {
       "id": "tutorial-branching-03",
@@ -44,9 +370,253 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-03.a8adeaae.mp3",
       "textHash": "a8adeaaea614ec9eed357a031153ccc02c596e7ddadd5bc88744440d3949e300",
       "audioDurationSec": 13.400816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 10
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.44,
+          "startChar": 16,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.84,
+          "startChar": 23,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.0,
+          "startChar": 31,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.48,
+          "startChar": 35,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.36,
+          "startChar": 43,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.76,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.72,
+          "startChar": 58,
+          "endChar": 74
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.2,
+          "startChar": 75,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 82,
+          "endChar": 85
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.0,
+          "startChar": 86,
+          "endChar": 91
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.64,
+          "startChar": 92,
+          "endChar": 101
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.12,
+          "startChar": 103,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.6,
+          "startChar": 109,
+          "endChar": 114
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.32,
+          "startChar": 115,
+          "endChar": 118
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.64,
+          "startChar": 119,
+          "endChar": 124
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 9.12,
+          "startChar": 125,
+          "endChar": 131
+        },
+        {
+          "startSec": 9.36,
+          "endSec": 9.6,
+          "startChar": 133,
+          "endChar": 138
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 9.76,
+          "startChar": 139,
+          "endChar": 142
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.08,
+          "startChar": 143,
+          "endChar": 146
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.64,
+          "startChar": 148,
+          "endChar": 152
+        },
+        {
+          "startSec": 10.64,
+          "endSec": 10.88,
+          "startChar": 153,
+          "endChar": 156
+        },
+        {
+          "startSec": 10.88,
+          "endSec": 11.28,
+          "startChar": 157,
+          "endChar": 162
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.48,
+          "startChar": 164,
+          "endChar": 178
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.72,
+          "startChar": 179,
+          "endChar": 182
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.28,
+          "startChar": 183,
+          "endChar": 192
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-03-after.330fec66.mp3",
       "afterAudioDurationSec": 5.250612,
-      "afterTextHash": "330fec66280b511cf789b35690c528bc505fb78b6aea886f679aed1b240a7a58"
+      "afterTextHash": "330fec66280b511cf789b35690c528bc505fb78b6aea886f679aed1b240a7a58",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.12,
+          "startChar": 11,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.84,
+          "startChar": 18,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.08,
+          "startChar": 27,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.8,
+          "startChar": 37,
+          "endChar": 44
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.2,
+          "startChar": 45,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.92,
+          "startChar": 56,
+          "endChar": 61
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 62,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 67,
+          "endChar": 72
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.64,
+          "startChar": 73,
+          "endChar": 79
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 5.12,
+          "startChar": 80,
+          "endChar": 87
+        }
+      ]
     },
     {
       "id": "tutorial-branching-04",
@@ -57,9 +627,151 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-04.9fbf8b23.mp3",
       "textHash": "9fbf8b2350bf0f80ad8dba0707cca4d70479f31f398e32150675b2b8a2c5b4b7",
       "audioDurationSec": 4.989388,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.4,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 15,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.52,
+          "startChar": 21,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.0,
+          "startChar": 28,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.48,
+          "startChar": 32,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 2.96,
+          "startChar": 39,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.44,
+          "startChar": 46,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 3.76,
+          "startChar": 52,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 3.92,
+          "startChar": 58,
+          "endChar": 61
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.48,
+          "startChar": 62,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 70,
+          "endChar": 74
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-04-after.30b813b1.mp3",
       "afterAudioDurationSec": 3.709388,
-      "afterTextHash": "30b813b14ac8558011309ecc044d038aeccd07c836ce2e52b303c91f17bbf902"
+      "afterTextHash": "30b813b14ac8558011309ecc044d038aeccd07c836ce2e52b303c91f17bbf902",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.72,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.04,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.36,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.08,
+          "startChar": 25,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 28,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.48,
+          "startChar": 32,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.2,
+          "startChar": 35,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 48,
+          "endChar": 54
+        }
+      ]
     },
     {
       "id": "tutorial-branching-05",
@@ -70,9 +782,145 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-05.347140f9.mp3",
       "textHash": "347140f9ce9e8c50f1315053f10f851e861074ad583f0487df5e3ff662e1437d",
       "audioDurationSec": 6.765714,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.96,
+          "startChar": 0,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.84,
+          "startChar": 16,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.4,
+          "startChar": 24,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 29,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 37,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.92,
+          "startChar": 45,
+          "endChar": 49
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.16,
+          "startChar": 50,
+          "endChar": 52
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.48,
+          "startChar": 53,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.88,
+          "startChar": 61,
+          "endChar": 65
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.52,
+          "startChar": 67,
+          "endChar": 70
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.0,
+          "startChar": 71,
+          "endChar": 77
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.32,
+          "startChar": 78,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.48,
+          "endSec": 6.64,
+          "startChar": 90,
+          "endChar": 95
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-05-after.8bd1cd9b.mp3",
       "afterAudioDurationSec": 3.474286,
-      "afterTextHash": "8bd1cd9b7d1191a7c77067c37ea268f474c431c28865db67a4ddd8f0dd654c9a"
+      "afterTextHash": "8bd1cd9b7d1191a7c77067c37ea268f474c431c28865db67a4ddd8f0dd654c9a",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.72,
+          "startChar": 4,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.12,
+          "startChar": 12,
+          "endChar": 16
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.28,
+          "startChar": 17,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 21,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.32,
+          "startChar": 26,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.72,
+          "startChar": 44,
+          "endChar": 47
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 48,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.36,
+          "startChar": 56,
+          "endChar": 61
+        }
+      ]
     },
     {
       "id": "tutorial-branching-06",
@@ -83,9 +931,223 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-06.f1dbd2c3.mp3",
       "textHash": "f1dbd2c3d94165554ffe3b172e2927a98680e8cd8e7233ad7673668143e44c39",
       "audioDurationSec": 10.44898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 12,
+          "endChar": 15
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.76,
+          "startChar": 16,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.56,
+          "startChar": 29,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 33,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.6,
+          "startChar": 42,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.84,
+          "startChar": 51,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.0,
+          "startChar": 58,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 62,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.04,
+          "startChar": 70,
+          "endChar": 79
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.6,
+          "startChar": 81,
+          "endChar": 83
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.08,
+          "startChar": 84,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.48,
+          "startChar": 91,
+          "endChar": 96
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 6.8,
+          "startChar": 97,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.2,
+          "startChar": 101,
+          "endChar": 104
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.36,
+          "startChar": 105,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.36,
+          "endSec": 7.76,
+          "startChar": 109,
+          "endChar": 115
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.32,
+          "startChar": 117,
+          "endChar": 119
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.64,
+          "startChar": 120,
+          "endChar": 123
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.12,
+          "startChar": 124,
+          "endChar": 129
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.28,
+          "startChar": 130,
+          "endChar": 133
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.84,
+          "startChar": 134,
+          "endChar": 139
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.32,
+          "startChar": 140,
+          "endChar": 145
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-06-after.aae2eede.mp3",
       "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "aae2eede0572d989d43422d4c4dc7199df51a75329289b83f3ab35aeb23f7574"
+      "afterTextHash": "aae2eede0572d989d43422d4c4dc7199df51a75329289b83f3ab35aeb23f7574",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.56,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.2,
+          "startChar": 11,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 23,
+          "endChar": 26
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.76,
+          "startChar": 27,
+          "endChar": 32
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 33,
+          "endChar": 37
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 46,
+          "endChar": 53
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.96,
+          "startChar": 54,
+          "endChar": 58
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.52,
+          "startChar": 59,
+          "endChar": 71
+        }
+      ]
     },
     {
       "id": "tutorial-branching-07",
@@ -96,9 +1158,187 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-07.840ddd09.mp3",
       "textHash": "840ddd09d0332b3e83cc2ba3c1ce3055e0a79b89f1081089846616fd618979c8",
       "audioDurationSec": 10.44898,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.48,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.96,
+          "startChar": 10,
+          "endChar": 16
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.12,
+          "startChar": 17,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.36,
+          "startChar": 22,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 2.0,
+          "startChar": 26,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.56,
+          "startChar": 34,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.64,
+          "startChar": 38,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.28,
+          "startChar": 42,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.6,
+          "startChar": 52,
+          "endChar": 56
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 57,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.08,
+          "startChar": 60,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.76,
+          "startChar": 75,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.32,
+          "startChar": 85,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.72,
+          "startChar": 95,
+          "endChar": 100
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.28,
+          "startChar": 102,
+          "endChar": 105
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 8.0,
+          "startChar": 106,
+          "endChar": 117
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.32,
+          "startChar": 118,
+          "endChar": 121
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.88,
+          "startChar": 122,
+          "endChar": 126
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.52,
+          "startChar": 128,
+          "endChar": 132
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 9.92,
+          "startChar": 133,
+          "endChar": 138
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.08,
+          "startChar": 139,
+          "endChar": 142
+        },
+        {
+          "startSec": 10.08,
+          "endSec": 10.32,
+          "startChar": 143,
+          "endChar": 146
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-07-after.17f7d45f.mp3",
       "afterAudioDurationSec": 3.395918,
-      "afterTextHash": "17f7d45f8ae7ccd40c48a63d6198343313d0755d44370695dbcfd74960632089"
+      "afterTextHash": "17f7d45f8ae7ccd40c48a63d6198343313d0755d44370695dbcfd74960632089",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.52,
+          "startChar": 9,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.08,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 26,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.12,
+          "startChar": 31,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.28,
+          "startChar": 39,
+          "endChar": 42
+        }
+      ]
     },
     {
       "id": "tutorial-branching-08",
@@ -109,9 +1349,193 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-08.73b41f8a.mp3",
       "textHash": "73b41f8a68991aa1ed00eeb25bcc4cd70d10269d7039ce40e5395f67551a0c75",
       "audioDurationSec": 11.807347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.88,
+          "startChar": 9,
+          "endChar": 13
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.36,
+          "startChar": 14,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 2.0,
+          "startChar": 18,
+          "endChar": 26
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.64,
+          "startChar": 27,
+          "endChar": 35
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.68,
+          "startChar": 37,
+          "endChar": 46
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.0,
+          "startChar": 47,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 51,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.88,
+          "startChar": 60,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.2,
+          "startChar": 69,
+          "endChar": 72
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.6,
+          "startChar": 73,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 6.0,
+          "startChar": 81,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.0,
+          "endSec": 6.4,
+          "startChar": 90,
+          "endChar": 93
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.04,
+          "startChar": 95,
+          "endChar": 98
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.44,
+          "startChar": 99,
+          "endChar": 107
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.84,
+          "startChar": 108,
+          "endChar": 116
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.16,
+          "startChar": 117,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.8,
+          "startChar": 122,
+          "endChar": 127
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.04,
+          "startChar": 128,
+          "endChar": 132
+        },
+        {
+          "startSec": 9.04,
+          "endSec": 9.28,
+          "startChar": 133,
+          "endChar": 135
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.6,
+          "startChar": 136,
+          "endChar": 140
+        },
+        {
+          "startSec": 9.6,
+          "endSec": 10.0,
+          "startChar": 141,
+          "endChar": 148
+        },
+        {
+          "startSec": 10.4,
+          "endSec": 10.8,
+          "startChar": 150,
+          "endChar": 156
+        },
+        {
+          "startSec": 10.96,
+          "endSec": 11.28,
+          "startChar": 157,
+          "endChar": 160
+        },
+        {
+          "startSec": 11.28,
+          "endSec": 11.76,
+          "startChar": 161,
+          "endChar": 166
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-08-after.3fe3744b.mp3",
       "afterAudioDurationSec": 1.959184,
-      "afterTextHash": "3fe3744bf52996fbc12ca043d6feef2c22f4d522a8486c04e26ca2b54891ec48"
+      "afterTextHash": "3fe3744bf52996fbc12ca043d6feef2c22f4d522a8486c04e26ca2b54891ec48",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.28,
+          "startChar": 5,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.36,
+          "startChar": 15,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.44,
+          "startChar": 18,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 1.84,
+          "startChar": 22,
+          "endChar": 27
+        }
+      ]
     },
     {
       "id": "tutorial-branching-09",
@@ -122,9 +1546,175 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-09.3206a133.mp3",
       "textHash": "3206a133045870f1a7373818ed785b236499908cd3a5c1609dc103e0ee3b4699",
       "audioDurationSec": 10.187755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 4,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.8,
+          "startChar": 7,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 0.88,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.44,
+          "startChar": 15,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 24,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 32,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.12,
+          "startChar": 37,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.84,
+          "startChar": 43,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.24,
+          "startChar": 51,
+          "endChar": 55
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.96,
+          "startChar": 56,
+          "endChar": 64
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.52,
+          "startChar": 66,
+          "endChar": 69
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.32,
+          "startChar": 70,
+          "endChar": 81
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.56,
+          "startChar": 82,
+          "endChar": 85
+        },
+        {
+          "startSec": 6.56,
+          "endSec": 7.2,
+          "startChar": 86,
+          "endChar": 93
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 7.92,
+          "startChar": 95,
+          "endChar": 99
+        },
+        {
+          "startSec": 8.0,
+          "endSec": 8.24,
+          "startChar": 100,
+          "endChar": 103
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.8,
+          "startChar": 104,
+          "endChar": 112
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.28,
+          "startChar": 113,
+          "endChar": 118
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.44,
+          "startChar": 119,
+          "endChar": 121
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 10.08,
+          "startChar": 122,
+          "endChar": 132
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-09-after.e3e7d383.mp3",
       "afterAudioDurationSec": 3.395918,
-      "afterTextHash": "e3e7d383598482eccd8f2dbdb02cd14f87a8a12fb9989070fd9953c8120a89b8"
+      "afterTextHash": "e3e7d383598482eccd8f2dbdb02cd14f87a8a12fb9989070fd9953c8120a89b8",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 1.2,
+          "startChar": 4,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.0,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 20,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 24,
+          "endChar": 27
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.28,
+          "startChar": 28,
+          "endChar": 35
+        }
+      ]
     },
     {
       "id": "tutorial-branching-10",
@@ -135,9 +1725,175 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-10.cb50a89a.mp3",
       "textHash": "cb50a89a58ee82ef7ad3bc8d1ee6c173b06ddecf651af84756f5126e410c4657",
       "audioDurationSec": 9.717551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.88,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.04,
+          "startChar": 12,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 15,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 20,
+          "endChar": 23
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.48,
+          "startChar": 49,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.44,
+          "startChar": 53,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.76,
+          "endSec": 4.48,
+          "startChar": 58,
+          "endChar": 68
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.28,
+          "startChar": 70,
+          "endChar": 84
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.6,
+          "startChar": 85,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.88,
+          "startChar": 95,
+          "endChar": 102
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.44,
+          "startChar": 103,
+          "endChar": 108
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.4,
+          "startChar": 119,
+          "endChar": 123
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.12,
+          "startChar": 125,
+          "endChar": 129
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.2,
+          "startChar": 130,
+          "endChar": 133
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.6,
+          "startChar": 134,
+          "endChar": 138
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-10-after.f2ebb54d.mp3",
       "afterAudioDurationSec": 5.146122,
-      "afterTextHash": "f2ebb54d30091afe248643702f74b0e79e751b0064fb2b502ee386d9b6c2e129"
+      "afterTextHash": "f2ebb54d30091afe248643702f74b0e79e751b0064fb2b502ee386d9b6c2e129",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.88,
+          "startChar": 5,
+          "endChar": 18
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 1.28,
+          "startChar": 19,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.44,
+          "startChar": 25,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.24,
+          "startChar": 29,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.56,
+          "startChar": 43,
+          "endChar": 50
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.36,
+          "startChar": 51,
+          "endChar": 55
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.0,
+          "startChar": 57,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.32,
+          "startChar": 60,
+          "endChar": 64
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 65,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 5.04,
+          "startChar": 71,
+          "endChar": 78
+        }
+      ]
     },
     {
       "id": "tutorial-branching-11",
@@ -148,9 +1904,73 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-11.1d73cf48.mp3",
       "textHash": "1d73cf48b0e90d3128b70a6e2528d8dcb38defe97709649a62fb7d41703475ec",
       "audioDurationSec": 3.004082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.08,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 35,
+          "endChar": 42
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.88,
+          "startChar": 43,
+          "endChar": 47
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-11-after.1a7ee0e4.mp3",
       "afterAudioDurationSec": 4.440816,
-      "afterTextHash": "1a7ee0e4a33cbcc89ed0aeaabbd981dcba90307016123bc72f453c4a14cc3220"
+      "afterTextHash": "1a7ee0e4a33cbcc89ed0aeaabbd981dcba90307016123bc72f453c4a14cc3220",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 5,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 1.2,
+          "startChar": 11,
+          "endChar": 17
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 19,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.16,
+          "startChar": 23,
+          "endChar": 31
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.88,
+          "startChar": 32,
+          "endChar": 39
+        }
+      ]
     },
     {
       "id": "tutorial-branching-12",
@@ -161,9 +1981,181 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-12.c1ad86e4.mp3",
       "textHash": "c1ad86e4e5f3e433071c5f8790f81032a1002107890b25b919431a402b3b4ac6",
       "audioDurationSec": 9.874286,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.56,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.2,
+          "startChar": 8,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 1.92,
+          "startChar": 16,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.8,
+          "startChar": 20,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.2,
+          "startChar": 34,
+          "endChar": 39
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.68,
+          "startChar": 40,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.32,
+          "startChar": 48,
+          "endChar": 52
+        },
+        {
+          "startSec": 4.8,
+          "endSec": 4.96,
+          "startChar": 54,
+          "endChar": 57
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 6.08,
+          "startChar": 58,
+          "endChar": 70
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.32,
+          "startChar": 75,
+          "endChar": 79
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.88,
+          "startChar": 80,
+          "endChar": 87
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 7.36,
+          "startChar": 88,
+          "endChar": 92
+        },
+        {
+          "startSec": 7.84,
+          "endSec": 8.16,
+          "startChar": 94,
+          "endChar": 98
+        },
+        {
+          "startSec": 8.16,
+          "endSec": 8.64,
+          "startChar": 99,
+          "endChar": 106
+        },
+        {
+          "startSec": 8.64,
+          "endSec": 8.8,
+          "startChar": 108,
+          "endChar": 111
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 8.96,
+          "startChar": 112,
+          "endChar": 114
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.44,
+          "startChar": 115,
+          "endChar": 124
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 125,
+          "endChar": 131
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-12-after.37e65c1a.mp3",
       "afterAudioDurationSec": 4.989388,
-      "afterTextHash": "37e65c1a62e8e5021d187dc148053d8e3796818180ca6276cd38ecda4b02d723"
+      "afterTextHash": "37e65c1a62e8e5021d187dc148053d8e3796818180ca6276cd38ecda4b02d723",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.64,
+          "startChar": 0,
+          "endChar": 8
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.6,
+          "startChar": 9,
+          "endChar": 22
+        },
+        {
+          "startSec": 2.24,
+          "endSec": 2.64,
+          "startChar": 24,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 2.88,
+          "startChar": 31,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.52,
+          "startChar": 37,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 3.68,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 55,
+          "endChar": 62
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 63,
+          "endChar": 65
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.96,
+          "startChar": 66,
+          "endChar": 74
+        }
+      ]
     },
     {
       "id": "tutorial-branching-13",
@@ -174,9 +2166,181 @@
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-13.acc5343c.mp3",
       "textHash": "acc5343c9fe22bad9792ee217937c3d8860b0872a76715b6dcc60b26fc398573",
       "audioDurationSec": 10.527347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.32,
+          "startChar": 4,
+          "endChar": 7
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.96,
+          "startChar": 8,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.68,
+          "startChar": 20,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.16,
+          "startChar": 24,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.56,
+          "startChar": 34,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 2.88,
+          "startChar": 42,
+          "endChar": 45
+        },
+        {
+          "startSec": 2.88,
+          "endSec": 3.28,
+          "startChar": 46,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 3.92,
+          "startChar": 54,
+          "endChar": 58
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 5.28,
+          "startChar": 71,
+          "endChar": 76
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 78,
+          "endChar": 81
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.72,
+          "startChar": 82,
+          "endChar": 90
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.88,
+          "startChar": 91,
+          "endChar": 94
+        },
+        {
+          "startSec": 6.88,
+          "endSec": 6.96,
+          "startChar": 95,
+          "endChar": 98
+        },
+        {
+          "startSec": 6.96,
+          "endSec": 7.52,
+          "startChar": 99,
+          "endChar": 108
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.4,
+          "startChar": 109,
+          "endChar": 126
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.44,
+          "startChar": 128,
+          "endChar": 133
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.68,
+          "startChar": 134,
+          "endChar": 137
+        },
+        {
+          "startSec": 9.68,
+          "endSec": 9.84,
+          "startChar": 138,
+          "endChar": 141
+        },
+        {
+          "startSec": 9.84,
+          "endSec": 10.4,
+          "startChar": 142,
+          "endChar": 149
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/de/tutorial-branching/tutorial-branching-13-after.4d6a01c1.mp3",
       "afterAudioDurationSec": 3.63102,
-      "afterTextHash": "4d6a01c143752c23507c82fb8ccbc8c42c4acd9ae82ec4dfd5c0425b3bada7a3"
+      "afterTextHash": "4d6a01c143752c23507c82fb8ccbc8c42c4acd9ae82ec4dfd5c0425b3bada7a3",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.64,
+          "startChar": 7,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.2,
+          "startChar": 12,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 1.6,
+          "startChar": 20,
+          "endChar": 23
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 2.4,
+          "startChar": 24,
+          "endChar": 35
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.72,
+          "startChar": 36,
+          "endChar": 39
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.2,
+          "startChar": 40,
+          "endChar": 50
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.52,
+          "startChar": 51,
+          "endChar": 58
+        }
+      ]
     }
   ],
   "narrationAudio": [
@@ -185,28 +2349,642 @@
       "textHash": "4b16378cebba66a9514fd6815b8c07379b4c22059ec4cd81b89b1b25a17a7103",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/intro.4b16378c.mp3",
       "narrationText": "Versioniere deine repositories wie Code! Wir frieren einen Checkpoint ein, geben ihm einen Namen und löschen dann eine echte Datenbanktabelle. Das Rollback stellt den exakt eingefrorenen Zustand wieder her, jede Zeile inklusive, in Sekunden.",
-      "audioDurationSec": 15.960816
+      "audioDurationSec": 15.960816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 41,
+          "endChar": 44
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.64,
+          "startChar": 54,
+          "endChar": 56
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 0.96,
+          "startChar": 85,
+          "endChar": 90
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.08,
+          "startChar": 195,
+          "endChar": 198
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.88,
+          "startChar": 216,
+          "endChar": 220
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.56,
+          "startChar": 235,
+          "endChar": 238
+        }
+      ]
     },
     {
       "id": "commit-model",
       "textHash": "8a4aef8226bbbb85e25c59528c86bc7daf74c76aabbd21951c1224df0e4ae520",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/commit-model.8a4aef82.mp3",
       "narrationText": "Das Modell ist git, aber für ganze repositories. Ein Commit ist ein eingefrorenes, unveränderliches Image. Es lässt sich nicht einmal mounten, also kann es niemand verändern. Ein Branch ist nur ein Name, der auf einen Commit zeigt. Und checkout verwandelt jeden Commit zurück in einen frischen, beschreibbaren Fork.",
-      "audioDurationSec": 22.987755
+      "audioDurationSec": 22.987755,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.8,
+          "startChar": 4,
+          "endChar": 10
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.12,
+          "startChar": 11,
+          "endChar": 14
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.44,
+          "startChar": 15,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 2.16,
+          "startChar": 20,
+          "endChar": 24
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.4,
+          "startChar": 25,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.8,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 3.84,
+          "startChar": 35,
+          "endChar": 47
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.4,
+          "startChar": 49,
+          "endChar": 52
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 4.72,
+          "startChar": 53,
+          "endChar": 59
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 4.96,
+          "startChar": 60,
+          "endChar": 63
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.12,
+          "startChar": 64,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 6.16,
+          "startChar": 68,
+          "endChar": 81
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 7.28,
+          "startChar": 83,
+          "endChar": 99
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.76,
+          "startChar": 100,
+          "endChar": 105
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.4,
+          "startChar": 107,
+          "endChar": 109
+        },
+        {
+          "startSec": 8.4,
+          "endSec": 8.72,
+          "startChar": 110,
+          "endChar": 115
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 8.88,
+          "startChar": 116,
+          "endChar": 120
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.12,
+          "startChar": 121,
+          "endChar": 126
+        },
+        {
+          "startSec": 9.2,
+          "endSec": 9.52,
+          "startChar": 127,
+          "endChar": 133
+        },
+        {
+          "startSec": 9.52,
+          "endSec": 10.16,
+          "startChar": 134,
+          "endChar": 141
+        },
+        {
+          "startSec": 10.72,
+          "endSec": 11.28,
+          "startChar": 143,
+          "endChar": 147
+        },
+        {
+          "startSec": 11.6,
+          "endSec": 11.84,
+          "startChar": 148,
+          "endChar": 152
+        },
+        {
+          "startSec": 11.84,
+          "endSec": 12.0,
+          "startChar": 153,
+          "endChar": 155
+        },
+        {
+          "startSec": 12.0,
+          "endSec": 12.4,
+          "startChar": 156,
+          "endChar": 163
+        },
+        {
+          "startSec": 12.4,
+          "endSec": 13.04,
+          "startChar": 164,
+          "endChar": 173
+        },
+        {
+          "startSec": 13.6,
+          "endSec": 13.76,
+          "startChar": 175,
+          "endChar": 178
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.16,
+          "startChar": 179,
+          "endChar": 185
+        },
+        {
+          "startSec": 14.48,
+          "endSec": 14.72,
+          "startChar": 186,
+          "endChar": 189
+        },
+        {
+          "startSec": 14.72,
+          "endSec": 14.88,
+          "startChar": 190,
+          "endChar": 193
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.2,
+          "startChar": 194,
+          "endChar": 197
+        },
+        {
+          "startSec": 15.2,
+          "endSec": 15.6,
+          "startChar": 198,
+          "endChar": 202
+        },
+        {
+          "startSec": 16.08,
+          "endSec": 16.16,
+          "startChar": 208,
+          "endChar": 211
+        },
+        {
+          "startSec": 16.16,
+          "endSec": 16.48,
+          "startChar": 212,
+          "endChar": 217
+        },
+        {
+          "startSec": 16.48,
+          "endSec": 16.88,
+          "startChar": 218,
+          "endChar": 224
+        },
+        {
+          "startSec": 16.88,
+          "endSec": 17.28,
+          "startChar": 225,
+          "endChar": 230
+        },
+        {
+          "startSec": 17.84,
+          "endSec": 18.16,
+          "startChar": 232,
+          "endChar": 235
+        },
+        {
+          "startSec": 18.16,
+          "endSec": 18.72,
+          "startChar": 236,
+          "endChar": 244
+        },
+        {
+          "startSec": 18.8,
+          "endSec": 19.28,
+          "startChar": 245,
+          "endChar": 255
+        },
+        {
+          "startSec": 19.28,
+          "endSec": 19.6,
+          "startChar": 256,
+          "endChar": 261
+        },
+        {
+          "startSec": 19.6,
+          "endSec": 20.0,
+          "startChar": 262,
+          "endChar": 268
+        },
+        {
+          "startSec": 20.0,
+          "endSec": 20.4,
+          "startChar": 269,
+          "endChar": 275
+        },
+        {
+          "startSec": 20.64,
+          "endSec": 20.8,
+          "startChar": 276,
+          "endChar": 278
+        },
+        {
+          "startSec": 20.8,
+          "endSec": 21.12,
+          "startChar": 279,
+          "endChar": 284
+        },
+        {
+          "startSec": 21.12,
+          "endSec": 21.76,
+          "startChar": 285,
+          "endChar": 293
+        },
+        {
+          "startSec": 21.76,
+          "endSec": 22.48,
+          "startChar": 295,
+          "endChar": 309
+        }
+      ]
     },
     {
       "id": "vscode-versions",
       "textHash": "c335d5f6aa7ecacb6bb04aecb5956e1222e9680ea1971b24fd3761b13eceb5a2",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/vscode-versions.c335d5f6.mp3",
       "narrationText": "Sehen heißt glauben. Der Rollback-Fork auf der linken Seite enthält Version eins, während der Working-Fork auf der rechten Seite zu Version zwei weitergezogen ist. Beide live, beide beschreibbar, beide aus derselben History.",
-      "audioDurationSec": 15.386122
+      "audioDurationSec": 15.386122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.4,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.8,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 12,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.76,
+          "startChar": 21,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.8,
+          "startChar": 25,
+          "endChar": 38
+        },
+        {
+          "startSec": 2.8,
+          "endSec": 2.96,
+          "startChar": 43,
+          "endChar": 46
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.36,
+          "startChar": 47,
+          "endChar": 53
+        },
+        {
+          "startSec": 3.36,
+          "endSec": 3.68,
+          "startChar": 54,
+          "endChar": 59
+        },
+        {
+          "startSec": 3.68,
+          "endSec": 4.16,
+          "startChar": 60,
+          "endChar": 67
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.8,
+          "startChar": 68,
+          "endChar": 75
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.36,
+          "startChar": 76,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.08,
+          "startChar": 82,
+          "endChar": 89
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 90,
+          "endChar": 93
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 7.44,
+          "startChar": 94,
+          "endChar": 106
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 7.6,
+          "startChar": 111,
+          "endChar": 114
+        },
+        {
+          "startSec": 7.6,
+          "endSec": 8.08,
+          "startChar": 115,
+          "endChar": 122
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.48,
+          "startChar": 123,
+          "endChar": 128
+        },
+        {
+          "startSec": 8.48,
+          "endSec": 8.72,
+          "startChar": 129,
+          "endChar": 131
+        },
+        {
+          "startSec": 8.72,
+          "endSec": 9.28,
+          "startChar": 132,
+          "endChar": 139
+        },
+        {
+          "startSec": 9.28,
+          "endSec": 9.76,
+          "startChar": 140,
+          "endChar": 144
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 10.32,
+          "startChar": 145,
+          "endChar": 158
+        },
+        {
+          "startSec": 10.48,
+          "endSec": 10.72,
+          "startChar": 159,
+          "endChar": 162
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.36,
+          "startChar": 164,
+          "endChar": 169
+        },
+        {
+          "startSec": 11.36,
+          "endSec": 11.92,
+          "startChar": 170,
+          "endChar": 174
+        },
+        {
+          "startSec": 12.32,
+          "endSec": 12.56,
+          "startChar": 176,
+          "endChar": 181
+        },
+        {
+          "startSec": 12.56,
+          "endSec": 13.28,
+          "startChar": 182,
+          "endChar": 194
+        },
+        {
+          "startSec": 13.76,
+          "endSec": 14.08,
+          "startChar": 196,
+          "endChar": 201
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.32,
+          "startChar": 202,
+          "endChar": 205
+        },
+        {
+          "startSec": 14.32,
+          "endSec": 14.48,
+          "startChar": 206,
+          "endChar": 209
+        }
+      ]
     },
     {
       "id": "next-tutorial",
       "textHash": "1cf826e01ea30a880f09aebc9894477a12cbccaa6812afad97ebeef22e09a2c9",
       "audioSrc": "/assets/tutorials/audio/de/tutorial-branching/next-tutorial.1cf826e0.mp3",
       "narrationText": "Commits ändern sich nie, Forks warten nicht. Als nächstes verschieben wir ein ganzes laufendes repository live auf eine andere Maschine. Bis zum nächsten Mal!",
-      "audioDurationSec": 9.952653
+      "audioDurationSec": 9.952653,
+      "wordTimings": [
+        {
+          "startSec": 1.12,
+          "endSec": 1.68,
+          "startChar": 25,
+          "endChar": 30
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.08,
+          "startChar": 31,
+          "endChar": 37
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.4,
+          "startChar": 38,
+          "endChar": 43
+        },
+        {
+          "startSec": 2.96,
+          "endSec": 3.2,
+          "startChar": 45,
+          "endChar": 48
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.6,
+          "startChar": 49,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.0,
+          "startChar": 58,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 70,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 4.32,
+          "startChar": 74,
+          "endChar": 77
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.88,
+          "startChar": 78,
+          "endChar": 84
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.44,
+          "startChar": 85,
+          "endChar": 94
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 6.32,
+          "startChar": 95,
+          "endChar": 105
+        },
+        {
+          "startSec": 6.32,
+          "endSec": 6.72,
+          "startChar": 106,
+          "endChar": 110
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.04,
+          "startChar": 111,
+          "endChar": 114
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.2,
+          "startChar": 115,
+          "endChar": 119
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.52,
+          "startChar": 120,
+          "endChar": 126
+        },
+        {
+          "startSec": 7.52,
+          "endSec": 8.0,
+          "startChar": 127,
+          "endChar": 135
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.72,
+          "startChar": 137,
+          "endChar": 140
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.12,
+          "startChar": 141,
+          "endChar": 144
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.44,
+          "startChar": 145,
+          "endChar": 153
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.84,
+          "startChar": 154,
+          "endChar": 157
+        }
+      ]
     }
   ]
 }

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-01T15:34:32.003Z",
+  "generatedAt": "2026-07-01T20:20:42.335Z",
   "baseUrl": "https://media.rediacc.com",
   "tutorials": {
     "tutorial-add-server": {
@@ -43,8 +43,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-add-server.de.vtt",
-          "size": 2484,
-          "sha256": "5df5dad7a591912437862955d7ba506ad052104982825d04eadd15ce97f578ff"
+          "size": 2082,
+          "sha256": "9ad99d33ca917794e8291fec6ac9ad2d6c07bab9310d43c37b484816a5d2a4e0"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-add-server.de.chapters.vtt",
@@ -53,8 +53,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-add-server.de.words.json",
-          "size": 15355,
-          "sha256": "53284d47f52fc4c1b42eb916f211f2ad2f98d2219a8a566a6f05e4435f5a4ee5"
+          "size": 9221,
+          "sha256": "3b21bc7e28d1d26f6344b2826c8014876956cd0820aec411805bc509fb4ea6ca"
         }
       },
       "en": {
@@ -70,8 +70,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-add-server.en.vtt",
-          "size": 2580,
-          "sha256": "b41ea55c10072a7bb042b9f8d75e86f2b16cc97b3ba8260413c8f24402d18a85"
+          "size": 2209,
+          "sha256": "8c043c1b4a5c09a942255129fd953f9219dc2c0b5d70e2749a81514f1b08fc87"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-add-server.en.chapters.vtt",
@@ -80,8 +80,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-add-server.en.words.json",
-          "size": 18020,
-          "sha256": "260866698363e7e6221431a8edf297a1983dd34f9a3156569dc5cf5cd9b8eb0b"
+          "size": 11739,
+          "sha256": "bbb99dad20036c3663caa030432a70c5cae0094a1376658c83a7c950ea346c2e"
         }
       },
       "es": {
@@ -97,8 +97,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-add-server.es.vtt",
-          "size": 2406,
-          "sha256": "7de49aeccf77acd0a2e0366a0a1f07939e184e7c184539c8eaff9730b84bf4b0"
+          "size": 2133,
+          "sha256": "44014fce130712b78f2f56f5700c9b549a534fc29e42f3e2d95f521a1d66366b"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-add-server.es.chapters.vtt",
@@ -107,8 +107,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-add-server.es.words.json",
-          "size": 16036,
-          "sha256": "30e61ad2c8a2c2e5126b20335694df15172a3079240890c062cf86df1431aa13"
+          "size": 10459,
+          "sha256": "7f927be408a9e38d34e76cebe421a29e43262906e7b12f31d902c0813bb0082a"
         }
       },
       "et": {
@@ -151,8 +151,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-add-server.fr.vtt",
-          "size": 2455,
-          "sha256": "83c88bc3f300ba417ad09a34bda64634ae9f65edd6195823413987ac3945b6e8"
+          "size": 2087,
+          "sha256": "1d808cbee9e9788edd6e4e473b3f5ab781905a40c816b00d5e546e8620c03e3c"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-add-server.fr.chapters.vtt",
@@ -161,8 +161,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-add-server.fr.words.json",
-          "size": 16299,
-          "sha256": "612da112504a842ee8cef972ce1b56eb0c96be2bf56764579bfbfa18412f0bda"
+          "size": 10456,
+          "sha256": "5b9eacc2cbf59ceddb25dbad835ec0a8e8b246fe98dfba713c8faee9bb69aa5a"
         }
       },
       "it": {
@@ -178,8 +178,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-add-server.it.vtt",
-          "size": 2333,
-          "sha256": "4bfd504a0b35d2abfb2d8fa1d259ca574ccd0a5f026317cbb6669ec44a0f4000"
+          "size": 2027,
+          "sha256": "a1574d48acd3a1c33e9ecfcd319065587ece3c65e220ae03234e65196b1c7038"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-add-server.it.chapters.vtt",
@@ -188,8 +188,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-add-server.it.words.json",
-          "size": 15456,
-          "sha256": "3254656e7e3a982f764db2f4bd7b6ad38c8beba2df3e058191e9c43fef067abe"
+          "size": 9297,
+          "sha256": "b2bc3a73cf35f247f5227f48cf06b0e6084ac62f6eb56be4c926ebc479a76d17"
         }
       },
       "ja": {
@@ -232,18 +232,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-add-server.ko.vtt",
-          "size": 2163,
-          "sha256": "f191d6dca6be2aeaf765ccd041c8b473c532d2198c8cd220ed275941f90d6929"
+          "size": 1981,
+          "sha256": "cb2c7e36b4d9e101be179a450101a3a57a185683079394d65a4a01b2706d8b6f"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-add-server.ko.chapters.vtt",
           "size": 389,
-          "sha256": "69954c23475468de5099960208289f603f6b39d90bafc8c227b91f1cf7387b91"
+          "sha256": "6acfbd0cf1a994edbd7000369ee0869548ed3888b777fa57ed9f30b48892ad23"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-add-server.ko.words.json",
-          "size": 10333,
-          "sha256": "fc95cd81b7babbae6acadca598475a00c1a55cd46e7947279ff68d6b568b5d25"
+          "size": 8663,
+          "sha256": "8077084466dc413e19c231d7ca062cc1473d9561322e1b6121950672593245b7"
         }
       },
       "pt": {
@@ -259,18 +259,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-add-server.pt.vtt",
-          "size": 2272,
-          "sha256": "0389b8657102d4ece28f50527a65094e773bcbd87c1e7099f3cde56b683ffd98"
+          "size": 1966,
+          "sha256": "78367fb923c6ea7969599a02b56bd8b643c9b57ef330e038dd435073849741a0"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-add-server.pt.chapters.vtt",
           "size": 418,
-          "sha256": "5c9e99cf8f945987974f3ac794ef4e541eb6893656fa82c374f5f2886b744642"
+          "sha256": "1bca1c74a6080ca83afe333c752c652c89cf4022dc1c4f5959acd68acace90c9"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-add-server.pt.words.json",
-          "size": 14784,
-          "sha256": "74a01d1b5944a75d33c35628422dc89a5068049e408686c439545ea39a781868"
+          "size": 8416,
+          "sha256": "12d96a80709c31939e9d6c5b446cca44053e5f99c1a2392e7451a437ea305341"
         }
       },
       "ru": {
@@ -286,18 +286,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-add-server.ru.vtt",
-          "size": 2949,
-          "sha256": "84e4db4287006ed4c067b62a066b316ab3870ddfbe991b64e340ff27220ca5b2"
+          "size": 2579,
+          "sha256": "379de632566f9062d306df18985af07639d8843663d16f6e1c52e4e7b74daa9a"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-add-server.ru.chapters.vtt",
           "size": 521,
-          "sha256": "5c6beed449a565f1b766b7fa02430fb45b1162ce3b183b23a10e88b7d70ba193"
+          "sha256": "b8d14631dd17cc7474eec754a264026ad951f8f71e2c12f1c3b4b6c628af12ad"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-add-server.ru.words.json",
-          "size": 13493,
-          "sha256": "87269f6c98144ae3ce108b0b3eb9074857e4c1fb9d64cac89e4e627197e33c7b"
+          "size": 8497,
+          "sha256": "1a610c74181ea986523d0e5045b5461567eb469f5dbdfe2ddefa95848c63396b"
         }
       },
       "tr": {
@@ -396,8 +396,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-backup-restore.de.vtt",
-          "size": 5034,
-          "sha256": "8d770b27650bd762174bd412998415191754e672e5221b66b626a34904e1859b"
+          "size": 4047,
+          "sha256": "644d423e1c7d7082b1bc2bb36b6d73350121e0319a5c4924673f4a392bf96be8"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-backup-restore.de.chapters.vtt",
@@ -406,8 +406,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-backup-restore.de.words.json",
-          "size": 29867,
-          "sha256": "8983eab0d5bdfb6ce76c15f3efc70d592cc74f3fd79c966ca3155cb1434c31de"
+          "size": 18840,
+          "sha256": "987a7ad6cc13a409e2f64206571bef1fe4a1482db123f572183461909ac8b647"
         }
       },
       "en": {
@@ -423,8 +423,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-backup-restore.en.vtt",
-          "size": 3538,
-          "sha256": "7be0a556095be8613497e5a35cee823d7f2da7b0e47dcaf589710a4495a9957b"
+          "size": 3291,
+          "sha256": "6692973df2617445fbfbfc7c172c716178d7523a1f007e19b65c0db4bdcb3ce0"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-backup-restore.en.chapters.vtt",
@@ -433,8 +433,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-backup-restore.en.words.json",
-          "size": 26111,
-          "sha256": "9fa4d5b68eb8daf60e95d79d94c20fb12c68e43e5ebaa0d6934af7f0e1d36d6c"
+          "size": 17594,
+          "sha256": "596058784ac6ff58305baf2a06a993507c0a30cc0342edfedd8a241f9a25feb7"
         }
       },
       "es": {
@@ -450,8 +450,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-backup-restore.es.vtt",
-          "size": 4867,
-          "sha256": "f10564dafd38b5da636cbf4ecfbf063b14aa8efd18a711f640ff1bca54b1006a"
+          "size": 3975,
+          "sha256": "d5e1a14a89def0fea59a3bebfd03ead92e44227394b02b2b84812d33a76b6f5d"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-backup-restore.es.chapters.vtt",
@@ -460,8 +460,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-backup-restore.es.words.json",
-          "size": 30616,
-          "sha256": "543ba76d4b6e05749ae8de695ac4f1f9d1e689a4e5f8b59037de879c793f043f"
+          "size": 18712,
+          "sha256": "41187d98fe467f2974c85ce6c6db80b46da2b153a1544f2d5bc37da6258f5937"
         }
       },
       "et": {
@@ -504,8 +504,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-backup-restore.fr.vtt",
-          "size": 5225,
-          "sha256": "8de3e39d973a942026e8a08d769e2481a62e99a49968b19ea484c6ff5a6637e7"
+          "size": 4122,
+          "sha256": "d40b087718061ad316c71278589e894b1746c703e9290b00ff7940b6797df340"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-backup-restore.fr.chapters.vtt",
@@ -514,8 +514,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-backup-restore.fr.words.json",
-          "size": 32476,
-          "sha256": "7c5c4f2ef3e830b3f4de37b2606f64423bfe71506ae4e3454d7844da5a0efc76"
+          "size": 19264,
+          "sha256": "4cdb60417db5135efc994aad3650a915bc761890f08de01b9129035991cd3d34"
         }
       },
       "it": {
@@ -531,8 +531,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-backup-restore.it.vtt",
-          "size": 4623,
-          "sha256": "6c1e4759ba6f89d72738ad63ee058226fd2f6f7601fbb6726cc02744b19ed1cc"
+          "size": 3795,
+          "sha256": "dd9a6c14058c02801d877c5107aa399d030eee3e781df6eeefc613193abfca7c"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-backup-restore.it.chapters.vtt",
@@ -541,8 +541,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-backup-restore.it.words.json",
-          "size": 29531,
-          "sha256": "d468ba312c5a401edd5935b374b741d7abede01b25564aabe7cf2759d97b9c7a"
+          "size": 17338,
+          "sha256": "027fe62bb62ad5438b4d31ab6c84eb05a5111e0909056bbb8221097a7ce814ac"
         }
       },
       "ja": {
@@ -585,18 +585,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-backup-restore.ko.vtt",
-          "size": 4825,
-          "sha256": "3194009e27a8903ba40c75a9d56d518f3fc0a0dbef5c6e05aea8df0196f3c774"
+          "size": 4101,
+          "sha256": "183cd033fd35a46017bdd64d66f5b6d3f9a00fc45956fdede4b2e571690e52a0"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-backup-restore.ko.chapters.vtt",
           "size": 653,
-          "sha256": "7c097225953fd17ac046f7fc83d36651f85506c014ced7af0f89c48cba609696"
+          "sha256": "ec81361e5f9bb5c57ac6736e350200db9d5aa3df8bdeaa01df6a2dab0ffd4950"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-backup-restore.ko.words.json",
-          "size": 23234,
-          "sha256": "b745c4a08761a297b71998e3685b3ce14c2b82e9e5365100a1c127acfc6f983e"
+          "size": 18607,
+          "sha256": "b88a4a8e919c007c56ae9c83e718d2b7aad1cd7d4ed5a591cfce7bc99b222220"
         }
       },
       "pt": {
@@ -612,18 +612,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-backup-restore.pt.vtt",
-          "size": 4801,
-          "sha256": "f1aab758f51fbb16c5f2adf7d72a74c4fe3179cdb120f68d5b29b3536dd2805b"
+          "size": 4155,
+          "sha256": "617f2527abac2c7c85dad05e883a7932f9e8fca8930a9bff5807b346679bd8f2"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-backup-restore.pt.chapters.vtt",
           "size": 658,
-          "sha256": "d112341166e47ab00a272d3640ec27b8733c51a0c6f0ab7964559f747cac3ee4"
+          "sha256": "aa2c651be3b47661354e07a90c17a06c4dca1070dbca0bc9b9118868ef717096"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-backup-restore.pt.words.json",
-          "size": 30375,
-          "sha256": "1f8ee6e051998e713f6966024bb3c04eb169e862597a59c95ca8578c72a792e7"
+          "size": 18314,
+          "sha256": "1b6e324bcd08187db294da76e8ac211f23252b0b18e3b664b9f2d3e6525a907a"
         }
       },
       "ru": {
@@ -639,18 +639,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-backup-restore.ru.vtt",
-          "size": 6290,
-          "sha256": "29b944aca246eb3b58eca6828f9962c4c1b32d54feb1f536c6f2f5cf27844850"
+          "size": 5556,
+          "sha256": "47df2105072d1dc029d136b554065179b9971eb3c8d01a959df0eef21ff2111e"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-backup-restore.ru.chapters.vtt",
           "size": 924,
-          "sha256": "6b67c89eda7182fcabef2efedc638b762f4a6f91446bcc9b8f42d13e1bd8892e"
+          "sha256": "993f5c068e7e6cf91640d6fcb7b1d9de1d92034e22d5a9c36d2beb4cc1a5124a"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-backup-restore.ru.words.json",
-          "size": 28818,
-          "sha256": "47f18970659ea48526dba81e0970067ed0d39ea13f97bf6d539e9315891c76bd"
+          "size": 18018,
+          "sha256": "116b9b321ac740c4a808a0a70e1a0dd62d610bd8c4dba4785b9aec403c3d9d70"
         }
       },
       "tr": {
@@ -739,18 +739,18 @@
       "de": {
         "mp4": {
           "path": "tutorials/video/de/tutorial-branching.mp4",
-          "size": 11765100,
-          "sha256": "46ba993d943bf916e993c1bc6898d9b5bcfab22516f1a927ef9eb39f67feea83"
+          "size": 9566752,
+          "sha256": "10cb517cc4631cc543032a2602812e2bb50261a8225b22e47dc2d051a1322027"
         },
         "poster": {
           "path": "tutorials/video/de/tutorial-branching.de.poster.jpg",
-          "size": 137361,
-          "sha256": "d4527466466d5301b8ff4a791a1180cfe3f02031298dcc8b6ad201fa0e7df896"
+          "size": 138792,
+          "sha256": "57eaaf2fc92f8ea8a458f09931446f923efbc84a41817e11eff78b29b6ffd0f2"
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-branching.de.vtt",
-          "size": 6942,
-          "sha256": "41c1e6aea000d4c3df52f0a52f16c25b79f8dbdf54bf24502b3914cdb392f20c"
+          "size": 5962,
+          "sha256": "41d80abc6169f84e7e1efc767f6ab5cb1e703a37bc5cb166a281494d5e8c2f83"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-branching.de.chapters.vtt",
@@ -759,15 +759,15 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-branching.de.words.json",
-          "size": 44364,
-          "sha256": "4f1297aedad4dcf4dc796d532b18dbe811361e97564083643f5df6683ef7d735"
+          "size": 28158,
+          "sha256": "b59e1c86513a3ef1323f16e7cd819f5ec04f1ec0c7a1e7fe504ca663898d3634"
         }
       },
       "en": {
         "mp4": {
           "path": "tutorials/video/en/tutorial-branching.mp4",
-          "size": 8355857,
-          "sha256": "b8001b85cadfc83720773b43be2ee6255bdb3bc0182bd61f5dcd2e191d912e7d"
+          "size": 8359146,
+          "sha256": "e75c50db795d2e74f96d6de2a091edf4a7793a164998a6a2fb8bcd45595f469a"
         },
         "poster": {
           "path": "tutorials/video/en/tutorial-branching.en.poster.jpg",
@@ -776,35 +776,35 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-branching.en.vtt",
-          "size": 6106,
-          "sha256": "23170ced328707e753e7a4f092ac22e866b0ad5835e492d35b94a08a7b909d66"
+          "size": 4965,
+          "sha256": "30afd37d5f7d1ae2900806b6ddd8e68bdd6aadc6a18ac874b69bb83e67811bf7"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-branching.en.chapters.vtt",
           "size": 1000,
-          "sha256": "917cd132472e0fe844b074d4c002d40adec71ba4c2449def0b89c4e16d299f7b"
+          "sha256": "58ed1b097eb390cb082022e46447cbdbf8454958afe46adb9d4064bb122569a7"
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-branching.en.words.json",
-          "size": 42756,
-          "sha256": "f102ecd13fe6edbf4ab2d41381b4328c616c78802b1531c869f50b4f2b9c6d9f"
+          "size": 26885,
+          "sha256": "64b1ef2b9fa4fc71be65bb15dd9999bff3f413789e012bbcaa6cde102e04d518"
         }
       },
       "es": {
         "mp4": {
           "path": "tutorials/video/es/tutorial-branching.mp4",
-          "size": 12454645,
-          "sha256": "5c6dde982333a765ce236a782035bb3dd4593d73d9e57501897bcca13120fa2e"
+          "size": 10242715,
+          "sha256": "82ce40d36a3e65a5a5ffeb07fbebeb93de959fb63025dc9e51b6bea3e617a440"
         },
         "poster": {
           "path": "tutorials/video/es/tutorial-branching.es.poster.jpg",
-          "size": 135504,
-          "sha256": "0209f2e1e17e64ad405c63a4179522810f359d51c69e2d9464e5156c9cf4e42e"
+          "size": 138253,
+          "sha256": "0c2c1bb97e4d9f3354d5e57bcaec4d2af7dbfd5cfabfd63d54b67c99fbc01c72"
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-branching.es.vtt",
-          "size": 7024,
-          "sha256": "5fffa0bd00c7e646ed80fd9b87141c72278814e2da7031ed302a97acbb43e746"
+          "size": 6132,
+          "sha256": "7999ba9a0597c2157d12286da6b6c211d3133206651d673bf3494fe7b784ccd3"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-branching.es.chapters.vtt",
@@ -813,8 +813,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-branching.es.words.json",
-          "size": 47444,
-          "sha256": "e55a19683c0d0c678be3446e6d6d9c2c4d4054eb72d27dde0ba3586737219db1"
+          "size": 30514,
+          "sha256": "d9af308414773e09d0076d402aca5597a7c9fb6ceec5eb35058e8f2f179bf8c5"
         }
       },
       "et": {
@@ -847,18 +847,18 @@
       "fr": {
         "mp4": {
           "path": "tutorials/video/fr/tutorial-branching.mp4",
-          "size": 11524965,
-          "sha256": "025203650b55242f72ff9a39d48092becb2ef09d042f2daea905ed72aea3f9d4"
+          "size": 9510621,
+          "sha256": "dcc511c40ad1b2d77e2717eaf7f4b0c367d4f573c26efa1de69612b3b6256883"
         },
         "poster": {
           "path": "tutorials/video/fr/tutorial-branching.fr.poster.jpg",
-          "size": 136096,
-          "sha256": "71bb62b8fae75d5088244a94777e0daf96e924071316ee790e133d910a754666"
+          "size": 138860,
+          "sha256": "44c58bd4c63fd31a9e5e40fafed4a81211f821ef1a8cee6bec8d3fc992b1d1ef"
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-branching.fr.vtt",
-          "size": 7081,
-          "sha256": "953ae5b66b27aedc786bbdc5bc0438075552f706cab8c4a1f0b2ee4cb04877e3"
+          "size": 6099,
+          "sha256": "010cc7a0522549ce418bd1c44647ed6d4305c45ebac5f152516c9876bf87d734"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-branching.fr.chapters.vtt",
@@ -867,25 +867,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-branching.fr.words.json",
-          "size": 48067,
-          "sha256": "534ae0f688cb20e8cbeee0d1b32bafeb702eb1bbd75556930840a0ee180c804e"
+          "size": 30121,
+          "sha256": "287d0b0c092c9dfb11d9ad4be93a01a1e5565098bf3cf503e191d4a765cd134a"
         }
       },
       "it": {
         "mp4": {
           "path": "tutorials/video/it/tutorial-branching.mp4",
-          "size": 11629909,
-          "sha256": "e45931246db1a6fb4c4bd6c42f14f6e06fb250065d2350b5f0766b3d0fab726c"
+          "size": 9528767,
+          "sha256": "37fd8edbe5a66645a26ee3cf166f8fa34e995065c07f1c2595183164a00af6b0"
         },
         "poster": {
           "path": "tutorials/video/it/tutorial-branching.it.poster.jpg",
-          "size": 136025,
-          "sha256": "040c62e444a95268b6720f64c0f336a411fe75b0bd06c1d70bee7f6f08adfa3f"
+          "size": 138784,
+          "sha256": "a8a74f557f3a3455549e3d2f1a01b0aea7dda18f8394f7a946204003e6586396"
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-branching.it.vtt",
-          "size": 6802,
-          "sha256": "dd889da9b3ba92f38f6361a5eef6a4e26ee08a9f59f1dcb0da7ed615d3b81543"
+          "size": 5853,
+          "sha256": "e46a1c782c37fb0f09efec9d62580f8b2126c36d5afb7cbfc90dac74aa68e2bc"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-branching.it.chapters.vtt",
@@ -894,8 +894,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-branching.it.words.json",
-          "size": 46271,
-          "sha256": "8ab2f8cf004f20fffe43fb81d3dc548553b23def8a331da1ae96cb26c169aaa9"
+          "size": 29086,
+          "sha256": "d5e09ecedd6e8ecda5b14952d984a9ed50b2800dea319bd0ece9f7fb2124ca04"
         }
       },
       "ja": {
@@ -938,18 +938,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-branching.ko.vtt",
-          "size": 7303,
-          "sha256": "03b4ef23d4c2f2f49939edc997aabe7c7e34f02ec741756a7b71172af2914be8"
+          "size": 6549,
+          "sha256": "8b9c95d384df4dbab8cead5cfc17d5dd55291e8320df5664907031e4ed1a96a1"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-branching.ko.chapters.vtt",
           "size": 1032,
-          "sha256": "569de7954551377d98577ea576fef750928f5d72fe5f1f1df900cb7aec7205e2"
+          "sha256": "d193711dc03337e53b667c0623459b69dd4db087d01719dc71f982cf8088a387"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-branching.ko.words.json",
-          "size": 37002,
-          "sha256": "7893a54ad7af79b41000f5668d3fd74aa7ea91340899702bc710af328aa85cc8"
+          "size": 29025,
+          "sha256": "51593cf62f1bb777cdfbfee79a659a536014ed8305ba6d7353ea76c078057215"
         }
       },
       "pt": {
@@ -965,18 +965,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-branching.pt.vtt",
-          "size": 6775,
-          "sha256": "8c7edad15a93626b9388ae044439d67da5770b0375863bfd8e623955c6c749ac"
+          "size": 5792,
+          "sha256": "189aa9d75d90f2875ed96aea21da6a9df6efe150ef4c27c5ac66bd6c7f23f6a8"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-branching.pt.chapters.vtt",
           "size": 1022,
-          "sha256": "5216544c02c94dae0222946660cca1e73f06e0b9c5e88bbfe87a6de9f1e31726"
+          "sha256": "8b8f4013114bbbcbc6716eb637468e44994ecfb2fd69b5b5e88c89e1d408c67d"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-branching.pt.words.json",
-          "size": 45931,
-          "sha256": "a4f7fbed4e2557599330d41f915a321da50b51c1f5664dd5b370a94dadc8a4c9"
+          "size": 27364,
+          "sha256": "5f9e53d01495c4841c902c08edcd65e061386c7383b83f20ce771396f82223cb"
         }
       },
       "ru": {
@@ -992,18 +992,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-branching.ru.vtt",
-          "size": 8439,
-          "sha256": "b0a1bb5137ffde5f418b6b319b796702cfd21595283e8a4bc71a4ca8e63f77f9"
+          "size": 7392,
+          "sha256": "1f7c53062520af8ff9b2e488a447ba42d13ab155d878aa394e9d86fca9760124"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-branching.ru.chapters.vtt",
           "size": 1193,
-          "sha256": "3950822070b91eaddc406d54718b4600706da917d0c4d05543ec65b3bc251924"
+          "sha256": "755f148e8b4084f650d3e3073f68b37b651b351db32e446fb2faecc5e39e30ec"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-branching.ru.words.json",
-          "size": 41408,
-          "sha256": "d6c6305987700bb6ae54ec51818ca1cc0a6e851139de7119023d82474baf1dba"
+          "size": 25636,
+          "sha256": "4744265f3acadff19e2809272c10935f8c512434327450da276ec3e2983db605"
         }
       },
       "tr": {
@@ -1102,8 +1102,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-create-repo.de.vtt",
-          "size": 3044,
-          "sha256": "2e710a1cd0b43cfc1ade710714dc826115876d21d52fb767d3b1a660bab0ab4a"
+          "size": 2710,
+          "sha256": "53606dc322fcc0491a20f32a0297673d4821145001ba67d13fce006b848e50bb"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-create-repo.de.chapters.vtt",
@@ -1112,8 +1112,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-create-repo.de.words.json",
-          "size": 19956,
-          "sha256": "a55d84353dd5cda8860fc4e820d27a33c4f973b73b00103f814fbdaae7c3cea6"
+          "size": 12942,
+          "sha256": "c4da01d2ca576f002b9bad3154c6eda81536049fd8a92e9e8855936bf2161ed3"
         }
       },
       "en": {
@@ -1129,8 +1129,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-create-repo.en.vtt",
-          "size": 2443,
-          "sha256": "69aec8534890d28759721fd0a828daecf3d4b8aed3af3d4118f401f39b769a61"
+          "size": 2168,
+          "sha256": "71d2b98473fb0b7372a02595e7669bc1b898c044241c08cd4fe77af4ce687311"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-create-repo.en.chapters.vtt",
@@ -1139,8 +1139,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-create-repo.en.words.json",
-          "size": 17708,
-          "sha256": "f1afda1d2a0e6c54c488a4faa01e4754f892c68f62a8081efc4fc890e3e5647b"
+          "size": 11698,
+          "sha256": "388bcd5f7d9e75c0e288f5852f7af0bc8cb4119d4c1acae277fcd7bd14061ccc"
         }
       },
       "es": {
@@ -1156,8 +1156,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-create-repo.es.vtt",
-          "size": 2917,
-          "sha256": "cb683a507d7592992acc329a73239c47a3af4cd0962da92778086a704b9b416b"
+          "size": 2454,
+          "sha256": "705f48e6030b559ddb4e6c5812b30901bb1c753e4fb6fa52c20996eb234fbf29"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-create-repo.es.chapters.vtt",
@@ -1166,8 +1166,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-create-repo.es.words.json",
-          "size": 19990,
-          "sha256": "a652b14ad6217291fb358f7d6c1a1166dd9e28bd81b5bebedbbe7ab686813141"
+          "size": 12923,
+          "sha256": "bcf06b363723d66fd848c77d71dd4500585974c8f6f346e8f01606a310be24c4"
         }
       },
       "et": {
@@ -1210,8 +1210,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-create-repo.fr.vtt",
-          "size": 2894,
-          "sha256": "34bc49ce0d5ac9781513265c8ffa5cbe45d0a5b6c196414d28c343b31517b538"
+          "size": 2462,
+          "sha256": "31ec37474e813463080db3fba6bb94a701b000fa2aa6ede7251472cc81e9507a"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-create-repo.fr.chapters.vtt",
@@ -1220,8 +1220,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-create-repo.fr.words.json",
-          "size": 20027,
-          "sha256": "43d9c95a7e70d3218d1ab2e684c0bf0623b4382f5e3f657cc89108cc0d3bd516"
+          "size": 12586,
+          "sha256": "46a64bd02183241fc5bae4ba0ea8b17970d8179ec69b25290acbcc4bda52bea1"
         }
       },
       "it": {
@@ -1237,8 +1237,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-create-repo.it.vtt",
-          "size": 2820,
-          "sha256": "c91cbf880fa13aa8d9a0b8e54a8293736c27103076376eee09c06bed8575d2f8"
+          "size": 2391,
+          "sha256": "8e162d90589cd474256635e426aa40dbe94234e4aac985b318c5698d08e77b2d"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-create-repo.it.chapters.vtt",
@@ -1247,8 +1247,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-create-repo.it.words.json",
-          "size": 18755,
-          "sha256": "2a3653dd25870ce7ac4cddee4593072924feb196cfdda8bf9f40ec7d7771fe9c"
+          "size": 11642,
+          "sha256": "4c7a7d9494ac196463f6a307b3734b9328d6ac1853e6ac14fddb9892ea22b7a9"
         }
       },
       "ja": {
@@ -1291,18 +1291,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-create-repo.ko.vtt",
-          "size": 2821,
-          "sha256": "d15d3c9a831e5ca613b4e514fe09e3496888724422ff5670212557ef4e464792"
+          "size": 2548,
+          "sha256": "6dd1f35e9c1c99e90efcd2b77552451210ce3407c7acd3bd8e6e88c14142c682"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-create-repo.ko.chapters.vtt",
           "size": 369,
-          "sha256": "7adc91005ffeecc4584044f421ffb90e58b4c47f87f10342c063915e055ac0be"
+          "sha256": "46438d5d1f5eefcd82b527d2cb96e5f7a9cef64a29801e77b6dbcf67a39bb3ff"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-create-repo.ko.words.json",
-          "size": 14348,
-          "sha256": "88290b24bc02d2b109dd9288db26074c2b94bf35d45bf947710a183305e0b8eb"
+          "size": 11878,
+          "sha256": "6e1e5512bfee2a2bad8a20cbe159f6f1eb6033d832b32dff74d676c56597fd24"
         }
       },
       "pt": {
@@ -1318,18 +1318,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-create-repo.pt.vtt",
-          "size": 2896,
-          "sha256": "3dd8502975dd9317441ca647bcbc3b43a56a193eec002fc2148a28f079dc86aa"
+          "size": 2557,
+          "sha256": "cab0fdb68205f9f540df649c042fe620882989f590b194b97d91188265d103d9"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-create-repo.pt.chapters.vtt",
           "size": 367,
-          "sha256": "f26b2ca5c63e4b40df46a698f0eaa9a053c42d389631395d1813dd78e96967f6"
+          "sha256": "be6d2cb29e2cebe3745b21ca34105f2ed2591873cef04180d9c73563e3d0d50a"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-create-repo.pt.words.json",
-          "size": 19030,
-          "sha256": "fe6e175d9bde67652fc217fc185200dea183406d3b1f49fc9c363ff2b5120d6d"
+          "size": 11690,
+          "sha256": "c5c1f4dff4ac1c190c0b08069add6137f95d613f856320031c216ce0cb999189"
         }
       },
       "ru": {
@@ -1345,18 +1345,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-create-repo.ru.vtt",
-          "size": 3729,
-          "sha256": "f92093086dac325a7567d2edcfe2b30532527cf5c97c1a6a6ce081543a5a4862"
+          "size": 3358,
+          "sha256": "f2437026d4db3a2e3a06d6d742e9eb163f8c410d07e5dacfbe562168126ac46e"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-create-repo.ru.chapters.vtt",
           "size": 474,
-          "sha256": "a2ba1f16738d920b9b5d7d8e4db91bd655bc8260fb319dbfcb53b9a74a561c33"
+          "sha256": "aa3f0a8bea8900b2e7e2451e521466298cbdb8c78a548dddb0b35c5616cff888"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-create-repo.ru.words.json",
-          "size": 17941,
-          "sha256": "0a7be8f9adfffc6875553677c6d808cc94b415883d96db04e7118c15cdb25d79"
+          "size": 11538,
+          "sha256": "732111f3ebd8c1c058a64d8f8f5f36bc748c4150fdb6d04c31e9ff705c32ed04"
         }
       },
       "tr": {
@@ -1455,8 +1455,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-delta-transfer.de.vtt",
-          "size": 3606,
-          "sha256": "ae8fbe72c8b4be9fefc71deae736f5fb185868a190ca0d31d92fafada8d603bf"
+          "size": 3117,
+          "sha256": "d6dae8f7bf6a609459098e4441b64ec712b5cde36e51bf540b8ddd214ce3ca5d"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-delta-transfer.de.chapters.vtt",
@@ -1465,8 +1465,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-delta-transfer.de.words.json",
-          "size": 23429,
-          "sha256": "bdb58a39899b892d4e050ec2115fa391f67802c1d9de5940f719056cab8dffb0"
+          "size": 14532,
+          "sha256": "cec5c96bf00e14785a8e758145a87dcdf12299ea4181de9f6ff61722f7c1a88a"
         }
       },
       "en": {
@@ -1509,8 +1509,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-delta-transfer.es.vtt",
-          "size": 3660,
-          "sha256": "8fa406941497e9032665baddd5e1f8dc157cc64b96020d1991d7916907c4d1b4"
+          "size": 3048,
+          "sha256": "5433b8691cd6a0fe03677947e3ccd38799727b85f996628de912911f5b2fb7f4"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-delta-transfer.es.chapters.vtt",
@@ -1519,8 +1519,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-delta-transfer.es.words.json",
-          "size": 24507,
-          "sha256": "94c486341a43e7f7f261197fb2b2635bff776b81e4b918362493eea8091c834b"
+          "size": 15338,
+          "sha256": "da8144e0ba4b036315f763cbcd9955878478d7ec3654eeb75ed7b473072023ea"
         }
       },
       "et": {
@@ -1563,8 +1563,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-delta-transfer.fr.vtt",
-          "size": 3779,
-          "sha256": "56d59d0dce64e5140d473fe9ef599df0de7b66db4fdcbb7475702e79427c8f54"
+          "size": 3256,
+          "sha256": "d1656dc79e4d35fb89b9d5fbb8065b65fae6bb2bcade7968f76adc013582b3e2"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-delta-transfer.fr.chapters.vtt",
@@ -1573,8 +1573,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-delta-transfer.fr.words.json",
-          "size": 25225,
-          "sha256": "d783017c318d16cf6ea8d47f168d66685f6a86c119ac0c4100dea6713f3d14be"
+          "size": 15289,
+          "sha256": "e3a581b9c043bf879bbd9c02e563ce3256e88a7e8a71b76f4aa0952234e14027"
         }
       },
       "it": {
@@ -1590,8 +1590,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-delta-transfer.it.vtt",
-          "size": 3514,
-          "sha256": "2d2da6deafb22606567dcd123ced5fb0f6b982cea080015d68e8dce8807d94d0"
+          "size": 3090,
+          "sha256": "ece5ad121b206cb2025fdd042f527175aea5fa82d4273863f57da2fc48565df1"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-delta-transfer.it.chapters.vtt",
@@ -1600,8 +1600,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-delta-transfer.it.words.json",
-          "size": 23337,
-          "sha256": "751f489d9b3ff3a0eada448e29a9e46df8dc8da9c9c8e933a92a61986e34f155"
+          "size": 14495,
+          "sha256": "ef224df7b9815323eaf061b51c1e716a1ddeae8ad0947a1a15f839ee6e0a0a8f"
         }
       },
       "ja": {
@@ -1644,18 +1644,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-delta-transfer.ko.vtt",
-          "size": 3780,
-          "sha256": "8cc9f3e5a2bdbe40c4231145772922441b2440ef689486a42d746421e3391898"
+          "size": 3331,
+          "sha256": "b141587b74f6b5a3c547784004820b73a99479f83a9d31f843243d08af7fa436"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-delta-transfer.ko.chapters.vtt",
           "size": 436,
-          "sha256": "b13d173acdf925854240e9175293a6844bd0f5e92189c6641396af8de23c018a"
+          "sha256": "1aa849d4bb4860edcbbd48f92f2e464f4d9acd1f1905ebb2ff5be0ee6829e357"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-delta-transfer.ko.words.json",
-          "size": 18442,
-          "sha256": "ece14902f4d75f60dc910de833f9956f6e995f3b243f87eaa48be6e797ef31f5"
+          "size": 14038,
+          "sha256": "054bd5968cfa717e639ee5e42e01f182a35493b77da89536e6bd06dad4e2bfa8"
         }
       },
       "pt": {
@@ -1671,18 +1671,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-delta-transfer.pt.vtt",
-          "size": 3574,
-          "sha256": "87968ce2719dae1ede215a334a070635b7cf7d872fe2e29dc7ccda31079818f9"
+          "size": 3082,
+          "sha256": "b1b0676931db62e1837530375e180a8239a78ee0e86f9177fa06604ea873e6ec"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-delta-transfer.pt.chapters.vtt",
           "size": 412,
-          "sha256": "8f9bec1a8d37d6cc4d1d31f67fe035a07045d13824ba39c282bb1745bb899a32"
+          "sha256": "6a69882364aab1215d4342350d3a5b1dc95336ba10ff58bcd33c71be3a3bfbf9"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-delta-transfer.pt.words.json",
-          "size": 24293,
-          "sha256": "d75354d201db986d33bd66bc97ce5219dd0edee19ab03af099e55e0f4b0e6f36"
+          "size": 14766,
+          "sha256": "c2adc1345540060334219ae1beb41bf4474124337382ee4fec5fd442c222714b"
         }
       },
       "ru": {
@@ -1698,18 +1698,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-delta-transfer.ru.vtt",
-          "size": 4626,
-          "sha256": "21e19f585857b631a20f8c02640bee17d664943df0bd0b5e95e90272ce6e4201"
+          "size": 4105,
+          "sha256": "c2a7a0664957df44df8d00e954d82d5d701ff005837772db56b67ecf29fe7b99"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-delta-transfer.ru.chapters.vtt",
           "size": 534,
-          "sha256": "2490e28f42d7cb53c96ea96054a8df1bbf2d7f8ce627eefc49d2d7d3fb85e7a9"
+          "sha256": "50ddae9a6103e781aa317d092c416ea6c13c764742a602bedecc121858a36240"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-delta-transfer.ru.words.json",
-          "size": 22324,
-          "sha256": "18ea71bd00e83edf2076abe1ec670054e93ac6a70825d654070ebe43e2864ce7"
+          "size": 13497,
+          "sha256": "ab241b0757b3e5fd8245fb2c770cf8f4f8ee75affdb09a659ae0eb4f2ba4a7e8"
         }
       },
       "tr": {
@@ -1798,18 +1798,18 @@
       "de": {
         "mp4": {
           "path": "tutorials/video/de/tutorial-deploy-app.mp4",
-          "size": 6046906,
-          "sha256": "9430e69099c63d4658a63ffb50c2fbbafed7390701b1de8fc6284f4c34f55a50"
+          "size": 4841798,
+          "sha256": "6e46fd63eabe1250e41d1efd2488923c023b7daafa38d9040dea6241e78f9268"
         },
         "poster": {
           "path": "tutorials/video/de/tutorial-deploy-app.de.poster.jpg",
-          "size": 59806,
-          "sha256": "0b4a8392462748d9a7582ceb5511eaf4dc1baf368e4a41e7789b378afeda7d0d"
+          "size": 61112,
+          "sha256": "a8f3caf87d64cfd788183243d67e955974ff23813e363ecbde330d69da70266d"
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-deploy-app.de.vtt",
-          "size": 4056,
-          "sha256": "b35afa9ac513491b0af2fa6bff6967cb082452abf9f50a5f5206fde44aa6d758"
+          "size": 3442,
+          "sha256": "90d8600d6d6fab752c2e9cb23e1f9de107d5627c9dd2ca98b1357dfcf30a281b"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-deploy-app.de.chapters.vtt",
@@ -1818,8 +1818,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-deploy-app.de.words.json",
-          "size": 25590,
-          "sha256": "50fa5a83d9c8a69457d1ce9b4cc1260c631bc2975b303c08e31130752c8994cc"
+          "size": 16409,
+          "sha256": "bfe527bdb018cd94bdc10f2c2dddc529689cdd3a82d9383359236096ec9428b9"
         }
       },
       "en": {
@@ -1835,8 +1835,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-deploy-app.en.vtt",
-          "size": 3532,
-          "sha256": "f2dfe27c4b684f82eee9388d76b191663114fa801afaf9273781472085f6edb7"
+          "size": 2979,
+          "sha256": "8679df1efcbb069c690b6cf55f74edbcb7fc36887dd95c7a156ff04a46f90012"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-deploy-app.en.chapters.vtt",
@@ -1845,25 +1845,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-deploy-app.en.words.json",
-          "size": 24228,
-          "sha256": "4793d0398280ef1894423aa2cdafef133360f2db410fd26e386b823f3c34a07e"
+          "size": 15771,
+          "sha256": "f6d2f1db61d72133438257ac26e42bd683930f0a341c9867c1309470d357a6df"
         }
       },
       "es": {
         "mp4": {
           "path": "tutorials/video/es/tutorial-deploy-app.mp4",
-          "size": 6483630,
-          "sha256": "7176e301de0e274a2f5783f59cdd858df6e992fedfeb8b901d6e4b4a845a2a8d"
+          "size": 5074348,
+          "sha256": "282505496c99d81ac8319f96c1d9b31acaf4327dcb37da1f21b3231d0c3c4bbf"
         },
         "poster": {
           "path": "tutorials/video/es/tutorial-deploy-app.es.poster.jpg",
-          "size": 61580,
-          "sha256": "e1f03a6d328cef0dd614fd245b8503bf60c9a0f71351a82bc5881ce631b82085"
+          "size": 62877,
+          "sha256": "a559f7f393a5b82eaab1a5040dade518d288890b43f709a85fc5c38409785332"
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-deploy-app.es.vtt",
-          "size": 4025,
-          "sha256": "1ad1f7b21ed6c5e564dc3c3bc1520bfe6158c93245cef772826a9818458189ac"
+          "size": 3503,
+          "sha256": "b56526ee077e7fe3ed54477a73bf65cb7d3df5ff31cb28af4044faa53896bd1a"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-deploy-app.es.chapters.vtt",
@@ -1872,8 +1872,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-deploy-app.es.words.json",
-          "size": 26710,
-          "sha256": "097bca9c166a64c6c85d48b06acf896e912fa08825ebcf78bcbe930c5c4f91ec"
+          "size": 17320,
+          "sha256": "01b4a2c72794c2f052a6f6353f4710db771e3c84e3eea1d2633111be6bb453df"
         }
       },
       "et": {
@@ -1906,18 +1906,18 @@
       "fr": {
         "mp4": {
           "path": "tutorials/video/fr/tutorial-deploy-app.mp4",
-          "size": 6008493,
-          "sha256": "77926f2dd81dd6f55c2a4fe57d07d935cfbe864836e80d4af60f84d157ad6554"
+          "size": 4742383,
+          "sha256": "94bd60cd8356c9ff57de6a8f295859f3926f5ca4caa6d43247aa0300521734ec"
         },
         "poster": {
           "path": "tutorials/video/fr/tutorial-deploy-app.fr.poster.jpg",
-          "size": 63185,
-          "sha256": "0fa7fd22dd800b1bf52db88e1f00770c483082e334ea38576bdbbcab6db929c1"
+          "size": 64642,
+          "sha256": "5c1f9365c1d8ed27f2c4ca1f286a869f89f773341be188b8fb2b2ae9b9276f81"
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-deploy-app.fr.vtt",
-          "size": 4179,
-          "sha256": "abee440b4a7a12389c903d12c5d3c5ad5a920ab5f1477dadc2f36a6db8ec4428"
+          "size": 3504,
+          "sha256": "02a29689749be82f6940b8fc9b384cd73c260dfba374449d239cce70d57853f9"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-deploy-app.fr.chapters.vtt",
@@ -1926,25 +1926,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-deploy-app.fr.words.json",
-          "size": 27458,
-          "sha256": "15728d038e5b8ddf59158bc2b172632534645331790d92ab0343c1266cf66926"
+          "size": 17247,
+          "sha256": "e54afb557427055329405dc0d12b9975c5122ea84e9e9a3da77fdd73fd721e38"
         }
       },
       "it": {
         "mp4": {
           "path": "tutorials/video/it/tutorial-deploy-app.mp4",
-          "size": 5893494,
-          "sha256": "ba6150b34b16fdd9d488b521ecf678ced5bfc4c73b5d0276aa7df07b8b3e126a"
+          "size": 4665482,
+          "sha256": "c2980642a417518867c6615edcc63d8e95111febf87e5e897e449bf9499aa7e5"
         },
         "poster": {
           "path": "tutorials/video/it/tutorial-deploy-app.it.poster.jpg",
-          "size": 58045,
-          "sha256": "976411da5a663724107c5b991d7f6c2ec1c15892bba276fe8f038b023049592f"
+          "size": 59194,
+          "sha256": "c91ec8a47e5cf7a107dba9af470c22bc9973ed07d56ae2e17f936d4777ead1d2"
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-deploy-app.it.vtt",
-          "size": 4030,
-          "sha256": "f161120d8391c85fccc895e43758912d8ede1587bb1f2bfee4d7ae9213498767"
+          "size": 3382,
+          "sha256": "d2d052795db81c71b547443e6f2e01e5365a0b249c4f3daa04ee4004cf901af5"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-deploy-app.it.chapters.vtt",
@@ -1953,8 +1953,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-deploy-app.it.words.json",
-          "size": 26446,
-          "sha256": "a7da961b65128f054cf9c05679d87902ab5ef926124c1796ec0a2608ee3ca145"
+          "size": 16267,
+          "sha256": "f456ba5697825eb3cbae78e98dfd6c0a52116636ef19dbe7595b8f5348f1c6c2"
         }
       },
       "ja": {
@@ -1997,18 +1997,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-deploy-app.ko.vtt",
-          "size": 4199,
-          "sha256": "d7e6a5039ba0ac1d419c9a8628dc1f160bc0fb6939b69ee7571bb94a836bcbd8"
+          "size": 3627,
+          "sha256": "d4a024191b1645ed13aa4d509946dcced17f7c00ac26edc95aad7cbf9de8e4fc"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-deploy-app.ko.chapters.vtt",
           "size": 548,
-          "sha256": "4321f0a74a2dbc7ba7242f20eb37b4c1ceda5cfe3041e1df7bcbb84d555acbcb"
+          "sha256": "29b2288226ee70ac5e767725bd4349d70075f2af94a5907826d496535f81cd8c"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-deploy-app.ko.words.json",
-          "size": 20553,
-          "sha256": "3840cfc0285c5b38c2e71eed3c0db95eb21cae3e40356ae452a64e57f6acbe31"
+          "size": 15048,
+          "sha256": "ddc131d773cc68a3d5b64a6929196399d7dca9e6faeadd2721ad9afa7177ec01"
         }
       },
       "pt": {
@@ -2024,18 +2024,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-deploy-app.pt.vtt",
-          "size": 4180,
-          "sha256": "b4f50c5fa264adc6dc3dc1bcbc5cb487e0c7d7c7ade845fc53a0179e5b0b66e9"
+          "size": 3538,
+          "sha256": "cdd959d34a357a69e154c1541d5652af91ad8aa66561654ba8c5705329c18fd3"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-deploy-app.pt.chapters.vtt",
           "size": 562,
-          "sha256": "063b339a83f82cdd7a4e14521ee2ddda9e1458b9e58338208de78743313d055c"
+          "sha256": "dae16e281150e5c6c6ac3396a201d8f6b0b1f255c633f02c27b4bee49286c796"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-deploy-app.pt.words.json",
-          "size": 26707,
-          "sha256": "9dbf07e5cab58e3b58a8c14c8492e4ecc94cdf22a6ca92cdf9e0c6dc365c42af"
+          "size": 15843,
+          "sha256": "d0eeffbcbfd9996640ef43d7ae19412f4cc951bb22c0a18f4579a08164723225"
         }
       },
       "ru": {
@@ -2051,18 +2051,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-deploy-app.ru.vtt",
-          "size": 5069,
-          "sha256": "c825d955c94f2d16747d07465a863c2dcfe43bfc9353e01f0a8a503353849ead"
+          "size": 4300,
+          "sha256": "cb0d40ec3dfb64cc890519b66ffabcb32f0bd382552b16e8225460be86ac1fd5"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-deploy-app.ru.chapters.vtt",
           "size": 685,
-          "sha256": "c460175101e0a142ef210d856316f5267845c90dfb7e78e59d744d171c6c0c9f"
+          "sha256": "d83843e347c36aff49fcd249ac6538cd532a7126ca54cc2203ac9f67958f420e"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-deploy-app.ru.words.json",
-          "size": 23046,
-          "sha256": "3d5505db20b556f9579b99570970b368031099e766aeec99768cfd277517d1cb"
+          "size": 14167,
+          "sha256": "18a143f644afdeb8808f337d0365d0d512dc909f8ff5bbb7ad0f8187b13f5621"
         }
       },
       "tr": {
@@ -2151,18 +2151,18 @@
       "de": {
         "mp4": {
           "path": "tutorials/video/de/tutorial-fork-isolation.mp4",
-          "size": 9358396,
-          "sha256": "c562e29f77eb88280cc2535ef43ef9f60bf5363676c517c0ba5e4d05f8fe1626"
+          "size": 6837294,
+          "sha256": "ab3fc1dc123f1978ad33025aaa7613212d657d8e8e3a35134883d61e4240a333"
         },
         "poster": {
           "path": "tutorials/video/de/tutorial-fork-isolation.de.poster.jpg",
-          "size": 66677,
-          "sha256": "b018ab43a0fd1e397957a467c71c761f3c9923e4a88f90321d8dd4b484f7a283"
+          "size": 68276,
+          "sha256": "1d84fbdb56a256ce217f36e5ba4431e4ce572ba596303cc30ec95274c1e81888"
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-fork-isolation.de.vtt",
-          "size": 3846,
-          "sha256": "7d5c82bbb5598c74d491907ca97b347952a66bdf82d091a514a8a4dd2dd9eb55"
+          "size": 3048,
+          "sha256": "e95d9d2f28acac715aba8424bc2ed9799c79a2787e99ef408fad3adc5a6c26e3"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-fork-isolation.de.chapters.vtt",
@@ -2171,8 +2171,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-fork-isolation.de.words.json",
-          "size": 23781,
-          "sha256": "ffacfc50431e610e05421f9c5351221e89c5221974e652cc7336520e623e3c92"
+          "size": 14823,
+          "sha256": "acbc2927f3d4ae8977a8da66764de53ba4cdb7dd04e3f8125f4fc60858bc2ca2"
         }
       },
       "en": {
@@ -2188,8 +2188,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-fork-isolation.en.vtt",
-          "size": 3814,
-          "sha256": "d561a73a1f108b605ac40c644356b91dc3819024c763a36b3100eca093427506"
+          "size": 3045,
+          "sha256": "f3a344dc543698c62766d549ef77e2e9c53ec1ea3b195df69deb699681bbe5df"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-fork-isolation.en.chapters.vtt",
@@ -2198,25 +2198,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-fork-isolation.en.words.json",
-          "size": 25495,
-          "sha256": "08524e77f0ced7a705380c40239e34b327bd7a2bed5ec690f7b2f8325461a7e5"
+          "size": 15544,
+          "sha256": "016b5ff6f832bead0a93b9489bb625c4c55e82ed6d886e53c115a264584fe830"
         }
       },
       "es": {
         "mp4": {
           "path": "tutorials/video/es/tutorial-fork-isolation.mp4",
-          "size": 9925217,
-          "sha256": "35d13ca25927b93afd86be20b8154cf5108ac4de96b0372ef971bc364ba7f8ff"
+          "size": 7254958,
+          "sha256": "9ad6a231ddda71af80591135f5008e03b8443cc685195029309f62a0a1c80f80"
         },
         "poster": {
           "path": "tutorials/video/es/tutorial-fork-isolation.es.poster.jpg",
-          "size": 68260,
-          "sha256": "7122da2a532ef8610af5b9d1cca52607bb7dacf39c22ed19aad1ee9dff0f42be"
+          "size": 69775,
+          "sha256": "12521c0901885f6d120e3ecf0eda7e2b12166a4dd37ecd4b241824e810ac6f60"
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-fork-isolation.es.vtt",
-          "size": 4019,
-          "sha256": "fb972766b92dafe6dab4786654071f72774dcdb4197c57feee359a84e3c73c0d"
+          "size": 3161,
+          "sha256": "c72bac92f90156506bfd157a1a640affc1edd5b0ef8bc80bc96927cb4f4dc933"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-fork-isolation.es.chapters.vtt",
@@ -2225,8 +2225,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-fork-isolation.es.words.json",
-          "size": 25752,
-          "sha256": "4309c3a3ae93749a1b5f2f24447e2fdf537c80b36696ed1b773a88fff5122fb7"
+          "size": 15770,
+          "sha256": "1d927e52e89aa30c1cb8b910fdb9117b1a88a59772c74afcffa58158edf5e700"
         }
       },
       "et": {
@@ -2259,18 +2259,18 @@
       "fr": {
         "mp4": {
           "path": "tutorials/video/fr/tutorial-fork-isolation.mp4",
-          "size": 9791309,
-          "sha256": "150dc3ee7025a81a86d5516d8bf9e60c570733ac325d5415e2148a0c604f8050"
+          "size": 6833157,
+          "sha256": "f19f2e8aa6fb089f7e0bdc1742505c3f4611e1959287731615fd4033781d6ab7"
         },
         "poster": {
           "path": "tutorials/video/fr/tutorial-fork-isolation.fr.poster.jpg",
-          "size": 64639,
-          "sha256": "d3c6d4fed7f6f744e3b9157baf2374530b8709518b89bc610e67ee5acde58593"
+          "size": 66202,
+          "sha256": "5bb2b7c4b551599202bab0cf77a66e3ff04f8e179e5431ec246754eb4976c4b5"
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-fork-isolation.fr.vtt",
-          "size": 3972,
-          "sha256": "5a37a2329dd6054cf815851dd16ebd4639f57acd349518bfb3fff8839a25341c"
+          "size": 3234,
+          "sha256": "510ff93f64a5a31ab47dc423ad496321081e6fb428aaebf1aca0be66530b2543"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-fork-isolation.fr.chapters.vtt",
@@ -2279,25 +2279,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-fork-isolation.fr.words.json",
-          "size": 25316,
-          "sha256": "93c922dee219358ea3ed85d4cc2b6b8104df7594d208a4c370ceba64ffad266a"
+          "size": 15223,
+          "sha256": "6bdb6fd3e59eb25a7c27e91cdfee238fc027ba6c9a0796199613e61ee4a8c689"
         }
       },
       "it": {
         "mp4": {
           "path": "tutorials/video/it/tutorial-fork-isolation.mp4",
-          "size": 9912835,
-          "sha256": "9fbf0abca9bbeafb3d269b384722cb78bf6522974f4dc7f9262db6b8e9c0f086"
+          "size": 7003399,
+          "sha256": "655e6d26caa61c69bf5caf860c35027fb8b94f79645f4f8031f66a14a995153a"
         },
         "poster": {
           "path": "tutorials/video/it/tutorial-fork-isolation.it.poster.jpg",
-          "size": 64537,
-          "sha256": "5b1fca2a5d2d6c801e46cc6991b4cdf894a7a000efd8a7097a3447798d29e097"
+          "size": 66053,
+          "sha256": "b8019c8e8b416ecb98d1470f2d1c270abbcac9c398ae34a3e765f0cf96842726"
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-fork-isolation.it.vtt",
-          "size": 3912,
-          "sha256": "7fb7982fc2495fa09ba818eff92a7adb1d1d31b1172edadb4580facc8f3b2d01"
+          "size": 3143,
+          "sha256": "8335a1a0dd15a1c8b27953d33e0fca05d33b41c2ed6dec3f1a338cb5569989e2"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-fork-isolation.it.chapters.vtt",
@@ -2306,8 +2306,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-fork-isolation.it.words.json",
-          "size": 24151,
-          "sha256": "6b2e22dd3e41544ee61fa51083656a91edff23540393bc502f19bfe04f7922f8"
+          "size": 14991,
+          "sha256": "7cdca95e207cf9e6f170faf9b719f09fd97afc62ca67e925692e138c40701566"
         }
       },
       "ja": {
@@ -2350,18 +2350,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-fork-isolation.ko.vtt",
-          "size": 4216,
-          "sha256": "cca85fae90ed4233f1aac94622e6353f56ad472c67f11cc0def32d91a1721c42"
+          "size": 3669,
+          "sha256": "180c9159331a1d94eed59b6897bd3ef894e7f7cd5c6506625597d491aeedf919"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-fork-isolation.ko.chapters.vtt",
           "size": 558,
-          "sha256": "d4b2fcbae94ca4f578511a04cd4857dcbb4952674d5604b22bc8a15789da7dbb"
+          "sha256": "dff1c80fa62fcda7c23c4ccf1e75e49ef466a36424517ec27971ecc1c483ca31"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-fork-isolation.ko.words.json",
-          "size": 21850,
-          "sha256": "67c4c67cfc30e4856829bb4d310e120f3c27b0fc6a86a860c53eca4fa2934ff1"
+          "size": 15746,
+          "sha256": "8fe285772c6a7b8ad28c4f972047cc8c95d61b12c86060e59e22b11cd7148ec0"
         }
       },
       "pt": {
@@ -2377,18 +2377,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-fork-isolation.pt.vtt",
-          "size": 3879,
-          "sha256": "c6d03bc915f55ffea872a17913426c44ed54fca846b7a57f0650480ca981f853"
+          "size": 3140,
+          "sha256": "23eeda8ba568629fa0187a3d4d5c3f8244adb115a727b8e88c866a7e5f8cffae"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-fork-isolation.pt.chapters.vtt",
           "size": 574,
-          "sha256": "60149dc174a1f7c735d09c7cee40511019b39fcf5f7e0a44f1231ecf212850cd"
+          "sha256": "4064a43c44aea4dd7bb58ca320ea1c83120e02426344cf7ea6ac06fb5e0ebf5b"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-fork-isolation.pt.words.json",
-          "size": 24793,
-          "sha256": "06e3c475a4846988ad18e0660a32a7e13629feff6180d2641a1d6c8c7d285d15"
+          "size": 14138,
+          "sha256": "9314f02e8834c1c5c1fc1f1e726d9fded452abd428ed69341caa15a83a455848"
         }
       },
       "ru": {
@@ -2404,18 +2404,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-fork-isolation.ru.vtt",
-          "size": 4555,
-          "sha256": "5775973ecc7628b3ec3cfb95ecf962fb1dc93d18b03e6b7fc9b734a1a9f9d98b"
+          "size": 3938,
+          "sha256": "bf152ae27b45784423eaf4a704f48e7fdb0005c1d3ae60d003cd2eeddca33f78"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-fork-isolation.ru.chapters.vtt",
           "size": 703,
-          "sha256": "3e3dffbd1bcd2d4ce0675b0fd43ebb112bfdceb60f811fe7d624fac4fd648dde"
+          "sha256": "b04c01c08ea133296e6e16dd47f861697c76515d78f2608bcc92a8e837cacb3e"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-fork-isolation.ru.words.json",
-          "size": 23560,
-          "sha256": "fe065a14b0bf57ff849b88b27016108b832f99e143aad1f3d5ceec705ae43d61"
+          "size": 14695,
+          "sha256": "428955d37bd7eae68b70cff71815c3724b3071e039571c0e6820dd1c36654950"
         }
       },
       "tr": {
@@ -2514,8 +2514,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-forking.de.vtt",
-          "size": 6342,
-          "sha256": "e3937e2f945be0d55a09dc1ec072efcf6ac1ec24c0d5a358b1b55312f1d222cb"
+          "size": 5179,
+          "sha256": "1d7036c760580ebe2aaa1ce97f04befbe65c472cc71e1b5a1d52dd53adcfab0f"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-forking.de.chapters.vtt",
@@ -2524,8 +2524,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-forking.de.words.json",
-          "size": 39337,
-          "sha256": "319dcb313c9cf42a56a61fed27f5f09bdafe67e1795e11f952f3e482aabefb06"
+          "size": 23902,
+          "sha256": "ef74958e42a6c25c002af5cc4984f38e7a879f6144748ca60dc648f14635d750"
         }
       },
       "en": {
@@ -2541,8 +2541,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-forking.en.vtt",
-          "size": 4270,
-          "sha256": "874c5658aae5625294ae675778c5e20529ff0cb7b7d934cd72171f4e664c3712"
+          "size": 4240,
+          "sha256": "78d7d6f109a0123cb64bb0e594421bc514e3a2c749356e1376ba9b978b5263a6"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-forking.en.chapters.vtt",
@@ -2551,8 +2551,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-forking.en.words.json",
-          "size": 31672,
-          "sha256": "a9e721f88fcb050ff91098b519f7e7b4b8b454f69260a5168cb39b5b6532cf0c"
+          "size": 22082,
+          "sha256": "30356674025417281c494b7c1fdf375db8a5f14446bbeea0c9bc9d3ac9443515"
         }
       },
       "es": {
@@ -2568,8 +2568,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-forking.es.vtt",
-          "size": 6243,
-          "sha256": "954815760ae75f96c86bab9cff8e415b2624714ff2a66cb6f45996f64f4d7746"
+          "size": 5108,
+          "sha256": "9a9ef536f314eb8e8437038b22ede8f6d0cbf900b0b64f8f89a07f9889a96fad"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-forking.es.chapters.vtt",
@@ -2578,8 +2578,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-forking.es.words.json",
-          "size": 40989,
-          "sha256": "fb4349c30724202cb7e6fa5b36a14760d81c682e949d60828a6c1f02440109f4"
+          "size": 26045,
+          "sha256": "22bf49d063532bf2285f24aa0add2a419c84ca3a712ffd2cf2639710d6ca9f56"
         }
       },
       "et": {
@@ -2622,8 +2622,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-forking.fr.vtt",
-          "size": 6321,
-          "sha256": "4237bc4c7a728e1bf9846edc51cbe28b795c6155fd1e4a353c05915531312287"
+          "size": 5244,
+          "sha256": "085a9cc72ecd7e1ebcece7c94ccf28d584a3a6b78f6098aaf4e638cea075c3a1"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-forking.fr.chapters.vtt",
@@ -2632,8 +2632,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-forking.fr.words.json",
-          "size": 41932,
-          "sha256": "adcd0c8c49941a0bc4310f41d4d3d2de2292aa181aa5b475d4bc735ee800fd83"
+          "size": 25498,
+          "sha256": "6a494a16b093984f596bb284630911695e516dad8dbef444bbebab43a3f0d778"
         }
       },
       "it": {
@@ -2649,8 +2649,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-forking.it.vtt",
-          "size": 6300,
-          "sha256": "70cb2f1b962fb1c60e244990ef0e1abda8787c3574ea837be1d9ee5ef74a3419"
+          "size": 5107,
+          "sha256": "bcdda4de107fa8ccc0fb42b59f83e23b7a36672096e9a42035e6bdbbf641d009"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-forking.it.chapters.vtt",
@@ -2659,8 +2659,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-forking.it.words.json",
-          "size": 40040,
-          "sha256": "f6998d86ffafeba40c42367c942d5096f8c76dfcce0e1625191cbb71a5c52084"
+          "size": 23170,
+          "sha256": "f2c1658cc623d3f368354503241b6da8fbf645a09278f0623b3d637fb2c57736"
         }
       },
       "ja": {
@@ -2703,18 +2703,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-forking.ko.vtt",
-          "size": 5756,
-          "sha256": "2448773f43ecc74de63f0237ab193f138527755ca8ed6780c06addce33748c0f"
+          "size": 5063,
+          "sha256": "d0364dfd474e312c0d44e3a3e6ee2be17e3ee34f1a5f84d41c2d6508a8373229"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-forking.ko.chapters.vtt",
           "size": 816,
-          "sha256": "1664cb79ce6f0b105f64131a3b619e3af829d1214ac5796f459bf2f887f8069c"
+          "sha256": "b0781557d15d86d65a86dd1dfcc2b9a6433cc9b5c7998561ca75ee8985b82bc5"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-forking.ko.words.json",
-          "size": 27792,
-          "sha256": "d700957df7edde0bf60e27899b3e9648b8fa344494a355ccb87e59b18f12d661"
+          "size": 20962,
+          "sha256": "d372c92e3d0678af8a97942fb67161b315859df8ff9c9ceee906a4003815ff38"
         }
       },
       "pt": {
@@ -2730,18 +2730,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-forking.pt.vtt",
-          "size": 6012,
-          "sha256": "833ce6fb8a28017ee19b6418c4dd4d7ecd71019be76fb31a7af031a3ac618e19"
+          "size": 4997,
+          "sha256": "c0609bf254cc5e66ecf0d19bf6d3b105926789c818adfe232b3bad5dcbda55c5"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-forking.pt.chapters.vtt",
           "size": 869,
-          "sha256": "9eaf5135243986f5e8955d500112c71fb7b85899fb874170b117729bb6c538b9"
+          "sha256": "ab464e6ab8e0a0e6e8b8dbe5ca00e1a101a9f105e9a4d41782f78b5e7b7c03b3"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-forking.pt.words.json",
-          "size": 38282,
-          "sha256": "b39c46897461083847b06dc80c6f8ce900ea6ad0fb9a8871fa496d57130a3431"
+          "size": 22045,
+          "sha256": "1cfd6ec86da0741c2ab2fd5aba9f77b985538be7d266252ee9ac51e94eb73834"
         }
       },
       "ru": {
@@ -2757,18 +2757,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-forking.ru.vtt",
-          "size": 8008,
-          "sha256": "1f3feecf146191b9edfd3775d5f5f7aa6b24b115ff839464fe5b5c3a0c837189"
+          "size": 6777,
+          "sha256": "732d926774fa45002e614fcef4fe70e00493c854ac3cd4dafa740d5f091c0c23"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-forking.ru.chapters.vtt",
           "size": 1056,
-          "sha256": "7b8fb1e29b6ac7f20370d8998444155663385c1969ce2eb293315faceaaba456"
+          "sha256": "679eaa962db7765c7411bdb4d21fa9153e3058f4f601422d0f3986610bb1e44f"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-forking.ru.words.json",
-          "size": 37606,
-          "sha256": "bceb14ec40722b2177410ed5afdd5d539bbfd9e23617f52b4463ed4ead834833"
+          "size": 22435,
+          "sha256": "e8e0948b019be5db04d6f1b5fbdde19e52ab18bfd7136391d7f0bf880c521b4b"
         }
       },
       "tr": {
@@ -2857,40 +2857,40 @@
       "de": {
         "mp4": {
           "path": "tutorials/video/de/tutorial-installation.mp4",
-          "size": 3037760,
-          "sha256": "fec114e86501f4c08c18446f260ca355883d47de1279d98afc3de64a2ec55acb"
+          "size": 3014688,
+          "sha256": "b906f49a1dbb773ee87534f80c77da64901a70edfa62a2c44da2b344fe59123a"
         },
         "poster": {
           "path": "tutorials/video/de/tutorial-installation.de.poster.jpg",
-          "size": 44640,
-          "sha256": "d4f21ccfa0a7a840e2ee53b4a4bd3352978ae4d79d384c960ac82c1208d00872"
+          "size": 43880,
+          "sha256": "894f165f80a3c175dac21a4b8cdf92d88537397ed1aa15ad75dd52dff62f00c7"
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-installation.de.vtt",
-          "size": 2624,
-          "sha256": "17e5aa1ef7fab634451a780f1cedf666ad3c507f2c540d24b9cc87fe63e269d1"
+          "size": 2226,
+          "sha256": "bdfb09486b665bc9cc166d1a21b2bed5a74c8f25f663ec27cf8d018eb2b9cd8d"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-installation.de.chapters.vtt",
           "size": 414,
-          "sha256": "2430f61a78cf27fbfffad48c3c000138deb1dd61c438872eb842b59c2e6b6be4"
+          "sha256": "e6b8ffeaf1d707f42b7088e28ca9da6d939e815dd65ab5886550699f1678cfeb"
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-installation.de.words.json",
-          "size": 16019,
-          "sha256": "59067c52ec49496f8184b43c9f2095f6b983f230b719ad91fd58fa3f741a8cce"
+          "size": 9940,
+          "sha256": "f7d9cd645e630d5ad0df561a0ff5deabbb55580173f0add6cf8f062392e49a82"
         }
       },
       "en": {
         "mp4": {
           "path": "tutorials/video/en/tutorial-installation.mp4",
-          "size": 2683674,
-          "sha256": "d4b1a4bd947191792ca93e25135305009272987b6356f250f38997ad727a67c8"
+          "size": 2670570,
+          "sha256": "35942efcb6e0c044247b2f1d8614e5c10cb66bd7f2b0bc1b4bfe9e84571d94c7"
         },
         "poster": {
           "path": "tutorials/video/en/tutorial-installation.en.poster.jpg",
-          "size": 42541,
-          "sha256": "63d501035d185b2d3ef701107132293fc4b8c149805bf69229deee9a2fabdc7e"
+          "size": 42481,
+          "sha256": "85900f96fe6aa2c8d4321194b3b116ec3a91d58bd9d459ce0201a78dbf7e372d"
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-installation.en.vtt",
@@ -2904,25 +2904,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-installation.en.words.json",
-          "size": 15111,
-          "sha256": "bb4fb3d26a78cb12f19a6028052fbfd145359b3849f8650fccfe546e290f8790"
+          "size": 10582,
+          "sha256": "027787b94a48a10e3ba20891c03926c4c700853a96fad7afca93b103863cabde"
         }
       },
       "es": {
         "mp4": {
           "path": "tutorials/video/es/tutorial-installation.mp4",
-          "size": 3105740,
-          "sha256": "c70421455d2f3447dae74f382859a74301651efdd0fb2bc8a5e58019339dba0e"
+          "size": 3042082,
+          "sha256": "9d6ebdb8852e1aacef1611b344e191dce1e49d7b56f31d939ea950d8a2b70ef7"
         },
         "poster": {
           "path": "tutorials/video/es/tutorial-installation.es.poster.jpg",
-          "size": 43297,
-          "sha256": "1d033850b2ecc1e0c7cb41cbc6f2555b0095fa32207008d46cfb426cb8d78e80"
+          "size": 43352,
+          "sha256": "9a96c398164114a941a70ada66cb0b000412d1355203d68330fe2cbf42332b49"
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-installation.es.vtt",
-          "size": 2569,
-          "sha256": "6095486c2a42a38b71fb797aaa96f0767b2929257d2ed967137690735bc55ccd"
+          "size": 2168,
+          "sha256": "d381ef9e2d7f5dca04497ac7ff07a4f672a997cedbeffc9427f6cdfe13ac6ff0"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-installation.es.chapters.vtt",
@@ -2931,8 +2931,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-installation.es.words.json",
-          "size": 16987,
-          "sha256": "5cfadbb882ec6ee98409e21ddbda3114bde9f6124d568a4ce30a8cb4b1571e90"
+          "size": 10759,
+          "sha256": "b679789856ce188ef6750fc186a6aad8c5413c43de6a38609ad4f3f4efcc3812"
         }
       },
       "et": {
@@ -2965,45 +2965,45 @@
       "fr": {
         "mp4": {
           "path": "tutorials/video/fr/tutorial-installation.mp4",
-          "size": 2725321,
-          "sha256": "1d96780450922493afa599c6c99b0ec1efbb7b844120577f5d9cb66ba9972654"
+          "size": 2719695,
+          "sha256": "8d3a9646ebb1064e631ecb5c694dba64bfd01f4bf14d7af710d73371de631b4f"
         },
         "poster": {
           "path": "tutorials/video/fr/tutorial-installation.fr.poster.jpg",
-          "size": 44650,
-          "sha256": "52b42a246e9dba779241be858c624f4cde024a0dffd9b4c84f1002767b5de8fb"
+          "size": 44696,
+          "sha256": "e2f9af5e23ee1c9cc852f31fab34b9de209ac1db7c6af280f1e47e26acc3a198"
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-installation.fr.vtt",
-          "size": 2583,
-          "sha256": "7b3b49e4d5746a53cd9bf5fd0edb275f038ded227989a3eb2724b431c2769389"
+          "size": 2183,
+          "sha256": "59825775f0fe184d9c5eb85a1ce4cddb123079750cf48537a9f5c681fff49c1d"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-installation.fr.chapters.vtt",
           "size": 430,
-          "sha256": "f46d9e3c6f3005bbaaf49ca4caba8d52ffaa24f98fd3ab31fa5673b58cc557ff"
+          "sha256": "5c782506e1fe4638810d9c70184824ffac109aa912dbaa211732cd97cce7588d"
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-installation.fr.words.json",
-          "size": 16304,
-          "sha256": "553e3bdd1b66d47bc86c1b051c941f4d0615c478a9a62a1b9b5ba18a52de2946"
+          "size": 10435,
+          "sha256": "1bdf7c389bcbed2486e0e20acedfbd7290a01c6c6aff0a19c13a306d59b1c898"
         }
       },
       "it": {
         "mp4": {
           "path": "tutorials/video/it/tutorial-installation.mp4",
-          "size": 2821673,
-          "sha256": "96091bffcd1e8d0c939a92ec1dfb9d375f6d4bc1667bc3952fb83cd7f62503b6"
+          "size": 2792745,
+          "sha256": "74109049051d3a40c777601fb521a3253045fb4eddff3fc785ff7fb8fc38a373"
         },
         "poster": {
           "path": "tutorials/video/it/tutorial-installation.it.poster.jpg",
-          "size": 44797,
-          "sha256": "6008214785eb79d08485a89687208b95b9ec231e792c7acf93371f18aa0f8cda"
+          "size": 44835,
+          "sha256": "072b6b687e3a2ab77ae03ec740e3e2d9f94b80afeaf41f5c97b18795a651a666"
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-installation.it.vtt",
-          "size": 2346,
-          "sha256": "e144cba5ee3333cd50d0914559c895d8c7d221f219d4a2e789b0f2b5c50745da"
+          "size": 2071,
+          "sha256": "b96bb666e109f464a7ecb6e1b16cc281c7075f099f2e4010d2f9d8d480f0dbc8"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-installation.it.chapters.vtt",
@@ -3012,8 +3012,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-installation.it.words.json",
-          "size": 15866,
-          "sha256": "6ac43ef036d327af23d44ba4525989190eed8e2f587ab4a58535ab8ae5ed1e8b"
+          "size": 10096,
+          "sha256": "100b17fa05779ab628e6d71826440a06e619deaf4ae6d9322916bfe77729e5d5"
         }
       },
       "ja": {
@@ -3056,18 +3056,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-installation.ko.vtt",
-          "size": 2495,
-          "sha256": "000925106c3e9aafe8551f86f5ae6e99084e33dd4c6e45c420c113277570261a"
+          "size": 2166,
+          "sha256": "900bc006d8aff12924b796c8d6855145bfb4b2d7b3e022f901091dea163e0b14"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-installation.ko.chapters.vtt",
           "size": 379,
-          "sha256": "d32af01f08af1def9b9eceb2b66257a35600134178f4cf7e2aac9b385a757fb1"
+          "sha256": "555940eccdd3e8e208d4cc12f956b2c9676c8f46eda0dcbea4aa24091e5986ef"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-installation.ko.words.json",
-          "size": 11894,
-          "sha256": "020211d5609db2fd495b8f6c04308735b4549b15b42c0c05878f1c2fed2251e0"
+          "size": 9795,
+          "sha256": "d35fb0122719705a65b0e1ecd9d0055dbd66e6d6e3dc9fced45a9efacb4581ad"
         }
       },
       "pt": {
@@ -3083,18 +3083,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-installation.pt.vtt",
-          "size": 2622,
-          "sha256": "01ae8559aa246067baa6e8496a393c563e817328e0157df3df8b1f858eed377a"
+          "size": 2129,
+          "sha256": "afcaef9ec49ee2f1171a169966d544bb92422f503175df01f000f4dd7303bf93"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-installation.pt.chapters.vtt",
           "size": 414,
-          "sha256": "ed25db738dafb0b3e0e158e6a810ad0a2b53a3e770a5cd382ffb37ba21cddd8c"
+          "sha256": "ba857cd56b5ec3d6040a1990b78225fc9a199344cb382b61bb98b52359f408d4"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-installation.pt.words.json",
-          "size": 16747,
-          "sha256": "d2d7739d57d7a0b80e8263fadb31fce2485a9a9e5777cf49cff9848c12278bce"
+          "size": 9257,
+          "sha256": "c9002f2ee8646b9f826a0951c099a12b56db9bf283dbf1e2c59ae9ebb6e4bff7"
         }
       },
       "ru": {
@@ -3110,18 +3110,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-installation.ru.vtt",
-          "size": 3097,
-          "sha256": "fd7a6f1fbac9d90ee4e493ecfd543c4b23ae926a84b0f2fb1dd98fa0ce995281"
+          "size": 2792,
+          "sha256": "f3e68a4c2fc03b42e007df7a599fd419eabceab0df1deda802764a28b45bc959"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-installation.ru.chapters.vtt",
           "size": 510,
-          "sha256": "35e1f4793d5eaa3749bc889e89de82b21e4fb480d0651ad7306c0a00ba057cd1"
+          "sha256": "1dab91e7e72a32e96537c50606974ab9cf097c5ab2e9f353b9c961d6c9200e8e"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-installation.ru.words.json",
-          "size": 14358,
-          "sha256": "80bd7e9334824e607998e617a73ba78c14d715142cf7b17b679b179208f16553"
+          "size": 9317,
+          "sha256": "0c25e06c7e55329a4f557df6eff7ee4d38c2b452785c0f0a5572bf9bb091170c"
         }
       },
       "tr": {
@@ -3220,8 +3220,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-live-migration.de.vtt",
-          "size": 5212,
-          "sha256": "fa1b7ceceb4657e6251ec446e65d254c0490258421357bff6cc640743c5e09f6"
+          "size": 4226,
+          "sha256": "d3ab9290863cedc19f7183fa52b55b08a0c708af8b49504fcf09596272b6da3f"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-live-migration.de.chapters.vtt",
@@ -3230,8 +3230,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-live-migration.de.words.json",
-          "size": 33057,
-          "sha256": "125d157a29c8640540a6ccc99fe14547bf05d0721623078f4a2a4334eda8a76f"
+          "size": 20689,
+          "sha256": "f268619a23df0ffdac518cfef9851239c61112f1afdde76c306c6d4f5344bdfb"
         }
       },
       "en": {
@@ -3247,8 +3247,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-live-migration.en.vtt",
-          "size": 4715,
-          "sha256": "a616cdb488b3aac2fe687eed40030297108eb4b2a6c2dc3c5675d8cb6a06555b"
+          "size": 3606,
+          "sha256": "62177b3c1e642641916826725eb10436cb9ac0a07f6020c5d53a4a648a6a0ad3"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-live-migration.en.chapters.vtt",
@@ -3257,8 +3257,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-live-migration.en.words.json",
-          "size": 31731,
-          "sha256": "81f0e0a1e04288663ea0236ca8a08cead2ec7f9fd347ca37fbebb29ffb68928e"
+          "size": 19446,
+          "sha256": "f02473d779d32fd6125091aed96f0a5dfea6755a26964ef7532efb374f70aadf"
         }
       },
       "es": {
@@ -3274,8 +3274,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-live-migration.es.vtt",
-          "size": 5287,
-          "sha256": "f28cd7fe572f9ba9d9007ca56e99ebdb3a38ca320855dbd52f808068b0686b44"
+          "size": 4271,
+          "sha256": "baf114328edb904e6007574399a2ccb7f2219d415102b516cea5491389337eb9"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-live-migration.es.chapters.vtt",
@@ -3284,8 +3284,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-live-migration.es.words.json",
-          "size": 34557,
-          "sha256": "ad07bf7053b7a3b41a8b60139c3889b9e620dc0cc0675deb083abef1ebc96e12"
+          "size": 21674,
+          "sha256": "145c8108bd70327eb5f4799721427d56cdafca2f04cb31582d3688aec3edd1ae"
         }
       },
       "et": {
@@ -3328,8 +3328,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-live-migration.fr.vtt",
-          "size": 5424,
-          "sha256": "e99e4ff68990187c211b7cdb422cabf5f4e277939e3e7936d86c046dbfbbe480"
+          "size": 4472,
+          "sha256": "c44583ee7049b060dfab0c79d18b264527e4a461365e24080a8053438b02a3e8"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-live-migration.fr.chapters.vtt",
@@ -3338,8 +3338,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-live-migration.fr.words.json",
-          "size": 35860,
-          "sha256": "6d02c316c6a26dea5f21fb2328bcfffee29c44da8dd4bce11c973b15fce8e0a1"
+          "size": 21923,
+          "sha256": "8dc15e9f251d9f9a9083634ce0bbc215434ea445d512a1be6d210bdcd2ce6eb5"
         }
       },
       "it": {
@@ -3355,8 +3355,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-live-migration.it.vtt",
-          "size": 5083,
-          "sha256": "842fd3e4727eba4904cb6e434a3979a01dd095041dcfb4b765f26e4cab131615"
+          "size": 4194,
+          "sha256": "0846858df99057bce50b554e6ca0068a7140098374328bfae08699f79f7f2856"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-live-migration.it.chapters.vtt",
@@ -3365,8 +3365,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-live-migration.it.words.json",
-          "size": 33644,
-          "sha256": "55575198ca0be2672d9ba7edbe9617caa96b5f6a2771488af9fc349df2fead9d"
+          "size": 20937,
+          "sha256": "0070d1836a175594d6d0501039d5b3eeb6e0af46bae49707bca09d3cf5dca4e3"
         }
       },
       "ja": {
@@ -3409,18 +3409,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-live-migration.ko.vtt",
-          "size": 5748,
-          "sha256": "e083cae7cf824987178593b43fb4ef1852daf3c36f92a39006637a2e017108d3"
+          "size": 5052,
+          "sha256": "3663e240489eecf800608d5afd91bc11a0049fc2c88da305bcf905a24cd3a7eb"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-live-migration.ko.chapters.vtt",
           "size": 527,
-          "sha256": "a9c9294e8357139685746fce8ce4ae36b4f8ec4204d151a31c7b09c8fa4db9eb"
+          "sha256": "5fe95ebdb3c94fe99a77d08f90fe9c30bbe070a3b3ee4d0532518268f0ea29c6"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-live-migration.ko.words.json",
-          "size": 28231,
-          "sha256": "1a28bb30483c5657580fd1890270f4cc2a53080c796ed3bbbe34f933322fb946"
+          "size": 22630,
+          "sha256": "c4e93603f5b1409e656bcdd1e34be1872e48eec550670efb95d80bde77123b40"
         }
       },
       "pt": {
@@ -3436,18 +3436,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-live-migration.pt.vtt",
-          "size": 5162,
-          "sha256": "9cb59d42699cbb8fc968ce1e9cbc8728ced191699f72c6269d40b194c1597a60"
+          "size": 4239,
+          "sha256": "66497539ac69433e2042a9a257d7a17974ded4e27bc8246804145f970c7c9832"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-live-migration.pt.chapters.vtt",
           "size": 494,
-          "sha256": "58800eab2e2f23e7c404ccfdaf421b3846da17c4d7e0d3b268867dbe6e686db1"
+          "sha256": "42117bb53a7eb4949e3415bd8ab95fc37578aea3fb64535144e2ca5a74345e00"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-live-migration.pt.words.json",
-          "size": 34478,
-          "sha256": "919e8963b08e767eede0a0ba0dd2c5939e2af938c4c31b169b73b42edf74ce28"
+          "size": 20021,
+          "sha256": "12071a8d1055e416d7bf42420ad807a9b320e37a310df6c1bb09fd2598e08031"
         }
       },
       "ru": {
@@ -3463,18 +3463,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-live-migration.ru.vtt",
-          "size": 6904,
-          "sha256": "45713a5455ee33c3ad2fce3c248b64100b550d2487764cb9fad3e91b81de3643"
+          "size": 5949,
+          "sha256": "bffaf981e7af76bcb3125a3523e29c32b6cd056d24efc3736f9072d506990a07"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-live-migration.ru.chapters.vtt",
           "size": 643,
-          "sha256": "0d12598ff42fcce03f91c3a937a2001f05c090fb76d2f3606ad983a7f6a56595"
+          "sha256": "f3cca4c9ab1f1f0c897baac35d1f94421d099f7cdd8c1449bab4ae09db6632ff"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-live-migration.ru.words.json",
-          "size": 32379,
-          "sha256": "fac6dda87bdaa733df21488920490100d6dc6fc0241abf7a1ed52845d315ab56"
+          "size": 19539,
+          "sha256": "f40efe8a5dc37906be3f9c5d2e56817ca99d9c304dad808a0be97ec6a857fa51"
         }
       },
       "tr": {
@@ -3573,8 +3573,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-managing-secrets.de.vtt",
-          "size": 8671,
-          "sha256": "f3fa7949fb1446dff8dbd95992391222db3e0be5a9b12e5586b4542425d3598b"
+          "size": 7136,
+          "sha256": "a9f78b83f2077d9a310a498e5ac1fb1a11ebce321e78a87d17959184dd6deb9d"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-managing-secrets.de.chapters.vtt",
@@ -3583,8 +3583,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-managing-secrets.de.words.json",
-          "size": 53273,
-          "sha256": "d86a28ae2a5d6819aea5591fdaea9a91879064069ae8c9fc8d356b4d7b679121"
+          "size": 32922,
+          "sha256": "41077c6d4348cf6340d0bce570cfdd883abfb29723615ebae42a8281e0f0fecf"
         }
       },
       "en": {
@@ -3600,8 +3600,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-managing-secrets.en.vtt",
-          "size": 7506,
-          "sha256": "ce401a281da02e7a246e748d88ba732a4c3e21baa547704a8c14020bf8d81398"
+          "size": 6493,
+          "sha256": "d4825c19b1004e45f58e4a2d417f365e214dcd98a589bab3d2a0755fa9c92210"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-managing-secrets.en.chapters.vtt",
@@ -3610,15 +3610,15 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-managing-secrets.en.words.json",
-          "size": 53839,
-          "sha256": "4226fea71b3a90fedc72e2964e82432d4f8123a71e49116ce1eb33bee74d1570"
+          "size": 34615,
+          "sha256": "fcfca2245f71880663ed35f9692e2cbbc73826b93bdbb356408eba5c900c154e"
         }
       },
       "es": {
         "mp4": {
           "path": "tutorials/video/es/tutorial-managing-secrets.mp4",
-          "size": 23297888,
-          "sha256": "38c12a05c6a824e2a7840066af22aa10d36adcd01d59f5078db65637370c1153"
+          "size": 31791983,
+          "sha256": "35903e34a8fcb41d24a157d9ab6c5514643d466e5f33882c1bd81a873c8f9c1e"
         },
         "poster": {
           "path": "tutorials/video/es/tutorial-managing-secrets.es.poster.jpg",
@@ -3627,8 +3627,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-managing-secrets.es.vtt",
-          "size": 9051,
-          "sha256": "18c3f13eebed1c0a8e047c0d9fe9c813fc7afbab553520f0540d49857f88074f"
+          "size": 7638,
+          "sha256": "07a073b6fc1147ee0c412b416fd72ff7c8f58c15248ea384d7d3d988e9fcefad"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-managing-secrets.es.chapters.vtt",
@@ -3637,8 +3637,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-managing-secrets.es.words.json",
-          "size": 61915,
-          "sha256": "502fbd925f7830c63da854f99cc71364e31e652ab23723146bcbf26c11258a63"
+          "size": 40085,
+          "sha256": "147f58006d084d8330a026a800f00a513ebb4d0e56acd1a77560b327f6f2909d"
         }
       },
       "et": {
@@ -3681,8 +3681,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-managing-secrets.fr.vtt",
-          "size": 9152,
-          "sha256": "cb9a76e98f65ce86bfcc8647b939af677fc4bd795a7e3a3fd9b975adfbcc1f89"
+          "size": 7677,
+          "sha256": "0d377b0ccad6721567c39459a9072584b227ef2ccf2bfc648d4eb96d2181545b"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-managing-secrets.fr.chapters.vtt",
@@ -3691,8 +3691,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-managing-secrets.fr.words.json",
-          "size": 63250,
-          "sha256": "0ae13cf4b9a10ec662d6d991d7c552ec509cef5c172581ed975c438bb0f7a136"
+          "size": 39282,
+          "sha256": "68fe3015471d138c32aa0098b07c205df174aba074c6e2f889b733527227ac9c"
         }
       },
       "it": {
@@ -3708,8 +3708,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-managing-secrets.it.vtt",
-          "size": 9145,
-          "sha256": "4ab66e4926925142be7999e2d4c8cc982734cb0197304cb44eb70fd47104ebae"
+          "size": 7765,
+          "sha256": "4d947c1639dec57f7bdd140576e454df16badd942a33e44f44fa080f93d3c87e"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-managing-secrets.it.chapters.vtt",
@@ -3718,8 +3718,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-managing-secrets.it.words.json",
-          "size": 61127,
-          "sha256": "7dffc1c8264a4c4a09e9136fc7e03cba7f5508c5824020a06156fda4064e59de"
+          "size": 38170,
+          "sha256": "bf43d3d582b0079eb8584c6be03d67c64acbd5fff10b7744033d0fccf0e626b1"
         }
       },
       "ja": {
@@ -3762,18 +3762,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-managing-secrets.ko.vtt",
-          "size": 9393,
-          "sha256": "5574b94790eb116f9251069fc3f36509c56ae7e1b28c94355256232f42ebd8d1"
+          "size": 8065,
+          "sha256": "1e5cd7b62d7d8574c758e802fea179087180006aa11c05095d9340601ce8a396"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-managing-secrets.ko.chapters.vtt",
           "size": 971,
-          "sha256": "3b92c6820855445b47cf40b9d7eb0b19dbf8ae3a9bc5cbbe5a7490bc36507d55"
+          "sha256": "e403228292e0615fc45948d4f85f44c12cdaac788eefa4b24459d2f791ba5003"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-managing-secrets.ko.words.json",
-          "size": 46321,
-          "sha256": "4696cbeaf7b47a39cea1b0af041522b5948cb5ad38c2002f76ab8a664304617a"
+          "size": 35502,
+          "sha256": "eca8d038723ba01b1ee3275abe464487ae648feb196e2ea5b152ae8020eea287"
         }
       },
       "pt": {
@@ -3789,18 +3789,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-managing-secrets.pt.vtt",
-          "size": 9103,
-          "sha256": "d87b6e8b7b57c72990e35d37c12cad7cd1a15d5f7763d82ff7049720b4614ebd"
+          "size": 7941,
+          "sha256": "66849f724b7bf7fb8552a4214923c2062be2f2b2769929a628b685c12490f136"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-managing-secrets.pt.chapters.vtt",
           "size": 982,
-          "sha256": "501fa52c8023a923d611e19be976d40baacc4768ea91b7f24125d7b2586bdfd9"
+          "sha256": "6190742c57cc589fd3e11453509c2de5cc34399a2c443dd112e5ee64c013bc2a"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-managing-secrets.pt.words.json",
-          "size": 61669,
-          "sha256": "53459bcb59bfd265cb3bcef57d4ba30f53f9fa781117b9b1fd4a7ce2b6146f9b"
+          "size": 37971,
+          "sha256": "679d6533a8a508b5738eec62486dab8eb677c5c09362d6fb0727fb1ffac58317"
         }
       },
       "ru": {
@@ -3816,18 +3816,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-managing-secrets.ru.vtt",
-          "size": 11267,
-          "sha256": "61d7cc33122eb5beb962866e83145334468643b840943c913632ddda97c9f019"
+          "size": 9983,
+          "sha256": "44502bb788c70993f89fdb2e3ef11309d938a4061d9e5d8877d7f668652a2989"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-managing-secrets.ru.chapters.vtt",
           "size": 1244,
-          "sha256": "f26e802a705cc6ba9dbad592c0c8b67a346eb46590c34c9e6dab86eeb48e73da"
+          "sha256": "c9b6868a837b72be0710b82a8dfbc66833bb2818f27648b2160b87a8e97b6228"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-managing-secrets.ru.words.json",
-          "size": 53217,
-          "sha256": "ba3bfa6b84ae5a0488f4e96780ef96174a3ffb85ebd6fb8bec4fbc0ae019d174"
+          "size": 33657,
+          "sha256": "1284daab52746377e7b1620890d3a2f86ea65b3f4ce2dc5deab218db7fc9a654"
         }
       },
       "tr": {
@@ -3926,8 +3926,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-monitoring.de.vtt",
-          "size": 4352,
-          "sha256": "d7f8b583fc7ea96127b903d87b2dfc432058077d099899a25e7442497a0a48f7"
+          "size": 3185,
+          "sha256": "6f4d0614cb2ce9044bd3ce0301f08e380085ec939319cecff500ed25b3b4a705"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-monitoring.de.chapters.vtt",
@@ -3936,8 +3936,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-monitoring.de.words.json",
-          "size": 23733,
-          "sha256": "dafba0fd47fbf893beadd89d939fc5889f1ce705ba895334c7151526e3901f1f"
+          "size": 13737,
+          "sha256": "c99e5f35d2fd3a3c0085dc25b6b90bd61a908fe5d6256ebc9ae56f4428647c45"
         }
       },
       "en": {
@@ -3953,8 +3953,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-monitoring.en.vtt",
-          "size": 2813,
-          "sha256": "9a0a232a744190942a48b730cd8b26598097ddd9d570b8b845c667270979e076"
+          "size": 2629,
+          "sha256": "8506ebbb85acf7b3bd2afb88c038db13218a00c0667d5bd678086bc0e5e412fa"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-monitoring.en.chapters.vtt",
@@ -3963,8 +3963,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-monitoring.en.words.json",
-          "size": 18137,
-          "sha256": "a64a4a5df5819e2ff59ad3af10fd03587b7423f4564272fd229d8a1c402912f7"
+          "size": 12314,
+          "sha256": "3e34c8d35586ab8f953047bb33e36d9c62557eddee5b7a2ce26e4f506221b04f"
         }
       },
       "es": {
@@ -3980,8 +3980,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-monitoring.es.vtt",
-          "size": 4398,
-          "sha256": "f15bcbf290b4e86db4810f5743359af2ad987908a2a0caa1f34dd302a4156a35"
+          "size": 3325,
+          "sha256": "724a7f3d62d87c7e97111d4fac6cd12f95ccd66ba64bc821dd32331831110abf"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-monitoring.es.chapters.vtt",
@@ -3990,8 +3990,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-monitoring.es.words.json",
-          "size": 27745,
-          "sha256": "f95c8db1dc79623cfa60bdc00f578637c8549b71e84a58b358f60d4afedb3524"
+          "size": 16978,
+          "sha256": "03f8b9c53b9ad2f2834b0f62b4155d14c534d77eec96cb8cc49386066f2ae77d"
         }
       },
       "et": {
@@ -4034,8 +4034,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-monitoring.fr.vtt",
-          "size": 4428,
-          "sha256": "033f76086511f45956b258e87eac9d93728f083ae0bdf151ee09f3af2a104529"
+          "size": 3633,
+          "sha256": "097e6f02d6f12168911fe43e074824df5d770e60d2ef5bb5a04566d79c8e18aa"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-monitoring.fr.chapters.vtt",
@@ -4044,8 +4044,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-monitoring.fr.words.json",
-          "size": 27598,
-          "sha256": "34dedcb7be665266c47b697e8768a9e155c6419a52e58a415e747c87919b4c11"
+          "size": 17181,
+          "sha256": "53f936a21a4f29f1b7ec61d864012344acdb1e0f0fe0f250bda2c23b973f2d6e"
         }
       },
       "it": {
@@ -4061,8 +4061,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-monitoring.it.vtt",
-          "size": 4014,
-          "sha256": "a1f3d2f8f06427ac569a3c671ef7ccc5651d64a2080325d37a036c7d0359facc"
+          "size": 3154,
+          "sha256": "5515a408ee28c60f03346883ff5af1b7866f5f9c629f5c518e56f506b4ce33de"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-monitoring.it.chapters.vtt",
@@ -4071,8 +4071,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-monitoring.it.words.json",
-          "size": 25671,
-          "sha256": "3d5d92eb1bd6f88de600b06422b33f460f1616e8a4911043944e68271c03cf22"
+          "size": 15222,
+          "sha256": "2254d8a40da3cdce06fbae1f6bcac740ce7171cdbbcb95f0abe49d4a8db2125d"
         }
       },
       "ja": {
@@ -4115,18 +4115,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-monitoring.ko.vtt",
-          "size": 4364,
-          "sha256": "a2dae3b7cc8bcf58a8b3e96c99a6262a083736d123063f8144904b4dc69a5c72"
+          "size": 3547,
+          "sha256": "5d1f35054cf358f49e0dc9f9498e65a1f19d6df7831e91e7b0f6f26630830531"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-monitoring.ko.chapters.vtt",
           "size": 426,
-          "sha256": "3abd3583910a1b7fb479f5521f204cc5a87cf8d5ccb7970a081722ae6182cd8b"
+          "sha256": "ba3d177696f4e972a7b5eeec33643804a815966929f257893f313723eabc22f5"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-monitoring.ko.words.json",
-          "size": 21854,
-          "sha256": "48935b13ad2fb8b81933a25bd00ac4a22356b10e278b9ca33a4a87e4dfd6783d"
+          "size": 15645,
+          "sha256": "97d8c5815cb6ea5ddb79c209695803ad8e5d3ef989c642a88d8ccabb86263b6e"
         }
       },
       "pt": {
@@ -4142,18 +4142,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-monitoring.pt.vtt",
-          "size": 4122,
-          "sha256": "72793ddd4342d838a37f52f24fdb3386dd3dfbe0c81ad154dc09b9ec0211ba01"
+          "size": 3295,
+          "sha256": "63829b82aa1334e15c2c6505918d9667370b93fc7a05f24088feffa2d6d44b53"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-monitoring.pt.chapters.vtt",
           "size": 444,
-          "sha256": "e4a9d267b7978847f3e5a4003471e8d1e59b74d16497df580e53717372cf500d"
+          "sha256": "5fefe71d6c0c709a0d3ccf429d47c40d5a7c56031fa0955c74fe9ac24f7ca2ac"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-monitoring.pt.words.json",
-          "size": 26147,
-          "sha256": "a0e10ecb0cab5ddb166b8807a23b1aa4390e5f068304f890c752dcb3122a502f"
+          "size": 15456,
+          "sha256": "12ba3431e65c36f4faa6498456036371988ada5ea0f766fda40b3fdb768379e6"
         }
       },
       "ru": {
@@ -4169,18 +4169,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-monitoring.ru.vtt",
-          "size": 5117,
-          "sha256": "4e7641ed88d500e587d7ab1ef502157fa76d2bf315935f7834d0d4bbd6dc8bb4"
+          "size": 4135,
+          "sha256": "0ae9d5cc337211e6fed40d85c853597cc712380c2924a452fcece9511591f071"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-monitoring.ru.chapters.vtt",
           "size": 565,
-          "sha256": "1880764dccb5e65662e026bc3cd325124b9ec18111fc04bbb80da231e0825be5"
+          "sha256": "619ecbcfc8afef5b96aaf897edb1f023a530253d5e11442e933c1302bade401c"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-monitoring.ru.words.json",
-          "size": 23316,
-          "sha256": "d7081aa7eda21f948366e55c0a1dbd5677d6dd9891de9af03a7766634641d671"
+          "size": 13079,
+          "sha256": "f79d3e230d0f9f5167ae8322a75356d171594be4a056465c9a06c317ff6ea9cc"
         }
       },
       "tr": {
@@ -4269,18 +4269,18 @@
       "de": {
         "mp4": {
           "path": "tutorials/video/de/tutorial-networking.mp4",
-          "size": 5399913,
-          "sha256": "63528c889845abbf93449f8faebc1f568a1b595b75fd64b7b6675104d9cc4bd9"
+          "size": 5398003,
+          "sha256": "b5254a87c0c01224df961a80ba409591960b44e8b007a3827c8e8748e3e73b4e"
         },
         "poster": {
           "path": "tutorials/video/de/tutorial-networking.de.poster.jpg",
-          "size": 94344,
-          "sha256": "1e0442afc412b783369779e4d7c7867d53c523db4e77ad0cea944beac689ac57"
+          "size": 94228,
+          "sha256": "ca26915a76d877520786a9d2d634363a0066b6e0c128d3ecb6233189da0616c3"
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-networking.de.vtt",
-          "size": 4761,
-          "sha256": "549bcf9e0708ac888413dec6dc6fa218eca4796375e8ce50cd9e905b814ea4dd"
+          "size": 4025,
+          "sha256": "2728c3a2dd9a4a6325f9fb4ae1fdc6127d79728e88ed628a73eeb212c234485d"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-networking.de.chapters.vtt",
@@ -4289,25 +4289,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-networking.de.words.json",
-          "size": 28666,
-          "sha256": "44e76f739df59590e609c7f859839998981c20b8a0f3a90c6bc5b6288d9e5430"
+          "size": 17916,
+          "sha256": "00137902c0bda3b09157dea1bdbe06a2959d6d014502e364302c444b85ea3da6"
         }
       },
       "en": {
         "mp4": {
           "path": "tutorials/video/en/tutorial-networking.mp4",
-          "size": 4576123,
-          "sha256": "862804877bbf3dfb8019ec8e96a982930817fb46f5bed5ae5f9ea999e96550b1"
+          "size": 4584449,
+          "sha256": "a27c45e07c2e84c4cb428029eda7335d81a780da04fd92a6d1cd9e8678da0b60"
         },
         "poster": {
           "path": "tutorials/video/en/tutorial-networking.en.poster.jpg",
-          "size": 91017,
-          "sha256": "c76ea79b6d6ed1de8ef9f673da68c00b3c7aa4f0d53d66e8da6f1e0021b9fe72"
+          "size": 91134,
+          "sha256": "500d89d7d2169660ac38abbcf943c13fa01d4221684863e69d5dadbda2ba4544"
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-networking.en.vtt",
-          "size": 3845,
-          "sha256": "4e4b85080d2293fb489d6f6e75b92d7b973cdd02c155c2d1f871a02f003ca141"
+          "size": 3447,
+          "sha256": "580dcfed2952f047c532ae18962bab11b207f86166aea2e2a46b70b2c0b60391"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-networking.en.chapters.vtt",
@@ -4316,25 +4316,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-networking.en.words.json",
-          "size": 27245,
-          "sha256": "9b9cc383b7c7aa5d3eab59063ace93f6cfed3f9cbcdc4e03921711761abee1d3"
+          "size": 18032,
+          "sha256": "9887299ad882fe2e66660c119c013c33573fb4b499805cb5577185a94175189f"
         }
       },
       "es": {
         "mp4": {
           "path": "tutorials/video/es/tutorial-networking.mp4",
-          "size": 5632417,
-          "sha256": "0063ca59ea496c9faad7267fa052df6b7140ec38a6698920336cb1896b850fdb"
+          "size": 5629928,
+          "sha256": "dfa879ddb16613173e6b91b1cd0e9d19ccbb0b365b66a86bdabdcbf2a2c0d63f"
         },
         "poster": {
           "path": "tutorials/video/es/tutorial-networking.es.poster.jpg",
-          "size": 91724,
-          "sha256": "cd16bceac966b7b62ee1b5dc8c281e5d0256cf165fe511c1faf18bfca8039b9d"
+          "size": 91718,
+          "sha256": "4d50598d56b7a9294221f2fce8e54522e74ab86f9c4e83a05ef59d154732ea49"
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-networking.es.vtt",
-          "size": 4752,
-          "sha256": "279c91e51d474d8f269c6140fd3fdd17df8b8ac5b6fa0d760b3a0cc76e5a76e9"
+          "size": 4075,
+          "sha256": "05756b4dc5954b4b36c73845faca20f9794e96d6351796544735838386cde0a9"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-networking.es.chapters.vtt",
@@ -4343,8 +4343,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-networking.es.words.json",
-          "size": 31608,
-          "sha256": "1e5e07f4cdb314ad44bab169c701b10c7cce2ab053bc130ace1e0e12d8cc2046"
+          "size": 19956,
+          "sha256": "42887fc05012be5fa913c8f8e78ace02c8ad61df150354a9194fbf2d58e8dd51"
         }
       },
       "et": {
@@ -4377,18 +4377,18 @@
       "fr": {
         "mp4": {
           "path": "tutorials/video/fr/tutorial-networking.mp4",
-          "size": 5368216,
-          "sha256": "86be63ba1f30605b4f7a54f066d3c56ca91a08cbba0dde1d5ddfb77bfc4afc49"
+          "size": 5360547,
+          "sha256": "a50577b2ab36b5673e200f2a78d4fb16a8abd6f5db040804cd939b10a063aa96"
         },
         "poster": {
           "path": "tutorials/video/fr/tutorial-networking.fr.poster.jpg",
-          "size": 94756,
-          "sha256": "53d017bdce2c9fb3479f0c9fccb37381b65b6145ffc1995cd9d7be212bef126c"
+          "size": 94796,
+          "sha256": "f2b1d7b4f0411ab5c6f8b66787eb1c753259672d88546e67dea6a14616beb149"
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-networking.fr.vtt",
-          "size": 4858,
-          "sha256": "7586145055c779d5efe25e2576401c63d8a1ac68503f28e4299e21c54a2c7d43"
+          "size": 4213,
+          "sha256": "8fa5ebbd62e949281c8c66be435d611926c531d867e00bf6d74f4fd54fe7af4b"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-networking.fr.chapters.vtt",
@@ -4397,25 +4397,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-networking.fr.words.json",
-          "size": 32130,
-          "sha256": "7d62a4e8f23b006fb1774347af72db7024b85459c8f15433b3fd42b0146b7d6b"
+          "size": 20221,
+          "sha256": "cdcf556aa5f980bb5ffd68b748f2e3182eca0871151785f73685f0b2de8ab797"
         }
       },
       "it": {
         "mp4": {
           "path": "tutorials/video/it/tutorial-networking.mp4",
-          "size": 5158825,
-          "sha256": "2e7d42b7a5f9bda5db19f5720e8886840208fb6f846d043dcd1ab641fba3c723"
+          "size": 5158231,
+          "sha256": "bdc9610ea4667be7ee74b500a87d13be1e53106ff4b95381a731c6540cc340e7"
         },
         "poster": {
           "path": "tutorials/video/it/tutorial-networking.it.poster.jpg",
-          "size": 88488,
-          "sha256": "18aba0735cc23392633b092177fc667a51116adcce6423a6e4970dc04ee5270a"
+          "size": 88461,
+          "sha256": "680bd11fd1f7f52dfa2cf67d2a15160b38a6865834ef218c26814c7dd3ee4526"
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-networking.it.vtt",
-          "size": 4559,
-          "sha256": "aa8caf4fa28e6ccee8916cdfa74fcecf3220735856e2c2d02cb6b521989cfb95"
+          "size": 4041,
+          "sha256": "b1554cf4fe19674c22885448c99f917d586b5e4f67c6c4f920ade6c350255fda"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-networking.it.chapters.vtt",
@@ -4424,8 +4424,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-networking.it.words.json",
-          "size": 30236,
-          "sha256": "1cbde412c16febd70d7c42a0cacdfa36eec8f3c9beee38045d48500a4d49f713"
+          "size": 19224,
+          "sha256": "c766302fb4f7f4230b9e3dd49896ee37914c272f40734a5a62a45195be5de527"
         }
       },
       "ja": {
@@ -4468,18 +4468,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-networking.ko.vtt",
-          "size": 4606,
-          "sha256": "12495c725aa47ade301d9e4d57a12c22df821b7519b57b0f2899d115c41e6c69"
+          "size": 4064,
+          "sha256": "7b5b21405cb253a04a620266beb666b863d90963232e27c224cb9e42339c5716"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-networking.ko.chapters.vtt",
           "size": 582,
-          "sha256": "78dbe424cccd77df27b2b91ec39197adfeb2ef8c2b769d72af5f7a34f85c2329"
+          "sha256": "1d11ed43de880251286ad10537cbad9e4094b078ca5112bd05f4f587fe796507"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-networking.ko.words.json",
-          "size": 23117,
-          "sha256": "9b9af3bcb3a95ee2e12e9f7c46c1d3627c3a48889d2be4ea72628e926fed06b6"
+          "size": 17124,
+          "sha256": "2b7db86f746e4a568858dfde8390c2e16f191f4a33f7a85b2c396cd2e2eaec67"
         }
       },
       "pt": {
@@ -4495,18 +4495,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-networking.pt.vtt",
-          "size": 4818,
-          "sha256": "ba63e21cf317e3c7f472d5c25639a7c5bcf51aed87f8d7ef3615a33705aa5e6c"
+          "size": 4049,
+          "sha256": "1b40aa47c1ecee35fe39a9aca0d949ab46b42315f8cf3d9b6c12d5cfa3e42f1e"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-networking.pt.chapters.vtt",
           "size": 625,
-          "sha256": "624bfcf841a4cf4e6cfe6332d6ed01d0bbf65996cc7c6876124ae09e26f2e67f"
+          "sha256": "c43f442f491146de351a879b85d20559633c45cd65b3ec7757ed5aa037b08e2f"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-networking.pt.words.json",
-          "size": 32144,
-          "sha256": "5d52758ccd9923dc45a1713781a0c116c43605ea492cca6407dcbdf54b5a4834"
+          "size": 18138,
+          "sha256": "b037434897499193975de79e6bf1c5305c8e5bdd5244036e4c34943bb44c1235"
         }
       },
       "ru": {
@@ -4522,18 +4522,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-networking.ru.vtt",
-          "size": 5886,
-          "sha256": "b5b92a1fb3ababb84f27bb826c06dc50f5cf99d75c4fb3d79d2cda34beb850e2"
+          "size": 5393,
+          "sha256": "28478a38155f5a11d2768cc3b043cc542b68ff44deba8a155d1736c016cf8b77"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-networking.ru.chapters.vtt",
           "size": 726,
-          "sha256": "1b28ef703d0791d4fb72288b382fba5900717e24af43cb1ac878967b5949e40c"
+          "sha256": "af27c0414a5e900e02f7b20637cfe172cd8089aa93dee8e83a1c1f6f289bb449"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-networking.ru.words.json",
-          "size": 27516,
-          "sha256": "22d12dcdc830653b5900b8855a59cb518e44c09a08966bee2ec5564ff3b00f1e"
+          "size": 17707,
+          "sha256": "8ccd8c6e8945986a1e18b3dbb9d388df5ddf0de1f7b45b9d9e337ffd853605c6"
         }
       },
       "tr": {
@@ -4632,8 +4632,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-production-mode.de.vtt",
-          "size": 3032,
-          "sha256": "16505844df6faa77184dbb4325f1dba77dc4f35038e58220bb8385621111567c"
+          "size": 2539,
+          "sha256": "16715c91e4c5f58241ce4c98cae826628d3d0abea259288a1fb613100545bc71"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-production-mode.de.chapters.vtt",
@@ -4642,8 +4642,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-production-mode.de.words.json",
-          "size": 19282,
-          "sha256": "8fa5bdf8ffc508e00bb0f96eaa8da4b197ba15f896da8d7165e4257165cde1f8"
+          "size": 11792,
+          "sha256": "e637ad5dbd997f362447b8fd290005706150fe6fe985ec506d7e56bbacc1371e"
         }
       },
       "en": {
@@ -4659,8 +4659,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-production-mode.en.vtt",
-          "size": 2210,
-          "sha256": "a58de32c678aaeccdc4b6ff7361f34b4310c035857d1af1b084eca4c620ff935"
+          "size": 2058,
+          "sha256": "368b9aa3d97f018efde4275dfc2a662d885cf1f1d350943c0d9e3c40a045c145"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-production-mode.en.chapters.vtt",
@@ -4669,8 +4669,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-production-mode.en.words.json",
-          "size": 16465,
-          "sha256": "e286992aecec2420369e0a975e370535c0855faaf0ee51e2273169f3e3912fe8"
+          "size": 11175,
+          "sha256": "b6fa388e29b799cc82ec9c3dab765f28ce43ac527d19b845cb51d08ff4b2091b"
         }
       },
       "es": {
@@ -4686,8 +4686,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-production-mode.es.vtt",
-          "size": 3108,
-          "sha256": "9f1c7acc6b66bf3d23e7289e4c866dd319f7227f3a9eb9ed543282a0f9b10bcd"
+          "size": 2619,
+          "sha256": "52ab6540c4b395c4b5b117c46cb4d9226455c78930cdd26067403b9fbd24f41f"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-production-mode.es.chapters.vtt",
@@ -4696,8 +4696,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-production-mode.es.words.json",
-          "size": 20769,
-          "sha256": "79e72a590e5205ad25ada2bfd39fb6ae99ca94e5281730d7af141ec18bddbf0d"
+          "size": 13323,
+          "sha256": "17865ba68f991a5e060210486c07fecee4c940e2b43410f5cd6dd1e273177eef"
         }
       },
       "et": {
@@ -4740,8 +4740,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-production-mode.fr.vtt",
-          "size": 3326,
-          "sha256": "f425028d7f05d5c3e88a201be1bf4874010a7cc4182dca36efd6997cdf4b240c"
+          "size": 2745,
+          "sha256": "2a0cc61340520ba02ac065aec3a720d8b4c899b6dbf07c3513b385547bbc510a"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-production-mode.fr.chapters.vtt",
@@ -4750,8 +4750,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-production-mode.fr.words.json",
-          "size": 20401,
-          "sha256": "403e26bcf7458a730cae257593837e996997693f9bef05ef4f23b476590f8c44"
+          "size": 12866,
+          "sha256": "2951bbf18f8e492c3532a53f2fdd57e7eff4adf5f5d51d8303c8c965d760e5eb"
         }
       },
       "it": {
@@ -4767,8 +4767,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-production-mode.it.vtt",
-          "size": 2860,
-          "sha256": "9ee582f9efab9877942540a6eb1a3e46004d4a2f9770606843b8cfa960434219"
+          "size": 2370,
+          "sha256": "813bc95d433b84a09a83ce9f7d3899c2c36ebca556fb7fa76d0032ad6a9aa838"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-production-mode.it.chapters.vtt",
@@ -4777,8 +4777,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-production-mode.it.words.json",
-          "size": 18607,
-          "sha256": "e018e8ccf72a26c30fb4204f75b4b8f2d1dbf8d956517992ac7967dc69694901"
+          "size": 11063,
+          "sha256": "0ccfe0d4f488b6b376adf286a25797e76b1e0e1456498d3af46a9fb7841d11e9"
         }
       },
       "ja": {
@@ -4821,18 +4821,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-production-mode.ko.vtt",
-          "size": 3166,
-          "sha256": "9eeaa73178abb0a8101575eec89f919d11bc5d39f15ef12fb7c47e4d51f94e83"
+          "size": 2868,
+          "sha256": "60de3d2dcc154f8bf29b885293c5d1f5d35b83b2ae3b96f0d765995d3656da0c"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-production-mode.ko.chapters.vtt",
           "size": 439,
-          "sha256": "610437e7546adf5a1d903974d1e92092ab0f8e34f60a68c005b5df363acdbdc0"
+          "sha256": "fe879da1fe8a75d331995ecdd17dc101f3acb504537fb54f46f5d676ef5859c6"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-production-mode.ko.words.json",
-          "size": 15411,
-          "sha256": "f52a10dd383155e91886ddf52ae32815099307599c10c3661ebd2bcc93cee4b7"
+          "size": 13350,
+          "sha256": "4980648e24654af06de97d9b7f8b2a233603cb3a7c6765ef26f59318ea870832"
         }
       },
       "pt": {
@@ -4848,18 +4848,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-production-mode.pt.vtt",
-          "size": 3120,
-          "sha256": "2817c196fcc0c28c245ad011a1a3475caf9848adfafd0a927b5b2c2ee46d646f"
+          "size": 2629,
+          "sha256": "725f9a5281fecebbe38602f8d7cf55ae944920932d2438bb0f5de1fa6cf99469"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-production-mode.pt.chapters.vtt",
           "size": 440,
-          "sha256": "98b9e0e632d30bc81d2fe9c8ce71b407a6afcd2db9fd5f5e8510970d72eb3499"
+          "sha256": "948f2a0ae75ca2f69c9290d65a978d1a4af18791e950263730927be58e0f9dc9"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-production-mode.pt.words.json",
-          "size": 20714,
-          "sha256": "f35bfa6cf64604e62945416cb2d5702e69bd936b50d68a32e5c8d07b6db31bdc"
+          "size": 12286,
+          "sha256": "16d0f46e0f1370ad70748a5c05d8867de41b2d472a3df4da3cc886ab008f3b4b"
         }
       },
       "ru": {
@@ -4875,18 +4875,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-production-mode.ru.vtt",
-          "size": 4019,
-          "sha256": "72bc4c036cb185c100b6249d65812d0f4ae9ea11b2cce62d0712adf0e97656f6"
+          "size": 3434,
+          "sha256": "1e3faaafbc150b4e7e38faf29402152a55937fee69d9fdbf434673869c58e404"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-production-mode.ru.chapters.vtt",
           "size": 520,
-          "sha256": "36aa7ec72af6edb717a098b7d41a51b6c48983ce02496bfaa801798a3575d731"
+          "sha256": "5f3638c595315888e0c3174e626b33ab311d058c8c35036dc306a1adf315e4b0"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-production-mode.ru.words.json",
-          "size": 18362,
-          "sha256": "f620c62c3c3dfbcab1ddd8a61474eefab423de42d9e89910bf901b6b39e7702a"
+          "size": 11001,
+          "sha256": "66010ad0c30ce08b40deb47c55bc9e14f3e4930977417e04fa298bac03954b20"
         }
       },
       "tr": {
@@ -4985,8 +4985,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-ssh-keys.de.vtt",
-          "size": 2767,
-          "sha256": "fb9c1be322456513bc5784f0ef4b5d0e0b81763e1ad0abbb57c1d13d11530321"
+          "size": 2246,
+          "sha256": "b3d46348b0300d3913afe86307d37efc38daf91ccca7a1eaacfa696dad1a8147"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-ssh-keys.de.chapters.vtt",
@@ -4995,8 +4995,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-ssh-keys.de.words.json",
-          "size": 16634,
-          "sha256": "1ec5f9262d2326b9ac2ccdae9cb249eced954b6dba6987c3fd7bfc65d6580520"
+          "size": 10089,
+          "sha256": "a4558d381ee64f21bd4ad56059ef1c2740f055948048621dcf8dd11369119d94"
         }
       },
       "en": {
@@ -5012,8 +5012,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-ssh-keys.en.vtt",
-          "size": 2311,
-          "sha256": "c897795165433312b8183c2b0e38294e36fe604fdd1597a835891a33506674ff"
+          "size": 1945,
+          "sha256": "3de96e2306deb6ece7f8252f16c1cf6d1fd32bff05ca280af0e63fa00d7c1a84"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-ssh-keys.en.chapters.vtt",
@@ -5022,8 +5022,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-ssh-keys.en.words.json",
-          "size": 15929,
-          "sha256": "7c4cdbf5d661f874eab4d59b09982e4fb4e1f56fc0cd72ba28cfc5179db9ce83"
+          "size": 10051,
+          "sha256": "0c37c0fe1fc9eb8cf1e97b060570a9a3f241e60bb2b88f570cf2ed192d20c26b"
         }
       },
       "es": {
@@ -5039,8 +5039,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-ssh-keys.es.vtt",
-          "size": 2666,
-          "sha256": "9c0324aa1fc8e6c3ead4487cc6d9f356b5e9aca35ec8387d11b370ffc0172185"
+          "size": 2236,
+          "sha256": "c52cfc12b0333b9f679ad261a1fbfc2b3087ad2fd8b697ba1dc0a787a6d44983"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-ssh-keys.es.chapters.vtt",
@@ -5049,8 +5049,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-ssh-keys.es.words.json",
-          "size": 17866,
-          "sha256": "c93ed8ec436f6e8860c3769ab14f03896f64f31410450522ff9b4f6577329272"
+          "size": 10840,
+          "sha256": "27f5c21102cdccf5beb25a4b1ee805c9ac1851cf487e4e337496e8c32da467e7"
         }
       },
       "et": {
@@ -5093,8 +5093,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-ssh-keys.fr.vtt",
-          "size": 2732,
-          "sha256": "cb68bb406084292900d967033aa56a27462331d399f1edf3284893107cfaed71"
+          "size": 2177,
+          "sha256": "eb76e5524f4e83ece23aa5540cb479f4bd43afa20613c09ced72e6cdfb312b6c"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-ssh-keys.fr.chapters.vtt",
@@ -5103,8 +5103,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-ssh-keys.fr.words.json",
-          "size": 18147,
-          "sha256": "a1315969602898dde43023b2852f07503c994fdd93ae4f283684196bba26422c"
+          "size": 11152,
+          "sha256": "6cab1b61ee72d07533f483c7210753281372b4663047fe2ec5c9a62d1f9b3daf"
         }
       },
       "it": {
@@ -5120,8 +5120,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-ssh-keys.it.vtt",
-          "size": 2552,
-          "sha256": "fa141a45b53ad8b247231bdfb3d99b145774d5da094d10a96ec7d0aa799062c0"
+          "size": 2182,
+          "sha256": "9a1c8666166d5f6eb232dc4eb77cfbc4fc71bd4f8086fa932cb8c52b851e1da9"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-ssh-keys.it.chapters.vtt",
@@ -5130,8 +5130,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-ssh-keys.it.words.json",
-          "size": 16324,
-          "sha256": "041af8df92fa39e342a192e9b22554950b7dcc9e22b963b26f46160d6044aeac"
+          "size": 9785,
+          "sha256": "70e1ec0567ba8696594cc10175542075613d5188829e4f65135d4ff24dbc503d"
         }
       },
       "ja": {
@@ -5174,18 +5174,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-ssh-keys.ko.vtt",
-          "size": 2344,
-          "sha256": "7e37e85f7e86b4570fb424cc2346314f6577cd3c92e109300352203d589f72df"
+          "size": 2077,
+          "sha256": "e4dc07586247dfa54b25cb8702ce69d283a66f525e10345d9f72a53b7a4aa0c2"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-ssh-keys.ko.chapters.vtt",
           "size": 361,
-          "sha256": "a70ec0f72dde9e30f64bea079bfc0eb8b5fec235b66965ea20edc806a658cf53"
+          "sha256": "1ebbe086a3f4c05fe60bc6e7ff8eb9deddc23923aaa325af3417cc6405b9cfdc"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-ssh-keys.ko.words.json",
-          "size": 11543,
-          "sha256": "2870942571434d1747c7b9067a169227f3a21ee7fc76f07372655866c0ec8faf"
+          "size": 9849,
+          "sha256": "7023b8c5352106025a5de4dac463d2f1c7ca492a5a4f8be6de8cf312b4c71f56"
         }
       },
       "pt": {
@@ -5201,18 +5201,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-ssh-keys.pt.vtt",
-          "size": 2532,
-          "sha256": "f0707172632a7673f1fa62fd4f7e39b0737360689fc519d3c13ce2f4edf39cd9"
+          "size": 2009,
+          "sha256": "319e85380d168203cf339155359906c0ae6fac6afd32e9ec48f3df1d3e7a7415"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-ssh-keys.pt.chapters.vtt",
           "size": 398,
-          "sha256": "830a271df40ecd915271039816a45035a101c6ce74be665babe0702d00adfce3"
+          "sha256": "abb07b1aa60e1993689703b4d5ebdedccf043bc2f1ec7d6ae6959af31526b4e9"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-ssh-keys.pt.words.json",
-          "size": 16470,
-          "sha256": "6ed4678844cf0e449b56b7d06a7f72eb005fd28542e3b2730813b5ca986ec3b9"
+          "size": 9177,
+          "sha256": "16426d12a94aaed5a6ef5260eabf9afb3d9d733d58d046f6a781fffae183b176"
         }
       },
       "ru": {
@@ -5228,18 +5228,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-ssh-keys.ru.vtt",
-          "size": 3201,
-          "sha256": "5062c8e0cc62e67f1f1dc0656dc7d42a1b34d99c5e71ba6ce9f7b0bbf5304c96"
+          "size": 2799,
+          "sha256": "9138d12851cf0771f226f5c903d5808705b68564f4ccb36186dfb815c19ca2f8"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-ssh-keys.ru.chapters.vtt",
           "size": 510,
-          "sha256": "07371463de09dd88c10d741bec3e9587d6190677526b319d87451193bf519a63"
+          "sha256": "e2b66ca0028f26f8265e4c8fe7e24cc81e63dc70410b3103861f670b4e502ac6"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-ssh-keys.ru.words.json",
-          "size": 14880,
-          "sha256": "1819204536daa088890fa754119c8d1e5868cd2f1682682efa9287034feb69c2"
+          "size": 9362,
+          "sha256": "1219ea2926a8c4b5ab7a41e75b03c082ce2500b0b417aac17b6de1cb9a8cd92e"
         }
       },
       "tr": {
@@ -5338,8 +5338,8 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-storage-management.de.vtt",
-          "size": 4358,
-          "sha256": "bff79ae112c4dadee14bc4bb5f1bca57204136db2751faf8feaeddafa87a130e"
+          "size": 3652,
+          "sha256": "13f39c9a325e902aeb1c2da050b8cc01997d7cdd7731cb1dfaba0ffea2fdb414"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-storage-management.de.chapters.vtt",
@@ -5348,8 +5348,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-storage-management.de.words.json",
-          "size": 28198,
-          "sha256": "cba674ec18c1114cac9553547be844af3ab4214ea084f021119a8591bf7a326d"
+          "size": 17584,
+          "sha256": "f7f4ad83fc1e61f49b49520fc3aca0eefd2ec628d166b29457b1629da7ce967a"
         }
       },
       "en": {
@@ -5365,8 +5365,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-storage-management.en.vtt",
-          "size": 4024,
-          "sha256": "10e619f8f90da6206d26da76571b303b84aeae9bf6d7127c4b47128efcf530a4"
+          "size": 3224,
+          "sha256": "8aa421b00a5a6435dc4f03b145278262c851627780ea1c588fe28295a5d1e05b"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-storage-management.en.chapters.vtt",
@@ -5375,8 +5375,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-storage-management.en.words.json",
-          "size": 27141,
-          "sha256": "bb158f9cd06212a33043cfe43ef47c1b050d8fbe884473975cefa0bf803986f1"
+          "size": 16720,
+          "sha256": "0e1435a177a20a43a76ce15f2a846984508b08d6a68c924bdaad0605d1465599"
         }
       },
       "es": {
@@ -5392,8 +5392,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-storage-management.es.vtt",
-          "size": 4300,
-          "sha256": "40aedac382cf97fd5958ec22fada37573637fab49603c50734bffc9f82af513a"
+          "size": 3625,
+          "sha256": "3683a939f3294c75715e1b8c7c8b32d159ae51925cce6d0a6f2f1a12a4cb6b4f"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-storage-management.es.chapters.vtt",
@@ -5402,8 +5402,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-storage-management.es.words.json",
-          "size": 29041,
-          "sha256": "e11736a443290812434393390c1035f48b37609eeaafad670fe51b1dc2752e03"
+          "size": 18356,
+          "sha256": "5ec016db2adc08103988adb7b8776664e5885ddb237844f9a254131cee93a181"
         }
       },
       "et": {
@@ -5446,8 +5446,8 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-storage-management.fr.vtt",
-          "size": 4250,
-          "sha256": "6b0b5ef4dcada3e161cf4b93e358b3d8bafc93e6a29587eb34535be37c9cd0f1"
+          "size": 3638,
+          "sha256": "e1294cc9f55d6f3d7a15c2199f9e9ec3bb77823c5fbec73a57b99800eaececd8"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-storage-management.fr.chapters.vtt",
@@ -5456,8 +5456,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-storage-management.fr.words.json",
-          "size": 28631,
-          "sha256": "eba9ca06a029010365f717ed88b0845648073d0ed8cd4b27d6066e26fe79b3c0"
+          "size": 17940,
+          "sha256": "e45a5b0dd6af34e81401f2098d46180b163c3aa982731b160fdcd2a09f010b84"
         }
       },
       "it": {
@@ -5473,8 +5473,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-storage-management.it.vtt",
-          "size": 4211,
-          "sha256": "58810b7af3f5a7eeb0560f3d8471c242b50cfbaa9712eed65782219cceacad76"
+          "size": 3720,
+          "sha256": "d97e76b4a0ea1f3be3cdd37003ce8edd70065f90969eed238222bff73c2328b9"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-storage-management.it.chapters.vtt",
@@ -5483,8 +5483,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-storage-management.it.words.json",
-          "size": 28370,
-          "sha256": "4b25b7ea701eb9a61bc66ee7eba8ed5f978e6ea58d74403354b5ba664fb7afd8"
+          "size": 18592,
+          "sha256": "f7c67713ac2907ad1dec301dd000f676b47fdf2b3147ed3a52e2c3483e8d789c"
         }
       },
       "ja": {
@@ -5527,18 +5527,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-storage-management.ko.vtt",
-          "size": 4864,
-          "sha256": "b8e7f1dd43ad908788d62404067ce9bcdcb875ce9e3023ed3f445c223d4a2772"
+          "size": 4227,
+          "sha256": "bf8288cd009091242864ad1cc657d217fdf81876575556ebf1f3d99d1ec09a95"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-storage-management.ko.chapters.vtt",
           "size": 676,
-          "sha256": "9a9b96c0cdff251715c9c22c14296e2f50b66b7991e1cccb6e2d604be366ef58"
+          "sha256": "7c3ea87575b52a742ac40ebc7e7cf42d1e981f626ebccee88c0ba2fec3954503"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-storage-management.ko.words.json",
-          "size": 27463,
-          "sha256": "8b98a704a81a0540ef0ebca8856979964f2eba6d2669da3551303d7f65fe352f"
+          "size": 19490,
+          "sha256": "8efd3fb88229e6c90a7edc1d93e390e18fb13482dd5bc0bddc7b7e9c79680054"
         }
       },
       "pt": {
@@ -5554,18 +5554,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-storage-management.pt.vtt",
-          "size": 4198,
-          "sha256": "793fd47be3d76024238017cc4b542e6904042f97f71ff8c09e33bb3a293be4a1"
+          "size": 3737,
+          "sha256": "873dd9a5cb61548119fe49bfdcfb847d04dac83072fba7d96906ab773a0f2b76"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-storage-management.pt.chapters.vtt",
           "size": 660,
-          "sha256": "7cea1ba980d2fa5787d023b73215f241268e469621acf24f118c94df8c1dbc93"
+          "sha256": "4ec4b01395e3045ea2f162d89b70d6795616b733fc6e86e5e1deed4ac1edcf39"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-storage-management.pt.words.json",
-          "size": 28181,
-          "sha256": "a86dde0ca3f0099bdbe05adc3e2e528e34bf8b2f7c0841851b3b06b9b1366fee"
+          "size": 18088,
+          "sha256": "7520ade1c29b3b2af97a39c0cd1ac5353585164e7f322454082e715dfebd65ed"
         }
       },
       "ru": {
@@ -5581,18 +5581,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-storage-management.ru.vtt",
-          "size": 5160,
-          "sha256": "9e37807c6f1302b9c45c629f5fe3b962a5f3541d79467e1173e2f1080ba21c3c"
+          "size": 4420,
+          "sha256": "5b6a75b75f531913eea2a1e62c0113aa61000fc488948b045c9c5215cd61a15d"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-storage-management.ru.chapters.vtt",
           "size": 835,
-          "sha256": "b271e917120b463da3b8b006c312bdae70beee0aacc04f06a7c4474f276bebfe"
+          "sha256": "31130b45390f0f15d4a02ac538efda6580cfab065de3deb595d070dd62d0a316"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-storage-management.ru.words.json",
-          "size": 28556,
-          "sha256": "58793843db1c6bca30ce094a4399b9a1560f63735ceb239043d2640a11eab9a3"
+          "size": 17453,
+          "sha256": "2e63cca1f52ea697fe34a950dce121f1cf2df54977c0aae5b00386a2d678bafb"
         }
       },
       "tr": {
@@ -5681,18 +5681,18 @@
       "de": {
         "mp4": {
           "path": "tutorials/video/de/tutorial-vscode-browser.mp4",
-          "size": 7732521,
-          "sha256": "7c562ada16376c5dbdc348a8a0606920e9e3720c298ea680cfe5e9552fc548e8"
+          "size": 6094389,
+          "sha256": "6c2b16ca548f997b703f7af6ab57b4edd4c5df091d42b290b53da61a5a358bc4"
         },
         "poster": {
           "path": "tutorials/video/de/tutorial-vscode-browser.de.poster.jpg",
-          "size": 89618,
-          "sha256": "1c9c4e05dbcd8f4cd651e6d52e8b641142cc223a0499ee91241ed0d27a5ca7f6"
+          "size": 91607,
+          "sha256": "0ef742262cd1e98837efc624b9144d6014ab71d25599fb2aa760c97651c52c20"
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-vscode-browser.de.vtt",
-          "size": 5178,
-          "sha256": "bc9e7e6dcc1000c27075bd3cfcec6091b0ebdb9d5c839faffc1a0f15eff65deb"
+          "size": 4228,
+          "sha256": "8612b96b763324b8fe2c72e589f68dcb23928a3fcacc696192073f5336d8747a"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-vscode-browser.de.chapters.vtt",
@@ -5701,8 +5701,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-vscode-browser.de.words.json",
-          "size": 33740,
-          "sha256": "66e5866296b4be2ec0adf08a0dbd8387034a8fe59da1d0b609c439a53b4aba1e"
+          "size": 20940,
+          "sha256": "5154dd85b068c11ec9465c46781509165b3e5ecf7759428310d8a98e544d715d"
         }
       },
       "en": {
@@ -5718,8 +5718,8 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-vscode-browser.en.vtt",
-          "size": 4855,
-          "sha256": "986f5986a6b83d950cacd1395db4c9eac70a475c9c9d52b9804a475f3633f62f"
+          "size": 3748,
+          "sha256": "7847c1cfcad8ca5aee039fb6d0c2820ff19233490b08d527c2801b2f0b9147eb"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-vscode-browser.en.chapters.vtt",
@@ -5728,25 +5728,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-vscode-browser.en.words.json",
-          "size": 33555,
-          "sha256": "e07f07fdb9c51c25b377c235990ca8ed59443c407e3f6da8d6bc6954e1d81a2f"
+          "size": 20353,
+          "sha256": "00ea00c5773143e27b28e00e907a0847b74f09c8431fb6bac101b3d69ab726ae"
         }
       },
       "es": {
         "mp4": {
           "path": "tutorials/video/es/tutorial-vscode-browser.mp4",
-          "size": 8001506,
-          "sha256": "1a1ee817cab86039ea4f3d81535eee69a13cd239baffb2dba034277e88287c11"
+          "size": 6151235,
+          "sha256": "28d518fc6fce0a238385061b88b8f8162bd7fbcbeea8421881121e936f1da0ff"
         },
         "poster": {
           "path": "tutorials/video/es/tutorial-vscode-browser.es.poster.jpg",
-          "size": 91620,
-          "sha256": "39d952f5329a66c6d8a02b337d9d2df8df99a1b5035648bf2c494230d80f5afc"
+          "size": 93679,
+          "sha256": "c6d37b50da8646f99962e806968b5367b431c40fc8a3ab99508ff8cb9c9aa674"
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-vscode-browser.es.vtt",
-          "size": 5055,
-          "sha256": "8d84e89a078d098f87581bbc96c9be15cedb1788f6da995c01a856a1b1c631ee"
+          "size": 4164,
+          "sha256": "4a22323810f9636722dcb0016f569f9a78bb74c8705694404665ffb4adf2b30f"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-vscode-browser.es.chapters.vtt",
@@ -5755,8 +5755,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-vscode-browser.es.words.json",
-          "size": 35046,
-          "sha256": "cac5fe91bff30d8efe9a28321c036ce65d0e40d398d763904f890bb3751e8378"
+          "size": 22099,
+          "sha256": "872f08c55d223afae74f3412c9a4bf9d21e76107d930d7244a3269df60d35a8c"
         }
       },
       "et": {
@@ -5789,18 +5789,18 @@
       "fr": {
         "mp4": {
           "path": "tutorials/video/fr/tutorial-vscode-browser.mp4",
-          "size": 7713164,
-          "sha256": "03567e19f6912a6171aeac20860a20d3b9cf5ad1257ae9260763bec78407fc68"
+          "size": 5954128,
+          "sha256": "0c6b513c2ba040e2a5e9a20aeb9594d64a38dd597ab0f9afb523eb5990666f40"
         },
         "poster": {
           "path": "tutorials/video/fr/tutorial-vscode-browser.fr.poster.jpg",
-          "size": 94634,
-          "sha256": "04687cc792ddd01281cede346286d2e75de7591d0eb5bc93c3c5fd3c21abaed8"
+          "size": 96832,
+          "sha256": "bb688d39188dde33448f969caea667e05aeacc36b6b8a0587401c2de00a41544"
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-vscode-browser.fr.vtt",
-          "size": 5163,
-          "sha256": "c37ead252bc0c0df096f9c9183a023795fe2fa6e84b8e1fc71375c976866b133"
+          "size": 4023,
+          "sha256": "f6f30ab0bf94f8ef119f167525e1207daa7771d0f27056cfee482f3708f0e0b7"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-vscode-browser.fr.chapters.vtt",
@@ -5809,25 +5809,25 @@
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-vscode-browser.fr.words.json",
-          "size": 34067,
-          "sha256": "4c8b7311a3762ba891ad112c9451fb803101cc9f0181db3561b15fcbb2ad02ef"
+          "size": 20345,
+          "sha256": "9861e06bb833a6650c25986f9ce907366aa32152508c3db82bd591d9a0e8f271"
         }
       },
       "it": {
         "mp4": {
           "path": "tutorials/video/it/tutorial-vscode-browser.mp4",
-          "size": 7727543,
-          "sha256": "63bf375419bb8187fe098c54d8b9ec070f7264475e9f19db41626f362ff25792"
+          "size": 5878393,
+          "sha256": "50c69bcaf95ea4d263435c698644cfce914e0dbc879c096d846db5adb8c6254e"
         },
         "poster": {
           "path": "tutorials/video/it/tutorial-vscode-browser.it.poster.jpg",
-          "size": 88264,
-          "sha256": "31466fd37d64ccf4a2a849189db1336269c27fd39249af4db93932c7db210f99"
+          "size": 90271,
+          "sha256": "2db0b464f3dc5952acedd67642943960d2b3cd28dea35d6c335e68a6387c7f5e"
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-vscode-browser.it.vtt",
-          "size": 4909,
-          "sha256": "f3404021bb7d8fe59fc8d520e193b3b407c17eae8f6c35d902f5b310a2a9f877"
+          "size": 3986,
+          "sha256": "b13008e3adbc63178af1ce53ccbcb979a1a5a8796c1a9299d10a804e983e46d7"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-vscode-browser.it.chapters.vtt",
@@ -5836,8 +5836,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-vscode-browser.it.words.json",
-          "size": 32600,
-          "sha256": "0daed33b8b0155c9f99e22d3580c325151ba8b5647cf8aba43a05ab6210a8f85"
+          "size": 19638,
+          "sha256": "fd6e721568b2d01ba74f88fb8112cc7d84c5bb39a750e8f0b58abcc14c223c6e"
         }
       },
       "ja": {
@@ -5880,18 +5880,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-vscode-browser.ko.vtt",
-          "size": 5217,
-          "sha256": "82965139950372f61608abece3bbefe984ce9ffe050bb25357a114803a6af3b7"
+          "size": 4301,
+          "sha256": "eb9cbc41a5d52f55042e6bf5a0f397a0d7a387f24fb330be4c49a5a6cc76b157"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-vscode-browser.ko.chapters.vtt",
           "size": 723,
-          "sha256": "59938a81123e14509dddbb7bc29f7bfd89509f2aeec652d2185c145b93cd6188"
+          "sha256": "c134f39b5a2d9518ed2672ae22da23e812ed5a2c7bbe9e011c4c03b32defdd6f"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-vscode-browser.ko.words.json",
-          "size": 29764,
-          "sha256": "c2e91bb84f1bb23e723e0ac09a0deaad26b30ae7ec1f2998393496cf6ec6e923"
+          "size": 20423,
+          "sha256": "0593d35dd1b2c74df2c6354523641b807582930ad7d213021ed36d582fc9d9ec"
         }
       },
       "pt": {
@@ -5907,18 +5907,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-vscode-browser.pt.vtt",
-          "size": 4927,
-          "sha256": "6de53569c823b91d5918a35feb937261cd9e3ea8890dcebc890cb09612369dea"
+          "size": 4131,
+          "sha256": "4203c39d7304b6cd7759be90c7a7c27dfb01a8e28eefcaa1b15ae2db52cd155e"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-vscode-browser.pt.chapters.vtt",
           "size": 680,
-          "sha256": "6b5d186cf304158f1388fba4ae0b223585fc8f953e3d697c1b49de5e31437d09"
+          "sha256": "169ff39c35fabf576594b565cfee26edcf8dba364b9bd674fec1ce468e1ee921"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-vscode-browser.pt.words.json",
-          "size": 33709,
-          "sha256": "5eb986f4df7b9778beb3b84d4ce35fadd6e7de38f7d4ce6ac6118544ce04abd5"
+          "size": 19742,
+          "sha256": "874f5b309f51487a388b99d5fef367264b967926ebe297b7d40ab9b26e4c2139"
         }
       },
       "ru": {
@@ -5934,18 +5934,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-vscode-browser.ru.vtt",
-          "size": 5876,
-          "sha256": "126542a61ee874e4c51052710e54d417cfbc6d7f7fa465dd6402fae62d5d247b"
+          "size": 4677,
+          "sha256": "a4ce82e7a1682f04b71d996dad7213806c51009689f630c516ceb152f1549e6c"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-vscode-browser.ru.chapters.vtt",
           "size": 822,
-          "sha256": "225757e52bd738373827619c51832719f6efc0385685fc35bdfee27dbc430281"
+          "sha256": "98317e505cbd78087d1ba1e7b75d304a02a1e8528b9e55091fa08d09a76d8703"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-vscode-browser.ru.words.json",
-          "size": 32027,
-          "sha256": "b014370022cf369573d3d3339ee1b989d56190f29ae1329f4d27c1ae7b8f23b2"
+          "size": 18897,
+          "sha256": "f422cb3b500c70af6a702f53d8719a6947b1cfe102c276231856c2bae4ec0abb"
         }
       },
       "tr": {
@@ -6034,8 +6034,8 @@
       "de": {
         "mp4": {
           "path": "tutorials/video/de/tutorial-work-with-repo.mp4",
-          "size": 3995167,
-          "sha256": "59f950e75cb853c54c1711ea2b339ccec883c5dcaed8dd84630242bce2aada53"
+          "size": 4055732,
+          "sha256": "1b8d296a0c00714eb9299f2f71451cb33c431367815df078205fe61fcb5567d1"
         },
         "poster": {
           "path": "tutorials/video/de/tutorial-work-with-repo.de.poster.jpg",
@@ -6044,25 +6044,25 @@
         },
         "vtt": {
           "path": "tutorials/video/de/tutorial-work-with-repo.de.vtt",
-          "size": 3606,
-          "sha256": "f58827754e2a826ac2bb6b265b67b5f21bfc9210d3da29490bd58209b80b4f1f"
+          "size": 3052,
+          "sha256": "86a40cbbba3c7e95e3bb8c0f465cfd6a4b52a6730544d8b49c2002fb5a30a5b6"
         },
         "chaptersVtt": {
           "path": "tutorials/video/de/tutorial-work-with-repo.de.chapters.vtt",
           "size": 504,
-          "sha256": "ea273613c997f18d0535db0e7a2c633f6f45070faa642e1a483d7b27f4a7f36e"
+          "sha256": "0137097d1155a659144bfc37bee82daaa7092149ab9e772769f64981623d1514"
         },
         "wordsJson": {
           "path": "tutorials/video/de/tutorial-work-with-repo.de.words.json",
-          "size": 22962,
-          "sha256": "5d4111aab001bd0cc42b00440f85d020afbcd67a8e3f5bd748315c4f673aab12"
+          "size": 14366,
+          "sha256": "12d1793b9fe74ce1d327ff1defccde6ac0aa9d4cc03d39967430d4399fe14c86"
         }
       },
       "en": {
         "mp4": {
           "path": "tutorials/video/en/tutorial-work-with-repo.mp4",
-          "size": 3236538,
-          "sha256": "5002c8c53f2a74acafe0f34fd39643e9c94d67f29128a28e7aaccf592ae25802"
+          "size": 3302133,
+          "sha256": "22beff4ff0583a008246abe19350035fef37974bbcd3d7b2686a15c566524ee4"
         },
         "poster": {
           "path": "tutorials/video/en/tutorial-work-with-repo.en.poster.jpg",
@@ -6071,25 +6071,25 @@
         },
         "vtt": {
           "path": "tutorials/video/en/tutorial-work-with-repo.en.vtt",
-          "size": 2575,
-          "sha256": "758029a01110224ff4412a20e1a8f699889c7f93afd4059ec3e7e94006ea54fb"
+          "size": 2544,
+          "sha256": "9b653aab77ead05375464de0c888644d5a0bab0998aebc849045857eac48f05b"
         },
         "chaptersVtt": {
           "path": "tutorials/video/en/tutorial-work-with-repo.en.chapters.vtt",
           "size": 495,
-          "sha256": "39f389e27403915c1538d482a5eae61fd6380dacf8b8ad4fcaee9aba3bc36882"
+          "sha256": "44140b1442c5e0961e436bed0e7d4a30e3e5bf0e1d9c7f0864b9e43592edc727"
         },
         "wordsJson": {
           "path": "tutorials/video/en/tutorial-work-with-repo.en.words.json",
-          "size": 19457,
-          "sha256": "3a2d9d601d2ce9ffda8323bf304dc6484e536d2e06fcc003e22c0abfda5b0181"
+          "size": 13526,
+          "sha256": "bd52ec9a3dd7074e48d38b1a836b8b324577a6022250cbe2c087de94efd1cb03"
         }
       },
       "es": {
         "mp4": {
           "path": "tutorials/video/es/tutorial-work-with-repo.mp4",
-          "size": 4357166,
-          "sha256": "ee73da94f739e2f1e6cb6621f84b890075d876f6b082dd47d9b0aa8f8e6dc175"
+          "size": 4416728,
+          "sha256": "a3471a5433cb21516b7d5fa0dabad5de7a457229941a26df21638c358b8a1bf3"
         },
         "poster": {
           "path": "tutorials/video/es/tutorial-work-with-repo.es.poster.jpg",
@@ -6098,8 +6098,8 @@
         },
         "vtt": {
           "path": "tutorials/video/es/tutorial-work-with-repo.es.vtt",
-          "size": 3816,
-          "sha256": "16933ff99b3a9e5877c8c40b8e297dd59e84e41330c99dd29de24a4a8e0725f1"
+          "size": 3168,
+          "sha256": "b11f0ecb718b8b638dcbeb832a67fc10bfdcea6a4e3a169318fdf1fdc806cee1"
         },
         "chaptersVtt": {
           "path": "tutorials/video/es/tutorial-work-with-repo.es.chapters.vtt",
@@ -6108,8 +6108,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/es/tutorial-work-with-repo.es.words.json",
-          "size": 25558,
-          "sha256": "496982fe495cdceb8dde77f183e2a1a8396f05d5308d5ef70daec6812a4f6fc7"
+          "size": 15630,
+          "sha256": "a7366210285a931e37b67f94fa29152613503482c124d305d557cf7945c75f12"
         }
       },
       "et": {
@@ -6142,8 +6142,8 @@
       "fr": {
         "mp4": {
           "path": "tutorials/video/fr/tutorial-work-with-repo.mp4",
-          "size": 4293986,
-          "sha256": "a2e05c6e2614b143aa4ec00824c5e76dc6ac04cf31f03354bca820d73b477b25"
+          "size": 4340024,
+          "sha256": "d5590e502f6ea60bee4de7bd0195080cd5c34637785a8b4fef98c5142d3ba080"
         },
         "poster": {
           "path": "tutorials/video/fr/tutorial-work-with-repo.fr.poster.jpg",
@@ -6152,25 +6152,25 @@
         },
         "vtt": {
           "path": "tutorials/video/fr/tutorial-work-with-repo.fr.vtt",
-          "size": 3970,
-          "sha256": "0884d415bad850e9fac56ac79addf3a22f46d7cce6d453b36860b2e58488d39e"
+          "size": 3445,
+          "sha256": "f93bec01cafb83fa0d2c1a9a71a200625f0e45facb9edc619e5e7f9d484cf006"
         },
         "chaptersVtt": {
           "path": "tutorials/video/fr/tutorial-work-with-repo.fr.chapters.vtt",
           "size": 543,
-          "sha256": "3cdaa1f814f109b0ecc3ab2d230fc4b99409e7f59234bd886eb65113031d4d37"
+          "sha256": "23f52bbe86425cfb3d9b7dbd967cc89db4410dfb2cbd4f1d1e209e5862ca67ff"
         },
         "wordsJson": {
           "path": "tutorials/video/fr/tutorial-work-with-repo.fr.words.json",
-          "size": 24871,
-          "sha256": "0a6f4875e57e4cd926f43741d8ea48aa241e7bbbbf9b8a1a6d2df0a732bdbe86"
+          "size": 16085,
+          "sha256": "a2267d7d3463ac17c5309d470e7b3ccb1063c7b016cddc2f17894092656ede8d"
         }
       },
       "it": {
         "mp4": {
           "path": "tutorials/video/it/tutorial-work-with-repo.mp4",
-          "size": 3925467,
-          "sha256": "fb64e01f87894db6f12bcf08b69d7db067eda8bd4520d88f9f577e96e7a3ed80"
+          "size": 3979405,
+          "sha256": "17d60cdf92d9ffe79ac82b660fa4d5853f3e18b3c369b166e6bdd68a980e0a0f"
         },
         "poster": {
           "path": "tutorials/video/it/tutorial-work-with-repo.it.poster.jpg",
@@ -6179,8 +6179,8 @@
         },
         "vtt": {
           "path": "tutorials/video/it/tutorial-work-with-repo.it.vtt",
-          "size": 3439,
-          "sha256": "eddd4bc951d1b78a47ad9a317b1e1110aac6be2be039342cfbb4c1b4c51a8065"
+          "size": 2918,
+          "sha256": "ebaec26d0e1ded131b5e2ad3006cabfd2cadcd42819e62748bf5ba6ccf1bcc36"
         },
         "chaptersVtt": {
           "path": "tutorials/video/it/tutorial-work-with-repo.it.chapters.vtt",
@@ -6189,8 +6189,8 @@
         },
         "wordsJson": {
           "path": "tutorials/video/it/tutorial-work-with-repo.it.words.json",
-          "size": 22294,
-          "sha256": "f242ee4150c24caac787d8d9261b091b57510cf10830c8a194b14aae3deb6ae5"
+          "size": 13715,
+          "sha256": "9c349049efb48c2d1f3a94916c187cf119bb3102f64bca2de19e0a754da48884"
         }
       },
       "ja": {
@@ -6233,18 +6233,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ko/tutorial-work-with-repo.ko.vtt",
-          "size": 3780,
-          "sha256": "526c05a8043646afc2db0a7f584c192c1e8abb5da784af7a720e740f7e79c652"
+          "size": 3298,
+          "sha256": "2956ae64a8c546ee2398a72d63aa453c8f916388642e645b608ff9f32b442953"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ko/tutorial-work-with-repo.ko.chapters.vtt",
           "size": 529,
-          "sha256": "e5e09e2c9dfbabd63c6f103967412db121392a32db1815899024b2128051ac36"
+          "sha256": "6d758d1ebe04ccff9038347e77badd1ca6b79165591b18ea4fdf4e561a08673d"
         },
         "wordsJson": {
           "path": "tutorials/video/ko/tutorial-work-with-repo.ko.words.json",
-          "size": 18920,
-          "sha256": "d5b3c594ffd22841f8b5cb471cc397ab078c9855d4c173e1d9cc7e1fbbc66b90"
+          "size": 14748,
+          "sha256": "825de64b7e5cd44695f4285aee8bb5ebfea62c997d37552df005b515dad885d1"
         }
       },
       "pt": {
@@ -6260,18 +6260,18 @@
         },
         "vtt": {
           "path": "tutorials/video/pt/tutorial-work-with-repo.pt.vtt",
-          "size": 3584,
-          "sha256": "579420516568c3923049e5941d1f2d4f592c25850949baf6da9a6c8d5fdb1f32"
+          "size": 3123,
+          "sha256": "c47dc2f091b329a57da67f2316d62f8ad9ad7ba36d62190e4a21528b7154d265"
         },
         "chaptersVtt": {
           "path": "tutorials/video/pt/tutorial-work-with-repo.pt.chapters.vtt",
           "size": 516,
-          "sha256": "1d38ad6bb83e2108f9d60841f012e7bbed9aa618588bbe244cf33d09e1827b8a"
+          "sha256": "d08b98dc8655aac0c3d4752b75044173df921239797bccaad5c6fe45738fbecc"
         },
         "wordsJson": {
           "path": "tutorials/video/pt/tutorial-work-with-repo.pt.words.json",
-          "size": 23464,
-          "sha256": "2f38d428aa86ba96a42501e4c2f785e277c5d3429d1e85d6e306a3844e7523bb"
+          "size": 13764,
+          "sha256": "dbc84a0c4e25192691392a2f5ad6bc99c518cace14e45bb3cacee344435b9eaf"
         }
       },
       "ru": {
@@ -6287,18 +6287,18 @@
         },
         "vtt": {
           "path": "tutorials/video/ru/tutorial-work-with-repo.ru.vtt",
-          "size": 4568,
-          "sha256": "d902842c6143700df8e570ec7bf3c41754533cc17d320983707ad8fc8fba4ffe"
+          "size": 3890,
+          "sha256": "76f3de992b6df42c18b669279ec575f34dbda44a65160cdce224356cb602dc02"
         },
         "chaptersVtt": {
           "path": "tutorials/video/ru/tutorial-work-with-repo.ru.chapters.vtt",
           "size": 618,
-          "sha256": "de635d41ace378d8d41de7fac1fbfa274b71b0609db292001233296925a4718d"
+          "sha256": "a15c74fd02f5f03ffe16646abc1a91d70c20463045fe6e69f1d03608f3c1406d"
         },
         "wordsJson": {
           "path": "tutorials/video/ru/tutorial-work-with-repo.ru.words.json",
-          "size": 21968,
-          "sha256": "be75cdc9c52a5f1ee28ddb7b5614ed57c22584637daec079e9df79a79d1458d9"
+          "size": 13509,
+          "sha256": "1ce74674f4d1d6c8231ea018fe4890a0332f902e0b6a990c9744c55caf8da588"
         }
       },
       "tr": {

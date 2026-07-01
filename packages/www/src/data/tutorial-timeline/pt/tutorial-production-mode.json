@@ -18,9 +18,271 @@
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/tutorial-production-mode-01.cf62cfab.mp3",
       "textHash": "cf62cfabec2e26289777415c08437d321429d94d9ee911c0f181a60c148abe56",
       "audioDurationSec": 16.117551,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.48,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.12,
+          "startChar": 14,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 1.84,
+          "startChar": 16,
+          "endChar": 25
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 1.92,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.32,
+          "startChar": 29,
+          "endChar": 33
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.4,
+          "startChar": 34,
+          "endChar": 36
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 3.04,
+          "startChar": 37,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.12,
+          "startChar": 46,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 48,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.6,
+          "startChar": 55,
+          "endChar": 57
+        },
+        {
+          "startSec": 3.6,
+          "endSec": 4.32,
+          "startChar": 58,
+          "endChar": 66
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.88,
+          "startChar": 68,
+          "endChar": 69
+        },
+        {
+          "startSec": 4.88,
+          "endSec": 5.2,
+          "startChar": 70,
+          "endChar": 77
+        },
+        {
+          "startSec": 5.2,
+          "endSec": 5.28,
+          "startChar": 78,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.76,
+          "startChar": 81,
+          "endChar": 87
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 5.92,
+          "startChar": 135,
+          "endChar": 137
+        },
+        {
+          "startSec": 8.96,
+          "endSec": 9.04,
+          "startChar": 139,
+          "endChar": 140
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 10.56,
+          "startChar": 150,
+          "endChar": 153
+        },
+        {
+          "startSec": 10.56,
+          "endSec": 11.04,
+          "startChar": 154,
+          "endChar": 159
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.2,
+          "startChar": 160,
+          "endChar": 162
+        },
+        {
+          "startSec": 11.2,
+          "endSec": 11.68,
+          "startChar": 163,
+          "endChar": 170
+        },
+        {
+          "startSec": 11.68,
+          "endSec": 12.0,
+          "startChar": 171,
+          "endChar": 176
+        },
+        {
+          "startSec": 12.48,
+          "endSec": 12.72,
+          "startChar": 178,
+          "endChar": 182
+        },
+        {
+          "startSec": 12.72,
+          "endSec": 13.12,
+          "startChar": 183,
+          "endChar": 189
+        },
+        {
+          "startSec": 13.12,
+          "endSec": 13.92,
+          "startChar": 192,
+          "endChar": 200
+        },
+        {
+          "startSec": 13.92,
+          "endSec": 14.08,
+          "startChar": 201,
+          "endChar": 202
+        },
+        {
+          "startSec": 14.08,
+          "endSec": 14.24,
+          "startChar": 203,
+          "endChar": 204
+        },
+        {
+          "startSec": 14.24,
+          "endSec": 14.88,
+          "startChar": 205,
+          "endChar": 214
+        },
+        {
+          "startSec": 14.88,
+          "endSec": 15.44,
+          "startChar": 215,
+          "endChar": 223
+        },
+        {
+          "startSec": 15.44,
+          "endSec": 16.0,
+          "startChar": 226,
+          "endChar": 235
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/tutorial-production-mode-01-after.04a5372a.mp3",
       "afterAudioDurationSec": 6.347755,
-      "afterTextHash": "04a5372afca70104ed75066bd2f1dbd4665fb1f579de286c83844fd9acb759b8"
+      "afterTextHash": "04a5372afca70104ed75066bd2f1dbd4665fb1f579de286c83844fd9acb759b8",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.88,
+          "startChar": 0,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.88,
+          "endSec": 0.96,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.96,
+          "endSec": 1.36,
+          "startChar": 12,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.44,
+          "startChar": 19,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.44,
+          "endSec": 2.16,
+          "startChar": 22,
+          "endChar": 30
+        },
+        {
+          "startSec": 2.56,
+          "endSec": 3.04,
+          "startChar": 32,
+          "endChar": 37
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.52,
+          "startChar": 38,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.24,
+          "startChar": 47,
+          "endChar": 52
+        },
+        {
+          "startSec": 4.24,
+          "endSec": 4.96,
+          "startChar": 53,
+          "endChar": 62
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.36,
+          "startChar": 64,
+          "endChar": 66
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.84,
+          "startChar": 67,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.24,
+          "startChar": 76,
+          "endChar": 80
+        }
+      ]
     },
     {
       "id": "tutorial-production-mode-02",
@@ -31,9 +293,217 @@
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/tutorial-production-mode-02.a82d9fd1.mp3",
       "textHash": "a82d9fd12814cb3b5e5c0d22431e89f2cebe5c268435a2869a61162d5918293e",
       "audioDurationSec": 13.322449,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 6,
+          "endChar": 11
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.28,
+          "startChar": 12,
+          "endChar": 18
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 1.52,
+          "startChar": 19,
+          "endChar": 20
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.16,
+          "startChar": 21,
+          "endChar": 29
+        },
+        {
+          "startSec": 2.16,
+          "endSec": 2.88,
+          "startChar": 30,
+          "endChar": 40
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 3.44,
+          "startChar": 41,
+          "endChar": 45
+        },
+        {
+          "startSec": 3.44,
+          "endSec": 4.0,
+          "startChar": 52,
+          "endChar": 61
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.64,
+          "startChar": 62,
+          "endChar": 71
+        },
+        {
+          "startSec": 4.64,
+          "endSec": 4.72,
+          "startChar": 72,
+          "endChar": 73
+        },
+        {
+          "startSec": 4.72,
+          "endSec": 4.96,
+          "startChar": 74,
+          "endChar": 76
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.44,
+          "startChar": 77,
+          "endChar": 85
+        },
+        {
+          "startSec": 5.44,
+          "endSec": 5.52,
+          "startChar": 86,
+          "endChar": 88
+        },
+        {
+          "startSec": 5.52,
+          "endSec": 6.16,
+          "startChar": 89,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.8,
+          "startChar": 99,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.2,
+          "startChar": 101,
+          "endChar": 107
+        },
+        {
+          "startSec": 7.2,
+          "endSec": 7.68,
+          "startChar": 108,
+          "endChar": 113
+        },
+        {
+          "startSec": 8.08,
+          "endSec": 8.24,
+          "startChar": 115,
+          "endChar": 117
+        },
+        {
+          "startSec": 8.24,
+          "endSec": 8.32,
+          "startChar": 118,
+          "endChar": 119
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.88,
+          "startChar": 120,
+          "endChar": 128
+        },
+        {
+          "startSec": 8.88,
+          "endSec": 9.68,
+          "startChar": 129,
+          "endChar": 138
+        },
+        {
+          "startSec": 10.0,
+          "endSec": 10.24,
+          "startChar": 140,
+          "endChar": 144
+        },
+        {
+          "startSec": 10.24,
+          "endSec": 11.04,
+          "startChar": 145,
+          "endChar": 156
+        },
+        {
+          "startSec": 11.04,
+          "endSec": 11.44,
+          "startChar": 157,
+          "endChar": 162
+        },
+        {
+          "startSec": 11.44,
+          "endSec": 12.16,
+          "startChar": 165,
+          "endChar": 173
+        },
+        {
+          "startSec": 12.24,
+          "endSec": 13.2,
+          "startChar": 174,
+          "endChar": 189
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/tutorial-production-mode-02-after.c88c605b.mp3",
       "afterAudioDurationSec": 5.146122,
-      "afterTextHash": "c88c605b33fc971c8e180cf7c3c593f11d65c2d39f9d310d30e579da837db206"
+      "afterTextHash": "c88c605b33fc971c8e180cf7c3c593f11d65c2d39f9d310d30e579da837db206",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.28,
+          "startChar": 9,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.0,
+          "startChar": 20,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.4,
+          "endSec": 2.48,
+          "startChar": 27,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.48,
+          "endSec": 3.2,
+          "startChar": 29,
+          "endChar": 38
+        },
+        {
+          "startSec": 3.2,
+          "endSec": 4.0,
+          "startChar": 39,
+          "endChar": 48
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.16,
+          "startChar": 49,
+          "endChar": 50
+        },
+        {
+          "startSec": 4.16,
+          "endSec": 5.04,
+          "startChar": 51,
+          "endChar": 60
+        }
+      ]
     },
     {
       "id": "tutorial-production-mode-03",
@@ -44,9 +514,157 @@
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/tutorial-production-mode-03.9177c59b.mp3",
       "textHash": "9177c59b4e614cbe0beec8094972285e7b0241321b66a99a48cb961f782e4353",
       "audioDurationSec": 7.706122,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.56,
+          "startChar": 0,
+          "endChar": 5
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 1.04,
+          "startChar": 6,
+          "endChar": 12
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.28,
+          "startChar": 13,
+          "endChar": 15
+        },
+        {
+          "startSec": 1.28,
+          "endSec": 2.08,
+          "startChar": 16,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.24,
+          "startChar": 29,
+          "endChar": 32
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.72,
+          "startChar": 33,
+          "endChar": 41
+        },
+        {
+          "startSec": 2.72,
+          "endSec": 3.28,
+          "startChar": 42,
+          "endChar": 52
+        },
+        {
+          "startSec": 3.28,
+          "endSec": 3.84,
+          "startChar": 53,
+          "endChar": 60
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 62,
+          "endChar": 70
+        },
+        {
+          "startSec": 4.96,
+          "endSec": 5.28,
+          "startChar": 71,
+          "endChar": 74
+        },
+        {
+          "startSec": 5.28,
+          "endSec": 5.36,
+          "startChar": 75,
+          "endChar": 76
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.68,
+          "startChar": 77,
+          "endChar": 82
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 6.4,
+          "startChar": 83,
+          "endChar": 92
+        },
+        {
+          "startSec": 6.4,
+          "endSec": 6.72,
+          "startChar": 93,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 6.8,
+          "startChar": 98,
+          "endChar": 100
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 101,
+          "endChar": 106
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.28,
+          "startChar": 107,
+          "endChar": 109
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.68,
+          "startChar": 110,
+          "endChar": 118
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/tutorial-production-mode-03-after.311ac09d.mp3",
       "afterAudioDurationSec": 2.35102,
-      "afterTextHash": "311ac09d601363cd492ad6a23828b5333c0d994aeeb40eabf007b169061ddd39"
+      "afterTextHash": "311ac09d601363cd492ad6a23828b5333c0d994aeeb40eabf007b169061ddd39",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.8,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.04,
+          "endSec": 1.2,
+          "startChar": 11,
+          "endChar": 13
+        },
+        {
+          "startSec": 1.2,
+          "endSec": 1.6,
+          "startChar": 14,
+          "endChar": 19
+        },
+        {
+          "startSec": 1.6,
+          "endSec": 1.76,
+          "startChar": 20,
+          "endChar": 22
+        },
+        {
+          "startSec": 1.76,
+          "endSec": 2.24,
+          "startChar": 23,
+          "endChar": 31
+        }
+      ]
     },
     {
       "id": "tutorial-production-mode-04",
@@ -57,9 +675,187 @@
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/tutorial-production-mode-04.754343da.mp3",
       "textHash": "754343da9831d0d85368590f4d8446b1ba8b7435183487b2641b717a27646650",
       "audioDurationSec": 10.684082,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.32,
+          "startChar": 2,
+          "endChar": 6
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.72,
+          "startChar": 7,
+          "endChar": 12
+        },
+        {
+          "startSec": 0.72,
+          "endSec": 0.8,
+          "startChar": 13,
+          "endChar": 14
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.44,
+          "startChar": 15,
+          "endChar": 24
+        },
+        {
+          "startSec": 1.84,
+          "endSec": 2.24,
+          "startChar": 26,
+          "endChar": 28
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.56,
+          "startChar": 29,
+          "endChar": 34
+        },
+        {
+          "startSec": 2.64,
+          "endSec": 3.04,
+          "startChar": 35,
+          "endChar": 42
+        },
+        {
+          "startSec": 3.04,
+          "endSec": 3.12,
+          "startChar": 43,
+          "endChar": 44
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 3.52,
+          "startChar": 45,
+          "endChar": 51
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.92,
+          "startChar": 52,
+          "endChar": 54
+        },
+        {
+          "startSec": 3.92,
+          "endSec": 4.56,
+          "startChar": 55,
+          "endChar": 63
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.36,
+          "startChar": 65,
+          "endChar": 67
+        },
+        {
+          "startSec": 5.36,
+          "endSec": 5.68,
+          "startChar": 68,
+          "endChar": 75
+        },
+        {
+          "startSec": 5.68,
+          "endSec": 5.84,
+          "startChar": 76,
+          "endChar": 80
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.56,
+          "startChar": 81,
+          "endChar": 88
+        },
+        {
+          "startSec": 7.04,
+          "endSec": 7.28,
+          "startChar": 90,
+          "endChar": 92
+        },
+        {
+          "startSec": 7.28,
+          "endSec": 7.68,
+          "startChar": 93,
+          "endChar": 100
+        },
+        {
+          "startSec": 7.68,
+          "endSec": 7.92,
+          "startChar": 101,
+          "endChar": 105
+        },
+        {
+          "startSec": 7.92,
+          "endSec": 8.48,
+          "startChar": 106,
+          "endChar": 111
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.44,
+          "startChar": 113,
+          "endChar": 117
+        },
+        {
+          "startSec": 9.44,
+          "endSec": 9.76,
+          "startChar": 120,
+          "endChar": 126
+        },
+        {
+          "startSec": 9.76,
+          "endSec": 9.92,
+          "startChar": 127,
+          "endChar": 129
+        },
+        {
+          "startSec": 9.92,
+          "endSec": 10.56,
+          "startChar": 130,
+          "endChar": 138
+        }
+      ],
       "afterAudioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/tutorial-production-mode-04-after.96b09a12.mp3",
       "afterAudioDurationSec": 4.989388,
-      "afterTextHash": "96b09a12b2c4bea5d41c054ddf3cf9716d5c396837519ff29666afc9b97175e0"
+      "afterTextHash": "96b09a12b2c4bea5d41c054ddf3cf9716d5c396837519ff29666afc9b97175e0",
+      "afterWordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.8,
+          "startChar": 0,
+          "endChar": 7
+        },
+        {
+          "startSec": 1.12,
+          "endSec": 2.32,
+          "startChar": 11,
+          "endChar": 18
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 2.64,
+          "startChar": 19,
+          "endChar": 23
+        },
+        {
+          "startSec": 3.12,
+          "endSec": 4.24,
+          "startChar": 37,
+          "endChar": 44
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.96,
+          "startChar": 50,
+          "endChar": 55
+        }
+      ]
     }
   ],
   "narrationAudio": [
@@ -68,21 +864,285 @@
       "textHash": "611a116135e3c486841465168a1d3389001a9f36089347f5ca29a4986721b8e4",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/intro.611a1161.mp3",
       "narrationText": "O seu app roda enquanto você está conectado. Produção significa que ele roda quando você não está. Três passos curtos, tudo pelo seu laptop.",
-      "audioDurationSec": 9.560816
+      "audioDurationSec": 9.560816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.16,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.16,
+          "endSec": 0.4,
+          "startChar": 26,
+          "endChar": 27
+        },
+        {
+          "startSec": 0.4,
+          "endSec": 0.48,
+          "startChar": 35,
+          "endChar": 36
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 0.56,
+          "startChar": 40,
+          "endChar": 41
+        },
+        {
+          "startSec": 0.56,
+          "endSec": 0.8,
+          "startChar": 45,
+          "endChar": 46
+        },
+        {
+          "startSec": 0.8,
+          "endSec": 1.2,
+          "startChar": 72,
+          "endChar": 76
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 1.92,
+          "startChar": 84,
+          "endChar": 88
+        },
+        {
+          "startSec": 1.92,
+          "endSec": 2.24,
+          "startChar": 93,
+          "endChar": 97
+        },
+        {
+          "startSec": 6.8,
+          "endSec": 7.12,
+          "startChar": 99,
+          "endChar": 103
+        },
+        {
+          "startSec": 7.12,
+          "endSec": 7.44,
+          "startChar": 104,
+          "endChar": 110
+        },
+        {
+          "startSec": 7.44,
+          "endSec": 8.0,
+          "startChar": 111,
+          "endChar": 117
+        },
+        {
+          "startSec": 8.32,
+          "endSec": 8.56,
+          "startChar": 119,
+          "endChar": 123
+        },
+        {
+          "startSec": 8.56,
+          "endSec": 8.8,
+          "startChar": 124,
+          "endChar": 128
+        },
+        {
+          "startSec": 8.8,
+          "endSec": 9.04,
+          "startChar": 129,
+          "endChar": 132
+        },
+        {
+          "startSec": 9.12,
+          "endSec": 9.44,
+          "startChar": 133,
+          "endChar": 139
+        }
+      ]
     },
     {
       "id": "dev-vs-prod",
       "textHash": "fe9c596f0cdd1331dd2ae789f0a6a0572b2c6650fbabfc0cfcaa0c26abc19581",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/dev-vs-prod.fe9c596f.mp3",
       "narrationText": "Aqui está a diferença. No desenvolvimento, você inicia o app de dentro do repo via SSH. Feche a sessão e o app morre com ela. Em produção, você o inicia desconectado do seu laptop: o servidor é dono do processo, a sua conexão não.",
-      "audioDurationSec": 18.207347
+      "audioDurationSec": 18.207347,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.32,
+          "startChar": 0,
+          "endChar": 4
+        },
+        {
+          "startSec": 0.32,
+          "endSec": 0.64,
+          "startChar": 5,
+          "endChar": 9
+        },
+        {
+          "startSec": 0.64,
+          "endSec": 1.36,
+          "startChar": 12,
+          "endChar": 21
+        },
+        {
+          "startSec": 1.68,
+          "endSec": 2.0,
+          "startChar": 23,
+          "endChar": 25
+        },
+        {
+          "startSec": 2.0,
+          "endSec": 3.12,
+          "startChar": 26,
+          "endChar": 41
+        },
+        {
+          "startSec": 3.52,
+          "endSec": 3.84,
+          "startChar": 43,
+          "endChar": 47
+        },
+        {
+          "startSec": 3.84,
+          "endSec": 4.32,
+          "startChar": 48,
+          "endChar": 54
+        },
+        {
+          "startSec": 4.32,
+          "endSec": 4.48,
+          "startChar": 55,
+          "endChar": 56
+        },
+        {
+          "startSec": 4.48,
+          "endSec": 4.88,
+          "startChar": 57,
+          "endChar": 59
+        },
+        {
+          "startSec": 5.12,
+          "endSec": 5.6,
+          "startChar": 64,
+          "endChar": 70
+        },
+        {
+          "startSec": 5.6,
+          "endSec": 5.76,
+          "startChar": 71,
+          "endChar": 73
+        },
+        {
+          "startSec": 5.76,
+          "endSec": 6.24,
+          "startChar": 74,
+          "endChar": 78
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.56,
+          "startChar": 79,
+          "endChar": 82
+        },
+        {
+          "startSec": 6.72,
+          "endSec": 7.36,
+          "startChar": 83,
+          "endChar": 86
+        },
+        {
+          "startSec": 8.368,
+          "endSec": 8.496,
+          "startChar": 218,
+          "endChar": 225
+        },
+        {
+          "startSec": 8.624,
+          "endSec": 8.752,
+          "startChar": 228,
+          "endChar": 229
+        }
+      ]
     },
     {
       "id": "next-tutorial",
       "textHash": "f30e3e184e708ab9a58d6a0c7ed9eacf757cd9f4a4598d51e43e179240967c59",
       "audioSrc": "/assets/tutorials/audio/pt/tutorial-production-mode/next-tutorial.f30e3e18.mp3",
       "narrationText": "E é assim o modo de produção, em resumo. Até ao próximo!",
-      "audioDurationSec": 7.000816
+      "audioDurationSec": 7.000816,
+      "wordTimings": [
+        {
+          "startSec": 0.08,
+          "endSec": 0.24,
+          "startChar": 0,
+          "endChar": 1
+        },
+        {
+          "startSec": 0.24,
+          "endSec": 0.48,
+          "startChar": 2,
+          "endChar": 3
+        },
+        {
+          "startSec": 0.48,
+          "endSec": 1.36,
+          "startChar": 4,
+          "endChar": 9
+        },
+        {
+          "startSec": 1.36,
+          "endSec": 1.52,
+          "startChar": 10,
+          "endChar": 11
+        },
+        {
+          "startSec": 1.52,
+          "endSec": 2.08,
+          "startChar": 12,
+          "endChar": 16
+        },
+        {
+          "startSec": 2.08,
+          "endSec": 2.32,
+          "startChar": 17,
+          "endChar": 19
+        },
+        {
+          "startSec": 2.32,
+          "endSec": 3.36,
+          "startChar": 20,
+          "endChar": 28
+        },
+        {
+          "startSec": 4.0,
+          "endSec": 4.4,
+          "startChar": 30,
+          "endChar": 32
+        },
+        {
+          "startSec": 4.4,
+          "endSec": 5.12,
+          "startChar": 33,
+          "endChar": 39
+        },
+        {
+          "startSec": 5.84,
+          "endSec": 6.08,
+          "startChar": 41,
+          "endChar": 44
+        },
+        {
+          "startSec": 6.08,
+          "endSec": 6.24,
+          "startChar": 45,
+          "endChar": 47
+        },
+        {
+          "startSec": 6.24,
+          "endSec": 6.88,
+          "startChar": 48,
+          "endChar": 55
+        }
+      ]
     }
   ]
 }
