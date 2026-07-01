@@ -1,11 +1,11 @@
 ---
-title: "订阅与许可证"
-description: "了解 account、rdc 和 renet 如何处理机器槽位、仓库许可证和计划限制。"
-category: "Guides"
+title: 订阅与许可证
+description: 了解 account、rdc 和 renet 如何处理机器槽位、仓库许可证和计划限制。
+category: Guides
 order: 7
 language: zh
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # 订阅与许可证
@@ -92,9 +92,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 | 计划 | 浮动许可证 | 仓库大小 | 每月仓库许可证发放次数 | 委托证书默认/最大有效期 |
 |------|-----------|----------|------------------------|-------------------------|
 | Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 1,000 | 60d / 120d |
-| Business | 10 | 200 GB | 10,000 | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 25,000+ | 120d / 365d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 特定合同限制可以为特定客户提高或降低这些值。委托证书有效期还受 `subscription.expiresAt + 3 day grace` 的硬性上限约束，因此按月计费的订阅自然会获得与计费周期对齐的证书。完整规则请参阅 [许可链与委托 - 有效期策略](/zh/docs/license-chain)。
 
@@ -110,7 +110,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 - 无需手动干预
 - 使用 `rdc machine query --system --licenses --name <machine>` 检查机器 ID 和许可证状态
 
-**Edge 渠道用户**免费获得 Community 计划 2 倍的限制（20 GB 仓库、每月 1,000 次发放、4 台机器）。付费计划仅在 Stable 渠道提供。详情请参阅 [发布渠道](/zh/docs/release-channels)。
+**Edge 渠道用户**免费获得 Community 计划 2 倍的限制（20 GB 仓库、每月 200 次发放、4 台机器）。付费计划仅在 Stable 渠道提供。详情请参阅 [发布渠道](/zh/docs/release-channels)。
 
 ## 仓库创建、启动、停止和重启期间发生的情况
 

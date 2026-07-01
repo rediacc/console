@@ -1,11 +1,13 @@
 ---
-title: "Подписка и лицензирование"
-description: "Узнайте, как account, rdc и renet управляют слотами машин, лицензиями репозиториев и ограничениями плана."
-category: "Guides"
+title: Подписка и лицензирование
+description: >-
+  Узнайте, как account, rdc и renet управляют слотами машин, лицензиями
+  репозиториев и ограничениями плана.
+category: Guides
 order: 7
 language: ru
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Подписка и лицензирование
@@ -92,9 +94,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|---|
 | Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 1,000 | 60d / 120d |
-| Business | 10 | 200 GB | 10,000 | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 25,000+ | 120d / 365d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 Специфичные для контракта ограничения могут повышать или понижать эти значения для конкретного клиента. Срок действия сертификата делегирования также жёстко ограничен `subscription.expiresAt + 3 day grace`, поэтому ежемесячно выставляемые подписки естественным образом получают сертификаты, выровненные по их циклу выставления счётов. See [License Chain & Delegation - Validity Policy](/en/docs/license-chain) for the full rules.
 
@@ -111,7 +113,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 - Никакого ручного вмешательства не требуется
 - Проверьте ID машины и статус лицензии с помощью `rdc machine query --system --licenses --name <machine>`
 
-**Пользователи канала Edge** получают 2X ограничения Community без дополнительных затрат (20 GB репозиториев, 1000 выпусков/месяц, 4 машины). Платные планы доступны только на канале Stable. See [Release Channels](/en/docs/release-channels) for details.
+**Пользователи канала Edge** получают 2X ограничения Community без дополнительных затрат (20 GB репозиториев, 200 выпусков/месяц, 4 машины). Платные планы доступны только на канале Stable. See [Release Channels](/en/docs/release-channels) for details.
 
 ## Что происходит при создании, запуске, остановке и перезагрузке репозитория
 

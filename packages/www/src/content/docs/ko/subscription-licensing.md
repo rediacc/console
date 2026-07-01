@@ -1,11 +1,11 @@
 ---
-title: "구독 및 라이선싱"
-description: "계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요금제 제한을 어떻게 처리하는지 이해합니다."
-category: "Guides"
+title: 구독 및 라이선싱
+description: '계정, rdc, renet이 머신 슬롯, 저장소 라이선스, 요금제 제한을 어떻게 처리하는지 이해합니다.'
+category: Guides
 order: 7
 language: ko
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # 구독 및 라이선싱
@@ -92,9 +92,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|---|
 | Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 1,000 | 60d / 120d |
-| Business | 10 | 200 GB | 10,000 | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 25,000+ | 120d / 365d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 계약별 제한은 특정 고객을 위해 이러한 값을 높이거나 낮출 수 있습니다. 위임 인증서 유효성도 `subscription.expiresAt + 3 day grace`로 하드 캡되므로 월별 청구되는 구독은 자연스럽게 청구 주기에 맞춰진 인증서를 얻습니다. 전체 규칙은 [License Chain & Delegation - Validity Policy](/en/docs/license-chain)를 참고하세요.
 
@@ -110,7 +110,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 - 수동 개입 필요 없음
 - `rdc machine query --system --licenses --name <machine>`으로 머신 ID 및 라이선스 상태 확인
 
-**Edge 채널 사용자**는 무료로 2X Community 제한을 받습니다 (20 GB 저장소, 월 1,000회 발급, 4개 머신). 유료 요금제는 Stable 채널에서만 사용할 수 있습니다. 자세한 내용은 [Release Channels](/en/docs/release-channels)를 참고하세요.
+**Edge 채널 사용자**는 무료로 2X Community 제한을 받습니다 (20 GB 저장소, 월 200회 발급, 4개 머신). 유료 요금제는 Stable 채널에서만 사용할 수 있습니다. 자세한 내용은 [Release Channels](/en/docs/release-channels)를 참고하세요.
 
 ## 저장소 생성, 시작, 중지, 재시작 중의 작동
 

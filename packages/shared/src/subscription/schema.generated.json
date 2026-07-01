@@ -228,15 +228,15 @@
       },
       "PROFESSIONAL": {
         "maxRepositorySizeGb": 50,
-        "maxRepoLicenseIssuancesPerMonth": 1000
+        "maxRepoLicenseIssuancesPerMonth": 2000
       },
       "BUSINESS": {
         "maxRepositorySizeGb": 200,
-        "maxRepoLicenseIssuancesPerMonth": 10000
+        "maxRepoLicenseIssuancesPerMonth": 5000
       },
       "ENTERPRISE": {
         "maxRepositorySizeGb": 1024,
-        "maxRepoLicenseIssuancesPerMonth": 25000
+        "maxRepoLicenseIssuancesPerMonth": 15000
       }
     },
     "planFeatures": {

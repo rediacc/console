@@ -1,11 +1,13 @@
 ---
-title: "Assinatura e Licenciamento"
-description: "Compreenda como account, rdc e renet lidam com slots de máquina, licenças de repositório e limites de plano."
-category: "Guides"
+title: Assinatura e Licenciamento
+description: >-
+  Compreenda como account, rdc e renet lidam com slots de máquina, licenças de
+  repositório e limites de plano.
+category: Guides
 order: 7
 language: pt
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Assinatura e Licenciamento
@@ -92,9 +94,9 @@ Os limites padrão para planos pagos são:
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|---|
 | Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 1,000 | 60d / 120d |
-| Business | 10 | 200 GB | 10,000 | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 25,000+ | 120d / 365d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 Limites específicos do contrato podem aumentar ou diminuir esses valores para um cliente específico. A validade do certificado de delegação também é limitada a `subscription.expiresAt + 3 day grace`, portanto assinaturas faturadas mensalmente naturalmente obtêm certificados alinhados ao seu ciclo de faturamento. Veja [License Chain & Delegation - Validity Policy](/en/docs/license-chain) para as regras completas.
 
@@ -110,7 +112,7 @@ Na prática:
 - Nenhuma intervenção manual necessária
 - Verifique o ID da máquina e o status da licença com `rdc machine query --system --licenses --name <machine>`
 
-**Usuários do edge channel** recebem 2X dos limites Community sem custo (repositórios de 20 GB, 1.000 emissões/mês, 4 máquinas). Planos pagos estão disponíveis apenas no canal Stable. Veja [Release Channels](/en/docs/release-channels) para detalhes.
+**Usuários do edge channel** recebem 2X dos limites Community sem custo (repositórios de 20 GB, 200 emissões/mês, 4 máquinas). Planos pagos estão disponíveis apenas no canal Stable. Veja [Release Channels](/en/docs/release-channels) para detalhes.
 
 ## O que Acontece Durante Criação, Up, Down e Reinício de Repositório
 

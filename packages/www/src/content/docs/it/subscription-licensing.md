@@ -1,11 +1,13 @@
 ---
-title: "Abbonamento e licenze"
-description: "Scopri come account, rdc e renet gestiscono gli slot macchina, le licenze repository e i limiti del piano."
-category: "Guides"
+title: Abbonamento e licenze
+description: >-
+  Scopri come account, rdc e renet gestiscono gli slot macchina, le licenze
+  repository e i limiti del piano.
+category: Guides
 order: 7
 language: it
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Abbonamento e licenze
@@ -92,9 +94,9 @@ I limiti predefiniti dei piani a pagamento sono:
 | Piano | Licenze floating | Dimensione repository | Emissioni di licenze repo al mese | Validità certificato delega predefinita / massima |
 |-------|------------------|-----------------------|-------------------------------------|---------------------------------------------------|
 | Community | 2 | 10 GB | 100 | 15g / 30g |
-| Professional | 3 | 50 GB | 1.000 | 60g / 120g |
-| Business | 10 | 200 GB | 10.000 | 90g / 180g |
-| Enterprise | 25+ | 1 TB+ | 25.000+ | 120g / 365g |
+| Professional | 3 | 50 GB | 2.000+ | 60g / 120g |
+| Business | 10 | 200 GB | 5.000+ | 90g / 180g |
+| Enterprise | 25+ | 1 TB+ | 15.000+ | 120g / 365g |
 
 I limiti specifici del contratto possono aumentare o ridurre questi valori per un cliente specifico. La validità del certificato di delega è anche limitata a `subscription.expiresAt + 3 giorno di grazia`, quindi gli abbonamenti con fatturazione mensile ottengono naturalmente certificati allineati al loro ciclo di fatturazione. Consulta [Catena di licenze e delega - Policy di validità](/it/docs/license-chain) per le regole complete.
 
@@ -110,7 +112,7 @@ In pratica:
 - Nessun intervento manuale richiesto
 - Verifica l'ID macchina e lo stato della licenza con `rdc machine query --system --licenses --name <machine>`
 
-**Gli utenti del canale edge** ricevono 2X i limiti Community senza costi aggiuntivi (repository da 20 GB, 1.000 emissioni/mese, 4 macchine). I piani a pagamento sono disponibili solo sul canale Stable. Consulta [Canali di rilascio](/it/docs/release-channels) per i dettagli.
+**Gli utenti del canale edge** ricevono 2X i limiti Community senza costi aggiuntivi (repository da 20 GB, 200 emissioni/mese, 4 macchine). I piani a pagamento sono disponibili solo sul canale Stable. Consulta [Canali di rilascio](/it/docs/release-channels) per i dettagli.
 
 ## Cosa succede durante la creazione, l'avvio, l'arresto e il riavvio di un repository
 

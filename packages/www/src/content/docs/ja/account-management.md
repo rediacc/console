@@ -1,11 +1,11 @@
 ---
-title: "アカウント管理"
-description: "Rediaccにおける組織、チーム、メンバー、サブスクリプション。"
+title: アカウント管理
+description: Rediaccにおける組織、チーム、メンバー、サブスクリプション。
 category: Guides
 order: 12
 language: ja
-sourceHash: "1a3458ba81b340d4"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: 3887adc59fc63c26
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 ### 組織
@@ -58,9 +58,9 @@ Rediaccは4つのプランを提供しています：
 | プラン | マシン | リポジトリライセンス/月 | 委任証明書のデフォルト/最大 | 機能 |
 |--------|--------|-------------------------|-----------------------------|------|
 | COMMUNITY | 2 | 100 | 15d / 30d | 基本 |
-| PROFESSIONAL | 3 | 1,000 | 60d / 120d | 権限グループ、監査ログ、カスタムブランディング、優先サポート |
-| BUSINESS | 10 | 10,000 | 90d / 180d | Ceph、高度な分析、キュー優先度、高度なキュー |
-| ENTERPRISE | 25+ | 25,000+ | 120d / 365d | 専任アカウントマネージャー |
+| PROFESSIONAL | 3 | 2,000+ | 60d / 120d | 権限グループ、監査ログ、カスタムブランディング、優先サポート |
+| BUSINESS | 10 | 5,000+ | 90d / 180d | Ceph、高度な分析、キュー優先度、高度なキュー |
+| ENTERPRISE | 25+ | 15,000+ | 120d / 365d | 専任アカウントマネージャー |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 

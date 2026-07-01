@@ -933,261 +933,9 @@
           "name": "Professionnelle"
         }
       },
-      "professionalServices": {
-        "access": {
-          "description": "Chaque forfait inclut une certaine assistance. Vous pouvez en ajouter plus quand vous en avez besoin.",
-          "heading": "Accès aux services professionnels par forfait",
-          "labels": {
-            "available": "Modules complémentaires disponibles",
-            "included": "Inclus"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Mise en œuvre standard (9 999 $) ou forfaits multi-niveaux (Petite 7 499 $ · Moyenne 14 999 $ · Grande 29 999 $ · Entreprise personnalisé)",
-                "Service d'intervention d'urgence (29 999 $ à la demande)"
-              ],
-              "included": [
-                "Documentation en libre-service, tutoriels vidéo et forum communautaire"
-              ],
-              "planId": "communauté"
-            },
-            {
-              "available": [
-                "Mise en œuvre prioritaire (19 999 $)",
-                "Service d'intervention d'urgence (29 999 $ à la demande)",
-                "Projets d'intégration personnalisés (portée définie)"
-              ],
-              "included": [
-                "Support par e-mail",
-                "Session d'intégration standard (appel de configuration et visite guidée)"
-              ],
-              "planId": "pro"
-            },
-            {
-              "available": [
-                "Mise à niveau prioritaire (19 999 $)",
-                "Service d'intervention d'urgence (29 999 $ à la demande)",
-                "Conseil en développement personnalisé et architecture de sécurité"
-              ],
-              "included": [
-                "Support prioritaire par e-mail/chat/téléphone",
-                "Intégration dédiée avec configuration et transfert du runbook",
-                "Forfait de mise en œuvre standard inclus (valeur 9 999 $)",
-                "Bilans de réussite trimestriels"
-              ],
-              "planId": "entreprise"
-            },
-            {
-              "available": [
-                "Développement personnalisé et intégrations avancées",
-                "Conseil en architecture de sécurité et d'infrastructure",
-                "Avance pour interventions d'urgence (5 000 $ à 7 500 $/mois)"
-              ],
-              "included": [
-                "Support d'experts 24h/24, 7j/7, 365 jours par an avec gestionnaire de compte dédié",
-                "Mise en œuvre prioritaire incluse (valeur 19 999 $)",
-                "Tests trimestriels de reprise après sinistre",
-                "Atelier annuel sur la planification de la continuité des activités",
-                "Ligne d'escalade pour les dirigeants"
-              ],
-              "planId": "entreprise"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Forfaits de services, niveaux de mise en œuvre, facteurs de tarification et options de rétention mensuelle",
-          "heading": "Détails de mise en œuvre et de tarification"
-        },
-        "benefits": {
-          "description": "Des ingénieurs dédiés à vos côtés quand vos systèmes défaillent.",
-          "heading": "Pourquoi choisir nos services professionnels ?",
-          "items": [
-            "Une équipe d'experts dédiée et affectée à votre projet",
-            "Délais de réponse garantis avec SLA",
-            "Basculez entre les niveaux de service selon vos besoins",
-            "Ligne d'assistance d'urgence 24h/24, 7j/7 pour le forfait Urgence"
-          ],
-          "statistics": [
-            "Le coût moyen d'une attaque par ransomware est de 4,62 millions de dollars (IBM Security, 2023)",
-            "Le coût moyen des temps d'arrêt est de 5 600 $ par minute pour les grandes entreprises"
-          ]
-        },
-        "cta": {
-          "button": "Prévoir une consultation",
-          "description": "Nos experts sont prêts à vous aider à réussir",
-          "heading": "Besoin d'assistance professionnelle ?"
-        },
-        "header": {
-          "badge": "Lancez-vous plus vite avec nos experts à vos côtés",
-          "eligibility": "Tous les forfaits incluent du support expert. Consultez le tableau ci-dessous pour découvrir ce qui est compris et ce que vous pouvez ajouter.",
-          "subtitle": "L'expertise au moment qui compte vraiment",
-          "title": "Forfaits de services professionnels"
-        },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "Engagement immédiat (moins de 2 heures)",
-              "Analyse médico-légale, confinement et plan de récupération",
-              "Rapport expliquant l'incident + plan de prévention"
-            ],
-            "description": "Appelez-nous en cas de problème. Nous réagissons en moins de 2 heures et restaurons vos systèmes le jour même.",
-            "name": "Urgence",
-            "price": "29 999 $",
-            "tiers": [],
-            "turnaround": "Même jour"
-          },
-          "priority": {
-            "benefits": [
-              "Gestionnaire de compte dédié",
-              "Disponibilité soir et week-end",
-              "Support pratique lors du passage en production"
-            ],
-            "description": "Livraison rapide avec disponibilité étendue et pilotage expert de votre passage en production.",
-            "name": "Priorité",
-            "price": "19 999 $",
-            "tiers": [],
-            "turnaround": "24-48 heures"
-          },
-          "standard": {
-            "benefits": [
-              "Découverte du projet et plan de réussite",
-              "Configuration et mise en place de l'environnement",
-              "Checklist de validation et transfert d'expertise"
-            ],
-            "description": "Planification, déploiement, tests, formation : nous gérons tout.",
-            "name": "Standard",
-            "price": "À partir de 7 499 $",
-            "tierHeading": "Tarification selon le nombre de serveurs",
-            "tierNote": "Chaque serveur ou application compte pour une unité. La mise en œuvre couvre la conception architecturale, le déploiement, la validation et la formation de votre équipe.",
-            "tiers": [
-              "Starter (1-4 serveurs) : 7 499 $",
-              "Croissance (5-10 serveurs) : 14 999 $",
-              "Échelle (11-25 serveurs) : 29 999 $",
-              "Entreprise (25+ serveurs) : Devis personnalisé"
-            ],
-            "turnaround": "3-5 jours ouvrables"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Nombre de systèmes, intégrations et dépendances impliqués",
-              "title": "Complexité du périmètre"
-            },
-            {
-              "description": "Solutions packagées versus développements personnalisés",
-              "title": "Niveau de personnalisation"
-            },
-            {
-              "description": "Expert unique ou équipe complète de spécialistes dédiés",
-              "title": "Taille de l'équipe"
-            }
-          ],
-          "heading": "Comprendre la tarification des services professionnels",
-          "intro": "Le coût final du projet dépend de :",
-          "note": "Exemple : une implémentation moyenne (120 machines) avec audit de sécurité coûte généralement entre 14 999 $ et 24 999 $, selon les intégrations et le support continu."
-        },
-        "retainers": {
-          "description": "Accès direct à notre équipe. Tarifs mensuels prévisibles.",
-          "heading": "Plans mensuels pour une tranquillité d'esprit permanente",
-          "items": [
-            {
-              "bullets": [
-                "Délai de réponse garanti de 2 heures",
-                "Ligne directe vers nos ingénieurs seniors quand c'est important",
-                "Examen trimestriel de l'état de préparation et mises à jour du playbook"
-              ],
-              "price": "5 000 $ à 7 500 $/mois",
-              "title": "Service d'intervention d'urgence en rétention"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Urgence",
-            "priority": "Priorité",
-            "standard": "Standard"
-          },
-          "heading": "Services proposés",
-          "intro": "Cliquez sur n'importe quel service pour voir les délais de réalisation selon le forfait choisi",
-          "services": [
-            {
-              "emergency": "Évaluation immédiate + systèmes critiques opérationnels le jour même + lancement de la migration complète",
-              "id": "migration de données",
-              "name": "Migration des données",
-              "priority": "Configuration rapide du pipeline de migration + données principales transférées en 48h",
-              "standard": "Migration complète de bout en bout avec validation intégrale"
-            },
-            {
-              "emergency": "Confinement immédiat + systèmes critiques restaurés le jour même + lancement de la récupération complète",
-              "id": "récupération de ransomware",
-              "name": "Récupération de rançongiciel",
-              "priority": "Évaluation rapide des menaces + opérations principales restaurées en 48h",
-              "standard": "Récupération complète avec expertise médico-légale et durcissement"
-            },
-            {
-              "emergency": "Analyse des vulnérabilités critiques + correctifs prioritaires déployés le jour même + lancement de l'audit complet",
-              "id": "évaluation de sécurité",
-              "name": "Évaluation de la sécurité",
-              "priority": "Évaluation complète des vulnérabilités + plan de correction en 48h",
-              "standard": "Audit de sécurité complet avec plan d'action clair"
-            },
-            {
-              "emergency": "Ressources critiques provisionnées le jour même + auto-scaling configuré + lancement du plan complet",
-              "id": "mise à l'échelle de l'infrastructure",
-              "name": "Mise à l'échelle de l'infrastructure",
-              "priority": "Augmentation rapide de la capacité + monitoring configuré en 48h",
-              "standard": "Refonte complète de l'infrastructure avec optimisations de performance"
-            },
-            {
-              "emergency": "Briefing sur les procédures critiques le jour même + préparation à la gestion de crise + lancement du programme complet",
-              "id": "formation d'équipe",
-              "name": "Formation d'équipe",
-              "priority": "Atelier pratique intensif + flux de travail essentiels couverts en 2 jours",
-              "standard": "Programme de formation pratique sur plusieurs jours"
-            },
-            {
-              "emergency": "Goulot d'étranglement critique identifié + correctif immédiat déployé le jour même + lancement de l'optimisation complète",
-              "id": "optimisation des performances",
-              "name": "Optimisation des performances",
-              "priority": "Profilage rapide + optimisations à fort impact déployées en 48h",
-              "standard": "Analyse approfondie avec optimisation complète des performances"
-            },
-            {
-              "emergency": "Connexion critique établie le jour même + flux de données de base opérationnel + lancement du développement complet",
-              "id": "intégration personnalisée",
-              "name": "Intégration personnalisée",
-              "priority": "Intégration de base fonctionnelle + fonctionnalités essentielles en ligne en 48h",
-              "standard": "Intégration complète avec tests et documentation"
-            },
-            {
-              "emergency": "Disques connectés + conversion RAID lancée le jour même + dépôts critiques vérifiés + début du renforcement complet",
-              "id": "storage-hardening",
-              "name": "Renforcement du stockage",
-              "priority": "BTRFS RAID1 ou RAID10 configuré + migration en direct lancée + auto-réparation active, en 48h",
-              "standard": "Configuration complète du stockage redondant BTRFS avec RAID1 (2 disques mirrorés) pour les déploiements standards ou RAID10 (4+ disques) pour les systèmes à haut trafic. Nous gérons la migration en direct, les vérifications de reflinks, la réparation automatique et la surveillance. Se termine par un plan de capacité et un examen de stratégie de sauvegarde."
-            }
-          ]
-        }
-      },
       "psTeaser": {
         "heading": "Besoin d'un coup de main pour démarrer ?",
-        "packages": {
-          "emergency": {
-            "name": "Urgence",
-            "price": "29 999 $"
-          },
-          "priority": {
-            "name": "Priorité",
-            "price": "19 999 $"
-          },
-          "standard": {
-            "name": "Standard",
-            "price": "À partir de 7 499 $"
-          }
-        },
-        "subtitle": "Accompagnement professionnel et support disponibles pour tous les plans",
+        "subtitle": "Des services professionnels d'implémentation et d'assistance disponibles pour tous les forfaits : formation, assistance, migrations, reprise d'activité et sécurité et conformité",
         "viewDetails": "Découvrez les services professionnels"
       },
       "strategy": {
@@ -2689,7 +2437,7 @@
                 "business": "10,000",
                 "community": "100",
                 "enterprise": "25,000+",
-                "label": "Floating license requests",
+                "label": "Configurations serveur par mois (1 licence flottante chacune)",
                 "professional": "1,000"
               },
               {
@@ -2856,10 +2604,10 @@
           "description": "Configuration experte, sauvegardes multi-régions et restauration garantie en 4 heures.",
           "features": [
             "Tous les avantages de Professional +",
-            "10 emplacements de configuration",
+            "10 licences flottantes",
             "Dépôts illimités",
-            "10 000 configurations serveur par mois",
-            "Support d'implémentation de 9 999 $ inclus (Offre de lancement)",
+            "Plus de 5 000 configurations serveur par mois",
+            "Accompagnement à l'implémentation inclus (offre de lancement)",
             "Stockage géo-redondant (3 régions)",
             "Protection continue des données",
             "SLA restauration 4 heures",
@@ -2874,8 +2622,8 @@
           "features": [
             "Utilisateurs et équipes illimités",
             "Dépôts illimités",
-            "100 configurations serveur par mois",
-            "2 emplacements de configuration",
+            "100 configurations serveur par mois (1 licence flottante par configuration)",
+            "2 licences flottantes",
             "Restaurations de sauvegarde",
             "Planification manuelle",
             "Accès Slack communautaire",
@@ -2887,9 +2635,9 @@
           "description": "Support dédié et conditions personnalisées pour les grands environnements complexes.",
           "features": [
             "Tous les avantages de Business +",
-            "25+ emplacements de configuration",
+            "Plus de 25 licences flottantes",
             "Dépôts illimités",
-            "25 000+ configurations serveur par mois",
+            "Plus de 15 000 configurations serveur par mois",
             "SLA personnalisé avec temps de restauration garantis",
             "Infrastructure serveur dédiée",
             "Support dédié 24/7/365",
@@ -2905,9 +2653,9 @@
           "description": "Automatisation et planification professionnelles pour les équipes en croissance",
           "features": [
             "Tous les avantages de Community +",
-            "3 emplacements de configuration",
+            "3 licences flottantes",
             "Dépôts illimités",
-            "1 000 configurations serveur par mois",
+            "Plus de 2 000 configurations serveur par mois",
             "Planification automatisée",
             "Restauration granulaire sur 24 heures",
             "Support par email et chat",
@@ -2919,79 +2667,14 @@
         }
       },
       "professionalServices": {
-        "access": {
-          "description": "Chaque forfait inclut une aide à l'intégration pour bien démarrer. Vous pouvez ajouter d'autres services en option. Le tableau ci-dessous montre ce qui est compris et ce qui coûte extra.",
-          "heading": "Accès aux services professionnels par forfait",
-          "labels": {
-            "available": "Services optionnels",
-            "included": "Compris"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Implémentation standard (9 999 $) ou forfaits à plusieurs niveaux (Débutant 7 499 $ · Croissance 14 999 $ · Échelle 29 999 $ · Entreprise sur mesure)",
-                "Intervention d'urgence sur demande (29 999 $)"
-              ],
-              "included": [
-                "Documentation en libre-service, tutoriels vidéo et forum communautaire"
-              ],
-              "planId": "communauté"
-            },
-            {
-              "available": [
-                "Implémentation prioritaire (19 999 $)",
-                "Intervention d'urgence sur demande (29 999 $)",
-                "Projets d'intégration sur mesure (scope défini)"
-              ],
-              "included": [
-                "Support par e-mail",
-                "Session d'intégration standard (appel de configuration et procédure pas à pas)"
-              ],
-              "planId": "pro"
-            },
-            {
-              "available": [
-                "Implémentation prioritaire (19 999 $)",
-                "Intervention d'urgence sur demande (29 999 $)",
-                "Développement sur mesure et conseil en architecture de sécurité"
-              ],
-              "included": [
-                "Support prioritaire par e-mail, chat et téléphone",
-                "Intégration dédiée avec configuration et guide opérationnel",
-                "Implémentation standard incluse (valeur : 9 999 $)",
-                "Points de suivi trimestriels"
-              ],
-              "planId": "entreprise"
-            },
-            {
-              "available": [
-                "Développement sur mesure et intégrations avancées",
-                "Conseil en architecture de sécurité et audit",
-                "Forfait intervention d'urgence (5 000 $ à 7 500 $/mois)"
-              ],
-              "included": [
-                "Support 24h/24, 7j/7, 365 jours par an avec gestionnaire de compte dédié",
-                "Implémentation prioritaire incluse (valeur : 19 999 $)",
-                "Tests trimestriels de reprise après sinistre",
-                "Atelier annuel de continuité des activités",
-                "Ligne prioritaire d'escalade pour les dirigeants"
-              ],
-              "planId": "entreprise"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Forfaits de services, niveaux de mise en œuvre, facteurs de tarification et options de rétention",
-          "heading": "Détails de mise en œuvre et tarification"
-        },
         "benefits": {
           "description": "Quand vos serveurs s'arrêtent, des vrais ingénieurs au téléphone. Pas de file d'attente de tickets. Un vrai humain, le jour même.",
           "heading": "Pourquoi les services professionnels ?",
           "items": [
             "Une équipe d'experts dédiée assignée à votre projet",
             "Délais de réponse garantis par contrat",
-            "Changez de niveau de service selon vos besoins",
-            "Hotline d'urgence 24h/24 et 7j/7 pour le niveau Urgence"
+            "Basculez entre les services selon l'évolution de vos besoins",
+            "Ligne d'urgence 24/7 pour les incidents critiques"
           ],
           "statistics": [
             "Le coût moyen d'une attaque de rançongiciel est de 4,62 millions de dollars (IBM Security, 2023)",
@@ -2999,159 +2682,49 @@
           ]
         },
         "cta": {
-          "button": "Planifier une consultation",
-          "description": "Nos experts sont prêts à vous aider à réussir",
+          "button": "Nous contacter",
+          "description": "Chaque projet est adapté à votre infrastructure. Contactez-nous et trouvons ensemble le plan qui vous convient.",
           "heading": "Besoin d'une assistance professionnelle ?"
         },
         "header": {
           "badge": "Des experts du début à la fin",
-          "eligibility": "Chaque forfait inclut l'accès à nos services professionnels. Le tableau ci-dessous montre ce qui est compris et ce que vous pouvez ajouter.",
+          "eligibility": "Tous nos forfaits donnent accès à nos services professionnels. Contactez-nous et nous définirons ensemble le bon accompagnement pour votre infrastructure.",
           "subtitle": "L'expertise quand vous en avez vraiment besoin",
-          "title": "Forfaits d'experts"
+          "title": "Services professionnels"
         },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "Engagement immédiat (moins de 2 heures)",
-              "Investigation légale, confinement et plan de récupération",
-              "Rapport de stabilisation avec feuille de route de sécurisation"
-            ],
-            "description": "Appel d'urgence ? On arrive le jour même. On arrête l'hémorragie, puis vos systèmes critiques repartent en ligne.",
-            "name": "Urgence",
-            "price": "29 999 $",
-            "tiers": [],
-            "turnaround": "Le jour même"
-          },
-          "priority": {
-            "benefits": [
-              "Responsable mission dédié",
-              "Disponibilité soir/week-end",
-              "Soutien lors de la mise en production"
-            ],
-            "description": "Livraison accélérée avec disponibilité soir/week-end. On vous accompagne jusqu'à la mise en production.",
-            "name": "Priorité",
-            "price": "19 999 $",
-            "tiers": [],
-            "turnaround": "24 à 48 heures"
-          },
-          "standard": {
-            "benefits": [
-              "Découverte du projet et plan de réussite",
-              "Configuration et mise en place de l'environnement",
-              "Vérification complète et transfert de connaissances"
-            ],
-            "description": "Nous concevons l'infrastructure, la déployons, la testons et formons votre équipe.",
-            "name": "Standard",
-            "price": "À partir de 7 499 $",
-            "tierHeading": "Tarification selon le nombre de serveurs",
-            "tierNote": "Chaque serveur ou application que vous souhaitez protéger compte comme une unité. La mise en place comprend l'architecture, le déploiement, les tests et la formation de votre équipe.",
-            "tiers": [
-              "Débutant (1 à 4 serveurs) : 7 499 $",
-              "Croissance (5 à 10 serveurs) : 14 999 $",
-              "Échelle (11 à 25 serveurs) : 29 999 $",
-              "Entreprise (25+ serveurs) : devis sur mesure"
-            ],
-            "turnaround": "3 à 5 jours ouvrables"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Nombre de systèmes, d'intégrations et de dépendances impliqués",
-              "title": "Portée complexe"
-            },
-            {
-              "description": "Solutions standard ou développement sur mesure",
-              "title": "Niveau de personnalisation"
-            },
-            {
-              "description": "Un seul expert ou une équipe entièrement dédiée de spécialistes",
-              "title": "Taille de l'équipe"
-            }
-          ],
-          "heading": "Comprendre la tarification des services professionnels",
-          "intro": "Les coûts finaux dépendent de :",
-          "note": "Par exemple : un projet de 120 serveurs avec audit de sécurité est une portée Enterprise. Ces projets coûtent généralement entre 14 999 $ et 24 999 $. Ce sont des estimations. Nous évaluerons le coût final une fois que nous verrons votre configuration. Le prix final dépend du nombre d'outils intégrés et de l'ajout ou non d'une rétention."
-        },
-        "retainers": {
-          "description": "Accès direct à nos ingénieurs. Un tarif mensuel forfaitaire unique.",
-          "heading": "Forfaits de disponibilité permanente",
+        "categories": {
+          "heading": "Services disponibles",
+          "intro": "Chaque projet commence par une discussion pour définir l'équipe et le calendrier adaptés à votre infrastructure.",
           "items": [
             {
-              "bullets": [
-                "Délai de réponse garanti : 2 heures",
-                "Escalade prioritaire avec coordination en salle de crise",
-                "Révision trimestrielle de préparation et mise à jour des procédures"
-              ],
-              "price": "5 000 $ à 7 500 $/mois",
-              "title": "Forfait intervention d'urgence"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Urgence",
-            "priority": "Priorité",
-            "standard": "Standard"
-          },
-          "heading": "Services disponibles",
-          "intro": "Cliquez sur un service pour voir les délais pour chaque forfait",
-          "services": [
-            {
-              "emergency": "Évaluation immédiate + systèmes critiques en ligne le jour même + migration complète en cours",
-              "id": "migration de données",
-              "name": "Migration des données",
-              "priority": "Configuration rapide du pipeline de migration + données principales transférées en 48h",
-              "standard": "Migration complète de bout en bout avec validation entière"
+              "id": "training",
+              "name": "Formation",
+              "description": "Formation pratique pour votre équipe, du tutoriel de mise en place guidée aux ateliers de plusieurs jours couvrant les workflows avancés et les procédures de réponse aux incidents.",
+              "icon": "team-training"
             },
             {
-              "emergency": "Confinement immédiat + systèmes critiques restaurés le jour même + récupération complète en cours",
-              "id": "récupération de ransomware",
-              "name": "Récupération de rançongiciel",
-              "priority": "Évaluation rapide des menaces + opérations principales restaurées en 48h",
-              "standard": "Récupération complète avec investigation légale et sécurisation"
+              "id": "support",
+              "name": "Assistance",
+              "description": "Une aide continue de la part de vrais ingénieurs, de l'assistance par e-mail pendant les heures de bureau jusqu'à une couverture 24/7/365 avec un responsable de compte dédié pour vos environnements critiques en production.",
+              "icon": "security-assessment"
             },
             {
-              "emergency": "Scan des vulnérabilités critiques + correctifs majeurs déployés le jour même + audit complet en cours",
-              "id": "évaluation de sécurité",
-              "name": "Évaluation de la sécurité",
-              "priority": "Évaluation complète des vulnérabilités + plan de correction en 48h",
-              "standard": "Audit de sécurité complet avec feuille de route d'implémentation"
+              "id": "migration",
+              "name": "Migrations",
+              "description": "Migration et intégration sur mesure de bout en bout, d'une migration de données entièrement validée à un basculement rapide le jour même quand vous êtes sous pression.",
+              "icon": "data-migration"
             },
             {
-              "emergency": "Ressources critiques provisionnées le jour même + auto-scaling configuré + optimisation complète en cours",
-              "id": "mise à l'échelle de l'infrastructure",
-              "name": "Mise à l'échelle de l'infrastructure",
-              "priority": "Augmentation rapide de la capacité + supervision en place en 48h",
-              "standard": "Refonte complète de l'infrastructure avec optimisation"
+              "id": "recovery",
+              "name": "Reprise d'activité",
+              "description": "Interventions de récupération après rançongiciel et de reprise d'activité, de l'analyse forensique et du durcissement après incident à la mise en place d'une réplication continue pour vos systèmes critiques.",
+              "icon": "ransomware-recovery"
             },
             {
-              "emergency": "Briefing sur les procédures critiques le jour même + préparation à la réponse aux incidents + programme complet en cours",
-              "id": "formation d'équipe",
-              "name": "Formation d'équipe",
-              "priority": "Atelier pratique intensif + flux de travail clés couverts en 2 jours",
-              "standard": "Programme de formation complet sur plusieurs jours"
-            },
-            {
-              "emergency": "Goulot critique identifié + correctif immédiat déployé le jour même + optimisation complète en cours",
-              "id": "optimisation des performances",
-              "name": "Optimisation des performances",
-              "priority": "Profilage rapide + optimisations à fort impact déployées en 48h",
-              "standard": "Analyse approfondie avec optimisation complète des performances"
-            },
-            {
-              "emergency": "Connexion critique établie le jour même + flux de données opérationnel + développement complet en cours",
-              "id": "intégration personnalisée",
-              "name": "Intégration personnalisée",
-              "priority": "Intégration de base fonctionnelle + fonctionnalités essentielles en place en 48h",
-              "standard": "Intégration complète avec tests et documentation"
-            },
-            {
-              "emergency": "Disques connectés + conversion RAID lancée le jour même + dépôts critiques vérifiés + sécurisation complète en cours",
-              "id": "storage-hardening",
-              "name": "Renforcement du stockage",
-              "priority": "BTRFS RAID1 ou RAID10 configuré + migration du solde en direct amorcée + scrub activé en 48h",
-              "standard": "Installation complète de BTRFS, un outil de stockage Linux, sur vos serveurs. Il écrit une copie de vos données sur 2 disques ou plus simultanément. RAID1 reflète 2 disques, donc en cas de défaillance, vous ne perdez rien. RAID10 utilise 4 disques ou plus pour la vitesse et la sécurité. Un contrôle intégré détecte et répare les erreurs disque automatiquement. Nous revoyons également votre capacité et votre plan de sauvegarde."
+              "id": "security",
+              "name": "Sécurité et conformité",
+              "description": "Audits de sécurité, checklists de durcissement, runbooks de conformité et contrats de gestion d'incident, adaptés à votre environnement et à vos exigences d'audit.",
+              "icon": "storage-hardening"
             }
           ]
         }
@@ -3171,21 +2744,21 @@
           {
             "key": "repoSize",
             "label": "Taille du dépôt",
-            "tooltip": "Les utilisateurs Community peuvent utiliser jusqu'à 10 Go. Les dépôts plus volumineux nécessitent un forfait payant."
+            "tooltip": "Les utilisateurs Community peuvent utiliser jusqu'à 10 Go par serveur. Au-delà, un forfait payant est nécessaire."
           },
           {
             "key": "floatingLicenses",
-            "label": "Créneaux d'activation",
-            "tooltip": "Nombre de machines pouvant créer ou copier des serveurs simultanément."
+            "label": "Licences flottantes",
+            "tooltip": "Nombre de machines pouvant créer ou copier des serveurs simultanément. Chaque licence flottante couvre une machine."
           },
           {
             "key": "jobsPerMonth",
             "label": "Configurations par mois",
-            "tooltip": "Nombre de nouvelles configurations de serveurs comptabilisées par mois calendaire. Créer ou copier un serveur = une activation."
+            "tooltip": "Nombre de nouvelles configurations serveur comptabilisées sur un mois calendaire. Créer un serveur ou en copier un existant compte chacun pour une unité. C'est une licence par machine : chaque configuration attribue 1 licence flottante."
           },
           {
             "key": "usersTeams",
-            "label": "Utilisateurs & Équipes"
+            "label": "Utilisateurs et équipes"
           }
         ],
         "values": {
@@ -3207,7 +2780,7 @@
             "floatingLicenses": "25+",
             "jobsPerMonth": "25,000+",
             "repositories": "Illimité",
-            "repoSize": "1 TB+",
+            "repoSize": "1 To+",
             "usersTeams": "Illimité"
           },
           "professional": {
@@ -3244,7 +2817,7 @@
             "title": "60 jours de grâce pour la mise à l’échelle."
           },
           {
-            "description": "Un slot se consomme seulement à la création ou la copie. Vos opérations quotidiennes n'en consomment jamais. Les slots se libèrent après 1 heure. Un plan à 5 slots couvre des dizaines de machines. Jamais de frais par machine.",
+            "description": "Une licence flottante n'est utilisée que lorsque vous créez ou copiez un serveur. Votre travail quotidien n'en consomme jamais. Les licences se libèrent après 5 heures d'inactivité. Un forfait à 5 licences suffit à des dizaines de machines. Aucun frais par machine, jamais.",
             "title": "Machines illimitées. Payez seulement à la création."
           },
           {
@@ -3260,8 +2833,8 @@
           "noLicenseRequired": "Pas de licence, marche toujours",
           "reposKeepRunning": "Vos apps continuent. Zéro step manuelle.",
           "requiredOnlyHere": "Requis uniquement ici",
-          "slotsAutoRelease": "Slots libérés après 1 heure sans action",
-          "slotsCreateFork": "Slots consommés à la création. Opérations quotidiennes toujours gratuites."
+          "slotsAutoRelease": "Les licences flottantes se libèrent après 5 heures d'inactivité",
+          "slotsCreateFork": "Licences flottantes utilisées uniquement pour les nouveaux serveurs et les copies. Les opérations quotidiennes sont toujours gratuites."
         }
       },
       "ui": {
@@ -3273,15 +2846,15 @@
           "ariaLabel": "Période de facturation",
           "monthly": "Mensuel"
         },
-        "contactSales": "Contacter le service commercial",
-        "contactUs": "Contactez-nous",
-        "contactUsSub": "Limites et conditions personnalisées",
+        "contactSales": "Contacter notre équipe",
+        "contactUs": "Nous contacter",
+        "contactUsSub": "Limites et conditions sur mesure",
         "cta": {
           "business": {
             "guarantee": "Garantie de remboursement",
             "launchBadge": "Offre de lancement limitée",
             "primary": "Réserver un appel de configuration",
-            "secondary": "Contacter le service commercial",
+            "secondary": "Contacter notre équipe",
             "valueNote": "Inclut 9 999 $ de crédit de mise en place"
           },
           "community": {
@@ -3292,28 +2865,28 @@
           "enterprise": {
             "guarantee": "Garantie de remboursement",
             "primary": "Réserver une démo",
-            "secondary": "Contacter le service commercial",
+            "secondary": "Contacter notre équipe",
             "subtext": "SLA personnalisé · Support dédié"
           },
           "professional": {
             "guarantee": "Garantie de remboursement",
             "primary": "Démarrer Professional",
-            "secondary": "Contacter le service commercial"
+            "secondary": "Contacter notre équipe"
           }
         },
         "designPartner": {
           "badge": "GRATUIT pour les Design Partners",
           "cta": "Devenir Design Partner",
-          "period": "À vie · Sans carte requise",
+          "period": "À vie · Pas de carte requise",
           "price": "FREE"
         },
         "edgeLimitsNote": "Limites affichées pour le canal edge. Le canal stable en a la moitié.",
         "foreverFree": "Gratuit à vie",
         "getStarted": "Installer maintenant",
         "guarantees": {
-          "cancelAnytime": "Annuler à tout moment",
-          "moneyBack": "Garantie de remboursement sous 14 jours",
-          "noContracts": "Pas de contrats à long terme"
+          "cancelAnytime": "Annulez à tout moment",
+          "moneyBack": "Garantie satisfait ou remboursé pendant 14 jours",
+          "noContracts": "Aucun engagement à long terme"
         },
         "keyBenefits": "Avantages clés",
         "learnMore": "Comparer les plans",
@@ -3322,7 +2895,7 @@
         "popular": "Le plus populaire",
         "startingAt": "*À partir de",
         "taxDisclaimer": "Prix en USD, hors taxes et droits applicables.",
-        "whatsIncluded": "Ce qui est inclus :"
+        "whatsIncluded": "Ce qui est inclus :"
       }
     },
     "privacyPolicy": {
@@ -3491,8 +3064,8 @@
         "title": "Services Professionnels | Mise en Œuvre & Assistance"
       },
       "packages": {
-        "heading": "Nos Forfaits Professionnels",
-        "subtitle": "Choisissez le forfait adapté à votre urgence et complexité"
+        "heading": "Services disponibles",
+        "subtitle": "Chaque projet commence par une discussion pour définir l'équipe et le calendrier adaptés à votre infrastructure"
       },
       "value": {
         "description": "Déploiements 75 % plus rapides. Taux de réussite de 100 % en migrations. Intervention d'urgence en 2 heures. C'est ce que notre équipe livre.",

@@ -1,11 +1,13 @@
 ---
-title: "Abonnement & Lizenzierung"
-description: "Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Lizenzen und Planlimits verwalten."
-category: "Guides"
+title: Abonnement & Lizenzierung
+description: >-
+  Erfahren Sie, wie Account, rdc und renet Maschinenplätze, Repo-Lizenzen und
+  Planlimits verwalten.
+category: Guides
 order: 7
 language: de
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Abonnement & Lizenzierung
@@ -92,9 +94,9 @@ Standard-Limits für kostenpflichtige Pläne:
 | Plan | Floating-Lizenzen | Repository-Größe | Monatliche Repo-Lizenzausstellungen | Delegierungszert. Standard / Max |
 |------|-------------------|------------------|-------------------------------------|---|
 | Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 1.000 | 60d / 120d |
-| Business | 10 | 200 GB | 10.000 | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 25.000+ | 120d / 365d |
+| Professional | 3 | 50 GB | 2.000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5.000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15.000+ | 120d / 365d |
 
 Vertragsspezifische Limits können diese Werte für einen bestimmten Kunden erhöhen oder verringern. Die Gültigkeit von Delegierungszertifikaten ist zusätzlich auf `subscription.expiresAt + 3 day grace` begrenzt, sodass monatlich abgerechnete Abonnements natürlicherweise Zertifikate erhalten, die auf ihren Abrechnungszeitraum ausgerichtet sind. Siehe [License Chain & Delegation - Validity Policy](/en/docs/license-chain) für die vollständigen Regeln.
 
@@ -110,7 +112,7 @@ In der Praxis:
 - Keine manuelle Intervention erforderlich
 - Maschinen-ID und Lizenzbewertung überprüfen mit `rdc machine query --system --licenses --name <machine>`
 
-**Edge-Kanal-Benutzer** erhalten kostenlos doppelte Community-Limits (20 GB Repos, 1.000 Ausstellungen/Monat, 4 Maschinen). Kostenpflichtige Pläne sind nur im Stable-Kanal verfügbar. Siehe [Release Channels](/en/docs/release-channels) für Details.
+**Edge-Kanal-Benutzer** erhalten kostenlos doppelte Community-Limits (20 GB Repos, 200 Ausstellungen/Monat, 4 Maschinen). Kostenpflichtige Pläne sind nur im Stable-Kanal verfügbar. Siehe [Release Channels](/en/docs/release-channels) für Details.
 
 ## Was bei Repo-Erstellung, -Start, -Stopp und -Neustart passiert
 

@@ -1,11 +1,11 @@
 ---
-title: "サブスクリプションとライセンス"
-description: "account、rdc、renetがマシンスロット、リポジトリライセンス、プラン制限をどのように処理するかを理解します。"
-category: "Guides"
+title: サブスクリプションとライセンス
+description: account、rdc、renetがマシンスロット、リポジトリライセンス、プラン制限をどのように処理するかを理解します。
+category: Guides
 order: 7
 language: ja
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # サブスクリプションとライセンス
@@ -92,9 +92,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 | プラン | フローティングライセンス | リポジトリサイズ | 月次リポジトリライセンス発行数 | 委任証明書のデフォルト/最大 |
 |--------|------------------------|-----------------|-------------------------------|---------------------------|
 | Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 1,000 | 60d / 120d |
-| Business | 10 | 200 GB | 10,000 | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 25,000+ | 120d / 365d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 契約固有の制限により、特定の顧客に対してこれらの値を上げたり下げたりすることができます。委任証明書の有効期間は `subscription.expiresAt + 3 day grace` でハードキャップが設けられているため、月次請求のサブスクリプションでは請求サイクルに合わせた証明書が自然に発行されます。完全なルールについては [ライセンスチェーンと委任 - 有効期間ポリシー](/ja/docs/license-chain) を参照してください。
 
@@ -110,7 +110,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 - 手動操作は不要
 - `rdc machine query --system --licenses --name <machine>` でマシンIDとライセンス状態を確認できます
 
-**Edgeチャンネルユーザー** は無償でコミュニティ制限の2倍を受け取ります（20GBのリポジトリ、月1,000回の発行、4台のマシン）。有料プランはStableチャンネルでのみ利用可能です。詳細は [リリースチャンネル](/ja/docs/release-channels) を参照してください。
+**Edgeチャンネルユーザー** は無償でコミュニティ制限の2倍を受け取ります（20GBのリポジトリ、月200回の発行、4台のマシン）。有料プランはStableチャンネルでのみ利用可能です。詳細は [リリースチャンネル](/ja/docs/release-channels) を参照してください。
 
 ## リポジトリの作成、起動、停止、再起動時の動作
 

@@ -1,11 +1,13 @@
 ---
-title: "Abonnement et licences"
-description: "Comprendre comment account, rdc et renet gèrent les slots de machine, les licences de dépôt et les limites de plan."
-category: "Guides"
+title: Abonnement et licences
+description: >-
+  Comprendre comment account, rdc et renet gèrent les slots de machine, les
+  licences de dépôt et les limites de plan.
+category: Guides
 order: 7
 language: fr
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Abonnement et licences
@@ -92,9 +94,9 @@ Limites par défaut des plans payants :
 | Plan | Licences flottantes | Taille du dépôt | Émissions mensuelles de licences de dépôt | Validité cert de délégation par défaut / max |
 |------|---------------------|-----------------|-------------------------------------------|----------------------------------------------|
 | Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 1,000 | 60d / 120d |
-| Business | 10 | 200 GB | 10,000 | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 25,000+ | 120d / 365d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 Les limites spécifiques au contrat peuvent augmenter ou diminuer ces valeurs pour un client particulier. La validité des certificats de délégation est également plafonnée à `subscription.expiresAt + 3 day grace`, de sorte que les abonnements facturés mensuellement obtiennent naturellement des certificats alignés sur leur cycle de facturation. Voir [Chaîne de licences et délégation - Politique de validité](/fr/docs/license-chain) pour les règles complètes.
 
@@ -110,7 +112,7 @@ En pratique :
 - Aucune intervention manuelle requise
 - Vérifiez l'ID de machine et le statut de la licence avec `rdc machine query --system --licenses --name <machine>`
 
-**Les utilisateurs du canal Edge** reçoivent 2X les limites Community sans frais supplémentaires (dépôts de 20 GB, 1,000 émissions/mois, 4 machines). Les plans payants ne sont disponibles que sur le canal Stable. Voir [Canaux de publication](/fr/docs/release-channels) pour plus de détails.
+**Les utilisateurs du canal Edge** reçoivent 2X les limites Community sans frais supplémentaires (dépôts de 20 GB, 200 émissions/mois, 4 machines). Les plans payants ne sont disponibles que sur le canal Stable. Voir [Canaux de publication](/fr/docs/release-channels) pour plus de détails.
 
 ## Ce qui se passe lors de la création, du démarrage, de l'arrêt et du redémarrage d'un dépôt
 

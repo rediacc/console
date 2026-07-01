@@ -90,9 +90,9 @@ Default paid-plan limits are:
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|---|
 | Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 1,000 | 60d / 120d |
-| Business | 10 | 200 GB | 10,000 | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 25,000+ | 120d / 365d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 Contract-specific limits can raise or lower these values for a specific customer. Delegation cert validity is also hard-capped at `subscription.expiresAt + 3 day grace`, so monthly-billed subscriptions naturally get certs aligned to their billing cycle. See [License Chain & Delegation - Validity Policy](/en/docs/license-chain) for the full rules.
 
@@ -108,7 +108,7 @@ In practice:
 - No manual intervention required
 - Check machine ID and license status with `rdc machine query --system --licenses --name <machine>`
 
-**Edge channel users** receive 2X Community limits at no cost (20 GB repos, 1,000 issuances/month, 4 machines). Paid plans are only available on the Stable channel. See [Release Channels](/en/docs/release-channels) for details.
+**Edge channel users** receive 2X Community limits at no cost (20 GB repos, 200 issuances/month, 4 machines). Paid plans are only available on the Stable channel. See [Release Channels](/en/docs/release-channels) for details.
 
 ## What Happens During Repo Create, Up, Down, and Restart
 

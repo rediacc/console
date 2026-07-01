@@ -57,7 +57,7 @@ describe('Subscription Schema Constants', () => {
 
     it('should have ENTERPRISE with highest limits', () => {
       expect(PLAN_LIMITS.ENTERPRISE.maxRepositorySizeGb).toBe(1024);
-      expect(PLAN_LIMITS.ENTERPRISE.maxRepoLicenseIssuancesPerMonth).toBe(25000);
+      expect(PLAN_LIMITS.ENTERPRISE.maxRepoLicenseIssuancesPerMonth).toBe(15000);
     });
   });
 
@@ -168,7 +168,7 @@ describe('Subscription Schema Helper Functions', () => {
   describe('getPlanLimits', () => {
     it('should return correct limits for valid plan', () => {
       const limits = getPlanLimits('PROFESSIONAL');
-      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(1000);
+      expect(limits.maxRepoLicenseIssuancesPerMonth).toBe(2000);
     });
 
     it('should return COMMUNITY limits for invalid plan', () => {

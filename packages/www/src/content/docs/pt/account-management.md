@@ -1,11 +1,11 @@
 ---
 title: Gestão de Conta
-description: Organizações, equipas, membros e subscrições no Rediacc.
+description: 'Organizações, equipas, membros e subscrições no Rediacc.'
 category: Guides
 order: 12
 language: pt
-sourceHash: "1a3458ba81b340d4"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: 3887adc59fc63c26
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 ### Organizações
@@ -58,13 +58,13 @@ O Rediacc oferece quatro planos:
 | Plano | Máquinas | Licenças de Repo/mês | Validade padrão / máxima do cert. de delegação | Funcionalidades |
 |-------|----------|----------------------|------------------------------------------------|-----------------|
 | COMMUNITY | 2 | 100 | 15d / 30d | Básico |
-| PROFESSIONAL | 3 | 1.000 | 60d / 120d | Grupos de permissões, registo de auditoria, marca personalizada, suporte prioritário |
-| BUSINESS | 10 | 10.000 | 90d / 180d | Ceph, análises avançadas, prioridade de fila, fila avançada |
-| ENTERPRISE | 25+ | 25.000+ | 120d / 365d | Gestor de conta dedicado |
+| PROFESSIONAL | 3 | 2.000+ | 60d / 120d | Grupos de permissões, registo de auditoria, marca personalizada, suporte prioritário |
+| BUSINESS | 10 | 5.000+ | 90d / 180d | Ceph, análises avançadas, prioridade de fila, fila avançada |
+| ENTERPRISE | 25+ | 15.000+ | 120d / 365d | Gestor de conta dedicado |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Todos os planos começam com um período de carência de 3 dias. As vagas de máquina são contabilizadas por equipa e libertadas automaticamente após 1 hora de inatividade. Consulte [Subscrição e Licenciamento](/en/docs/subscription-licensing) para mais detalhes.
+Todos os planos começam com um período de carência de 3 dias. As vagas de máquina são contabilizadas por equipa e libertadas automaticamente após 5 horas de inatividade. Consulte [Subscrição e Licenciamento](/en/docs/subscription-licensing) para mais detalhes.
 
 ### Faturação
 

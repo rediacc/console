@@ -4,8 +4,8 @@ description: Rediacc 中的组织、团队、成员和订阅。
 category: Guides
 order: 12
 language: zh
-sourceHash: "1a3458ba81b340d4"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: 3887adc59fc63c26
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 ### 组织
@@ -58,9 +58,9 @@ Rediacc 提供四种计划：
 | 计划 | 机器 | 仓库许可证/月 | 委托证书默认/最大有效期 | 功能 |
 |------|------|---------------|-------------------------|------|
 | COMMUNITY | 2 | 100 | 15d / 30d | 基础 |
-| PROFESSIONAL | 3 | 1,000 | 60d / 120d | 权限组、审计日志、自定义品牌、优先支持 |
-| BUSINESS | 10 | 10,000 | 90d / 180d | Ceph、高级分析、队列优先级、高级队列 |
-| ENTERPRISE | 25+ | 25,000+ | 120d / 365d | 专属账户经理 |
+| PROFESSIONAL | 3 | 2,000+ | 60d / 120d | 权限组、审计日志、自定义品牌、优先支持 |
+| BUSINESS | 10 | 5,000+ | 90d / 180d | Ceph、高级分析、队列优先级、高级队列 |
+| ENTERPRISE | 25+ | 15,000+ | 120d / 365d | 专属账户经理 |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 

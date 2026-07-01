@@ -1,11 +1,13 @@
 ---
 title: Gestione dell'account
-description: Organizzazioni, team, membri e abbonamenti in Rediacc. È possibile gestire l'intera struttura dell'organizzazione con pochi clic.
+description: >-
+  Organizzazioni, team, membri e abbonamenti in Rediacc. È possibile gestire
+  l'intera struttura dell'organizzazione con pochi clic.
 category: Guides
 order: 12
 language: it
-sourceHash: "1a3458ba81b340d4"
-sourceCommit: "8062f196566d6ba5f90b084e5484cf722b4bdf16"
+sourceHash: 3887adc59fc63c26
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 ### Organizzazioni
@@ -58,13 +60,13 @@ Rediacc offre quattro piani:
 | Piano | Macchine | Licenze repo/mese | Validità cert delegazione predefinita / max | Funzionalità |
 |-------|----------|-------------------|---------------------------------------------|--------------|
 | COMMUNITY | 2 | 100 | 15g / 30g | Base |
-| PROFESSIONAL | 3 | 1.000 | 60g / 120g | Gruppi di permessi, registro audit, branding personalizzato, supporto prioritario |
-| BUSINESS | 10 | 10.000 | 90g / 180g | Ceph, analisi avanzate, priorità coda, coda avanzata |
-| ENTERPRISE | 25+ | 25.000+ | 120g / 365g | Account manager dedicato |
+| PROFESSIONAL | 3 | 2.000+ | 60g / 120g | Gruppi di permessi, registro audit, branding personalizzato, supporto prioritario |
+| BUSINESS | 10 | 5.000+ | 90g / 180g | Ceph, analisi avanzate, priorità coda, coda avanzata |
+| ENTERPRISE | 25+ | 15.000+ | 120g / 365g | Account manager dedicato |
 
 ![Subscription Flow](/img/account-subscription-flow.svg)
 
-Tutti i piani iniziano con un periodo di grazia di 3 giorni. Gli slot macchina vengono tracciati per team e rilasciati automaticamente dopo 1 ora di inattività. Consulta [Abbonamento e licenze](/en/docs/subscription-licensing) per i dettagli.
+Tutti i piani iniziano con un periodo di grazia di 3 giorni. Gli slot macchina vengono tracciati per team e rilasciati automaticamente dopo 5 ore di inattività. Consulta [Abbonamento e licenze](/en/docs/subscription-licensing) per i dettagli.
 
 ### Fatturazione
 

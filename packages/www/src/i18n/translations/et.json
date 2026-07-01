@@ -933,259 +933,9 @@
           "name": "Professional"
         }
       },
-      "professionalServices": {
-        "access": {
-          "description": "Kõigiga kaasneb mingi abi. Saad juurde võtta rohkem, kui vaja.",
-          "heading": "Professionaalse teenuse juurdepääs paketi järgi",
-          "labels": {
-            "available": "Saad lisada",
-            "included": "Kaasas"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Standard seadistamine (9 999 $) või astmeline pakett (Väike 7 499 $ · Keskmine 14 999 $ · Suur 29 999 $ · Enterprise kohandatud)",
-                "Emergency Response teenus (29 999 $ nõudmisel)"
-              ],
-              "included": ["Iseabi dokumentatsioon, videoõpetused ja kogukonna foorum"],
-              "planId": "kogukond"
-            },
-            {
-              "available": [
-                "Priority seadistamine (19 999 $)",
-                "Emergency Response teenus (29 999 $ nõudmisel)",
-                "Kohandatud integratsiooniprojektid (ulatuse järgi)"
-              ],
-              "included": [
-                "E-posti tugi",
-                "Standardne sisseelamine (seadistuskõne ja konfiguratsiooni juhend)"
-              ],
-              "planId": "professionaalne"
-            },
-            {
-              "available": [
-                "Priority seadistamise täiendus (19 999 $)",
-                "Emergency Response teenus (29 999 $ nõudmisel)",
-                "Kohandatud arendus ja turbearhitektuuri konsultatsioon"
-              ],
-              "included": [
-                "Priority e-posti/vestluse/telefonitugi",
-                "Pühendatud sisseelamine konfiguratsiooni ja juhendi üleandmisega",
-                "Standard seadistamise pakett kaasas (9 999 $ väärtuses)",
-                "Kvartalipõhised edukuse ülevaated"
-              ],
-              "planId": "ettevõte"
-            },
-            {
-              "available": [
-                "Kohandatud arendus ja täiustatud integratsioonid",
-                "Turbe- ja infrastruktuuri disaini konsultatsioon",
-                "Emergency Response kuuleping (5 000–7 500 $/kuus)"
-              ],
-              "included": [
-                "Ööpäevaringne käepigem eksperditugi 365 päeval aastas ja pühendatud kliendihaldur",
-                "Priority seadistamine kaasas (19 999 $ väärtuses)",
-                "Kvartalipõhised katastroofitaaste testid",
-                "Aastane ärikontinuumsuse planeerimise töötuba",
-                "Juhtivtaseme eskalatsiooni otseline liin"
-              ],
-              "planId": "suurettevõte"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Teenuste paketid, seadistamise astmed, hinnakujunduse tegurid ja kuuleping toevõimalused",
-          "heading": "Seadistamise ja hinnakujunduse üksikasjad"
-        },
-        "benefits": {
-          "description": "Pühendatud insenerid sinu kõrval, kui süsteemid ebaõnnestuvad.",
-          "heading": "Miks valida professionaalsed teenused",
-          "items": [
-            "Teie projektile määratud pühendatud spetsialistide meeskond",
-            "Garanteeritud reageerimisajad SLA-ga",
-            "Vaheta teenuste vahel vastavalt vajadusele",
-            "Ööpäevaringne hädaabiinfo Emergency paketi kasutajatele"
-          ],
-          "statistics": [
-            "Lunavararünnaku keskmine kulu on 4,62 miljonit $ (IBM Security, 2023)",
-            "Seisakust tuleneva kulu keskmine on 5 600 $ minutis suurettevõtete jaoks"
-          ]
-        },
-        "cta": {
-          "button": "Broneeri nõu",
-          "description": "Meie eksperdid on valmis sind edule aitama",
-          "heading": "Vajad professionaalset abi?"
-        },
-        "header": {
-          "badge": "Kiire seadistus meie spetsialistide abiga",
-          "eligibility": "Igas paketis on mingi tase ekspertabi. Vaata allpool tabelit, et näha, mis on sinu paketiga kaasas ja mida saad lisada.",
-          "subtitle": "Saate ekspertabi siis, kui teil seda kõige rohkem vaja on",
-          "title": "Professionaalse teenuse paketid"
-        },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "Otseselt töösse alla 2 tunniga",
-              "Uurimine, ohjeldamine ja taasteplaan",
-              "Aruanne, mis juhtus, ja plaan, et see ei korduks"
-            ],
-            "description": "Kui juhtub midagi ootamatut, helistage meile. Reageerime 2 tunni jooksul ja alustame süsteemide taastamist samal päeval.",
-            "name": "Hädaolukord",
-            "price": "29 999 $",
-            "tiers": [],
-            "turnaround": "Samal päeval"
-          },
-          "priority": {
-            "benefits": [
-              "Pühendatud juhendaja",
-              "Juurdepääs ka õhtuti ja nädalavahetusel",
-              "Reaalne abi, kui lähete reaalsesse kasutusesse"
-            ],
-            "description": "Kiirendatud kohaletoimetamine. Meie tiim aitab sind ka õhtuti ja nädalavahetusel.",
-            "name": "Priority",
-            "price": "19 999 $",
-            "tiers": [],
-            "turnaround": "24–48 tundi"
-          },
-          "standard": {
-            "benefits": [
-              "Projekti avastamine ja eduplaan",
-              "Keskkonna seadistamine ja konfigureerimine",
-              "Valideerimise kontrollnimekiri ja meeskonna üleandmine"
-            ],
-            "description": "Planeerimine, seadistamine, testimine ja koolitamine – teeme kõik.",
-            "name": "Standard",
-            "price": "Alates 7 499 $",
-            "tierHeading": "Hind sõltub serverite arvust",
-            "tierNote": "Iga server (või rakendus) loetakse üheks ühikuks. Seadistamine hõlmab disaini, konfiguratsiooni, testimist ja meeskonna koolitust.",
-            "tiers": [
-              "Starter (1–4 serverit): 7 499 $",
-              "Growth (5–10 serverit): 14 999 $",
-              "Scale (11–25 serverit): 29 999 $",
-              "Enterprise (25+ serverit): Kohandatud pakkumine"
-            ],
-            "turnaround": "3–5 tööpäeva"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Süsteemide, integratsioonide ja sõltuvuste arv",
-              "title": "Ulatus ja keerukus"
-            },
-            {
-              "description": "Standardlahendused või kohandatud arendus",
-              "title": "Kohandamine"
-            },
-            {
-              "description": "Üksik ekspert või täielik spetsialistide meeskond",
-              "title": "Meeskonna suurus"
-            }
-          ],
-          "heading": "Kuidas määratakse professionaalse teenuse hind",
-          "intro": "Lõplik projekti maksumus sõltub järgmistest teguritest:",
-          "note": "Näiteks: keskmise suurusega seadistamine (120 masinat) turvalisuse ülevaatusega maksab tavaliselt 14 999–24 999 $, sõltuvalt integratsioonidest ja jooksva toe mahust."
-        },
-        "retainers": {
-          "description": "Otsene juurdepääs meie tiimile. Ennustatav kuine hinnakujundus.",
-          "heading": "Kuulepingud pidevaks kindluseks",
-          "items": [
-            {
-              "bullets": [
-                "Garanteeritud 2-tunnine reageerimisaeg",
-                "Otseühendus vaneminseneridega, kui sul seda kõige rohkem vaja on",
-                "Kvartalipõhine valmisoleku ülevaatus ja vastuseplani uuendused"
-              ],
-              "price": "5 000–7 500 $/kuus",
-              "title": "Emergency Response kuuleping"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Emergency",
-            "priority": "Priority",
-            "standard": "Standard"
-          },
-          "heading": "Mis teenuseid pakume",
-          "intro": "Klõpsa teenusel ja näe, kui kiiresti pakud igat paketit",
-          "services": [
-            {
-              "emergency": "Kohene hindamine + kriitilised süsteemid üles samal päeval + täielik migreerimine algab",
-              "id": "data-migration",
-              "name": "Andmete migreerimine",
-              "priority": "Kiire migreerimisseadistus, põhiandmed üle kantud 48 tunniga",
-              "standard": "Täielik otsast-otsani migreerimine täieliku valideerimisega"
-            },
-            {
-              "emergency": "Kohene ohjeldamine + kriitilised süsteemid taastatud samal päeval + täielik taastumine algab",
-              "id": "ransomware-recovery",
-              "name": "Lunavararünnakust taastumine",
-              "priority": "Kiire ohuanalüüs, põhitegevused taastatud 48 tunniga",
-              "standard": "Täielik taastumine uuringutega ja tugevdamisega"
-            },
-            {
-              "emergency": "Kriitiliste haavatavuste skan + ohtlikud paigad rakendatud samal päeval + täielik audit algab",
-              "id": "security-assessment",
-              "name": "Turbeanalüüs",
-              "priority": "Täielik haavatavuste hindamine + parandusplaan 48 tunniga",
-              "standard": "Täielik turvalisuse audit koos tegevuskavaga"
-            },
-            {
-              "emergency": "Kriitilised ressursid valmis samal päeval + automaatne skaleerumine seadistatud + täielik plaan algab",
-              "id": "infrastructure-scaling",
-              "name": "Infrastruktuuri skaleerumine",
-              "priority": "Kiire võimsuse suurendamine, seire konfigureeritud 48 tunniga",
-              "standard": "Täielik infrastruktuuri ümberkavandamine koos jõudluse parandamisega"
-            },
-            {
-              "emergency": "Kriitiliste protseduuride ülevaade samal päeval + intsidentidele reageerimise ettevalmistus + täielik programm algab",
-              "id": "team-training",
-              "name": "Meeskonnakoolitus",
-              "priority": "Intensiivne praktiline töötuba + olulised töövood kaetud 2 päevaga",
-              "standard": "Mitmepäevane praktiline koolitusprogramm"
-            },
-            {
-              "emergency": "Kriitiline kitsaskoht leitud, kohene parandus rakendatud samal päeval + täielik optimeerimine algab",
-              "id": "performance-optimization",
-              "name": "Jõudluse optimeerimine",
-              "priority": "Kiire profileerimine, suurte mõjuga parandused rakendatud 48 tunniga",
-              "standard": "Põhjalik analüüs täieliku jõudluse häälestamisega"
-            },
-            {
-              "emergency": "Kriitiline ühendus loodud samal päeval + andmevoog toimib + täielik arendus algab",
-              "id": "custom-integration",
-              "name": "Kohandatud integratsioon",
-              "priority": "Põhiintegratsioon toimib + olulised funktsioonid elus 48 tunniga",
-              "standard": "Täielik integratsioon testimise ja dokumentatsiooniga"
-            },
-            {
-              "emergency": "Kettad ühendatud, RAID konversioon algatatud samal päeval + kriitilised talletused kontrollitud + täielik tugevdamine algab",
-              "id": "storage-hardening",
-              "name": "Salvestuse tugevdamine",
-              "priority": "BTRFS RAID1 või RAID10 seadistus, reaalajas migreerimine alustatud, automaatne parandamine aktiivne – kõik 48 tunniga",
-              "standard": "Täielik BTRFS redundantne talletamine, kus RAID1 (2 peeglitud kettast) standardjuurutustes või RAID10 (4+ kettast) suure liiklusega süsteemides. Kaasas reaalajas migreerimine, linkide kontrollimine, automaatne parandamine ja seire. Lõpeb salvestusplaaniga ja varukoopia strateegia ülevaatusega."
-            }
-          ]
-        }
-      },
       "psTeaser": {
         "heading": "Vajad ekspertabi?",
-        "packages": {
-          "emergency": {
-            "name": "Hädaolukord",
-            "price": "29 999 $"
-          },
-          "priority": {
-            "name": "Priority",
-            "price": "19 999 $"
-          },
-          "standard": {
-            "name": "Standard",
-            "price": "Alates 7 499 $"
-          }
-        },
-        "subtitle": "Professionaalset juurutamist ja tuge saadaval igas pakettis.",
+        "subtitle": "Professionaalsed juurutamise ja toe teenused on saadaval kõikides pakettides: koolitus, tugi, migreerimine, taaste ning turvalisus ja vastavus",
         "viewDetails": "Tutvu professionaalsete teenustega"
       },
       "strategy": {
@@ -2687,7 +2437,7 @@
                 "business": "10,000",
                 "community": "100",
                 "enterprise": "25,000+",
-                "label": "Floating license requests",
+                "label": "Serveriseadistused kuus (1 ujuv litsents iga seadistuse kohta)",
                 "professional": "1,000"
               },
               {
@@ -2854,10 +2604,10 @@
           "description": "Ekspertne seadistamine, varundus mitmes piirkonnas ja 4-tunnine taastamine.",
           "features": [
             "Kõik Professional paketis sisalduv +",
-            "10 seadistuspaika",
+            "10 ujuvat litsentsi",
             "Piiramata hoidlaid",
-            "10 000 serveriseadistust kuus",
-            "9 999 $ juurutustugi kaasas (käivituspakkumine)",
+            "5 000+ serveriseadistust kuus",
+            "Juurutustugi kaasas (käivituspakkumine)",
             "Geo-redundantne salvestus (3 piirkonda)",
             "Pidev andmekaitse",
             "4-tunnine taastamise SLA",
@@ -2872,8 +2622,8 @@
           "features": [
             "Piiramata kasutajaid ja meeskondi",
             "Piiramata hoidlaid",
-            "100 serveriseadistust kuus",
-            "2 seadistuspaika",
+            "100 serveriseadistust kuus (1 ujuv litsents iga seadistuse kohta)",
+            "2 ujuvat litsentsi",
             "Varunduse taastamine",
             "Käsitsi ajastamine",
             "Juurdepääs kogukonna Slack-kanalile",
@@ -2885,9 +2635,9 @@
           "description": "Pühendatud tugi ja kohandatud tingimused keeruliste keskkondade jaoks.",
           "features": [
             "Kõik äripaketis sisalduv +",
-            "25+ seadistuspaika",
+            "25+ ujuvat litsentsi",
             "Piiramata hoidlaid",
-            "25 000+ serveriseadistust kuus",
+            "15 000+ serveriseadistust kuus",
             "Kohandatud SLA garanteeritud taastamisaegadega",
             "Pühendatud serveriressurss ja ruum",
             "24/7/365 pühendatud tugi",
@@ -2903,9 +2653,9 @@
           "description": "Professionaalne automatiseerimine ja ajastamine teie kasvavale meeskonnale",
           "features": [
             "Kõik kogukonnapaketis sisalduv +",
-            "3 seadistuspaika",
+            "3 ujuvat litsentsi",
             "Piiramata hoidlaid",
-            "1 000 serveriseadistust kuus",
+            "2 000+ serveriseadistust kuus",
             "Automaatne ajastamine",
             "Taastamine viimase 24 tunni mis tahes hetkel",
             "E-posti ja vestluse tugi",
@@ -2917,77 +2667,14 @@
         }
       },
       "professionalServices": {
-        "access": {
-          "description": "Hübriidkatvus ühendab kaasasoleva sisseelamistoega valikulised lisandmoodulid, nii et iga meeskond saab õigel ajal õige abi.",
-          "heading": "Professionaalsete teenuste juurdepääs paketi alusel",
-          "labels": {
-            "available": "Saadaolevad lisandmoodulid",
-            "included": "Kaasas"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Standard juurutamine (9 999 $) või astmeline pakett (Väike 7 499 $ · Keskmine 14 999 $ · Suur 29 999 $ · Enterprise kohandatud)",
-                "Emergency Response kaasamine (29 999 $ nõudmisel)"
-              ],
-              "included": ["Iseabi dokumentatsioon, videoõpetused ja kogukonna foorum"],
-              "planId": "kogukond"
-            },
-            {
-              "available": [
-                "Priority juurutamine (19 999 $)",
-                "Emergency Response kaasamine (29 999 $ nõudmisel)",
-                "Kohandatud integratsiooniprojektid (ulatuse järgi)"
-              ],
-              "included": [
-                "E-posti tugi",
-                "Standardne sisseelamisseanssi (seadistamiskõne ja konfiguratsiooni juhend)"
-              ],
-              "planId": "professionaalne"
-            },
-            {
-              "available": [
-                "Priority juurutamise täiendus (19 999 $)",
-                "Emergency Response kaasamine (29 999 $ nõudmisel)",
-                "Kohandatud arendus ja turbearhitektuuri konsultatsioon"
-              ],
-              "included": [
-                "Priority e-posti / vestluse / telefonitugi",
-                "Pühendatud sisseelamine konfiguratsiooni ja käitusjuhendi üleandmisega",
-                "Standard juurutamise pakett kaasas (9 999 $ väärtuses)",
-                "Kvartalipõhised edukuse ülevaated"
-              ],
-              "planId": "ettevõte"
-            },
-            {
-              "available": [
-                "Kohandatud arendus ja täiustatud integratsioonid",
-                "Turbe- ja auditarhitektuuri konsultatsioon",
-                "Emergency Response jooksev leping (5 000–7 500 $/kuus)"
-              ],
-              "included": [
-                "Ööpäevaringne täisteeninduslik tugi 365 päeval aastas ja pühendatud CSM",
-                "Priority juurutamine kaasas (19 999 $ väärtuses)",
-                "Kvartalipõhised katastroofitaaste testid",
-                "Aastane äritegevuse järjepidevuse planeerimise töötuba",
-                "Juhtivtaseme eskalatsiooni otseliin"
-              ],
-              "planId": "suurettevõte"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Teenuste paketid, juurutamise astmed, hinnakujunduse tegurid ja jooksva lepingu võimalused",
-          "heading": "Juurutamise ja hinnakujunduse üksikasjad"
-        },
         "benefits": {
           "description": "Päris insenerid telefonis, kui su serverid kukkuvad. Pole pileti järjekorda. Päris inimene, samal päeval.",
           "heading": "Miks professionaalsed teenused?",
           "items": [
             "Teie projektile määratud pühendatud ekspertide meeskond",
             "Garanteeritud reageerimisajad SLA-ga",
-            "Vaheta teenuse pakettide vahel vastavalt vajadusele",
-            "Ööpäevaringne hädaabiinfo Emergency paketi kasutajatele"
+            "Vaheta teenuseid vastavalt oma vajadustele",
+            "24/7 hädaabi telefoniliin kriitiliste intsidentide jaoks"
           ],
           "statistics": [
             "Lunavararünnaku keskmine maksumus on 4,62 miljonit $ (IBM Security, 2023)",
@@ -2995,159 +2682,49 @@
           ]
         },
         "cta": {
-          "button": "Planeeri konsultatsioon",
-          "description": "Meie eksperdid on valmis aitama teid edule",
+          "button": "Võta meiega ühendust",
+          "description": "Iga koostöö kohandatakse sinu seadistuse järgi. Võta meiega ühendust ja leiame koos õige plaani.",
           "heading": "Vajad professionaalset abi?"
         },
         "header": {
           "badge": "Ekspertabi iga sammul",
-          "eligibility": "Kõik paketid annavad juurdepääsu professionaalsetele teenustele. Allolevast tabelist näed, mis on kaasas ja mida saad juurde valida.",
+          "eligibility": "Iga pakett annab juurdepääsu meie professionaalsetele teenustele. Võta meiega ühendust ja leiame sinu seadistusele sobiva koostöövormi.",
           "subtitle": "Saage ekspertabi siis, kui seda kõige rohkem vajate",
-          "title": "Professionaalsete teenuste paketid"
+          "title": "Professionaalsed teenused"
         },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "Kohene kaasamine (alla 2 tunni)",
-              "Kohtuekspertiis, ohjeldamine ja taasteplaan",
-              "Stabiliseerimise aruanne koos tugevdamise tegevuskavaga"
-            ],
-            "description": "Ohjeldame kriisi, seejärel toome kriitilised süsteemid tagasi tööle.",
-            "name": "Hädaolukord",
-            "price": "29 999 $",
-            "tiers": [],
-            "turnaround": "Samal päeval"
-          },
-          "priority": {
-            "benefits": [
-              "Pühendatud haldur",
-              "Õhtune ja nädalavahetuse kättesaadavus",
-              "Tootmise üleviimise abi"
-            ],
-            "description": "Kiire juurutamine, tugi ka õhtul ja nädalavahetusel, oleme teiega kuni tootmisse minumiseni.",
-            "name": "Priority",
-            "price": "19 999 $",
-            "tiers": [],
-            "turnaround": "24–48 tundi"
-          },
-          "standard": {
-            "benefits": [
-              "Projekti avastamine ja eduplaan",
-              "Keskkonna ettevalmistamine ja konfigureerimine",
-              "Valideerimise kontrollnimekiri ja teadmiste üleandmine"
-            ],
-            "description": "Planeerime lahenduse, juurutame selle, testame ja koolitame su meeskonda.",
-            "name": "Standard",
-            "price": "Alates 7 499 $",
-            "tierHeading": "Hinnakujundus serverite arvu järgi",
-            "tierNote": "Iga server ja rakendus loeb ühe üksusena. Juurutamine hõlmab planeerimist, juurutamist, testimist ja su meeskonna koolitust.",
-            "tiers": [
-              "Starter (1–4 töökoormust): 7 499 $",
-              "Growth (5–10 töökoormust): 14 999 $",
-              "Scale (11–25 töökoormust): 29 999 $",
-              "Enterprise (25+ töökoormust): Kohandatud hinnapakkumine"
-            ],
-            "turnaround": "3–5 tööpäeva"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Seotud süsteemide, integratsioonide ja sõltuvuste arv",
-              "title": "Ulatuse keerukus"
-            },
-            {
-              "description": "Standardlahendused versus kohandatud arenduse nõuded",
-              "title": "Kohandamise tase"
-            },
-            {
-              "description": "Üksik ekspert versus täielik pühendatud spetsialistide meeskond",
-              "title": "Meeskonna suurus"
-            }
-          ],
-          "heading": "Professionaalsete teenuste hinnakujunduse mõistmine",
-          "intro": "Lõplikud projektikulud määratakse järgmiste tegurite alusel:",
-          "note": "Näide: 120-serveri projekt koos turbeauditiga on Enterprise'i mahus. Tavaliselt 14 999–24 999 $. Need on hinnangud. Lõpliku hinna määrame seadistuse nägemise järgi. Hind sõltub tööriistadest ja jooksva lepingu valikust."
-        },
-        "retainers": {
-          "description": "Juhtivtaseme sidusrühmad saavad otsese juurdepääsu meie spetsialistidele. Prognoositav igakuine hinnakujundus.",
-          "heading": "Pideva valmisoleku jooksva lepingu võimalused",
+        "categories": {
+          "heading": "Saadaolevad teenused",
+          "intro": "Iga koostöö algab vestlusega, et saaksime sinu seadistuse jaoks paika panna õige meeskonna ja ajakava.",
           "items": [
             {
-              "bullets": [
-                "Garanteeritud 2-tunnine reageerimisaeg",
-                "Priority eskalatsioon sõjakeskuse koordinatsiooniga",
-                "Kvartalipõhine valmisoleku ülevaatus ja mängureeglite uuendused"
-              ],
-              "price": "5 000–7 500 $/kuus",
-              "title": "Emergency Response jooksev leping"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Emergency",
-            "priority": "Priority",
-            "standard": "Standard"
-          },
-          "heading": "Saadaolevad teenused",
-          "intro": "Klõpsa teenusele, et näha tarneaegu iga paketi jaoks",
-          "services": [
-            {
-              "emergency": "Kohene hindamine + kriitilised süsteemid võrgus samal päeval + täielik migreerimine algab",
-              "id": "data-migration",
-              "name": "Andmete migreerimine",
-              "priority": "Kiirendatud migreerimiskonveieri seadistamine + põhiandmed üle kantud 48 tunniga",
-              "standard": "Täielik otsast-otsani migreerimine täieliku valideerimisega"
+              "id": "training",
+              "name": "Koolitus",
+              "description": "Praktiline koolitus sinu meeskonnale, alates juhitud seadistuse ülevaatest kuni mitmepäevaste töötubadeni, mis katavad edasijõudnud töövooge ja intsidentidele reageerimise protseduure.",
+              "icon": "team-training"
             },
             {
-              "emergency": "Kohene ohjeldamine + kriitilised süsteemid taastatud samal päeval + täielik taastumine algab",
-              "id": "ransomware-recovery",
-              "name": "Lunavararünnakust taastumine",
-              "priority": "Kiirendatud ohuanalüüs + põhitegevused taastatud 48 tunniga",
-              "standard": "Täielik taastumine kohtuekspertiisiga ja tugevdamine"
+              "id": "support",
+              "name": "Tugi",
+              "description": "Pidev abi päris inseneridelt, alates tööajal saadaolevast e-posti toest kuni 24/7/365 katvuseni koos pühendunud kontohalduriga tootmiskriitilistes keskkondades.",
+              "icon": "security-assessment"
             },
             {
-              "emergency": "Kriitiliste nõrkuste skannimine + suure riskiga paigad juurutatud samal päeval + täielik audit algab",
-              "id": "security-assessment",
-              "name": "Turbeanalüüs",
-              "priority": "Täielik nõrkuste hindamine + parandusplaan 48 tunniga",
-              "standard": "Täielik turbeaudit koos juurutamise tegevuskavaga"
+              "id": "migration",
+              "name": "Migreerimine",
+              "description": "Lõpuni viidud migreerimine ja kohandatud integreerimistöö, alates täielikult valideeritud andmeülekandest kuni kiire sama päeva ümberlülituseni, kui oled ajasurve all.",
+              "icon": "data-migration"
             },
             {
-              "emergency": "Kriitilised ressursid ette valmistatud samal päeval + automaatne skaleerumine konfigureeritud + täielik plaan algab",
-              "id": "infrastructure-scaling",
-              "name": "Infrastruktuuri skaleerumine",
-              "priority": "Kiirendatud võimsuse suurendamine + seire seadistamine 48 tunniga",
-              "standard": "Täielik infrastruktuuri ümberkavandamine optimeerimisega"
+              "id": "recovery",
+              "name": "Taaste",
+              "description": "Lunavararünnakust taastumine ja katastroofitaaste koostöö, alates juhtumi järgsest forensilisest analüüsist ja tugevdamisest kuni missioonikriitiliste süsteemide pideva replikatsiooni seadmiseni.",
+              "icon": "ransomware-recovery"
             },
             {
-              "emergency": "Kriitiliste protseduuride ülevaade samal päeval + intsidentidele reageerimise ettevalmistus + täielik programm algab",
-              "id": "team-training",
-              "name": "Meeskonnakoolitus",
-              "priority": "Intensiivne praktiline töötuba + põhilised töövood kaetud 2 päevaga",
-              "standard": "Mitmepäevane praktiline koolitusprogramm"
-            },
-            {
-              "emergency": "Kriitiline kitsaskoht tuvastatud + kohene kiirparandus juurutatud samal päeval + täielik optimeerimine algab",
-              "id": "performance-optimization",
-              "name": "Jõudluse optimeerimine",
-              "priority": "Kiire profileerimine + suure mõjuga optimeerimine juurutatud 48 tunniga",
-              "standard": "Põhjalik analüüs täieliku jõudluse häälestamisega"
-            },
-            {
-              "emergency": "Kriitiline ühendus loodud samal päeval + põhiline andmevoog toimib + täielik arendus algab",
-              "id": "custom-integration",
-              "name": "Kohandatud integratsioon",
-              "priority": "Põhiintegratsioon toimib + olulised funktsioonid kättesaadavad 48 tunniga",
-              "standard": "Täielik integratsioon testimise ja dokumentatsiooniga"
-            },
-            {
-              "emergency": "Kettad ühendatud + RAID-konversioon algatatud samal päeval + kriitilised hoidlad kontrollitud + täielik tugevdamine algab",
-              "id": "storage-hardening",
-              "name": "Salvestuse tugevdamine",
-              "priority": "BTRFS RAID1 või RAID10 konfigureeritud + reaalajas tasakaalu migreerimine alustatud + skrubi taimer aktiivne 48 tunniga",
-              "standard": "Täielik BTRFS-i redundantse salvestuse seadistamine iseparaneva skrubiga, reaalajas andmete migreerimine ühe kettaga kettalt, reflingi kontroll ja seire integratsioon. RAID1 (2 SSD-d, peegeldatud) standardjuurutuste jaoks või RAID10 (4+ SSD-d, ühendatud peeglid) suure läbilaskevõimega tootmiskoormuste jaoks. Scrub parandab automaatselt rikked redundantse koopia põhjal, mitte ei tuvasta neid. Sisaldab mahu planeerimist ja varukoopiate strateegia ülevaatust."
+              "id": "security",
+              "name": "Turvalisus ja vastavus",
+              "description": "Turvaaudid, tugevdamise kontrollnimekirjad, vastavuse käsiraamatud ja intsidentidele reageerimise lepingud, kohandatud sinu keskkonna ja auditi nõuete järgi.",
+              "icon": "storage-hardening"
             }
           ]
         }
@@ -3171,13 +2748,13 @@
           },
           {
             "key": "floatingLicenses",
-            "label": "Seadistusslotid",
-            "tooltip": "Mitu masinat saab samaaegselt servereid luua või kopeerida."
+            "label": "Ujuvad litsentsid",
+            "tooltip": "Mitu masinat saab samaaegselt servereid luua või kopeerida. Iga ujuv litsents hõlmab ühte masinat."
           },
           {
             "key": "jobsPerMonth",
             "label": "Serveri seadistusi kuus",
-            "tooltip": "Mitu uut serveri seadistust loendatakse kalenderikuus. Serveri loomine või kopeerimine loendatakse mõlemad ühe seadistusena."
+            "tooltip": "Mitu uut serveriseadistust loendatakse kalendrikuu jooksul. Serveri loomine või olemasoleva kopeerimine loetakse mõlemad ühe seadistusena. See on masinapõhine litsentsimine: iga seadistus annab 1 ujuva litsentsi."
           },
           {
             "key": "usersTeams",
@@ -3240,7 +2817,7 @@
             "title": "60-päevane ajapikendus skaleerimiseks."
           },
           {
-            "description": "Kohti kasutatakse ainult uute ja kloonitud hoidlate loomisel - igapäevased toimingud ei tarbigi kunagi ühte. Kohad vabanevad automaatselt 1 tunni pärast. 5-kohaline pakett teenindab kümneid masinaid. Masinapõhiseid tasusid pole kunagi.",
+            "description": "Ujuvat litsentsi kasutatakse ainult uue serveri loomiseks või olemasoleva kopeerimiseks. Sinu tavatoimingud ei hõiva kunagi litsentsi. Litsentsid vabanevad pärast 5 tunnist tegevusetust. 5 litsentsiga pakett sobib kümnete masinate jaoks. Masinapõhiseid tasusid pole kunagi.",
             "title": "Piiramatu arv masinaid. Tasud ainult uute loomisel."
           },
           {
@@ -3256,8 +2833,8 @@
           "noLicenseRequired": "Litsentsi ei nõuta - töötab alati",
           "reposKeepRunning": "Hoidlad töötavad kogu selle aja. Käsitsi samme pole vaja.",
           "requiredOnlyHere": "Nõutav ainult siin",
-          "slotsAutoRelease": "Kohad vabanevad automaatselt 1 tunni pärast",
-          "slotsCreateFork": "Kohti kasutatakse ainult uute ja kloonitud hoidlate jaoks. Igapäevased toimingud on alati tasuta."
+          "slotsAutoRelease": "Ujuvad litsentsid vabanevad pärast 5 tunnist tegevusetust",
+          "slotsCreateFork": "Ujuvaid litsentse kasutatakse ainult uute ja kopeeritud serverite jaoks. Igapäevased toimingud on alati tasuta."
         }
       },
       "ui": {
@@ -3493,8 +3070,8 @@
         "title": "Professionaalsed teenused | Ekspertabi, juurutamine ja tugi"
       },
       "packages": {
-        "heading": "Professionaalsete teenuste paketid",
-        "subtitle": "Valige teenuse tase, mis vastab teie kiireloomulisusele ja keerukusele"
+        "heading": "Saadaolevad teenused",
+        "subtitle": "Iga koostöö algab vestlusega, et saaksime sinu seadistuse jaoks paika panna õige meeskonna ja ajakava"
       },
       "value": {
         "description": "75% kiiremad juurutamised. 100% migreerimise edukuse määr. 2-tunnine hädaabireageerimine. Seda pakub meie professionaalsete teenuste meeskond.",

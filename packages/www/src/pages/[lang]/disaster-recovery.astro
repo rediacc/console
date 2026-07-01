@@ -150,22 +150,6 @@ const buildMetrics = (planId: string) =>
           <h2>{t(`${ns}.psTeaser.heading`)}</h2>
           <p class="ps-teaser-subtitle">{t(`${ns}.psTeaser.subtitle`)}</p>
 
-          <div class="ps-teaser-packages">
-            <div class="ps-teaser-card">
-              <h3>{t(`${ns}.psTeaser.packages.standard.name`)}</h3>
-              <p class="teaser-price">{t(`${ns}.psTeaser.packages.standard.price`)}</p>
-            </div>
-            <div class="ps-teaser-card popular">
-              <div class="popular-badge">{t(`${ns}.ui.popular`)}</div>
-              <h3>{t(`${ns}.psTeaser.packages.priority.name`)}</h3>
-              <p class="teaser-price">{t(`${ns}.psTeaser.packages.priority.price`)}</p>
-            </div>
-            <div class="ps-teaser-card">
-              <h3>{t(`${ns}.psTeaser.packages.emergency.name`)}</h3>
-              <p class="teaser-price">{t(`${ns}.psTeaser.packages.emergency.price`)}</p>
-            </div>
-          </div>
-
           <a href={`/${lang}/professional-services`} class="btn btn-primary btn-large">
             {t(`${ns}.psTeaser.viewDetails`)}
           </a>

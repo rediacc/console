@@ -1,11 +1,13 @@
 ---
-title: "Tellimus ja litsentsid"
-description: "Mõista, kuidas account, rdc ja renet haldavad masina kohti, repositooriumi litsentse ja plaani piiranguid."
-category: "Guides"
+title: Tellimus ja litsentsid
+description: >-
+  Mõista, kuidas account, rdc ja renet haldavad masina kohti, repositooriumi
+  litsentse ja plaani piiranguid.
+category: Guides
 order: 7
 language: et
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Tellimus ja litsentsid
@@ -92,9 +94,9 @@ Vaikimisi tasuliste plaanide piirangud on:
 | Plaan | Hõljuvad litsentsid | Repositooriumi suurus | Igakuised repositooriumilitsentside väljastamised | Delegeerimissertifikaadi vaikimisi/max |
 |------|-------------------|-----------------|-------------------------------|---|
 | Community | 2 | 10 GB | 100 | 15d / 30d |
-| Professional | 3 | 50 GB | 1,000 | 60d / 120d |
-| Business | 10 | 200 GB | 10,000 | 90d / 180d |
-| Enterprise | 25+ | 1 TB+ | 25,000+ | 120d / 365d |
+| Professional | 3 | 50 GB | 2,000+ | 60d / 120d |
+| Business | 10 | 200 GB | 5,000+ | 90d / 180d |
+| Enterprise | 25+ | 1 TB+ | 15,000+ | 120d / 365d |
 
 Lepingupõhised piirangud võivad konkreetse kliendi puhul neid väärtusi tõsta või langetada. Delegeerimissertifikaadi kehtivus on ka kõvasti piiratud väärtusega `subscription.expiresAt + 3 day grace`, nii et igakuise arveldusega tellimused saavad sertifikaadid, mis on joondatud nende arveldustsükliga. Täielikke reegleid vaata jaotisest [Litsentsiahel ja delegeerimine - kehtivuspoliitika](/en/docs/license-chain).
 
@@ -110,7 +112,7 @@ Praktikas:
 - Käsitsi sekkumist ei ole vaja
 - Kontrolli masina ID-d ja litsentsi olekut käsuga `rdc machine query --system --licenses --name <machine>`
 
-**Edge-kanali kasutajad** saavad 2-kordsed Community piirangud tasuta (20 GB repositooriumid, 1000 väljastamist/kuus, 4 masinat). Tasulised plaanid on saadaval ainult Stable-kanalil. Üksikasju vaata jaotisest [Väljalaskekanalid](/en/docs/release-channels).
+**Edge-kanali kasutajad** saavad 2-kordsed Community piirangud tasuta (20 GB repositooriumid, 200 väljastamist/kuus, 4 masinat). Tasulised plaanid on saadaval ainult Stable-kanalil. Üksikasju vaata jaotisest [Väljalaskekanalid](/en/docs/release-channels).
 
 ## Mis juhtub repositooriumi loomisel, käivitamisel, peatamisel ja taaskäivitamisel
 

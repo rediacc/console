@@ -10,6 +10,11 @@ import type { BillingPeriod, FeatureFlags, PlanCode, PlanMetadata, PlanPricing }
 /**
  * Resource limits by plan.
  * This is the canonical source of truth for all plan limits.
+ *
+ * `maxRepoLicenseIssuancesPerMonth` is a per-machine setup cap: each repo
+ * license issuance licenses exactly one machine (1 issuance = 1 Floating
+ * license). Paid-tier display copy renders these with a "+" suffix (e.g.
+ * "2,000+") to signal room to grow / contact for more.
  */
 export const PLAN_LIMITS: Record<
   PlanCode,
@@ -24,17 +29,27 @@ export const PLAN_LIMITS: Record<
   },
   PROFESSIONAL: {
     maxRepositorySizeGb: 50,
-    maxRepoLicenseIssuancesPerMonth: 1000,
+    maxRepoLicenseIssuancesPerMonth: 2000,
   },
   BUSINESS: {
     maxRepositorySizeGb: 200,
-    maxRepoLicenseIssuancesPerMonth: 10000,
+    maxRepoLicenseIssuancesPerMonth: 5000,
   },
   ENTERPRISE: {
     maxRepositorySizeGb: 1024,
-    maxRepoLicenseIssuancesPerMonth: 25000,
+    maxRepoLicenseIssuancesPerMonth: 15000,
   },
 } as const;
+
+/**
+ * How long a machine holds its Floating license slot after the last repo
+ * license issuance on that machine, before it auto-releases from inactivity.
+ * Single source of truth for both the account server's enforcement
+ * (`private/account/src/constants.ts` re-exports this) and any marketing/docs
+ * copy referencing the auto-release window.
+ */
+export const MACHINE_AUTO_RELEASE_MS = 5 * 60 * 60 * 1000; // 5 hours
+export const MACHINE_AUTO_RELEASE_HOURS = MACHINE_AUTO_RELEASE_MS / (60 * 60 * 1000);
 
 /**
  * Feature availability by plan.

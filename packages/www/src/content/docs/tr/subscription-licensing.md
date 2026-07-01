@@ -1,11 +1,13 @@
 ---
-title: "Abonelik ve Lisanslama"
-description: "account, rdc ve renet'in makine slotlarını, depo lisanslarını ve plan limitlerini nasıl yönettiğini anlayın."
-category: "Guides"
+title: Abonelik ve Lisanslama
+description: >-
+  account, rdc ve renet'in makine slotlarını, depo lisanslarını ve plan
+  limitlerini nasıl yönettiğini anlayın.
+category: Guides
 order: 7
 language: tr
-sourceHash: "ed0aef562aad7367"
-sourceCommit: "68c6d120013af4c092bcfd997ed8e9b47101be34"
+sourceHash: 10e9f781881854be
+sourceCommit: 2e3862505c06f97f846b7d879375434011954f95
 ---
 
 # Abonelik ve Lisanslama
@@ -92,9 +94,9 @@ Depo boyutu hak düzeyine bağlıdır:
 | Plan | Değişken Lisanslar | Depo Boyutu | Aylık depo lisansı düzenlemeleri | Delegasyon sertifikası varsayılan / maks |
 |------|---------------------|-------------|----------------------------------|----------------------------------------|
 | Community | 2 | 10 GB | 100 | 15g / 30g |
-| Professional | 3 | 50 GB | 1.000 | 60g / 120g |
-| Business | 10 | 200 GB | 10.000 | 90g / 180g |
-| Enterprise | 25+ | 1 TB+ | 25.000+ | 120g / 365g |
+| Professional | 3 | 50 GB | 2.000+ | 60g / 120g |
+| Business | 10 | 200 GB | 5.000+ | 90g / 180g |
+| Enterprise | 25+ | 1 TB+ | 15.000+ | 120g / 365g |
 
 Sözleşmeye özgü limitler, belirli bir müşteri için bu değerleri artırabilir veya azaltabilir. Delegasyon sertifikası geçerliliği aynı zamanda `subscription.expiresAt + 3 günlük ek süre` ile kesin olarak sınırlandırılmıştır; dolayısıyla aylık faturalandırılan abonelikler doğal olarak faturalama döngüleriyle uyumlu sertifikalar alır. Tam kurallar için [Lisans Zinciri ve Delegasyon - Geçerlilik Politikası](/tr/docs/license-chain) sayfasına bakın.
 
@@ -110,7 +112,7 @@ Pratikte:
 - El ile müdahale gerekli değil
 - `rdc machine query --system --licenses --name <machine>` ile makine kimliği ve lisans durumunu kontrol edin
 
-**Edge kanalı kullanıcıları** 2X Community limitlerini ücretsiz alır (20 GB depolar, ayda 1.000 düzenleme, 4 makine). Ücretli planlar yalnızca Stable kanalında mevcuttur. Ayrıntılar için [Yayın Kanalları](/tr/docs/release-channels) sayfasına bakın.
+**Edge kanalı kullanıcıları** 2X Community limitlerini ücretsiz alır (20 GB depolar, ayda 200 düzenleme, 4 makine). Ücretli planlar yalnızca Stable kanalında mevcuttur. Ayrıntılar için [Yayın Kanalları](/tr/docs/release-channels) sayfasına bakın.
 
 ## Depo Oluşturma, Başlatma, Durdurma ve Yeniden Başlatma Sırasında Ne Olur
 

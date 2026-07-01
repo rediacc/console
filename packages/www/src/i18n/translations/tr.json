@@ -929,259 +929,9 @@
           "name": "Profesyonel"
         }
       },
-      "professionalServices": {
-        "access": {
-          "description": "Her planda hazırlanan yardım yer alıyor. İhtiyacınız olduğunda daha fazlasını ekleyebilirsiniz.",
-          "heading": "Katmana Göre Profesyonel Hizmet Erişimi",
-          "labels": {
-            "available": "Eklenebilir",
-            "included": "Dahil"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Standart Kurulum (9.999 $) veya katmanlı paketler (Başlangıç 7.499 $ · Büyüme 14.999 $ · Ölçek 29.999 $ · Kurumsal özel)",
-                "Acil Durum Müdahale Hizmeti (talep üzerine 29.999 $)"
-              ],
-              "included": ["Self servis belgeler, video eğitimleri ve topluluk forumu"],
-              "planId": "toplum"
-            },
-            {
-              "available": [
-                "Hızlı Kurulum (19.999 $)",
-                "Acil Durum Müdahale Hizmeti (talep üzerine 29.999 $)",
-                "Özel entegrasyon projeleri (kapsama dahil)"
-              ],
-              "included": [
-                "E-posta desteği",
-                "Standart katılım oturumu (kurulum çağrısı ve yapılandırma rehberi)"
-              ],
-              "planId": "profesyonel"
-            },
-            {
-              "available": [
-                "Hızlı Kurulum yükseltmesi (19.999 $)",
-                "Acil Durum Müdahale Hizmeti (talep üzerine 29.999 $)",
-                "Özel geliştirme ve güvenlik mimarisi danışmanlığı"
-              ],
-              "included": [
-                "Hızlı e-posta/sohbet/telefon desteği",
-                "Yapılandırma ve adım adım rehberin geçişiyle adanmış katılım",
-                "Standart Kurulum paketi dahil (9.999 $ değerinde)",
-                "Üç ayda bir başarı değerlendirmesi"
-              ],
-              "planId": "işletme"
-            },
-            {
-              "available": [
-                "Özel geliştirme ve gelişmiş entegrasyonlar",
-                "Güvenlik ve altyapı mimarisi danışmanlığı",
-                "Aylık Acil Durum Müdahale sözleşmesi (5.000-7.500 $/ay)"
-              ],
-              "included": [
-                "7/24/365 beyaz eldiven desteği ve adanmış hesap müdürü",
-                "Hızlı Kurulum dahil (19.999 $ değerinde)",
-                "Üç ayda bir olağanüstü durum kurtarma testi",
-                "Yıllık iş sürekliliği planlama çalıştayı",
-                "Yönetim düzeyine iletme hattı"
-              ],
-              "planId": "girişim"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Hizmet paketleri, kurulum katmanları, fiyatlandırma faktörleri ve aylık destek seçenekleri",
-          "heading": "Kurulum ve Fiyatlandırma Ayrıntıları"
-        },
-        "benefits": {
-          "description": "Sistemleriniz çöktüğünde yanınızda olan uzman mühendisler.",
-          "heading": "Neden Profesyonel Hizmetler?",
-          "items": [
-            "Projenize atanan uzmanlardan oluşan özel ekip",
-            "SLA ile garantili yanıt süreleri",
-            "Gerektiğinde hizmet katmanları arasında geçiş yapın",
-            "Acil Durum paketi için 7/24 yardım hattı"
-          ],
-          "statistics": [
-            "Ortalama fidye yazılımı saldırısının maliyeti: 4,62 milyon $ (IBM Security, 2023)",
-            "Kesinti maliyeti: büyük işletmeler için dakika başına ortalama 5.600 $"
-          ]
-        },
-        "cta": {
-          "button": "Danışman Randevusu Al",
-          "description": "Uzmanlarımız başarılı olmanıza yardımcı olmaya hazır",
-          "heading": "Profesyonel Yardıma İhtiyacınız Var mı?"
-        },
-        "header": {
-          "badge": "Uzman desteğiyle kurulumunuzu hızlandırın",
-          "eligibility": "Her planda uzman desteği yer alıyor. Aşağıdaki tablodan paketinize nelerin dahil olduğunu ve neler ekleyebileceğinizi görebilirsiniz.",
-          "subtitle": "İhtiyacınız olduğunda en iyi desteğe erişin",
-          "title": "Uzman Desteği Paketleri"
-        },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "2 saat içinde harekete geçeriz",
-              "Adli tıp, kontrol altına alma ve kurtarma planı",
-              "Neler yanlış gitti raporu + tekrar olmaması için eylem planı"
-            ],
-            "description": "Sorun çıktığında bizi arayın. 2 saat içinde yanınızdayız ve sistemlerinizi aynı gün geri getirmeye başlarız.",
-            "name": "Acil durum",
-            "price": "29.999$",
-            "tiers": [],
-            "turnaround": "Aynı Gün"
-          },
-          "priority": {
-            "benefits": [
-              "Adanmış proje müdürü",
-              "Akşam ve hafta sonu desteği",
-              "Yayına alırken pratik destek"
-            ],
-            "description": "Daha hızlı teslim. Takımımız akşam ve hafta sonları da kullanılabilir ve canlı yayına kılavuzluk eder.",
-            "name": "Öncelik",
-            "price": "19.999$",
-            "tiers": [],
-            "turnaround": "24-48 Saat"
-          },
-          "standard": {
-            "benefits": [
-              "Proje keşfi ve başarı planı",
-              "Ortam sağlama ve yapılandırma",
-              "Test kontrol listesi ve ekibe geçiş"
-            ],
-            "description": "Planlamadan test ve eğitime kadar her şeyi biz yönetiyoruz.",
-            "name": "Standart",
-            "price": "7.499$'dan başlayan fiyatlarla",
-            "tierHeading": "Sunucu Sayısına Göre Fiyatlandırma",
-            "tierNote": "Her sunucu veya uygulama bir birim olarak sayılır. Kurulum tasarımdan yapılandırma, test ve ekip eğitimine kadar her şeyi kapsar.",
-            "tiers": [
-              "Başlangıç (1-4 sunucu): 7.499 $",
-              "Büyüme (5-10 sunucu): 14.999 $",
-              "Ölçek (11-25 sunucu): 29.999 $",
-              "Kurumsal (25+ sunucu): Özel fiyatlandırma"
-            ],
-            "turnaround": "3-5 İş Günü"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Kaç sistem, entegrasyon ve bağımlılığa sahip olduğunuz",
-              "title": "Kapsam Karmaşıklığı"
-            },
-            {
-              "description": "Standart çözümler mi yoksa özel geliştirme mi gerekli",
-              "title": "Özelleştirme Düzeyi"
-            },
-            {
-              "description": "Tek uzman mı yoksa tam bir uzman ekibi mi",
-              "title": "Takım Boyutu"
-            }
-          ],
-          "heading": "Profesyonel Hizmet Fiyatlandırmasını Anlamak",
-          "intro": "Nihai proje maliyetleri şu unsurlardan belirlenir:",
-          "note": "Örneğin: güvenlik incelemesi de dahil 120 makineli orta ölçekli kurulum genellikle 14.999 $ ile 24.999 $ arasında değişir. Entegrasyonlar ve devam eden desteğe göre farklılık gösterebilir."
-        },
-        "retainers": {
-          "description": "Takımımıza doğrudan erişim. Öngörülebilir aylık fiyatlandırma.",
-          "heading": "Aylık Planlar - Her Zaman Hazır Olun",
-          "items": [
-            {
-              "bullets": [
-                "Garantili 2 saatlik yanıt süresi",
-                "Kıdemli mühendislere doğrudan erişim en çok ihtiyacınız olduğunda",
-                "Üç ayda bir hazırlık incelemesi ve müdahale planı güncellemeleri"
-              ],
-              "price": "5.000$–7.500$/ay",
-              "title": "Acil Durum Müdahale Tutucusu"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Acil",
-            "priority": "Hızlı",
-            "standard": "Standart"
-          },
-          "heading": "Mevcut Hizmetler",
-          "intro": "Her paket katmanının sürelerini görmek için herhangi bir hizmeti seçin",
-          "services": [
-            {
-              "emergency": "Anında değerlendirme + kritik sistemler aynı gün çevrimiçi + tam geçiş başlıyor",
-              "id": "veri taşıma",
-              "name": "Veri Taşıma",
-              "priority": "Hızlı geçiş kurulumu, 48 saat içinde kritik veriler taşındı",
-              "standard": "Tam doğrulamaya sahip uçtan uca geçiş"
-            },
-            {
-              "emergency": "Derhal kontrol altına alma + kritik sistemler aynı gün içinde onarılır + tam kurtarma başlar",
-              "id": "fidye yazılımı kurtarma",
-              "name": "Fidye Yazılımı Kurtarma",
-              "priority": "Hızlı tehdit değerlendirmesi + temel operasyonlar 48 saat içinde geri yüklendi",
-              "standard": "Adli tıp ve güçlendirmeyle tam iyileşme"
-            },
-            {
-              "emergency": "Kritik güvenlik açığı taraması + yüksek riskli yamalar aynı gün dağıtılır + tam denetim başlar",
-              "id": "güvenlik değerlendirmesi",
-              "name": "Güvenlik Değerlendirmesi",
-              "priority": "Kapsamlı güvenlik açığı değerlendirmesi + 48 saat içinde iyileştirme planı",
-              "standard": "Eylem planı da dahil tam güvenlik denetimi"
-            },
-            {
-              "emergency": "Kritik kaynaklar aynı gün sağlandı + otomatik ölçeklendirme yapılandırıldı + tam plan başlıyor",
-              "id": "altyapı ölçeklendirme",
-              "name": "Altyapı Ölçeklendirmesi",
-              "priority": "Hızlı kapasite artışı + 48 saat içinde izleme kurulumu",
-              "standard": "Performans iyileştirmeleriyle eksiksiz altyapı yeniden tasarımı"
-            },
-            {
-              "emergency": "Aynı gün kritik prosedürler eğitimi + olay müdahale hazırlığı + tam program başlıyor",
-              "id": "takım eğitimi",
-              "name": "Takım Eğitimi",
-              "priority": "Yoğun uygulamalı atölye + 2 gün içinde önemli iş akışları",
-              "standard": "Çok günlük uygulamalı eğitim programı"
-            },
-            {
-              "emergency": "Kritik darboğaz belirlendi + aynı gün anında düzeltme + tam optimizasyon başlıyor",
-              "id": "performans optimizasyonu",
-              "name": "Performans Optimizasyonu",
-              "priority": "Hızlı profil oluşturma + 48 saat içinde yüksek etkili optimizasyonlar",
-              "standard": "Eksiksiz performans ayarlamasıyla derin analiz"
-            },
-            {
-              "emergency": "Kritik bağlantı aynı gün kuruldu + temel veri akışı çalışıyor + tam geliştirme başlıyor",
-              "id": "özel entegrasyon",
-              "name": "Özel Entegrasyon",
-              "priority": "Temel entegrasyon hazır + temel özellikler 48 saat içinde yayında",
-              "standard": "Test ve dokümantasyonla tam entegrasyon"
-            },
-            {
-              "emergency": "Diskler bağlandı, RAID dönüşümü aynı gün başlatıldı, kritik uygulamalar doğrulandı, tam güçlendirme başlıyor",
-              "id": "storage-hardening",
-              "name": "Depolama Guclendirme",
-              "priority": "BTRFS RAID1 veya RAID10 yapılandırıldı, canlı geçiş başlatıldı, otomatik onarım etkin - 48 saat içinde",
-              "standard": "Tam BTRFS yedekli depolama kurulur (standart için RAID1 - 2 aynalı disk, yüksek trafik için RAID10 - 4+ disk). Canlı geçiş, otomatik onarım ve izleme de dahil. Depolama planı ve yedekleme stratejisi incelemesiyle sonuçlanır."
-            }
-          ]
-        }
-      },
       "psTeaser": {
         "heading": "Başlarken Uzman Yardımına İhtiyaç mı Var?",
-        "packages": {
-          "emergency": {
-            "name": "Acil durum",
-            "price": "29.999$"
-          },
-          "priority": {
-            "name": "Öncelik",
-            "price": "19.999$"
-          },
-          "standard": {
-            "name": "Standart",
-            "price": "7.499$'dan başlayan fiyatlarla"
-          }
-        },
-        "subtitle": "Tüm planlar için profesyonel uygulama ve destek hizmetleri sunuyoruz",
+        "subtitle": "Tüm planlar için profesyonel uygulama ve destek hizmetleri: Eğitim, Destek, Göç, Kurtarma ve Güvenlik ve Uyumluluk",
         "viewDetails": "Profesyonel Hizmetler"
       },
       "strategy": {
@@ -2683,7 +2433,7 @@
                 "business": "10,000",
                 "community": "100",
                 "enterprise": "25,000+",
-                "label": "Floating license requests",
+                "label": "Aylık sunucu kurulumu (her kurulum 1 slot)",
                 "professional": "1,000"
               },
               {
@@ -2850,10 +2600,10 @@
           "description": "Uzman kurulumu, çok bölgeli yedeklemeler ve 4 saatlik geri yükleme garantisi.",
           "features": [
             "Professional'daki her şey +",
-            "10 kurulum yuvası",
+            "10 slot",
             "Sınırsız depo",
-            "Ayda 10.000 sunucu kurulumu",
-            "$9,999 kurulum desteği dahil (Lansman Teklifi)",
+            "Ayda 5.000+ sunucu kurulumu",
+            "Kurulum desteği dahil (Lansman Teklifi)",
             "Coğrafi olarak yedeklenmiş depolama (3 bölge)",
             "Sürekli veri koruması",
             "4 saatlik geri yükleme SLA'sı",
@@ -2868,8 +2618,8 @@
           "features": [
             "Sınırsız kullanıcı ve ekip",
             "Sınırsız depo",
-            "Ayda 100 sunucu kurulumu",
-            "2 kurulum slotu",
+            "Ayda 100 sunucu kurulumu (kurulum başına 1 slot)",
+            "2 slot",
             "Yedek geri yüklemeler",
             "Manuel planlama",
             "Topluluk Slack kanalına erişim",
@@ -2881,9 +2631,9 @@
           "description": "Büyük ve karmaşık altyapılar için özel destek ve koşullar.",
           "features": [
             "Business'taki her şey +",
-            "25+ kurulum yuvası",
+            "25+ slot",
             "Sınırsız depo",
-            "Ayda 25.000+ sunucu kurulumu",
+            "Ayda 15.000+ sunucu kurulumu",
             "Özel SLA ve garantili geri yükleme süreleri",
             "Kendi özel sunucu alanınız",
             "7/24/365 özel destek",
@@ -2899,9 +2649,9 @@
           "description": "Büyüyen ekipler için profesyonel otomasyon ve planlama",
           "features": [
             "Community'daki her şey +",
-            "3 kurulum yuvası",
+            "3 slot",
             "Sınırsız depo",
-            "Ayda 1.000 sunucu kurulumu",
+            "Ayda 2.000+ sunucu kurulumu",
             "Otomatik planlama",
             "Son 24 saatten herhangi bir noktadan geri yükleme",
             "E-posta ve sohbet desteği",
@@ -2913,77 +2663,14 @@
         }
       },
       "professionalServices": {
-        "access": {
-          "description": "Planınız başlangıç eğitimi içeriyor. Üzerine daha fazla hizmet ekleyebilirsiniz. Aşağıdaki tablo neyin dahil olduğunu ve neyin ekstra maliyetli olduğunu gösteriyor.",
-          "heading": "Katmana göre profesyonel hizmet erişimi",
-          "labels": {
-            "available": "Mevcut eklentiler",
-            "included": "Dahil"
-          },
-          "tiers": [
-            {
-              "available": [
-                "Standart Uygulama (9.999 USD) veya katmanlı paketler (Başlangıç 7.499 · Büyüme 14.999 · Ölçek 29.999 · Kurumsal özel)",
-                "Acil Durum Müdahale (talep üzerine 29.999 USD)"
-              ],
-              "included": ["Self servis dokümantasyon, video eğitimleri ve topluluk forumu"],
-              "planId": "toplum"
-            },
-            {
-              "available": [
-                "Öncelikli Uygulama (19.999 USD)",
-                "Acil Durum Müdahale (talep üzerine 29.999 USD)",
-                "Özel entegrasyon projeleri (kapsamlı)"
-              ],
-              "included": [
-                "E-posta desteği",
-                "Standart katılım (kurulum görüşmesi ve yapılandırma rehberi)"
-              ],
-              "planId": "profesyonel"
-            },
-            {
-              "available": [
-                "Öncelikli Uygulama yükseltmesi (19.999 USD)",
-                "Acil Durum Müdahale (talep üzerine 29.999 USD)",
-                "Özel geliştirme ve güvenlik mimarisi danışmanlığı"
-              ],
-              "included": [
-                "Öncelikli e-posta/sohbet/telefon desteği",
-                "Yapılandırma ve runbook aktarımıyla özel katılım",
-                "Standart Uygulama paketi dahil (9.999 USD değerinde)",
-                "Üç aylık başarı değerlendirmeleri"
-              ],
-              "planId": "işletme"
-            },
-            {
-              "available": [
-                "Özel geliştirme ve gelişmiş entegrasyonlar",
-                "Güvenlik ve denetim mimarisi danışmanlığı",
-                "Acil Durum Müdahale tutucusu (5.000–7.500 USD/ay)"
-              ],
-              "included": [
-                "24/7/365 beyaz eldiven desteği ve özel CSM",
-                "Öncelikli Uygulama dahil (19.999 USD değerinde)",
-                "Üç ayda bir olağanüstü durum kurtarma testi",
-                "Yıllık iş sürekliliği planlama çalıştayı",
-                "Yönetim eskalasyon hattı"
-              ],
-              "planId": "girişim"
-            }
-          ]
-        },
-        "advancedDetails": {
-          "description": "Hizmet paketleri, uygulama katmanları, fiyatlandırma faktörleri ve tutucular",
-          "heading": "Uygulama ve Fiyatlandırma Detayları"
-        },
         "benefits": {
           "description": "Sunucularınız çöktüğünde telefonunuza cevap veren gerçek mühendisler. Destek kuyruğu değil. İnsan. Aynı gün.",
           "heading": "Neden Profesyonel Hizmetler?",
           "items": [
             "Projenize atanan uzmanlar ekibi",
             "Yazılı olarak garantili yanıt süreleri",
-            "Gerektiğinde hizmet katmanları arası geçiş",
-            "Acil durum katmanı için 24/7 acil yardım hattı"
+            "İhtiyaçlarınız değiştikçe hizmetler arasında geçiş yapın",
+            "Kritik olaylar için 7/24 acil destek hattı"
           ],
           "statistics": [
             "Fidye yazılımı saldırısının ortalama maliyeti 4,62 milyon USD (IBM Security, 2023)",
@@ -2991,159 +2678,49 @@
           ]
         },
         "cta": {
-          "button": "Danışmanlık Planla",
-          "description": "Uzmanlarımız başarılı olmanız için hazır",
+          "button": "Bize ulaşın",
+          "description": "Her işbirliği kurulumunuza göre şekillenir. Bize ulaşın, doğru planı birlikte belirleyelim.",
           "heading": "Profesyonel Yardıma mı İhtiyacınız Var?"
         },
         "header": {
           "badge": "Her aşamada uzman desteği",
-          "eligibility": "Her planda profesyonel hizmetlere erişebilirsiniz. Aşağıdaki tablodan neyin dahil olduğunu ve neyi ekleyebileceğini gör.",
+          "eligibility": "Tüm planlar profesyonel hizmetlerimize erişebilir. Bize ulaşın, kurulumunuza uygun işbirliğini birlikte tasarlayalım.",
           "subtitle": "En çok ihtiyaç duyduğunuz anda uzman yardımı alın",
-          "title": "Profesyonel Hizmet Paketleri"
+          "title": "Profesyonel Hizmetler"
         },
-        "packages": {
-          "emergency": {
-            "benefits": [
-              "Anında katılım (2 saatin altında)",
-              "Adli tıp, kontrol altına alma ve kurtarma planı",
-              "İstikrar raporu ve güçlendirme haritası"
-            ],
-            "description": "Sistem çöktü mü? Arayın. Aynı gün geliyoruz. Sorunu durdururuz, kritik sistemlerinizi çalıştırırız.",
-            "name": "Acil durum",
-            "price": "29.999$",
-            "tiers": [],
-            "turnaround": "Aynı Gün"
-          },
-          "priority": {
-            "benefits": [
-              "Özel proje müdürü",
-              "Akşam ve hafta sonu erişimi",
-              "Üretim ortamı canlı yayın desteği"
-            ],
-            "description": "Daha hızlı teslimat, akşam ve hafta sonu desteği. Canlı yayın sırasında yanınızda kalıyoruz.",
-            "name": "Öncelik",
-            "price": "19.999$",
-            "tiers": [],
-            "turnaround": "24-48 Saat"
-          },
-          "standard": {
-            "benefits": [
-              "Proje keşfi ve başarı planı",
-              "Ortam kurulumu ve yapılandırması",
-              "Test kontrol listesi ve bilgi aktarımı"
-            ],
-            "description": "Kurulumu tasarlarız, dağıtırız, test yaparız ve ekibinizi eğitiriz.",
-            "name": "Standart",
-            "price": "7.499$'dan başlayan fiyatlarla",
-            "tierHeading": "Sunucu Sayısına Göre Fiyatlandırma",
-            "tierNote": "Korumak istediğiniz her sunucu veya uygulama bir birim sayılır. Kurulum; planlama, dağıtım, test ve ekip eğitimini kapsıyor.",
-            "tiers": [
-              "Başlangıç (1-4 sunucu): 7.499 USD",
-              "Büyüme (5-10 sunucu): 14.999 USD",
-              "Ölçek (11-25 sunucu): 29.999 USD",
-              "Kurumsal (25+ sunucu): Özel Fiyat"
-            ],
-            "turnaround": "3-5 İş Günü"
-          }
-        },
-        "pricingFactors": {
-          "factors": [
-            {
-              "description": "Sistem, entegrasyon ve bağımlılık sayısı",
-              "title": "Kapsam Karmaşıklığı"
-            },
-            {
-              "description": "Hazır çözümler vs. özel geliştirme gereksinimleri",
-              "title": "Özelleştirme Düzeyi"
-            },
-            {
-              "description": "Tek uzman vs. tam adanmış uzman ekibi",
-              "title": "Takım Boyutu"
-            }
-          ],
-          "heading": "Profesyonel Hizmet Fiyatlandırmasını Anlamak",
-          "intro": "Nihai proje maliyeti şunlara göre belirlenir:",
-          "note": "Örneğin: 120 sunuculu proje + güvenlik incelemesi = Kurumsal özel kapsam. Böyle projeler genellikle 14.999–24.999 USD arasındadır. Bunlar tahminlerdir. Kurulumunuzu görünce nihai maliyeti belirleriz. Kesin fiyat kaç araç bağlandığına ve tutucuyu seçip seçmediğinize bağlıdır."
-        },
-        "retainers": {
-          "description": "Mühendislerimize doğrudan erişim. Tek düz aylık fiyat.",
-          "heading": "Her zaman hazır olma için tutucu seçenekleri",
+        "categories": {
+          "heading": "Sunulan Hizmetler",
+          "intro": "Her işbirliği bir görüşme ile başlar; böylece kurulumunuza uygun ekibi ve zaman çizelgesini birlikte belirleyebiliriz.",
           "items": [
             {
-              "bullets": [
-                "Garantili 2 saatlik yanıt süresi",
-                "Savaş odası koordinasyonu ile öncelikli yükseltme yolu",
-                "Üç ayda bir hazırlık incelemesi ve oyun kitabı güncellemeleri"
-              ],
-              "price": "5.000$–7.500$/ay",
-              "title": "Acil Durum Müdahale Tutucusu"
-            }
-          ]
-        },
-        "serviceTypes": {
-          "badgeLabels": {
-            "emergency": "Acil",
-            "priority": "Öncelikli",
-            "standard": "Standart"
-          },
-          "heading": "Sunulan Hizmetler",
-          "intro": "Paket katmanının turnaround sürelerini görmek için bir hizmet seçin",
-          "services": [
-            {
-              "emergency": "Anında değerlendirme + kritik sistemler aynı gün çevrimiçi + tam geçiş başlıyor",
-              "id": "veri taşıma",
-              "name": "Veri Taşıma",
-              "priority": "Hızlı geçiş hattı kurulumu + 48 saat içinde aktarılan temel veriler",
-              "standard": "Tam doğrulama ile uçtan uca göç"
+              "id": "training",
+              "name": "Eğitim",
+              "description": "Takımınıza yönelik uygulamalı eğitimler; rehberli kurulum turundan, ileri düzey iş akışları ve olay müdahale prosedürlerini ele alan çok günlük atölyelere kadar.",
+              "icon": "team-training"
             },
             {
-              "emergency": "Acil kontrol altına alma + kritik sistemler aynı gün geri yüklendi + tam kurtarma başlıyor",
-              "id": "fidye yazılımı kurtarma",
-              "name": "Fidye Yazılımı Kurtarma",
-              "priority": "Hızlı tehdit değerlendirmesi + temel operasyonlar 48 saat içinde geri yüklendi",
-              "standard": "Adli inceleme ve güçlendirme ile tam kurtarma"
+              "id": "support",
+              "name": "Destek",
+              "description": "Gerçek mühendislerden sürekli destek; iş saatleri içi e-posta desteğinden, kritik üretim ortamları için özel hesap yöneticisiyle 7/24/365 kapsama kadar.",
+              "icon": "security-assessment"
             },
             {
-              "emergency": "Kritik güvenlik açığı taraması + yüksek riskli yamalar aynı gün + tam denetim başlıyor",
-              "id": "güvenlik değerlendirmesi",
-              "name": "Güvenlik Değerlendirmesi",
-              "priority": "Tam güvenlik açığı değerlendirmesi + 48 saat içinde düzeltme planı",
-              "standard": "Uygulama haritasıyla tam güvenlik denetimi"
+              "id": "migration",
+              "name": "Göç",
+              "description": "Uçtan uca göç ve özel entegrasyon çalışmaları; tam doğrulanmış veri göçünden, zaman baskısı altında aynı gün gerçekleştirilen hızlı kesintisiz geçişe kadar.",
+              "icon": "data-migration"
             },
             {
-              "emergency": "Kritik kaynaklar aynı gün + otomatik ölçeklendirme yapılandırıldı + tam plan başlıyor",
-              "id": "altyapı ölçeklendirme",
-              "name": "Altyapı Ölçeklendirmesi",
-              "priority": "Hızlı kapasite artışı + 48 saat içinde izleme kurulumu",
-              "standard": "İyileştirmeler ile tam altyapı yeniden tasarımı"
+              "id": "recovery",
+              "name": "Kurtarma",
+              "description": "Fidye yazılımı kurtarma ve afet kurtarma çalışmaları; olay sonrası adli inceleme ve sertleştirmeden, kritik sistemler için sürekli çoğaltma altyapısının devreye alınmasına kadar.",
+              "icon": "ransomware-recovery"
             },
             {
-              "emergency": "Kritik prosedürler aynı gün + olay müdahale hazırlığı + tam program başlıyor",
-              "id": "takım eğitimi",
-              "name": "Takım Eğitimi",
-              "priority": "Yoğun uygulamalı çalıştay + önemli iş akışları 2 gün içinde",
-              "standard": "Çok günlük uygulamalı eğitim programı"
-            },
-            {
-              "emergency": "Kritik darboğaz belirlendi + acil düzeltme aynı gün + tam optimizasyon başlıyor",
-              "id": "performans optimizasyonu",
-              "name": "Performans Optimizasyonu",
-              "priority": "Hızlı profilleme + yüksek etkili iyileştirmeler 48 saat içinde",
-              "standard": "Derin analiz ve tam performans ayarlama"
-            },
-            {
-              "emergency": "Kritik bağlantı aynı gün kuruldu + temel veri akışı çalışıyor + tam geliştirme başlıyor",
-              "id": "özel entegrasyon",
-              "name": "Özel Entegrasyon",
-              "priority": "Temel entegrasyon aktif + önemli özellikler 48 saat içinde yayında",
-              "standard": "Tam entegrasyon, test ve dokümantasyon"
-            },
-            {
-              "emergency": "Diskler bağlandı + RAID dönüştürme aynı gün başlatıldı + kritik depolar doğrulandı + tam güçlendirme başlıyor",
-              "id": "storage-hardening",
-              "name": "Depolama Guclendirme",
-              "priority": "BTRFS RAID1 veya RAID10 kuruldu + canlı denge göçü başlatıldı + scrub 48 saat içinde aktif",
-              "standard": "BTRFS kurarız — sunucularınızda Linux depolama sistemi. Verileriniz 2 veya daha fazla diske eş zamanlı yazılır. RAID1, 2 diski yansıtarak bir disk arızalandığında veri kaybını engeller. RAID10 ise 4+ disk ile hem hız hem de güvenlik sağlar. Disk hataları otomatik olarak tespit edilip onarılır. Kapasite planlama ve yedekleme planınızı gözden geçiririz."
+              "id": "security",
+              "name": "Güvenlik ve Uyumluluk",
+              "description": "Ortamınıza ve denetim gereksinimlerinize göre uyarlanan güvenlik incelemeleri, sertleştirme kontrol listeleri, uyumluluk runbook'ları ve olay müdahale danışmanlığı.",
+              "icon": "storage-hardening"
             }
           ]
         }
@@ -3167,13 +2744,13 @@
           },
           {
             "key": "floatingLicenses",
-            "label": "Kurulum Yuvaları",
-            "tooltip": "Aynı anda kaç makine aktif etkinleştirme yuvasına sahip olabilir."
+            "label": "Kurulum Slotları",
+            "tooltip": "Aynı anda kaç makine sunucu oluşturabilir veya kopyalayabilir. Her slot bir makineyi kapsar."
           },
           {
             "key": "jobsPerMonth",
             "label": "Aylık iş sayısı",
-            "tooltip": "Takvim ayında sayılan yeni sunucu kurulumlarının sayısı. Bir sunucu oluşturmak veya var olan bir sunucuyu kopyalamak her biri birer işlem sayılır."
+            "tooltip": "Bir takvim ayında sayılan yeni sunucu kurulumları. Sunucu oluşturmak veya mevcut birini kopyalamak birer işlem sayılır. Bu, makine başına lisanslamadır: her kurulum 1 slot kullanır."
           },
           {
             "key": "usersTeams",
@@ -3216,7 +2793,7 @@
         "items": ["AES-256 şifreleme standardı", "%99,99 kesintisiz çalışma taahhüdü"]
       },
       "trustSection": {
-        "corporateGuarantee": "Rediacc sizin için çalışmazsa, geri taşınmanıza yardımcı oluruz.",
+        "corporateGuarantee": "Rediacc sizin için uygun değilse, geri taşınmanıza yardımcı oluruz.",
         "heading": "Altyapı Sende, Kurallar Sende",
         "rows": [
           {
@@ -3236,7 +2813,7 @@
             "title": "Ölçekleme İçin 60 Günlük İmtiyaz"
           },
           {
-            "description": "Setup slotlar yalnızca yeni sunucu oluştururken veya kopyalarken kullanılır. Normal işlemler slot tüketmez. Slotlar 1 saat hareketsizlik sonra otomatik açılır. 5 slotluk plan onlarca sunucuyu çalıştırabilir. Sunucu başına ücret yok, asla.",
+            "description": "Slot yalnızca sunucu oluştururken veya kopyalarken kullanılır. Günlük işlemleriniz hiçbir slot tüketmez. 5 saat işlem yapılmadığında slotlar otomatik olarak boşalır. 5 slot'luk bir plan düzinelerce makine için yeterlidir. Makine başına asla ücret yoktur.",
             "title": "Sınırsız Sunucu. Yalnızca Yeni Olanları Öde"
           },
           {
@@ -3252,8 +2829,8 @@
           "noLicenseRequired": "Lisans gerekmez — her zaman çalışır",
           "reposKeepRunning": "Uygulamalar çalışmaya devam eder. Elle yapılacak iş yok.",
           "requiredOnlyHere": "Yalnızca burada gerekli",
-          "slotsAutoRelease": "Slotlar 1 saat hareketsizlik sonra otomatik olarak açılır",
-          "slotsCreateFork": "Slotlar yalnızca oluşturma ve kopyalama için gerekli — günlük işlemler her zaman ücretsiz"
+          "slotsAutoRelease": "5 saat hareketsizlik sonrasında slotlar otomatik olarak boşalır",
+          "slotsCreateFork": "Slotlar yalnızca yeni ve kopyalanan sunucular için kullanılır. Günlük operasyonlar her zaman ücretsizdir."
         }
       },
       "ui": {
@@ -3266,7 +2843,7 @@
           "monthly": "Aylık"
         },
         "contactSales": "Satış Ekibine Ulaş",
-        "contactUs": "Bize ulaşın",
+        "contactUs": "Bize Ulaşın",
         "contactUsSub": "Özel limitler ve koşullar",
         "cta": {
           "business": {
@@ -3481,8 +3058,8 @@
         "title": "Profesyonel Hizmetler | Uzman Uygulama ve Destek"
       },
       "packages": {
-        "heading": "Profesyonel Hizmet Paketleri",
-        "subtitle": "Aciliyetinize ve karmaşıklığınıza uygun hizmet düzeyini seçin"
+        "heading": "Sunulan Hizmetler",
+        "subtitle": "Her işbirliği bir görüşme ile başlar; böylece kurulumunuza uygun ekibi ve zaman çizelgesini birlikte belirleyebiliriz"
       },
       "value": {
         "description": "Uygulamalar 75% daha hızlı. Göç başarı oranı 100%. 2 saatlik acil müdahale. Profesyonel hizmet ekibimiz bunu hallediyor.",
