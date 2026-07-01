@@ -22,6 +22,9 @@ source "$SCRIPT_DIR/../lib/emit-advisory.sh"
 # shellcheck source=../lib/blocker-validator.sh
 # BLOCKER: shared BLOCKER parser + quality validator used by every suppression gate
 source "$SCRIPT_DIR/../lib/blocker-validator.sh"
+# shellcheck source=../lib/release-age.sh
+# BLOCKER: shared daily-batch freshness rule; keeps audit deferral in sync with check-deps.ts + check-go-deps.sh
+source "$SCRIPT_DIR/../lib/release-age.sh"
 # shellcheck source=../lib/age-check.sh
 # BLOCKER: age-based rot detection for allowlist entries; warns at 180 days, fails at 365
 source "$SCRIPT_DIR/../lib/age-check.sh"
@@ -188,13 +191,9 @@ get_advisory_fix_info() {
 # (warn) those; they fail for real once the fix ages in / the hold is lifted.
 DEFER_REASON=""
 
-# minimum-release-age (minutes) from .npmrc; 0 disables the time-based check.
-get_min_release_age_minutes() {
-    local v
-    v=$(grep -E '^[[:space:]]*minimum-release-age[[:space:]]*=[[:space:]]*[0-9]+' .npmrc 2>/dev/null |
-        head -1 | grep -oE '[0-9]+' | head -1)
-    echo "${v:-0}"
-}
+# The freshness window + daily-batch eligibility rule live in
+# .ci/scripts/lib/release-age.sh (is_release_deferred), shared with the go gate
+# and mirrored by scripts/check-deps.ts.
 
 # Exact-name match against .deps-upgrade-blocklist (entries: "name  # BLOCKER: …").
 deps_blocklist_has() {
@@ -239,26 +238,18 @@ should_defer_advisory() {
         return 0
     fi
 
-    # Condition A: the fix version is younger than the minimum-release-age window
-    # (npm refuses to install it yet, so it is not remediable today).
-    local min_min
-    min_min=$(get_min_release_age_minutes)
-    if [[ "$min_min" -gt 0 ]]; then
-        local epoch=""
-        if [[ "$fix_type" == "object" && -n "$fix_version" ]]; then
-            epoch=$(version_publish_epoch "$fix_pkg" "$fix_version") || epoch=""
-        elif [[ "$fix_type" == "boolean" && "$fix_value" == "true" ]]; then
-            epoch=$(version_publish_epoch "$pkg" "") || epoch=""
-        fi
-        if [[ -n "$epoch" ]]; then
-            local now age_min
-            now=$(date -u +%s)
-            age_min=$(((now - epoch) / 60))
-            if ((age_min < min_min)); then
-                DEFER_REASON="fix published ${age_min}m ago, within npm minimum-release-age (${min_min}m) — not installable yet"
-                return 0
-            fi
-        fi
+    # Condition A: the fix version is still within the freshness window — too
+    # fresh to bump today. Deferred until the next UTC day after it ages 24h
+    # (daily batch); see .ci/scripts/lib/release-age.sh.
+    local epoch=""
+    if [[ "$fix_type" == "object" && -n "$fix_version" ]]; then
+        epoch=$(version_publish_epoch "$fix_pkg" "$fix_version") || epoch=""
+    elif [[ "$fix_type" == "boolean" && "$fix_value" == "true" ]]; then
+        epoch=$(version_publish_epoch "$pkg" "") || epoch=""
+    fi
+    if [[ -n "$epoch" ]] && is_release_deferred "$epoch"; then
+        DEFER_REASON="fix published $(date -u -d "@$epoch" +%Y-%m-%d), within freshness window — deferred until next UTC day"
+        return 0
     fi
     return 1
 }

@@ -31,9 +31,9 @@ export const LOW_EFFORT_BLOCKER_PATTERNS: readonly string[] = [
 // Substring-matched (not exact-match) phrases that signal can-kicking a routine,
 // installable bump rather than a genuine technical hold. The upgrade blocklist is
 // only for bumps that genuinely cannot be taken now (breaking major, pin conflict,
-// native rebuild, known regression). check-deps already auto-defers versions too
-// fresh to install under .npmrc minimum-release-age, so "routine bump deferred to a
-// dedicated dependency-bump PR" / "not needed by this change" is deferral-for-
+// native rebuild, known regression). check-deps already auto-defers freshly-
+// published versions (until the next UTC day after the minimum-release-age window),
+// so "routine bump deferred to a dedicated dependency-bump PR" / "not needed by this change" is deferral-for-
 // convenience — take the bump. Legitimate major-migration holds read differently
 // (e.g. "dedicated lint-tooling PR", "dedicated PR that exercises the email flows")
 // and are NOT matched here.
@@ -98,7 +98,7 @@ export function validateBlockerQuality(
         message: [
           `Allowlist ${file}: BLOCKER for entry ${id} defers a routine bump instead of justifying a hold ("${reason}")`,
           `  Rejected because: it contains "${pattern}" — the upgrade blocklist is for bumps that genuinely cannot be taken now (breaking major, pin conflict, native rebuild, known regression), not for deferring a routine installable bump.`,
-          `  Note: check-deps already auto-defers versions too fresh to install under .npmrc minimum-release-age, so there is no need to blocklist a fresh release.`,
+          `  Note: check-deps already auto-defers freshly-published versions (until the next UTC day after they age the minimum-release-age window), so there is no need to blocklist a fresh release.`,
           `  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the concrete technical blocker (which package pins what, what breaks).`,
         ].join('\n'),
       };

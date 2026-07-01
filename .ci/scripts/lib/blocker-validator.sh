@@ -150,7 +150,7 @@ validate_blocker_quality() {
         if [[ "$normalized" == *"$pattern"* ]]; then
             ci_error "Allowlist $file: BLOCKER for entry $id defers a routine bump instead of justifying a hold (\"$reason\")"
             echo "  Rejected because: it contains \"$pattern\" — the upgrade blocklist is for bumps that genuinely cannot be taken now (breaking major, pin conflict, native rebuild, known regression), not for deferring a routine installable bump."
-            echo "  Note: check-deps already auto-defers versions too fresh to install under .npmrc minimum-release-age, so there is no need to blocklist a fresh release."
+            echo "  Note: check-deps already auto-defers freshly-published versions (until the next UTC day after they age the minimum-release-age window), so there is no need to blocklist a fresh release."
             echo "  Action: TAKE the bump ('npm run check:deps -- --upgrade'), OR cite the concrete technical blocker (which package pins what, what breaks)."
             return 1
         fi
