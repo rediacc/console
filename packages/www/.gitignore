@@ -2,3 +2,13 @@
 # split-pane scene IDs contain ':' which is an illegal path char on Windows and
 # breaks `git checkout` (exit 128) on windows-latest CI runners.
 *.debug-frames/
+
+# Tutorial/solution media synced to Cloudflare R2 (media.rediacc.com).
+# Not committed -- see .ci/docs/r2-media-setup.md. Restore via
+# .ci/scripts/deploy/sync-media-from-r2.sh or ./run.sh www tutorials generate.
+# NOTE: these entries only take effect once the directories are removed from
+# git tracking (git rm) -- adding a path to .gitignore does not untrack
+# already-committed files. See root CLAUDE.md's "Media Assets" section.
+public/assets/tutorials/video/
+public/assets/videos/solutions/
+public/assets/tutorials/audio/

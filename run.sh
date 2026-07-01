@@ -557,11 +557,39 @@ www_tutorials_scaffold_locales() {
     npm run transcripts:scaffold-locales -w @rediacc/www
 }
 
+www_tutorial_audio_restore() {
+    # Best-effort: the tutorial-narration mp3 cache is synced to R2, not
+    # committed to git (see .ci/docs/r2-media-setup.md #3). Restoring it
+    # before generate/video lets tutorial_tts/cli.py's cache-hit check
+    # (keyed on the file existing locally) actually hit, instead of paying
+    # for a full TTS re-synthesis on every fresh checkout. Skips with a
+    # warning if R2 credentials aren't configured -- local iteration without
+    # them still works, just without the cache.
+    if [[ -z "${R2_MEDIA_ACCESS_KEY_ID:-}" || -z "${R2_MEDIA_SECRET_ACCESS_KEY:-}" || -z "${R2_MEDIA_ENDPOINT:-}" ]]; then
+        log_warn "R2_MEDIA_* not set — skipping tutorial-audio cache restore (will regenerate via TTS as needed)"
+        return 0
+    fi
+    log_step "Restoring tutorial-audio cache from R2..."
+    "$ROOT_DIR/.ci/scripts/deploy/sync-media-from-r2.sh" --audio-only || log_warn "Audio cache restore failed, continuing without it"
+}
+
+www_tutorial_audio_upload() {
+    # Counterpart to www_tutorial_audio_restore: backs up newly-synthesized
+    # narration so it's not lost/re-paid-for on the next fresh checkout.
+    if [[ -z "${R2_MEDIA_ACCESS_KEY_ID:-}" || -z "${R2_MEDIA_SECRET_ACCESS_KEY:-}" || -z "${R2_MEDIA_ENDPOINT:-}" ]]; then
+        log_warn "R2_MEDIA_* not set — skipping tutorial-audio cache upload"
+        return 0
+    fi
+    log_step "Backing up tutorial-audio cache to R2..."
+    "$ROOT_DIR/.ci/scripts/deploy/sync-media-to-r2.sh" --audio-only || log_warn "Audio cache upload failed"
+}
+
 www_tutorials_generate() {
     check_node_version
     ensure_generative_submodule
     ensure_python_installed
     ensure_audio_system_deps
+    www_tutorial_audio_restore
 
     local clean_venv=false
     local destroy_venv=false
@@ -592,6 +620,8 @@ www_tutorials_generate() {
     log_step "Generating tutorial audio assets..."
     npm run tutorials:tts:generate -w @rediacc/www -- "${passthrough[@]}"
 
+    www_tutorial_audio_upload
+
     if [[ "$destroy_venv" == "true" ]]; then
         log_step "Destroying generative Python environment..."
         rm -rf "$ROOT_DIR/private/generative/.venv"
@@ -602,6 +632,7 @@ www_tutorials_video() {
     check_node_version
     ensure_deps
     ensure_audio_system_deps
+    www_tutorial_audio_restore
 
     local name=""
     local lang=""

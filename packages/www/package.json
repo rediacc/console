@@ -19,6 +19,8 @@
     "tutorials:tts:generate": "tsx scripts/generate-tutorial-audio.ts",
     "tutorials:translate": "tsx scripts/translate-tutorial-transcripts.ts",
     "tutorials:derive-fallback-timeline": "tsx scripts/derive-fallback-timeline.ts",
+    "tutorials:publish-video": "tsx scripts/publish-tutorial-video-to-r2.ts",
+    "video-manifest:generate": "tsx scripts/generate-video-manifest.ts",
     "team-video:extract": "tsx scripts/extract-team-video-transcripts.ts",
     "team-video:scaffold-locales": "node scripts/scaffold-team-video-transcript-locales.js",
     "team-video:tts:generate": "tsx scripts/generate-team-video-audio.ts",

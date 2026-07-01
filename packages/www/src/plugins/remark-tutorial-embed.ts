@@ -11,11 +11,23 @@
  */
 
 import path from 'node:path';
+import process from 'node:process';
 import { DEFAULTS_EXTENDED } from '@rediacc/shared/config/defaults';
 import type { Image, Paragraph, Root } from 'mdast';
 import type { Node, Parent } from 'unist';
 import { SKIP, visit } from 'unist-util-visit';
 import type { VFile } from 'vfile';
+import { loadManifest } from '../../scripts/lib/update-video-manifest.ts';
+
+const TUTORIAL_FIELDS = ['mp4', 'poster', 'vtt', 'chaptersVtt', 'wordsJson'] as const;
+type TutorialField = (typeof TUTORIAL_FIELDS)[number];
+
+/**
+ * CDN base URL for published videos (Cloudflare R2 + media.rediacc.com).
+ * Read via process.env, not import.meta.env: this remark plugin runs at
+ * build time and import.meta.env is only populated under Vite.
+ */
+const VIDEO_CDN_BASE_URL = process.env.PUBLIC_VIDEO_CDN_BASE_URL ?? '';
 
 function isCastUrl(url: string): boolean {
   return path.extname(url).toLowerCase() === '.cast';
@@ -37,16 +49,32 @@ function langFromFilePath(filePath: string | undefined): string {
   return m ? m[1].toLowerCase() : 'en';
 }
 
+function resolveUrl(castKey: string, lang: string, field: TutorialField): string {
+  const localFallback: Record<TutorialField, string> = {
+    mp4: `/assets/tutorials/video/${lang}/${castKey}.mp4`,
+    poster: `/assets/tutorials/video/${lang}/${castKey}.${lang}.poster.jpg`,
+    vtt: `/assets/tutorials/video/${lang}/${castKey}.${lang}.vtt`,
+    chaptersVtt: `/assets/tutorials/video/${lang}/${castKey}.${lang}.chapters.vtt`,
+    wordsJson: `/assets/tutorials/video/${lang}/${castKey}.${lang}.words.json`,
+  };
+  if (!VIDEO_CDN_BASE_URL) return localFallback[field];
+
+  const manifest = loadManifest();
+  const assetPath = manifest.tutorials[castKey]?.[lang]?.[field]?.path;
+  if (!assetPath) return localFallback[field];
+
+  return `${VIDEO_CDN_BASE_URL}/${assetPath}`;
+}
+
 function buildVideoContainerHtml(castUrl: string, lang: string, title: string): string {
   const castKey = path.basename(castUrl, '.cast');
-  const base = `/assets/tutorials/video/${lang}/${castKey}`;
   return [
     '<div class="tutorial-video-container"',
-    ` data-video-src="${escapeHtml(`${base}.mp4`)}"`,
-    ` data-poster-src="${escapeHtml(`${base}.${lang}.poster.jpg`)}"`,
-    ` data-subtitles-src="${escapeHtml(`${base}.${lang}.vtt`)}"`,
-    ` data-chapters-src="${escapeHtml(`${base}.${lang}.chapters.vtt`)}"`,
-    ` data-words-src="${escapeHtml(`${base}.${lang}.words.json`)}"`,
+    ` data-video-src="${escapeHtml(resolveUrl(castKey, lang, 'mp4'))}"`,
+    ` data-poster-src="${escapeHtml(resolveUrl(castKey, lang, 'poster'))}"`,
+    ` data-subtitles-src="${escapeHtml(resolveUrl(castKey, lang, 'vtt'))}"`,
+    ` data-chapters-src="${escapeHtml(resolveUrl(castKey, lang, 'chaptersVtt'))}"`,
+    ` data-words-src="${escapeHtml(resolveUrl(castKey, lang, 'wordsJson'))}"`,
     ` data-title="${escapeHtml(title)}"`,
     ` data-lang="${escapeHtml(lang)}"`,
     '></div>',
