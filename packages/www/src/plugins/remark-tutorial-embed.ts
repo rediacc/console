@@ -19,8 +19,7 @@ import { SKIP, visit } from 'unist-util-visit';
 import type { VFile } from 'vfile';
 import { loadManifest } from '../../scripts/lib/update-video-manifest.ts';
 
-const TUTORIAL_FIELDS = ['mp4', 'poster', 'vtt', 'chaptersVtt', 'wordsJson'] as const;
-type TutorialField = (typeof TUTORIAL_FIELDS)[number];
+type TutorialField = 'mp4' | 'poster' | 'vtt' | 'chaptersVtt' | 'wordsJson';
 
 /**
  * CDN base URL for published videos (Cloudflare R2 + media.rediacc.com).
@@ -60,7 +59,7 @@ function resolveUrl(castKey: string, lang: string, field: TutorialField): string
   if (!VIDEO_CDN_BASE_URL) return localFallback[field];
 
   const manifest = loadManifest();
-  const assetPath = manifest.tutorials[castKey]?.[lang]?.[field]?.path;
+  const assetPath = manifest.tutorials[castKey][lang][field].path;
   if (!assetPath) return localFallback[field];
 
   return `${VIDEO_CDN_BASE_URL}/${assetPath}`;

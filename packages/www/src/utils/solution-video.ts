@@ -50,7 +50,7 @@ function resolveUrl(slug: string, lang: VideoLang, field: 'mp4' | 'vertical' | '
   if (!VIDEO_CDN_BASE_URL) return localFallback[field];
 
   const manifest = loadManifest();
-  const path = manifest.solutions[slug]?.[lang]?.[field]?.path;
+  const path = manifest.solutions[slug][lang][field].path;
   if (!path) return localFallback[field];
 
   return `${VIDEO_CDN_BASE_URL}/${path}`;
