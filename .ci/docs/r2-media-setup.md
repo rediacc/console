@@ -151,14 +151,15 @@ header) gets cached at the edge as a specific response — including the
 (`max-age=31536000`, no `vary: origin` on that stale entry). Applying the
 CORS policy in §5b only affects the R2 *origin* response for future cache
 misses; anything already `HIT`-cached keeps serving the pre-CORS response
-until it's purged or expires. After applying/changing the CORS policy,
-purge the CDN cache for the hostname:
+until it's purged or expires. After applying/changing the CORS policy (or
+republishing a file that needs the fix to actually be visible), purge the
+CDN cache for the hostname:
 
 ```bash
-curl -X POST "https://api.cloudflare.com/client/v4/zones/9e802649c143c9cefd811d8fd671d31c/purge_cache" \
-  -H "X-Auth-Key: $CF_GLOBAL_API_KEY" -H "X-Auth-Email: $CF_EMAIL" -H "Content-Type: application/json" \
-  --data '{"hosts": ["media.rediacc.com"]}'
+.ci/scripts/deploy/purge-media-cache.sh
 ```
+
+(Needs `CLOUDFLARE_API_TOKEN`, or `CF_GLOBAL_API_KEY` + `CF_EMAIL`.)
 
 Confirm with the same `curl -sI -H "Origin: ..."` check above — look for
 `cf-cache-status: MISS` (first hit after purge) or `HIT` *with*
