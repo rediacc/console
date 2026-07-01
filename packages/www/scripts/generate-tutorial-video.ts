@@ -256,6 +256,23 @@ async function main(): Promise<void> {
       .map((s, i) => isBrowserScene(s.type) || isBrowserScene(storyboard.scenes[i + 1].type));
 
     if (captionsOnly) {
+      // --captions-only assumes the mp4 already exists (that's the entire
+      // premise -- "the video didn't change, just re-derive captions for
+      // it"). Silently proceeding without one produces vtt/chapters/
+      // words.json for a video that was never downloaded/rendered locally,
+      // which publish-tutorial-video-to-r2.ts's --all mode won't even
+      // discover (it finds tutorials by scanning for .mp4 files) -- the
+      // sidecars would be written and then silently never published. Fail
+      // loudly instead: restore/render the mp4 first (`sync-media-from-r2.sh`
+      // doesn't cover video/, only audio -- there's no per-tutorial video
+      // restore command; use a full render for now).
+      if (!existsSync(outPath)) {
+        throw new Error(
+          `--captions-only: ${outPath} does not exist locally -- this mode only ` +
+            `re-derives captions for an mp4 that's already on disk. Re-run without ` +
+            `--captions-only to render it first.`
+        );
+      }
       console.log(`[video] --captions-only: recovering scene timing without rendering`);
       for (let i = 0; i < storyboard.scenes.length; i++) {
         const scene = storyboard.scenes[i];
