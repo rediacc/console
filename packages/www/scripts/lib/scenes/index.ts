@@ -2,9 +2,21 @@ import type { Scene, Storyboard } from '../storyboard.ts';
 import type { ParsedCast } from '../cast-splitter.ts';
 import type { NarrationLookup } from '../narration-lookup.ts';
 import type { SessionManager } from './browser-session.ts';
-import { compileSlide, compileTitle, compileOutro } from './slide.ts';
-import { compileCast, compileCastFreeze, compileCastNarrated } from './cast.ts';
-import { compileBrowser, compileBrowserSplit } from './browser.ts';
+import {
+  compileSlide,
+  compileTitle,
+  compileOutro,
+  computeFreezeSceneDurationDry,
+} from './slide.ts';
+import {
+  compileCast,
+  compileCastFreeze,
+  compileCastNarrated,
+  computeCastDurationDry,
+  computeCastFreezeDurationDry,
+  computeCastNarratedDurationDry,
+} from './cast.ts';
+import { compileBrowser, compileBrowserSplit, computeBrowserSceneDurationDry } from './browser.ts';
 
 export interface CastNarratedDebug {
   sceneId: string;
@@ -84,6 +96,53 @@ export async function compileScene(scene: Scene, ctx: SceneContext): Promise<Sce
       return await compileBrowser(scene, ctx);
     case 'browser-split':
       return await compileBrowserSplit(scene, ctx);
+    default: {
+      const t: never = scene;
+      throw new Error(`Unknown scene type: ${JSON.stringify(t)}`);
+    }
+  }
+}
+
+export interface SceneDurationDry {
+  durationSec: number;
+  /** Only populated for cast-narrated scenes -- the debug record VTT/word-
+   * timing emission needs (mirrors what recordCastNarrated would have
+   * collected during a full render). */
+  castNarratedDebug?: CastNarratedDebug;
+}
+
+/**
+ * Recover a scene's final duration WITHOUT rendering it -- used by
+ * `--captions-only` (generate-tutorial-video.ts) to rebuild
+ * `sceneAbsStart`/`sceneAbsEnd` and the cast-narrated debug records that VTT
+ * emission needs, at a fraction of the cost of a full ffmpeg compile.
+ *
+ * Returns `null` when the scene's duration cannot be recovered without a
+ * real render -- currently only browser/browser-split scenes with a cold
+ * silent-segment cache (see computeBrowserSceneDurationDry). Callers must
+ * fall back to a full render for that case; there is no way to know a live
+ * Playwright session's wall-clock duration without running it.
+ */
+export function computeSceneDurationDry(scene: Scene, ctx: SceneContext): SceneDurationDry | null {
+  switch (scene.type) {
+    case 'title':
+    case 'outro':
+      return { durationSec: computeFreezeSceneDurationDry(scene.narrationKey, ctx) };
+    case 'slide':
+      return { durationSec: computeFreezeSceneDurationDry(scene.narrationKey, ctx) };
+    case 'cast':
+      return { durationSec: computeCastDurationDry(scene, ctx) };
+    case 'cast-freeze':
+      return { durationSec: computeCastFreezeDurationDry(scene, ctx) };
+    case 'cast-narrated': {
+      const { durationSec, debug } = computeCastNarratedDurationDry(scene, ctx);
+      return { durationSec, castNarratedDebug: debug };
+    }
+    case 'browser':
+    case 'browser-split': {
+      const durationSec = computeBrowserSceneDurationDry(ctx, scene);
+      return durationSec === null ? null : { durationSec };
+    }
     default: {
       const t: never = scene;
       throw new Error(`Unknown scene type: ${JSON.stringify(t)}`);

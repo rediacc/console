@@ -392,6 +392,29 @@ export function browserSceneWillRecord(
   return !existsSync(path.join(cache.dir, `${tutorial}.${scene.id}.${hash}.mp4`));
 }
 
+/**
+ * Duration of a `browser`/`browser-split` scene WITHOUT running a live
+ * session -- only possible when the content-addressed silent-segment cache
+ * (language-independent pixels, keyed by `sceneVisualHash`) is warm.
+ * Mirrors `muxCachedSegment`'s duration math exactly (`probeDurationSec` on
+ * the cached silent segment, extended to fit `scene.durationSec`/narration
+ * length) without actually muxing anything.
+ *
+ * Returns `null` when the cache is cold -- `--captions-only` cannot recover
+ * this scene's timing without a live Playwright session in that case, and
+ * must fall back to a full render (see generate-tutorial-video.ts).
+ */
+export function computeBrowserSceneDurationDry(
+  ctx: SceneContext,
+  scene: BrowserScene | BrowserSplitScene
+): number | null {
+  const cacheFile = cachePathFor(ctx, scene);
+  if (!ctx.browserCache.reuse || ctx.browserCache.refresh || !existsSync(cacheFile)) return null;
+  const durSec = probeDurationSec(cacheFile);
+  const narration = ctx.narrations.get(scene.narrationKey);
+  return Math.max(durSec, scene.durationSec, narration.audioDurationSec ?? 0);
+}
+
 /** Mux a cached silent segment with this language's narration (last-frame hold). */
 function muxCachedSegment(
   ctx: SceneContext,

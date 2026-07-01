@@ -139,11 +139,15 @@ async function checkTarget(target: Target): Promise<FlatCue[] | { error: string 
 
 function printRemediation(slug: string, lang: string): void {
   console.error(`  ./run.sh www tutorials generate --cast ${slug} --lang ${lang} --subtitle`);
-  console.error(`  ./run.sh www tutorials video ${slug} --lang ${lang}`);
+  console.error(`  ./run.sh www tutorials video ${slug} --lang ${lang} --captions-only`);
   console.error(
     `  npm run tutorials:publish-video -w @rediacc/www -- --cast ${slug} --lang ${lang}`
   );
   console.error(`  .ci/scripts/deploy/purge-media-cache.sh`);
+  console.error(
+    `  # --captions-only skips the ffmpeg re-encode (mp4 unchanged) and just re-derives` +
+      ` vtt/chapters/words.json; drop it to force a full render if that scene's browser cache is cold`
+  );
 }
 
 async function main(): Promise<number> {

@@ -656,7 +656,7 @@ www_tutorials_video() {
                 jobs="${1#*=}"
                 shift
                 ;;
-            --keep-temp)
+            --keep-temp | --captions-only | --debug | --refresh-browser-cache | --no-browser-cache)
                 passthrough+=("$1")
                 shift
                 ;;
@@ -1571,9 +1571,14 @@ WWW COMMANDS:
   www tutorials extract             Sync cast markers to transcripts (preserves text)
   www tutorials scaffold-locales    Sync locale transcripts with English
   www tutorials generate [opts]     Generate TTS audio + timelines (Python venv)
-  www tutorials video [name] [--lang <code>] [--jobs N]  Compile .mp4 from cast+storyboard+timeline+audio
+  www tutorials video [name] [--lang <code>] [--jobs N] [--captions-only]  Compile .mp4 from cast+storyboard+timeline+audio
                                      (--jobs N runs N compiles concurrently, default 1; ffmpeg-bound,
                                      safe to raise on a multi-core box -- e.g. --jobs 6 on 20 cores)
+                                     (--captions-only recovers scene timing analytically and re-emits
+                                     just the vtt/chapters/words.json sidecars, skipping the ffmpeg
+                                     re-encode entirely -- use after a --subtitle realignment when the
+                                     mp4 itself hasn't changed. Falls back to a full render per-tutorial
+                                     if a browser scene's silent-segment cache is cold.)
   www tutorials validate            Validate transcripts + audio integrity
   www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate -> video)
 
