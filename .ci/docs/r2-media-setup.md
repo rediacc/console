@@ -109,6 +109,41 @@ curl -sI https://media.rediacc.com/<some-path>.mp4 | grep -iE "cf-cache-status|a
 curl -sI -r 0-99 https://media.rediacc.com/<some-path>.mp4   # expect HTTP 206
 ```
 
+## 5b. CORS policy
+
+`media.rediacc.com` is a different origin than `www.rediacc.com`/
+`edge.rediacc.com`, so the tutorial player's `<video crossOrigin="anonymous">`
+element (needed for cross-origin `<track>` subtitle/chapter loading) and its
+plain `fetch()` for `words.json` both require the bucket to send
+`Access-Control-Allow-Origin`. R2's CORS config is set via the Cloudflare API
+(not the S3-compatible API — the scoped `ci-www-media-rw` token's Object
+Read & Write permission doesn't cover it; use a Global API Key / account-admin
+token instead):
+
+```bash
+curl -X PUT "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/r2/buckets/rediacc-www-media/cors" \
+  -H "X-Auth-Key: $CF_GLOBAL_API_KEY" -H "X-Auth-Email: $CF_EMAIL" -H "Content-Type: application/json" \
+  --data '{
+    "rules": [{
+      "id": "public-media-read",
+      "allowed": { "origins": ["*"], "methods": ["GET", "HEAD"] },
+      "exposeHeaders": ["Content-Length", "Content-Range", "ETag"],
+      "maxAgeSeconds": 3600
+    }]
+  }'
+```
+
+`origins: ["*"]` is intentional — every file in this bucket is already
+individually fetchable by anyone at `media.rediacc.com/<path>` with no
+credentials, so scoping CORS to specific origins would add no real
+restriction, just friction for local dev / PR previews on other hostnames.
+
+Verify: `curl -sI -H "Origin: https://edge.rediacc.com" https://media.rediacc.com/<path> | grep -i access-control-allow-origin` should show `*`.
+
+Also see `packages/www/public/_headers`: the CSP's `media-src` and
+`connect-src` directives must include `https://media.rediacc.com`, or the
+browser blocks the loads before CORS is even evaluated.
+
 ## 6. Syncing media
 
 Use `.ci/scripts/deploy/sync-media-to-r2.sh` — wraps `aws s3 sync`, which is
