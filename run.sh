@@ -636,6 +636,7 @@ www_tutorials_video() {
 
     local name=""
     local lang=""
+    local jobs=1
     local passthrough=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -645,6 +646,14 @@ www_tutorials_video() {
                 ;;
             --lang=*)
                 lang="${1#*=}"
+                shift
+                ;;
+            --jobs)
+                jobs="$2"
+                shift 2
+                ;;
+            --jobs=*)
+                jobs="${1#*=}"
                 shift
                 ;;
             --keep-temp)
@@ -657,6 +666,11 @@ www_tutorials_video() {
                 ;;
         esac
     done
+
+    if ! [[ "$jobs" =~ ^[0-9]+$ ]] || [[ "$jobs" -lt 1 ]]; then
+        log_error "--jobs must be a positive integer, got: $jobs"
+        exit 1
+    fi
 
     local tutorials_root="$ROOT_DIR/packages/www/public/assets/tutorials"
     local timeline_root="$ROOT_DIR/packages/www/src/data/tutorial-timeline"
@@ -687,33 +701,64 @@ www_tutorials_video() {
         done
     fi
 
-    log_step "Compiling tutorial videos (${#tutorials[@]} tutorial(s) × ${#langs[@]} lang(s))..."
-    local failures=()
+    # Build the candidate (tutorial, lang) pair list up front -- same
+    # timeline/audio existence pre-checks as before, just split out so the
+    # dispatch loop below doesn't need to re-check per job.
+    local pairs=()
+    for t in "${tutorials[@]}"; do
+        for l in "${langs[@]}"; do
+            if [[ ! -f "$timeline_root/$l/${t}.json" ]]; then
+                log_debug "skip $t × $l (no timeline)"
+                continue
+            fi
+            if [[ ! -d "$tutorials_root/audio/$l/$t" ]]; then
+                log_debug "skip $t × $l (no audio)"
+                continue
+            fi
+            pairs+=("$t"$'\t'"$l")
+        done
+    done
+
+    log_step "Compiling tutorial videos (${#pairs[@]} pair(s), --jobs $jobs)..."
+    local failure_prefix="/tmp/_tut_video_failures.$$"
+    rm -f "${failure_prefix}".*
+
+    # Bounded job pool: each (t, l) pair runs as its own ffmpeg-heavy
+    # compile (generate-tutorial-video.ts), independent of every other
+    # pair -- no shared temp dirs, no shared output files -- so this is
+    # safe to run with --jobs > 1. --jobs 1 (default) runs one at a time,
+    # identical order/behavior to before this flag existed. Each job
+    # writes its own failure file (not one shared file with concurrent
+    # appends) to avoid depending on single-line-append atomicity.
     (
         cd "$ROOT_DIR/packages/www"
-        for t in "${tutorials[@]}"; do
-            for l in "${langs[@]}"; do
-                if [[ ! -f "$timeline_root/$l/${t}.json" ]]; then
-                    log_debug "skip $t × $l (no timeline)"
-                    continue
-                fi
-                if [[ ! -d "$tutorials_root/audio/$l/$t" ]]; then
-                    log_debug "skip $t × $l (no audio)"
-                    continue
-                fi
+        running=0
+        idx=0
+        for pair in "${pairs[@]}"; do
+            t="${pair%%$'\t'*}"
+            l="${pair##*$'\t'}"
+            idx=$((idx + 1))
+            (
                 log_step "  → $t × $l"
                 if ! npx tsx scripts/generate-tutorial-video.ts \
                     --cast "$t" --lang "$l" "${passthrough[@]}"; then
                     log_error "  ✗ failed: $t × $l"
-                    echo "$t × $l" >>/tmp/_tut_video_failures.$$
+                    echo "$t × $l" >>"${failure_prefix}.${idx}"
                 fi
-            done
+            ) &
+            running=$((running + 1))
+            if [[ "$running" -ge "$jobs" ]]; then
+                wait -n
+                running=$((running - 1))
+            fi
         done
+        wait
     )
-    if [[ -f "/tmp/_tut_video_failures.$$" ]]; then
+
+    if compgen -G "${failure_prefix}.*" >/dev/null; then
         log_error "Failed tutorials:"
-        cat "/tmp/_tut_video_failures.$$" >&2
-        rm -f "/tmp/_tut_video_failures.$$"
+        cat "${failure_prefix}".* >&2
+        rm -f "${failure_prefix}".*
         return 1
     fi
 }
@@ -1526,7 +1571,9 @@ WWW COMMANDS:
   www tutorials extract             Sync cast markers to transcripts (preserves text)
   www tutorials scaffold-locales    Sync locale transcripts with English
   www tutorials generate [opts]     Generate TTS audio + timelines (Python venv)
-  www tutorials video [name] [--lang <code>]  Compile .mp4 from cast+storyboard+timeline+audio
+  www tutorials video [name] [--lang <code>] [--jobs N]  Compile .mp4 from cast+storyboard+timeline+audio
+                                     (--jobs N runs N compiles concurrently, default 1; ffmpeg-bound,
+                                     safe to raise on a multi-core box -- e.g. --jobs 6 on 20 cores)
   www tutorials validate            Validate transcripts + audio integrity
   www tutorials all [opts]          Full tutorial pipeline (record -> extract -> generate -> video)
 
